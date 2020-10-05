@@ -10,6 +10,7 @@
       "noEmit": false,
       "moduleResolution": "node",
       "esModuleInterop": true,
+      "preserveSymlinks": true,
       "baseUrl": ".",
       "paths": {
          "@principia/core*": ["packages/core/dist*"],
