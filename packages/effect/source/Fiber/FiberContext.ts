@@ -14,6 +14,8 @@ import { AtomicReference, defaultScheduler } from "../Support";
 import * as X from "../XPure";
 import * as T from "./_internal/effect";
 import * as F from "./core";
+import { Fiber, FiberDescriptor, InterruptStatus, Runtime } from "./Fiber";
+import type { FiberId } from "./FiberId";
 import { fiberId as makeFiberId } from "./FiberId";
 import type { Callback, FiberRefLocals } from "./state";
 import { FiberStateDone, FiberStateExecuting, initial, interrupting } from "./state";
@@ -75,7 +77,7 @@ export const _tracing = new TracingContext();
 
 export const currentFiber = new AtomicReference<FiberContext<any, any> | null>(null);
 
-export class FiberContext<E, A> implements F.Runtime<E, A> {
+export class FiberContext<E, A> implements Runtime<E, A> {
    readonly _tag = "RuntimeFiber";
    readonly state = new AtomicReference(initial<E, A>());
    readonly scheduler = defaultScheduler;
@@ -89,9 +91,9 @@ export class FiberContext<E, A> implements F.Runtime<E, A> {
    scopeKey: Scope.Key | undefined = undefined;
 
    constructor(
-      readonly fiberId: F.FiberId,
+      readonly fiberId: FiberId,
       readonly startEnv: any,
-      readonly startIStatus: F.InterruptStatus,
+      readonly startIStatus: InterruptStatus,
       readonly fiberRefLocals: FiberRefLocals,
       readonly supervisor0: Supervisor<any>,
       readonly openScope: Scope.Open<Ex.Exit<E, A>>,
@@ -298,7 +300,7 @@ export class FiberContext<E, A> implements F.Runtime<E, A> {
       }
    }
 
-   kill0(fiberId: F.FiberId): T.UIO<Ex.Exit<E, A>> {
+   kill0(fiberId: FiberId): T.UIO<Ex.Exit<E, A>> {
       const interruptedCause = C.interrupt(fiberId);
 
       const setInterruptedLoop = (): C.Cause<never> => {
@@ -347,7 +349,7 @@ export class FiberContext<E, A> implements F.Runtime<E, A> {
       });
    }
 
-   interruptAs(fiberId: F.FiberId): T.UIO<Ex.Exit<E, A>> {
+   interruptAs(fiberId: FiberId): T.UIO<Ex.Exit<E, A>> {
       return this.kill0(fiberId);
    }
 
@@ -411,7 +413,7 @@ export class FiberContext<E, A> implements F.Runtime<E, A> {
       }
    }
 
-   enterAsync(epoch: number, blockingOn: ReadonlyArray<F.FiberId>): T.Instruction | undefined {
+   enterAsync(epoch: number, blockingOn: ReadonlyArray<FiberId>): T.Instruction | undefined {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -532,7 +534,7 @@ export class FiberContext<E, A> implements F.Runtime<E, A> {
             T.suspend(
                (): T.UIO<any> => {
                   const _interruptors =
-                     exit._tag === "Failure" ? C.interruptors(exit.cause) : new Set<F.FiberId>();
+                     exit._tag === "Failure" ? C.interruptors(exit.cause) : new Set<FiberId>();
 
                   const head = _interruptors.values().next();
 
@@ -599,7 +601,7 @@ export class FiberContext<E, A> implements F.Runtime<E, A> {
    }
 
    getDescriptor() {
-      return new F.FiberDescriptor(
+      return new FiberDescriptor(
          this.fiberId,
          this.state.get.status,
          C.interruptors(this.state.get.interrupted),
@@ -609,9 +611,9 @@ export class FiberContext<E, A> implements F.Runtime<E, A> {
    }
 
    complete<R, R1, R2, E2, A2, R3, E3, A3>(
-      winner: F.Fiber<any, any>,
-      loser: F.Fiber<any, any>,
-      cont: (exit: Ex.Exit<any, any>, fiber: F.Fiber<any, any>) => T.Effect<any, any, any>,
+      winner: Fiber<any, any>,
+      loser: Fiber<any, any>,
+      cont: (exit: Ex.Exit<any, any>, fiber: Fiber<any, any>) => T.Effect<any, any, any>,
       winnerExit: Ex.Exit<any, any>,
       ab: AtomicReference<boolean>,
       cb: (_: T.Effect<R & R1 & R2 & R3, E2 | E3, A2 | A3>) => void

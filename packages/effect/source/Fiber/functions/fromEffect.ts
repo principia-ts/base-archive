@@ -1,5 +1,6 @@
 import * as T from "../_internal/effect";
-import { done, Synthetic } from "../core";
+import { done } from "../core";
+import type { Synthetic } from "../Fiber";
 
 /**
  * ```haskell

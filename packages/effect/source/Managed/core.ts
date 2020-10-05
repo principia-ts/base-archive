@@ -20,7 +20,7 @@ import {
    ReleaseMap
 } from "./ReleaseMap";
 
-export type { Managed, UIO, RIO, IO, URI, V } from "./Managed";
+export type { Managed, UIO, RIO, IO } from "./Managed";
 
 export const managed = <R, E, A>(
    effect: T.Effect<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>

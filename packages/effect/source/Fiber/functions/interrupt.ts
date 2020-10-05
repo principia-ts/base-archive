@@ -1,7 +1,8 @@
 import * as I from "@principia/core/Iterable";
 
 import * as T from "../_internal/effect";
-import type { Fiber, FiberId } from "../core";
+import type { Fiber } from "../Fiber";
+import type { FiberId } from "../FiberId";
 
 /**
  * ```haskell

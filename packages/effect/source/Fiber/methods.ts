@@ -5,8 +5,7 @@ import * as C from "../Cause";
 import { _mapBothPar } from "../Effect/functions/mapBothPar";
 import * as Ex from "../Exit";
 import * as T from "./_internal/effect";
-import * as F from "./core";
-import { Fiber, Synthetic } from "./Fiber";
+import type { Fiber, Synthetic, URI, V } from "./Fiber";
 
 /**
  * Effectually maps over the value the fiber computes.
@@ -38,19 +37,19 @@ export const mapEffect = <A, E1, B>(f: (a: A) => T.IO<E1, B>) => <E>(fiber: Fibe
 /**
  * Maps over the value the fiber computes.
  */
-export const _map: TC.UC_MapF<[F.URI], F.V> = (fa, f) => _mapEffect(fa, (a) => T.pure(f(a)));
+export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _mapEffect(fa, (a) => T.pure(f(a)));
 
 /**
  * Maps over the value the fiber computes.
  */
-export const map: TC.MapF<[F.URI], F.V> = (f) => (fa) => _map(fa, f);
+export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
 
 /**
  * Zips this fiber with the specified fiber, combining their results using
  * the specified combiner function. Both joins and interruptions are performed
  * in sequential order from left to right.
  */
-export const _mapBoth: TC.UC_MapBothF<[F.URI], F.V> = <E, E1, A, A1, B>(
+export const _mapBoth: TC.UC_MapBothF<[URI], V> = <E, E1, A, A1, B>(
    fa: Fiber<E, A>,
    fb: Fiber<E1, A1>,
    f: (a: A, b: A1) => B
@@ -73,22 +72,22 @@ export const _mapBoth: TC.UC_MapBothF<[F.URI], F.V> = <E, E1, A, A1, B>(
  * the specified combiner function. Both joins and interruptions are performed
  * in sequential order from left to right.
  */
-export const mapBoth: TC.MapBothF<[F.URI], F.V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
+export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
 
 /**
  * Zips this fiber and the specified fiber together, producing a tuple of their output.
  */
-export const _both: TC.UC_BothF<[F.URI], F.V> = (fa, fb) => _mapBoth(fa, fb, (a, b) => [a, b]);
+export const _both: TC.UC_BothF<[URI], V> = (fa, fb) => _mapBoth(fa, fb, (a, b) => [a, b]);
 
 /**
  * Zips this fiber and the specified fiber together, producing a tuple of their output.
  */
-export const both: TC.BothF<[F.URI], F.V> = (fb) => (fa) => _both(fa, fb);
+export const both: TC.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
 
-export const _apFirst: TC.UC_ApFirstF<[F.URI], F.V> = (fa, fb) => _mapBoth(fa, fb, (a, _) => a);
+export const _apFirst: TC.UC_ApFirstF<[URI], V> = (fa, fb) => _mapBoth(fa, fb, (a, _) => a);
 
-export const apFirst: TC.ApFirstF<[F.URI], F.V> = (fb) => (fa) => _apFirst(fa, fb);
+export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
 
-export const _apSecond: TC.UC_ApSecondF<[F.URI], F.V> = (fa, fb) => _mapBoth(fa, fb, (_, b) => b);
+export const _apSecond: TC.UC_ApSecondF<[URI], V> = (fa, fb) => _mapBoth(fa, fb, (_, b) => b);
 
-export const apSecond: TC.ApSecondF<[F.URI], F.V> = (fb) => (fa) => _apSecond(fa, fb);
+export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb);

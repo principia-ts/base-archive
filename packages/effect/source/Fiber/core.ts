@@ -8,9 +8,6 @@ import type { Exit } from "../Exit/Exit";
 import { Fiber, InterruptStatus, Runtime, Synthetic } from "./Fiber";
 import type { FiberId } from "./FiberId";
 
-export * from "./Fiber";
-export type { FiberId } from "./FiberId";
-
 /**
  * ```haskell
  * _fold :: (
