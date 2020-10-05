@@ -4,13 +4,13 @@ import { insert } from "@principia/core/Map";
 import { sequential } from "../ExecutionStrategy";
 import type { Exit } from "../Exit/Exit";
 import { has, HasTag } from "../Has";
-import * as M from "../Managed/core";
 import type { Finalizer, ReleaseMap } from "../Managed/ReleaseMap";
 import * as RelMap from "../Managed/ReleaseMap";
 import * as XP from "../XPromise";
 import * as XR from "../XRef";
 import * as XRM from "../XRefM";
 import * as T from "./_internal/effect";
+import * as M from "./_internal/managed";
 import { Layer } from "./Layer";
 
 /**
@@ -87,7 +87,7 @@ export class MemoMap {
                                                    XP.halt(e.cause),
                                                    T.chain(
                                                       () =>
-                                                         RelMap.releaseAll(
+                                                         M.releaseAll(
                                                             e,
                                                             sequential()
                                                          )(innerReleaseMap) as T.IO<E, any>
@@ -106,7 +106,7 @@ export class MemoMap {
                                                                XR.modify((n) => [n === 1, n - 1])
                                                             )
                                                          )(
-                                                            RelMap.releaseAll(
+                                                            M.releaseAll(
                                                                e,
                                                                sequential()
                                                             )(innerReleaseMap) as T.UIO<any>

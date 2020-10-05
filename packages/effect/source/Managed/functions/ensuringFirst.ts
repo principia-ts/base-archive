@@ -1,6 +1,6 @@
 import type { Effect } from "../../Effect/Effect";
-import { _onExitFirst, onExitFirst } from "../core";
 import type { Managed } from "../Managed";
+import { _onExitFirst, onExitFirst } from "./onExitFirst";
 
 /**
  * Ensures that `f` is executed when this `Managed` is finalized, before

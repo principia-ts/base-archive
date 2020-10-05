@@ -1,4 +1,4 @@
-import { bind_, bindTo_, flow, pipe } from "@principia/core/Function";
+import { bind_, flow } from "@principia/core/Function";
 import * as TC from "@principia/core/typeclass-index";
 
 import * as M from "./core";
@@ -33,27 +33,8 @@ export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => M._chain(fa, () => that(
 
 export const alt: TC.AltF<[URI], V> = (that) => (fa) => _alt(fa, that);
 
-export const bindS: TC.BindSF<[URI], V> = (name, f) =>
-   M.chain((a) =>
-      pipe(
-         f(a),
-         M.map((b) => bind_(a, name, b))
-      )
-   );
-
-export const bindTo: TC.BindToSF<[URI], V> = (name) => (fa) => M._map(fa, bindTo_(name));
-
 export const apS: TC.ApSF<[URI], V> = (name, fb) =>
    flow(
       M.map((a) => (b: InferSuccess<typeof fb>) => bind_(a, name, b)),
       ap(fb)
-   );
-
-export const letS: TC.LetSF<[URI], V> = (name, f) =>
-   M.chain((a) =>
-      pipe(
-         f(a),
-         M.succeed,
-         M.map((b) => bind_(a, name, b))
-      )
    );

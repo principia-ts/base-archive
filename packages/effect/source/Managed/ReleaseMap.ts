@@ -4,9 +4,7 @@ import * as M from "@principia/core/Map";
 import * as Mb from "@principia/core/Maybe";
 import { just, Maybe, nothing } from "@principia/core/Maybe";
 
-import { ExecutionStrategy } from "../ExecutionStrategy";
 import { Exit } from "../Exit";
-import * as Ex from "../Exit";
 import * as XR from "../XRef/combinators";
 import type { Ref } from "../XRef/XRef";
 import * as T from "./_internal/effect";
@@ -117,62 +115,3 @@ export const releaseMap = (ref: Ref<ManagedState>): ReleaseMap => ({
 export const makeReleaseMap = T._map(XR.makeRef<ManagedState>(running(0, new Map())), (s) =>
    releaseMap(s)
 );
-
-export function releaseAll(
-   exit: Exit<any, any>,
-   execStrategy: ExecutionStrategy
-): (_: ReleaseMap) => T.UIO<any> {
-   return (_: ReleaseMap) =>
-      pipe(
-         _.ref,
-         XR.modify((s): [T.UIO<any>, ManagedState] => {
-            switch (s._tag) {
-               case "Exited": {
-                  return [T.unit, s];
-               }
-               case "Running": {
-                  switch (execStrategy._tag) {
-                     case "Sequential": {
-                        return [
-                           T._chain(
-                              T._foreach(Array.from(finalizers(s)).reverse(), ([_, f]) =>
-                                 T.result(f(exit))
-                              ),
-                              (e) =>
-                                 T.done(Mb._getOrElse(Ex.collectAll(...e), () => Ex.succeed([])))
-                           ),
-                           exited(s.nextKey, exit)
-                        ];
-                     }
-                     case "Parallel": {
-                        return [
-                           T._chain(
-                              T._foreachPar(Array.from(finalizers(s)).reverse(), ([_, f]) =>
-                                 T.result(f(exit))
-                              ),
-                              (e) =>
-                                 T.done(Mb._getOrElse(Ex.collectAllPar(...e), () => Ex.succeed([])))
-                           ),
-                           exited(s.nextKey, exit)
-                        ];
-                     }
-                     case "ParallelN": {
-                        return [
-                           T._chain(
-                              T._foreachParN(execStrategy.n)(
-                                 Array.from(finalizers(s)).reverse(),
-                                 ([_, f]) => T.result(f(exit))
-                              ),
-                              (e) =>
-                                 T.done(Mb._getOrElse(Ex.collectAllPar(...e), () => Ex.succeed([])))
-                           ),
-                           exited(s.nextKey, exit)
-                        ];
-                     }
-                  }
-               }
-            }
-         }),
-         T.flatten
-      );
-}

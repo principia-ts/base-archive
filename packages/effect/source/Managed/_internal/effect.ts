@@ -2,7 +2,6 @@ export * from "../../Effect/core";
 export * from "../../Effect/Effect";
 export { forkDaemon } from "../../Effect/core-scope";
 export { _foreachPar } from "../../Effect/functions/foreachPar";
-export { _foreachParN } from "../../Effect/functions/foreachParN";
 export {
    makeUninterruptible,
    uninterruptibleMask,

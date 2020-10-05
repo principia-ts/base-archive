@@ -4,15 +4,15 @@ import { identity, pipe } from "@principia/core/Function";
 import * as Mb from "@principia/core/Maybe";
 
 import * as T from "../Effect/core";
-import * as M from "../Managed";
+import { _bracket } from "../Effect/functions/bracket";
+import * as M from "../Managed/core";
 import { ImmutableQueue } from "../Support";
 import type { XPromise } from "../XPromise";
+import { make as promiseMake } from "../XPromise/functions/make";
+import { _succeed as promiseSucceed } from "../XPromise/functions/succeed";
+import { wait as promiseWait } from "../XPromise/functions/wait";
 import * as XR from "../XRef/combinators";
 import type { Ref } from "../XRef/XRef";
-import { _succeed as promiseSucceed } from "../XPromise/functions/succeed";
-import { make as promiseMake } from "../XPromise/functions/make";
-import { wait as promiseWait } from "../XPromise/functions/wait";
-import { _bracket } from "../Effect/functions/bracket";
 
 export type Entry = [XPromise<never, void>, number];
 export type State = Either<ImmutableQueue<Entry>, number>;

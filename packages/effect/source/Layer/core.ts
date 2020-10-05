@@ -5,8 +5,8 @@ import { Erase, UnionToIntersection } from "@principia/core/Utils";
 import * as T from "../Effect/core";
 import * as H from "../Has";
 import { Has, mergeEnvironments } from "../Has";
-import * as M from "../Managed/core";
 import type { Managed } from "../Managed/Managed";
+import * as M from "./_internal/managed";
 import type { Layer } from "./Layer";
 
 export type RIO<R, A> = Layer<R, never, A>;

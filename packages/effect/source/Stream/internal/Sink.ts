@@ -9,7 +9,7 @@ import * as C from "../../Cause";
 import * as T from "../../Effect";
 import * as Ex from "../../Exit";
 import * as F from "../../Fiber";
-import * as M from "../../Managed";
+import * as M from "../../Managed/core";
 import * as XR from "../../XRef";
 import * as Push from "./Push";
 
@@ -31,7 +31,8 @@ export class Sink<R, E, I, L, Z> {
 /**
  * Creates a sink from a Push
  */
-export const fromPush = <R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>) => new Sink(M.pure(push));
+export const fromPush = <R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>) =>
+   new Sink(M.succeed(push));
 
 /**
  * A sink that immediately ends with the specified value.
