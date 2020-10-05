@@ -1,0 +1,20 @@
+{
+   "compilerOptions": {
+      "target": "es2020",
+      "lib": ["es2020", "DOM"],
+      "strict": true,
+      "declaration": true,
+      "noErrorTruncation": true,
+      "noEmitOnError": false,
+      "suppressImplicitAnyIndexErrors": true,
+      "noEmit": false,
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "baseUrl": ".",
+      "paths": {
+         "@principia/core*": ["packages/core/dist*"],
+         "@principia/effect*": ["packages/effect/dist*"]
+      }
+   },
+   "exclude": ["build", "node_modules", "_source_"]
+}
