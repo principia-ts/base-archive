@@ -95,9 +95,7 @@ export const flip: FlipF = (f: any) => (b: any) => (a: any) => f(a)(b);
 export const hole: <T>() => T = absurd as any;
 
 export const matchPredicate: {
-   <A, B extends A, C>(refinement: Refinement<A, B>, onTrue: (a: B) => C, onFalse: (a: A) => C): (
-      a: A
-   ) => C;
+   <A, B extends A, C>(refinement: Refinement<A, B>, onTrue: (a: B) => C, onFalse: (a: A) => C): (a: A) => C;
    <A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B): (a: A) => B;
 } = <A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B) => (a: A) =>
    predicate(a) ? onTrue(a) : onFalse(a);

@@ -1,4 +1,4 @@
-import { flow, identity, pipe, tuple } from "../Function";
+import { bind_, flow, identity, pipe, tuple } from "../Function";
 import type * as TC from "../typeclass-index";
 import { left, right } from "./constructors";
 import type { Either, URI, V } from "./Either";
@@ -12,10 +12,10 @@ import { isLeft } from "./guards";
 
 /**
  * ```haskell
- * any :: () -> Either e Any
+ * unit :: () -> Either _ ()
  * ```
  */
-export const any: TC.AnyF<[URI], V> = () => right({} as any);
+export const unit: <E = never>() => Either<E, void> = () => right(undefined);
 
 /**
  * ```haskell
@@ -27,7 +27,7 @@ export const any: TC.AnyF<[URI], V> = () => right({} as any);
  * @category Functor
  * @since 1.0.0
  */
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => (isLeft(fa) ? fa : right(f(fa.right)));
+export const _map = <E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> => (isLeft(fa) ? fa : right(f(fa.right)));
 
 /**
  * ```haskell
@@ -39,7 +39,7 @@ export const _map: TC.UC_MapF<[URI], V> = (fa, f) => (isLeft(fa) ? fa : right(f(
  * @category functor
  * @since 1.0.0
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map = <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>): Either<E, B> => _map(fa, f);
 
 /**
  * ```haskell
@@ -51,7 +51,7 @@ export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
  * @category AltBifunctor
  * @since 1.0.0
  */
-export const swap: TC.SwapF<[URI], V> = (pab) => (isLeft(pab) ? right(pab.left) : left(pab.right));
+export const swap = <E, A>(pab: Either<E, A>): Either<A, E> => (isLeft(pab) ? right(pab.left) : left(pab.right));
 
 /**
  * ```haskell
@@ -63,7 +63,7 @@ export const swap: TC.SwapF<[URI], V> = (pab) => (isLeft(pab) ? right(pab.left) 
  * @category Bifunctor
  * @since 1.0.0
  */
-export const _bimap: TC.UC_BimapF<[URI], V> = (pab, f, g) =>
+export const _bimap = <E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) => B): Either<G, B> =>
    isLeft(pab) ? left(f(pab.left)) : right(g(pab.right));
 
 /**
@@ -76,7 +76,8 @@ export const _bimap: TC.UC_BimapF<[URI], V> = (pab, f, g) =>
  * @category Bifunctor
  * @since 1.0.0
  */
-export const bimap: TC.BimapF<[URI], V> = (f, g) => (pab) => _bimap(pab, f, g);
+export const bimap = <E, A, G, B>(f: (e: E) => G, g: (a: A) => B) => (pab: Either<E, A>): Either<G, B> =>
+   _bimap(pab, f, g);
 
 /**
  * ```haskell
@@ -88,7 +89,8 @@ export const bimap: TC.BimapF<[URI], V> = (f, g) => (pab) => _bimap(pab, f, g);
  * @category Bifunctor
  * @since 1.0.0
  */
-export const _first: TC.UC_FirstF<[URI], V> = (pab, f) => (isLeft(pab) ? left(f(pab.left)) : pab);
+export const _first = <E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> =>
+   isLeft(pab) ? left(f(pab.left)) : pab;
 
 /**
  * ```haskell
@@ -100,7 +102,7 @@ export const _first: TC.UC_FirstF<[URI], V> = (pab, f) => (isLeft(pab) ? left(f(
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first: TC.FirstF<[URI], V> = (f) => (pab) => _first(pab, f);
+export const first = <E, G>(f: (e: E) => G) => <A>(pab: Either<E, A>): Either<G, A> => _first(pab, f);
 
 /**
  * ```haskell
@@ -136,7 +138,7 @@ export const mapLeft = first;
  * @category Apply
  * @since 1.0.0
  */
-export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) =>
+export const _ap = <E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): Either<E | G, B> =>
    isLeft(fab) ? fab : isLeft(fa) ? fa : right(fab.right(fa.right));
 
 /**
@@ -149,7 +151,7 @@ export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) =>
  * @category Apply
  * @since 1.0.0
  */
-export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
+export const ap = <E, A>(fa: Either<E, A>) => <G, B>(fab: Either<G, (a: A) => B>): Either<E | G, B> => _ap(fab, fa);
 
 /**
  * ```haskell
@@ -161,7 +163,7 @@ export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
  * @category Uncurried Apply
  * @since 1.0.0
  */
-export const _apFirst: TC.UC_ApFirstF<[URI], V> = (fa, fb) =>
+export const _apFirst = <E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> =>
    _ap(
       _map(fa, (a) => () => a),
       fb
@@ -177,7 +179,7 @@ export const _apFirst: TC.UC_ApFirstF<[URI], V> = (fa, fb) =>
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
+export const apFirst = <G, B>(fb: Either<G, B>) => <E, A>(fa: Either<E, A>): Either<E | G, A> => _apFirst(fa, fb);
 
 /**
  * ```haskell
@@ -189,10 +191,7 @@ export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
  * @category Apply
  * @since 1.0.0
  */
-export const _apSecond: TC.UC_ApSecondF<[URI], V> = <E1, B, E, A>(
-   fa: Either<E, A>,
-   fb: Either<E1, B>
-) =>
+export const _apSecond = <E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> =>
    _ap(
       _map(fa, () => (b: B) => b),
       fb
@@ -208,7 +207,63 @@ export const _apSecond: TC.UC_ApSecondF<[URI], V> = <E1, B, E, A>(
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb);
+export const apSecond = <G, B>(fb: Either<G, B>) => <E, A>(fa: Either<E, A>): Either<E | G, B> => _apSecond(fa, fb);
+
+/**
+ * ```haskell
+ * _mapBoth :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * ```
+ *
+ * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const _mapBoth = <E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: A, b: B) => C): Either<E | G, C> =>
+   _ap(
+      _map(fa, (a) => (b: B) => f(a, b)),
+      fb
+   );
+
+/**
+ * ```haskell
+ * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * ```
+ *
+ * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const mapBoth = <A, G, B, C>(fb: Either<G, B>, f: (a: A, b: B) => C) => <E>(
+   fa: Either<E, A>
+): Either<E | G, C> => _mapBoth(fa, fb, f);
+
+/**
+ * ```haskell
+ * _both :: Apply f => (f a, f b) -> f (a, b)
+ * ```
+ *
+ * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const _both = <E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, readonly [A, B]> =>
+   _mapBoth(fa, fb, tuple);
+
+/**
+ * ```haskell
+ * both :: Apply f => f b -> f a -> f (a, b)
+ * ```
+ *
+ * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const both = <G, B>(fb: Either<G, B>) => <E, A>(fa: Either<E, A>): Either<E | G, readonly [A, B]> =>
+   _both(fa, fb);
 
 /**
  * ```haskell
@@ -220,8 +275,9 @@ export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb
  * @category Apply
  * @since 1.0.0
  */
-export const lift2: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) =>
-   isLeft(fa) ? left(fa.left) : isLeft(fb) ? left(fb.left) : right(f(fa.right)(fb.right));
+export const lift2 = <A, B, C>(f: (a: A) => (b: B) => C) => <E>(fa: Either<E, A>) => <G>(
+   fb: Either<G, B>
+): Either<E | G, C> => (isLeft(fa) ? left(fa.left) : isLeft(fb) ? left(fb.left) : right(f(fa.right)(fb.right)));
 
 /**
  * ```haskell
@@ -233,7 +289,7 @@ export const lift2: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) =>
  * @category Applicative
  * @since 1.0.0
  */
-export const pure: TC.PureF<[URI], V> = right;
+export const pure: <E = never, A = never>(a: A) => Either<E, A> = right;
 
 /**
  * ```haskell
@@ -245,7 +301,8 @@ export const pure: TC.PureF<[URI], V> = right;
  * @category Monad
  * @since 1.0.0
  */
-export const _chain: TC.UC_ChainF<[URI], V> = (fa, f) => (isLeft(fa) ? fa : f(fa.right));
+export const _chain = <E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> =>
+   isLeft(fa) ? fa : f(fa.right);
 
 /**
  * ```haskell
@@ -257,7 +314,7 @@ export const _chain: TC.UC_ChainF<[URI], V> = (fa, f) => (isLeft(fa) ? fa : f(fa
  * @category Monad
  * @since 1.0.0
  */
-export const chain: TC.ChainF<[URI], V> = (f) => (fa) => _chain(fa, f);
+export const chain = <A, G, B>(f: (e: A) => Either<G, B>) => <E>(ma: Either<E, A>): Either<E | G, B> => _chain(ma, f);
 
 /**
  * ```haskell
@@ -270,7 +327,7 @@ export const chain: TC.ChainF<[URI], V> = (f) => (fa) => _chain(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const bind: TC.BindF<[URI], V> = (fa) => (f) => _chain(fa, f);
+export const bind = <E, A>(ma: Either<E, A>) => <G, B>(f: (a: A) => Either<G, B>): Either<E | G, B> => _chain(ma, f);
 
 /**
  * ```haskell
@@ -283,7 +340,7 @@ export const bind: TC.BindF<[URI], V> = (fa) => (f) => _chain(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const _tap: TC.UC_TapF<[URI], V> = (ma, f) =>
+export const _tap = <E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, A> =>
    _chain(ma, (a) =>
       pipe(
          f(a),
@@ -302,20 +359,20 @@ export const _tap: TC.UC_TapF<[URI], V> = (ma, f) =>
  * @category Monad
  * @since 1.0.0
  */
-export const tap: TC.TapF<[URI], V> = (f) => (ma) => _tap(ma, f);
+export const tap = <A, G, B>(f: (a: A) => Either<G, B>) => <E>(ma: Either<E, A>): Either<E | G, A> => _tap(ma, f);
 
 /**
  * ```haskell
  * chainFirst :: Monad m => (a -> m b) -> m a -> m a
  * ```
- * A synonym of `tap`
+ * A synonym of `tap`.
  * Composes computations in sequence, using the return value of one computation as input for the next
  * and keeping only the result of the first
  *
  * @category Monad
  * @since 1.0.0
  */
-export const chainFirst: TC.ChainFirstF<[URI], V> = tap;
+export const chainFirst = tap;
 
 /**
  * ```haskell
@@ -327,7 +384,7 @@ export const chainFirst: TC.ChainFirstF<[URI], V> = tap;
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: TC.FlattenF<[URI], V> = flow(chain(identity));
+export const flatten: <E, G, A>(mma: Either<E, Either<G, A>>) => Either<E | G, A> = flow(chain(identity));
 
 /**
  * ```haskell
@@ -387,7 +444,8 @@ export const sequence: TC.SequenceF<[URI], V> = (F) => (fa) =>
  * @category Alt
  * @since 1.0.0
  */
-export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => (isLeft(fa) ? that() : fa);
+export const _alt = <E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Either<E | G, A> =>
+   isLeft(fa) ? that() : fa;
 
 /**
  * ```haskell
@@ -399,71 +457,22 @@ export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => (isLeft(fa) ? that() : f
  * @category Alt
  * @since 1.0.0
  */
-export const alt: TC.AltF<[URI], V> = (that) => (fa) => _alt(fa, that);
-
-/**
- * ```haskell
- * _both :: Apply f => (f a, f b) -> f (a, b)
- * ```
- *
- * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const _both: TC.UC_BothF<[URI], V> = (fa, fb) =>
-   _chain(fa, (a) => _map(fb, (b) => tuple(a, b)));
-
-/**
- * ```haskell
- * both :: Apply f => f b -> f a -> f (a, b)
- * ```
- *
- * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const both: TC.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
-
-/**
- * ```haskell
- * _mapBoth :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
- * ```
- *
- * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const _mapBoth: TC.UC_MapBothF<[URI], V> = (fa, fb, f) =>
-   _chain(fa, (a) => _map(fb, (b) => f(a, b)));
-
-/**
- * ```haskell
- * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
- * ```
- *
- * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
+export const alt = <G, A>(that: () => Either<G, A>) => <E>(fa: Either<E, A>): Either<E | G, A> => _alt(fa, that);
 
 /**
  * ```haskell
  * _extend :: Extend w => (w a, (w a -> b)) -> w b
  * ```
  */
-export const _extend: TC.UC_ExtendF<[URI], V> = (wa, f) => (isLeft(wa) ? wa : right(f(wa)));
+export const _extend = <E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): Either<E, B> =>
+   isLeft(wa) ? wa : right(f(wa));
 
 /**
  * ```haskell
  * extend :: Extend w => (w a -> b) -> w a -> w b
  * ```
  */
-export const extend: TC.ExtendF<[URI], V> = (f) => (wa) => _extend(wa, f);
+export const extend = <E, A, B>(f: (wa: Either<E, A>) => B) => (wa: Either<E, A>): Either<E, B> => _extend(wa, f);
 
 /**
  * ```haskell
@@ -477,21 +486,21 @@ export const duplicate = <E, A>(wa: Either<E, A>): Either<E, Either<E, A>> => _e
  * _reduce :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export const _reduce: TC.UC_ReduceF<[URI], V> = (fa, b, f) => (isLeft(fa) ? b : f(b, fa.right));
+export const _reduce = <E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): B => (isLeft(fa) ? b : f(b, fa.right));
 
 /**
  * ```haskell
  * reduce :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export const reduce: TC.ReduceF<[URI], V> = (b, f) => (fa) => _reduce(fa, b, f);
+export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => <E>(fa: Either<E, A>): B => _reduce(fa, b, f);
 
 /**
  * ```haskell
  * _foldMap :: (Foldable f, Monoid m) => Instance m b -> (f a, (a -> b)) -> b
  * ```
  */
-export const _foldMap: TC.UC_FoldMapF<[URI], V> = (M) => (fa, f) =>
+export const _foldMap = <M>(M: TC.Monoid<M>) => <E, A, B>(fa: Either<E, A>, f: (a: A) => M): M =>
    isLeft(fa) ? M.empty : f(fa.right);
 
 /**
@@ -499,14 +508,14 @@ export const _foldMap: TC.UC_FoldMapF<[URI], V> = (M) => (fa, f) =>
  * foldMap :: (Foldable f, Monoid m) => Instance m b -> (a -> b) -> f a -> b
  * ```
  */
-export const foldMap: TC.FoldMapF<[URI], V> = (M) => (f) => (fa) => _foldMap(M)(fa, f);
+export const foldMap = <M>(M: TC.Monoid<M>) => <A>(f: (a: A) => M) => <E>(fa: Either<E, A>): M => _foldMap(M)(fa, f);
 
 /**
  * ```haskell
  * _reduceRight :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export const _reduceRight: TC.UC_ReduceRightF<[URI], V> = (fa, b, f) =>
+export const _reduceRight = <E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) => B): B =>
    isLeft(fa) ? b : f(fa.right, b);
 
 /**
@@ -514,7 +523,7 @@ export const _reduceRight: TC.UC_ReduceRightF<[URI], V> = (fa, b, f) =>
  * reduceRight :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export const reduceRight: TC.ReduceRightF<[URI], V> = (b, f) => (fa) => _reduceRight(fa, b, f);
+export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => <E>(fa: Either<E, A>): B => _reduceRight(fa, b, f);
 
 /**
  * Compact type Either<E, A> | Either<E1, B> to Either<E | E1, A | B>
@@ -522,3 +531,25 @@ export const reduceRight: TC.ReduceRightF<[URI], V> = (b, f) => (fa) => _reduceR
 export const deunion: <T extends Either<any, any>>(
    fa: T
 ) => [T] extends [Either<infer E, infer A>] ? Either<E, A> : T = identity as any;
+
+/**
+ * ```haskell
+ * apS :: (Apply f, Nominal n) =>
+ *    (n n3, f c)
+ *    -> f ({ n1: a, n2: b, ... })
+ *    -> f ({ n1: a, n2: b, n3: c })
+ * ```
+ *
+ * A pipeable version of `sequenceS`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const apS = <N extends string, A, E1, B>(
+   name: Exclude<N, keyof A>,
+   fb: Either<E1, B>
+): (<E>(fa: Either<E, A>) => Either<E | E1, { [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
+   flow(
+      map((a) => (b: B) => bind_(a, name, b)),
+      ap(fb)
+   );

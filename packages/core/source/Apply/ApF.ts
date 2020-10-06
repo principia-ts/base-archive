@@ -1,9 +1,18 @@
 import type * as HKT from "../HKT";
 
 export interface ApF<F extends HKT.URIS, C = HKT.Auto> {
-   <N extends string, K, Q, W, X, I, S, R, E, A>(
-      fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-   ): <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
+   <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): <
+      N1 extends string,
+      K1,
+      Q1,
+      W1,
+      X1,
+      I1,
+      S1,
+      R1,
+      E1,
+      B
+   >(
       fab: HKT.Kind<
          F,
          C,
@@ -35,28 +44,7 @@ export interface ApF<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface UC_ApF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      I,
-      S,
-      R,
-      E,
-      A,
-      N1 extends string,
-      K1,
-      Q1,
-      W1,
-      X1,
-      I1,
-      S1,
-      R1,
-      E1,
-      B
-   >(
+   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
       fab: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, (a: A) => B>,
       fa: HKT.Kind<
          F,
@@ -88,47 +76,9 @@ export interface UC_ApF<F extends HKT.URIS, C = HKT.Auto> {
    >;
 }
 
-export interface ApFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
-   <
-      NF extends string,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      NG extends string,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG,
-      A
-   >(
-      fga: HKT.Kind<
-         F,
-         CF,
-         NF,
-         KF,
-         QF,
-         WF,
-         XF,
-         IF,
-         SF,
-         RF,
-         EF,
-         HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>
-      >
+export interface ApFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+   <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A>(
+      fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
    ): <
       NF1 extends string,
       KF1,
@@ -206,12 +156,7 @@ export interface ApFComposition<
    >;
 }
 
-export interface UC_ApFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface UC_ApFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <
       NF extends string,
       KF,

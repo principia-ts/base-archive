@@ -25,7 +25,7 @@ export const pure: TC.PureF<[URI], V> = (a) => () => Promise.resolve(a);
  * any :: () -> Task Any
  * ```
  */
-export const any: TC.AnyF<[URI], V> = () => () => Promise.resolve({} as any);
+export const any: TC.UnitF<[URI], V> = () => () => Promise.resolve({} as any);
 
 /**
  * ```haskell
@@ -61,8 +61,7 @@ export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
  * @category Apply
  * @since 1.0.0
  */
-export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => () =>
-   Promise.all([fab(), fa()]).then(([f, a]) => f(a));
+export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => () => Promise.all([fab(), fa()]).then(([f, a]) => f(a));
 
 /**
  * ```haskell
@@ -362,8 +361,7 @@ export const apSecondSeq: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecondSeq(
  * @category Apply
  * @since 1.0.0
  */
-export const _mapBothSeq: TC.UC_MapBothF<[URI], V> = (fa, fb, f) =>
-   _chain(fa, (a) => _map(fb, (b) => f(a, b)));
+export const _mapBothSeq: TC.UC_MapBothF<[URI], V> = (fa, fb, f) => _chain(fa, (a) => _map(fb, (b) => f(a, b)));
 
 /**
  * ```haskell
@@ -411,8 +409,7 @@ export const bothSeq: TC.BothF<[URI], V> = (fb) => (fa) => _bothSeq(fa, fb);
  * @category Apply
  * @since 1.0.0
  */
-export const lift2Seq: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) =>
-   _chain(fa, (a) => _map(fb, (b) => f(a)(b)));
+export const lift2Seq: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) => _chain(fa, (a) => _map(fb, (b) => f(a)(b)));
 
 /**
  * ```haskell
@@ -424,8 +421,7 @@ export const lift2Seq: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) =>
  * @category Apply
  * @since 1.0.0
  */
-export const mapN: TC.MapNF<[URI], V> = (f) => (fas) => () =>
-   Promise.all(fas).then((as) => f(as as any));
+export const mapN: TC.MapNF<[URI], V> = (f) => (fas) => () => Promise.all(fas).then((as) => f(as as any));
 
 /**
  * ```haskell
@@ -439,11 +435,9 @@ export const mapN: TC.MapNF<[URI], V> = (f) => (fas) => () =>
  */
 export const tuple: TC.TupleF<[URI], V> = (fas) => () => Promise.all(fas) as any;
 
-export const bindS: TC.BindSF<[URI], V> = (name, f) =>
-   chain((a) => _map(f(a), (b) => bind_(a, name, b)));
+export const bindS: TC.BindSF<[URI], V> = (name, f) => chain((a) => _map(f(a), (b) => bind_(a, name, b)));
 
-export const letS: TC.LetSF<[URI], V> = (name, f) =>
-   chain((a) => _map(pure(f(a)), (b) => bind_(a, name, b)));
+export const letS: TC.LetSF<[URI], V> = (name, f) => chain((a) => _map(pure(f(a)), (b) => bind_(a, name, b)));
 
 export const bindToS: TC.BindToSF<[URI], V> = (name) => (fa) => _map(fa, bindTo_(name));
 

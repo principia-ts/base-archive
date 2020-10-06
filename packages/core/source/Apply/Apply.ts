@@ -11,24 +11,18 @@ export interface Apply<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
    readonly _mapBoth: UC_MapBothF<F, C>;
 }
 
-export interface ApplyComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> extends FunctorComposition<F, G, CF, CG> {
+export interface ApplyComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
+   extends FunctorComposition<F, G, CF, CG> {
    readonly ap: ApFComposition<F, G, CF, CG>;
    readonly _ap: UC_ApFComposition<F, G, CF, CG>;
    readonly mapBoth: MapBothFComposition<F, G, CF, CG>;
    readonly _mapBoth: UC_MapBothFComposition<F, G, CF, CG>;
 }
 
-export function getApplyComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
->(F: Apply<F, CF>, G: Apply<G, CG>): ApplyComposition<F, G, CF, CG>;
+export function getApplyComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
+   F: Apply<F, CF>,
+   G: Apply<G, CG>
+): ApplyComposition<F, G, CF, CG>;
 export function getApplyComposition<F, G>(F: Apply<HKT.UHKT<F>>, G: Apply<HKT.UHKT<G>>) {
    const _ap = <A, B>(
       fgab: HKT.HKT<F, HKT.HKT<G, (a: A) => B>>,

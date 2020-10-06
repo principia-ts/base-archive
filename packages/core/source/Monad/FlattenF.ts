@@ -45,12 +45,7 @@ export interface FlattenF<F extends HKT.URIS, C = HKT.Auto> {
    >;
 }
 
-export interface FlattenFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface FlattenFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <
       NF extends string,
       KF,

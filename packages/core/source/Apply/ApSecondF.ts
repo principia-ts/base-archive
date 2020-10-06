@@ -1,9 +1,18 @@
 import type * as HKT from "../HKT";
 
 export interface ApSecondF<F extends HKT.URIS, C = HKT.Auto> {
-   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-      fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>
-   ): <N extends string, K, Q, W, X, I, S, R, E, A>(
+   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
+      N extends string,
+      K,
+      Q,
+      W,
+      X,
+      I,
+      S,
+      R,
+      E,
+      A
+   >(
       fa: HKT.Kind<
          F,
          C,
@@ -35,28 +44,7 @@ export interface ApSecondF<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface UC_ApSecondF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      I,
-      S,
-      R,
-      E,
-      A,
-      N1 extends string,
-      K1,
-      Q1,
-      W1,
-      X1,
-      I1,
-      S1,
-      R1,
-      E1,
-      B
-   >(
+   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
       fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
       fb: HKT.Kind<
          F,
@@ -88,12 +76,7 @@ export interface UC_ApSecondF<F extends HKT.URIS, C = HKT.Auto> {
    >;
 }
 
-export interface ApSecondFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface ApSecondFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <
       NF1 extends string,
       KF1,
@@ -130,26 +113,7 @@ export interface ApSecondFComposition<
          EF1,
          HKT.Kind<G, CG, NG1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, A>
       >
-   ): <
-      NF extends string,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      NG extends string,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG
-   >(
+   ): <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG>(
       fga: HKT.Kind<
          F,
          CF,

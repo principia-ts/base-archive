@@ -5,8 +5,5 @@ import type { Separated } from "../Utils";
 export interface SeparateF<F extends HKT.URIS, C = HKT.Auto> {
    <N extends string, K, Q, W, X, I, S, R, E, A, B>(
       fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<A, B>>
-   ): Separated<
-      HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-      HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
-   >;
+   ): Separated<HKT.Kind<F, C, string, K, Q, W, X, I, S, R, E, A>, HKT.Kind<F, C, string, K, Q, W, X, I, S, R, E, B>>;
 }

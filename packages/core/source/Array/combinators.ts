@@ -34,17 +34,14 @@ export const _append = <A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): Readonly
    return r;
 };
 
-export const append = <A>(ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> =>
-   _append(xs, ys);
+export const append = <A>(ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => _append(xs, ys);
 
 export const _lookup = <A>(i: number, as: ReadonlyArray<A>): Maybe<A> =>
    _isOutOfBound(i, as) ? nothing() : just(as[i]);
 
 export const lookup = (i: number) => <A>(as: ReadonlyArray<A>): Maybe<A> => _lookup(i, as);
 
-export const scanl = <A, B>(b: B, f: (b: B, a: A) => B) => (
-   as: ReadonlyArray<A>
-): ReadonlyArray<B> => {
+export const scanl = <A, B>(b: B, f: (b: B, a: A) => B) => (as: ReadonlyArray<A>): ReadonlyArray<B> => {
    const l = as.length;
    const r: Array<B> = new Array(l + 1);
    r[0] = b;
@@ -54,9 +51,7 @@ export const scanl = <A, B>(b: B, f: (b: B, a: A) => B) => (
    return r;
 };
 
-export const scanr = <A, B>(b: B, f: (a: A, b: B) => B) => (
-   as: ReadonlyArray<A>
-): ReadonlyArray<B> => {
+export const scanr = <A, B>(b: B, f: (a: A, b: B) => B) => (as: ReadonlyArray<A>): ReadonlyArray<B> => {
    const l = as.length;
    const r: Array<B> = new Array(l + 1);
    r[l] = b;
@@ -88,8 +83,7 @@ export const snoc = <A>(end: A) => (init: ReadonlyArray<A>): NonEmptyArray<A> =>
 
 export const head = <A>(as: ReadonlyArray<A>): Maybe<A> => (isEmpty(as) ? nothing() : just(as[0]));
 
-export const tail = <A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> =>
-   isEmpty(as) ? nothing() : just(as.slice(1));
+export const tail = <A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> => (isEmpty(as) ? nothing() : just(as.slice(1)));
 
 export const last = <A>(as: ReadonlyArray<A>): Maybe<A> => _lookup(as.length - 1, as);
 
@@ -101,7 +95,7 @@ export const init = <A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> => {
 export const takel = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => as.slice(0, n);
 
 export const taker = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> =>
-   isEmpty(as) ? empty : as.slice(-n);
+   isEmpty(as) ? empty() : as.slice(-n);
 
 const spanIndexUncurry = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>): number => {
    const l = as.length;
@@ -148,15 +142,11 @@ export const spanl: {
    return { init, rest };
 };
 
-export const dropl = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> =>
-   as.slice(n, as.length);
+export const dropl = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => as.slice(n, as.length);
 
-export const dropr = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> =>
-   as.slice(0, as.length - n);
+export const dropr = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => as.slice(0, as.length - n);
 
-export const droprWhile = <A>(predicate: Predicate<A>) => (
-   as: ReadonlyArray<A>
-): ReadonlyArray<A> => {
+export const droprWhile = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): ReadonlyArray<A> => {
    const i = spanIndexUncurry(as, predicate);
    const l = as.length;
    const rest = Array(l - i);
@@ -268,8 +258,7 @@ export const updateAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Maybe<Re
 export const deleteAt = (i: number) => <A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> =>
    _isOutOfBound(i, as) ? nothing() : just(unsafeDeleteAt(i, as));
 
-export const reverse = <A>(as: ReadonlyArray<A>): ReadonlyArray<A> =>
-   isEmpty(as) ? as : as.slice().reverse();
+export const reverse = <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => (isEmpty(as) ? as : as.slice().reverse());
 
 export const rights = <E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<A> => {
    const rs: Array<A> = [];
@@ -293,38 +282,10 @@ export const lefts = <E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> =
    return ls;
 };
 
-export const sort = <B>(O: Ord.Ord<B>) => <A extends B>(as: ReadonlyArray<A>) =>
-   isEmpty(as) ? empty : as.slice().sort((a, b) => toNumber(O.compare(a)(b)));
+export const sort = <B>(O: Ord.Ord<B>) => <A extends B>(as: ReadonlyArray<A>): ReadonlyArray<A> =>
+   isEmpty(as) ? empty() : as.slice().sort((a, b) => toNumber(O.compare(a)(b)));
 
-export const _zipWith = <A, B, C>(
-   fa: ReadonlyArray<A>,
-   fb: ReadonlyArray<B>,
-   f: (a: A, b: B) => C
-): ReadonlyArray<C> => {
-   const fc: Array<C> = [];
-   const len = Math.min(fa.length, fb.length);
-   for (let i = 0; i < len; i++) {
-      fc[i] = f(fa[i], fb[i]);
-   }
-   return fc;
-};
-
-export const zipWith = <A, B, C>(fb: ReadonlyArray<B>, f: (a: A, b: B) => C) => (
-   fa: ReadonlyArray<A>
-): ReadonlyArray<C> => _zipWith(fa, fb, f);
-
-export const _zip = <A, B>(
-   as: ReadonlyArray<A>,
-   bs: ReadonlyArray<B>
-): ReadonlyArray<readonly [A, B]> => _zipWith(as, bs, (a, b) => [a, b] as const);
-
-export const zip = <B>(bs: ReadonlyArray<B>) => <A>(
-   as: ReadonlyArray<A>
-): ReadonlyArray<readonly [A, B]> => _zip(as, bs);
-
-export const unzip = <A, B>(
-   as: ReadonlyArray<readonly [A, B]>
-): readonly [ReadonlyArray<A>, ReadonlyArray<B>] => {
+export const unzip = <A, B>(as: ReadonlyArray<readonly [A, B]>): readonly [ReadonlyArray<A>, ReadonlyArray<B>] => {
    const fa: Array<A> = [];
    const fb: Array<B> = [];
 
@@ -362,9 +323,7 @@ export const uniq = <A>(E: Eq<A>) => (as: ReadonlyArray<A>): ReadonlyArray<A> =>
    return len === out.length ? as : out;
 };
 
-export const sortBy = <B>(ords: ReadonlyArray<Ord.Ord<B>>) => <A extends B>(
-   as: ReadonlyArray<A>
-): ReadonlyArray<A> => {
+export const sortBy = <B>(ords: ReadonlyArray<Ord.Ord<B>>) => <A extends B>(as: ReadonlyArray<A>): ReadonlyArray<A> => {
    const M = Ord.getMonoid<B>();
    return sort(_reduce(ords, M.empty, (b, a) => M.concat(b)(a)))(as);
 };
@@ -385,30 +344,23 @@ export const comprehension: {
       f: (a: A, b: B) => R,
       g?: (a: A, b: B) => boolean
    ): ReadonlyArray<R>;
-   <A, R>(input: readonly [ReadonlyArray<A>], f: (a: A) => boolean, g?: (a: A) => R): ReadonlyArray<
-      R
-   >;
+   <A, R>(input: readonly [ReadonlyArray<A>], f: (a: A) => boolean, g?: (a: A) => R): ReadonlyArray<R>;
 } = <R>(
    input: ReadonlyArray<ReadonlyArray<any>>,
    f: (...xs: ReadonlyArray<any>) => R,
    g: (...xs: ReadonlyArray<any>) => boolean = () => true
 ): ReadonlyArray<R> => {
-   const go = (
-      scope: ReadonlyArray<any>,
-      input: ReadonlyArray<ReadonlyArray<any>>
-   ): ReadonlyArray<R> => {
+   const go = (scope: ReadonlyArray<any>, input: ReadonlyArray<ReadonlyArray<any>>): ReadonlyArray<R> => {
       if (input.length === 0) {
-         return g(...scope) ? [f(...scope)] : empty;
+         return g(...scope) ? [f(...scope)] : empty();
       } else {
          return _chain(input[0], (x) => go(snoc(x)(scope), input.slice(1)));
       }
    };
-   return go(empty, input);
+   return go(empty(), input);
 };
 
-export const union = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (
-   xs: ReadonlyArray<A>
-): ReadonlyArray<A> => {
+export const union = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => {
    const elemE = elem(E);
    return _append(
       xs,
@@ -416,9 +368,7 @@ export const union = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (
    );
 };
 
-export const intersection = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (
-   xs: ReadonlyArray<A>
-): ReadonlyArray<A> => {
+export const intersection = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => {
    const elemE = elem(E);
    return xs.filter((a) => elemE(a)(ys));
 };
@@ -441,36 +391,28 @@ export const chop = <A, B>(f: (as: NonEmptyArray<A>) => readonly [B, ReadonlyArr
    as: ReadonlyArray<A>
 ): ReadonlyArray<B> => _chop(as, f);
 
-export const splitAt = (n: number) => <A>(
-   as: ReadonlyArray<A>
-): readonly [ReadonlyArray<A>, ReadonlyArray<A>] => [as.slice(0, n), as.slice(n)];
+export const splitAt = (n: number) => <A>(as: ReadonlyArray<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>] => [
+   as.slice(0, n),
+   as.slice(n)
+];
 
 export const chunksOf = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<ReadonlyArray<A>> =>
-   as.length === 0 ? empty : _isOutOfBound(n - 1, as) ? [as] : _chop(as, splitAt(n));
+   as.length === 0 ? empty() : _isOutOfBound(n - 1, as) ? [as] : _chop(as, splitAt(n));
 
-export const difference = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (
-   xs: ReadonlyArray<A>
-): ReadonlyArray<A> => {
+export const difference = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => {
    const elemE = elem(E);
    return xs.filter((a) => !elemE(a)(ys));
 };
 
-export const _dropLeft = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> =>
-   as.slice(n, as.length);
+export const _dropLeft = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> => as.slice(n, as.length);
 
-export const dropLeft = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> =>
-   _dropLeft(as, n);
+export const dropLeft = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => _dropLeft(as, n);
 
-export const _dropRight = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> =>
-   as.slice(0, as.length - n);
+export const _dropRight = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> => as.slice(0, as.length - n);
 
-export const dropRight = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> =>
-   _dropRight(as, n);
+export const dropRight = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => _dropRight(as, n);
 
-export const _dropLeftWhile = <A>(
-   as: ReadonlyArray<A>,
-   predicate: Predicate<A>
-): ReadonlyArray<A> => {
+export const _dropLeftWhile = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A> => {
    const i = spanIndexUncurry(as, predicate);
    const l = as.length;
    const rest = Array(l - i);
@@ -480,6 +422,5 @@ export const _dropLeftWhile = <A>(
    return rest;
 };
 
-export const dropLeftWhile = <A>(predicate: Predicate<A>) => (
-   as: ReadonlyArray<A>
-): ReadonlyArray<A> => _dropLeftWhile(as, predicate);
+export const dropLeftWhile = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): ReadonlyArray<A> =>
+   _dropLeftWhile(as, predicate);

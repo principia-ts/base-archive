@@ -15,12 +15,7 @@ export interface UC_ReduceWithIndexF<F extends HKT.URIS, C = HKT.Auto> {
    ): B;
 }
 
-export interface ReduceWithIndexFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface ReduceWithIndexFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <NF extends string, NG extends string, KF, KG, A, B>(
       b: B,
       f: (
@@ -32,65 +27,13 @@ export interface ReduceWithIndexFComposition<
          a: A
       ) => B
    ): <QF, WF, XF, IF, SF, RF, EF, QG, WG, XG, IG, SG, RG, EG>(
-      fga: HKT.Kind<
-         F,
-         CF,
-         NF,
-         KF,
-         QF,
-         WF,
-         XF,
-         IF,
-         SF,
-         RF,
-         EF,
-         HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>
-      >
+      fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
    ) => B;
 }
 
-export interface UC_ReduceWithIndexFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
-   <
-      NF extends string,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      NG extends string,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG,
-      A,
-      B
-   >(
-      fga: HKT.Kind<
-         F,
-         CF,
-         NF,
-         KF,
-         QF,
-         WF,
-         XF,
-         IF,
-         SF,
-         RF,
-         EF,
-         HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>
-      >,
+export interface UC_ReduceWithIndexFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+   <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+      fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
       b: B,
       f: (
          i: [

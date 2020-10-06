@@ -13,12 +13,7 @@ export interface UC_ContramapF<F extends HKT.URIS, C = HKT.Auto> {
    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>;
 }
 
-export interface ContramapFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface ContramapFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <A, B>(f: (b: A) => B): <
       NF extends string,
       KF,
@@ -39,32 +34,6 @@ export interface ContramapFComposition<
       RG,
       EG
    >(
-      fa: HKT.Kind<
-         F,
-         CF,
-         NF,
-         KF,
-         QF,
-         WF,
-         XF,
-         IF,
-         SF,
-         RF,
-         EF,
-         HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>
-      >
-   ) => HKT.Kind<
-      F,
-      CF,
-      NF,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>
-   >;
+      fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+   ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>;
 }

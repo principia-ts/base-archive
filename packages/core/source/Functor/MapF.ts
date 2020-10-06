@@ -13,12 +13,7 @@ export interface UC_MapF<F extends HKT.URIS, C = HKT.Auto> {
    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>;
 }
 
-export interface MapFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface MapFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <A, B>(f: (a: A) => B): <
       NF extends string,
       KF,
@@ -39,91 +34,13 @@ export interface MapFComposition<
       RG,
       EG
    >(
-      fa: HKT.Kind<
-         F,
-         CF,
-         NF,
-         KF,
-         QF,
-         WF,
-         XF,
-         IF,
-         SF,
-         RF,
-         EF,
-         HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>
-      >
-   ) => HKT.Kind<
-      F,
-      CF,
-      NF,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>
-   >;
+      fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+   ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>;
 }
 
-export interface UC_MapFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
-   <
-      NF extends string,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      NG extends string,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG,
-      A,
-      B
-   >(
-      fa: HKT.Kind<
-         F,
-         CF,
-         NF,
-         KF,
-         QF,
-         WF,
-         XF,
-         IF,
-         SF,
-         RF,
-         EF,
-         HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>
-      >,
+export interface UC_MapFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+   <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+      fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
       f: (a: A) => B
-   ): HKT.Kind<
-      F,
-      CF,
-      NF,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>
-   >;
+   ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>;
 }

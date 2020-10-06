@@ -1,6 +1,6 @@
 import * as HKT from "../HKT";
 import * as TC from "../typeclass-index";
-import { URI, V } from "./Array";
+import type { URI, V } from "./Array";
 import { append } from "./combinators";
 import { empty } from "./constructors";
 import {
@@ -12,13 +12,12 @@ import {
    _foldMap,
    _foldMapWithIndex,
    _map,
-   _mapBoth,
+   _mapEither,
    _mapEitherWithIndex,
    _mapMaybe,
    _mapMaybeWithIndex,
    _mapWithIndex,
    _partition,
-   _partitionMap,
    _partitionWithIndex,
    _reduce,
    _reduceRight,
@@ -30,25 +29,24 @@ import {
    _wiltWithIndex,
    _wither,
    _witherWithIndex,
+   _zipWith,
    alt,
-   any,
    ap,
    chain,
    compact,
    extend,
    filter,
    filterWithIndex,
+   flatten,
    foldMap,
    foldMapWithIndex,
    map,
-   mapBoth,
+   mapEither,
    mapEitherWithIndex,
    mapMaybe,
    mapMaybeWithIndex,
    mapWithIndex,
-   none,
    partition,
-   partitionMap,
    partitionWithIndex,
    pure,
    reduce,
@@ -63,12 +61,13 @@ import {
    wilt,
    wiltWithIndex,
    wither,
-   witherWithIndex
+   witherWithIndex,
+   zipWith
 } from "./methods";
 
 export const getMonoid = <A = never>(): TC.Monoid<ReadonlyArray<A>> => ({
    concat: append,
-   empty
+   empty: empty()
 });
 
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
@@ -85,20 +84,20 @@ export const Apply: TC.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap,
    _ap,
-   mapBoth,
-   _mapBoth
+   mapBoth: zipWith,
+   _mapBoth: _zipWith
 });
 
 export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
    ...Apply,
-   pure,
-   any
+   pure
 });
 
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
    _chain,
-   chain
+   chain,
+   flatten
 });
 
 export const Alt: TC.Alt<[URI], V> = HKT.instance({
@@ -110,7 +109,7 @@ export const Alt: TC.Alt<[URI], V> = HKT.instance({
 export const Alterenative: TC.Alternative<[URI], V> = HKT.instance({
    ...Applicative,
    ...Alt,
-   none
+   none: empty
 });
 
 export const Extend: TC.Extend<[URI], V> = HKT.instance({
@@ -129,11 +128,11 @@ export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
    _filter,
    _mapMaybe: _mapMaybe,
    _partition,
-   _mapEither: _partitionMap,
+   _mapEither: _mapEither,
    filter,
    mapMaybe: mapMaybe,
    partition,
-   mapEither: partitionMap
+   mapEither: mapEither
 });
 
 export const FilterableWithIndex: TC.FilterableWithIndex<[URI], V> = HKT.instance({

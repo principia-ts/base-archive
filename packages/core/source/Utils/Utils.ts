@@ -5,11 +5,7 @@
  * -------------------------------------------
  */
 
-export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-   k: infer I
-) => void
-   ? I
-   : never;
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
 
@@ -22,17 +18,10 @@ export function intersect<AS extends unknown[] & { 0: unknown }>(
 export const pattern: <N extends string>(
    n: N
 ) => {
-   <
-      X extends { [k in N]: string },
-      K extends { [k in X[N]]: (_: Extract<X, { [_tag in N]: k }>) => any }
-   >(
-      _: K
-   ): (m: X) => ReturnType<K[keyof K]>;
-   <
-      X extends { [k in N]: string },
-      K extends { [k in X[N]]?: (_: Extract<X, { [_tag in N]: k }>) => any },
-      H
-   >(
+   <X extends { [k in N]: string }, K extends { [k in X[N]]: (_: Extract<X, { [_tag in N]: k }>) => any }>(_: K): (
+      m: X
+   ) => ReturnType<K[keyof K]>;
+   <X extends { [k in N]: string }, K extends { [k in X[N]]?: (_: Extract<X, { [_tag in N]: k }>) => any }, H>(
       _: K,
       __: (_: Exclude<X, { _tag: keyof K }>) => H
    ): (m: X) => { [k in keyof K]: ReturnType<NonNullable<K[k]>> }[keyof K] | H;
@@ -55,3 +44,5 @@ export type PredicateWithIndex<I, A> = (i: I, a: A) => boolean;
 export type Erase<R, K> = R & K extends K & infer R1 ? R1 : R;
 
 export type Mutable<T> = { -readonly [k in keyof T]: T[k] };
+
+export type WidenLiteral<N> = N extends string ? string : N extends number ? number : N;

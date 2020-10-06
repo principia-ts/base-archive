@@ -1,5 +1,7 @@
 import type * as HKT from "../HKT";
-import { Mutable } from "../Utils";
+import type { Mutable } from "../Utils";
+import { Apply } from "./Apply";
+import { sequenceT } from "./SequenceT";
 
 export interface MapNF<F extends HKT.URIS, C = HKT.Auto> {
    <
@@ -26,4 +28,9 @@ export interface MapNF<F extends HKT.URIS, C = HKT.Auto> {
       HKT.Mix<C, "E", Mutable<{ [K in keyof KT]: HKT.Infer<F, "E", KT[K]> }>>,
       B
    >;
+}
+
+export function deriveMapN<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): MapNF<F, C>;
+export function deriveMapN<F>(A: Apply<HKT.UHKT<F>>): MapNF<HKT.UHKT<F>> {
+   return (f) => (fas) => A._map(sequenceT(A)(...(fas as any)), (as) => f(as as any));
 }

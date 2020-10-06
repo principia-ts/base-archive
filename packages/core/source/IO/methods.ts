@@ -19,14 +19,14 @@ import { InferA, IO, URI, V } from "./IO";
  * @category Applicative
  * @since 1.0.0
  */
-export const pure: TC.PureF<[URI], V> = (a) => () => a;
+export const pure = <A>(a: A): IO<A> => () => a;
 
 /**
  * ```haskell
- * any :: () -> IO Any
+ * any :: () -> IO ()
  * ```
  */
-export const any: TC.AnyF<[URI], V> = () => () => ({});
+export const unit = (): IO<void> => () => undefined;
 
 /**
  * ```haskell
@@ -38,7 +38,7 @@ export const any: TC.AnyF<[URI], V> = () => () => ({});
  * @category Functor
  * @since 1.0.0
  */
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => () => f(fa());
+export const _map = <A, B>(fa: IO<A>, f: (a: A) => B): IO<B> => () => f(fa());
 
 /**
  * ```haskell
@@ -50,7 +50,7 @@ export const _map: TC.UC_MapF<[URI], V> = (fa, f) => () => f(fa());
  * @category Functor
  * @since 1.0.0
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map = <A, B>(f: (a: A) => B) => (fa: IO<A>): IO<B> => _map(fa, f);
 
 /**
  * ```haskell
@@ -62,7 +62,7 @@ export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
  * @category Apply
  * @since 1.0.0
  */
-export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => () => fab()(fa());
+export const _ap = <A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> => () => fab()(fa());
 
 /**
  * ```haskell
@@ -74,7 +74,7 @@ export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => () => fab()(fa());
  * @category Apply
  * @since 1.0.0
  */
-export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
+export const ap = <A>(fa: IO<A>) => <B>(fab: IO<(a: A) => B>): IO<B> => _ap(fab, fa);
 
 /**
  * ```haskell
@@ -86,7 +86,7 @@ export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
  * @category Apply
  * @since 1.0.0
  */
-export const _apFirst: TC.UC_ApFirstF<[URI], V> = <A, B>(fa: IO<A>, fb: IO<B>): IO<A> =>
+export const _apFirst = <A, B>(fa: IO<A>, fb: IO<B>): IO<A> =>
    pipe(
       fa,
       map((a) => () => a),
@@ -103,7 +103,7 @@ export const _apFirst: TC.UC_ApFirstF<[URI], V> = <A, B>(fa: IO<A>, fb: IO<B>): 
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
+export const apFirst = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<A> => _apFirst(fa, fb);
 
 /**
  * ```haskell
@@ -115,7 +115,7 @@ export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
  * @category Apply
  * @since 1.0.0
  */
-export const _apSecond: TC.UC_ApSecondF<[URI], V> = <A, B>(fa: IO<A>, fb: IO<B>): IO<B> =>
+export const _apSecond = <A, B>(fa: IO<A>, fb: IO<B>): IO<B> =>
    pipe(
       fa,
       map(() => (b: B) => b),
@@ -132,7 +132,7 @@ export const _apSecond: TC.UC_ApSecondF<[URI], V> = <A, B>(fa: IO<A>, fb: IO<B>)
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb);
+export const apSecond = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<B> => _apSecond(fa, fb);
 
 /**
  * ```haskell
@@ -144,7 +144,7 @@ export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb
  * @category Apply
  * @since 1.0.0
  */
-export const _both: TC.UC_BothF<[URI], V> = (fa, fb) => () => [fa(), fb()];
+export const _both = <A, B>(fa: IO<A>, fb: IO<B>): IO<readonly [A, B]> => () => [fa(), fb()];
 
 /**
  * ```haskell
@@ -156,7 +156,7 @@ export const _both: TC.UC_BothF<[URI], V> = (fa, fb) => () => [fa(), fb()];
  * @category Apply
  * @since 1.0.0
  */
-export const both: TC.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
+export const both = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<readonly [A, B]> => _both(fa, fb);
 
 /**
  * ```haskell
@@ -168,7 +168,7 @@ export const both: TC.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
  * @category Apply
  * @since 1.0.0
  */
-export const _mapBoth: TC.UC_MapBothF<[URI], V> = (fa, fb, f) => () => f(fa(), fb());
+export const _mapBoth = <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C): IO<C> => () => f(fa(), fb());
 
 /**
  * ```haskell
@@ -180,7 +180,7 @@ export const _mapBoth: TC.UC_MapBothF<[URI], V> = (fa, fb, f) => () => f(fa(), f
  * @category Apply
  * @since 1.0.0
  */
-export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
+export const mapBoth = <A, B, C>(fb: IO<B>, f: (a: A, b: B) => C) => (fa: IO<A>): IO<C> => _mapBoth(fa, fb, f);
 
 /**
  * ```haskell
@@ -192,82 +192,7 @@ export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb
  * @category Apply
  * @since 1.0.0
  */
-export const lift2: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) => () => f(fa())(fb());
-
-/**
- * ```haskell
- * _chain :: Monad m => (m a, (a -> m b)) -> m b
- * ```
- *
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export const _chain: TC.UC_ChainF<[URI], V> = (ma, f) => () => f(ma())();
-
-/**
- * ```haskell
- * chain :: Monad m => (a -> m b) -> m a -> m b
- * ```
- *
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export const chain: TC.ChainF<[URI], V> = (f) => (ma) => _chain(ma, f);
-
-/**
- * ```haskell
- * bind :: Monad m => m a -> (a -> m b) -> m b
- * ```
- *
- * A version of `chain` where the arguments are flipped
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export const bind: TC.BindF<[URI], V> = (ma) => (f) => _chain(ma, f);
-
-/**
- * ```haskell
- * _tap :: Monad m => (ma, (a -> m b)) -> m a
- * ```
- *
- * Composes computations in sequence, using the return value of one computation as input for the next
- * and keeping only the result of the first
- *
- * @category Monad
- * @since 1.0.0
- */
-export const _tap: TC.UC_TapF<[URI], V> = (ma, f) => _chain(ma, (a) => _map(f(a), () => a));
-
-/**
- * ```haskell
- * tap :: Monad m => (a -> m b) -> ma -> m a
- * ```
- *
- * Composes computations in sequence, using the return value of one computation as input for the next
- * and keeping only the result of the first
- *
- * @category Monad
- * @since 1.0.0
- */
-export const tap: TC.TapF<[URI], V> = (f) => (ma) => _tap(ma, f);
-
-/**
- * ```haskell
- * flatten :: Monad m => m m a -> m a
- * ```
- *
- * Removes one level of nesting from a nested `IO`
- *
- * @category Monad
- * @since 1.0.0
- */
-export const flatten: TC.FlattenF<[URI], V> = (mma) => _chain(mma, identity);
+export const lift2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb: IO<B>): IO<C> => () => f(fa())(fb());
 
 /**
  * ```haskell
@@ -294,15 +219,99 @@ export const mapN: TC.MapNF<[URI], V> = (f) => (fas) => () =>
  */
 export const tuple: TC.TupleF<[URI], V> = mapN(identity);
 
-export const bindS: TC.BindSF<[URI], V> = (name, f) =>
-   chain((a) => _map(f(a), (b) => bind_(a, name, b)));
-
-export const letS: TC.LetSF<[URI], V> = (name, f) => bindS(name, (a) => pure(f(a)));
-
-export const bindToS: TC.BindToSF<[URI], V> = (name) => (fa) => _map(fa, bindTo_(name));
-
-export const apS: TC.ApSF<[URI], V> = (name, fb) =>
+/**
+ * ```haskell
+ * apS :: (Apply f, Nominal n) =>
+ *    (n n3, f c)
+ *    -> f ({ n1: a, n2: b, ... })
+ *    -> f ({ n1: a, n2: b, n3: c })
+ * ```
+ *
+ * A pipeable version of `sequenceS`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const apS = <N extends string, A, B>(
+   name: Exclude<N, keyof A>,
+   fb: IO<B>
+): (<E>(fa: IO<A>) => IO<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
    flow(
-      map((a) => (b: InferA<typeof fb>) => bind_(a, name, b)),
+      map((a) => (b: B) => bind_(a, name, b)),
       ap(fb)
    );
+
+/**
+ * ```haskell
+ * _chain :: Monad m => (m a, (a -> m b)) -> m b
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
+export const _chain = <A, B>(ma: IO<A>, f: (a: A) => IO<B>): IO<B> => () => f(ma())();
+
+/**
+ * ```haskell
+ * chain :: Monad m => (a -> m b) -> m a -> m b
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
+export const chain = <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>): IO<B> => _chain(ma, f);
+
+/**
+ * ```haskell
+ * bind :: Monad m => m a -> (a -> m b) -> m b
+ * ```
+ *
+ * A version of `chain` where the arguments are flipped
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
+export const bind = <A>(ma: IO<A>) => <B>(f: (a: A) => IO<B>): IO<B> => _chain(ma, f);
+
+/**
+ * ```haskell
+ * _tap :: Monad m => (ma, (a -> m b)) -> m a
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ * and keeping only the result of the first
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
+export const _tap = <A, B>(ma: IO<A>, f: (a: A) => IO<B>): IO<A> => _chain(ma, (a) => _map(f(a), () => a));
+
+/**
+ * ```haskell
+ * tap :: Monad m => (a -> m b) -> ma -> m a
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ * and keeping only the result of the first
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
+export const tap = <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>): IO<A> => _tap(ma, f);
+
+/**
+ * ```haskell
+ * flatten :: Monad m => m m a -> m a
+ * ```
+ *
+ * Removes one level of nesting from a nested `IO`
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
+export const flatten = <A>(mma: IO<IO<A>>): IO<A> => _chain(mma, identity);

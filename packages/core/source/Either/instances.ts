@@ -1,11 +1,11 @@
+import { deriveMapN } from "../Apply";
 import { Eq } from "../Eq";
-import { pipe, Predicate } from "../Function";
+import { identity, pipe, Predicate } from "../Function";
 import * as HKT from "../HKT";
 import { Show } from "../Show";
-import type * as TC from "../typeclass-index";
+import * as TC from "../typeclass-index";
 import type { Separated } from "../Utils";
 import { left, right } from "./constructors";
-import { apS, bindS, bindToS, letS } from "./do";
 import type { Either, URI, V } from "./Either";
 import { isLeft, isRight } from "./guards";
 import {
@@ -21,12 +21,12 @@ import {
    _reduceRight,
    _traverse,
    alt,
-   any,
    ap,
    bimap,
    chain,
    extend,
    first,
+   flatten,
    foldMap,
    map,
    mapBoth,
@@ -53,10 +53,7 @@ import {
  */
 export const getEq = <E, A>(eqE: Eq<E>, eqA: Eq<A>): Eq<Either<E, A>> => ({
    equals: (x) => (y) =>
-      x === y ||
-      (isLeft(x)
-         ? isLeft(y) && eqE.equals(x.left)(y.left)
-         : isRight(y) && eqA.equals(x.right)(y.right))
+      x === y || (isLeft(x) ? isLeft(y) && eqE.equals(x.left)(y.left) : isRight(y) && eqA.equals(x.right)(y.right))
 });
 
 /**
@@ -80,18 +77,29 @@ export const Functor: TC.Functor<[URI], V> = HKT.instance({
    _map
 });
 
+export const Apply: TC.Apply<[URI], V> = HKT.instance({
+   ...Functor,
+   ap,
+   _ap,
+   mapBoth,
+   _mapBoth
+});
+
+export const sequenceT = TC.sequenceT(Apply);
+
+export const mapN: TC.MapNF<[URI], V> = deriveMapN(Apply);
+
+export const tuple: TC.TupleF<[URI], V> = mapN(identity);
+
+export const sequenceS = TC.sequenceS(Apply);
+
 /**
  * @category Instances
  * @since 1.0.0
  */
 export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   ap,
-   _ap,
-   pure,
-   any,
-   mapBoth,
-   _mapBoth
+   ...Apply,
+   pure
 });
 
 /**
@@ -100,6 +108,7 @@ export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
  */
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
+   flatten,
    _chain,
    chain
 });
@@ -165,22 +174,12 @@ export const Extend: TC.Extend<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const ApplicativeDo: TC.ApplicativeDo<[URI], V> = HKT.instance({
-   ...Applicative,
-   bindS,
-   letS,
-   apS,
-   bindToS
-});
-
-/**
- * @category Instances
- * @since 1.0.0
- */
 export const MonadFail: TC.MonadFail<[URI], V> = HKT.instance({
    ...Monad,
    fail: left
 });
+
+export const Do: TC.Do<[URI], V> = TC.deriveDo(Monad);
 
 /**
  * ```haskell
@@ -253,9 +252,7 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
          return { left: fa, right: fa };
       }
       const e = f(fa.right);
-      return isLeft(e)
-         ? { left: right(e.left), right: empty }
-         : { left: empty, right: right(e.right) };
+      return isLeft(e) ? { left: right(e.left), right: empty } : { left: empty, right: right(e.right) };
    };
 
    const _partition: TC.UC_PartitionF<[URI], V_> = <A>(
@@ -277,10 +274,8 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
       return ob._tag === "Nothing" ? empty : right(ob.value);
    };
 
-   const _filter: TC.UC_FilterF<[URI], V_> = <A>(
-      fa: Either<E, A>,
-      predicate: Predicate<A>
-   ): Either<E, A> => (isLeft(fa) ? fa : predicate(fa.right) ? fa : empty);
+   const _filter: TC.UC_FilterF<[URI], V_> = <A>(fa: Either<E, A>, predicate: Predicate<A>): Either<E, A> =>
+      isLeft(fa) ? fa : predicate(fa.right) ? fa : empty;
 
    return HKT.instance<TC.Filterable<[URI], V_>>({
       ...Functor,
@@ -338,9 +333,7 @@ export const getWitherable = <E>(M: TC.Monoid<E>): TC.Witherable<[URI], V & HKT.
  * @category Instances
  * @since 1.0.0
  */
-export const getApplicativeValidation = <E>(
-   S: TC.Semigroup<E>
-): TC.Applicative<[URI], V & HKT.Fix<"E", E>> => {
+export const getApplicativeValidation = <E>(S: TC.Semigroup<E>): TC.Applicative<[URI], V & HKT.Fix<"E", E>> => {
    type V_ = V & HKT.Fix<"E", E>;
 
    const apV: TC.ApF<[URI], V_> = (fa) => (fab) =>
@@ -367,8 +360,7 @@ export const getApplicativeValidation = <E>(
       _ap: (fab, fa) => pipe(fab, apV(fa)),
       pure,
       mapBoth: mapBothV,
-      _mapBoth: (fa, fb, f) => pipe(fa, mapBothV(fb, f)),
-      any
+      _mapBoth: (fa, fb, f) => pipe(fa, mapBothV(fb, f))
    });
 };
 

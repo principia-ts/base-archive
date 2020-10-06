@@ -36,29 +36,7 @@ export interface MapBothF<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface UC_MapBothF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      I,
-      S,
-      R,
-      E,
-      A,
-      N1 extends string,
-      K1,
-      Q1,
-      W1,
-      X1,
-      I1,
-      S1,
-      R1,
-      E1,
-      B,
-      D
-   >(
+   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, D>(
       fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
       fb: HKT.Kind<
          F,
@@ -91,12 +69,7 @@ export interface UC_MapBothF<F extends HKT.URIS, C = HKT.Auto> {
    >;
 }
 
-export interface MapBothFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface MapBothFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <
       A,
       NF1 extends string,
@@ -135,26 +108,7 @@ export interface MapBothFComposition<
          HKT.Kind<G, CG, NG1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, B>
       >,
       f: (a: A, b: B) => D
-   ): <
-      NF extends string,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      NG extends string,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG
-   >(
+   ): <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG>(
       fga: HKT.Kind<
          F,
          CF,
@@ -211,12 +165,7 @@ export interface MapBothFComposition<
    >;
 }
 
-export interface UC_MapBothFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface UC_MapBothFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <
       NF extends string,
       KF,
@@ -258,20 +207,7 @@ export interface UC_MapBothFComposition<
       B,
       D
    >(
-      fga: HKT.Kind<
-         F,
-         CF,
-         NF,
-         KF,
-         QF,
-         WF,
-         XF,
-         IF,
-         SF,
-         RF,
-         EF,
-         HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>
-      >,
+      fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
       fgb: HKT.Kind<
          F,
          CF,

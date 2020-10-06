@@ -6,11 +6,9 @@ import { NonEmptyArray } from "../NonEmptyArray";
  * -------------------------------------------
  */
 
-export const _isOutOfBound = <A>(i: number, as: ReadonlyArray<A>): boolean =>
-   i < 0 || i >= as.length;
+export const _isOutOfBound = <A>(i: number, as: ReadonlyArray<A>): boolean => i < 0 || i >= as.length;
 
-export const isOutOfBound = (i: number) => <A>(as: ReadonlyArray<A>): boolean =>
-   _isOutOfBound(i, as);
+export const isOutOfBound = (i: number) => <A>(as: ReadonlyArray<A>): boolean => _isOutOfBound(i, as);
 
 export const isEmpty = <A>(as: ReadonlyArray<A>): boolean => as.length === 0;
 

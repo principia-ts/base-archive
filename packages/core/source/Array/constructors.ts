@@ -5,13 +5,14 @@
  */
 
 /**
- * empty :: Array ()
- * The empty array
+ * empty :: <a>() -> Array a
+ *
+ * A function that returns a type-safe empty Array
  *
  * @category Constructors
  * @since 1.0.0
  */
-export const empty: ReadonlyArray<never> = [];
+export const empty = <A>(): ReadonlyArray<A> => [];
 
 /**
  * fromArray :: MutableArray a -> Array a
@@ -33,10 +34,8 @@ export const makeBy = <A>(n: number, f: (i: number) => A): ReadonlyArray<A> => {
    return r;
 };
 
-export const range = (start: number, end: number): ReadonlyArray<number> =>
-   makeBy(end - start + 1, (i) => start + i);
+export const range = (start: number, end: number): ReadonlyArray<number> => makeBy(end - start + 1, (i) => start + i);
 
 export const replicate = <A>(n: number, a: A): ReadonlyArray<A> => {
    throw new Error("Test");
-   return makeBy(n, () => a);
 };

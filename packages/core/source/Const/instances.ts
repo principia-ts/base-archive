@@ -46,9 +46,7 @@ export const getBounded: <E, A>(B: Bounded<E>) => Bounded<Const<E, A>> = identit
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup: <E, A>(
-   S: TC.Semigroup<E>
-) => TC.Semigroup<Const<E, A>> = identity as any;
+export const getSemigroup: <E, A>(S: TC.Semigroup<E>) => TC.Semigroup<Const<E, A>> = identity as any;
 
 /**
  * @category Instances
@@ -90,8 +88,7 @@ export const getApply = <E>(S: TC.Semigroup<E>): TC.Apply<[URI], V & HKT.Fix<"E"
 export const getApplicative = <E>(M: TC.Monoid<E>): TC.Applicative<[URI], V & HKT.Fix<"E", E>> =>
    HKT.instance({
       ...getApply(M),
-      pure: () => make(M.empty),
-      any: () => make(M.empty)
+      pure: () => make(M.empty)
    });
 
 /**

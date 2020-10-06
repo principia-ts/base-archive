@@ -19,20 +19,7 @@ export interface WitherF<F extends HKT.URIS, C = HKT.Auto> {
       f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
    ) => <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF>(
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
-   ) => HKT.Kind<
-      G,
-      GC,
-      NG,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG,
-      HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>
-   >;
+   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
 }
 
 export interface UC_WitherF<F extends HKT.URIS, C = HKT.Auto> {
@@ -60,20 +47,7 @@ export interface UC_WitherF<F extends HKT.URIS, C = HKT.Auto> {
    >(
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
       f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
-   ) => HKT.Kind<
-      G,
-      GC,
-      NG,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG,
-      HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>
-   >;
+   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
 }
 
 export function implementWither<F extends HKT.URIS, C = HKT.Auto>(): (
@@ -96,7 +70,7 @@ export function implementWither<F extends HKT.URIS, C = HKT.Auto>(): (
       f: (a: A) => HKT.HKT<G, Maybe<B>>
    ) => (
       wa: HKT.Kind<F, C, NF, FK, FQ, FW, FX, FI, FS, FR, FE, A>
-   ) => HKT.HKT<G, HKT.Kind<F, C, NF, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
+   ) => HKT.HKT<G, HKT.Kind<F, C, string, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
 ) => WitherF<F, C>;
 export function implementWither() {
    return (i: any) => i();
@@ -121,7 +95,7 @@ export function implementUCWither<F extends HKT.URIS, C = HKT.Auto>(): (
    ) => (
       wa: HKT.Kind<F, C, NF, FK, FQ, FW, FX, FI, FS, FR, FE, A>,
       f: (a: A) => HKT.HKT<G, Maybe<B>>
-   ) => HKT.HKT<G, HKT.Kind<F, C, NF, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
+   ) => HKT.HKT<G, HKT.Kind<F, C, string, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
 ) => UC_WitherF<F, C>;
 export function implementUCWither() {
    return (i: any) => i();

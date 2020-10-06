@@ -1,22 +1,7 @@
 import * as HKT from "../HKT";
-import type * as TC from "../typeclass-index";
+import * as TC from "../typeclass-index";
 import type { IO, URI, V } from "./IO";
-import {
-   _ap,
-   _chain,
-   _map,
-   _mapBoth,
-   any,
-   ap,
-   apS,
-   bindS,
-   bindToS,
-   chain,
-   letS,
-   map,
-   mapBoth,
-   pure
-} from "./methods";
+import { _ap, _chain, _map, _mapBoth, ap, chain, flatten, map, mapBoth, pure } from "./methods";
 
 /*
  * -------------------------------------------
@@ -68,20 +53,14 @@ export const Apply: TC.Apply<[URI], V> = HKT.instance({
 
 export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
    ...Apply,
-   pure,
-   any
-});
-
-export const ApplicativeDo: TC.ApplicativeDo<[URI], V> = HKT.instance({
-   ...Applicative,
-   bindS,
-   letS,
-   apS,
-   bindToS
+   pure
 });
 
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
    _chain,
-   chain
+   chain,
+   flatten
 });
+
+export const Do: TC.Do<[URI], V> = TC.deriveDo(Monad);

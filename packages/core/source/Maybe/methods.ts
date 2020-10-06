@@ -1,4 +1,6 @@
-import { flow, identity, pipe, Predicate, tuple } from "../Function";
+import { Either } from "../Either";
+import { bind_, flow, identity, pipe, Predicate, Refinement, tuple } from "../Function";
+import { Monoid } from "../Monoid";
 import type * as TC from "../typeclass-index";
 import { Separated } from "../Utils";
 import { getLeft, getRight } from "./combinators";
@@ -12,7 +14,7 @@ import type { Maybe, URI, V } from "./Maybe";
  * -------------------------------------------
  */
 
-export const any: TC.AnyF<[URI], V> = () => just(undefined as any);
+export const unit = (): Maybe<void> => just(undefined);
 
 export const none: TC.NoneF<[URI], V> = nothing;
 
@@ -26,7 +28,7 @@ export const none: TC.NoneF<[URI], V> = nothing;
  * @category Functor
  * @since 1.0.0
  */
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => (isNothing(fa) ? fa : just(f(fa.value)));
+export const _map = <A, B>(fa: Maybe<A>, f: (a: A) => B): Maybe<B> => (isNothing(fa) ? fa : just(f(fa.value)));
 
 /**
  * ```haskell
@@ -38,7 +40,7 @@ export const _map: TC.UC_MapF<[URI], V> = (fa, f) => (isNothing(fa) ? fa : just(
  * @category Functor
  * @since 1.0.0
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map = <A, B>(f: (a: A) => B) => (fa: Maybe<A>): Maybe<B> => _map(fa, f);
 
 /**
  * ```haskell
@@ -50,7 +52,7 @@ export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
  * @category Apply
  * @since 1.0.0
  */
-export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) =>
+export const _ap = <A, B>(fab: Maybe<(a: A) => B>, fa: Maybe<A>): Maybe<B> =>
    isNothing(fab) ? nothing() : isNothing(fa) ? nothing() : just(fab.value(fa.value));
 
 /**
@@ -63,23 +65,75 @@ export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) =>
  * @category Apply
  * @since 1.0.0
  */
-export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
+export const ap = <A>(fa: Maybe<A>) => <B>(fab: Maybe<(a: A) => B>): Maybe<B> => _ap(fab, fa);
 
-export const _apFirst: TC.UC_ApFirstF<[URI], V> = (fa, fb) =>
+export const _apFirst = <A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<A> =>
    _ap(
       _map(fa, (a) => () => a),
       fb
    );
 
-export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
+export const apFirst = <B>(fb: Maybe<B>) => <A>(fa: Maybe<A>): Maybe<A> => _apFirst(fa, fb);
 
-export const _apSecond: TC.UC_ApSecondF<[URI], V> = <A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<B> =>
+export const _apSecond = <A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<B> =>
    _ap(
       _map(fa, () => (b: B) => b),
       fb
    );
 
-export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb);
+export const apSecond = <B>(fb: Maybe<B>) => <A>(fa: Maybe<A>): Maybe<B> => _apSecond(fa, fb);
+
+/**
+ * ```haskell
+ * _mapBoth :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * ```
+ *
+ * Applies both `Maybe`s and if both are `Some`,  maps their results with function `f`, otherwise returns `Nothing`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const _mapBoth = <A, B, C>(fa: Maybe<A>, fb: Maybe<B>, f: (a: A, b: B) => C): Maybe<C> =>
+   _ap(
+      _map(fa, (a) => (b: B) => f(a, b)),
+      fb
+   );
+
+/**
+ * ```haskell
+ * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * ```
+ *
+ * Applies both `Maybe`s and if both are `Some`, maps their results with function `f`, otherwise returns `Nothing`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+
+export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
+/**
+ * ```haskell
+ * _both :: Apply f => (f a, f b) -> f (a, b)
+ * ```
+ *
+ * Applies both `Maybe`s and if both are `Some`, collects their values into a tuple, otherwise, returns `Nothing`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const _both = <A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<readonly [A, B]> => _mapBoth(fa, fb, tuple);
+
+/**
+ * ```haskell
+ * both :: Apply f => f b -> f a -> f (a, b)
+ * ```
+ *
+ * Applies both `Maybe`s and if both are `Some`, collects their values into a tuple, otherwise returns `Nothing`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const both = <B>(fb: Maybe<B>) => <A>(fa: Maybe<A>): Maybe<readonly [A, B]> => _both(fa, fb);
 
 /**
  * ```haskell
@@ -91,8 +145,20 @@ export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb
  * @category Apply
  * @since 1.0.0
  */
-export const lift2: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) =>
+export const lift2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: Maybe<A>) => (fb: Maybe<B>): Maybe<C> =>
    isNothing(fa) ? nothing() : isNothing(fb) ? nothing() : just(f(fa.value)(fb.value));
+
+/**
+ * ```haskell
+ * pure :: Applicative f => a -> f a
+ * ```
+ *
+ * Lifts a pure expression info a `Maybe`
+ *
+ * @category Applicative
+ * @since 1.0.0
+ */
+export const pure: <A>(a: A) => Maybe<A> = just;
 
 /**
  * ```haskell
@@ -104,7 +170,7 @@ export const lift2: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) =>
  * @category Uncurried Monad
  * @since 1.0.0
  */
-export const _chain: TC.UC_ChainF<[URI], V> = (fa, f) => (isNothing(fa) ? fa : f(fa.value));
+export const _chain = <A, B>(ma: Maybe<A>, f: (a: A) => Maybe<B>): Maybe<B> => (isNothing(ma) ? ma : f(ma.value));
 
 /**
  * ```haskell
@@ -116,7 +182,7 @@ export const _chain: TC.UC_ChainF<[URI], V> = (fa, f) => (isNothing(fa) ? fa : f
  * @category Monad
  * @since 1.0.0
  */
-export const chain: TC.ChainF<[URI], V> = (f) => (fa) => _chain(fa, f);
+export const chain = <A, B>(f: (a: A) => Maybe<B>) => (ma: Maybe<A>): Maybe<B> => _chain(ma, f);
 
 /**
  * ```haskell
@@ -129,7 +195,7 @@ export const chain: TC.ChainF<[URI], V> = (f) => (fa) => _chain(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const bind: TC.BindF<[URI], V> = (fa) => (f) => _chain(fa, f);
+export const bind = <A>(ma: Maybe<A>) => <B>(f: (a: A) => Maybe<B>): Maybe<B> => _chain(ma, f);
 
 /**
  * ```haskell
@@ -142,7 +208,7 @@ export const bind: TC.BindF<[URI], V> = (fa) => (f) => _chain(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const _tap: TC.UC_TapF<[URI], V> = (ma, f) =>
+export const _tap = <A, B>(ma: Maybe<A>, f: (a: A) => Maybe<B>): Maybe<A> =>
    _chain(ma, (a) =>
       pipe(
          f(a),
@@ -161,7 +227,7 @@ export const _tap: TC.UC_TapF<[URI], V> = (ma, f) =>
  * @category Monad
  * @since 1.0.0
  */
-export const tap: TC.TapF<[URI], V> = (f) => (ma) => _tap(ma, f);
+export const tap = <A, B>(f: (a: A) => Maybe<B>) => (ma: Maybe<A>): Maybe<A> => _tap(ma, f);
 
 /**
  * ```haskell
@@ -175,19 +241,7 @@ export const tap: TC.TapF<[URI], V> = (f) => (ma) => _tap(ma, f);
  * @category Monad
  * @since 1.0.0
  */
-export const chainFirst: TC.ChainFirstF<[URI], V> = (f) => (ma) => _tap(ma, f);
-
-/**
- * ```haskell
- * pure :: Applicative f => a -> f a
- * ```
- *
- * Lifts a pure expression info a `Maybe`
- *
- * @category Applicative
- * @since 1.0.0
- */
-export const pure: TC.PureF<[URI], V> = just;
+export const chainFirst = tap;
 
 /**
  * ```haskell
@@ -199,43 +253,42 @@ export const pure: TC.PureF<[URI], V> = just;
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: TC.FlattenF<[URI], V> = flow(chain(identity));
+export const flatten: <A>(mma: Maybe<Maybe<A>>) => Maybe<A> = flow(chain(identity));
 
 /**
  * ```haskell
  * _reduce :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export const _reduce: TC.UC_ReduceF<[URI], V> = (fa, b, f) => (isNothing(fa) ? b : f(b, fa.value));
+export const _reduce = <A, B>(fa: Maybe<A>, b: B, f: (b: B, a: A) => B): B => (isNothing(fa) ? b : f(b, fa.value));
 
 /**
  * ```haskell
  * reduce :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export const reduce: TC.ReduceF<[URI], V> = (b, f) => (fa) => _reduce(fa, b, f);
+export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: Maybe<A>): B => _reduce(fa, b, f);
 
 /**
  * ```haskell
  * _reduceRight :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export const _reduceRight: TC.UC_ReduceRightF<[URI], V> = (fa, b, f) =>
-   isNothing(fa) ? b : f(fa.value, b);
+export const _reduceRight = <A, B>(fa: Maybe<A>, b: B, f: (a: A, b: B) => B): B => (isNothing(fa) ? b : f(fa.value, b));
 
 /**
  * ```haskell
  * reduceRight :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export const reduceRight: TC.ReduceRightF<[URI], V> = (b, f) => (fa) => _reduceRight(fa, b, f);
+export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: Maybe<A>): B => _reduceRight(fa, b, f);
 
 /**
  * ```haskell
  * _foldMap :: (Foldable f, Monoid m) => Instance m b -> (f a, (a -> b)) -> b
  * ```
  */
-export const _foldMap: TC.UC_FoldMapF<[URI], V> = (M) => (fa, f) =>
+export const _foldMap = <M>(M: Monoid<M>) => <A>(fa: Maybe<A>, f: (a: A) => M): M =>
    isNothing(fa) ? M.empty : f(fa.value);
 
 /**
@@ -243,7 +296,61 @@ export const _foldMap: TC.UC_FoldMapF<[URI], V> = (M) => (fa, f) =>
  * foldMap :: (Foldable f, Monoid m) => Instance m b -> (a -> b) -> f a -> b
  * ```
  */
-export const foldMap: TC.FoldMapF<[URI], V> = (M) => (f) => (fa) => _foldMap(M)(fa, f);
+export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: Maybe<A>): M => _foldMap(M)(fa, f);
+
+export const separate = <A, B>(fa: Maybe<Either<A, B>>): Separated<Maybe<A>, Maybe<B>> => {
+   const o = _map(fa, (e) => ({
+      left: getLeft(e),
+      right: getRight(e)
+   }));
+   return isNothing(o) ? { left: nothing(), right: nothing() } : o.value;
+};
+
+export const compact: <A>(ta: Maybe<Maybe<A>>) => Maybe<A> = flatten;
+
+export const _filter: {
+   <A, B extends A>(fa: Maybe<A>, refinement: Refinement<A, B>): Maybe<B>;
+   <A>(fa: Maybe<A>, predicate: Predicate<A>): Maybe<A>;
+} = <A>(fa: Maybe<A>, predicate: Predicate<A>) => (isNothing(fa) ? nothing() : predicate(fa.value) ? fa : nothing());
+
+export const filter: {
+   <A, B extends A>(refinement: Refinement<A, B>): (fa: Maybe<A>) => Maybe<B>;
+   <A>(predicate: Predicate<A>): (fa: Maybe<A>) => Maybe<A>;
+} = <A>(predicate: Predicate<A>) => (fa: Maybe<A>) => _filter(fa, predicate);
+
+export const _partition: {
+   <A, B extends A>(fa: Maybe<A>, refinement: Refinement<A, B>): Separated<Maybe<A>, Maybe<B>>;
+   <A>(fa: Maybe<A>, predicate: Predicate<A>): Separated<Maybe<A>, Maybe<A>>;
+} = <A>(fa: Maybe<A>, predicate: Predicate<A>): Separated<Maybe<A>, Maybe<A>> => ({
+   left: _filter(fa, (a) => !predicate(a)),
+   right: _filter(fa, predicate)
+});
+
+export const partition: {
+   <A, B extends A>(refinement: Refinement<A, B>): (fa: Maybe<A>) => Separated<Maybe<A>, Maybe<B>>;
+   <A>(predicate: Predicate<A>): (fa: Maybe<A>) => Separated<Maybe<A>, Maybe<A>>;
+} = <A>(predicate: Predicate<A>) => (fa: Maybe<A>) => _partition(fa, predicate);
+
+export const _mapEither = <A, B, C>(fa: Maybe<A>, f: (a: A) => Either<B, C>): Separated<Maybe<B>, Maybe<C>> =>
+   separate(_map(fa, f));
+
+export const mapEither = <A, B, C>(f: (a: A) => Either<B, C>) => (fa: Maybe<A>): Separated<Maybe<B>, Maybe<C>> =>
+   _mapEither(fa, f);
+
+/**
+ * ```haskell
+ * _mapMaybe :: Filterable f => (f a, (a -> Maybe b)) -> f b
+ * ```
+ */
+export const _mapMaybe = <A, B>(fa: Maybe<A>, f: (a: A) => Maybe<B>): Maybe<B> =>
+   isNothing(fa) ? nothing() : f(fa.value);
+
+/**
+ * ```haskell
+ * filterMap :: Filterable f => (a -> Maybe b) -> f a -> f b
+ * ```
+ */
+export const mapMaybe = <A, B>(f: (a: A) => Maybe<B>) => (fa: Maybe<A>): Maybe<B> => _mapMaybe(fa, f);
 
 /**
  * ```haskell
@@ -293,7 +400,7 @@ export const sequence: TC.SequenceF<[URI], V> = (A) => (fa) =>
  * @category Alt
  * @since 1.0.0
  */
-export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => (isNothing(fa) ? that() : fa);
+export const _alt = <A>(fa: Maybe<A>, that: () => Maybe<A>): Maybe<A> => (isNothing(fa) ? that() : fa);
 
 /**
  * ```haskell
@@ -305,95 +412,14 @@ export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => (isNothing(fa) ? that() 
  * @category Alt
  * @since 1.0.0
  */
-export const alt: TC.AltF<[URI], V> = (that) => (fa) => _alt(fa, that);
-
-/**
- * ```haskell
- * _both :: Apply f => (f a, f b) -> f (a, b)
- * ```
- *
- * Applies both `Maybe`s and if both are `Some`, collects their values into a tuple, otherwise, returns `Nothing`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const _both: TC.UC_BothF<[URI], V> = (fa, fb) =>
-   _chain(fa, (a) => _map(fb, (b) => tuple(a, b)));
-
-/**
- * ```haskell
- * both :: Apply f => f b -> f a -> f (a, b)
- * ```
- *
- * Applies both `Maybe`s and if both are `Some`, collects their values into a tuple, otherwise returns `Nothing`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const both: TC.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
-
-/**
- * ```haskell
- * _mapBoth :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
- * ```
- *
- * Applies both `Maybe`s and if both are `Some`,  maps their results with function `f`, otherwise returns `Nothing`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const _mapBoth: TC.UC_MapBothF<[URI], V> = (fa, fb, f) =>
-   _chain(fa, (a) => _map(fb, (b) => f(a, b)));
-
-/**
- * ```haskell
- * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
- * ```
- *
- * Applies both `Maybe`s and if both are `Some`, maps their results with function `f`, otherwise returns `Nothing`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
-
-export const separate: TC.SeparateF<[URI], V> = (fa) => {
-   const o = _map(fa, (e) => ({
-      left: getLeft(e),
-      right: getRight(e)
-   }));
-   return isNothing(o) ? { left: nothing(), right: nothing() } : o.value;
-};
-
-export const _filter: TC.UC_FilterF<[URI], V> = <A>(fa: Maybe<A>, f: Predicate<A>) =>
-   isNothing(fa) ? nothing() : f(fa.value) ? fa : nothing();
-
-export const filter: TC.FilterF<[URI], V> = <A>(f: Predicate<A>) => (fa: Maybe<A>) =>
-   _filter(fa, f);
-
-/**
- * ```haskell
- * _filterMap :: Filterable f => (f a, (a -> Maybe b)) -> f b
- * ```
- */
-export const _mapMaybe: TC.UC_MapMaybeF<[URI], V> = (fa, f) =>
-   isNothing(fa) ? nothing() : f(fa.value);
-
-/**
- * ```haskell
- * filterMap :: Filterable f => (a -> Maybe b) -> f a -> f b
- * ```
- */
-export const mapMaybe: TC.MapMaybeF<[URI], V> = (f) => (fa) => _mapMaybe(fa, f);
-
-export const compact: TC.CompactF<[URI], V> = flatten;
+export const alt = <A>(that: () => Maybe<A>) => (fa: Maybe<A>): Maybe<A> => _alt(fa, that);
 
 /**
  * ```haskell
  * _extend :: Extend w => (w a, (w a -> b)) -> w b
  * ```
  */
-export const _extend: TC.UC_ExtendF<[URI], V> = (wa, f) =>
+export const _extend = <A, B>(wa: Maybe<A>, f: (wa: Maybe<A>) => B): Maybe<B> =>
    isNothing(wa) ? nothing() : just(f(wa));
 
 /**
@@ -401,7 +427,7 @@ export const _extend: TC.UC_ExtendF<[URI], V> = (wa, f) =>
  * extend :: Extend w => (w a -> b) -> w a -> w b
  * ```
  */
-export const extend: TC.ExtendF<[URI], V> = (f) => (wa) => _extend(wa, f);
+export const extend = <A, B>(f: (wa: Maybe<A>) => B) => (wa: Maybe<A>): Maybe<B> => _extend(wa, f);
 
 /**
  * ```haskell
@@ -410,23 +436,7 @@ export const extend: TC.ExtendF<[URI], V> = (f) => (wa) => _extend(wa, f);
  */
 export const duplicate = <A>(wa: Maybe<A>): Maybe<Maybe<A>> => _extend(wa, identity);
 
-export const _partition: TC.UC_PartitionF<[URI], V> = <A>(
-   fa: Maybe<A>,
-   f: Predicate<A>
-): Separated<Maybe<A>, Maybe<A>> => ({
-   left: _filter(fa, (a) => !f(a)),
-   right: _filter(fa, f)
-});
-
-export const partition: TC.PartitionF<[URI], V> = <A>(f: Predicate<A>) => (fa: Maybe<A>) =>
-   _partition(fa, f);
-
-export const _mapEither: TC.UC_MapEitherF<[URI], V> = (fa, f) => separate(_map(fa, f));
-
-export const mapEither: TC.MapEitherF<[URI], V> = (f) => (fa) => _mapEither(fa, f);
-
-export const _wither: TC.UC_WitherF<[URI], V> = (A) => (wa, f) =>
-   isNothing(wa) ? A.pure(nothing()) : f(wa.value);
+export const _wither: TC.UC_WitherF<[URI], V> = (A) => (wa, f) => (isNothing(wa) ? A.pure(nothing()) : f(wa.value));
 
 export const wither: TC.WitherF<[URI], V> = (A) => (f) => (wa) => _wither(A)(wa, f);
 
@@ -450,3 +460,25 @@ export const _wilt: TC.UC_WiltF<[URI], V> = (A) => (wa, f) => {
 };
 
 export const wilt: TC.WiltF<[URI], V> = (A) => (f) => (wa) => _wilt(A)(wa, f);
+
+/**
+ * ```haskell
+ * apS :: (Apply f, Nominal n) =>
+ *    (n n3, f c)
+ *    -> f ({ n1: a, n2: b, ... })
+ *    -> f ({ n1: a, n2: b, n3: c })
+ * ```
+ *
+ * A pipeable version of `sequenceS`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const apS = <N extends string, A, B>(
+   name: Exclude<N, keyof A>,
+   fb: Maybe<B>
+): (<E>(fa: Maybe<A>) => Maybe<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
+   flow(
+      map((a) => (b: B) => bind_(a, name, b)),
+      ap(fb)
+   );

@@ -5,11 +5,8 @@ import type { Apply } from "./Apply";
 import { getRecordConstructor } from "./utils";
 
 export function sequenceS<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>) {
-   return <
-      KS extends Record<string, HKT.Kind<F, C, string, any, any, any, any, any, any, any, any, any>>
-   >(
-      r: EnforceNonEmptyRecord<KS> &
-         Record<string, HKT.Kind<F, C, string, any, any, any, any, any, any, any, any, any>>
+   return <KS extends Record<string, HKT.Kind<F, C, string, any, any, any, any, any, any, any, any, any>>>(
+      r: EnforceNonEmptyRecord<KS> & Record<string, HKT.Kind<F, C, string, any, any, any, any, any, any, any, any, any>>
    ): SequencedS<KS, F, C> => {
       const keys = Object.keys(r);
       const len = keys.length;

@@ -1,9 +1,17 @@
 import type * as HKT from "../HKT";
 
 export interface ComposeF<F extends HKT.URIS, C = HKT.Auto> {
-   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, A, B>(
-      fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, A, B>
-   ): <N extends string, K, Q, W, X, I, S, R, E>(
+   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, A, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, A, B>): <
+      N extends string,
+      K,
+      Q,
+      W,
+      X,
+      I,
+      S,
+      R,
+      E
+   >(
       fa: HKT.Kind<
          F,
          C,

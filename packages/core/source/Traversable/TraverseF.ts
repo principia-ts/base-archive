@@ -18,20 +18,7 @@ export interface TraverseF<F extends HKT.URIS, CF = HKT.Auto> {
       f: (a: A) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
    ) => <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE>(
       ta: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, A>
-   ) => HKT.Kind<
-      G,
-      CG,
-      GN,
-      GK,
-      GQ,
-      GW,
-      GX,
-      GI,
-      GS,
-      GR,
-      GE,
-      HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>
-   >;
+   ) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>>;
 }
 
 export interface UC_TraverseF<F extends HKT.URIS, CF = HKT.Auto> {
@@ -59,28 +46,10 @@ export interface UC_TraverseF<F extends HKT.URIS, CF = HKT.Auto> {
    >(
       ta: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, A>,
       f: (a: A) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
-   ) => HKT.Kind<
-      G,
-      CG,
-      GN,
-      GK,
-      GQ,
-      GW,
-      GX,
-      GI,
-      GS,
-      GR,
-      GE,
-      HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>
-   >;
+   ) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>>;
 }
 
-export interface TraverseFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface TraverseFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
       HN extends string,
       HK,
@@ -95,40 +64,8 @@ export interface TraverseFComposition<
       B
    >(
       f: (a: A) => HKT.Kind<H, CH, HN, HK, HQ, HW, HX, HI, HS, HR, HE, B>
-   ) => <
-      FN extends string,
-      FK,
-      FQ,
-      FW,
-      FX,
-      FI,
-      FS,
-      FR,
-      FE,
-      GN extends string,
-      GK,
-      GQ,
-      GW,
-      GX,
-      GI,
-      GS,
-      GR,
-      GE
-   >(
-      fga: HKT.Kind<
-         F,
-         CF,
-         FN,
-         FK,
-         FQ,
-         FW,
-         FX,
-         FI,
-         FS,
-         FR,
-         FE,
-         HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>
-      >
+   ) => <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE, GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE>(
+      fga: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>>
    ) => HKT.Kind<
       H,
       CH,
@@ -141,29 +78,11 @@ export interface TraverseFComposition<
       HS,
       HR,
       HE,
-      HKT.Kind<
-         F,
-         CF,
-         FN,
-         FK,
-         FQ,
-         FW,
-         FX,
-         FI,
-         FS,
-         FR,
-         FE,
-         HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
-      >
+      HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>>
    >;
 }
 
-export interface UC_TraverseFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface UC_TraverseFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
       FN extends string,
       FK,
@@ -195,20 +114,7 @@ export interface UC_TraverseFComposition<
       A,
       B
    >(
-      fga: HKT.Kind<
-         F,
-         CF,
-         FN,
-         FK,
-         FQ,
-         FW,
-         FX,
-         FI,
-         FS,
-         FR,
-         FE,
-         HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>
-      >,
+      fga: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>>,
       f: (a: A) => HKT.Kind<H, CH, HN, HK, HQ, HW, HX, HI, HS, HR, HE, B>
    ) => HKT.Kind<
       H,
@@ -222,20 +128,7 @@ export interface UC_TraverseFComposition<
       HS,
       HR,
       HE,
-      HKT.Kind<
-         F,
-         CF,
-         FN,
-         FK,
-         FQ,
-         FW,
-         FX,
-         FI,
-         FS,
-         FR,
-         FE,
-         HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
-      >
+      HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>>
    >;
 }
 
@@ -282,9 +175,7 @@ export function implementTraverse<F extends HKT.URIS, C = HKT.Auto>(): (
       G: Applicative<HKT.UHKT<G>>
    ) => (
       f: (a: A) => HKT.HKT<G, B>
-   ) => (
-      ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-   ) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
+   ) => (ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
 ) => TraverseF<F, C>;
 export function implementTraverse() {
    return (i: any) => i();

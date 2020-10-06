@@ -4,7 +4,6 @@ import { fromCompare } from "./combinators";
 import { Ord } from "./Ord";
 
 export const getMonoid = <A = never>(): Monoid<Ord<A>> => ({
-   concat: (x) => (y) =>
-      fromCompare((a) => (b) => Ordering.Monoid.concat(x.compare(a)(b))(y.compare(a)(b))),
+   concat: (x) => (y) => fromCompare((a) => (b) => Ordering.Monoid.concat(x.compare(a)(b))(y.compare(a)(b))),
    empty: fromCompare(() => () => Ordering.EQ)
 });

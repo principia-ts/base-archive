@@ -17,12 +17,7 @@ export interface PureF<F extends HKT.URIS, C = HKT.Auto> {
    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>;
 }
 
-export interface PureFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface PureFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <
       A,
       N extends string = HKT.Initial<CF, "N">,

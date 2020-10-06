@@ -1,0 +1,3 @@
+[submodule "packages/effect/matechs-effect"]
+	path = packages/effect/matechs-effect
+	url = https://github.com/Matechs-Garage/matechs-effect.git

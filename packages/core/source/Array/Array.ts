@@ -10,9 +10,7 @@ import type * as HKT from "../HKT";
  * -------------------------------------------
  */
 
-export type InferArrayType<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<infer A>
-   ? A
-   : never;
+export type InferArrayType<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<infer A> ? A : never;
 
 export const URI = "Array";
 

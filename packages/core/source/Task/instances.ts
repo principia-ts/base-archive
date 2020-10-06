@@ -95,13 +95,13 @@ export const ApplySeq: TC.Apply<[URI], V> = HKT.instance({
 export const ApplicativePar: TC.Applicative<[URI], V> = HKT.instance({
    ...ApplyPar,
    pure,
-   any
+   unit: any
 });
 
 export const ApplicativeSeq: TC.Applicative<[URI], V> = HKT.instance({
    ...ApplySeq,
    pure,
-   any
+   unit: any
 });
 
 export const MonadPar: TC.Monad<[URI], V> = HKT.instance({

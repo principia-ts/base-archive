@@ -146,10 +146,7 @@ export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const getFilterableWithIndex = <K = never>(): TC.FilterableWithIndex<
-   [URI],
-   V & HKT.Fix<"K", K>
-> =>
+export const getFilterableWithIndex = <K = never>(): TC.FilterableWithIndex<[URI], V & HKT.Fix<"K", K>> =>
    HKT.instance({
       ...Filterable,
       ...FunctorWithIndex,
@@ -187,8 +184,7 @@ export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & H
       return out;
    };
 
-   const _reduce: TC.UC_ReduceF<[URI], CK> = (fa, b, f) =>
-      _reduceWithIndex(fa, b, (_, b, a) => f(b, a));
+   const _reduce: TC.UC_ReduceF<[URI], CK> = (fa, b, f) => _reduceWithIndex(fa, b, (_, b, a) => f(b, a));
 
    const _foldMapWithIndex: TC.UC_FoldMapWithIndexF<[URI], CK> = <M>(M: Monoid<M>) => <A>(
       fa: ReadonlyMap<K, A>,
@@ -204,8 +200,7 @@ export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & H
       return out;
    };
 
-   const _foldMap: TC.UC_FoldMapF<[URI], CK> = (M) => (fa, f) =>
-      _foldMapWithIndex(M)(fa, (_, a) => f(a));
+   const _foldMap: TC.UC_FoldMapF<[URI], CK> = (M) => (fa, f) => _foldMapWithIndex(M)(fa, (_, a) => f(a));
 
    const _reduceRightWithIndex: TC.UC_ReduceRightWithIndexF<[URI], CK> = <A, B>(
       fa: ReadonlyMap<K, A>,
@@ -222,30 +217,26 @@ export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & H
       return out;
    };
 
-   const _reduceRight: TC.UC_ReduceRightF<[URI], CK> = (fa, b, f) =>
-      _reduceRightWithIndex(fa, b, (_, a, b) => f(a, b));
+   const _reduceRight: TC.UC_ReduceRightF<[URI], CK> = (fa, b, f) => _reduceRightWithIndex(fa, b, (_, a, b) => f(a, b));
 
-   const _traverseWithIndex = TC.implementUCTraverseWithIndex<[URI], CK>()(
-      (_) => (G) => (ta, f) => {
-         type _ = typeof _;
-         let gm: HKT.HKT<_["G"], ReadonlyMap<_["K"], _["B"]>> = G.pure(empty);
-         const ks = keysO(ta);
-         const len = ks.length;
-         for (let i = 0; i < len; i++) {
-            const key = ks[i];
-            const a = ta.get(key)!;
-            gm = pipe(
-               gm,
-               G.map((m) => (b: typeof _.B) => new Map(m).set(key, b)),
-               G.ap(f(key, a))
-            );
-         }
-         return gm;
+   const _traverseWithIndex = TC.implementUCTraverseWithIndex<[URI], CK>()((_) => (G) => (ta, f) => {
+      type _ = typeof _;
+      let gm: HKT.HKT<_["G"], ReadonlyMap<_["K"], _["B"]>> = G.pure(empty);
+      const ks = keysO(ta);
+      const len = ks.length;
+      for (let i = 0; i < len; i++) {
+         const key = ks[i];
+         const a = ta.get(key)!;
+         gm = pipe(
+            gm,
+            G.map((m) => (b: typeof _.B) => new Map(m).set(key, b)),
+            G.ap(f(key, a))
+         );
       }
-   );
+      return gm;
+   });
 
-   const _traverse: TC.UC_TraverseF<[URI], CK> = (G) => (ta, f) =>
-      _traverseWithIndex(G)(ta, (_, a) => f(a));
+   const _traverse: TC.UC_TraverseF<[URI], CK> = (G) => (ta, f) => _traverseWithIndex(G)(ta, (_, a) => f(a));
 
    const sequence: TC.SequenceF<[URI], CK> = (G) => (ta) => _traverseWithIndex(G)(ta, (_, a) => a);
 
@@ -253,8 +244,7 @@ export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & H
       pipe(_traverseWithIndex(G)(wa, f), G.map(compact))
    );
 
-   const _wither: TC.UC_WitherF<[URI], CK> = (G) => (wa, f) =>
-      _witherWithIndex(G)(wa, (_, a) => f(a));
+   const _wither: TC.UC_WitherF<[URI], CK> = (G) => (wa, f) => _witherWithIndex(G)(wa, (_, a) => f(a));
 
    const _wiltWithIndex = TC.implementUCWiltWithIndex<[URI], CK>()((_) => (G) => (wa, f) =>
       pipe(_traverseWithIndex(G)(wa, f), G.map(separate))

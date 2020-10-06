@@ -1,9 +1,17 @@
 import type * as HKT from "../../HKT";
 
 export interface BothF<F extends HKT.URIS, C = HKT.Auto> {
-   <S2, N2 extends string, K1, Q1, W1, X1, S3, R1, E1, B>(
-      fb: HKT.Kind<F, C, N2, K1, Q1, W1, X1, S2, S3, R1, E1, B>
-   ): <N extends string, K, Q, W, X, S1, R, E, A>(
+   <S2, N2 extends string, K1, Q1, W1, X1, S3, R1, E1, B>(fb: HKT.Kind<F, C, N2, K1, Q1, W1, X1, S2, S3, R1, E1, B>): <
+      N extends string,
+      K,
+      Q,
+      W,
+      X,
+      S1,
+      R,
+      E,
+      A
+   >(
       fa: HKT.Kind<
          F,
          C,
@@ -35,27 +43,7 @@ export interface BothF<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface UC_BothF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      S1,
-      S2,
-      R,
-      E,
-      A,
-      N1 extends string,
-      K1,
-      Q1,
-      W1,
-      X1,
-      S3,
-      R1,
-      E1,
-      B
-   >(
+   <N extends string, K, Q, W, X, S1, S2, R, E, A, N1 extends string, K1, Q1, W1, X1, S3, R1, E1, B>(
       fa: HKT.Kind<F, C, N, K, Q, W, X, S1, S2, R, E, A>,
       fb: HKT.Kind<
          F,

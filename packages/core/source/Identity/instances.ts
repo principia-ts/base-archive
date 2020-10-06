@@ -1,6 +1,6 @@
 import * as HKT from "../HKT";
 import type * as TC from "../typeclass-index";
-import { URI, V } from "./Identity";
+import type { URI, V } from "./Identity";
 import {
    _alt,
    _ap,
@@ -12,11 +12,11 @@ import {
    _reduceRight,
    _traverse,
    alt,
-   any,
    ap,
    chain,
    extend,
    extract,
+   flatten,
    foldMap,
    map,
    mapBoth,
@@ -42,14 +42,14 @@ export const Apply: TC.Apply<[URI], V> = HKT.instance({
 
 export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
    ...Apply,
-   pure,
-   any
+   pure
 });
 
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
    _chain,
-   chain
+   chain,
+   flatten
 });
 
 export const Foldable: TC.Foldable<[URI], V> = HKT.instance({

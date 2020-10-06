@@ -35,28 +35,7 @@ export interface TapF<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface UC_TapF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      I,
-      S,
-      R,
-      E,
-      A,
-      N2 extends string,
-      K2,
-      Q2,
-      W2,
-      X2,
-      I2,
-      S2,
-      R2,
-      E2,
-      B
-   >(
+   <N extends string, K, Q, W, X, I, S, R, E, A, N2 extends string, K2, Q2, W2, X2, I2, S2, R2, E2, B>(
       fa: HKT.Kind<
          F,
          C,

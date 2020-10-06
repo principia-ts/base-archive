@@ -112,9 +112,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB
    get: T.Effect<RB, EB, B> = T._chain(this.value.get, (a) => this.getEither(a));
 
    set: (a: A) => T.Effect<RA, EA, void> = (a) =>
-      withPermit(this.value.semaphore)(
-         T._chain(T._chain(this.value.get, this.setEither(a)), (a) => this.value.set(a))
-      );
+      withPermit(this.value.semaphore)(T._chain(T._chain(this.value.get, this.setEither(a)), (a) => this.value.set(a)));
 }
 
 export class Derived<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A, B> {
@@ -203,8 +201,7 @@ export class Atomic<A> implements XRefM<unknown, unknown, never, never, A, A> {
 
    readonly get: T.Effect<unknown, never, A> = this.ref.get;
 
-   readonly set: (a: A) => T.Effect<unknown, never, void> = (a) =>
-      withPermit(this.semaphore)(this.set(a));
+   readonly set: (a: A) => T.Effect<unknown, never, void> = (a) => withPermit(this.semaphore)(this.set(a));
 }
 
 export interface RefMRE<R, E, A> extends XRefM<R, R, E, E, A, A> {}

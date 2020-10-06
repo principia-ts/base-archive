@@ -35,28 +35,7 @@ export interface ChainF<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface UC_ChainF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      I,
-      S,
-      R,
-      E,
-      A,
-      N1 extends string,
-      K1,
-      Q1,
-      W1,
-      X1,
-      I1,
-      S1,
-      R1,
-      E1,
-      B
-   >(
+   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
       fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
       f: (
          a: A

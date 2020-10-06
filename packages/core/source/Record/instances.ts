@@ -91,10 +91,19 @@ export const getMonoid: {
    empty
 });
 
-export const fromFoldableMap = <B, F extends HKT.URIS, C = HKT.Auto>(
-   S: TC.Semigroup<B>,
-   F: TC.Foldable<F, C>
-) => <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, N extends string>(
+export const fromFoldableMap = <B, F extends HKT.URIS, C = HKT.Auto>(S: TC.Semigroup<B>, F: TC.Foldable<F, C>) => <
+   NF extends string,
+   KF,
+   QF,
+   WF,
+   XF,
+   IF,
+   SF,
+   RF,
+   EF,
+   A,
+   N extends string
+>(
    fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
    f: (a: A) => readonly [N, B]
 ): ReadonlyRecord<N, B> =>

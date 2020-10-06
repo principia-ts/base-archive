@@ -1,9 +1,9 @@
 import type * as HKT from "../HKT";
 
 /**
- * "any" function type
+ * "unit" function type
  */
-export interface AnyF<F extends HKT.URIS, C = HKT.Auto> {
+export interface UnitF<F extends HKT.URIS, C = HKT.Auto> {
    <
       N extends string = HKT.Initial<C, "N">,
       K = HKT.Initial<C, "K">,
@@ -14,15 +14,10 @@ export interface AnyF<F extends HKT.URIS, C = HKT.Auto> {
       S = HKT.Initial<C, "S">,
       R = HKT.Initial<C, "R">,
       E = HKT.Initial<C, "E">
-   >(): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, any>;
+   >(): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, void>;
 }
 
-export interface AnyFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface AnyFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <
       NF extends string = HKT.Initial<CF, "N">,
       KF = HKT.Initial<CF, "K">,
@@ -42,18 +37,5 @@ export interface AnyFComposition<
       SG = HKT.Initial<CG, "S">,
       RG = HKT.Initial<CG, "R">,
       EG = HKT.Initial<CG, "E">
-   >(): HKT.Kind<
-      F,
-      CF,
-      NF,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, any>
-   >;
+   >(): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, void>>;
 }

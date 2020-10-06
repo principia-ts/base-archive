@@ -20,11 +20,7 @@ export const _isSubmap = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
       while (!(e = entries.next()).done) {
          const [k, a] = e.value;
          const d2OptA = lookupWithKeyE(k)(that);
-         if (
-            Mb.isNothing(d2OptA) ||
-            !EK.equals(k)(d2OptA.value[0]) ||
-            !EA.equals(a)(d2OptA.value[1])
-         ) {
+         if (Mb.isNothing(d2OptA) || !EK.equals(k)(d2OptA.value[0]) || !EA.equals(a)(d2OptA.value[1])) {
             return false;
          }
       }

@@ -7,9 +7,7 @@ import { elem } from "./methods";
  *
  * @since 1.0.0
  */
-export const isSubset = <A>(
-   E: Eq<A>
-): ((that: ReadonlySet<A>) => (me: ReadonlySet<A>) => boolean) => {
+export const isSubset = <A>(E: Eq<A>): ((that: ReadonlySet<A>) => (me: ReadonlySet<A>) => boolean) => {
    const elemE = elem(E);
    return (that) => every((a: A) => elemE(a)(that));
 };

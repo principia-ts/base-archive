@@ -56,8 +56,7 @@ export const toNullable = <A>(fa: Maybe<A>): A | null => (isNothing(fa) ? null :
  * @category Destructors
  * @since 1.0.0
  */
-export const toUndefined = <A>(fa: Maybe<A>): A | undefined =>
-   isNothing(fa) ? undefined : fa.value;
+export const toUndefined = <A>(fa: Maybe<A>): A | undefined => (isNothing(fa) ? undefined : fa.value);
 
 /**
  * ```haskell
@@ -69,8 +68,7 @@ export const toUndefined = <A>(fa: Maybe<A>): A | undefined =>
  * @category Destructors
  * @since 1.0.0
  */
-export const _getOrElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<B>): A | B =>
-   isNothing(fa) ? onNothing() : fa.value;
+export const _getOrElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<B>): A | B => (isNothing(fa) ? onNothing() : fa.value);
 
 /**
  * ```haskell
@@ -82,5 +80,4 @@ export const _getOrElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<B>): A | B =>
  * @category Destructors
  * @since 1.0.0
  */
-export const getOrElse = <B>(onNothing: Lazy<B>) => <A>(fa: Maybe<A>): A | B =>
-   _getOrElse(fa, onNothing);
+export const getOrElse = <B>(onNothing: Lazy<B>) => <A>(fa: Maybe<A>): A | B => _getOrElse(fa, onNothing);

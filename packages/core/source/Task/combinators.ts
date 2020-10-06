@@ -49,9 +49,8 @@ export const delay = (ms: number) => <A>(ma: Task<A>): Task<A> => _delay(ma, ms)
  * @category Combinators
  * @since 1.0.0
  */
-export const fromIOK = <A extends ReadonlyArray<unknown>, B>(
-   f: FunctionN<A, IO<B>>
-): FunctionN<A, Task<B>> => (...a) => fromIO(f(...a));
+export const fromIOK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, IO<B>>): FunctionN<A, Task<B>> => (...a) =>
+   fromIO(f(...a));
 
 /**
  * ```haskell

@@ -1,4 +1,4 @@
-import { Eq } from "../Eq";
+import type { Eq } from "../Eq";
 import { not, Predicate } from "../Function";
 import { empty } from "./constructors";
 import { _elem, _filter, elem } from "./methods";
@@ -20,11 +20,9 @@ export const _some = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => {
 
 export const some = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => _some(set, predicate);
 
-export const _every = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) =>
-   not(some(not(predicate)))(set);
+export const _every = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => not(some(not(predicate)))(set);
 
-export const every = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) =>
-   _every(set, predicate);
+export const every = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => _every(set, predicate);
 
 /**
  * Form the union of two sets
@@ -123,7 +121,6 @@ export const insert = <A>(E: Eq<A>) => {
    return (a: A) => (set: ReadonlySet<A>) => _insertE(set, a);
 };
 
-export const _remove = <A>(E: Eq<A>) => (set: ReadonlySet<A>, a: A) =>
-   _filter(set, (ax) => !E.equals(a)(ax));
+export const _remove = <A>(E: Eq<A>) => (set: ReadonlySet<A>, a: A) => _filter(set, (ax) => !E.equals(a)(ax));
 
 export const remove = <A>(E: Eq<A>) => (a: A) => (set: ReadonlySet<A>) => _remove(E)(set, a);

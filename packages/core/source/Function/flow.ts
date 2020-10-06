@@ -1,8 +1,5 @@
 export function flow<A extends ReadonlyArray<unknown>, B>(ab: (...a: A) => B): (...a: A) => B;
-export function flow<A extends ReadonlyArray<unknown>, B, C>(
-   ab: (...a: A) => B,
-   bc: (b: B) => C
-): (...a: A) => C;
+export function flow<A extends ReadonlyArray<unknown>, B, C>(ab: (...a: A) => B, bc: (b: B) => C): (...a: A) => C;
 export function flow<A extends ReadonlyArray<unknown>, B, C, D>(
    ab: (...a: A) => B,
    bc: (b: B) => C,

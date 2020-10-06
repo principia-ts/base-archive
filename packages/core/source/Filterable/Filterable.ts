@@ -6,9 +6,7 @@ import type { MapEitherF, UC_MapEitherF } from "./MapEitherF";
 import type { MapMaybeF, UC_MapMaybeF } from "./MapMaybeF";
 import type { PartitionF, UC_PartitionF } from "./PartitionF";
 
-export interface Filterable<F extends HKT.URIS, C = HKT.Auto>
-   extends Functor<F, C>,
-      Compactable<F, C> {
+export interface Filterable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Compactable<F, C> {
    readonly _mapEither: UC_MapEitherF<F, C>;
    readonly mapEither: MapEitherF<F, C>;
    readonly _partition: UC_PartitionF<F, C>;

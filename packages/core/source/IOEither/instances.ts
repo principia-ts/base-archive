@@ -1,6 +1,5 @@
 import type { Either } from "../Either";
 import * as E from "../Either";
-
 import { flow, not, pipe, Predicate } from "../Function";
 import * as HKT from "../HKT";
 import * as I from "../IO";
@@ -17,11 +16,11 @@ import {
    _map,
    _mapBoth,
    alt,
-   any,
    ap,
    bimap,
    chain,
    first,
+   flatten,
    map,
    mapBoth,
    pure
@@ -108,8 +107,7 @@ export const Apply: TC.Apply<[URI], V> = HKT.instance({
  */
 export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
    ...Apply,
-   pure,
-   any
+   pure
 });
 
 /**
@@ -119,7 +117,8 @@ export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
    _chain,
-   chain
+   chain,
+   flatten
 });
 
 /**
@@ -136,9 +135,7 @@ export const Alt: TC.Alt<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const getApplicativeIOValidation = <E>(
-   S: TC.Semigroup<E>
-): TC.Applicative<[URI], V & HKT.Fix<"E", E>> => {
+export const getApplicativeIOValidation = <E>(S: TC.Semigroup<E>): TC.Applicative<[URI], V & HKT.Fix<"E", E>> => {
    type V_ = V & HKT.Fix<"E", E>;
 
    const AV = E.getApplicativeValidation(S);
@@ -155,7 +152,6 @@ export const getApplicativeIOValidation = <E>(
    return HKT.instance<TC.Applicative<[URI], V_>>({
       ...Functor,
       pure,
-      any,
       _ap: _apV,
       ap: (fa) => (fab) => _apV(fab, fa),
       _mapBoth: _mapBothV,
@@ -204,10 +200,7 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
 
    const _mapMaybe: TC.UC_MapMaybeF<[URI], V_> = (fa, f) => I._map(fa, (ga) => F._mapMaybe(ga, f));
 
-   const _partition: TC.UC_PartitionF<[URI], V_> = <A>(
-      fga: IOEither<E, A>,
-      predicate: Predicate<A>
-   ) => ({
+   const _partition: TC.UC_PartitionF<[URI], V_> = <A>(fga: IOEither<E, A>, predicate: Predicate<A>) => ({
       left: _filter(fga, not(predicate)),
       right: _filter(fga, predicate)
    });

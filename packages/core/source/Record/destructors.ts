@@ -8,9 +8,8 @@ import { ReadonlyRecord } from "./Record";
  * @category Destructors
  * @since 1.0.0
  */
-export const toArray = <N extends string, A>(
-   r: ReadonlyRecord<N, A>
-): ReadonlyArray<readonly [N, A]> => _collect(r, (k, a) => [k, a]);
+export const toArray = <N extends string, A>(r: ReadonlyRecord<N, A>): ReadonlyArray<readonly [N, A]> =>
+   _collect(r, (k, a) => [k, a]);
 
 /**
  * Unfolds a record into a list of key/value pairs
@@ -18,10 +17,7 @@ export const toArray = <N extends string, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export const toUnfoldable = <F extends HKT.URIS, C = HKT.Auto>(U: Unfoldable<F, C>) => <
-   N extends string,
-   A
->(
+export const toUnfoldable = <F extends HKT.URIS, C = HKT.Auto>(U: Unfoldable<F, C>) => <N extends string, A>(
    r: ReadonlyRecord<N, A>
 ): HKT.Kind<
    F,

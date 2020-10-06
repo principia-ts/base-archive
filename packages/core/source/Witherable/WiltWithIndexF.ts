@@ -39,8 +39,8 @@ export interface WiltWithIndexF<F extends HKT.URIS, C = HKT.Auto> {
       RG,
       EG,
       Separated<
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B2>
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
       >
    >;
 }
@@ -87,8 +87,8 @@ export interface UC_WiltWithIndexF<F extends HKT.URIS, C = HKT.Auto> {
       RG,
       EG,
       Separated<
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B2>
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
       >
    >;
 }
@@ -111,17 +111,14 @@ export function implementWiltWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
    }) => (
       G: Applicative<HKT.UHKT<G>>
    ) => (
-      f: (
-         i: HKT.IndexFor<F, HKT.OrFix<"N", C, NF>, HKT.OrFix<"K", C, KF>>,
-         a: A
-      ) => HKT.HKT<G, Either<B, B2>>
+      f: (i: HKT.IndexFor<F, HKT.OrFix<"N", C, NF>, HKT.OrFix<"K", C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
    ) => (
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
    ) => HKT.HKT<
       G,
       Separated<
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B2>
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
       >
    >
 ) => WiltWithIndexF<F, C>;
@@ -148,15 +145,12 @@ export function implementUCWiltWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
       G: Applicative<HKT.UHKT<G>>
    ) => (
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-      f: (
-         i: HKT.IndexFor<F, HKT.OrFix<"N", C, NF>, HKT.OrFix<"K", C, KF>>,
-         a: A
-      ) => HKT.HKT<G, Either<B, B2>>
+      f: (i: HKT.IndexFor<F, HKT.OrFix<"N", C, NF>, HKT.OrFix<"K", C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
    ) => HKT.HKT<
       G,
       Separated<
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-         HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B2>
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
+         HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
       >
    >
 ) => UC_WiltWithIndexF<F, C>;

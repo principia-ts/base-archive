@@ -7,5 +7,6 @@ export * from "./SequenceS";
 export * from "./SequenceT";
 export * from "./BothF";
 export * from "./MapBothF";
+export * from "./ApSF";
 export * from "./MapNF";
 export * from "./TupleF";

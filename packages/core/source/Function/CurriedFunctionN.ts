@@ -8,10 +8,9 @@ type Last<A extends ReadonlyArray<unknown>> = 1 extends Length<A> ? A[0] : Last<
 
 type Push<A extends ReadonlyArray<unknown>, B> = [...A, B];
 
-type Init<
-   A extends ReadonlyArray<unknown>,
-   Acc extends ReadonlyArray<unknown> = readonly []
-> = 1 extends Length<A> ? Acc : Init<Tail<A>, Push<Acc, Head<A>>>;
+type Init<A extends ReadonlyArray<unknown>, Acc extends ReadonlyArray<unknown> = readonly []> = 1 extends Length<A>
+   ? Acc
+   : Init<Tail<A>, Push<Acc, Head<A>>>;
 
 type CurriedFunctionN<A extends ReadonlyArray<unknown>, B> = (
    _: Head<A>

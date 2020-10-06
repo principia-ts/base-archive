@@ -1,28 +1,7 @@
 import type * as HKT from "../HKT";
 
 export interface ChainFirstF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      I,
-      S,
-      R,
-      E,
-      A,
-      N2 extends string,
-      K2,
-      Q2,
-      W2,
-      X2,
-      I2,
-      S2,
-      R2,
-      E2,
-      B
-   >(
+   <N extends string, K, Q, W, X, I, S, R, E, A, N2 extends string, K2, Q2, W2, X2, I2, S2, R2, E2, B>(
       f: (a: A) => HKT.Kind<F, C, N2, K2, Q2, W2, X2, I2, S2, R2, E2, B>
    ): (
       fa: HKT.Kind<

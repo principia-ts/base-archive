@@ -1,10 +1,11 @@
-import { Endomorphism, flow, pipe, unsafeCoerce } from "fp-ts/lib/function";
-import * as A from "fp-ts/lib/Array";
-import * as E from "fp-ts/lib/Either";
-import { posix } from "path";
-import * as TE from "fp-ts/lib/TaskEither";
 import chalk from "chalk";
 import { sequenceT } from "fp-ts/lib/Apply";
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import { Endomorphism, flow, pipe, unsafeCoerce } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import { posix } from "path";
+
 import { copy, glob, modifyGlob, onLeft, onRight } from "./common";
 
 const MAP_GLOB_PATTERN = "dist/**/*.map";
@@ -29,15 +30,11 @@ const replaceSingleStage = (content: string, path: string): string =>
       E.map(
          flow(
             Object.entries,
-            A.map(([k, v]) =>
-               k === "sources" ? [k, A.array.map(v as string[], replaceString(path))] : [k, v]
-            ),
+            A.map(([k, v]) => (k === "sources" ? [k, A.array.map(v as string[], replaceString(path))] : [k, v])),
             A.reduce({}, (acc, [k, v]) => ({ ...acc, [k]: v }))
          ) as <A>(x: A) => A
       ),
-      E.chain((obj) =>
-         E.stringifyJSON(obj, (reason) => new Error("could not stringify json: " + String(reason)))
-      ),
+      E.chain((obj) => E.stringifyJSON(obj, (reason) => new Error("could not stringify json: " + String(reason)))),
       E.getOrElse(() => content)
    );
 

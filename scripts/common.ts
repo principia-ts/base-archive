@@ -1,14 +1,14 @@
-import fs from "fs";
 import chalk from "chalk";
+import { AsyncOptions, copy as copy_ } from "cpx";
 import * as A from "fp-ts/lib/Array";
 import { log } from "fp-ts/lib/Console";
+import { FunctionN } from "fp-ts/lib/function";
 import * as IO from "fp-ts/lib/IO";
+import { pipe } from "fp-ts/lib/pipeable";
 import * as T from "fp-ts/lib/Task";
 import * as TE from "fp-ts/lib/TaskEither";
-import { FunctionN } from "fp-ts/lib/function";
-import { pipe } from "fp-ts/lib/pipeable";
+import fs from "fs";
 import glob_ from "glob";
-import { copy as copy_, AsyncOptions } from "cpx";
 
 export const readFile = TE.taskify<fs.PathLike, string, NodeJS.ErrnoException, string>(fs.readFile);
 
@@ -45,9 +45,7 @@ function modifyFile(
       pipe(
          readFile(path, "utf8"),
          TE.map((original) => ({ original, updated: f(original, path) })),
-         TE.chain(({ original, updated }) =>
-            original === updated ? TE.of(undefined) : writeFile(path, updated)
-         )
+         TE.chain(({ original, updated }) => (original === updated ? TE.of(undefined) : writeFile(path, updated)))
       );
 }
 
@@ -71,7 +69,10 @@ export async function runMain(t: T.Task<void>): Promise<void> {
    return t().catch((e) => console.log(chalk.bold.red(`Unexpected error: ${e}`)));
 }
 
-export const copy: FunctionN<
-   [string, string, AsyncOptions?],
-   TE.TaskEither<Error, void>
-> = TE.taskify<string, string, AsyncOptions | undefined, Error, void>(copy_);
+export const copy: FunctionN<[string, string, AsyncOptions?], TE.TaskEither<Error, void>> = TE.taskify<
+   string,
+   string,
+   AsyncOptions | undefined,
+   Error,
+   void
+>(copy_);

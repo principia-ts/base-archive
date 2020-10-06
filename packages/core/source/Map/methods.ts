@@ -1,5 +1,5 @@
 import { Either, isLeft } from "../Either";
-import { Predicate, PredicateWithIndex } from "../Function";
+import { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "../Function";
 import { Maybe } from "../Maybe";
 import type * as TC from "../typeclass-index";
 import { Separated } from "../Utils";
@@ -14,9 +14,7 @@ interface Next<A> {
  * @category Compactable
  * @since 1.0.0
  */
-export const compact: TC.CompactF<[URI], V> = <K, A>(
-   fa: ReadonlyMap<K, Maybe<A>>
-): ReadonlyMap<K, A> => {
+export const compact = <K, A>(fa: ReadonlyMap<K, Maybe<A>>): ReadonlyMap<K, A> => {
    const m = new Map<K, A>();
    const entries = fa.entries();
    let e: Next<readonly [K, Maybe<A>]>;
@@ -33,7 +31,7 @@ export const compact: TC.CompactF<[URI], V> = <K, A>(
  * @category Compactable
  * @since 1.0.0
  */
-export const separate: TC.SeparateF<[URI], V> = <K, A, B>(
+export const separate = <K, A, B>(
    fa: ReadonlyMap<K, Either<A, B>>
 ): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>> => {
    const left = new Map<K, A>();
@@ -58,10 +56,7 @@ export const separate: TC.SeparateF<[URI], V> = <K, A, B>(
 /**
  * Filter out `Nothing` and map
  */
-export const _mapMaybeWithIndex: TC.UC_MapMaybeWithIndexF<[URI], V> = <K, A, B>(
-   fa: ReadonlyMap<K, A>,
-   f: (k: K, a: A) => Maybe<B>
-): ReadonlyMap<K, B> => {
+export const _mapMaybeWithIndex = <K, A, B>(fa: ReadonlyMap<K, A>, f: (k: K, a: A) => Maybe<B>): ReadonlyMap<K, B> => {
    const m = new Map<K, B>();
    const entries = fa.entries();
    let e: Next<readonly [K, A]>;
@@ -78,24 +73,25 @@ export const _mapMaybeWithIndex: TC.UC_MapMaybeWithIndexF<[URI], V> = <K, A, B>(
 /**
  * Filter out `Nothing` and map
  */
-export const mapMaybeWithIndex: TC.MapMaybeWithIndexF<[URI], V> = (f) => (fa) =>
+export const mapMaybeWithIndex = <K, A, B>(f: (k: K, a: A) => Maybe<B>) => (fa: ReadonlyMap<K, A>): ReadonlyMap<K, B> =>
    _mapMaybeWithIndex(fa, f);
 
 /**
  * Filter out `Nothing` and map
  */
-export const _mapMaybe: TC.UC_MapMaybeF<[URI], V> = (fa, f) =>
+export const _mapMaybe = <K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A) => Maybe<B>): ReadonlyMap<K, B> =>
    _mapMaybeWithIndex(fa, (_, a) => f(a));
 
 /**
  * Filter out `Nothing` and map
  */
-export const mapMaybe: TC.MapMaybeF<[URI], V> = (f) => (fa) => _mapMaybe(fa, f);
+export const mapMaybe = <A, B>(f: (a: A) => Maybe<B>) => <K>(fa: ReadonlyMap<K, A>): ReadonlyMap<K, B> =>
+   _mapMaybe(fa, f);
 
-export const _filterWithIndex: TC.UC_FilterWithIndexF<[URI], V> = <K, A>(
-   fa: ReadonlyMap<K, A>,
-   predicate: PredicateWithIndex<K, A>
-): ReadonlyMap<K, A> => {
+export const _filterWithIndex: {
+   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: RefinementWithIndex<K, A, B>): ReadonlyMap<K, B>;
+   <K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A>;
+} = <K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A> => {
    const m = new Map<K, A>();
    const entries = fa.entries();
    let e: Next<readonly [K, A]>;
@@ -111,18 +107,20 @@ export const _filterWithIndex: TC.UC_FilterWithIndexF<[URI], V> = <K, A>(
 /**
  *
  */
-export const filterWithIndex: TC.FilterWithIndexF<[URI], V> = <K, A>(
-   predicate: PredicateWithIndex<K, A>
-) => (fa: ReadonlyMap<K, A>) => _filterWithIndex(fa, predicate);
+export const filterWithIndex: {
+   <K, A, B extends A>(refinement: RefinementWithIndex<K, A, B>): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B>;
+   <K, A>(predicate: PredicateWithIndex<K, A>): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A>;
+} = <K, A>(predicate: PredicateWithIndex<K, A>) => (fa: ReadonlyMap<K, A>) => _filterWithIndex(fa, predicate);
 
-export const _filter: TC.UC_FilterF<[URI], V> = <K, A>(
-   fa: ReadonlyMap<K, A>,
-   predicate: Predicate<A>
-) => _filterWithIndex(fa, (_, a) => predicate(a));
+export const _filter: {
+   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: Refinement<A, B>): ReadonlyMap<K, B>;
+   <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>): ReadonlyMap<K, A>;
+} = <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>) => _filterWithIndex(fa, (_, a) => predicate(a));
 
-export const filter: TC.FilterF<[URI], V> = <A>(predicate: Predicate<A>) => <K>(
-   fa: ReadonlyMap<K, A>
-) => _filter(fa, predicate);
+export const filter: {
+   <A, B extends A>(refinement: Refinement<A, B>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B>;
+   <A>(predicate: Predicate<A>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A>;
+} = <A>(predicate: Predicate<A>) => <K>(fa: ReadonlyMap<K, A>) => _filter(fa, predicate);
 
 /**
  * Test whether or not a map is empty
@@ -132,10 +130,7 @@ export const isEmpty = <K, A>(d: ReadonlyMap<K, A>): boolean => d.size === 0;
 /**
  * Maps values using f
  */
-export const _mapWithIndex: TC.UC_MapWithIndexF<[URI], V> = <K, A, B>(
-   fa: ReadonlyMap<K, A>,
-   f: (k: K, a: A) => B
-): ReadonlyMap<K, B> => {
+export const _mapWithIndex = <K, A, B>(fa: ReadonlyMap<K, A>, f: (k: K, a: A) => B): ReadonlyMap<K, B> => {
    const m = new Map<K, B>();
    const entries = fa.entries();
    let e: Next<readonly [K, A]>;
@@ -149,19 +144,27 @@ export const _mapWithIndex: TC.UC_MapWithIndexF<[URI], V> = <K, A, B>(
 /**
  * Maps values using f
  */
-export const mapWithIndex: TC.MapWithIndexF<[URI], V> = (f) => (fa) => _mapWithIndex(fa, f);
+export const mapWithIndex = <K, A, B>(f: (k: K, a: A) => B) => (fa: ReadonlyMap<K, A>): ReadonlyMap<K, B> =>
+   _mapWithIndex(fa, f);
 
 /**
  * Maps values using f
  */
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _mapWithIndex(fa, (_, a) => f(a));
+export const _map = <K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A) => B): ReadonlyMap<K, B> =>
+   _mapWithIndex(fa, (_, a) => f(a));
 
 /**
  * Maps values using f
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map = <A, B>(f: (a: A) => B) => <K>(fa: ReadonlyMap<K, A>): ReadonlyMap<K, B> => _map(fa, f);
 
-export const _partitionWithIndex: TC.UC_PartitionWithIndexF<[URI], V> = <K, A>(
+export const _partitionWithIndex: {
+   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: RefinementWithIndex<K, A, B>): Separated<
+      ReadonlyMap<K, A>,
+      ReadonlyMap<K, B>
+   >;
+   <K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+} = <K, A>(
    fa: ReadonlyMap<K, A>,
    predicate: PredicateWithIndex<K, A>
 ): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> => {
@@ -183,23 +186,34 @@ export const _partitionWithIndex: TC.UC_PartitionWithIndexF<[URI], V> = <K, A>(
    };
 };
 
-export const partitionWithIndex: TC.PartitionWithIndexF<[URI], V> = <K, A>(
-   predicate: PredicateWithIndex<K, A>
-) => (fa: ReadonlyMap<K, A>) => _partitionWithIndex(fa, predicate);
+export const partitionWithIndex: {
+   <K, A, B extends A>(refinement: RefinementWithIndex<K, A, B>): (
+      fa: ReadonlyMap<K, A>
+   ) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+   <K, A>(predicate: PredicateWithIndex<K, A>): (
+      fa: ReadonlyMap<K, A>
+   ) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+} = <K, A>(predicate: PredicateWithIndex<K, A>) => (fa: ReadonlyMap<K, A>) => _partitionWithIndex(fa, predicate);
 
-export const _partition: TC.UC_PartitionF<[URI], V> = <K, A>(
-   fa: ReadonlyMap<K, A>,
-   predicate: Predicate<A>
-) => _partitionWithIndex(fa, (_, a) => predicate(a));
+export const _partition: {
+   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: Refinement<A, B>): Separated<
+      ReadonlyMap<K, A>,
+      ReadonlyMap<K, B>
+   >;
+   <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+} = <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>) => _partitionWithIndex(fa, (_, a) => predicate(a));
 
-export const partition: TC.PartitionF<[URI], V> = <A>(predicate: Predicate<A>) => <K>(
-   fa: ReadonlyMap<K, A>
-) => _partition(fa, predicate);
+export const partition: {
+   <A, B extends A>(refinement: Refinement<A, B>): <K>(
+      fa: ReadonlyMap<K, A>
+   ) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+   <A>(predicate: Predicate<A>): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+} = <A>(predicate: Predicate<A>) => <K>(fa: ReadonlyMap<K, A>) => _partition(fa, predicate);
 
-export const _mapEitherWithIndex: TC.UC_MapEitherWithIndexF<[URI], V> = <K, A, B, C>(
+export const _mapEitherWithIndex = <K, A, B, C>(
    fa: ReadonlyMap<K, A>,
    f: (k: K, a: A) => Either<B, C>
-) => {
+): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => {
    const left = new Map<K, B>();
    const right = new Map<K, C>();
    const entries = fa.entries();
@@ -219,10 +233,15 @@ export const _mapEitherWithIndex: TC.UC_MapEitherWithIndexF<[URI], V> = <K, A, B
    };
 };
 
-export const mapEitherWithIndex: TC.MapEitherWithIndexF<[URI], V> = (f) => (fa) =>
-   _mapEitherWithIndex(fa, f);
+export const mapEitherWithIndex: TC.MapEitherWithIndexF<[URI], V> = <K, A, B, C>(f: (k: K, a: A) => Either<B, C>) => (
+   fa: ReadonlyMap<K, A>
+): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => _mapEitherWithIndex(fa, f);
 
-export const _mapEither: TC.UC_MapEitherF<[URI], V> = (fa, f) =>
-   _mapEitherWithIndex(fa, (_, a) => f(a));
+export const _mapEither = <K, A, B, C>(
+   fa: ReadonlyMap<K, A>,
+   f: (a: A) => Either<B, C>
+): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => _mapEitherWithIndex(fa, (_, a) => f(a));
 
-export const mapEither: TC.MapEitherF<[URI], V> = (f) => (fa) => _mapEither(fa, f);
+export const mapEither = <A, B, C>(f: (a: A) => Either<B, C>) => <K>(
+   fa: ReadonlyMap<K, A>
+): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => _mapEither(fa, f);

@@ -109,10 +109,7 @@ export const _partialK = <A extends ReadonlyArray<unknown>, B, E>(
  * @category Constructors
  * @since 1.0.0
  */
-export const partialK = <E>(onThrow: (reason: unknown) => E) => <
-   A extends ReadonlyArray<unknown>,
-   B
->(
+export const partialK = <E>(onThrow: (reason: unknown) => E) => <A extends ReadonlyArray<unknown>, B>(
    f: FunctionN<A, B>
 ) => _partialK(f, onThrow);
 
@@ -145,8 +142,7 @@ export const _parseJSON = <E>(s: string, onThrow: (reason: unknown) => E): Eithe
  * @category Constructors
  * @since 1.0.0
  */
-export const parseJSON = <E>(onThrow: (reason: unknown) => E) => (s: string): Either<E, Json> =>
-   _parseJSON(s, onThrow);
+export const parseJSON = <E>(onThrow: (reason: unknown) => E) => (s: string): Either<E, Json> => _parseJSON(s, onThrow);
 
 /**
  * ```haskell
@@ -171,9 +167,8 @@ export const _stringifyJSON = <E>(u: unknown, onThrow: (reason: unknown) => E): 
  * @category Constructors
  * @since 1.0.0
  */
-export const stringifyJSON = <E>(onThrow: (reason: unknown) => E) => (
-   u: unknown
-): Either<E, string> => _stringifyJSON(u, onThrow);
+export const stringifyJSON = <E>(onThrow: (reason: unknown) => E) => (u: unknown): Either<E, string> =>
+   _stringifyJSON(u, onThrow);
 
 /**
  * ```haskell
@@ -194,9 +189,7 @@ export const _fromMaybe = <E, A>(fa: Maybe<A>, onNothing: Lazy<E>): Either<E, A>
  * @category Constructors
  * @since 1.0.0
  */
-export const fromMaybe: <E>(onNothing: Lazy<E>) => <A>(fa: Maybe<A>) => Either<E, A> = (f) => (
-   fa
-) => _fromMaybe(fa, f);
+export const fromMaybe: <E>(onNothing: Lazy<E>) => <A>(fa: Maybe<A>) => Either<E, A> = (f) => (fa) => _fromMaybe(fa, f);
 
 /**
  * ```haskell
@@ -225,5 +218,4 @@ export const _fromPredicate: {
 export const fromPredicate: {
    <E, A, B extends A>(refinement: Refinement<A, B>, onFalse: (a: A) => E): (a: A) => Either<E, B>;
    <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A>;
-} = <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E) => (a: A) =>
-   _fromPredicate(a, predicate, onFalse);
+} = <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E) => (a: A) => _fromPredicate(a, predicate, onFalse);

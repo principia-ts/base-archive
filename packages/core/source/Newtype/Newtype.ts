@@ -50,8 +50,6 @@ export type TypeOf<T extends Constructor<any, any>> = [T] extends [Constructor<i
    ? Newtype<URI, K>
    : never;
 
-export type Generic<T, K extends GenericConstructor<any>> = [K] extends [
-   GenericConstructor<infer URI>
-]
+export type Generic<T, K extends GenericConstructor<any>> = [K] extends [GenericConstructor<infer URI>]
    ? Newtype<URI, T>
    : never;

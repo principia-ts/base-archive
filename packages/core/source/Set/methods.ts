@@ -1,15 +1,14 @@
-import type { Either } from "../Either";
-
 import * as A from "../Array";
+import type { Either } from "../Either";
 import type { Eq } from "../Eq";
-import { identity, Predicate } from "../Function";
+import { identity, Predicate, Refinement } from "../Function";
 import type { Maybe } from "../Maybe";
 import type { Monoid } from "../Monoid";
-import { Ord } from "../Ord";
+import type { Ord } from "../Ord";
 import type * as TC from "../typeclass-index";
 import type { Separated } from "../Utils";
 import { toArray } from "./destructors";
-import { URI, V } from "./Set";
+import type { URI, V } from "./Set";
 
 interface Next<A> {
    readonly done?: boolean;
@@ -52,9 +51,7 @@ export const _map = <B>(E: Eq<B>) => <A>(set: ReadonlySet<A>, f: (a: A) => B) =>
 
 export const map = <B>(E: Eq<B>) => <A>(f: (a: A) => B) => (set: ReadonlySet<A>) => _map(E)(set, f);
 
-export const _bind = <B>(
-   E: Eq<B>
-): (<A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B>) => {
+export const _bind = <B>(E: Eq<B>): (<A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B>) => {
    const elemE = elem(E);
    return (set, f) => {
       const r = new Set<B>();
@@ -69,18 +66,16 @@ export const _bind = <B>(
    };
 };
 
-export const bind = <B>(E: Eq<B>) => <A>(set: ReadonlySet<A>) => (
-   f: (a: A) => ReadonlySet<B>
-): ReadonlySet<B> => _bind(E)(set, f);
-
-export const chain = <B>(E: Eq<B>) => <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) =>
+export const bind = <B>(E: Eq<B>) => <A>(set: ReadonlySet<A>) => (f: (a: A) => ReadonlySet<B>): ReadonlySet<B> =>
    _bind(E)(set, f);
 
-export const _filter: TC.UC_FilterF<[URI], V> = <A>(
-   set: ReadonlySet<A>,
-   predicate: Predicate<A>
-) => {
-   const values = set.values();
+export const chain = <B>(E: Eq<B>) => <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => _bind(E)(set, f);
+
+export const _filter: {
+   <A, B extends A>(fa: ReadonlySet<A>, refinement: Refinement<A, B>): ReadonlySet<B>;
+   <A>(fa: ReadonlySet<A>, predicate: Predicate<A>): ReadonlySet<A>;
+} = <A>(fa: ReadonlySet<A>, predicate: Predicate<A>) => {
+   const values = fa.values();
    let e: Next<A>;
    const r = new Set<A>();
    while (!(e = values.next()).done) {
@@ -92,14 +87,16 @@ export const _filter: TC.UC_FilterF<[URI], V> = <A>(
    return r;
 };
 
-export const filter: TC.FilterF<[URI], V> = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) =>
-   _filter(set, predicate);
+export const filter: {
+   <A, B extends A>(refinement: Refinement<A, B>): (fa: ReadonlySet<A>) => ReadonlySet<B>;
+   <A>(predicate: Predicate<A>): (fa: ReadonlySet<A>) => ReadonlySet<A>;
+} = <A>(predicate: Predicate<A>) => (fa: ReadonlySet<A>) => _filter(fa, predicate);
 
-export const _partition: TC.UC_PartitionF<[URI], V> = <A>(
-   set: ReadonlySet<A>,
-   predicate: Predicate<A>
-) => {
-   const values = set.values();
+export const _partition: {
+   <A, B extends A>(fa: ReadonlySet<A>, refinement: Refinement<A, B>): Separated<ReadonlySet<A>, ReadonlySet<B>>;
+   <A>(fa: ReadonlySet<A>, predicate: Predicate<A>): Separated<ReadonlySet<A>, ReadonlySet<A>>;
+} = <A>(fa: ReadonlySet<A>, predicate: Predicate<A>) => {
+   const values = fa.values();
    let e: Next<A>;
    const right = new Set<A>();
    const left = new Set<A>();
@@ -114,9 +111,10 @@ export const _partition: TC.UC_PartitionF<[URI], V> = <A>(
    return { left, right };
 };
 
-export const partition: TC.PartitionF<[URI], V> = <A>(predicate: Predicate<A>) => (
-   set: ReadonlySet<A>
-) => _partition(set, predicate);
+export const partition: {
+   <A, B extends A>(refinement: Refinement<A, B>): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<B>>;
+   <A>(predicate: Predicate<A>): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<A>>;
+} = <A>(predicate: Predicate<A>) => (fa: ReadonlySet<A>) => _partition(fa, predicate);
 
 /**
  * @since 1.0.0
@@ -152,22 +150,20 @@ export const _mapEither = <B, C>(EB: Eq<B>, EC: Eq<C>) => <A>(
 /**
  * @since 1.0.0
  */
-export const mapEither = <B, C>(EB: Eq<B>, EC: Eq<C>) => <A>(f: (a: A) => Either<B, C>) => (
-   set: ReadonlySet<A>
-) => _mapEither(EB, EC)(set, f);
+export const mapEither = <B, C>(EB: Eq<B>, EC: Eq<C>) => <A>(f: (a: A) => Either<B, C>) => (set: ReadonlySet<A>) =>
+   _mapEither(EB, EC)(set, f);
 
 export const _reduce = <A>(O: Ord<A>) => {
    const toArrayO = toArray(O);
-   return <B>(fa: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B => A._reduce(toArrayO(fa), b, f);
+   return <B>(set: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B => A._reduce(toArrayO(set), b, f);
 };
 
-export const reduce = <A>(O: Ord<A>) => <B>(b: B, f: (b: B, a: A) => B) => (fa: ReadonlySet<A>) =>
-   _reduce(O)(fa, b, f);
+export const reduce = <A>(O: Ord<A>) => <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) =>
+   _reduce(O)(set, b, f);
 
 export const _foldMap = <A, M>(O: Ord<A>, M: Monoid<M>) => {
    const toArrayO = toArray(O);
-   return (fa: ReadonlySet<A>, f: (a: A) => M) =>
-      A._reduce(toArrayO(fa), M.empty, (b, a) => M.concat(b)(f(a)));
+   return (fa: ReadonlySet<A>, f: (a: A) => M) => A._reduce(toArrayO(fa), M.empty, (b, a) => M.concat(b)(f(a)));
 };
 
 export const foldMap = <A, M>(O: Ord<A>, M: Monoid<M>) => {
@@ -194,8 +190,7 @@ export const mapMaybe = <B>(E: Eq<B>) => {
    return <A>(f: (a: A) => Maybe<B>) => (fa: ReadonlySet<A>) => _filterMapE(fa, f);
 };
 
-export const compact = <A>(E: Eq<A>): ((fa: ReadonlySet<Maybe<A>>) => ReadonlySet<A>) =>
-   mapMaybe(E)(identity);
+export const compact = <A>(E: Eq<A>): ((fa: ReadonlySet<Maybe<A>>) => ReadonlySet<A>) => mapMaybe(E)(identity);
 
 export const separate = <E, A>(EE: Eq<E>, EA: Eq<A>) => (
    fa: ReadonlySet<Either<E, A>>

@@ -22,9 +22,7 @@ export const eqDate: Eq<Date> = {
    equals: (x) => (y) => x.valueOf() === y.valueOf()
 };
 
-export function getStructEq<O extends Readonly<Record<string, any>>>(
-   eqs: { [K in keyof O]: Eq<O[K]> }
-): Eq<O> {
+export function getStructEq<O extends Readonly<Record<string, any>>>(eqs: { [K in keyof O]: Eq<O[K]> }): Eq<O> {
    return fromEquals((x) => (y) => {
       for (const k in eqs) {
          if (!eqs[k].equals(x[k])(y[k])) {

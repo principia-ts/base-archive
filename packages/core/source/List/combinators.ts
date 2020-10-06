@@ -93,11 +93,7 @@ export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
       return __ascending(b, cons(() => a) as any, as);
    };
 
-   const __ascending = (
-      a: A,
-      fas: (xs: Lazy<List<A>>) => List<A>,
-      bbs: List<A>
-   ): Trampoline<List<List<A>>> => {
+   const __ascending = (a: A, fas: (xs: Lazy<List<A>>) => List<A>, bbs: List<A>): Trampoline<List<List<A>>> => {
       if (isEmpty(bbs)) {
          return done(
             _cons(
@@ -219,10 +215,7 @@ export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
 
 export const sortBy = <A>(cmp: CompareF<A>) => (xs: List<A>) => _sortBy(xs, cmp);
 
-export const _append = trampoline(function append<A>(
-   xs: List<A>,
-   ys: List<A>
-): Trampoline<List<A>> {
+export const _append = trampoline(function append<A>(xs: List<A>, ys: List<A>): Trampoline<List<A>> {
    if (isEmpty(xs)) return done(ys);
    if (isEmpty(ys)) return done(xs);
    return done(

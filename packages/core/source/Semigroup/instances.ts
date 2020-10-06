@@ -96,9 +96,7 @@ export const getDualSemigroup = <A>(S: Semigroup<A>): Semigroup<A> => ({
  * @category Instances
  * @since 1.0.0
  */
-export const getFunctionSemigroup = <S>(S: Semigroup<S>) => <A = never>(): Semigroup<
-   (a: A) => S
-> => ({
+export const getFunctionSemigroup = <S>(S: Semigroup<S>) => <A = never>(): Semigroup<(a: A) => S> => ({
    concat: (f) => (g) => (a) => S.concat(f(a))(g(a))
 });
 

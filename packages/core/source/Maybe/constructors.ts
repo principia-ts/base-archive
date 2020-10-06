@@ -79,9 +79,9 @@ export const partial = <A>(thunk: Lazy<A>): Maybe<A> => {
  * @category Constructors
  * @since 1.0.0
  */
-export const partialK = <A extends ReadonlyArray<unknown>, B>(
-   f: FunctionN<A, B>
-): ((...args: A) => Maybe<B>) => (...a) => partial(() => f(...a));
+export const partialK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): ((...args: A) => Maybe<B>) => (
+   ...a
+) => partial(() => f(...a));
 
 /**
  * ```haskell
@@ -125,5 +125,4 @@ export const fromPredicate: {
  * @category Constructors
  * @since 1.0.0
  */
-export const fromEither = <E, A>(ma: Either<E, A>): Maybe<A> =>
-   ma._tag === "Left" ? nothing() : just(ma.right);
+export const fromEither = <E, A>(ma: Either<E, A>): Maybe<A> => (ma._tag === "Left" ? nothing() : just(ma.right));

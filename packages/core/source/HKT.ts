@@ -135,20 +135,7 @@ export interface URItoIndex<N extends string, K> {
  * -------------------------------------------
  */
 
-export type ConcreteURIS = keyof URItoKind<
-   any,
-   any,
-   any,
-   any,
-   any,
-   any,
-   any,
-   any,
-   any,
-   any,
-   any,
-   any
->;
+export type ConcreteURIS = keyof URItoKind<any, any, any, any, any, any, any, any, any, any, any, any>;
 
 export type URIS = [RealURIS, ...RealURIS[]];
 
@@ -159,17 +146,14 @@ export interface URI<F extends ConcreteURIS, C> {
 
 export type RealURIS = ConcreteURIS | URI<ConcreteURIS, any>;
 
-export type AppendURI<F extends RealURIS[], G extends RealURIS> = F extends RealURIS[]
-   ? [...F, G]
-   : F;
+export type AppendURI<F extends RealURIS[], G extends RealURIS> = F extends RealURIS[] ? [...F, G] : F;
 
-export type PrependURI<G extends RealURIS, F extends RealURIS[]> = F extends RealURIS[]
-   ? [G, ...F]
-   : F;
+export type PrependURI<G extends RealURIS, F extends RealURIS[]> = F extends RealURIS[] ? [G, ...F] : F;
 
-export type ConcreteKind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = ((
-   ...x: F
-) => any) extends (fst: infer XURI, ...rest: infer Rest) => any
+export type ConcreteKind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = ((...x: F) => any) extends (
+   fst: infer XURI,
+   ...rest: infer Rest
+) => any
    ? XURI extends ConcreteURIS
       ? URItoKind<
            Auto,
@@ -229,20 +213,7 @@ export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A>
  */
 
 export type Infer<F extends URIS, P extends Param | "A" | "C", K> = [K] extends [
-   ConcreteKind<
-      F,
-      infer C,
-      infer N,
-      infer K,
-      infer Q,
-      infer W,
-      infer X,
-      infer I,
-      infer S,
-      infer R,
-      infer E,
-      infer A
-   >
+   ConcreteKind<F, infer C, infer N, infer K, infer Q, infer W, infer X, infer I, infer S, infer R, infer E, infer A>
 ]
    ? P extends "C"
       ? C
@@ -271,14 +242,9 @@ export type Infer<F extends URIS, P extends Param | "A" | "C", K> = [K] extends 
 
 export type URIOf<
    K extends ConcreteKind<any, any, any, any, any, any, any, any, any, any, any, any>
-> = K extends ConcreteKind<infer F, any, any, any, any, any, any, any, any, any, any, any>
-   ? F
-   : never;
+> = K extends ConcreteKind<infer F, any, any, any, any, any, any, any, any, any, any, any> ? F : never;
 
-export type IndexForBase<F extends ConcreteURIS, N extends string, K> = F extends keyof URItoIndex<
-   any,
-   any
->
+export type IndexForBase<F extends ConcreteURIS, N extends string, K> = F extends keyof URItoIndex<any, any>
    ? URItoIndex<N, K>[F]
    : K;
 

@@ -23,10 +23,7 @@ export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
 
 export const pure: TC.PureF<[URI], V> = list;
 
-export const _filter = trampoline(function _filter<A>(
-   xs: List<A>,
-   predicate: Predicate<A>
-): Trampoline<List<A>> {
+export const _filter = trampoline(function _filter<A>(xs: List<A>, predicate: Predicate<A>): Trampoline<List<A>> {
    if (isEmpty(xs)) return done(nil);
    const a = head(xs);
    const as = tail(xs);
@@ -40,9 +37,8 @@ export const _filter = trampoline(function _filter<A>(
       : more(() => _filter(as, predicate));
 });
 
-export const filter: TC.FilterF<[URI], V> = <A>(predicate: Predicate<A>) => (
-   xs: List<A>
-): List<A> => _filter(xs, predicate);
+export const filter: TC.FilterF<[URI], V> = <A>(predicate: Predicate<A>) => (xs: List<A>): List<A> =>
+   _filter(xs, predicate);
 
 /*
  * export const _filter: TC.UC_FilterF<[URI], V> = <A>(fa: List<A>, f: Predicate<A>): List<A> => {

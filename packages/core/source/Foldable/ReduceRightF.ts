@@ -14,12 +14,7 @@ export interface UC_ReduceRightF<F extends HKT.URIS, C = HKT.Auto> {
    ): B;
 }
 
-export interface ReduceRightFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
+export interface ReduceRightFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
    <A, B>(b: B, f: (a: A, b: B) => B): <
       FN extends string,
       FK,
@@ -40,65 +35,13 @@ export interface ReduceRightFComposition<
       GR,
       GE
    >(
-      fa: HKT.Kind<
-         F,
-         CF,
-         FN,
-         FK,
-         FQ,
-         FW,
-         FX,
-         FI,
-         FS,
-         FR,
-         FE,
-         HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>
-      >
+      fa: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>>
    ) => B;
 }
 
-export interface UC_ReduceRightFComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> {
-   <
-      FN extends string,
-      FK,
-      FQ,
-      FW,
-      FX,
-      FI,
-      FS,
-      FR,
-      FE,
-      GN extends string,
-      GK,
-      GQ,
-      GW,
-      GX,
-      GI,
-      GS,
-      GR,
-      GE,
-      A,
-      B
-   >(
-      fa: HKT.Kind<
-         F,
-         CF,
-         FN,
-         FK,
-         FQ,
-         FW,
-         FX,
-         FI,
-         FS,
-         FR,
-         FE,
-         HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>
-      >,
+export interface UC_ReduceRightFComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+   <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE, GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE, A, B>(
+      fa: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>>,
       b: B,
       f: (a: A, b: B) => B
    ): B;

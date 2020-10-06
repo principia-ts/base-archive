@@ -22,15 +22,15 @@ export interface ApSF<F extends HKT.URIS, C = HKT.Auto> {
    ) => HKT.Kind<
       F,
       C,
-      HKT.Mix<C, "N", [N1, N]>,
-      HKT.Mix<C, "K", [K1, K]>,
-      HKT.Mix<C, "Q", [Q1, Q]>,
-      HKT.Mix<C, "W", [W1, W]>,
-      HKT.Mix<C, "X", [X1, X]>,
-      HKT.Mix<C, "I", [I1, I]>,
-      HKT.Mix<C, "S", [S1, S]>,
-      HKT.Mix<C, "R", [R1, R]>,
-      HKT.Mix<C, "E", [E1, E]>,
+      HKT.Mix<C, "N", [N, N1]>,
+      HKT.Mix<C, "K", [K, K1]>,
+      HKT.Mix<C, "Q", [Q, Q1]>,
+      HKT.Mix<C, "W", [W, W1]>,
+      HKT.Mix<C, "X", [X, X1]>,
+      HKT.Mix<C, "I", [I, I1]>,
+      HKT.Mix<C, "S", [S, S1]>,
+      HKT.Mix<C, "R", [R, R1]>,
+      HKT.Mix<C, "E", [E, E1]>,
       { [K in keyof A | BN]: K extends keyof A ? A[K] : A1 }
    >;
 }

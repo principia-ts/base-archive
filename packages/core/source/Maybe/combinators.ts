@@ -27,9 +27,8 @@ export const _mapNullable = <A, B>(fa: Maybe<A>, f: (a: A) => B | null | undefin
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const mapNullable: <A, B>(
-   f: (a: A) => B | null | undefined
-) => (fa: Maybe<A>) => Maybe<B> = (f) => (fa) => _mapNullable(fa, f);
+export const mapNullable: <A, B>(f: (a: A) => B | null | undefined) => (fa: Maybe<A>) => Maybe<B> = (f) => (fa) =>
+   _mapNullable(fa, f);
 
 /**
  * _orElse :: Maybe m => (m a, () -> m b) -> m (a | b)
@@ -48,8 +47,7 @@ export const _orElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<Maybe<B>>): Maybe<A 
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const orElse = <B>(onNothing: Lazy<Maybe<B>>) => <A>(fa: Maybe<A>): Maybe<A | B> =>
-   _orElse(fa, onNothing);
+export const orElse = <B>(onNothing: Lazy<Maybe<B>>) => <A>(fa: Maybe<A>): Maybe<A | B> => _orElse(fa, onNothing);
 
 /**
  * getLeft :: (Either e, Maybe m) => e a b -> m a
@@ -58,8 +56,7 @@ export const orElse = <B>(onNothing: Lazy<Maybe<B>>) => <A>(fa: Maybe<A>): Maybe
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const getLeft = <E, A>(fea: Either<E, A>): Maybe<E> =>
-   fea._tag === "Right" ? nothing() : just(fea.left);
+export const getLeft = <E, A>(fea: Either<E, A>): Maybe<E> => (fea._tag === "Right" ? nothing() : just(fea.left));
 
 /**
  * getRight :: (Either e, Maybe m) => e a b -> m b
@@ -68,5 +65,4 @@ export const getLeft = <E, A>(fea: Either<E, A>): Maybe<E> =>
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const getRight = <E, A>(fea: Either<E, A>): Maybe<A> =>
-   fea._tag === "Left" ? nothing() : just(fea.right);
+export const getRight = <E, A>(fea: Either<E, A>): Maybe<A> => (fea._tag === "Left" ? nothing() : just(fea.right));

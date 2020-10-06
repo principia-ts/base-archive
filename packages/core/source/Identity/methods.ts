@@ -1,4 +1,5 @@
 import { identity, pipe } from "../Function";
+import { Monoid } from "../Monoid";
 import * as TC from "../typeclass-index";
 import type { Identity, URI, V } from "./Identity";
 
@@ -8,72 +9,71 @@ import type { Identity, URI, V } from "./Identity";
  * -------------------------------------------
  */
 
-export const any: TC.AnyF<[URI], V> = () => ({} as any);
+export const unit = (): void => undefined;
 
-export const pure: TC.PureF<[URI], V> = identity;
+export const pure: <A>(a: A) => A = identity;
 
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => f(fa);
+export const _map = <A, B>(fa: A, f: (a: A) => B) => f(fa);
 
-export const map: TC.MapF<[URI], V> = (f) => (fa) => f(fa);
+export const map = <A, B>(f: (a: A) => B) => (fa: A): B => f(fa);
 
-export const _chain: TC.UC_ChainF<[URI], V> = (ma, f) => f(ma);
+export const _chain = <A, B>(ma: A, f: (a: A) => B): B => f(ma);
 
-export const chain: TC.ChainF<[URI], V> = (f) => (ma) => f(ma);
+export const chain = <A, B>(f: (a: A) => B) => (ma: A): B => f(ma);
 
-export const _tap: TC.UC_TapF<[URI], V> = (ma, f) => _chain(ma, (a) => _map(f(a), () => a));
+export const _tap = <A, B>(ma: A, f: (a: A) => B): A => _chain(ma, (a) => _map(f(a), () => a));
 
-export const tap: TC.TapF<[URI], V> = (f) => (ma) => _tap(ma, f);
+export const tap = <A, B>(f: (a: A) => B) => (ma: A): A => _tap(ma, f);
 
-export const flatten: TC.FlattenF<[URI], V> = (ffa) => _chain(ffa, identity);
+export const flatten = <A>(mma: A): A => _chain(mma, identity);
 
-export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => fab(fa);
+export const _ap = <A, B>(fab: (a: A) => B, fa: A): B => fab(fa);
 
-export const ap: TC.ApF<[URI], V> = (fa) => (fab) => fab(fa);
+export const ap = <A>(fa: A) => <B>(fab: (a: A) => B): B => fab(fa);
 
-export const _apFirst: TC.UC_ApFirstF<[URI], V> = (fa, fb) =>
+export const _apFirst = <A, B>(fa: A, fb: B): A =>
    _ap(
       _map(fa, (a) => () => a),
       fb
    );
 
-export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
+export const apFirst = <B>(fb: B) => <A>(fa: A): A => _apFirst(fa, fb);
 
-export const _apSecond: TC.UC_ApSecondF<[URI], V> = <A, B>(fa: A, fb: B) =>
+export const _apSecond = <A, B>(fa: A, fb: B) =>
    _ap(
       _map(fa, (_) => (b: B) => b),
       fb
    );
 
-export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb);
+export const apSecond = <B>(fb: B) => <A>(fa: A): B => _apSecond(fa, fb);
 
-export const _mapBoth: TC.UC_MapBothF<[URI], V> = (fa, fb, f) => f(fa, fb);
+export const _mapBoth = <A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C => f(fa, fb);
 
-export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => f(fa, fb);
+export const mapBoth = <A, B, C>(fb: B, f: (a: A, b: B) => C) => (fa: A): C => f(fa, fb);
 
-export const _reduce: TC.UC_ReduceF<[URI], V> = (fa, b, f) => f(b, fa);
+export const _reduce = <A, B>(fa: A, b: B, f: (b: B, a: A) => B): B => f(b, fa);
 
-export const reduce: TC.ReduceF<[URI], V> = (b, f) => (fa) => f(b, fa);
+export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: A): B => f(b, fa);
 
-export const _foldMap: TC.UC_FoldMapF<[URI], V> = (_) => (fa, f) => f(fa);
+export const _foldMap = <M>(_: Monoid<M>) => <A>(fa: A, f: (a: A) => M) => f(fa);
 
-export const foldMap: TC.FoldMapF<[URI], V> = (_) => (f) => (fa) => f(fa);
+export const foldMap = <M>(_: Monoid<M>) => <A>(f: (a: A) => M) => (fa: A): M => f(fa);
 
-export const _reduceRight: TC.UC_ReduceRightF<[URI], V> = (fa, b, f) => f(fa, b);
+export const _reduceRight = <A, B>(fa: A, b: B, f: (a: A, b: B) => B): B => f(fa, b);
 
-export const reduceRight: TC.ReduceRightF<[URI], V> = (b, f) => (fa) => f(fa, b);
+export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: A): B => f(fa, b);
 
-export const _extend: TC.UC_ExtendF<[URI], V> = (wa, f) => f(wa);
+export const _extend = <A, B>(wa: A, f: (wa: A) => B): B => f(wa);
 
-export const extend: TC.ExtendF<[URI], V> = (f) => (wa) => f(wa);
+export const extend = <A, B>(f: (wa: A) => B) => (wa: A): B => f(wa);
 
-export const extract: TC.ExtractF<[URI], V> = identity;
+export const extract: <A>(wa: A) => A = identity;
 
 export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(identity);
 
-export const _traverse: TC.UC_TraverseF<[URI], V> = TC.implementUCTraverse<
-   [URI],
-   V
->()((_) => (G) => (ta, f) => pipe(f(ta), G.map(identity)));
+export const _traverse: TC.UC_TraverseF<[URI], V> = TC.implementUCTraverse<[URI], V>()((_) => (G) => (ta, f) =>
+   pipe(f(ta), G.map(identity))
+);
 
 export const traverse: TC.TraverseF<[URI], V> = (G) => {
    const _traverseG = _traverse(G);
@@ -82,6 +82,6 @@ export const traverse: TC.TraverseF<[URI], V> = (G) => {
 
 export const sequence: TC.SequenceF<[URI], V> = (G) => (ta) => pipe(ta, G.map(identity));
 
-export const _alt: TC.UC_AltF<[URI], V> = identity;
+export const _alt: <A>(fa: A, that: () => A) => A = identity;
 
-export const alt: TC.AltF<[URI], V> = identity;
+export const alt = <A>(that: () => A) => (fa: A): A => _alt(fa, that);

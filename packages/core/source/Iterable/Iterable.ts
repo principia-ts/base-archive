@@ -56,11 +56,7 @@ function* genChain<A, B>(iterator: Iterator<A>, mapping: (a: A) => Iterable<B>) 
 
 // inspired from "Closing Iterables is a Leaky Abstraction" by Reginald Braithwaite
 // https://raganwald.com/2017/07/22/closing-iterables-is-a-leaky-abstraction.html
-const zipWith = <A, B, C>(
-   iterableA: Iterable<A>,
-   iterableB: Iterable<B>,
-   zipper: (a: A, b: B) => C
-): Iterable<C> => ({
+const zipWith = <A, B, C>(iterableA: Iterable<A>, iterableB: Iterable<B>, zipper: (a: A, b: B) => C): Iterable<C> => ({
    [Symbol.iterator]() {
       let done = false;
       const ia = iterableA[Symbol.iterator]();
@@ -120,9 +116,8 @@ export const chain_ = <A, B>(i: Iterable<A>, f: (a: A) => Iterable<B>): Iterable
    [Symbol.iterator]: () => genChain(i[Symbol.iterator](), f)
 });
 
-export const ap: <A>(fa: Iterable<A>) => <B>(fab: Iterable<(a: A) => B>) => Iterable<B> = (fa) => (
-   fab
-) => chain_(fab, (f) => map_(fa, f));
+export const ap: <A>(fa: Iterable<A>) => <B>(fab: Iterable<(a: A) => B>) => Iterable<B> = (fa) => (fab) =>
+   chain_(fab, (f) => map_(fa, f));
 
 export const of = <A>(a: A): Iterable<A> => ({
    [Symbol.iterator]: () => genOf(a)
@@ -133,9 +128,7 @@ export const never: Iterable<never> = {
    *[Symbol.iterator]() {}
 };
 
-export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A, k: number) => M) => (
-   fa: Iterable<A>
-): M => {
+export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A, k: number) => M) => (fa: Iterable<A>): M => {
    let res = M.empty;
    let n = -1;
    const iterator = fa[Symbol.iterator]();
@@ -167,12 +160,9 @@ export const reduce_ = <A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A, i: number) 
    return res;
 };
 
-export const reduce = <A, B>(b: B, f: (b: B, a: A, i: number) => B) => (fa: Iterable<A>): B =>
-   reduce_(fa, b, f);
+export const reduce = <A, B>(b: B, f: (b: B, a: A, i: number) => B) => (fa: Iterable<A>): B => reduce_(fa, b, f);
 
-export const reduceRight = <A, B>(b: B, f: (a: A, b: B, i: number) => B) => (
-   fa: Iterable<A>
-): B => {
+export const reduceRight = <A, B>(b: B, f: (a: A, b: B, i: number) => B) => (fa: Iterable<A>): B => {
    return A._reduceRightWithIndex(Array.from(fa), b, (i, a, b) => f(a, b, i));
 };
 

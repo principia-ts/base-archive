@@ -1,6 +1,6 @@
 export * from "./Alt";
 export * from "./Apply";
-export * from "./Any";
+export * from "./Unit";
 export * from "./Apply";
 export * from "./Monad";
 export * from "./None";
@@ -19,7 +19,7 @@ export * from "./Filterable";
 export * from "./Witherable";
 export * from "./Compactable";
 export * from "./Contravariant";
-export * from "./ApplicativeDo";
+export * from "./Do";
 export * from "./Compactable";
 export * from "./Swap";
 export * from "./MonadFail";

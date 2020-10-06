@@ -1,7 +1,6 @@
 import * as E from "../Either";
 import * as EitherT from "../EitherT";
-
-import { identity } from "../Function";
+import { identity, tuple } from "../Function";
 import * as I from "../IO";
 import type * as TC from "../typeclass-index";
 import { right } from "./constructors";
@@ -17,66 +16,83 @@ const Monad = EitherT.Monad(I.Monad);
 
 export const pure: TC.PureF<[URI], V> = Monad.pure;
 
-export const any: TC.AnyF<[URI], V> = Monad.any;
+export const unit: <E = never>() => IOEither<E, void> = () => I.pure(E.unit());
 
-export const _map: TC.UC_MapF<[URI], V> = Monad._map;
+export const _map: <E, A, B>(fa: IOEither<E, A>, f: (a: A) => B) => IOEither<E, B> = Monad._map;
 
-export const map: TC.MapF<[URI], V> = Monad.map;
+export const map: <A, B>(f: (a: A) => B) => <E>(fa: IOEither<E, A>) => IOEither<E, B> = Monad.map;
 
-export const _ap: TC.UC_ApF<[URI], V> = Monad._ap;
+export const _ap: <E, A, G, B>(fab: IOEither<G, (a: A) => B>, fa: IOEither<E, A>) => IOEither<E | G, B> = Monad._ap;
 
 export const ap: TC.ApF<[URI], V> = Monad.ap;
 
-export const _apFirst: TC.UC_ApFirstF<[URI], V> = (fa, fb) =>
+export const _apFirst = <E, A, G, B>(fa: IOEither<E, A>, fb: IOEither<G, B>): IOEither<E | G, A> =>
    _ap(
       _map(fa, (a) => () => a),
       fb
    );
 
-export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
+export const apFirst = <G, B>(fb: IOEither<G, B>) => <E, A>(fa: IOEither<E, A>): IOEither<E | G, A> => _apFirst(fa, fb);
 
-export const _apSecond: TC.UC_ApSecondF<[URI], V> = (fa, fb) =>
+export const _apSecond = <E, A, G, B>(fa: IOEither<E, A>, fb: IOEither<G, B>): IOEither<E | G, B> =>
    _ap(
       _map(fa, () => (b) => b),
       fb
    );
 
-export const apSecond: TC.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb);
+export const apSecond = <G, B>(fb: IOEither<G, B>) => <E, A>(fa: IOEither<E, A>): IOEither<E | G, B> =>
+   _apSecond(fa, fb);
 
-export const lift2: TC.Lift2F<[URI], V> = (f) => (fa) => (fb) =>
+export const lift2 = <A, B, C, E, G>(f: (a: A) => (b: B) => C) => (fa: IOEither<E, A>) => (
+   fb: IOEither<G, B>
+): IOEither<E | G, C> =>
    _ap(
       _map(fa, (a) => (b) => f(a)(b)),
       fb
    );
 
-export const _chain: TC.UC_ChainF<[URI], V> = Monad._chain;
+export const _chain: <E, A, G, B>(ma: IOEither<E, A>, f: (a: A) => IOEither<G, B>) => IOEither<E | G, B> = Monad._chain;
 
-export const chain: TC.ChainF<[URI], V> = Monad.chain;
+export const chain: <A, G, B>(f: (a: A) => IOEither<G, B>) => <E>(ma: IOEither<E, A>) => IOEither<E | G, B> =
+   Monad.chain;
 
-export const _tap: TC.UC_TapF<[URI], V> = (fa, f) => _chain(fa, (a) => _map(f(a), () => a));
+export const _tap = <E, A, G, B>(fa: IOEither<E, A>, f: (a: A) => IOEither<G, B>): IOEither<E | G, A> =>
+   _chain(fa, (a) => _map(f(a), () => a));
 
-export const tap: TC.TapF<[URI], V> = (f) => (fa) => _tap(fa, f);
+export const tap = <A, G, B>(f: (a: A) => IOEither<G, B>) => <E>(fa: IOEither<E, A>): IOEither<E | G, A> => _tap(fa, f);
 
-export const _bimap: TC.UC_BimapF<[URI], V> = (pab, f, g) => I._map(pab, E.bimap(f, g));
+export const _bimap = <E, A, B, C>(pab: IOEither<E, A>, f: (e: E) => B, g: (a: A) => C): IOEither<B, C> =>
+   I._map(pab, E.bimap(f, g));
 
-export const bimap: TC.BimapF<[URI], V> = (f, g) => (pab) => _bimap(pab, f, g);
+export const bimap = <E, A, B, C>(f: (e: E) => B, g: (a: A) => C) => (pab: IOEither<E, A>): IOEither<B, C> =>
+   _bimap(pab, f, g);
 
-export const _first: TC.UC_FirstF<[URI], V> = (pab, f) => I._map(pab, E.first(f));
+export const _first = <E, A, B>(pab: IOEither<E, A>, f: (e: E) => B): IOEither<B, A> => I._map(pab, E.first(f));
 
-export const first: TC.FirstF<[URI], V> = (f) => (pab) => _first(pab, f);
+export const first = <E, B>(f: (e: E) => B) => <A>(pab: IOEither<E, A>): IOEither<B, A> => _first(pab, f);
 
-export const flatten: TC.FlattenF<[URI], V> = (mma) => _chain(mma, identity);
+export const flatten = <E, G, A>(mma: IOEither<E, IOEither<G, A>>): IOEither<E | G, A> => _chain(mma, identity);
 
-export const _mapBoth: TC.UC_MapBothF<[URI], V> = Monad._mapBoth;
+export const _mapBoth: <E, A, G, B, C>(
+   fa: IOEither<E, A>,
+   fb: IOEither<G, B>,
+   f: (a: A, b: B) => C
+) => IOEither<E | G, C> = Monad._mapBoth;
 
-export const mapBoth: TC.MapBothF<[URI], V> = Monad.mapBoth;
+export const mapBoth: <A, G, B, C>(
+   fb: IOEither<G, B>,
+   f: (a: A, b: B) => C
+) => <E>(fa: IOEither<E, A>) => IOEither<E | G, C> = Monad.mapBoth;
 
-export const _both: TC.UC_BothF<[URI], V> = (fa, fb) => _mapBoth(fa, fb, (a, b) => [a, b]);
+export const _both = <E, A, G, B>(fa: IOEither<E, A>, fb: IOEither<G, B>): IOEither<E | G, readonly [A, B]> =>
+   _mapBoth(fa, fb, tuple);
 
-export const both: TC.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
+export const both = <G, B>(fb: IOEither<G, B>) => <E, A>(fa: IOEither<E, A>): IOEither<E | G, readonly [A, B]> =>
+   _both(fa, fb);
 
-export const swap: TC.SwapF<[URI], V> = (pab) => I._map(pab, E.swap);
+export const swap = <E, A>(pab: IOEither<E, A>): IOEither<A, E> => I._map(pab, E.swap);
 
-export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => I._chain(fa, E.fold(that, right));
+export const _alt = <E, A, G>(fa: IOEither<E, A>, that: () => IOEither<G, A>): IOEither<E | G, A> =>
+   I._chain(fa, E.fold(that, right));
 
-export const alt: TC.AltF<[URI], V> = (that) => (fa) => _alt(fa, that);
+export const alt = <A, G>(that: () => IOEither<G, A>) => <E>(fa: IOEither<E, A>): IOEither<E | G, A> => _alt(fa, that);

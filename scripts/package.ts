@@ -13,9 +13,7 @@ const cjsJSON = JSON.stringify({ type: "commonjs" });
 pipe(
    readFile(Path.resolve(process.cwd(), "package.json"), "utf8"),
    TE.chain((content) =>
-      TE.fromEither(
-         parseJSON(content, (err) => new Error(`json parse error: ${(err as Error).message}`))
-      )
+      TE.fromEither(parseJSON(content, (err) => new Error(`json parse error: ${(err as Error).message}`)))
    ),
    TE.chain((content: any) =>
       writeFile(
@@ -51,11 +49,7 @@ pipe(
       )
    ),
    TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/_dist_/cjs/package.json"), cjsJSON)),
-   TE.chain(() =>
-      writeFile(Path.resolve(process.cwd(), "dist/_dist_/esm-shake/package.json"), shakeJSON)
-   ),
-   TE.chain(() =>
-      writeFile(Path.resolve(process.cwd(), "dist/_dist_/esm-fix/package.json"), esmJSON)
-   ),
+   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/_dist_/esm-shake/package.json"), shakeJSON)),
+   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/_dist_/esm-fix/package.json"), esmJSON)),
    TE.fold(onLeft, onRight("Package copy succeeded!"))
 )().catch((e) => console.log(chalk.red.bold(`unexpected error ${e}`)));

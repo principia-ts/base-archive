@@ -1,12 +1,7 @@
 import * as HKT from "../HKT";
 import { FoldMapF, FoldMapFComposition, UC_FoldMapF, UC_FoldMapFComposition } from "./FoldMapF";
 import { ReduceF, ReduceFComposition, UC_ReduceF, UC_ReduceFComposition } from "./ReduceF";
-import {
-   ReduceRightF,
-   ReduceRightFComposition,
-   UC_ReduceRightF,
-   UC_ReduceRightFComposition
-} from "./ReduceRightF";
+import { ReduceRightF, ReduceRightFComposition, UC_ReduceRightF, UC_ReduceRightFComposition } from "./ReduceRightF";
 
 export interface Foldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
    readonly _reduce: UC_ReduceF<F, C>;
@@ -17,12 +12,8 @@ export interface Foldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, 
    readonly reduceRight: ReduceRightF<F, C>;
 }
 
-export interface FoldableComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
-> extends HKT.CompositionBase2<F, G, CF, CG> {
+export interface FoldableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
+   extends HKT.CompositionBase2<F, G, CF, CG> {
    readonly _reduce: UC_ReduceFComposition<F, G, CF, CG>;
    readonly reduce: ReduceFComposition<F, G, CF, CG>;
    readonly _foldMap: UC_FoldMapFComposition<F, G, CF, CG>;
@@ -31,12 +22,10 @@ export interface FoldableComposition<
    readonly reduceRight: ReduceRightFComposition<F, G, CF, CG>;
 }
 
-export function getFoldableComposition<
-   F extends HKT.URIS,
-   G extends HKT.URIS,
-   CF = HKT.Auto,
-   CG = HKT.Auto
->(F: Foldable<F, CF>, G: Foldable<G, CG>): FoldableComposition<F, G, CF, CG>;
+export function getFoldableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
+   F: Foldable<F, CF>,
+   G: Foldable<G, CG>
+): FoldableComposition<F, G, CF, CG>;
 export function getFoldableComposition<F, G>(
    F: Foldable<HKT.UHKT<F>>,
    G: Foldable<HKT.UHKT<G>>

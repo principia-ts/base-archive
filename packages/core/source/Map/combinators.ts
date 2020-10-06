@@ -18,10 +18,7 @@ interface Next<A> {
 export const keys = <K>(O: Ord<K>) => <A>(m: ReadonlyMap<K, A>): ReadonlyArray<K> =>
    Array.from(m.keys()).sort((a, b) => toNumber(O.compare(a)(b)));
 
-export const _lookupWithKey = <K>(E: Eq<K>) => <A>(
-   m: ReadonlyMap<K, A>,
-   k: K
-): Maybe<readonly [K, A]> => {
+export const _lookupWithKey = <K>(E: Eq<K>) => <A>(m: ReadonlyMap<K, A>, k: K): Maybe<readonly [K, A]> => {
    const entries = m.entries();
    let e: Next<readonly [K, A]>;
    while (!(e = entries.next()).done) {

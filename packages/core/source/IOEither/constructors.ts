@@ -21,22 +21,16 @@ export const rightIO: <E = never, A = never>(io: IO<A>) => IOEither<E, A> = I.ma
 
 export const fromEither: <E, A>(pab: Either<E, A>) => IOEither<E, A> = I.pure;
 
-export const _partial = <E, A>(
-   thunk: Lazy<A>,
-   onThrow: (reason: unknown) => E
-): IOEither<E, A> => () => E._partial(thunk, onThrow);
+export const _partial = <E, A>(thunk: Lazy<A>, onThrow: (reason: unknown) => E): IOEither<E, A> => () =>
+   E._partial(thunk, onThrow);
 
-export const partial = <E>(onThrow: (reason: unknown) => E) => <A>(thunk: Lazy<A>) =>
-   _partial(thunk, onThrow);
+export const partial = <E>(onThrow: (reason: unknown) => E) => <A>(thunk: Lazy<A>) => _partial(thunk, onThrow);
 
 export const _partialK = <A extends ReadonlyArray<unknown>, B, E>(
    f: FunctionN<A, B>,
    onThrow: (reason: unknown) => E
 ): ((...args: A) => IOEither<E, B>) => (...a) => _partial(() => f(...a), onThrow);
 
-export const partialK = <E>(onThrow: (reason: unknown) => E) => <
-   A extends ReadonlyArray<unknown>,
-   B
->(
+export const partialK = <E>(onThrow: (reason: unknown) => E) => <A extends ReadonlyArray<unknown>, B>(
    f: FunctionN<A, B>
 ) => _partialK(f, onThrow);

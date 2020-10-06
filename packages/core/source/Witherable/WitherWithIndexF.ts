@@ -24,20 +24,7 @@ export interface WitherWithIndexF<F extends HKT.URIS, C = HKT.Auto> {
       ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
    ) => <QF, WF, XF, IF, SF, RF, EF>(
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
-   ) => HKT.Kind<
-      G,
-      GC,
-      NG,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG,
-      HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>
-   >;
+   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
 }
 
 export interface UC_WitherWithIndexF<F extends HKT.URIS, C = HKT.Auto> {
@@ -68,20 +55,7 @@ export interface UC_WitherWithIndexF<F extends HKT.URIS, C = HKT.Auto> {
          k: HKT.IndexFor<F, HKT.OrFix<"N", C, NF>, HKT.OrFix<"K", C, KF>>,
          a: A
       ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
-   ) => HKT.Kind<
-      G,
-      GC,
-      NG,
-      KG,
-      QG,
-      WG,
-      XG,
-      IG,
-      SG,
-      RG,
-      EG,
-      HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>
-   >;
+   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
 }
 
 export function implementWitherWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
@@ -101,13 +75,10 @@ export function implementWitherWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
    }) => (
       G: Applicative<HKT.UHKT<G>>
    ) => (
-      f: (
-         i: HKT.IndexFor<F, HKT.OrFix<"N", F, NF>, HKT.OrFix<"K", F, KF>>,
-         a: A
-      ) => HKT.HKT<G, Maybe<B>>
+      f: (i: HKT.IndexFor<F, HKT.OrFix<"N", F, NF>, HKT.OrFix<"K", F, KF>>, a: A) => HKT.HKT<G, Maybe<B>>
    ) => (
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
-   ) => HKT.HKT<G, HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+   ) => HKT.HKT<G, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => WitherWithIndexF<F, C>;
 export function implementWitherWithIndex() {
    return (i: any) => i();
@@ -131,11 +102,8 @@ export function implementUCWitherWithIndex<F extends HKT.URIS, C = HKT.Auto>(): 
       G: Applicative<HKT.UHKT<G>>
    ) => (
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-      f: (
-         i: HKT.IndexFor<F, HKT.OrFix<"N", C, NF>, HKT.OrFix<"K", C, KF>>,
-         a: A
-      ) => HKT.HKT<G, Maybe<B>>
-   ) => HKT.HKT<G, HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+      f: (i: HKT.IndexFor<F, HKT.OrFix<"N", C, NF>, HKT.OrFix<"K", C, KF>>, a: A) => HKT.HKT<G, Maybe<B>>
+   ) => HKT.HKT<G, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => UC_WitherWithIndexF<F, C>;
 export function implementUCWitherWithIndex() {
    return (i: any) => i();

@@ -1,9 +1,17 @@
 import * as HKT from "../../HKT";
 
 export interface ApFirstF<F extends HKT.URIS, C = HKT.Auto> {
-   <S, N1 extends string, K1, Q1, W1, X1, S1, R1, E1, B>(
-      fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, S, S1, R1, E1, B>
-   ): <N extends string, K, Q, W, X, I, R, E, A>(
+   <S, N1 extends string, K1, Q1, W1, X1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, S, S1, R1, E1, B>): <
+      N extends string,
+      K,
+      Q,
+      W,
+      X,
+      I,
+      R,
+      E,
+      A
+   >(
       fa: HKT.Kind<
          F,
          C,
@@ -35,27 +43,7 @@ export interface ApFirstF<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface UC_ApFirstF<F extends HKT.URIS, C = HKT.Auto> {
-   <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      S1,
-      S2,
-      R,
-      E,
-      A,
-      N1 extends string,
-      K1,
-      Q1,
-      W1,
-      X1,
-      S3,
-      R1,
-      E1,
-      B
-   >(
+   <N extends string, K, Q, W, X, S1, S2, R, E, A, N1 extends string, K1, Q1, W1, X1, S3, R1, E1, B>(
       fa: HKT.Kind<F, C, N, K, Q, W, X, S1, S2, R, E, A>,
       fb: HKT.Kind<
          F,

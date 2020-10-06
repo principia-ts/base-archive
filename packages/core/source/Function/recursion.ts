@@ -44,12 +44,10 @@ export const zip = <A, B>(ta: Trampoline<A>, tb: Trampoline<B>): Trampoline<read
    return bind(ta, (a) => map(tb, (b) => [a, b]));
 };
 
-export const trampoline = <A extends ReadonlyArray<unknown>, B>(
-   fn: FunctionN<A, Trampoline<B>>
-) => (...args: A): B => {
+export const trampoline = <A extends ReadonlyArray<unknown>, B>(fn: FunctionN<A, Trampoline<B>>) => (...args: A): B => {
    let result = fn(...args);
    /* eslint-disable-next-line */
-      while (true) {
+   while (true) {
       switch (result._tag) {
          case "More":
             result = result.fn();

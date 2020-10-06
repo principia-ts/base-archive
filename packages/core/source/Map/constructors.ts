@@ -10,8 +10,7 @@ export const empty: ReadonlyMap<never, never> = new Map<never, never>();
 /**
  * Create from a key-value array
  */
-export const make = <K, V>(values: ReadonlyArray<readonly [K, V]>): ReadonlyMap<K, V> =>
-   new Map(values);
+export const make = <K, V>(values: ReadonlyArray<readonly [K, V]>): ReadonlyMap<K, V> => new Map(values);
 
 /**
  * Construct a new Readonly Map
@@ -23,11 +22,7 @@ export const fromMutable = <K, A>(m: Map<K, A>): ReadonlyMap<K, A> => new Map(m)
  */
 export const singleton = <K, A>(k: K, a: A): ReadonlyMap<K, A> => new Map([[k, a]]);
 
-export const fromFoldable = <F extends HKT.URIS, K, A, C = HKT.Auto>(
-   E: Eq<K>,
-   S: Semigroup<A>,
-   F: Foldable<F, C>
-) => (
+export const fromFoldable = <F extends HKT.URIS, K, A, C = HKT.Auto>(E: Eq<K>, S: Semigroup<A>, F: Foldable<F, C>) => (
    fka: HKT.Kind<
       F,
       C,

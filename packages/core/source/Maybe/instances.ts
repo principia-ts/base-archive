@@ -1,9 +1,6 @@
-import * as A from "../Array";
-import { identity } from "../Function";
 import * as HKT from "../HKT";
-import type * as TC from "../typeclass-index";
+import * as TC from "../typeclass-index";
 import { just, nothing } from "./constructors";
-import { apS, bindS, bindToS, letS } from "./do";
 import { isJust, isNothing } from "./guards";
 import type { Maybe, URI, V } from "./Maybe";
 import {
@@ -23,12 +20,12 @@ import {
    _wilt,
    _wither,
    alt,
-   any,
    ap,
    chain,
    compact,
    extend,
    filter,
+   flatten,
    foldMap,
    map,
    mapBoth,
@@ -56,24 +53,14 @@ export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
    ap,
    _ap,
    mapBoth,
-   _mapBoth,
-   any
+   _mapBoth
 });
-
-export const mapN: TC.MapNF<[URI], V> = (f) => (fas) => {
-   const as = A.sequence(Applicative)(fas);
-   if (as._tag === "Nothing") {
-      return nothing();
-   }
-   return just(f(as.value as any));
-};
-
-export const tuple: TC.TupleF<[URI], V> = mapN(identity);
 
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
    _chain,
-   chain
+   chain,
+   flatten
 });
 
 export const Alt: TC.Alt<[URI], V> = HKT.instance({
@@ -131,13 +118,7 @@ export const Witherable: TC.Witherable<[URI], V> = HKT.instance({
    wither
 });
 
-export const ApplicativeDo: TC.ApplicativeDo<[URI], V> = HKT.instance({
-   ...Applicative,
-   bindS,
-   bindToS,
-   apS,
-   letS
-});
+export const Do: TC.Do<[URI], V> = TC.deriveDo(Monad);
 
 export const getApplySemigroup = <A>(S: TC.Semigroup<A>): TC.Semigroup<Maybe<A>> => ({
    concat: (y) => (x) => (isJust(x) && isJust(y) ? just(S.concat(x.value)(y.value)) : nothing())
