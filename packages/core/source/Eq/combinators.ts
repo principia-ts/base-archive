@@ -1,4 +1,4 @@
-import { Eq } from "./Eq";
+import type { Eq } from "./Eq";
 
 export const fromEquals = <A>(equals: (x: A) => (y: A) => boolean): Eq<A> => ({
    equals: (x) => (y) => x === y || equals(x)(y)

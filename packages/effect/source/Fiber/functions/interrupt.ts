@@ -2,6 +2,7 @@ import * as I from "@principia/core/Iterable";
 
 import * as T from "../../Effect/core";
 import { forkDaemon } from "../../Effect/core-scope";
+import type { UIO } from "../../Effect/Effect";
 import { checkFiberId } from "../../Effect/functions/checkFiberId";
 import type { Fiber } from "../Fiber";
 import type { FiberId } from "../FiberId";
@@ -15,8 +16,7 @@ import type { FiberId } from "../FiberId";
  * fiber has already exited, the returned effect will resume immediately.
  * Otherwise, the effect will resume when the fiber exits.
  */
-export const interrupt = <E, A>(fiber: Fiber<E, A>) =>
-   T._chain(checkFiberId(), (id) => fiber.interruptAs(id));
+export const interrupt = <E, A>(fiber: Fiber<E, A>) => T.chain_(checkFiberId(), (id) => fiber.interruptAs(id));
 
 /**
  * ```haskell
@@ -26,7 +26,7 @@ export const interrupt = <E, A>(fiber: Fiber<E, A>) =>
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.
  */
 export const interruptAllAs = (id: FiberId) => (fs: Iterable<Fiber<any, any>>) =>
-   I.reduce_(fs, T.unit as T.UIO<void>, (io, f) => T.asUnit(T._chain(io, () => f.interruptAs(id))));
+   I.reduce_(fs, T.unit as UIO<void>, (io, f) => T.asUnit(T.chain_(io, () => f.interruptAs(id))));
 
 /**
  * ```haskell

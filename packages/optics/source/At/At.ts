@@ -1,4 +1,4 @@
-import { Lens } from "../Lens";
+import type { Lens } from "../Lens";
 
 /*
  * -------------------------------------------

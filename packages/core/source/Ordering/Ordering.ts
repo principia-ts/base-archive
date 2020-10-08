@@ -1,4 +1,5 @@
-import { newtype, typeDef, TypeOf } from "../Newtype";
+import type { TypeOf } from "../Newtype";
+import { newtype, typeDef } from "../Newtype";
 
 const Ordering_ = typeDef<"LT" | "EQ" | "GT">()("Ordering");
 

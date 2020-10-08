@@ -1,73 +1,60 @@
-import { identity, pipe } from "@principia/core/Function";
+import { identity, tuple } from "@principia/core/Function";
 import type * as TC from "@principia/core/typeclass-index";
 
 import { succeed } from "./constructors";
 import { AccessInstruction, ChainInstruction, ProvideInstruction } from "./instructions";
-import { URI, V, XPure } from "./XPure";
+import type { URI, V, XPure } from "./XPure";
 
-export const _chain: TC.X.UC_ChainF<[URI], V> = (ma, f) => new ChainInstruction(ma, f);
+export const chain_: TC.X.UC_ChainF<[URI], V> = (ma, f) => new ChainInstruction(ma, f);
 
-export const chain: TC.X.ChainF<[URI], V> = (f) => (ma) => _chain(ma, f);
+export const chain: TC.X.ChainF<[URI], V> = (f) => (ma) => chain_(ma, f);
 
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _chain(fa, (a) => succeed(f(a)));
+export const map_: TC.UC_MapF<[URI], V> = (fa, f) => chain_(fa, (a) => succeed(f(a)));
 
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map: TC.MapF<[URI], V> = (f) => (fa) => map_(fa, f);
 
-export const _tap: TC.X.UC_TapF<[URI], V> = (ma, f) => _chain(ma, (a) => _map(f(a), () => a));
+export const tap_: TC.X.UC_TapF<[URI], V> = (ma, f) => chain_(ma, (a) => map_(f(a), () => a));
 
-export const tap: TC.X.TapF<[URI], V> = (f) => (ma) => _tap(ma, f);
+export const tap: TC.X.TapF<[URI], V> = (f) => (ma) => tap_(ma, f);
 
-export const _ap: TC.X.UC_ApF<[URI], V> = (fab, fa) => _chain(fab, (f) => _map(fa, f));
+export const pure = <A>(a: A): XPure<unknown, never, unknown, never, A> => succeed(a);
 
-export const ap: TC.X.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
-
-export const _apFirst: TC.X.UC_ApFirstF<[URI], V> = (fa, fb) =>
-   pipe(
-      fa,
-      map((a) => () => a),
-      ap(fb)
-   );
-
-export const apFirst: TC.X.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
-
-export const _apSecond: TC.X.UC_ApSecondF<[URI], V> = <S1, S2, R, E, A, S3, R1, E1, B>(
+export const mapBoth_ = <S1, S2, R, E, A, S3, Q, D, B, C>(
    fa: XPure<S1, S2, R, E, A>,
-   fb: XPure<S2, S3, R1, E1, B>
-): XPure<S1, S3, R & R1, E | E1, B> =>
-   pipe(
-      fa,
-      map(() => (b: B) => b),
-      ap(fb)
-   );
+   fb: XPure<S2, S3, Q, D, B>,
+   f: (a: A, b: B) => C
+): XPure<S1, S3, Q & R, D | E, C> => chain_(fa, (a) => map_(fb, (b) => f(a, b)));
 
-export const apSecond: TC.X.ApSecondF<[URI], V> = (fb) => (fa) => _apSecond(fa, fb);
+export const mapBoth = <A, S2, S3, Q, D, B, C>(fb: XPure<S2, S3, Q, D, B>, f: (a: A, b: B) => C) => <S1, R, E>(
+   fa: XPure<S1, S2, R, E, A>
+): XPure<S1, S3, Q & R, D | E, C> => mapBoth_(fa, fb, f);
 
-export const _mapBoth: TC.X.UC_MapBothF<[URI], V> = (fa, fb, f) =>
-   _chain(fa, (a) => _map(fb, (b) => f(a, b)));
+export const both_ = <S1, S2, R, E, A, S3, Q, D, B>(
+   fa: XPure<S1, S2, R, E, A>,
+   fb: XPure<S2, S3, Q, D, B>
+): XPure<S1, S3, Q & R, D | E, readonly [A, B]> => mapBoth_(fa, fb, tuple);
 
-export const mapBoth: TC.X.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
+export const both = <S2, S3, Q, D, B>(fb: XPure<S2, S3, Q, D, B>) => <S1, R, E, A>(
+   fa: XPure<S1, S2, R, E, A>
+): XPure<S1, S3, Q & R, D | E, readonly [A, B]> => both_(fa, fb);
 
-export const _both: TC.X.UC_BothF<[URI], V> = (fa, fb) => _mapBoth(fa, fb, (a, b) => [a, b]);
+export const flatten: TC.X.FlattenF<[URI], V> = (mma) => chain_(mma, identity);
 
-export const both: TC.X.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
+export const ask = <R>(): XPure<unknown, never, R, never, R> => new AccessInstruction((r: R) => succeed(r));
 
-export const flatten: TC.X.FlattenF<[URI], V> = (mma) => _chain(mma, identity);
+export const asksM: TC.AccessMF<[URI], V> = (f) => new AccessInstruction(f);
 
-export const accessM: TC.AccessMF<[URI], V> = (f) => new AccessInstruction(f);
+export const asks: TC.AccessF<[URI], V> = (f) => asksM((r: Parameters<typeof f>[0]) => succeed(f(r)));
 
-export const access: TC.AccessF<[URI], V> = (f) =>
-   accessM((r: Parameters<typeof f>[0]) => succeed(f(r)));
+export const giveAll_: TC.UC_ProvideAllF<[URI], V> = (fa, r) => new ProvideInstruction(fa, r);
 
-export const _provideAll: TC.UC_ProvideAllF<[URI], V> = (fa, r) => new ProvideInstruction(fa, r);
+export const giveAll: TC.ProvideAllF<[URI], V> = (r) => (fa) => giveAll_(fa, r);
 
-export const provideAll: TC.ProvideAllF<[URI], V> = (r) => (fa) => _provideAll(fa, r);
+export const local_: TC.UC_ProvideSomeF<[URI], V> = (ma, f) =>
+   asksM((r: Parameters<typeof f>[0]) => giveAll_(ma, f(r)));
 
-export const _provideSome: TC.UC_ProvideSomeF<[URI], V> = (ma, f) =>
-   accessM((r: Parameters<typeof f>[0]) => _provideAll(ma, f(r)));
+export const local: TC.ProvideSomeF<[URI], V> = (f) => (ma) => local_(ma, f);
 
-export const provideSome: TC.ProvideSomeF<[URI], V> = (f) => (ma) => _provideSome(ma, f);
+export const give_: TC.UC_ProvideF<[URI], V> = (ma, r) => local_(ma, (r0) => ({ ...r, ...r0 }));
 
-export const _provide: TC.UC_ProvideF<[URI], V> = (ma, r) =>
-   _provideSome(ma, (r0) => ({ ...r, ...r0 }));
-
-export const provide: TC.ProvideF<[URI], V> = (r) => (ma) => _provide(ma, r);
+export const give: TC.ProvideF<[URI], V> = (r) => (ma) => give_(ma, r);

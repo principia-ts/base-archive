@@ -1,5 +1,5 @@
-import * as T from "../_internal/effect";
-import { Managed } from "../Managed";
+import type * as T from "../_internal/effect";
+import type { Managed } from "../Managed";
 import { _onExit } from "./onExit";
 
 /**
@@ -8,8 +8,7 @@ import { _onExit } from "./onExit";
  *
  * For usecases that need access to the Managed's result, see [[onExit]].
  */
-export const _ensuring = <R, E, A, R1>(self: Managed<R, E, A>, f: T.Effect<R1, never, any>) =>
-   _onExit(self, () => f);
+export const ensuring_ = <R, E, A, R1>(self: Managed<R, E, A>, f: T.Effect<R1, never, any>) => _onExit(self, () => f);
 
 /**
  * Ensures that `f` is executed when this Managed is finalized, after
@@ -17,5 +16,4 @@ export const _ensuring = <R, E, A, R1>(self: Managed<R, E, A>, f: T.Effect<R1, n
  *
  * For usecases that need access to the Managed's result, see [[onExit]].
  */
-export const ensuring = <R1>(f: T.Effect<R1, never, any>) => <R, E, A>(self: Managed<R, E, A>) =>
-   _ensuring(self, f);
+export const ensuring = <R1>(f: T.Effect<R1, never, any>) => <R, E, A>(self: Managed<R, E, A>) => ensuring_(self, f);

@@ -1,8 +1,8 @@
 import type * as HKT from "@principia/core/HKT";
-import type { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 
 export interface Prism<S, A> {
-   readonly getMaybe: (s: S) => Maybe<A>;
+   readonly getOption: (s: S) => Option<A>;
    readonly reverseGet: (a: A) => S;
 }
 

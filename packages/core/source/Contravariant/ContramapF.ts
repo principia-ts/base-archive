@@ -1,4 +1,4 @@
-import * as HKT from "../HKT";
+import type * as HKT from "../HKT";
 
 export interface ContramapF<F extends HKT.URIS, C = HKT.Auto> {
    <A, B>(f: (a: B) => A): <N extends string, K, Q, W, X, I, S, R, E>(

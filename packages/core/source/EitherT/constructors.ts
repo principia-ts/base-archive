@@ -1,6 +1,6 @@
 import * as E from "../Either";
-import * as HKT from "../HKT";
-import * as TC from "../typeclass-index";
+import type * as HKT from "../HKT";
+import type * as TC from "../typeclass-index";
 
 export const left = <F extends HKT.URIS, C = HKT.Auto>(M: TC.Monad<F, C>) => <E = never, A = never>(l: E) =>
    M.pure(E.left(l));
@@ -21,7 +21,7 @@ export const leftM = <F extends HKT.URIS, C = HKT.Auto>(M: TC.Monad<F, C>) => <
    A
 >(
    ma: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, E.Either<A, never>> => M._map(ma, (a) => E.left<A, never>(a));
+): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, E.Either<A, never>> => M.map_(ma, (a) => E.left<A, never>(a));
 
 export const rightM = <F extends HKT.URIS, C = HKT.Auto>(M: TC.Monad<F, C>) => <
    N extends string,
@@ -36,4 +36,4 @@ export const rightM = <F extends HKT.URIS, C = HKT.Auto>(M: TC.Monad<F, C>) => <
    A
 >(
    ma: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, E.Either<never, A>> => M._map(ma, E.right);
+): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, E.Either<never, A>> => M.map_(ma, E.right);

@@ -16,10 +16,7 @@ export interface Done<O> {
    readonly out: O;
 }
 
-export type StepFunction<R, I, O> = (
-   interval: number,
-   input: I
-) => Effect<R, never, Decision<R, I, O>>;
+export type StepFunction<R, I, O> = (interval: number, input: I) => Effect<R, never, Decision<R, I, O>>;
 
 export const URI = "Decision";
 export type URI = typeof URI;
@@ -28,6 +25,6 @@ export type V = HKT.V<"X", "+"> & HKT.V<"R", "-"> & HKT.V<"E", "-">;
 
 declare module "@principia/core/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      [URI]: Decision<R, E, A>;
+      readonly [URI]: Decision<R, E, A>;
    }
 }

@@ -1,6 +1,6 @@
 import type { Effect } from "../../Effect/Effect";
 import type { Managed } from "../Managed";
-import { _onExitFirst, onExitFirst } from "./onExitFirst";
+import { onExitFirst, onExitFirst_ } from "./onExitFirst";
 
 /**
  * Ensures that `f` is executed when this `Managed` is finalized, before
@@ -20,9 +20,9 @@ export function ensuringFirst<R1>(
  *
  * For use cases that need access to the Managed's result, see `onExitFirst_`.
  */
-export function _ensuringFirst<R, E, A, R1>(
+export function ensuringFirst_<R, E, A, R1>(
    self: Managed<R, E, A>,
    f: Effect<R1, never, unknown>
 ): Managed<R & R1, E, A> {
-   return _onExitFirst(self, () => f);
+   return onExitFirst_(self, () => f);
 }

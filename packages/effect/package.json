@@ -24,7 +24,7 @@
    },
    "scripts": {
       "autofix": "yarn lint --fix",
-      "build": "yarn copy:system && yarn build:types && yarn build:esm-fix && yarn build:intermediary && yarn build:esm-shake && yarn build:cjs && yarn build:postprocess",
+      "build": "yarn build:types && yarn build:esm-fix && yarn build:intermediary && yarn build:esm-shake && yarn build:cjs && yarn build:postprocess",
       "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
       "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/_dist_/cjs dist/_dist_/.intermediary",
       "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/_dist_/esm-shake dist/_dist_/.intermediary",

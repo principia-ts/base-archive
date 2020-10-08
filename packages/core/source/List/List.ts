@@ -1,7 +1,7 @@
 /**
  * A lazy singly-linked list implementation
  */
-import { Lazy } from "../Function";
+import type { Lazy } from "../Function";
 import type * as HKT from "../HKT";
 
 /*
@@ -9,9 +9,6 @@ import type * as HKT from "../HKT";
  * Model
  * -------------------------------------------
  */
-
-/* eslint-disable-next-line */
-export var groupkey = {};
 
 export interface Nil {
    readonly _tag: "Nil";

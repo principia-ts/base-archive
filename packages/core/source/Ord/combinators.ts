@@ -1,5 +1,6 @@
 import { eqBoolean, eqNumber, eqString } from "../Eq";
-import { EQ, GT, LT, Ordering } from "../Ordering";
+import type { Ordering } from "../Ordering";
+import { EQ, GT, LT } from "../Ordering";
 import type { Ord } from "./Ord";
 
 export const fromCompare = <A>(compare: (x: A) => (y: A) => Ordering): Ord<A> => ({

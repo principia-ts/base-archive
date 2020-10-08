@@ -15,7 +15,7 @@ import type { URI, V } from "./Traversal";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const _compose: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.traversalComposeTraversal(ab)(sa);
+export const compose_: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.traversalComposeTraversal(ab)(sa);
 
 /**
  * Compose a `Traversal` with a `Traversal`

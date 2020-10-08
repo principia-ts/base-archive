@@ -1,13 +1,14 @@
-import { Either } from "../Either";
-import { Eq } from "../Eq";
-import { Predicate, Refinement } from "../Function";
-import { isJust, just, Maybe, nothing } from "../Maybe";
-import { NonEmptyArray } from "../NonEmptyArray";
+import type { Either } from "../Either";
+import type { Eq } from "../Eq";
+import type { Predicate, Refinement } from "../Function";
+import type { NonEmptyArray } from "../NonEmptyArray";
+import type { Option } from "../Option";
+import { isSome, none, some } from "../Option";
 import * as Ord from "../Ord";
 import { toNumber } from "../Ordering";
 import { empty } from "./constructors";
-import { _isOutOfBound, isEmpty, isNonEmpty } from "./guards";
-import { _chain, _reduce } from "./methods";
+import { isEmpty, isNonEmpty, isOutOfBound_ } from "./guards";
+import { chain_, reduce_ } from "./methods";
 
 /*
  * -------------------------------------------
@@ -15,7 +16,7 @@ import { _chain, _reduce } from "./methods";
  * -------------------------------------------
  */
 
-export const _append = <A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> => {
+export const append_ = <A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> => {
    const lenx = xs.length;
    if (lenx === 0) {
       return ys;
@@ -34,12 +35,11 @@ export const _append = <A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): Readonly
    return r;
 };
 
-export const append = <A>(ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => _append(xs, ys);
+export const append = <A>(ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => append_(xs, ys);
 
-export const _lookup = <A>(i: number, as: ReadonlyArray<A>): Maybe<A> =>
-   _isOutOfBound(i, as) ? nothing() : just(as[i]);
+export const lookup_ = <A>(i: number, as: ReadonlyArray<A>): Option<A> => (isOutOfBound_(i, as) ? none() : some(as[i]));
 
-export const lookup = (i: number) => <A>(as: ReadonlyArray<A>): Maybe<A> => _lookup(i, as);
+export const lookup = (i: number) => <A>(as: ReadonlyArray<A>): Option<A> => lookup_(i, as);
 
 export const scanl = <A, B>(b: B, f: (b: B, a: A) => B) => (as: ReadonlyArray<A>): ReadonlyArray<B> => {
    const l = as.length;
@@ -81,15 +81,15 @@ export const snoc = <A>(end: A) => (init: ReadonlyArray<A>): NonEmptyArray<A> =>
    return (r as unknown) as NonEmptyArray<A>;
 };
 
-export const head = <A>(as: ReadonlyArray<A>): Maybe<A> => (isEmpty(as) ? nothing() : just(as[0]));
+export const head = <A>(as: ReadonlyArray<A>): Option<A> => (isEmpty(as) ? none() : some(as[0]));
 
-export const tail = <A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> => (isEmpty(as) ? nothing() : just(as.slice(1)));
+export const tail = <A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> => (isEmpty(as) ? none() : some(as.slice(1)));
 
-export const last = <A>(as: ReadonlyArray<A>): Maybe<A> => _lookup(as.length - 1, as);
+export const last = <A>(as: ReadonlyArray<A>): Option<A> => lookup_(as.length - 1, as);
 
-export const init = <A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> => {
+export const init = <A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> => {
    const len = as.length;
-   return len === 0 ? nothing() : just(as.slice(0, len - 1));
+   return len === 0 ? none() : some(as.slice(0, len - 1));
 };
 
 export const takel = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => as.slice(0, n);
@@ -157,74 +157,74 @@ export const droprWhile = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>)
 };
 
 export const findr: {
-   <A, B extends A>(refinement: Refinement<A, B>): (as: ReadonlyArray<A>) => Maybe<B>;
-   <A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A>;
-} = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Maybe<A> => {
+   <A, B extends A>(refinement: Refinement<A, B>): (as: ReadonlyArray<A>) => Option<B>;
+   <A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => Option<A>;
+} = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Option<A> => {
    const len = as.length;
    for (let i = 0; i < len; i++) {
       if (predicate(as[i])) {
-         return just(as[i]);
+         return some(as[i]);
       }
    }
-   return nothing();
+   return none();
 };
 
-export const findrMap = <A, B>(f: (a: A) => Maybe<B>) => (as: ReadonlyArray<A>): Maybe<B> => {
+export const findrMap = <A, B>(f: (a: A) => Option<B>) => (as: ReadonlyArray<A>): Option<B> => {
    const len = as.length;
    for (let i = 0; i < len; i++) {
       const v = f(as[i]);
-      if (isJust(v)) {
+      if (isSome(v)) {
          return v;
       }
    }
-   return nothing();
+   return none();
 };
 
 export const findl: {
-   <A, B extends A>(refinement: Refinement<A, B>): (as: ReadonlyArray<A>) => Maybe<B>;
-   <A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A>;
-} = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Maybe<A> => {
+   <A, B extends A>(refinement: Refinement<A, B>): (as: ReadonlyArray<A>) => Option<B>;
+   <A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => Option<A>;
+} = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Option<A> => {
    const len = as.length;
    for (let i = len - 1; i >= 0; i--) {
       if (predicate(as[i])) {
-         return just(as[i]);
+         return some(as[i]);
       }
    }
-   return nothing();
+   return none();
 };
 
-export const findlMap = <A, B>(f: (a: A) => Maybe<B>) => (as: ReadonlyArray<A>): Maybe<B> => {
+export const findlMap = <A, B>(f: (a: A) => Option<B>) => (as: ReadonlyArray<A>): Option<B> => {
    const len = as.length;
    for (let i = len - 1; i >= 0; i--) {
       const v = f(as[i]);
-      if (isJust(v)) {
+      if (isSome(v)) {
          return v;
       }
    }
-   return nothing();
+   return none();
 };
 
-export const _findlIndex = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>): Maybe<number> => {
+export const findlIndex_ = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>): Option<number> => {
    const len = as.length;
    for (let i = 0; i < len; i++) {
       if (predicate(as[i])) {
-         return just(i);
+         return some(i);
       }
    }
-   return nothing();
+   return none();
 };
 
-export const findlIndex = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Maybe<number> =>
-   _findlIndex(as, predicate);
+export const findlIndex = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Option<number> =>
+   findlIndex_(as, predicate);
 
-export const findrIndex = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Maybe<number> => {
+export const findrIndex = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): Option<number> => {
    const len = as.length;
    for (let i = len - 1; i >= 0; i--) {
       if (predicate(as[i])) {
-         return just(i);
+         return some(i);
       }
    }
-   return nothing();
+   return none();
 };
 
 export const unsafeInsertAt = <A>(i: number, a: A, as: ReadonlyArray<A>): ReadonlyArray<A> => {
@@ -249,14 +249,14 @@ export const unsafeDeleteAt = <A>(i: number, as: ReadonlyArray<A>): ReadonlyArra
    return xs;
 };
 
-export const insertAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> =>
-   _isOutOfBound(i, as) ? nothing() : just(unsafeInsertAt(i, a, as));
+export const insertAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Option<ReadonlyArray<A>> =>
+   isOutOfBound_(i, as) ? none() : some(unsafeInsertAt(i, a, as));
 
-export const updateAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> =>
-   _isOutOfBound(i, as) ? nothing() : just(unsafeUpdateAt(i, a, as));
+export const updateAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Option<ReadonlyArray<A>> =>
+   isOutOfBound_(i, as) ? none() : some(unsafeUpdateAt(i, a, as));
 
-export const deleteAt = (i: number) => <A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> =>
-   _isOutOfBound(i, as) ? nothing() : just(unsafeDeleteAt(i, as));
+export const deleteAt = (i: number) => <A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> =>
+   isOutOfBound_(i, as) ? none() : some(unsafeDeleteAt(i, as));
 
 export const reverse = <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => (isEmpty(as) ? as : as.slice().reverse());
 
@@ -325,7 +325,7 @@ export const uniq = <A>(E: Eq<A>) => (as: ReadonlyArray<A>): ReadonlyArray<A> =>
 
 export const sortBy = <B>(ords: ReadonlyArray<Ord.Ord<B>>) => <A extends B>(as: ReadonlyArray<A>): ReadonlyArray<A> => {
    const M = Ord.getMonoid<B>();
-   return sort(_reduce(ords, M.empty, (b, a) => M.concat(b)(a)))(as);
+   return sort(reduce_(ords, M.empty, (b, a) => M.concat(b)(a)))(as);
 };
 
 export const comprehension: {
@@ -354,7 +354,7 @@ export const comprehension: {
       if (input.length === 0) {
          return g(...scope) ? [f(...scope)] : empty();
       } else {
-         return _chain(input[0], (x) => go(snoc(x)(scope), input.slice(1)));
+         return chain_(input[0], (x) => go(snoc(x)(scope), input.slice(1)));
       }
    };
    return go(empty(), input);
@@ -362,7 +362,7 @@ export const comprehension: {
 
 export const union = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => {
    const elemE = elem(E);
-   return _append(
+   return append_(
       xs,
       ys.filter((a) => !elemE(a)(xs))
    );
@@ -373,7 +373,7 @@ export const intersection = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (xs: Read
    return xs.filter((a) => elemE(a)(ys));
 };
 
-export const _chop = <A, B>(
+export const chop_ = <A, B>(
    as: ReadonlyArray<A>,
    f: (as: NonEmptyArray<A>) => readonly [B, ReadonlyArray<A>]
 ): ReadonlyArray<B> => {
@@ -389,7 +389,7 @@ export const _chop = <A, B>(
 
 export const chop = <A, B>(f: (as: NonEmptyArray<A>) => readonly [B, ReadonlyArray<A>]) => (
    as: ReadonlyArray<A>
-): ReadonlyArray<B> => _chop(as, f);
+): ReadonlyArray<B> => chop_(as, f);
 
 export const splitAt = (n: number) => <A>(as: ReadonlyArray<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>] => [
    as.slice(0, n),
@@ -397,22 +397,22 @@ export const splitAt = (n: number) => <A>(as: ReadonlyArray<A>): readonly [Reado
 ];
 
 export const chunksOf = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<ReadonlyArray<A>> =>
-   as.length === 0 ? empty() : _isOutOfBound(n - 1, as) ? [as] : _chop(as, splitAt(n));
+   as.length === 0 ? empty() : isOutOfBound_(n - 1, as) ? [as] : chop_(as, splitAt(n));
 
 export const difference = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>): ReadonlyArray<A> => {
    const elemE = elem(E);
    return xs.filter((a) => !elemE(a)(ys));
 };
 
-export const _dropLeft = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> => as.slice(n, as.length);
+export const dropLeft_ = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> => as.slice(n, as.length);
 
-export const dropLeft = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => _dropLeft(as, n);
+export const dropLeft = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => dropLeft_(as, n);
 
-export const _dropRight = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> => as.slice(0, as.length - n);
+export const dropRight_ = <A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> => as.slice(0, as.length - n);
 
-export const dropRight = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => _dropRight(as, n);
+export const dropRight = (n: number) => <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => dropRight_(as, n);
 
-export const _dropLeftWhile = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A> => {
+export const dropLeftWhile_ = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A> => {
    const i = spanIndexUncurry(as, predicate);
    const l = as.length;
    const rest = Array(l - i);
@@ -423,4 +423,4 @@ export const _dropLeftWhile = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>)
 };
 
 export const dropLeftWhile = <A>(predicate: Predicate<A>) => (as: ReadonlyArray<A>): ReadonlyArray<A> =>
-   _dropLeftWhile(as, predicate);
+   dropLeftWhile_(as, predicate);

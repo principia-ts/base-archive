@@ -1,6 +1,6 @@
 import { pipe } from "../Function";
 import type * as HKT from "../HKT";
-import { EnforceNonEmptyRecord } from "../Utils";
+import type { EnforceNonEmptyRecord } from "../Utils";
 import type { Apply } from "./Apply";
 import { getRecordConstructor } from "./utils";
 

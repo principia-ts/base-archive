@@ -1,12 +1,13 @@
 import * as A from "@principia/core/Array";
 import { flow, pipe, tuple } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 
 import * as C from "../Cause";
-import { ExecutionStrategy, sequential } from "../ExecutionStrategy";
+import type { ExecutionStrategy } from "../ExecutionStrategy";
+import { sequential } from "../ExecutionStrategy";
 import * as Ex from "../Exit/core";
-import { Exit } from "../Exit/Exit";
-import { Fiber } from "../Fiber/Fiber";
+import type { Exit } from "../Exit/Exit";
+import type { Fiber } from "../Fiber/Fiber";
 import type { FiberContext } from "../Fiber/FiberContext";
 import { interrupt } from "../Fiber/functions/interrupt";
 import * as M from "../Managed/core";
@@ -36,37 +37,29 @@ export function releaseAllReleaseMaps(
                   switch (execStrategy._tag) {
                      case "Sequential": {
                         return [
-                           T._chain(
-                              T._foreach(Array.from(RM.finalizers(s)).reverse(), ([_, f]) =>
-                                 T.result(f(exit))
-                              ),
-                              (e) =>
-                                 T.done(Mb._getOrElse(Ex.collectAll(...e), () => Ex.succeed([])))
+                           T.chain_(
+                              T.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
+                              (e) => T.done(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
                            ),
                            RM.exited(s.nextKey, exit)
                         ];
                      }
                      case "Parallel": {
                         return [
-                           T._chain(
-                              _foreachPar(Array.from(RM.finalizers(s)).reverse(), ([_, f]) =>
-                                 T.result(f(exit))
-                              ),
-                              (e) =>
-                                 T.done(Mb._getOrElse(Ex.collectAllPar(...e), () => Ex.succeed([])))
+                           T.chain_(
+                              foreachPar_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
+                              (e) => T.done(O.getOrElse_(Ex.collectAllPar(...e), () => Ex.succeed([])))
                            ),
                            RM.exited(s.nextKey, exit)
                         ];
                      }
                      case "ParallelN": {
                         return [
-                           T._chain(
-                              _foreachParN(execStrategy.n)(
-                                 Array.from(RM.finalizers(s)).reverse(),
-                                 ([_, f]) => T.result(f(exit))
+                           T.chain_(
+                              foreachParN_(execStrategy.n)(Array.from(RM.finalizers(s)).reverse(), ([_, f]) =>
+                                 T.result(f(exit))
                               ),
-                              (e) =>
-                                 T.done(Mb._getOrElse(Ex.collectAllPar(...e), () => Ex.succeed([])))
+                              (e) => T.done(O.getOrElse_(Ex.collectAllPar(...e), () => Ex.succeed([])))
                            ),
                            RM.exited(s.nextKey, exit)
                         ];
@@ -91,10 +84,7 @@ export function releaseAllReleaseMaps(
  *
  * Additionally, interrupts all effects on any failure.
  */
-export function _foreachUnitPar<R, E, A>(
-   as: Iterable<A>,
-   f: (a: A) => T.Effect<R, E, any>
-): T.Effect<R, E, void> {
+export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Effect<R, E, any>): T.Effect<R, E, void> {
    const arr = Array.from(as);
    const size = arr.length;
 
@@ -151,14 +141,14 @@ export function _foreachUnitPar<R, E, A>(
             )
          )
       ),
-      T.bindS("fibers", (s) => T._foreach(arr, (a) => T.fork(s.task(a)))),
+      T.bindS("fibers", (s) => T.foreach_(arr, (a) => T.fork(s.task(a)))),
       T.letS("interruptor", (s) =>
          pipe(
             s.result,
             promiseWait,
             T.catchAll(() =>
-               T._chain(
-                  T._foreach(s.fibers, (f) => T.fork(f.interruptAs(s.parentId))),
+               T.chain_(
+                  T.foreach_(s.fibers, (f) => T.fork(f.interruptAs(s.parentId))),
                   joinAllFibers
                )
             ),
@@ -167,26 +157,22 @@ export function _foreachUnitPar<R, E, A>(
          )
       ),
       T.tap((s) =>
-         _useManaged(s.interruptor, () =>
-            T._onInterruptExtended(
+         useManaged_(s.interruptor, () =>
+            T.onInterruptExtended_(
                T.whenM(
-                  T._map(
-                     T._foreach(s.fibers, (f) => f.await),
+                  T.map_(
+                     T.foreach_(s.fibers, (f) => f.await),
                      flow(
                         A.findr((e) => e._tag === "Failure"),
-                        (m) => m._tag === "Just"
+                        (m) => m._tag === "Some"
                      )
                   )
-               )(
-                  T._chain(promiseFail<void>(undefined)(s.result), () =>
-                     T._chain(s.causes.get, (x) => T.halt(x))
-                  )
-               ),
+               )(T.chain_(promiseFail<void>(undefined)(s.result), () => T.chain_(s.causes.get, (x) => T.halt(x)))),
                () =>
-                  T._chain(promiseFail<void>(undefined)(s.result), () =>
-                     T._chain(
-                        T._foreach(s.fibers, (f) => f.await),
-                        () => T._chain(s.causes.get, (x) => T.halt(x))
+                  T.chain_(promiseFail<void>(undefined)(s.result), () =>
+                     T.chain_(
+                        T.foreach_(s.fibers, (f) => f.await),
+                        () => T.chain_(s.causes.get, (x) => T.halt(x))
                      )
                   )
             )
@@ -208,9 +194,8 @@ export function _foreachUnitPar<R, E, A>(
  *
  * Additionally, interrupts all effects on any failure.
  */
-export const foreachUnitPar = <R, E, A>(f: (a: A) => T.Effect<R, E, any>) => (
-   as: Iterable<A>
-): T.Effect<R, E, void> => _foreachUnitPar(as, f);
+export const foreachUnitPar = <R, E, A>(f: (a: A) => T.Effect<R, E, any>) => (as: Iterable<A>): T.Effect<R, E, void> =>
+   foreachUnitPar_(as, f);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -218,25 +203,25 @@ export const foreachUnitPar = <R, E, A>(f: (a: A) => T.Effect<R, E, any>) => (
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const _foreachPar = <R, E, A, B>(
+export const foreachPar_ = <R, E, A, B>(
    as: Iterable<A>,
    f: (a: A) => T.Effect<R, E, B>
 ): T.Effect<R, E, ReadonlyArray<B>> => {
    const arr = Array.from(as);
 
-   return T._chain(
+   return T.chain_(
       T.total<B[]>(() => []),
       (array) => {
          const fn = ([a, n]: [A, number]) =>
-            T._chain(
+            T.chain_(
                T.suspend(() => f(a)),
                (b) =>
                   T.total(() => {
                      array[n] = b;
                   })
             );
-         return T._chain(
-            _foreachUnitPar(
+         return T.chain_(
+            foreachUnitPar_(
                arr.map((a, n) => [a, n] as [A, number]),
                fn
             ),
@@ -248,7 +233,7 @@ export const _foreachPar = <R, E, A, B>(
 
 export const foreachPar = <R, E, A, B>(f: (a: A) => T.Effect<R, E, B>) => (
    as: Iterable<A>
-): T.Effect<R, E, ReadonlyArray<B>> => _foreachPar(as, f);
+): T.Effect<R, E, ReadonlyArray<B>> => foreachPar_(as, f);
 
 /**
  * Applies the functionw `f` to each element of the `Iterable<A>` in parallel,
@@ -256,38 +241,38 @@ export const foreachPar = <R, E, A, B>(f: (a: A) => T.Effect<R, E, B>) => (
  *
  * Unlike `foreachPar`, this method will use at most up to `n` fibers.
  */
-export const _foreachParN = (n: number) => <A, R, E, B>(
+export const foreachParN_ = (n: number) => <A, R, E, B>(
    as: Iterable<A>,
    f: (a: A) => T.Effect<R, E, B>
 ): T.Effect<R, E, ReadonlyArray<B>> =>
    pipe(
       Sema.makeSemaphore(n),
-      T.chain((s) => _foreachPar(as, (a) => Sema.withPermit(s)(f(a))))
+      T.chain((s) => foreachPar_(as, (a) => Sema.withPermit(s)(f(a))))
    );
 
-export const foreachParN = (n: number) => <X, R, E, A, B>(f: (a: A) => T.Effect<R, E, B>) => (
+export const foreachParN = (n: number) => <R, E, A, B>(f: (a: A) => T.Effect<R, E, B>) => (
    as: Iterable<A>
-): T.Effect<R, E, ReadonlyArray<B>> => _foreachParN(n)(as, f);
+): T.Effect<R, E, ReadonlyArray<B>> => foreachParN_(n)(as, f);
 
 /**
  * Run an effect while acquiring the resource before and releasing it after
  */
 export const useManaged = <A, R2, E2, B>(f: (a: A) => T.Effect<R2, E2, B>) => <R, E>(
    self: Managed<R, E, A>
-): T.Effect<R & R2, E | E2, B> => _useManaged(self, f);
+): T.Effect<R & R2, E | E2, B> => useManaged_(self, f);
 
 /**
  * Run an effect while acquiring the resource before and releasing it after
  */
-export const _useManaged = <R, E, A, R2, E2, B>(
+export const useManaged_ = <R, E, A, R2, E2, B>(
    self: Managed<R, E, A>,
    f: (a: A) => T.Effect<R2, E2, B>
 ): T.Effect<R & R2, E | E2, B> => {
-   return T._bracketExit(
+   return T.bracketExit_(
       RM.makeReleaseMap,
       (rm) =>
-         T._chain(
-            T._provideSome(self.effect, (r: R) => tuple(r, rm)),
+         T.chain_(
+            T.local_(self.effect, (r: R) => tuple(r, rm)),
             (a) => f(a[1])
          ),
       (rm, ex) => releaseAllReleaseMaps(ex, sequential())(rm)
@@ -299,14 +284,12 @@ export const _useManaged = <R, E, A, R2, E2, B>(
  * and provides that fiber. The finalizer for this value will interrupt the fiber
  * and run the original finalizer.
  */
-export const forkManaged = <R, E, A>(
-   self: Managed<R, E, A>
-): Managed<R, never, FiberContext<E, A>> =>
+export const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberContext<E, A>> =>
    M.managed(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
             T.of,
-            T.bindS("tp", () => T.environment<readonly [R, RM.ReleaseMap]>()),
+            T.bindS("tp", () => T.ask<readonly [R, RM.ReleaseMap]>()),
             T.letS("r", ({ tp }) => tp[0]),
             T.letS("outerReleaseMap", ({ tp }) => tp[1]),
             T.bindS("innerReleaseMap", () => RM.makeReleaseMap),
@@ -316,7 +299,7 @@ export const forkManaged = <R, E, A>(
                      self.effect,
                      T.map(([_, a]) => a),
                      T.forkDaemon,
-                     T.provideAll([r, innerReleaseMap] as const)
+                     T.giveAll([r, innerReleaseMap] as const)
                   )
                )
             ),
@@ -339,10 +322,8 @@ export const forkManaged = <R, E, A>(
  * be released with the specified `ExecutionStrategy` as the release action
  * for the resulting `Managed`.
  */
-export const makeManagedReleaseMap = (
-   es: ExecutionStrategy
-): Managed<unknown, never, RM.ReleaseMap> =>
-   M._makeExit(RM.makeReleaseMap, (rm, e) => releaseAllReleaseMaps(e, es)(rm));
+export const makeManagedReleaseMap = (es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> =>
+   M.makeExit_(RM.makeReleaseMap, (rm, e) => releaseAllReleaseMaps(e, es)(rm));
 
 /**
  * Joins all fibers, awaiting their _successful_ completion.
@@ -350,12 +331,10 @@ export const makeManagedReleaseMap = (
  * a catchable error, _if_ that error does not result from interruption.
  */
 export const joinAllFibers = <E, A>(as: Iterable<Fiber<E, A>>) =>
-   T._tap(T._chain(awaitAllFibers(as), T.done), () => T._foreach(as, (f) => f.inheritRefs));
+   T.tap_(T.chain_(awaitAllFibers(as), T.done), () => T.foreach_(as, (f) => f.inheritRefs));
 
 /**
  * Awaits on all fibers to be completed, successfully or not.
  */
-export const awaitAllFibers = <E, A>(
-   as: Iterable<Fiber<E, A>>
-): T.Effect<unknown, never, Exit<E, ReadonlyArray<A>>> =>
-   T.result(_foreachPar(as, (f) => T._chain(f.await, T.done)));
+export const awaitAllFibers = <E, A>(as: Iterable<Fiber<E, A>>): T.Effect<unknown, never, Exit<E, ReadonlyArray<A>>> =>
+   T.result(foreachPar_(as, (f) => T.chain_(f.await, T.done)));

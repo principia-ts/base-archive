@@ -1,5 +1,5 @@
 import * as C from "../../Cause";
-import type { Exit } from "../../Exit/core";
+import type { Exit } from "../../Exit/Exit";
 import type { Fiber } from "../../Fiber/Fiber";
 import type { FiberId } from "../../Fiber/FiberId";
 import { join } from "../../Fiber/functions/join";
@@ -10,7 +10,7 @@ import { raceWith, transplant } from "../core-scope";
  * Sequentially zips this effect with the specified effect using the
  * specified combiner function.
  */
-export function _mapBothPar<R, E, A, R2, E2, A2, B>(
+export function mapBothPar_<R, E, A, R2, E2, A2, B>(
    a: T.Effect<R, E, A>,
    b: T.Effect<R2, E2, A2>,
    f: (a: A, b: A2) => B
@@ -33,12 +33,9 @@ export function _mapBothPar<R, E, A, R2, E2, A2, B>(
  * Sequentially zips this effect with the specified effect using the
  * specified combiner function.
  */
-export const mapBothPar = <A, R1, E1, A1, B>(mb: T.Effect<R1, E1, A1>, f: (a: A, b: A1) => B) => <
-   R,
-   E
->(
+export const mapBothPar = <A, R1, E1, A1, B>(mb: T.Effect<R1, E1, A1>, f: (a: A, b: A1) => B) => <R, E>(
    ma: T.Effect<R, E, A>
-) => _mapBothPar(ma, mb, f);
+) => mapBothPar_(ma, mb, f);
 
 function coordinateBothPar<E, E2>() {
    return <B, X, Y>(
@@ -50,18 +47,16 @@ function coordinateBothPar<E, E2>() {
    ) => {
       switch (winner._tag) {
          case "Success": {
-            return T._map(join(loser), (y) => f(winner.value, y));
+            return T.map_(join(loser), (y) => f(winner.value, y));
          }
          case "Failure": {
-            return T._chain(loser.interruptAs(fiberId), (e) => {
+            return T.chain_(loser.interruptAs(fiberId), (e) => {
                switch (e._tag) {
                   case "Success": {
                      return T.halt(winner.cause);
                   }
                   case "Failure": {
-                     return leftWinner
-                        ? T.halt(C.both(winner.cause, e.cause))
-                        : T.halt(C.both(e.cause, winner.cause));
+                     return leftWinner ? T.halt(C.both(winner.cause, e.cause)) : T.halt(C.both(e.cause, winner.cause));
                   }
                }
             });

@@ -1,12 +1,12 @@
 import { flow } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 
 import * as _ from "../internal";
-import { Lens } from "../Lens";
-import { Optional } from "../Optional";
-import { Prism } from "../Prism";
-import { Traversal } from "../Traversal";
-import { Iso } from "./Iso";
+import type { Lens } from "../Lens";
+import type { Optional } from "../Optional";
+import type { Prism } from "../Prism";
+import type { Traversal } from "../Traversal";
+import type { Iso } from "./Iso";
 
 /*
  * -------------------------------------------
@@ -29,7 +29,7 @@ export const asLens: <S, A>(sa: Iso<S, A>) => Lens<S, A> = _.isoAsLens;
  * @since 1.0.0
  */
 export const asPrism = <S, A>(sa: Iso<S, A>): Prism<S, A> => ({
-   getMaybe: flow(sa.get, Mb.just),
+   getOption: flow(sa.get, O.some),
    reverseGet: sa.reverseGet
 });
 
@@ -48,7 +48,5 @@ export const asOptional: <S, A>(sa: Iso<S, A>) => Optional<S, A> = _.isoAsOption
  * @since 1.0.0
  */
 export const asTraversal = <S, A>(sa: Iso<S, A>): Traversal<S, A> => ({
-   modifyF: _.implementModifyF<S, A>()((_) => (F) => (f) => (s) =>
-      F._map(f(sa.get(s)), (a) => sa.reverseGet(a))
-   )
+   modifyF: _.implementModifyF<S, A>()((_) => (F) => (f) => (s) => F.map_(f(sa.get(s)), (a) => sa.reverseGet(a)))
 });

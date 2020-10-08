@@ -1,7 +1,7 @@
 import type * as HKT from "@principia/core/HKT";
-import type { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 
-import type { UIO } from "../Effect";
+import type { UIO } from "../Effect/Effect";
 import type { Exit } from "../Exit/Exit";
 import type { FiberRef } from "../FiberRef/FiberRef";
 import type { Scope } from "../Scope";
@@ -56,7 +56,7 @@ export interface CommonFiber<E, A> {
    getRef: <K>(fiberRef: FiberRef<K>) => UIO<K>;
    inheritRefs: UIO<void>;
    interruptAs(fiberId: FiberId): UIO<Exit<E, A>>;
-   poll: UIO<Maybe<Exit<E, A>>>;
+   poll: UIO<Option<Exit<E, A>>>;
 }
 
 export interface Runtime<E, A> extends CommonFiber<E, A> {

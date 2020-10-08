@@ -1,20 +1,23 @@
 import * as A from "@principia/core/Array";
 import * as E from "@principia/core/Either";
-import { Maybe, nothing } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import { none } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 
 import * as C from "../Cause";
 import * as Ex from "../Exit/core";
+import type { Exit } from "../Exit/Exit";
 import * as FR from "../FiberRef";
 import * as Scope from "../Scope";
 import { Stack } from "../Stack";
+import type { Supervisor } from "../Supervisor";
 import * as Super from "../Supervisor";
-import { Supervisor } from "../Supervisor";
 import { AtomicReference, defaultScheduler } from "../Support";
 import * as X from "../XPure";
 import * as T from "./_internal/effect";
 import * as F from "./core";
-import { Fiber, FiberDescriptor, InterruptStatus, Runtime } from "./Fiber";
+import type { Fiber, InterruptStatus, Runtime } from "./Fiber";
+import { FiberDescriptor } from "./Fiber";
 import type { FiberId } from "./FiberId";
 import { fiberId as makeFiberId } from "./FiberId";
 import type { Callback, FiberRefLocals } from "./state";
@@ -87,7 +90,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
    environments?: Stack<any> = new Stack(this.startEnv);
    interruptStatus?: Stack<boolean> = new Stack(this.startIStatus.toBoolean);
    supervisors: Stack<Supervisor<any>> = new Stack(this.supervisor0);
-   forkScopeOverride?: Stack<Maybe<Scope.Scope<Ex.Exit<any, any>>>> = undefined;
+   forkScopeOverride?: Stack<Option<Scope.Scope<Exit<any, any>>>> = undefined;
    scopeKey: Scope.Key | undefined = undefined;
 
    constructor(
@@ -96,7 +99,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       readonly startIStatus: InterruptStatus,
       readonly fiberRefLocals: FiberRefLocals,
       readonly supervisor0: Supervisor<any>,
-      readonly openScope: Scope.Open<Ex.Exit<E, A>>,
+      readonly openScope: Scope.Open<Exit<E, A>>,
       readonly mapOp: number
    ) {
       _tracing.trace(this);
@@ -115,10 +118,10 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
       switch (state._tag) {
          case "Executing": {
-            return Mb.nothing();
+            return O.none();
          }
          case "Done": {
-            return Mb.just(state.value);
+            return O.some(state.value);
          }
       }
    }
@@ -231,7 +234,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       return discardedFolds;
    }
 
-   register0(k: Callback<never, Ex.Exit<E, A>>): Ex.Exit<E, A> | null {
+   register0(k: Callback<never, Exit<E, A>>): Exit<E, A> | null {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -241,9 +244,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
          case "Executing": {
             const observers = [k, ...oldState.observers];
 
-            this.state.set(
-               new FiberStateExecuting(oldState.status, observers, oldState.interrupted)
-            );
+            this.state.set(new FiberStateExecuting(oldState.status, observers, oldState.interrupted));
 
             return null;
          }
@@ -261,36 +262,32 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       }
    }
 
-   notifyObservers(v: Ex.Exit<E, A>, observers: Callback<never, Ex.Exit<E, A>>[]) {
+   notifyObservers(v: Exit<E, A>, observers: Callback<never, Exit<E, A>>[]) {
       const result = Ex.succeed(v);
 
       observers.forEach((k) => k(result));
    }
 
-   observe0(k: Callback<never, Ex.Exit<E, A>>): Maybe<T.UIO<Ex.Exit<E, A>>> {
+   observe0(k: Callback<never, Exit<E, A>>): Option<T.UIO<Exit<E, A>>> {
       const x = this.register0(k);
 
       if (x != null) {
-         return Mb.just(T.pure(x));
+         return O.some(T.pure(x));
       }
 
-      return Mb.nothing();
+      return O.none();
    }
 
-   get await(): T.UIO<Ex.Exit<E, A>> {
+   get await(): T.UIO<Exit<E, A>> {
       return T.maybeAsyncInterrupt(
-         (k): E.Either<T.UIO<void>, T.UIO<Ex.Exit<E, A>>> => {
-            const cb: Callback<never, Ex.Exit<E, A>> = (x) => k(T.done(x));
-            return Mb._fold(
-               this.observe0(cb),
-               () => E.left(T.total(() => this.interruptObserver(cb))),
-               E.right
-            );
+         (k): E.Either<T.UIO<void>, T.UIO<Exit<E, A>>> => {
+            const cb: Callback<never, Exit<E, A>> = (x) => k(T.done(x));
+            return O.fold_(this.observe0(cb), () => E.left(T.total(() => this.interruptObserver(cb))), E.right);
          }
       );
    }
 
-   interruptObserver(k: Callback<never, Ex.Exit<E, A>>) {
+   interruptObserver(k: Callback<never, Exit<E, A>>) {
       const oldState = this.state.get;
 
       if (oldState._tag === "Executing") {
@@ -300,7 +297,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       }
    }
 
-   kill0(fiberId: FiberId): T.UIO<Ex.Exit<E, A>> {
+   kill0(fiberId: FiberId): T.UIO<Exit<E, A>> {
       const interruptedCause = C.interrupt(fiberId);
 
       const setInterruptedLoop = (): C.Cause<never> => {
@@ -308,11 +305,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
          switch (oldState._tag) {
             case "Executing": {
-               if (
-                  oldState.status._tag === "Suspended" &&
-                  oldState.status.interruptible &&
-                  !interrupting(oldState)
-               ) {
+               if (oldState.status._tag === "Suspended" && oldState.status.interruptible && !interrupting(oldState)) {
                   const newCause = C.then(oldState.interrupted, interruptedCause);
 
                   this.state.set(
@@ -329,9 +322,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                } else {
                   const newCause = C.then(oldState.interrupted, interruptedCause);
 
-                  this.state.set(
-                     new FiberStateExecuting(oldState.status, oldState.observers, newCause)
-                  );
+                  this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, newCause));
 
                   return newCause;
                }
@@ -349,11 +340,11 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       });
    }
 
-   interruptAs(fiberId: FiberId): T.UIO<Ex.Exit<E, A>> {
+   interruptAs(fiberId: FiberId): T.UIO<Exit<E, A>> {
       return this.kill0(fiberId);
    }
 
-   done(v: Ex.Exit<E, A>): T.Instruction | undefined {
+   done(v: Exit<E, A>): T.Instruction | undefined {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -378,16 +369,12 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                 * because there are effects to execute on the fiber.
                 */
                this.state.set(
-                  new FiberStateExecuting(
-                     Status.toFinishing(oldState.status),
-                     oldState.observers,
-                     oldState.interrupted
-                  )
+                  new FiberStateExecuting(Status.toFinishing(oldState.status), oldState.observers, oldState.interrupted)
                );
 
                this.setInterrupting(true);
 
-               return T._chain(this.openScope.close(v), () => T.done(v))[T._I];
+               return T.chain_(this.openScope.close(v), () => T.done(v))[T._I];
             }
          }
       }
@@ -449,9 +436,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
          }
          case "Executing": {
             if (oldState.status._tag === "Suspended" && epoch === oldState.status.epoch) {
-               this.state.set(
-                  new FiberStateExecuting(oldState.status, oldState.observers, oldState.interrupted)
-               );
+               this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, oldState.interrupted));
                return true;
             } else {
                return false;
@@ -474,29 +459,26 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       });
    }
 
-   get scope(): Scope.Scope<Ex.Exit<E, A>> {
+   get scope(): Scope.Scope<Exit<E, A>> {
       return this.openScope.scope;
    }
 
-   fork(
-      i0: T.Instruction,
-      forkScope: Maybe<Scope.Scope<Ex.Exit<any, any>>>
-   ): FiberContext<any, any> {
+   fork(i0: T.Instruction, forkScope: Option<Scope.Scope<Exit<any, any>>>): FiberContext<any, any> {
       const childFiberRefLocals: FiberRefLocals = new Map();
 
       this.fiberRefLocals.forEach((v, k) => {
          childFiberRefLocals.set(k, k.fork(v));
       });
 
-      const parentScope: Scope.Scope<Ex.Exit<any, any>> = Mb._getOrElse(
-         Mb._alt(forkScope, () => this.forkScopeOverride?.value || Mb.nothing()),
+      const parentScope: Scope.Scope<Exit<any, any>> = O.getOrElse_(
+         O.alt_(forkScope, () => this.forkScopeOverride?.value || O.none()),
          () => this.scope
       );
 
       const currentEnv = this.environments?.value || {};
       const currentSup = this.supervisors.value;
       const childId = makeFiberId();
-      const childScope = Scope.unsafeMakeScope<Ex.Exit<E, A>>();
+      const childScope = Scope.unsafeMakeScope<Exit<E, A>>();
 
       const childContext = new FiberContext(
          childId,
@@ -509,7 +491,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       );
 
       if (currentSup !== Super.none) {
-         currentSup.unsafeOnStart(currentEnv, i0, Mb.just(this), childContext);
+         currentSup.unsafeOnStart(currentEnv, i0, O.some(this), childContext);
          childContext.onDone((exit) => {
             currentSup.unsafeOnEnd(Ex.flatten(exit), childContext);
          });
@@ -525,7 +507,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
    }
 
    private parentScopeOp(
-      parentScope: Scope.Scope<Ex.Exit<any, any>>,
+      parentScope: Scope.Scope<Exit<any, any>>,
       childContext: FiberContext<E, A>,
       i0: T.Instruction
    ): T.Instruction {
@@ -533,8 +515,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
          const exitOrKey = parentScope.unsafeEnsure((exit) =>
             T.suspend(
                (): T.UIO<any> => {
-                  const _interruptors =
-                     exit._tag === "Failure" ? C.interruptors(exit.cause) : new Set<FiberId>();
+                  const _interruptors = exit._tag === "Failure" ? C.interruptors(exit.cause) : new Set<FiberId>();
 
                   const head = _interruptors.values().next();
 
@@ -547,16 +528,13 @@ export class FiberContext<E, A> implements Runtime<E, A> {
             )
          );
 
-         return E._fold(
+         return E.fold_(
             exitOrKey,
             (exit) => {
                switch (exit._tag) {
                   case "Failure": {
                      return T.interruptAs(
-                        Mb._getOrElse(
-                           A.head(Array.from(C.interruptors(exit.cause))),
-                           () => this.fiberId
-                        )
+                        O.getOrElse_(A.head(Array.from(C.interruptors(exit.cause))), () => this.fiberId)
                      )[T._I];
                   }
                   case "Success": {
@@ -580,7 +558,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       }
    }
 
-   onDone(k: Callback<never, Ex.Exit<E, A>>): void {
+   onDone(k: Callback<never, Exit<E, A>>): void {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -589,13 +567,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
             return;
          }
          case "Executing": {
-            this.state.set(
-               new FiberStateExecuting(
-                  oldState.status,
-                  [k, ...oldState.observers],
-                  oldState.interrupted
-               )
-            );
+            this.state.set(new FiberStateExecuting(oldState.status, [k, ...oldState.observers], oldState.interrupted));
          }
       }
    }
@@ -613,8 +585,8 @@ export class FiberContext<E, A> implements Runtime<E, A> {
    complete<R, R1, R2, E2, A2, R3, E3, A3>(
       winner: Fiber<any, any>,
       loser: Fiber<any, any>,
-      cont: (exit: Ex.Exit<any, any>, fiber: Fiber<any, any>) => T.Effect<any, any, any>,
-      winnerExit: Ex.Exit<any, any>,
+      cont: (exit: Exit<any, any>, fiber: Fiber<any, any>) => T.Effect<any, any, any>,
+      winnerExit: Exit<any, any>,
       ab: AtomicReference<boolean>,
       cb: (_: T.Effect<R & R1 & R2 & R3, E2 | E3, A2 | A3>) => void
    ): void {
@@ -638,7 +610,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
          if (locals.size === 0) {
             return T.unit;
          } else {
-            return T._foreachUnit(locals, ([fiberRef, value]) =>
+            return T.foreachUnit_(locals, ([fiberRef, value]) =>
                FR.update((old) => fiberRef.join(old, value))(fiberRef)
             );
          }
@@ -755,7 +727,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
                            case "XPure": {
                               const res: E.Either<any, any> = X.runEither(
-                                 X._provideAll(current, this.environments?.value || {})
+                                 X.giveAll_(current, this.environments?.value || {})
                               );
                               if (res._tag === "Left") {
                                  current = T.fail(res.left)[T._I];
@@ -792,9 +764,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                                  // Error not caught, stack is empty:
                                  const cause = () => {
                                     const interrupted = this.state.get.interrupted;
-                                    const causeAndInterrupt = C.contains(interrupted)(
-                                       maybeRedactedCause
-                                    )
+                                    const causeAndInterrupt = C.contains(interrupted)(maybeRedactedCause)
                                        ? maybeRedactedCause
                                        : C.then(maybeRedactedCause, interrupted);
 
@@ -808,7 +778,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                                  this.setInterrupting(false);
 
                                  // Error caught, next continuation on the stack will deal
-                                 // with it, so we just have to compute it here:
+                                 // with it, so we some have to compute it here:
                                  current = this.nextInstr(maybeRedactedCause);
                               }
 
@@ -854,11 +824,11 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                                  const h = k(this.resumeAsync(epoch));
 
                                  switch (h._tag) {
-                                    case "Nothing": {
+                                    case "None": {
                                        current = undefined;
                                        break;
                                     }
-                                    case "Just": {
+                                    case "Some": {
                                        if (this.exitAsync(epoch)) {
                                           current = h.value[T._I];
                                        } else {
@@ -894,7 +864,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
                            case "Provide": {
                               const c = current;
-                              current = T._bracket(
+                              current = T.bracket_(
                                  T.total(() => {
                                     this.pushEnv(c.env);
                                  }),
@@ -925,11 +895,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                            }
 
                            case "NewFiberRef": {
-                              const fiberRef = FR.fiberRef(
-                                 current.initial,
-                                 current.onFork,
-                                 current.onJoin
-                              );
+                              const fiberRef = FR.fiberRef(current.initial, current.onFork, current.onJoin);
 
                               this.fiberRefLocals.set(fiberRef, current.initial);
 
@@ -940,10 +906,8 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
                            case "ModifyFiberRef": {
                               const c = current;
-                              const oldValue = Mb.fromNullable(this.fiberRefLocals.get(c.fiberRef));
-                              const [result, newValue] = current.f(
-                                 Mb._getOrElse(oldValue, () => c.fiberRef.initial)
-                              );
+                              const oldValue = O.fromNullable(this.fiberRefLocals.get(c.fiberRef));
+                              const [result, newValue] = current.f(O.getOrElse_(oldValue, () => c.fiberRef.initial));
                               this.fiberRefLocals.set(c.fiberRef, newValue);
                               current = this.nextInstr(result);
                               break;
@@ -965,7 +929,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                                  this.supervisors = this.supervisors.previous!;
                               });
-                              current = T._bracket(
+                              current = T.bracket_(
                                  push,
                                  () => c.E,
                                  () => pop
@@ -975,12 +939,9 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
                            case "GetForkScope": {
                               const c = current;
-                              current = c.f(
-                                 Mb._getOrElse(
-                                    this.forkScopeOverride?.value || nothing(),
-                                    () => this.scope
-                                 )
-                              )[T._I];
+                              current = c.f(O.getOrElse_(this.forkScopeOverride?.value || none(), () => this.scope))[
+                                 T._I
+                              ];
                               break;
                            }
 
@@ -988,17 +949,14 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               const c = current;
 
                               const push = T.total(() => {
-                                 this.forkScopeOverride = new Stack(
-                                    c.forkScope,
-                                    this.forkScopeOverride
-                                 );
+                                 this.forkScopeOverride = new Stack(c.forkScope, this.forkScopeOverride);
                               });
 
                               const pop = T.total(() => {
                                  this.forkScopeOverride = this.forkScopeOverride?.previous;
                               });
 
-                              current = T._bracket(
+                              current = T.bracket_(
                                  push,
                                  () => c.E,
                                  () => pop

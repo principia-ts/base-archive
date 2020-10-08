@@ -1,19 +1,19 @@
 import * as E from "@principia/core/Either";
 
 import * as C from "../../Cause";
-import { _chain, _foldCauseM, halt, pure } from "../core";
+import { chain_, foldCauseM_, halt, pure } from "../core";
 import type { Effect } from "../Effect";
 
 /**
  * Returns an effect that effectfully "peeks" at the failure of this effect.
  */
-export const _tapError = <R, E, A, R1, E1>(ef: Effect<R, E, A>, f: (e: E) => Effect<R1, E1, any>) =>
-   _foldCauseM(
+export const tapError_ = <R, E, A, R1, E1>(ef: Effect<R, E, A>, f: (e: E) => Effect<R1, E1, any>) =>
+   foldCauseM_(
       ef,
       (c) =>
-         E._fold(
+         E.fold_(
             C.failureOrCause(c),
-            (e) => _chain(f(e), () => halt(c)),
+            (e) => chain_(f(e), () => halt(c)),
             (_) => halt(c)
          ),
       pure
@@ -22,6 +22,5 @@ export const _tapError = <R, E, A, R1, E1>(ef: Effect<R, E, A>, f: (e: E) => Eff
 /**
  * Returns an effect that effectfully "peeks" at the failure of this effect.
  */
-export const tapError = <E, R1, E1>(f: (e: E) => Effect<R1, E1, any>) => <R, A>(
-   ef: Effect<R, E, A>
-) => _tapError(ef, f);
+export const tapError = <E, R1, E1>(f: (e: E) => Effect<R1, E1, any>) => <R, A>(ef: Effect<R, E, A>) =>
+   tapError_(ef, f);

@@ -1,6 +1,6 @@
 import type { V as Variance } from "@principia/core/HKT";
 
-import type * as C from "../Cause";
+import type { Cause } from "../Cause";
 
 export type Exit<E, A> = Success<A> | Failure<E>;
 
@@ -11,7 +11,7 @@ export interface Success<A> {
 
 export interface Failure<E> {
    readonly _tag: "Failure";
-   readonly cause: C.Cause<E>;
+   readonly cause: Cause<E>;
 }
 
 export const URI = "Exit";

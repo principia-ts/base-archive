@@ -1,4 +1,4 @@
-import { FunctionN, Lazy } from "./Function";
+import type { FunctionN, Lazy } from "./Function";
 
 export interface Done<A> {
    readonly _tag: "Done";

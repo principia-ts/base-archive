@@ -1,40 +1,41 @@
 import { deriveMapN } from "../Apply";
-import { Eq } from "../Eq";
-import { identity, pipe, Predicate } from "../Function";
+import type { Eq } from "../Eq";
+import type { Predicate } from "../Function";
+import { identity, pipe } from "../Function";
 import * as HKT from "../HKT";
-import { Show } from "../Show";
+import type { Show } from "../Show";
 import * as TC from "../typeclass-index";
 import type { Separated } from "../Utils";
 import { left, right } from "./constructors";
 import type { Either, URI, V } from "./Either";
 import { isLeft, isRight } from "./guards";
 import {
-   _alt,
-   _ap,
-   _bimap,
-   _chain,
-   _first,
-   _foldMap,
-   _map,
-   _mapBoth,
-   _reduce,
-   _reduceRight,
-   _traverse,
    alt,
+   alt_,
    ap,
+   ap_,
    bimap,
+   bimap_,
    chain,
+   chain_,
    extend,
    first,
+   first_,
    flatten,
    foldMap,
+   foldMap_,
    map,
+   map_,
    mapBoth,
+   mapBoth_,
    pure,
    reduce,
+   reduce_,
    reduceRight,
+   reduceRight_,
    sequence,
-   traverse
+   traverse,
+   traverse_
 } from "./methods";
 
 /*
@@ -74,15 +75,15 @@ export const getShow = <E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>
  */
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
    map,
-   _map
+   map_
 });
 
 export const Apply: TC.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap,
-   _ap,
+   ap_,
    mapBoth,
-   _mapBoth
+   mapBoth_
 });
 
 export const sequenceT = TC.sequenceT(Apply);
@@ -109,7 +110,7 @@ export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
    flatten,
-   _chain,
+   chain_,
    chain
 });
 
@@ -118,9 +119,9 @@ export const Monad: TC.Monad<[URI], V> = HKT.instance({
  * @since 1.0.0
  */
 export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
-   _reduce,
-   _foldMap,
-   _reduceRight,
+   reduce_,
+   foldMap_,
+   reduceRight_,
    reduce,
    foldMap,
    reduceRight
@@ -133,7 +134,7 @@ export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
 export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
    ...Functor,
    ...Foldable,
-   _traverse,
+   traverse_,
    sequence,
    traverse
 });
@@ -143,11 +144,11 @@ export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
  * @since 1.0.0
  */
 export const Bifunctor: TC.Bifunctor<[URI], V> = HKT.instance({
-   _bimap,
+   bimap_,
    bimap,
-   _first,
+   first_,
    first,
-   _second: _map,
+   second_: map_,
    second: map
 });
 
@@ -157,7 +158,7 @@ export const Bifunctor: TC.Bifunctor<[URI], V> = HKT.instance({
  */
 export const Alt: TC.Alt<[URI], V> = HKT.instance({
    ...Functor,
-   _alt,
+   alt_,
    alt
 });
 
@@ -236,7 +237,7 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
    const empty = left(M.empty);
 
    const compact: TC.CompactF<[URI], V_> = (fa) => {
-      return isLeft(fa) ? fa : fa.right._tag === "Nothing" ? empty : right(fa.right.value);
+      return isLeft(fa) ? fa : fa.right._tag === "None" ? empty : right(fa.right.value);
    };
 
    const separate: TC.SeparateF<[URI], V_> = (fa) => {
@@ -247,7 +248,7 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
          : { left: empty, right: right(fa.right.right) };
    };
 
-   const _mapEither: TC.UC_MapEitherF<[URI], V_> = (fa, f) => {
+   const mapEither_: TC.UC_MapEitherF<[URI], V_> = (fa, f) => {
       if (isLeft(fa)) {
          return { left: fa, right: fa };
       }
@@ -255,7 +256,7 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
       return isLeft(e) ? { left: right(e.left), right: empty } : { left: empty, right: right(e.right) };
    };
 
-   const _partition: TC.UC_PartitionF<[URI], V_> = <A>(
+   const partition_: TC.UC_PartitionF<[URI], V_> = <A>(
       fa: Either<E, A>,
       predicate: Predicate<A>
    ): Separated<Either<E, A>, Either<E, A>> => {
@@ -266,29 +267,29 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
          : { left: right(fa.right), right: empty };
    };
 
-   const _mapMaybe: TC.UC_MapMaybeF<[URI], V_> = (fa, f) => {
+   const mapOption_: TC.UC_MapOptionF<[URI], V_> = (fa, f) => {
       if (isLeft(fa)) {
          return fa;
       }
       const ob = f(fa.right);
-      return ob._tag === "Nothing" ? empty : right(ob.value);
+      return ob._tag === "None" ? empty : right(ob.value);
    };
 
-   const _filter: TC.UC_FilterF<[URI], V_> = <A>(fa: Either<E, A>, predicate: Predicate<A>): Either<E, A> =>
+   const filter_: TC.UC_FilterF<[URI], V_> = <A>(fa: Either<E, A>, predicate: Predicate<A>): Either<E, A> =>
       isLeft(fa) ? fa : predicate(fa.right) ? fa : empty;
 
    return HKT.instance<TC.Filterable<[URI], V_>>({
       ...Functor,
       compact,
       separate,
-      _filter,
-      _mapMaybe,
-      _partition,
-      _mapEither,
-      filter: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => _filter(fa, predicate),
-      mapMaybe: (f) => (fa) => _mapMaybe(fa, f),
-      partition: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => _partition(fa, predicate),
-      mapEither: (f) => (fa) => _mapEither(fa, f)
+      filter_: filter_,
+      mapOption_: mapOption_,
+      partition_: partition_,
+      mapEither_: mapEither_,
+      filter: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => filter_(fa, predicate),
+      mapOption: (f) => (fa) => mapOption_(fa, f),
+      partition: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => partition_(fa, predicate),
+      mapEither: (f) => (fa) => mapEither_(fa, f)
    });
 };
 
@@ -307,13 +308,13 @@ export const getWitherable = <E>(M: TC.Monoid<E>): TC.Witherable<[URI], V & HKT.
 
    const Filterable = getFilterable(M);
 
-   const _wither: TC.UC_WitherF<[URI], V_> = (G) => (wa, f) => {
-      const traverseF = _traverse(G);
+   const wither_: TC.UC_WitherF<[URI], V_> = (G) => (wa, f) => {
+      const traverseF = traverse_(G);
       return pipe(traverseF(wa, f), G.map(Filterable.compact));
    };
 
-   const _wilt: TC.UC_WiltF<[URI], V_> = (G) => (wa, f) => {
-      const traverseF = _traverse(G);
+   const wilt_: TC.UC_WiltF<[URI], V_> = (G) => (wa, f) => {
+      const traverseF = traverse_(G);
       return pipe(traverseF(wa, f), G.map(Filterable.separate));
    };
 
@@ -322,10 +323,10 @@ export const getWitherable = <E>(M: TC.Monoid<E>): TC.Witherable<[URI], V & HKT.
       ...Filterable,
       ...Traversable,
       ...Foldable,
-      _wither,
-      _wilt,
-      wither: (G) => (f) => (wa) => _wither(G)(wa, f),
-      wilt: (G) => (f) => (wa) => _wilt(G)(wa, f)
+      wither_: wither_,
+      wilt_: wilt_,
+      wither: (G) => (f) => (wa) => wither_(G)(wa, f),
+      wilt: (G) => (f) => (wa) => wilt_(G)(wa, f)
    });
 };
 
@@ -357,10 +358,10 @@ export const getApplicativeValidation = <E>(S: TC.Semigroup<E>): TC.Applicative<
    return HKT.instance({
       ...Functor,
       ap: apV,
-      _ap: (fab, fa) => pipe(fab, apV(fa)),
+      ap_: (fab, fa) => pipe(fab, apV(fa)),
       pure,
       mapBoth: mapBothV,
-      _mapBoth: (fa, fb, f) => pipe(fa, mapBothV(fb, f))
+      mapBoth_: (fa, fb, f) => pipe(fa, mapBothV(fb, f))
    });
 };
 
@@ -371,7 +372,7 @@ export const getApplicativeValidation = <E>(S: TC.Semigroup<E>): TC.Applicative<
 export const getAltValidation = <E>(S: TC.Semigroup<E>): TC.Alt<[URI], V & HKT.Fix<"E", E>> => {
    type V_ = V & HKT.Fix<"E", E>;
 
-   const _altV: TC.UC_AltF<[URI], V_> = (fa, that) => {
+   const altV_: TC.UC_AltF<[URI], V_> = (fa, that) => {
       if (isRight(fa)) {
          return fa;
       }
@@ -381,7 +382,7 @@ export const getAltValidation = <E>(S: TC.Semigroup<E>): TC.Alt<[URI], V & HKT.F
 
    return HKT.instance<TC.Alt<[URI], V_>>({
       ...Functor,
-      _alt: _altV,
-      alt: (that) => (fa) => _altV(fa, that)
+      alt_: altV_,
+      alt: (that) => (fa) => altV_(fa, that)
    });
 };

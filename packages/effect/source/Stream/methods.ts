@@ -1,24 +1,25 @@
 import * as A from "@principia/core/Array";
 import { flow, identity, pipe } from "@principia/core/Function";
-import { Maybe } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as Mb from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 
+import type { Cause } from "../Cause";
 import * as C from "../Cause";
-import { Cause } from "../Cause";
 import * as T from "../Effect";
-import { Exit } from "../Exit";
+import type { Exit } from "../Exit";
 import * as M from "../Managed";
 import * as Semaphore from "../Semaphore";
 import * as XP from "../XPromise";
 import * as XQ from "../XQueue";
 import * as XR from "../XRef";
-import { fromArray, fromEffect, managed, repeatEffectChunkMaybe } from "./constructors";
+import { fromArray, fromEffect, managed, repeatEffectChunkOption } from "./constructors";
 import { foreachManaged } from "./destructors";
 import * as BPull from "./internal/BufferedPull";
 import * as Pull from "./internal/Pull";
 import * as Take from "./internal/Take";
-import { Chain, RIO, Stream, URI, V } from "./Stream";
+import type { RIO, URI, V } from "./Stream";
+import { Chain, Stream } from "./Stream";
 
 /**
  * Creates a single-valued pure stream
@@ -28,7 +29,7 @@ export const pure: TC.PureF<[URI], V> = (a) => fromArray([a]);
 /**
  * Effectfully transforms the chunks emitted by this stream.
  */
-export const _mapChunksM = <R, E, A, R1, E1, B>(
+export const mapChunksM_ = <R, E, A, R1, E1, B>(
    fa: Stream<R, E, A>,
    f: (chunks: ReadonlyArray<A>) => T.Effect<R1, E1, ReadonlyArray<B>>
 ): Stream<R & R1, E | E1, B> =>
@@ -38,7 +39,7 @@ export const _mapChunksM = <R, E, A, R1, E1, B>(
          M.map((e) =>
             pipe(
                e,
-               T.chain((x) => pipe(f(x), T.first<E1, Maybe<E | E1>>(Mb.just)))
+               T.chain((x) => pipe(f(x), T.first<E1, Option<E | E1>>(Mb.some)))
             )
          )
       )
@@ -47,39 +48,39 @@ export const _mapChunksM = <R, E, A, R1, E1, B>(
 /**
  * Effectfully transforms the chunks emitted by this stream.
  */
-export const mapChunksM = <A, R1, E1, A1>(
-   f: (chunks: ReadonlyArray<A>) => T.Effect<R1, E1, ReadonlyArray<A1>>
-) => <R, E>(fa: Stream<R, E, A>): Stream<R & R1, E1 | E, A1> => _mapChunksM(fa, f);
-
-/**
- * Transforms the chunks emitted by this stream.
- */
-export const _mapChunks = <R, E, A, B>(
-   fa: Stream<R, E, A>,
-   f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>
-) => _mapChunksM(fa, flow(f, T.pure));
-
-/**
- * Transforms the chunks emitted by this stream.
- */
-export const mapChunks = <A, B>(f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>) => <R, E>(
+export const mapChunksM = <A, R1, E1, A1>(f: (chunks: ReadonlyArray<A>) => T.Effect<R1, E1, ReadonlyArray<A1>>) => <
+   R,
+   E
+>(
    fa: Stream<R, E, A>
-) => _mapChunks(fa, f);
+): Stream<R & R1, E1 | E, A1> => mapChunksM_(fa, f);
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _mapChunks(fa, A.map(f));
+export const mapChunks_ = <R, E, A, B>(fa: Stream<R, E, A>, f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>) =>
+   mapChunksM_(fa, flow(f, T.pure));
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const mapChunks = <A, B>(f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>) => <R, E>(fa: Stream<R, E, A>) =>
+   mapChunks_(fa, f);
+
+/**
+ * Transforms the chunks emitted by this stream.
+ */
+export const map_: TC.UC_MapF<[URI], V> = (fa, f) => mapChunks_(fa, A.map(f));
+
+/**
+ * Transforms the chunks emitted by this stream.
+ */
+export const map: TC.MapF<[URI], V> = (f) => (fa) => map_(fa, f);
 
 /**
  * Maps over elements of the stream with the specified effectful function.
  */
-export const _mapM = <R, E, A, R1, E1, B>(
+export const mapM_ = <R, E, A, R1, E1, B>(
    fa: Stream<R, E, A>,
    f: (a: A) => T.Effect<R1, E1, B>
 ): Stream<R & R1, E | E1, B> =>
@@ -94,7 +95,7 @@ export const _mapM = <R, E, A, R1, E1, B>(
                T.chain((o) =>
                   pipe(
                      f(o),
-                     T.bimap(Mb.just, (o1) => [o1] as [B])
+                     T.bimap(Mb.some, (o1) => [o1] as [B])
                   )
                )
             )
@@ -105,31 +106,25 @@ export const _mapM = <R, E, A, R1, E1, B>(
 /**
  * Maps over elements of the stream with the specified effectful function.
  */
-export const mapM = <A, R1, E1, A1>(f: (o: A) => T.Effect<R1, E1, A1>) => <R, E>(
-   fa: Stream<R, E, A>
-) => _mapM(fa, f);
+export const mapM = <A, R1, E1, A1>(f: (o: A) => T.Effect<R1, E1, A1>) => <R, E>(fa: Stream<R, E, A>) => mapM_(fa, f);
 
-export const _first: TC.UC_FirstF<[URI], V> = (pab, f) =>
-   new Stream(pipe(pab.proc, M.map(T.first(Mb.map(f)))));
+export const first_: TC.UC_FirstF<[URI], V> = (pab, f) => new Stream(pipe(pab.proc, M.map(T.first(Mb.map(f)))));
 
-export const first: TC.FirstF<[URI], V> = (f) => (pab) => _first(pab, f);
+export const first: TC.FirstF<[URI], V> = (f) => (pab) => first_(pab, f);
 
 export const mapError = first;
 
-export const _mapErrorCause = <R, E, A, E1>(
-   stream: Stream<R, E, A>,
-   f: (e: Cause<E>) => Cause<E1>
-) =>
+export const mapErrorCause_ = <R, E, A, E1>(stream: Stream<R, E, A>, f: (e: Cause<E>) => Cause<E1>) =>
    new Stream(
       pipe(
          stream.proc,
          M.map(
             T.mapErrorCause((cause) =>
                pipe(
-                  C.sequenceCauseMaybe(cause),
+                  C.sequenceCauseOption(cause),
                   Mb.fold(
-                     () => C.fail(Mb.nothing()),
-                     (c) => C._map(f(c), Mb.just)
+                     () => C.fail(Mb.none()),
+                     (c) => C.map_(f(c), Mb.some)
                   )
                )
             )
@@ -137,15 +132,14 @@ export const _mapErrorCause = <R, E, A, E1>(
       )
    );
 
-export const mapErrorCause = <E, E1>(f: (e: Cause<E>) => Cause<E1>) => <R, A>(
-   stream: Stream<R, E, A>
-) => _mapErrorCause(stream, f);
+export const mapErrorCause = <E, E1>(f: (e: Cause<E>) => Cause<E1>) => <R, A>(stream: Stream<R, E, A>) =>
+   mapErrorCause_(stream, f);
 
 /**
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const _chain: TC.UC_ChainF<[URI], V> = <R, E, A, R1, E1, B>(
+export const chain_: TC.UC_ChainF<[URI], V> = <R, E, A, R1, E1, B>(
    fa: Stream<R, E, A>,
    f: (a: A) => Stream<R1, E1, B>
 ) => {
@@ -162,12 +156,9 @@ export const _chain: TC.UC_ChainF<[URI], V> = <R, E, A, R1, E1, B>(
             )
          ),
          M.bindS("currInnerStream", () =>
-            T.toManaged()(XR.makeRef<T.Effect<R_, Maybe<E_>, ReadonlyArray<B>>>(Pull.end))
+            T.toManaged()(XR.makeRef<T.Effect<R_, Option<E_>, ReadonlyArray<B>>>(Pull.end))
          ),
-         M.bindS(
-            "innerFinalizer",
-            () => M.finalizerRef(M.noopFinalizer) as M.Managed<R_, never, XR.Ref<M.Finalizer>>
-         ),
+         M.bindS("innerFinalizer", () => M.finalizerRef(M.noopFinalizer) as M.Managed<R_, never, XR.Ref<M.Finalizer>>),
          M.map(({ currInnerStream, currOuterChunk, innerFinalizer, outerStream }) =>
             new Chain(f, outerStream, currOuterChunk, currInnerStream, innerFinalizer).apply()
          )
@@ -179,35 +170,35 @@ export const _chain: TC.UC_ChainF<[URI], V> = <R, E, A, R1, E1, B>(
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const bind: TC.BindF<[URI], V> = (fa) => (f) => _chain(fa, f);
+export const bind: TC.BindF<[URI], V> = (fa) => (f) => chain_(fa, f);
 
 /**
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const chain: TC.ChainF<[URI], V> = (f) => (fa) => _chain(fa, f);
+export const chain: TC.ChainF<[URI], V> = (f) => (fa) => chain_(fa, f);
 
 /**
  * Flattens this stream-of-streams into a stream made of the concatenation in
  * strict order of all the streams.
  */
-export const flatten: TC.FlattenF<[URI], V> = (ffa) => _chain(ffa, identity);
+export const flatten: TC.FlattenF<[URI], V> = (ffa) => chain_(ffa, identity);
 
-export const environment = <R>(): RIO<R, R> => fromEffect(T.environment<R>());
+export const environment = <R>(): RIO<R, R> => fromEffect(T.ask<R>());
 
-export const access: TC.AccessF<[URI], V> = (f) => _map(environment(), f);
+export const access: TC.AccessF<[URI], V> = (f) => map_(environment(), f);
 
 export const accessEffect = <R0, R, E, A>(f: (_: R0) => T.Effect<R, E, A>): Stream<R & R0, E, A> =>
-   _mapM(environment<R0>(), f);
+   mapM_(environment<R0>(), f);
 
 export const accessM: TC.AccessMF<[URI], V> = <R0, R, E, A>(f: (_: R0) => Stream<R, E, A>) =>
-   _chain(environment<R0>(), f);
+   chain_(environment<R0>(), f);
 
 /**
  * Statefully and effectfully maps over the elements of this stream to produce
  * new elements.
  */
-export const _mapAccumM = <R, E, A, R1, E1, B, Z>(
+export const mapAccumM_ = <R, E, A, R1, E1, B, Z>(
    stream: Stream<R, E, A>,
    z: Z,
    f: (z: Z, a: A) => T.Effect<R1, E1, [Z, B]>
@@ -226,9 +217,9 @@ export const _mapAccumM = <R, E, A, R1, E1, B, Z>(
                      T.of,
                      T.bindS("s", () => state.get),
                      T.bindS("t", ({ s }) => f(s, o)),
-                     T.chainFirst(({ t }) => state.set(t[0])),
+                     T.tap(({ t }) => state.set(t[0])),
                      T.map(({ t }) => [t[1]]),
-                     T.first(Mb.just)
+                     T.first(Mb.some)
                   )
                )
             )
@@ -236,54 +227,40 @@ export const _mapAccumM = <R, E, A, R1, E1, B, Z>(
       )
    );
 
-export const mapAccumM = <Z>(z: Z) => <A, R1, E1, B>(
-   f: (z: Z, a: A) => T.Effect<R1, E1, [Z, B]>
-) => <R, E>(stream: Stream<R, E, A>) => _mapAccumM(stream, z, f);
-
-export const _mapAccum = <R, E, A, B, Z>(
-   stream: Stream<R, E, A>,
-   z: Z,
-   f: (z: Z, a: A) => [Z, B]
-) => _mapAccumM(stream, z, (z, a) => T.pure(f(z, a)));
-
-export const mapAccum = <Z>(z: Z) => <A, B>(f: (z: Z, a: A) => [Z, B]) => <R, E>(
+export const mapAccumM = <Z>(z: Z) => <A, R1, E1, B>(f: (z: Z, a: A) => T.Effect<R1, E1, [Z, B]>) => <R, E>(
    stream: Stream<R, E, A>
-) => _mapAccum(stream, z, f);
+) => mapAccumM_(stream, z, f);
 
-export const _mapConcat = <R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => Iterable<B>) =>
-   _mapChunks(stream, (chunks) => A._chain(chunks, (a) => Array.from(f(a))));
+export const mapAccum_ = <R, E, A, B, Z>(stream: Stream<R, E, A>, z: Z, f: (z: Z, a: A) => [Z, B]) =>
+   mapAccumM_(stream, z, (z, a) => T.pure(f(z, a)));
 
-export const mapConcat = <A, B>(f: (a: A) => Iterable<B>) => <R, E>(stream: Stream<R, E, A>) =>
-   _mapConcat(stream, f);
+export const mapAccum = <Z>(z: Z) => <A, B>(f: (z: Z, a: A) => [Z, B]) => <R, E>(stream: Stream<R, E, A>) =>
+   mapAccum_(stream, z, f);
 
-export const _mapConcatChunk = <R, E, A, B>(
-   stream: Stream<R, E, A>,
-   f: (a: A) => ReadonlyArray<B>
-) => _mapChunks(stream, (chunks) => A._chain(chunks, f));
+export const mapConcat_ = <R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => Iterable<B>) =>
+   mapChunks_(stream, (chunks) => A.chain_(chunks, (a) => Array.from(f(a))));
 
-export const mapConcatChunk = <A, B>(f: (a: A) => ReadonlyArray<B>) => <R, E>(
-   stream: Stream<R, E, A>
-) => _mapConcatChunk(stream, f);
+export const mapConcat = <A, B>(f: (a: A) => Iterable<B>) => <R, E>(stream: Stream<R, E, A>) => mapConcat_(stream, f);
 
-export const _mapConcatChunkM = <R, E, A, R1, E1, B>(
+export const mapConcatChunk_ = <R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => ReadonlyArray<B>) =>
+   mapChunks_(stream, (chunks) => A.chain_(chunks, f));
+
+export const mapConcatChunk = <A, B>(f: (a: A) => ReadonlyArray<B>) => <R, E>(stream: Stream<R, E, A>) =>
+   mapConcatChunk_(stream, f);
+
+export const mapConcatChunkM_ = <R, E, A, R1, E1, B>(
    stream: Stream<R, E, A>,
    f: (a: A) => T.Effect<R1, E1, ReadonlyArray<B>>
 ) => pipe(stream, mapM(f), mapConcatChunk(identity));
 
-export const mapConcatChunkM = <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, ReadonlyArray<B>>) => <
-   R,
-   E
->(
+export const mapConcatChunkM = <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, ReadonlyArray<B>>) => <R, E>(
    stream: Stream<R, E, A>
-) => _mapConcatChunkM(stream, f);
+) => mapConcatChunkM_(stream, f);
 
-export const _mapConcatM = <R, E, A, R1, E1, B>(
-   stream: Stream<R, E, A>,
-   f: (a: A) => T.Effect<R1, E1, Iterable<B>>
-) =>
+export const mapConcatM_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => T.Effect<R1, E1, Iterable<B>>) =>
    pipe(
       stream,
-      mapConcatChunkM((a) => T._map(f(a), (_) => Array.from(_)))
+      mapConcatChunkM((a) => T.map_(f(a), (_) => Array.from(_)))
    );
 
 /**
@@ -291,14 +268,14 @@ export const _mapConcatM = <R, E, A, R1, E1, B>(
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
  */
-export const _mapEffectPar = (n: number) => <R, E, A, R1, E1, B>(
+export const mapEffectPar_ = (n: number) => <R, E, A, R1, E1, B>(
    stream: Stream<R, E, A>,
    f: (a: A) => T.Effect<R1, E1, B>
 ): Stream<R & R1, E | E1, B> =>
    new Stream(
       pipe(
          M.of,
-         M.bindS("out", () => T.toManaged()(XQ.makeBounded<T.Effect<R1, Maybe<E1 | E>, B>>(n))),
+         M.bindS("out", () => T.toManaged()(XQ.makeBounded<T.Effect<R1, Option<E1 | E>, B>>(n))),
          M.bindS("errorSignal", () => T.toManaged()(XP.make<E1, never>())),
          M.bindS("permits", () => T.toManaged()(Semaphore.makeSemaphore(n))),
          M.tap(({ errorSignal, out, permits }) =>
@@ -309,8 +286,8 @@ export const _mapEffectPar = (n: number) => <R, E, A, R1, E1, B>(
                      T.of,
                      T.bindS("p", () => XP.make<E1, B>()),
                      T.bindS("latch", () => XP.make<never, void>()),
-                     T.chainFirst(({ p }) => out.offer(pipe(p, XP.wait, T.first(Mb.just)))),
-                     T.chainFirst(({ latch, p }) =>
+                     T.tap(({ p }) => out.offer(pipe(p, XP.wait, T.first(Mb.some)))),
+                     T.tap(({ latch, p }) =>
                         pipe(
                            latch,
                            // Make sure we start evaluation before moving on to the next element
@@ -331,7 +308,7 @@ export const _mapEffectPar = (n: number) => <R, E, A, R1, E1, B>(
                            T.fork
                         )
                      ),
-                     T.chainFirst(({ latch }) => XP.wait(latch)),
+                     T.tap(({ latch }) => XP.wait(latch)),
                      T.asUnit
                   )
                ),
@@ -362,12 +339,9 @@ export const _mapEffectPar = (n: number) => <R, E, A, R1, E1, B>(
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
  */
-export const mapEffectPar = (n: number) => <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, B>) => <
-   R,
-   E
->(
+export const mapEffectPar = (n: number) => <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, B>) => <R, E>(
    stream: Stream<R, E, A>
-) => _mapEffectPar(n)(stream, f);
+) => mapEffectPar_(n)(stream, f);
 
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times
@@ -377,7 +351,7 @@ export const mapEffectPar = (n: number) => <A, R1, E1, B>(f: (a: A) => T.Effect<
 export const asyncEffect = <R, E, A, R1 = R, E1 = E>(
    register: (
       cb: (
-         next: T.Effect<R, Maybe<E>, ReadonlyArray<A>>,
+         next: T.Effect<R, Option<E>, ReadonlyArray<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
       ) => T.UIO<Exit<never, boolean>>
    ) => T.Effect<R1, E1, unknown>,
@@ -389,9 +363,7 @@ export const asyncEffect = <R, E, A, R1 = R, E1 = E>(
       M.bindS("runtime", () => pipe(T.runtime<R>(), T.toManaged())),
       M.tap(({ output, runtime }) =>
          T.toManaged()(
-            register((k, cb) =>
-               pipe(Take.fromPull(k), T.chain(output.offer), (x) => runtime.runCancel(x, cb))
-            )
+            register((k, cb) => pipe(Take.fromPull(k), T.chain(output.offer), (x) => runtime.runCancel(x, cb)))
          )
       ),
       M.bindS("done", () => XR.makeManagedRef(false)),
@@ -416,5 +388,5 @@ export const asyncEffect = <R, E, A, R1 = R, E1 = E>(
       ),
       M.map(({ pull }) => pull),
       managed,
-      chain(repeatEffectChunkMaybe)
+      chain(repeatEffectChunkOption)
    );

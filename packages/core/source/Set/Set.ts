@@ -1,4 +1,4 @@
-import * as HKT from "../HKT";
+import type * as HKT from "../HKT";
 
 export const URI = "Set";
 

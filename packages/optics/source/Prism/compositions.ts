@@ -1,5 +1,5 @@
 import { flow } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 
 import * as _ from "../internal";
@@ -20,8 +20,8 @@ import type { Prism, URI, V } from "./Prism";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const _compose: TC.UC_ComposeF<[URI], V> = (sa, ab) => ({
-   getMaybe: flow(sa.getMaybe, Mb.chain(ab.getMaybe)),
+export const compose_: TC.UC_ComposeF<[URI], V> = (sa, ab) => ({
+   getOption: flow(sa.getOption, O.chain(ab.getOption)),
    reverseGet: flow(ab.reverseGet, sa.reverseGet)
 });
 
@@ -31,7 +31,7 @@ export const _compose: TC.UC_ComposeF<[URI], V> = (sa, ab) => ({
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose: TC.ComposeF<[URI], V> = (ab) => (sa) => _compose(sa, ab);
+export const compose: TC.ComposeF<[URI], V> = (ab) => (sa) => compose_(sa, ab);
 
 /**
  * Compose a `Prism` with a `Lens`
@@ -39,8 +39,7 @@ export const compose: TC.ComposeF<[URI], V> = (ab) => (sa) => _compose(sa, ab);
  * @category Compositions
  * @since 1.0.0
  */
-export const _composeLens = <S, A, B>(sa: Prism<S, A>, ab: Lens<A, B>): Optional<S, B> =>
-   _.prismComposeLens(ab)(sa);
+export const composeLens_ = <S, A, B>(sa: Prism<S, A>, ab: Lens<A, B>): Optional<S, B> => _.prismComposeLens(ab)(sa);
 
 /**
  * Compose a `Prism` with a `Lens`
@@ -56,7 +55,7 @@ export const composeLens = _.prismComposeLens;
  * @category Compositions
  * @since 1.0.0
  */
-export const _composeOptional = <S, A, B>(sa: Prism<S, A>, ab: Optional<A, B>): Optional<S, B> =>
+export const composeOptional_ = <S, A, B>(sa: Prism<S, A>, ab: Optional<A, B>): Optional<S, B> =>
    _.optionalComposeOptional(ab)(asOptional(sa));
 
 /**
@@ -66,4 +65,4 @@ export const _composeOptional = <S, A, B>(sa: Prism<S, A>, ab: Optional<A, B>): 
  * @since 1.0.0
  */
 export const composeOptional = <A, B>(ab: Optional<A, B>) => <S>(sa: Prism<S, A>): Optional<S, B> =>
-   _composeOptional(sa, ab);
+   composeOptional_(sa, ab);

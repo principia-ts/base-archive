@@ -1,5 +1,5 @@
-import { Eq } from "../Eq";
-import { CompareF } from "./CompareF";
+import type { Eq } from "../Eq";
+import type { CompareF } from "./CompareF";
 
 export const URI = "Ord";
 

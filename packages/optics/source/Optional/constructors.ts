@@ -1,5 +1,5 @@
 import { constant } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 
 import type { Optional } from "./Optional";
 
@@ -10,6 +10,6 @@ import type { Optional } from "./Optional";
  */
 
 export const id = <S>(): Optional<S, S> => ({
-   getMaybe: Mb.just,
+   getOption: O.some,
    set: constant
 });

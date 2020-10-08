@@ -4,10 +4,10 @@
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
 import { pipe } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import type * as O from "@principia/core/Option";
 
 import * as T from "../Effect/core";
-import { Exit } from "../Exit";
+import type { Exit } from "../Exit/Exit";
 import type { Runtime } from "../Fiber";
 import type { Atomic } from "../XRef";
 import * as R from "../XRef/atomic";
@@ -52,7 +52,7 @@ export class Supervisor<A> {
       readonly unsafeOnStart: <R, E, A>(
          environment: R,
          effect: T.Effect<R, E, A>,
-         parent: Mb.Maybe<Runtime<any, any>>,
+         parent: O.Option<Runtime<any, any>>,
          fiber: Runtime<E, A>
       ) => Propagation,
       readonly unsafeOnEnd: <E, A>(value: Exit<E, A>, fiber: Runtime<E, A>) => Propagation
@@ -69,14 +69,13 @@ export class Supervisor<A> {
     */
    and<B>(that: Supervisor<B>): Supervisor<readonly [A, B]> {
       return new Supervisor(
-         T._both(this.value, that.value),
+         T.both_(this.value, that.value),
          (environment, effect, parent, fiber) =>
             propagationAnd(
                this.unsafeOnStart(environment, effect, parent, fiber),
                that.unsafeOnStart(environment, effect, parent, fiber)
             ),
-         (value, fiber) =>
-            propagationAnd(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
+         (value, fiber) => propagationAnd(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
       );
    }
 
@@ -91,14 +90,13 @@ export class Supervisor<A> {
     */
    or<B>(that: Supervisor<B>): Supervisor<readonly [A, B]> {
       return new Supervisor(
-         T._both(this.value, that.value),
+         T.both_(this.value, that.value),
          (environment, effect, parent, fiber) =>
             propagationOr(
                this.unsafeOnStart(environment, effect, parent, fiber),
                that.unsafeOnStart(environment, effect, parent, fiber)
             ),
-         (value, fiber) =>
-            propagationOr(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
+         (value, fiber) => propagationOr(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
       );
    }
 }

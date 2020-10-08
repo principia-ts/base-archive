@@ -1,3 +1,4 @@
+export * from "../../Effect/Effect";
 export * from "../../Effect/core";
 export * from "../../Effect/functions/bracket";
 export * from "../../Effect/functions/interrupt";

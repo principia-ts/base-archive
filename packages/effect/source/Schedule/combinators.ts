@@ -1,21 +1,22 @@
 import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
 import { constant, pipe, tuple } from "@principia/core/Function";
-import type { Maybe } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 
 import * as T from "../Effect/core";
 import { nextDouble } from "../Random";
 import { makeSchedule } from "./constructors";
-import { Decision, makeContinue, makeDone, StepFunction } from "./Decision";
+import type { Decision, StepFunction } from "./Decision";
+import { makeContinue, makeDone } from "./Decision";
 import type { Schedule, URI, V } from "./Schedule";
 
 const repeatLoop = <R, I, O>(
    init: StepFunction<R, I, O>,
    self: StepFunction<R, I, O> = init
 ): StepFunction<R, I, O> => (now, i) =>
-   T._chain(self(now, i), (d) => {
+   T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
             return repeatLoop(init, self)(now, i);
@@ -30,7 +31,7 @@ const modifyDelayMLoop = <R, I, O, R1>(
    sf: StepFunction<R, I, O>,
    f: (o: O, d: number) => T.Effect<R1, never, number>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-   T._chain(sf(now, i), (d) => {
+   T.chain_(sf(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
             return T.pure<Decision<R & R1, I, O>>(makeDone(d.out));
@@ -38,9 +39,7 @@ const modifyDelayMLoop = <R, I, O, R1>(
          case "Continue": {
             const delay = d.interval - now;
 
-            return T._map(f(d.out, delay), (n) =>
-               makeContinue(d.out, d.interval + n, modifyDelayMLoop(d.next, f))
-            );
+            return T.map_(f(d.out, delay), (n) => makeContinue(d.out, d.interval + n, modifyDelayMLoop(d.next, f)));
          }
       }
    });
@@ -49,84 +48,74 @@ const modifyDelayMLoop = <R, I, O, R1>(
  * Returns a new schedule that loops this one continuously, resetting the state
  * when this schedule is done.
  */
-export const repeat = <R, I, O>(sc: Schedule<R, I, O>): Schedule<R, I, O> =>
-   makeSchedule(repeatLoop(sc.step));
+export const repeat = <R, I, O>(sc: Schedule<R, I, O>): Schedule<R, I, O> => makeSchedule(repeatLoop(sc.step));
 
-export const _modifyDelayM = <R, I, O, R1>(
+export const modifyDelayM_ = <R, I, O, R1>(
    sc: Schedule<R, I, O>,
    f: (o: O, d: number) => T.Effect<R1, never, number>
 ): Schedule<R & R1, I, O> => makeSchedule(modifyDelayMLoop(sc.step, f));
 
 export const modifyDelayM = <R1, O>(f: (o: O, d: number) => T.Effect<R1, never, number>) => <R, I>(
    sc: Schedule<R, I, O>
-): Schedule<R & R1, I, O> => _modifyDelayM(sc, f);
+): Schedule<R & R1, I, O> => modifyDelayM_(sc, f);
 
-export const _modifyDelay = <R, I, O>(
-   sc: Schedule<R, I, O>,
-   f: (o: O, d: number) => number
-): Schedule<R, I, O> => _modifyDelayM(sc, (o, d) => T.pure(f(o, d)));
+export const modifyDelay_ = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O, d: number) => number): Schedule<R, I, O> =>
+   modifyDelayM_(sc, (o, d) => T.pure(f(o, d)));
 
-export const modifyDelay = <O>(f: (o: O, d: number) => number) => <R, I>(
-   sc: Schedule<R, I, O>
-): Schedule<R, I, O> => _modifyDelay(sc, f);
+export const modifyDelay = <O>(f: (o: O, d: number) => number) => <R, I>(sc: Schedule<R, I, O>): Schedule<R, I, O> =>
+   modifyDelay_(sc, f);
 
 /**
  * Returns a new schedule with the effectfully calculated delay added to every update.
  */
-export const _addDelayM = <R, I, O, R1>(
+export const addDelayM_ = <R, I, O, R1>(
    sc: Schedule<R, I, O>,
    f: (o: O) => T.Effect<R1, never, number>
-): Schedule<R & R1, I, O> => _modifyDelayM(sc, (o, d) => T._map(f(o), (i) => i + d));
+): Schedule<R & R1, I, O> => modifyDelayM_(sc, (o, d) => T.map_(f(o), (i) => i + d));
 
 /**
  * Returns a new schedule with the effectfully calculated delay added to every update.
  */
 export const addDelayM = <R1, O>(f: (o: O) => T.Effect<R1, never, number>) => <R, I>(
    sc: Schedule<R, I, O>
-): Schedule<R & R1, I, O> => _addDelayM(sc, f);
+): Schedule<R & R1, I, O> => addDelayM_(sc, f);
 
 /**
  * Returns a new schedule with the given delay added to every update.
  */
-export const _addDelay = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => number) =>
-   _addDelayM(sc, (o) => T.pure(f(o)));
+export const addDelay_ = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => number) => addDelayM_(sc, (o) => T.pure(f(o)));
 
 /**
  * Returns a new schedule with the given delay added to every update.
  */
-export const addDelay = <O>(f: (o: O) => number) => <R, I>(sc: Schedule<R, I, O>) =>
-   _addDelay(sc, f);
+export const addDelay = <O>(f: (o: O) => number) => <R, I>(sc: Schedule<R, I, O>) => addDelay_(sc, f);
 
 /**
  * Returns a new `Schedule` with the specified effectfully computed delay added before the start
  * of each interval produced by the this `Schedule`.
  */
-export const _delayedM = <R, I, O, R1>(
-   sc: Schedule<R, I, O>,
-   f: (d: number) => T.Effect<R1, never, number>
-) => _modifyDelayM(sc, (_, d) => f(d));
+export const delayedM_ = <R, I, O, R1>(sc: Schedule<R, I, O>, f: (d: number) => T.Effect<R1, never, number>) =>
+   modifyDelayM_(sc, (_, d) => f(d));
 
 /**
  * Returns a new `Schedule` with the specified effectfully computed delay added before the start
  * of each interval produced by the this `Schedule`.
  */
-export const delayedM = <R1>(f: (d: number) => T.Effect<R1, never, number>) => <R, I, O>(
-   sc: Schedule<R, I, O>
-) => _delayedM(sc, f);
+export const delayedM = <R1>(f: (d: number) => T.Effect<R1, never, number>) => <R, I, O>(sc: Schedule<R, I, O>) =>
+   delayedM_(sc, f);
 
 /**
  * Returns a new schedule with the specified computed delay added before the start
  * of each interval produced by this schedule.
  */
-export const _delayed = <R, I, O>(sc: Schedule<R, I, O>, f: (d: number) => number) =>
-   _delayedM(sc, (d) => T.pure(f(d)));
+export const delayed_ = <R, I, O>(sc: Schedule<R, I, O>, f: (d: number) => number) =>
+   delayedM_(sc, (d) => T.pure(f(d)));
 
 /**
  * Returns a new schedule with the specified computed delay added before the start
  * of each interval produced by this schedule.
  */
-export const delayed = (f: (d: number) => number) => <R, I, O>(sc: Schedule<R, I, O>) =>
-   _delayed(sc, f);
+export const delayed = (f: (d: number) => number) => <R, I, O>(sc: Schedule<R, I, O>) => delayed_(sc, f);
 
 export const duration = (n: number) =>
    makeSchedule((now, _: unknown) => T.pure(makeContinue(0, now + n, () => T.pure(makeDone(n)))));
@@ -135,7 +124,7 @@ export const duration = (n: number) =>
  * Returns a new schedule with the specified computed delay added before the start
  * of each interval produced by this schedule.
  */
-export const delayedFrom = <R, I>(sc: Schedule<R, I, number>) => _addDelay(sc, (x) => x);
+export const delayedFrom = <R, I>(sc: Schedule<R, I, number>) => addDelay_(sc, (x) => x);
 
 const andThenEitherLoop = <R, I, O, R1, I1, O1>(
    sc: StepFunction<R, I, O>,
@@ -143,29 +132,23 @@ const andThenEitherLoop = <R, I, O, R1, I1, O1>(
    onLeft: boolean
 ): StepFunction<R & R1, I & I1, Either<O, O1>> => (now, i) =>
    onLeft
-      ? T._chain(sc(now, i), (d) => {
+      ? T.chain_(sc(now, i), (d) => {
            switch (d._tag) {
               case "Continue": {
-                 return T.pure(
-                    makeContinue(E.left(d.out), d.interval, andThenEitherLoop(d.next, that, true))
-                 );
+                 return T.pure(makeContinue(E.left(d.out), d.interval, andThenEitherLoop(d.next, that, true)));
               }
               case "Done": {
                  return andThenEitherLoop(sc, that, false)(now, i);
               }
            }
         })
-      : T._map(that(now, i), (d) => {
+      : T.map_(that(now, i), (d) => {
            switch (d._tag) {
               case "Done": {
                  return makeDone(E.right(d.out));
               }
               case "Continue": {
-                 return makeContinue(
-                    E.right(d.out),
-                    d.interval,
-                    andThenEitherLoop(sc, d.next, false)
-                 );
+                 return makeContinue(E.right(d.out), d.interval, andThenEitherLoop(sc, d.next, false));
               }
            }
         });
@@ -174,56 +157,48 @@ const andThenEitherLoop = <R, I, O, R1, I1, O1>(
  * Returns a new schedule that first executes this schedule to completion, and then executes the
  * specified schedule to completion.
  */
-export const _andThenEither = <R, I, O, R1, I1, O1>(
-   sc: Schedule<R, I, O>,
-   that: Schedule<R1, I1, O1>
-) => makeSchedule(andThenEitherLoop(sc.step, that.step, true));
+export const andThenEither_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   makeSchedule(andThenEitherLoop(sc.step, that.step, true));
 
 /**
  * Returns a new schedule that first executes this schedule to completion, and then executes the
  * specified schedule to completion.
  */
-export const andThenEither = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(
-   sc: Schedule<R, I, O>
-) => _andThenEither(sc, that);
+export const andThenEither = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) =>
+   andThenEither_(sc, that);
 
 const mapMLoop = <R, I, O, R1, O1>(
    self: StepFunction<R, I, O>,
    f: (o: O) => T.Effect<R1, never, O1>
 ): StepFunction<R & R1, I, O1> => (now, i) =>
-   T._chain(self(now, i), (d) => {
+   T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T._map(f(d.out), (o): Decision<R & R1, I, O1> => makeDone(o));
+            return T.map_(f(d.out), (o): Decision<R & R1, I, O1> => makeDone(o));
          }
          case "Continue": {
-            return T._map(f(d.out), (o) => makeContinue(o, d.interval, mapMLoop(d.next, f)));
+            return T.map_(f(d.out), (o) => makeContinue(o, d.interval, mapMLoop(d.next, f)));
          }
       }
    });
 
-export const _mapM = <R, I, O, R1, O1>(
-   sc: Schedule<R, I, O>,
-   f: (o: O) => T.Effect<R1, never, O1>
-) => makeSchedule(mapMLoop(sc.step, (o) => f(o)));
+export const mapM_ = <R, I, O, R1, O1>(sc: Schedule<R, I, O>, f: (o: O) => T.Effect<R1, never, O1>) =>
+   makeSchedule(mapMLoop(sc.step, (o) => f(o)));
 
-export const mapM = <R1, O, O1>(f: (o: O) => T.Effect<R1, never, O1>) => <R, I>(
-   sc: Schedule<R, I, O>
-) => _mapM(sc, f);
+export const mapM = <R1, O, O1>(f: (o: O) => T.Effect<R1, never, O1>) => <R, I>(sc: Schedule<R, I, O>) => mapM_(sc, f);
 
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _mapM(fa, (o) => T.pure(f(o)));
+export const map_: TC.UC_MapF<[URI], V> = (fa, f) => mapM_(fa, (o) => T.pure(f(o)));
 
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map: TC.MapF<[URI], V> = (f) => (fa) => map_(fa, f);
 
-export const _as = <R, I, O, O1>(sc: Schedule<R, I, O>, o: O1) => _map(sc, () => o);
+export const as_ = <R, I, O, O1>(sc: Schedule<R, I, O>, o: O1) => map_(sc, () => o);
 
-export const as = <O1>(o: O1) => <R, I, O>(sc: Schedule<R, I, O>) => _as(sc, o);
+export const as = <O1>(o: O1) => <R, I, O>(sc: Schedule<R, I, O>) => as_(sc, o);
 
 /**
  * Returns a new schedule that maps the output of this schedule to unit.
  */
-export const unit = <R, I, O, R1>(sc: Schedule<R, I, O>): Schedule<R & R1, I, void> =>
-   as<void>(undefined)(sc);
+export const unit = <R, I, O, R1>(sc: Schedule<R, I, O>): Schedule<R & R1, I, void> => as<void>(undefined)(sc);
 
 const combineWithLoop = <R, I, O, R1, I1, O1>(
    sc: StepFunction<R, I, O>,
@@ -233,7 +208,7 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
    const left = sc(now, i);
    const right = that(now, i);
 
-   return T._map(T._both(left, right), ([l, r]) => {
+   return T.map_(T.both_(left, right), ([l, r]) => {
       switch (l._tag) {
          case "Done": {
             switch (r._tag) {
@@ -252,11 +227,7 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
                   return makeDone<[O, O1]>([l.out, r.out]);
                }
                case "Continue": {
-                  return makeContinue(
-                     [l.out, r.out],
-                     f(l.interval, r.interval),
-                     combineWithLoop(l.next, r.next, f)
-                  );
+                  return makeContinue([l.out, r.out], f(l.interval, r.interval), combineWithLoop(l.next, r.next, f));
                }
             }
          }
@@ -264,38 +235,40 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
    });
 };
 
-export const _combineWith = <R, I, O, R1, I1, O1>(
+export const combineWith_ = <R, I, O, R1, I1, O1>(
    sc: Schedule<R, I, O>,
    that: Schedule<R1, I1, O1>,
    f: (d1: number, d2: number) => number
 ) => makeSchedule(combineWithLoop(sc.step, that.step, f));
 
-export const combineWith = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => (
-   f: (d1: number, d2: number) => number
-) => <R, I, O>(sc: Schedule<R, I, O>) => _combineWith(sc, that, f);
-
-export const _either = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
-   _combineWith(sc, that, (d1, d2) => Math.min(d1, d2));
-
-export const either = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(
+export const combineWith = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => (f: (d1: number, d2: number) => number) => <
+   R,
+   I,
+   O
+>(
    sc: Schedule<R, I, O>
-) => _either(sc, that);
+) => combineWith_(sc, that, f);
 
-export const _eitherWith = <R, I, O, R1, I1, O1, O2>(
+export const either_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   combineWith_(sc, that, (d1, d2) => Math.min(d1, d2));
+
+export const either = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) => either_(sc, that);
+
+export const eitherWith_ = <R, I, O, R1, I1, O1, O2>(
    sc: Schedule<R, I, O>,
    that: Schedule<R1, I1, O1>,
    f: (o: O, o1: O1) => O2
-) => _map(_either(sc, that), ([o, o1]) => f(o, o1));
+) => map_(either_(sc, that), ([o, o1]) => f(o, o1));
 
-export const eitherWith = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <O, O2>(
-   f: (o: O, o1: O1) => O2
-) => <R, I>(sc: Schedule<R, I, O>) => _eitherWith(sc, that, f);
+export const eitherWith = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <O, O2>(f: (o: O, o1: O1) => O2) => <R, I>(
+   sc: Schedule<R, I, O>
+) => eitherWith_(sc, that, f);
 
 const bothLoop = <R, I, O, R1, I1, O1>(
    sc: StepFunction<R, I, O>,
    that: StepFunction<R1, I1, O1>
 ): StepFunction<R & R1, readonly [I, I1], readonly [O, O1]> => (now, [in1, in2]) =>
-   T._map(T._both(sc(now, in1), that(now, in2)), ([d1, d2]) => {
+   T.map_(T.both_(sc(now, in1), that(now, in2)), ([d1, d2]) => {
       switch (d1._tag) {
          case "Done": {
             switch (d2._tag) {
@@ -329,25 +302,22 @@ const bothLoop = <R, I, O, R1, I1, O1>(
  * Returns a new schedule that has both the inputs and outputs of this and the specified
  * schedule.
  */
-export const _bothInOut = <R, I, O, R1, I1, O1>(
-   sc: Schedule<R, I, O>,
-   that: Schedule<R1, I1, O1>
-) => makeSchedule(bothLoop(sc.step, that.step));
+export const bothInOut_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   makeSchedule(bothLoop(sc.step, that.step));
 
 /**
  * Returns a new schedule that has both the inputs and outputs of this and the specified
  * schedule.
  */
-export const bothInOut = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(
-   sc: Schedule<R, I, O>
-) => _bothInOut(sc, that);
+export const bothInOut = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) =>
+   bothInOut_(sc, that);
 
 /**
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export const _both = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
-   _combineWith(sc, that, (l, r) => Math.max(l, r));
+export const both_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   combineWith_(sc, that, (l, r) => Math.max(l, r));
 
 /**
  * Returns a new schedule that performs a geometric intersection on the intervals defined
@@ -355,19 +325,19 @@ export const _both = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule
  */
 export const both = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(
    self: Schedule<R, I, O>
-): Schedule<R & R1, I & I1, readonly [O, O1]> => _both(self, that);
+): Schedule<R & R1, I & I1, readonly [O, O1]> => both_(self, that);
 
 const checkMLoop = <R, I, O, R1>(
    self: StepFunction<R, I, O>,
    test: (i: I, o: O) => T.Effect<R1, never, boolean>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-   T._chain(self(now, i), (d) => {
+   T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
             return T.pure(makeDone(d.out));
          }
          case "Continue": {
-            return T._map(test(i, d.out), (b) =>
+            return T.map_(test(i, d.out), (b) =>
                b ? makeContinue(d.out, d.interval, checkMLoop(d.next, test)) : makeDone(d.out)
             );
          }
@@ -379,168 +349,144 @@ const checkMLoop = <R, I, O, R1>(
  * function, and then determines whether or not to continue based on the return value of the
  * function.
  */
-export const _checkM = <R, I, O, R1>(
-   sc: Schedule<R, I, O>,
-   test: (i: I, o: O) => T.Effect<R1, never, boolean>
-) => makeSchedule(checkMLoop(sc.step, test));
+export const checkM_ = <R, I, O, R1>(sc: Schedule<R, I, O>, test: (i: I, o: O) => T.Effect<R1, never, boolean>) =>
+   makeSchedule(checkMLoop(sc.step, test));
 
 /**
  * Returns a new schedule that passes each input and output of this schedule to the specified
  * function, and then determines whether or not to continue based on the return value of the
  * function.
  */
-export const checkM = <R1, I, O>(test: (i: I, o: O) => T.Effect<R1, never, boolean>) => <X, R>(
-   sc: Schedule<R, I, O>
-) => _checkM(sc, test);
+export const checkM = <R1, I, O>(test: (i: I, o: O) => T.Effect<R1, never, boolean>) => <R>(sc: Schedule<R, I, O>) =>
+   checkM_(sc, test);
 
 /**
  * Returns a new schedule that passes each input and output of this schedule to the spefcified
  * function, and then determines whether or not to continue based on the return value of the
  * function.
  */
-export const _check = <R, I, O>(sc: Schedule<R, I, O>, test: (i: I, o: O) => boolean) =>
-   _checkM(sc, (i, o) => T.pure(test(i, o)));
+export const check_ = <R, I, O>(sc: Schedule<R, I, O>, test: (i: I, o: O) => boolean) =>
+   checkM_(sc, (i, o) => T.pure(test(i, o)));
 
 /**
  * Returns a new schedule that passes each input and output of this schedule to the spefcified
  * function, and then determines whether or not to continue based on the return value of the
  * function.
  */
-export const check = <I, O>(test: (i: I, o: O) => boolean) => <R>(sc: Schedule<R, I, O>) =>
-   _check(sc, test);
+export const check = <I, O>(test: (i: I, o: O) => boolean) => <R>(sc: Schedule<R, I, O>) => check_(sc, test);
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const _untilInput = <R, I, O>(sc: Schedule<R, I, O>, f: (i: I) => boolean) =>
-   _check(sc, (i) => !f(i));
+export const untilInput_ = <R, I, O>(sc: Schedule<R, I, O>, f: (i: I) => boolean) => check_(sc, (i) => !f(i));
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const untilInput = <I>(f: (i: I) => boolean) => <R, O>(sc: Schedule<R, I, O>) =>
-   _untilInput(sc, f);
+export const untilInput = <I>(f: (i: I) => boolean) => <R, O>(sc: Schedule<R, I, O>) => untilInput_(sc, f);
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const _untilInputM = <R, I, O, R1>(
-   sc: Schedule<R, I, O>,
-   f: (i: I) => T.Effect<R1, never, boolean>
-) => _checkM(sc, (i) => T._map(f(i), (b) => !b));
+export const untilInputM_ = <R, I, O, R1>(sc: Schedule<R, I, O>, f: (i: I) => T.Effect<R1, never, boolean>) =>
+   checkM_(sc, (i) => T.map_(f(i), (b) => !b));
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const untilInputM = <R1, I>(f: (i: I) => T.Effect<R1, never, boolean>) => <R, O>(
-   sc: Schedule<R, I, O>
-) => _untilInputM(sc, f);
+export const untilInputM = <R1, I>(f: (i: I) => T.Effect<R1, never, boolean>) => <R, O>(sc: Schedule<R, I, O>) =>
+   untilInputM_(sc, f);
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const _untilOutput = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => boolean) =>
-   _check(sc, (_, o) => !f(o));
+export const untilOutput_ = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => boolean) => check_(sc, (_, o) => !f(o));
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const untilOutput = <O>(f: (o: O) => boolean) => <R, I>(sc: Schedule<R, I, O>) =>
-   _untilOutput(sc, f);
+export const untilOutput = <O>(f: (o: O) => boolean) => <R, I>(sc: Schedule<R, I, O>) => untilOutput_(sc, f);
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const _untilOutputM = <R, I, O, R1>(
-   sc: Schedule<R, I, O>,
-   f: (o: O) => T.Effect<R1, never, boolean>
-) => _checkM(sc, (_, o) => T._map(f(o), (b) => !b));
+export const untilOutputM_ = <R, I, O, R1>(sc: Schedule<R, I, O>, f: (o: O) => T.Effect<R1, never, boolean>) =>
+   checkM_(sc, (_, o) => T.map_(f(o), (b) => !b));
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export const untilOutputM = <R1, O>(f: (o: O) => T.Effect<R1, never, boolean>) => <R, I>(
-   sc: Schedule<R, I, O>
-) => _untilOutputM(sc, f);
+export const untilOutputM = <R1, O>(f: (o: O) => T.Effect<R1, never, boolean>) => <R, I>(sc: Schedule<R, I, O>) =>
+   untilOutputM_(sc, f);
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const _whileInput = <R, I, O>(sc: Schedule<R, I, O>, f: (i: I) => boolean) =>
-   _check(sc, (i) => f(i));
+export const whileInput_ = <R, I, O>(sc: Schedule<R, I, O>, f: (i: I) => boolean) => check_(sc, (i) => f(i));
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const whileInput = <I>(f: (i: I) => boolean) => <R, O>(sc: Schedule<R, I, O>) =>
-   _whileInput(sc, f);
+export const whileInput = <I>(f: (i: I) => boolean) => <R, O>(sc: Schedule<R, I, O>) => whileInput_(sc, f);
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const _whileInputM = <R, I, O, R1>(
-   sc: Schedule<R, I, O>,
-   f: (i: I) => T.Effect<R1, never, boolean>
-) => _checkM(sc, (i) => f(i));
+export const whileInputM_ = <R, I, O, R1>(sc: Schedule<R, I, O>, f: (i: I) => T.Effect<R1, never, boolean>) =>
+   checkM_(sc, (i) => f(i));
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const whileInputM = <R1, I>(f: (i: I) => T.Effect<R1, never, boolean>) => <R, O>(
-   sc: Schedule<R, I, O>
-) => _whileInputM(sc, f);
+export const whileInputM = <R1, I>(f: (i: I) => T.Effect<R1, never, boolean>) => <R, O>(sc: Schedule<R, I, O>) =>
+   whileInputM_(sc, f);
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const _whileOutput = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => boolean) =>
-   _check(sc, (_, o) => f(o));
+export const whileOutput_ = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => boolean) => check_(sc, (_, o) => f(o));
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const whileOutput = <O>(f: (o: O) => boolean) => <R, I>(sc: Schedule<R, I, O>) =>
-   _whileOutput(sc, f);
+export const whileOutput = <O>(f: (o: O) => boolean) => <R, I>(sc: Schedule<R, I, O>) => whileOutput_(sc, f);
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const _whileOutputM = <R, I, O, R1>(
-   sc: Schedule<R, I, O>,
-   f: (o: O) => T.Effect<R1, never, boolean>
-) => _checkM(sc, (_, o) => f(o));
+export const whileOutputM_ = <R, I, O, R1>(sc: Schedule<R, I, O>, f: (o: O) => T.Effect<R1, never, boolean>) =>
+   checkM_(sc, (_, o) => f(o));
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export const whileOutputM = <R1, O>(f: (o: O) => T.Effect<R1, never, boolean>) => <R, I>(
-   sc: Schedule<R, I, O>
-) => _whileOutputM(sc, f);
+export const whileOutputM = <R1, O>(f: (o: O) => T.Effect<R1, never, boolean>) => <R, I>(sc: Schedule<R, I, O>) =>
+   whileOutputM_(sc, f);
 
 const chooseLoop = <R, I, O, R1, I1, O1>(
    sc: StepFunction<R, I, O>,
    that: StepFunction<R1, I1, O1>
 ): StepFunction<R & R1, Either<I, I1>, Either<O, O1>> => (now, either) =>
-   E._fold(
+   E.fold_(
       either,
       (i) =>
-         T._map(sc(now, i), (d) => {
+         T.map_(sc(now, i), (d) => {
             switch (d._tag) {
                case "Done": {
                   return makeDone(E.left(d.out));
@@ -551,7 +497,7 @@ const chooseLoop = <R, I, O, R1, I1, O1>(
             }
          }),
       (i2) =>
-         T._map(that(now, i2), (d) => {
+         T.map_(that(now, i2), (d) => {
             switch (d._tag) {
                case "Done": {
                   return makeDone(E.right(d.out));
@@ -567,42 +513,37 @@ const chooseLoop = <R, I, O, R1, I1, O1>(
  * Returns a new schedule that allows choosing between feeding inputs to this schedule, or
  * feeding inputs to the specified schedule.
  */
-export const _choose = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+export const choose_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
    makeSchedule(chooseLoop(sc.step, that.step));
 
 /**
  * Returns a new schedule that allows choosing between feeding inputs to this schedule, or
  * feeding inputs to the specified schedule.
  */
-export const choose = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(
-   sc: Schedule<R, I, O>
-) => _choose(sc, that);
+export const choose = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) => choose_(sc, that);
 
 /**
  * Returns a new schedule that allows choosing between feeding inputs to this schedule, or
  * feeding inputs to the specified schedule.
  */
-export const _chooseMerge = <R, I, O, R1, I1, O1>(
-   sc: Schedule<R, I, O>,
-   that: Schedule<R1, I1, O1>
-) => _map(_choose(sc, that), E.merge);
+export const chooseMerge_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   map_(choose_(sc, that), E.merge);
 
 /**
  * Returns a new schedule that allows choosing between feeding inputs to this schedule, or
  * feeding inputs to the specified schedule.
  */
-export const chooseMerge = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(
-   sc: Schedule<R, I, O>
-) => _chooseMerge(sc, that);
+export const chooseMerge = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) =>
+   chooseMerge_(sc, that);
 
 const ensuringLoop = <R, I, O, R1>(
    self: StepFunction<R, I, O>,
    finalizer: T.Effect<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-   T._chain(self(now, i), (d) => {
+   T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T._as(finalizer, makeDone(d.out));
+            return T.as_(finalizer, makeDone(d.out));
          }
          case "Continue": {
             return T.pure(makeContinue(d.out, d.interval, ensuringLoop(d.next, finalizer)));
@@ -617,10 +558,8 @@ const ensuringLoop = <R, I, O, R1>(
  * to completion. However, if the `Schedule` ever decides not to continue, then the
  * finalizer will be run.
  */
-export const _ensuring = <R, I, O, R1>(
-   sc: Schedule<R, I, O>,
-   finalizer: T.Effect<R1, never, any>
-) => makeSchedule(ensuringLoop(sc.step, finalizer));
+export const ensuring_ = <R, I, O, R1>(sc: Schedule<R, I, O>, finalizer: T.Effect<R1, never, any>) =>
+   makeSchedule(ensuringLoop(sc.step, finalizer));
 
 /**
  * Returns a new schedule that will run the specified finalizer as soon as the schedule is
@@ -629,9 +568,8 @@ export const _ensuring = <R, I, O, R1>(
  * to completion. However, if the `Schedule` ever decides not to continue, then the
  * finalizer will be run.
  */
-export const ensuring = <R1>(finalizer: T.Effect<R1, never, any>) => <R, I, O>(
-   sc: Schedule<R, I, O>
-) => _ensuring(sc, finalizer);
+export const ensuring = <R1>(finalizer: T.Effect<R1, never, any>) => <R, I, O>(sc: Schedule<R, I, O>) =>
+   ensuring_(sc, finalizer);
 
 /**
  * A schedule that recurs on a fixed interval. Returns the number of
@@ -648,19 +586,11 @@ export const ensuring = <R1>(finalizer: T.Effect<R1, never, any>) => <R, I, O>(
 export const fixed = (interval: number): Schedule<unknown, unknown, number> => {
    type State = { startMillis: number; lastRun: number };
 
-   const loop = (startMillis: Maybe<State>, n: number): StepFunction<unknown, unknown, number> => (
-      now,
-      _
-   ) =>
+   const loop = (startMillis: Option<State>, n: number): StepFunction<unknown, unknown, number> => (now, _) =>
       T.pure(
-         Mb._fold(
+         O.fold_(
             startMillis,
-            () =>
-               makeContinue(
-                  n + 1,
-                  now + interval,
-                  loop(Mb.just({ startMillis: now, lastRun: now }), n + 1)
-               ),
+            () => makeContinue(n + 1, now + interval, loop(O.some({ startMillis: now, lastRun: now }), n + 1)),
             ({ lastRun, startMillis }) => {
                const runningBehind = now > lastRun + interval;
                const boundary = (now - startMillis) % interval;
@@ -671,7 +601,7 @@ export const fixed = (interval: number): Schedule<unknown, unknown, number> => {
                   n + 1,
                   nextRun,
                   loop(
-                     Mb.just<State>({ startMillis, lastRun: nextRun }),
+                     O.some<State>({ startMillis, lastRun: nextRun }),
                      n + 1
                   )
                );
@@ -679,7 +609,7 @@ export const fixed = (interval: number): Schedule<unknown, unknown, number> => {
          )
       );
 
-   return makeSchedule(loop(Mb.nothing(), 0));
+   return makeSchedule(loop(O.none(), 0));
 };
 
 const foldMLoop = <R, I, O, R1, B>(
@@ -687,15 +617,13 @@ const foldMLoop = <R, I, O, R1, B>(
    b: B,
    f: (b: B, o: O) => T.Effect<R1, never, B>
 ): StepFunction<R & R1, I, B> => (now, i) =>
-   T._chain(sf(now, i), (d) => {
+   T.chain_(sf(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
             return T.pure<Decision<R & R1, I, B>>(makeDone(b));
          }
          case "Continue": {
-            return T._map(f(b, d.out), (b2) =>
-               makeContinue(b2, d.interval, foldMLoop(d.next, b2, f))
-            );
+            return T.map_(f(b, d.out), (b2) => makeContinue(b2, d.interval, foldMLoop(d.next, b2, f)));
          }
       }
    });
@@ -703,30 +631,25 @@ const foldMLoop = <R, I, O, R1, B>(
 /**
  * Returns a new `Schedule` that effectfully folds over the outputs of a `Schedule`.
  */
-export const _foldM = <R, I, O, R1, B>(
-   sc: Schedule<R, I, O>,
-   b: B,
-   f: (b: B, o: O) => T.Effect<R1, never, B>
-) => makeSchedule(foldMLoop(sc.step, b, f));
+export const foldM_ = <R, I, O, R1, B>(sc: Schedule<R, I, O>, b: B, f: (b: B, o: O) => T.Effect<R1, never, B>) =>
+   makeSchedule(foldMLoop(sc.step, b, f));
 
 /**
  * Returns a new `Schedule` that effectfully folds over the outputs of a `Schedule`.
  */
-export const foldM = <R1, O, B>(b: B, f: (b: B, o: O) => T.Effect<R1, never, B>) => <X, R, I>(
-   sc: Schedule<R, I, O>
-) => _foldM(sc, b, f);
+export const foldM = <R1, O, B>(b: B, f: (b: B, o: O) => T.Effect<R1, never, B>) => <R, I>(sc: Schedule<R, I, O>) =>
+   foldM_(sc, b, f);
 
 /**
  * Returns a new `Schedule` that folds over the outputs of a `Schedule`.
  */
-export const _fold = <R, I, O, B>(sc: Schedule<R, I, O>, b: B, f: (b: B, o: O) => B) =>
-   _foldM(sc, b, (b, o) => T.pure(f(b, o)));
+export const fold_ = <R, I, O, B>(sc: Schedule<R, I, O>, b: B, f: (b: B, o: O) => B) =>
+   foldM_(sc, b, (b, o) => T.pure(f(b, o)));
 
 /**
  * Returns a new `Schedule` that folds over the outputs of a `Schedule`.
  */
-export const fold = <O, B>(b: B, f: (b: B, o: O) => B) => <R, I>(sc: Schedule<R, I, O>) =>
-   _fold(sc, b, f);
+export const fold = <O, B>(b: B, f: (b: B, o: O) => B) => <R, I>(sc: Schedule<R, I, O>) => fold_(sc, b, f);
 
 const unfoldLoop = <A>(a: A, f: (a: A) => A): StepFunction<unknown, unknown, A> => (now, _) =>
    T.pure(makeContinue(a, now, unfoldLoop(f(a), f)));
@@ -734,7 +657,7 @@ const unfoldLoop = <A>(a: A, f: (a: A) => A): StepFunction<unknown, unknown, A> 
 /**
  * Unfolds a schedule that repeats one time from the specified state and iterator.
  */
-export const _unfold = <A>(a: () => A, f: (a: A) => A) =>
+export const unfold_ = <A>(a: () => A, f: (a: A) => A) =>
    makeSchedule((now) =>
       pipe(
          T.total(a),
@@ -745,35 +668,31 @@ export const _unfold = <A>(a: () => A, f: (a: A) => A) =>
 /**
  * Unfolds a schedule that repeats one time from the specified state and iterator.
  */
-export const unfold = <A>(f: (a: A) => A) => (a: () => A) => _unfold(a, f);
+export const unfold = <A>(f: (a: A) => A) => (a: () => A) => unfold_(a, f);
 
-const unfoldMLoop = <R, A>(
-   a: A,
-   f: (a: A) => T.Effect<R, never, A>
-): StepFunction<R, unknown, A> => (now, _) =>
-   T.pure(makeContinue(a, now, (n, i) => T._chain(f(a), (x) => unfoldMLoop(x, f)(n, i))));
+const unfoldMLoop = <R, A>(a: A, f: (a: A) => T.Effect<R, never, A>): StepFunction<R, unknown, A> => (now, _) =>
+   T.pure(makeContinue(a, now, (n, i) => T.chain_(f(a), (x) => unfoldMLoop(x, f)(n, i))));
 
 /**
  * Effectfully unfolds a schedule that repeats one time from the specified state and iterator.
  */
-export const _unfoldM = <R, A>(a: A, f: (a: A) => T.Effect<R, never, A>) =>
-   makeSchedule(unfoldMLoop(a, f));
+export const unfoldM_ = <R, A>(a: A, f: (a: A) => T.Effect<R, never, A>) => makeSchedule(unfoldMLoop(a, f));
 
 /**
  * Effectfully unfolds a schedule that repeats one time from the specified state and iterator.
  */
-export const unfoldM = <R, A>(f: (a: A) => T.Effect<R, never, A>) => (a: A) => _unfoldM(a, f);
+export const unfoldM = <R, A>(f: (a: A) => T.Effect<R, never, A>) => (a: A) => unfoldM_(a, f);
 
 /**
  * A schedule that recurs forever and produces a count of repeats.
  */
-export const forever = _unfold(constant(0), (n) => n + 1);
+export const forever = unfold_(constant(0), (n) => n + 1);
 
 /**
  * A schedule spanning all time, which can be stepped only the specified number of times before
  * it terminates.
  */
-export const recur = (n: number) => _whileOutput(forever, (x) => x < n);
+export const recur = (n: number) => whileOutput_(forever, (x) => x < n);
 
 /**
  * A `Schedule` that recurs one time.
@@ -788,38 +707,31 @@ export const stop = unit(recur(0));
 /**
  * Returns a new schedule that randomly modifies the size of the intervals of this schedule.
  */
-export const _jittered = <R, I, O>(
+export const jittered_ = <R, I, O>(
    sc: Schedule<R, I, O>,
    { max = 0.1, min = 0 }: { min?: number; max?: number } = {}
-) => _delayedM(sc, (d) => T._map(nextDouble, (r) => d * min * (1 - r) + d * max * r));
+) => delayedM_(sc, (d) => T.map_(nextDouble, (r) => d * min * (1 - r) + d * max * r));
 
 /**
  * Returns a new schedule that randomly modifies the size of the intervals of this schedule.
  */
-export const jittered = ({ max = 0.1, min = 0 }: { min?: number; max?: number } = {}) => <
-   X,
-   R,
-   I,
-   O
->(
+export const jittered = ({ max = 0.1, min = 0 }: { min?: number; max?: number } = {}) => <R, I, O>(
    sc: Schedule<R, I, O>
-) => _jittered(sc, { min, max });
+) => jittered_(sc, { min, max });
 
 /**
  * A schedule that always recurs, but will repeat on a linear time
  * interval, given by `base * n` where `n` is the number of
  * repetitions so far. Returns the current duration between recurrences.
  */
-export const linear = (base: number) => delayedFrom(_map(forever, (i) => base * (i + 1)));
+export const linear = (base: number) => delayedFrom(map_(forever, (i) => base * (i + 1)));
 
 /**
  * Returns a new schedule that collects the outputs of a `Schedule` into an array.
  */
-export const collectAll = <R, I, O>(sc: Schedule<R, I, O>) =>
-   _fold(sc, [] as ReadonlyArray<O>, (xs, x) => [...xs, x]);
+export const collectAll = <R, I, O>(sc: Schedule<R, I, O>) => fold_(sc, [] as ReadonlyArray<O>, (xs, x) => [...xs, x]);
 
-const identityLoop = <A>(): StepFunction<unknown, A, A> => (now, i) =>
-   T.pure(makeContinue(i, now, identityLoop()));
+const identityLoop = <A>(): StepFunction<unknown, A, A> => (now, i) => T.pure(makeContinue(i, now, identityLoop()));
 
 /**
  * A schedule that always recurs and returns inputs as outputs.
@@ -830,44 +742,41 @@ export const identity = <A>() => makeSchedule(identityLoop<A>());
  * Returns a new schedule that makes this schedule available on the `Left` side of an `Either`
  * input, allowing propagating some type `X` through this channel on demand.
  */
-export const left = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => _choose(sc, identity<A>());
+export const left = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => choose_(sc, identity<A>());
 
 /**
  * Returns a new schedule that makes this schedule available on the `Right` side of an `Either`
  * input, allowing propagating some type `X` through this channel on demand.
  */
-export const right = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => _choose(identity<A>(), sc);
+export const right = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => choose_(identity<A>(), sc);
 
 /**
  * Returns a new schedule that packs the input and output of this schedule into the first
  * element of a tuple. This allows carrying information through this schedule.
  */
-export const first = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => _bothInOut(sc, identity<A>());
+export const first = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => bothInOut_(sc, identity<A>());
 
 /**
  * Returns a new schedule that packs the input and output of this schedule into the second
  * element of a tuple. This allows carrying information through this schedule.
  */
-export const second = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => _bothInOut(identity<A>(), sc);
+export const second = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => bothInOut_(identity<A>(), sc);
 
 /**
  * A schedule that always recurs, mapping input values through the
  * specified function.
  */
-export const fromFunction = <A, B>(f: (a: A) => B) => _map(identity<A>(), f);
+export const fromFunction = <A, B>(f: (a: A) => B) => map_(identity<A>(), f);
 
 /**
  * Returns a schedule that recurs continuously, each repetition spaced the specified duration
  * from the last run.
  */
-export const spaced = (duration: number) => _addDelay(forever, () => duration);
+export const spaced = (duration: number) => addDelay_(forever, () => duration);
 
-const provideAllLoop = <R, I, O>(
-   self: StepFunction<R, I, O>,
-   r: R
-): StepFunction<unknown, I, O> => (now, i) =>
-   T.provideAll(r)(
-      T._map(self(now, i), (d) => {
+const provideAllLoop = <R, I, O>(self: StepFunction<R, I, O>, r: R): StepFunction<unknown, I, O> => (now, i) =>
+   T.giveAll(r)(
+      T.map_(self(now, i), (d) => {
          switch (d._tag) {
             case "Done": {
                return makeDone(d.out);
@@ -883,21 +792,21 @@ const provideAllLoop = <R, I, O>(
  * Returns a new schedule with its environment provided to it, so the resulting
  * schedule does not require any environment.
  */
-export const _provideAll = <R, I, O>(sc: Schedule<R, I, O>, r: R): Schedule<unknown, I, O> =>
+export const provideAll_ = <R, I, O>(sc: Schedule<R, I, O>, r: R): Schedule<unknown, I, O> =>
    makeSchedule(provideAllLoop(sc.step, r));
 
 /**
  * Returns a new schedule with its environment provided to it, so the resulting
  * schedule does not require any environment.
  */
-export const provideAll = <R>(r: R) => <I, O>(sc: Schedule<R, I, O>) => _provideAll(sc, r);
+export const provideAll = <R>(r: R) => <I, O>(sc: Schedule<R, I, O>) => provideAll_(sc, r);
 
-const provideSomeLoop = <R, R1, I, O>(
-   self: StepFunction<R, I, O>,
-   r: (_: R1) => R
-): StepFunction<R1, I, O> => (now, i) =>
-   T._provideSome(
-      T._map(self(now, i), (d) => {
+const provideSomeLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) => R): StepFunction<R1, I, O> => (
+   now,
+   i
+) =>
+   T.local_(
+      T.map_(self(now, i), (d) => {
          switch (d._tag) {
             case "Done": {
                return makeDone(d.out);
@@ -914,26 +823,23 @@ const provideSomeLoop = <R, R1, I, O>(
  * Returns a new schedule with part of its environment provided to it, so the
  * resulting schedule does not require any environment.
  */
-export const _provideSome = <R, R1, I, O>(
-   sc: Schedule<R, I, O>,
-   r: (_: R1) => R
-): Schedule<R1, I, O> => makeSchedule(provideSomeLoop(sc.step, r));
+export const provideSome_ = <R, R1, I, O>(sc: Schedule<R, I, O>, r: (_: R1) => R): Schedule<R1, I, O> =>
+   makeSchedule(provideSomeLoop(sc.step, r));
 
 /**
  * Returns a new schedule with part of its environment provided to it, so the
  * resulting schedule does not require any environment.
  */
-export const provideSome = <R, R1>(r: (_: R1) => R) => <I, O>(sc: Schedule<R, I, O>) =>
-   _provideSome(sc, r);
+export const provideSome = <R, R1>(r: (_: R1) => R) => <I, O>(sc: Schedule<R, I, O>) => provideSome_(sc, r);
 
 const reconsiderMLoop = <R, I, O, R1, O1>(
    self: StepFunction<R, I, O>,
    f: (_: Decision<R, I, O>) => T.Effect<R1, never, E.Either<O1, [O1, number]>>
 ): StepFunction<R & R1, I, O1> => (now, i) =>
-   T._chain(self(now, i), (d) => {
+   T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T._map(
+            return T.map_(
                f(d),
                E.fold(
                   (o2) => makeDone(o2),
@@ -942,7 +848,7 @@ const reconsiderMLoop = <R, I, O, R1, O1>(
             );
          }
          case "Continue": {
-            return T._map(
+            return T.map_(
                f(d),
                E.fold(
                   (o2) => makeDone(o2),
@@ -957,7 +863,7 @@ const reconsiderMLoop = <R, I, O, R1, O1>(
  * Returns a new schedule that effectfully reconsiders every decision made by this schedule,
  * possibly modifying the next interval and the output type in the process.
  */
-export const _reconsiderM = <R, I, O, R1, O1>(
+export const reconsiderM_ = <R, I, O, R1, O1>(
    sc: Schedule<R, I, O>,
    f: (d: Decision<R, I, O>) => T.Effect<R1, never, Either<O1, [O1, number]>>
 ): Schedule<R & R1, I, O1> => makeSchedule(reconsiderMLoop(sc.step, f));
@@ -968,16 +874,16 @@ export const _reconsiderM = <R, I, O, R1, O1>(
  */
 export const reconsiderM = <R, I, O, R1, O1>(
    f: (d: Decision<R, I, O>) => T.Effect<R1, never, Either<O1, [O1, number]>>
-) => (sc: Schedule<R, I, O>) => _reconsiderM(sc, f);
+) => (sc: Schedule<R, I, O>) => reconsiderM_(sc, f);
 
 /**
  * Returns a new schedule that reconsiders every decision made by this schedule,
  * possibly modifying the next interval and the output type in the process.
  */
-export const _reconsider = <R, I, O, O1>(
+export const reconsider_ = <R, I, O, O1>(
    sc: Schedule<R, I, O>,
    f: (d: Decision<R, I, O>) => Either<O1, [O1, number]>
-) => _reconsiderM(sc, (d) => T.pure(f(d)));
+) => reconsiderM_(sc, (d) => T.pure(f(d)));
 
 /**
  * Returns a new schedule that reconsiders every decision made by this schedule,
@@ -985,59 +891,55 @@ export const _reconsider = <R, I, O, O1>(
  */
 export const reconsider = <R, I, O, O1>(f: (d: Decision<R, I, O>) => Either<O1, [O1, number]>) => (
    sc: Schedule<R, I, O>
-) => _reconsider(sc, f);
+) => reconsider_(sc, f);
 
 /**
  * A schedule that recurs for as long as the effectful predicate evaluates to true.
  */
-export const recurWhileM = <R, A>(f: (a: A) => T.Effect<R, never, boolean>) =>
-   _whileInputM(identity<A>(), f);
+export const recurWhileM = <R, A>(f: (a: A) => T.Effect<R, never, boolean>) => whileInputM_(identity<A>(), f);
 
 /**
  * A schedule that recurs for as long as the predicate evaluates to true.
  */
-export const recurWhile = <A>(f: (a: A) => boolean) => _whileInput(identity<A>(), f);
+export const recurWhile = <A>(f: (a: A) => boolean) => whileInput_(identity<A>(), f);
 
 /**
  * A schedule that recurs for as long as the predicate evaluates to true.
  */
-export const recurWhileEqual = <A>(a: A) => _whileInput(identity<A>(), (x) => a === x);
+export const recurWhileEqual = <A>(a: A) => whileInput_(identity<A>(), (x) => a === x);
 
 /**
  * A schedule that recurs until the effectful predicate evaluates to true.
  */
-export const recurUntilM = <R, A>(f: (a: A) => T.Effect<R, never, boolean>) =>
-   _untilInputM(identity<A>(), f);
+export const recurUntilM = <R, A>(f: (a: A) => T.Effect<R, never, boolean>) => untilInputM_(identity<A>(), f);
 
 /**
  * A schedule that recurs until the predicate evaluates to true.
  */
-export const recurUntil = <A>(f: (a: A) => boolean) => _untilInput(identity<A>(), f);
+export const recurUntil = <A>(f: (a: A) => boolean) => untilInput_(identity<A>(), f);
 
 /**
  * A schedule that recurs until the predicate evaluates to true.
  */
-export const recurUntilEqual = <A>(a: A) => _untilInput(identity<A>(), (x) => x === a);
+export const recurUntilEqual = <A>(a: A) => untilInput_(identity<A>(), (x) => x === a);
 
 /**
  * Returns a new schedule that outputs the number of repetitions of this one.
  */
-export const repetitions = <R, I, O>(sc: Schedule<R, I, O>) => _fold(sc, 0, (n) => n + 1);
+export const repetitions = <R, I, O>(sc: Schedule<R, I, O>) => fold_(sc, 0, (n) => n + 1);
 
 const resetWhenLoop = <R, I, O>(
    sc: Schedule<R, I, O>,
    step: StepFunction<R, I, O>,
    f: (o: O) => boolean
 ): StepFunction<R, I, O> => (now, i) =>
-   T._chain(step(now, i), (d) => {
+   T.chain_(step(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
             return f(d.out) ? sc.step(now, i) : T.pure(makeDone(d.out));
          }
          case "Continue": {
-            return f(d.out)
-               ? sc.step(now, i)
-               : T.pure(makeContinue(d.out, d.interval, resetWhenLoop(sc, d.next, f)));
+            return f(d.out) ? sc.step(now, i) : T.pure(makeContinue(d.out, d.interval, resetWhenLoop(sc, d.next, f)));
          }
       }
    });
@@ -1045,14 +947,13 @@ const resetWhenLoop = <R, I, O>(
 /**
  * Resets the schedule when the specified predicate on the schedule output evaluates to true.
  */
-export const _resetWhen = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => boolean) =>
+export const resetWhen_ = <R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => boolean) =>
    makeSchedule(resetWhenLoop(sc, sc.step, f));
 
 /**
  * Resets the schedule when the specified predicate on the schedule output evaluates to true.
  */
-export const resetWhen = <O>(f: (o: O) => boolean) => <R, I>(sc: Schedule<R, I, O>) =>
-   _resetWhen(sc, f);
+export const resetWhen = <O>(f: (o: O) => boolean) => <R, I>(sc: Schedule<R, I, O>) => resetWhen_(sc, f);
 
 const runLoop = <R, I, O>(
    self: StepFunction<R, I, O>,
@@ -1061,7 +962,7 @@ const runLoop = <R, I, O>(
    acc: readonly O[]
 ): T.Effect<R, never, readonly O[]> =>
    xs.length > 0
-      ? T._chain(self(now, xs[0]), (d) => {
+      ? T.chain_(self(now, xs[0]), (d) => {
            switch (d._tag) {
               case "Done": {
                  return T.pure([...acc, d.out]);
@@ -1073,23 +974,22 @@ const runLoop = <R, I, O>(
         })
       : T.pure(acc);
 
-export const _run = <R, I, O>(sc: Schedule<R, I, O>, now: number, i: Iterable<I>) =>
+export const run_ = <R, I, O>(sc: Schedule<R, I, O>, now: number, i: Iterable<I>) =>
    runLoop(sc.step, now, Array.from(i), []);
 
-export const run = <I>(now: number, i: Iterable<I>) => <R, O>(sc: Schedule<R, I, O>) =>
-   _run(sc, now, i);
+export const run = <I>(now: number, i: Iterable<I>) => <R, O>(sc: Schedule<R, I, O>) => run_(sc, now, i);
 
 const onDecisionLoop = <R, I, O, R1>(
    self: StepFunction<R, I, O>,
    f: (d: Decision<R, I, O>) => T.Effect<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-   T._chain(self(now, i), (d) => {
+   T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T._as(f(d), makeDone(d.out));
+            return T.as_(f(d), makeDone(d.out));
          }
          case "Continue": {
-            return T._as(f(d), makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)));
+            return T.as_(f(d), makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)));
          }
       }
    });
@@ -1099,7 +999,7 @@ const onDecisionLoop = <R, I, O, R1>(
  * for every decision of this schedule. This can be used to create schedules
  * that log failures, decisions, or computed values.
  */
-export const _onDecision = <R, I, O, R1>(
+export const onDecision_ = <R, I, O, R1>(
    sc: Schedule<R, I, O>,
    f: (d: Decision<R, I, O>) => T.Effect<R1, never, any>
 ) => makeSchedule(onDecisionLoop(sc.step, f));
@@ -1111,14 +1011,14 @@ export const _onDecision = <R, I, O, R1>(
  */
 export const onDecision = <R, I, O, R1>(f: (d: Decision<R, I, O>) => T.Effect<R1, never, any>) => (
    sc: Schedule<R, I, O>
-) => _onDecision(sc, f);
+) => onDecision_(sc, f);
 
 const tapInputLoop = <R, I, O, R1>(
    self: StepFunction<R, I, O>,
    f: (i: I) => T.Effect<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-   T._chain(f(i), () =>
-      T._map(self(now, i), (d) => {
+   T.chain_(f(i), () =>
+      T.map_(self(now, i), (d) => {
          switch (d._tag) {
             case "Done": {
                return makeDone(d.out);
@@ -1130,112 +1030,104 @@ const tapInputLoop = <R, I, O, R1>(
       })
    );
 
-export const _tapInput = <R, I, O, R1>(
+export const tapInput_ = <R, I, O, R1>(
    sc: Schedule<R, I, O>,
    f: (i: I) => T.Effect<R1, never, any>
 ): Schedule<R & R1, I, O> => makeSchedule(tapInputLoop(sc.step, f));
 
-export const tapInput = <R1, I>(f: (i: I) => T.Effect<R1, never, any>) => <R, O>(
-   sc: Schedule<R, I, O>
-) => _tapInput(sc, f);
+export const tapInput = <R1, I>(f: (i: I) => T.Effect<R1, never, any>) => <R, O>(sc: Schedule<R, I, O>) =>
+   tapInput_(sc, f);
 
 const tapOutputLoop = <R, I, O, R1>(
    self: StepFunction<R, I, O>,
    f: (o: O) => T.Effect<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-   T._chain(self(now, i), (d) => {
+   T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T._as(f(d.out), makeDone(d.out));
+            return T.as_(f(d.out), makeDone(d.out));
          }
          case "Continue": {
-            return T._as(f(d.out), makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)));
+            return T.as_(f(d.out), makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)));
          }
       }
    });
 
-export const _tapOutput = <R, I, O, R1>(
+export const tapOutput_ = <R, I, O, R1>(
    sc: Schedule<R, I, O>,
    f: (o: O) => T.Effect<R1, never, any>
 ): Schedule<R & R1, I, O> => makeSchedule(tapOutputLoop(sc.step, f));
 
-export const tapOutput = <R1, O>(f: (o: O) => T.Effect<R1, never, any>) => <R, I>(
-   sc: Schedule<R, I, O>
-) => _tapOutput(sc, f);
+export const tapOutput = <R1, O>(f: (o: O) => T.Effect<R1, never, any>) => <R, I>(sc: Schedule<R, I, O>) =>
+   tapOutput_(sc, f);
 
 const windowedLoop = (
    interval: number,
-   startMillis: Maybe<number>,
+   startMillis: Option<number>,
    n: number
 ): StepFunction<unknown, unknown, number> => (now, _) =>
    T.pure(
-      Mb._fold(
+      O.fold_(
          startMillis,
-         () => makeContinue(n + 1, now + interval, windowedLoop(interval, Mb.just(now), n + 1)),
+         () => makeContinue(n + 1, now + interval, windowedLoop(interval, O.some(now), n + 1)),
          (startMillis) =>
             makeContinue(
                n + 1,
                now + ((now - startMillis) % interval),
-               windowedLoop(interval, Mb.just(startMillis), n + 1)
+               windowedLoop(interval, O.some(startMillis), n + 1)
             )
       )
    );
 
-export const windowed = (interval: number) => makeSchedule(windowedLoop(interval, Mb.nothing(), 0));
+export const windowed = (interval: number) => makeSchedule(windowedLoop(interval, O.none(), 0));
 
 /**
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export const _zip = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
-   _combineWith(sc, that, (d, d2) => Math.max(d, d2));
+export const zip_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   combineWith_(sc, that, (d, d2) => Math.max(d, d2));
 
 /**
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export const zip = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) =>
-   _zip(sc, that);
+export const zip = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) => zip_(sc, that);
 
 /**
  * Same as zip but ignores the right output.
  */
-export const _zipl = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
-   _map(_zip(sc, that), ([_]) => _);
+export const zipl_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   map_(zip_(sc, that), ([_]) => _);
 
 /**
  * Same as zip but ignores the right output.
  */
-export const zipl = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) =>
-   _zipl(sc, that);
+export const zipl = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) => zipl_(sc, that);
 
 /**
  * Same as zip but ignores the left output.
  */
-export const _zipr = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
-   _map(_zip(sc, that), ([_, __]) => __);
+export const zipr_ = <R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) =>
+   map_(zip_(sc, that), ([_, __]) => __);
 
 /**
  * Same as zip but ignores the left output.
  */
-export const zipr = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) =>
-   _zipr(sc, that);
+export const zipr = <R1, I1, O1>(that: Schedule<R1, I1, O1>) => <R, I, O>(sc: Schedule<R, I, O>) => zipr_(sc, that);
 
 /**
  * Equivalent to `zip` followed by `map`.
  */
-export const _zipWith = <R, I, O, R1, I1, O1, O2>(
+export const zipWith_ = <R, I, O, R1, I1, O1, O2>(
    sc: Schedule<R, I, O>,
    that: Schedule<R1, I1, O1>,
    f: (o: O, o1: O1) => O2
-) => _map(_zip(sc, that), ([o, o1]) => f(o, o1));
+) => map_(zip_(sc, that), ([o, o1]) => f(o, o1));
 
 /**
  * Equivalent to `zip` followed by `map`.
  */
-export const zipWith = <R1, I1, O, O1, O2>(that: Schedule<R1, I1, O1>, f: (o: O, o1: O1) => O2) => <
-   R,
-   I
->(
+export const zipWith = <R1, I1, O, O1, O2>(that: Schedule<R1, I1, O1>, f: (o: O, o1: O1) => O2) => <R, I>(
    sc: Schedule<R, I, O>
-) => _zipWith(sc, that, f);
+) => zipWith_(sc, that, f);

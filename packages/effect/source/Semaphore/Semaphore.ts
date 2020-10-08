@@ -1,15 +1,15 @@
-import { Either } from "@principia/core/Either";
+import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
 import { identity, pipe } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 
 import * as T from "../Effect/core";
-import { _bracket } from "../Effect/functions/bracket";
+import { bracket_ } from "../Effect/functions/bracket";
 import * as M from "../Managed/core";
 import { ImmutableQueue } from "../Support";
 import type { XPromise } from "../XPromise";
 import { make as promiseMake } from "../XPromise/functions/make";
-import { _succeed as promiseSucceed } from "../XPromise/functions/succeed";
+import { succeed_ as promiseSucceed } from "../XPromise/functions/succeed";
 import { wait as promiseWait } from "../XPromise/functions/wait";
 import * as XR from "../XRef/combinators";
 import type { Ref } from "../XRef/XRef";
@@ -40,7 +40,7 @@ export class Semaphore {
    }
 
    get available() {
-      return T._map(
+      return T.map_(
          this.state.get,
          E.fold(() => 0, identity)
       );
@@ -52,18 +52,14 @@ export class Semaphore {
             return [acc, E.right(n + state.right)];
          }
          case "Left": {
-            return Mb._fold(
+            return O.fold_(
                state.left.dequeue(),
                (): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
                ([[p, m], q]): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
                   if (n > m) {
-                     return this.loop(
-                        n - m,
-                        E.left(q),
-                        T._apFirst(acc, promiseSucceed(p, undefined))
-                     );
+                     return this.loop(n - m, E.left(q), T.apFirst_(acc, promiseSucceed(p, undefined)));
                   } else if (n === m) {
-                     return [T._apFirst(acc, promiseSucceed(p, undefined)), E.left(q)];
+                     return [T.apFirst_(acc, promiseSucceed(p, undefined)), E.left(q)];
                   } else {
                      return [acc, E.left(q.prepend([p, m - n]))];
                   }
@@ -75,7 +71,7 @@ export class Semaphore {
 
    private releaseN(toRelease: number): T.UIO<void> {
       return T.flatten(
-         T._chain(assertNonNegative(toRelease), () =>
+         T.chain_(assertNonNegative(toRelease), () =>
             pipe(
                this.state,
                XR.modify((s) => this.loop(toRelease, s, T.unit))
@@ -91,21 +87,15 @@ export class Semaphore {
             XR.modify(
                E.fold(
                   (q) =>
-                     Mb._fold(
+                     O.fold_(
                         q.find(([a]) => a === p),
-                        (): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
-                           this.releaseN(n),
-                           E.left(q)
-                        ],
+                        (): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [this.releaseN(n), E.left(q)],
                         (x): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
                            this.releaseN(n - x[1]),
                            E.left(q.filter(([a]) => a != p))
                         ]
                      ),
-                  (m): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
-                     T.unit,
-                     E.right(n + m)
-                  ]
+                  (m): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [T.unit, E.right(n + m)]
                )
             )
          )
@@ -116,7 +106,7 @@ export class Semaphore {
       if (n === 0) {
          return T.pure(new Acquisition(T.unit, T.unit));
       } else {
-         return T._chain(promiseMake<never, void>(), (p) =>
+         return T.chain_(promiseMake<never, void>(), (p) =>
             pipe(
                this.state,
                XR.modify(
@@ -145,10 +135,10 @@ export class Semaphore {
 /**
  * Acquires `n` permits, executes the action and releases the permits right after.
  */
-export const withPermits = (n: number) => (s: Semaphore) => <S, R, E, A>(e: T.Effect<R, E, A>) =>
-   _bracket(
+export const withPermits = (n: number) => (s: Semaphore) => <R, E, A>(e: T.Effect<R, E, A>) =>
+   bracket_(
       s.prepare(n),
-      (a) => T._chain(a.waitAcquire, () => e),
+      (a) => T.chain_(a.waitAcquire, () => e),
       (a) => a.release
    );
 
@@ -161,7 +151,7 @@ export const withPermit = (s: Semaphore) => withPermits(1)(s);
  * Acquires `n` permits in a [[Managed]] and releases the permits in the finalizer.
  */
 export const withPermitsManaged = (n: number) => (s: Semaphore) =>
-   M.makeReserve(T._map(s.prepare(n), (a) => M.makeReservation(() => a.release)(a.waitAcquire)));
+   M.makeReserve(T.map_(s.prepare(n), (a) => M.makeReservation(() => a.release)(a.waitAcquire)));
 
 /**
  * Acquires a permit in a [[Managed]] and releases the permit in the finalizer.
@@ -177,7 +167,7 @@ export const available = (s: Semaphore) => s.available;
  * Creates a new `Sempahore` with the specified number of permits.
  */
 export const makeSemaphore = (permits: number) =>
-   T._map(XR.makeRef<State>(E.right(permits)), (state) => new Semaphore(state));
+   T.map_(XR.makeRef<State>(E.right(permits)), (state) => new Semaphore(state));
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.

@@ -3,7 +3,7 @@ import type * as TC from "@principia/core/typeclass-index";
 
 import { id } from "./constructors";
 import { compose } from "./methods";
-import { URI, V } from "./Traversal";
+import type { URI, V } from "./Traversal";
 
 /*
  * -------------------------------------------

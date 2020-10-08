@@ -1,4 +1,4 @@
-import { Lazy } from "../Function";
+import type { Lazy } from "../Function";
 import { isEmpty } from "./guards";
 
 /*

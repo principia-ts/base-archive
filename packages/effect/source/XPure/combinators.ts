@@ -3,12 +3,12 @@ import type * as TC from "@principia/core/typeclass-index";
 
 import { modify, succeed } from "./constructors";
 import { FoldInstruction } from "./instructions";
-import { _chain, _map, accessM } from "./methods";
+import { asksM, chain_, map_ } from "./methods";
 import type { URI, V, XPure } from "./XPure";
 
 /**
  * ```haskell
- * _foldM :: (
+ * foldM_ :: (
  *    XPure s1 s2 r e a,
  *    (e -> XPure s3 s4 r1 e1 b),
  *    (a -> XPure s2 s5 r2 e2 c)
@@ -21,12 +21,11 @@ import type { URI, V, XPure } from "./XPure";
  * @category Combinators
  * @since 1.0.0
  */
-export const _foldM = <S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
+export const foldM_ = <S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
    fa: XPure<S1, S2, R, E, A>,
    onFailure: (e: E) => XPure<S5, S3, R1, E1, B>,
    onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
-): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> =>
-   new FoldInstruction(fa, onFailure, onSuccess);
+): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> => new FoldInstruction(fa, onFailure, onSuccess);
 
 /**
  * ```haskell
@@ -45,11 +44,11 @@ export const _foldM = <S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
 export const foldM = <S1, S2, E, A, S3, R1, E1, B, S4, R2, E2, C>(
    onFailure: (e: E) => XPure<S1, S3, R1, E1, B>,
    onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
-) => <R>(fa: XPure<S1, S2, R, E, A>) => _foldM(fa, onFailure, onSuccess);
+) => <R>(fa: XPure<S1, S2, R, E, A>) => foldM_(fa, onFailure, onSuccess);
 
 /**
  * ```haskell
- * _fold :: (
+ * fold_ :: (
  *    XPure s1 s2 r e a,
  *    (e -> b),
  *    (a -> c)
@@ -63,12 +62,12 @@ export const foldM = <S1, S2, E, A, S3, R1, E1, B, S4, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const _fold = <S1, S2, R, E, A, B, C>(
+export const fold_ = <S1, S2, R, E, A, B, C>(
    fa: XPure<S1, S2, R, E, A>,
    onFailure: (e: E) => B,
    onSuccess: (a: A) => C
 ): XPure<S1, S2, R, never, B | C> =>
-   _foldM(
+   foldM_(
       fa,
       (e) => succeed(onFailure(e)),
       (a) => succeed(onSuccess(a))
@@ -88,11 +87,11 @@ export const _fold = <S1, S2, R, E, A, B, C>(
  */
 export const fold = <E, A, B, C>(onFailure: (e: E) => B, onSuccess: (a: A) => C) => <S1, S2, R>(
    fa: XPure<S1, S2, R, E, A>
-) => _fold(fa, onFailure, onSuccess);
+) => fold_(fa, onFailure, onSuccess);
 
 /**
  * ```haskell
- * _catchAll :: (XPure s1 s2 r e a, (e -> XPure s1 s3 r1 e1 b)) ->
+ * catchAll_ :: (XPure s1 s2 r e a, (e -> XPure s1 s3 r1 e1 b)) ->
  *    XPure s1 s3 (r & r1) e1 (a | b)
  * ```
  *
@@ -101,14 +100,14 @@ export const fold = <E, A, B, C>(onFailure: (e: E) => B, onSuccess: (a: A) => C)
  * @category Combinators
  * @since 1.0.0
  */
-export const _catchAll = <S1, S2, R, E, A, S3, R1, E1, B>(
+export const catchAll_ = <S1, S2, R, E, A, S3, R1, E1, B>(
    fa: XPure<S1, S2, R, E, A>,
    onFailure: (e: E) => XPure<S1, S3, R1, E1, B>
-) => _foldM(fa, onFailure, (a) => succeed(a));
+) => foldM_(fa, onFailure, (a) => succeed(a));
 
 /**
  * ```haskell
- * _catchAll :: (e -> XPure s1 s3 r1 e1 b) -> XPure s1 s2 r e a ->
+ * catchAll_ :: (e -> XPure s1 s3 r1 e1 b) -> XPure s1 s2 r e a ->
  *    XPure s1 s3 (r & r1) e1 (a | b)
  * ```
  *
@@ -117,13 +116,9 @@ export const _catchAll = <S1, S2, R, E, A, S3, R1, E1, B>(
  * @category Combinators
  * @since 1.0.0
  */
-export const catchAll = <S1, E, S3, R1, E1, B>(onFailure: (e: E) => XPure<S1, S3, R1, E1, B>) => <
-   S2,
-   R,
-   A
->(
+export const catchAll = <S1, E, S3, R1, E1, B>(onFailure: (e: E) => XPure<S1, S3, R1, E1, B>) => <S2, R, A>(
    fa: XPure<S1, S2, R, E, A>
-) => _catchAll(fa, onFailure);
+) => catchAll_(fa, onFailure);
 
 /**
  * ```haskell
@@ -135,12 +130,12 @@ export const catchAll = <S1, E, S3, R1, E1, B>(onFailure: (e: E) => XPure<S1, S3
  * @category Combinators
  * @since 1.0.0
  */
-export const update = <S1, S2, A>(f: (s: S1) => S2): XPure<S1, S2, unknown, never, void> =>
+export const update = <S1, S2>(f: (s: S1) => S2): XPure<S1, S2, unknown, never, void> =>
    modify((s) => [f(s), undefined]);
 
 /**
  * ```haskell
- * _contramapInput :: (XPure s1 s2 r e a, (s0 -> s1)) -> XPure s0 s2 r e a
+ * contramapInput_ :: (XPure s1 s2 r e a, (s0 -> s1)) -> XPure s0 s2 r e a
  * ```
  *
  * Transforms the initial state of this computation` with the specified
@@ -149,10 +144,8 @@ export const update = <S1, S2, A>(f: (s: S1) => S2): XPure<S1, S2, unknown, neve
  * @category Combinators
  * @since 1.0.0
  */
-export const _contramapInput = <S0, S1, S2, R, E, A>(
-   fa: XPure<S1, S2, R, E, A>,
-   f: (s: S0) => S1
-) => _chain(update(f), () => fa);
+export const contramapInput_ = <S0, S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>, f: (s: S0) => S1) =>
+   chain_(update(f), () => fa);
 
 /**
  * ```haskell
@@ -165,9 +158,8 @@ export const _contramapInput = <S0, S1, S2, R, E, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const contramapInput = <S0, S1>(f: (s: S0) => S1) => <S2, R, E, A>(
-   fa: XPure<S1, S2, R, E, A>
-) => _contramapInput(fa, f);
+export const contramapInput = <S0, S1>(f: (s: S0) => S1) => <S2, R, E, A>(fa: XPure<S1, S2, R, E, A>) =>
+   contramapInput_(fa, f);
 
 /**
  * ```haskell
@@ -179,8 +171,7 @@ export const contramapInput = <S0, S1>(f: (s: S0) => S1) => <S2, R, E, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const environment = <R, S1 = unknown, S2 = never>() =>
-   accessM((r: R) => succeed<R, S1, S2>(r));
+export const environment = <R, S1 = unknown, S2 = never>() => asksM((r: R) => succeed<R, S1, S2>(r));
 
 /**
  * ```haskell
@@ -194,13 +185,12 @@ export const environment = <R, S1 = unknown, S2 = never>() =>
  * @category Combinators
  * @since 1.0.0
  */
-export const either = <S1, S2, R, E, A>(
-   fa: XPure<S1, S2, R, E, A>
-): XPure<S1, S1 | S2, R, never, E.Either<E, A>> => _fold(fa, E.left, E.right);
+export const either = <S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>): XPure<S1, S1 | S2, R, never, E.Either<E, A>> =>
+   fold_(fa, E.left, E.right);
 
 /**
  * ```haskell
- * _orElseEither :: (XPure s1 s2 r e a, XPure s3 s4 r1 e1 a1) ->
+ * orElseEither_ :: (XPure s1 s2 r e a, XPure s3 s4 r1 e1 a1) ->
  *    XPure (s1 & s3) (s2 | s4) (r & r1) e1 (Either a a1)
  * ```
  *
@@ -210,13 +200,13 @@ export const either = <S1, S2, R, E, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const _orElseEither = <S1, S2, R, E, A, S3, S4, R1, E1, A1>(
+export const orElseEither_ = <S1, S2, R, E, A, S3, S4, R1, E1, A1>(
    fa: XPure<S1, S2, R, E, A>,
    that: XPure<S3, S4, R1, E1, A1>
 ): XPure<S1 & S3, S2 | S4, R & R1, E1, E.Either<A, A1>> =>
-   _foldM(
+   foldM_(
       fa,
-      () => _map(that, E.right),
+      () => map_(that, E.right),
       (a) => succeed(E.left(a))
    );
 
@@ -232,27 +222,21 @@ export const _orElseEither = <S1, S2, R, E, A, S3, S4, R1, E1, A1>(
  * @category Combinators
  * @since 1.0.0
  */
-export const orElseEither = <S3, S4, R1, E1, A1>(that: XPure<S3, S4, R1, E1, A1>) => <
-   S1,
-   S2,
-   R,
-   E,
-   A
->(
+export const orElseEither = <S3, S4, R1, E1, A1>(that: XPure<S3, S4, R1, E1, A1>) => <S1, S2, R, E, A>(
    fa: XPure<S1, S2, R, E, A>
-) => _orElseEither(fa, that);
+) => orElseEither_(fa, that);
 
-export const _bimap: TC.UC_BimapF<[URI], V> = (pab, f, g) =>
-   _foldM(
+export const bimap_: TC.UC_BimapF<[URI], V> = (pab, f, g) =>
+   foldM_(
       pab,
       (e) => fail(f(e)),
       (a) => succeed(g(a))
    );
 
-export const bimap: TC.BimapF<[URI], V> = (f, g) => (pab) => _bimap(pab, f, g);
+export const bimap: TC.BimapF<[URI], V> = (f, g) => (pab) => bimap_(pab, f, g);
 
-export const _first: TC.UC_FirstF<[URI], V> = (pab, f) => _catchAll(pab, (e) => fail(f(e)));
+export const first_: TC.UC_FirstF<[URI], V> = (pab, f) => catchAll_(pab, (e) => fail(f(e)));
 
-export const first: TC.FirstF<[URI], V> = (f) => (pab) => _first(pab, f);
+export const first: TC.FirstF<[URI], V> = (f) => (pab) => first_(pab, f);
 
 export const mapError = first;

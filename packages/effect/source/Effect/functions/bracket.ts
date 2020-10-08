@@ -1,13 +1,13 @@
 import * as C from "../../Cause";
 import * as Ex from "../../Exit";
-import type { Exit } from "../../Exit/core";
-import { _chain, _foldCauseM, done, halt, pure, result } from "../core";
+import type { Exit } from "../../Exit/Exit";
+import { chain_, done, foldCauseM_, halt, pure, result } from "../core";
 import type { Effect } from "../Effect";
 import { uninterruptibleMask } from "./interrupt";
 
 /**
  * ```haskell
- * _bracketExit :: Effect t => (
+ * bracketExit_ :: Effect t => (
  *    t x r e a,
  *    (a -> x x1 r1 e1 b),
  *    ((a, (Exit e1 b)) -> x x2 r2 e2 _)
@@ -23,19 +23,19 @@ import { uninterruptibleMask } from "./interrupt";
  * @category Combinators
  * @since 1.0.0
  */
-export const _bracketExit = <R, E, A, E1, R1, A1, R2, E2>(
+export const bracketExit_ = <R, E, A, E1, R1, A1, R2, E2>(
    acquire: Effect<R, E, A>,
    use: (a: A) => Effect<R1, E1, A1>,
    release: (a: A, e: Exit<E1, A1>) => Effect<R2, E2, any>
 ): Effect<R & R1 & R2, E | E1 | E2, A1> =>
    uninterruptibleMask(({ restore }) =>
-      _chain(acquire, (a) =>
-         _chain(result(restore(use(a))), (e) =>
-            _foldCauseM(
+      chain_(acquire, (a) =>
+         chain_(result(restore(use(a))), (e) =>
+            foldCauseM_(
                release(a, e),
                (cause2) =>
                   halt(
-                     Ex._fold(
+                     Ex.fold_(
                         e,
                         (_) => C.then(_, cause2),
                         (_) => cause2
@@ -67,11 +67,11 @@ export const _bracketExit = <R, E, A, E1, R1, A1, R2, E2>(
 export const bracketExit = <A, R1, E1, B, R2, E2, C>(
    use: (a: A) => Effect<R1, E1, B>,
    release: (a: A, e: Exit<E1, B>) => Effect<R2, E2, C>
-) => <R, E>(acquire: Effect<R, E, A>) => _bracketExit(acquire, use, release);
+) => <R, E>(acquire: Effect<R, E, A>) => bracketExit_(acquire, use, release);
 
 /**
  * ```haskell
- * _bracket :: Effect t => (
+ * bracket_ :: Effect t => (
  *    t x r e a,
  *    (a -> t x1 r1 e1 a1),
  *    (a -> t x2 r2 e2 a2)
@@ -100,11 +100,11 @@ export const bracketExit = <A, R1, E1, B, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const _bracket = <R, E, A, R1, E1, A1, R2, E2, A2>(
+export const bracket_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
    acquire: Effect<R, E, A>,
    use: (a: A) => Effect<R1, E1, A1>,
    release: (a: A) => Effect<R2, E2, A2>
-): Effect<R & R1 & R2, E | E1 | E2, A1> => _bracketExit(acquire, use, release);
+): Effect<R & R1 & R2, E | E1 | E2, A1> => bracketExit_(acquire, use, release);
 
 /**
  * ```haskell
@@ -139,7 +139,7 @@ export const _bracket = <R, E, A, R1, E1, A1, R2, E2, A2>(
 export const bracket = <A, R1, E1, B, R2, E2, C>(
    use: (a: A) => Effect<R1, E1, B>,
    release: (a: A) => Effect<R2, E2, C>
-) => <R, E>(acquire: Effect<R, E, A>) => _bracketExit(acquire, use, release);
+) => <R, E>(acquire: Effect<R, E, A>) => bracketExit_(acquire, use, release);
 
 /**
  * Returns an effect that, if this effect _starts_ execution, then the
@@ -155,16 +155,16 @@ export const bracket = <A, R1, E1, B, R2, E2, C>(
 export function ensuring<R>(finalizer: Effect<R, never, any>) {
    return <R1, E, A>(effect: Effect<R1, E, A>) =>
       uninterruptibleMask(({ restore }) =>
-         _foldCauseM(
+         foldCauseM_(
             restore(effect),
             (cause1) =>
-               _foldCauseM(
+               foldCauseM_(
                   finalizer,
                   (cause2) => halt(C.then(cause1, cause2)),
                   (_) => halt(cause1)
                ),
             (value) =>
-               _foldCauseM(
+               foldCauseM_(
                   finalizer,
                   (cause1) => halt(cause1),
                   (_) => pure(value)

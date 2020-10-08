@@ -1,4 +1,4 @@
-import { NonEmptyArray } from "./NonEmptyArray";
+import type { NonEmptyArray } from "./NonEmptyArray";
 
 export const head = <A>(as: NonEmptyArray<A>) => as[0];
 

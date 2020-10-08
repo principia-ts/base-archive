@@ -1,4 +1,4 @@
-import { Lazy } from "@principia/core/Function";
+import type { Lazy } from "@principia/core/Function";
 
 import { XPure } from "./XPure";
 
@@ -50,19 +50,10 @@ export class ModifyInstruction<S1, S2, E, A> extends XPure<S1, S2, unknown, E, A
    }
 }
 
-export class ChainInstruction<S1, S2, S3, R, R1, E, E1, A, B> extends XPure<
-   S1,
-   S3,
-   R & R1,
-   E1 | E,
-   B
-> {
+export class ChainInstruction<S1, S2, S3, R, R1, E, E1, A, B> extends XPure<S1, S3, R & R1, E1 | E, B> {
    readonly _xptag = "FlatMap";
 
-   constructor(
-      readonly ma: XPure<S1, S2, R, E, A>,
-      readonly f: (a: A) => XPure<S2, S3, R1, E1, B>
-   ) {
+   constructor(readonly ma: XPure<S1, S2, R, E, A>, readonly f: (a: A) => XPure<S2, S3, R1, E1, B>) {
       super();
    }
 }
@@ -106,22 +97,7 @@ export type Concrete<S1, S2, R, E, A> =
    | FailInstruction<E>
    | ModifyInstruction<S1, S2, E, A>
    | ChainInstruction<S1, unknown, S2, R, R, E, E, unknown, A>
-   | FoldInstruction<
-        S1,
-        unknown,
-        unknown,
-        R,
-        E,
-        unknown,
-        unknown,
-        unknown,
-        unknown,
-        unknown,
-        S2,
-        unknown,
-        unknown,
-        A
-     >
+   | FoldInstruction<S1, unknown, unknown, R, E, unknown, unknown, unknown, unknown, unknown, S2, unknown, unknown, A>
    | AccessInstruction<unknown, S1, S2, R, E, A>
    | ProvideInstruction<S1, S2, R, E, A>
    | SuspendInstruction<S1, S2, R, E, A>

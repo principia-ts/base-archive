@@ -1,12 +1,13 @@
-import { Either } from "@principia/core/Either";
-import { flow, pipe, Predicate, Refinement } from "@principia/core/Function";
+import type { Either } from "@principia/core/Either";
+import type { Predicate, Refinement } from "@principia/core/Function";
+import { flow, pipe } from "@principia/core/Function";
 import type * as HKT from "@principia/core/HKT";
-import type { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 
 import * as _ from "../internal";
 import type { Optional } from "../Optional";
-import { Traversal } from "../Traversal";
+import type { Traversal } from "../Traversal";
 import { compose, composeLens, composeOptional } from "./compositions";
 import { asOptional, asTraversal } from "./converters";
 import type { Prism } from "./Prism";
@@ -27,8 +28,7 @@ export const set: <A>(a: A) => <S>(sa: Prism<S, A>) => (s: S) => S = _.prismSet;
  * @category Combinators
  * @since 1.0.0
  */
-export const modifyMaybe: <A>(f: (a: A) => A) => <S>(sa: Prism<S, A>) => (s: S) => Maybe<S> =
-   _.prismModifyMaybe;
+export const modifyOption: <A>(f: (a: A) => A) => <S>(sa: Prism<S, A>) => (s: S) => Option<S> = _.prismModifyOption;
 
 /**
  * @category Combinators
@@ -42,9 +42,7 @@ export const modify: <A>(f: (a: A) => A) => <S>(sa: Prism<S, A>) => (s: S) => S 
  * @category Combinators
  * @since 1.0.0
  */
-export const fromNullable: <S, A>(sa: Prism<S, A>) => Prism<S, NonNullable<A>> = compose(
-   _.prismFromNullable()
-);
+export const fromNullable: <S, A>(sa: Prism<S, A>) => Prism<S, NonNullable<A>> = compose(_.prismFromNullable());
 
 /**
  * @category Combinators
@@ -53,8 +51,7 @@ export const fromNullable: <S, A>(sa: Prism<S, A>) => Prism<S, NonNullable<A>> =
 export const filter: {
    <A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Prism<S, A>) => Prism<S, B>;
    <A>(predicate: Predicate<A>): <S>(sa: Prism<S, A>) => Prism<S, A>;
-} = <A>(predicate: Predicate<A>): (<S>(sa: Prism<S, A>) => Prism<S, A>) =>
-   compose(_.prismFromPredicate(predicate));
+} = <A>(predicate: Predicate<A>): (<S>(sa: Prism<S, A>) => Prism<S, A>) => compose(_.prismFromPredicate(predicate));
 
 /**
  * Return a `Optional` from a `Prism` and a prop
@@ -73,8 +70,7 @@ export const prop = <A, P extends keyof A>(prop: P): (<S>(sa: Prism<S, A>) => Op
  */
 export const props = <A, P extends keyof A>(
    ...props: [P, P, ...Array<P>]
-): (<S>(sa: Prism<S, A>) => Optional<S, { [K in P]: A[K] }>) =>
-   composeLens(pipe(_.lensId<A>(), _.lensProps(...props)));
+): (<S>(sa: Prism<S, A>) => Optional<S, { [K in P]: A[K] }>) => composeLens(pipe(_.lensId<A>(), _.lensProps(...props)));
 
 /**
  * Return a `Optional` from a `Prism` and a component
@@ -84,8 +80,7 @@ export const props = <A, P extends keyof A>(
  */
 export const component = <A extends ReadonlyArray<unknown>, P extends keyof A>(
    prop: P
-): (<S>(sa: Prism<S, A>) => Optional<S, A[P]>) =>
-   composeLens(pipe(_.lensId<A>(), _.lensComponent(prop)));
+): (<S>(sa: Prism<S, A>) => Optional<S, A[P]>) => composeLens(pipe(_.lensId<A>(), _.lensComponent(prop)));
 
 /**
  * Return a `Optional` from a `Prism` focused on a `ReadonlyArray`
@@ -102,9 +97,8 @@ export const index = (i: number) => <S, A>(sa: Prism<S, ReadonlyArray<A>>): Opti
  * @category Combinators
  * @since 1.0.0
  */
-export const key = (key: string) => <S, A>(
-   sa: Prism<S, Readonly<Record<string, A>>>
-): Optional<S, A> => pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)));
+export const key = (key: string) => <S, A>(sa: Prism<S, Readonly<Record<string, A>>>): Optional<S, A> =>
+   pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)));
 
 /**
  * Return a `Optional` from a `Prism` focused on a `ReadonlyRecord` and a required key
@@ -112,17 +106,16 @@ export const key = (key: string) => <S, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const atKey = (key: string) => <S, A>(
-   sa: Prism<S, Readonly<Record<string, A>>>
-): Optional<S, Maybe<A>> => _.prismComposeLens(_.atRecord<A>().at(key))(sa);
+export const atKey = (key: string) => <S, A>(sa: Prism<S, Readonly<Record<string, A>>>): Optional<S, Option<A>> =>
+   _.prismComposeLens(_.atRecord<A>().at(key))(sa);
 
 /**
- * Return a `Prism` from a `Prism` focused on the `Some` of a `Maybe` type
+ * Return a `Prism` from a `Prism` focused on the `Some` of a `Option` type
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Prism<S, Maybe<A>>) => Prism<S, A> = compose(_.prismSome());
+export const some: <S, A>(soa: Prism<S, Option<A>>) => Prism<S, A> = compose(_.prismSome());
 
 /**
  * Return a `Prism` from a `Prism` focused on the `Right` of a `Either` type
@@ -156,6 +149,7 @@ export const traverse = <T extends HKT.URIS, C = HKT.Auto>(
  * @category Combinators
  * @since 1.0.0
  */
-export const findl: <A>(
-   predicate: Predicate<A>
-) => <S>(sa: Prism<S, ReadonlyArray<A>>) => Optional<S, A> = flow(_.findFirst, composeOptional);
+export const findl: <A>(predicate: Predicate<A>) => <S>(sa: Prism<S, ReadonlyArray<A>>) => Optional<S, A> = flow(
+   _.findFirst,
+   composeOptional
+);

@@ -1,6 +1,6 @@
-import { Eq } from "../Eq";
-import { Predicate } from "../Function";
-import { ReadonlyRecord } from "./Record";
+import type { Eq } from "../Eq";
+import type { Predicate } from "../Function";
+import type { ReadonlyRecord } from "./Record";
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 

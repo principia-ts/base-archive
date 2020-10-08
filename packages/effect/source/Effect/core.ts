@@ -1,9 +1,10 @@
 import * as A from "@principia/core/Array";
 import * as E from "@principia/core/Either";
-import { bind_, bindTo_, flow, identity, Lazy, pipe } from "@principia/core/Function";
+import type { Lazy } from "@principia/core/Function";
+import { bind_, bindTo_, flow, identity, pipe, tuple } from "@principia/core/Function";
 import * as I from "@principia/core/Iterable";
-import * as Mb from "@principia/core/Maybe";
-import { just, Maybe, nothing } from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
+import { none, some } from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 
 import type { Cause } from "../Cause";
@@ -13,31 +14,28 @@ import type { Exit } from "../Exit/Exit";
 import type { FiberDescriptor, InterruptStatus } from "../Fiber/Fiber";
 import type { FiberContext } from "../Fiber/FiberContext";
 import type { FiberId } from "../Fiber/FiberId";
+import type { Effect, IO, RIO, UIO, URI, V } from "./Effect";
 import {
    AsyncInstruction,
    ChainInstruction,
    CheckDescriptorInstruction,
    CheckInterruptInstruction,
-   Effect,
    FailInstruction,
    FoldInstruction,
    ForkInstruction,
-   IO,
    ProvideInstruction,
    PureInstruction,
    ReadInstruction,
-   RIO,
    SuspendInstruction,
-   TotalInstruction,
-   UIO,
-   URI,
-   V
+   TotalInstruction
 } from "./Effect";
 
-export type { Effect, IO, RIO, UIO };
+export { Effect, IO, UIO, RIO } from "./Effect";
 
 /*
- * Base Constructors
+ * -------------------------------------------
+ * Core Effect Constructors
+ * -------------------------------------------
  */
 
 /**
@@ -50,11 +48,11 @@ export type { Effect, IO, RIO, UIO };
  * @category Applicative
  * @since 1.0.0
  */
-export const pure: TC.PureF<[URI], V> = (a) => new PureInstruction(a);
+export const pure = <A>(a: A): UIO<A> => new PureInstruction(a);
 
 /**
  * ```haskell
- * succeed :: Effect t => a -> t _ _ _ a
+ * succeed :: a -> Effect _ _ a
  * ```
  *
  * A synonym of `pure`
@@ -64,11 +62,11 @@ export const pure: TC.PureF<[URI], V> = (a) => new PureInstruction(a);
  * @category Constructors
  * @since 1.0.0
  */
-export const succeed: <A, E = never>(a: A) => Effect<unknown, E, A> = pure;
+export const succeed: <E = never, A = never>(a: A) => IO<E, A> = pure;
 
 /**
  * ```haskell
- * of :: Effect _ _ _ {}
+ * of :: Effect _ _ {}
  * ```
  *
  * The `Effect` that carries a success of an empty `Record`. Useful for `Do` notation.
@@ -80,7 +78,7 @@ export const of: Effect<unknown, never, {}> = pure({});
 
 /**
  * ```haskell
- * async :: Effect t => (((t x r e a -> ()) -> ()), ?[FiberId]) -> t x r e a
+ * async :: Effect t => (((t r e a -> ()) -> ()), ?[FiberId]) -> t r e a
  * ```
  *
  * Imports an asynchronous side-effect into an `Effect`
@@ -94,12 +92,12 @@ export const async = <R, E, A>(
 ): Effect<R, E, A> =>
    new AsyncInstruction((cb) => {
       register(cb);
-      return Mb.nothing();
+      return O.none();
    }, blockingOn);
 
 /**
  * ```haskell
- * maybeAsync :: Effect t => (((t x r e a -> () -> Maybe (t x r e a))), ?[FiberId]) -> t x r e a
+ * asyncOption :: (((Effect r e a -> ()) -> Option (Effect r e a)), ?[FiberId]) -> Effect r e a
  * ```
  *
  * Imports an asynchronous effect into a pure `Effect`, possibly returning
@@ -111,14 +109,14 @@ export const async = <R, E, A>(
  * @category Constructors
  * @since 1.0.0
  */
-export const maybeAsync = <R, E, A>(
-   register: (resolve: (_: Effect<R, E, A>) => void) => Mb.Maybe<Effect<R, E, A>>,
+export const asyncOption = <R, E, A>(
+   register: (resolve: (_: Effect<R, E, A>) => void) => O.Option<Effect<R, E, A>>,
    blockingOn: ReadonlyArray<FiberId> = []
 ): Effect<R, E, A> => new AsyncInstruction(register, blockingOn);
 
 /**
  * ```haskell
- * total :: Effect t => (() -> a) -> t _ _ _ a
+ * total :: (() -> a) -> Effect _ _ a
  * ```
  *
  * Creates an `Effect` from the return value of a total function
@@ -126,11 +124,11 @@ export const maybeAsync = <R, E, A>(
  * @category Constructors
  * @since 1.0.0
  */
-export const total = <A>(thunk: Lazy<A>): UIO<A> => new TotalInstruction(thunk);
+export const total = <A>(thunk: () => A): UIO<A> => new TotalInstruction(thunk);
 
 /**
  * ```haskell
- * suspend :: Effect t => (() -> t x r e a) -> t x r e a
+ * suspend :: (() -> Effect r e a) -> Effect r e a
  * ```
  *
  * Creates an lazily-constructed `Effect`, whose construction itself may require effects
@@ -138,12 +136,11 @@ export const total = <A>(thunk: Lazy<A>): UIO<A> => new TotalInstruction(thunk);
  * @category Constructors
  * @since 1.0.0
  */
-export const suspend = <R, E, A>(factory: Lazy<Effect<R, E, A>>): Effect<R, E, A> =>
-   new SuspendInstruction(factory);
+export const suspend = <R, E, A>(factory: Lazy<Effect<R, E, A>>): Effect<R, E, A> => new SuspendInstruction(factory);
 
 /**
  * ```haskell
- * halt :: (Effect t, Cause c) => c e -> t _ _ e _
+ * halt :: Cause e -> Effect _ e _
  * ```
  *
  * Creates an `Effect` that has failed with the specified `Cause`
@@ -155,10 +152,10 @@ export const halt = <E>(cause: C.Cause<E>): IO<E, never> => new FailInstruction(
 
 /**
  * ```haskell
- * fail :: Effect t => e -> t _ _ e _
+ * fail :: e -> Effect _ e _
  * ```
  *
- * Creates an `Effect` that has failed with value `e`
+ * Creates an `Effect` that has failed with value `e`. The moral equivalent of `throw`, except not immoral :)
  *
  * @category Constructors
  * @since 1.0.0
@@ -167,7 +164,7 @@ export const fail = <E>(e: E): IO<E, never> => halt(C.fail(e));
 
 /**
  * ```haskell
- * die :: Effect t => Any -> t _ _ _ _
+ * die :: Any -> Effect _ _ _
  * ```
  *
  * Creates an `Effect` that has died with the specified defect
@@ -179,7 +176,7 @@ export const die = (e: unknown): IO<never, never> => halt(C.die(e));
 
 /**
  * ```haskell
- * done :: (Effect t, Exit e) => e a b -> t _ _ a b
+ * done :: Exit a b -> Effect _ a b
  * ```
  *
  * Creates an `Effect` from an exit value
@@ -200,14 +197,18 @@ export const done = <E = never, A = unknown>(exit: Exit<E, A>) => {
    });
 };
 
+export const unit: UIO<void> = pure(undefined);
+
+export const ask = <R>(): Effect<R, never, R> => asks((_: R) => _);
+
 /*
- * Destructors
+ * Core Effect Destructors
  */
 
 /**
- * A more powerful version of `_foldM` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `foldM_` that allows recovering from any kind of failure except interruptions.
  */
-export const _foldCauseM = <R, E, A, R1, E1, A1, R2, E2, A2>(
+export const foldCauseM_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
    ma: Effect<R, E, A>,
    onFailure: (cause: Cause<E>) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
@@ -219,58 +220,53 @@ export const _foldCauseM = <R, E, A, R1, E1, A1, R2, E2, A2>(
 export const foldCauseM = <E, A, R1, E1, A1, R2, E2, A2>(
    onFailure: (cause: Cause<E>) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
-) => <R>(ma: Effect<R, E, A>): Effect<R & R1 & R2, E1 | E2, A1 | A2> =>
-   new FoldInstruction(ma, onFailure, onSuccess);
+) => <R>(ma: Effect<R, E, A>): Effect<R & R1 & R2, E1 | E2, A1 | A2> => new FoldInstruction(ma, onFailure, onSuccess);
 
-export const _foldM = <X, X1, X2, R, R1, R2, E, E1, E2, A, A1, A2>(
+export const foldM_ = <R, R1, R2, E, E1, E2, A, A1, A2>(
    ma: Effect<R, E, A>,
    onFailure: (e: E) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
 ): Effect<R & R1 & R2, E1 | E2, A1 | A2> =>
-   _foldCauseM(ma, (cause) => E._fold(C.failureOrCause(cause), onFailure, halt), onSuccess);
+   foldCauseM_(ma, (cause) => E.fold_(C.failureOrCause(cause), onFailure, halt), onSuccess);
 
 export const foldM = <R1, R2, E, E1, E2, A, A1, A2>(
    onFailure: (e: E) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
-) => <R>(ma: Effect<R, E, A>): Effect<R & R1 & R2, E1 | E2, A1 | A2> =>
-   _foldM(ma, onFailure, onSuccess);
+) => <R>(ma: Effect<R, E, A>): Effect<R & R1 & R2, E1 | E2, A1 | A2> => foldM_(ma, onFailure, onSuccess);
 
 /*
- * Methods
+ * -------------------------------------------
+ * Core Effect Methods
+ * -------------------------------------------
  */
 
 /**
  * ```haskell
- * access :: MonadEnv m => (r -> a) -> m r a
+ * asks :: MonadEnv m => (r -> a) -> m r a
  * ```
- *
- * Accesses the environment of a MonadEnv
  *
  * Accesses the environment provided to an `Effect`
  *
  * @category MonadEnv
  * @since 1.0.0
  */
-export const access: TC.AccessF<[URI], V> = <R0, A>(f: (_: R0) => A): RIO<R0, A> =>
-   new ReadInstruction((_: R0) => new PureInstruction(f(_)));
+export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => new ReadInstruction((_: R) => new PureInstruction(f(_)));
 
 /**
  * ```haskell
- * accessM :: MonadEnv m => (r0 -> m r a) -> m (r & r0) a
+ * asksM :: MonadEnv m => (q -> m r a) -> m (r & q) a
  * ```
  *
- * Monadically accesses the environment of a MonadEnv
- *
- * Accesses the environment provided to an `Effect`
+ * Effectfully accesses the environment provided to an `Effect`
  *
  * @category MonadEnv
  * @since 1.0.0
  */
-export const accessM: TC.AccessMF<[URI], V> = (f) => new ReadInstruction(f);
+export const asksM = <Q, R, E, A>(f: (r: Q) => Effect<R, E, A>): Effect<R & Q, E, A> => new ReadInstruction(f);
 
 /**
  * ```haskell
- * _provideAll :: MonadEnv m => (m r a, r) -> m _ a
+ * giveAll_ :: MonadEnv m => (m r a, r) -> m _ a
  * ```
  *
  * Provides all of the environment required to compute a MonadEnv
@@ -281,11 +277,11 @@ export const accessM: TC.AccessMF<[URI], V> = (f) => new ReadInstruction(f);
  * @category MonadEnv
  * @since 1.0.0
  */
-export const _provideAll: TC.UC_ProvideAllF<[URI], V> = (ma, r) => new ProvideInstruction(ma, r);
+export const giveAll_ = <R, E, A>(ma: Effect<R, E, A>, r: R): IO<E, A> => new ProvideInstruction(ma, r);
 
 /**
  * ```haskell
- * provideAll :: MonadEnv m => r -> m r a -> m _ a
+ * giveAll :: MonadEnv m => r -> m r a -> m _ a
  * ```
  *
  * Provides all of the environment required to compute a MonadEnv
@@ -296,11 +292,11 @@ export const _provideAll: TC.UC_ProvideAllF<[URI], V> = (ma, r) => new ProvideIn
  * @category MonadEnv
  * @since 1.0.0
  */
-export const provideAll: TC.ProvideAllF<[URI], V> = (r) => (ma) => _provideAll(ma, r);
+export const giveAll = <R>(r: R) => <E, A>(ma: Effect<R, E, A>): Effect<unknown, E, A> => giveAll_(ma, r);
 
 /**
  * ```haskell
- * _provideSome :: MonadEnv m => (m r a, (r0 -> r)) -> m r0 a
+ * local_ :: MonadEnv m => (m r a, (r0 -> r)) -> m r0 a
  * ```
  *
  * Provides a portion of the environment required to compute a MonadEnv
@@ -311,14 +307,11 @@ export const provideAll: TC.ProvideAllF<[URI], V> = (r) => (ma) => _provideAll(m
  * @category MonadEnv
  * @since 1.0.0
  */
-export const _provideSome: TC.UC_ProvideSomeF<[URI], V> = <R0, R, E, A>(
-   ma: Effect<R, E, A>,
-   f: (r0: R0) => R
-) => accessM((r0: R0) => _provideAll(ma, f(r0)));
+export const local_ = <R0, R, E, A>(ma: Effect<R, E, A>, f: (r0: R0) => R) => asksM((r0: R0) => giveAll_(ma, f(r0)));
 
 /**
  * ```haskell
- * provideSome :: MonadEnv m => (r0 -> r) -> m r a -> m r0 a
+ * local :: MonadEnv m => (r0 -> r) -> m r a -> m r0 a
  * ```
  *
  * Provides a portion of the environment required to compute a MonadEnv
@@ -329,11 +322,11 @@ export const _provideSome: TC.UC_ProvideSomeF<[URI], V> = <R0, R, E, A>(
  * @category MonadEnv
  * @since 1.0.0
  */
-export const provideSome: TC.ProvideSomeF<[URI], V> = (f) => (ma) => _provideSome(ma, f);
+export const local = <R0, R>(f: (r0: R0) => R) => <E, A>(ma: Effect<R, E, A>): Effect<R0, E, A> => local_(ma, f);
 
 /**
  * ```haskell
- * _provide :: MonadEnv m => (m (r & r0) a, r) -> m r0 a
+ * give_ :: MonadEnv m => (m (r & r0) a, r) -> m r0 a
  * ```
  *
  * Provides a portion of the environment required to compute a MonadEnv
@@ -344,12 +337,12 @@ export const provideSome: TC.ProvideSomeF<[URI], V> = (f) => (ma) => _provideSom
  * @category MonadEnv
  * @since 1.0.0
  */
-export const _provide: TC.UC_ProvideF<[URI], V> = (ma, r) =>
-   _provideSome(ma, (r0) => ({ ...r0, ...r }));
+export const give_ = <E, A, R = unknown, R0 = unknown>(ma: Effect<R & R0, E, A>, r: R): Effect<R0, E, A> =>
+   local_(ma, (r0) => ({ ...r0, ...r }));
 
 /**
  * ```haskell
- * provide :: MonadEnv m => r -> m (r & r0) a -> m r0 a
+ * give :: MonadEnv m => r -> m (r & r0) a -> m r0 a
  * ```
  *
  * Provides a portion of the environment required to compute a MonadEnv
@@ -360,11 +353,12 @@ export const _provide: TC.UC_ProvideF<[URI], V> = (ma, r) =>
  * @category MonadEnv
  * @since 1.0.0
  */
-export const provide: TC.ProvideF<[URI], V> = (r) => (ma) => _provide(ma, r);
+export const give = <R = unknown>(r: R) => <E, A, R0 = unknown>(ma: Effect<R & R0, E, A>): Effect<R0, E, A> =>
+   give_(ma, r);
 
 /**
  * ```haskell
- * _chain :: Monad m => (m a, (a -> m b)) -> m b
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -376,7 +370,8 @@ export const provide: TC.ProvideF<[URI], V> = (r) => (ma) => _provide(ma, r);
  * @category Monad
  * @since 1.0.0
  */
-export const _chain: TC.UC_ChainF<[URI], V> = (ma, f) => new ChainInstruction(ma, f);
+export const chain_ = <R, E, A, U, G, B>(ma: Effect<R, E, A>, f: (a: A) => Effect<U, G, B>): Effect<R & U, E | G, B> =>
+   new ChainInstruction(ma, f);
 
 /**
  * ```haskell
@@ -392,28 +387,13 @@ export const _chain: TC.UC_ChainF<[URI], V> = (ma, f) => new ChainInstruction(ma
  * @category Monad
  * @since 1.0.0
  */
-export const chain: TC.ChainF<[URI], V> = (f) => (ma) => _chain(ma, f);
+export const chain = <A, U, G, B>(f: (a: A) => Effect<U, G, B>) => <R, E>(
+   ma: Effect<R, E, A>
+): Effect<R & U, E | G, B> => chain_(ma, f);
 
 /**
  * ```haskell
- * bind :: Monad m => m a -> (a -> m b) -> m b
- * ```
- *
- * A version of `chain` where the arguments are interchanged
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * Returns an effect that models the execution of this effect, followed by
- * the passing of its value to the specified continuation function `f`,
- * followed by the effect that it returns.
- *
- * @category Monad
- * @since 1.0.0
- */
-export const bind: TC.BindF<[URI], V> = (ma) => (f) => _chain(ma, f);
-
-/**
- * ```haskell
- * _map :: Functor f => (f a, (a -> b)) -> f b
+ * map_ :: Functor f => (f a, (a -> b)) -> f b
  * ```
  *
  * Lifts a function a -> b to a function f a -> f b
@@ -423,7 +403,7 @@ export const bind: TC.BindF<[URI], V> = (ma) => (f) => _chain(ma, f);
  * @category Functor
  * @since 1.0.0
  */
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _chain(fa, (a) => pure(f(a)));
+export const map_ = <R, E, A, B>(fa: Effect<R, E, A>, f: (a: A) => B): Effect<R, E, B> => chain_(fa, (a) => pure(f(a)));
 
 /**
  * ```haskell
@@ -437,7 +417,115 @@ export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _chain(fa, (a) => pure(f(a)
  * @category Functor
  * @since 1.0.0
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map = <A, B>(f: (a: A) => B) => <R, E>(fa: Effect<R, E, A>): Effect<R, E, B> => map_(fa, f);
+
+/**
+ * ```haskell
+ * ap_ :: Apply f => (f (a -> b), f a) -> f b
+ * ```
+ *
+ * Apply a function to an argument under a type constructor
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const ap_ = <Q, D, A, B, R, E>(fab: Effect<Q, D, (a: A) => B>, fa: Effect<R, E, A>): Effect<Q & R, D | E, B> =>
+   chain_(fab, (ab) => map_(fa, ab));
+
+/**
+ * ```haskell
+ * ap :: Apply f => f (a -> b) -> f a -> f b
+ * ```
+ *
+ * Apply a function to an argument under a type constructor
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const ap = <R, E, A>(fa: Effect<R, E, A>) => <Q, D, B>(
+   fab: Effect<Q, D, (a: A) => B>
+): Effect<Q & R, D | E, B> => ap_(fab, fa);
+
+export const apFirst_ = <R, E, A, Q, D, B>(fa: Effect<R, E, A>, fb: Effect<Q, D, B>): Effect<Q & R, D | E, A> =>
+   ap_(
+      map_(fa, (a) => () => a),
+      fb
+   );
+
+export const apFirst = <Q, D, B>(fb: Effect<Q, D, B>) => <R, E, A>(fa: Effect<R, E, A>): Effect<Q & R, D | E, A> =>
+   apFirst_(fa, fb);
+
+/**
+ * ```haskell
+ * _apSecond :: Apply f => (f a, f b) -> f b
+ * ```
+ *
+ * Combine two effectful actions, keeping only the result of the second
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const _apSecond = <R, E, A, Q, D, B>(fa: Effect<R, E, A>, fb: Effect<Q, D, B>): Effect<Q & R, D | E, B> =>
+   ap_(
+      map_(fa, () => (b: B) => b),
+      fb
+   );
+
+/**
+ * ```haskell
+ * apSecond :: Apply f => f b -> f a -> f b
+ * ```
+ *
+ * Combine two effectful actions, keeping only the result of the second
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const apSecond = <Q, D, B>(fb: Effect<Q, D, B>) => <R, E, A>(fa: Effect<R, E, A>): Effect<Q & R, D | E, B> =>
+   _apSecond(fa, fb);
+
+export const mapBoth_ = <R, E, A, Q, D, B, C>(
+   fa: Effect<R, E, A>,
+   fb: Effect<Q, D, B>,
+   f: (a: A, b: B) => C
+): Effect<Q & R, D | E, C> => chain_(fa, (ra) => map_(fb, (rb) => f(ra, rb)));
+
+export const mapBoth = <A, Q, D, B, C>(fb: Effect<Q, D, B>, f: (a: A, b: B) => C) => <R, E>(
+   fa: Effect<R, E, A>
+): Effect<Q & R, D | E, C> => mapBoth_(fa, fb, f);
+
+/**
+ * ```haskell
+ * both_ :: Apply f => (f a, f b) -> f [a, b]
+ * ```
+ *
+ * Tuples the arguments of two `Functors`
+ *
+ * Tuples the success values of two `Effects`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const both_ = <R, E, A, Q, D, B>(
+   fa: Effect<R, E, A>,
+   fb: Effect<Q, D, B>
+): Effect<Q & R, D | E, readonly [A, B]> => mapBoth_(fa, fb, tuple);
+
+/**
+ * ```haskell
+ * both :: Apply f => f b -> f a -> f [a, b]
+ * ```
+ *
+ * Tuples the arguments of two `Functors`
+ *
+ * Tuples the success values of two `Effects`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const both = <Q, D, B>(fb: Effect<Q, D, B>) => <R, E, A>(
+   fa: Effect<R, E, A>
+): Effect<Q & R, D | E, readonly [A, B]> => both_(fa, fb);
 
 /**
  * ```haskell
@@ -449,11 +537,11 @@ export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: TC.FlattenF<[URI], V> = (ffa) => _chain(ffa, identity);
+export const flatten: TC.FlattenF<[URI], V> = (ffa) => chain_(ffa, identity);
 
 /**
  * ```haskell
- * _tap :: Monad m => (ma, (a -> m b)) -> m a
+ * tap_ :: Monad m => (ma, (a -> m b)) -> m a
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -464,8 +552,8 @@ export const flatten: TC.FlattenF<[URI], V> = (ffa) => _chain(ffa, identity);
  * @category Monad
  * @since 1.0.0
  */
-export const _tap: TC.UC_TapF<[URI], V> = (fa, f) =>
-   _chain(fa, (a) =>
+export const tap_: TC.UC_TapF<[URI], V> = (fa, f) =>
+   chain_(fa, (a) =>
       pipe(
          f(a),
          map(() => a)
@@ -485,7 +573,7 @@ export const _tap: TC.UC_TapF<[URI], V> = (fa, f) =>
  * @category Monad
  * @since 1.0.0
  */
-export const tap: TC.TapF<[URI], V> = (f) => (fa) => _tap(fa, f);
+export const tap: TC.TapF<[URI], V> = (f) => (fa) => tap_(fa, f);
 
 /**
  * ```haskell
@@ -504,9 +592,19 @@ export const tap: TC.TapF<[URI], V> = (f) => (fa) => _tap(fa, f);
  */
 export const chainFirst: TC.ChainFirstF<[URI], V> = tap;
 
+export const bimap_ = <R, E, A, G, B>(pab: Effect<R, E, A>, f: (e: E) => G, g: (a: A) => B): Effect<R, G, B> =>
+   foldM_(
+      pab,
+      (e) => fail(f(e)),
+      (a) => pure(g(a))
+   );
+
+export const bimap = <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <R>(pab: Effect<R, E, A>): Effect<R, G, B> =>
+   bimap_(pab, f, g);
+
 /**
  * ```haskell
- * _first :: Bifunctor p => (p a c, (a -> b)) -> p b c
+ * first_ :: Bifunctor p => (p a c, (a -> b)) -> p b c
  * ```
  *
  * Map covariantly over the first argument.
@@ -518,8 +616,7 @@ export const chainFirst: TC.ChainFirstF<[URI], V> = tap;
  * @category Bifunctor
  * @since 1.0.0
  */
-export const _first: TC.UC_FirstF<[URI], V> = (fea, f) =>
-   _foldCauseM(fea, flow(C.map(f), halt), pure);
+export const first_: TC.UC_FirstF<[URI], V> = (fea, f) => foldCauseM_(fea, flow(C.map(f), halt), pure);
 
 /**
  * ```haskell
@@ -535,140 +632,7 @@ export const _first: TC.UC_FirstF<[URI], V> = (fea, f) =>
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first: TC.FirstF<[URI], V> = (f) => (fea) => _first(fea, f);
-
-export const _bimap: TC.UC_BimapF<[URI], V> = (fea, f, g) =>
-   _foldM(
-      fea,
-      (e) => fail(f(e)),
-      (a) => pure(g(a))
-   );
-
-export const bimap: TC.BimapF<[URI], V> = (f, g) => (fea) => _bimap(fea, f, g);
-
-/**
- * ```haskell
- * _ap :: Apply f => (f (a -> b), f a) -> f b
- * ```
- *
- * Apply a function to an argument under a type constructor
- *
- * @category Apply
- * @since 1.0.0
- */
-export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => _chain(fab, (ab) => _map(fa, ab));
-
-/**
- * ```haskell
- * ap :: Apply f => f (a -> b) -> f a -> f b
- * ```
- *
- * Apply a function to an argument under a type constructor
- *
- * @category Apply
- * @since 1.0.0
- */
-export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
-
-export const _mapBoth: TC.UC_MapBothF<[URI], V> = (fa, fb, f) =>
-   _chain(fa, (ra) => _map(fb, (rb) => f(ra, rb)));
-
-export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => _mapBoth(fa, fb, f);
-
-/**
- * ```haskell
- * _both :: Apply f => (f a, f b) -> f [a, b]
- * ```
- *
- * Tuples the arguments of two `Functors`
- *
- * Tuples the success values of two `Effects`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const _both: TC.UC_BothF<[URI], V> = (fa, fb) => _mapBoth(fa, fb, (a, b) => [a, b]);
-
-/**
- * ```haskell
- * both :: Apply f => f b -> f a -> f [a, b]
- * ```
- *
- * Tuples the arguments of two `Functors`
- *
- * Tuples the success values of two `Effects`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const both: TC.BothF<[URI], V> = (fb) => (fa) => _both(fa, fb);
-
-/**
- * ```haskell
- * mapN :: Apply f => ([a, b, ...] -> c) -> [f a, f b, ...] -> f c
- * ```
- *
- * Combines a tuple of `Effects` and if all are successes, maps with provided function `f`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const mapN: TC.MapNF<[URI], V> = (f) =>
-   flow(
-      foreach(identity),
-      map((a) => f(a as any))
-   );
-
-/**
- * ```haskell
- * tuple :: Apply f => [f a, f b, ...] -> f [a, b, ...]
- * ```
- *
- * Combines a tuple of `Effects` and if all are successes, returns a succeeded `Effect` of all arguments as a tuple
- *
- * @category Apply
- * @since 1.0.0
- */
-export const tuple: TC.TupleF<[URI], V> = (fas) => _foreach(fas, identity) as any;
-
-/**
- * ```haskell
- * _extend :: Extend w => (w a, (w a -> b)) -> w b
- * ```
- */
-export const _extend: TC.UC_ExtendF<[URI], V> = (wa, f) =>
-   _foldM(
-      wa,
-      (e) => fail(e),
-      (_) => pure(f(wa))
-   );
-
-/**
- * ```haskell
- * extend :: Extend w => (w a -> b) -> w a -> w b
- * ```
- */
-export const extend: TC.ExtendF<[URI], V> = (f) => (wa) => _extend(wa, f);
-
-/**
- * ```haskell
- * duplicate :: Extend w => w a -> w w a
- * ```
- */
-export const duplicate = <R, E, A>(wa: Effect<R, E, A>): Effect<R, E, Effect<R, E, A>> =>
-   _extend(wa, identity);
-
-/**
- * ```haskell
- * swap :: Bifunctor p => p a b -> p b a
- * ```
- *
- * Swaps the positions of a Bifunctor's arguments
- *
- * @category AltBifunctor
- * @since 1.0.0
- */
-export const swap: TC.SwapF<[URI], V> = (pab) => _foldM(pab, pure, fail);
+export const first: TC.FirstF<[URI], V> = (f) => (fea) => first_(fea, f);
 
 export const bindS: TC.BindSF<[URI], V> = (name, f) =>
    chain((a) =>
@@ -678,113 +642,169 @@ export const bindS: TC.BindSF<[URI], V> = (name, f) =>
       )
    );
 
-export const bindToS: TC.BindToSF<[URI], V> = (name) => (fa) => _map(fa, bindTo_(name));
+export const bindToS: TC.BindToSF<[URI], V> = (name) => (fa) => map_(fa, bindTo_(name));
 
-export const letS: TC.LetSF<[URI], V> = (name, f) =>
-   chain((a) =>
-      pipe(
-         f(a),
-         pure,
-         map((b) => bind_(a, name, b))
-      )
-   );
+export const letS: TC.LetSF<[URI], V> = (name, f) => bindS(name, flow(f, pure));
 
 /*
- * Additional Constructors
+ * -------------------------------------------
+ * Core Effect Combinators
+ * -------------------------------------------
  */
 
-export const unit: UIO<void> = pure(undefined);
+export const catchAll_ = <R, E, A, R1, E1, A1>(
+   ma: Effect<R, E, A>,
+   f: (e: E) => Effect<R1, E1, A1>
+): Effect<R & R1, E1, A | A1> => foldM_(ma, f, (x) => pure(x));
 
-export const environment = <R>(): Effect<R, never, R> => access((_: R) => _);
+export const catchAll = <R, E, E2, A>(f: (e: E2) => Effect<R, E, A>) => <R2, A2>(ma: Effect<R2, E2, A2>) =>
+   catchAll_(ma, f);
 
-export const uncause = <R, E, A>(ma: Effect<R, never, C.Cause<E>>): Effect<R, E, void> =>
-   _chain(ma, (a) => (C.isEmpty(a) ? unit : halt(a)));
+export const uncause = <R, E>(ma: Effect<R, never, C.Cause<E>>): Effect<R, E, void> =>
+   chain_(ma, (a) => (C.isEmpty(a) ? unit : halt(a)));
 
-/*
- * Combinators
+/**
+ * Ignores the result of the effect, replacing it with unit
+ *
+ * @category Combinators
+ * @since 1.0.0
  */
+export const asUnit = <R, E>(ma: Effect<R, E, any>) => chain_(ma, () => unit);
 
-export const asUnit = <R, E>(ma: Effect<R, E, any>) => _chain(ma, () => unit);
+/**
+ * ```haskell
+ * as_ :: (Effect r e a, b) -> Effect r e b
+ * ```
+ *
+ * Maps the success value of this effect to the specified constant value.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const as_ = <R, E, A, B>(ma: Effect<R, E, A>, b: B) => map_(ma, () => b);
 
-export const _as = <R, E, A, B>(ma: Effect<R, E, A>, b: B) => _map(ma, () => b);
+/**
+ * ```haskell
+ * as :: b -> Effect r e a -> Effect r e b
+ * ```
+ *
+ * Maps the success value of this effect to the specified constant value.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const as = <B>(b: B) => <R, E, A>(ma: Effect<R, E, A>) => as_(ma, b);
 
-export const as = <B>(b: B) => <R, E, A>(ma: Effect<R, E, A>) => _as(ma, b);
-
-export const asJustError: <R, E, A>(ma: Effect<R, E, A>) => Effect<R, Maybe<E>, A> = first(just);
+/**
+ * ```haskell
+ * asSomeError :: Effect r e a -> Effect r (Maybe e) a
+ * ```
+ *
+ * Maps the error value of this effect to an optional value.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const asSomeError: <R, E, A>(ma: Effect<R, E, A>) => Effect<R, O.Option<E>, A> = first(some);
 
 export const cause = <R, E, A>(effect: Effect<R, E, A>): Effect<R, never, Cause<E>> =>
-   _foldCauseM(effect, pure, () => pure(C.empty));
+   foldCauseM_(effect, pure, () => pure(C.empty));
 
-export const ifM = <R, E>(b: Effect<R, E, boolean>) => <R1, E1, A1>(
-   onTrue: () => Effect<R1, E1, A1>
-) => <X2, R2, E2, A2>(
+/**
+ * The moral equivalent of
+ * ```typescript
+ * if (b) {
+ *    onTrue();
+ * } else {
+ *    onFalse();
+ * }
+ * ```
+ * but way more moral
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const ifM = <R, E>(b: Effect<R, E, boolean>) => <R1, E1, A1>(onTrue: () => Effect<R1, E1, A1>) => <R2, E2, A2>(
    onFalse: () => Effect<R2, E2, A2>
 ): Effect<R & R1 & R2, E | E1 | E2, A1 | A2> =>
-   _chain(b, (x) => (x ? (onTrue() as Effect<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
+   chain_(b, (x) => (x ? (onTrue() as Effect<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
 
-export const _foldl = <A, B, R, E>(
-   as: Iterable<A>,
-   b: B,
-   f: (b: B, a: A) => Effect<R, E, B>
-): Effect<R, E, B> =>
-   A._reduce(Array.from(as), pure(b) as Effect<R, E, B>, (acc, el) => _chain(acc, (a) => f(a, el)));
+export const fromEither = <E, A>(f: () => E.Either<E, A>) => chain_(total(f), E.fold(fail, pure));
 
-export const foldl = <R, E, A, B>(b: B, f: (b: B, a: A) => Effect<R, E, B>) => (as: Iterable<A>) =>
-   _foldl(as, b, f);
+/**
+ * ```haskell
+ * absolve :: Effect r e (Either e1 a) -> Effect r (e | e1) a
+ * ```
+ *
+ * Returns an effect that submerges the error case of an `Either` into the
+ * `Effect`.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const absolve = <R, E, E1, A>(v: Effect<R, E, E.Either<E1, A>>) => chain_(v, (e) => fromEither(() => e));
 
-export const _foldr = <A, Z, R, E>(
-   i: Iterable<A>,
-   zero: Z,
-   f: (a: A, z: Z) => Effect<R, E, Z>
-): Effect<R, E, Z> =>
-   A._reduceRight(Array.from(i), pure(zero) as Effect<R, E, Z>, (el, acc) =>
-      _chain(acc, (a) => f(el, a))
-   );
-
-export const foldr = <A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Effect<R, E, Z>) => (
-   i: Iterable<A>
-) => _foldr(i, zero, f);
-
-export const _apFirst: TC.UC_ApFirstF<[URI], V> = <R, R1, E, E1, A, A1>(
-   a: Effect<R, E, A>,
-   b: Effect<R1, E1, A1>
-): Effect<R & R1, E | E1, A> => _chain(a, (a) => _map(b, () => a));
-
-export const apFirst: TC.ApFirstF<[URI], V> = (fb) => (fa) => _apFirst(fa, fb);
-
-export const fromEither = <E, A>(f: () => E.Either<E, A>) => _chain(total(f), E.fold(fail, pure));
-
-export const absolve = <R, E, E1, A>(v: Effect<R, E, E.Either<E1, A>>) =>
-   _chain(v, (e) => fromEither(() => e));
-
-export const _foreachUnit = <R, E, A>(
-   as: Iterable<A>,
-   f: (a: A) => Effect<R, E, any>
-): Effect<R, E, void> =>
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` and runs
+ * produced effects sequentially.
+ *
+ * Equivalent to `asUnit(foreach(f)(as))`, but without the cost of building
+ * the list of results.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Effect<R, E, any>): Effect<R, E, void> =>
    I.foldMap<Effect<R, E, void>>({
       empty: unit,
-      concat: (x) => (y) => _chain(x, () => y)
+      concat: (x) => (y) => chain_(x, () => y)
    })(f)(as);
 
-export const foreachUnit = <R, E, A>(f: (a: A) => Effect<R, E, any>) => (
-   as: Iterable<A>
-): Effect<R, E, void> => _foreachUnit(as, f);
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` and runs
+ * produced effects sequentially.
+ *
+ * Equivalent to `asUnit(foreach(f)(as))`, but without the cost of building
+ * the list of results.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const foreachUnit = <R, E, A>(f: (a: A) => Effect<R, E, any>) => (as: Iterable<A>): Effect<R, E, void> =>
+   foreachUnit_(as, f);
 
-export const _foreach = <R, E, A, B>(
-   as: Iterable<A>,
-   f: (a: A) => Effect<R, E, B>
-): Effect<R, E, ReadonlyArray<B>> =>
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` and
+ * returns the results in a new `readonly B[]`.
+ *
+ * For a parallel version of this method, see `foreachPar`.
+ * If you do not need the results, see `foreachUnit` for a more efficient implementation.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Effect<R, E, B>): Effect<R, E, ReadonlyArray<B>> =>
    I.reduce_(as, pure([]) as Effect<R, E, ReadonlyArray<B>>, (b, a) =>
-      _mapBoth(
+      mapBoth_(
          b,
          suspend(() => f(a)),
          (acc, r) => [...acc, r]
       )
    );
 
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` and
+ * returns the results in a new `readonly B[]`.
+ *
+ * For a parallel version of this method, see `foreachPar`.
+ * If you do not need the results, see `foreachUnit` for a more efficient implementation.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export const foreach = <R, E, A, B>(f: (a: A) => Effect<R, E, B>) => (
    as: Iterable<A>
-): Effect<R, E, ReadonlyArray<B>> => _foreach(as, f);
+): Effect<R, E, ReadonlyArray<B>> => foreach_(as, f);
 
 export const result = <R, E, A>(value: Effect<R, E, A>): Effect<R, never, Exit<E, A>> =>
    new FoldInstruction(
@@ -793,136 +813,33 @@ export const result = <R, E, A>(value: Effect<R, E, A>): Effect<R, never, Exit<E
       (succ) => pure(Ex.succeed(succ))
    );
 
-export const either = <R, E, A>(self: Effect<R, E, A>): Effect<R, never, E.Either<E, A>> =>
-   _foldM(
-      self,
-      (e) => pure(E.left(e)),
-      (a) => pure(E.right(a))
-   );
+export const foldl_ = <A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => Effect<R, E, B>): Effect<R, E, B> =>
+   A.reduce_(Array.from(as), pure(b) as Effect<R, E, B>, (acc, el) => chain_(acc, (a) => f(a, el)));
 
-export const _catchAll = <R, E, A, R1, E1, A1>(
-   ma: Effect<R, E, A>,
-   f: (e: E) => Effect<R1, E1, A1>
-): Effect<R & R1, E1, A | A1> => _foldM(ma, f, (x) => pure(x));
+export const foldl = <R, E, A, B>(b: B, f: (b: B, a: A) => Effect<R, E, B>) => (as: Iterable<A>) => foldl_(as, b, f);
 
-export const catchAll = <R, E, E2, A>(f: (e: E2) => Effect<R, E, A>) => <S2, R2, A2>(
-   ma: Effect<R2, E2, A2>
-) => _catchAll(ma, f);
+export const foldr_ = <A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => Effect<R, E, Z>): Effect<R, E, Z> =>
+   A.reduceRight_(Array.from(i), pure(zero) as Effect<R, E, Z>, (el, acc) => chain_(acc, (a) => f(el, a)));
 
-export const _tryOrElse = <R, E, A, R1, E1, A1, R2, E2, A2>(
-   ma: Effect<R, E, A>,
-   that: () => Effect<R1, E1, A1>,
-   onSuccess: (a: A) => Effect<R2, E2, A2>
-): Effect<R & R1 & R2, E1 | E2, A1 | A2> =>
-   new FoldInstruction(ma, (cause) => Mb._fold(C.keepDefects(cause), that, halt), onSuccess);
+export const foldr = <A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Effect<R, E, Z>) => (i: Iterable<A>) =>
+   foldr_(i, zero, f);
 
-export const tryOrElse = <A, R1, E1, A1, R2, E2, A2>(
-   that: () => Effect<R1, E1, A1>,
-   onSuccess: (a: A) => Effect<R2, E2, A2>
-) => <R, E>(ma: Effect<R, E, A>): Effect<R & R1 & R2, E1 | E2, A1 | A2> =>
-   _tryOrElse(ma, that, onSuccess);
+export const whenM_ = <R, E, A, R1, E1>(f: Effect<R, E, A>, b: Effect<R1, E1, boolean>) =>
+   chain_(b, (a) => (a ? map_(f, some) : map_(unit, () => none())));
 
-export const _orElse = <R, E, A, R1, E1, A1>(
-   ma: Effect<R, E, A>,
-   that: () => Effect<R1, E1, A1>
-): Effect<R & R1, E1, A | A1> => _tryOrElse(ma, that, pure);
+export const whenM = <R, E>(b: Effect<R, E, boolean>) => <R1, E1, A>(f: Effect<R1, E1, A>) => whenM_(f, b);
 
-export const orElse = <R1, E1, A1>(that: () => Effect<R1, E1, A1>) => <R, E, A>(
-   ma: Effect<R, E, A>
-): Effect<R & R1, E1, A | A1> => _tryOrElse(ma, that, pure);
+export const tapCause_ = <R2, A2, R, E, E2>(effect: Effect<R2, E2, A2>, f: (e: Cause<E2>) => Effect<R, E, any>) =>
+   foldCauseM_(effect, (c) => chain_(f(c), () => halt(c)), pure);
 
-export const _orElseEither = <R, E, A, R1, E1, A1>(
-   self: Effect<R, E, A>,
-   that: Effect<R1, E1, A1>
-): Effect<R & R1, E1, E.Either<A, A1>> =>
-   _tryOrElse(
-      self,
-      () => _map(that, E.right),
-      (a) => new PureInstruction(E.left(a))
-   );
+export const tapCause = <R, E, E1>(f: (e: Cause<E1>) => Effect<R, E, any>) => <R1, A1>(effect: Effect<R1, E1, A1>) =>
+   tapCause_(effect, f);
 
-export const orElseEither = <R1, E1, A1>(that: Effect<R1, E1, A1>) => <R, E, A>(
-   ma: Effect<R, E, A>
-) => _orElseEither(ma, that);
+export const checkDescriptor = <R, E, A>(f: (d: FiberDescriptor) => Effect<R, E, A>): Effect<R, E, A> =>
+   new CheckDescriptorInstruction(f);
 
-export const _orElseFail = <R, E, A, E1>(ma: Effect<R, E, A>, e: E1): Effect<R, E1, A> =>
-   _orElse(ma, () => fail(e));
-
-export const _orElseMaybe = <R, E, A, R1, E1, A1>(
-   ma: Effect<R, Maybe<E>, A>,
-   that: () => Effect<R1, Maybe<E1>, A1>
-): Effect<R & R1, Maybe<E | E1>, A | A1> =>
-   _catchAll(
-      ma,
-      Mb.fold(that, (e) => fail(just<E | E1>(e)))
-   );
-
-export const orElseMaybe = <R1, E1, A1>(that: () => Effect<R1, Maybe<E1>, A1>) => <R, E, A>(
-   ma: Effect<R, Maybe<E>, A>
-) => _orElseMaybe(ma, that);
-
-export const _orElseSucceed = <R, E, A, A1>(ma: Effect<R, E, A>, a: A1): Effect<R, E, A | A1> =>
-   _orElse(ma, () => pure(a));
-
-export const orElseSucceed = <A1>(a: A1) => <R, E, A>(self: Effect<R, E, A>) =>
-   _orElseSucceed(self, a);
-
-export const _orDieWith = <R, E, A>(
-   ma: Effect<R, E, A>,
-   f: (e: E) => unknown
-): Effect<R, never, A> => _foldM(ma, (e) => die(f(e)), pure);
-
-export const orDieWith = <E>(f: (e: E) => unknown) => <R, A>(
-   ma: Effect<R, E, A>
-): Effect<R, never, A> => _orDieWith(ma, f);
-
-export const orDie = <R, E, A>(ma: Effect<R, E, A>): Effect<R, never, A> =>
-   _orDieWith(ma, identity);
-
-export const orDieKeep = <R, E, A>(ma: Effect<R, E, A>): Effect<R, unknown, A> =>
-   _foldCauseM(ma, (ce) => halt(C._chain(ce, (e) => C.die(e))), pure);
-
-export const _whenM = <R, E, A, R1, E1>(f: Effect<R, E, A>, b: Effect<R1, E1, boolean>) =>
-   _chain(b, (a) => (a ? _map(f, just) : _map(unit, () => nothing())));
-
-export const whenM = <R, E>(b: Effect<R, E, boolean>) => <R1, E1, A>(f: Effect<R1, E1, A>) =>
-   _whenM(f, b);
-
-export const _tapCause = <R2, A2, R, E, E2>(
-   effect: Effect<R2, E2, A2>,
-   f: (e: Cause<E2>) => Effect<R, E, any>
-) => _foldCauseM(effect, (c) => _chain(f(c), () => halt(c)), pure);
-
-export const tapCause = <R, E, E1>(f: (e: Cause<E1>) => Effect<R, E, any>) => <R1, A1>(
-   effect: Effect<R1, E1, A1>
-) => _tapCause(effect, f);
-
-export const _summarized = <R, E, A, R1, E1, B, C>(
-   self: Effect<R, E, A>,
-   summary: Effect<R1, E1, B>,
-   f: (start: B, end: B) => C
-): Effect<R & R1, E | E1, [C, A]> =>
-   pipe(
-      of,
-      bindS("start", () => summary),
-      bindS("value", () => self),
-      bindS("end", () => summary),
-      map((s) => [f(s.start, s.end), s.value])
-   );
-
-export const summarized = <R1, E1, B, C>(
-   summary: Effect<R1, E1, B>,
-   f: (start: B, end: B) => C
-) => <R, E, A>(self: Effect<R, E, A>): Effect<R & R1, E | E1, [C, A]> =>
-   _summarized(self, summary, f);
-
-export const checkDescriptor = <R, E, A>(
-   f: (d: FiberDescriptor) => Effect<R, E, A>
-): Effect<R, E, A> => new CheckDescriptorInstruction(f);
-
-export const checkInterruptible = <R, E, A>(
-   f: (i: InterruptStatus) => Effect<R, E, A>
-): Effect<R, E, A> => new CheckInterruptInstruction(f);
+export const checkInterruptible = <R, E, A>(f: (i: InterruptStatus) => Effect<R, E, A>): Effect<R, E, A> =>
+   new CheckInterruptInstruction(f);
 
 export const fork = <R, E, A>(value: Effect<R, E, A>): RIO<R, FiberContext<E, A>> =>
-   new ForkInstruction(value, Mb.nothing());
+   new ForkInstruction(value, O.none());

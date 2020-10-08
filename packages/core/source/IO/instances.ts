@@ -1,7 +1,7 @@
 import * as HKT from "../HKT";
 import * as TC from "../typeclass-index";
 import type { IO, URI, V } from "./IO";
-import { _ap, _chain, _map, _mapBoth, ap, chain, flatten, map, mapBoth, pure } from "./methods";
+import { ap, ap_, chain, chain_, flatten, map, map_, mapBoth, mapBoth_, pure } from "./methods";
 
 /*
  * -------------------------------------------
@@ -39,15 +39,15 @@ export const getMonoid = <A>(M: TC.Monoid<A>): TC.Monoid<IO<A>> => ({
 });
 
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
-   _map,
+   map_: map_,
    map
 });
 
 export const Apply: TC.Apply<[URI], V> = HKT.instance({
    ...Functor,
-   _ap,
+   ap_: ap_,
    ap,
-   _mapBoth,
+   mapBoth_: mapBoth_,
    mapBoth
 });
 
@@ -58,7 +58,7 @@ export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
 
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
-   _chain,
+   chain_: chain_,
    chain,
    flatten
 });

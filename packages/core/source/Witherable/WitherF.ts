@@ -1,6 +1,6 @@
 import type { Applicative } from "../Applicative";
 import type * as HKT from "../HKT";
-import type { Maybe } from "../Maybe";
+import type { Option } from "../Option";
 
 export interface WitherF<F extends HKT.URIS, C = HKT.Auto> {
    <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
@@ -16,7 +16,7 @@ export interface WitherF<F extends HKT.URIS, C = HKT.Auto> {
       A,
       B
    >(
-      f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
+      f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
    ) => <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF>(
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
@@ -46,7 +46,7 @@ export interface UC_WitherF<F extends HKT.URIS, C = HKT.Auto> {
       B
    >(
       wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-      f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
+      f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
 }
 
@@ -67,7 +67,7 @@ export function implementWither<F extends HKT.URIS, C = HKT.Auto>(): (
    }) => (
       G: Applicative<HKT.UHKT<G>>
    ) => (
-      f: (a: A) => HKT.HKT<G, Maybe<B>>
+      f: (a: A) => HKT.HKT<G, Option<B>>
    ) => (
       wa: HKT.Kind<F, C, NF, FK, FQ, FW, FX, FI, FS, FR, FE, A>
    ) => HKT.HKT<G, HKT.Kind<F, C, string, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
@@ -94,7 +94,7 @@ export function implementUCWither<F extends HKT.URIS, C = HKT.Auto>(): (
       G: Applicative<HKT.UHKT<G>>
    ) => (
       wa: HKT.Kind<F, C, NF, FK, FQ, FW, FX, FI, FS, FR, FE, A>,
-      f: (a: A) => HKT.HKT<G, Maybe<B>>
+      f: (a: A) => HKT.HKT<G, Option<B>>
    ) => HKT.HKT<G, HKT.Kind<F, C, string, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
 ) => UC_WitherF<F, C>;
 export function implementUCWither() {

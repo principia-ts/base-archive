@@ -43,6 +43,6 @@ export type V = Auto;
 
 declare module "@principia/core/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      [URI]: Cause<A>;
+      readonly [URI]: Cause<A>;
    }
 }

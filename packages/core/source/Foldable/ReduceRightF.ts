@@ -1,4 +1,4 @@
-import * as HKT from "../HKT";
+import type * as HKT from "../HKT";
 
 export interface ReduceRightF<F extends HKT.URIS, C = HKT.Auto> {
    <A, B>(b: B, f: (a: A, b: B) => B): <N extends string, K, Q, W, X, I, S, R, E>(

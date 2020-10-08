@@ -2,8 +2,9 @@ import * as E from "@principia/core/Either";
 
 import { Stack } from "../Stack";
 import { concrete, fail, succeed } from "./constructors";
-import { ApplyFrame, FoldFrame, Frame } from "./instructions";
-import { XPure } from "./XPure";
+import type { Frame } from "./instructions";
+import { ApplyFrame, FoldFrame } from "./instructions";
+import type { XPure } from "./XPure";
 
 /**
  * Runs this computation with the specified initial state, returning either a
@@ -189,9 +190,7 @@ export const _run = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =
  * Runs this computation with the specified initial state, returning both
  * updated state and the result
  */
-export const run = <S1>(s: S1) => <S2, A>(
-   self: XPure<S1, S2, unknown, never, A>
-): readonly [S2, A] => _run(self, s);
+export const run = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>): readonly [S2, A] => _run(self, s);
 
 /**
  * Runs this computation, returning the result.
@@ -209,8 +208,7 @@ export const _runState = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: 
  * Runs this computation with the specified initial state, returning the
  * updated state and discarding the result.
  */
-export const runState = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>) =>
-   _runState(self, s);
+export const runState = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>) => _runState(self, s);
 
 /**
  * Runs this computation with the specified initial state, returning the
@@ -237,11 +235,10 @@ export const _runResult = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s:
  * Runs this computation with the specified initial state, returning the
  * result and discarding the updated state.
  */
-export const runResult = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>) =>
-   _runResult(self, s);
+export const runResult = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>) => _runResult(self, s);
 
 /**
  * Runs this computation returning either the result or error
  */
 export const runEither = <E, A>(self: XPure<unknown, unknown, unknown, E, A>): E.Either<E, A> =>
-   E._map(_runStateEither(self, {}), ([_, x]) => x);
+   E.map_(_runStateEither(self, {}), ([_, x]) => x);

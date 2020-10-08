@@ -1,10 +1,10 @@
 import { tuple } from "@principia/core/Function";
 
 import * as T from "../_internal/effect";
-import { _foreachParN as effectForeachParN } from "../../Effect/functions/foreachParN";
+import { foreachParN_ as effectForeachParN } from "../../Effect/functions/foreachParN";
 import { parallelN, sequential } from "../../ExecutionStrategy";
-import { _mapEffect } from "../core";
-import { Managed } from "../Managed";
+import { mapEffect_ } from "../core";
+import type { Managed } from "../Managed";
 import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
 
 /**
@@ -15,7 +15,7 @@ import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
  */
 export const foreachParN = (n: number) => <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (
    as: Iterable<A>
-): Managed<R, E, readonly B[]> => _foreachParN(n)(as, f);
+): Managed<R, E, readonly B[]> => foreachParN_(n)(as, f);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -23,21 +23,19 @@ export const foreachParN = (n: number) => <R, E, A, B>(f: (a: A) => Managed<R, E
  *
  * Unlike `foreachPar_`, this method will use at most up to `n` fibers.
  */
-export const _foreachParN = (n: number) => <R, E, A, B>(
+export const foreachParN_ = (n: number) => <R, E, A, B>(
    as: Iterable<A>,
    f: (a: A) => Managed<R, E, B>
 ): Managed<R, E, readonly B[]> =>
-   _mapEffect(makeManagedReleaseMap(parallelN(n)), (parallelReleaseMap) => {
-      const makeInnerMap = T._provideSome(
-         T._map(makeManagedReleaseMap(sequential()).effect, ([_, x]) => x),
+   mapEffect_(makeManagedReleaseMap(parallelN(n)), (parallelReleaseMap) => {
+      const makeInnerMap = T.local_(
+         T.map_(makeManagedReleaseMap(sequential()).effect, ([_, x]) => x),
          (x: unknown) => tuple(x, parallelReleaseMap)
       );
 
       return effectForeachParN(n)(as, (a) =>
-         T._map(
-            T._chain(makeInnerMap, (innerMap) =>
-               T._provideSome(f(a).effect, (u: R) => tuple(u, innerMap))
-            ),
+         T.map_(
+            T.chain_(makeInnerMap, (innerMap) => T.local_(f(a).effect, (u: R) => tuple(u, innerMap))),
             ([_, b]) => b
          )
       );

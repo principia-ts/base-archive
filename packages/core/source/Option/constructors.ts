@@ -1,6 +1,6 @@
-import { Either } from "../Either";
+import type { Either } from "../Either";
 import type { FunctionN, Lazy, Predicate, Refinement } from "../Function";
-import type { Maybe } from "./Maybe";
+import type { Option } from "./Option";
 
 /*
  * -------------------------------------------
@@ -18,8 +18,8 @@ import type { Maybe } from "./Maybe";
  * @category Constructors
  * @since 1.0.0
  */
-export const nothing = <A = never>(): Maybe<A> => ({
-   _tag: "Nothing"
+export const none = <A = never>(): Option<A> => ({
+   _tag: "None"
 });
 
 /**
@@ -32,8 +32,8 @@ export const nothing = <A = never>(): Maybe<A> => ({
  * @category Constructs
  * @since 1.0.0
  */
-export const just = <A>(a: A): Maybe<A> => ({
-   _tag: "Just",
+export const some = <A>(a: A): Option<A> => ({
+   _tag: "Some",
    value: a
 });
 
@@ -48,8 +48,8 @@ export const just = <A>(a: A): Maybe<A> => ({
  * @category Constructors
  * @since 1.0.0
  */
-export const fromNullable = <A>(a: A | null | undefined): Maybe<NonNullable<A>> =>
-   a == null ? nothing() : just(a as NonNullable<A>);
+export const fromNullable = <A>(a: A | null | undefined): Option<NonNullable<A>> =>
+   a == null ? none() : some(a as NonNullable<A>);
 
 /**
  * ```haskell
@@ -61,11 +61,11 @@ export const fromNullable = <A>(a: A | null | undefined): Maybe<NonNullable<A>> 
  * @category Constructors
  * @since 1.0.0
  */
-export const partial = <A>(thunk: Lazy<A>): Maybe<A> => {
+export const partial = <A>(thunk: Lazy<A>): Option<A> => {
    try {
-      return just(thunk());
+      return some(thunk());
    } catch (_) {
-      return nothing();
+      return none();
    }
 };
 
@@ -79,14 +79,14 @@ export const partial = <A>(thunk: Lazy<A>): Maybe<A> => {
  * @category Constructors
  * @since 1.0.0
  */
-export const partialK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): ((...args: A) => Maybe<B>) => (
+export const partialK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): ((...args: A) => Option<B>) => (
    ...a
 ) => partial(() => f(...a));
 
 /**
  * ```haskell
- * _fromPredicate :: (a, (a -> is b)) -> Maybe b
- * _fromPredicate :: (a, (a -> Boolean)) -> Maybe a
+ * fromPredicate_ :: (a, (a -> is b)) -> Maybe b
+ * fromPredicate_ :: (a, (a -> Boolean)) -> Maybe a
  * ```
  *
  * Constructs a new `Maybe` from a value and the given predicate
@@ -94,10 +94,10 @@ export const partialK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>
  * @category Constructors
  * @since 1.0.0
  */
-export const _fromPredicate: {
-   <A, B extends A>(a: A, refinement: Refinement<A, B>): Maybe<A>;
-   <A>(a: A, predicate: Predicate<A>): Maybe<A>;
-} = <A>(a: A, predicate: Predicate<A>): Maybe<A> => (predicate(a) ? nothing() : just(a));
+export const fromPredicate_: {
+   <A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>;
+   <A>(a: A, predicate: Predicate<A>): Option<A>;
+} = <A>(a: A, predicate: Predicate<A>): Option<A> => (predicate(a) ? none() : some(a));
 
 /**
  * ```haskell
@@ -111,9 +111,9 @@ export const _fromPredicate: {
  * @since 1.0.0
  */
 export const fromPredicate: {
-   <A, B extends A>(refinement: Refinement<A, B>): (a: A) => Maybe<A>;
-   <A>(predicate: Predicate<A>): (a: A) => Maybe<A>;
-} = <A>(predicate: Predicate<A>) => (a: A) => _fromPredicate(a, predicate);
+   <A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<A>;
+   <A>(predicate: Predicate<A>): (a: A) => Option<A>;
+} = <A>(predicate: Predicate<A>) => (a: A) => fromPredicate_(a, predicate);
 
 /**
  * ```haskell
@@ -125,4 +125,4 @@ export const fromPredicate: {
  * @category Constructors
  * @since 1.0.0
  */
-export const fromEither = <E, A>(ma: Either<E, A>): Maybe<A> => (ma._tag === "Left" ? nothing() : just(ma.right));
+export const fromEither = <E, A>(ma: Either<E, A>): Option<A> => (ma._tag === "Left" ? none() : some(ma.right));

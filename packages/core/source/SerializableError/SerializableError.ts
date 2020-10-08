@@ -1,4 +1,4 @@
-import { FunctionN } from "../Function";
+import type { FunctionN } from "../Function";
 
 export class SerializableError<I> extends Error {
    readonly stacktrace: ReadonlyArray<string>;

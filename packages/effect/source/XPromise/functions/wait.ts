@@ -2,7 +2,7 @@ import { left, right } from "@principia/core/Either";
 
 import { maybeAsyncInterrupt } from "../../Effect/functions/interrupt";
 import { Pending } from "../state";
-import { XPromise } from "../XPromise";
+import type { XPromise } from "../XPromise";
 import { interruptJoiner } from "./interrupt";
 
 /**

@@ -5,11 +5,9 @@ import { completeWith } from "./completeWith";
 /**
  * Completes the promise with the specified value.
  */
-export const succeed = <A>(a: A) => <E>(promise: XPromise<E, A>) =>
-   completeWith<E, A>(T.pure(a))(promise);
+export const succeed = <A>(a: A) => <E>(promise: XPromise<E, A>) => completeWith<E, A>(T.pure(a))(promise);
 
 /**
  * Completes the promise with the specified value.
  */
-export const _succeed = <A, E>(promise: XPromise<E, A>, a: A) =>
-   completeWith<E, A>(T.pure(a))(promise);
+export const succeed_ = <A, E>(promise: XPromise<E, A>, a: A) => completeWith<E, A>(T.pure(a))(promise);

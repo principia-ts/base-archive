@@ -1,8 +1,8 @@
-import { Either } from "../Either";
-import { Lazy } from "../Function";
-import { fromNullable, just, nothing } from "./constructors";
-import { isNothing } from "./guards";
-import type { Maybe } from "./Maybe";
+import type { Either } from "../Either";
+import type { Lazy } from "../Function";
+import { fromNullable, none, some } from "./constructors";
+import { isNone } from "./guards";
+import type { Option } from "./Option";
 
 /*
  * -------------------------------------------
@@ -11,14 +11,14 @@ import type { Maybe } from "./Maybe";
  */
 
 /**
- * _mapNullable :: Maybe m => (m a, (a -> ?b)) -> m b
+ * mapNullable_ :: Maybe m => (m a, (a -> ?b)) -> m b
  * Map over a Maybe with a function that returns a nullable value
  *
  * @category Uncurried Maybe Combinators
  * @since 1.0.0
  */
-export const _mapNullable = <A, B>(fa: Maybe<A>, f: (a: A) => B | null | undefined): Maybe<B> =>
-   isNothing(fa) ? nothing() : fromNullable(f(fa.value));
+export const mapNullable_ = <A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> =>
+   isNone(fa) ? none() : fromNullable(f(fa.value));
 
 /**
  * mapNullable :: Maybe m => (a -> ?b) -> m a -> m b
@@ -27,18 +27,18 @@ export const _mapNullable = <A, B>(fa: Maybe<A>, f: (a: A) => B | null | undefin
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const mapNullable: <A, B>(f: (a: A) => B | null | undefined) => (fa: Maybe<A>) => Maybe<B> = (f) => (fa) =>
-   _mapNullable(fa, f);
+export const mapNullable: <A, B>(f: (a: A) => B | null | undefined) => (fa: Option<A>) => Option<B> = (f) => (fa) =>
+   mapNullable_(fa, f);
 
 /**
- * _orElse :: Maybe m => (m a, () -> m b) -> m (a | b)
+ * orElse_ :: Maybe m => (m a, () -> m b) -> m (a | b)
  * Evaluate and return alternate optional value if empty
  *
  * @category Uncurried Maybe Combinators
  * @since 1.0.0
  */
-export const _orElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<Maybe<B>>): Maybe<A | B> =>
-   isNothing(fa) ? onNothing() : fa;
+export const orElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option<A | B> =>
+   isNone(fa) ? onNothing() : fa;
 
 /**
  * orElse :: Maybe m => (() -> m b) -> m a -> m (a | b)
@@ -47,7 +47,7 @@ export const _orElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<Maybe<B>>): Maybe<A 
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const orElse = <B>(onNothing: Lazy<Maybe<B>>) => <A>(fa: Maybe<A>): Maybe<A | B> => _orElse(fa, onNothing);
+export const orElse = <B>(onNothing: Lazy<Option<B>>) => <A>(fa: Option<A>): Option<A | B> => orElse_(fa, onNothing);
 
 /**
  * getLeft :: (Either e, Maybe m) => e a b -> m a
@@ -56,7 +56,7 @@ export const orElse = <B>(onNothing: Lazy<Maybe<B>>) => <A>(fa: Maybe<A>): Maybe
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const getLeft = <E, A>(fea: Either<E, A>): Maybe<E> => (fea._tag === "Right" ? nothing() : just(fea.left));
+export const getLeft = <E, A>(fea: Either<E, A>): Option<E> => (fea._tag === "Right" ? none() : some(fea.left));
 
 /**
  * getRight :: (Either e, Maybe m) => e a b -> m b
@@ -65,4 +65,4 @@ export const getLeft = <E, A>(fea: Either<E, A>): Maybe<E> => (fea._tag === "Rig
  * @category Maybe Combinators
  * @since 1.0.0
  */
-export const getRight = <E, A>(fea: Either<E, A>): Maybe<A> => (fea._tag === "Left" ? nothing() : just(fea.right));
+export const getRight = <E, A>(fea: Either<E, A>): Option<A> => (fea._tag === "Left" ? none() : some(fea.right));

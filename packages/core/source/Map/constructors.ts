@@ -1,9 +1,9 @@
-import { Eq } from "../Eq";
-import { Foldable } from "../Foldable";
+import type { Eq } from "../Eq";
+import type { Foldable } from "../Foldable";
 import { pipe } from "../Function";
 import type * as HKT from "../HKT";
-import { Semigroup } from "../Semigroup";
-import { _lookupWithKey } from "./combinators";
+import type { Semigroup } from "../Semigroup";
+import { lookupWithKey_ } from "./combinators";
 
 export const empty: ReadonlyMap<never, never> = new Map<never, never>();
 
@@ -22,28 +22,25 @@ export const fromMutable = <K, A>(m: Map<K, A>): ReadonlyMap<K, A> => new Map(m)
  */
 export const singleton = <K, A>(k: K, a: A): ReadonlyMap<K, A> => new Map([[k, a]]);
 
-export const fromFoldable = <F extends HKT.URIS, K, A, C = HKT.Auto>(E: Eq<K>, S: Semigroup<A>, F: Foldable<F, C>) => (
-   fka: HKT.Kind<
-      F,
-      C,
-      HKT.Initial<C, "N">,
-      HKT.Initial<C, "K">,
-      HKT.Initial<C, "Q">,
-      HKT.Initial<C, "W">,
-      HKT.Initial<C, "X">,
-      HKT.Initial<C, "I">,
-      HKT.Initial<C, "S">,
-      HKT.Initial<C, "R">,
-      HKT.Initial<C, "E">,
-      readonly [K, A]
-   >
+export const fromFoldable = <F extends HKT.URIS, K, A, C = HKT.Auto>(E: Eq<K>, S: Semigroup<A>, F: Foldable<F, C>) => <
+   N extends string,
+   K_,
+   Q,
+   W,
+   X,
+   I,
+   S,
+   R,
+   E
+>(
+   fka: HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, readonly [K, A]>
 ): ReadonlyMap<K, A> => {
-   const _lookupWithKeyE = _lookupWithKey(E);
+   const lookupWithKeyE_ = lookupWithKey_(E);
    return pipe(
       fka,
       F.reduce(new Map<K, A>(), (b, [k, a]) => {
-         const oka = _lookupWithKeyE(b, k);
-         if (oka._tag === "Just") {
+         const oka = lookupWithKeyE_(b, k);
+         if (oka._tag === "Some") {
             b.set(oka.value[0], S.concat(oka.value[1])(a));
          } else {
             b.set(k, a);

@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
 import * as A from "@principia/core/Array";
-import { Eq } from "@principia/core/Eq";
+import type { Eq } from "@principia/core/Eq";
 import { pipe } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
-import { NonEmptyArray } from "@principia/core/NonEmptyArray";
-import { Show } from "@principia/core/Show";
+import type { NonEmptyArray } from "@principia/core/NonEmptyArray";
+import * as O from "@principia/core/Option";
+import type { Show } from "@principia/core/Show";
 
-import { eqFiberId, FiberId } from "../Fiber/FiberId";
+import type { FiberId } from "../Fiber/FiberId";
+import { eqFiberId } from "../Fiber/FiberId";
 import type { Cause } from "./Cause";
 
 type Segment = Sequential | Parallel | Failure;
@@ -141,14 +142,14 @@ const format = (segment: Segment): readonly string[] => {
       case "Parallel": {
          return [
             times("══╦", segment.all.length - 1) + "══╗",
-            ...A._reduceRight(segment.all, [] as string[], (current, acc) => [
+            ...A.reduceRight_(segment.all, [] as string[], (current, acc) => [
                ...prefixBlock(acc, "  ║", "  ║"),
                ...prefixBlock(format(current), "  ", "  ")
             ])
          ];
       }
       case "Sequential": {
-         return A._chain(segment.all, (seg) => ["║", ...prefixBlock(format(seg), "╠", "║"), "▼"]);
+         return A.chain_(segment.all, (seg) => ["║", ...prefixBlock(format(seg), "╠", "║"), "▼"]);
       }
    }
 };
@@ -160,7 +161,7 @@ const prettyLines = <E>(cause: Cause<E>): readonly string[] => {
       return s.all[0].lines;
    }
 
-   return Mb._getOrElse(A.updateAt(0, "╥")(format(s)), (): string[] => []);
+   return O.getOrElse_(A.updateAt(0, "╥")(format(s)), (): string[] => []);
 };
 
 export const prettyPrint = <E>(cause: Cause<E>) => prettyLines(cause).join("\n");

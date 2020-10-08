@@ -1,5 +1,6 @@
 import { constVoid, pipe } from "@principia/core/Function";
-import { just, Maybe, nothing } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import { none, some } from "@principia/core/Option";
 import { matchTag } from "@principia/core/Utils";
 
 import * as T from "../../Effect";
@@ -93,20 +94,17 @@ export function take<A>(h: Handoff<A>): T.UIO<A> {
    );
 }
 
-export function poll<A>(h: Handoff<A>): T.UIO<Maybe<A>> {
+export function poll<A>(h: Handoff<A>): T.UIO<Option<A>> {
    return pipe(
       XP.make<never, void>(),
       T.chain((p) =>
          pipe(
             h.ref,
-            XR.modify<T.UIO<Maybe<A>>, State<A>>(
+            XR.modify<T.UIO<Option<A>>, State<A>>(
                matchTag({
-                  Empty: (s) => [T.succeed(nothing()), s] as const,
+                  Empty: (s) => [T.succeed(none()), s] as const,
                   Full: ({ a, notifyProducer }) =>
-                     [
-                        pipe(notifyProducer, XP.succeed(constVoid()), T.as(just(a))),
-                        new Empty(p)
-                     ] as const
+                     [pipe(notifyProducer, XP.succeed(constVoid()), T.as(some(a))), new Empty(p)] as const
                })
             ),
             T.flatten

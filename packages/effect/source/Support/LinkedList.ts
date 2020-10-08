@@ -3,10 +3,7 @@ export class LinkedListNode<T> {
 }
 
 export class LinkedList<T> {
-   constructor(
-      public head: LinkedListNode<T> | null = null,
-      public tail: LinkedListNode<T> | null = null
-   ) {
+   constructor(public head: LinkedListNode<T> | null = null, public tail: LinkedListNode<T> | null = null) {
       this.head = null;
       this.tail = null;
    }

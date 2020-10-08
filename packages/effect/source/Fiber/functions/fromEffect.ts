@@ -9,5 +9,4 @@ import type { Synthetic } from "../Fiber";
  *
  * Lifts an `Effect` into a `Fiber`.
  */
-export const fromEffect = <E, A>(effect: T.IO<E, A>): T.UIO<Synthetic<E, A>> =>
-   T._map(T.result(effect), done);
+export const fromEffect = <E, A>(effect: T.IO<E, A>): T.UIO<Synthetic<E, A>> => T.map_(T.result(effect), done);

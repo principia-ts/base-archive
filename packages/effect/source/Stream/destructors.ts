@@ -1,32 +1,32 @@
 import * as E from "@principia/core/Either";
 import { pipe } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 
 import * as C from "../Cause";
 import * as T from "../Effect";
 import * as M from "../Managed";
 import * as Sink from "./internal/Sink";
-import { Stream } from "./Stream";
+import type { Stream } from "./Stream";
 
 /**
  * Runs the sink on the stream to produce either the sink's result or an error.
  */
-export const _runManaged = <R, E, A, R1, E1, B>(
+export const runManaged_ = <R, E, A, R1, E1, B>(
    stream: Stream<R, E, A>,
    sink: Sink.Sink<R1, E1, A, any, B>
 ): M.Managed<R & R1, E1 | E, B> =>
    pipe(
-      M._both(stream.proc, sink.push),
+      M.both_(stream.proc, sink.push),
       M.mapEffect(([pull, push]) => {
-         const go: T.Effect<R1 & R, E1 | E, B> = T._foldCauseM(
+         const go: T.Effect<R1 & R, E1 | E, B> = T.foldCauseM_(
             pull,
             (c): T.Effect<R1, E1 | E, B> =>
                pipe(
-                  C.sequenceCauseMaybe(c),
-                  Mb.fold(
+                  C.sequenceCauseOption(c),
+                  O.fold(
                      () =>
-                        T._foldCauseM(
-                           push(Mb.nothing()),
+                        T.foldCauseM_(
+                           push(O.none()),
                            (c) =>
                               pipe(
                                  c,
@@ -40,8 +40,8 @@ export const _runManaged = <R, E, A, R1, E1, B>(
                   )
                ),
             (os) =>
-               T._foldCauseM(
-                  push(Mb.just(os)),
+               T.foldCauseM_(
+                  push(O.some(os)),
                   (c): T.Effect<unknown, E1, B> =>
                      pipe(
                         c,
@@ -56,35 +56,25 @@ export const _runManaged = <R, E, A, R1, E1, B>(
       })
    );
 
-export const runManaged = <A, R1, E1, B>(sink: Sink.Sink<R1, E1, A, any, B>) => <R, E>(
-   stream: Stream<R, E, A>
-) => _runManaged(stream, sink);
+export const runManaged = <A, R1, E1, B>(sink: Sink.Sink<R1, E1, A, any, B>) => <R, E>(stream: Stream<R, E, A>) =>
+   runManaged_(stream, sink);
 
-export const _run = <R, E, A, R1, E1, B>(
-   stream: Stream<R, E, A>,
-   sink: Sink.Sink<R1, E1, A, any, B>
-) => M.useNow(_runManaged(stream, sink));
+export const run_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, sink: Sink.Sink<R1, E1, A, any, B>) =>
+   M.useNow(runManaged_(stream, sink));
 
-export const run = <A, R1, E1, B>(sink: Sink.Sink<R1, E1, A, any, B>) => <R, E>(
-   stream: Stream<R, E, A>
-) => _run(stream, sink);
+export const run = <A, R1, E1, B>(sink: Sink.Sink<R1, E1, A, any, B>) => <R, E>(stream: Stream<R, E, A>) =>
+   run_(stream, sink);
 
-export const runCollect = <R, E, A>(stream: Stream<R, E, A>) => _run(stream, Sink.collectAll<A>());
+export const runCollect = <R, E, A>(stream: Stream<R, E, A>) => run_(stream, Sink.collectAll<A>());
 
-export const _foreach = <R, E, A, R1, E1, B>(
-   stream: Stream<R, E, A>,
-   f: (a: A) => T.Effect<R1, E1, B>
-) => _run(stream, Sink.foreach(f));
+export const foreach_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => T.Effect<R1, E1, B>) =>
+   run_(stream, Sink.foreach(f));
 
-export const foreach = <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, B>) => <R, E>(
-   stream: Stream<R, E, A>
-) => _foreach(stream, f);
+export const foreach = <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, B>) => <R, E>(stream: Stream<R, E, A>) =>
+   foreach_(stream, f);
 
-export const _foreachManaged = <R, E, A, R1, E1, B>(
-   stream: Stream<R, E, A>,
-   f: (a: A) => T.Effect<R1, E1, B>
-) => _runManaged(stream, Sink.foreach(f));
+export const foreachManaged_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => T.Effect<R1, E1, B>) =>
+   runManaged_(stream, Sink.foreach(f));
 
-export const foreachManaged = <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, B>) => <R, E>(
-   stream: Stream<R, E, A>
-) => _foreachManaged(stream, f);
+export const foreachManaged = <A, R1, E1, B>(f: (a: A) => T.Effect<R1, E1, B>) => <R, E>(stream: Stream<R, E, A>) =>
+   foreachManaged_(stream, f);

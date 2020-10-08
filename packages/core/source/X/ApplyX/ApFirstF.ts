@@ -1,4 +1,4 @@
-import * as HKT from "../../HKT";
+import type * as HKT from "../../HKT";
 
 export interface ApFirstF<F extends HKT.URIS, C = HKT.Auto> {
    <S, N1 extends string, K1, Q1, W1, X1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, S, S1, R1, E1, B>): <

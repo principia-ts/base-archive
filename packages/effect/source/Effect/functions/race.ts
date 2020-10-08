@@ -1,11 +1,11 @@
 import * as C from "../../Cause";
+import type { Exit } from "../../Exit";
 import * as Ex from "../../Exit";
-import { Exit } from "../../Exit";
 import { join } from "../../Fiber/functions/join";
-import { _chain, checkDescriptor, halt, pure } from "../core";
+import { chain_, checkDescriptor, halt, pure } from "../core";
 import { raceWith } from "../core-scope";
-import { Effect } from "../Effect";
-import { _mapErrorCause } from "./mapErrorCause";
+import type { Effect } from "../Effect";
+import { mapErrorCause_ } from "./mapErrorCause";
 
 const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): Effect<unknown, E1, A> => {
    switch (x._tag) {
@@ -25,7 +25,7 @@ const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): Effect<unknown
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export const _race = <R, E, A, R1, E1, A1>(
+export const race_ = <R, E, A, R1, E1, A1>(
    ef: Effect<R, E, A>,
    that: Effect<R1, E1, A1>
 ): Effect<R & R1, E | E1, A | A1> =>
@@ -34,16 +34,16 @@ export const _race = <R, E, A, R1, E1, A1>(
          ef,
          that,
          (exit, right) =>
-            Ex._foldM(
+            Ex.foldM_(
                exit,
-               (cause) => _mapErrorCause(join(right), (_) => C.both(cause, _)),
-               (a) => _chain(right.interruptAs(d.id), mergeInterruption(a))
+               (cause) => mapErrorCause_(join(right), (_) => C.both(cause, _)),
+               (a) => chain_(right.interruptAs(d.id), mergeInterruption(a))
             ),
          (exit, left) =>
-            Ex._foldM(
+            Ex.foldM_(
                exit,
-               (cause) => _mapErrorCause(join(left), (_) => C.both(cause, _)),
-               (a) => _chain(left.interruptAs(d.id), mergeInterruption(a))
+               (cause) => mapErrorCause_(join(left), (_) => C.both(cause, _)),
+               (a) => chain_(left.interruptAs(d.id), mergeInterruption(a))
             )
       )
    );
@@ -57,5 +57,4 @@ export const _race = <R, E, A, R1, E1, A1>(
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export const race = <R1, E1, A1>(that: Effect<R1, E1, A1>) => <R, E, A>(ef: Effect<R, E, A>) =>
-   _race(ef, that);
+export const race = <R1, E1, A1>(that: Effect<R1, E1, A1>) => <R, E, A>(ef: Effect<R, E, A>) => race_(ef, that);

@@ -3,7 +3,7 @@ import { pipe } from "@principia/core/Function";
 import type { Exit } from "../../Exit/Exit";
 import { chain, done, result } from "../core";
 import type { Effect } from "../Effect";
-import { _race } from "./race";
+import { race_ } from "./race";
 
 /**
  * Returns an effect that races this effect with the specified effect,
@@ -21,6 +21,6 @@ export const raceFirst = <R1, E1, A1>(that: Effect<R1, E1, A1>) => <R, E, A>(
    ef: Effect<R, E, A>
 ): Effect<R & R1, E | E1, A | A1> =>
    pipe(
-      _race(result(ef), result(that)),
+      race_(result(ef), result(that)),
       chain((a) => done(a as Exit<E | E1, A | A1>))
    );

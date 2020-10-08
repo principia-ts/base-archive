@@ -1,6 +1,7 @@
-import { Apply, ApplyComposition, getApplyComposition } from "../Apply";
+import type { Apply, ApplyComposition } from "../Apply";
+import { getApplyComposition } from "../Apply";
 import * as HKT from "../HKT";
-import { PureF, PureFComposition } from "./PureF";
+import type { PureF, PureFComposition } from "./PureF";
 
 export interface Applicative<F extends HKT.URIS, C = HKT.Auto> extends Apply<F, C> {
    readonly pure: PureF<F, C>;

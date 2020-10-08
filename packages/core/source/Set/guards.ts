@@ -1,4 +1,4 @@
-import { Eq } from "../Eq";
+import type { Eq } from "../Eq";
 import { every } from "./combinators";
 import { elem } from "./methods";
 

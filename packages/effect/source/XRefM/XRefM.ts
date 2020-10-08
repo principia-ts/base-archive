@@ -79,12 +79,12 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB
       new DerivedAll<RA & RC, RB & RD, EC, ED, C, D, S>(
          this.value,
          (s) =>
-            T._foldM(
+            T.foldM_(
                this.getEither(s),
                (e) => T.fail(eb(e)),
                (a) => bd(a)
             ),
-         (a) => (s) => T._chain(ca(a), (a) => T._first(this.setEither(a)(s), ea))
+         (a) => (s) => T.chain_(ca(a), (a) => T.first_(this.setEither(a)(s), ea))
       );
 
    readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -97,22 +97,22 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB
       new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
          this.value,
          (s) =>
-            T._foldM(
+            T.foldM_(
                this.getEither(s),
                (e) => T.fail(eb(e)),
                (a) => bd(a)
             ),
          (c) => (s) =>
-            T._chain(
-               T._foldM(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
-               (a) => T._first(this.setEither(a)(s), ea)
+            T.chain_(
+               T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
+               (a) => T.first_(this.setEither(a)(s), ea)
             )
       );
 
-   get: T.Effect<RB, EB, B> = T._chain(this.value.get, (a) => this.getEither(a));
+   get: T.Effect<RB, EB, B> = T.chain_(this.value.get, (a) => this.getEither(a));
 
    set: (a: A) => T.Effect<RA, EA, void> = (a) =>
-      withPermit(this.value.semaphore)(T._chain(T._chain(this.value.get, this.setEither(a)), (a) => this.value.set(a)));
+      withPermit(this.value.semaphore)(T.chain_(T.chain_(this.value.get, this.setEither(a)), (a) => this.value.set(a)));
 }
 
 export class Derived<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A, B> {
@@ -133,12 +133,12 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A
       new Derived<RA & RC, RB & RD, EC, ED, C, D, S>(
          this.value,
          (s) =>
-            T._foldM(
+            T.foldM_(
                this.getEither(s),
                (e) => T.fail(eb(e)),
                (a) => bd(a)
             ),
-         (a) => T._chain(ca(a), (a) => T._first(this.setEither(a), ea))
+         (a) => T.chain_(ca(a), (a) => T.first_(this.setEither(a), ea))
       );
 
    readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -151,22 +151,22 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A
       new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
          this.value,
          (s) =>
-            T._foldM(
+            T.foldM_(
                this.getEither(s),
                (e) => T.fail(eb(e)),
                (a) => bd(a)
             ),
          (c) => (s) =>
-            T._chain(
-               T._foldM(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
-               (a) => T._first(this.setEither(a), ea)
+            T.chain_(
+               T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
+               (a) => T.first_(this.setEither(a), ea)
             )
       );
 
-   get: T.Effect<RB, EB, B> = T._chain(this.value.get, (a) => this.getEither(a));
+   get: T.Effect<RB, EB, B> = T.chain_(this.value.get, (a) => this.getEither(a));
 
    set: (a: A) => T.Effect<RA, EA, void> = (a) =>
-      withPermit(this.value.semaphore)(T._chain(this.setEither(a), (a) => this.value.set(a)));
+      withPermit(this.value.semaphore)(T.chain_(this.setEither(a), (a) => this.value.set(a)));
 }
 
 export class Atomic<A> implements XRefM<unknown, unknown, never, never, A, A> {

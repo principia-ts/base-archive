@@ -1,5 +1,5 @@
-import { Commutative } from "../Commutative";
-import { Semigroup } from "../Semigroup";
+import type { Commutative } from "../Commutative";
+import type { Semigroup } from "../Semigroup";
 
 /**
  * Provides a function that is both associative and commutative that lets you combine any two values into one

@@ -1,11 +1,12 @@
 import { pipe } from "@principia/core/Function";
-import { just } from "@principia/core/Maybe";
+import { some } from "@principia/core/Option";
 
 import type { Cause } from "../Cause";
 import * as T from "../Effect/core";
 import * as Ex from "../Exit/core";
 import type { Exit } from "../Exit/Exit";
-import { Fiber, InterruptStatus, Runtime, Synthetic } from "./Fiber";
+import type { Fiber, Runtime, Synthetic } from "./Fiber";
+import { InterruptStatus } from "./Fiber";
 import type { FiberId } from "./FiberId";
 
 /**
@@ -32,10 +33,9 @@ export const _fold = <E, A, B>(
  *
  * Folds over the runtime or synthetic fiber.
  */
-export const fold = <E, A, B>(
-   onRuntime: (_: Runtime<E, A>) => B,
-   onSynthetic: (_: Synthetic<E, A>) => B
-) => (fiber: Fiber<E, A>) => {
+export const fold = <E, A, B>(onRuntime: (_: Runtime<E, A>) => B, onSynthetic: (_: Synthetic<E, A>) => B) => (
+   fiber: Fiber<E, A>
+) => {
    switch (fiber._tag) {
       case "RuntimeFiber": {
          return onRuntime(fiber);
@@ -52,7 +52,7 @@ export const done = <E, A>(exit: Exit<E, A>): Synthetic<E, A> => ({
    getRef: (ref) => T.pure(ref.initial),
    inheritRefs: T.unit,
    interruptAs: () => T.pure(exit),
-   poll: T.pure(just(exit))
+   poll: T.pure(some(exit))
 });
 
 export const succeed = <A>(a: A): Synthetic<never, A> => done(Ex.succeed(a));

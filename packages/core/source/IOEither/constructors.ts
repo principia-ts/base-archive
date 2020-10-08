@@ -1,6 +1,7 @@
 import type { Either } from "../Either";
 import * as E from "../Either";
-import { flow, FunctionN, Lazy } from "../Function";
+import type { FunctionN, Lazy } from "../Function";
+import { flow } from "../Function";
 import type { IO } from "../IO";
 import * as I from "../IO";
 import type { IOEither } from "./IOEither";
@@ -22,7 +23,7 @@ export const rightIO: <E = never, A = never>(io: IO<A>) => IOEither<E, A> = I.ma
 export const fromEither: <E, A>(pab: Either<E, A>) => IOEither<E, A> = I.pure;
 
 export const _partial = <E, A>(thunk: Lazy<A>, onThrow: (reason: unknown) => E): IOEither<E, A> => () =>
-   E._partial(thunk, onThrow);
+   E.partial_(thunk, onThrow);
 
 export const partial = <E>(onThrow: (reason: unknown) => E) => <A>(thunk: Lazy<A>) => _partial(thunk, onThrow);
 

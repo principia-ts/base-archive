@@ -1,8 +1,8 @@
 import { identity, pipe } from "@principia/core/Function";
-import type { Maybe } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 
-import type * as T from "../Effect";
+import type * as T from "../Effect/Effect";
 import { ModifyFiberRefInstruction, NewFiberRefInstruction } from "../Effect/Effect";
 
 export interface FiberRef<A> {
@@ -12,11 +12,7 @@ export interface FiberRef<A> {
    readonly join: (a: A, a1: A) => A;
 }
 
-export const fiberRef = <A>(
-   initial: A,
-   fork: (a: A) => A,
-   join: (a: A, a1: A) => A
-): FiberRef<A> => ({
+export const fiberRef = <A>(initial: A, fork: (a: A) => A, join: (a: A, a1: A) => A): FiberRef<A> => ({
    _tag: "FiberRef",
    initial,
    fork,
@@ -62,8 +58,8 @@ export const getAndUpdate = <A>(f: (a: A) => A) => (fiberRef: FiberRef<A>) =>
       modify((v) => [v, f(v)])
    );
 
-export const getAndUpdateSome = <A>(f: (a: A) => Maybe<A>) => (fiberRef: FiberRef<A>) =>
+export const getAndUpdateSome = <A>(f: (a: A) => Option<A>) => (fiberRef: FiberRef<A>) =>
    pipe(
       fiberRef,
-      modify((v) => [v, Mb._getOrElse(f(v), () => v)])
+      modify((v) => [v, O.getOrElse_(f(v), () => v)])
    );

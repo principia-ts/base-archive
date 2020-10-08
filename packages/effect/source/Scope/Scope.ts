@@ -1,6 +1,6 @@
 import * as A from "@principia/core/Array";
+import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
-import { Either } from "@principia/core/Either";
 
 import type { Cause } from "../Cause";
 import * as C from "../Cause";
@@ -146,7 +146,7 @@ export class GlobalScope implements CommonScope<never> {
    }
 
    get open(): UIO<boolean> {
-      return T._map(this.closed, (c) => !c);
+      return T.map_(this.closed, (c) => !c);
    }
 
    get released(): UIO<boolean> {
@@ -194,7 +194,7 @@ export class LocalScope<A> implements CommonScope<A> {
    }
 
    get open(): UIO<boolean> {
-      return T._map(this.closed, (c) => !c);
+      return T.map_(this.closed, (c) => !c);
    }
 
    deny(key: Key): UIO<boolean> {
@@ -261,10 +261,7 @@ export class LocalScope<A> implements CommonScope<A> {
       const key = new Key();
       key.setRemove(this.deny(key));
 
-      this.finalizers.set(
-         key,
-         new OrderedFinalizer(this.finalizerCount.incrementAndGet(), finalizer)
-      );
+      this.finalizers.set(key, new OrderedFinalizer(this.finalizerCount.incrementAndGet(), finalizer));
 
       return E.right(key);
    }
@@ -310,8 +307,8 @@ export class LocalScope<A> implements CommonScope<A> {
          const a = this.exitValue.get;
 
          return T.uncause(
-            A._reduce(sorted, noCauseEffect, (acc, o) =>
-               o != null ? T._mapBoth(acc, T.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
+            A.reduce_(sorted, noCauseEffect, (acc, o) =>
+               o != null ? T.mapBoth_(acc, T.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
             )
          );
       } else {
@@ -341,19 +338,14 @@ export class Open<A> {
 export const unsafeMakeScope = <A>() => {
    const exitValue = new AtomicReference<A | null>(null);
    const finalizers = new Map<Key, OrderedFinalizer>();
-   const scope = new LocalScope(
-      new AtomicNumber(Number.MIN_SAFE_INTEGER),
-      exitValue,
-      new AtomicNumber(1),
-      finalizers
-   );
+   const scope = new LocalScope(new AtomicNumber(Number.MIN_SAFE_INTEGER), exitValue, new AtomicNumber(1), finalizers);
 
    return new Open<A>((a) => {
       return T.suspend(() => {
          const result = scope.unsafeClose(a);
 
          if (result != null) {
-            return T._map(result, () => true);
+            return T.map_(result, () => true);
          } else {
             return T.pure(false);
          }

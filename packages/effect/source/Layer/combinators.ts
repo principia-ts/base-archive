@@ -6,7 +6,8 @@ import * as M from "../Managed";
 import * as T from "./_internal/effect";
 import * as L from "./core";
 import type { Layer } from "./Layer";
-import { HasMemoMap, MemoMap } from "./MemoMap";
+import type { MemoMap } from "./MemoMap";
+import { HasMemoMap } from "./MemoMap";
 
 /**
  * Type level bound to make sure a layer is complete
@@ -18,7 +19,7 @@ export const main = <E, A>(layer: Layer<DefaultEnv, E, A>) => layer;
  */
 export const memo = <R, E, A>(layer: Layer<R, E, A>): Layer<Has<MemoMap> & R, E, A> =>
    pipe(
-      M.fromEffect(T.readService(HasMemoMap)),
+      M.fromEffect(T.askService(HasMemoMap)),
       M.chain((m) => m.getOrElseMemoize(layer)),
       L.fromRawManaged
    );

@@ -1,49 +1,46 @@
-import { Either, left } from "@principia/core/Either";
-import { just, Maybe, nothing } from "@principia/core/Maybe";
+import type { Either } from "@principia/core/Either";
+import { left } from "@principia/core/Either";
+import type { Option } from "@principia/core/Option";
+import { none, some } from "@principia/core/Option";
 
 import * as C from "../../Cause";
 import { interruptible, uninterruptible } from "../../Fiber/core";
-import { InterruptStatus } from "../../Fiber/Fiber";
+import type { InterruptStatus } from "../../Fiber/Fiber";
 import type { FiberId } from "../../Fiber/FiberId";
 import { join } from "../../Fiber/functions/join";
 import { AtomicReference, OneShot } from "../../Support";
 import {
-   _chain,
-   _foldCauseM,
+   asyncOption,
+   chain_,
    checkInterruptible,
-   Effect,
    flatten,
+   foldCauseM_,
    halt,
-   IO,
-   maybeAsync,
    pure,
    suspend,
    total,
-   UIO,
    unit
 } from "../core";
 import { forkDaemon } from "../core-scope";
-import { Canceler, ChangeInterruptStatusInstruction } from "../Effect";
+import type { Canceler, Effect, IO, UIO } from "../Effect";
+import { ChangeInterruptStatusInstruction } from "../Effect";
 import { checkFiberId } from "./checkFiberId";
 
 export const interruptAs = (fiberId: FiberId): IO<never, never> => halt(C.interrupt(fiberId));
 
-export const interrupt: Effect<unknown, never, never> = _chain(checkFiberId(), interruptAs);
+export const interrupt: Effect<unknown, never, never> = chain_(checkFiberId(), interruptAs);
 
-export const _setInterruptStatus = <R, E, A>(
-   effect: Effect<R, E, A>,
-   flag: InterruptStatus
-): Effect<R, E, A> => new ChangeInterruptStatusInstruction(effect, flag);
+export const setInterruptStatus_ = <R, E, A>(effect: Effect<R, E, A>, flag: InterruptStatus): Effect<R, E, A> =>
+   new ChangeInterruptStatusInstruction(effect, flag);
 
-export const setInterruptStatus = (flag: InterruptStatus) => <R, E, A>(
-   ma: Effect<R, E, A>
-): Effect<R, E, A> => _setInterruptStatus(ma, flag);
+export const setInterruptStatus = (flag: InterruptStatus) => <R, E, A>(ma: Effect<R, E, A>): Effect<R, E, A> =>
+   setInterruptStatus_(ma, flag);
 
 export const makeInterruptible = <R, E, A>(ma: Effect<R, E, A>): Effect<R, E, A> =>
-   _setInterruptStatus(ma, interruptible);
+   setInterruptStatus_(ma, interruptible);
 
 export const makeUninterruptible = <R, E, A>(ma: Effect<R, E, A>): Effect<R, E, A> =>
-   _setInterruptStatus(ma, uninterruptible);
+   setInterruptStatus_(ma, uninterruptible);
 
 /**
  * Makes the effect uninterruptible, but passes it a restore function that
@@ -52,24 +49,20 @@ export const makeUninterruptible = <R, E, A>(ma: Effect<R, E, A>): Effect<R, E, 
  */
 export const uninterruptibleMask = <R, E, A>(
    f: (restore: InterruptStatusRestore) => Effect<R, E, A>
-): Effect<R, E, A> =>
-   checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestoreImpl(flag))));
+): Effect<R, E, A> => checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestoreImpl(flag))));
 
 /**
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted.
  */
-export const _onInterrupt = <R, E, A, R1>(
+export const onInterrupt_ = <R, E, A, R1>(
    ma: Effect<R, E, A>,
    cleanup: (interruptors: ReadonlySet<FiberId>) => Effect<R1, never, any>
 ) =>
    uninterruptibleMask(({ restore }) =>
-      _foldCauseM(
+      foldCauseM_(
          restore(ma),
-         (cause) =>
-            C.isInterrupt(cause)
-               ? _chain(cleanup(C.interruptors(cause)), () => halt(cause))
-               : halt(cause),
+         (cause) => (C.isInterrupt(cause) ? chain_(cleanup(C.interruptors(cause)), () => halt(cause)) : halt(cause)),
          pure
       )
    );
@@ -78,16 +71,13 @@ export const _onInterrupt = <R, E, A, R1>(
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted (allows for expanding error).
  */
-export function _onInterruptExtended<R, E, A, R2, E2>(
-   self: Effect<R, E, A>,
-   cleanup: () => Effect<R2, E2, any>
-) {
+export function onInterruptExtended_<R, E, A, R2, E2>(self: Effect<R, E, A>, cleanup: () => Effect<R2, E2, any>) {
    return uninterruptibleMask(({ restore }) =>
-      _foldCauseM(
+      foldCauseM_(
          restore(self),
          (cause) =>
             C.isInterrupt(cause)
-               ? _foldCauseM(
+               ? foldCauseM_(
                     cleanup(),
                     (_) => halt(_),
                     () => halt(cause)
@@ -113,9 +103,9 @@ export function _onInterruptExtended<R, E, A, R2, E2>(
  */
 export const disconnect = <R, E, A>(effect: Effect<R, E, A>): Effect<R, E, A> =>
    uninterruptibleMask(({ restore }) =>
-      _chain(checkFiberId(), (id) =>
-         _chain(forkDaemon(restore(effect)), (fiber) =>
-            _onInterrupt(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
+      chain_(checkFiberId(), (id) =>
+         chain_(forkDaemon(restore(effect)), (fiber) =>
+            onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
          )
       )
    );
@@ -135,14 +125,14 @@ export class InterruptStatusRestoreImpl implements InterruptStatusRestore {
    }
 
    restore<R, E, A>(ma: Effect<R, E, A>): Effect<R, E, A> {
-      return _setInterruptStatus(ma, this.flag);
+      return setInterruptStatus_(ma, this.flag);
    }
 
    force<R, E, A>(ma: Effect<R, E, A>): Effect<R, E, A> {
       if (this.flag.isUninteruptible) {
          return makeInterruptible(disconnect(makeUninterruptible(ma)));
       }
-      return _setInterruptStatus(ma, this.flag);
+      return setInterruptStatus_(ma, this.flag);
    }
 }
 
@@ -166,19 +156,19 @@ export const maybeAsyncInterrupt = <R, E, A>(
    register: (cb: (resolve: Effect<R, E, A>) => void) => Either<Canceler<R>, Effect<R, E, A>>,
    blockingOn: ReadonlyArray<FiberId> = []
 ): Effect<R, E, A> =>
-   _chain(
+   chain_(
       total(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
       ([started, cancel]) =>
-         _onInterrupt(
+         onInterrupt_(
             flatten(
-               maybeAsync<R, E, Effect<R, E, A>>((k) => {
+               asyncOption<R, E, Effect<R, E, A>>((k) => {
                   started.set(true);
-                  const ret = new AtomicReference<Maybe<UIO<Effect<R, E, A>>>>(nothing());
+                  const ret = new AtomicReference<Option<UIO<Effect<R, E, A>>>>(none());
                   try {
                      const res = register((io) => k(pure(io)));
                      switch (res._tag) {
                         case "Right": {
-                           ret.set(just(pure(res.right)));
+                           ret.set(some(pure(res.right)));
                            break;
                         }
                         case "Left": {

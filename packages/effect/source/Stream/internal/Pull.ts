@@ -1,16 +1,17 @@
 import { pipe } from "@principia/core/Function";
-import { just, Maybe, nothing } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import { none, some } from "@principia/core/Option";
 
-import { Cause } from "../../Cause";
+import type { Cause } from "../../Cause";
 import * as T from "../../Effect";
 
-export type Pull<R, E, O> = T.Effect<R, Maybe<E>, ReadonlyArray<O>>;
+export type Pull<R, E, O> = T.Effect<R, Option<E>, ReadonlyArray<O>>;
 
-export const end = T.fail(nothing());
+export const end = T.fail(none());
 
-export const fail = <E>(e: E) => T.fail(just(e));
+export const fail = <E>(e: E) => T.fail(some(e));
 
-export const halt = <E>(e: Cause<E>) => pipe(T.halt(e), T.first(just));
+export const halt = <E>(e: Cause<E>) => pipe(T.halt(e), T.first(some));
 
 export const empty = <A>() => T.pure([] as ReadonlyArray<A>);
 

@@ -1,68 +1,68 @@
 import * as HKT from "../HKT";
-import * as TC from "../typeclass-index";
+import type * as TC from "../typeclass-index";
 import type { URI, V } from "./Array";
 import { append } from "./combinators";
 import { empty } from "./constructors";
 import {
-   _alt,
-   _ap,
-   _chain,
-   _filter,
-   _filterWithIndex,
-   _foldMap,
-   _foldMapWithIndex,
-   _map,
-   _mapEither,
-   _mapEitherWithIndex,
-   _mapMaybe,
-   _mapMaybeWithIndex,
-   _mapWithIndex,
-   _partition,
-   _partitionWithIndex,
-   _reduce,
-   _reduceRight,
-   _reduceRightWithIndex,
-   _reduceWithIndex,
-   _traverse,
-   _traverseWithIndex,
-   _wilt,
-   _wiltWithIndex,
-   _wither,
-   _witherWithIndex,
-   _zipWith,
    alt,
+   alt_,
    ap,
+   ap_,
    chain,
+   chain_,
    compact,
    extend,
    filter,
+   filter_,
    filterWithIndex,
+   filterWithIndex_,
    flatten,
    foldMap,
+   foldMap_,
    foldMapWithIndex,
+   foldMapWithIndex_,
    map,
+   map_,
    mapEither,
+   mapEither_,
    mapEitherWithIndex,
-   mapMaybe,
-   mapMaybeWithIndex,
+   mapEitherWithIndex_,
+   mapOption,
+   mapOption_,
+   mapOptionWithIndex,
+   mapOptionWithIndex_,
    mapWithIndex,
+   mapWithIndex_,
    partition,
+   partition_,
    partitionWithIndex,
+   partitionWithIndex_,
    pure,
    reduce,
+   reduce_,
    reduceRight,
+   reduceRight_,
    reduceRightWithIndex,
+   reduceRightWithIndex_,
    reduceWithIndex,
+   reduceWithIndex_,
    separate,
    sequence,
    traverse,
+   traverse_,
    traverseWithIndex,
+   traverseWithIndex_,
    unfold,
    wilt,
+   wilt_,
    wiltWithIndex,
+   wiltWithIndex_,
    wither,
+   wither_,
    witherWithIndex,
-   zipWith
+   witherWithIndex_,
+   zipWith,
+   zipWith_
 } from "./methods";
 
 export const getMonoid = <A = never>(): TC.Monoid<ReadonlyArray<A>> => ({
@@ -72,20 +72,20 @@ export const getMonoid = <A = never>(): TC.Monoid<ReadonlyArray<A>> => ({
 
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
    map,
-   _map
+   map_: map_
 });
 
 export const FunctorWithIndex: TC.FunctorWithIndex<[URI], V> = HKT.instance({
    mapWithIndex,
-   _mapWithIndex
+   mapWithIndex_: mapWithIndex_
 });
 
 export const Apply: TC.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap,
-   _ap,
+   ap_: ap_,
    mapBoth: zipWith,
-   _mapBoth: _zipWith
+   mapBoth_: zipWith_
 });
 
 export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
@@ -95,14 +95,14 @@ export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
 
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
-   _chain,
+   chain_: chain_,
    chain,
    flatten
 });
 
 export const Alt: TC.Alt<[URI], V> = HKT.instance({
    ...Functor,
-   _alt,
+   alt_: alt_,
    alt
 });
 
@@ -125,33 +125,33 @@ export const Compactable: TC.Compactable<[URI], V> = HKT.instance({
 export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
    ...Functor,
    ...Compactable,
-   _filter,
-   _mapMaybe: _mapMaybe,
-   _partition,
-   _mapEither: _mapEither,
+   filter_: filter_,
+   mapOption_: mapOption_,
+   partition_: partition_,
+   mapEither_: mapEither_,
    filter,
-   mapMaybe: mapMaybe,
+   mapOption,
    partition,
-   mapEither: mapEither
+   mapEither
 });
 
 export const FilterableWithIndex: TC.FilterableWithIndex<[URI], V> = HKT.instance({
    ...Filterable,
    ...FunctorWithIndex,
-   _filterWithIndex,
-   _mapMaybeWithIndex,
-   _mapEitherWithIndex,
-   mapMaybeWithIndex,
+   filterWithIndex_: filterWithIndex_,
+   mapOptionWithIndex_: mapOptionWithIndex_,
+   mapEitherWithIndex_: mapEitherWithIndex_,
+   mapOptionWithIndex,
    filterWithIndex,
    mapEitherWithIndex,
-   _partitionWithIndex,
+   partitionWithIndex_: partitionWithIndex_,
    partitionWithIndex
 });
 
 export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
-   _reduce,
-   _foldMap,
-   _reduceRight,
+   reduce_: reduce_,
+   foldMap_: foldMap_,
+   reduceRight_: reduceRight_,
    reduce,
    foldMap,
    reduceRight
@@ -159,9 +159,9 @@ export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
 
 export const FoldableWithIndex: TC.FoldableWithIndex<[URI], V> = HKT.instance({
    ...Foldable,
-   _reduceWithIndex,
-   _foldMapWithIndex,
-   _reduceRightWithIndex,
+   reduceWithIndex_: reduceWithIndex_,
+   foldMapWithIndex_: foldMapWithIndex_,
+   reduceRightWithIndex_: reduceRightWithIndex_,
    reduceWithIndex,
    foldMapWithIndex,
    reduceRightWithIndex
@@ -170,7 +170,7 @@ export const FoldableWithIndex: TC.FoldableWithIndex<[URI], V> = HKT.instance({
 export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
    ...Functor,
    ...Foldable,
-   _traverse,
+   traverse_: traverse_,
    traverse,
    sequence
 });
@@ -179,7 +179,7 @@ export const TraversableWithIndex: TC.TraversableWithIndex<[URI], V> = HKT.insta
    ...Traversable,
    ...FunctorWithIndex,
    ...FoldableWithIndex,
-   _traverseWithIndex,
+   traverseWithIndex_: traverseWithIndex_,
    traverseWithIndex
 });
 
@@ -187,8 +187,8 @@ export const Witherable: TC.Witherable<[URI], V> = HKT.instance({
    ...Traversable,
    ...Compactable,
    ...Filterable,
-   _wither,
-   _wilt,
+   wither_: wither_,
+   wilt_: wilt_,
    wither,
    wilt
 });
@@ -197,8 +197,8 @@ export const WitherableWithIndex: TC.WitherableWithIndex<[URI], V> = HKT.instanc
    ...TraversableWithIndex,
    ...FilterableWithIndex,
    ...Witherable,
-   _witherWithIndex,
-   _wiltWithIndex,
+   witherWithIndex_: witherWithIndex_,
+   wiltWithIndex_: wiltWithIndex_,
    witherWithIndex,
    wiltWithIndex
 });

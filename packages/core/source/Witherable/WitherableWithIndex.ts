@@ -9,8 +9,8 @@ export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>
    extends TraversableWithIndex<F, C>,
       FilterableWithIndex<F, C>,
       Witherable<F, C> {
-   readonly _witherWithIndex: UC_WitherWithIndexF<F, C>;
+   readonly witherWithIndex_: UC_WitherWithIndexF<F, C>;
    readonly witherWithIndex: WitherWithIndexF<F, C>;
-   readonly _wiltWithIndex: UC_WiltWithIndexF<F, C>;
+   readonly wiltWithIndex_: UC_WiltWithIndexF<F, C>;
    readonly wiltWithIndex: WiltWithIndexF<F, C>;
 }

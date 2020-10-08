@@ -19,7 +19,7 @@ import { isLeft } from "./guards";
  * @category Destructors
  * @since 1.0.0
  */
-export const _fold = <E, A, B, C>(pab: Either<E, A>, onLeft: (e: E) => B, onRight: (a: A) => C): B | C =>
+export const fold_ = <E, A, B, C>(pab: Either<E, A>, onLeft: (e: E) => B, onRight: (a: A) => C): B | C =>
    isLeft(pab) ? onLeft(pab.left) : onRight(pab.right);
 
 /**
@@ -34,7 +34,7 @@ export const _fold = <E, A, B, C>(pab: Either<E, A>, onLeft: (e: E) => B, onRigh
  * @since 1.0.0
  */
 export const fold = <E, A, B, C>(onLeft: (e: E) => B, onRight: (a: A) => C) => (pab: Either<E, A>): B | C =>
-   _fold(pab, onLeft, onRight);
+   fold_(pab, onLeft, onRight);
 
 /**
  * ```haskell
@@ -72,4 +72,4 @@ export const getOrElse = <E, A, B>(f: (e: E) => B) => (pab: Either<E, A>) => get
  * @category Destructors
  * @since 1.0.0
  */
-export const merge = <E, A>(pab: Either<E, A>): E | A => _fold(pab, identity, identity as any);
+export const merge = <E, A>(pab: Either<E, A>): E | A => fold_(pab, identity, identity as any);

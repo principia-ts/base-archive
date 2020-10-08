@@ -1,5 +1,5 @@
 import type * as HKT from "@principia/core/HKT";
-import type { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 
 /*
  * -------------------------------------------
@@ -8,7 +8,7 @@ import type { Maybe } from "@principia/core/Maybe";
  */
 
 export interface Optional<S, A> {
-   readonly getMaybe: (s: S) => Maybe<A>;
+   readonly getOption: (s: S) => Option<A>;
    readonly set: (a: A) => (s: S) => S;
 }
 

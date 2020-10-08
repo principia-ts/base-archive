@@ -1,6 +1,7 @@
 import * as T from "../../Effect/core";
+import type { IO, UIO } from "../../Effect/Effect";
 import { Done } from "../state";
-import { XPromise } from "../XPromise";
+import type { XPromise } from "../XPromise";
 
 /**
  * Completes the promise with the specified effect. If the promise has
@@ -15,7 +16,7 @@ import { XPromise } from "../XPromise";
  * completes the promise with the result of an effect see
  * `Promise.complete`.
  */
-export const completeWith = <E, A>(io: T.IO<E, A>) => (promise: XPromise<E, A>): T.UIO<boolean> =>
+export const completeWith = <E, A>(io: IO<E, A>) => (promise: XPromise<E, A>): UIO<boolean> =>
    T.total(() => {
       const state = promise.state.get;
 

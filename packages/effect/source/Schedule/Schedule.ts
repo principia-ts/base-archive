@@ -1,5 +1,5 @@
 import type * as HKT from "@principia/core/HKT";
-import { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 
 import type { Effect, IO, UIO } from "../Effect/Effect";
 import type { StepFunction } from "./Decision";
@@ -14,13 +14,13 @@ export interface Schedule<R, I, O> {
 }
 
 export interface ScheduleDriver<R, I, O> {
-   readonly next: (input: I) => Effect<R, Maybe<never>, O>;
+   readonly next: (input: I) => Effect<R, Option<never>, O>;
    readonly last: IO<Error, O>;
    readonly reset: UIO<void>;
 }
 
 declare module "@principia/core/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      [URI]: Schedule<R, E, A>;
+      readonly [URI]: Schedule<R, E, A>;
    }
 }

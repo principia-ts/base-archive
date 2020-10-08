@@ -26,8 +26,7 @@ export class Untraced extends Error {
    }
 }
 
-export const isUntraced = (u: unknown): u is Untraced =>
-   u instanceof Untraced && u._tag === "Untraced";
+export const isUntraced = (u: unknown): u is Untraced => u instanceof Untraced && u._tag === "Untraced";
 
 export class RuntimeError extends Error {
    readonly _tag = "RuntimeError";
@@ -39,8 +38,7 @@ export class RuntimeError extends Error {
    }
 }
 
-export const isRuntime = (u: unknown): u is RuntimeError =>
-   u instanceof RuntimeError && u._tag === "RuntimeError";
+export const isRuntime = (u: unknown): u is RuntimeError => u instanceof RuntimeError && u._tag === "RuntimeError";
 
 export class InterruptedException extends Error {
    readonly _tag = "InterruptedException";

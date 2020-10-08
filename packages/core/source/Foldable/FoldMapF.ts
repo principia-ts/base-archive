@@ -1,4 +1,4 @@
-import * as HKT from "../HKT";
+import type * as HKT from "../HKT";
 import type { Monoid } from "../Monoid";
 
 export interface FoldMapF<F extends HKT.URIS, C = HKT.Auto> {

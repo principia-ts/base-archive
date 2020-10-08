@@ -1,6 +1,6 @@
 import * as A from "@principia/core/Array";
 import { pipe } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 
 import * as T from "../../Effect";
 import * as R from "../../XRef";
@@ -8,15 +8,15 @@ import * as Pull from "./Pull";
 
 export class BufferedPull<R, E, A> {
    constructor(
-      readonly upstream: T.Effect<R, Mb.Maybe<E>, ReadonlyArray<A>>,
+      readonly upstream: T.Effect<R, O.Option<E>, ReadonlyArray<A>>,
       readonly done: R.Ref<boolean>,
       readonly cursor: R.Ref<[ReadonlyArray<A>, number]>
    ) {}
 }
 
-export const ifNotDone = <R1, E1, A1>(fa: T.Effect<R1, Mb.Maybe<E1>, A1>) => <R, E, A>(
+export const ifNotDone = <R1, E1, A1>(fa: T.Effect<R1, O.Option<E1>, A1>) => <R, E, A>(
    self: BufferedPull<R, E, A>
-): T.Effect<R1, Mb.Maybe<E1>, A1> =>
+): T.Effect<R1, O.Option<E1>, A1> =>
    pipe(
       self.done.get,
       T.chain((b) => (b ? Pull.end : fa))
@@ -29,7 +29,7 @@ export const update = <R, E, A>(self: BufferedPull<R, E, A>) =>
          pipe(
             self.upstream,
             T.foldM(
-               Mb.fold(
+               O.fold(
                   () =>
                      pipe(
                         self.done.set(true),
@@ -43,13 +43,13 @@ export const update = <R, E, A>(self: BufferedPull<R, E, A>) =>
       )
    );
 
-export const pullElement = <R, E, A>(self: BufferedPull<R, E, A>): T.Effect<R, Mb.Maybe<E>, A> =>
+export const pullElement = <R, E, A>(self: BufferedPull<R, E, A>): T.Effect<R, O.Option<E>, A> =>
    pipe(
       self,
       ifNotDone(
          pipe(
             self.cursor,
-            R.modify(([c, i]): [T.Effect<R, Mb.Maybe<E>, A>, [ReadonlyArray<A>, number]] => {
+            R.modify(([c, i]): [T.Effect<R, O.Option<E>, A>, [ReadonlyArray<A>, number]] => {
                if (i >= c.length) {
                   return [
                      pipe(
@@ -67,22 +67,17 @@ export const pullElement = <R, E, A>(self: BufferedPull<R, E, A>): T.Effect<R, M
       )
    );
 
-export const pullArray = <R, E, A>(
-   self: BufferedPull<R, E, A>
-): T.Effect<R, Mb.Maybe<E>, ReadonlyArray<A>> =>
+export const pullArray = <R, E, A>(self: BufferedPull<R, E, A>): T.Effect<R, O.Option<E>, ReadonlyArray<A>> =>
    pipe(
       self,
       ifNotDone(
          pipe(
             self.cursor,
-            R.modify(([chunk, idx]): [
-               T.Effect<R, Mb.Maybe<E>, ReadonlyArray<A>>,
-               [ReadonlyArray<A>, number]
-            ] => {
+            R.modify(([chunk, idx]): [T.Effect<R, O.Option<E>, ReadonlyArray<A>>, [ReadonlyArray<A>, number]] => {
                if (idx >= chunk.length) {
-                  return [T._chain(update(self), () => pullArray(self)), [[], 0]];
+                  return [T.chain_(update(self), () => pullArray(self)), [[], 0]];
                } else {
-                  return [T.pure(A._dropLeft(chunk, idx)), [[], 0]];
+                  return [T.pure(A.dropLeft_(chunk, idx)), [[], 0]];
                }
             }),
             T.flatten
@@ -90,7 +85,7 @@ export const pullArray = <R, E, A>(
       )
    );
 
-export const make = <R, E, A>(pull: T.Effect<R, Mb.Maybe<E>, ReadonlyArray<A>>) =>
+export const make = <R, E, A>(pull: T.Effect<R, O.Option<E>, ReadonlyArray<A>>) =>
    pipe(
       T.of,
       T.bindS("done", () => R.makeRef(false)),

@@ -2,19 +2,19 @@ import * as HKT from "../HKT";
 import type * as TC from "../typeclass-index";
 import { never } from "./constructors";
 import {
-   _ap,
-   _apSeq,
-   _chain,
-   _map,
-   _mapBoth,
-   _mapBothSeq,
-   any,
    ap,
+   ap_,
    apSeq,
+   apSeq_,
    chain,
+   chain_,
+   flatten,
    map,
+   map_,
    mapBoth,
+   mapBoth_,
    mapBothSeq,
+   mapBothSeq_,
    pure
 } from "./methods";
 import type { Task, URI, V } from "./Task";
@@ -72,46 +72,46 @@ export const getRaceMonoid = <A = never>(): TC.Monoid<Task<A>> => ({
 });
 
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
-   _map,
+   map_: map_,
    map
 });
 
 export const ApplyPar: TC.Apply<[URI], V> = HKT.instance({
    ...Functor,
-   _ap,
+   ap_: ap_,
    ap,
-   _mapBoth,
+   mapBoth_: mapBoth_,
    mapBoth
 });
 
 export const ApplySeq: TC.Apply<[URI], V> = HKT.instance({
    ...Functor,
-   _ap: _apSeq,
+   ap_: apSeq_,
    ap: apSeq,
-   _mapBoth: _mapBothSeq,
+   mapBoth_: mapBothSeq_,
    mapBoth: mapBothSeq
 });
 
 export const ApplicativePar: TC.Applicative<[URI], V> = HKT.instance({
    ...ApplyPar,
-   pure,
-   unit: any
+   pure
 });
 
 export const ApplicativeSeq: TC.Applicative<[URI], V> = HKT.instance({
    ...ApplySeq,
-   pure,
-   unit: any
+   pure
 });
 
 export const MonadPar: TC.Monad<[URI], V> = HKT.instance({
    ...ApplicativePar,
-   _chain,
-   chain
+   chain_: chain_,
+   chain,
+   flatten
 });
 
 export const MonadSeq: TC.Monad<[URI], V> = HKT.instance({
    ...ApplicativeSeq,
-   _chain,
-   chain
+   chain_: chain_,
+   chain,
+   flatten
 });

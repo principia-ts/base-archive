@@ -1,15 +1,15 @@
 import type * as HKT from "../HKT";
-import * as Mb from "../Maybe";
-import { Unfoldable } from "../typeclass-index";
-import { _collect } from "./combinators";
-import { ReadonlyRecord } from "./Record";
+import * as O from "../Option";
+import type { Unfoldable } from "../typeclass-index";
+import { collect_ } from "./combinators";
+import type { ReadonlyRecord } from "./Record";
 
 /**
  * @category Destructors
  * @since 1.0.0
  */
 export const toArray = <N extends string, A>(r: ReadonlyRecord<N, A>): ReadonlyArray<readonly [N, A]> =>
-   _collect(r, (k, a) => [k, a]);
+   collect_(r, (k, a) => [k, a]);
 
 /**
  * Unfolds a record into a list of key/value pairs
@@ -35,5 +35,5 @@ export const toUnfoldable = <F extends HKT.URIS, C = HKT.Auto>(U: Unfoldable<F, 
 > => {
    const arr = toArray(r);
    const len = arr.length;
-   return U.unfold(0, (b) => (b < len ? Mb.just([arr[b], b + 1]) : Mb.nothing()));
+   return U.unfold(0, (b) => (b < len ? O.some([arr[b], b + 1]) : O.none()));
 };

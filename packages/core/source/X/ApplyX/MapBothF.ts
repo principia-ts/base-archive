@@ -1,4 +1,4 @@
-import * as HKT from "../../HKT";
+import type * as HKT from "../../HKT";
 
 export interface MapBothF<F extends HKT.URIS, C = HKT.Auto> {
    <A, S2, N1 extends string, K1, Q1, W1, X1, S3, R1, E1, B, D>(

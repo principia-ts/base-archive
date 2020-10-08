@@ -2,51 +2,48 @@ import { pipe } from "@principia/core/Function";
 
 import * as T from "../_internal/effect";
 import { sequential } from "../../ExecutionStrategy";
+import type { Exit } from "../../Exit";
 import * as Ex from "../../Exit/core";
 import { managed } from "../core";
-import { Managed } from "../Managed";
-import { add, makeReleaseMap, ReleaseMap } from "../ReleaseMap";
+import type { Managed } from "../Managed";
+import type { ReleaseMap } from "../ReleaseMap";
+import { add, makeReleaseMap } from "../ReleaseMap";
 import { releaseAll } from "./releaseAll";
 
 /**
  * Ensures that a cleanup function runs when this ZManaged is finalized, before
  * the existing finalizers.
  */
-export const onExitFirst = <E, A, R1>(
-   cleanup: (exit: Ex.Exit<E, A>) => T.Effect<R1, never, any>
-) => <R>(self: Managed<R, E, A>) => _onExitFirst(self, cleanup);
+export const onExitFirst = <E, A, R1>(cleanup: (exit: Exit<E, A>) => T.Effect<R1, never, any>) => <R>(
+   self: Managed<R, E, A>
+) => onExitFirst_(self, cleanup);
 
 /**
  * Ensures that a cleanup function runs when this ZManaged is finalized, before
  * the existing finalizers.
  */
-export const _onExitFirst = <R, E, A, R1>(
+export const onExitFirst_ = <R, E, A, R1>(
    self: Managed<R, E, A>,
-   cleanup: (exit: Ex.Exit<E, A>) => T.Effect<R1, never, any>
+   cleanup: (exit: Exit<E, A>) => T.Effect<R1, never, any>
 ) =>
    managed<R & R1, E, A>(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
             T.of,
-            T.bindS("tp", () => T.environment<readonly [R & R1, ReleaseMap]>()),
+            T.bindS("tp", () => T.ask<readonly [R & R1, ReleaseMap]>()),
             T.letS("r", (s) => s.tp[0]),
             T.letS("outerReleaseMap", (s) => s.tp[1]),
             T.bindS("innerReleaseMap", () => makeReleaseMap),
             T.bindS("exitEA", (s) =>
-               restore(
-                  T._provideAll(T.result(T._map(self.effect, ([_, a]) => a)), [
-                     s.r,
-                     s.innerReleaseMap
-                  ])
-               )
+               restore(T.giveAll_(T.result(T.map_(self.effect, ([_, a]) => a)), [s.r, s.innerReleaseMap]))
             ),
             T.bindS("releaseMapEntry", (s) =>
                add((e) =>
                   T.flatten(
-                     T._mapBoth(
-                        T.result(T._provideAll(cleanup(s.exitEA), s.r)),
+                     T.mapBoth_(
+                        T.result(T.giveAll_(cleanup(s.exitEA), s.r)),
                         T.result(releaseAll(e, sequential())(s.innerReleaseMap)),
-                        (l, r) => T.done(Ex._apSecond(l, r))
+                        (l, r) => T.done(Ex.apSecond_(l, r))
                      )
                   )
                )(s.outerReleaseMap)

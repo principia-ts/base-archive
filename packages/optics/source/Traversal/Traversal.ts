@@ -1,7 +1,6 @@
 import type * as HKT from "@principia/core/HKT";
-import type * as TC from "@principia/core/typeclass-index";
 
-import { ModifyF } from "../internal";
+import type { ModifyF } from "../internal";
 
 /*
  * -------------------------------------------

@@ -2,7 +2,8 @@ import type { Cause } from "../Cause";
 import * as C from "../Cause";
 import type { Exit } from "../Exit";
 import type { FiberRef } from "../FiberRef";
-import { Done, FiberStatus, Running } from "./status";
+import type { FiberStatus } from "./status";
+import { Done, Running } from "./status";
 
 export type FiberState<E, A> = FiberStateExecuting<E, A> | FiberStateDone<E, A>;
 
@@ -27,8 +28,7 @@ export class FiberStateDone<E, A> {
    constructor(readonly value: Exit<E, A>) {}
 }
 
-export const initial = <E, A>(): FiberState<E, A> =>
-   new FiberStateExecuting(new Running(false), [], C.empty);
+export const initial = <E, A>(): FiberState<E, A> => new FiberStateExecuting(new Running(false), [], C.empty);
 
 export type FiberRefLocals = Map<FiberRef<any>, any>;
 

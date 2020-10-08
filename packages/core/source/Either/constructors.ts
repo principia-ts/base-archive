@@ -1,5 +1,5 @@
 import type { FunctionN, Lazy, Predicate, Refinement } from "../Function";
-import type { Maybe } from "../Maybe";
+import type { Option } from "../Option";
 import type { Either } from "./Either";
 
 /*
@@ -62,7 +62,7 @@ export const fromNullable = <E>(e: Lazy<E>) => <A>(a: A): Either<E, NonNullable<
  * @category Constructors
  * @since 1.0.0
  */
-export const _partial = <E, A>(a: Lazy<A>, onThrow: (reason: unknown) => E): Either<E, A> => {
+export const partial_ = <E, A>(a: Lazy<A>, onThrow: (reason: unknown) => E): Either<E, A> => {
    try {
       return right(a());
    } catch (e) {
@@ -96,10 +96,10 @@ export const partial = <E>(onError: (reason: unknown) => E) => <A>(a: Lazy<A>): 
  * @category Constructors
  * @since 1.0.0
  */
-export const _partialK = <A extends ReadonlyArray<unknown>, B, E>(
+export const partialK_ = <A extends ReadonlyArray<unknown>, B, E>(
    f: FunctionN<A, B>,
    onThrow: (reason: unknown) => E
-): ((...args: A) => Either<E, B>) => (...a) => _partial(() => f(...a), onThrow);
+): ((...args: A) => Either<E, B>) => (...a) => partial_(() => f(...a), onThrow);
 
 /**
  * ```haskell
@@ -111,7 +111,7 @@ export const _partialK = <A extends ReadonlyArray<unknown>, B, E>(
  */
 export const partialK = <E>(onThrow: (reason: unknown) => E) => <A extends ReadonlyArray<unknown>, B>(
    f: FunctionN<A, B>
-) => _partialK(f, onThrow);
+) => partialK_(f, onThrow);
 
 export type Json = boolean | number | string | null | JsonArray | JsonRecord;
 
@@ -129,8 +129,8 @@ export interface JsonArray extends ReadonlyArray<Json> {}
  * @category Constructors
  * @since 1.0.0
  */
-export const _parseJSON = <E>(s: string, onThrow: (reason: unknown) => E): Either<E, Json> =>
-   _partial(() => JSON.parse(s), onThrow);
+export const parseJson_ = <E>(s: string, onThrow: (reason: unknown) => E): Either<E, Json> =>
+   partial_(() => JSON.parse(s), onThrow);
 
 /**
  * ```haskell
@@ -142,7 +142,7 @@ export const _parseJSON = <E>(s: string, onThrow: (reason: unknown) => E): Eithe
  * @category Constructors
  * @since 1.0.0
  */
-export const parseJSON = <E>(onThrow: (reason: unknown) => E) => (s: string): Either<E, Json> => _parseJSON(s, onThrow);
+export const parseJson = <E>(onThrow: (reason: unknown) => E) => (s: string): Either<E, Json> => parseJson_(s, onThrow);
 
 /**
  * ```haskell
@@ -154,8 +154,8 @@ export const parseJSON = <E>(onThrow: (reason: unknown) => E) => (s: string): Ei
  * @category Constructors
  * @since 1.0.0
  */
-export const _stringifyJSON = <E>(u: unknown, onThrow: (reason: unknown) => E): Either<E, string> =>
-   _partial(() => JSON.stringify(u), onThrow);
+export const stringifyJson_ = <E>(u: unknown, onThrow: (reason: unknown) => E): Either<E, string> =>
+   partial_(() => JSON.stringify(u), onThrow);
 
 /**
  * ```haskell
@@ -168,7 +168,7 @@ export const _stringifyJSON = <E>(u: unknown, onThrow: (reason: unknown) => E): 
  * @since 1.0.0
  */
 export const stringifyJSON = <E>(onThrow: (reason: unknown) => E) => (u: unknown): Either<E, string> =>
-   _stringifyJSON(u, onThrow);
+   stringifyJson_(u, onThrow);
 
 /**
  * ```haskell
@@ -178,8 +178,8 @@ export const stringifyJSON = <E>(onThrow: (reason: unknown) => E) => (u: unknown
  * @category Constructors
  * @since 1.0.0
  */
-export const _fromMaybe = <E, A>(fa: Maybe<A>, onNothing: Lazy<E>): Either<E, A> =>
-   fa._tag === "Nothing" ? left(onNothing()) : right(fa.value);
+export const fromOption_ = <E, A>(fa: Option<A>, onNothing: Lazy<E>): Either<E, A> =>
+   fa._tag === "None" ? left(onNothing()) : right(fa.value);
 
 /**
  * ```haskell
@@ -189,7 +189,8 @@ export const _fromMaybe = <E, A>(fa: Maybe<A>, onNothing: Lazy<E>): Either<E, A>
  * @category Constructors
  * @since 1.0.0
  */
-export const fromMaybe: <E>(onNothing: Lazy<E>) => <A>(fa: Maybe<A>) => Either<E, A> = (f) => (fa) => _fromMaybe(fa, f);
+export const fromOption: <E>(onNothing: Lazy<E>) => <A>(fa: Option<A>) => Either<E, A> = (f) => (fa) =>
+   fromOption_(fa, f);
 
 /**
  * ```haskell
@@ -200,7 +201,7 @@ export const fromMaybe: <E>(onNothing: Lazy<E>) => <A>(fa: Maybe<A>) => Either<E
  * @category Constructors
  * @since 1.0.0
  */
-export const _fromPredicate: {
+export const fromPredicate_: {
    <E, A, B extends A>(a: A, refinement: Refinement<A, B>, onFalse: (a: A) => E): Either<E, B>;
    <E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A>;
 } = <E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A> =>
@@ -218,4 +219,4 @@ export const _fromPredicate: {
 export const fromPredicate: {
    <E, A, B extends A>(refinement: Refinement<A, B>, onFalse: (a: A) => E): (a: A) => Either<E, B>;
    <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A>;
-} = <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E) => (a: A) => _fromPredicate(a, predicate, onFalse);
+} = <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E) => (a: A) => fromPredicate_(a, predicate, onFalse);

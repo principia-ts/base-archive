@@ -1,9 +1,6 @@
-import { Lazy } from "../Function";
-import { isNothing } from "../Maybe";
 import { head, tail } from "./combinators";
-import { nil } from "./constructors";
 import { isEmpty, isNonEmpty } from "./guards";
-import type { Cons, List } from "./List";
+import type { List } from "./List";
 
 /*
  * -------------------------------------------

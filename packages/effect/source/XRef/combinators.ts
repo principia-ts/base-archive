@@ -1,19 +1,21 @@
 import * as E from "@principia/core/Either";
 import { identity, pipe, tuple } from "@principia/core/Function";
-import { just, Maybe, nothing } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import { none, some } from "@principia/core/Option";
+import * as Mb from "@principia/core/Option";
 import { matchTag } from "@principia/core/Utils";
 
 import * as T from "../Effect/core";
+import type { IO, UIO } from "../Effect/Effect";
 import { AtomicReference } from "../Support";
 import * as At from "./atomic";
-import { Atomic, concrete, Ref, XRef } from "./XRef";
+import type { Ref, XRef } from "./XRef";
+import { Atomic, concrete } from "./XRef";
 
 /**
  * Creates a new `XRef` with the specified value.
  */
-export const makeRef = <A>(a: A): T.UIO<Ref<A>> =>
-   T.total(() => new Atomic(new AtomicReference(a)));
+export const makeRef = <A>(a: A): UIO<Ref<A>> => T.total(() => new Atomic(new AtomicReference(a)));
 
 /**
  * Creates a new `XRef` with the specified value.
@@ -26,28 +28,27 @@ export const unsafeMakeRef = <A>(a: A): Ref<A> => new Atomic(new AtomicReference
  * result of the partial function if it is defined or else fails with `None`.
  */
 export const collect: <B, C>(
-   pf: (_: B) => Maybe<C>
-) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, Maybe<EB>, A, C> = (pf) => (_) =>
-   _.fold(identity, just, E.right, (b) => E._fromMaybe(pf(b), () => nothing()));
+   pf: (_: B) => Option<C>
+) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, Option<EB>, A, C> = (pf) => (_) =>
+   _.fold(identity, some, E.right, (b) => E.fromOption_(pf(b), () => none()));
 
 /**
  * Maps and filters the `get` value of the `XRef` with the specified partial
  * function, returning a `XRef` with a `get` value that succeeds with the
  * result of the partial function if it is defined or else fails with `None`.
  */
-export const _collect: <EA, EB, A, B, C>(
+export const collect_: <EA, EB, A, B, C>(
    _: XRef<EA, EB, A, B>,
-   pf: (_: B) => Maybe<C>
-) => XRef<EA, Maybe<EB>, A, C> = (_, pf) => collect(pf)(_);
+   pf: (_: B) => Option<C>
+) => XRef<EA, Option<EB>, A, C> = (_, pf) => collect(pf)(_);
 
 /**
  * Transforms both the `set` and `get` values of the `XRef` with the
  * specified fallible functions.
  */
-export const bimapEither = <A, B, C, EC, D, ED>(
-   f: (_: C) => E.Either<EC, A>,
-   g: (_: B) => E.Either<ED, D>
-) => <EA, EB>(_: XRef<EA, EB, A, B>): XRef<EC | EA, EB | ED, C, D> =>
+export const bimapEither = <A, B, C, EC, D, ED>(f: (_: C) => E.Either<EC, A>, g: (_: B) => E.Either<ED, D>) => <EA, EB>(
+   _: XRef<EA, EB, A, B>
+): XRef<EC | EA, EB | ED, C, D> =>
    _.fold(
       (ea: EA | EC) => ea,
       (eb: EB | ED) => eb,
@@ -59,7 +60,7 @@ export const bimapEither = <A, B, C, EC, D, ED>(
  * Transforms both the `set` and `get` values of the `XRef` with the
  * specified fallible functions.
  */
-export const _bimapEither: <EA, EB, A, B, C, EC, D, ED>(
+export const bimapEither_: <EA, EB, A, B, C, EC, D, ED>(
    _: XRef<EA, EB, A, B>,
    f: (_: C) => E.Either<EC, A>,
    g: (_: B) => E.Either<ED, D>
@@ -81,7 +82,7 @@ export const contramapEither = <A, EC, C>(f: (_: C) => E.Either<EC, A>) => <EA, 
  * Transforms the `set` value of the `XRef` with the specified fallible
  * function.
  */
-export const _contramapEither = <A, EC, C, EA, EB, B>(
+export const contramapEither_ = <A, EC, C, EA, EB, B>(
    _: XRef<EA, EB, A, B>,
    f: (_: C) => E.Either<EC, A>
 ): XRef<EC | EA, EB, C, B> => contramapEither(f)(_);
@@ -89,18 +90,14 @@ export const _contramapEither = <A, EC, C, EA, EB, B>(
 /**
  * Transforms the `set` value of the `XRef` with the specified function.
  */
-export const contramap: <A, C>(
-   f: (_: C) => A
-) => <EA, EB, B>(_: XRef<EA, EB, A, B>) => XRef<EA, EB, C, B> = (f) =>
+export const contramap: <A, C>(f: (_: C) => A) => <EA, EB, B>(_: XRef<EA, EB, A, B>) => XRef<EA, EB, C, B> = (f) =>
    contramapEither((c) => E.right(f(c)));
 
 /**
  * Transforms the `set` value of the `XRef` with the specified function.
  */
-export const _contramap: <EA, EB, B, A, C>(
-   _: XRef<EA, EB, A, B>,
-   f: (_: C) => A
-) => XRef<EA, EB, C, B> = (_, f) => contramap(f)(_);
+export const contramap_: <EA, EB, B, A, C>(_: XRef<EA, EB, A, B>, f: (_: C) => A) => XRef<EA, EB, C, B> = (_, f) =>
+   contramap(f)(_);
 
 /**
  * Transforms both the `set` and `get` values of the `XRef` with the
@@ -121,11 +118,8 @@ export const bimap = <A, B, C, D>(f: (_: C) => A, g: (_: B) => D) => <EA, EB>(
  * Transforms both the `set` and `get` values of the `XRef` with the
  * specified functions.
  */
-export const _bimap = <EA, EB, A, B, C, D>(
-   _: XRef<EA, EB, A, B>,
-   f: (_: C) => A,
-   g: (_: B) => D
-): XRef<EA, EB, C, D> => bimap(f, g)(_);
+export const bimap_ = <EA, EB, A, B, C, D>(_: XRef<EA, EB, A, B>, f: (_: C) => A, g: (_: B) => D): XRef<EA, EB, C, D> =>
+   bimap(f, g)(_);
 
 /**
  * Transforms both the `set` and `get` errors of the `XRef` with the
@@ -134,14 +128,13 @@ export const _bimap = <EA, EB, A, B, C, D>(
 export const bimapError: <EA, EB, EC, ED>(
    f: (_: EA) => EC,
    g: (_: EB) => ED
-) => <A, B>(_: XRef<EA, EB, A, B>) => XRef<EC, ED, A, B> = (f, g) => (_) =>
-   _.fold(f, g, E.right, E.right);
+) => <A, B>(_: XRef<EA, EB, A, B>) => XRef<EC, ED, A, B> = (f, g) => (_) => _.fold(f, g, E.right, E.right);
 
 /**
  * Transforms both the `set` and `get` errors of the `XRef` with the
  * specified functions.
  */
-export const _bimapError: <A, B, EA, EB, EC, ED>(
+export const bimapError_: <A, B, EA, EB, EC, ED>(
    _: XRef<EA, EB, A, B>,
    f: (_: EA) => EC,
    g: (_: EB) => ED
@@ -152,11 +145,11 @@ export const _bimapError: <A, B, EA, EB, EC, ED>(
  * returning a `XRef` with a `set` value that succeeds if the predicate is
  * satisfied or else fails with `None`.
  */
-export const _filterInput: <EA, EB, B, A, A1 extends A>(
+export const filterInput_: <EA, EB, B, A, A1 extends A>(
    _: XRef<EA, EB, A, B>,
    f: (_: A1) => boolean
-) => XRef<Maybe<EA>, EB, A1, B> = (_, f) =>
-   _.fold(just, identity, (a) => (f(a) ? E.right(a) : E.left(nothing())), E.right);
+) => XRef<Option<EA>, EB, A1, B> = (_, f) =>
+   _.fold(some, identity, (a) => (f(a) ? E.right(a) : E.left(none())), E.right);
 
 /**
  * Filters the `set` value of the `XRef` with the specified predicate,
@@ -165,19 +158,18 @@ export const _filterInput: <EA, EB, B, A, A1 extends A>(
  */
 export const filterInput: <A, A1 extends A>(
    f: (_: A1) => boolean
-) => <EA, EB, B>(_: XRef<EA, EB, A, B>) => XRef<Maybe<EA>, EB, A1, B> = (f) => (_) =>
-   _filterInput(_, f);
+) => <EA, EB, B>(_: XRef<EA, EB, A, B>) => XRef<Option<EA>, EB, A1, B> = (f) => (_) => filterInput_(_, f);
 
 /**
  * Filters the `get` value of the `XRef` with the specified predicate,
  * returning a `XRef` with a `get` value that succeeds if the predicate is
  * satisfied or else fails with `None`.
  */
-export const _filterOutput: <EA, EB, A, B>(
+export const filterOutput_: <EA, EB, A, B>(
    _: XRef<EA, EB, A, B>,
    f: (_: B) => boolean
-) => XRef<EA, Maybe<EB>, A, B> = (_, f) =>
-   _.fold(identity, just, E.right, (b) => (f(b) ? E.right(b) : E.left(nothing())));
+) => XRef<EA, Option<EB>, A, B> = (_, f) =>
+   _.fold(identity, some, E.right, (b) => (f(b) ? E.right(b) : E.left(none())));
 
 /**
  * Filters the `get` value of the `XRef` with the specified predicate,
@@ -186,8 +178,7 @@ export const _filterOutput: <EA, EB, A, B>(
  */
 export const filterOutput: <B>(
    f: (_: B) => boolean
-) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, Maybe<EB>, A, B> = (f) => (_) =>
-   _filterOutput(_, f);
+) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, Option<EB>, A, B> = (f) => (_) => filterOutput_(_, f);
 
 /**
  * Transforms the `get` value of the `XRef` with the specified fallible
@@ -195,33 +186,28 @@ export const filterOutput: <B>(
  */
 export const mapEither: <B, EC, C>(
    f: (_: B) => E.Either<EC, C>
-) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, EC | EB, A, C> = (f) =>
-   bimapEither((a) => E.right(a), f);
+) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, EC | EB, A, C> = (f) => bimapEither((a) => E.right(a), f);
 
 /**
  * Transforms the `get` value of the `XRef` with the specified fallible
  * function.
  */
-export const _mapEither: <EA, EB, A, B, EC, C>(
+export const mapEither_: <EA, EB, A, B, EC, C>(
    _: XRef<EA, EB, A, B>,
    f: (_: B) => E.Either<EC, C>
-) => XRef<EA, EC | EB, A, C> = (_, f) => _bimapEither(_, (a) => E.right(a), f);
+) => XRef<EA, EC | EB, A, C> = (_, f) => bimapEither_(_, (a) => E.right(a), f);
 
 /**
  * Transforms the `get` value of the `XRef` with the specified function.
  */
-export const map: <B, C>(
-   f: (_: B) => C
-) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, EB, A, C> = (f) =>
+export const map: <B, C>(f: (_: B) => C) => <EA, EB, A>(_: XRef<EA, EB, A, B>) => XRef<EA, EB, A, C> = (f) =>
    mapEither((b) => E.right(f(b)));
 
 /**
  * Transforms the `get` value of the `XRef` with the specified function.
  */
-export const _map: <EA, EB, A, B, C>(
-   _: XRef<EA, EB, A, B>,
-   f: (_: B) => C
-) => XRef<EA, EB, A, C> = (_, f) => _mapEither(_, (b) => E.right(f(b)));
+export const map_: <EA, EB, A, B, C>(_: XRef<EA, EB, A, B>, f: (_: B) => C) => XRef<EA, EB, A, C> = (_, f) =>
+   mapEither_(_, (b) => E.right(f(b)));
 
 /**
  * Returns a read only view of the `XRef`.
@@ -244,9 +230,7 @@ export const writeOnly: <EA, EB, A, B>(_: XRef<EA, EB, A, B>) => XRef<EA, void, 
  * computes a return value for the modification. This is a more powerful
  * version of `update`.
  */
-export const modify = <B, A>(f: (a: A) => readonly [B, A]) => <EA, EB>(
-   self: XRef<EA, EB, A, A>
-): T.IO<EA | EB, B> =>
+export const modify = <B, A>(f: (a: A) => readonly [B, A]) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, B> =>
    pipe(
       self,
       concrete,
@@ -309,10 +293,7 @@ export const modify = <B, A>(f: (a: A) => readonly [B, A]) => <EA, EB>(
  * computes a return value for the modification. This is a more powerful
  * version of `update`.
  */
-export const modify_ = <EA, EB, B, A>(
-   self: XRef<EA, EB, A, A>,
-   f: (a: A) => [B, A]
-): T.IO<EA | EB, B> => modify(f)(self);
+export const modify_ = <EA, EB, B, A>(self: XRef<EA, EB, A, A>, f: (a: A) => [B, A]): IO<EA | EB, B> => modify(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified partial function,
@@ -320,9 +301,9 @@ export const modify_ = <EA, EB, B, A>(
  * defined on the current value otherwise it returns a default value. This
  * is a more powerful version of `updateSome`.
  */
-export const modifySome = <B>(def: B) => <A>(f: (a: A) => Maybe<[B, A]>) => <EA, EB>(
+export const modifySome = <B>(def: B) => <A>(f: (a: A) => Option<[B, A]>) => <EA, EB>(
    self: XRef<EA, EB, A, A>
-): T.IO<EA | EB, B> =>
+): IO<EA | EB, B> =>
    pipe(
       self,
       concrete,
@@ -343,11 +324,11 @@ export const modifySome = <B>(def: B) => <A>(f: (a: A) => Maybe<[B, A]>) => <EA,
  * defined on the current value otherwise it returns a default value. This
  * is a more powerful version of `updateSome`.
  */
-export const _modifySome = <EA, EB, A, B>(
+export const modifySome_ = <EA, EB, A, B>(
    self: XRef<EA, EB, A, A>,
    def: B,
-   f: (a: A) => Maybe<[B, A]>
-): T.IO<EA | EB, B> => modifySome(def)(f)(self);
+   f: (a: A) => Option<[B, A]>
+): IO<EA | EB, B> => modifySome(def)(f)(self);
 
 /**
  * Atomically writes the specified value to the `XRef`, returning the value
@@ -367,7 +348,7 @@ export const getAndSet = <A>(a: A) => <EA, EB>(self: XRef<EA, EB, A, A>) =>
  * Atomically writes the specified value to the `XRef`, returning the value
  * immediately before modification.
  */
-export const _getAndSet = <EA, EB, A>(self: XRef<EA, EB, A, A>, a: A) => getAndSet(a)(self);
+export const getAndSet_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, a: A) => getAndSet(a)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified function, returning
@@ -387,15 +368,14 @@ export const getAndUpdate = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A
  * Atomically modifies the `XRef` with the specified function, returning
  * the value immediately before modification.
  */
-export const _getAndUpdate = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A) =>
-   getAndUpdate(f)(self);
+export const getAndUpdate_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A) => getAndUpdate(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified partial function,
  * returning the value immediately before modification. If the function is
  * undefined on the current value it doesn't change it.
  */
-export const getAndUpdateSome = <A>(f: (a: A) => Maybe<A>) => <EA, EB>(self: XRef<EA, EB, A, A>) =>
+export const getAndUpdateSome = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA, EB, A, A>) =>
    pipe(
       self,
       concrete,
@@ -416,15 +396,13 @@ export const getAndUpdateSome = <A>(f: (a: A) => Maybe<A>) => <EA, EB>(self: XRe
  * returning the value immediately before modification. If the function is
  * undefined on the current value it doesn't change it.
  */
-export const _getAndUpdateSome = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Maybe<A>) =>
+export const getAndUpdateSome_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Option<A>) =>
    getAndUpdateSome(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified function.
  */
-export const update = <A>(f: (a: A) => A) => <EA, EB>(
-   self: XRef<EA, EB, A, A>
-): T.IO<EA | EB, void> =>
+export const update = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, void> =>
    pipe(
       self,
       concrete,
@@ -437,16 +415,13 @@ export const update = <A>(f: (a: A) => A) => <EA, EB>(
 /**
  * Atomically modifies the `XRef` with the specified function.
  */
-export const _update = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A): T.IO<EA | EB, void> =>
-   update(f)(self);
+export const update_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A): IO<EA | EB, void> => update(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified function and returns
  * the updated value.
  */
-export const updateAndGet = <A>(f: (a: A) => A) => <EA, EB>(
-   self: XRef<EA, EB, A, A>
-): T.IO<EA | EB, A> =>
+export const updateAndGet = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, A> =>
    pipe(
       self,
       concrete,
@@ -463,18 +438,14 @@ export const updateAndGet = <A>(f: (a: A) => A) => <EA, EB>(
  * Atomically modifies the `XRef` with the specified function and returns
  * the updated value.
  */
-export const _updateAndGet = <EA, EB, A>(
-   self: XRef<EA, EB, A, A>,
-   f: (a: A) => A
-): T.IO<EA | EB, A> => updateAndGet(f)(self);
+export const updateAndGet_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A): IO<EA | EB, A> =>
+   updateAndGet(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified partial function. If
  * the function is undefined on the current value it doesn't change it.
  */
-export const updateSome = <A>(f: (a: A) => Maybe<A>) => <EA, EB>(
-   self: XRef<EA, EB, A, A>
-): T.IO<EA | EB, void> =>
+export const updateSome = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, void> =>
    pipe(
       self,
       concrete,
@@ -494,19 +465,15 @@ export const updateSome = <A>(f: (a: A) => Maybe<A>) => <EA, EB>(
  * Atomically modifies the `XRef` with the specified partial function. If
  * the function is undefined on the current value it doesn't change it.
  */
-export const _updateSome = <EA, EB, A>(
-   self: XRef<EA, EB, A, A>,
-   f: (a: A) => Maybe<A>
-): T.IO<EA | EB, void> => updateSome(f)(self);
+export const updateSome_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Option<A>): IO<EA | EB, void> =>
+   updateSome(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified partial function. If
  * the function is undefined on the current value it returns the old value
  * without changing it.
  */
-export const updateSomeAndGet = <A>(f: (a: A) => Maybe<A>) => <EA, EB>(
-   self: XRef<EA, EB, A, A>
-): T.IO<EA | EB, A> =>
+export const updateSomeAndGet = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, A> =>
    pipe(
       self,
       concrete,
@@ -527,10 +494,8 @@ export const updateSomeAndGet = <A>(f: (a: A) => Maybe<A>) => <EA, EB>(
  * the function is undefined on the current value it returns the old value
  * without changing it.
  */
-export const _updateSomeAndGet = <EA, EB, A>(
-   self: XRef<EA, EB, A, A>,
-   f: (a: A) => Maybe<A>
-): T.IO<EA | EB, A> => updateSomeAndGet(f)(self);
+export const updateSomeAndGet_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Option<A>): IO<EA | EB, A> =>
+   updateSomeAndGet(f)(self);
 
 /**
  * Unsafe update value in a Ref<A>
@@ -549,9 +514,7 @@ export const unsafeUpdate = <A>(f: (a: A) => A) => (self: Ref<A>) =>
          DerivedAll: (self) =>
             pipe(
                self.value,
-               At.unsafeUpdate((s) =>
-                  pipe(s, self.getEither, E.merge, f, (a) => self.setEither(a)(s), E.merge)
-               )
+               At.unsafeUpdate((s) => pipe(s, self.getEither, E.merge, f, (a) => self.setEither(a)(s), E.merge))
             )
       })
    );
@@ -559,7 +522,7 @@ export const unsafeUpdate = <A>(f: (a: A) => A) => (self: Ref<A>) =>
 /**
  * Unsafe update value in a Ref<A>
  */
-export const _unsafeUpdate = <A>(self: Ref<A>, f: (a: A) => A) => unsafeUpdate(f)(self);
+export const unsafeUpdate_ = <A>(self: Ref<A>, f: (a: A) => A) => unsafeUpdate(f)(self);
 
 /**
  * Folds over the error and value types of the `XRef`. This is a highly
@@ -582,7 +545,7 @@ export const fold = <EA, EB, A, B, EC, ED, C = A, D = B>(
  * combinators implemented in terms of `fold` will be more ergonomic but this
  * method is extremely useful for implementing new combinators.
  */
-export const _fold = <EA, EB, A, B, EC, ED, C = A, D = B>(
+export const fold_ = <EA, EB, A, B, EC, ED, C = A, D = B>(
    self: XRef<EA, EB, A, B>,
    ea: (_: EA) => EC,
    eb: (_: EB) => ED,
@@ -608,7 +571,7 @@ export const foldAll = <EA, EB, A, B, EC, ED, C = A, D = B>(
  * the state in transforming the `set` value. This is a more powerful version
  * of `fold` but requires unifying the error types.
  */
-export const _foldAll = <EA, EB, A, B, EC, ED, C = A, D = B>(
+export const foldAll_ = <EA, EB, A, B, EC, ED, C = A, D = B>(
    self: XRef<EA, EB, A, B>,
    ea: (_: EA) => EC,
    eb: (_: EB) => ED,
@@ -632,4 +595,4 @@ export const set = <A>(a: A) => <EA, EB, B>(self: XRef<EA, EB, A, B>) => self.se
  * Writes a new value to the `XRef`, with a guarantee of immediate
  * consistency (at some cost to performance).
  */
-export const _set = <EA, EB, B, A>(self: XRef<EA, EB, A, B>, a: A) => self.set(a);
+export const set_ = <EA, EB, B, A>(self: XRef<EA, EB, A, B>, a: A) => self.set(a);

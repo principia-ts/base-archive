@@ -1,4 +1,4 @@
-import { Lazy } from "../Function";
+import type { Lazy } from "../Function";
 import type * as HKT from "../HKT";
 
 export interface AltF<F extends HKT.URIS, C = HKT.Auto> {

@@ -1,10 +1,10 @@
 import type * as HKT from "../HKT";
-import { Monad } from "../Monad";
-import { AccessF } from "./AccessF";
-import { AccessMF } from "./AccessMF";
-import { ProvideAllF } from "./ProvideAllF";
-import { ProvideF } from "./ProvideF";
-import { ProvideSomeF } from "./ProvideSomeF";
+import type { Monad } from "../Monad";
+import type { AccessF } from "./AccessF";
+import type { AccessMF } from "./AccessMF";
+import type { ProvideAllF } from "./ProvideAllF";
+import type { ProvideF } from "./ProvideF";
+import type { ProvideSomeF } from "./ProvideSomeF";
 
 export interface MonadEnv<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C> {
    readonly access: AccessF<F, C>;

@@ -1,5 +1,5 @@
-import { Eq } from "../Eq";
-import * as Mb from "../Maybe";
+import type { Eq } from "../Eq";
+import * as O from "../Option";
 import { lookupWithKey } from "./combinators";
 
 interface Next<A> {
@@ -12,7 +12,7 @@ interface Next<A> {
  *
  * @since 1.0.0
  */
-export const _isSubmap = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
+export const isSubmap_ = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
    const lookupWithKeyE = lookupWithKey(EK);
    return (me: ReadonlyMap<K, A>, that: ReadonlyMap<K, A>) => {
       const entries = me.entries();
@@ -20,7 +20,7 @@ export const _isSubmap = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
       while (!(e = entries.next()).done) {
          const [k, a] = e.value;
          const d2OptA = lookupWithKeyE(k)(that);
-         if (Mb.isNothing(d2OptA) || !EK.equals(k)(d2OptA.value[0]) || !EA.equals(a)(d2OptA.value[1])) {
+         if (O.isNone(d2OptA) || !EK.equals(k)(d2OptA.value[0]) || !EA.equals(a)(d2OptA.value[1])) {
             return false;
          }
       }
@@ -29,6 +29,6 @@ export const _isSubmap = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
 };
 
 export const isSubmap = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
-   const _isSubmapKA = _isSubmap(EK, EA);
-   return (that: ReadonlyMap<K, A>) => (me: ReadonlyMap<K, A>) => _isSubmapKA(me, that);
+   const isSubmapKA_ = isSubmap_(EK, EA);
+   return (that: ReadonlyMap<K, A>) => (me: ReadonlyMap<K, A>) => isSubmapKA_(me, that);
 };

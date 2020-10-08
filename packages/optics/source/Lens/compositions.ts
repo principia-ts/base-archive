@@ -18,7 +18,7 @@ import type { Lens, URI, V } from "./Lens";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const _compose: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.lensComposeLens(ab)(sa);
+export const compose_: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.lensComposeLens(ab)(sa);
 
 /**
  * Compose an `Lens` with a `Lens`
@@ -34,8 +34,7 @@ export const compose: TC.ComposeF<[URI], V> = _.lensComposeLens;
  * @category Compositions
  * @since 1.0.0
  */
-export const _composePrism = <S, A, B>(sa: Lens<S, A>, ab: Prism<A, B>): Optional<S, B> =>
-   _.lensComposePrism(ab)(sa);
+export const composePrism_ = <S, A, B>(sa: Lens<S, A>, ab: Prism<A, B>): Optional<S, B> => _.lensComposePrism(ab)(sa);
 
 /**
  * Compose an `Lens` with a `Prism`
@@ -51,7 +50,7 @@ export const composePrism = _.lensComposePrism;
  * @category Compositions
  * @since 1.0.0
  */
-export const _composeOptional = <S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): Optional<S, B> =>
+export const composeOptional_ = <S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): Optional<S, B> =>
    _.optionalComposeOptional(ab)(asOptional(sa));
 
 /**
@@ -61,4 +60,4 @@ export const _composeOptional = <S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): O
  * @since 1.0.0
  */
 export const composeOptional = <A, B>(ab: Optional<A, B>) => <S>(sa: Lens<S, A>): Optional<S, B> =>
-   _composeOptional(sa, ab);
+   composeOptional_(sa, ab);

@@ -25,6 +25,6 @@ export type IO<E, A> = Managed<unknown, E, A>;
 
 declare module "@principia/core/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      [URI]: Managed<R, E, A>;
+      readonly [URI]: Managed<R, E, A>;
    }
 }

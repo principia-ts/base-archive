@@ -1,10 +1,7 @@
 {
    "extends": "../../tsconfig.json",
    "compilerOptions": {
-      "lib": ["es2020", "DOM"],
-      "paths": {
-         "@effect-ts/system*": ["./matechs-effect/packages/system/src*"]
-      }
+      "lib": ["es2020", "DOM"]
    },
    "exclude": ["dist", "build"]
 }

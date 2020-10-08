@@ -1,6 +1,8 @@
-# prelude/base
+# principia - TypeScript Functional Programming Principles
 
-WIP
+`principia` is an academic pursuit and represents my ongoing efforts in learning the principles behind category theory and functional programming, as well as creating a correct and structured implementation of those principles. However, it also aims to be a functional functional library (pun absolutely intended) with high performance and powerful data types.
+
+There are no tests written for this code as of yet, so _caveat emptor_, use at your own risk.
 
 ## Contributions, Included Works, and Derivations
 
@@ -18,4 +20,4 @@ Throughout my journey of learning and applying functional programming, several i
 
 Giulio Canti - author of `fp-ts`, `fp-ts-contrib`, `newtype-ts`, `monocle-ts`, `io-ts`, and other packages - has been instrumental to the TypeScript functional programming community. Many of the modules in this project are direct descendants of his work.
 
-Michael Arnaldi (and the contributors to Matechs Garage) is the author of `matechs-effect`, a TypeScript port of the `ZIO` library of Scala fame. He also implemented the encoding for Higher-Kinded Types that is used liberally in this package. Many of the typeclasses included in this package are either copied directly or restructured from his work. In addition, the `Effect`, `Layer` and other related types and implementations provided by this package are derived directly from `matechs-effect`.
+Michael Arnaldi (and the contributors to Matechs Garage) is the author of `effect-ts`, a TypeScript port of the `ZIO` library of Scala fame. He also implemented the encoding for Higher-Kinded Types that is used liberally in this package. The contents of `effect` is forked from his library as well.

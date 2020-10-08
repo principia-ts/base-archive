@@ -1,5 +1,5 @@
 import * as T from "../core";
-import { _foreachUnitPar } from "./foreachUnitPar";
+import { foreachUnitPar_ } from "./foreachUnitPar";
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -7,25 +7,25 @@ import { _foreachUnitPar } from "./foreachUnitPar";
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const _foreachPar = <R, E, A, B>(
+export const foreachPar_ = <R, E, A, B>(
    as: Iterable<A>,
    f: (a: A) => T.Effect<R, E, B>
 ): T.Effect<R, E, ReadonlyArray<B>> => {
    const arr = Array.from(as);
 
-   return T._chain(
+   return T.chain_(
       T.total<B[]>(() => []),
       (array) => {
          const fn = ([a, n]: [A, number]) =>
-            T._chain(
+            T.chain_(
                T.suspend(() => f(a)),
                (b) =>
                   T.total(() => {
                      array[n] = b;
                   })
             );
-         return T._chain(
-            _foreachUnitPar(
+         return T.chain_(
+            foreachUnitPar_(
                arr.map((a, n) => [a, n] as [A, number]),
                fn
             ),
@@ -35,6 +35,6 @@ export const _foreachPar = <R, E, A, B>(
    );
 };
 
-export const foreachPar = <X, R, E, A, B>(f: (a: A) => T.Effect<R, E, B>) => (
+export const foreachPar = <R, E, A, B>(f: (a: A) => T.Effect<R, E, B>) => (
    as: Iterable<A>
-): T.Effect<R, E, ReadonlyArray<B>> => _foreachPar(as, f);
+): T.Effect<R, E, ReadonlyArray<B>> => foreachPar_(as, f);

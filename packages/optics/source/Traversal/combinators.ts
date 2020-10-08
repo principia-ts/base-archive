@@ -1,23 +1,23 @@
 import * as A from "@principia/core/Array";
 import * as C from "@principia/core/Const";
-import { Either } from "@principia/core/Either";
-import { identity, pipe, Predicate, Refinement } from "@principia/core/Function";
+import type { Either } from "@principia/core/Either";
+import type { Predicate, Refinement } from "@principia/core/Function";
+import { identity, pipe } from "@principia/core/Function";
 import type * as HKT from "@principia/core/HKT";
 import * as I from "@principia/core/Identity";
-import { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 
 import * as _ from "../internal";
 import { fromTraversable } from "./constructors";
 import { compose } from "./methods";
-import { Traversal } from "./Traversal";
+import type { Traversal } from "./Traversal";
 
 /**
  * @category Combinators
  * @since 1.0.0
  */
-export const modify = <A>(f: (a: A) => A) => <S>(sa: Traversal<S, A>): ((s: S) => S) =>
-   sa.modifyF(I.Applicative)(f);
+export const modify = <A>(f: (a: A) => A) => <S>(sa: Traversal<S, A>): ((s: S) => S) => sa.modifyF(I.Applicative)(f);
 
 /**
  * @category Combinators
@@ -43,9 +43,7 @@ export const filter: {
  * @category Combinators
  * @since 1.0.0
  */
-export const prop = <A, P extends keyof A>(
-   prop: P
-): (<S>(sa: Traversal<S, A>) => Traversal<S, A[P]>) =>
+export const prop = <A, P extends keyof A>(prop: P): (<S>(sa: Traversal<S, A>) => Traversal<S, A[P]>) =>
    compose(pipe(_.lensId<A>(), _.lensProp(prop), _.lensAsTraversal));
 
 /**
@@ -85,9 +83,8 @@ export const index = (i: number) => <S, A>(sa: Traversal<S, ReadonlyArray<A>>): 
  * @category Combinators
  * @since 1.0.0
  */
-export const key = (key: string) => <S, A>(
-   sa: Traversal<S, Readonly<Record<string, A>>>
-): Traversal<S, A> => pipe(sa, compose(_.optionalAsTraversal(_.indexRecord<A>().index(key))));
+export const key = (key: string) => <S, A>(sa: Traversal<S, Readonly<Record<string, A>>>): Traversal<S, A> =>
+   pipe(sa, compose(_.optionalAsTraversal(_.indexRecord<A>().index(key))));
 
 /**
  * Return a `Traversal` from a `Traversal` focused on a `ReadonlyRecord` and a required key
@@ -95,9 +92,8 @@ export const key = (key: string) => <S, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const atKey = (key: string) => <S, A>(
-   sa: Traversal<S, Readonly<Record<string, A>>>
-): Traversal<S, Maybe<A>> => pipe(sa, compose(_.lensAsTraversal(_.atRecord<A>().at(key))));
+export const atKey = (key: string) => <S, A>(sa: Traversal<S, Readonly<Record<string, A>>>): Traversal<S, Option<A>> =>
+   pipe(sa, compose(_.lensAsTraversal(_.atRecord<A>().at(key))));
 
 /**
  * Return a `Traversal` from a `Traversal` focused on the `Some` of a `Option` type
@@ -105,9 +101,7 @@ export const atKey = (key: string) => <S, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Traversal<S, Maybe<A>>) => Traversal<S, A> = compose(
-   _.prismAsTraversal(_.prismSome())
-);
+export const some: <S, A>(soa: Traversal<S, Option<A>>) => Traversal<S, A> = compose(_.prismAsTraversal(_.prismSome()));
 
 /**
  * Return a `Traversal` from a `Traversal` focused on the `Right` of a `Either` type
@@ -147,9 +141,8 @@ export const traverse = <T extends HKT.URIS, C = HKT.Auto>(
  * @category Combinators
  * @since 1.0.0
  */
-export const foldMap = <M>(M: TC.Monoid<M>) => <A>(f: (a: A) => M) => <S>(
-   sa: Traversal<S, A>
-): ((s: S) => M) => sa.modifyF(C.getApplicative(M))((a) => C.make(f(a)));
+export const foldMap = <M>(M: TC.Monoid<M>) => <A>(f: (a: A) => M) => <S>(sa: Traversal<S, A>): ((s: S) => M) =>
+   sa.modifyF(C.getApplicative(M))((a) => C.make(f(a)));
 
 /**
  * Map each target to a `Monoid` and combine the results.
@@ -157,8 +150,7 @@ export const foldMap = <M>(M: TC.Monoid<M>) => <A>(f: (a: A) => M) => <S>(
  * @category Combinators
  * @since 1.0.0
  */
-export const fold = <A>(M: TC.Monoid<A>): (<S>(sa: Traversal<S, A>) => (s: S) => A) =>
-   foldMap(M)(identity);
+export const fold = <A>(M: TC.Monoid<A>): (<S>(sa: Traversal<S, A>) => (s: S) => A) => foldMap(M)(identity);
 
 /**
  * Get all the targets of a `Traversal`.

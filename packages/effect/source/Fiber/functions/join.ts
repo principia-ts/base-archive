@@ -1,5 +1,6 @@
 import * as T from "../../Effect/core";
-import { Fiber } from "../Fiber";
+import type { IO } from "../../Effect/Effect";
+import type { Fiber } from "../Fiber";
 
 /**
  * ```haskell
@@ -12,5 +13,5 @@ import { Fiber } from "../Fiber";
  * "inner interruption" of this fiber, unlike interruption triggered by another
  * fiber, "inner interruption" can be caught and recovered.
  */
-export const join = <E, A>(fiber: Fiber<E, A>): T.IO<E, A> =>
-   T._tap(T._chain(fiber.await, T.done), () => fiber.inheritRefs);
+export const join = <E, A>(fiber: Fiber<E, A>): IO<E, A> =>
+   T.tap_(T.chain_(fiber.await, T.done), () => fiber.inheritRefs);

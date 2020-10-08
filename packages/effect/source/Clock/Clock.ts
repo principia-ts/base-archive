@@ -5,7 +5,7 @@
  */
 import * as T from "../Effect/core";
 import { asyncInterrupt } from "../Effect/functions/interrupt";
-import { accessService, accessServiceM } from "../Effect/functions/service";
+import { asksService, asksServiceM } from "../Effect/functions/service";
 import type { HasTag } from "../Has";
 import { has } from "../Has";
 
@@ -58,19 +58,19 @@ export class ProxyClock extends Clock {
 /**
  * Get the current time in ms since epoch
  */
-export const currentTime = accessServiceM(HasClock)((_) => _.currentTime);
+export const currentTime = asksServiceM(HasClock)((_) => _.currentTime);
 
 /**
  * Sleeps for the provided amount of ms
  */
-export const sleep = (ms: number) => accessServiceM(HasClock)((_) => _.sleep(ms));
+export const sleep = (ms: number) => asksServiceM(HasClock)((_) => _.sleep(ms));
 
 /**
  * Access clock from environment
  */
-export const withClockM = accessServiceM(HasClock);
+export const withClockM = asksServiceM(HasClock);
 
 /**
  * Access clock from environment
  */
-export const withClock = accessService(HasClock);
+export const withClock = asksService(HasClock);

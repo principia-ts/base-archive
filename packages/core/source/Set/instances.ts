@@ -1,8 +1,9 @@
-import { Eq, fromEquals } from "../Eq";
-import { Monoid } from "../Monoid";
-import { Semigroup } from "../Semigroup";
-import { Show } from "../Show";
-import { _intersection, _union } from "./combinators";
+import type { Eq } from "../Eq";
+import { fromEquals } from "../Eq";
+import type { Monoid } from "../Monoid";
+import type { Semigroup } from "../Semigroup";
+import type { Show } from "../Show";
+import { intersection_, union_ } from "./combinators";
 import { empty } from "./constructors";
 import { isSubset } from "./guards";
 
@@ -25,16 +26,16 @@ export const getEq = <A>(E: Eq<A>): Eq<ReadonlySet<A>> => {
 };
 
 export const getUnionMonoid = <A>(E: Eq<A>): Monoid<ReadonlySet<A>> => {
-   const _unionE = _union(E);
+   const unionE_ = union_(E);
    return {
-      concat: (x) => (y) => _unionE(x, y),
+      concat: (x) => (y) => unionE_(x, y),
       empty
    };
 };
 
 export const getIntersectionSemigroup = <A>(E: Eq<A>): Semigroup<ReadonlySet<A>> => {
-   const _intersectionE = _intersection(E);
+   const intersectionE_ = intersection_(E);
    return {
-      concat: (x) => (y) => _intersectionE(x, y)
+      concat: (x) => (y) => intersectionE_(x, y)
    };
 };

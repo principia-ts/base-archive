@@ -82,15 +82,11 @@ export function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: A) => B): (
    return (...a) => f(a);
 }
 
-export interface FlipF {
-   <A, B, C>(f: (a: A) => (b: B) => C): (b: B) => (a: A) => C;
-}
-
 /**
  * flip :: (a -> b -> c) -> b -> a -> c
  * Flips the arguments of a curried binary function
  */
-export const flip: FlipF = (f: any) => (b: any) => (a: any) => f(a)(b);
+export const flip2 = <A, B, C>(f: (a: A) => (b: B) => C) => (b: B) => (a: A): C => f(a)(b);
 
 export const hole: <T>() => T = absurd as any;
 

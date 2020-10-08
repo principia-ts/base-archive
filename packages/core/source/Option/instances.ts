@@ -1,78 +1,78 @@
 import * as HKT from "../HKT";
 import * as TC from "../typeclass-index";
-import { just, nothing } from "./constructors";
-import { isJust, isNothing } from "./guards";
-import type { Maybe, URI, V } from "./Maybe";
+import { none, some } from "./constructors";
+import { isNone, isSome } from "./guards";
 import {
-   _alt,
-   _ap,
-   _chain,
-   _filter,
-   _foldMap,
-   _map,
-   _mapBoth,
-   _mapEither,
-   _mapMaybe,
-   _partition,
-   _reduce,
-   _reduceRight,
-   _traverse,
-   _wilt,
-   _wither,
    alt,
+   alt_,
    ap,
+   ap_,
    chain,
+   chain_,
    compact,
    extend,
    filter,
+   filter_,
    flatten,
    foldMap,
+   foldMap_,
    map,
+   map_,
    mapBoth,
+   mapBoth_,
    mapEither,
-   mapMaybe,
+   mapEither_,
+   mapOption,
+   mapOption_,
    partition,
+   partition_,
    pure,
    reduce,
+   reduce_,
    reduceRight,
+   reduceRight_,
    separate,
    sequence,
    traverse,
+   traverse_,
    wilt,
-   wither
+   wilt_,
+   wither,
+   wither_
 } from "./methods";
+import type { Option, URI, V } from "./Option";
 
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
    map,
-   _map
+   map_: map_
 });
 
 export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
    ...Functor,
    pure,
    ap,
-   _ap,
+   ap_: ap_,
    mapBoth,
-   _mapBoth
+   mapBoth_: mapBoth_
 });
 
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
-   _chain,
+   chain_: chain_,
    chain,
    flatten
 });
 
 export const Alt: TC.Alt<[URI], V> = HKT.instance({
    ...Functor,
-   _alt,
+   alt_: alt_,
    alt
 });
 
 export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
-   _reduce,
-   _reduceRight,
-   _foldMap,
+   reduce_: reduce_,
+   reduceRight_: reduceRight_,
+   foldMap_: foldMap_,
    reduce,
    reduceRight,
    foldMap
@@ -91,12 +91,12 @@ export const Compactable: TC.Compactable<[URI], V> = HKT.instance({
 export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
    ...Functor,
    ...Compactable,
-   _mapMaybe,
-   _filter,
-   _mapEither,
-   _partition,
+   mapOption_: mapOption_,
+   filter_: filter_,
+   mapEither_: mapEither_,
+   partition_: partition_,
    filter,
-   mapMaybe,
+   mapOption,
    partition,
    mapEither
 });
@@ -104,7 +104,7 @@ export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
 export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
    ...Functor,
    ...Foldable,
-   _traverse,
+   traverse_: traverse_,
    traverse,
    sequence
 });
@@ -112,34 +112,34 @@ export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
 export const Witherable: TC.Witherable<[URI], V> = HKT.instance({
    ...Traversable,
    ...Filterable,
-   _wilt,
-   _wither,
+   wilt_: wilt_,
+   wither_: wither_,
    wilt,
    wither
 });
 
 export const Do: TC.Do<[URI], V> = TC.deriveDo(Monad);
 
-export const getApplySemigroup = <A>(S: TC.Semigroup<A>): TC.Semigroup<Maybe<A>> => ({
-   concat: (y) => (x) => (isJust(x) && isJust(y) ? just(S.concat(x.value)(y.value)) : nothing())
+export const getApplySemigroup = <A>(S: TC.Semigroup<A>): TC.Semigroup<Option<A>> => ({
+   concat: (y) => (x) => (isSome(x) && isSome(y) ? some(S.concat(x.value)(y.value)) : none())
 });
 
-export const getApplyMonoid = <A>(M: TC.Monoid<A>): TC.Monoid<Maybe<A>> => ({
+export const getApplyMonoid = <A>(M: TC.Monoid<A>): TC.Monoid<Option<A>> => ({
    ...getApplySemigroup(M),
-   empty: just(M.empty)
+   empty: some(M.empty)
 });
 
-export const getFirstMonoid = <A = never>(): TC.Monoid<Maybe<A>> => ({
-   concat: (y) => (x) => (isNothing(y) ? x : y),
-   empty: nothing()
+export const getFirstMonoid = <A = never>(): TC.Monoid<Option<A>> => ({
+   concat: (y) => (x) => (isNone(y) ? x : y),
+   empty: none()
 });
 
-export const getLastMonoid = <A = never>(): TC.Monoid<Maybe<A>> => ({
-   concat: (y) => (x) => (isNothing(x) ? y : x),
-   empty: nothing()
+export const getLastMonoid = <A = never>(): TC.Monoid<Option<A>> => ({
+   concat: (y) => (x) => (isNone(x) ? y : x),
+   empty: none()
 });
 
-export const getMonoid = <A>(S: TC.Semigroup<A>): TC.Monoid<Maybe<A>> => ({
-   concat: (y) => (x) => (isNothing(x) ? y : isNothing(y) ? x : just(S.concat(x.value)(y.value))),
-   empty: nothing()
+export const getMonoid = <A>(S: TC.Semigroup<A>): TC.Monoid<Option<A>> => ({
+   concat: (y) => (x) => (isNone(x) ? y : isNone(y) ? x : some(S.concat(x.value)(y.value))),
+   empty: none()
 });

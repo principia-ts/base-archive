@@ -1,28 +1,29 @@
 import type { Either } from "../Either";
 import * as E from "../Either";
-import { flow, not, pipe, Predicate } from "../Function";
+import type { Predicate } from "../Function";
+import { flow, not, pipe } from "../Function";
 import * as HKT from "../HKT";
 import * as I from "../IO";
-import { getLeft, getRight } from "../Maybe";
+import { getLeft, getRight } from "../Option";
 import type * as TC from "../typeclass-index";
 import { right } from "./constructors";
 import type { IOEither, URI, V } from "./IOEither";
 import {
-   _alt,
-   _ap,
-   _bimap,
-   _chain,
-   _first,
-   _map,
-   _mapBoth,
    alt,
+   alt_,
    ap,
+   ap_,
    bimap,
+   bimap_,
    chain,
+   chain_,
    first,
+   first_,
    flatten,
    map,
+   map_,
    mapBoth,
+   mapBoth_,
    pure
 } from "./methods";
 
@@ -72,7 +73,7 @@ export const getrpplyMonoid = <E, A>(M: TC.Monoid<A>): TC.Monoid<IOEither<E, A>>
  * @since 1.0.0
  */
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
-   _map,
+   map_: map_,
    map
 });
 
@@ -81,11 +82,11 @@ export const Functor: TC.Functor<[URI], V> = HKT.instance({
  * @since 1.0.0
  */
 export const Bifunctor: TC.Bifunctor<[URI], V> = HKT.instance({
-   _bimap,
+   bimap_: bimap_,
    bimap,
-   _first,
+   first_: first_,
    first,
-   _second: _map,
+   second_: map_,
    second: map
 });
 
@@ -95,9 +96,9 @@ export const Bifunctor: TC.Bifunctor<[URI], V> = HKT.instance({
  */
 export const Apply: TC.Apply<[URI], V> = HKT.instance({
    ...Functor,
-   _ap,
+   ap_: ap_,
    ap,
-   _mapBoth,
+   mapBoth_: mapBoth_,
    mapBoth
 });
 
@@ -116,7 +117,7 @@ export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
  */
 export const Monad: TC.Monad<[URI], V> = HKT.instance({
    ...Applicative,
-   _chain,
+   chain_: chain_,
    chain,
    flatten
 });
@@ -127,7 +128,7 @@ export const Monad: TC.Monad<[URI], V> = HKT.instance({
  */
 export const Alt: TC.Alt<[URI], V> = HKT.instance({
    ...Functor,
-   _alt,
+   alt_: alt_,
    alt
 });
 
@@ -140,22 +141,22 @@ export const getApplicativeIOValidation = <E>(S: TC.Semigroup<E>): TC.Applicativ
 
    const AV = E.getApplicativeValidation(S);
 
-   const _apV: TC.UC_ApF<[URI], V_> = <A, B>(fab: IOEither<E, (a: A) => B>, fa: IOEither<E, A>) =>
+   const apV_: TC.UC_ApF<[URI], V_> = <A, B>(fab: IOEither<E, (a: A) => B>, fa: IOEither<E, A>) =>
       pipe(
-         I._map(fab, (gab) => (ga: Either<E, A>) => AV._ap(gab, ga)),
+         I.map_(fab, (gab) => (ga: Either<E, A>) => AV.ap_(gab, ga)),
          I.ap(fa)
       );
 
-   const _mapBothV: TC.UC_MapBothF<[URI], V_> = (fa, fb, f) =>
-      I._mapBoth(fa, fb, (ga, gb) => AV._mapBoth(ga, gb, (a, b) => f(a, b)));
+   const mapBothV_: TC.UC_MapBothF<[URI], V_> = (fa, fb, f) =>
+      I.mapBoth_(fa, fb, (ga, gb) => AV.mapBoth_(ga, gb, (a, b) => f(a, b)));
 
    return HKT.instance<TC.Applicative<[URI], V_>>({
       ...Functor,
       pure,
-      _ap: _apV,
-      ap: (fa) => (fab) => _apV(fab, fa),
-      _mapBoth: _mapBothV,
-      mapBoth: (fb, f) => (fa) => _mapBothV(fa, fb, f)
+      ap_: apV_,
+      ap: (fa) => (fab) => apV_(fab, fa),
+      mapBoth_: mapBothV_,
+      mapBoth: (fb, f) => (fa) => mapBothV_(fa, fb, f)
    });
 };
 
@@ -168,14 +169,14 @@ export const getAltIOValidation = <E>(S: TC.Semigroup<E>): TC.Alt<[URI], V & HKT
 
    const A = E.getAltValidation(S);
 
-   const _altV: TC.UC_AltF<[URI], V_> = (fa, that) => () => A._alt(fa(), () => that()());
+   const altV_: TC.UC_AltF<[URI], V_> = (fa, that) => () => A.alt_(fa(), () => that()());
 
    return HKT.instance<TC.Alt<[URI], V_>>({
       ...Functor,
-      _map,
+      map_: map_,
       map,
-      _alt: _altV,
-      alt: (that) => (fa) => _altV(fa, that)
+      alt_: altV_,
+      alt: (that) => (fa) => altV_(fa, that)
    });
 };
 
@@ -188,39 +189,39 @@ export const getFilterable = <E>(M: TC.Monoid<E>): TC.Filterable<[URI], V & HKT.
 
    const F = E.getFilterable(M);
 
-   const compact: TC.CompactF<[URI], V_> = (fa) => I._map(fa, F.compact);
+   const compact: TC.CompactF<[URI], V_> = (fa) => I.map_(fa, F.compact);
 
    const separate: TC.SeparateF<[URI], V_> = (fge) => ({
-      left: pipe(_map(fge, getLeft), compact),
-      right: pipe(_map(fge, getRight), compact)
+      left: pipe(map_(fge, getLeft), compact),
+      right: pipe(map_(fge, getRight), compact)
    });
 
-   const _filter: TC.UC_FilterF<[URI], V_> = <A>(fga: IOEither<E, A>, predicate: Predicate<A>) =>
-      I._map(fga, (ga) => F._filter(ga, predicate));
+   const filter_: TC.UC_FilterF<[URI], V_> = <A>(fga: IOEither<E, A>, predicate: Predicate<A>) =>
+      I.map_(fga, (ga) => F.filter_(ga, predicate));
 
-   const _mapMaybe: TC.UC_MapMaybeF<[URI], V_> = (fa, f) => I._map(fa, (ga) => F._mapMaybe(ga, f));
+   const mapOption_: TC.UC_MapOptionF<[URI], V_> = (fa, f) => I.map_(fa, (ga) => F.mapOption_(ga, f));
 
-   const _partition: TC.UC_PartitionF<[URI], V_> = <A>(fga: IOEither<E, A>, predicate: Predicate<A>) => ({
-      left: _filter(fga, not(predicate)),
-      right: _filter(fga, predicate)
+   const partition_: TC.UC_PartitionF<[URI], V_> = <A>(fga: IOEither<E, A>, predicate: Predicate<A>) => ({
+      left: filter_(fga, not(predicate)),
+      right: filter_(fga, predicate)
    });
 
-   const _mapEither: TC.UC_MapEitherF<[URI], V_> = (fa, f) => ({
-      left: _mapMaybe(fa, flow(f, getLeft)),
-      right: _mapMaybe(fa, flow(f, getRight))
+   const mapEither_: TC.UC_MapEitherF<[URI], V_> = (fa, f) => ({
+      left: mapOption_(fa, flow(f, getLeft)),
+      right: mapOption_(fa, flow(f, getRight))
    });
 
    return HKT.instance<TC.Filterable<[URI], V_>>({
       ...Functor,
       compact,
       separate,
-      _filter,
-      _mapMaybe,
-      _partition,
-      _mapEither,
-      filter: <A>(predicate: Predicate<A>) => (fa: IOEither<E, A>) => _filter(fa, predicate),
-      mapMaybe: (f) => (fa) => _mapMaybe(fa, f),
-      partition: <A>(predicate: Predicate<A>) => (fa: IOEither<E, A>) => _partition(fa, predicate),
-      mapEither: (f) => (fa) => _mapEither(fa, f)
+      filter_: filter_,
+      mapOption_: mapOption_,
+      partition_: partition_,
+      mapEither_: mapEither_,
+      filter: <A>(predicate: Predicate<A>) => (fa: IOEither<E, A>) => filter_(fa, predicate),
+      mapOption: (f) => (fa) => mapOption_(fa, f),
+      partition: <A>(predicate: Predicate<A>) => (fa: IOEither<E, A>) => partition_(fa, predicate),
+      mapEither: (f) => (fa) => mapEither_(fa, f)
    });
 };

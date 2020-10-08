@@ -41,12 +41,7 @@ export const withInterrupting = (b: boolean) => (s: FiberStatus): FiberStatus =>
          return new Running(b);
       }
       case "Suspended": {
-         return new Suspended(
-            withInterrupting(b)(s.previous),
-            s.interruptible,
-            s.epoch,
-            s.blockingOn
-         );
+         return new Suspended(withInterrupting(b)(s.previous), s.interruptible, s.epoch, s.blockingOn);
       }
    }
 };

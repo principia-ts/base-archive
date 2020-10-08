@@ -1,11 +1,13 @@
 import * as A from "@principia/core/Array";
 import { pipe } from "@principia/core/Function";
 
-import { AtomicBoolean, Bounded, MutableQueue, Unbounded } from "../Support";
-import { XPromise } from "../XPromise";
+import type { MutableQueue } from "../Support";
+import { AtomicBoolean, Bounded, Unbounded } from "../Support";
+import type { XPromise } from "../XPromise";
 import * as XP from "../XPromise";
 import * as T from "./_internal/effect";
-import { Queue, XQueue } from "./XQueue";
+import type { Queue } from "./XQueue";
+import { XQueue } from "./XQueue";
 
 export const unsafeOfferAll = <A>(q: MutableQueue<A>, as: readonly A[]): readonly A[] => {
    const bs = Array.from(as);
@@ -32,8 +34,7 @@ export const unsafePollAll = <A>(q: MutableQueue<A>): readonly A[] => {
    return as;
 };
 
-export const unsafeCompletePromise = <A>(p: XPromise<never, A>, a: A) =>
-   XP.unsafeDone(T.pure(a))(p);
+export const unsafeCompletePromise = <A>(p: XPromise<never, A>, a: A) => XP.unsafeDone(T.pure(a))(p);
 
 export const unsafeRemove = <A>(q: MutableQueue<A>, a: A) => {
    unsafeOfferAll(q, unsafePollAll(q)).filter((b) => a !== b);
@@ -113,7 +114,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
          T.suspend(() => {
             const p = XP.unsafeMake<never, boolean>(d.id);
 
-            return T._onInterrupt(
+            return T.onInterrupt_(
                T.suspend(() => {
                   this.unsafeOffer(as, p);
                   this.unsafeOnQueueEmptySpace(queue);
@@ -178,9 +179,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
          T.bindS("fiberId", () => T.checkFiberId()),
          T.bindS("putters", () => T.total(() => unsafePollAll(this.putters))),
          T.tap((s) =>
-            T._foreachPar(s.putters, ([_, p, lastItem]) =>
-               lastItem ? XP.interruptAs(s.fiberId)(p) : T.unit
-            )
+            T.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? XP.interruptAs(s.fiberId)(p) : T.unit))
          ),
          T.asUnit
       );
@@ -329,10 +328,7 @@ export const unsafeCreate = <A>(
 
             return T.makeUninterruptible(
                T.whenM(XP.succeed<void>(undefined)(shutdownHook))(
-                  T._chain(
-                     T._foreachPar(unsafePollAll(takers), XP.interruptAs(d.id)),
-                     () => strategy.shutdown
-                  )
+                  T.chain_(T.foreachPar_(unsafePollAll(takers), XP.interruptAs(d.id)), () => strategy.shutdown)
                )
             );
          })
@@ -360,7 +356,7 @@ export const unsafeCreate = <A>(
             } else {
                const p = XP.unsafeMake<never, A>(d.id);
 
-               return T._onInterrupt(
+               return T.onInterrupt_(
                   T.suspend(() => {
                      takers.offer(p);
                      unsafeCompleteTakers(strategy, queue, takers);
@@ -403,30 +399,28 @@ export const unsafeCreate = <A>(
    })();
 
 export const createQueue = <A>(strategy: Strategy<A>) => (queue: MutableQueue<A>) =>
-   T._map(XP.make<never, void>(), (p) =>
-      unsafeCreate(queue, new Unbounded(), p, new AtomicBoolean(false), strategy)
-   );
+   T.map_(XP.make<never, void>(), (p) => unsafeCreate(queue, new Unbounded(), p, new AtomicBoolean(false), strategy));
 
 export const makeSliding = <A>(capacity: number): T.UIO<Queue<A>> =>
-   T._chain(
+   T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new SlidingStrategy())
    );
 
 export const makeUnbounded = <A>(): T.UIO<Queue<A>> =>
-   T._chain(
+   T.chain_(
       T.total(() => new Unbounded<A>()),
       createQueue(new DroppingStrategy())
    );
 
 export const makeDropping = <A>(capacity: number): T.UIO<Queue<A>> =>
-   T._chain(
+   T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new DroppingStrategy())
    );
 
 export const makeBounded = <A>(capacity: number): T.UIO<Queue<A>> =>
-   T._chain(
+   T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new BackPressureStrategy())
    );

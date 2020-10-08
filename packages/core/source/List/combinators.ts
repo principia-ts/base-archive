@@ -1,9 +1,11 @@
-import { done, Lazy, matchPredicate, more, Trampoline, trampoline } from "../Function";
-import { CompareF } from "../Ord";
+import type { Lazy, Trampoline } from "../Function";
+import { done, matchPredicate, more, trampoline } from "../Function";
+import type { CompareF } from "../Ord";
 import { GT } from "../Ordering";
-import { _cons, cons, list, nil } from "./constructors";
+import { cons, cons_, list, nil } from "./constructors";
 import { isEmpty, isNonEmpty } from "./guards";
-import { errorEmptyList, List } from "./List";
+import type { List } from "./List";
+import { errorEmptyList } from "./List";
 
 /*
  * -------------------------------------------
@@ -23,16 +25,16 @@ export const tail: <A>(xs: List<A>) => List<A> = matchPredicate(
    (_) => errorEmptyList("tail")
 );
 
-export const _rangeBy = (start: number, end: number, step: (n: number) => number): List<number> => {
+export const rangeBy_ = (start: number, end: number, step: (n: number) => number): List<number> => {
    if (start === end)
-      return _cons(
+      return cons_(
          () => start,
          () => nil
       );
 
-   return _cons(
+   return cons_(
       () => start,
-      () => _rangeBy(step(start), end, step)
+      () => rangeBy_(step(start), end, step)
    );
 };
 
@@ -41,7 +43,7 @@ export const init: <A>(xs: List<A>) => List<A> = matchPredicate(
    (l) =>
       isEmpty(tail(l))
          ? nil
-         : _cons(
+         : cons_(
               () => head(l),
               () => init(tail(l))
            ),
@@ -56,16 +58,16 @@ export const last: <A>(xs: List<A>) => A = trampoline(function last<A>(xs: List<
    )(xs);
 });
 
-export const _take = <A>(xs: List<A>, n: number): List<A> => {
+export const take_ = <A>(xs: List<A>, n: number): List<A> => {
    if (n <= 0) return nil;
    if (isEmpty(xs)) return nil;
-   return _cons(
+   return cons_(
       () => head(xs),
-      () => _take(tail(xs), n - 1)
+      () => take_(tail(xs), n - 1)
    );
 };
 
-export const take = (n: number) => <A>(xs: List<A>) => _take(xs, n);
+export const take = (n: number) => <A>(xs: List<A>) => take_(xs, n);
 
 export const lines: (s: string) => List<string> = matchPredicate(
    (s) => s.length === 0,
@@ -75,8 +77,8 @@ export const lines: (s: string) => List<string> = matchPredicate(
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
-export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
-   const __sequences = (xs: List<A>): Trampoline<List<List<A>>> => {
+export function sortBy_<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
+   const _sequences_ = (xs: List<A>): Trampoline<List<List<A>>> => {
       if (isEmpty(xs)) {
          return done(list(xs));
       }
@@ -88,44 +90,44 @@ export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
       const b = head(as);
       as = tail(as);
       if (cmp(a)(b) === GT) {
-         return __descending(b, list(a), as);
+         return _descending_(b, list(a), as);
       }
-      return __ascending(b, cons(() => a) as any, as);
+      return _ascending_(b, cons(() => a) as any, as);
    };
 
-   const __ascending = (a: A, fas: (xs: Lazy<List<A>>) => List<A>, bbs: List<A>): Trampoline<List<List<A>>> => {
+   const _ascending_ = (a: A, fas: (xs: Lazy<List<A>>) => List<A>, bbs: List<A>): Trampoline<List<List<A>>> => {
       if (isEmpty(bbs)) {
          return done(
-            _cons(
+            cons_(
                () => fas(() => list(a)),
-               () => trampoline(__sequences)(bbs)
+               () => trampoline(_sequences_)(bbs)
             )
          );
       }
       const b = head(bbs);
       const bs = tail(bbs);
-      const ys = (ys: Lazy<List<A>>) => fas(() => _cons(() => a, ys));
+      const ys = (ys: Lazy<List<A>>) => fas(() => cons_(() => a, ys));
       if (cmp(a)(b) !== GT) {
-         return more(() => __ascending(b, ys, bs));
+         return more(() => _ascending_(b, ys, bs));
       }
       return done(
-         _cons(
+         cons_(
             () => fas(() => list(a)),
-            () => trampoline(__sequences)(bbs)
+            () => trampoline(_sequences_)(bbs)
          )
       );
    };
 
-   const __descending = (a: A, as: List<A>, bbs: List<A>): Trampoline<List<List<A>>> => {
+   const _descending_ = (a: A, as: List<A>, bbs: List<A>): Trampoline<List<List<A>>> => {
       if (isEmpty(bbs)) {
          return done(
-            _cons(
+            cons_(
                () =>
-                  _cons(
+                  cons_(
                      () => a,
                      () => as
                   ),
-               () => trampoline(__sequences)(bbs)
+               () => trampoline(_sequences_)(bbs)
             )
          );
       }
@@ -133,9 +135,9 @@ export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
       const bs = tail(bbs);
       if (cmp(a)(b) === GT) {
          return more(() =>
-            __descending(
+            _descending_(
                b,
-               _cons(
+               cons_(
                   () => a,
                   () => as
                ),
@@ -144,18 +146,18 @@ export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
          );
       }
       return done(
-         _cons(
+         cons_(
             () =>
-               _cons(
+               cons_(
                   () => a,
                   () => as
                ),
-            () => trampoline(__sequences)(bbs)
+            () => trampoline(_sequences_)(bbs)
          )
       );
    };
 
-   const __mergePairs = (as: List<List<A>>): Trampoline<List<List<A>>> => {
+   const _mergePairs_ = (as: List<List<A>>): Trampoline<List<List<A>>> => {
       if (isEmpty(as)) {
          return done(as);
       }
@@ -167,14 +169,14 @@ export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
       const b = head(xs);
       xs = tail(xs);
       return done(
-         _cons(
-            () => trampoline(__merge)(a, b),
-            () => trampoline(__mergePairs)(xs)
+         cons_(
+            () => trampoline(_merge_)(a, b),
+            () => trampoline(_mergePairs_)(xs)
          )
       );
    };
 
-   const __merge = (as: List<A>, bs: List<A>): Trampoline<List<A>> => {
+   const _merge_ = (as: List<A>, bs: List<A>): Trampoline<List<A>> => {
       if (isEmpty(as)) {
          return done(bs);
       }
@@ -187,39 +189,39 @@ export function _sortBy<A>(xs: List<A>, cmp: CompareF<A>): List<A> {
       const bs1 = tail(bs);
       if (cmp(a)(b) === GT) {
          return done(
-            _cons(
+            cons_(
                () => b,
-               () => trampoline(__merge)(as, bs1)
+               () => trampoline(_merge_)(as, bs1)
             )
          );
       }
       return done(
-         _cons(
+         cons_(
             () => a,
-            () => trampoline(__merge)(as1, bs)
+            () => trampoline(_merge_)(as1, bs)
          )
       );
    };
 
-   const __mergeAll = (xs: List<List<A>>): Trampoline<List<A>> => {
+   const _mergeAll_ = (xs: List<List<A>>): Trampoline<List<A>> => {
       if (isEmpty(tail(xs))) {
          return done(head(xs));
       }
-      return more(() => __mergeAll(trampoline(__mergePairs)(xs)));
+      return more(() => _mergeAll_(trampoline(_mergePairs_)(xs)));
    };
 
-   return trampoline(__mergeAll)(trampoline(__sequences)(xs));
+   return trampoline(_mergeAll_)(trampoline(_sequences_)(xs));
 }
 
 /* eslint-enable */
 
-export const sortBy = <A>(cmp: CompareF<A>) => (xs: List<A>) => _sortBy(xs, cmp);
+export const sortBy = <A>(cmp: CompareF<A>) => (xs: List<A>) => sortBy_(xs, cmp);
 
-export const _append = trampoline(function append<A>(xs: List<A>, ys: List<A>): Trampoline<List<A>> {
+export const append_ = trampoline(function append<A>(xs: List<A>, ys: List<A>): Trampoline<List<A>> {
    if (isEmpty(xs)) return done(ys);
    if (isEmpty(ys)) return done(xs);
    return done(
-      _cons(
+      cons_(
          () => head(xs),
          () => trampoline(append)(tail(xs), ys)
       )

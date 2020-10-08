@@ -1,17 +1,17 @@
 import * as A from "@principia/core/Array";
+import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
-import { Either } from "@principia/core/Either";
 import { constVoid, flow, pipe, tuple } from "@principia/core/Function";
-import { Maybe } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
-import { NonEmptyArray } from "@principia/core/NonEmptyArray";
+import type { NonEmptyArray } from "@principia/core/NonEmptyArray";
+import type { Option } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 
 import * as C from "../Cause";
-import { HasClock } from "../Clock";
+import type { HasClock } from "../Clock";
 import * as T from "../Effect";
 import { sequential } from "../ExecutionStrategy";
+import type { Exit } from "../Exit";
 import * as Ex from "../Exit";
-import { Exit } from "../Exit";
 import * as M from "../Managed";
 import * as Sc from "../Schedule";
 import * as XR from "../XRef";
@@ -20,21 +20,18 @@ import * as Pull from "./internal/Pull";
 import { chain, flatten, pure } from "./methods";
 import { Stream } from "./Stream";
 
-export const absolve: <R, E, A, E1>(
-   stream: Stream<R, E, Either<E1, A>>
-) => Stream<R, E | E1, A> = chain(E.fold(fail, pure));
+export const absolve: <R, E, A, E1>(stream: Stream<R, E, Either<E1, A>>) => Stream<R, E | E1, A> = chain(
+   E.fold(fail, pure)
+);
 
-export const unwrap = <R, E, A>(fa: T.Effect<R, E, Stream<R, E, A>>): Stream<R, E, A> =>
-   flatten(fromEffect(fa));
+export const unwrap = <R, E, A>(fa: T.Effect<R, E, Stream<R, E, A>>): Stream<R, E, A> => flatten(fromEffect(fa));
 
 /**
  * Creates a stream from a `Schedule` that does not require any further
  * input. The stream will emit an element for each value output from the
  * schedule, continuing for as long as the schedule continues.
  */
-export const fromSchedule: <R, A>(
-   schedule: Sc.Schedule<R, unknown, A>
-) => Stream<R & HasClock, never, A> = flow(
+export const fromSchedule: <R, A>(schedule: Sc.Schedule<R, unknown, A>) => Stream<R & HasClock, never, A> = flow(
    Sc.driver,
    T.map((driver) => repeatEffectOption(driver.next(constVoid()))),
    unwrap
@@ -44,7 +41,7 @@ export const fromSchedule: <R, A>(
  * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
  */
 export const unfoldChunkM = <Z>(z: Z) => <R, E, A>(
-   f: (z: Z) => T.Effect<R, E, Maybe<readonly [ReadonlyArray<A>, Z]>>
+   f: (z: Z) => T.Effect<R, E, Option<readonly [ReadonlyArray<A>, Z]>>
 ): Stream<R, E, A> =>
    new Stream(
       pipe(
@@ -62,7 +59,7 @@ export const unfoldChunkM = <Z>(z: Z) => <R, E, A>(
                           T.chain(f),
                           T.foldM(
                              Pull.fail,
-                             Mb.fold(
+                             O.fold(
                                 () =>
                                    pipe(
                                       done.set(true),
@@ -89,19 +86,12 @@ export const unfoldChunkM = <Z>(z: Z) => <R, E, A>(
  * it to the destination stream. `f` can maintain some internal state to control
  * the combining process, with the initial state being specified by `s`.
  */
-export const combineChunks = <R1, E1, B>(that: Stream<R1, E1, B>) => <Z>(z: Z) => <
-   X,
-   R,
-   E,
-   A,
-   X2,
-   C
->(
+export const combineChunks = <R1, E1, B>(that: Stream<R1, E1, B>) => <Z>(z: Z) => <R, E, A, C>(
    f: (
       z: Z,
-      s: T.Effect<R, Maybe<E>, ReadonlyArray<A>>,
-      t: T.Effect<R1, Maybe<E1>, ReadonlyArray<B>>
-   ) => T.Effect<R & R1, never, Exit<Maybe<E | E1>, readonly [ReadonlyArray<C>, Z]>>
+      s: T.Effect<R, Option<E>, ReadonlyArray<A>>,
+      t: T.Effect<R1, Option<E1>, ReadonlyArray<B>>
+   ) => T.Effect<R & R1, never, Exit<Option<E | E1>, readonly [ReadonlyArray<C>, Z]>>
 ) => (self: Stream<R, E, A>): Stream<R & R1, E1 | E, C> =>
    new Stream(
       pipe(
@@ -134,10 +124,10 @@ function __zipChunks<A, B, C>(
    }
 
    if (fa.length > fb.length) {
-      return [fc, E.left(A._dropLeft(fa, fb.length))];
+      return [fc, E.left(A.dropLeft_(fa, fb.length))];
    }
 
-   return [fc, E.right(A._dropLeft(fb, fa.length))];
+   return [fc, E.right(A.dropLeft_(fb, fa.length))];
 }
 
 /**
@@ -148,19 +138,19 @@ function __zipChunks<A, B, C>(
  * By default pull is executed in parallel to preserve async semantics, see `zipWithSeq` for
  * a sequential alternative
  */
-export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
+export function bothMapPar_<R, E, O, O2, O3, R1, E1>(
    stream: Stream<R, E, O>,
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps: "seq"
 ): Stream<R & R1, E1 | E, O3>;
-export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
+export function bothMapPar_<R, E, O, O2, O3, R1, E1>(
    stream: Stream<R, E, O>,
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps?: "par" | "seq"
 ): Stream<R & R1, E1 | E, O3>;
-export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
+export function bothMapPar_<R, E, O, O2, O3, R1, E1>(
    stream: Stream<R, E, O>,
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
@@ -176,10 +166,10 @@ export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
    type State<W1, W2> = End | Running<W1, W2> | LeftDone<W1> | RightDone<W2>;
 
    const handleSuccess = (
-      leftUpd: Maybe<ReadonlyArray<O>>,
-      rightUpd: Maybe<ReadonlyArray<O2>>,
+      leftUpd: Option<ReadonlyArray<O>>,
+      rightUpd: Option<ReadonlyArray<O2>>,
       excess: Either<ReadonlyArray<O>, ReadonlyArray<O2>>
-   ): Exit<Maybe<never>, readonly [ReadonlyArray<O3>, State<O, O2>]> => {
+   ): Exit<Option<never>, readonly [ReadonlyArray<O3>, State<O, O2>]> => {
       const [leftExcess, rightExcess] = pipe(
          excess,
          E.fold(
@@ -191,14 +181,14 @@ export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
       const [left, right] = [
          pipe(
             leftUpd,
-            Mb.fold(
+            O.fold(
                () => leftExcess,
                (upd) => [...leftExcess, ...upd] as ReadonlyArray<O>
             )
          ),
          pipe(
             rightUpd,
-            Mb.fold(
+            O.fold(
                () => rightExcess,
                (upd) => [...rightExcess, ...upd] as ReadonlyArray<O2>
             )
@@ -207,15 +197,15 @@ export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
 
       const [emit, newExcess] = __zipChunks(left, right, f);
 
-      if (Mb.isJust(leftUpd) && Mb.isJust(rightUpd)) {
+      if (O.isSome(leftUpd) && O.isSome(rightUpd)) {
          return Ex.succeed(
             tuple<[ReadonlyArray<O3>, State<O, O2>]>(emit, {
                _tag: "Running",
                excess: newExcess
             })
          );
-      } else if (Mb.isNothing(leftUpd) && Mb.isNothing(rightUpd)) {
-         return Ex.fail(Mb.nothing());
+      } else if (O.isNone(leftUpd) && O.isNone(rightUpd)) {
+         return Ex.fail(O.none());
       } else {
          return Ex.succeed(
             tuple(
@@ -252,7 +242,7 @@ export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
       })((st, p1, p2) => {
          switch (st._tag) {
             case "End": {
-               return T.pure(Ex.fail(Mb.nothing()));
+               return T.pure(Ex.fail(O.none()));
             }
             case "Running": {
                return pipe(
@@ -261,23 +251,23 @@ export function _bothMapPar<R, E, O, O2, O3, R1, E1>(
                   ps === "par"
                      ? T.mapBothPar(T.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
                      : T.mapBoth(T.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
-                  T.catchAllCause((e) => T.pure(Ex.failure(pipe(e, C.map(Mb.just)))))
+                  T.catchAllCause((e) => T.pure(Ex.failure(pipe(e, C.map(O.some)))))
                );
             }
             case "LeftDone": {
                return pipe(
                   p2,
                   T.optional,
-                  T.map((r) => handleSuccess(Mb.nothing(), r, E.left(st.excessL))),
-                  T.catchAllCause((e) => T.pure(Ex.failure(pipe(e, C.map(Mb.just)))))
+                  T.map((r) => handleSuccess(O.none(), r, E.left(st.excessL))),
+                  T.catchAllCause((e) => T.pure(Ex.failure(pipe(e, C.map(O.some)))))
                );
             }
             case "RightDone": {
                return pipe(
                   p1,
                   T.optional,
-                  T.map((l) => handleSuccess(l, Mb.nothing(), E.right(st.excessR))),
-                  T.catchAllCause((e) => T.pure(Ex.failure(pipe(e, C.map(Mb.just)))))
+                  T.map((l) => handleSuccess(l, O.none(), E.right(st.excessR))),
+                  T.catchAllCause((e) => T.pure(Ex.failure(pipe(e, C.map(O.some)))))
                );
             }
          }
@@ -295,33 +285,30 @@ export function bothMapPar<O, O2, O3, R1, E1>(
    f: (a: O, a1: O2) => O3,
    ps?: "par" | "seq"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3>;
-export function bothMapPar<R, E, O, O2, O3, R1, E1>(
+export function bothMapPar<O, O2, O3, R1, E1>(
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps: "par" | "seq" = "par"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3> {
-   return (stream) => _bothMapPar(stream, that, f, ps);
+   return (stream) => bothMapPar_(stream, that, f, ps);
 }
 
-export const _bothMap = <R, E, A, R1, E1, A1, B>(
+export const bothMap_ = <R, E, A, R1, E1, A1, B>(
    stream: Stream<R, E, A>,
    that: Stream<R1, E1, A1>,
    f: (a: A, a1: A1) => B
-) => _bothMapPar(stream, that, f, "seq");
+) => bothMapPar_(stream, that, f, "seq");
 
-export const bothMap = <A, R1, E1, A1, B>(that: Stream<R1, E1, A1>, f: (a: A, a1: A1) => B) => <
-   R,
-   E
->(
+export const bothMap = <A, R1, E1, A1, B>(that: Stream<R1, E1, A1>, f: (a: A, a1: A1) => B) => <R, E>(
    stream: Stream<R, E, A>
-) => _bothMap(stream, that, f);
+) => bothMap_(stream, that, f);
 
 /**
  * Switches over to the stream produced by the provided function in case this one
  * fails. Allows recovery from all causes of failure, including interruption if the
  * stream is uninterruptible.
  */
-export const _catchAllCause = <R, E, A, R1, E2, B>(
+export const catchAllCause_ = <R, E, A, R1, E2, B>(
    stream: Stream<R, E, A>,
    f: (e: C.Cause<E>) => Stream<R1, E2, B>
 ): Stream<R & R1, E2, B | A> => {
@@ -333,10 +320,7 @@ export const _catchAllCause = <R, E, A, R1, E2, B>(
    return new Stream<R & R1, E2, A | B>(
       pipe(
          M.of,
-         M.bindS(
-            "finalizerRef",
-            () => M.finalizerRef(M.noopFinalizer) as M.Managed<R, never, XR.Ref<M.Finalizer>>
-         ),
+         M.bindS("finalizerRef", () => M.finalizerRef(M.noopFinalizer) as M.Managed<R, never, XR.Ref<M.Finalizer>>),
          M.bindS("ref", () =>
             pipe(
                XR.makeRef<State<E>>({ _tag: "NotStarted" }),
@@ -352,9 +336,7 @@ export const _catchAllCause = <R, E, A, R1, E2, B>(
                   T.makeUninterruptible
                );
 
-            const open = <R, E0, O>(stream: Stream<R, E0, O>) => (
-               asState: (_: Pull.Pull<R, E0, O>) => State<E>
-            ) =>
+            const open = <R, E0, O>(stream: Stream<R, E0, O>) => (asState: (_: Pull.Pull<R, E0, O>) => State<E>) =>
                T.uninterruptibleMask(({ restore }) =>
                   pipe(
                      M.makeReleaseMap,
@@ -364,7 +346,7 @@ export const _catchAllCause = <R, E, A, R1, E2, B>(
                            T.chain(() =>
                               pipe(
                                  restore(stream.proc.effect),
-                                 T.provideSome((_: R) => [_, releaseMap] as [R, M.ReleaseMap]),
+                                 T.local((_: R) => [_, releaseMap] as [R, M.ReleaseMap]),
                                  T.map(([_, __]) => __),
                                  T.chainFirst((pull) => ref.set(asState(pull)))
                               )
@@ -374,12 +356,12 @@ export const _catchAllCause = <R, E, A, R1, E2, B>(
                   )
                );
 
-            const failover = (cause: C.Cause<Maybe<E>>) =>
+            const failover = (cause: C.Cause<Option<E>>) =>
                pipe(
                   cause,
-                  C.sequenceCauseMaybe,
-                  Mb.fold(
-                     () => T.fail(Mb.nothing()),
+                  C.sequenceCauseOption,
+                  O.fold(
+                     () => T.fail(O.none()),
                      (cause) =>
                         pipe(
                            closeCurrent(cause),
@@ -420,6 +402,6 @@ export const _catchAllCause = <R, E, A, R1, E2, B>(
    );
 };
 
-export const catchAllCause = <E, R1, E1, B>(f: (e: C.Cause<E>) => Stream<R1, E1, B>) => <X, R, A>(
+export const catchAllCause = <E, R1, E1, B>(f: (e: C.Cause<E>) => Stream<R1, E1, B>) => <R, A>(
    stream: Stream<R, E, A>
-): Stream<R & R1, E1, B | A> => _catchAllCause(stream, f);
+): Stream<R & R1, E1, B | A> => catchAllCause_(stream, f);

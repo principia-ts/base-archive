@@ -1,7 +1,7 @@
-import { Monoid } from "../Monoid";
+import type { Monoid } from "../Monoid";
 import * as Ordering from "../Ordering";
 import { fromCompare } from "./combinators";
-import { Ord } from "./Ord";
+import type { Ord } from "./Ord";
 
 export const getMonoid = <A = never>(): Monoid<Ord<A>> => ({
    concat: (x) => (y) => fromCompare((a) => (b) => Ordering.Monoid.concat(x.compare(a)(b))(y.compare(a)(b))),

@@ -1,9 +1,9 @@
 import * as A from "@principia/core/Array";
-import { Either } from "@principia/core/Either";
+import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
 import { pipe } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
-import { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 
 import * as C from "../../Cause";
 import * as T from "../../Effect";
@@ -31,15 +31,14 @@ export class Sink<R, E, I, L, Z> {
 /**
  * Creates a sink from a Push
  */
-export const fromPush = <R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>) =>
-   new Sink(M.succeed(push));
+export const fromPush = <R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>) => new Sink(M.succeed(push));
 
 /**
  * A sink that immediately ends with the specified value.
  */
 export const succeed = <Z, I>(z: Z): Sink<unknown, never, I, I, Z> =>
    fromPush<unknown, never, I, I, Z>((c) => {
-      const leftover = Mb._fold(
+      const leftover = O.fold_(
          c,
          () => [] as ReadonlyArray<I>,
          (x) => x
@@ -61,23 +60,21 @@ export const foldArraysM = <Z>(z: Z) => (contFn: (s: Z) => boolean) => <I, R, E>
          pipe(
             M.of,
             M.bindS("state", () => pipe(XR.makeRef(z), T.toManaged())),
-            M.letS("push", ({ state }) => (is: Maybe<ReadonlyArray<I>>) => {
+            M.letS("push", ({ state }) => (is: Option<ReadonlyArray<I>>) => {
                switch (is._tag) {
-                  case "Nothing": {
+                  case "None": {
                      return pipe(
                         state.get,
                         T.chain((s) => Push.emit(s, []))
                      );
                   }
-                  case "Just": {
+                  case "Some": {
                      return pipe(
                         state.get,
                         T.chain((s) =>
                            pipe(
                               f(s, is.value),
-                              T.first(
-                                 (e) => [E.left(e), []] as [Either<E, never>, ReadonlyArray<I>]
-                              ),
+                              T.first((e) => [E.left(e), []] as [Either<E, never>, ReadonlyArray<I>]),
                               T.chain((s) =>
                                  contFn(s)
                                     ? pipe(
@@ -107,15 +104,13 @@ export const foldArraysM = <Z>(z: Z) => (contFn: (s: Z) => boolean) => <I, R, E>
  */
 export const foldArrays = <Z>(z: Z) => (contFn: (s: Z) => boolean) => <I>(
    f: (s: Z, i: ReadonlyArray<I>) => Z
-): Sink<unknown, never, I, I, Z> =>
-   foldArraysM(z)(contFn)((z, i: ReadonlyArray<I>) => T.pure(f(z, i)));
+): Sink<unknown, never, I, I, Z> => foldArraysM(z)(contFn)((z, i: ReadonlyArray<I>) => T.pure(f(z, i)));
 
 /**
  * A sink that folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export const foldLeftArrays = <Z>(z: Z) => <I>(f: (s: Z, i: ReadonlyArray<I>) => Z) =>
-   foldArrays(z)(() => true)(f);
+export const foldLeftArrays = <Z>(z: Z) => <I>(f: (s: Z, i: ReadonlyArray<I>) => Z) => foldArrays(z)(() => true)(f);
 
 /**
  * A sink that collects all of its inputs into an array.
@@ -127,12 +122,7 @@ export const collectAll = <A>(): Sink<unknown, never, A, A, ReadonlyArray<A>> =>
  * Runs both sinks in parallel on the input, returning the result or the error from the
  * one that finishes first.
  */
-export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1, L1, Z1>) => <
-   R,
-   E,
-   L,
-   Z
->(
+export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1, L1, Z1>) => <R, E, L, Z>(
    self: Sink<R, E, I, L, Z>
 ): Sink<R1 & R, E1 | E, I1, L1 | L, E.Either<Z, Z1>> =>
    new Sink(
@@ -140,7 +130,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
          M.of,
          M.bindS("p1", () => self.push),
          M.bindS("p2", () => that.push),
-         M.map(({ p1, p2 }) => (i: Maybe<ReadonlyArray<I1>>): T.Effect<
+         M.map(({ p1, p2 }) => (i: Option<ReadonlyArray<I1>>): T.Effect<
             R1 & R,
             readonly [Either<E | E1, Either<Z, Z1>>, ReadonlyArray<L | L1>],
             void
@@ -149,7 +139,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                p1(i),
                p2(i),
                (res1, fib2) =>
-                  Ex._foldM(
+                  Ex.foldM_(
                      res1,
                      (f) =>
                         T._apSecond(
@@ -157,18 +147,14 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                            T.halt(
                               pipe(
                                  f,
-                                 C.map(([r, leftover]) => [E._map(r, E.left), leftover] as const)
+                                 C.map(([r, leftover]) => [E.map_(r, E.left), leftover] as const)
                               )
                            )
                         ),
-                     () =>
-                        T._first(
-                           F.join(fib2),
-                           ([r, leftover]) => [E._map(r, E.right), leftover] as const
-                        )
+                     () => T.first_(F.join(fib2), ([r, leftover]) => [E.map_(r, E.right), leftover] as const)
                   ),
                (res2, fib1) =>
-                  Ex._foldM(
+                  Ex.foldM_(
                      res2,
                      (f) =>
                         T._apSecond(
@@ -176,15 +162,11 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                            T.halt(
                               pipe(
                                  f,
-                                 C.map(([r, leftover]) => [E._map(r, E.right), leftover] as const)
+                                 C.map(([r, leftover]) => [E.map_(r, E.right), leftover] as const)
                               )
                            )
                         ),
-                     () =>
-                        T._first(
-                           F.join(fib1),
-                           ([r, leftover]) => [E._map(r, E.left), leftover] as const
-                        )
+                     () => T.first_(F.join(fib1), ([r, leftover]) => [E.map_(r, E.left), leftover] as const)
                   )
             )
          )
@@ -206,7 +188,7 @@ export const foreach = <I, R1, E1>(f: (i: I) => T.Effect<R1, E1, any>) => {
          return pipe(
             f(chunk[idx]),
             T.foldM(
-               (e) => Push.fail(e, A._dropLeft(chunk, idx + 1)),
+               (e) => Push.fail(e, A.dropLeft_(chunk, idx + 1)),
                () => go(chunk, idx + 1, len)
             )
          );
@@ -214,7 +196,7 @@ export const foreach = <I, R1, E1>(f: (i: I) => T.Effect<R1, E1, any>) => {
    };
 
    return fromPush(
-      Mb.fold(
+      O.fold(
          () => Push.emit<never, void>(undefined, []),
          (is: ReadonlyArray<I>) => go(is, 0, is.length)
       )

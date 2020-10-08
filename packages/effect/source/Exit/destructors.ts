@@ -1,11 +1,11 @@
-import * as C from "../Cause";
+import type * as C from "../Cause";
 import type { Effect } from "../Effect/Effect";
-import { Exit } from "./Exit";
+import type { Exit } from "./Exit";
 
 /**
  * Folds over the value or cause.
  */
-export const _foldM = <E, A, R1, E1, A1, R2, E2, A2>(
+export const foldM_ = <E, A, R1, E1, A1, R2, E2, A2>(
    exit: Exit<E, A>,
    onFailure: (e: C.Cause<E>) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
@@ -23,4 +23,4 @@ export const _foldM = <E, A, R1, E1, A1, R2, E2, A2>(
 export const foldM = <E, A, R1, E1, A1, R2, E2, A2>(
    onFailure: (e: C.Cause<E>) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
-) => (exit: Exit<E, A>) => _foldM(exit, onFailure, onSuccess);
+) => (exit: Exit<E, A>) => foldM_(exit, onFailure, onSuccess);

@@ -1,8 +1,9 @@
-import { identity, Predicate, Refinement } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
+import type { Predicate, Refinement } from "@principia/core/Function";
+import { identity } from "@principia/core/Function";
+import * as O from "@principia/core/Option";
 
 import * as _ from "../internal";
-import { Prism } from "./Prism";
+import type { Prism } from "./Prism";
 
 /*
  * -------------------------------------------
@@ -15,7 +16,7 @@ import { Prism } from "./Prism";
  * @since 1.0.0
  */
 export const id = <S>(): Prism<S, S> => ({
-   getMaybe: Mb.just,
+   getOption: O.some,
    reverseGet: identity
 });
 

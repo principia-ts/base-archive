@@ -1,6 +1,6 @@
 import type { Lazy } from "../Function";
-import { isNothing } from "./guards";
-import type { Maybe } from "./Maybe";
+import { isNone } from "./guards";
+import type { Option } from "./Option";
 
 /*
  * -------------------------------------------
@@ -10,7 +10,7 @@ import type { Maybe } from "./Maybe";
 
 /**
  * ```haskell
- * _fold :: (Maybe a, (() -> b), (a -> c)) -> b | c
+ * fold_ :: (Maybe a, (() -> b), (a -> c)) -> b | c
  * ```
  *
  * Takes a default value, a function, and an `Maybe` value, if the `Maybe` value is `Nothing` the default value is returned, otherwise the function is applied to the value inside the `Just` and the result is returned.
@@ -18,8 +18,8 @@ import type { Maybe } from "./Maybe";
  * @category Destructors
  * @since 1.0.0
  */
-export const _fold = <A, B, C>(fa: Maybe<A>, onNothing: Lazy<B>, onJust: (a: A) => C): B | C =>
-   isNothing(fa) ? onNothing() : onJust(fa.value);
+export const fold_ = <A, B, C>(fa: Option<A>, onNothing: Lazy<B>, onJust: (a: A) => C): B | C =>
+   isNone(fa) ? onNothing() : onJust(fa.value);
 
 /**
  * ```haskell
@@ -31,8 +31,8 @@ export const _fold = <A, B, C>(fa: Maybe<A>, onNothing: Lazy<B>, onJust: (a: A) 
  * @category Destructors
  * @since 1.0.0
  */
-export const fold = <A, B, C>(onNothing: Lazy<B>, onJust: (a: A) => C) => (fa: Maybe<A>): B | C =>
-   _fold(fa, onNothing, onJust);
+export const fold = <A, B, C>(onNothing: Lazy<B>, onJust: (a: A) => C) => (fa: Option<A>): B | C =>
+   fold_(fa, onNothing, onJust);
 
 /**
  * ```haskell
@@ -44,7 +44,7 @@ export const fold = <A, B, C>(onNothing: Lazy<B>, onJust: (a: A) => C) => (fa: M
  * @category Destructors
  * @since 1.0.0
  */
-export const toNullable = <A>(fa: Maybe<A>): A | null => (isNothing(fa) ? null : fa.value);
+export const toNullable = <A>(fa: Option<A>): A | null => (isNone(fa) ? null : fa.value);
 
 /**
  * ```haskell
@@ -56,11 +56,11 @@ export const toNullable = <A>(fa: Maybe<A>): A | null => (isNothing(fa) ? null :
  * @category Destructors
  * @since 1.0.0
  */
-export const toUndefined = <A>(fa: Maybe<A>): A | undefined => (isNothing(fa) ? undefined : fa.value);
+export const toUndefined = <A>(fa: Option<A>): A | undefined => (isNone(fa) ? undefined : fa.value);
 
 /**
  * ```haskell
- * _getOrElse :: (Maybe a, (() -> b)) -> a | b
+ * getOrElse_ :: (Maybe a, (() -> b)) -> a | b
  * ```
  *
  * Extracts the value out of the structure, if it exists. Otherwise returns the given default value
@@ -68,7 +68,7 @@ export const toUndefined = <A>(fa: Maybe<A>): A | undefined => (isNothing(fa) ? 
  * @category Destructors
  * @since 1.0.0
  */
-export const _getOrElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<B>): A | B => (isNothing(fa) ? onNothing() : fa.value);
+export const getOrElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<B>): A | B => (isNone(fa) ? onNothing() : fa.value);
 
 /**
  * ```haskell
@@ -80,4 +80,4 @@ export const _getOrElse = <A, B>(fa: Maybe<A>, onNothing: Lazy<B>): A | B => (is
  * @category Destructors
  * @since 1.0.0
  */
-export const getOrElse = <B>(onNothing: Lazy<B>) => <A>(fa: Maybe<A>): A | B => _getOrElse(fa, onNothing);
+export const getOrElse = <B>(onNothing: Lazy<B>) => <A>(fa: Option<A>): A | B => getOrElse_(fa, onNothing);

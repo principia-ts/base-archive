@@ -1,9 +1,10 @@
 import type { Cause } from "../../Cause/Cause";
-import { _foldCauseM, Effect, halt, pure } from "../core";
+import type { Effect } from "../core";
+import { foldCauseM_, halt, pure } from "../core";
 
 /**
  * ```haskell
- * _mapErrorCause :: Effect t => (t x r e a, (Cause e -> Cause e1)) -> t x r e1 a
+ * mapErrorCause_ :: Effect t => (t x r e a, (Cause e -> Cause e1)) -> t x r e1 a
  * ```
  *
  * Returns an effect with its full cause of failure mapped using
@@ -13,10 +14,8 @@ import { _foldCauseM, Effect, halt, pure } from "../core";
  * @category Combinators
  * @since 1.0.0
  */
-export const _mapErrorCause = <R, E, A, E1>(
-   ef: Effect<R, E, A>,
-   f: (cause: Cause<E>) => Cause<E1>
-): Effect<R, E1, A> => _foldCauseM(ef, (c) => halt(f(c)), pure);
+export const mapErrorCause_ = <R, E, A, E1>(ef: Effect<R, E, A>, f: (cause: Cause<E>) => Cause<E1>): Effect<R, E1, A> =>
+   foldCauseM_(ef, (c) => halt(f(c)), pure);
 
 /**
  * ```haskell
@@ -32,4 +31,4 @@ export const _mapErrorCause = <R, E, A, E1>(
  */
 export const mapErrorCause = <E, E1>(f: (cause: Cause<E>) => Cause<E1>) => <R, A>(
    ef: Effect<R, E, A>
-): Effect<R, E1, A> => _mapErrorCause(ef, f);
+): Effect<R, E1, A> => mapErrorCause_(ef, f);

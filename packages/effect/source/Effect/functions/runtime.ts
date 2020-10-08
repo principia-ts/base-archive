@@ -1,6 +1,6 @@
 import * as C from "../../Cause";
 import { HasClock, LiveClock } from "../../Clock";
-import { Exit } from "../../Exit";
+import type { Exit } from "../../Exit";
 import * as F from "../../Fiber";
 import { FiberContext } from "../../Fiber/FiberContext";
 import { fiberId } from "../../Fiber/FiberId";
@@ -22,9 +22,7 @@ export const empty = () => {
 export type DefaultEnv = HasClock & HasRandom & HasMemoMap;
 
 export const memoMap = new MemoMap(
-   XRM.unsafeMakeRefM<ReadonlyMap<Layer<any, any, any>, readonly [T.IO<any, any>, Finalizer]>>(
-      new Map()
-   )
+   XRM.unsafeMakeRefM<ReadonlyMap<Layer<any, any, any>, readonly [T.IO<any, any>, Finalizer]>>(new Map())
 );
 
 export const defaultEnv = () => ({
@@ -129,10 +127,7 @@ export const runPromiseExit = <E, A>(_: T.Effect<DefaultEnv, E, A>): Promise<Exi
  * Runs effect until completion returing a cancel effecr that when executed
  * triggers cancellation of the process
  */
-export const runCancel = <E, A>(
-   _: T.Effect<DefaultEnv, E, A>,
-   cb?: Callback<E, A>
-): AsyncCancel<E, A> => {
+export const runCancel = <E, A>(_: T.Effect<DefaultEnv, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> => {
    const context = fiberContext<E, A>();
 
    context.evaluateLater(_[_I]);
@@ -172,29 +167,25 @@ export const runPromise = <E, A>(_: T.Effect<DefaultEnv, E, A>): Promise<A> => {
 export interface Runtime<R0> {
    in: <R, E, A>(effect: T.Effect<R & R0, E, A>) => T.Effect<R, E, A>;
    run: <E, A>(_: T.Effect<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => void;
-   runCancel: <E, A>(
-      _: T.Effect<DefaultEnv & R0, E, A>,
-      cb?: Callback<E, A> | undefined
-   ) => T.UIO<Exit<E, A>>;
+   runCancel: <E, A>(_: T.Effect<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => T.UIO<Exit<E, A>>;
    runPromise: <E, A>(_: T.Effect<DefaultEnv & R0, E, A>) => Promise<A>;
    runPromiseExit: <E, A>(_: T.Effect<DefaultEnv & R0, E, A>) => Promise<Exit<E, A>>;
 }
 
 export const makeRuntime = <R0>(r0: R0): Runtime<R0> => ({
-   in: <R, E, A>(effect: T.Effect<R & R0, E, A>) =>
-      T._provideSome(effect, (r: R) => ({ ...r0, ...r })),
+   in: <R, E, A>(effect: T.Effect<R & R0, E, A>) => T.local_(effect, (r: R) => ({ ...r0, ...r })),
    run: (_, cb) =>
       run(
-         T._provideSome(_, (r) => ({ ...r0, ...r })),
+         T.local_(_, (r) => ({ ...r0, ...r })),
          cb
       ),
    runCancel: (_, cb) =>
       runCancel(
-         T._provideSome(_, (r) => ({ ...r0, ...r })),
+         T.local_(_, (r) => ({ ...r0, ...r })),
          cb
       ),
-   runPromise: (_) => runPromise(T._provideSome(_, (r) => ({ ...r0, ...r }))),
-   runPromiseExit: (_) => runPromiseExit(T._provideSome(_, (r) => ({ ...r0, ...r })))
+   runPromise: (_) => runPromise(T.local_(_, (r) => ({ ...r0, ...r }))),
+   runPromiseExit: (_) => runPromiseExit(T.local_(_, (r) => ({ ...r0, ...r })))
 });
 
 /**
@@ -205,7 +196,7 @@ export const makeRuntime = <R0>(r0: R0): Runtime<R0> => ({
  * is valid (i.e. keep attention to closed resources)
  */
 export const runtime = <R0>() =>
-   T.accessM((r0: R0) =>
+   T.asksM((r0: R0) =>
       T.total(
          (): Runtime<R0> => {
             return makeRuntime<R0>(r0);
@@ -213,8 +204,6 @@ export const runtime = <R0>() =>
       )
    );
 
-export const withRuntimeM = <R0, R, E, A>(f: (r: Runtime<R0>) => T.Effect<R, E, A>) =>
-   T._chain(runtime<R0>(), f);
+export const withRuntimeM = <R0, R, E, A>(f: (r: Runtime<R0>) => T.Effect<R, E, A>) => T.chain_(runtime<R0>(), f);
 
-export const withRuntime = <R0, A>(f: (r: Runtime<R0>) => A) =>
-   T._chain(runtime<R0>(), (r) => T.pure(f(r)));
+export const withRuntime = <R0, A>(f: (r: Runtime<R0>) => A) => T.chain_(runtime<R0>(), (r) => T.pure(f(r)));

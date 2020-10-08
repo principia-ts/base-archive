@@ -1,6 +1,5 @@
-import type { Lazy } from "@principia/core/Function";
 import type { V as Variance } from "@principia/core/HKT";
-import type { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 
 import type { Cause } from "../Cause";
 import type { Exit } from "../Exit/Exit";
@@ -30,8 +29,8 @@ export type URI = typeof URI;
 
 export interface Effect<R, E, A> {
    readonly [_U]: URI;
-   readonly [_E]: Lazy<E>;
-   readonly [_A]: Lazy<A>;
+   readonly [_E]: () => E;
+   readonly [_A]: () => A;
    readonly [_R]: (_: R) => void;
 
    readonly [_I]: Instruction;
@@ -70,8 +69,8 @@ export abstract class BaseInstruction<R, E, A> implements Effect<R, E, A> {
    readonly _S2!: () => never;
 
    readonly [_U]: URI;
-   readonly [_E]: Lazy<E>;
-   readonly [_A]: Lazy<A>;
+   readonly [_E]: () => E;
+   readonly [_A]: () => A;
    readonly [_R]: (_: R) => void;
 
    get [_I]() {
@@ -115,14 +114,14 @@ export class PureInstruction<A> extends BaseInstruction<unknown, never, A> {
 
 export class PartialInstruction<E, A> extends BaseInstruction<unknown, E, A> {
    readonly _tag = "Partial";
-   constructor(readonly thunk: Lazy<A>, readonly onThrow: (u: unknown) => E) {
+   constructor(readonly thunk: () => A, readonly onThrow: (u: unknown) => E) {
       super();
    }
 }
 
 export class TotalInstruction<A> extends BaseInstruction<unknown, never, A> {
    readonly _tag = "Total";
-   constructor(readonly thunk: Lazy<A>) {
+   constructor(readonly thunk: () => A) {
       super();
    }
 }
@@ -130,18 +129,14 @@ export class TotalInstruction<A> extends BaseInstruction<unknown, never, A> {
 export class AsyncInstruction<R, E, A> extends BaseInstruction<R, E, A> {
    readonly _tag = "Async";
    constructor(
-      readonly register: (f: (_: Effect<R, E, A>) => void) => Maybe<Effect<R, E, A>>,
+      readonly register: (f: (_: Effect<R, E, A>) => void) => Option<Effect<R, E, A>>,
       readonly blockingOn: ReadonlyArray<FiberId>
    ) {
       super();
    }
 }
 
-export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends BaseInstruction<
-   R & R1 & R2,
-   E1 | E2,
-   B | C
-> {
+export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends BaseInstruction<R & R1 & R2, E1 | E2, B | C> {
    readonly _tag = "Fold";
 
    constructor(
@@ -160,7 +155,7 @@ export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends BaseInstruct
 export class ForkInstruction<R, E, A> extends BaseInstruction<R, never, FiberContext<E, A>> {
    readonly _tag = "Fork";
 
-   constructor(readonly E: Effect<R, E, A>, readonly scope: Maybe<Scope<Exit<any, any>>>) {
+   constructor(readonly E: Effect<R, E, A>, readonly scope: Option<Scope<Exit<any, any>>>) {
       super();
    }
 }
@@ -217,7 +212,7 @@ export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extend
       readonly right: Effect<R1, E1, A1>,
       readonly leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => Effect<R2, E2, A2>,
       readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => Effect<R3, E3, A3>,
-      readonly scope: Maybe<Scope<Exit<any, any>>>
+      readonly scope: Option<Scope<Exit<any, any>>>
    ) {
       super();
    }
@@ -266,11 +261,7 @@ export class SuspendPartialInstruction<R, E, A, E2> extends BaseInstruction<R, E
 export class NewFiberRefInstruction<A> extends BaseInstruction<unknown, never, FiberRef<A>> {
    readonly _tag = "NewFiberRef";
 
-   constructor(
-      readonly initial: A,
-      readonly onFork: (a: A) => A,
-      readonly onJoin: (a: A, a2: A) => A
-   ) {
+   constructor(readonly initial: A, readonly onFork: (a: A) => A, readonly onJoin: (a: A, a2: A) => A) {
       super();
    }
 }
@@ -294,7 +285,7 @@ export class GetForkScopeInstruction<R, E, A> extends BaseInstruction<R, E, A> {
 export class OverrideForkScopeInstruction<R, E, A> extends BaseInstruction<R, E, A> {
    readonly _tag = "OverrideForkScope";
 
-   constructor(readonly E: Effect<R, E, A>, readonly forkScope: Maybe<Scope<Exit<any, any>>>) {
+   constructor(readonly E: Effect<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
       super();
    }
 }

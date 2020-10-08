@@ -1,7 +1,7 @@
 import * as A from "../Array";
 import type { Either } from "../Either";
 import { identity } from "../Function";
-import { Monoid } from "../Monoid";
+import type { Monoid } from "../Monoid";
 import type { Separated } from "../Utils";
 
 function* genOf<A>(a: A) {
@@ -163,11 +163,11 @@ export const reduce_ = <A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A, i: number) 
 export const reduce = <A, B>(b: B, f: (b: B, a: A, i: number) => B) => (fa: Iterable<A>): B => reduce_(fa, b, f);
 
 export const reduceRight = <A, B>(b: B, f: (a: A, b: B, i: number) => B) => (fa: Iterable<A>): B => {
-   return A._reduceRightWithIndex(Array.from(fa), b, (i, a, b) => f(a, b, i));
+   return A.reduceRightWithIndex_(Array.from(fa), b, (i, a, b) => f(a, b, i));
 };
 
 export const reduceRight_ = <A, B>(fa: Iterable<A>, b: B, f: (a: A, b: B, i: number) => B): B => {
-   return A._reduceRightWithIndex(Array.from(fa), b, (i, a, b) => f(a, b, i));
+   return A.reduceRightWithIndex_(Array.from(fa), b, (i, a, b) => f(a, b, i));
 };
 
 export const concat = <A>(a: Iterable<A>, b: Iterable<A>): Iterable<A> => ({

@@ -1,14 +1,15 @@
 import type { Eq } from "../Eq";
-import { not, Predicate } from "../Function";
+import type { Predicate } from "../Function";
+import { not } from "../Function";
 import { empty } from "./constructors";
-import { _elem, _filter, elem } from "./methods";
+import { elem, elem_, filter_ } from "./methods";
 
 interface Next<A> {
    readonly done?: boolean;
    readonly value: A;
 }
 
-export const _some = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => {
+export const some_ = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => {
    const values = set.values();
    let e: Next<A>;
    let found = false;
@@ -18,11 +19,11 @@ export const _some = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => {
    return found;
 };
 
-export const some = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => _some(set, predicate);
+export const some = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => some_(set, predicate);
 
-export const _every = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => not(some(not(predicate)))(set);
+export const every_ = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => not(some(not(predicate)))(set);
 
-export const every = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => _every(set, predicate);
+export const every = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => every_(set, predicate);
 
 /**
  * Form the union of two sets
@@ -30,7 +31,7 @@ export const every = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => _e
  * @category Combinators
  * @since 1.0.0
  */
-export const _union = <A>(E: Eq<A>) => {
+export const union_ = <A>(E: Eq<A>) => {
    const elemE = elem(E);
    return (me: ReadonlySet<A>, that: ReadonlySet<A>) => {
       if (me === empty) {
@@ -56,8 +57,8 @@ export const _union = <A>(E: Eq<A>) => {
  * @since 1.0.0
  */
 export const union = <A>(E: Eq<A>) => {
-   const _unionE = _union(E);
-   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => _unionE(me, that);
+   const unionE_ = union_(E);
+   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => unionE_(me, that);
 };
 
 /**
@@ -66,7 +67,7 @@ export const union = <A>(E: Eq<A>) => {
  * @category Combinators
  * @since 1.0.0
  */
-export const _intersection = <A>(E: Eq<A>) => {
+export const intersection_ = <A>(E: Eq<A>) => {
    const elemE = elem(E);
    return (me: ReadonlySet<A>, that: ReadonlySet<A>) => {
       if (me === empty || that === empty) {
@@ -89,24 +90,24 @@ export const _intersection = <A>(E: Eq<A>) => {
  * @since 1.0.0
  */
 export const intersection = <A>(E: Eq<A>) => {
-   const _intersectionE = _intersection(E);
-   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => _intersectionE(me, that);
+   const intersectionE_ = intersection_(E);
+   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => intersectionE_(me, that);
 };
 
-export const _difference = <A>(E: Eq<A>) => {
-   const _elemE = _elem(E);
-   return (me: ReadonlySet<A>, that: ReadonlySet<A>) => _filter(me, (a) => !_elemE(that, a));
+export const difference_ = <A>(E: Eq<A>) => {
+   const elemE_ = elem_(E);
+   return (me: ReadonlySet<A>, that: ReadonlySet<A>) => filter_(me, (a) => !elemE_(that, a));
 };
 
 export const difference = <A>(E: Eq<A>) => {
-   const _differenceE = _difference(E);
-   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => _differenceE(me, that);
+   const differenceE_ = difference_(E);
+   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => differenceE_(me, that);
 };
 
-export const _insert = <A>(E: Eq<A>) => {
-   const _elemE = _elem(E);
+export const insert_ = <A>(E: Eq<A>) => {
+   const elemE_ = elem_(E);
    return (set: ReadonlySet<A>, a: A) => {
-      if (!_elemE(set, a)) {
+      if (!elemE_(set, a)) {
          const r = new Set(set);
          r.add(a);
          return r;
@@ -117,10 +118,10 @@ export const _insert = <A>(E: Eq<A>) => {
 };
 
 export const insert = <A>(E: Eq<A>) => {
-   const _insertE = _insert(E);
-   return (a: A) => (set: ReadonlySet<A>) => _insertE(set, a);
+   const insertE_ = insert_(E);
+   return (a: A) => (set: ReadonlySet<A>) => insertE_(set, a);
 };
 
-export const _remove = <A>(E: Eq<A>) => (set: ReadonlySet<A>, a: A) => _filter(set, (ax) => !E.equals(a)(ax));
+export const remove_ = <A>(E: Eq<A>) => (set: ReadonlySet<A>, a: A) => filter_(set, (ax) => !E.equals(a)(ax));
 
-export const remove = <A>(E: Eq<A>) => (a: A) => (set: ReadonlySet<A>) => _remove(E)(set, a);
+export const remove = <A>(E: Eq<A>) => (a: A) => (set: ReadonlySet<A>) => remove_(E)(set, a);

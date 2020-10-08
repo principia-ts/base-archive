@@ -1,8 +1,9 @@
 import * as HKT from "../HKT";
-import { ContramapF, ContramapFComposition } from "./ContramapF";
+import type { ContramapF, ContramapFComposition, UC_ContramapF } from "./ContramapF";
 
 export interface Contravariant<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
    readonly contramap: ContramapF<F, C>;
+   readonly contramap_: UC_ContramapF<F, C>;
 }
 
 export interface ContravariantComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>

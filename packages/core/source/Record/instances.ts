@@ -1,59 +1,60 @@
-import { Eq, fromEquals } from "../Eq";
+import type { Eq } from "../Eq";
+import { fromEquals } from "../Eq";
 import { pipe } from "../Function";
 import * as HKT from "../HKT";
 import type * as TC from "../typeclass-index";
 import { empty } from "./constructors";
 import { isSubrecord } from "./guards";
 import {
-   _filter,
-   _filterWithIndex,
-   _foldMap,
-   _foldMapWithIndex,
-   _map,
-   _mapEither,
-   _mapEitherWithIndex,
-   _mapMaybe,
-   _mapMaybeWithIndex,
-   _mapWithIndex,
-   _partition,
-   _partitionWithIndex,
-   _reduce,
-   _reduceRight,
-   _reduceRightWithIndex,
-   _reduceWithIndex,
-   _traverse,
-   _traverseWithIndex,
-   _wilt,
-   _wiltWithIndex,
-   _wither,
-   _witherWithIndex,
    compact,
    filter,
+   filter_,
    filterWithIndex,
+   filterWithIndex_,
    foldMap,
+   foldMap_,
    foldMapWithIndex,
+   foldMapWithIndex_,
    map,
+   map_,
    mapEither,
+   mapEither_,
    mapEitherWithIndex,
-   mapMaybe,
-   mapMaybeWithIndex,
+   mapEitherWithIndex_,
+   mapOption,
+   mapOption_,
+   mapOptionWithIndex,
+   mapOptionWithIndex_,
    mapWithIndex,
+   mapWithIndex_,
    partition,
+   partition_,
    partitionWithIndex,
+   partitionWithIndex_,
    reduce,
+   reduce_,
    reduceRight,
+   reduceRight_,
    reduceRightWithIndex,
+   reduceRightWithIndex_,
    reduceWithIndex,
+   reduceWithIndex_,
    separate,
    sequence,
    traverse,
+   traverse_,
    traverseWithIndex,
+   traverseWithIndex_,
    wilt,
+   wilt_,
    wiltWithIndex,
+   wiltWithIndex_,
    wither,
-   witherWithIndex
+   wither_,
+   witherWithIndex,
+   witherWithIndex_
 } from "./methods";
-import { ReadonlyRecord, URI, V } from "./Record";
+import type { ReadonlyRecord, URI, V } from "./Record";
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -118,19 +119,19 @@ export const fromFoldableMap = <B, F extends HKT.URIS, C = HKT.Auto>(S: TC.Semig
 
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
    map,
-   _map
+   map_: map_
 });
 
 export const FunctorWithIndex: TC.FunctorWithIndex<[URI], V> = HKT.instance({
    ...Functor,
    mapWithIndex,
-   _mapWithIndex
+   mapWithIndex_: mapWithIndex_
 });
 
 export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
-   _reduce,
-   _foldMap,
-   _reduceRight,
+   reduce_: reduce_,
+   foldMap_: foldMap_,
+   reduceRight_: reduceRight_,
    reduce,
    foldMap,
    reduceRight
@@ -138,9 +139,9 @@ export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
 
 export const FoldableWithIndex: TC.FoldableWithIndex<[URI], V> = HKT.instance({
    ...Foldable,
-   _reduceWithIndex,
-   _foldMapWithIndex,
-   _reduceRightWithIndex,
+   reduceWithIndex_: reduceWithIndex_,
+   foldMapWithIndex_: foldMapWithIndex_,
+   reduceRightWithIndex_: reduceRightWithIndex_,
    reduceWithIndex,
    foldMapWithIndex,
    reduceRightWithIndex
@@ -154,12 +155,12 @@ export const Compactable: TC.Compactable<[URI], V> = HKT.instance({
 export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
    ...Functor,
    ...Compactable,
-   _filter,
-   _mapMaybe,
-   _partition,
-   _mapEither,
+   filter_: filter_,
+   mapOption_: mapOption_,
+   partition_: partition_,
+   mapEither_: mapEither_,
    filter,
-   mapMaybe,
+   mapOption,
    partition,
    mapEither
 });
@@ -167,12 +168,12 @@ export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
 export const FilterableWithIndex: TC.FilterableWithIndex<[URI], V> = HKT.instance({
    ...Filterable,
    ...FunctorWithIndex,
-   _filterWithIndex,
-   _mapMaybeWithIndex,
-   _partitionWithIndex,
-   _mapEitherWithIndex,
+   filterWithIndex_: filterWithIndex_,
+   mapOptionWithIndex_: mapOptionWithIndex_,
+   partitionWithIndex_: partitionWithIndex_,
+   mapEitherWithIndex_: mapEitherWithIndex_,
    filterWithIndex,
-   mapMaybeWithIndex,
+   mapOptionWithIndex,
    partitionWithIndex,
    mapEitherWithIndex
 });
@@ -180,7 +181,7 @@ export const FilterableWithIndex: TC.FilterableWithIndex<[URI], V> = HKT.instanc
 export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
    ...Functor,
    ...Foldable,
-   _traverse,
+   traverse_: traverse_,
    traverse,
    sequence
 });
@@ -189,15 +190,15 @@ export const TraversableWithIndex: TC.TraversableWithIndex<[URI], V> = HKT.insta
    ...FunctorWithIndex,
    ...FoldableWithIndex,
    ...Traversable,
-   _traverseWithIndex,
+   traverseWithIndex_: traverseWithIndex_,
    traverseWithIndex
 });
 
 export const Witherable: TC.Witherable<[URI], V> = HKT.instance({
    ...Traversable,
    ...Filterable,
-   _wither,
-   _wilt,
+   wither_: wither_,
+   wilt_: wilt_,
    wither,
    wilt
 });
@@ -206,8 +207,8 @@ export const WitherableWithIndex: TC.WitherableWithIndex<[URI], V> = HKT.instanc
    ...Witherable,
    ...FilterableWithIndex,
    ...TraversableWithIndex,
-   _wiltWithIndex,
-   _witherWithIndex,
+   wiltWithIndex_: wiltWithIndex_,
+   witherWithIndex_: witherWithIndex_,
    witherWithIndex,
    wiltWithIndex
 });

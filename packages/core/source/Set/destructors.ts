@@ -1,4 +1,4 @@
-import { Ord } from "../Ord";
+import type { Ord } from "../Ord";
 import { toNumber } from "../Ordering";
 
 export const toArray = <A>(O: Ord<A>) => (set: ReadonlySet<A>): ReadonlyArray<A> => {

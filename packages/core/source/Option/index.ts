@@ -1,4 +1,4 @@
-export * from "./Maybe";
+export * from "./Option";
 export * from "./guards";
 export * from "./instances";
 export * from "./combinators";

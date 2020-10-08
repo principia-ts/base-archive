@@ -1,5 +1,5 @@
 import { pipe } from "@principia/core/Function";
-import type { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 
 import type { At } from "../At";
 import * as _ from "../internal";
@@ -16,7 +16,7 @@ import type { Ix } from "./Ix";
  * @category Constructors
  * @since 1.0.0
  */
-export const fromAt = <T, J, B>(at: At<T, J, Maybe<B>>): Ix<T, J, B> => ({
+export const fromAt = <T, J, B>(at: At<T, J, Option<B>>): Ix<T, J, B> => ({
    index: (i) => _.lensComposePrism(_.prismSome<B>())(at.at(i))
 });
 

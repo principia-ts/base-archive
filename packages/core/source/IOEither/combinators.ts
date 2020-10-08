@@ -1,14 +1,11 @@
 import type { Either } from "../Either";
 import * as E from "../Either";
-
-import { FunctionN, Lazy, pipe, Predicate, Refinement } from "../Function";
-import type { IO } from "../IO";
+import type { FunctionN, Lazy, Predicate, Refinement } from "../Function";
 import * as I from "../IO";
-import { Maybe } from "../Maybe";
-import type * as TC from "../typeclass-index";
+import type { Option } from "../Option";
 import { fromEither, left, right } from "./constructors";
 import type { IOEither } from "./IOEither";
-import { _chain } from "./methods";
+import { chain_ } from "./methods";
 
 /*
  * -------------------------------------------
@@ -16,19 +13,19 @@ import { _chain } from "./methods";
  * -------------------------------------------
  */
 
-export const _orElse = <E, A, M>(ma: IOEither<E, A>, onLeft: (e: E) => IOEither<M, A>): IOEither<M, A> =>
-   I._chain(ma, E.fold(onLeft, right));
+export const orElse_ = <E, A, M>(ma: IOEither<E, A>, onLeft: (e: E) => IOEither<M, A>): IOEither<M, A> =>
+   I.chain_(ma, E.fold(onLeft, right));
 
-export const orElse = <E, A, M>(onLeft: (e: E) => IOEither<M, A>) => (ma: IOEither<E, A>) => _orElse(ma, onLeft);
+export const orElse = <E, A, M>(onLeft: (e: E) => IOEither<M, A>) => (ma: IOEither<E, A>) => orElse_(ma, onLeft);
 
-export const _filterOrElse: {
+export const filterOrElse_: {
    <E, A, E1, B extends A>(ma: IOEither<E, A>, refinement: Refinement<A, B>, onFalse: (a: A) => E1): IOEither<
       E | E1,
       B
    >;
    <E, A, E1>(ma: IOEither<E, A>, predicate: Predicate<A>, onFalse: (a: A) => E1): IOEither<E | E1, A>;
 } = <E, A, E1>(ma: IOEither<E, A>, predicate: Predicate<A>, onFalse: (a: A) => E1): IOEither<E | E1, A> =>
-   _chain(ma, (a) => (predicate(a) ? right(a) : left(onFalse(a))));
+   chain_(ma, (a) => (predicate(a) ? right(a) : left(onFalse(a))));
 
 export const filterOrElse: {
    <E, A, E1, B extends A>(refinement: Refinement<A, B>, onFalse: (a: A) => E1): (
@@ -36,18 +33,18 @@ export const filterOrElse: {
    ) => IOEither<E | E1, B>;
    <E, A, E1>(predicate: Predicate<A>, onFalse: (a: A) => E1): (ma: IOEither<E, A>) => IOEither<E | E1, A>;
 } = <E, A, E1>(predicate: Predicate<A>, onFalse: (a: A) => E1) => (ma: IOEither<E, A>) =>
-   _filterOrElse(ma, predicate, onFalse);
+   filterOrElse_(ma, predicate, onFalse);
 
 export const fromEitherK = <A extends ReadonlyArray<unknown>, E, B>(
    f: FunctionN<A, Either<E, B>>
 ): ((...args: A) => IOEither<E, B>) => (...a) => fromEither(f(...a));
 
-export const _chainEitherK = <E, A, E1, B>(ma: IOEither<E, A>, f: (a: A) => Either<E1, B>) =>
-   _chain(ma, fromEitherK(f));
+export const chainEitherK_ = <E, A, E1, B>(ma: IOEither<E, A>, f: (a: A) => Either<E1, B>) =>
+   chain_(ma, fromEitherK(f));
 
-export const chainEitherK = <A, E1, B>(f: (a: A) => Either<E1, B>) => <E>(ma: IOEither<E, A>) => _chainEitherK(ma, f);
+export const chainEitherK = <A, E1, B>(f: (a: A) => Either<E1, B>) => <E>(ma: IOEither<E, A>) => chainEitherK_(ma, f);
 
-export const _fromMaybe = <E, A>(ma: Maybe<A>, onNone: Lazy<E>): IOEither<E, A> =>
-   ma._tag === "Nothing" ? left(onNone()) : right(ma.value);
+export const fromOption_ = <E, A>(ma: Option<A>, onNone: Lazy<E>): IOEither<E, A> =>
+   ma._tag === "None" ? left(onNone()) : right(ma.value);
 
-export const fromMaybe = <E>(onNone: Lazy<E>) => <A>(ma: Maybe<A>) => _fromMaybe(ma, onNone);
+export const fromOption = <E>(onNone: Lazy<E>) => <A>(ma: Option<A>) => fromOption_(ma, onNone);

@@ -2,6 +2,7 @@ import * as E from "@principia/core/Either";
 import { pipe } from "@principia/core/Function";
 
 import * as T from "../Effect/core";
+import type { IO, UIO } from "../Effect/Effect";
 import type { AtomicReference } from "../Support/AtomicReference";
 import { modify } from "./atomic";
 
@@ -36,13 +37,13 @@ export interface XRef<EA, EB, A, B> {
    /**
     * Reads the value from the `XRef`.
     */
-   readonly get: T.IO<EB, B>;
+   readonly get: IO<EB, B>;
 
    /**
     * Writes a new value to the `XRef`, with a guarantee of immediate
     * consistency (at some cost to performance).
     */
-   readonly set: (a: A) => T.IO<EA, void>;
+   readonly set: (a: A) => IO<EA, void>;
 }
 
 export class DerivedAll<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
@@ -62,9 +63,8 @@ export class DerivedAll<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
    ): XRef<EC, ED, C, D> =>
       new DerivedAll(
          this.value,
-         (s) => E._fold(this.getEither(s), (e) => E.left(eb(e)), bd),
-         (c) => (s) =>
-            E._chain(ca(c), (a) => E._fold(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
+         (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
+         (c) => (s) => E.chain_(ca(c), (a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
       );
 
    readonly foldAll = <EC, ED, C, D>(
@@ -76,26 +76,26 @@ export class DerivedAll<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
    ): XRef<EC, ED, C, D> =>
       new DerivedAll(
          this.value,
-         (s) => E._fold(this.getEither(s), (e) => E.left(eb(e)), bd),
+         (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
          (c) => (s) =>
             pipe(
                this.getEither(s),
                E.fold((e) => E.left(ec(e)), ca(c)),
                E.deunion,
-               E.chain((a) => E._fold(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
+               E.chain((a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
             )
       );
 
-   readonly get: T.IO<EB, B> = pipe(
+   readonly get: IO<EB, B> = pipe(
       this.value.get,
-      T.chain((a) => E._fold(this.getEither(a), T.fail, T.pure))
+      T.chain((a) => E.fold_(this.getEither(a), T.fail, T.pure))
    );
 
-   readonly set: (a: A) => T.IO<EA, void> = (a) =>
+   readonly set: (a: A) => IO<EA, void> = (a) =>
       pipe(
          this.value,
          modify((s) =>
-            E._fold(
+            E.fold_(
                this.setEither(a)(s),
                (e) => [E.left(e), s] as [E.Either<EA, void>, S],
                (s) => [E.right(undefined), s] as [E.Either<EA, void>, S]
@@ -122,8 +122,8 @@ export class Derived<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
    ): XRef<EC, ED, C, D> =>
       new Derived<EC, ED, C, D, S>(
          this.value,
-         (s) => E._fold(this.getEither(s), (e) => E.left(eb(e)), bd),
-         (c) => E._chain(ca(c), (a) => E._fold(this.setEither(a), (e) => E.left(ea(e)), E.right))
+         (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
+         (c) => E.chain_(ca(c), (a) => E.fold_(this.setEither(a), (e) => E.left(ea(e)), E.right))
       );
 
    readonly foldAll = <EC, ED, C, D>(
@@ -135,7 +135,7 @@ export class Derived<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
    ): XRef<EC, ED, C, D> =>
       new DerivedAll<EC, ED, C, D, S>(
          this.value,
-         (s) => E._fold(this.getEither(s), (e) => E.left(eb(e)), E.right) as E.Either<ED, D>,
+         (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), E.right) as E.Either<ED, D>,
          (c) => (s) =>
             pipe(
                this.getEither(s),
@@ -150,13 +150,12 @@ export class Derived<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
             )
       );
 
-   readonly get: T.IO<EB, B> = pipe(
+   readonly get: IO<EB, B> = pipe(
       this.value.get,
-      T.chain((s) => E._fold(this.getEither(s), T.fail, T.pure))
+      T.chain((s) => E.fold_(this.getEither(s), T.fail, T.pure))
    );
 
-   readonly set: (a: A) => T.IO<EA, void> = (a) =>
-      E._fold(this.setEither(a), T.fail, this.value.set);
+   readonly set: (a: A) => IO<EA, void> = (a) => E.fold_(this.setEither(a), T.fail, this.value.set);
 }
 
 export class Atomic<A> implements XRef<never, never, A, A> {
@@ -189,11 +188,11 @@ export class Atomic<A> implements XRef<never, never, A, A> {
 
    constructor(readonly value: AtomicReference<A>) {}
 
-   get get(): T.UIO<A> {
+   get get(): UIO<A> {
       return T.total(() => this.value.get);
    }
 
-   readonly set = (a: A): T.UIO<void> => {
+   readonly set = (a: A): UIO<void> => {
       return T.total(() => {
          this.value.set(a);
       });

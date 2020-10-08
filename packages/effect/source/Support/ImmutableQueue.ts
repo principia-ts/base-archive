@@ -1,6 +1,6 @@
 import * as A from "@principia/core/Array";
 import * as NA from "@principia/core/NonEmptyArray";
-import * as Mb from "@principia/core/Maybe";
+import * as O from "@principia/core/Option";
 
 export class ImmutableQueue<A> {
    constructor(private readonly backing: readonly A[]) {}
@@ -19,12 +19,9 @@ export class ImmutableQueue<A> {
 
    dequeue() {
       if (A.isNonEmpty(this.backing)) {
-         return Mb.just([
-            NA.head(this.backing),
-            new ImmutableQueue(NA.tail(this.backing))
-         ] as const);
+         return O.some([NA.head(this.backing), new ImmutableQueue(NA.tail(this.backing))] as const);
       } else {
-         return Mb.nothing();
+         return O.none();
       }
    }
 

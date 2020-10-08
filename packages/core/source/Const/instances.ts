@@ -1,14 +1,14 @@
-import { Bounded } from "../Bounded";
-import { Eq } from "../Eq";
+import type { Bounded } from "../Bounded";
+import type { Eq } from "../Eq";
 import { identity, unsafeCoerce } from "../Function";
 import * as HKT from "../HKT";
-import { Ord } from "../Ord";
-import { Ring } from "../Ring";
-import { Show } from "../Show";
-import * as TC from "../typeclass-index";
-import { Const, URI, V } from "./Const";
+import type { Ord } from "../Ord";
+import type { Ring } from "../Ring";
+import type { Show } from "../Show";
+import type * as TC from "../typeclass-index";
+import type { Const, URI, V } from "./Const";
 import { make } from "./constructors";
-import { _bimap, _first, _map, bimap, contramap, first, map } from "./methods";
+import { bimap, bimap_, contramap, first, first_, map, map_ } from "./methods";
 
 /*
  * -------------------------------------------
@@ -67,17 +67,17 @@ export const getRing: <E, A>(S: Ring<E>) => Ring<Const<E, A>> = identity as any;
 export const getApply = <E>(S: TC.Semigroup<E>): TC.Apply<[URI], V & HKT.Fix<"E", E>> => {
    type CE = V & HKT.Fix<"E", E>;
 
-   const _ap: TC.UC_ApF<[URI], CE> = (fab, fa) => make(S.concat(fab)(fa));
+   const ap_: TC.UC_ApF<[URI], CE> = (fab, fa) => make(S.concat(fab)(fa));
 
-   const _mapBoth: TC.UC_MapBothF<[URI], CE> = (fa, _, __) => unsafeCoerce(fa);
+   const mapBoth_: TC.UC_MapBothF<[URI], CE> = (fa, _, __) => unsafeCoerce(fa);
 
    return HKT.instance<TC.Apply<[URI], CE>>({
-      _map,
+      map_: map_,
       map,
-      _ap,
-      ap: (fa) => (fab) => _ap(fab, fa),
-      _mapBoth,
-      mapBoth: (fb, f) => (fa) => _mapBoth(fa, fb, f)
+      ap_: ap_,
+      ap: (fa) => (fab) => ap_(fab, fa),
+      mapBoth_: mapBoth_,
+      mapBoth: (fb, f) => (fa) => mapBoth_(fa, fb, f)
    });
 };
 
@@ -96,7 +96,7 @@ export const getApplicative = <E>(M: TC.Monoid<E>): TC.Applicative<[URI], V & HK
  * @since 1.0.0
  */
 export const Functor: TC.Functor<[URI], V> = HKT.instance({
-   _map,
+   map_: map_,
    map
 });
 
@@ -105,7 +105,8 @@ export const Functor: TC.Functor<[URI], V> = HKT.instance({
  * @since 1.0.0
  */
 export const Contravariant: TC.Contravariant<[URI], V> = HKT.instance({
-   contramap
+   contramap,
+   contramap_: (fa, f) => contramap(f)(fa)
 });
 
 /**
@@ -113,10 +114,10 @@ export const Contravariant: TC.Contravariant<[URI], V> = HKT.instance({
  * @since 1.0.0
  */
 export const Bifunctor: TC.Bifunctor<[URI], V> = HKT.instance({
-   _bimap,
+   bimap_: bimap_,
    bimap,
-   _first,
+   first_: first_,
    first,
-   _second: _map,
+   second_: map_,
    second: map
 });

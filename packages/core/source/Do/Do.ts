@@ -24,6 +24,6 @@ export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
       ...M,
       bindS,
       letS: (name, f) => bindS(name, flow(f, M.pure)),
-      bindToS: (name) => (ma) => M._map(ma, bindTo_(name))
+      bindToS: (name) => (ma) => M.map_(ma, bindTo_(name))
    });
 }

@@ -1,4 +1,5 @@
-import { Ord, ordNumber } from "../Ord";
+import type { Ord } from "../Ord";
+import { ordNumber } from "../Ord";
 
 export interface Bounded<A> extends Ord<A> {
    readonly top: A;

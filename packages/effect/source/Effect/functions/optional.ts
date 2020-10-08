@@ -1,15 +1,15 @@
 import { flow } from "@principia/core/Function";
-import { Maybe } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 
 import * as T from "../core";
 
 /**
  * Converts an option on errors into an option on values.
  */
-export const optional = <R, E, A>(ef: T.Effect<R, Maybe<E>, A>): T.Effect<R, E, Maybe<A>> =>
-   T._foldM(
+export const optional = <R, E, A>(ef: T.Effect<R, Option<E>, A>): T.Effect<R, E, Option<A>> =>
+   T.foldM_(
       ef,
-      Mb.fold(() => T.pure(Mb.nothing()), T.fail),
-      flow(Mb.just, T.pure)
+      O.fold(() => T.pure(O.none()), T.fail),
+      flow(O.some, T.pure)
    );

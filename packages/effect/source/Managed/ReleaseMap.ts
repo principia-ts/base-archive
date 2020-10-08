@@ -1,10 +1,11 @@
 import { eqNumber } from "@principia/core/Eq";
 import { increment, pipe } from "@principia/core/Function";
 import * as M from "@principia/core/Map";
-import * as Mb from "@principia/core/Maybe";
-import { just, Maybe, nothing } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as Mb from "@principia/core/Option";
+import { none, some } from "@principia/core/Option";
 
-import { Exit } from "../Exit";
+import type { Exit } from "../Exit";
 import * as XR from "../XRef/combinators";
 import type { Ref } from "../XRef/XRef";
 import * as T from "./_internal/effect";
@@ -46,20 +47,17 @@ export const finalizers = (state: Running): ReadonlyMap<number, Finalizer> => st
 export const noopFinalizer: Finalizer = () => T.unit;
 
 export function addIfOpen(finalizer: Finalizer) {
-   return (_: ReleaseMap): T.Effect<unknown, never, Maybe<number>> =>
+   return (_: ReleaseMap): T.Effect<unknown, never, Option<number>> =>
       pipe(
          _.ref,
-         XR.modify<T.Effect<unknown, never, Maybe<number>>, ManagedState>((s) => {
+         XR.modify<T.Effect<unknown, never, Option<number>>, ManagedState>((s) => {
             switch (s._tag) {
                case "Exited": {
-                  return [
-                     T._map(finalizer(s.exit), () => nothing()),
-                     exited(increment(s.nextKey), s.exit)
-                  ];
+                  return [T.map_(finalizer(s.exit), () => none()), exited(increment(s.nextKey), s.exit)];
                }
                case "Running": {
                   return [
-                     T.pure(just(s.nextKey)),
+                     T.pure(some(s.nextKey)),
                      running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)))
                   ];
                }
@@ -69,10 +67,7 @@ export function addIfOpen(finalizer: Finalizer) {
       );
 }
 
-export function release(
-   key: number,
-   exit: Exit<any, any>
-): (_: ReleaseMap) => T.Effect<unknown, never, any>;
+export function release(key: number, exit: Exit<any, any>): (_: ReleaseMap) => T.Effect<unknown, never, any>;
 export function release(key: number, exit: Exit<any, any>) {
    return (_: ReleaseMap) =>
       pipe(
@@ -84,8 +79,8 @@ export function release(key: number, exit: Exit<any, any>) {
                }
                case "Running": {
                   return [
-                     Mb._fold(
-                        M._lookup(eqNumber)(finalizers(s), key),
+                     Mb.fold_(
+                        M.lookup_(eqNumber)(finalizers(s), key),
                         () => T.unit,
                         (f) => f(exit)
                      ),
@@ -99,7 +94,7 @@ export function release(key: number, exit: Exit<any, any>) {
 
 export function add(finalizer: Finalizer) {
    return (_: ReleaseMap) =>
-      T._map(
+      T.map_(
          addIfOpen(finalizer)(_),
          Mb.fold(
             (): Finalizer => () => T.unit,
@@ -112,6 +107,4 @@ export const releaseMap = (ref: Ref<ManagedState>): ReleaseMap => ({
    ref
 });
 
-export const makeReleaseMap = T._map(XR.makeRef<ManagedState>(running(0, new Map())), (s) =>
-   releaseMap(s)
-);
+export const makeReleaseMap = T.map_(XR.makeRef<ManagedState>(running(0, new Map())), (s) => releaseMap(s));

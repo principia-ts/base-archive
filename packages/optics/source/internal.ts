@@ -3,10 +3,11 @@
 import * as A from "@principia/core/Array";
 import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
-import { constant, flow, identity, pipe, Predicate } from "@principia/core/Function";
+import type { Predicate } from "@principia/core/Function";
+import { constant, flow, identity, pipe } from "@principia/core/Function";
 import type * as HKT from "@principia/core/HKT";
-import type { Maybe } from "@principia/core/Maybe";
-import * as Mb from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 import * as R from "@principia/core/Record";
 import type * as TC from "@principia/core/typeclass-index";
 
@@ -19,17 +20,7 @@ import type { Prism } from "./Prism";
 import type { Traversal } from "./Traversal";
 
 export interface ModifyF<S, A> {
-   <F extends HKT.URIS, C = HKT.Auto>(F: TC.Applicative<F, C>): <
-      N extends string,
-      K,
-      Q,
-      W,
-      X,
-      I,
-      _S,
-      R,
-      E
-   >(
+   <F extends HKT.URIS, C = HKT.Auto>(F: TC.Applicative<F, C>): <N extends string, K, Q, W, X, I, _S, R, E>(
       f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, A>
    ) => (s: S) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, S>;
 }
@@ -59,7 +50,7 @@ export const isoAsLens = <S, A>(sa: Iso<S, A>): Lens<S, A> => ({
 
 /** @internal */
 export const isoAsOptional = <S, A>(sa: Iso<S, A>): Optional<S, A> => ({
-   getMaybe: flow(sa.get, Mb.just),
+   getOption: flow(sa.get, O.some),
    set: flow(sa.reverseGet, constant)
 });
 
@@ -70,15 +61,13 @@ export const isoAsOptional = <S, A>(sa: Iso<S, A>): Optional<S, A> => ({
  */
 /** @internal */
 export const lensAsOptional = <S, A>(sa: Lens<S, A>): Optional<S, A> => ({
-   getMaybe: flow(sa.get, Mb.just),
+   getOption: flow(sa.get, O.some),
    set: sa.set
 });
 
 /** @internal */
 export const lensAsTraversal = <S, A>(sa: Lens<S, A>): Traversal<S, A> => ({
-   modifyF: implementModifyF<S, A>()((_) => (F) => (f) => (s) =>
-      F._map(f(sa.get(s)), (a) => sa.set(a)(s))
-   )
+   modifyF: implementModifyF<S, A>()((_) => (F) => (f) => (s) => F.map_(f(sa.get(s)), (a) => sa.set(a)(s)))
 });
 
 /** @internal */
@@ -98,9 +87,7 @@ export const lensId = <S>(): Lens<S, S> => ({
 });
 
 /** @internal */
-export const lensProp = <A, P extends keyof A>(prop: P) => <S>(
-   lens: Lens<S, A>
-): Lens<S, A[P]> => ({
+export const lensProp = <A, P extends keyof A>(prop: P) => <S>(lens: Lens<S, A>): Lens<S, A[P]> => ({
    get: (s) => lens.get(s)[prop],
    set: (ap) => (s) => {
       const oa = lens.get(s);
@@ -158,7 +145,7 @@ export const lensComponent = <A extends ReadonlyArray<unknown>, P extends keyof 
 
 /** @internal */
 export const prismAsOptional = <S, A>(sa: Prism<S, A>): Optional<S, A> => ({
-   getMaybe: sa.getMaybe,
+   getOption: sa.getOption,
    set: (a) => prismSet(a)(sa)
 });
 
@@ -166,20 +153,20 @@ export const prismAsOptional = <S, A>(sa: Prism<S, A>): Optional<S, A> => ({
 export const prismAsTraversal = <S, A>(sa: Prism<S, A>): Traversal<S, A> => ({
    modifyF: implementModifyF<S, A>()((_) => (F) => (f) => (s) =>
       pipe(
-         sa.getMaybe(s),
-         Mb.fold(
+         sa.getOption(s),
+         O.fold(
             () => F.pure(s),
-            (a) => F._map(f(a), (a) => prismSet(a)(sa)(s))
+            (a) => F.map_(f(a), (a) => prismSet(a)(sa)(s))
          )
       )
    )
 });
 
 /** @internal */
-export const prismModifyMaybe = <A>(f: (a: A) => A) => <S>(sa: Prism<S, A>) => (s: S): Maybe<S> =>
+export const prismModifyOption = <A>(f: (a: A) => A) => <S>(sa: Prism<S, A>) => (s: S): Option<S> =>
    pipe(
-      sa.getMaybe(s),
-      Mb.map((o) => {
+      sa.getOption(s),
+      O.map((o) => {
          const n = f(o);
          return n === o ? s : sa.reverseGet(n);
       })
@@ -187,11 +174,11 @@ export const prismModifyMaybe = <A>(f: (a: A) => A) => <S>(sa: Prism<S, A>) => (
 
 /** @internal */
 export const prismModify = <A>(f: (a: A) => A) => <S>(sa: Prism<S, A>): ((s: S) => S) => {
-   const g = prismModifyMaybe(f)(sa);
+   const g = prismModifyOption(f)(sa);
    return (s) =>
       pipe(
          g(s),
-         Mb.getOrElse(() => s)
+         O.getOrElse(() => s)
       );
 };
 
@@ -204,33 +191,33 @@ export const prismComposeLens = <A, B>(ab: Lens<A, B>) => <S>(sa: Prism<S, A>): 
 
 /** @internal */
 export const prismFromNullable = <A>(): Prism<A, NonNullable<A>> => ({
-   getMaybe: Mb.fromNullable,
+   getOption: O.fromNullable,
    reverseGet: identity
 });
 
 /** @internal */
 export function prismFromPredicate<A>(predicate: Predicate<A>): Prism<A, A> {
    return {
-      getMaybe: Mb.fromPredicate(predicate),
+      getOption: O.fromPredicate(predicate),
       reverseGet: identity
    };
 }
 
 /** @internal */
-export const prismSome = <A>(): Prism<Maybe<A>, A> => ({
-   getMaybe: identity,
-   reverseGet: Mb.just
+export const prismSome = <A>(): Prism<Option<A>, A> => ({
+   getOption: identity,
+   reverseGet: O.some
 });
 
 /** @internal */
 export const prismRight = <E, A>(): Prism<Either<E, A>, A> => ({
-   getMaybe: Mb.fromEither,
+   getOption: O.fromEither,
    reverseGet: E.right
 });
 
 /** @internal */
 export const prismLeft = <E, A>(): Prism<E.Either<E, A>, E> => ({
-   getMaybe: (s) => (E.isLeft(s) ? Mb.just(s.left) : Mb.nothing()), // TODO: replace with E.getLeft in v3
+   getOption: (s) => (E.isLeft(s) ? O.some(s.left) : O.none()), // TODO: replace with E.getLeft in v3
    reverseGet: E.left
 });
 
@@ -244,53 +231,47 @@ export const prismLeft = <E, A>(): Prism<E.Either<E, A>, E> => ({
 export const optionalAsTraversal = <S, A>(sa: Optional<S, A>): Traversal<S, A> => ({
    modifyF: implementModifyF<S, A>()((_) => (F) => (f) => (s) =>
       pipe(
-         sa.getMaybe(s),
-         Mb.fold(
+         sa.getOption(s),
+         O.fold(
             () => F.pure(s),
-            (a) => F._map(f(a), (a: A) => sa.set(a)(s))
+            (a) => F.map_(f(a), (a: A) => sa.set(a)(s))
          )
       )
    )
 });
 
 /** @internal */
-export const optionalModifyOption = <A>(f: (a: A) => A) => <S>(optional: Optional<S, A>) => (
-   s: S
-): Maybe<S> =>
+export const optionalModifyOption = <A>(f: (a: A) => A) => <S>(optional: Optional<S, A>) => (s: S): Option<S> =>
    pipe(
-      optional.getMaybe(s),
-      Mb.map((a) => {
+      optional.getOption(s),
+      O.map((a) => {
          const n = f(a);
          return n === a ? s : optional.set(n)(s);
       })
    );
 
 /** @internal */
-export const optionalModify = <A>(f: (a: A) => A) => <S>(
-   optional: Optional<S, A>
-): ((s: S) => S) => {
+export const optionalModify = <A>(f: (a: A) => A) => <S>(optional: Optional<S, A>): ((s: S) => S) => {
    const g = optionalModifyOption(f)(optional);
    return (s) =>
       pipe(
          g(s),
-         Mb.getOrElse(() => s)
+         O.getOrElse(() => s)
       );
 };
 
 /** @internal */
-export const optionalComposeOptional = <A, B>(ab: Optional<A, B>) => <S>(
-   sa: Optional<S, A>
-): Optional<S, B> => ({
-   getMaybe: flow(sa.getMaybe, Mb.chain(ab.getMaybe)),
+export const optionalComposeOptional = <A, B>(ab: Optional<A, B>) => <S>(sa: Optional<S, A>): Optional<S, B> => ({
+   getOption: flow(sa.getOption, O.chain(ab.getOption)),
    set: (b) => optionalModify(ab.set(b))(sa)
 });
 
 export const findFirst = <A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>, A> => ({
-   getMaybe: A.findl(predicate),
+   getOption: A.findl(predicate),
    set: (a) => (s) =>
       pipe(
          A.findlIndex(predicate)(s),
-         Mb.fold(
+         O.fold(
             () => s,
             (i) => A.unsafeUpdateAt(i, a, s)
          )
@@ -304,24 +285,19 @@ export const findFirst = <A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>
  */
 
 /** @internal */
-export const traversalComposeTraversal = <A, B>(ab: Traversal<A, B>) => <S>(
-   sa: Traversal<S, A>
-) => ({
+export const traversalComposeTraversal = <A, B>(ab: Traversal<A, B>) => <S>(sa: Traversal<S, A>) => ({
    modifyF: implementModifyF<S, B>()((_) => (F) => (f) => sa.modifyF(F)(ab.modifyF(F)(f)))
 });
 
 /** @internal */
 export function fromTraversable<T extends HKT.URIS, C = HKT.Auto>(
    T: TC.Traversable<T, C>
-): <N extends string, K, Q, W, X, I, S, R, E, A>() => Traversal<
-   HKT.Kind<T, C, N, K, Q, W, X, I, S, R, E, A>,
-   A
->;
+): <N extends string, K, Q, W, X, I, S, R, E, A>() => Traversal<HKT.Kind<T, C, N, K, Q, W, X, I, S, R, E, A>, A>;
 export function fromTraversable<T>(T: TC.Traversable<HKT.UHKT<T>>) {
    return <A>(): Traversal<HKT.HKT<T, A>, A> => ({
       modifyF: implementModifyF<HKT.HKT<T, A>, A>()((_) => (F) => {
-         const _traverseF = T._traverse(F);
-         return (f) => (s) => _traverseF(s, f);
+         const traverseF_ = T.traverse_(F);
+         return (f) => (s) => traverseF_(s, f);
       })
    });
 }
@@ -335,11 +311,11 @@ export function fromTraversable<T>(T: TC.Traversable<HKT.UHKT<T>>) {
 /** @internal */
 export const indexArray = <A = never>(): Ix<ReadonlyArray<A>, number, A> => ({
    index: (i) => ({
-      getMaybe: (as) => A._lookup(i, as),
+      getOption: (as) => A.lookup_(i, as),
       set: (a) => (as) =>
          pipe(
             A.updateAt(i, a)(as),
-            Mb.getOrElse(() => as)
+            O.getOrElse(() => as)
          )
    })
 });
@@ -347,9 +323,9 @@ export const indexArray = <A = never>(): Ix<ReadonlyArray<A>, number, A> => ({
 /** @internal */
 export const indexRecord = <A = never>(): Ix<Readonly<Record<string, A>>, string, A> => ({
    index: (k) => ({
-      getMaybe: (r) => R._lookup(r, k),
+      getOption: (r) => R.lookup_(r, k),
       set: (a) => (r) => {
-         if (r[k] === a || Mb.isNothing(R._lookup(r, k))) {
+         if (r[k] === a || O.isNone(R.lookup_(r, k))) {
             return r;
          }
          return R.insertAt(k, a)(r);
@@ -363,10 +339,10 @@ export const indexRecord = <A = never>(): Ix<Readonly<Record<string, A>>, string
  * -------------------------------------------
  */
 
-export const atRecord = <A = never>(): At<Readonly<Record<string, A>>, string, Maybe<A>> => ({
+export const atRecord = <A = never>(): At<Readonly<Record<string, A>>, string, Option<A>> => ({
    at: (key) => ({
-      get: (r) => R._lookup(r, key),
-      set: Mb.fold(
+      get: (r) => R.lookup_(r, key),
+      set: O.fold(
          () => R.deleteAt(key),
          (a) => R.insertAt(key, a)
       )

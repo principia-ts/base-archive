@@ -1,5 +1,4 @@
 import type { Either } from "../Either";
-
 import type * as HKT from "../HKT";
 import type { IO } from "../IO";
 

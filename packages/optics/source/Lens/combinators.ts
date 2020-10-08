@@ -1,7 +1,8 @@
 import type { Either } from "@principia/core/Either";
-import { flow, pipe, Predicate, Refinement } from "@principia/core/Function";
+import type { Predicate, Refinement } from "@principia/core/Function";
+import { flow, pipe } from "@principia/core/Function";
 import type * as HKT from "@principia/core/HKT";
-import { Maybe } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 
 import * as _ from "../internal";
@@ -52,8 +53,7 @@ export const filter: {
  * @category Combinators
  * @since 1.0.0
  */
-export const prop: <A, P extends keyof A>(prop: P) => <S>(sa: Lens<S, A>) => Lens<S, A[P]> =
-   _.lensProp;
+export const prop: <A, P extends keyof A>(prop: P) => <S>(sa: Lens<S, A>) => Lens<S, A[P]> = _.lensProp;
 
 /**
  * Return a `Lens` from a `Lens` and a list of props
@@ -90,26 +90,24 @@ export const index = (i: number) => <S, A>(sa: Lens<S, ReadonlyArray<A>>): Optio
  * @category Combinators
  * @since 1.0.0
  */
-export const key = (key: string) => <S, A>(
-   sa: Lens<S, Readonly<Record<string, A>>>
-): Optional<S, A> => pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)));
+export const key = (key: string) => <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Optional<S, A> =>
+   pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)));
 
 /**
  * Return a `Lens` from a `Lens` focused on a `ReadonlyRecord` and a required key
  *
  * @category Combinators
  */
-export const atKey = (key: string) => <S, A>(
-   sa: Lens<S, Readonly<Record<string, A>>>
-): Lens<S, Maybe<A>> => pipe(sa, compose(_.atRecord<A>().at(key)));
+export const atKey = (key: string) => <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Lens<S, Option<A>> =>
+   pipe(sa, compose(_.atRecord<A>().at(key)));
 
 /**
- * Return a `Optional` from a `Lens` focused on the `Some` of a `Maybe` type
+ * Return a `Optional` from a `Lens` focused on the `Some` of a `Option` type
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Lens<S, Maybe<A>>) => Optional<S, A> = composePrism(_.prismSome());
+export const some: <S, A>(soa: Lens<S, Option<A>>) => Optional<S, A> = composePrism(_.prismSome());
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type
@@ -117,9 +115,7 @@ export const some: <S, A>(soa: Lens<S, Maybe<A>>) => Optional<S, A> = composePri
  * @category Combinators
  * @since 1.0.0
  */
-export const right: <S, E, A>(sea: Lens<S, Either<E, A>>) => Optional<S, A> = composePrism(
-   _.prismRight()
-);
+export const right: <S, E, A>(sea: Lens<S, Either<E, A>>) => Optional<S, A> = composePrism(_.prismRight());
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Left` of a `Either` type
@@ -127,9 +123,7 @@ export const right: <S, E, A>(sea: Lens<S, Either<E, A>>) => Optional<S, A> = co
  * @category Combinators
  * @since 1.0.0
  */
-export const left: <S, E, A>(sea: Lens<S, Either<E, A>>) => Optional<S, E> = composePrism(
-   _.prismLeft()
-);
+export const left: <S, E, A>(sea: Lens<S, Either<E, A>>) => Optional<S, E> = composePrism(_.prismLeft());
 
 /**
  * Return a `Traversal` from a `Lens` focused on a `Traversable`
@@ -147,6 +141,7 @@ export const traverse = <T extends HKT.URIS, C = HKT.Auto>(
  * @category Combinators
  * @since 1.0.0
  */
-export const findl: <A>(
-   predicate: Predicate<A>
-) => <S>(sa: Lens<S, ReadonlyArray<A>>) => Optional<S, A> = flow(_.findFirst, composeOptional);
+export const findl: <A>(predicate: Predicate<A>) => <S>(sa: Lens<S, ReadonlyArray<A>>) => Optional<S, A> = flow(
+   _.findFirst,
+   composeOptional
+);

@@ -1,6 +1,7 @@
-import { max, min, Ord } from "../Ord";
+import type { Ord } from "../Ord";
+import { max, min } from "../Ord";
 import type { ReadonlyRecord } from "../Record";
-import { Semigroup } from "./Semigroup";
+import type { Semigroup } from "./Semigroup";
 
 /**
  * Boolean semigroup under conjunction

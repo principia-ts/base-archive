@@ -1,5 +1,5 @@
-import { FunctionN } from "../Function";
-import { IO } from "../IO";
+import type { FunctionN } from "../Function";
+import type { IO } from "../IO";
 import { fromIO } from "./constructors";
 import { chain } from "./methods";
 import type { Task } from "./Task";
@@ -12,7 +12,7 @@ import type { Task } from "./Task";
 
 /**
  * ```haskell
- * _delay :: (Task a, Number) -> Task a
+ * delay_ :: (Task a, Number) -> Task a
  * ```
  *
  * Delays a `Task` by the provided number of milliseconds.
@@ -20,7 +20,7 @@ import type { Task } from "./Task";
  * @category Combinators
  * @since 1.0.0
  */
-export const _delay = <A>(ma: Task<A>, ms: number): Task<A> => () =>
+export const delay_ = <A>(ma: Task<A>, ms: number): Task<A> => () =>
    new Promise((resolve) => {
       setTimeout(() => {
          ma().then(resolve);
@@ -37,7 +37,7 @@ export const _delay = <A>(ma: Task<A>, ms: number): Task<A> => () =>
  * @category Combinators
  * @since 1.0.0
  */
-export const delay = (ms: number) => <A>(ma: Task<A>): Task<A> => _delay(ma, ms);
+export const delay = (ms: number) => <A>(ma: Task<A>): Task<A> => delay_(ma, ms);
 
 /**
  * ```haskell

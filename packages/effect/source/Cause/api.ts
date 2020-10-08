@@ -2,13 +2,14 @@ import * as A from "@principia/core/Array";
 import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
 import { flow, identity, pipe } from "@principia/core/Function";
-import * as Mb from "@principia/core/Maybe";
-import { just, Maybe, nothing } from "@principia/core/Maybe";
+import type { Option } from "@principia/core/Option";
+import * as O from "@principia/core/Option";
+import { none, some } from "@principia/core/Option";
 import type * as TC from "@principia/core/typeclass-index";
 import { matchTag } from "@principia/core/Utils";
 
 import type { FiberId } from "../Fiber/FiberId";
-import { Both, Cause, Then, URI, V } from "./Cause";
+import type { Both, Cause, Then, URI, V } from "./Cause";
 import { InterruptedException } from "./errors";
 import { equalsCause } from "./instances";
 
@@ -18,7 +19,7 @@ export const empty: Cause<never> = {
 
 /**
  * ```haskell
- * find :: (Cause c, Maybe m) => (c e -> m a) -> c e -> m a
+ * find :: (Cause c, Option m) => (c e -> m a) -> c e -> m a
  * ```
  *
  * Finds the first result matching f
@@ -26,17 +27,17 @@ export const empty: Cause<never> = {
  * @category Combinators
  * @since 1.0.0
  */
-export const find = <A, E>(f: (cause: Cause<E>) => Maybe<A>) => (cause: Cause<E>): Maybe<A> => {
+export const find = <A, E>(f: (cause: Cause<E>) => Option<A>) => (cause: Cause<E>): Option<A> => {
    const apply = f(cause);
 
-   if (apply._tag === "Just") {
+   if (apply._tag === "Some") {
       return apply;
    }
 
    switch (cause._tag) {
       case "Then": {
          const isLeft = find(f)(cause.left);
-         if (isLeft._tag === "Just") {
+         if (isLeft._tag === "Some") {
             return isLeft;
          } else {
             return find(f)(cause.right);
@@ -44,7 +45,7 @@ export const find = <A, E>(f: (cause: Cause<E>) => Maybe<A>) => (cause: Cause<E>
       }
       case "Both": {
          const isLeft = find(f)(cause.left);
-         if (isLeft._tag === "Just") {
+         if (isLeft._tag === "Some") {
             return isLeft;
          } else {
             return find(f)(cause.right);
@@ -106,7 +107,7 @@ export const fold = <E, A>(
 
 /**
  * ```haskell
- * _foldl :: (Cause c) => (c e, a, ((a, c e) -> Maybe a)) -> a
+ * foldl_ :: (Cause c) => (c e, a, ((a, c e) -> Option a)) -> a
  * ```
  *
  * Accumulates a state over a Cause
@@ -114,20 +115,14 @@ export const fold = <E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export const _foldl = <E, A>(
-   cause: Cause<E>,
-   a: A,
-   f: (a: A, cause: Cause<E>) => Mb.Maybe<A>
-): A => {
-   const apply = Mb._getOrElse(f(a, cause), () => a);
-   return cause._tag === "Both" || cause._tag === "Then"
-      ? _foldl(cause.right, _foldl(cause.left, apply, f), f)
-      : apply;
+export const foldl_ = <E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): A => {
+   const apply = O.getOrElse_(f(a, cause), () => a);
+   return cause._tag === "Both" || cause._tag === "Then" ? foldl_(cause.right, foldl_(cause.left, apply, f), f) : apply;
 };
 
 /**
  * ```haskell
- * foldl :: (Cause c) => (a, ((a, c e) -> Maybe a)) -> c e -> a
+ * foldl :: (Cause c) => (a, ((a, c e) -> Option a)) -> c e -> a
  * ```
  *
  * Accumulates a state over a Cause
@@ -135,9 +130,8 @@ export const _foldl = <E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export const foldl = <E, A>(a: A, f: (a: A, cause: Cause<E>) => Mb.Maybe<A>) => (
-   cause: Cause<E>
-): A => _foldl(cause, a, f);
+export const foldl = <E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>) => (cause: Cause<E>): A =>
+   foldl_(cause, a, f);
 
 /*
  * -------------------------------------------
@@ -152,30 +146,30 @@ export const foldl = <E, A>(a: A, f: (a: A, cause: Cause<E>) => Mb.Maybe<A>) => 
  */
 export const isEmpty = <E>(cause: Cause<E>) =>
    equalsCause(cause, empty) ||
-   _foldl(cause, true as boolean, (acc, c) =>
+   foldl_(cause, true as boolean, (acc, c) =>
       pipe(
          c,
          matchTag({
-            Empty: () => just(acc),
-            Die: () => just(false),
-            Fail: () => just(false),
-            Interrupt: () => just(false),
-            Then: () => nothing(),
-            Both: () => nothing()
+            Empty: () => some(acc),
+            Die: () => some(false),
+            Fail: () => some(false),
+            Interrupt: () => some(false),
+            Then: () => none(),
+            Both: () => none()
          })
       )
    );
 
 /**
  * ```haskell
- * dieMaybe :: Cause e -> Maybe _
+ * dieOption :: Cause e -> Option _
  * ```
  *
  * Returns the `Error` associated with the first `Die` in this `Cause` if
  * one exists.
  */
-export const dieMaybe: <E>(cause: Cause<E>) => Maybe<unknown> = find((c) =>
-   c._tag === "Die" ? just(c.value) : nothing()
+export const dieOption: <E>(cause: Cause<E>) => Option<unknown> = find((c) =>
+   c._tag === "Die" ? some(c.value) : none()
 );
 
 /**
@@ -186,21 +180,21 @@ export const dieMaybe: <E>(cause: Cause<E>) => Maybe<unknown> = find((c) =>
  * Returns if a cause contains a defect
  */
 export const isDie: <E>(cause: Cause<E>) => boolean = flow(
-   dieMaybe,
-   Mb.map(() => true),
-   Mb.getOrElse(() => false)
+   dieOption,
+   O.map(() => true),
+   O.getOrElse(() => false)
 );
 
 /**
  * ```haskell
- * failureMaybe :: Cause e -> Maybe e
+ * failureOption :: Cause e -> Option e
  * ```
  *
  * Returns the `E` associated with the first `Fail` in this `Cause` if one
  * exists.
  */
-export const failureMaybe: <E>(cause: Cause<E>) => Maybe<E> = find((c) =>
-   c._tag === "Fail" ? just(c.value) : nothing()
+export const failureOption: <E>(cause: Cause<E>) => Option<E> = find((c) =>
+   c._tag === "Fail" ? some(c.value) : none()
 );
 
 /**
@@ -211,9 +205,9 @@ export const failureMaybe: <E>(cause: Cause<E>) => Maybe<E> = find((c) =>
  * Returns if the cause has a failure in it
  */
 export const didFail: <E>(cause: Cause<E>) => boolean = flow(
-   failureMaybe,
-   Mb.map(() => true),
-   Mb.getOrElse(() => false)
+   failureOption,
+   O.map(() => true),
+   O.getOrElse(() => false)
 );
 
 /**
@@ -284,14 +278,14 @@ export const both = <E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> =>
 
 /**
  * ```haskell
- * interruptMaybe :: Cause e -> Maybe FiberId
+ * interruptOption :: Cause e -> Option FiberId
  * ```
  *
  * Returns the `FiberID` associated with the first `Interrupt` in this `Cause` if one
  * exists.
  */
-export const interruptMaybe: <E>(cause: Cause<E>) => Maybe<FiberId> = find((c) =>
-   c._tag === "Interrupt" ? just(c.fiberId) : nothing()
+export const interruptOption: <E>(cause: Cause<E>) => Option<FiberId> = find((c) =>
+   c._tag === "Interrupt" ? some(c.fiberId) : none()
 );
 
 /**
@@ -304,9 +298,9 @@ export const interruptMaybe: <E>(cause: Cause<E>) => Maybe<FiberId> = find((c) =
 export const isInterrupt = <E>(cause: Cause<E>) =>
    pipe(
       cause,
-      interruptMaybe,
-      Mb.map(() => true),
-      Mb.getOrElse(() => false)
+      interruptOption,
+      O.map(() => true),
+      O.getOrElse(() => false)
    );
 
 /**
@@ -317,8 +311,7 @@ export const isInterrupt = <E>(cause: Cause<E>) =>
  * Determines if this cause contains or is equal to the specified cause.
  */
 export const contains = <E, E1 extends E = E>(that: Cause<E1>) => (cause: Cause<E>) =>
-   equalsCause(that, cause) ||
-   _foldl(cause, false as boolean, (_, c) => (equalsCause(that, c) ? just(true) : nothing()));
+   equalsCause(that, cause) || foldl_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? some(true) : none()));
 
 /*
  * -------------------------------------------
@@ -340,7 +333,7 @@ export const pure: TC.PureF<[URI], V> = (a) => fail(a);
 
 /**
  * ```haskell
- * _chain :: Monad m => (m a, (a -> m b)) -> m b
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -348,7 +341,7 @@ export const pure: TC.PureF<[URI], V> = (a) => fail(a);
  * @category Monad
  * @since 1.0.0
  */
-export const _chain: TC.UC_ChainF<[URI], V> = (fa, f) => {
+export const chain_: TC.UC_ChainF<[URI], V> = (fa, f) => {
    switch (fa._tag) {
       case "Empty":
          return empty;
@@ -359,9 +352,9 @@ export const _chain: TC.UC_ChainF<[URI], V> = (fa, f) => {
       case "Interrupt":
          return fa;
       case "Then":
-         return then(_chain(fa.left, f), _chain(fa.right, f));
+         return then(chain_(fa.left, f), chain_(fa.right, f));
       case "Both":
-         return both(_chain(fa.left, f), _chain(fa.right, f));
+         return both(chain_(fa.left, f), chain_(fa.right, f));
    }
 };
 
@@ -375,7 +368,7 @@ export const _chain: TC.UC_ChainF<[URI], V> = (fa, f) => {
  * @category Monad
  * @since 1.0.0
  */
-export const chain: TC.ChainF<[URI], V> = (f) => (fa) => _chain(fa, f);
+export const chain: TC.ChainF<[URI], V> = (f) => (fa) => chain_(fa, f);
 
 /**
  * ```haskell
@@ -388,11 +381,11 @@ export const chain: TC.ChainF<[URI], V> = (f) => (fa) => _chain(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const bind: TC.BindF<[URI], V> = (fa) => (f) => _chain(fa, f);
+export const bind: TC.BindF<[URI], V> = (fa) => (f) => chain_(fa, f);
 
 /**
  * ```haskell
- * _map :: Functor f => (f a, (a -> b)) -> f b
+ * map_ :: Functor f => (f a, (a -> b)) -> f b
  * ```
  *
  * Lifts a function a -> b to a function f a -> f b
@@ -400,7 +393,7 @@ export const bind: TC.BindF<[URI], V> = (fa) => (f) => _chain(fa, f);
  * @category Functor
  * @since 1.0.0
  */
-export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _chain(fa, (e) => fail(f(e)));
+export const map_: TC.UC_MapF<[URI], V> = (fa, f) => chain_(fa, (e) => fail(f(e)));
 
 /**
  * ```haskell
@@ -412,7 +405,7 @@ export const _map: TC.UC_MapF<[URI], V> = (fa, f) => _chain(fa, (e) => fail(f(e)
  * @category Functor
  * @since 1.0.0
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => _map(fa, f);
+export const map: TC.MapF<[URI], V> = (f) => (fa) => map_(fa, f);
 
 /**
  * ```haskell
@@ -428,13 +421,13 @@ export const as = <E1>(e: E1): (<E>(fa: Cause<E>) => Cause<E1>) => map(() => e);
 
 /**
  * ```haskell
- * _alt :: Alt f => (f a, (() -> f a)) -> f a
+ * alt_ :: Alt f => (f a, (() -> f a)) -> f a
  * ```
  *
  * @category Alt
  * @since 1.0.0
  */
-export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => _chain(fa, () => that());
+export const alt_: TC.UC_AltF<[URI], V> = (fa, that) => chain_(fa, () => that());
 
 /**
  * ```haskell
@@ -444,7 +437,7 @@ export const _alt: TC.UC_AltF<[URI], V> = (fa, that) => _chain(fa, () => that())
  * @category Alt
  * @since 1.0.0
  */
-export const alt: TC.AltF<[URI], V> = (that) => (fa) => _alt(fa, that);
+export const alt: TC.AltF<[URI], V> = (that) => (fa) => alt_(fa, that);
 
 /**
  * ```haskell
@@ -456,11 +449,11 @@ export const alt: TC.AltF<[URI], V> = (that) => (fa) => _alt(fa, that);
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: TC.FlattenF<[URI], V> = (ffa) => _chain(ffa, identity);
+export const flatten: TC.FlattenF<[URI], V> = (ffa) => chain_(ffa, identity);
 
 /**
  * ```haskell
- * _ap :: Apply f => (f (a -> b), f a) -> f b
+ * ap_ :: Apply f => (f (a -> b), f a) -> f b
  * ```
  *
  * Apply a function to an argument under a type constructor
@@ -468,7 +461,7 @@ export const flatten: TC.FlattenF<[URI], V> = (ffa) => _chain(ffa, identity);
  * @category Apply
  * @since 1.0.0
  */
-export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => _chain(fab, (f) => _map(fa, f));
+export const ap_: TC.UC_ApF<[URI], V> = (fab, fa) => chain_(fab, (f) => map_(fa, f));
 
 /**
  * ```haskell
@@ -480,7 +473,7 @@ export const _ap: TC.UC_ApF<[URI], V> = (fab, fa) => _chain(fab, (f) => _map(fa,
  * @category Apply
  * @since 1.0.0
  */
-export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
+export const ap: TC.ApF<[URI], V> = (fa) => (fab) => ap_(fab, fa);
 
 /*
  * -------------------------------------------
@@ -492,18 +485,14 @@ export const ap: TC.ApF<[URI], V> = (fa) => (fab) => _ap(fab, fa);
  * Extracts a list of non-recoverable errors from the `Cause`.
  */
 export const defects = <E>(cause: Cause<E>): ReadonlyArray<unknown> =>
-   _foldl(cause, [] as ReadonlyArray<unknown>, (a, c) =>
-      c._tag === "Die" ? just([...a, c.value]) : nothing()
-   );
+   foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) => (c._tag === "Die" ? some([...a, c.value]) : none()));
 
 /**
  * Returns a set of interruptors, fibers that interrupted the fiber described
  * by this `Cause`.
  */
 export const interruptors = <E>(cause: Cause<E>): ReadonlySet<FiberId> =>
-   _foldl(cause, new Set(), (s, c) =>
-      c._tag === "Interrupt" ? Mb.just(s.add(c.fiberId)) : Mb.nothing()
-   );
+   foldl_(cause, new Set(), (s, c) => (c._tag === "Interrupt" ? O.some(s.add(c.fiberId)) : O.none()));
 
 /**
  * Determines if the `Cause` contains only interruptions and not any `Die` or
@@ -512,8 +501,8 @@ export const interruptors = <E>(cause: Cause<E>): ReadonlySet<FiberId> =>
 export const interruptedOnly = <E>(cause: Cause<E>) =>
    pipe(
       cause,
-      find((c) => (isDie(c) || didFail(c) ? just(false) : nothing())),
-      Mb.getOrElse(() => true)
+      find((c) => (isDie(c) || didFail(c) ? some(false) : none())),
+      O.getOrElse(() => true)
    );
 
 /**
@@ -544,32 +533,32 @@ export const stripInterrupts: <E>(cause: Cause<E>) => Cause<E> = matchTag({
  * Remove all `Fail` and `Interrupt` nodes from this `Cause`,
  * return only `Die` cause/finalizer defects.
  */
-export const keepDefects: <E>(cause: Cause<E>) => Maybe<Cause<never>> = matchTag({
-   Empty: () => nothing(),
-   Fail: () => nothing(),
-   Interrupt: () => nothing(),
-   Die: (c) => just(c),
+export const keepDefects: <E>(cause: Cause<E>) => Option<Cause<never>> = matchTag({
+   Empty: () => none(),
+   Fail: () => none(),
+   Interrupt: () => none(),
+   Die: (c) => some(c),
    Then: (c) => {
       const lefts = keepDefects(c.left);
       const rights = keepDefects(c.right);
-      return lefts._tag === "Just"
-         ? rights._tag === "Just"
-            ? just(then(lefts.value, rights.value))
+      return lefts._tag === "Some"
+         ? rights._tag === "Some"
+            ? some(then(lefts.value, rights.value))
             : lefts
-         : rights._tag === "Just"
+         : rights._tag === "Some"
          ? rights
-         : nothing();
+         : none();
    },
    Both: (c) => {
       const lefts = keepDefects(c.left);
       const rights = keepDefects(c.right);
-      return lefts._tag === "Just"
-         ? rights._tag === "Just"
-            ? just(both(lefts.value, rights.value))
+      return lefts._tag === "Some"
+         ? rights._tag === "Some"
+            ? some(both(lefts.value, rights.value))
             : lefts
-         : rights._tag === "Just"
+         : rights._tag === "Some"
          ? rights
-         : nothing();
+         : none();
    }
 });
 
@@ -604,32 +593,32 @@ export const sequenceCauseEither: <E, A>(c: Cause<Either<E, A>>) => Either<Cause
 /**
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
-export const sequenceCauseMaybe: <E>(c: Cause<Maybe<E>>) => Maybe<Cause<E>> = matchTag({
-   Empty: () => just(empty),
-   Interrupt: (c) => just(c),
-   Fail: (c) => Mb._map(c.value, fail),
-   Die: (c) => just(c),
+export const sequenceCauseOption: <E>(c: Cause<Option<E>>) => Option<Cause<E>> = matchTag({
+   Empty: () => some(empty),
+   Interrupt: (c) => some(c),
+   Fail: (c) => O.map_(c.value, fail),
+   Die: (c) => some(c),
    Then: (c) => {
-      const lefts = sequenceCauseMaybe(c.left);
-      const rights = sequenceCauseMaybe(c.right);
-      return lefts._tag === "Just"
-         ? rights._tag === "Just"
-            ? just(then(lefts.value, rights.value))
+      const lefts = sequenceCauseOption(c.left);
+      const rights = sequenceCauseOption(c.right);
+      return lefts._tag === "Some"
+         ? rights._tag === "Some"
+            ? some(then(lefts.value, rights.value))
             : lefts
-         : rights._tag === "Just"
+         : rights._tag === "Some"
          ? rights
-         : nothing();
+         : none();
    },
    Both: (c) => {
-      const lefts = sequenceCauseMaybe(c.left);
-      const rights = sequenceCauseMaybe(c.right);
-      return lefts._tag === "Just"
-         ? rights._tag === "Just"
-            ? just(both(lefts.value, rights.value))
+      const lefts = sequenceCauseOption(c.left);
+      const rights = sequenceCauseOption(c.right);
+      return lefts._tag === "Some"
+         ? rights._tag === "Some"
+            ? some(both(lefts.value, rights.value))
             : lefts
-         : rights._tag === "Just"
+         : rights._tag === "Some"
          ? rights
-         : nothing();
+         : none();
    }
 });
 
@@ -641,9 +630,9 @@ export const sequenceCauseMaybe: <E>(c: Cause<Maybe<E>>) => Maybe<Cause<E>> = ma
 export const failureOrCause = <E>(cause: Cause<E>): E.Either<E, Cause<never>> =>
    pipe(
       cause,
-      failureMaybe,
-      Mb.map(E.left),
-      Mb.getOrElse(() => E.right(cause as Cause<never>)) // no E inside this cause, can safely cast
+      failureOption,
+      O.map(E.left),
+      O.getOrElse(() => E.right(cause as Cause<never>)) // no E inside this cause, can safely cast
    );
 
 /**
@@ -653,11 +642,11 @@ export const failureOrCause = <E>(cause: Cause<E>): E.Either<E, Cause<never>> =>
 export const squash = <E>(f: (e: E) => unknown) => (cause: Cause<E>): unknown =>
    pipe(
       cause,
-      failureMaybe,
-      Mb.map(f),
-      Mb.alt(() =>
+      failureOption,
+      O.map(f),
+      O.alt(() =>
          isInterrupt(cause)
-            ? just<unknown>(
+            ? some<unknown>(
                  new InterruptedException(
                     "Interrupted by fibers: " +
                        Array.from(interruptors(cause))
@@ -666,8 +655,8 @@ export const squash = <E>(f: (e: E) => unknown) => (cause: Cause<E>): unknown =>
                           .join(", ")
                  )
               )
-            : nothing()
+            : none()
       ),
-      Mb.alt(() => A.head(defects(cause))),
-      Mb.getOrElse(() => new InterruptedException())
+      O.alt(() => A.head(defects(cause))),
+      O.getOrElse(() => new InterruptedException())
    );

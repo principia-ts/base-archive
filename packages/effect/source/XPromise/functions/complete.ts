@@ -1,6 +1,6 @@
-import { XPromise } from "../XPromise";
+import type { IO } from "../../Effect/Effect";
+import type { XPromise } from "../XPromise";
 import { to } from "./to";
-import * as T from "../../Effect/core";
 
 /**
  * Completes the promise with the result of the specified effect. If the
@@ -9,4 +9,4 @@ import * as T from "../../Effect/core";
  * Note that `Promise.completeWith` will be much faster, so consider using
  * that if you do not need to memoize the result of the specified effect.
  */
-export const complete = <E, A>(e: T.IO<E, A>) => (promise: XPromise<E, A>) => to(promise)(e);
+export const complete = <E, A>(e: IO<E, A>) => (promise: XPromise<E, A>) => to(promise)(e);

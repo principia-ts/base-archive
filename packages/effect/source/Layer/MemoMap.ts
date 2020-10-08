@@ -3,7 +3,8 @@ import { insert } from "@principia/core/Map";
 
 import { sequential } from "../ExecutionStrategy";
 import type { Exit } from "../Exit/Exit";
-import { has, HasTag } from "../Has";
+import type { HasTag } from "../Has";
+import { has } from "../Has";
 import type { Finalizer, ReleaseMap } from "../Managed/ReleaseMap";
 import * as RelMap from "../Managed/ReleaseMap";
 import * as XP from "../XPromise";
@@ -11,18 +12,14 @@ import * as XR from "../XRef";
 import * as XRM from "../XRefM";
 import * as T from "./_internal/effect";
 import * as M from "./_internal/managed";
-import { Layer } from "./Layer";
+import type { Layer } from "./Layer";
 
 /**
  * A `MemoMap` memoizes dependencies.
  */
 
 export class MemoMap {
-   constructor(
-      readonly ref: XRM.RefM<
-         ReadonlyMap<Layer<any, any, any>, readonly [T.IO<any, any>, Finalizer]>
-      >
-   ) {}
+   constructor(readonly ref: XRM.RefM<ReadonlyMap<Layer<any, any, any>, readonly [T.IO<any, any>, Finalizer]>>) {}
 
    /**
     * Checks the memo map to see if a dependency exists. If it is, immediately
@@ -39,7 +36,7 @@ export class MemoMap {
                if (inMap) {
                   const [acquire, release] = inMap;
 
-                  const cached = T.accessM(([_, rm]: readonly [R, ReleaseMap]) =>
+                  const cached = T.asksM(([_, rm]: readonly [R, ReleaseMap]) =>
                      pipe(
                         acquire as T.IO<E, A>,
                         T.onExit((ex) => {
@@ -67,17 +64,14 @@ export class MemoMap {
                         T.uninterruptibleMask(({ restore }) =>
                            pipe(
                               T.of,
-                              T.bindS("env", () => T.environment<readonly [R, ReleaseMap]>()),
+                              T.bindS("env", () => T.ask<readonly [R, ReleaseMap]>()),
                               T.letS("a", ({ env: [a] }) => a),
-                              T.letS(
-                                 "outerReleaseMap",
-                                 ({ env: [_, outerReleaseMap] }) => outerReleaseMap
-                              ),
+                              T.letS("outerReleaseMap", ({ env: [_, outerReleaseMap] }) => outerReleaseMap),
                               T.bindS("innerReleaseMap", () => RelMap.makeReleaseMap),
                               T.bindS("tp", ({ a, innerReleaseMap, outerReleaseMap }) =>
                                  restore(
                                     pipe(
-                                       T._provideAll(layer.build.effect, [a, innerReleaseMap]),
+                                       T.giveAll_(layer.build.effect, [a, innerReleaseMap]),
                                        T.result,
                                        T.chain((e) => {
                                           switch (e._tag) {
@@ -87,10 +81,7 @@ export class MemoMap {
                                                    XP.halt(e.cause),
                                                    T.chain(
                                                       () =>
-                                                         M.releaseAll(
-                                                            e,
-                                                            sequential()
-                                                         )(innerReleaseMap) as T.IO<E, any>
+                                                         M.releaseAll(e, sequential())(innerReleaseMap) as T.IO<E, any>
                                                    ),
                                                    T.chain(() => T.halt(e.cause))
                                                 );
@@ -105,12 +96,7 @@ export class MemoMap {
                                                                observers,
                                                                XR.modify((n) => [n === 1, n - 1])
                                                             )
-                                                         )(
-                                                            M.releaseAll(
-                                                               e,
-                                                               sequential()
-                                                            )(innerReleaseMap) as T.UIO<any>
-                                                         )
+                                                         )(M.releaseAll(e, sequential())(innerReleaseMap) as T.UIO<any>)
                                                       )
                                                    ),
                                                    T.tap(() =>
@@ -120,16 +106,12 @@ export class MemoMap {
                                                       )
                                                    ),
                                                    T.bindS("outerFinalizer", () =>
-                                                      RelMap.add((e) =>
-                                                         T._chain(finalizerRef.get, (f) => f(e))
-                                                      )(outerReleaseMap)
+                                                      RelMap.add((e) => T.chain_(finalizerRef.get, (f) => f(e)))(
+                                                         outerReleaseMap
+                                                      )
                                                    ),
-                                                   T.tap(() =>
-                                                      pipe(promise, XP.succeed(e.value[1]))
-                                                   ),
-                                                   T.map(({ outerFinalizer }) =>
-                                                      tuple(outerFinalizer, e.value[1])
-                                                   )
+                                                   T.tap(() => pipe(promise, XP.succeed(e.value[1]))),
+                                                   T.map(({ outerFinalizer }) => tuple(outerFinalizer, e.value[1]))
                                                 );
                                              }
                                           }
@@ -162,16 +144,12 @@ export class MemoMap {
                                     }
                                  })
                               ),
-                              (e: Exit<any, any>) => T._chain(finalizerRef.get, (f) => f(e))
+                              (e: Exit<any, any>) => T.chain_(finalizerRef.get, (f) => f(e))
                            ] as readonly [T.IO<any, any>, Finalizer]
                      ),
                      T.map(({ memoized, resource }) =>
                         tuple(
-                           resource as T.Effect<
-                              readonly [R, ReleaseMap],
-                              E,
-                              readonly [Finalizer, A]
-                           >,
+                           resource as T.Effect<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>,
                            insert(layer, memoized)(m) as ReadonlyMap<
                               Layer<any, any, any>,
                               readonly [T.IO<any, any>, Finalizer]
