@@ -1,6 +1,6 @@
 {
    "name": "@principia/optics",
-   "version": "0.0.1",
+   "version": "0.0.2",
    "description": "Optics",
    "repository": "git://github.com/0x706b/principia",
    "license": "MIT",
@@ -41,7 +41,7 @@
       "test": "yarn build:test && jest build/test"
    },
    "dependencies": {
-      "@principia/core": "^0.0.1",
+      "@principia/core": "^0.0.2",
       "core-js": "3"
    },
    "devDependencies": {

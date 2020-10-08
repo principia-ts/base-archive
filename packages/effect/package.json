@@ -1,6 +1,6 @@
 {
    "name": "@principia/effect",
-   "version": "0.0.4",
+   "version": "0.0.5",
    "description": "Effect",
    "repository": "git://github.com/0x706b/principia",
    "license": "MIT",
@@ -42,7 +42,7 @@
       "copy:system": "ts-node ../../scripts/copy-system.ts"
    },
    "dependencies": {
-      "@principia/core": "^0.0.1",
+      "@principia/core": "^0.0.2",
       "core-js": "3"
    },
    "devDependencies": {
