@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
 import * as A from "@principia/core/Array";
-import type { Eq } from "@principia/core/Eq";
 import { pipe } from "@principia/core/Function";
 import type { NonEmptyArray } from "@principia/core/NonEmptyArray";
 import * as O from "@principia/core/Option";
-import type { Show } from "@principia/core/Show";
+import type { Eq } from "@principia/prelude/Eq";
+import { fromEquals } from "@principia/prelude/Eq";
+import type { Show } from "@principia/prelude/Show";
 
 import type { FiberId } from "../Fiber/FiberId";
 import { eqFiberId } from "../Fiber/FiberId";
@@ -200,6 +201,4 @@ export const equalsCause = <E>(x: Cause<E>, y: Cause<E>): boolean => {
    }
 };
 
-export const eqCause: Eq<Cause<any>> = {
-   equals: (x) => (y) => equalsCause(x, y)
-};
+export const eqCause: Eq<Cause<any>> = fromEquals(equalsCause);

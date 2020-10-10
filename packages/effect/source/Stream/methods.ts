@@ -2,7 +2,7 @@ import * as A from "@principia/core/Array";
 import { flow, identity, pipe } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import * as Mb from "@principia/core/Option";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as P from "@principia/prelude";
 
 import type { Cause } from "../Cause";
 import * as C from "../Cause";
@@ -24,7 +24,7 @@ import { Chain, Stream } from "./Stream";
 /**
  * Creates a single-valued pure stream
  */
-export const pure: TC.PureF<[URI], V> = (a) => fromArray([a]);
+export const pure: P.PureFn<[URI], V> = (a) => fromArray([a]);
 
 /**
  * Effectfully transforms the chunks emitted by this stream.
@@ -70,12 +70,12 @@ export const mapChunks = <A, B>(f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const map_: TC.UC_MapF<[URI], V> = (fa, f) => mapChunks_(fa, A.map(f));
+export const map_: P.MapFn_<[URI], V> = (fa, f) => mapChunks_(fa, A.map(f));
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const map: TC.MapF<[URI], V> = (f) => (fa) => map_(fa, f);
+export const map: P.MapFn<[URI], V> = (f) => (fa) => map_(fa, f);
 
 /**
  * Maps over elements of the stream with the specified effectful function.
@@ -108,9 +108,9 @@ export const mapM_ = <R, E, A, R1, E1, B>(
  */
 export const mapM = <A, R1, E1, A1>(f: (o: A) => T.Effect<R1, E1, A1>) => <R, E>(fa: Stream<R, E, A>) => mapM_(fa, f);
 
-export const first_: TC.UC_FirstF<[URI], V> = (pab, f) => new Stream(pipe(pab.proc, M.map(T.first(Mb.map(f)))));
+export const first_: P.FirstFn_<[URI], V> = (pab, f) => new Stream(pipe(pab.proc, M.map(T.first(Mb.map(f)))));
 
-export const first: TC.FirstF<[URI], V> = (f) => (pab) => first_(pab, f);
+export const first: P.FirstFn<[URI], V> = (f) => (pab) => first_(pab, f);
 
 export const mapError = first;
 
@@ -139,7 +139,7 @@ export const mapErrorCause = <E, E1>(f: (e: Cause<E>) => Cause<E1>) => <R, A>(st
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const chain_: TC.UC_ChainF<[URI], V> = <R, E, A, R1, E1, B>(
+export const chain_: P.ChainFn_<[URI], V> = <R, E, A, R1, E1, B>(
    fa: Stream<R, E, A>,
    f: (a: A) => Stream<R1, E1, B>
 ) => {
@@ -170,28 +170,28 @@ export const chain_: TC.UC_ChainF<[URI], V> = <R, E, A, R1, E1, B>(
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const bind: TC.BindF<[URI], V> = (fa) => (f) => chain_(fa, f);
+export const bind: P.BindFn<[URI], V> = (fa) => (f) => chain_(fa, f);
 
 /**
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const chain: TC.ChainF<[URI], V> = (f) => (fa) => chain_(fa, f);
+export const chain: P.ChainFn<[URI], V> = (f) => (fa) => chain_(fa, f);
 
 /**
  * Flattens this stream-of-streams into a stream made of the concatenation in
  * strict order of all the streams.
  */
-export const flatten: TC.FlattenF<[URI], V> = (ffa) => chain_(ffa, identity);
+export const flatten: P.FlattenFn<[URI], V> = (ffa) => chain_(ffa, identity);
 
 export const environment = <R>(): RIO<R, R> => fromEffect(T.ask<R>());
 
-export const access: TC.AccessF<[URI], V> = (f) => map_(environment(), f);
+export const asks: P.AsksFn<[URI], V> = (f) => map_(environment(), f);
 
 export const accessEffect = <R0, R, E, A>(f: (_: R0) => T.Effect<R, E, A>): Stream<R & R0, E, A> =>
    mapM_(environment<R0>(), f);
 
-export const accessM: TC.AccessMF<[URI], V> = <R0, R, E, A>(f: (_: R0) => Stream<R, E, A>) =>
+export const accessM: P.AsksMFn<[URI], V> = <R0, R, E, A>(f: (_: R0) => Stream<R, E, A>) =>
    chain_(environment<R0>(), f);
 
 /**

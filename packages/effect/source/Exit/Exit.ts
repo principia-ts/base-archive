@@ -1,4 +1,4 @@
-import type { V as Variance } from "@principia/core/HKT";
+import type { V as Variance } from "@principia/prelude/HKT";
 
 import type { Cause } from "../Cause";
 
@@ -19,7 +19,7 @@ export type URI = typeof URI;
 
 export type V = Variance<"E", "+">;
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: Exit<E, A>;
    }

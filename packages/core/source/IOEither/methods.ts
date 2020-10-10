@@ -1,8 +1,10 @@
+import * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import * as E from "../Either";
 import * as EitherT from "../EitherT";
-import { identity, tuple } from "../Function";
+import { identity } from "../Function";
 import * as I from "../IO";
-import type * as TC from "../typeclass-index";
 import { right } from "./constructors";
 import type { IOEither, URI, V } from "./IOEither";
 
@@ -13,8 +15,9 @@ import type { IOEither, URI, V } from "./IOEither";
  */
 
 const Monad = EitherT.Monad(I.Monad);
+const Applicative = EitherT.Applicative(I.Applicative);
 
-export const pure: TC.PureF<[URI], V> = Monad.pure;
+export const pure: P.PureFn<[URI], V> = P.pureF(Monad);
 
 export const unit: <E = never>() => IOEither<E, void> = () => I.pure(E.unit());
 
@@ -22,9 +25,11 @@ export const map_: <E, A, B>(fa: IOEither<E, A>, f: (a: A) => B) => IOEither<E, 
 
 export const map: <A, B>(f: (a: A) => B) => <E>(fa: IOEither<E, A>) => IOEither<E, B> = Monad.map;
 
-export const ap_: <E, A, G, B>(fab: IOEither<G, (a: A) => B>, fa: IOEither<E, A>) => IOEither<E | G, B> = Monad.ap_;
+export const ap_: <E, A, G, B>(fab: IOEither<G, (a: A) => B>, fa: IOEither<E, A>) => IOEither<E | G, B> = P.apF_(
+   Applicative
+);
 
-export const ap: TC.ApF<[URI], V> = Monad.ap;
+export const ap: P.ApFn<[URI], V> = (fa) => (fab) => ap_(fab, fa);
 
 export const apFirst_ = <E, A, G, B>(fa: IOEither<E, A>, fb: IOEither<G, B>): IOEither<E | G, A> =>
    ap_(
@@ -51,10 +56,13 @@ export const lift2 = <A, B, C, E, G>(f: (a: A) => (b: B) => C) => (fa: IOEither<
       fb
    );
 
-export const chain_: <E, A, G, B>(ma: IOEither<E, A>, f: (a: A) => IOEither<G, B>) => IOEither<E | G, B> = Monad.chain_;
+export const chain_: <E, A, G, B>(ma: IOEither<E, A>, f: (a: A) => IOEither<G, B>) => IOEither<E | G, B> = P.chainF_(
+   Monad
+);
 
-export const chain: <A, G, B>(f: (a: A) => IOEither<G, B>) => <E>(ma: IOEither<E, A>) => IOEither<E | G, B> =
-   Monad.chain;
+export const chain: <A, G, B>(f: (a: A) => IOEither<G, B>) => <E>(ma: IOEither<E, A>) => IOEither<E | G, B> = P.chainF(
+   Monad
+);
 
 export const tap_ = <E, A, G, B>(fa: IOEither<E, A>, f: (a: A) => IOEither<G, B>): IOEither<E | G, A> =>
    chain_(fa, (a) => map_(f(a), () => a));
@@ -77,18 +85,18 @@ export const mapBoth_: <E, A, G, B, C>(
    fa: IOEither<E, A>,
    fb: IOEither<G, B>,
    f: (a: A, b: B) => C
-) => IOEither<E | G, C> = Monad.mapBoth_;
+) => IOEither<E | G, C> = P.mapBothF_(Applicative);
 
 export const mapBoth: <A, G, B, C>(
    fb: IOEither<G, B>,
    f: (a: A, b: B) => C
-) => <E>(fa: IOEither<E, A>) => IOEither<E | G, C> = Monad.mapBoth;
+) => <E>(fa: IOEither<E, A>) => IOEither<E | G, C> = P.mapBothF(Applicative);
 
-export const both_ = <E, A, G, B>(fa: IOEither<E, A>, fb: IOEither<G, B>): IOEither<E | G, readonly [A, B]> =>
-   mapBoth_(fa, fb, tuple);
+export const both_: <E, A, G, B>(fa: IOEither<E, A>, fb: IOEither<G, B>) => IOEither<E | G, readonly [A, B]> =
+   Applicative.both_;
 
-export const both = <G, B>(fb: IOEither<G, B>) => <E, A>(fa: IOEither<E, A>): IOEither<E | G, readonly [A, B]> =>
-   both_(fa, fb);
+export const both: <G, B>(fb: IOEither<G, B>) => <E, A>(fa: IOEither<E, A>) => IOEither<E | G, readonly [A, B]> =
+   Applicative.both;
 
 export const swap = <E, A>(pab: IOEither<E, A>): IOEither<A, E> => I.map_(pab, E.swap);
 

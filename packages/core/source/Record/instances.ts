@@ -1,8 +1,10 @@
-import type { Eq } from "../Eq";
-import { fromEquals } from "../Eq";
+import type * as TC from "@principia/prelude";
+import { makeMonoid } from "@principia/prelude";
+import type { Eq } from "@principia/prelude/Eq";
+import { fromEquals } from "@principia/prelude/Eq";
+import * as HKT from "@principia/prelude/HKT";
+
 import { pipe } from "../Function";
-import * as HKT from "../HKT";
-import type * as TC from "../typeclass-index";
 import { empty } from "./constructors";
 import { isSubrecord } from "./guards";
 import {
@@ -63,14 +65,14 @@ export const getEq: {
    <A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>>;
 } = <A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>> => {
    const isSubrecordE = isSubrecord(E);
-   return fromEquals((x) => (y) => isSubrecordE(x)(y) && isSubrecordE(y)(x));
+   return fromEquals((x, y) => isSubrecordE(x)(y) && isSubrecordE(y)(x));
 };
 
 export const getMonoid: {
    <N extends string, A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<N, A>>;
    <A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<string, A>>;
-} = <A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<string, A>> => ({
-   concat: (x) => (y) => {
+} = <A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<string, A>> =>
+   makeMonoid<ReadonlyRecord<string, A>>((x, y) => {
       if (x === empty) {
          return y;
       }
@@ -85,12 +87,10 @@ export const getMonoid: {
       const r: Record<string, A> = Object.assign({}, x);
       for (let i = 0; i < len; i++) {
          const k = keys[i];
-         r[k] = _hasOwnProperty.call(x, k) ? S.concat(x[k])(y[k]) : y[k];
+         r[k] = _hasOwnProperty.call(x, k) ? S.combine_(x[k], y[k]) : y[k];
       }
       return r;
-   },
-   empty
-});
+   }, empty);
 
 export const fromFoldableMap = <B, F extends HKT.URIS, C = HKT.Auto>(S: TC.Semigroup<B>, F: TC.Foldable<F, C>) => <
    NF extends string,
@@ -112,18 +112,18 @@ export const fromFoldableMap = <B, F extends HKT.URIS, C = HKT.Auto>(S: TC.Semig
       fa,
       F.reduce<A, Record<N, B>>({} as any, (r, a) => {
          const [k, b] = f(a);
-         r[k] = _hasOwnProperty.call(r, k) ? S.concat(r[k])(b) : b;
+         r[k] = _hasOwnProperty.call(r, k) ? S.combine_(r[k], b) : b;
          return r;
       })
    );
 
-export const Functor: TC.Functor<[URI], V> = HKT.instance({
+export const CovariantFunctor: TC.Functor<[URI], V> = HKT.instance({
    map,
    map_: map_
 });
 
-export const FunctorWithIndex: TC.FunctorWithIndex<[URI], V> = HKT.instance({
-   ...Functor,
+export const CovariantFunctorWithIndex: TC.FunctorWithIndex<[URI], V> = HKT.instance({
+   ...CovariantFunctor,
    mapWithIndex,
    mapWithIndex_: mapWithIndex_
 });
@@ -153,12 +153,11 @@ export const Compactable: TC.Compactable<[URI], V> = HKT.instance({
 });
 
 export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
-   ...Functor,
-   ...Compactable,
-   filter_: filter_,
-   mapOption_: mapOption_,
-   partition_: partition_,
-   mapEither_: mapEither_,
+   ...CovariantFunctor,
+   filter_,
+   mapOption_,
+   partition_,
+   mapEither_,
    filter,
    mapOption,
    partition,
@@ -166,12 +165,11 @@ export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
 });
 
 export const FilterableWithIndex: TC.FilterableWithIndex<[URI], V> = HKT.instance({
-   ...Filterable,
-   ...FunctorWithIndex,
-   filterWithIndex_: filterWithIndex_,
-   mapOptionWithIndex_: mapOptionWithIndex_,
-   partitionWithIndex_: partitionWithIndex_,
-   mapEitherWithIndex_: mapEitherWithIndex_,
+   ...CovariantFunctorWithIndex,
+   filterWithIndex_,
+   mapOptionWithIndex_,
+   partitionWithIndex_,
+   mapEitherWithIndex_,
    filterWithIndex,
    mapOptionWithIndex,
    partitionWithIndex,
@@ -179,24 +177,20 @@ export const FilterableWithIndex: TC.FilterableWithIndex<[URI], V> = HKT.instanc
 });
 
 export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
-   ...Functor,
-   ...Foldable,
+   ...CovariantFunctor,
    traverse_: traverse_,
    traverse,
    sequence
 });
 
 export const TraversableWithIndex: TC.TraversableWithIndex<[URI], V> = HKT.instance({
-   ...FunctorWithIndex,
-   ...FoldableWithIndex,
+   ...CovariantFunctorWithIndex,
    ...Traversable,
    traverseWithIndex_: traverseWithIndex_,
    traverseWithIndex
 });
 
 export const Witherable: TC.Witherable<[URI], V> = HKT.instance({
-   ...Traversable,
-   ...Filterable,
    wither_: wither_,
    wilt_: wilt_,
    wither,
@@ -204,9 +198,6 @@ export const Witherable: TC.Witherable<[URI], V> = HKT.instance({
 });
 
 export const WitherableWithIndex: TC.WitherableWithIndex<[URI], V> = HKT.instance({
-   ...Witherable,
-   ...FilterableWithIndex,
-   ...TraversableWithIndex,
    wiltWithIndex_: wiltWithIndex_,
    witherWithIndex_: witherWithIndex_,
    witherWithIndex,

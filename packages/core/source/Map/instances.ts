@@ -1,13 +1,14 @@
-import type { Eq } from "../Eq";
-import { fromEquals } from "../Eq";
+import type { Monoid, Semigroup } from "@principia/prelude";
+import { makeMonoid } from "@principia/prelude";
+import * as P from "@principia/prelude";
+import type { Eq } from "@principia/prelude/Eq";
+import { fromEquals } from "@principia/prelude/Eq";
+import * as HKT from "@principia/prelude/HKT";
+import type { Ord } from "@principia/prelude/Ord";
+import type { Show } from "@principia/prelude/Show";
+
 import { pipe } from "../Function";
-import * as HKT from "../HKT";
-import type { Monoid } from "../Monoid";
 import * as O from "../Option";
-import type { Ord } from "../Ord";
-import type { Semigroup } from "../Semigroup";
-import type { Show } from "../Show";
-import * as TC from "../typeclass-index";
 import { keys, lookupWithKey_ } from "./combinators";
 import { empty } from "./constructors";
 import { isSubmap_ } from "./guards";
@@ -65,7 +66,7 @@ export const getShow = <K, A>(SK: Show<K>, SA: Show<A>): Show<ReadonlyMap<K, A>>
  */
 export const getEq = <K, A>(EK: Eq<K>, EA: Eq<A>): Eq<ReadonlyMap<K, A>> => {
    const isSubmapKA_ = isSubmap_(EK, EA);
-   return fromEquals((x) => (y) => isSubmapKA_(x, y) && isSubmapKA_(y, x));
+   return fromEquals((x, y) => isSubmapKA_(x, y) && isSubmapKA_(y, x));
 };
 
 /**
@@ -76,43 +77,39 @@ export const getEq = <K, A>(EK: Eq<K>, EA: Eq<A>): Eq<ReadonlyMap<K, A>> => {
  */
 export function getMonoid<K, A>(SK: Eq<K>, SA: Semigroup<A>): Monoid<ReadonlyMap<K, A>> {
    const lookupWithKeyK_ = lookupWithKey_(SK);
-   return {
-      concat: (mx) => (my) => {
-         if (mx === empty) {
-            return my;
+   return makeMonoid<ReadonlyMap<K, A>>((mx, my) => {
+      if (mx === empty) {
+         return my;
+      }
+      if (my === empty) {
+         return mx;
+      }
+      const r = new Map(mx);
+      const entries = my.entries();
+      let e: Next<readonly [K, A]>;
+      while (!(e = entries.next()).done) {
+         const [k, a] = e.value;
+         const mxOptA = lookupWithKeyK_(mx, k);
+         if (O.isSome(mxOptA)) {
+            r.set(mxOptA.value[0], SA.combine_(mxOptA.value[1], a));
+         } else {
+            r.set(k, a);
          }
-         if (my === empty) {
-            return mx;
-         }
-         const r = new Map(mx);
-         const entries = my.entries();
-         let e: Next<readonly [K, A]>;
-         while (!(e = entries.next()).done) {
-            const [k, a] = e.value;
-            const mxOptA = lookupWithKeyK_(mx, k);
-            if (O.isSome(mxOptA)) {
-               r.set(mxOptA.value[0], SA.concat(mxOptA.value[1])(a));
-            } else {
-               r.set(k, a);
-            }
-         }
-         return r;
-      },
-      empty
-   };
+      }
+      return r;
+   }, empty);
 }
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const Functor: TC.Functor<[URI], V> = HKT.instance({
+export const Functor: P.Functor<[URI], V> = HKT.instance({
    map,
    map_: map_
 });
 
-export const FunctorWithIndex: TC.FunctorWithIndex<[URI], V> = HKT.instance({
-   ...Functor,
+export const FunctorWithIndex: P.FunctorWithIndex<[URI], V> = HKT.instance({
    mapWithIndex,
    mapWithIndex_: mapWithIndex_
 });
@@ -121,7 +118,7 @@ export const FunctorWithIndex: TC.FunctorWithIndex<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const Compactable: TC.Compactable<[URI], V> = HKT.instance({
+export const Compactable: P.Compactable<[URI], V> = HKT.instance({
    compact,
    separate
 });
@@ -130,9 +127,8 @@ export const Compactable: TC.Compactable<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
+export const Filterable: P.Filterable<[URI], V> = HKT.instance({
    ...Functor,
-   ...Compactable,
    filter_: filter_,
    mapOption_: mapOption_,
    partition_: partition_,
@@ -147,10 +143,8 @@ export const Filterable: TC.Filterable<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const getFilterableWithIndex = <K = never>(): TC.FilterableWithIndex<[URI], V & HKT.Fix<"K", K>> =>
+export const getFilterableWithIndex = <K = never>(): P.FilterableWithIndex<[URI], V & HKT.Fix<"K", K>> =>
    HKT.instance({
-      ...Filterable,
-      ...FunctorWithIndex,
       mapOptionWithIndex_: mapOptionWithIndex_,
       filterWithIndex_: filterWithIndex_,
       mapEitherWithIndex_: mapEitherWithIndex_,
@@ -165,12 +159,10 @@ export const getFilterableWithIndex = <K = never>(): TC.FilterableWithIndex<[URI
  * @category Instances
  * @since 1.0.0
  */
-export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & HKT.Fix<"K", K>> => {
+export const getFoldableWithIndex = <K>(O: Ord<K>): P.FoldableWithIndex<[URI], V & HKT.Fix<"K", K>> => {
    type CK = V & HKT.Fix<"K", K>;
-
    const keysO = keys(O);
-
-   const reduceWithIndex_: TC.UC_ReduceWithIndexF<[URI], CK> = <A, B>(
+   const reduceWithIndex_: P.ReduceWithIndexFn_<[URI], CK> = <A, B>(
       fa: ReadonlyMap<K, A>,
       b: B,
       f: (k: K, b: B, a: A) => B
@@ -185,27 +177,21 @@ export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & H
       }
       return out;
    };
-
-   const reduce_: TC.UC_ReduceF<[URI], CK> = (fa, b, f) => reduceWithIndex_(fa, b, (_, b, a) => f(b, a));
-
-   const foldMapWithIndex_: TC.UC_FoldMapWithIndexF<[URI], CK> = <M>(M: Monoid<M>) => <A>(
+   const foldMapWithIndex_: P.FoldMapWithIndexFn_<[URI], CK> = <M>(M: Monoid<M>) => <A>(
       fa: ReadonlyMap<K, A>,
       f: (k: K, a: A) => M
    ): M => {
-      let out: M = M.empty;
+      let out: M = M.nat;
       const ks = keysO(fa);
       const len = ks.length;
       for (let i = 0; i < len; i++) {
          const k = ks[i];
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-         out = M.concat(out)(f(k, fa.get(k)!));
+         out = M.combine_(out, f(k, fa.get(k)!));
       }
       return out;
    };
-
-   const foldMap_: TC.UC_FoldMapF<[URI], CK> = (M) => (fa, f) => foldMapWithIndex_(M)(fa, (_, a) => f(a));
-
-   const reduceRightWithIndex_: TC.UC_ReduceRightWithIndexF<[URI], CK> = <A, B>(
+   const reduceRightWithIndex_: P.ReduceRightWithIndexFn_<[URI], CK> = <A, B>(
       fa: ReadonlyMap<K, A>,
       b: B,
       f: (k: K, a: A, b: B) => B
@@ -221,11 +207,28 @@ export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & H
       return out;
    };
 
-   const reduceRight_: TC.UC_ReduceRightF<[URI], CK> = (fa, b, f) => reduceRightWithIndex_(fa, b, (_, a, b) => f(a, b));
+   return HKT.instance<P.FoldableWithIndex<[URI], CK>>({
+      reduceWithIndex_,
+      reduceWithIndex: (b, f) => (fa) => reduceWithIndex_(fa, b, f),
+      foldMapWithIndex_,
+      foldMapWithIndex: (M) => (f) => (fa) => foldMapWithIndex_(M)(fa, f),
+      reduceRightWithIndex_,
+      reduceRightWithIndex: (b, f) => (fa) => reduceRightWithIndex_(fa, b, f)
+   });
+};
 
-   const traverseWithIndex_ = TC.implementUCTraverseWithIndex<[URI], CK>()((_) => (G) => (ta, f) => {
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export const getTraversableWithindex = <K>(O: Ord<K>): P.TraversableWithIndex<[URI], V & HKT.Fix<"K", K>> => {
+   type CK = V & HKT.Fix<"K", K>;
+
+   const keysO = keys(O);
+
+   const traverseWithIndex_ = P.implementTraverseWithIndex_<[URI], CK>()((_) => (G) => (ta, f) => {
       type _ = typeof _;
-      let gm: HKT.HKT<_["G"], ReadonlyMap<_["K"], _["B"]>> = G.pure(empty);
+      let gm: HKT.HKT<_["G"], ReadonlyMap<_["K"], _["B"]>> = P.pureF(G)(empty);
       const ks = keysO(ta);
       const len = ks.length;
       for (let i = 0; i < len; i++) {
@@ -235,54 +238,40 @@ export const getWitherable = <K>(O: Ord<K>): TC.WitherableWithIndex<[URI], V & H
          gm = pipe(
             gm,
             G.map((m) => (b: typeof _.B) => new Map(m).set(key, b)),
-            G.ap(f(key, a))
+            P.apF(G)(f(key, a))
          );
       }
       return gm;
    });
 
-   const traverse_: TC.UC_TraverseF<[URI], CK> = (G) => (ta, f) => traverseWithIndex_(G)(ta, (_, a) => f(a));
+   return HKT.instance<P.TraversableWithIndex<[URI], CK>>({
+      ...FunctorWithIndex,
+      traverseWithIndex_,
+      traverseWithIndex: (G) => (f) => (ta) => traverseWithIndex_(G)(ta, f)
+   });
+};
 
-   const sequence: TC.SequenceF<[URI], CK> = (G) => (ta) => traverseWithIndex_(G)(ta, (_, a) => a);
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export const getWitherable = <K>(O: Ord<K>): P.WitherableWithIndex<[URI], V & HKT.Fix<"K", K>> => {
+   type CK = V & HKT.Fix<"K", K>;
 
-   const witherWithIndex_ = TC.implementUCWitherWithIndex<[URI], CK>()((_) => (G) => (wa, f) =>
+   const { traverseWithIndex_ } = getTraversableWithindex(O);
+
+   const witherWithIndex_ = P.implementWitherWithIndex_<[URI], CK>()((_) => (G) => (wa, f) =>
       pipe(traverseWithIndex_(G)(wa, f), G.map(compact))
    );
 
-   const wither_: TC.UC_WitherF<[URI], CK> = (G) => (wa, f) => witherWithIndex_(G)(wa, (_, a) => f(a));
-
-   const wiltWithIndex_ = TC.implementUCWiltWithIndex<[URI], CK>()((_) => (G) => (wa, f) =>
+   const wiltWithIndex_ = P.implementWiltWithIndex_<[URI], CK>()((_) => (G) => (wa, f) =>
       pipe(traverseWithIndex_(G)(wa, f), G.map(separate))
    );
 
-   const wilt_: TC.UC_WiltF<[URI], CK> = (G) => (wa, f) => wiltWithIndex_(G)(wa, (_, a) => f(a));
-
-   return HKT.instance<TC.WitherableWithIndex<[URI], CK>>({
-      ...getFilterableWithIndex<K>(),
-      reduceWithIndex_: reduceWithIndex_,
-      reduce_: reduce_,
-      foldMapWithIndex_: foldMapWithIndex_,
-      foldMap_: foldMap_,
-      reduceRightWithIndex_: reduceRightWithIndex_,
-      reduceRight_: reduceRight_,
-      traverseWithIndex_: traverseWithIndex_,
-      traverse_: traverse_,
+   return HKT.instance<P.WitherableWithIndex<[URI], CK>>({
       wiltWithIndex_: wiltWithIndex_,
-      wilt_: wilt_,
       witherWithIndex_: witherWithIndex_,
-      wither_: wither_,
-      reduceWithIndex: (b, f) => (fa) => reduceWithIndex_(fa, b, f),
-      reduce: (b, f) => (fa) => reduce_(fa, b, f),
-      foldMapWithIndex: (M) => (f) => (fa) => foldMapWithIndex_(M)(fa, f),
-      foldMap: (M) => (f) => (fa) => foldMap_(M)(fa, f),
-      reduceRightWithIndex: (b, f) => (fa) => reduceRightWithIndex_(fa, b, f),
-      reduceRight: (b, f) => (fa) => reduceRight_(fa, b, f),
-      traverseWithIndex: (G) => (f) => (ta) => traverseWithIndex_(G)(ta, f),
-      traverse: (G) => (f) => (ta) => traverse_(G)(ta, f),
       wiltWithIndex: (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f),
-      wilt: (G) => (f) => (wa) => wilt_(G)(wa, f),
-      witherWithIndex: (G) => (f) => (wa) => witherWithIndex_(G)(wa, f),
-      wither: (G) => (f) => (wa) => wither_(G)(wa, f),
-      sequence
+      witherWithIndex: (G) => (f) => (wa) => witherWithIndex_(G)(wa, f)
    });
 };

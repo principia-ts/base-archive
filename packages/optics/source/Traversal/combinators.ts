@@ -3,10 +3,10 @@ import * as C from "@principia/core/Const";
 import type { Either } from "@principia/core/Either";
 import type { Predicate, Refinement } from "@principia/core/Function";
 import { identity, pipe } from "@principia/core/Function";
-import type * as HKT from "@principia/core/HKT";
 import * as I from "@principia/core/Identity";
 import type { Option } from "@principia/core/Option";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as TC from "@principia/prelude";
+import type * as HKT from "@principia/prelude/HKT";
 
 import * as _ from "../internal";
 import { fromTraversable } from "./constructors";

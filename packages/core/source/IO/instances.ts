@@ -1,7 +1,9 @@
-import * as HKT from "../HKT";
-import * as TC from "../typeclass-index";
+import * as P from "@principia/prelude";
+import { fromCombine } from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import type { IO, URI, V } from "./IO";
-import { ap, ap_, chain, chain_, flatten, map, map_, mapBoth, mapBoth_, pure } from "./methods";
+import { ap, ap_, both, both_, flatten, map, map_, mapBoth, mapBoth_, pure, unit } from "./methods";
 
 /*
  * -------------------------------------------
@@ -19,9 +21,8 @@ import { ap, ap_, chain, chain_, flatten, map, map_, mapBoth, mapBoth_, pure } f
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <A>(S: TC.Semigroup<A>): TC.Semigroup<IO<A>> => ({
-   concat: (x) => (y) => () => S.concat(x())(y())
-});
+export const getSemigroup = <A>(S: P.Semigroup<A>): P.Semigroup<IO<A>> =>
+   fromCombine((x, y) => () => S.combine_(x(), y()));
 
 /**
  * ```haskell
@@ -33,17 +34,17 @@ export const getSemigroup = <A>(S: TC.Semigroup<A>): TC.Semigroup<IO<A>> => ({
  * @category Instances
  * @since 1.0.0
  */
-export const getMonoid = <A>(M: TC.Monoid<A>): TC.Monoid<IO<A>> => ({
+export const getMonoid = <A>(M: P.Monoid<A>): P.Monoid<IO<A>> => ({
    ...getSemigroup(M),
-   empty: pure(M.empty)
+   nat: pure(M.nat)
 });
 
-export const Functor: TC.Functor<[URI], V> = HKT.instance({
+export const Functor: P.Functor<[URI], V> = HKT.instance({
    map_: map_,
    map
 });
 
-export const Apply: TC.Apply<[URI], V> = HKT.instance({
+export const Apply: P.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap_: ap_,
    ap,
@@ -51,16 +52,17 @@ export const Apply: TC.Apply<[URI], V> = HKT.instance({
    mapBoth
 });
 
-export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
-   ...Apply,
-   pure
+export const Applicative: P.Applicative<[URI], V> = HKT.instance({
+   ...Functor,
+   both_,
+   both,
+   unit
 });
 
-export const Monad: TC.Monad<[URI], V> = HKT.instance({
-   ...Applicative,
-   chain_: chain_,
-   chain,
+export const Monad: P.Monad<[URI], V> = HKT.instance({
+   ...Functor,
+   unit,
    flatten
 });
 
-export const Do: TC.Do<[URI], V> = TC.deriveDo(Monad);
+export const Do: P.Do<[URI], V> = P.deriveDo(Monad);

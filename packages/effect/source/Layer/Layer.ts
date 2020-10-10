@@ -8,7 +8,7 @@ export interface Layer<R, E, A> {
    readonly build: Managed<R, E, A>;
 }
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: Layer<R, E, A>;
    }

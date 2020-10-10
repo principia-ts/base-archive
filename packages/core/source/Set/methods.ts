@@ -1,12 +1,13 @@
+import type { Eq } from "@principia/prelude/Eq";
+import type { Monoid } from "@principia/prelude/Monoid";
+import type { Ord } from "@principia/prelude/Ord";
+import type { Separated } from "@principia/prelude/Utils";
+
 import * as A from "../Array";
 import type { Either } from "../Either";
-import type { Eq } from "../Eq";
 import type { Predicate, Refinement } from "../Function";
 import { identity } from "../Function";
-import type { Monoid } from "../Monoid";
 import type { Option } from "../Option";
-import type { Ord } from "../Ord";
-import type { Separated } from "../Utils";
 import { toArray } from "./destructors";
 
 interface Next<A> {
@@ -162,7 +163,7 @@ export const reduce = <A>(O: Ord<A>) => <B>(b: B, f: (b: B, a: A) => B) => (set:
 
 export const foldMap_ = <A, M>(O: Ord<A>, M: Monoid<M>) => {
    const toArrayO = toArray(O);
-   return (fa: ReadonlySet<A>, f: (a: A) => M) => A.reduce_(toArrayO(fa), M.empty, (b, a) => M.concat(b)(f(a)));
+   return (fa: ReadonlySet<A>, f: (a: A) => M) => A.reduce_(toArrayO(fa), M.nat, (b, a) => M.combine_(b, f(a)));
 };
 
 export const foldMap = <A, M>(O: Ord<A>, M: Monoid<M>) => {

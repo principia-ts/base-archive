@@ -1,13 +1,17 @@
-import * as HKT from "../HKT";
-import type * as TC from "../typeclass-index";
+import type * as P from "@principia/prelude";
+import { fromCombine, makeMonoid } from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import { never } from "./constructors";
 import {
    ap,
    ap_,
    apSeq,
    apSeq_,
-   chain,
-   chain_,
+   both,
+   both_,
+   bothSeq,
+   bothSeq_,
    flatten,
    map,
    map_,
@@ -15,7 +19,8 @@ import {
    mapBoth_,
    mapBothSeq,
    mapBothSeq_,
-   pure
+   pure,
+   unit
 } from "./methods";
 import type { Task, URI, V } from "./Task";
 
@@ -35,9 +40,8 @@ import type { Task, URI, V } from "./Task";
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <A>(S: TC.Semigroup<A>): TC.Semigroup<Task<A>> => ({
-   concat: (x) => (y) => () => x().then((rx) => y().then((ry) => S.concat(rx)(ry)))
-});
+export const getSemigroup = <A>(S: P.Semigroup<A>): P.Semigroup<Task<A>> =>
+   fromCombine((x, y) => () => x().then((rx) => y().then((ry) => S.combine_(rx, ry))));
 
 /**
  * ```haskell
@@ -49,9 +53,9 @@ export const getSemigroup = <A>(S: TC.Semigroup<A>): TC.Semigroup<Task<A>> => ({
  * @category Instances
  * @since 1.0.0
  */
-export const getMonoid = <A>(M: TC.Monoid<A>): TC.Monoid<Task<A>> => ({
+export const getMonoid = <A>(M: P.Monoid<A>): P.Monoid<Task<A>> => ({
    ...getSemigroup(M),
-   empty: pure(M.empty)
+   nat: pure(M.nat)
 });
 
 /**
@@ -66,17 +70,15 @@ export const getMonoid = <A>(M: TC.Monoid<A>): TC.Monoid<Task<A>> => ({
  * @category Instances
  * @since 1.0.0
  */
-export const getRaceMonoid = <A = never>(): TC.Monoid<Task<A>> => ({
-   concat: (x) => (y) => () => Promise.race([x(), y()]),
-   empty: never
-});
+export const getRaceMonoid = <A = never>(): P.Monoid<Task<A>> =>
+   makeMonoid<Task<A>>((x, y) => () => Promise.race([x(), y()]), never);
 
-export const Functor: TC.Functor<[URI], V> = HKT.instance({
+export const Functor: P.Functor<[URI], V> = HKT.instance({
    map_: map_,
    map
 });
 
-export const ApplyPar: TC.Apply<[URI], V> = HKT.instance({
+export const ApplyPar: P.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap_: ap_,
    ap,
@@ -84,7 +86,7 @@ export const ApplyPar: TC.Apply<[URI], V> = HKT.instance({
    mapBoth
 });
 
-export const ApplySeq: TC.Apply<[URI], V> = HKT.instance({
+export const ApplySeq: P.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap_: apSeq_,
    ap: apSeq,
@@ -92,26 +94,22 @@ export const ApplySeq: TC.Apply<[URI], V> = HKT.instance({
    mapBoth: mapBothSeq
 });
 
-export const ApplicativePar: TC.Applicative<[URI], V> = HKT.instance({
-   ...ApplyPar,
-   pure
+export const ApplicativePar: P.Applicative<[URI], V> = HKT.instance({
+   ...Functor,
+   both_,
+   both,
+   unit
 });
 
-export const ApplicativeSeq: TC.Applicative<[URI], V> = HKT.instance({
-   ...ApplySeq,
-   pure
+export const ApplicativeSeq: P.Applicative<[URI], V> = HKT.instance({
+   ...Functor,
+   both_: bothSeq_,
+   both: bothSeq,
+   unit
 });
 
-export const MonadPar: TC.Monad<[URI], V> = HKT.instance({
-   ...ApplicativePar,
-   chain_: chain_,
-   chain,
-   flatten
-});
-
-export const MonadSeq: TC.Monad<[URI], V> = HKT.instance({
-   ...ApplicativeSeq,
-   chain_: chain_,
-   chain,
+export const Monad: P.Monad<[URI], V> = HKT.instance({
+   ...Functor,
+   unit,
    flatten
 });

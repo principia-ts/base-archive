@@ -1,8 +1,9 @@
+import type { Monoid } from "@principia/prelude/Monoid";
+import type { Separated } from "@principia/prelude/Utils";
+
 import * as A from "../Array";
 import type { Either } from "../Either";
 import { identity } from "../Function";
-import type { Monoid } from "../Monoid";
-import type { Separated } from "../Utils";
 
 function* genOf<A>(a: A) {
    yield a;
@@ -129,7 +130,7 @@ export const never: Iterable<never> = {
 };
 
 export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A, k: number) => M) => (fa: Iterable<A>): M => {
-   let res = M.empty;
+   let res = M.nat;
    let n = -1;
    const iterator = fa[Symbol.iterator]();
    // eslint-disable-next-line no-constant-condition
@@ -139,7 +140,7 @@ export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A, k: number) => M) => (f
          break;
       }
       n += 1;
-      res = M.concat(res)(f(result.value, n));
+      res = M.combine_(res, f(result.value, n));
    }
    return res;
 };

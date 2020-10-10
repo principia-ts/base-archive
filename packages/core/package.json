@@ -41,7 +41,8 @@
       "test": "yarn build:test && jest build/test"
    },
    "dependencies": {
-      "core-js": "3"
+      "core-js": "3",
+      "@principia/prelude": "^0.0.0"
    },
    "devDependencies": {
       "typescript": "next"

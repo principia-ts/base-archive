@@ -1,4 +1,4 @@
-import { matchTag } from "@principia/core/Utils";
+import { matchTag } from "@principia/prelude/Utils";
 
 import * as T from "../_internal/effect";
 import { halt } from "../core";

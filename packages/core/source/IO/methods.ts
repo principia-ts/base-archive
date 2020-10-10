@@ -1,8 +1,5 @@
-import * as A from "../Array";
-import { bind_, bindTo_, flow, identity, pipe } from "../Function";
-import type * as TC from "../typeclass-index";
-import type { IO, URI, V } from "./IO";
-import { InferA } from "./IO";
+import { bind_, flow, identity, pipe } from "../Function";
+import type { IO } from "./IO";
 
 /*
  * -------------------------------------------
@@ -193,32 +190,7 @@ export const mapBoth = <A, B, C>(fb: IO<B>, f: (a: A, b: B) => C) => (fa: IO<A>)
  * @category Apply
  * @since 1.0.0
  */
-export const lift2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb: IO<B>): IO<C> => () => f(fa())(fb());
-
-/**
- * ```haskell
- * mapN :: Apply f => ([a, b, ...] -> c) -> [f a, f b, ...] -> f c
- * ```
- *
- * Combines a tuple of `IO`s and maps with provided function `f`
- *
- * @category Apply
- * @since 1.0.0
- */
-export const mapN: TC.MapNF<[URI], V> = (f) => (fas) => () =>
-   f(A.reduce_(fas, [] as ReadonlyArray<any>, (b, a) => [...b, a()]) as any);
-
-/**
- * ```haskell
- * tuple :: Apply f => [f a, f b, ...] -> f [a, b, ...]
- * ```
- *
- * Combines a tuple of `IO`s and returns an `IO` of all arguments as a tuple
- *
- * @category Apply
- * @since 1.0.0
- */
-export const tuple: TC.TupleF<[URI], V> = mapN(identity);
+export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb: IO<B>): IO<C> => () => f(fa())(fb());
 
 /**
  * ```haskell
@@ -236,7 +208,7 @@ export const tuple: TC.TupleF<[URI], V> = mapN(identity);
 export const apS = <N extends string, A, B>(
    name: Exclude<N, keyof A>,
    fb: IO<B>
-): (<E>(fa: IO<A>) => IO<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
+): ((fa: IO<A>) => IO<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
    flow(
       map((a) => (b: B) => bind_(a, name, b)),
       ap(fb)

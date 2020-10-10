@@ -1,4 +1,5 @@
-import type { Eq } from "../Eq";
+import type { Eq } from "@principia/prelude/Eq";
+
 import type { Predicate, Refinement } from "../Function";
 import { left, right } from "./constructors";
 import type { Either } from "./Either";

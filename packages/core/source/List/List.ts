@@ -1,8 +1,9 @@
 /**
  * A lazy singly-linked list implementation
  */
+import type * as HKT from "@principia/prelude/HKT";
+
 import type { Lazy } from "../Function";
-import type * as HKT from "../HKT";
 
 /*
  * -------------------------------------------
@@ -34,7 +35,7 @@ export type URI = typeof URI;
 
 export type V = HKT.Auto;
 
-declare module "../HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       [URI]: List<A>;
    }

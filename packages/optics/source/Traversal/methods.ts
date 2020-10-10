@@ -1,4 +1,4 @@
-import type * as TC from "@principia/core/typeclass-index";
+import type * as TC from "@principia/prelude";
 
 import * as _ from "../internal";
 import type { URI, V } from "./Traversal";
@@ -15,7 +15,7 @@ import type { URI, V } from "./Traversal";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose_: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.traversalComposeTraversal(ab)(sa);
+export const compose_: TC.ComposeFn_<[URI], V> = (sa, ab) => _.traversalComposeTraversal(ab)(sa);
 
 /**
  * Compose a `Traversal` with a `Traversal`
@@ -23,4 +23,4 @@ export const compose_: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.traversalCompose
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose: TC.ComposeF<[URI], V> = _.traversalComposeTraversal;
+export const compose: TC.ComposeFn<[URI], V> = _.traversalComposeTraversal;

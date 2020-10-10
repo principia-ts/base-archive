@@ -1,7 +1,7 @@
 import * as A from "@principia/core/Array";
 import { pipe } from "@principia/core/Function";
 import * as R from "@principia/core/Record";
-import type { UnionToIntersection } from "@principia/core/Utils";
+import type { UnionToIntersection } from "@principia/prelude/Utils";
 
 import type { Has, Region, Tag } from "../../Has";
 import { has, mergeEnvironments } from "../../Has";

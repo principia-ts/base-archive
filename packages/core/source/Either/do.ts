@@ -1,4 +1,5 @@
-import { deriveDo } from "../Do";
+import { deriveDo } from "@principia/prelude/Do";
+
 import { Monad } from "./instances";
 
 /*

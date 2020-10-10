@@ -1,5 +1,6 @@
+import type * as HKT from "@principia/prelude/HKT";
+
 import type { Either } from "../Either";
-import type * as HKT from "../HKT";
 import type { IO } from "../IO";
 
 /*
@@ -16,7 +17,7 @@ export type URI = typeof URI;
 
 export type V = HKT.V<"E", "+">;
 
-declare module "../HKT" {
+declare module "@principia/prelude/HKT" {
    export interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       [URI]: IOEither<E, A>;
    }

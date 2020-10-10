@@ -1,6 +1,7 @@
-import type * as HKT from "../HKT";
+import type { Unfoldable } from "@principia/prelude";
+import type * as HKT from "@principia/prelude/HKT";
+
 import * as O from "../Option";
-import type { Unfoldable } from "../typeclass-index";
 import { collect_ } from "./combinators";
 import type { ReadonlyRecord } from "./Record";
 

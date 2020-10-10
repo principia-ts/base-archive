@@ -1,4 +1,5 @@
-import type { Eq } from "../Eq";
+import type { Eq } from "@principia/prelude/Eq";
+
 import { every } from "./combinators";
 import { elem } from "./methods";
 

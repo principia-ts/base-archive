@@ -1,4 +1,4 @@
-import type { Auto } from "@principia/core/HKT";
+import type { Auto } from "@principia/prelude/HKT";
 
 import type { FiberId } from "../Fiber/FiberId";
 
@@ -41,7 +41,7 @@ export type URI = typeof URI;
 
 export type V = Auto;
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: Cause<A>;
    }

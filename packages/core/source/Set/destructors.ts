@@ -1,5 +1,5 @@
-import type { Ord } from "../Ord";
-import { toNumber } from "../Ordering";
+import type { Ord } from "@principia/prelude/Ord";
+import { toNumber } from "@principia/prelude/Ordering";
 
 export const toArray = <A>(O: Ord<A>) => (set: ReadonlySet<A>): ReadonlyArray<A> => {
    const r: Array<A> = [];

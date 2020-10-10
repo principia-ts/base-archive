@@ -1,5 +1,5 @@
 import * as E from "@principia/core/Either";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as P from "@principia/prelude";
 
 import { modify, succeed } from "./constructors";
 import { FoldInstruction } from "./instructions";
@@ -226,17 +226,17 @@ export const orElseEither = <S3, S4, R1, E1, A1>(that: XPure<S3, S4, R1, E1, A1>
    fa: XPure<S1, S2, R, E, A>
 ) => orElseEither_(fa, that);
 
-export const bimap_: TC.UC_BimapF<[URI], V> = (pab, f, g) =>
+export const bimap_: P.BimapFn_<[URI], V> = (pab, f, g) =>
    foldM_(
       pab,
       (e) => fail(f(e)),
       (a) => succeed(g(a))
    );
 
-export const bimap: TC.BimapF<[URI], V> = (f, g) => (pab) => bimap_(pab, f, g);
+export const bimap: P.BimapFn<[URI], V> = (f, g) => (pab) => bimap_(pab, f, g);
 
-export const first_: TC.UC_FirstF<[URI], V> = (pab, f) => catchAll_(pab, (e) => fail(f(e)));
+export const first_: P.FirstFn_<[URI], V> = (pab, f) => catchAll_(pab, (e) => fail(f(e)));
 
-export const first: TC.FirstF<[URI], V> = (f) => (pab) => first_(pab, f);
+export const first: P.FirstFn<[URI], V> = (f) => (pab) => first_(pab, f);
 
 export const mapError = first;

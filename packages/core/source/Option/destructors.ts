@@ -1,4 +1,3 @@
-import type { Lazy } from "../Function";
 import { isNone } from "./guards";
 import type { Option } from "./Option";
 
@@ -18,7 +17,7 @@ import type { Option } from "./Option";
  * @category Destructors
  * @since 1.0.0
  */
-export const fold_ = <A, B, C>(fa: Option<A>, onNothing: Lazy<B>, onJust: (a: A) => C): B | C =>
+export const fold_ = <A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A) => C): B | C =>
    isNone(fa) ? onNothing() : onJust(fa.value);
 
 /**
@@ -31,7 +30,7 @@ export const fold_ = <A, B, C>(fa: Option<A>, onNothing: Lazy<B>, onJust: (a: A)
  * @category Destructors
  * @since 1.0.0
  */
-export const fold = <A, B, C>(onNothing: Lazy<B>, onJust: (a: A) => C) => (fa: Option<A>): B | C =>
+export const fold = <A, B, C>(onNothing: () => B, onJust: (a: A) => C) => (fa: Option<A>): B | C =>
    fold_(fa, onNothing, onJust);
 
 /**
@@ -68,7 +67,7 @@ export const toUndefined = <A>(fa: Option<A>): A | undefined => (isNone(fa) ? un
  * @category Destructors
  * @since 1.0.0
  */
-export const getOrElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<B>): A | B => (isNone(fa) ? onNothing() : fa.value);
+export const getOrElse_ = <A, B>(fa: Option<A>, onNothing: () => B): A | B => (isNone(fa) ? onNothing() : fa.value);
 
 /**
  * ```haskell
@@ -80,4 +79,4 @@ export const getOrElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<B>): A | B => (i
  * @category Destructors
  * @since 1.0.0
  */
-export const getOrElse = <B>(onNothing: Lazy<B>) => <A>(fa: Option<A>): A | B => getOrElse_(fa, onNothing);
+export const getOrElse = <B>(onNothing: () => B) => <A>(fa: Option<A>): A | B => getOrElse_(fa, onNothing);

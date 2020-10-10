@@ -1,11 +1,12 @@
+import type { Eq } from "@principia/prelude/Eq";
+import * as Ord from "@principia/prelude/Ord";
+import { toNumber } from "@principia/prelude/Ordering";
+
 import type { Either } from "../Either";
-import type { Eq } from "../Eq";
 import type { Predicate, Refinement } from "../Function";
 import type { NonEmptyArray } from "../NonEmptyArray";
 import type { Option } from "../Option";
 import { isSome, none, some } from "../Option";
-import * as Ord from "../Ord";
-import { toNumber } from "../Ordering";
 import { empty } from "./constructors";
 import { isEmpty, isNonEmpty, isOutOfBound_ } from "./guards";
 import { chain_, reduce_ } from "./methods";
@@ -325,7 +326,7 @@ export const uniq = <A>(E: Eq<A>) => (as: ReadonlyArray<A>): ReadonlyArray<A> =>
 
 export const sortBy = <B>(ords: ReadonlyArray<Ord.Ord<B>>) => <A extends B>(as: ReadonlyArray<A>): ReadonlyArray<A> => {
    const M = Ord.getMonoid<B>();
-   return sort(reduce_(ords, M.empty, (b, a) => M.concat(b)(a)))(as);
+   return sort(reduce_(ords, M.nat, (b, a) => M.combine_(a, b)))(as);
 };
 
 export const comprehension: {

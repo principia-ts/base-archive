@@ -1,9 +1,9 @@
-import * as HKT from "@principia/core/HKT";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as TC from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
 
 import { id } from "./constructors";
 import type { URI, V } from "./Iso";
-import { compose, imap, imap_ } from "./methods";
+import { compose, compose_, imap, imap_ } from "./methods";
 
 /*
  * -------------------------------------------
@@ -26,5 +26,6 @@ export const Invariant: TC.Invariant<[URI], V> = HKT.instance({
  */
 export const Category: TC.Category<[URI], V> = HKT.instance({
    id,
-   compose
+   compose,
+   compose_
 });

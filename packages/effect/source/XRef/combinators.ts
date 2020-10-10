@@ -3,7 +3,7 @@ import { identity, pipe, tuple } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import { none, some } from "@principia/core/Option";
 import * as Mb from "@principia/core/Option";
-import { matchTag } from "@principia/core/Utils";
+import { matchTag } from "@principia/prelude/Utils";
 
 import * as T from "../Effect/core";
 import type { IO, UIO } from "../Effect/Effect";

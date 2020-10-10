@@ -1,4 +1,5 @@
-import type { Eq } from "../Eq";
+import type { Eq } from "@principia/prelude/Eq";
+
 import * as O from "../Option";
 import { lookupWithKey } from "./combinators";
 
@@ -20,7 +21,7 @@ export const isSubmap_ = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
       while (!(e = entries.next()).done) {
          const [k, a] = e.value;
          const d2OptA = lookupWithKeyE(k)(that);
-         if (O.isNone(d2OptA) || !EK.equals(k)(d2OptA.value[0]) || !EA.equals(a)(d2OptA.value[1])) {
+         if (O.isNone(d2OptA) || !EK.equals_(k, d2OptA.value[0]) || !EA.equals_(a, d2OptA.value[1])) {
             return false;
          }
       }

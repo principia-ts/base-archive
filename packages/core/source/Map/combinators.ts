@@ -1,9 +1,10 @@
-import type { Eq } from "../Eq";
+import type { Eq } from "@principia/prelude/Eq";
+import type { Ord } from "@principia/prelude/Ord";
+import { toNumber } from "@principia/prelude/Ordering";
+
 import { pipe } from "../Function";
 import type { Option } from "../Option";
 import * as O from "../Option";
-import type { Ord } from "../Ord";
-import { toNumber } from "../Ordering";
 
 interface Next<A> {
    readonly done?: boolean;
@@ -16,14 +17,14 @@ interface Next<A> {
  * @since 2.5.0
  */
 export const keys = <K>(O: Ord<K>) => <A>(m: ReadonlyMap<K, A>): ReadonlyArray<K> =>
-   Array.from(m.keys()).sort((a, b) => toNumber(O.compare(a)(b)));
+   Array.from(m.keys()).sort((a, b) => toNumber(O.compare_(a, b)));
 
 export const lookupWithKey_ = <K>(E: Eq<K>) => <A>(m: ReadonlyMap<K, A>, k: K): Option<readonly [K, A]> => {
    const entries = m.entries();
    let e: Next<readonly [K, A]>;
    while (!(e = entries.next()).done) {
       const [ka, a] = e.value;
-      if (E.equals(ka)(k)) {
+      if (E.equals_(ka, k)) {
          return O.some([ka, a]);
       }
    }

@@ -1,4 +1,4 @@
-import type * as TC from "@principia/core/typeclass-index";
+import type * as P from "@principia/prelude";
 
 import * as _ from "../internal";
 import type { Optional } from "../Optional";
@@ -18,7 +18,7 @@ import type { Lens, URI, V } from "./Lens";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose_: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.lensComposeLens(ab)(sa);
+export const compose_: P.ComposeFn_<[URI], V> = (sa, ab) => _.lensComposeLens(ab)(sa);
 
 /**
  * Compose an `Lens` with a `Lens`
@@ -26,7 +26,7 @@ export const compose_: TC.UC_ComposeF<[URI], V> = (sa, ab) => _.lensComposeLens(
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose: TC.ComposeF<[URI], V> = _.lensComposeLens;
+export const compose: P.ComposeFn<[URI], V> = _.lensComposeLens;
 
 /**
  * Compose an `Lens` with a `Prism`

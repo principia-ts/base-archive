@@ -1,9 +1,9 @@
-import { eqNumber } from "@principia/core/Eq";
 import { increment, pipe } from "@principia/core/Function";
 import * as M from "@principia/core/Map";
 import type { Option } from "@principia/core/Option";
 import * as Mb from "@principia/core/Option";
 import { none, some } from "@principia/core/Option";
+import { eqNumber } from "@principia/prelude/Eq";
 
 import type { Exit } from "../Exit";
 import * as XR from "../XRef/combinators";

@@ -1,11 +1,14 @@
-import * as HKT from "../HKT";
-import type * as TC from "../typeclass-index";
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import type { URI, V } from "./Identity";
 import {
    alt,
    alt_,
    ap,
    ap_,
+   both,
+   both_,
    chain,
    chain_,
    extend,
@@ -17,22 +20,22 @@ import {
    map_,
    mapBoth,
    mapBoth_,
-   pure,
    reduce,
    reduce_,
    reduceRight,
    reduceRight_,
    sequence,
    traverse,
-   traverse_
+   traverse_,
+   unit
 } from "./methods";
 
-export const Functor: TC.Functor<[URI], V> = HKT.instance({
+export const Functor: P.Functor<[URI], V> = HKT.instance({
    map_: map_,
    map
 });
 
-export const Apply: TC.Apply<[URI], V> = HKT.instance({
+export const Apply: P.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap_: ap_,
    ap,
@@ -40,19 +43,20 @@ export const Apply: TC.Apply<[URI], V> = HKT.instance({
    mapBoth
 });
 
-export const Applicative: TC.Applicative<[URI], V> = HKT.instance({
-   ...Apply,
-   pure
+export const Applicative: P.Applicative<[URI], V> = HKT.instance({
+   ...Functor,
+   both_,
+   both,
+   unit
 });
 
-export const Monad: TC.Monad<[URI], V> = HKT.instance({
-   ...Applicative,
-   chain_: chain_,
-   chain,
+export const Monad: P.Monad<[URI], V> = HKT.instance({
+   ...Functor,
+   unit,
    flatten
 });
 
-export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
+export const Foldable: P.Foldable<[URI], V> = HKT.instance({
    reduce_: reduce_,
    reduce,
    foldMap_: foldMap_,
@@ -61,21 +65,20 @@ export const Foldable: TC.Foldable<[URI], V> = HKT.instance({
    reduceRight
 });
 
-export const Traversable: TC.Traversable<[URI], V> = HKT.instance({
+export const Traversable: P.Traversable<[URI], V> = HKT.instance({
    ...Functor,
-   ...Foldable,
    traverse_: traverse_,
    traverse,
    sequence
 });
 
-export const Alt: TC.Alt<[URI], V> = HKT.instance({
+export const Alt: P.Alt<[URI], V> = HKT.instance({
    ...Functor,
    alt_: alt_,
    alt
 });
 
-export const Comonad: TC.Comonad<[URI], V> = HKT.instance({
+export const Comonad: P.Comonad<[URI], V> = HKT.instance({
    ...Functor,
    extend,
    extract

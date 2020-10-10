@@ -1,4 +1,4 @@
-import type { V as Variance } from "@principia/core/HKT";
+import type { V as Variance } from "@principia/prelude/HKT";
 
 import type * as T from "../Effect/Effect";
 import type { Finalizer, ReleaseMap } from "./ReleaseMap";
@@ -23,7 +23,7 @@ export type UIO<A> = Managed<unknown, never, A>;
 export type RIO<R, A> = Managed<R, never, A>;
 export type IO<E, A> = Managed<unknown, E, A>;
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: Managed<R, E, A>;
    }

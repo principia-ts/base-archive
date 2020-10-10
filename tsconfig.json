@@ -13,6 +13,8 @@
       "preserveSymlinks": true,
       "baseUrl": ".",
       "paths": {
+         "@principia/prelude*": ["packages/prelude/dist*"],
+         "@principia/prelude": ["packages/prelude/dist/index"],
          "@principia/core*": ["packages/core/dist*"],
          "@principia/effect*": ["packages/effect/dist*"]
       }

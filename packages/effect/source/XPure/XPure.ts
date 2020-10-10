@@ -1,4 +1,4 @@
-import type * as HKT from "@principia/core/HKT";
+import type * as HKT from "@principia/prelude/HKT";
 
 import type { Instruction } from "../Effect/Effect";
 import * as T from "../Effect/Effect";
@@ -32,7 +32,7 @@ export abstract class XPure<S1, S2, R, E, A> {
    }
 }
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: XPure<I, S, R, E, A>;
    }

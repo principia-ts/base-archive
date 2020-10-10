@@ -1,6 +1,6 @@
 import * as A from "@principia/core/Array";
 import { tuple } from "@principia/core/Function";
-import type { Erase, UnionToIntersection } from "@principia/core/Utils";
+import type { Erase, UnionToIntersection } from "@principia/prelude/Utils";
 
 import * as T from "../Effect/core";
 import type * as H from "../Has";

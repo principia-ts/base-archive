@@ -1,4 +1,4 @@
-import type * as HKT from "../HKT";
+import type * as HKT from "@principia/prelude/HKT";
 
 /*
  * -------------------------------------------
@@ -18,8 +18,8 @@ export interface IO<A> {
 
 export type InferA<T> = [T] extends [IO<infer A>] ? A : never;
 
-declare module "../HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      [URI]: IO<A>;
+      readonly [URI]: IO<A>;
    }
 }

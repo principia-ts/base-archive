@@ -1,7 +1,7 @@
 import { constVoid, pipe } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import { none, some } from "@principia/core/Option";
-import { matchTag } from "@principia/core/Utils";
+import { matchTag } from "@principia/prelude/Utils";
 
 import * as T from "../../Effect";
 import * as XP from "../../XPromise";

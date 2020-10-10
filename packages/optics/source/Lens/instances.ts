@@ -1,7 +1,7 @@
-import * as HKT from "@principia/core/HKT";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
 
-import { compose } from "./compositions";
+import { compose, compose_ } from "./compositions";
 import { id } from "./constructors";
 import type { URI, V } from "./Lens";
 import { imap, imap_ } from "./methods";
@@ -16,7 +16,7 @@ import { imap, imap_ } from "./methods";
  * @category Instances
  * @since 1.0.0
  */
-export const Invariant: TC.Invariant<[URI], V> = HKT.instance({
+export const Invariant: P.Invariant<[URI], V> = HKT.instance({
    imap_,
    imap
 });
@@ -25,7 +25,8 @@ export const Invariant: TC.Invariant<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const Category: TC.Category<[URI], V> = HKT.instance({
+export const Category: P.Category<[URI], V> = HKT.instance({
    id,
-   compose
+   compose,
+   compose_
 });

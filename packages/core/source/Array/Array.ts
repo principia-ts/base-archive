@@ -2,7 +2,7 @@
  * Nothing special: just your standard array
  */
 
-import type * as HKT from "../HKT";
+import type * as HKT from "@principia/prelude/HKT";
 
 /*
  * -------------------------------------------
@@ -18,7 +18,7 @@ export type URI = typeof URI;
 
 export type V = HKT.Auto;
 
-declare module "../HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: ReadonlyArray<A>;
    }

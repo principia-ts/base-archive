@@ -5,7 +5,8 @@ import { bind_, bindTo_, flow, identity, pipe, tuple } from "@principia/core/Fun
 import * as I from "@principia/core/Iterable";
 import * as O from "@principia/core/Option";
 import { none, some } from "@principia/core/Option";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as P from "@principia/prelude";
+import { makeMonoid } from "@principia/prelude";
 
 import type { Cause } from "../Cause";
 import * as C from "../Cause";
@@ -537,7 +538,7 @@ export const both = <Q, D, B>(fb: Effect<Q, D, B>) => <R, E, A>(
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: TC.FlattenF<[URI], V> = (ffa) => chain_(ffa, identity);
+export const flatten: P.FlattenFn<[URI], V> = (ffa) => chain_(ffa, identity);
 
 /**
  * ```haskell
@@ -552,7 +553,7 @@ export const flatten: TC.FlattenF<[URI], V> = (ffa) => chain_(ffa, identity);
  * @category Monad
  * @since 1.0.0
  */
-export const tap_: TC.UC_TapF<[URI], V> = (fa, f) =>
+export const tap_: P.TapFn_<[URI], V> = (fa, f) =>
    chain_(fa, (a) =>
       pipe(
          f(a),
@@ -573,7 +574,7 @@ export const tap_: TC.UC_TapF<[URI], V> = (fa, f) =>
  * @category Monad
  * @since 1.0.0
  */
-export const tap: TC.TapF<[URI], V> = (f) => (fa) => tap_(fa, f);
+export const tap: P.TapFn<[URI], V> = (f) => (fa) => tap_(fa, f);
 
 /**
  * ```haskell
@@ -590,7 +591,7 @@ export const tap: TC.TapF<[URI], V> = (f) => (fa) => tap_(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const chainFirst: TC.ChainFirstF<[URI], V> = tap;
+export const chainFirst: P.ChainFirstFn<[URI], V> = tap;
 
 export const bimap_ = <R, E, A, G, B>(pab: Effect<R, E, A>, f: (e: E) => G, g: (a: A) => B): Effect<R, G, B> =>
    foldM_(
@@ -616,7 +617,7 @@ export const bimap = <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <R>(pab: Ef
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first_: TC.UC_FirstF<[URI], V> = (fea, f) => foldCauseM_(fea, flow(C.map(f), halt), pure);
+export const first_: P.FirstFn_<[URI], V> = (fea, f) => foldCauseM_(fea, flow(C.map(f), halt), pure);
 
 /**
  * ```haskell
@@ -632,9 +633,9 @@ export const first_: TC.UC_FirstF<[URI], V> = (fea, f) => foldCauseM_(fea, flow(
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first: TC.FirstF<[URI], V> = (f) => (fea) => first_(fea, f);
+export const first: P.FirstFn<[URI], V> = (f) => (fea) => first_(fea, f);
 
-export const bindS: TC.BindSF<[URI], V> = (name, f) =>
+export const bindS: P.BindSFn<[URI], V> = (name, f) =>
    chain((a) =>
       pipe(
          f(a),
@@ -642,9 +643,9 @@ export const bindS: TC.BindSF<[URI], V> = (name, f) =>
       )
    );
 
-export const bindToS: TC.BindToSF<[URI], V> = (name) => (fa) => map_(fa, bindTo_(name));
+export const bindToS: P.BindToSFn<[URI], V> = (name) => (fa) => map_(fa, bindTo_(name));
 
-export const letS: TC.LetSF<[URI], V> = (name, f) => bindS(name, flow(f, pure));
+export const letS: P.LetSFn<[URI], V> = (name, f) => bindS(name, flow(f, pure));
 
 /*
  * -------------------------------------------
@@ -755,10 +756,7 @@ export const absolve = <R, E, E1, A>(v: Effect<R, E, E.Either<E1, A>>) => chain_
  * @since 1.0.0
  */
 export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Effect<R, E, any>): Effect<R, E, void> =>
-   I.foldMap<Effect<R, E, void>>({
-      empty: unit,
-      concat: (x) => (y) => chain_(x, () => y)
-   })(f)(as);
+   I.foldMap(makeMonoid<Effect<R, E, void>>((x, y) => chain_(x, () => y), unit))(f)(as);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs

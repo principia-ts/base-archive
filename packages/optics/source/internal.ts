@@ -5,11 +5,12 @@ import type { Either } from "@principia/core/Either";
 import * as E from "@principia/core/Either";
 import type { Predicate } from "@principia/core/Function";
 import { constant, flow, identity, pipe } from "@principia/core/Function";
-import type * as HKT from "@principia/core/HKT";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
 import * as R from "@principia/core/Record";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as P from "@principia/prelude";
+import { pureF } from "@principia/prelude";
+import type * as HKT from "@principia/prelude/HKT";
 
 import type { At } from "./At";
 import type { Iso } from "./Iso";
@@ -20,7 +21,7 @@ import type { Prism } from "./Prism";
 import type { Traversal } from "./Traversal";
 
 export interface ModifyF<S, A> {
-   <F extends HKT.URIS, C = HKT.Auto>(F: TC.Applicative<F, C>): <N extends string, K, Q, W, X, I, _S, R, E>(
+   <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <N extends string, K, Q, W, X, I, _S, R, E>(
       f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, A>
    ) => (s: S) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, S>;
 }
@@ -30,7 +31,7 @@ export function implementModifyF<S, A>(): (
       F: F;
       A: A;
       S: S;
-   }) => (F: TC.Applicative<HKT.UHKT<F>>) => (f: (a: A) => HKT.HKT<F, A>) => (s: S) => HKT.HKT<F, S>
+   }) => (F: P.Applicative<HKT.UHKT<F>>) => (f: (a: A) => HKT.HKT<F, A>) => (s: S) => HKT.HKT<F, S>
 ) => ModifyF<S, A>;
 export function implementModifyF() {
    return (i: any) => i();
@@ -155,7 +156,7 @@ export const prismAsTraversal = <S, A>(sa: Prism<S, A>): Traversal<S, A> => ({
       pipe(
          sa.getOption(s),
          O.fold(
-            () => F.pure(s),
+            () => pureF(F)(s),
             (a) => F.map_(f(a), (a) => prismSet(a)(sa)(s))
          )
       )
@@ -233,7 +234,7 @@ export const optionalAsTraversal = <S, A>(sa: Optional<S, A>): Traversal<S, A> =
       pipe(
          sa.getOption(s),
          O.fold(
-            () => F.pure(s),
+            () => pureF(F)(s),
             (a) => F.map_(f(a), (a: A) => sa.set(a)(s))
          )
       )
@@ -285,15 +286,15 @@ export const findFirst = <A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>
  */
 
 /** @internal */
-export const traversalComposeTraversal = <A, B>(ab: Traversal<A, B>) => <S>(sa: Traversal<S, A>) => ({
+export const traversalComposeTraversal = <A, B>(ab: Traversal<A, B>) => <S>(sa: Traversal<S, A>): Traversal<S, B> => ({
    modifyF: implementModifyF<S, B>()((_) => (F) => (f) => sa.modifyF(F)(ab.modifyF(F)(f)))
 });
 
 /** @internal */
 export function fromTraversable<T extends HKT.URIS, C = HKT.Auto>(
-   T: TC.Traversable<T, C>
+   T: P.Traversable<T, C>
 ): <N extends string, K, Q, W, X, I, S, R, E, A>() => Traversal<HKT.Kind<T, C, N, K, Q, W, X, I, S, R, E, A>, A>;
-export function fromTraversable<T>(T: TC.Traversable<HKT.UHKT<T>>) {
+export function fromTraversable<T>(T: P.Traversable<HKT.UHKT<T>>) {
    return <A>(): Traversal<HKT.HKT<T, A>, A> => ({
       modifyF: implementModifyF<HKT.HKT<T, A>, A>()((_) => (F) => {
          const traverseF_ = T.traverse_(F);

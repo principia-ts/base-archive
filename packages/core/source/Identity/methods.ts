@@ -1,6 +1,7 @@
-import { identity, pipe } from "../Function";
-import type { Monoid } from "../Monoid";
-import * as TC from "../typeclass-index";
+import * as P from "@principia/prelude";
+import type { Monoid } from "@principia/prelude/Monoid";
+
+import { identity, pipe, tuple } from "../Function";
 import type { Identity, URI, V } from "./Identity";
 
 /*
@@ -51,6 +52,10 @@ export const mapBoth_ = <A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C => f(fa
 
 export const mapBoth = <A, B, C>(fb: B, f: (a: A, b: B) => C) => (fa: A): C => f(fa, fb);
 
+export const both_: <A, B>(fa: A, fb: B) => readonly [A, B] = tuple;
+
+export const both = <B>(fb: B) => <A>(fa: A): readonly [A, B] => both_(fa, fb);
+
 export const reduce_ = <A, B>(fa: A, b: B, f: (b: B, a: A) => B): B => f(b, fa);
 
 export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: A): B => f(b, fa);
@@ -71,16 +76,16 @@ export const extract: <A>(wa: A) => A = identity;
 
 export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(identity);
 
-export const traverse_: TC.UC_TraverseF<[URI], V> = TC.implementUCTraverse<[URI], V>()((_) => (G) => (ta, f) =>
+export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) =>
    pipe(f(ta), G.map(identity))
 );
 
-export const traverse: TC.TraverseF<[URI], V> = (G) => {
+export const traverse: P.TraverseFn<[URI], V> = (G) => {
    const traverseG_ = traverse_(G);
    return (f) => (ta) => traverseG_(ta, f);
 };
 
-export const sequence: TC.SequenceF<[URI], V> = (G) => (ta) => pipe(ta, G.map(identity));
+export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => pipe(ta, G.map(identity));
 
 export const alt_: <A>(fa: A, that: () => A) => A = identity;
 

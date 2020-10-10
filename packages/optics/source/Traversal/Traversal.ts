@@ -1,4 +1,4 @@
-import type * as HKT from "@principia/core/HKT";
+import type * as HKT from "@principia/prelude/HKT";
 
 import type { ModifyF } from "../internal";
 
@@ -16,10 +16,10 @@ export const URI = "optics/Traversal";
 
 export type URI = typeof URI;
 
-export type V = HKT.V<"E", "_">;
+export type V = HKT.V<"I", "_">;
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Traversal<E, A>;
+      readonly [URI]: Traversal<I, A>;
    }
 }

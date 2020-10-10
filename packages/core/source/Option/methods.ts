@@ -1,9 +1,10 @@
+import type * as P from "@principia/prelude";
+import type { Monoid } from "@principia/prelude/Monoid";
+import type { Separated } from "@principia/prelude/Utils";
+
 import type { Either } from "../Either";
 import type { Predicate, Refinement } from "../Function";
 import { bind_, flow, identity, pipe, tuple } from "../Function";
-import type { Monoid } from "../Monoid";
-import type * as TC from "../typeclass-index";
-import type { Separated } from "../Utils";
 import { getLeft, getRight } from "./combinators";
 import { none, some } from "./constructors";
 import { isNone } from "./guards";
@@ -109,7 +110,7 @@ export const mapBoth_ = <A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) 
  * @since 1.0.0
  */
 
-export const mapBoth: TC.MapBothF<[URI], V> = (fb, f) => (fa) => mapBoth_(fa, fb, f);
+export const mapBoth: P.MapBothFn<[URI], V> = (fb, f) => (fa) => mapBoth_(fa, fb, f);
 /**
  * ```haskell
  * both_ :: Apply f => (f a, f b) -> f (a, b)
@@ -288,7 +289,7 @@ export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: Option<A>)
  * ```
  */
 export const foldMap_ = <M>(M: Monoid<M>) => <A>(fa: Option<A>, f: (a: A) => M): M =>
-   isNone(fa) ? M.empty : f(fa.value);
+   isNone(fa) ? M.nat : f(fa.value);
 
 /**
  * ```haskell
@@ -361,8 +362,8 @@ export const mapOption = <A, B>(f: (a: A) => Option<B>) => (fa: Option<A>): Opti
  * @category Uncurried Traversable
  * @since 1.0.0
  */
-export const traverse_: TC.UC_TraverseF<[URI], V> = (A) => (ta, f) =>
-   isNone(ta) ? A.pure(none()) : pipe(f(ta.value), A.map(some));
+export const traverse_: P.TraverseFn_<[URI], V> = (A) => (ta, f) =>
+   isNone(ta) ? A.map_(A.unit(), () => none()) : pipe(f(ta.value), A.map(some));
 
 /**
  * ```haskell
@@ -374,7 +375,7 @@ export const traverse_: TC.UC_TraverseF<[URI], V> = (A) => (ta, f) =>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: TC.TraverseF<[URI], V> = (A) => (f) => (ta) => traverse_(A)(ta, f);
+export const traverse: P.TraverseFn<[URI], V> = (A) => (f) => (ta) => traverse_(A)(ta, f);
 
 /**
  * ```haskell
@@ -386,8 +387,8 @@ export const traverse: TC.TraverseF<[URI], V> = (A) => (f) => (ta) => traverse_(
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: TC.SequenceF<[URI], V> = (A) => (fa) =>
-   isNone(fa) ? A.pure(none()) : pipe(fa.value, A.map(some));
+export const sequence: P.SequenceFn<[URI], V> = (A) => (fa) =>
+   isNone(fa) ? A.map_(A.unit(), () => none()) : pipe(fa.value, A.map(some));
 
 /**
  * ```haskell
@@ -434,11 +435,12 @@ export const extend = <A, B>(f: (wa: Option<A>) => B) => (wa: Option<A>): Option
  */
 export const duplicate = <A>(wa: Option<A>): Option<Option<A>> => extend_(wa, identity);
 
-export const wither_: TC.UC_WitherF<[URI], V> = (A) => (wa, f) => (isNone(wa) ? A.pure(none()) : f(wa.value));
+export const wither_: P.WitherFn_<[URI], V> = (A) => (wa, f) =>
+   isNone(wa) ? A.map_(A.unit(), () => none()) : f(wa.value);
 
-export const wither: TC.WitherF<[URI], V> = (A) => (f) => (wa) => wither_(A)(wa, f);
+export const wither: P.WitherFn<[URI], V> = (A) => (f) => (wa) => wither_(A)(wa, f);
 
-export const wilt_: TC.UC_WiltF<[URI], V> = (A) => (wa, f) => {
+export const wilt_: P.WiltFn_<[URI], V> = (A) => (wa, f) => {
    const o = map_(
       wa,
       flow(
@@ -450,14 +452,14 @@ export const wilt_: TC.UC_WiltF<[URI], V> = (A) => (wa, f) => {
       )
    );
    return isNone(o)
-      ? A.pure({
+      ? A.map_(A.unit(), () => ({
            left: none(),
            right: none()
-        })
+        }))
       : o.value;
 };
 
-export const wilt: TC.WiltF<[URI], V> = (A) => (f) => (wa) => wilt_(A)(wa, f);
+export const wilt: P.WiltFn<[URI], V> = (A) => (f) => (wa) => wilt_(A)(wa, f);
 
 /**
  * ```haskell

@@ -1,5 +1,5 @@
-import type { V as Variance } from "@principia/core/HKT";
 import type { Option } from "@principia/core/Option";
+import type { V as Variance } from "@principia/prelude/HKT";
 
 import type { Cause } from "../Cause";
 import type { Exit } from "../Exit/Exit";
@@ -86,7 +86,7 @@ export type IO<E, A> = Effect<unknown, E, A>;
 
 export type Canceler<R> = RIO<R, void>;
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: Effect<R, E, A>;
    }

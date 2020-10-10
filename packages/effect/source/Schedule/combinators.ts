@@ -3,7 +3,7 @@ import * as E from "@principia/core/Either";
 import { constant, pipe, tuple } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as TC from "@principia/prelude";
 
 import * as T from "../Effect/core";
 import { nextDouble } from "../Random";
@@ -187,9 +187,10 @@ export const mapM_ = <R, I, O, R1, O1>(sc: Schedule<R, I, O>, f: (o: O) => T.Eff
 
 export const mapM = <R1, O, O1>(f: (o: O) => T.Effect<R1, never, O1>) => <R, I>(sc: Schedule<R, I, O>) => mapM_(sc, f);
 
-export const map_: TC.UC_MapF<[URI], V> = (fa, f) => mapM_(fa, (o) => T.pure(f(o)));
+export const map_ = <R, I, A, B>(fa: Schedule<R, I, A>, f: (a: A) => B): Schedule<R, I, B> =>
+   mapM_(fa, (o) => T.pure(f(o)));
 
-export const map: TC.MapF<[URI], V> = (f) => (fa) => map_(fa, f);
+export const map = <A, B>(f: (a: A) => B) => <R, I>(fa: Schedule<R, I, A>): Schedule<R, I, B> => map_(fa, f);
 
 export const as_ = <R, I, O, O1>(sc: Schedule<R, I, O>, o: O1) => map_(sc, () => o);
 

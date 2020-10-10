@@ -1,11 +1,12 @@
+import * as TC from "@principia/prelude";
+import type { Monoid } from "@principia/prelude/Monoid";
+import type { Separated } from "@principia/prelude/Utils";
+
 import type { Either } from "../Either";
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "../Function";
 import { flow, identity, pipe } from "../Function";
-import type { Monoid } from "../Monoid";
 import type { NonEmptyArray } from "../NonEmptyArray";
 import type { Option } from "../Option";
-import * as TC from "../typeclass-index";
-import type { Separated } from "../Utils";
 import type { URI, V } from "./Array";
 import { empty } from "./constructors";
 
@@ -213,7 +214,7 @@ export const flatten = <A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
 /**
  * bind :: Monad m => m a -> (a -> m b) -> m b
  */
-export const bind: TC.BindF<[URI], V> = (fa) => (f) => chain_(fa, f);
+export const bind: TC.BindFn<[URI], V> = (fa) => (f) => chain_(fa, f);
 
 export const tap_ = <A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<A> =>
    chain_(ma, (a) =>
@@ -464,7 +465,7 @@ export const reduceRight_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) =
 export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: ReadonlyArray<A>): B => reduceRight_(fa, b, f);
 
 export const foldMapWithIndex_ = <M>(M: Monoid<M>) => <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M): M =>
-   reduceWithIndex_(fa, M.empty, (i, b, a) => M.concat(b)(f(i, a)));
+   reduceWithIndex_(fa, M.nat, (i, b, a) => M.combine_(b, f(i, a)));
 
 export const foldMapWithIndex = <M>(M: Monoid<M>) => <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) =>
    foldMapWithIndex_(M)(fa, f);
@@ -607,16 +608,18 @@ export const alt = <A>(that: () => ReadonlyArray<A>) => (fa: ReadonlyArray<A>): 
  *    g -> (t k a, ((k, a) -> g b)) -> g (t k b)
  * ```
  */
-export const traverseWithIndex_: TC.UC_TraverseWithIndexF<[URI], V> = TC.implementUCTraverseWithIndex<[URI], V>()(
+export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implementTraverseWithIndex_<[URI], V>()(
    (_) => (G) => (ta, f) =>
       pipe(
          ta,
-         reduceWithIndex(G.pure(empty()), (i, fbs, a) =>
-            pipe(
-               fbs,
-               G.map((bs) => (b: typeof _.B) => __snoc(b)(bs)),
-               G.ap(f(i, a))
-            )
+         reduceWithIndex(
+            G.map_(G.unit(), () => empty()),
+            (i, fbs, a) =>
+               pipe(
+                  fbs,
+                  G.both(f(i, a)),
+                  G.map(([bs, b]) => __snoc(b)(bs))
+               )
          )
       )
 );
@@ -627,7 +630,7 @@ export const traverseWithIndex_: TC.UC_TraverseWithIndexF<[URI], V> = TC.impleme
  *    g -> ((k, a) -> g b) -> t k a -> g (t k b)
  * ```
  */
-export const traverseWithIndex: TC.TraverseWithIndexF<[URI], V> = (A) => (f) => (ta) => traverseWithIndex_(A)(ta, f);
+export const traverseWithIndex: TC.TraverseWithIndexFn<[URI], V> = (A) => (f) => (ta) => traverseWithIndex_(A)(ta, f);
 
 /**
  * ```haskell
@@ -635,7 +638,7 @@ export const traverseWithIndex: TC.TraverseWithIndexF<[URI], V> = (A) => (f) => 
  *    g -> (t a, (a -> g b)) -> g (t b)
  * ```
  */
-export const traverse_: TC.UC_TraverseF<[URI], V> = (A) => (ta, f) => traverseWithIndex_(A)(ta, (_, a) => f(a));
+export const traverse_: TC.TraverseFn_<[URI], V> = (A) => (ta, f) => traverseWithIndex_(A)(ta, (_, a) => f(a));
 
 /**
  * ```haskell
@@ -643,22 +646,24 @@ export const traverse_: TC.UC_TraverseF<[URI], V> = (A) => (ta, f) => traverseWi
  *    g -> (a -> g b) -> t a -> g (t b)
  * ```
  */
-export const traverse: TC.TraverseF<[URI], V> = (A) => (f) => (ta) => traverseWithIndex_(A)(ta, (_, a) => f(a));
+export const traverse: TC.TraverseFn<[URI], V> = (A) => (f) => (ta) => traverseWithIndex_(A)(ta, (_, a) => f(a));
 
 /**
  * ```haskell
  * sequence :: (Applicative g, Traversable t) => g -> t a -> g (t a)
  * ```
  */
-export const sequence: TC.SequenceF<[URI], V> = TC.implementSequence<[URI], V>()((_) => (G) => (ta) =>
+export const sequence: TC.SequenceFn<[URI], V> = TC.implementSequence<[URI], V>()((_) => (G) => (ta) =>
    pipe(
       ta,
-      reduce(G.pure(empty()), (fas, fa) =>
-         pipe(
-            fas,
-            G.map((as) => (a: typeof _.A) => __snoc(a)(as)),
-            G.ap(fa)
-         )
+      reduce(
+         G.map_(G.unit(), () => empty()),
+         (fas, fa) =>
+            pipe(
+               fas,
+               G.both(fa),
+               G.map(([as, a]) => __snoc(a)(as))
+            )
       )
    )
 );
@@ -669,7 +674,7 @@ export const sequence: TC.SequenceF<[URI], V> = TC.implementSequence<[URI], V>()
  *    g -> (w k a, ((k, a) -> g (w k (Maybe b)))) -> g (w k b)
  * ```
  */
-export const witherWithIndex_: TC.UC_WitherWithIndexF<[URI], V> = (G) => {
+export const witherWithIndex_: TC.WitherWithIndexFn_<[URI], V> = (G) => {
    const traverseG = traverseWithIndex_(G);
    return (wa, f) => pipe(traverseG(wa, f), G.map(compact));
 };
@@ -680,7 +685,7 @@ export const witherWithIndex_: TC.UC_WitherWithIndexF<[URI], V> = (G) => {
  *    g -> ((k, a) -> g (w k (Maybe b))) -> w k a -> g (w k b)
  * ```
  */
-export const witherWithIndex: TC.WitherWithIndexF<[URI], V> = (G) => (f) => (wa) => witherWithIndex_(G)(wa, f);
+export const witherWithIndex: TC.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => witherWithIndex_(G)(wa, f);
 
 /**
  * ```haskell
@@ -688,7 +693,7 @@ export const witherWithIndex: TC.WitherWithIndexF<[URI], V> = (G) => (f) => (wa)
  *    g -> (w a, (a -> g (w (Maybe b)))) -> g (w b)
  * ```
  */
-export const wither_: TC.UC_WitherF<[URI], V> = (G) => (wa, f) => witherWithIndex_(G)(wa, (_, a) => f(a));
+export const wither_: TC.WitherFn_<[URI], V> = (G) => (wa, f) => witherWithIndex_(G)(wa, (_, a) => f(a));
 
 /**
  * ```haskell
@@ -696,7 +701,7 @@ export const wither_: TC.UC_WitherF<[URI], V> = (G) => (wa, f) => witherWithInde
  *    g -> (a -> g (w (Maybe b))) -> w a -> g (w b)
  * ```
  */
-export const wither: TC.WitherF<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa, f);
+export const wither: TC.WitherFn<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa, f);
 
 /**
  * ```haskell
@@ -704,7 +709,7 @@ export const wither: TC.WitherF<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa,
  *    g -> (w k a, ((k, a) -> g (w k (Either b c)))) -> g (Separated (w k b) (w k c))
  * ```
  */
-export const wiltWithIndex_: TC.UC_WiltWithIndexF<[URI], V> = (G) => {
+export const wiltWithIndex_: TC.WiltWithIndexFn_<[URI], V> = (G) => {
    const traverseG = traverseWithIndex_(G);
    return (wa, f) => pipe(traverseG(wa, f), G.map(separate));
 };
@@ -715,7 +720,7 @@ export const wiltWithIndex_: TC.UC_WiltWithIndexF<[URI], V> = (G) => {
  *    g -> ((k, a) -> g (w k (Either b c))) -> w k a -> g (Separated (w k b) (w k c))
  * ```
  */
-export const wiltWithIndex: TC.WiltWithIndexF<[URI], V> = (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f);
+export const wiltWithIndex: TC.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f);
 
 /**
  * ```haskell
@@ -723,7 +728,7 @@ export const wiltWithIndex: TC.WiltWithIndexF<[URI], V> = (G) => (f) => (wa) => 
  *    g -> (w a, (a -> g (w (Either b c)))) -> g (Separated (w b) (w c))
  * ```
  */
-export const wilt_: TC.UC_WiltF<[URI], V> = (G) => (wa, f) => wiltWithIndex_(G)(wa, (_, a) => f(a));
+export const wilt_: TC.WiltFn_<[URI], V> = (G) => (wa, f) => wiltWithIndex_(G)(wa, (_, a) => f(a));
 
 /**
  * ```haskell
@@ -731,7 +736,7 @@ export const wilt_: TC.UC_WiltF<[URI], V> = (G) => (wa, f) => wiltWithIndex_(G)(
  *    g -> (a -> g (w (Either b c))) -> w a -> g (Separated (w b) (w c))
  * ```
  */
-export const wilt: TC.WiltF<[URI], V> = (G) => (f) => (wa) => wilt_(G)(wa, f);
+export const wilt: TC.WiltFn<[URI], V> = (G) => (f) => (wa) => wilt_(G)(wa, f);
 
 export const duplicate: <A>(wa: ReadonlyArray<A>) => ReadonlyArray<ReadonlyArray<A>> = (wa) => extend_(wa, identity);
 

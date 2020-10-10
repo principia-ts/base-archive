@@ -1,7 +1,7 @@
 import { pipe } from "@principia/core/Function";
-import type { V as Variance } from "@principia/core/HKT";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
+import type { V as Variance } from "@principia/prelude/HKT";
 
 import * as C from "../Cause";
 import * as T from "../Effect";
@@ -16,7 +16,7 @@ export type URI = typeof URI;
 
 export type V = Variance<"R", "-"> & Variance<"E", "+">;
 
-declare module "@principia/core/HKT" {
+declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
       readonly [URI]: Stream<R, E, A>;
    }

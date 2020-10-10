@@ -1,7 +1,9 @@
+import type * as P from "@principia/prelude";
+import { pureF } from "@principia/prelude";
+
+import type { Either, URI, V } from "../Either";
 import { bind_, flow, identity, pipe, tuple } from "../Function";
-import type * as TC from "../typeclass-index";
 import { left, right } from "./constructors";
-import type { Either, URI, V } from "./Either";
 import { isLeft } from "./guards";
 
 /*
@@ -396,9 +398,9 @@ export const flatten: <E, G, A>(mma: Either<E, Either<G, A>>) => Either<E | G, A
  * @category Uncurried Traversable
  * @since 1.0.0
  */
-export const traverse_: TC.UC_TraverseF<[URI], V> = (F) => (ta, f) =>
+export const traverse_: P.TraverseFn_<[URI], V> = (F) => (ta, f) =>
    isLeft(ta)
-      ? F.pure(left(ta.left))
+      ? pureF(F)(left(ta.left))
       : pipe(
            f(ta.right),
            F.map((b) => right(b))
@@ -414,7 +416,7 @@ export const traverse_: TC.UC_TraverseF<[URI], V> = (F) => (ta, f) =>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: TC.TraverseF<[URI], V> = (F) => (f) => (ta) => traverse_(F)(ta, f);
+export const traverse: P.TraverseFn<[URI], V> = (F) => (f) => (ta) => traverse_(F)(ta, f);
 
 /**
  * ```haskell
@@ -426,13 +428,7 @@ export const traverse: TC.TraverseF<[URI], V> = (F) => (f) => (ta) => traverse_(
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: TC.SequenceF<[URI], V> = (F) => (fa) =>
-   isLeft(fa)
-      ? F.pure(left(fa.left))
-      : pipe(
-           fa.right,
-           F.map((a) => right(a))
-        );
+export const sequence: P.SequenceFn<[URI], V> = (F) => (ta) => traverse_(F)(ta, identity);
 
 /**
  * ```haskell
@@ -500,15 +496,15 @@ export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => <E>(fa: Either<E, A>
  * foldMap_ :: (Foldable f, Monoid m) => Instance m b -> (f a, (a -> b)) -> b
  * ```
  */
-export const foldMap_ = <M>(M: TC.Monoid<M>) => <E, A>(fa: Either<E, A>, f: (a: A) => M): M =>
-   isLeft(fa) ? M.empty : f(fa.right);
+export const foldMap_ = <M>(M: P.Monoid<M>) => <E, A>(fa: Either<E, A>, f: (a: A) => M): M =>
+   isLeft(fa) ? M.nat : f(fa.right);
 
 /**
  * ```haskell
  * foldMap :: (Foldable f, Monoid m) => Instance m b -> (a -> b) -> f a -> b
  * ```
  */
-export const foldMap = <M>(M: TC.Monoid<M>) => <A>(f: (a: A) => M) => <E>(fa: Either<E, A>): M => foldMap_(M)(fa, f);
+export const foldMap = <M>(M: P.Monoid<M>) => <A>(f: (a: A) => M) => <E>(fa: Either<E, A>): M => foldMap_(M)(fa, f);
 
 /**
  * ```haskell

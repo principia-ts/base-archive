@@ -1,8 +1,8 @@
-import type { Eq } from "../Eq";
-import type { Foldable } from "../Foldable";
+import type { Foldable, Semigroup } from "@principia/prelude";
+import type { Eq } from "@principia/prelude/Eq";
+import type * as HKT from "@principia/prelude/HKT";
+
 import { pipe } from "../Function";
-import type * as HKT from "../HKT";
-import type { Semigroup } from "../Semigroup";
 import { lookupWithKey_ } from "./combinators";
 
 export const empty: ReadonlyMap<never, never> = new Map<never, never>();
@@ -41,7 +41,7 @@ export const fromFoldable = <F extends HKT.URIS, K, A, C = HKT.Auto>(E: Eq<K>, S
       F.reduce(new Map<K, A>(), (b, [k, a]) => {
          const oka = lookupWithKeyE_(b, k);
          if (oka._tag === "Some") {
-            b.set(oka.value[0], S.concat(oka.value[1])(a));
+            b.set(oka.value[0], S.combine_(oka.value[1], a));
          } else {
             b.set(k, a);
          }

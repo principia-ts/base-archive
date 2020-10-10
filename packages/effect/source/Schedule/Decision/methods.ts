@@ -1,10 +1,8 @@
-import type * as TC from "@principia/core/typeclass-index";
-
 import * as T from "../../Effect/core";
 import { makeContinue, makeDone } from "./constructors";
-import type { URI, V } from "./Decision";
+import type { Decision } from "./Decision";
 
-export const map_: TC.UC_MapF<[URI], V> = (fa, f) => {
+export const map_ = <R, I, A, B>(fa: Decision<R, I, A>, f: (a: A) => B): Decision<R, I, B> => {
    switch (fa._tag) {
       case "Done":
          return makeDone(f(fa.out));
@@ -13,4 +11,4 @@ export const map_: TC.UC_MapF<[URI], V> = (fa, f) => {
    }
 };
 
-export const map: TC.MapF<[URI], V> = (f) => (fa) => map_(fa, f);
+export const map = <A, B>(f: (a: A) => B) => <R, I>(fa: Decision<R, I, A>): Decision<R, I, B> => map_(fa, f);

@@ -1,9 +1,9 @@
 import type { Either } from "@principia/core/Either";
 import type { Predicate, Refinement } from "@principia/core/Function";
 import { flow, pipe } from "@principia/core/Function";
-import type * as HKT from "@principia/core/HKT";
 import type { Option } from "@principia/core/Option";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as P from "@principia/prelude";
+import type * as HKT from "@principia/prelude/HKT";
 
 import * as _ from "../internal";
 import type { Optional } from "../Optional";
@@ -132,7 +132,7 @@ export const left: <S, E, A>(sea: Lens<S, Either<E, A>>) => Optional<S, E> = com
  * @since 1.0.0
  */
 export const traverse = <T extends HKT.URIS, C = HKT.Auto>(
-   T: TC.Traversable<T, C>
+   T: P.Traversable<T, C>
 ): (<S, N extends string, K, Q, W, X, I, S_, R, E, A>(
    sta: Lens<S, HKT.Kind<T, C, N, K, Q, W, X, I, S_, R, E, A>>
 ) => Traversal<S, A>) => flow(asTraversal, _.traversalComposeTraversal(_.fromTraversable(T)()));

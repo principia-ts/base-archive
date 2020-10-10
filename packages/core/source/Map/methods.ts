@@ -1,9 +1,10 @@
+import type * as P from "@principia/prelude";
+import type { Separated } from "@principia/prelude/Utils";
+
 import type { Either } from "../Either";
 import { isLeft } from "../Either";
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "../Function";
 import type { Option } from "../Option";
-import type * as TC from "../typeclass-index";
-import type { Separated } from "../Utils";
 import type { URI, V } from "./Map";
 
 interface Next<A> {
@@ -238,7 +239,7 @@ export const mapEitherWithIndex_ = <K, A, B, C>(
    };
 };
 
-export const mapEitherWithIndex: TC.MapEitherWithIndexF<[URI], V> = <K, A, B, C>(f: (k: K, a: A) => Either<B, C>) => (
+export const mapEitherWithIndex = <K, A, B, C>(f: (k: K, a: A) => Either<B, C>) => (
    fa: ReadonlyMap<K, A>
 ): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => mapEitherWithIndex_(fa, f);
 

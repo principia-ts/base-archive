@@ -1,5 +1,5 @@
 import { bind_, bindTo_, flow, pipe } from "@principia/core/Function";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as TC from "@principia/prelude";
 
 import type { Cause } from "../Cause";
 import type { Exit } from "../Exit";
@@ -344,7 +344,7 @@ export const mapBoth_ = <R, E, A, R1, E1, A1, B>(
 
 export const of = succeed({});
 
-export const bindS: TC.BindSF<[URI], V> = (name, f) =>
+export const bindS: TC.BindSFn<[URI], V> = (name, f) =>
    chain((a) =>
       pipe(
          f(a),
@@ -352,6 +352,6 @@ export const bindS: TC.BindSF<[URI], V> = (name, f) =>
       )
    );
 
-export const bindTo: TC.BindToSF<[URI], V> = (name) => (fa) => map_(fa, bindTo_(name));
+export const bindTo: TC.BindToSFn<[URI], V> = (name) => (fa) => map_(fa, bindTo_(name));
 
-export const letS: TC.LetSF<[URI], V> = (name, f) => bindS(name, flow(f, succeed));
+export const letS: TC.LetSFn<[URI], V> = (name, f) => bindS(name, flow(f, succeed));

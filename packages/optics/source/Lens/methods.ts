@@ -1,5 +1,5 @@
 import { flow } from "@principia/core/Function";
-import type * as TC from "@principia/core/typeclass-index";
+import type * as TC from "@principia/prelude";
 
 import type { URI, V } from "./Lens";
 
@@ -13,7 +13,7 @@ import type { URI, V } from "./Lens";
  * @category Invariant
  * @since 1.0.0
  */
-export const imap_: TC.UC_IMapF<[URI], V> = (ea, ab, ba) => ({
+export const imap_: TC.IMapFn_<[URI], V> = (ea, ab, ba) => ({
    get: flow(ea.get, ab),
    set: flow(ba, ea.set)
 });
@@ -22,4 +22,4 @@ export const imap_: TC.UC_IMapF<[URI], V> = (ea, ab, ba) => ({
  * @category Invariant
  * @since 1.0.0
  */
-export const imap: TC.IMapF<[URI], V> = (ab, ba) => (ea) => imap_(ea, ab, ba);
+export const imap: TC.IMapFn<[URI], V> = (ab, ba) => (ea) => imap_(ea, ab, ba);

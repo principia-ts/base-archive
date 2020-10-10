@@ -1,4 +1,5 @@
-import type { Eq } from "@principia/core/Eq";
+import type { Eq } from "@principia/prelude/Eq";
+import { fromEquals } from "@principia/prelude/Eq";
 
 import { AtomicNumber } from "../Support/AtomicNumber";
 
@@ -19,6 +20,4 @@ export const fiberId = (args?: Omit<FiberId, "_tag">): FiberId => ({
 
 export const none = fiberId({ startTime: 0, seqNumber: 0 });
 
-export const eqFiberId: Eq<FiberId> = {
-   equals: (x) => (y) => x.seqNumber === y.seqNumber && x.startTime === y.startTime
-};
+export const eqFiberId: Eq<FiberId> = fromEquals((x, y) => x.seqNumber === y.seqNumber && x.startTime === y.startTime);
