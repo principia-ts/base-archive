@@ -14,27 +14,27 @@ import { has } from "../Has";
 //
 export const URI = Symbol();
 
-export abstract class Clock {
-   readonly _tag!: typeof URI;
+export interface Clock {
+   readonly _tag: typeof URI;
 
-   abstract readonly currentTime: T.UIO<number>;
-   abstract readonly sleep: (ms: number) => T.UIO<void>;
+   readonly currentTime: T.UIO<number>;
+   readonly sleep: (ms: number) => T.UIO<void>;
 }
 
 //
 // Has Clock
 //
-export const HasClock = has(Clock);
+export const HasClock = has<Clock>();
 
 export type HasClock = HasTag<typeof HasClock>;
 
 //
 // Live Clock Implementation
 //
-export class LiveClock extends Clock {
-   currentTime: T.UIO<number> = T.total(() => new Date().getTime());
-
-   sleep: (ms: number) => T.UIO<void> = (ms) =>
+export const LiveClock = (): Clock => ({
+   _tag: URI,
+   currentTime: T.total(() => new Date().getTime()),
+   sleep: (ms) =>
       asyncInterrupt((cb) => {
          const timeout = setTimeout(() => {
             cb(T.unit);
@@ -43,17 +43,17 @@ export class LiveClock extends Clock {
          return T.total(() => {
             clearTimeout(timeout);
          });
-      });
-}
+      })
+});
 
 //
 // Proxy Clock Implementation
 //
-export class ProxyClock extends Clock {
-   constructor(readonly currentTime: T.UIO<number>, readonly sleep: (ms: number) => T.UIO<void>) {
-      super();
-   }
-}
+export const ProxyClock = (currentTime: T.UIO<number>, sleep: (ms: number) => T.UIO<void>): Clock => ({
+   _tag: URI,
+   currentTime,
+   sleep
+});
 
 /**
  * Get the current time in ms since epoch

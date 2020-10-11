@@ -26,7 +26,7 @@ export const memoMap = new MemoMap(
 );
 
 export const defaultEnv = () => ({
-   [HasClock.key]: new LiveClock(),
+   [HasClock.key]: LiveClock(),
    [HasRandom.key]: defaultRandom,
    [HasMemoMap.key]: memoMap
 });

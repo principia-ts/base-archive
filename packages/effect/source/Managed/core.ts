@@ -184,7 +184,7 @@ export const makeExit_ = <R, E, A, R1>(
  * This two-phase acquisition allows for resource acquisition flows that can be
  * safely interrupted and released.
  */
-export const makeReserve = <R, E, X2, R2, E2, A>(reservation: T.Effect<R, E, Reservation<R2, E2, A>>) =>
+export const makeReserve = <R, E, R2, E2, A>(reservation: T.Effect<R, E, Reservation<R2, E2, A>>) =>
    managed<R & R2, E | E2, A>(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
@@ -261,10 +261,8 @@ export const provideSome_ = <R, E, A, R0>(self: Managed<R, E, A>, f: (r0: R0) =>
  * without specifying when or how that resource might be used.
  */
 export class Reservation<R, E, A> {
-   static of = <R, E, A, X2, R2>(
-      acquire: T.Effect<R, E, A>,
-      release: (exit: Exit<any, any>) => T.Effect<R2, never, any>
-   ) => new Reservation<R & R2, E, A>(acquire, release);
+   static of = <R, E, A, R2>(acquire: T.Effect<R, E, A>, release: (exit: Exit<any, any>) => T.Effect<R2, never, any>) =>
+      new Reservation<R & R2, E, A>(acquire, release);
 
    private constructor(
       readonly acquire: T.Effect<R, E, A>,
@@ -275,7 +273,7 @@ export class Reservation<R, E, A> {
 /**
  * Make a new reservation
  */
-export const makeReservation_ = <R, E, A, X2, R2>(
+export const makeReservation_ = <R, E, A, R2>(
    acquire: T.Effect<R, E, A>,
    release: (exit: Exit<any, any>) => T.Effect<R2, never, any>
 ) => Reservation.of(acquire, release);

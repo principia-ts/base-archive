@@ -15,6 +15,7 @@ import * as Super from "../Supervisor";
 import { AtomicReference, defaultScheduler } from "../Support";
 import * as X from "../XPure";
 import * as T from "./_internal/effect";
+import { EffectInstructionTag } from "./_internal/effect";
 import * as F from "./core";
 import type { Fiber, InterruptStatus, Runtime } from "./Fiber";
 import { FiberDescriptor } from "./Fiber";
@@ -682,20 +683,20 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                         current = undefined;
                      } else {
                         switch (current._tag) {
-                           case "Chain": {
+                           case EffectInstructionTag.Chain: {
                               const nested: T.Instruction = current.ma[T._I];
                               const k: (a: any) => T.Effect<any, any, any> = current.f;
 
                               switch (nested._tag) {
-                                 case "Pure": {
+                                 case EffectInstructionTag.Pure: {
                                     current = k(nested.value)[T._I];
                                     break;
                                  }
-                                 case "Total": {
+                                 case EffectInstructionTag.Total: {
                                     current = k(nested.thunk())[T._I];
                                     break;
                                  }
-                                 case "Partial": {
+                                 case EffectInstructionTag.Partial: {
                                     try {
                                        current = k(nested.thunk())[T._I];
                                     } catch (e) {
@@ -737,19 +738,19 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "Pure": {
+                           case EffectInstructionTag.Pure: {
                               current = this.nextInstr(current.value);
                               break;
                            }
 
-                           case "Total": {
+                           case EffectInstructionTag.Total: {
                               current = this.nextInstr(current.thunk());
                               break;
                            }
 
-                           case "Fail": {
+                           case EffectInstructionTag.Fail: {
                               const discardedFolds = this.unwindStack();
-                              const fullCause = current.C;
+                              const fullCause = current.cause;
 
                               const maybeRedactedCause = discardedFolds
                                  ? // We threw away some error handlers while unwinding the stack because
@@ -785,25 +786,25 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "Fold": {
+                           case EffectInstructionTag.Fold: {
                               this.pushContinuation(current);
                               current = current.fa[T._I];
                               break;
                            }
 
-                           case "ChangeInterruptStatus": {
+                           case EffectInstructionTag.InterruptStatus: {
                               this.pushInterruptStatus(current.flag.toBoolean);
                               this.pushContinuation(this.interruptExit);
-                              current = current.E[T._I];
+                              current = current.fa[T._I];
                               break;
                            }
 
-                           case "CheckInterrupt": {
+                           case EffectInstructionTag.CheckInterrupt: {
                               current = current.f(F.interruptStatus(this.isInterruptible))[T._I];
                               break;
                            }
 
-                           case "Partial": {
+                           case EffectInstructionTag.Partial: {
                               const c = current;
                               try {
                                  current = this.nextInstr(c.thunk());
@@ -813,7 +814,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "Async": {
+                           case EffectInstructionTag.Async: {
                               const epoch = this.asyncEpoch;
                               this.asyncEpoch = epoch + 1;
                               const c = current;
@@ -841,28 +842,28 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "Fork": {
-                              current = this.nextInstr(this.fork(current.E[T._I], current.scope));
+                           case EffectInstructionTag.Fork: {
+                              current = this.nextInstr(this.fork(current.fa[T._I], current.scope));
                               break;
                            }
 
-                           case "CheckDescriptor": {
+                           case EffectInstructionTag.CheckDescriptor: {
                               current = current.f(this.getDescriptor())[T._I];
                               break;
                            }
 
-                           case "Yield": {
+                           case EffectInstructionTag.Yield: {
                               current = undefined;
                               this.evaluateLater(T.unit[T._I]);
                               break;
                            }
 
-                           case "Read": {
+                           case EffectInstructionTag.Read: {
                               current = current.f(this.environments?.value || {})[T._I];
                               break;
                            }
 
-                           case "Provide": {
+                           case EffectInstructionTag.Give: {
                               const c = current;
                               current = T.bracket_(
                                  T.total(() => {
@@ -877,12 +878,12 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "Suspend": {
+                           case EffectInstructionTag.Suspend: {
                               current = current.factory()[T._I];
                               break;
                            }
 
-                           case "SuspendPartial": {
+                           case EffectInstructionTag.SuspendPartial: {
                               const c = current;
 
                               try {
@@ -894,7 +895,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "NewFiberRef": {
+                           case EffectInstructionTag.NewFiberRef: {
                               const fiberRef = FR.fiberRef(current.initial, current.onFork, current.onJoin);
 
                               this.fiberRefLocals.set(fiberRef, current.initial);
@@ -904,7 +905,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "ModifyFiberRef": {
+                           case EffectInstructionTag.ModifyFiberRef: {
                               const c = current;
                               const oldValue = O.fromNullable(this.fiberRefLocals.get(c.fiberRef));
                               const [result, newValue] = current.f(O.getOrElse_(oldValue, () => c.fiberRef.initial));
@@ -913,12 +914,12 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "Race": {
+                           case EffectInstructionTag.Race: {
                               current = this.raceWithImpl(current)[T._I];
                               break;
                            }
 
-                           case "Supervise": {
+                           case EffectInstructionTag.Supervise: {
                               const c = current;
                               const lastSupervisor = this.supervisors.value;
                               const newSupervisor = c.supervisor.and(lastSupervisor);
@@ -931,13 +932,13 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               });
                               current = T.bracket_(
                                  push,
-                                 () => c.E,
+                                 () => c.fa,
                                  () => pop
                               )[T._I];
                               break;
                            }
 
-                           case "GetForkScope": {
+                           case EffectInstructionTag.GetForkScope: {
                               const c = current;
                               current = c.f(O.getOrElse_(this.forkScopeOverride?.value || none(), () => this.scope))[
                                  T._I
@@ -945,7 +946,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               break;
                            }
 
-                           case "OverrideForkScope": {
+                           case EffectInstructionTag.OverrideForkScope: {
                               const c = current;
 
                               const push = T.total(() => {
@@ -958,7 +959,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
                               current = T.bracket_(
                                  push,
-                                 () => c.E,
+                                 () => c.fa,
                                  () => pop
                               )[T._I];
 

@@ -6,7 +6,7 @@ import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
 import { none, some } from "@principia/core/Option";
 import type * as TC from "@principia/prelude";
-import { matchTag } from "@principia/prelude/Utils";
+import { matchTag, matchTag_ } from "@principia/prelude/Utils";
 
 import type { FiberId } from "../Fiber/FiberId";
 import type { Both, Cause, Then, URI, V } from "./Cause";

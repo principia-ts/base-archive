@@ -24,7 +24,7 @@ import {
    FailInstruction,
    FoldInstruction,
    ForkInstruction,
-   ProvideInstruction,
+   GiveInstruction,
    PureInstruction,
    ReadInstruction,
    SuspendInstruction,
@@ -49,7 +49,7 @@ export { Effect, IO, UIO, RIO } from "./Effect";
  * @category Applicative
  * @since 1.0.0
  */
-export const pure = <A>(a: A): UIO<A> => new PureInstruction(a);
+export const pure = <A>(a: A): UIO<A> => PureInstruction(a);
 
 /**
  * ```haskell
@@ -91,7 +91,7 @@ export const async = <R, E, A>(
    register: (resolve: (_: Effect<R, E, A>) => void) => void,
    blockingOn: ReadonlyArray<FiberId> = []
 ): Effect<R, E, A> =>
-   new AsyncInstruction((cb) => {
+   AsyncInstruction((cb) => {
       register(cb);
       return O.none();
    }, blockingOn);
@@ -113,7 +113,7 @@ export const async = <R, E, A>(
 export const asyncOption = <R, E, A>(
    register: (resolve: (_: Effect<R, E, A>) => void) => O.Option<Effect<R, E, A>>,
    blockingOn: ReadonlyArray<FiberId> = []
-): Effect<R, E, A> => new AsyncInstruction(register, blockingOn);
+): Effect<R, E, A> => AsyncInstruction(register, blockingOn);
 
 /**
  * ```haskell
@@ -125,7 +125,7 @@ export const asyncOption = <R, E, A>(
  * @category Constructors
  * @since 1.0.0
  */
-export const total = <A>(thunk: () => A): UIO<A> => new TotalInstruction(thunk);
+export const total = <A>(thunk: () => A): UIO<A> => TotalInstruction(thunk);
 
 /**
  * ```haskell
@@ -137,7 +137,7 @@ export const total = <A>(thunk: () => A): UIO<A> => new TotalInstruction(thunk);
  * @category Constructors
  * @since 1.0.0
  */
-export const suspend = <R, E, A>(factory: Lazy<Effect<R, E, A>>): Effect<R, E, A> => new SuspendInstruction(factory);
+export const suspend = <R, E, A>(factory: Lazy<Effect<R, E, A>>): Effect<R, E, A> => SuspendInstruction(factory);
 
 /**
  * ```haskell
@@ -149,7 +149,7 @@ export const suspend = <R, E, A>(factory: Lazy<Effect<R, E, A>>): Effect<R, E, A
  * @category Constructors
  * @since 1.0.0
  */
-export const halt = <E>(cause: C.Cause<E>): IO<E, never> => new FailInstruction(cause);
+export const halt = <E>(cause: C.Cause<E>): IO<E, never> => FailInstruction(cause);
 
 /**
  * ```haskell
@@ -213,7 +213,7 @@ export const foldCauseM_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
    ma: Effect<R, E, A>,
    onFailure: (cause: Cause<E>) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
-): Effect<R & R1 & R2, E1 | E2, A1 | A2> => new FoldInstruction(ma, onFailure, onSuccess);
+): Effect<R & R1 & R2, E1 | E2, A1 | A2> => FoldInstruction(ma, onFailure, onSuccess);
 
 /**
  * A more powerful version of `foldM` that allows recovering from any kind of failure except interruptions.
@@ -221,7 +221,7 @@ export const foldCauseM_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
 export const foldCauseM = <E, A, R1, E1, A1, R2, E2, A2>(
    onFailure: (cause: Cause<E>) => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
-) => <R>(ma: Effect<R, E, A>): Effect<R & R1 & R2, E1 | E2, A1 | A2> => new FoldInstruction(ma, onFailure, onSuccess);
+) => <R>(ma: Effect<R, E, A>): Effect<R & R1 & R2, E1 | E2, A1 | A2> => FoldInstruction(ma, onFailure, onSuccess);
 
 export const foldM_ = <R, R1, R2, E, E1, E2, A, A1, A2>(
    ma: Effect<R, E, A>,
@@ -251,7 +251,7 @@ export const foldM = <R1, R2, E, E1, E2, A, A1, A2>(
  * @category MonadEnv
  * @since 1.0.0
  */
-export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => new ReadInstruction((_: R) => new PureInstruction(f(_)));
+export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => ReadInstruction((_: R) => PureInstruction(f(_)));
 
 /**
  * ```haskell
@@ -263,7 +263,7 @@ export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => new ReadInstruction((_:
  * @category MonadEnv
  * @since 1.0.0
  */
-export const asksM = <Q, R, E, A>(f: (r: Q) => Effect<R, E, A>): Effect<R & Q, E, A> => new ReadInstruction(f);
+export const asksM = <Q, R, E, A>(f: (r: Q) => Effect<R, E, A>): Effect<R & Q, E, A> => ReadInstruction(f);
 
 /**
  * ```haskell
@@ -278,7 +278,7 @@ export const asksM = <Q, R, E, A>(f: (r: Q) => Effect<R, E, A>): Effect<R & Q, E
  * @category MonadEnv
  * @since 1.0.0
  */
-export const giveAll_ = <R, E, A>(ma: Effect<R, E, A>, r: R): IO<E, A> => new ProvideInstruction(ma, r);
+export const giveAll_ = <R, E, A>(ma: Effect<R, E, A>, r: R): IO<E, A> => GiveInstruction(ma, r);
 
 /**
  * ```haskell
@@ -372,7 +372,7 @@ export const give = <R = unknown>(r: R) => <E, A, R0 = unknown>(ma: Effect<R & R
  * @since 1.0.0
  */
 export const chain_ = <R, E, A, U, G, B>(ma: Effect<R, E, A>, f: (a: A) => Effect<U, G, B>): Effect<R & U, E | G, B> =>
-   new ChainInstruction(ma, f);
+   ChainInstruction(ma, f);
 
 /**
  * ```haskell
@@ -805,7 +805,7 @@ export const foreach = <R, E, A, B>(f: (a: A) => Effect<R, E, B>) => (
 ): Effect<R, E, ReadonlyArray<B>> => foreach_(as, f);
 
 export const result = <R, E, A>(value: Effect<R, E, A>): Effect<R, never, Exit<E, A>> =>
-   new FoldInstruction(
+   FoldInstruction(
       value,
       (cause) => pure(Ex.failure(cause)),
       (succ) => pure(Ex.succeed(succ))
@@ -834,10 +834,9 @@ export const tapCause = <R, E, E1>(f: (e: Cause<E1>) => Effect<R, E, any>) => <R
    tapCause_(effect, f);
 
 export const checkDescriptor = <R, E, A>(f: (d: FiberDescriptor) => Effect<R, E, A>): Effect<R, E, A> =>
-   new CheckDescriptorInstruction(f);
+   CheckDescriptorInstruction(f);
 
 export const checkInterruptible = <R, E, A>(f: (i: InterruptStatus) => Effect<R, E, A>): Effect<R, E, A> =>
-   new CheckInterruptInstruction(f);
+   CheckInterruptInstruction(f);
 
-export const fork = <R, E, A>(value: Effect<R, E, A>): RIO<R, FiberContext<E, A>> =>
-   new ForkInstruction(value, O.none());
+export const fork = <R, E, A>(value: Effect<R, E, A>): RIO<R, FiberContext<E, A>> => ForkInstruction(value, O.none());

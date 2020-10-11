@@ -8,7 +8,7 @@ import * as T from "../Effect/core";
 import { NoSuchElementException } from "../GlobalExceptions";
 import * as XR from "../XRef/combinators";
 import type { StepFunction } from "./Decision";
-import { done, makeDone } from "./Decision";
+import { done } from "./Decision";
 import type { Schedule, ScheduleDriver } from "./Schedule";
 
 export const makeDriver = <R, I, O>(
