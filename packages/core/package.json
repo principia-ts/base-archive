@@ -1,6 +1,6 @@
 {
    "name": "@principia/core",
-   "version": "0.0.2",
+   "version": "0.0.3",
    "description": "Core",
    "repository": "git://github.com/0x706b/principia",
    "license": "MIT",
@@ -41,8 +41,8 @@
       "test": "yarn build:test && jest build/test"
    },
    "dependencies": {
-      "core-js": "3",
-      "@principia/prelude": "^0.0.0"
+      "@principia/prelude": "^0.0.1",
+      "core-js": "3"
    },
    "devDependencies": {
       "typescript": "next"
