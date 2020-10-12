@@ -49,33 +49,3 @@ export const _forkAs = <R, E, A>(fa: Effect<R, E, A>, name: string): RIO<R, Fibe
  * Forks the effect into a new independent fiber, with the specified name.
  */
 export const forkAs = (name: string) => <R, E, A>(ef: Effect<R, E, A>): RIO<R, Fiber.Driver<E, A>> => _forkAs(ef, name);
-
-export interface ForkScopeRestore {
-   /** @internal */
-   readonly scope: Scope<Exit<any, any>>;
-
-   readonly restore: <R, E, A>(fa: Effect<R, E, A>) => Effect<R, E, A>;
-}
-
-export const ForkScopeRestore = (scope: Scope<Exit<any, any>>): ForkScopeRestore => ({
-   scope,
-   restore: (fa) => OverrideForkScopeInstruction(fa, O.some(scope))
-});
-
-/*
- * export class ForkScopeRestore {
- *    constructor(private scope: Scope<Exit<any, any>>) {}
- *
- *    readonly restore = <R, E, A>(ef: Effect<R, E, A>): Effect<R, E, A> =>
- *       OverrideForkScopeInstruction(ef, O.some(this.scope));
- * }
- */
-
-/**
- * Captures the fork scope, before overriding it with the specified new
- * scope, passing a function that allows restoring the fork scope to
- * what it was originally.
- */
-export const forkScopeMask = (newScope: Scope<Exit<any, any>>) => <R, E, A>(
-   f: (restore: ForkScopeRestore) => Effect<R, E, A>
-) => forkScopeWith((scope) => OverrideForkScopeInstruction(f(ForkScopeRestore(scope)), O.some(newScope)));

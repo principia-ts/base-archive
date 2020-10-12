@@ -124,8 +124,8 @@ export const replace = (key: number, finalizer: Finalizer) => (
       T.flatten
    );
 
-export const releaseMap = (ref: Ref<ManagedState>): ReleaseMap => ({
+export const ReleaseMap = (ref: Ref<ManagedState>): ReleaseMap => ({
    ref
 });
 
-export const makeReleaseMap = T.map_(XR.makeRef<ManagedState>(running(0, new Map())), (s) => releaseMap(s));
+export const makeReleaseMap = T.map_(XR.makeRef<ManagedState>(running(0, new Map())), (s) => ReleaseMap(s));
