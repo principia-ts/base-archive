@@ -1,16 +1,9 @@
-import type { Either } from "@principia/core/Either";
-import * as E from "@principia/core/Either";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
 
 import * as Fiber from "../../Fiber";
 import { chain_, fail, pure, total } from "../core";
 import type { Effect, IO } from "../Effect";
-
-/**
- * Lifts an `Either` into a `Effect` value.
- */
-export const fromEither = <E, A>(f: () => Either<E, A>) => chain_(total(f), E.fold(fail, pure));
 
 /**
  * Creates a `Effect` value that represents the exit value of the specified

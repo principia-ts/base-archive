@@ -14,10 +14,10 @@ import * as M from "../Managed/core";
 import type { Managed } from "../Managed/Managed";
 import * as RM from "../Managed/ReleaseMap";
 import * as Sema from "../Semaphore";
+import { await as promiseWait } from "../XPromise/functions/await";
 import { fail as promiseFail } from "../XPromise/functions/fail";
 import { make as promiseMake } from "../XPromise/functions/make";
 import { succeed as promiseSucceed } from "../XPromise/functions/succeed";
-import { await as promiseWait } from "../XPromise/functions/wait";
 import * as XR from "../XRef/combinators";
 import * as T from "./_internal/effect";
 

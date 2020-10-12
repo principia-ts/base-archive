@@ -8,9 +8,9 @@ import { bracket_ } from "../Effect/functions/bracket";
 import * as M from "../Managed/core";
 import { ImmutableQueue } from "../Support";
 import type { XPromise } from "../XPromise";
+import { await as promiseWait } from "../XPromise/functions/await";
 import { make as promiseMake } from "../XPromise/functions/make";
 import { succeed_ as promiseSucceed } from "../XPromise/functions/succeed";
-import { await as promiseWait } from "../XPromise/functions/wait";
 import * as XR from "../XRef/combinators";
 import type { Ref } from "../XRef/XRef";
 
