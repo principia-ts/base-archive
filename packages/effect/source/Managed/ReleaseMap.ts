@@ -1,4 +1,4 @@
-import { increment, pipe } from "@principia/core/Function";
+import { absurd, increment, pipe } from "@principia/core/Function";
 import * as M from "@principia/core/Map";
 import type { Option } from "@principia/core/Option";
 import * as Mb from "@principia/core/Option";
@@ -102,6 +102,27 @@ export function add(finalizer: Finalizer) {
          )
       );
 }
+
+export const replace = (key: number, finalizer: Finalizer) => (
+   _: ReleaseMap
+): T.Effect<unknown, never, Option<Finalizer>> =>
+   pipe(
+      _.ref,
+      XR.modify<T.Effect<unknown, never, Option<Finalizer>>, ManagedState>((s) => {
+         switch (s._tag) {
+            case "Exited":
+               return [T.map_(finalizer(s.exit), () => none()), exited(s.nextKey, s.exit)];
+            case "Running":
+               return [
+                  T.succeed(M.lookup_(eqNumber)(finalizers(s), key)),
+                  running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
+               ];
+            default:
+               return absurd(s);
+         }
+      }),
+      T.flatten
+   );
 
 export const releaseMap = (ref: Ref<ManagedState>): ReleaseMap => ({
    ref

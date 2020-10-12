@@ -1,6 +1,6 @@
 import * as T from "../_internal/effect";
 import { done } from "../core";
-import type { Synthetic } from "../Fiber";
+import type { SyntheticFiber } from "../Fiber";
 
 /**
  * ```haskell
@@ -9,4 +9,4 @@ import type { Synthetic } from "../Fiber";
  *
  * Lifts an `Effect` into a `Fiber`.
  */
-export const fromEffect = <E, A>(effect: T.IO<E, A>): T.UIO<Synthetic<E, A>> => T.map_(T.result(effect), done);
+export const fromEffect = <E, A>(effect: T.IO<E, A>): T.UIO<SyntheticFiber<E, A>> => T.map_(T.result(effect), done);

@@ -10,5 +10,7 @@ export * from "./mapBothPar";
 export * from "./onExit";
 export * from "./onExitFirst";
 export * from "./releaseAll";
+export * from "./releaseMap";
+export * from "./switchable";
 export * from "./use";
 // codegen:end

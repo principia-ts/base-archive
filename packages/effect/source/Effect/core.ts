@@ -12,8 +12,8 @@ import type { Cause } from "../Cause";
 import * as C from "../Cause";
 import * as Ex from "../Exit/core";
 import type { Exit } from "../Exit/Exit";
+import type { Driver } from "../Fiber/Driver";
 import type { FiberDescriptor, InterruptStatus } from "../Fiber/Fiber";
-import type { FiberContext } from "../Fiber/FiberContext";
 import type { FiberId } from "../Fiber/FiberId";
 import type { Effect, IO, RIO, UIO, URI, V } from "./Effect";
 import {
@@ -839,4 +839,4 @@ export const checkDescriptor = <R, E, A>(f: (d: FiberDescriptor) => Effect<R, E,
 export const checkInterruptible = <R, E, A>(f: (i: InterruptStatus) => Effect<R, E, A>): Effect<R, E, A> =>
    CheckInterruptInstruction(f);
 
-export const fork = <R, E, A>(value: Effect<R, E, A>): RIO<R, FiberContext<E, A>> => ForkInstruction(value, O.none());
+export const fork = <R, E, A>(value: Effect<R, E, A>): RIO<R, Driver<E, A>> => ForkInstruction(value, O.none());

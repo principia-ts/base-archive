@@ -5,12 +5,12 @@ import * as C from "../Cause";
 import { mapBothPar_ } from "../Effect/functions/mapBothPar";
 import * as Ex from "../Exit";
 import * as T from "./_internal/effect";
-import type { Fiber, Synthetic, URI, V } from "./Fiber";
+import type { Fiber, SyntheticFiber, URI, V } from "./Fiber";
 
 /**
  * Effectually maps over the value the fiber computes.
  */
-export const mapEffect_ = <E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => T.IO<E1, B>): Synthetic<E | E1, B> => ({
+export const mapEffect_ = <E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => T.IO<E1, B>): SyntheticFiber<E | E1, B> => ({
    _tag: "SyntheticFiber",
    await: T.chain_(fiber.await, Ex.foreach(f)),
    getRef: (ref) => fiber.getRef(ref),
@@ -49,7 +49,7 @@ export const mapBoth_: P.MapBothFn_<[URI], V> = <E, E1, A, A1, B>(
    fa: Fiber<E, A>,
    fb: Fiber<E1, A1>,
    f: (a: A, b: A1) => B
-): Synthetic<E | E1, B> => ({
+): SyntheticFiber<E | E1, B> => ({
    _tag: "SyntheticFiber",
    getRef: (ref) => T.mapBoth_(fa.getRef(ref), fb.getRef(ref), (a, b) => ref.join(a, b)),
    inheritRefs: T.chain_(fa.inheritRefs, () => fb.inheritRefs),

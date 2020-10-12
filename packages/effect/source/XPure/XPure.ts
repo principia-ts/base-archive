@@ -16,20 +16,17 @@ export type V = HKT.V<"I", "+"> & HKT.V<"S", "-"> & HKT.V<"R", "-"> & HKT.V<"E",
  * of its polymorphism `XPure` can be used to model a variety of effects
  * including context, state, and failure.
  */
-export abstract class XPure<S1, S2, R, E, A> {
-   readonly _tag = "XPure";
+export interface XPure<S1, S2, R, E, A> {
+   readonly _tag: "XPure";
 
-   readonly _S1!: (_: S1) => void;
-   readonly _S2!: () => S2;
+   readonly _S1: (_: S1) => void;
+   readonly _S2: () => S2;
 
-   readonly [T._U]!: T.URI;
-   readonly [T._E]!: () => E;
-   readonly [T._A]!: () => A;
-   readonly [T._R]!: (_: R) => void;
-
-   get [T._I](): Instruction {
-      return this as any;
-   }
+   readonly [T._U]: T.URI;
+   readonly [T._E]: () => E;
+   readonly [T._A]: () => A;
+   readonly [T._R]: (_: R) => void;
+   readonly [T._I]: Instruction;
 }
 
 declare module "@principia/prelude/HKT" {

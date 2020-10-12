@@ -3,7 +3,7 @@ import * as E from "@principia/core/Either";
 import { Stack } from "../Stack";
 import { concrete, fail, succeed } from "./constructors";
 import type { Frame } from "./instructions";
-import { ApplyFrame, FoldFrame } from "./instructions";
+import { ApplyFrame, FoldFrame, XPureInstructionTag } from "./instructions";
 import type { XPure } from "./XPure";
 
 /**
@@ -11,7 +11,7 @@ import type { XPure } from "./XPure";
  * failure or the updated state and the result
  */
 export const runStateEither_ = <S1, S2, E, A>(
-   fx: XPure<S1, S2, unknown, E, A>,
+   fa: XPure<S1, S2, unknown, E, A>,
    s: S1
 ): E.Either<E, readonly [S2, A]> => {
    let stack: Stack<Frame> | undefined = undefined;
@@ -19,7 +19,7 @@ export const runStateEither_ = <S1, S2, E, A>(
    let a = null;
    let r = null;
    let failed = false;
-   let curXPure = fx as XPure<any, any, any, any, any> | undefined;
+   let current = fa as XPure<any, any, any, any, any> | undefined;
 
    function pop() {
       const nextInstr = stack;
@@ -36,128 +36,128 @@ export const runStateEither_ = <S1, S2, E, A>(
    function findNextErrorHandler() {
       let unwinding = true;
       while (unwinding) {
-         const nextInstr = pop();
+         const next = pop();
 
-         if (nextInstr == null) {
+         if (next == null) {
             unwinding = false;
          } else {
-            if (nextInstr._xptag === "FoldFrame") {
+            if (next._xptag === "FoldFrame") {
                unwinding = false;
-               push(new ApplyFrame(nextInstr.failure));
+               push(new ApplyFrame(next.failure));
             }
          }
       }
    }
 
-   while (curXPure != null) {
-      const xp = concrete(curXPure);
+   while (current != null) {
+      const xp = concrete(current);
 
       switch (xp._xptag) {
-         case "FlatMap": {
+         case XPureInstructionTag.Chain: {
             const nested = concrete(xp.ma);
             const continuation = xp.f;
 
             switch (nested._xptag) {
-               case "Pure": {
-                  curXPure = continuation(nested.a);
+               case XPureInstructionTag.Pure: {
+                  current = continuation(nested.value);
                   break;
                }
-               case "Total": {
-                  curXPure = continuation(nested.thunk());
+               case XPureInstructionTag.Total: {
+                  current = continuation(nested.thunk());
                   break;
                }
-               case "Partial": {
+               case XPureInstructionTag.Partial: {
                   try {
-                     curXPure = succeed(nested.thunk());
+                     current = succeed(nested.thunk());
                   } catch (e) {
-                     curXPure = fail(nested.onThrow(e));
+                     current = fail(nested.onThrow(e));
                   }
                   break;
                }
-               case "Modify": {
+               case XPureInstructionTag.Modify: {
                   const updated = nested.run(s0);
 
                   s0 = updated[0];
                   a = updated[1];
 
-                  curXPure = continuation(a);
+                  current = continuation(a);
                   break;
                }
                default: {
-                  curXPure = nested;
+                  current = nested;
                   push(new ApplyFrame(continuation));
                }
             }
 
             break;
          }
-         case "Total": {
+         case XPureInstructionTag.Total: {
             a = xp.thunk();
             const nextInstruction = pop();
             if (nextInstruction) {
-               curXPure = nextInstruction.apply(a);
+               current = nextInstruction.apply(a);
             } else {
-               curXPure = undefined;
+               current = undefined;
             }
             break;
          }
-         case "Partial": {
+         case XPureInstructionTag.Partial: {
             try {
-               curXPure = succeed(xp.thunk());
+               current = succeed(xp.thunk());
             } catch (e) {
-               curXPure = fail(xp.onThrow(e));
+               current = fail(xp.onThrow(e));
             }
             break;
          }
-         case "Suspend": {
-            curXPure = xp.factory();
+         case XPureInstructionTag.Suspend: {
+            current = xp.factory();
             break;
          }
-         case "Pure": {
-            a = xp.a;
+         case XPureInstructionTag.Pure: {
+            a = xp.value;
             const nextInstr = pop();
             if (nextInstr) {
-               curXPure = nextInstr.apply(a);
+               current = nextInstr.apply(a);
             } else {
-               curXPure = undefined;
+               current = undefined;
             }
             break;
          }
-         case "Fail": {
+         case XPureInstructionTag.Fail: {
             findNextErrorHandler();
             const nextInst = pop();
             if (nextInst) {
-               curXPure = nextInst.apply(xp.e);
+               current = nextInst.apply(xp.e);
             } else {
                failed = true;
                a = xp.e;
-               curXPure = undefined;
+               current = undefined;
             }
             break;
          }
-         case "Fold": {
-            curXPure = xp.fa;
+         case XPureInstructionTag.Fold: {
+            current = xp.fa;
             push(new FoldFrame(xp.onFailure, xp.onSuccess));
             break;
          }
-         case "Access": {
-            curXPure = xp.access(r);
+         case XPureInstructionTag.Read: {
+            current = xp.f(r);
             break;
          }
-         case "Provide": {
+         case XPureInstructionTag.Give: {
             r = xp.r;
-            curXPure = xp.fa;
+            current = xp.fa;
             break;
          }
-         case "Modify": {
+         case XPureInstructionTag.Modify: {
             const updated = xp.run(s0);
             s0 = updated[0];
             a = updated[1];
             const nextInst = pop();
             if (nextInst) {
-               curXPure = nextInst.apply(a);
+               current = nextInst.apply(a);
             } else {
-               curXPure = undefined;
+               current = undefined;
             }
             break;
          }

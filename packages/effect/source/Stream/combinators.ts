@@ -8,16 +8,21 @@ import * as O from "@principia/core/Option";
 
 import * as C from "../Cause";
 import type { HasClock } from "../Clock";
+import type { Effect } from "../Effect";
 import * as T from "../Effect";
 import { sequential } from "../ExecutionStrategy";
 import type { Exit } from "../Exit";
 import * as Ex from "../Exit";
 import * as M from "../Managed";
 import * as Sc from "../Schedule";
+import type { Ref } from "../XRef";
 import * as XR from "../XRef";
 import { fail, fromEffect, repeatEffectOption } from "./constructors";
+import { run, runManaged } from "./destructors";
 import * as Pull from "./internal/Pull";
+import * as Sink from "./internal/Sink";
 import { chain, flatten, pure } from "./methods";
+import type { UIO } from "./Stream";
 import { Stream } from "./Stream";
 
 export const absolve: <R, E, A, E1>(stream: Stream<R, E, Either<E1, A>>) => Stream<R, E | E1, A> = chain(
@@ -138,19 +143,19 @@ function __zipChunks<A, B, C>(
  * By default pull is executed in parallel to preserve async semantics, see `zipWithSeq` for
  * a sequential alternative
  */
-export function bothMapPar_<R, E, O, O2, O3, R1, E1>(
+export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
    stream: Stream<R, E, O>,
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps: "seq"
 ): Stream<R & R1, E1 | E, O3>;
-export function bothMapPar_<R, E, O, O2, O3, R1, E1>(
+export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
    stream: Stream<R, E, O>,
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps?: "par" | "seq"
 ): Stream<R & R1, E1 | E, O3>;
-export function bothMapPar_<R, E, O, O2, O3, R1, E1>(
+export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
    stream: Stream<R, E, O>,
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
@@ -275,33 +280,33 @@ export function bothMapPar_<R, E, O, O2, O3, R1, E1>(
    );
 }
 
-export function bothMapPar<O, O2, O3, R1, E1>(
+export function mapBothPar<O, O2, O3, R1, E1>(
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps: "seq"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3>;
-export function bothMapPar<O, O2, O3, R1, E1>(
+export function mapBothPar<O, O2, O3, R1, E1>(
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps?: "par" | "seq"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3>;
-export function bothMapPar<O, O2, O3, R1, E1>(
+export function mapBothPar<O, O2, O3, R1, E1>(
    that: Stream<R1, E1, O2>,
    f: (a: O, a1: O2) => O3,
    ps: "par" | "seq" = "par"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3> {
-   return (stream) => bothMapPar_(stream, that, f, ps);
+   return (stream) => mapBothPar_(stream, that, f, ps);
 }
 
-export const bothMap_ = <R, E, A, R1, E1, A1, B>(
+export const mapBoth_ = <R, E, A, R1, E1, A1, B>(
    stream: Stream<R, E, A>,
    that: Stream<R1, E1, A1>,
    f: (a: A, a1: A1) => B
-) => bothMapPar_(stream, that, f, "seq");
+) => mapBothPar_(stream, that, f, "seq");
 
 export const bothMap = <A, R1, E1, A1, B>(that: Stream<R1, E1, A1>, f: (a: A, a1: A1) => B) => <R, E>(
    stream: Stream<R, E, A>
-) => bothMap_(stream, that, f);
+) => mapBoth_(stream, that, f);
 
 /**
  * Switches over to the stream produced by the provided function in case this one
@@ -405,3 +410,66 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
 export const catchAllCause = <E, R1, E1, B>(f: (e: C.Cause<E>) => Stream<R1, E1, B>) => <R, A>(
    stream: Stream<R, E, A>
 ): Stream<R & R1, E1, B | A> => catchAllCause_(stream, f);
+
+function go<R, E, A>(
+   streams: ReadonlyArray<Stream<R, E, A>>,
+   chunkSize: number,
+   currIndex: Ref<number>,
+   currStream: Ref<T.Effect<R, Option<E>, ReadonlyArray<A>>>,
+   switchStream: (
+      x: M.Managed<R, never, T.Effect<R, Option<E>, ReadonlyArray<A>>>
+   ) => T.Effect<R, never, T.Effect<R, Option<E>, ReadonlyArray<A>>>
+): T.Effect<R, Option<E>, ReadonlyArray<A>> {
+   return pipe(
+      currStream.get,
+      T.flatten,
+      T.catchAllCause((x) =>
+         O.fold_(
+            C.sequenceCauseOption(x),
+            () =>
+               pipe(
+                  currIndex,
+                  XR.getAndUpdate((x) => x + 1),
+                  T.chain((i) =>
+                     i >= chunkSize
+                        ? Pull.end
+                        : pipe(
+                             switchStream(streams[i].proc),
+                             T.chain(currStream.set),
+                             T.apSecond(go(streams, chunkSize, currIndex, currStream, switchStream))
+                          )
+                  )
+               ),
+            Pull.halt
+         )
+      )
+   );
+}
+
+/**
+ * Concatenates all of the streams in the chunk to one stream.
+ */
+export const concatAll = <R, E, A>(streams: Array<Stream<R, E, A>>): Stream<R, E, A> => {
+   const chunkSize = streams.length;
+   return new Stream(
+      pipe(
+         M.of,
+         M.bindS("currIndex", () => XR.makeManagedRef(0)),
+         M.bindS("currStream", () => XR.makeManagedRef<T.Effect<R, Option<E>, ReadonlyArray<A>>>(Pull.end)),
+         M.bindS("switchStream", () => M.switchable<R, never, T.Effect<R, Option<E>, ReadonlyArray<A>>>()),
+         M.map(({ currIndex, currStream, switchStream }) => go(streams, chunkSize, currIndex, currStream, switchStream))
+      )
+   );
+};
+
+/**
+ * Executes the provided finalizer before this stream's finalizers run.
+ */
+export const ensuringFirst_ = <R, E, A, R1>(self: Stream<R, E, A>, fin: Effect<R1, never, unknown>) =>
+   new Stream<R & R1, E, A>(M.ensuringFirst_(self.proc, fin));
+
+/**
+ * Executes the provided finalizer before this stream's finalizers run.
+ */
+export const ensuringFirst = <R1>(fin: Effect<R1, never, unknown>) => <R, E, A>(self: Stream<R, E, A>) =>
+   ensuringFirst_(self, fin);

@@ -8,7 +8,7 @@ import type * as O from "@principia/core/Option";
 
 import * as T from "../Effect/core";
 import type { Exit } from "../Exit/Exit";
-import type { Runtime } from "../Fiber";
+import type { RuntimeFiber } from "../Fiber";
 import type { Atomic } from "../XRef";
 import * as R from "../XRef/atomic";
 
@@ -52,10 +52,10 @@ export class Supervisor<A> {
       readonly unsafeOnStart: <R, E, A>(
          environment: R,
          effect: T.Effect<R, E, A>,
-         parent: O.Option<Runtime<any, any>>,
-         fiber: Runtime<E, A>
+         parent: O.Option<RuntimeFiber<any, any>>,
+         fiber: RuntimeFiber<E, A>
       ) => Propagation,
-      readonly unsafeOnEnd: <E, A>(value: Exit<E, A>, fiber: Runtime<E, A>) => Propagation
+      readonly unsafeOnEnd: <E, A>(value: Exit<E, A>, fiber: RuntimeFiber<E, A>) => Propagation
    ) {}
 
    /**
@@ -105,9 +105,9 @@ export class Supervisor<A> {
  * Creates a new supervisor that tracks children in a set.
  */
 export const track = T.total(() => {
-   const set = new Set<Runtime<any, any>>();
+   const set = new Set<RuntimeFiber<any, any>>();
 
-   return new Supervisor<Runtime<any, any>[]>(
+   return new Supervisor<RuntimeFiber<any, any>[]>(
       T.total(() => Array.from(set)),
       (_, __, ___, fiber) => {
          set.add(fiber);
@@ -123,7 +123,7 @@ export const track = T.total(() => {
 /**
  * Creates a new supervisor that tracks children in a set.
  */
-export const fibersIn = (ref: Atomic<Set<Runtime<any, any>>>) =>
+export const fibersIn = (ref: Atomic<Set<RuntimeFiber<any, any>>>) =>
    T.total(
       () =>
          new Supervisor(

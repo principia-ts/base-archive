@@ -1,4 +1,5 @@
 // codegen:start{preset: barrel, include: ./*.ts}
+export * from "./await";
 export * from "./complete";
 export * from "./completeWith";
 export * from "./die";
@@ -14,5 +15,4 @@ export * from "./succeed";
 export * from "./to";
 export * from "./unsafeDone";
 export * from "./unsafeMake";
-export * from "./wait";
 // codegen:end

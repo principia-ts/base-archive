@@ -4,8 +4,8 @@ import type { V as Variance } from "@principia/prelude/HKT";
 import type { Effect } from "..";
 import type { Cause } from "../Cause";
 import type { Exit } from "../Exit/Exit";
+import type { Driver } from "../Fiber/Driver";
 import type { Fiber, FiberDescriptor, InterruptStatus } from "../Fiber/Fiber";
-import type { FiberContext } from "../Fiber/FiberContext";
 import type { FiberId } from "../Fiber/FiberId";
 import type { FiberRef } from "../FiberRef/FiberRef";
 import type { Scope } from "../Scope";
@@ -258,7 +258,7 @@ export const FoldInstruction = <R, E, A, R1, E1, B, R2, E2, C>(
 //    }
 // }
 
-export interface ForkInstruction<R, E, A> extends Effect<R, never, FiberContext<E, A>> {
+export interface ForkInstruction<R, E, A> extends Effect<R, never, Driver<E, A>> {
    readonly _tag: EffectInstructionTag.Fork;
    readonly fa: Effect<R, E, A>;
    readonly scope: Option<Scope<Exit<any, any>>>;

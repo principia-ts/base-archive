@@ -58,7 +58,7 @@ export const uninterruptibleMask = <R, E, A>(
 export const onInterrupt_ = <R, E, A, R1>(
    ma: Effect<R, E, A>,
    cleanup: (interruptors: ReadonlySet<FiberId>) => Effect<R1, never, any>
-) =>
+): Effect<R & R1, E, A> =>
    uninterruptibleMask(({ restore }) =>
       foldCauseM_(
          restore(ma),
@@ -66,6 +66,10 @@ export const onInterrupt_ = <R, E, A, R1>(
          pure
       )
    );
+
+export const onInterrupt = <R1>(cleanup: (interruptors: ReadonlySet<FiberId>) => Effect<R1, never, any>) => <R, E, A>(
+   ma: Effect<R, E, A>
+): Effect<R & R1, E, A> => onInterrupt_(ma, cleanup);
 
 /**
  * Calls the specified function, and runs the effect it returns, if this

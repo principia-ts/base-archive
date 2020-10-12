@@ -7,11 +7,11 @@ import { uninterruptibleMask } from "./interrupt";
 
 /**
  * ```haskell
- * bracketExit_ :: Effect t => (
- *    t x r e a,
- *    (a -> x x1 r1 e1 b),
- *    ((a, (Exit e1 b)) -> x x2 r2 e2 _)
- * ) -> t (x | x1 | x2) (r & r1 & r2) (e | e1 | e2) b
+ * bracketExit_ :: (
+ *    Effect r e a,
+ *    (a -> Effect r1 e1 b),
+ *    ((a, (Exit e1 b)) -> Effect r2 e2 _)
+ * ) -> Effect (r & r1 & r2) (e | e1 | e2) b
  * ```
  *
  * Acquires a resource, uses the resource, and then releases the resource.
@@ -49,10 +49,10 @@ export const bracketExit_ = <R, E, A, E1, R1, A1, R2, E2>(
 
 /**
  * ```haskell
- * bracketExit :: Effect t => (
- *    (a -> x x1 r1 e1 b),
- *    ((a, (Exit e1 b)) -> x x2 r2 e2 _)
- * ) -> t x r e a -> t (x | x1 | x2) (r & r1 & r2) (e | e1 | e2) b
+ * bracketExit :: (
+ *    (a -> Effect r1 e1 b),
+ *    ((a, (Exit e1 b)) -> Effect r2 e2 _)
+ * ) -> Effect r e a -> Effect (r & r1 & r2) (e | e1 | e2) b
  * ```
  *
  * Acquires a resource, uses the resource, and then releases the resource.
@@ -71,11 +71,11 @@ export const bracketExit = <A, R1, E1, B, R2, E2, C>(
 
 /**
  * ```haskell
- * bracket_ :: Effect t => (
- *    t x r e a,
- *    (a -> t x1 r1 e1 a1),
- *    (a -> t x2 r2 e2 a2)
- * ) -> t (x | x1 | x2) (r & r1 & r2) (e | e1 | e2) a1
+ * bracket_ :: (
+ *    Effect r e a,
+ *    (a -> Effect r1 e1 a1),
+ *    (a -> Effect r2 e2 a2)
+ * ) -> Effect (r & r1 & r2) (e | e1 | e2) a1
  * ```
  *
  * When this effect represents acquisition of a resource (for example,
@@ -108,10 +108,10 @@ export const bracket_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
 
 /**
  * ```haskell
- * bracket :: Effect t => (
- *    (a -> t x1 r1 e1 b),
- *    (a -> t x2 r2 e2 c)
- * ) -> t x r e a -> t (x | x1 | x2) (r & r1 & r2) (e | e1 | e2) b
+ * bracket :: (
+ *    (a -> Effect r1 e1 b),
+ *    (a -> Effect r2 e2 c)
+ * ) -> Effect r e a -> Effect (r & r1 & r2) (e | e1 | e2) b
  * ```
  *
  * When this effect represents acquisition of a resource (for example,

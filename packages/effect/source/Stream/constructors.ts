@@ -16,7 +16,7 @@ import * as XR from "../XRef";
 import * as Pull from "./internal/Pull";
 import * as Take from "./internal/Take";
 import type { Transducer } from "./internal/Transducer";
-import type { IO, UIO } from "./Stream";
+import type { IO, RIO, UIO } from "./Stream";
 import { Stream } from "./Stream";
 
 /**
@@ -25,12 +25,18 @@ import { Stream } from "./Stream";
 export const fromArray = <A>(c: ReadonlyArray<A>): UIO<A> =>
    new Stream(
       pipe(
-         XR.makeRef(false),
-         T.chain(
-            XR.modify<T.IO<Option<never>, ReadonlyArray<A>>, boolean>((done) =>
-               done || c.length === 0 ? [Pull.end, true] : [T.pure(c), true]
+         T.of,
+         T.bindS("doneRef", () => XR.makeRef(false)),
+         T.letS("pull", ({ doneRef }) =>
+            pipe(
+               doneRef,
+               XR.modify<T.IO<Option<never>, ReadonlyArray<A>>, boolean>((done) =>
+                  done || c.length === 0 ? [Pull.end, true] : [T.pure(c), true]
+               ),
+               T.flatten
             )
          ),
+         T.map(({ pull }) => pull),
          T.toManaged()
       )
    );
@@ -266,6 +272,9 @@ export const repeatEffectChunkOption = <R, E, A>(ef: T.Effect<R, Option<E>, Read
       )
    );
 
+const ensuringFirst_ = <R, E, A, R1>(stream: Stream<R, E, A>, finalizer: T.Effect<R1, never, unknown>) =>
+   new Stream(M.ensuringFirst_(stream.proc, finalizer));
+
 /**
  * Creates a stream from an effect producing values of type `A` until it fails with None.
  */
@@ -283,9 +292,6 @@ export const fromArrayXQueue = <R, E, O>(queue: XQueue<never, R, unknown, E, nev
          T.chain_(queue.isShutdown, (down) => (down && C.isInterrupt(c) ? Pull.end : Pull.halt(c)))
       )
    );
-
-const ensuringFirst_ = <R, E, A, R1>(stream: Stream<R, E, A>, finalizer: T.Effect<R1, never, unknown>) =>
-   new Stream(M.ensuringFirst_(stream.proc, finalizer));
 
 /**
  * Creates a stream from an `XQueue` of values. The queue will be shutdown once the stream is closed.
@@ -322,6 +328,11 @@ export const die = (e: unknown): UIO<never> => fromEffect(T.die(e));
  * The stream that dies with an exception described by `message`.
  */
 export const dieMessage = (message: string) => fromEffect(T.dieMessage(message));
+
+/**
+ * The empty stream
+ */
+export const empty: UIO<never> = new Stream(M.pure(Pull.end));
 
 /**
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
@@ -367,6 +378,11 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
          M.map(({ pull }) => pull)
       )
    );
+
+/**
+ * Creates a one-element stream that never fails and executes the finalizer when it ends.
+ */
+export const finalizer = <R>(finalizer: T.RIO<R, unknown>): RIO<R, unknown> => bracket((_) => finalizer)(T.unit);
 
 /**
  * Applies an aggregator to the stream, which converts one or more elements

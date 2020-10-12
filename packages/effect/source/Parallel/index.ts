@@ -7,8 +7,8 @@ import type { ExecutionStrategy } from "../ExecutionStrategy";
 import { sequential } from "../ExecutionStrategy";
 import * as Ex from "../Exit/core";
 import type { Exit } from "../Exit/Exit";
+import type { Driver } from "../Fiber/Driver";
 import type { Fiber } from "../Fiber/Fiber";
-import type { FiberContext } from "../Fiber/FiberContext";
 import { interrupt } from "../Fiber/functions/interrupt";
 import * as M from "../Managed/core";
 import type { Managed } from "../Managed/Managed";
@@ -17,7 +17,7 @@ import * as Sema from "../Semaphore";
 import { fail as promiseFail } from "../XPromise/functions/fail";
 import { make as promiseMake } from "../XPromise/functions/make";
 import { succeed as promiseSucceed } from "../XPromise/functions/succeed";
-import { wait as promiseWait } from "../XPromise/functions/wait";
+import { await as promiseWait } from "../XPromise/functions/wait";
 import * as XR from "../XRef/combinators";
 import * as T from "./_internal/effect";
 
@@ -284,7 +284,7 @@ export const useManaged_ = <R, E, A, R2, E2, B>(
  * and provides that fiber. The finalizer for this value will interrupt the fiber
  * and run the original finalizer.
  */
-export const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberContext<E, A>> =>
+export const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, Driver<E, A>> =>
    M.managed(
       T.uninterruptibleMask(({ restore }) =>
          pipe(

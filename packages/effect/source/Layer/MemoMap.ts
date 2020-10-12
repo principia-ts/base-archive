@@ -129,7 +129,7 @@ export class MemoMap {
                            [
                               pipe(
                                  promise,
-                                 XP.wait,
+                                 XP.await,
                                  T.onExit((e) => {
                                     switch (e._tag) {
                                        case "Failure": {

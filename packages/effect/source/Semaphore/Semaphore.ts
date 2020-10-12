@@ -10,7 +10,7 @@ import { ImmutableQueue } from "../Support";
 import type { XPromise } from "../XPromise";
 import { make as promiseMake } from "../XPromise/functions/make";
 import { succeed_ as promiseSucceed } from "../XPromise/functions/succeed";
-import { wait as promiseWait } from "../XPromise/functions/wait";
+import { await as promiseWait } from "../XPromise/functions/wait";
 import * as XR from "../XRef/combinators";
 import type { Ref } from "../XRef/XRef";
 

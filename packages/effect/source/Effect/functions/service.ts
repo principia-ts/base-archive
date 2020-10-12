@@ -197,3 +197,12 @@ export const asksServiceInM = <A>(_: Tag<A>) => <K, T>(h: Tag<Region<Has<A> & T,
          )
       )
    );
+
+/**
+ * ```haskell
+ * asService :: Tag a -> Effect r e a -> Effect r e (Has a)
+ * ```
+ *
+ * Maps the success value of this effect to a service.
+ */
+export const asService = <A>(has: Tag<A>) => <R, E>(fa: T.Effect<R, E, A>) => T.map_(fa, has.of);

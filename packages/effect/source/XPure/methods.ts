@@ -2,13 +2,13 @@ import { identity, tuple } from "@principia/core/Function";
 import type * as P from "@principia/prelude";
 
 import { succeed } from "./constructors";
-import { AccessInstruction, ChainInstruction, ProvideInstruction } from "./instructions";
+import { ChainInstruction, GiveInstruction, ReadInstruction } from "./instructions";
 import type { URI, V, XPure } from "./XPure";
 
 export const chain_ = <S1, S2, R, E, A, S3, Q, D, B>(
    ma: XPure<S1, S2, R, E, A>,
    f: (a: A) => XPure<S2, S3, Q, D, B>
-): XPure<S1, S3, Q & R, D | E, B> => new ChainInstruction(ma, f);
+): XPure<S1, S3, Q & R, D | E, B> => ChainInstruction(ma, f);
 
 export const chain = <A, S2, S3, Q, D, B>(f: (a: A) => XPure<S2, S3, Q, D, B>) => <S1, R, E>(
    ma: XPure<S1, S2, R, E, A>
@@ -54,13 +54,13 @@ export const flatten = <S1, S2, R, E, A, S3, Q, D>(
    mma: XPure<S1, S2, R, E, XPure<S2, S3, Q, D, A>>
 ): XPure<S1, S3, Q & R, D | E, A> => chain_(mma, identity);
 
-export const ask = <R>(): XPure<unknown, never, R, never, R> => new AccessInstruction((r: R) => succeed(r));
+export const ask = <R>(): XPure<unknown, never, R, never, R> => ReadInstruction((r: R) => succeed(r));
 
-export const asksM: P.AsksMFn<[URI], V> = (f) => new AccessInstruction(f);
+export const asksM: P.AsksMFn<[URI], V> = ReadInstruction;
 
 export const asks: P.AsksFn<[URI], V> = (f) => asksM((r: Parameters<typeof f>[0]) => succeed(f(r)));
 
-export const giveAll_: P.GiveAllFn_<[URI], V> = (fa, r) => new ProvideInstruction(fa, r);
+export const giveAll_: P.GiveAllFn_<[URI], V> = GiveInstruction;
 
 export const giveAll: P.GiveAllFn<[URI], V> = (r) => (fa) => giveAll_(fa, r);
 

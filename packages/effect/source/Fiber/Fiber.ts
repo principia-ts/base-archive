@@ -48,7 +48,7 @@ export class FiberDescriptor {
    ) {}
 }
 
-export type Fiber<E, A> = Runtime<E, A> | Synthetic<E, A>;
+export type Fiber<E, A> = RuntimeFiber<E, A> | SyntheticFiber<E, A>;
 
 export interface CommonFiber<E, A> {
    await: UIO<Exit<E, A>>;
@@ -59,11 +59,11 @@ export interface CommonFiber<E, A> {
    poll: UIO<Option<Exit<E, A>>>;
 }
 
-export interface Runtime<E, A> extends CommonFiber<E, A> {
+export interface RuntimeFiber<E, A> extends CommonFiber<E, A> {
    _tag: "RuntimeFiber";
 }
 
-export interface Synthetic<E, A> extends CommonFiber<E, A> {
+export interface SyntheticFiber<E, A> extends CommonFiber<E, A> {
    _tag: "SyntheticFiber";
 }
 
@@ -74,4 +74,4 @@ export interface Synthetic<E, A> extends CommonFiber<E, A> {
  *
  * A type helper for building a Synthetic Fiber
  */
-export const makeSynthetic = <E, A>(_: Synthetic<E, A>): Fiber<E, A> => _;
+export const makeSynthetic = <E, A>(_: SyntheticFiber<E, A>): Fiber<E, A> => _;

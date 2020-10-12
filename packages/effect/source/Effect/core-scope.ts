@@ -2,8 +2,8 @@ import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
 
 import type { Exit } from "../Exit";
-import type { Fiber, Runtime } from "../Fiber/Fiber";
-import type { FiberContext } from "../Fiber/FiberContext";
+import type { Driver } from "../Fiber/Driver";
+import type { Fiber, RuntimeFiber } from "../Fiber/Fiber";
 import type { Scope } from "../Scope";
 import { globalScope } from "../Scope";
 import { pure } from "./core";
@@ -25,7 +25,7 @@ export const forkScopeMask = (newScope: Scope<Exit<any, any>>) => <R, E, A>(
    f: (restore: ForkScopeRestore) => Effect<R, E, A>
 ) => forkScopeWith((scope) => OverrideForkScopeInstruction(f(new ForkScopeRestore(scope)), O.some(newScope)));
 
-export const forkIn = (scope: Scope<Exit<any, any>>) => <R, E, A>(value: Effect<R, E, A>): RIO<R, Runtime<E, A>> =>
+export const forkIn = (scope: Scope<Exit<any, any>>) => <R, E, A>(value: Effect<R, E, A>): RIO<R, RuntimeFiber<E, A>> =>
    ForkInstruction(value, O.some(scope));
 
 export const raceWith = <R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
@@ -46,5 +46,5 @@ export const transplant = <R, E, A>(f: (_: Grafter) => Effect<R, E, A>) =>
  * new fiber is attached to the global scope, when the fiber executing the
  * returned effect terminates, the forked fiber will continue running.
  */
-export const forkDaemon = <R, E, A>(ma: Effect<R, E, A>): RIO<R, FiberContext<E, A>> =>
+export const forkDaemon = <R, E, A>(ma: Effect<R, E, A>): RIO<R, Driver<E, A>> =>
    ForkInstruction(ma, O.some(globalScope));

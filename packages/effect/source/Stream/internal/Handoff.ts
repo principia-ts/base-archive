@@ -48,13 +48,13 @@ export function offer<A>(a: A) {
                   matchTag({
                      Empty: ({ notifyConsumer }) =>
                         [
-                           pipe(notifyConsumer, XP.succeed(constVoid()), T.apSecond(XP.wait(p))),
+                           pipe(notifyConsumer, XP.succeed(constVoid()), T.apSecond(XP.await(p))),
                            new Full(a, p)
                         ] as const,
                      Full: (s) =>
                         [
                            pipe(
-                              XP.wait(s.notifyProducer),
+                              XP.await(s.notifyProducer),
                               T.chain(() => offer(a)(h))
                            ),
                            s
@@ -79,7 +79,7 @@ export function take<A>(h: Handoff<A>): T.UIO<A> {
                      [
                         pipe(
                            s.notifyConsumer,
-                           XP.wait,
+                           XP.await,
                            T.chain(() => take(h))
                         ),
                         s

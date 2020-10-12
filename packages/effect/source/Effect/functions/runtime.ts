@@ -2,7 +2,7 @@ import * as C from "../../Cause";
 import { HasClock, LiveClock } from "../../Clock";
 import type { Exit } from "../../Exit";
 import * as F from "../../Fiber";
-import { FiberContext } from "../../Fiber/FiberContext";
+import { Driver } from "../../Fiber/Driver";
 import { fiberId } from "../../Fiber/FiberId";
 import type { Callback } from "../../Fiber/state";
 import type { Layer } from "../../Layer/Layer";
@@ -32,7 +32,7 @@ export const defaultEnv = () => ({
 });
 
 export const fiberContext = <E, A>() =>
-   new FiberContext<E, A>(
+   new Driver<E, A>(
       fiberId(),
       defaultEnv(),
       F.interruptible,

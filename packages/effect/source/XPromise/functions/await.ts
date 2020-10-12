@@ -9,7 +9,7 @@ import { interruptJoiner } from "./interrupt";
  * Retrieves the value of the promise, suspending the fiber running the action
  * until the result is available.
  */
-export const wait = <E, A>(promise: XPromise<E, A>) =>
+const wait = <E, A>(promise: XPromise<E, A>) =>
    maybeAsyncInterrupt<unknown, E, A>((k) => {
       const state = promise.state.get;
 
@@ -23,3 +23,5 @@ export const wait = <E, A>(promise: XPromise<E, A>) =>
          }
       }
    }, promise.blockingOn);
+
+export { wait as await };

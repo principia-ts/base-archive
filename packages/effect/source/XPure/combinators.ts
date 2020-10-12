@@ -25,7 +25,7 @@ export const foldM_ = <S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
    fa: XPure<S1, S2, R, E, A>,
    onFailure: (e: E) => XPure<S5, S3, R1, E1, B>,
    onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
-): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> => new FoldInstruction(fa, onFailure, onSuccess);
+): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> => FoldInstruction(fa, onFailure, onSuccess);
 
 /**
  * ```haskell

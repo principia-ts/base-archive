@@ -1,7 +1,7 @@
 import * as A from "@principia/core/Array";
 import { flow, identity, pipe } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
-import * as Mb from "@principia/core/Option";
+import * as O from "@principia/core/Option";
 import type * as P from "@principia/prelude";
 
 import type { Cause } from "../Cause";
@@ -18,13 +18,13 @@ import { foreachManaged } from "./destructors";
 import * as BPull from "./internal/BufferedPull";
 import * as Pull from "./internal/Pull";
 import * as Take from "./internal/Take";
-import type { RIO, URI, V } from "./Stream";
+import type { RIO, UIO, URI, V } from "./Stream";
 import { Chain, Stream } from "./Stream";
 
 /**
  * Creates a single-valued pure stream
  */
-export const pure: P.PureFn<[URI], V> = (a) => fromArray([a]);
+export const pure = <A>(a: A): UIO<A> => fromArray([a]);
 
 /**
  * Effectfully transforms the chunks emitted by this stream.
@@ -39,7 +39,7 @@ export const mapChunksM_ = <R, E, A, R1, E1, B>(
          M.map((e) =>
             pipe(
                e,
-               T.chain((x) => pipe(f(x), T.first<E1, Option<E | E1>>(Mb.some)))
+               T.chain((x) => pipe(f(x), T.first<E1, Option<E | E1>>(O.some)))
             )
          )
       )
@@ -70,12 +70,12 @@ export const mapChunks = <A, B>(f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const map_: P.MapFn_<[URI], V> = (fa, f) => mapChunks_(fa, A.map(f));
+export const map_ = <R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => B): Stream<R, E, B> => mapChunks_(fa, A.map(f));
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const map: P.MapFn<[URI], V> = (f) => (fa) => map_(fa, f);
+export const map = <A, B>(f: (a: A) => B) => <R, E>(fa: Stream<R, E, A>): Stream<R, E, B> => map_(fa, f);
 
 /**
  * Maps over elements of the stream with the specified effectful function.
@@ -95,7 +95,7 @@ export const mapM_ = <R, E, A, R1, E1, B>(
                T.chain((o) =>
                   pipe(
                      f(o),
-                     T.bimap(Mb.some, (o1) => [o1] as [B])
+                     T.bimap(O.some, (o1) => [o1] as [B])
                   )
                )
             )
@@ -108,7 +108,7 @@ export const mapM_ = <R, E, A, R1, E1, B>(
  */
 export const mapM = <A, R1, E1, A1>(f: (o: A) => T.Effect<R1, E1, A1>) => <R, E>(fa: Stream<R, E, A>) => mapM_(fa, f);
 
-export const first_: P.FirstFn_<[URI], V> = (pab, f) => new Stream(pipe(pab.proc, M.map(T.first(Mb.map(f)))));
+export const first_: P.FirstFn_<[URI], V> = (pab, f) => new Stream(pipe(pab.proc, M.map(T.first(O.map(f)))));
 
 export const first: P.FirstFn<[URI], V> = (f) => (pab) => first_(pab, f);
 
@@ -122,9 +122,9 @@ export const mapErrorCause_ = <R, E, A, E1>(stream: Stream<R, E, A>, f: (e: Caus
             T.mapErrorCause((cause) =>
                pipe(
                   C.sequenceCauseOption(cause),
-                  Mb.fold(
-                     () => C.fail(Mb.none()),
-                     (c) => C.map_(f(c), Mb.some)
+                  O.fold(
+                     () => C.fail(O.none()),
+                     (c) => C.map_(f(c), O.some)
                   )
                )
             )
@@ -132,19 +132,16 @@ export const mapErrorCause_ = <R, E, A, E1>(stream: Stream<R, E, A>, f: (e: Caus
       )
    );
 
-export const mapErrorCause = <E, E1>(f: (e: Cause<E>) => Cause<E1>) => <R, A>(stream: Stream<R, E, A>) =>
+export const mapErrorCause = <E, D>(f: (e: Cause<E>) => Cause<D>) => <R, A>(stream: Stream<R, E, A>) =>
    mapErrorCause_(stream, f);
 
 /**
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const chain_: P.ChainFn_<[URI], V> = <R, E, A, R1, E1, B>(
-   fa: Stream<R, E, A>,
-   f: (a: A) => Stream<R1, E1, B>
-) => {
-   type R_ = R & R1;
-   type E_ = E | E1;
+export const chain_ = <R, E, A, Q, D, B>(fa: Stream<R, E, A>, f: (a: A) => Stream<Q, D, B>) => {
+   type R_ = R & Q;
+   type E_ = E | D;
 
    return new Stream(
       pipe(
@@ -170,29 +167,24 @@ export const chain_: P.ChainFn_<[URI], V> = <R, E, A, R1, E1, B>(
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export const bind: P.BindFn<[URI], V> = (fa) => (f) => chain_(fa, f);
-
-/**
- * Returns a stream made of the concatenation in strict order of all the streams
- * produced by passing each element of this stream to `f0`
- */
-export const chain: P.ChainFn<[URI], V> = (f) => (fa) => chain_(fa, f);
+export const chain = <A, Q, D, B>(f: (a: A) => Stream<Q, D, B>) => <R, E>(
+   fa: Stream<R, E, A>
+): Stream<Q & R, D | E, B> => chain_(fa, f);
 
 /**
  * Flattens this stream-of-streams into a stream made of the concatenation in
  * strict order of all the streams.
  */
-export const flatten: P.FlattenFn<[URI], V> = (ffa) => chain_(ffa, identity);
+export const flatten = <R, E, Q, D, A>(ffa: Stream<R, E, Stream<Q, D, A>>): Stream<Q & R, D | E, A> =>
+   chain_(ffa, identity);
 
-export const environment = <R>(): RIO<R, R> => fromEffect(T.ask<R>());
+export const ask = <R>(): RIO<R, R> => fromEffect(T.ask<R>());
 
-export const asks: P.AsksFn<[URI], V> = (f) => map_(environment(), f);
+export const asks = <R, A>(f: (_: R) => A): Stream<R, never, A> => map_(ask(), f);
 
-export const accessEffect = <R0, R, E, A>(f: (_: R0) => T.Effect<R, E, A>): Stream<R & R0, E, A> =>
-   mapM_(environment<R0>(), f);
+export const asksEffect = <R0, R, E, A>(f: (_: R0) => T.Effect<R, E, A>): Stream<R & R0, E, A> => mapM_(ask<R0>(), f);
 
-export const accessM: P.AsksMFn<[URI], V> = <R0, R, E, A>(f: (_: R0) => Stream<R, E, A>) =>
-   chain_(environment<R0>(), f);
+export const asksM = <R0, R, E, A>(f: (_: R0) => Stream<R, E, A>) => chain_(ask<R0>(), f);
 
 /**
  * Statefully and effectfully maps over the elements of this stream to produce
@@ -219,7 +211,7 @@ export const mapAccumM_ = <R, E, A, R1, E1, B, Z>(
                      T.bindS("t", ({ s }) => f(s, o)),
                      T.tap(({ t }) => state.set(t[0])),
                      T.map(({ t }) => [t[1]]),
-                     T.first(Mb.some)
+                     T.first(O.some)
                   )
                )
             )
@@ -286,7 +278,7 @@ export const mapEffectPar_ = (n: number) => <R, E, A, R1, E1, B>(
                      T.of,
                      T.bindS("p", () => XP.make<E1, B>()),
                      T.bindS("latch", () => XP.make<never, void>()),
-                     T.tap(({ p }) => out.offer(pipe(p, XP.wait, T.first(Mb.some)))),
+                     T.tap(({ p }) => out.offer(pipe(p, XP.await, T.first(O.some)))),
                      T.tap(({ latch, p }) =>
                         pipe(
                            latch,
@@ -295,7 +287,7 @@ export const mapEffectPar_ = (n: number) => <R, E, A, R1, E1, B>(
                            T.chain(() =>
                               pipe(
                                  errorSignal,
-                                 XP.wait,
+                                 XP.await,
                                  // Interrupt evaluation if another task fails
                                  T.raceFirst(f(a)),
                                  // Notify other tasks of a failure
@@ -308,7 +300,7 @@ export const mapEffectPar_ = (n: number) => <R, E, A, R1, E1, B>(
                            T.fork
                         )
                      ),
-                     T.tap(({ latch }) => XP.wait(latch)),
+                     T.tap(({ latch }) => XP.await(latch)),
                      T.asUnit
                   )
                ),

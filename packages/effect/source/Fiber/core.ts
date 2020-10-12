@@ -5,7 +5,7 @@ import type { Cause } from "../Cause";
 import * as T from "../Effect/core";
 import * as Ex from "../Exit/core";
 import type { Exit } from "../Exit/Exit";
-import type { Fiber, Runtime, Synthetic } from "./Fiber";
+import type { Fiber, RuntimeFiber, SyntheticFiber } from "./Fiber";
 import { InterruptStatus } from "./Fiber";
 import type { FiberId } from "./FiberId";
 
@@ -22,8 +22,8 @@ import type { FiberId } from "./FiberId";
  */
 export const _fold = <E, A, B>(
    fiber: Fiber<E, A>,
-   onRuntime: (_: Runtime<E, A>) => B,
-   onSynthetic: (_: Synthetic<E, A>) => B
+   onRuntime: (_: RuntimeFiber<E, A>) => B,
+   onSynthetic: (_: SyntheticFiber<E, A>) => B
 ): B => pipe(fiber, fold(onRuntime, onSynthetic));
 
 /**
@@ -33,7 +33,7 @@ export const _fold = <E, A, B>(
  *
  * Folds over the runtime or synthetic fiber.
  */
-export const fold = <E, A, B>(onRuntime: (_: Runtime<E, A>) => B, onSynthetic: (_: Synthetic<E, A>) => B) => (
+export const fold = <E, A, B>(onRuntime: (_: RuntimeFiber<E, A>) => B, onSynthetic: (_: SyntheticFiber<E, A>) => B) => (
    fiber: Fiber<E, A>
 ) => {
    switch (fiber._tag) {
@@ -46,7 +46,7 @@ export const fold = <E, A, B>(onRuntime: (_: Runtime<E, A>) => B, onSynthetic: (
    }
 };
 
-export const done = <E, A>(exit: Exit<E, A>): Synthetic<E, A> => ({
+export const done = <E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> => ({
    _tag: "SyntheticFiber",
    await: T.pure(exit),
    getRef: (ref) => T.pure(ref.initial),
@@ -55,9 +55,9 @@ export const done = <E, A>(exit: Exit<E, A>): Synthetic<E, A> => ({
    poll: T.pure(some(exit))
 });
 
-export const succeed = <A>(a: A): Synthetic<never, A> => done(Ex.succeed(a));
+export const succeed = <A>(a: A): SyntheticFiber<never, A> => done(Ex.succeed(a));
 
-export const fail = <E>(e: E): Synthetic<E, never> => done(Ex.fail(e));
+export const fail = <E>(e: E): SyntheticFiber<E, never> => done(Ex.fail(e));
 
 export const halt = <E>(cause: Cause<E>) => done(Ex.failure(cause));
 

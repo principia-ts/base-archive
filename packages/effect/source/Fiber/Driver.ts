@@ -17,7 +17,7 @@ import * as X from "../XPure";
 import * as T from "./_internal/effect";
 import { EffectInstructionTag } from "./_internal/effect";
 import * as F from "./core";
-import type { Fiber, InterruptStatus, Runtime } from "./Fiber";
+import type { Fiber, InterruptStatus, RuntimeFiber } from "./Fiber";
 import { FiberDescriptor } from "./Fiber";
 import type { FiberId } from "./FiberId";
 import { fiberId as makeFiberId } from "./FiberId";
@@ -47,10 +47,10 @@ export type Frame =
    | ApplyFrame;
 
 export class TracingContext {
-   readonly running = new Set<FiberContext<any, any>>();
+   readonly running = new Set<Driver<any, any>>();
    readonly interval = new AtomicReference<NodeJS.Timeout | undefined>(undefined);
 
-   readonly trace = (fiber: FiberContext<any, any>) => {
+   readonly trace = (fiber: Driver<any, any>) => {
       if (!this.running.has(fiber)) {
          if (typeof this.interval.get === "undefined") {
             this.interval.set(
@@ -79,9 +79,9 @@ export class TracingContext {
 
 export const _tracing = new TracingContext();
 
-export const currentFiber = new AtomicReference<FiberContext<any, any> | null>(null);
+export const currentFiber = new AtomicReference<Driver<any, any> | null>(null);
 
-export class FiberContext<E, A> implements Runtime<E, A> {
+export class Driver<E, A> implements RuntimeFiber<E, A> {
    readonly _tag = "RuntimeFiber";
    readonly state = new AtomicReference(initial<E, A>());
    readonly scheduler = defaultScheduler;
@@ -107,14 +107,14 @@ export class FiberContext<E, A> implements Runtime<E, A> {
    }
 
    get poll() {
-      return T.total(() => this.poll0());
+      return T.total(() => this._poll());
    }
 
    getRef<K>(fiberRef: FR.FiberRef<K>): T.UIO<K> {
       return T.total(() => this.fiberRefLocals.get(fiberRef) || fiberRef.initial);
    }
 
-   poll0() {
+   _poll() {
       const state = this.state.get;
 
       switch (state._tag) {
@@ -194,7 +194,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
    }
 
    runAsync(k: Callback<E, A>) {
-      const v = this.register0((xx) => k(Ex.flatten(xx)));
+      const v = this.registerObserver((xx) => k(Ex.flatten(xx)));
 
       if (v) {
          k(v);
@@ -235,7 +235,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       return discardedFolds;
    }
 
-   register0(k: Callback<never, Exit<E, A>>): Exit<E, A> | null {
+   registerObserver(k: Callback<never, Exit<E, A>>): Exit<E, A> | null {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -252,7 +252,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       }
    }
 
-   nextInstr(value: any): T.Instruction | undefined {
+   nextInstruction(value: any): T.Instruction | undefined {
       if (!this.isStackEmpty) {
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
          const k = this.popContinuation()!;
@@ -269,8 +269,8 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       observers.forEach((k) => k(result));
    }
 
-   observe0(k: Callback<never, Exit<E, A>>): Option<T.UIO<Exit<E, A>>> {
-      const x = this.register0(k);
+   observe(k: Callback<never, Exit<E, A>>): Option<T.UIO<Exit<E, A>>> {
+      const x = this.registerObserver(k);
 
       if (x != null) {
          return O.some(T.pure(x));
@@ -283,7 +283,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       return T.maybeAsyncInterrupt(
          (k): E.Either<T.UIO<void>, T.UIO<Exit<E, A>>> => {
             const cb: Callback<never, Exit<E, A>> = (x) => k(T.done(x));
-            return O.fold_(this.observe0(cb), () => E.left(T.total(() => this.interruptObserver(cb))), E.right);
+            return O.fold_(this.observe(cb), () => E.left(T.total(() => this.interruptObserver(cb))), E.right);
          }
       );
    }
@@ -464,7 +464,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       return this.openScope.scope;
    }
 
-   fork(i0: T.Instruction, forkScope: Option<Scope.Scope<Exit<any, any>>>): FiberContext<any, any> {
+   fork(i0: T.Instruction, forkScope: Option<Scope.Scope<Exit<any, any>>>): Driver<any, any> {
       const childFiberRefLocals: FiberRefLocals = new Map();
 
       this.fiberRefLocals.forEach((v, k) => {
@@ -481,7 +481,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       const childId = makeFiberId();
       const childScope = Scope.unsafeMakeScope<Exit<E, A>>();
 
-      const childContext = new FiberContext(
+      const childContext = new Driver(
          childId,
          currentEnv,
          F.interruptStatus(this.isInterruptible),
@@ -509,7 +509,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
    private parentScopeOp(
       parentScope: Scope.Scope<Exit<any, any>>,
-      childContext: FiberContext<E, A>,
+      childContext: Driver<E, A>,
       i0: T.Instruction
    ): T.Instruction {
       if (parentScope !== Scope.globalScope) {
@@ -627,7 +627,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
       return T.async<R & R1 & R2 & R3, E2 | E3, A2 | A3>(
          (cb) => {
-            const leftRegister = left.register0((exit) => {
+            const leftRegister = left.registerObserver((exit) => {
                switch (exit._tag) {
                   case "Failure": {
                      this.complete(left, right, race.leftWins, exit, raceIndicator, cb);
@@ -643,7 +643,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
             if (leftRegister != null) {
                this.complete(left, right, race.leftWins, leftRegister, raceIndicator, cb);
             } else {
-               const rightRegister = right.register0((exit) => {
+               const rightRegister = right.registerObserver((exit) => {
                   switch (exit._tag) {
                      case "Failure": {
                         this.complete(right, left, race.rightWins, exit, raceIndicator, cb);
@@ -665,10 +665,10 @@ export class FiberContext<E, A> implements Runtime<E, A> {
       );
    }
 
-   evaluateNow(i0: T.Instruction): void {
+   evaluateNow(start: T.Instruction): void {
       try {
          // eslint-disable-next-line prefer-const
-         let current: T.Instruction | undefined = i0;
+         let current: T.Instruction | undefined = start;
 
          currentFiber.set(this);
 
@@ -704,20 +704,6 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                                     }
                                     break;
                                  }
-                                 /*
-                                  * case "XPure": {
-                                  *    const res: E.Either<any, any> = X.runEither(
-                                  *       X._provideAll(nested, this.environments?.value || {})
-                                  *    );
-                                  *    console.log(res);
-                                  *    if (res._tag === "Left") {
-                                  *       current = T.fail(res.left)[T._I];
-                                  *    } else {
-                                  *       current = this.nextInstr(res.right);
-                                  *    }
-                                  *    break;
-                                  * }
-                                  */
                                  default: {
                                     current = nested;
                                     this.pushContinuation(new ApplyFrame(k));
@@ -733,18 +719,18 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               if (res._tag === "Left") {
                                  current = T.fail(res.left)[T._I];
                               } else {
-                                 current = this.nextInstr(res.right);
+                                 current = this.nextInstruction(res.right);
                               }
                               break;
                            }
 
                            case EffectInstructionTag.Pure: {
-                              current = this.nextInstr(current.value);
+                              current = this.nextInstruction(current.value);
                               break;
                            }
 
                            case EffectInstructionTag.Total: {
-                              current = this.nextInstr(current.thunk());
+                              current = this.nextInstruction(current.thunk());
                               break;
                            }
 
@@ -780,7 +766,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
                                  // Error caught, next continuation on the stack will deal
                                  // with it, so we some have to compute it here:
-                                 current = this.nextInstr(maybeRedactedCause);
+                                 current = this.nextInstruction(maybeRedactedCause);
                               }
 
                               break;
@@ -807,7 +793,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                            case EffectInstructionTag.Partial: {
                               const c = current;
                               try {
-                                 current = this.nextInstr(c.thunk());
+                                 current = this.nextInstruction(c.thunk());
                               } catch (e) {
                                  current = T.fail(c.onThrow(e))[T._I];
                               }
@@ -843,7 +829,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                            }
 
                            case EffectInstructionTag.Fork: {
-                              current = this.nextInstr(this.fork(current.fa[T._I], current.scope));
+                              current = this.nextInstruction(this.fork(current.fa[T._I], current.scope));
                               break;
                            }
 
@@ -900,7 +886,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
 
                               this.fiberRefLocals.set(fiberRef, current.initial);
 
-                              current = this.nextInstr(fiberRef);
+                              current = this.nextInstruction(fiberRef);
 
                               break;
                            }
@@ -910,7 +896,7 @@ export class FiberContext<E, A> implements Runtime<E, A> {
                               const oldValue = O.fromNullable(this.fiberRefLocals.get(c.fiberRef));
                               const [result, newValue] = current.f(O.getOrElse_(oldValue, () => c.fiberRef.initial));
                               this.fiberRefLocals.set(c.fiberRef, newValue);
-                              current = this.nextInstr(result);
+                              current = this.nextInstruction(result);
                               break;
                            }
 
