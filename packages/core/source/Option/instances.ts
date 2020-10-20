@@ -41,7 +41,7 @@ import {
    wither,
    wither_
 } from "./methods";
-import type { Option, URI, V } from "./Option";
+import type { Option, URI, V } from "./model";
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
    map,

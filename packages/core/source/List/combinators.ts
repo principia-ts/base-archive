@@ -5,8 +5,8 @@ import type { Lazy, Trampoline } from "../Function";
 import { done, matchPredicate, more, trampoline } from "../Function";
 import { cons, cons_, list, nil } from "./constructors";
 import { isEmpty, isNonEmpty } from "./guards";
-import type { List } from "./List";
-import { errorEmptyList } from "./List";
+import type { List } from "./model";
+import { errorEmptyList } from "./model";
 
 /*
  * -------------------------------------------

@@ -353,7 +353,7 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
                                  restore(stream.proc.effect),
                                  T.local((_: R) => [_, releaseMap] as [R, M.ReleaseMap]),
                                  T.map(([_, __]) => __),
-                                 T.chainFirst((pull) => ref.set(asState(pull)))
+                                 T.tap((pull) => ref.set(asState(pull)))
                               )
                            )
                         )

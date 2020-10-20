@@ -1,5 +1,5 @@
 import { unsafeCoerce } from "../Function";
-import type { Const } from "./Const";
+import type { Const } from "./model";
 
 /*
  * -------------------------------------------

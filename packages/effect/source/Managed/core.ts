@@ -1,12 +1,11 @@
 import { bind_, bindTo_, flow, pipe } from "@principia/core/Function";
-import type * as TC from "@principia/prelude";
 
 import type { Cause } from "../Cause";
 import type { Exit } from "../Exit";
 import * as Ex from "../Exit";
 import { makeRef } from "../XRef/combinators";
 import * as T from "./_internal/effect";
-import type { Managed, URI, V } from "./Managed";
+import type { Managed } from "./Managed";
 import type { Finalizer, ReleaseMap } from "./ReleaseMap";
 import { add, addIfOpen, noopFinalizer, release } from "./ReleaseMap";
 
@@ -342,7 +341,18 @@ export const mapBoth_ = <R, E, A, R1, E1, A1, B>(
 
 export const of = succeed({});
 
-export const bindS: TC.BindSFn<[URI], V> = (name, f) =>
+export const bindS = <R, E, A, K, N extends string>(
+   name: Exclude<N, keyof K>,
+   f: (_: K) => Managed<R, E, A>
+): (<R2, E2>(
+   mk: Managed<R2, E2, K>
+) => Managed<
+   R & R2,
+   E | E2,
+   {
+      [k in N | keyof K]: k extends keyof K ? K[k] : A;
+   }
+>) =>
    chain((a) =>
       pipe(
          f(a),
@@ -350,6 +360,9 @@ export const bindS: TC.BindSFn<[URI], V> = (name, f) =>
       )
    );
 
-export const bindTo: TC.BindToSFn<[URI], V> = (name) => (fa) => map_(fa, bindTo_(name));
+export const bindTo = <K, N extends string>(name: Exclude<N, keyof K>) => <R, E, A>(
+   fa: Managed<R, E, A>
+): Managed<R, E, { [k in Exclude<N, keyof K>]: A }> => map_(fa, bindTo_(name));
 
-export const letS: TC.LetSFn<[URI], V> = (name, f) => bindS(name, flow(f, succeed));
+export const letS = <K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K) => A) =>
+   bindS(name, flow(f, succeed));

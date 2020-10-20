@@ -56,7 +56,7 @@ import {
    witherWithIndex,
    witherWithIndex_
 } from "./methods";
-import type { ReadonlyRecord, URI, V } from "./Record";
+import type { ReadonlyRecord, URI, V } from "./model";
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 

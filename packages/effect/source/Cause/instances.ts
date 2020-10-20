@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-use-before-define */
-
 import * as A from "@principia/core/Array";
 import { pipe } from "@principia/core/Function";
 import type { NonEmptyArray } from "@principia/core/NonEmptyArray";

@@ -5,11 +5,10 @@ import { flow, identity, pipe } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
 import { none, some } from "@principia/core/Option";
-import type * as TC from "@principia/prelude";
-import { matchTag, matchTag_ } from "@principia/prelude/Utils";
+import { matchTag } from "@principia/prelude/Utils";
 
 import type { FiberId } from "../Fiber/FiberId";
-import type { Both, Cause, Then, URI, V } from "./Cause";
+import type { Both, Cause, Then } from "./Cause";
 import { InterruptedException } from "./errors";
 import { equalsCause } from "./instances";
 
@@ -341,7 +340,7 @@ export const pure = <E>(e: E): Cause<E> => fail(e);
  * @category Monad
  * @since 1.0.0
  */
-export const chain_: TC.ChainFn_<[URI], V> = (fa, f) => {
+export const chain_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> => {
    switch (fa._tag) {
       case "Empty":
          return empty;
@@ -368,7 +367,7 @@ export const chain_: TC.ChainFn_<[URI], V> = (fa, f) => {
  * @category Monad
  * @since 1.0.0
  */
-export const chain: TC.ChainFn<[URI], V> = (f) => (fa) => chain_(fa, f);
+export const chain = <E, D>(f: (e: E) => Cause<D>) => (fa: Cause<E>) => chain_(fa, f);
 
 /**
  * ```haskell
@@ -381,7 +380,7 @@ export const chain: TC.ChainFn<[URI], V> = (f) => (fa) => chain_(fa, f);
  * @category Monad
  * @since 1.0.0
  */
-export const bind: TC.BindFn<[URI], V> = (fa) => (f) => chain_(fa, f);
+// export const bind: TC.BindFn<[URI], V> = (fa) => (f) => chain_(fa, f);
 
 /**
  * ```haskell
@@ -393,7 +392,7 @@ export const bind: TC.BindFn<[URI], V> = (fa) => (f) => chain_(fa, f);
  * @category Functor
  * @since 1.0.0
  */
-export const map_: TC.MapFn_<[URI], V> = (fa, f) => chain_(fa, (e) => fail(f(e)));
+export const map_ = <E, D>(fa: Cause<E>, f: (e: E) => D) => chain_(fa, (e) => fail(f(e)));
 
 /**
  * ```haskell
@@ -405,7 +404,7 @@ export const map_: TC.MapFn_<[URI], V> = (fa, f) => chain_(fa, (e) => fail(f(e))
  * @category Functor
  * @since 1.0.0
  */
-export const map: TC.MapFn<[URI], V> = (f) => (fa) => map_(fa, f);
+export const map = <E, D>(f: (e: E) => D) => (fa: Cause<E>) => map_(fa, f);
 
 /**
  * ```haskell
@@ -427,7 +426,7 @@ export const as = <E1>(e: E1): (<E>(fa: Cause<E>) => Cause<E1>) => map(() => e);
  * @category Alt
  * @since 1.0.0
  */
-export const alt_: TC.AltFn_<[URI], V> = (fa, that) => chain_(fa, () => that());
+export const alt_ = <E>(fa: Cause<E>, that: () => Cause<E>) => chain_(fa, () => that());
 
 /**
  * ```haskell
@@ -437,7 +436,7 @@ export const alt_: TC.AltFn_<[URI], V> = (fa, that) => chain_(fa, () => that());
  * @category Alt
  * @since 1.0.0
  */
-export const alt: TC.AltFn<[URI], V> = (that) => (fa) => alt_(fa, that);
+export const alt = <E>(that: () => Cause<E>) => (fa: Cause<E>) => alt_(fa, that);
 
 /**
  * ```haskell
@@ -449,7 +448,7 @@ export const alt: TC.AltFn<[URI], V> = (that) => (fa) => alt_(fa, that);
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: TC.FlattenFn<[URI], V> = (ffa) => chain_(ffa, identity);
+export const flatten = <E>(ffa: Cause<Cause<E>>) => chain_(ffa, identity);
 
 /**
  * ```haskell
@@ -461,7 +460,7 @@ export const flatten: TC.FlattenFn<[URI], V> = (ffa) => chain_(ffa, identity);
  * @category Apply
  * @since 1.0.0
  */
-export const ap_: TC.ApFn_<[URI], V> = (fab, fa) => chain_(fab, (f) => map_(fa, f));
+export const ap_ = <E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>) => chain_(fab, (f) => map_(fa, f));
 
 /**
  * ```haskell
@@ -473,7 +472,7 @@ export const ap_: TC.ApFn_<[URI], V> = (fab, fa) => chain_(fab, (f) => map_(fa, 
  * @category Apply
  * @since 1.0.0
  */
-export const ap: TC.ApFn<[URI], V> = (fa) => (fab) => ap_(fab, fa);
+export const ap = <E>(fa: Cause<E>) => <D>(fab: Cause<(a: E) => D>) => ap_(fab, fa);
 
 /*
  * -------------------------------------------

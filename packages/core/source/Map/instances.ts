@@ -12,7 +12,6 @@ import * as O from "../Option";
 import { keys, lookupWithKey_ } from "./combinators";
 import { empty } from "./constructors";
 import { isSubmap_ } from "./guards";
-import type { URI, V } from "./Map";
 import {
    compact,
    filter,
@@ -37,6 +36,7 @@ import {
    partitionWithIndex_,
    separate
 } from "./methods";
+import type { URI, V } from "./model";
 
 interface Next<A> {
    readonly done?: boolean;

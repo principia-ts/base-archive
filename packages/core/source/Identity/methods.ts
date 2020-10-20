@@ -2,7 +2,7 @@ import * as P from "@principia/prelude";
 import type { Monoid } from "@principia/prelude/Monoid";
 
 import { identity, pipe, tuple } from "../Function";
-import type { Identity, URI, V } from "./Identity";
+import type { Identity, URI, V } from "./model";
 
 /*
  * -------------------------------------------

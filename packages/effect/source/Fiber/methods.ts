@@ -1,11 +1,10 @@
 import * as O from "@principia/core/Option";
-import type * as P from "@principia/prelude";
 
 import * as C from "../Cause";
 import { mapBothPar_ } from "../Effect/functions/mapBothPar";
 import * as Ex from "../Exit";
 import * as T from "./_internal/effect";
-import type { Fiber, SyntheticFiber, URI, V } from "./Fiber";
+import type { Fiber, SyntheticFiber } from "./Fiber";
 
 /**
  * Effectually maps over the value the fiber computes.
@@ -33,19 +32,19 @@ export const mapEffect = <A, E1, B>(f: (a: A) => T.IO<E1, B>) => <E>(fiber: Fibe
 /**
  * Maps over the value the fiber computes.
  */
-export const map_: P.MapFn_<[URI], V> = (fa, f) => mapEffect_(fa, (a) => T.pure(f(a)));
+export const map_ = <E, A, B>(fa: Fiber<E, A>, f: (a: A) => B) => mapEffect_(fa, (a) => T.pure(f(a)));
 
 /**
  * Maps over the value the fiber computes.
  */
-export const map: P.MapFn<[URI], V> = (f) => (fa) => map_(fa, f);
+export const map = <A, B>(f: (a: A) => B) => <E>(fa: Fiber<E, A>) => map_(fa, f);
 
 /**
  * Zips this fiber with the specified fiber, combining their results using
  * the specified combiner function. Both joins and interruptions are performed
  * in sequential order from left to right.
  */
-export const mapBoth_: P.MapBothFn_<[URI], V> = <E, E1, A, A1, B>(
+export const mapBoth_ = <E, E1, A, A1, B>(
    fa: Fiber<E, A>,
    fb: Fiber<E1, A1>,
    f: (a: A, b: A1) => B
@@ -66,22 +65,23 @@ export const mapBoth_: P.MapBothFn_<[URI], V> = <E, E1, A, A1, B>(
  * the specified combiner function. Both joins and interruptions are performed
  * in sequential order from left to right.
  */
-export const mapBoth: P.MapBothFn<[URI], V> = (fb, f) => (fa) => mapBoth_(fa, fb, f);
+export const mapBoth = <A, D, B, C>(fb: Fiber<D, B>, f: (a: A, b: B) => C) => <E>(fa: Fiber<E, A>) =>
+   mapBoth_(fa, fb, f);
 
 /**
  * Zips this fiber and the specified fiber together, producing a tuple of their output.
  */
-export const both_: P.BothFn_<[URI], V> = (fa, fb) => mapBoth_(fa, fb, (a, b) => [a, b]);
+export const both_ = <E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) => mapBoth_(fa, fb, (a, b) => [a, b]);
 
 /**
  * Zips this fiber and the specified fiber together, producing a tuple of their output.
  */
-export const both: P.BothFn<[URI], V> = (fb) => (fa) => both_(fa, fb);
+export const both = <D, B>(fb: Fiber<D, B>) => <E, A>(fa: Fiber<E, A>) => both_(fa, fb);
 
-export const apFirst_: P.ApFirstFn_<[URI], V> = (fa, fb) => mapBoth_(fa, fb, (a, _) => a);
+export const apFirst_ = <E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) => mapBoth_(fa, fb, (a, _) => a);
 
-export const apFirst: P.ApFirstFn<[URI], V> = (fb) => (fa) => apFirst_(fa, fb);
+export const apFirst = <D, B>(fb: Fiber<D, B>) => <E, A>(fa: Fiber<E, A>) => apFirst_(fa, fb);
 
-export const apSecond_: P.ApSecondFn_<[URI], V> = (fa, fb) => mapBoth_(fa, fb, (_, b) => b);
+export const apSecond_ = <E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) => mapBoth_(fa, fb, (_, b) => b);
 
-export const apSecond: P.ApSecondFn<[URI], V> = (fb) => (fa) => apSecond_(fa, fb);
+export const apSecond = <D, B>(fb: Fiber<D, B>) => <E, A>(fa: Fiber<E, A>) => apSecond_(fa, fb);

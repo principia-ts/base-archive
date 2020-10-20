@@ -2,7 +2,7 @@ import type { Either } from "../Either";
 import type { Lazy } from "../Function";
 import { fromNullable, none, some } from "./constructors";
 import { isNone } from "./guards";
-import type { Option } from "./Option";
+import type { Option } from "./model";
 
 /*
  * -------------------------------------------

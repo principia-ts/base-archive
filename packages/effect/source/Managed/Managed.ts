@@ -22,9 +22,3 @@ export type InferSuccess<T> = T extends Managed<infer R, infer E, infer A> ? A :
 export type UIO<A> = Managed<unknown, never, A>;
 export type RIO<R, A> = Managed<R, never, A>;
 export type IO<E, A> = Managed<unknown, E, A>;
-
-declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Managed<R, E, A>;
-   }
-}

@@ -22,7 +22,7 @@ import {
    pure,
    unit
 } from "./methods";
-import type { Task, URI, V } from "./Task";
+import type { Task, URI, V } from "./model";
 
 /*
  * -------------------------------------------

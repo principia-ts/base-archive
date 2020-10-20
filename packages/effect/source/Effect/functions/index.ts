@@ -34,6 +34,8 @@ export * from "./forever";
 export * from "./fork";
 export * from "./from";
 export * from "./fromPromise";
+export * from "./gen";
+export * from "./getOrFail";
 export * from "./interrupt";
 export * from "./interruptibleMask";
 export * from "./iterate";

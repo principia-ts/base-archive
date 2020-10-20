@@ -1,25 +1,28 @@
+/**
+ * Nothing special: just your standard array
+ */
+
 import type * as HKT from "@principia/prelude/HKT";
 
 /*
  * -------------------------------------------
- * IO Model
+ * Array Model
  * -------------------------------------------
  */
 
-export const URI = "IO";
+export type InferA<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<infer A> ? A : never;
+
+export const URI = "Array";
 
 export type URI = typeof URI;
 
 export type V = HKT.Auto;
 
-export interface IO<A> {
-   (): A;
-}
-
-export type InferA<T> = [T] extends [IO<infer A>] ? A : never;
-
 declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: IO<A>;
+      readonly [URI]: ReadonlyArray<A>;
+   }
+   interface URItoIndex<N extends string, K> {
+      readonly [URI]: number;
    }
 }

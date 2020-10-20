@@ -4,7 +4,7 @@ import type * as P from "@principia/prelude";
 import { modify, succeed } from "./constructors";
 import { FoldInstruction } from "./instructions";
 import { asksM, chain_, map_ } from "./methods";
-import type { URI, V, XPure } from "./XPure";
+import type { XPure } from "./XPure";
 
 /**
  * ```haskell
@@ -226,17 +226,17 @@ export const orElseEither = <S3, S4, R1, E1, A1>(that: XPure<S3, S4, R1, E1, A1>
    fa: XPure<S1, S2, R, E, A>
 ) => orElseEither_(fa, that);
 
-export const bimap_: P.BimapFn_<[URI], V> = (pab, f, g) =>
-   foldM_(
-      pab,
-      (e) => fail(f(e)),
-      (a) => succeed(g(a))
-   );
+// export const bimap_: P.BimapFn_<[URI], V> = (pab, f, g) =>
+//    foldM_(
+//       pab,
+//       (e) => fail(f(e)),
+//       (a) => succeed(g(a))
+//    );
 
-export const bimap: P.BimapFn<[URI], V> = (f, g) => (pab) => bimap_(pab, f, g);
+// export const bimap: P.BimapFn<[URI], V> = (f, g) => (pab) => bimap_(pab, f, g);
 
-export const first_: P.FirstFn_<[URI], V> = (pab, f) => catchAll_(pab, (e) => fail(f(e)));
+// export const first_: P.FirstFn_<[URI], V> = (pab, f) => catchAll_(pab, (e) => fail(f(e)));
 
-export const first: P.FirstFn<[URI], V> = (f) => (pab) => first_(pab, f);
+// export const first: P.FirstFn<[URI], V> = (f) => (pab) => first_(pab, f);
 
-export const mapError = first;
+// export const mapError = first;

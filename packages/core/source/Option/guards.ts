@@ -1,4 +1,4 @@
-import type { None, Option, Some } from "./Option";
+import type { None, Option, Some } from "./model";
 
 /*
  * -------------------------------------------

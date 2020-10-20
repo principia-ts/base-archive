@@ -1,4 +1,4 @@
-import type { Either, Left, Right } from "./Either";
+import type { Either, Left, Right } from "./model";
 
 /*
  * -------------------------------------------

@@ -1,4 +1,4 @@
-export * from "./Option";
+export * from "./model";
 export * from "./guards";
 export * from "./instances";
 export * from "./combinators";

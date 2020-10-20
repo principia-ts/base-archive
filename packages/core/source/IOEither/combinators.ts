@@ -4,8 +4,8 @@ import type { FunctionN, Lazy, Predicate, Refinement } from "../Function";
 import * as I from "../IO";
 import type { Option } from "../Option";
 import { fromEither, left, right } from "./constructors";
-import type { IOEither } from "./IOEither";
 import { chain_ } from "./methods";
+import type { IOEither } from "./model";
 
 /*
  * -------------------------------------------

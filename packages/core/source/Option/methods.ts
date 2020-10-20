@@ -8,7 +8,7 @@ import { bind_, flow, identity, pipe, tuple } from "../Function";
 import { getLeft, getRight } from "./combinators";
 import { none, some } from "./constructors";
 import { isNone } from "./guards";
-import type { Option, URI, V } from "./Option";
+import type { Option, URI, V } from "./model";
 
 /*
  * -------------------------------------------

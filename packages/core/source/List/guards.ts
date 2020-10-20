@@ -1,4 +1,4 @@
-import type { Cons, List, Nil } from "./List";
+import type { Cons, List, Nil } from "./model";
 
 /*
  * -------------------------------------------

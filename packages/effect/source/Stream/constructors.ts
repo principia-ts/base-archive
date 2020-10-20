@@ -367,7 +367,7 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
                                    T.onError(() => doneRef.set(true))
                                 )
                              ),
-                             T.chainFirst(() => doneRef.set(true)),
+                             T.tap(() => doneRef.set(true)),
                              T.map(({ a }) => [a]),
                              T.first(O.some)
                           )

@@ -1,6 +1,6 @@
 import type { FunctionN, Lazy, Predicate, Refinement } from "../Function";
 import type { Option } from "../Option";
-import type { Either } from "./Either";
+import type { Either } from "./model";
 
 /*
  * -------------------------------------------

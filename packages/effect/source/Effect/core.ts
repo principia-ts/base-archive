@@ -15,7 +15,7 @@ import type { Exit } from "../Exit/Exit";
 import type { Driver } from "../Fiber/Driver";
 import type { FiberDescriptor, InterruptStatus } from "../Fiber/Fiber";
 import type { FiberId } from "../Fiber/FiberId";
-import type { Effect, IO, RIO, UIO, URI, V } from "./Effect";
+import type { Effect, IO, RIO, UIO, URI } from "./Effect";
 import {
    AsyncInstruction,
    ChainInstruction,
@@ -538,7 +538,7 @@ export const both = <Q, D, B>(fb: Effect<Q, D, B>) => <R, E, A>(
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: P.FlattenFn<[URI], V> = (ffa) => chain_(ffa, identity);
+export const flatten = <R, E, Q, D, A>(ffa: Effect<R, E, Effect<Q, D, A>>) => chain_(ffa, identity);
 
 /**
  * ```haskell
@@ -553,7 +553,7 @@ export const flatten: P.FlattenFn<[URI], V> = (ffa) => chain_(ffa, identity);
  * @category Monad
  * @since 1.0.0
  */
-export const tap_: P.TapFn_<[URI], V> = (fa, f) =>
+export const tap_ = <R, E, A, Q, D, B>(fa: Effect<R, E, A>, f: (a: A) => Effect<Q, D, B>): Effect<Q & R, D | E, A> =>
    chain_(fa, (a) =>
       pipe(
          f(a),
@@ -574,24 +574,8 @@ export const tap_: P.TapFn_<[URI], V> = (fa, f) =>
  * @category Monad
  * @since 1.0.0
  */
-export const tap: P.TapFn<[URI], V> = (f) => (fa) => tap_(fa, f);
-
-/**
- * ```haskell
- * chainFirst :: Monad m => (a -> m b) -> m a -> m a
- * ```
- *
- * A synonym of `tap`.
- *
- * Composes computations in sequence, using the return value of one computation as input for the next
- * and keeping only the result of the first
- *
- * Returns an effect that effectfully "peeks" at the success of this effect.
- *
- * @category Monad
- * @since 1.0.0
- */
-export const chainFirst: P.ChainFirstFn<[URI], V> = tap;
+export const tap = <A, Q, D, B>(f: (a: A) => Effect<Q, D, B>) => <R, E>(fa: Effect<R, E, A>): Effect<Q & R, D | E, A> =>
+   tap_(fa, f);
 
 export const bimap_ = <R, E, A, G, B>(pab: Effect<R, E, A>, f: (e: E) => G, g: (a: A) => B): Effect<R, G, B> =>
    foldM_(
@@ -617,7 +601,8 @@ export const bimap = <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <R>(pab: Ef
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first_: P.FirstFn_<[URI], V> = (fea, f) => foldCauseM_(fea, flow(C.map(f), halt), pure);
+export const first_ = <R, E, A, D>(fea: Effect<R, E, A>, f: (e: E) => D): Effect<R, D, A> =>
+   foldCauseM_(fea, flow(C.map(f), halt), pure);
 
 /**
  * ```haskell
@@ -633,9 +618,20 @@ export const first_: P.FirstFn_<[URI], V> = (fea, f) => foldCauseM_(fea, flow(C.
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first: P.FirstFn<[URI], V> = (f) => (fea) => first_(fea, f);
+export const first = <E, D>(f: (e: E) => D) => <R, A>(fea: Effect<R, E, A>) => first_(fea, f);
 
-export const bindS: P.BindSFn<[URI], V> = (name, f) =>
+export const bindS = <R, E, A, K, N extends string>(
+   name: Exclude<N, keyof K>,
+   f: (_: K) => Effect<R, E, A>
+): (<R2, E2>(
+   mk: Effect<R2, E2, K>
+) => Effect<
+   R & R2,
+   E | E2,
+   {
+      [k in N | keyof K]: k extends keyof K ? K[k] : A;
+   }
+>) =>
    chain((a) =>
       pipe(
          f(a),
@@ -643,9 +639,11 @@ export const bindS: P.BindSFn<[URI], V> = (name, f) =>
       )
    );
 
-export const bindToS: P.BindToSFn<[URI], V> = (name) => (fa) => map_(fa, bindTo_(name));
+export const bindTo = <K, N extends string>(name: Exclude<N, keyof K>) => <R, E, A>(
+   fa: Effect<R, E, A>
+): Effect<R, E, { [k in Exclude<N, keyof K>]: A }> => map_(fa, bindTo_(name));
 
-export const letS: P.LetSFn<[URI], V> = (name, f) => bindS(name, flow(f, pure));
+export const letS = <K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K) => A) => bindS(name, flow(f, pure));
 
 /*
  * -------------------------------------------

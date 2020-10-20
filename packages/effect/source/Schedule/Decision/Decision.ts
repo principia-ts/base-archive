@@ -22,9 +22,3 @@ export const URI = "Decision";
 export type URI = typeof URI;
 
 export type V = HKT.V<"X", "+"> & HKT.V<"R", "-"> & HKT.V<"E", "-">;
-
-declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Decision<R, E, A>;
-   }
-}

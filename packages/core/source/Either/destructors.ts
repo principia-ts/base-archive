@@ -1,6 +1,6 @@
 import { identity } from "../Function";
-import type { Either } from "./Either";
 import { isLeft } from "./guards";
+import type { Either } from "./model";
 
 /*
  * -------------------------------------------

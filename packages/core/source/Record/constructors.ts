@@ -1,4 +1,4 @@
-import type { ReadonlyRecord } from "./Record";
+import type { ReadonlyRecord } from "./model";
 
 export const empty: ReadonlyRecord<string, never> = {};
 

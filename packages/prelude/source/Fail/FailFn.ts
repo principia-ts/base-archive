@@ -1,6 +1,6 @@
 import type * as HKT from "../HKT";
 
-export interface FailF<F extends HKT.URIS, C = HKT.Auto> {
+export interface FailFn<F extends HKT.URIS, C = HKT.Auto> {
    <
       N extends string = HKT.Initial<C, "N">,
       K = HKT.Initial<C, "K">,

@@ -1,7 +1,7 @@
 import { constant } from "../Function";
-import type { Functor } from "../Functor";
+import type { Functor, Functor1, Functor2, Functor3, Functor4 } from "../Functor";
 import type * as HKT from "../HKT";
-import type { Unit } from "../Unit";
+import type { Unit, Unit1, Unit2, Unit3, Unit4 } from "../Unit";
 
 export interface PureFn<F extends HKT.URIS, C = HKT.Auto> {
    <
@@ -64,6 +64,20 @@ export interface PureFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = 
 }
 
 export function pureF<F extends HKT.URIS, TC = HKT.Auto>(F: Functor<F, TC> & Unit<F, TC>): PureFn<F, TC>;
+export function pureF<F extends HKT.URIS1, TC = HKT.Auto>(
+   F: Functor1<F, TC> & Unit1<F, TC>
+): <A>(a: A) => HKT.Kind1<F, TC, A>;
+export function pureF<F extends HKT.URIS2, TC = HKT.Auto>(
+   F: Functor2<F, TC> & Unit2<F, TC>
+): <A, E = HKT.Initial2<TC, "E">>(a: A) => HKT.Kind2<F, TC, E, A>;
+export function pureF<F extends HKT.URIS3, TC = HKT.Auto>(
+   F: Functor3<F, TC> & Unit3<F, TC>
+): <A, R = HKT.Initial3<TC, "R">, E = HKT.Initial3<TC, "E">>(a: A) => HKT.Kind3<F, TC, R, E, A>;
+export function pureF<F extends HKT.URIS4, TC = HKT.Auto>(
+   F: Functor4<F, TC> & Unit4<F, TC>
+): <A, S = HKT.Initial4<TC, "S">, R = HKT.Initial4<TC, "R">, E = HKT.Initial4<TC, "E">>(
+   a: A
+) => HKT.Kind4<F, TC, S, R, E, A>;
 export function pureF<F>(F: Functor<HKT.UHKT<F>> & Unit<HKT.UHKT<F>>): PureFn<HKT.UHKT<F>> {
    return (a) => F.map_(F.unit(), constant(a));
 }

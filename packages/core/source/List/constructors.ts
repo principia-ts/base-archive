@@ -1,5 +1,5 @@
 import type { Lazy } from "../Function";
-import type { List } from "./List";
+import type { List } from "./model";
 
 /*
  * -------------------------------------------

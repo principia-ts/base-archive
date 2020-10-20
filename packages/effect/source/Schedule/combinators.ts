@@ -3,14 +3,13 @@ import * as E from "@principia/core/Either";
 import { constant, pipe, tuple } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
-import type * as TC from "@principia/prelude";
 
 import * as T from "../Effect/core";
 import { nextDouble } from "../Random";
 import { makeSchedule } from "./constructors";
 import type { Decision, StepFunction } from "./Decision";
 import { makeContinue, makeDone } from "./Decision";
-import type { Schedule, URI, V } from "./Schedule";
+import type { Schedule } from "./Schedule";
 
 const repeatLoop = <R, I, O>(
    init: StepFunction<R, I, O>,

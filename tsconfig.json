@@ -11,13 +11,15 @@
       "moduleResolution": "node",
       "esModuleInterop": true,
       "preserveSymlinks": true,
+      "skipLibCheck": true,
       "baseUrl": ".",
       "paths": {
          "@principia/prelude*": ["packages/prelude/dist*"],
          "@principia/prelude": ["packages/prelude/dist/index"],
          "@principia/core*": ["packages/core/dist*"],
-         "@principia/effect*": ["packages/effect/dist*"]
+         "@principia/effect*": ["packages/effect/dist*"],
+         "@principia/optics/*": ["packages/optics/dist/*"]
       }
    },
-   "exclude": ["build", "node_modules", "_source_"]
+   "exclude": ["build", "node_modules", "dist"]
 }

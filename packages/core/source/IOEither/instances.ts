@@ -7,7 +7,6 @@ import { flow, not, pipe } from "../Function";
 import * as I from "../IO";
 import { getLeft, getRight } from "../Option";
 import { right } from "./constructors";
-import type { IOEither, URI, V } from "./IOEither";
 import {
    alt,
    alt_,
@@ -26,6 +25,7 @@ import {
    mapBoth_,
    unit
 } from "./methods";
+import type { IOEither, URI, V } from "./model";
 
 /*
  * -------------------------------------------

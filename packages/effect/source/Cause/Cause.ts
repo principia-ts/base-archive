@@ -1,4 +1,4 @@
-import type { Auto } from "@principia/prelude/HKT";
+import type * as HKT from "@principia/prelude/HKT";
 
 import type { FiberId } from "../Fiber/FiberId";
 
@@ -39,10 +39,4 @@ export const URI = "Cause";
 
 export type URI = typeof URI;
 
-export type V = Auto;
-
-declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Cause<A>;
-   }
-}
+export type V = HKT.Auto;

@@ -1,9 +1,8 @@
 import { identity, tuple } from "@principia/core/Function";
-import type * as P from "@principia/prelude";
 
 import { succeed } from "./constructors";
 import { ChainInstruction, GiveInstruction, ReadInstruction } from "./instructions";
-import type { URI, V, XPure } from "./XPure";
+import type { XPure } from "./XPure";
 
 export const chain_ = <S1, S2, R, E, A, S3, Q, D, B>(
    ma: XPure<S1, S2, R, E, A>,
@@ -56,18 +55,26 @@ export const flatten = <S1, S2, R, E, A, S3, Q, D>(
 
 export const ask = <R>(): XPure<unknown, never, R, never, R> => ReadInstruction((r: R) => succeed(r));
 
-export const asksM: P.AsksMFn<[URI], V> = ReadInstruction;
+export const asksM: <R0, S1, S2, R, E, A>(
+   f: (r: R0) => XPure<S1, S2, R, E, A>
+) => XPure<S1, S2, R & R0, E, A> = ReadInstruction;
 
-export const asks: P.AsksFn<[URI], V> = (f) => asksM((r: Parameters<typeof f>[0]) => succeed(f(r)));
+export const asks = <R0, A>(f: (r: R0) => A) => asksM((r: R0) => succeed(f(r)));
 
-export const giveAll_: P.GiveAllFn_<[URI], V> = GiveInstruction;
+export const giveAll_: <S1, S2, R, E, A>(
+   fa: XPure<S1, S2, R, E, A>,
+   r: R
+) => XPure<S1, S2, unknown, E, A> = GiveInstruction;
 
-export const giveAll: P.GiveAllFn<[URI], V> = (r) => (fa) => giveAll_(fa, r);
+export const giveAll = <R>(r: R) => <S1, S2, E, A>(fa: XPure<S1, S2, R, E, A>) => giveAll_(fa, r);
 
-export const local_: P.LocalFn_<[URI], V> = (ma, f) => asksM((r: Parameters<typeof f>[0]) => giveAll_(ma, f(r)));
+export const local_ = <R0, S1, S2, R, E, A>(ma: XPure<S1, S2, R, E, A>, f: (r0: R0) => R) =>
+   asksM((r: R0) => giveAll_(ma, f(r)));
 
-export const local: P.LocalFn<[URI], V> = (f) => (ma) => local_(ma, f);
+export const local = <R0, R>(f: (r0: R0) => R) => <S1, S2, E, A>(ma: XPure<S1, S2, R, E, A>) => local_(ma, f);
 
-export const give_: P.GiveFn_<[URI], V> = (ma, r) => local_(ma, (r0) => ({ ...r, ...r0 }));
+export const give_ = <S1, S2, R, E, A, R0>(ma: XPure<S1, S2, R & R0, E, A>, r: R): XPure<S1, S2, R0, E, A> =>
+   local_(ma, (r0) => ({ ...r, ...r0 }));
 
-export const give: P.GiveFn<[URI], V> = (r) => (ma) => give_(ma, r);
+export const give = <R>(r: R) => <S1, S2, R0, E, A>(ma: XPure<S1, S2, R & R0, E, A>): XPure<S1, S2, R0, E, A> =>
+   give_(ma, r);

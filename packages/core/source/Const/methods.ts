@@ -1,8 +1,8 @@
 import type * as TC from "@principia/prelude";
 
 import { unsafeCoerce } from "../Function";
-import type { URI, V } from "./Const";
 import { make } from "./constructors";
+import type { URI, V } from "./model";
 
 /*
  * -------------------------------------------

@@ -5,7 +5,7 @@ import { done, matchPredicate, more, trampoline } from "../Function";
 import { head, tail } from "./combinators";
 import { cons_, list, nil } from "./constructors";
 import { isEmpty, isNonEmpty } from "./guards";
-import type { List, URI, V } from "./List";
+import type { List, URI, V } from "./model";
 
 /*
  * -------------------------------------------

@@ -9,7 +9,7 @@ import { pipe } from "../Function";
 import type { Option } from "../Option";
 import { isSome } from "../Option";
 import { empty } from "./constructors";
-import type { ReadonlyRecord, URI, V } from "./Record";
+import type { ReadonlyRecord, URI, V } from "./model";
 
 const keys = <N extends string>(r: ReadonlyRecord<N, unknown>): ReadonlyArray<N> => Object.keys(r) as any;
 

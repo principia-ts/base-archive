@@ -1,5 +1,5 @@
 import type { IO } from "../IO";
-import type { Task } from "./Task";
+import type { Task } from "./model";
 
 /*
  * -------------------------------------------

@@ -14,12 +14,6 @@ export type URI = typeof URI;
 
 export type V = HKT.V<"E", "+">;
 
-declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Fiber<E, A>;
-   }
-}
-
 /**
  * InterruptStatus tracks interruptability of the current stack region
  */

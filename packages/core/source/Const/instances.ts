@@ -7,9 +7,9 @@ import type { Ring } from "@principia/prelude/Ring";
 import type { Show } from "@principia/prelude/Show";
 
 import { identity, unsafeCoerce } from "../Function";
-import type { Const, URI, V } from "./Const";
 import { make } from "./constructors";
 import { bimap, bimap_, contramap, first, first_, map, map_ } from "./methods";
+import type { Const, URI, V } from "./model";
 
 /*
  * -------------------------------------------

@@ -5,7 +5,7 @@ import type { Either } from "../Either";
 import { isLeft } from "../Either";
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "../Function";
 import type { Option } from "../Option";
-import type { URI, V } from "./Map";
+import type { URI, V } from "./model";
 
 interface Next<A> {
    readonly done?: boolean;

@@ -1,4 +1,4 @@
-export * from "./Map";
+export * from "./model";
 export * from "./guards";
 export * from "./methods";
 export * from "./instances";

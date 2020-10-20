@@ -2,7 +2,6 @@ import * as A from "@principia/core/Array";
 import { flow, identity, pipe } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
-import type * as P from "@principia/prelude";
 
 import type { Cause } from "../Cause";
 import * as C from "../Cause";
@@ -18,7 +17,7 @@ import { foreachManaged } from "./destructors";
 import * as BPull from "./internal/BufferedPull";
 import * as Pull from "./internal/Pull";
 import * as Take from "./internal/Take";
-import type { RIO, UIO, URI, V } from "./Stream";
+import type { RIO, UIO } from "./Stream";
 import { Chain, Stream } from "./Stream";
 
 /**
@@ -108,9 +107,10 @@ export const mapM_ = <R, E, A, R1, E1, B>(
  */
 export const mapM = <A, R1, E1, A1>(f: (o: A) => T.Effect<R1, E1, A1>) => <R, E>(fa: Stream<R, E, A>) => mapM_(fa, f);
 
-export const first_: P.FirstFn_<[URI], V> = (pab, f) => new Stream(pipe(pab.proc, M.map(T.first(O.map(f)))));
+export const first_ = <R, E, A, D>(pab: Stream<R, E, A>, f: (e: E) => D) =>
+   new Stream(pipe(pab.proc, M.map(T.first(O.map(f)))));
 
-export const first: P.FirstFn<[URI], V> = (f) => (pab) => first_(pab, f);
+export const first = <E, D>(f: (e: E) => D) => <R, A>(pab: Stream<R, E, A>) => first_(pab, f);
 
 export const mapError = first;
 

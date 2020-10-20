@@ -1,7 +1,7 @@
 import type * as TC from "@principia/prelude";
 
 import { bind_, bindTo_, flow, identity } from "../Function";
-import type { InferA, Task, URI, V } from "./Task";
+import type { InferA, Task, URI, V } from "./model";
 
 /*
  * -------------------------------------------

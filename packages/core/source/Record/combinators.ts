@@ -1,6 +1,6 @@
 import type { Option } from "../Option";
 import * as O from "../Option";
-import type { ReadonlyRecord } from "./Record";
+import type { ReadonlyRecord } from "./model";
 
 const hasOwnProperty_ = Object.prototype.hasOwnProperty;
 

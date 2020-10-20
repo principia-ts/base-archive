@@ -1,4 +1,4 @@
-import type { IO } from "./IO";
+import type { IO } from "./model";
 
 /*
  * -------------------------------------------

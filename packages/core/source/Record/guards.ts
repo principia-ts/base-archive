@@ -1,7 +1,7 @@
 import type { Eq } from "@principia/prelude/Eq";
 
 import type { Predicate } from "../Function";
-import type { ReadonlyRecord } from "./Record";
+import type { ReadonlyRecord } from "./model";
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 

@@ -1,8 +1,9 @@
 import type * as P from "@principia/prelude";
 import { makeMonoid } from "@principia/prelude";
+import type { Eq } from "@principia/prelude/Eq";
+import { fromEquals } from "@principia/prelude/Eq";
 import * as HKT from "@principia/prelude/HKT";
 
-import type { URI, V } from "./Array";
 import { append_ } from "./combinators";
 import { empty } from "./constructors";
 import {
@@ -66,8 +67,7 @@ import {
    zipWith,
    zipWith_
 } from "./methods";
-
-export const getMonoid = <A = never>(): P.Monoid<ReadonlyArray<A>> => makeMonoid(append_, empty());
+import type { URI, V } from "./model";
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
    map,
@@ -195,3 +195,9 @@ export const WitherableWithIndex: P.WitherableWithIndex<[URI], V> = HKT.instance
 export const Unfoldable: P.Unfoldable<[URI], V> = HKT.instance({
    unfold
 });
+
+export const getEq = <A>(E: Eq<A>): Eq<ReadonlyArray<A>> =>
+   fromEquals((xs, ys) => xs === ys || (xs.length === ys.length && xs.every((x, i) => E.equals_(x, ys[i]))));
+
+export const getMonoid = <A = never>(): P.Monoid<ReadonlyArray<A>> => makeMonoid(append_, empty());
+

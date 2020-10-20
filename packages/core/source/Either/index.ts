@@ -1,4 +1,4 @@
-export * from "./Either";
+export * from "./model";
 export * from "./instances";
 export * from "./guards";
 export * from "./methods";

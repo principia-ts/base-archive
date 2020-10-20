@@ -1,7 +1,6 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import type { URI, V } from "./Identity";
 import {
    alt,
    alt_,
@@ -29,6 +28,7 @@ import {
    traverse_,
    unit
 } from "./methods";
+import type { URI, V } from "./model";
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
    map_: map_,

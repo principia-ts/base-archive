@@ -2,7 +2,7 @@ import type { FunctionN } from "../Function";
 import type { IO } from "../IO";
 import { fromIO } from "./constructors";
 import { chain } from "./methods";
-import type { Task } from "./Task";
+import type { Task } from "./model";
 
 /*
  * -------------------------------------------

@@ -1,7 +1,7 @@
 import * as E from "../Either";
 import type { IO } from "../IO";
 import * as I from "../IO";
-import type { IOEither } from "./IOEither";
+import type { IOEither } from "./model";
 
 /*
  * -------------------------------------------

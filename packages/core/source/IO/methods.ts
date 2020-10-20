@@ -1,5 +1,5 @@
 import { bind_, flow, identity, pipe } from "../Function";
-import type { IO } from "./IO";
+import type { IO } from "./model";
 
 /*
  * -------------------------------------------

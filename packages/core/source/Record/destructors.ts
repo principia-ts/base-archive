@@ -3,7 +3,7 @@ import type * as HKT from "@principia/prelude/HKT";
 
 import * as O from "../Option";
 import { collect_ } from "./combinators";
-import type { ReadonlyRecord } from "./Record";
+import type { ReadonlyRecord } from "./model";
 
 /**
  * @category Destructors

@@ -1,2 +1,2 @@
-export * from "./NonEmptyArray";
+export * from "./model";
 export * from "./combinators";

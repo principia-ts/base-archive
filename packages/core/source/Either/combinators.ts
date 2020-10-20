@@ -2,9 +2,9 @@ import type { Eq } from "@principia/prelude/Eq";
 
 import type { Predicate, Refinement } from "../Function";
 import { left, right } from "./constructors";
-import type { Either } from "./Either";
 import { isLeft } from "./guards";
 import { map_ } from "./methods";
+import type { Either } from "./model";
 
 /*
  * -------------------------------------------

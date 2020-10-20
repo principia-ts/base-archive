@@ -1,7 +1,6 @@
 import type { Option } from "@principia/core/Option";
 import type { V as Variance } from "@principia/prelude/HKT";
 
-import type { Effect } from "..";
 import type { Cause } from "../Cause";
 import type { Exit } from "../Exit/Exit";
 import type { Driver } from "../Fiber/Driver";

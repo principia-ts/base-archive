@@ -1,6 +1,6 @@
 import { head, tail } from "./combinators";
 import { isEmpty, isNonEmpty } from "./guards";
-import type { List } from "./List";
+import type { List } from "./model";
 
 /*
  * -------------------------------------------

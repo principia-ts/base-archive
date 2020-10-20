@@ -7,7 +7,13 @@ export const URI = "XPure";
 
 export type URI = typeof URI;
 
-export type V = HKT.V<"I", "+"> & HKT.V<"S", "-"> & HKT.V<"R", "-"> & HKT.V<"E", "+">;
+export type V = HKT.V<"S", "_"> & HKT.V<"R", "-"> & HKT.V<"E", "+">;
+
+declare module "@principia/prelude/HKT" {
+   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+      readonly [URI]: XPure<S, S, R, E, A>;
+   }
+}
 
 /**
  * `XPure<S1, S2, R, E, A>` is a purely functional description of a computation
@@ -27,10 +33,4 @@ export interface XPure<S1, S2, R, E, A> {
    readonly [T._A]: () => A;
    readonly [T._R]: (_: R) => void;
    readonly [T._I]: Instruction;
-}
-
-declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: XPure<I, S, R, E, A>;
-   }
 }

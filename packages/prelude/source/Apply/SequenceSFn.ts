@@ -13,7 +13,6 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
             HKT.Kind<
                F,
                TC,
-               string,
                HKT.Intro<TC, "N", N, any>,
                HKT.Intro<TC, "K", K, any>,
                HKT.Intro<TC, "Q", Q, any>,

@@ -15,6 +15,7 @@ export * from "./Contravariant/index";
 export * from "./Do/index";
 export * from "./Empty/index";
 export * from "./Extend/index";
+export * from "./Fail/index";
 export * from "./Filterable/index";
 export * from "./Foldable/index";
 export * from "./Function/index";

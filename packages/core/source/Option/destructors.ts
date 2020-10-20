@@ -1,5 +1,5 @@
 import { isNone } from "./guards";
-import type { Option } from "./Option";
+import type { Option } from "./model";
 
 /*
  * -------------------------------------------

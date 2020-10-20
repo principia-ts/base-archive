@@ -7,8 +7,8 @@ import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } f
 import { flow, identity, pipe } from "../Function";
 import type { NonEmptyArray } from "../NonEmptyArray";
 import type { Option } from "../Option";
-import type { URI, V } from "./Array";
 import { empty } from "./constructors";
+import type { URI, V } from "./model";
 
 /**
  * @internal

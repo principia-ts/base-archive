@@ -82,6 +82,15 @@ export const Functor: P.Functor<[URI], V> = HKT.instance({
    map_
 });
 
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export const Functor2: P.Functor2<URI, V> = HKT.instance({
+   map,
+   map_
+});
+
 export const Apply: P.Apply<[URI], V> = HKT.instance({
    ...Functor,
    ap,
@@ -107,12 +116,29 @@ export const Applicative: P.Applicative<[URI], V> = HKT.instance({
    unit
 });
 
+export const Applicative2: P.Applicative2<URI, V> = HKT.instance({
+   ...Functor2,
+   both_,
+   both,
+   unit
+});
+
 /**
  * @category Instances
  * @since 1.0.0
  */
 export const Monad: P.Monad<[URI], V> = HKT.instance({
    ...Functor,
+   unit,
+   flatten
+});
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export const Monad2: P.Monad2<URI, V> = HKT.instance({
+   ...Functor2,
    unit,
    flatten
 });
@@ -159,6 +185,19 @@ export const Bifunctor: P.Bifunctor<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
+export const Bifunctor2: P.Bifunctor2<URI, V> = HKT.instance({
+   bimap_,
+   bimap,
+   first_,
+   first,
+   second_: map_,
+   second: map
+});
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
 export const Alt: P.Alt<[URI], V> = HKT.instance({
    ...Functor,
    alt_,
@@ -178,9 +217,34 @@ export const Extend: P.Extend<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
+export const Fail: P.Fail<[URI], V> = HKT.instance({
+   fail: left
+});
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export const Fail2: P.Fail2<URI, V> = HKT.instance({
+   fail: left
+});
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
 export const MonadFail: P.MonadFail<[URI], V> = HKT.instance({
    ...Monad,
-   fail: left
+   ...Fail
+});
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export const MonadFail2: P.MonadFail2<URI, V> = HKT.instance({
+   ...Monad2,
+   ...Fail2
 });
 
 export const Do: P.Do<[URI], V> = P.deriveDo(Monad);

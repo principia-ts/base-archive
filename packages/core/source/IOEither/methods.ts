@@ -6,7 +6,7 @@ import * as EitherT from "../EitherT";
 import { identity } from "../Function";
 import * as I from "../IO";
 import { right } from "./constructors";
-import type { IOEither, URI, V } from "./IOEither";
+import type { IOEither, URI, V } from "./model";
 
 /*
  * -------------------------------------------

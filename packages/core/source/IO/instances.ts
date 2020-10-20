@@ -2,8 +2,8 @@ import * as P from "@principia/prelude";
 import { fromCombine } from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import type { IO, URI, V } from "./IO";
 import { ap, ap_, both, both_, flatten, map, map_, mapBoth, mapBoth_, pure, unit } from "./methods";
+import type { IO, URI, V } from "./model";
 
 /*
  * -------------------------------------------

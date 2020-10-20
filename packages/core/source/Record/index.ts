@@ -1,4 +1,4 @@
-export * from "./Record";
+export * from "./model";
 export * from "./methods";
 export * from "./guards";
 export * from "./instances";

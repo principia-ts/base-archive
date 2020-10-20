@@ -1,7 +1,7 @@
 import { pipe } from "@principia/core/Function";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
-import type { V as Variance } from "@principia/prelude/HKT";
+import type * as HKT from "@principia/prelude/HKT";
 
 import * as C from "../Cause";
 import * as T from "../Effect";
@@ -14,16 +14,10 @@ import * as Pull from "./internal/Pull";
 export const URI = "Stream";
 export type URI = typeof URI;
 
-export type V = Variance<"R", "-"> & Variance<"E", "+">;
-
-declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Stream<R, E, A>;
-   }
-}
+export type V = HKT.V<"R", "-"> & HKT.V<"E", "+">;
 
 /**
- * A `Stream<X, R, E, A>` is a description of a program that, when evaluated,
+ * A `Stream<R, E, A>` is a description of a program that, when evaluated,
  * may emit 0 or more values of type `A`, may fail with errors of type `E`
  * and uses an environment of type `R` and can be sync or async `X`.
  * One way to think of `Stream` is as a `Effect` program that could emit multiple values.
@@ -118,7 +112,7 @@ export class Chain<R_, E_, O, O2> {
                return [
                   pipe(
                      this.pullNonEmpty(this.outerStream),
-                     T.chainFirst((os) => this.currOuterChunk.set([os, 1])),
+                     T.tap((os) => this.currOuterChunk.set([os, 1])),
                      T.map((os) => os[0])
                   ),
                   [chunk, nextIdx]
@@ -140,10 +134,8 @@ export class Chain<R_, E_, O, O2> {
                         )
                      )
                   ),
-                  T.chainFirst(({ pull }) => this.currInnerStream.set(pull)),
-                  T.chainFirst(({ releaseMap }) =>
-                     this.innerFinalizer.set((e) => M.releaseAll(e, sequential())(releaseMap))
-                  ),
+                  T.tap(({ pull }) => this.currInnerStream.set(pull)),
+                  T.tap(({ releaseMap }) => this.innerFinalizer.set((e) => M.releaseAll(e, sequential())(releaseMap))),
                   T.asUnit
                )
             )

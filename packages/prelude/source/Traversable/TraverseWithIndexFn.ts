@@ -1,4 +1,4 @@
-import type { Applicative } from "../Applicative";
+import type { Applicative, Applicative2 } from "../Applicative";
 import type * as HKT from "../HKT";
 
 export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
@@ -55,6 +55,23 @@ export interface TraverseWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
          a: A
       ) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>
    ) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
+   <G extends HKT.URIS2, CG = HKT.Auto>(A: Applicative2<G, CG>): <
+      NF extends string,
+      KF,
+      QF,
+      WF,
+      XF,
+      IF,
+      SF,
+      RF,
+      EF,
+      A,
+      D,
+      B
+   >(
+      ta: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+      f: (i: HKT.IndexFor<F, HKT.OrFix<"N", CF, NF>, HKT.OrFix<"K", CF, KF>>, a: A) => HKT.Kind2<G, CG, D, B>
+   ) => HKT.Kind2<G, CG, D, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>;
 }
 
 export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
