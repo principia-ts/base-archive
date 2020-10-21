@@ -3,16 +3,20 @@ import { unit } from "../core";
 import type { Effect } from "../model";
 import { onExit_ } from "./onExit";
 
-export function onError<E, A, R2, E2>(cleanup: (exit: Cause<E>) => Effect<R2, E2, any>) {
-   return <R>(self: Effect<R, E, A>): Effect<R & R2, E | E2, A> =>
-      onExit_(self, (e) => {
-         switch (e._tag) {
-            case "Failure": {
-               return cleanup(e.cause);
-            }
-            case "Success": {
-               return unit;
-            }
+export const onError_ = <R, E, A, R2, E2>(
+   ma: Effect<R, E, A>,
+   cleanup: (exit: Cause<E>) => Effect<R2, E2, any>
+): Effect<R & R2, E | E2, A> =>
+   onExit_(ma, (e) => {
+      switch (e._tag) {
+         case "Failure": {
+            return cleanup(e.cause);
          }
-      });
-}
+         case "Success": {
+            return unit;
+         }
+      }
+   });
+
+export const onError = <E, R2, E2>(cleanup: (exit: Cause<E>) => Effect<R2, E2, any>) => <R, A>(ma: Effect<R, E, A>) =>
+   onError_(ma, cleanup);

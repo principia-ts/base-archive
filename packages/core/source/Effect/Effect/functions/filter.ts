@@ -1,7 +1,127 @@
+import * as A from "../../../Array";
 import type { Predicate, Refinement } from "../../../Function";
-import { flow } from "../../../Function";
-import { chain_, die, fail, pure } from "../core";
+import { flow, pipe } from "../../../Function";
+import * as I from "../../../Iterable";
+import * as O from "../../../Option";
+import { chain_, die, fail, map, map_, mapBoth_, pure } from "../core";
 import type { Effect } from "../model";
+import { foreachPar } from "./foreachPar";
+import { foreachParN } from "./foreachParN";
+
+/**
+ * Filters the collection using the specified effectual predicate.
+ */
+export const filter = <A, R, E>(f: (a: A) => Effect<R, E, boolean>) => (as: Iterable<A>) => filter_(as, f);
+
+/**
+ * Filters the collection using the specified effectual predicate.
+ */
+export const filter_ = <A, R, E>(as: Iterable<A>, f: (a: A) => Effect<R, E, boolean>): Effect<R, E, readonly A[]> =>
+   I.reduce_(as, pure([]) as Effect<R, E, A[]>, (ma, a) =>
+      mapBoth_(ma, f(a), (as_, p) => {
+         if (p) {
+            as_.push(a);
+         }
+         return as_;
+      })
+   );
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filter` for a sequential version of it.
+ */
+export const filterPar_ = <A, R, E>(as: Iterable<A>, f: (a: A) => Effect<R, E, boolean>) =>
+   pipe(
+      as,
+      foreachPar((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
+      map(A.compact)
+   );
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filter` for a sequential version of it.
+ */
+export const filterPar = <A, R, E>(f: (a: A) => Effect<R, E, boolean>) => (as: Iterable<A>) => filterPar_(as, f);
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filter` for a sequential version of it.
+ *
+ * This method will use up to `n` fibers.
+ */
+export const filterParN_ = (n: number) => <A, R, E>(as: Iterable<A>, f: (a: A) => Effect<R, E, boolean>) =>
+   pipe(
+      as,
+      foreachParN(n)((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
+      map(A.compact)
+   );
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filter` for a sequential version of it.
+ *
+ * This method will use up to `n` fibers.
+ */
+export const filterParN = (n: number) => <A, R, E>(f: (a: A) => Effect<R, E, boolean>) => (as: Iterable<A>) =>
+   filterParN_(n)(as, f);
+
+/**
+ * Filters the collection using the specified effectual predicate, removing
+ * all elements that satisfy the predicate.
+ */
+export const filterNot_ = <A, R, E>(as: Iterable<A>, f: (a: A) => Effect<R, E, boolean>) =>
+   filter_(
+      as,
+      flow(
+         f,
+         map((b) => !b)
+      )
+   );
+
+/**
+ * Filters the collection using the specified effectual predicate, removing
+ * all elements that satisfy the predicate.
+ */
+export const filterNot = <A, R, E>(f: (a: A) => Effect<R, E, boolean>) => (as: Iterable<A>) => filterNot_(as, f);
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filterNot` for a sequential version of it.
+ */
+export const filterNotPar_ = <A, R, E>(as: Iterable<A>, f: (a: A) => Effect<R, E, boolean>) =>
+   filterPar_(
+      as,
+      flow(
+         f,
+         map((b) => !b)
+      )
+   );
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filterNot` for a sequential version of it.
+ */
+export const filterNotPar = <A, R, E>(f: (a: A) => Effect<R, E, boolean>) => (as: Iterable<A>) => filterNotPar_(as, f);
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filterNot` for a sequential version of it.
+ */
+export const filterNotParN_ = (n: number) => <A, R, E>(as: Iterable<A>, f: (a: A) => Effect<R, E, boolean>) =>
+   filterParN_(n)(
+      as,
+      flow(
+         f,
+         map((b) => !b)
+      )
+   );
+
+/**
+ * Filters the collection in parallel using the specified effectual predicate.
+ * See `filterNot` for a sequential version of it.
+ */
+export const filterNotParN = (n: number) => <A, R, E>(f: (a: A) => Effect<R, E, boolean>) => (as: Iterable<A>) =>
+   filterNotParN_(n)(as, f);
 
 /**
  * Applies `or` if the predicate fails.

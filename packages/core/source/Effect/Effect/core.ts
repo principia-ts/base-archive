@@ -728,6 +728,9 @@ export const ifM = <R, E>(b: Effect<R, E, boolean>) => <R1, E1, A1>(onTrue: () =
 ): Effect<R & R1 & R2, E | E1 | E2, A1 | A2> =>
    chain_(b, (x) => (x ? (onTrue() as Effect<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
 
+/**
+ * Lifts an `Either` into an `Effect`
+ */
 export const fromEither = <E, A>(f: () => E.Either<E, A>) => chain_(total(f), E.fold(fail, pure));
 
 /**
