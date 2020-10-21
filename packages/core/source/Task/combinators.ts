@@ -1,6 +1,5 @@
 import type { FunctionN } from "../Function";
 import type { IO } from "../IO";
-import { fromIO } from "./constructors";
 import { chain } from "./methods";
 import type { Task } from "./model";
 
@@ -49,8 +48,8 @@ export const delay = (ms: number) => <A>(ma: Task<A>): Task<A> => delay_(ma, ms)
  * @category Combinators
  * @since 1.0.0
  */
-export const fromIOK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, IO<B>>): FunctionN<A, Task<B>> => (...a) =>
-   fromIO(f(...a));
+// export const fromIOK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, IO<B>>): FunctionN<A, Task<B>> => (...a) =>
+//    fromIO(f(...a));
 
 /**
  * ```haskell
@@ -61,4 +60,4 @@ export const fromIOK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, IO<
  * @category Combinators
  * @since 1.0.0
  */
-export const chainIOK = <A, B>(f: (a: A) => IO<B>): ((ma: Task<A>) => Task<B>) => chain(fromIOK(f));
+// export const chainIOK = <A, B>(f: (a: A) => IO<B>): ((ma: Task<A>) => Task<B>) => chain(fromIOK(f));

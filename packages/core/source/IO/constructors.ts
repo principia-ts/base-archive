@@ -1,3 +1,4 @@
+import * as F from "../XPure";
 import type { IO } from "./model";
 
 /*
@@ -16,4 +17,4 @@ import type { IO } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const of: IO<{}> = () => ({});
+export const of: IO<{}> = F.pure({});

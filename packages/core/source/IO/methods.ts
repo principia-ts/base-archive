@@ -1,4 +1,5 @@
 import { bind_, flow, identity, pipe } from "../Function";
+import * as F from "../XPure";
 import type { IO } from "./model";
 
 /*
@@ -17,14 +18,14 @@ import type { IO } from "./model";
  * @category Applicative
  * @since 1.0.0
  */
-export const pure = <A>(a: A): IO<A> => () => a;
+export const pure: <A>(a: A) => IO<A> = F.pure;
 
 /**
  * ```haskell
  * any :: () -> IO ()
  * ```
  */
-export const unit = (): IO<void> => () => undefined;
+export const unit: () => IO<void> = F.unit;
 
 /**
  * ```haskell
@@ -36,7 +37,7 @@ export const unit = (): IO<void> => () => undefined;
  * @category Functor
  * @since 1.0.0
  */
-export const map_ = <A, B>(fa: IO<A>, f: (a: A) => B): IO<B> => () => f(fa());
+export const map_: <A, B>(fa: IO<A>, f: (a: A) => B) => IO<B> = F.map_;
 
 /**
  * ```haskell
@@ -60,7 +61,7 @@ export const map = <A, B>(f: (a: A) => B) => (fa: IO<A>): IO<B> => map_(fa, f);
  * @category Apply
  * @since 1.0.0
  */
-export const ap_ = <A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> => () => fab()(fa());
+export const ap_ = <A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> => map_(F.both_(fab, fa), ([f, a]) => f(a));
 
 /**
  * ```haskell
@@ -142,7 +143,7 @@ export const apSecond = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<B> => apSecond_(fa,
  * @category Apply
  * @since 1.0.0
  */
-export const both_ = <A, B>(fa: IO<A>, fb: IO<B>): IO<readonly [A, B]> => () => [fa(), fb()];
+export const both_: <A, B>(fa: IO<A>, fb: IO<B>) => IO<readonly [A, B]> = F.both_;
 
 /**
  * ```haskell
@@ -166,7 +167,7 @@ export const both = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<readonly [A, B]> => bot
  * @category Apply
  * @since 1.0.0
  */
-export const mapBoth_ = <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C): IO<C> => () => f(fa(), fb());
+export const mapBoth_: <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C) => IO<C> = F.mapBoth_;
 
 /**
  * ```haskell
@@ -190,7 +191,8 @@ export const mapBoth = <A, B, C>(fb: IO<B>, f: (a: A, b: B) => C) => (fa: IO<A>)
  * @category Apply
  * @since 1.0.0
  */
-export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb: IO<B>): IO<C> => () => f(fa())(fb());
+export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb: IO<B>): IO<C> =>
+   map_(both_(fa, fb), ([a, b]) => f(a)(b));
 
 /**
  * ```haskell
@@ -224,7 +226,7 @@ export const apS = <N extends string, A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export const chain_ = <A, B>(ma: IO<A>, f: (a: A) => IO<B>): IO<B> => () => f(ma())();
+export const chain_: <A, B>(ma: IO<A>, f: (a: A) => IO<B>) => IO<B> = F.chain_;
 
 /**
  * ```haskell

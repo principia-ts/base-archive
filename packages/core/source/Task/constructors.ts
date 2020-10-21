@@ -1,4 +1,3 @@
-import type { IO } from "../IO";
 import type { Task } from "./model";
 
 /*
@@ -17,7 +16,7 @@ import type { Task } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const fromIO = <A>(ma: IO<A>): Task<A> => () => Promise.resolve(ma());
+// export const fromIO = <A>(ma: IO<A>): Task<A> => () => Promise.resolve(ma());
 
 /**
  * ```haskell

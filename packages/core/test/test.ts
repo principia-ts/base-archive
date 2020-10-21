@@ -1,15 +1,11 @@
 import { pipe } from "../source/Function";
-import * as Mb from "../source/Maybe";
+import * as EIO from "../source/IOEither";
+import { runEither } from "../source/XPure";
 
-const a = pipe(
-   [Mb.just(1), Mb.nothing(), Mb.just(3)] as const,
-   Mb.mapN(([a, b, c]) => {
-      console.log(a);
-      console.log(b);
-      console.log(c);
-      return a + b + c;
-   }),
-   Mb.toNullable
+pipe(
+   EIO.pure(5),
+   EIO.chain((n) => EIO.pure(n * n)),
+   EIO.chain((n) => (n > 24 ? EIO.fail(`number too high ${n}`) : EIO.pure(n))),
+   runEither,
+   (e) => console.log(e)
 );
-
-console.log(a);

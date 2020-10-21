@@ -200,4 +200,3 @@ export const getEq = <A>(E: Eq<A>): Eq<ReadonlyArray<A>> =>
    fromEquals((xs, ys) => xs === ys || (xs.length === ys.length && xs.every((x, i) => E.equals_(x, ys[i]))));
 
 export const getMonoid = <A = never>(): P.Monoid<ReadonlyArray<A>> => makeMonoid(append_, empty());
-
