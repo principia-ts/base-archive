@@ -22,7 +22,7 @@ import type { IO, URI, V } from "./model";
  * @since 1.0.0
  */
 export const getSemigroup = <A>(S: P.Semigroup<A>): P.Semigroup<IO<A>> =>
-   fromCombine((x, y) => map_(both_(x, y), ([x_, y_]) => S.combine_(x_, y_)));
+   fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
 
 /**
  * ```haskell
