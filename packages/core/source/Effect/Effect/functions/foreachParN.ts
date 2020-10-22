@@ -1,7 +1,13 @@
-import { pipe } from "../../../Function";
-import * as Sema from "../../Semaphore";
+import * as A from "../../../Array";
+import { pipe, tuple } from "../../../Function";
+import * as F from "../../Fiber";
+import * as XP from "../../XPromise";
+import * as Q from "../../XQueue";
 import * as T from "../core";
-import { foreachPar_ } from "./foreachPar";
+import { bracket } from "./bracket";
+import { collectAll } from "./collectAll";
+import { forever } from "./forever";
+
 /**
  * Applies the functionw `f` to each element of the `Iterable<A>` in parallel,
  * and returns the results in a new `readonly B[]`.
@@ -13,8 +19,61 @@ export const foreachParN_ = (n: number) => <A, R, E, B>(
    f: (a: A) => T.Effect<R, E, B>
 ): T.Effect<R, E, ReadonlyArray<B>> =>
    pipe(
-      Sema.makeSemaphore(n),
-      T.chain((s) => foreachPar_(as, (a) => Sema.withPermit(s)(f(a))))
+      Q.makeBounded<readonly [XP.XPromise<E, B>, A]>(n),
+      bracket(
+         (q) =>
+            pipe(
+               T.of,
+               T.bindS("pairs", () =>
+                  pipe(
+                     as,
+                     T.foreach((a) =>
+                        pipe(
+                           XP.make<E, B>(),
+                           T.map((p) => tuple(p, a))
+                        )
+                     )
+                  )
+               ),
+               T.tap(({ pairs }) => pipe(pairs, T.foreachUnit(q.offer), T.fork)),
+               T.bindS("fibers", ({ pairs }) =>
+                  pipe(
+                     A.makeBy(n, () =>
+                        pipe(
+                           q.take,
+                           T.chain(([p, a]) =>
+                              pipe(
+                                 f(a),
+                                 T.foldCauseM(
+                                    (c) =>
+                                       pipe(
+                                          pairs,
+                                          T.foreach(([promise, _]) => pipe(promise, XP.halt(c)))
+                                       ),
+                                    (b) => pipe(p, XP.succeed(b))
+                                 )
+                              )
+                           ),
+                           forever,
+                           T.fork
+                        )
+                     ),
+                     collectAll
+                  )
+               ),
+               T.bindS("res", ({ fibers, pairs }) =>
+                  pipe(
+                     pairs,
+                     T.foreach(([p]) => XP.await(p)),
+                     T.result,
+                     T.tap(() => pipe(fibers, T.foreach(F.interrupt))),
+                     T.chain(T.done)
+                  )
+               ),
+               T.map(({ res }) => res)
+            ),
+         (q) => q.shutdown
+      )
    );
 
 export const foreachParN = (n: number) => <R, E, A, B>(f: (a: A) => T.Effect<R, E, B>) => (

@@ -3,6 +3,8 @@ import { makeMonoid } from "@principia/prelude";
 
 import * as A from "../../Array";
 import * as E from "../../Either";
+import type { FreeSemigroup } from "../../FreeSemigroup";
+import * as FS from "../../FreeSemigroup";
 import type { Lazy } from "../../Function";
 import { bind_, bindTo_, flow, identity, pipe, tuple } from "../../Function";
 import * as I from "../../Iterable";
@@ -783,12 +785,15 @@ export const foreachUnit = <R, E, A>(f: (a: A) => Effect<R, E, any>) => (as: Ite
  * @since 1.0.0
  */
 export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Effect<R, E, B>): Effect<R, E, ReadonlyArray<B>> =>
-   I.reduce_(as, pure([]) as Effect<R, E, ReadonlyArray<B>>, (b, a) =>
-      mapBoth_(
-         b,
-         suspend(() => f(a)),
-         (acc, r) => [...acc, r]
-      )
+   map_(
+      I.reduce_(as, pure(FS.empty<B>()) as Effect<R, E, FreeSemigroup<B>>, (b, a) =>
+         mapBoth_(
+            b,
+            suspend(() => f(a)),
+            (acc, r) => FS.append_(acc, r)
+         )
+      ),
+      FS.toArray
    );
 
 /**
