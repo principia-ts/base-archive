@@ -683,7 +683,7 @@ export class Driver<E, A> implements RuntimeFiber<E, A> {
                      } else {
                         switch (current._tag) {
                            case EffectInstructionTag.Chain: {
-                              const nested: T.Instruction = current.ma[T._I];
+                              const nested: T.Instruction = current.effect[T._I];
                               const k: (a: any) => T.Effect<any, any, any> = current.f;
 
                               switch (nested._tag) {
@@ -720,6 +720,11 @@ export class Driver<E, A> implements RuntimeFiber<E, A> {
                               } else {
                                  current = this.nextInstruction(res.right);
                               }
+                              break;
+                           }
+
+                           case EffectInstructionTag.Integration: {
+                              current = current[T._I];
                               break;
                            }
 
@@ -773,14 +778,14 @@ export class Driver<E, A> implements RuntimeFiber<E, A> {
 
                            case EffectInstructionTag.Fold: {
                               this.pushContinuation(current);
-                              current = current.fa[T._I];
+                              current = current.effect[T._I];
                               break;
                            }
 
                            case EffectInstructionTag.InterruptStatus: {
                               this.pushInterruptStatus(current.flag.toBoolean);
                               this.pushContinuation(this.interruptExit);
-                              current = current.fa[T._I];
+                              current = current.effect[T._I];
                               break;
                            }
 
@@ -828,7 +833,7 @@ export class Driver<E, A> implements RuntimeFiber<E, A> {
                            }
 
                            case EffectInstructionTag.Fork: {
-                              current = this.nextInstruction(this.fork(current.fa[T._I], current.scope));
+                              current = this.nextInstruction(this.fork(current.effect[T._I], current.scope));
                               break;
                            }
 
@@ -854,7 +859,7 @@ export class Driver<E, A> implements RuntimeFiber<E, A> {
                                  T.total(() => {
                                     this.pushEnv(c.env);
                                  }),
-                                 () => c.fa,
+                                 () => c.effect,
                                  () =>
                                     T.total(() => {
                                        this.popEnv();
@@ -917,7 +922,7 @@ export class Driver<E, A> implements RuntimeFiber<E, A> {
                               });
                               current = T.bracket_(
                                  push,
-                                 () => c.fa,
+                                 () => c.effect,
                                  () => pop
                               )[T._I];
                               break;
@@ -944,7 +949,7 @@ export class Driver<E, A> implements RuntimeFiber<E, A> {
 
                               current = T.bracket_(
                                  push,
-                                 () => c.fa,
+                                 () => c.effect,
                                  () => pop
                               )[T._I];
 

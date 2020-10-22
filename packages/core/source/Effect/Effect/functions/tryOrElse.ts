@@ -9,7 +9,7 @@ export const tryOrElse_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
    that: () => Effect<R1, E1, A1>,
    onSuccess: (a: A) => Effect<R2, E2, A2>
 ): Effect<R & R1 & R2, E1 | E2, A1 | A2> =>
-   FoldInstruction(ma, (cause) => O.fold_(C.keepDefects(cause), that, halt), onSuccess);
+   new FoldInstruction(ma, (cause) => O.fold_(C.keepDefects(cause), that, halt), onSuccess);
 
 export const tryOrElse = <A, R1, E1, A1, R2, E2, A2>(
    that: () => Effect<R1, E1, A1>,

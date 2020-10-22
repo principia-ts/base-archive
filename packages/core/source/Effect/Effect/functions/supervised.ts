@@ -14,7 +14,7 @@ import { SuperviseInstruction } from "../model";
  * @since 1.0.0
  */
 export const supervised_ = <R, E, A>(fa: Effect<R, E, A>, supervisor: Supervisor<any>): Effect<R, E, A> =>
-   SuperviseInstruction(fa, supervisor);
+   new SuperviseInstruction(fa, supervisor);
 
 /**
  * ```haskell

@@ -1,11 +1,9 @@
+import * as T from "../source/Effect/Effect";
 import { pipe } from "../source/Function";
-import * as EIO from "../source/IOEither";
-import { runEither } from "../source/XPure";
 
 pipe(
-   EIO.pure(5),
-   EIO.chain((n) => EIO.pure(n * n)),
-   EIO.chain((n) => (n > 24 ? EIO.fail(`number too high ${n}`) : EIO.pure(n))),
-   runEither,
-   (e) => console.log(e)
+   T.ask<{ name: string }>(),
+   T.chain(({ name }) => T.total(() => console.log(`Hello, ${name}`))),
+   T.giveAll({ name: "Peter" }),
+   T.runMain
 );

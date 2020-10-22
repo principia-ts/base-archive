@@ -1,5 +1,3 @@
-import { ENGINE_METHOD_PKEY_ASN1_METHS, SIGUSR1 } from "constants";
-
 import * as E from "../Either";
 import { identity, tuple } from "../Function";
 import { fail, succeed } from "./constructors";
@@ -25,7 +23,7 @@ export const foldM_ = <S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
    fa: XPure<S1, S2, R, E, A>,
    onFailure: (e: E) => XPure<S5, S3, R1, E1, B>,
    onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
-): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> => FoldInstruction(fa, onFailure, onSuccess);
+): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> => new FoldInstruction(fa, onFailure, onSuccess);
 
 /**
  * ```haskell
@@ -49,7 +47,7 @@ export const foldM = <S1, S2, E, A, S3, R1, E1, B, S4, R2, E2, C>(
 export const chain_ = <S1, S2, R, E, A, S3, Q, D, B>(
    ma: XPure<S1, S2, R, E, A>,
    f: (a: A) => XPure<S2, S3, Q, D, B>
-): XPure<S1, S3, Q & R, D | E, B> => ChainInstruction(ma, f);
+): XPure<S1, S3, Q & R, D | E, B> => new ChainInstruction(ma, f);
 
 export const chain = <A, S2, S3, Q, D, B>(f: (a: A) => XPure<S2, S3, Q, D, B>) => <S1, R, E>(
    ma: XPure<S1, S2, R, E, A>
@@ -126,18 +124,15 @@ export const recover = <S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>): XPure<S1, 
 export const absolve = <S1, S2, R, E, E1, A>(fa: XPure<S1, S2, R, E, E.Either<E1, A>>): XPure<S1, S2, R, E | E1, A> =>
    chain_(fa, E.fold(fail, succeed));
 
-export const ask = <R>(): XPure<unknown, never, R, never, R> => ReadInstruction((r: R) => succeed(r));
+export const ask = <R>(): XPure<unknown, never, R, never, R> => new ReadInstruction((r: R) => succeed(r));
 
-export const asksM: <R0, S1, S2, R, E, A>(
-   f: (r: R0) => XPure<S1, S2, R, E, A>
-) => XPure<S1, S2, R & R0, E, A> = ReadInstruction;
+export const asksM = <R0, S1, S2, R, E, A>(f: (r: R0) => XPure<S1, S2, R, E, A>): XPure<S1, S2, R & R0, E, A> =>
+   new ReadInstruction(f);
 
 export const asks = <R0, A>(f: (r: R0) => A) => asksM((r: R0) => succeed(f(r)));
 
-export const giveAll_: <S1, S2, R, E, A>(
-   fa: XPure<S1, S2, R, E, A>,
-   r: R
-) => XPure<S1, S2, unknown, E, A> = GiveInstruction;
+export const giveAll_ = <S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>, r: R): XPure<S1, S2, unknown, E, A> =>
+   new GiveInstruction(fa, r);
 
 export const giveAll = <R>(r: R) => <S1, S2, E, A>(fa: XPure<S1, S2, R, E, A>) => giveAll_(fa, r);
 

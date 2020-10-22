@@ -1,22 +1,22 @@
 import type * as TC from "@principia/prelude";
 
 import { bind_, bindTo_, flow, identity } from "../Function";
-import type { InferA, Task, URI, V } from "./model";
+import type { InferA, LazyPromise, URI, V } from "./model";
 
 /*
  * -------------------------------------------
- * Task Methods
+ * LazyPromise Methods
  * -------------------------------------------
  */
 
-export const unit = (): Task<void> => () => Promise.resolve();
+export const unit = (): LazyPromise<void> => () => Promise.resolve();
 
 /**
  * ```haskell
- * pure :: a -> Task a
+ * pure :: a -> LazyPromise a
  * ```
  *
- * Lifts a pure value into a `Task`
+ * Lifts a pure value into a `LazyPromise`
  *
  * @category Applicative
  * @since 1.0.0
@@ -25,7 +25,7 @@ export const pure: TC.PureFn<[URI], V> = (a) => () => Promise.resolve(a);
 
 /**
  * ```haskell
- * any :: () -> Task Any
+ * any :: () -> LazyPromise Any
  * ```
  */
 export const any: TC.UnitFn<[URI], V> = () => () => Promise.resolve({} as any);
@@ -116,7 +116,7 @@ export const apFirst: TC.ApFirstFn<[URI], V> = (fb) => (fa) => apFirst_(fa, fb);
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond_: TC.ApSecondFn_<[URI], V> = <A, B>(fa: Task<A>, fb: Task<B>): Task<B> =>
+export const apSecond_: TC.ApSecondFn_<[URI], V> = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<B> =>
    ap_(
       map_(fa, () => (b: B) => b),
       fb
@@ -155,7 +155,7 @@ export const liftA2: TC.LiftA2Fn<[URI], V> = (f) => (fa) => (fb) =>
  * mapBoth_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
- * Applies both `Task`s and maps their results with function `f`
+ * Applies both `LazyPromise`s and maps their results with function `f`
  *
  * @category Apply
  * @since 1.0.0
@@ -168,7 +168,7 @@ export const mapBoth_: TC.MapBothFn_<[URI], V> = (fa, fb, f) => () =>
  * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
- * Applies both `Task`s and maps their results with function `f`
+ * Applies both `LazyPromise`s and maps their results with function `f`
  *
  * @category Apply
  * @since 1.0.0
@@ -180,7 +180,7 @@ export const mapBoth: TC.MapBothFn<[URI], V> = (fb, f) => (fa) => mapBoth_(fa, f
  * both_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
- * Applies both `Task`s and collects their results into a tuple
+ * Applies both `LazyPromise`s and collects their results into a tuple
  *
  * @category Apply
  * @since 1.0.0
@@ -192,7 +192,7 @@ export const both_: TC.BothFn_<[URI], V> = (fa, fb) => mapBoth_(fa, fb, (a, b) =
  * both :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
- * Applies both `Task`s and collects their results into a tuple
+ * Applies both `LazyPromise`s and collects their results into a tuple
  *
  * @category Apply
  * @since 1.0.0
@@ -267,7 +267,7 @@ export const tap: TC.TapFn<[URI], V> = (f) => (ma) => tap_(ma, f);
  * flatten :: Monad m => m m a -> m a
  * ```
  *
- * Removes one level of nesting from a nested `Task`
+ * Removes one level of nesting from a nested `LazyPromise`
  *
  * @category Monad
  * @since 1.0.0
@@ -336,7 +336,7 @@ export const apFirstSeq: TC.ApFirstFn<[URI], V> = (fb) => (fa) => apFirstSeq_(fa
  * @category Apply
  * @since 1.0.0
  */
-export const apSecondSeq_: TC.ApSecondFn_<[URI], V> = <A, B>(fa: Task<A>, fb: Task<B>): Task<B> =>
+export const apSecondSeq_: TC.ApSecondFn_<[URI], V> = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<B> =>
    apSeq_(
       map_(fa, () => (b: B) => b),
       fb
@@ -359,7 +359,7 @@ export const apSecondSeq: TC.ApSecondFn<[URI], V> = (fb) => (fa) => apSecondSeq_
  * mapBothSeq_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
- * Sequentially applies both `Task`s and maps their results with function `f`. For a parallel version, see `mapBoth_`
+ * Sequentially applies both `LazyPromise`s and maps their results with function `f`. For a parallel version, see `mapBoth_`
  *
  * @category Apply
  * @since 1.0.0
@@ -371,7 +371,7 @@ export const mapBothSeq_: TC.MapBothFn_<[URI], V> = (fa, fb, f) => chain_(fa, (a
  * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
- * Sequentially applies both `Task`s and maps their results with function `f`. For a parallel version, see `mapBoth`
+ * Sequentially applies both `LazyPromise`s and maps their results with function `f`. For a parallel version, see `mapBoth`
  *
  * @category Apply
  * @since 1.0.0
@@ -383,7 +383,7 @@ export const mapBothSeq: TC.MapBothFn<[URI], V> = (fb, f) => (fa) => mapBothSeq_
  * bothSeq_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
- * Sequentially applies both `Task`s and collects their results into a tuple. For a parallel version, see `both_`
+ * Sequentially applies both `LazyPromise`s and collects their results into a tuple. For a parallel version, see `both_`
  *
  * @category Apply
  * @since 1.0.0
@@ -395,7 +395,7 @@ export const bothSeq_: TC.BothFn_<[URI], V> = (fa, fb) => mapBothSeq_(fa, fb, (a
  * bothSeq :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
- * Sequentially applies both `Task`s and collects their results into a tuple. For a parallel version, see `both`
+ * Sequentially applies both `LazyPromise`s and collects their results into a tuple. For a parallel version, see `both`
  *
  * @category Apply
  * @since 1.0.0
@@ -407,7 +407,7 @@ export const bothSeq: TC.BothFn<[URI], V> = (fb) => (fa) => bothSeq_(fa, fb);
  * lift2Seq :: Apply f => (a -> b -> c) -> f a -> f b -> f c
  * ```
  *
- * Lifts a binary function to actions. `Task`s will be evaluated sequentially. For a parallel version, see `lift2`
+ * Lifts a binary function to actions. `LazyPromise`s will be evaluated sequentially. For a parallel version, see `lift2`
  *
  * @category Apply
  * @since 1.0.0
@@ -419,7 +419,7 @@ export const lift2Seq: TC.LiftA2Fn<[URI], V> = (f) => (fa) => (fb) => chain_(fa,
  * mapN :: Apply f => ([a, b, ...] -> c) -> [f a, f b, ...] -> f c
  * ```
  *
- * Combines a tuple of `Task`s and maps with provided function `f`
+ * Combines a tuple of `LazyPromise`s and maps with provided function `f`
  *
  * @category Apply
  * @since 1.0.0

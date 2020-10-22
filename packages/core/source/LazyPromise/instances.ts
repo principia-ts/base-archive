@@ -22,45 +22,45 @@ import {
    pure,
    unit
 } from "./methods";
-import type { Task, URI, V } from "./model";
+import type { LazyPromise, URI, V } from "./model";
 
 /*
  * -------------------------------------------
- * Task Typeclass Instances
+ * LazyPromise Typeclass Instances
  * -------------------------------------------
  */
 
 /**
  * ```haskell
- * getSemigroup :: Semigroup s => s a -> s (Task a)
+ * getSemigroup :: Semigroup s => s a -> s (LazyPromise a)
  * ```
  *
- * Lift a `Semigroup` into 'Task', the inner values are concatenated using the provided `Semigroup`.
+ * Lift a `Semigroup` into 'LazyPromise', the inner values are concatenated using the provided `Semigroup`.
  *
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <A>(S: P.Semigroup<A>): P.Semigroup<Task<A>> =>
+export const getSemigroup = <A>(S: P.Semigroup<A>): P.Semigroup<LazyPromise<A>> =>
    fromCombine((x, y) => () => x().then((rx) => y().then((ry) => S.combine_(rx, ry))));
 
 /**
  * ```haskell
- * getMonoid :: Monoid m => m a -> m (Task a)
+ * getMonoid :: Monoid m => m a -> m (LazyPromise a)
  * ```
  *
- * Lift a `Monoid` into `Task`, the inner values are concatenated using the provided `Monoid`.
+ * Lift a `Monoid` into `LazyPromise`, the inner values are concatenated using the provided `Monoid`.
  *
  * @category Instances
  * @since 1.0.0
  */
-export const getMonoid = <A>(M: P.Monoid<A>): P.Monoid<Task<A>> => ({
+export const getMonoid = <A>(M: P.Monoid<A>): P.Monoid<LazyPromise<A>> => ({
    ...getSemigroup(M),
    nat: pure(M.nat)
 });
 
 /**
  * ```haskell
- * getRaceMonoid :: <a>() -> Monoid (Task a)
+ * getRaceMonoid :: <a>() -> Monoid (LazyPromise a)
  * ```
  *
  * Monoid returning the first completed task.
@@ -70,8 +70,8 @@ export const getMonoid = <A>(M: P.Monoid<A>): P.Monoid<Task<A>> => ({
  * @category Instances
  * @since 1.0.0
  */
-export const getRaceMonoid = <A = never>(): P.Monoid<Task<A>> =>
-   makeMonoid<Task<A>>((x, y) => () => Promise.race([x(), y()]), never);
+export const getRaceMonoid = <A = never>(): P.Monoid<LazyPromise<A>> =>
+   makeMonoid<LazyPromise<A>>((x, y) => () => Promise.race([x(), y()]), never);
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
    map_: map_,

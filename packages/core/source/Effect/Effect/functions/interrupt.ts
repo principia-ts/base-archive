@@ -30,7 +30,7 @@ export const interruptAs = (fiberId: FiberId): IO<never, never> => halt(C.interr
 export const interrupt: Effect<unknown, never, never> = chain_(checkFiberId(), interruptAs);
 
 export const setInterruptStatus_ = <R, E, A>(effect: Effect<R, E, A>, flag: InterruptStatus): Effect<R, E, A> =>
-   InterruptStatusInstruction(effect, flag);
+   new InterruptStatusInstruction(effect, flag);
 
 export const setInterruptStatus = (flag: InterruptStatus) => <R, E, A>(ma: Effect<R, E, A>): Effect<R, E, A> =>
    setInterruptStatus_(ma, flag);

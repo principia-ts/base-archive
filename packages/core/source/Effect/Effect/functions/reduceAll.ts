@@ -1,6 +1,5 @@
-import { NoSuchElementException } from "packages/core/source/GlobalExceptions";
-
 import * as A from "../../../Array";
+import { NoSuchElementException } from "../../../GlobalExceptions";
 import * as NA from "../../../NonEmptyArray";
 import * as O from "../../../Option";
 import { map_, mapBoth_ } from "../core";

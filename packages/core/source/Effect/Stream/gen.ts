@@ -10,38 +10,29 @@ import { fromEffect, suspend } from "./constructors";
 import { chain_, pure } from "./methods";
 import { Stream } from "./Stream";
 
-export interface GenStream<R, E, A> {
-   readonly _R: (_R: R) => void;
-   readonly _E: () => E;
-   readonly _A: () => A;
-   readonly S: Stream<R, E, A>;
-   [Symbol.iterator](): Generator<GenStream<R, E, A>, A, any>;
+export class GenStream<R, E, A> {
+   readonly _R!: (_R: R) => void;
+   readonly _E!: () => E;
+   readonly _A!: () => A;
+   constructor(readonly S: Stream<R, E, A>) {}
+   *[Symbol.iterator](): Generator<GenStream<R, E, A>, A, any> {
+      return yield this;
+   }
 }
-
-export const GenStream = <R, E, A>(S: Stream<R, E, A>): GenStream<R, E, A> => {
-   const get: GenStream<R, E, A> = {
-      _R: () => undefined as any,
-      _E: () => undefined as any,
-      _A: () => undefined as any,
-      S,
-      *[Symbol.iterator]() {
-         return yield get;
-      }
-   };
-   return get;
-};
 
 const adapter = (_: any, __?: any) => {
    if (isOption(_)) {
-      return GenStream(_._tag === "None" ? fail(__ ? __() : new NoSuchElementException("Stream.gen")) : pure(_.value));
+      return new GenStream(
+         _._tag === "None" ? fail(__ ? __() : new NoSuchElementException("Stream.gen")) : pure(_.value)
+      );
    } else if (isEither(_)) {
-      return GenStream(fromEffect(fromEither(() => _)));
+      return new GenStream(fromEffect(fromEither(() => _)));
    } else if (_ instanceof Stream) {
-      return GenStream(_);
+      return new GenStream(_);
    } else if (isTag(_)) {
-      return GenStream(fromEffect(askService(_)));
+      return new GenStream(fromEffect(askService(_)));
    }
-   return GenStream(fromEffect(_));
+   return new GenStream(fromEffect(_));
 };
 
 export const gen = <T extends GenStream<any, any, any>, A>(

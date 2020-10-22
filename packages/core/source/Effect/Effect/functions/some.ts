@@ -1,6 +1,5 @@
-import { NoSuchElementException } from "packages/core/source/GlobalExceptions";
-
 import { constant, flow, pipe } from "../../../Function";
+import { NoSuchElementException } from "../../../GlobalExceptions";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import { chain_, fail, foldM, map, pure, total } from "../core";

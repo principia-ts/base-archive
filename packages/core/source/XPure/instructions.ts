@@ -1,5 +1,4 @@
-import { makeInstruction } from "../Effect/Effect/model";
-import type { XPure } from "./XPure";
+import { XPure } from "./XPure";
 
 export enum XPureInstructionTag {
    Pure = "Pure",
@@ -14,147 +13,84 @@ export enum XPureInstructionTag {
    Give = "Give"
 }
 
-export interface PureInstruction<A> extends XPure<unknown, never, unknown, never, A> {
-   readonly _xptag: XPureInstructionTag.Pure;
-   readonly value: A;
+export class PureInstruction<A> extends XPure<unknown, never, unknown, never, A> {
+   readonly _xptag = XPureInstructionTag.Pure;
+   constructor(readonly value: A) {
+      super();
+   }
 }
 
-export const PureInstruction = <A>(value: A): PureInstruction<A> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Pure,
-      value
-   });
-
-export interface TotalInstruction<A> extends XPure<unknown, never, unknown, never, A> {
-   readonly _xptag: XPureInstructionTag.Total;
-   readonly thunk: () => A;
+export class TotalInstruction<A> extends XPure<unknown, never, unknown, never, A> {
+   readonly _xptag = XPureInstructionTag.Total;
+   constructor(readonly thunk: () => A) {
+      super();
+   }
 }
 
-export const TotalInstruction = <A>(thunk: () => A): TotalInstruction<A> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Total,
-      thunk
-   });
-
-export interface PartialInstruction<E, A> extends XPure<unknown, never, unknown, E, A> {
-   readonly _xptag: XPureInstructionTag.Partial;
-   readonly thunk: () => A;
-   readonly onThrow: (u: unknown) => E;
+export class PartialInstruction<E, A> extends XPure<unknown, never, unknown, E, A> {
+   readonly _xptag = XPureInstructionTag.Partial;
+   constructor(readonly thunk: () => A, readonly onThrow: (u: unknown) => E) {
+      super();
+   }
 }
 
-export const PartialInstruction = <E, A>(thunk: () => A, onThrow: (u: unknown) => E): PartialInstruction<E, A> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Partial,
-      thunk,
-      onThrow
-   });
-
-export interface SuspendInstruction<S1, S2, R, E, A> extends XPure<S1, S2, R, E, A> {
-   readonly _xptag: XPureInstructionTag.Suspend;
-   readonly factory: () => XPure<S1, S2, R, E, A>;
+export class SuspendInstruction<S1, S2, R, E, A> extends XPure<S1, S2, R, E, A> {
+   readonly _xptag = XPureInstructionTag.Suspend;
+   constructor(readonly factory: () => XPure<S1, S2, R, E, A>) {
+      super();
+   }
 }
 
-export const SuspendInstruction = <S1, S2, R, E, A>(
-   factory: () => XPure<S1, S2, R, E, A>
-): SuspendInstruction<S1, S2, R, E, A> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Suspend,
-      factory
-   });
-
-export interface FailInstruction<E> extends XPure<unknown, never, unknown, E, never> {
-   readonly _xptag: XPureInstructionTag.Fail;
-   readonly e: E;
+export class FailInstruction<E> extends XPure<unknown, never, unknown, E, never> {
+   readonly _xptag = XPureInstructionTag.Fail;
+   constructor(readonly e: E) {
+      super();
+   }
 }
 
-export const FailInstruction = <E>(e: E): FailInstruction<E> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Fail,
-      e
-   });
-
-export interface ModifyInstruction<S1, S2, A> extends XPure<S1, S2, unknown, never, A> {
-   readonly _xptag: XPureInstructionTag.Modify;
-   readonly run: (s1: S1) => readonly [S2, A];
+export class ModifyInstruction<S1, S2, A> extends XPure<S1, S2, unknown, never, A> {
+   readonly _xptag = XPureInstructionTag.Modify;
+   constructor(readonly run: (s1: S1) => readonly [S2, A]) {
+      super();
+   }
 }
 
-export const ModifyInstruction = <S1, S2, A>(run: (s1: S1) => readonly [S2, A]): ModifyInstruction<S1, S2, A> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Modify,
-      run
-   });
-
-export interface ChainInstruction<S1, S2, R, E, A, S3, Q, D, B> extends XPure<S1, S3, Q & R, D | E, B> {
-   readonly _xptag: XPureInstructionTag.Chain;
-   readonly ma: XPure<S1, S2, R, E, A>;
-   readonly f: (a: A) => XPure<S2, S3, Q, D, B>;
+export class ChainInstruction<S1, S2, R, E, A, S3, Q, D, B> extends XPure<S1, S3, Q & R, D | E, B> {
+   readonly _xptag = XPureInstructionTag.Chain;
+   constructor(readonly ma: XPure<S1, S2, R, E, A>, readonly f: (a: A) => XPure<S2, S3, Q, D, B>) {
+      super();
+   }
+}
+export class FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C> extends XPure<
+   S1 & S5,
+   S3 | S4,
+   R & R1 & R2,
+   E1 | E2,
+   B | C
+> {
+   readonly _xptag = XPureInstructionTag.Fold;
+   constructor(
+      readonly fa: XPure<S1, S2, R, E, A>,
+      readonly onFailure: (e: E) => XPure<S5, S3, R1, E1, B>,
+      readonly onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
+   ) {
+      super();
+   }
 }
 
-export const ChainInstruction = <S1, S2, R, E, A, S3, Q, D, B>(
-   ma: XPure<S1, S2, R, E, A>,
-   f: (a: A) => XPure<S2, S3, Q, D, B>
-): ChainInstruction<S1, S2, R, E, A, S3, Q, D, B> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Chain,
-      ma,
-      f
-   });
-
-export interface FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C>
-   extends XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-   readonly _xptag: XPureInstructionTag.Fold;
-   readonly fa: XPure<S1, S2, R, E, A>;
-   readonly onFailure: (e: E) => XPure<S5, S3, R1, E1, B>;
-   readonly onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>;
+export class ReadInstruction<R0, S1, S2, R, E, A> extends XPure<S1, S2, R0 & R, E, A> {
+   readonly _xptag = XPureInstructionTag.Read;
+   constructor(readonly f: (r: R0) => XPure<S1, S2, R, E, A>) {
+      super();
+   }
 }
 
-export const FoldInstruction = <S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
-   fa: XPure<S1, S2, R, E, A>,
-   onFailure: (e: E) => XPure<S5, S3, R1, E1, B>,
-   onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
-): FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Fold,
-      fa,
-      onFailure,
-      onSuccess
-   });
-
-export interface ReadInstruction<R0, S1, S2, R, E, A> extends XPure<S1, S2, R0 & R, E, A> {
-   readonly _xptag: XPureInstructionTag.Read;
-   readonly f: (r: R0) => XPure<S1, S2, R, E, A>;
+export class GiveInstruction<S1, S2, R, E, A> extends XPure<S1, S2, unknown, E, A> {
+   readonly _xptag = XPureInstructionTag.Give;
+   constructor(readonly fa: XPure<S1, S2, R, E, A>, readonly r: R) {
+      super();
+   }
 }
-
-export const ReadInstruction = <R0, S1, S2, R, E, A>(
-   f: (r: R0) => XPure<S1, S2, R, E, A>
-): ReadInstruction<R0, S1, S2, R, E, A> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Read,
-      f
-   });
-
-export interface GiveInstruction<S1, S2, R, E, A> extends XPure<S1, S2, unknown, E, A> {
-   readonly _xptag: XPureInstructionTag.Give;
-   readonly fa: XPure<S1, S2, R, E, A>;
-   readonly r: R;
-}
-
-export const GiveInstruction = <S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>, r: R): GiveInstruction<S1, S2, R, E, A> =>
-   makeInstruction({
-      _tag: "XPure",
-      _xptag: XPureInstructionTag.Give,
-      fa,
-      r
-   });
 
 export type Concrete<S1, S2, R, E, A> =
    | PureInstruction<A>

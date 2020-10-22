@@ -14,40 +14,29 @@ import { bracketExit_ } from "./bracket";
 import { getOrFail } from "./getOrFail";
 import { askService } from "./service";
 
-export interface GenEffect<R, E, A> {
-   readonly _R: (_R: R) => void;
-   readonly _E: () => E;
-   readonly _A: () => A;
+export class GenEffect<R, E, A> {
+   readonly _R!: (_R: R) => void;
+   readonly _E!: () => E;
+   readonly _A!: () => A;
 
-   readonly ma: Effect<R, E, A> | Managed<R, E, A>;
+   constructor(readonly ma: Effect<R, E, A> | Managed<R, E, A>) {}
 
-   [Symbol.iterator](): Generator<GenEffect<R, E, A>, A, any>;
+   *[Symbol.iterator](): Generator<GenEffect<R, E, A>, A, any> {
+      return yield this;
+   }
 }
-
-export const GenEffect = <R, E, A>(effect: Effect<R, E, A> | Managed<R, E, A>): GenEffect<R, E, A> => {
-   const get: GenEffect<R, E, A> = {
-      _R: () => undefined as any,
-      _E: () => undefined as any,
-      _A: () => undefined as any,
-      ma: effect,
-      *[Symbol.iterator]() {
-         return yield get;
-      }
-   };
-   return get;
-};
 
 const adapter = (_: any, __?: any) => {
    if (isEither(_)) {
-      return GenEffect(fromEither(() => _));
+      return new GenEffect(fromEither(() => _));
    }
    if (isOption(_)) {
-      return GenEffect(__ ? (_._tag === "None" ? fail(__()) : pure(_.value)) : getOrFail(_));
+      return new GenEffect(__ ? (_._tag === "None" ? fail(__()) : pure(_.value)) : getOrFail(_));
    }
    if (isTag(_)) {
-      return GenEffect(askService(_));
+      return new GenEffect(askService(_));
    }
-   return GenEffect(_);
+   return new GenEffect(_);
 };
 
 export const gen = <T extends GenEffect<any, any, any>, A>(
