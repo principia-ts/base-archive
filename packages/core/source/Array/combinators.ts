@@ -62,7 +62,7 @@ export const scanr = <A, B>(b: B, f: (a: A, b: B) => B) => (as: ReadonlyArray<A>
    return r;
 };
 
-export const cons = <A>(head: A) => (tail: ReadonlyArray<A>): NonEmptyArray<A> => {
+export const cons_ = <A>(head: A, tail: ReadonlyArray<A>): NonEmptyArray<A> => {
    const len = tail.length;
    const r = Array(len + 1);
    for (let i = 0; i < len; i++) {
@@ -72,7 +72,9 @@ export const cons = <A>(head: A) => (tail: ReadonlyArray<A>): NonEmptyArray<A> =
    return (r as unknown) as NonEmptyArray<A>;
 };
 
-export const snoc = <A>(end: A) => (init: ReadonlyArray<A>): NonEmptyArray<A> => {
+export const cons = <A>(tail: ReadonlyArray<A>) => (head: A): NonEmptyArray<A> => cons_(head, tail);
+
+export const snoc_ = <A>(end: A, init: ReadonlyArray<A>): NonEmptyArray<A> => {
    const len = init.length;
    const r = Array(len + 1);
    for (let i = 0; i < len; i++) {
@@ -81,6 +83,8 @@ export const snoc = <A>(end: A) => (init: ReadonlyArray<A>): NonEmptyArray<A> =>
    r[len] = end;
    return (r as unknown) as NonEmptyArray<A>;
 };
+
+export const snoc = <A>(init: ReadonlyArray<A>) => (end: A): NonEmptyArray<A> => snoc_(end, init);
 
 export const head = <A>(as: ReadonlyArray<A>): Option<A> => (isEmpty(as) ? none() : some(as[0]));
 
@@ -250,14 +254,38 @@ export const unsafeDeleteAt = <A>(i: number, as: ReadonlyArray<A>): ReadonlyArra
    return xs;
 };
 
-export const insertAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Option<ReadonlyArray<A>> =>
+export const insertAt_ = <A>(as: ReadonlyArray<A>, i: number, a: A): Option<ReadonlyArray<A>> =>
    isOutOfBound_(i, as) ? none() : some(unsafeInsertAt(i, a, as));
 
-export const updateAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Option<ReadonlyArray<A>> =>
+export const insertAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Option<ReadonlyArray<A>> => insertAt_(as, i, a);
+
+export const updateAt_ = <A>(as: ReadonlyArray<A>, i: number, a: A): Option<ReadonlyArray<A>> =>
    isOutOfBound_(i, as) ? none() : some(unsafeUpdateAt(i, a, as));
 
-export const deleteAt = (i: number) => <A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> =>
+export const updateAt = <A>(i: number, a: A) => (as: ReadonlyArray<A>): Option<ReadonlyArray<A>> => updateAt_(as, i, a);
+
+export const deleteAt_ = <A>(as: ReadonlyArray<A>, i: number): Option<ReadonlyArray<A>> =>
    isOutOfBound_(i, as) ? none() : some(unsafeDeleteAt(i, as));
+
+export const deleteAt = (i: number) => <A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> => deleteAt_(as, i);
+
+/**
+ * Apply a function to the element at the specified index, creating a new array, or returning `None` if the index is out
+ * of bounds
+ *
+ * @since 1.0.0
+ */
+export const modifyAt_ = <A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): Option<ReadonlyArray<A>> =>
+   isOutOfBound_(i, as) ? none() : some(unsafeUpdateAt(i, f(as[i]), as));
+
+/**
+ * Apply a function to the element at the specified index, creating a new array, or returning `None` if the index is out
+ * of bounds
+ *
+ * @since 1.0.0
+ */
+export const modifyAt = <A>(i: number, f: (a: A) => A) => (as: ReadonlyArray<A>): Option<ReadonlyArray<A>> =>
+   modifyAt_(as, i, f);
 
 export const reverse = <A>(as: ReadonlyArray<A>): ReadonlyArray<A> => (isEmpty(as) ? as : as.slice().reverse());
 
@@ -355,7 +383,7 @@ export const comprehension: {
       if (input.length === 0) {
          return g(...scope) ? [f(...scope)] : empty();
       } else {
-         return chain_(input[0], (x) => go(snoc(x)(scope), input.slice(1)));
+         return chain_(input[0], (x) => go(snoc_(scope, x), input.slice(1)));
       }
    };
    return go(empty(), input);

@@ -17,7 +17,7 @@ const _hasOwnProperty = Object.prototype.hasOwnProperty;
 
 /**
  * ```haskell
- * mapWithIndex_ :: (FunctorWithIndex f, Index k) => (f k a, ((k, a) -> b)) -> f k b
+ * mapWithIndex_ :: (FunctorWithIndex f, Index k) => (f a, ((k, a) -> b)) -> f b
  * ```
  *
  * Map a record passing the keys to the iterating function
@@ -40,7 +40,7 @@ export const mapWithIndex_ = <N extends string, A, B>(
 
 /**
  * ```haskell
- * mapWithIndex_ :: (FunctorWithIndex f, Index k) => ((k, a) -> b) -> f k a -> f k b
+ * mapWithIndex_ :: (FunctorWithIndex f, Index k) => ((k, a) -> b) -> f a -> f b
  * ```
  *
  * Map a record passing the keys to the iterating function
@@ -80,7 +80,7 @@ export const map = <A, B>(f: (a: A) => B) => <N extends string>(fa: ReadonlyReco
 
 /**
  * ```haskell
- * reduceWithIndex_ :: (FoldableWithIndex t, Index k) => (t k a, b, ((k, b, a) -> b)) -> b
+ * reduceWithIndex_ :: (FoldableWithIndex t, Index k) => (t a, b, ((k, b, a) -> b)) -> b
  * ```
  */
 export const reduceWithIndex_ = <N extends string, A, B>(
@@ -101,7 +101,7 @@ export const reduceWithIndex_ = <N extends string, A, B>(
 /**
  * ```haskell
  * reduceWithIndex :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, b, a) -> b)) -> t k a -> b
+ *    (b, ((k, b, a) -> b)) -> t a -> b
  * ```
  */
 export const reduceWithIndex = <N extends string, A, B>(b: B, f: (k: N, b: B, a: A) => B) => (
@@ -127,7 +127,7 @@ export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => <N extends string>(f
 /**
  * ```haskell
  * reduceRightWithIndex_ :: (FoldableWithIndex t, Index k) =>
- *    (t k a, b, ((k, a, b) -> b)) -> b
+ *    (t a, b, ((k, a, b) -> b)) -> b
  * ```
  */
 export const reduceRightWithIndex_ = <N extends string, A, B>(
@@ -148,7 +148,7 @@ export const reduceRightWithIndex_ = <N extends string, A, B>(
 /**
  * ```haskell
  * reduceRightWithIndex :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, a, b) -> b)) -> t k a -> b
+ *    (b, ((k, a, b) -> b)) -> t a -> b
  * ```
  */
 export const reduceRightWithIndex = <N extends string, A, B>(b: B, f: (k: N, a: A, b: B) => B) => (
@@ -174,7 +174,7 @@ export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => <N extends stri
 /**
  * ```haskell
  * traverseWithIndex_ :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g -> (t k a, ((k, a) -> g b)) -> g (t k b)
+ *    g -> (t a, ((k, a) -> g b)) -> g (t b)
  * ```
  */
 export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implementTraverseWithIndex_<[URI], V>()(
@@ -204,7 +204,7 @@ export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implemen
 /**
  * ```haskell
  * traverseWithIndex :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g -> ((k, a) -> g b) -> t k a -> g (t k b)
+ *    g -> ((k, a) -> g b) -> t a -> g (t b)
  * ```
  */
 export const traverseWithIndex: TC.TraverseWithIndexFn<[URI], V> = (G) => (f) => (ta) => traverseWithIndex_(G)(ta, f);
@@ -235,7 +235,7 @@ export const sequence: TC.SequenceFn<[URI], V> = (G) => (ta) => traverseWithInde
 /**
  * ```haskell
  * filterWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Boolean)) -> f k a
+ *    (f a, ((k, a) -> Boolean)) -> f a
  * ```
  */
 export const filterWithIndex_: {
@@ -263,7 +263,7 @@ export const filterWithIndex_: {
 /**
  * ```haskell
  * filterWithIndex :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Boolean) -> f k a -> f k a
+ *    ((k, a) -> Boolean) -> f a -> f a
  * ```
  */
 export const filterWithIndex: {
@@ -301,7 +301,7 @@ export const filter: {
 /**
  * ```haskell
  * mapMaybeWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Maybe b)) -> f k b
+ *    (f a, ((k, a) -> Maybe b)) -> f b
  * ```
  */
 export const mapOptionWithIndex_ = <N extends string, A, B>(
@@ -323,7 +323,7 @@ export const mapOptionWithIndex_ = <N extends string, A, B>(
 /**
  * ```haskell
  * mapMaybeWithIndex :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Maybe b) -> f k a -> f k b
+ *    ((k, a) -> Maybe b) -> f a -> f b
  * ```
  */
 export const mapOptionWithIndex = <N extends string, A, B>(f: (k: N, a: A) => Option<B>) => (
@@ -376,7 +376,7 @@ export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => <N extends st
 /**
  * ```haskell
  * partitionWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Boolean)) -> Separated (f k a) (f k a)
+ *    (f a, ((k, a) -> Boolean)) -> Separated (f a) (f a)
  * ```
  */
 export const partitionWithIndex_: {
@@ -410,7 +410,7 @@ export const partitionWithIndex_: {
 /**
  * ```haskell
  * partitionWithIndex :: (FilterableWithIndex f, Index k) =>
- *    (k, a) -> Boolean) -> f k a -> Separated (f k a) (f k a)
+ *    (k, a) -> Boolean) -> f a -> Separated (f a) (f a)
  * ```
  */
 export const partitionWithIndex: {
@@ -456,7 +456,7 @@ export const partition: {
 /**
  * ```haskell
  * mapEitherWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Either b c)) -> Separated (f k b) (f k c)
+ *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
 export const mapEitherWithIndex_ = <N extends string, A, B, C>(
@@ -487,7 +487,7 @@ export const mapEitherWithIndex_ = <N extends string, A, B, C>(
 /**
  * ```haskell
  * mapEitherWithIndex :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Either b c) -> f k a -> Separated (f k b) (f k c)
+ *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
 export const mapEitherWithIndex = <N extends string, A, B, C>(f: (k: N, a: A) => Either<B, C>) => (

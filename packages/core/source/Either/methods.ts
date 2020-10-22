@@ -162,7 +162,7 @@ export const ap = <E, A>(fa: Either<E, A>) => <G, B>(fab: Either<G, (a: A) => B>
  *
  * Combine two effectful actions, keeping only the result of the first
  *
- * @category Uncurried Apply
+ * @category Apply
  * @since 1.0.0
  */
 export const apFirst_ = <E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> =>
@@ -390,12 +390,12 @@ export const flatten: <E, G, A>(mma: Either<E, Either<G, A>>) => Either<E | G, A
 
 /**
  * ```haskell
- * traverse_ :: (Applicative f, Traversable t) => Instance f -> (t a, (a -> f b)) -> f (t b)
+ * traverse_ :: (Applicative f, Traversable t) => (t a, (a -> f b)) -> f (t b)
  * ```
  *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
- * @category Uncurried Traversable
+ * @category Traversable
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<[URI], V> = (F) => (ta, f) =>
@@ -408,7 +408,7 @@ export const traverse_: P.TraverseFn_<[URI], V> = (F) => (ta, f) =>
 
 /**
  * ```haskell
- * traverse :: (Applicative f, Traversable t) => Instance f -> (a -> f b) -> t a -> f (t b)
+ * traverse :: (Applicative f, Traversable t) => (a -> f b) -> t a -> f (t b)
  * ```
  *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -420,7 +420,7 @@ export const traverse: P.TraverseFn<[URI], V> = (F) => (f) => (ta) => traverse_(
 
 /**
  * ```haskell
- * sequence :: (Applicative f, Traversable t) => Instance f -> t (f a) -> f (t a)
+ * sequence :: (Applicative f, Traversable t) => t (f a) -> f (t a)
  * ```
  *
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -459,6 +459,9 @@ export const alt = <G, A>(that: () => Either<G, A>) => <E>(fa: Either<E, A>): Ei
  * ```haskell
  * extend_ :: Extend w => (w a, (w a -> b)) -> w b
  * ```
+ *
+ * @category Extend
+ * @since 1.0.0
  */
 export const extend_ = <E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): Either<E, B> =>
    isLeft(wa) ? wa : right(f(wa));
@@ -467,6 +470,9 @@ export const extend_ = <E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): 
  * ```haskell
  * extend :: Extend w => (w a -> b) -> w a -> w b
  * ```
+ *
+ * @category Extend
+ * @since 1.0.0
  */
 export const extend = <E, A, B>(f: (wa: Either<E, A>) => B) => (wa: Either<E, A>): Either<E, B> => extend_(wa, f);
 
@@ -474,6 +480,9 @@ export const extend = <E, A, B>(f: (wa: Either<E, A>) => B) => (wa: Either<E, A>
  * ```haskell
  * duplicate :: Extend w => w a -> w (w a)
  * ```
+ *
+ * @category Extend
+ * @since 1.0.0
  */
 export const duplicate = <E, A>(wa: Either<E, A>): Either<E, Either<E, A>> => extend_(wa, identity);
 

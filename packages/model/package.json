@@ -43,7 +43,7 @@
    },
    "dependencies": {
       "@principia/core": "^0.0.3",
-      "@principia/effect": "^0.0.6",
+      "@principia/optics": "^0.0.0",
       "core-js": "3"
    },
    "devDependencies": {

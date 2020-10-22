@@ -92,7 +92,7 @@ export const mapWithIndex_ = <A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) =
 
 /**
  * ```haskell
- * mapWithIndex_ :: (FunctorWithIndex f, Index k) =>
+ * mapWithIndex :: (FunctorWithIndex f, Index k) =>
  *    ((k, a) -> b) -> f k a -> f k b
  * ```
  *
@@ -177,20 +177,44 @@ export const chainWithIndex_: <A, B>(
    return out;
 };
 
-export const chainWithIdex: <A, B>(
+export const chainWithIndex: <A, B>(
    f: (i: number, a: A) => ReadonlyArray<B>
 ) => (fa: ReadonlyArray<A>) => ReadonlyArray<B> = (f) => (fa) => chainWithIndex_(fa, f);
 
+/**
+ * ```haskell
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
 export const chain_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> =>
    chainWithIndex_(fa, (_, a) => f(a));
 
 /**
- * chain :: Monad m => (a -> b) -> m a -> m b
+ * ```haskell
+ * chain :: Monad m => (a -> m b) -> m a -> m b
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ *
+ * @category Monad
+ * @since 1.0.0
  */
 export const chain = <A, B>(f: (a: A) => ReadonlyArray<B>) => (fa: ReadonlyArray<A>): ReadonlyArray<B> => chain_(fa, f);
 
 /**
+ * ```haskell
  * flatten :: Monad m => m m a -> m a
+ * ```
+ *
+ * Removes one level of nesting from a nested `NonEmptyArray`
+ *
+ * @category Monad
+ * @since 1.0.0
  */
 export const flatten = <A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<A> => {
    let rLen = 0;
@@ -216,6 +240,17 @@ export const flatten = <A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
  */
 export const bind: TC.BindFn<[URI], V> = (fa) => (f) => chain_(fa, f);
 
+/**
+ * ```haskell
+ * tap_ :: Monad m => (ma, (a -> m b)) -> m a
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ * and keeping only the result of the first
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
 export const tap_ = <A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<A> =>
    chain_(ma, (a) =>
       pipe(
@@ -224,10 +259,31 @@ export const tap_ = <A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>):
       )
    );
 
+/**
+ * ```haskell
+ * tap :: Monad m => (a -> mb) -> m a -> m a
+ * ```
+ *
+ * Composes computations in sequence, using the return value of one computation as input for the next
+ * and keeping only the result of the first
+ *
+ * @category Monad
+ * @since 1.0.0
+ */
 export const tap = <A, B>(f: (a: A) => ReadonlyArray<B>) => (ma: ReadonlyArray<A>): ReadonlyArray<A> => tap_(ma, f);
 
 export const chainFirst = tap;
 
+/**
+ * ```haskell
+ * ap_ :: Apply f => (f (a -> b), f a) -> f b
+ * ```
+ *
+ * Apply a function to an argument under a type constructor
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
 export const ap_ = <A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>): ReadonlyArray<B> =>
    flatten(
       pipe(
@@ -236,14 +292,76 @@ export const ap_ = <A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>)
       )
    );
 
+/**
+ * ```haskell
+ * ap :: Apply f => f a -> f (a -> b) -> f b
+ * ```
+ *
+ * Apply a function to an argument under a type constructor
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
 export const ap = <A>(fa: ReadonlyArray<A>) => <B>(fab: ReadonlyArray<(a: A) => B>): ReadonlyArray<B> => ap_(fab, fa);
 
+/**
+ * ```haskell
+ * apFirst_ :: Apply f => (f a, f b) -> f a
+ * ```
+ *
+ * Combine two effectful actions, keeping only the result of the first
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const apFirst_ = <A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<A> =>
+   ap_(
+      map_(fa, (a) => () => a),
+      fb
+   );
+
+/**
+ * ```haskell
+ * apFirst :: Apply f => f b -> f a -> f a
+ * ```
+ *
+ * Combine two effectful actions, keeping only the result of the first
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
 export const apFirst: <B>(fb: ReadonlyArray<B>) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<A> = (fb) =>
    flow(
       map((a) => () => a),
       ap(fb)
    );
 
+/**
+ * ```haskell
+ * apSecond_ :: Apply f => (f a, f b) -> f b
+ * ```
+ *
+ * Combine two effectful actions, keeping only the result of the second
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const apSecond_ = <A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<B> =>
+   ap_(
+      map_(fa, () => (b: B) => b),
+      fb
+   );
+
+/**
+ * ```haskell
+ * apSecond :: Apply f => f b -> f a -> f b
+ * ```
+ *
+ * Combine two effectful actions, keeping only the result of the second
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
 export const apSecond = <B>(fb: ReadonlyArray<B>): (<A>(fa: ReadonlyArray<A>) => ReadonlyArray<B>) =>
    flow(
       map(() => (b: B) => b),
@@ -253,8 +371,11 @@ export const apSecond = <B>(fb: ReadonlyArray<B>): (<A>(fa: ReadonlyArray<A>) =>
 /**
  * ```haskell
  * filterWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Boolean)) -> f k a
+ *    (f a, ((k, a) -> Boolean)) -> f a
  * ```
+ *
+ * @category FilterableWithIndex
+ * @since 1.0.0
  */
 export const filterWithIndex_: {
    <A, B extends A>(fa: ReadonlyArray<A>, f: RefinementWithIndex<number, A, B>): ReadonlyArray<B>;
@@ -273,8 +394,11 @@ export const filterWithIndex_: {
 /**
  * ```haskell
  * filterWithIndex :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Boolean) -> f k a -> f k a
+ *    ((k, a) -> Boolean) -> f a -> f a
  * ```
+ *
+ * @category FilterableWithIndex
+ * @since 1.0.0
  */
 export const filterWithIndex: {
    <A, B extends A>(f: RefinementWithIndex<number, A, B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B>;
@@ -285,6 +409,9 @@ export const filterWithIndex: {
  * ```haskell
  * filter_ :: Filterable f => (f a, (a -> Boolean)) -> f a
  * ```
+ *
+ * @category Filterable
+ * @since 1.0.0
  */
 export const filter_: {
    <A, B extends A>(fa: ReadonlyArray<A>, f: Refinement<A, B>): ReadonlyArray<B>;
@@ -295,6 +422,9 @@ export const filter_: {
  * ```haskell
  * filter :: Filterable f => (a -> Boolean) -> f a -> f a
  * ```
+ *
+ * @category Filterable
+ * @since 1.0.0
  */
 export const filter: {
    <A, B extends A>(f: Refinement<A, B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B>;
@@ -304,8 +434,11 @@ export const filter: {
 /**
  * ```haskell
  * mapOptionWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Option b)) -> f k b
+ *    (f a, ((k, a) -> Option b)) -> f k b
  * ```
+ *
+ * @category FilterableWithIndex
+ * @since 1.0.0
  */
 export const mapOptionWithIndex_ = <A, B>(
    fa: ReadonlyArray<A>,
@@ -324,8 +457,11 @@ export const mapOptionWithIndex_ = <A, B>(
 /**
  * ```haskell
  * mapOptionWithIndex :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Option b) -> f k a -> f k b
+ *    ((k, a) -> Option b) -> f a -> f k b
  * ```
+ *
+ * @category FilterableWithIndex
+ * @since 1.0.0
  */
 export const mapOptionWithIndex = <A, B>(f: (i: number, a: A) => Option<B>) => (
    fa: ReadonlyArray<A>
@@ -333,16 +469,22 @@ export const mapOptionWithIndex = <A, B>(f: (i: number, a: A) => Option<B>) => (
 
 /**
  * ```haskell
- * mapMaybe_ :: Filterable f => (f a, (a -> Maybe b)) -> f b
+ * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
+ *
+ * @category Filterable
+ * @since 1.0.0
  */
 export const mapOption_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> =>
    mapOptionWithIndex_(fa, (_, a) => f(a));
 
 /**
  * ```haskell
- * mapMaybe :: Filterable f => (a -> Maybe b) -> f a -> f b
+ * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
+ *
+ * @category Filterable
+ * @since 1.0.0
  */
 export const mapOption = <A, B>(f: (a: A) => Option<B>) => (fa: ReadonlyArray<A>): ReadonlyArray<B> =>
    mapOptionWithIndex_(fa, (_, a) => f(a));
@@ -389,8 +531,11 @@ export const separate = <E, A>(fa: ReadonlyArray<Either<E, A>>): Separated<Reado
 /**
  * ```haskell
  * reduceWithIndex_ :: (FoldableWithIndex t, Index k) =>
- *    (t k a, b, ((k, b, a) -> b)) -> b
+ *    (t a, b, ((k, b, a) -> b)) -> b
  * ```
+ *
+ * @category FoldableWithIndex
+ * @since 1.0.0
  */
 export const reduceWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number, b: B, a: A) => B): B => {
    const len = fa.length;
@@ -404,8 +549,11 @@ export const reduceWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number
 /**
  * ```haskell
  * reduceWithIndex :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, b, a) -> b)) -> t k a -> b
+ *    (b, ((k, b, a) -> b)) -> t a -> b
  * ```
+ *
+ * @category FoldableWithIndex
+ * @since 1.0.0
  */
 export const reduceWithIndex = <A, B>(b: B, f: (i: number, b: B, a: A) => B) => (fa: ReadonlyArray<A>): B =>
    reduceWithIndex_(fa, b, f);
@@ -414,6 +562,9 @@ export const reduceWithIndex = <A, B>(b: B, f: (i: number, b: B, a: A) => B) => 
  * ```haskell
  * reduce_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
  * ```
+ *
+ * @category Foldable
+ * @since 1.0.0
  */
 export const reduce_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): B =>
    reduceWithIndex_(fa, b, (_, b, a) => f(b, a));
@@ -422,6 +573,9 @@ export const reduce_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B):
  * ```haskell
  * reduce :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
  * ```
+ *
+ * @category Foldable
+ * @since 1.0.0
  */
 export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: ReadonlyArray<A>): B =>
    reduceWithIndex_(fa, b, (_, b, a) => f(b, a));
@@ -429,8 +583,11 @@ export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: ReadonlyArray<A
 /**
  * ```haskell
  * reduceRightWithIndex_ :: (FoldableWithIndex t, Index k) =>
- *    (t k a, b, ((k, a, b) -> b)) -> b
+ *    (t a, b, ((k, a, b) -> b)) -> b
  * ```
+ *
+ * @category FoldableWithIndex
+ * @since 1.0.0
  */
 export const reduceRightWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number, a: A, b: B) => B): B => {
    let r = b;
@@ -443,8 +600,11 @@ export const reduceRightWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: n
 /**
  * ```haskell
  * reduceRightWithIndex :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, a, b) -> b)) -> t k a -> b
+ *    (b, ((k, a, b) -> b)) -> t a -> b
  * ```
+ *
+ * @category FoldableWithIndex
+ * @since 1.0.0
  */
 export const reduceRightWithIndex = <A, B>(b: B, f: (i: number, a: A, b: B) => B) => (fa: ReadonlyArray<A>): B =>
    reduceRightWithIndex_(fa, b, f);
@@ -453,6 +613,9 @@ export const reduceRightWithIndex = <A, B>(b: B, f: (i: number, a: A, b: B) => B
  * ```haskell
  * reduceRight_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
  * ```
+ *
+ * @category Foldable
+ * @since 1.0.0
  */
 export const reduceRight_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): B =>
    reduceRightWithIndex_(fa, b, (_, a, b) => f(a, b));
@@ -461,26 +624,64 @@ export const reduceRight_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) =
  * ```haskell
  * reduceRight :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
  * ```
+ *
+ * @category Foldable
+ * @since 1.0.0
  */
 export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: ReadonlyArray<A>): B => reduceRight_(fa, b, f);
 
+/**
+ * ```haskell
+ * foldMapWithIndex_ :: (Monoid m, FoldableWithIndex f, Index k) =>
+ *    m b -> (f a, ((k, a) -> b) -> b
+ * ```
+ *
+ * @category FoldableWithIndex
+ * @since 1.0.0
+ */
 export const foldMapWithIndex_ = <M>(M: Monoid<M>) => <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M): M =>
    reduceWithIndex_(fa, M.nat, (i, b, a) => M.combine_(b, f(i, a)));
 
+/**
+ * ```haskell
+ * foldMapWithIndex :: (Monoid m, FoldableWithIndex f, Index k) =>
+ *    m b -> ((k, a) -> b) -> f a -> b
+ * ```
+ *
+ * @category FoldableWithIndex
+ * @since 1.0.0
+ */
 export const foldMapWithIndex = <M>(M: Monoid<M>) => <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) =>
    foldMapWithIndex_(M)(fa, f);
 
+/**
+ * ```haskell
+ * foldMap_ :: (Monoid m, Foldable f) =>
+ *    m b -> (f a, (a -> b)) -> b
+ * ```
+ *
+ * @category Foldable
+ * @since 1.0.0
+ */
 export const foldMap_ = <M>(M: Monoid<M>): (<A>(fa: ReadonlyArray<A>, f: (a: A) => M) => M) => {
    const foldMapWithIndexM_ = foldMapWithIndex_(M);
    return (fa, f) => foldMapWithIndexM_(fa, (_, a) => f(a));
 };
 
+/**
+ * ```haskell
+ * foldMap :: (Monoid m, Foldable f) => m b -> (a -> b) -> f a -> b
+ * ```
+ *
+ * @category Foldable
+ * @since 1.0.0
+ */
 export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: ReadonlyArray<A>): M => foldMap_(M)(fa, f);
 
 /**
  * ```haskell
  * partitionWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Boolean)) -> Separated (f k a) (f k a)
+ *    (f a, ((k, a) -> Boolean)) -> Separated (f a) (f a)
  * ```
  */
 export const partitionWithIndex_: {
@@ -509,7 +710,7 @@ export const partitionWithIndex_: {
 /**
  * ```haskell
  * partitionWithIndex :: (FilterableWithIndex f, Index k) =>
- *    (k, a) -> Boolean) -> f k a -> Separated (f k a) (f k a)
+ *    ((k, a) -> Boolean) -> f a -> Separated (f a) (f a)
  * ```
  */
 export const partitionWithIndex: {
@@ -546,7 +747,7 @@ export const partition: {
 /**
  * ```haskell
  * mapEitherWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f k a, ((k, a) -> Either b c)) -> Separated (f k b) (f k c)
+ *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
 export const mapEitherWithIndex_ = <A, B, C>(
@@ -572,7 +773,7 @@ export const mapEitherWithIndex_ = <A, B, C>(
 /**
  * ```haskell
  * mapEitherWithIndex :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Either b c) -> f k a -> Separated (f k b) (f k c)
+ *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
 export const mapEitherWithIndex = <A, B, C>(f: (i: number, a: A) => Either<B, C>) => (
@@ -598,15 +799,40 @@ export const mapEither = <A, B, C>(f: (a: A) => Either<B, C>) => (
    ta: ReadonlyArray<A>
 ): Separated<ReadonlyArray<B>, ReadonlyArray<C>> => mapEitherWithIndex_(ta, (_, a) => f(a));
 
+/**
+ * ```haskell
+ * alt_ :: Alt f => (f a, (() -> f a)) -> f a
+ * ```
+ *
+ * Combines two `Array`s
+ *
+ * @category Alt
+ * @since 1.0.0
+ */
 export const alt_ = <A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): ReadonlyArray<A> => __append(fa, that());
 
+/**
+ * ```haskell
+ * alt :: Alt f => (() -> f a) -> f a -> f a
+ * ```
+ *
+ * Combines two `Array`s
+ *
+ * @category Alt
+ * @since 1.0.0
+ */
 export const alt = <A>(that: () => ReadonlyArray<A>) => (fa: ReadonlyArray<A>): ReadonlyArray<A> => alt_(fa, that);
 
 /**
  * ```haskell
  * traverseWithIndex_ :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g -> (t k a, ((k, a) -> g b)) -> g (t k b)
+ *    g
+ *    -> (t a, ((k, a) -> g b))
+ *    -> g (t b)
  * ```
+ *
+ * @category TraversableWithIndex
+ * @since 1.0.0
  */
 export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implementTraverseWithIndex_<[URI], V>()(
    (_) => (G) => (ta, f) =>
@@ -627,24 +853,45 @@ export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implemen
 /**
  * ```haskell
  * traverseWithIndex :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g -> ((k, a) -> g b) -> t k a -> g (t k b)
+ *    g
+ *    -> ((k, a) -> g b)
+ *    -> t a
+ *    -> g (t b)
  * ```
+ *
+ * @category TraversableWithIndex
+ * @since 1.0.0
  */
 export const traverseWithIndex: TC.TraverseWithIndexFn<[URI], V> = (A) => (f) => (ta) => traverseWithIndex_(A)(ta, f);
 
 /**
  * ```haskell
  * traverse_ :: (Applicative g, Traversable t) =>
- *    g -> (t a, (a -> g b)) -> g (t b)
+ *    g
+ *    -> (t a, (a -> g b))
+ *    -> g (t b)
  * ```
+ *
+ * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
+ *
+ * @category Traversable
+ * @since 1.0.0
  */
 export const traverse_: TC.TraverseFn_<[URI], V> = (A) => (ta, f) => traverseWithIndex_(A)(ta, (_, a) => f(a));
 
 /**
  * ```haskell
  * traverse :: (Applicative g, Traversable t) =>
- *    g -> (a -> g b) -> t a -> g (t b)
+ *    g
+ *    -> (a -> g b)
+ *    -> t a
+ *    -> g (t b)
  * ```
+ *
+ * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
+ *
+ * @category Traversable
+ * @since 1.0.0
  */
 export const traverse: TC.TraverseFn<[URI], V> = (A) => (f) => (ta) => traverseWithIndex_(A)(ta, (_, a) => f(a));
 
@@ -652,6 +899,11 @@ export const traverse: TC.TraverseFn<[URI], V> = (A) => (f) => (ta) => traverseW
  * ```haskell
  * sequence :: (Applicative g, Traversable t) => g -> t a -> g (t a)
  * ```
+ *
+ * Evaluate each action in the structure from left to right, and collect the results.
+ *
+ * @category Traversable
+ * @since 1.0.0
  */
 export const sequence: TC.SequenceFn<[URI], V> = TC.implementSequence<[URI], V>()((_) => (G) => (ta) =>
    pipe(
@@ -671,7 +923,9 @@ export const sequence: TC.SequenceFn<[URI], V> = TC.implementSequence<[URI], V>(
 /**
  * ```haskell
  * witherWithIndex_ :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> (w k a, ((k, a) -> g (w k (Maybe b)))) -> g (w k b)
+ *    g
+ *    -> (w a, ((k, a) -> g (w (Maybe b))))
+ *    -> g (w b)
  * ```
  */
 export const witherWithIndex_: TC.WitherWithIndexFn_<[URI], V> = (G) => {
@@ -682,7 +936,11 @@ export const witherWithIndex_: TC.WitherWithIndexFn_<[URI], V> = (G) => {
 /**
  * ```haskell
  * witherWithIndex :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> ((k, a) -> g (w k (Maybe b))) -> w k a -> g (w k b)
+ *    g
+ *    -> ((k, a)
+ *    -> g (w (Maybe b)))
+ *    -> w a
+ *    -> g (w b)
  * ```
  */
 export const witherWithIndex: TC.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => witherWithIndex_(G)(wa, f);
@@ -690,7 +948,9 @@ export const witherWithIndex: TC.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa
 /**
  * ```haskell
  * wither_ :: (Applicative g, Witherable w) =>
- *    g -> (w a, (a -> g (w (Maybe b)))) -> g (w b)
+ *    g
+ *    -> (w a, (a -> g (w (Maybe b))))
+ *    -> g (w b)
  * ```
  */
 export const wither_: TC.WitherFn_<[URI], V> = (G) => (wa, f) => witherWithIndex_(G)(wa, (_, a) => f(a));
@@ -698,7 +958,10 @@ export const wither_: TC.WitherFn_<[URI], V> = (G) => (wa, f) => witherWithIndex
 /**
  * ```haskell
  * wither :: (Applicative g, Witherable w) =>
- *    g -> (a -> g (w (Maybe b))) -> w a -> g (w b)
+ *    g
+ *    -> (a -> g (w (Maybe b)))
+ *    -> w a
+ *    -> g (w b)
  * ```
  */
 export const wither: TC.WitherFn<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa, f);
@@ -706,7 +969,9 @@ export const wither: TC.WitherFn<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa
 /**
  * ```haskell
  * wiltWithIndex_ :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> (w k a, ((k, a) -> g (w k (Either b c)))) -> g (Separated (w k b) (w k c))
+ *    g
+ *    -> (w a, ((k, a) -> g (w (Either b c))))
+ *    -> g (Separated (w b) (w c))
  * ```
  */
 export const wiltWithIndex_: TC.WiltWithIndexFn_<[URI], V> = (G) => {
@@ -717,7 +982,10 @@ export const wiltWithIndex_: TC.WiltWithIndexFn_<[URI], V> = (G) => {
 /**
  * ```haskell
  * wiltWithIndex :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> ((k, a) -> g (w k (Either b c))) -> w k a -> g (Separated (w k b) (w k c))
+ *    g
+ *    -> ((k, a) -> g (w (Either b c)))
+ *    -> w a
+ *    -> g (Separated (w b) (w c))
  * ```
  */
 export const wiltWithIndex: TC.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f);
@@ -725,19 +993,29 @@ export const wiltWithIndex: TC.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) =>
 /**
  * ```haskell
  * wilt_ :: (Applicative g, Witherable w) =>
- *    g -> (w a, (a -> g (w (Either b c)))) -> g (Separated (w b) (w c))
+ *    g
+ *    -> (w a, (a -> g (w (Either b c))))
+ *    -> g (Separated (w b) (w c))
  * ```
  */
 export const wilt_: TC.WiltFn_<[URI], V> = (G) => (wa, f) => wiltWithIndex_(G)(wa, (_, a) => f(a));
 
 /**
  * ```haskell
- * wilt_ :: (Applicative g, Witherable w) =>
- *    g -> (a -> g (w (Either b c))) -> w a -> g (Separated (w b) (w c))
+ * wilt :: (Applicative g, Witherable w) =>
+ *    g
+ *    -> (a -> g (w (Either b c)))
+ *    -> w a
+ *    -> g (Separated (w b) (w c))
  * ```
  */
 export const wilt: TC.WiltFn<[URI], V> = (G) => (f) => (wa) => wilt_(G)(wa, f);
 
+/**
+ * ```haskell
+ * duplicate :: Extend w => w a -> w (w a)
+ * ```
+ */
 export const duplicate: <A>(wa: ReadonlyArray<A>) => ReadonlyArray<ReadonlyArray<A>> = (wa) => extend_(wa, identity);
 
 export const unfold = <A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): ReadonlyArray<A> => {
