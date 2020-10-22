@@ -1,6 +1,6 @@
 import { head, tail } from "./combinators";
 import { isEmpty, isNonEmpty } from "./guards";
-import type { List } from "./model";
+import type { LazyList } from "./model";
 
 /*
  * -------------------------------------------
@@ -8,10 +8,10 @@ import type { List } from "./model";
  * -------------------------------------------
  */
 
-export const toArray = <A>(xs: List<A>): ReadonlyArray<A> => {
+export const toArray = <A>(xs: LazyList<A>): ReadonlyArray<A> => {
    if (isEmpty(xs)) return [];
    const r = [];
-   let l: List<A> = xs;
+   let l: LazyList<A> = xs;
    while (isNonEmpty(l)) {
       r.push(head(l));
       l = tail(l);

@@ -1,11 +1,11 @@
-import type { CompareFn, CompareFn_ } from "@principia/prelude/Ord";
+import type { CompareFn_ } from "@principia/prelude/Ord";
 import { GT } from "@principia/prelude/Ordering";
 
 import type { Lazy, Trampoline } from "../Function";
 import { done, matchPredicate, more, trampoline } from "../Function";
 import { cons, cons_, list, nil } from "./constructors";
 import { isEmpty, isNonEmpty } from "./guards";
-import type { List } from "./model";
+import type { LazyList } from "./model";
 import { errorEmptyList } from "./model";
 
 /*
@@ -14,19 +14,19 @@ import { errorEmptyList } from "./model";
  * -------------------------------------------
  */
 
-export const head: <A>(xs: List<A>) => A = matchPredicate(
+export const head: <A>(xs: LazyList<A>) => A = matchPredicate(
    isNonEmpty,
    (l) => l.head(),
    (_) => errorEmptyList("head")
 );
 
-export const tail: <A>(xs: List<A>) => List<A> = matchPredicate(
+export const tail: <A>(xs: LazyList<A>) => LazyList<A> = matchPredicate(
    isNonEmpty,
    (l) => l.tail(),
    (_) => errorEmptyList("tail")
 );
 
-export const rangeBy_ = (start: number, end: number, step: (n: number) => number): List<number> => {
+export const rangeBy_ = (start: number, end: number, step: (n: number) => number): LazyList<number> => {
    if (start === end)
       return cons_(
          () => start,
@@ -39,7 +39,7 @@ export const rangeBy_ = (start: number, end: number, step: (n: number) => number
    );
 };
 
-export const init: <A>(xs: List<A>) => List<A> = matchPredicate(
+export const init: <A>(xs: LazyList<A>) => LazyList<A> = matchPredicate(
    isNonEmpty,
    (l) =>
       isEmpty(tail(l))
@@ -51,7 +51,7 @@ export const init: <A>(xs: List<A>) => List<A> = matchPredicate(
    (_) => errorEmptyList("init")
 );
 
-export const last: <A>(xs: List<A>) => A = trampoline(function last<A>(xs: List<A>): Trampoline<A> {
+export const last: <A>(xs: LazyList<A>) => A = trampoline(function last<A>(xs: LazyList<A>): Trampoline<A> {
    return matchPredicate(
       isNonEmpty,
       (l) => (isEmpty(tail(l)) ? done(head(l)) : more(() => last(tail(l)))),
@@ -59,7 +59,7 @@ export const last: <A>(xs: List<A>) => A = trampoline(function last<A>(xs: List<
    )(xs);
 });
 
-export const take_ = <A>(xs: List<A>, n: number): List<A> => {
+export const take_ = <A>(xs: LazyList<A>, n: number): LazyList<A> => {
    if (n <= 0) return nil;
    if (isEmpty(xs)) return nil;
    return cons_(
@@ -68,9 +68,9 @@ export const take_ = <A>(xs: List<A>, n: number): List<A> => {
    );
 };
 
-export const take = (n: number) => <A>(xs: List<A>) => take_(xs, n);
+export const take = (n: number) => <A>(xs: LazyList<A>) => take_(xs, n);
 
-export const lines: (s: string) => List<string> = matchPredicate(
+export const lines: (s: string) => LazyList<string> = matchPredicate(
    (s) => s.length === 0,
    (_) => nil,
    (s) => list(...s.split("\n"))
@@ -78,8 +78,8 @@ export const lines: (s: string) => List<string> = matchPredicate(
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
-export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
-   const _sequences = (xs: List<A>): Trampoline<List<List<A>>> => {
+export function sortBy_<A>(xs: LazyList<A>, cmp: CompareFn_<A>): LazyList<A> {
+   const _sequences = (xs: LazyList<A>): Trampoline<LazyList<LazyList<A>>> => {
       if (isEmpty(xs)) {
          return done(list(xs));
       }
@@ -96,7 +96,11 @@ export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
       return _ascending(b, cons(() => a) as any, as);
    };
 
-   const _ascending = (a: A, fas: (xs: Lazy<List<A>>) => List<A>, bbs: List<A>): Trampoline<List<List<A>>> => {
+   const _ascending = (
+      a: A,
+      fas: (xs: Lazy<LazyList<A>>) => LazyList<A>,
+      bbs: LazyList<A>
+   ): Trampoline<LazyList<LazyList<A>>> => {
       if (isEmpty(bbs)) {
          return done(
             cons_(
@@ -107,7 +111,7 @@ export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
       }
       const b = head(bbs);
       const bs = tail(bbs);
-      const ys = (ys: Lazy<List<A>>) => fas(() => cons_(() => a, ys));
+      const ys = (ys: Lazy<LazyList<A>>) => fas(() => cons_(() => a, ys));
       if (cmp(a, b) !== GT) {
          return more(() => _ascending(b, ys, bs));
       }
@@ -119,7 +123,7 @@ export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
       );
    };
 
-   const _descending = (a: A, as: List<A>, bbs: List<A>): Trampoline<List<List<A>>> => {
+   const _descending = (a: A, as: LazyList<A>, bbs: LazyList<A>): Trampoline<LazyList<LazyList<A>>> => {
       if (isEmpty(bbs)) {
          return done(
             cons_(
@@ -158,7 +162,7 @@ export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
       );
    };
 
-   const _mergePairs = (as: List<List<A>>): Trampoline<List<List<A>>> => {
+   const _mergePairs = (as: LazyList<LazyList<A>>): Trampoline<LazyList<LazyList<A>>> => {
       if (isEmpty(as)) {
          return done(as);
       }
@@ -177,7 +181,7 @@ export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
       );
    };
 
-   const _merge = (as: List<A>, bs: List<A>): Trampoline<List<A>> => {
+   const _merge = (as: LazyList<A>, bs: LazyList<A>): Trampoline<LazyList<A>> => {
       if (isEmpty(as)) {
          return done(bs);
       }
@@ -204,7 +208,7 @@ export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
       );
    };
 
-   const _mergeAll = (xs: List<List<A>>): Trampoline<List<A>> => {
+   const _mergeAll = (xs: LazyList<LazyList<A>>): Trampoline<LazyList<A>> => {
       if (isEmpty(tail(xs))) {
          return done(head(xs));
       }
@@ -216,9 +220,9 @@ export function sortBy_<A>(xs: List<A>, cmp: CompareFn_<A>): List<A> {
 
 /* eslint-enable */
 
-export const sortBy = <A>(cmp: CompareFn_<A>) => (xs: List<A>) => sortBy_(xs, cmp);
+export const sortBy = <A>(cmp: CompareFn_<A>) => (xs: LazyList<A>) => sortBy_(xs, cmp);
 
-export const append_ = trampoline(function append<A>(xs: List<A>, ys: List<A>): Trampoline<List<A>> {
+export const append_ = trampoline(function append<A>(xs: LazyList<A>, ys: LazyList<A>): Trampoline<LazyList<A>> {
    if (isEmpty(xs)) return done(ys);
    if (isEmpty(ys)) return done(xs);
    return done(
