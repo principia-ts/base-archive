@@ -1,6 +1,6 @@
 import type { Predicate } from "../Function";
-import type { Stack } from "../Stack";
-import * as S from "../Stack";
+import type { Stack } from "../support/Stack";
+import * as S from "../support/Stack";
 import type { Filter, FreeSemigroup, Map } from "./model";
 
 /*

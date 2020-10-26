@@ -1,7 +1,7 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import type { Instruction } from "../Effect/Effect";
-import * as T from "../Effect/Effect/model";
+import type { Instruction } from "../Task/Task";
+import * as T from "../Task/Task/model";
 
 export const URI = "XPure";
 

@@ -45,6 +45,8 @@
       "core-js": "3"
    },
    "devDependencies": {
+      "@types/benchmark": "^1.0.33",
+      "benchmark": "^2.1.4",
       "typescript": "next"
    }
 }

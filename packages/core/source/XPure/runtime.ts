@@ -1,5 +1,5 @@
-import { Stack } from "../Effect/Stack";
 import * as E from "../Either";
+import { Stack } from "../Task/Stack";
 import { concrete, fail, succeed } from "./constructors";
 import type { Frame } from "./instructions";
 import { ApplyFrame, FoldFrame, XPureInstructionTag } from "./instructions";
