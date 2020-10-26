@@ -1,6 +1,7 @@
 import { pipe } from "../Function";
 import type { Option } from "../Option";
 import * as O from "../Option";
+import { Scheduler } from "../support";
 import type { Stack } from "../support/Stack";
 import { stack } from "../support/Stack";
 import { fail, succeed, total } from "./constructors";

@@ -5,13 +5,9 @@ import * as F from "../../Fiber";
 import { Executor } from "../../Fiber/executor";
 import { newFiberId } from "../../Fiber/FiberId";
 import type { Callback } from "../../Fiber/state";
-import { HasMemoMap, MemoMap } from "../../Layer/MemoMap";
-import type { Layer } from "../../Layer/model";
-import type { Finalizer } from "../../Managed/ReleaseMap";
 import { defaultRandom, HasRandom } from "../../Random";
 import * as Scope from "../../Scope";
 import * as Super from "../../Supervisor";
-import * as XRM from "../../XRefM";
 import * as T from "../core";
 import { _I } from "../model";
 
@@ -19,16 +15,11 @@ export const empty = () => {
    return;
 };
 
-export type DefaultEnv = HasClock & HasRandom & HasMemoMap;
-
-export const memoMap = new MemoMap(
-   XRM.unsafeMakeRefM<ReadonlyMap<Layer<any, any, any>, readonly [T.IO<any, any>, Finalizer]>>(new Map())
-);
+export type DefaultEnv = HasClock & HasRandom;
 
 export const defaultEnv = () => ({
    [HasClock.key]: LiveClock(),
-   [HasRandom.key]: defaultRandom,
-   [HasMemoMap.key]: memoMap
+   [HasRandom.key]: defaultRandom
 });
 
 export const fiberExecutor = <E, A>() =>

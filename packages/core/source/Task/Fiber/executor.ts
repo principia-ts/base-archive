@@ -81,10 +81,13 @@ export const _tracing = new TracingContext();
 
 export const currentFiber = new AtomicReference<Executor<any, any> | null>(null);
 
+/**
+ * `Executor` provides all of the context and facilities required to run a `Task`
+ */
 export class Executor<E, A> implements RuntimeFiber<E, A> {
    readonly _tag = "RuntimeFiber";
-   readonly state = new AtomicReference(initial<E, A>());
-   readonly scheduler = defaultScheduler;
+   private readonly state = new AtomicReference(initial<E, A>());
+   private readonly scheduler = defaultScheduler;
 
    private asyncEpoch = 0 | 0;
    private continuationFrames?: Stack<Frame> = undefined;
@@ -127,7 +130,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       }
    }
 
-   interruptExit = new InterruptExit((v: any) => {
+   private interruptExit = new InterruptExit((v: any) => {
       if (this.isInterruptible) {
          this.popInterruptStatus();
          return T.pure(v)[T._I];
@@ -163,31 +166,31 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return this.fiberId;
    }
 
-   pushContinuation(k: Frame) {
+   private pushContinuation(k: Frame) {
       this.continuationFrames = stack(k, this.continuationFrames);
    }
 
-   popContinuation() {
+   private popContinuation() {
       const current = this.continuationFrames?.value;
       this.continuationFrames = this.continuationFrames?.previous;
       return current;
    }
 
-   pushEnv(k: any) {
+   private pushEnv(k: any) {
       this.environments = stack(k, this.environments);
    }
 
-   popEnv() {
+   private popEnv() {
       const current = this.environments?.value;
       this.environments = this.environments?.previous;
       return current;
    }
 
-   pushInterruptStatus(flag: boolean) {
+   private pushInterruptStatus(flag: boolean) {
       this.interruptStatus = stack(flag, this.interruptStatus);
    }
 
-   popInterruptStatus() {
+   private popInterruptStatus() {
       const current = this.interruptStatus?.value;
       this.interruptStatus = this.interruptStatus?.previous;
       return current;
@@ -205,7 +208,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     * Unwinds the stack, looking for the first error handler, and exiting
     * interruptible / uninterruptible regions.
     */
-   unwindStack() {
+   private unwindStack() {
       let unwinding = true;
       let discardedFolds = false;
 
@@ -235,7 +238,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return discardedFolds;
    }
 
-   registerObserver(k: Callback<never, Exit<E, A>>): Exit<E, A> | null {
+   private registerObserver(k: Callback<never, Exit<E, A>>): Exit<E, A> | null {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -269,7 +272,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       observers.forEach((k) => k(result));
    }
 
-   observe(k: Callback<never, Exit<E, A>>): Option<T.UIO<Exit<E, A>>> {
+   private observe(k: Callback<never, Exit<E, A>>): Option<T.UIO<Exit<E, A>>> {
       const x = this.registerObserver(k);
 
       if (x != null) {
@@ -288,7 +291,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       );
    }
 
-   interruptObserver(k: Callback<never, Exit<E, A>>) {
+   private interruptObserver(k: Callback<never, Exit<E, A>>) {
       const oldState = this.state.get;
 
       if (oldState._tag === "Executing") {
@@ -345,7 +348,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return this.kill(fiberId);
    }
 
-   done(v: Exit<E, A>): T.Instruction | undefined {
+   private done(v: Exit<E, A>): T.Instruction | undefined {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -381,7 +384,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       }
    }
 
-   setInterrupting(value: boolean): void {
+   private setInterrupting(value: boolean): void {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -401,7 +404,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       }
    }
 
-   enterAsync(epoch: number, blockingOn: ReadonlyArray<FiberId>): T.Instruction | undefined {
+   private enterAsync(epoch: number, blockingOn: ReadonlyArray<FiberId>): T.Instruction | undefined {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -428,7 +431,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       }
    }
 
-   exitAsync(epoch: number): boolean {
+   private exitAsync(epoch: number): boolean {
       const oldState = this.state.get;
 
       switch (oldState._tag) {
@@ -446,7 +449,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       }
    }
 
-   resumeAsync(epoch: number) {
+   private resumeAsync(epoch: number) {
       return (_: T.Task<any, any, any>) => {
          if (this.exitAsync(epoch)) {
             this.evaluateLater(_[T._I]);
@@ -464,7 +467,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return this.openScope.scope;
    }
 
-   fork(i0: T.Instruction, forkScope: Option<Scope.Scope<Exit<any, any>>>): Executor<any, any> {
+   private fork(i0: T.Instruction, forkScope: Option<Scope.Scope<Exit<any, any>>>): Executor<any, any> {
       const childFiberRefLocals: FiberRefLocals = new Map();
 
       this.fiberRefLocals.forEach((v, k) => {
@@ -477,7 +480,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       );
 
       const currentEnv = this.environments?.value || {};
-      const currentSup = this.supervisors.value;
+      const currentSupervisor = this.supervisors.value;
       const childId = newFiberId();
       const childScope = Scope.unsafeMakeScope<Exit<E, A>>();
 
@@ -486,15 +489,15 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
          currentEnv,
          F.interruptStatus(this.isInterruptible),
          childFiberRefLocals,
-         currentSup,
+         currentSupervisor,
          childScope,
          this.maxOperations
       );
 
-      if (currentSup !== Super.none) {
-         currentSup.unsafeOnStart(currentEnv, i0, O.some(this), childContext);
+      if (currentSupervisor !== Super.none) {
+         currentSupervisor.unsafeOnStart(currentEnv, i0, O.some(this), childContext);
          childContext.onDone((exit) => {
-            currentSup.unsafeOnEnd(Ex.flatten(exit), childContext);
+            currentSupervisor.unsafeOnEnd(Ex.flatten(exit), childContext);
          });
       }
 
@@ -545,8 +548,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
             },
             (key) => {
                childContext.scopeKey = key;
-               // Remove the finalizer key from the parent scope when the child fiber
-               // terminates:
+               // Remove the finalizer key from the parent scope when the child fiber terminates:
                childContext.onDone(() => {
                   parentScope.unsafeDeny(key);
                });
@@ -573,7 +575,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       }
    }
 
-   getDescriptor() {
+   private getDescriptor() {
       return new FiberDescriptor(
          this.fiberId,
          this.state.get.status,
@@ -583,7 +585,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       );
    }
 
-   complete<R, R1, R2, E2, A2, R3, E3, A3>(
+   private complete<R, R1, R2, E2, A2, R3, E3, A3>(
       winner: Fiber<any, any>,
       loser: Fiber<any, any>,
       cont: (exit: Exit<any, any>, fiber: Fiber<any, any>) => T.Task<any, any, any>,
@@ -618,7 +620,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       });
    }
 
-   raceWithImpl<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
+   private raceWithImpl<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
       race: T.RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>
    ): T.Task<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
       const raceIndicator = new AtomicReference(true);
@@ -665,6 +667,9 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       );
    }
 
+   /**
+    * Begins the `Task` run loop
+    */
    evaluateNow(start: T.Instruction): void {
       try {
          // eslint-disable-next-line prefer-const
@@ -685,20 +690,20 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                         switch (current._tag) {
                            case TaskInstructionTag.Chain: {
                               const nested: T.Instruction = current.effect[T._I];
-                              const k: (a: any) => T.Task<any, any, any> = current.f;
+                              const continuation: (a: any) => T.Task<any, any, any> = current.f;
 
                               switch (nested._tag) {
                                  case TaskInstructionTag.Pure: {
-                                    current = k(nested.value)[T._I];
+                                    current = continuation(nested.value)[T._I];
                                     break;
                                  }
                                  case TaskInstructionTag.Total: {
-                                    current = k(nested.thunk())[T._I];
+                                    current = continuation(nested.thunk())[T._I];
                                     break;
                                  }
                                  case TaskInstructionTag.Partial: {
                                     try {
-                                       current = k(nested.thunk())[T._I];
+                                       current = continuation(nested.thunk())[T._I];
                                     } catch (e) {
                                        current = T.fail(nested.onThrow(e))[T._I];
                                     }
@@ -706,7 +711,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                                  }
                                  default: {
                                     current = nested;
-                                    this.pushContinuation(new ApplyFrame(k));
+                                    this.pushContinuation(new ApplyFrame(continuation));
                                  }
                               }
                               break;
@@ -743,37 +748,23 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                               const discardedFolds = this.unwindStack();
                               const fullCause = current.cause;
 
-                              const maybeRedactedCause = discardedFolds
-                                 ? // We threw away some error handlers while unwinding the stack because
-                                   // we got interrupted during this instruction. So it's not safe to return
-                                   // typed failures from cause0, because they might not be typed correctly.
-                                   // Instead, we strip the typed failures, and return the remainders and
-                                   // the interruption.
-                                   C.stripFailures(fullCause)
-                                 : fullCause;
+                              const maybeRedactedCause = discardedFolds ? C.stripFailures(fullCause) : fullCause;
 
                               if (this.isStackEmpty) {
-                                 // Error not caught, stack is empty:
                                  const cause = () => {
                                     const interrupted = this.state.get.interrupted;
                                     const causeAndInterrupt = C.contains(interrupted)(maybeRedactedCause)
                                        ? maybeRedactedCause
                                        : C.then(maybeRedactedCause, interrupted);
-
                                     return causeAndInterrupt;
                                  };
-
                                  this.setInterrupting(true);
 
                                  current = this.done(Ex.failure(cause()));
                               } else {
                                  this.setInterrupting(false);
-
-                                 // Error caught, next continuation on the stack will deal
-                                 // with it, so we some have to compute it here:
                                  current = this.next(maybeRedactedCause);
                               }
-
                               break;
                            }
 
@@ -812,8 +803,8 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                               current = this.enterAsync(epoch, c.blockingOn);
 
                               if (!current) {
-                                 const k = c.register;
-                                 const h = k(this.resumeAsync(epoch));
+                                 const onResolve = c.register;
+                                 const h = onResolve(this.resumeAsync(epoch));
 
                                  switch (h._tag) {
                                     case "None": {
@@ -914,46 +905,39 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                               const c = current;
                               const lastSupervisor = this.supervisors.value;
                               const newSupervisor = c.supervisor.and(lastSupervisor);
-                              const push = T.total(() => {
-                                 this.supervisors = stack(newSupervisor, this.supervisors);
-                              });
-                              const pop = T.total(() => {
-                                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                                 this.supervisors = this.supervisors.previous!;
-                              });
                               current = T.bracket_(
-                                 push,
+                                 T.total(() => {
+                                    this.supervisors = stack(newSupervisor, this.supervisors);
+                                 }),
                                  () => c.effect,
-                                 () => pop
+                                 () =>
+                                    T.total(() => {
+                                       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                                       this.supervisors = this.supervisors.previous!;
+                                    })
                               )[T._I];
                               break;
                            }
 
                            case TaskInstructionTag.GetForkScope: {
-                              const c = current;
-                              current = c.f(O.getOrElse_(this.forkScopeOverride?.value || none(), () => this.scope))[
-                                 T._I
-                              ];
+                              current = current.f(
+                                 O.getOrElse_(this.forkScopeOverride?.value || none(), () => this.scope)
+                              )[T._I];
                               break;
                            }
 
                            case TaskInstructionTag.OverrideForkScope: {
                               const c = current;
-
-                              const push = T.total(() => {
-                                 this.forkScopeOverride = stack(c.forkScope, this.forkScopeOverride);
-                              });
-
-                              const pop = T.total(() => {
-                                 this.forkScopeOverride = this.forkScopeOverride?.previous;
-                              });
-
                               current = T.bracket_(
-                                 push,
+                                 T.total(() => {
+                                    this.forkScopeOverride = stack(c.forkScope, this.forkScopeOverride);
+                                 }),
                                  () => c.effect,
-                                 () => pop
+                                 () =>
+                                    T.total(() => {
+                                       this.forkScopeOverride = this.forkScopeOverride?.previous;
+                                    })
                               )[T._I];
-
                               break;
                            }
                         }
@@ -962,7 +946,6 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                      current = T.halt(this.state.get.interrupted)[T._I];
                      this.setInterrupting(true);
                   }
-
                   opCount++;
                }
             } catch (e) {

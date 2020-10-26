@@ -2,15 +2,15 @@ import type { Option } from "../Option";
 import * as O from "../Option";
 import { AtomicReference } from "../support";
 import type { Cause } from "../Task/Exit/Cause";
-import { EffectInstructionTag } from "../Task/Task/constants";
+import { TaskInstructionTag } from "../Task/Task/constants";
 import type * as T from "../Task/Task/model";
 
-export const effectIntegrationRef = new AtomicReference<Option<<R, E, A>(task: Async<R, E, A>) => T.Task<R, E, A>>>(
+export const taskIntegrationRef = new AtomicReference<Option<<R, E, A>(task: Async<R, E, A>) => T.Task<R, E, A>>>(
    O.none()
 );
 
 export class _FailInstruction<E> {
-   readonly _tag = EffectInstructionTag.Fail;
+   readonly _tag = TaskInstructionTag.Fail;
    readonly _S1!: (_: unknown) => void;
    readonly _S2!: () => never;
 
@@ -42,7 +42,7 @@ export class Async<R, E, A> implements T.Integration<R, E, A> {
    readonly ["_R"]!: (_: R) => void;
 
    get ["_I"](): T.Instruction {
-      const ci = effectIntegrationRef.get;
+      const ci = taskIntegrationRef.get;
       if (ci._tag === "Some") {
          return ci.value(this)["_I"];
       }
