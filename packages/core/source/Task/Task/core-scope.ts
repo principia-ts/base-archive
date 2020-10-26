@@ -25,8 +25,8 @@ export const forkScopeMask = (newScope: Scope<Exit<any, any>>) => <R, E, A>(
    f: (restore: ForkScopeRestore) => Task<R, E, A>
 ) => forkScopeWith((scope) => new OverrideForkScopeInstruction(f(new ForkScopeRestore(scope)), O.some(newScope)));
 
-export const forkIn = (scope: Scope<Exit<any, any>>) => <R, E, A>(value: Task<R, E, A>): RIO<R, RuntimeFiber<E, A>> =>
-   new ForkInstruction(value, O.some(scope));
+export const forkIn = (scope: Scope<Exit<any, any>>) => <R, E, A>(task: Task<R, E, A>): RIO<R, RuntimeFiber<E, A>> =>
+   new ForkInstruction(task, O.some(scope));
 
 export const raceWith = <R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
    left: Task<R, E, A>,

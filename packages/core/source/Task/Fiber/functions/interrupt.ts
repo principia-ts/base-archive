@@ -19,13 +19,22 @@ export const interrupt = <E, A>(fiber: Fiber<E, A>) => T.chain_(checkFiberId(), 
 
 /**
  * ```haskell
+ * interruptAllAs_ :: (Iterable (Fiber Any Any), FiberId) -> Task _ _ ()
+ * ```
+ *
+ * Interrupts all fibers as by the specified fiber, awaiting their interruption.
+ */
+export const interruptAllAs_ = (fs: Iterable<Fiber<any, any>>, id: FiberId) =>
+   I.reduce_(fs, T.unit as UIO<void>, (io, f) => T.asUnit(T.chain_(io, () => f.interruptAs(id))));
+
+/**
+ * ```haskell
  * interruptAllAs :: FiberId -> Iterable (Fiber Any Any) -> Task _ _ ()
  * ```
  *
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.
  */
-export const interruptAllAs = (id: FiberId) => (fs: Iterable<Fiber<any, any>>) =>
-   I.reduce_(fs, T.unit as UIO<void>, (io, f) => T.asUnit(T.chain_(io, () => f.interruptAs(id))));
+export const interruptAllAs = (id: FiberId) => (fs: Iterable<Fiber<any, any>>) => interruptAllAs_(fs, id);
 
 /**
  * ```haskell

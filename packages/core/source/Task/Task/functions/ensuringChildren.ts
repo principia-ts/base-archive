@@ -13,20 +13,20 @@ import { supervised } from "./supervised";
  * @category Combinators
  * @since 1.0.0
  */
-export const _ensuringChildren = <R, E, A, R1>(
-   fa: Task<R, E, A>,
+export const ensuringChildren_ = <R, E, A, R1>(
+   task: Task<R, E, A>,
    children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>
 ) =>
    pipe(
       Supervisor.track,
       chain((s) =>
          pipe(
-            fa,
+            task,
             supervised(s),
             ensuring(
                pipe(
                   s.value,
-                  chain((v) => children(v))
+                  chain((fiber) => children(fiber))
                )
             )
          )
@@ -45,5 +45,5 @@ export const ensuringChildren = <R1>(children: (_: ReadonlyArray<RuntimeFiber<an
    E,
    A
 >(
-   fa: Task<R, E, A>
-) => _ensuringChildren(fa, children);
+   task: Task<R, E, A>
+) => ensuringChildren_(task, children);

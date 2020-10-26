@@ -487,6 +487,12 @@ export const defects = <E>(cause: Cause<E>): ReadonlyArray<unknown> =>
    foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) => (c._tag === "Die" ? some([...a, c.value]) : none()));
 
 /**
+ * Produces a list of all recoverable errors `E` in the `Cause`.
+ */
+export const failures = <E>(cause: Cause<E>): ReadonlyArray<E> =>
+   foldl_(cause, [] as readonly E[], (a, c) => (c._tag === "Fail" ? O.some([...a, c.value]) : O.none()));
+
+/**
  * Returns a set of interruptors, fibers that interrupted the fiber described
  * by this `Cause`.
  */

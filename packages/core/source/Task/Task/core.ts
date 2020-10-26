@@ -26,6 +26,7 @@ import {
    FoldInstruction,
    ForkInstruction,
    GiveInstruction,
+   PartialInstruction,
    PureInstruction,
    ReadInstruction,
    SuspendInstruction,
@@ -127,6 +128,31 @@ export const asyncOption = <R, E, A>(
  * @since 1.0.0
  */
 export const total = <A>(thunk: () => A): UIO<A> => new TotalInstruction(thunk);
+
+/**
+ * ```haskell
+ * partial_ :: (() -> a, (Any -> e)) -> Task _ e a
+ * ```
+ *
+ * Creates an `Task` from the return value of a function that may throw, mapping the error
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): IO<E, A> =>
+   new PartialInstruction(thunk, onThrow);
+
+/**
+ * ```haskell
+ * partial :: (Any -> e) -> (() -> a) -> Task _ e a
+ * ```
+ *
+ * Creates an `Task` from the return value of a function that may throw, mapping the error
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A): IO<E, A> => partial_(thunk, onThrow);
 
 /**
  * ```haskell
