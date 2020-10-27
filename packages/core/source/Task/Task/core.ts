@@ -16,7 +16,7 @@ import type { Exit } from "../Exit/model";
 import type { Executor } from "../Fiber/executor";
 import type { FiberId } from "../Fiber/FiberId";
 import type { FiberDescriptor, InterruptStatus } from "../Fiber/model";
-import type { IO, RIO, Task, UIO } from "./model";
+import type { EIO, IO, RIO, Task } from "./model";
 import {
    AsyncInstruction,
    ChainInstruction,
@@ -33,7 +33,7 @@ import {
    TotalInstruction
 } from "./model";
 
-export { Task, IO, UIO, RIO } from "./model";
+export * from "./model";
 
 /*
  * -------------------------------------------
@@ -51,7 +51,7 @@ export { Task, IO, UIO, RIO } from "./model";
  * @category Applicative
  * @since 1.0.0
  */
-export const pure = <A>(a: A): UIO<A> => new PureInstruction(a);
+export const pure = <A>(a: A): IO<A> => new PureInstruction(a);
 
 /**
  * ```haskell
@@ -65,7 +65,7 @@ export const pure = <A>(a: A): UIO<A> => new PureInstruction(a);
  * @category Constructors
  * @since 1.0.0
  */
-export const succeed: <E = never, A = never>(a: A) => IO<E, A> = pure;
+export const succeed: <E = never, A = never>(a: A) => EIO<E, A> = pure;
 
 /**
  * ```haskell
@@ -127,7 +127,7 @@ export const asyncOption = <R, E, A>(
  * @category Constructors
  * @since 1.0.0
  */
-export const total = <A>(thunk: () => A): UIO<A> => new TotalInstruction(thunk);
+export const total = <A>(thunk: () => A): IO<A> => new TotalInstruction(thunk);
 
 /**
  * ```haskell
@@ -139,7 +139,7 @@ export const total = <A>(thunk: () => A): UIO<A> => new TotalInstruction(thunk);
  * @category Constructors
  * @since 1.0.0
  */
-export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): IO<E, A> =>
+export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): EIO<E, A> =>
    new PartialInstruction(thunk, onThrow);
 
 /**
@@ -152,7 +152,8 @@ export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): 
  * @category Constructors
  * @since 1.0.0
  */
-export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A): IO<E, A> => partial_(thunk, onThrow);
+export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A): EIO<E, A> =>
+   partial_(thunk, onThrow);
 
 /**
  * ```haskell
@@ -176,7 +177,7 @@ export const suspend = <R, E, A>(factory: Lazy<Task<R, E, A>>): Task<R, E, A> =>
  * @category Constructors
  * @since 1.0.0
  */
-export const halt = <E>(cause: C.Cause<E>): IO<E, never> => new FailInstruction(cause);
+export const halt = <E>(cause: C.Cause<E>): EIO<E, never> => new FailInstruction(cause);
 
 /**
  * ```haskell
@@ -188,7 +189,7 @@ export const halt = <E>(cause: C.Cause<E>): IO<E, never> => new FailInstruction(
  * @category Constructors
  * @since 1.0.0
  */
-export const fail = <E>(e: E): IO<E, never> => halt(C.fail(e));
+export const fail = <E>(e: E): EIO<E, never> => halt(C.fail(e));
 
 /**
  * ```haskell
@@ -200,7 +201,7 @@ export const fail = <E>(e: E): IO<E, never> => halt(C.fail(e));
  * @category Constructors
  * @since 1.0.0
  */
-export const die = (e: unknown): IO<never, never> => halt(C.die(e));
+export const die = (e: unknown): EIO<never, never> => halt(C.die(e));
 
 /**
  * ```haskell
@@ -225,7 +226,7 @@ export const done = <E = never, A = unknown>(exit: Exit<E, A>) => {
    });
 };
 
-export const unit: UIO<void> = pure(undefined);
+export const unit: IO<void> = pure(undefined);
 
 export const ask = <R>(): Task<R, never, R> => asks((_: R) => _);
 
@@ -305,7 +306,7 @@ export const asksM = <Q, R, E, A>(f: (r: Q) => Task<R, E, A>): Task<R & Q, E, A>
  * @category MonadEnv
  * @since 1.0.0
  */
-export const giveAll_ = <R, E, A>(ma: Task<R, E, A>, r: R): IO<E, A> => new GiveInstruction(ma, r);
+export const giveAll_ = <R, E, A>(ma: Task<R, E, A>, r: R): EIO<E, A> => new GiveInstruction(ma, r);
 
 /**
  * ```haskell

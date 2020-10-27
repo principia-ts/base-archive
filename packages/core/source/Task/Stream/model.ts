@@ -61,9 +61,9 @@ export class Stream<R, E, A> {
 /**
  * Type aliases
  */
-export type UIO<A> = Stream<unknown, never, A>;
+export type IO<A> = Stream<unknown, never, A>;
 export type RIO<R, A> = Stream<R, never, A>;
-export type IO<E, A> = Stream<unknown, E, A>;
+export type EIO<E, A> = Stream<unknown, E, A>;
 
 /**
  * The default chunk size used by the various combinators and constructors of [[Stream]].

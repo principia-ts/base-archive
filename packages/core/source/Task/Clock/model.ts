@@ -17,8 +17,8 @@ export const URI = Symbol();
 export interface Clock {
    readonly _tag: typeof URI;
 
-   readonly currentTime: T.UIO<number>;
-   readonly sleep: (ms: number) => T.UIO<void>;
+   readonly currentTime: T.IO<number>;
+   readonly sleep: (ms: number) => T.IO<void>;
 }
 
 /**
@@ -49,7 +49,7 @@ export const LiveClock = (): Clock => ({
 /**
  * Proxy Clock Implementation
  */
-export const ProxyClock = (currentTime: T.UIO<number>, sleep: (ms: number) => T.UIO<void>): Clock => ({
+export const ProxyClock = (currentTime: T.IO<number>, sleep: (ms: number) => T.IO<void>): Clock => ({
    _tag: URI,
    currentTime,
    sleep

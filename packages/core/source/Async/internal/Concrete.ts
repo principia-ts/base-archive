@@ -1,4 +1,5 @@
-import type { Either } from "../../Either";
+import type { Option } from "../../Option";
+import type { Cause } from "../../Task/Exit/Cause";
 import { Async } from "../model";
 
 export enum AsyncInstructionTag {
@@ -49,7 +50,7 @@ export class PartialSyncInstruction<E, A> extends Async<unknown, E, A> {
 
 export class AsyncInstruction<R, E, A> extends Async<R, E, A> {
    readonly _asyncTag = AsyncInstructionTag.Async;
-   constructor(readonly register: (resolve: (_: Async<R, E, A>) => void) => void) {
+   constructor(readonly register: (resolve: (_: Async<R, E, A>) => void) => Option<Async<R, E, A>>) {
       super();
    }
 }
@@ -63,7 +64,7 @@ export class SuspendInstruction<R, E, A> extends Async<R, E, A> {
 
 export class FailInstruction<E> extends Async<unknown, E, never> {
    readonly _asyncTag = AsyncInstructionTag.Fail;
-   constructor(readonly e: E) {
+   constructor(readonly e: Cause<E>) {
       super();
    }
 }

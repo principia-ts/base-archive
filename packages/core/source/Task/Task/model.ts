@@ -12,7 +12,7 @@ import type { Scope } from "../Scope";
 import type { Supervisor } from "../Supervisor";
 import { _A, _E, _I, _R, _U, TaskInstructionTag } from "./constants";
 
-export { _A, _E, _I, _R, _U, TaskInstructionTag };
+export { _A, _E, _I, _R, _U, TaskInstructionTag } from "./constants";
 
 /*
  * -------------------------------------------
@@ -64,9 +64,9 @@ export type Instruction =
 
 export type V = Variance<"E", "+"> & Variance<"R", "-">;
 
-export type UIO<A> = Task<unknown, never, A>;
+export type IO<A> = Task<unknown, never, A>;
 export type RIO<R, A> = Task<R, never, A>;
-export type IO<E, A> = Task<unknown, E, A>;
+export type EIO<E, A> = Task<unknown, E, A>;
 
 export type Canceler<R> = RIO<R, void>;
 

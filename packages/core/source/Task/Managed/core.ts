@@ -3,12 +3,12 @@ import type { Exit } from "../Exit";
 import * as Ex from "../Exit";
 import type { Cause } from "../Exit/Cause";
 import { makeRef } from "../XRef/combinators";
-import * as T from "./_internal/effect";
+import * as T from "./_internal/task";
 import type { Managed } from "./model";
 import type { Finalizer, ReleaseMap } from "./ReleaseMap";
 import { add, addIfOpen, noopFinalizer, release } from "./ReleaseMap";
 
-export type { Managed, UIO, RIO, IO } from "./model";
+export * from "./model";
 
 export const managed = <R, E, A>(
    effect: T.Task<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>

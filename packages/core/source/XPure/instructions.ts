@@ -103,18 +103,3 @@ export type Concrete<S1, S2, R, E, A> =
    | SuspendInstruction<S1, S2, R, E, A>
    | TotalInstruction<A>
    | PartialInstruction<E, A>;
-
-export class FoldFrame {
-   readonly _xptag = "FoldFrame";
-   constructor(
-      readonly failure: (e: any) => XPure<any, any, any, any, any>,
-      readonly apply: (e: any) => XPure<any, any, any, any, any>
-   ) {}
-}
-
-export class ApplyFrame {
-   readonly _xptag = "ApplyFrame";
-   constructor(readonly apply: (e: any) => XPure<any, any, any, any, any>) {}
-}
-
-export type Frame = FoldFrame | ApplyFrame;

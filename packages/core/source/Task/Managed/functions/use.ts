@@ -1,5 +1,5 @@
-import * as T from "../_internal/effect";
-import { useManaged, useManaged_ } from "../../Parallel";
+import * as T from "../_internal/task";
+import { useManaged, useManaged_ } from "../../_parallel";
 import type { Managed } from "../model";
 
 export const use = useManaged;

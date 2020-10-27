@@ -1,6 +1,4 @@
-import { RSA_X931_PADDING } from "constants";
-
-import { flow } from "../Function";
+import { flow, identity } from "../Function";
 import { succeed } from "./constructors";
 import { AllInstruction, ChainInstruction, GiveInstruction, ReadInstruction } from "./internal/Concrete";
 import type { Async } from "./model";
@@ -13,6 +11,9 @@ export const chain_ = <R, E, A, R1, E1, B>(
 export const chain = <A, R1, E1, B>(f: (a: A) => Async<R1, E1, B>) => <R, E>(
    ma: Async<R, E, A>
 ): Async<R & R1, E | E1, B> => chain_(ma, f);
+
+export const flatten = <R, E, R1, E1, A>(mma: Async<R, E, Async<R1, E1, A>>): Async<R & R1, E | E1, A> =>
+   chain_(mma, identity);
 
 export const map_ = <R, E, A, B>(fa: Async<R, E, A>, f: (a: A) => B): Async<R, E, B> => chain_(fa, flow(f, succeed));
 
@@ -31,5 +32,5 @@ export const giveAll = <R>(env: R) => <E, A>(ra: Async<R, E, A>): Async<unknown,
 
 export const asksM = <R0, R, E, A>(f: (r0: R0) => Async<R, E, A>): Async<R0 & R, E, A> => new ReadInstruction(f);
 
-export const collectAll = <R, E, A>(fas: ReadonlyArray<Async<R, E, A>>): Async<R, E, ReadonlyArray<A>> =>
+export const collectAllPar = <R, E, A>(fas: ReadonlyArray<Async<R, E, A>>): Async<R, E, ReadonlyArray<A>> =>
    new AllInstruction(fas);

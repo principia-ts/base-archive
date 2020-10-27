@@ -1,5 +1,5 @@
 import * as T from "../../Task/core";
-import type { IO } from "../../Task/model";
+import type { EIO } from "../../Task/model";
 import type { Fiber } from "../model";
 
 /**
@@ -13,5 +13,5 @@ import type { Fiber } from "../model";
  * "inner interruption" of this fiber, unlike interruption triggered by another
  * fiber, "inner interruption" can be caught and recovered.
  */
-export const join = <E, A>(fiber: Fiber<E, A>): IO<E, A> =>
+export const join = <E, A>(fiber: Fiber<E, A>): EIO<E, A> =>
    T.tap_(T.chain_(fiber.await, T.done), () => fiber.inheritRefs);

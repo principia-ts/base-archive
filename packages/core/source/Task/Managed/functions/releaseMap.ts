@@ -1,4 +1,4 @@
-import * as T from "../_internal/effect";
+import * as T from "../_internal/task";
 import { pipe } from "../../../Function";
 import { managed } from "../core";
 import type { Managed } from "../model";

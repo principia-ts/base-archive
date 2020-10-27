@@ -1,4 +1,4 @@
-import * as T from "../_internal/effect";
+import * as T from "../_internal/task";
 import { pipe } from "../../../Function";
 import * as O from "../../../Option";
 import { sequential } from "../../ExecutionStrategy";

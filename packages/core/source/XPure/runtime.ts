@@ -1,9 +1,24 @@
 import * as E from "../Either";
-import { Stack } from "../Task/Stack";
+import type { Stack } from "../support/Stack";
+import { stack } from "../support/Stack";
 import { concrete, fail, succeed } from "./constructors";
-import type { Frame } from "./instructions";
-import { ApplyFrame, FoldFrame, XPureInstructionTag } from "./instructions";
+import { XPureInstructionTag } from "./instructions";
 import type { XPure } from "./XPure";
+
+export class FoldFrame {
+   readonly _xptag = "FoldFrame";
+   constructor(
+      readonly failure: (e: any) => XPure<any, any, any, any, any>,
+      readonly apply: (e: any) => XPure<any, any, any, any, any>
+   ) {}
+}
+
+export class ApplyFrame {
+   readonly _xptag = "ApplyFrame";
+   constructor(readonly apply: (e: any) => XPure<any, any, any, any, any>) {}
+}
+
+export type Frame = FoldFrame | ApplyFrame;
 
 /**
  * Runs this computation with the specified initial state, returning either a
@@ -13,48 +28,48 @@ export const runStateEither_ = <S1, S2, E, A>(
    fa: XPure<S1, S2, unknown, E, A>,
    s: S1
 ): E.Either<E, readonly [S2, A]> => {
-   let stack: Stack<Frame> | undefined = undefined;
-   let s0 = s as any;
-   let a = null;
-   let r = null;
+   let frames: Stack<Frame> | undefined = undefined;
+   let state = s as any;
+   let result = null;
+   let environment = null;
    let failed = false;
    let current = fa as XPure<any, any, any, any, any> | undefined;
 
-   function pop() {
-      const nextInstr = stack;
+   function popContinuation() {
+      const nextInstr = frames;
       if (nextInstr) {
-         stack = stack?.previous;
+         frames = frames?.previous;
       }
       return nextInstr?.value;
    }
 
-   function push(cont: Frame) {
-      stack = new Stack(cont, stack);
+   function pushContinuation(cont: Frame) {
+      frames = stack(cont, frames);
    }
 
    function findNextErrorHandler() {
       let unwinding = true;
       while (unwinding) {
-         const next = pop();
+         const next = popContinuation();
 
          if (next == null) {
             unwinding = false;
          } else {
             if (next._xptag === "FoldFrame") {
                unwinding = false;
-               push(new ApplyFrame(next.failure));
+               pushContinuation(new ApplyFrame(next.failure));
             }
          }
       }
    }
 
    while (current != null) {
-      const xp = concrete(current);
+      const I = concrete(current);
 
-      switch (xp._xptag) {
+      switch (I._xptag) {
          case XPureInstructionTag.Chain: {
-            const nested = concrete(xp.ma);
-            const continuation = xp.f;
+            const nested = concrete(I.ma);
+            const continuation = I.f;
 
             switch (nested._xptag) {
                case XPureInstructionTag.Pure: {
@@ -74,27 +89,27 @@ export const runStateEither_ = <S1, S2, E, A>(
                   break;
                }
                case XPureInstructionTag.Modify: {
-                  const updated = nested.run(s0);
+                  const updated = nested.run(state);
 
-                  s0 = updated[0];
-                  a = updated[1];
+                  state = updated[0];
+                  result = updated[1];
 
-                  current = continuation(a);
+                  current = continuation(result);
                   break;
                }
                default: {
                   current = nested;
-                  push(new ApplyFrame(continuation));
+                  pushContinuation(new ApplyFrame(continuation));
                }
             }
 
             break;
          }
          case XPureInstructionTag.Total: {
-            a = xp.thunk();
-            const nextInstruction = pop();
+            result = I.thunk();
+            const nextInstruction = popContinuation();
             if (nextInstruction) {
-               current = nextInstruction.apply(a);
+               current = nextInstruction.apply(result);
             } else {
                current = undefined;
             }
@@ -102,21 +117,21 @@ export const runStateEither_ = <S1, S2, E, A>(
          }
          case XPureInstructionTag.Partial: {
             try {
-               current = succeed(xp.thunk());
+               current = succeed(I.thunk());
             } catch (e) {
-               current = fail(xp.onThrow(e));
+               current = fail(I.onThrow(e));
             }
             break;
          }
          case XPureInstructionTag.Suspend: {
-            current = xp.factory();
+            current = I.factory();
             break;
          }
          case XPureInstructionTag.Pure: {
-            a = xp.value;
-            const nextInstr = pop();
+            result = I.value;
+            const nextInstr = popContinuation();
             if (nextInstr) {
-               current = nextInstr.apply(a);
+               current = nextInstr.apply(result);
             } else {
                current = undefined;
             }
@@ -124,37 +139,37 @@ export const runStateEither_ = <S1, S2, E, A>(
          }
          case XPureInstructionTag.Fail: {
             findNextErrorHandler();
-            const nextInst = pop();
+            const nextInst = popContinuation();
             if (nextInst) {
-               current = nextInst.apply(xp.e);
+               current = nextInst.apply(I.e);
             } else {
                failed = true;
-               a = xp.e;
+               result = I.e;
                current = undefined;
             }
             break;
          }
          case XPureInstructionTag.Fold: {
-            current = xp.fa;
-            push(new FoldFrame(xp.onFailure, xp.onSuccess));
+            current = I.fa;
+            pushContinuation(new FoldFrame(I.onFailure, I.onSuccess));
             break;
          }
          case XPureInstructionTag.Read: {
-            current = xp.f(r);
+            current = I.f(environment);
             break;
          }
          case XPureInstructionTag.Give: {
-            r = xp.r;
-            current = xp.fa;
+            environment = I.r;
+            current = I.fa;
             break;
          }
          case XPureInstructionTag.Modify: {
-            const updated = xp.run(s0);
-            s0 = updated[0];
-            a = updated[1];
-            const nextInst = pop();
+            const updated = I.run(state);
+            state = updated[0];
+            result = updated[1];
+            const nextInst = popContinuation();
             if (nextInst) {
-               current = nextInst.apply(a);
+               current = nextInst.apply(result);
             } else {
                current = undefined;
             }
@@ -164,10 +179,10 @@ export const runStateEither_ = <S1, S2, E, A>(
    }
 
    if (failed) {
-      return E.left(a);
+      return E.left(result);
    }
 
-   return E.right([s0, a]);
+   return E.right([state, result]);
 };
 
 /**

@@ -19,6 +19,6 @@ export interface Managed<R, E, A> {
 
 export type InferSuccess<T> = T extends Managed<infer R, infer E, infer A> ? A : never;
 
-export type UIO<A> = Managed<unknown, never, A>;
+export type IO<A> = Managed<unknown, never, A>;
 export type RIO<R, A> = Managed<R, never, A>;
-export type IO<E, A> = Managed<unknown, E, A>;
+export type EIO<E, A> = Managed<unknown, E, A>;

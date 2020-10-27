@@ -17,13 +17,13 @@ import { foreachManaged } from "./destructors";
 import * as BPull from "./internal/BufferedPull";
 import * as Pull from "./internal/Pull";
 import * as Take from "./internal/Take";
-import type { RIO, UIO } from "./model";
+import type { IO, RIO } from "./model";
 import { Chain, Stream } from "./model";
 
 /**
  * Creates a single-valued pure stream
  */
-export const pure = <A>(a: A): UIO<A> => fromArray([a]);
+export const pure = <A>(a: A): IO<A> => fromArray([a]);
 
 /**
  * Taskfully transforms the chunks emitted by this stream.
@@ -346,7 +346,7 @@ export const asyncTask = <R, E, A, R1 = R, E1 = E>(
       cb: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
-      ) => T.UIO<Exit<never, boolean>>
+      ) => T.IO<Exit<never, boolean>>
    ) => T.Task<R1, E1, unknown>,
    outputBuffer = 16
 ): Stream<R & R1, E | E1, A> =>

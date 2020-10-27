@@ -14,13 +14,13 @@ export const URI = Symbol();
 export abstract class Random {
    readonly _URI!: typeof URI;
 
-   abstract readonly next: T.UIO<number>;
-   abstract readonly nextBoolean: T.UIO<boolean>;
-   abstract readonly nextInt: T.UIO<number>;
-   abstract readonly nextDouble: T.UIO<number>;
-   abstract readonly nextRange: (low: number, high: number) => T.UIO<number>;
-   abstract readonly nextIntBetween: (low: number, high: number) => T.UIO<number>;
-   abstract readonly setSeed: (s: string) => T.UIO<void>;
+   abstract readonly next: T.IO<number>;
+   abstract readonly nextBoolean: T.IO<boolean>;
+   abstract readonly nextInt: T.IO<number>;
+   abstract readonly nextDouble: T.IO<number>;
+   abstract readonly nextRange: (low: number, high: number) => T.IO<number>;
+   abstract readonly nextIntBetween: (low: number, high: number) => T.IO<number>;
+   abstract readonly setSeed: (s: string) => T.IO<void>;
 }
 
 export class LiveRandom extends Random {
@@ -30,18 +30,18 @@ export class LiveRandom extends Random {
       super();
    }
 
-   next: T.UIO<number> = T.total(() => this.PRNG.next());
+   next: T.IO<number> = T.total(() => this.PRNG.next());
 
-   nextBoolean: T.UIO<boolean> = T.chain_(this.next, (n) => T.total(() => n > 0.5));
+   nextBoolean: T.IO<boolean> = T.chain_(this.next, (n) => T.total(() => n > 0.5));
 
-   nextInt: T.UIO<number> = T.total(() => this.PRNG.int32());
+   nextInt: T.IO<number> = T.total(() => this.PRNG.int32());
 
-   nextDouble: T.UIO<number> = T.total(() => this.PRNG.double());
+   nextDouble: T.IO<number> = T.total(() => this.PRNG.double());
 
-   nextRange: (low: number, high: number) => T.UIO<number> = (low, high) =>
+   nextRange: (low: number, high: number) => T.IO<number> = (low, high) =>
       T.chain_(this.next, (n) => T.total(() => (high - low) * n + low));
 
-   nextIntBetween: (low: number, high: number) => T.UIO<number> = (low, high) =>
+   nextIntBetween: (low: number, high: number) => T.IO<number> = (low, high) =>
       T.chain_(this.next, (n) => T.total(() => Math.floor((high - low + 1) * n + low)));
 
    setSeed = (s: string) =>

@@ -4,13 +4,13 @@ import { pipe, tuple } from "../../../Function";
 import * as XP from "../../XPromise";
 import * as XRM from "../../XRefM";
 import { bindS, fork, map, of, pure, tap } from "../core";
-import type { Task, UIO } from "../model";
+import type { IO, Task } from "../model";
 import { to } from "./to";
 
 /**
  * Returns a memoized version of the specified effectual function.
  */
-export const memoize = <R, E, A, B>(f: (a: A) => Task<R, E, B>): UIO<(a: A) => Task<R, E, B>> =>
+export const memoize = <R, E, A, B>(f: (a: A) => Task<R, E, B>): IO<(a: A) => Task<R, E, B>> =>
    pipe(
       XRM.makeRefM(new Map<A, XP.XPromise<E, B>>()),
       map((ref) => (a: A) =>
@@ -43,7 +43,7 @@ export const memoize = <R, E, A, B>(f: (a: A) => Task<R, E, B>): UIO<(a: A) => T
  *
  * This variant uses the compare function to compare `A`
  */
-export const memoizeEq = <A>(eq: Eq<A>) => <R, E, B>(f: (a: A) => Task<R, E, B>): UIO<(a: A) => Task<R, E, B>> =>
+export const memoizeEq = <A>(eq: Eq<A>) => <R, E, B>(f: (a: A) => Task<R, E, B>): IO<(a: A) => Task<R, E, B>> =>
    pipe(
       XRM.makeRefM(new Map<A, XP.XPromise<E, B>>()),
       map((ref) => (a: A) =>

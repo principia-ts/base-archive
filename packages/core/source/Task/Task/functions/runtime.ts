@@ -96,7 +96,7 @@ export const runMain = <E>(effect: T.Task<DefaultEnv, E, void>): CancelMain => {
 /**
  * Task Canceler
  */
-export type AsyncCancel<E, A> = T.UIO<Exit<E, A>>;
+export type AsyncCancel<E, A> = T.IO<Exit<E, A>>;
 
 /**
  * Run effect as a Promise of the Exit state
@@ -158,7 +158,7 @@ export const runPromise = <E, A>(_: T.Task<DefaultEnv, E, A>): Promise<A> => {
 export interface Runtime<R0> {
    in: <R, E, A>(effect: T.Task<R & R0, E, A>) => T.Task<R, E, A>;
    run: <E, A>(_: T.Task<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => void;
-   runCancel: <E, A>(_: T.Task<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => T.UIO<Exit<E, A>>;
+   runCancel: <E, A>(_: T.Task<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => T.IO<Exit<E, A>>;
    runPromise: <E, A>(_: T.Task<DefaultEnv & R0, E, A>) => Promise<A>;
    runPromiseExit: <E, A>(_: T.Task<DefaultEnv & R0, E, A>) => Promise<Exit<E, A>>;
 }

@@ -2,7 +2,7 @@ import type { FiberId } from "../../Fiber/FiberId";
 import * as T from "../../Task/core";
 import { checkFiberId } from "../../Task/functions/checkFiberId";
 import { interruptAs as effectInterruptAs } from "../../Task/functions/interrupt";
-import type { Canceler, IO, UIO } from "../../Task/model";
+import type { Canceler, EIO, IO } from "../../Task/model";
 import type { XPromise } from "../model";
 import { Pending } from "../state";
 import { completeWith } from "./completeWith";
@@ -11,17 +11,17 @@ import { completeWith } from "./completeWith";
  * Completes the promise with interruption. This will interrupt all fibers
  * waiting on the value of the promise as by the fiber calling this method.
  */
-export const interrupt = <E, A>(promise: XPromise<E, A>): UIO<boolean> =>
+export const interrupt = <E, A>(promise: XPromise<E, A>): IO<boolean> =>
    T.chain_(checkFiberId(), (id) => completeWith<E, A>(effectInterruptAs(id))(promise));
 
 /**
  * Completes the promise with interruption. This will interrupt all fibers
  * waiting on the value of the promise as by the specified fiber.
  */
-export const interruptAs = (id: FiberId) => <E, A>(promise: XPromise<E, A>): UIO<boolean> =>
+export const interruptAs = (id: FiberId) => <E, A>(promise: XPromise<E, A>): IO<boolean> =>
    completeWith<E, A>(effectInterruptAs(id))(promise);
 
-export const interruptJoiner = <E, A>(joiner: (a: IO<E, A>) => void) => (promise: XPromise<E, A>): Canceler<unknown> =>
+export const interruptJoiner = <E, A>(joiner: (a: EIO<E, A>) => void) => (promise: XPromise<E, A>): Canceler<unknown> =>
    T.total(() => {
       const state = promise.state.get;
 

@@ -29,7 +29,7 @@ class Handoff<A> {
    constructor(readonly ref: XR.Ref<State<A>>) {}
 }
 
-export function make<A>(): T.UIO<Handoff<A>> {
+export function make<A>(): T.IO<Handoff<A>> {
    return pipe(
       XP.make<never, void>(),
       T.chain((p) => XR.makeRef<State<A>>(new Empty(p))),
@@ -38,13 +38,13 @@ export function make<A>(): T.UIO<Handoff<A>> {
 }
 
 export function offer<A>(a: A) {
-   return (h: Handoff<A>): T.UIO<void> =>
+   return (h: Handoff<A>): T.IO<void> =>
       pipe(
          XP.make<never, void>(),
          T.chain((p) =>
             pipe(
                h.ref,
-               XR.modify<T.UIO<void>, State<A>>(
+               XR.modify<T.IO<void>, State<A>>(
                   matchTag({
                      Empty: ({ notifyConsumer }) =>
                         [
@@ -67,13 +67,13 @@ export function offer<A>(a: A) {
       );
 }
 
-export function take<A>(h: Handoff<A>): T.UIO<A> {
+export function take<A>(h: Handoff<A>): T.IO<A> {
    return pipe(
       XP.make<never, void>(),
       T.chain((p) =>
          pipe(
             h.ref,
-            XR.modify<T.UIO<A>, State<A>>(
+            XR.modify<T.IO<A>, State<A>>(
                matchTag({
                   Empty: (s) =>
                      [
@@ -94,13 +94,13 @@ export function take<A>(h: Handoff<A>): T.UIO<A> {
    );
 }
 
-export function poll<A>(h: Handoff<A>): T.UIO<Option<A>> {
+export function poll<A>(h: Handoff<A>): T.IO<Option<A>> {
    return pipe(
       XP.make<never, void>(),
       T.chain((p) =>
          pipe(
             h.ref,
-            XR.modify<T.UIO<Option<A>>, State<A>>(
+            XR.modify<T.IO<Option<A>>, State<A>>(
                matchTag({
                   Empty: (s) => [T.succeed(none()), s] as const,
                   Full: ({ a, notifyProducer }) =>

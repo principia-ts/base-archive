@@ -33,7 +33,7 @@ import {
    unit
 } from "../core";
 import { raceWith } from "../core-scope";
-import type { Task, UIO } from "../model";
+import type { IO, Task } from "../model";
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from "./interrupt";
 import { mapErrorCause_ } from "./mapErrorCause";
 
@@ -134,7 +134,7 @@ const arbiter = <E, A>(
    winner: Fiber.Fiber<E, A>,
    promise: XP.XPromise<E, readonly [A, Fiber.Fiber<E, A>]>,
    fails: XR.Ref<number>
-) => (res: Exit<E, A>): UIO<void> =>
+) => (res: Exit<E, A>): IO<void> =>
    Ex.foldM_(
       res,
       (e) =>
@@ -149,7 +149,7 @@ const arbiter = <E, A>(
             XP.succeed(tuple(a, winner)),
             chain((set) =>
                set
-                  ? A.reduce_(fibers, unit as UIO<void>, (io, f) =>
+                  ? A.reduce_(fibers, unit as IO<void>, (io, f) =>
                        f === winner ? io : tap_(io, () => Fiber.interrupt(f))
                     )
                   : unit
@@ -178,7 +178,7 @@ export const raceAll = <R, E, A>(
                of,
                bindS("fs", () => foreach_(ios, flow(makeInterruptible, fork))),
                tap(({ fs }) =>
-                  A.reduce_(fs, unit as UIO<void>, (io, f) =>
+                  A.reduce_(fs, unit as IO<void>, (io, f) =>
                      chain_(io, () => pipe(f.await, chain(arbiter(fs, f, done, fails)), fork))
                   )
                ),
@@ -188,7 +188,7 @@ export const raceAll = <R, E, A>(
                bindS("c", ({ fs, inheritRefs }) =>
                   pipe(
                      restore(pipe(done, XP.await, chain(inheritRefs))),
-                     onInterrupt(() => A.reduce_(fs, unit as UIO<void>, (io, f) => tap_(io, () => Fiber.interrupt(f))))
+                     onInterrupt(() => A.reduce_(fs, unit as IO<void>, (io, f) => tap_(io, () => Fiber.interrupt(f))))
                   )
                ),
                map(({ c, fs }) => ({ c, fs }))

@@ -8,7 +8,7 @@ import type { Fiber, SyntheticFiber } from "./model";
 /**
  * Taskually maps over the value the fiber computes.
  */
-export const mapTask_ = <E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => T.IO<E1, B>): SyntheticFiber<E | E1, B> => ({
+export const mapTask_ = <E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => T.EIO<E1, B>): SyntheticFiber<E | E1, B> => ({
    _tag: "SyntheticFiber",
    await: T.chain_(fiber.await, Ex.foreach(f)),
    getRef: (ref) => fiber.getRef(ref),
@@ -26,7 +26,7 @@ export const mapTask_ = <E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => T.IO<E1, 
 /**
  * Taskually maps over the value the fiber computes.
  */
-export const mapTask = <A, E1, B>(f: (a: A) => T.IO<E1, B>) => <E>(fiber: Fiber<E, A>) => mapTask_(fiber, f);
+export const mapTask = <A, E1, B>(f: (a: A) => T.EIO<E1, B>) => <E>(fiber: Fiber<E, A>) => mapTask_(fiber, f);
 
 /**
  * Maps over the value the fiber computes.

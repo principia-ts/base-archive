@@ -1,4 +1,4 @@
-import * as T from "../_internal/effect";
+import * as T from "../_internal/task";
 import { tuple } from "../../../Function";
 import { parallel, sequential } from "../../ExecutionStrategy";
 import { mapTask_ } from "../core";

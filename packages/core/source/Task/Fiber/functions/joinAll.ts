@@ -1,3 +1,3 @@
-import { joinAllFibers } from "../../Parallel";
+import { joinAllFibers } from "../../_parallel";
 
 export const joinAll = joinAllFibers;

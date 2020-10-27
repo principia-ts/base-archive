@@ -47,7 +47,7 @@ export const propagationOr = (self: Propagation, that: Propagation) =>
  */
 export class Supervisor<A> {
    constructor(
-      readonly value: T.UIO<A>,
+      readonly value: T.IO<A>,
       readonly unsafeOnStart: <R, E, A>(
          environment: R,
          effect: T.Task<R, E, A>,

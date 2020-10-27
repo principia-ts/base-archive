@@ -1,3 +1,3 @@
-import { forkManaged } from "../../Parallel";
+import { forkManaged } from "../../_parallel";
 
 export const fork = forkManaged;

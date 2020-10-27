@@ -6,10 +6,10 @@ import type { Fiber, RuntimeFiber } from "../Fiber/model";
 import type { Scope } from "../Scope";
 import { globalScope } from "../Scope";
 import { pure } from "./core";
-import type { RIO, Task, UIO } from "./model";
+import type { IO, RIO, Task } from "./model";
 import { ForkInstruction, GetForkScopeInstruction, OverrideForkScopeInstruction, RaceInstruction } from "./model";
 
-export const forkScope: UIO<Scope<Exit<any, any>>> = new GetForkScopeInstruction(pure);
+export const forkScope: IO<Scope<Exit<any, any>>> = new GetForkScopeInstruction(pure);
 
 export const forkScopeWith = <R, E, A>(f: (_: Scope<Exit<any, any>>) => Task<R, E, A>) =>
    new GetForkScopeInstruction(f);

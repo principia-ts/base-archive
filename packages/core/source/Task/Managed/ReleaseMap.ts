@@ -8,7 +8,7 @@ import { none, some } from "../../Option";
 import type { Exit } from "../Exit";
 import * as XR from "../XRef/combinators";
 import type { Ref } from "../XRef/model";
-import * as T from "./_internal/effect";
+import * as T from "./_internal/task";
 
 export type Finalizer = (exit: Exit<any, any>) => T.Task<unknown, never, any>;
 

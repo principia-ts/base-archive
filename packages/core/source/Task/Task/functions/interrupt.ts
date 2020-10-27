@@ -21,11 +21,11 @@ import {
    unit
 } from "../core";
 import { forkDaemon } from "../core-scope";
-import type { Canceler, IO, Task, UIO } from "../model";
+import type { Canceler, EIO, IO, Task } from "../model";
 import { InterruptStatusInstruction } from "../model";
 import { checkFiberId } from "./checkFiberId";
 
-export const interruptAs = (fiberId: FiberId): IO<never, never> => halt(C.interrupt(fiberId));
+export const interruptAs = (fiberId: FiberId): EIO<never, never> => halt(C.interrupt(fiberId));
 
 export const interrupt: Task<unknown, never, never> = chain_(checkFiberId(), interruptAs);
 
@@ -164,7 +164,7 @@ export const maybeAsyncInterrupt = <R, E, A>(
             flatten(
                asyncOption<R, E, Task<R, E, A>>((k) => {
                   started.set(true);
-                  const ret = new AtomicReference<Option<UIO<Task<R, E, A>>>>(none());
+                  const ret = new AtomicReference<Option<IO<Task<R, E, A>>>>(none());
                   try {
                      const res = register((io) => k(pure(io)));
                      switch (res._tag) {

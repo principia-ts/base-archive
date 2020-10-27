@@ -1,4 +1,4 @@
-import * as T from "../_internal/effect";
+import * as T from "../_internal/task";
 import { fromTask } from "../core";
 import { onExitFirst_ } from "./onExitFirst";
 

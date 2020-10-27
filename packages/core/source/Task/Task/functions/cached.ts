@@ -7,7 +7,7 @@ import type { XPromise } from "../../XPromise";
 import * as XP from "../../XPromise";
 import * as XRM from "../../XRefM";
 import { ask, bindS, chain, die, giveAll, map, of, tap } from "../core";
-import type { IO, RIO, Task } from "../model";
+import type { EIO, RIO, Task } from "../model";
 import { uninterruptibleMask } from "./interrupt";
 import { to } from "./to";
 
@@ -55,7 +55,7 @@ const _get = <R, E, A>(fa: Task<R, E, A>, ttl: number, cache: XRM.RefM<Option<re
  * @category Combinators
  * @since 1.0.0
  */
-export const cached_ = <R, E, A>(fa: Task<R, E, A>, timeToLive: number): RIO<R & HasClock, IO<E, A>> =>
+export const cached_ = <R, E, A>(fa: Task<R, E, A>, timeToLive: number): RIO<R & HasClock, EIO<E, A>> =>
    pipe(
       of,
       bindS("r", () => ask<R & HasClock>()),

@@ -227,7 +227,7 @@ function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, any> {
  */
 
 export class MemoMap {
-   constructor(readonly ref: XRM.RefM<ReadonlyMap<symbol, readonly [T.IO<any, any>, Finalizer]>>) {}
+   constructor(readonly ref: XRM.RefM<ReadonlyMap<symbol, readonly [T.EIO<any, any>, Finalizer]>>) {}
 
    /**
     * Checks the memo map to see if a dependency exists. If it is, immediately
@@ -246,7 +246,7 @@ export class MemoMap {
 
                   const cached = T.asksM(([_, rm]: readonly [R, ReleaseMap]) =>
                      pipe(
-                        acquire as T.IO<E, A>,
+                        acquire as T.EIO<E, A>,
                         T.onExit((ex) => {
                            switch (ex._tag) {
                               case "Success": {
@@ -295,7 +295,7 @@ export class MemoMap {
                                                    XP.halt(e.cause),
                                                    T.chain(
                                                       () =>
-                                                         M.releaseAll(e, sequential())(innerReleaseMap) as T.IO<E, any>
+                                                         M.releaseAll(e, sequential())(innerReleaseMap) as T.EIO<E, any>
                                                    ),
                                                    T.chain(() => T.halt(e.cause))
                                                 );
@@ -310,7 +310,7 @@ export class MemoMap {
                                                                observers,
                                                                XR.modify((n) => [n === 1, n - 1])
                                                             )
-                                                         )(M.releaseAll(e, sequential())(innerReleaseMap) as T.UIO<any>)
+                                                         )(M.releaseAll(e, sequential())(innerReleaseMap) as T.IO<any>)
                                                       )
                                                    ),
                                                    T.tap(() =>
@@ -359,14 +359,14 @@ export class MemoMap {
                                  })
                               ),
                               (e: Exit<any, any>) => T.chain_(finalizerRef.get, (f) => f(e))
-                           ] as readonly [T.IO<any, any>, Finalizer]
+                           ] as readonly [T.EIO<any, any>, Finalizer]
                      ),
                      T.map(({ memoized, resource }) =>
                         tuple(
                            resource as T.Task<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>,
                            insert(layer.hash.get, memoized)(m) as ReadonlyMap<
                               symbol,
-                              readonly [T.IO<any, any>, Finalizer]
+                              readonly [T.EIO<any, any>, Finalizer]
                            >
                         )
                      )
@@ -383,7 +383,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>;
 
 export function makeMemoMap() {
    return pipe(
-      XRM.makeRefM<ReadonlyMap<symbol, readonly [T.IO<any, any>, Finalizer]>>(new Map()),
+      XRM.makeRefM<ReadonlyMap<symbol, readonly [T.EIO<any, any>, Finalizer]>>(new Map()),
       T.chain((r) => T.total(() => new MemoMap(r)))
    );
 }

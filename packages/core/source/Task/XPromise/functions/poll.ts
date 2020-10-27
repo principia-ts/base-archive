@@ -1,14 +1,14 @@
 import type { Option } from "../../../Option";
 import { none, some } from "../../../Option";
 import * as T from "../../Task/core";
-import type { IO, UIO } from "../../Task/model";
+import type { EIO, IO } from "../../Task/model";
 import type { XPromise } from "../model";
 
 /**
  * Checks for completion of this Promise. Returns the result effect if this
  * promise has already been completed or a `None` otherwise.
  */
-export const poll = <E, A>(promise: XPromise<E, A>): UIO<Option<IO<E, A>>> =>
+export const poll = <E, A>(promise: XPromise<E, A>): IO<Option<EIO<E, A>>> =>
    T.total(() => {
       const state = promise.state.get;
 

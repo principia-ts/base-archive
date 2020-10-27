@@ -1,15 +1,65 @@
+import type { Either } from "../Either";
+import * as E from "../Either";
 import { pipe } from "../Function";
 import type { Option } from "../Option";
 import * as O from "../Option";
-import { Scheduler } from "../support";
+import { AtomicReference, Scheduler } from "../support";
 import type { Stack } from "../support/Stack";
 import { stack } from "../support/Stack";
-import { fail, succeed, total } from "./constructors";
-import * as Ex from "./exit";
+import * as Ex from "../Task/Exit";
+import type { Cause } from "../Task/Exit/Cause";
+import * as C from "../Task/Exit/Cause";
+import { newFiberId } from "../Task/Fiber/FiberId";
+import * as Ac from "./_deps";
 import type { Concrete } from "./internal/Concrete";
 import { AsyncInstructionTag, concrete } from "./internal/Concrete";
 import { chain, giveAll, tap } from "./methods";
 import type { Async } from "./model";
+
+export class AsyncTracingContext {
+   readonly running = new Set<AsyncDriver<any, any>>();
+   readonly listeners = new Set<() => void>();
+   readonly interval = new AtomicReference<NodeJS.Timeout | undefined>(undefined);
+   private done = false;
+
+   private finish() {
+      if (!this.done) {
+         this.done = true;
+         this.listeners.forEach((f) => {
+            f();
+         });
+      }
+   }
+
+   listen(f: () => void) {
+      this.listeners.add(f);
+   }
+
+   trace(driver: AsyncDriver<any, any>) {
+      if (!this.running.has(driver)) {
+         if (typeof this.interval.get === "undefined") {
+            this.interval.set(
+               setInterval(() => {
+                  /* */
+               }, 60000)
+            );
+         }
+
+         this.running.add(driver);
+
+         driver.runAsync(() => {
+            this.running.delete(driver);
+            if (this.running.size === 0) {
+               const ci = this.interval.get;
+               if (ci) {
+                  clearInterval(ci);
+               }
+               this.finish();
+            }
+         });
+      }
+   }
+}
 
 export class FoldFrame {
    readonly _tag = "FoldFrame";
@@ -69,19 +119,113 @@ export class AsyncResult<A> {
    }
 }
 
+export class Done {
+   readonly _tag = "Done";
+}
+
+export class Finishing {
+   readonly _tag = "Finishing";
+   constructor(readonly interrupting: boolean) {}
+}
+
+export class Running {
+   readonly _tag = "Running";
+   constructor(readonly interrupting: boolean) {}
+}
+
+export class Suspended {
+   readonly _tag = "Suspended";
+   constructor(readonly previous: AsyncStatus, readonly epoch: number) {}
+}
+
+export type AsyncStatus = Done | Finishing | Running | Suspended;
+
+export class AsyncStateExecuting<E, A> {
+   readonly _tag = "Executing";
+   constructor(
+      readonly status: AsyncStatus,
+      readonly observers: Array<(_: Ex.Exit<never, Ex.Exit<E, A>>) => void>,
+      readonly interrupted: C.Cause<never>
+   ) {}
+}
+
+export type AsyncState<E, A> = AsyncStateExecuting<E, A> | AsyncStateDone<E, A>;
+
+export const initialAsyncState = <E, A>(): AsyncState<E, A> => new AsyncStateExecuting(new Running(false), [], C.empty);
+
+export class AsyncStateDone<E, A> {
+   readonly _tag = "Done";
+   readonly interrupted = C.empty;
+   readonly status: AsyncStatus = new Done();
+   constructor(readonly value: Ex.Exit<E, A>) {}
+}
+
+const isInterrupting = <E, A>(state: AsyncState<E, A>) => {
+   const loop = (status: AsyncStatus): boolean => {
+      switch (status._tag) {
+         case "Running": {
+            return status.interrupting;
+         }
+         case "Finishing": {
+            return status.interrupting;
+         }
+         case "Suspended": {
+            return loop(status.previous);
+         }
+         case "Done": {
+            return false;
+         }
+      }
+   };
+   return loop(state.status);
+};
+
+const withInterrupting = (b: boolean) => (s: AsyncStatus): AsyncStatus => {
+   switch (s._tag) {
+      case "Done": {
+         return s;
+      }
+      case "Finishing": {
+         return new Finishing(b);
+      }
+      case "Running": {
+         return new Running(b);
+      }
+      case "Suspended": {
+         return new Suspended(withInterrupting(b)(s.previous), s.epoch);
+      }
+   }
+};
+
 const defaultAsyncScheduler = (() => new Scheduler())();
 
 export class AsyncDriver<E, A> {
+   private readonly state = new AtomicReference(initialAsyncState<E, A>());
+   private readonly scheduler = defaultAsyncScheduler;
    private frameStack?: Stack<Frame> = undefined;
    private environments?: Stack<any> = undefined;
-   private result: AsyncResult<Ex.Exit<E, A>> = new AsyncResult();
    private running = false;
-   private scheduler = defaultAsyncScheduler;
    private interruptListeners = new Set<() => Async<unknown, unknown, unknown>>();
    private interrupted = false;
 
+   private fiberId = newFiberId();
+
+   private epoch = 0;
+
    constructor(initialEnv: any) {
       this.environments = stack(initialEnv);
+   }
+
+   private get isInterrupted() {
+      return !C.isEmpty(this.state.get.interrupted);
+   }
+
+   private get isInterrupting() {
+      return isInterrupting(this.state.get);
+   }
+
+   private get shouldInterrupt() {
+      return this.isInterrupted && !this.isInterrupting;
    }
 
    private popFrame(): Frame | undefined {
@@ -104,16 +248,92 @@ export class AsyncDriver<E, A> {
       this.environments = stack(env, this.environments);
    }
 
-   onExit(f: (exit: Ex.Exit<E, A>) => void): () => void {
-      return this.result.listen(f);
+   private setInterrupting(b: boolean): void {
+      const s = this.state.get;
+
+      switch (s._tag) {
+         case "Executing": {
+            this.state.set(new AsyncStateExecuting(withInterrupting(b)(s.status), s.observers, s.interrupted));
+            return;
+         }
+         case "Done": {
+            return;
+         }
+      }
    }
 
-   interrupt(): void {
-      this.interrupted = true;
-      this.result.complete(Ex.interrupt());
+   private done(exit: Ex.Exit<E, A>): Async<unknown, unknown, unknown> | undefined {
+      const s = this.state.get;
+      switch (s._tag) {
+         case "Done": {
+            return undefined;
+         }
+         case "Executing": {
+            this.state.set(new AsyncStateDone(exit));
+            s.observers.forEach((f) => f(Ex.succeed(exit)));
+            return undefined;
+         }
+      }
    }
 
-   canRecover(rejection: Ex.Rejection<unknown>): boolean {
+   onExit(f: (exit: Ex.Exit<never, Ex.Exit<E, A>>) => void): void {
+      const s = this.state.get;
+      switch (s._tag) {
+         case "Done": {
+            f(Ex.succeed(s.value));
+            return;
+         }
+         case "Executing": {
+            this.state.set(new AsyncStateExecuting(s.status, [f, ...s.observers], s.interrupted));
+         }
+      }
+   }
+
+   private registerObserver(cb: (exit: Ex.Exit<never, Ex.Exit<E, A>>) => void): Ex.Exit<E, A> | null {
+      const s = this.state.get;
+
+      switch (s._tag) {
+         case "Done": {
+            return s.value;
+         }
+         case "Executing": {
+            const observers = [cb, ...s.observers];
+
+            this.state.set(new AsyncStateExecuting(s.status, observers, s.interrupted));
+
+            return null;
+         }
+      }
+   }
+
+   interrupt(): Async<unknown, never, Ex.Exit<E, A>> {
+      const setInterrupt = (): Cause<never> => {
+         const s = this.state.get;
+         switch (s._tag) {
+            case "Executing": {
+               if (s.status._tag === "Suspended" && !isInterrupting(s)) {
+                  const rejection = C.then(s.interrupted, C.interrupt(this.fiberId));
+                  this.state.set(new AsyncStateExecuting(withInterrupting(true)(s.status), s.observers, rejection));
+                  this.evaluateLater(Ac.halt(C.interrupt(this.fiberId)));
+                  return rejection;
+               } else {
+                  const rejection = C.then(s.interrupted, C.interrupt(this.fiberId));
+                  this.state.set(new AsyncStateExecuting(s.status, s.observers, rejection));
+                  return rejection;
+               }
+            }
+            case "Done": {
+               return C.interrupt(this.fiberId);
+            }
+         }
+      };
+      return Ac.suspend(() => {
+         setInterrupt();
+         return this.await;
+      });
+   }
+
+   canRecover(rejection: Cause<unknown>): boolean {
       if (rejection._tag === "Fail" && !this.interrupted) {
          return true;
       }
@@ -124,7 +344,7 @@ export class AsyncDriver<E, A> {
       return !this.frameStack;
    }
 
-   handleRejection(rejection: Ex.Rejection<unknown>): Async<unknown, unknown, unknown> | undefined {
+   handleRejection(rejection: Cause<unknown>): Async<unknown, unknown, unknown> | undefined {
       while (!this.isStackEmpty) {
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
          const frame = this.popFrame()!;
@@ -136,7 +356,7 @@ export class AsyncDriver<E, A> {
             }
          }
       }
-      this.result.complete(rejection as Ex.Rejection<E>);
+      this.done(Ex.failure(rejection) as Ex.Exit<E, A>);
       return;
    }
 
@@ -145,25 +365,36 @@ export class AsyncDriver<E, A> {
       if (frame) {
          return frame.apply(value);
       }
-      this.result.complete(Ex.done(value as A));
+      this.done(Ex.succeed(value as A));
       return;
    }
 
-   resume(status: Async<unknown, unknown, unknown>): void {
-      this.scheduler.dispatchLater(() => {
-         this.evaluateNow(status);
-      });
+   resume(epoch: number) {
+      return (_: Async<unknown, unknown, unknown>) => {
+         if (this.exitAsync(epoch)) {
+            this.evaluateLater(_);
+         }
+      };
    }
 
-   promise(register: (resolve: (_: Async<unknown, unknown, unknown>) => void) => void) {
-      let complete = false;
-      register((status) => {
-         if (complete) {
-            return;
+   enterAsync(epoch: number) {
+      const s = this.state.get;
+      switch (s._tag) {
+         case "Done": {
+            throw new Error("Unexpected AsyncDriver completion");
          }
-         complete = true;
-         this.resume(status);
-      });
+         case "Executing": {
+            const newState = new AsyncStateExecuting(new Suspended(s.status, epoch), s.observers, s.interrupted);
+            this.state.set(newState);
+
+            if (this.shouldInterrupt) {
+               this.exitAsync(epoch);
+               return Ac.halt(this.state.get.interrupted);
+            } else {
+               return undefined;
+            }
+         }
+      }
    }
 
    start(I: Async<unknown, E, A>): void {
@@ -180,31 +411,72 @@ export class AsyncDriver<E, A> {
          d.onExit((exit) => {
             resolve(exit);
          });
-         d.start(start);
+         d.evaluateLater(start);
       });
    }
 
-   all(Is: ReadonlyArray<Async<unknown, unknown, unknown>>): void {
-      this.promise(async (resolve) => {
-         const results: Array<Ex.Exit<unknown, unknown>> = [];
-         const running = new Set<Promise<Ex.Exit<unknown, unknown>>>();
-         for (let i = 0; i < Is.length; i++) {
-            const p = this.forkToPromise(Is[i]);
-            running.add(p);
-            p.then((exit) => {
-               running.delete(p);
-               results.push(exit);
-            });
+   private observe(cb: (exit: Ex.Exit<never, Ex.Exit<E, A>>) => void) {
+      const x = this.registerObserver(cb);
+      if (x != null) {
+         return O.some(Ac.succeed(x));
+      }
+      return O.none();
+   }
+
+   get await(): Async<unknown, never, Ex.Exit<E, A>> {
+      return Ac.maybeAsyncInterrupt(
+         (r): Either<Async<unknown, never, void>, Async<unknown, never, Ex.Exit<E, A>>> => {
+            const cb = (exit: Ex.Exit<never, Ex.Exit<E, A>>): void => r(Ac.done(exit));
+            return O.fold_(this.observe(cb), () => E.left(Ac.total(() => this.interruptObserver(cb))), E.right);
          }
-         await Promise.all(running);
-         resolve(succeed(results));
+      );
+   }
+
+   private interruptObserver(cb: (exit: Ex.Exit<never, Ex.Exit<E, A>>) => void): void {
+      const s = this.state.get;
+      if (s._tag === "Executing") {
+         const observers = s.observers.filter((o) => o !== cb);
+         this.state.set(new AsyncStateExecuting(s.status, observers, s.interrupted));
+      }
+   }
+
+   fork(start: Async<unknown, unknown, unknown>) {
+      const d = new AsyncDriver(this.environments?.value || {});
+      this.scheduler.dispatchLater(() => {
+         d.evaluateNow(start);
       });
+      return d;
+   }
+
+   runAsync(cb: (exit: Ex.Exit<E, A>) => void) {
+      const v = this.registerObserver((xx) => cb(Ex.flatten(xx)));
+
+      if (v) {
+         cb(v);
+      }
    }
 
    evaluateLater(start: Async<unknown, unknown, unknown>): void {
       this.scheduler.dispatchLater(() => {
          this.evaluateNow(start);
       });
+   }
+
+   exitAsync(epoch: number): boolean {
+      const s = this.state.get;
+      switch (s._tag) {
+         case "Done": {
+            return false;
+         }
+         case "Executing": {
+            if (s.status._tag === "Suspended" && epoch === s.status.epoch) {
+               this.state.set(new AsyncStateExecuting(s.status, s.observers, s.interrupted));
+               return true;
+            } else {
+               return false;
+            }
+         }
+      }
    }
 
    evaluateNow(start: Async<unknown, unknown, unknown>): void {
@@ -227,9 +499,9 @@ export class AsyncDriver<E, A> {
                   }
                   case AsyncInstructionTag.PartialSync: {
                      try {
-                        current = succeed(nested.thunk());
+                        current = Ac.succeed(nested.thunk());
                      } catch (e) {
-                        current = fail(nested.onThrow(e));
+                        current = Ac.fail(nested.onThrow(e));
                      }
                      break;
                   }
@@ -253,8 +525,29 @@ export class AsyncDriver<E, A> {
                break;
             }
             case AsyncInstructionTag.Async: {
-               this.promise(I.register);
-               current = undefined;
+               const c = I;
+               const epoch = this.epoch;
+               this.epoch = this.epoch + 1;
+               current = this.enterAsync(epoch);
+               if (!current) {
+                  const onResolve = c.register;
+                  const h = onResolve(this.resume(epoch));
+
+                  switch (h._tag) {
+                     case "None": {
+                        current = undefined;
+                        break;
+                     }
+                     case "Some": {
+                        if (this.exitAsync(epoch)) {
+                           current = h.value;
+                        } else {
+                           current = undefined;
+                        }
+                        break;
+                     }
+                  }
+               }
                break;
             }
             case AsyncInstructionTag.Suspend: {
@@ -266,7 +559,7 @@ export class AsyncDriver<E, A> {
                break;
             }
             case AsyncInstructionTag.Fail: {
-               current = this.handleRejection(Ex.fail(I.e));
+               current = this.handleRejection(I.e);
                break;
             }
             case AsyncInstructionTag.Fold: {
@@ -280,12 +573,12 @@ export class AsyncDriver<E, A> {
             }
             case AsyncInstructionTag.Give: {
                current = pipe(
-                  total(() => {
+                  Ac.total(() => {
                      this.pushEnv(I.r);
                   }),
                   chain(() => I.task),
                   tap(() =>
-                     total(() => {
+                     Ac.total(() => {
                         this.popEnv();
                      })
                   )
@@ -299,8 +592,22 @@ export class AsyncDriver<E, A> {
                break;
             }
             case AsyncInstructionTag.All: {
-               this.all(I.tasks);
-               current = undefined;
+               current = Ac.asyncOption((resolve) => {
+                  const results: Array<Ex.Exit<unknown, unknown>> = Array(I.tasks.length);
+                  const tracer = new AsyncTracingContext();
+                  tracer.listen(() => {
+                     resolve(Ac.done(O.getOrElse_(Ex.collectAllPar(...results), () => Ex.succeed([]))));
+                  });
+                  for (let i = 0; i < I.tasks.length; i++) {
+                     const d = this.fork(I.tasks[i]);
+                     tracer.trace(d);
+                     d.runAsync((ex) => {
+                        results[i] = ex;
+                     });
+                  }
+                  return O.none();
+               });
+
                break;
             }
          }
@@ -312,10 +619,10 @@ export const run = <E, A>(task: Async<unknown, E, A>, callback?: (exit: Ex.Exit<
    const driver = new AsyncDriver<E, A>({});
    driver.evaluateLater(task);
    if (callback) {
-      driver.onExit(callback);
+      driver.runAsync(callback);
    }
    return () => {
-      run(total(() => driver.interrupt()));
+      run(driver.interrupt());
    };
 };
 
@@ -323,6 +630,6 @@ export const runPromiseExit = <E, A>(task: Async<unknown, E, A>): Promise<Ex.Exi
    const driver = new AsyncDriver<E, A>({});
    driver.evaluateLater(task);
    return new Promise<Ex.Exit<E, A>>((resolve) => {
-      driver.onExit(resolve);
+      driver.runAsync(resolve);
    });
 };

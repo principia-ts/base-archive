@@ -2,7 +2,7 @@ import * as I from "../../../Iterable";
 import * as T from "../../Task/core";
 import { forkDaemon } from "../../Task/core-scope";
 import { checkFiberId } from "../../Task/functions/checkFiberId";
-import type { UIO } from "../../Task/model";
+import type { IO } from "../../Task/model";
 import type { FiberId } from "../FiberId";
 import type { Fiber } from "../model";
 
@@ -25,7 +25,7 @@ export const interrupt = <E, A>(fiber: Fiber<E, A>) => T.chain_(checkFiberId(), 
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.
  */
 export const interruptAllAs_ = (fs: Iterable<Fiber<any, any>>, id: FiberId) =>
-   I.reduce_(fs, T.unit as UIO<void>, (io, f) => T.asUnit(T.chain_(io, () => f.interruptAs(id))));
+   I.reduce_(fs, T.unit as IO<void>, (io, f) => T.asUnit(T.chain_(io, () => f.interruptAs(id))));
 
 /**
  * ```haskell

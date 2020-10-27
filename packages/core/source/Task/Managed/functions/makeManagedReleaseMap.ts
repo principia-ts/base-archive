@@ -1,3 +1,3 @@
-import { makeManagedReleaseMap as __makeManagedReleaseMap } from "../../Parallel";
+import { makeManagedReleaseMap as _makeManagedReleaseMap } from "../../_parallel";
 
-export const makeManagedReleaseMap = __makeManagedReleaseMap;
+export const makeManagedReleaseMap = _makeManagedReleaseMap;

@@ -2,7 +2,7 @@ import * as E from "../../Either";
 import { pipe } from "../../Function";
 import type { AtomicReference } from "../../support";
 import * as T from "../Task/core";
-import type { IO, UIO } from "../Task/model";
+import type { EIO, IO } from "../Task/model";
 import { modify } from "./atomic";
 
 export interface XRef<EA, EB, A, B> {
@@ -36,13 +36,13 @@ export interface XRef<EA, EB, A, B> {
    /**
     * Reads the value from the `XRef`.
     */
-   readonly get: IO<EB, B>;
+   readonly get: EIO<EB, B>;
 
    /**
     * Writes a new value to the `XRef`, with a guarantee of immediate
     * consistency (at some cost to performance).
     */
-   readonly set: (a: A) => IO<EA, void>;
+   readonly set: (a: A) => EIO<EA, void>;
 }
 
 export class DerivedAll<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
@@ -85,12 +85,12 @@ export class DerivedAll<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
             )
       );
 
-   readonly get: IO<EB, B> = pipe(
+   readonly get: EIO<EB, B> = pipe(
       this.value.get,
       T.chain((a) => E.fold_(this.getEither(a), T.fail, T.pure))
    );
 
-   readonly set: (a: A) => IO<EA, void> = (a) =>
+   readonly set: (a: A) => EIO<EA, void> = (a) =>
       pipe(
          this.value,
          modify((s) =>
@@ -149,12 +149,12 @@ export class Derived<EA, EB, A, B, S> implements XRef<EA, EB, A, B> {
             )
       );
 
-   readonly get: IO<EB, B> = pipe(
+   readonly get: EIO<EB, B> = pipe(
       this.value.get,
       T.chain((s) => E.fold_(this.getEither(s), T.fail, T.pure))
    );
 
-   readonly set: (a: A) => IO<EA, void> = (a) => E.fold_(this.setEither(a), T.fail, this.value.set);
+   readonly set: (a: A) => EIO<EA, void> = (a) => E.fold_(this.setEither(a), T.fail, this.value.set);
 }
 
 export class Atomic<A> implements XRef<never, never, A, A> {
@@ -187,11 +187,11 @@ export class Atomic<A> implements XRef<never, never, A, A> {
 
    constructor(readonly value: AtomicReference<A>) {}
 
-   get get(): UIO<A> {
+   get get(): IO<A> {
       return T.total(() => this.value.get);
    }
 
-   readonly set = (a: A): UIO<void> => {
+   readonly set = (a: A): IO<void> => {
       return T.total(() => {
          this.value.set(a);
       });

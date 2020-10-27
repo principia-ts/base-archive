@@ -12,8 +12,8 @@ import type { Schedule, ScheduleExecutor } from "./model";
 
 export const makeExecutor = <R, I, O>(
    next: (input: I) => T.Task<R, Option<never>, O>,
-   last: T.IO<Error, O>,
-   reset: T.UIO<void>
+   last: T.EIO<Error, O>,
+   reset: T.IO<void>
 ): ScheduleExecutor<R, I, O> => ({
    next,
    last,
@@ -24,7 +24,7 @@ export const makeSchedule = <R, I, O>(step: StepFunction<R, I, O>): Schedule<R, 
    step
 });
 
-export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.UIO<ScheduleExecutor<HasClock & R, I, O>> =>
+export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecutor<HasClock & R, I, O>> =>
    pipe(
       XR.makeRef([O.none<O>(), schedule.step] as const),
       T.map((ref) => {

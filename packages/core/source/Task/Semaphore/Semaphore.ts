@@ -20,7 +20,7 @@ export const assertNonNegative = (n: number) =>
    n < 0 ? T.die(`Unexpected negative value ${n} passed to acquireN or releaseN.`) : T.unit;
 
 export class Acquisition {
-   constructor(readonly waitAcquire: T.UIO<void>, readonly release: T.UIO<void>) {}
+   constructor(readonly waitAcquire: T.IO<void>, readonly release: T.IO<void>) {}
 }
 
 /**
@@ -45,7 +45,7 @@ export class Semaphore {
       );
    }
 
-   private loop(n: number, state: State, acc: T.UIO<void>): [T.UIO<void>, State] {
+   private loop(n: number, state: State, acc: T.IO<void>): [T.IO<void>, State] {
       switch (state._tag) {
          case "Right": {
             return [acc, E.right(n + state.right)];
@@ -53,8 +53,8 @@ export class Semaphore {
          case "Left": {
             return O.fold_(
                state.left.dequeue(),
-               (): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
-               ([[p, m], q]): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
+               (): [T.IO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
+               ([[p, m], q]): [T.IO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
                   if (n > m) {
                      return this.loop(n - m, E.left(q), T.apFirst_(acc, promiseSucceed(p, undefined)));
                   } else if (n === m) {
@@ -68,7 +68,7 @@ export class Semaphore {
       }
    }
 
-   private releaseN(toRelease: number): T.UIO<void> {
+   private releaseN(toRelease: number): T.IO<void> {
       return T.flatten(
          T.chain_(assertNonNegative(toRelease), () =>
             pipe(
@@ -79,7 +79,7 @@ export class Semaphore {
       );
    }
 
-   private restore(p: XPromise<never, void>, n: number): T.UIO<void> {
+   private restore(p: XPromise<never, void>, n: number): T.IO<void> {
       return T.flatten(
          pipe(
             this.state,
@@ -88,13 +88,13 @@ export class Semaphore {
                   (q) =>
                      O.fold_(
                         q.find(([a]) => a === p),
-                        (): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [this.releaseN(n), E.left(q)],
-                        (x): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
+                        (): [T.IO<void>, E.Either<ImmutableQueue<Entry>, number>] => [this.releaseN(n), E.left(q)],
+                        (x): [T.IO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
                            this.releaseN(n - x[1]),
                            E.left(q.filter(([a]) => a != p))
                         ]
                      ),
-                  (m): [T.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [T.unit, E.right(n + m)]
+                  (m): [T.IO<void>, E.Either<ImmutableQueue<Entry>, number>] => [T.unit, E.right(n + m)]
                )
             )
          )

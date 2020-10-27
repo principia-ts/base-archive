@@ -23,11 +23,11 @@ import * as T from "./_internal/effect";
 export function releaseAllReleaseMaps(
    exit: Exit<any, any>,
    execStrategy: ExecutionStrategy
-): (_: RM.ReleaseMap) => T.UIO<any> {
+): (_: RM.ReleaseMap) => T.IO<any> {
    return (_: RM.ReleaseMap) =>
       pipe(
          _.ref,
-         XR.modify((s): [T.UIO<any>, RM.ManagedState] => {
+         XR.modify((s): [T.IO<any>, RM.ManagedState] => {
             switch (s._tag) {
                case "Exited": {
                   return [T.unit, s];

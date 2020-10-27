@@ -113,7 +113,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return T.total(() => this._poll());
    }
 
-   getRef<K>(fiberRef: FR.FiberRef<K>): T.UIO<K> {
+   getRef<K>(fiberRef: FR.FiberRef<K>): T.IO<K> {
       return T.total(() => this.fiberRefLocals.get(fiberRef) || fiberRef.initial);
    }
 
@@ -272,7 +272,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       observers.forEach((k) => k(result));
    }
 
-   private observe(k: Callback<never, Exit<E, A>>): Option<T.UIO<Exit<E, A>>> {
+   private observe(k: Callback<never, Exit<E, A>>): Option<T.IO<Exit<E, A>>> {
       const x = this.registerObserver(k);
 
       if (x != null) {
@@ -282,9 +282,9 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return O.none();
    }
 
-   get await(): T.UIO<Exit<E, A>> {
+   get await(): T.IO<Exit<E, A>> {
       return T.maybeAsyncInterrupt(
-         (k): E.Either<T.UIO<void>, T.UIO<Exit<E, A>>> => {
+         (k): E.Either<T.IO<void>, T.IO<Exit<E, A>>> => {
             const cb: Callback<never, Exit<E, A>> = (x) => k(T.done(x));
             return O.fold_(this.observe(cb), () => E.left(T.total(() => this.interruptObserver(cb))), E.right);
          }
@@ -301,7 +301,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       }
    }
 
-   private kill(fiberId: FiberId): T.UIO<Exit<E, A>> {
+   private kill(fiberId: FiberId): T.IO<Exit<E, A>> {
       const interruptedCause = C.interrupt(fiberId);
 
       const setInterruptedLoop = (): C.Cause<never> => {
@@ -320,7 +320,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                      )
                   );
 
-                  this.evaluateLater(F.interruptAs(this.fiberId)[T._I]);
+                  this.evaluateLater(T.interruptAs(this.fiberId)[T._I]);
 
                   return newCause;
                } else {
@@ -344,7 +344,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       });
    }
 
-   interruptAs(fiberId: FiberId): T.UIO<Exit<E, A>> {
+   interruptAs(fiberId: FiberId): T.IO<Exit<E, A>> {
       return this.kill(fiberId);
    }
 
@@ -518,7 +518,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       if (parentScope !== Scope.globalScope) {
          const exitOrKey = parentScope.unsafeEnsure((exit) =>
             T.suspend(
-               (): T.UIO<any> => {
+               (): T.IO<any> => {
                   const _interruptors = exit._tag === "Failure" ? C.interruptors(exit.cause) : new Set<FiberId>();
 
                   const head = _interruptors.values().next();

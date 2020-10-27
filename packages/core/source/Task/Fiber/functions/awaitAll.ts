@@ -1,3 +1,3 @@
-import { awaitAllFibers } from "../../Parallel";
+import { awaitAllFibers } from "../../_parallel";
 
 export const awaitAll = awaitAllFibers;

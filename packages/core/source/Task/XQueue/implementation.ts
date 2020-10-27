@@ -91,13 +91,13 @@ export interface Strategy<A> {
       queue: MutableQueue<A>,
       takers: MutableQueue<XPromise<never, A>>,
       isShutdown: AtomicBoolean
-   ) => T.UIO<boolean>;
+   ) => T.IO<boolean>;
 
    readonly unsafeOnQueueEmptySpace: (queue: MutableQueue<A>) => void;
 
    readonly surplusSize: number;
 
-   readonly shutdown: T.UIO<void>;
+   readonly shutdown: T.IO<void>;
 }
 
 export class BackPressureStrategy<A> implements Strategy<A> {
@@ -108,7 +108,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
       queue: MutableQueue<A>,
       takers: MutableQueue<XPromise<never, A>>,
       isShutdown: AtomicBoolean
-   ): T.UIO<boolean> {
+   ): T.IO<boolean> {
       return T.checkDescriptor((d) =>
          T.suspend(() => {
             const p = XP.unsafeMake<never, boolean>(d.id);
@@ -172,7 +172,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
       }
    }
 
-   get shutdown(): T.UIO<void> {
+   get shutdown(): T.IO<void> {
       return pipe(
          T.of,
          T.bindS("fiberId", () => T.checkFiberId()),
@@ -195,7 +195,7 @@ export class DroppingStrategy<A> implements Strategy<A> {
       _queue: MutableQueue<A>,
       _takers: MutableQueue<XPromise<never, A>>,
       _isShutdown: AtomicBoolean
-   ): T.UIO<boolean> {
+   ): T.IO<boolean> {
       return T.pure(false);
    }
 
@@ -203,7 +203,7 @@ export class DroppingStrategy<A> implements Strategy<A> {
       //
    }
 
-   get shutdown(): T.UIO<void> {
+   get shutdown(): T.IO<void> {
       return T.unit;
    }
 
@@ -218,7 +218,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
       queue: MutableQueue<A>,
       takers: MutableQueue<XPromise<never, A>>,
       _isShutdown: AtomicBoolean
-   ): T.UIO<boolean> {
+   ): T.IO<boolean> {
       return T.total(() => {
          this.unsafeSlidingOffer(queue, as);
          unsafeCompleteTakers(this, queue, takers);
@@ -230,7 +230,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
       //
    }
 
-   get shutdown(): T.UIO<void> {
+   get shutdown(): T.IO<void> {
       return T.unit;
    }
 
@@ -263,11 +263,11 @@ export const unsafeCreate = <A>(
    strategy: Strategy<A>
 ): Queue<A> =>
    new (class extends XQueue<unknown, unknown, never, never, A, A> {
-      awaitShutdown: T.UIO<void> = XP.await(shutdownHook);
+      awaitShutdown: T.IO<void> = XP.await(shutdownHook);
 
       capacity: number = queue.capacity;
 
-      isShutdown: T.UIO<boolean> = T.total(() => shutdownFlag.get);
+      isShutdown: T.IO<boolean> = T.total(() => shutdownFlag.get);
 
       offer: (a: A) => T.Task<unknown, never, boolean> = (a) =>
          T.suspend(() => {
@@ -321,7 +321,7 @@ export const unsafeCreate = <A>(
          });
       };
 
-      shutdown: T.UIO<void> = T.checkDescriptor((d) =>
+      shutdown: T.IO<void> = T.checkDescriptor((d) =>
          T.suspend(() => {
             shutdownFlag.set(true);
 
@@ -333,7 +333,7 @@ export const unsafeCreate = <A>(
          })
       );
 
-      size: T.UIO<number> = T.suspend(() => {
+      size: T.IO<number> = T.suspend(() => {
          if (shutdownFlag.get) {
             return T.interrupt;
          } else {
@@ -400,25 +400,25 @@ export const unsafeCreate = <A>(
 export const createQueue = <A>(strategy: Strategy<A>) => (queue: MutableQueue<A>) =>
    T.map_(XP.make<never, void>(), (p) => unsafeCreate(queue, new Unbounded(), p, new AtomicBoolean(false), strategy));
 
-export const makeSliding = <A>(capacity: number): T.UIO<Queue<A>> =>
+export const makeSliding = <A>(capacity: number): T.IO<Queue<A>> =>
    T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new SlidingStrategy())
    );
 
-export const makeUnbounded = <A>(): T.UIO<Queue<A>> =>
+export const makeUnbounded = <A>(): T.IO<Queue<A>> =>
    T.chain_(
       T.total(() => new Unbounded<A>()),
       createQueue(new DroppingStrategy())
    );
 
-export const makeDropping = <A>(capacity: number): T.UIO<Queue<A>> =>
+export const makeDropping = <A>(capacity: number): T.IO<Queue<A>> =>
    T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new DroppingStrategy())
    );
 
-export const makeBounded = <A>(capacity: number): T.UIO<Queue<A>> =>
+export const makeBounded = <A>(capacity: number): T.IO<Queue<A>> =>
    T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new BackPressureStrategy())

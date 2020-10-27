@@ -1,4 +1,4 @@
-import * as T from "../_internal/effect";
+import * as T from "../_internal/task";
 import { tuple } from "../../../Function";
 import { parallelN, sequential } from "../../ExecutionStrategy";
 import { foreachParN_ as effectForeachParN } from "../../Task/functions/foreachParN";

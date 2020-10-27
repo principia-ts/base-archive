@@ -4,7 +4,7 @@ import * as E from "../../Either";
 import { AtomicNumber, AtomicReference } from "../../support";
 import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
-import type { UIO } from "../Task";
+import type { IO } from "../Task";
 import * as T from "../Task/core";
 
 /**
@@ -18,14 +18,14 @@ export class Key {
     * finalizer will not be executed, while a value of `false` indicates the
     * finalizer was already executed
     */
-   remove: UIO<boolean> = T.pure(false);
-   constructor(remove?: UIO<boolean>) {
+   remove: IO<boolean> = T.pure(false);
+   constructor(remove?: IO<boolean>) {
       if (remove) {
          this.remove = remove;
       }
    }
 
-   setRemove(remove: UIO<boolean>) {
+   setRemove(remove: IO<boolean>) {
       this.remove = remove;
    }
 }
@@ -39,21 +39,21 @@ export interface CommonScope<A> {
     * Returns a task that will succeed with `true` if the scope is closed,
     * and `false` otherwise.
     */
-   readonly closed: UIO<boolean>;
+   readonly closed: IO<boolean>;
 
    /**
     * Prevents a previously added finalizer from being executed when the scope
     * is closed. The returned effect will succeed with `true` if the finalizer
     * will not be run by this scope, and `false` otherwise.
     */
-   readonly deny: (key: Key) => UIO<boolean>;
+   readonly deny: (key: Key) => IO<boolean>;
 
    /**
     * Determines if the scope is empty (has no finalizers) at the instant the
     * effect executes. The returned effect will succeed with `true` if the scope
     * is empty, and `false` otherwise.
     */
-   readonly empty: UIO<boolean>;
+   readonly empty: IO<boolean>;
 
    /**
     * Adds a finalizer to the scope. If successful, this ensures that when the
@@ -62,7 +62,7 @@ export interface CommonScope<A> {
     * The returned effect will succeed with a key ifthe finalizer was added
     * to the scope, and `None` if the scope is already closed.
     */
-   readonly ensure: (finalizer: (a: A) => UIO<any>) => UIO<Either<A, Key>>;
+   readonly ensure: (finalizer: (a: A) => IO<any>) => IO<Either<A, Key>>;
 
    /**
     * Extends the specified scope so that it will not be closed until this
@@ -72,23 +72,23 @@ export interface CommonScope<A> {
     * Scope extension does not result in changes to the scope contract: open
     * scopes must *always* be closed.
     */
-   readonly extend: (that: Scope<any>) => UIO<boolean>;
+   readonly extend: (that: Scope<any>) => IO<boolean>;
 
    /**
     * Determines if the scope is open at the moment the effect is executed.
     * Returns a task that will succeed with `true` if the scope is open,
     * and `false` otherwise.
     */
-   readonly open: UIO<boolean>;
+   readonly open: IO<boolean>;
 
    /**
     * Determines if the scope has been released at the moment the effect is
     * executed. A scope can be closed yet unreleased, if it has been
     * extended by another scope which is not yet released.
     */
-   readonly released: UIO<boolean>;
+   readonly released: IO<boolean>;
 
-   readonly unsafeEnsure: (finalizer: (_: A) => UIO<any>) => Either<A, Key>;
+   readonly unsafeEnsure: (finalizer: (_: A) => IO<any>) => Either<A, Key>;
    readonly unsafeExtend: (that: Scope<any>) => boolean;
    readonly unsafeDeny: (key: Key) => boolean;
 }
@@ -124,35 +124,35 @@ export class GlobalScope implements CommonScope<never> {
 
    private ensureResult = T.total(() => this.unsafeEnsureResult);
 
-   get closed(): UIO<boolean> {
+   get closed(): IO<boolean> {
       return T.pure(false);
    }
 
-   deny(_key: Key): UIO<boolean> {
+   deny(_key: Key): IO<boolean> {
       return T.pure(true);
    }
 
-   get empty(): UIO<boolean> {
+   get empty(): IO<boolean> {
       return T.pure(false);
    }
 
-   ensure(_finalizer: (a: never) => UIO<any>): UIO<E.Either<never, Key>> {
+   ensure(_finalizer: (a: never) => IO<any>): IO<E.Either<never, Key>> {
       return this.ensureResult;
    }
 
-   extend(that: Scope<any>): UIO<boolean> {
+   extend(that: Scope<any>): IO<boolean> {
       return T.total(() => this.unsafeExtend(that));
    }
 
-   get open(): UIO<boolean> {
+   get open(): IO<boolean> {
       return T.map_(this.closed, (c) => !c);
    }
 
-   get released(): UIO<boolean> {
+   get released(): IO<boolean> {
       return T.pure(false);
    }
 
-   unsafeEnsure(_finalizer: (_: never) => UIO<any>): E.Either<never, Key> {
+   unsafeEnsure(_finalizer: (_: never) => IO<any>): E.Either<never, Key> {
       return this.unsafeEnsureResult;
    }
 
@@ -171,12 +171,12 @@ export class GlobalScope implements CommonScope<never> {
 }
 
 export class OrderedFinalizer {
-   constructor(readonly order: number, readonly finalizer: (_: any) => UIO<any>) {}
+   constructor(readonly order: number, readonly finalizer: (_: any) => IO<any>) {}
 }
 
 const noCause = C.empty;
 
-const noCauseTask: UIO<Cause<never>> = T.pure(noCause);
+const noCauseTask: IO<Cause<never>> = T.pure(noCause);
 
 export class LocalScope<A> implements CommonScope<A> {
    readonly _tag = "Local";
@@ -188,31 +188,31 @@ export class LocalScope<A> implements CommonScope<A> {
       readonly finalizers: Map<Key, OrderedFinalizer>
    ) {}
 
-   get closed(): UIO<boolean> {
+   get closed(): IO<boolean> {
       return T.total(() => this.unsafeClosed);
    }
 
-   get open(): UIO<boolean> {
+   get open(): IO<boolean> {
       return T.map_(this.closed, (c) => !c);
    }
 
-   deny(key: Key): UIO<boolean> {
+   deny(key: Key): IO<boolean> {
       return T.total(() => this.unsafeDeny(key));
    }
 
-   get empty(): UIO<boolean> {
+   get empty(): IO<boolean> {
       return T.total(() => this.finalizers.size === 0);
    }
 
-   ensure(finalizer: (a: A) => UIO<any>): UIO<E.Either<A, Key>> {
+   ensure(finalizer: (a: A) => IO<any>): IO<E.Either<A, Key>> {
       return T.total(() => this.unsafeEnsure(finalizer));
    }
 
-   extend(that: Scope<any>): UIO<boolean> {
+   extend(that: Scope<any>): IO<boolean> {
       return T.total(() => this.unsafeExtend(that));
    }
 
-   get released(): UIO<boolean> {
+   get released(): IO<boolean> {
       return T.total(() => this.unsafeReleased());
    }
 
@@ -235,7 +235,7 @@ export class LocalScope<A> implements CommonScope<A> {
       }
    }
 
-   get release(): UIO<boolean> {
+   get release(): IO<boolean> {
       return T.suspend(() => {
          const result = this.unsafeRelease();
 
@@ -251,7 +251,7 @@ export class LocalScope<A> implements CommonScope<A> {
       return this.references.get <= 0;
    }
 
-   unsafeEnsure(finalizer: (_: A) => UIO<any>): E.Either<A, Key> {
+   unsafeEnsure(finalizer: (_: A) => IO<any>): E.Either<A, Key> {
       if (this.unsafeClosed) {
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
          return E.left(this.exitValue.get!);
@@ -285,13 +285,13 @@ export class LocalScope<A> implements CommonScope<A> {
       }
    }
 
-   unsafeClose(a: A): UIO<any> | null {
+   unsafeClose(a: A): IO<any> | null {
       this.exitValue.compareAndSet(null, a);
 
       return this.unsafeRelease();
    }
 
-   unsafeRelease(): UIO<any> | null {
+   unsafeRelease(): IO<any> | null {
       if (this.references.decrementAndGet() === 0) {
          const totalSize = this.finalizers.size;
 
@@ -331,7 +331,7 @@ export const globalScope = new GlobalScope();
  * the scope.
  */
 export class Open<A> {
-   constructor(readonly close: (_: A) => UIO<boolean>, readonly scope: LocalScope<A>) {}
+   constructor(readonly close: (_: A) => IO<boolean>, readonly scope: LocalScope<A>) {}
 }
 
 export const unsafeMakeScope = <A>() => {

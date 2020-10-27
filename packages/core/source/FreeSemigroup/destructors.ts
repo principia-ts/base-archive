@@ -93,6 +93,7 @@ export const toArray = <A>(fs: FreeSemigroup<A>): ReadonlyArray<A> => {
             } else {
                as.push(current.value);
             }
+            current = undefined;
             break;
          }
          case "Filter": {

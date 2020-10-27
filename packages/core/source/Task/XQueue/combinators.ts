@@ -185,11 +185,11 @@ export const bothMapM_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
    f: (b: B, c: C) => T.Task<R3, E3, D>
 ): XQueue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, A1, D> =>
    new (class extends XQueue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, A1, D> {
-      awaitShutdown: T.UIO<void> = T.chain_(self.awaitShutdown, () => that.awaitShutdown);
+      awaitShutdown: T.IO<void> = T.chain_(self.awaitShutdown, () => that.awaitShutdown);
 
       capacity: number = Math.min(self.capacity, that.capacity);
 
-      isShutdown: T.UIO<boolean> = self.isShutdown;
+      isShutdown: T.IO<boolean> = self.isShutdown;
 
       offer: (a: A1) => T.Task<RA & RA1, EA1 | EA, boolean> = (a) =>
          T.mapBothPar_(self.offer(a), that.offer(a), (x, y) => x && y);
@@ -197,9 +197,9 @@ export const bothMapM_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
       offerAll: (as: Iterable<A1>) => T.Task<RA & RA1, EA1 | EA, boolean> = (as) =>
          T.mapBothPar_(self.offerAll(as), that.offerAll(as), (x, y) => x && y);
 
-      shutdown: T.UIO<void> = T.mapBothPar_(self.shutdown, that.shutdown, () => undefined);
+      shutdown: T.IO<void> = T.mapBothPar_(self.shutdown, that.shutdown, () => undefined);
 
-      size: T.UIO<number> = T.mapBothPar_(self.size, that.size, (x, y) => Math.max(x, y));
+      size: T.IO<number> = T.mapBothPar_(self.size, that.size, (x, y) => Math.max(x, y));
 
       take: T.Task<RB & RB1 & R3, E3 | EB | EB1, D> = T.chain_(T.bothPar_(self.take, that.take), ([b, c]) => f(b, c));
 
@@ -312,20 +312,20 @@ export const bimapM_ = <RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
    g: (b: B) => T.Task<RD, ED, D>
 ): XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> =>
    new (class extends XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
-      awaitShutdown: T.UIO<void> = self.awaitShutdown;
+      awaitShutdown: T.IO<void> = self.awaitShutdown;
 
       capacity: number = self.capacity;
 
-      isShutdown: T.UIO<boolean> = self.isShutdown;
+      isShutdown: T.IO<boolean> = self.isShutdown;
 
       offer: (a: C) => T.Task<RC & RA, EA | EC, boolean> = (c) => T.chain_(f(c), self.offer);
 
       offerAll: (as: Iterable<C>) => T.Task<RC & RA, EC | EA, boolean> = (cs) =>
          T.chain_(T.foreach_(cs, f), self.offerAll);
 
-      shutdown: T.UIO<void> = self.shutdown;
+      shutdown: T.IO<void> = self.shutdown;
 
-      size: T.UIO<number> = self.size;
+      size: T.IO<number> = self.size;
 
       take: T.Task<RD & RB, ED | EB, D> = T.chain_(self.take, g);
 
@@ -363,11 +363,11 @@ export const filterInputM_ = <RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
    f: (_: A1) => T.Task<R2, E2, boolean>
 ): XQueue<RA & R2, RB, EA | E2, EB, A1, B> =>
    new (class extends XQueue<RA & R2, RB, EA | E2, EB, A1, B> {
-      awaitShutdown: T.UIO<void> = self.awaitShutdown;
+      awaitShutdown: T.IO<void> = self.awaitShutdown;
 
       capacity: number = self.capacity;
 
-      isShutdown: T.UIO<boolean> = self.isShutdown;
+      isShutdown: T.IO<boolean> = self.isShutdown;
 
       offer: (a: A1) => T.Task<RA & R2, EA | E2, boolean> = (a) =>
          T.chain_(f(a), (b) => (b ? self.offer(a) : T.pure(false)));
@@ -392,9 +392,9 @@ export const filterInputM_ = <RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
             })
          );
 
-      shutdown: T.UIO<void> = self.shutdown;
+      shutdown: T.IO<void> = self.shutdown;
 
-      size: T.UIO<number> = self.size;
+      size: T.IO<number> = self.size;
 
       take: T.Task<RB, EB, B> = self.take;
 

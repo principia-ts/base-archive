@@ -1,4 +1,4 @@
-import type { IO } from "../../Task/model";
+import type { EIO } from "../../Task/model";
 import type { XPromise } from "../model";
 import { to } from "./to";
 
@@ -9,4 +9,4 @@ import { to } from "./to";
  * Note that `Promise.completeWith` will be much faster, so consider using
  * that if you do not need to memoize the result of the specified effect.
  */
-export const complete = <E, A>(e: IO<E, A>) => (promise: XPromise<E, A>) => to(promise)(e);
+export const complete = <E, A>(e: EIO<E, A>) => (promise: XPromise<E, A>) => to(promise)(e);

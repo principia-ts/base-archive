@@ -16,18 +16,18 @@ export const make = <A>(
    initial: A,
    onFork: (a: A) => A = identity,
    onJoin: (a: A, a1: A) => A = (_, a) => a
-): T.UIO<FiberRef<A>> => new NewFiberRefInstruction(initial, onFork, onJoin);
+): T.IO<FiberRef<A>> => new NewFiberRefInstruction(initial, onFork, onJoin);
 
-export const modify = <A, B>(f: (a: A) => [B, A]) => (fiberRef: FiberRef<A>): T.UIO<B> =>
+export const modify = <A, B>(f: (a: A) => [B, A]) => (fiberRef: FiberRef<A>): T.IO<B> =>
    new ModifyFiberRefInstruction(fiberRef, f);
 
-export const update = <A>(f: (a: A) => A) => (fiberRef: FiberRef<A>): T.UIO<void> =>
+export const update = <A>(f: (a: A) => A) => (fiberRef: FiberRef<A>): T.IO<void> =>
    pipe(
       fiberRef,
       modify((v) => [undefined, f(v)])
    );
 
-export const set = <A>(a: A) => (fiberRef: FiberRef<A>): T.UIO<void> =>
+export const set = <A>(a: A) => (fiberRef: FiberRef<A>): T.IO<void> =>
    pipe(
       fiberRef,
       modify((_) => [undefined, a])

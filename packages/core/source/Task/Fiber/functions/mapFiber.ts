@@ -13,7 +13,7 @@ import type { Fiber } from "../model";
  * Passes the success of this fiber to the specified callback, and continues
  * with the fiber that it returns.
  */
-export const mapFiber_ = <A, E, E1, A1>(fiber: Fiber<E, A>, f: (a: A) => Fiber<E1, A1>): T.UIO<Fiber<E | E1, A1>> =>
+export const mapFiber_ = <A, E, E1, A1>(fiber: Fiber<E, A>, f: (a: A) => Fiber<E1, A1>): T.IO<Fiber<E | E1, A1>> =>
    T.map_(
       fiber.await,
       matchTag({
@@ -30,5 +30,5 @@ export const mapFiber_ = <A, E, E1, A1>(fiber: Fiber<E, A>, f: (a: A) => Fiber<E
  * Passes the success of this fiber to the specified callback, and continues
  * with the fiber that it returns.
  */
-export const mapFiber = <E1, A, B>(f: (a: A) => Fiber<E1, B>) => <E>(fiber: Fiber<E, A>): T.UIO<Fiber<E | E1, B>> =>
+export const mapFiber = <E1, A, B>(f: (a: A) => Fiber<E1, B>) => <E>(fiber: Fiber<E, A>): T.IO<Fiber<E | E1, B>> =>
    mapFiber_(fiber, f);

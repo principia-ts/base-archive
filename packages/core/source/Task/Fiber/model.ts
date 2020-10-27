@@ -4,7 +4,7 @@ import type { Option } from "../../Option";
 import type { Exit } from "../Exit/model";
 import type { FiberRef } from "../FiberRef/model";
 import type { Scope } from "../Scope";
-import type { UIO } from "../Task/model";
+import type { IO } from "../Task/model";
 import type { FiberId } from "./FiberId";
 import type { FiberStatus } from "./status";
 
@@ -45,12 +45,12 @@ export class FiberDescriptor {
 export type Fiber<E, A> = RuntimeFiber<E, A> | SyntheticFiber<E, A>;
 
 export interface CommonFiber<E, A> {
-   await: UIO<Exit<E, A>>;
+   await: IO<Exit<E, A>>;
    //children: Sync<Iterable<Runtime<any, any>>>
-   getRef: <K>(fiberRef: FiberRef<K>) => UIO<K>;
-   inheritRefs: UIO<void>;
-   interruptAs(fiberId: FiberId): UIO<Exit<E, A>>;
-   poll: UIO<Option<Exit<E, A>>>;
+   getRef: <K>(fiberRef: FiberRef<K>) => IO<K>;
+   inheritRefs: IO<void>;
+   interruptAs(fiberId: FiberId): IO<Exit<E, A>>;
+   poll: IO<Option<Exit<E, A>>>;
 }
 
 export interface RuntimeFiber<E, A> extends CommonFiber<E, A> {

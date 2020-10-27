@@ -18,7 +18,7 @@ import { Atomic, concrete } from "./model";
 /**
  * Creates a new `XRefM` with the specified value.
  */
-export const makeRefM = <A>(a: A): T.UIO<RefM<A>> =>
+export const makeRefM = <A>(a: A): T.IO<RefM<A>> =>
    pipe(
       T.of,
       T.bindS("ref", () => XR.makeRef(a)),
@@ -39,13 +39,13 @@ export const unsafeMakeRefM = <A>(a: A): RefM<A> => {
  * Creates a new `RefM` with the specified value in the context of a
  * `Managed.`
  */
-export const makeManagedRefM = <A>(a: A): M.UIO<RefM<A>> => pipe(makeRefM(a), M.fromTask);
+export const makeManagedRefM = <A>(a: A): M.IO<RefM<A>> => pipe(makeRefM(a), M.fromTask);
 
 /**
  * Creates a new `RefM` and a `Dequeue` that will emit every change to the
  * `RefM`.
  */
-export const dequeueRef = <A>(a: A): T.UIO<[RefM<A>, XQ.Dequeue<A>]> =>
+export const dequeueRef = <A>(a: A): T.IO<[RefM<A>, XQ.Dequeue<A>]> =>
    pipe(
       T.of,
       T.bindS("ref", () => makeRefM(a)),

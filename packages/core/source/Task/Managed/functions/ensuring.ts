@@ -1,4 +1,4 @@
-import type * as T from "../_internal/effect";
+import type * as T from "../_internal/task";
 import type { Managed } from "../model";
 import { _onExit } from "./onExit";
 

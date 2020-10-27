@@ -1,5 +1,5 @@
 import * as T from "../../Task/core";
-import type { IO, UIO } from "../../Task/model";
+import type { EIO, IO } from "../../Task/model";
 import type { XPromise } from "../model";
 import { Done } from "../state";
 
@@ -16,7 +16,7 @@ import { Done } from "../state";
  * completes the promise with the result of a task see
  * `Promise.complete`.
  */
-export const completeWith = <E, A>(io: IO<E, A>) => (promise: XPromise<E, A>): UIO<boolean> =>
+export const completeWith = <E, A>(io: EIO<E, A>) => (promise: XPromise<E, A>): IO<boolean> =>
    T.total(() => {
       const state = promise.state.get;
 

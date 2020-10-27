@@ -1,4 +1,4 @@
-import type { Task, UIO } from "../Task";
+import type { IO, Task } from "../Task";
 
 /**
  * A `XQueue<RA, RB, EA, EB, A, B>` is a lightweight, asynchronous queue into which values of
@@ -13,7 +13,7 @@ export abstract class XQueue<RA, RB, EA, EB, A, B> {
     * The `IO` returned by this method will not resume until the queue has been shutdown.
     * If the queue is already shutdown, the `IO` will resume right away.
     */
-   abstract readonly awaitShutdown: UIO<void>;
+   abstract readonly awaitShutdown: IO<void>;
    /**
     * How many elements can hold in the queue
     */
@@ -21,7 +21,7 @@ export abstract class XQueue<RA, RB, EA, EB, A, B> {
    /**
     * `true` if `shutdown` has been called.
     */
-   abstract readonly isShutdown: UIO<boolean>;
+   abstract readonly isShutdown: IO<boolean>;
    /**
     * Places one value in the queue.
     */
@@ -48,13 +48,13 @@ export abstract class XQueue<RA, RB, EA, EB, A, B> {
     * Interrupts any fibers that are suspended on `offer` or `take`.
     * Future calls to `offer*` and `take*` will be interrupted immediately.
     */
-   abstract readonly shutdown: UIO<void>;
+   abstract readonly shutdown: IO<void>;
    /**
     * Retrieves the size of the queue, which is equal to the number of elements
     * in the queue. This may be negative if fibers are suspended waiting for
     * elements to be added to the queue.
     */
-   abstract readonly size: UIO<number>;
+   abstract readonly size: IO<number>;
    /**
     * Removes the oldest value in the queue. If the queue is empty, this will
     * return a computation that resumes when an item has been added to the queue.

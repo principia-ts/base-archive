@@ -1,1 +1,1 @@
-export { foreachUnitPar, foreachUnitPar_ } from "../../Parallel";
+export { foreachUnitPar, foreachUnitPar_ } from "../../_parallel";

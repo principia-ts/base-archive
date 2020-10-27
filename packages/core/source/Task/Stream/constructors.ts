@@ -15,13 +15,13 @@ import * as XR from "../XRef";
 import * as Pull from "./internal/Pull";
 import * as Take from "./internal/Take";
 import type { Transducer } from "./internal/Transducer";
-import type { IO, RIO, UIO } from "./model";
+import type { EIO, IO, RIO } from "./model";
 import { Stream } from "./model";
 
 /**
  * Creates a stream from an array of values
  */
-export const fromArray = <A>(c: ReadonlyArray<A>): UIO<A> =>
+export const fromArray = <A>(c: ReadonlyArray<A>): IO<A> =>
    new Stream(
       pipe(
          T.of,
@@ -29,7 +29,7 @@ export const fromArray = <A>(c: ReadonlyArray<A>): UIO<A> =>
          T.letS("pull", ({ doneRef }) =>
             pipe(
                doneRef,
-               XR.modify<T.IO<Option<never>, ReadonlyArray<A>>, boolean>((done) =>
+               XR.modify<T.EIO<Option<never>, ReadonlyArray<A>>, boolean>((done) =>
                   done || c.length === 0 ? [Pull.end, true] : [T.pure(c), true]
                ),
                T.flatten
@@ -85,7 +85,7 @@ export const asyncOption = <R, E, A>(
       resolve: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
-      ) => T.UIO<Exit<never, boolean>>
+      ) => T.IO<Exit<never, boolean>>
    ) => Option<Stream<R, E, A>>,
    outputBuffer = 16
 ): Stream<R, E, A> =>
@@ -148,7 +148,7 @@ export const async = <R, E, A>(
       resolve: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
-      ) => T.UIO<Exit<never, boolean>>
+      ) => T.IO<Exit<never, boolean>>
    ) => void,
    outputBuffer = 16
 ): Stream<R, E, A> =>
@@ -168,7 +168,7 @@ export const asyncInterruptEither = <R, E, A>(
       resolve: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
-      ) => T.UIO<Exit<never, boolean>>
+      ) => T.IO<Exit<never, boolean>>
    ) => Either<T.Canceler<R>, Stream<R, E, A>>,
    outputBuffer = 16
 ): Stream<R, E, A> =>
@@ -233,12 +233,12 @@ export const asyncInterrupt = <R, E, A>(
       cb: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
-      ) => T.UIO<Exit<never, boolean>>
+      ) => T.IO<Exit<never, boolean>>
    ) => T.Canceler<R>,
    outputBuffer = 16
 ): Stream<R, E, A> => asyncInterruptEither((cb) => E.left(register(cb)), outputBuffer);
 
-export const fail = <E>(e: E): IO<E, never> => fromTask(T.fail(e));
+export const fail = <E>(e: E): EIO<E, never> => fromTask(T.fail(e));
 
 /**
  * Creates a stream from a task producing chunks of `A` values until it fails with None.
@@ -320,7 +320,7 @@ export const fromXQueueWithShutdown = <R, E, A>(queue: XQueue<never, R, unknown,
 /**
  * The `Stream` that dies with the error.
  */
-export const die = (e: unknown): UIO<never> => fromTask(T.die(e));
+export const die = (e: unknown): IO<never> => fromTask(T.die(e));
 
 /**
  * The stream that dies with an exception described by `message`.
@@ -330,12 +330,12 @@ export const dieMessage = (message: string) => fromTask(T.dieMessage(message));
 /**
  * The empty stream
  */
-export const empty: UIO<never> = new Stream(M.pure(Pull.end));
+export const empty: IO<never> = new Stream(M.pure(Pull.end));
 
 /**
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
  */
-export const iterate = <A>(a: A, f: (a: A) => A): UIO<A> =>
+export const iterate = <A>(a: A, f: (a: A) => A): IO<A> =>
    new Stream(pipe(XR.makeRef(a), T.toManaged(), M.map(flow(XR.getAndUpdate(f), T.map(A.pure)))));
 
 export const suspend = <R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> =>

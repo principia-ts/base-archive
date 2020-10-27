@@ -1,3 +1,3 @@
-import { releaseAllReleaseMaps } from "../../Parallel";
+import { releaseAllReleaseMaps } from "../../_parallel";
 
 export const releaseAll = releaseAllReleaseMaps;

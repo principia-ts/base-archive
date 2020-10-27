@@ -1,23 +1,23 @@
 import type { Option } from "../../Option";
 import * as T from "../Task/core";
-import type { UIO } from "../Task/model";
+import type { IO } from "../Task/model";
 import type { Atomic } from "./model";
 
-export const getAndSet = <A>(a: A) => (self: Atomic<A>): UIO<A> =>
+export const getAndSet = <A>(a: A) => (self: Atomic<A>): IO<A> =>
    T.total(() => {
       const v = self.value.get;
       self.value.set(a);
       return v;
    });
 
-export const getAndUpdate = <A>(f: (a: A) => A) => (self: Atomic<A>): UIO<A> =>
+export const getAndUpdate = <A>(f: (a: A) => A) => (self: Atomic<A>): IO<A> =>
    T.total(() => {
       const v = self.value.get;
       self.value.set(f(v));
       return v;
    });
 
-export const getAndUpdateSome = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>): UIO<A> =>
+export const getAndUpdateSome = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>): IO<A> =>
    T.total(() => {
       const v = self.value.get;
       const o = f(v);
@@ -27,7 +27,7 @@ export const getAndUpdateSome = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>)
       return v;
    });
 
-export const modify = <A, B>(f: (a: A) => readonly [B, A]) => (self: Atomic<A>): UIO<B> =>
+export const modify = <A, B>(f: (a: A) => readonly [B, A]) => (self: Atomic<A>): IO<B> =>
    T.total(() => {
       const v = self.value.get;
       const o = f(v);
@@ -35,7 +35,7 @@ export const modify = <A, B>(f: (a: A) => readonly [B, A]) => (self: Atomic<A>):
       return o[0];
    });
 
-export const modifySome = <B>(def: B) => <A>(f: (a: A) => Option<readonly [B, A]>) => (self: Atomic<A>): UIO<B> =>
+export const modifySome = <B>(def: B) => <A>(f: (a: A) => Option<readonly [B, A]>) => (self: Atomic<A>): IO<B> =>
    T.total(() => {
       const v = self.value.get;
       const o = f(v);
@@ -48,19 +48,19 @@ export const modifySome = <B>(def: B) => <A>(f: (a: A) => Option<readonly [B, A]
       return def;
    });
 
-export const update = <A>(f: (a: A) => A) => (self: Atomic<A>): UIO<void> =>
+export const update = <A>(f: (a: A) => A) => (self: Atomic<A>): IO<void> =>
    T.total(() => {
       self.value.set(f(self.value.get));
    });
 
-export const updateAndGet = <A>(f: (a: A) => A) => (self: Atomic<A>): UIO<A> => {
+export const updateAndGet = <A>(f: (a: A) => A) => (self: Atomic<A>): IO<A> => {
    return T.total(() => {
       self.value.set(f(self.value.get));
       return self.value.get;
    });
 };
 
-export const updateSome = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>): UIO<void> =>
+export const updateSome = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>): IO<void> =>
    T.total(() => {
       const o = f(self.value.get);
 
@@ -69,7 +69,7 @@ export const updateSome = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>): UIO<
       }
    });
 
-export const updateSomeAndGet = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>): UIO<A> => {
+export const updateSomeAndGet = <A>(f: (a: A) => Option<A>) => (self: Atomic<A>): IO<A> => {
    return T.total(() => {
       const o = f(self.value.get);
 

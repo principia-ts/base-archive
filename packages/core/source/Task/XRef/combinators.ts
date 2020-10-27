@@ -7,7 +7,7 @@ import { none, some } from "../../Option";
 import * as Mb from "../../Option";
 import { AtomicReference } from "../../support";
 import * as T from "../Task/core";
-import type { IO, UIO } from "../Task/model";
+import type { EIO, IO } from "../Task/model";
 import * as At from "./atomic";
 import type { Ref, XRef } from "./model";
 import { Atomic, concrete } from "./model";
@@ -15,7 +15,7 @@ import { Atomic, concrete } from "./model";
 /**
  * Creates a new `XRef` with the specified value.
  */
-export const makeRef = <A>(a: A): UIO<Ref<A>> => T.total(() => new Atomic(new AtomicReference(a)));
+export const makeRef = <A>(a: A): IO<Ref<A>> => T.total(() => new Atomic(new AtomicReference(a)));
 
 /**
  * Creates a new `XRef` with the specified value.
@@ -230,7 +230,7 @@ export const writeOnly: <EA, EB, A, B>(_: XRef<EA, EB, A, B>) => XRef<EA, void, 
  * computes a return value for the modification. This is a more powerful
  * version of `update`.
  */
-export const modify = <B, A>(f: (a: A) => readonly [B, A]) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, B> =>
+export const modify = <B, A>(f: (a: A) => readonly [B, A]) => <EA, EB>(self: XRef<EA, EB, A, A>): EIO<EA | EB, B> =>
    pipe(
       self,
       concrete,
@@ -293,7 +293,8 @@ export const modify = <B, A>(f: (a: A) => readonly [B, A]) => <EA, EB>(self: XRe
  * computes a return value for the modification. This is a more powerful
  * version of `update`.
  */
-export const modify_ = <EA, EB, B, A>(self: XRef<EA, EB, A, A>, f: (a: A) => [B, A]): IO<EA | EB, B> => modify(f)(self);
+export const modify_ = <EA, EB, B, A>(self: XRef<EA, EB, A, A>, f: (a: A) => [B, A]): EIO<EA | EB, B> =>
+   modify(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified partial function,
@@ -303,7 +304,7 @@ export const modify_ = <EA, EB, B, A>(self: XRef<EA, EB, A, A>, f: (a: A) => [B,
  */
 export const modifySome = <B>(def: B) => <A>(f: (a: A) => Option<[B, A]>) => <EA, EB>(
    self: XRef<EA, EB, A, A>
-): IO<EA | EB, B> =>
+): EIO<EA | EB, B> =>
    pipe(
       self,
       concrete,
@@ -328,7 +329,7 @@ export const modifySome_ = <EA, EB, A, B>(
    self: XRef<EA, EB, A, A>,
    def: B,
    f: (a: A) => Option<[B, A]>
-): IO<EA | EB, B> => modifySome(def)(f)(self);
+): EIO<EA | EB, B> => modifySome(def)(f)(self);
 
 /**
  * Atomically writes the specified value to the `XRef`, returning the value
@@ -402,7 +403,7 @@ export const getAndUpdateSome_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A)
 /**
  * Atomically modifies the `XRef` with the specified function.
  */
-export const update = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, void> =>
+export const update = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A, A>): EIO<EA | EB, void> =>
    pipe(
       self,
       concrete,
@@ -415,13 +416,13 @@ export const update = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A, A>):
 /**
  * Atomically modifies the `XRef` with the specified function.
  */
-export const update_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A): IO<EA | EB, void> => update(f)(self);
+export const update_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A): EIO<EA | EB, void> => update(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified function and returns
  * the updated value.
  */
-export const updateAndGet = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, A> =>
+export const updateAndGet = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A, A>): EIO<EA | EB, A> =>
    pipe(
       self,
       concrete,
@@ -438,14 +439,14 @@ export const updateAndGet = <A>(f: (a: A) => A) => <EA, EB>(self: XRef<EA, EB, A
  * Atomically modifies the `XRef` with the specified function and returns
  * the updated value.
  */
-export const updateAndGet_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A): IO<EA | EB, A> =>
+export const updateAndGet_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => A): EIO<EA | EB, A> =>
    updateAndGet(f)(self);
 
 /**
  * Atomically modifies the `XRef` with the specified partial function. If
  * the function is undefined on the current value it doesn't change it.
  */
-export const updateSome = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, void> =>
+export const updateSome = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA, EB, A, A>): EIO<EA | EB, void> =>
    pipe(
       self,
       concrete,
@@ -465,7 +466,7 @@ export const updateSome = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA,
  * Atomically modifies the `XRef` with the specified partial function. If
  * the function is undefined on the current value it doesn't change it.
  */
-export const updateSome_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Option<A>): IO<EA | EB, void> =>
+export const updateSome_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Option<A>): EIO<EA | EB, void> =>
    updateSome(f)(self);
 
 /**
@@ -473,7 +474,7 @@ export const updateSome_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Op
  * the function is undefined on the current value it returns the old value
  * without changing it.
  */
-export const updateSomeAndGet = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA, EB, A, A>): IO<EA | EB, A> =>
+export const updateSomeAndGet = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XRef<EA, EB, A, A>): EIO<EA | EB, A> =>
    pipe(
       self,
       concrete,
@@ -494,7 +495,7 @@ export const updateSomeAndGet = <A>(f: (a: A) => Option<A>) => <EA, EB>(self: XR
  * the function is undefined on the current value it returns the old value
  * without changing it.
  */
-export const updateSomeAndGet_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Option<A>): IO<EA | EB, A> =>
+export const updateSomeAndGet_ = <EA, EB, A>(self: XRef<EA, EB, A, A>, f: (a: A) => Option<A>): EIO<EA | EB, A> =>
    updateSomeAndGet(f)(self);
 
 /**
