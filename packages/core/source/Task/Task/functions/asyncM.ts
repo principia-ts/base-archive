@@ -2,7 +2,7 @@ import { pipe } from "@principia/prelude";
 
 import type { Cause } from "../../Exit/Cause";
 import * as XP from "../../XPromise";
-import { apSecond, bindS, fork, map, of } from "../core";
+import * as _ from "../core";
 import type { Task } from "../model";
 import { catchAllCause } from "./catchAllCause";
 import { uninterruptibleMask } from "./interrupt";
@@ -17,13 +17,13 @@ export const asyncM = <R, E, R1, E1, A>(
    register: (resolve: (_: Task<R1, E1, A>) => void) => Task<R, E, any>
 ): Task<R & R1, E | E1, A> =>
    pipe(
-      of,
-      bindS("p", () => XP.make<E | E1, A>()),
-      bindS("r", () => runtime<R & R1>()),
-      bindS("a", ({ p, r }) =>
+      _.do,
+      _.bindS("p", () => XP.make<E | E1, A>()),
+      _.bindS("r", () => runtime<R & R1>()),
+      _.bindS("a", ({ p, r }) =>
          uninterruptibleMask(({ restore }) =>
             pipe(
-               fork(
+               _.fork(
                   restore(
                      pipe(
                         register((k) => {
@@ -33,9 +33,9 @@ export const asyncM = <R, E, R1, E1, A>(
                      )
                   )
                ),
-               apSecond(restore(XP.await(p)))
+               _.apSecond(restore(XP.await(p)))
             )
          )
       ),
-      map(({ a }) => a)
+      _.map(({ a }) => a)
    );

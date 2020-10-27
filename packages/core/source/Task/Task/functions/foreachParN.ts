@@ -23,7 +23,7 @@ export const foreachParN_ = (n: number) => <A, R, E, B>(
       bracket(
          (q) =>
             pipe(
-               T.of,
+               T.do,
                T.bindS("pairs", () =>
                   pipe(
                      as,

@@ -1,3 +1,5 @@
+import { pipe } from "@principia/prelude";
+
 import type { Either } from "../../../Either";
 import { left } from "../../../Either";
 import type { Option } from "../../../Option";
@@ -10,6 +12,7 @@ import { join } from "../../Fiber/functions/join";
 import type { InterruptStatus } from "../../Fiber/model";
 import {
    asyncOption,
+   chain,
    chain_,
    checkInterruptible,
    flatten,
@@ -157,54 +160,39 @@ export const maybeAsyncInterrupt = <R, E, A>(
    register: (cb: (resolve: Task<R, E, A>) => void) => Either<Canceler<R>, Task<R, E, A>>,
    blockingOn: ReadonlyArray<FiberId> = []
 ): Task<R, E, A> =>
-   chain_(
+   pipe(
       total(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
-      ([started, cancel]) =>
-         onInterrupt_(
-            flatten(
-               asyncOption<R, E, Task<R, E, A>>((k) => {
-                  started.set(true);
-                  const ret = new AtomicReference<Option<IO<Task<R, E, A>>>>(none());
-                  try {
-                     const res = register((io) => k(pure(io)));
-                     switch (res._tag) {
-                        case "Right": {
-                           ret.set(some(pure(res.right)));
-                           break;
-                        }
-                        case "Left": {
-                           cancel.set(res.left);
-                           break;
-                        }
+      chain(([started, cancel]) =>
+         pipe(
+            asyncOption<R, E, Task<R, E, A>>((k) => {
+               started.set(true);
+               const ret = new AtomicReference<Option<IO<Task<R, E, A>>>>(none());
+               try {
+                  const res = register((io) => k(pure(io)));
+                  switch (res._tag) {
+                     case "Right": {
+                        ret.set(some(pure(res.right)));
+                        break;
                      }
-                  } finally {
-                     if (!cancel.isSet()) {
-                        cancel.set(unit);
+                     case "Left": {
+                        cancel.set(res.left);
+                        break;
                      }
                   }
-                  return ret.get;
-               }, blockingOn)
-            ),
-            () => suspend(() => (started.get ? cancel.get() : unit))
+               } finally {
+                  if (!cancel.isSet()) {
+                     cancel.set(unit);
+                  }
+               }
+               return ret.get;
+            }, blockingOn),
+            flatten,
+            onInterrupt(() => suspend(() => (started.get ? cancel.get() : unit)))
          )
+      )
    );
 
 export const asyncInterrupt = <R, E, A>(
    register: (cb: (_: Task<R, E, A>) => void) => Canceler<R>,
    blockingOn: ReadonlyArray<FiberId> = []
 ) => maybeAsyncInterrupt<R, E, A>((cb) => left(register(cb)), blockingOn);
-
-/**
- * Returns a effect that will never produce anything. The moral equivalent of
- * `while(true) {}`, only without the wasted CPU cycles.
- */
-export const never = suspend(() =>
-   asyncInterrupt<unknown, never, never>(() => {
-      const interval = setInterval(() => {
-         //
-      }, 60000);
-      return total(() => {
-         clearInterval(interval);
-      });
-   })
-);

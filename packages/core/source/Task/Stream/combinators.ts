@@ -47,7 +47,7 @@ export const unfoldChunkM = <Z>(z: Z) => <R, E, A>(
 ): Stream<R, E, A> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("done", () => XR.makeManagedRef(false)),
          M.bindS("ref", () => XR.makeManagedRef(z)),
          M.letS("pull", ({ done, ref }) =>
@@ -97,7 +97,7 @@ export const combineChunks = <R1, E1, B>(that: Stream<R1, E1, B>) => <Z>(z: Z) =
 ) => (self: Stream<R, E, A>): Stream<R & R1, E1 | E, C> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("left", () => self.proc),
          M.bindS("right", () => that.proc),
          M.bindS(
@@ -321,7 +321,7 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
 
    return new Stream<R & R1, E2, A | B>(
       pipe(
-         M.of,
+         M.do,
          M.bindS("finalizerRef", () => M.finalizerRef(M.noopFinalizer) as M.Managed<R, never, XR.Ref<M.Finalizer>>),
          M.bindS("ref", () =>
             pipe(
@@ -347,7 +347,7 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
                            finalizerRef.set((exit) => M.releaseAll(exit, sequential())(releaseMap)),
                            T.chain(() =>
                               pipe(
-                                 restore(stream.proc.effect),
+                                 restore(stream.proc.task),
                                  T.local((_: R) => [_, releaseMap] as [R, M.ReleaseMap]),
                                  T.map(([_, __]) => __),
                                  T.tap((pull) => ref.set(asState(pull)))
@@ -450,7 +450,7 @@ export const concatAll = <R, E, A>(streams: Array<Stream<R, E, A>>): Stream<R, E
    const chunkSize = streams.length;
    return new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("currIndex", () => XR.makeManagedRef(0)),
          M.bindS("currStream", () => XR.makeManagedRef<T.Task<R, Option<E>, ReadonlyArray<A>>>(Pull.end)),
          M.bindS("switchStream", () => M.switchable<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>()),
@@ -489,7 +489,7 @@ export const mergeWith_ = <R, E, A, R1, E1, B, C, C1>(
 ): Stream<R1 & R, E | E1, C | C1> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("handoff", () => M.fromTask(H.make<Take.Take<E | E1, C | C1>>())),
          M.bindS("done", () => M.fromTask(XRM.makeRefM<O.Option<boolean>>(O.none()))),
          M.bindS("chunksL", () => sa.proc),
@@ -564,7 +564,7 @@ export const mergeWith_ = <R, E, A, R1, E1, B, C, C1>(
          ),
          M.map(({ done, handoff }) =>
             pipe(
-               T.of,
+               T.do,
                T.bindS("done", () => done.get),
                T.bindS("take", (s) =>
                   s.done._tag === "Some" && s.done.value ? pipe(handoff, H.poll, T.some) : pipe(handoff, H.take)

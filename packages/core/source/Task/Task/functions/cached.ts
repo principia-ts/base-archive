@@ -6,24 +6,24 @@ import { currentTime } from "../../Clock";
 import type { XPromise } from "../../XPromise";
 import * as XP from "../../XPromise";
 import * as XRM from "../../XRefM";
-import { ask, bindS, chain, die, giveAll, map, of, tap } from "../core";
+import * as _ from "../core";
 import type { EIO, RIO, Task } from "../model";
 import { uninterruptibleMask } from "./interrupt";
 import { to } from "./to";
 
 const _compute = <R, E, A>(fa: Task<R, E, A>, ttl: number, start: number) =>
    pipe(
-      of,
-      bindS("p", () => XP.make<E, A>()),
-      tap(({ p }) => to(p)(fa)),
-      map(({ p }) => O.some(tuple(start + ttl, p)))
+      _.do,
+      _.bindS("p", () => XP.make<E, A>()),
+      _.tap(({ p }) => to(p)(fa)),
+      _.map(({ p }) => O.some(tuple(start + ttl, p)))
    );
 
 const _get = <R, E, A>(fa: Task<R, E, A>, ttl: number, cache: XRM.RefM<Option<readonly [number, XPromise<E, A>]>>) =>
    uninterruptibleMask(({ restore }) =>
       pipe(
          currentTime,
-         chain((time) =>
+         _.chain((time) =>
             pipe(
                cache,
                XRM.updateSomeAndGet((o) =>
@@ -38,7 +38,7 @@ const _get = <R, E, A>(fa: Task<R, E, A>, ttl: number, cache: XRM.RefM<Option<re
                      )
                   )
                ),
-               chain((a) => (a._tag === "None" ? die("bug") : restore(XP.await(a.value[1]))))
+               _.chain((a) => (a._tag === "None" ? _.die("bug") : restore(XP.await(a.value[1]))))
             )
          )
       )
@@ -57,10 +57,10 @@ const _get = <R, E, A>(fa: Task<R, E, A>, ttl: number, cache: XRM.RefM<Option<re
  */
 export const cached_ = <R, E, A>(fa: Task<R, E, A>, timeToLive: number): RIO<R & HasClock, EIO<E, A>> =>
    pipe(
-      of,
-      bindS("r", () => ask<R & HasClock>()),
-      bindS("cache", () => XRM.makeRefM<Option<readonly [number, XPromise<E, A>]>>(O.none())),
-      map(({ cache, r }) => giveAll(r)(_get(fa, timeToLive, cache)))
+      _.do,
+      _.bindS("r", () => _.ask<R & HasClock>()),
+      _.bindS("cache", () => XRM.makeRefM<Option<readonly [number, XPromise<E, A>]>>(O.none())),
+      _.map(({ cache, r }) => _.giveAll(r)(_get(fa, timeToLive, cache)))
    );
 
 /**

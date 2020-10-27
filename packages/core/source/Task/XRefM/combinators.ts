@@ -20,7 +20,7 @@ import { Atomic, concrete } from "./model";
  */
 export const makeRefM = <A>(a: A): T.IO<RefM<A>> =>
    pipe(
-      T.of,
+      T.do,
       T.bindS("ref", () => XR.makeRef(a)),
       T.bindS("semaphore", () => S.makeSemaphore(1)),
       T.map(({ ref, semaphore }) => new Atomic(ref, semaphore))
@@ -47,7 +47,7 @@ export const makeManagedRefM = <A>(a: A): M.IO<RefM<A>> => pipe(makeRefM(a), M.f
  */
 export const dequeueRef = <A>(a: A): T.IO<[RefM<A>, XQ.Dequeue<A>]> =>
    pipe(
-      T.of,
+      T.do,
       T.bindS("ref", () => makeRefM(a)),
       T.bindS("queue", () => XQ.makeUnbounded<A>()),
       T.map(({ queue, ref }) => [

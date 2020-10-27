@@ -58,6 +58,7 @@ export * from "./mapPartial";
 export * from "./memoize";
 export * from "./merge";
 export * from "./mergeAll";
+export * from "./never";
 export * from "./once";
 export * from "./onError";
 export * from "./onExit";

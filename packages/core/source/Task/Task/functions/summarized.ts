@@ -1,5 +1,5 @@
 import { pipe } from "../../../Function";
-import { bindS, map, of } from "../core";
+import * as _ from "../core";
 import type { Task } from "../model";
 
 export const summarized_ = <R, E, A, R1, E1, B, C>(
@@ -8,11 +8,11 @@ export const summarized_ = <R, E, A, R1, E1, B, C>(
    f: (start: B, end: B) => C
 ): Task<R & R1, E | E1, [C, A]> =>
    pipe(
-      of,
-      bindS("start", () => summary),
-      bindS("value", () => self),
-      bindS("end", () => summary),
-      map((s) => [f(s.start, s.end), s.value])
+      _.do,
+      _.bindS("start", () => summary),
+      _.bindS("value", () => self),
+      _.bindS("end", () => summary),
+      _.map((s) => [f(s.start, s.end), s.value])
    );
 
 export const summarized = <R1, E1, B, C>(summary: Task<R1, E1, B>, f: (start: B, end: B) => C) => <R, E, A>(

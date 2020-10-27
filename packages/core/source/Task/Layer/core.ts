@@ -98,7 +98,7 @@ export const _build = <R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, 
 
 export const build = <R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, A> =>
    pipe(
-      M.of,
+      M.do,
       M.bindS("memoMap", () => M.fromTask(makeMemoMap())),
       M.bindS("run", () => _build(_)),
       M.bindS("value", ({ memoMap, run }) => run(memoMap)),
@@ -235,7 +235,7 @@ export class MemoMap {
     * and adds a finalizer to the outer `Managed`.
     */
    getOrElseMemoize = <R, E, A>(layer: Layer<R, E, A>) =>
-      M.managed<R, E, A>(
+      new M.Managed<R, E, A>(
          pipe(
             this.ref,
             XRM.modify((m) => {
@@ -264,14 +264,14 @@ export class MemoMap {
                   return T.pure(tuple(cached, m));
                } else {
                   return pipe(
-                     T.of,
+                     T.do,
                      T.bindS("observers", () => XR.makeRef(0)),
                      T.bindS("promise", () => XP.make<E, A>()),
                      T.bindS("finalizerRef", () => XR.makeRef<Finalizer>(RelMap.noopFinalizer)),
                      T.letS("resource", ({ finalizerRef, observers, promise }) =>
                         T.uninterruptibleMask(({ restore }) =>
                            pipe(
-                              T.of,
+                              T.do,
                               T.bindS("env", () => T.ask<readonly [R, ReleaseMap]>()),
                               T.letS("a", ({ env: [a] }) => a),
                               T.letS("outerReleaseMap", ({ env: [_, outerReleaseMap] }) => outerReleaseMap),
@@ -283,7 +283,7 @@ export class MemoMap {
                                           pipe(
                                              _build(layer),
                                              M.chain((_) => _(this))
-                                          ).effect,
+                                          ).task,
                                           [a, innerReleaseMap]
                                        ),
                                        T.result,
@@ -302,7 +302,7 @@ export class MemoMap {
                                              }
                                              case "Success": {
                                                 return pipe(
-                                                   T.of,
+                                                   T.do,
                                                    T.tap(() =>
                                                       finalizerRef.set((e) =>
                                                          T.whenM(

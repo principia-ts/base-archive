@@ -69,7 +69,7 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
       InferMixStruct<F, TC, "R", R, KS>,
       InferMixStruct<F, TC, "E", E, KS>,
       {
-         [K in keyof KS]: HKT.Infer<F, "A", KS[K]>;
+         [K in keyof KS]: HKT.Infer<F, TC, "A", KS[K]>;
       }
    >;
 }

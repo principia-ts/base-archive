@@ -142,7 +142,7 @@ export const chain_ = <R, E, A, Q, D, B>(fa: Stream<R, E, A>, f: (a: A) => Strea
 
    return new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("outerStream", () => fa.proc),
          M.bindS("currOuterChunk", () =>
             T.toManaged()(
@@ -198,7 +198,7 @@ export const mapAccumM_ = <R, E, A, R1, E1, B, Z>(
 ) =>
    new Stream<R & R1, E | E1, B>(
       pipe(
-         M.of,
+         M.do,
          M.bindS("state", () => XR.makeManagedRef(z)),
          M.bindS("pull", () => pipe(stream.proc, M.mapTask(BPull.make))),
          M.map(({ pull, state }) =>
@@ -207,7 +207,7 @@ export const mapAccumM_ = <R, E, A, R1, E1, B, Z>(
                BPull.pullElement,
                T.chain((o) =>
                   pipe(
-                     T.of,
+                     T.do,
                      T.bindS("s", () => state.get),
                      T.bindS("t", ({ s }) => f(s, o)),
                      T.tap(({ t }) => state.set(t[0])),
@@ -267,7 +267,7 @@ export const mapTaskPar_ = (n: number) => <R, E, A, R1, E1, B>(
 ): Stream<R & R1, E | E1, B> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("out", () => T.toManaged()(XQ.makeBounded<T.Task<R1, Option<E1 | E>, B>>(n))),
          M.bindS("errorSignal", () => T.toManaged()(XP.make<E1, never>())),
          M.bindS("permits", () => T.toManaged()(Semaphore.makeSemaphore(n))),
@@ -276,7 +276,7 @@ export const mapTaskPar_ = (n: number) => <R, E, A, R1, E1, B>(
                stream,
                foreachManaged((a) =>
                   pipe(
-                     T.of,
+                     T.do,
                      T.bindS("p", () => XP.make<E1, B>()),
                      T.bindS("latch", () => XP.make<never, void>()),
                      T.tap(({ p }) => out.offer(pipe(p, XP.await, T.first(O.some)))),
@@ -351,7 +351,7 @@ export const asyncTask = <R, E, A, R1 = R, E1 = E>(
    outputBuffer = 16
 ): Stream<R & R1, E | E1, A> =>
    pipe(
-      M.of,
+      M.do,
       M.bindS("output", () => pipe(XQ.makeBounded<Take.Take<E, A>>(outputBuffer), T.toManaged())),
       M.bindS("runtime", () => pipe(T.runtime<R>(), T.toManaged())),
       M.tap(({ output, runtime }) =>

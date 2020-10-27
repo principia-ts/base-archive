@@ -57,7 +57,7 @@ export const foldArraysM = <Z>(z: Z) => (contFn: (s: Z) => boolean) => <I, R, E>
    if (contFn(z)) {
       return new Sink(
          pipe(
-            M.of,
+            M.do,
             M.bindS("state", () => pipe(XR.makeRef(z), T.toManaged())),
             M.letS("push", ({ state }) => (is: Option<ReadonlyArray<I>>) => {
                switch (is._tag) {
@@ -126,7 +126,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
 ): Sink<R1 & R, E1 | E, I1, L1 | L, E.Either<Z, Z1>> =>
    new Sink(
       pipe(
-         M.of,
+         M.do,
          M.bindS("p1", () => self.push),
          M.bindS("p2", () => that.push),
          M.map(({ p1, p2 }) => (i: Option<ReadonlyArray<I1>>): T.Task<

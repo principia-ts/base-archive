@@ -1,5 +1,4 @@
 import * as T from "../_internal/task";
-import type { Managed } from "../core";
-import { managed } from "../core";
+import { Managed } from "../core";
 
-export const suspend = <R, E, A>(thunk: () => Managed<R, E, A>) => managed(T.suspend(() => thunk().effect));
+export const suspend = <R, E, A>(thunk: () => Managed<R, E, A>) => new Managed(T.suspend(() => thunk().task));

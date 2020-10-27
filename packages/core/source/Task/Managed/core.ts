@@ -4,25 +4,18 @@ import * as Ex from "../Exit";
 import type { Cause } from "../Exit/Cause";
 import { makeRef } from "../XRef/combinators";
 import * as T from "./_internal/task";
-import type { Managed } from "./model";
+import { Managed } from "./model";
 import type { Finalizer, ReleaseMap } from "./ReleaseMap";
 import { add, addIfOpen, noopFinalizer, release } from "./ReleaseMap";
 
 export * from "./model";
-
-export const managed = <R, E, A>(
-   effect: T.Task<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>
-): Managed<R, E, A> =>
-   ({
-      effect
-   } as Managed<R, E, A>);
 
 /**
  * Lifts a `Task<R, E, A>` into `Managed<R, E, A>` with no release action. The
  * effect will be performed interruptibly.
  */
 export const fromTask = <R, E, A>(effect: T.Task<R, E, A>) =>
-   managed<R, E, A>(
+   new Managed<R, E, A>(
       T.map_(
          T.asksM((_: readonly [R, ReleaseMap]) => T.giveAll_(effect, _[0])),
          (a) => [noopFinalizer, a]
@@ -43,9 +36,9 @@ export const chain = <R1, E1, A, A1>(f: (a: A) => Managed<R1, E1, A1>) => <R, E>
  * followed by the managed that it returns.
  */
 export const chain_ = <R, E, A, R1, E1, A1>(self: Managed<R, E, A>, f: (a: A) => Managed<R1, E1, A1>) =>
-   managed<R & R1, E | E1, A1>(
-      T.chain_(self.effect, ([releaseSelf, a]) =>
-         T.map_(f(a).effect, ([releaseThat, b]) => [
+   new Managed<R & R1, E | E1, A1>(
+      T.chain_(self.task, ([releaseSelf, a]) =>
+         T.map_(f(a).task, ([releaseThat, b]) => [
             (e) =>
                T.chain_(T.result(releaseThat(e)), (e1) =>
                   T.chain_(T.result(releaseSelf(e1)), (e2) => T.done(Ex.apSecond_(e1, e2)))
@@ -89,12 +82,12 @@ export const foldCauseM_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
    f: (cause: Cause<E>) => Managed<R1, E1, A1>,
    g: (a: A) => Managed<R2, E2, A2>
 ) =>
-   managed<R & R1 & R2, E1 | E2, A1 | A2>(
+   new Managed<R & R1 & R2, E1 | E2, A1 | A2>(
       pipe(
-         self.effect,
+         self.task,
          T.foldCauseM(
-            (c) => f(c).effect,
-            ([_, a]) => g(a).effect
+            (c) => f(c).task,
+            ([_, a]) => g(a).task
          )
       )
    );
@@ -116,9 +109,9 @@ export const foreach = <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (as: Itera
  * If you do not need the results, see `foreachUnit_` for a more efficient implementation.
  */
 export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>) =>
-   managed<R, E, readonly B[]>(
+   new Managed<R, E, readonly B[]>(
       T.map_(
-         T.foreach_(as, (a) => f(a).effect),
+         T.foreach_(as, (a) => f(a).task),
          (res) => {
             const fins = res.map((k) => k[0]);
             const as = res.map((k) => k[1]);
@@ -161,10 +154,10 @@ export const makeExit_ = <R, E, A, R1>(
    acquire: T.Task<R, E, A>,
    release: (a: A, exit: Exit<any, any>) => T.Task<R1, never, unknown>
 ) =>
-   managed<R & R1, E, A>(
+   new Managed<R & R1, E, A>(
       T.makeUninterruptible(
          pipe(
-            T.of,
+            T.do,
             T.bindS("r", () => T.ask<readonly [R & R1, ReleaseMap]>()),
             T.bindS("a", (s) => T.giveAll_(acquire, s.r[0])),
             T.bindS("rm", (s) => add((ex) => T.giveAll_(release(s.a, ex), s.r[0]))(s.r[1])),
@@ -183,10 +176,10 @@ export const makeExit_ = <R, E, A, R1>(
  * safely interrupted and released.
  */
 export const makeReserve = <R, E, R2, E2, A>(reservation: T.Task<R, E, Reservation<R2, E2, A>>) =>
-   managed<R & R2, E | E2, A>(
+   new Managed<R & R2, E | E2, A>(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
-            T.of,
+            T.do,
             T.bindS("tp", () => T.ask<readonly [R & R2, ReleaseMap]>()),
             T.letS("r", (s) => s.tp[0]),
             T.letS("releaseMap", (s) => s.tp[1]),
@@ -220,14 +213,14 @@ export const map = <A, B>(f: (a: A) => B) => <R, E>(self: Managed<R, E, A>) => m
  * Returns a managed whose success is mapped by the specified `f` function.
  */
 export const map_ = <R, E, A, B>(self: Managed<R, E, A>, f: (a: A) => B) =>
-   managed<R, E, B>(T.map_(self.effect, ([fin, a]) => [fin, f(a)]));
+   new Managed<R, E, B>(T.map_(self.task, ([fin, a]) => [fin, f(a)]));
 
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
  */
 export const mapTask_ = <R, E, A, R1, E1, B>(self: Managed<R, E, A>, f: (a: A) => T.Task<R1, E1, B>) =>
-   managed<R & R1, E | E1, B>(
-      T.chain_(self.effect, ([fin, a]) =>
+   new Managed<R & R1, E | E1, B>(
+      T.chain_(self.task, ([fin, a]) =>
          T.local_(
             T.map_(f(a), (b) => [fin, b]),
             ([r]: readonly [R & R1, ReleaseMap]) => r
@@ -239,8 +232,8 @@ export const mapTask_ = <R, E, A, R1, E1, B>(self: Managed<R, E, A>, f: (a: A) =
  * Returns a managed whose success is mapped by the specified `f` function.
  */
 export const mapTask = <R1, E1, A, B>(f: (a: A) => T.Task<R1, E1, B>) => <R, E>(self: Managed<R, E, A>) =>
-   managed<R & R1, E | E1, B>(
-      T.chain_(self.effect, ([fin, a]) =>
+   new Managed<R & R1, E | E1, B>(
+      T.chain_(self.task, ([fin, a]) =>
          T.local_(
             T.map_(f(a), (b) => [fin, b]),
             ([r]: readonly [R & R1, ReleaseMap]) => r
@@ -252,7 +245,7 @@ export const mapTask = <R1, E1, A, B>(f: (a: A) => T.Task<R1, E1, B>) => <R, E>(
  * Like provideSome_ for effect but for Managed
  */
 export const provideSome_ = <R, E, A, R0>(self: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> =>
-   managed(T.asksM(([r0, rm]: readonly [R0, ReleaseMap]) => T.giveAll_(self.effect, [f(r0), rm])));
+   new Managed(T.asksM(([r0, rm]: readonly [R0, ReleaseMap]) => T.giveAll_(self.task, [f(r0), rm])));
 
 /**
  * A `Reservation<R, E, A>` encapsulates resource acquisition and disposal
@@ -338,7 +331,8 @@ export const mapBoth_ = <R, E, A, R1, E1, A1, B>(
    f: (a: A, a2: A1) => B
 ) => chain_(self, (a) => map_(that, (a2) => f(a, a2)));
 
-export const of = succeed({});
+const of = succeed({});
+export { of as do };
 
 export const bindS = <R, E, A, K, N extends string>(
    name: Exclude<N, keyof K>,

@@ -123,12 +123,12 @@ export class Chain<R_, E_, O, O2> {
          T.chain((o) =>
             T.uninterruptibleMask(({ restore }) =>
                pipe(
-                  T.of,
+                  T.do,
                   T.bindS("releaseMap", () => M.makeReleaseMap),
                   T.bindS("pull", ({ releaseMap }) =>
                      restore(
                         pipe(
-                           this.f0(o).proc.effect,
+                           this.f0(o).proc.task,
                            T.local((_: R_) => [_, releaseMap] as [R_, M.ReleaseMap]),
                            T.map(([_, x]) => x)
                         )

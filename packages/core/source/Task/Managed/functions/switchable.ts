@@ -3,7 +3,7 @@ import { pipe } from "../../../Function";
 import * as O from "../../../Option";
 import { sequential } from "../../ExecutionStrategy";
 import * as Ex from "../../Exit";
-import { bindS, fromTask, map, of } from "../core";
+import * as _ from "../core";
 import type { Managed } from "../model";
 import * as RelMap from "../ReleaseMap";
 import { releaseAll } from "./releaseAll";
@@ -24,17 +24,17 @@ import { releaseMap } from "./releaseMap";
  */
 export const switchable = <R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => T.Task<R, E, A>> =>
    pipe(
-      of,
-      bindS("releaseMap", () => releaseMap),
-      bindS("key", ({ releaseMap }) =>
+      _.do,
+      _.bindS("releaseMap", () => releaseMap),
+      _.bindS("key", ({ releaseMap }) =>
          pipe(
             releaseMap,
             RelMap.addIfOpen((_) => T.unit),
             T.chain(O.fold(() => T.interrupt, T.succeed)),
-            fromTask
+            _.fromTask
          )
       ),
-      map(({ key, releaseMap }) => (newResource) =>
+      _.map(({ key, releaseMap }) => (newResource) =>
          T.uninterruptibleMask(({ restore }) =>
             pipe(
                releaseMap,
@@ -45,10 +45,10 @@ export const switchable = <R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
                      (fin) => fin(Ex.unit)
                   )
                ),
-               T.apSecond(T.of),
+               T.apSecond(T.do),
                T.bindS("r", () => T.ask<R>()),
                T.bindS("inner", () => RelMap.makeReleaseMap),
-               T.bindS("a", ({ inner, r }) => restore(T.giveAll_(newResource.effect, [r, inner]))),
+               T.bindS("a", ({ inner, r }) => restore(T.giveAll_(newResource.task, [r, inner]))),
                T.tap(({ inner }) => RelMap.replace(key, (exit) => releaseAll(exit, sequential())(inner))(releaseMap)),
                T.map(({ a }) => a[1])
             )

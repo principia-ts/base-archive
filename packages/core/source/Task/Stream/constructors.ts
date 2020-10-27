@@ -24,7 +24,7 @@ import { Stream } from "./model";
 export const fromArray = <A>(c: ReadonlyArray<A>): IO<A> =>
    new Stream(
       pipe(
-         T.of,
+         T.do,
          T.bindS("doneRef", () => XR.makeRef(false)),
          T.letS("pull", ({ doneRef }) =>
             pipe(
@@ -46,7 +46,7 @@ export const fromArray = <A>(c: ReadonlyArray<A>): IO<A> =>
 export const fromTaskOption = <R, E, A>(fa: T.Task<R, Option<E>, A>): Stream<R, E, A> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("doneRef", () => pipe(XR.makeRef(false), T.toManaged())),
          M.letS("pull", ({ doneRef }) =>
             pipe(
@@ -91,7 +91,7 @@ export const asyncOption = <R, E, A>(
 ): Stream<R, E, A> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("output", () => pipe(XQ.makeBounded<Take.Take<E, A>>(outputBuffer), T.toManaged())),
          M.bindS("runtime", () => pipe(T.runtime<R>(), T.toManaged())),
          M.bindS("maybeStream", ({ output, runtime }) =>
@@ -104,7 +104,7 @@ export const asyncOption = <R, E, A>(
                maybeStream,
                () =>
                   pipe(
-                     M.of,
+                     M.do,
                      M.bindS("done", () => XR.makeManagedRef(false)),
                      M.map(({ done }) =>
                         pipe(
@@ -174,7 +174,7 @@ export const asyncInterruptEither = <R, E, A>(
 ): Stream<R, E, A> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("output", () => pipe(XQ.makeBounded<Take.Take<E, A>>(outputBuffer), T.toManaged())),
          M.bindS("runtime", () => pipe(T.runtime<R>(), T.toManaged())),
          M.bindS("eitherStream", ({ output, runtime }) =>
@@ -187,7 +187,7 @@ export const asyncInterruptEither = <R, E, A>(
                eitherStream,
                (canceler) =>
                   pipe(
-                     M.of,
+                     M.do,
                      M.bindS("done", () => XR.makeManagedRef(false)),
                      M.map(({ done }) =>
                         pipe(
@@ -246,7 +246,7 @@ export const fail = <E>(e: E): EIO<E, never> => fromTask(T.fail(e));
 export const repeatTaskChunkOption = <R, E, A>(ef: T.Task<R, Option<E>, ReadonlyArray<A>>): Stream<R, E, A> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("done", () => XR.makeManagedRef(false)),
          M.letS("pull", ({ done }) =>
             pipe(
@@ -347,7 +347,7 @@ export const suspend = <R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> 
 export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
    new Stream(
       pipe(
-         M.of,
+         M.do,
          M.bindS("doneRef", () => XR.makeManagedRef(false)),
          M.bindS("finalizer", () => M.makeManagedReleaseMap(sequential())),
          M.letS("pull", ({ doneRef, finalizer }) =>
@@ -358,10 +358,10 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
                      done
                         ? Pull.end
                         : pipe(
-                             T.of,
+                             T.do,
                              T.bindS("a", () =>
                                 pipe(
-                                   ma.effect,
+                                   ma.task,
                                    T.map(([_, __]) => __),
                                    T.local((r: R) => [r, finalizer] as [R, M.ReleaseMap]),
                                    restore,
@@ -392,7 +392,7 @@ export const finalizer = <R>(finalizer: T.RIO<R, unknown>): RIO<R, unknown> => b
 export const aggregate_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, transducer: Transducer<R1, E1, A, B>) =>
    new Stream<R & R1, E | E1, B>(
       pipe(
-         M.of,
+         M.do,
          M.bindS("pull", () => stream.proc),
          M.bindS("push", () => transducer.push),
          M.bindS("done", () => XR.makeManagedRef(false)),

@@ -214,8 +214,8 @@ export type Kind4<F extends URIS4, C, S, R, E, A> = F extends URIS4
  * -------------------------------------------
  */
 
-export type Infer<F extends URIS, P extends Param | "A" | "C", K> = [K] extends [
-   Kind<F, infer C, infer N, infer K, infer Q, infer W, infer X, infer I, infer S, infer R, infer E, infer A>
+export type Infer<F extends URIS, C, P extends Param | "A" | "C", K> = [K] extends [
+   Kind<F, C, infer N, infer K, infer Q, infer W, infer X, infer I, infer S, infer R, infer E, infer A>
 ]
    ? P extends "C"
       ? C

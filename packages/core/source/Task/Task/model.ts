@@ -98,7 +98,7 @@ export abstract class BaseInstruction<R, E, A> implements Task<R, E, A> {
 
 export class ChainInstruction<R, R1, E, E1, A, A1> extends BaseInstruction<R & R1, E | E1, A1> {
    readonly _tag = TaskInstructionTag.Chain;
-   constructor(readonly effect: Task<R, E, A>, readonly f: (a: A) => Task<R1, E1, A1>) {
+   constructor(readonly task: Task<R, E, A>, readonly f: (a: A) => Task<R1, E1, A1>) {
       super();
    }
 }
@@ -138,7 +138,7 @@ export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends BaseInstruct
    readonly _tag = TaskInstructionTag.Fold;
 
    constructor(
-      readonly effect: Task<R, E, A>,
+      readonly task: Task<R, E, A>,
       readonly onFailure: (cause: Cause<E>) => Task<R1, E1, B>,
       readonly onSuccess: (a: A) => Task<R2, E2, C>
    ) {
@@ -153,7 +153,7 @@ export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends BaseInstruct
 export class ForkInstruction<R, E, A> extends BaseInstruction<R, never, Executor<E, A>> {
    readonly _tag = TaskInstructionTag.Fork;
 
-   constructor(readonly effect: Task<R, E, A>, readonly scope: Option<Scope<Exit<any, any>>>) {
+   constructor(readonly task: Task<R, E, A>, readonly scope: Option<Scope<Exit<any, any>>>) {
       super();
    }
 }
@@ -185,7 +185,7 @@ export class ReadInstruction<R0, R, E, A> extends BaseInstruction<R & R0, E, A> 
 export class GiveInstruction<R, E, A> extends BaseInstruction<unknown, E, A> {
    readonly _tag = TaskInstructionTag.Give;
 
-   constructor(readonly effect: Task<R, E, A>, readonly env: R) {
+   constructor(readonly task: Task<R, E, A>, readonly env: R) {
       super();
    }
 }
@@ -219,7 +219,7 @@ export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extend
 export class InterruptStatusInstruction<R, E, A> extends BaseInstruction<R, E, A> {
    readonly _tag = TaskInstructionTag.InterruptStatus;
 
-   constructor(readonly effect: Task<R, E, A>, readonly flag: InterruptStatus) {
+   constructor(readonly task: Task<R, E, A>, readonly flag: InterruptStatus) {
       super();
    }
 }
@@ -243,7 +243,7 @@ export class CheckDescriptorInstruction<R, E, A> extends BaseInstruction<R, E, A
 export class SuperviseInstruction<R, E, A> extends BaseInstruction<R, E, A> {
    readonly _tag = TaskInstructionTag.Supervise;
 
-   constructor(readonly effect: Task<R, E, A>, readonly supervisor: Supervisor<any>) {
+   constructor(readonly task: Task<R, E, A>, readonly supervisor: Supervisor<any>) {
       super();
    }
 }
@@ -283,7 +283,7 @@ export class GetForkScopeInstruction<R, E, A> extends BaseInstruction<R, E, A> {
 export class OverrideForkScopeInstruction<R, E, A> extends BaseInstruction<R, E, A> {
    readonly _tag = TaskInstructionTag.OverrideForkScope;
 
-   constructor(readonly effect: Task<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
+   constructor(readonly task: Task<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
       super();
    }
 }

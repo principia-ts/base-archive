@@ -689,7 +689,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                      } else {
                         switch (current._tag) {
                            case TaskInstructionTag.Chain: {
-                              const nested: T.Instruction = current.effect[T._I];
+                              const nested: T.Instruction = current.task[T._I];
                               const continuation: (a: any) => T.Task<any, any, any> = current.f;
 
                               switch (nested._tag) {
@@ -770,14 +770,14 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
 
                            case TaskInstructionTag.Fold: {
                               this.pushContinuation(current);
-                              current = current.effect[T._I];
+                              current = current.task[T._I];
                               break;
                            }
 
                            case TaskInstructionTag.InterruptStatus: {
                               this.pushInterruptStatus(current.flag.toBoolean);
                               this.pushContinuation(this.interruptExit);
-                              current = current.effect[T._I];
+                              current = current.task[T._I];
                               break;
                            }
 
@@ -825,7 +825,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                            }
 
                            case TaskInstructionTag.Fork: {
-                              current = this.next(this.fork(current.effect[T._I], current.scope));
+                              current = this.next(this.fork(current.task[T._I], current.scope));
                               break;
                            }
 
@@ -851,7 +851,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                                  T.total(() => {
                                     this.pushEnv(c.env);
                                  }),
-                                 () => c.effect,
+                                 () => c.task,
                                  () =>
                                     T.total(() => {
                                        this.popEnv();
@@ -909,7 +909,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                                  T.total(() => {
                                     this.supervisors = stack(newSupervisor, this.supervisors);
                                  }),
-                                 () => c.effect,
+                                 () => c.task,
                                  () =>
                                     T.total(() => {
                                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -932,7 +932,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                                  T.total(() => {
                                     this.forkScopeOverride = stack(c.forkScope, this.forkScopeOverride);
                                  }),
-                                 () => c.effect,
+                                 () => c.task,
                                  () =>
                                     T.total(() => {
                                        this.forkScopeOverride = this.forkScopeOverride?.previous;

@@ -69,7 +69,7 @@ export const succeed: <E = never, A = never>(a: A) => EIO<E, A> = pure;
 
 /**
  * ```haskell
- * of :: Task _ _ {}
+ * do :: Task _ _ {}
  * ```
  *
  * The `Task` that carries a success of an empty `Record`. Useful for `Do` notation.
@@ -77,7 +77,9 @@ export const succeed: <E = never, A = never>(a: A) => EIO<E, A> = pure;
  * @category Constructors
  * @since 1.0.0
  */
-export const of: Task<unknown, never, {}> = pure({});
+const of: Task<unknown, never, {}> = pure({});
+
+export { of as do };
 
 /**
  * ```haskell

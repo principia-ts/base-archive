@@ -48,7 +48,7 @@ export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
       R = HKT.Initial<TC, "R">,
       E = HKT.Initial<TC, "E">
    >(
-      f: (...as: readonly [...{ [K in keyof KT]: HKT.Infer<F, "A", KT[K]> }]) => B
+      f: (...as: readonly [...{ [K in keyof KT]: HKT.Infer<F, TC, "A", KT[K]> }]) => B
    ): (
       ...t: readonly [...KT]
    ) => HKT.Kind<

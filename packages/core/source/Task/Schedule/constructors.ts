@@ -43,7 +43,7 @@ export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecu
 
          const next = (input: I) =>
             pipe(
-               T.of,
+               T.do,
                T.bindS("step", () => T.map_(ref.get, ([_, o]) => o)),
                T.bindS("now", () => Clock.currentTime),
                T.bindS("dec", ({ now, step }) => step(now, input)),

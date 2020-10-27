@@ -86,7 +86,7 @@ export type InferMixStruct<F extends HKT.URIS, TC, P extends HKT.Param, T, KS> =
    TC,
    P,
    T,
-   { [K in keyof KS]: HKT.Infer<F, P, KS[K]> }
+   { [K in keyof KS]: HKT.Infer<F, TC, P, KS[K]> }
 >;
 
 /**
@@ -96,5 +96,5 @@ export type InferMixTuple<F extends HKT.URIS, TC, P extends HKT.Param, T, KT> = 
    TC,
    P,
    T,
-   { [K in keyof KT & number]: HKT.Infer<F, P, KT[K]> }
+   { [K in keyof KT & number]: HKT.Infer<F, TC, P, KT[K]> }
 >;

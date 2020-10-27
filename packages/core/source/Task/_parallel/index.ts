@@ -10,7 +10,7 @@ import type { Executor } from "../Fiber/executor";
 import { interrupt } from "../Fiber/functions/interrupt";
 import type { Fiber } from "../Fiber/model";
 import * as M from "../Managed/core";
-import type { Managed } from "../Managed/model";
+import { Managed } from "../Managed/model";
 import * as RM from "../Managed/ReleaseMap";
 import * as Sema from "../Semaphore";
 import { await as promiseWait } from "../XPromise/functions/await";
@@ -92,7 +92,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
    }
 
    return pipe(
-      T.of,
+      T.do,
       T.bindS("parentId", () => T.checkFiberId()),
       T.bindS("causes", () => XR.makeRef<C.Cause<E>>(C.empty)),
       T.bindS("result", () => promiseMake<void, void>()),
@@ -271,7 +271,7 @@ export const useManaged_ = <R, E, A, R2, E2, B>(
       RM.makeReleaseMap,
       (rm) =>
          T.chain_(
-            T.local_(self.effect, (r: R) => tuple(r, rm)),
+            T.local_(self.task, (r: R) => tuple(r, rm)),
             (a) => f(a[1])
          ),
       (rm, ex) => releaseAllReleaseMaps(ex, sequential())(rm)
@@ -284,10 +284,10 @@ export const useManaged_ = <R, E, A, R2, E2, B>(
  * and run the original finalizer.
  */
 export const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, Executor<E, A>> =>
-   M.managed(
+   new Managed(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
-            T.of,
+            T.do,
             T.bindS("tp", () => T.ask<readonly [R, RM.ReleaseMap]>()),
             T.letS("r", ({ tp }) => tp[0]),
             T.letS("outerReleaseMap", ({ tp }) => tp[1]),
@@ -295,7 +295,7 @@ export const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, 
             T.bindS("fiber", ({ innerReleaseMap, r }) =>
                restore(
                   pipe(
-                     self.effect,
+                     self.task,
                      T.map(([_, a]) => a),
                      T.forkDaemon,
                      T.giveAll([r, innerReleaseMap] as const)

@@ -86,7 +86,7 @@ export const pullArray = <R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.Opt
 
 export const make = <R, E, A>(pull: T.Task<R, O.Option<E>, ReadonlyArray<A>>) =>
    pipe(
-      T.of,
+      T.do,
       T.bindS("done", () => R.makeRef(false)),
       T.bindS("cursor", () => R.makeRef<[ReadonlyArray<A>, number]>([[], 0])),
       T.map(({ cursor, done }) => new BufferedPull(pull, done, cursor))
