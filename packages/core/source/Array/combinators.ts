@@ -8,8 +8,9 @@ import type { NonEmptyArray } from "../NonEmptyArray";
 import type { Option } from "../Option";
 import { isSome, none, some } from "../Option";
 import { empty } from "./constructors";
+import { reduce_ } from "./foldable";
 import { isEmpty, isNonEmpty, isOutOfBound_ } from "./guards";
-import { chain_, reduce_ } from "./methods";
+import { chain_ } from "./monad";
 
 /*
  * -------------------------------------------
@@ -74,7 +75,7 @@ export const cons_ = <A>(head: A, tail: ReadonlyArray<A>): NonEmptyArray<A> => {
 
 export const cons = <A>(tail: ReadonlyArray<A>) => (head: A): NonEmptyArray<A> => cons_(head, tail);
 
-export const snoc_ = <A>(end: A, init: ReadonlyArray<A>): NonEmptyArray<A> => {
+export const snoc_ = <A>(init: ReadonlyArray<A>, end: A): NonEmptyArray<A> => {
    const len = init.length;
    const r = Array(len + 1);
    for (let i = 0; i < len; i++) {
@@ -84,7 +85,7 @@ export const snoc_ = <A>(end: A, init: ReadonlyArray<A>): NonEmptyArray<A> => {
    return (r as unknown) as NonEmptyArray<A>;
 };
 
-export const snoc = <A>(init: ReadonlyArray<A>) => (end: A): NonEmptyArray<A> => snoc_(end, init);
+export const snoc = <A>(end: A) => (init: ReadonlyArray<A>): NonEmptyArray<A> => snoc_(init, end);
 
 export const head = <A>(as: ReadonlyArray<A>): Option<A> => (isEmpty(as) ? none() : some(as[0]));
 

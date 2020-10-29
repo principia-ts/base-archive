@@ -1,12 +1,9 @@
 import type { Option } from "../Option";
 import * as O from "../Option";
 import type { ReadonlyRecord } from "./model";
+import { keys } from "./utils";
 
 const hasOwnProperty_ = Object.prototype.hasOwnProperty;
-
-export const size = (r: ReadonlyRecord<string, unknown>): number => Object.keys(r).length;
-
-export const keys = <N extends string>(r: ReadonlyRecord<N, unknown>): ReadonlyArray<N> => Object.keys(r) as any;
 
 export const collect_ = <N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (k: N, a: A) => B) => {
    const out: Array<B> = [];

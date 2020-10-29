@@ -3,7 +3,7 @@ import { isEmpty } from "./guards";
 
 /*
  * -------------------------------------------
- * Destructors
+ * Array Destructors
  * -------------------------------------------
  */
 

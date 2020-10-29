@@ -1,6 +1,8 @@
 import { deriveDo } from "@principia/prelude/Do";
 
-import { Monad } from "./instances";
+import { right } from "./constructors";
+import type { Either } from "./model";
+import { Monad } from "./monad";
 
 /*
  * -------------------------------------------
@@ -8,7 +10,22 @@ import { Monad } from "./instances";
  * -------------------------------------------
  */
 
-const Do = deriveDo(Monad);
+/**
+ * @category Do
+ * @since 1.0.0
+ */
+export const Do = deriveDo(Monad);
+
+/**
+ * ```haskell
+ * do :: Either _ {}
+ * ```
+ *
+ * @category Do
+ * @since 1.0.0
+ */
+const of: Either<never, {}> = right({});
+export { of as do };
 
 /**
  * ```haskell

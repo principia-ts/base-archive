@@ -25,7 +25,7 @@ export const cons: <A>(tail: ReadonlyArray<A>) => (head: A) => NonEmptyArray<A> 
  * @category Constructors
  * @since 1.0.0
  */
-export const snoc_: <A>(end: A, init: ReadonlyArray<A>) => NonEmptyArray<A> = A.snoc_;
+export const snoc_: <A>(init: ReadonlyArray<A>, end: A) => NonEmptyArray<A> = A.snoc_;
 
 /**
  * Append an element to the end of an array, creating a new non empty array
@@ -33,7 +33,7 @@ export const snoc_: <A>(end: A, init: ReadonlyArray<A>) => NonEmptyArray<A> = A.
  * @category Constructors
  * @since 1.0.0
  */
-export const snoc: <A>(init: ReadonlyArray<A>) => (end: A) => NonEmptyArray<A> = A.snoc;
+export const snoc: <A>(end: A) => (init: ReadonlyArray<A>) => NonEmptyArray<A> = A.snoc;
 
 /**
  * Builds a `NonEmptyArray` from an array returning `none` if `as` is an empty array

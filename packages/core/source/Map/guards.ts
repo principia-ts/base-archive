@@ -9,6 +9,11 @@ interface Next<A> {
 }
 
 /**
+ * Test whether or not a map is empty
+ */
+export const isEmpty = <K, A>(d: ReadonlyMap<K, A>): boolean => d.size === 0;
+
+/**
  * Test whether or not one `Map` contains all of the keys and values contained in another `Map`
  *
  * @since 1.0.0

@@ -5,7 +5,9 @@ export class Scheduler {
 
    array = new LinkedList<() => void>();
 
-   isRunning = (): boolean => this.running;
+   isRunning(): boolean {
+      return this.running;
+   }
 
    setImmediate(thunk: () => void) {
       const handle = setImmediate(() => this.dispatch(thunk));

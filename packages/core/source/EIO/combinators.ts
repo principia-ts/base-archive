@@ -1,10 +1,11 @@
 import type { Either } from "../Either";
 import type { FunctionN, Lazy, Predicate, Refinement } from "../Function";
+import type { IO } from "../IO";
 import type { Option } from "../Option";
-import * as F from "../XPure";
+import * as X from "../XPure";
 import { fail, fromEither, succeed } from "./constructors";
-import { chain_ } from "./methods";
 import type { EIO } from "./model";
+import { chain_ } from "./monad";
 
 /*
  * -------------------------------------------
@@ -12,7 +13,24 @@ import type { EIO } from "./model";
  * -------------------------------------------
  */
 
-export const orElse_: <E, A, M>(ma: EIO<E, A>, onLeft: (e: E) => EIO<M, A>) => EIO<M, A> = F.orElse_;
+export const foldM_: <E, A, E1, B, E2, C>(
+   ma: EIO<E, A>,
+   onFailure: (e: E) => EIO<E1, B>,
+   onSuccess: (a: A) => EIO<E2, C>
+) => EIO<E1 | E2, B | C> = X.foldM_;
+
+export const foldM: <E, A, E1, B, E2, C>(
+   onFailure: (e: E) => EIO<E1, B>,
+   onSuccess: (a: A) => EIO<E2, C>
+) => (ma: EIO<E, A>) => EIO<E1 | E2, B | C> = X.foldM;
+
+export const fold_ = <E, A, B, C>(ma: EIO<E, A>, onFailure: (e: E) => IO<B>, onSuccess: (a: A) => IO<C>): IO<B | C> =>
+   foldM_(ma, onFailure, onSuccess);
+
+export const fold = <E, A, B, C>(onLeft: (e: E) => IO<B>, onRight: (a: A) => IO<C>) => (ma: EIO<E, A>) =>
+   fold_(ma, onLeft, onRight);
+
+export const orElse_: <E, A, M>(ma: EIO<E, A>, onLeft: (e: E) => EIO<M, A>) => EIO<M, A> = X.orElse_;
 
 export const orElse = <E, A, M>(onLeft: (e: E) => EIO<M, A>) => (ma: EIO<E, A>) => orElse_(ma, onLeft);
 

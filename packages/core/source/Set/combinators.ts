@@ -1,30 +1,8 @@
 import type { Eq } from "@principia/prelude/Eq";
 
-import type { Predicate } from "../Function";
-import { not } from "../Function";
 import { empty } from "./constructors";
-import { elem, elem_, filter_ } from "./methods";
-
-interface Next<A> {
-   readonly done?: boolean;
-   readonly value: A;
-}
-
-export const some_ = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => {
-   const values = set.values();
-   let e: Next<A>;
-   let found = false;
-   while (!found && !(e = values.next()).done) {
-      found = predicate(e.value);
-   }
-   return found;
-};
-
-export const some = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => some_(set, predicate);
-
-export const every_ = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => not(some(not(predicate)))(set);
-
-export const every = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => every_(set, predicate);
+import { filter_ } from "./filterable";
+import { elem, elem_ } from "./guards";
 
 /**
  * Form the union of two sets

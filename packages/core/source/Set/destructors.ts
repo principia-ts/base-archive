@@ -1,6 +1,12 @@
 import type { Ord } from "@principia/prelude/Ord";
 import { toNumber } from "@principia/prelude/Ordering";
 
+/*
+ * -------------------------------------------
+ * Set Destructors
+ * -------------------------------------------
+ */
+
 export const toArray = <A>(O: Ord<A>) => (set: ReadonlySet<A>): ReadonlyArray<A> => {
    const r: Array<A> = [];
    set.forEach((e) => r.push(e));

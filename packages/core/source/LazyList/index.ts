@@ -1,6 +1,10 @@
-export * from "./model";
-export * from "./guards";
-export * from "./methods";
+// codegen:start { preset: barrel }
+export * from "./applicative";
 export * from "./combinators";
-export * from "./destructors";
 export * from "./constructors";
+export * from "./destructors";
+export * from "./filterable";
+export * from "./functor";
+export * from "./guards";
+export * from "./model";
+// codegen:end

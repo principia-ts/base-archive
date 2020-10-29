@@ -1,8 +1,8 @@
 import type { FunctionN } from "../Function";
 import type { IO } from "../IO";
 import { fromIO } from "./constructors";
-import { chain } from "./methods";
 import type { LazyPromise } from "./model";
+import { chain } from "./monad";
 
 /*
  * -------------------------------------------

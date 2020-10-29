@@ -1,50 +1,9 @@
 import * as E from "../Either";
 import { modify, succeed } from "./constructors";
-import { asksM, chain_, foldM_, map_ } from "./methods";
-import type { XPure } from "./XPure";
-
-/**
- * ```haskell
- * fold_ :: (
- *    XPure s1 s2 r e a,
- *    (e -> b),
- *    (a -> c)
- * ) -> XPure s1 s2 r _ (b | c)
- * ```
- *
- * Folds over the failed or successful results of this computation to yield
- * a computation that does not fail, but succeeds with the value of the left
- * or right function passed to `fold`.
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const fold_ = <S1, S2, R, E, A, B, C>(
-   fa: XPure<S1, S2, R, E, A>,
-   onFailure: (e: E) => B,
-   onSuccess: (a: A) => C
-): XPure<S1, S2, R, never, B | C> =>
-   foldM_(
-      fa,
-      (e) => succeed(onFailure(e)),
-      (a) => succeed(onSuccess(a))
-   );
-
-/**
- * ```haskell
- * fold :: ((e -> b), (a -> c)) -> XPure s1 s2 r e a -> XPure s1 s2 r _ (b | c)
- * ```
- *
- * Folds over the failed or successful results of this computation to yield
- * a computation that does not fail, but succeeds with the value of the left
- * or right function passed to `fold`.
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const fold = <E, A, B, C>(onFailure: (e: E) => B, onSuccess: (a: A) => C) => <S1, S2, R>(
-   fa: XPure<S1, S2, R, E, A>
-) => fold_(fa, onFailure, onSuccess);
+import { fold_, foldM_ } from "./fold";
+import { map_ } from "./functor";
+import type { XPure } from "./model";
+import { chain_ } from "./monad";
 
 /**
  * ```haskell
@@ -120,18 +79,6 @@ export const contramapInput = <S0, S1>(f: (s: S0) => S1) => <S2, R, E, A>(fa: XP
 
 /**
  * ```haskell
- * environment :: <r, s1, s2>() -> XPure s1 s2 r _ r
- * ```
- *
- * Access the environment
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const environment = <R, S1 = unknown, S2 = never>() => asksM((r: R) => succeed<R, S1, S2>(r));
-
-/**
- * ```haskell
  * either :: XPure s1 s2 r e a -> XPure s1 (s1 | s2) r _ (Either e a)
  * ```
  *
@@ -191,18 +138,3 @@ export const orElseEither_ = <S1, S2, R, E, A, S3, S4, R1, E1, A1>(
 export const orElseEither = <S3, S4, R1, E1, A1>(that: XPure<S3, S4, R1, E1, A1>) => <S1, S2, R, E, A>(
    fa: XPure<S1, S2, R, E, A>
 ) => orElseEither_(fa, that);
-
-// export const bimap_: P.BimapFn_<[URI], V> = (pab, f, g) =>
-//    foldM_(
-//       pab,
-//       (e) => fail(f(e)),
-//       (a) => succeed(g(a))
-//    );
-
-// export const bimap: P.BimapFn<[URI], V> = (f, g) => (pab) => bimap_(pab, f, g);
-
-// export const first_: P.FirstFn_<[URI], V> = (pab, f) => catchAll_(pab, (e) => fail(f(e)));
-
-// export const first: P.FirstFn<[URI], V> = (f) => (pab) => first_(pab, f);
-
-// export const mapError = first;

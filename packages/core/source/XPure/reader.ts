@@ -1,0 +1,26 @@
+import type { XPure } from "./model";
+import { succeed } from "./constructors";
+import { GiveInstruction, ReadInstruction } from "./_concrete";
+
+export const ask = <R>(): XPure<unknown, never, R, never, R> => new ReadInstruction((r: R) => succeed(r));
+
+export const asksM = <R0, S1, S2, R, E, A>(f: (r: R0) => XPure<S1, S2, R, E, A>): XPure<S1, S2, R & R0, E, A> =>
+   new ReadInstruction(f);
+
+export const asks = <R0, A>(f: (r: R0) => A) => asksM((r: R0) => succeed(f(r)));
+
+export const giveAll_ = <S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>, r: R): XPure<S1, S2, unknown, E, A> =>
+   new GiveInstruction(fa, r);
+
+export const giveAll = <R>(r: R) => <S1, S2, E, A>(fa: XPure<S1, S2, R, E, A>) => giveAll_(fa, r);
+
+export const local_ = <R0, S1, S2, R, E, A>(ma: XPure<S1, S2, R, E, A>, f: (r0: R0) => R) =>
+   asksM((r: R0) => giveAll_(ma, f(r)));
+
+export const local = <R0, R>(f: (r0: R0) => R) => <S1, S2, E, A>(ma: XPure<S1, S2, R, E, A>) => local_(ma, f);
+
+export const give_ = <S1, S2, R, E, A, R0>(ma: XPure<S1, S2, R & R0, E, A>, r: R): XPure<S1, S2, R0, E, A> =>
+   local_(ma, (r0) => ({ ...r, ...r0 }));
+
+export const give = <R>(r: R) => <S1, S2, R0, E, A>(ma: XPure<S1, S2, R & R0, E, A>): XPure<S1, S2, R0, E, A> =>
+   give_(ma, r);

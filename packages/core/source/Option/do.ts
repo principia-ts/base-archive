@@ -1,14 +1,19 @@
 import { deriveDo } from "@principia/prelude";
 
-import { Monad } from "./instances";
+import { some } from "./constructors";
+import type { Option } from "./model";
+import { Monad } from "./monad";
 
 /*
  * -------------------------------------------
- * Pipeable Do Notation for Maybe
+ * Do Option
  * -------------------------------------------
  */
 
-const Do = deriveDo(Monad);
+export const Do = deriveDo(Monad);
+
+const of: Option<{}> = some({});
+export { of as do };
 
 /**
  * ```haskell
