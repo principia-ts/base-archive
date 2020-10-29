@@ -1,44 +1,60 @@
-import type { Task } from "../Task";
-import * as T from "../Task/core";
-import { failure } from "./core";
+import * as A from "../../Array";
+import { pipe } from "../../Function";
+import * as O from "../../Option";
+import { mapBothCause } from "./apply";
+import { first_ } from "./bifunctor";
+import * as C from "./Cause";
+import { map, map_ } from "./functor";
 import type { Exit } from "./model";
 
-/**
- * Applies the function `f` to the successful result of the `Exit` and
- * returns the result in a new `Exit`.
- */
-export const foreach_ = <E2, A2, R, E, A>(
-   exit: Exit<E2, A2>,
-   f: (a: A2) => Task<R, E, A>
-): Task<R, never, Exit<E | E2, A>> => {
-   switch (exit._tag) {
-      case "Failure": {
-         return T.pure(failure(exit.cause));
-      }
-      case "Success": {
-         return T.result(f(exit.value));
-      }
-   }
-};
+export const as_ = <E, A, B>(fa: Exit<E, A>, b: B): Exit<E, B> => map_(fa, () => b);
 
-/**
- * Applies the function `f` to the successful result of the `Exit` and
- * returns the result in a new `Exit`.
- */
-export const foreach = <A2, R, E, A>(f: (a: A2) => Task<R, E, A>) => <E2>(exit: Exit<E2, A2>) => foreach_(exit, f);
+export const as = <B>(b: B): (<E, A>(fa: Exit<E, A>) => Exit<E, B>) => map(() => b);
 
-export const mapM_ = <R, E, E1, A, A1>(
-   exit: Exit<E, A>,
-   f: (a: A) => Task<R, E1, A1>
-): Task<R, never, Exit<E | E1, A1>> => {
-   switch (exit._tag) {
-      case "Failure":
-         return T.pure(failure(exit.cause));
-      case "Success":
-         return T.result(f(exit.value));
-   }
-};
+export const collectAll = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, ReadonlyArray<A>>> =>
+   pipe(
+      A.head(exits),
+      O.map((head) =>
+         pipe(
+            A.dropLeft_(exits, 1),
+            A.reduce(
+               pipe(
+                  head,
+                  map((x): ReadonlyArray<A> => [x])
+               ),
+               (acc, el) =>
+                  pipe(
+                     acc,
+                     mapBothCause(el, (acc, el) => [el, ...acc], C.then)
+                  )
+            ),
+            map(A.reverse)
+         )
+      )
+   );
 
-export const mapM = <R, E1, A, A1>(f: (a: A) => Task<R, E1, A1>) => <E>(
-   exit: Exit<E, A>
-): Task<R, never, Exit<E | E1, A1>> => mapM_(exit, f);
+export const collectAllPar = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, readonly A[]>> =>
+   pipe(
+      A.head(exits),
+      O.map((head) =>
+         pipe(
+            A.dropLeft_(exits, 1),
+            A.reduce(
+               pipe(
+                  head,
+                  map((x): ReadonlyArray<A> => [x])
+               ),
+               (acc, el) =>
+                  pipe(
+                     acc,
+                     mapBothCause(el, (acc, el) => [el, ...acc], C.both)
+                  )
+            ),
+            map(A.reverse)
+         )
+      )
+   );
+
+export const orElseFail_ = <E, A, G>(exit: Exit<E, A>, orElse: G) => first_(exit, () => orElse);
+
+export const orElseFail = <G>(orElse: G) => <E, A>(exit: Exit<E, A>): Exit<G, A> => orElseFail_(exit, orElse);

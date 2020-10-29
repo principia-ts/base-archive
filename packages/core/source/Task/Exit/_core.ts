@@ -1,4 +1,3 @@
-// codegen:start { preset: barrel, exclude: _core.ts }
 export * from "./applicative";
 export * from "./apply";
 export * from "./bifunctor";
@@ -9,6 +8,4 @@ export * from "./functor";
 export * from "./guards";
 export * from "./model";
 export * from "./monad";
-export * from "./task";
 export * from "./unit";
-// codegen:end

@@ -10,15 +10,15 @@ import type { Fiber, SyntheticFiber } from "./model";
  */
 export const mapTask_ = <E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => T.EIO<E1, B>): SyntheticFiber<E | E1, B> => ({
    _tag: "SyntheticFiber",
-   await: T.chain_(fiber.await, Ex.foreach(f)),
+   await: T.chain_(fiber.await, Ex.foreachTask(f)),
    getRef: (ref) => fiber.getRef(ref),
    inheritRefs: fiber.inheritRefs,
-   interruptAs: (id) => T.chain_(fiber.interruptAs(id), Ex.foreach(f)),
+   interruptAs: (id) => T.chain_(fiber.interruptAs(id), Ex.foreachTask(f)),
    poll: T.chain_(
       fiber.poll,
       O.fold(
          () => T.pure(O.none()),
-         (a) => T.map_(Ex.foreach_(a, f), O.some)
+         (a) => T.map_(Ex.foreachTask_(a, f), O.some)
       )
    )
 });
@@ -52,9 +52,9 @@ export const mapBoth_ = <E, E1, A, A1, B>(
    getRef: (ref) => T.mapBoth_(fa.getRef(ref), fb.getRef(ref), (a, b) => ref.join(a, b)),
    inheritRefs: T.chain_(fa.inheritRefs, () => fb.inheritRefs),
    interruptAs: (id) =>
-      T.mapBoth_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) => Ex.bothMapCause_(ea, eb, f, C.both)),
+      T.mapBoth_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) => Ex.mapBothCause_(ea, eb, f, C.both)),
    poll: T.mapBoth_(fa.poll, fb.poll, (fa, fb) =>
-      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.bothMapCause_(ea, eb, f, C.both)))
+      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.mapBothCause_(ea, eb, f, C.both)))
    ),
    await: T.result(mapBothPar_(T.chain_(fa.await, T.done), T.chain_(fb.await, T.done), f))
 });

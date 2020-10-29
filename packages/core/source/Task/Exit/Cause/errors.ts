@@ -1,5 +1,5 @@
-import { showCause } from "./instances";
 import type { Cause } from "./model";
+import { showCause } from "./show";
 
 export class FiberFailure<E> extends Error {
    readonly _tag = "FiberFailure";

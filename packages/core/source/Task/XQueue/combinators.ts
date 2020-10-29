@@ -3,7 +3,7 @@
 import * as A from "../../Array";
 import { identity, pipe, tuple } from "../../Function";
 import * as O from "../../Option";
-import * as T from "./_internal/effect";
+import * as T from "./_internal/task";
 import { XQueue } from "./model";
 
 /**
@@ -165,10 +165,10 @@ export const takeAllUpTo_ = <RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, 
  * For example, a dropping queue and a bounded queue composed together may apply `f`
  * to different elements.
  */
-export const bothMapM = <RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
+export const mapBothM = <RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
    that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
    f: (b: B, c: C) => T.Task<R3, E3, D>
-) => <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => bothMapM_(self, that, f);
+) => <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => mapBothM_(self, that, f);
 
 /**
  * Creates a new queue from this queue and another. Offering to the composite queue
@@ -179,7 +179,7 @@ export const bothMapM = <RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
  * For example, a dropping queue and a bounded queue composed together may apply `f`
  * to different elements.
  */
-export const bothMapM_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
+export const mapBothM_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
    self: XQueue<RA, RB, EA, EB, A, B>,
    that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
    f: (b: B, c: C) => T.Task<R3, E3, D>
@@ -227,19 +227,19 @@ export const bothMapM_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
 /**
  * Like `bothWithM`, but uses a pure function.
  */
-export const bothMap = <RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
+export const mapBoth = <RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
    that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
    f: (b: B, c: C) => D
-) => <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => bothMapM_(self, that, (b, c) => T.pure(f(b, c)));
+) => <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
 
 /**
  * Like `bothWithM`, but uses a pure function.
  */
-export const bothMap_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
+export const mapBoth_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
    self: XQueue<RA, RB, EA, EB, A, B>,
    that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
    f: (b: B, c: C) => D
-) => bothMapM_(self, that, (b, c) => T.pure(f(b, c)));
+) => mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
 
 /**
  * Like `bothWith`, but tuples the elements instead of applying a function.
@@ -251,7 +251,7 @@ export const both = <RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(that: XQueue<RA1
    EB
 >(
    self: XQueue<RA, RB, EA, EB, A, B>
-) => bothMap_(self, that, (b, c) => tuple(b, c));
+) => mapBoth_(self, that, (b, c) => tuple(b, c));
 
 /**
  * Like `bothWith`, but tuples the elements instead of applying a function.
@@ -259,7 +259,7 @@ export const both = <RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(that: XQueue<RA1
 export const both_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
    self: XQueue<RA, RB, EA, EB, A, B>,
    that: XQueue<RA1, RB1, EA1, EB1, A1, C>
-) => bothMap_(self, that, (b, c) => tuple(b, c));
+) => mapBoth_(self, that, (b, c) => tuple(b, c));
 
 /**
  * Transforms elements enqueued into and dequeued from this queue with the

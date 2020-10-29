@@ -4,7 +4,7 @@ import type { MutableQueue } from "../../support";
 import { AtomicBoolean, Bounded, Unbounded } from "../../support";
 import type { XPromise } from "../XPromise";
 import * as XP from "../XPromise";
-import * as T from "./_internal/effect";
+import * as T from "./_internal/task";
 import type { Queue } from "./model";
 import { XQueue } from "./model";
 

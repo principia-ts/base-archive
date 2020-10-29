@@ -1,5 +1,3 @@
-import type { Eq } from "@principia/prelude/Eq";
-import { fromEquals } from "@principia/prelude/Eq";
 import type { Show } from "@principia/prelude/Show";
 
 import * as A from "../../../Array";
@@ -7,7 +5,6 @@ import { pipe } from "../../../Function";
 import type { NonEmptyArray } from "../../../NonEmptyArray";
 import * as O from "../../../Option";
 import type { FiberId } from "../../Fiber/FiberId";
-import { eqFiberId } from "../../Fiber/FiberId";
 import type { Cause } from "./model";
 
 type Segment = Sequential | Parallel | Failure;
@@ -168,35 +165,3 @@ export const prettyPrint = <E>(cause: Cause<E>) => prettyLines(cause).join("\n")
 export const showCause: Show<Cause<any>> = {
    show: (cause) => prettyLines(cause).join("\n")
 };
-
-export const equalsCause = <E>(x: Cause<E>, y: Cause<E>): boolean => {
-   switch (x._tag) {
-      case "Fail": {
-         return y._tag === "Fail" && x.value === y.value;
-      }
-      case "Empty": {
-         return y._tag === "Empty";
-      }
-      case "Die": {
-         return (
-            y._tag === "Die" &&
-            ((x.value instanceof Error &&
-               y.value instanceof Error &&
-               x.value.name === y.value.name &&
-               x.value.message === y.value.message) ||
-               x.value === y.value)
-         );
-      }
-      case "Interrupt": {
-         return y._tag === "Interrupt" && eqFiberId.equals(x.fiberId)(y.fiberId);
-      }
-      case "Both": {
-         return y._tag === "Both" && equalsCause(x.left, y.left) && equalsCause(x.right, y.right);
-      }
-      case "Then": {
-         return y._tag === "Then" && equalsCause(x.left, y.left) && equalsCause(x.right, y.right);
-      }
-   }
-};
-
-export const eqCause: Eq<Cause<any>> = fromEquals(equalsCause);

@@ -330,7 +330,7 @@ export const dieMessage = (message: string) => fromTask(T.dieMessage(message));
 /**
  * The empty stream
  */
-export const empty: IO<never> = new Stream(M.pure(Pull.end));
+export const empty: IO<never> = new Stream(M.succeed(Pull.end));
 
 /**
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...

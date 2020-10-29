@@ -1,7 +1,7 @@
 import * as T from "../_internal/task";
 import { pipe } from "../../../Function";
 import { sequential } from "../../ExecutionStrategy";
-import * as Ex from "../../Exit/core";
+import * as Ex from "../../Exit";
 import type { Exit } from "../../Exit/model";
 import { Managed } from "../model";
 import type { ReleaseMap } from "../ReleaseMap";

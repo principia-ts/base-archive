@@ -8,7 +8,7 @@ import type { Stack } from "../../support/Stack";
 import { stack } from "../../support/Stack";
 import * as X from "../../XPure";
 import * as C from "../Exit/Cause";
-import * as Ex from "../Exit/core";
+import * as Ex from "../Exit";
 import type { Exit } from "../Exit/model";
 import * as FR from "../FiberRef";
 import * as Scope from "../Scope";

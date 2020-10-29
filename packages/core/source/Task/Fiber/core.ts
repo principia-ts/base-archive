@@ -1,7 +1,7 @@
 import { pipe } from "../../Function";
 import { some } from "../../Option";
+import * as Ex from "../Exit";
 import type { Cause } from "../Exit/Cause";
-import * as Ex from "../Exit/core";
 import type { Exit } from "../Exit/model";
 import * as T from "../Task/core";
 import type { FiberId } from "./FiberId";

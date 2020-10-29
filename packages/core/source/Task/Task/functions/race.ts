@@ -40,13 +40,13 @@ export const race_ = <R, E, A, R1, E1, A1>(ef: Task<R, E, A>, that: Task<R1, E1,
          ef,
          that,
          (exit, right) =>
-            Ex.foldM_(
+            Ex.foldTask_(
                exit,
                (cause) => mapErrorCause_(join(right), (_) => C.both(cause, _)),
                (a) => _.chain_(right.interruptAs(d.id), mergeInterruption(a))
             ),
          (exit, left) =>
-            Ex.foldM_(
+            Ex.foldTask_(
                exit,
                (cause) => mapErrorCause_(join(left), (_) => C.both(cause, _)),
                (a) => _.chain_(left.interruptAs(d.id), mergeInterruption(a))
@@ -114,7 +114,7 @@ const arbiter = <E, A>(
    promise: XP.XPromise<E, readonly [A, Fiber.Fiber<E, A>]>,
    fails: XR.Ref<number>
 ) => (res: Exit<E, A>): IO<void> =>
-   Ex.foldM_(
+   Ex.foldTask_(
       res,
       (e) =>
          pipe(
