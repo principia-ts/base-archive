@@ -1,4 +1,4 @@
-import * as T from "../../Task/core";
+import * as T from "../../Task/_core";
 import { makeContinue, makeDone } from "./constructors";
 import type { Decision } from "./Decision";
 

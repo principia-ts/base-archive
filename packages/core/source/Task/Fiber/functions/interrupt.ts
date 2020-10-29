@@ -1,7 +1,7 @@
 import * as I from "../../../Iterable";
-import * as T from "../../Task/core";
+import * as T from "../../Task/_core";
+import { checkFiberId } from "../../Task/combinators/checkFiberId";
 import { forkDaemon } from "../../Task/core-scope";
-import { checkFiberId } from "../../Task/functions/checkFiberId";
 import type { IO } from "../../Task/model";
 import type { FiberId } from "../FiberId";
 import type { Fiber } from "../model";

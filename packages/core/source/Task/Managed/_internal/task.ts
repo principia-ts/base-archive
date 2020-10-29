@@ -1,7 +1,7 @@
-export * from "../../Task/core";
+export * from "../../Task/_core";
 export * from "../../Task/model";
 export { forkDaemon } from "../../Task/core-scope";
-export { foreachPar_ } from "../../Task/functions/foreachPar";
-export { makeUninterruptible, uninterruptibleMask, interrupt } from "../../Task/functions/interrupt";
-export { mapBothPar_ } from "../../Task/functions/mapBothPar";
-export { bracketExit_, bracket_ } from "../../Task/functions/bracket";
+export { foreachPar_ } from "../../Task/combinators/foreachPar";
+export { makeUninterruptible, uninterruptibleMask, interrupt } from "../../Task/combinators/interrupt";
+export { mapBothPar_ } from "../../Task/apply-par";
+export { bracketExit_, bracket_ } from "../../Task/combinators/bracket";

@@ -1,1 +1,1 @@
-export * from "./Semaphore";
+export * from "./model";

@@ -1,4 +1,4 @@
-import * as T from "../../Task/core";
+import * as T from "../../Task/_core";
 import type { EIO } from "../../Task/model";
 import type { Fiber } from "../model";
 

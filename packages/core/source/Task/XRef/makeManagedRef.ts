@@ -1,6 +1,6 @@
 import { flow } from "../../Function";
-import { toManaged } from "../Task/functions/toManaged";
-import { makeRef } from "./combinators";
+import { toManaged } from "../Task/combinators/toManaged";
+import { makeRef } from "./constructors";
 /**
  * Creates a new `XRef` with the specified value.
  */

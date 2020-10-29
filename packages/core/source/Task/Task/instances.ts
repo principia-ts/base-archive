@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import * as _ from "./core";
+import * as _ from "./_core";
 import type { URI, V } from "./model";
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({

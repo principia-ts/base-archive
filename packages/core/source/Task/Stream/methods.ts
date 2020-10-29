@@ -83,7 +83,7 @@ export const mapM_ = <R, E, A, R1, E1, B>(
    new Stream<R & R1, E | E1, B>(
       pipe(
          fa.proc,
-         M.mapTask(BPull.make),
+         M.mapM(BPull.make),
          M.map((pull) =>
             pipe(
                pull,
@@ -200,7 +200,7 @@ export const mapAccumM_ = <R, E, A, R1, E1, B, Z>(
       pipe(
          M.do,
          M.bindS("state", () => XR.makeManagedRef(z)),
-         M.bindS("pull", () => pipe(stream.proc, M.mapTask(BPull.make))),
+         M.bindS("pull", () => pipe(stream.proc, M.mapM(BPull.make))),
          M.map(({ pull, state }) =>
             pipe(
                pull,

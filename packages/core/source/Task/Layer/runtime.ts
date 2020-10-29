@@ -1,9 +1,9 @@
 import { pipe } from "../../Function";
 import type { Has, Region, Tag } from "../Has";
 import * as M from "../Managed";
-import * as T from "../Task/core";
-import type { Runtime } from "../Task/functions/runtime";
-import { makeRuntime } from "../Task/functions/runtime";
+import * as T from "../Task/_core";
+import type { Runtime } from "../Task/combinators/runtime";
+import { makeRuntime } from "../Task/combinators/runtime";
 import * as L from "./core";
 import { LayerRefreshInstruction } from "./model";
 

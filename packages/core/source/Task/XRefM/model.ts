@@ -1,6 +1,6 @@
 import type { Semaphore } from "../Semaphore";
 import { withPermit } from "../Semaphore";
-import * as T from "../Task/core";
+import * as T from "../Task/_core";
 import type { Ref } from "../XRef";
 
 /**

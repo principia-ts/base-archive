@@ -4,7 +4,7 @@ import { constant, pipe, tuple } from "../../Function";
 import type { Option } from "../../Option";
 import * as O from "../../Option";
 import { nextDouble } from "../Random";
-import * as T from "../Task/core";
+import * as T from "../Task/_core";
 import { makeSchedule } from "./constructors";
 import type { Decision, StepFunction } from "./Decision";
 import { makeContinue, makeDone } from "./Decision";

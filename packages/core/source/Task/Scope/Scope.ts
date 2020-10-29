@@ -5,7 +5,7 @@ import { AtomicNumber, AtomicReference } from "../../support";
 import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
 import type { IO } from "../Task";
-import * as T from "../Task/core";
+import * as T from "../Task/_core";
 
 /**
  * Represents a key in a scope, which is associated with a single finalizer.

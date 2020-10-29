@@ -5,7 +5,7 @@ import type { Executor } from "../Fiber/executor";
 import type { Fiber, RuntimeFiber } from "../Fiber/model";
 import type { Scope } from "../Scope";
 import { globalScope } from "../Scope";
-import { pure } from "./core";
+import { pure } from "./_core";
 import type { IO, RIO, Task } from "./model";
 import { ForkInstruction, GetForkScopeInstruction, OverrideForkScopeInstruction, RaceInstruction } from "./model";
 

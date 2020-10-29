@@ -1,5 +1,5 @@
-import * as T from "../../Task/core";
-import { checkFiberId } from "../../Task/functions/checkFiberId";
+import * as T from "../../Task/_core";
+import { checkFiberId } from "../../Task/combinators/checkFiberId";
 import type { Fiber } from "../model";
 import { interruptAllAs_ } from "./interrupt";
 

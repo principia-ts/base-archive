@@ -3,7 +3,7 @@ import { some } from "../../Option";
 import * as Ex from "../Exit";
 import type { Cause } from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
-import * as T from "../Task/core";
+import * as T from "../Task/_core";
 import type { FiberId } from "./FiberId";
 import type { Fiber, RuntimeFiber, SyntheticFiber } from "./model";
 import { InterruptStatus } from "./model";

@@ -1,4 +1,4 @@
-import * as M from "./core";
+import * as M from "./_core";
 
 export const pure = M.succeed;
 

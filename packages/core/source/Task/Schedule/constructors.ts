@@ -4,7 +4,7 @@ import type { Option } from "../../Option";
 import * as O from "../../Option";
 import type { HasClock } from "../Clock";
 import * as Clock from "../Clock";
-import * as T from "../Task/core";
+import * as T from "../Task/_core";
 import * as XR from "../XRef/combinators";
 import type { StepFunction } from "./Decision";
 import { done } from "./Decision";

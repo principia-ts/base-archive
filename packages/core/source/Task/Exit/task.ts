@@ -1,5 +1,5 @@
 import type { Task } from "../Task";
-import * as T from "../Task/core";
+import * as T from "../Task/_core";
 import { failure } from "./constructors";
 import type { Exit } from "./model";
 

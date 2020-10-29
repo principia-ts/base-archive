@@ -7,7 +7,7 @@ import * as O from "../../../Option";
 import * as Ex from "../../Exit";
 import * as C from "../../Exit/Cause";
 import * as F from "../../Fiber";
-import * as M from "../../Managed/core";
+import * as M from "../../Managed/_core";
 import * as T from "../../Task";
 import * as XR from "../../XRef";
 import * as Push from "./Push";

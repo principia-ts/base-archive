@@ -5,8 +5,8 @@
  */
 import type { HasTag } from "../Has";
 import { has } from "../Has";
-import * as T from "../Task/core";
-import { asksServiceM, replaceService } from "../Task/functions/service";
+import * as T from "../Task/_core";
+import { asksServiceM, replaceService } from "../Task/combinators/service";
 import { PRNG } from "./Alea";
 
 export const URI = Symbol();

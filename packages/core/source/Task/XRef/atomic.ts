@@ -1,5 +1,5 @@
 import type { Option } from "../../Option";
-import * as T from "../Task/core";
+import * as T from "../Task/_core";
 import type { IO } from "../Task/model";
 import type { Atomic } from "./model";
 

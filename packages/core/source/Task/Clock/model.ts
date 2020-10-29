@@ -5,9 +5,9 @@
  */
 import type { HasTag } from "../Has";
 import { has } from "../Has";
-import * as T from "../Task/core";
-import { asyncInterrupt } from "../Task/functions/interrupt";
-import { asksService, asksServiceM } from "../Task/functions/service";
+import * as T from "../Task/_core";
+import { asyncInterrupt } from "../Task/combinators/interrupt";
+import { asksService, asksServiceM } from "../Task/combinators/service";
 
 /**
  * Clock Model

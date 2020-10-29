@@ -4,7 +4,7 @@ import { identity } from "../../Function";
 import type { Has, Tag } from "../Has";
 import * as M from "../Managed";
 import type { Task } from "../Task";
-import * as T from "../Task/functions/service";
+import * as T from "../Task/combinators/service";
 import * as L from "./core";
 
 export const fromConstructor = <S>(tag: Tag<S>) => <Services extends any[]>(

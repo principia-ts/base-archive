@@ -7,8 +7,8 @@ import { AtomicReference, defaultScheduler } from "../../support";
 import type { Stack } from "../../support/Stack";
 import { stack } from "../../support/Stack";
 import * as X from "../../XPure";
-import * as C from "../Exit/Cause";
 import * as Ex from "../Exit";
+import * as C from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
 import * as FR from "../FiberRef";
 import * as Scope from "../Scope";
@@ -672,7 +672,6 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     */
    evaluateNow(start: T.Instruction): void {
       try {
-         // eslint-disable-next-line prefer-const
          let current: T.Instruction | undefined = start;
 
          currentFiber.set(this);
@@ -681,7 +680,6 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
             try {
                let opCount = 0;
                while (current != null) {
-                  // Check to see if the fiber should continue executing or not:
                   if (!this.shouldInterrupt) {
                      if (opCount === this.maxOperations) {
                         this.evaluateLater(current);

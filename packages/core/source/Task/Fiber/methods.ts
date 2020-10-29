@@ -1,7 +1,7 @@
 import * as O from "../../Option";
 import * as Ex from "../Exit";
 import * as C from "../Exit/Cause";
-import { mapBothPar_ } from "../Task/functions/mapBothPar";
+import { mapBothPar_ } from "../Task/apply-par";
 import * as T from "./_internal/task";
 import type { Fiber, SyntheticFiber } from "./model";
 
