@@ -2,8 +2,6 @@
 export * from "./absorbWith";
 export * from "./asSome";
 export * from "./asyncM";
-export * from "./bind";
-export * from "./bothPar";
 export * from "./bracket";
 export * from "./bracketFiber";
 export * from "./bracketOnError";
@@ -52,7 +50,6 @@ export * from "./iterate";
 export * from "./join";
 export * from "./left";
 export * from "./loop";
-export * from "./mapBothPar";
 export * from "./mapErrorCause";
 export * from "./mapPartial";
 export * from "./memoize";

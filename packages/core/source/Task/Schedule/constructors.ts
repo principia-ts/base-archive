@@ -5,7 +5,7 @@ import * as O from "../../Option";
 import type { HasClock } from "../Clock";
 import * as Clock from "../Clock";
 import * as T from "../Task/_core";
-import * as XR from "../XRef/combinators";
+import * as XR from "../XRef/_core";
 import type { StepFunction } from "./Decision";
 import { done } from "./Decision";
 import type { Schedule, ScheduleExecutor } from "./model";

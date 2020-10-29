@@ -17,7 +17,7 @@ import { await as promiseWait } from "../XPromise/combinators/await";
 import { fail as promiseFail } from "../XPromise/combinators/fail";
 import { make as promiseMake } from "../XPromise/combinators/make";
 import { succeed as promiseSucceed } from "../XPromise/combinators/succeed";
-import * as XR from "../XRef/combinators";
+import * as XR from "../XRef/_core";
 import * as T from "./_internal/effect";
 
 export function releaseAllReleaseMaps(

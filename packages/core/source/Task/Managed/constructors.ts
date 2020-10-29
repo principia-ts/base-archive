@@ -1,6 +1,6 @@
 import { pipe } from "../../Function";
 import type { Exit } from "../Exit";
-import { makeRef } from "../XRef/combinators";
+import { makeRef } from "../XRef/_core";
 import * as T from "./_internal/task";
 import { Managed } from "./model";
 import type { Finalizer, ReleaseMap } from "./ReleaseMap";
