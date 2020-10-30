@@ -2,8 +2,8 @@ import { makeMonoid } from "@principia/prelude";
 
 import * as A from "../../Array";
 import * as E from "../../Either";
-import type { FreeSemigroup } from "../../FreeSemigroup";
-import * as FS from "../../FreeSemigroup";
+import type { FreeMonoid } from "../../FreeMonoid";
+import * as FS from "../../FreeMonoid";
 import * as I from "../../Iterable";
 import * as O from "../../Option";
 import { none, some } from "../../Option";
@@ -162,7 +162,7 @@ export const foreachUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Itera
  */
 export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, E, ReadonlyArray<B>> =>
    map_(
-      I.reduce_(as, succeed(FS.empty<B>()) as Task<R, E, FreeSemigroup<B>>, (b, a) =>
+      I.reduce_(as, succeed(FS.empty<B>()) as Task<R, E, FreeMonoid<B>>, (b, a) =>
          mapBoth_(
             b,
             suspend(() => f(a)),

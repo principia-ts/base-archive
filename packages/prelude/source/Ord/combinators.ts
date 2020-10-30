@@ -1,4 +1,4 @@
-import { eqBoolean, eqNumber, eqString } from "../Eq";
+import { boolean, number, string } from "../Eq";
 import { EQ, GT, LT, Ordering } from "../Ordering";
 import type { Ord } from "./Ord";
 
@@ -18,19 +18,19 @@ const _compare = (y: any): ((x: any) => Ordering) => {
 const _compare_ = (x: any, y: any) => (x < y ? LT : x > y ? GT : EQ);
 
 export const ordString: Ord<string> = {
-   ...eqString,
+   ...string,
    compare: _compare,
    compare_: _compare_
 };
 
 export const ordNumber: Ord<number> = {
-   ...eqNumber,
+   ...number,
    compare: _compare,
    compare_: _compare_
 };
 
 export const ordBoolean: Ord<boolean> = {
-   ...eqBoolean,
+   ...boolean,
    compare: _compare,
    compare_: _compare_
 };

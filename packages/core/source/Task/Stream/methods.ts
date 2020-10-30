@@ -261,7 +261,7 @@ export const mapConcatM_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: 
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
  */
-export const mapTaskPar_ = (n: number) => <R, E, A, R1, E1, B>(
+export const mapMPar_ = (n: number) => <R, E, A, R1, E1, B>(
    stream: Stream<R, E, A>,
    f: (a: A) => T.Task<R1, E1, B>
 ): Stream<R & R1, E | E1, B> =>
@@ -332,9 +332,9 @@ export const mapTaskPar_ = (n: number) => <R, E, A, R1, E1, B>(
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
  */
-export const mapTaskPar = (n: number) => <A, R1, E1, B>(f: (a: A) => T.Task<R1, E1, B>) => <R, E>(
+export const mapMPar = (n: number) => <A, R1, E1, B>(f: (a: A) => T.Task<R1, E1, B>) => <R, E>(
    stream: Stream<R, E, A>
-) => mapTaskPar_(n)(stream, f);
+) => mapMPar_(n)(stream, f);
 
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times

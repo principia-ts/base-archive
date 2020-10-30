@@ -1,5 +1,4 @@
-import { eqNumber } from "@principia/prelude/Eq";
-
+import * as Eq from "../../Eq";
 import { absurd, increment, pipe } from "../../Function";
 import * as M from "../../Map";
 import type { Option } from "../../Option";
@@ -80,7 +79,7 @@ export function release(key: number, exit: Exit<any, any>) {
                case "Running": {
                   return [
                      Mb.fold_(
-                        M.lookup_(eqNumber)(finalizers(s), key),
+                        M.lookup_(Eq.number)(finalizers(s), key),
                         () => T.unit,
                         (f) => f(exit)
                      ),
@@ -114,7 +113,7 @@ export const replace = (key: number, finalizer: Finalizer) => (
                return [T.map_(finalizer(s.exit), () => none()), exited(s.nextKey, s.exit)];
             case "Running":
                return [
-                  T.succeed(M.lookup_(eqNumber)(finalizers(s), key)),
+                  T.succeed(M.lookup_(Eq.number)(finalizers(s), key)),
                   running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
                ];
             default:

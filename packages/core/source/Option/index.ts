@@ -7,6 +7,7 @@ export * from "./compactable";
 export * from "./constructors";
 export * from "./destructors";
 export * from "./do";
+export * from "./eq";
 export * from "./extend";
 export * from "./filterable";
 export * from "./foldable";
