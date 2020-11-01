@@ -16,7 +16,7 @@ export const URI = "Layer";
 export type URI = typeof URI;
 
 export abstract class Layer<R, E, A> {
-   readonly hash = new AtomicReference(Symbol());
+   readonly hash = new AtomicReference<PropertyKey>(Symbol());
 
    readonly _R!: (_: R) => void;
    readonly _E!: () => E;

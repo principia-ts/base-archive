@@ -227,7 +227,7 @@ function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, any> {
  */
 
 export class MemoMap {
-   constructor(readonly ref: XRM.RefM<ReadonlyMap<symbol, readonly [T.EIO<any, any>, Finalizer]>>) {}
+   constructor(readonly ref: XRM.RefM<ReadonlyMap<PropertyKey, readonly [T.EIO<any, any>, Finalizer]>>) {}
 
    /**
     * Checks the memo map to see if a dependency exists. If it is, immediately
@@ -365,7 +365,7 @@ export class MemoMap {
                         tuple(
                            resource as T.Task<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>,
                            insert(layer.hash.get, memoized)(m) as ReadonlyMap<
-                              symbol,
+                              PropertyKey,
                               readonly [T.EIO<any, any>, Finalizer]
                            >
                         )
@@ -383,7 +383,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>;
 
 export function makeMemoMap() {
    return pipe(
-      XRM.makeRefM<ReadonlyMap<symbol, readonly [T.EIO<any, any>, Finalizer]>>(new Map()),
+      XRM.makeRefM<ReadonlyMap<PropertyKey, readonly [T.EIO<any, any>, Finalizer]>>(new Map()),
       T.chain((r) => T.total(() => new MemoMap(r)))
    );
 }
