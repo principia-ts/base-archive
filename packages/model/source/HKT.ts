@@ -1,6 +1,8 @@
 import type * as H from "@principia/prelude/HKT";
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
+import type { TaggedBuilder } from "./adt/summoner";
+import { makeTagged } from "./adt/summoner";
 import { OpticsFor } from "./optics";
 import type { CacheType, InhabitedTypes, SelectKeyOfMatchingValues } from "./utils";
 import { assignCallable, assignFunction, inhabitTypes, memoize, wrapFun } from "./utils";
@@ -186,7 +188,7 @@ const inhabitInterpreterAndAlgebra = <PURI extends ProgramURIS, RURI extends Res
    t: T
 ): T & InhabitedInterpreterAndAlgebra<PURI, RURI> => t as T & InhabitedInterpreterAndAlgebra<PURI, RURI>;
 
-export type Morph<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, S, R, E, A> = URItoResult<
+export type Model<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, S, R, E, A> = URItoResult<
    S,
    R,
    E,
@@ -202,7 +204,7 @@ export type Morph<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends
 function interpret<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, S, R, E, A>(
    program: URItoProgram<Env, S, R, E, A>[PURI],
    programInterpreter: ProgramInterpreter<PURI, RURI>
-): Morph<PURI, RURI, Env, S, R, E, A> & InhabitedTypes<Env, S, R, E, A> {
+): Model<PURI, RURI, Env, S, R, E, A> & InhabitedTypes<Env, S, R, E, A> {
    return inhabitInterpreterAndAlgebra(
       inhabitTypes(assignFunction(wrapFun(program as any), programInterpreter(program)))
    );
@@ -211,7 +213,7 @@ function interpret<PURI extends ProgramURIS, RURI extends ResultURIS, Env extend
 export function materialize<PURI extends ProgramURIS, IURI extends InterpreterURIS, Env extends AnyEnv, S, R, E, A>(
    program: URItoProgram<Env, S, R, E, A>[PURI],
    programInterpreter: ProgramInterpreter<PURI, IURI>
-): Morph<PURI, IURI, Env, S, R, E, A> {
+): Model<PURI, IURI, Env, S, R, E, A> {
    const morph = interpret(program, programInterpreter);
    return assignCallable(morph, {
       ...OpticsFor<A>(),
@@ -226,7 +228,7 @@ export function materialize<PURI extends ProgramURIS, IURI extends InterpreterUR
  */
 
 export interface Summoners<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv> {
-   <S, R, E, A>(F: InferredProgram<PURI, Env, S, R, E, A>): Morph<PURI, RURI, Env, S, R, E, A>;
+   <S, R, E, A>(F: InferredProgram<PURI, Env, S, R, E, A>): Model<PURI, RURI, Env, S, R, E, A>;
    readonly _P: PURI;
    readonly _M: RURI;
    readonly _Env: (_: Env) => void;
@@ -240,6 +242,7 @@ export type SummonerEnv<X extends Summoners<any, any, any>> = NonNullable<Parame
 
 export interface SummonerOps<S extends Summoners<any, any, any> = never> {
    readonly make: S;
+   readonly makeADT: TaggedBuilder<SummonerPURI<S>, SummonerRURI<S>, SummonerEnv<S>>;
 }
 
 export function makeSummoner<Su extends Summoners<any, any, any> = never>(
@@ -253,15 +256,17 @@ export function makeSummoner<Su extends Summoners<any, any, any> = never>(
    type Env = SummonerEnv<Su>;
 
    type P<S, R, E, A> = URItoProgram<Env, S, R, E, A>[PURI];
-   type M<S, R, E, A> = Morph<PURI, IURI, Env, S, R, E, A>;
+   type M<S, R, E, A> = Model<PURI, IURI, Env, S, R, E, A>;
 
    const summon = (<S, R, E, A>(F: P<S, R, E, A>): M<S, R, E, A> =>
       materialize(
          cacheProgramEval(F),
          programInterpreter as <S, R, E, A>(program: P<S, R, E, A>) => URItoResult<S, R, E, A>[IURI]
       )) as Su;
+   const tagged: TaggedBuilder<PURI, IURI, SummonerEnv<Su>> = makeTagged(summon);
    return {
-      make: summon
+      make: summon,
+      makeADT: tagged
    };
 }
 
@@ -278,7 +283,7 @@ export type ExtractEnv<Env extends AnyEnv, SummonerEnv extends InterpreterURIS> 
 export type TaggedUnion1<Types, URI extends H.URIS1, TC = H.Auto> = {
    [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind1<URI, TC, A>
-      : Types[k] extends Morph<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
+      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind1<URI, TC, A>
       : Types[k] extends [infer S, infer R, infer E, infer A]
       ? H.Kind1<URI, TC, A>
@@ -288,7 +293,7 @@ export type TaggedUnion1<Types, URI extends H.URIS1, TC = H.Auto> = {
 export type TaggedUnion2<Types, URI extends H.URIS2, TC = H.Auto> = {
    [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind2<URI, TC, E, A>
-      : Types[k] extends Morph<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
+      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind2<URI, TC, E, A>
       : Types[k] extends [infer S, infer R, infer E, infer A]
       ? H.Kind2<URI, TC, E, A>
@@ -298,7 +303,7 @@ export type TaggedUnion2<Types, URI extends H.URIS2, TC = H.Auto> = {
 export type TaggedUnion3<Types, URI extends H.URIS3, TC = H.Auto> = {
    [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind3<URI, TC, R, E, A>
-      : Types[k] extends Morph<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
+      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind3<URI, TC, R, E, A>
       : Types[k] extends [infer S, infer R, infer E, infer A]
       ? H.Kind3<URI, TC, R, E, A>
@@ -308,14 +313,14 @@ export type TaggedUnion3<Types, URI extends H.URIS3, TC = H.Auto> = {
 export type TaggedUnion4<Types, URI extends H.URIS4, TC = H.Auto> = {
    [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind4<URI, TC, S, R, E, A>
-      : Types[k] extends Morph<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
+      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
       ? H.Kind4<URI, TC, S, R, E, A>
       : Types[k] extends [infer S, infer R, infer E, infer A]
       ? H.Kind4<URI, TC, S, R, E, A>
       : never;
 };
 
-export type Intersection1<A extends unknown[], URI extends H.URIS1, TC = H.Auto> = A extends [infer X, infer Y]
+export type Intersection1<A extends readonly unknown[], URI extends H.URIS1, TC = H.Auto> = A extends [infer X, infer Y]
    ? [H.Kind1<URI, TC, X>, H.Kind1<URI, TC, Y>]
    : A extends [infer X, infer Y, infer Z]
    ? [H.Kind1<URI, TC, X>, H.Kind1<URI, TC, Y>, H.Kind1<URI, TC, Z>]
@@ -325,10 +330,12 @@ export type Intersection1<A extends unknown[], URI extends H.URIS1, TC = H.Auto>
    ? [H.Kind1<URI, TC, X>, H.Kind1<URI, TC, Y>, H.Kind1<URI, TC, Z>, H.Kind1<URI, TC, W>, H.Kind1<URI, TC, K>]
    : H.Kind1<URI, TC, UnionToIntersection<A[number]>>[];
 
-export type Intersection2<E extends unknown[], A extends unknown[], URI extends H.URIS2, TC = H.Auto> = [E, A] extends [
-   [infer E1, infer E2],
-   [infer A1, infer A2]
-]
+export type Intersection2<
+   E extends readonly unknown[],
+   A extends readonly unknown[],
+   URI extends H.URIS2,
+   TC = H.Auto
+> = [E, A] extends [[infer E1, infer E2], [infer A1, infer A2]]
    ? [H.Kind2<URI, TC, E1, A1>, H.Kind2<URI, TC, E2, A2>]
    : [E, A] extends [[infer E1, infer E2, infer E3], [infer A1, infer A2, infer A3]]
    ? [H.Kind2<URI, TC, E1, A1>, H.Kind2<URI, TC, E2, A2>, H.Kind2<URI, TC, E3, A3>]

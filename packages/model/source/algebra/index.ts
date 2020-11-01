@@ -1,4 +1,5 @@
 // codegen:start { preset: barrel }
+export * from "./intersection";
 export * from "./newtype";
 export * from "./nullable";
 export * from "./object";

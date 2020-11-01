@@ -2,7 +2,7 @@ import { pipe } from "@principia/core/Function";
 
 import * as _ from "../internal";
 import type { Iso } from "../Iso";
-import type { At } from "./At";
+import type { At } from "./model";
 
 /*
  * -------------------------------------------

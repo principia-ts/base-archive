@@ -440,7 +440,9 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
          }
          case "Executing": {
             if (oldState.status._tag === "Suspended" && epoch === oldState.status.epoch) {
-               this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, oldState.interrupted));
+               this.state.set(
+                  new FiberStateExecuting(oldState.status.previous, oldState.observers, oldState.interrupted)
+               );
                return true;
             } else {
                return false;

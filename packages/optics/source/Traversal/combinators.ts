@@ -9,9 +9,9 @@ import type * as TC from "@principia/prelude";
 import type * as HKT from "@principia/prelude/HKT";
 
 import * as _ from "../internal";
+import { compose } from "./category";
 import { fromTraversable } from "./constructors";
-import { compose } from "./methods";
-import type { Traversal } from "./Traversal";
+import type { Traversal } from "./model";
 
 /**
  * @category Combinators

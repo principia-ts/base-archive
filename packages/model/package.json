@@ -47,6 +47,7 @@
       "core-js": "3"
    },
    "devDependencies": {
-      "typescript": "next"
+      "typescript": "next",
+      "fast-check": "^2.6.0"
    }
 }

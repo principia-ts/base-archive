@@ -1,7 +1,7 @@
 import * as _ from "../internal";
 import type { Optional } from "../Optional";
 import type { Traversal } from "../Traversal";
-import type { Lens } from "./Lens";
+import type { Lens } from "./model";
 
 /*
  * -------------------------------------------

@@ -1,6 +1,6 @@
 import { implementModifyF } from "../internal";
 import * as _ from "../internal";
-import type { Traversal } from "./Traversal";
+import type { Traversal } from "./model";
 
 /*
  * -------------------------------------------

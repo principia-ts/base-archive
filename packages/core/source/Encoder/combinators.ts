@@ -45,7 +45,7 @@ export const record = <O, A>(codomain: Encoder<O, A>): Encoder<Record<string, O>
    }
 });
 
-export const array = <O, A>(item: Encoder<O, A>): Encoder<Array<O>, Array<A>> => ({
+export const array = <O, A>(item: Encoder<O, A>): Encoder<ReadonlyArray<O>, ReadonlyArray<A>> => ({
    encode: (as) => as.map(item.encode)
 });
 

@@ -1,7 +1,7 @@
 import * as D from "@principia/core/Decoder";
 import type * as HKT from "@principia/prelude/HKT";
 
-import type { Interface2, TaggedUnion2 } from "../../HKT";
+import type { Interface2, Intersection2, TaggedUnion2 } from "../../HKT";
 import { getApplyConfig } from "../../HKT";
 
 declare module "../../HKT" {
@@ -79,6 +79,12 @@ declare module "../../algebra/nullable" {
    }
    interface OptionalConfig<S, R, E, A> {
       readonly [D.URI]: D.Decoder<unknown, A>;
+   }
+}
+
+declare module "../../algebra/intersection" {
+   interface IntersectionConfig<E, A> {
+      readonly [D.URI]: Intersection2<E, A, D.URI, D.V & HKT.Fix2<"E", unknown>>;
    }
 }
 

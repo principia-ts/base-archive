@@ -1,4 +1,5 @@
 import type {
+   IntersectionURI,
    NewtypeURI,
    NullableURI,
    ObjectURI,
@@ -30,7 +31,8 @@ declare module "../HKT" {
          | RefinementURI
          | SetURI
          | SumURI
-         | NullableURI;
+         | NullableURI
+         | IntersectionURI;
    }
    interface URItoProgramAlgebra<Env> {
       readonly [PURI]: NoUnion<Env>;

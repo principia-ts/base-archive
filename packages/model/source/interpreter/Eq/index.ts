@@ -1,9 +1,10 @@
 import type * as Eq from "@principia/core/Eq";
 import { pipe } from "@principia/core/Function";
 
-import type { AnyEnv, Morph, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
+import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";
 import { merge } from "../../utils";
+import { IntersectionEq } from "./intersection";
 import { NewtypeEq } from "./newtype";
 import { NullableEq } from "./nullable";
 import { ObjectEq } from "./object";
@@ -24,12 +25,13 @@ export const AllEqInterpreters = <Env extends AnyEnv>() =>
       RecursiveEq<Env>(),
       SetEq<Env>(),
       SumEq<Env>(),
-      NullableEq<Env>()
+      NullableEq<Env>(),
+      IntersectionEq<Env>()
    );
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
    env: {
       [K in Eq.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
    }
-) => <S, R, E, A>(F: Morph<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Eq.Eq<A> =>
+) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Eq.Eq<A> =>
    pipe(env, F.derive(AllEqInterpreters()));

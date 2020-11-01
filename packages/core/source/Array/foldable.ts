@@ -1,4 +1,8 @@
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
 import type { Monoid } from "@principia/prelude/Monoid";
+
+import type { URI, V } from "./model";
 
 /*
  * -------------------------------------------
@@ -155,3 +159,21 @@ export const foldMap_ = <M>(M: Monoid<M>): (<A>(fa: ReadonlyArray<A>, f: (a: A) 
  * @since 1.0.0
  */
 export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: ReadonlyArray<A>): M => foldMap_(M)(fa, f);
+
+export const FoldableWithIndex: P.FoldableWithIndex<[URI], V> = HKT.instance({
+   reduceWithIndex_,
+   reduceWithIndex,
+   reduceRightWithIndex,
+   reduceRightWithIndex_,
+   foldMapWithIndex,
+   foldMapWithIndex_
+});
+
+export const Foldable: P.Foldable<[URI], V> = HKT.instance({
+   reduce_,
+   reduce,
+   reduceRight_,
+   reduceRight,
+   foldMap_,
+   foldMap
+});

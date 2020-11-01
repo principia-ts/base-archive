@@ -23,6 +23,6 @@ export interface NullableAlgebra<F extends InterpreterURIS, Env extends AnyEnv> 
 
    readonly optional: <S, R, E, A>(
       a: InterpretedKind<F, Env, S, R, E, A>,
-      config?: Config<Env, S | null, R | null, E | null, Option<A>, OptionalConfig<S, R, E, A>>
-   ) => InterpretedKind<F, Env, S | null, R | null, E | null, Option<A>>;
+      config?: Config<Env, S | undefined, R | undefined, E | undefined, Option<A>, OptionalConfig<S, R, E, A>>
+   ) => InterpretedKind<F, Env, S | undefined, R | undefined, E | undefined, Option<A>>;
 }

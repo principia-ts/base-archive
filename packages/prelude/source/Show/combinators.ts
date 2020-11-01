@@ -1,14 +1,4 @@
-import type { Show } from "./Show";
-
-const showAny: Show<any> = {
-   show: (a) => JSON.stringify(a)
-};
-
-export const showString: Show<string> = showAny;
-
-export const showNumber: Show<number> = showAny;
-
-export const showBoolean: Show<boolean> = showAny;
+import type { Show } from "./model";
 
 export const getStructShow = <O extends Readonly<Record<string, any>>>(
    shows: { [K in keyof O]: Show<O[K]> }

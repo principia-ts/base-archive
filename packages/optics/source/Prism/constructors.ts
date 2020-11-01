@@ -3,7 +3,7 @@ import { identity } from "@principia/core/Function";
 import * as O from "@principia/core/Option";
 
 import * as _ from "../internal";
-import type { Prism } from "./Prism";
+import type { Prism } from "./model";
 
 /*
  * -------------------------------------------

@@ -1,32 +1,14 @@
-import type * as P from "@principia/prelude";
-
 import * as _ from "../internal";
 import type { Optional } from "../Optional";
 import type { Prism } from "../Prism";
 import { asOptional } from "./converters";
-import type { Lens, URI, V } from "./Lens";
+import type { Lens } from "./model";
 
 /*
  * -------------------------------------------
  * Lens Compositions
  * -------------------------------------------
  */
-
-/**
- * Compose an `Lens` with a `Lens`
- *
- * @category Semigroupoid
- * @since 1.0.0
- */
-export const compose_: P.ComposeFn_<[URI], V> = (sa, ab) => _.lensComposeLens(ab)(sa);
-
-/**
- * Compose an `Lens` with a `Lens`
- *
- * @category Semigroupoid
- * @since 1.0.0
- */
-export const compose: P.ComposeFn<[URI], V> = _.lensComposeLens;
 
 /**
  * Compose an `Lens` with a `Prism`

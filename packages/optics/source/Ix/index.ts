@@ -1,2 +1,2 @@
-export * from "./Ix";
+export * from "./model";
 export * from "./constructors";

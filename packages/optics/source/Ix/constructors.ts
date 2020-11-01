@@ -4,7 +4,7 @@ import type { Option } from "@principia/core/Option";
 import type { At } from "../At";
 import * as _ from "../internal";
 import type { Iso } from "../Iso";
-import type { Ix } from "./Ix";
+import type { Ix } from "./model";
 
 /*
  * -------------------------------------------

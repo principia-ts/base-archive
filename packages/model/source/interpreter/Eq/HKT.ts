@@ -1,6 +1,6 @@
 import * as Eq from "@principia/core/Eq";
 
-import type { Interface1, TaggedUnion1 } from "../../HKT";
+import type { Interface1, Intersection1, TaggedUnion1 } from "../../HKT";
 import { getApplyConfig } from "../../HKT";
 
 declare module "../../HKT" {
@@ -78,6 +78,12 @@ declare module "../../algebra/nullable" {
    }
    interface OptionalConfig<S, R, E, A> {
       readonly [Eq.URI]: Eq.Eq<A>;
+   }
+}
+
+declare module "../../algebra/intersection" {
+   interface IntersectionConfig<E, A> {
+      readonly [Eq.URI]: Intersection1<A, Eq.URI>;
    }
 }
 

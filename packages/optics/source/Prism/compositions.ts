@@ -1,37 +1,14 @@
-import { flow } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-import type * as TC from "@principia/prelude";
-
 import * as _ from "../internal";
 import type { Lens } from "../Lens";
 import type { Optional } from "../Optional";
 import { asOptional } from "./converters";
-import type { Prism, URI, V } from "./Prism";
+import type { Prism } from "./model";
 
 /*
  * -------------------------------------------
  * Prism Compositions
  * -------------------------------------------
  */
-
-/**
- * Compose a `Prism` with a `Prism`
- *
- * @category Semigroupoid
- * @since 1.0.0
- */
-export const compose_: TC.ComposeFn_<[URI], V> = (sa, ab) => ({
-   getOption: flow(sa.getOption, O.chain(ab.getOption)),
-   reverseGet: flow(ab.reverseGet, sa.reverseGet)
-});
-
-/**
- * Compose a `Prism` with a `Prism`
- *
- * @category Semigroupoid
- * @since 1.0.0
- */
-export const compose: TC.ComposeFn<[URI], V> = (ab) => (sa) => compose_(sa, ab);
 
 /**
  * Compose a `Prism` with a `Lens`

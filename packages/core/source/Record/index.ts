@@ -10,6 +10,7 @@ export * from "./functor";
 export * from "./guards";
 export * from "./model";
 export * from "./monoid";
+export * from "./show";
 export * from "./traversable";
 export * from "./utils";
 export * from "./witherable";

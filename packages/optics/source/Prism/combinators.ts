@@ -8,9 +8,10 @@ import type * as HKT from "@principia/prelude/HKT";
 import * as _ from "../internal";
 import type { Optional } from "../Optional";
 import type { Traversal } from "../Traversal";
-import { compose, composeLens, composeOptional } from "./compositions";
+import { compose } from "./category";
+import { composeLens, composeOptional } from "./compositions";
 import { asOptional, asTraversal } from "./converters";
-import type { Prism } from "./Prism";
+import type { Prism } from "./model";
 
 /*
  * -------------------------------------------

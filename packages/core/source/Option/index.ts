@@ -17,6 +17,7 @@ export * from "./model";
 export * from "./monad";
 export * from "./monoid";
 export * from "./semigroup";
+export * from "./show";
 export * from "./traversable";
 export * from "./unit";
 export * from "./witherable";

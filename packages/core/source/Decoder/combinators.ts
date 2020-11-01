@@ -1,3 +1,5 @@
+import type { UnionToIntersection } from "@principia/prelude/Utils";
+
 import * as A from "../Array";
 import type { Either } from "../Either";
 import * as FS from "../FreeSemigroup";
@@ -226,6 +228,22 @@ export const intersect_ = <IA, A, IB, B>(
 export const intersect = <IB, B>(right: Decoder<IB, B>, name?: string) => <IA, A>(
    left: Decoder<IA, A>
 ): Decoder<IA & IB, A & B> => intersect_(left, right, name);
+
+export const intersectAll = <
+   A extends readonly [Decoder<any, any>, Decoder<any, any>, ...(readonly Decoder<any, any>[])]
+>(
+   decoders: A,
+   name?: string
+): Decoder<
+   UnionToIntersection<{ [K in keyof A]: InputOf<A[K]> }[keyof A]>,
+   UnionToIntersection<{ [K in keyof A]: TypeOf<A[K]> }[keyof A]>
+> => {
+   const [left, right, ...rest] = decoders;
+   const decode = A.reduce_(rest, K.intersect_(M)(left, right), (b, a) => K.intersect_(M)(b, a)).decode;
+   const _name = name ?? A.map_(decoders, (d) => d._meta.name).join(" & ");
+
+   return pipe({ decode, _meta: { name: name ?? _name } }, wrapInfo({ name: name ?? _name }));
+};
 
 export const fromSum_ = <T extends string, MS extends Record<string, Decoder<any, any>>>(
    tag: T,

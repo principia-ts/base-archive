@@ -20,13 +20,13 @@ export interface RefinementAlgebra<F extends InterpreterURIS, Env extends AnyEnv
       a: InterpretedKind<F, Env, S, R, E, A>,
       refinement: Refinement<A, B>,
       name: string,
-      config?: Config<Env, unknown, unknown, E, B, RefineConfig<E, A, B>>
+      config?: Omit<Config<Env, unknown, unknown, E, B, RefineConfig<E, A, B>>, "name">
    ) => InterpretedKind<F, Env, unknown, unknown, E, B>;
 
    readonly constrain: <S, R, E, A>(
       a: InterpretedKind<F, Env, S, R, E, A>,
       predicate: Predicate<A>,
       name: string,
-      config?: Config<Env, unknown, unknown, E, A, ConstrainConfig<E, A>>
+      config?: Omit<Config<Env, unknown, unknown, E, A, ConstrainConfig<E, A>>, "name">
    ) => InterpretedKind<F, Env, unknown, unknown, E, A>;
 }

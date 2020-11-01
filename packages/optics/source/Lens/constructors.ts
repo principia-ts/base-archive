@@ -1,5 +1,5 @@
 import * as _ from "../internal";
-import type { Lens } from "./Lens";
+import type { Lens } from "./model";
 
 /*
  * -------------------------------------------

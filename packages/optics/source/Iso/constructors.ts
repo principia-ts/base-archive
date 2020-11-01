@@ -1,6 +1,6 @@
 import { identity } from "@principia/core/Function";
 
-import type { Iso } from "./Iso";
+import type { Iso } from "./model";
 
 /*
  * -------------------------------------------

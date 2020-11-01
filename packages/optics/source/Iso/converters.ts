@@ -6,7 +6,7 @@ import type { Lens } from "../Lens";
 import type { Optional } from "../Optional";
 import type { Prism } from "../Prism";
 import type { Traversal } from "../Traversal";
-import type { Iso } from "./Iso";
+import type { Iso } from "./model";
 
 /*
  * -------------------------------------------

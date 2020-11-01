@@ -1,4 +1,4 @@
-import type { Iso } from "./Iso";
+import type { Iso } from "./model";
 
 /*
  * -------------------------------------------
