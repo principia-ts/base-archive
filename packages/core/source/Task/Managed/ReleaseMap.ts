@@ -43,7 +43,7 @@ export const exited = (nextKey: number, exit: Exit<any, any>): Exited => ({
 
 export const finalizers = (state: Running): ReadonlyMap<number, Finalizer> => state.finalizers;
 
-export const noopFinalizer: Finalizer = () => T.unit;
+export const noopFinalizer: Finalizer = () => T.unit();
 
 export function addIfOpen(finalizer: Finalizer) {
    return (_: ReleaseMap): T.Task<unknown, never, Option<number>> =>
@@ -74,13 +74,13 @@ export function release(key: number, exit: Exit<any, any>) {
          XR.modify((s) => {
             switch (s._tag) {
                case "Exited": {
-                  return [T.unit, s];
+                  return [T.unit(), s];
                }
                case "Running": {
                   return [
                      Mb.fold_(
                         M.lookup_(Eq.number)(finalizers(s), key),
-                        () => T.unit,
+                        () => T.unit(),
                         (f) => f(exit)
                      ),
                      running(s.nextKey, M.remove(key)(finalizers(s)))
@@ -96,7 +96,7 @@ export function add(finalizer: Finalizer) {
       T.map_(
          addIfOpen(finalizer)(_),
          Mb.fold(
-            (): Finalizer => () => T.unit,
+            (): Finalizer => () => T.unit(),
             (k): Finalizer => (e) => release(k, e)(_)
          )
       );

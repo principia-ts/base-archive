@@ -10,6 +10,7 @@ import * as X from "../../XPure";
 import * as Ex from "../Exit";
 import * as C from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
+import type { FiberRef } from "../FiberRef";
 import * as FR from "../FiberRef";
 import * as Scope from "../Scope";
 import type { Supervisor } from "../Supervisor";
@@ -21,9 +22,11 @@ import type { FiberId } from "./FiberId";
 import { newFiberId } from "./FiberId";
 import type { Fiber, InterruptStatus, RuntimeFiber } from "./model";
 import { FiberDescriptor } from "./model";
-import type { Callback, FiberRefLocals } from "./state";
+import type { Callback } from "./state";
 import { FiberStateDone, FiberStateExecuting, initial, interrupting } from "./state";
 import * as Status from "./status";
+
+export type FiberRefLocals = Map<FiberRef<any>, any>;
 
 export class InterruptExit {
    readonly _tag = "InterruptExit";
@@ -80,6 +83,8 @@ export class TracingContext {
 export const _tracing = new TracingContext();
 
 export const currentFiber = new AtomicReference<Executor<any, any> | null>(null);
+
+export const unsafeCurrentFiber = (): O.Option<Executor<any, any>> => O.fromNullable(currentFiber.get);
 
 /**
  * `Executor` provides all of the context and facilities required to run a `Task`
@@ -469,6 +474,10 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return this.openScope.scope;
    }
 
+   get status(): T.IO<Status.FiberStatus> {
+      return T.succeed(this.state.get.status);
+   }
+
    private fork(i0: T.Instruction, forkScope: Option<Scope.Scope<Exit<any, any>>>): Executor<any, any> {
       const childFiberRefLocals: FiberRefLocals = new Map();
 
@@ -613,7 +622,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       return T.suspend(() => {
          const locals = this.fiberRefLocals;
          if (locals.size === 0) {
-            return T.unit;
+            return T.unit();
          } else {
             return T.foreachUnit_(locals, ([fiberRef, value]) =>
                FR.update((old) => fiberRef.join(old, value))(fiberRef)
@@ -836,7 +845,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
 
                            case TaskInstructionTag.Yield: {
                               current = undefined;
-                              this.evaluateLater(T.unit[T._I]);
+                              this.evaluateLater(T.unit()[T._I]);
                               break;
                            }
 

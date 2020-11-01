@@ -1,7 +1,7 @@
+import { chain_, fail, pure, total } from "../_core";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as Fiber from "../../Fiber";
-import { chain_, fail, pure, total } from "../_core";
 import type { EIO, Task } from "../model";
 
 /**

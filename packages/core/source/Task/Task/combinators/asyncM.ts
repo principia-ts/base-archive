@@ -1,8 +1,8 @@
 import { pipe } from "@principia/prelude";
 
+import * as _ from "../_core";
 import type { Cause } from "../../Exit/Cause";
 import * as XP from "../../XPromise";
-import * as _ from "../_core";
 import type { Task } from "../model";
 import { catchAllCause } from "./catchAllCause";
 import { uninterruptibleMask } from "./interrupt";

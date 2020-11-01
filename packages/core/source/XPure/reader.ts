@@ -1,6 +1,6 @@
-import type { XPure } from "./model";
-import { succeed } from "./constructors";
 import { GiveInstruction, ReadInstruction } from "./_concrete";
+import { succeed } from "./constructors";
+import type { XPure } from "./model";
 
 export const ask = <R>(): XPure<unknown, never, R, never, R> => new ReadInstruction((r: R) => succeed(r));
 

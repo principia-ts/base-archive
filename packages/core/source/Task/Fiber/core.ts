@@ -49,7 +49,7 @@ export const done = <E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> => ({
    _tag: "SyntheticFiber",
    await: T.pure(exit),
    getRef: (ref) => T.pure(ref.initial),
-   inheritRefs: T.unit,
+   inheritRefs: T.unit(),
    interruptAs: () => T.pure(exit),
    poll: T.pure(some(exit))
 });

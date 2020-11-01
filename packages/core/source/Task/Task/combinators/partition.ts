@@ -1,8 +1,8 @@
 import type { Separated } from "@principia/prelude/Utils";
 
+import { foreach_, map_ } from "../_core";
 import { identity } from "../../../Function";
 import * as I from "../../../Iterable";
-import { foreach_, map_ } from "../_core";
 import type { Task } from "../model";
 import { either } from "./either";
 import { foreachPar_ } from "./foreachPar";

@@ -7,4 +7,6 @@ export * from "./interruptAll";
 export * from "./join";
 export * from "./joinAll";
 export * from "./mapFiber";
+export * from "./never";
+export * from "./toManaged";
 // codegen:end

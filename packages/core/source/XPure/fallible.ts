@@ -1,7 +1,7 @@
 import * as E from "../Either";
-import type { XPure } from "./model";
 import { succeed } from "./constructors";
 import { foldM_ } from "./fold";
+import type { XPure } from "./model";
 import { chain_ } from "./monad";
 
 /*

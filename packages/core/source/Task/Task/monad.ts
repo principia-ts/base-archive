@@ -1,5 +1,5 @@
 import { identity, pipe } from "../../Function";
-import { map } from "./functor";
+import { succeed } from "./constructors";
 import type { Task } from "./model";
 import { ChainInstruction } from "./model";
 
@@ -72,7 +72,7 @@ export const tap_ = <R, E, A, Q, D, B>(fa: Task<R, E, A>, f: (a: A) => Task<Q, D
    chain_(fa, (a) =>
       pipe(
          f(a),
-         map(() => a)
+         chain(() => succeed(a))
       )
    );
 

@@ -37,7 +37,7 @@ export const LiveClock = (): Clock => ({
    sleep: (ms) =>
       asyncInterrupt((cb) => {
          const timeout = setTimeout(() => {
-            cb(T.unit);
+            cb(T.unit());
          }, ms);
 
          return T.total(() => {

@@ -1,5 +1,5 @@
-import { succeed } from "./constructors";
 import { FoldInstruction } from "./_concrete";
+import { succeed } from "./constructors";
 import type { XPure } from "./model";
 
 /*

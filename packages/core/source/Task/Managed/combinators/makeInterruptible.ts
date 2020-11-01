@@ -1,5 +1,5 @@
-import * as T from "../_internal/task";
 import { fromTask } from "../_core";
+import * as T from "../_internal/task";
 import { onExitFirst_ } from "./onExitFirst";
 
 /**
@@ -23,7 +23,7 @@ export const _makeInterruptible = <R, E, A, R1>(
    onExitFirst_(fromTask(acquire), (e) => {
       switch (e._tag) {
          case "Failure": {
-            return T.unit;
+            return T.unit();
          }
          case "Success": {
             return release(e.value);

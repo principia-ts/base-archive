@@ -1,3 +1,4 @@
+import * as T from "../_core";
 import { HasClock, LiveClock } from "../../Clock";
 import type { Exit } from "../../Exit";
 import * as C from "../../Exit/Cause";
@@ -8,7 +9,6 @@ import type { Callback } from "../../Fiber/state";
 import { defaultRandom, HasRandom } from "../../Random";
 import * as Scope from "../../Scope";
 import * as Super from "../../Supervisor";
-import * as T from "../_core";
 import { _I } from "../model";
 
 export const empty = () => {

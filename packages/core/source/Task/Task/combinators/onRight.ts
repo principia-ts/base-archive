@@ -1,5 +1,5 @@
-import type { Either } from "../../../Either";
 import * as T from "../_core";
+import type { Either } from "../../../Either";
 import type { Task } from "../model";
 import { joinEither_ } from "./join";
 

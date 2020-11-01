@@ -1,10 +1,10 @@
+import { chain, chain_, foreach_, fork, map_, unit } from "../_core";
 import * as A from "../../../Array";
 import { pipe } from "../../../Function";
 import * as I from "../../../Iterable";
 import * as O from "../../../Option";
 import * as Fiber from "../../Fiber";
 import * as FiberRef from "../../FiberRef";
-import { chain, chain_, foreach_, fork, map_, unit } from "../_core";
 import type { RIO, Task } from "../model";
 import { uninterruptibleMask } from "./interrupt";
 
@@ -26,7 +26,7 @@ export const forkAll = <R, E, A>(efs: Iterable<Task<R, E, A>>): RIO<R, Fiber.Fib
  * in cases where the results of the forked fibers are not needed.
  */
 export const forkAllUnit = <R, E, A>(efs: Iterable<Task<R, E, A>>) =>
-   I.reduce_(efs, unit as RIO<R, void>, (b, a) => chain_(fork(a), () => b));
+   I.reduce_(efs, unit() as RIO<R, void>, (b, a) => chain_(fork(a), () => b));
 
 /**
  * Forks the effect into a new independent fiber, with the specified name.

@@ -1,5 +1,5 @@
-import type { RuntimeFiber } from "../../Fiber";
 import { chain_ } from "../_core";
+import type { RuntimeFiber } from "../../Fiber";
 import { forkDaemon } from "../core-scope";
 import type { Task } from "../model";
 import { bracket_ } from "./bracket";

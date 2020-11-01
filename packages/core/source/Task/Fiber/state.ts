@@ -30,8 +30,6 @@ export class FiberStateDone<E, A> {
 
 export const initial = <E, A>(): FiberState<E, A> => new FiberStateExecuting(new Running(false), [], C.empty);
 
-export type FiberRefLocals = Map<FiberRef<any>, any>;
-
 export const interrupting = <E, A>(state: FiberState<E, A>) => {
    const loop = (status: FiberStatus): boolean => {
       switch (status._tag) {

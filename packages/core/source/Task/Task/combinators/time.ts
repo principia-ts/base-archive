@@ -1,8 +1,8 @@
+import { as, flatten, map, pure, suspend } from "../_core";
 import { pipe } from "../../../Function";
 import * as O from "../../../Option";
 import type { HasClock } from "../../Clock";
 import { currentTime, sleep } from "../../Clock";
-import { as, flatten, map, pure, suspend } from "../_core";
 import type { Task } from "../model";
 import { makeInterruptible } from "./interrupt";
 import { raceFirst } from "./race";

@@ -81,7 +81,7 @@ export const runCollect = <R, E, A>(stream: Stream<R, E, A>) => run_(stream, Sin
 export const runDrain = <R, E, A>(stream: Stream<R, E, A>): T.Task<R, E, void> =>
    pipe(
       stream,
-      foreach((_) => T.unit)
+      foreach((_) => T.unit())
    );
 
 /**

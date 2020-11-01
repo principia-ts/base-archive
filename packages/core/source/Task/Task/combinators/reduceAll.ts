@@ -1,8 +1,8 @@
+import { map_, mapBoth_ } from "../_core";
 import * as A from "../../../Array";
 import { NoSuchElementException } from "../../../GlobalExceptions";
 import * as NA from "../../../NonEmptyArray";
 import * as O from "../../../Option";
-import { map_, mapBoth_ } from "../_core";
 import type { Task } from "../model";
 import { mergeAllPar_, mergeAllParN_ } from "./mergeAll";
 

@@ -178,7 +178,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
          T.bindS("fiberId", () => T.checkFiberId()),
          T.bindS("putters", () => T.total(() => unsafePollAll(this.putters))),
          T.tap((s) =>
-            T.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? XP.interruptAs(s.fiberId)(p) : T.unit))
+            T.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? XP.interruptAs(s.fiberId)(p) : T.unit()))
          ),
          T.asUnit
       );
@@ -204,7 +204,7 @@ export class DroppingStrategy<A> implements Strategy<A> {
    }
 
    get shutdown(): T.IO<void> {
-      return T.unit;
+      return T.unit();
    }
 
    get surplusSize(): number {
@@ -231,7 +231,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
    }
 
    get shutdown(): T.IO<void> {
-      return T.unit;
+      return T.unit();
    }
 
    get surplusSize(): number {

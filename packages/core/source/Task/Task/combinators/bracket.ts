@@ -1,7 +1,7 @@
+import { chain_, done, foldCauseM_, halt, pure, result } from "../_core";
 import * as Ex from "../../Exit";
 import * as C from "../../Exit/Cause";
 import type { Exit } from "../../Exit/model";
-import { chain_, done, foldCauseM_, halt, pure, result } from "../_core";
 import type { Task } from "../model";
 import { uninterruptibleMask } from "./interrupt";
 

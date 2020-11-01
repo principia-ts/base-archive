@@ -1,4 +1,3 @@
-
 import type * as TC from "@principia/prelude";
 import { makeMonoid } from "@principia/prelude";
 import type { Eq } from "@principia/prelude/Eq";
@@ -8,7 +7,7 @@ import * as HKT from "@principia/prelude/HKT";
 import { pipe } from "../Function";
 import { empty } from "./constructors";
 import { isSubrecord } from "./guards";
-import {ReadonlyRecord} from "./model";
+import type { ReadonlyRecord } from "./model";
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 

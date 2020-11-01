@@ -7,4 +7,4 @@ import type { IO } from "./model";
  * -------------------------------------------
  */
 
-export const unit: IO<void> = succeed(undefined);
+export const unit = (): IO<void> => succeed(undefined);

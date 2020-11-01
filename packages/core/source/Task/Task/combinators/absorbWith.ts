@@ -1,6 +1,6 @@
+import { fail, foldM, pure } from "../_core";
 import { flow, pipe } from "../../../Function";
 import * as C from "../../Exit/Cause";
-import { fail, foldM, pure } from "../_core";
 import type { Task } from "../model";
 import { sandbox } from "./sandbox";
 

@@ -1,5 +1,5 @@
-import type { Option } from "../../../Option";
 import { catchAll_ } from "../_core";
+import type { Option } from "../../../Option";
 import type { Task } from "../model";
 import { unrefineWith_ } from "./unrefineWith";
 

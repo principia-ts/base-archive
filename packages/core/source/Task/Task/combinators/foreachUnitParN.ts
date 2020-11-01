@@ -1,6 +1,6 @@
+import * as T from "../_core";
 import { pipe } from "../../../Function";
 import * as Sema from "../../Semaphore";
-import * as T from "../_core";
 import { foreachUnitPar_ } from "./foreachUnitPar";
 
 /**

@@ -1,5 +1,5 @@
-import type { Exit } from "../../Exit";
 import { unit } from "../_core";
+import type { Exit } from "../../Exit";
 import type { Task } from "../model";
 import { bracketExit_ } from "./bracket";
 
@@ -8,7 +8,7 @@ export function onExit_<R, E, A, R2, E2>(
    cleanup: (exit: Exit<E, A>) => Task<R2, E2, any>
 ): Task<R & R2, E | E2, A> {
    return bracketExit_(
-      unit,
+      unit(),
       () => self,
       (_, e) => cleanup(e)
    );

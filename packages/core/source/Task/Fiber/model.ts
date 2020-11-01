@@ -42,19 +42,57 @@ export class FiberDescriptor {
    ) {}
 }
 
+/**
+ * A fiber is a lightweight thread of execution that never consumes more than a
+ * whole thread (but may consume much less, depending on contention and
+ * asynchronicity). Fibers are spawned by forking ZIO effects, which run
+ * concurrently with the parent effect.
+ *
+ * Fibers can be joined, yielding their result to other fibers, or interrupted,
+ * which terminates the fiber, safely releasing all resources.
+ */
 export type Fiber<E, A> = RuntimeFiber<E, A> | SyntheticFiber<E, A>;
 
 export interface CommonFiber<E, A> {
-   await: IO<Exit<E, A>>;
-   //children: Sync<Iterable<Runtime<any, any>>>
-   getRef: <K>(fiberRef: FiberRef<K>) => IO<K>;
-   inheritRefs: IO<void>;
-   interruptAs(fiberId: FiberId): IO<Exit<E, A>>;
-   poll: IO<Option<Exit<E, A>>>;
+   /**
+    * Awaits the fiber, which suspends the awaiting fiber until the result of the
+    * fiber has been determined.
+    */
+   readonly await: IO<Exit<E, A>>;
+   /**
+    * Gets the value of the fiber ref for this fiber, or the initial value of
+    * the fiber ref, if the fiber is not storing the ref.
+    */
+   readonly getRef: <K>(fiberRef: FiberRef<K>) => IO<K>;
+   /**
+    * Inherits values from all {@link FiberRef} instances into current fiber.
+    * This will resume immediately.
+    */
+   readonly inheritRefs: IO<void>;
+   /**
+    * Interrupts the fiber as if interrupted from the specified fiber. If the
+    * fiber has already exited, the returned effect will resume immediately.
+    * Otherwise, the effect will resume when the fiber exits.
+    */
+   readonly interruptAs: (fiberId: FiberId) => IO<Exit<E, A>>;
+   /**
+    * Tentatively observes the fiber, but returns immediately if it is not already done.
+    */
+   readonly poll: IO<Option<Exit<E, A>>>;
 }
 
 export interface RuntimeFiber<E, A> extends CommonFiber<E, A> {
    _tag: "RuntimeFiber";
+   /**
+    * The identity of the fiber.
+    */
+   readonly id: FiberId;
+
+   readonly scope: Scope<Exit<E, A>>;
+   /**
+    * The status of the fiber.
+    */
+   readonly status: IO<FiberStatus>;
 }
 
 export interface SyntheticFiber<E, A> extends CommonFiber<E, A> {

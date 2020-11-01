@@ -1,10 +1,10 @@
 import { pipe } from "@principia/prelude";
 
+import { chain } from "../_core";
 import * as A from "../../../Array";
 import * as O from "../../../Option";
 import * as F from "../../Fiber";
 import type { Scope } from "../../Scope";
-import { chain } from "../_core";
 import { forkDaemon } from "../core-scope";
 import type { Task } from "../model";
 import { onInterrupt, uninterruptibleMask } from "./interrupt";

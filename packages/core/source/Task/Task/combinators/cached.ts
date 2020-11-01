@@ -1,3 +1,4 @@
+import * as _ from "../_core";
 import { pipe, tuple } from "../../../Function";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
@@ -6,7 +7,6 @@ import { currentTime } from "../../Clock";
 import type { XPromise } from "../../XPromise";
 import * as XP from "../../XPromise";
 import * as XRM from "../../XRefM";
-import * as _ from "../_core";
 import type { EIO, RIO, Task } from "../model";
 import { uninterruptibleMask } from "./interrupt";
 import { to } from "./to";

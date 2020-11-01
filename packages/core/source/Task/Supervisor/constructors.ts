@@ -56,7 +56,7 @@ export const fibersIn = (ref: Atomic<Set<RuntimeFiber<any, any>>>) =>
  * A supervisor that doesn't do anything in response to supervision events.
  */
 export const none = new Supervisor<void>(
-   T.unit,
+   T.unit(),
    () => _continue,
    () => _continue
 );

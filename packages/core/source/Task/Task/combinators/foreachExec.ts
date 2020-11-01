@@ -1,5 +1,5 @@
-import type { ExecutionStrategy, Parallel, ParallelN, Sequential } from "../../ExecutionStrategy";
 import * as T from "../_core";
+import type { ExecutionStrategy, Parallel, ParallelN, Sequential } from "../../ExecutionStrategy";
 import { foreachPar_ } from "./foreachPar";
 import { foreachParN_ } from "./foreachParN";
 

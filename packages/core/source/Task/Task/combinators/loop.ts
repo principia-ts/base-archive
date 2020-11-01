@@ -45,4 +45,4 @@ export const loop = <B>(initial: B) => (cont: (a: B) => boolean, inc: (b: B) => 
  */
 export const loopUnit = <A>(initial: A) => (cont: (a: A) => boolean, inc: (a: A) => A) => <R, E>(
    body: (a: A) => Task<R, E, any>
-): Task<R, E, void> => (cont(initial) ? chain_(body(initial), () => loop(inc(initial))(cont, inc)(body)) : unit);
+): Task<R, E, void> => (cont(initial) ? chain_(body(initial), () => loop(inc(initial))(cont, inc)(body)) : unit());

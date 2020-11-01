@@ -1,9 +1,9 @@
 import type { Eq } from "@principia/prelude/Eq";
 
+import * as _ from "../_core";
 import { pipe, tuple } from "../../../Function";
 import * as XP from "../../XPromise";
 import * as XRM from "../../XRefM";
-import * as _ from "../_core";
 import type { IO, Task } from "../model";
 import { to } from "./to";
 

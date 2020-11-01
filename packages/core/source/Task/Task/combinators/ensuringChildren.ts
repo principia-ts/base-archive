@@ -1,7 +1,7 @@
+import { chain } from "../_core";
 import { pipe } from "../../../Function";
 import type { RuntimeFiber } from "../../Fiber";
 import * as Supervisor from "../../Supervisor";
-import { chain } from "../_core";
 import type { Task } from "../model";
 import { ensuring } from "./bracket";
 import { supervised } from "./supervised";

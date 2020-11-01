@@ -309,7 +309,7 @@ export const mapMPar_ = (n: number) => <R, E, A, R1, E1, B>(
                   (c) => T.toManaged()(out.offer(Pull.halt(c))),
                   () =>
                      pipe(
-                        Semaphore.withPermits(n)(permits)(T.unit),
+                        Semaphore.withPermits(n)(permits)(T.unit()),
                         T.chain(() => out.offer(Pull.end)),
                         T.toManaged()
                      )

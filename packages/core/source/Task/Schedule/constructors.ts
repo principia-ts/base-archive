@@ -58,7 +58,7 @@ export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecu
                         return pipe(
                            ref.set([O.some(dec.out), dec.next]),
                            T.map(() => dec.interval - now),
-                           T.chain((s) => (s > 0 ? Clock.sleep(s) : T.unit)),
+                           T.chain((s) => (s > 0 ? Clock.sleep(s) : T.unit())),
                            T.map(() => dec.out)
                         );
                   }

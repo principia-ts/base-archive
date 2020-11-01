@@ -1,6 +1,6 @@
 import { identity } from "../Function";
-import { map_ } from "./functor";
 import { ChainInstruction } from "./_concrete";
+import { map_ } from "./functor";
 import type { XPure } from "./model";
 
 /*

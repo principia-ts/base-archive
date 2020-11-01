@@ -1,9 +1,9 @@
+import { chain_, die, fail, map, map_, mapBoth_, pure } from "../_core";
 import * as A from "../../../Array";
 import type { Predicate, Refinement } from "../../../Function";
 import { flow, pipe } from "../../../Function";
 import * as I from "../../../Iterable";
 import * as O from "../../../Option";
-import { chain_, die, fail, map, map_, mapBoth_, pure } from "../_core";
 import type { Task } from "../model";
 import { foreachPar } from "./foreachPar";
 import { foreachParN } from "./foreachParN";

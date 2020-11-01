@@ -38,7 +38,7 @@ export const catchAll = <R, E, E2, A>(f: (e: E2) => Task<R, E, A>) => <R2, A2>(m
    catchAll_(ma, f);
 
 export const uncause = <R, E>(ma: Task<R, never, C.Cause<E>>): Task<R, E, void> =>
-   chain_(ma, (a) => (C.isEmpty(a) ? unit : halt(a)));
+   chain_(ma, (a) => (C.isEmpty(a) ? unit() : halt(a)));
 
 /**
  * Ignores the result of the effect, replacing it with unit
@@ -46,7 +46,7 @@ export const uncause = <R, E>(ma: Task<R, never, C.Cause<E>>): Task<R, E, void> 
  * @category Combinators
  * @since 1.0.0
  */
-export const asUnit = <R, E>(ma: Task<R, E, any>) => chain_(ma, () => unit);
+export const asUnit = <R, E>(ma: Task<R, E, any>) => chain_(ma, () => unit());
 
 /**
  * ```haskell
@@ -135,7 +135,7 @@ export const absolve = <R, E, E1, A>(v: Task<R, E, E.Either<E1, A>>) => chain_(v
  * @since 1.0.0
  */
 export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, any>): Task<R, E, void> =>
-   I.foldMap(makeMonoid<Task<R, E, void>>((x, y) => chain_(x, () => y), unit))(f)(as);
+   I.foldMap(makeMonoid<Task<R, E, void>>((x, y) => chain_(x, () => y), unit()))(f)(as);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -203,7 +203,7 @@ export const foldr_ = <A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => T
 export const foldr = <A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Task<R, E, Z>) => (i: Iterable<A>) => foldr_(i, zero, f);
 
 export const whenM_ = <R, E, A, R1, E1>(f: Task<R, E, A>, b: Task<R1, E1, boolean>) =>
-   chain_(b, (a) => (a ? map_(f, some) : map_(unit, () => none())));
+   chain_(b, (a) => (a ? map_(f, some) : map_(unit(), () => none())));
 
 export const whenM = <R, E>(b: Task<R, E, boolean>) => <R1, E1, A>(f: Task<R1, E1, A>) => whenM_(f, b);
 

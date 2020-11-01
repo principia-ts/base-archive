@@ -1,15 +1,5 @@
 import { pipe } from "@principia/prelude";
 
-import type { Either } from "../../../Either";
-import { left } from "../../../Either";
-import type { Option } from "../../../Option";
-import { none, some } from "../../../Option";
-import { AtomicReference, OneShot } from "../../../support";
-import * as C from "../../Exit/Cause";
-import { interruptible, uninterruptible } from "../../Fiber/core";
-import type { FiberId } from "../../Fiber/FiberId";
-import { join } from "../../Fiber/functions/join";
-import type { InterruptStatus } from "../../Fiber/model";
 import {
    asyncOption,
    chain,
@@ -23,6 +13,16 @@ import {
    total,
    unit
 } from "../_core";
+import type { Either } from "../../../Either";
+import { left } from "../../../Either";
+import type { Option } from "../../../Option";
+import { none, some } from "../../../Option";
+import { AtomicReference, OneShot } from "../../../support";
+import * as C from "../../Exit/Cause";
+import { join } from "../../Fiber/combinators/join";
+import { interruptible, uninterruptible } from "../../Fiber/core";
+import type { FiberId } from "../../Fiber/FiberId";
+import type { InterruptStatus } from "../../Fiber/model";
 import { forkDaemon } from "../core-scope";
 import type { Canceler, EIO, IO, Task } from "../model";
 import { InterruptStatusInstruction } from "../model";
@@ -181,13 +181,13 @@ export const maybeAsyncInterrupt = <R, E, A>(
                   }
                } finally {
                   if (!cancel.isSet()) {
-                     cancel.set(unit);
+                     cancel.set(unit());
                   }
                }
                return ret.get;
             }, blockingOn),
             flatten,
-            onInterrupt(() => suspend(() => (started.get ? cancel.get() : unit)))
+            onInterrupt(() => suspend(() => (started.get ? cancel.get() : unit())))
          )
       )
    );

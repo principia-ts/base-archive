@@ -1,8 +1,8 @@
+import { fail, halt } from "../_core";
 import { pipe } from "../../../Function";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as C from "../../Exit/Cause";
-import { fail, halt } from "../_core";
 import type { Task } from "../model";
 import { catchAllCause_ } from "./catchAllCause";
 

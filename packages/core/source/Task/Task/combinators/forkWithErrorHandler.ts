@@ -1,7 +1,7 @@
+import { fork, halt } from "../_core";
 import * as E from "../../../Either";
 import { flow } from "../../../Function";
 import * as C from "../../Exit/Cause";
-import { fork, halt } from "../_core";
 import type { RIO, Task } from "../model";
 import { onError_ } from "./onError";
 

@@ -1,3 +1,4 @@
+import { chain_, fail, fromEither, local_, map_, pure, suspend, unit } from "../_core";
 import type { Either } from "../../../Either";
 import { tuple } from "../../../Function";
 import type { NoSuchElementException } from "../../../GlobalExceptions";
@@ -8,7 +9,6 @@ import { sequential } from "../../ExecutionStrategy";
 import type { Has, Tag } from "../../Has";
 import type { ReleaseMap } from "../../Managed";
 import { makeReleaseMap, Managed, releaseAll } from "../../Managed";
-import { chain_, fail, fromEither, local_, map_, pure, suspend, unit } from "../_core";
 import type { Task } from "../model";
 import { bracketExit_ } from "./bracket";
 import { getOrFail } from "./getOrFail";
@@ -105,7 +105,7 @@ export function gen(...args: any[]): any {
 
          return chain_(makeReleaseMap, (rm) =>
             bracketExit_(
-               unit,
+               unit(),
                () => run(rm, state),
                (_, e) => releaseAll(e, sequential())(rm)
             )

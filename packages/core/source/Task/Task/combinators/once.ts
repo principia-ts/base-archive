@@ -1,6 +1,6 @@
+import * as T from "../_core";
 import type { Option } from "../../../Option";
 import { getAndSet_, makeRef } from "../../XRef";
-import * as T from "../_core";
 import type { IO, Task } from "../model";
 
 export const once = <R, E, A>(task: Task<R, E, A>): IO<Task<R, E, Option<A>>> =>

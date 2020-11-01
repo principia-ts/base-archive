@@ -1,9 +1,9 @@
+import * as T from "../_core";
 import * as A from "../../../Array";
 import { pipe, tuple } from "../../../Function";
 import * as F from "../../Fiber";
 import * as XP from "../../XPromise";
 import * as Q from "../../XQueue";
-import * as T from "../_core";
 import { bracket } from "./bracket";
 import { collectAll } from "./collectAll";
 import { forever } from "./forever";

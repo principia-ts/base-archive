@@ -1,4 +1,6 @@
-import { Show, fromShow } from "@principia/prelude/Show";
+import type { Show } from "@principia/prelude/Show";
+import { fromShow } from "@principia/prelude/Show";
+
 import { isNone } from "./guards";
 import type { Option } from "./model";
 

@@ -29,7 +29,7 @@ export const switchable = <R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
       _.bindS("key", ({ releaseMap }) =>
          pipe(
             releaseMap,
-            RelMap.addIfOpen((_) => T.unit),
+            RelMap.addIfOpen((_) => T.unit()),
             T.chain(O.fold(() => T.interrupt, T.succeed)),
             _.fromTask
          )
@@ -38,11 +38,11 @@ export const switchable = <R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
          T.uninterruptibleMask(({ restore }) =>
             pipe(
                releaseMap,
-               RelMap.replace(key, (_) => T.unit),
+               RelMap.replace(key, (_) => T.unit()),
                T.chain(
                   O.fold(
-                     () => T.unit,
-                     (fin) => fin(Ex.unit)
+                     () => T.unit(),
+                     (fin) => fin(Ex.unit())
                   )
                ),
                T.apSecond(T.do),

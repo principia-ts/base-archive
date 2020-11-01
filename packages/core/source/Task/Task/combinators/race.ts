@@ -1,3 +1,4 @@
+import * as _ from "../_core";
 import * as A from "../../../Array";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
@@ -7,10 +8,9 @@ import type { Exit } from "../../Exit";
 import * as Ex from "../../Exit";
 import * as C from "../../Exit/Cause";
 import * as Fiber from "../../Fiber";
-import { join } from "../../Fiber/functions/join";
+import { join } from "../../Fiber/combinators/join";
 import * as XP from "../../XPromise";
 import * as XR from "../../XRef";
-import * as _ from "../_core";
 import { raceWith } from "../core-scope";
 import type { IO, Task } from "../model";
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from "./interrupt";
@@ -119,7 +119,7 @@ const arbiter = <E, A>(
       (e) =>
          pipe(
             fails,
-            XR.modify((c) => tuple(c === 0 ? pipe(promise, XP.halt(e), _.asUnit) : _.unit, c - 1)),
+            XR.modify((c) => tuple(c === 0 ? pipe(promise, XP.halt(e), _.asUnit) : _.unit(), c - 1)),
             _.flatten
          ),
       (a) =>
@@ -128,10 +128,8 @@ const arbiter = <E, A>(
             XP.succeed(tuple(a, winner)),
             _.chain((set) =>
                set
-                  ? A.reduce_(fibers, _.unit as IO<void>, (io, f) =>
-                       f === winner ? io : _.tap_(io, () => Fiber.interrupt(f))
-                    )
-                  : _.unit
+                  ? A.reduce_(fibers, _.unit(), (io, f) => (f === winner ? io : _.tap_(io, () => Fiber.interrupt(f))))
+                  : _.unit()
             )
          )
    );
@@ -157,7 +155,7 @@ export const raceAll = <R, E, A>(
                _.do,
                _.bindS("fs", () => _.foreach_(ios, flow(makeInterruptible, _.fork))),
                _.tap(({ fs }) =>
-                  A.reduce_(fs, _.unit as IO<void>, (io, f) =>
+                  A.reduce_(fs, _.unit(), (io, f) =>
                      _.chain_(io, () => pipe(f.await, _.chain(arbiter(fs, f, done, fails)), _.fork))
                   )
                ),
@@ -167,15 +165,13 @@ export const raceAll = <R, E, A>(
                _.bindS("c", ({ fs, inheritRefs }) =>
                   pipe(
                      restore(pipe(done, XP.await, _.chain(inheritRefs))),
-                     onInterrupt(() =>
-                        A.reduce_(fs, _.unit as IO<void>, (io, f) => _.tap_(io, () => Fiber.interrupt(f)))
-                     )
+                     onInterrupt(() => A.reduce_(fs, _.unit(), (io, f) => _.tap_(io, () => Fiber.interrupt(f))))
                   )
                ),
                _.map(({ c, fs }) => ({ c, fs }))
             )
          )
       ),
-      _.tap(({ c: { fs } }) => (interruptStrategy === "wait" ? _.foreach_(fs, (f) => f.await) : _.unit)),
+      _.tap(({ c: { fs } }) => (interruptStrategy === "wait" ? _.foreach_(fs, (f) => f.await) : _.unit())),
       _.map(({ c: { c } }) => c)
    );

@@ -259,7 +259,7 @@ export const repeatTaskChunkOption = <R, E, A>(ef: T.Task<R, Option<E>, Readonly
                           T.tapError(
                              O.fold(
                                 () => done.set(true),
-                                () => T.unit
+                                () => T.unit()
                              )
                           )
                        )
@@ -383,7 +383,7 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
 /**
  * Creates a one-element stream that never fails and executes the finalizer when it ends.
  */
-export const finalizer = <R>(finalizer: T.RIO<R, unknown>): RIO<R, unknown> => bracket((_) => finalizer)(T.unit);
+export const finalizer = <R>(finalizer: T.RIO<R, unknown>): RIO<R, unknown> => bracket((_) => finalizer)(T.unit());
 
 /**
  * Applies an aggregator to the stream, which converts one or more elements

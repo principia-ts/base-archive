@@ -91,7 +91,7 @@ export class Chain<R_, E_, O, O2> {
       return pipe(
          this.innerFinalizer,
          XR.getAndSet(M.noopFinalizer),
-         T.chain((f) => f(Ex.unit))
+         T.chain((f) => f(Ex.unit()))
       );
    }
 

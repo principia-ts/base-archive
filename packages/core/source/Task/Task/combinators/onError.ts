@@ -1,5 +1,5 @@
-import type { Cause } from "../../Exit/Cause";
 import { unit } from "../_core";
+import type { Cause } from "../../Exit/Cause";
 import type { Task } from "../model";
 import { onExit_ } from "./onExit";
 
@@ -13,7 +13,7 @@ export const onError_ = <R, E, A, R2, E2>(
             return cleanup(e.cause);
          }
          case "Success": {
-            return unit;
+            return unit();
          }
       }
    });

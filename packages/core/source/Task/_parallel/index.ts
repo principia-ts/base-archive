@@ -6,8 +6,8 @@ import { sequential } from "../ExecutionStrategy";
 import * as Ex from "../Exit";
 import * as C from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
+import { interrupt } from "../Fiber/combinators/interrupt";
 import type { Executor } from "../Fiber/executor";
-import { interrupt } from "../Fiber/functions/interrupt";
 import type { Fiber } from "../Fiber/model";
 import * as M from "../Managed/_core";
 import { Managed } from "../Managed/model";
@@ -30,7 +30,7 @@ export function releaseAllReleaseMaps(
          XR.modify((s): [T.IO<any>, RM.ManagedState] => {
             switch (s._tag) {
                case "Exited": {
-                  return [T.unit, s];
+                  return [T.unit(), s];
                }
                case "Running": {
                   switch (execStrategy._tag) {
@@ -88,7 +88,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
    const size = arr.length;
 
    if (size === 0) {
-      return T.unit;
+      return T.unit();
    }
 
    return pipe(

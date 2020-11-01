@@ -1,5 +1,5 @@
-import * as E from "../../../Either";
 import { map_, pure } from "../_core";
+import * as E from "../../../Either";
 import type { Task } from "../model";
 import { tryOrElse_ } from "./tryOrElse";
 

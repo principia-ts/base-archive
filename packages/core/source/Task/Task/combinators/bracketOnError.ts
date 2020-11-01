@@ -1,5 +1,5 @@
-import type { Exit } from "../../Exit";
 import { unit } from "../_core";
+import type { Exit } from "../../Exit";
 import type { Task } from "../model";
 import { bracketExit_ } from "./bracket";
 
@@ -22,7 +22,7 @@ export const bracketOnError_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
    use: (a: A) => Task<R1, E1, A1>,
    release: (a: A, e: Exit<E1, A1>) => Task<R2, E2, A2>
 ): Task<R & R1 & R2, E | E1 | E2, A1> =>
-   bracketExit_(acquire, use, (a, e) => (e._tag === "Success" ? unit : release(a, e)));
+   bracketExit_(acquire, use, (a, e) => (e._tag === "Success" ? unit() : release(a, e)));
 
 /**
  * ```haskell

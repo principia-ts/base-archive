@@ -10,7 +10,7 @@ export const Functor: P.Functor<[URI], V> = HKT.instance({
 });
 
 export const Unit: P.Unit<[URI], V> = HKT.instance({
-   unit: () => _.unit
+   unit: _.unit
 });
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({

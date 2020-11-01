@@ -253,7 +253,7 @@ export class MemoMap {
                                  return RelMap.add(release)(rm);
                               }
                               case "Failure": {
-                                 return T.unit;
+                                 return T.unit();
                               }
                            }
                         }),
@@ -347,7 +347,7 @@ export class MemoMap {
                                  T.onExit((e) => {
                                     switch (e._tag) {
                                        case "Failure": {
-                                          return T.unit;
+                                          return T.unit();
                                        }
                                        case "Success": {
                                           return pipe(

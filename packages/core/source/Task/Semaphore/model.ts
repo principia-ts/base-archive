@@ -17,7 +17,7 @@ export type Entry = [XPromise<never, void>, number];
 export type State = Either<ImmutableQueue<Entry>, number>;
 
 export const assertNonNegative = (n: number) =>
-   n < 0 ? T.die(`Unexpected negative value ${n} passed to acquireN or releaseN.`) : T.unit;
+   n < 0 ? T.die(`Unexpected negative value ${n} passed to acquireN or releaseN.`) : T.unit();
 
 export class Acquisition {
    constructor(readonly waitAcquire: T.IO<void>, readonly release: T.IO<void>) {}
@@ -73,7 +73,7 @@ export class Semaphore {
          T.chain_(assertNonNegative(toRelease), () =>
             pipe(
                this.state,
-               XR.modify((s) => this.loop(toRelease, s, T.unit))
+               XR.modify((s) => this.loop(toRelease, s, T.unit()))
             )
          )
       );
@@ -94,7 +94,7 @@ export class Semaphore {
                            E.left(q.filter(([a]) => a != p))
                         ]
                      ),
-                  (m): [T.IO<void>, E.Either<ImmutableQueue<Entry>, number>] => [T.unit, E.right(n + m)]
+                  (m): [T.IO<void>, E.Either<ImmutableQueue<Entry>, number>] => [T.unit(), E.right(n + m)]
                )
             )
          )
@@ -103,7 +103,7 @@ export class Semaphore {
 
    prepare(n: number) {
       if (n === 0) {
-         return T.pure(new Acquisition(T.unit, T.unit));
+         return T.pure(new Acquisition(T.unit(), T.unit()));
       } else {
          return T.chain_(promiseMake<never, void>(), (p) =>
             pipe(
@@ -116,7 +116,7 @@ export class Semaphore {
                      ],
                      (m): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => {
                         if (m >= n) {
-                           return [new Acquisition(T.unit, this.releaseN(n)), E.right(m - n)];
+                           return [new Acquisition(T.unit(), this.releaseN(n)), E.right(m - n)];
                         }
                         return [
                            new Acquisition(promiseWait(p), this.restore(p, n)),

@@ -7,4 +7,4 @@ import type { Exit } from "./model";
  * -------------------------------------------
  */
 
-export const unit: Exit<never, void> = succeed(undefined);
+export const unit = (): Exit<never, void> => succeed(undefined);

@@ -1,3 +1,4 @@
+import { chain, chain_, foldM, map, map_, pure } from "../_core";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
 import { pipe } from "../../../Function";
@@ -6,7 +7,6 @@ import * as O from "../../../Option";
 import type { HasClock } from "../../Clock";
 import type { Schedule } from "../../Schedule";
 import * as S from "../../Schedule";
-import { chain, chain_, foldM, map, map_, pure } from "../_core";
 import type { Task } from "../model";
 import { orDie } from "./orDie";
 

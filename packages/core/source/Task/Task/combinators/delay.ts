@@ -1,6 +1,6 @@
+import { chain_ } from "../_core";
 import type { HasClock } from "../../Clock";
 import { sleep } from "../../Clock";
-import { chain_ } from "../_core";
 import type { Task } from "../model";
 
 /**
