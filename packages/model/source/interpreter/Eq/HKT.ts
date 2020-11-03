@@ -1,6 +1,6 @@
 import * as Eq from "@principia/core/Eq";
 
-import type { Interface1, Intersection1, TaggedUnion1 } from "../../HKT";
+import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from "../../HKT";
 import { getApplyConfig } from "../../HKT";
 
 declare module "../../HKT" {
@@ -23,15 +23,15 @@ declare module "../../algebra/primitives" {
 
 declare module "../../algebra/object" {
    interface TypeConfig<Props> {
-      readonly [Eq.URI]: Interface1<Props, Eq.URI>;
+      readonly [Eq.URI]: InterfaceConfigKind<Eq.URI, Props>;
    }
    interface PartialConfig<Props> {
-      readonly [Eq.URI]: Interface1<Props, Eq.URI>;
+      readonly [Eq.URI]: InterfaceConfigKind<Eq.URI, Props>;
    }
    interface BothConfig<Props, PropsPartial> {
       readonly [Eq.URI]: {
-         required: Interface1<Props, Eq.URI>;
-         optional: Interface1<PropsPartial, Eq.URI>;
+         required: InterfaceConfigKind<Eq.URI, Props>;
+         optional: InterfaceConfigKind<Eq.URI, PropsPartial>;
       };
    }
 }
@@ -59,7 +59,7 @@ declare module "../../algebra/set" {
 
 declare module "../../algebra/sum" {
    interface TaggedUnionConfig<Types> {
-      readonly [Eq.URI]: TaggedUnion1<Types, Eq.URI>;
+      readonly [Eq.URI]: TaggedUnionConfigKind<Eq.URI, Types>;
    }
    interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
       readonly [Eq.URI]: {
@@ -82,8 +82,8 @@ declare module "../../algebra/nullable" {
 }
 
 declare module "../../algebra/intersection" {
-   interface IntersectionConfig<E, A> {
-      readonly [Eq.URI]: Intersection1<A, Eq.URI>;
+   interface IntersectionConfig<S, R, E, A> {
+      readonly [Eq.URI]: IntersectionConfigKind<Eq.URI, S, R, E, A>;
    }
 }
 

@@ -31,7 +31,12 @@ type InferTuple<
       : never;
 };
 
-export interface IntersectionConfig<E extends ReadonlyArray<unknown>, A extends ReadonlyArray<unknown>> {}
+export interface IntersectionConfig<
+   S extends ReadonlyArray<unknown>,
+   R extends ReadonlyArray<unknown>,
+   E extends ReadonlyArray<unknown>,
+   A extends ReadonlyArray<unknown>
+> {}
 
 export interface IntersectionAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
    readonly intersection: <
@@ -44,17 +49,22 @@ export interface IntersectionAlgebra<F extends InterpreterURIS, Env extends AnyE
       types: KS,
       config?: Config<
          Env,
-         unknown,
-         unknown,
+         UnionToIntersection<InferTuple<F, Env, KS, "S">[number]>,
+         UnionToIntersection<InferTuple<F, Env, KS, "R">[number]>,
          UnionToIntersection<InferTuple<F, Env, KS, "E">[number]>,
          UnionToIntersection<InferTuple<F, Env, KS, "A">[number]>,
-         IntersectionConfig<InferTuple<F, Env, KS, "E">, InferTuple<F, Env, KS, "A">>
+         IntersectionConfig<
+            InferTuple<F, Env, KS, "S">,
+            InferTuple<F, Env, KS, "R">,
+            InferTuple<F, Env, KS, "E">,
+            InferTuple<F, Env, KS, "A">
+         >
       >
    ) => InterpretedKind<
       F,
       Env,
-      unknown,
-      unknown,
+      UnionToIntersection<InferTuple<F, Env, KS, "S">[number]>,
+      UnionToIntersection<InferTuple<F, Env, KS, "R">[number]>,
       UnionToIntersection<InferTuple<F, Env, KS, "E">[number]>,
       UnionToIntersection<InferTuple<F, Env, KS, "A">[number]>
    >;

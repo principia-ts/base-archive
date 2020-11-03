@@ -1,6 +1,6 @@
 import type * as fc from "fast-check";
 
-import type { AnyEnv, Interface1, Intersection1, TaggedUnion1 } from "../../HKT";
+import type { AnyEnv, InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from "../../HKT";
 import { getApplyConfig } from "../../HKT";
 
 export const ArbURI = "Arbitrary";
@@ -43,15 +43,15 @@ declare module "../../algebra/primitives" {
 
 declare module "../../algebra/object" {
    interface TypeConfig<Props> {
-      readonly [ArbURI]: Interface1<Props, ArbURI>;
+      readonly [ArbURI]: InterfaceConfigKind<ArbURI, Props>;
    }
    interface PartialConfig<Props> {
-      readonly [ArbURI]: Interface1<Props, ArbURI>;
+      readonly [ArbURI]: InterfaceConfigKind<ArbURI, Props>;
    }
    interface BothConfig<Props, PropsPartial> {
       readonly [ArbURI]: {
-         required: Interface1<Props, ArbURI>;
-         optional: Interface1<PropsPartial, ArbURI>;
+         required: InterfaceConfigKind<ArbURI, Props>;
+         optional: InterfaceConfigKind<ArbURI, PropsPartial>;
       };
    }
 }
@@ -79,7 +79,7 @@ declare module "../../algebra/set" {
 
 declare module "../../algebra/sum" {
    interface TaggedUnionConfig<Types> {
-      readonly [ArbURI]: TaggedUnion1<Types, ArbURI>;
+      readonly [ArbURI]: TaggedUnionConfigKind<ArbURI, Types>;
    }
    interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
       readonly [ArbURI]: {
@@ -102,8 +102,8 @@ declare module "../../algebra/nullable" {
 }
 
 declare module "../../algebra/intersection" {
-   interface IntersectionConfig<E, A> {
-      readonly [ArbURI]: Intersection1<A, ArbURI>;
+   interface IntersectionConfig<S, R, E, A> {
+      readonly [ArbURI]: IntersectionConfigKind<ArbURI, S, R, E, A>;
    }
 }
 

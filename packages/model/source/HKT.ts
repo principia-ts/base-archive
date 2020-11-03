@@ -1,4 +1,3 @@
-import type * as H from "@principia/prelude/HKT";
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
 import type { TaggedBuilder } from "./adt/summoner";
@@ -97,6 +96,12 @@ export type MapToConfig<Env extends AnyEnv, T extends InterpreterURISIndexedAny,
 export interface URItoConfig<S, R, E, A> {
    readonly [UIHKT]: never;
 }
+
+export type ConfigURIS = keyof URItoConfig<any, any, any, any>;
+
+export type ConfigKind<CURI extends ConfigURIS, S, R, E, A> = CURI extends ConfigURIS
+   ? URItoConfig<S, R, E, A>[CURI]
+   : never;
 
 export type Config<Env extends AnyEnv, S, R, E, A, Custom = {}> = {
    name?: string;
@@ -280,185 +285,34 @@ export type ExtractEnv<Env extends AnyEnv, SummonerEnv extends InterpreterURIS> 
  * -------------------------------------------
  */
 
-export type TaggedUnion1<Types, URI extends H.URIS1, TC = H.Auto> = {
-   [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind1<URI, TC, A>
-      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind1<URI, TC, A>
-      : Types[k] extends [infer S, infer R, infer E, infer A]
-      ? H.Kind1<URI, TC, A>
-      : never;
-};
-
-export type TaggedUnion2<Types, URI extends H.URIS2, TC = H.Auto> = {
-   [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind2<URI, TC, E, A>
-      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind2<URI, TC, E, A>
-      : Types[k] extends [infer S, infer R, infer E, infer A]
-      ? H.Kind2<URI, TC, E, A>
-      : never;
-};
-
-export type TaggedUnion3<Types, URI extends H.URIS3, TC = H.Auto> = {
-   [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind3<URI, TC, R, E, A>
-      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind3<URI, TC, R, E, A>
-      : Types[k] extends [infer S, infer R, infer E, infer A]
-      ? H.Kind3<URI, TC, R, E, A>
-      : never;
-};
-
-export type TaggedUnion4<Types, URI extends H.URIS4, TC = H.Auto> = {
-   [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind4<URI, TC, S, R, E, A>
-      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind4<URI, TC, S, R, E, A>
-      : Types[k] extends [infer S, infer R, infer E, infer A]
-      ? H.Kind4<URI, TC, S, R, E, A>
-      : never;
-};
-
-export type Intersection1<A extends readonly unknown[], URI extends H.URIS1, TC = H.Auto> = A extends [infer X, infer Y]
-   ? [H.Kind1<URI, TC, X>, H.Kind1<URI, TC, Y>]
-   : A extends [infer X, infer Y, infer Z]
-   ? [H.Kind1<URI, TC, X>, H.Kind1<URI, TC, Y>, H.Kind1<URI, TC, Z>]
-   : A extends [infer X, infer Y, infer Z, infer W]
-   ? [H.Kind1<URI, TC, X>, H.Kind1<URI, TC, Y>, H.Kind1<URI, TC, Z>, H.Kind1<URI, TC, W>]
-   : A extends [infer X, infer Y, infer Z, infer W, infer K]
-   ? [H.Kind1<URI, TC, X>, H.Kind1<URI, TC, Y>, H.Kind1<URI, TC, Z>, H.Kind1<URI, TC, W>, H.Kind1<URI, TC, K>]
-   : H.Kind1<URI, TC, UnionToIntersection<A[number]>>[];
-
-export type Intersection2<
+export type IntersectionConfigKind<
+   CURI extends ConfigURIS,
+   S extends readonly unknown[],
+   R extends readonly unknown[],
    E extends readonly unknown[],
-   A extends readonly unknown[],
-   URI extends H.URIS2,
-   TC = H.Auto
-> = [E, A] extends [[infer E1, infer E2], [infer A1, infer A2]]
-   ? [H.Kind2<URI, TC, E1, A1>, H.Kind2<URI, TC, E2, A2>]
-   : [E, A] extends [[infer E1, infer E2, infer E3], [infer A1, infer A2, infer A3]]
-   ? [H.Kind2<URI, TC, E1, A1>, H.Kind2<URI, TC, E2, A2>, H.Kind2<URI, TC, E3, A3>]
-   : [E, A] extends [[infer E1, infer E2, infer E3, infer E4], [infer A1, infer A2, infer A3, infer A4]]
-   ? [H.Kind2<URI, TC, E1, A1>, H.Kind2<URI, TC, E2, A2>, H.Kind2<URI, TC, E3, A3>, H.Kind2<URI, TC, E4, A4>]
-   : [E, A] extends [
-        [infer E1, infer E2, infer E3, infer E4, infer E5],
-        [infer A1, infer A2, infer A3, infer A4, infer A5]
-     ]
-   ? [
-        H.Kind2<URI, TC, E1, A1>,
-        H.Kind2<URI, TC, E2, A2>,
-        H.Kind2<URI, TC, E3, A3>,
-        H.Kind2<URI, TC, E4, A4>,
-        H.Kind2<URI, TC, E5, A5>
-     ]
-   : H.Kind2<URI, TC, UnionToIntersection<E[number]>, UnionToIntersection<A[number]>>[];
-
-export type IntersectionKind3<
-   R extends unknown[],
-   E extends unknown[],
-   A extends unknown[],
-   URI extends H.URIS3,
-   TC = H.Auto
-> = [R, E, A] extends [[infer R1, infer R2], [infer E1, infer E2], [infer A1, infer A2]]
-   ? [H.Kind3<URI, TC, R1, E1, A1>, H.Kind3<URI, TC, R2, E2, A2>]
-   : [R, E, A] extends [[infer R1, infer R2, infer R3], [infer E1, infer E2, infer E3], [infer A1, infer A2, infer A3]]
-   ? [H.Kind3<URI, TC, R1, E1, A1>, H.Kind3<URI, TC, R2, E2, A2>, H.Kind3<URI, TC, R3, E3, A3>]
-   : [R, E, A] extends [
-        [infer R1, infer R2, infer R3, infer R4],
-        [infer E1, infer E2, infer E3, infer E4],
-        [infer A1, infer A2, infer A3, infer A4]
-     ]
-   ? [
-        H.Kind3<URI, TC, R1, E1, A1>,
-        H.Kind3<URI, TC, R2, E2, A2>,
-        H.Kind3<URI, TC, R3, E3, A3>,
-        H.Kind3<URI, TC, R4, E4, A4>
-     ]
-   : [R, E, A] extends [
-        [infer R1, infer R2, infer R3, infer R4, infer R5],
-        [infer E1, infer E2, infer E3, infer E4, infer E5],
-        [infer A1, infer A2, infer A3, infer A4, infer A5]
-     ]
-   ? [
-        H.Kind3<URI, TC, R1, E1, A1>,
-        H.Kind3<URI, TC, R2, E2, A2>,
-        H.Kind3<URI, TC, R3, E3, A3>,
-        H.Kind3<URI, TC, R4, E4, A4>,
-        H.Kind3<URI, TC, R5, E5, A5>
-     ]
-   : H.Kind3<URI, TC, UnionToIntersection<R[number]>, UnionToIntersection<E[number]>, UnionToIntersection<A[number]>>[];
-
-export type Intersection4<
-   S extends unknown[],
-   R extends unknown[],
-   E extends unknown[],
-   A extends unknown[],
-   URI extends H.URIS4,
-   TC = H.Auto
-> = [S, R, E, A] extends [[infer S1, infer S2], [infer R1, infer R2], [infer E1, infer E2], [infer A1, infer A2]]
-   ? [H.Kind4<URI, TC, S1, R1, E1, A1>, H.Kind4<URI, TC, S2, R2, E2, A2>]
-   : [S, R, E, A] extends [
-        [infer S1, infer S2, infer S3],
-        [infer R1, infer R2, infer R3],
-        [infer E1, infer E2, infer E3],
-        [infer A1, infer A2, infer A3]
-     ]
-   ? [H.Kind4<URI, TC, S1, R1, E1, A1>, H.Kind4<URI, TC, S2, R2, E2, A2>, H.Kind4<URI, TC, S3, R3, E3, A3>]
-   : [S, R, E, A] extends [
-        [infer S1, infer S2, infer S3, infer S4],
-        [infer R1, infer R2, infer R3, infer R4],
-        [infer E1, infer E2, infer E3, infer E4],
-        [infer A1, infer A2, infer A3, infer A4]
-     ]
-   ? [
-        H.Kind4<URI, TC, S1, R1, E1, A1>,
-        H.Kind4<URI, TC, S2, R2, E2, A2>,
-        H.Kind4<URI, TC, S3, R3, E3, A3>,
-        H.Kind4<URI, TC, S4, R4, E4, A4>
-     ]
-   : [S, R, E, A] extends [
-        [infer S1, infer S2, infer S3, infer S4, infer S5],
-        [infer R1, infer R2, infer R3, infer R4, infer R5],
-        [infer E1, infer E2, infer E3, infer E4, infer E5],
-        [infer A1, infer A2, infer A3, infer A4, infer A5]
-     ]
-   ? [
-        H.Kind4<URI, TC, S1, R1, E1, A1>,
-        H.Kind4<URI, TC, S2, R2, E2, A2>,
-        H.Kind4<URI, TC, S3, R3, E3, A3>,
-        H.Kind4<URI, TC, S4, R4, E4, A4>,
-        H.Kind4<URI, TC, S5, R5, E5, A5>
-     ]
-   : H.Kind4<
-        URI,
-        TC,
-        UnionToIntersection<S[number]>,
-        UnionToIntersection<R[number]>,
-        UnionToIntersection<E[number]>,
-        UnionToIntersection<A[number]>
-     >[];
-
-export type Interface1<Props, URI extends H.URIS1, TC = H.Auto> = {
-   [k in keyof Props]: Props[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind1<URI, TC, A>
+   A extends readonly unknown[]
+> = {
+   [k in keyof A]: k extends keyof S
+      ? k extends keyof R
+         ? k extends keyof E
+            ? ConfigKind<CURI, S[k], R[k], E[k], A[k]>
+            : never
+         : never
       : never;
 };
 
-export type Interface2<Props, URI extends H.URIS2, TC = H.Auto> = {
-   [k in keyof Props]: Props[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind2<URI, TC, E, A>
+export type TaggedUnionConfigKind<CURI extends ConfigURIS, Types> = {
+   [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
+      ? ConfigKind<CURI, S, R, E, A>
+      : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
+      ? ConfigKind<CURI, S, R, E, A>
+      : Types[k] extends [infer S, infer R, infer E, infer A]
+      ? ConfigKind<CURI, S, R, E, A>
       : never;
 };
 
-export type Interface3<Props, URI extends H.URIS3, TC = H.Auto> = {
+export type InterfaceConfigKind<CURI extends ConfigURIS, Props> = {
    [k in keyof Props]: Props[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind3<URI, TC, R, E, A>
-      : never;
-};
-
-export type Interface4<Props, URI extends H.URIS4, TC = H.Auto> = {
-   [k in keyof Props]: Props[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-      ? H.Kind4<URI, TC, S, R, E, A>
+      ? ConfigKind<CURI, S, R, E, A>
       : never;
 };
