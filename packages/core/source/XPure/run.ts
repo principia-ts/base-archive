@@ -1,9 +1,12 @@
-import * as E from "../Either";
+import type { Either, Right } from "../Either";
+import { left, right } from "../Either/constructors";
+import { map_ as mapEither_ } from "../Either/functor";
 import type { Stack } from "../support/Stack";
 import { stack } from "../support/Stack";
 import { XPureInstructionTag } from "./_concrete";
 import { concrete, fail, succeed } from "./constructors";
 import type { XPure } from "./model";
+import { giveAll_ } from "./reader";
 
 export class FoldFrame {
    readonly _xptag = "FoldFrame";
@@ -24,10 +27,7 @@ export type Frame = FoldFrame | ApplyFrame;
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export const runStateEither_ = <S1, S2, E, A>(
-   fa: XPure<S1, S2, unknown, E, A>,
-   s: S1
-): E.Either<E, readonly [S2, A]> => {
+export const runStateEither_ = <S1, S2, E, A>(fa: XPure<S1, S2, unknown, E, A>, s: S1): Either<E, readonly [S2, A]> => {
    let frames: Stack<Frame> | undefined = undefined;
    let state = s as any;
    let result = null;
@@ -179,10 +179,10 @@ export const runStateEither_ = <S1, S2, E, A>(
    }
 
    if (failed) {
-      return E.left(result);
+      return left(result);
    }
 
-   return E.right([state, result]);
+   return right([state, result]);
 };
 
 /**
@@ -191,14 +191,14 @@ export const runStateEither_ = <S1, S2, E, A>(
  */
 export const runStateEither = <S1>(s: S1) => <S2, E, A>(
    fx: XPure<S1, S2, unknown, E, A>
-): E.Either<E, readonly [S2, A]> => runStateEither_(fx, s);
+): Either<E, readonly [S2, A]> => runStateEither_(fx, s);
 
 /**
  * Runs this computation with the specified initial state, returning both
  * the updated state and the result.
  */
 export const run_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right;
+   (runStateEither_(self, s) as Right<readonly [S2, A]>).right;
 
 /**
  * Runs this computation with the specified initial state, returning both
@@ -216,7 +216,7 @@ export const runIO = <A>(self: XPure<unknown, unknown, unknown, never, A>) => ru
  * updated state and discarding the result.
  */
 export const runState_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[0];
+   (runStateEither_(self, s) as Right<readonly [S2, A]>).right[0];
 
 /**
  * Runs this computation with the specified initial state, returning the
@@ -229,7 +229,7 @@ export const runState = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, neve
  * updated state and the result.
  */
 export const runStateResult_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right;
+   (runStateEither_(self, s) as Right<readonly [S2, A]>).right;
 
 /**
  * Runs this computation with the specified initial state, returning the
@@ -243,7 +243,7 @@ export const runStateResult = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown
  * result and discarding the updated state.
  */
 export const runResult_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[1];
+   (runStateEither_(self, s) as Right<readonly [S2, A]>).right[1];
 
 /**
  * Runs this computation with the specified initial state, returning the
@@ -254,5 +254,11 @@ export const runResult = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, nev
 /**
  * Runs this computation returning either the result or error
  */
-export const runEither = <E, A>(self: XPure<unknown, unknown, unknown, E, A>): E.Either<E, A> =>
-   E.map_(runStateEither_(self, {}), ([_, x]) => x);
+export const runEither = <E, A>(self: XPure<never, unknown, unknown, E, A>): Either<E, A> =>
+   mapEither_(runStateEither_(self, {} as never), ([_, x]) => x);
+
+export const runEitherEnv_ = <R, E, A>(self: XPure<never, unknown, R, E, A>, env: R): Either<E, A> =>
+   runEither(giveAll_(self, env));
+
+export const runEitherEnv = <R>(env: R) => <E, A>(self: XPure<never, unknown, R, E, A>): Either<E, A> =>
+   runEitherEnv_(self, env);

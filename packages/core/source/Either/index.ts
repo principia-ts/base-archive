@@ -14,6 +14,7 @@ export * from "./fail";
 export * from "./filterable";
 export * from "./foldable";
 export * from "./functor";
+export * from "./gen";
 export * from "./guards";
 export * from "./model";
 export * from "./monad";

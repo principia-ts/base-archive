@@ -1,7 +1,8 @@
 import type { Either } from "../Either";
 import type { Option } from "../Option";
+import type { Sync } from "../Sync";
 import type { Tag } from "../Task/Has";
-import type { Managed } from "../Task/Managed";
+import { Managed } from "../Task/Managed/model";
 import type { Task } from "../Task/Task";
 import type { XPure } from "../XPure";
 
@@ -23,4 +24,6 @@ export const isTag = (u: unknown): u is Tag<unknown> =>
 export const isXPure = (u: unknown): u is XPure<unknown, unknown, unknown, unknown, unknown> =>
    typeof u === "object" && u != null && "_tag" in u && u["_tag"] === "XPure";
 
-export const isManaged = <R, E, A>(u: Task<R, E, A> | Managed<R, E, A>): u is Managed<R, E, A> => "effect" in u;
+export const isSync = (u: unknown): u is Sync<unknown, unknown, unknown> => isXPure(u);
+
+export const isManaged = <R, E, A>(u: Task<R, E, A> | Managed<R, E, A>): u is Managed<R, E, A> => u instanceof Managed;

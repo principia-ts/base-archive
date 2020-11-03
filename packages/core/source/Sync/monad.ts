@@ -1,6 +1,11 @@
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import { identity } from "../Function";
 import * as X from "../XPure";
-import type { Sync } from "./model";
+import { Functor } from "./functor";
+import type { Sync, URI, V } from "./model";
+import { unit } from "./unit";
 
 /*
  * -------------------------------------------
@@ -20,3 +25,9 @@ export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D,
 
 export const tap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> =
    X.tap;
+
+export const Monad: P.Monad<[URI], V> = HKT.instance({
+   ...Functor,
+   unit,
+   flatten
+});
