@@ -2,7 +2,7 @@ import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
 import { identity, pipe } from "../Function";
-import { Functor, Functor2, map } from "./functor";
+import { Functor, map } from "./functor";
 import { isLeft } from "./guards";
 import type { Either, URI, V } from "./model";
 import { unit } from "./unit";
@@ -114,16 +114,6 @@ export const flatten: <E, G, A>(mma: Either<E, Either<G, A>>) => Either<E | G, A
  */
 export const Monad: P.Monad<[URI], V> = HKT.instance({
    ...Functor,
-   unit,
-   flatten
-});
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export const Monad2: P.Monad2<URI, V> = HKT.instance({
-   ...Functor2,
    unit,
    flatten
 });

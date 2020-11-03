@@ -20,7 +20,7 @@ export class Scheduler {
       let cancelled = false;
       Promise.resolve(thunk).then((t) => {
          if (!cancelled) {
-            t();
+            this.dispatch(t);
          }
       });
       return () => {

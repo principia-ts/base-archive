@@ -1,3 +1,5 @@
+import { RSA_X931_PADDING } from "constants";
+
 import * as C from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
 import { join } from "../Fiber/combinators/join";
@@ -73,3 +75,21 @@ export const apPar_ = <R, E, A, R1, E1, B>(
 export const apPar = <R, E, A>(fa: T.Task<R, E, A>) => <Q, D, B>(
    fab: T.Task<Q, D, (a: A) => B>
 ): T.Task<Q & R, D | E, B> => apPar_(fab, fa);
+
+export const apFirstPar_ = <R, E, A, R1, E1, B>(
+   fa: T.Task<R, E, A>,
+   fb: T.Task<R1, E1, B>
+): T.Task<R & R1, E | E1, A> => mapBothPar_(fa, fb, (a, _) => a);
+
+export const apFirstPar = <R1, E1, B>(fb: T.Task<R1, E1, B>) => <R, E, A>(
+   fa: T.Task<R, E, A>
+): T.Task<R & R1, E | E1, A> => apFirstPar_(fa, fb);
+
+export const apSecondPar_ = <R, E, A, R1, E1, B>(
+   fa: T.Task<R, E, A>,
+   fb: T.Task<R1, E1, B>
+): T.Task<R & R1, E | E1, B> => mapBothPar_(fa, fb, (_, b) => b);
+
+export const apSecondPar = <R1, E1, B>(fb: T.Task<R1, E1, B>) => <R, E, A>(
+   fa: T.Task<R, E, A>
+): T.Task<R & R1, E | E1, B> => apSecondPar_(fa, fb);

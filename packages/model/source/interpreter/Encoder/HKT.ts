@@ -60,7 +60,7 @@ declare module "../../algebra/set" {
 
 declare module "../../algebra/sum" {
    interface TaggedUnionConfig<Types> {
-      readonly [E.URI]: TaggedUnion2<Types, E.URI, E.V & HKT.Fix2<"E", unknown>>;
+      readonly [E.URI]: TaggedUnion2<Types, E.URI, E.V & HKT.Fix<"E", unknown>>;
    }
    interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
       readonly [E.URI]: {

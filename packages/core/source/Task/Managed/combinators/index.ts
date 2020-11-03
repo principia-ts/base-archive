@@ -1,9 +1,9 @@
 // codegen:start {preset: barrel, include: ./*.ts}
 export * from "./ensuring";
 export * from "./ensuringFirst";
-export * from "./foreach";
-export * from "./foreachPar";
-export * from "./foreachParN";
+export * from "./traverseI";
+export * from "./traverseIPar";
+export * from "./traverseIParN";
 export * from "./fork";
 export * from "./makeInterruptible";
 export * from "./makeManagedReleaseMap";

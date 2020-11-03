@@ -41,6 +41,7 @@
       "test": "yarn build:test && jest build/test"
    },
    "dependencies": {
+      "@effect-ts/core": "^0.7.29",
       "@principia/prelude": "^0.0.1",
       "core-js": "3"
    },

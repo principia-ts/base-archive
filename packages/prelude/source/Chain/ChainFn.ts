@@ -1,5 +1,5 @@
 import type * as HKT from "../HKT";
-import type { Monad, Monad1, Monad2, Monad3, Monad4, MonadHKT } from "../Monad";
+import type { Monad } from "../Monad";
 
 export interface ChainFn<F extends HKT.URIS, TC = HKT.Auto> {
    <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, A>(
@@ -280,42 +280,11 @@ export interface ChainFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF
 }
 
 export function chainF<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): ChainFn<F, TC>;
-export function chainF<F extends HKT.URIS1, TC = HKT.Auto>(
-   F: Monad1<F, TC>
-): <A, B>(f: (a: A) => HKT.Kind1<F, TC, B>) => (fa: HKT.Kind1<F, TC, A>) => HKT.Kind1<F, TC, B>;
-export function chainF<F extends HKT.URIS2, TC = HKT.Auto>(
-   F: Monad2<F, TC>
-): <A, G, B>(
-   f: (a: A) => HKT.Kind2<F, TC, G, B>
-) => <E>(fa: HKT.Kind2<F, TC, HKT.Intro2<TC, "E", G, E>, B>) => HKT.Kind2<F, TC, HKT.Mix2<TC, "E", [G, E]>, B>;
-export function chainF<F>(F: MonadHKT<F>): <A, B>(f: (a: A) => HKT.HKT<F, B>) => (ma: HKT.HKT<F, A>) => HKT.HKT<F, B>;
 export function chainF<F>(F: Monad<HKT.UHKT<F>>): ChainFn<HKT.UHKT<F>> {
    return (f) => (ma) => F.flatten(F.map_(ma, f));
 }
 
 export function chainF_<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): ChainFn_<F, TC>;
-export function chainF_<F extends HKT.URIS1, TC = HKT.Auto>(
-   F: Monad1<F, TC>
-): <A, B>(ma: HKT.Kind1<F, TC, A>, f: (a: A) => HKT.Kind1<F, TC, B>) => HKT.Kind1<F, TC, B>;
-export function chainF_<F extends HKT.URIS2, TC = HKT.Auto>(
-   F: Monad2<F, TC>
-): <E, A, G, B>(
-   ma: HKT.Kind2<F, TC, E, A>,
-   f: (a: A) => HKT.Kind2<F, TC, HKT.Intro2<TC, "E", E, G>, B>
-) => HKT.Kind2<F, TC, HKT.Mix2<TC, "E", [E, G]>, B>;
-export function chainF_<F extends HKT.URIS3, TC = HKT.Auto>(
-   F: Monad3<F, TC>
-): <R, E, A, Q, G, B>(
-   ma: HKT.Kind3<F, TC, R, E, A>,
-   f: (a: A) => HKT.Kind3<F, TC, HKT.Intro3<TC, "R", R, Q>, HKT.Intro3<TC, "E", E, G>, B>
-) => HKT.Kind3<F, TC, HKT.Mix3<TC, "R", [R, Q]>, HKT.Mix3<TC, "E", [E, G]>, B>;
-export function chainF_<F extends HKT.URIS4, TC = HKT.Auto>(
-   F: Monad4<F, TC>
-): <S, R, E, A, U, Q, G, B>(
-   ma: HKT.Kind4<F, TC, S, R, E, A>,
-   f: (a: A) => HKT.Kind4<F, TC, HKT.Intro4<TC, "S", S, U>, HKT.Intro3<TC, "R", R, Q>, HKT.Intro3<TC, "E", E, G>, B>
-) => HKT.Kind4<F, TC, HKT.Mix4<TC, "S", [S, U]>, HKT.Mix4<TC, "R", [R, Q]>, HKT.Mix4<TC, "E", [E, G]>, B>;
-export function chainF_<F>(F: MonadHKT<F>): <A, B>(ma: HKT.HKT<F, A>, f: (a: A) => HKT.HKT<F, B>) => HKT.HKT<F, B>;
 export function chainF_<F>(F: Monad<HKT.UHKT<F>>): ChainFn_<HKT.UHKT<F>> {
    return (ma, f) => F.flatten(F.map_(ma, f));
 }

@@ -43,12 +43,3 @@ export const Functor: P.Functor<[URI], V> = HKT.instance({
    map,
    map_
 });
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export const Functor2: P.Functor2<URI, V> = HKT.instance({
-   map,
-   map_
-});

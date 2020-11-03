@@ -884,6 +884,18 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
+"@effect-ts/core@^0.7.29":
+  version "0.7.29"
+  resolved "https://registry.yarnpkg.com/@effect-ts/core/-/core-0.7.29.tgz#51722cc815459fae2441a0a96d4d4078fe549390"
+  integrity sha512-xd+yJwx4Kt6sG1HyomOzw8VkkE96KETJ/D+B20upbswGF0RZVTLXei27EG/hv+PCmy1IFuqWMR0aq5zB4ESDHw==
+  dependencies:
+    "@effect-ts/system" "^0.5.22"
+
+"@effect-ts/system@^0.5.22":
+  version "0.5.22"
+  resolved "https://registry.yarnpkg.com/@effect-ts/system/-/system-0.5.22.tgz#68d887e1e8c7ce7d8aebeb22b446768549631e9b"
+  integrity sha512-SJlOgDJEyQujB7Bo54/oji8EOEjy5BnKrJYaIKICrr189Kc0crs5oGZFj6ExSzTJplIT237J8EKUXUioxUWV/A==
+
 "@eslint/eslintrc@^0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.2.0.tgz#bc7e3c4304d4c8720968ccaee793087dfb5fe6b4"

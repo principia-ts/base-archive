@@ -153,7 +153,7 @@ export const raceAll = <R, E, A>(
          uninterruptibleMask(({ restore }) =>
             pipe(
                _.do,
-               _.bindS("fs", () => _.foreach_(ios, flow(makeInterruptible, _.fork))),
+               _.bindS("fs", () => _.traverseI_(ios, flow(makeInterruptible, _.fork))),
                _.tap(({ fs }) =>
                   A.reduce_(fs, _.unit(), (io, f) =>
                      _.chain_(io, () => pipe(f.await, _.chain(arbiter(fs, f, done, fails)), _.fork))
@@ -172,6 +172,6 @@ export const raceAll = <R, E, A>(
             )
          )
       ),
-      _.tap(({ c: { fs } }) => (interruptStrategy === "wait" ? _.foreach_(fs, (f) => f.await) : _.unit())),
+      _.tap(({ c: { fs } }) => (interruptStrategy === "wait" ? _.traverseI_(fs, (f) => f.await) : _.unit())),
       _.map(({ c: { c } }) => c)
    );

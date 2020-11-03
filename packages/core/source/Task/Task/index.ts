@@ -1,6 +1,3 @@
-/*
- * export * from "../Common/effect-base";
- */
 export * from "./model";
 export * from "./core-scope";
 export * from "./combinators";
@@ -18,3 +15,4 @@ export * from "./functor";
 export * from "./monad";
 export * from "./reader";
 export * from "./unit";
+export * from "./integrations";

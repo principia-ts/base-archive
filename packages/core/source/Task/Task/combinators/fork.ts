@@ -1,4 +1,4 @@
-import { chain, chain_, foreach_, fork, map_, unit } from "../_core";
+import { chain, chain_, fork, map_, traverseI_, unit } from "../_core";
 import * as A from "../../../Array";
 import { pipe } from "../../../Function";
 import * as I from "../../../Iterable";
@@ -14,7 +14,7 @@ import { uninterruptibleMask } from "./interrupt";
  */
 export const forkAll = <R, E, A>(efs: Iterable<Task<R, E, A>>): RIO<R, Fiber.Fiber<E, ReadonlyArray<A>>> =>
    map_(
-      foreach_(efs, fork),
+      traverseI_(efs, fork),
       A.reduce(Fiber.succeed([]) as Fiber.Fiber<E, ReadonlyArray<A>>, (b, a) =>
          Fiber.mapBoth_(b, a, (_a, _b) => [..._a, _b])
       )

@@ -1,5 +1,4 @@
-import * as Eff from "@effect-ts/core/Effect";
-import bench from "benchmark";
+import * as As from "@effect-ts/core/Async";
 import { inspect } from "util";
 
 import * as Ac from "../source/Async";
@@ -11,43 +10,29 @@ import * as T from "../source/Task/Task";
 (async () => {
    const start = Date.now();
 
-   const a = await pipe(
-      Ac.collectAllPar([
-         Ac.async((resolve) => {
-            setTimeout(() => {
-               resolve(Ac.succeed("A"));
-            }, 1000);
-         }),
-         Ac.async((resolve) => {
-            setTimeout(() => {
-               resolve(Ac.succeed("A"));
-            }, 2000);
+   const [p, i] = pipe(
+      Ac.sequenceTPar(
+         Ac.unfailable<string>((onInterrupt) => {
+            return new Promise((resolve) => {
+               const to = setTimeout(() => {
+                  resolve("A");
+               }, 2000);
+               onInterrupt(() => {
+                  clearTimeout(to);
+               });
+            });
          }),
          Ac.succeed("B"),
          Ac.succeed("C")
-      ]),
-      (t) => Ac.runPromiseExit(t)
+      ),
+      T.tap((a) => T.total(() => console.log(a))),
+      T.runPromiseExitCancel
    );
+   setTimeout(() => {
+      i();
+   }, 1000);
+   console.log(await p);
    const end = Date.now();
 
-   console.log(a);
-   console.log(end - start);
-})();
-
-(async () => {
-   const start = Date.now();
-   const a = await pipe(T.collectAllPar([T.succeed("A"), T.succeed("B"), T.succeed("C")]), T.runPromiseExit);
-   const end = Date.now();
-
-   console.log(a);
-   console.log(end - start);
-})();
-
-(async () => {
-   const start = Date.now();
-   const a = await pipe(Eff.collectAllPar([Eff.succeed("A"), Eff.succeed("B"), Eff.succeed("C")]), Eff.runPromiseExit);
-   const end = Date.now();
-
-   console.log(a);
    console.log(end - start);
 })();

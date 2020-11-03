@@ -24,15 +24,15 @@ declare module "../../algebra/primitives" {
 
 declare module "../../algebra/object" {
    interface TypeConfig<Props> {
-      readonly [D.URI]: Interface2<Props, D.URI, D.V & HKT.Fix2<"E", unknown>>;
+      readonly [D.URI]: Interface2<Props, D.URI, D.V & HKT.Fix<"E", unknown>>;
    }
    interface PartialConfig<Props> {
-      readonly [D.URI]: Interface2<Props, D.URI, D.V & HKT.Fix2<"E", unknown>>;
+      readonly [D.URI]: Interface2<Props, D.URI, D.V & HKT.Fix<"E", unknown>>;
    }
    interface BothConfig<Props, PropsPartial> {
       readonly [D.URI]: {
-         required: Interface2<Props, D.URI, D.V & HKT.Fix2<"E", unknown>>;
-         optional: Interface2<PropsPartial, D.URI, D.V & HKT.Fix2<"E", unknown>>;
+         required: Interface2<Props, D.URI, D.V & HKT.Fix<"E", unknown>>;
+         optional: Interface2<PropsPartial, D.URI, D.V & HKT.Fix<"E", unknown>>;
       };
    }
 }
@@ -60,7 +60,7 @@ declare module "../../algebra/set" {
 
 declare module "../../algebra/sum" {
    interface TaggedUnionConfig<Types> {
-      readonly [D.URI]: TaggedUnion2<Types, D.URI, D.V & HKT.Fix2<"E", unknown>>;
+      readonly [D.URI]: TaggedUnion2<Types, D.URI, D.V & HKT.Fix<"E", unknown>>;
    }
    interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
       readonly [D.URI]: {
@@ -84,7 +84,7 @@ declare module "../../algebra/nullable" {
 
 declare module "../../algebra/intersection" {
    interface IntersectionConfig<E, A> {
-      readonly [D.URI]: Intersection2<E, A, D.URI, D.V & HKT.Fix2<"E", unknown>>;
+      readonly [D.URI]: Intersection2<E, A, D.URI, D.V & HKT.Fix<"E", unknown>>;
    }
 }
 

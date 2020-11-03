@@ -1,49 +1,37 @@
-import type { Either } from "../Either";
-import { pipe } from "../Function";
-import type { Option } from "../Option";
-import * as O from "../Option";
-import { AtomicReference, OneShot } from "../support";
-import type { Async } from ".";
-import { asyncOption, succeed, suspend, total, unit } from "./constructors";
-import { OnInterruptInstruction } from "./internal/Concrete";
-import { chain_, flatten } from "./methods";
+import { flow } from "../Function";
+import type { AsyncExit } from "./AsyncExit";
+import { failure, success } from "./AsyncExit";
+import { succeed, unfailable } from "./constructors";
+import { foldM_ } from "./fold";
+import type { Async } from "./model";
+import { FinalizeInstruction } from "./model";
+import { chain_ } from "./monad";
 
-export const onInterrupt_ = <R, E, A, R1>(
-   task: Async<R, E, A>,
-   onInterrupt: () => Async<R1, never, any>
-): Async<R & R1, E, A> => new OnInterruptInstruction(task, onInterrupt);
-
-export const maybeAsyncInterrupt = <R, E, A>(
-   register: (cb: (resolve: Async<R, E, A>) => void) => Either<Async<R, never, void>, Async<R, E, A>>
-): Async<R, E, A> =>
-   chain_(
-      total(() => [new AtomicReference(false), new OneShot<Async<R, never, void>>()] as const),
-      ([started, cancel]) =>
-         onInterrupt_(
-            pipe(
-               asyncOption<R, E, Async<R, E, A>>((r) => {
-                  started.set(true);
-                  const ret = new AtomicReference<Option<Async<unknown, never, Async<R, E, A>>>>(O.none());
-                  try {
-                     const res = register((io) => r(succeed(io)));
-                     switch (res._tag) {
-                        case "Right": {
-                           ret.set(O.some(succeed(res.right)));
-                           break;
-                        }
-                        case "Left": {
-                           cancel.set(res.left);
-                        }
-                     }
-                  } finally {
-                     if (!cancel.isSet()) {
-                        cancel.set(unit);
-                     }
-                  }
-                  return ret.get;
-               }),
-               flatten
-            ),
-            () => suspend(() => (started.get ? cancel.get() : unit))
-         )
+export const sleep = (ms: number): Async<unknown, never, void> =>
+   unfailable<void>(
+      (onInterrupt) =>
+         new Promise((resolve) => {
+            const timer = setTimeout(() => {
+               resolve(undefined);
+            }, ms);
+            onInterrupt(() => {
+               clearInterval(timer);
+            });
+         })
    );
+
+export const delay_ = <R, E, A>(async: Async<R, E, A>, ms: number): Async<R, E, A> => chain_(sleep(ms), () => async);
+
+export const delay = (ms: number) => <R, E, A>(async: Async<R, E, A>): Async<R, E, A> => delay_(async, ms);
+
+export const result = <R, E, A>(async: Async<R, E, A>): Async<R, never, AsyncExit<E, A>> =>
+   foldM_(async, flow(failure, succeed), flow(success, succeed));
+
+export const onInterrupt_ = <R, E, A, R1, A1>(
+   async: Async<R, E, A>,
+   onInterrupted: () => Async<R1, never, A1>
+): Async<R & R1, E, A> => new FinalizeInstruction(async, onInterrupted);
+
+export const onInterrupt = <R1, A1>(onInterrupted: () => Async<R1, never, A1>) => <R, E, A>(
+   async: Async<R, E, A>
+): Async<R & R1, E, A> => onInterrupt_(async, onInterrupted);

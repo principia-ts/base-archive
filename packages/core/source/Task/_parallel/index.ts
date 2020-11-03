@@ -37,8 +37,8 @@ export function releaseAllReleaseMaps(
                      case "Sequential": {
                         return [
                            T.chain_(
-                              T.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
-                              (e) => T.done(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
+                              T.traverseI_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
+                              (e) => T.done(O.getOrElse_(Ex.sequenceA(...e), () => Ex.succeed([])))
                            ),
                            RM.exited(s.nextKey, exit)
                         ];
@@ -46,8 +46,8 @@ export function releaseAllReleaseMaps(
                      case "Parallel": {
                         return [
                            T.chain_(
-                              foreachPar_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
-                              (e) => T.done(O.getOrElse_(Ex.collectAllPar(...e), () => Ex.succeed([])))
+                              traverseIPar_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
+                              (e) => T.done(O.getOrElse_(Ex.sequenceAPar(...e), () => Ex.succeed([])))
                            ),
                            RM.exited(s.nextKey, exit)
                         ];
@@ -55,10 +55,10 @@ export function releaseAllReleaseMaps(
                      case "ParallelN": {
                         return [
                            T.chain_(
-                              foreachParN_(execStrategy.n)(Array.from(RM.finalizers(s)).reverse(), ([_, f]) =>
+                              traverseIParN_(execStrategy.n)(Array.from(RM.finalizers(s)).reverse(), ([_, f]) =>
                                  T.result(f(exit))
                               ),
-                              (e) => T.done(O.getOrElse_(Ex.collectAllPar(...e), () => Ex.succeed([])))
+                              (e) => T.done(O.getOrElse_(Ex.sequenceAPar(...e), () => Ex.succeed([])))
                            ),
                            RM.exited(s.nextKey, exit)
                         ];
@@ -83,7 +83,7 @@ export function releaseAllReleaseMaps(
  *
  * Additionally, interrupts all effects on any failure.
  */
-export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R, E, any>): T.Task<R, E, void> {
+export function traverseIUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R, E, any>): T.Task<R, E, void> {
    const arr = Array.from(as);
    const size = arr.length;
 
@@ -140,14 +140,14 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
             )
          )
       ),
-      T.bindS("fibers", (s) => T.foreach_(arr, (a) => T.fork(s.task(a)))),
+      T.bindS("fibers", (s) => T.traverseI_(arr, (a) => T.fork(s.task(a)))),
       T.letS("interruptor", (s) =>
          pipe(
             s.result,
             promiseWait,
             T.catchAll(() =>
                T.chain_(
-                  T.foreach_(s.fibers, (f) => T.fork(f.interruptAs(s.parentId))),
+                  T.traverseI_(s.fibers, (f) => T.fork(f.interruptAs(s.parentId))),
                   joinAllFibers
                )
             ),
@@ -160,7 +160,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
             T.onInterruptExtended_(
                T.whenM(
                   T.map_(
-                     T.foreach_(s.fibers, (f) => f.await),
+                     T.traverseI_(s.fibers, (f) => f.await),
                      flow(
                         A.findr((e) => e._tag === "Failure"),
                         (m) => m._tag === "Some"
@@ -170,7 +170,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
                () =>
                   T.chain_(promiseFail<void>(undefined)(s.result), () =>
                      T.chain_(
-                        T.foreach_(s.fibers, (f) => f.await),
+                        T.traverseI_(s.fibers, (f) => f.await),
                         () => T.chain_(s.causes.get, (x) => T.halt(x))
                      )
                   )
@@ -193,8 +193,8 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
  *
  * Additionally, interrupts all effects on any failure.
  */
-export const foreachUnitPar = <R, E, A>(f: (a: A) => T.Task<R, E, any>) => (as: Iterable<A>): T.Task<R, E, void> =>
-   foreachUnitPar_(as, f);
+export const traverseIUnitPar = <R, E, A>(f: (a: A) => T.Task<R, E, any>) => (as: Iterable<A>): T.Task<R, E, void> =>
+   traverseIUnitPar_(as, f);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -202,7 +202,7 @@ export const foreachUnitPar = <R, E, A>(f: (a: A) => T.Task<R, E, any>) => (as: 
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const foreachPar_ = <R, E, A, B>(
+export const traverseIPar_ = <R, E, A, B>(
    as: Iterable<A>,
    f: (a: A) => T.Task<R, E, B>
 ): T.Task<R, E, ReadonlyArray<B>> => {
@@ -220,7 +220,7 @@ export const foreachPar_ = <R, E, A, B>(
                   })
             );
          return T.chain_(
-            foreachUnitPar_(
+            traverseIUnitPar_(
                arr.map((a, n) => [a, n] as [A, number]),
                fn
             ),
@@ -230,9 +230,9 @@ export const foreachPar_ = <R, E, A, B>(
    );
 };
 
-export const foreachPar = <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
+export const traverseIPar = <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
    as: Iterable<A>
-): T.Task<R, E, ReadonlyArray<B>> => foreachPar_(as, f);
+): T.Task<R, E, ReadonlyArray<B>> => traverseIPar_(as, f);
 
 /**
  * Applies the functionw `f` to each element of the `Iterable<A>` in parallel,
@@ -240,18 +240,18 @@ export const foreachPar = <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
  *
  * Unlike `foreachPar`, this method will use at most up to `n` fibers.
  */
-export const foreachParN_ = (n: number) => <A, R, E, B>(
+export const traverseIParN_ = (n: number) => <A, R, E, B>(
    as: Iterable<A>,
    f: (a: A) => T.Task<R, E, B>
 ): T.Task<R, E, ReadonlyArray<B>> =>
    pipe(
       Sema.makeSemaphore(n),
-      T.chain((s) => foreachPar_(as, (a) => Sema.withPermit(s)(f(a))))
+      T.chain((s) => traverseIPar_(as, (a) => Sema.withPermit(s)(f(a))))
    );
 
-export const foreachParN = (n: number) => <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
+export const traverseIParN = (n: number) => <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
    as: Iterable<A>
-): T.Task<R, E, ReadonlyArray<B>> => foreachParN_(n)(as, f);
+): T.Task<R, E, ReadonlyArray<B>> => traverseIParN_(n)(as, f);
 
 /**
  * Run a task while acquiring the resource before and releasing it after
@@ -330,10 +330,10 @@ export const makeManagedReleaseMap = (es: ExecutionStrategy): Managed<unknown, n
  * a catchable error, _if_ that error does not result from interruption.
  */
 export const joinAllFibers = <E, A>(as: Iterable<Fiber<E, A>>) =>
-   T.tap_(T.chain_(awaitAllFibers(as), T.done), () => T.foreach_(as, (f) => f.inheritRefs));
+   T.tap_(T.chain_(awaitAllFibers(as), T.done), () => T.traverseI_(as, (f) => f.inheritRefs));
 
 /**
  * Awaits on all fibers to be completed, successfully or not.
  */
 export const awaitAllFibers = <E, A>(as: Iterable<Fiber<E, A>>): T.Task<unknown, never, Exit<E, ReadonlyArray<A>>> =>
-   T.result(foreachPar_(as, (f) => T.chain_(f.await, T.done)));
+   T.result(traverseIPar_(as, (f) => T.chain_(f.await, T.done)));

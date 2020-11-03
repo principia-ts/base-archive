@@ -4,7 +4,7 @@ import * as I from "../../../Iterable";
 import * as XR from "../../XRef";
 import { mapBothPar_ } from "../apply-par";
 import type { Task } from "../model";
-import { foreachUnitParN_ } from "./foreachUnitParN";
+import { traverseIUnitParN_ } from "./traverseIUnitParN";
 
 /**
  * Merges an `Iterable<Task>` to a single Task, working sequentially.
@@ -61,7 +61,7 @@ export const mergeAllParN_ = (n: number) => <R, E, A, B>(
 ): Task<R, E, B> =>
    chain_(XR.makeRef(b), (acc) =>
       chain_(
-         foreachUnitParN_(n)(
+         traverseIUnitParN_(n)(
             fas,
             chain((a) =>
                pipe(

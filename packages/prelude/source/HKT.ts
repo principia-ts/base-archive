@@ -199,12 +199,12 @@ export type URIS3 = keyof URItoKind3<any, any, any, any>;
 export type URIS4 = keyof URItoKind4<any, any, any, any, any>;
 
 export type Kind1<F extends URIS1, C, A> = F extends URIS1 ? URItoKind1<C, A>[F] : never;
-export type Kind2<F extends URIS2, C, E, A> = F extends URIS2 ? URItoKind2<C, OrFix2<"E", C, E>, A>[F] : never;
+export type Kind2<F extends URIS2, C, E, A> = F extends URIS2 ? URItoKind2<C, OrFix<"E", C, E>, A>[F] : never;
 export type Kind3<F extends URIS3, C, R, E, A> = F extends URIS3
-   ? URItoKind3<C, OrFix3<"R", C, R>, OrFix3<"E", C, E>, A>[F]
+   ? URItoKind3<C, OrFix<"R", C, R>, OrFix<"E", C, E>, A>[F]
    : never;
 export type Kind4<F extends URIS4, C, S, R, E, A> = F extends URIS4
-   ? URItoKind4<C, OrFix4<"S", C, S>, OrFix4<"R", C, R>, OrFix4<"E", C, E>, A>[F]
+   ? URItoKind4<C, OrFix<"S", C, S>, OrFix<"R", C, R>, OrFix<"E", C, E>, A>[F]
    : never;
 
 /*
@@ -301,10 +301,6 @@ export type AccessCustomExtends<C, P extends string, D = any> = C extends Custom
 
 export type Param = "N" | "K" | "Q" | "W" | "I" | "X" | "S" | "R" | "E";
 
-export type Param2 = "E";
-export type Param3 = "R" | "E";
-export type Param4 = "S" | "R" | "E";
-
 export interface Fix<P extends Param, F> {
    Fix: {
       [p in P]: {
@@ -313,10 +309,6 @@ export interface Fix<P extends Param, F> {
    };
 }
 
-export type Fix2<P extends Param2, F> = Fix<P, F>;
-export type Fix3<P extends Param3, F> = Fix<P, F>;
-export type Fix4<P extends Param4, F> = Fix<P, F>;
-
 export type OrFix<P extends Param, A, B> = A extends Fix<P, infer X>
    ? P extends "N"
       ? X extends string
@@ -324,10 +316,6 @@ export type OrFix<P extends Param, A, B> = A extends Fix<P, infer X>
          : B
       : X
    : B;
-
-export type OrFix2<P extends Param2, C, A> = C extends Fix2<P, infer X> ? X : A;
-export type OrFix3<P extends Param3, C, A> = C extends Fix3<P, infer X> ? X : A;
-export type OrFix4<P extends Param4, C, A> = C extends Fix4<P, infer X> ? X : A;
 
 export type Unfix<C, P extends Param> = (Exclude<keyof C, "Fix"> extends never
    ? unknown
@@ -368,10 +356,6 @@ export interface V<F extends Param, V extends Variance> {
    };
 }
 
-export type V2<P extends Param2, X extends Variance> = V<P, X>;
-export type V3<P extends Param3, X extends Variance> = V<P, X>;
-export type V4<P extends Param4, X extends Variance> = V<P, X>;
-
 /**
  * Composes types according to variance specified in C
  */
@@ -394,10 +378,6 @@ export type Mix<C, P extends Param, X extends [any, ...any[]]> = C extends V<P, 
       ? X[0] & X[1] & X[2] & X[3] & X[4] & X[5]
       : UnionToIntersection<{ [k in keyof X]: OrNever<X[k]> }[keyof X]>
    : X[0];
-
-export type Mix2<C, P extends Param2, X extends [any, ...any[]]> = Mix<C, P, X>;
-export type Mix3<C, P extends Param3, X extends [any, ...any[]]> = Mix<C, P, X>;
-export type Mix4<C, P extends Param4, X extends [any, ...any[]]> = Mix<C, P, X>;
 
 /**
  * Composes a record of types to the base respecting variance from C
@@ -423,30 +403,6 @@ export type Intro<C, P extends Param, Fixed, Current> = C extends V<P, "_">
    ? Current
    : Fixed;
 
-export type Intro2<C, P extends Param2, Fixed, Current> = C extends V2<P, "_">
-   ? Fixed
-   : C extends V2<P, "+">
-   ? Current
-   : C extends V2<P, "-">
-   ? Current
-   : Fixed;
-
-export type Intro3<C, P extends Param3, Fixed, Current> = C extends V3<P, "_">
-   ? Fixed
-   : C extends V3<P, "+">
-   ? Current
-   : C extends V3<P, "-">
-   ? Current
-   : Fixed;
-
-export type Intro4<C, P extends Param4, Fixed, Current> = C extends V4<P, "_">
-   ? Fixed
-   : C extends V4<P, "+">
-   ? Current
-   : C extends V4<P, "-">
-   ? Current
-   : Fixed;
-
 /**
  * Initial type depending on variance of P in C (eg: initial Contravariant R = unknown, initial Covariant E = never)
  */
@@ -457,10 +413,6 @@ export type Initial<C, P extends Param> = C extends V<P, "-">
    : C extends V<P, "+">
    ? never
    : any;
-
-export type Initial2<C, P extends Param2> = C extends V2<P, "-"> ? unknown : C extends V2<P, "+"> ? never : any;
-export type Initial3<C, P extends Param3> = C extends V3<P, "-"> ? unknown : C extends V3<P, "+"> ? never : any;
-export type Initial4<C, P extends Param4> = C extends V4<P, "-"> ? unknown : C extends V4<P, "+"> ? never : any;
 
 export type Strip<C, P extends Param> = Erase<C, V<P, "_"> & V<P, "-"> & V<P, "+">>;
 

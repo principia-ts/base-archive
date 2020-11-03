@@ -8,8 +8,6 @@ import { chain_ } from "./monad";
  * -------------------------------------------
  */
 
-// inspired from "Closing Iterables is a Leaky Abstraction" by Reginald Braithwaite
-// https://raganwald.com/2017/07/22/closing-iterables-is-a-leaky-abstraction.html
 export const zipWith_ = <A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, b: B) => C): Iterable<C> => ({
    [Symbol.iterator]() {
       let done = false;
@@ -48,8 +46,11 @@ export const zipWith_ = <A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, b:
    }
 });
 
-export const ap_: <A>(fa: Iterable<A>) => <B>(fab: Iterable<(a: A) => B>) => Iterable<B> = (fa) => (fab) =>
-   chain_(fab, (f) => map_(fa, f));
+export const zipWith = <A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C) => (fa: Iterable<A>) => zipWith_(fa, fb, f);
+
+export const ap_ = <A, B>(fab: Iterable<(a: A) => B>, fa: Iterable<A>): Iterable<B> => chain_(fab, (f) => map_(fa, f));
+
+export const ap = <A>(fa: Iterable<A>) => <B>(fab: Iterable<(a: A) => B>): Iterable<B> => ap_(fab, fa);
 
 export const pure = <A>(a: A): Iterable<A> => ({
    [Symbol.iterator]: () => genOf(a)

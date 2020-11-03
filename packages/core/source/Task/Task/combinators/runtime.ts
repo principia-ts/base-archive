@@ -1,3 +1,5 @@
+import { exit } from "process";
+
 import * as T from "../_core";
 import { HasClock, LiveClock } from "../../Clock";
 import type { Exit } from "../../Exit";
@@ -112,6 +114,21 @@ export const runPromiseExit = <E, A>(_: T.Task<DefaultEnv, E, A>): Promise<Exit<
          res(exit);
       });
    });
+};
+
+export const runPromiseExitCancel = <E, A>(_: T.Task<DefaultEnv, E, A>): [Promise<Exit<E, A>>, CancelMain] => {
+   const context = fiberExecutor<E, A>();
+
+   context.evaluateLater(_[_I]);
+   const promise = new Promise<Exit<E, A>>((res) => {
+      context.runAsync(res);
+   });
+   return [
+      promise,
+      () => {
+         run(context.interruptAs(context.id));
+      }
+   ];
 };
 
 /**

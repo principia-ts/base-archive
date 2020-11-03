@@ -4,7 +4,7 @@ import * as HKT from "@principia/prelude/HKT";
 import { tuple } from "../Function";
 import { mapBoth_ } from "./apply";
 import { right } from "./constructors";
-import { Functor, Functor2 } from "./functor";
+import { Functor } from "./functor";
 import type { Either, URI, V } from "./model";
 import { unit } from "./unit";
 
@@ -58,13 +58,6 @@ export const pure: <E = never, A = never>(a: A) => Either<E, A> = right;
  */
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
    ...Functor,
-   both_,
-   both,
-   unit
-});
-
-export const Applicative2: P.Applicative2<URI, V> = HKT.instance({
-   ...Functor2,
    both_,
    both,
    unit

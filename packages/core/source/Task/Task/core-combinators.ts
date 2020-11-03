@@ -134,7 +134,7 @@ export const absolve = <R, E, E1, A>(v: Task<R, E, E.Either<E1, A>>) => chain_(v
  * @category Combinators
  * @since 1.0.0
  */
-export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, any>): Task<R, E, void> =>
+export const traverseIUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, any>): Task<R, E, void> =>
    I.foldMap(makeMonoid<Task<R, E, void>>((x, y) => chain_(x, () => y), unit()))(f)(as);
 
 /**
@@ -147,8 +147,8 @@ export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, a
  * @category Combinators
  * @since 1.0.0
  */
-export const foreachUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Iterable<A>): Task<R, E, void> =>
-   foreachUnit_(as, f);
+export const traverseIUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Iterable<A>): Task<R, E, void> =>
+   traverseIUnit_(as, f);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and
@@ -160,7 +160,7 @@ export const foreachUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Itera
  * @category Combinators
  * @since 1.0.0
  */
-export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, E, ReadonlyArray<B>> =>
+export const traverseI_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, E, ReadonlyArray<B>> =>
    map_(
       I.reduce_(as, succeed(FS.empty<B>()) as Task<R, E, FreeMonoid<B>>, (b, a) =>
          mapBoth_(
@@ -182,8 +182,8 @@ export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>
  * @category Combinators
  * @since 1.0.0
  */
-export const foreach = <R, E, A, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>): Task<R, E, ReadonlyArray<B>> =>
-   foreach_(as, f);
+export const traverseI = <R, E, A, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>): Task<R, E, ReadonlyArray<B>> =>
+   traverseI_(as, f);
 
 export const result = <R, E, A>(value: Task<R, E, A>): Task<R, never, Exit<E, A>> =>
    new FoldInstruction(

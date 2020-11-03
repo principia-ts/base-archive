@@ -1,4 +1,4 @@
-import { absolve, foreach_, map_ } from "../_core";
+import { absolve, map_, traverseI_ } from "../_core";
 import * as A from "../../../Array";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
@@ -6,9 +6,9 @@ import type { NonEmptyArray } from "../../../NonEmptyArray";
 import type { ExecutionStrategy, Parallel, ParallelN, Sequential } from "../../ExecutionStrategy";
 import type { Task } from "../model";
 import { either } from "./either";
-import { foreachExec_ } from "./foreachExec";
-import { foreachPar_ } from "./foreachPar";
-import { foreachParN_ } from "./foreachParN";
+import { traverseIExec_ } from "./traverseIExec";
+import { traverseIPar_ } from "./traverseIPar";
+import { traverseIParN_ } from "./traverseIParN";
 
 const mergeExits = <E, B>() => (exits: ReadonlyArray<Either<E, B>>): Either<NonEmptyArray<E>, Array<B>> => {
    const errors = [] as E[];
@@ -35,7 +35,7 @@ const mergeExits = <E, B>() => (exits: ReadonlyArray<Either<E, B>>): Either<NonE
 export const validate_ = <A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
    absolve(
       map_(
-         foreach_(as, (a) => either(f(a))),
+         traverseI_(as, (a) => either(f(a))),
          mergeExits<E, B>()
       )
    );
@@ -52,7 +52,7 @@ export const validate = <A, R, E, B>(f: (a: A) => Task<R, E, B>) => (as: Iterabl
 export const validatePar_ = <A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
    absolve(
       map_(
-         foreachPar_(as, (a) => either(f(a))),
+         traverseIPar_(as, (a) => either(f(a))),
          mergeExits<E, B>()
       )
    );
@@ -69,7 +69,7 @@ export const validatePar = <A, R, E, B>(f: (a: A) => Task<R, E, B>) => (as: Iter
 export const validateParN_ = (n: number) => <A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
    absolve(
       map_(
-         foreachParN_(n)(as, (a) => either(f(a))),
+         traverseIParN_(n)(as, (a) => either(f(a))),
          mergeExits<E, B>()
       )
    );
@@ -104,7 +104,7 @@ export const validateExec_: {
 } = <R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
    absolve(
       map_(
-         foreachExec_(es, as, (a) => either(f(a))),
+         traverseIExec_(es, as, (a) => either(f(a))),
          mergeExits<E, B>()
       )
    );

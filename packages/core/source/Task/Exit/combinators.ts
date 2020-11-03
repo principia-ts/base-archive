@@ -11,7 +11,7 @@ export const as_ = <E, A, B>(fa: Exit<E, A>, b: B): Exit<E, B> => map_(fa, () =>
 
 export const as = <B>(b: B): (<E, A>(fa: Exit<E, A>) => Exit<E, B>) => map(() => b);
 
-export const collectAll = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, ReadonlyArray<A>>> =>
+export const sequenceA = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, ReadonlyArray<A>>> =>
    pipe(
       A.head(exits),
       O.map((head) =>
@@ -33,7 +33,7 @@ export const collectAll = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<
       )
    );
 
-export const collectAllPar = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, readonly A[]>> =>
+export const sequenceAPar = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, readonly A[]>> =>
    pipe(
       A.head(exits),
       O.map((head) =>

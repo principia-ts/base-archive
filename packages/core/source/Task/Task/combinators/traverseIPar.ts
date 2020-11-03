@@ -1,5 +1,5 @@
 import * as T from "../_core";
-import { foreachUnitPar_ } from "./foreachUnitPar";
+import { traverseIUnitPar_ } from "./traverseIUnitPar";
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -7,7 +7,7 @@ import { foreachUnitPar_ } from "./foreachUnitPar";
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const foreachPar_ = <R, E, A, B>(
+export const traverseIPar_ = <R, E, A, B>(
    as: Iterable<A>,
    f: (a: A) => T.Task<R, E, B>
 ): T.Task<R, E, ReadonlyArray<B>> => {
@@ -25,7 +25,7 @@ export const foreachPar_ = <R, E, A, B>(
                   })
             );
          return T.chain_(
-            foreachUnitPar_(
+            traverseIUnitPar_(
                arr.map((a, n) => [a, n] as [A, number]),
                fn
             ),
@@ -35,6 +35,6 @@ export const foreachPar_ = <R, E, A, B>(
    );
 };
 
-export const foreachPar = <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
+export const traverseIPar = <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
    as: Iterable<A>
-): T.Task<R, E, ReadonlyArray<B>> => foreachPar_(as, f);
+): T.Task<R, E, ReadonlyArray<B>> => traverseIPar_(as, f);
