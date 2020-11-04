@@ -71,7 +71,7 @@ export const foldSafe_ = <E, A>(
    onInterrupt: (id: FiberId) => A,
    onThen: (l: A, r: A) => A,
    onBoth: (l: A, r: A) => A
-): Sy.Sync<unknown, never, A> =>
+): Sy.IO<A> =>
    Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty":
@@ -124,11 +124,7 @@ export const fold = <E, A>(
 /**
  * @internal
  */
-export const foldlSafe_ = <E, B>(
-   cause: Cause<E>,
-   b: B,
-   f: (b: B, cause: Cause<E>) => O.Option<B>
-): Sy.Sync<unknown, never, B> =>
+export const foldlSafe_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Sy.IO<B> =>
    Sy.gen(function* (_) {
       const apply = O.getOrElse_(f(b, cause), () => b);
       switch (cause._tag) {
@@ -169,8 +165,10 @@ export const foldl_ = F.trampoline(function loop<E, A>(
       : F.done(apply);
 });
 
-// export const foldl_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): B =>
-//    Sy.runIO(foldlSafe_(cause, b, f));
+/*
+ * export const foldl_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): B =>
+ *    Sy.runIO(foldlSafe_(cause, b, f));
+ */
 
 /**
  * ```haskell

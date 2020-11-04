@@ -76,10 +76,10 @@ export const runMain = <E>(effect: T.Task<DefaultEnv, E, void>): CancelMain => {
       switch (exit._tag) {
          case "Failure": {
             if (C.isDie(exit.cause) || C.didFail(exit.cause)) {
-               console.error(C.prettyPrint(exit.cause));
+               console.error(C.pretty(exit.cause));
                process.exit(2);
             } else {
-               console.log(C.prettyPrint(exit.cause));
+               console.log(C.pretty(exit.cause));
                process.exit(0);
             }
          }

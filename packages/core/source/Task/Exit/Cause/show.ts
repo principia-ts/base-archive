@@ -4,6 +4,7 @@ import * as A from "../../../Array";
 import { pipe } from "../../../Function";
 import type { NonEmptyArray } from "../../../NonEmptyArray";
 import * as O from "../../../Option";
+import * as Sy from "../../../Sync";
 import type { FiberId } from "../../Fiber/FiberId";
 import type { Cause } from "./model";
 
@@ -71,54 +72,57 @@ const renderFail = (error: string[]): Sequential =>
 const renderFailError = (error: Error): Sequential =>
    Sequential([Failure(["A checked error was not handled.", ...renderError(error)])]);
 
-const causeToSequential = <E>(cause: Cause<E>): Sequential => {
-   switch (cause._tag) {
-      case "Empty": {
-         return Sequential([]);
+const causeToSequential = <E>(cause: Cause<E>): Sy.IO<Sequential> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Empty": {
+            return Sequential([]);
+         }
+         case "Fail": {
+            return cause.value instanceof Error
+               ? renderFailError(cause.value)
+               : renderFail(lines(JSON.stringify(cause.value, null, 2)));
+         }
+         case "Die": {
+            return cause.value instanceof Error
+               ? renderDie(cause.value)
+               : renderDieUnknown(lines(JSON.stringify(cause.value, null, 2)));
+         }
+         case "Interrupt": {
+            return renderInterrupt(cause.fiberId);
+         }
+         case "Then": {
+            return Sequential(yield* _(linearSegments(cause)));
+         }
+         case "Both": {
+            return Sequential([Parallel(yield* _(parallelSegments(cause)))]);
+         }
       }
-      case "Fail": {
-         return cause.value instanceof Error
-            ? renderFailError(cause.value)
-            : renderFail(lines(JSON.stringify(cause.value, null, 2)));
-      }
-      case "Die": {
-         return cause.value instanceof Error
-            ? renderDie(cause.value)
-            : renderDieUnknown(lines(JSON.stringify(cause.value, null, 2)));
-      }
-      case "Interrupt": {
-         return renderInterrupt(cause.fiberId);
-      }
-      case "Then": {
-         return Sequential(linearSegments(cause));
-      }
-      case "Both": {
-         return Sequential([Parallel(parallelSegments(cause))]);
-      }
-   }
-};
+   });
 
-const linearSegments = <E>(cause: Cause<E>): Step[] => {
-   switch (cause._tag) {
-      case "Then": {
-         return [...linearSegments(cause.left), ...linearSegments(cause.right)];
+const linearSegments = <E>(cause: Cause<E>): Sy.IO<Step[]> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Then": {
+            return [...(yield* _(linearSegments(cause.left))), ...(yield* _(linearSegments(cause.right)))];
+         }
+         default: {
+            return (yield* _(causeToSequential(cause))).all;
+         }
       }
-      default: {
-         return causeToSequential(cause).all;
-      }
-   }
-};
+   });
 
-const parallelSegments = <E>(cause: Cause<E>): Sequential[] => {
-   switch (cause._tag) {
-      case "Both": {
-         return [...parallelSegments(cause.left), ...parallelSegments(cause.right)];
+const parallelSegments = <E>(cause: Cause<E>): Sy.IO<Sequential[]> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Both": {
+            return [...(yield* _(parallelSegments(cause.left))), ...(yield* _(parallelSegments(cause.right)))];
+         }
+         default: {
+            return [yield* _(causeToSequential(cause))];
+         }
       }
-      default: {
-         return [causeToSequential(cause)];
-      }
-   }
-};
+   });
 
 const times = (s: string, n: number) => {
    let h = "";
@@ -150,18 +154,25 @@ const format = (segment: Segment): readonly string[] => {
    }
 };
 
-const prettyLines = <E>(cause: Cause<E>): readonly string[] => {
-   const s = causeToSequential(cause);
+const prettyLines = <E>(cause: Cause<E>): Sy.IO<readonly string[]> =>
+   Sy.gen(function* (_) {
+      const s = yield* _(causeToSequential(cause));
 
-   if (s.all.length === 1 && s.all[0]._tag === "Failure") {
-      return s.all[0].lines;
-   }
+      if (s.all.length === 1 && s.all[0]._tag === "Failure") {
+         return s.all[0].lines;
+      }
 
-   return O.getOrElse_(A.updateAt(0, "╥")(format(s)), (): string[] => []);
-};
+      return O.getOrElse_(A.updateAt(0, "╥")(format(s)), (): string[] => []);
+   });
 
-export const prettyPrint = <E>(cause: Cause<E>) => prettyLines(cause).join("\n");
+export const prettyM = <E>(cause: Cause<E>): Sy.IO<string> =>
+   Sy.gen(function* (_) {
+      const lines = yield* _(prettyLines(cause));
+      return lines.join("\n");
+   });
+
+export const pretty = <E>(cause: Cause<E>) => Sy.runIO(prettyM(cause));
 
 export const showCause: Show<Cause<any>> = {
-   show: (cause) => prettyLines(cause).join("\n")
+   show: pretty
 };

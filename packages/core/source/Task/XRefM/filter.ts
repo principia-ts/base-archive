@@ -19,7 +19,12 @@ export const filterInputM_ = <RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
       foldM(
          (ea) => some<EA | EC>(ea),
          identity,
-         (a: A1) => T.ifM(T.asSomeError(f(a)))(() => T.pure(a))(() => T.fail<Option<EA | EC>>(none())),
+         (a: A1) =>
+            T.ifM_(
+               T.asSomeError(f(a)),
+               () => T.pure(a),
+               () => T.fail<Option<EA | EC>>(none())
+            ),
          T.pure
       )
    );
@@ -66,7 +71,12 @@ export const filterOutputM_ = <RA, RB, EA, EB, A, B, RC, EC>(
       (ea) => ea,
       (eb) => some<EB | EC>(eb),
       (a) => T.pure(a),
-      (b) => T.ifM(T.asSomeError(f(b)))(() => T.pure(b))(() => T.fail(none()))
+      (b) =>
+         T.ifM_(
+            T.asSomeError(f(b)),
+            () => T.pure(b),
+            () => T.fail(none())
+         )
    );
 
 /**

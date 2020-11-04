@@ -96,15 +96,44 @@ export const cause = <R, E, A>(effect: Task<R, E, A>): Task<R, never, Cause<E>> 
  *    onFalse();
  * }
  * ```
- * but way more moral
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const ifM = <R, E>(b: Task<R, E, boolean>) => <R1, E1, A1>(onTrue: () => Task<R1, E1, A1>) => <R2, E2, A2>(
+export const ifM_ = <R, E, R1, E1, A1, R2, E2, A2>(
+   mb: Task<R, E, boolean>,
+   onTrue: () => Task<R1, E1, A1>,
    onFalse: () => Task<R2, E2, A2>
 ): Task<R & R1 & R2, E | E1 | E2, A1 | A2> =>
-   chain_(b, (x) => (x ? (onTrue() as Task<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
+   chain_(mb, (x) => (x ? (onTrue() as Task<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
+
+/**
+ * The moral equivalent of
+ * ```typescript
+ * if (b) {
+ *    onTrue();
+ * } else {
+ *    onFalse();
+ * }
+ * ```
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const ifM = <R1, E1, A1, R2, E2, A2>(onTrue: () => Task<R1, E1, A1>, onFalse: () => Task<R2, E2, A2>) => <R, E>(
+   b: Task<R, E, boolean>
+): Task<R & R1 & R2, E | E1 | E2, A1 | A2> => ifM_(b, onTrue, onFalse);
+
+export const if_ = <R, E, A, R1, E1, A1>(
+   b: boolean,
+   onTrue: () => Task<R, E, A>,
+   onFalse: () => Task<R1, E1, A1>
+): Task<R & R1, E | E1, A | A1> => ifM_(succeed(b), onTrue, onFalse);
+
+const _if = <R, E, A, R1, E1, A1>(onTrue: () => Task<R, E, A>, onFalse: () => Task<R1, E1, A1>) => (
+   b: boolean
+): Task<R & R1, E | E1, A | A1> => if_(b, onTrue, onFalse);
+export { _if as if };
 
 /**
  * Lifts an `Either` into an `Task`

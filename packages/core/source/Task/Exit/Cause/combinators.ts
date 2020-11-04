@@ -63,7 +63,7 @@ export const interruptedOnly = <E>(cause: Cause<E>) =>
 /**
  * @internal
  */
-export const stripFailuresSafe = <E>(cause: Cause<E>): Sy.Sync<unknown, never, Cause<never>> =>
+export const stripFailuresSafe = <E>(cause: Cause<E>): Sy.IO<Cause<never>> =>
    Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
@@ -95,7 +95,7 @@ export const stripFailures = <E>(cause: Cause<E>): Cause<never> => Sy.runIO(stri
 /**
  * @internal
  */
-export const stripInterruptsSafe = <E>(cause: Cause<E>): Sy.Sync<unknown, never, Cause<E>> =>
+export const stripInterruptsSafe = <E>(cause: Cause<E>): Sy.IO<Cause<E>> =>
    Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
@@ -127,7 +127,7 @@ export const stripInterrupts = <E>(cause: Cause<E>): Cause<E> => Sy.runIO(stripI
 /**
  * @internal
  */
-export const keepDefectsSafe = <E>(cause: Cause<E>): Sy.Sync<unknown, never, O.Option<Cause<never>>> =>
+export const keepDefectsSafe = <E>(cause: Cause<E>): Sy.IO<O.Option<Cause<never>>> =>
    Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
@@ -179,9 +179,7 @@ export const keepDefectsSafe = <E>(cause: Cause<E>): Sy.Sync<unknown, never, O.O
  */
 export const keepDefects = <E>(cause: Cause<E>): O.Option<Cause<never>> => Sy.runIO(keepDefectsSafe(cause));
 
-export const sequenceCauseEitherSafe = <E, A>(
-   cause: Cause<E.Either<E, A>>
-): Sy.Sync<unknown, never, E.Either<Cause<E>, A>> =>
+export const sequenceCauseEitherSafe = <E, A>(cause: Cause<E.Either<E, A>>): Sy.IO<E.Either<Cause<E>, A>> =>
    Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
@@ -225,7 +223,7 @@ export const sequenceCauseEitherSafe = <E, A>(
 export const sequenceCauseEither = <E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> =>
    Sy.runIO(sequenceCauseEitherSafe(cause));
 
-export const sequenceCauseOptionSafe = <E>(cause: Cause<O.Option<E>>): Sy.Sync<unknown, never, O.Option<Cause<E>>> =>
+export const sequenceCauseOptionSafe = <E>(cause: Cause<O.Option<E>>): Sy.IO<O.Option<Cause<E>>> =>
    Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {

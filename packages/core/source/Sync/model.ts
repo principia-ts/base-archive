@@ -10,6 +10,10 @@ import type { XPure } from "../XPure";
 
 export interface Sync<R, E, A> extends XPure<unknown, never, R, E, A> {}
 
+export type IO<A> = Sync<unknown, never, A>;
+export type EIO<E, A> = Sync<unknown, E, A>;
+export type RIO<R, A> = Sync<R, never, A>;
+
 export const URI = "Sync";
 
 export type URI = typeof URI;
