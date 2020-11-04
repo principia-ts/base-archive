@@ -13,6 +13,41 @@ import type { Cause } from "./model";
  */
 
 /**
+ * @internal
+ */
+export const findSafe_ = <E, A>(
+   cause: Cause<E>,
+   f: (cause: Cause<E>) => O.Option<A>
+): Sy.Sync<unknown, never, O.Option<A>> =>
+   Sy.gen(function* (_) {
+      const apply = f(cause);
+      if (apply._tag === "Some") {
+         return apply;
+      }
+      switch (cause._tag) {
+         case "Then": {
+            const isLeft = yield* _(findSafe_(cause.left, f));
+            if (isLeft._tag === "Some") {
+               return isLeft;
+            } else {
+               return yield* _(findSafe_(cause.right, f));
+            }
+         }
+         case "Both": {
+            const isLeft = yield* _(findSafe_(cause.left, f));
+            if (isLeft._tag === "Some") {
+               return isLeft;
+            } else {
+               return yield* _(findSafe_(cause.right, f));
+            }
+         }
+         default: {
+            return apply;
+         }
+      }
+   });
+
+/**
  * ```haskell
  * find :: (Cause c, Option m) => (c e -> m a) -> c e -> m a
  * ```
@@ -22,35 +57,8 @@ import type { Cause } from "./model";
  * @category Combinators
  * @since 1.0.0
  */
-export const find = <A, E>(f: (cause: Cause<E>) => O.Option<A>) => (cause: Cause<E>): O.Option<A> => {
-   const apply = f(cause);
-
-   if (apply._tag === "Some") {
-      return apply;
-   }
-
-   switch (cause._tag) {
-      case "Then": {
-         const isLeft = find(f)(cause.left);
-         if (isLeft._tag === "Some") {
-            return isLeft;
-         } else {
-            return find(f)(cause.right);
-         }
-      }
-      case "Both": {
-         const isLeft = find(f)(cause.left);
-         if (isLeft._tag === "Some") {
-            return isLeft;
-         } else {
-            return find(f)(cause.right);
-         }
-      }
-      default: {
-         return apply;
-      }
-   }
-};
+export const find = <A, E>(f: (cause: Cause<E>) => O.Option<A>) => (cause: Cause<E>): O.Option<A> =>
+   Sy.runIO(findSafe_(cause, f));
 
 /**
  * @internal
@@ -114,6 +122,33 @@ export const fold = <E, A>(
 ) => (cause: Cause<E>): A => Sy.runIO(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth));
 
 /**
+ * @internal
+ */
+export const foldlSafe_ = <E, B>(
+   cause: Cause<E>,
+   b: B,
+   f: (b: B, cause: Cause<E>) => O.Option<B>
+): Sy.Sync<unknown, never, B> =>
+   Sy.gen(function* (_) {
+      const apply = O.getOrElse_(f(b, cause), () => b);
+      switch (cause._tag) {
+         case "Then": {
+            const l = yield* _(foldlSafe_(cause.left, apply, f));
+            const r = yield* _(foldlSafe_(cause.right, l, f));
+            return r;
+         }
+         case "Both": {
+            const l = yield* _(foldlSafe_(cause.left, apply, f));
+            const r = yield* _(foldlSafe_(cause.right, l, f));
+            return r;
+         }
+         default: {
+            return apply;
+         }
+      }
+   });
+
+/**
  * ```haskell
  * foldl_ :: (Cause c) => (c e, a, ((a, c e) -> Option a)) -> a
  * ```
@@ -133,6 +168,9 @@ export const foldl_ = F.trampoline(function loop<E, A>(
       ? F.more(() => loop(cause.right, foldl_(cause.left, apply, f), f))
       : F.done(apply);
 });
+
+// export const foldl_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): B =>
+//    Sy.runIO(foldlSafe_(cause, b, f));
 
 /**
  * ```haskell

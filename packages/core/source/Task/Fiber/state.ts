@@ -1,7 +1,7 @@
+import * as Sy from "../../Sync";
 import type { Exit } from "../Exit";
 import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
-import type { FiberRef } from "../FiberRef";
 import type { FiberStatus } from "./status";
 import { Done, Running } from "./status";
 
@@ -30,23 +30,24 @@ export class FiberStateDone<E, A> {
 
 export const initial = <E, A>(): FiberState<E, A> => new FiberStateExecuting(new Running(false), [], C.empty);
 
-export const interrupting = <E, A>(state: FiberState<E, A>) => {
-   const loop = (status: FiberStatus): boolean => {
-      switch (status._tag) {
-         case "Running": {
-            return status.interrupting;
+export const interrupting = <E, A>(state: FiberState<E, A>): boolean => {
+   const loop = (status: FiberStatus): Sy.Sync<unknown, never, boolean> =>
+      Sy.gen(function* (_) {
+         switch (status._tag) {
+            case "Running": {
+               return status.interrupting;
+            }
+            case "Finishing": {
+               return status.interrupting;
+            }
+            case "Suspended": {
+               return yield* _(loop(status.previous));
+            }
+            case "Done": {
+               return false;
+            }
          }
-         case "Finishing": {
-            return status.interrupting;
-         }
-         case "Suspended": {
-            return loop(status.previous);
-         }
-         case "Done": {
-            return false;
-         }
-      }
-   };
+      });
 
-   return loop(state.status);
+   return Sy.runIO(loop(state.status));
 };

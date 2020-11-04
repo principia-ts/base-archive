@@ -1,11 +1,10 @@
-import { matchTag } from "@principia/prelude/Utils";
-
 import * as A from "../../../Array";
 import * as E from "../../../Either";
 import { pipe } from "../../../Function";
 import * as O from "../../../Option";
+import * as Sy from "../../../Sync";
 import type { FiberId } from "../../Fiber/FiberId";
-import { both, then } from "./constructors";
+import { both, fail, then } from "./constructors";
 import { failureOption, find, foldl_ } from "./destructors";
 import { empty } from "./empty";
 import { InterruptedException } from "./errors";
@@ -62,121 +61,215 @@ export const interruptedOnly = <E>(cause: Cause<E>) =>
    );
 
 /**
- * Discards all typed failures kept on this `Cause`.
+ * @internal
  */
-export const stripFailures: <E>(cause: Cause<E>) => Cause<never> = matchTag({
-   Empty: () => empty,
-   Fail: () => empty,
-   Interrupt: (c) => c,
-   Die: (c) => c,
-   Both: (c) => both(stripFailures(c.left), stripFailures(c.right)),
-   Then: (c) => then(stripFailures(c.left), stripFailures(c.right))
-});
+export const stripFailuresSafe = <E>(cause: Cause<E>): Sy.Sync<unknown, never, Cause<never>> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Empty": {
+            return empty;
+         }
+         case "Fail": {
+            return empty;
+         }
+         case "Interrupt": {
+            return cause;
+         }
+         case "Die": {
+            return cause;
+         }
+         case "Both": {
+            return both(yield* _(stripFailuresSafe(cause.left)), yield* _(stripFailuresSafe(cause.right)));
+         }
+         case "Then": {
+            return then(yield* _(stripFailuresSafe(cause.left)), yield* _(stripFailuresSafe(cause.right)));
+         }
+      }
+   });
 
 /**
  * Discards all typed failures kept on this `Cause`.
  */
-export const stripInterrupts: <E>(cause: Cause<E>) => Cause<E> = matchTag({
-   Empty: () => empty,
-   Fail: (c) => c,
-   Interrupt: () => empty,
-   Die: (c) => c,
-   Both: (c) => both(stripInterrupts(c.left), stripInterrupts(c.right)),
-   Then: (c) => then(stripInterrupts(c.left), stripInterrupts(c.right))
-});
+export const stripFailures = <E>(cause: Cause<E>): Cause<never> => Sy.runIO(stripFailuresSafe(cause));
+
+/**
+ * @internal
+ */
+export const stripInterruptsSafe = <E>(cause: Cause<E>): Sy.Sync<unknown, never, Cause<E>> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Empty": {
+            return empty;
+         }
+         case "Fail": {
+            return cause;
+         }
+         case "Interrupt": {
+            return empty;
+         }
+         case "Die": {
+            return cause;
+         }
+         case "Both": {
+            return both(yield* _(stripInterruptsSafe(cause.left)), yield* _(stripInterruptsSafe(cause.right)));
+         }
+         case "Then": {
+            return then(yield* _(stripInterruptsSafe(cause.left)), yield* _(stripInterruptsSafe(cause.right)));
+         }
+      }
+   });
+
+/**
+ * Discards all interrupts kept on this `Cause`.
+ */
+export const stripInterrupts = <E>(cause: Cause<E>): Cause<E> => Sy.runIO(stripInterruptsSafe(cause));
+
+/**
+ * @internal
+ */
+export const keepDefectsSafe = <E>(cause: Cause<E>): Sy.Sync<unknown, never, O.Option<Cause<never>>> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Empty": {
+            return O.none();
+         }
+         case "Fail": {
+            return O.none();
+         }
+         case "Interrupt": {
+            return O.none();
+         }
+         case "Die": {
+            return O.some(cause);
+         }
+         case "Then": {
+            const lefts = yield* _(keepDefectsSafe(cause.left));
+            const rights = yield* _(keepDefectsSafe(cause.right));
+
+            if (lefts._tag === "Some" && rights._tag === "Some") {
+               return O.some(then(lefts.value, rights.value));
+            } else if (lefts._tag === "Some") {
+               return lefts;
+            } else if (rights._tag === "Some") {
+               return rights;
+            } else {
+               return O.none();
+            }
+         }
+         case "Both": {
+            const lefts = yield* _(keepDefectsSafe(cause.left));
+            const rights = yield* _(keepDefectsSafe(cause.right));
+
+            if (lefts._tag === "Some" && rights._tag === "Some") {
+               return O.some(both(lefts.value, rights.value));
+            } else if (lefts._tag === "Some") {
+               return lefts;
+            } else if (rights._tag === "Some") {
+               return rights;
+            } else {
+               return O.none();
+            }
+         }
+      }
+   });
 
 /**
  * Remove all `Fail` and `Interrupt` nodes from this `Cause`,
  * return only `Die` cause/finalizer defects.
  */
-export const keepDefects: <E>(cause: Cause<E>) => O.Option<Cause<never>> = matchTag({
-   Empty: () => O.none(),
-   Fail: () => O.none(),
-   Interrupt: () => O.none(),
-   Die: (c) => O.some(c),
-   Then: (c) => {
-      const lefts = keepDefects(c.left);
-      const rights = keepDefects(c.right);
-      return lefts._tag === "Some"
-         ? rights._tag === "Some"
-            ? O.some(then(lefts.value, rights.value))
-            : lefts
-         : rights._tag === "Some"
-         ? rights
-         : O.none();
-   },
-   Both: (c) => {
-      const lefts = keepDefects(c.left);
-      const rights = keepDefects(c.right);
-      return lefts._tag === "Some"
-         ? rights._tag === "Some"
-            ? O.some(both(lefts.value, rights.value))
-            : lefts
-         : rights._tag === "Some"
-         ? rights
-         : O.none();
-   }
-});
+export const keepDefects = <E>(cause: Cause<E>): O.Option<Cause<never>> => Sy.runIO(keepDefectsSafe(cause));
+
+export const sequenceCauseEitherSafe = <E, A>(
+   cause: Cause<E.Either<E, A>>
+): Sy.Sync<unknown, never, E.Either<Cause<E>, A>> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Empty": {
+            return E.left(empty);
+         }
+         case "Interrupt": {
+            return E.left(cause);
+         }
+         case "Fail": {
+            return cause.value._tag === "Left" ? E.left(fail(cause.value.left)) : E.right(cause.value.right);
+         }
+         case "Die": {
+            return E.left(cause);
+         }
+         case "Then": {
+            const lefts = yield* _(sequenceCauseEitherSafe(cause.left));
+            const rights = yield* _(sequenceCauseEitherSafe(cause.right));
+
+            return lefts._tag === "Left"
+               ? rights._tag === "Right"
+                  ? E.right(rights.right)
+                  : E.left(then(lefts.left, rights.left))
+               : E.right(lefts.right);
+         }
+         case "Both": {
+            const lefts = yield* _(sequenceCauseEitherSafe(cause.left));
+            const rights = yield* _(sequenceCauseEitherSafe(cause.right));
+
+            return lefts._tag === "Left"
+               ? rights._tag === "Right"
+                  ? E.right(rights.right)
+                  : E.left(both(lefts.left, rights.left))
+               : E.right(lefts.right);
+         }
+      }
+   });
 
 /**
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
-export const sequenceCauseEither: <E, A>(c: Cause<E.Either<E, A>>) => E.Either<Cause<E>, A> = matchTag({
-   Empty: () => E.left(empty),
-   Interrupt: (c) => E.left(c),
-   Fail: (c) => (c.value._tag === "Left" ? E.left(fail(c.value.left)) : E.right(c.value.right)),
-   Die: (c) => E.left(c),
-   Then: (c) => {
-      const lefts = sequenceCauseEither(c.left);
-      const rights = sequenceCauseEither(c.right);
-      return lefts._tag === "Left"
-         ? rights._tag === "Right"
-            ? E.right(rights.right)
-            : E.left(then(lefts.left, rights.left))
-         : E.right(lefts.right);
-   },
-   Both: (c) => {
-      const lefts = sequenceCauseEither(c.left);
-      const rights = sequenceCauseEither(c.right);
-      return lefts._tag === "Left"
-         ? rights._tag === "Right"
-            ? E.right(rights.right)
-            : E.left(both(lefts.left, rights.left))
-         : E.right(lefts.right);
-   }
-});
+export const sequenceCauseEither = <E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> =>
+   Sy.runIO(sequenceCauseEitherSafe(cause));
+
+export const sequenceCauseOptionSafe = <E>(cause: Cause<O.Option<E>>): Sy.Sync<unknown, never, O.Option<Cause<E>>> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Empty": {
+            return O.some(empty);
+         }
+         case "Interrupt": {
+            return O.some(cause);
+         }
+         case "Fail": {
+            return O.map_(cause.value, fail);
+         }
+         case "Die": {
+            return O.some(cause);
+         }
+         case "Then": {
+            const lefts = yield* _(sequenceCauseOptionSafe(cause.left));
+            const rights = yield* _(sequenceCauseOptionSafe(cause.right));
+            return lefts._tag === "Some"
+               ? rights._tag === "Some"
+                  ? O.some(then(lefts.value, rights.value))
+                  : lefts
+               : rights._tag === "Some"
+               ? rights
+               : O.none();
+         }
+         case "Both": {
+            const lefts = yield* _(sequenceCauseOptionSafe(cause.left));
+            const rights = yield* _(sequenceCauseOptionSafe(cause.right));
+            return lefts._tag === "Some"
+               ? rights._tag === "Some"
+                  ? O.some(both(lefts.value, rights.value))
+                  : lefts
+               : rights._tag === "Some"
+               ? rights
+               : O.none();
+         }
+      }
+   });
 
 /**
- * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
+ * Converts the specified `Cause<Option<E>>` to an `Option<Cause<E>>`.
  */
-export const sequenceCauseOption: <E>(c: Cause<O.Option<E>>) => O.Option<Cause<E>> = matchTag({
-   Empty: () => O.some(empty),
-   Interrupt: (c) => O.some(c),
-   Fail: (c) => O.map_(c.value, fail),
-   Die: (c) => O.some(c),
-   Then: (c) => {
-      const lefts = sequenceCauseOption(c.left);
-      const rights = sequenceCauseOption(c.right);
-      return lefts._tag === "Some"
-         ? rights._tag === "Some"
-            ? O.some(then(lefts.value, rights.value))
-            : lefts
-         : rights._tag === "Some"
-         ? rights
-         : O.none();
-   },
-   Both: (c) => {
-      const lefts = sequenceCauseOption(c.left);
-      const rights = sequenceCauseOption(c.right);
-      return lefts._tag === "Some"
-         ? rights._tag === "Some"
-            ? O.some(both(lefts.value, rights.value))
-            : lefts
-         : rights._tag === "Some"
-         ? rights
-         : O.none();
-   }
-});
+export const sequenceCauseOption = <E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> =>
+   Sy.runIO(sequenceCauseOptionSafe(cause));
 
 /**
  * Retrieve the first checked error on the `Left` if available,

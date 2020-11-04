@@ -1,3 +1,4 @@
+import * as Sy from "../../Sync";
 import type { FiberId } from "./FiberId";
 
 export type FiberStatus = Done | Finishing | Running | Suspended;
@@ -29,36 +30,50 @@ export class Suspended {
    ) {}
 }
 
-export const withInterrupting = (b: boolean) => (s: FiberStatus): FiberStatus => {
-   switch (s._tag) {
-      case "Done": {
-         return s;
+/**
+ * @internal
+ */
+export const withInterruptingSafe_ = (s: FiberStatus, b: boolean): Sy.Sync<unknown, never, FiberStatus> =>
+   Sy.gen(function* (_) {
+      switch (s._tag) {
+         case "Done": {
+            return s;
+         }
+         case "Finishing": {
+            return new Finishing(b);
+         }
+         case "Running": {
+            return new Running(b);
+         }
+         case "Suspended": {
+            return new Suspended(
+               yield* _(withInterruptingSafe_(s.previous, b)),
+               s.interruptible,
+               s.epoch,
+               s.blockingOn
+            );
+         }
       }
-      case "Finishing": {
-         return new Finishing(b);
-      }
-      case "Running": {
-         return new Running(b);
-      }
-      case "Suspended": {
-         return new Suspended(withInterrupting(b)(s.previous), s.interruptible, s.epoch, s.blockingOn);
-      }
-   }
-};
+   });
 
-export const toFinishing = (s: FiberStatus): FiberStatus => {
-   switch (s._tag) {
-      case "Done": {
-         return s;
+export const withInterrupting = (b: boolean) => (s: FiberStatus): FiberStatus => Sy.runIO(withInterruptingSafe_(s, b));
+
+export const toFinishingSafe = (s: FiberStatus): Sy.Sync<unknown, never, FiberStatus> =>
+   Sy.gen(function* (_) {
+      switch (s._tag) {
+         case "Done": {
+            return s;
+         }
+         case "Finishing": {
+            return s;
+         }
+         case "Running": {
+            return s;
+         }
+         case "Suspended": {
+            return yield* _(toFinishingSafe(s.previous));
+         }
       }
-      case "Finishing": {
-         return s;
-      }
-      case "Running": {
-         return s;
-      }
-      case "Suspended": {
-         return toFinishing(s.previous);
-      }
-   }
-};
+   });
+
+export const toFinishing = (s: FiberStatus): FiberStatus => Sy.runIO(toFinishingSafe(s));
