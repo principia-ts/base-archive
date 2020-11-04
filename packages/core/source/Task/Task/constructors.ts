@@ -8,7 +8,7 @@ import {
    AsyncInstruction,
    FailInstruction,
    PartialInstruction,
-   PureInstruction,
+   SucceedInstruction,
    SuspendInstruction,
    TotalInstruction
 } from "./model";
@@ -24,14 +24,12 @@ import {
  * succeed :: a -> Task _ _ a
  * ```
  *
- * A synonym of `pure`
- *
  * Creates an `Task` that has succeeded with a pure value
  *
  * @category Constructors
  * @since 1.0.0
  */
-export const succeed = <E = never, A = never>(a: A): EIO<E, A> => new PureInstruction(a);
+export const succeed = <E = never, A = never>(a: A): EIO<E, A> => new SucceedInstruction(a);
 
 /**
  * ```haskell

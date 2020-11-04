@@ -1,6 +1,6 @@
-import { ChainInstruction } from "./_concrete";
 import { succeed } from "./constructors";
 import type { XPure } from "./model";
+import { ChainInstruction } from "./model";
 
 /**
  * @internal

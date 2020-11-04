@@ -1,11 +1,11 @@
-import { GiveInstruction, ReadInstruction } from "./_concrete";
+import { AsksInstruction, GiveInstruction } from "./model";
 import { succeed } from "./constructors";
 import type { XPure } from "./model";
 
-export const ask = <R>(): XPure<unknown, never, R, never, R> => new ReadInstruction((r: R) => succeed(r));
+export const ask = <R>(): XPure<unknown, never, R, never, R> => new AsksInstruction((r: R) => succeed(r));
 
 export const asksM = <R0, S1, S2, R, E, A>(f: (r: R0) => XPure<S1, S2, R, E, A>): XPure<S1, S2, R & R0, E, A> =>
-   new ReadInstruction(f);
+   new AsksInstruction(f);
 
 export const asks = <R0, A>(f: (r: R0) => A) => asksM((r: R0) => succeed(f(r)));
 

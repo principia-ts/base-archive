@@ -1,6 +1,8 @@
 import { matchTag } from "@principia/prelude/Utils";
 
+import * as F from "../../../Function";
 import * as O from "../../../Option";
+import * as Sy from "../../../Sync";
 import type { FiberId } from "../../Fiber/FiberId";
 import type { Cause } from "./model";
 
@@ -51,6 +53,41 @@ export const find = <A, E>(f: (cause: Cause<E>) => O.Option<A>) => (cause: Cause
 };
 
 /**
+ * @internal
+ */
+export const foldSafe_ = <E, A>(
+   cause: Cause<E>,
+   onEmpty: () => A,
+   onFail: (reason: E) => A,
+   onDie: (reason: unknown) => A,
+   onInterrupt: (id: FiberId) => A,
+   onThen: (l: A, r: A) => A,
+   onBoth: (l: A, r: A) => A
+): Sy.Sync<unknown, never, A> =>
+   Sy.gen(function* (_) {
+      switch (cause._tag) {
+         case "Empty":
+            return onEmpty();
+         case "Fail":
+            return onFail(cause.value);
+         case "Die":
+            return onDie(cause.value);
+         case "Interrupt":
+            return onInterrupt(cause.fiberId);
+         case "Both":
+            return onBoth(
+               yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+               yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
+            );
+         case "Then":
+            return onThen(
+               yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+               yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
+            );
+      }
+   });
+
+/**
  * ```haskell
  * fold :: (
  *    (() -> a),
@@ -74,23 +111,7 @@ export const fold = <E, A>(
    onInterrupt: (id: FiberId) => A,
    onThen: (l: A, r: A) => A,
    onBoth: (l: A, r: A) => A
-): ((cause: Cause<E>) => A) =>
-   matchTag({
-      Empty: (_) => onEmpty(),
-      Fail: (c) => onFail(c.value),
-      Die: (c) => onDie(c.value),
-      Interrupt: (c) => onInterrupt(c.fiberId),
-      Both: (c) =>
-         onBoth(
-            fold(onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)(c.left),
-            fold(onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)(c.right)
-         ),
-      Then: (c) =>
-         onThen(
-            fold(onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)(c.left),
-            fold(onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)(c.right)
-         )
-   });
+) => (cause: Cause<E>): A => Sy.runIO(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth));
 
 /**
  * ```haskell
@@ -102,10 +123,16 @@ export const fold = <E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export const foldl_ = <E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): A => {
+export const foldl_ = F.trampoline(function loop<E, A>(
+   cause: Cause<E>,
+   a: A,
+   f: (a: A, cause: Cause<E>) => O.Option<A>
+): F.Trampoline<A> {
    const apply = O.getOrElse_(f(a, cause), () => a);
-   return cause._tag === "Both" || cause._tag === "Then" ? foldl_(cause.right, foldl_(cause.left, apply, f), f) : apply;
-};
+   return cause._tag === "Both" || cause._tag === "Then"
+      ? F.more(() => loop(cause.right, foldl_(cause.left, apply, f), f))
+      : F.done(apply);
+});
 
 /**
  * ```haskell

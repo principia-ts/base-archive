@@ -47,19 +47,22 @@ export const isBoth = <E>(cause: Cause<E>): cause is Both<E> => cause._tag === "
  */
 export const isEmpty = <E>(cause: Cause<E>) =>
    equalsCause(cause, empty) ||
-   foldl_(cause, true as boolean, (acc, c) =>
-      pipe(
-         c,
-         matchTag({
-            Empty: () => O.some(acc),
-            Die: () => O.some(false),
-            Fail: () => O.some(false),
-            Interrupt: () => O.some(false),
-            Then: () => O.none(),
-            Both: () => O.none()
-         })
-      )
-   );
+   foldl_(cause, true as boolean, (acc, c) => {
+      switch (c._tag) {
+         case "Empty":
+            return O.some(acc);
+         case "Die":
+            return O.some(false);
+         case "Fail":
+            return O.some(false);
+         case "Interrupt":
+            return O.some(false);
+         case "Then":
+            return O.none();
+         case "Both":
+            return O.none();
+      }
+   });
 
 /**
  * ```haskell

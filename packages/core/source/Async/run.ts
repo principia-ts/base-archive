@@ -1,121 +1,277 @@
-/* eslint-disable no-fallthrough */
 import * as A from "../Array";
+import { pipe } from "../Function";
+import type { Stack } from "../support/Stack";
+import { stack } from "../support/Stack";
 import * as Ex from "./AsyncExit";
 import { CancellablePromise } from "./CancellablePromise";
+import { fail, succeed, total } from "./constructors";
 import { InterruptionState } from "./InterruptionState";
-import type { Async } from "./model";
+import type { Async, AsyncInstruction } from "./model";
 import { _AI, AsyncInstructionTag } from "./model";
+import { chain, tap } from "./monad";
 import { defaultPromiseTracingContext } from "./PromiseTracingContext";
 
-const _run = async <R, E, A>(async: Async<R, E, A>, r: R, interruptionState = new InterruptionState()): Promise<A> => {
-   const I = async[_AI];
+class FoldFrame {
+   readonly _tag = "FoldFrame";
+   constructor(readonly recover: (e: any) => Async<any, any, any>, readonly apply: (a: any) => Async<any, any, any>) {}
+}
 
-   if (interruptionState.interrupted) {
-      throw Ex.interrupted();
-   }
+class ApplyFrame {
+   readonly _tag = "ApplyFrame";
+   constructor(readonly apply: (a: any) => Async<any, any, any>) {}
+}
 
-   switch (I._asyncTag) {
-      case AsyncInstructionTag.Pure: {
-         return I.value;
-      }
-      case AsyncInstructionTag.Suspend: {
-         return await _run(I.async(), r, interruptionState);
-      }
-      case AsyncInstructionTag.Asks: {
-         return await _run(I.f(r), r, interruptionState);
-      }
-      case AsyncInstructionTag.Done: {
-         switch (I.exit._tag) {
-            case "Failure": {
-               throw I.exit.error;
-            }
-            case "Interrupt": {
-               throw Ex.interrupted();
-            }
-            case "Success": {
-               return I.exit.value;
-            }
-         }
-      }
-      case AsyncInstructionTag.Chain: {
-         const a = await _run(I.async, r, interruptionState);
-         return await _run(I.f(a), r, interruptionState);
-      }
-      case AsyncInstructionTag.Give: {
-         return await _run(I.async, I.env, interruptionState);
-      }
-      case AsyncInstructionTag.Fold: {
-         const a = await runPromiseExitEnv(I.async, r, interruptionState);
+type Frame = FoldFrame | ApplyFrame;
 
-         switch (a._tag) {
-            case "Failure": {
-               return await _run(I.f(a.error), r, interruptionState);
-            }
-            case "Interrupt": {
-               throw Ex.interrupted();
-            }
-            case "Success": {
-               return await _run(I.g(a.value), r, interruptionState);
-            }
-         }
-      }
-      case AsyncInstructionTag.Finalize: {
-         const a = await runPromiseExitEnv(I.async, r, interruptionState);
-
-         switch (a._tag) {
-            case "Failure": {
-               throw Ex.failure(a.error);
-            }
-            case "Interrupt": {
-               await _run(I.f(), r, new InterruptionState());
-               throw Ex.interrupted();
-            }
-            case "Success": {
-               return a.value;
-            }
-         }
-         break;
-      }
-      case AsyncInstructionTag.Promise: {
-         return await new CancellablePromise(
-            (s) => I.promise(s).catch((e) => Promise.reject(Ex.failure(I.onError(e)))),
-            interruptionState
-         ).promise();
-      }
-      case AsyncInstructionTag.All: {
-         return (await Promise.all(A.map_(I.asyncs, (a) => _run(a, r, interruptionState)))) as any;
-      }
-   }
-};
-
-export const runPromiseExitEnv = async <R, E, A>(
+export const runPromiseExitEnv_ = async <R, E, A>(
    async: Async<R, E, A>,
-   env: R,
+   r: R,
    interruptionState = new InterruptionState()
-): Promise<Ex.AsyncExit<E, A>> => {
-   try {
-      const a = await defaultPromiseTracingContext.traced(() => _run(async, env, interruptionState))();
-      return Ex.success(a);
-   } catch (e) {
-      return e;
-   }
-};
+): Promise<Ex.AsyncExit<E, A>> =>
+   defaultPromiseTracingContext.traced(async () => {
+      let frames: Stack<Frame> | undefined = undefined;
+      let result = null;
+      let env: Stack<any> | undefined = stack(r);
+      let failed = false;
+      let current: Async<any, any, any> | undefined = async;
+      let instructionCount = 0;
+      let interrupted = false;
 
-export const runPromiseExit = async <E, A>(
+      const isInterrupted = () => interrupted || interruptionState.interrupted;
+
+      const popFrame = (): Frame | undefined => {
+         const current = frames?.value;
+         frames = frames?.previous;
+         return current;
+      };
+
+      const pushFrame = (continuation: Frame): void => {
+         frames = stack(continuation, frames);
+      };
+
+      const popEnv = () => {
+         const current = env?.value;
+         env = env?.previous;
+         return current;
+      };
+
+      const pushEnv = (k: any) => {
+         env = stack(k, env);
+      };
+
+      const unwindStack = () => {
+         let unwinding = true;
+         while (unwinding) {
+            const next = popFrame();
+            if (next == null) {
+               unwinding = false;
+            } else if (next._tag === "FoldFrame") {
+               unwinding = false;
+               pushFrame(new ApplyFrame(next.recover));
+            }
+         }
+      };
+
+      while (current != null && !isInterrupted()) {
+         if (instructionCount > 10_000) {
+            await new Promise((resolve) => {
+               setTimeout(() => {
+                  resolve(undefined);
+               }, 0);
+            });
+            instructionCount = 0;
+         }
+         instructionCount += 1;
+         const I: AsyncInstruction = current[_AI];
+         switch (I._asyncTag) {
+            case AsyncInstructionTag.Chain: {
+               const nested: AsyncInstruction = I.async[_AI];
+               const continuation: (a: any) => Async<any, any, any> = I.f;
+               switch (nested._asyncTag) {
+                  case AsyncInstructionTag.Succeed: {
+                     current = continuation(nested.value);
+                     break;
+                  }
+                  case AsyncInstructionTag.Total: {
+                     current = continuation(nested.thunk());
+                     break;
+                  }
+                  case AsyncInstructionTag.Partial: {
+                     try {
+                        current = continuation(nested.thunk());
+                     } catch (e) {
+                        current = fail(nested.onThrow(e));
+                     }
+                     break;
+                  }
+                  default: {
+                     current = nested;
+                     pushFrame(new ApplyFrame(continuation));
+                  }
+               }
+               break;
+            }
+            case AsyncInstructionTag.Suspend: {
+               current = I.async();
+               break;
+            }
+            case AsyncInstructionTag.Succeed: {
+               result = I.value;
+               const next = popFrame();
+               if (next) {
+                  current = next.apply(result);
+               } else {
+                  current = undefined;
+               }
+               break;
+            }
+            case AsyncInstructionTag.Total: {
+               current = succeed(I.thunk());
+               break;
+            }
+            case AsyncInstructionTag.Partial: {
+               try {
+                  current = succeed(I.thunk());
+               } catch (e) {
+                  current = fail(I.onThrow(e));
+               }
+               break;
+            }
+            case AsyncInstructionTag.Fail: {
+               unwindStack();
+               const next = popFrame();
+               if (next) {
+                  current = next.apply(I.e);
+               } else {
+                  failed = true;
+                  result = I.e;
+                  current = undefined;
+               }
+               break;
+            }
+            case AsyncInstructionTag.Done: {
+               switch (I.exit._tag) {
+                  case "Failure": {
+                     current = fail(I.exit.error);
+                     break;
+                  }
+                  case "Interrupt": {
+                     interrupted = true;
+                     current = undefined;
+                     break;
+                  }
+                  case "Success": {
+                     current = succeed(I.exit.value);
+                     break;
+                  }
+               }
+               break;
+            }
+            case AsyncInstructionTag.Asks: {
+               current = I.f(env.value || {});
+               break;
+            }
+            case AsyncInstructionTag.Give: {
+               current = pipe(
+                  total(() => {
+                     pushEnv(I.env);
+                  }),
+                  chain(() => I.async),
+                  tap(() =>
+                     total(() => {
+                        popEnv();
+                     })
+                  )
+               );
+               break;
+            }
+            case AsyncInstructionTag.All: {
+               const exits: ReadonlyArray<Ex.AsyncExit<any, any>> = await Promise.all(
+                  A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, env?.value || {}, interruptionState))
+               );
+               const results = [];
+               let errored = false;
+               for (let i = 0; i < exits.length && !errored; i++) {
+                  const e = exits[i];
+                  switch (e._tag) {
+                     case "Success": {
+                        results.push(e.value);
+                        break;
+                     }
+                     case "Failure": {
+                        errored = true;
+                        current = fail(e.error);
+                        break;
+                     }
+                     case "Interrupt": {
+                        errored = true;
+                        interrupted = true;
+                        current = undefined;
+                        break;
+                     }
+                  }
+               }
+               if (!errored) {
+                  current = succeed(results);
+               }
+               break;
+            }
+            case AsyncInstructionTag.Promise: {
+               try {
+                  current = succeed(
+                     await new CancellablePromise(
+                        (s) => I.promise(s).catch((e) => Promise.reject(Ex.failure(e))),
+                        interruptionState
+                     ).promise()
+                  );
+               } catch (e) {
+                  const _e = e as Ex.Rejection<E>;
+                  switch (_e._tag) {
+                     case "Failure": {
+                        current = fail(_e.error);
+                        break;
+                     }
+                     case "Interrupt": {
+                        interrupted = true;
+                        current = undefined;
+                        break;
+                     }
+                  }
+               }
+               break;
+            }
+         }
+      }
+      if (interruptionState.interrupted) {
+         return Ex.interrupted();
+      }
+      if (failed) {
+         return Ex.failure(result);
+      }
+      return Ex.success(result);
+   })();
+
+export const runPromiseExit_ = <E, A>(
    async: Async<unknown, E, A>,
    interruptionState = new InterruptionState()
 ): Promise<Ex.AsyncExit<E, A>> => {
-   try {
-      const a = await defaultPromiseTracingContext.traced(() => _run(async, {}, interruptionState))();
-      return Ex.success(a);
-   } catch (e) {
-      return e;
-   }
+   return runPromiseExitEnv_(async, {}, interruptionState);
+};
+
+export const runPromiseExitInterrupt = <E, A>(
+   async: Async<unknown, E, A>
+): [Promise<Ex.AsyncExit<E, A>>, () => void] => {
+   const interruptionState = new InterruptionState();
+   const p = runPromiseExitEnv_(async, {}, interruptionState);
+   const i = () => {
+      interruptionState.interrupt();
+   };
+   return [p, i];
 };
 
 export const runAsync = <E, A>(async: Async<unknown, E, A>, onExit?: (exit: Ex.AsyncExit<E, A>) => void) => {
    const interruptionState = new InterruptionState();
-   runPromiseExit(async, interruptionState).then(onExit);
+   runPromiseExit_(async, interruptionState).then(onExit);
    return () => {
       interruptionState.interrupt();
    };
@@ -123,7 +279,7 @@ export const runAsync = <E, A>(async: Async<unknown, E, A>, onExit?: (exit: Ex.A
 
 export const runAsyncEnv = <R, E, A>(async: Async<R, E, A>, env: R, onExit?: (exit: Ex.AsyncExit<E, A>) => void) => {
    const interruptionState = new InterruptionState();
-   runPromiseExitEnv(async, env, interruptionState).then(onExit);
+   runPromiseExitEnv_(async, env, interruptionState).then(onExit);
    return () => {
       interruptionState.interrupt();
    };

@@ -702,7 +702,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                               const continuation: (a: any) => T.Task<any, any, any> = current.f;
 
                               switch (nested._tag) {
-                                 case TaskInstructionTag.Pure: {
+                                 case TaskInstructionTag.Succeed: {
                                     current = continuation(nested.value)[T._I];
                                     break;
                                  }
@@ -743,7 +743,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                               break;
                            }
 
-                           case TaskInstructionTag.Pure: {
+                           case TaskInstructionTag.Succeed: {
                               current = this.next(current.value);
                               break;
                            }
@@ -783,14 +783,14 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                               break;
                            }
 
-                           case TaskInstructionTag.InterruptStatus: {
+                           case TaskInstructionTag.SetInterrupt: {
                               this.pushInterruptStatus(current.flag.toBoolean);
                               this.pushContinuation(this.interruptExit);
                               current = current.task[T._I];
                               break;
                            }
 
-                           case TaskInstructionTag.CheckInterrupt: {
+                           case TaskInstructionTag.GetInterrupt: {
                               current = current.f(F.interruptStatus(this.isInterruptible))[T._I];
                               break;
                            }

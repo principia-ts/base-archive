@@ -25,7 +25,7 @@ import type { FiberId } from "../../Fiber/FiberId";
 import type { InterruptStatus } from "../../Fiber/model";
 import { forkDaemon } from "../core-scope";
 import type { Canceler, EIO, IO, Task } from "../model";
-import { InterruptStatusInstruction } from "../model";
+import { SetInterruptInstruction } from "../model";
 import { checkFiberId } from "./checkFiberId";
 
 export const interruptAs = (fiberId: FiberId): EIO<never, never> => halt(C.interrupt(fiberId));
@@ -33,7 +33,7 @@ export const interruptAs = (fiberId: FiberId): EIO<never, never> => halt(C.inter
 export const interrupt: Task<unknown, never, never> = chain_(checkFiberId(), interruptAs);
 
 export const setInterruptStatus_ = <R, E, A>(effect: Task<R, E, A>, flag: InterruptStatus): Task<R, E, A> =>
-   new InterruptStatusInstruction(effect, flag);
+   new SetInterruptInstruction(effect, flag);
 
 export const setInterruptStatus = (flag: InterruptStatus) => <R, E, A>(ma: Task<R, E, A>): Task<R, E, A> =>
    setInterruptStatus_(ma, flag);

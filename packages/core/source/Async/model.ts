@@ -43,7 +43,9 @@ declare module "@principia/prelude/HKT" {
 }
 
 export enum AsyncInstructionTag {
-   Pure = "Pure",
+   Succeed = "Succeed",
+   Total = "Total",
+   Partial = "Partial",
    Suspend = "Suspend",
    Promise = "Promise",
    Chain = "Chain",
@@ -52,11 +54,12 @@ export enum AsyncInstructionTag {
    Done = "Done",
    Give = "Give",
    Finalize = "Finalize",
-   All = "All"
+   All = "All",
+   Fail = "Fail"
 }
 
 export type AsyncInstruction =
-   | PureInstruction<any>
+   | SucceedInstruction<any>
    | SuspendInstruction<any, any, any>
    | PromiseInstruction<any, any>
    | ChainInstruction<any, any, any, any, any, any>
@@ -65,12 +68,31 @@ export type AsyncInstruction =
    | DoneInstruction<any, any>
    | GiveInstruction<any, any, any>
    | FinalizeInstruction<any, any, any, any, any>
-   | AllInstruction<any, any, any>;
+   | AllInstruction<any, any, any>
+   | FailInstruction<any>
+   | TotalInstruction<any>
+   | PartialInstruction<any, any>;
 
-export class PureInstruction<A> extends Async<unknown, never, A> {
-   readonly _asyncTag = AsyncInstructionTag.Pure;
+export class SucceedInstruction<A> extends Async<unknown, never, A> {
+   readonly _asyncTag = AsyncInstructionTag.Succeed;
 
    constructor(readonly value: A) {
+      super();
+   }
+}
+
+export class TotalInstruction<A> extends Async<unknown, never, A> {
+   readonly _asyncTag = AsyncInstructionTag.Total;
+
+   constructor(readonly thunk: () => A) {
+      super();
+   }
+}
+
+export class PartialInstruction<E, A> extends Async<unknown, E, A> {
+   readonly _asyncTag = AsyncInstructionTag.Partial;
+
+   constructor(readonly thunk: () => A, readonly onThrow: (error: unknown) => E) {
       super();
    }
 }
@@ -79,6 +101,14 @@ export class DoneInstruction<E, A> extends Async<unknown, E, A> {
    readonly _asyncTag = AsyncInstructionTag.Done;
 
    constructor(readonly exit: Ex.AsyncExit<E, A>) {
+      super();
+   }
+}
+
+export class FailInstruction<E> extends Async<unknown, E, never> {
+   readonly _asyncTag = AsyncInstructionTag.Fail;
+
+   constructor(readonly e: E) {
       super();
    }
 }
@@ -120,7 +150,7 @@ export class PromiseInstruction<E, A> extends Async<unknown, E, A> {
 
    constructor(
       readonly promise: (onInterrupt: (f: () => void) => void) => Promise<A>,
-      readonly onError: (u: unknown) => E
+      readonly onReject: (reason: unknown) => E
    ) {
       super();
    }

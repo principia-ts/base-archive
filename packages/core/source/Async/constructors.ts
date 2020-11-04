@@ -1,7 +1,14 @@
 import type { AsyncExit } from "./AsyncExit";
-import { failure } from "./AsyncExit";
 import type { Async } from "./model";
-import { DoneInstruction, PromiseInstruction, PureInstruction, SuspendInstruction } from "./model";
+import {
+   DoneInstruction,
+   FailInstruction,
+   PartialInstruction,
+   PromiseInstruction,
+   SucceedInstruction,
+   SuspendInstruction,
+   TotalInstruction
+} from "./model";
 
 /*
  * -------------------------------------------
@@ -9,9 +16,9 @@ import { DoneInstruction, PromiseInstruction, PureInstruction, SuspendInstructio
  * -------------------------------------------
  */
 
-export const succeed = <A>(a: A): Async<unknown, never, A> => new PureInstruction(a);
+export const succeed = <A>(a: A): Async<unknown, never, A> => new SucceedInstruction(a);
 
-export const fail = <E>(e: E): Async<unknown, E, never> => new DoneInstruction(failure(e));
+export const fail = <E>(e: E): Async<unknown, E, never> => new FailInstruction(e);
 
 export const done = <E, A>(exit: AsyncExit<E, A>): Async<unknown, E, A> => new DoneInstruction(exit);
 
@@ -30,10 +37,10 @@ export const promise = <E>(onError: (u: unknown) => E) => <A>(
    promise: (onInterrupt: (f: () => void) => void) => Promise<A>
 ) => new PromiseInstruction(promise, onError);
 
-export const total = <A>(thunk: () => A): Async<unknown, never, A> => unfailable(() => Promise.resolve(thunk()));
+export const total = <A>(thunk: () => A): Async<unknown, never, A> => new TotalInstruction(thunk);
 
 export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> =>
-   promise_(() => Promise.resolve(thunk()), onThrow);
+   new PartialInstruction(thunk, onThrow);
 
 export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A): Async<unknown, E, A> =>
    partial_(thunk, onThrow);

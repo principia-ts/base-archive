@@ -5,7 +5,7 @@ export const _I = "_I";
 export const _U = "_U";
 
 export enum TaskInstructionTag {
-   Pure = "Pure",
+   Succeed = "Succeed",
    Chain = "Chain",
    Partial = "Partial",
    Total = "Total",
@@ -18,8 +18,8 @@ export enum TaskInstructionTag {
    Give = "Give",
    Suspend = "Suspend",
    Race = "Race",
-   InterruptStatus = "InterruptStatus",
-   CheckInterrupt = "CheckInterrupt",
+   SetInterrupt = "SetInterrupt",
+   GetInterrupt = "GetInterrupt",
    CheckDescriptor = "CheckDescriptor",
    Supervise = "Supervise",
    SuspendPartial = "SuspendPartial",

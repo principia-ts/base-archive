@@ -19,7 +19,7 @@ import { fail, halt, succeed, suspend, total } from "./constructors";
 import { foldCauseM_, foldM_ } from "./fold";
 import { map_ } from "./functor";
 import type { RIO, Task } from "./model";
-import { CheckDescriptorInstruction, CheckInterruptInstruction, FoldInstruction, ForkInstruction } from "./model";
+import { CheckDescriptorInstruction, FoldInstruction, ForkInstruction, GetInterruptInstruction } from "./model";
 import { chain_ } from "./monad";
 import { unit } from "./unit";
 
@@ -217,6 +217,6 @@ export const checkDescriptor = <R, E, A>(f: (d: FiberDescriptor) => Task<R, E, A
    new CheckDescriptorInstruction(f);
 
 export const checkInterruptible = <R, E, A>(f: (i: InterruptStatus) => Task<R, E, A>): Task<R, E, A> =>
-   new CheckInterruptInstruction(f);
+   new GetInterruptInstruction(f);
 
 export const fork = <R, E, A>(value: Task<R, E, A>): RIO<R, Executor<E, A>> => new ForkInstruction(value, O.none());

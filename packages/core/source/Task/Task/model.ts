@@ -38,14 +38,14 @@ export interface Task<R, E, A> {
 
 export type Instruction =
    | ChainInstruction<any, any, any, any, any, any>
-   | PureInstruction<any>
+   | SucceedInstruction<any>
    | PartialInstruction<any, any>
    | TotalInstruction<any>
    | AsyncInstruction<any, any, any>
    | FoldInstruction<any, any, any, any, any, any, any, any, any>
    | ForkInstruction<any, any, any>
-   | InterruptStatusInstruction<any, any, any>
-   | CheckInterruptInstruction<any, any, any>
+   | SetInterruptInstruction<any, any, any>
+   | GetInterruptInstruction<any, any, any>
    | FailInstruction<any>
    | CheckDescriptorInstruction<any, any, any>
    | YieldInstruction
@@ -103,8 +103,8 @@ export class ChainInstruction<R, R1, E, E1, A, A1> extends BaseInstruction<R & R
    }
 }
 
-export class PureInstruction<A> extends BaseInstruction<unknown, never, A> {
-   readonly _tag = TaskInstructionTag.Pure;
+export class SucceedInstruction<A> extends BaseInstruction<unknown, never, A> {
+   readonly _tag = TaskInstructionTag.Succeed;
    constructor(readonly value: A) {
       super();
    }
@@ -216,16 +216,16 @@ export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extend
    }
 }
 
-export class InterruptStatusInstruction<R, E, A> extends BaseInstruction<R, E, A> {
-   readonly _tag = TaskInstructionTag.InterruptStatus;
+export class SetInterruptInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+   readonly _tag = TaskInstructionTag.SetInterrupt;
 
    constructor(readonly task: Task<R, E, A>, readonly flag: InterruptStatus) {
       super();
    }
 }
 
-export class CheckInterruptInstruction<R, E, A> extends BaseInstruction<R, E, A> {
-   readonly _tag = TaskInstructionTag.CheckInterrupt;
+export class GetInterruptInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+   readonly _tag = TaskInstructionTag.GetInterrupt;
 
    constructor(readonly f: (_: InterruptStatus) => Task<R, E, A>) {
       super();

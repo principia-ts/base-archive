@@ -3,9 +3,9 @@ import { left, right } from "../Either/constructors";
 import { map_ as mapEither_ } from "../Either/functor";
 import type { Stack } from "../support/Stack";
 import { stack } from "../support/Stack";
-import { XPureInstructionTag } from "./_concrete";
-import { concrete, fail, succeed } from "./constructors";
+import { fail, succeed } from "./constructors";
 import type { XPure } from "./model";
+import { _XPI, XPureInstructionTag } from "./model";
 import { giveAll_ } from "./reader";
 
 export class FoldFrame {
@@ -64,15 +64,15 @@ export const runStateEither_ = <S1, S2, E, A>(fa: XPure<S1, S2, unknown, E, A>, 
    }
 
    while (current != null) {
-      const I = concrete(current);
+      const I = current[_XPI];
 
       switch (I._xptag) {
          case XPureInstructionTag.Chain: {
-            const nested = concrete(I.ma);
+            const nested = I.ma[_XPI];
             const continuation = I.f;
 
             switch (nested._xptag) {
-               case XPureInstructionTag.Pure: {
+               case XPureInstructionTag.Succeed: {
                   current = continuation(nested.value);
                   break;
                }
@@ -127,7 +127,7 @@ export const runStateEither_ = <S1, S2, E, A>(fa: XPure<S1, S2, unknown, E, A>, 
             current = I.factory();
             break;
          }
-         case XPureInstructionTag.Pure: {
+         case XPureInstructionTag.Succeed: {
             result = I.value;
             const nextInstr = popContinuation();
             if (nextInstr) {
@@ -154,7 +154,7 @@ export const runStateEither_ = <S1, S2, E, A>(fa: XPure<S1, S2, unknown, E, A>, 
             pushContinuation(new FoldFrame(I.onFailure, I.onSuccess));
             break;
          }
-         case XPureInstructionTag.Read: {
+         case XPureInstructionTag.Asks: {
             current = I.f(environment);
             break;
          }

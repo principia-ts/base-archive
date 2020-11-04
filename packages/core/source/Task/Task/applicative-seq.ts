@@ -1,7 +1,7 @@
 import { tuple } from "../../Function";
 import { mapBoth_ } from "./apply-seq";
 import type { IO, Task } from "./model";
-import { PureInstruction } from "./model";
+import { SucceedInstruction } from "./model";
 
 /*
  * -------------------------------------------
@@ -49,4 +49,4 @@ export const both = <Q, D, B>(fb: Task<Q, D, B>) => <R, E, A>(fa: Task<R, E, A>)
  * @category Applicative
  * @since 1.0.0
  */
-export const pure = <A>(a: A): IO<A> => new PureInstruction(a);
+export const pure = <A>(a: A): IO<A> => new SucceedInstruction(a);

@@ -1,4 +1,5 @@
 import { identity } from "../../../Function";
+import * as Sy from "../../../Sync";
 import { both, then } from "./constructors";
 import { empty } from "./empty";
 import type { Cause } from "./model";
@@ -8,6 +9,24 @@ import type { Cause } from "./model";
  * Monad Cause
  * -------------------------------------------
  */
+
+export const chainSafe_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<unknown, never, Cause<D>> =>
+   Sy.gen(function* (_) {
+      switch (fa._tag) {
+         case "Empty":
+            return empty;
+         case "Fail":
+            return f(fa.value);
+         case "Die":
+            return fa;
+         case "Interrupt":
+            return fa;
+         case "Then":
+            return then(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
+         case "Both":
+            return both(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
+      }
+   });
 
 /**
  * ```haskell
@@ -20,20 +39,7 @@ import type { Cause } from "./model";
  * @since 1.0.0
  */
 export const chain_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> => {
-   switch (fa._tag) {
-      case "Empty":
-         return empty;
-      case "Fail":
-         return f(fa.value);
-      case "Die":
-         return fa;
-      case "Interrupt":
-         return fa;
-      case "Then":
-         return then(chain_(fa.left, f), chain_(fa.right, f));
-      case "Both":
-         return both(chain_(fa.left, f), chain_(fa.right, f));
-   }
+   return Sy.runIO(chainSafe_(fa, f));
 };
 
 /**

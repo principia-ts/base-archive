@@ -1,5 +1,5 @@
 import type { EIO, RIO, Task } from "./model";
-import { GiveInstruction, PureInstruction, ReadInstruction } from "./model";
+import { GiveInstruction, ReadInstruction, SucceedInstruction } from "./model";
 
 /**
  * ```haskell
@@ -11,7 +11,7 @@ import { GiveInstruction, PureInstruction, ReadInstruction } from "./model";
  * @category MonadEnv
  * @since 1.0.0
  */
-export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => new ReadInstruction((_: R) => new PureInstruction(f(_)));
+export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => new ReadInstruction((_: R) => new SucceedInstruction(f(_)));
 
 /**
  * ```haskell

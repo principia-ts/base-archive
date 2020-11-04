@@ -1,22 +1,20 @@
-import type { Concrete } from "./_concrete";
+import type { XPure } from "./model";
 import {
    FailInstruction,
    ModifyInstruction,
    PartialInstruction,
-   PureInstruction,
+   SucceedInstruction,
    SuspendInstruction,
    TotalInstruction
-} from "./_concrete";
-import type { XPure } from "./model";
-
-export const concrete = <S1, S2, R, E, A>(_: XPure<S1, S2, R, E, A>): Concrete<S1, S2, R, E, A> => _ as any;
+} from "./model";
 
 /**
  * ```haskell
  * succeed :: <a, s1, s2>a -> XPure s1 s2 _ _ a
  * ```
  */
-export const succeed = <A, S1 = unknown, S2 = never>(a: A): XPure<S1, S2, unknown, never, A> => new PureInstruction(a);
+export const succeed = <A, S1 = unknown, S2 = never>(a: A): XPure<S1, S2, unknown, never, A> =>
+   new SucceedInstruction(a);
 
 export const total = <A, S1 = unknown, S2 = never>(thunk: () => A): XPure<S1, S2, unknown, never, A> =>
    new TotalInstruction(thunk);
