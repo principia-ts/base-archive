@@ -1,7 +1,10 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import { _A, _E, _I, _R, _U } from "../Task/Task/constants";
+import type * as Ac from "../Async";
+import { _AI } from "../Async/constants";
+import { _A, _E, _I, _R, _U, TaskInstructionTag } from "../Task/Task/constants";
 import type * as T from "../Task/Task/model";
+import { XPureIntegrationNotImplemented, XPureTaskIntegration } from "./integration";
 
 export const URI = "XPure";
 
@@ -26,7 +29,8 @@ export type _XPI = typeof _XPI;
  * including context, state, and failure.
  */
 export abstract class XPure<S1, S2, R, E, A> {
-   readonly _tag = "XPure";
+   readonly _tag = TaskInstructionTag.Integration;
+   readonly _asyncTag = "XPure";
 
    readonly _S1!: (_: S1) => void;
    readonly _S2!: () => S2;
@@ -36,6 +40,13 @@ export abstract class XPure<S1, S2, R, E, A> {
    readonly [_A]!: () => A;
    readonly [_R]!: (_: R) => void;
    get [_I](): T.Instruction {
+      const xi = XPureTaskIntegration.get;
+      if (xi._tag === "Some") {
+         return xi.value(this as any)[_I];
+      }
+      return XPureIntegrationNotImplemented;
+   }
+   get [_AI](): Ac.AsyncInstruction {
       return this as any;
    }
    get [_XPI](): Instruction {

@@ -7,6 +7,7 @@ export * from "./constructors";
 export * from "./fallible";
 export * from "./fold";
 export * from "./functor";
+export * from "./integration";
 export * from "./model";
 export * from "./monad";
 export * from "./reader";

@@ -726,17 +726,17 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                               break;
                            }
 
-                           case "XPure": {
-                              const res: E.Either<any, any> = X.runEither(
-                                 X.giveAll_(current, this.environments?.value || {})
-                              );
-                              if (res._tag === "Left") {
-                                 current = T.fail(res.left)[T._I];
-                              } else {
-                                 current = this.next(res.right);
-                              }
-                              break;
-                           }
+                           // case "XPure": {
+                           //    const res: E.Either<any, any> = X.runEither(
+                           //       X.giveAll_(current, this.environments?.value || {})
+                           //    );
+                           //    if (res._tag === "Left") {
+                           //       current = T.fail(res.left)[T._I];
+                           //    } else {
+                           //       current = this.next(res.right);
+                           //    }
+                           //    break;
+                           // }
 
                            case TaskInstructionTag.Integration: {
                               current = current[T._I];

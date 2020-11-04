@@ -294,7 +294,7 @@ export const integrationNotImplemented = new FailInstruction({
 });
 
 export abstract class Integration<R, E, A> extends BaseInstruction<R, E, A> {
-   readonly _tag = "Integration";
+   readonly _tag = TaskInstructionTag.Integration;
    readonly _S1!: (_: unknown) => void;
    readonly _S2!: () => never;
 

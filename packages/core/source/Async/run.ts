@@ -1,13 +1,15 @@
 import * as A from "../Array";
+import { fold_ as foldEither } from "../Either";
 import { pipe } from "../Function";
 import type { Stack } from "../support/Stack";
 import { stack } from "../support/Stack";
+import * as X from "../XPure";
 import * as Ex from "./AsyncExit";
 import { CancellablePromise } from "./CancellablePromise";
+import { _AI, AsyncInstructionTag } from "./constants";
 import { fail, succeed, total } from "./constructors";
 import { InterruptionState } from "./InterruptionState";
 import type { Async, AsyncInstruction } from "./model";
-import { _AI, AsyncInstructionTag } from "./model";
 import { chain, tap } from "./monad";
 import { defaultPromiseTracingContext } from "./PromiseTracingContext";
 
@@ -239,6 +241,14 @@ export const runPromiseExitEnv_ = async <R, E, A>(
                   }
                }
                break;
+            }
+            case "XPure": {
+               const res = X.runEitherEnv_(I, env?.value || {});
+               if (res._tag === "Left") {
+                  current = fail(res.left);
+               } else {
+                  current = succeed(res.right);
+               }
             }
          }
       }

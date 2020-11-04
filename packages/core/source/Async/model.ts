@@ -1,15 +1,14 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import { _A, _E, _I, _R, _U } from "../Task/Task/constants";
+import type { Sync } from "../Sync";
+import { _A, _E, _I, _R, _U, TaskInstructionTag } from "../Task/Task/constants";
 import type * as T from "../Task/Task/model";
 import type * as Ex from "./AsyncExit";
+import { _AI, AsyncInstructionTag } from "./constants";
 import { asyncIntegrationNotImplemented, asyncTaskIntegration } from "./integration";
 
-export const _AI = "_AI";
-export type _AI = typeof _AI;
-
 export abstract class Async<R, E, A> implements T.Integration<R, E, A> {
-   readonly _tag = "Integration";
+   readonly _tag = TaskInstructionTag.Integration;
    readonly _S1!: (_: unknown) => void;
    readonly _S2!: () => never;
 
@@ -42,22 +41,6 @@ declare module "@principia/prelude/HKT" {
    }
 }
 
-export enum AsyncInstructionTag {
-   Succeed = "Succeed",
-   Total = "Total",
-   Partial = "Partial",
-   Suspend = "Suspend",
-   Promise = "Promise",
-   Chain = "Chain",
-   Fold = "Fold",
-   Asks = "Asks",
-   Done = "Done",
-   Give = "Give",
-   Finalize = "Finalize",
-   All = "All",
-   Fail = "Fail"
-}
-
 export type AsyncInstruction =
    | SucceedInstruction<any>
    | SuspendInstruction<any, any, any>
@@ -71,7 +54,8 @@ export type AsyncInstruction =
    | AllInstruction<any, any, any>
    | FailInstruction<any>
    | TotalInstruction<any>
-   | PartialInstruction<any, any>;
+   | PartialInstruction<any, any>
+   | Sync<any, any, any>;
 
 export class SucceedInstruction<A> extends Async<unknown, never, A> {
    readonly _asyncTag = AsyncInstructionTag.Succeed;

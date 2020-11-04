@@ -1,8 +1,8 @@
 import { identity } from "@principia/prelude";
 import type { UnionToIntersection } from "@principia/prelude/Utils";
-import type { NonEmptyArray } from "packages/core/source/NonEmptyArray";
 
 import { traverseI_ } from "../_core";
+import type { NonEmptyArray } from "../../../NonEmptyArray";
 import type { Task } from "../model";
 import { traverseIPar_ } from "./traverseIPar";
 import { traverseIParN_ } from "./traverseIParN";
