@@ -3,7 +3,7 @@ import type * as G from "@principia/core/Guard";
 
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";
-import { merge } from "../../utils";
+import { memoize, merge } from "../../utils";
 import { IntersectionGuard } from "./intersection";
 import { NewtypeGuard } from "./newtype";
 import { NullableGuard } from "./nullable";
@@ -15,7 +15,7 @@ import { RefinementGuard } from "./refinement";
 import { SetGuard } from "./set";
 import { SumGuard } from "./sum";
 
-export const AllGuardInterpreters = <Env extends AnyEnv>() =>
+export const _allGuardInterpreters = <Env extends AnyEnv>() =>
    merge(
       PrimitivesGuard<Env>(),
       RefinementGuard<Env>(),
@@ -29,9 +29,11 @@ export const AllGuardInterpreters = <Env extends AnyEnv>() =>
       IntersectionGuard<Env>()
    );
 
+export const allGuardInterpreters = memoize(_allGuardInterpreters) as typeof _allGuardInterpreters;
+
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
    env: {
       [K in G.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
    }
 ) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): G.Guard<unknown, A> =>
-   pipe(env, F.derive(AllGuardInterpreters()));
+   pipe(env, F.derive(allGuardInterpreters()));

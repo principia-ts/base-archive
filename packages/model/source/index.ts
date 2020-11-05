@@ -11,13 +11,21 @@ import { summonFor } from "./summoner";
 
 export const { make, makeADT } = summonFor({});
 
-export const show = S.deriveFor(make)({});
-export const decoder = Dec.deriveFor(make)({});
-export const encoder = Enc.deriveFor(make)({});
-export const eq = Eq.deriveFor(make)({});
-export const guard = G.deriveFor(make)({});
-export const arbitrary = Arb.deriveFor(make)({
+export const getShow = S.deriveFor(make)({});
+export const getDecoder = Dec.deriveFor(make)({});
+export const getEncoder = Enc.deriveFor(make)({});
+export const getEq = Eq.deriveFor(make)({});
+export const getGuard = G.deriveFor(make)({});
+export const getArbitrary = Arb.deriveFor(make)({
    [ArbURI]: {
       module: fc
    }
 });
+
+export {} from "./interpreter/Eq/HKT";
+export {} from "./interpreter/Show/HKT";
+export {} from "./interpreter/Guard/HKT";
+export {} from "./interpreter/Encoder/HKT";
+export {} from "./interpreter/Decoder/HKT";
+export {} from "./interpreter/Arbitrary/HKT";
+export {} from "./HKT";

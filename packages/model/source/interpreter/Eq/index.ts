@@ -3,7 +3,7 @@ import { pipe } from "@principia/core/Function";
 
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";
-import { merge } from "../../utils";
+import { memoize, merge } from "../../utils";
 import { IntersectionEq } from "./intersection";
 import { NewtypeEq } from "./newtype";
 import { NullableEq } from "./nullable";
@@ -15,7 +15,7 @@ import { RefinementEq } from "./refinement";
 import { SetEq } from "./set";
 import { SumEq } from "./sum";
 
-export const AllEqInterpreters = <Env extends AnyEnv>() =>
+export const _allEqInterpreters = <Env extends AnyEnv>() =>
    merge(
       PrimitivesEq<Env>(),
       RefinementEq<Env>(),
@@ -29,9 +29,11 @@ export const AllEqInterpreters = <Env extends AnyEnv>() =>
       IntersectionEq<Env>()
    );
 
+export const allEqInterpreters = memoize(_allEqInterpreters) as typeof _allEqInterpreters;
+
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
    env: {
       [K in Eq.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
    }
 ) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Eq.Eq<A> =>
-   pipe(env, F.derive(AllEqInterpreters()));
+   pipe(env, F.derive(allEqInterpreters()));
