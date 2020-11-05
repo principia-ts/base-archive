@@ -1,13 +1,14 @@
 import { inspect } from "util";
 
-import * as A from "../source/Array";
 import * as Ac from "../source/Async";
 import * as E from "../source/Either";
 import { pipe } from "../source/Function";
 import * as F from "../source/Function";
 import * as O from "../source/Option";
 import * as Sy from "../source/Sync";
+import * as L from "../source/Sync/Layer";
 import * as C from "../source/Task/Exit/Cause";
+import * as H from "../source/Has";
 import * as T from "../source/Task/Task";
 import * as X from "../source/XPure";
 
@@ -81,14 +82,3 @@ import * as X from "../source/XPure";
 //    const end = Date.now();
 //    console.log(end - start);
 // })();
-const start = Date.now();
-pipe(
-   Sy.asks((_: { s: string }) => _.s),
-   Ac.map((s) => s.length),
-   T.map((n) => n + 1),
-   T.tap((n) => T.total(() => console.log(n))),
-   T.giveAll({ s: "Hello World" }),
-   T.run
-);
-const end = Date.now();
-console.log(end - start);

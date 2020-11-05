@@ -1,4 +1,4 @@
-import type { Has, Tag } from "../../Has";
+import type { Has, Tag } from "../../../Has";
 import * as L from "../../Layer/core";
 import type { Task } from "../model";
 

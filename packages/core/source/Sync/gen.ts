@@ -4,7 +4,7 @@ import { NoSuchElementException } from "../GlobalExceptions";
 import type { Option } from "../Option";
 import type { _E, _R } from "../support/utils";
 import { isEither, isOption, isTag } from "../support/utils";
-import type { Has, Tag } from "../Task/Has";
+import type { Has, Tag } from "../Has";
 import { fromEither, fromOption, succeed, suspend } from "./constructors";
 import type { Sync } from "./model";
 import { chain_ } from "./monad";

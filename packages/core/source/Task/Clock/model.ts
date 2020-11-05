@@ -3,8 +3,8 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import type { HasTag } from "../Has";
-import { has } from "../Has";
+import type { HasTag } from "../../Has";
+import { tag } from "../../Has";
 import * as T from "../Task/_core";
 import { asyncInterrupt } from "../Task/combinators/interrupt";
 import { asksService, asksServiceM } from "../Task/combinators/service";
@@ -24,7 +24,7 @@ export interface Clock {
 /**
  * Has Clock
  */
-export const HasClock = has<Clock>();
+export const HasClock = tag<Clock>();
 
 export type HasClock = HasTag<typeof HasClock>;
 

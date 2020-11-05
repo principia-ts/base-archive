@@ -1,11 +1,11 @@
 import { pipe } from "../../Function";
-import type { Has, Region, Tag } from "../Has";
+import type { Has, Region, Tag } from "../../Has";
 import * as M from "../Managed";
 import * as T from "../Task/_core";
 import type { Runtime } from "../Task/combinators/runtime";
 import { makeRuntime } from "../Task/combinators/runtime";
 import * as L from "./core";
-import { LayerRefreshInstruction } from "./model";
+import { LayerFreshInstruction } from "./model";
 
 /**
  * Embed the requird environment in a region
@@ -22,4 +22,4 @@ export const toRuntime = <R, E, A>(_: L.Layer<R, E, A>): M.Managed<R, E, Runtime
  * Returns a fresh version of a potentially memoized layer,
  * note that this will override the memoMap for the layer and its children
  */
-export const refresh = <R, E, A>(layer: L.Layer<R, E, A>): L.Layer<R, E, A> => new LayerRefreshInstruction(layer);
+export const fresh = <R, E, A>(layer: L.Layer<R, E, A>): L.Layer<R, E, A> => new LayerFreshInstruction(layer);

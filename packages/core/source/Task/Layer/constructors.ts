@@ -1,7 +1,7 @@
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
 import { identity } from "../../Function";
-import type { Has, Tag } from "../Has";
+import type { Has, Tag } from "../../Has";
 import * as M from "../Managed";
 import type { Task } from "../Task";
 import * as T from "../Task/combinators/service";

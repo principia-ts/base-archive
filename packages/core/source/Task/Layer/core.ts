@@ -2,12 +2,12 @@ import type { Erase } from "@principia/prelude/Utils";
 
 import * as A from "../../Array";
 import { pipe, tuple } from "../../Function";
+import type * as H from "../../Has";
+import { mergeEnvironments, tag } from "../../Has";
 import { insert } from "../../Map";
 import { sequential } from "../ExecutionStrategy";
 import type { Cause } from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
-import type * as H from "../Has";
-import { has, mergeEnvironments } from "../Has";
 import type { Managed } from "../Managed/model";
 import type { Finalizer, ReleaseMap } from "../Managed/ReleaseMap";
 import * as RelMap from "../Managed/ReleaseMap";
@@ -35,7 +35,7 @@ export const _build = <R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, 
    const I = layer._I();
 
    switch (I._tag) {
-      case LayerInstructionTag.Refresh: {
+      case LayerInstructionTag.Fresh: {
          return M.succeed(() => build(I.layer));
       }
       case LayerInstructionTag.Managed: {
@@ -378,7 +378,7 @@ export class MemoMap {
       );
 }
 
-export const HasMemoMap = has(MemoMap);
+export const HasMemoMap = tag(MemoMap);
 export type HasMemoMap = H.HasTag<typeof HasMemoMap>;
 
 export function makeMemoMap() {

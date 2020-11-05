@@ -2,9 +2,9 @@ import type { UnionToIntersection } from "@principia/prelude/Utils";
 
 import * as A from "../Array";
 import { pipe } from "../Function";
+import type { Has, Region, Tag } from "../Has";
+import { mergeEnvironments, tag } from "../Has";
 import * as R from "../Record";
-import type { Has, Region, Tag } from "../Task/Has";
-import { has, mergeEnvironments } from "../Task/Has";
 import * as X from "../XPure";
 import type { Sync } from "./model";
 
@@ -146,7 +146,7 @@ export const replaceService_ = <R1, E1, A1, T>(
    f: (_: T) => T
 ): Sync<R1 & Has<T>, E1, A1> => asksServiceM(_)((t) => giveServiceM(_)(X.pure(f(t)))(ma));
 
-export const region = <K, T>(): Tag<Region<T, K>> => has<Region<T, K>>();
+export const region = <K, T>(): Tag<Region<T, K>> => tag<Region<T, K>>();
 
 export const useRegion = <K, T>(h: Tag<Region<T, K>>) => <R, E, A>(e: Sync<R & T, E, A>) =>
    asksServiceM(h)((a) => pipe(e, X.give((a as any) as T)));

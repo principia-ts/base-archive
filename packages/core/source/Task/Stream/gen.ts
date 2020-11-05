@@ -3,7 +3,7 @@ import { NoSuchElementException, PrematureGeneratorExit } from "../../GlobalExce
 import type { Option } from "../../Option";
 import type { _E, _R } from "../../support/utils";
 import { isEither, isOption, isTag } from "../../support/utils";
-import type { Has, Tag } from "../Has";
+import type { Has, Tag } from "../../Has";
 import type { Task } from "../Task";
 import { askService, die, fromEither } from "../Task";
 import { fromTask, suspend } from "./constructors";

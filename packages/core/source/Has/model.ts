@@ -9,6 +9,9 @@
  * Derived from the above sources
  */
 
+import type { Option } from "../Option";
+import { fromNullable, none } from "../Option";
+
 /**
  * URI used in Has
  */
@@ -53,6 +56,7 @@ export type Constructor<T> = Function & { prototype: T };
  * Tag Encodes capabilities of reading and writing a service T into a generic environment
  */
 export interface Tag<T> {
+   _tag: "Tag";
    _T: T;
    key: PropertyKey;
    def: boolean;
@@ -60,6 +64,7 @@ export interface Tag<T> {
    fixed: () => Tag<T>;
    refine: <T1 extends T>() => Tag<T1>;
    read: (r: Has<T>) => T;
+   readOption: (r: unknown) => Option<T>;
    setKey: (s: PropertyKey) => Tag<T>;
    of: (_: T) => Has<T>;
 }
@@ -70,6 +75,7 @@ export interface Tag<T> {
 export type HasTag<T> = [T] extends [Tag<infer A>] ? Has<A> : never;
 
 const makeTag = <T>(def = false, key: PropertyKey = Symbol()): Tag<T> => ({
+   _tag: "Tag",
    _T: undefined as any,
    key,
    def,
@@ -78,15 +84,16 @@ const makeTag = <T>(def = false, key: PropertyKey = Symbol()): Tag<T> => ({
    fixed: () => makeTag(false, key),
    refine: () => makeTag(def, key),
    read: (r: Has<T>) => r[key],
+   readOption: (r) => (typeof r === "object" && r !== null ? fromNullable(r[key]) : none()),
    setKey: (s: PropertyKey) => makeTag(def, s)
 });
 
 /**
  * Create a service entry Tag from a type and a URI
  */
-export function has<T extends Constructor<any>>(_: T): Tag<ConstructorType<T>>;
-export function has<T>(): Tag<T>;
-export function has(_?: any): Tag<unknown> {
+export function tag<T extends Constructor<any>>(_: T): Tag<ConstructorType<T>>;
+export function tag<T>(): Tag<T>;
+export function tag(_?: any): Tag<unknown> {
    return makeTag();
 }
 

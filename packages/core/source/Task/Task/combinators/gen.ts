@@ -6,7 +6,7 @@ import type { Option } from "../../../Option";
 import type { _E, _R } from "../../../support/utils";
 import { isEither, isOption, isTag } from "../../../support/utils";
 import { sequential } from "../../ExecutionStrategy";
-import type { Has, Tag } from "../../Has";
+import type { Has, Tag } from "../../../Has";
 import type { ReleaseMap } from "../../Managed";
 import { makeReleaseMap, Managed, releaseAll } from "../../Managed";
 import type { Task } from "../model";

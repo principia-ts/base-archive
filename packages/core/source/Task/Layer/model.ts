@@ -42,7 +42,7 @@ export enum LayerInstructionTag {
    Fold = "LayerFold",
    Map = "LayerMap",
    Chain = "LayerChain",
-   Refresh = "LayerRefresh",
+   Fresh = "LayerRefresh",
    Managed = "LayerManaged",
    Suspend = "LayerSuspend",
    MapBothPar = "LayerMapBothPar",
@@ -61,7 +61,7 @@ export type LayerInstruction =
    | LayerMapInstruction<any, any, any, any>
    | LayerChainInstruction<any, any, any, any, any, any>
    | LayerChainInstruction<any, any, any, any, any, any>
-   | LayerRefreshInstruction<any, any, any>
+   | LayerFreshInstruction<any, any, any>
    | LayerManagedInstruction<any, any, any>
    | LayerSuspendInstruction<any, any, any>
    | LayerMapBothParInstruction<any, any, any, any, any, any, any>
@@ -101,8 +101,8 @@ export class LayerChainInstruction<R, E, A, R1, E1, B> extends Layer<R & R1, E |
    }
 }
 
-export class LayerRefreshInstruction<R, E, A> extends Layer<R, E, A> {
-   readonly _tag = LayerInstructionTag.Refresh;
+export class LayerFreshInstruction<R, E, A> extends Layer<R, E, A> {
+   readonly _tag = LayerInstructionTag.Fresh;
 
    constructor(readonly layer: Layer<R, E, A>) {
       super();

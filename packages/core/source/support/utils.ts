@@ -1,7 +1,7 @@
 import type { Either } from "../Either";
+import type { Tag } from "../Has";
 import type { Option } from "../Option";
 import type { Sync } from "../Sync";
-import type { Tag } from "../Task/Has";
 import { Managed } from "../Task/Managed/model";
 import type { Task } from "../Task/Task";
 import type { XPure } from "../XPure";
