@@ -17,3 +17,7 @@ export const first_ = <R, E, A, D>(pab: Managed<R, E, A>, f: (e: E) => D): Manag
    new Managed(T.first_(pab.task, f));
 
 export const first = <E, D>(f: (e: E) => D) => <R, A>(pab: Managed<R, E, A>): Managed<R, D, A> => first_(pab, f);
+
+export const mapError_ = first_;
+
+export const mapError = first;

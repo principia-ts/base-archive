@@ -3,7 +3,7 @@ import { flow, pipe } from "../../Function";
 import type { Cause } from "../Exit/Cause";
 import { failureOrCause } from "../Exit/Cause";
 import * as T from "./_internal/task";
-import { halt } from "./constructors";
+import { halt, succeed } from "./constructors";
 import { Managed } from "./model";
 
 /*
@@ -57,3 +57,13 @@ export const foldM = <E, A, R1, E1, B, R2, E2, C>(f: (e: E) => Managed<R1, E1, B
 >(
    ma: Managed<R, E, A>
 ): Managed<R & R1 & R2, E1 | E2, B | C> => foldM_(ma, f, g);
+
+export const fold_ = <R, E, A, B, C>(
+   ma: Managed<R, E, A>,
+   onError: (e: E) => B,
+   onSuccess: (a: A) => C
+): Managed<R, never, B | C> => foldM_(ma, flow(onError, succeed), flow(onSuccess, succeed));
+
+export const fold = <E, A, B, C>(onError: (e: E) => B, onSuccess: (a: A) => C) => <R>(
+   ma: Managed<R, E, A>
+): Managed<R, never, B | C> => fold_(ma, onError, onSuccess);

@@ -8,3 +8,4 @@ export { bracketExit_, bracket_ } from "../../Task/combinators/bracket";
 export { sandbox } from "../../Task/combinators/sandbox";
 export * from "../../Task/combinators/orDieWith";
 export * from "../../Task/combinators/orDie";
+export * from "../../Task/combinators/eventually";

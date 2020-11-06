@@ -23,6 +23,7 @@ export * from "./duplicate";
 export * from "./either";
 export * from "./ensuringChildren";
 export * from "./errorAsCause";
+export * from "./eventually";
 export * from "./extend";
 export * from "./filter";
 export * from "./firstSuccess";

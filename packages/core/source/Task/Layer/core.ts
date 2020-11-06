@@ -79,10 +79,10 @@ export const _build = <R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, 
                (e) =>
                   pipe(
                      T.toManaged()(T.ask<any>()),
-                     M.chain((r) => M.provideSome_(memo.getOrElseMemoize(I.onFailure), () => tuple(r, e)))
+                     M.chain((r) => M.local_(memo.getOrElseMemoize(I.onFailure), () => tuple(r, e)))
                   ),
                (r) =>
-                  M.provideSome_(memo.getOrElseMemoize(I.onSuccess), (x) =>
+                  M.local_(memo.getOrElseMemoize(I.onSuccess), (x) =>
                      typeof x === "object" && typeof r === "object"
                         ? {
                              ...x,
