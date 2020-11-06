@@ -33,6 +33,7 @@ export * from "./fromPromise";
 export * from "./gen";
 export * from "./get";
 export * from "./getOrFail";
+export * from "./giveLayer";
 export * from "./in";
 export * from "./interrupt";
 export * from "./interruptAllChildren";
@@ -107,5 +108,4 @@ export * from "./tuple";
 export * from "./unrefine";
 export * from "./unrefineWith";
 export * from "./validate";
-export * from "./withLayer";
 // codegen:end

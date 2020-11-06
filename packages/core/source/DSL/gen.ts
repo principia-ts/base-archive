@@ -97,7 +97,7 @@ export function genF<
       >;
    }
 >(
-   M: Monad<F>,
+   M: Monad<F, TC>,
    config?: { adapter?: Adapter }
 ): <T extends GenHKT<HKT.Kind<F, TC, any, any, any, any, any, any, any, any, any, any>, any>, A0>(
    f: (i: Adapter) => Generator<T, A0, any>
@@ -128,23 +128,23 @@ export function genF<F>(
    const chain = chainF(F);
    const pure = pureF(F);
 
-   return <Eff extends GenHKT<HKT.HKT<F, any>, any>, AEff>(
-      f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
-   ): HKT.HKT<F, AEff> => {
+   return <T extends GenHKT<HKT.HKT<F, any>, any>, A>(
+      f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<T, A, any>
+   ): HKT.HKT<F, A> => {
       return pipe(
          pure({}),
          chain(() => {
             const iterator = f((config?.adapter ? config.adapter : adapter) as any);
             const state = iterator.next();
 
-            function run(state: IteratorYieldResult<Eff> | IteratorReturnResult<AEff>): HKT.HKT<F, AEff> {
+            function run(state: IteratorYieldResult<T> | IteratorReturnResult<A>): HKT.HKT<F, A> {
                if (state.done) {
                   return pure(state.value);
                }
                return chain((val) => {
                   const next = iterator.next(val);
                   return run(next);
-               })(state.value["T"]);
+               })(state.value.T);
             }
 
             return run(state);

@@ -1,5 +1,3 @@
-import { RSA_X931_PADDING } from "constants";
-
 import * as C from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
 import { join } from "../Fiber/combinators/join";
@@ -7,6 +5,12 @@ import type { FiberId } from "../Fiber/FiberId";
 import type { Fiber } from "../Fiber/model";
 import * as T from "./_core";
 import { raceWith, transplant } from "./core-scope";
+
+/*
+ * -------------------------------------------
+ * Parallel Apply Task
+ * -------------------------------------------
+ */
 
 /**
  * Parallelly zips this effect with the specified effect using the

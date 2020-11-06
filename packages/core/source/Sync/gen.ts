@@ -1,10 +1,10 @@
 import type { Either } from "../Either";
 import { identity } from "../Function";
 import { NoSuchElementException } from "../GlobalExceptions";
+import type { Has, Tag } from "../Has";
 import type { Option } from "../Option";
 import type { _E, _R } from "../support/utils";
 import { isEither, isOption, isTag } from "../support/utils";
-import type { Has, Tag } from "../Has";
 import { fromEither, fromOption, succeed, suspend } from "./constructors";
 import type { Sync } from "./model";
 import { chain_ } from "./monad";

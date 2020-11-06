@@ -2,11 +2,11 @@ import { chain_, fail, fromEither, local_, map_, pure, suspend, unit } from "../
 import type { Either } from "../../../Either";
 import { tuple } from "../../../Function";
 import type { NoSuchElementException } from "../../../GlobalExceptions";
+import type { Has, Tag } from "../../../Has";
 import type { Option } from "../../../Option";
 import type { _E, _R } from "../../../support/utils";
 import { isEither, isOption, isTag } from "../../../support/utils";
 import { sequential } from "../../ExecutionStrategy";
-import type { Has, Tag } from "../../../Has";
 import type { ReleaseMap } from "../../Managed";
 import { makeReleaseMap, Managed, releaseAll } from "../../Managed";
 import type { Task } from "../model";

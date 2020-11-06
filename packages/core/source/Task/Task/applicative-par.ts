@@ -1,6 +1,12 @@
 import { mapBothPar_ } from "./apply-par";
 import type { Task } from "./model";
 
+/*
+ * -------------------------------------------
+ * Parallel Applicative Task
+ * -------------------------------------------
+ */
+
 /**
  * Parallely zips two `Tasks`
  */
