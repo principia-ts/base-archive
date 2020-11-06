@@ -27,10 +27,10 @@ export const sequenceI = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
                T.map((a2) => ref.join(a, a2))
             )
          ),
-      inheritRefs: T.traverseIUnit_(fibers, (f) => f.inheritRefs),
+      inheritRefs: T.foreachUnit_(fibers, (f) => f.inheritRefs),
       interruptAs: (fiberId) =>
          pipe(
-            T.traverseI_(fibers, (f) => f.interruptAs(fiberId)),
+            T.foreach_(fibers, (f) => f.interruptAs(fiberId)),
             T.map(
                A.reduceRight(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
                   Ex.mapBothCause_(a, b, (_a, _b) => [_a, ..._b], C.both)
@@ -38,7 +38,7 @@ export const sequenceI = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
             )
          ),
       poll: pipe(
-         T.traverseI_(fibers, (f) => f.poll),
+         T.foreach_(fibers, (f) => f.poll),
          T.map(
             A.reduceRight(some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
                O.fold_(

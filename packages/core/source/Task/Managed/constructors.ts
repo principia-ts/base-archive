@@ -1,5 +1,6 @@
 import { pipe } from "../../Function";
 import type { Exit } from "../Exit";
+import type { Cause } from "../Exit/Cause";
 import { makeRef } from "../XRef/_core";
 import * as T from "./_internal/task";
 import { Managed } from "./model";
@@ -24,14 +25,19 @@ export const fromTask = <R, E, A>(effect: T.Task<R, E, A>) =>
    );
 
 /**
- * Imports a synchronous side-effect into a pure value
+ * Imports a synchronous side-effect into a Managed
  */
 export const total = <A>(effect: () => A) => fromTask(T.total(effect));
 
 /**
- * Returns a task that models failure with the specified error. The moral equivalent of throw for pure code.
+ * Returns a Managed that models failure with the specified error. The moral equivalent of throw for pure code.
  */
 export const fail = <E>(e: E) => fromTask(T.fail(e));
+
+/**
+ * Returns a Managed that models failure with the specified `Cause`.
+ */
+export const halt = <E>(cause: Cause<E>) => fromTask(T.halt(cause));
 
 /**
  * Creates a task that executes a finalizer stored in a `Ref`.

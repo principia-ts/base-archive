@@ -163,7 +163,7 @@ export const absolve = <R, E, E1, A>(v: Task<R, E, E.Either<E1, A>>) => chain_(v
  * @category Combinators
  * @since 1.0.0
  */
-export const traverseIUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, any>): Task<R, E, void> =>
+export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, any>): Task<R, E, void> =>
    I.foldMap(makeMonoid<Task<R, E, void>>((x, y) => chain_(x, () => y), unit()))(f)(as);
 
 /**
@@ -176,8 +176,8 @@ export const traverseIUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E,
  * @category Combinators
  * @since 1.0.0
  */
-export const traverseIUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Iterable<A>): Task<R, E, void> =>
-   traverseIUnit_(as, f);
+export const foreachUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Iterable<A>): Task<R, E, void> =>
+   foreachUnit_(as, f);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and
@@ -189,7 +189,7 @@ export const traverseIUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Ite
  * @category Combinators
  * @since 1.0.0
  */
-export const traverseI_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, E, ReadonlyArray<B>> =>
+export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, E, ReadonlyArray<B>> =>
    map_(
       I.reduce_(as, succeed(FS.empty<B>()) as Task<R, E, FreeMonoid<B>>, (b, a) =>
          mapBoth_(
@@ -211,12 +211,12 @@ export const traverseI_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, 
  * @category Combinators
  * @since 1.0.0
  */
-export const traverseI = <R, E, A, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>): Task<R, E, ReadonlyArray<B>> =>
-   traverseI_(as, f);
+export const foreach = <R, E, A, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>): Task<R, E, ReadonlyArray<B>> =>
+   foreach_(as, f);
 
-export const result = <R, E, A>(value: Task<R, E, A>): Task<R, never, Exit<E, A>> =>
+export const result = <R, E, A>(ma: Task<R, E, A>): Task<R, never, Exit<E, A>> =>
    new FoldInstruction(
-      value,
+      ma,
       (cause) => succeed(Ex.failure(cause)),
       (succ) => succeed(Ex.succeed(succ))
    );
@@ -231,16 +231,16 @@ export const foldr_ = <A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => T
 
 export const foldr = <A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Task<R, E, Z>) => (i: Iterable<A>) => foldr_(i, zero, f);
 
-export const whenM_ = <R, E, A, R1, E1>(f: Task<R, E, A>, b: Task<R1, E1, boolean>) =>
-   chain_(b, (a) => (a ? map_(f, some) : map_(unit(), () => none())));
+export const whenM_ = <R, E, A, R1, E1>(ma: Task<R, E, A>, mb: Task<R1, E1, boolean>) =>
+   chain_(mb, (a) => (a ? asUnit(ma) : unit()));
 
-export const whenM = <R, E>(b: Task<R, E, boolean>) => <R1, E1, A>(f: Task<R1, E1, A>) => whenM_(f, b);
+export const whenM = <R, E>(mb: Task<R, E, boolean>) => <R1, E1, A>(ma: Task<R1, E1, A>) => whenM_(ma, mb);
 
-export const tapCause_ = <R2, A2, R, E, E2>(effect: Task<R2, E2, A2>, f: (e: Cause<E2>) => Task<R, E, any>) =>
-   foldCauseM_(effect, (c) => chain_(f(c), () => halt(c)), succeed);
+export const tapCause_ = <R2, A2, R, E, E2>(ma: Task<R2, E2, A2>, f: (e: Cause<E2>) => Task<R, E, any>) =>
+   foldCauseM_(ma, (c) => chain_(f(c), () => halt(c)), succeed);
 
-export const tapCause = <R, E, E1>(f: (e: Cause<E1>) => Task<R, E, any>) => <R1, A1>(effect: Task<R1, E1, A1>) =>
-   tapCause_(effect, f);
+export const tapCause = <R, E, E1>(f: (e: Cause<E1>) => Task<R, E, any>) => <R1, A1>(ma: Task<R1, E1, A1>) =>
+   tapCause_(ma, f);
 
 export const checkDescriptor = <R, E, A>(f: (d: FiberDescriptor) => Task<R, E, A>): Task<R, E, A> =>
    new CheckDescriptorInstruction(f);
@@ -248,4 +248,4 @@ export const checkDescriptor = <R, E, A>(f: (d: FiberDescriptor) => Task<R, E, A
 export const checkInterruptible = <R, E, A>(f: (i: InterruptStatus) => Task<R, E, A>): Task<R, E, A> =>
    new GetInterruptInstruction(f);
 
-export const fork = <R, E, A>(value: Task<R, E, A>): RIO<R, Executor<E, A>> => new ForkInstruction(value, O.none());
+export const fork = <R, E, A>(ma: Task<R, E, A>): RIO<R, Executor<E, A>> => new ForkInstruction(ma, O.none());

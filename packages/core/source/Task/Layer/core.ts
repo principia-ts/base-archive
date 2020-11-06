@@ -59,7 +59,7 @@ export const _build = <R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, 
       case LayerInstructionTag.AllPar: {
          return M.succeed((memo) => {
             return pipe(
-               M.traverseIPar_(I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+               M.foreachPar_(I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
                M.map(A.reduce({} as any, (b, a) => ({ ...b, ...a })))
             );
          });
@@ -67,7 +67,7 @@ export const _build = <R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, 
       case LayerInstructionTag.AllSeq: {
          return M.succeed((memo) => {
             return pipe(
-               M.traverseI_(I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+               M.foreach_(I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
                M.map(A.reduce({} as any, (b, a) => ({ ...b, ...a })))
             );
          });

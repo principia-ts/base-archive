@@ -127,8 +127,8 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
    mapBoth
 });
 
-export const sequenceS = P.sequenceSF(Apply);
+export const struct = P.structF(Apply);
 
-export const sequenceT = P.sequenceTF(Apply);
+export const tuple = P.tupleF(Apply);
 
 export const mapN = P.mapNF(Apply);

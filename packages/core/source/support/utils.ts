@@ -3,7 +3,6 @@ import type { Tag } from "../Has";
 import type { Option } from "../Option";
 import type { Sync } from "../Sync";
 import { Managed } from "../Task/Managed/model";
-import type { Task } from "../Task/Task";
 import type { XPure } from "../XPure";
 
 export type _A<T> = [T] extends [{ ["_A"]: () => infer A }] ? A : never;
@@ -26,4 +25,4 @@ export const isXPure = (u: unknown): u is XPure<unknown, unknown, unknown, unkno
 
 export const isSync = (u: unknown): u is Sync<unknown, unknown, unknown> => isXPure(u);
 
-export const isManaged = <R, E, A>(u: Task<R, E, A> | Managed<R, E, A>): u is Managed<R, E, A> => u instanceof Managed;
+export const isManaged = <R, E, A>(u: unknown): u is Managed<R, E, A> => u instanceof Managed;

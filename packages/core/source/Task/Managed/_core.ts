@@ -7,4 +7,4 @@ export * from "./fold";
 export * from "./functor";
 export * from "./monad";
 export * from "./reader";
-export * from "./combinators/traverseI";
+export * from "./combinators/foreach";

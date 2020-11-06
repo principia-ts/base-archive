@@ -5,9 +5,9 @@ import type { Option } from "../../Option";
 import * as Mb from "../../Option";
 import { none, some } from "../../Option";
 import type { Exit } from "../Exit";
+import * as T from "../Task/_core";
 import * as XR from "../XRef/_core";
 import type { Ref } from "../XRef/model";
-import * as T from "./_internal/task";
 
 export type Finalizer = (exit: Exit<any, any>) => T.Task<unknown, never, any>;
 

@@ -5,7 +5,7 @@ import type { Apply } from "./Apply";
 import type { InferMixStruct } from "./utils";
 import { getRecordConstructor } from "./utils";
 
-export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface StructFn<F extends HKT.URIS, TC = HKT.Auto> {
    <
       KS extends Readonly<
          Record<
@@ -74,8 +74,8 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
    >;
 }
 
-export function sequenceSF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): SequenceSFn<F, C>;
-export function sequenceSF<F>(F: Apply<HKT.UHKT<F>>): SequenceSFn<HKT.UHKT<F>> {
+export function structF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): StructFn<F, C>;
+export function structF<F>(F: Apply<HKT.UHKT<F>>): StructFn<HKT.UHKT<F>> {
    return (r) => {
       const keys = Object.keys(r);
       const len = keys.length;

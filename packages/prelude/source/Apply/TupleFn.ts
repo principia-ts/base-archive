@@ -4,7 +4,7 @@ import type { Apply } from "./Apply";
 import type { InferMixTuple } from "./utils";
 import { getTupleConstructor } from "./utils";
 
-export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface TupleFn<F extends HKT.URIS, TC = HKT.Auto> {
    <
       KT extends readonly [
          HKT.Kind<
@@ -67,8 +67,8 @@ export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
    >;
 }
 
-export function sequenceTF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): SequenceTFn<F, C>;
-export function sequenceTF<F>(F: Apply<HKT.UHKT<F>>): SequenceTFn<HKT.UHKT<F>> {
+export function tupleF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): TupleFn<F, C>;
+export function tupleF<F>(F: Apply<HKT.UHKT<F>>): TupleFn<HKT.UHKT<F>> {
    return (...t) => {
       const len = t.length;
       const f = getTupleConstructor(len);

@@ -210,7 +210,7 @@ export const mapBothM_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
             const acs = Array.from(cs);
             const all = A.zip_(abs, acs);
 
-            return T.traverseI_(all, ([b, c]) => f(b, c));
+            return T.foreach_(all, ([b, c]) => f(b, c));
          }
       );
 
@@ -220,7 +220,7 @@ export const mapBothM_ = <RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
             const acs = Array.from(cs);
             const all = A.zip_(abs, acs);
 
-            return T.traverseI_(all, ([b, c]) => f(b, c));
+            return T.foreach_(all, ([b, c]) => f(b, c));
          });
    })();
 
@@ -321,7 +321,7 @@ export const bimapM_ = <RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
       offer: (a: C) => T.Task<RC & RA, EA | EC, boolean> = (c) => T.chain_(f(c), self.offer);
 
       offerAll: (as: Iterable<C>) => T.Task<RC & RA, EC | EA, boolean> = (cs) =>
-         T.chain_(T.traverseI_(cs, f), self.offerAll);
+         T.chain_(T.foreach_(cs, f), self.offerAll);
 
       shutdown: T.IO<void> = self.shutdown;
 
@@ -329,10 +329,10 @@ export const bimapM_ = <RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
 
       take: T.Task<RD & RB, ED | EB, D> = T.chain_(self.take, g);
 
-      takeAll: T.Task<RD & RB, ED | EB, readonly D[]> = T.chain_(self.takeAll, (a) => T.traverseI_(a, g));
+      takeAll: T.Task<RD & RB, ED | EB, readonly D[]> = T.chain_(self.takeAll, (a) => T.foreach_(a, g));
 
       takeUpTo: (n: number) => T.Task<RD & RB, ED | EB, readonly D[]> = (max) =>
-         T.chain_(self.takeUpTo(max), (bs) => T.traverseI_(bs, g));
+         T.chain_(self.takeUpTo(max), (bs) => T.foreach_(bs, g));
    })();
 
 /**
@@ -375,7 +375,7 @@ export const filterInputM_ = <RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
       offerAll: (as: Iterable<A1>) => T.Task<RA & R2, EA | E2, boolean> = (as) =>
          pipe(
             as,
-            T.traverseI((a) =>
+            T.foreach((a) =>
                pipe(
                   f(a),
                   T.map((b) => (b ? O.some(a) : O.none()))

@@ -2,7 +2,7 @@ import { mapM_ } from "../_core";
 import * as T from "../_internal/task";
 import { tuple } from "../../../Function";
 import { parallelN, sequential } from "../../ExecutionStrategy";
-import { traverseIParN_ as effectForeachParN } from "../../Task/combinators/traverseIParN";
+import { foreachParN_ as effectForeachParN } from "../../Task/combinators/foreachParN";
 import type { Managed } from "../model";
 import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
 
@@ -12,9 +12,9 @@ import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
  *
  * Unlike `foreachPar`, this method will use at most up to `n` fibers.
  */
-export const traverseIParN = (n: number) => <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (
+export const foreachParN = (n: number) => <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (
    as: Iterable<A>
-): Managed<R, E, readonly B[]> => traverseIParN_(n)(as, f);
+): Managed<R, E, readonly B[]> => foreachParN_(n)(as, f);
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -22,7 +22,7 @@ export const traverseIParN = (n: number) => <R, E, A, B>(f: (a: A) => Managed<R,
  *
  * Unlike `foreachPar_`, this method will use at most up to `n` fibers.
  */
-export const traverseIParN_ = (n: number) => <R, E, A, B>(
+export const foreachParN_ = (n: number) => <R, E, A, B>(
    as: Iterable<A>,
    f: (a: A) => Managed<R, E, B>
 ): Managed<R, E, readonly B[]> =>

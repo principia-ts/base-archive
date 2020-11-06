@@ -1,6 +1,6 @@
 import type * as HKT from "../HKT";
 import type { Apply } from "./Apply";
-import { sequenceTF } from "./SequenceTFn";
+import { tupleF } from "./TupleFn";
 import type { InferMixTuple } from "./utils";
 
 export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
@@ -79,5 +79,5 @@ export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
  */
 export function mapNF<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): MapNFn<F, C>;
 export function mapNF<F>(F: Apply<HKT.UHKT<F>>): MapNFn<HKT.UHKT<F>> {
-   return (f) => (...t) => F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)));
+   return (f) => (...t) => F.map_(tupleF(F)(...(t as any)), (as) => f(...(as as any)));
 }

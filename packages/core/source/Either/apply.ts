@@ -146,11 +146,11 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
    mapBoth_
 });
 
-export const sequenceT = P.sequenceTF(Apply);
+export const tuple = P.tupleF(Apply);
 
 export const mapN: P.MapNFn<[URI], V> = P.mapNF(Apply);
 
-export const sequenceS = P.sequenceSF(Apply);
+export const struct = P.structF(Apply);
 
 /**
  * ```haskell
@@ -160,7 +160,7 @@ export const sequenceS = P.sequenceSF(Apply);
  *    -> f ({ n1: a, n2: b, n3: c })
  * ```
  *
- * A pipeable version of `sequenceS`
+ * A pipeable version of `struct`
  *
  * @category Apply
  * @since 1.0.0

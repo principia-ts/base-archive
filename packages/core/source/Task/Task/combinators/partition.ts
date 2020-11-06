@@ -1,12 +1,12 @@
 import type { Separated } from "@principia/prelude/Utils";
 
-import { map_, traverseI_ } from "../_core";
+import { foreach_, map_ } from "../_core";
 import { identity } from "../../../Function";
 import * as I from "../../../Iterable";
 import type { Task } from "../model";
 import { either } from "./either";
-import { traverseIPar_ } from "./traverseIPar";
-import { traverseIParN_ } from "./traverseIParN";
+import { foreachPar_ } from "./foreachPar";
+import { foreachParN_ } from "./foreachParN";
 
 /**
  * Feeds elements of type `A` to a function `f` that returns a task.
@@ -17,7 +17,7 @@ export const partition_ = <R, E, A, B>(
    f: (a: A) => Task<R, E, B>
 ): Task<R, never, Separated<Iterable<E>, Iterable<B>>> =>
    map_(
-      traverseI_(as, (a) => either(f(a))),
+      foreach_(as, (a) => either(f(a))),
       I.partitionMap(identity)
    );
 
@@ -39,7 +39,7 @@ export const partitionPar_ = <R, E, A, B>(
    f: (a: A) => Task<R, E, B>
 ): Task<R, never, Separated<Iterable<E>, Iterable<B>>> =>
    map_(
-      traverseIPar_(as, (a) => either(f(a))),
+      foreachPar_(as, (a) => either(f(a))),
       I.partitionMap(identity)
    );
 
@@ -64,7 +64,7 @@ export const partitionParN_ = (n: number) => <R, E, A, B>(
    f: (a: A) => Task<R, E, B>
 ): Task<R, never, Separated<Iterable<E>, Iterable<B>>> =>
    map_(
-      traverseIParN_(n)(as, (a) => either(f(a))),
+      foreachParN_(n)(as, (a) => either(f(a))),
       I.partitionMap(identity)
    );
 

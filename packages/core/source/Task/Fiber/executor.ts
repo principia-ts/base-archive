@@ -624,7 +624,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
          if (locals.size === 0) {
             return T.unit();
          } else {
-            return T.traverseIUnit_(locals, ([fiberRef, value]) =>
+            return T.foreachUnit_(locals, ([fiberRef, value]) =>
                FR.update((old) => fiberRef.join(old, value))(fiberRef)
             );
          }

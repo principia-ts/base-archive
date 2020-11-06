@@ -5,8 +5,8 @@ import { flow, pipe } from "../../../Function";
 import * as I from "../../../Iterable";
 import * as O from "../../../Option";
 import type { Task } from "../model";
-import { traverseIPar } from "./traverseIPar";
-import { traverseIParN } from "./traverseIParN";
+import { foreachPar } from "./foreachPar";
+import { foreachParN } from "./foreachParN";
 
 /**
  * Filters the collection using the specified effectual predicate.
@@ -33,7 +33,7 @@ export const filter_ = <A, R, E>(as: Iterable<A>, f: (a: A) => Task<R, E, boolea
 export const filterPar_ = <A, R, E>(as: Iterable<A>, f: (a: A) => Task<R, E, boolean>) =>
    pipe(
       as,
-      traverseIPar((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
+      foreachPar((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
       map(A.compact)
    );
 
@@ -52,7 +52,7 @@ export const filterPar = <A, R, E>(f: (a: A) => Task<R, E, boolean>) => (as: Ite
 export const filterParN_ = (n: number) => <A, R, E>(as: Iterable<A>, f: (a: A) => Task<R, E, boolean>) =>
    pipe(
       as,
-      traverseIParN(n)((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
+      foreachParN(n)((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
       map(A.compact)
    );
 

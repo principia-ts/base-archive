@@ -1,11 +1,11 @@
 import { identity } from "@principia/prelude";
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
-import { traverseI_ } from "../_core";
+import { foreach_ } from "../_core";
 import type { NonEmptyArray } from "../../../NonEmptyArray";
 import type { Task } from "../model";
-import { traverseIPar_ } from "./traverseIPar";
-import { traverseIParN_ } from "./traverseIParN";
+import { foreachPar_ } from "./foreachPar";
+import { foreachParN_ } from "./foreachParN";
 
 export type TupleR<T extends NonEmptyArray<Task<any, any, any>>> = UnionToIntersection<
    {
@@ -22,12 +22,12 @@ export type TupleA<T extends NonEmptyArray<Task<any, any, any>>> = {
 };
 
 export const tuple = <A extends NonEmptyArray<Task<any, any, any>>>(...t: A): Task<TupleR<A>, TupleE<A>, TupleA<A>> =>
-   traverseI_(t, identity) as any;
+   foreach_(t, identity) as any;
 
 export const tuplePar = <A extends NonEmptyArray<Task<any, any, any>>>(
    ...t: A
-): Task<TupleR<A>, TupleE<A>, TupleA<A>> => traverseIPar_(t, identity) as any;
+): Task<TupleR<A>, TupleE<A>, TupleA<A>> => foreachPar_(t, identity) as any;
 
 export const tupleParN = (n: number) => <A extends NonEmptyArray<Task<any, any, any>>>(
    ...t: A
-): Task<TupleR<A>, TupleE<A>, TupleA<A>> => traverseIParN_(n)(t, identity) as any;
+): Task<TupleR<A>, TupleE<A>, TupleA<A>> => foreachParN_(n)(t, identity) as any;

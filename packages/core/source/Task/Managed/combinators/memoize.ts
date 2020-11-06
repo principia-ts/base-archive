@@ -1,0 +1,30 @@
+import { pipe } from "@principia/prelude";
+
+import * as T from "../_internal/_task";
+import * as XP from "../../XPromise";
+import { mapM_ } from "../functor";
+import type { IO, Managed } from "../model";
+import { releaseMap } from "./releaseMap";
+
+/**
+ * Returns a memoized version of the specified Managed.
+ */
+export const memoize = <R, E, A>(ma: Managed<R, E, A>): IO<Managed<R, E, A>> =>
+   mapM_(releaseMap, (finalizers) =>
+      T.gen(function* (_) {
+         const promise = yield* _(XP.make<E, A>());
+         const complete = yield* _(
+            T.once(
+               T.asksM((r: R) =>
+                  pipe(
+                     ma.task,
+                     T.giveAll([r, finalizers] as const),
+                     T.map(([_, a]) => a),
+                     T.to(promise)
+                  )
+               )
+            )
+         );
+         return pipe(complete, T.apSecond(XP.await(promise)), T.toManaged());
+      })
+   );

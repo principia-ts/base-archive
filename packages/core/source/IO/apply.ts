@@ -140,7 +140,7 @@ export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb:
  *    -> f ({ n1: a, n2: b, n3: c })
  * ```
  *
- * A pipeable version of `sequenceS`
+ * A pipeable version of `struct`
  *
  * @category Apply
  * @since 1.0.0
