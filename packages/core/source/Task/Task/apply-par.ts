@@ -4,7 +4,7 @@ import { join } from "../Fiber/combinators/join";
 import type { FiberId } from "../Fiber/FiberId";
 import type { Fiber } from "../Fiber/model";
 import * as T from "./_core";
-import { raceWith, transplant } from "./core-scope";
+import { raceWith_, transplant } from "./core-scope";
 
 /*
  * -------------------------------------------
@@ -25,7 +25,7 @@ export const mapBothPar_ = <R, E, A, R2, E2, A2, B>(
 
    return transplant((graft) =>
       T.checkDescriptor((d) =>
-         raceWith(
+         raceWith_(
             graft(a),
             graft(b),
             (ex, fi) => coordinateBothPar<E, E2>()(d.id, f, true, ex, fi),

@@ -11,7 +11,7 @@ import * as Fiber from "../../Fiber";
 import { join } from "../../Fiber/combinators/join";
 import * as XP from "../../XPromise";
 import * as XR from "../../XRef";
-import { raceWith } from "../core-scope";
+import { raceWith_ } from "../core-scope";
 import type { IO, Task } from "../model";
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from "./interrupt";
 import { mapErrorCause_ } from "./mapErrorCause";
@@ -36,7 +36,7 @@ const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): Task<unknown, 
  */
 export const race_ = <R, E, A, R1, E1, A1>(ef: Task<R, E, A>, that: Task<R1, E1, A1>): Task<R & R1, E | E1, A | A1> =>
    _.checkDescriptor((d) =>
-      raceWith(
+      raceWith_(
          ef,
          that,
          (exit, right) =>

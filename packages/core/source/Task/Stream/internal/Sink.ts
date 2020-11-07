@@ -134,14 +134,14 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
             readonly [Either<E | E1, Either<Z, Z1>>, ReadonlyArray<L | L1>],
             void
          > =>
-            T.raceWith(
+            T.raceWith_(
                p1(i),
                p2(i),
                (res1, fib2) =>
                   Ex.foldTask_(
                      res1,
                      (f) =>
-                        T._apSecond(
+                        T.apSecond_(
                            F.interrupt(fib2),
                            T.halt(
                               pipe(
@@ -156,7 +156,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                   Ex.foldTask_(
                      res2,
                      (f) =>
-                        T._apSecond(
+                        T.apSecond_(
                            F.interrupt(fib1),
                            T.halt(
                               pipe(

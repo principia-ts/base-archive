@@ -9,3 +9,4 @@ export { sandbox } from "../../Task/combinators/sandbox";
 export * from "../../Task/combinators/orDieWith";
 export * from "../../Task/combinators/orDie";
 export * from "../../Task/combinators/eventually";
+export * from "../../Task/combinators/never";

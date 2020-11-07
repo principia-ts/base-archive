@@ -1,6 +1,7 @@
+import { identity } from "../../Function";
 import * as Ex from "../Exit";
 import * as T from "./_internal/task";
-import { map_ } from "./functor";
+import { map_, mapM } from "./functor";
 import { Managed } from "./model";
 
 /*
@@ -38,11 +39,18 @@ export const chain_ = <R, E, A, R1, E1, A1>(self: Managed<R, E, A>, f: (a: A) =>
 /**
  * Returns a managed that effectfully peeks at the acquired resource.
  */
-export const tap = <R1, E1, A>(f: (a: A) => Managed<R1, E1, any>) => <R, E>(self: Managed<R, E, A>) =>
-   chain_(self, (a) => map_(f(a), () => a));
+export const tap_ = <R, E, A, Q, D>(ma: Managed<R, E, A>, f: (a: A) => Managed<Q, D, any>): Managed<R & Q, E | D, A> =>
+   chain_(ma, (a) => map_(f(a), () => a));
 
 /**
  * Returns a managed that effectfully peeks at the acquired resource.
  */
-export const tap_ = <R, E, A, Q, D>(ma: Managed<R, E, A>, f: (a: A) => Managed<Q, D, any>): Managed<R & Q, E | D, A> =>
-   tap(f)(ma);
+export const tap = <R1, E1, A>(f: (a: A) => Managed<R1, E1, any>) => <R, E>(ma: Managed<R, E, A>) => tap_(ma, f);
+
+export const flatten: <R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>) => Managed<R & R1, E | E1, A> = chain(
+   identity
+);
+
+export const flattenM: <R, E, R1, E1, A>(mma: Managed<R, E, T.Task<R1, E1, A>>) => Managed<R & R1, E | E1, A> = mapM(
+   identity
+);

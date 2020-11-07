@@ -53,7 +53,7 @@ export const apFirst = <Q, D, B>(fb: Task<Q, D, B>) => <R, E, A>(fa: Task<R, E, 
  * @category Apply
  * @since 1.0.0
  */
-export const _apSecond = <R, E, A, Q, D, B>(fa: Task<R, E, A>, fb: Task<Q, D, B>): Task<Q & R, D | E, B> =>
+export const apSecond_ = <R, E, A, Q, D, B>(fa: Task<R, E, A>, fb: Task<Q, D, B>): Task<Q & R, D | E, B> =>
    ap_(
       map_(fa, () => (b: B) => b),
       fb
@@ -70,7 +70,7 @@ export const _apSecond = <R, E, A, Q, D, B>(fa: Task<R, E, A>, fb: Task<Q, D, B>
  * @since 1.0.0
  */
 export const apSecond = <Q, D, B>(fb: Task<Q, D, B>) => <R, E, A>(fa: Task<R, E, A>): Task<Q & R, D | E, B> =>
-   _apSecond(fa, fb);
+   apSecond_(fa, fb);
 
 export const mapBoth_ = <R, E, A, Q, D, B, C>(
    fa: Task<R, E, A>,

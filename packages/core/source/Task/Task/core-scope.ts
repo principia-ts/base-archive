@@ -28,13 +28,21 @@ export const forkScopeMask = (newScope: Scope<Exit<any, any>>) => <R, E, A>(
 export const forkIn = (scope: Scope<Exit<any, any>>) => <R, E, A>(task: Task<R, E, A>): RIO<R, RuntimeFiber<E, A>> =>
    new ForkInstruction(task, O.some(scope));
 
-export const raceWith = <R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
+export const raceWith_ = <R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
    left: Task<R, E, A>,
    right: Task<R1, E1, A1>,
    leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => Task<R2, E2, A2>,
    rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => Task<R3, E3, A3>,
    scope: Option<Scope<Exit<any, any>>> = O.none()
 ): Task<R & R1 & R2 & R3, E2 | E3, A2 | A3> => new RaceInstruction(left, right, leftWins, rightWins, scope);
+
+export const raceWith = <E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
+   right: Task<R1, E1, A1>,
+   leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => Task<R2, E2, A2>,
+   rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => Task<R3, E3, A3>,
+   scope: Option<Scope<Exit<any, any>>> = O.none()
+) => <R>(left: Task<R, E, A>): Task<R & R1 & R2 & R3, E2 | E3, A2 | A3> =>
+   new RaceInstruction(left, right, leftWins, rightWins, scope);
 
 export type Grafter = <R, E, A>(effect: Task<R, E, A>) => Task<R, E, A>;
 

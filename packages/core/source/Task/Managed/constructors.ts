@@ -27,7 +27,19 @@ export const fromTask = <R, E, A>(effect: T.Task<R, E, A>) =>
 /**
  * Imports a synchronous side-effect into a Managed
  */
-export const total = <A>(effect: () => A) => fromTask(T.total(effect));
+export const total = <A>(thunk: () => A): Managed<unknown, never, A> => fromTask(T.total(thunk));
+
+/**
+ * Imports a synchronous side-effect that may throw into a Managed
+ */
+export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): Managed<unknown, E, A> =>
+   fromTask(T.partial_(thunk, onThrow));
+
+/**
+ * Imports a synchronous side-effect that may throw into a Managed
+ */
+export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A): Managed<unknown, E, A> =>
+   partial_(thunk, onThrow);
 
 /**
  * Returns a Managed that models failure with the specified error. The moral equivalent of throw for pure code.
