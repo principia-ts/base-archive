@@ -16,7 +16,7 @@ import type { URI, V } from "./model";
 
 /**
  * ```haskell
- * compact :: Compactable c => c (Maybe a) -> c a
+ * compact :: Compactable c => c (Option a) -> c a
  * ```
  */
 export const compact = <A>(as: ReadonlyArray<Option<A>>): ReadonlyArray<A> => mapOption_(as, identity);

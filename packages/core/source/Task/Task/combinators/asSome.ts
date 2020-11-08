@@ -4,7 +4,7 @@ import type { Task } from "../model";
 
 /**
  * ```haskell
- * asSome :: Task r e a -> Task r e (Maybe a)
+ * asSome :: Task r e a -> Task r e (Option a)
  * ```
  *
  * Maps the success value of this effect to an optional value.

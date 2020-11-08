@@ -15,7 +15,7 @@ import { traverseWithIndex_ } from "./traversable";
  * ```haskell
  * witherWithIndex_ :: (Applicative g, WitherableWithIndex w, Index k) =>
  *    g
- *    -> (w a, ((k, a) -> g (w (Maybe b))))
+ *    -> (w a, ((k, a) -> g (w (Option b))))
  *    -> g (w b)
  * ```
  */
@@ -29,7 +29,7 @@ export const witherWithIndex_: TC.WitherWithIndexFn_<[URI], V> = (G) => {
  * witherWithIndex :: (Applicative g, WitherableWithIndex w, Index k) =>
  *    g
  *    -> ((k, a)
- *    -> g (w (Maybe b)))
+ *    -> g (w (Option b)))
  *    -> w a
  *    -> g (w b)
  * ```
@@ -40,7 +40,7 @@ export const witherWithIndex: TC.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa
  * ```haskell
  * wither_ :: (Applicative g, Witherable w) =>
  *    g
- *    -> (w a, (a -> g (w (Maybe b))))
+ *    -> (w a, (a -> g (w (Option b))))
  *    -> g (w b)
  * ```
  */
@@ -50,7 +50,7 @@ export const wither_: TC.WitherFn_<[URI], V> = (G) => (wa, f) => witherWithIndex
  * ```haskell
  * wither :: (Applicative g, Witherable w) =>
  *    g
- *    -> (a -> g (w (Maybe b)))
+ *    -> (a -> g (w (Option b)))
  *    -> w a
  *    -> g (w b)
  * ```

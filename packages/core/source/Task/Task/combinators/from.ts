@@ -21,5 +21,5 @@ export const fromFiberM = <R, E, A, E1>(fiber: Task<R, E, Fiber.Fiber<E1, A>>): 
  * Lifts an `Option` into a `Task` but preserves the error as an option in the error channel, making it easier to compose
  * in some scenarios.
  */
-export const fromMaybe = <A>(m: () => Option<A>): EIO<Option<never>, A> =>
+export const fromOption = <A>(m: () => Option<A>): EIO<Option<never>, A> =>
    chain_(total(m), (ma) => (ma._tag === "None" ? fail(O.none()) : pure(ma.value)));

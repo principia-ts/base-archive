@@ -1,10 +1,11 @@
 import type { Eq } from "@principia/prelude/Eq";
 
 import type { Predicate, Refinement } from "../Function";
-import { left, right } from "./constructors";
+import { fromNullableK_, left, right } from "./constructors";
 import { map_ } from "./functor";
 import { isLeft } from "./guards";
 import type { Either } from "./model";
+import { chain, chain_ } from "./monad";
 
 /*
  * -------------------------------------------
@@ -68,3 +69,13 @@ export const exists: {
    <A, B extends A>(refinement: Refinement<A, B>): <E>(fa: Either<E, A>) => fa is Either<E, B>;
    <A>(predicate: Predicate<A>): <E>(fa: Either<E, A>) => fa is Either<E, A>;
 } = <A>(predicate: Predicate<A>) => <E>(fa: Either<E, A>): fa is Either<E, A> => exists_(fa, predicate);
+
+export const chainNullableK_ = <E, A, B>(
+   ma: Either<E, A>,
+   e: () => E,
+   f: (a: A) => B | null | undefined
+): Either<E, NonNullable<B>> => chain_(ma, fromNullableK_(f, e));
+
+export const chainNullableK = <E, A, B>(e: () => E, f: (a: A) => B | null | undefined) => (
+   ma: Either<E, A>
+): Either<E, NonNullable<B>> => chainNullableK_(ma, e, f);

@@ -9,10 +9,10 @@ import type { Option } from "./model";
 
 /**
  * ```haskell
- * fold_ :: (Maybe a, (() -> b), (a -> c)) -> b | c
+ * fold_ :: (Option a, (() -> b), (a -> c)) -> b | c
  * ```
  *
- * Takes a default value, a function, and an `Maybe` value, if the `Maybe` value is `Nothing` the default value is returned, otherwise the function is applied to the value inside the `Just` and the result is returned.
+ * Takes a default value, a function, and an `Option` value, if the `Option` value is `Nothing` the default value is returned, otherwise the function is applied to the value inside the `Just` and the result is returned.
  *
  * @category Destructors
  * @since 1.0.0
@@ -22,10 +22,10 @@ export const fold_ = <A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A)
 
 /**
  * ```haskell
- * fold :: ((() -> b), (a -> c)) -> Maybe a -> b | c
+ * fold :: ((() -> b), (a -> c)) -> Option a -> b | c
  * ```
  *
- * Takes a default value, a function, and an `Maybe` value, if the `Maybe` value is `Nothing` the default value is returned, otherwise the function is applied to the value inside the `Just` and the result is returned.
+ * Takes a default value, a function, and an `Option` value, if the `Option` value is `Nothing` the default value is returned, otherwise the function is applied to the value inside the `Just` and the result is returned.
  *
  * @category Destructors
  * @since 1.0.0
@@ -35,7 +35,7 @@ export const fold = <A, B, C>(onNothing: () => B, onJust: (a: A) => C) => (fa: O
 
 /**
  * ```haskell
- * toNullable :: Maybe a -> a | Null
+ * toNullable :: Option a -> a | Null
  * ```
  *
  * Extracts the value out of the structure, if it exists. Otherwise returns `null`.
@@ -47,7 +47,7 @@ export const toNullable = <A>(fa: Option<A>): A | null => (isNone(fa) ? null : f
 
 /**
  * ```haskell
- * toUndefined :: Maybe a -> a | Undefined
+ * toUndefined :: Option a -> a | Undefined
  * ```
  *
  * Extracts the value out of the structure, if it exists. Otherwise returns `undefined`.
@@ -59,7 +59,7 @@ export const toUndefined = <A>(fa: Option<A>): A | undefined => (isNone(fa) ? un
 
 /**
  * ```haskell
- * getOrElse_ :: (Maybe a, (() -> b)) -> a | b
+ * getOrElse_ :: (Option a, (() -> b)) -> a | b
  * ```
  *
  * Extracts the value out of the structure, if it exists. Otherwise returns the given default value
@@ -71,7 +71,7 @@ export const getOrElse_ = <A, B>(fa: Option<A>, onNothing: () => B): A | B => (i
 
 /**
  * ```haskell
- * getOrElse :: (() -> b) -> Maybe a -> a | b
+ * getOrElse :: (() -> b) -> Option a -> a | b
  * ```
  *
  * Extracts the value out of the structure, if it exists. Otherwise returns the given default value

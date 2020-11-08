@@ -41,7 +41,7 @@ export const separate = <N extends string, A, B>(fa: ReadonlyRecord<N, Either<A,
 
 /**
  * ```haskell
- * compact :: Compactable c => c (Maybe a) -> c a
+ * compact :: Compactable c => c (Option a) -> c a
  * ```
  */
 export const compact = <N extends string, A>(fa: ReadonlyRecord<N, Option<A>>) => {

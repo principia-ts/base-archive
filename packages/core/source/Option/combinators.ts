@@ -11,27 +11,27 @@ import type { Option } from "./model";
  */
 
 /**
- * mapNullable_ :: Maybe m => (m a, (a -> ?b)) -> m b
- * Map over a Maybe with a function that returns a nullable value
+ * chainNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
+ * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const mapNullable_ = <A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> =>
+export const chainNullableK_ = <A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> =>
    isNone(fa) ? none() : fromNullable(f(fa.value));
 
 /**
- * mapNullable :: Maybe m => (a -> ?b) -> m a -> m b
- * Map over a Maybe with a function that returns a nullable value
+ * chainNullableK :: Option m => (a -> ?b) -> m a -> m b
+ * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const mapNullable: <A, B>(f: (a: A) => B | null | undefined) => (fa: Option<A>) => Option<B> = (f) => (fa) =>
-   mapNullable_(fa, f);
+export const chainNullableK: <A, B>(f: (a: A) => B | null | undefined) => (fa: Option<A>) => Option<B> = (f) => (fa) =>
+   chainNullableK_(fa, f);
 
 /**
- * orElse_ :: Maybe m => (m a, () -> m b) -> m (a | b)
+ * orElse_ :: Option m => (m a, () -> m b) -> m (a | b)
  * Evaluate and return alternate optional value if empty
  *
  * @category Combinators
@@ -41,7 +41,7 @@ export const orElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option
    isNone(fa) ? onNothing() : fa;
 
 /**
- * orElse :: Maybe m => (() -> m b) -> m a -> m (a | b)
+ * orElse :: Option m => (() -> m b) -> m a -> m (a | b)
  * Evaluate and return alternate optional value if empty
  *
  * @category Combinators
@@ -50,8 +50,8 @@ export const orElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option
 export const orElse = <B>(onNothing: Lazy<Option<B>>) => <A>(fa: Option<A>): Option<A | B> => orElse_(fa, onNothing);
 
 /**
- * getLeft :: (Either e, Maybe m) => e a b -> m a
- * Evaluates an `Either` and returns a `Maybe` carrying the left value, if it exists
+ * getLeft :: (Either e, Option m) => e a b -> m a
+ * Evaluates an `Either` and returns a `Option` carrying the left value, if it exists
  *
  * @category Combinators
  * @since 1.0.0
@@ -59,8 +59,8 @@ export const orElse = <B>(onNothing: Lazy<Option<B>>) => <A>(fa: Option<A>): Opt
 export const getLeft = <E, A>(fea: Either<E, A>): Option<E> => (fea._tag === "Right" ? none() : some(fea.left));
 
 /**
- * getRight :: (Either e, Maybe m) => e a b -> m b
- * Evaluates an `Either` and returns a `Maybe` carrying the right value, if it exists
+ * getRight :: (Either e, Option m) => e a b -> m b
+ * Evaluates an `Either` and returns a `Option` carrying the right value, if it exists
  *
  * @category Combinators
  * @since 1.0.0

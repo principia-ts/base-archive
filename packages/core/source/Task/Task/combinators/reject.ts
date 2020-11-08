@@ -6,7 +6,7 @@ import { chain } from "../monad";
 
 /**
  * ```haskell
- * rejectM_ :: (Task r e a, (a -> Maybe (Task r1 e1 e1))) -> Task (r & r1) (e | e1) a
+ * rejectM_ :: (Task r e a, (a -> Option (Task r1 e1 e1))) -> Task (r & r1) (e | e1) a
  * ```
  *
  * Continue with the returned computation if the partial function `pf` matches,
@@ -23,7 +23,7 @@ export const rejectM_ = <R, E, A, R1, E1>(
 
 /**
  * ```haskell
- * rejectM :: (a -> Maybe (Task r1 e1 e1)) -> Task r e a -> Task (r & r1) (e | e1) a
+ * rejectM :: (a -> Option (Task r1 e1 e1)) -> Task r e a -> Task (r & r1) (e | e1) a
  * ```
  *
  * Continue with the returned computation if the partial function `pf` matches,
@@ -39,7 +39,7 @@ export const rejectM = <R1, E1, A>(pf: (a: A) => Option<Task<R1, E1, E1>>) => <R
 
 /**
  * ```haskell
- * reject_ :: (Task r e a, (a -> Maybe e1)) -> Task r (e | e1) a
+ * reject_ :: (Task r e a, (a -> Option e1)) -> Task r (e | e1) a
  * ```
  *
  * Fail with the returned value if the partial function `pf` matches, otherwise
@@ -53,7 +53,7 @@ export const reject_ = <R, E, A, E1>(fa: Task<R, E, A>, pf: (a: A) => Option<E1>
 
 /**
  * ```haskell
- * reject :: (a -> Maybe e1) -> Task r e a -> Task r (e | e1) a
+ * reject :: (a -> Option e1) -> Task r e a -> Task r (e | e1) a
  * ```
  *
  * Fail with the returned value if the partial function `pf` matches, otherwise

@@ -40,7 +40,7 @@ export const repeatN = (n: number) => <R, E, A>(ef: Task<R, E, A>) => repeatN_(e
  * repeatOrElseEither_ :: (
  *    Task r e a,
  *    Schedule r1 a b,
- *    ((e, Maybe b) -> Task r2 e2 c)
+ *    ((e, Option b) -> Task r2 e2 c)
  * ) -> Task (r & r1 & r2 & HasClock) e2 (Either c b)
  * ```
  *
@@ -91,7 +91,7 @@ export const repeatOrElseEither_ = <R, R1, R2, E, E2, A, B, C>(
 
 /**
  * ```haskell
- * repeatOrElse_ :: (Task r e a, Schedule sr a b, ((e, Maybe b) -> Task r1 e1 c)) ->
+ * repeatOrElse_ :: (Task r e a, Schedule sr a b, ((e, Option b) -> Task r1 e1 c)) ->
  *    Task (r & sr & r1 & HasClock) e1 (c | b)
  * ```
  *

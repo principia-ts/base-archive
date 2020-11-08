@@ -47,7 +47,7 @@ export const mapEither = <A, B, C>(f: (a: A) => Either<B, C>) => (fa: Option<A>)
 
 /**
  * ```haskell
- * mapOption_ :: Filterable f => (f a, (a -> Maybe b)) -> f b
+ * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  */
 export const mapOption_ = <A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> =>
@@ -55,7 +55,7 @@ export const mapOption_ = <A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<
 
 /**
  * ```haskell
- * mapOption :: Filterable f => (a -> Maybe b) -> f a -> f b
+ * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  */
 export const mapOption = <A, B>(f: (a: A) => Option<B>) => (fa: Option<A>): Option<B> => mapOption_(fa, f);

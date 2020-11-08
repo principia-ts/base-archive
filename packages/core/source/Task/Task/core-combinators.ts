@@ -74,7 +74,7 @@ export const as = <B>(b: B) => <R, E, A>(ma: Task<R, E, A>) => as_(ma, b);
 
 /**
  * ```haskell
- * asSomeError :: Task r e a -> Task r (Maybe e) a
+ * asSomeError :: Task r e a -> Task r (Option e) a
  * ```
  *
  * Maps the error value of this effect to an optional value.

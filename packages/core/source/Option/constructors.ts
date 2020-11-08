@@ -13,7 +13,7 @@ import type { Option } from "./model";
  * nothing :: <a> () -> Nothing
  * ```
  *
- * Constructs a new `Maybe` holding no value (a.k.a `Nothing`)
+ * Constructs a new `Option` holding no value (a.k.a `Nothing`)
  *
  * @category Constructors
  * @since 1.0.0
@@ -27,7 +27,7 @@ export const none = <A = never>(): Option<A> => ({
  * just :: a -> Just a
  * ```
  *
- * Constructs a new `Maybe` holding a `Just` value.
+ * Constructs a new `Option` holding a `Just` value.
  *
  * @category Constructs
  * @since 1.0.0
@@ -39,10 +39,10 @@ export const some = <A>(a: A): Option<A> => ({
 
 /**
  * ```haskell
- * fromNullable :: ?a -> Maybe a
+ * fromNullable :: ?a -> Option a
  * ```
  *
- * Constructs a new `Maybe` from a nullable value. If the value is `null` or `undefined`, returns `Nothing`, otherwise
+ * Constructs a new `Option` from a nullable value. If the value is `null` or `undefined`, returns `Nothing`, otherwise
  * returns the value wrapped in a `Just`
  *
  * @category Constructors
@@ -51,12 +51,16 @@ export const some = <A>(a: A): Option<A> => ({
 export const fromNullable = <A>(a: A | null | undefined): Option<NonNullable<A>> =>
    a == null ? none() : some(a as NonNullable<A>);
 
+export const fromNullableK = <A extends ReadonlyArray<unknown>, B>(
+   f: (...args: A) => B | null | undefined
+): ((...args: A) => Option<NonNullable<B>>) => (...args) => fromNullable(f(...args));
+
 /**
  * ```haskell
- * partial :: (() -> a) -> Maybe a
+ * partial :: (() -> a) -> Option a
  * ```
  *
- * Constructs a new `Maybe` from a function that might throw
+ * Constructs a new `Option` from a function that might throw
  *
  * @category Constructors
  * @since 1.0.0
@@ -71,10 +75,10 @@ export const partial = <A>(thunk: Lazy<A>): Option<A> => {
 
 /**
  * ```haskell
- * partialK :: ((a, b, ...) -> c) -> ((a, b, ...) -> Maybe c)
+ * partialK :: ((a, b, ...) -> c) -> ((a, b, ...) -> Option c)
  * ```
  *
- * Transforms a non-curried function that may throw, takes a set of arguments `(a, b, ...)`, and returns a value `c`, into a non-curried function that will not throw, takes a set of arguments `(a, b, ...)`, and returns a `Maybe`
+ * Transforms a non-curried function that may throw, takes a set of arguments `(a, b, ...)`, and returns a value `c`, into a non-curried function that will not throw, takes a set of arguments `(a, b, ...)`, and returns a `Option`
  *
  * @category Constructors
  * @since 1.0.0
@@ -85,11 +89,11 @@ export const partialK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>
 
 /**
  * ```haskell
- * fromPredicate_ :: (a, (a -> is b)) -> Maybe b
- * fromPredicate_ :: (a, (a -> Boolean)) -> Maybe a
+ * fromPredicate_ :: (a, (a -> is b)) -> Option b
+ * fromPredicate_ :: (a, (a -> Boolean)) -> Option a
  * ```
  *
- * Constructs a new `Maybe` from a value and the given predicate
+ * Constructs a new `Option` from a value and the given predicate
  *
  * @category Constructors
  * @since 1.0.0
@@ -101,8 +105,8 @@ export const fromPredicate_: {
 
 /**
  * ```haskell
- * fromPredicate :: (a -> is b) -> a -> Maybe b
- * fromPredicate :: (a -> Boolean) -> a -> Maybe a
+ * fromPredicate :: (a -> is b) -> a -> Option b
+ * fromPredicate :: (a -> Boolean) -> a -> Option a
  * ```
  *
  * Returns a smart constructor based on the given predicate
@@ -117,10 +121,10 @@ export const fromPredicate: {
 
 /**
  * ```haskell
- * fromEither :: Either e a -> Maybe a
+ * fromEither :: Either e a -> Option a
  * ```
  *
- * Constructs a new `Maybe` from an `Either`, transforming a `Left` into a `Nothing` and a `Right` into a `Just`.
+ * Constructs a new `Option` from an `Either`, transforming a `Left` into a `Nothing` and a `Right` into a `Just`.
  *
  * @category Constructors
  * @since 1.0.0

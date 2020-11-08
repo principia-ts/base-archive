@@ -100,7 +100,7 @@ export const chainFirst = tap;
  * flatten :: Monad m => m m a -> m a
  * ```
  *
- * Removes one level of nesting from a nested `Maybe`
+ * Removes one level of nesting from a nested `Option`
  *
  * @category Monad
  * @since 1.0.0

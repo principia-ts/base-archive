@@ -59,7 +59,7 @@ export const apSecond = <B>(fb: Option<B>) => <A>(fa: Option<A>): Option<B> => a
  * mapBoth_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
- * Applies both `Maybe`s and if both are `Some`,  maps their results with function `f`, otherwise returns `Nothing`
+ * Applies both `Option`s and if both are `Some`,  maps their results with function `f`, otherwise returns `Nothing`
  *
  * @category Apply
  * @since 1.0.0
@@ -75,7 +75,7 @@ export const mapBoth_ = <A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) 
  * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
- * Applies both `Maybe`s and if both are `Some`, maps their results with function `f`, otherwise returns `Nothing`
+ * Applies both `Option`s and if both are `Some`, maps their results with function `f`, otherwise returns `Nothing`
  *
  * @category Apply
  * @since 1.0.0

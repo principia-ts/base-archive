@@ -7,7 +7,7 @@ import type { Task } from "../model";
 
 /**
  * ```haskell
- * some :: Task t => T x r e (Maybe a) -> T x r (Maybe e) a
+ * some :: Task t => T x r e (Option a) -> T x r (Option e) a
  * ```
  *
  * Converts an optional value into an optional error
@@ -22,7 +22,7 @@ export const some: <R, E, A>(ef: Task<R, E, Option<A>>) => Task<R, Option<E>, A>
 
 /**
  * ```haskell
- * someOrElse_ :: Task t => (t x r e (Maybe a), (() -> b)) -> t x r e (a | b)
+ * someOrElse_ :: Task t => (t x r e (Option a), (() -> b)) -> t x r e (a | b)
  * ```
  *
  * Extracts the optional value, or returns the given 'orElse'.
@@ -35,7 +35,7 @@ export const someOrElse_ = <R, E, A, B>(ef: Task<R, E, Option<A>>, orElse: () =>
 
 /**
  * ```haskell
- * someOrElse :: Task t => (() -> b) -> t x r e (Maybe a) -> t x r e (a | b)
+ * someOrElse :: Task t => (() -> b) -> t x r e (Option a) -> t x r e (a | b)
  * ```
  *
  * Extracts the optional value, or returns the given 'orElse'.
@@ -47,7 +47,7 @@ export const someOrElse = <B>(orElse: () => B) => <R, E, A>(ef: Task<R, E, Optio
 
 /**
  * ```haskell
- * someOrElseM_ :: Task t => (t x r e (Maybe a), t x1 r1 e1 b) ->
+ * someOrElseM_ :: Task t => (t x r e (Option a), t x1 r1 e1 b) ->
  *    t (x | x1) (r & r1) (e | e1) (a | b)
  * ```
  *
@@ -64,7 +64,7 @@ export const someOrElseM_ = <R, E, A, R1, E1, B>(
 
 /**
  * ```haskell
- * someOrElseM :: Task t => t x1 r1 e1 b -> t x r e (Maybe a) ->
+ * someOrElseM :: Task t => t x1 r1 e1 b -> t x r e (Option a) ->
  *    t (x | x1) (r & r1) (e | e1) (a | b)
  * ```
  *

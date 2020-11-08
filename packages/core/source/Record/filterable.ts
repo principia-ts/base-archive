@@ -84,8 +84,8 @@ export const filter: {
 
 /**
  * ```haskell
- * mapMaybeWithIndex_ :: (FilterableWithIndex f, Index k) =>
- *    (f a, ((k, a) -> Maybe b)) -> f b
+ * mapOptionWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ *    (f a, ((k, a) -> Option b)) -> f b
  * ```
  */
 export const mapOptionWithIndex_ = <N extends string, A, B>(
@@ -106,8 +106,8 @@ export const mapOptionWithIndex_ = <N extends string, A, B>(
 
 /**
  * ```haskell
- * mapMaybeWithIndex :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Maybe b) -> f a -> f b
+ * mapOptionWithIndex :: (FilterableWithIndex f, Index k) =>
+ *    ((k, a) -> Option b) -> f a -> f b
  * ```
  */
 export const mapOptionWithIndex = <N extends string, A, B>(f: (k: N, a: A) => Option<B>) => (
@@ -116,7 +116,7 @@ export const mapOptionWithIndex = <N extends string, A, B>(f: (k: N, a: A) => Op
 
 /**
  * ```haskell
- * mapMaybe_ :: Filterable f => (f a, (a -> Maybe b)) -> f b
+ * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  */
 export const mapOption_ = <N extends string, A, B>(
@@ -126,7 +126,7 @@ export const mapOption_ = <N extends string, A, B>(
 
 /**
  * ```haskell
- * mapMaybe :: Filterable f => (a -> Maybe b) -> f a -> f b
+ * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  */
 export const mapOption = <A, B>(f: (a: A) => Option<B>) => <N extends string>(

@@ -41,6 +41,20 @@ export const right = <E = never, A = never>(a: A): Either<E, A> => ({
 /**
  * 
  * ```haskell
+ * fromNullable_ :: (?a, (() -> e)) -> Either e a
+ * ```
+ 
+ * Takes a default and a nullable value, if the value is not nully, turn it into a `Right`, if the value is nully use the provided default as a `Left`
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export const fromNullable_ = <E, A>(a: A, e: Lazy<E>): Either<E, NonNullable<A>> =>
+   a == null ? left(e()) : right(a as NonNullable<A>);
+
+/**
+ * 
+ * ```haskell
  * fromNullable :: (() -> e) -> ?a -> Either e a
  * ```
  
@@ -51,6 +65,18 @@ export const right = <E = never, A = never>(a: A): Either<E, A> => ({
  */
 export const fromNullable = <E>(e: Lazy<E>) => <A>(a: A): Either<E, NonNullable<A>> =>
    a == null ? left(e()) : right(a as NonNullable<A>);
+
+export const fromNullableK_ = <E, A extends ReadonlyArray<unknown>, B>(
+   f: (...args: A) => B | null | undefined,
+   e: Lazy<E>
+): ((...args: A) => Either<E, NonNullable<B>>) => {
+   const from = fromNullable(e);
+   return (...args) => from(f(...args));
+};
+
+export const fromNullableK = <E>(e: Lazy<E>) => <A extends ReadonlyArray<unknown>, B>(
+   f: (...args: A) => B | null | undefined
+): ((...args: A) => Either<E, NonNullable<B>>) => fromNullableK_(f, e);
 
 /**
  * ```haskell
@@ -121,7 +147,7 @@ export interface JsonArray extends ReadonlyArray<Json> {}
 
 /**
  * ```haskell
- * _parseJSON :: (String, (* -> e)) -> Either e Json
+ * _parseJson :: (String, (* -> e)) -> Either e Json
  * ```
  *
  * Converts a JavaScript Object Notation (JSON) string into an object.
@@ -134,7 +160,7 @@ export const parseJson_ = <E>(s: string, onThrow: (reason: unknown) => E): Eithe
 
 /**
  * ```haskell
- * parseJSON :: (* -> e) -> String -> Either e Json
+ * parseJson :: (* -> e) -> String -> Either e Json
  * ```
  *
  * Converts a JavaScript Object Notation (JSON) string into an object.
@@ -167,12 +193,12 @@ export const stringifyJson_ = <E>(u: unknown, onThrow: (reason: unknown) => E): 
  * @category Constructors
  * @since 1.0.0
  */
-export const stringifyJSON = <E>(onThrow: (reason: unknown) => E) => (u: unknown): Either<E, string> =>
+export const stringifyJson = <E>(onThrow: (reason: unknown) => E) => (u: unknown): Either<E, string> =>
    stringifyJson_(u, onThrow);
 
 /**
  * ```haskell
- * _fromMaybe :: (Maybe a, (() -> e)) -> Either e a
+ * _fromOption :: (Option a, (() -> e)) -> Either e a
  * ```
  *
  * @category Constructors
@@ -183,7 +209,7 @@ export const fromOption_ = <E, A>(fa: Option<A>, onNothing: Lazy<E>): Either<E, 
 
 /**
  * ```haskell
- * fromMaybe :: (() -> e) -> Maybe a -> Either e a
+ * fromOption :: (() -> e) -> Option a -> Either e a
  * ```
  *
  * @category Constructors
