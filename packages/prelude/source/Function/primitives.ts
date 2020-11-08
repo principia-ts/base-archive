@@ -1,36 +1,4 @@
-import type * as HKT from "../HKT";
-
-export interface Lazy<A> {
-   (): A;
-}
-
-export interface Predicate<A> {
-   (a: A): boolean;
-}
-
-export interface Refinement<A, B extends A> {
-   (a: A): a is B;
-}
-
-export interface PredicateWithIndex<I, A> {
-   (i: I, a: A): boolean;
-}
-
-export interface RefinementWithIndex<I, A, B extends A> {
-   (i: I, a: A): a is B;
-}
-
-export interface Endomorphism<A> {
-   (a: A): A;
-}
-
-export interface Morphism<A, B> {
-   (a: A): B;
-}
-
-export interface FunctionN<A extends ReadonlyArray<unknown>, B> {
-   (...args: A): B;
-}
+import type { Lazy, Predicate } from "./model";
 
 export function identity<A>(a: A) {
    return a;
@@ -82,16 +50,4 @@ export function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: A) => B): (
    return (...a) => f(a);
 }
 
-/**
- * flip :: (a -> b -> c) -> b -> a -> c
- * Flips the arguments of a curried binary function
- */
-export const flip2 = <A, B, C>(f: (a: A) => (b: B) => C) => (b: B) => (a: A): C => f(a)(b);
-
 export const hole: <T>() => T = absurd as any;
-
-export const matchPredicate: {
-   <A, B extends A, C>(refinement: Refinement<A, B>, onTrue: (a: B) => C, onFalse: (a: A) => C): (a: A) => C;
-   <A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B): (a: A) => B;
-} = <A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B) => (a: A) =>
-   predicate(a) ? onTrue(a) : onFalse(a);
