@@ -6,7 +6,8 @@ import type { _E, _R } from "../../support/utils";
 import { parallel, sequential } from "../ExecutionStrategy";
 import { map_, mapM_ } from "./_core";
 import * as T from "./_internal/task";
-import { foreachPar_, foreachParN_ } from "./combinators";
+import { foreachPar_ } from "./combinators/foreachPar";
+import { foreachParN_ } from "./combinators/foreachParN";
 import { makeManagedReleaseMap } from "./combinators/makeManagedReleaseMap";
 import type { Managed } from "./model";
 

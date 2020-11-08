@@ -24,6 +24,9 @@ export const fromTask = <R, E, A>(effect: T.Task<R, E, A>) =>
       )
    );
 
+export const fromTaskUninterruptiblee = <R, E, A>(ma: T.Task<R, E, A>): Managed<R, E, A> =>
+   fromTask(T.makeUninterruptible(ma));
+
 /**
  * Imports a synchronous side-effect into a Managed
  */

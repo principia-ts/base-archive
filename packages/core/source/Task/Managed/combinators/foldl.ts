@@ -13,5 +13,5 @@ export const foldl_ = <R, E, A, B>(as: Iterable<A>, b: B, f: (b: B, a: A) => Man
 /**
  * Folds an Iterable<A> using an effectual function f, working sequentially from left to right.
  */
-export const fold = <R, E, A, B>(b: B, f: (b: B, a: A) => Managed<R, E, B>) => (as: Iterable<A>): Managed<R, E, B> =>
+export const foldl = <R, E, A, B>(b: B, f: (b: B, a: A) => Managed<R, E, B>) => (as: Iterable<A>): Managed<R, E, B> =>
    foldl_(as, b, f);

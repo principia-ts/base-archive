@@ -1,5 +1,6 @@
 import { fromTask } from "../_core";
 import * as T from "../_internal/task";
+import type { Managed } from "../model";
 import { onExitFirst_ } from "./onExitFirst";
 
 /**
@@ -7,19 +8,10 @@ import { onExitFirst_ } from "./onExitFirst";
  * The acquire action will be performed interruptibly, while release
  * will be performed uninterruptibly.
  */
-export const makeInterruptible = <A, R1>(release: (a: A) => T.Task<R1, never, unknown>) => <S, R, E>(
-   acquire: T.Task<R, E, A>
-) => _makeInterruptible(acquire, release);
-
-/**
- * Lifts a `Task<R, E, A>` into `Managed<R, E, A>` with a release action.
- * The acquire action will be performed interruptibly, while release
- * will be performed uninterruptibly.
- */
-export const _makeInterruptible = <R, E, A, R1>(
+export const makeInterruptible_ = <R, E, A, R1>(
    acquire: T.Task<R, E, A>,
    release: (a: A) => T.Task<R1, never, unknown>
-) =>
+): Managed<R & R1, E, A> =>
    onExitFirst_(fromTask(acquire), (e) => {
       switch (e._tag) {
          case "Failure": {
@@ -30,3 +22,12 @@ export const _makeInterruptible = <R, E, A, R1>(
          }
       }
    });
+
+/**
+ * Lifts a `Task<R, E, A>` into `Managed<R, E, A>` with a release action.
+ * The acquire action will be performed interruptibly, while release
+ * will be performed uninterruptibly.
+ */
+export const makeInterruptible = <A, R1>(release: (a: A) => T.Task<R1, never, unknown>) => <R, E>(
+   acquire: T.Task<R, E, A>
+): Managed<R & R1, E, A> => makeInterruptible_(acquire, release);
