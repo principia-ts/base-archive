@@ -183,9 +183,9 @@ export const ask = <R>(): RIO<R, R> => fromTask(T.ask<R>());
 
 export const asks = <R, A>(f: (_: R) => A): Stream<R, never, A> => map_(ask(), f);
 
-export const asksTask = <R0, R, E, A>(f: (_: R0) => T.Task<R, E, A>): Stream<R & R0, E, A> => mapM_(ask<R0>(), f);
+export const asksM = <R0, R, E, A>(f: (_: R0) => T.Task<R, E, A>): Stream<R & R0, E, A> => mapM_(ask<R0>(), f);
 
-export const asksM = <R0, R, E, A>(f: (_: R0) => Stream<R, E, A>) => chain_(ask<R0>(), f);
+export const asksStream = <R0, R, E, A>(f: (_: R0) => Stream<R, E, A>) => chain_(ask<R0>(), f);
 
 /**
  * Statefully and effectfully maps over the elements of this stream to produce
@@ -341,7 +341,7 @@ export const mapMPar = (n: number) => <A, R1, E1, B>(f: (a: A) => T.Task<R1, E1,
  * The registration of the callback itself returns a task. The optionality of the
  * error type `E` can be used to signal the end of the stream, by setting it to `None`.
  */
-export const asyncTask = <R, E, A, R1 = R, E1 = E>(
+export const asyncM = <R, E, A, R1 = R, E1 = E>(
    register: (
       cb: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,

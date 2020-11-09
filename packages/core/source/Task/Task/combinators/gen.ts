@@ -1,4 +1,4 @@
-import { chain_, fail, fromEither, local_, map_, pure, suspend, unit } from "../_core";
+import { chain_, fail, fromEither, gives_, map_, pure, suspend, unit } from "../_core";
 import type { Either } from "../../../Either";
 import { tuple } from "../../../Function";
 import type { NoSuchElementException } from "../../../GlobalExceptions";
@@ -94,7 +94,7 @@ export function gen(...args: any[]): any {
             return chain_(
                state.value.T instanceof Managed
                   ? map_(
-                       local_(state.value.T.task, (r0) => tuple(r0, rm)),
+                       gives_(state.value.T.task, (r0) => tuple(r0, rm)),
                        ([_, a]) => a
                     )
                   : state.value.T,

@@ -271,7 +271,7 @@ export const useManaged_ = <R, E, A, R2, E2, B>(
       RM.makeReleaseMap,
       (rm) =>
          T.chain_(
-            T.local_(self.task, (r: R) => tuple(r, rm)),
+            T.gives_(self.task, (r: R) => tuple(r, rm)),
             (a) => f(a[1])
          ),
       (rm, ex) => releaseAllReleaseMaps(ex, sequential())(rm)

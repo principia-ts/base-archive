@@ -23,14 +23,14 @@ export const foreachPar = <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (
  */
 export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> =>
    mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
-      const makeInnerMap = T.local_(
+      const makeInnerMap = T.gives_(
          T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
          (x: unknown) => tuple(x, parallelReleaseMap)
       );
 
       return T.traverseIPar_(as, (a) =>
          T.map_(
-            T.chain_(makeInnerMap, (innerMap) => T.local_(f(a).task, (u: R) => tuple(u, innerMap))),
+            T.chain_(makeInnerMap, (innerMap) => T.gives_(f(a).task, (u: R) => tuple(u, innerMap))),
             ([_, b]) => b
          )
       );

@@ -15,7 +15,7 @@ export const retry_ = <R, E, A, R1, O>(
       T.asksM(([env, releaseMap]: readonly [R & R1 & Has<Clock>, ReleaseMap]) =>
          pipe(
             ma.task,
-            T.local((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
+            T.gives((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
             T.retry(policy),
             T.giveAll(env)
          )

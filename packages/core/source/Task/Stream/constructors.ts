@@ -363,7 +363,7 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
                                 pipe(
                                    ma.task,
                                    T.map(([_, __]) => __),
-                                   T.local((r: R) => [r, finalizer] as [R, M.ReleaseMap]),
+                                   T.gives((r: R) => [r, finalizer] as [R, M.ReleaseMap]),
                                    restore,
                                    T.onError(() => doneRef.set(true))
                                 )

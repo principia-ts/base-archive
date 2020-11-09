@@ -800,15 +800,15 @@ export const giveAll_ = <R, I, O>(sc: Schedule<R, I, O>, r: R): Schedule<unknown
  */
 export const giveAll = <R>(r: R) => <I, O>(sc: Schedule<R, I, O>) => giveAll_(sc, r);
 
-const localLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) => R): StepFunction<R1, I, O> => (now, i) =>
-   T.local_(
+const givesLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) => R): StepFunction<R1, I, O> => (now, i) =>
+   T.gives_(
       T.map_(self(now, i), (d) => {
          switch (d._tag) {
             case "Done": {
                return makeDone(d.out);
             }
             case "Continue": {
-               return makeContinue(d.out, d.interval, localLoop(d.next, r));
+               return makeContinue(d.out, d.interval, givesLoop(d.next, r));
             }
          }
       }),
@@ -819,14 +819,14 @@ const localLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) => R): S
  * Returns a new schedule with part of its environment provided to it, so the
  * resulting schedule does not require any environment.
  */
-export const local_ = <R, R1, I, O>(sc: Schedule<R, I, O>, r: (_: R1) => R): Schedule<R1, I, O> =>
-   makeSchedule(localLoop(sc.step, r));
+export const gives_ = <R, R1, I, O>(sc: Schedule<R, I, O>, r: (_: R1) => R): Schedule<R1, I, O> =>
+   makeSchedule(givesLoop(sc.step, r));
 
 /**
  * Returns a new schedule with part of its environment provided to it, so the
  * resulting schedule does not require any environment.
  */
-export const local = <R, R1>(r: (_: R1) => R) => <I, O>(sc: Schedule<R, I, O>) => local_(sc, r);
+export const gives = <R, R1>(r: (_: R1) => R) => <I, O>(sc: Schedule<R, I, O>) => gives_(sc, r);
 
 const reconsiderMLoop = <R, I, O, R1, O1>(
    self: StepFunction<R, I, O>,

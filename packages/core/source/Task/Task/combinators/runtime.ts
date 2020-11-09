@@ -181,19 +181,19 @@ export interface Runtime<R0> {
 }
 
 export const makeRuntime = <R0>(r0: R0): Runtime<R0> => ({
-   in: <R, E, A>(effect: T.Task<R & R0, E, A>) => T.local_(effect, (r: R) => ({ ...r0, ...r })),
+   in: <R, E, A>(effect: T.Task<R & R0, E, A>) => T.gives_(effect, (r: R) => ({ ...r0, ...r })),
    run: (_, cb) =>
       run(
-         T.local_(_, (r) => ({ ...r0, ...r })),
+         T.gives_(_, (r) => ({ ...r0, ...r })),
          cb
       ),
    runCancel: (_, cb) =>
       runCancel(
-         T.local_(_, (r) => ({ ...r0, ...r })),
+         T.gives_(_, (r) => ({ ...r0, ...r })),
          cb
       ),
-   runPromise: (_) => runPromise(T.local_(_, (r) => ({ ...r0, ...r }))),
-   runPromiseExit: (_) => runPromiseExit(T.local_(_, (r) => ({ ...r0, ...r })))
+   runPromise: (_) => runPromise(T.gives_(_, (r) => ({ ...r0, ...r }))),
+   runPromiseExit: (_) => runPromiseExit(T.gives_(_, (r) => ({ ...r0, ...r })))
 });
 
 /**

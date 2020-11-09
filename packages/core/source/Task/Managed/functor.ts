@@ -25,7 +25,7 @@ export const map = <A, B>(f: (a: A) => B) => <R, E>(fa: Managed<R, E, A>) => map
 export const mapM_ = <R, E, A, R1, E1, B>(fa: Managed<R, E, A>, f: (a: A) => T.Task<R1, E1, B>) =>
    new Managed<R & R1, E | E1, B>(
       T.chain_(fa.task, ([fin, a]) =>
-         T.local_(
+         T.gives_(
             T.map_(f(a), (b) => [fin, b]),
             ([r]: readonly [R & R1, ReleaseMap]) => r
          )

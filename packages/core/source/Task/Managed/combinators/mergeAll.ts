@@ -68,7 +68,7 @@ export const mergeAllParN_ = (n: number) => <R, E, A, B>(
             mas,
             I.map((m) => T.map_(m.task, ([_, a]) => a)),
             T.mergeAllParN(n)(b, f),
-            T.local((_: R) => [_, rm] as const)
+            T.gives((_: R) => [_, rm] as const)
          )
       )
    );

@@ -140,7 +140,7 @@ export const makeReserve = <R, E, R2, E2, A>(reservation: T.Task<R, E, Reservati
                   }
                   case "Some": {
                      return T.map_(
-                        restore(T.local_(s.reserved.acquire, ([r]: readonly [R & R2, ReleaseMap]) => r)),
+                        restore(T.gives_(s.reserved.acquire, ([r]: readonly [R & R2, ReleaseMap]) => r)),
                         (a): [Finalizer, A] => [(e) => release(k.value, e)(s.releaseMap), a]
                      );
                   }

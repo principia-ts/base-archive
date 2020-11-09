@@ -22,7 +22,7 @@ export const preallocate = <R, E, A>(ma: Managed<R, E, A>): T.Task<R, E, Managed
          T.bindS("tp", ({ releaseMap }) =>
             pipe(
                ma.task,
-               T.local((r: R) => tuple(r, releaseMap)),
+               T.gives((r: R) => tuple(r, releaseMap)),
                restore,
                T.result
             )

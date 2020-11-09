@@ -348,7 +348,7 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
                            T.chain(() =>
                               pipe(
                                  restore(stream.proc.task),
-                                 T.local((_: R) => [_, releaseMap] as [R, M.ReleaseMap]),
+                                 T.gives((_: R) => [_, releaseMap] as [R, M.ReleaseMap]),
                                  T.map(([_, __]) => __),
                                  T.tap((pull) => ref.set(asState(pull)))
                               )

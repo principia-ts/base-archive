@@ -57,7 +57,7 @@ export const giveAll = <R>(r: R) => <E, A>(ma: Task<R, E, A>): Task<unknown, E, 
 
 /**
  * ```haskell
- * local_ :: MonadEnv m => (m r a, (r0 -> r)) -> m r0 a
+ * gives_ :: MonadEnv m => (m r a, (r0 -> r)) -> m r0 a
  * ```
  *
  * Provides a portion of the environment required to compute a MonadEnv
@@ -68,11 +68,11 @@ export const giveAll = <R>(r: R) => <E, A>(ma: Task<R, E, A>): Task<unknown, E, 
  * @category MonadEnv
  * @since 1.0.0
  */
-export const local_ = <R0, R, E, A>(ma: Task<R, E, A>, f: (r0: R0) => R) => asksM((r0: R0) => giveAll_(ma, f(r0)));
+export const gives_ = <R0, R, E, A>(ma: Task<R, E, A>, f: (r0: R0) => R) => asksM((r0: R0) => giveAll_(ma, f(r0)));
 
 /**
  * ```haskell
- * local :: MonadEnv m => (r0 -> r) -> m r a -> m r0 a
+ * gives :: MonadEnv m => (r0 -> r) -> m r a -> m r0 a
  * ```
  *
  * Provides a portion of the environment required to compute a MonadEnv
@@ -83,7 +83,7 @@ export const local_ = <R0, R, E, A>(ma: Task<R, E, A>, f: (r0: R0) => R) => asks
  * @category MonadEnv
  * @since 1.0.0
  */
-export const local = <R0, R>(f: (r0: R0) => R) => <E, A>(ma: Task<R, E, A>): Task<R0, E, A> => local_(ma, f);
+export const gives = <R0, R>(f: (r0: R0) => R) => <E, A>(ma: Task<R, E, A>): Task<R0, E, A> => gives_(ma, f);
 
 /**
  * ```haskell
@@ -99,7 +99,7 @@ export const local = <R0, R>(f: (r0: R0) => R) => <E, A>(ma: Task<R, E, A>): Tas
  * @since 1.0.0
  */
 export const give_ = <E, A, R = unknown, R0 = unknown>(ma: Task<R & R0, E, A>, r: R): Task<R0, E, A> =>
-   local_(ma, (r0) => ({ ...r0, ...r }));
+   gives_(ma, (r0) => ({ ...r0, ...r }));
 
 /**
  * ```haskell

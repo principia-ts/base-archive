@@ -27,12 +27,12 @@ export const mapBothPar_ = <R, E, A, R1, E1, B, C>(
    f: (a: A, b: B) => C
 ): Managed<R & R1, E | E1, C> =>
    mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
-      const innerMap = T.local_(makeManagedReleaseMap(sequential()).task, (r: R & R1) => tuple(r, parallelReleaseMap));
+      const innerMap = T.gives_(makeManagedReleaseMap(sequential()).task, (r: R & R1) => tuple(r, parallelReleaseMap));
 
       return T.chain_(T.both_(innerMap, innerMap), ([[_, l], [__, r]]) =>
          T.mapBothPar_(
-            T.local_(fa.task, (_: R & R1) => tuple(_, l)),
-            T.local_(fb.task, (_: R & R1) => tuple(_, r)),
+            T.gives_(fa.task, (_: R & R1) => tuple(_, l)),
+            T.gives_(fb.task, (_: R & R1) => tuple(_, r)),
             ([_, a], [__, a2]) => f(a, a2)
          )
       );

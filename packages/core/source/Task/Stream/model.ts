@@ -129,7 +129,7 @@ export class Chain<R_, E_, O, O2> {
                      restore(
                         pipe(
                            this.f0(o).proc.task,
-                           T.local((_: R_) => [_, releaseMap] as [R_, M.ReleaseMap]),
+                           T.gives((_: R_) => [_, releaseMap] as [R_, M.ReleaseMap]),
                            T.map(([_, x]) => x)
                         )
                      )

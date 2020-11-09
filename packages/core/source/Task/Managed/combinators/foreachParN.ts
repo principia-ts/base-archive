@@ -27,14 +27,14 @@ export const foreachParN_ = (n: number) => <R, E, A, B>(
    f: (a: A) => Managed<R, E, B>
 ): Managed<R, E, readonly B[]> =>
    mapM_(makeManagedReleaseMap(parallelN(n)), (parallelReleaseMap) => {
-      const makeInnerMap = T.local_(
+      const makeInnerMap = T.gives_(
          T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
          (x: unknown) => tuple(x, parallelReleaseMap)
       );
 
       return effectForeachParN(n)(as, (a) =>
          T.map_(
-            T.chain_(makeInnerMap, (innerMap) => T.local_(f(a).task, (u: R) => tuple(u, innerMap))),
+            T.chain_(makeInnerMap, (innerMap) => T.gives_(f(a).task, (u: R) => tuple(u, innerMap))),
             ([_, b]) => b
          )
       );
