@@ -1,4 +1,4 @@
-import { chain_, fail, fromEither, gives_, map_, pure, suspend, unit } from "../_core";
+import { chain_, fail, gives_, map_, pure, suspend, unit } from "../_core";
 import type { Either } from "../../../Either";
 import { tuple } from "../../../Function";
 import type { NoSuchElementException } from "../../../GlobalExceptions";
@@ -7,12 +7,13 @@ import type { Option } from "../../../Option";
 import type { _E, _R } from "../../../support/utils";
 import { isEither, isOption, isTag } from "../../../support/utils";
 import { sequential } from "../../ExecutionStrategy";
-import type { ReleaseMap } from "../../Managed";
 import { releaseAll } from "../../Managed/combinators/releaseAll";
 import { Managed } from "../../Managed/model";
-import { makeReleaseMap } from "../../Managed/ReleaseMap";
+import type { ReleaseMap } from "../../Managed/ReleaseMap";
+import { make } from "../../Managed/ReleaseMap";
 import type { Task } from "../model";
 import { bracketExit_ } from "./bracket";
+import { fromEither } from "./from";
 import { getOrFail } from "./getOrFail";
 import { askService } from "./service";
 
@@ -105,7 +106,7 @@ export function gen(...args: any[]): any {
             );
          };
 
-         return chain_(makeReleaseMap, (rm) =>
+         return chain_(make, (rm) =>
             bracketExit_(
                unit(),
                () => run(rm, state),

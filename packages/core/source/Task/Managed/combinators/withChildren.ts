@@ -1,7 +1,7 @@
 import * as T from "../_internal/task";
 import type { RuntimeFiber } from "../../Fiber/model";
 import { track } from "../../Supervisor";
-import { supervised_ } from "../../Task";
+import { supervised_ } from "../../Task/combinators/supervised";
 import { Managed } from "../model";
 import { unwrap } from "./unwrap";
 

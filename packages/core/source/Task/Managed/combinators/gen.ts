@@ -6,11 +6,11 @@ import type { Option } from "../../../Option";
 import type { _E, _R } from "../../../support/utils";
 import { isEither, isOption, isTag } from "../../../support/utils";
 import type { Task } from "../../Task";
-import { getOrFail } from "../../Task";
+import { getOrFail } from "../../Task/combinators/getOrFail";
 import { fromTask, succeed } from "../constructors";
 import { Managed } from "../model";
 import { chain_ } from "../monad";
-import { fromEither } from "./fromEither";
+import { fromEither } from "./from";
 import { asksService } from "./service";
 import { suspend } from "./suspend";
 
@@ -31,7 +31,7 @@ const adapter = (_: any, __?: any) => {
       return new GenManaged(asksService(_)(identity));
    }
    if (isEither(_)) {
-      return new GenManaged(fromEither(_));
+      return new GenManaged(fromEither(() => _));
    }
    if (isOption(_)) {
       return new GenManaged(__ ? (_._tag === "None" ? fail(__()) : succeed(_.value)) : fromTask(getOrFail(_)));

@@ -7,6 +7,7 @@ import { sequential } from "../ExecutionStrategy";
 import * as Ex from "../Exit";
 import * as C from "../Exit/Cause";
 import * as M from "../Managed";
+import * as RM from "../Managed/ReleaseMap";
 import * as T from "../Task";
 import * as XR from "../XRef";
 import * as Pull from "./internal/Pull";
@@ -79,7 +80,7 @@ export class Chain<R_, E_, O, O2> {
       readonly outerStream: T.Task<R_, Option<E_>, ReadonlyArray<O>>,
       readonly currOuterChunk: XR.Ref<[ReadonlyArray<O>, number]>,
       readonly currInnerStream: XR.Ref<T.Task<R_, Option<E_>, ReadonlyArray<O2>>>,
-      readonly innerFinalizer: XR.Ref<M.Finalizer>
+      readonly innerFinalizer: XR.Ref<RM.Finalizer>
    ) {
       this.apply = this.apply.bind(this);
       this.closeInner = this.closeInner.bind(this);
@@ -90,7 +91,7 @@ export class Chain<R_, E_, O, O2> {
    closeInner() {
       return pipe(
          this.innerFinalizer,
-         XR.getAndSet(M.noopFinalizer),
+         XR.getAndSet(RM.noopFinalizer),
          T.chain((f) => f(Ex.unit()))
       );
    }
@@ -124,12 +125,12 @@ export class Chain<R_, E_, O, O2> {
             T.uninterruptibleMask(({ restore }) =>
                pipe(
                   T.do,
-                  T.bindS("releaseMap", () => M.makeReleaseMap),
+                  T.bindS("releaseMap", () => RM.make),
                   T.bindS("pull", ({ releaseMap }) =>
                      restore(
                         pipe(
                            this.f0(o).proc.task,
-                           T.gives((_: R_) => [_, releaseMap] as [R_, M.ReleaseMap]),
+                           T.gives((_: R_) => [_, releaseMap] as [R_, RM.ReleaseMap]),
                            T.map(([_, x]) => x)
                         )
                      )

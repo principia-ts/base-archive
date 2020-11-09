@@ -1,5 +1,4 @@
 export * from "./model";
-export * from "./ReleaseMap";
 export * from "./methods";
 export * from "./combinators";
 export * from "./applicative-seq";

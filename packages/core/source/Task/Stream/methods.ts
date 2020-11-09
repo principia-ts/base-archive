@@ -7,6 +7,7 @@ import type { Exit } from "../Exit";
 import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
 import * as M from "../Managed";
+import * as RM from "../Managed/ReleaseMap";
 import * as Semaphore from "../Semaphore";
 import * as T from "../Task";
 import * as XP from "../XPromise";
@@ -152,7 +153,10 @@ export const chain_ = <R, E, A, Q, D, B>(fa: Stream<R, E, A>, f: (a: A) => Strea
          M.bindS("currInnerStream", () =>
             T.toManaged()(XR.makeRef<T.Task<R_, Option<E_>, ReadonlyArray<B>>>(Pull.end))
          ),
-         M.bindS("innerFinalizer", () => M.finalizerRef(M.noopFinalizer) as M.Managed<R_, never, XR.Ref<M.Finalizer>>),
+         M.bindS(
+            "innerFinalizer",
+            () => M.finalizerRef(RM.noopFinalizer) as M.Managed<R_, never, XR.Ref<RM.Finalizer>>
+         ),
          M.map(({ currInnerStream, currOuterChunk, innerFinalizer, outerStream }) =>
             new Chain(f, outerStream, currOuterChunk, currInnerStream, innerFinalizer).apply()
          )

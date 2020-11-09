@@ -1,6 +1,6 @@
 import type * as T from "../_internal/task";
 import type { Managed } from "../model";
-import { _onExit } from "./onExit";
+import { onExit_ } from "./onExit";
 
 /**
  * Ensures that `f` is executed when this Managed is finalized, after
@@ -8,7 +8,7 @@ import { _onExit } from "./onExit";
  *
  * For usecases that need access to the Managed's result, see [[onExit]].
  */
-export const ensuring_ = <R, E, A, R1>(self: Managed<R, E, A>, f: T.Task<R1, never, any>) => _onExit(self, () => f);
+export const ensuring_ = <R, E, A, R1>(self: Managed<R, E, A>, f: T.Task<R1, never, any>) => onExit_(self, () => f);
 
 /**
  * Ensures that `f` is executed when this Managed is finalized, after

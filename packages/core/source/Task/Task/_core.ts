@@ -11,3 +11,4 @@ export * from "./functor";
 export * from "./monad";
 export * from "./reader";
 export * from "./unit";
+export * from "./fallible";

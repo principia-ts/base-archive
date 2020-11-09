@@ -1,5 +1,5 @@
 import type { Either } from "../../Either";
-import * as T from "../Task/_core";
+import * as T from "./_internal/task";
 import type { XRefM } from "./model";
 
 /**

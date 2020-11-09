@@ -27,7 +27,7 @@ export function releaseAllReleaseMaps(
    return (_: RM.ReleaseMap) =>
       pipe(
          _.ref,
-         XR.modify((s): [T.IO<any>, RM.ManagedState] => {
+         XR.modify((s): [T.IO<any>, RM.State] => {
             switch (s._tag) {
                case "Exited": {
                   return [T.unit(), s];
@@ -40,7 +40,7 @@ export function releaseAllReleaseMaps(
                               T.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
                               (e) => T.done(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
                            ),
-                           RM.exited(s.nextKey, exit)
+                           new RM.Exited(s.nextKey, exit)
                         ];
                      }
                      case "Parallel": {
@@ -49,7 +49,7 @@ export function releaseAllReleaseMaps(
                               foreachPar_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => T.result(f(exit))),
                               (e) => T.done(O.getOrElse_(Ex.collectAllPar(...e), () => Ex.succeed([])))
                            ),
-                           RM.exited(s.nextKey, exit)
+                           new RM.Exited(s.nextKey, exit)
                         ];
                      }
                      case "ParallelN": {
@@ -60,7 +60,7 @@ export function releaseAllReleaseMaps(
                               ),
                               (e) => T.done(O.getOrElse_(Ex.collectAllPar(...e), () => Ex.succeed([])))
                            ),
-                           RM.exited(s.nextKey, exit)
+                           new RM.Exited(s.nextKey, exit)
                         ];
                      }
                   }
@@ -268,7 +268,7 @@ export const useManaged_ = <R, E, A, R2, E2, B>(
    f: (a: A) => T.Task<R2, E2, B>
 ): T.Task<R & R2, E | E2, B> => {
    return T.bracketExit_(
-      RM.makeReleaseMap,
+      RM.make,
       (rm) =>
          T.chain_(
             T.gives_(self.task, (r: R) => tuple(r, rm)),
@@ -291,7 +291,7 @@ export const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, 
             T.bindS("tp", () => T.ask<readonly [R, RM.ReleaseMap]>()),
             T.letS("r", ({ tp }) => tp[0]),
             T.letS("outerReleaseMap", ({ tp }) => tp[1]),
-            T.bindS("innerReleaseMap", () => RM.makeReleaseMap),
+            T.bindS("innerReleaseMap", () => RM.make),
             T.bindS("fiber", ({ innerReleaseMap, r }) =>
                restore(
                   pipe(
@@ -322,7 +322,7 @@ export const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, 
  * for the resulting `Managed`.
  */
 export const makeManagedReleaseMap = (es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> =>
-   M.makeExit_(RM.makeReleaseMap, (rm, e) => releaseAllReleaseMaps(e, es)(rm));
+   M.makeExit_(RM.make, (rm, e) => releaseAllReleaseMaps(e, es)(rm));
 
 /**
  * Joins all fibers, awaiting their _successful_ completion.

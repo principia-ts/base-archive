@@ -5,14 +5,14 @@ import * as Ex from "../../Exit";
 import type { Exit } from "../../Exit/model";
 import { Managed } from "../model";
 import type { ReleaseMap } from "../ReleaseMap";
-import { add, makeReleaseMap } from "../ReleaseMap";
+import { add, make } from "../ReleaseMap";
 import { releaseAll } from "./releaseAll";
 
 /**
  * Ensures that a cleanup function runs when this Managed is finalized, after
  * the existing finalizers.
  */
-export const _onExit = <R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>) =>
+export const onExit_ = <R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>) =>
    new Managed<R & R1, E, A>(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
@@ -20,7 +20,7 @@ export const _onExit = <R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exi
             T.bindS("tp", () => T.ask<readonly [R & R1, ReleaseMap]>()),
             T.letS("r", (s) => s.tp[0]),
             T.letS("outerReleaseMap", (s) => s.tp[1]),
-            T.bindS("innerReleaseMap", () => makeReleaseMap),
+            T.bindS("innerReleaseMap", () => make),
             T.bindS("exitEA", (s) =>
                restore(T.giveAll_(T.result(T.map_(self.task, ([_, a]) => a)), [s.r, s.innerReleaseMap]))
             ),
@@ -45,4 +45,4 @@ export const _onExit = <R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exi
  */
 export const onExit = <E, A, R1>(cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>) => <R>(
    self: Managed<R, E, A>
-) => _onExit(self, cleanup);
+) => onExit_(self, cleanup);

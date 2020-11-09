@@ -2,7 +2,7 @@ import { identity } from "../../Function";
 import * as Ex from "../Exit";
 import * as T from "./_internal/task";
 import { map_, mapM } from "./functor";
-import { Managed } from "./model";
+import { Managed, RIO } from "./model";
 
 /*
  * -------------------------------------------

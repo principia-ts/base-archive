@@ -37,7 +37,7 @@ export const timeout = (d: number) => <R, E, A>(ma: Managed<R, E, A>): Managed<R
             T.bindS("env", () => T.ask<readonly [R & Has<Clock>, RM.ReleaseMap]>()),
             T.letS("outerReleaseMap", ({ env }) => env[1]),
             T.letS("r", ({ env }) => env[0]),
-            T.bindS("innerReleaseMap", () => RM.makeReleaseMap),
+            T.bindS("innerReleaseMap", () => RM.make),
             T.bindS("earlyRelease", ({ outerReleaseMap, innerReleaseMap }) =>
                pipe(
                   outerReleaseMap,

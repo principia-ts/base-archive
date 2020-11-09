@@ -8,6 +8,7 @@ import { sequential } from "../ExecutionStrategy";
 import type { Exit } from "../Exit";
 import * as C from "../Exit/Cause";
 import * as M from "../Managed";
+import type * as RM from "../Managed/ReleaseMap";
 import * as T from "../Task";
 import type { XQueue } from "../XQueue";
 import * as XQ from "../XQueue";
@@ -363,7 +364,7 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
                                 pipe(
                                    ma.task,
                                    T.map(([_, __]) => __),
-                                   T.gives((r: R) => [r, finalizer] as [R, M.ReleaseMap]),
+                                   T.gives((r: R) => [r, finalizer] as [R, RM.ReleaseMap]),
                                    restore,
                                    T.onError(() => doneRef.set(true))
                                 )

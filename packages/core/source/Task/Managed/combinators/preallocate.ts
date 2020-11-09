@@ -18,7 +18,7 @@ export const preallocate = <R, E, A>(ma: Managed<R, E, A>): T.Task<R, E, Managed
    T.uninterruptibleMask(({ restore }) =>
       pipe(
          T.do,
-         T.bindS("releaseMap", () => RM.makeReleaseMap),
+         T.bindS("releaseMap", () => RM.make),
          T.bindS("tp", ({ releaseMap }) =>
             pipe(
                ma.task,

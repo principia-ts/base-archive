@@ -275,7 +275,7 @@ export class MemoMap {
                               T.bindS("env", () => T.ask<readonly [R, ReleaseMap]>()),
                               T.letS("a", ({ env: [a] }) => a),
                               T.letS("outerReleaseMap", ({ env: [_, outerReleaseMap] }) => outerReleaseMap),
-                              T.bindS("innerReleaseMap", () => RelMap.makeReleaseMap),
+                              T.bindS("innerReleaseMap", () => RelMap.make),
                               T.bindS("tp", ({ a, innerReleaseMap, outerReleaseMap }) =>
                                  restore(
                                     pipe(

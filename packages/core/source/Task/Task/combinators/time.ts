@@ -11,19 +11,19 @@ import { summarized_ } from "./summarized";
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
  */
-export const timedWith_ = <R, E, A, R1, E1>(fa: Task<R, E, A>, msTime: Task<R1, E1, number>) =>
-   summarized_(fa, msTime, (start, end) => end - start);
+export const timedWith_ = <R, E, A, R1, E1>(ma: Task<R, E, A>, msTime: Task<R1, E1, number>) =>
+   summarized_(ma, msTime, (start, end) => end - start);
 
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
  */
-export const timedWith = <R1, E1>(msTime: Task<R1, E1, number>) => <R, E, A>(ef: Task<R, E, A>) =>
-   timedWith_(ef, msTime);
+export const timedWith = <R1, E1>(msTime: Task<R1, E1, number>) => <R, E, A>(ma: Task<R, E, A>) =>
+   timedWith_(ma, msTime);
 
 /**
  * Returns a new effect that executes this one and times the execution.
  */
-export const timed = <R, E, A>(fa: Task<R, E, A>) => timedWith_(fa, currentTime);
+export const timed = <R, E, A>(ma: Task<R, E, A>) => timedWith_(ma, currentTime);
 
 /**
  * Returns a task that will timeout this effect, returning either the
@@ -35,11 +35,11 @@ export const timed = <R, E, A>(fa: Task<R, E, A>) => timedWith_(fa, currentTime)
  * will be safely interrupted
  */
 export const timeoutTo_ = <R, E, A, B, B1>(
-   fa: Task<R, E, A>,
+   ma: Task<R, E, A>,
    d: number,
    b: B,
    f: (a: A) => B1
-): Task<R & HasClock, E, B | B1> => pipe(fa, map(f), raceFirst(pipe(sleep(d), makeInterruptible, as(b))));
+): Task<R & HasClock, E, B | B1> => pipe(ma, map(f), raceFirst(pipe(sleep(d), makeInterruptible, as(b))));
 
 /**
  * Returns a task that will timeout this effect, returning either the
@@ -50,8 +50,8 @@ export const timeoutTo_ = <R, E, A, B, B1>(
  * If the timeout elapses without producing a value, the running effect
  * will be safely interrupted
  */
-export const timeoutTo = <A, B, B1>(d: number, b: B, f: (a: A) => B1) => <R, E>(fa: Task<R, E, A>) =>
-   timeoutTo_(fa, d, b, f);
+export const timeoutTo = <A, B, B1>(d: number, b: B, f: (a: A) => B1) => <R, E>(ma: Task<R, E, A>) =>
+   timeoutTo_(ma, d, b, f);
 
 /**
  * Returns a task that will timeout this effect, returning `None` if the
@@ -69,7 +69,7 @@ export const timeoutTo = <A, B, B1>(d: number, b: B, f: (a: A) => B1) => <R, E>(
  * the timeout, resulting in earliest possible return, before an underlying
  * effect has been successfully interrupted.
  */
-export const timeout_ = <R, E, A>(fa: Task<R, E, A>, d: number) => timeoutTo_(fa, d, O.none(), O.some);
+export const timeout_ = <R, E, A>(ma: Task<R, E, A>, d: number) => timeoutTo_(ma, d, O.none(), O.some);
 
 /**
  * Returns a task that will timeout this effect, returning `None` if the
@@ -87,16 +87,16 @@ export const timeout_ = <R, E, A>(fa: Task<R, E, A>, d: number) => timeoutTo_(fa
  * the timeout, resulting in earliest possible return, before an underlying
  * effect has been successfully interrupted.
  */
-export const timeout = (d: number) => <R, E, A>(fa: Task<R, E, A>) => timeout_(fa, d);
+export const timeout = (d: number) => <R, E, A>(ma: Task<R, E, A>) => timeout_(ma, d);
 
 /**
  * The same as `timeout`, but instead of producing a `None` in the event
  * of timeout, it will produce the specified error.
  */
-export const timeoutFail_ = <R, E, A, E1>(fa: Task<R, E, A>, d: number, e: () => E1): Task<R & HasClock, E | E1, A> =>
+export const timeoutFail_ = <R, E, A, E1>(ma: Task<R, E, A>, d: number, e: () => E1): Task<R & HasClock, E | E1, A> =>
    flatten(
       timeoutTo_(
-         fa,
+         ma,
          d,
          suspend(() => fail(e())),
          pure
@@ -107,4 +107,4 @@ export const timeoutFail_ = <R, E, A, E1>(fa: Task<R, E, A>, d: number, e: () =>
  * The same as `timeout`, but instead of producing a `None` in the event
  * of timeout, it will produce the specified error.
  */
-export const timeoutFail = <E1>(d: number, e: () => E1) => <R, E, A>(fa: Task<R, E, A>) => timeoutFail_(fa, d, e);
+export const timeoutFail = <E1>(d: number, e: () => E1) => <R, E, A>(ma: Task<R, E, A>) => timeoutFail_(ma, d, e);

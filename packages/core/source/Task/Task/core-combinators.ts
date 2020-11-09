@@ -136,24 +136,6 @@ const _if = <R, E, A, R1, E1, A1>(onTrue: () => Task<R, E, A>, onFalse: () => Ta
 export { _if as if };
 
 /**
- * Lifts an `Either` into an `Task`
- */
-export const fromEither = <E, A>(f: () => E.Either<E, A>) => chain_(total(f), E.fold(fail, succeed));
-
-/**
- * ```haskell
- * absolve :: Task r e (Either e1 a) -> Task r (e | e1) a
- * ```
- *
- * Returns a task that submerges the error case of an `Either` into the
- * `Task`.
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const absolve = <R, E, E1, A>(v: Task<R, E, E.Either<E1, A>>) => chain_(v, (e) => fromEither(() => e));
-
-/**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
  * produced effects sequentially.
  *

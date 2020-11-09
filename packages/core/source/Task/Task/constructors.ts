@@ -3,7 +3,7 @@ import * as O from "../../Option";
 import type { Exit } from "../Exit";
 import * as C from "../Exit/Cause";
 import type { FiberId } from "../Fiber/FiberId";
-import type { EIO, IO, Task } from "./model";
+import type { EIO, IO, RIO, Task } from "./model";
 import {
    AsyncInstruction,
    FailInstruction,
@@ -12,6 +12,7 @@ import {
    SuspendInstruction,
    TotalInstruction
 } from "./model";
+import { asks } from "./reader";
 
 /*
  * -------------------------------------------

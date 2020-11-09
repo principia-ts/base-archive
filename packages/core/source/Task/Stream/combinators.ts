@@ -13,6 +13,7 @@ import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
 import * as F from "../Fiber";
 import * as M from "../Managed";
+import * as RM from "../Managed/ReleaseMap";
 import * as Sc from "../Schedule";
 import type { Task } from "../Task";
 import * as T from "../Task";
@@ -322,7 +323,7 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
    return new Stream<R & R1, E2, A | B>(
       pipe(
          M.do,
-         M.bindS("finalizerRef", () => M.finalizerRef(M.noopFinalizer) as M.Managed<R, never, XR.Ref<M.Finalizer>>),
+         M.bindS("finalizerRef", () => M.finalizerRef(RM.noopFinalizer) as M.Managed<R, never, XR.Ref<RM.Finalizer>>),
          M.bindS("ref", () =>
             pipe(
                XR.makeRef<State<E>>({ _tag: "NotStarted" }),
@@ -333,7 +334,7 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
             const closeCurrent = (cause: C.Cause<any>) =>
                pipe(
                   finalizerRef,
-                  XR.getAndSet(M.noopFinalizer),
+                  XR.getAndSet(RM.noopFinalizer),
                   T.chain((f) => f(Ex.failure(cause))),
                   T.makeUninterruptible
                );
@@ -341,14 +342,14 @@ export const catchAllCause_ = <R, E, A, R1, E2, B>(
             const open = <R, E0, O>(stream: Stream<R, E0, O>) => (asState: (_: Pull.Pull<R, E0, O>) => State<E>) =>
                T.uninterruptibleMask(({ restore }) =>
                   pipe(
-                     M.makeReleaseMap,
+                     RM.make,
                      T.chain((releaseMap) =>
                         pipe(
                            finalizerRef.set((exit) => M.releaseAll(exit, sequential())(releaseMap)),
                            T.chain(() =>
                               pipe(
                                  restore(stream.proc.task),
-                                 T.gives((_: R) => [_, releaseMap] as [R, M.ReleaseMap]),
+                                 T.gives((_: R) => [_, releaseMap] as [R, RM.ReleaseMap]),
                                  T.map(([_, __]) => __),
                                  T.tap((pull) => ref.set(asState(pull)))
                               )
