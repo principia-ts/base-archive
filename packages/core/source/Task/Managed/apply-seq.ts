@@ -3,7 +3,7 @@ import type { EnforceNonEmptyRecord } from "@principia/prelude/Utils";
 import { identity } from "../../Function";
 import type { ReadonlyRecord } from "../../Record";
 import * as R from "../../Record";
-import type { _E, _R } from "../../support/utils";
+import type { _E, _R } from "../../Utils/infer";
 import { foreach_ } from "./combinators/foreach";
 import { map_ } from "./functor";
 import type { Managed } from "./model";

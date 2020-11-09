@@ -50,5 +50,6 @@ export const duplicate = <E, A>(wa: Either<E, A>): Either<E, Either<E, A>> => ex
  */
 export const Extend: P.Extend<[URI], V> = HKT.instance({
    ...Functor,
+   extend_,
    extend
 });

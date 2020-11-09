@@ -1,4 +1,4 @@
-import { AtomicReference } from "../../support/AtomicReference";
+import { AtomicReference } from "../../Utils/support/AtomicReference";
 import * as Sy from "./_internal";
 
 export abstract class SyncLayer<R, E, A> {

@@ -1,6 +1,6 @@
 import * as E from "../../Either";
 import { pipe } from "../../Function";
-import type { AtomicReference } from "../../support";
+import type { AtomicReference } from "../../Utils/support/AtomicReference";
 import * as T from "../Task/_core";
 import type { EIO, IO } from "../Task/model";
 import { modify } from "./atomic";

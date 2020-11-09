@@ -35,5 +35,6 @@ export const duplicate = <A>(wa: Option<A>): Option<Option<A>> => extend_(wa, id
 
 export const Extend: P.Extend<[URI], V> = HKT.instance({
    ...Functor,
+   extend_,
    extend
 });

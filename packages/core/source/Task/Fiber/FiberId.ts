@@ -1,7 +1,7 @@
 import type { Eq } from "@principia/prelude/Eq";
 import { fromEquals } from "@principia/prelude/Eq";
 
-import { AtomicNumber } from "../../support/AtomicNumber";
+import { AtomicNumber } from "../../Utils/support/AtomicNumber";
 
 export interface FiberId {
    readonly _tag: "FiberId";

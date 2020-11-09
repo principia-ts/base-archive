@@ -1,8 +1,8 @@
 import * as A from "../Array";
 import { fold_ as foldEither } from "../Either";
 import { pipe } from "../Function";
-import type { Stack } from "../support/Stack";
-import { stack } from "../support/Stack";
+import type { Stack } from "../Utils/Stack";
+import { stack } from "../Utils/Stack";
 import * as X from "../XPure";
 import * as Ex from "./AsyncExit";
 import { CancellablePromise } from "./CancellablePromise";

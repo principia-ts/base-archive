@@ -1,6 +1,6 @@
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
-import { AtomicReference } from "../../support";
+import { AtomicReference } from "../../Utils/support/AtomicReference";
 import type { Cause } from "../Exit/Cause";
 import type { Managed } from "../Managed/model";
 import type { DefaultEnv } from "../Task";

@@ -1,7 +1,8 @@
 import * as A from "../../Array";
 import { pipe } from "../../Function";
-import type { MutableQueue } from "../../support";
-import { AtomicBoolean, Bounded, Unbounded } from "../../support";
+import { AtomicBoolean } from "../../Utils/support/AtomicBoolean";
+import type { MutableQueue } from "../../Utils/support/MutableQueue";
+import { Bounded, Unbounded } from "../../Utils/support/MutableQueue";
 import type { XPromise } from "../XPromise";
 import * as XP from "../XPromise";
 import * as T from "./_internal/task";

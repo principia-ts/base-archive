@@ -48,5 +48,6 @@ export const duplicate: <A>(wa: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray
 
 export const Extend: P.Extend<[URI], V> = HKT.instance({
    ...Functor,
+   extend_,
    extend
 });

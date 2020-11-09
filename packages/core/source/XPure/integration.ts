@@ -1,8 +1,8 @@
 import * as O from "../Option";
-import { AtomicReference } from "../support/AtomicReference";
 import type { Cause } from "../Task/Exit/Cause";
 import { _A, _E, _I, _R, _U, TaskInstructionTag } from "../Task/Task/constants";
 import type { Instruction, Task, URI } from "../Task/Task/model";
+import { AtomicReference } from "../Utils/support/AtomicReference";
 import type { XPure } from "./model";
 
 export const XPureTaskIntegration = new AtomicReference<

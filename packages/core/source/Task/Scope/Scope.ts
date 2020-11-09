@@ -1,7 +1,8 @@
 import * as A from "../../Array";
 import type { Either } from "../../Either";
 import * as E from "../../Either";
-import { AtomicNumber, AtomicReference } from "../../support";
+import { AtomicNumber } from "../../Utils/support/AtomicNumber";
+import { AtomicReference } from "../../Utils/support/AtomicReference";
 import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
 import type { IO } from "../Task";

@@ -29,5 +29,6 @@ export const duplicate: <A>(wa: ReadonlyArray<A>) => ReadonlyArray<ReadonlyArray
 
 export const Extend: P.Extend<[URI], V> = HKT.instance({
    ...Functor,
+   extend_,
    extend
 });

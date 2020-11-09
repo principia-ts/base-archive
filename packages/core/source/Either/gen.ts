@@ -1,8 +1,8 @@
 import { genF, GenHKT } from "../DSL/gen";
 import { NoSuchElementException } from "../GlobalExceptions";
 import type { Option } from "../Option";
-import { isOption, isSync } from "../support/utils";
 import type { Sync } from "../Sync";
+import { isOption, isSync } from "../Utils/guards";
 import { runEither, runEitherEnv_ } from "../XPure/run";
 import { fromOption_ } from "./constructors";
 import type { Either } from "./model";

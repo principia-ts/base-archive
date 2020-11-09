@@ -2,7 +2,7 @@ import type { Either } from "../../Either";
 import * as E from "../../Either";
 import { identity, pipe } from "../../Function";
 import * as O from "../../Option";
-import { ImmutableQueue } from "../../support";
+import { ImmutableQueue } from "../../Utils/support/ImmutableQueue";
 import * as M from "../Managed/_core";
 import * as T from "../Task/_core";
 import { bracket_ } from "../Task/combinators/bracket";

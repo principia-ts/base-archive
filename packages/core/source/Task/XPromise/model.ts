@@ -1,4 +1,4 @@
-import type { AtomicReference } from "../../support";
+import type { AtomicReference } from "../../Utils/support/AtomicReference";
 import type { FiberId } from "../Fiber/FiberId";
 import type { State } from "./state";
 

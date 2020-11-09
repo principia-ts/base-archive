@@ -1,6 +1,6 @@
 import * as DSL from "../DSL";
 import type * as O from "../Option";
-import { isOption } from "../support/utils";
+import { isOption } from "../Utils/guards";
 import { Monad } from "./monad";
 
 const adapter: {

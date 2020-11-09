@@ -1,8 +1,8 @@
 import type { Either, Right } from "../Either";
 import { left, right } from "../Either/constructors";
 import { map_ as mapEither_ } from "../Either/functor";
-import type { Stack } from "../support/Stack";
-import { stack } from "../support/Stack";
+import type { Stack } from "../Utils/Stack";
+import { stack } from "../Utils/Stack";
 import { fail, succeed } from "./constructors";
 import type { XPure } from "./model";
 import { _XPI, XPureInstructionTag } from "./model";

@@ -1,6 +1,6 @@
 import type { Predicate } from "../Function";
-import type { Stack } from "../support/Stack";
-import * as S from "../support/Stack";
+import type { Stack } from "../Utils/Stack";
+import * as S from "../Utils/Stack";
 import type { Filter, FreeMonoid, Map } from "./model";
 
 /*

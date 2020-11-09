@@ -1,4 +1,4 @@
-import { AtomicReference } from "../../support";
+import { AtomicReference } from "../../Utils/support/AtomicReference";
 import type { IO } from "../Task";
 import * as T from "../Task/_core";
 import type { Ref } from "./model";

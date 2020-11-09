@@ -1,9 +1,9 @@
 import type { Either } from "../../Either";
 import { NoSuchElementException, PrematureGeneratorExit } from "../../GlobalExceptions";
-import type { Option } from "../../Option";
-import type { _E, _R } from "../../support/utils";
-import { isEither, isOption, isTag } from "../../support/utils";
 import type { Has, Tag } from "../../Has";
+import type { Option } from "../../Option";
+import { isEither, isOption, isTag } from "../../Utils/guards";
+import type { _E, _R } from "../../Utils/infer";
 import type { Task } from "../Task";
 import { askService, die, fromEither } from "../Task";
 import { fromTask, suspend } from "./constructors";

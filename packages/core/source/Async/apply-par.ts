@@ -1,4 +1,4 @@
-import type { _A, _E, _R } from "../support/utils";
+import type { _A, _E, _R } from "../Utils/infer";
 import { map_ } from "./functor";
 import type { Async } from "./model";
 import { AllInstruction } from "./model";

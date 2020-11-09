@@ -21,6 +21,7 @@ export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(i
 
 export const Comonad: P.Comonad<[URI], V> = HKT.instance({
    ...Functor,
+   extend_,
    extend,
    extract
 });
