@@ -1,3 +1,3 @@
-import { checkDescriptor, pure } from "../_core";
+import { descriptorWith, pure } from "../_core";
 
-export const checkFiberId = () => checkDescriptor((d) => pure(d.id));
+export const fiberId = () => descriptorWith((d) => pure(d.id));

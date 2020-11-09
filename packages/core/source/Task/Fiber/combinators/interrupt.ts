@@ -1,6 +1,6 @@
 import * as I from "../../../Iterable";
 import * as T from "../../Task/_core";
-import { checkFiberId } from "../../Task/combinators/checkFiberId";
+import { fiberId } from "../../Task/combinators/checkFiberId";
 import { forkDaemon } from "../../Task/core-scope";
 import type { IO } from "../../Task/model";
 import type { FiberId } from "../FiberId";
@@ -15,7 +15,7 @@ import type { Fiber } from "../model";
  * fiber has already exited, the returned effect will resume immediately.
  * Otherwise, the effect will resume when the fiber exits.
  */
-export const interrupt = <E, A>(fiber: Fiber<E, A>) => T.chain_(checkFiberId(), (id) => fiber.interruptAs(id));
+export const interrupt = <E, A>(fiber: Fiber<E, A>) => T.chain_(fiberId(), (id) => fiber.interruptAs(id));
 
 /**
  * ```haskell

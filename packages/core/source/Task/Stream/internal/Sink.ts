@@ -138,7 +138,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                p1(i),
                p2(i),
                (res1, fib2) =>
-                  Ex.foldTask_(
+                  Ex.foldM_(
                      res1,
                      (f) =>
                         T.apSecond_(
@@ -153,7 +153,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                      () => T.first_(F.join(fib2), ([r, leftover]) => [E.map_(r, E.right), leftover] as const)
                   ),
                (res2, fib1) =>
-                  Ex.foldTask_(
+                  Ex.foldM_(
                      res2,
                      (f) =>
                         T.apSecond_(

@@ -26,11 +26,11 @@ import type { InterruptStatus } from "../../Fiber/model";
 import { forkDaemon } from "../core-scope";
 import type { Canceler, EIO, IO, Task } from "../model";
 import { SetInterruptInstruction } from "../model";
-import { checkFiberId } from "./checkFiberId";
+import { fiberId } from "./checkFiberId";
 
 export const interruptAs = (fiberId: FiberId): EIO<never, never> => halt(C.interrupt(fiberId));
 
-export const interrupt: Task<unknown, never, never> = chain_(checkFiberId(), interruptAs);
+export const interrupt: Task<unknown, never, never> = chain_(fiberId(), interruptAs);
 
 export const setInterruptStatus_ = <R, E, A>(effect: Task<R, E, A>, flag: InterruptStatus): Task<R, E, A> =>
    new SetInterruptInstruction(effect, flag);
@@ -107,7 +107,7 @@ export function onInterruptExtended_<R, E, A, R2, E2>(self: Task<R, E, A>, clean
  */
 export const disconnect = <R, E, A>(effect: Task<R, E, A>): Task<R, E, A> =>
    uninterruptibleMask(({ restore }) =>
-      chain_(checkFiberId(), (id) =>
+      chain_(fiberId(), (id) =>
          chain_(forkDaemon(restore(effect)), (fiber) =>
             onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
          )

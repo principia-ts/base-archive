@@ -93,7 +93,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
 
    return pipe(
       T.do,
-      T.bindS("parentId", () => T.checkFiberId()),
+      T.bindS("parentId", () => T.fiberId()),
       T.bindS("causes", () => XR.makeRef<C.Cause<E>>(C.empty)),
       T.bindS("result", () => promiseMake<void, void>()),
       T.bindS("status", () => XR.makeRef([0, 0, false] as [number, number, boolean])),

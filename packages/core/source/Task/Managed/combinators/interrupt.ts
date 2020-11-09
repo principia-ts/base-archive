@@ -10,7 +10,7 @@ import { chain_ } from "../monad";
  * method.
  */
 export const interrupt: Managed<unknown, never, never> = chain_(
-   fromTask(T.checkDescriptor((d) => T.succeed(d.id))),
+   fromTask(T.descriptorWith((d) => T.succeed(d.id))),
    (id) => halt(C.interrupt(id))
 );
 

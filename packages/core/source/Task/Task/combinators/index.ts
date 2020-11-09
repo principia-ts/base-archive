@@ -109,4 +109,5 @@ export * from "./tuple";
 export * from "./unrefine";
 export * from "./unrefineWith";
 export * from "./validate";
+export * from "./withChildren";
 // codegen:end

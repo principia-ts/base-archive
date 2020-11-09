@@ -1,6 +1,7 @@
 import { pipe } from "@principia/prelude";
 
 import * as T from "../_internal/task";
+import { tuple } from "../../../Function";
 import { sequential } from "../../ExecutionStrategy";
 import * as Ex from "../../Exit";
 import { Managed } from "../model";
@@ -21,23 +22,23 @@ export const preallocate = <R, E, A>(ma: Managed<R, E, A>): T.Task<R, E, Managed
          T.bindS("tp", ({ releaseMap }) =>
             pipe(
                ma.task,
-               T.local((r: R) => [r, releaseMap] as const),
-               T.result,
-               restore
+               T.local((r: R) => tuple(r, releaseMap)),
+               restore,
+               T.result
             )
          ),
          T.bindS("preallocated", ({ releaseMap, tp }) =>
-            Ex.foldTask_(
+            Ex.foldM_(
                tp,
                (c) => pipe(releaseMap, releaseAll(Ex.failure(c), sequential()), T.apSecond(T.halt(c))),
                ([release, a]) =>
                   T.succeed(
                      new Managed(
-                        T.asksM(([_, releaseMap]: readonly [any, RM.ReleaseMap]) =>
+                        T.asksM(([_, releaseMap]: readonly [unknown, RM.ReleaseMap]) =>
                            pipe(
                               releaseMap,
                               RM.add(release),
-                              T.map((__) => [_, a] as const)
+                              T.map((_) => tuple(_, a))
                            )
                         )
                      )
@@ -57,11 +58,11 @@ export const preallocateManaged = <R, E, A>(ma: Managed<R, E, A>): Managed<R, E,
       T.map_(ma.task, ([release, a]) => [
          release,
          new Managed(
-            T.asksM(([_, releaseMap]: readonly [any, RM.ReleaseMap]) =>
+            T.asksM(([_, releaseMap]: readonly [unknown, RM.ReleaseMap]) =>
                pipe(
                   releaseMap,
                   RM.add(release),
-                  T.map((__) => [_, a] as const)
+                  T.map((_) => tuple(_, a))
                )
             )
          )

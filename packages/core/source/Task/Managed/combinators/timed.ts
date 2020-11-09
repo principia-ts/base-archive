@@ -44,7 +44,7 @@ export const timeout = (d: number) => <R, E, A>(ma: Managed<R, E, A>): Managed<R
                   RM.add((ex) => releaseAll(ex, sequential())(innerReleaseMap))
                )
             ),
-            T.bindS("id", () => T.checkFiberId()),
+            T.bindS("id", () => T.fiberId()),
             T.bindS("raceResult", ({ r, innerReleaseMap, id }) =>
                pipe(
                   ma.task,

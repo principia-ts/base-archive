@@ -24,7 +24,7 @@ export const mapBothPar_ = <R, E, A, R2, E2, A2, B>(
    const g = (b: A2, a: A) => f(a, b);
 
    return transplant((graft) =>
-      T.checkDescriptor((d) =>
+      T.descriptorWith((d) =>
          raceWith_(
             graft(a),
             graft(b),

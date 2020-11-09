@@ -3,4 +3,4 @@ import type { FiberId } from "../../Fiber/FiberId";
 import { fromTask } from "../constructors";
 import type { Managed } from "../model";
 
-export const fiberId = (): Managed<unknown, never, FiberId> => fromTask(T.checkFiberId());
+export const fiberId = (): Managed<unknown, never, FiberId> => fromTask(T.fiberId());

@@ -242,8 +242,10 @@ export const tapCause_ = <R2, A2, R, E, E2>(ma: Task<R2, E2, A2>, f: (e: Cause<E
 export const tapCause = <R, E, E1>(f: (e: Cause<E1>) => Task<R, E, any>) => <R1, A1>(ma: Task<R1, E1, A1>) =>
    tapCause_(ma, f);
 
-export const checkDescriptor = <R, E, A>(f: (d: FiberDescriptor) => Task<R, E, A>): Task<R, E, A> =>
+export const descriptorWith = <R, E, A>(f: (d: FiberDescriptor) => Task<R, E, A>): Task<R, E, A> =>
    new CheckDescriptorInstruction(f);
+
+export const descriptor = (): Task<unknown, never, FiberDescriptor> => descriptorWith(succeed);
 
 export const checkInterruptible = <R, E, A>(f: (i: InterruptStatus) => Task<R, E, A>): Task<R, E, A> =>
    new GetInterruptInstruction(f);

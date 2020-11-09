@@ -1,6 +1,6 @@
 import type { FiberId } from "../../Fiber/FiberId";
 import * as T from "../../Task/_core";
-import { checkFiberId } from "../../Task/combinators/checkFiberId";
+import { fiberId } from "../../Task/combinators/checkFiberId";
 import { interruptAs as effectInterruptAs } from "../../Task/combinators/interrupt";
 import type { Canceler, EIO, IO } from "../../Task/model";
 import type { XPromise } from "../model";
@@ -12,7 +12,7 @@ import { completeWith } from "./completeWith";
  * waiting on the value of the promise as by the fiber calling this method.
  */
 export const interrupt = <E, A>(promise: XPromise<E, A>): IO<boolean> =>
-   T.chain_(checkFiberId(), (id) => completeWith<E, A>(effectInterruptAs(id))(promise));
+   T.chain_(fiberId(), (id) => completeWith<E, A>(effectInterruptAs(id))(promise));
 
 /**
  * Completes the promise with interruption. This will interrupt all fibers

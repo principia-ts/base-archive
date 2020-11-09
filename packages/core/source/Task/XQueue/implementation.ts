@@ -109,7 +109,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
       takers: MutableQueue<XPromise<never, A>>,
       isShutdown: AtomicBoolean
    ): T.IO<boolean> {
-      return T.checkDescriptor((d) =>
+      return T.descriptorWith((d) =>
          T.suspend(() => {
             const p = XP.unsafeMake<never, boolean>(d.id);
 
@@ -175,7 +175,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
    get shutdown(): T.IO<void> {
       return pipe(
          T.do,
-         T.bindS("fiberId", () => T.checkFiberId()),
+         T.bindS("fiberId", () => T.fiberId()),
          T.bindS("putters", () => T.total(() => unsafePollAll(this.putters))),
          T.tap((s) =>
             T.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? XP.interruptAs(s.fiberId)(p) : T.unit()))
@@ -321,7 +321,7 @@ export const unsafeCreate = <A>(
          });
       };
 
-      shutdown: T.IO<void> = T.checkDescriptor((d) =>
+      shutdown: T.IO<void> = T.descriptorWith((d) =>
          T.suspend(() => {
             shutdownFlag.set(true);
 
@@ -341,7 +341,7 @@ export const unsafeCreate = <A>(
          }
       });
 
-      take: T.Task<unknown, never, A> = T.checkDescriptor((d) =>
+      take: T.Task<unknown, never, A> = T.descriptorWith((d) =>
          T.suspend(() => {
             if (shutdownFlag.get) {
                return T.interrupt;

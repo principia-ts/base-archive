@@ -753,13 +753,13 @@ export const right = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => choose_(identi
  * Returns a new schedule that packs the input and output of this schedule into the first
  * element of a tuple. This allows carrying information through this schedule.
  */
-export const first = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => bothInOut_(sc, identity<A>());
+export const fst = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => bothInOut_(sc, identity<A>());
 
 /**
  * Returns a new schedule that packs the input and output of this schedule into the second
  * element of a tuple. This allows carrying information through this schedule.
  */
-export const second = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => bothInOut_(identity<A>(), sc);
+export const snd = <A>() => <R, I, O>(sc: Schedule<R, I, O>) => bothInOut_(identity<A>(), sc);
 
 /**
  * A schedule that always recurs, mapping input values through the
@@ -773,7 +773,7 @@ export const fromFunction = <A, B>(f: (a: A) => B) => map_(identity<A>(), f);
  */
 export const spaced = (duration: number) => addDelay_(forever, () => duration);
 
-const provideAllLoop = <R, I, O>(self: StepFunction<R, I, O>, r: R): StepFunction<unknown, I, O> => (now, i) =>
+const giveAllLoop = <R, I, O>(self: StepFunction<R, I, O>, r: R): StepFunction<unknown, I, O> => (now, i) =>
    T.giveAll(r)(
       T.map_(self(now, i), (d) => {
          switch (d._tag) {
@@ -781,7 +781,7 @@ const provideAllLoop = <R, I, O>(self: StepFunction<R, I, O>, r: R): StepFunctio
                return makeDone(d.out);
             }
             case "Continue": {
-               return makeContinue(d.out, d.interval, provideAllLoop(d.next, r));
+               return makeContinue(d.out, d.interval, giveAllLoop(d.next, r));
             }
          }
       })
@@ -791,19 +791,16 @@ const provideAllLoop = <R, I, O>(self: StepFunction<R, I, O>, r: R): StepFunctio
  * Returns a new schedule with its environment provided to it, so the resulting
  * schedule does not require any environment.
  */
-export const provideAll_ = <R, I, O>(sc: Schedule<R, I, O>, r: R): Schedule<unknown, I, O> =>
-   makeSchedule(provideAllLoop(sc.step, r));
+export const giveAll_ = <R, I, O>(sc: Schedule<R, I, O>, r: R): Schedule<unknown, I, O> =>
+   makeSchedule(giveAllLoop(sc.step, r));
 
 /**
  * Returns a new schedule with its environment provided to it, so the resulting
  * schedule does not require any environment.
  */
-export const provideAll = <R>(r: R) => <I, O>(sc: Schedule<R, I, O>) => provideAll_(sc, r);
+export const giveAll = <R>(r: R) => <I, O>(sc: Schedule<R, I, O>) => giveAll_(sc, r);
 
-const provideSomeLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) => R): StepFunction<R1, I, O> => (
-   now,
-   i
-) =>
+const localLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) => R): StepFunction<R1, I, O> => (now, i) =>
    T.local_(
       T.map_(self(now, i), (d) => {
          switch (d._tag) {
@@ -811,7 +808,7 @@ const provideSomeLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) =>
                return makeDone(d.out);
             }
             case "Continue": {
-               return makeContinue(d.out, d.interval, provideSomeLoop(d.next, r));
+               return makeContinue(d.out, d.interval, localLoop(d.next, r));
             }
          }
       }),
@@ -822,14 +819,14 @@ const provideSomeLoop = <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) =>
  * Returns a new schedule with part of its environment provided to it, so the
  * resulting schedule does not require any environment.
  */
-export const provideSome_ = <R, R1, I, O>(sc: Schedule<R, I, O>, r: (_: R1) => R): Schedule<R1, I, O> =>
-   makeSchedule(provideSomeLoop(sc.step, r));
+export const local_ = <R, R1, I, O>(sc: Schedule<R, I, O>, r: (_: R1) => R): Schedule<R1, I, O> =>
+   makeSchedule(localLoop(sc.step, r));
 
 /**
  * Returns a new schedule with part of its environment provided to it, so the
  * resulting schedule does not require any environment.
  */
-export const provideSome = <R, R1>(r: (_: R1) => R) => <I, O>(sc: Schedule<R, I, O>) => provideSome_(sc, r);
+export const local = <R, R1>(r: (_: R1) => R) => <I, O>(sc: Schedule<R, I, O>) => local_(sc, r);
 
 const reconsiderMLoop = <R, I, O, R1, O1>(
    self: StepFunction<R, I, O>,

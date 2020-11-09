@@ -12,3 +12,4 @@ export * from "../../Task/combinators/sleep";
 export * from "../../Task/combinators/checkFiberId";
 export * from "../../Task/combinators/bracket";
 export * from "../../Task/combinators/mergeAll";
+export * from "../../Task/combinators/retry";

@@ -1,6 +1,7 @@
 import { pipe } from "../../Function";
 import type { Exit } from "../Exit";
 import type { Cause } from "../Exit/Cause";
+import * as C from "../Exit/Cause";
 import { makeRef } from "../XRef/_core";
 import * as T from "./_internal/task";
 import { Managed } from "./model";
@@ -24,7 +25,7 @@ export const fromTask = <R, E, A>(effect: T.Task<R, E, A>) =>
       )
    );
 
-export const fromTaskUninterruptiblee = <R, E, A>(ma: T.Task<R, E, A>): Managed<R, E, A> =>
+export const fromTaskUninterruptible = <R, E, A>(ma: T.Task<R, E, A>): Managed<R, E, A> =>
    fromTask(T.makeUninterruptible(ma));
 
 /**
@@ -53,6 +54,11 @@ export const fail = <E>(e: E) => fromTask(T.fail(e));
  * Returns a Managed that models failure with the specified `Cause`.
  */
 export const halt = <E>(cause: Cause<E>) => fromTask(T.halt(cause));
+
+/**
+ * Returns a Managed that dies with the specified error
+ */
+export const die = (error: unknown) => halt(C.die(error));
 
 /**
  * Creates a task that executes a finalizer stored in a `Ref`.
