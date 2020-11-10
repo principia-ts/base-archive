@@ -1,5 +1,3 @@
-import { UnknownArray } from "packages/core/source/Eq";
-
 import type { Task } from "../_internal/task";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";

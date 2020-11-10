@@ -2,7 +2,8 @@ import chalk from "chalk";
 import { sequenceT } from "fp-ts/lib/Apply";
 import * as A from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
-import { Endomorphism, flow, pipe, unsafeCoerce } from "fp-ts/lib/function";
+import type { Endomorphism } from "fp-ts/lib/function";
+import { flow, pipe, unsafeCoerce } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
 import { posix } from "path";
 
@@ -17,7 +18,7 @@ interface SourceMap {
 const replaceString = (path: string): Endomorphism<string> => {
    const dir = posix.dirname(path);
    return flow(
-      (x) => x.replace(/(.*)\.\.\/source(.*)/gm, "$1_source_$2"),
+      (x) => x.replace(/(.*)\.\.\/src(.*)/gm, "$1_src$2"),
       (x) => posix.relative(dir, posix.join(dir, x)),
       (x) => (x.startsWith(".") ? x : "./" + x)
    );
@@ -40,7 +41,7 @@ const replaceSingleStage = (content: string, path: string): string =>
 
 pipe(
    sequenceT(TE.taskEither)(
-      copy("source/**/*", "dist/_source_", { update: true }),
+      copy("src/**/*", "dist/_src", { update: true }),
       modifyGlob(replaceSingleStage)(MAP_GLOB_PATTERN)
    ),
    TE.fold(onLeft, onRight("Source map linking succeeded!"))

@@ -25,16 +25,16 @@ pipe(
             sideEffects: false,
             exports: {
                ".": {
-                  import: "./_dist_/esm-fix/index.js",
-                  require: "./_dist_/cjs/index.js"
+                  import: "./dist/esm-fix/index.js",
+                  require: "./dist/cjs/index.js"
                },
                "./": {
-                  import: "./_dist_/esm-fix/",
-                  require: "./_dist_/cjs/"
+                  import: "./dist/esm-fix/",
+                  require: "./dist/cjs/"
                }
             },
             license: content["license"],
-            main: "./_dist_/cjs/index.js",
+            main: "./dist/cjs/index.js",
             name: content["name"],
             peerDependencies: content["peerDependencies"],
             private: false,
@@ -42,14 +42,14 @@ pipe(
                access: "public"
             },
             repository: content["repository"],
-            module: "./_dist_/esm-shake/index.js",
+            module: "./dist/esm-shake/index.js",
             typings: "./index.d.ts",
             version: content["version"]
          })
       )
    ),
-   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/_dist_/cjs/package.json"), cjsJSON)),
-   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/_dist_/esm-shake/package.json"), shakeJSON)),
-   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/_dist_/esm-fix/package.json"), esmJSON)),
+   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/dist/cjs/package.json"), cjsJSON)),
+   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/dist/esm-shake/package.json"), shakeJSON)),
+   TE.chain(() => writeFile(Path.resolve(process.cwd(), "dist/dist/esm-fix/package.json"), esmJSON)),
    TE.fold(onLeft, onRight("Package copy succeeded!"))
 )().catch((e) => console.log(chalk.red.bold(`unexpected error ${e}`)));
