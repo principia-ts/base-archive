@@ -1,33 +1,225 @@
-import type { Erase } from "@principia/prelude/Utils";
+import type { Erase, UnionToIntersection } from "@principia/prelude/Utils";
 
 import * as A from "../../Array";
 import { pipe, tuple } from "../../Function";
 import type * as H from "../../Has";
 import { mergeEnvironments, tag } from "../../Has";
 import { insert } from "../../Map";
+import { AtomicReference } from "../../Utils/support/AtomicReference";
 import { sequential } from "../ExecutionStrategy";
 import type { Cause } from "../Exit/Cause";
 import type { Exit } from "../Exit/model";
 import type { Managed } from "../Managed/model";
 import type { Finalizer, ReleaseMap } from "../Managed/ReleaseMap";
 import * as RelMap from "../Managed/ReleaseMap";
+import type { DefaultEnv } from "../Task";
 import * as XP from "../XPromise";
 import * as XR from "../XRef";
 import * as XRM from "../XRefM";
 import * as M from "./_internal/managed";
 import * as T from "./_internal/task";
-import type { Layer, MergeA, MergeE, MergeR } from "./model";
-import {
-   LayerAllParInstruction,
-   LayerAllSeqInstruction,
-   LayerFoldInstruction,
-   LayerInstructionTag,
-   LayerManagedInstruction,
-   LayerMapBothParInstruction,
-   LayerMapBothSeqInstruction
-} from "./model";
 
-export * from "./model";
+/*
+ * -------------------------------------------
+ * Layer Model
+ * -------------------------------------------
+ */
+
+export const URI = "Layer";
+
+export type URI = typeof URI;
+
+export abstract class Layer<R, E, A> {
+   readonly hash = new AtomicReference<PropertyKey>(Symbol());
+
+   readonly _R!: (_: R) => void;
+   readonly _E!: () => E;
+   readonly _A!: () => A;
+
+   setKey(hash: symbol) {
+      this.hash.set(hash);
+      return this;
+   }
+
+   ["_I"](): LayerInstruction {
+      return this as any;
+   }
+
+   ["<<<"]<R1, E1, A1>(from: Layer<R1, E1, A1>): Layer<Erase<R, A1> & R1, E | E1, A> {
+      return from_(this, from);
+   }
+
+   [">>>"]<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<Erase<R1, A> & R, E | E1, A1> {
+      return from_(to, this);
+   }
+
+   ["<+<"]<R1, E1, A1>(from: Layer<R1, E1, A1>): Layer<Erase<R, A1> & R1, E | E1, A & A1> {
+      return using_(this, from);
+   }
+
+   [">+>"]<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<Erase<R1, A> & R, E | E1, A & A1> {
+      return using_(to, this);
+   }
+
+   ["+++"]<R1, E1, A1>(and: Layer<R1, E1, A1>): Layer<R & R1, E | E1, A & A1> {
+      return and_(this, and);
+   }
+
+   use<R1, E1, A1>(task: T.Task<R1 & A, E1, A1>): T.Task<R & R1, E | E1, A1> {
+      return M.use_(build(this["+++"](identity<R1>())), (a) => T.giveAll_(task, a));
+   }
+}
+
+declare module "@principia/prelude/HKT" {
+   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
+      readonly [URI]: Layer<R, E, A>;
+   }
+}
+
+/*
+ * -------------------------------------------
+ * Instructions
+ * -------------------------------------------
+ */
+
+export enum LayerInstructionTag {
+   Fold = "LayerFold",
+   Map = "LayerMap",
+   Chain = "LayerChain",
+   Fresh = "LayerRefresh",
+   Managed = "LayerManaged",
+   Suspend = "LayerSuspend",
+   MapBothPar = "LayerMapBothPar",
+   AllPar = "LayerAllPar",
+   AllSeq = "LayerAllSeq",
+   MapBothSeq = "LayerMapBothSeq"
+}
+
+/**
+ * Type level bound to make sure a layer is complete
+ */
+export const main = <E, A>(layer: Layer<DefaultEnv, E, A>) => layer;
+
+export type LayerInstruction =
+   | LayerFoldInstruction<any, any, any, any, any, any, any, any>
+   | LayerMapInstruction<any, any, any, any>
+   | LayerChainInstruction<any, any, any, any, any, any>
+   | LayerChainInstruction<any, any, any, any, any, any>
+   | LayerFreshInstruction<any, any, any>
+   | LayerManagedInstruction<any, any, any>
+   | LayerSuspendInstruction<any, any, any>
+   | LayerMapBothParInstruction<any, any, any, any, any, any, any>
+   | LayerMapBothSeqInstruction<any, any, any, any, any, any, any>
+   | LayerAllParInstruction<Layer<any, any, any>[]>
+   | LayerAllSeqInstruction<Layer<any, any, any>[]>;
+
+export class LayerFoldInstruction<R, E, A, E1, A1, R2, E2, A2> extends Layer<R & R2, E1 | E2, A1 | A2> {
+   readonly _tag = LayerInstructionTag.Fold;
+
+   constructor(
+      readonly layer: Layer<R, E, A>,
+      readonly onFailure: Layer<readonly [R, Cause<E>], E1, A1>,
+      readonly onSuccess: Layer<A & R2, E2, A2>
+   ) {
+      super();
+   }
+}
+
+export class LayerMapInstruction<R, E, A, B> extends Layer<R, E, B> {
+   readonly _tag = LayerInstructionTag.Map;
+
+   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => B) {
+      super();
+   }
+}
+
+export class LayerChainInstruction<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
+   readonly _tag = LayerInstructionTag.Chain;
+
+   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => Layer<R1, E1, B>) {
+      super();
+   }
+}
+
+export class LayerFreshInstruction<R, E, A> extends Layer<R, E, A> {
+   readonly _tag = LayerInstructionTag.Fresh;
+
+   constructor(readonly layer: Layer<R, E, A>) {
+      super();
+   }
+}
+
+export class LayerManagedInstruction<R, E, A> extends Layer<R, E, A> {
+   readonly _tag = LayerInstructionTag.Managed;
+
+   constructor(readonly managed: Managed<R, E, A>) {
+      super();
+   }
+}
+
+export class LayerSuspendInstruction<R, E, A> extends Layer<R, E, A> {
+   readonly _tag = LayerInstructionTag.Suspend;
+
+   constructor(readonly factory: () => Layer<R, E, A>) {
+      super();
+   }
+}
+
+export type MergeR<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
+   {
+      [k in keyof Ls]: [Ls[k]] extends [Layer<infer X, any, any>] ? (unknown extends X ? never : X) : never;
+   }[number]
+>;
+
+export type MergeE<Ls extends Layer<any, any, any>[]> = {
+   [k in keyof Ls]: [Ls[k]] extends [Layer<any, infer X, any>] ? X : never;
+}[number];
+
+export type MergeA<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
+   {
+      [k in keyof Ls]: [Ls[k]] extends [Layer<any, any, infer X>] ? (unknown extends X ? never : X) : never;
+   }[number]
+>;
+
+export class LayerMapBothParInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+   readonly _tag = LayerInstructionTag.MapBothPar;
+
+   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
+      super();
+   }
+}
+
+export class LayerAllParInstruction<Ls extends Layer<any, any, any>[]> extends Layer<
+   MergeR<Ls>,
+   MergeE<Ls>,
+   MergeA<Ls>
+> {
+   readonly _tag = LayerInstructionTag.AllPar;
+
+   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
+      super();
+   }
+}
+
+export class LayerMapBothSeqInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+   readonly _tag = LayerInstructionTag.MapBothSeq;
+
+   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
+      super();
+   }
+}
+
+export class LayerAllSeqInstruction<Ls extends Layer<any, any, any>[]> extends Layer<
+   MergeR<Ls>,
+   MergeE<Ls>,
+   MergeA<Ls>
+> {
+   readonly _tag = LayerInstructionTag.AllSeq;
+
+   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
+      super();
+   }
+}
 
 export type RIO<R, A> = Layer<R, never, A>;
 
@@ -108,6 +300,8 @@ export const build = <R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, A> =>
 export const pure = <T>(has: H.Tag<T>) => (resource: T) =>
    new LayerManagedInstruction(M.chain_(M.fromTask(T.pure(resource)), (a) => environmentFor(has, a)));
 
+export const identity = <R>() => fromRawManaged(M.ask<R>());
+
 export const prepare = <T>(has: H.Tag<T>) => <R, E, A extends T>(acquire: T.Task<R, E, A>) => ({
    open: <R1, E1>(open: (_: A) => T.Task<R1, E1, any>) => ({
       release: <R2>(release: (_: A) => T.Task<R2, never, any>) =>
@@ -143,6 +337,34 @@ export const fromRawTask = <R, E, A>(resource: T.Task<R, E, A>): Layer<R, E, A> 
 export const fromRawFunction = <A, B>(f: (a: A) => B) => fromRawTask(T.asks(f));
 
 export const fromRawFunctionM = <A, R, E, B>(f: (a: A) => T.Task<R, E, B>) => fromRawTask(T.asksM(f));
+
+export const using_: {
+   <R, E, A, R2, E2, A2>(self: Layer<R & A2, E, A>, from: Layer<R2, E2, A2>, noErase: "no-erase"): Layer<
+      R & R2,
+      E | E2,
+      A & A2
+   >;
+   <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, from: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A & A2>;
+} = <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, from: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A & A2> =>
+   fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A2 & A>(
+      from,
+      fromRawFunctionM((_: readonly [R & R2, Cause<E2>]) => T.halt(_[1])),
+      and_(from, self)
+   );
+
+export const from_: {
+   <R, E, A, R2, E2, A2>(self: Layer<R & A2, E, A>, to: Layer<R2, E2, A2>, noErase: "no-erase"): Layer<
+      R & R2,
+      E | E2,
+      A
+   >;
+   <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, to: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A>;
+} = <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, to: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A> =>
+   fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A>(
+      to,
+      fromRawFunctionM((_: readonly [R & R2, Cause<E2>]) => T.halt(_[1])),
+      self
+   );
 
 export const both_ = <R, E, A, R2, E2, A2>(
    left: Layer<R, E, A>,
