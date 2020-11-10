@@ -2,12 +2,12 @@ import type * as P from "@principia/prelude";
 import { apF_, chainF_, pureF } from "@principia/prelude";
 import type * as HKT from "@principia/prelude/HKT";
 
-import { _intersect, memoize } from "../_utils";
 import * as A from "../Array";
 import * as E from "../Either";
 import type { Option } from "../Option";
 import { none, some } from "../Option";
 import * as R from "../Record";
+import { _intersect, memoize } from "../Utils";
 import { fromRefinement } from "./constructors";
 import type { InputOf, KleisliDecoder, KleisliDecoderHKT, TypeOf } from "./model";
 
@@ -15,7 +15,7 @@ export function mapLeftWithInput_<M extends HKT.URIS, C>(
    M: P.Bifunctor<M, C>
 ): <I, E, A>(decoder: KleisliDecoder<M, C, I, E, A>, f: (i: I, e: E) => E) => KleisliDecoder<M, C, I, E, A> {
    return (decoder, f) => ({
-      decode: (i) => M.first_(decoder.decode(i), (e) => f(i, e))
+      decode: (i) => M.mapLeft_(decoder.decode(i), (e) => f(i, e))
    });
 }
 
@@ -223,7 +223,7 @@ export function fromType_<E, M>(
    return (properties, onPropertyError) => ({
       decode: (i) =>
          R.traverseWithIndex_(M)(properties, (key, decoder) =>
-            M.first_(decoder.decode(i[key]), (e) => onPropertyError(key, e))
+            M.mapLeft_(decoder.decode(i[key]), (e) => onPropertyError(key, e))
          ) as any
    });
 }
@@ -325,7 +325,7 @@ export function fromArray_<E, M>(
 ) => KleisliDecoderHKT<M, ReadonlyArray<I>, E, ReadonlyArray<A>> {
    const traverse = A.traverseWithIndex_(M);
    return (item, onItemError) => ({
-      decode: (is) => traverse(is, (index, i) => M.first_(item.decode(i), (e: E) => onItemError(index, e)))
+      decode: (is) => traverse(is, (index, i) => M.mapLeft_(item.decode(i), (e: E) => onItemError(index, e)))
    });
 }
 
@@ -357,7 +357,7 @@ export function fromRecord_<E, M>(
 ) => KleisliDecoderHKT<M, Record<string, I>, E, Record<string, A>> {
    const traverse = R.traverseWithIndex_(M);
    return (codomain, onKeyError) => ({
-      decode: (ir) => traverse(ir, (key, i) => M.first_(codomain.decode(i as any), (e) => onKeyError(key, e)))
+      decode: (ir) => traverse(ir, (key, i) => M.mapLeft_(codomain.decode(i as any), (e) => onKeyError(key, e)))
    });
 }
 
@@ -393,7 +393,7 @@ export function fromTuple<E, M>(
    return (onIndexError) => (...components) => ({
       decode: (is) =>
          traverse(components, (index, decoder) =>
-            M.first_(decoder.decode(is[index]), (e) => onIndexError(index, e))
+            M.mapLeft_(decoder.decode(is[index]), (e) => onIndexError(index, e))
          ) as any
    });
 }
@@ -414,9 +414,9 @@ export function union<E, M>(
 ) => KleisliDecoderHKT<M, any, E, any> {
    return (onMemberError) => (...members) => ({
       decode: (i) => {
-         let out = M.first_(members[0].decode(i), (e) => onMemberError(0, e));
+         let out = M.mapLeft_(members[0].decode(i), (e) => onMemberError(0, e));
          for (let index = 1; index < members.length; index++) {
-            out = M.alt_(out, () => M.first_(members[index].decode(i), (e) => onMemberError(index, e)));
+            out = M.alt_(out, () => M.mapLeft_(members[index].decode(i), (e) => onMemberError(index, e)));
          }
          return out;
       }
@@ -529,7 +529,7 @@ export function lazy_<E, M>(
    ): KleisliDecoderHKT<M, I, E, A> => {
       const get = memoize<void, KleisliDecoderHKT<M, I, E, A>>(f);
       return {
-         decode: (i) => M.first_(get().decode(i), (e: E) => onError(id, e))
+         decode: (i) => M.mapLeft_(get().decode(i), (e: E) => onError(id, e))
       };
    };
 }

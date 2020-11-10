@@ -2,7 +2,7 @@ import * as A from "../../Array";
 import { pipe } from "../../Function";
 import * as O from "../../Option";
 import { mapBothCause } from "./apply";
-import { first_ } from "./bifunctor";
+import { mapError_ } from "./bifunctor";
 import * as C from "./Cause";
 import { map, map_ } from "./functor";
 import type { Exit } from "./model";
@@ -55,6 +55,6 @@ export const collectAllPar = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Opti
       )
    );
 
-export const orElseFail_ = <E, A, G>(exit: Exit<E, A>, orElse: G) => first_(exit, () => orElse);
+export const orElseFail_ = <E, A, G>(exit: Exit<E, A>, orElse: G) => mapError_(exit, () => orElse);
 
 export const orElseFail = <G>(orElse: G) => <E, A>(exit: Exit<E, A>): Exit<G, A> => orElseFail_(exit, orElse);

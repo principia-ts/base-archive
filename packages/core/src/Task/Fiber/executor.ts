@@ -17,11 +17,10 @@ import type { Supervisor } from "../Supervisor";
 import * as Super from "../Supervisor";
 import * as T from "./_internal/task";
 import { TaskInstructionTag } from "./_internal/task";
-import * as F from "./core";
 import type { FiberId } from "./FiberId";
 import { newFiberId } from "./FiberId";
 import type { Fiber, InterruptStatus, RuntimeFiber } from "./model";
-import { FiberDescriptor } from "./model";
+import { FiberDescriptor, interruptStatus } from "./model";
 import type { Callback } from "./state";
 import { FiberStateDone, FiberStateExecuting, initial, interrupting } from "./state";
 import * as Status from "./status";
@@ -498,7 +497,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       const childContext = new Executor(
          childId,
          currentEnv,
-         F.interruptStatus(this.isInterruptible),
+         interruptStatus(this.isInterruptible),
          childFiberRefLocals,
          currentSupervisor,
          childScope,
@@ -591,7 +590,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
          this.fiberId,
          this.state.get.status,
          C.interruptors(this.state.get.interrupted),
-         F.interruptStatus(this.isInterruptible),
+         interruptStatus(this.isInterruptible),
          this.scope
       );
    }
@@ -791,7 +790,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                            }
 
                            case TaskInstructionTag.GetInterrupt: {
-                              current = current.f(F.interruptStatus(this.isInterruptible))[T._I];
+                              current = current.f(interruptStatus(this.isInterruptible))[T._I];
                               break;
                            }
 

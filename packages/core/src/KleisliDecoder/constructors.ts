@@ -2,9 +2,9 @@ import type * as P from "@principia/prelude";
 import { pureF } from "@principia/prelude";
 import type * as HKT from "@principia/prelude/HKT";
 
-import type { Literal } from "../_utils";
 import type { Refinement } from "../Function";
 import * as G from "../Guard";
+import type { Literal } from "../Utils";
 import type { KleisliDecoder } from "./model";
 
 export const fromRefinement = <E, M extends HKT.URIS, C>(M: P.MonadFail<M, C & HKT.Fix<"E", E>>) => <I, A extends I>(

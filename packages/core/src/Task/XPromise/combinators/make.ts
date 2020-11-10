@@ -1,5 +1,5 @@
 import { chain_ } from "../../Task/_core";
-import { fiberId } from "../../Task/combinators/checkFiberId";
+import { fiberId } from "../../Task/combinators/fiberId";
 import { makeAs } from "./makeAs";
 
 /**

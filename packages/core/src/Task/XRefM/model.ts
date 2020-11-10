@@ -84,7 +84,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB
                (e) => T.fail(eb(e)),
                (a) => bd(a)
             ),
-         (a) => (s) => T.chain_(ca(a), (a) => T.first_(this.setEither(a)(s), ea))
+         (a) => (s) => T.chain_(ca(a), (a) => T.mapError_(this.setEither(a)(s), ea))
       );
 
    readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -105,7 +105,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB
          (c) => (s) =>
             T.chain_(
                T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
-               (a) => T.first_(this.setEither(a)(s), ea)
+               (a) => T.mapError_(this.setEither(a)(s), ea)
             )
       );
 
@@ -138,7 +138,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A
                (e) => T.fail(eb(e)),
                (a) => bd(a)
             ),
-         (a) => T.chain_(ca(a), (a) => T.first_(this.setEither(a), ea))
+         (a) => T.chain_(ca(a), (a) => T.mapError_(this.setEither(a), ea))
       );
 
    readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -159,7 +159,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A
          (c) => (s) =>
             T.chain_(
                T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
-               (a) => T.first_(this.setEither(a), ea)
+               (a) => T.mapError_(this.setEither(a), ea)
             )
       );
 

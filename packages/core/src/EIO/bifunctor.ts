@@ -3,7 +3,7 @@ import * as HKT from "@principia/prelude/HKT";
 
 import * as X from "../XPure";
 import { fail, succeed } from "./constructors";
-import { map, map_ } from "./functor";
+import { Functor } from "./functor";
 import type { EIO, URI, V } from "./model";
 
 /*
@@ -16,9 +16,9 @@ export const bimap_: <E, A, B, C>(pab: EIO<E, A>, f: (e: E) => B, g: (a: A) => C
 
 export const bimap: <E, A, B, C>(f: (e: E) => B, g: (a: A) => C) => (pab: EIO<E, A>) => EIO<B, C> = X.bimap;
 
-export const first_: <E, A, B>(pab: EIO<E, A>, f: (e: E) => B) => EIO<B, A> = X.first_;
+export const mapError_: <E, A, B>(pab: EIO<E, A>, f: (e: E) => B) => EIO<B, A> = X.mapError_;
 
-export const first: <E, B>(f: (e: E) => B) => <A>(pab: EIO<E, A>) => EIO<B, A> = X.first;
+export const mapError: <E, B>(f: (e: E) => B) => <A>(pab: EIO<E, A>) => EIO<B, A> = X.mapError;
 
 export const swap = <E, A>(pab: EIO<E, A>): EIO<A, E> => X.foldM_(pab, succeed, fail);
 
@@ -27,10 +27,9 @@ export const swap = <E, A>(pab: EIO<E, A>): EIO<A, E> => X.foldM_(pab, succeed, 
  * @since 1.0.0
  */
 export const Bifunctor: P.Bifunctor<[URI], V> = HKT.instance({
+   ...Functor,
    bimap_,
    bimap,
-   first_,
-   first,
-   second_: map_,
-   second: map
+   mapLeft_: mapError_,
+   mapLeft: mapError
 });

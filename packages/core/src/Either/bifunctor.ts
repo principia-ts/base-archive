@@ -2,7 +2,7 @@ import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
 import { left, right } from "./constructors";
-import { map, map_ } from "./functor";
+import { Functor, map, map_ } from "./functor";
 import { isLeft } from "./guards";
 import type { Either, URI, V } from "./model";
 
@@ -52,31 +52,6 @@ export const bimap = <E, A, G, B>(f: (e: E) => G, g: (a: A) => B) => (pab: Eithe
 
 /**
  * ```haskell
- * first_ :: Bifunctor p => (p a c, (a -> b)) -> p b c
- * ```
- *
- * Map a function over the first type argument of a bifunctor.
- *
- * @category Bifunctor
- * @since 1.0.0
- */
-export const first_ = <E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> =>
-   isLeft(pab) ? left(f(pab.left)) : pab;
-
-/**
- * ```haskell
- * first :: Bifunctor p => (a -> c) -> p a b -> p c b
- * ```
- *
- * Map a function over the first type argument of a bifunctor.
- *
- * @category Bifunctor
- * @since 1.0.0
- */
-export const first = <E, G>(f: (e: E) => G) => <A>(pab: Either<E, A>): Either<G, A> => first_(pab, f);
-
-/**
- * ```haskell
  * mapLeft_ :: Bifunctor p => (p a c, (a -> b)) -> p b c
  * ```
  *
@@ -85,7 +60,8 @@ export const first = <E, G>(f: (e: E) => G) => <A>(pab: Either<E, A>): Either<G,
  * @category Bifunctor
  * @since 1.0.0
  */
-export const mapLeft_ = first_;
+export const mapLeft_ = <E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> =>
+   isLeft(pab) ? left(f(pab.left)) : pab;
 
 /**
  * ```haskell
@@ -97,30 +73,16 @@ export const mapLeft_ = first_;
  * @category Bifunctor
  * @since 1.0.0
  */
-export const mapLeft = first;
+export const mapLeft = <E, G>(f: (e: E) => G) => <A>(pab: Either<E, A>): Either<G, A> => mapLeft_(pab, f);
 
 /**
  * @category Instances
  * @since 1.0.0
  */
 export const Bifunctor: P.Bifunctor<[URI], V> = HKT.instance({
+   ...Functor,
    bimap_,
    bimap,
-   first_,
-   first,
-   second_: map_,
-   second: map
-});
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export const Bifunctor2: P.Bifunctor2<URI, V> = HKT.instance({
-   bimap_,
-   bimap,
-   first_,
-   first,
-   second_: map_,
-   second: map
+   mapLeft_,
+   mapLeft
 });

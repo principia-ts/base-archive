@@ -1,4 +1,4 @@
-import type { UnionToIntersection } from "@principia/core/_utils";
+import type { UnionToIntersection } from "@principia/core/Utils";
 
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from "../HKT";
 

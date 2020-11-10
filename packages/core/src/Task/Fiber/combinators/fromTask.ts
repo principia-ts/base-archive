@@ -1,10 +1,10 @@
 import * as T from "../_internal/task";
-import { done } from "../core";
+import { done } from "../constructors";
 import type { SyntheticFiber } from "../model";
 
 /**
  * ```haskell
- * fromTask :: Task t => t ^ _ e a -> t ^ _ _ (Synthetic e a)
+ * fromTask :: Task _ e a -> Task _ _ (Synthetic e a)
  * ```
  *
  * Lifts an `Task` into a `Fiber`.

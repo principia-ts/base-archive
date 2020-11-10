@@ -1,7 +1,7 @@
-import type { Literal } from "../_utils";
 import type { Refinement } from "../Function";
 import type { Guard } from "../Guard";
 import * as K from "../KleisliDecoder";
+import type { Literal } from "../Utils";
 import type { ErrorInfo } from "./decode-error";
 import { error } from "./decode-error";
 import type { Decoder } from "./model";

@@ -1,7 +1,7 @@
-import type { EnforceNonEmptyRecord } from "../../_utils";
 import { identity, tuple } from "../../Function";
 import type { ReadonlyRecord } from "../../Record";
 import * as R from "../../Record";
+import type { EnforceNonEmptyRecord } from "../../Utils";
 import type { _E, _R } from "../../Utils/infer";
 import { parallel, sequential } from "../ExecutionStrategy";
 import { map_, mapM_ } from "./_core";

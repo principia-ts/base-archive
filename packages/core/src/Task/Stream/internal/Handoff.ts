@@ -1,8 +1,7 @@
-import { matchTag } from "@principia/prelude/Utils";
-
 import { constVoid, pipe } from "../../../Function";
 import type { Option } from "../../../Option";
 import { none, some } from "../../../Option";
+import { matchTag } from "../../../Utils";
 import * as T from "../../Task";
 import * as XP from "../../XPromise";
 import * as XR from "../../XRef";

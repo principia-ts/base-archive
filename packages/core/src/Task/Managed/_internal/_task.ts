@@ -9,7 +9,7 @@ export * from "../../Task/combinators/service";
 export * from "../../Task/combinators/race";
 export * from "../../Task/core-scope";
 export * from "../../Task/combinators/sleep";
-export * from "../../Task/combinators/checkFiberId";
+export * from "../../Task/combinators/fiberId";
 export * from "../../Task/combinators/bracket";
 export * from "../../Task/combinators/mergeAll";
 export * from "../../Task/combinators/retry";

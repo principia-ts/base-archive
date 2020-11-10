@@ -1,5 +1,3 @@
-export * from "@principia/prelude/Utils";
-
 export type Literal = string | number | boolean | null;
 
 const typeOf = (x: unknown): string => (x === null ? "null" : typeof x);
@@ -26,3 +24,8 @@ export const memoize = <A, B>(f: (a: A) => B): ((a: A) => B) => {
       return cache.get(a);
    };
 };
+
+export * from "./infer";
+export * from "./types";
+export * from "./guards";
+export * from "./matchers";

@@ -22,7 +22,7 @@ export const bimap = <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <R>(pab: Ta
 
 /**
  * ```haskell
- * first_ :: Bifunctor p => (p a c, (a -> b)) -> p b c
+ * mapError_ :: Bifunctor p => (p a c, (a -> b)) -> p b c
  * ```
  *
  * Map covariantly over the first argument.
@@ -34,12 +34,12 @@ export const bimap = <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <R>(pab: Ta
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first_ = <R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<R, D, A> =>
+export const mapError_ = <R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<R, D, A> =>
    foldCauseM_(fea, flow(C.map(f), halt), succeed);
 
 /**
  * ```haskell
- * first :: Bifunctor p => (a -> b) -> p a c -> p b c
+ * mapError :: Bifunctor p => (a -> b) -> p a c -> p b c
  * ```
  *
  * Map covariantly over the first argument.
@@ -51,4 +51,4 @@ export const first_ = <R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<R, 
  * @category Bifunctor
  * @since 1.0.0
  */
-export const first = <E, D>(f: (e: E) => D) => <R, A>(fea: Task<R, E, A>) => first_(fea, f);
+export const mapError = <E, D>(f: (e: E) => D) => <R, A>(fea: Task<R, E, A>) => mapError_(fea, f);

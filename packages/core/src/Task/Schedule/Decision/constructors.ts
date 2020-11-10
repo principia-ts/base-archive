@@ -1,5 +1,4 @@
-import { matchTag } from "@principia/prelude/Utils";
-
+import { matchTag } from "../../../Utils";
 import type { Decision, Done, StepFunction } from "./Decision";
 
 export const makeDone = <O>(out: O): Done<O> => ({

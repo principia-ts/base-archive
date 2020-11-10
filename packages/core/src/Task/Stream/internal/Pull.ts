@@ -10,7 +10,7 @@ export const end = T.fail(none());
 
 export const fail = <E>(e: E) => T.fail(some(e));
 
-export const halt = <E>(e: Cause<E>) => pipe(T.halt(e), T.first(some));
+export const halt = <E>(e: Cause<E>) => pipe(T.halt(e), T.mapError(some));
 
 export const empty = <A>() => T.pure([] as ReadonlyArray<A>);
 

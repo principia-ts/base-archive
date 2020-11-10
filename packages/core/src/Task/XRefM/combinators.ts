@@ -1,10 +1,9 @@
-import { matchTag } from "@principia/prelude/Utils";
-
 import { left, right } from "../../Either";
 import { identity, pipe, tuple } from "../../Function";
 import type { Option } from "../../Option";
 import { none, some } from "../../Option";
 import * as Mb from "../../Option";
+import { matchTag } from "../../Utils";
 import * as S from "../Semaphore";
 import * as T from "../Task/_core";
 import { fold } from "./fold";

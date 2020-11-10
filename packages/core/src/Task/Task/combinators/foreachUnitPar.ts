@@ -14,7 +14,7 @@ import * as XP from "../../XPromise";
 import * as XR from "../../XRef/_core";
 import { forkDaemon } from "../core-scope";
 import { bracketExit_, ensuring } from "./bracket";
-import { fiberId } from "./checkFiberId";
+import { fiberId } from "./fiberId";
 import { makeInterruptible, makeUninterruptible, onInterruptExtended_, uninterruptibleMask } from "./interrupt";
 import { toManaged } from "./toManaged";
 

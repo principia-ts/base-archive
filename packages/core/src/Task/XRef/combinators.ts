@@ -1,10 +1,9 @@
-import { matchTag } from "@principia/prelude/Utils";
-
 import * as E from "../../Either";
 import { identity, pipe, tuple } from "../../Function";
 import type { Option } from "../../Option";
 import { none, some } from "../../Option";
 import * as Mb from "../../Option";
+import { matchTag } from "../../Utils";
 import * as T from "../Task/_core";
 import type { EIO } from "../Task/model";
 import * as At from "./atomic";

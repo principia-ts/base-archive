@@ -1,5 +1,3 @@
-import { matchTag } from "@principia/prelude/Utils";
-
 import { flow, pipe } from "../../../Function";
 import * as O from "../../../Option";
 import { dieOption, failureOption, foldl_, interruptOption } from "./destructors";

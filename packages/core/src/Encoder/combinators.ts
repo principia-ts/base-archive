@@ -1,5 +1,5 @@
-import { _intersect, memoize } from "../_utils";
 import { identity } from "../Function";
+import { _intersect, memoize } from "../Utils";
 import type { Encoder, OutputOf, TypeOf } from "./model";
 
 export const nullable = <O, A>(or: Encoder<O, A>): Encoder<null | O, null | A> => ({

@@ -3,7 +3,7 @@ import type { RuntimeFiber } from "../../Fiber";
 import { forkDaemon } from "../core-scope";
 import type { Task } from "../model";
 import { bracket_ } from "./bracket";
-import { fiberId } from "./checkFiberId";
+import { fiberId } from "./fiberId";
 
 /**
  * ```haskell

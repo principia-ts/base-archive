@@ -21,13 +21,13 @@ import { AtomicReference } from "../../../Utils/support/AtomicReference";
 import { OneShot } from "../../../Utils/support/OneShot";
 import * as C from "../../Exit/Cause";
 import { join } from "../../Fiber/combinators/join";
-import { interruptible, uninterruptible } from "../../Fiber/core";
 import type { FiberId } from "../../Fiber/FiberId";
 import type { InterruptStatus } from "../../Fiber/model";
+import { interruptible, uninterruptible } from "../../Fiber/model";
 import { forkDaemon } from "../core-scope";
 import type { Canceler, EIO, IO, Task } from "../model";
 import { SetInterruptInstruction } from "../model";
-import { fiberId } from "./checkFiberId";
+import { fiberId } from "./fiberId";
 
 export const interruptAs = (fiberId: FiberId): EIO<never, never> => halt(C.interrupt(fiberId));
 

@@ -14,7 +14,7 @@ import type { Exit } from "../Exit/model";
 import type { Executor } from "../Fiber/executor";
 import type { FiberDescriptor, InterruptStatus } from "../Fiber/model";
 import { mapBoth_ } from "./apply-seq";
-import { first } from "./bifunctor";
+import { mapError } from "./bifunctor";
 import { fail, halt, succeed, suspend, total } from "./constructors";
 import { foldCauseM_, foldM_ } from "./fold";
 import { map_ } from "./functor";
@@ -82,7 +82,7 @@ export const as = <B>(b: B) => <R, E, A>(ma: Task<R, E, A>) => as_(ma, b);
  * @category Combinators
  * @since 1.0.0
  */
-export const asSomeError: <R, E, A>(ma: Task<R, E, A>) => Task<R, O.Option<E>, A> = first(some);
+export const asSomeError: <R, E, A>(ma: Task<R, E, A>) => Task<R, O.Option<E>, A> = mapError(some);
 
 export const cause = <R, E, A>(effect: Task<R, E, A>): Task<R, never, Cause<E>> =>
    foldCauseM_(effect, succeed, () => succeed(C.empty));

@@ -1,4 +1,4 @@
-import type { Literal } from "../_utils";
+import type { Literal } from "../Utils";
 import type { Guard } from "./Guard";
 
 /*

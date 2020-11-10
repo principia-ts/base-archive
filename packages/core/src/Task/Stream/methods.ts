@@ -39,7 +39,7 @@ export const mapChunksM_ = <R, E, A, R1, E1, B>(
          M.map((e) =>
             pipe(
                e,
-               T.chain((x) => pipe(f(x), T.first<E1, Option<E | E1>>(O.some)))
+               T.chain((x) => pipe(f(x), T.mapError<E1, Option<E | E1>>(O.some)))
             )
          )
       )
@@ -105,12 +105,10 @@ export const mapM_ = <R, E, A, R1, E1, B>(
  */
 export const mapM = <A, R1, E1, A1>(f: (o: A) => T.Task<R1, E1, A1>) => <R, E>(fa: Stream<R, E, A>) => mapM_(fa, f);
 
-export const first_ = <R, E, A, D>(pab: Stream<R, E, A>, f: (e: E) => D) =>
-   new Stream(pipe(pab.proc, M.map(T.first(O.map(f)))));
+export const mapError_ = <R, E, A, D>(pab: Stream<R, E, A>, f: (e: E) => D) =>
+   new Stream(pipe(pab.proc, M.map(T.mapError(O.map(f)))));
 
-export const first = <E, D>(f: (e: E) => D) => <R, A>(pab: Stream<R, E, A>) => first_(pab, f);
-
-export const mapError = first;
+export const mapError = <E, D>(f: (e: E) => D) => <R, A>(pab: Stream<R, E, A>) => mapError_(pab, f);
 
 export const mapErrorCause_ = <R, E, A, E1>(stream: Stream<R, E, A>, f: (e: Cause<E>) => Cause<E1>) =>
    new Stream(
@@ -216,7 +214,7 @@ export const mapAccumM_ = <R, E, A, R1, E1, B, Z>(
                      T.bindS("t", ({ s }) => f(s, o)),
                      T.tap(({ t }) => state.set(t[0])),
                      T.map(({ t }) => [t[1]]),
-                     T.first(O.some)
+                     T.mapError(O.some)
                   )
                )
             )
@@ -283,7 +281,7 @@ export const mapMPar_ = (n: number) => <R, E, A, R1, E1, B>(
                      T.do,
                      T.bindS("p", () => XP.make<E1, B>()),
                      T.bindS("latch", () => XP.make<never, void>()),
-                     T.tap(({ p }) => out.offer(pipe(p, XP.await, T.first(O.some)))),
+                     T.tap(({ p }) => out.offer(pipe(p, XP.await, T.mapError(O.some)))),
                      T.tap(({ latch, p }) =>
                         pipe(
                            latch,

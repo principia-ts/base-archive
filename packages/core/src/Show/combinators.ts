@@ -1,10 +1,10 @@
 import * as S from "@principia/prelude/Show";
 
-import { memoize } from "../_utils";
 import * as A from "../Array";
 import { pipe } from "../Function";
 import type { ReadonlyRecord } from "../Record";
 import * as R from "../Record";
+import { memoize } from "../Utils";
 import type { Show } from "./model";
 
 /*

@@ -1,4 +1,4 @@
-import { succeed } from "./core";
+import { succeed } from "./constructors";
 import type { Fiber } from "./model";
 
 /*

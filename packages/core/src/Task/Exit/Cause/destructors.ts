@@ -1,5 +1,3 @@
-import { matchTag } from "@principia/prelude/Utils";
-
 import * as F from "../../../Function";
 import * as O from "../../../Option";
 import * as Sy from "../../../Sync";

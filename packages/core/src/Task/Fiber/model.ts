@@ -29,6 +29,12 @@ export class InterruptStatus {
    }
 }
 
+export const interruptible = new InterruptStatus(true);
+
+export const uninterruptible = new InterruptStatus(false);
+
+export const interruptStatus = (b: boolean) => (b ? interruptible : uninterruptible);
+
 /**
  * A record containing information about a `Fiber`.
  */

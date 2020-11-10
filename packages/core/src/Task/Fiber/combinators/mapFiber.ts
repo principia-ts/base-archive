@@ -1,7 +1,5 @@
-import { matchTag } from "@principia/prelude/Utils";
-
 import * as T from "../_internal/task";
-import { halt } from "../core";
+import { halt } from "../constructors";
 import type { Fiber } from "../model";
 
 /**
@@ -14,13 +12,16 @@ import type { Fiber } from "../model";
  * with the fiber that it returns.
  */
 export const mapFiber_ = <A, E, E1, A1>(fiber: Fiber<E, A>, f: (a: A) => Fiber<E1, A1>): T.IO<Fiber<E | E1, A1>> =>
-   T.map_(
-      fiber.await,
-      matchTag({
-         Success: (ex) => f(ex.value),
-         Failure: (ex) => halt(ex.cause)
-      })
-   );
+   T.map_(fiber.await, (ex) => {
+      switch (ex._tag) {
+         case "Success": {
+            return f(ex.value);
+         }
+         case "Failure": {
+            return halt(ex.cause);
+         }
+      }
+   });
 
 /**
  * ```haskell

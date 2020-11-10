@@ -73,7 +73,7 @@ export const fromTaskOption = <R, E, A>(fa: T.Task<R, Option<E>, A>): Stream<R, 
 /**
  * Creates a stream from a task producing a value of type `A`
  */
-export const fromTask = <R, E, A>(ef: T.Task<R, E, A>): Stream<R, E, A> => pipe(ef, T.first(O.some), fromTaskOption);
+export const fromTask = <R, E, A>(ef: T.Task<R, E, A>): Stream<R, E, A> => pipe(ef, T.mapError(O.some), fromTaskOption);
 
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times.
@@ -371,7 +371,7 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
                              ),
                              T.tap(() => doneRef.set(true)),
                              T.map(({ a }) => [a]),
-                             T.first(O.some)
+                             T.mapError(O.some)
                           )
                   )
                )

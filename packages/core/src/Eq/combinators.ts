@@ -1,9 +1,9 @@
 import * as E from "@principia/prelude/Eq";
 
-import { memoize } from "../_utils";
 import * as A from "../Array";
 import type { ReadonlyRecord } from "../Record";
 import * as R from "../Record";
+import { memoize } from "../Utils";
 import type { Eq } from "./model";
 
 /*

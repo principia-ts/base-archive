@@ -4,9 +4,9 @@
  * -------------------------------------------
  */
 
-import { memoize } from "../_utils";
 import { pipe } from "../Function";
 import type { ReadonlyRecord } from "../Record";
+import { memoize } from "../Utils";
 import type { Guard } from "./Guard";
 import { UnknownArray, UnknownRecord } from "./primitives";
 

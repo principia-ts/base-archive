@@ -73,7 +73,7 @@ export const foldArraysM = <Z>(z: Z) => (contFn: (s: Z) => boolean) => <I, R, E>
                         T.chain((s) =>
                            pipe(
                               f(s, is.value),
-                              T.first((e) => [E.left(e), []] as [Either<E, never>, ReadonlyArray<I>]),
+                              T.mapError((e) => [E.left(e), []] as [Either<E, never>, ReadonlyArray<I>]),
                               T.chain((s) =>
                                  contFn(s)
                                     ? pipe(
@@ -150,7 +150,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                               )
                            )
                         ),
-                     () => T.first_(F.join(fib2), ([r, leftover]) => [E.map_(r, E.right), leftover] as const)
+                     () => T.mapError_(F.join(fib2), ([r, leftover]) => [E.map_(r, E.right), leftover] as const)
                   ),
                (res2, fib1) =>
                   Ex.foldM_(
@@ -165,7 +165,7 @@ export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                               )
                            )
                         ),
-                     () => T.first_(F.join(fib1), ([r, leftover]) => [E.map_(r, E.left), leftover] as const)
+                     () => T.mapError_(F.join(fib1), ([r, leftover]) => [E.map_(r, E.left), leftover] as const)
                   )
             )
          )

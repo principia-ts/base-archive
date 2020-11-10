@@ -3,19 +3,19 @@ import "@principia/prelude/Operators";
 
 import { inspect } from "util";
 
-import * as Ac from "../source/Async";
-import * as DSL from "../source/DSL";
-import * as E from "../source/Either";
-import { pipe } from "../source/Function";
-import * as F from "../source/Function";
-import * as H from "../source/Has";
-import { tag } from "../source/Has";
-import * as O from "../source/Option";
-import * as Sy from "../source/Sync";
-import * as C from "../source/Task/Exit/Cause";
-import * as L from "../source/Task/Layer";
-import * as T from "../source/Task/Task";
-import * as X from "../source/XPure";
+import * as Ac from "../src/Async";
+import * as DSL from "../src/DSL";
+import * as E from "../src/Either";
+import { pipe } from "../src/Function";
+import * as F from "../src/Function";
+import * as H from "../src/Has";
+import { tag } from "../src/Has";
+import * as O from "../src/Option";
+import * as Sy from "../src/Sync";
+import * as C from "../src/Task/Exit/Cause";
+import * as L from "../src/Task/Layer";
+import * as T from "../src/Task/Task";
+import * as X from "../src/XPure";
 
 interface Service {
    a: string;

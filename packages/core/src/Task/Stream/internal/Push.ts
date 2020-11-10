@@ -16,4 +16,4 @@ export const fail = <E, I>(e: E, leftover: ReadonlyArray<I>): T.EIO<[E.Either<E,
    T.fail([E.left(e), leftover]);
 
 export const halt = <E>(c: Cause<E>): T.EIO<[E.Either<E, never>, ReadonlyArray<never>], never> =>
-   T.first_(T.halt(c), (e) => [E.left(e), []]);
+   T.mapError_(T.halt(c), (e) => [E.left(e), []]);
