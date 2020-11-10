@@ -17,7 +17,7 @@ import { awaitAll } from "./awaitAll";
  * Collects all fibers into a single fiber producing an in-order list of the
  * results.
  */
-export const sequenceI = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
+export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
    makeSynthetic({
       _tag: "SyntheticFiber",
       getRef: (ref) =>

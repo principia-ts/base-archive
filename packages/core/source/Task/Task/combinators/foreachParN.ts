@@ -1,19 +1,13 @@
 import * as T from "../_core";
 import * as A from "../../../Array";
 import { pipe, tuple } from "../../../Function";
-import * as F from "../../Fiber";
+import { interrupt as interruptFiber } from "../../Fiber/combinators/interrupt";
 import * as XP from "../../XPromise";
 import * as Q from "../../XQueue";
 import { bracket } from "./bracket";
 import { collectAll } from "./collectAll";
 import { forever } from "./forever";
 
-/**
- * Applies the functionw `f` to each element of the `Iterable<A>` in parallel,
- * and returns the results in a new `readonly B[]`.
- *
- * Unlike `foreachPar`, this method will use at most up to `n` fibers.
- */
 export const foreachParN_ = (n: number) => <A, R, E, B>(
    as: Iterable<A>,
    f: (a: A) => T.Task<R, E, B>
@@ -66,7 +60,7 @@ export const foreachParN_ = (n: number) => <A, R, E, B>(
                      pairs,
                      T.foreach(([p]) => XP.await(p)),
                      T.result,
-                     T.tap(() => pipe(fibers, T.foreach(F.interrupt))),
+                     T.tap(() => pipe(fibers, T.foreach(interruptFiber))),
                      T.chain(T.done)
                   )
                ),

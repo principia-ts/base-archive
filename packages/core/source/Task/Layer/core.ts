@@ -301,7 +301,7 @@ export const build = <R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, A> =>
       M.map(({ value }) => value)
    );
 
-export const pure = <T>(has: H.Tag<T>) => (resource: T) =>
+export const pure = <T>(has: H.Tag<T>) => (resource: T): Layer<unknown, never, H.Has<T>> =>
    new LayerManagedInstruction(M.chain_(M.fromTask(T.pure(resource)), (a) => environmentFor(has, a)));
 
 export const identity = <R>() => fromRawManaged(M.ask<R>());

@@ -28,7 +28,7 @@ export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
          (x: unknown) => tuple(x, parallelReleaseMap)
       );
 
-      return T.traverseIPar_(as, (a) =>
+      return T.foreachPar_(as, (a) =>
          T.map_(
             T.chain_(makeInnerMap, (innerMap) => T.gives_(f(a).task, (u: R) => tuple(u, innerMap))),
             ([_, b]) => b

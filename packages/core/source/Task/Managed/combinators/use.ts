@@ -1,16 +1,34 @@
 import * as T from "../_internal/task";
-import { useManaged, useManaged_ } from "../../_parallel";
+import { tuple } from "../../../Function";
+import { sequential } from "../../ExecutionStrategy";
 import type { Managed } from "../model";
+import * as RM from "../ReleaseMap";
+import { releaseAll } from "./releaseAll";
 
 /**
  * Run an effect while acquiring the resource before and releasing it after
  */
-export const use = useManaged;
+export const use = <A, R2, E2, B>(f: (a: A) => T.Task<R2, E2, B>) => <R, E>(
+   self: Managed<R, E, A>
+): T.Task<R & R2, E | E2, B> => use_(self, f);
 
 /**
  * Run an effect while acquiring the resource before and releasing it after
  */
-export const use_ = useManaged_;
+export const use_ = <R, E, A, R2, E2, B>(
+   self: Managed<R, E, A>,
+   f: (a: A) => T.Task<R2, E2, B>
+): T.Task<R & R2, E | E2, B> => {
+   return T.bracketExit_(
+      RM.make,
+      (rm) =>
+         T.chain_(
+            T.gives_(self.task, (r: R) => tuple(r, rm)),
+            (a) => f(a[1])
+         ),
+      (rm, ex) => releaseAll(ex, sequential())(rm)
+   );
+};
 
 /**
  * Runs the acquire and release actions and returns the result of this
