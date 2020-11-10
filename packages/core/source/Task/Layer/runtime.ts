@@ -5,7 +5,7 @@ import * as T from "../Task/_core";
 import type { Runtime } from "../Task/combinators/runtime";
 import { makeRuntime } from "../Task/combinators/runtime";
 import * as L from "./core";
-import { LayerFreshInstruction } from "./model";
+import { LayerFreshInstruction } from "./core";
 
 /**
  * Embed the requird environment in a region

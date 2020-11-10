@@ -36,6 +36,10 @@ export abstract class Layer<R, E, A> {
    readonly _E!: () => E;
    readonly _A!: () => A;
 
+   constructor() {
+      this.use = this.use.bind(this);
+   }
+
    setKey(hash: symbol) {
       this.hash.set(hash);
       return this;
