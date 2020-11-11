@@ -35,10 +35,7 @@ export const ap = <R, E, A>(fa: Task<R, E, A>) => <Q, D, B>(fab: Task<Q, D, (a: 
    ap_(fab, fa);
 
 export const apFirst_ = <R, E, A, Q, D, B>(fa: Task<R, E, A>, fb: Task<Q, D, B>): Task<Q & R, D | E, A> =>
-   ap_(
-      map_(fa, (a) => () => a),
-      fb
-   );
+   chain_(fa, (a) => map_(fb, () => a));
 
 export const apFirst = <Q, D, B>(fb: Task<Q, D, B>) => <R, E, A>(fa: Task<R, E, A>): Task<Q & R, D | E, A> =>
    apFirst_(fa, fb);

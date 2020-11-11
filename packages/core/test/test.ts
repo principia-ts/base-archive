@@ -14,22 +14,10 @@ import * as O from "../src/Option";
 import * as Sy from "../src/Sync";
 import * as C from "../src/Task/Exit/Cause";
 import * as L from "../src/Task/Layer";
+import * as Sc from "../src/Task/Schedule";
+import * as Dec from "../src/Task/Schedule/Decision";
+import * as S from "../src/Task/Stream";
+import * as Tr from "../src/Task/Stream/internal/Transducer";
+import * as Sink from "../src/Task/Stream/Sink";
 import * as T from "../src/Task/Task";
 import * as X from "../src/XPure";
-
-interface Service {
-   a: string;
-   b: number;
-}
-
-const HasService = tag<Service>();
-
-const LiveService = L.pure(HasService)({
-   a: "Hello",
-   b: 42
-});
-
-T.asksService(HasService)((s) => s.a)
-   ["|>"](T.chain((s) => T.total(() => console.log(s))))
-   ["|>"](LiveService.use)
-   ["|>"](T.runMain);

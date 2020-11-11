@@ -5,10 +5,11 @@ import type { Option } from "../../Option";
 import * as O from "../../Option";
 import { nextDouble } from "../Random";
 import * as T from "../Task/_core";
+import { interruptJoiner } from "../XPromise";
 import { makeSchedule } from "./constructors";
 import type { Decision, StepFunction } from "./Decision";
 import { makeContinue, makeDone } from "./Decision";
-import type { Schedule } from "./model";
+import { Schedule } from "./model";
 
 const repeatLoop = <R, I, O>(
    init: StepFunction<R, I, O>,
@@ -592,9 +593,15 @@ export const fixed = (interval: number): Schedule<unknown, unknown, number> => {
             () => makeContinue(n + 1, now + interval, loop(O.some({ startMillis: now, lastRun: now }), n + 1)),
             ({ lastRun, startMillis }) => {
                const runningBehind = now > lastRun + interval;
-               const boundary = (now - startMillis) % interval;
-               const sleepTime = boundary === 0 ? now : boundary;
+               const boundary = interval === 0 ? interval : interval - ((now - startMillis) % interval);
+               const sleepTime = boundary === 0 ? interval : boundary;
                const nextRun = runningBehind ? now : now + sleepTime;
+
+               // console.log(`n: ${n}`);
+               // console.log(`runningBehind: ${runningBehind}`);
+               // console.log(`boundary: ${boundary}`);
+               // console.log(`sleepTime: ${sleepTime}`);
+               // console.log(`nextRun: ${nextRun}`);
 
                return makeContinue(
                   n + 1,
@@ -608,7 +615,7 @@ export const fixed = (interval: number): Schedule<unknown, unknown, number> => {
          )
       );
 
-   return makeSchedule(loop(O.none(), 0));
+   return new Schedule(loop(O.none(), 0));
 };
 
 const foldMLoop = <R, I, O, R1, B>(

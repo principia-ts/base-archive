@@ -8,21 +8,15 @@ import * as T from "../Task/_core";
 import * as XR from "../XRef/_core";
 import type { StepFunction } from "./Decision";
 import { done } from "./Decision";
-import type { Schedule, ScheduleExecutor } from "./model";
+import { Schedule, ScheduleExecutor } from "./model";
 
 export const makeExecutor = <R, I, O>(
    next: (input: I) => T.Task<R, Option<never>, O>,
    last: T.EIO<Error, O>,
    reset: T.IO<void>
-): ScheduleExecutor<R, I, O> => ({
-   next,
-   last,
-   reset
-});
+): ScheduleExecutor<R, I, O> => new ScheduleExecutor(next, last, reset);
 
-export const makeSchedule = <R, I, O>(step: StepFunction<R, I, O>): Schedule<R, I, O> => ({
-   step
-});
+export const makeSchedule = <R, I, O>(step: StepFunction<R, I, O>): Schedule<R, I, O> => new Schedule(step);
 
 export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecutor<HasClock & R, I, O>> =>
    pipe(
@@ -66,6 +60,6 @@ export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecu
                T.map(({ v }) => v)
             );
 
-         return makeExecutor(next, last, reset);
+         return new ScheduleExecutor(next, last, reset);
       })
    );

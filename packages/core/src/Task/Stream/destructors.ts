@@ -4,8 +4,8 @@ import * as O from "../../Option";
 import * as C from "../Exit/Cause";
 import * as M from "../Managed";
 import * as T from "../Task";
-import * as Sink from "./internal/Sink";
 import type { Stream } from "./model";
+import * as Sink from "./Sink";
 
 /**
  * Runs the sink on the stream to produce either the sink's result or an error.
@@ -88,7 +88,7 @@ export const runDrain = <R, E, A>(stream: Stream<R, E, A>): T.Task<R, E, void> =
  * Consumes all elements of the stream, passing them to the specified callback.
  */
 export const foreach_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => T.Task<R1, E1, B>) =>
-   run_(stream, Sink.foreach(f));
+   run_(stream, Sink.fromForeach(f));
 
 /**
  * Consumes all elements of the stream, passing them to the specified callback.
@@ -101,7 +101,7 @@ export const foreach = <A, R1, E1, B>(f: (a: A) => T.Task<R1, E1, B>) => <R, E>(
  * can be controlled.
  */
 export const foreachManaged_ = <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => T.Task<R1, E1, B>) =>
-   runManaged_(stream, Sink.foreach(f));
+   runManaged_(stream, Sink.fromForeach(f));
 
 /**
  * Like `foreach`, but returns a `Managed` so the finalization order

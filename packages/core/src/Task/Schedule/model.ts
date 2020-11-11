@@ -5,12 +5,14 @@ import type { StepFunction } from "./Decision";
 export const URI = "Schedule";
 export type URI = typeof URI;
 
-export interface Schedule<R, I, O> {
-   readonly step: StepFunction<R, I, O>;
+export class Schedule<R, I, O> {
+   constructor(readonly step: StepFunction<R, I, O>) {}
 }
 
-export interface ScheduleExecutor<R, I, O> {
-   readonly next: (input: I) => Task<R, Option<never>, O>;
-   readonly last: EIO<Error, O>;
-   readonly reset: IO<void>;
+export class ScheduleExecutor<R, I, O> {
+   constructor(
+      readonly next: (input: I) => Task<R, Option<never>, O>,
+      readonly last: EIO<Error, O>,
+      readonly reset: IO<void>
+   ) {}
 }

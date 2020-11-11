@@ -218,6 +218,10 @@ export const whenM_ = <R, E, A, R1, E1>(ma: Task<R, E, A>, mb: Task<R1, E1, bool
 
 export const whenM = <R, E>(mb: Task<R, E, boolean>) => <R1, E1, A>(ma: Task<R1, E1, A>) => whenM_(ma, mb);
 
+export const when_ = <R, E, A>(ma: Task<R, E, A>, b: () => boolean) => whenM_(ma, total(b));
+
+export const when = (b: () => boolean) => <R, E, A>(ma: Task<R, E, A>) => when_(ma, b);
+
 export const tapCause_ = <R2, A2, R, E, E2>(ma: Task<R2, E2, A2>, f: (e: Cause<E2>) => Task<R, E, any>) =>
    foldCauseM_(ma, (c) => chain_(f(c), () => halt(c)), succeed);
 

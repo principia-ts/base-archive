@@ -6,9 +6,9 @@ import { isEither, isOption, isTag } from "../../Utils/guards";
 import type { _E, _R } from "../../Utils/infer";
 import type { Task } from "../Task";
 import { askService, die, fromEither } from "../Task";
-import { fromTask, suspend } from "./constructors";
-import { chain_, pure } from "./methods";
+import { fromTask, succeed, suspend } from "./constructors";
 import { Stream } from "./model";
+import { chain_ } from "./monad";
 
 export class GenStream<R, E, A> {
    readonly _R!: (_R: R) => void;
@@ -23,7 +23,7 @@ export class GenStream<R, E, A> {
 const adapter = (_: any, __?: any) => {
    if (isOption(_)) {
       return new GenStream(
-         _._tag === "None" ? fail(__ ? __() : new NoSuchElementException("Stream.gen")) : pure(_.value)
+         _._tag === "None" ? fail(__ ? __() : new NoSuchElementException("Stream.gen")) : succeed(_.value)
       );
    } else if (isEither(_)) {
       return new GenStream(fromTask(fromEither(() => _)));
@@ -56,9 +56,9 @@ export const gen = <T extends GenStream<any, any, any>, A>(
             state = iterator.next(replayStack[i]);
          }
          if (state.done) {
-            return pure(state.value);
+            return succeed(state.value);
          }
-         return chain_(state.value["S"], (val) => {
+         return chain_(state.value.S, (val) => {
             return run(replayStack.concat([val]));
          });
       }
