@@ -29,7 +29,7 @@ export const errorEmptyList = (fun: string) => {
 
 export type InferListType<T> = T extends LazyList<infer A> ? A : never;
 
-export const URI = "List";
+export const URI = "LazyList";
 
 export type URI = typeof URI;
 
@@ -37,6 +37,6 @@ export type V = HKT.Auto;
 
 declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      [URI]: LazyList<A>;
+      readonly [URI]: LazyList<A>;
    }
 }

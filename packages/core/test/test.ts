@@ -10,6 +10,7 @@ import { pipe } from "../src/Function";
 import * as F from "../src/Function";
 import * as H from "../src/Has";
 import { tag } from "../src/Has";
+import * as List from "../src/List";
 import * as O from "../src/Option";
 import * as Sy from "../src/Sync";
 import * as C from "../src/Task/Exit/Cause";
