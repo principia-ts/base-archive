@@ -20,7 +20,9 @@ export const mapError_: <E, A, B>(pab: EIO<E, A>, f: (e: E) => B) => EIO<B, A> =
 
 export const mapError: <E, B>(f: (e: E) => B) => <A>(pab: EIO<E, A>) => EIO<B, A> = X.mapError;
 
-export const swap = <E, A>(pab: EIO<E, A>): EIO<A, E> => X.foldM_(pab, succeed, fail);
+export function swap<E, A>(pab: EIO<E, A>): EIO<A, E> {
+   return X.foldM_(pab, succeed, fail);
+}
 
 /**
  * @category Bifunctor

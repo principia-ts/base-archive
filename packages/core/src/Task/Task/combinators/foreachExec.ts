@@ -1,5 +1,5 @@
 import * as T from "../_core";
-import type { ExecutionStrategy, Parallel, ParallelN, Sequential } from "../../ExecutionStrategy";
+import type { ExecutionStrategy } from "../../ExecutionStrategy";
 import { foreachPar_ } from "./foreachPar";
 import { foreachParN_ } from "./foreachParN";
 
@@ -9,12 +9,7 @@ import { foreachParN_ } from "./foreachParN";
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const foreachExec_: {
-   <R, E, A, B>(es: Sequential, as: Iterable<A>, f: (a: A) => T.Task<R, E, B>): T.Task<R, E, ReadonlyArray<B>>;
-   <R, E, A, B>(es: Parallel, as: Iterable<A>, f: (a: A) => T.Task<R, E, B>): T.Task<R, E, ReadonlyArray<B>>;
-   <R, E, A, B>(es: ParallelN, as: Iterable<A>, f: (a: A) => T.Task<R, E, B>): T.Task<R, E, ReadonlyArray<B>>;
-   <R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>, f: (a: A) => T.Task<R, E, B>): T.Task<R, E, ReadonlyArray<B>>;
-} = <R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>, f: (a: A) => T.Task<R, E, B>) => {
+export function foreachExec_<R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>, f: (a: A) => T.Task<R, E, B>) {
    switch (es._tag) {
       case "Sequential": {
          return T.foreach_(as, f) as any;
@@ -26,7 +21,7 @@ export const foreachExec_: {
          return foreachParN_(es.n)(as, f) as any;
       }
    }
-};
+}
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -34,12 +29,8 @@ export const foreachExec_: {
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const foreachExec: {
-   (es: Sequential): <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (as: Iterable<A>) => T.Task<R, E, ReadonlyArray<B>>;
-   (es: Parallel): <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (as: Iterable<A>) => T.Task<R, E, ReadonlyArray<B>>;
-   (es: ParallelN): <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (as: Iterable<A>) => T.Task<R, E, ReadonlyArray<B>>;
-   (es: ExecutionStrategy): <R, E, A, B>(
-      f: (a: A) => T.Task<R, E, A>
-   ) => (as: Iterable<A>) => T.Task<R, E, ReadonlyArray<B>>;
-} = (es: ExecutionStrategy) => <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (as: Iterable<A>) =>
-   foreachExec_(es, as, f) as any;
+export function foreachExec(
+   es: ExecutionStrategy
+): <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (as: Iterable<A>) => T.Task<R, E, B> {
+   return (f) => (as) => foreachExec_(es, as, f) as any;
+}

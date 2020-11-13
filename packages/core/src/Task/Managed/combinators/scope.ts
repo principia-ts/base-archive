@@ -10,8 +10,8 @@ export class ManagedScope {
    constructor(readonly apply: <R, E, A>(managed: Managed<R, E, A>) => T.Task<R, E, readonly [Finalizer, A]>) {}
 }
 
-export const scope = (): Managed<unknown, never, ManagedScope> =>
-   pipe(
+export function scope(): Managed<unknown, never, ManagedScope> {
+   return pipe(
       releaseMap,
       map(
          (finalizers) =>
@@ -21,3 +21,4 @@ export const scope = (): Managed<unknown, never, ManagedScope> =>
             )
       )
    );
+}

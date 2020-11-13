@@ -18,7 +18,9 @@ import { chain_ } from "./monad";
  * @category Functor
  * @since 1.0.0
  */
-export const map_ = <E, D>(fa: Cause<E>, f: (e: E) => D) => chain_(fa, (e) => fail(f(e)));
+export function map_<E, D>(fa: Cause<E>, f: (e: E) => D) {
+   return chain_(fa, (e) => fail(f(e)));
+}
 
 /**
  * ```haskell
@@ -30,4 +32,6 @@ export const map_ = <E, D>(fa: Cause<E>, f: (e: E) => D) => chain_(fa, (e) => fa
  * @category Functor
  * @since 1.0.0
  */
-export const map = <E, D>(f: (e: E) => D) => (fa: Cause<E>) => map_(fa, f);
+export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
+   return (fa) => map_(fa, f);
+}

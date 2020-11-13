@@ -35,20 +35,7 @@ export const chain_: <A, B>(ma: IO<A>, f: (a: A) => IO<B>) => IO<B> = X.chain_;
  * @category Monad
  * @since 1.0.0
  */
-export const chain = <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>): IO<B> => chain_(ma, f);
-
-/**
- * ```haskell
- * bind :: Monad m => m a -> (a -> m b) -> m b
- * ```
- *
- * A version of `chain` where the arguments are flipped
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export const bind = <A>(ma: IO<A>) => <B>(f: (a: A) => IO<B>): IO<B> => chain_(ma, f);
+export const chain: <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>) => IO<B> = X.chain;
 
 /**
  * ```haskell
@@ -61,7 +48,7 @@ export const bind = <A>(ma: IO<A>) => <B>(f: (a: A) => IO<B>): IO<B> => chain_(m
  * @category Monad
  * @since 1.0.0
  */
-export const tap_ = <A, B>(ma: IO<A>, f: (a: A) => IO<B>): IO<A> => chain_(ma, (a) => map_(f(a), () => a));
+export const tap_: <A, B>(ma: IO<A>, f: (a: A) => IO<B>) => IO<A> = X.tap_;
 
 /**
  * ```haskell
@@ -74,7 +61,7 @@ export const tap_ = <A, B>(ma: IO<A>, f: (a: A) => IO<B>): IO<A> => chain_(ma, (
  * @category Monad
  * @since 1.0.0
  */
-export const tap = <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>): IO<A> => tap_(ma, f);
+export const tap: <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>) => IO<A> = X.tap;
 
 /**
  * ```haskell
@@ -86,7 +73,7 @@ export const tap = <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>): IO<A> => tap_(ma, 
  * @category Monad
  * @since 1.0.0
  */
-export const flatten = <A>(mma: IO<IO<A>>): IO<A> => chain_(mma, identity);
+export const flatten: <A>(mma: IO<IO<A>>) => IO<A> = X.flatten;
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
    ...Functor,

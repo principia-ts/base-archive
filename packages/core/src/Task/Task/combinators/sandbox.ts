@@ -28,6 +28,8 @@ export const sandbox: <R, E, A>(fa: Task<R, E, A>) => Task<R, Cause<E>, A> = fol
  */
 export const unsandbox: <R, E, A>(ef: Task<R, Cause<E>, A>) => Task<R, E, A> = mapErrorCause(C.flatten);
 
-export const sandboxWith = <R, E, A, E1>(f: (_: Task<R, Cause<E>, A>) => Task<R, Cause<E1>, A>) => (
-   ef: Task<R, E, A>
-) => unsandbox(f(sandbox(ef)));
+export function sandboxWith<R, E, A, E1>(
+   f: (_: Task<R, Cause<E>, A>) => Task<R, Cause<E1>, A>
+): (ef: Task<R, E, A>) => Task<R, E1, A> {
+   return (ef) => unsandbox(f(sandbox(ef)));
+}

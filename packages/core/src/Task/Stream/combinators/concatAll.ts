@@ -47,7 +47,7 @@ function go<R, E, A>(
 /**
  * Concatenates all of the streams in the chunk to one stream.
  */
-export const concatAll = <R, E, A>(streams: Array<Stream<R, E, A>>): Stream<R, E, A> => {
+export function concatAll<R, E, A>(streams: Array<Stream<R, E, A>>): Stream<R, E, A> {
    const chunkSize = streams.length;
    return new Stream(
       pipe(
@@ -58,4 +58,4 @@ export const concatAll = <R, E, A>(streams: Array<Stream<R, E, A>>): Stream<R, E
          M.map(({ currIndex, currStream, switchStream }) => go(streams, chunkSize, currIndex, currStream, switchStream))
       )
    );
-};
+}

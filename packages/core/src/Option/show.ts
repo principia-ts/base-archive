@@ -10,5 +10,6 @@ import type { Option } from "./model";
  * -------------------------------------------
  */
 
-export const getShow = <A>(S: Show<A>): Show<Option<A>> =>
-   fromShow((a) => (isNone(a) ? "None" : `Some<${S.show(a.value)}>`));
+export function getShow<A>(S: Show<A>): Show<Option<A>> {
+   return fromShow((a) => (isNone(a) ? "None" : `Some<${S.show(a.value)}>`));
+}

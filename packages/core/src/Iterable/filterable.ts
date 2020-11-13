@@ -10,6 +10,8 @@ import { map_ } from "./functor";
  * -------------------------------------------
  */
 
-export const partitionMap = <A, A1, A2>(f: (a: A) => Either<A1, A2>) => (
-   as: Iterable<A>
-): Separated<Iterable<A1>, Iterable<A2>> => A.separate(Array.from(map_(as, f)));
+export function partitionMap<A, A1, A2>(
+   f: (a: A) => Either<A1, A2>
+): (as: Iterable<A>) => Separated<Iterable<A1>, Iterable<A2>> {
+   return (as) => A.separate(Array.from(map_(as, f)));
+}

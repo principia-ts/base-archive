@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import { append_ } from "./combinators";
+import { concat_ } from "./combinators";
 import { Functor } from "./functor";
 import type { URI, V } from "./model";
 
@@ -21,7 +21,9 @@ import type { URI, V } from "./model";
  * @category Alt
  * @since 1.0.0
  */
-export const alt_ = <A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): ReadonlyArray<A> => append_(fa, that());
+export function alt_<A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): ReadonlyArray<A> {
+   return concat_(fa, that());
+}
 
 /**
  * ```haskell
@@ -33,7 +35,9 @@ export const alt_ = <A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): Rea
  * @category Alt
  * @since 1.0.0
  */
-export const alt = <A>(that: () => ReadonlyArray<A>) => (fa: ReadonlyArray<A>): ReadonlyArray<A> => alt_(fa, that);
+export function alt<A>(that: () => ReadonlyArray<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (fa) => alt_(fa, that);
+}
 
 export const Alt: P.Alt<[URI], V> = HKT.instance({
    ...Functor,

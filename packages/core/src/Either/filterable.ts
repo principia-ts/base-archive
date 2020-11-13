@@ -24,7 +24,7 @@ import type { Either, URI, V } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getFilterable = <E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fix<"E", E>> => {
+export function getFilterable<E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fix<"E", E>> {
    type V_ = V & HKT.Fix<"E", E>;
 
    const empty = left(M.nat);
@@ -70,4 +70,4 @@ export const getFilterable = <E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fi
       partition: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => partition_(fa, predicate),
       mapEither: (f) => (fa) => mapEither_(fa, f)
    });
-};
+}

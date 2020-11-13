@@ -17,10 +17,12 @@ import type { Iso, URI, V } from "./model";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose_ = <I, A, B>(sa: Iso<I, A>, ab: Iso<A, B>): Iso<I, B> => ({
-   get: flow(sa.get, ab.get),
-   reverseGet: flow(ab.reverseGet, sa.reverseGet)
-});
+export function compose_<I, A, B>(sa: Iso<I, A>, ab: Iso<A, B>): Iso<I, B> {
+   return {
+      get: flow(sa.get, ab.get),
+      reverseGet: flow(ab.reverseGet, sa.reverseGet)
+   };
+}
 
 /**
  * Compose an `Iso` with an `Iso`
@@ -28,7 +30,9 @@ export const compose_ = <I, A, B>(sa: Iso<I, A>, ab: Iso<A, B>): Iso<I, B> => ({
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose = <A, B>(ab: Iso<A, B>) => <I>(sa: Iso<I, A>): Iso<I, B> => compose_(sa, ab);
+export function compose<A, B>(ab: Iso<A, B>): <I>(sa: Iso<I, A>) => Iso<I, B> {
+   return (sa) => compose_(sa, ab);
+}
 
 /**
  * @category Instances

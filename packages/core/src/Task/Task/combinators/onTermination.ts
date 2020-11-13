@@ -8,11 +8,11 @@ import * as C from "../../Exit/Cause";
 import type { Task } from "../model";
 import { bracketExit_ } from "./bracket";
 
-export const onTermination_ = <R, E, A, R1>(
+export function onTermination_<R, E, A, R1>(
    task: Task<R, E, A>,
    onTerminated: (cause: Cause<never>) => T.RIO<R1, any>
-): Task<R & R1, E, A> =>
-   bracketExit_(
+): Task<R & R1, E, A> {
+   return bracketExit_(
       T.unit(),
       () => task,
       (_, exit) =>
@@ -25,7 +25,10 @@ export const onTermination_ = <R, E, A, R1>(
             () => T.unit()
          )
    );
+}
 
-export const onTermination = <R1>(onTerminated: (cause: Cause<never>) => T.RIO<R1, any>) => <R, E, A>(
-   task: Task<R, E, A>
-): Task<R & R1, E, A> => onTermination_(task, onTerminated);
+export function onTermination<R1>(
+   onTerminated: (cause: Cause<never>) => T.RIO<R1, any>
+): <R, E, A>(task: T.Task<R, E, A>) => T.Task<R & R1, E, A> {
+   return (task) => onTermination_(task, onTerminated);
+}

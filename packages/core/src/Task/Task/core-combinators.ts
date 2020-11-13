@@ -1,12 +1,11 @@
 import { makeMonoid } from "@principia/prelude";
 
 import * as A from "../../Array";
-import * as E from "../../Either";
 import type { FreeMonoid } from "../../FreeMonoid";
 import * as FS from "../../FreeMonoid";
 import * as I from "../../Iterable";
 import * as O from "../../Option";
-import { none, some } from "../../Option";
+import { some } from "../../Option";
 import * as Ex from "../Exit/_core";
 import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
@@ -15,7 +14,7 @@ import type { Executor } from "../Fiber/executor";
 import type { FiberDescriptor, InterruptStatus } from "../Fiber/model";
 import { mapBoth_ } from "./apply-seq";
 import { mapError } from "./bifunctor";
-import { fail, halt, succeed, suspend, total } from "./constructors";
+import { halt, succeed, suspend, total } from "./constructors";
 import { foldCauseM_, foldM_ } from "./fold";
 import { map_ } from "./functor";
 import type { RIO, Task } from "./model";
@@ -29,16 +28,22 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export const catchAll_ = <R, E, A, R1, E1, A1>(
+export function catchAll_<R, E, A, R1, E1, A1>(
    ma: Task<R, E, A>,
    f: (e: E) => Task<R1, E1, A1>
-): Task<R & R1, E1, A | A1> => foldM_(ma, f, (x) => succeed(x));
+): Task<R & R1, E1, A | A1> {
+   return foldM_(ma, f, (x) => succeed(x));
+}
 
-export const catchAll = <R, E, E2, A>(f: (e: E2) => Task<R, E, A>) => <R2, A2>(ma: Task<R2, E2, A2>) =>
-   catchAll_(ma, f);
+export function catchAll<R, E, E2, A>(
+   f: (e: E2) => Task<R, E, A>
+): <R2, A2>(ma: Task<R2, E2, A2>) => Task<R2 & R, E, A | A2> {
+   return (ma) => catchAll_(ma, f);
+}
 
-export const uncause = <R, E>(ma: Task<R, never, C.Cause<E>>): Task<R, E, void> =>
-   chain_(ma, (a) => (C.isEmpty(a) ? unit() : halt(a)));
+export function uncause<R, E>(ma: Task<R, never, C.Cause<E>>): Task<R, E, void> {
+   return chain_(ma, (a) => (C.isEmpty(a) ? unit() : halt(a)));
+}
 
 /**
  * Ignores the result of the effect, replacing it with unit
@@ -46,7 +51,9 @@ export const uncause = <R, E>(ma: Task<R, never, C.Cause<E>>): Task<R, E, void> 
  * @category Combinators
  * @since 1.0.0
  */
-export const asUnit = <R, E>(ma: Task<R, E, any>) => chain_(ma, () => unit());
+export function asUnit<R, E>(ma: Task<R, E, any>): Task<R, E, void> {
+   return chain_(ma, () => unit());
+}
 
 /**
  * ```haskell
@@ -58,7 +65,9 @@ export const asUnit = <R, E>(ma: Task<R, E, any>) => chain_(ma, () => unit());
  * @category Combinators
  * @since 1.0.0
  */
-export const as_ = <R, E, A, B>(ma: Task<R, E, A>, b: B) => map_(ma, () => b);
+export function as_<R, E, A, B>(ma: Task<R, E, A>, b: B): Task<R, E, B> {
+   return map_(ma, () => b);
+}
 
 /**
  * ```haskell
@@ -70,7 +79,9 @@ export const as_ = <R, E, A, B>(ma: Task<R, E, A>, b: B) => map_(ma, () => b);
  * @category Combinators
  * @since 1.0.0
  */
-export const as = <B>(b: B) => <R, E, A>(ma: Task<R, E, A>) => as_(ma, b);
+export function as<B>(b: B): <R, E, A>(ma: Task<R, E, A>) => Task<R, E, B> {
+   return (ma) => as_(ma, b);
+}
 
 /**
  * ```haskell
@@ -84,8 +95,9 @@ export const as = <B>(b: B) => <R, E, A>(ma: Task<R, E, A>) => as_(ma, b);
  */
 export const asSomeError: <R, E, A>(ma: Task<R, E, A>) => Task<R, O.Option<E>, A> = mapError(some);
 
-export const cause = <R, E, A>(effect: Task<R, E, A>): Task<R, never, Cause<E>> =>
-   foldCauseM_(effect, succeed, () => succeed(C.empty));
+export function cause<R, E, A>(effect: Task<R, E, A>): Task<R, never, Cause<E>> {
+   return foldCauseM_(effect, succeed, () => succeed(C.empty));
+}
 
 /**
  * The moral equivalent of
@@ -100,12 +112,13 @@ export const cause = <R, E, A>(effect: Task<R, E, A>): Task<R, never, Cause<E>> 
  * @category Combinators
  * @since 1.0.0
  */
-export const ifM_ = <R, E, R1, E1, A1, R2, E2, A2>(
+export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
    mb: Task<R, E, boolean>,
    onTrue: () => Task<R1, E1, A1>,
    onFalse: () => Task<R2, E2, A2>
-): Task<R & R1 & R2, E | E1 | E2, A1 | A2> =>
-   chain_(mb, (x) => (x ? (onTrue() as Task<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
+): Task<R & R1 & R2, E | E1 | E2, A1 | A2> {
+   return chain_(mb, (x) => (x ? (onTrue() as Task<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
+}
 
 /**
  * The moral equivalent of
@@ -120,19 +133,27 @@ export const ifM_ = <R, E, R1, E1, A1, R2, E2, A2>(
  * @category Combinators
  * @since 1.0.0
  */
-export const ifM = <R1, E1, A1, R2, E2, A2>(onTrue: () => Task<R1, E1, A1>, onFalse: () => Task<R2, E2, A2>) => <R, E>(
-   b: Task<R, E, boolean>
-): Task<R & R1 & R2, E | E1 | E2, A1 | A2> => ifM_(b, onTrue, onFalse);
+export function ifM<R1, E1, A1, R2, E2, A2>(
+   onTrue: () => Task<R1, E1, A1>,
+   onFalse: () => Task<R2, E2, A2>
+): <R, E>(b: Task<R, E, boolean>) => Task<R & R1 & R2, E | E1 | E2, A1 | A2> {
+   return (b) => ifM_(b, onTrue, onFalse);
+}
 
-export const if_ = <R, E, A, R1, E1, A1>(
+export function if_<R, E, A, R1, E1, A1>(
    b: boolean,
    onTrue: () => Task<R, E, A>,
    onFalse: () => Task<R1, E1, A1>
-): Task<R & R1, E | E1, A | A1> => ifM_(succeed(b), onTrue, onFalse);
+): Task<R & R1, E | E1, A | A1> {
+   return ifM_(succeed(b), onTrue, onFalse);
+}
 
-const _if = <R, E, A, R1, E1, A1>(onTrue: () => Task<R, E, A>, onFalse: () => Task<R1, E1, A1>) => (
-   b: boolean
-): Task<R & R1, E | E1, A | A1> => if_(b, onTrue, onFalse);
+function _if<R, E, A, R1, E1, A1>(
+   onTrue: () => Task<R, E, A>,
+   onFalse: () => Task<R1, E1, A1>
+): (b: boolean) => Task<R & R1, E | E1, A | A1> {
+   return (b) => if_(b, onTrue, onFalse);
+}
 export { _if as if };
 
 /**
@@ -145,8 +166,9 @@ export { _if as if };
  * @category Combinators
  * @since 1.0.0
  */
-export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, any>): Task<R, E, void> =>
-   I.foldMap(makeMonoid<Task<R, E, void>>((x, y) => chain_(x, () => y), unit()))(f)(as);
+export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, any>): Task<R, E, void> {
+   return I.foldMap(makeMonoid<Task<R, E, void>>((x, y) => chain_(x, () => y), unit()))(f)(as);
+}
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -158,8 +180,9 @@ export const foreachUnit_ = <R, E, A>(as: Iterable<A>, f: (a: A) => Task<R, E, a
  * @category Combinators
  * @since 1.0.0
  */
-export const foreachUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Iterable<A>): Task<R, E, void> =>
-   foreachUnit_(as, f);
+export function foreachUnit<R, E, A>(f: (a: A) => Task<R, E, any>): (as: Iterable<A>) => Task<R, E, void> {
+   return (as) => foreachUnit_(as, f);
+}
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and
@@ -171,8 +194,8 @@ export const foreachUnit = <R, E, A>(f: (a: A) => Task<R, E, any>) => (as: Itera
  * @category Combinators
  * @since 1.0.0
  */
-export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, E, ReadonlyArray<B>> =>
-   map_(
+export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, E, ReadonlyArray<B>> {
+   return map_(
       I.reduce_(as, succeed(FS.empty<B>()) as Task<R, E, FreeMonoid<B>>, (b, a) =>
          mapBoth_(
             b,
@@ -182,6 +205,7 @@ export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>
       ),
       FS.toArray
    );
+}
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and
@@ -193,47 +217,75 @@ export const foreach_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>
  * @category Combinators
  * @since 1.0.0
  */
-export const foreach = <R, E, A, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>): Task<R, E, ReadonlyArray<B>> =>
-   foreach_(as, f);
+export function foreach<R, E, A, B>(f: (a: A) => Task<R, E, B>): (as: Iterable<A>) => Task<R, E, ReadonlyArray<B>> {
+   return (as) => foreach_(as, f);
+}
 
-export const result = <R, E, A>(ma: Task<R, E, A>): Task<R, never, Exit<E, A>> =>
-   new FoldInstruction(
+export function result<R, E, A>(ma: Task<R, E, A>): Task<R, never, Exit<E, A>> {
+   return new FoldInstruction(
       ma,
       (cause) => succeed(Ex.failure(cause)),
       (succ) => succeed(Ex.succeed(succ))
    );
+}
 
-export const foldl_ = <A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => Task<R, E, B>): Task<R, E, B> =>
-   A.reduce_(Array.from(as), succeed(b) as Task<R, E, B>, (acc, el) => chain_(acc, (a) => f(a, el)));
+export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => Task<R, E, B>): Task<R, E, B> {
+   return A.reduce_(Array.from(as), succeed(b) as Task<R, E, B>, (acc, el) => chain_(acc, (a) => f(a, el)));
+}
 
-export const foldl = <R, E, A, B>(b: B, f: (b: B, a: A) => Task<R, E, B>) => (as: Iterable<A>) => foldl_(as, b, f);
+export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => Task<R, E, B>): (as: Iterable<A>) => Task<R, E, B> {
+   return (as) => foldl_(as, b, f);
+}
 
-export const foldr_ = <A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => Task<R, E, Z>): Task<R, E, Z> =>
-   A.reduceRight_(Array.from(i), succeed(zero) as Task<R, E, Z>, (el, acc) => chain_(acc, (a) => f(el, a)));
+export function foldr_<A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => Task<R, E, Z>): Task<R, E, Z> {
+   return A.reduceRight_(Array.from(i), succeed(zero) as Task<R, E, Z>, (el, acc) => chain_(acc, (a) => f(el, a)));
+}
 
-export const foldr = <A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Task<R, E, Z>) => (i: Iterable<A>) => foldr_(i, zero, f);
+export function foldr<A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Task<R, E, Z>): (i: Iterable<A>) => Task<R, E, Z> {
+   return (i) => foldr_(i, zero, f);
+}
 
-export const whenM_ = <R, E, A, R1, E1>(ma: Task<R, E, A>, mb: Task<R1, E1, boolean>) =>
-   chain_(mb, (a) => (a ? asUnit(ma) : unit()));
+export function whenM_<R, E, A, R1, E1>(ma: Task<R, E, A>, mb: Task<R1, E1, boolean>) {
+   return chain_(mb, (a) => (a ? asUnit(ma) : unit()));
+}
 
-export const whenM = <R, E>(mb: Task<R, E, boolean>) => <R1, E1, A>(ma: Task<R1, E1, A>) => whenM_(ma, mb);
+export function whenM<R, E>(mb: Task<R, E, boolean>): <R1, E1, A>(ma: Task<R1, E1, A>) => Task<R & R1, E | E1, void> {
+   return (ma) => whenM_(ma, mb);
+}
 
-export const when_ = <R, E, A>(ma: Task<R, E, A>, b: () => boolean) => whenM_(ma, total(b));
+export function when_<R, E, A>(ma: Task<R, E, A>, b: () => boolean) {
+   return whenM_(ma, total(b));
+}
 
-export const when = (b: () => boolean) => <R, E, A>(ma: Task<R, E, A>) => when_(ma, b);
+export function when(b: () => boolean): <R, E, A>(ma: Task<R, E, A>) => Task<R, E, void> {
+   return (ma) => when_(ma, b);
+}
 
-export const tapCause_ = <R2, A2, R, E, E2>(ma: Task<R2, E2, A2>, f: (e: Cause<E2>) => Task<R, E, any>) =>
-   foldCauseM_(ma, (c) => chain_(f(c), () => halt(c)), succeed);
+export function tapCause_<R2, A2, R, E, E2>(
+   ma: Task<R2, E2, A2>,
+   f: (e: Cause<E2>) => Task<R, E, any>
+): Task<R2 & R, E | E2, A2> {
+   return foldCauseM_(ma, (c) => chain_(f(c), () => halt(c)), succeed);
+}
 
-export const tapCause = <R, E, E1>(f: (e: Cause<E1>) => Task<R, E, any>) => <R1, A1>(ma: Task<R1, E1, A1>) =>
-   tapCause_(ma, f);
+export function tapCause<R, E, E1>(
+   f: (e: Cause<E1>) => Task<R, E, any>
+): <R1, A1>(ma: Task<R1, E1, A1>) => Task<R1 & R, E | E1, A1> {
+   return (ma) => tapCause_(ma, f);
+}
 
-export const descriptorWith = <R, E, A>(f: (d: FiberDescriptor) => Task<R, E, A>): Task<R, E, A> =>
-   new CheckDescriptorInstruction(f);
+export function descriptorWith<R, E, A>(f: (d: FiberDescriptor) => Task<R, E, A>): Task<R, E, A> {
+   return new CheckDescriptorInstruction(f);
+}
 
-export const descriptor = (): Task<unknown, never, FiberDescriptor> => descriptorWith(succeed);
+export function descriptor(): Task<unknown, never, FiberDescriptor> {
+   return descriptorWith(succeed);
+}
 
-export const checkInterruptible = <R, E, A>(f: (i: InterruptStatus) => Task<R, E, A>): Task<R, E, A> =>
-   new GetInterruptInstruction(f);
+export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => Task<R, E, A>): Task<R, E, A> {
+   return new GetInterruptInstruction(f);
+}
 
-export const fork = <R, E, A>(ma: Task<R, E, A>): RIO<R, Executor<E, A>> => new ForkInstruction(ma, O.none());
+export function fork<R, E, A>(ma: Task<R, E, A>): RIO<R, Executor<E, A>> {
+   return new ForkInstruction(ma, O.none());
+}

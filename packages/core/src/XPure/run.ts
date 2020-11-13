@@ -27,7 +27,7 @@ export type Frame = FoldFrame | ApplyFrame;
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export const runStateEither_ = <S1, S2, E, A>(fa: XPure<S1, S2, unknown, E, A>, s: S1): Either<E, readonly [S2, A]> => {
+export function runStateEither_<S1, S2, E, A>(fa: XPure<S1, S2, unknown, E, A>, s: S1): Either<E, readonly [S2, A]> {
    let frames: Stack<Frame> | undefined = undefined;
    let state = s as any;
    let result = null;
@@ -183,82 +183,98 @@ export const runStateEither_ = <S1, S2, E, A>(fa: XPure<S1, S2, unknown, E, A>, 
    }
 
    return right([state, result]);
-};
+}
 
 /**
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export const runStateEither = <S1>(s: S1) => <S2, E, A>(
-   fx: XPure<S1, S2, unknown, E, A>
-): Either<E, readonly [S2, A]> => runStateEither_(fx, s);
+export function runStateEither<S1>(s: S1): <S2, E, A>(fa: XPure<S1, S2, unknown, E, A>) => Either<E, readonly [S2, A]> {
+   return (fa) => runStateEither_(fa, s);
+}
 
 /**
  * Runs this computation with the specified initial state, returning both
  * the updated state and the result.
  */
-export const run_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as Right<readonly [S2, A]>).right;
+export function run_<S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
+   return (runStateEither_(self, s) as Right<readonly [S2, A]>).right;
+}
 
 /**
  * Runs this computation with the specified initial state, returning both
  * updated state and the result
  */
-export const run = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>): readonly [S2, A] => run_(self, s);
+export function run<S1>(s: S1): <S2, A>(self: XPure<S1, S2, unknown, never, A>) => readonly [S2, A] {
+   return (self) => run_(self, s);
+}
 
 /**
  * Runs this computation, returning the result.
  */
-export const runIO = <A>(self: XPure<unknown, unknown, unknown, never, A>) => run_(self, {})[1];
+export function runIO<A>(self: XPure<unknown, unknown, unknown, never, A>): A {
+   return run_(self, {})[1];
+}
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and discarding the result.
  */
-export const runState_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as Right<readonly [S2, A]>).right[0];
+export function runState_<S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1): S2 {
+   return (runStateEither_(self, s) as Right<readonly [S2, A]>).right[0];
+}
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and discarding the result.
  */
-export const runState = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>) => runState_(self, s);
+export function runState<S1>(s: S1): <S2, A>(self: XPure<S1, S2, unknown, never, A>) => S2 {
+   return (self) => runState_(self, s);
+}
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and the result.
  */
-export const runStateResult_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as Right<readonly [S2, A]>).right;
+export function runStateResult_<S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
+   return (runStateEither_(self, s) as Right<readonly [S2, A]>).right;
+}
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and the result.
  */
-export const runStateResult = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>) =>
-   runStateResult_(self, s);
+export function runStateResult<S1>(s: S1): <S2, A>(self: XPure<S1, S2, unknown, never, A>) => readonly [S2, A] {
+   return (self) => runStateResult_(self, s);
+}
 
 /**
  * Runs this computation with the specified initial state, returning the
  * result and discarding the updated state.
  */
-export const runResult_ = <S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1) =>
-   (runStateEither_(self, s) as Right<readonly [S2, A]>).right[1];
+export function runResult_<S1, S2, A>(self: XPure<S1, S2, unknown, never, A>, s: S1): A {
+   return (runStateEither_(self, s) as Right<readonly [S2, A]>).right[1];
+}
 
 /**
  * Runs this computation with the specified initial state, returning the
  * result and discarding the updated state.
  */
-export const runResult = <S1>(s: S1) => <S2, A>(self: XPure<S1, S2, unknown, never, A>) => runResult_(self, s);
+export function runResult<S1>(s: S1): <S2, A>(self: XPure<S1, S2, unknown, never, A>) => A {
+   return (self) => runResult_(self, s);
+}
 
 /**
  * Runs this computation returning either the result or error
  */
-export const runEither = <E, A>(self: XPure<never, unknown, unknown, E, A>): Either<E, A> =>
-   mapEither_(runStateEither_(self, {} as never), ([_, x]) => x);
+export function runEither<E, A>(self: XPure<never, unknown, unknown, E, A>): Either<E, A> {
+   return mapEither_(runStateEither_(self, {} as never), ([_, x]) => x);
+}
 
-export const runEitherEnv_ = <R, E, A>(self: XPure<never, unknown, R, E, A>, env: R): Either<E, A> =>
-   runEither(giveAll_(self, env));
+export function runEitherEnv_<R, E, A>(self: XPure<never, unknown, R, E, A>, env: R): Either<E, A> {
+   return runEither(giveAll_(self, env));
+}
 
-export const runEitherEnv = <R>(env: R) => <E, A>(self: XPure<never, unknown, R, E, A>): Either<E, A> =>
-   runEitherEnv_(self, env);
+export function runEitherEnv<R>(env: R): <E, A>(self: XPure<never, unknown, R, E, A>) => Either<E, A> {
+   return (self) => runEitherEnv_(self, env);
+}

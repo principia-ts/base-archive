@@ -6,13 +6,16 @@ import * as O from "../../../Option";
 import type { Task } from "../model";
 import { mergeAllPar_, mergeAllParN_ } from "./mergeAll";
 
-export const reduceAll_ = <R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (b: A, a: A) => A) =>
-   A.reduce_(NA.tail(as), NA.head(as), (b, a) => mapBoth_(b, a, f));
+export function reduceAll_<R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (b: A, a: A) => A) {
+   return A.reduce_(NA.tail(as), NA.head(as), (b, a) => mapBoth_(b, a, f));
+}
 
-export const reduceAll = <A>(f: (b: A, a: A) => A) => <R, E>(as: NA.NonEmptyArray<Task<R, E, A>>) => reduceAll_(as, f);
+export function reduceAll<A>(f: (b: A, a: A) => A): <R, E>(as: NA.NonEmptyArray<Task<R, E, A>>) => Task<R, E, A> {
+   return (as) => reduceAll_(as, f);
+}
 
-export const reduceAllPar_ = <R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (b: A, a: A) => A) =>
-   map_(
+export function reduceAllPar_<R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (b: A, a: A) => A) {
+   return map_(
       mergeAllPar_(as, O.none<A>(), (b, a) =>
          O.some(
             O.fold_(
@@ -26,25 +29,32 @@ export const reduceAllPar_ = <R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (
          throw new NoSuchElementException("Task.reduceAllPar_");
       })
    );
+}
 
-export const reduceAllPar = <A>(f: (b: A, a: A) => A) => <R, E>(as: NA.NonEmptyArray<Task<R, E, A>>) =>
-   reduceAllPar_(as, f);
+export function reduceAllPar<A>(f: (b: A, a: A) => A): <R, E>(as: NA.NonEmptyArray<Task<R, E, A>>) => Task<R, E, A> {
+   return (as) => reduceAllPar_(as, f);
+}
 
-export const reduceAllParN_ = (n: number) => <R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (b: A, a: A) => A) =>
-   map_(
-      mergeAllParN_(n)(as, O.none<A>(), (ob, a) =>
-         O.some(
-            O.fold_(
-               ob,
-               () => a,
-               (b) => f(b, a)
+export function reduceAllParN_(n: number) {
+   return <R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (b: A, a: A) => A) =>
+      map_(
+         mergeAllParN_(n)(as, O.none<A>(), (ob, a) =>
+            O.some(
+               O.fold_(
+                  ob,
+                  () => a,
+                  (b) => f(b, a)
+               )
             )
-         )
-      ),
-      O.getOrElse(() => {
-         throw new NoSuchElementException("Task.reduceAllParN_");
-      })
-   );
+         ),
+         O.getOrElse(() => {
+            throw new NoSuchElementException("Task.reduceAllParN_");
+         })
+      );
+}
 
-export const reduceAllParN = (n: number) => <A>(f: (b: A, a: A) => A) => <R, E>(as: NA.NonEmptyArray<Task<R, E, A>>) =>
-   reduceAllParN_(n)(as, f);
+export function reduceAllParN(
+   n: number
+): <A>(f: (b: A, a: A) => A) => <R, E>(as: NA.NonEmptyArray<Task<R, E, A>>) => Task<R, E, A> {
+   return (f) => (as) => reduceAllParN_(n)(as, f);
+}

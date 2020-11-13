@@ -9,12 +9,12 @@ import * as XR from "../../XRef";
 import type * as Push from "../internal/Push";
 import { Sink } from "./model";
 
-export const foldM_ = <R, E, I, L, Z, R1, E1, L1, Z1>(
+export function foldM_<R, E, I, L, Z, R1, E1, L1, Z1>(
    sz: Sink<R, E, I, L, Z>,
    onFailure: (e: E) => Sink<R1, E1, I, L1, Z1>,
    onSuccess: (z: Z) => Sink<R1, E1, I, L1, Z1>
-): Sink<R & R1, E1, I, L1, Z1> =>
-   new Sink(
+): Sink<R & R1, E1, I, L1, Z1> {
+   return new Sink(
       M.gen(function* (_) {
          const switched = yield* _(XR.makeRef(false));
          const thisPush = yield* _(sz.push);
@@ -60,8 +60,11 @@ export const foldM_ = <R, E, I, L, Z, R1, E1, L1, Z1>(
             });
       })
    );
+}
 
-export const foldM = <E, I, Z, R1, E1, L1, Z1>(
+export function foldM<E, I, Z, R1, E1, L1, Z1>(
    onFailure: (e: E) => Sink<R1, E1, I, L1, Z1>,
    onSuccess: (z: Z) => Sink<R1, E1, I, L1, Z1>
-) => <R, L>(sz: Sink<R, E, I, L, Z>): Sink<R & R1, E1, I, L1, Z1> => foldM_(sz, onFailure, onSuccess);
+): <R, L>(sz: Sink<R, E, I, L, Z>) => Sink<R & R1, E1, I, L1, Z1> {
+   return (sz) => foldM_(sz, onFailure, onSuccess);
+}

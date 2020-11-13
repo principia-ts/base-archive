@@ -19,43 +19,53 @@ import { chain_ } from "./monad";
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export const mapBoth = <A, R1, E1, B, C>(fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) => <R, E>(
-   fa: Managed<R, E, A>
-) => mapBoth_(fa, fb, f);
+export function mapBoth<A, R1, E1, B, C>(
+   fb: Managed<R1, E1, B>,
+   f: (a: A, b: B) => C
+): <R, E>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, C> {
+   return (fa) => mapBoth_(fa, fb, f);
+}
 
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export const mapBoth_ = <R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) =>
-   chain_(fa, (a) => map_(fb, (a2) => f(a, a2)));
+export function mapBoth_<R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) {
+   return chain_(fa, (a) => map_(fb, (a2) => f(a, a2)));
+}
 
-export const ap_ = <R, E, A, Q, D, B>(
-   fab: Managed<Q, D, (a: A) => B>,
+export function ap_<R, E, A, Q, D, B>(fab: Managed<Q, D, (a: A) => B>, fa: Managed<R, E, A>): Managed<Q & R, D | E, B> {
+   return mapBoth_(fab, fa, (f, a) => f(a));
+}
+
+export function ap<R, E, A>(
    fa: Managed<R, E, A>
-): Managed<Q & R, D | E, B> => mapBoth_(fab, fa, (f, a) => f(a));
+): <Q, D, B>(fab: Managed<Q, D, (a: A) => B>) => Managed<Q & R, E | D, B> {
+   return (fab) => ap_(fab, fa);
+}
 
-export const ap = <R, E, A>(fa: Managed<R, E, A>) => <Q, D, B>(
-   fab: Managed<Q, D, (a: A) => B>
-): Managed<Q & R, D | E, B> => ap_(fab, fa);
+export function apFirst_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
+   return mapBoth_(fa, fb, (a, _) => a);
+}
 
-export const apFirst_ = <R, E, A, R1, E1, B>(
+export function apFirst<R1, E1, B>(
+   fb: Managed<R1, E1, B>
+): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
+   return (fa) => apFirst_(fa, fb);
+}
+
+export function apSecond_<R, E, A, R1, E1, B>(
    fa: Managed<R, E, A>,
    fb: Managed<R1, E1, B>
-): Managed<R & R1, E | E1, A> => mapBoth_(fa, fb, (a, _) => a);
+): Managed<R & R1, E | E1, B> {
+   return mapBoth_(fa, fb, (_, b) => b);
+}
 
-export const apFirst = <R1, E1, B>(fb: Managed<R1, E1, B>) => <R, E, A>(
-   fa: Managed<R, E, A>
-): Managed<R & R1, E | E1, A> => apFirst_(fa, fb);
-
-export const apSecond_ = <R, E, A, R1, E1, B>(
-   fa: Managed<R, E, A>,
+export function apSecond<R1, E1, B>(
    fb: Managed<R1, E1, B>
-): Managed<R & R1, E | E1, B> => mapBoth_(fa, fb, (_, b) => b);
-
-export const apSecond = <R1, E1, B>(fb: Managed<R1, E1, B>) => <R, E, A>(
-   fa: Managed<R, E, A>
-): Managed<R & R1, E | E1, B> => apSecond_(fa, fb);
+): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
+   return (fa) => apSecond_(fa, fb);
+}
 
 export const struct = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
    mr: EnforceNonEmptyRecord<MR> & Record<string, Managed<any, any, any>>

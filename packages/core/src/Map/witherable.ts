@@ -17,7 +17,7 @@ import { getTraversableWithindex } from "./traversable";
  * @category Witherable
  * @since 1.0.0
  */
-export const getWitherable = <K>(O: Ord<K>): P.WitherableWithIndex<[URI], V & HKT.Fix<"K", K>> => {
+export function getWitherable<K>(O: Ord<K>): P.WitherableWithIndex<[URI], V & HKT.Fix<"K", K>> {
    type CK = V & HKT.Fix<"K", K>;
 
    const { traverseWithIndex_ } = getTraversableWithindex(O);
@@ -36,4 +36,4 @@ export const getWitherable = <K>(O: Ord<K>): P.WitherableWithIndex<[URI], V & HK
       wiltWithIndex: (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f),
       witherWithIndex: (G) => (f) => (wa) => witherWithIndex_(G)(wa, f)
    });
-};
+}

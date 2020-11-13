@@ -11,14 +11,21 @@ import type { Const, URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const bimap_ = <E, A, D, B>(pab: Const<E, A>, f: (e: E) => D, _: (a: A) => B): Const<D, B> => make(f(pab));
+export function bimap_<E, A, D, B>(pab: Const<E, A>, f: (e: E) => D, _: (a: A) => B): Const<D, B> {
+   return make(f(pab));
+}
 
-export const bimap = <E, A, D, B>(f: (e: E) => D, g: (a: A) => B) => (pab: Const<E, A>): Const<D, B> =>
-   bimap_(pab, f, g);
+export function bimap<E, A, D, B>(f: (e: E) => D, g: (a: A) => B): (pab: Const<E, A>) => Const<D, B> {
+   return (pab) => bimap_(pab, f, g);
+}
 
-export const mapLeft_ = <E, A, D>(pab: Const<E, A>, f: (e: E) => D): Const<D, A> => make(f(pab));
+export function mapLeft_<E, A, D>(pab: Const<E, A>, f: (e: E) => D): Const<D, A> {
+   return make(f(pab));
+}
 
-export const mapLeft = <E, D>(f: (e: E) => D) => <A>(pab: Const<E, A>): Const<D, A> => make(f(pab));
+export function mapLeft<E, D>(f: (e: E) => D): <A>(pab: Const<E, A>) => Const<D, A> {
+   return (pab) => make(f(pab));
+}
 
 /**
  * @category Bifunctor

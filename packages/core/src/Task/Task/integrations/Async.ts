@@ -2,7 +2,7 @@ import * as Ac from "../../../Async";
 import * as O from "../../../Option";
 import * as T from "./_internal/task";
 
-const _integrateAsync = () => {
+function _integrateAsync() {
    if (Ac.asyncTaskIntegration.get._tag === "None") {
       Ac.asyncTaskIntegration.set(
          O.some(<R, E, A>(async: Ac.Async<R, E, A>) =>
@@ -31,6 +31,6 @@ const _integrateAsync = () => {
          )
       );
    }
-};
+}
 
 _integrateAsync();

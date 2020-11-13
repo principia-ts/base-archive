@@ -7,11 +7,11 @@ import type { Schedule } from "../../Schedule";
 import { Managed } from "../model";
 import type { ReleaseMap } from "../ReleaseMap";
 
-export const retry_ = <R, E, A, R1, O>(
+export function retry_<R, E, A, R1, O>(
    ma: Managed<R, E, A>,
    policy: Schedule<R1, E, O>
-): Managed<R & R1 & Has<Clock>, E, A> =>
-   new Managed(
+): Managed<R & R1 & Has<Clock>, E, A> {
+   return new Managed(
       T.asksM(([env, releaseMap]: readonly [R & R1 & Has<Clock>, ReleaseMap]) =>
          pipe(
             ma.task,
@@ -21,7 +21,10 @@ export const retry_ = <R, E, A, R1, O>(
          )
       )
    );
+}
 
-export const retry = <R1, E, O>(policy: Schedule<R1, E, O>) => <R, A>(
-   ma: Managed<R, E, A>
-): Managed<R & R1 & Has<Clock>, E, A> => retry_(ma, policy);
+export function retry<R1, E, O>(
+   policy: Schedule<R1, E, O>
+): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1 & Has<Clock>, E, A> {
+   return (ma) => retry_(ma, policy);
+}

@@ -13,4 +13,6 @@ import type { Const } from "./model";
  * @category Monoid
  * @since 1.0.0
  */
-export const getMonoid: <E, A>(M: Monoid<E>) => Monoid<Const<E, A>> = identity as any;
+export function getMonoid<E, A>(M: Monoid<E>): Monoid<Const<E, A>> {
+   return identity(M) as any;
+}

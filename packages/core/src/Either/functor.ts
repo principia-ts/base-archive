@@ -21,7 +21,9 @@ import type { Either, URI, V } from "./model";
  * @category Functor
  * @since 1.0.0
  */
-export const map_ = <E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> => (isLeft(fa) ? fa : right(f(fa.right)));
+export function map_<E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> {
+   return isLeft(fa) ? fa : right(f(fa.right));
+}
 
 /**
  * ```haskell
@@ -33,7 +35,9 @@ export const map_ = <E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> =>
  * @category Functor
  * @since 1.0.0
  */
-export const map = <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>): Either<E, B> => map_(fa, f);
+export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B> {
+   return (fa) => map_(fa, f);
+}
 
 /**
  * @category Instances

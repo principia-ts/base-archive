@@ -10,12 +10,14 @@ import { chain_ } from "./monad";
  * -------------------------------------------
  */
 
-export const recover = <S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>): XPure<S1, S2, R, never, E.Either<E, A>> =>
-   foldM_(
+export function recover<S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>): XPure<S1, S2, R, never, E.Either<E, A>> {
+   return foldM_(
       fa,
       (e) => succeed(E.left(e)),
       (a) => succeed(E.right(a))
    );
+}
 
-export const absolve = <S1, S2, R, E, E1, A>(fa: XPure<S1, S2, R, E, E.Either<E1, A>>): XPure<S1, S2, R, E | E1, A> =>
-   chain_(fa, E.fold(fail, succeed));
+export function absolve<S1, S2, R, E, E1, A>(fa: XPure<S1, S2, R, E, E.Either<E1, A>>): XPure<S1, S2, R, E | E1, A> {
+   return chain_(fa, E.fold(fail, succeed));
+}

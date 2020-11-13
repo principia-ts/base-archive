@@ -14,11 +14,11 @@ import { asksService, asksServiceM } from "../Task/combinators/service";
  */
 export const URI = Symbol();
 
-export interface Clock {
-   readonly _tag: typeof URI;
+export abstract class Clock {
+   readonly _tag!: typeof URI;
 
-   readonly currentTime: T.IO<number>;
-   readonly sleep: (ms: number) => T.IO<void>;
+   abstract readonly currentTime: T.IO<number>;
+   abstract readonly sleep: (ms: number) => T.IO<void>;
 }
 
 /**
@@ -31,10 +31,9 @@ export type HasClock = HasTag<typeof HasClock>;
 /**
  * Live clock implementation
  */
-export const LiveClock = (): Clock => ({
-   _tag: URI,
-   currentTime: T.total(() => new Date().getTime()),
-   sleep: (ms) =>
+export class LiveClock extends Clock {
+   currentTime: T.IO<number> = T.total(() => new Date().getTime());
+   sleep = (ms: number): T.IO<void> =>
       asyncInterrupt((cb) => {
          const timeout = setTimeout(() => {
             cb(T.unit());
@@ -43,17 +42,17 @@ export const LiveClock = (): Clock => ({
          return T.total(() => {
             clearTimeout(timeout);
          });
-      })
-});
+      });
+}
 
 /**
  * Proxy Clock Implementation
  */
-export const ProxyClock = (currentTime: T.IO<number>, sleep: (ms: number) => T.IO<void>): Clock => ({
-   _tag: URI,
-   currentTime,
-   sleep
-});
+export class ProxyClock extends Clock {
+   constructor(readonly currentTime: T.IO<number>, readonly sleep: (ms: number) => T.IO<void>) {
+      super();
+   }
+}
 
 /**
  * Get the current time in ms since epoch

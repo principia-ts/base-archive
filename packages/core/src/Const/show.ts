@@ -12,6 +12,8 @@ import type { Const } from "./model";
  * @category Show
  * @since 1.0.0
  */
-export const getShow = <E, A>(S: Show<E>): Show<Const<E, A>> => ({
-   show: (c) => `make(${S.show(c)})`
-});
+export function getShow<E, A>(S: Show<E>): Show<Const<E, A>> {
+   return {
+      show: (c) => `make(${S.show(c)})`
+   };
+}

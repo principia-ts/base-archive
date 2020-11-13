@@ -1,7 +1,7 @@
 import type { FreeSemigroup } from "../../FreeSemigroup";
 import type { DecodeError, Kind } from "./model";
 
-export const fold = <E, R>(patterns: {
+export function fold<E, R>(patterns: {
    Leaf: (input: unknown, expected: string) => R;
    Key: (key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>) => R;
    Index: (index: number, kind: Kind, errors: FreeSemigroup<DecodeError<E>>) => R;
@@ -9,7 +9,7 @@ export const fold = <E, R>(patterns: {
    Lazy: (id: string, errors: FreeSemigroup<DecodeError<E>>) => R;
    Wrap: (error: E, errors: FreeSemigroup<DecodeError<E>>) => R;
    Info: (error: E) => R;
-}): ((e: DecodeError<E>) => R) => {
+}): (e: DecodeError<E>) => R {
    const f = (e: DecodeError<E>): R => {
       switch (e._tag) {
          case "Leaf":
@@ -29,4 +29,4 @@ export const fold = <E, R>(patterns: {
       }
    };
    return f;
-};
+}

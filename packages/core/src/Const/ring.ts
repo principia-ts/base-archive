@@ -13,4 +13,6 @@ import type { Const } from "./model";
  * @category Ring
  * @since 1.0.0
  */
-export const getRing: <E, A>(S: Ring<E>) => Ring<Const<E, A>> = identity as any;
+export function getRing<E, A>(S: Ring<E>): Ring<Const<E, A>> {
+   return identity(S) as any;
+}

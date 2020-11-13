@@ -33,7 +33,9 @@ export const interruptible = new InterruptStatus(true);
 
 export const uninterruptible = new InterruptStatus(false);
 
-export const interruptStatus = (b: boolean) => (b ? interruptible : uninterruptible);
+export function interruptStatus(b: boolean): InterruptStatus {
+   return b ? interruptible : uninterruptible;
+}
 
 /**
  * A record containing information about a `Fiber`.
@@ -112,4 +114,6 @@ export interface SyntheticFiber<E, A> extends CommonFiber<E, A> {
  *
  * A type helper for building a Synthetic Fiber
  */
-export const makeSynthetic = <E, A>(_: SyntheticFiber<E, A>): Fiber<E, A> => _;
+export function makeSynthetic<E, A>(_: SyntheticFiber<E, A>): Fiber<E, A> {
+   return _;
+}

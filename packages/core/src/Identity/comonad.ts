@@ -11,9 +11,13 @@ import type { Identity, URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const extend_ = <A, B>(wa: A, f: (wa: A) => B): B => f(wa);
+export function extend_<A, B>(wa: A, f: (wa: A) => B): B {
+   return f(wa);
+}
 
-export const extend = <A, B>(f: (wa: A) => B) => (wa: A): B => f(wa);
+export function extend<A, B>(f: (wa: A) => B): (wa: A) => B {
+   return (wa) => f(wa);
+}
 
 export const extract: <A>(wa: A) => A = identity;
 

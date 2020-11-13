@@ -4,4 +4,6 @@
  * -------------------------------------------
  */
 
-export const unit = (): void => undefined;
+export function unit(): void {
+   return undefined;
+}

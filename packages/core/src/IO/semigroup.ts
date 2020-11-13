@@ -20,5 +20,6 @@ import type { IO } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <A>(S: Semigroup<A>): Semigroup<IO<A>> =>
-   fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
+export function getSemigroup<A>(S: Semigroup<A>): Semigroup<IO<A>> {
+   return fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
+}

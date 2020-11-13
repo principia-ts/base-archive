@@ -3,7 +3,7 @@ import * as A from "../../../Array";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
 import type { NonEmptyArray } from "../../../NonEmptyArray";
-import type { ExecutionStrategy, Parallel, ParallelN, Sequential } from "../../ExecutionStrategy";
+import type { ExecutionStrategy } from "../../ExecutionStrategy";
 import type { Task } from "../model";
 import { either } from "./either";
 import { foreachExec_ } from "./foreachExec";
@@ -32,15 +32,18 @@ const mergeExits = <E, B>() => (exits: ReadonlyArray<Either<E, B>>): Either<NonE
  * This combinator is lossy meaning that if there are errors all successes
  * will be lost.
  */
-export const validate_ = <A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
-   absolve(
+export function validate_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) {
+   return absolve(
       map_(
          foreach_(as, (a) => either(f(a))),
          mergeExits<E, B>()
       )
    );
+}
 
-export const validate = <A, R, E, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>) => validate_(as, f);
+export function validate<A, R, E, B>(f: (a: A) => Task<R, E, B>): (as: Iterable<A>) => Task<R, NonEmptyArray<E>, B[]> {
+   return (as) => validate_(as, f);
+}
 
 /**
  * Feeds elements of type `A` to `f` and accumulates all errors in error
@@ -49,33 +52,20 @@ export const validate = <A, R, E, B>(f: (a: A) => Task<R, E, B>) => (as: Iterabl
  * This combinator is lossy meaning that if there are errors all successes
  * will be lost.
  */
-export const validatePar_ = <A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
-   absolve(
+export function validatePar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) {
+   return absolve(
       map_(
          foreachPar_(as, (a) => either(f(a))),
          mergeExits<E, B>()
       )
    );
+}
 
-export const validatePar = <A, R, E, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>) => validatePar_(as, f);
-
-/**
- * Feeds elements of type `A` to `f` and accumulates all errors in error
- * channel or successes in success channel.
- *
- * This combinator is lossy meaning that if there are errors all successes
- * will be lost.
- */
-export const validateParN_ = (n: number) => <A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
-   absolve(
-      map_(
-         foreachParN_(n)(as, (a) => either(f(a))),
-         mergeExits<E, B>()
-      )
-   );
-
-export const validateParN = (n: number) => <A, R, E, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>) =>
-   validateParN_(n)(as, f);
+export function validatePar<A, R, E, B>(
+   f: (a: A) => Task<R, E, B>
+): (as: Iterable<A>) => Task<R, NonEmptyArray<E>, B[]> {
+   return (as) => validatePar_(as, f);
+}
 
 /**
  * Feeds elements of type `A` to `f` and accumulates all errors in error
@@ -84,30 +74,41 @@ export const validateParN = (n: number) => <A, R, E, B>(f: (a: A) => Task<R, E, 
  * This combinator is lossy meaning that if there are errors all successes
  * will be lost.
  */
-export const validateExec_: {
-   <R, E, A, B>(es: Sequential, as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<
-      R,
-      NonEmptyArray<E>,
-      ReadonlyArray<B>
-   >;
-   <R, E, A, B>(es: Parallel, as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<R, NonEmptyArray<E>, ReadonlyArray<B>>;
-   <R, E, A, B>(es: ParallelN, as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<
-      R,
-      NonEmptyArray<E>,
-      ReadonlyArray<B>
-   >;
-   <R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>, f: (a: A) => Task<R, E, B>): Task<
-      R,
-      NonEmptyArray<E>,
-      ReadonlyArray<B>
-   >;
-} = <R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
-   absolve(
+export function validateParN_(n: number) {
+   return <A, R, E, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) =>
+      absolve(
+         map_(
+            foreachParN_(n)(as, (a) => either(f(a))),
+            mergeExits<E, B>()
+         )
+      );
+}
+
+export function validateParN(
+   n: number
+): <A, R, E, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>) => Task<R, NonEmptyArray<E>, readonly B[]> {
+   return (f) => (as) => validateParN_(n)(as, f);
+}
+
+/**
+ * Feeds elements of type `A` to `f` and accumulates all errors in error
+ * channel or successes in success channel.
+ *
+ * This combinator is lossy meaning that if there are errors all successes
+ * will be lost.
+ */
+export function validateExec_<R, E, A, B>(
+   es: ExecutionStrategy,
+   as: Iterable<A>,
+   f: (a: A) => Task<R, E, B>
+): Task<R, NonEmptyArray<E>, ReadonlyArray<B>> {
+   return absolve(
       map_(
          foreachExec_(es, as, (a) => either(f(a))),
          mergeExits<E, B>()
       )
    );
+}
 
 /**
  * Feeds elements of type `A` to `f` and accumulates all errors in error
@@ -116,18 +117,8 @@ export const validateExec_: {
  * This combinator is lossy meaning that if there are errors all successes
  * will be lost.
  */
-export const validateExec: {
-   (es: Sequential): <R, E, A, B>(
-      f: (a: A) => Task<R, E, B>
-   ) => (as: Iterable<A>) => Task<R, NonEmptyArray<E>, ReadonlyArray<B>>;
-   (es: Parallel): <R, E, A, B>(
-      f: (a: A) => Task<R, E, B>
-   ) => (as: Iterable<A>) => Task<R, NonEmptyArray<E>, ReadonlyArray<B>>;
-   (es: ParallelN): <R, E, A, B>(
-      f: (a: A) => Task<R, E, B>
-   ) => (as: Iterable<A>) => Task<R, NonEmptyArray<E>, ReadonlyArray<B>>;
-   (es: ExecutionStrategy): <R, E, A, B>(
-      f: (a: A) => Task<R, E, B>
-   ) => (as: Iterable<A>) => Task<R, NonEmptyArray<E>, ReadonlyArray<B>>;
-} = (es: ExecutionStrategy) => <R, E, A, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>) =>
-   validateExec_(es, as, f) as any;
+export function validateExec(
+   es: ExecutionStrategy
+): <R, E, A, B>(f: (a: A) => Task<R, E, B>) => (as: Iterable<A>) => Task<R, NonEmptyArray<E>, ReadonlyArray<B>> {
+   return (f) => (as) => validateExec_(es, as, f) as any;
+}

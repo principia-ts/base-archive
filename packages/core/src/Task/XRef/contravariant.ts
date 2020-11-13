@@ -7,22 +7,26 @@ import type { XRef } from "./model";
  * Transforms the `set` value of the `XRef` with the specified fallible
  * function.
  */
-export const contramapEither = <A, EC, C>(f: (_: C) => E.Either<EC, A>) => <EA, EB, B>(
-   _: XRef<EA, EB, A, B>
-): XRef<EC | EA, EB, C, B> =>
-   pipe(
-      _,
-      bimapEither(f, (x) => E.right(x))
-   );
+export function contramapEither<A, EC, C>(
+   f: (_: C) => E.Either<EC, A>
+): <EA, EB, B>(_: XRef<EA, EB, A, B>) => XRef<EA | EC, EB, C, B> {
+   return (_) =>
+      pipe(
+         _,
+         bimapEither(f, (x) => E.right(x))
+      );
+}
 
 /**
  * Transforms the `set` value of the `XRef` with the specified fallible
  * function.
  */
-export const contramapEither_ = <A, EC, C, EA, EB, B>(
+export function contramapEither_<A, EC, C, EA, EB, B>(
    _: XRef<EA, EB, A, B>,
    f: (_: C) => E.Either<EC, A>
-): XRef<EC | EA, EB, C, B> => contramapEither(f)(_);
+): XRef<EC | EA, EB, C, B> {
+   return contramapEither(f)(_);
+}
 
 /**
  * Transforms the `set` value of the `XRef` with the specified function.

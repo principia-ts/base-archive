@@ -21,8 +21,9 @@ import type { Either, URI, V } from "./model";
  * @category Extend
  * @since 1.0.0
  */
-export const extend_ = <E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): Either<E, B> =>
-   isLeft(wa) ? wa : right(f(wa));
+export function extend_<E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): Either<E, B> {
+   return isLeft(wa) ? wa : right(f(wa));
+}
 
 /**
  * ```haskell
@@ -32,7 +33,9 @@ export const extend_ = <E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): 
  * @category Extend
  * @since 1.0.0
  */
-export const extend = <E, A, B>(f: (wa: Either<E, A>) => B) => (wa: Either<E, A>): Either<E, B> => extend_(wa, f);
+export function extend<E, A, B>(f: (wa: Either<E, A>) => B): (wa: Either<E, A>) => Either<E, B> {
+   return (wa) => extend_(wa, f);
+}
 
 /**
  * ```haskell
@@ -42,7 +45,9 @@ export const extend = <E, A, B>(f: (wa: Either<E, A>) => B) => (wa: Either<E, A>
  * @category Extend
  * @since 1.0.0
  */
-export const duplicate = <E, A>(wa: Either<E, A>): Either<E, Either<E, A>> => extend_(wa, identity);
+export function duplicate<E, A>(wa: Either<E, A>): Either<E, Either<E, A>> {
+   return extend_(wa, identity);
+}
 
 /**
  * @category Instances

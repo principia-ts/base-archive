@@ -9,8 +9,8 @@ import { unit } from "../unit";
 /**
  * Requires the option produced by this value to be `None`.
  */
-export const none = <R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Option<E>, void> =>
-   foldM_(
+export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Option<E>, void> {
+   return foldM_(
       ma,
       flow(O.some, fail),
       O.fold(
@@ -18,3 +18,4 @@ export const none = <R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Opti
          () => fail(O.none())
       )
    );
+}

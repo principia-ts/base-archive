@@ -8,4 +8,6 @@ import { useNow } from "./use";
  * Note that this is only safe if the result of this managed effect is valid
  * outside its scope.
  */
-export const release = <R, E, A>(ma: Managed<R, E, A>): Managed<R, E, A> => fromTask(useNow(ma));
+export function release<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, A> {
+   return fromTask(useNow(ma));
+}

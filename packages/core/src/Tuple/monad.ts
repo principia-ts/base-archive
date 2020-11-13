@@ -7,7 +7,7 @@ import { Functor } from "./functor";
 import type { URI, V } from "./model";
 import { unit } from "./unit";
 
-export const getMonad = <M>(M: Monoid<M>): P.Monad<[URI], V & HKT.Fix<"I", M>> => {
+export function getMonad<M>(M: Monoid<M>): P.Monad<[URI], V & HKT.Fix<"I", M>> {
    const flatten: P.FlattenFn<[URI], V & HKT.Fix<"I", M>> = (mma) =>
       [fst(fst(mma)), M.combine_(snd(fst(mma)), snd(mma))] as const;
 
@@ -16,4 +16,4 @@ export const getMonad = <M>(M: Monoid<M>): P.Monad<[URI], V & HKT.Fix<"I", M>> =
       unit: unit(M),
       flatten
    });
-};
+}

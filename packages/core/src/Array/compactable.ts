@@ -19,14 +19,16 @@ import type { URI, V } from "./model";
  * compact :: Compactable c => c (Option a) -> c a
  * ```
  */
-export const compact = <A>(as: ReadonlyArray<Option<A>>): ReadonlyArray<A> => mapOption_(as, identity);
+export function compact<A>(as: ReadonlyArray<Option<A>>): ReadonlyArray<A> {
+   return mapOption_(as, identity);
+}
 
 /**
  * ```haskell
  * separate :: Compactable c => c (Either a b) -> Separated (c a) (c b)
  * ```
  */
-export const separate = <E, A>(fa: ReadonlyArray<Either<E, A>>): Separated<ReadonlyArray<E>, ReadonlyArray<A>> => {
+export function separate<E, A>(fa: ReadonlyArray<Either<E, A>>): Separated<ReadonlyArray<E>, ReadonlyArray<A>> {
    const len = fa.length;
    const left = [];
    const right = [];
@@ -42,7 +44,7 @@ export const separate = <E, A>(fa: ReadonlyArray<Either<E, A>>): Separated<Reado
       left,
       right
    };
-};
+}
 
 export const Compactable: P.Compactable<[URI], V> = HKT.instance({
    compact,

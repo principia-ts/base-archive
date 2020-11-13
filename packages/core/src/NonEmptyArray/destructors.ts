@@ -8,4 +8,6 @@ import type { NonEmptyArray } from "./model";
  * fold :: Semigroup s => s a -> NonEmptyArray a -> a
  * ```
  */
-export const fold = <A>(S: Semigroup<A>) => (as: NonEmptyArray<A>): A => A.reduce_(as.slice(1), as[0], S.combine_);
+export function fold<A>(S: Semigroup<A>): (as: NonEmptyArray<A>) => A {
+   return (as) => A.reduce_(as.slice(1), as[0], S.combine_);
+}

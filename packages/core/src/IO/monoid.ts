@@ -20,7 +20,9 @@ import { getSemigroup } from "./semigroup";
  * @category Instances
  * @since 1.0.0
  */
-export const getMonoid = <A>(M: Monoid<A>): Monoid<IO<A>> => ({
-   ...getSemigroup(M),
-   nat: pure(M.nat)
-});
+export function getMonoid<A>(M: Monoid<A>): Monoid<IO<A>> {
+   return {
+      ...getSemigroup(M),
+      nat: pure(M.nat)
+   };
+}

@@ -102,7 +102,9 @@ export enum LayerInstructionTag {
 /**
  * Type level bound to make sure a layer is complete
  */
-export const main = <E, A>(layer: Layer<DefaultEnv, E, A>) => layer;
+export function main<E, A>(layer: Layer<DefaultEnv, E, A>) {
+   return layer;
+}
 
 export type LayerInstruction =
    | LayerFoldInstruction<any, any, any, any, any, any, any, any>
@@ -227,7 +229,7 @@ export class LayerAllSeqInstruction<Ls extends Layer<any, any, any>[]> extends L
 
 export type RIO<R, A> = Layer<R, never, A>;
 
-export const _build = <R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap) => Managed<R, E, A>> => {
+export function _build<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap) => Managed<R, E, A>> {
    const I = layer._I();
 
    switch (I._tag) {
@@ -290,154 +292,226 @@ export const _build = <R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, 
          );
       }
    }
-};
+}
 
-export const build = <R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, A> =>
-   pipe(
+export function build<R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, A> {
+   return pipe(
       M.do,
       M.bindS("memoMap", () => M.fromTask(makeMemoMap())),
       M.bindS("run", () => _build(_)),
       M.bindS("value", ({ memoMap, run }) => run(memoMap)),
       M.map(({ value }) => value)
    );
+}
 
-export const pure = <T>(has: H.Tag<T>) => (resource: T): Layer<unknown, never, H.Has<T>> =>
-   new LayerManagedInstruction(M.chain_(M.fromTask(T.pure(resource)), (a) => environmentFor(has, a)));
+export function pure<T>(has: H.Tag<T>): (resource: T) => Layer<unknown, never, H.Has<T>> {
+   return (resource) =>
+      new LayerManagedInstruction(M.chain_(M.fromTask(T.pure(resource)), (a) => environmentFor(has, a)));
+}
 
-export const identity = <R>() => fromRawManaged(M.ask<R>());
+export function identity<R>(): Layer<R, never, R> {
+   return fromRawManaged(M.ask<R>());
+}
 
-export const prepare = <T>(has: H.Tag<T>) => <R, E, A extends T>(acquire: T.Task<R, E, A>) => ({
-   open: <R1, E1>(open: (_: A) => T.Task<R1, E1, any>) => ({
-      release: <R2>(release: (_: A) => T.Task<R2, never, any>) =>
-         fromManaged(has)(
-            M.chain_(
-               M.makeExit_(acquire, (a) => release(a)),
-               (a) => M.fromTask(T.map_(open(a), () => a))
+export function prepare<T>(has: H.Tag<T>) {
+   return <R, E, A extends T>(acquire: T.Task<R, E, A>) => ({
+      open: <R1, E1>(open: (_: A) => T.Task<R1, E1, any>) => ({
+         release: <R2>(release: (_: A) => T.Task<R2, never, any>) =>
+            fromManaged(has)(
+               M.chain_(
+                  M.makeExit_(acquire, (a) => release(a)),
+                  (a) => M.fromTask(T.map_(open(a), () => a))
+               )
             )
-         )
-   }),
-   release: <R2>(release: (_: A) => T.Task<R2, never, any>) => fromManaged(has)(M.makeExit_(acquire, (a) => release(a)))
-});
+      }),
+      release: <R2>(release: (_: A) => T.Task<R2, never, any>) =>
+         fromManaged(has)(M.makeExit_(acquire, (a) => release(a)))
+   });
+}
 
-export const create = <T>(has: H.Tag<T>) => ({
-   fromTask: fromTask(has),
-   fromManaged: fromManaged(has),
-   pure: pure(has),
-   prepare: prepare(has)
-});
+export function create<T>(has: H.Tag<T>) {
+   return {
+      fromTask: fromTask(has),
+      fromManaged: fromManaged(has),
+      pure: pure(has),
+      prepare: prepare(has)
+   };
+}
 
-export const fromTask = <T>(has: H.Tag<T>) => <R, E>(resource: T.Task<R, E, T>) =>
-   new LayerManagedInstruction(M.chain_(M.fromTask(resource), (a) => environmentFor(has, a)));
+export function fromTask<T>(
+   has: H.Tag<T>
+): <R, E>(resource: T.Task<R, E, T>) => LayerManagedInstruction<R, E, H.Has<T>> {
+   return (resource) => new LayerManagedInstruction(M.chain_(M.fromTask(resource), (a) => environmentFor(has, a)));
+}
 
-export const fromManaged = <T>(has: H.Tag<T>) => <R, E>(resource: Managed<R, E, T>): Layer<R, E, H.Has<T>> =>
-   new LayerManagedInstruction(M.chain_(resource, (a) => environmentFor(has, a)));
+export function fromManaged<T>(has: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
+   return (resource) => new LayerManagedInstruction(M.chain_(resource, (a) => environmentFor(has, a)));
+}
 
-export const fromRawManaged = <R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> =>
-   new LayerManagedInstruction(resource);
+export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> {
+   return new LayerManagedInstruction(resource);
+}
 
-export const fromRawTask = <R, E, A>(resource: T.Task<R, E, A>): Layer<R, E, A> =>
-   new LayerManagedInstruction(M.fromTask(resource));
+export function fromRawTask<R, E, A>(resource: T.Task<R, E, A>): Layer<R, E, A> {
+   return new LayerManagedInstruction(M.fromTask(resource));
+}
 
-export const fromRawFunction = <A, B>(f: (a: A) => B) => fromRawTask(T.asks(f));
+export function fromRawFunction<A, B>(f: (a: A) => B): Layer<A, never, B> {
+   return fromRawTask(T.asks(f));
+}
 
-export const fromRawFunctionM = <A, R, E, B>(f: (a: A) => T.Task<R, E, B>) => fromRawTask(T.asksM(f));
+export function fromRawFunctionM<A, R, E, B>(f: (a: A) => T.Task<R, E, B>): Layer<R & A, E, B> {
+   return fromRawTask(T.asksM(f));
+}
 
-export const using_: {
-   <R, E, A, R2, E2, A2>(self: Layer<R & A2, E, A>, from: Layer<R2, E2, A2>, noErase: "no-erase"): Layer<
-      R & R2,
-      E | E2,
-      A & A2
-   >;
-   <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, from: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A & A2>;
-} = <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, from: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A & A2> =>
-   fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A2 & A>(
+export function using_<R, E, A, R2, E2, A2>(
+   self: Layer<R & A2, E, A>,
+   from: Layer<R2, E2, A2>,
+   noErase: "no-erase"
+): Layer<R & R2, E | E2, A & A2>;
+export function using_<R, E, A, R2, E2, A2>(
+   self: Layer<R, E, A>,
+   from: Layer<R2, E2, A2>
+): Layer<Erase<R, A2> & R2, E | E2, A & A2>;
+export function using_<R, E, A, R2, E2, A2>(
+   self: Layer<R, E, A>,
+   from: Layer<R2, E2, A2>
+): Layer<Erase<R, A2> & R2, E | E2, A & A2> {
+   return fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A2 & A>(
       from,
       fromRawFunctionM((_: readonly [R & R2, Cause<E2>]) => T.halt(_[1])),
       and_(from, self)
    );
+}
 
-export const from_: {
-   <R, E, A, R2, E2, A2>(self: Layer<R & A2, E, A>, to: Layer<R2, E2, A2>, noErase: "no-erase"): Layer<
-      R & R2,
-      E | E2,
-      A
-   >;
-   <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, to: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A>;
-} = <R, E, A, R2, E2, A2>(self: Layer<R, E, A>, to: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A> =>
-   fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A>(
+export function from_<R, E, A, R2, E2, A2>(
+   self: Layer<R & A2, E, A>,
+   to: Layer<R2, E2, A2>,
+   noErase: "no-erase"
+): Layer<R & R2, E | E2, A>;
+export function from_<R, E, A, R2, E2, A2>(
+   self: Layer<R, E, A>,
+   to: Layer<R2, E2, A2>
+): Layer<Erase<R, A2> & R2, E | E2, A>;
+export function from_<R, E, A, R2, E2, A2>(
+   self: Layer<R, E, A>,
+   to: Layer<R2, E2, A2>
+): Layer<Erase<R, A2> & R2, E | E2, A> {
+   return fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A>(
       to,
       fromRawFunctionM((_: readonly [R & R2, Cause<E2>]) => T.halt(_[1])),
       self
    );
+}
 
-export const both_ = <R, E, A, R2, E2, A2>(
+export function both_<R, E, A, R2, E2, A2>(
    left: Layer<R, E, A>,
    right: Layer<R2, E2, A2>
-): Layer<R & R2, E | E2, readonly [A, A2]> => new LayerMapBothSeqInstruction(left, right, tuple);
+): Layer<R & R2, E | E2, readonly [A, A2]> {
+   return new LayerMapBothSeqInstruction(left, right, tuple);
+}
 
-export const both = <R2, E2, A2>(right: Layer<R2, E2, A2>) => <R, E, A>(left: Layer<R, E, A>) => both_(left, right);
+export function both<R2, E2, A2>(
+   right: Layer<R2, E2, A2>
+): <R, E, A>(left: Layer<R, E, A>) => Layer<R & R2, E2 | E, readonly [A, A2]> {
+   return (left) => both_(left, right);
+}
 
-export const and_ = <R, E, A, R2, E2, A2>(
+export function and_<R, E, A, R2, E2, A2>(
    left: Layer<R, E, A>,
    right: Layer<R2, E2, A2>
-): Layer<R & R2, E | E2, A & A2> => new LayerMapBothParInstruction(left, right, (l, r) => ({ ...l, ...r }));
+): Layer<R & R2, E | E2, A & A2> {
+   return new LayerMapBothParInstruction(left, right, (l, r) => ({ ...l, ...r }));
+}
 
-export const and = <R2, E2, A2>(right: Layer<R2, E2, A2>) => <R, E, A>(left: Layer<R, E, A>) => and_(left, right);
+export function and<R2, E2, A2>(
+   right: Layer<R2, E2, A2>
+): <R, E, A>(left: Layer<R, E, A>) => Layer<R & R2, E2 | E, A & A2> {
+   return (left) => and_(left, right);
+}
 
-export const fold_ = <R, E, A, E1, B, R2, E2, C>(
+export function fold_<R, E, A, E1, B, R2, E2, C>(
    layer: Layer<R, E, A>,
    onFailure: Layer<readonly [R, Cause<E>], E1, B>,
    onSuccess: Layer<A & R2, E2, C>
-): Layer<R & R2, E1 | E2, B | C> => new LayerFoldInstruction<R, E, A, E1, B, R2, E2, C>(layer, onFailure, onSuccess);
+): Layer<R & R2, E1 | E2, B | C> {
+   return new LayerFoldInstruction<R, E, A, E1, B, R2, E2, C>(layer, onFailure, onSuccess);
+}
 
-export const andTo: {
-   <R1, E1, A1>(right: Layer<R1, E1, A1>, noErase: "no-erase"): <R, E, A>(
-      left: Layer<R & A1, E, A>
-   ) => Layer<R & R1, E | E1, A & A1>;
-   <R1, E1, A1>(right: Layer<R1, E1, A1>): <R, E, A>(left: Layer<R, E, A>) => Layer<Erase<R, A1> & R1, E | E1, A & A1>;
-} = <R2, E2, A2>(right: Layer<R2, E2, A2>) => <R, E, A>(left: Layer<R, E, A>) =>
-   andTo_<R, E, A, R2, E2, A2>(left, right);
+export function andTo<R1, E1, A1>(
+   right: Layer<R1, E1, A1>,
+   noErase: "no-erase"
+): <R, E, A>(left: Layer<R & A1, E, A>) => Layer<R & R1, E | E1, A & A1>;
+export function andTo<R1, E1, A1>(
+   right: Layer<R1, E1, A1>
+): <R, E, A>(left: Layer<R, E, A>) => Layer<Erase<R, A1> & R1, E | E1, A & A1>;
+export function andTo<R1, E1, A1>(
+   right: Layer<R1, E1, A1>
+): <R, E, A>(left: Layer<R, E, A>) => Layer<Erase<R, A1> & R1, E | E1, A & A1> {
+   return (left) => andTo_(left, right);
+}
 
-export const andTo_: {
-   <R, E, A, R1, E1, A1>(left: Layer<R, E, A>, right: Layer<R1, E1, A1>, noErase: "no-erase"): Layer<
-      R & R1,
-      E | E1,
-      A & A1
-   >;
-   <R, E, A, R1, E1, A1>(left: Layer<R, E, A>, right: Layer<R1, E1, A1>): Layer<Erase<R, A1> & R1, E | E1, A & A1>;
-} = <R, E, A, R2, E2, A2>(left: Layer<R, E, A>, right: Layer<R2, E2, A2>): Layer<Erase<R, A2> & R2, E | E2, A & A2> =>
-   fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A2 & A>(
+export function andTo_<R, E, A, R1, E1, A1>(
+   left: Layer<R, E, A>,
+   right: Layer<R1, E1, A1>,
+   noErase: "no-erase"
+): Layer<R & R1, E | E1, A & A1>;
+export function andTo_<R, E, A, R1, E1, A1>(
+   left: Layer<R, E, A>,
+   right: Layer<R1, E1, A1>
+): Layer<Erase<R, A1> & R1, E | E1, A & A1>;
+export function andTo_<R, E, A, R2, E2, A2>(
+   left: Layer<R, E, A>,
+   right: Layer<R2, E2, A2>
+): Layer<Erase<R, A2> & R2, E | E2, A & A2> {
+   return fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A2 & A>(
       right,
       fromRawFunctionM((_: readonly [R & R2, Cause<E2>]) => T.halt(_[1])),
       and_(right, left)
    );
+}
 
-export const to = <R, E, A>(to: Layer<R, E, A>) => <R2, E2, A2>(layer: Layer<R2, E2, A2>) => to_(layer, to);
+export function to<R, E, A>(
+   to: Layer<R, E, A>
+): <R2, E2, A2>(layer: Layer<R2, E2, A2>) => Layer<Erase<R, A2> & R2, E | E2, A> {
+   return (layer) => to_(layer, to);
+}
 
-export const to_ = <R, E, A, R2, E2, A2>(
+export function to_<R, E, A, R2, E2, A2>(
    layer: Layer<R2, E2, A2>,
    to: Layer<R, E, A>
-): Layer<Erase<R, A2> & R2, E | E2, A> =>
-   fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A>(
+): Layer<Erase<R, A2> & R2, E | E2, A> {
+   return fold_<Erase<R, A2> & R2, E2, A2, E2, never, Erase<R, A2> & R2, E | E2, A>(
       layer,
       fromRawFunctionM((_: readonly [R & R2, Cause<E2>]) => T.halt(_[1])),
       to
    );
+}
 
-export const andSeq_ = <R, E, A, R1, E1, A1>(
+export function andSeq_<R, E, A, R1, E1, A1>(
    layer: Layer<R, E, A>,
    that: Layer<R1, E1, A1>
-): Layer<R & R1, E | E1, A & A1> => new LayerMapBothSeqInstruction(layer, that, (l, r) => ({ ...l, ...r }));
+): Layer<R & R1, E | E1, A & A1> {
+   return new LayerMapBothSeqInstruction(layer, that, (l, r) => ({ ...l, ...r }));
+}
 
-export const andSeq = <R1, E1, A1>(that: Layer<R1, E1, A1>) => <R, E, A>(layer: Layer<R, E, A>) => andSeq_(layer, that);
+export function andSeq<R1, E1, A1>(
+   that: Layer<R1, E1, A1>
+): <R, E, A>(layer: Layer<R, E, A>) => Layer<R & R1, E1 | E, A & A1> {
+   return (layer) => andSeq_(layer, that);
+}
 
-export const all = <Ls extends Layer<any, any, any>[]>(
+export function all<Ls extends Layer<any, any, any>[]>(
    ...ls: Ls & { 0: Layer<any, any, any> }
-): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> => new LayerAllParInstruction(ls);
+): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
+   return new LayerAllParInstruction(ls);
+}
 
-export const allPar = <Ls extends Layer<any, any, any>[]>(
+export function allPar<Ls extends Layer<any, any, any>[]>(
    ...ls: Ls & { 0: Layer<any, any, any> }
-): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> => new LayerAllSeqInstruction(ls);
+): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
+   return new LayerAllSeqInstruction(ls);
+}
 
 function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, H.Has<T>>;
 function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, any> {

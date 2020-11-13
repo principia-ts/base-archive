@@ -8,17 +8,19 @@ import { releaseAll } from "./releaseAll";
 /**
  * Run an effect while acquiring the resource before and releasing it after
  */
-export const use = <A, R2, E2, B>(f: (a: A) => T.Task<R2, E2, B>) => <R, E>(
-   self: Managed<R, E, A>
-): T.Task<R & R2, E | E2, B> => use_(self, f);
+export function use<A, R2, E2, B>(
+   f: (a: A) => T.Task<R2, E2, B>
+): <R, E>(self: Managed<R, E, A>) => T.Task<R & R2, E | E2, B> {
+   return (self) => use_(self, f);
+}
 
 /**
  * Run an effect while acquiring the resource before and releasing it after
  */
-export const use_ = <R, E, A, R2, E2, B>(
+export function use_<R, E, A, R2, E2, B>(
    self: Managed<R, E, A>,
    f: (a: A) => T.Task<R2, E2, B>
-): T.Task<R & R2, E | E2, B> => {
+): T.Task<R & R2, E | E2, B> {
    return T.bracketExit_(
       RM.make,
       (rm) =>
@@ -28,7 +30,7 @@ export const use_ = <R, E, A, R2, E2, B>(
          ),
       (rm, ex) => releaseAll(ex, sequential())(rm)
    );
-};
+}
 
 /**
  * Runs the acquire and release actions and returns the result of this

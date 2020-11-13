@@ -1,5 +1,9 @@
 import type { Tuple } from "./model";
 
-export const fst = <A, I>(ai: Tuple<A, I>): A => ai[0];
+export function fst<A, I>(ai: Tuple<A, I>): A {
+   return ai[0];
+}
 
-export const snd = <A, I>(ai: Tuple<A, I>): I => ai[1];
+export function snd<A, I>(ai: Tuple<A, I>): I {
+   return ai[1];
+}

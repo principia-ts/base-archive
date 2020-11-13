@@ -15,8 +15,9 @@ import type { Either, URI, V } from "./model";
  * @category Alt
  * @since 1.0.0
  */
-export const alt_ = <E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Either<E | G, A> =>
-   isLeft(fa) ? that() : fa;
+export function alt_<E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Either<E | G, A> {
+   return isLeft(fa) ? that() : fa;
+}
 
 /**
  * ```haskell
@@ -28,7 +29,9 @@ export const alt_ = <E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Eithe
  * @category Alt
  * @since 1.0.0
  */
-export const alt = <G, A>(that: () => Either<G, A>) => <E>(fa: Either<E, A>): Either<E | G, A> => alt_(fa, that);
+export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Either<G | E, A> {
+   return (fa) => alt_(fa, that);
+}
 
 /**
  * @category Instances

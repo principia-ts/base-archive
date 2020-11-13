@@ -16,7 +16,7 @@ import type { URI, V } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getFoldableWithIndex = <K>(O: Ord<K>): P.FoldableWithIndex<[URI], V & HKT.Fix<"K", K>> => {
+export function getFoldableWithIndex<K>(O: Ord<K>): P.FoldableWithIndex<[URI], V & HKT.Fix<"K", K>> {
    type CK = V & HKT.Fix<"K", K>;
    const keysO = keys(O);
    const reduceWithIndex_: P.ReduceWithIndexFn_<[URI], CK> = <A, B>(
@@ -72,4 +72,4 @@ export const getFoldableWithIndex = <K>(O: Ord<K>): P.FoldableWithIndex<[URI], V
       reduceRightWithIndex_,
       reduceRightWithIndex: (b, f) => (fa) => reduceRightWithIndex_(fa, b, f)
    });
-};
+}

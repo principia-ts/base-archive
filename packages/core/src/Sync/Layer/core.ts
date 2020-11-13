@@ -1,5 +1,4 @@
 import type { Erase, UnionToIntersection } from "@principia/prelude/Utils";
-import { inspect } from "util";
 
 import * as A from "../../Array";
 import { pipe } from "../../Function";
@@ -8,27 +7,29 @@ import * as Sy from "./_internal";
 import type { SyncMemoMap } from "./model";
 import { SyncLayer, SyncLayerInstructionTag } from "./model";
 
-export const getMemoOrElseCreate = <R, E, A>(layer: SyncLayer<R, E, A>) => (m: SyncMemoMap): Sy.Sync<R, E, A> =>
-   Sy.gen(function* (_) {
-      const inMap = yield* _(Sy.total(() => m.get(layer.hash.get)));
+export function getMemoOrElseCreate<R, E, A>(layer: SyncLayer<R, E, A>): (m: SyncMemoMap) => Sy.Sync<R, E, A> {
+   return (m) =>
+      Sy.gen(function* (_) {
+         const inMap = yield* _(Sy.total(() => m.get(layer.hash.get)));
 
-      if (inMap) {
-         return yield* _(Sy.succeed(inMap));
-      } else {
-         return yield* _(
-            Sy.gen(function* (_) {
-               const f = yield* _(layer.scope());
-               const a = yield* _(f(m));
-               yield* _(
-                  Sy.total(() => {
-                     m.set(layer.hash.get, a);
-                  })
-               );
-               return a;
-            })
-         );
-      }
-   });
+         if (inMap) {
+            return yield* _(Sy.succeed(inMap));
+         } else {
+            return yield* _(
+               Sy.gen(function* (_) {
+                  const f = yield* _(layer.scope());
+                  const a = yield* _(f(m));
+                  yield* _(
+                     Sy.total(() => {
+                        m.set(layer.hash.get, a);
+                     })
+                  );
+                  return a;
+               })
+            );
+         }
+      });
+}
 
 export class FromSyncInstruction<R, E, A> extends SyncLayer<R, E, A> {
    readonly _tag = SyncLayerInstructionTag.FromSync;
@@ -171,49 +172,72 @@ export class AllInstruction<Layers extends ReadonlyArray<SyncLayer<any, any, any
    }
 }
 
-export const fromRawSync = <R, E, A>(sync: Sy.Sync<R, E, A>): SyncLayer<R, E, A> => new FromSyncInstruction(sync);
+export function fromRawSync<R, E, A>(sync: Sy.Sync<R, E, A>): SyncLayer<R, E, A> {
+   return new FromSyncInstruction(sync);
+}
 
-export const fresh = <R, E, A>(layer: SyncLayer<R, E, A>) => new FreshInstruction(layer);
+export function fresh<R, E, A>(layer: SyncLayer<R, E, A>) {
+   return new FreshInstruction(layer);
+}
 
-export const suspend = <R, E, A>(layer: () => SyncLayer<R, E, A>) => new SuspendInstruction(layer);
+export function suspend<R, E, A>(layer: () => SyncLayer<R, E, A>) {
+   return new SuspendInstruction(layer);
+}
 
-export const fromSync = <T>(tag: Tag<T>) => <R, E>(_: Sy.Sync<R, E, T>): SyncLayer<R, E, Has<T>> =>
-   new FromSyncInstruction(pipe(_, Sy.map(tag.of)));
+export function fromSync<T>(tag: Tag<T>): <R, E>(_: Sy.Sync<R, E, T>) => SyncLayer<R, E, Has<T>> {
+   return (_) => new FromSyncInstruction(pipe(_, Sy.map(tag.of)));
+}
 
-export const fromFunction = <T>(tag: Tag<T>) => <R>(f: (_: R) => T): SyncLayer<R, never, Has<T>> =>
-   new FromSyncInstruction(pipe(Sy.asks(f), Sy.map(tag.of)));
+export function fromFunction<T>(tag: Tag<T>): <R>(f: (_: R) => T) => SyncLayer<R, never, Has<T>> {
+   return (f) => new FromSyncInstruction(pipe(Sy.asks(f), Sy.map(tag.of)));
+}
 
-export const fromValue = <T>(tag: Tag<T>) => (_: T): SyncLayer<unknown, never, Has<T>> =>
-   new FromSyncInstruction(Sy.succeed(tag.of(_)));
+export function fromValue<T>(tag: Tag<T>): (_: T) => SyncLayer<unknown, never, Has<T>> {
+   return (_) => new FromSyncInstruction(Sy.succeed(tag.of(_)));
+}
 
-export const and = <R2, E2, A2>(left: SyncLayer<R2, E2, A2>) => <R, E, A>(
-   right: SyncLayer<R, E, A>
-): SyncLayer<R & R2, E | E2, A & A2> => new BothInstruction(left, right);
+export function and<R2, E2, A2>(
+   left: SyncLayer<R2, E2, A2>
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & R2, E2 | E, A & A2> {
+   return (right) => new BothInstruction(left, right);
+}
 
-export const andTo = <R2, E2, A2>(left: SyncLayer<R2, E2, A2>) => <R, E, A>(
-   right: SyncLayer<R, E, A>
-): SyncLayer<R & Erase<R2, A>, E | E2, A & A2> => new UsingInstruction(right, left);
+export function andTo<R2, E2, A2>(
+   left: SyncLayer<R2, E2, A2>
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & Erase<R2, A>, E2 | E, A & A2> {
+   return (right) => new UsingInstruction(right, left);
+}
 
-export const to = <R2, E2, A2>(left: SyncLayer<R2, E2, A2>) => <R, E, A>(
-   right: SyncLayer<R, E, A>
-): SyncLayer<R & Erase<R2, A>, E | E2, A2> => new FromInstruction(right, left);
+export function to<R2, E2, A2>(
+   left: SyncLayer<R2, E2, A2>
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & Erase<R2, A>, E2 | E, A2> {
+   return (right) => new FromInstruction(right, left);
+}
 
-export const using = <R2, E2, A2>(left: SyncLayer<R2, E2, A2>) => <R, E, A>(
-   right: SyncLayer<R, E, A>
-): SyncLayer<Erase<R, A2> & R2, E | E2, A & A2> => new UsingInstruction(left, right);
+export function using<R2, E2, A2>(
+   left: SyncLayer<R2, E2, A2>
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<Erase<R, A2> & R2, E2 | E, A & A2> {
+   return (right) => new UsingInstruction(left, right);
+}
 
-export const from = <R2, E2, A2>(left: SyncLayer<R2, E2, A2>) => <R, E, A>(
-   right: SyncLayer<R, E, A>
-): SyncLayer<Erase<R, A2> & R2, E | E2, A> => new FromInstruction(left, right);
+export function from<R2, E2, A2>(
+   left: SyncLayer<R2, E2, A2>
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<Erase<R, A2> & R2, E2 | E, A> {
+   return (right) => new FromInstruction(left, right);
+}
 
-export const giveLayer = <R, E, A>(layer: SyncLayer<R, E, A>) => <R2, E2, A2>(
-   _: Sy.Sync<R2 & A, E2, A2>
-): Sy.Sync<R & R2, E | E2, A2> =>
-   pipe(
-      layer.build(),
-      Sy.chain((a) => pipe(_, Sy.give(a)))
-   );
+export function giveLayer<R, E, A>(
+   layer: SyncLayer<R, E, A>
+): <R2, E2, A2>(_: Sy.Sync<R2 & A, E2, A2>) => Sy.Sync<R & R2, E | E2, A2> {
+   return (_) =>
+      pipe(
+         layer.build(),
+         Sy.chain((a) => pipe(_, Sy.give(a)))
+      );
+}
 
-export const all = <Ls extends ReadonlyArray<SyncLayer<any, any, any>>>(
+export function all<Ls extends ReadonlyArray<SyncLayer<any, any, any>>>(
    ...ls: Ls & { 0: SyncLayer<any, any, any> }
-): SyncLayer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> => new AllInstruction(ls);
+): SyncLayer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
+   return new AllInstruction(ls);
+}

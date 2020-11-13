@@ -23,12 +23,12 @@ import { uninterruptibleMask } from "./interrupt";
  * @category Combinators
  * @since 1.0.0
  */
-export const bracketExit_ = <R, E, A, E1, R1, A1, R2, E2>(
+export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
    acquire: Task<R, E, A>,
    use: (a: A) => Task<R1, E1, A1>,
    release: (a: A, e: Exit<E1, A1>) => Task<R2, E2, any>
-): Task<R & R1 & R2, E | E1 | E2, A1> =>
-   uninterruptibleMask(({ restore }) =>
+): Task<R & R1 & R2, E | E1 | E2, A1> {
+   return uninterruptibleMask(({ restore }) =>
       chain_(acquire, (a) =>
          chain_(result(restore(use(a))), (e) =>
             foldCauseM_(
@@ -46,6 +46,7 @@ export const bracketExit_ = <R, E, A, E1, R1, A1, R2, E2>(
          )
       )
    );
+}
 
 /**
  * ```haskell
@@ -64,10 +65,12 @@ export const bracketExit_ = <R, E, A, E1, R1, A1, R2, E2>(
  * @category Combinators
  * @since 1.0.0
  */
-export const bracketExit = <A, R1, E1, B, R2, E2, C>(
+export function bracketExit<A, R1, E1, B, R2, E2, C>(
    use: (a: A) => Task<R1, E1, B>,
    release: (a: A, e: Exit<E1, B>) => Task<R2, E2, C>
-) => <R, E>(acquire: Task<R, E, A>) => bracketExit_(acquire, use, release);
+): <R, E>(acquire: Task<R, E, A>) => Task<R & R1 & R2, E1 | E2 | E, B> {
+   return (acquire) => bracketExit_(acquire, use, release);
+}
 
 /**
  * ```haskell
@@ -100,11 +103,13 @@ export const bracketExit = <A, R1, E1, B, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const bracket_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
+export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
    acquire: Task<R, E, A>,
    use: (a: A) => Task<R1, E1, A1>,
    release: (a: A) => Task<R2, E2, A2>
-): Task<R & R1 & R2, E | E1 | E2, A1> => bracketExit_(acquire, use, release);
+): Task<R & R1 & R2, E | E1 | E2, A1> {
+   return bracketExit_(acquire, use, release);
+}
 
 /**
  * ```haskell
@@ -136,10 +141,12 @@ export const bracket_ = <R, E, A, R1, E1, A1, R2, E2, A2>(
  * @category Combinators
  * @since 1.0.0
  */
-export const bracket = <A, R1, E1, B, R2, E2, C>(
+export function bracket<A, R1, E1, B, R2, E2, C>(
    use: (a: A) => Task<R1, E1, B>,
    release: (a: A) => Task<R2, E2, C>
-) => <R, E>(acquire: Task<R, E, A>) => bracketExit_(acquire, use, release);
+): <R, E>(acquire: Task<R, E, A>) => Task<R & R1 & R2, E1 | E2 | E, B> {
+   return (acquire) => bracketExit_(acquire, use, release);
+}
 
 /**
  * Returns a task that, if this effect _starts_ execution, then the
@@ -152,8 +159,8 @@ export const bracket = <A, R1, E1, B, R2, E2, C>(
  * should generally not be used for releasing resources. For higher-level
  * logic built on `ensuring`, see `bracket`.
  */
-export function ensuring<R>(finalizer: Task<R, never, any>) {
-   return <R1, E, A>(effect: Task<R1, E, A>) =>
+export function ensuring<R>(finalizer: Task<R, never, any>): <R1, E, A>(effect: Task<R1, E, A>) => Task<R1 & R, E, A> {
+   return (effect) =>
       uninterruptibleMask(({ restore }) =>
          foldCauseM_(
             restore(effect),

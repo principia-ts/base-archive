@@ -107,8 +107,9 @@ export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: NonEmptyArr
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const foldMapWithIndex_ = <S>(S: P.Semigroup<S>) => <A>(fa: NonEmptyArray<A>, f: (i: number, a: A) => S): S =>
-   A.reduceWithIndex_(fa.slice(1), f(0, fa[0]), (i, s, a) => S.combine_(s, f(i + 1, a)));
+export function foldMapWithIndex_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (i: number, a: A) => S) => S {
+   return (fa, f) => A.reduceWithIndex_(fa.slice(1), f(0, fa[0]), (i, s, a) => S.combine_(s, f(i + 1, a)));
+}
 
 /**
  * ```haskell
@@ -119,8 +120,9 @@ export const foldMapWithIndex_ = <S>(S: P.Semigroup<S>) => <A>(fa: NonEmptyArray
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const foldMapWithIndex = <S>(S: P.Semigroup<S>) => <A>(f: (i: number, a: A) => S) => (fa: NonEmptyArray<A>): S =>
-   foldMapWithIndex_(S)(fa, f);
+export function foldMapWithIndex<S>(S: P.Semigroup<S>): <A>(f: (i: number, a: A) => S) => (fa: NonEmptyArray<A>) => S {
+   return (f) => (fa) => foldMapWithIndex_(S)(fa, f);
+}
 
 /**
  * ```haskell
@@ -130,8 +132,9 @@ export const foldMapWithIndex = <S>(S: P.Semigroup<S>) => <A>(f: (i: number, a: 
  * @category Foldable
  * @since 1.0.0
  */
-export const foldMap_ = <S>(S: P.Semigroup<S>) => <A>(fa: NonEmptyArray<A>, f: (a: A) => S): S =>
-   A.reduce_(fa.slice(1), f(fa[0]), (s, a) => S.combine_(s, f(a)));
+export function foldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (a: A) => S) => S {
+   return (fa, f) => A.reduce_(fa.slice(1), f(fa[0]), (s, a) => S.combine_(s, f(a)));
+}
 
 /**
  * ```haskell
@@ -141,7 +144,9 @@ export const foldMap_ = <S>(S: P.Semigroup<S>) => <A>(fa: NonEmptyArray<A>, f: (
  * @category Foldable
  * @since 1.0.0
  */
-export const foldMap = <S>(S: P.Semigroup<S>) => <A>(f: (a: A) => S) => (fa: NonEmptyArray<A>): S => foldMap_(S)(fa, f);
+export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEmptyArray<A>) => S {
+   return (f) => (fa) => foldMap_(S)(fa, f);
+}
 
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
    reduce_: reduce_,

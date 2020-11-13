@@ -19,14 +19,14 @@ import type { URI, V } from "./model";
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number, b: B, a: A) => B): B => {
+export function reduceWithIndex_<A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number, b: B, a: A) => B): B {
    const len = fa.length;
    let r = b;
    for (let i = 0; i < len; i++) {
       r = f(i, r, fa[i]);
    }
    return r;
-};
+}
 
 /**
  * ```haskell
@@ -37,8 +37,9 @@ export const reduceWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceWithIndex = <A, B>(b: B, f: (i: number, b: B, a: A) => B) => (fa: ReadonlyArray<A>): B =>
-   reduceWithIndex_(fa, b, f);
+export function reduceWithIndex<A, B>(b: B, f: (i: number, b: B, a: A) => B): (fa: ReadonlyArray<A>) => B {
+   return (fa) => reduceWithIndex_(fa, b, f);
+}
 
 /**
  * ```haskell
@@ -48,8 +49,9 @@ export const reduceWithIndex = <A, B>(b: B, f: (i: number, b: B, a: A) => B) => 
  * @category Foldable
  * @since 1.0.0
  */
-export const reduce_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): B =>
-   reduceWithIndex_(fa, b, (_, b, a) => f(b, a));
+export function reduce_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): B {
+   return reduceWithIndex_(fa, b, (_, b, a) => f(b, a));
+}
 
 /**
  * ```haskell
@@ -59,8 +61,9 @@ export const reduce_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B):
  * @category Foldable
  * @since 1.0.0
  */
-export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: ReadonlyArray<A>): B =>
-   reduceWithIndex_(fa, b, (_, b, a) => f(b, a));
+export function reduce<A, B>(b: B, f: (b: B, a: A) => B): (fa: ReadonlyArray<A>) => B {
+   return (fa) => reduceWithIndex_(fa, b, (_, b, a) => f(b, a));
+}
 
 /**
  * ```haskell
@@ -71,13 +74,13 @@ export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: ReadonlyArray<A
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceRightWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number, a: A, b: B) => B): B => {
+export function reduceRightWithIndex_<A, B>(fa: ReadonlyArray<A>, b: B, f: (i: number, a: A, b: B) => B): B {
    let r = b;
    for (let i = fa.length - 1; i >= 0; i--) {
       r = f(i, fa[i], r);
    }
    return r;
-};
+}
 
 /**
  * ```haskell
@@ -88,8 +91,9 @@ export const reduceRightWithIndex_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (i: n
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceRightWithIndex = <A, B>(b: B, f: (i: number, a: A, b: B) => B) => (fa: ReadonlyArray<A>): B =>
-   reduceRightWithIndex_(fa, b, f);
+export function reduceRightWithIndex<A, B>(b: B, f: (i: number, a: A, b: B) => B): (fa: ReadonlyArray<A>) => B {
+   return (fa) => reduceRightWithIndex_(fa, b, f);
+}
 
 /**
  * ```haskell
@@ -99,8 +103,9 @@ export const reduceRightWithIndex = <A, B>(b: B, f: (i: number, a: A, b: B) => B
  * @category Foldable
  * @since 1.0.0
  */
-export const reduceRight_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): B =>
-   reduceRightWithIndex_(fa, b, (_, a, b) => f(a, b));
+export function reduceRight_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): B {
+   return reduceRightWithIndex_(fa, b, (_, a, b) => f(a, b));
+}
 
 /**
  * ```haskell
@@ -110,7 +115,9 @@ export const reduceRight_ = <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) =
  * @category Foldable
  * @since 1.0.0
  */
-export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: ReadonlyArray<A>): B => reduceRight_(fa, b, f);
+export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) => B {
+   return (fa) => reduceRight_(fa, b, f);
+}
 
 /**
  * ```haskell
@@ -121,8 +128,9 @@ export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: ReadonlyAr
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const foldMapWithIndex_ = <M>(M: Monoid<M>) => <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M): M =>
-   reduceWithIndex_(fa, M.nat, (i, b, a) => M.combine_(b, f(i, a)));
+export function foldMapWithIndex_<M>(M: Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M) => M {
+   return (fa, f) => reduceWithIndex_(fa, M.nat, (i, b, a) => M.combine_(b, f(i, a)));
+}
 
 /**
  * ```haskell
@@ -133,8 +141,9 @@ export const foldMapWithIndex_ = <M>(M: Monoid<M>) => <A>(fa: ReadonlyArray<A>, 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const foldMapWithIndex = <M>(M: Monoid<M>) => <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) =>
-   foldMapWithIndex_(M)(fa, f);
+export function foldMapWithIndex<M>(M: Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) => M {
+   return (f) => (fa) => foldMapWithIndex_(M)(fa, f);
+}
 
 /**
  * ```haskell
@@ -145,10 +154,10 @@ export const foldMapWithIndex = <M>(M: Monoid<M>) => <A>(f: (i: number, a: A) =>
  * @category Foldable
  * @since 1.0.0
  */
-export const foldMap_ = <M>(M: Monoid<M>): (<A>(fa: ReadonlyArray<A>, f: (a: A) => M) => M) => {
+export function foldMap_<M>(M: Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (a: A) => M) => M {
    const foldMapWithIndexM_ = foldMapWithIndex_(M);
    return (fa, f) => foldMapWithIndexM_(fa, (_, a) => f(a));
-};
+}
 
 /**
  * ```haskell
@@ -158,7 +167,9 @@ export const foldMap_ = <M>(M: Monoid<M>): (<A>(fa: ReadonlyArray<A>, f: (a: A) 
  * @category Foldable
  * @since 1.0.0
  */
-export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: ReadonlyArray<A>): M => foldMap_(M)(fa, f);
+export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: ReadonlyArray<A>) => M {
+   return (f) => (fa) => foldMap_(M)(fa, f);
+}
 
 export const FoldableWithIndex: P.FoldableWithIndex<[URI], V> = HKT.instance({
    reduceWithIndex_,

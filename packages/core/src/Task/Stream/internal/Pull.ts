@@ -8,12 +8,22 @@ export type Pull<R, E, O> = T.Task<R, Option<E>, ReadonlyArray<O>>;
 
 export const end = T.fail(none());
 
-export const fail = <E>(e: E) => T.fail(some(e));
+export function fail<E>(e: E): T.EIO<Option<E>, never> {
+   return T.fail(some(e));
+}
 
-export const halt = <E>(e: Cause<E>) => pipe(T.halt(e), T.mapError(some));
+export function halt<E>(e: Cause<E>): T.Task<unknown, Option<E>, never> {
+   return pipe(T.halt(e), T.mapError(some));
+}
 
-export const empty = <A>() => T.pure([] as ReadonlyArray<A>);
+export function empty<A>(): T.IO<readonly A[]> {
+   return T.pure([] as ReadonlyArray<A>);
+}
 
-export const emit = <A>(a: A) => T.pure([a]);
+export function emit<A>(a: A): T.IO<A[]> {
+   return T.pure([a]);
+}
 
-export const emitArray = <A>(as: ReadonlyArray<A>) => T.pure(as);
+export function emitArray<A>(as: ReadonlyArray<A>): T.IO<readonly A[]> {
+   return T.pure(as);
+}

@@ -335,7 +335,7 @@ export class Open<A> {
    constructor(readonly close: (_: A) => IO<boolean>, readonly scope: LocalScope<A>) {}
 }
 
-export const unsafeMakeScope = <A>() => {
+export function unsafeMakeScope<A>(): Open<A> {
    const exitValue = new AtomicReference<A | null>(null);
    const finalizers = new Map<Key, OrderedFinalizer>();
    const scope = new LocalScope(new AtomicNumber(Number.MIN_SAFE_INTEGER), exitValue, new AtomicNumber(1), finalizers);
@@ -351,6 +351,8 @@ export const unsafeMakeScope = <A>() => {
          }
       });
    }, scope);
-};
+}
 
-export const makeScope = <A>() => T.total(() => unsafeMakeScope<A>());
+export function makeScope<A>(): IO<Open<A>> {
+   return T.total(() => unsafeMakeScope<A>());
+}

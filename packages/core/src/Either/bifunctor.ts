@@ -22,7 +22,9 @@ import type { Either, URI, V } from "./model";
  * @category AltBifunctor
  * @since 1.0.0
  */
-export const swap = <E, A>(pab: Either<E, A>): Either<A, E> => (isLeft(pab) ? right(pab.left) : left(pab.right));
+export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
+   return isLeft(pab) ? right(pab.left) : left(pab.right);
+}
 
 /**
  * ```haskell
@@ -34,8 +36,9 @@ export const swap = <E, A>(pab: Either<E, A>): Either<A, E> => (isLeft(pab) ? ri
  * @category Bifunctor
  * @since 1.0.0
  */
-export const bimap_ = <E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) => B): Either<G, B> =>
-   isLeft(pab) ? left(f(pab.left)) : right(g(pab.right));
+export function bimap_<E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) => B): Either<G, B> {
+   return isLeft(pab) ? left(f(pab.left)) : right(g(pab.right));
+}
 
 /**
  * ```haskell
@@ -47,8 +50,9 @@ export const bimap_ = <E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) 
  * @category Bifunctor
  * @since 1.0.0
  */
-export const bimap = <E, A, G, B>(f: (e: E) => G, g: (a: A) => B) => (pab: Either<E, A>): Either<G, B> =>
-   bimap_(pab, f, g);
+export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Either<E, A>) => Either<G, B> {
+   return (pab) => bimap_(pab, f, g);
+}
 
 /**
  * ```haskell
@@ -60,8 +64,9 @@ export const bimap = <E, A, G, B>(f: (e: E) => G, g: (a: A) => B) => (pab: Eithe
  * @category Bifunctor
  * @since 1.0.0
  */
-export const mapLeft_ = <E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> =>
-   isLeft(pab) ? left(f(pab.left)) : pab;
+export function mapLeft_<E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> {
+   return isLeft(pab) ? left(f(pab.left)) : pab;
+}
 
 /**
  * ```haskell
@@ -73,7 +78,9 @@ export const mapLeft_ = <E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, 
  * @category Bifunctor
  * @since 1.0.0
  */
-export const mapLeft = <E, G>(f: (e: E) => G) => <A>(pab: Either<E, A>): Either<G, A> => mapLeft_(pab, f);
+export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<G, A> {
+   return (pab) => mapLeft_(pab, f);
+}
 
 /**
  * @category Instances

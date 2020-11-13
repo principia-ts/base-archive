@@ -33,8 +33,8 @@ export class Suspended {
 /**
  * @internal
  */
-export const withInterruptingSafe_ = (s: FiberStatus, b: boolean): Sy.Sync<unknown, never, FiberStatus> =>
-   Sy.gen(function* (_) {
+export function withInterruptingSafe_(s: FiberStatus, b: boolean): Sy.Sync<unknown, never, FiberStatus> {
+   return Sy.gen(function* (_) {
       switch (s._tag) {
          case "Done": {
             return s;
@@ -55,11 +55,14 @@ export const withInterruptingSafe_ = (s: FiberStatus, b: boolean): Sy.Sync<unkno
          }
       }
    });
+}
 
-export const withInterrupting = (b: boolean) => (s: FiberStatus): FiberStatus => Sy.runIO(withInterruptingSafe_(s, b));
+export function withInterrupting(b: boolean): (s: FiberStatus) => FiberStatus {
+   return (s) => Sy.runIO(withInterruptingSafe_(s, b));
+}
 
-export const toFinishingSafe = (s: FiberStatus): Sy.Sync<unknown, never, FiberStatus> =>
-   Sy.gen(function* (_) {
+export function toFinishingSafe(s: FiberStatus): Sy.Sync<unknown, never, FiberStatus> {
+   return Sy.gen(function* (_) {
       switch (s._tag) {
          case "Done": {
             return s;
@@ -75,5 +78,8 @@ export const toFinishingSafe = (s: FiberStatus): Sy.Sync<unknown, never, FiberSt
          }
       }
    });
+}
 
-export const toFinishing = (s: FiberStatus): FiberStatus => Sy.runIO(toFinishingSafe(s));
+export function toFinishing(s: FiberStatus): FiberStatus {
+   return Sy.runIO(toFinishingSafe(s));
+}

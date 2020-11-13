@@ -16,20 +16,22 @@ import { Done } from "../state";
  * completes the promise with the result of a task see
  * `Promise.complete`.
  */
-export const completeWith = <E, A>(io: EIO<E, A>) => (promise: XPromise<E, A>): IO<boolean> =>
-   T.total(() => {
-      const state = promise.state.get;
+export function completeWith<E, A>(io: EIO<E, A>) {
+   return (promise: XPromise<E, A>): IO<boolean> =>
+      T.total(() => {
+         const state = promise.state.get;
 
-      switch (state._tag) {
-         case "Done": {
-            return false;
+         switch (state._tag) {
+            case "Done": {
+               return false;
+            }
+            case "Pending": {
+               promise.state.set(new Done(io));
+               state.joiners.forEach((f) => {
+                  f(io);
+               });
+               return true;
+            }
          }
-         case "Pending": {
-            promise.state.set(new Done(io));
-            state.joiners.forEach((f) => {
-               f(io);
-            });
-            return true;
-         }
-      }
-   });
+      });
+}

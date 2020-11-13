@@ -32,7 +32,7 @@ export const map_: <A, B>(fa: IO<A>, f: (a: A) => B) => IO<B> = X.map_;
  * @category Functor
  * @since 1.0.0
  */
-export const map = <A, B>(f: (a: A) => B) => (fa: IO<A>): IO<B> => map_(fa, f);
+export const map: <A, B>(f: (a: A) => B) => (fa: IO<A>) => IO<B> = X.map;
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
    map_: map_,

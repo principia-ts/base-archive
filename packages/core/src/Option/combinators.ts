@@ -17,8 +17,9 @@ import type { Option } from "./model";
  * @category Combinators
  * @since 1.0.0
  */
-export const chainNullableK_ = <A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> =>
-   isNone(fa) ? none() : fromNullable(f(fa.value));
+export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
+   return isNone(fa) ? none() : fromNullable(f(fa.value));
+}
 
 /**
  * chainNullableK :: Option m => (a -> ?b) -> m a -> m b
@@ -27,8 +28,9 @@ export const chainNullableK_ = <A, B>(fa: Option<A>, f: (a: A) => B | null | und
  * @category Combinators
  * @since 1.0.0
  */
-export const chainNullableK: <A, B>(f: (a: A) => B | null | undefined) => (fa: Option<A>) => Option<B> = (f) => (fa) =>
-   chainNullableK_(fa, f);
+export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
+   return (fa) => chainNullableK_(fa, f);
+}
 
 /**
  * orElse_ :: Option m => (m a, () -> m b) -> m (a | b)
@@ -37,8 +39,9 @@ export const chainNullableK: <A, B>(f: (a: A) => B | null | undefined) => (fa: O
  * @category Combinators
  * @since 1.0.0
  */
-export const orElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option<A | B> =>
-   isNone(fa) ? onNothing() : fa;
+export function orElse_<A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option<A | B> {
+   return isNone(fa) ? onNothing() : fa;
+}
 
 /**
  * orElse :: Option m => (() -> m b) -> m a -> m (a | b)
@@ -47,7 +50,9 @@ export const orElse_ = <A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option
  * @category Combinators
  * @since 1.0.0
  */
-export const orElse = <B>(onNothing: Lazy<Option<B>>) => <A>(fa: Option<A>): Option<A | B> => orElse_(fa, onNothing);
+export function orElse<B>(onNothing: Lazy<Option<B>>): <A>(fa: Option<A>) => Option<B | A> {
+   return (fa) => orElse_(fa, onNothing);
+}
 
 /**
  * getLeft :: (Either e, Option m) => e a b -> m a
@@ -56,7 +61,9 @@ export const orElse = <B>(onNothing: Lazy<Option<B>>) => <A>(fa: Option<A>): Opt
  * @category Combinators
  * @since 1.0.0
  */
-export const getLeft = <E, A>(fea: Either<E, A>): Option<E> => (fea._tag === "Right" ? none() : some(fea.left));
+export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
+   return fea._tag === "Right" ? none() : some(fea.left);
+}
 
 /**
  * getRight :: (Either e, Option m) => e a b -> m b
@@ -65,4 +72,6 @@ export const getLeft = <E, A>(fea: Either<E, A>): Option<E> => (fea._tag === "Ri
  * @category Combinators
  * @since 1.0.0
  */
-export const getRight = <E, A>(fea: Either<E, A>): Option<A> => (fea._tag === "Left" ? none() : some(fea.right));
+export function getRight<E, A>(fea: Either<E, A>): Option<A> {
+   return fea._tag === "Left" ? none() : some(fea.right);
+}

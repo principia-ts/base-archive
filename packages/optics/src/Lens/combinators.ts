@@ -23,11 +23,13 @@ import type { Lens } from "./model";
  * @category Combinators
  * @since 1.0.0
  */
-export const modify = <A>(f: (a: A) => A) => <S>(sa: Lens<S, A>) => (s: S): S => {
-   const o = sa.get(s);
-   const n = f(o);
-   return o === n ? s : sa.set(n)(s);
-};
+export function modify<A>(f: (a: A) => A): <S>(sa: Lens<S, A>) => (s: S) => S {
+   return (sa) => (s) => {
+      const o = sa.get(s);
+      const n = f(o);
+      return o === n ? s : sa.set(n)(s);
+   };
+}
 
 /**
  * Return a `Optional` from a `Lens` focused on a nullable value
@@ -35,18 +37,19 @@ export const modify = <A>(f: (a: A) => A) => <S>(sa: Lens<S, A>) => (s: S): S =>
  * @category Combinators
  * @since 1.0.0
  */
-export const fromNullable = <S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> =>
-   _.lensComposePrism(_.prismFromNullable<A>())(sa);
+export function fromNullable<S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> {
+   return _.lensComposePrism(_.prismFromNullable<A>())(sa);
+}
 
 /**
  * @category Combinators
  * @since 1.0.0
  */
-export const filter: {
-   <A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B>;
-   <A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A>;
-} = <A>(predicate: Predicate<A>): (<S>(sa: Lens<S, A>) => Optional<S, A>) =>
-   composePrism(_.prismFromPredicate(predicate));
+export function filter<A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B>;
+export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A>;
+export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A> {
+   return composePrism(_.prismFromPredicate(predicate));
+}
 
 /**
  * Return a `Lens` from a `Lens` and a prop
@@ -82,8 +85,10 @@ export const component: <A extends ReadonlyArray<unknown>, P extends keyof A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const index = (i: number) => <S, A>(sa: Lens<S, ReadonlyArray<A>>): Optional<S, A> =>
-   pipe(sa, asOptional, _.optionalComposeOptional(_.indexArray<A>().index(i)));
+export function index(i: number) {
+   return <S, A>(sa: Lens<S, ReadonlyArray<A>>): Optional<S, A> =>
+      pipe(sa, asOptional, _.optionalComposeOptional(_.indexArray<A>().index(i)));
+}
 
 /**
  * Return a `Optional` from a `Lens` focused on a `ReadonlyRecord` and a key
@@ -91,16 +96,20 @@ export const index = (i: number) => <S, A>(sa: Lens<S, ReadonlyArray<A>>): Optio
  * @category Combinators
  * @since 1.0.0
  */
-export const key = (key: string) => <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Optional<S, A> =>
-   pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)));
+export function key(key: string) {
+   return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Optional<S, A> =>
+      pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)));
+}
 
 /**
  * Return a `Lens` from a `Lens` focused on a `ReadonlyRecord` and a required key
  *
  * @category Combinators
  */
-export const atKey = (key: string) => <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Lens<S, Option<A>> =>
-   pipe(sa, compose(_.atRecord<A>().at(key)));
+export function atKey(key: string) {
+   return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Lens<S, Option<A>> =>
+      pipe(sa, compose(_.atRecord<A>().at(key)));
+}
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Some` of a `Option` type
@@ -132,11 +141,13 @@ export const left: <S, E, A>(sea: Lens<S, Either<E, A>>) => Optional<S, E> = com
  * @category Combinators
  * @since 1.0.0
  */
-export const traverse = <T extends HKT.URIS, C = HKT.Auto>(
+export function traverse<T extends HKT.URIS, C = HKT.Auto>(
    T: P.Traversable<T, C>
-): (<S, N extends string, K, Q, W, X, I, S_, R, E, A>(
+): <S, N extends string, K, Q, W, X, I, S_, R, E, A>(
    sta: Lens<S, HKT.Kind<T, C, N, K, Q, W, X, I, S_, R, E, A>>
-) => Traversal<S, A>) => flow(asTraversal, _.traversalComposeTraversal(_.fromTraversable(T)()));
+) => Traversal<S, A> {
+   return flow(asTraversal, _.traversalComposeTraversal(_.fromTraversable(T)()));
+}
 
 /**
  * @category Combinators

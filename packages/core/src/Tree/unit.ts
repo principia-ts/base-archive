@@ -7,7 +7,9 @@ import type { Tree } from "./model";
  * -------------------------------------------
  */
 
-export const unit = (): Tree<void> => ({
-   value: undefined,
-   forest: A.empty()
-});
+export function unit(): Tree<void> {
+   return {
+      value: undefined,
+      forest: A.empty()
+   };
+}

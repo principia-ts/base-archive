@@ -8,12 +8,17 @@ import { chain_ } from "./monad";
  * -------------------------------------------
  */
 
-export const mapBoth_ = <S1, S2, R, E, A, S3, Q, D, B, C>(
+export function mapBoth_<S1, S2, R, E, A, S3, Q, D, B, C>(
    fa: XPure<S1, S2, R, E, A>,
    fb: XPure<S2, S3, Q, D, B>,
    f: (a: A, b: B) => C
-): XPure<S1, S3, Q & R, D | E, C> => chain_(fa, (a) => map_(fb, (b) => f(a, b)));
+): XPure<S1, S3, Q & R, D | E, C> {
+   return chain_(fa, (a) => map_(fb, (b) => f(a, b)));
+}
 
-export const mapBoth = <A, S2, S3, Q, D, B, C>(fb: XPure<S2, S3, Q, D, B>, f: (a: A, b: B) => C) => <S1, R, E>(
-   fa: XPure<S1, S2, R, E, A>
-): XPure<S1, S3, Q & R, D | E, C> => mapBoth_(fa, fb, f);
+export function mapBoth<A, S2, S3, Q, D, B, C>(
+   fb: XPure<S2, S3, Q, D, B>,
+   f: (a: A, b: B) => C
+): <S1, R, E>(fa: XPure<S1, S2, R, E, A>) => XPure<S1, S3, Q & R, D | E, C> {
+   return (fa) => mapBoth_(fa, fb, f);
+}

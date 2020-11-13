@@ -18,31 +18,36 @@ import { Sink } from "./model";
 /**
  * Replaces this sink's result with the provided value.
  */
-export const as_ = <R, E, I, L, Z, Z1>(sz: Sink<R, E, I, L, Z>, z1: Z1): Sink<R, E, I, L, Z1> => map_(sz, () => z1);
+export function as_<R, E, I, L, Z, Z1>(sz: Sink<R, E, I, L, Z>, z1: Z1): Sink<R, E, I, L, Z1> {
+   return map_(sz, () => z1);
+}
 
 /**
  * Replaces this sink's result with the provided value.
  */
-export const as = <Z1>(z1: Z1) => <R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>): Sink<R, E, I, L, Z1> => as_(sz, z1);
+export function as<Z1>(z1: Z1): <R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>) => Sink<R, E, I, L, Z1> {
+   return (sz) => as_(sz, z1);
+}
 
 /**
  * A sink that collects all of its inputs into an array.
  */
-export const collectAll = <A>(): Sink<unknown, never, A, A, ReadonlyArray<A>> =>
-   fromFoldLeftChunks([] as ReadonlyArray<A>, (s, i: ReadonlyArray<A>) => [...s, ...i]);
+export function collectAll<A>(): Sink<unknown, never, A, A, ReadonlyArray<A>> {
+   return fromFoldLeftChunks([] as ReadonlyArray<A>, (s, i: ReadonlyArray<A>) => [...s, ...i]);
+}
 
 /**
  * Repeatedly runs the sink for as long as its results satisfy
  * the predicate `p`. The sink's results will be accumulated
  * using the stepping function `f`.
  */
-export const collectAllWhileWith_ = <R, E, I, L, Z, S>(
+export function collectAllWhileWith_<R, E, I, L, Z, S>(
    sz: Sink<R, E, I, L, Z>,
    z: S,
    p: (z: Z) => boolean,
    f: (s: S, z: Z) => S
-): Sink<R, E, I, L, S> =>
-   new Sink(
+): Sink<R, E, I, L, S> {
+   return new Sink(
       pipe(
          XR.makeManagedRef(z),
          M.chain((acc) => {
@@ -88,70 +93,78 @@ export const collectAllWhileWith_ = <R, E, I, L, Z, S>(
          })
       )
    );
+}
 
 /**
  * Repeatedly runs the sink for as long as its results satisfy
  * the predicate `p`. The sink's results will be accumulated
  * using the stepping function `f`.
  */
-export const collectAllWhileWith = <R, E, I, L, Z, S>(z: S, p: (z: Z) => boolean, f: (s: S, z: Z) => S) => (
-   sz: Sink<R, E, I, L, Z>
-) => collectAllWhileWith_(sz, z, p, f);
+export function collectAllWhileWith<R, E, I, L, Z, S>(
+   z: S,
+   p: (z: Z) => boolean,
+   f: (s: S, z: Z) => S
+): (sz: Sink<R, E, I, L, Z>) => Sink<R, E, I, L, S> {
+   return (sz) => collectAllWhileWith_(sz, z, p, f);
+}
 
 /**
  * Runs both sinks in parallel on the input, returning the result or the error from the
  * one that finishes first.
  */
-export const raceBoth = <R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1, L1, Z1>) => <R, E, L, Z>(
-   self: Sink<R, E, I, L, Z>
-): Sink<R1 & R, E1 | E, I1, L1 | L, E.Either<Z, Z1>> =>
-   new Sink(
-      pipe(
-         M.do,
-         M.bindS("p1", () => self.push),
-         M.bindS("p2", () => that.push),
-         M.map(({ p1, p2 }) => (i: Option<ReadonlyArray<I1>>): T.Task<
-            R1 & R,
-            readonly [Either<E | E1, Either<Z, Z1>>, ReadonlyArray<L | L1>],
-            void
-         > =>
-            T.raceWith_(
-               p1(i),
-               p2(i),
-               (res1, fib2) =>
-                  Ex.foldM_(
-                     res1,
-                     (f) =>
-                        T.apSecond_(
-                           F.interrupt(fib2),
-                           T.halt(
-                              pipe(
-                                 f,
-                                 C.map(([r, leftover]) => [E.map_(r, E.left), leftover] as const)
+export function raceBoth<R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1, L1, Z1>) {
+   return <R, E, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R1 & R, E1 | E, I1, L1 | L, E.Either<Z, Z1>> =>
+      new Sink(
+         pipe(
+            M.do,
+            M.bindS("p1", () => self.push),
+            M.bindS("p2", () => that.push),
+            M.map(({ p1, p2 }) => (i: Option<ReadonlyArray<I1>>): T.Task<
+               R1 & R,
+               readonly [Either<E | E1, Either<Z, Z1>>, ReadonlyArray<L | L1>],
+               void
+            > =>
+               T.raceWith_(
+                  p1(i),
+                  p2(i),
+                  (res1, fib2) =>
+                     Ex.foldM_(
+                        res1,
+                        (f) =>
+                           T.apSecond_(
+                              F.interrupt(fib2),
+                              T.halt(
+                                 pipe(
+                                    f,
+                                    C.map(([r, leftover]) => [E.map_(r, E.left), leftover] as const)
+                                 )
                               )
-                           )
-                        ),
-                     () => T.mapError_(F.join(fib2), ([r, leftover]) => [E.map_(r, E.right), leftover] as const)
-                  ),
-               (res2, fib1) =>
-                  Ex.foldM_(
-                     res2,
-                     (f) =>
-                        T.apSecond_(
-                           F.interrupt(fib1),
-                           T.halt(
-                              pipe(
-                                 f,
-                                 C.map(([r, leftover]) => [E.map_(r, E.right), leftover] as const)
+                           ),
+                        () => T.mapError_(F.join(fib2), ([r, leftover]) => [E.map_(r, E.right), leftover] as const)
+                     ),
+                  (res2, fib1) =>
+                     Ex.foldM_(
+                        res2,
+                        (f) =>
+                           T.apSecond_(
+                              F.interrupt(fib1),
+                              T.halt(
+                                 pipe(
+                                    f,
+                                    C.map(([r, leftover]) => [E.map_(r, E.right), leftover] as const)
+                                 )
                               )
-                           )
-                        ),
-                     () => T.mapError_(F.join(fib1), ([r, leftover]) => [E.map_(r, E.left), leftover] as const)
-                  )
+                           ),
+                        () => T.mapError_(F.join(fib1), ([r, leftover]) => [E.map_(r, E.left), leftover] as const)
+                     )
+               )
             )
          )
-      )
-   );
+      );
+}
 
-export const dropLeftover = <R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>): Sink<R, E, I, never, Z> =>
-   new Sink(M.map_(sz.push, (p) => (in_: O.Option<ReadonlyArray<I>>) => T.mapError_(p(in_), ([v, _]) => [v, []])));
+export function dropLeftover<R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>): Sink<R, E, I, never, Z> {
+   return new Sink(
+      M.map_(sz.push, (p) => (in_: O.Option<ReadonlyArray<I>>) => T.mapError_(p(in_), ([v, _]) => [v, []]))
+   );
+}

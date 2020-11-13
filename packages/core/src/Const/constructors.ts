@@ -7,4 +7,6 @@ import type { Const } from "./model";
  * -------------------------------------------
  */
 
-export const make: <E, A = never>(e: E) => Const<E, A> = unsafeCoerce;
+export function make<E, A = never>(e: E): Const<E, A> {
+   return unsafeCoerce(e);
+}

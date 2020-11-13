@@ -16,10 +16,14 @@ import type { FreeMonoid } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <A = never>(): Semigroup<FreeMonoid<A>> => fromCombine(combine);
+export function getSemigroup<A = never>(): Semigroup<FreeMonoid<A>> {
+   return fromCombine(combine);
+}
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const getMonoid = <A = never>(): Monoid<FreeMonoid<A>> => makeMonoid(getSemigroup<A>().combine_, empty());
+export function getMonoid<A = never>(): Monoid<FreeMonoid<A>> {
+   return makeMonoid(getSemigroup<A>().combine_, empty());
+}

@@ -12,10 +12,10 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export const chainWithIndex_: <A, B>(
+export function chainWithIndex_<A, B>(
    fa: ReadonlyArray<A>,
    f: (i: number, a: A) => ReadonlyArray<B>
-) => ReadonlyArray<B> = (fa, f) => {
+): ReadonlyArray<B> {
    let outLen = 0;
    const len = fa.length;
    const temp = new Array(len);
@@ -36,11 +36,13 @@ export const chainWithIndex_: <A, B>(
       start += l;
    }
    return out;
-};
+}
 
-export const chainWithIndex: <A, B>(
+export function chainWithIndex<A, B>(
    f: (i: number, a: A) => ReadonlyArray<B>
-) => (fa: ReadonlyArray<A>) => ReadonlyArray<B> = (f) => (fa) => chainWithIndex_(fa, f);
+): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+   return (fa) => chainWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
@@ -52,8 +54,9 @@ export const chainWithIndex: <A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export const chain_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> =>
-   chainWithIndex_(fa, (_, a) => f(a));
+export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
+   return chainWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
@@ -65,7 +68,9 @@ export const chain_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>
  * @category Monad
  * @since 1.0.0
  */
-export const chain = <A, B>(f: (a: A) => ReadonlyArray<B>) => (fa: ReadonlyArray<A>): ReadonlyArray<B> => chain_(fa, f);
+export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+   return (fa) => chain_(fa, f);
+}
 
 /**
  * ```haskell
@@ -77,7 +82,7 @@ export const chain = <A, B>(f: (a: A) => ReadonlyArray<B>) => (fa: ReadonlyArray
  * @category Monad
  * @since 1.0.0
  */
-export const flatten = <A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<A> => {
+export function flatten<A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<A> {
    let rLen = 0;
    const len = mma.length;
    for (let i = 0; i < len; i++) {
@@ -94,7 +99,7 @@ export const flatten = <A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
       start += l;
    }
    return r;
-};
+}
 
 /**
  * ```haskell
@@ -107,13 +112,14 @@ export const flatten = <A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
  * @category Monad
  * @since 1.0.0
  */
-export const tap_ = <A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<A> =>
-   chain_(ma, (a) =>
+export function tap_<A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<A> {
+   return chain_(ma, (a) =>
       pipe(
          f(a),
          map(() => a)
       )
    );
+}
 
 /**
  * ```haskell
@@ -126,9 +132,9 @@ export const tap_ = <A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>):
  * @category Monad
  * @since 1.0.0
  */
-export const tap = <A, B>(f: (a: A) => ReadonlyArray<B>) => (ma: ReadonlyArray<A>): ReadonlyArray<A> => tap_(ma, f);
-
-export const chainFirst = tap;
+export function tap<A, B>(f: (a: A) => ReadonlyArray<B>): (ma: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (ma) => tap_(ma, f);
+}
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
    ...Functor,

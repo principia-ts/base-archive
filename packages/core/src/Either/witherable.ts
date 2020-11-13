@@ -22,7 +22,7 @@ import { traverse_ } from "./traversable";
  * @category Instances
  * @since 1.0.0
  */
-export const getWitherable = <E>(M: P.Monoid<E>): P.Witherable<[URI], V & HKT.Fix<"E", E>> => {
+export function getWitherable<E>(M: P.Monoid<E>): P.Witherable<[URI], V & HKT.Fix<"E", E>> {
    type V_ = V & HKT.Fix<"E", E>;
 
    const Compactable = getCompactable(M);
@@ -43,4 +43,4 @@ export const getWitherable = <E>(M: P.Monoid<E>): P.Witherable<[URI], V & HKT.Fi
       wither: (G) => (f) => (wa) => wither_(G)(wa, f),
       wilt: (G) => (f) => (wa) => wilt_(G)(wa, f)
    });
-};
+}

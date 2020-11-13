@@ -22,13 +22,18 @@ const _hasOwnProperty = Object.prototype.hasOwnProperty;
  *    (f a, ((k, a) -> Boolean)) -> f a
  * ```
  */
-export const filterWithIndex_: {
-   <N extends string, A, B extends A>(
-      fa: ReadonlyRecord<N, A>,
-      refinement: RefinementWithIndex<N, A, B>
-   ): ReadonlyRecord<string, B>;
-   <N extends string, A>(fa: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): ReadonlyRecord<string, A>;
-} = <A>(fa: ReadonlyRecord<string, A>, predicate: PredicateWithIndex<string, A>) => {
+export function filterWithIndex_<N extends string, A, B extends A>(
+   fa: ReadonlyRecord<N, A>,
+   refinement: RefinementWithIndex<N, A, B>
+): ReadonlyRecord<string, B>;
+export function filterWithIndex_<N extends string, A>(
+   fa: ReadonlyRecord<N, A>,
+   predicate: PredicateWithIndex<N, A>
+): ReadonlyRecord<string, A>;
+export function filterWithIndex_<A>(
+   fa: ReadonlyRecord<string, A>,
+   predicate: PredicateWithIndex<string, A>
+): ReadonlyRecord<string, A> {
    const out: Record<string, A> = {};
    let changed = false;
    for (const key in fa) {
@@ -42,7 +47,7 @@ export const filterWithIndex_: {
       }
    }
    return changed ? out : fa;
-};
+}
 
 /**
  * ```haskell
@@ -50,37 +55,49 @@ export const filterWithIndex_: {
  *    ((k, a) -> Boolean) -> f a -> f a
  * ```
  */
-export const filterWithIndex: {
-   <N extends string, A, B extends A>(refinement: RefinementWithIndex<N, A, B>): (
-      fa: ReadonlyRecord<N, A>
-   ) => ReadonlyRecord<string, B>;
-   <N extends string, A>(predicate: PredicateWithIndex<N, A>): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, A>;
-} = <A>(predicate: PredicateWithIndex<string, A>) => (fa: ReadonlyRecord<string, A>) => filterWithIndex_(fa, predicate);
+export function filterWithIndex<N extends string, A, B extends A>(
+   refinement: RefinementWithIndex<N, A, B>
+): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B>;
+export function filterWithIndex<N extends string, A>(
+   predicate: PredicateWithIndex<N, A>
+): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, A>;
+export function filterWithIndex<A>(
+   predicate: PredicateWithIndex<string, A>
+): (fa: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
+   return (fa) => filterWithIndex_(fa, predicate);
+}
 
 /**
  * ```haskell
  * filter_ :: Filterable f => (f a, (a -> Boolean)) -> f a
  * ```
  */
-export const filter_: {
-   <N extends string, A, B extends A>(fa: ReadonlyRecord<N, A>, refinement: Refinement<A, B>): ReadonlyRecord<
-      string,
-      B
-   >;
-   <N extends string, A>(fa: ReadonlyRecord<N, A>, predicate: Predicate<A>): ReadonlyRecord<string, A>;
-} = <A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A>) => filterWithIndex_(fa, (_, a) => predicate(a));
+export function filter_<N extends string, A, B extends A>(
+   fa: ReadonlyRecord<N, A>,
+   refinement: Refinement<A, B>
+): ReadonlyRecord<string, B>;
+export function filter_<N extends string, A>(
+   fa: ReadonlyRecord<N, A>,
+   predicate: Predicate<A>
+): ReadonlyRecord<string, A>;
+export function filter_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A>): ReadonlyRecord<string, A> {
+   return filterWithIndex_(fa, (_, a) => predicate(a));
+}
 
 /**
  * ```haskell
  * filter :: Filterable f => (a -> Boolean) -> f a -> f a
  * ```
  */
-export const filter: {
-   <A, B extends A>(refinement: Refinement<A, B>): <N extends string>(
-      fa: ReadonlyRecord<N, A>
-   ) => ReadonlyRecord<string, B>;
-   <A>(predicate: Predicate<A>): <N extends string>(fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, A>;
-} = <A>(predicate: Predicate<A>) => (fa: ReadonlyRecord<string, A>) => filter_(fa, predicate);
+export function filter<A, B extends A>(
+   refinement: Refinement<A, B>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B>;
+export function filter<A>(
+   predicate: Predicate<A>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, A>;
+export function filter<A>(predicate: Predicate<A>): (fa: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
+   return (fa) => filter_(fa, predicate);
+}
 
 /**
  * ```haskell
@@ -88,10 +105,10 @@ export const filter: {
  *    (f a, ((k, a) -> Option b)) -> f b
  * ```
  */
-export const mapOptionWithIndex_ = <N extends string, A, B>(
+export function mapOptionWithIndex_<N extends string, A, B>(
    fa: ReadonlyRecord<N, A>,
    f: (k: N, a: A) => Option<B>
-): ReadonlyRecord<string, B> => {
+): ReadonlyRecord<string, B> {
    const r: Record<string, B> = {} as any;
    const ks = keys(fa);
    for (let i = 0; i < ks.length; i++) {
@@ -102,7 +119,7 @@ export const mapOptionWithIndex_ = <N extends string, A, B>(
       }
    }
    return r;
-};
+}
 
 /**
  * ```haskell
@@ -110,28 +127,34 @@ export const mapOptionWithIndex_ = <N extends string, A, B>(
  *    ((k, a) -> Option b) -> f a -> f b
  * ```
  */
-export const mapOptionWithIndex = <N extends string, A, B>(f: (k: N, a: A) => Option<B>) => (
-   fa: ReadonlyRecord<N, A>
-): ReadonlyRecord<string, B> => mapOptionWithIndex_(fa, f);
+export function mapOptionWithIndex<N extends string, A, B>(
+   f: (k: N, a: A) => Option<B>
+): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B> {
+   return (fa) => mapOptionWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
  * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  */
-export const mapOption_ = <N extends string, A, B>(
+export function mapOption_<N extends string, A, B>(
    fa: ReadonlyRecord<N, A>,
    f: (a: A) => Option<B>
-): ReadonlyRecord<string, B> => mapOptionWithIndex_(fa, (_, a) => f(a));
+): ReadonlyRecord<string, B> {
+   return mapOptionWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
  * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  */
-export const mapOption = <A, B>(f: (a: A) => Option<B>) => <N extends string>(
-   fa: ReadonlyRecord<N, A>
-): ReadonlyRecord<string, B> => mapOption_(fa, f);
+export function mapOption<A, B>(
+   f: (a: A) => Option<B>
+): <N extends string>(fa: Readonly<Record<N, A>>) => ReadonlyRecord<string, B> {
+   return (fa) => mapOption_(fa, f);
+}
 
 /**
  * ```haskell
@@ -139,16 +162,15 @@ export const mapOption = <A, B>(f: (a: A) => Option<B>) => <N extends string>(
  *    (f a, ((k, a) -> Boolean)) -> Separated (f a) (f a)
  * ```
  */
-export const partitionWithIndex_: {
-   <N extends string, A, B extends A>(fa: ReadonlyRecord<N, A>, refinement: RefinementWithIndex<N, A, B>): Separated<
-      ReadonlyRecord<string, A>,
-      ReadonlyRecord<string, B>
-   >;
-   <N extends string, A>(fa: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): Separated<
-      ReadonlyRecord<string, A>,
-      ReadonlyRecord<string, A>
-   >;
-} = <A>(fa: ReadonlyRecord<string, A>, predicate: PredicateWithIndex<string, A>) => {
+export function partitionWithIndex_<N extends string, A, B extends A>(
+   fa: ReadonlyRecord<N, A>,
+   refinement: RefinementWithIndex<N, A, B>
+): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+export function partitionWithIndex_<N extends string, A>(
+   fa: ReadonlyRecord<N, A>,
+   predicate: PredicateWithIndex<N, A>
+): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+export function partitionWithIndex_<A>(fa: ReadonlyRecord<string, A>, predicate: PredicateWithIndex<string, A>) {
    const left: Record<string, A> = {};
    const right: Record<string, A> = {};
    const ks = keys(fa);
@@ -165,7 +187,7 @@ export const partitionWithIndex_: {
       left,
       right
    };
-};
+}
 
 /**
  * ```haskell
@@ -173,45 +195,51 @@ export const partitionWithIndex_: {
  *    (k, a) -> Boolean) -> f a -> Separated (f a) (f a)
  * ```
  */
-export const partitionWithIndex: {
-   <N extends string, A, B extends A>(refinement: RefinementWithIndex<N, A, B>): (
-      fa: ReadonlyRecord<N, A>
-   ) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
-   <N extends string, A>(predicate: PredicateWithIndex<N, A>): (
-      fa: ReadonlyRecord<N, A>
-   ) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
-} = <A>(predicate: PredicateWithIndex<string, A>) => (fa: ReadonlyRecord<string, A>) =>
-   partitionWithIndex_(fa, predicate);
+export function partitionWithIndex<N extends string, A, B extends A>(
+   refinement: RefinementWithIndex<N, A, B>
+): (fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+export function partitionWithIndex<N extends string, A>(
+   predicate: PredicateWithIndex<N, A>
+): (fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+export function partitionWithIndex<A>(
+   predicate: PredicateWithIndex<string, A>
+): (fa: ReadonlyRecord<string, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>> {
+   return (fa) => partitionWithIndex_(fa, predicate);
+}
 
 /**
  * ```haskell
  * partition_ :: Filterable f => (f a, (a -> Boolean)) -> Separated (f a) (f a)
  * ```
  */
-export const partition_: {
-   <N extends string, A, B extends A>(fa: ReadonlyRecord<N, A>, refinement: Refinement<A, B>): Separated<
-      ReadonlyRecord<string, A>,
-      ReadonlyRecord<string, B>
-   >;
-   <N extends string, A>(fa: ReadonlyRecord<N, A>, predicate: Predicate<A>): Separated<
-      ReadonlyRecord<string, A>,
-      ReadonlyRecord<string, A>
-   >;
-} = <A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A>) => partitionWithIndex_(fa, (_, a) => predicate(a));
+export function partition_<N extends string, A, B extends A>(
+   fa: ReadonlyRecord<N, A>,
+   refinement: Refinement<A, B>
+): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+export function partition_<N extends string, A>(
+   fa: ReadonlyRecord<N, A>,
+   predicate: Predicate<A>
+): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A>) {
+   return partitionWithIndex_(fa, (_, a) => predicate(a));
+}
 
 /**
  * ```haskell
  * partition :: Filterable f => (a -> Boolean) -> f a -> Separated (f a) (f a)
  * ```
  */
-export const partition: {
-   <A, B extends A>(refinement: Refinement<A, B>): <N extends string>(
-      fa: ReadonlyRecord<N, A>
-   ) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
-   <A>(predicate: Predicate<A>): <N extends string>(
-      fa: ReadonlyRecord<N, A>
-   ) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
-} = <A>(predicate: Predicate<A>) => (fa: ReadonlyRecord<string, A>) => partition_(fa, predicate);
+export function partition<A, B extends A>(
+   refinement: Refinement<A, B>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): (fa: ReadonlyRecord<string, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>> {
+   return (fa) => partition_(fa, predicate);
+}
 
 /**
  * ```haskell
@@ -219,10 +247,10 @@ export const partition: {
  *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export const mapEitherWithIndex_ = <N extends string, A, B, C>(
+export function mapEitherWithIndex_<N extends string, A, B, C>(
    fa: ReadonlyRecord<N, A>,
    f: (k: N, a: A) => Either<B, C>
-): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> => {
+): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
    const left: Record<string, B> = {};
    const right: Record<string, C> = {};
    const ks = keys(fa);
@@ -242,7 +270,7 @@ export const mapEitherWithIndex_ = <N extends string, A, B, C>(
       left,
       right
    };
-};
+}
 
 /**
  * ```haskell
@@ -250,28 +278,34 @@ export const mapEitherWithIndex_ = <N extends string, A, B, C>(
  *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export const mapEitherWithIndex = <N extends string, A, B, C>(f: (k: N, a: A) => Either<B, C>) => (
-   fa: ReadonlyRecord<N, A>
-): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> => mapEitherWithIndex_(fa, f);
+export function mapEitherWithIndex<N extends string, A, B, C>(
+   f: (k: N, a: A) => Either<B, C>
+): (fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
+   return (fa) => mapEitherWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
  * mapEither_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export const mapEither_ = <N extends string, A, B, C>(
+export function mapEither_<N extends string, A, B, C>(
    fa: ReadonlyRecord<N, A>,
    f: (a: A) => Either<B, C>
-): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> => mapEitherWithIndex_(fa, (_, a) => f(a));
+): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
+   return mapEitherWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
  * mapEither :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export const mapEither = <A, B, C>(f: (a: A) => Either<B, C>) => <N extends string>(
-   fa: ReadonlyRecord<N, A>
-): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> => mapEither_(fa, f);
+export function mapEither<A, B, C>(
+   f: (a: A) => Either<B, C>
+): <N extends string>(fa: Readonly<Record<N, A>>) => Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
+   return (fa) => mapEither_(fa, f);
+}
 
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
    filter_,

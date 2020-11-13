@@ -23,10 +23,7 @@ interface Next<A> {
 /**
  * Filter out `None` and map
  */
-export const mapOptionWithIndex_ = <K, A, B>(
-   fa: ReadonlyMap<K, A>,
-   f: (k: K, a: A) => Option<B>
-): ReadonlyMap<K, B> => {
+export function mapOptionWithIndex_<K, A, B>(fa: ReadonlyMap<K, A>, f: (k: K, a: A) => Option<B>): ReadonlyMap<K, B> {
    const m = new Map<K, B>();
    const entries = fa.entries();
    let e: Next<readonly [K, A]>;
@@ -38,31 +35,37 @@ export const mapOptionWithIndex_ = <K, A, B>(
       }
    }
    return m;
-};
+}
 
 /**
  * Filter out `None` and map
  */
-export const mapOptionWithIndex = <K, A, B>(f: (k: K, a: A) => Option<B>) => (
-   fa: ReadonlyMap<K, A>
-): ReadonlyMap<K, B> => mapOptionWithIndex_(fa, f);
+export function mapOptionWithIndex<K, A, B>(
+   f: (k: K, a: A) => Option<B>
+): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
+   return (fa) => mapOptionWithIndex_(fa, f);
+}
 
 /**
  * Filter out `None` and map
  */
-export const mapOption_ = <K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A) => Option<B>): ReadonlyMap<K, B> =>
-   mapOptionWithIndex_(fa, (_, a) => f(a));
+export function mapOption_<K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A) => Option<B>): ReadonlyMap<K, B> {
+   return mapOptionWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * Filter out `None` and map
  */
-export const mapOption = <A, B>(f: (a: A) => Option<B>) => <K>(fa: ReadonlyMap<K, A>): ReadonlyMap<K, B> =>
-   mapOption_(fa, f);
+export function mapOption<A, B>(f: (a: A) => Option<B>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
+   return (fa) => mapOption_(fa, f);
+}
 
-export const filterWithIndex_: {
-   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: RefinementWithIndex<K, A, B>): ReadonlyMap<K, B>;
-   <K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A>;
-} = <K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A> => {
+export function filterWithIndex_<K, A, B extends A>(
+   fa: ReadonlyMap<K, A>,
+   refinement: RefinementWithIndex<K, A, B>
+): ReadonlyMap<K, B>;
+export function filterWithIndex_<K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A>;
+export function filterWithIndex_<K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A> {
    const m = new Map<K, A>();
    const entries = fa.entries();
    let e: Next<readonly [K, A]>;
@@ -73,36 +76,47 @@ export const filterWithIndex_: {
       }
    }
    return m;
-};
+}
 
 /**
  *
  */
-export const filterWithIndex: {
-   <K, A, B extends A>(refinement: RefinementWithIndex<K, A, B>): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B>;
-   <K, A>(predicate: PredicateWithIndex<K, A>): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A>;
-} = <K, A>(predicate: PredicateWithIndex<K, A>) => (fa: ReadonlyMap<K, A>) => filterWithIndex_(fa, predicate);
+export function filterWithIndex<K, A, B extends A>(
+   refinement: RefinementWithIndex<K, A, B>
+): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B>;
+export function filterWithIndex<K, A>(
+   predicate: PredicateWithIndex<K, A>
+): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A>;
+export function filterWithIndex<K, A>(
+   predicate: PredicateWithIndex<K, A>
+): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+   return (fa) => filterWithIndex_(fa, predicate);
+}
 
-export const filter_: {
-   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: Refinement<A, B>): ReadonlyMap<K, B>;
-   <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>): ReadonlyMap<K, A>;
-} = <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>) => filterWithIndex_(fa, (_, a) => predicate(a));
+export function filter_<K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: Refinement<A, B>): ReadonlyMap<K, B>;
+export function filter_<K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>): ReadonlyMap<K, A>;
+export function filter_<K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>): ReadonlyMap<K, A> {
+   return filterWithIndex_(fa, (_, a) => predicate(a));
+}
 
-export const filter: {
-   <A, B extends A>(refinement: Refinement<A, B>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B>;
-   <A>(predicate: Predicate<A>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A>;
-} = <A>(predicate: Predicate<A>) => <K>(fa: ReadonlyMap<K, A>) => filter_(fa, predicate);
+export function filter<A, B extends A>(refinement: Refinement<A, B>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B>;
+export function filter<A>(predicate: Predicate<A>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A>;
+export function filter<A>(predicate: Predicate<A>): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+   return (fa) => filter_(fa, predicate);
+}
 
-export const partitionWithIndex_: {
-   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: RefinementWithIndex<K, A, B>): Separated<
-      ReadonlyMap<K, A>,
-      ReadonlyMap<K, B>
-   >;
-   <K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
-} = <K, A>(
+export function partitionWithIndex_<K, A, B extends A>(
+   fa: ReadonlyMap<K, A>,
+   refinement: RefinementWithIndex<K, A, B>
+): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+export function partitionWithIndex_<K, A>(
    fa: ReadonlyMap<K, A>,
    predicate: PredicateWithIndex<K, A>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> => {
+): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+export function partitionWithIndex_<K, A>(
+   fa: ReadonlyMap<K, A>,
+   predicate: PredicateWithIndex<K, A>
+): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
    const left = new Map<K, A>();
    const right = new Map<K, A>();
    const entries = fa.entries();
@@ -119,36 +133,51 @@ export const partitionWithIndex_: {
       left,
       right
    };
-};
+}
 
-export const partitionWithIndex: {
-   <K, A, B extends A>(refinement: RefinementWithIndex<K, A, B>): (
-      fa: ReadonlyMap<K, A>
-   ) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
-   <K, A>(predicate: PredicateWithIndex<K, A>): (
-      fa: ReadonlyMap<K, A>
-   ) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
-} = <K, A>(predicate: PredicateWithIndex<K, A>) => (fa: ReadonlyMap<K, A>) => partitionWithIndex_(fa, predicate);
+export function partitionWithIndex<K, A, B extends A>(
+   refinement: RefinementWithIndex<K, A, B>
+): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+export function partitionWithIndex<K, A>(
+   predicate: PredicateWithIndex<K, A>
+): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+export function partitionWithIndex<K, A>(
+   predicate: PredicateWithIndex<K, A>
+): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
+   return (fa) => partitionWithIndex_(fa, predicate);
+}
 
-export const partition_: {
-   <K, A, B extends A>(fa: ReadonlyMap<K, A>, refinement: Refinement<A, B>): Separated<
-      ReadonlyMap<K, A>,
-      ReadonlyMap<K, B>
-   >;
-   <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
-} = <K, A>(fa: ReadonlyMap<K, A>, predicate: Predicate<A>) => partitionWithIndex_(fa, (_, a) => predicate(a));
+export function partition_<K, A, B extends A>(
+   fa: ReadonlyMap<K, A>,
+   refinement: Refinement<A, B>
+): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+export function partition_<K, A>(
+   fa: ReadonlyMap<K, A>,
+   predicate: Predicate<A>
+): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+export function partition_<K, A>(
+   fa: ReadonlyMap<K, A>,
+   predicate: Predicate<A>
+): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
+   return partitionWithIndex_(fa, (_, a) => predicate(a));
+}
 
-export const partition: {
-   <A, B extends A>(refinement: Refinement<A, B>): <K>(
-      fa: ReadonlyMap<K, A>
-   ) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
-   <A>(predicate: Predicate<A>): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
-} = <A>(predicate: Predicate<A>) => <K>(fa: ReadonlyMap<K, A>) => partition_(fa, predicate);
+export function partition<A, B extends A>(
+   refinement: Refinement<A, B>
+): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
+   return (fa) => partition_(fa, predicate);
+}
 
-export const mapEitherWithIndex_ = <K, A, B, C>(
+export function mapEitherWithIndex_<K, A, B, C>(
    fa: ReadonlyMap<K, A>,
    f: (k: K, a: A) => Either<B, C>
-): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => {
+): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
    const left = new Map<K, B>();
    const right = new Map<K, C>();
    const entries = fa.entries();
@@ -166,20 +195,26 @@ export const mapEitherWithIndex_ = <K, A, B, C>(
       left,
       right
    };
-};
+}
 
-export const mapEitherWithIndex = <K, A, B, C>(f: (k: K, a: A) => Either<B, C>) => (
-   fa: ReadonlyMap<K, A>
-): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => mapEitherWithIndex_(fa, f);
+export function mapEitherWithIndex<K, A, B, C>(
+   f: (k: K, a: A) => Either<B, C>
+): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
+   return (fa) => mapEitherWithIndex_(fa, f);
+}
 
-export const mapEither_ = <K, A, B, C>(
+export function mapEither_<K, A, B, C>(
    fa: ReadonlyMap<K, A>,
    f: (a: A) => Either<B, C>
-): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => mapEitherWithIndex_(fa, (_, a) => f(a));
+): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
+   return mapEitherWithIndex_(fa, (_, a) => f(a));
+}
 
-export const mapEither = <A, B, C>(f: (a: A) => Either<B, C>) => <K>(
-   fa: ReadonlyMap<K, A>
-): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> => mapEither_(fa, f);
+export function mapEither<A, B, C>(
+   f: (a: A) => Either<B, C>
+): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
+   return (fa) => mapEither_(fa, f);
+}
 
 /**
  * @category Instances
@@ -201,8 +236,8 @@ export const Filterable: P.Filterable<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const getFilterableWithIndex = <K = never>(): P.FilterableWithIndex<[URI], V & HKT.Fix<"K", K>> =>
-   HKT.instance({
+export function getFilterableWithIndex<K = never>(): P.FilterableWithIndex<[URI], V & HKT.Fix<"K", K>> {
+   return HKT.instance({
       mapOptionWithIndex_,
       filterWithIndex_,
       mapEitherWithIndex_,
@@ -212,3 +247,4 @@ export const getFilterableWithIndex = <K = never>(): P.FilterableWithIndex<[URI]
       partitionWithIndex,
       mapEitherWithIndex
    });
+}

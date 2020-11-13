@@ -74,19 +74,21 @@ export interface Tag<T> {
  */
 export type HasTag<T> = [T] extends [Tag<infer A>] ? Has<A> : never;
 
-const makeTag = <T>(def = false, key: PropertyKey = Symbol()): Tag<T> => ({
-   _tag: "Tag",
-   _T: undefined as any,
-   key,
-   def,
-   of: (t) => ({ [key]: t } as any),
-   overridable: () => makeTag(true, key),
-   fixed: () => makeTag(false, key),
-   refine: () => makeTag(def, key),
-   read: (r: Has<T>) => r[key],
-   readOption: (r) => (typeof r === "object" && r !== null ? fromNullable(r[key]) : none()),
-   setKey: (s: PropertyKey) => makeTag(def, s)
-});
+function makeTag<T>(def = false, key: PropertyKey = Symbol()): Tag<T> {
+   return {
+      _tag: "Tag",
+      _T: undefined as any,
+      key,
+      def,
+      of: (t) => ({ [key]: t } as any),
+      overridable: () => makeTag(true, key),
+      fixed: () => makeTag(false, key),
+      refine: () => makeTag(def, key),
+      read: (r: Has<T>) => r[key],
+      readOption: (r) => (typeof r === "object" && r !== null ? fromNullable(r[key]) : none()),
+      setKey: (s: PropertyKey) => makeTag(def, s)
+   };
+}
 
 /**
  * Create a service entry Tag from a type and a URI
@@ -105,28 +107,33 @@ export type ServiceType<T> = [T] extends [Has<infer A>] ? A : never;
 /**
  * Replaces the service with the required Service Entry, in the specified environment
  */
-export const replaceServiceIn = <T>(_: Tag<T>, f: (t: T) => T) => <R>(r: R & Has<T>): R & Has<T> => ({
-   ...r,
-   [_.key]: f(r[_.key])
-});
+export function replaceServiceIn<T>(_: Tag<T>, f: (t: T) => T): <R>(r: R & Has<T>) => R & Has<T> {
+   return (r) => ({
+      ...r,
+      [_.key]: f(r[_.key])
+   });
+}
 
 /**
  * Replaces the service with the required Service Entry, in the specified environment
  */
-export const replaceServiceIn_ = <R, T>(r: R & Has<T>, _: Tag<T>, f: (t: T) => T): R & Has<T> =>
-   ({
+export function replaceServiceIn_<R, T>(r: R & Has<T>, _: Tag<T>, f: (t: T) => T): R & Has<T> {
+   return {
       ...r,
       [_.key]: f(r[_.key])
-   } as any);
+   } as any;
+}
 
 /**
  * Flags the current Has to be overridable, when this is used subsequently provided
  * environments will override pre-existing. Useful to provide defaults.
  */
-export const overridable = <T>(h: Tag<T>): Tag<T> => ({
-   ...h,
-   def: true
-});
+export function overridable<T>(h: Tag<T>): Tag<T> {
+   return {
+      ...h,
+      def: true
+   };
+}
 
 export function mergeEnvironments<T, R1>(_: Tag<T>, r: R1, t: T): R1 & Has<T> {
    return _.def && r[_.key]

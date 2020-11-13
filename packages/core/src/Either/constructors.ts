@@ -18,10 +18,12 @@ import type { Either } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const left = <E = never, A = never>(e: E): Either<E, A> => ({
-   _tag: "Left",
-   left: e
-});
+export function left<E = never, A = never>(e: E): Either<E, A> {
+   return {
+      _tag: "Left",
+      left: e
+   };
+}
 
 /**
  * ```haskell
@@ -33,10 +35,12 @@ export const left = <E = never, A = never>(e: E): Either<E, A> => ({
  * @category Constructors
  * @since 1.0.0
  */
-export const right = <E = never, A = never>(a: A): Either<E, A> => ({
-   _tag: "Right",
-   right: a
-});
+export function right<E = never, A = never>(a: A): Either<E, A> {
+   return {
+      _tag: "Right",
+      right: a
+   };
+}
 
 /**
  * 
@@ -49,8 +53,9 @@ export const right = <E = never, A = never>(a: A): Either<E, A> => ({
  * @category Constructors
  * @since 1.0.0
  */
-export const fromNullable_ = <E, A>(a: A, e: Lazy<E>): Either<E, NonNullable<A>> =>
-   a == null ? left(e()) : right(a as NonNullable<A>);
+export function fromNullable_<E, A>(a: A, e: Lazy<E>): Either<E, NonNullable<A>> {
+   return a == null ? left(e()) : right(a as NonNullable<A>);
+}
 
 /**
  * 
@@ -63,20 +68,25 @@ export const fromNullable_ = <E, A>(a: A, e: Lazy<E>): Either<E, NonNullable<A>>
  * @category Constructors
  * @since 1.0.0
  */
-export const fromNullable = <E>(e: Lazy<E>) => <A>(a: A): Either<E, NonNullable<A>> =>
-   a == null ? left(e()) : right(a as NonNullable<A>);
+export function fromNullable<E>(e: Lazy<E>): <A>(a: A) => Either<E, NonNullable<A>> {
+   return <A>(a: A): Either<E, NonNullable<A>> => (a == null ? left(e()) : right(a as NonNullable<A>));
+}
 
-export const fromNullableK_ = <E, A extends ReadonlyArray<unknown>, B>(
+export function fromNullableK_<E, A extends ReadonlyArray<unknown>, B>(
    f: (...args: A) => B | null | undefined,
    e: Lazy<E>
-): ((...args: A) => Either<E, NonNullable<B>>) => {
+): (...args: A) => Either<E, NonNullable<B>> {
    const from = fromNullable(e);
    return (...args) => from(f(...args));
-};
+}
 
-export const fromNullableK = <E>(e: Lazy<E>) => <A extends ReadonlyArray<unknown>, B>(
+export function fromNullableK<E>(
+   e: Lazy<E>
+): <A extends readonly unknown[], B>(
    f: (...args: A) => B | null | undefined
-): ((...args: A) => Either<E, NonNullable<B>>) => fromNullableK_(f, e);
+) => (...args: A) => Either<E, NonNullable<B>> {
+   return (f) => fromNullableK_(f, e);
+}
 
 /**
  * ```haskell
@@ -88,13 +98,13 @@ export const fromNullableK = <E>(e: Lazy<E>) => <A extends ReadonlyArray<unknown
  * @category Constructors
  * @since 1.0.0
  */
-export const partial_ = <E, A>(a: Lazy<A>, onThrow: (reason: unknown) => E): Either<E, A> => {
+export function partial_<E, A>(a: Lazy<A>, onThrow: (reason: unknown) => E): Either<E, A> {
    try {
       return right(a());
    } catch (e) {
       return left(onThrow(e));
    }
-};
+}
 
 /**
  * ```haskell
@@ -106,13 +116,15 @@ export const partial_ = <E, A>(a: Lazy<A>, onThrow: (reason: unknown) => E): Eit
  * @category Constructors
  * @since 1.0.0
  */
-export const partial = <E>(onError: (reason: unknown) => E) => <A>(a: Lazy<A>): Either<E, A> => {
-   try {
-      return right(a());
-   } catch (e) {
-      return left(onError(e));
-   }
-};
+export function partial<E>(onError: (reason: unknown) => E): <A>(a: Lazy<A>) => Either<E, A> {
+   return (a) => {
+      try {
+         return right(a());
+      } catch (e) {
+         return left(onError(e));
+      }
+   };
+}
 
 /**
  * ```haskell
@@ -122,10 +134,12 @@ export const partial = <E>(onError: (reason: unknown) => E) => <A>(a: Lazy<A>): 
  * @category Constructors
  * @since 1.0.0
  */
-export const partialK_ = <A extends ReadonlyArray<unknown>, B, E>(
+export function partialK_<A extends ReadonlyArray<unknown>, B, E>(
    f: FunctionN<A, B>,
    onThrow: (reason: unknown) => E
-): ((...args: A) => Either<E, B>) => (...a) => partial_(() => f(...a), onThrow);
+): (...args: A) => Either<E, B> {
+   return (...a) => partial_(() => f(...a), onThrow);
+}
 
 /**
  * ```haskell
@@ -135,9 +149,11 @@ export const partialK_ = <A extends ReadonlyArray<unknown>, B, E>(
  * @category Constructors
  * @since 1.0.0
  */
-export const partialK = <E>(onThrow: (reason: unknown) => E) => <A extends ReadonlyArray<unknown>, B>(
-   f: FunctionN<A, B>
-) => partialK_(f, onThrow);
+export function partialK<E>(
+   onThrow: (reason: unknown) => E
+): <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>) => (...args: A) => Either<E, B> {
+   return (f) => partialK_(f, onThrow);
+}
 
 export type Json = boolean | number | string | null | JsonArray | JsonRecord;
 
@@ -155,8 +171,9 @@ export interface JsonArray extends ReadonlyArray<Json> {}
  * @category Constructors
  * @since 1.0.0
  */
-export const parseJson_ = <E>(s: string, onThrow: (reason: unknown) => E): Either<E, Json> =>
-   partial_(() => JSON.parse(s), onThrow);
+export function parseJson_<E>(s: string, onThrow: (reason: unknown) => E): Either<E, Json> {
+   return partial_(() => JSON.parse(s), onThrow);
+}
 
 /**
  * ```haskell
@@ -168,7 +185,9 @@ export const parseJson_ = <E>(s: string, onThrow: (reason: unknown) => E): Eithe
  * @category Constructors
  * @since 1.0.0
  */
-export const parseJson = <E>(onThrow: (reason: unknown) => E) => (s: string): Either<E, Json> => parseJson_(s, onThrow);
+export function parseJson<E>(onThrow: (reason: unknown) => E): (s: string) => Either<E, Json> {
+   return (s) => parseJson_(s, onThrow);
+}
 
 /**
  * ```haskell
@@ -180,8 +199,9 @@ export const parseJson = <E>(onThrow: (reason: unknown) => E) => (s: string): Ei
  * @category Constructors
  * @since 1.0.0
  */
-export const stringifyJson_ = <E>(u: unknown, onThrow: (reason: unknown) => E): Either<E, string> =>
-   partial_(() => JSON.stringify(u), onThrow);
+export function stringifyJson_<E>(u: unknown, onThrow: (reason: unknown) => E): Either<E, string> {
+   return partial_(() => JSON.stringify(u), onThrow);
+}
 
 /**
  * ```haskell
@@ -193,8 +213,9 @@ export const stringifyJson_ = <E>(u: unknown, onThrow: (reason: unknown) => E): 
  * @category Constructors
  * @since 1.0.0
  */
-export const stringifyJson = <E>(onThrow: (reason: unknown) => E) => (u: unknown): Either<E, string> =>
-   stringifyJson_(u, onThrow);
+export function stringifyJson<E>(onThrow: (reason: unknown) => E): (u: unknown) => Either<E, string> {
+   return (u) => stringifyJson_(u, onThrow);
+}
 
 /**
  * ```haskell
@@ -204,8 +225,9 @@ export const stringifyJson = <E>(onThrow: (reason: unknown) => E) => (u: unknown
  * @category Constructors
  * @since 1.0.0
  */
-export const fromOption_ = <E, A>(fa: Option<A>, onNothing: Lazy<E>): Either<E, A> =>
-   fa._tag === "None" ? left(onNothing()) : right(fa.value);
+export function fromOption_<E, A>(fa: Option<A>, onNothing: Lazy<E>): Either<E, A> {
+   return fa._tag === "None" ? left(onNothing()) : right(fa.value);
+}
 
 /**
  * ```haskell
@@ -215,8 +237,9 @@ export const fromOption_ = <E, A>(fa: Option<A>, onNothing: Lazy<E>): Either<E, 
  * @category Constructors
  * @since 1.0.0
  */
-export const fromOption: <E>(onNothing: Lazy<E>) => <A>(fa: Option<A>) => Either<E, A> = (f) => (fa) =>
-   fromOption_(fa, f);
+export function fromOption<E>(onNothing: Lazy<E>): <A>(fa: Option<A>) => Either<E, A> {
+   return (fa) => fromOption_(fa, onNothing);
+}
 
 /**
  * ```haskell
@@ -227,11 +250,15 @@ export const fromOption: <E>(onNothing: Lazy<E>) => <A>(fa: Option<A>) => Either
  * @category Constructors
  * @since 1.0.0
  */
-export const fromPredicate_: {
-   <E, A, B extends A>(a: A, refinement: Refinement<A, B>, onFalse: (a: A) => E): Either<E, B>;
-   <E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A>;
-} = <E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A> =>
-   predicate(a) ? right(a) : left(onFalse(a));
+export function fromPredicate_<E, A, B extends A>(
+   a: A,
+   refinement: Refinement<A, B>,
+   onFalse: (a: A) => E
+): Either<E, B>;
+export function fromPredicate_<E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A>;
+export function fromPredicate_<E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A> {
+   return predicate(a) ? right(a) : left(onFalse(a));
+}
 
 /**
  * ```haskell
@@ -242,7 +269,11 @@ export const fromPredicate_: {
  * @category Constructors
  * @since 1.0.0
  */
-export const fromPredicate: {
-   <E, A, B extends A>(refinement: Refinement<A, B>, onFalse: (a: A) => E): (a: A) => Either<E, B>;
-   <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A>;
-} = <E, A>(predicate: Predicate<A>, onFalse: (a: A) => E) => (a: A) => fromPredicate_(a, predicate, onFalse);
+export function fromPredicate<E, A, B extends A>(
+   refinement: Refinement<A, B>,
+   onFalse: (a: A) => E
+): (a: A) => Either<E, B>;
+export function fromPredicate<E, A>(predicate: Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A>;
+export function fromPredicate<E, A>(predicate: Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A> {
+   return (a) => fromPredicate_(a, predicate, onFalse);
+}

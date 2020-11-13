@@ -16,10 +16,12 @@ import { chain } from "../monad";
  * @category Combinators
  * @since 1.0.0
  */
-export const rejectM_ = <R, E, A, R1, E1>(
+export function rejectM_<R, E, A, R1, E1>(
    fa: Task<R, E, A>,
    pf: (a: A) => Option<Task<R1, E1, E1>>
-): Task<R & R1, E | E1, A> => chain_(fa, (a) => O.fold_(pf(a), () => pure(a), chain(fail)));
+): Task<R & R1, E | E1, A> {
+   return chain_(fa, (a) => O.fold_(pf(a), () => pure(a), chain(fail)));
+}
 
 /**
  * ```haskell
@@ -33,9 +35,11 @@ export const rejectM_ = <R, E, A, R1, E1>(
  * @category Combinators
  * @since 1.0.0
  */
-export const rejectM = <R1, E1, A>(pf: (a: A) => Option<Task<R1, E1, E1>>) => <R, E>(
-   fa: Task<R, E, A>
-): Task<R & R1, E | E1, A> => rejectM_(fa, pf);
+export function rejectM<R1, E1, A>(
+   pf: (a: A) => Option<Task<R1, E1, E1>>
+): <R, E>(fa: Task<R, E, A>) => Task<R & R1, E1 | E, A> {
+   return (fa) => rejectM_(fa, pf);
+}
 
 /**
  * ```haskell
@@ -48,8 +52,9 @@ export const rejectM = <R1, E1, A>(pf: (a: A) => Option<Task<R1, E1, E1>>) => <R
  * @category Combinators
  * @since 1.0.0
  */
-export const reject_ = <R, E, A, E1>(fa: Task<R, E, A>, pf: (a: A) => Option<E1>): Task<R, E | E1, A> =>
-   rejectM_(fa, (a) => O.map_(pf(a), fail));
+export function reject_<R, E, A, E1>(fa: Task<R, E, A>, pf: (a: A) => Option<E1>): Task<R, E | E1, A> {
+   return rejectM_(fa, (a) => O.map_(pf(a), fail));
+}
 
 /**
  * ```haskell
@@ -62,5 +67,6 @@ export const reject_ = <R, E, A, E1>(fa: Task<R, E, A>, pf: (a: A) => Option<E1>
  * @category Combinators
  * @since 1.0.0
  */
-export const reject = <A, E1>(pf: (a: A) => Option<E1>) => <R, E>(fa: Task<R, E, A>): Task<R, E | E1, A> =>
-   reject_(fa, pf);
+export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: Task<R, E, A>) => Task<R, E1 | E, A> {
+   return (fa) => reject_(fa, pf);
+}

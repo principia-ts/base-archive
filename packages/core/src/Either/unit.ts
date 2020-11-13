@@ -12,4 +12,6 @@ import type { Either } from "./model";
  * unit :: () -> Either _ ()
  * ```
  */
-export const unit: <E = never>() => Either<E, void> = () => right(undefined);
+export function unit<E = never>(): Either<E, void> {
+   return right(undefined);
+}

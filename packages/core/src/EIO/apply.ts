@@ -11,26 +11,35 @@ import type { EIO, URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const ap_ = <E, A, G, B>(fab: EIO<G, (a: A) => B>, fa: EIO<E, A>): EIO<E | G, B> =>
-   X.map_(X.both_(fab, fa), ([f, a]) => f(a));
+export function ap_<E, A, G, B>(fab: EIO<G, (a: A) => B>, fa: EIO<E, A>): EIO<E | G, B> {
+   return X.map_(X.both_(fab, fa), ([f, a]) => f(a));
+}
 
-export const ap = <E, A>(fa: EIO<E, A>) => <G, B>(fab: EIO<G, (a: A) => B>): EIO<E | G, B> => ap_(fab, fa);
+export function ap<E, A>(fa: EIO<E, A>): <G, B>(fab: EIO<G, (a: A) => B>) => EIO<E | G, B> {
+   return (fab) => ap_(fab, fa);
+}
 
-export const apFirst_ = <E, A, G, B>(fa: EIO<E, A>, fb: EIO<G, B>): EIO<E | G, A> =>
-   ap_(
+export function apFirst_<E, A, G, B>(fa: EIO<E, A>, fb: EIO<G, B>): EIO<E | G, A> {
+   return ap_(
       map_(fa, (a) => () => a),
       fb
    );
+}
 
-export const apFirst = <G, B>(fb: EIO<G, B>) => <E, A>(fa: EIO<E, A>): EIO<E | G, A> => apFirst_(fa, fb);
+export function apFirst<G, B>(fb: EIO<G, B>): <E, A>(fa: EIO<E, A>) => EIO<G | E, A> {
+   return (fa) => apFirst_(fa, fb);
+}
 
-export const apSecond_ = <E, A, G, B>(fa: EIO<E, A>, fb: EIO<G, B>): EIO<E | G, B> =>
-   ap_(
+export function apSecond_<E, A, G, B>(fa: EIO<E, A>, fb: EIO<G, B>): EIO<E | G, B> {
+   return ap_(
       map_(fa, () => (b: B) => b),
       fb
    );
+}
 
-export const apSecond = <G, B>(fb: EIO<G, B>) => <E, A>(fa: EIO<E, A>): EIO<E | G, B> => apSecond_(fa, fb);
+export function apSecond<G, B>(fb: EIO<G, B>): <E, A>(fa: EIO<E, A>) => EIO<G | E, B> {
+   return (fa) => apSecond_(fa, fb);
+}
 
 export const mapBoth_: <E, A, G, B, C>(fa: EIO<E, A>, fb: EIO<G, B>, f: (a: A, b: B) => C) => EIO<E | G, C> =
    X.mapBoth_;
@@ -38,11 +47,13 @@ export const mapBoth_: <E, A, G, B, C>(fa: EIO<E, A>, fb: EIO<G, B>, f: (a: A, b
 export const mapBoth: <A, G, B, C>(fb: EIO<G, B>, f: (a: A, b: B) => C) => <E>(fa: EIO<E, A>) => EIO<E | G, C> =
    X.mapBoth;
 
-export const lift2 = <A, B, C, E, G>(f: (a: A) => (b: B) => C) => (fa: EIO<E, A>) => (fb: EIO<G, B>): EIO<E | G, C> =>
-   ap_(
-      map_(fa, (a) => (b: B) => f(a)(b)),
-      fb
-   );
+export function lift2<A, B, C, E, G>(f: (a: A) => (b: B) => C): (fa: EIO<E, A>) => (fb: EIO<G, B>) => EIO<E | G, C> {
+   return (fa) => (fb) =>
+      ap_(
+         map_(fa, (a) => (b: B) => f(a)(b)),
+         fb
+      );
+}
 
 /**
  * @category Apply

@@ -165,13 +165,16 @@ const prettyLines = <E>(cause: Cause<E>): Sy.IO<readonly string[]> =>
       return O.getOrElse_(A.updateAt(0, "╥")(format(s)), (): string[] => []);
    });
 
-export const prettyM = <E>(cause: Cause<E>): Sy.IO<string> =>
-   Sy.gen(function* (_) {
+export function prettyM<E>(cause: Cause<E>): Sy.IO<string> {
+   return Sy.gen(function* (_) {
       const lines = yield* _(prettyLines(cause));
       return lines.join("\n");
    });
+}
 
-export const pretty = <E>(cause: Cause<E>) => Sy.runIO(prettyM(cause));
+export function pretty<E>(cause: Cause<E>): string {
+   return Sy.runIO(prettyM(cause));
+}
 
 export const showCause: Show<Cause<any>> = {
    show: pretty

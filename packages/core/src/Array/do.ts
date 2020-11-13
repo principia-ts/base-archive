@@ -12,25 +12,39 @@ import { chain } from "./monad";
 const of: ReadonlyArray<{}> = pure({});
 export { of as do };
 
-export const bindS = <A, K, N extends string>(
+export function bindS<A, K, N extends string>(
    name: Exclude<N, keyof K>,
    f: (_: K) => ReadonlyArray<A>
-): ((
+): (
    mk: ReadonlyArray<K>
 ) => ReadonlyArray<
    {
       [k in N | keyof K]: k extends keyof K ? K[k] : A;
    }
->) =>
-   chain((a) =>
+> {
+   return chain((a) =>
       pipe(
          f(a),
          map((b) => bind_(a, name, b))
       )
    );
+}
 
-export const bindTo = <K, N extends string>(name: Exclude<N, keyof K>) => <R, E, A>(
+export function bindTo<K, N extends string>(
+   name: Exclude<N, keyof K>
+): <A>(
    fa: ReadonlyArray<A>
-): ReadonlyArray<{ [k in Exclude<N, keyof K>]: A }> => map_(fa, bindTo_(name));
+) => ReadonlyArray<
+   {
+      [k in Exclude<N, keyof K>]: A;
+   }
+> {
+   return map(bindTo_(name));
+}
 
-export const letS = <K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K) => A) => bindS(name, flow(f, pure));
+export function letS<K, N extends string, A>(
+   name: Exclude<N, keyof K>,
+   f: (_: K) => A
+): (mk: ReadonlyArray<K>) => ReadonlyArray<{ [k in N | keyof K]: k extends keyof K ? K[k] : A }> {
+   return bindS(name, flow(f, pure));
+}

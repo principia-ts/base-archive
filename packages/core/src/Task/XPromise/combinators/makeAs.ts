@@ -5,4 +5,6 @@ import { unsafeMake } from "./unsafeMake";
 /**
  * Makes a new promise to be completed by the fiber with the specified id.
  */
-export const makeAs = <E, A>(fiberId: FiberId) => total(() => unsafeMake<E, A>(fiberId));
+export function makeAs<E, A>(fiberId: FiberId) {
+   return total(() => unsafeMake<E, A>(fiberId));
+}

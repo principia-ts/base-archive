@@ -9,7 +9,7 @@ import { elem } from "./guards";
  * -------------------------------------------
  */
 
-export const chain_ = <B>(E: Eq<B>): (<A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B>) => {
+export function chain_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
    const elemE = elem(E);
    return (set, f) => {
       const r = new Set<B>();
@@ -22,8 +22,13 @@ export const chain_ = <B>(E: Eq<B>): (<A>(set: ReadonlySet<A>, f: (a: A) => Read
       });
       return r;
    };
-};
+}
 
-export const chain = <B>(E: Eq<B>) => <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => chain_(E)(set, f);
+export function chain<B>(E: Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
+   return (f) => (set) => chain_(E)(set, f);
+}
 
-export const flatten: <A>(E: Eq<A>) => (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> = (E) => chain(E)(identity);
+export function flatten<A>(E: Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> {
+   const chainE = chain(E);
+   return chainE(identity);
+}

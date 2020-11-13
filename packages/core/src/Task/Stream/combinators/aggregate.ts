@@ -8,11 +8,11 @@ import * as Pull from "../internal/Pull";
 import type { Transducer } from "../internal/Transducer";
 import { Stream } from "../model";
 
-export const aggregate_ = <R, E, O, R1, E1, P>(
+export function aggregate_<R, E, O, R1, E1, P>(
    stream: Stream<R, E, O>,
    transducer: Transducer<R1, E1, O, P>
-): Stream<R & R1, E | E1, P> =>
-   new Stream(
+): Stream<R & R1, E | E1, P> {
+   return new Stream(
       M.gen(function* (_) {
          const pull = yield* _(stream.proc);
          const push = yield* _(transducer.push);
@@ -39,6 +39,10 @@ export const aggregate_ = <R, E, O, R1, E1, P>(
          return go;
       })
    );
+}
 
-export const aggregate = <R1, E1, O, P>(transducer: Transducer<R1, E1, O, P>) => <R, E>(stream: Stream<R, E, O>) =>
-   aggregate_(stream, transducer);
+export function aggregate<R1, E1, O, P>(
+   transducer: Transducer<R1, E1, O, P>
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, P> {
+   return (stream) => aggregate_(stream, transducer);
+}

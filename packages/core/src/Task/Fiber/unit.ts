@@ -7,4 +7,6 @@ import type { Fiber } from "./model";
  * -------------------------------------------
  */
 
-export const unit = (): Fiber<never, void> => succeed(undefined);
+export function unit(): Fiber<never, void> {
+   return succeed(undefined);
+}

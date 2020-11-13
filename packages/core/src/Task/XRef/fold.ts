@@ -8,12 +8,14 @@ import type { XRef } from "./model";
  * combinators implemented in terms of `fold` will be more ergonomic but this
  * method is extremely useful for implementing new combinators.
  */
-export const fold = <EA, EB, A, B, EC, ED, C = A, D = B>(
+export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
    ea: (_: EA) => EC,
    eb: (_: EB) => ED,
    ca: (_: C) => E.Either<EC, A>,
    bd: (_: B) => E.Either<ED, D>
-) => (ref: XRef<EA, EB, A, B>): XRef<EC, ED, C, D> => ref.fold(ea, eb, ca, bd);
+): (ref: XRef<EA, EB, A, B>) => XRef<EC, ED, C, D> {
+   return (ref) => ref.fold(ea, eb, ca, bd);
+}
 
 /**
  * Folds over the error and value types of the `XRef`. This is a highly
@@ -22,37 +24,43 @@ export const fold = <EA, EB, A, B, EC, ED, C = A, D = B>(
  * combinators implemented in terms of `fold` will be more ergonomic but this
  * method is extremely useful for implementing new combinators.
  */
-export const fold_ = <EA, EB, A, B, EC, ED, C = A, D = B>(
+export function fold_<EA, EB, A, B, EC, ED, C = A, D = B>(
    ref: XRef<EA, EB, A, B>,
    ea: (_: EA) => EC,
    eb: (_: EB) => ED,
    ca: (_: C) => E.Either<EC, A>,
    bd: (_: B) => E.Either<ED, D>
-): XRef<EC, ED, C, D> => ref.fold(ea, eb, ca, bd);
+): XRef<EC, ED, C, D> {
+   return ref.fold(ea, eb, ca, bd);
+}
 
 /**
  * Folds over the error and value types of the `XRef`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
  * of `fold` but requires unifying the error types.
  */
-export const foldAll = <EA, EB, A, B, EC, ED, C = A, D = B>(
+export function foldAll<EA, EB, A, B, EC, ED, C = A, D = B>(
    ea: (_: EA) => EC,
    eb: (_: EB) => ED,
    ec: (_: EB) => EC,
    ca: (_: C) => (_: B) => E.Either<EC, A>,
    bd: (_: B) => E.Either<ED, D>
-) => (ref: XRef<EA, EB, A, B>): XRef<EC, ED, C, D> => ref.foldAll(ea, eb, ec, ca, bd);
+): (ref: XRef<EA, EB, A, B>) => XRef<EC, ED, C, D> {
+   return (ref) => ref.foldAll(ea, eb, ec, ca, bd);
+}
 
 /**
  * Folds over the error and value types of the `XRef`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
  * of `fold` but requires unifying the error types.
  */
-export const foldAll_ = <EA, EB, A, B, EC, ED, C = A, D = B>(
+export function foldAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
    ref: XRef<EA, EB, A, B>,
    ea: (_: EA) => EC,
    eb: (_: EB) => ED,
    ec: (_: EB) => EC,
    ca: (_: C) => (_: B) => E.Either<EC, A>,
    bd: (_: B) => E.Either<ED, D>
-): XRef<EC, ED, C, D> => ref.foldAll(ea, eb, ec, ca, bd);
+): XRef<EC, ED, C, D> {
+   return ref.foldAll(ea, eb, ec, ca, bd);
+}

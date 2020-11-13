@@ -1,10 +1,18 @@
 import { combine, element } from "./constructors";
 import type { FreeMonoid } from "./model";
 
-export const append_ = <A>(fs: FreeMonoid<A>, a: A): FreeMonoid<A> => combine(fs, element(a));
+export function append_<A>(fs: FreeMonoid<A>, a: A): FreeMonoid<A> {
+   return combine(fs, element(a));
+}
 
-export const append = <A>(a: A) => (fs: FreeMonoid<A>): FreeMonoid<A> => append_(fs, a);
+export function append<A>(a: A): (fs: FreeMonoid<A>) => FreeMonoid<A> {
+   return (fs) => append_(fs, a);
+}
 
-export const prepend_ = <A>(fs: FreeMonoid<A>, a: A): FreeMonoid<A> => combine(element(a), fs);
+export function prepend_<A>(fs: FreeMonoid<A>, a: A): FreeMonoid<A> {
+   return combine(element(a), fs);
+}
 
-export const prepend = <A>(a: A) => (fs: FreeMonoid<A>): FreeMonoid<A> => prepend_(fs, a);
+export function prepend<A>(a: A): (fs: FreeMonoid<A>) => FreeMonoid<A> {
+   return (fs) => prepend_(fs, a);
+}

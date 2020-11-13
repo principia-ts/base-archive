@@ -17,7 +17,9 @@ import type { Lens, URI, V } from "./model";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose_ = <S, A, B>(sa: Lens<S, A>, ab: Lens<A, B>): Lens<S, B> => _.lensComposeLens(ab)(sa);
+export function compose_<S, A, B>(sa: Lens<S, A>, ab: Lens<A, B>): Lens<S, B> {
+   return _.lensComposeLens(ab)(sa);
+}
 
 /**
  * Compose an `Lens` with a `Lens`

@@ -2,8 +2,14 @@ import type { ReadonlyRecord } from "./model";
 
 export const empty: ReadonlyRecord<string, never> = {};
 
-export const fromRecord = <N extends string, A>(r: Record<N, A>): ReadonlyRecord<N, A> => Object.assign({}, r);
+export function fromRecord<N extends string, A>(r: Record<N, A>): ReadonlyRecord<N, A> {
+   return Object.assign({}, r);
+}
 
-export const toRecord = <N extends string, A>(r: ReadonlyRecord<N, A>): Record<N, A> => Object.assign({}, r);
+export function toRecord<N extends string, A>(r: ReadonlyRecord<N, A>): Record<N, A> {
+   return Object.assign({}, r);
+}
 
-export const singleton = <N extends string, A>(k: N, a: A): ReadonlyRecord<N, A> => ({ [k]: a } as any);
+export function singleton<N extends string, A>(k: N, a: A): ReadonlyRecord<N, A> {
+   return { [k]: a } as any;
+}

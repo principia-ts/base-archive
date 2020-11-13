@@ -9,5 +9,6 @@ import { releaseAll } from "./releaseAll";
  * be released with the specified `ExecutionStrategy` as the release action
  * for the resulting `Managed`.
  */
-export const makeManagedReleaseMap = (es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> =>
-   makeExit_(RM.make, (rm, e) => releaseAll(e, es)(rm));
+export function makeManagedReleaseMap(es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> {
+   return makeExit_(RM.make, (rm, e) => releaseAll(e, es)(rm));
+}

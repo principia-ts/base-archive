@@ -7,26 +7,35 @@ import type { XRefM } from "./model";
  * Transforms the `get` value of the `XRefM` with the specified effectual
  * function.
  */
-export const mapM_ = <RA, RB, EA, EB, A, B, RC, EC, C>(
+export function mapM_<RA, RB, EA, EB, A, B, RC, EC, C>(
    self: XRefM<RA, RB, EA, EB, A, B>,
    f: (b: B) => T.Task<RC, EC, C>
-) => pipe(self, bimapM(T.pure, f));
+): XRefM<RA, RB & RC, EA, EB | EC, A, C> {
+   return pipe(self, bimapM(T.pure, f));
+}
 
 /**
  * Transforms the `get` value of the `XRefM` with the specified effectual
  * function.
  */
-export const mapM = <B, RC, EC, C>(f: (b: B) => T.Task<RC, EC, C>) => <RA, RB, EA, EB, A>(
-   self: XRefM<RA, RB, EA, EB, A, B>
-) => mapM_(self, f);
+export function mapM<B, RC, EC, C>(
+   f: (b: B) => T.Task<RC, EC, C>
+): <RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA, RB & RC, EA, EC | EB, A, C> {
+   return (self) => mapM_(self, f);
+}
 
 /**
  * Transforms the `get` value of the `XRefM` with the specified function.
  */
-export const map_ = <RA, RB, EA, EB, A, B, C>(self: XRefM<RA, RB, EA, EB, A, B>, f: (b: B) => C) =>
-   mapM_(self, (b) => T.pure(f(b)));
+export function map_<RA, RB, EA, EB, A, B, C>(self: XRefM<RA, RB, EA, EB, A, B>, f: (b: B) => C) {
+   return mapM_(self, (b) => T.pure(f(b)));
+}
 
 /**
  * Transforms the `get` value of the `XRefM` with the specified function.
  */
-export const map = <B, C>(f: (b: B) => C) => <RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, B>) => map_(self, f);
+export function map<B, C>(
+   f: (b: B) => C
+): <RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA, RB, EA, EB, A, C> {
+   return (self) => map_(self, f);
+}

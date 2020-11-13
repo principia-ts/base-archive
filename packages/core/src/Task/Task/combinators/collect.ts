@@ -4,12 +4,12 @@ import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import type { Task } from "../model";
 
-export const _collectM = <R, E, A, R1, E1, A1, E2>(
+export function collectM_<R, E, A, R1, E1, A1, E2>(
    ef: Task<R, E, A>,
    f: () => E2,
    pf: (a: A) => Option<Task<R1, E1, A1>>
-) =>
-   chain_(
+): Task<R & R1, E | E1 | E2, A1> {
+   return chain_(
       ef,
       (a): Task<R1, E1 | E2, A1> =>
          pipe(
@@ -17,13 +17,26 @@ export const _collectM = <R, E, A, R1, E1, A1, E2>(
             O.getOrElse(() => fail(f()))
          )
    );
+}
 
-export const collectM = <A, R1, E1, A1, E2>(f: () => E2, pf: (a: A) => Option<Task<R1, E1, A1>>) => <R, E>(
-   ef: Task<R, E, A>
-) => _collectM(ef, f, pf);
+export function collectM<A, R1, E1, A1, E2>(
+   f: () => E2,
+   pf: (a: A) => Option<Task<R1, E1, A1>>
+): <R, E>(ef: Task<R, E, A>) => Task<R & R1, E1 | E2 | E, A1> {
+   return (ef) => collectM_(ef, f, pf);
+}
 
-export const _collect = <R, E, A, E1, A1>(ef: Task<R, E, A>, f: () => E1, pf: (a: A) => Option<A1>) =>
-   _collectM(ef, f, flow(pf, O.map(pure)));
+export function collect_<R, E, A, E1, A1>(
+   ef: Task<R, E, A>,
+   f: () => E1,
+   pf: (a: A) => Option<A1>
+): Task<R, E | E1, A1> {
+   return collectM_(ef, f, flow(pf, O.map(pure)));
+}
 
-export const collect = <A, E1, A1>(f: () => E1, pf: (a: A) => Option<A1>) => <R, E>(ef: Task<R, E, A>) =>
-   _collect(ef, f, pf);
+export function collect<A, E1, A1>(
+   f: () => E1,
+   pf: (a: A) => Option<A1>
+): <R, E>(ef: Task<R, E, A>) => Task<R, E1 | E, A1> {
+   return (ef) => collect_(ef, f, pf);
+}

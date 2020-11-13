@@ -11,16 +11,18 @@ interface Next<A> {
 /**
  * Test whether or not a map is empty
  */
-export const isEmpty = <K, A>(d: ReadonlyMap<K, A>): boolean => d.size === 0;
+export function isEmpty<K, A>(d: ReadonlyMap<K, A>): boolean {
+   return d.size === 0;
+}
 
 /**
  * Test whether or not one `Map` contains all of the keys and values contained in another `Map`
  *
  * @since 1.0.0
  */
-export const isSubmap_ = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
+export function isSubmap_<K, A>(EK: Eq<K>, EA: Eq<A>): (me: ReadonlyMap<K, A>, that: ReadonlyMap<K, A>) => boolean {
    const lookupWithKeyE = lookupWithKey(EK);
-   return (me: ReadonlyMap<K, A>, that: ReadonlyMap<K, A>) => {
+   return (me, that) => {
       const entries = me.entries();
       let e: Next<readonly [K, A]>;
       while (!(e = entries.next()).done) {
@@ -32,9 +34,9 @@ export const isSubmap_ = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
       }
       return true;
    };
-};
+}
 
-export const isSubmap = <K, A>(EK: Eq<K>, EA: Eq<A>) => {
+export function isSubmap<K, A>(EK: Eq<K>, EA: Eq<A>): (that: ReadonlyMap<K, A>) => (me: ReadonlyMap<K, A>) => boolean {
    const isSubmapKA_ = isSubmap_(EK, EA);
-   return (that: ReadonlyMap<K, A>) => (me: ReadonlyMap<K, A>) => isSubmapKA_(me, that);
-};
+   return (that) => (me) => isSubmapKA_(me, that);
+}

@@ -16,9 +16,11 @@ import type { At } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const fromIso = <T, S>(iso: Iso<T, S>) => <I, A>(sia: At<S, I, A>): At<T, I, A> => ({
-   at: (i) => pipe(iso, _.isoAsLens, _.lensComposeLens(sia.at(i)))
-});
+export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: At<S, I, A>) => At<T, I, A> {
+   return (sia) => ({
+      at: (i) => pipe(iso, _.isoAsLens, _.lensComposeLens(sia.at(i)))
+   });
+}
 
 /**
  * @category Constructors

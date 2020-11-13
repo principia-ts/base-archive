@@ -15,6 +15,8 @@ function* genCombine<A>(ia: Iterator<A>, ib: Iterator<A>) {
    }
 }
 
-export const append_ = <A>(fa: Iterable<A>, fb: Iterable<A>): Iterable<A> => ({
-   [Symbol.iterator]: () => genCombine(fa[Symbol.iterator](), fb[Symbol.iterator]())
-});
+export function append_<A>(fa: Iterable<A>, fb: Iterable<A>): Iterable<A> {
+   return {
+      [Symbol.iterator]: () => genCombine(fa[Symbol.iterator](), fb[Symbol.iterator]())
+   };
+}

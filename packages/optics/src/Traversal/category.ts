@@ -17,8 +17,9 @@ import type { Traversal, URI, V } from "./model";
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose_ = <S, A, B>(sa: Traversal<S, A>, ab: Traversal<A, B>): Traversal<S, B> =>
-   _.traversalComposeTraversal(ab)(sa);
+export function compose_<S, A, B>(sa: Traversal<S, A>, ab: Traversal<A, B>): Traversal<S, B> {
+   return _.traversalComposeTraversal(ab)(sa);
+}
 
 /**
  * Compose a `Traversal` with a `Traversal`

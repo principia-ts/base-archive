@@ -34,8 +34,8 @@ const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): Task<unknown, 
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export const race_ = <R, E, A, R1, E1, A1>(ef: Task<R, E, A>, that: Task<R1, E1, A1>): Task<R & R1, E | E1, A | A1> =>
-   _.descriptorWith((d) =>
+export function race_<R, E, A, R1, E1, A1>(ef: Task<R, E, A>, that: Task<R1, E1, A1>): Task<R & R1, E | E1, A | A1> {
+   return _.descriptorWith((d) =>
       raceWith_(
          ef,
          that,
@@ -53,6 +53,7 @@ export const race_ = <R, E, A, R1, E1, A1>(ef: Task<R, E, A>, that: Task<R1, E1,
             )
       )
    );
+}
 
 /**
  * Returns a task that races this effect with the specified effect,
@@ -63,7 +64,9 @@ export const race_ = <R, E, A, R1, E1, A1>(ef: Task<R, E, A>, that: Task<R1, E1,
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export const race = <R1, E1, A1>(that: Task<R1, E1, A1>) => <R, E, A>(ef: Task<R, E, A>) => race_(ef, that);
+export function race<R1, E1, A1>(that: Task<R1, E1, A1>): <R, E, A>(ef: Task<R, E, A>) => Task<R & R1, E1 | E, A1 | A> {
+   return (ef) => race_(ef, that);
+}
 
 /**
  * Returns a task that races this effect with the specified effect,
@@ -73,10 +76,12 @@ export const race = <R1, E1, A1>(that: Task<R1, E1, A1>) => <R, E, A>(ef: Task<R
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export const raceEither_ = <R, E, A, R1, E1, A1>(
+export function raceEither_<R, E, A, R1, E1, A1>(
    fa: Task<R, E, A>,
    that: Task<R1, E1, A1>
-): Task<R & R1, E | E1, Either<A, A1>> => race_(_.map_(fa, E.left), _.map_(that, E.right));
+): Task<R & R1, E | E1, Either<A, A1>> {
+   return race_(_.map_(fa, E.left), _.map_(that, E.right));
+}
 
 /**
  * Returns a task that races this effect with the specified effect,
@@ -86,7 +91,11 @@ export const raceEither_ = <R, E, A, R1, E1, A1>(
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export const raceEither = <R1, E1, A1>(that: Task<R1, E1, A1>) => <R, E, A>(fa: Task<R, E, A>) => raceEither_(fa, that);
+export function raceEither<R1, E1, A1>(
+   that: Task<R1, E1, A1>
+): <R, E, A>(fa: Task<R, E, A>) => Task<R & R1, E1 | E, Either<A, A1>> {
+   return (fa) => raceEither_(fa, that);
+}
 
 /**
  * Returns a task that races this effect with the specified effect,
@@ -100,13 +109,13 @@ export const raceEither = <R1, E1, A1>(that: Task<R1, E1, A1>) => <R, E, A>(fa: 
  * interrupt signal, allowing a fast return, with interruption performed
  * in the background.
  */
-export const raceFirst = <R1, E1, A1>(that: Task<R1, E1, A1>) => <R, E, A>(
-   ef: Task<R, E, A>
-): Task<R & R1, E | E1, A | A1> =>
-   pipe(
-      race_(_.result(ef), _.result(that)),
-      _.chain((a) => _.done(a as Exit<E | E1, A | A1>))
-   );
+export function raceFirst<R1, E1, A1>(that: Task<R1, E1, A1>) {
+   return <R, E, A>(ef: Task<R, E, A>): Task<R & R1, E | E1, A | A1> =>
+      pipe(
+         race_(_.result(ef), _.result(that)),
+         _.chain((a) => _.done(a as Exit<E | E1, A | A1>))
+      );
+}
 
 const arbiter = <E, A>(
    fibers: ReadonlyArray<Fiber.Fiber<E, A>>,
@@ -141,11 +150,11 @@ const arbiter = <E, A>(
  *
  * Note: in case of success eventual interruption errors are ignored
  */
-export const raceAll = <R, E, A>(
+export function raceAll<R, E, A>(
    ios: NonEmptyArray<Task<R, E, A>>,
    interruptStrategy: "background" | "wait" = "background"
-): Task<R, E, A> =>
-   pipe(
+): Task<R, E, A> {
+   return pipe(
       _.do,
       _.bindS("done", () => XP.make<E, readonly [A, Fiber.Fiber<E, A>]>()),
       _.bindS("fails", () => XR.makeRef(ios.length)),
@@ -175,3 +184,4 @@ export const raceAll = <R, E, A>(
       _.tap(({ c: { fs } }) => (interruptStrategy === "wait" ? _.foreach_(fs, (f) => f.await) : _.unit())),
       _.map(({ c: { c } }) => c)
    );
+}

@@ -14,28 +14,29 @@ export const SE = DE.getSemigroup<ErrorInfo>();
 /**
  * @internal
  */
-const both_ = <A, B>(
+function both_<A, B>(
    fa: E.Either<DecodeError, A>,
    fb: E.Either<DecodeError, B>
-): E.Either<DecodeError, readonly [A, B]> =>
-   E.isLeft(fa)
+): E.Either<DecodeError, readonly [A, B]> {
+   return E.isLeft(fa)
       ? E.isLeft(fb)
          ? E.left(SE.combine_(fa.left, fb.left))
          : fa
       : E.isLeft(fb)
       ? fb
       : E.right([fa.right, fb.right]);
+}
 
 /**
  * @internal
  */
-const alt_ = <A>(me: E.Either<DecodeError, A>, that: () => E.Either<DecodeError, A>): E.Either<DecodeError, A> => {
+function alt_<A>(me: E.Either<DecodeError, A>, that: () => E.Either<DecodeError, A>): E.Either<DecodeError, A> {
    if (E.isRight(me)) {
       return me;
    }
    const ea = that();
    return E.isLeft(ea) ? E.left(SE.combine_(me.left, ea.left)) : ea;
-};
+}
 
 /**
  * @internal

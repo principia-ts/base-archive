@@ -1,5 +1,5 @@
 import { identity } from "../../Function";
 import * as O from "../../Option";
-import { fiberRef } from "../FiberRef";
+import { FiberRef } from "../FiberRef";
 
-export const fiberName = fiberRef<O.Option<string>>(O.none(), identity, identity);
+export const fiberName = new FiberRef<O.Option<string>>(O.none(), identity, identity);

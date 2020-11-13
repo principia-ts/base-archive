@@ -24,7 +24,9 @@ import { unit } from "./unit";
  * @category Apply
  * @since 1.0.0
  */
-export const both_ = <A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> => mapBoth_(fa, fb, tuple);
+export function both_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
+   return mapBoth_(fa, fb, tuple);
+}
 
 /**
  * ```haskell
@@ -36,7 +38,9 @@ export const both_ = <A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B
  * @category Apply
  * @since 1.0.0
  */
-export const both = <B>(fb: Option<B>) => <A>(fa: Option<A>): Option<readonly [A, B]> => both_(fa, fb);
+export function both<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A, B]> {
+   return (fa) => both_(fa, fb);
+}
 
 /**
  * ```haskell

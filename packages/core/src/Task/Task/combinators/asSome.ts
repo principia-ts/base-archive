@@ -1,4 +1,5 @@
 import { map_ } from "../_core";
+import type { Option } from "../../../Option";
 import { some } from "../../../Option";
 import type { Task } from "../model";
 
@@ -9,4 +10,6 @@ import type { Task } from "../model";
  *
  * Maps the success value of this effect to an optional value.
  */
-export const asSome = <R, E, A>(ef: Task<R, E, A>) => map_(ef, some);
+export function asSome<R, E, A>(ef: Task<R, E, A>): Task<R, E, Option<A>> {
+   return map_(ef, some);
+}

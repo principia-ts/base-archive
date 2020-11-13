@@ -23,12 +23,18 @@ function* genChain<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
    }
 }
 
-export const chain = <A, B>(f: (a: A) => Iterable<B>) => (ma: Iterable<A>): Iterable<B> => ({
-   [Symbol.iterator]: () => genChain(ma[Symbol.iterator](), f)
-});
+export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
+   return (ma) => ({
+      [Symbol.iterator]: () => genChain(ma[Symbol.iterator](), f)
+   });
+}
 
-export const chain_ = <A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> => ({
-   [Symbol.iterator]: () => genChain(ma[Symbol.iterator](), f)
-});
+export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
+   return {
+      [Symbol.iterator]: () => genChain(ma[Symbol.iterator](), f)
+   };
+}
 
-export const flatten = <A>(mma: Iterable<Iterable<A>>) => chain_(mma, identity);
+export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
+   return chain_(mma, identity);
+}

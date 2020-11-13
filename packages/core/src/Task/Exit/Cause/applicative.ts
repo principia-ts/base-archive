@@ -17,4 +17,6 @@ import type { Cause } from "./model";
  * @category Applicative
  * @since 1.0.0
  */
-export const pure = <E>(e: E): Cause<E> => fail(e);
+export function pure<E>(e: E): Cause<E> {
+   return fail(e);
+}

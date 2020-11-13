@@ -8,4 +8,6 @@ import type { Tuple } from "./model";
  * -------------------------------------------
  */
 
-export const unit = <M>(M: Monoid<M>) => (): Tuple<void, M> => [undefined, M.nat] as const;
+export function unit<M>(M: Monoid<M>): () => Tuple<void, M> {
+   return () => [undefined, M.nat] as const;
+}

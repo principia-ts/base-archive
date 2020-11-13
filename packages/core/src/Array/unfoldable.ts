@@ -10,7 +10,7 @@ import type { URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const unfold = <A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): ReadonlyArray<A> => {
+export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): ReadonlyArray<A> {
    const ret = [];
    let bb = b;
    /* eslint-disable-next-line no-constant-condition */
@@ -25,7 +25,7 @@ export const unfold = <A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): Readon
       }
    }
    return ret;
-};
+}
 
 export const Unfoldable: P.Unfoldable<[URI], V> = HKT.instance({
    unfold

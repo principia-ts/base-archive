@@ -6,19 +6,29 @@ import * as T from "../Task/_core";
 import type { FiberId } from "./FiberId";
 import type { SyntheticFiber } from "./model";
 
-export const done = <E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> => ({
-   _tag: "SyntheticFiber",
-   await: T.pure(exit),
-   getRef: (ref) => T.pure(ref.initial),
-   inheritRefs: T.unit(),
-   interruptAs: () => T.pure(exit),
-   poll: T.pure(O.some(exit))
-});
+export function done<E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> {
+   return {
+      _tag: "SyntheticFiber",
+      await: T.pure(exit),
+      getRef: (ref) => T.pure(ref.initial),
+      inheritRefs: T.unit(),
+      interruptAs: () => T.pure(exit),
+      poll: T.pure(O.some(exit))
+   };
+}
 
-export const succeed = <A>(a: A): SyntheticFiber<never, A> => done(Ex.succeed(a));
+export function succeed<A>(a: A): SyntheticFiber<never, A> {
+   return done(Ex.succeed(a));
+}
 
-export const fail = <E>(e: E): SyntheticFiber<E, never> => done(Ex.fail(e));
+export function fail<E>(e: E): SyntheticFiber<E, never> {
+   return done(Ex.fail(e));
+}
 
-export const halt = <E>(cause: Cause<E>) => done(Ex.failure(cause));
+export function halt<E>(cause: Cause<E>) {
+   return done(Ex.failure(cause));
+}
 
-export const interruptAs = (id: FiberId) => done(Ex.interrupt(id));
+export function interruptAs(id: FiberId) {
+   return done(Ex.interrupt(id));
+}

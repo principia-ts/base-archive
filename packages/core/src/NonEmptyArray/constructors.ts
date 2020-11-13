@@ -41,4 +41,6 @@ export const snoc: <A>(end: A) => (init: ReadonlyArray<A>) => NonEmptyArray<A> =
  * @category Constructors
  * @since 1.0.0
  */
-export const fromArray = <A>(as: ReadonlyArray<A>): Option<NonEmptyArray<A>> => (A.isNonEmpty(as) ? some(as) : none());
+export function fromArray<A>(as: ReadonlyArray<A>): Option<NonEmptyArray<A>> {
+   return A.isNonEmpty(as) ? some(as) : none();
+}

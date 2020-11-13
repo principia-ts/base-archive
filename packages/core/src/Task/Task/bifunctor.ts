@@ -10,15 +10,17 @@ import type { Task } from "./model";
  * -------------------------------------------
  */
 
-export const bimap_ = <R, E, A, G, B>(pab: Task<R, E, A>, f: (e: E) => G, g: (a: A) => B): Task<R, G, B> =>
-   foldM_(
+export function bimap_<R, E, A, G, B>(pab: Task<R, E, A>, f: (e: E) => G, g: (a: A) => B): Task<R, G, B> {
+   return foldM_(
       pab,
       (e) => fail(f(e)),
       (a) => succeed(g(a))
    );
+}
 
-export const bimap = <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <R>(pab: Task<R, E, A>): Task<R, G, B> =>
-   bimap_(pab, f, g);
+export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: Task<R, E, A>) => Task<R, G, B> {
+   return (pab) => bimap_(pab, f, g);
+}
 
 /**
  * ```haskell
@@ -34,8 +36,9 @@ export const bimap = <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <R>(pab: Ta
  * @category Bifunctor
  * @since 1.0.0
  */
-export const mapError_ = <R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<R, D, A> =>
-   foldCauseM_(fea, flow(C.map(f), halt), succeed);
+export function mapError_<R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<R, D, A> {
+   return foldCauseM_(fea, flow(C.map(f), halt), succeed);
+}
 
 /**
  * ```haskell
@@ -51,4 +54,6 @@ export const mapError_ = <R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<
  * @category Bifunctor
  * @since 1.0.0
  */
-export const mapError = <E, D>(f: (e: E) => D) => <R, A>(fea: Task<R, E, A>) => mapError_(fea, f);
+export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: Task<R, E, A>) => Task<R, D, A> {
+   return (fea) => mapError_(fea, f);
+}

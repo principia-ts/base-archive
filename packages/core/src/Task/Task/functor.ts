@@ -20,7 +20,9 @@ import { chain_ } from "./monad";
  * @category Functor
  * @since 1.0.0
  */
-export const map_ = <R, E, A, B>(fa: Task<R, E, A>, f: (a: A) => B): Task<R, E, B> => chain_(fa, (a) => succeed(f(a)));
+export function map_<R, E, A, B>(fa: Task<R, E, A>, f: (a: A) => B): Task<R, E, B> {
+   return chain_(fa, (a) => succeed(f(a)));
+}
 
 /**
  * ```haskell
@@ -34,4 +36,6 @@ export const map_ = <R, E, A, B>(fa: Task<R, E, A>, f: (a: A) => B): Task<R, E, 
  * @category Functor
  * @since 1.0.0
  */
-export const map = <A, B>(f: (a: A) => B) => <R, E>(fa: Task<R, E, A>): Task<R, E, B> => map_(fa, f);
+export function map<A, B>(f: (a: A) => B): <R, E>(fa: Task<R, E, A>) => Task<R, E, B> {
+   return (fa) => map_(fa, f);
+}

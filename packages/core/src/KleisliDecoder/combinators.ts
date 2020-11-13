@@ -550,26 +550,27 @@ export function lazy<E, M>(
    return (onError) => (id, f) => lazy_(M)(id, f, onError);
 }
 
-export const id = <E, M extends HKT.URIS, C>(M: P.Applicative<M, C & HKT.Fix<"E", E>>) => <A>(): KleisliDecoder<
-   M,
-   C,
-   A,
-   E,
-   A
-> => ({
-   decode: pureF(M)
-});
+export function id<E, M extends HKT.URIS, C>(
+   M: P.Applicative<M, C & HKT.Fix<"E", E>>
+): <A>() => KleisliDecoder<M, C, A, E, A> {
+   return () => ({
+      decode: pureF(M)
+   });
+}
 
-export const map_ = <E, F extends HKT.URIS, C>(F: P.Functor<F, C & HKT.Fix<"E", E>>) => <I, A, B>(
-   ia: KleisliDecoder<F, C, I, E, A>,
-   f: (a: A) => B
-): KleisliDecoder<F, C, I, E, B> => ({
-   decode: (i) => F.map_(ia.decode(i), f)
-});
+export function map_<E, F extends HKT.URIS, C>(
+   F: P.Functor<F, C & HKT.Fix<"E", E>>
+): <I, A, B>(ia: KleisliDecoder<F, C, I, E, A>, f: (a: A) => B) => KleisliDecoder<F, C, I, E, B> {
+   return (ia, f) => ({
+      decode: (i) => F.map_(ia.decode(i), f)
+   });
+}
 
-export const map = <E, F extends HKT.URIS, C>(F: P.Functor<F, C & HKT.Fix<"E", E>>) => <A, B>(f: (a: A) => B) => <I>(
-   ia: KleisliDecoder<F, C, I, E, A>
-): KleisliDecoder<F, C, I, E, B> => map_(F)(ia, f);
+export function map<E, F extends HKT.URIS, C>(
+   F: P.Functor<F, C & HKT.Fix<"E", E>>
+): <A, B>(f: (a: A) => B) => <I>(ia: KleisliDecoder<F, C, I, E, A>) => KleisliDecoder<F, C, I, E, B> {
+   return (f) => (ia) => map_(F)(ia, f);
+}
 
 export function alt_<E, F extends HKT.URIS, C>(
    A: P.Alt<F, C & HKT.Fix<"E", E>>

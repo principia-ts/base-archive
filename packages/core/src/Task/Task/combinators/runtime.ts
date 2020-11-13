@@ -1,5 +1,3 @@
-import { exit } from "process";
-
 import * as T from "../_core";
 import { HasClock, LiveClock } from "../../Clock";
 import type { Exit } from "../../Exit";
@@ -13,47 +11,50 @@ import * as Scope from "../../Scope";
 import * as Super from "../../Supervisor";
 import { _I } from "../model";
 
-export const empty = () => {
+export function empty() {
    return;
-};
+}
 
 export type DefaultEnv = HasClock & HasRandom;
 
-export const defaultEnv = () => ({
-   [HasClock.key]: LiveClock(),
-   [HasRandom.key]: defaultRandom
-});
+export function defaultEnv() {
+   return {
+      [HasClock.key]: new LiveClock(),
+      [HasRandom.key]: defaultRandom
+   };
+}
 
-export const fiberExecutor = <E, A>() =>
-   new Executor<E, A>(
+export function fiberExecutor<E, A>() {
+   return new Executor<E, A>(
       newFiberId(),
       defaultEnv(),
       F.interruptible,
       new Map(),
       Super.none,
       Scope.unsafeMakeScope<Exit<E, A>>(),
-      10_000
+      10000
    );
+}
 
 /**
  * Runs effect until completion, calling cb with the eventual exit state
  */
-export const run = <E, A>(_: T.Task<DefaultEnv, E, A>, cb?: Callback<E, A>) => {
+export function run<E, A>(_: T.Task<DefaultEnv, E, A>, cb?: Callback<E, A>) {
    const context = fiberExecutor<E, A>();
 
    context.evaluateLater(_[_I]);
    context.runAsync(cb || empty);
-};
+}
 
 /**
  * Runs effect until completion, calling cb with the eventual exit state
  */
-export const runAsap = <E, A>(_: T.Task<DefaultEnv, E, A>, cb?: Callback<E, A>) => {
+export function runAsap<E, A>(_: T.Task<DefaultEnv, E, A>, cb?: Callback<E, A>) {
    const context = fiberExecutor<E, A>();
 
    context.evaluateNow(_[_I]);
    context.runAsync(cb || empty);
-};
+}
 
 export interface CancelMain {
    (): void;
@@ -68,7 +69,7 @@ export interface CancelMain {
  *
  * Note: this should be used only in node.js as it depends on process.exit
  */
-export const runMain = <E>(effect: T.Task<DefaultEnv, E, void>): CancelMain => {
+export function runMain<E>(effect: T.Task<DefaultEnv, E, void>): CancelMain {
    const context = fiberExecutor<E, void>();
 
    context.evaluateLater(effect[_I]);
@@ -93,7 +94,7 @@ export const runMain = <E>(effect: T.Task<DefaultEnv, E, void>): CancelMain => {
    return () => {
       run(context.interruptAs(context.id));
    };
-};
+}
 
 /**
  * Task Canceler
@@ -104,7 +105,7 @@ export type AsyncCancel<E, A> = T.IO<Exit<E, A>>;
  * Run effect as a Promise of the Exit state
  * in case of error.
  */
-export const runPromiseExit = <E, A>(_: T.Task<DefaultEnv, E, A>): Promise<Exit<E, A>> => {
+export function runPromiseExit<E, A>(_: T.Task<DefaultEnv, E, A>): Promise<Exit<E, A>> {
    const context = fiberExecutor<E, A>();
 
    context.evaluateLater(_[_I]);
@@ -114,9 +115,9 @@ export const runPromiseExit = <E, A>(_: T.Task<DefaultEnv, E, A>): Promise<Exit<
          res(exit);
       });
    });
-};
+}
 
-export const runPromiseExitCancel = <E, A>(_: T.Task<DefaultEnv, E, A>): [Promise<Exit<E, A>>, CancelMain] => {
+export function runPromiseExitCancel<E, A>(_: T.Task<DefaultEnv, E, A>): [Promise<Exit<E, A>>, CancelMain] {
    const context = fiberExecutor<E, A>();
 
    context.evaluateLater(_[_I]);
@@ -129,26 +130,26 @@ export const runPromiseExitCancel = <E, A>(_: T.Task<DefaultEnv, E, A>): [Promis
          run(context.interruptAs(context.id));
       }
    ];
-};
+}
 
 /**
  * Runs effect until completion returing a cancel effecr that when executed
  * triggers cancellation of the process
  */
-export const runCancel = <E, A>(_: T.Task<DefaultEnv, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> => {
+export function runCancel<E, A>(_: T.Task<DefaultEnv, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
    const context = fiberExecutor<E, A>();
 
    context.evaluateLater(_[_I]);
    context.runAsync(cb || empty);
 
    return context.interruptAs(context.id);
-};
+}
 
 /**
  * Run effect as a Promise, throwing a FiberFailure containing the cause of exit
  * in case of error.
  */
-export const runPromise = <E, A>(_: T.Task<DefaultEnv, E, A>): Promise<A> => {
+export function runPromise<E, A>(_: T.Task<DefaultEnv, E, A>): Promise<A> {
    const context = fiberExecutor<E, A>();
 
    context.evaluateLater(_[_I]);
@@ -167,7 +168,7 @@ export const runPromise = <E, A>(_: T.Task<DefaultEnv, E, A>): Promise<A> => {
          }
       });
    });
-};
+}
 
 /**
  * Represent an environment providing function
@@ -180,21 +181,23 @@ export interface Runtime<R0> {
    runPromiseExit: <E, A>(_: T.Task<DefaultEnv & R0, E, A>) => Promise<Exit<E, A>>;
 }
 
-export const makeRuntime = <R0>(r0: R0): Runtime<R0> => ({
-   in: <R, E, A>(effect: T.Task<R & R0, E, A>) => T.gives_(effect, (r: R) => ({ ...r0, ...r })),
-   run: (_, cb) =>
-      run(
-         T.gives_(_, (r) => ({ ...r0, ...r })),
-         cb
-      ),
-   runCancel: (_, cb) =>
-      runCancel(
-         T.gives_(_, (r) => ({ ...r0, ...r })),
-         cb
-      ),
-   runPromise: (_) => runPromise(T.gives_(_, (r) => ({ ...r0, ...r }))),
-   runPromiseExit: (_) => runPromiseExit(T.gives_(_, (r) => ({ ...r0, ...r })))
-});
+export function makeRuntime<R0>(r0: R0): Runtime<R0> {
+   return {
+      in: <R, E, A>(effect: T.Task<R & R0, E, A>) => T.gives_(effect, (r: R) => ({ ...r0, ...r })),
+      run: (_, cb) =>
+         run(
+            T.gives_(_, (r) => ({ ...r0, ...r })),
+            cb
+         ),
+      runCancel: (_, cb) =>
+         runCancel(
+            T.gives_(_, (r) => ({ ...r0, ...r })),
+            cb
+         ),
+      runPromise: (_) => runPromise(T.gives_(_, (r) => ({ ...r0, ...r }))),
+      runPromiseExit: (_) => runPromiseExit(T.gives_(_, (r) => ({ ...r0, ...r })))
+   };
+}
 
 /**
  * Use current environment to build a runtime that is capable of
@@ -203,15 +206,20 @@ export const makeRuntime = <R0>(r0: R0): Runtime<R0> => ({
  * NOTE: in should be used in a region where current environment
  * is valid (i.e. keep attention to closed resources)
  */
-export const runtime = <R0>() =>
-   T.asksM((r0: R0) =>
+export function runtime<R0>() {
+   return T.asksM((r0: R0) =>
       T.total(
          (): Runtime<R0> => {
             return makeRuntime<R0>(r0);
          }
       )
    );
+}
 
-export const withRuntimeM = <R0, R, E, A>(f: (r: Runtime<R0>) => T.Task<R, E, A>) => T.chain_(runtime<R0>(), f);
+export function withRuntimeM<R0, R, E, A>(f: (r: Runtime<R0>) => T.Task<R, E, A>) {
+   return T.chain_(runtime<R0>(), f);
+}
 
-export const withRuntime = <R0, A>(f: (r: Runtime<R0>) => A) => T.chain_(runtime<R0>(), (r) => T.pure(f(r)));
+export function withRuntime<R0, A>(f: (r: Runtime<R0>) => A) {
+   return T.chain_(runtime<R0>(), (r) => T.pure(f(r)));
+}

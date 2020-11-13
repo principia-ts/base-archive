@@ -17,8 +17,9 @@ import type { Option } from "./model";
  * @category Destructors
  * @since 1.0.0
  */
-export const fold_ = <A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A) => C): B | C =>
-   isNone(fa) ? onNothing() : onJust(fa.value);
+export function fold_<A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A) => C): B | C {
+   return isNone(fa) ? onNothing() : onJust(fa.value);
+}
 
 /**
  * ```haskell
@@ -30,8 +31,9 @@ export const fold_ = <A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A)
  * @category Destructors
  * @since 1.0.0
  */
-export const fold = <A, B, C>(onNothing: () => B, onJust: (a: A) => C) => (fa: Option<A>): B | C =>
-   fold_(fa, onNothing, onJust);
+export function fold<A, B, C>(onNothing: () => B, onJust: (a: A) => C): (fa: Option<A>) => B | C {
+   return (fa) => fold_(fa, onNothing, onJust);
+}
 
 /**
  * ```haskell
@@ -43,7 +45,9 @@ export const fold = <A, B, C>(onNothing: () => B, onJust: (a: A) => C) => (fa: O
  * @category Destructors
  * @since 1.0.0
  */
-export const toNullable = <A>(fa: Option<A>): A | null => (isNone(fa) ? null : fa.value);
+export function toNullable<A>(fa: Option<A>): A | null {
+   return isNone(fa) ? null : fa.value;
+}
 
 /**
  * ```haskell
@@ -55,7 +59,9 @@ export const toNullable = <A>(fa: Option<A>): A | null => (isNone(fa) ? null : f
  * @category Destructors
  * @since 1.0.0
  */
-export const toUndefined = <A>(fa: Option<A>): A | undefined => (isNone(fa) ? undefined : fa.value);
+export function toUndefined<A>(fa: Option<A>): A | undefined {
+   return isNone(fa) ? undefined : fa.value;
+}
 
 /**
  * ```haskell
@@ -67,7 +73,9 @@ export const toUndefined = <A>(fa: Option<A>): A | undefined => (isNone(fa) ? un
  * @category Destructors
  * @since 1.0.0
  */
-export const getOrElse_ = <A, B>(fa: Option<A>, onNothing: () => B): A | B => (isNone(fa) ? onNothing() : fa.value);
+export function getOrElse_<A, B>(fa: Option<A>, onNothing: () => B): A | B {
+   return isNone(fa) ? onNothing() : fa.value;
+}
 
 /**
  * ```haskell
@@ -79,4 +87,6 @@ export const getOrElse_ = <A, B>(fa: Option<A>, onNothing: () => B): A | B => (i
  * @category Destructors
  * @since 1.0.0
  */
-export const getOrElse = <B>(onNothing: () => B) => <A>(fa: Option<A>): A | B => getOrElse_(fa, onNothing);
+export function getOrElse<B>(onNothing: () => B): <A>(fa: Option<A>) => B | A {
+   return (fa) => getOrElse_(fa, onNothing);
+}

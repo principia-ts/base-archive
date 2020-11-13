@@ -18,9 +18,11 @@ import type { Option } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const none = <A = never>(): Option<A> => ({
-   _tag: "None"
-});
+export function none<A = never>(): Option<A> {
+   return {
+      _tag: "None"
+   };
+}
 
 /**
  * ```haskell
@@ -32,10 +34,12 @@ export const none = <A = never>(): Option<A> => ({
  * @category Constructs
  * @since 1.0.0
  */
-export const some = <A>(a: A): Option<A> => ({
-   _tag: "Some",
-   value: a
-});
+export function some<A>(a: A): Option<A> {
+   return {
+      _tag: "Some",
+      value: a
+   };
+}
 
 /**
  * ```haskell
@@ -48,12 +52,15 @@ export const some = <A>(a: A): Option<A> => ({
  * @category Constructors
  * @since 1.0.0
  */
-export const fromNullable = <A>(a: A | null | undefined): Option<NonNullable<A>> =>
-   a == null ? none() : some(a as NonNullable<A>);
+export function fromNullable<A>(a: A | null | undefined): Option<NonNullable<A>> {
+   return a == null ? none() : some(a as NonNullable<A>);
+}
 
-export const fromNullableK = <A extends ReadonlyArray<unknown>, B>(
+export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
    f: (...args: A) => B | null | undefined
-): ((...args: A) => Option<NonNullable<B>>) => (...args) => fromNullable(f(...args));
+): (...args: A) => Option<NonNullable<B>> {
+   return (...args) => fromNullable(f(...args));
+}
 
 /**
  * ```haskell
@@ -65,13 +72,13 @@ export const fromNullableK = <A extends ReadonlyArray<unknown>, B>(
  * @category Constructors
  * @since 1.0.0
  */
-export const partial = <A>(thunk: Lazy<A>): Option<A> => {
+export function partial<A>(thunk: Lazy<A>): Option<A> {
    try {
       return some(thunk());
    } catch (_) {
       return none();
    }
-};
+}
 
 /**
  * ```haskell
@@ -83,9 +90,9 @@ export const partial = <A>(thunk: Lazy<A>): Option<A> => {
  * @category Constructors
  * @since 1.0.0
  */
-export const partialK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): ((...args: A) => Option<B>) => (
-   ...a
-) => partial(() => f(...a));
+export function partialK<A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): (...args: A) => Option<B> {
+   return (...a) => partial(() => f(...a));
+}
 
 /**
  * ```haskell
@@ -98,10 +105,11 @@ export const partialK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>
  * @category Constructors
  * @since 1.0.0
  */
-export const fromPredicate_: {
-   <A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>;
-   <A>(a: A, predicate: Predicate<A>): Option<A>;
-} = <A>(a: A, predicate: Predicate<A>): Option<A> => (predicate(a) ? none() : some(a));
+export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>;
+export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>;
+export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
+   return predicate(a) ? none() : some(a);
+}
 
 /**
  * ```haskell
@@ -114,10 +122,11 @@ export const fromPredicate_: {
  * @category Constructors
  * @since 1.0.0
  */
-export const fromPredicate: {
-   <A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<A>;
-   <A>(predicate: Predicate<A>): (a: A) => Option<A>;
-} = <A>(predicate: Predicate<A>) => (a: A) => fromPredicate_(a, predicate);
+export function fromPredicate<A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<A>;
+export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A>;
+export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
+   return (a) => fromPredicate_(a, predicate);
+}
 
 /**
  * ```haskell
@@ -129,4 +138,6 @@ export const fromPredicate: {
  * @category Constructors
  * @since 1.0.0
  */
-export const fromEither = <E, A>(ma: Either<E, A>): Option<A> => (ma._tag === "Left" ? none() : some(ma.right));
+export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
+   return ma._tag === "Left" ? none() : some(ma.right);
+}

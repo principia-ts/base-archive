@@ -1,7 +1,7 @@
 import type { Monoid } from "@principia/prelude/Monoid";
 import { makeMonoid } from "@principia/prelude/Monoid";
 
-import { append_ } from "./combinators";
+import { concat_ } from "./combinators";
 import { empty } from "./constructors";
 
 /*
@@ -10,4 +10,6 @@ import { empty } from "./constructors";
  * -------------------------------------------
  */
 
-export const getMonoid = <A = never>(): Monoid<ReadonlyArray<A>> => makeMonoid(append_, empty());
+export function getMonoid<A = never>(): Monoid<ReadonlyArray<A>> {
+   return makeMonoid(concat_, empty());
+}

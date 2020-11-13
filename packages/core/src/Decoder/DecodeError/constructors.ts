@@ -1,45 +1,59 @@
 import type { FreeSemigroup } from "../../FreeSemigroup";
 import type { DecodeError, Kind } from "./model";
 
-export const leaf = <E>(actual: unknown, expected: string): DecodeError<E> => ({
-   _tag: "Leaf",
-   actual,
-   expected
-});
+export function leaf<E>(actual: unknown, expected: string): DecodeError<E> {
+   return {
+      _tag: "Leaf",
+      actual,
+      expected
+   };
+}
 
-export const key = <E>(key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> => ({
-   _tag: "Key",
-   key,
-   kind,
-   errors
-});
+export function key<E>(key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+   return {
+      _tag: "Key",
+      key,
+      kind,
+      errors
+   };
+}
 
-export const index = <E>(index: number, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> => ({
-   _tag: "Index",
-   index,
-   kind,
-   errors
-});
+export function index<E>(index: number, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+   return {
+      _tag: "Index",
+      index,
+      kind,
+      errors
+   };
+}
 
-export const member = <E>(index: number, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> => ({
-   _tag: "Member",
-   index,
-   errors
-});
+export function member<E>(index: number, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+   return {
+      _tag: "Member",
+      index,
+      errors
+   };
+}
 
-export const lazy = <E>(id: string, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> => ({
-   _tag: "Lazy",
-   id,
-   errors
-});
+export function lazy<E>(id: string, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+   return {
+      _tag: "Lazy",
+      id,
+      errors
+   };
+}
 
-export const wrap = <E>(error: E, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> => ({
-   _tag: "Wrap",
-   error,
-   errors
-});
+export function wrap<E>(error: E, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+   return {
+      _tag: "Wrap",
+      error,
+      errors
+   };
+}
 
-export const info = <E>(error: E): DecodeError<E> => ({
-   _tag: "Info",
-   error
-});
+export function info<E>(error: E): DecodeError<E> {
+   return {
+      _tag: "Info",
+      error
+   };
+}

@@ -9,7 +9,9 @@ import type { Optional } from "./Optional";
  * -------------------------------------------
  */
 
-export const id = <S>(): Optional<S, S> => ({
-   getOption: O.some,
-   set: constant
-});
+export function id<S>(): Optional<S, S> {
+   return {
+      getOption: O.some,
+      set: constant
+   };
+}

@@ -7,4 +7,6 @@ import type { Option } from "./model";
  * -------------------------------------------
  */
 
-export const unit = (): Option<void> => some(undefined);
+export function unit(): Option<void> {
+   return some(undefined);
+}

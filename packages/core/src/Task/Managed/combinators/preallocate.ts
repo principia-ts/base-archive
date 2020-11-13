@@ -14,8 +14,8 @@ import { releaseAll } from "./releaseAll";
  * are not interrupted between running preallocate and actually acquiring
  * the resource as you might leak otherwise.
  */
-export const preallocate = <R, E, A>(ma: Managed<R, E, A>): T.Task<R, E, Managed<unknown, never, A>> =>
-   T.uninterruptibleMask(({ restore }) =>
+export function preallocate<R, E, A>(ma: Managed<R, E, A>): T.Task<R, E, Managed<unknown, never, A>> {
+   return T.uninterruptibleMask(({ restore }) =>
       pipe(
          T.do,
          T.bindS("releaseMap", () => RM.make),
@@ -48,13 +48,14 @@ export const preallocate = <R, E, A>(ma: Managed<R, E, A>): T.Task<R, E, Managed
          T.map(({ preallocated }) => preallocated)
       )
    );
+}
 
 /**
  * Preallocates the managed resource inside an outer Managed, resulting in a
  * Managed that reserves and acquires immediately and cannot fail.
  */
-export const preallocateManaged = <R, E, A>(ma: Managed<R, E, A>): Managed<R, E, Managed<unknown, never, A>> =>
-   new Managed(
+export function preallocateManaged<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, Managed<unknown, never, A>> {
+   return new Managed(
       T.map_(ma.task, ([release, a]) => [
          release,
          new Managed(
@@ -68,3 +69,4 @@ export const preallocateManaged = <R, E, A>(ma: Managed<R, E, A>): Managed<R, E,
          )
       ])
    );
+}

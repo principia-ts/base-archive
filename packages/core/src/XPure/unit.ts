@@ -7,4 +7,6 @@ import type { XPure } from "./model";
  * -------------------------------------------
  */
 
-export const unit = (): XPure<unknown, never, unknown, never, void> => succeed(undefined);
+export function unit(): XPure<unknown, never, unknown, never, void> {
+   return succeed(undefined);
+}

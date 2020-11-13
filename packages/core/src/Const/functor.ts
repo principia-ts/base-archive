@@ -10,9 +10,13 @@ import type { Const, URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const map_ = <E, A, B>(fa: Const<E, A>, _: (a: A) => B): Const<E, B> => unsafeCoerce(fa);
+export function map_<E, A, B>(fa: Const<E, A>, _: (a: A) => B): Const<E, B> {
+   return unsafeCoerce(fa);
+}
 
-export const map = <A, B>(_: (a: A) => B) => <E>(fa: Const<E, A>): Const<E, B> => unsafeCoerce(fa);
+export function map<A, B>(_: (a: A) => B): <E>(fa: Const<E, A>) => Const<E, B> {
+   return unsafeCoerce;
+}
 
 /**
  * @category Functor

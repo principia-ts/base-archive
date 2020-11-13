@@ -20,7 +20,9 @@ import type { Option, URI, V } from "./model";
  * @category Alt
  * @since 1.0.0
  */
-export const alt_ = <A>(fa: Option<A>, that: () => Option<A>): Option<A> => (isNone(fa) ? that() : fa);
+export function alt_<A>(fa: Option<A>, that: () => Option<A>): Option<A> {
+   return isNone(fa) ? that() : fa;
+}
 
 /**
  * ```haskell
@@ -32,7 +34,9 @@ export const alt_ = <A>(fa: Option<A>, that: () => Option<A>): Option<A> => (isN
  * @category Alt
  * @since 1.0.0
  */
-export const alt = <A>(that: () => Option<A>) => (fa: Option<A>): Option<A> => alt_(fa, that);
+export function alt<A>(that: () => Option<A>): (fa: Option<A>) => Option<A> {
+   return (fa) => alt_(fa, that);
+}
 
 export const Alt: P.Alt<[URI], V> = HKT.instance({
    ...Functor,

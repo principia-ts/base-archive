@@ -24,8 +24,8 @@ import { chain, flatten } from "./monad";
 /**
  * Creates a stream from an array of values
  */
-export const fromArray = <A>(c: ReadonlyArray<A>): IO<A> =>
-   new Stream(
+export function fromArray<A>(c: ReadonlyArray<A>): IO<A> {
+   return new Stream(
       pipe(
          T.do,
          T.bindS("doneRef", () => XR.makeRef(false)),
@@ -42,23 +42,32 @@ export const fromArray = <A>(c: ReadonlyArray<A>): IO<A> =>
          T.toManaged()
       )
    );
+}
 
 /**
  * Creates a single-valued pure stream
  */
-export const succeed = <O>(o: O): IO<O> => fromArray([o]);
+export function succeed<O>(o: O): IO<O> {
+   return fromArray([o]);
+}
 
-export const fail = <E>(e: E): EIO<E, never> => fromTask(T.fail(e));
+export function fail<E>(e: E): EIO<E, never> {
+   return fromTask(T.fail(e));
+}
 
 /**
  * The `Stream` that dies with the error.
  */
-export const die = (e: unknown): IO<never> => fromTask(T.die(e));
+export function die(e: unknown): IO<never> {
+   return fromTask(T.die(e));
+}
 
 /**
  * The stream that dies with an exception described by `message`.
  */
-export const dieMessage = (message: string) => fromTask(T.dieMessage(message));
+export function dieMessage(message: string): Stream<unknown, never, never> {
+   return fromTask(T.dieMessage(message));
+}
 
 /**
  * The empty stream
@@ -68,17 +77,19 @@ export const empty: IO<never> = new Stream(M.succeed(Pull.end));
 /**
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
  */
-export const iterate = <A>(a: A, f: (a: A) => A): IO<A> =>
-   new Stream(pipe(XR.makeRef(a), T.toManaged(), M.map(flow(XR.getAndUpdate(f), T.map(A.pure)))));
+export function iterate<A>(a: A, f: (a: A) => A): IO<A> {
+   return new Stream(pipe(XR.makeRef(a), T.toManaged(), M.map(flow(XR.getAndUpdate(f), T.map(A.pure)))));
+}
 
-export const suspend = <R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> =>
-   new Stream(M.suspend(() => thunk().proc));
+export function suspend<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
+   return new Stream(M.suspend(() => thunk().proc));
+}
 
 /**
  * Creates a single-valued stream from a managed resource
  */
-export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
-   new Stream(
+export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
+   return new Stream(
       pipe(
          M.do,
          M.bindS("doneRef", () => XR.makeManagedRef(false)),
@@ -112,17 +123,20 @@ export const managed = <R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> =>
          M.map(({ pull }) => pull)
       )
    );
+}
 
 /**
  * Creates a one-element stream that never fails and executes the finalizer when it ends.
  */
-export const finalizer = <R>(finalizer: T.RIO<R, unknown>): RIO<R, unknown> => bracket((_) => finalizer)(T.unit());
+export function finalizer<R>(finalizer: T.RIO<R, unknown>): RIO<R, unknown> {
+   return bracket((_) => finalizer)(T.unit());
+}
 
 /**
  * Creates a stream from a task producing a value of type `A` or an empty Stream
  */
-export const fromTaskOption = <R, E, A>(fa: T.Task<R, Option<E>, A>): Stream<R, E, A> =>
-   new Stream(
+export function fromTaskOption<R, E, A>(fa: T.Task<R, Option<E>, A>): Stream<R, E, A> {
+   return new Stream(
       pipe(
          M.do,
          M.bindS("doneRef", () => pipe(XR.makeRef(false), T.toManaged())),
@@ -146,11 +160,14 @@ export const fromTaskOption = <R, E, A>(fa: T.Task<R, Option<E>, A>): Stream<R, 
          M.map(({ pull }) => pull)
       )
    );
+}
 
 /**
  * Creates a stream from a task producing a value of type `A`
  */
-export const fromTask = <R, E, A>(ef: T.Task<R, E, A>): Stream<R, E, A> => pipe(ef, T.mapError(O.some), fromTaskOption);
+export function fromTask<R, E, A>(ef: T.Task<R, E, A>): Stream<R, E, A> {
+   return pipe(ef, T.mapError(O.some), fromTaskOption);
+}
 
 const unwrap = <R, E, O>(fa: T.Task<R, E, Stream<R, E, O>>): Stream<R, E, O> => flatten(fromTask(fa));
 /**
@@ -170,7 +187,7 @@ export const fromSchedule: <R, A>(schedule: Sc.Schedule<R, unknown, A>) => Strea
  * The optionality of the error type `E` can be used to signal the end of the stream,
  * by setting it to `None`.
  */
-export const asyncOption = <R, E, A>(
+export function asyncOption<R, E, A>(
    register: (
       resolve: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
@@ -178,8 +195,8 @@ export const asyncOption = <R, E, A>(
       ) => T.IO<Exit<never, boolean>>
    ) => Option<Stream<R, E, A>>,
    outputBuffer = 16
-): Stream<R, E, A> =>
-   new Stream(
+): Stream<R, E, A> {
+   return new Stream(
       pipe(
          M.do,
          M.bindS("output", () => pipe(XQ.makeBounded<Take.Take<E, A>>(outputBuffer), T.toManaged())),
@@ -227,13 +244,14 @@ export const asyncOption = <R, E, A>(
          M.map(({ pull }) => pull)
       )
    );
+}
 
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times.
  * The optionality of the error type `E` can be used to signal the end of the stream,
  * by setting it to `None`.
  */
-export const async = <R, E, A>(
+export function async<R, E, A>(
    register: (
       resolve: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
@@ -241,11 +259,12 @@ export const async = <R, E, A>(
       ) => T.IO<Exit<never, boolean>>
    ) => void,
    outputBuffer = 16
-): Stream<R, E, A> =>
-   asyncOption((cb) => {
+): Stream<R, E, A> {
+   return asyncOption((cb) => {
       register(cb);
       return O.none();
    }, outputBuffer);
+}
 
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times.
@@ -253,7 +272,7 @@ export const async = <R, E, A>(
  * The optionality of the error type `E` can be used to signal the end of the stream, by
  * setting it to `None`.
  */
-export const asyncInterruptEither = <R, E, A>(
+export function asyncInterruptEither<R, E, A>(
    register: (
       resolve: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
@@ -261,8 +280,8 @@ export const asyncInterruptEither = <R, E, A>(
       ) => T.IO<Exit<never, boolean>>
    ) => Either<T.Canceler<R>, Stream<R, E, A>>,
    outputBuffer = 16
-): Stream<R, E, A> =>
-   new Stream(
+): Stream<R, E, A> {
+   return new Stream(
       pipe(
          M.do,
          M.bindS("output", () => pipe(XQ.makeBounded<Take.Take<E, A>>(outputBuffer), T.toManaged())),
@@ -311,6 +330,7 @@ export const asyncInterruptEither = <R, E, A>(
          M.map(({ pull }) => pull)
       )
    );
+}
 
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times.
@@ -318,7 +338,7 @@ export const asyncInterruptEither = <R, E, A>(
  * The optionality of the error type `E` can be used to signal the end of the stream, by
  * setting it to `None`.
  */
-export const asyncInterrupt = <R, E, A>(
+export function asyncInterrupt<R, E, A>(
    register: (
       cb: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
@@ -326,13 +346,15 @@ export const asyncInterrupt = <R, E, A>(
       ) => T.IO<Exit<never, boolean>>
    ) => T.Canceler<R>,
    outputBuffer = 16
-): Stream<R, E, A> => asyncInterruptEither((cb) => E.left(register(cb)), outputBuffer);
+): Stream<R, E, A> {
+   return asyncInterruptEither((cb) => E.left(register(cb)), outputBuffer);
+}
 
 /**
  * Creates a stream from a task producing chunks of `A` values until it fails with None.
  */
-export const repeatTaskChunkOption = <R, E, A>(ef: T.Task<R, Option<E>, ReadonlyArray<A>>): Stream<R, E, A> =>
-   new Stream(
+export function repeatTaskChunkOption<R, E, A>(ef: T.Task<R, Option<E>, ReadonlyArray<A>>): Stream<R, E, A> {
+   return new Stream(
       pipe(
          M.do,
          M.bindS("done", () => XR.makeManagedRef(false)),
@@ -357,6 +379,7 @@ export const repeatTaskChunkOption = <R, E, A>(ef: T.Task<R, Option<E>, Readonly
          M.map(({ pull }) => pull)
       )
    );
+}
 
 const ensuringFirst_ = <R, E, A, R1>(stream: Stream<R, E, A>, finalizer: T.Task<R1, never, unknown>) =>
    new Stream(M.ensuringFirst_(stream.proc, finalizer));
@@ -372,25 +395,28 @@ export const repeatTaskOption: <R, E, A>(fa: T.Task<R, Option<E>, A>) => Stream<
 /**
  * Creates a stream from an `XQueue` of values
  */
-export const fromArrayXQueue = <R, E, O>(queue: XQueue<never, R, unknown, E, never, Array<O>>): Stream<R, E, O> =>
-   repeatTaskChunkOption(
+export function fromArrayXQueue<R, E, O>(queue: XQueue<never, R, unknown, E, never, Array<O>>): Stream<R, E, O> {
+   return repeatTaskChunkOption(
       T.catchAllCause_(queue.take, (c) =>
          T.chain_(queue.isShutdown, (down) => (down && C.isInterrupt(c) ? Pull.end : Pull.halt(c)))
       )
    );
+}
 
 /**
  * Creates a stream from an `XQueue` of values. The queue will be shutdown once the stream is closed.
  */
-export const fromArrayXQueueWithShutdown = <R, E, A>(
+export function fromArrayXQueueWithShutdown<R, E, A>(
    queue: XQueue<never, R, unknown, E, never, Array<A>>
-): Stream<R, E, A> => ensuringFirst_(fromArrayXQueue(queue), queue.shutdown);
+): Stream<R, E, A> {
+   return ensuringFirst_(fromArrayXQueue(queue), queue.shutdown);
+}
 
 /**
  * Creates a stream from an `XQueue` of values
  */
-export const fromXQueue = <R, E, A>(queue: XQueue<never, R, unknown, E, never, A>): Stream<R, E, A> =>
-   pipe(
+export function fromXQueue<R, E, A>(queue: XQueue<never, R, unknown, E, never, A>): Stream<R, E, A> {
+   return pipe(
       queue,
       XQ.takeBetween(1, Number.MAX_SAFE_INTEGER),
       T.catchAllCause((c) =>
@@ -398,12 +424,14 @@ export const fromXQueue = <R, E, A>(queue: XQueue<never, R, unknown, E, never, A
       ),
       repeatTaskChunkOption
    );
+}
 
 /**
  * Creates a stream from an `XQueue` of values. The queue will be shutdown once the stream is closed.
  */
-export const fromXQueueWithShutdown = <R, E, A>(queue: XQueue<never, R, unknown, E, never, A>): Stream<R, E, A> =>
-   ensuringFirst_(fromXQueue(queue), queue.shutdown);
+export function fromXQueueWithShutdown<R, E, A>(queue: XQueue<never, R, unknown, E, never, A>): Stream<R, E, A> {
+   return ensuringFirst_(fromXQueue(queue), queue.shutdown);
+}
 
 /**
  * Creates a new `Stream` from a managed effect that yields chunks.
@@ -413,48 +441,56 @@ export const fromXQueueWithShutdown = <R, E, A>(queue: XQueue<never, R, unknown,
  * The stream evaluation guarantees proper acquisition and release of the
  * `Managed`.
  */
-export const apply = <R, E, A>(proc: M.Managed<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>) => new Stream(proc);
+export function apply<R, E, A>(proc: M.Managed<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>): Stream<R, E, A> {
+   return new Stream(proc);
+}
 
 /**
  * Creates a stream from a single value that will get cleaned up after the
  * stream is consumed
  */
-export const bracket_ = <R, E, A, R1>(acquire: T.Task<R, E, A>, release: (a: A) => T.Task<R1, never, any>) =>
-   managed(M.make_(acquire, release));
+export function bracket_<R, E, A, R1>(
+   acquire: T.Task<R, E, A>,
+   release: (a: A) => T.Task<R1, never, any>
+): Stream<R & R1, E, A> {
+   return managed(M.make_(acquire, release));
+}
 
 /**
  * Creates a stream from a single value that will get cleaned up after the
  * stream is consumed
  */
-export const bracket = <A, R1>(release: (a: A) => T.Task<R1, never, any>) => <R, E>(acquire: T.Task<R, E, A>) =>
-   bracket_(acquire, release);
+export function bracket<A, R1>(release: (a: A) => T.Task<R1, never, any>) {
+   return <R, E>(acquire: T.Task<R, E, A>) => bracket_(acquire, release);
+}
 
 /**
  * Creates a stream from a single value that will get cleaned up after the
  * stream is consumed
  */
-export const bracketExit_ = <R, E, A, R1>(
+export function bracketExit_<R, E, A, R1>(
    acquire: T.Task<R, E, A>,
    release: (a: A, exit: Exit<unknown, unknown>) => T.Task<R1, never, unknown>
-) => managed(M.makeExit_(acquire, release));
+): Stream<R & R1, E, A> {
+   return managed(M.makeExit_(acquire, release));
+}
 
 /**
  * Creates a stream from a single value that will get cleaned up after the
  * stream is consumed
  */
-export const bracketExit = <A, R1>(release: (a: A, exit: Exit<unknown, unknown>) => T.Task<R1, never, unknown>) => <
-   R,
-   E
->(
-   acquire: T.Task<R, E, A>
-) => bracketExit_(acquire, release);
+export function bracketExit<A, R1>(
+   release: (a: A, exit: Exit<unknown, unknown>) => T.Task<R1, never, unknown>
+): <R, E>(acquire: T.Task<R, E, A>) => Stream<R & R1, E, A> {
+   return (acquire) => bracketExit_(acquire, release);
+}
 
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times
  * The registration of the callback itself returns a task. The optionality of the
  * error type `E` can be used to signal the end of the stream, by setting it to `None`.
  */
-export const asyncM = <R, E, A, R1 = R, E1 = E>(
+export function asyncM<R, E, A, R1 = R, E1 = E>(
    register: (
       cb: (
          next: T.Task<R, Option<E>, ReadonlyArray<A>>,
@@ -462,8 +498,8 @@ export const asyncM = <R, E, A, R1 = R, E1 = E>(
       ) => T.IO<Exit<never, boolean>>
    ) => T.Task<R1, E1, unknown>,
    outputBuffer = 16
-): Stream<R & R1, E | E1, A> =>
-   pipe(
+): Stream<R & R1, E | E1, A> {
+   return pipe(
       M.do,
       M.bindS("output", () => pipe(XQ.makeBounded<Take.Take<E, A>>(outputBuffer), T.toManaged())),
       M.bindS("runtime", () => pipe(T.runtime<R>(), T.toManaged())),
@@ -496,3 +532,4 @@ export const asyncM = <R, E, A, R1 = R, E1 = E>(
       managed,
       chain(repeatTaskChunkOption)
    );
+}

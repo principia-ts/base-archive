@@ -16,11 +16,14 @@ import type { NonEmptyArray } from "./model";
  *    (f a, ((k, a) -> Boolean)) -> Option (f a)
  * ```
  */
-export const filterWithIndex_: {
-   <A, B extends A>(fa: NonEmptyArray<A>, f: RefinementWithIndex<number, A, B>): Option<NonEmptyArray<B>>;
-   <A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): Option<NonEmptyArray<A>>;
-} = <A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): Option<NonEmptyArray<A>> =>
-   fromArray(A.filterWithIndex_(fa, f));
+export function filterWithIndex_<A, B extends A>(
+   fa: NonEmptyArray<A>,
+   f: RefinementWithIndex<number, A, B>
+): Option<NonEmptyArray<B>>;
+export function filterWithIndex_<A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): Option<NonEmptyArray<A>>;
+export function filterWithIndex_<A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): Option<NonEmptyArray<A>> {
+   return fromArray(A.filterWithIndex_(fa, f));
+}
 
 /**
  * ```haskell
@@ -28,28 +31,36 @@ export const filterWithIndex_: {
  *    ((k, a) -> Boolean) -> f a -> Option (f a)
  * ```
  */
-export const filterWithIndex: {
-   <A, B extends A>(f: RefinementWithIndex<number, A, B>): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<B>>;
-   <A>(f: PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<A>>;
-} = <A>(f: PredicateWithIndex<number, A>) => (fa: NonEmptyArray<A>): Option<NonEmptyArray<A>> =>
-   filterWithIndex_(fa, f);
+export function filterWithIndex<A, B extends A>(
+   f: RefinementWithIndex<number, A, B>
+): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<B>>;
+export function filterWithIndex<A>(
+   f: PredicateWithIndex<number, A>
+): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<A>>;
+export function filterWithIndex<A>(
+   f: PredicateWithIndex<number, A>
+): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
+   return (fa) => filterWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
  * filter_ :: NonEmptyArray f => (f a, (a -> Boolean)) -> Option (f a)
  * ```
  */
-export const filter_: {
-   <A, B extends A>(fa: NonEmptyArray<A>, f: Refinement<A, B>): Option<NonEmptyArray<B>>;
-   <A>(fa: NonEmptyArray<A>, f: Predicate<A>): Option<NonEmptyArray<A>>;
-} = <A>(fa: NonEmptyArray<A>, f: Predicate<A>): Option<NonEmptyArray<A>> => filterWithIndex_(fa, (_, a) => f(a));
+export function filter_<A, B extends A>(fa: NonEmptyArray<A>, f: Refinement<A, B>): Option<NonEmptyArray<B>>;
+export function filter_<A>(fa: NonEmptyArray<A>, f: Predicate<A>): Option<NonEmptyArray<A>>;
+export function filter_<A>(fa: NonEmptyArray<A>, f: Predicate<A>): Option<NonEmptyArray<A>> {
+   return filterWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
  * filter :: NonEmptyArray f => (a -> Boolean) -> f a -> Option (f a)
  * ```
  */
-export const filter: {
-   <A, B extends A>(f: Refinement<A, B>): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<B>>;
-   <A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<A>>;
-} = <A>(f: Predicate<A>) => (fa: NonEmptyArray<A>) => filterWithIndex_(fa, (_, a) => f(a));
+export function filter<A, B extends A>(f: Refinement<A, B>): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<B>>;
+export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<A>>;
+export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
+   return (fa) => filterWithIndex_(fa, (_, a) => f(a));
+}

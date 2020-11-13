@@ -22,3 +22,22 @@ import * as Tr from "../src/Task/Stream/internal/Transducer";
 import * as Sink from "../src/Task/Stream/Sink";
 import * as T from "../src/Task/Task";
 import * as X from "../src/XPure";
+
+(async () => {
+   const p = T.bothPar_(
+      T.async<unknown, never, string>((resolve) => {
+         setTimeout(() => {
+            resolve(T.succeed("A"));
+         }, 1000);
+      }),
+      T.async<unknown, never, string>((resolve) => {
+         setTimeout(() => {
+            resolve(T.succeed("B"));
+         }, 1000);
+      })
+   )
+      ["|>"](T.tap((x) => T.total(() => console.log(x))))
+      ["|>"](T.runPromiseExit);
+
+   console.log(await p);
+})();

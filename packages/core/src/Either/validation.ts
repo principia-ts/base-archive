@@ -18,7 +18,7 @@ import { unit } from "./unit";
  * @category Instances
  * @since 1.0.0
  */
-export const getApplicativeValidation = <E>(S: P.Semigroup<E>): P.Applicative<[URI], V & HKT.Fix<"E", E>> => {
+export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<[URI], V & HKT.Fix<"E", E>> {
    type V_ = V & HKT.Fix<"E", E>;
 
    const bothV_: P.BothFn_<[URI], V_> = (fa, fb) =>
@@ -36,13 +36,13 @@ export const getApplicativeValidation = <E>(S: P.Semigroup<E>): P.Applicative<[U
       both: (fb) => (fa) => bothV_(fa, fb),
       unit
    });
-};
+}
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const getAltValidation = <E>(S: P.Semigroup<E>): P.Alt<[URI], V & HKT.Fix<"E", E>> => {
+export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<[URI], V & HKT.Fix<"E", E>> {
    type V_ = V & HKT.Fix<"E", E>;
 
    const altV_: P.AltFn_<[URI], V_> = (fa, that) => {
@@ -58,4 +58,4 @@ export const getAltValidation = <E>(S: P.Semigroup<E>): P.Alt<[URI], V & HKT.Fix
       alt_: altV_,
       alt: (that) => (fa) => altV_(fa, that)
    });
-};
+}

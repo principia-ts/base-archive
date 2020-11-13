@@ -17,7 +17,7 @@ interface Next<A> {
 /**
  * @since 1.0.0
  */
-export const some_ = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => {
+export function some_<A>(set: ReadonlySet<A>, predicate: Predicate<A>): boolean {
    const values = set.values();
    let e: Next<A>;
    let found = false;
@@ -25,51 +25,61 @@ export const some_ = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => {
       found = predicate(e.value);
    }
    return found;
-};
+}
 
 /**
  * @since 1.0.0
  */
-export const some = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => some_(set, predicate);
+export function some<A>(predicate: Predicate<A>): (set: ReadonlySet<A>) => boolean {
+   return (set) => some_(set, predicate);
+}
 
 /**
  * @since 1.0.0
  */
-export const every_ = <A>(set: ReadonlySet<A>, predicate: Predicate<A>) => not(some(not(predicate)))(set);
+export function every_<A>(set: ReadonlySet<A>, predicate: Predicate<A>) {
+   return not(some(not(predicate)))(set);
+}
 
 /**
  * @since 1.0.0
  */
-export const every = <A>(predicate: Predicate<A>) => (set: ReadonlySet<A>) => every_(set, predicate);
-
-/**
- * Test if a value is a member of a set
- *
- * @since 1.0.0
- */
-export const elem_ = <A>(E: Eq<A>) => (set: ReadonlySet<A>, a: A): boolean => {
-   const values = set.values();
-   let e: Next<A>;
-   let found = false;
-   while (!found && !(e = values.next()).done) {
-      found = E.equals(a)(e.value);
-   }
-   return found;
-};
+export function every<A>(predicate: Predicate<A>): (set: ReadonlySet<A>) => boolean {
+   return (set) => every_(set, predicate);
+}
 
 /**
  * Test if a value is a member of a set
  *
  * @since 1.0.0
  */
-export const elem = <A>(E: Eq<A>) => (a: A) => (set: ReadonlySet<A>): boolean => elem_(E)(set, a);
+export function elem_<A>(E: Eq<A>): (set: ReadonlySet<A>, a: A) => boolean {
+   return (set, a) => {
+      const values = set.values();
+      let e: Next<A>;
+      let found = false;
+      while (!found && !(e = values.next()).done) {
+         found = E.equals(a)(e.value);
+      }
+      return found;
+   };
+}
+
+/**
+ * Test if a value is a member of a set
+ *
+ * @since 1.0.0
+ */
+export function elem<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => boolean {
+   return (a) => (set) => elem_(E)(set, a);
+}
 
 /**
  * `true` if and only if every element in the first set is an element of the second set
  *
  * @since 1.0.0
  */
-export const isSubset = <A>(E: Eq<A>): ((that: ReadonlySet<A>) => (me: ReadonlySet<A>) => boolean) => {
+export function isSubset<A>(E: Eq<A>): (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => boolean {
    const elemE = elem(E);
    return (that) => every((a: A) => elemE(a)(that));
-};
+}

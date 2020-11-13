@@ -10,11 +10,11 @@ import { Stream } from "./model";
 /**
  * Taskfully transforms the chunks emitted by this stream.
  */
-export const mapChunksM_ = <R, E, A, R1, E1, B>(
+export function mapChunksM_<R, E, A, R1, E1, B>(
    fa: Stream<R, E, A>,
    f: (chunks: ReadonlyArray<A>) => T.Task<R1, E1, ReadonlyArray<B>>
-): Stream<R & R1, E | E1, B> =>
-   new Stream(
+): Stream<R & R1, E | E1, B> {
+   return new Stream(
       pipe(
          fa.proc,
          M.map((e) =>
@@ -25,44 +25,58 @@ export const mapChunksM_ = <R, E, A, R1, E1, B>(
          )
       )
    );
+}
 
 /**
  * Taskfully transforms the chunks emitted by this stream.
  */
-export const mapChunksM = <A, R1, E1, A1>(f: (chunks: ReadonlyArray<A>) => T.Task<R1, E1, ReadonlyArray<A1>>) => <R, E>(
-   fa: Stream<R, E, A>
-): Stream<R & R1, E1 | E, A1> => mapChunksM_(fa, f);
+export function mapChunksM<A, R1, E1, A1>(
+   f: (chunks: ReadonlyArray<A>) => T.Task<R1, E1, ReadonlyArray<A1>>
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E1 | E, A1> {
+   return (fa) => mapChunksM_(fa, f);
+}
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const mapChunks_ = <R, E, A, B>(fa: Stream<R, E, A>, f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>) =>
-   mapChunksM_(fa, flow(f, T.pure));
+export function mapChunks_<R, E, A, B>(
+   fa: Stream<R, E, A>,
+   f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>
+): Stream<R, E, B> {
+   return mapChunksM_(fa, flow(f, T.pure));
+}
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const mapChunks = <A, B>(f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>) => <R, E>(fa: Stream<R, E, A>) =>
-   mapChunks_(fa, f);
+export function mapChunks<A, B>(
+   f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>
+): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
+   return (fa) => mapChunks_(fa, f);
+}
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const map_ = <R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => B): Stream<R, E, B> => mapChunks_(fa, A.map(f));
+export function map_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => B): Stream<R, E, B> {
+   return mapChunks_(fa, A.map(f));
+}
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export const map = <A, B>(f: (a: A) => B) => <R, E>(fa: Stream<R, E, A>): Stream<R, E, B> => map_(fa, f);
+export function map<A, B>(f: (a: A) => B): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
+   return (fa) => map_(fa, f);
+}
 
 /**
  * Maps over elements of the stream with the specified effectful function.
  */
-export const mapM_ = <R, E, A, R1, E1, B>(
+export function mapM_<R, E, A, R1, E1, B>(
    fa: Stream<R, E, A>,
    f: (a: A) => T.Task<R1, E1, B>
-): Stream<R & R1, E | E1, B> =>
-   new Stream<R & R1, E | E1, B>(
+): Stream<R & R1, E | E1, B> {
+   return new Stream<R & R1, E | E1, B>(
       pipe(
          fa.proc,
          M.mapM(BPull.make),
@@ -80,8 +94,13 @@ export const mapM_ = <R, E, A, R1, E1, B>(
          )
       )
    );
+}
 
 /**
  * Maps over elements of the stream with the specified effectful function.
  */
-export const mapM = <A, R1, E1, A1>(f: (o: A) => T.Task<R1, E1, A1>) => <R, E>(fa: Stream<R, E, A>) => mapM_(fa, f);
+export function mapM<A, R1, E1, A1>(
+   f: (o: A) => T.Task<R1, E1, A1>
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E1 | E, A1> {
+   return (fa) => mapM_(fa, f);
+}

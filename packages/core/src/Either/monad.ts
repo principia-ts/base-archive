@@ -23,8 +23,9 @@ import { unit } from "./unit";
  * @category Monad
  * @since 1.0.0
  */
-export const chain_ = <E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> =>
-   isLeft(fa) ? fa : f(fa.right);
+export function chain_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
+   return isLeft(fa) ? fa : f(fa.right);
+}
 
 /**
  * ```haskell
@@ -36,20 +37,9 @@ export const chain_ = <E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>):
  * @category Monad
  * @since 1.0.0
  */
-export const chain = <A, G, B>(f: (e: A) => Either<G, B>) => <E>(ma: Either<E, A>): Either<E | G, B> => chain_(ma, f);
-
-/**
- * ```haskell
- * bind :: Monad m => m a -> (a -> m b) -> m b
- * ```
- *
- * A version of `chain` where the arguments are flipped
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export const bind = <E, A>(ma: Either<E, A>) => <G, B>(f: (a: A) => Either<G, B>): Either<E | G, B> => chain_(ma, f);
+export function chain<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, B> {
+   return (ma) => chain_(ma, f);
+}
 
 /**
  * ```haskell
@@ -62,13 +52,14 @@ export const bind = <E, A>(ma: Either<E, A>) => <G, B>(f: (a: A) => Either<G, B>
  * @category Monad
  * @since 1.0.0
  */
-export const tap_ = <E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, A> =>
-   chain_(ma, (a) =>
+export function tap_<E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, A> {
+   return chain_(ma, (a) =>
       pipe(
          f(a),
          map(() => a)
       )
    );
+}
 
 /**
  * ```haskell
@@ -81,20 +72,9 @@ export const tap_ = <E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): E
  * @category Monad
  * @since 1.0.0
  */
-export const tap = <A, G, B>(f: (a: A) => Either<G, B>) => <E>(ma: Either<E, A>): Either<E | G, A> => tap_(ma, f);
-
-/**
- * ```haskell
- * chainFirst :: Monad m => (a -> m b) -> m a -> m a
- * ```
- * A synonym of `tap`.
- * Composes computations in sequence, using the return value of one computation as input for the next
- * and keeping only the result of the first
- *
- * @category Monad
- * @since 1.0.0
- */
-export const chainFirst = tap;
+export function tap<A, G, B>(f: (a: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, A> {
+   return (ma) => tap_(ma, f);
+}
 
 /**
  * ```haskell
@@ -106,7 +86,9 @@ export const chainFirst = tap;
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: <E, G, A>(mma: Either<E, Either<G, A>>) => Either<E | G, A> = chain(identity);
+export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A> {
+   return chain_(mma, identity);
+}
 
 /**
  * @category Instances

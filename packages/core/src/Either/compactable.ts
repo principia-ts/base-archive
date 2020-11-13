@@ -11,8 +11,8 @@ import type { URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const getCompactable = <E>(M: P.Monoid<E>) =>
-   HKT.instance<P.Compactable<[URI], V & HKT.Fix<"E", E>>>({
+export function getCompactable<E>(M: P.Monoid<E>) {
+   return HKT.instance<P.Compactable<[URI], V & HKT.Fix<"E", E>>>({
       compact: (fa) => {
          return isLeft(fa) ? fa : fa.right._tag === "None" ? left(M.nat) : right(fa.right.value);
       },
@@ -25,3 +25,4 @@ export const getCompactable = <E>(M: P.Monoid<E>) =>
             : { left: left(M.nat), right: right(fa.right.right) };
       }
    });
+}

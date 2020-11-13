@@ -29,48 +29,59 @@ import type { Canceler, EIO, IO, Task } from "../model";
 import { SetInterruptInstruction } from "../model";
 import { fiberId } from "./fiberId";
 
-export const interruptAs = (fiberId: FiberId): EIO<never, never> => halt(C.interrupt(fiberId));
+export function interruptAs(fiberId: FiberId): EIO<never, never> {
+   return halt(C.interrupt(fiberId));
+}
 
 export const interrupt: Task<unknown, never, never> = chain_(fiberId(), interruptAs);
 
-export const setInterruptStatus_ = <R, E, A>(effect: Task<R, E, A>, flag: InterruptStatus): Task<R, E, A> =>
-   new SetInterruptInstruction(effect, flag);
+export function setInterruptStatus_<R, E, A>(effect: Task<R, E, A>, flag: InterruptStatus): Task<R, E, A> {
+   return new SetInterruptInstruction(effect, flag);
+}
 
-export const setInterruptStatus = (flag: InterruptStatus) => <R, E, A>(ma: Task<R, E, A>): Task<R, E, A> =>
-   setInterruptStatus_(ma, flag);
+export function setInterruptStatus(flag: InterruptStatus): <R, E, A>(ma: Task<R, E, A>) => Task<R, E, A> {
+   return (ma) => setInterruptStatus_(ma, flag);
+}
 
-export const makeInterruptible = <R, E, A>(ma: Task<R, E, A>): Task<R, E, A> => setInterruptStatus_(ma, interruptible);
+export function makeInterruptible<R, E, A>(ma: Task<R, E, A>): Task<R, E, A> {
+   return setInterruptStatus_(ma, interruptible);
+}
 
-export const makeUninterruptible = <R, E, A>(ma: Task<R, E, A>): Task<R, E, A> =>
-   setInterruptStatus_(ma, uninterruptible);
+export function makeUninterruptible<R, E, A>(ma: Task<R, E, A>): Task<R, E, A> {
+   return setInterruptStatus_(ma, uninterruptible);
+}
 
 /**
  * Makes the effect uninterruptible, but passes it a restore function that
  * can be used to restore the inherited interruptibility from whatever region
  * the effect is composed into.
  */
-export const uninterruptibleMask = <R, E, A>(f: (restore: InterruptStatusRestore) => Task<R, E, A>): Task<R, E, A> =>
-   checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestoreImpl(flag))));
+export function uninterruptibleMask<R, E, A>(f: (restore: InterruptStatusRestore) => Task<R, E, A>): Task<R, E, A> {
+   return checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestoreImpl(flag))));
+}
 
 /**
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted.
  */
-export const onInterrupt_ = <R, E, A, R1>(
+export function onInterrupt_<R, E, A, R1>(
    ma: Task<R, E, A>,
    cleanup: (interruptors: ReadonlySet<FiberId>) => Task<R1, never, any>
-): Task<R & R1, E, A> =>
-   uninterruptibleMask(({ restore }) =>
+): Task<R & R1, E, A> {
+   return uninterruptibleMask(({ restore }) =>
       foldCauseM_(
          restore(ma),
          (cause) => (C.isInterrupt(cause) ? chain_(cleanup(C.interruptors(cause)), () => halt(cause)) : halt(cause)),
          pure
       )
    );
+}
 
-export const onInterrupt = <R1>(cleanup: (interruptors: ReadonlySet<FiberId>) => Task<R1, never, any>) => <R, E, A>(
-   ma: Task<R, E, A>
-): Task<R & R1, E, A> => onInterrupt_(ma, cleanup);
+export function onInterrupt<R1>(
+   cleanup: (interruptors: ReadonlySet<FiberId>) => Task<R1, never, any>
+): <R, E, A>(ma: Task<R, E, A>) => Task<R & R1, E, A> {
+   return (ma) => onInterrupt_(ma, cleanup);
+}
 
 /**
  * Calls the specified function, and runs the effect it returns, if this
@@ -106,14 +117,15 @@ export function onInterruptExtended_<R, E, A, R2, E2>(self: Task<R, E, A>, clean
  *
  * See timeout and race for other applications.
  */
-export const disconnect = <R, E, A>(effect: Task<R, E, A>): Task<R, E, A> =>
-   uninterruptibleMask(({ restore }) =>
+export function disconnect<R, E, A>(effect: Task<R, E, A>): Task<R, E, A> {
+   return uninterruptibleMask(({ restore }) =>
       chain_(fiberId(), (id) =>
          chain_(forkDaemon(restore(effect)), (fiber) =>
             onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
          )
       )
    );
+}
 
 /**
  * Used to restore the inherited interruptibility
@@ -157,11 +169,11 @@ export class InterruptStatusRestoreImpl implements InterruptStatusRestore {
  * The list of fibers, that may complete the async callback, is used to
  * provide better diagnostics.
  */
-export const maybeAsyncInterrupt = <R, E, A>(
+export function maybeAsyncInterrupt<R, E, A>(
    register: (cb: (resolve: Task<R, E, A>) => void) => Either<Canceler<R>, Task<R, E, A>>,
    blockingOn: ReadonlyArray<FiberId> = []
-): Task<R, E, A> =>
-   pipe(
+): Task<R, E, A> {
+   return pipe(
       total(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
       chain(([started, cancel]) =>
          pipe(
@@ -192,8 +204,11 @@ export const maybeAsyncInterrupt = <R, E, A>(
          )
       )
    );
+}
 
-export const asyncInterrupt = <R, E, A>(
+export function asyncInterrupt<R, E, A>(
    register: (cb: (_: Task<R, E, A>) => void) => Canceler<R>,
    blockingOn: ReadonlyArray<FiberId> = []
-) => maybeAsyncInterrupt<R, E, A>((cb) => left(register(cb)), blockingOn);
+): Task<R, E, A> {
+   return maybeAsyncInterrupt<R, E, A>((cb) => left(register(cb)), blockingOn);
+}

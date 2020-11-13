@@ -19,10 +19,10 @@ import type { ReadonlyRecord, URI, V } from "./model";
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export const mapWithIndex_ = <N extends string, A, B>(
+export function mapWithIndex_<N extends string, A, B>(
    fa: ReadonlyRecord<N, A>,
    f: (k: N, a: A) => B
-): ReadonlyRecord<N, B> => {
+): ReadonlyRecord<N, B> {
    const out = {} as Record<N, B>;
    const keys = Object.keys(fa);
    for (let i = 0; i < keys.length; i++) {
@@ -30,7 +30,7 @@ export const mapWithIndex_ = <N extends string, A, B>(
       out[k] = f(k, fa[k]);
    }
    return out;
-};
+}
 
 /**
  * ```haskell
@@ -42,9 +42,11 @@ export const mapWithIndex_ = <N extends string, A, B>(
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export const mapWithIndex = <N extends string, A, B>(f: (k: N, a: A) => B) => (
-   fa: ReadonlyRecord<N, A>
-): ReadonlyRecord<N, B> => mapWithIndex_(fa, f);
+export function mapWithIndex<N extends string, A, B>(
+   f: (k: N, a: A) => B
+): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<N, B> {
+   return (fa) => mapWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
@@ -56,8 +58,9 @@ export const mapWithIndex = <N extends string, A, B>(f: (k: N, a: A) => B) => (
  * @category Functor
  * @since 1.0.0
  */
-export const map_ = <N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A) => B): ReadonlyRecord<N, B> =>
-   mapWithIndex_(fa, (_, a) => f(a));
+export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A) => B): ReadonlyRecord<N, B> {
+   return mapWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
@@ -69,8 +72,9 @@ export const map_ = <N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A)
  * @category Functor
  * @since 1.0.0
  */
-export const map = <A, B>(f: (a: A) => B) => <N extends string>(fa: ReadonlyRecord<N, A>): ReadonlyRecord<N, B> =>
-   map_(fa, f);
+export function map<A, B>(f: (a: A) => B): <N extends string>(fa: Readonly<Record<N, A>>) => Readonly<Record<N, B>> {
+   return (fa) => map_(fa, f);
+}
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
    map,

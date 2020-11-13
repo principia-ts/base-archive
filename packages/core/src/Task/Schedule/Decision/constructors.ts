@@ -1,19 +1,25 @@
-import { matchTag } from "../../../Utils";
+import { matchTag_ } from "../../../Utils";
 import type { Decision, Done, StepFunction } from "./Decision";
 
-export const makeDone = <O>(out: O): Done<O> => ({
-   _tag: "Done",
-   out
-});
+export function makeDone<O>(out: O): Done<O> {
+   return {
+      _tag: "Done",
+      out
+   };
+}
 
-export const makeContinue = <R, I, O>(out: O, interval: number, next: StepFunction<R, I, O>): Decision<R, I, O> => ({
-   _tag: "Continue",
-   out,
-   interval,
-   next
-});
+export function makeContinue<R, I, O>(out: O, interval: number, next: StepFunction<R, I, O>): Decision<R, I, O> {
+   return {
+      _tag: "Continue",
+      out,
+      interval,
+      next
+   };
+}
 
-export const toDone: <R, I, O>(decision: Decision<R, I, O>) => Done<O> = matchTag({
-   Done: (_) => _,
-   Continue: (c) => makeDone(c.out)
-});
+export function toDone<R, I, O>(decision: Decision<R, I, O>): Done<O> {
+   return matchTag_(decision, {
+      Done: (_) => _,
+      Continue: (c) => makeDone(c.out)
+   });
+}

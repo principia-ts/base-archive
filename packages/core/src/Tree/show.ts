@@ -15,10 +15,16 @@ const draw = <A>(S: Show<A>) => (indentation: string, forest: Forest<A>): string
    return r;
 };
 
-export const drawForest = <A>(S: Show<A>) => (forest: Forest<A>): string => draw(S)("\n", forest);
+export function drawForest<A>(S: Show<A>): (forest: Forest<A>) => string {
+   return (forest) => draw(S)("\n", forest);
+}
 
-export const drawTree = <A>(S: Show<A>) => (tree: Tree<A>): string => S.show(tree.value) + drawForest(S)(tree.forest);
+export function drawTree<A>(S: Show<A>): (tree: Tree<A>) => string {
+   return (tree) => S.show(tree.value) + drawForest(S)(tree.forest);
+}
 
-export const getShow = <A>(S: Show<A>): Show<Tree<A>> => ({
-   show: drawTree(S)
-});
+export function getShow<A>(S: Show<A>): Show<Tree<A>> {
+   return {
+      show: drawTree(S)
+   };
+}

@@ -16,11 +16,11 @@ import { raceWith_, transplant } from "./core-scope";
  * Parallelly zips this effect with the specified effect using the
  * specified combiner function.
  */
-export const mapBothPar_ = <R, E, A, R2, E2, A2, B>(
+export function mapBothPar_<R, E, A, R2, E2, A2, B>(
    a: T.Task<R, E, A>,
    b: T.Task<R2, E2, A2>,
    f: (a: A, b: A2) => B
-): T.Task<R & R2, E | E2, B> => {
+): T.Task<R & R2, E | E2, B> {
    const g = (b: A2, a: A) => f(a, b);
 
    return transplant((graft) =>
@@ -33,15 +33,18 @@ export const mapBothPar_ = <R, E, A, R2, E2, A2, B>(
          )
       )
    );
-};
+}
 
 /**
  * Parallelly zips this effect with the specified effect using the
  * specified combiner function.
  */
-export const mapBothPar = <A, R1, E1, A1, B>(mb: T.Task<R1, E1, A1>, f: (a: A, b: A1) => B) => <R, E>(
-   ma: T.Task<R, E, A>
-) => mapBothPar_(ma, mb, f);
+export function mapBothPar<A, R1, E1, A1, B>(
+   mb: T.Task<R1, E1, A1>,
+   f: (a: A, b: A1) => B
+): <R, E>(ma: T.Task<R, E, A>) => T.Task<R & R1, E1 | E, B> {
+   return (ma) => mapBothPar_(ma, mb, f);
+}
 
 function coordinateBothPar<E, E2>() {
    return <B, X, Y>(
@@ -71,29 +74,38 @@ function coordinateBothPar<E, E2>() {
    };
 }
 
-export const apPar_ = <R, E, A, R1, E1, B>(
+export function apPar_<R, E, A, R1, E1, B>(
    fab: T.Task<R, E, (a: A) => B>,
    fa: T.Task<R1, E1, A>
-): T.Task<R & R1, E | E1, B> => mapBothPar_(fab, fa, (f, a) => f(a));
+): T.Task<R & R1, E | E1, B> {
+   return mapBothPar_(fab, fa, (f, a) => f(a));
+}
 
-export const apPar = <R, E, A>(fa: T.Task<R, E, A>) => <Q, D, B>(
-   fab: T.Task<Q, D, (a: A) => B>
-): T.Task<Q & R, D | E, B> => apPar_(fab, fa);
+export function apPar<R, E, A>(
+   fa: T.Task<R, E, A>
+): <Q, D, B>(fab: T.Task<Q, D, (a: A) => B>) => T.Task<Q & R, E | D, B> {
+   return (fab) => apPar_(fab, fa);
+}
 
-export const apFirstPar_ = <R, E, A, R1, E1, B>(
+export function apFirstPar_<R, E, A, R1, E1, B>(fa: T.Task<R, E, A>, fb: T.Task<R1, E1, B>): T.Task<R & R1, E | E1, A> {
+   return mapBothPar_(fa, fb, (a, _) => a);
+}
+
+export function apFirstPar<R1, E1, B>(
+   fb: T.Task<R1, E1, B>
+): <R, E, A>(fa: T.Task<R, E, A>) => T.Task<R & R1, E1 | E, A> {
+   return (fa) => apFirstPar_(fa, fb);
+}
+
+export function apSecondPar_<R, E, A, R1, E1, B>(
    fa: T.Task<R, E, A>,
    fb: T.Task<R1, E1, B>
-): T.Task<R & R1, E | E1, A> => mapBothPar_(fa, fb, (a, _) => a);
+): T.Task<R & R1, E | E1, B> {
+   return mapBothPar_(fa, fb, (_, b) => b);
+}
 
-export const apFirstPar = <R1, E1, B>(fb: T.Task<R1, E1, B>) => <R, E, A>(
-   fa: T.Task<R, E, A>
-): T.Task<R & R1, E | E1, A> => apFirstPar_(fa, fb);
-
-export const apSecondPar_ = <R, E, A, R1, E1, B>(
-   fa: T.Task<R, E, A>,
+export function apSecondPar<R1, E1, B>(
    fb: T.Task<R1, E1, B>
-): T.Task<R & R1, E | E1, B> => mapBothPar_(fa, fb, (_, b) => b);
-
-export const apSecondPar = <R1, E1, B>(fb: T.Task<R1, E1, B>) => <R, E, A>(
-   fa: T.Task<R, E, A>
-): T.Task<R & R1, E | E1, B> => apSecondPar_(fa, fb);
+): <R, E, A>(fa: T.Task<R, E, A>) => T.Task<R & R1, E1 | E, B> {
+   return (fa) => apSecondPar_(fa, fb);
+}

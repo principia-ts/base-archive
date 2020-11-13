@@ -28,9 +28,11 @@ export class FiberStateDone<E, A> {
    constructor(readonly value: Exit<E, A>) {}
 }
 
-export const initial = <E, A>(): FiberState<E, A> => new FiberStateExecuting(new Running(false), [], C.empty);
+export function initial<E, A>(): FiberState<E, A> {
+   return new FiberStateExecuting(new Running(false), [], C.empty);
+}
 
-export const interrupting = <E, A>(state: FiberState<E, A>): boolean => {
+export function interrupting<E, A>(state: FiberState<E, A>): boolean {
    const loop = (status: FiberStatus): Sy.Sync<unknown, never, boolean> =>
       Sy.gen(function* (_) {
          switch (status._tag) {
@@ -50,4 +52,4 @@ export const interrupting = <E, A>(state: FiberState<E, A>): boolean => {
       });
 
    return Sy.runIO(loop(state.status));
-};
+}

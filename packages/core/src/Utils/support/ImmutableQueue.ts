@@ -26,7 +26,7 @@ export class ImmutableQueue<A> {
    }
 
    find(f: (a: A) => boolean) {
-      return A.findr(f)(this.backing);
+      return A.findFirst(f)(this.backing);
    }
 
    filter(f: (a: A) => boolean) {

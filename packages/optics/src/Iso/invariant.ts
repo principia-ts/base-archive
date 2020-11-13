@@ -14,16 +14,20 @@ import type { Iso, URI, V } from "./model";
  * @category Invariant
  * @since 1.0.0
  */
-export const imap_ = <I, A, B>(ea: Iso<I, A>, ab: (a: A) => B, ba: (b: B) => A): Iso<I, B> => ({
-   get: flow(ea.get, ab),
-   reverseGet: flow(ba, ea.reverseGet)
-});
+export function imap_<I, A, B>(ea: Iso<I, A>, ab: (a: A) => B, ba: (b: B) => A): Iso<I, B> {
+   return {
+      get: flow(ea.get, ab),
+      reverseGet: flow(ba, ea.reverseGet)
+   };
+}
 
 /**
  * @category Invariant
  * @since 1.0.0
  */
-export const imap = <A, B>(ab: (a: A) => B, ba: (b: B) => A) => <I>(ea: Iso<I, A>): Iso<I, B> => imap_(ea, ab, ba);
+export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Iso<I, A>) => Iso<I, B> {
+   return (ea) => imap_(ea, ab, ba);
+}
 
 /**
  * @category Instances

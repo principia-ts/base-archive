@@ -6,6 +6,10 @@ import type { None, Option, Some } from "./model";
  * -------------------------------------------
  */
 
-export const isNone = <A>(fa: Option<A>): fa is None => fa._tag === "None";
+export function isNone<A>(fa: Option<A>): fa is None {
+   return fa._tag === "None";
+}
 
-export const isSome = <A>(fa: Option<A>): fa is Some<A> => fa._tag === "Some";
+export function isSome<A>(fa: Option<A>): fa is Some<A> {
+   return fa._tag === "Some";
+}

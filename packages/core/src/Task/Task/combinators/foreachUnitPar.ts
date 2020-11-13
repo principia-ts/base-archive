@@ -109,7 +109,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
                   T.map_(
                      T.foreach_(s.fibers, (f) => f.await),
                      flow(
-                        A.findr((e) => e._tag === "Failure"),
+                        A.findFirst((e) => e._tag === "Failure"),
                         (m) => m._tag === "Some"
                      )
                   )

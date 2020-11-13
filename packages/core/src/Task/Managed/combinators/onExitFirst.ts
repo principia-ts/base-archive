@@ -12,11 +12,11 @@ import { releaseAll } from "./releaseAll";
  * Ensures that a cleanup function runs when this ZManaged is finalized, before
  * the existing finalizers.
  */
-export const onExitFirst_ = <R, E, A, R1>(
+export function onExitFirst_<R, E, A, R1>(
    self: Managed<R, E, A>,
    cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>
-) =>
-   new Managed<R & R1, E, A>(
+): Managed<R & R1, E, A> {
+   return new Managed<R & R1, E, A>(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
             T.do,
@@ -43,11 +43,14 @@ export const onExitFirst_ = <R, E, A, R1>(
          )
       )
    );
+}
 
 /**
  * Ensures that a cleanup function runs when this ZManaged is finalized, before
  * the existing finalizers.
  */
-export const onExitFirst = <E, A, R1>(cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>) => <R>(
-   self: Managed<R, E, A>
-) => onExitFirst_(self, cleanup);
+export function onExitFirst<E, A, R1>(
+   cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>
+): <R>(self: Managed<R, E, A>) => Managed<R & R1, E, A> {
+   return (self) => onExitFirst_(self, cleanup);
+}

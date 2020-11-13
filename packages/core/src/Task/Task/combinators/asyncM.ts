@@ -13,10 +13,10 @@ import { to } from "./to";
  * Imports an asynchronous effect into an `Task`. This formulation is
  * necessary when the effect is itself expressed in terms of `Task`.
  */
-export const asyncM = <R, E, R1, E1, A>(
+export function asyncM<R, E, R1, E1, A>(
    register: (resolve: (_: Task<R1, E1, A>) => void) => Task<R, E, any>
-): Task<R & R1, E | E1, A> =>
-   pipe(
+): Task<R & R1, E | E1, A> {
+   return pipe(
       _.do,
       _.bindS("p", () => XP.make<E | E1, A>()),
       _.bindS("r", () => runtime<R & R1>()),
@@ -39,3 +39,4 @@ export const asyncM = <R, E, R1, E1, A>(
       ),
       _.map(({ a }) => a)
    );
+}

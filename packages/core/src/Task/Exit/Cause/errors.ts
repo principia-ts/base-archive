@@ -13,8 +13,9 @@ export class FiberFailure<E> extends Error {
    }
 }
 
-export const isFiberFailure = (u: unknown): u is FiberFailure<unknown> =>
-   u instanceof FiberFailure && u._tag === "FiberFailure";
+export function isFiberFailure(u: unknown): u is FiberFailure<unknown> {
+   return u instanceof FiberFailure && u._tag === "FiberFailure";
+}
 
 export class Untraced extends Error {
    readonly _tag = "Untraced";
@@ -26,7 +27,9 @@ export class Untraced extends Error {
    }
 }
 
-export const isUntraced = (u: unknown): u is Untraced => u instanceof Untraced && u._tag === "Untraced";
+export function isUntraced(u: unknown): u is Untraced {
+   return u instanceof Untraced && u._tag === "Untraced";
+}
 
 export class RuntimeError extends Error {
    readonly _tag = "RuntimeError";
@@ -38,7 +41,9 @@ export class RuntimeError extends Error {
    }
 }
 
-export const isRuntime = (u: unknown): u is RuntimeError => u instanceof RuntimeError && u._tag === "RuntimeError";
+export function isRuntime(u: unknown): u is RuntimeError {
+   return u instanceof RuntimeError && u._tag === "RuntimeError";
+}
 
 export class InterruptedException extends Error {
    readonly _tag = "InterruptedException";
@@ -49,8 +54,9 @@ export class InterruptedException extends Error {
    }
 }
 
-export const isInterruptedException = (u: unknown): u is InterruptedException =>
-   u instanceof InterruptedException && u._tag === "InterruptedException";
+export function isInterruptedException(u: unknown): u is InterruptedException {
+   return u instanceof InterruptedException && u._tag === "InterruptedException";
+}
 
 export class IllegalStateException extends Error {
    readonly _tag = "IllegalStateException";
@@ -61,5 +67,6 @@ export class IllegalStateException extends Error {
    }
 }
 
-export const isIllegalStateException = (u: unknown): u is IllegalStateException =>
-   u instanceof IllegalStateException && u._tag === "IllegalStateException";
+export function isIllegalStateException(u: unknown): u is IllegalStateException {
+   return u instanceof IllegalStateException && u._tag === "IllegalStateException";
+}

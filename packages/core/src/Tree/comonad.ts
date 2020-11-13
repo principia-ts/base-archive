@@ -8,13 +8,19 @@ import type { Tree } from "./model";
  * -------------------------------------------
  */
 
-export const extend_ = <A, B>(wa: Tree<A>, f: (wa: Tree<A>) => B): Tree<B> => ({
-   value: f(wa),
-   forest: A.map_(wa.forest, (a) => extend_(a, f))
-});
+export function extend_<A, B>(wa: Tree<A>, f: (wa: Tree<A>) => B): Tree<B> {
+   return {
+      value: f(wa),
+      forest: A.map_(wa.forest, (a) => extend_(a, f))
+   };
+}
 
-export const extend = <A, B>(f: (wa: Tree<A>) => B) => (wa: Tree<A>): Tree<B> => extend_(wa, f);
+export function extend<A, B>(f: (wa: Tree<A>) => B): (wa: Tree<A>) => Tree<B> {
+   return (wa) => extend_(wa, f);
+}
 
 export const duplicate: <A>(wa: Tree<A>) => Tree<Tree<A>> = extend(identity);
 
-export const extract = <A>(wa: Tree<A>): A => wa.value;
+export function extract<A>(wa: Tree<A>): A {
+   return wa.value;
+}

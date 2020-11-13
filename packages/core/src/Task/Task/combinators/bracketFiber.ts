@@ -1,4 +1,5 @@
 import { chain_ } from "../_core";
+import type { Exit } from "../../Exit";
 import type { RuntimeFiber } from "../../Fiber";
 import { forkDaemon } from "../core-scope";
 import type { Task } from "../model";
@@ -19,8 +20,12 @@ import { fiberId } from "./fiberId";
  * @category Combinators
  * @since 1.0.0
  */
-export const bracketFiber_ = <R, E, A, R1, E1, B>(ef: Task<R, E, A>, use: (f: RuntimeFiber<E, A>) => Task<R1, E1, B>) =>
-   bracket_(forkDaemon(ef), (f) => chain_(fiberId(), (id) => f.interruptAs(id)), use);
+export function bracketFiber_<R, E, A, R1, E1, B>(
+   ef: Task<R, E, A>,
+   use: (f: RuntimeFiber<E, A>) => Task<R1, E1, B>
+): Task<R & R1, E1, Exit<E, A>> {
+   return bracket_(forkDaemon(ef), (f) => chain_(fiberId(), (id) => f.interruptAs(id)), use);
+}
 
 /**
  * ```haskell
@@ -34,6 +39,8 @@ export const bracketFiber_ = <R, E, A, R1, E1, B>(ef: Task<R, E, A>, use: (f: Ru
  * @category Combinators
  * @since 1.0.0
  */
-export const bracketFiber = <E, A, R1, E1, A1>(use: (f: RuntimeFiber<E, A>) => Task<R1, E1, A1>) => <R>(
-   ef: Task<R, E, A>
-) => bracketFiber_(ef, use);
+export function bracketFiber<E, A, R1, E1, A1>(
+   use: (f: RuntimeFiber<E, A>) => Task<R1, E1, A1>
+): <R>(ef: Task<R, E, A>) => Task<R & R1, E1, Exit<E, A>> {
+   return (ef) => bracketFiber_(ef, use);
+}

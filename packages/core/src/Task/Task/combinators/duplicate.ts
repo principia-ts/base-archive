@@ -7,4 +7,6 @@ import { extend_ } from "./extend";
  * duplicate :: Extend w => w a -> w w a
  * ```
  */
-export const duplicate = <R, E, A>(wa: Task<R, E, A>): Task<R, E, Task<R, E, A>> => extend_(wa, identity);
+export function duplicate<R, E, A>(wa: Task<R, E, A>): Task<R, E, Task<R, E, A>> {
+   return extend_(wa, identity);
+}

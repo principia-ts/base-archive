@@ -23,8 +23,9 @@ import { ChainInstruction } from "./model";
  * @category Monad
  * @since 1.0.0
  */
-export const chain_ = <R, E, A, U, G, B>(ma: Task<R, E, A>, f: (a: A) => Task<U, G, B>): Task<R & U, E | G, B> =>
-   new ChainInstruction(ma, f);
+export function chain_<R, E, A, U, G, B>(ma: Task<R, E, A>, f: (a: A) => Task<U, G, B>): Task<R & U, E | G, B> {
+   return new ChainInstruction(ma, f);
+}
 
 /**
  * ```haskell
@@ -40,8 +41,9 @@ export const chain_ = <R, E, A, U, G, B>(ma: Task<R, E, A>, f: (a: A) => Task<U,
  * @category Monad
  * @since 1.0.0
  */
-export const chain = <A, U, G, B>(f: (a: A) => Task<U, G, B>) => <R, E>(ma: Task<R, E, A>): Task<R & U, E | G, B> =>
-   chain_(ma, f);
+export function chain<A, U, G, B>(f: (a: A) => Task<U, G, B>): <R, E>(ma: Task<R, E, A>) => Task<R & U, G | E, B> {
+   return (ma) => chain_(ma, f);
+}
 
 /**
  * ```haskell
@@ -53,7 +55,9 @@ export const chain = <A, U, G, B>(f: (a: A) => Task<U, G, B>) => <R, E>(ma: Task
  * @category Monad
  * @since 1.0.0
  */
-export const flatten = <R, E, Q, D, A>(ffa: Task<R, E, Task<Q, D, A>>) => chain_(ffa, identity);
+export function flatten<R, E, Q, D, A>(ffa: Task<R, E, Task<Q, D, A>>) {
+   return chain_(ffa, identity);
+}
 
 /**
  * ```haskell
@@ -68,13 +72,14 @@ export const flatten = <R, E, Q, D, A>(ffa: Task<R, E, Task<Q, D, A>>) => chain_
  * @category Monad
  * @since 1.0.0
  */
-export const tap_ = <R, E, A, Q, D, B>(fa: Task<R, E, A>, f: (a: A) => Task<Q, D, B>): Task<Q & R, D | E, A> =>
-   chain_(fa, (a) =>
+export function tap_<R, E, A, Q, D, B>(fa: Task<R, E, A>, f: (a: A) => Task<Q, D, B>): Task<Q & R, D | E, A> {
+   return chain_(fa, (a) =>
       pipe(
          f(a),
          chain(() => succeed(a))
       )
    );
+}
 
 /**
  * ```haskell
@@ -89,5 +94,6 @@ export const tap_ = <R, E, A, Q, D, B>(fa: Task<R, E, A>, f: (a: A) => Task<Q, D
  * @category Monad
  * @since 1.0.0
  */
-export const tap = <A, Q, D, B>(f: (a: A) => Task<Q, D, B>) => <R, E>(fa: Task<R, E, A>): Task<Q & R, D | E, A> =>
-   tap_(fa, f);
+export function tap<A, Q, D, B>(f: (a: A) => Task<Q, D, B>): <R, E>(fa: Task<R, E, A>) => Task<Q & R, D | E, A> {
+   return (fa) => tap_(fa, f);
+}

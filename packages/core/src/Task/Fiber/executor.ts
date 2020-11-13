@@ -83,7 +83,9 @@ export const _tracing = new TracingContext();
 
 export const currentFiber = new AtomicReference<Executor<any, any> | null>(null);
 
-export const unsafeCurrentFiber = (): O.Option<Executor<any, any>> => O.fromNullable(currentFiber.get);
+export function unsafeCurrentFiber(): O.Option<Executor<any, any>> {
+   return O.fromNullable(currentFiber.get);
+}
 
 /**
  * `Executor` provides all of the context and facilities required to run a `Task`
@@ -886,7 +888,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                            }
 
                            case TaskInstructionTag.NewFiberRef: {
-                              const fiberRef = FR.fiberRef(current.initial, current.onFork, current.onJoin);
+                              const fiberRef = new FR.FiberRef(current.initial, current.onFork, current.onJoin);
 
                               this.fiberRefLocals.set(fiberRef, current.initial);
 

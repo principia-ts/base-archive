@@ -9,10 +9,10 @@ import { unwrap } from "./unwrap";
  * Locally installs a supervisor and an effect that succeeds with all the
  * children that have been forked in the returned effect.
  */
-export const withChildren = <R, E, A>(
+export function withChildren<R, E, A>(
    get: (_: T.IO<ReadonlyArray<RuntimeFiber<any, any>>>) => Managed<R, E, A>
-): Managed<R, E, A> =>
-   unwrap(
+): Managed<R, E, A> {
+   return unwrap(
       T.map_(
          track,
          (supervisor) =>
@@ -28,3 +28,4 @@ export const withChildren = <R, E, A>(
             )
       )
    );
+}

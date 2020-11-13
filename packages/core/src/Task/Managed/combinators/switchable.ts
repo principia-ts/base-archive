@@ -22,8 +22,8 @@ import { releaseMap } from "./releaseMap";
  * This constructor can be used to create an expressive control flow that uses
  * several instances of a managed resource.
  */
-export const switchable = <R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => T.Task<R, E, A>> =>
-   pipe(
+export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => T.Task<R, E, A>> {
+   return pipe(
       _.do,
       _.bindS("releaseMap", () => releaseMap),
       _.bindS("key", ({ releaseMap }) =>
@@ -55,3 +55,4 @@ export const switchable = <R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
          )
       )
    );
+}

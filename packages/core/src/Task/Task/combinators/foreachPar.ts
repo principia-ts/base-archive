@@ -16,14 +16,15 @@ export const foreachPar_ = <R, E, A, B>(
    return T.chain_(
       T.total<B[]>(() => []),
       (array) => {
-         const fn = ([a, n]: [A, number]) =>
-            T.chain_(
+         function fn([a, n]: [A, number]) {
+            return T.chain_(
                T.suspend(() => f(a)),
                (b) =>
                   T.total(() => {
                      array[n] = b;
                   })
             );
+         }
          return T.chain_(
             foreachUnitPar_(
                arr.map((a, n) => [a, n] as [A, number]),
@@ -41,6 +42,8 @@ export const foreachPar_ = <R, E, A, B>(
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const foreachPar = <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (
-   as: Iterable<A>
-): T.Task<R, E, ReadonlyArray<B>> => foreachPar_(as, f);
+export function foreachPar<R, E, A, B>(
+   f: (a: A) => T.Task<R, E, B>
+): (as: Iterable<A>) => T.Task<R, E, ReadonlyArray<B>> {
+   return (as) => foreachPar_(as, f);
+}

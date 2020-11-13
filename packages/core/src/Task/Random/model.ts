@@ -59,15 +59,22 @@ export const next = asksServiceM(HasRandom)((_) => _.next);
 
 export const nextBoolean = asksServiceM(HasRandom)((_) => _.nextBoolean);
 
-export const nextIntBetween = (low: number, high: number) =>
-   asksServiceM(HasRandom)((_) => _.nextIntBetween(low, high));
+export function nextIntBetween(low: number, high: number) {
+   return asksServiceM(HasRandom)((_) => _.nextIntBetween(low, high));
+}
 
 export const nextInt = asksServiceM(HasRandom)((_) => _.nextInt);
 
 export const nextDouble = asksServiceM(HasRandom)((_) => _.nextDouble);
 
-export const nextRange = (low: number, high: number) => asksServiceM(HasRandom)((_) => _.nextRange(low, high));
+export function nextRange(low: number, high: number) {
+   return asksServiceM(HasRandom)((_) => _.nextRange(low, high));
+}
 
-export const setSeed = (seed: string) => asksServiceM(HasRandom)((_) => _.setSeed(seed));
+export function setSeed(seed: string) {
+   return asksServiceM(HasRandom)((_) => _.setSeed(seed));
+}
 
-export const withSeed = (seed: string) => replaceService(HasRandom, () => new LiveRandom(seed));
+export function withSeed(seed: string) {
+   return replaceService(HasRandom, () => new LiveRandom(seed));
+}

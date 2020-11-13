@@ -134,45 +134,55 @@ export class Semaphore {
 /**
  * Acquires `n` permits, executes the action and releases the permits right after.
  */
-export const withPermits = (n: number) => (s: Semaphore) => <R, E, A>(e: T.Task<R, E, A>) =>
-   bracket_(
-      s.prepare(n),
-      (a) => T.chain_(a.waitAcquire, () => e),
-      (a) => a.release
-   );
+export function withPermits(n: number) {
+   return (s: Semaphore) => <R, E, A>(e: T.Task<R, E, A>) =>
+      bracket_(
+         s.prepare(n),
+         (a) => T.chain_(a.waitAcquire, () => e),
+         (a) => a.release
+      );
+}
 
 /**
  * Acquires a permit, executes the action and releases the permit right after.
  */
-export const withPermit = (s: Semaphore) => withPermits(1)(s);
+export function withPermit(s: Semaphore) {
+   return withPermits(1)(s);
+}
 
 /**
  * Acquires `n` permits in a [[Managed]] and releases the permits in the finalizer.
  */
-export const withPermitsManaged = (n: number) => (s: Semaphore) =>
-   M.makeReserve(T.map_(s.prepare(n), (a) => M.makeReservation(() => a.release)(a.waitAcquire)));
+export function withPermitsManaged(n: number): (s: Semaphore) => M.Managed<unknown, never, void> {
+   return (s) => M.makeReserve(T.map_(s.prepare(n), (a) => M.makeReservation(() => a.release)(a.waitAcquire)));
+}
 
 /**
  * Acquires a permit in a [[Managed]] and releases the permit in the finalizer.
  */
-export const withPermitManaged = (s: Semaphore) => withPermitsManaged(1)(s);
+export function withPermitManaged(s: Semaphore) {
+   return withPermitsManaged(1)(s);
+}
 
 /**
  * The number of permits currently available.
  */
-export const available = (s: Semaphore) => s.available;
+export function available(s: Semaphore): T.Task<unknown, never, number> {
+   return s.available;
+}
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
-export const makeSemaphore = (permits: number) =>
-   T.map_(XR.makeRef<State>(E.right(permits)), (state) => new Semaphore(state));
+export function makeSemaphore(permits: number): T.Task<unknown, never, Semaphore> {
+   return T.map_(XR.makeRef<State>(E.right(permits)), (state) => new Semaphore(state));
+}
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
-export const unsafeMakeSemaphore = (permits: number) => {
+export function unsafeMakeSemaphore(permits: number): Semaphore {
    const state = XR.unsafeMakeRef<State>(E.right(permits));
 
    return new Semaphore(state);
-};
+}

@@ -1,5 +1,7 @@
 import type { Show } from "./model";
 
-export const fromShow = <A>(show: (a: A) => string): Show<A> => ({
-   show
-});
+export function fromShow<A>(show: (a: A) => string): Show<A> {
+   return {
+      show
+   };
+}

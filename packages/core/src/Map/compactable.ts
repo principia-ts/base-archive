@@ -22,7 +22,7 @@ interface Next<A> {
  * @category Compactable
  * @since 1.0.0
  */
-export const compact = <K, A>(fa: ReadonlyMap<K, Option<A>>): ReadonlyMap<K, A> => {
+export function compact<K, A>(fa: ReadonlyMap<K, Option<A>>): ReadonlyMap<K, A> {
    const m = new Map<K, A>();
    const entries = fa.entries();
    let e: Next<readonly [K, Option<A>]>;
@@ -33,15 +33,13 @@ export const compact = <K, A>(fa: ReadonlyMap<K, Option<A>>): ReadonlyMap<K, A> 
       }
    }
    return m;
-};
+}
 
 /**
  * @category Compactable
  * @since 1.0.0
  */
-export const separate = <K, A, B>(
-   fa: ReadonlyMap<K, Either<A, B>>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>> => {
+export function separate<K, A, B>(fa: ReadonlyMap<K, Either<A, B>>): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>> {
    const left = new Map<K, A>();
    const right = new Map<K, B>();
    const entries = fa.entries();
@@ -59,7 +57,7 @@ export const separate = <K, A, B>(
       left,
       right
    };
-};
+}
 
 /**
  * @category Compactable

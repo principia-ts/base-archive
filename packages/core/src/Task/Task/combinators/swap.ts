@@ -11,4 +11,6 @@ import type { Task } from "../model";
  * @category AltBifunctor?
  * @since 1.0.0
  */
-export const swap = <R, E, A>(pab: Task<R, E, A>): Task<R, A, E> => foldM_(pab, pure, fail);
+export function swap<R, E, A>(pab: Task<R, E, A>): Task<R, A, E> {
+   return foldM_(pab, pure, fail);
+}

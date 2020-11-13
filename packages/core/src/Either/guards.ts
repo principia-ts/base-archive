@@ -16,7 +16,9 @@ import type { Either, Left, Right } from "./model";
  * @category Guards
  * @since 1.0.0
  */
-export const isLeft = <E, A>(fa: Either<E, A>): fa is Left<E> => fa._tag === "Left";
+export function isLeft<E, A>(fa: Either<E, A>): fa is Left<E> {
+   return fa._tag === "Left";
+}
 
 /**
  * ```haskell
@@ -28,4 +30,6 @@ export const isLeft = <E, A>(fa: Either<E, A>): fa is Left<E> => fa._tag === "Le
  * @category Guards
  * @since 1.0.0
  */
-export const isRight = <E, A>(fa: Either<E, A>): fa is Right<A> => fa._tag === "Right";
+export function isRight<E, A>(fa: Either<E, A>): fa is Right<A> {
+   return fa._tag === "Right";
+}

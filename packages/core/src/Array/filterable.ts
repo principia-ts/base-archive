@@ -22,10 +22,12 @@ import type { URI, V } from "./model";
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export const filterWithIndex_: {
-   <A, B extends A>(fa: ReadonlyArray<A>, f: RefinementWithIndex<number, A, B>): ReadonlyArray<B>;
-   <A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A>;
-} = <A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A> => {
+export function filterWithIndex_<A, B extends A>(
+   fa: ReadonlyArray<A>,
+   f: RefinementWithIndex<number, A, B>
+): ReadonlyArray<B>;
+export function filterWithIndex_<A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A>;
+export function filterWithIndex_<A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A> {
    const result: Array<A> = [];
    for (let i = 0; i < fa.length; i++) {
       const a = fa[i];
@@ -34,7 +36,7 @@ export const filterWithIndex_: {
       }
    }
    return result;
-};
+}
 
 /**
  * ```haskell
@@ -45,10 +47,13 @@ export const filterWithIndex_: {
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export const filterWithIndex: {
-   <A, B extends A>(f: RefinementWithIndex<number, A, B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B>;
-   <A>(f: PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>;
-} = <A>(f: PredicateWithIndex<number, A>) => (fa: ReadonlyArray<A>): ReadonlyArray<A> => filterWithIndex_(fa, f);
+export function filterWithIndex<A, B extends A>(
+   f: RefinementWithIndex<number, A, B>
+): (fa: ReadonlyArray<A>) => ReadonlyArray<B>;
+export function filterWithIndex<A>(f: PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>;
+export function filterWithIndex<A>(f: PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (fa) => filterWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
@@ -58,10 +63,11 @@ export const filterWithIndex: {
  * @category Filterable
  * @since 1.0.0
  */
-export const filter_: {
-   <A, B extends A>(fa: ReadonlyArray<A>, f: Refinement<A, B>): ReadonlyArray<B>;
-   <A>(fa: ReadonlyArray<A>, f: Predicate<A>): ReadonlyArray<A>;
-} = <A>(fa: ReadonlyArray<A>, f: Predicate<A>): ReadonlyArray<A> => filterWithIndex_(fa, (_, a) => f(a));
+export function filter_<A, B extends A>(fa: ReadonlyArray<A>, f: Refinement<A, B>): ReadonlyArray<B>;
+export function filter_<A>(fa: ReadonlyArray<A>, f: Predicate<A>): ReadonlyArray<A>;
+export function filter_<A>(fa: ReadonlyArray<A>, f: Predicate<A>): ReadonlyArray<A> {
+   return filterWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
@@ -71,10 +77,11 @@ export const filter_: {
  * @category Filterable
  * @since 1.0.0
  */
-export const filter: {
-   <A, B extends A>(f: Refinement<A, B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B>;
-   <A>(f: Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>;
-} = <A>(f: Predicate<A>) => (fa: ReadonlyArray<A>) => filterWithIndex_(fa, (_, a) => f(a));
+export function filter<A, B extends A>(f: Refinement<A, B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B>;
+export function filter<A>(f: Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>;
+export function filter<A>(f: Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (fa) => filterWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
@@ -85,10 +92,7 @@ export const filter: {
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export const mapOptionWithIndex_ = <A, B>(
-   fa: ReadonlyArray<A>,
-   f: (i: number, a: A) => Option<B>
-): ReadonlyArray<B> => {
+export function mapOptionWithIndex_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => Option<B>): ReadonlyArray<B> {
    const result = [];
    for (let i = 0; i < fa.length; i++) {
       const optionB = f(i, fa[i]);
@@ -97,7 +101,7 @@ export const mapOptionWithIndex_ = <A, B>(
       }
    }
    return result;
-};
+}
 
 /**
  * ```haskell
@@ -108,9 +112,11 @@ export const mapOptionWithIndex_ = <A, B>(
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export const mapOptionWithIndex = <A, B>(f: (i: number, a: A) => Option<B>) => (
-   fa: ReadonlyArray<A>
-): ReadonlyArray<B> => mapOptionWithIndex_(fa, f);
+export function mapOptionWithIndex<A, B>(
+   f: (i: number, a: A) => Option<B>
+): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+   return (fa) => mapOptionWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
@@ -120,8 +126,9 @@ export const mapOptionWithIndex = <A, B>(f: (i: number, a: A) => Option<B>) => (
  * @category Filterable
  * @since 1.0.0
  */
-export const mapOption_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> =>
-   mapOptionWithIndex_(fa, (_, a) => f(a));
+export function mapOption_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> {
+   return mapOptionWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
@@ -131,8 +138,9 @@ export const mapOption_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): 
  * @category Filterable
  * @since 1.0.0
  */
-export const mapOption = <A, B>(f: (a: A) => Option<B>) => (fa: ReadonlyArray<A>): ReadonlyArray<B> =>
-   mapOptionWithIndex_(fa, (_, a) => f(a));
+export function mapOption<A, B>(f: (a: A) => Option<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+   return (fa) => mapOptionWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
@@ -140,13 +148,18 @@ export const mapOption = <A, B>(f: (a: A) => Option<B>) => (fa: ReadonlyArray<A>
  *    (f a, ((k, a) -> Boolean)) -> Separated (f a) (f a)
  * ```
  */
-export const partitionWithIndex_: {
-   <A, B extends A>(ta: ReadonlyArray<A>, refinement: RefinementWithIndex<number, A, B>): Separated<
-      ReadonlyArray<A>,
-      ReadonlyArray<B>
-   >;
-   <A>(ta: ReadonlyArray<A>, predicate: PredicateWithIndex<number, A>): Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
-} = <A>(ta: ReadonlyArray<A>, predicate: PredicateWithIndex<number, A>) => {
+export function partitionWithIndex_<A, B extends A>(
+   ta: ReadonlyArray<A>,
+   refinement: RefinementWithIndex<number, A, B>
+): Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+export function partitionWithIndex_<A>(
+   ta: ReadonlyArray<A>,
+   predicate: PredicateWithIndex<number, A>
+): Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+export function partitionWithIndex_<A>(
+   ta: ReadonlyArray<A>,
+   predicate: PredicateWithIndex<number, A>
+): Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
    const left: Array<A> = [];
    const right: Array<A> = [];
    for (let i = 0; i < ta.length; i++) {
@@ -161,7 +174,7 @@ export const partitionWithIndex_: {
       left,
       right
    };
-};
+}
 
 /**
  * ```haskell
@@ -169,36 +182,54 @@ export const partitionWithIndex_: {
  *    ((k, a) -> Boolean) -> f a -> Separated (f a) (f a)
  * ```
  */
-export const partitionWithIndex: {
-   <A, B extends A>(refinement: RefinementWithIndex<number, A, B>): (
-      ta: ReadonlyArray<A>
-   ) => Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
-   <A>(predicate: PredicateWithIndex<number, A>): (
-      ta: ReadonlyArray<A>
-   ) => Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
-} = <A>(predicate: PredicateWithIndex<number, A>) => (ta: ReadonlyArray<A>) => partitionWithIndex_(ta, predicate);
+export function partitionWithIndex<A, B extends A>(
+   refinement: RefinementWithIndex<number, A, B>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+export function partitionWithIndex<A>(
+   predicate: PredicateWithIndex<number, A>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+export function partitionWithIndex<A>(
+   predicate: PredicateWithIndex<number, A>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
+   return (ta) => partitionWithIndex_(ta, predicate);
+}
 
 /**
  * ```haskell
  * partition_ :: Filterable f => (f a, (a -> Boolean)) -> Separated (f a) (f a)
  * ```
  */
-export const partition_: {
-   <A, B extends A>(ta: ReadonlyArray<A>, refinement: Refinement<A, B>): Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
-   <A>(ta: ReadonlyArray<A>, predicate: Predicate<A>): Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
-} = <A>(ta: ReadonlyArray<A>, predicate: Predicate<A>) => partitionWithIndex_(ta, (_, a) => predicate(a));
+export function partition_<A, B extends A>(
+   ta: ReadonlyArray<A>,
+   refinement: Refinement<A, B>
+): Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+export function partition_<A>(
+   ta: ReadonlyArray<A>,
+   predicate: Predicate<A>
+): Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+export function partition_<A>(
+   ta: ReadonlyArray<A>,
+   predicate: Predicate<A>
+): Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
+   return partitionWithIndex_(ta, (_, a) => predicate(a));
+}
 
 /**
  * ```haskell
  * partition :: Filterable f => (a -> Boolean) -> f a -> Separated (f a) (f a)
  * ```
  */
-export const partition: {
-   <A, B extends A>(refinement: Refinement<A, B>): (
-      ta: ReadonlyArray<A>
-   ) => Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
-   <A>(predicate: Predicate<A>): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
-} = <A>(predicate: Predicate<A>) => (ta: ReadonlyArray<A>) => partitionWithIndex_(ta, (_, a) => predicate(a));
+export function partition<A, B extends A>(
+   refinement: Refinement<A, B>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
+   return (ta) => partitionWithIndex_(ta, (_, a) => predicate(a));
+}
 
 /**
  * ```haskell
@@ -206,10 +237,10 @@ export const partition: {
  *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export const mapEitherWithIndex_ = <A, B, C>(
+export function mapEitherWithIndex_<A, B, C>(
    ta: ReadonlyArray<A>,
    f: (i: number, a: A) => Either<B, C>
-): Separated<ReadonlyArray<B>, ReadonlyArray<C>> => {
+): Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
    const left = [];
    const right = [];
    for (let i = 0; i < ta.length; i++) {
@@ -224,7 +255,7 @@ export const mapEitherWithIndex_ = <A, B, C>(
       left,
       right
    };
-};
+}
 
 /**
  * ```haskell
@@ -232,28 +263,34 @@ export const mapEitherWithIndex_ = <A, B, C>(
  *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export const mapEitherWithIndex = <A, B, C>(f: (i: number, a: A) => Either<B, C>) => (
-   ta: ReadonlyArray<A>
-): Separated<ReadonlyArray<B>, ReadonlyArray<C>> => mapEitherWithIndex_(ta, f);
+export function mapEitherWithIndex<A, B, C>(
+   f: (i: number, a: A) => Either<B, C>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
+   return (ta) => mapEitherWithIndex_(ta, f);
+}
 
 /**
  * ```haskell
  * mapEither_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export const mapEither_ = <A, B, C>(
+export function mapEither_<A, B, C>(
    ta: ReadonlyArray<A>,
    f: (a: A) => Either<B, C>
-): Separated<ReadonlyArray<B>, ReadonlyArray<C>> => mapEitherWithIndex_(ta, (_, a) => f(a));
+): Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
+   return mapEitherWithIndex_(ta, (_, a) => f(a));
+}
 
 /**
  * ```haskell
  * mapEither :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export const mapEither = <A, B, C>(f: (a: A) => Either<B, C>) => (
-   ta: ReadonlyArray<A>
-): Separated<ReadonlyArray<B>, ReadonlyArray<C>> => mapEitherWithIndex_(ta, (_, a) => f(a));
+export function mapEither<A, B, C>(
+   f: (a: A) => Either<B, C>
+): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
+   return (ta) => mapEitherWithIndex_(ta, (_, a) => f(a));
+}
 
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
    filter_,

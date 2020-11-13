@@ -7,7 +7,7 @@ import { Functor } from "./functor";
 import type { Tuple, URI, V } from "./model";
 import { unit } from "./unit";
 
-export const getApplicative = <M>(M: Monoid<M>): P.Applicative<[URI], V & HKT.Fix<"I", M>> => {
+export function getApplicative<M>(M: Monoid<M>): P.Applicative<[URI], V & HKT.Fix<"I", M>> {
    const both_: P.BothFn_<[URI], V & HKT.Fix<"I", M>> = (fa, fb) => [[fst(fa), fst(fb)], M.combine_(snd(fa), snd(fb))];
    return HKT.instance<P.Applicative<[URI], V & HKT.Fix<"I", M>>>({
       ...Functor,
@@ -15,6 +15,8 @@ export const getApplicative = <M>(M: Monoid<M>): P.Applicative<[URI], V & HKT.Fi
       both: (fb) => (fa) => both_(fa, fb),
       unit: unit(M)
    });
-};
+}
 
-export const pure = <M>(M: Monoid<M>) => <A>(a: A): Tuple<A, M> => [a, M.nat] as const;
+export function pure<M>(M: Monoid<M>): <A>(a: A) => Tuple<A, M> {
+   return (a) => [a, M.nat] as const;
+}

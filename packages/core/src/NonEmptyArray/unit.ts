@@ -14,4 +14,6 @@ import type { NonEmptyArray } from "./model";
  * @category Unit
  * @since 1.0.0
  */
-export const unit = (): NonEmptyArray<void> => [undefined];
+export function unit(): NonEmptyArray<void> {
+   return [undefined];
+}

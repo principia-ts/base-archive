@@ -9,8 +9,8 @@ import * as BPull from "../internal/BufferedPull";
 import * as Pull from "../internal/Pull";
 import { Stream } from "../model";
 
-export const flattenExitOption = <R, E, E1, O>(stream: Stream<R, E, Ex.Exit<O.Option<E1>, O>>): Stream<R, E | E1, O> =>
-   new Stream(
+export function flattenExitOption<R, E, E1, O>(stream: Stream<R, E, Ex.Exit<O.Option<E1>, O>>): Stream<R, E | E1, O> {
+   return new Stream(
       M.gen(function* (_) {
          const upstream = yield* _(M.mapM_(stream.proc, BPull.make));
          const done = yield* _(XR.makeRef(false));
@@ -34,3 +34,4 @@ export const flattenExitOption = <R, E, E1, O>(stream: Stream<R, E, Ex.Exit<O.Op
          );
       })
    );
+}

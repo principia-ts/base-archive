@@ -30,20 +30,24 @@ export type FreeSemigroup<A> = Element<A> | Combine<A>;
  * @category Constructors
  * @since 1.0.0
  */
-export const combine = <A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): FreeSemigroup<A> => ({
-   _tag: "Combine",
-   left,
-   right
-});
+export function combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): FreeSemigroup<A> {
+   return {
+      _tag: "Combine",
+      left,
+      right
+   };
+}
 
 /**
  * @category Constructors
  * @since 1.0.0
  */
-export const element = <A>(a: A): FreeSemigroup<A> => ({
-   _tag: "Element",
-   value: a
-});
+export function element<A>(a: A): FreeSemigroup<A> {
+   return {
+      _tag: "Element",
+      value: a
+   };
+}
 
 /*
  * -------------------------------------------
@@ -55,16 +59,19 @@ export const element = <A>(a: A): FreeSemigroup<A> => ({
  * @category Destructors
  * @since 1.0.0
  */
-export const fold = <A, R>(onOf: (value: A) => R, onConcat: (left: FreeSemigroup<A>, right: FreeSemigroup<A>) => R) => (
-   f: FreeSemigroup<A>
-): R => {
-   switch (f._tag) {
-      case "Element":
-         return onOf(f.value);
-      case "Combine":
-         return onConcat(f.left, f.right);
-   }
-};
+export function fold<A, R>(
+   onOf: (value: A) => R,
+   onConcat: (left: FreeSemigroup<A>, right: FreeSemigroup<A>) => R
+): (f: FreeSemigroup<A>) => R {
+   return (f) => {
+      switch (f._tag) {
+         case "Element":
+            return onOf(f.value);
+         case "Combine":
+            return onConcat(f.left, f.right);
+      }
+   };
+}
 
 /*
  * -------------------------------------------
@@ -76,4 +83,6 @@ export const fold = <A, R>(onOf: (value: A) => R, onConcat: (left: FreeSemigroup
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <A = never>(): Semigroup<FreeSemigroup<A>> => fromCombine(combine);
+export function getSemigroup<A = never>(): Semigroup<FreeSemigroup<A>> {
+   return fromCombine(combine);
+}

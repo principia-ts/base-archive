@@ -5,10 +5,12 @@ import type * as HKT from "@principia/prelude/HKT";
 import * as A from "../Array";
 import type { Forest, Tree } from "./model";
 
-export const make = <A>(value: A, forest: Forest<A>): Tree<A> => ({
-   value,
-   forest
-});
+export function make<A>(value: A, forest: Forest<A>): Tree<A> {
+   return {
+      value,
+      forest
+   };
+}
 
 /**
  * Build a tree from a seed value

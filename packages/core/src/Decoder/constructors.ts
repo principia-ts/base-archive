@@ -7,27 +7,32 @@ import { error } from "./decode-error";
 import type { Decoder } from "./model";
 import { M } from "./monad";
 
-export const fromRefinement = <I, A extends I>(
+export function fromRefinement<I, A extends I>(
    refinement: Refinement<I, A>,
    expected: string,
    info?: ErrorInfo
-): Decoder<I, A> => ({
-   decode: K.fromRefinement(M)(refinement, (u) => error(u, expected, info)).decode,
-   _meta: {
-      name: expected
-   }
-});
+): Decoder<I, A> {
+   return {
+      decode: K.fromRefinement(M)(refinement, (u) => error(u, expected, info)).decode,
+      _meta: {
+         name: expected
+      }
+   };
+}
 
-export const fromGuard = <I, A extends I>(guard: Guard<I, A>, expected: string, info?: ErrorInfo): Decoder<I, A> =>
-   fromRefinement(guard.is, expected, info);
+export function fromGuard<I, A extends I>(guard: Guard<I, A>, expected: string, info?: ErrorInfo): Decoder<I, A> {
+   return fromRefinement(guard.is, expected, info);
+}
 
-export const literal: <A extends readonly [Literal, ...Array<Literal>]>(
+export function literal<A extends readonly [Literal, ...Array<Literal>]>(
    ...values: A
-) => (info?: ErrorInfo) => Decoder<unknown, A[number]> = (...values) => (info) => ({
-   decode: K.literal(M)((u, values) => error(u, values.map((value) => JSON.stringify(value)).join(" | "), info))(
-      ...values
-   ).decode,
-   _meta: {
-      name: values.map((value) => JSON.stringify(value)).join(" | ")
-   }
-});
+): (info?: ErrorInfo | undefined) => Decoder<unknown, A[number]> {
+   return (info) => ({
+      decode: K.literal(M)((u, values) => error(u, values.map((value) => JSON.stringify(value)).join(" | "), info))(
+         ...values
+      ).decode,
+      _meta: {
+         name: values.map((value) => JSON.stringify(value)).join(" | ")
+      }
+   });
+}

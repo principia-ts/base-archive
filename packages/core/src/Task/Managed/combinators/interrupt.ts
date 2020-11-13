@@ -17,4 +17,6 @@ export const interrupt: Managed<unknown, never, never> = chain_(
 /**
  * Returns a Managed that is interrupted as if by the specified fiber.
  */
-export const interruptAs = (fiberId: FiberId): Managed<unknown, never, never> => halt(C.interrupt(fiberId));
+export function interruptAs(fiberId: FiberId): Managed<unknown, never, never> {
+   return halt(C.interrupt(fiberId));
+}

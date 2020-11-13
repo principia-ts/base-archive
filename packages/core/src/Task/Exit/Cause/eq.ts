@@ -10,7 +10,7 @@ import type { Cause } from "./model";
  * -------------------------------------------
  */
 
-export const equalsCause = <E>(x: Cause<E>, y: Cause<E>): boolean => {
+export function equalsCause<E>(x: Cause<E>, y: Cause<E>): boolean {
    switch (x._tag) {
       case "Fail": {
          return y._tag === "Fail" && x.value === y.value;
@@ -38,6 +38,6 @@ export const equalsCause = <E>(x: Cause<E>, y: Cause<E>): boolean => {
          return y._tag === "Then" && equalsCause(x.left, y.left) && equalsCause(x.right, y.right);
       }
    }
-};
+}
 
 export const eqCause: Eq<Cause<any>> = fromEquals(equalsCause);

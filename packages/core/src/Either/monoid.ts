@@ -14,7 +14,9 @@ import { getApplySemigroup } from "./semigroup";
  * @category Instances
  * @since 1.0.0
  */
-export const getApplyMonoid = <E, A>(M: P.Monoid<A>): P.Monoid<Either<E, A>> => ({
-   ...getApplySemigroup<E, A>(M),
-   nat: right(M.nat)
-});
+export function getApplyMonoid<E, A>(M: P.Monoid<A>): P.Monoid<Either<E, A>> {
+   return {
+      ...getApplySemigroup<E, A>(M),
+      nat: right(M.nat)
+   };
+}

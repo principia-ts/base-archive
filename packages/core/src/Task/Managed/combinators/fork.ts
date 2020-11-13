@@ -11,8 +11,8 @@ import { releaseAll } from "./releaseAll";
  * and provides that fiber. The finalizer for this value will interrupt the fiber
  * and run the original finalizer.
  */
-export const fork = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.Executor<E, A>> =>
-   new Managed(
+export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.Executor<E, A>> {
+   return new Managed(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
             T.do,
@@ -43,3 +43,4 @@ export const fork = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.Execu
          )
       )
    );
+}

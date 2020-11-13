@@ -11,9 +11,11 @@ import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
  *
  * For a sequential version of this method, see `foreach`.
  */
-export const foreachPar = <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (
-   as: Iterable<A>
-): Managed<R, E, readonly B[]> => foreachPar_(as, f);
+export function foreachPar<R, E, A, B>(
+   f: (a: A) => Managed<R, E, B>
+): (as: Iterable<A>) => Managed<R, E, readonly B[]> {
+   return (as) => foreachPar_(as, f);
+}
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -21,8 +23,8 @@ export const foreachPar = <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (
  *
  * For a sequential version of this method, see `foreach_`.
  */
-export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> =>
-   mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
+export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> {
+   return mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
       const makeInnerMap = T.gives_(
          T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
          (x: unknown) => tuple(x, parallelReleaseMap)
@@ -35,3 +37,4 @@ export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
          )
       );
    });
+}

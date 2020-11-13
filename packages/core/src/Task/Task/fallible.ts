@@ -15,6 +15,10 @@ import { chain_ } from "./monad";
  * @category Combinators
  * @since 1.0.0
  */
-export const absolve = <R, E, E1, A>(ma: Task<R, E, E.Either<E1, A>>) => chain_(ma, E.fold(fail, succeed));
+export function absolve<R, E, E1, A>(ma: Task<R, E, E.Either<E1, A>>): Task<R, E | E1, A> {
+   return chain_(ma, E.fold(fail, succeed));
+}
 
-export const recover = <R, E, A>(ma: Task<R, E, A>): Task<R, never, E.Either<E, A>> => fold_(ma, E.left, E.right);
+export function recover<R, E, A>(ma: Task<R, E, A>): Task<R, never, E.Either<E, A>> {
+   return fold_(ma, E.left, E.right);
+}

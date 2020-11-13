@@ -4,11 +4,15 @@ import type { Managed } from "../model";
 
 export const swap = <R, E, A>(ma: Managed<R, E, A>): Managed<R, A, E> => foldM_(ma, succeed, fail);
 
-export const swapWith_ = <R, E, A, R1, E1, B>(
+export function swapWith_<R, E, A, R1, E1, B>(
    ma: Managed<R, E, A>,
    f: (me: Managed<R, A, E>) => Managed<R1, B, E1>
-): Managed<R1, E1, B> => swap(f(swap(ma)));
+): Managed<R1, E1, B> {
+   return swap(f(swap(ma)));
+}
 
-export const swapWith = <R, E, A, R1, E1, B>(f: (me: Managed<R, A, E>) => Managed<R1, B, E1>) => (
-   ma: Managed<R, E, A>
-): Managed<R1, E1, B> => swapWith_(ma, f);
+export function swapWith<R, E, A, R1, E1, B>(
+   f: (me: Managed<R, A, E>) => Managed<R1, B, E1>
+): (ma: Managed<R, E, A>) => Managed<R1, E1, B> {
+   return (ma) => swapWith_(ma, f);
+}

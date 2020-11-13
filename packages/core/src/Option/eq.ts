@@ -10,5 +10,6 @@ import type { Option } from "./model";
  * -------------------------------------------
  */
 
-export const getEq = <A>(E: Eq<A>): Eq<Option<A>> =>
-   fromEquals((x, y) => (x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)));
+export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
+   return fromEquals((x, y) => (x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)));
+}

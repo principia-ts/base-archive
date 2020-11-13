@@ -21,7 +21,9 @@ export const tap_: <E, A, G, B>(fa: EIO<E, A>, f: (a: A) => EIO<G, B>) => EIO<E 
 
 export const tap: <A, G, B>(f: (a: A) => EIO<G, B>) => <E>(fa: EIO<E, A>) => EIO<E | G, A> = X.tap;
 
-export const flatten = <E, G, A>(mma: EIO<E, EIO<G, A>>): EIO<E | G, A> => chain_(mma, identity);
+export function flatten<E, G, A>(mma: EIO<E, EIO<G, A>>): EIO<E | G, A> {
+   return chain_(mma, identity);
+}
 
 /**
  * @category Monad

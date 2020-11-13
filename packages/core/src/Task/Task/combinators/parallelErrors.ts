@@ -6,8 +6,8 @@ import type { Task } from "../model";
 /**
  * Exposes all parallel errors in a single call
  */
-export const parallelErrors = <R, E, A>(task: Task<R, E, A>): Task<R, ReadonlyArray<E>, A> =>
-   T.foldCauseM_(
+export function parallelErrors<R, E, A>(task: Task<R, E, A>): Task<R, ReadonlyArray<E>, A> {
+   return T.foldCauseM_(
       task,
       (cause) => {
          const f = C.failures(cause);
@@ -20,3 +20,4 @@ export const parallelErrors = <R, E, A>(task: Task<R, E, A>): Task<R, ReadonlyAr
       },
       T.succeed
    );
+}

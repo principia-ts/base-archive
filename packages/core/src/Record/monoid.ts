@@ -17,11 +17,10 @@ const _hasOwnProperty = Object.prototype.hasOwnProperty;
  * -------------------------------------------
  */
 
-export const getMonoid: {
-   <N extends string, A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<N, A>>;
-   <A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<string, A>>;
-} = <A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<string, A>> =>
-   makeMonoid<ReadonlyRecord<string, A>>((x, y) => {
+export function getMonoid<N extends string, A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<N, A>>;
+export function getMonoid<A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<string, A>>;
+export function getMonoid<A>(S: TC.Semigroup<A>): TC.Monoid<ReadonlyRecord<string, A>> {
+   return makeMonoid<ReadonlyRecord<string, A>>((x, y) => {
       if (x === empty) {
          return y;
       }
@@ -40,3 +39,4 @@ export const getMonoid: {
       }
       return r;
    }, empty);
+}

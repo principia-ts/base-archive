@@ -11,35 +11,38 @@ import { tapInput } from "./tap";
 /**
  * Creates a new `XRefM` with the specified value.
  */
-export const makeRefM = <A>(a: A): T.IO<RefM<A>> =>
-   pipe(
+export function makeRefM<A>(a: A): T.IO<RefM<A>> {
+   return pipe(
       T.do,
       T.bindS("ref", () => XR.makeRef(a)),
       T.bindS("semaphore", () => S.makeSemaphore(1)),
       T.map(({ ref, semaphore }) => new Atomic(ref, semaphore))
    );
+}
 
 /**
  * Creates a new `XRefM` with the specified value.
  */
-export const unsafeMakeRefM = <A>(a: A): RefM<A> => {
+export function unsafeMakeRefM<A>(a: A): RefM<A> {
    const ref = XR.unsafeMakeRef(a);
    const semaphore = S.unsafeMakeSemaphore(1);
    return new Atomic(ref, semaphore);
-};
+}
 
 /**
  * Creates a new `RefM` with the specified value in the context of a
  * `Managed.`
  */
-export const makeManagedRefM = <A>(a: A): M.IO<RefM<A>> => pipe(makeRefM(a), M.fromTask);
+export function makeManagedRefM<A>(a: A): M.IO<RefM<A>> {
+   return pipe(makeRefM(a), M.fromTask);
+}
 
 /**
  * Creates a new `RefM` and a `Dequeue` that will emit every change to the
  * `RefM`.
  */
-export const dequeueRef = <A>(a: A): T.IO<[RefM<A>, XQ.Dequeue<A>]> =>
-   pipe(
+export function dequeueRef<A>(a: A): T.IO<[RefM<A>, XQ.Dequeue<A>]> {
+   return pipe(
       T.do,
       T.bindS("ref", () => makeRefM(a)),
       T.bindS("queue", () => XQ.makeUnbounded<A>()),
@@ -51,3 +54,4 @@ export const dequeueRef = <A>(a: A): T.IO<[RefM<A>, XQ.Dequeue<A>]> =>
          queue
       ])
    );
+}

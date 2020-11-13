@@ -12,8 +12,8 @@ import { releaseAll } from "./releaseAll";
  * Ensures that a cleanup function runs when this Managed is finalized, after
  * the existing finalizers.
  */
-export const onExit_ = <R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>) =>
-   new Managed<R & R1, E, A>(
+export function onExit_<R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>) {
+   return new Managed<R & R1, E, A>(
       T.uninterruptibleMask(({ restore }) =>
          pipe(
             T.do,
@@ -38,11 +38,14 @@ export const onExit_ = <R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exi
          )
       )
    );
+}
 
 /**
  * Ensures that a cleanup function runs when this Managed is finalized, after
  * the existing finalizers.
  */
-export const onExit = <E, A, R1>(cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>) => <R>(
-   self: Managed<R, E, A>
-) => onExit_(self, cleanup);
+export function onExit<E, A, R1>(
+   cleanup: (exit: Exit<E, A>) => T.Task<R1, never, any>
+): <R>(self: Managed<R, E, A>) => Managed<R & R1, E, A> {
+   return (self) => onExit_(self, cleanup);
+}

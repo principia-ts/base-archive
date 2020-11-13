@@ -8,7 +8,9 @@ import type { Iso } from "./model";
  * -------------------------------------------
  */
 
-export const newtype = <T extends Newtype<any, any>>(): Iso<T["_A"], T> => ({
-   get: (_) => _ as any,
-   reverseGet: (_) => _ as any
-});
+export function newtype<T extends Newtype<any, any>>(): Iso<T["_A"], T> {
+   return {
+      get: (_) => _ as any,
+      reverseGet: (_) => _ as any
+   };
+}

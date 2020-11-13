@@ -12,7 +12,9 @@
  * @category Constructors
  * @since 1.0.0
  */
-export const empty = <A>(): ReadonlyArray<A> => [];
+export function empty<A>(): ReadonlyArray<A> {
+   return [];
+}
 
 /**
  * fromArray :: MutableArray a -> Array a
@@ -32,13 +34,13 @@ export function fromArray<A>(as: Array<A>): ReadonlyArray<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export const makeBy = <A>(n: number, f: (i: number) => A): ReadonlyArray<A> => {
+export function makeBy<A>(n: number, f: (i: number) => A): ReadonlyArray<A> {
    const r: Array<A> = [];
    for (let i = 0; i < n; i++) {
       r.push(f(i));
    }
    return r;
-};
+}
 
 /**
  * Create an array containing a range of integers, including both endpoints
@@ -46,7 +48,9 @@ export const makeBy = <A>(n: number, f: (i: number) => A): ReadonlyArray<A> => {
  * @category Constructors
  * @since 1.0.0
  */
-export const range = (start: number, end: number): ReadonlyArray<number> => makeBy(end - start + 1, (i) => start + i);
+export function range(start: number, end: number): ReadonlyArray<number> {
+   return makeBy(end - start + 1, (i) => start + i);
+}
 
 /**
  * Create an array containing a value repeated the specified number of times
@@ -54,4 +58,6 @@ export const range = (start: number, end: number): ReadonlyArray<number> => make
  * @category Constructors
  * @since 1.0.0
  */
-export const replicate = <A>(n: number, a: A): ReadonlyArray<A> => makeBy(n, () => a);
+export function replicate<A>(n: number, a: A): ReadonlyArray<A> {
+   return makeBy(n, () => a);
+}

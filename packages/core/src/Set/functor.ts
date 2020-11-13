@@ -8,16 +8,20 @@ import { elem } from "./guards";
  * -------------------------------------------
  */
 
-export const map_ = <B>(E: Eq<B>) => <A>(set: ReadonlySet<A>, f: (a: A) => B) => {
-   const elemE = elem(E);
-   const r = new Set<B>();
-   set.forEach((e) => {
-      const v = f(e);
-      if (!elemE(v)(r)) {
-         r.add(v);
-      }
-   });
-   return r;
-};
+export function map_<B>(E: Eq<B>) {
+   return <A>(set: ReadonlySet<A>, f: (a: A) => B) => {
+      const elemE = elem(E);
+      const r = new Set<B>();
+      set.forEach((e) => {
+         const v = f(e);
+         if (!elemE(v)(r)) {
+            r.add(v);
+         }
+      });
+      return r;
+   };
+}
 
-export const map = <B>(E: Eq<B>) => <A>(f: (a: A) => B) => (set: ReadonlySet<A>) => map_(E)(set, f);
+export function map<B>(E: Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>) => Set<B> {
+   return (f) => (set) => map_(E)(set, f);
+}

@@ -55,13 +55,14 @@ const _get = <R, E, A>(fa: Task<R, E, A>, ttl: number, cache: XRM.RefM<Option<re
  * @category Combinators
  * @since 1.0.0
  */
-export const cached_ = <R, E, A>(fa: Task<R, E, A>, timeToLive: number): RIO<R & HasClock, EIO<E, A>> =>
-   pipe(
+export function cached_<R, E, A>(fa: Task<R, E, A>, timeToLive: number): RIO<R & HasClock, EIO<E, A>> {
+   return pipe(
       _.do,
       _.bindS("r", () => _.ask<R & HasClock>()),
       _.bindS("cache", () => XRM.makeRefM<Option<readonly [number, XPromise<E, A>]>>(O.none())),
       _.map(({ cache, r }) => _.giveAll(r)(_get(fa, timeToLive, cache)))
    );
+}
 
 /**
  * ```haskell
@@ -74,4 +75,6 @@ export const cached_ = <R, E, A>(fa: Task<R, E, A>, timeToLive: number): RIO<R &
  * @category Combinators
  * @since 1.0.0
  */
-export const cached = (timeToLive: number) => <R, E, A>(fa: Task<R, E, A>) => cached_(fa, timeToLive);
+export function cached(timeToLive: number): <R, E, A>(fa: _.Task<R, E, A>) => RIO<R & HasClock, EIO<E, A>> {
+   return <R, E, A>(fa: Task<R, E, A>) => cached_(fa, timeToLive);
+}

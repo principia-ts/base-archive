@@ -28,43 +28,51 @@ import type { Cause } from "./model";
  * @category Combinators
  * @since 1.0.0
  */
-export const as = <E1>(e: E1): (<E>(fa: Cause<E>) => Cause<E1>) => map(() => e);
+export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
+   return map(() => e);
+}
 
 /**
  * Extracts a list of non-recoverable errors from the `Cause`.
  */
-export const defects = <E>(cause: Cause<E>): ReadonlyArray<unknown> =>
-   foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) => (c._tag === "Die" ? O.some([...a, c.value]) : O.none()));
+export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
+   return foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
+      c._tag === "Die" ? O.some([...a, c.value]) : O.none()
+   );
+}
 
 /**
  * Produces a list of all recoverable errors `E` in the `Cause`.
  */
-export const failures = <E>(cause: Cause<E>): ReadonlyArray<E> =>
-   foldl_(cause, [] as readonly E[], (a, c) => (c._tag === "Fail" ? O.some([...a, c.value]) : O.none()));
+export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
+   return foldl_(cause, [] as readonly E[], (a, c) => (c._tag === "Fail" ? O.some([...a, c.value]) : O.none()));
+}
 
 /**
  * Returns a set of interruptors, fibers that interrupted the fiber described
  * by this `Cause`.
  */
-export const interruptors = <E>(cause: Cause<E>): ReadonlySet<FiberId> =>
-   foldl_(cause, new Set(), (s, c) => (c._tag === "Interrupt" ? O.some(s.add(c.fiberId)) : O.none()));
+export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
+   return foldl_(cause, new Set(), (s, c) => (c._tag === "Interrupt" ? O.some(s.add(c.fiberId)) : O.none()));
+}
 
 /**
  * Determines if the `Cause` contains only interruptions and not any `Die` or
  * `Fail` causes.
  */
-export const interruptedOnly = <E>(cause: Cause<E>) =>
-   pipe(
+export function interruptedOnly<E>(cause: Cause<E>): boolean {
+   return pipe(
       cause,
       find((c) => (isDie(c) || didFail(c) ? O.some(false) : O.none())),
       O.getOrElse(() => true)
    );
+}
 
 /**
  * @internal
  */
-export const stripFailuresSafe = <E>(cause: Cause<E>): Sy.IO<Cause<never>> =>
-   Sy.gen(function* (_) {
+export function stripFailuresSafe<E>(cause: Cause<E>): Sy.IO<Cause<never>> {
+   return Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
             return empty;
@@ -86,17 +94,20 @@ export const stripFailuresSafe = <E>(cause: Cause<E>): Sy.IO<Cause<never>> =>
          }
       }
    });
+}
 
 /**
  * Discards all typed failures kept on this `Cause`.
  */
-export const stripFailures = <E>(cause: Cause<E>): Cause<never> => Sy.runIO(stripFailuresSafe(cause));
+export function stripFailures<E>(cause: Cause<E>): Cause<never> {
+   return Sy.runIO(stripFailuresSafe(cause));
+}
 
 /**
  * @internal
  */
-export const stripInterruptsSafe = <E>(cause: Cause<E>): Sy.IO<Cause<E>> =>
-   Sy.gen(function* (_) {
+export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.IO<Cause<E>> {
+   return Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
             return empty;
@@ -118,17 +129,20 @@ export const stripInterruptsSafe = <E>(cause: Cause<E>): Sy.IO<Cause<E>> =>
          }
       }
    });
+}
 
 /**
  * Discards all interrupts kept on this `Cause`.
  */
-export const stripInterrupts = <E>(cause: Cause<E>): Cause<E> => Sy.runIO(stripInterruptsSafe(cause));
+export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
+   return Sy.runIO(stripInterruptsSafe(cause));
+}
 
 /**
  * @internal
  */
-export const keepDefectsSafe = <E>(cause: Cause<E>): Sy.IO<O.Option<Cause<never>>> =>
-   Sy.gen(function* (_) {
+export function keepDefectsSafe<E>(cause: Cause<E>): Sy.IO<O.Option<Cause<never>>> {
+   return Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
             return O.none();
@@ -172,15 +186,18 @@ export const keepDefectsSafe = <E>(cause: Cause<E>): Sy.IO<O.Option<Cause<never>
          }
       }
    });
+}
 
 /**
  * Remove all `Fail` and `Interrupt` nodes from this `Cause`,
  * return only `Die` cause/finalizer defects.
  */
-export const keepDefects = <E>(cause: Cause<E>): O.Option<Cause<never>> => Sy.runIO(keepDefectsSafe(cause));
+export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
+   return Sy.runIO(keepDefectsSafe(cause));
+}
 
-export const sequenceCauseEitherSafe = <E, A>(cause: Cause<E.Either<E, A>>): Sy.IO<E.Either<Cause<E>, A>> =>
-   Sy.gen(function* (_) {
+export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Sy.IO<E.Either<Cause<E>, A>> {
+   return Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
             return E.left(empty);
@@ -216,15 +233,17 @@ export const sequenceCauseEitherSafe = <E, A>(cause: Cause<E.Either<E, A>>): Sy.
          }
       }
    });
+}
 
 /**
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
-export const sequenceCauseEither = <E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> =>
-   Sy.runIO(sequenceCauseEitherSafe(cause));
+export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> {
+   return Sy.runIO(sequenceCauseEitherSafe(cause));
+}
 
-export const sequenceCauseOptionSafe = <E>(cause: Cause<O.Option<E>>): Sy.IO<O.Option<Cause<E>>> =>
-   Sy.gen(function* (_) {
+export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.IO<O.Option<Cause<E>>> {
+   return Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty": {
             return O.some(empty);
@@ -262,48 +281,53 @@ export const sequenceCauseOptionSafe = <E>(cause: Cause<O.Option<E>>): Sy.IO<O.O
          }
       }
    });
+}
 
 /**
  * Converts the specified `Cause<Option<E>>` to an `Option<Cause<E>>`.
  */
-export const sequenceCauseOption = <E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> =>
-   Sy.runIO(sequenceCauseOptionSafe(cause));
+export function sequenceCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> {
+   return Sy.runIO(sequenceCauseOptionSafe(cause));
+}
 
 /**
  * Retrieve the first checked error on the `Left` if available,
  * if there are no checked errors return the rest of the `Cause`
  * that is known to contain only `Die` or `Interrupt` causes.
  * */
-export const failureOrCause = <E>(cause: Cause<E>): E.Either<E, Cause<never>> =>
-   pipe(
+export function failureOrCause<E>(cause: Cause<E>): E.Either<E, Cause<never>> {
+   return pipe(
       cause,
       failureOption,
       O.map(E.left),
       O.getOrElse(() => E.right(cause as Cause<never>)) // no E inside this cause, can safely cast
    );
+}
 
 /**
  * Squashes a `Cause` down to a single `Throwable`, chosen to be the
  * "most important" `Throwable`.
  */
-export const squash = <E>(f: (e: E) => unknown) => (cause: Cause<E>): unknown =>
-   pipe(
-      cause,
-      failureOption,
-      O.map(f),
-      O.alt(() =>
-         isInterrupt(cause)
-            ? O.some<unknown>(
-                 new InterruptedException(
-                    "Interrupted by fibers: " +
-                       Array.from(interruptors(cause))
-                          .map((_) => _.seqNumber.toString())
-                          .map((_) => "#" + _)
-                          .join(", ")
+export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
+   return (cause) =>
+      pipe(
+         cause,
+         failureOption,
+         O.map(f),
+         O.alt(() =>
+            isInterrupt(cause)
+               ? O.some<unknown>(
+                    new InterruptedException(
+                       "Interrupted by fibers: " +
+                          Array.from(interruptors(cause))
+                             .map((_) => _.seqNumber.toString())
+                             .map((_) => "#" + _)
+                             .join(", ")
+                    )
                  )
-              )
-            : O.none()
-      ),
-      O.alt(() => A.head(defects(cause))),
-      O.getOrElse(() => new InterruptedException())
-   );
+               : O.none()
+         ),
+         O.alt(() => A.head(defects(cause))),
+         O.getOrElse(() => new InterruptedException())
+      );
+}

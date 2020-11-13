@@ -19,15 +19,19 @@ export type DecodeError = FS.FreeSemigroup<DE.DecodeError<ErrorInfo>>;
 
 const isInfoPopulated = (info?: ErrorInfo): info is ErrorInfo => !!info?.id || !!info?.name || !!info?.message;
 
-export const error = (actual: unknown, expected: string, info?: ErrorInfo): DecodeError =>
-   isInfoPopulated(info)
+export function error(actual: unknown, expected: string, info?: ErrorInfo): DecodeError {
+   return isInfoPopulated(info)
       ? FS.combine(FS.element(DE.leaf(actual, expected)), FS.element(DE.info(info)))
       : FS.element(DE.leaf(actual, expected));
+}
 
-export const success: <A>(a: A) => E.Either<DecodeError, A> = E.right;
+export function success<A>(a: A): E.Either<DecodeError, A> {
+   return E.right(a);
+}
 
-export const failure = <A = never>(actual: unknown, expected: string, info?: ErrorInfo): E.Either<DecodeError, A> =>
-   E.left(error(actual, expected, info));
+export function failure<A = never>(actual: unknown, expected: string, info?: ErrorInfo): E.Either<DecodeError, A> {
+   return E.left(error(actual, expected, info));
+}
 
 const empty: ReadonlyArray<never> = [];
 
@@ -46,7 +50,7 @@ const toTree: (e: DE.DecodeError<ErrorInfo>) => Tree<string> = DE.fold({
    Info: (error) => make(showErrorInfo(error))
 });
 
-export const toForest = (e: DecodeError): ReadonlyArray<Tree<string>> => {
+export function toForest(e: DecodeError): ReadonlyArray<Tree<string>> {
    const stack = [];
    let focus = e;
    const res = [];
@@ -67,9 +71,10 @@ export const toForest = (e: DecodeError): ReadonlyArray<Tree<string>> => {
             break;
       }
    }
-};
+}
 
-export const draw = (e: DecodeError): string =>
-   toForest(e)
+export function draw(e: DecodeError): string {
+   return toForest(e)
       .map(drawTree({ show: identity }))
       .join("\n");
+}

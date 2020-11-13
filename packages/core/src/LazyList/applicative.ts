@@ -7,4 +7,6 @@ import type { LazyList } from "./model";
  * -------------------------------------------
  */
 
-export const pure: <A>(a: A) => LazyList<A> = list;
+export function pure<A>(a: A): LazyList<A> {
+   return list(a);
+}

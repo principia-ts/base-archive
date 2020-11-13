@@ -9,8 +9,8 @@ import { releaseMap } from "./releaseMap";
 /**
  * Returns a memoized version of the specified Managed.
  */
-export const memoize = <R, E, A>(ma: Managed<R, E, A>): IO<Managed<R, E, A>> =>
-   mapM_(releaseMap, (finalizers) =>
+export function memoize<R, E, A>(ma: Managed<R, E, A>): IO<Managed<R, E, A>> {
+   return mapM_(releaseMap, (finalizers) =>
       T.gen(function* (_) {
          const promise = yield* _(XP.make<E, A>());
          const complete = yield* _(
@@ -28,3 +28,4 @@ export const memoize = <R, E, A>(ma: Managed<R, E, A>): IO<Managed<R, E, A>> =>
          return pipe(complete, T.apSecond(XP.await(promise)), T.toManaged());
       })
    );
+}

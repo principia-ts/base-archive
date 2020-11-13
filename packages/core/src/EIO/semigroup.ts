@@ -22,8 +22,9 @@ import type { EIO } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> =>
-   fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
+export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> {
+   return fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
+}
 
 /**
  * ```haskell
@@ -35,8 +36,8 @@ export const getSemigroup = <E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> =>
  * @category Instances
  * @since 1.0.0
  */
-export const getApplySemigroup = <E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> =>
-   fromCombine((x, y) =>
+export function getApplySemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> {
+   return fromCombine((x, y) =>
       foldM_(
          y,
          () => x,
@@ -48,3 +49,4 @@ export const getApplySemigroup = <E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A
             )
       )
    );
+}

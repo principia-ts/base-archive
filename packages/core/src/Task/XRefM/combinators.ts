@@ -15,11 +15,11 @@ import { concrete } from "./model";
  * a return value for the modification. This is a more powerful version of
  * `update`.
  */
-export const modify_ = <RA, RB, EA, EB, R1, E1, B, A>(
+export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    f: (a: A) => T.Task<R1, E1, readonly [B, A]>
-): T.Task<RA & RB & R1, EA | EB | E1, B> =>
-   pipe(
+): T.Task<RA & RB & R1, EA | EB | E1, B> {
+   return pipe(
       self,
       concrete,
       matchTag({
@@ -68,41 +68,47 @@ export const modify_ = <RA, RB, EA, EB, R1, E1, B, A>(
             )
       })
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, which computes
  * a return value for the modification. This is a more powerful version of
  * `update`.
  */
-export const modify = <R1, E1, B, A>(f: (a: A) => T.Task<R1, E1, readonly [B, A]>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-): T.Task<RA & RB & R1, EA | EB | E1, B> => modify_(self, f);
+export function modify<R1, E1, B, A>(
+   f: (a: A) => T.Task<R1, E1, readonly [B, A]>
+): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, EA | EB | E1, B> {
+   return (self) => modify_(self, f);
+}
 
 /**
  * Writes a new value to the `RefM`, returning the value immediately before
  * modification.
  */
-export const getAndSet_ = <RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, A>, a: A) =>
-   pipe(
+export function getAndSet_<RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, A>, a: A): T.Task<RA & RB, EA | EB, A> {
+   return pipe(
       self,
       modify((v) => T.pure([v, a]))
    );
+}
 
 /**
  * Writes a new value to the `RefM`, returning the value immediately before
  * modification.
  */
-export const getAndSet = <A>(a: A) => <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => getAndSet_(self, a);
+export function getAndSet<A>(a: A): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB, EA | EB, A> {
+   return (self) => getAndSet_(self, a);
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export const getAndUpdate_ = <RA, RB, EA, EB, R1, E1, A>(
+export function getAndUpdate_<RA, RB, EA, EB, R1, E1, A>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    f: (a: A) => T.Task<R1, E1, A>
-) =>
-   pipe(
+): T.Task<RA & RB & R1, EA | EB | E1, A> {
+   return pipe(
       self,
       modify((v) =>
          pipe(
@@ -111,24 +117,27 @@ export const getAndUpdate_ = <RA, RB, EA, EB, R1, E1, A>(
          )
       )
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export const getAndUpdate = <R1, E1, A>(f: (a: A) => T.Task<R1, E1, A>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-) => getAndUpdate_(self, f);
+export function getAndUpdate<R1, E1, A>(
+   f: (a: A) => T.Task<R1, E1, A>
+): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, E1 | EA | EB, A> {
+   return (self) => getAndUpdate_(self, f);
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export const getAndUpdateSome_ = <RA, RB, EA, EB, R1, E1, A>(
+export function getAndUpdateSome_<RA, RB, EA, EB, R1, E1, A>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    f: (a: A) => Option<T.Task<R1, E1, A>>
-) =>
-   pipe(
+): T.Task<RA & RB & R1, EA | EB | E1, A> {
+   return pipe(
       self,
       modify((v) =>
          pipe(
@@ -138,14 +147,17 @@ export const getAndUpdateSome_ = <RA, RB, EA, EB, R1, E1, A>(
          )
       )
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export const getAndUpdateSome = <R1, E1, A>(f: (a: A) => Option<T.Task<R1, E1, A>>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-) => getAndUpdateSome_(self, f);
+export function getAndUpdateSome<R1, E1, A>(
+   f: (a: A) => Option<T.Task<R1, E1, A>>
+): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, EA | EB | E1, A> {
+   return (self) => getAndUpdateSome_(self, f);
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, which computes
@@ -153,12 +165,12 @@ export const getAndUpdateSome = <R1, E1, A>(f: (a: A) => Option<T.Task<R1, E1, A
  * otherwise it returns a default value.
  * This is a more powerful version of `updateSome`.
  */
-export const modifySome_ = <RA, RB, EA, EB, R1, E1, A, B>(
+export function modifySome_<RA, RB, EA, EB, R1, E1, A, B>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    def: B,
    f: (a: A) => Option<T.Task<R1, E1, readonly [B, A]>>
-) =>
-   pipe(
+): T.Task<RA & RB & R1, EA | EB | E1, B> {
+   return pipe(
       self,
       modify((v) =>
          pipe(
@@ -167,6 +179,7 @@ export const modifySome_ = <RA, RB, EA, EB, R1, E1, A, B>(
          )
       )
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, which computes
@@ -174,18 +187,22 @@ export const modifySome_ = <RA, RB, EA, EB, R1, E1, A, B>(
  * otherwise it returns a default value.
  * This is a more powerful version of `updateSome`.
  */
-export const modifySome = <B>(def: B) => <R1, E1, A>(f: (a: A) => Option<T.Task<R1, E1, [B, A]>>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-) => modifySome_(self, def, f);
+export function modifySome<B>(
+   def: B
+): <R1, E1, A>(
+   f: (a: A) => Option<T.Task<R1, E1, [B, A]>>
+) => <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, E1 | EA | EB, B> {
+   return (f) => (self) => modifySome_(self, def, f);
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const update_ = <RA, RB, EA, EB, R1, E1, A>(
+export function update_<RA, RB, EA, EB, R1, E1, A>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    f: (a: A) => T.Task<R1, E1, A>
-): T.Task<RA & RB & R1, E1 | EA | EB, void> =>
-   pipe(
+): T.Task<RA & RB & R1, E1 | EA | EB, void> {
+   return pipe(
       self,
       modify((v) =>
          pipe(
@@ -194,22 +211,25 @@ export const update_ = <RA, RB, EA, EB, R1, E1, A>(
          )
       )
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const update = <R1, E1, A>(f: (a: A) => T.Task<R1, E1, A>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-): T.Task<RA & RB & R1, E1 | EA | EB, void> => update_(self, f);
+export function update<R1, E1, A>(
+   f: (a: A) => T.Task<R1, E1, A>
+): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, E1 | EA | EB, void> {
+   return (self) => update_(self, f);
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const updateAndGet_ = <RA, RB, EA, EB, R1, E1, A>(
+export function updateAndGet_<RA, RB, EA, EB, R1, E1, A>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    f: (a: A) => T.Task<R1, E1, A>
-): T.Task<RA & RB & R1, E1 | EA | EB, void> =>
-   pipe(
+): T.Task<RA & RB & R1, E1 | EA | EB, void> {
+   return pipe(
       self,
       modify((v) =>
          pipe(
@@ -218,22 +238,25 @@ export const updateAndGet_ = <RA, RB, EA, EB, R1, E1, A>(
          )
       )
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const updateAndGet = <R1, E1, A>(f: (a: A) => T.Task<R1, E1, A>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-): T.Task<RA & RB & R1, E1 | EA | EB, void> => updateAndGet_(self, f);
+export function updateAndGet<R1, E1, A>(
+   f: (a: A) => T.Task<R1, E1, A>
+): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, E1 | EA | EB, void> {
+   return (self) => updateAndGet_(self, f);
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const updateSome_ = <RA, RB, EA, EB, R1, E1, A>(
+export function updateSome_<RA, RB, EA, EB, R1, E1, A>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    f: (a: A) => Option<T.Task<R1, E1, A>>
-): T.Task<RA & RB & R1, E1 | EA | EB, void> =>
-   pipe(
+): T.Task<RA & RB & R1, E1 | EA | EB, void> {
+   return pipe(
       self,
       modify((v) =>
          pipe(
@@ -243,22 +266,25 @@ export const updateSome_ = <RA, RB, EA, EB, R1, E1, A>(
          )
       )
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const updateSome = <R1, E1, A>(f: (a: A) => Option<T.Task<R1, E1, A>>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-): T.Task<RA & RB & R1, E1 | EA | EB, void> => updateSome_(self, f);
+export function updateSome<R1, E1, A>(
+   f: (a: A) => Option<T.Task<R1, E1, A>>
+): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, EA | EB | E1, void> {
+   return (self) => updateSome_(self, f);
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const updateSomeAndGet_ = <RA, RB, EA, EB, R1, E1, A>(
+export function updateSomeAndGet_<RA, RB, EA, EB, R1, E1, A>(
    self: XRefM<RA, RB, EA, EB, A, A>,
    f: (a: A) => Option<T.Task<R1, E1, A>>
-): T.Task<RA & RB & R1, E1 | EA | EB, A> =>
-   pipe(
+): T.Task<RA & RB & R1, E1 | EA | EB, A> {
+   return pipe(
       self,
       modify((v) =>
          pipe(
@@ -268,13 +294,16 @@ export const updateSomeAndGet_ = <RA, RB, EA, EB, R1, E1, A>(
          )
       )
    );
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export const updateSomeAndGet = <R1, E1, A>(f: (a: A) => Option<T.Task<R1, E1, A>>) => <RA, RB, EA, EB>(
-   self: XRefM<RA, RB, EA, EB, A, A>
-): T.Task<RA & RB & R1, E1 | EA | EB, A> => updateSomeAndGet_(self, f);
+export function updateSomeAndGet<R1, E1, A>(
+   f: (a: A) => Option<T.Task<R1, E1, A>>
+): <RA, RB, EA, EB>(self: XRefM<RA, RB, EA, EB, A, A>) => T.Task<RA & RB & R1, E1 | EA | EB, A> {
+   return (self) => updateSomeAndGet_(self, f);
+}
 
 /**
  * Maps and filters the `get` value of the `XRefM` with the specified
@@ -282,11 +311,11 @@ export const updateSomeAndGet = <R1, E1, A>(f: (a: A) => Option<T.Task<R1, E1, A
  * succeeds with the result of the partial function if it is defined or else
  * fails with `None`.
  */
-export const collectM_ = <RA, RB, EA, EB, A, B, RC, EC, C>(
+export function collectM_<RA, RB, EA, EB, A, B, RC, EC, C>(
    self: XRefM<RA, RB, EA, EB, A, B>,
    f: (b: B) => Option<T.Task<RC, EC, C>>
-): XRefM<RA, RB & RC, EA, Option<EB | EC>, A, C> =>
-   self.foldM(
+): XRefM<RA, RB & RC, EA, Option<EB | EC>, A, C> {
+   return self.foldM(
       identity,
       (_) => some<EB | EC>(_),
       (_) => T.pure(_),
@@ -297,6 +326,7 @@ export const collectM_ = <RA, RB, EA, EB, A, B, RC, EC, C>(
             Mb.getOrElse(() => T.fail(none()))
          )
    );
+}
 
 /**
  * Maps and filters the `get` value of the `XRefM` with the specified
@@ -304,44 +334,50 @@ export const collectM_ = <RA, RB, EA, EB, A, B, RC, EC, C>(
  * succeeds with the result of the partial function if it is defined or else
  * fails with `None`.
  */
-export const collectM = <B, RC, EC, C>(f: (b: B) => Option<T.Task<RC, EC, C>>) => <RA, RB, EA, EB, A>(
-   self: XRefM<RA, RB, EA, EB, A, B>
-): XRefM<RA, RB & RC, EA, Option<EB | EC>, A, C> => collectM_(self, f);
+export function collectM<B, RC, EC, C>(
+   f: (b: B) => Option<T.Task<RC, EC, C>>
+): <RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA, RB & RC, EA, Option<EC | EB>, A, C> {
+   return (self) => collectM_(self, f);
+}
 
 /**
  * Maps and filters the `get` value of the `XRefM` with the specified partial
  * function, returning a `XRefM` with a `get` value that succeeds with the
  * result of the partial function if it is defined or else fails with `None`.
  */
-export const collect_ = <RA, RB, EA, EB, A, B, C>(
+export function collect_<RA, RB, EA, EB, A, B, C>(
    self: XRefM<RA, RB, EA, EB, A, B>,
    f: (b: B) => Option<C>
-): XRefM<RA, RB, EA, Option<EB>, A, C> =>
-   pipe(
+): XRefM<RA, RB, EA, Option<EB>, A, C> {
+   return pipe(
       self,
       collectM((b) => pipe(f(b), Mb.map(T.pure)))
    );
+}
 
 /**
  * Maps and filters the `get` value of the `XRefM` with the specified partial
  * function, returning a `XRefM` with a `get` value that succeeds with the
  * result of the partial function if it is defined or else fails with `None`.
  */
-export const collect = <B, C>(f: (b: B) => Option<C>) => <RA, RB, EA, EB, A>(
-   self: XRefM<RA, RB, EA, EB, A, B>
-): XRefM<RA, RB, EA, Option<EB>, A, C> => collect_(self, f);
+export function collect<B, C>(
+   f: (b: B) => Option<C>
+): <RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA, RB, EA, Option<EB>, A, C> {
+   return (self) => collect_(self, f);
+}
 
 /**
  * Returns a read only view of the `XRefM`.
  */
-export const readOnly = <RA, RB, EA, EB, A, B>(self: XRefM<RA, RB, EA, EB, A, B>): XRefM<RA, RB, EA, EB, never, B> =>
-   self;
+export function readOnly<RA, RB, EA, EB, A, B>(self: XRefM<RA, RB, EA, EB, A, B>): XRefM<RA, RB, EA, EB, never, B> {
+   return self;
+}
 
 /**
  * Returns a read only view of the `XRefM`.
  */
-export const writeOnly = <RA, RB, EA, EB, A, B>(self: XRefM<RA, RB, EA, EB, A, B>): XRefM<RA, RB, EA, void, A, never> =>
-   pipe(
+export function writeOnly<RA, RB, EA, EB, A, B>(self: XRefM<RA, RB, EA, EB, A, B>): XRefM<RA, RB, EA, void, A, never> {
+   return pipe(
       self,
       fold(
          identity,
@@ -350,3 +386,4 @@ export const writeOnly = <RA, RB, EA, EB, A, B>(self: XRefM<RA, RB, EA, EB, A, B
          () => left<void>(undefined)
       )
    );
+}

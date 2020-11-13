@@ -9,5 +9,7 @@ import { done } from "./done";
  * this effect. Synchronizes interruption, so if this effect is interrupted,
  * the specified promise will be interrupted, too.
  */
-export const to = <E, A>(p: XPromise<E, A>) => <R>(effect: Task<R, E, A>): Task<R, never, boolean> =>
-   uninterruptibleMask(({ restore }) => T.chain_(T.result(restore(effect)), (x) => done(x)(p)));
+export function to<E, A>(p: XPromise<E, A>) {
+   return <R>(effect: Task<R, E, A>): Task<R, never, boolean> =>
+      uninterruptibleMask(({ restore }) => T.chain_(T.result(restore(effect)), (x) => done(x)(p)));
+}

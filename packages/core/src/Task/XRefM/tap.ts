@@ -8,40 +8,46 @@ import type { XRefM } from "./model";
  * Performs the specified effect every time a value is written to this
  * `XRefM`.
  */
-export const tapInput_ = <RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
+export function tapInput_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
    self: XRefM<RA, RB, EA, EB, A, B>,
    f: (a: A1) => T.Task<RC, EC, any>
-) =>
-   pipe(
+): XRefM<RA & RC, RB, EA | EC, EB, A1, B> {
+   return pipe(
       self,
       contramapM((c: A1) => pipe(f(c), T.as(c)))
    );
+}
 
 /**
  * Performs the specified effect every time a value is written to this
  * `XRefM`.
  */
-export const tapInput = <A, RC, EC, A1 extends A = A>(f: (a: A1) => T.Task<RC, EC, any>) => <RA, RB, EA, EB, B>(
-   self: XRefM<RA, RB, EA, EB, A, B>
-) => tapInput_(self, f);
+export function tapInput<A, RC, EC, A1 extends A = A>(
+   f: (a: A1) => T.Task<RC, EC, any>
+): <RA, RB, EA, EB, B>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA & RC, RB, EC | EA, EB, A1, B> {
+   return (self) => tapInput_(self, f);
+}
 
 /**
  * Performs the specified effect every time a value is written to this
  * `XRefM`.
  */
-export const tapOutput_ = <RA, RB, EA, EB, A, B, RC, EC>(
+export function tapOutput_<RA, RB, EA, EB, A, B, RC, EC>(
    self: XRefM<RA, RB, EA, EB, A, B>,
    f: (b: B) => T.Task<RC, EC, any>
-) =>
-   pipe(
+): XRefM<RA, RB & RC, EA, EB | EC, A, B> {
+   return pipe(
       self,
       mapM((b) => pipe(f(b), T.as(b)))
    );
+}
 
 /**
  * Performs the specified effect every time a value is written to this
  * `XRefM`.
  */
-export const tapOutput = <B, RC, EC>(f: (b: B) => T.Task<RC, EC, any>) => <RA, RB, EA, EB, A>(
-   self: XRefM<RA, RB, EA, EB, A, B>
-) => tapOutput_(self, f);
+export function tapOutput<B, RC, EC>(
+   f: (b: B) => T.Task<RC, EC, any>
+): <RA, RB, EA, EB, A>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA, RB & RC, EA, EC | EB, A, B> {
+   return (self) => tapOutput_(self, f);
+}

@@ -31,7 +31,9 @@ export class Running {
 
 export type State = Exited | Running;
 
-export const finalizers = (state: Running): ReadonlyMap<number, Finalizer> => state.finalizers();
+export function finalizers(state: Running): ReadonlyMap<number, Finalizer> {
+   return state.finalizers();
+}
 
 export const noopFinalizer: Finalizer = () => T.unit();
 
@@ -91,25 +93,28 @@ export function add(finalizer: Finalizer) {
       );
 }
 
-export const replace = (key: number, finalizer: Finalizer) => (
-   _: ReleaseMap
-): T.Task<unknown, never, Option<Finalizer>> =>
-   pipe(
-      _.ref,
-      XR.modify<T.Task<unknown, never, Option<Finalizer>>, State>((s) => {
-         switch (s._tag) {
-            case "Exited":
-               return [T.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit)];
-            case "Running":
-               return [
-                  T.succeed(M.lookup_(Eq.number)(finalizers(s), key)),
-                  new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
-               ];
-            default:
-               return absurd(s);
-         }
-      }),
-      T.flatten
-   );
+export function replace(
+   key: number,
+   finalizer: Finalizer
+): (_: ReleaseMap) => T.Task<unknown, never, Option<Finalizer>> {
+   return (_) =>
+      pipe(
+         _.ref,
+         XR.modify<T.Task<unknown, never, Option<Finalizer>>, State>((s) => {
+            switch (s._tag) {
+               case "Exited":
+                  return [T.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit)];
+               case "Running":
+                  return [
+                     T.succeed(M.lookup_(Eq.number)(finalizers(s), key)),
+                     new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
+                  ];
+               default:
+                  return absurd(s);
+            }
+         }),
+         T.flatten
+      );
+}
 
 export const make = T.map_(XR.makeRef<State>(new Running(0, new Map())), (s) => new ReleaseMap(s));

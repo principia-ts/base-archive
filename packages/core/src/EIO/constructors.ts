@@ -27,11 +27,15 @@ export const _partial: <E, A>(thunk: Lazy<A>, onThrow: (reason: unknown) => E) =
 
 export const partial = <E>(onThrow: (reason: unknown) => E) => <A>(thunk: Lazy<A>) => _partial(thunk, onThrow);
 
-export const _partialK = <A extends ReadonlyArray<unknown>, B, E>(
+export function _partialK<A extends ReadonlyArray<unknown>, B, E>(
    f: FunctionN<A, B>,
    onThrow: (reason: unknown) => E
-): ((...args: A) => EIO<E, B>) => (...a) => _partial(() => f(...a), onThrow);
+): (...args: A) => EIO<E, B> {
+   return (...a) => _partial(() => f(...a), onThrow);
+}
 
-export const partialK = <E>(onThrow: (reason: unknown) => E) => <A extends ReadonlyArray<unknown>, B>(
-   f: FunctionN<A, B>
-) => _partialK(f, onThrow);
+export function partialK<E>(
+   onThrow: (reason: unknown) => E
+): <A extends readonly unknown[], B>(f: FunctionN<A, B>) => (...args: A) => EIO<E, B> {
+   return (f) => _partialK(f, onThrow);
+}

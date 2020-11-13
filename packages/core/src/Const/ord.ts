@@ -13,4 +13,6 @@ import type { Const } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getOrd: <E, A>(O: Ord<E>) => Ord<Const<E, A>> = identity;
+export function getOrd<E, A>(O: Ord<E>): Ord<Const<E, A>> {
+   return identity(O) as any;
+}

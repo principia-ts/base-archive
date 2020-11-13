@@ -7,4 +7,6 @@ import type { Cause } from "./model";
  * -------------------------------------------
  */
 
-export const unit = (): Cause<void> => fail(undefined);
+export function unit(): Cause<void> {
+   return fail(undefined);
+}

@@ -9,4 +9,6 @@ import { to } from "./to";
  * Note that `Promise.completeWith` will be much faster, so consider using
  * that if you do not need to memoize the result of the specified effect.
  */
-export const complete = <E, A>(e: EIO<E, A>) => (promise: XPromise<E, A>) => to(promise)(e);
+export function complete<E, A>(e: EIO<E, A>) {
+   return (promise: XPromise<E, A>) => to(promise)(e);
+}

@@ -4,4 +4,6 @@ import type { Task } from "../model";
 /**
  * Repeats this effect forever (until the first failure).
  */
-export const forever = <R, E, A>(fa: Task<R, E, A>): Task<R, E, A> => chain_(fa, () => forever(fa));
+export function forever<R, E, A>(fa: Task<R, E, A>): Task<R, E, A> {
+   return chain_(fa, () => forever(fa));
+}

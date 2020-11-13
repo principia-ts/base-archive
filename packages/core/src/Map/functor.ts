@@ -17,7 +17,7 @@ interface Next<A> {
 /**
  * Maps values using f
  */
-export const mapWithIndex_ = <K, A, B>(fa: ReadonlyMap<K, A>, f: (k: K, a: A) => B): ReadonlyMap<K, B> => {
+export function mapWithIndex_<K, A, B>(fa: ReadonlyMap<K, A>, f: (k: K, a: A) => B): ReadonlyMap<K, B> {
    const m = new Map<K, B>();
    const entries = fa.entries();
    let e: Next<readonly [K, A]>;
@@ -26,24 +26,28 @@ export const mapWithIndex_ = <K, A, B>(fa: ReadonlyMap<K, A>, f: (k: K, a: A) =>
       m.set(key, f(key, a));
    }
    return m;
-};
+}
 
 /**
  * Maps values using f
  */
-export const mapWithIndex = <K, A, B>(f: (k: K, a: A) => B) => (fa: ReadonlyMap<K, A>): ReadonlyMap<K, B> =>
-   mapWithIndex_(fa, f);
+export function mapWithIndex<K, A, B>(f: (k: K, a: A) => B): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
+   return (fa) => mapWithIndex_(fa, f);
+}
 
 /**
  * Maps values using f
  */
-export const map_ = <K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A) => B): ReadonlyMap<K, B> =>
-   mapWithIndex_(fa, (_, a) => f(a));
+export function map_<K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A) => B): ReadonlyMap<K, B> {
+   return mapWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * Maps values using f
  */
-export const map = <A, B>(f: (a: A) => B) => <K>(fa: ReadonlyMap<K, A>): ReadonlyMap<K, B> => map_(fa, f);
+export function map<A, B>(f: (a: A) => B): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
+   return (fa) => map_(fa, f);
+}
 
 /**
  * @category Functor

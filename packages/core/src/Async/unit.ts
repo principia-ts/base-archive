@@ -7,4 +7,6 @@ import type { Async } from "./model";
  * -------------------------------------------
  */
 
-export const unit = (): Async<unknown, never, void> => succeed(undefined);
+export function unit(): Async<unknown, never, void> {
+   return succeed(undefined);
+}

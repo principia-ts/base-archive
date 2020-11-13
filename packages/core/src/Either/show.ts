@@ -17,6 +17,8 @@ import type { Either } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getShow = <E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>> => ({
-   show: (fa) => (isLeft(fa) ? `left(${showE.show(fa.left)})` : `right(${showA.show(fa.right)})`)
-});
+export function getShow<E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>> {
+   return {
+      show: (fa) => (isLeft(fa) ? `left(${showE.show(fa.left)})` : `right(${showA.show(fa.right)})`)
+   };
+}

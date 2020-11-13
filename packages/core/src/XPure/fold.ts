@@ -23,11 +23,13 @@ import { FoldInstruction } from "./model";
  * @category Combinators
  * @since 1.0.0
  */
-export const foldM_ = <S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
+export function foldM_<S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
    fa: XPure<S1, S2, R, E, A>,
    onFailure: (e: E) => XPure<S5, S3, R1, E1, B>,
    onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
-): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> => new FoldInstruction(fa, onFailure, onSuccess);
+): XPure<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
+   return new FoldInstruction(fa, onFailure, onSuccess);
+}
 
 /**
  * ```haskell
@@ -43,10 +45,12 @@ export const foldM_ = <S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const foldM = <S1, S2, E, A, S3, R1, E1, B, S4, R2, E2, C>(
+export function foldM<S1, S2, E, A, S3, R1, E1, B, S4, R2, E2, C>(
    onFailure: (e: E) => XPure<S1, S3, R1, E1, B>,
    onSuccess: (a: A) => XPure<S2, S4, R2, E2, C>
-) => <R>(fa: XPure<S1, S2, R, E, A>) => foldM_(fa, onFailure, onSuccess);
+): <R>(fa: XPure<S1, S2, R, E, A>) => XPure<S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
+   return (fa) => foldM_(fa, onFailure, onSuccess);
+}
 
 /**
  * ```haskell
@@ -64,16 +68,17 @@ export const foldM = <S1, S2, E, A, S3, R1, E1, B, S4, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const fold_ = <S1, S2, R, E, A, B, C>(
+export function fold_<S1, S2, R, E, A, B, C>(
    fa: XPure<S1, S2, R, E, A>,
    onFailure: (e: E) => B,
    onSuccess: (a: A) => C
-): XPure<S1, S2, R, never, B | C> =>
-   foldM_(
+): XPure<S1, S2, R, never, B | C> {
+   return foldM_(
       fa,
       (e) => succeed(onFailure(e)),
       (a) => succeed(onSuccess(a))
    );
+}
 
 /**
  * ```haskell
@@ -87,6 +92,9 @@ export const fold_ = <S1, S2, R, E, A, B, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const fold = <E, A, B, C>(onFailure: (e: E) => B, onSuccess: (a: A) => C) => <S1, S2, R>(
-   fa: XPure<S1, S2, R, E, A>
-) => fold_(fa, onFailure, onSuccess);
+export function fold<E, A, B, C>(
+   onFailure: (e: E) => B,
+   onSuccess: (a: A) => C
+): <S1, S2, R>(fa: XPure<S1, S2, R, E, A>) => XPure<S1, S2, R, never, B | C> {
+   return (fa) => fold_(fa, onFailure, onSuccess);
+}

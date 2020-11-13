@@ -13,11 +13,11 @@ import { supervised } from "./supervised";
  * @category Combinators
  * @since 1.0.0
  */
-export const ensuringChildren_ = <R, E, A, R1>(
+export function ensuringChildren_<R, E, A, R1>(
    task: Task<R, E, A>,
    children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>
-) =>
-   pipe(
+): Task<R & R1, E, A> {
+   return pipe(
       Supervisor.track,
       chain((s) =>
          pipe(
@@ -32,6 +32,7 @@ export const ensuringChildren_ = <R, E, A, R1>(
          )
       )
    );
+}
 
 /**
  * Acts on the children of this fiber, guaranteeing the specified callback
@@ -40,10 +41,8 @@ export const ensuringChildren_ = <R, E, A, R1>(
  * @category Combinators
  * @since 1.0.0
  */
-export const ensuringChildren = <R1>(children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>) => <
-   R,
-   E,
-   A
->(
-   task: Task<R, E, A>
-) => ensuringChildren_(task, children);
+export function ensuringChildren<R1>(
+   children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>
+): <R, E, A>(task: Task<R, E, A>) => Task<R & R1, E, A> {
+   return (task) => ensuringChildren_(task, children);
+}

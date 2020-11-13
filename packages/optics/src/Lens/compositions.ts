@@ -16,7 +16,9 @@ import type { Lens } from "./model";
  * @category Compositions
  * @since 1.0.0
  */
-export const composePrism_ = <S, A, B>(sa: Lens<S, A>, ab: Prism<A, B>): Optional<S, B> => _.lensComposePrism(ab)(sa);
+export function composePrism_<S, A, B>(sa: Lens<S, A>, ab: Prism<A, B>): Optional<S, B> {
+   return _.lensComposePrism(ab)(sa);
+}
 
 /**
  * Compose an `Lens` with a `Prism`
@@ -32,8 +34,9 @@ export const composePrism = _.lensComposePrism;
  * @category Compositions
  * @since 1.0.0
  */
-export const composeOptional_ = <S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): Optional<S, B> =>
-   _.optionalComposeOptional(ab)(asOptional(sa));
+export function composeOptional_<S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): Optional<S, B> {
+   return _.optionalComposeOptional(ab)(asOptional(sa));
+}
 
 /**
  * Compose an `Lens` with an `Optional`
@@ -41,5 +44,6 @@ export const composeOptional_ = <S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): O
  * @category Compositions
  * @since 1.0.0
  */
-export const composeOptional = <A, B>(ab: Optional<A, B>) => <S>(sa: Lens<S, A>): Optional<S, B> =>
-   composeOptional_(sa, ab);
+export function composeOptional<A, B>(ab: Optional<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B> {
+   return (sa) => composeOptional_(sa, ab);
+}

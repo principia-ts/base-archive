@@ -13,7 +13,9 @@ import type { Task } from "../model";
  * @category Combinators
  * @since 1.0.0
  */
-export const _delay = <R, E, A>(ef: Task<R, E, A>, ms: number): Task<R & HasClock, E, A> => chain_(sleep(ms), () => ef);
+export function delay_<R, E, A>(ef: Task<R, E, A>, ms: number): Task<R & HasClock, E, A> {
+   return chain_(sleep(ms), () => ef);
+}
 
 /**
  * ```haskell
@@ -25,4 +27,6 @@ export const _delay = <R, E, A>(ef: Task<R, E, A>, ms: number): Task<R & HasCloc
  * @category Combinators
  * @since 1.0.0
  */
-export const delay = (ms: number) => <R, E, A>(ef: Task<R, E, A>): Task<R & HasClock, E, A> => _delay(ef, ms);
+export function delay(ms: number): <R, E, A>(ef: Task<R, E, A>) => Task<R & HasClock, E, A> {
+   return (ef) => delay_(ef, ms);
+}

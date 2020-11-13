@@ -5,5 +5,6 @@ import type { Stream } from "../model";
 import { flattenChunks } from "./flattenChunks";
 import { flattenExitOption } from "./flattenExitOption";
 
-export const flattenTake = <R, E, E1, O>(stream: Stream<R, E, Take.Take<E1, O>>): Stream<R, E | E1, O> =>
-   pipe(stream, flattenExitOption, flattenChunks);
+export function flattenTake<R, E, E1, O>(stream: Stream<R, E, Take.Take<E1, O>>): Stream<R, E | E1, O> {
+   return pipe(stream, flattenExitOption, flattenChunks);
+}

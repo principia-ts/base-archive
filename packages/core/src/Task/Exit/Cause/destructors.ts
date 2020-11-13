@@ -13,11 +13,11 @@ import type { Cause } from "./model";
 /**
  * @internal
  */
-export const findSafe_ = <E, A>(
+export function findSafe_<E, A>(
    cause: Cause<E>,
    f: (cause: Cause<E>) => O.Option<A>
-): Sy.Sync<unknown, never, O.Option<A>> =>
-   Sy.gen(function* (_) {
+): Sy.Sync<unknown, never, O.Option<A>> {
+   return Sy.gen(function* (_) {
       const apply = f(cause);
       if (apply._tag === "Some") {
          return apply;
@@ -44,6 +44,7 @@ export const findSafe_ = <E, A>(
          }
       }
    });
+}
 
 /**
  * ```haskell
@@ -55,13 +56,14 @@ export const findSafe_ = <E, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export const find = <A, E>(f: (cause: Cause<E>) => O.Option<A>) => (cause: Cause<E>): O.Option<A> =>
-   Sy.runIO(findSafe_(cause, f));
+export function find<A, E>(f: (cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => O.Option<A> {
+   return (cause) => Sy.runIO(findSafe_(cause, f));
+}
 
 /**
  * @internal
  */
-export const foldSafe_ = <E, A>(
+export function foldSafe_<E, A>(
    cause: Cause<E>,
    onEmpty: () => A,
    onFail: (reason: E) => A,
@@ -69,8 +71,8 @@ export const foldSafe_ = <E, A>(
    onInterrupt: (id: FiberId) => A,
    onThen: (l: A, r: A) => A,
    onBoth: (l: A, r: A) => A
-): Sy.IO<A> =>
-   Sy.gen(function* (_) {
+): Sy.IO<A> {
+   return Sy.gen(function* (_) {
       switch (cause._tag) {
          case "Empty":
             return onEmpty();
@@ -92,6 +94,7 @@ export const foldSafe_ = <E, A>(
             );
       }
    });
+}
 
 /**
  * ```haskell
@@ -110,20 +113,22 @@ export const foldSafe_ = <E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export const fold = <E, A>(
+export function fold<E, A>(
    onEmpty: () => A,
    onFail: (reason: E) => A,
    onDie: (reason: unknown) => A,
    onInterrupt: (id: FiberId) => A,
    onThen: (l: A, r: A) => A,
    onBoth: (l: A, r: A) => A
-) => (cause: Cause<E>): A => Sy.runIO(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth));
+): (cause: Cause<E>) => A {
+   return (cause) => Sy.runIO(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth));
+}
 
 /**
  * @internal
  */
-export const foldlSafe_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Sy.IO<B> =>
-   Sy.gen(function* (_) {
+export function foldlSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Sy.IO<B> {
+   return Sy.gen(function* (_) {
       const apply = O.getOrElse_(f(b, cause), () => b);
       switch (cause._tag) {
          case "Then": {
@@ -141,6 +146,7 @@ export const foldlSafe_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E
          }
       }
    });
+}
 
 /**
  * ```haskell
@@ -178,8 +184,9 @@ export const foldl_ = F.trampoline(function loop<E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export const foldl = <E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>) => (cause: Cause<E>): A =>
-   foldl_(cause, a, f);
+export function foldl<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => A {
+   return (cause) => foldl_(cause, a, f);
+}
 
 /**
  * ```haskell

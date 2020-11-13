@@ -7,6 +7,10 @@ import { fromShow } from "@principia/prelude/Show";
  * -------------------------------------------
  */
 
-export const contramap_ = <A, B>(fa: Show<A>, f: (b: B) => A): Show<B> => fromShow((b) => fa.show(f(b)));
+export function contramap_<A, B>(fa: Show<A>, f: (b: B) => A): Show<B> {
+   return fromShow((b) => fa.show(f(b)));
+}
 
-export const contramap = <A, B>(f: (b: B) => A) => (fa: Show<A>): Show<B> => contramap_(fa, f);
+export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
+   return (fa) => contramap_(fa, f);
+}

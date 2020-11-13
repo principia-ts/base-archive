@@ -12,7 +12,9 @@ import type { Iso } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const id = <S>(): Iso<S, S> => ({
-   get: identity,
-   reverseGet: identity
-});
+export function id<S>(): Iso<S, S> {
+   return {
+      get: identity,
+      reverseGet: identity
+   };
+}

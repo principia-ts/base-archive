@@ -28,7 +28,9 @@ export const zip: <B>(
  * @category Applicative
  * @since 1.0.0
  */
-export const pure = <A>(a: A): NonEmptyArray<A> => [a];
+export function pure<A>(a: A): NonEmptyArray<A> {
+   return [a];
+}
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
    ...Functor,

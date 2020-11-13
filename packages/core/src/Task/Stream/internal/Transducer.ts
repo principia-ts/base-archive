@@ -25,45 +25,49 @@ export class Transducer<R, E, I, O> {
  *   Stated differently, after a first push(None), all subsequent push(None) must
  *   result in empty [].
  */
-export const transducer = <R, E, I, O, R1>(
+export function transducer<R, E, I, O, R1>(
    push: M.Managed<R, never, (c: Option<ReadonlyArray<I>>) => T.Task<R1, E, ReadonlyArray<O>>>
-) => new Transducer<R & R1, E, I, O>(push);
+): Transducer<R & R1, E, I, O> {
+   return new Transducer<R & R1, E, I, O>(push);
+}
 
 /**
  * Compose this tansducer with another transducer, resulting in a composite transducer.
  */
-export const then = <R1, E1, O, O1>(that: Transducer<R1, E1, O, O1>) => <R, E, I>(
-   self: Transducer<R, E, I, O>
-): Transducer<R & R1, E1 | E, I, O1> =>
-   transducer(
-      pipe(
-         self.push,
-         M.mapBoth(that.push, (pushLeft, pushRight) =>
-            O.fold(
-               () =>
-                  pipe(
-                     pushLeft(O.none()),
-                     T.chain((cl) =>
-                        cl.length === 0
-                           ? pushRight(O.none())
-                           : pipe(
-                                pushRight(O.some(cl)),
-                                T.mapBoth(pushRight(O.none()), (a, b) => [...a, ...b])
-                             )
+export function then<R1, E1, O, O1>(
+   that: Transducer<R1, E1, O, O1>
+): <R, E, I>(self: Transducer<R, E, I, O>) => Transducer<R & R1, E1 | E, I, O1> {
+   return (self) =>
+      transducer(
+         pipe(
+            self.push,
+            M.mapBoth(that.push, (pushLeft, pushRight) =>
+               O.fold(
+                  () =>
+                     pipe(
+                        pushLeft(O.none()),
+                        T.chain((cl) =>
+                           cl.length === 0
+                              ? pushRight(O.none())
+                              : pipe(
+                                   pushRight(O.some(cl)),
+                                   T.mapBoth(pushRight(O.none()), (a, b) => [...a, ...b])
+                                )
+                        )
+                     ),
+                  (inputs) =>
+                     pipe(
+                        pushLeft(O.some(inputs)),
+                        T.chain((cl) => pushRight(O.some(cl)))
                      )
-                  ),
-               (inputs) =>
-                  pipe(
-                     pushLeft(O.some(inputs)),
-                     T.chain((cl) => pushRight(O.some(cl)))
-                  )
+               )
             )
          )
-      )
-   );
+      );
+}
 
-export const dropWhile = <I>(predicate: Predicate<I>): Transducer<unknown, never, I, I> =>
-   new Transducer(
+export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never, I, I> {
+   return new Transducer(
       M.gen(function* (_) {
          const dropping = yield* _(XR.makeManagedRef(true));
          return (is: O.Option<ReadonlyArray<I>>) =>
@@ -85,3 +89,4 @@ export const dropWhile = <I>(predicate: Predicate<I>): Transducer<unknown, never
             );
       })
    );
+}

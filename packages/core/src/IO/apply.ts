@@ -23,7 +23,9 @@ import type { IO, URI, V } from "./model";
  * @category Apply
  * @since 1.0.0
  */
-export const ap_ = <A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> => map_(X.both_(fab, fa), ([f, a]) => f(a));
+export function ap_<A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> {
+   return map_(X.both_(fab, fa), ([f, a]) => f(a));
+}
 
 /**
  * ```haskell
@@ -35,7 +37,9 @@ export const ap_ = <A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> => map_(X.both
  * @category Apply
  * @since 1.0.0
  */
-export const ap = <A>(fa: IO<A>) => <B>(fab: IO<(a: A) => B>): IO<B> => ap_(fab, fa);
+export function ap<A>(fa: IO<A>): <B>(fab: IO<(a: A) => B>) => IO<B> {
+   return (fab) => ap_(fab, fa);
+}
 
 /**
  * ```haskell
@@ -47,12 +51,13 @@ export const ap = <A>(fa: IO<A>) => <B>(fab: IO<(a: A) => B>): IO<B> => ap_(fab,
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst_ = <A, B>(fa: IO<A>, fb: IO<B>): IO<A> =>
-   pipe(
+export function apFirst_<A, B>(fa: IO<A>, fb: IO<B>): IO<A> {
+   return pipe(
       fa,
       map((a) => () => a),
       ap(fb)
    );
+}
 
 /**
  * ```haskell
@@ -64,7 +69,9 @@ export const apFirst_ = <A, B>(fa: IO<A>, fb: IO<B>): IO<A> =>
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<A> => apFirst_(fa, fb);
+export function apFirst<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<A> {
+   return (fa) => apFirst_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -76,12 +83,13 @@ export const apFirst = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<A> => apFirst_(fa, f
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond_ = <A, B>(fa: IO<A>, fb: IO<B>): IO<B> =>
-   pipe(
+export function apSecond_<A, B>(fa: IO<A>, fb: IO<B>): IO<B> {
+   return pipe(
       fa,
       map(() => (b: B) => b),
       ap(fb)
    );
+}
 
 /**
  * ```haskell
@@ -93,7 +101,9 @@ export const apSecond_ = <A, B>(fa: IO<A>, fb: IO<B>): IO<B> =>
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<B> => apSecond_(fa, fb);
+export function apSecond<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<B> {
+   return (fa) => apSecond_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -117,7 +127,9 @@ export const mapBoth_: <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C) => 
  * @category Apply
  * @since 1.0.0
  */
-export const mapBoth = <A, B, C>(fb: IO<B>, f: (a: A, b: B) => C) => (fa: IO<A>): IO<C> => mapBoth_(fa, fb, f);
+export function mapBoth<A, B, C>(fb: IO<B>, f: (a: A, b: B) => C): (fa: IO<A>) => IO<C> {
+   return (fa) => mapBoth_(fa, fb, f);
+}
 
 /**
  * ```haskell
@@ -129,8 +141,9 @@ export const mapBoth = <A, B, C>(fb: IO<B>, f: (a: A, b: B) => C) => (fa: IO<A>)
  * @category Apply
  * @since 1.0.0
  */
-export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb: IO<B>): IO<C> =>
-   map_(both_(fa, fb), ([a, b]) => f(a)(b));
+export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: IO<A>) => (fb: IO<B>) => IO<C> {
+   return (fa) => (fb) => map_(both_(fa, fb), ([a, b]) => f(a)(b));
+}
 
 /**
  * ```haskell
@@ -145,14 +158,21 @@ export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: IO<A>) => (fb:
  * @category Apply
  * @since 1.0.0
  */
-export const apS = <N extends string, A, B>(
+export function apS<N extends string, A, B>(
    name: Exclude<N, keyof A>,
    fb: IO<B>
-): ((fa: IO<A>) => IO<{ [K in keyof A | N]: K extends keyof A ? A[K] : B }>) =>
-   flow(
+): (
+   fa: IO<A>
+) => IO<
+   {
+      [K in keyof A | N]: K extends keyof A ? A[K] : B;
+   }
+> {
+   return flow(
       map((a) => (b: B) => bind_(a, name, b)),
       ap(fb)
    );
+}
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
    ...Functor,

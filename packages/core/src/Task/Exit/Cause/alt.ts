@@ -15,7 +15,9 @@ import { chain_ } from "./monad";
  * @category Alt
  * @since 1.0.0
  */
-export const alt_ = <E>(fa: Cause<E>, that: () => Cause<E>) => chain_(fa, () => that());
+export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
+   return chain_(fa, () => that());
+}
 
 /**
  * ```haskell
@@ -25,4 +27,6 @@ export const alt_ = <E>(fa: Cause<E>, that: () => Cause<E>) => chain_(fa, () => 
  * @category Alt
  * @since 1.0.0
  */
-export const alt = <E>(that: () => Cause<E>) => (fa: Cause<E>) => alt_(fa, that);
+export function alt<E>(that: () => Cause<E>): (fa: Cause<E>) => Cause<E> {
+   return (fa) => alt_(fa, that);
+}

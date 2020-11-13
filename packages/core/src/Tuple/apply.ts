@@ -6,7 +6,7 @@ import { fst, snd } from "./destructors";
 import { Functor } from "./functor";
 import type { URI, V } from "./model";
 
-export const getApply = <M>(M: Monoid<M>): P.Apply<[URI], V & HKT.Fix<"I", M>> => {
+export function getApply<M>(M: Monoid<M>): P.Apply<[URI], V & HKT.Fix<"I", M>> {
    const mapBoth_: P.MapBothFn_<[URI], HKT.Fix<"I", M>> = (fa, fb, f) => [
       f(fst(fa), fst(fb)),
       M.combine_(snd(fa), snd(fb))
@@ -20,4 +20,4 @@ export const getApply = <M>(M: Monoid<M>): P.Apply<[URI], V & HKT.Fix<"I", M>> =
       ap_,
       ap: (fa) => (fab) => ap_(fab, fa)
    });
-};
+}

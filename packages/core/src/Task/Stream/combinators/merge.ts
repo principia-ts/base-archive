@@ -24,14 +24,14 @@ export type TerminationStrategy = "Left" | "Right" | "Both" | "Either";
  * New produced stream will terminate when both specified stream terminate if
  * no termination strategy is specified.
  */
-export const mergeWith_ = <R, E, A, R1, E1, B, C, C1>(
+export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
    sa: Stream<R, E, A>,
    sb: Stream<R1, E1, B>,
    l: (a: A) => C,
    r: (b: B) => C1,
    strategy: TerminationStrategy = "Both"
-): Stream<R1 & R, E | E1, C | C1> =>
-   new Stream(
+): Stream<R1 & R, E | E1, C | C1> {
+   return new Stream(
       pipe(
          M.do,
          M.bindS("handoff", () => M.fromTask(H.make<Take.Take<E | E1, C | C1>>())),
@@ -119,6 +119,7 @@ export const mergeWith_ = <R, E, A, R1, E1, B, C, C1>(
          )
       )
    );
+}
 
 /**
  * Merges this stream and the specified stream together to a common element
@@ -127,12 +128,14 @@ export const mergeWith_ = <R, E, A, R1, E1, B, C, C1>(
  * New produced stream will terminate when both specified stream terminate if
  * no termination strategy is specified.
  */
-export const mergeWith = <R, E, A, R1, E1, B, C, C1>(
+export function mergeWith<R, E, A, R1, E1, B, C, C1>(
    that: Stream<R1, E1, B>,
    l: (a: A) => C,
    r: (b: B) => C1,
    strategy: TerminationStrategy = "Both"
-) => (ma: Stream<R, E, A>) => mergeWith_(ma, that, l, r, strategy);
+): (ma: Stream<R, E, A>) => Stream<R1 & R, E | E1, C | C1> {
+   return (ma) => mergeWith_(ma, that, l, r, strategy);
+}
 
 /**
  * Merges this stream and the specified stream together.
@@ -140,18 +143,19 @@ export const mergeWith = <R, E, A, R1, E1, B, C, C1>(
  * New produced stream will terminate when both specified stream terminate if no termination
  * strategy is specified.
  */
-export const merge_ = <R, E, A, R1, E1, B>(
+export function merge_<R, E, A, R1, E1, B>(
    self: Stream<R, E, A>,
    that: Stream<R1, E1, B>,
    strategy: TerminationStrategy = "Both"
-): Stream<R1 & R, E | E1, A | B> =>
-   mergeWith_(
+): Stream<R1 & R, E | E1, A | B> {
+   return mergeWith_(
       self,
       that,
       (a): A | B => a,
       (b) => b,
       strategy
    );
+}
 
 /**
  * Merges this stream and the specified stream together.
@@ -159,72 +163,95 @@ export const merge_ = <R, E, A, R1, E1, B>(
  * New produced stream will terminate when both specified stream terminate if no termination
  * strategy is specified.
  */
-export const merge = <R1, E1, B>(sb: Stream<R1, E1, B>, strategy: TerminationStrategy = "Both") => <R, E, A>(
-   sa: Stream<R, E, A>
-) => merge_(sa, sb, strategy);
+export function merge<R1, E1, B>(
+   sb: Stream<R1, E1, B>,
+   strategy: TerminationStrategy = "Both"
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
+   return (sa) => merge_(sa, sb, strategy);
+}
 
 /**
  * Merges this stream and the specified stream together. New produced stream will
  * terminate when either stream terminates.
  */
-export const mergeTerminateEither_ = <R, E, A, R1, E1, B>(
+export function mergeTerminateEither_<R, E, A, R1, E1, B>(
    sa: Stream<R, E, A>,
    sb: Stream<R1, E1, B>
-): Stream<R1 & R, E | E1, A | B> => merge_(sa, sb, "Either");
+): Stream<R1 & R, E | E1, A | B> {
+   return merge_(sa, sb, "Either");
+}
 
 /**
  * Merges this stream and the specified stream together. New produced stream will
  * terminate when either stream terminates.
  */
-export const mergeTerminateEither = <R1, E1, B>(sb: Stream<R1, E1, B>) => <R, E, A>(sa: Stream<R, E, A>) =>
-   merge_(sa, sb, "Either");
+export function mergeTerminateEither<R1, E1, B>(
+   sb: Stream<R1, E1, B>
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
+   return (sa) => merge_(sa, sb, "Either");
+}
 
 /**
  * Merges this stream and the specified stream together. New produced stream will
  * terminate when this stream terminates.
  */
-export const mergeTerminateLeft_ = <R, E, A, R1, E1, B>(
+export function mergeTerminateLeft_<R, E, A, R1, E1, B>(
    sa: Stream<R, E, A>,
    sb: Stream<R1, E1, B>
-): Stream<R1 & R, E | E1, A | B> => merge_(sa, sb, "Left");
+): Stream<R1 & R, E | E1, A | B> {
+   return merge_(sa, sb, "Left");
+}
 
 /**
  * Merges this stream and the specified stream together. New produced stream will
  * terminate when this stream terminates.
  */
-export const mergeTerminateLeft = <R1, E1, B>(sb: Stream<R1, E1, B>) => <R, E, A>(sa: Stream<R, E, A>) =>
-   merge_(sa, sb, "Left");
+export function mergeTerminateLeft<R1, E1, B>(
+   sb: Stream<R1, E1, B>
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
+   return (sa) => merge_(sa, sb, "Left");
+}
 
 /**
  * Merges this stream and the specified stream together. New produced stream will
  * terminate when the specified stream terminates.
  */
-export const mergeTerminateRight_ = <R, E, A, R1, E1, B>(
+export function mergeTerminateRight_<R, E, A, R1, E1, B>(
    sa: Stream<R, E, A>,
    sb: Stream<R1, E1, B>
-): Stream<R1 & R, E | E1, A | B> => merge_(sa, sb, "Right");
+): Stream<R1 & R, E | E1, A | B> {
+   return merge_(sa, sb, "Right");
+}
 
 /**
  * Merges this stream and the specified stream together. New produced stream will
  * terminate when the specified stream terminates.
  */
-export const mergeTerminateRight = <R1, E1, B>(sb: Stream<R1, E1, B>) => <R, E, A>(sa: Stream<R, E, A>) =>
-   merge_(sa, sb, "Right");
+export function mergeTerminateRight<R1, E1, B>(
+   sb: Stream<R1, E1, B>
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
+   return (sa) => merge_(sa, sb, "Right");
+}
 
 /**
  * Merges this stream and the specified stream together to produce a stream of
  * eithers.
  */
-export const mergeEither_ = <R, E, A, R1, E1, B>(
+export function mergeEither_<R, E, A, R1, E1, B>(
    sa: Stream<R, E, A>,
    sb: Stream<R1, E1, B>,
    strategy: TerminationStrategy = "Both"
-): Stream<R & R1, E | E1, Either<A, B>> => mergeWith_(sa, sb, E.left, E.right, strategy);
+): Stream<R & R1, E | E1, Either<A, B>> {
+   return mergeWith_(sa, sb, E.left, E.right, strategy);
+}
 
 /**
  * Merges this stream and the specified stream together to produce a stream of
  * eithers.
  */
-export const mergeEither = <R1, E1, B>(sb: Stream<R1, E1, B>, strategy: TerminationStrategy = "Both") => <R, E, A>(
-   sa: Stream<R, E, A>
-): Stream<R & R1, E | E1, Either<A, B>> => mergeEither_(sa, sb, strategy);
+export function mergeEither<R1, E1, B>(
+   sb: Stream<R1, E1, B>,
+   strategy: TerminationStrategy = "Both"
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R & R1, E1 | E, Either<A, B>> {
+   return (sa) => mergeEither_(sa, sb, strategy);
+}

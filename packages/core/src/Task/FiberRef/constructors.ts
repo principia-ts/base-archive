@@ -5,54 +5,45 @@ import type * as T from "../Task/model";
 import { ModifyFiberRefInstruction, NewFiberRefInstruction } from "../Task/model";
 import type { FiberRef } from "./model";
 
-export const fiberRef = <A>(initial: A, fork: (a: A) => A, join: (a: A, a1: A) => A): FiberRef<A> => ({
-   _tag: "FiberRef",
-   initial,
-   fork,
-   join
-});
-
-export const make = <A>(
+export function make<A>(
    initial: A,
    onFork: (a: A) => A = identity,
    onJoin: (a: A, a1: A) => A = (_, a) => a
-): T.IO<FiberRef<A>> => new NewFiberRefInstruction(initial, onFork, onJoin);
+): T.IO<FiberRef<A>> {
+   return new NewFiberRefInstruction(initial, onFork, onJoin);
+}
 
-export const modify = <A, B>(f: (a: A) => [B, A]) => (fiberRef: FiberRef<A>): T.IO<B> =>
-   new ModifyFiberRefInstruction(fiberRef, f);
+export function modify<A, B>(f: (a: A) => [B, A]): (fiberRef: FiberRef<A>) => T.IO<B> {
+   return (fiberRef) => new ModifyFiberRefInstruction(fiberRef, f);
+}
 
-export const update = <A>(f: (a: A) => A) => (fiberRef: FiberRef<A>): T.IO<void> =>
-   pipe(
-      fiberRef,
-      modify((v) => [undefined, f(v)])
-   );
+export function update<A>(f: (a: A) => A): (fiberRef: FiberRef<A>) => T.IO<void> {
+   return (fiberRef) =>
+      pipe(
+         fiberRef,
+         modify((v) => [undefined, f(v)])
+      );
+}
 
-export const set = <A>(a: A) => (fiberRef: FiberRef<A>): T.IO<void> =>
-   pipe(
-      fiberRef,
-      modify((_) => [undefined, a])
-   );
+export function set<A>(a: A): (fiberRef: FiberRef<A>) => T.IO<void> {
+   return modify((_) => [undefined, a]);
+}
 
-export const get = <A>(fiberRef: FiberRef<A>) =>
-   pipe(
+export function get<A>(fiberRef: FiberRef<A>): T.IO<A> {
+   return pipe(
       fiberRef,
       modify((a) => [a, a])
    );
+}
 
-export const getAndSet = <A>(a: A) => (fiberRef: FiberRef<A>) =>
-   pipe(
-      fiberRef,
-      modify((v) => [v, a])
-   );
+export function getAndSet<A>(a: A): (fiberRef: FiberRef<A>) => T.IO<A> {
+   return modify((v) => [v, a]);
+}
 
-export const getAndUpdate = <A>(f: (a: A) => A) => (fiberRef: FiberRef<A>) =>
-   pipe(
-      fiberRef,
-      modify((v) => [v, f(v)])
-   );
+export function getAndUpdate<A>(f: (a: A) => A): (fiberRef: FiberRef<A>) => T.IO<A> {
+   return modify((v) => [v, f(v)]);
+}
 
-export const getAndUpdateSome = <A>(f: (a: A) => Option<A>) => (fiberRef: FiberRef<A>) =>
-   pipe(
-      fiberRef,
-      modify((v) => [v, O.getOrElse_(f(v), () => v)])
-   );
+export function getAndUpdateSome<A>(f: (a: A) => Option<A>): (fiberRef: FiberRef<A>) => T.IO<A> {
+   return modify((v) => [v, O.getOrElse_(f(v), () => v)]);
+}

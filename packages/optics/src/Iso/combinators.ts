@@ -10,13 +10,17 @@ import type { Iso } from "./model";
  * @category Combinators
  * @since 1.0.0
  */
-export const reverse = <S, A>(sa: Iso<S, A>): Iso<A, S> => ({
-   get: sa.reverseGet,
-   reverseGet: sa.get
-});
+export function reverse<S, A>(sa: Iso<S, A>): Iso<A, S> {
+   return {
+      get: sa.reverseGet,
+      reverseGet: sa.get
+   };
+}
 
 /**
  * @category Combinators
  * @since 1.0.0
  */
-export const modify = <A>(f: (a: A) => A) => <S>(sa: Iso<S, A>) => (s: S): S => sa.reverseGet(f(sa.get(s)));
+export function modify<A>(f: (a: A) => A): <S>(sa: Iso<S, A>) => (s: S) => S {
+   return (sa) => (s) => sa.reverseGet(f(sa.get(s)));
+}

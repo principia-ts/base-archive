@@ -13,12 +13,12 @@ import { catchAllCause_ } from "./catchAllCause";
  * @category Combinators
  * @since 1.0.0
  */
-export const unrefineWith_ = <R, E, A, E1, E2>(
+export function unrefineWith_<R, E, A, E1, E2>(
    fa: Task<R, E, A>,
    pf: (u: unknown) => Option<E1>,
    f: (e: E) => E2
-): Task<R, E1 | E2, A> =>
-   catchAllCause_(
+): Task<R, E1 | E2, A> {
+   return catchAllCause_(
       fa,
       (cause): Task<R, E1 | E2, A> =>
          pipe(
@@ -27,6 +27,7 @@ export const unrefineWith_ = <R, E, A, E1, E2>(
             O.fold(() => pipe(cause, C.map(f), halt), fail)
          )
    );
+}
 
 /**
  * Takes some fiber failures and converts them into errors, using the
@@ -35,6 +36,8 @@ export const unrefineWith_ = <R, E, A, E1, E2>(
  * @category Combinators
  * @since 1.0.0
  */
-export const unrefineWith = <E1>(fa: (u: unknown) => Option<E1>) => <E, E2>(f: (e: E) => E2) => <R, A>(
-   ef: Task<R, E, A>
-) => unrefineWith_(ef, fa, f);
+export function unrefineWith<E1>(
+   fa: (u: unknown) => Option<E1>
+): <E, E2>(f: (e: E) => E2) => <R, A>(ef: Task<R, E, A>) => Task<R, E1 | E2, A> {
+   return (f) => (ef) => unrefineWith_(ef, fa, f);
+}

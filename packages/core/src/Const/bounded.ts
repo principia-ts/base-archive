@@ -13,4 +13,6 @@ import type { Const } from "./model";
  * @category Instances
  * @since 1.0.0
  */
-export const getBounded: <E, A>(B: Bounded<E>) => Bounded<Const<E, A>> = identity as any;
+export function getBounded<E, A>(B: Bounded<E>): Bounded<Const<E, A>> {
+   return identity(B) as any;
+}

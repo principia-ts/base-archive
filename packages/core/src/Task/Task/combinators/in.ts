@@ -9,8 +9,8 @@ import { forkDaemon } from "../core-scope";
 import type { Task } from "../model";
 import { onInterrupt, uninterruptibleMask } from "./interrupt";
 
-export const in_ = <R, E, A>(task: Task<R, E, A>, scope: Scope<any>): Task<R, E, A> =>
-   uninterruptibleMask(({ restore }) =>
+export function in_<R, E, A>(task: Task<R, E, A>, scope: Scope<any>): Task<R, E, A> {
+   return uninterruptibleMask(({ restore }) =>
       pipe(
          task,
          restore,
@@ -37,7 +37,10 @@ export const in_ = <R, E, A>(task: Task<R, E, A>, scope: Scope<any>): Task<R, E,
          )
       )
    );
+}
 
-const _in = (scope: Scope<any>) => <R, E, A>(task: Task<R, E, A>): Task<R, E, A> => in_(task, scope);
+function _in(scope: Scope<any>): <R, E, A>(task: Task<R, E, A>) => Task<R, E, A> {
+   return (task) => in_(task, scope);
+}
 
 export { _in as in };

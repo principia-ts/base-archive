@@ -19,12 +19,12 @@ import type { Transducer } from "../internal/Transducer";
 import { Stream } from "../model";
 import { flattenTake } from "./flattenTake";
 
-export const aggregateAsyncWithinEither_ = <R, E, O, R1, E1, P, Q>(
+export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
    stream: Stream<R, E, O>,
    transducer: Transducer<R1, E1, O, P>,
    schedule: Schedule<R1, ReadonlyArray<P>, Q>
-): Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> =>
-   flattenTake(
+): Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> {
+   return flattenTake(
       new Stream(
          M.gen(function* (_) {
             const pull = yield* _(stream.proc);
@@ -137,3 +137,4 @@ export const aggregateAsyncWithinEither_ = <R, E, O, R1, E1, P, Q>(
          })
       )
    );
+}

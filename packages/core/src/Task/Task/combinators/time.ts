@@ -11,19 +11,25 @@ import { summarized_ } from "./summarized";
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
  */
-export const timedWith_ = <R, E, A, R1, E1>(ma: Task<R, E, A>, msTime: Task<R1, E1, number>) =>
-   summarized_(ma, msTime, (start, end) => end - start);
+export function timedWith_<R, E, A, R1, E1>(ma: Task<R, E, A>, msTime: Task<R1, E1, number>) {
+   return summarized_(ma, msTime, (start, end) => end - start);
+}
 
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
  */
-export const timedWith = <R1, E1>(msTime: Task<R1, E1, number>) => <R, E, A>(ma: Task<R, E, A>) =>
-   timedWith_(ma, msTime);
+export function timedWith<R1, E1>(
+   msTime: Task<R1, E1, number>
+): <R, E, A>(ma: Task<R, E, A>) => Task<R & R1, E1 | E, [number, A]> {
+   return (ma) => timedWith_(ma, msTime);
+}
 
 /**
  * Returns a new effect that executes this one and times the execution.
  */
-export const timed = <R, E, A>(ma: Task<R, E, A>) => timedWith_(ma, currentTime);
+export function timed<R, E, A>(ma: Task<R, E, A>) {
+   return timedWith_(ma, currentTime);
+}
 
 /**
  * Returns a task that will timeout this effect, returning either the
@@ -34,12 +40,14 @@ export const timed = <R, E, A>(ma: Task<R, E, A>) => timedWith_(ma, currentTime)
  * If the timeout elapses without producing a value, the running effect
  * will be safely interrupted
  */
-export const timeoutTo_ = <R, E, A, B, B1>(
+export function timeoutTo_<R, E, A, B, B1>(
    ma: Task<R, E, A>,
    d: number,
    b: B,
    f: (a: A) => B1
-): Task<R & HasClock, E, B | B1> => pipe(ma, map(f), raceFirst(pipe(sleep(d), makeInterruptible, as(b))));
+): Task<R & HasClock, E, B | B1> {
+   return pipe(ma, map(f), raceFirst(pipe(sleep(d), makeInterruptible, as(b))));
+}
 
 /**
  * Returns a task that will timeout this effect, returning either the
@@ -50,8 +58,9 @@ export const timeoutTo_ = <R, E, A, B, B1>(
  * If the timeout elapses without producing a value, the running effect
  * will be safely interrupted
  */
-export const timeoutTo = <A, B, B1>(d: number, b: B, f: (a: A) => B1) => <R, E>(ma: Task<R, E, A>) =>
-   timeoutTo_(ma, d, b, f);
+export function timeoutTo<A, B, B1>(d: number, b: B, f: (a: A) => B1) {
+   return <R, E>(ma: Task<R, E, A>) => timeoutTo_(ma, d, b, f);
+}
 
 /**
  * Returns a task that will timeout this effect, returning `None` if the
@@ -69,7 +78,9 @@ export const timeoutTo = <A, B, B1>(d: number, b: B, f: (a: A) => B1) => <R, E>(
  * the timeout, resulting in earliest possible return, before an underlying
  * effect has been successfully interrupted.
  */
-export const timeout_ = <R, E, A>(ma: Task<R, E, A>, d: number) => timeoutTo_(ma, d, O.none(), O.some);
+export function timeout_<R, E, A>(ma: Task<R, E, A>, d: number) {
+   return timeoutTo_(ma, d, O.none(), O.some);
+}
 
 /**
  * Returns a task that will timeout this effect, returning `None` if the
@@ -87,14 +98,16 @@ export const timeout_ = <R, E, A>(ma: Task<R, E, A>, d: number) => timeoutTo_(ma
  * the timeout, resulting in earliest possible return, before an underlying
  * effect has been successfully interrupted.
  */
-export const timeout = (d: number) => <R, E, A>(ma: Task<R, E, A>) => timeout_(ma, d);
+export function timeout(d: number) {
+   return <R, E, A>(ma: Task<R, E, A>) => timeout_(ma, d);
+}
 
 /**
  * The same as `timeout`, but instead of producing a `None` in the event
  * of timeout, it will produce the specified error.
  */
-export const timeoutFail_ = <R, E, A, E1>(ma: Task<R, E, A>, d: number, e: () => E1): Task<R & HasClock, E | E1, A> =>
-   flatten(
+export function timeoutFail_<R, E, A, E1>(ma: Task<R, E, A>, d: number, e: () => E1): Task<R & HasClock, E | E1, A> {
+   return flatten(
       timeoutTo_(
          ma,
          d,
@@ -102,9 +115,12 @@ export const timeoutFail_ = <R, E, A, E1>(ma: Task<R, E, A>, d: number, e: () =>
          pure
       )
    );
+}
 
 /**
  * The same as `timeout`, but instead of producing a `None` in the event
  * of timeout, it will produce the specified error.
  */
-export const timeoutFail = <E1>(d: number, e: () => E1) => <R, E, A>(ma: Task<R, E, A>) => timeoutFail_(ma, d, e);
+export function timeoutFail<E1>(d: number, e: () => E1) {
+   return <R, E, A>(ma: Task<R, E, A>) => timeoutFail_(ma, d, e);
+}

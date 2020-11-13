@@ -22,7 +22,9 @@ import { unit } from "./unit";
  * @category Uncurried Monad
  * @since 1.0.0
  */
-export const chain_ = <A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> => (isNone(ma) ? ma : f(ma.value));
+export function chain_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
+   return isNone(ma) ? ma : f(ma.value);
+}
 
 /**
  * ```haskell
@@ -34,20 +36,9 @@ export const chain_ = <A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> =
  * @category Monad
  * @since 1.0.0
  */
-export const chain = <A, B>(f: (a: A) => Option<B>) => (ma: Option<A>): Option<B> => chain_(ma, f);
-
-/**
- * ```haskell
- * bind :: Monad m => m a -> (a -> m b) -> m b
- * ```
- *
- * A version of `chain` where the arguments are flipped
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export const bind = <A>(ma: Option<A>) => <B>(f: (a: A) => Option<B>): Option<B> => chain_(ma, f);
+export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
+   return (ma) => chain_(ma, f);
+}
 
 /**
  * ```haskell
@@ -60,13 +51,14 @@ export const bind = <A>(ma: Option<A>) => <B>(f: (a: A) => Option<B>): Option<B>
  * @category Monad
  * @since 1.0.0
  */
-export const tap_ = <A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> =>
-   chain_(ma, (a) =>
+export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
+   return chain_(ma, (a) =>
       pipe(
          f(a),
          map(() => a)
       )
    );
+}
 
 /**
  * ```haskell
@@ -79,21 +71,9 @@ export const tap_ = <A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> =>
  * @category Monad
  * @since 1.0.0
  */
-export const tap = <A, B>(f: (a: A) => Option<B>) => (ma: Option<A>): Option<A> => tap_(ma, f);
-
-/**
- * ```haskell
- * chainFirst :: Monad m => (a -> m b) -> m a -> m a
- * ```
- *
- * A synonym of `tap`
- * Composes computations in sequence, using the return value of one computation as input for the next
- * and keeping only the result of the first
- *
- * @category Monad
- * @since 1.0.0
- */
-export const chainFirst = tap;
+export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> {
+   return (ma) => tap_(ma, f);
+}
 
 /**
  * ```haskell

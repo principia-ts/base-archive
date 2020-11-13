@@ -8,11 +8,11 @@ import { onExitFirst_ } from "./onExitFirst";
  * The acquire action will be performed interruptibly, while release
  * will be performed uninterruptibly.
  */
-export const makeInterruptible_ = <R, E, A, R1>(
+export function makeInterruptible_<R, E, A, R1>(
    acquire: T.Task<R, E, A>,
    release: (a: A) => T.Task<R1, never, unknown>
-): Managed<R & R1, E, A> =>
-   onExitFirst_(fromTask(acquire), (e) => {
+): Managed<R & R1, E, A> {
+   return onExitFirst_(fromTask(acquire), (e) => {
       switch (e._tag) {
          case "Failure": {
             return T.unit();
@@ -22,12 +22,15 @@ export const makeInterruptible_ = <R, E, A, R1>(
          }
       }
    });
+}
 
 /**
  * Lifts a `Task<R, E, A>` into `Managed<R, E, A>` with a release action.
  * The acquire action will be performed interruptibly, while release
  * will be performed uninterruptibly.
  */
-export const makeInterruptible = <A, R1>(release: (a: A) => T.Task<R1, never, unknown>) => <R, E>(
-   acquire: T.Task<R, E, A>
-): Managed<R & R1, E, A> => makeInterruptible_(acquire, release);
+export function makeInterruptible<A, R1>(
+   release: (a: A) => T.Task<R1, never, unknown>
+): <R, E>(acquire: T.Task<R, E, A>) => Managed<R & R1, E, A> {
+   return (acquire) => makeInterruptible_(acquire, release);
+}

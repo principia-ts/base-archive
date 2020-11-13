@@ -18,7 +18,7 @@ import type { URI, V } from "./model";
  * @category Traversable
  * @since 1.0.0
  */
-export const getTraversableWithindex = <K>(O: Ord<K>): P.TraversableWithIndex<[URI], V & HKT.Fix<"K", K>> => {
+export function getTraversableWithindex<K>(O: Ord<K>): P.TraversableWithIndex<[URI], V & HKT.Fix<"K", K>> {
    type CK = V & HKT.Fix<"K", K>;
 
    const keysO = keys(O);
@@ -46,4 +46,4 @@ export const getTraversableWithindex = <K>(O: Ord<K>): P.TraversableWithIndex<[U
       traverseWithIndex_,
       traverseWithIndex: (G) => (f) => (ta) => traverseWithIndex_(G)(ta, f)
    });
-};
+}

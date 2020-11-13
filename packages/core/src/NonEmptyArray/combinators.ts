@@ -7,32 +7,36 @@ import type { Option } from "../Option";
 import type { ReadonlyRecord } from "../Record";
 import type { NonEmptyArray } from "./model";
 
-export const head = <A>(as: NonEmptyArray<A>): A => as[0];
+export function head<A>(as: NonEmptyArray<A>): A {
+   return as[0];
+}
 
-export const tail = <A>(as: NonEmptyArray<A>): ReadonlyArray<A> => as.slice(1);
+export function tail<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
+   return as.slice(1);
+}
 
 export const reverse: <A>(as: NonEmptyArray<A>) => NonEmptyArray<A> = A.reverse as any;
 
-export const min = <A>(O: Ord<A>): ((as: NonEmptyArray<A>) => A) => {
+export function min<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
    const S = getMeetSemigroup(O);
    return (as) => as.reduce(S.combine_);
-};
+}
 
-export const max = <A>(O: Ord<A>): ((as: NonEmptyArray<A>) => A) => {
+export function max<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
    const S = getJoinSemigroup(O);
    return (as) => as.reduce(S.combine_);
-};
+}
 
 export function append_<A>(xs: ReadonlyArray<A>, ys: NonEmptyArray<A>): NonEmptyArray<A>;
 export function append_<A>(xs: NonEmptyArray<A>, ys: ReadonlyArray<A>): NonEmptyArray<A>;
 export function append_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
-   return A.append_(xs, ys);
+   return A.concat_(xs, ys);
 }
 
 export function append<A>(ys: NonEmptyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>;
 export function append<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>;
 export function append<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (xs) => A.append_(xs, ys);
+   return (xs) => A.concat_(xs, ys);
 }
 
 /**
@@ -77,11 +81,11 @@ export function group<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonE
  * @category Combinators
  * @since 1.0.0
  */
-export const groupSort = <A>(O: Ord<A>): ((as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>>) => {
+export function groupSort<A>(O: Ord<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
    const sortO = A.sort(O);
    const groupO = group(O);
    return (as) => groupO(sortO(as));
-};
+}
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -92,48 +96,62 @@ const _hasOwnProperty = Object.prototype.hasOwnProperty;
  * @category Combinators
  * @since 1.0.0
  */
-export const groupBy = <A>(f: (a: A) => string) => (as: ReadonlyArray<A>): ReadonlyRecord<string, NonEmptyArray<A>> => {
-   const r: Record<string, [A, ...ReadonlyArray<A>]> = {};
-   for (const a of as) {
-      const k = f(a);
-      if (_hasOwnProperty.call(r, k)) {
-         r[k].push(a);
-      } else {
-         r[k] = [a];
+export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => ReadonlyRecord<string, NonEmptyArray<A>> {
+   return (as) => {
+      const r: Record<string, [A, ...ReadonlyArray<A>]> = {};
+      for (const a of as) {
+         const k = f(a);
+         if (_hasOwnProperty.call(r, k)) {
+            r[k].push(a);
+         } else {
+            r[k] = [a];
+         }
       }
-   }
-   return r;
-};
+      return r;
+   };
+}
 
 /**
  * Get the last elements of a non empty array
  *
  * @since 1.0.0
  */
-export const last = <A>(as: NonEmptyArray<A>): A => as[as.length - 1];
+export function last<A>(as: NonEmptyArray<A>): A {
+   return as[as.length - 1];
+}
 
 /**
  * Get all but the last element of a non empty array, creating a new array.
  *
  * @since 1.0.0
  */
-export const init = <A>(as: NonEmptyArray<A>): ReadonlyArray<A> => as.slice(0, -1);
+export function init<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
+   return as.slice(0, -1);
+}
 
 /**
  * @category Combinators
  * @since 1.0.0
  */
-export const sort = <A>(O: Ord<A>) => (as: NonEmptyArray<A>): NonEmptyArray<A> => A.sort(O)(as) as any;
+export function sort<A>(O: Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<A> {
+   return (as) => A.sort(O)(as) as any;
+}
 
-export const insertAt_ = <A>(as: NonEmptyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> =>
-   A.insertAt_(as, i, a) as any;
+export function insertAt_<A>(as: NonEmptyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> {
+   return A.insertAt_(as, i, a) as any;
+}
 
-export const insertAt = <A>(i: number, a: A) => (as: NonEmptyArray<A>): Option<NonEmptyArray<A>> => insertAt_(as, i, a);
+export function insertAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
+   return (as) => insertAt_(as, i, a);
+}
 
-export const updateAt_ = <A>(as: NonEmptyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> =>
-   A.updateAt_(as, i, a) as any;
+export function updateAt_<A>(as: NonEmptyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> {
+   return A.updateAt_(as, i, a) as any;
+}
 
-export const updateAt = <A>(i: number, a: A) => (as: NonEmptyArray<A>): Option<NonEmptyArray<A>> => updateAt_(as, i, a);
+export function updateAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
+   return (as) => updateAt_(as, i, a);
+}
 
 /**
  * Apply a function to the element at the specified index, creating a new array, or returning `None` if the index is out
@@ -141,8 +159,9 @@ export const updateAt = <A>(i: number, a: A) => (as: NonEmptyArray<A>): Option<N
  *
  * @since 1.0.0
  */
-export const modifyAt_ = <A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): Option<NonEmptyArray<A>> =>
-   A.modifyAt_(as, i, f) as any;
+export function modifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): Option<NonEmptyArray<A>> {
+   return A.modifyAt_(as, i, f) as any;
+}
 
 /**
  * Apply a function to the element at the specified index, creating a new array, or returning `None` if the index is out
@@ -150,8 +169,9 @@ export const modifyAt_ = <A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): O
  *
  * @since 1.0.0
  */
-export const modifyAt = <A>(i: number, f: (a: A) => A) => (as: NonEmptyArray<A>): Option<NonEmptyArray<A>> =>
-   modifyAt_(as, i, f);
+export function modifyAt<A>(i: number, f: (a: A) => A): (as: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
+   return (as) => modifyAt_(as, i, f);
+}
 
 /**
  * @since 1.0.0

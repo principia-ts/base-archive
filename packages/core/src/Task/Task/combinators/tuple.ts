@@ -21,13 +21,15 @@ export type TupleA<T extends NonEmptyArray<Task<any, any, any>>> = {
    [K in keyof T]: [T[K]] extends [Task<any, any, infer A>] ? A : never;
 };
 
-export const tuple = <A extends NonEmptyArray<Task<any, any, any>>>(...t: A): Task<TupleR<A>, TupleE<A>, TupleA<A>> =>
-   foreach_(t, identity) as any;
+export function tuple<A extends NonEmptyArray<Task<any, any, any>>>(...t: A): Task<TupleR<A>, TupleE<A>, TupleA<A>> {
+   return foreach_(t, identity) as any;
+}
 
-export const tuplePar = <A extends NonEmptyArray<Task<any, any, any>>>(
-   ...t: A
-): Task<TupleR<A>, TupleE<A>, TupleA<A>> => foreachPar_(t, identity) as any;
+export function tuplePar<A extends NonEmptyArray<Task<any, any, any>>>(...t: A): Task<TupleR<A>, TupleE<A>, TupleA<A>> {
+   return foreachPar_(t, identity) as any;
+}
 
-export const tupleParN = (n: number) => <A extends NonEmptyArray<Task<any, any, any>>>(
-   ...t: A
-): Task<TupleR<A>, TupleE<A>, TupleA<A>> => foreachParN_(n)(t, identity) as any;
+export function tupleParN(n: number) {
+   return <A extends NonEmptyArray<Task<any, any, any>>>(...t: A): Task<TupleR<A>, TupleE<A>, TupleA<A>> =>
+      foreachParN_(n)(t, identity) as any;
+}

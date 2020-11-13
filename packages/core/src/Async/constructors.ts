@@ -16,31 +16,47 @@ import {
  * -------------------------------------------
  */
 
-export const succeed = <A>(a: A): Async<unknown, never, A> => new SucceedInstruction(a);
+export function succeed<A>(a: A): Async<unknown, never, A> {
+   return new SucceedInstruction(a);
+}
 
-export const fail = <E>(e: E): Async<unknown, E, never> => new FailInstruction(e);
+export function fail<E>(e: E): Async<unknown, E, never> {
+   return new FailInstruction(e);
+}
 
-export const done = <E, A>(exit: AsyncExit<E, A>): Async<unknown, E, A> => new DoneInstruction(exit);
+export function done<E, A>(exit: AsyncExit<E, A>): Async<unknown, E, A> {
+   return new DoneInstruction(exit);
+}
 
-export const suspend = <R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> => new SuspendInstruction(factory);
+export function suspend<R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> {
+   return new SuspendInstruction(factory);
+}
 
-export const unfailable = <A>(
-   promise: (onInterrupt: (f: () => void) => void) => Promise<A>
-): Async<unknown, never, A> => new PromiseInstruction(promise, () => undefined as never);
+export function unfailable<A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>): Async<unknown, never, A> {
+   return new PromiseInstruction(promise, () => undefined as never);
+}
 
-export const promise_ = <E, A>(
+export function promise_<E, A>(
    promise: (onInterrupt: (f: () => void) => void) => Promise<A>,
    onError: (u: unknown) => E
-): Async<unknown, E, A> => new PromiseInstruction(promise, onError);
+): Async<unknown, E, A> {
+   return new PromiseInstruction(promise, onError);
+}
 
-export const promise = <E>(onError: (u: unknown) => E) => <A>(
-   promise: (onInterrupt: (f: () => void) => void) => Promise<A>
-) => new PromiseInstruction(promise, onError);
+export function promise<E>(
+   onError: (u: unknown) => E
+): <A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>) => PromiseInstruction<E, A> {
+   return (promise) => new PromiseInstruction(promise, onError);
+}
 
-export const total = <A>(thunk: () => A): Async<unknown, never, A> => new TotalInstruction(thunk);
+export function total<A>(thunk: () => A): Async<unknown, never, A> {
+   return new TotalInstruction(thunk);
+}
 
-export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> =>
-   new PartialInstruction(thunk, onThrow);
+export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
+   return new PartialInstruction(thunk, onThrow);
+}
 
-export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A): Async<unknown, E, A> =>
-   partial_(thunk, onThrow);
+export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => Async<unknown, E, A> {
+   return (thunk) => partial_(thunk, onThrow);
+}

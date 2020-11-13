@@ -10,16 +10,20 @@ import type { StepFunction } from "./Decision";
 import { done } from "./Decision";
 import { Schedule, ScheduleExecutor } from "./model";
 
-export const makeExecutor = <R, I, O>(
+export function makeExecutor<R, I, O>(
    next: (input: I) => T.Task<R, Option<never>, O>,
    last: T.EIO<Error, O>,
    reset: T.IO<void>
-): ScheduleExecutor<R, I, O> => new ScheduleExecutor(next, last, reset);
+): ScheduleExecutor<R, I, O> {
+   return new ScheduleExecutor(next, last, reset);
+}
 
-export const makeSchedule = <R, I, O>(step: StepFunction<R, I, O>): Schedule<R, I, O> => new Schedule(step);
+export function makeSchedule<R, I, O>(step: StepFunction<R, I, O>): Schedule<R, I, O> {
+   return new Schedule(step);
+}
 
-export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecutor<HasClock & R, I, O>> =>
-   pipe(
+export function driver<R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecutor<HasClock & R, I, O>> {
+   return pipe(
       XR.makeRef([O.none<O>(), schedule.step] as const),
       T.map((ref) => {
          const reset = ref.set([O.none(), schedule.step]);
@@ -63,3 +67,4 @@ export const driver = <R, I, O>(schedule: Schedule<R, I, O>): T.IO<ScheduleExecu
          return new ScheduleExecutor(next, last, reset);
       })
    );
+}

@@ -11,9 +11,13 @@ import { chain_ } from "./monad";
  * -------------------------------------------
  */
 
-export const alt_ = <E, A, G>(fa: EIO<E, A>, that: () => EIO<G, A>): EIO<E | G, A> => chain_(fa, that);
+export function alt_<E, A, G>(fa: EIO<E, A>, that: () => EIO<G, A>): EIO<E | G, A> {
+   return chain_(fa, that);
+}
 
-export const alt = <A, G>(that: () => EIO<G, A>) => <E>(fa: EIO<E, A>): EIO<E | G, A> => alt_(fa, that);
+export function alt<A, G>(that: () => EIO<G, A>): <E>(fa: EIO<E, A>) => EIO<G | E, A> {
+   return (fa) => alt_(fa, that);
+}
 
 /**
  * @category Alt

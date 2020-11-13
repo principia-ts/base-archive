@@ -9,7 +9,7 @@ import { isSubset } from "./guards";
  * -------------------------------------------
  */
 
-export const getEq = <A>(E: Eq<A>): Eq<ReadonlySet<A>> => {
+export function getEq<A>(E: Eq<A>): Eq<ReadonlySet<A>> {
    const subsetE = isSubset(E);
    return fromEquals((x, y) => subsetE(x)(y) && subsetE(y)(x));
-};
+}

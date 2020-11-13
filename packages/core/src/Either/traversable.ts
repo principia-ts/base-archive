@@ -1,4 +1,4 @@
-import type * as P from "@principia/prelude";
+import * as P from "@principia/prelude";
 import { pureF } from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
@@ -25,7 +25,7 @@ import type { URI, V } from "./model";
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<[URI], V> = (F) => {
+export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (F) => {
    const pure = pureF(F);
    return (ta, f) =>
       isLeft(ta)
@@ -34,7 +34,7 @@ export const traverse_: P.TraverseFn_<[URI], V> = (F) => {
               f(ta.right),
               F.map((b) => right(b))
            );
-};
+});
 
 /**
  * ```haskell

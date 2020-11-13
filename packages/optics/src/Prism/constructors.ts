@@ -15,10 +15,12 @@ import type { Prism } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const id = <S>(): Prism<S, S> => ({
-   getOption: O.some,
-   reverseGet: identity
-});
+export function id<S>(): Prism<S, S> {
+   return {
+      getOption: O.some,
+      reverseGet: identity
+   };
+}
 
 /**
  * @category Constructors

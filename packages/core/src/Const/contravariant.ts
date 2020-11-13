@@ -10,9 +10,13 @@ import type { Const, URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const contramap_ = <E, A, B>(fa: Const<E, A>, _: (b: B) => A): Const<E, B> => unsafeCoerce(fa);
+export function contramap_<E, A, B>(fa: Const<E, A>, _: (b: B) => A): Const<E, B> {
+   return unsafeCoerce(fa);
+}
 
-export const contramap = <A, B>(_: (b: B) => A) => <E>(fa: Const<E, A>): Const<E, B> => unsafeCoerce(fa);
+export function contramap<A, B>(_: (b: B) => A): <E>(fa: Const<E, A>) => Const<E, B> {
+   return unsafeCoerce;
+}
 
 /**
  * @category Contravariant

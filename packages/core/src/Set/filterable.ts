@@ -20,10 +20,9 @@ interface Next<A> {
 /**
  * @since 1.0.0
  */
-export const filter_: {
-   <A, B extends A>(fa: ReadonlySet<A>, refinement: Refinement<A, B>): ReadonlySet<B>;
-   <A>(fa: ReadonlySet<A>, predicate: Predicate<A>): ReadonlySet<A>;
-} = <A>(fa: ReadonlySet<A>, predicate: Predicate<A>) => {
+export function filter_<A, B extends A>(fa: ReadonlySet<A>, refinement: Refinement<A, B>): ReadonlySet<B>;
+export function filter_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>): ReadonlySet<A>;
+export function filter_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
    const values = fa.values();
    let e: Next<A>;
    const r = new Set<A>();
@@ -34,23 +33,17 @@ export const filter_: {
       }
    }
    return r;
-};
+}
 
 /**
  * @since 1.0.0
  */
-export const filter: {
-   <A, B extends A>(refinement: Refinement<A, B>): (fa: ReadonlySet<A>) => ReadonlySet<B>;
-   <A>(predicate: Predicate<A>): (fa: ReadonlySet<A>) => ReadonlySet<A>;
-} = <A>(predicate: Predicate<A>) => (fa: ReadonlySet<A>) => filter_(fa, predicate);
-
-/**
- * @since 1.0.0
- */
-export const partition_: {
-   <A, B extends A>(fa: ReadonlySet<A>, refinement: Refinement<A, B>): Separated<ReadonlySet<A>, ReadonlySet<B>>;
-   <A>(fa: ReadonlySet<A>, predicate: Predicate<A>): Separated<ReadonlySet<A>, ReadonlySet<A>>;
-} = <A>(fa: ReadonlySet<A>, predicate: Predicate<A>) => {
+export function partition_<A, B extends A>(
+   fa: ReadonlySet<A>,
+   refinement: Refinement<A, B>
+): Separated<ReadonlySet<A>, ReadonlySet<B>>;
+export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>): Separated<ReadonlySet<A>, ReadonlySet<A>>;
+export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
    const values = fa.values();
    let e: Next<A>;
    const right = new Set<A>();
@@ -64,57 +57,67 @@ export const partition_: {
       }
    }
    return { left, right };
-};
+}
 
 /**
  * @since 1.0.0
  */
-export const partition: {
-   <A, B extends A>(refinement: Refinement<A, B>): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<B>>;
-   <A>(predicate: Predicate<A>): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<A>>;
-} = <A>(predicate: Predicate<A>) => (fa: ReadonlySet<A>) => partition_(fa, predicate);
+export function partition<A, B extends A>(
+   refinement: Refinement<A, B>
+): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<B>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<A>>;
+export function partition<A>(
+   predicate: Predicate<A>
+): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<A>> {
+   return (fa) => partition_(fa, predicate);
+}
 
 /**
  * @since 1.0.0
  */
-export const mapEither_ = <B, C>(EB: Eq<B>, EC: Eq<C>) => <A>(
-   set: ReadonlySet<A>,
-   f: (a: A) => Either<B, C>
-): Separated<ReadonlySet<B>, ReadonlySet<C>> => {
-   const values = set.values();
-   let e: Next<A>;
-   const left = new Set<B>();
-   const right = new Set<C>();
-   const hasB = elem(EB);
-   const hasC = elem(EC);
-   while (!(e = values.next()).done) {
-      const v = f(e.value);
-      switch (v._tag) {
-         case "Left":
-            if (!hasB(v.left)(left)) {
-               left.add(v.left);
-            }
-            break;
-         case "Right":
-            if (!hasC(v.right)(right)) {
-               right.add(v.right);
-            }
-            break;
+export function mapEither_<B, C>(EB: Eq<B>, EC: Eq<C>) {
+   return <A>(set: ReadonlySet<A>, f: (a: A) => Either<B, C>): Separated<ReadonlySet<B>, ReadonlySet<C>> => {
+      const values = set.values();
+      let e: Next<A>;
+      const left = new Set<B>();
+      const right = new Set<C>();
+      const hasB = elem(EB);
+      const hasC = elem(EC);
+      while (!(e = values.next()).done) {
+         const v = f(e.value);
+         switch (v._tag) {
+            case "Left":
+               if (!hasB(v.left)(left)) {
+                  left.add(v.left);
+               }
+               break;
+            case "Right":
+               if (!hasC(v.right)(right)) {
+                  right.add(v.right);
+               }
+               break;
+         }
       }
-   }
-   return { left, right };
-};
+      return { left, right };
+   };
+}
 
 /**
  * @since 1.0.0
  */
-export const mapEither = <B, C>(EB: Eq<B>, EC: Eq<C>) => <A>(f: (a: A) => Either<B, C>) => (set: ReadonlySet<A>) =>
-   mapEither_(EB, EC)(set, f);
+export function mapEither<B, C>(
+   EB: Eq<B>,
+   EC: Eq<C>
+): <A>(f: (a: A) => Either<B, C>) => (set: ReadonlySet<A>) => Separated<ReadonlySet<B>, ReadonlySet<C>> {
+   return (f) => (set) => mapEither_(EB, EC)(set, f);
+}
 
 /**
  * @since 1.0.0
  */
-export const mapOption_ = <B>(E: Eq<B>) => {
+export function mapOption_<B>(E: Eq<B>) {
    const elemE_ = elem_(E);
    return <A>(fa: ReadonlySet<A>, f: (a: A) => Option<B>) => {
       const r: Set<B> = new Set();
@@ -126,12 +129,12 @@ export const mapOption_ = <B>(E: Eq<B>) => {
       });
       return r;
    };
-};
+}
 
 /**
  * @since 1.0.0
  */
-export const mapOption = <B>(E: Eq<B>) => {
+export function mapOption<B>(E: Eq<B>) {
    const filterMapE_ = mapOption_(E);
    return <A>(f: (a: A) => Option<B>) => (fa: ReadonlySet<A>) => filterMapE_(fa, f);
-};
+}

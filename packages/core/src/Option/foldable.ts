@@ -16,43 +16,54 @@ import type { Option, URI, V } from "./model";
  * reduce_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export const reduce_ = <A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B => (isNone(fa) ? b : f(b, fa.value));
+export function reduce_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
+   return isNone(fa) ? b : f(b, fa.value);
+}
 
 /**
  * ```haskell
  * reduce :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export const reduce = <A, B>(b: B, f: (b: B, a: A) => B) => (fa: Option<A>): B => reduce_(fa, b, f);
+export function reduce<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
+   return (fa) => reduce_(fa, b, f);
+}
 
 /**
  * ```haskell
  * reduceRight_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export const reduceRight_ = <A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B => (isNone(fa) ? b : f(fa.value, b));
+export function reduceRight_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
+   return isNone(fa) ? b : f(fa.value, b);
+}
 
 /**
  * ```haskell
  * reduceRight :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export const reduceRight = <A, B>(b: B, f: (a: A, b: B) => B) => (fa: Option<A>): B => reduceRight_(fa, b, f);
+export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
+   return (fa) => reduceRight_(fa, b, f);
+}
 
 /**
  * ```haskell
  * foldMap_ :: (Foldable f, Monoid m) => Instance m b -> (f a, (a -> b)) -> b
  * ```
  */
-export const foldMap_ = <M>(M: Monoid<M>) => <A>(fa: Option<A>, f: (a: A) => M): M =>
-   isNone(fa) ? M.nat : f(fa.value);
+export function foldMap_<M>(M: Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) => M {
+   return (fa, f) => (isNone(fa) ? M.nat : f(fa.value));
+}
 
 /**
  * ```haskell
  * foldMap :: (Foldable f, Monoid m) => Instance m b -> (a -> b) -> f a -> b
  * ```
  */
-export const foldMap = <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: Option<A>): M => foldMap_(M)(fa, f);
+export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A>) => M {
+   return (f) => (fa) => foldMap_(M)(fa, f);
+}
 
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
    reduce_,

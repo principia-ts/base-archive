@@ -34,7 +34,9 @@ export const both_: <A, B>(fa: IO<A>, fb: IO<B>) => IO<readonly [A, B]> = X.both
  * @category Apply
  * @since 1.0.0
  */
-export const both = <B>(fb: IO<B>) => <A>(fa: IO<A>): IO<readonly [A, B]> => both_(fa, fb);
+export function both<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<readonly [A, B]> {
+   return (fa) => both_(fa, fb);
+}
 
 /**
  * ```haskell

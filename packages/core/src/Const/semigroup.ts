@@ -13,4 +13,6 @@ import type { Const } from "./model";
  * @category Semigroup
  * @since 1.0.0
  */
-export const getSemigroup: <E, A>(S: Semigroup<E>) => Semigroup<Const<E, A>> = identity as any;
+export function getSemigroup<E, A>(S: Semigroup<E>): Semigroup<Const<E, A>> {
+   return identity(S) as any;
+}

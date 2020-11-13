@@ -8,6 +8,10 @@ export const deunion: <T extends Either<any, any>>(
    fa: T
 ) => [T] extends [Either<infer E, infer A>] ? Either<E, A> : T = identity as any;
 
-export const widenE = <E1>() => <E, A>(fa: Either<E, A>): Either<E | E1, A> => fa;
+export function widenE<E1>(): <E, A>(fa: Either<E, A>) => Either<E1 | E, A> {
+   return identity;
+}
 
-export const widenA = <A1>() => <E, A>(fa: Either<E, A>): Either<E, A | A1> => fa;
+export function widenA<A1>(): <E, A>(fa: Either<E, A>) => Either<E, A1 | A> {
+   return identity;
+}

@@ -28,10 +28,12 @@ export const asLens: <S, A>(sa: Iso<S, A>) => Lens<S, A> = _.isoAsLens;
  * @category Converters
  * @since 1.0.0
  */
-export const asPrism = <S, A>(sa: Iso<S, A>): Prism<S, A> => ({
-   getOption: flow(sa.get, O.some),
-   reverseGet: sa.reverseGet
-});
+export function asPrism<S, A>(sa: Iso<S, A>): Prism<S, A> {
+   return {
+      getOption: flow(sa.get, O.some),
+      reverseGet: sa.reverseGet
+   };
+}
 
 /**
  * View an `Iso` as a `Optional`
@@ -47,6 +49,8 @@ export const asOptional: <S, A>(sa: Iso<S, A>) => Optional<S, A> = _.isoAsOption
  * @category Converters
  * @since 1.0.0
  */
-export const asTraversal = <S, A>(sa: Iso<S, A>): Traversal<S, A> => ({
-   modifyF: _.implementModifyF<S, A>()((_) => (F) => (f) => (s) => F.map_(f(sa.get(s)), (a) => sa.reverseGet(a)))
-});
+export function asTraversal<S, A>(sa: Iso<S, A>): Traversal<S, A> {
+   return {
+      modifyF: _.implementModifyF<S, A>()((_) => (F) => (f) => (s) => F.map_(f(sa.get(s)), (a) => sa.reverseGet(a)))
+   };
+}

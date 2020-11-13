@@ -11,7 +11,9 @@ import { GiveInstruction, ReadInstruction, SucceedInstruction } from "./model";
  * @category MonadEnv
  * @since 1.0.0
  */
-export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => new ReadInstruction((_: R) => new SucceedInstruction(f(_)));
+export function asks<R, A>(f: (_: R) => A): RIO<R, A> {
+   return new ReadInstruction((_: R) => new SucceedInstruction(f(_)));
+}
 
 /**
  * ```haskell
@@ -23,7 +25,9 @@ export const asks = <R, A>(f: (_: R) => A): RIO<R, A> => new ReadInstruction((_:
  * @category MonadEnv
  * @since 1.0.0
  */
-export const asksM = <Q, R, E, A>(f: (r: Q) => Task<R, E, A>): Task<R & Q, E, A> => new ReadInstruction(f);
+export function asksM<Q, R, E, A>(f: (r: Q) => Task<R, E, A>): Task<R & Q, E, A> {
+   return new ReadInstruction(f);
+}
 
 /**
  * ```haskell
@@ -38,7 +42,9 @@ export const asksM = <Q, R, E, A>(f: (r: Q) => Task<R, E, A>): Task<R & Q, E, A>
  * @category MonadEnv
  * @since 1.0.0
  */
-export const giveAll_ = <R, E, A>(ma: Task<R, E, A>, r: R): EIO<E, A> => new GiveInstruction(ma, r);
+export function giveAll_<R, E, A>(ma: Task<R, E, A>, r: R): EIO<E, A> {
+   return new GiveInstruction(ma, r);
+}
 
 /**
  * ```haskell
@@ -53,7 +59,9 @@ export const giveAll_ = <R, E, A>(ma: Task<R, E, A>, r: R): EIO<E, A> => new Giv
  * @category MonadEnv
  * @since 1.0.0
  */
-export const giveAll = <R>(r: R) => <E, A>(ma: Task<R, E, A>): Task<unknown, E, A> => giveAll_(ma, r);
+export function giveAll<R>(r: R): <E, A>(ma: Task<R, E, A>) => Task<unknown, E, A> {
+   return (ma) => giveAll_(ma, r);
+}
 
 /**
  * ```haskell
@@ -68,7 +76,9 @@ export const giveAll = <R>(r: R) => <E, A>(ma: Task<R, E, A>): Task<unknown, E, 
  * @category MonadEnv
  * @since 1.0.0
  */
-export const gives_ = <R0, R, E, A>(ma: Task<R, E, A>, f: (r0: R0) => R) => asksM((r0: R0) => giveAll_(ma, f(r0)));
+export function gives_<R0, R, E, A>(ma: Task<R, E, A>, f: (r0: R0) => R) {
+   return asksM((r0: R0) => giveAll_(ma, f(r0)));
+}
 
 /**
  * ```haskell
@@ -83,7 +93,9 @@ export const gives_ = <R0, R, E, A>(ma: Task<R, E, A>, f: (r0: R0) => R) => asks
  * @category MonadEnv
  * @since 1.0.0
  */
-export const gives = <R0, R>(f: (r0: R0) => R) => <E, A>(ma: Task<R, E, A>): Task<R0, E, A> => gives_(ma, f);
+export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Task<R, E, A>) => Task<R0, E, A> {
+   return (ma) => gives_(ma, f);
+}
 
 /**
  * ```haskell
@@ -98,8 +110,9 @@ export const gives = <R0, R>(f: (r0: R0) => R) => <E, A>(ma: Task<R, E, A>): Tas
  * @category MonadEnv
  * @since 1.0.0
  */
-export const give_ = <E, A, R = unknown, R0 = unknown>(ma: Task<R & R0, E, A>, r: R): Task<R0, E, A> =>
-   gives_(ma, (r0) => ({ ...r0, ...r }));
+export function give_<E, A, R = unknown, R0 = unknown>(ma: Task<R & R0, E, A>, r: R): Task<R0, E, A> {
+   return gives_(ma, (r0) => ({ ...r0, ...r }));
+}
 
 /**
  * ```haskell
@@ -114,6 +127,10 @@ export const give_ = <E, A, R = unknown, R0 = unknown>(ma: Task<R & R0, E, A>, r
  * @category MonadEnv
  * @since 1.0.0
  */
-export const give = <R = unknown>(r: R) => <E, A, R0 = unknown>(ma: Task<R & R0, E, A>): Task<R0, E, A> => give_(ma, r);
+export function give<R = unknown>(r: R): <E, A, R0 = unknown>(ma: Task<R & R0, E, A>) => Task<R0, E, A> {
+   return (ma) => give_(ma, r);
+}
 
-export const ask = <R>(): Task<R, never, R> => asks((_: R) => _);
+export function ask<R>(): Task<R, never, R> {
+   return asks((_: R) => _);
+}

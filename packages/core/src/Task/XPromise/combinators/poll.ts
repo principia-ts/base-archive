@@ -8,8 +8,8 @@ import type { XPromise } from "../model";
  * Checks for completion of this Promise. Returns the result effect if this
  * promise has already been completed or a `None` otherwise.
  */
-export const poll = <E, A>(promise: XPromise<E, A>): IO<Option<EIO<E, A>>> =>
-   T.total(() => {
+export function poll<E, A>(promise: XPromise<E, A>): IO<Option<EIO<E, A>>> {
+   return T.total(() => {
       const state = promise.state.get;
 
       switch (state._tag) {
@@ -21,3 +21,4 @@ export const poll = <E, A>(promise: XPromise<E, A>): IO<Option<EIO<E, A>>> =>
          }
       }
    });
+}

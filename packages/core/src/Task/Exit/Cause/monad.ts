@@ -10,8 +10,8 @@ import type { Cause } from "./model";
  * -------------------------------------------
  */
 
-export const chainSafe_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<unknown, never, Cause<D>> =>
-   Sy.gen(function* (_) {
+export function chainSafe_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<unknown, never, Cause<D>> {
+   return Sy.gen(function* (_) {
       switch (fa._tag) {
          case "Empty":
             return empty;
@@ -27,6 +27,7 @@ export const chainSafe_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<u
             return both(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
       }
    });
+}
 
 /**
  * ```haskell
@@ -38,9 +39,9 @@ export const chainSafe_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<u
  * @category Monad
  * @since 1.0.0
  */
-export const chain_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> => {
+export function chain_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
    return Sy.runIO(chainSafe_(fa, f));
-};
+}
 
 /**
  * ```haskell
@@ -52,7 +53,9 @@ export const chain_ = <E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> => {
  * @category Monad
  * @since 1.0.0
  */
-export const chain = <E, D>(f: (e: E) => Cause<D>) => (fa: Cause<E>) => chain_(fa, f);
+export function chain<E, D>(f: (e: E) => Cause<D>): (fa: Cause<E>) => Cause<D> {
+   return (fa) => chain_(fa, f);
+}
 
 /**
  * ```haskell
@@ -64,4 +67,6 @@ export const chain = <E, D>(f: (e: E) => Cause<D>) => (fa: Cause<E>) => chain_(f
  * @category Monad
  * @since 1.0.0
  */
-export const flatten = <E>(ffa: Cause<Cause<E>>) => chain_(ffa, identity);
+export function flatten<E>(ffa: Cause<Cause<E>>): Cause<E> {
+   return chain_(ffa, identity);
+}

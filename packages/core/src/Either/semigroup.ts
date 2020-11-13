@@ -21,14 +21,14 @@ import { isLeft } from "./guards";
  * @category Instances
  * @since 1.0.0
  */
-export const getSemigroup = <E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> => {
+export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> {
    const combine_: P.CombineFn_<Either<E, A>> = (x, y) =>
       isLeft(y) ? x : isLeft(x) ? y : right(S.combine_(x.right, y.right));
    return {
       combine_,
       combine: (y) => (x) => combine_(x, y)
    };
-};
+}
 
 /**
  * ```haskell
@@ -41,11 +41,11 @@ export const getSemigroup = <E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>>
  * @category Instances
  * @since 1.0.0
  */
-export const getApplySemigroup = <E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> => {
+export function getApplySemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> {
    const combine_ = (x: Either<E, A>, y: Either<E, A>) =>
       isLeft(y) ? y : isLeft(x) ? x : right(S.combine_(x.right, y.right));
    return {
       combine_,
       combine: (y) => (x) => combine_(x, y)
    };
-};
+}

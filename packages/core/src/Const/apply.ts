@@ -16,7 +16,7 @@ import type { URI, V } from "./model";
  * @category Apply
  * @since 1.0.0
  */
-export const getApply = <E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<"E", E>> => {
+export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<"E", E>> {
    type CE = V & HKT.Fix<"E", E>;
 
    const ap_: P.ApFn_<[URI], CE> = (fab, fa) => make(S.combine_(fab, fa));
@@ -31,4 +31,4 @@ export const getApply = <E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<"E", 
       mapBoth_: mapBoth_,
       mapBoth: (fb, f) => (fa) => mapBoth_(fa, fb, f)
    });
-};
+}

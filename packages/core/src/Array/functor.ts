@@ -19,14 +19,14 @@ import type { URI, V } from "./model";
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export const mapWithIndex_ = <A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): ReadonlyArray<B> => {
+export function mapWithIndex_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): ReadonlyArray<B> {
    const len = fa.length;
    const bs = new Array(len);
    for (let i = 0; i < len; i++) {
       bs[i] = f(i, fa[i]);
    }
    return bs;
-};
+}
 
 /**
  * ```haskell
@@ -38,8 +38,9 @@ export const mapWithIndex_ = <A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) =
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export const mapWithIndex = <A, B>(f: (i: number, a: A) => B) => (fa: ReadonlyArray<A>): ReadonlyArray<B> =>
-   mapWithIndex_(fa, f);
+export function mapWithIndex<A, B>(f: (i: number, a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+   return (fa) => mapWithIndex_(fa, f);
+}
 
 /**
  * ```haskell
@@ -51,7 +52,9 @@ export const mapWithIndex = <A, B>(f: (i: number, a: A) => B) => (fa: ReadonlyAr
  * @category Functor
  * @since 1.0.0
  */
-export const map_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => B): ReadonlyArray<B> => mapWithIndex_(fa, (_, a) => f(a));
+export function map_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => B): ReadonlyArray<B> {
+   return mapWithIndex_(fa, (_, a) => f(a));
+}
 
 /**
  * ```haskell
@@ -63,7 +66,9 @@ export const map_ = <A, B>(fa: ReadonlyArray<A>, f: (a: A) => B): ReadonlyArray<
  * @category Functor
  * @since 1.0.0
  */
-export const map = <A, B>(f: (a: A) => B) => (fa: ReadonlyArray<A>): ReadonlyArray<B> => map_(fa, f);
+export function map<A, B>(f: (a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+   return (fa) => map_(fa, f);
+}
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
    map,

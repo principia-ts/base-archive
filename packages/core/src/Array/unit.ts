@@ -9,4 +9,6 @@
  * unit :: () -> Array ()
  * ```
  */
-export const unit = (): ReadonlyArray<void> => [undefined];
+export function unit(): ReadonlyArray<void> {
+   return [undefined];
+}

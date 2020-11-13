@@ -12,9 +12,11 @@ import type { Traversal } from "./model";
  * @category Constructors
  * @since 1.0.0
  */
-export const id = <S>(): Traversal<S, S> => ({
-   modifyF: implementModifyF<S, S>()((_) => (_) => (f) => f)
-});
+export function id<S>(): Traversal<S, S> {
+   return {
+      modifyF: implementModifyF<S, S>()((_) => (_) => (f) => f)
+   };
+}
 
 /**
  * Create a `Traversal` from a `Traversable`

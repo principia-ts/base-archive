@@ -13,7 +13,7 @@ import type { Filter, FreeMonoid, Map } from "./model";
  * @category Destructors
  * @since 1.0.0
  */
-export const fold_ = <A, R>(
+export function fold_<A, R>(
    f: FreeMonoid<A>,
    patterns: {
       Empty: () => R;
@@ -22,7 +22,7 @@ export const fold_ = <A, R>(
       Map: (fa: FreeMonoid<A>, f: (a: A) => A) => R;
       Combine: (l: FreeMonoid<A>, r: FreeMonoid<A>) => R;
    }
-): R => {
+): R {
    switch (f._tag) {
       case "Empty":
          return patterns.Empty();
@@ -35,19 +35,21 @@ export const fold_ = <A, R>(
       case "Map":
          return patterns.Map(f.fa, f.f);
    }
-};
+}
 
 /**
  * @category Destructors
  * @since 1.0.0
  */
-export const fold = <A, R>(patterns: {
+export function fold<A, R>(patterns: {
    Empty: () => R;
    Element: (value: A) => R;
    Filter: (fa: FreeMonoid<A>, f: Predicate<A>) => R;
    Map: (fa: FreeMonoid<A>, f: (a: A) => A) => R;
    Combine: (l: FreeMonoid<A>, r: FreeMonoid<A>) => R;
-}) => (f: FreeMonoid<A>): R => fold_(f, patterns);
+}): (f: FreeMonoid<A>) => R {
+   return (f) => fold_(f, patterns);
+}
 
 type Ops<A> = Filter<A> | Map<A>;
 
@@ -57,7 +59,7 @@ type Ops<A> = Filter<A> | Map<A>;
  * @category Destructors
  * @since 1.0.0
  */
-export const toArray = <A>(fs: FreeMonoid<A>): ReadonlyArray<A> => {
+export function toArray<A>(fs: FreeMonoid<A>): ReadonlyArray<A> {
    const as: Array<A> = [];
    let current: FreeMonoid<A> | undefined = fs;
    let stack: Stack<FreeMonoid<A>> | undefined = undefined;
@@ -123,4 +125,4 @@ export const toArray = <A>(fs: FreeMonoid<A>): ReadonlyArray<A> => {
    }
 
    return as;
-};
+}

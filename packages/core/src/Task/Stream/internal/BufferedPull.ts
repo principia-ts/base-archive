@@ -13,16 +13,18 @@ export class BufferedPull<R, E, A> {
    ) {}
 }
 
-export const ifNotDone = <R1, E1, A1>(fa: T.Task<R1, O.Option<E1>, A1>) => <R, E, A>(
-   self: BufferedPull<R, E, A>
-): T.Task<R1, O.Option<E1>, A1> =>
-   pipe(
-      self.done.get,
-      T.chain((b) => (b ? Pull.end : fa))
-   );
+export function ifNotDone<R1, E1, A1>(
+   fa: T.Task<R1, O.Option<E1>, A1>
+): <R, E, A>(self: BufferedPull<R, E, A>) => T.Task<R1, O.Option<E1>, A1> {
+   return (self) =>
+      pipe(
+         self.done.get,
+         T.chain((b) => (b ? Pull.end : fa))
+      );
+}
 
-export const update = <R, E, A>(self: BufferedPull<R, E, A>) =>
-   pipe(
+export function update<R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.Option<E>, void> {
+   return pipe(
       self,
       ifNotDone(
          pipe(
@@ -41,9 +43,10 @@ export const update = <R, E, A>(self: BufferedPull<R, E, A>) =>
          )
       )
    );
+}
 
-export const pullElement = <R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.Option<E>, A> =>
-   pipe(
+export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.Option<E>, A> {
+   return pipe(
       self,
       ifNotDone(
          pipe(
@@ -65,9 +68,10 @@ export const pullElement = <R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.O
          )
       )
    );
+}
 
-export const pullArray = <R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.Option<E>, ReadonlyArray<A>> =>
-   pipe(
+export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.Option<E>, ReadonlyArray<A>> {
+   return pipe(
       self,
       ifNotDone(
          pipe(
@@ -83,11 +87,15 @@ export const pullArray = <R, E, A>(self: BufferedPull<R, E, A>): T.Task<R, O.Opt
          )
       )
    );
+}
 
-export const make = <R, E, A>(pull: T.Task<R, O.Option<E>, ReadonlyArray<A>>) =>
-   pipe(
+export function make<R, E, A>(
+   pull: T.Task<R, O.Option<E>, ReadonlyArray<A>>
+): T.Task<unknown, never, BufferedPull<R, E, A>> {
+   return pipe(
       T.do,
       T.bindS("done", () => R.makeRef(false)),
       T.bindS("cursor", () => R.makeRef<[ReadonlyArray<A>, number]>([[], 0])),
       T.map(({ cursor, done }) => new BufferedPull(pull, done, cursor))
    );
+}

@@ -9,7 +9,7 @@ import * as T from "./_internal/task";
 import type { Queue } from "./model";
 import { XQueue } from "./model";
 
-export const unsafeOfferAll = <A>(q: MutableQueue<A>, as: readonly A[]): readonly A[] => {
+export function unsafeOfferAll<A>(q: MutableQueue<A>, as: readonly A[]): readonly A[] {
    const bs = Array.from(as);
 
    while (bs.length > 0) {
@@ -21,9 +21,9 @@ export const unsafeOfferAll = <A>(q: MutableQueue<A>, as: readonly A[]): readonl
    }
 
    return bs;
-};
+}
 
-export const unsafePollAll = <A>(q: MutableQueue<A>): readonly A[] => {
+export function unsafePollAll<A>(q: MutableQueue<A>): readonly A[] {
    const as = [] as A[];
 
    while (!q.isEmpty) {
@@ -32,15 +32,17 @@ export const unsafePollAll = <A>(q: MutableQueue<A>): readonly A[] => {
    }
 
    return as;
-};
+}
 
-export const unsafeCompletePromise = <A>(p: XPromise<never, A>, a: A) => XP.unsafeDone(T.pure(a))(p);
+export function unsafeCompletePromise<A>(p: XPromise<never, A>, a: A) {
+   return XP.unsafeDone(T.pure(a))(p);
+}
 
-export const unsafeRemove = <A>(q: MutableQueue<A>, a: A) => {
+export function unsafeRemove<A>(q: MutableQueue<A>, a: A) {
    unsafeOfferAll(q, unsafePollAll(q)).filter((b) => a !== b);
-};
+}
 
-export const unsafePollN = <A>(q: MutableQueue<A>, max: number): readonly A[] => {
+export function unsafePollN<A>(q: MutableQueue<A>, max: number): readonly A[] {
    let j = 0;
    const as = [] as A[];
 
@@ -57,13 +59,13 @@ export const unsafePollN = <A>(q: MutableQueue<A>, max: number): readonly A[] =>
    }
 
    return as;
-};
+}
 
-export const unsafeCompleteTakers = <A>(
+export function unsafeCompleteTakers<A>(
    strategy: Strategy<A>,
    queue: MutableQueue<A>,
    takers: MutableQueue<XPromise<never, A>>
-) => {
+) {
    let keepPolling = true;
 
    while (keepPolling && !queue.isEmpty) {
@@ -84,7 +86,7 @@ export const unsafeCompleteTakers = <A>(
          keepPolling = false;
       }
    }
-};
+}
 
 export interface Strategy<A> {
    readonly handleSurplus: (
@@ -256,14 +258,14 @@ export class SlidingStrategy<A> implements Strategy<A> {
    }
 }
 
-export const unsafeCreate = <A>(
+export function unsafeCreate<A>(
    queue: MutableQueue<A>,
    takers: MutableQueue<XPromise<never, A>>,
    shutdownHook: XPromise<never, void>,
    shutdownFlag: AtomicBoolean,
    strategy: Strategy<A>
-): Queue<A> =>
-   new (class extends XQueue<unknown, unknown, never, never, A, A> {
+): Queue<A> {
+   return new (class extends XQueue<unknown, unknown, never, never, A, A> {
       awaitShutdown: T.IO<void> = XP.await(shutdownHook);
 
       capacity: number = queue.capacity;
@@ -397,30 +399,39 @@ export const unsafeCreate = <A>(
             }
          });
    })();
+}
 
-export const createQueue = <A>(strategy: Strategy<A>) => (queue: MutableQueue<A>) =>
-   T.map_(XP.make<never, void>(), (p) => unsafeCreate(queue, new Unbounded(), p, new AtomicBoolean(false), strategy));
+export function createQueue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) => T.Task<unknown, never, Queue<A>> {
+   return (queue) =>
+      T.map_(XP.make<never, void>(), (p) =>
+         unsafeCreate(queue, new Unbounded(), p, new AtomicBoolean(false), strategy)
+      );
+}
 
-export const makeSliding = <A>(capacity: number): T.IO<Queue<A>> =>
-   T.chain_(
+export function makeSliding<A>(capacity: number): T.IO<Queue<A>> {
+   return T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new SlidingStrategy())
    );
+}
 
-export const makeUnbounded = <A>(): T.IO<Queue<A>> =>
-   T.chain_(
+export function makeUnbounded<A>(): T.IO<Queue<A>> {
+   return T.chain_(
       T.total(() => new Unbounded<A>()),
       createQueue(new DroppingStrategy())
    );
+}
 
-export const makeDropping = <A>(capacity: number): T.IO<Queue<A>> =>
-   T.chain_(
+export function makeDropping<A>(capacity: number): T.IO<Queue<A>> {
+   return T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new DroppingStrategy())
    );
+}
 
-export const makeBounded = <A>(capacity: number): T.IO<Queue<A>> =>
-   T.chain_(
+export function makeBounded<A>(capacity: number): T.IO<Queue<A>> {
+   return T.chain_(
       T.total(() => new Bounded<A>(capacity)),
       createQueue(new BackPressureStrategy())
    );
+}

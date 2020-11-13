@@ -5,30 +5,48 @@ import { Managed } from "./model";
 import { chain_ } from "./monad";
 import type { ReleaseMap } from "./ReleaseMap";
 
-export const ask = <R>(): Managed<R, never, R> => fromTask(T.ask<R>());
+export function ask<R>(): Managed<R, never, R> {
+   return fromTask(T.ask<R>());
+}
 
-export const asks = <R, A>(f: (r: R) => A): Managed<R, never, A> => map_(ask<R>(), f);
+export function asks<R, A>(f: (r: R) => A): Managed<R, never, A> {
+   return map_(ask<R>(), f);
+}
 
-export const asksM = <R0, R, E, A>(f: (r: R0) => T.Task<R, E, A>): Managed<R0 & R, E, A> => mapM_(ask<R0>(), f);
+export function asksM<R0, R, E, A>(f: (r: R0) => T.Task<R, E, A>): Managed<R0 & R, E, A> {
+   return mapM_(ask<R0>(), f);
+}
 
-export const asksManaged = <R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> => chain_(ask<R0>(), f);
+export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
+   return chain_(ask<R0>(), f);
+}
 
 /**
  * Modify the environment required to run a Managed
  */
-export const gives_ = <R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> =>
-   new Managed(T.asksM(([r0, rm]: readonly [R0, ReleaseMap]) => T.giveAll_(ma.task, [f(r0), rm])));
+export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> {
+   return new Managed(T.asksM(([r0, rm]: readonly [R0, ReleaseMap]) => T.giveAll_(ma.task, [f(r0), rm])));
+}
 
 /**
  * Modify the environment required to run a Managed
  */
-export const gives = <R0, R>(f: (r0: R0) => R) => <E, A>(ma: Managed<R, E, A>): Managed<R0, E, A> => gives_(ma, f);
+export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => Managed<R0, E, A> {
+   return (ma) => gives_(ma, f);
+}
 
-export const giveAll_ = <R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> => gives_(ma, () => env);
+export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> {
+   return gives_(ma, () => env);
+}
 
-export const giveAll = <R>(env: R) => <E, A>(ma: Managed<R, E, A>): Managed<unknown, E, A> => giveAll_(ma, env);
+export function giveAll<R>(env: R): <E, A>(ma: Managed<R, E, A>) => Managed<unknown, E, A> {
+   return (ma) => giveAll_(ma, env);
+}
 
-export const give_ = <E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>, env: R): Managed<R0, E, A> =>
-   gives_(ma, (r0) => ({ ...r0, ...env }));
+export function give_<E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>, env: R): Managed<R0, E, A> {
+   return gives_(ma, (r0) => ({ ...r0, ...env }));
+}
 
-export const give = <R>(env: R) => <R0, E, A>(ma: Managed<R & R0, E, A>): Managed<R0, E, A> => give_(ma, env);
+export function give<R>(env: R): <R0, E, A>(ma: Managed<R & R0, E, A>) => Managed<R0, E, A> {
+   return (ma) => give_(ma, env);
+}

@@ -7,12 +7,16 @@ import * as C from "./Cause";
 import { map, map_ } from "./functor";
 import type { Exit } from "./model";
 
-export const as_ = <E, A, B>(fa: Exit<E, A>, b: B): Exit<E, B> => map_(fa, () => b);
+export function as_<E, A, B>(fa: Exit<E, A>, b: B): Exit<E, B> {
+   return map_(fa, () => b);
+}
 
-export const as = <B>(b: B): (<E, A>(fa: Exit<E, A>) => Exit<E, B>) => map(() => b);
+export function as<B>(b: B): <E, A>(fa: Exit<E, A>) => Exit<E, B> {
+   return map(() => b);
+}
 
-export const collectAll = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, ReadonlyArray<A>>> =>
-   pipe(
+export function collectAll<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, ReadonlyArray<A>>> {
+   return pipe(
       A.head(exits),
       O.map((head) =>
          pipe(
@@ -32,9 +36,10 @@ export const collectAll = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<
          )
       )
    );
+}
 
-export const collectAllPar = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, readonly A[]>> =>
-   pipe(
+export function collectAllPar<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<Exit<E, readonly A[]>> {
+   return pipe(
       A.head(exits),
       O.map((head) =>
          pipe(
@@ -54,7 +59,12 @@ export const collectAllPar = <E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Opti
          )
       )
    );
+}
 
-export const orElseFail_ = <E, A, G>(exit: Exit<E, A>, orElse: G) => mapError_(exit, () => orElse);
+export function orElseFail_<E, A, G>(exit: Exit<E, A>, orElse: G) {
+   return mapError_(exit, () => orElse);
+}
 
-export const orElseFail = <G>(orElse: G) => <E, A>(exit: Exit<E, A>): Exit<G, A> => orElseFail_(exit, orElse);
+export function orElseFail<G>(orElse: G): <E, A>(exit: Exit<E, A>) => Exit<G, A> {
+   return (exit) => orElseFail_(exit, orElse);
+}

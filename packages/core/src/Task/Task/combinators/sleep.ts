@@ -1,3 +1,5 @@
 import { sleep as _sleep } from "../../Clock";
 
-export const sleep = (ms: number) => _sleep(ms);
+export function sleep(ms: number) {
+   return _sleep(ms);
+}

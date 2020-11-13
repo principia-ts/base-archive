@@ -3,7 +3,7 @@ import * as O from "../../Option";
 import type { Exit } from "../Exit";
 import * as C from "../Exit/Cause";
 import type { FiberId } from "../Fiber/FiberId";
-import type { EIO, IO, RIO, Task } from "./model";
+import type { EIO, IO, Task } from "./model";
 import {
    AsyncInstruction,
    FailInstruction,
@@ -12,7 +12,6 @@ import {
    SuspendInstruction,
    TotalInstruction
 } from "./model";
-import { asks } from "./reader";
 
 /*
  * -------------------------------------------
@@ -30,7 +29,9 @@ import { asks } from "./reader";
  * @category Constructors
  * @since 1.0.0
  */
-export const succeed = <E = never, A = never>(a: A): EIO<E, A> => new SucceedInstruction(a);
+export function succeed<E = never, A = never>(a: A): EIO<E, A> {
+   return new SucceedInstruction(a);
+}
 
 /**
  * ```haskell
@@ -42,14 +43,15 @@ export const succeed = <E = never, A = never>(a: A): EIO<E, A> => new SucceedIns
  * @category Constructors
  * @since 1.0.0
  */
-export const async = <R, E, A>(
+export function async<R, E, A>(
    register: (resolve: (_: Task<R, E, A>) => void) => void,
    blockingOn: ReadonlyArray<FiberId> = []
-): Task<R, E, A> =>
-   new AsyncInstruction((cb) => {
+): Task<R, E, A> {
+   return new AsyncInstruction((cb) => {
       register(cb);
       return O.none();
    }, blockingOn);
+}
 
 /**
  * ```haskell
@@ -65,10 +67,12 @@ export const async = <R, E, A>(
  * @category Constructors
  * @since 1.0.0
  */
-export const asyncOption = <R, E, A>(
+export function asyncOption<R, E, A>(
    register: (resolve: (_: Task<R, E, A>) => void) => O.Option<Task<R, E, A>>,
    blockingOn: ReadonlyArray<FiberId> = []
-): Task<R, E, A> => new AsyncInstruction(register, blockingOn);
+): Task<R, E, A> {
+   return new AsyncInstruction(register, blockingOn);
+}
 
 /**
  * ```haskell
@@ -80,7 +84,9 @@ export const asyncOption = <R, E, A>(
  * @category Constructors
  * @since 1.0.0
  */
-export const total = <A>(thunk: () => A): IO<A> => new TotalInstruction(thunk);
+export function total<A>(thunk: () => A): IO<A> {
+   return new TotalInstruction(thunk);
+}
 
 /**
  * ```haskell
@@ -92,8 +98,9 @@ export const total = <A>(thunk: () => A): IO<A> => new TotalInstruction(thunk);
  * @category Constructors
  * @since 1.0.0
  */
-export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): EIO<E, A> =>
-   new PartialInstruction(thunk, onThrow);
+export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): EIO<E, A> {
+   return new PartialInstruction(thunk, onThrow);
+}
 
 /**
  * ```haskell
@@ -105,8 +112,9 @@ export const partial_ = <E, A>(thunk: () => A, onThrow: (error: unknown) => E): 
  * @category Constructors
  * @since 1.0.0
  */
-export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A): EIO<E, A> =>
-   partial_(thunk, onThrow);
+export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => EIO<E, A> {
+   return (thunk) => partial_(thunk, onThrow);
+}
 
 /**
  * ```haskell
@@ -118,7 +126,9 @@ export const partial = <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A
  * @category Constructors
  * @since 1.0.0
  */
-export const suspend = <R, E, A>(factory: Lazy<Task<R, E, A>>): Task<R, E, A> => new SuspendInstruction(factory);
+export function suspend<R, E, A>(factory: Lazy<Task<R, E, A>>): Task<R, E, A> {
+   return new SuspendInstruction(factory);
+}
 
 /**
  * ```haskell
@@ -130,7 +140,9 @@ export const suspend = <R, E, A>(factory: Lazy<Task<R, E, A>>): Task<R, E, A> =>
  * @category Constructors
  * @since 1.0.0
  */
-export const halt = <E>(cause: C.Cause<E>): EIO<E, never> => new FailInstruction(cause);
+export function halt<E>(cause: C.Cause<E>): EIO<E, never> {
+   return new FailInstruction(cause);
+}
 
 /**
  * ```haskell
@@ -142,7 +154,9 @@ export const halt = <E>(cause: C.Cause<E>): EIO<E, never> => new FailInstruction
  * @category Constructors
  * @since 1.0.0
  */
-export const fail = <E>(e: E): EIO<E, never> => halt(C.fail(e));
+export function fail<E>(e: E): EIO<E, never> {
+   return halt(C.fail(e));
+}
 
 /**
  * ```haskell
@@ -154,7 +168,9 @@ export const fail = <E>(e: E): EIO<E, never> => halt(C.fail(e));
  * @category Constructors
  * @since 1.0.0
  */
-export const die = (e: unknown): EIO<never, never> => halt(C.die(e));
+export function die(e: unknown): EIO<never, never> {
+   return halt(C.die(e));
+}
 
 /**
  * ```haskell
@@ -166,7 +182,7 @@ export const die = (e: unknown): EIO<never, never> => halt(C.die(e));
  * @category Constructors
  * @since 1.0.0
  */
-export const done = <E = never, A = unknown>(exit: Exit<E, A>) => {
+export function done<E = never, A = unknown>(exit: Exit<E, A>): EIO<E, A> {
    return suspend(() => {
       switch (exit._tag) {
          case "Success": {
@@ -177,4 +193,4 @@ export const done = <E = never, A = unknown>(exit: Exit<E, A>) => {
          }
       }
    });
-};
+}

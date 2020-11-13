@@ -22,4 +22,6 @@ export const none = FiberId(0, 0);
 
 export const eqFiberId: Eq<FiberId> = fromEquals((x, y) => x.seqNumber === y.seqNumber && x.startTime === y.startTime);
 
-export const newFiberId = () => FiberId(new Date().getTime(), _fiberCounter.getAndIncrement());
+export function newFiberId() {
+   return FiberId(new Date().getTime(), _fiberCounter.getAndIncrement());
+}
