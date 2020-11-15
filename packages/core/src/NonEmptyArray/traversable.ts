@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import { Functor, FunctorWithIndex } from "./functor";
 import type { URI, V } from "./model";
 

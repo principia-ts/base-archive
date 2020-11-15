@@ -1,4 +1,4 @@
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import * as E from "../../Either";
 import type { Option } from "../../Option";
 import { none } from "../../Option";

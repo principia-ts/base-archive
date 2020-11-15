@@ -1,7 +1,7 @@
 import { pipe } from "@principia/prelude";
 
 import { chain } from "../_core";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import * as O from "../../../Option";
 import * as F from "../../Fiber";
 import type { Scope } from "../../Scope";

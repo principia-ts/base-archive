@@ -2,7 +2,7 @@ import { getJoinSemigroup, getMeetSemigroup } from "@principia/prelude";
 import type { Eq } from "@principia/prelude/Eq";
 import type { Ord } from "@principia/prelude/Ord";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Option } from "../Option";
 import type { ReadonlyRecord } from "../Record";
 import type { NonEmptyArray } from "./model";

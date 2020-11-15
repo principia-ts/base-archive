@@ -54,6 +54,8 @@ export * from "./retry";
 export * from "./sandbox";
 export * from "./scope";
 export * from "./service";
+export * from "./someOrElse";
+export * from "./someOrFail";
 export * from "./suspend";
 export * from "./swap";
 export * from "./switchable";

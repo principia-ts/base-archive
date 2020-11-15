@@ -1,4 +1,4 @@
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import { flow, pipe } from "../../Function";
 import * as L from "../../List";
 import type { Option } from "../../Option";

@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { NonEmptyArray, URI, V } from "./model";
 
 /*

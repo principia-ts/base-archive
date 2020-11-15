@@ -1,5 +1,5 @@
 import * as T from "../_core";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { flow, pipe, tuple } from "../../../Function";
 import * as O from "../../../Option";
 import * as Ex from "../../Exit";
@@ -8,6 +8,7 @@ import type { Exit } from "../../Exit/model";
 import { interrupt as interruptFiber } from "../../Fiber/combinators/interrupt";
 import type { Executor } from "../../Fiber/executor";
 import type { Fiber } from "../../Fiber/model";
+import { fromTask } from "../../Managed/_core";
 import { Managed } from "../../Managed/model";
 import * as RM from "../../Managed/ReleaseMap";
 import * as XP from "../../XPromise";
@@ -16,7 +17,6 @@ import { forkDaemon } from "../core-scope";
 import { bracketExit_, ensuring } from "./bracket";
 import { fiberId } from "./fiberId";
 import { makeInterruptible, makeUninterruptible, onInterruptExtended_, uninterruptibleMask } from "./interrupt";
-import { toManaged } from "./toManaged";
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -98,7 +98,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
                   joinAllFibers
                )
             ),
-            toManaged(),
+            fromTask,
             forkManaged
          )
       ),

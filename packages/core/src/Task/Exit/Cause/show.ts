@@ -1,6 +1,6 @@
 import type { Show } from "@principia/prelude/Show";
 
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { pipe } from "../../../Function";
 import type { NonEmptyArray } from "../../../NonEmptyArray";
 import * as O from "../../../Option";

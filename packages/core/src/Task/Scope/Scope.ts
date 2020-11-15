@@ -1,4 +1,4 @@
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import type { Either } from "../../Either";
 import * as E from "../../Either";
 import { AtomicNumber } from "../../Utils/support/AtomicNumber";

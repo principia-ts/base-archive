@@ -1,4 +1,4 @@
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import type { NonEmptyArray } from "../../../NonEmptyArray";
 import * as NEA from "../../../NonEmptyArray";
 import type { Task } from "../model";

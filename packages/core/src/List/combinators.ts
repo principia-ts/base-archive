@@ -49,11 +49,11 @@ import {
    zeroOffset
 } from "./_internal";
 import { empty, emptyPushable } from "./constructors";
-import type { MutableList } from "./model";
-import { List } from "./model";
 import { unsafeLast, unsafeNth_ } from "./destructors";
 import { reduce_ } from "./foldable";
 import { map_ } from "./functor";
+import type { MutableList } from "./model";
+import { List } from "./model";
 
 export function cloneList<A>(l: List<A>): MutableList<A> {
    return new List(l.bits, l.offset, l.length, l.prefix, l.root, l.suffix) as any;

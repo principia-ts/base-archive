@@ -2,6 +2,7 @@
 /* eslint-disable no-var */
 import type { Node } from "./_internal";
 import { arrayPush, ForwardListIterator } from "./_internal";
+import { unsafeNth_ } from "./destructors";
 import { reduce_ } from "./foldable";
 
 /**
@@ -16,9 +17,11 @@ export class List<A> implements Iterable<A> {
       readonly root: Node | undefined,
       readonly suffix: A[]
    ) {}
+
    [Symbol.iterator](): Iterator<A> {
       return new ForwardListIterator(this);
    }
+
    toJSON(): readonly A[] {
       return reduce_<A, A[]>(this, [], arrayPush);
    }

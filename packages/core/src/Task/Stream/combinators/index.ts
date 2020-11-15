@@ -13,6 +13,7 @@ export * from "./mapBoth";
 export * from "./mapBothPar";
 export * from "./mapConcat";
 export * from "./mapMPar";
+export * from "./mapOption";
 export * from "./merge";
 export * from "./unfoldChunkM";
 export * from "./unwrap";

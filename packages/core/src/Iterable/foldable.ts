@@ -1,6 +1,6 @@
 import type { Monoid } from "@principia/prelude/Monoid";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 
 /*
  * -------------------------------------------

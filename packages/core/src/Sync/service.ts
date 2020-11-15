@@ -1,6 +1,6 @@
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import { pipe } from "../Function";
 import type { Has, Region, Tag } from "../Has";
 import { mergeEnvironments, tag } from "../Has";

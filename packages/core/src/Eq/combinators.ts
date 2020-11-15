@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as E from "@principia/prelude/Eq";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { ReadonlyRecord } from "../Record";
 import * as R from "../Record";
 import { memoize } from "../Utils";

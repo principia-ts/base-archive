@@ -2,7 +2,7 @@ import type * as P from "@principia/prelude";
 import { apF_, chainF_, pureF } from "@principia/prelude";
 import type * as HKT from "@principia/prelude/HKT";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import * as E from "../Either";
 import type { Option } from "../Option";
 import { none, some } from "../Option";

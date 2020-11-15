@@ -1,7 +1,7 @@
 import type { Monoid } from "@principia/prelude/Monoid";
 import type { Ord } from "@principia/prelude/Ord";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import { toArray } from "./destructors";
 
 /*

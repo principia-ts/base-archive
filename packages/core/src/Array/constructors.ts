@@ -29,6 +29,18 @@ export function fromArray<A>(as: Array<A>): ReadonlyArray<A> {
 }
 
 /**
+ * from :: Iterable a -> Array a
+ *
+ * Constructs a new readpnly array from an interable.
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function from<A>(as: Iterable<A>): ReadonlyArray<A> {
+   return Array.from(as);
+}
+
+/**
  * Return a list of length `n` with element `i` initialized with `f(i)`
  *
  * @category Constructors

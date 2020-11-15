@@ -1,4 +1,4 @@
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import * as NA from "../../NonEmptyArray";
 import * as O from "../../Option";
 

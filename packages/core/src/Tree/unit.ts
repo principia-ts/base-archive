@@ -1,4 +1,4 @@
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Tree } from "./model";
 
 /*

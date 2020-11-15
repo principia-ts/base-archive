@@ -1,6 +1,6 @@
 import { makeMonoid } from "@principia/prelude";
 
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import type { FreeMonoid } from "../../FreeMonoid";
 import * as FS from "../../FreeMonoid";
 import * as I from "../../Iterable";

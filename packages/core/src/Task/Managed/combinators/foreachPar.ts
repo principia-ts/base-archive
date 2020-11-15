@@ -1,5 +1,5 @@
 import { mapM_ } from "../_core";
-import * as T from "../_internal/task";
+import * as T from "../_internal/_task";
 import { tuple } from "../../../Function";
 import { parallel, sequential } from "../../ExecutionStrategy";
 import type { Managed } from "../model";

@@ -1,4 +1,4 @@
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Option } from "../Option";
 import { none, some } from "../Option";
 import type { NonEmptyArray } from "./model";

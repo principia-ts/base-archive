@@ -41,6 +41,14 @@ export function concat<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => Reado
    return (xs) => concat_(xs, ys);
 }
 
+export function append_<A>(as: ReadonlyArray<A>, a: A): ReadonlyArray<A> {
+   return concat_(as, [a]);
+}
+
+export function append<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (as) => append_(as, a);
+}
+
 export function lookup_<A>(i: number, as: ReadonlyArray<A>): Option<A> {
    return isOutOfBound_(i, as) ? none() : some(as[i]);
 }

@@ -1,4 +1,4 @@
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import * as L from "../../../List";
 import * as O from "../../../Option";
 import { mapChunks_ } from "../functor";

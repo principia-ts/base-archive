@@ -1,6 +1,6 @@
 import type { Erase, UnionToIntersection } from "@principia/prelude/Utils";
 
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import { pipe, tuple } from "../../Function";
 import type * as H from "../../Has";
 import { mergeEnvironments, tag } from "../../Has";

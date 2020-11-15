@@ -1,6 +1,6 @@
 import * as S from "@principia/prelude/Show";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import { pipe } from "../Function";
 import type { ReadonlyRecord } from "../Record";
 import * as R from "../Record";

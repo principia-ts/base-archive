@@ -1,5 +1,5 @@
 import * as _ from "../_core";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
 import { flow, pipe, tuple } from "../../../Function";

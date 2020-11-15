@@ -1,4 +1,4 @@
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import { fold_ as foldEither } from "../Either";
 import { pipe } from "../Function";
 import type { Stack } from "../Utils/Stack";

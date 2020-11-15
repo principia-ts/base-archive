@@ -2,7 +2,7 @@ import { flow } from "@principia/prelude";
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
 import type * as T from "../_internal/task";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import type { Has, Tag } from "../../../Has";
 import * as R from "../../../Record";
 import { map_ } from "../functor";

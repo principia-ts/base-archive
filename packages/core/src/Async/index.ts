@@ -6,6 +6,7 @@ export * from "./apply-seq";
 export * from "./bifunctor";
 export * from "./CancellablePromise";
 export * from "./combinators";
+export * from "./constants";
 export * from "./constructors";
 export * from "./do";
 export * from "./fallible";

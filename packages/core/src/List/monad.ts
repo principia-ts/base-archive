@@ -1,8 +1,8 @@
 import { concat_ } from "./combinators";
 import { empty } from "./constructors";
-import type { List } from "./model";
 import { reduce_ } from "./foldable";
 import { map_ } from "./functor";
+import type { List } from "./model";
 
 /**
  * Flattens a list of lists into a list. Note that this function does

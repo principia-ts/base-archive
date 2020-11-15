@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import { identity, pipe, tuple } from "../../Function";
 import * as O from "../../Option";
 import * as T from "./_internal/task";

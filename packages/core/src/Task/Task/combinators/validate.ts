@@ -1,5 +1,5 @@
 import { absolve, foreach_, map_ } from "../_core";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
 import type { NonEmptyArray } from "../../../NonEmptyArray";

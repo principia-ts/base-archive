@@ -1,6 +1,6 @@
 import type { Separated } from "@principia/prelude/Utils";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Either } from "../Either";
 import { map_ } from "./functor";
 

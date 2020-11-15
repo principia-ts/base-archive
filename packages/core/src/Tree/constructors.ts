@@ -2,7 +2,7 @@ import type { Applicative, Monad } from "@principia/prelude";
 import { chainF_, pureF } from "@principia/prelude";
 import type * as HKT from "@principia/prelude/HKT";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Forest, Tree } from "./model";
 
 export function make<A>(value: A, forest: Forest<A>): Tree<A> {

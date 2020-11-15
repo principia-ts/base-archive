@@ -1,6 +1,6 @@
 import type { Semigroup } from "@principia/prelude";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { NonEmptyArray } from "./model";
 
 /**

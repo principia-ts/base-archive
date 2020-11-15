@@ -1,4 +1,5 @@
 export * from "./task";
+export * from "../../Task/combinators/foreachPar";
 export * from "../../Task/combinators/gen";
 export * from "../../Task/combinators/toManaged";
 export * from "../../Task/combinators/once";

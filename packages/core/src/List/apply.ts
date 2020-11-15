@@ -1,5 +1,5 @@
-import type { List } from "./model";
 import { map_ } from "./functor";
+import type { List } from "./model";
 import { flatten } from "./monad";
 
 /*

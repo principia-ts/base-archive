@@ -1,5 +1,5 @@
 import { map_, mapBoth_ } from "../_core";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { NoSuchElementException } from "../../../GlobalExceptions";
 import * as NA from "../../../NonEmptyArray";
 import * as O from "../../../Option";

@@ -1,5 +1,5 @@
 import * as T from "../_core";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { pipe, tuple } from "../../../Function";
 import { interrupt as interruptFiber } from "../../Fiber/combinators/interrupt";
 import * as XP from "../../XPromise";

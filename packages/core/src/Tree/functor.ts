@@ -1,4 +1,4 @@
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Tree } from "./model";
 
 export function map_<A, B>(fa: Tree<A>, f: (a: A) => B): Tree<B> {

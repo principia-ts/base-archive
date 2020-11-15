@@ -1,4 +1,4 @@
-import * as A from "../../Array";
+import * as A from "../../Array/_core";
 import { pipe } from "../../Function";
 import { AtomicBoolean } from "../../Utils/support/AtomicBoolean";
 import type { MutableQueue } from "../../Utils/support/MutableQueue";

@@ -1,6 +1,6 @@
 import type { UnionToIntersection } from "@principia/prelude/Utils";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Either } from "../Either";
 import * as FS from "../FreeSemigroup";
 import type { Refinement } from "../Function";

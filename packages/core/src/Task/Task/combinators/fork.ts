@@ -1,5 +1,5 @@
 import { chain, chain_, foreach_, fork, map_, unit } from "../_core";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { pipe } from "../../../Function";
 import * as I from "../../../Iterable";
 import * as O from "../../../Option";

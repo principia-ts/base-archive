@@ -1,4 +1,4 @@
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { identity, pipe } from "../../../Function";
 import * as L from "../../../List";
 import * as T from "../../Task";

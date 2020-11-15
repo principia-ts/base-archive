@@ -1,4 +1,4 @@
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "../Function";
 import type { Option } from "../Option";
 import { fromArray } from "./constructors";

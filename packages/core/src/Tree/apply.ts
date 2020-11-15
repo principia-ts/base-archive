@@ -1,4 +1,4 @@
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import { map_ } from "./functor";
 import type { Tree } from "./model";
 import { chain_ } from "./monad";

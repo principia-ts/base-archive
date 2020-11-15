@@ -2,7 +2,7 @@ import type { SequenceFn, TraverseFn, TraverseFn_ } from "@principia/prelude";
 import { apF_, implementTraverse_ } from "@principia/prelude";
 import type * as HKT from "@principia/prelude/HKT";
 
-import * as A from "../Array";
+import * as A from "../Array/_core";
 import { identity } from "../Function";
 import type { Forest, Tree, URI, V } from "./model";
 

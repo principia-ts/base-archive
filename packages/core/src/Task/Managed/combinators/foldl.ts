@@ -1,4 +1,4 @@
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { succeed } from "../constructors";
 import type { Managed } from "../model";
 import { chain_ } from "../monad";

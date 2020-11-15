@@ -1,5 +1,5 @@
 import * as T from "../_internal/task";
-import * as A from "../../../Array";
+import * as A from "../../../Array/_core";
 import { pipe } from "../../../Function";
 import { none, some } from "../../../Option";
 import * as O from "../../../Option";
