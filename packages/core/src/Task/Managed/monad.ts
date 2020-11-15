@@ -1,7 +1,12 @@
 import { identity } from "../../Function";
 import * as Ex from "../Exit";
+import type { Cause } from "../Exit/Cause";
+import type { Task } from "./_internal/task";
 import * as T from "./_internal/task";
-import { map_, mapM } from "./functor";
+import { catchAllCause_ } from "./combinators/catchAll";
+import { fail, halt, succeed } from "./constructors";
+import { foldM_ } from "./fold";
+import { map_, mapM, mapM_ } from "./functor";
 import { Managed } from "./model";
 
 /*
@@ -66,3 +71,61 @@ export const flatten: <R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>) 
 export const flattenM: <R, E, R1, E1, A>(mma: Managed<R, E, T.Task<R1, E1, A>>) => Managed<R & R1, E | E1, A> = mapM(
    identity
 );
+
+export function tapBoth_<R, E, A, R1, E1, R2, E2>(
+   ma: Managed<R, E, A>,
+   f: (e: E) => Managed<R1, E1, any>,
+   g: (a: A) => Managed<R2, E2, any>
+): Managed<R & R1 & R2, E | E1 | E2, A> {
+   return foldM_(
+      ma,
+      (e) => chain_(f(e), () => fail(e)),
+      (a) => map_(g(a), () => a)
+   );
+}
+
+export function tapBoth<E, A, R1, E1, R2, E2>(
+   f: (e: E) => Managed<R1, E1, any>,
+   g: (a: A) => Managed<R2, E2, any>
+): <R>(ma: Managed<R, E, A>) => Managed<R & R1 & R2, E | E1 | E2, A> {
+   return (ma) => tapBoth_(ma, f, g);
+}
+
+export function tapCause_<R, E, A, R1, E1>(
+   ma: Managed<R, E, A>,
+   f: (c: Cause<E>) => Managed<R1, E1, any>
+): Managed<R & R1, E | E1, A> {
+   return catchAllCause_(ma, (c) => chain_(f(c), () => halt(c)));
+}
+
+export function tapCause<E, R1, E1>(
+   f: (c: Cause<E>) => Managed<R1, E1, any>
+): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A> {
+   return (ma) => tapCause_(ma, f);
+}
+
+export function tapError_<R, E, A, R1, E1>(
+   ma: Managed<R, E, A>,
+   f: (e: E) => Managed<R1, E1, any>
+): Managed<R & R1, E | E1, A> {
+   return tapBoth_(ma, f, succeed);
+}
+
+export function tapError<E, R1, E1>(
+   f: (e: E) => Managed<R1, E1, any>
+): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A> {
+   return (ma) => tapError_(ma, f);
+}
+
+export function tapM_<R, E, A, R1, E1>(
+   ma: Managed<R, E, A>,
+   f: (a: A) => Task<R1, E1, any>
+): Managed<R & R1, E | E1, A> {
+   return mapM_(ma, (a) => T.as_(f(a), a));
+}
+
+export function tapM<A, R1, E1>(
+   f: (a: A) => Task<R1, E1, any>
+): <R, E>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A> {
+   return (ma) => tapM_(ma, f);
+}

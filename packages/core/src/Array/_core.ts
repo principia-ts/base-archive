@@ -1,4 +1,3 @@
-// codegen:start { preset: barrel, exclude: _core.ts }
 export * from "./alt";
 export * from "./alternative";
 export * from "./applicative";
@@ -24,4 +23,3 @@ export * from "./traversable";
 export * from "./unfoldable";
 export * from "./unit";
 export * from "./witherable";
-// codegen:end

@@ -9,7 +9,7 @@ import { AllInstruction } from "./model";
  * -------------------------------------------
  */
 
-export function foreachPar<A extends ReadonlyArray<Async<any, any, any>>>(
+export function tuplePar<A extends ReadonlyArray<Async<any, any, any>>>(
    ...asyncs: A & { 0: Async<any, any, any> }
 ): Async<
    _R<A[number]>,
@@ -26,7 +26,7 @@ export function mapBothPar_<R, E, A, R1, E1, B, C>(
    fb: Async<R1, E1, B>,
    f: (a: A, b: B) => C
 ): Async<R & R1, E | E1, C> {
-   return map_(foreachPar(fa, fb), ([a, b]) => f(a, b));
+   return map_(tuplePar(fa, fb), ([a, b]) => f(a, b));
 }
 
 export function mapBothPar<A, R1, E1, B, C>(

@@ -1,4 +1,4 @@
-import { flow } from "@principia/prelude";
+import { flow, pipe } from "@principia/prelude";
 
 import * as O from "../../../Option";
 import type * as Ex from "../../Exit";
@@ -23,13 +23,14 @@ export function flattenExitOption<R, E, E1, O>(stream: Stream<R, E, Ex.Exit<O.Op
                        () => T.apSecond_(done.set(true), Pull.end),
                        (e) => Pull.fail(e as E | E1)
                     ),
-                    flow(
-                       T.done,
-                       T.foldM(
-                          O.fold(() => T.apSecond_(done.set(true), Pull.end), Pull.fail),
-                          Pull.emit
+                    (ex) =>
+                       pipe(
+                          T.done(ex),
+                          T.foldM(
+                             O.fold(() => T.apSecond_(done.set(true), Pull.end), Pull.fail),
+                             Pull.emit
+                          )
                        )
-                    )
                  )
          );
       })

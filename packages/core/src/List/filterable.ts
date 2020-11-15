@@ -4,8 +4,8 @@ import type * as O from "../Option";
 import type { Separated } from "../Utils";
 import { push } from "./_internal";
 import { emptyPushable } from "./constructors";
-import type { List, MutableList } from "./model";
 import { reduce_ } from "./foldable";
+import type { List, MutableList } from "./model";
 
 /**
  * Returns a new list that only contains the elements of the original
@@ -37,7 +37,7 @@ export function filter<A>(predicate: (a: A) => boolean): (fa: List<A>) => List<A
  *
  * @complexity O(n)
  */
-export function filterMap_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B> {
+export function mapOption_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B> {
    return reduce_(fa, emptyPushable(), (acc, a) => {
       const fa = f(a);
       if (fa._tag === "Some") {
@@ -53,8 +53,8 @@ export function filterMap_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B>
  *
  * @complexity O(n)
  */
-export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: List<A>) => List<B> {
-   return (fa) => filterMap_(fa, f);
+export function mapOption<A, B>(f: (a: A) => O.Option<B>): (fa: List<A>) => List<B> {
+   return (fa) => mapOption_(fa, f);
 }
 
 /**
@@ -98,7 +98,7 @@ export function partition<A>(predicate: (a: A) => boolean): (l: List<A>) => Sepa
  *
  * @complexity O(n)
  */
-export function partitionMap_<A, B, C>(l: List<A>, f: (a: A) => E.Either<B, C>): Separated<List<B>, List<C>> {
+export function mapEither_<A, B, C>(l: List<A>, f: (a: A) => E.Either<B, C>): Separated<List<B>, List<C>> {
    return reduce_(
       l,
       { left: emptyPushable<B>(), right: emptyPushable<C>() } as Separated<MutableList<B>, MutableList<C>>,
@@ -120,6 +120,6 @@ export function partitionMap_<A, B, C>(l: List<A>, f: (a: A) => E.Either<B, C>):
  *
  * @complexity O(n)
  */
-export function partitionMap<A, B, C>(f: (_: A) => E.Either<B, C>): (l: List<A>) => Separated<List<B>, List<C>> {
-   return (l) => partitionMap_(l, f);
+export function mapEither<A, B, C>(f: (_: A) => E.Either<B, C>): (l: List<A>) => Separated<List<B>, List<C>> {
+   return (l) => mapEither_(l, f);
 }

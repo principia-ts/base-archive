@@ -1,5 +1,8 @@
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import { succeed } from "./constructors";
-import type { XPure } from "./model";
+import type { URI, V, XPure } from "./model";
 import { ChainInstruction } from "./model";
 
 /**
@@ -23,3 +26,8 @@ export function map_<S1, S2, R, E, A, B>(fa: XPure<S1, S2, R, E, A>, f: (a: A) =
 export function map<A, B>(f: (a: A) => B): <S1, S2, R, E>(fa: XPure<S1, S2, R, E, A>) => XPure<S1, S2, R, E, B> {
    return (fa) => map_(fa, f);
 }
+
+export const Functor: P.Functor<[URI], V> = HKT.instance({
+   map_,
+   map
+});

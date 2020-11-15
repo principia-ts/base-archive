@@ -109,3 +109,6 @@ export function apSecondPar<R1, E1, B>(
 ): <R, E, A>(fa: T.Task<R, E, A>) => T.Task<R & R1, E1 | E, B> {
    return (fa) => apSecondPar_(fa, fb);
 }
+
+export const andThenPar_ = apSecondPar_;
+export const andThenPar = apSecondPar;

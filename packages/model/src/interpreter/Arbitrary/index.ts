@@ -32,9 +32,11 @@ export const _allArbitraryInterpreters = <Env extends AnyEnv>() =>
 
 export const allArbitraryInterpreters = memoize(_allArbitraryInterpreters) as typeof _allArbitraryInterpreters;
 
-export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
-   env: {
-      [K in ArbURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
-   }
-) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Arbitrary<A> =>
-   pipe(env, F.derive(allArbitraryInterpreters()));
+export function deriveFor<Su extends Summoner<any>>(_S: Su) {
+   return (
+      env: {
+         [K in ArbURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
+      }
+   ) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Arbitrary<A> =>
+      pipe(env, F.derive(allArbitraryInterpreters()));
+}

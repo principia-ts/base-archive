@@ -1,4 +1,5 @@
 import { identity, pipe } from "../../Function";
+import * as L from "../../List";
 import type { Option } from "../../Option";
 import * as M from "../Managed";
 import * as RM from "../Managed/ReleaseMap";
@@ -21,12 +22,10 @@ export function chain_<R, E, A, Q, D, B>(ma: Stream<R, E, A>, f: (a: A) => Strea
          M.bindS("outerStream", () => ma.proc),
          M.bindS("currOuterChunk", () =>
             T.toManaged()(
-               XR.makeRef<[ReadonlyArray<A>, number]>([[], 0])
+               XR.makeRef<[L.List<A>, number]>([L.empty(), 0])
             )
          ),
-         M.bindS("currInnerStream", () =>
-            T.toManaged()(XR.makeRef<T.Task<R_, Option<E_>, ReadonlyArray<B>>>(Pull.end))
-         ),
+         M.bindS("currInnerStream", () => T.toManaged()(XR.makeRef<T.Task<R_, Option<E_>, L.List<B>>>(Pull.end))),
          M.bindS(
             "innerFinalizer",
             () => M.finalizerRef(RM.noopFinalizer) as M.Managed<R_, never, XR.Ref<RM.Finalizer>>

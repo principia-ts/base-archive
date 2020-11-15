@@ -1,7 +1,7 @@
 import { flow, pipe } from "@principia/prelude";
 
-import * as A from "../../../Array";
 import * as E from "../../../Either";
+import * as L from "../../../List";
 import * as O from "../../../Option";
 import type { HasClock } from "../../Clock";
 import * as Ex from "../../Exit";
@@ -15,14 +15,22 @@ import * as XR from "../../XRef";
 import * as Ha from "../internal/Handoff";
 import type * as Pull from "../internal/Pull";
 import * as Take from "../internal/Take";
-import type { Transducer } from "../internal/Transducer";
 import { Stream } from "../model";
+import type { Transducer } from "../Transducer/model";
 import { flattenTake } from "./flattenTake";
+import { mapOption_ } from "./mapOption";
+
+export function aggregateAsyncWithinEither<O, R1, E1, P, Q>(
+   transducer: Transducer<R1, E1, O, P>,
+   schedule: Schedule<R1, L.List<P>, Q>
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> {
+   return (stream) => aggregateAsyncWithinEither_(stream, transducer, schedule);
+}
 
 export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
    stream: Stream<R, E, O>,
    transducer: Transducer<R1, E1, O, P>,
-   schedule: Schedule<R1, ReadonlyArray<P>, Q>
+   schedule: Schedule<R1, L.List<P>, Q>
 ): Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> {
    return flattenTake(
       new Stream(
@@ -33,7 +41,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
             const raceNextTime = yield* _(XR.makeManagedRef(false));
             const waitingFiber = yield* _(XR.makeManagedRef<O.Option<Fiber<never, Take.Take<E | E1, O>>>>(O.none()));
             const sdriver = yield* _(Sc.driver(schedule));
-            const lastChunk = yield* _(XR.makeManagedRef<ReadonlyArray<P>>(A.empty()));
+            const lastChunk = yield* _(XR.makeManagedRef<L.List<P>>(L.empty()));
             const producer = T.repeatWhileM_(Take.fromPull(pull), (take) =>
                pipe(Ha.offer(take)(handoff), T.as(Ex.isSuccess(take)))
             );
@@ -64,12 +72,12 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
                      () =>
                         pipe(
                            push(O.none()),
-                           T.map((ps) => [Take.chunk(A.map_(ps, E.right)), Take.end])
+                           T.map((ps) => L.list(Take.chunk(L.map_(ps, E.right)), Take.end))
                         ),
                      T.halt,
                      (os) =>
                         T.chain_(Take.fromPull(T.asSomeError(push(O.some(os)))), (take) =>
-                           T.as_(updateLastChunk(take), [Take.map_(take, E.right)])
+                           T.as_(updateLastChunk(take), L.list(Take.map_(take, E.right)))
                         )
                   ),
                   T.mapError(O.some)
@@ -77,7 +85,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
 
             const go = (
                race: boolean
-            ): T.Task<R & R1 & HasClock, O.Option<E | E1>, ReadonlyArray<Take.Take<E1, E.Either<Q, P>>>> => {
+            ): T.Task<R & R1 & HasClock, O.Option<E | E1>, L.List<Take.Take<E1, E.Either<Q, P>>>> => {
                if (!race) {
                   return pipe(waitForProducer, T.chain(handleTake), T.apFirst(raceNextTime.set(true)));
                } else {
@@ -94,18 +102,20 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
                                        T.gen(function* (_) {
                                           const lastQ = yield* _(
                                              pipe(
-                                                lastChunk.set(A.empty()),
+                                                lastChunk.set(L.empty()),
                                                 T.apSecond(pipe(sdriver.last, T.orDie)),
                                                 T.apFirst(sdriver.reset)
                                              )
                                           );
-                                          const scheduleResult = Ex.succeed([E.left(lastQ)]);
+                                          const scheduleResult: Take.Take<E1, E.Either<Q, P>> = Ex.succeed(
+                                             L.list(E.left(lastQ))
+                                          );
                                           const take = yield* _(
                                              pipe(push(O.none()), T.asSomeError, Take.fromPull, T.tap(updateLastChunk))
                                           );
                                           yield* _(raceNextTime.set(false));
                                           yield* _(waitingFiber.set(O.some(producerWaiting)));
-                                          return [scheduleResult, Take.map_(take, E.right)];
+                                          return L.list(scheduleResult, Take.map_(take, E.right));
                                        }),
                                     (_) =>
                                        T.gen(function* (_) {
@@ -114,7 +124,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
                                           );
                                           yield* _(raceNextTime.set(false));
                                           yield* _(waitingFiber.set(O.some(producerWaiting)));
-                                          return [Take.map_(ps, E.right)];
+                                          return L.list(Take.map_(ps, E.right));
                                        })
                                  )
                               )
@@ -137,4 +147,22 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
          })
       )
    );
+}
+
+export function aggregatAsyncWithin_<R, E, O, R1, E1, P>(
+   stream: Stream<R, E, O>,
+   transducer: Transducer<R1, E1, O, P>,
+   schedule: Schedule<R1, L.List<P>, any>
+): Stream<R & R1 & HasClock, E | E1, P> {
+   return mapOption_(
+      aggregateAsyncWithinEither_(stream, transducer, schedule),
+      E.fold(() => O.none(), O.some)
+   );
+}
+
+export function aggregateAsync_<R, E, O, R1, E1, P>(
+   stream: Stream<R, E, O>,
+   transducer: Transducer<R1, E1, O, P>
+): Stream<R & R1 & HasClock, E | E1, P> {
+   return aggregatAsyncWithin_(stream, transducer, Sc.forever);
 }

@@ -112,11 +112,13 @@ export type Config<Env extends AnyEnv, S, R, E, A, Custom = {}> = {
 
 export type ThreadURI<C, IURI extends InterpreterURIS> = IURI extends keyof C ? C[IURI] : unknown;
 
-export const getApplyConfig: <IURI extends InterpreterURIS>(
+export function getApplyConfig<IURI extends InterpreterURIS>(
    uri: IURI
-) => <Config>(config?: Config) => NonNullable<ThreadURI<Config, IURI>> = (uri) => (config) =>
-   ((a: any, r: any, k: any) =>
-      ((config && (config as any)[uri] ? (config as any)[uri] : <A>(a: A) => a) as any)(a, r[uri], k)) as any;
+): <Config>(config?: Config | undefined) => NonNullable<ThreadURI<Config, IURI>> {
+   return (config) =>
+      ((a: any, r: any, k: any) =>
+         ((config && (config as any)[uri] ? (config as any)[uri] : <A>(a: A) => a) as any)(a, r[uri], k)) as any;
+}
 
 /*
  * -------------------------------------------

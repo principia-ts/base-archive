@@ -1,7 +1,11 @@
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import { identity } from "../Function";
-import { map_ } from "./functor";
-import type { XPure } from "./model";
+import { Functor, map_ } from "./functor";
+import type { URI, V, XPure } from "./model";
 import { ChainInstruction } from "./model";
+import { unit } from "./unit";
 
 /*
  * -------------------------------------------
@@ -40,3 +44,9 @@ export function flatten<S1, S2, R, E, A, S3, Q, D>(
 ): XPure<S1, S3, Q & R, D | E, A> {
    return chain_(mma, identity);
 }
+
+export const Monad: P.Monad<[URI], V> = HKT.instance({
+   ...Functor,
+   unit,
+   flatten
+});

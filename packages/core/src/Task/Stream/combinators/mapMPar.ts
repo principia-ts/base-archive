@@ -1,4 +1,5 @@
 import { pipe } from "../../../Function";
+import * as L from "../../../List";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as M from "../../Managed";
@@ -69,13 +70,7 @@ export function mapMPar_(n: number) {
                   M.fork
                )
             ),
-            M.map(({ out }) =>
-               pipe(
-                  out.take,
-                  T.flatten,
-                  T.map((o) => [o])
-               )
-            )
+            M.map(({ out }) => pipe(out.take, T.flatten, T.map(L.list)))
          )
       );
 }

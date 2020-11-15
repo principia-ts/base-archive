@@ -22,8 +22,9 @@ import { unit } from "./unit";
  * @category Apply
  * @since 1.0.0
  */
-export const both_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> =>
-   mapBoth_(fa, fb, (a, b) => [a, b]);
+export function both_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> {
+   return mapBoth_(fa, fb, (a, b) => [a, b]);
+}
 
 /**
  * ```haskell
@@ -35,7 +36,9 @@ export const both_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise
  * @category Apply
  * @since 1.0.0
  */
-export const both = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyPromise<readonly [A, B]> => both_(fa, fb);
+export function both<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
+   return (fa) => both_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -47,8 +50,9 @@ export const both = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyProm
  * @category Apply
  * @since 1.0.0
  */
-export const bothSeq_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> =>
-   mapBothSeq_(fa, fb, (a, b) => [a, b]);
+export function bothSeq_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> {
+   return mapBothSeq_(fa, fb, (a, b) => [a, b]);
+}
 
 /**
  * ```haskell
@@ -60,8 +64,9 @@ export const bothSeq_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyProm
  * @category Apply
  * @since 1.0.0
  */
-export const bothSeq = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyPromise<readonly [A, B]> =>
-   bothSeq_(fa, fb);
+export function bothSeq<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
+   return (fa) => bothSeq_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -73,7 +78,9 @@ export const bothSeq = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyP
  * @category Applicative
  * @since 1.0.0
  */
-export const pure = <A>(a: A): LazyPromise<A> => () => Promise.resolve(a);
+export function pure<A>(a: A): LazyPromise<A> {
+   return () => Promise.resolve(a);
+}
 
 export const ApplicativePar: P.Applicative<[URI], V> = HKT.instance({
    ...Functor,

@@ -21,8 +21,9 @@ import { chain_ } from "./monad";
  * @category Apply
  * @since 1.0.0
  */
-export const ap_ = <A, B>(fab: LazyPromise<(a: A) => B>, fa: LazyPromise<A>): LazyPromise<B> => () =>
-   Promise.all([fab(), fa()]).then(([f, a]) => f(a));
+export function ap_<A, B>(fab: LazyPromise<(a: A) => B>, fa: LazyPromise<A>): LazyPromise<B> {
+   return () => Promise.all([fab(), fa()]).then(([f, a]) => f(a));
+}
 
 /**
  * ```haskell
@@ -34,7 +35,9 @@ export const ap_ = <A, B>(fab: LazyPromise<(a: A) => B>, fa: LazyPromise<A>): La
  * @category Apply
  * @since 1.0.0
  */
-export const ap = <A>(fa: LazyPromise<A>) => <B>(fab: LazyPromise<(a: A) => B>): LazyPromise<B> => ap_(fab, fa);
+export function ap<A>(fa: LazyPromise<A>): <B>(fab: LazyPromise<(a: A) => B>) => LazyPromise<B> {
+   return (fab) => ap_(fab, fa);
+}
 
 /**
  * ```haskell
@@ -46,11 +49,12 @@ export const ap = <A>(fa: LazyPromise<A>) => <B>(fab: LazyPromise<(a: A) => B>):
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<A> =>
-   ap_(
+export function apFirst_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<A> {
+   return ap_(
       map_(fa, (a) => () => a),
       fb
    );
+}
 
 /**
  * ```haskell
@@ -62,7 +66,9 @@ export const apFirst_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyProm
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyPromise<A> => apFirst_(fa, fb);
+export function apFirst<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<A> {
+   return (fa) => apFirst_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -74,11 +80,12 @@ export const apFirst = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyP
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<B> =>
-   ap_(
+export function apSecond_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<B> {
+   return ap_(
       map_(fa, () => (b: B) => b),
       fb
    );
+}
 
 /**
  * ```haskell
@@ -90,7 +97,9 @@ export const apSecond_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPro
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyPromise<B> => apSecond_(fa, fb);
+export function apSecond<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<B> {
+   return (fa) => apSecond_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -102,13 +111,15 @@ export const apSecond = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): Lazy
  * @category Apply
  * @since 1.0.0
  */
-export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: LazyPromise<A>) => (
-   fb: LazyPromise<B>
-): LazyPromise<C> =>
-   ap_(
-      map_(fa, (a) => (b) => f(a)(b)),
-      fb
-   );
+export function liftA2<A, B, C>(
+   f: (a: A) => (b: B) => C
+): (fa: LazyPromise<A>) => (fb: LazyPromise<B>) => LazyPromise<C> {
+   return (fa) => (fb) =>
+      ap_(
+         map_(fa, (a) => (b) => f(a)(b)),
+         fb
+      );
+}
 
 /**
  * ```haskell
@@ -120,8 +131,9 @@ export const liftA2 = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: LazyPromise<A>
  * @category Apply
  * @since 1.0.0
  */
-export const mapBoth_ = <A, B, C>(fa: LazyPromise<A>, fb: LazyPromise<B>, f: (a: A, b: B) => C): LazyPromise<C> => () =>
-   Promise.all([fa(), fb()]).then(([a, b]) => f(a, b));
+export function mapBoth_<A, B, C>(fa: LazyPromise<A>, fb: LazyPromise<B>, f: (a: A, b: B) => C): LazyPromise<C> {
+   return () => Promise.all([fa(), fb()]).then(([a, b]) => f(a, b));
+}
 
 /**
  * ```haskell
@@ -133,8 +145,9 @@ export const mapBoth_ = <A, B, C>(fa: LazyPromise<A>, fb: LazyPromise<B>, f: (a:
  * @category Apply
  * @since 1.0.0
  */
-export const mapBoth = <A, B, C>(fb: LazyPromise<B>, f: (a: A, b: B) => C) => (fa: LazyPromise<A>): LazyPromise<C> =>
-   mapBoth_(fa, fb, f);
+export function mapBoth<A, B, C>(fb: LazyPromise<B>, f: (a: A, b: B) => C): (fa: LazyPromise<A>) => LazyPromise<C> {
+   return (fa) => mapBoth_(fa, fb, f);
+}
 
 /**
  * ```haskell
@@ -146,8 +159,9 @@ export const mapBoth = <A, B, C>(fb: LazyPromise<B>, f: (a: A, b: B) => C) => (f
  * @category Apply
  * @since 1.0.0
  */
-export const apSeq_ = <A, B>(fab: LazyPromise<(a: A) => B>, fa: LazyPromise<A>): LazyPromise<B> =>
-   chain_(fab, (f) => map_(fa, f));
+export function apSeq_<A, B>(fab: LazyPromise<(a: A) => B>, fa: LazyPromise<A>): LazyPromise<B> {
+   return chain_(fab, (f) => map_(fa, f));
+}
 
 /**
  * ```haskell
@@ -159,7 +173,9 @@ export const apSeq_ = <A, B>(fab: LazyPromise<(a: A) => B>, fa: LazyPromise<A>):
  * @category Apply
  * @since 1.0.0
  */
-export const apSeq = <A>(fa: LazyPromise<A>) => <B>(fab: LazyPromise<(a: A) => B>): LazyPromise<B> => apSeq_(fab, fa);
+export function apSeq<A>(fa: LazyPromise<A>): <B>(fab: LazyPromise<(a: A) => B>) => LazyPromise<B> {
+   return (fab) => apSeq_(fab, fa);
+}
 
 /**
  * ```haskell
@@ -171,11 +187,12 @@ export const apSeq = <A>(fa: LazyPromise<A>) => <B>(fab: LazyPromise<(a: A) => B
  * @category Uncurried Apply
  * @since 1.0.0
  */
-export const apFirstSeq_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<A> =>
-   apSeq_(
+export function apFirstSeq_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<A> {
+   return apSeq_(
       map_(fa, (a) => () => a),
       fb
    );
+}
 
 /**
  * ```haskell
@@ -187,7 +204,9 @@ export const apFirstSeq_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyP
  * @category Apply
  * @since 1.0.0
  */
-export const apFirstSeq = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyPromise<A> => apFirstSeq_(fa, fb);
+export function apFirstSeq<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<A> {
+   return (fa) => apFirstSeq_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -199,11 +218,12 @@ export const apFirstSeq = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): La
  * @category Apply
  * @since 1.0.0
  */
-export const apSecondSeq_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<B> =>
-   apSeq_(
+export function apSecondSeq_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<B> {
+   return apSeq_(
       map_(fa, () => (b: B) => b),
       fb
    );
+}
 
 /**
  * ```haskell
@@ -215,7 +235,9 @@ export const apSecondSeq_ = <A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): Lazy
  * @category Apply
  * @since 1.0.0
  */
-export const apSecondSeq = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): LazyPromise<B> => apSecondSeq_(fa, fb);
+export function apSecondSeq<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<B> {
+   return (fa) => apSecondSeq_(fa, fb);
+}
 
 /**
  * ```haskell
@@ -227,8 +249,9 @@ export const apSecondSeq = <B>(fb: LazyPromise<B>) => <A>(fa: LazyPromise<A>): L
  * @category Apply
  * @since 1.0.0
  */
-export const mapBothSeq_ = <A, B, C>(fa: LazyPromise<A>, fb: LazyPromise<B>, f: (a: A, b: B) => C): LazyPromise<C> =>
-   chain_(fa, (a) => map_(fb, (b) => f(a, b)));
+export function mapBothSeq_<A, B, C>(fa: LazyPromise<A>, fb: LazyPromise<B>, f: (a: A, b: B) => C): LazyPromise<C> {
+   return chain_(fa, (a) => map_(fb, (b) => f(a, b)));
+}
 
 /**
  * ```haskell
@@ -240,8 +263,9 @@ export const mapBothSeq_ = <A, B, C>(fa: LazyPromise<A>, fb: LazyPromise<B>, f: 
  * @category Apply
  * @since 1.0.0
  */
-export const mapBothSeq = <A, B, C>(fb: LazyPromise<B>, f: (a: A, b: B) => C) => (fa: LazyPromise<A>): LazyPromise<C> =>
-   mapBothSeq_(fa, fb, f);
+export function mapBothSeq<A, B, C>(fb: LazyPromise<B>, f: (a: A, b: B) => C): (fa: LazyPromise<A>) => LazyPromise<C> {
+   return (fa) => mapBothSeq_(fa, fb, f);
+}
 
 /**
  * ```haskell
@@ -253,9 +277,11 @@ export const mapBothSeq = <A, B, C>(fb: LazyPromise<B>, f: (a: A, b: B) => C) =>
  * @category Apply
  * @since 1.0.0
  */
-export const liftA2Seq = <A, B, C>(f: (a: A) => (b: B) => C) => (fa: LazyPromise<A>) => (
-   fb: LazyPromise<B>
-): LazyPromise<C> => chain_(fa, (a) => map_(fb, (b) => f(a)(b)));
+export function liftA2Seq<A, B, C>(
+   f: (a: A) => (b: B) => C
+): (fa: LazyPromise<A>) => (fb: LazyPromise<B>) => LazyPromise<C> {
+   return (fa) => (fb) => chain_(fa, (a) => map_(fb, (b) => f(a)(b)));
+}
 
 export const ApplyPar: P.Apply<[URI], V> = HKT.instance({
    ...Functor,

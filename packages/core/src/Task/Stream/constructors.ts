@@ -2,6 +2,7 @@ import * as A from "../../Array";
 import type { Either } from "../../Either";
 import * as E from "../../Either";
 import { flow, pipe } from "../../Function";
+import * as L from "../../List";
 import type { Option } from "../../Option";
 import * as O from "../../Option";
 import type { HasClock } from "../Clock";
@@ -32,8 +33,8 @@ export function fromArray<A>(c: ReadonlyArray<A>): IO<A> {
          T.letS("pull", ({ doneRef }) =>
             pipe(
                doneRef,
-               XR.modify<T.EIO<Option<never>, ReadonlyArray<A>>, boolean>((done) =>
-                  done || c.length === 0 ? [Pull.end, true] : [T.pure(c), true]
+               XR.modify<T.EIO<Option<never>, L.List<A>>, boolean>((done) =>
+                  done || c.length === 0 ? [Pull.end, true] : [T.pure(L.from(c)), true]
                ),
                T.flatten
             )
@@ -78,7 +79,7 @@ export const empty: IO<never> = new Stream(M.succeed(Pull.end));
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
  */
 export function iterate<A>(a: A, f: (a: A) => A): IO<A> {
-   return new Stream(pipe(XR.makeRef(a), T.toManaged(), M.map(flow(XR.getAndUpdate(f), T.map(A.pure)))));
+   return new Stream(pipe(XR.makeRef(a), T.toManaged(), M.map(flow(XR.getAndUpdate(f), T.map(L.list)))));
 }
 
 export function suspend<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
@@ -113,7 +114,7 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
                                 )
                              ),
                              T.tap(() => doneRef.set(true)),
-                             T.map(({ a }) => [a]),
+                             T.map(({ a }) => L.list(a)),
                              T.mapError(O.some)
                           )
                   )
@@ -143,17 +144,7 @@ export function fromTaskOption<R, E, A>(fa: T.Task<R, Option<E>, A>): Stream<R, 
          M.letS("pull", ({ doneRef }) =>
             pipe(
                doneRef,
-               XR.modify((b) =>
-                  b
-                     ? [Pull.end, true]
-                     : [
-                          pipe(
-                             fa,
-                             T.map((a) => [a])
-                          ),
-                          true
-                       ]
-               ),
+               XR.modify((b) => (b ? [Pull.end, true] : [pipe(fa, T.map(L.list)), true])),
                T.flatten
             )
          ),
@@ -190,7 +181,7 @@ export const fromSchedule: <R, A>(schedule: Sc.Schedule<R, unknown, A>) => Strea
 export function asyncOption<R, E, A>(
    register: (
       resolve: (
-         next: T.Task<R, Option<E>, ReadonlyArray<A>>,
+         next: T.Task<R, Option<E>, L.List<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
       ) => T.IO<Exit<never, boolean>>
    ) => Option<Stream<R, E, A>>,
@@ -254,7 +245,7 @@ export function asyncOption<R, E, A>(
 export function async<R, E, A>(
    register: (
       resolve: (
-         next: T.Task<R, Option<E>, ReadonlyArray<A>>,
+         next: T.Task<R, Option<E>, L.List<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
       ) => T.IO<Exit<never, boolean>>
    ) => void,
@@ -275,7 +266,7 @@ export function async<R, E, A>(
 export function asyncInterruptEither<R, E, A>(
    register: (
       resolve: (
-         next: T.Task<R, Option<E>, ReadonlyArray<A>>,
+         next: T.Task<R, Option<E>, L.List<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
       ) => T.IO<Exit<never, boolean>>
    ) => Either<T.Canceler<R>, Stream<R, E, A>>,
@@ -341,7 +332,7 @@ export function asyncInterruptEither<R, E, A>(
 export function asyncInterrupt<R, E, A>(
    register: (
       cb: (
-         next: T.Task<R, Option<E>, ReadonlyArray<A>>,
+         next: T.Task<R, Option<E>, L.List<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
       ) => T.IO<Exit<never, boolean>>
    ) => T.Canceler<R>,
@@ -353,7 +344,7 @@ export function asyncInterrupt<R, E, A>(
 /**
  * Creates a stream from a task producing chunks of `A` values until it fails with None.
  */
-export function repeatTaskChunkOption<R, E, A>(ef: T.Task<R, Option<E>, ReadonlyArray<A>>): Stream<R, E, A> {
+export function repeatTaskChunkOption<R, E, A>(ef: T.Task<R, Option<E>, L.List<A>>): Stream<R, E, A> {
    return new Stream(
       pipe(
          M.do,
@@ -388,7 +379,7 @@ const ensuringFirst_ = <R, E, A, R1>(stream: Stream<R, E, A>, finalizer: T.Task<
  * Creates a stream from a task producing values of type `A` until it fails with None.
  */
 export const repeatTaskOption: <R, E, A>(fa: T.Task<R, Option<E>, A>) => Stream<R, E, A> = flow(
-   T.map(A.pure),
+   T.map(L.list),
    repeatTaskChunkOption
 );
 
@@ -397,7 +388,7 @@ export const repeatTaskOption: <R, E, A>(fa: T.Task<R, Option<E>, A>) => Stream<
  */
 export function fromArrayXQueue<R, E, O>(queue: XQueue<never, R, unknown, E, never, Array<O>>): Stream<R, E, O> {
    return repeatTaskChunkOption(
-      T.catchAllCause_(queue.take, (c) =>
+      T.catchAllCause_(T.map_(queue.take, L.from), (c) =>
          T.chain_(queue.isShutdown, (down) => (down && C.isInterrupt(c) ? Pull.end : Pull.halt(c)))
       )
    );
@@ -419,6 +410,7 @@ export function fromXQueue<R, E, A>(queue: XQueue<never, R, unknown, E, never, A
    return pipe(
       queue,
       XQ.takeBetween(1, Number.MAX_SAFE_INTEGER),
+      T.map(L.from),
       T.catchAllCause((c) =>
          T.chain_(queue.isShutdown, (down) => (down && C.isInterrupt(c) ? Pull.end : Pull.halt(c)))
       ),
@@ -441,7 +433,7 @@ export function fromXQueueWithShutdown<R, E, A>(queue: XQueue<never, R, unknown,
  * The stream evaluation guarantees proper acquisition and release of the
  * `Managed`.
  */
-export function apply<R, E, A>(proc: M.Managed<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>): Stream<R, E, A> {
+export function apply<R, E, A>(proc: M.Managed<R, never, T.Task<R, Option<E>, L.List<A>>>): Stream<R, E, A> {
    return new Stream(proc);
 }
 
@@ -493,7 +485,7 @@ export function bracketExit<A, R1>(
 export function asyncM<R, E, A, R1 = R, E1 = E>(
    register: (
       cb: (
-         next: T.Task<R, Option<E>, ReadonlyArray<A>>,
+         next: T.Task<R, Option<E>, L.List<A>>,
          offerCb?: (e: Exit<never, boolean>) => void
       ) => T.IO<Exit<never, boolean>>
    ) => T.Task<R1, E1, unknown>,

@@ -2,6 +2,7 @@ import * as A from "../../../Array";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
 import { pipe } from "../../../Function";
+import * as L from "../../../List";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as Ex from "../../Exit";
@@ -32,8 +33,8 @@ export function as<Z1>(z1: Z1): <R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>) => Sink
 /**
  * A sink that collects all of its inputs into an array.
  */
-export function collectAll<A>(): Sink<unknown, never, A, A, ReadonlyArray<A>> {
-   return fromFoldLeftChunks([] as ReadonlyArray<A>, (s, i: ReadonlyArray<A>) => [...s, ...i]);
+export function collectAll<A>(): Sink<unknown, never, A, A, L.List<A>> {
+   return fromFoldLeftChunks(L.empty<A>(), (s, i: L.List<A>) => L.concat_(s, i));
 }
 
 /**
@@ -56,9 +57,9 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                M.map(([push, restart]) => {
                   const go = (
                      s: S,
-                     in_: O.Option<ReadonlyArray<I>>,
+                     in_: O.Option<L.List<I>>,
                      end: boolean
-                  ): T.Task<R, [E.Either<E, S>, ReadonlyArray<L>], S> =>
+                  ): T.Task<R, [E.Either<E, S>, L.List<L>], S> =>
                      T.catchAll_(T.as_(push(in_), s), ([e, leftover]) =>
                         E.fold_(
                            e,
@@ -69,14 +70,14 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
 
                                  if (leftover.length === 0) {
                                     if (end) {
-                                       return Push.emit(s1, A.empty());
+                                       return Push.emit(s1, L.empty());
                                     } else {
                                        return T.as_(restart, s1);
                                     }
                                  } else {
                                     return T.apSecond_(
                                        restart,
-                                       go(s1, O.some((leftover as unknown) as ReadonlyArray<I>), end)
+                                       go(s1, O.some((leftover as unknown) as L.List<I>), end)
                                     );
                                  }
                               } else {
@@ -86,7 +87,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                         )
                      );
 
-                  return (in_: O.Option<ReadonlyArray<I>>) =>
+                  return (in_: O.Option<L.List<I>>) =>
                      T.chain_(acc.get, (s) => T.chain_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)));
                })
             );
@@ -119,9 +120,9 @@ export function raceBoth<R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
             M.do,
             M.bindS("p1", () => self.push),
             M.bindS("p2", () => that.push),
-            M.map(({ p1, p2 }) => (i: Option<ReadonlyArray<I1>>): T.Task<
+            M.map(({ p1, p2 }) => (i: Option<L.List<I1>>): T.Task<
                R1 & R,
-               readonly [Either<E | E1, Either<Z, Z1>>, ReadonlyArray<L | L1>],
+               readonly [Either<E | E1, Either<Z, Z1>>, L.List<L | L1>],
                void
             > =>
                T.raceWith_(
@@ -165,6 +166,6 @@ export function raceBoth<R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
 
 export function dropLeftover<R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>): Sink<R, E, I, never, Z> {
    return new Sink(
-      M.map_(sz.push, (p) => (in_: O.Option<ReadonlyArray<I>>) => T.mapError_(p(in_), ([v, _]) => [v, []]))
+      M.map_(sz.push, (p) => (in_: O.Option<L.List<I>>) => T.mapError_(p(in_), ([v, _]) => [v, L.empty()]))
    );
 }

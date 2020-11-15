@@ -1,4 +1,5 @@
 import * as E from "../../../Either";
+import type * as L from "../../../List";
 import type * as O from "../../../Option";
 import * as M from "../../Managed";
 import * as T from "../../Task";
@@ -15,7 +16,7 @@ import { Sink } from "./model";
  */
 export function map_<R, E, I, L, Z, Z2>(sz: Sink<R, E, I, L, Z>, f: (z: Z) => Z2): Sink<R, E, I, L, Z2> {
    return new Sink(
-      M.map_(sz.push, (sink) => (inputs: O.Option<ReadonlyArray<I>>) =>
+      M.map_(sz.push, (sink) => (inputs: O.Option<L.List<I>>) =>
          T.mapError_(sink(inputs), (e) => [E.map_(e[0], f), e[1]])
       )
    );

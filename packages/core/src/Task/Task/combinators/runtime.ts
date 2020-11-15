@@ -1,9 +1,12 @@
 import * as T from "../_core";
+import { AtomicBoolean } from "../../../Utils/support/AtomicBoolean";
 import { HasClock, LiveClock } from "../../Clock";
 import type { Exit } from "../../Exit";
 import * as C from "../../Exit/Cause";
 import * as F from "../../Fiber";
+import { interruptAllAs_ } from "../../Fiber";
 import { Executor } from "../../Fiber/executor";
+import type { FiberId } from "../../Fiber/FiberId";
 import { newFiberId } from "../../Fiber/FiberId";
 import type { Callback } from "../../Fiber/state";
 import { defaultRandom, HasRandom } from "../../Random";
@@ -60,6 +63,22 @@ export interface CancelMain {
    (): void;
 }
 
+export function defaultTeardown(status: number, id: FiberId, onExit: (status: number) => void) {
+   run(interruptAllAs_(F._tracing.running, id), () => {
+      setTimeout(() => {
+         if (F._tracing.running.size === 0) {
+            onExit(status);
+         } else {
+            defaultTeardown(status, id, onExit);
+         }
+      }, 0);
+   });
+}
+
+export function defaultHook(cont: NodeJS.SignalsListener): (signal: NodeJS.Signals) => void {
+   return (signal) => cont(signal);
+}
+
 /**
  * Runs effect until completion returing a cancel function that when invoked
  * triggers cancellation of the process, in case errors are found process will
@@ -69,8 +88,14 @@ export interface CancelMain {
  *
  * Note: this should be used only in node.js as it depends on process.exit
  */
-export function runMain<E>(effect: T.Task<DefaultEnv, E, void>): CancelMain {
+export function runMain<E>(
+   effect: T.Task<DefaultEnv, E, void>,
+   customHook: (cont: NodeJS.SignalsListener) => NodeJS.SignalsListener = defaultHook,
+   customTeardown: typeof defaultTeardown = defaultTeardown
+): void {
    const context = fiberExecutor<E, void>();
+
+   const onExit = (status: number) => process.exit(status);
 
    context.evaluateLater(effect[_I]);
    context.runAsync((exit) => {
@@ -78,22 +103,36 @@ export function runMain<E>(effect: T.Task<DefaultEnv, E, void>): CancelMain {
          case "Failure": {
             if (C.isDie(exit.cause) || C.didFail(exit.cause)) {
                console.error(C.pretty(exit.cause));
-               process.exit(2);
+               customTeardown(1, context.id, onExit);
+               break;
             } else {
                console.log(C.pretty(exit.cause));
-               process.exit(0);
+               customTeardown(0, context.id, onExit);
+               break;
             }
          }
-         // eslint-disable-next-line no-fallthrough
          case "Success": {
-            process.exit(0);
+            customTeardown(0, context.id, onExit);
+            break;
          }
       }
-   });
 
-   return () => {
-      run(context.interruptAs(context.id));
-   };
+      const interrupted = new AtomicBoolean(false);
+
+      const handler: NodeJS.SignalsListener = (signal) => {
+         customHook(() => {
+            process.removeListener("SIGTERM", handler);
+            process.removeListener("SIGINT", handler);
+
+            if (interrupted.compareAndSet(false, true)) {
+               run(context.interruptAs(context.id));
+            }
+         })(signal);
+      };
+
+      process.once("SIGTERM", handler);
+      process.once("SIGINT", handler);
+   });
 }
 
 /**

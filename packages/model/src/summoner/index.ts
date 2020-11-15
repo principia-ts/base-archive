@@ -9,11 +9,12 @@ export interface Summoner<Env extends AnyEnv> extends Summoners<PURI, RURI, Env>
    <S, R, E, A>(F: URItoProgram<Env, S, R, E, A>[PURI]): Model<PURI, RURI, Env, S, R, E, A>;
 }
 
-export const summonFor: <Env extends AnyEnv = {}>(
-   env: ExtractEnv<Env, never>
-) => SummonerOps<Summoner<Env & FastCheckEnv>> = <Env extends AnyEnv = {}>(_env: ExtractEnv<Env, never>) =>
-   makeSummoner<Summoner<Env & FastCheckEnv>>(cacheUnaryFunction, (program) => {
+export function summonFor<Env extends AnyEnv = {}>(
+   _env: ExtractEnv<Env, never>
+): SummonerOps<Summoner<Env & FastCheckEnv>> {
+   return makeSummoner<Summoner<Env & FastCheckEnv>>(cacheUnaryFunction, (program) => {
       return {
          build: (a) => a
       };
    });
+}

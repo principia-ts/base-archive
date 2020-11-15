@@ -1,4 +1,5 @@
 import { pipe } from "../../../Function";
+import type * as L from "../../../List";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as M from "../../Managed";
@@ -12,7 +13,7 @@ import { Stream } from "../model";
  */
 export function unfoldChunkM<Z>(
    z: Z
-): <R, E, A>(f: (z: Z) => T.Task<R, E, Option<readonly [ReadonlyArray<A>, Z]>>) => Stream<R, E, A> {
+): <R, E, A>(f: (z: Z) => T.Task<R, E, Option<readonly [L.List<A>, Z]>>) => Stream<R, E, A> {
    return (f) =>
       new Stream(
          pipe(

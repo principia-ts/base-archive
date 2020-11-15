@@ -75,6 +75,9 @@ export function apSecond<Q, D, B>(fb: Task<Q, D, B>): <R, E, A>(fa: Task<R, E, A
    return (fa) => apSecond_(fa, fb);
 }
 
+export const andThen_ = apSecond_;
+export const andThen = apSecond;
+
 export function mapBoth_<R, E, A, Q, D, B, C>(
    fa: Task<R, E, A>,
    fb: Task<Q, D, B>,

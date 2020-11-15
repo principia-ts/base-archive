@@ -12,7 +12,9 @@ export interface FastCheckEnv {
    };
 }
 
-export const accessFastCheck = <Env extends AnyEnv>(env: Env): typeof fc => (env as FastCheckEnv)[ArbURI].module;
+export function accessFastCheck<Env extends AnyEnv>(env: Env): typeof fc {
+   return (env as FastCheckEnv)[ArbURI].module;
+}
 
 declare module "@principia/prelude/HKT" {
    interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

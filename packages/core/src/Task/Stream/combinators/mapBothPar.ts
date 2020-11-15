@@ -2,7 +2,7 @@ import * as A from "../../../Array";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
 import { pipe, tuple } from "../../../Function";
-import type { NonEmptyArray } from "../../../NonEmptyArray";
+import * as L from "../../../List";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import type { Exit } from "../../Exit";
@@ -13,21 +13,21 @@ import type { Stream } from "../model";
 import { combineChunks } from "./combineChunks";
 
 function _zipChunks<A, B, C>(
-   fa: ReadonlyArray<A>,
-   fb: ReadonlyArray<B>,
+   fa: L.List<A>,
+   fb: L.List<B>,
    f: (a: A, b: B) => C
-): [ReadonlyArray<C>, E.Either<ReadonlyArray<A>, ReadonlyArray<B>>] {
-   const fc: C[] = [];
+): [L.List<C>, E.Either<L.List<A>, L.List<B>>] {
+   const fc = L.empty<C>();
    const len = Math.min(fa.length, fb.length);
    for (let i = 0; i < len; i++) {
-      fc[i] = f(fa[i], fb[i]);
+      L.insert_(fc, i, f(L.unsafeNth_(fa, i) as A, L.unsafeNth_(fb, i) as B));
    }
 
    if (fa.length > fb.length) {
-      return [fc, E.left(A.dropLeft_(fa, fb.length))];
+      return [fc, E.left(L.drop_(fa, fb.length))];
    }
 
-   return [fc, E.right(A.dropLeft_(fb, fa.length))];
+   return [fc, E.right(L.drop_(fb, fa.length))];
 }
 
 /**
@@ -57,24 +57,24 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
    ps: "par" | "seq" = "par"
 ): Stream<R & R1, E1 | E, O3> {
    type End = { _tag: "End" };
-   type RightDone<W2> = { _tag: "RightDone"; excessR: NonEmptyArray<W2> };
-   type LeftDone<W1> = { _tag: "LeftDone"; excessL: NonEmptyArray<W1> };
+   type RightDone<W2> = { _tag: "RightDone"; excessR: L.List<W2> };
+   type LeftDone<W1> = { _tag: "LeftDone"; excessL: L.List<W1> };
    type Running<W1, W2> = {
       _tag: "Running";
-      excess: Either<ReadonlyArray<W1>, ReadonlyArray<W2>>;
+      excess: Either<L.List<W1>, L.List<W2>>;
    };
    type State<W1, W2> = End | Running<W1, W2> | LeftDone<W1> | RightDone<W2>;
 
    const handleSuccess = (
-      leftUpd: Option<ReadonlyArray<O>>,
-      rightUpd: Option<ReadonlyArray<O2>>,
-      excess: Either<ReadonlyArray<O>, ReadonlyArray<O2>>
-   ): Exit<Option<never>, readonly [ReadonlyArray<O3>, State<O, O2>]> => {
+      leftUpd: Option<L.List<O>>,
+      rightUpd: Option<L.List<O2>>,
+      excess: Either<L.List<O>, L.List<O2>>
+   ): Exit<Option<never>, readonly [L.List<O3>, State<O, O2>]> => {
       const [leftExcess, rightExcess] = pipe(
          excess,
          E.fold(
-            (l) => tuple<[ReadonlyArray<O>, ReadonlyArray<O2>]>(l, []),
-            (r) => tuple<[ReadonlyArray<O>, ReadonlyArray<O2>]>([], r)
+            (l) => tuple<[L.List<O>, L.List<O2>]>(l, L.empty()),
+            (r) => tuple<[L.List<O>, L.List<O2>]>(L.empty(), r)
          )
       );
 
@@ -83,14 +83,14 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
             leftUpd,
             O.fold(
                () => leftExcess,
-               (upd) => [...leftExcess, ...upd] as ReadonlyArray<O>
+               (upd) => L.concat_(leftExcess, upd)
             )
          ),
          pipe(
             rightUpd,
             O.fold(
                () => rightExcess,
-               (upd) => [...rightExcess, ...upd] as ReadonlyArray<O2>
+               (upd) => L.concat_(rightExcess, upd)
             )
          )
       ];
@@ -99,7 +99,7 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
 
       if (O.isSome(leftUpd) && O.isSome(rightUpd)) {
          return Ex.succeed(
-            tuple<[ReadonlyArray<O3>, State<O, O2>]>(emit, {
+            tuple<[L.List<O3>, State<O, O2>]>(emit, {
                _tag: "Running",
                excess: newExcess
             })
@@ -114,14 +114,14 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
                   newExcess,
                   E.fold(
                      (l): State<O, O2> =>
-                        A.isNonEmpty(l)
+                        !L.isEmpty(l)
                            ? {
                                 _tag: "LeftDone",
                                 excessL: l
                              }
                            : { _tag: "End" },
                      (r): State<O, O2> =>
-                        A.isNonEmpty(r)
+                        !L.isEmpty(r)
                            ? {
                                 _tag: "RightDone",
                                 excessR: r
@@ -138,7 +138,7 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
       stream,
       combineChunks(that)<State<O, O2>>({
          _tag: "Running",
-         excess: E.left([])
+         excess: E.left(L.empty())
       })((st, p1, p2) => {
          switch (st._tag) {
             case "End": {

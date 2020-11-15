@@ -8,12 +8,16 @@ export interface OpticsFor<S> {
    readonly optional: O.Optional<S, S>;
 }
 
-const makeOpticsFor = <S>(): OpticsFor<S> => ({
-   lens: L.id(),
-   prism: P.id(),
-   optional: O.id()
-});
+function makeOpticsFor<S>(): OpticsFor<S> {
+   return {
+      lens: L.id(),
+      prism: P.id(),
+      optional: O.id()
+   };
+}
 
 const staticOptics = makeOpticsFor<any>();
 
-export const OpticsFor = <A>(): OpticsFor<A> => staticOptics;
+export function OpticsFor<A>(): OpticsFor<A> {
+   return staticOptics;
+}

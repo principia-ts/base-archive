@@ -1,6 +1,6 @@
 // codegen:start { preset: barrel }
 export * from "./aggregate";
-export * from "./aggregateAsyncWithinEither";
+export * from "./aggregateAsync";
 export * from "./catchAllCause";
 export * from "./combineChunks";
 export * from "./concatAll";

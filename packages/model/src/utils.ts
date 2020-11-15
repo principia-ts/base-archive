@@ -5,7 +5,7 @@ export type Literal = string | number | boolean | null;
 
 const typeOf = (x: unknown): string => (x === null ? "null" : typeof x);
 
-export const _intersect = <A, B>(a: A, b: B): A & B => {
+export function _intersect<A, B>(a: A, b: B): A & B {
    if (a !== undefined && b !== undefined) {
       const tx = typeOf(a);
       const ty = typeOf(b);
@@ -14,9 +14,9 @@ export const _intersect = <A, B>(a: A, b: B): A & B => {
       }
    }
    return b as any;
-};
+}
 
-export const memoize = <A, B>(f: (a: A) => B): ((a: A) => B) => {
+export function memoize<A, B>(f: (a: A) => B): (a: A) => B {
    const cache = new Map();
    return (a) => {
       if (!cache.has(a)) {
@@ -26,21 +26,24 @@ export const memoize = <A, B>(f: (a: A) => B): ((a: A) => B) => {
       }
       return cache.get(a);
    };
-};
+}
 
-export const assignFunction = <F extends Function, C>(ab: F, c: C): F & C => {
+export function assignFunction<F extends Function, C>(ab: F, c: C): F & C {
    const newF: typeof ab = ((...x: any[]) => ab(...x)) as any;
    return Object.assign(newF, c);
-};
+}
 
 export type SelectKeyOfMatchingValues<KeyedValues, Constraint> = {
    [k in keyof KeyedValues]: KeyedValues[k] extends Constraint ? k : never;
 }[keyof KeyedValues];
 
-export const assignCallable = <C, F extends Function & C, D>(F: F, d: D): F & C & D =>
-   assignFunction(F, Object.assign({}, F, d));
+export function assignCallable<C, F extends Function & C, D>(F: F, d: D): F & C & D {
+   return assignFunction(F, Object.assign({}, F, d));
+}
 
-export const wrapFun = <A, B, X>(g: ((a: A) => B) & X): typeof g => ((x: any) => g(x)) as any;
+export function wrapFun<A, B, X>(g: ((a: A) => B) & X): typeof g {
+   return ((x: any) => g(x)) as any;
+}
 
 export interface InhabitedTypes<Env, S, R, E, A> {
    _Env: (_: Env) => void;
@@ -60,8 +63,9 @@ export type InferS<X extends InhabitedTypes<any, any, any, any, any>> = X["_S"];
 
 export type InferEnv<X extends InhabitedTypes<any, any, any, any, any>> = Parameters<X["_Env"]>[0];
 
-export const inhabitTypes = <Env, S, R, E, A, T>(t: T): T & InhabitedTypes<Env, S, R, E, A> =>
-   t as T & InhabitedTypes<Env, S, R, E, A>;
+export function inhabitTypes<Env, S, R, E, A, T>(t: T): T & InhabitedTypes<Env, S, R, E, A> {
+   return t as T & InhabitedTypes<Env, S, R, E, A>;
+}
 
 type Function1 = (a: any) => any;
 
@@ -84,38 +88,55 @@ export function cacheUnaryFunction<F extends Function1>(f: F) {
    return r as F;
 }
 
-export const mapRecord = <Dic extends { [k in keyof Dic]: any }, B>(
+export function mapRecord<
+   Dic extends {
+      [k in keyof Dic]: any;
+   },
+   B
+>(
    d: Dic,
    f: (v: Dic[keyof Dic]) => B
-): { [k in keyof Dic]: B } => R.map_(d, f) as { [k in keyof Dic]: B };
-
-export const projectField = <T extends R.ReadonlyRecord<any, R.ReadonlyRecord<any, any>>>(t: T) => <
-   K extends keyof T[keyof T]
->(
-   k: K
 ): {
-   [q in keyof T]: T[q][K];
-} =>
-   R.map_(t, (p) => p[k]) as {
-      [q in keyof T]: T[q][K];
+   [k in keyof Dic]: B;
+} {
+   return R.map_(d, f) as {
+      [k in keyof Dic]: B;
    };
+}
 
-export const projectFieldWithEnv = <T extends R.ReadonlyRecord<any, (e: R) => R.ReadonlyRecord<any, any>>, R>(
+export function projectField<T extends R.ReadonlyRecord<any, R.ReadonlyRecord<any, any>>>(t: T) {
+   return <K extends keyof T[keyof T]>(
+      k: K
+   ): {
+      [q in keyof T]: T[q][K];
+   } =>
+      R.map_(t, (p) => p[k]) as {
+         [q in keyof T]: T[q][K];
+      };
+}
+
+export function projectFieldWithEnv<T extends R.ReadonlyRecord<any, (e: R) => R.ReadonlyRecord<any, any>>, R>(
    t: T,
    env: R
-) => <K extends keyof ReturnType<T[keyof T]>>(
-   k: K
-): {
-   [q in keyof T]: ReturnType<T[q]>[K];
-} =>
-   R.map_(t, (p) => p(env)[k]) as {
+) {
+   return <K extends keyof ReturnType<T[keyof T]>>(
+      k: K
+   ): {
       [q in keyof T]: ReturnType<T[q]>[K];
-   };
+   } =>
+      R.map_(t, (p) => p(env)[k]) as {
+         [q in keyof T]: ReturnType<T[q]>[K];
+      };
+}
 
-export const projectWithEnv = <T extends R.ReadonlyRecord<any, (_: Env) => R.ReadonlyRecord<string, any>>, Env>(
+export function projectWithEnv<T extends R.ReadonlyRecord<any, (_: Env) => R.ReadonlyRecord<string, any>>, Env>(
    t: T,
    env: Env
-): { [K in keyof T]: ReturnType<T[K]> } => R.map_(t, (p) => p(env)) as any;
+): {
+   [K in keyof T]: ReturnType<T[K]>;
+} {
+   return R.map_(t, (p) => p(env)) as any;
+}
 
 export type TupleToUnion<T extends unknown[]> = { [P in keyof T]: T[P] } extends {
    [key: number]: infer V;
