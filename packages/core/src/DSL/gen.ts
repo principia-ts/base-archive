@@ -5,6 +5,7 @@ import { pureF } from "@principia/prelude/Pure";
 
 import { pipe } from "../Function";
 import { PrematureGeneratorExit } from "../GlobalExceptions";
+import * as L from "../List/_core";
 
 export class GenHKT<T, A> {
    constructor(readonly T: T) {}
@@ -63,25 +64,25 @@ export function genWithHistoryF<F>(
       f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
    ): HKT.HKT<F, AEff> => {
       return pipe(
-         pure({}),
+         pure(undefined),
          chain(() => {
-            function run(replayStack: any[]): HKT.HKT<F, AEff> {
+            function run(replayStack: L.List<any>): HKT.HKT<F, AEff> {
                const iterator = f((config?.adapter ? config.adapter : adapter) as any);
                let state = iterator.next();
-               for (let i = 0; i < replayStack.length; i++) {
+               L.forEach_(replayStack, (a) => {
                   if (state.done) {
                      throw new PrematureGeneratorExit("GenHKT.genWithHistoryF");
                   }
-                  state = iterator.next(replayStack[i]);
-               }
+                  state = iterator.next(a);
+               });
                if (state.done) {
                   return pure(state.value);
                }
                return chain((val) => {
-                  return run(replayStack.concat([val]));
+                  return run(L.append_(replayStack, val));
                })(state.value["T"]);
             }
-            return run([]);
+            return run(L.empty());
          })
       );
    };

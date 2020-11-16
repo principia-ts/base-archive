@@ -7,6 +7,8 @@ export * from "./bracketFiber";
 export * from "./bracketOnError";
 export * from "./cached";
 export * from "./catchAllCause";
+export * from "./catchSome";
+export * from "./catchSomeCause";
 export * from "./catchSomeDefect";
 export * from "./causeAsError";
 export * from "./chainError";

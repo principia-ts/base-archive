@@ -138,6 +138,16 @@ export function deleteAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => Re
    return (k) => (m) => deleteAtE_(m, k);
 }
 
+export function unsafeDeleteAt_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
+   const r = new Map(m);
+   r.delete(k);
+   return r;
+}
+
+export function unsafeDeleteAt<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+   return (m) => unsafeDeleteAt_(m, k);
+}
+
 export function updateAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => Option<ReadonlyMap<K, A>> {
    const lookupWithKeyE_ = lookupWithKey_(E);
    return (m, k, a) => {

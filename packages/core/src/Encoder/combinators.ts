@@ -2,9 +2,11 @@ import { identity } from "../Function";
 import { _intersect, memoize } from "../Utils";
 import type { Encoder, OutputOf, TypeOf } from "./model";
 
-export const nullable = <O, A>(or: Encoder<O, A>): Encoder<null | O, null | A> => ({
-   encode: (a) => (a === null ? null : or.encode(a))
-});
+export function nullable<O, A>(or: Encoder<O, A>): Encoder<null | O, null | A> {
+   return {
+      encode: (a) => (a === null ? null : or.encode(a))
+   };
+}
 
 export function type<P extends Record<string, Encoder<any, any>>>(
    properties: P

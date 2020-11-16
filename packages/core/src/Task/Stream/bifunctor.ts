@@ -4,6 +4,7 @@ import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
 import * as M from "../Managed";
 import * as T from "../Task";
+import { map } from "./functor";
 import { Stream } from "./model";
 
 export function mapError_<R, E, A, D>(pab: Stream<R, E, A>, f: (e: E) => D) {
@@ -35,4 +36,20 @@ export function mapErrorCause_<R, E, A, E1>(stream: Stream<R, E, A>, f: (e: Caus
 
 export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(stream: Stream<R, E, A>) => Stream<R, D, A> {
    return (stream) => mapErrorCause_(stream, f);
+}
+
+/**
+ * Returns a stream whose failure and success channels have been mapped by
+ * the specified pair of functions, `f` and `g`.
+ */
+export function bimap_<R, E, O, E1, O1>(pab: Stream<R, E, O>, f: (e: E) => E1, g: (o: O) => O1): Stream<R, E1, O1> {
+   return pipe(pab, mapError(f), map(g));
+}
+
+/**
+ * Returns a stream whose failure and success channels have been mapped by
+ * the specified pair of functions, `f` and `g`.
+ */
+export function bimap<E, O, E1, O1>(f: (e: E) => E1, g: (o: O) => O1): <R>(pab: Stream<R, E, O>) => Stream<R, E1, O1> {
+   return (pab) => bimap_(pab, f, g);
 }
