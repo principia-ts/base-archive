@@ -52,7 +52,7 @@ export function timeout(d: number) {
                      ma.task,
                      T.giveAll([r, innerReleaseMap] as const),
                      T.raceWith(
-                        T.as_(T.sleep(d), O.none()),
+                        T.as_(T.sleep(d), () => O.none()),
                         (result, sleeper) =>
                            T.apSecond_(sleeper.interruptAs(id), T.done(Ex.map_(result, ([_, a]) => E.right(a)))),
                         (_, resultFiber) => T.succeed(E.left(resultFiber))
@@ -69,7 +69,7 @@ export function timeout(d: number) {
                            fiber.interruptAs(id),
                            T.ensuring(pipe(innerReleaseMap, releaseAll(Ex.interrupt(id), sequential()))),
                            T.forkDaemon,
-                           T.as(O.none())
+                           T.as(() => O.none())
                         ),
                      (result) => T.succeed(O.some(result))
                   )

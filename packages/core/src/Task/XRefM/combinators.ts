@@ -27,7 +27,12 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
             pipe(
                atomic.ref.get,
                T.chain(f),
-               T.chain(([b, a]) => pipe(atomic.ref.set(a), T.as(b))),
+               T.chain(([b, a]) =>
+                  pipe(
+                     atomic.ref.set(a),
+                     T.as(() => b)
+                  )
+               ),
                S.withPermit(atomic.semaphore)
             ),
          Derived: (derived) =>
@@ -41,7 +46,7 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
                         pipe(
                            derived.setEither(a),
                            T.chain((a) => derived.value.ref.set(a)),
-                           T.as(b)
+                           T.as(() => b)
                         )
                      )
                   )
@@ -59,7 +64,7 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
                         pipe(
                            derivedAll.setEither(a)(s),
                            T.chain((a) => derivedAll.value.ref.set(a)),
-                           T.as(b)
+                           T.as(() => b)
                         )
                      )
                   )

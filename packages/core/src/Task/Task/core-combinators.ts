@@ -65,8 +65,8 @@ export function asUnit<R, E>(ma: Task<R, E, any>): Task<R, E, void> {
  * @category Combinators
  * @since 1.0.0
  */
-export function as_<R, E, A, B>(ma: Task<R, E, A>, b: B): Task<R, E, B> {
-   return map_(ma, () => b);
+export function as_<R, E, A, B>(ma: Task<R, E, A>, b: () => B): Task<R, E, B> {
+   return map_(ma, () => b());
 }
 
 /**
@@ -79,7 +79,7 @@ export function as_<R, E, A, B>(ma: Task<R, E, A>, b: B): Task<R, E, B> {
  * @category Combinators
  * @since 1.0.0
  */
-export function as<B>(b: B): <R, E, A>(ma: Task<R, E, A>) => Task<R, E, B> {
+export function as<B>(b: () => B): <R, E, A>(ma: Task<R, E, A>) => Task<R, E, B> {
    return (ma) => as_(ma, b);
 }
 

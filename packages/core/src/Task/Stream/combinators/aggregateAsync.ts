@@ -43,7 +43,10 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
             const sdriver = yield* _(Sc.driver(schedule));
             const lastChunk = yield* _(XR.makeManagedRef<L.List<P>>(L.empty()));
             const producer = T.repeatWhileM_(Take.fromPull(pull), (take) =>
-               pipe(Ha.offer(take)(handoff), T.as(Ex.isSuccess(take)))
+               pipe(
+                  Ha.offer(take)(handoff),
+                  T.as(() => Ex.isSuccess(take))
+               )
             );
 
             const updateSchedule: T.RIO<R1 & HasClock, O.Option<Q>> = pipe(
@@ -77,7 +80,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
                      T.halt,
                      (os) =>
                         T.chain_(Take.fromPull(T.asSomeError(push(O.some(os)))), (take) =>
-                           T.as_(updateLastChunk(take), L.list(Take.map_(take, E.right)))
+                           T.as_(updateLastChunk(take), () => L.list(Take.map_(take, E.right)))
                         )
                   ),
                   T.mapError(O.some)

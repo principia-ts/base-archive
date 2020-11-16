@@ -12,7 +12,9 @@ export function fromSet<A>(s: Set<A>): ReadonlySet<A> {
    return new Set(s);
 }
 
-export const empty: ReadonlySet<never> = new Set();
+export function empty<A>(): ReadonlySet<A> {
+   return new Set();
+}
 
 export function singleton<A>(a: A): ReadonlySet<A> {
    return new Set([a]);

@@ -1,6 +1,5 @@
-import { NoSuchElementException } from "packages/core/src/GlobalExceptions";
-
 import type { Managed } from "../_core";
+import { NoSuchElementException } from "../../../GlobalExceptions";
 import * as O from "../../../Option";
 import { fail, succeed } from "../constructors";
 import { chain_ } from "../monad";

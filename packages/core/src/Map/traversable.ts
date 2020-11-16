@@ -25,7 +25,7 @@ export function getTraversableWithindex<K>(O: Ord<K>): P.TraversableWithIndex<[U
 
    const traverseWithIndex_ = P.implementTraverseWithIndex_<[URI], CK>()((_) => (G) => (ta, f) => {
       type _ = typeof _;
-      let gm: HKT.HKT<_["G"], ReadonlyMap<_["K"], _["B"]>> = P.pureF(G)(empty);
+      let gm: HKT.HKT<_["G"], ReadonlyMap<_["K"], _["B"]>> = P.pureF(G)(empty());
       const ks = keysO(ta);
       const len = ks.length;
       for (let i = 0; i < len; i++) {

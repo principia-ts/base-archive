@@ -1,14 +1,19 @@
+import type * as Eq from "../../../Eq";
 import type { Predicate } from "../../../Function";
-import { pipe, tuple } from "../../../Function";
+import { flow, not, pipe, tuple } from "../../../Function";
 import * as L from "../../../List";
+import * as Map from "../../../Map";
 import * as O from "../../../Option";
+import * as Set from "../../../Set";
 import * as Tup from "../../../Tuple";
 import * as Ex from "../../Exit";
+import type { Cause } from "../../Exit/Cause";
 import * as M from "../../Managed";
 import type { Finalizer } from "../../Managed/ReleaseMap";
 import * as T from "../../Task";
 import * as XR from "../../XRef";
 import * as XRM from "../../XRefM";
+import { filter } from "./filterable";
 import { map, map_, mapM_ } from "./functor";
 import { Transducer } from "./model";
 
@@ -18,6 +23,10 @@ export function fail<E>(e: E): Transducer<unknown, E, unknown, never> {
 
 export function die(error: unknown): Transducer<unknown, never, unknown, never> {
    return new Transducer(M.succeed((_) => T.die(error)));
+}
+
+export function halt<E>(c: Cause<E>): Transducer<unknown, E, unknown, never> {
+   return new Transducer(M.succeed((_) => T.halt(c)));
 }
 
 export function identity<I>(): Transducer<unknown, never, I, I> {
@@ -172,6 +181,32 @@ export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never
                   })
             );
       })
+   );
+}
+
+export function dropWhileM<R, E, I>(p: (i: I) => T.Task<R, E, boolean>): Transducer<R, E, I, I> {
+   return new Transducer(
+      pipe(
+         M.do,
+         M.bindS("dropping", () => XR.makeManagedRef(true)),
+         M.letS("push", ({ dropping }) => (is: O.Option<L.List<I>>) =>
+            O.fold_(
+               is,
+               () => T.succeed(L.empty<I>()),
+               (is) =>
+                  pipe(
+                     dropping.get,
+                     T.chain((b) =>
+                        b
+                           ? T.map_(L.dropWhileTask_(is, p), (l) => [l, L.isEmpty(l)] as const)
+                           : T.succeed([is, false] as const)
+                     ),
+                     T.chain(([is, pt]) => T.as_(dropping.set(pt), () => is))
+                  )
+            )
+         ),
+         M.map(({ push }) => push)
+      )
    );
 }
 
@@ -475,5 +510,95 @@ export function foldWeightedDecomposeM<R, E, I, O>(
                )
          )
       )
+   );
+}
+
+export function foldWeighted<I, O>(
+   initial: O,
+   costFn: (o: O, i: I) => number,
+   max: number,
+   f: (o: O, i: I) => O
+): Transducer<unknown, never, I, O> {
+   return foldWeightedDecompose(initial, costFn, max, L.list, f);
+}
+
+/**
+ * Creates a transducer accumulating incoming values into chunks of maximum size `n`.
+ */
+export function collectAllN<I>(n: number): Transducer<unknown, never, I, L.List<I>> {
+   const go = (in_: L.List<I>, leftover: L.List<I>, acc: L.List<L.List<I>>): [L.List<L.List<I>>, L.List<I>] => {
+      const [left, nextIn] = L.splitAt_(in_, n - leftover.length);
+      if (leftover.length + left.length < n) return [acc, L.concat_(leftover, left)];
+      else {
+         const nextOut = !L.isEmpty(leftover) ? L.append_(acc, L.concat_(leftover, left)) : L.append_(acc, left);
+         return go(nextIn, L.empty(), nextOut);
+      }
+   };
+
+   return new Transducer(
+      M.map_(XR.makeManagedRef(L.empty<I>()), (state) => (is: O.Option<L.List<I>>) =>
+         O.fold_(
+            is,
+            () =>
+               T.map_(XR.getAndSet_(state, L.empty()), (leftover) =>
+                  !L.isEmpty(leftover) ? L.list(leftover) : L.empty()
+               ),
+            (in_) => XR.modify_(state, (leftover) => go(in_, leftover, L.empty()))
+         )
+      )
+   );
+}
+
+export function collectAllToMapN<K, I>(
+   n: number,
+   key: (i: I) => K,
+   merge: (i: I, i1: I) => I
+): Transducer<unknown, never, I, ReadonlyMap<K, I>> {
+   return pipe(
+      foldWeighted<I, ReadonlyMap<K, I>>(
+         Map.empty(),
+         (acc, i) => (acc.has(key(i)) ? 0 : 1),
+         n,
+         (acc, i) => {
+            const k = key(i);
+            if (acc.has(k)) return Map.unsafeInsertAt_(acc, k, merge(acc.get(k) as I, i));
+            else return Map.unsafeInsertAt_(acc, k, i);
+         }
+      ),
+      filter(not(Map.isEmpty))
+   );
+}
+
+export function collectAllToSetN<I>(E: Eq.Eq<I>): (n: number) => Transducer<unknown, never, I, ReadonlySet<I>> {
+   const insertE = Set.insert_(E);
+   return (n) =>
+      pipe(
+         foldWeighted<I, ReadonlySet<I>>(
+            Set.empty(),
+            (acc, i) => (acc.has(i) ? 0 : 1),
+            n,
+            (acc, i) => insertE(acc, i)
+         ),
+         filter((set) => set.size !== 0)
+      );
+}
+
+export function collectAllWhile<I>(p: Predicate<I>): Transducer<unknown, never, I, L.List<I>> {
+   return pipe(
+      fold<I, [L.List<I>, boolean]>([L.empty(), true], Tup.snd, ([is, _], i) =>
+         p(i) ? [L.prepend_(is, i), true] : [is, false]
+      ),
+      map(flow(Tup.fst, L.reverse)),
+      filter(not(L.isEmpty))
+   );
+}
+
+export function collectAllWhileM<R, E, I>(p: (i: I) => T.Task<R, E, boolean>): Transducer<R, E, I, L.List<I>> {
+   return pipe(
+      foldM<R, E, I, [L.List<I>, boolean]>([L.empty(), true], Tup.snd, ([is, _], i) =>
+         T.map_(p(i), (b) => (b ? [L.prepend_(is, i), true] : [is, false]))
+      ),
+      map(flow(Tup.fst, L.reverse)),
+      filter(not(L.isEmpty))
    );
 }

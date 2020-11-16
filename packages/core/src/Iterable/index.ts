@@ -7,4 +7,6 @@ export * from "./filterable";
 export * from "./foldable";
 export * from "./functor";
 export * from "./monad";
+export * from "./unit";
+export * from "./utils";
 // codegen:end

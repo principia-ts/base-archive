@@ -84,7 +84,14 @@ export function take<A>(h: Handoff<A>): T.IO<A> {
                         s
                      ] as const,
                   Full: ({ a, notifyProducer }) =>
-                     [pipe(notifyProducer, XP.succeed(constVoid()), T.as(a)), new Empty(p)] as const
+                     [
+                        pipe(
+                           notifyProducer,
+                           XP.succeed(constVoid()),
+                           T.as(() => a)
+                        ),
+                        new Empty(p)
+                     ] as const
                })
             ),
             T.flatten
@@ -103,7 +110,14 @@ export function poll<A>(h: Handoff<A>): T.IO<Option<A>> {
                matchTag({
                   Empty: (s) => [T.succeed(none()), s] as const,
                   Full: ({ a, notifyProducer }) =>
-                     [pipe(notifyProducer, XP.succeed(constVoid()), T.as(some(a))), new Empty(p)] as const
+                     [
+                        pipe(
+                           notifyProducer,
+                           XP.succeed(constVoid()),
+                           T.as(() => some(a))
+                        ),
+                        new Empty(p)
+                     ] as const
                })
             ),
             T.flatten

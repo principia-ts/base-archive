@@ -488,23 +488,23 @@ export const difference = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (xs: Readon
    return xs.filter((a) => !elemE(a)(ys));
 };
 
-export function dropLeft_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
+export function drop_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
    return as.slice(n, as.length);
 }
 
-export function dropLeft(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (as) => dropLeft_(as, n);
+export function drop(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (as) => drop_(as, n);
 }
 
-export function dropRight_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
+export function dropLast_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
    return as.slice(0, as.length - n);
 }
 
-export function dropRight(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (as) => dropRight_(as, n);
+export function dropLast(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (as) => dropLast_(as, n);
 }
 
-export function dropLeftWhile_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A> {
+export function dropWhile_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A> {
    const i = spanIndexUncurry(as, predicate);
    const l = as.length;
    const rest = Array(l - i);
@@ -514,18 +514,20 @@ export function dropLeftWhile_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>)
    return rest;
 }
 
-export function dropLeftWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (as) => dropLeftWhile_(as, predicate);
+export function dropWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+   return (as) => dropWhile_(as, predicate);
 }
 
-export function dropRightWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (as) => {
-      const i = spanIndexUncurry(as, predicate);
-      const l = as.length;
-      const rest = Array(l - i);
-      for (let j = i; j < l; j++) {
-         rest[j - i] = as[j];
-      }
-      return rest;
-   };
-}
+// export function dropLastWHile_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A> {
+//    const i = spanIndexUncurry(as, predicate);
+//    const l = as.length;
+//    const rest = Array(l - i);
+//    for (let j = i; j < l; j++) {
+//       rest[j - i] = as[j];
+//    }
+//    return rest;
+// }
+
+// export function dropLastWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+//    return (as) => dropLastWHile_(as, predicate);
+// }

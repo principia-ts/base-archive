@@ -10,11 +10,16 @@ import { reduce_ } from "./foldable";
  */
 export class List<A> implements Iterable<A> {
    constructor(
+      /** @private */
       readonly bits: number,
+      /** @private */
       readonly offset: number,
       readonly length: number,
+      /** @private */
       readonly prefix: A[],
+      /** @private */
       readonly root: Node | undefined,
+      /** @private */
       readonly suffix: A[]
    ) {}
 

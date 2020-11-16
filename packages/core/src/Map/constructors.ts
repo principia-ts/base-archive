@@ -5,7 +5,9 @@ import type * as HKT from "@principia/prelude/HKT";
 import { pipe } from "../Function";
 import { lookupWithKey_ } from "./combinators";
 
-export const empty: ReadonlyMap<never, never> = new Map<never, never>();
+export function empty<K, A>(): ReadonlyMap<K, A> {
+   return new Map();
+}
 
 /**
  * Create from a key-value array

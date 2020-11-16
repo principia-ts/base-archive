@@ -140,8 +140,9 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => T.Task<R,
  *
  * Additionally, interrupts all effects on any failure.
  */
-export const foreachUnitPar = <R, E, A>(f: (a: A) => T.Task<R, E, any>) => (as: Iterable<A>): T.Task<R, E, void> =>
-   foreachUnitPar_(as, f);
+export function foreachUnitPar<R, E, A>(f: (a: A) => T.Task<R, E, any>): (as: Iterable<A>) => T.Task<R, E, void> {
+   return (as) => foreachUnitPar_(as, f);
+}
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -149,7 +150,7 @@ export const foreachUnitPar = <R, E, A>(f: (a: A) => T.Task<R, E, any>) => (as: 
  *
  * For a sequential version of this method, see `foreach`.
  */
-const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => T.Task<R, E, B>): T.Task<R, E, ReadonlyArray<B>> => {
+function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => T.Task<R, E, B>): T.Task<R, E, ReadonlyArray<B>> {
    const arr = Array.from(as);
 
    return T.chain_(
@@ -172,18 +173,20 @@ const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => T.Task<R, E, B>):
          );
       }
    );
-};
+}
 
-const joinAllFibers = <E, A>(as: Iterable<Fiber<E, A>>) =>
-   T.tap_(T.chain_(awaitAllFibers(as), T.done), () => T.foreach_(as, (f) => f.inheritRefs));
+function joinAllFibers<E, A>(as: Iterable<Fiber<E, A>>) {
+   return T.tap_(T.chain_(awaitAllFibers(as), T.done), () => T.foreach_(as, (f) => f.inheritRefs));
+}
 
-const awaitAllFibers = <E, A>(as: Iterable<Fiber<E, A>>): T.Task<unknown, never, Exit<E, ReadonlyArray<A>>> =>
-   T.result(foreachPar_(as, (f) => T.chain_(f.await, T.done)));
+function awaitAllFibers<E, A>(as: Iterable<Fiber<E, A>>): T.Task<unknown, never, Exit<E, ReadonlyArray<A>>> {
+   return T.result(foreachPar_(as, (f) => T.chain_(f.await, T.done)));
+}
 
-const useManaged_ = <R, E, A, R2, E2, B>(
+function useManaged_<R, E, A, R2, E2, B>(
    self: Managed<R, E, A>,
    f: (a: A) => T.Task<R2, E2, B>
-): T.Task<R & R2, E | E2, B> => {
+): T.Task<R & R2, E | E2, B> {
    return bracketExit_(
       RM.make,
       (rm) =>
@@ -193,10 +196,10 @@ const useManaged_ = <R, E, A, R2, E2, B>(
          ),
       releaseAllSeq_
    );
-};
+}
 
-const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, Executor<E, A>> =>
-   new Managed(
+function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, Executor<E, A>> {
+   return new Managed(
       uninterruptibleMask(({ restore }) =>
          pipe(
             T.do,
@@ -227,9 +230,10 @@ const forkManaged = <R, E, A>(self: Managed<R, E, A>): Managed<R, never, Executo
          )
       )
    );
+}
 
-const releaseAllSeq_ = (_: RM.ReleaseMap, exit: Exit<any, any>): T.IO<any> =>
-   pipe(
+function releaseAllSeq_(_: RM.ReleaseMap, exit: Exit<any, any>): T.IO<any> {
+   return pipe(
       _.ref,
       XR.modify((s): [T.IO<any>, RM.State] => {
          switch (s._tag) {
@@ -249,3 +253,4 @@ const releaseAllSeq_ = (_: RM.ReleaseMap, exit: Exit<any, any>): T.IO<any> =>
       }),
       T.flatten
    );
+}

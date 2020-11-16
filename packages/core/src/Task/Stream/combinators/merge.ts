@@ -67,13 +67,13 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                                     return pipe(
                                        handoff,
                                        H.offer(<Take.Take<E | E1, C | C1>>Take.chunk(causeOrChunk.right)),
-                                       T.as([true, o])
+                                       T.as(() => [true, o])
                                     );
                                  } else if (causeOrChunk._tag === "Left" && causeOrChunk.left._tag === "Some") {
                                     return pipe(
                                        handoff,
                                        H.offer(<Take.Take<E | E1, C | C1>>Take.halt(causeOrChunk.left.value)),
-                                       T.as([false, O.some(true)])
+                                       T.as(() => [false, O.some(true)])
                                     );
                                  } else if (
                                     causeOrChunk._tag === "Left" &&
@@ -83,7 +83,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                                     return pipe(
                                        handoff,
                                        H.offer(<Take.Take<E | E1, C | C1>>Take.end),
-                                       T.as([false, O.some(true)])
+                                       T.as(() => [false, O.some(true)])
                                     );
                                  } else {
                                     return T.succeed([false, O.some(false)]);

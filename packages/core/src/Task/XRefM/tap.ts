@@ -14,7 +14,12 @@ export function tapInput_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
 ): XRefM<RA & RC, RB, EA | EC, EB, A1, B> {
    return pipe(
       self,
-      contramapM((c: A1) => pipe(f(c), T.as(c)))
+      contramapM((c: A1) =>
+         pipe(
+            f(c),
+            T.as(() => c)
+         )
+      )
    );
 }
 
@@ -38,7 +43,12 @@ export function tapOutput_<RA, RB, EA, EB, A, B, RC, EC>(
 ): XRefM<RA, RB & RC, EA, EB | EC, A, B> {
    return pipe(
       self,
-      mapM((b) => pipe(f(b), T.as(b)))
+      mapM((b) =>
+         pipe(
+            f(b),
+            T.as(() => b)
+         )
+      )
    );
 }
 

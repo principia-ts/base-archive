@@ -46,7 +46,17 @@ export function timeoutTo_<R, E, A, B, B1>(
    b: B,
    f: (a: A) => B1
 ): Task<R & HasClock, E, B | B1> {
-   return pipe(ma, map(f), raceFirst(pipe(sleep(d), makeInterruptible, as(b))));
+   return pipe(
+      ma,
+      map(f),
+      raceFirst(
+         pipe(
+            sleep(d),
+            makeInterruptible,
+            as(() => b)
+         )
+      )
+   );
 }
 
 /**

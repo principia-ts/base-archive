@@ -121,7 +121,7 @@ export function tapM_<R, E, A, R1, E1>(
    ma: Managed<R, E, A>,
    f: (a: A) => Task<R1, E1, any>
 ): Managed<R & R1, E | E1, A> {
-   return mapM_(ma, (a) => T.as_(f(a), a));
+   return mapM_(ma, (a) => T.as_(f(a), () => a));
 }
 
 export function tapM<A, R1, E1>(

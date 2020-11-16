@@ -27,10 +27,10 @@ interface Next<A> {
 export function getMonoid<K, A>(SK: Eq<K>, SA: Semigroup<A>): Monoid<ReadonlyMap<K, A>> {
    const lookupWithKeyK_ = lookupWithKey_(SK);
    return makeMonoid<ReadonlyMap<K, A>>((mx, my) => {
-      if (mx === empty) {
+      if (mx.size === 0) {
          return my;
       }
-      if (my === empty) {
+      if (my.size === 0) {
          return mx;
       }
       const r = new Map(mx);
@@ -46,5 +46,5 @@ export function getMonoid<K, A>(SK: Eq<K>, SA: Semigroup<A>): Monoid<ReadonlyMap
          }
       }
       return r;
-   }, empty);
+   }, empty());
 }

@@ -169,7 +169,10 @@ export function raceAll<R, E, A>(
                   )
                ),
                _.letS("inheritRefs", () => (res: readonly [A, Fiber.Fiber<E, A>]) =>
-                  pipe(res[1].inheritRefs, _.as(res[0]))
+                  pipe(
+                     res[1].inheritRefs,
+                     _.as(() => res[0])
+                  )
                ),
                _.bindS("c", ({ fs, inheritRefs }) =>
                   pipe(

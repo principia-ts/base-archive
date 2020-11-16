@@ -20,7 +20,7 @@ export function collectAll<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<
       A.head(exits),
       O.map((head) =>
          pipe(
-            A.dropLeft_(exits, 1),
+            A.drop_(exits, 1),
             A.reduce(
                pipe(
                   head,
@@ -43,7 +43,7 @@ export function collectAllPar<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Opti
       A.head(exits),
       O.map((head) =>
          pipe(
-            A.dropLeft_(exits, 1),
+            A.drop_(exits, 1),
             A.reduce(
                pipe(
                   head,

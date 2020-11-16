@@ -60,6 +60,12 @@ export function lookup<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => Opti
    return (k) => (m) => lookupE_(m, k);
 }
 
+export function unsafeInsertAt_<K, A>(m: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
+   const r = new Map(m);
+   r.set(k, a);
+   return r;
+}
+
 export function insertAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => ReadonlyMap<K, A> {
    const lookupWithKeyE_ = lookupWithKey_(E);
    return (m, k, a) => {

@@ -60,31 +60,33 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                      in_: O.Option<L.List<I>>,
                      end: boolean
                   ): T.Task<R, [E.Either<E, S>, L.List<L>], S> =>
-                     T.catchAll_(T.as_(push(in_), s), ([e, leftover]) =>
-                        E.fold_(
-                           e,
-                           (e) => Push.fail(e, leftover),
-                           (z) => {
-                              if (p(z)) {
-                                 const s1 = f(s, z);
+                     T.catchAll_(
+                        T.as_(push(in_), () => s),
+                        ([e, leftover]) =>
+                           E.fold_(
+                              e,
+                              (e) => Push.fail(e, leftover),
+                              (z) => {
+                                 if (p(z)) {
+                                    const s1 = f(s, z);
 
-                                 if (leftover.length === 0) {
-                                    if (end) {
-                                       return Push.emit(s1, L.empty());
+                                    if (leftover.length === 0) {
+                                       if (end) {
+                                          return Push.emit(s1, L.empty());
+                                       } else {
+                                          return T.as_(restart, () => s1);
+                                       }
                                     } else {
-                                       return T.as_(restart, s1);
+                                       return T.apSecond_(
+                                          restart,
+                                          go(s1, O.some((leftover as unknown) as L.List<I>), end)
+                                       );
                                     }
                                  } else {
-                                    return T.apSecond_(
-                                       restart,
-                                       go(s1, O.some((leftover as unknown) as L.List<I>), end)
-                                    );
+                                    return Push.emit(s, leftover);
                                  }
-                              } else {
-                                 return Push.emit(s, leftover);
                               }
-                           }
-                        )
+                           )
                      );
 
                   return (in_: O.Option<L.List<I>>) =>

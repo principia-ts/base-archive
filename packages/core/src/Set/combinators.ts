@@ -13,10 +13,10 @@ import { elem, elem_ } from "./guards";
 export function union_<A>(E: Eq<A>) {
    const elemE = elem(E);
    return (me: ReadonlySet<A>, that: ReadonlySet<A>) => {
-      if (me === empty) {
+      if (me.size === 0) {
          return that;
       }
-      if (that === empty) {
+      if (that.size === 0) {
          return me;
       }
       const r = new Set(me);
@@ -46,11 +46,11 @@ export function union<A>(E: Eq<A>) {
  * @category Combinators
  * @since 1.0.0
  */
-export function intersection_<A>(E: Eq<A>) {
+export function intersection_<A>(E: Eq<A>): (me: ReadonlySet<A>, that: ReadonlySet<A>) => ReadonlySet<A> {
    const elemE = elem(E);
-   return (me: ReadonlySet<A>, that: ReadonlySet<A>) => {
-      if (me === empty || that === empty) {
-         return empty;
+   return (me, that) => {
+      if (me.size === 0 || that.size === 0) {
+         return empty<A>();
       }
       const r = new Set<A>();
       me.forEach((e) => {

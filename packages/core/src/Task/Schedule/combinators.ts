@@ -660,7 +660,7 @@ const ensuringLoop = <R, I, O, R1>(
    T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T.as_(finalizer, makeDone(d.out));
+            return T.as_(finalizer, () => makeDone(d.out));
          }
          case "Continue": {
             return T.pure(makeContinue(d.out, d.interval, ensuringLoop(d.next, finalizer)));
@@ -1182,10 +1182,10 @@ const onDecisionLoop = <R, I, O, R1>(
    T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T.as_(f(d), makeDone(d.out));
+            return T.as_(f(d), () => makeDone(d.out));
          }
          case "Continue": {
-            return T.as_(f(d), makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)));
+            return T.as_(f(d), () => makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)));
          }
       }
    });
@@ -1250,10 +1250,10 @@ const tapOutputLoop = <R, I, O, R1>(
    T.chain_(self(now, i), (d) => {
       switch (d._tag) {
          case "Done": {
-            return T.as_(f(d.out), makeDone(d.out));
+            return T.as_(f(d.out), () => makeDone(d.out));
          }
          case "Continue": {
-            return T.as_(f(d.out), makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)));
+            return T.as_(f(d.out), () => makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)));
          }
       }
    });

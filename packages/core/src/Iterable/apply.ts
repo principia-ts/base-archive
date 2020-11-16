@@ -1,6 +1,7 @@
 import { genOf } from "./constructors";
 import { map_ } from "./functor";
 import { chain_ } from "./monad";
+import { iterable } from "./utils";
 
 /*
  * -------------------------------------------
@@ -57,7 +58,7 @@ export function ap<A>(fa: Iterable<A>): <B>(fab: Iterable<(a: A) => B>) => Itera
 }
 
 export function pure<A>(a: A): Iterable<A> {
-   return {
-      [Symbol.iterator]: () => genOf(a)
-   };
+   return iterable(function* () {
+      yield a;
+   });
 }
