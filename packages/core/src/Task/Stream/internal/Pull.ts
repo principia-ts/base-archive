@@ -1,11 +1,11 @@
+import * as L from "../../../Array";
 import { pipe } from "../../../Function";
-import * as L from "../../../List";
 import type { Option } from "../../../Option";
 import { none, some } from "../../../Option";
 import type { Cause } from "../../Exit/Cause";
 import * as T from "../../Task";
 
-export type Pull<R, E, O> = T.Task<R, Option<E>, L.List<O>>;
+export type Pull<R, E, O> = T.Task<R, Option<E>, ReadonlyArray<O>>;
 
 export const end = T.fail(none());
 
@@ -17,14 +17,14 @@ export function halt<E>(e: Cause<E>): T.Task<unknown, Option<E>, never> {
    return pipe(T.halt(e), T.mapError(some));
 }
 
-export function empty<A>(): T.IO<L.List<A>> {
+export function empty<A>(): T.IO<ReadonlyArray<A>> {
    return T.pure(L.empty());
 }
 
-export function emit<A>(a: A): T.IO<L.List<A>> {
-   return T.pure(L.list(a));
+export function emit<A>(a: A): T.IO<ReadonlyArray<A>> {
+   return T.pure([a]);
 }
 
-export function emitArray<A>(as: ReadonlyArray<A>): T.IO<L.List<A>> {
+export function emitArray<A>(as: ReadonlyArray<A>): T.IO<ReadonlyArray<A>> {
    return T.pure(L.from(as));
 }

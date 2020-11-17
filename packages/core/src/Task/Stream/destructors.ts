@@ -1,6 +1,5 @@
 import * as E from "../../Either";
 import { pipe } from "../../Function";
-import type * as L from "../../List";
 import * as O from "../../Option";
 import * as C from "../Exit/Cause";
 import * as M from "../Managed";
@@ -82,7 +81,7 @@ export function run<A, R1, E1, B>(
    return (stream) => run_(stream, sink);
 }
 
-export function runCollect<R, E, A>(stream: Stream<R, E, A>): T.Task<R, E, L.List<A>> {
+export function runCollect<R, E, A>(stream: Stream<R, E, A>): T.Task<R, E, ReadonlyArray<A>> {
    return run_(stream, Sink.collectAll<A>());
 }
 

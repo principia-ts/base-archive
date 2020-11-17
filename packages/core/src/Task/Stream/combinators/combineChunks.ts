@@ -1,5 +1,4 @@
 import { pipe } from "../../../Function";
-import type * as L from "../../../List";
 import type { Option } from "../../../Option";
 import type { Exit } from "../../Exit";
 import * as M from "../../Managed";
@@ -20,9 +19,9 @@ export function combineChunks<R1, E1, B>(
 ) => <R, E, A, C>(
    f: (
       z: Z,
-      s: T.Task<R, Option<E>, L.List<A>>,
-      t: T.Task<R1, Option<E1>, L.List<B>>
-   ) => T.Task<R & R1, never, Exit<Option<E1 | E>, readonly [L.List<C>, Z]>>
+      s: T.Task<R, Option<E>, ReadonlyArray<A>>,
+      t: T.Task<R1, Option<E1>, ReadonlyArray<B>>
+   ) => T.Task<R & R1, never, Exit<Option<E1 | E>, readonly [ReadonlyArray<C>, Z]>>
 ) => (stream: Stream<R, E, A>) => Stream<R & R1, E1 | E, C> {
    return (z) => (f) => (stream) =>
       new Stream(

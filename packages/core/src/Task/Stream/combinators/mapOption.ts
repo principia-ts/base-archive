@@ -1,5 +1,4 @@
-import * as A from "../../../Array/_core";
-import * as L from "../../../List";
+import * as L from "../../../Array";
 import * as O from "../../../Option";
 import { mapChunks_ } from "../functor";
 import type { Stream } from "../model";

@@ -1,4 +1,4 @@
-import * as L from "../../../List";
+import * as A from "../../../Array";
 import * as M from "../../Managed";
 import * as T from "../../Task";
 import { Transducer } from "./model";
@@ -7,7 +7,7 @@ import { Transducer } from "./model";
  * Transforms the outputs of this transducer.
  */
 export function map_<R, E, I, O, O1>(fa: Transducer<R, E, I, O>, f: (o: O) => O1): Transducer<R, E, I, O1> {
-   return new Transducer(M.map_(fa.push, (push) => (input) => T.map_(push(input), L.map(f))));
+   return new Transducer(M.map_(fa.push, (push) => (input) => T.map_(push(input), A.map(f))));
 }
 
 /**
@@ -22,7 +22,7 @@ export function map<O, P>(f: (o: O) => P): <R, E, I>(fa: Transducer<R, E, I, O>)
  */
 export function mapChunks_<R, E, I, O, O1>(
    fa: Transducer<R, E, I, O>,
-   f: (chunks: L.List<O>) => L.List<O1>
+   f: (chunks: ReadonlyArray<O>) => ReadonlyArray<O1>
 ): Transducer<R, E, I, O1> {
    return new Transducer(M.map_(fa.push, (push) => (input) => T.map_(push(input), f)));
 }
@@ -31,7 +31,7 @@ export function mapChunks_<R, E, I, O, O1>(
  * Transforms the chunks emitted by this transducer.
  */
 export function mapChunks<O, O1>(
-   f: (chunks: L.List<O>) => L.List<O1>
+   f: (chunks: ReadonlyArray<O>) => ReadonlyArray<O1>
 ): <R, E, I>(fa: Transducer<R, E, I, O>) => Transducer<R, E, I, O1> {
    return (fa) => mapChunks_(fa, f);
 }
@@ -41,7 +41,7 @@ export function mapChunks<O, O1>(
  */
 export function mapChunksM_<R, E, I, O, R1, E1, O1>(
    fa: Transducer<R, E, I, O>,
-   f: (chunk: L.List<O>) => T.Task<R1, E1, L.List<O1>>
+   f: (chunk: ReadonlyArray<O>) => T.Task<R1, E1, ReadonlyArray<O1>>
 ): Transducer<R & R1, E | E1, I, O1> {
    return new Transducer(M.map_(fa.push, (push) => (input) => T.chain_(push(input), f)));
 }
@@ -50,7 +50,7 @@ export function mapChunksM_<R, E, I, O, R1, E1, O1>(
  * Effectfully transforms the chunks emitted by this transducer.
  */
 export function mapChunksM<O, R1, E1, O1>(
-   f: (chunk: L.List<O>) => T.Task<R1, E1, L.List<O1>>
+   f: (chunk: ReadonlyArray<O>) => T.Task<R1, E1, ReadonlyArray<O1>>
 ): <R, E, I>(fa: Transducer<R, E, I, O>) => Transducer<R & R1, E | E1, I, O1> {
    return (fa) => mapChunksM_(fa, f);
 }
@@ -62,7 +62,7 @@ export function mapM_<R, E, I, O, R1, E1, O1>(
    fa: Transducer<R, E, I, O>,
    f: (o: O) => T.Task<R1, E1, O1>
 ): Transducer<R & R1, E | E1, I, O1> {
-   return new Transducer(M.map_(fa.push, (push) => (input) => T.chain_(push(input), L.foreachTask(f))));
+   return new Transducer(M.map_(fa.push, (push) => (input) => T.chain_(push(input), T.foreach(f))));
 }
 
 /**

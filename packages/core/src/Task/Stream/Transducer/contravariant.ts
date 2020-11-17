@@ -1,6 +1,6 @@
 import { flow } from "@principia/prelude";
 
-import * as L from "../../../List";
+import * as A from "../../../Array";
 import * as O from "../../../Option";
 import * as M from "../../Managed";
 import * as T from "../../Task";
@@ -10,7 +10,7 @@ import { Transducer } from "./model";
  * Transforms the inputs of this transducer.
  */
 export function contramap_<R, E, I, O, J>(fa: Transducer<R, E, I, O>, f: (j: J) => I): Transducer<R, E, J, O> {
-   return new Transducer(M.map_(fa.push, (push) => (input) => push(O.map_(input, L.map(f)))));
+   return new Transducer(M.map_(fa.push, (push) => (input) => push(O.map_(input, A.map(f)))));
 }
 
 /**
@@ -33,7 +33,7 @@ export function contramapM_<R, E, I, O, R1, E1, J>(
             is,
             () => push(O.none()),
             flow(
-               L.foreachTask(f),
+               T.foreach(f),
                T.chain((in_) => push(O.some(in_)))
             )
          )

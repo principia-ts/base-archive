@@ -1,7 +1,7 @@
 import type { Predicate, Refinement } from "@principia/prelude";
 import { flow } from "@principia/prelude";
 
-import * as L from "../../../List";
+import * as A from "../../../Array";
 import * as O from "../../../Option";
 import * as M from "../../Managed";
 import * as T from "../../Task";
@@ -16,7 +16,7 @@ export function filter_<R, E, I, O, B extends O>(
    refinement: Refinement<O, B>
 ): Transducer<R, E, I, B>;
 export function filter_<R, E, I, O>(fa: Transducer<R, E, I, O>, predicate: Predicate<O>): Transducer<R, E, I, O> {
-   return new Transducer(M.map_(fa.push, (push) => (is) => T.map_(push(is), L.filter(predicate))));
+   return new Transducer(M.map_(fa.push, (push) => (is) => T.map_(push(is), A.filter(predicate))));
 }
 
 /**
@@ -39,7 +39,7 @@ export function filterInput_<R, E, I, O, I1 extends I>(
    refinement: Refinement<I, I1>
 ): Transducer<R, E, I1, O>;
 export function filterInput_<R, E, I, O>(fa: Transducer<R, E, I, O>, predicate: Predicate<I>): Transducer<R, E, I, O> {
-   return new Transducer(M.map_(fa.push, (push) => (is) => push(O.map_(is, L.filter(predicate)))));
+   return new Transducer(M.map_(fa.push, (push) => (is) => push(O.map_(is, A.filter(predicate)))));
 }
 
 /**
@@ -70,7 +70,7 @@ export function filterInputM_<R, E, I, O, R1, E1>(
             is,
             () => push(O.none()),
             flow(
-               L.filterTask(predicate),
+               T.filter(predicate),
                T.chain((in_) => push(O.some(in_)))
             )
          )

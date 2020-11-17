@@ -1,5 +1,4 @@
 import { pipe } from "../../../Function";
-import * as L from "../../../List";
 import * as O from "../../../Option";
 import * as M from "../../Managed";
 import * as T from "../../Task";
@@ -30,7 +29,7 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
                      T.bindS("s", () => state.get),
                      T.bindS("t", ({ s }) => f(s, o)),
                      T.tap(({ t }) => state.set(t[0])),
-                     T.map(({ t }) => L.list(t[1])),
+                     T.map(({ t }) => [t[1]]),
                      T.mapError(O.some)
                   )
                )

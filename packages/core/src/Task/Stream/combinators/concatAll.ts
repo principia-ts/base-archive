@@ -1,5 +1,4 @@
 import { pipe } from "../../../Function";
-import type * as L from "../../../List";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as C from "../../Exit/Cause";
@@ -14,11 +13,11 @@ function go<R, E, A>(
    streams: ReadonlyArray<Stream<R, E, A>>,
    chunkSize: number,
    currIndex: Ref<number>,
-   currStream: Ref<T.Task<R, Option<E>, L.List<A>>>,
+   currStream: Ref<T.Task<R, Option<E>, ReadonlyArray<A>>>,
    switchStream: (
-      x: M.Managed<R, never, T.Task<R, Option<E>, L.List<A>>>
-   ) => T.Task<R, never, T.Task<R, Option<E>, L.List<A>>>
-): T.Task<R, Option<E>, L.List<A>> {
+      x: M.Managed<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>
+   ) => T.Task<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>
+): T.Task<R, Option<E>, ReadonlyArray<A>> {
    return pipe(
       currStream.get,
       T.flatten,
@@ -54,8 +53,8 @@ export function concatAll<R, E, A>(streams: ReadonlyArray<Stream<R, E, A>>): Str
       pipe(
          M.do,
          M.bindS("currIndex", () => XR.makeManagedRef(0)),
-         M.bindS("currStream", () => XR.makeManagedRef<T.Task<R, Option<E>, L.List<A>>>(Pull.end)),
-         M.bindS("switchStream", () => M.switchable<R, never, T.Task<R, Option<E>, L.List<A>>>()),
+         M.bindS("currStream", () => XR.makeManagedRef<T.Task<R, Option<E>, ReadonlyArray<A>>>(Pull.end)),
+         M.bindS("switchStream", () => M.switchable<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>()),
          M.map(({ currIndex, currStream, switchStream }) => go(streams, chunkSize, currIndex, currStream, switchStream))
       )
    );

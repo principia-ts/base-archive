@@ -1,7 +1,7 @@
+import * as A from "../../../Array";
 import type * as Eq from "../../../Eq";
 import type { Predicate } from "../../../Function";
-import { flow, not, pipe, tuple } from "../../../Function";
-import * as L from "../../../List";
+import { not, pipe, tuple } from "../../../Function";
 import * as Map from "../../../Map";
 import * as O from "../../../Option";
 import * as Set from "../../../Set";
@@ -30,17 +30,17 @@ export function halt<E>(c: Cause<E>): Transducer<unknown, E, unknown, never> {
 }
 
 export function identity<I>(): Transducer<unknown, never, I, I> {
-   return fromPush(O.fold(() => T.succeed(L.empty()), T.succeed));
+   return fromPush(O.fold(() => T.succeed(A.empty()), T.succeed));
 }
 
 export function fromPush<R, E, I, O>(
-   push: (input: O.Option<L.List<I>>) => T.Task<R, E, L.List<O>>
+   push: (input: O.Option<ReadonlyArray<I>>) => T.Task<R, E, ReadonlyArray<O>>
 ): Transducer<R, E, I, O> {
    return new Transducer(M.succeed(push));
 }
 
 export function fromTask<R, E, A>(task: T.Task<R, E, A>): Transducer<R, E, unknown, A> {
-   return new Transducer(M.succeed((_: any) => T.map_(task, L.list)));
+   return new Transducer(M.succeed((_: any) => T.map_(task, A.pure)));
 }
 
 export function fromFunction<I, O>(f: (i: I) => O): Transducer<unknown, never, I, O> {
@@ -65,17 +65,17 @@ export function last<O>(): Transducer<unknown, never, O, O.Option<O>> {
    return reduce(O.none(), (_, a) => O.some(a));
 }
 
-export function prepend<O>(values: L.List<O>): Transducer<unknown, never, O, O> {
+export function prepend<O>(values: ReadonlyArray<O>): Transducer<unknown, never, O, O> {
    return new Transducer(
-      M.map_(XR.makeManagedRef(values), (state) => (is: O.Option<L.List<O>>) =>
+      M.map_(XR.makeManagedRef(values), (state) => (is: O.Option<ReadonlyArray<O>>) =>
          O.fold_(
             is,
-            () => XR.getAndSet_(state, L.empty()),
+            () => XR.getAndSet_(state, A.empty()),
             (xs) =>
                pipe(
                   state,
-                  XR.getAndSet(L.empty()),
-                  T.map((c) => (L.isEmpty(c) ? xs : L.concat_(c, xs)))
+                  XR.getAndSet(A.empty()),
+                  T.map((c) => (A.isEmpty(c) ? xs : A.concat_(c, xs)))
                )
          )
       )
@@ -84,28 +84,28 @@ export function prepend<O>(values: L.List<O>): Transducer<unknown, never, O, O> 
 
 export function branchAfter<R, E, I, O>(
    n: number,
-   f: (c: L.List<I>) => Transducer<R, E, I, O>
+   f: (c: ReadonlyArray<I>) => Transducer<R, E, I, O>
 ): Transducer<R, E, I, O> {
    interface Collecting {
       _tag: "Collecting";
-      data: L.List<I>;
+      data: ReadonlyArray<I>;
    }
    interface Emitting {
       _tag: "Emitting";
       finalizer: Finalizer;
-      push: (is: O.Option<L.List<I>>) => T.Task<R, E, L.List<O>>;
+      push: (is: O.Option<ReadonlyArray<I>>) => T.Task<R, E, ReadonlyArray<O>>;
    }
    type State = Collecting | Emitting;
    const initialState: State = {
       _tag: "Collecting",
-      data: L.empty()
+      data: A.empty()
    };
 
    const toCollect = Math.max(0, n);
 
    return new Transducer(
       M.chain_(M.scope(), (scope) =>
-         M.map_(XRM.makeManagedRefM<State>(initialState), (state) => (is: O.Option<L.List<I>>) =>
+         M.map_(XRM.makeManagedRefM<State>(initialState), (state) => (is: O.Option<ReadonlyArray<I>>) =>
             O.fold_(
                is,
                () =>
@@ -129,14 +129,14 @@ export function branchAfter<R, E, I, O>(
                            return T.map_(s.push(O.some(data)), (_) => [_, s] as const);
                         }
                         case "Collecting": {
-                           if (L.isEmpty(data)) {
-                              return T.succeed([L.empty<O>(), s] as const);
+                           if (A.isEmpty(data)) {
+                              return T.succeed([A.empty<O>(), s] as const);
                            } else {
                               const remaining = toCollect - s.data.length;
                               if (remaining <= data.length) {
-                                 const [newCollected, remainder] = L.splitAt(remaining)(data);
+                                 const [newCollected, remainder] = A.splitAt(remaining)(data);
                                  return T.chain_(
-                                    scope.apply(f(L.concat_(s.data, newCollected)).push),
+                                    scope.apply(f(A.concat_(s.data, newCollected)).push),
                                     ([finalizer, push]) =>
                                        T.map_(
                                           push(O.some(remainder)),
@@ -145,8 +145,8 @@ export function branchAfter<R, E, I, O>(
                                  );
                               } else {
                                  return T.succeed([
-                                    L.empty<O>(),
-                                    { _tag: "Collecting", data: L.concat_(s.data, data) }
+                                    A.empty<O>(),
+                                    { _tag: "Collecting", data: A.concat_(s.data, data) }
                                  ] as const);
                               }
                            }
@@ -163,15 +163,15 @@ export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never
    return new Transducer(
       M.gen(function* (_) {
          const dropping = yield* _(XR.makeManagedRef(true));
-         return (is: O.Option<L.List<I>>) =>
+         return (is: O.Option<ReadonlyArray<I>>) =>
             O.fold_(
                is,
-               () => T.succeed(L.empty()),
+               () => T.succeed(A.empty()),
                (is) =>
                   XR.modify_(dropping, (b) => {
                      switch (b) {
                         case true: {
-                           const is1 = L.dropWhile_(is, predicate);
+                           const is1 = A.dropWhile_(is, predicate);
                            return [is1, is1.length === 0];
                         }
                         case false: {
@@ -189,16 +189,16 @@ export function dropWhileM<R, E, I>(p: (i: I) => T.Task<R, E, boolean>): Transdu
       pipe(
          M.do,
          M.bindS("dropping", () => XR.makeManagedRef(true)),
-         M.letS("push", ({ dropping }) => (is: O.Option<L.List<I>>) =>
+         M.letS("push", ({ dropping }) => (is: O.Option<ReadonlyArray<I>>) =>
             O.fold_(
                is,
-               () => T.succeed(L.empty<I>()),
+               () => T.succeed(A.empty<I>()),
                (is) =>
                   pipe(
                      dropping.get,
                      T.chain((b) =>
                         b
-                           ? T.map_(L.dropWhileTask_(is, p), (l) => [l, L.isEmpty(l)] as const)
+                           ? T.map_(A.dropWhileTask_(is, p), (l) => [l, A.isEmpty(l)] as const)
                            : T.succeed([is, false] as const)
                      ),
                      T.chain(([is, pt]) => T.as_(dropping.set(pt), () => is))
@@ -215,24 +215,24 @@ export function fold<I, O>(
    cont: (o: O) => boolean,
    f: (output: O, input: I) => O
 ): Transducer<unknown, never, I, O> {
-   const go = (in_: L.List<I>, state: O, progress: boolean): readonly [L.List<O>, O, boolean] => {
+   const go = (in_: ReadonlyArray<I>, state: O, progress: boolean): readonly [ReadonlyArray<O>, O, boolean] => {
       return pipe(
          in_,
-         L.reduce([L.empty<O>(), state, progress] as const, ([os0, state, _], i) => {
+         A.reduce([A.empty<O>(), state, progress] as const, ([os0, state, _], i) => {
             const o = f(state, i);
             if (cont(o)) {
                return [os0, o, true] as const;
             } else {
-               return [L.append_(os0, o), initial, false] as const;
+               return [A.append_(os0, o), initial, false] as const;
             }
          })
       );
    };
    return new Transducer(
-      M.map_(XR.makeManagedRef(O.some(initial)), (state) => (is: O.Option<L.List<I>>) =>
+      M.map_(XR.makeManagedRef(O.some(initial)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
          O.fold_(
             is,
-            () => pipe(XR.getAndSet_(state, O.none()), T.map(O.fold(() => L.empty(), L.list))),
+            () => pipe(XR.getAndSet_(state, O.none()), T.map(O.fold(() => A.empty(), A.pure))),
             (in_) =>
                XR.modify_(state, (s) => {
                   const [o, s2, progress] = go(
@@ -261,26 +261,30 @@ export function foldM<R, E, I, O>(
    f: (output: O, input: I) => T.Task<R, E, O>
 ): Transducer<R, E, I, O> {
    const init = O.some(initial);
-   const go = (in_: L.List<I>, state: O, progress: boolean): T.Task<R, E, readonly [L.List<O>, O, boolean]> =>
-      L.reduce_(
+   const go = (
+      in_: ReadonlyArray<I>,
+      state: O,
+      progress: boolean
+   ): T.Task<R, E, readonly [ReadonlyArray<O>, O, boolean]> =>
+      A.reduce_(
          in_,
-         T.succeed([L.empty(), state, progress]) as T.Task<R, E, readonly [L.List<O>, O, boolean]>,
+         T.succeed([A.empty(), state, progress]) as T.Task<R, E, readonly [ReadonlyArray<O>, O, boolean]>,
          (b, i) =>
             T.chain_(b, ([os0, state, _]) =>
                T.map_(f(state, i), (o) => {
                   if (cont(o)) {
                      return [os0, o, true] as const;
                   } else {
-                     return [L.append_(os0, o), initial, false] as const;
+                     return [A.append_(os0, o), initial, false] as const;
                   }
                })
             )
       );
    return new Transducer(
-      M.map_(XR.makeManagedRef(init), (state) => (is: O.Option<L.List<I>>) =>
+      M.map_(XR.makeManagedRef(init), (state) => (is: O.Option<ReadonlyArray<I>>) =>
          O.fold_(
             is,
-            () => pipe(state, XR.getAndSet(O.none()), T.map(O.fold(() => L.empty(), L.list))),
+            () => pipe(state, XR.getAndSet(O.none()), T.map(O.fold(() => A.empty(), A.pure))),
             (in_) =>
                pipe(
                   state,
@@ -341,7 +345,7 @@ export function foldWeightedDecompose<I, O>(
    initial: O,
    cost: (output: O, input: I) => number,
    max: number,
-   decompose: (input: I) => L.List<I>,
+   decompose: (input: I) => ReadonlyArray<I>,
    f: (output: O, input: I) => O
 ): Transducer<unknown, never, I, O> {
    interface FoldWeightedState {
@@ -355,26 +359,22 @@ export function foldWeightedDecompose<I, O>(
    };
 
    const go = (
-      in_: L.List<I>,
-      os0: L.List<O>,
+      in_: ReadonlyArray<I>,
+      os0: ReadonlyArray<O>,
       state: FoldWeightedState,
       dirty: boolean
-   ): readonly [L.List<O>, FoldWeightedState, boolean] =>
-      L.reduce_(in_, [os0, state, dirty] as const, ([os0, state, _], i) => {
+   ): readonly [ReadonlyArray<O>, FoldWeightedState, boolean] =>
+      A.reduce_(in_, [os0, state, dirty] as const, ([os0, state, _], i) => {
          const total = state.cost + cost(state.result, i);
 
          if (total > max) {
             const is = decompose(i);
             if (is.length <= 1 && !dirty) {
-               return [
-                  L.append_(os0, f(state.result, !L.isEmpty(is) ? (L.unsafeFirst(is) as I) : i)),
-                  initialState,
-                  false
-               ] as const;
+               return [A.append_(os0, f(state.result, A.isNonEmpty(is) ? is[0] : i)), initialState, false] as const;
             } else if (is.length <= 1 && dirty) {
-               const elem = !L.isEmpty(is) ? (L.unsafeFirst(is) as I) : i;
+               const elem = A.isNonEmpty(is) ? is[0] : i;
                return [
-                  L.append_(os0, state.result),
+                  A.append_(os0, state.result),
                   { result: f(initialState.result, elem), cost: cost(initialState.result, elem) },
                   true
                ] as const;
@@ -387,7 +387,7 @@ export function foldWeightedDecompose<I, O>(
       });
 
    return new Transducer(
-      M.map_(XR.makeManagedRef(O.some(initialState)), (state) => (is: O.Option<L.List<I>>) =>
+      M.map_(XR.makeManagedRef(O.some(initialState)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
          O.fold_(
             is,
             () =>
@@ -396,8 +396,8 @@ export function foldWeightedDecompose<I, O>(
                   XR.getAndSet(O.none()),
                   T.map(
                      O.fold(
-                        () => L.empty(),
-                        (s) => L.list(s.result)
+                        () => A.empty(),
+                        (s) => [s.result]
                      )
                   )
                ),
@@ -405,7 +405,7 @@ export function foldWeightedDecompose<I, O>(
                XR.modify_(state, (s) => {
                   const [o, s2, dirty] = go(
                      in_,
-                     L.empty(),
+                     A.empty(),
                      O.getOrElse_(s, () => initialState),
                      O.isSome(s)
                   );
@@ -424,7 +424,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
    initial: O,
    costFn: (output: O, input: I) => T.Task<R, E, number>,
    max: number,
-   decompose: (input: I) => T.Task<R, E, L.List<I>>,
+   decompose: (input: I) => T.Task<R, E, ReadonlyArray<I>>,
    f: (output: O, input: I) => T.Task<R, E, O>
 ): Transducer<R, E, I, O> {
    interface FoldWeightedState {
@@ -438,14 +438,14 @@ export function foldWeightedDecomposeM<R, E, I, O>(
    };
 
    const go = (
-      in_: L.List<I>,
-      os: L.List<O>,
+      in_: ReadonlyArray<I>,
+      os: ReadonlyArray<O>,
       state: FoldWeightedState,
       dirty: boolean
-   ): T.Task<R, E, readonly [L.List<O>, FoldWeightedState, boolean]> =>
-      L.reduce_(
+   ): T.Task<R, E, readonly [ReadonlyArray<O>, FoldWeightedState, boolean]> =>
+      A.reduce_(
          in_,
-         T.succeed([os, state, dirty]) as T.Task<R, E, readonly [L.List<O>, FoldWeightedState, boolean]>,
+         T.succeed([os, state, dirty]) as T.Task<R, E, readonly [ReadonlyArray<O>, FoldWeightedState, boolean]>,
          (o, i) =>
             T.chain_(o, ([os, state, _]) =>
                T.chain_(costFn(state.result, i), (cost) => {
@@ -454,15 +454,15 @@ export function foldWeightedDecomposeM<R, E, I, O>(
                      return T.chain_(decompose(i), (is) => {
                         if (is.length <= 1 && !dirty) {
                            return T.map_(
-                              f(state.result, !L.isEmpty(is) ? (L.unsafeFirst(is) as I) : i),
-                              (o) => [L.append_(os, o), initialState, false] as const
+                              f(state.result, A.isNonEmpty(is) ? is[0] : i),
+                              (o) => [A.append_(os, o), initialState, false] as const
                            );
                         } else if (is.length <= 1 && dirty) {
-                           const elem = !L.isEmpty(is) ? (L.unsafeFirst(is) as I) : i;
+                           const elem = A.isNonEmpty(is) ? is[0] : i;
                            return T.mapBoth_(
                               f(initialState.result, elem),
                               costFn(initialState.result, elem),
-                              (result, cost) => [L.append_(os, state.result), { result, cost }, true]
+                              (result, cost) => [A.append_(os, state.result), { result, cost }, true]
                            );
                         } else {
                            return go(is, os, state, dirty);
@@ -476,7 +476,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
       );
 
    return new Transducer(
-      M.map_(XR.makeManagedRef(O.some(initialState)), (state) => (is: O.Option<L.List<I>>) =>
+      M.map_(XR.makeManagedRef(O.some(initialState)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
          O.fold_(
             is,
             () =>
@@ -485,8 +485,8 @@ export function foldWeightedDecomposeM<R, E, I, O>(
                   XR.getAndSet(O.none()),
                   T.map(
                      O.fold(
-                        () => L.empty(),
-                        (s) => L.list(s.result)
+                        () => A.empty(),
+                        (s) => [s.result]
                      )
                   )
                ),
@@ -497,7 +497,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
                   T.chain((s) =>
                      go(
                         in_,
-                        L.empty(),
+                        A.empty(),
                         O.getOrElse_(s, () => initialState),
                         O.isSome(s)
                      )
@@ -519,31 +519,33 @@ export function foldWeighted<I, O>(
    max: number,
    f: (o: O, i: I) => O
 ): Transducer<unknown, never, I, O> {
-   return foldWeightedDecompose(initial, costFn, max, L.list, f);
+   return foldWeightedDecompose(initial, costFn, max, A.pure, f);
 }
 
 /**
  * Creates a transducer accumulating incoming values into chunks of maximum size `n`.
  */
-export function collectAllN<I>(n: number): Transducer<unknown, never, I, L.List<I>> {
-   const go = (in_: L.List<I>, leftover: L.List<I>, acc: L.List<L.List<I>>): [L.List<L.List<I>>, L.List<I>] => {
-      const [left, nextIn] = L.splitAt_(in_, n - leftover.length);
-      if (leftover.length + left.length < n) return [acc, L.concat_(leftover, left)];
+export function collectAllN<I>(n: number): Transducer<unknown, never, I, ReadonlyArray<I>> {
+   const go = (
+      in_: ReadonlyArray<I>,
+      leftover: ReadonlyArray<I>,
+      acc: ReadonlyArray<ReadonlyArray<I>>
+   ): [ReadonlyArray<ReadonlyArray<I>>, ReadonlyArray<I>] => {
+      const [left, nextIn] = A.splitAt(n - leftover.length)(in_);
+      if (leftover.length + left.length < n) return [acc, A.concat_(leftover, left)];
       else {
-         const nextOut = !L.isEmpty(leftover) ? L.append_(acc, L.concat_(leftover, left)) : L.append_(acc, left);
-         return go(nextIn, L.empty(), nextOut);
+         const nextOut = !A.isEmpty(leftover) ? A.append_(acc, A.concat_(leftover, left)) : A.append_(acc, left);
+         return go(nextIn, A.empty(), nextOut);
       }
    };
 
    return new Transducer(
-      M.map_(XR.makeManagedRef(L.empty<I>()), (state) => (is: O.Option<L.List<I>>) =>
+      M.map_(XR.makeManagedRef(A.empty<I>()), (state) => (is: O.Option<ReadonlyArray<I>>) =>
          O.fold_(
             is,
             () =>
-               T.map_(XR.getAndSet_(state, L.empty()), (leftover) =>
-                  !L.isEmpty(leftover) ? L.list(leftover) : L.empty()
-               ),
-            (in_) => XR.modify_(state, (leftover) => go(in_, leftover, L.empty()))
+               T.map_(XR.getAndSet_(state, A.empty()), (leftover) => (!A.isEmpty(leftover) ? [leftover] : A.empty())),
+            (in_) => XR.modify_(state, (leftover) => go(in_, leftover, A.empty()))
          )
       )
    );
@@ -583,22 +585,22 @@ export function collectAllToSetN<I>(E: Eq.Eq<I>): (n: number) => Transducer<unkn
       );
 }
 
-export function collectAllWhile<I>(p: Predicate<I>): Transducer<unknown, never, I, L.List<I>> {
+export function collectAllWhile<I>(p: Predicate<I>): Transducer<unknown, never, I, ReadonlyArray<I>> {
    return pipe(
-      fold<I, [L.List<I>, boolean]>([L.empty(), true], Tup.snd, ([is, _], i) =>
-         p(i) ? [L.prepend_(is, i), true] : [is, false]
+      fold<I, [ReadonlyArray<I>, boolean]>([A.empty(), true], Tup.snd, ([is, _], i) =>
+         p(i) ? [A.append_(is, i), true] : [is, false]
       ),
-      map(flow(Tup.fst, L.reverse)),
-      filter(not(L.isEmpty))
+      map(Tup.fst),
+      filter(A.isNonEmpty)
    );
 }
 
-export function collectAllWhileM<R, E, I>(p: (i: I) => T.Task<R, E, boolean>): Transducer<R, E, I, L.List<I>> {
+export function collectAllWhileM<R, E, I>(p: (i: I) => T.Task<R, E, boolean>): Transducer<R, E, I, ReadonlyArray<I>> {
    return pipe(
-      foldM<R, E, I, [L.List<I>, boolean]>([L.empty(), true], Tup.snd, ([is, _], i) =>
-         T.map_(p(i), (b) => (b ? [L.prepend_(is, i), true] : [is, false]))
+      foldM<R, E, I, [ReadonlyArray<I>, boolean]>([A.empty(), true], Tup.snd, ([is, _], i) =>
+         T.map_(p(i), (b) => (b ? [A.append_(is, i), true] : [is, false]))
       ),
-      map(flow(Tup.fst, L.reverse)),
-      filter(not(L.isEmpty))
+      map(Tup.fst),
+      filter(A.isNonEmpty)
    );
 }

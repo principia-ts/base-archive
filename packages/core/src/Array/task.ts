@@ -1,3 +1,4 @@
+import { pipe } from "../Function";
 import * as T from "../Task/Task";
 import { append_ } from "./combinators";
 import { empty } from "./constructors";
@@ -102,4 +103,29 @@ export function mapAccumTask<S, A, R, E, B>(
    f: (s: S, a: A) => T.Task<R, E, readonly [S, B]>
 ): (as: ReadonlyArray<A>) => T.Task<R, E, readonly [S, ReadonlyArray<B>]> {
    return (as) => mapAccumTask_(as, s, f);
+}
+
+export function dropWhileTask_<A, R, E>(
+   as: ReadonlyArray<A>,
+   p: (a: A) => T.Task<R, E, boolean>
+): T.Task<R, E, ReadonlyArray<A>> {
+   return T.suspend(() => {
+      let dropping = T.succeed(true) as T.Task<R, E, boolean>;
+      const ret: Array<A> = [];
+      for (let i = 0; i < as.length; i++) {
+         const a = as[i];
+         dropping = pipe(
+            dropping,
+            T.chain((d) => (d ? p(a) : T.succeed(false))),
+            T.map((d) => {
+               if (d) return true;
+               else {
+                  ret.push(a);
+                  return false;
+               }
+            })
+         );
+      }
+      return T.as_(dropping, () => ret);
+   });
 }

@@ -1,7 +1,7 @@
 import type * as HKT from "@principia/prelude/HKT";
 
+import * as L from "../../Array";
 import { pipe } from "../../Function";
-import * as L from "../../List";
 import type { Option } from "../../Option";
 import * as O from "../../Option";
 import { sequential } from "../ExecutionStrategy";
@@ -57,7 +57,7 @@ export class Stream<R, E, A> {
    readonly [T._A]: () => A;
    readonly [T._R]: (_: R) => void;
 
-   constructor(readonly proc: M.Managed<R, never, T.Task<R, Option<E>, L.List<A>>>) {}
+   constructor(readonly proc: M.Managed<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>) {}
 }
 
 /**
@@ -78,9 +78,9 @@ export const DefaultChunkSize = 4096;
 export class Chain<R_, E_, O, O2> {
    constructor(
       readonly f0: (a: O) => Stream<R_, E_, O2>,
-      readonly outerStream: T.Task<R_, Option<E_>, L.List<O>>,
-      readonly currOuterChunk: XR.Ref<[L.List<O>, number]>,
-      readonly currInnerStream: XR.Ref<T.Task<R_, Option<E_>, L.List<O2>>>,
+      readonly outerStream: T.Task<R_, Option<E_>, ReadonlyArray<O>>,
+      readonly currOuterChunk: XR.Ref<[ReadonlyArray<O>, number]>,
+      readonly currInnerStream: XR.Ref<T.Task<R_, Option<E_>, ReadonlyArray<O2>>>,
       readonly innerFinalizer: XR.Ref<RM.Finalizer>
    ) {
       this.apply = this.apply.bind(this);
@@ -97,7 +97,7 @@ export class Chain<R_, E_, O, O2> {
       );
    }
 
-   pullNonEmpty<R, E, O>(pull: T.Task<R, Option<E>, L.List<O>>): T.Task<R, Option<E>, L.List<O>> {
+   pullNonEmpty<R, E, O>(pull: T.Task<R, Option<E>, ReadonlyArray<O>>): T.Task<R, Option<E>, ReadonlyArray<O>> {
       return pipe(
          pull,
          T.chain((os) => (os.length > 0 ? T.pure(os) : this.pullNonEmpty(pull)))
@@ -107,7 +107,7 @@ export class Chain<R_, E_, O, O2> {
    pullOuter() {
       return pipe(
          this.currOuterChunk,
-         XR.modify(([chunk, nextIdx]): [T.Task<R_, Option<E_>, O>, [L.List<O>, number]] => {
+         XR.modify(([chunk, nextIdx]): [T.Task<R_, Option<E_>, O>, [ReadonlyArray<O>, number]] => {
             if (nextIdx < chunk.length) {
                return [T.pure(chunk[nextIdx]), [chunk, nextIdx + 1]];
             } else {
@@ -115,7 +115,7 @@ export class Chain<R_, E_, O, O2> {
                   pipe(
                      this.pullNonEmpty(this.outerStream),
                      T.tap((os) => this.currOuterChunk.set([os, 1])),
-                     T.map((os) => L.unsafeFirst(os) as O)
+                     T.map((os) => os[0])
                   ),
                   [chunk, nextIdx]
                ];
@@ -145,7 +145,7 @@ export class Chain<R_, E_, O, O2> {
       );
    }
 
-   apply(): T.Task<R_, Option<E_>, L.List<O2>> {
+   apply(): T.Task<R_, Option<E_>, ReadonlyArray<O2>> {
       return pipe(
          this.currInnerStream.get,
          T.flatten,

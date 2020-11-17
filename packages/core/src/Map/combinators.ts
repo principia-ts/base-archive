@@ -66,6 +66,10 @@ export function unsafeInsertAt_<K, A>(m: ReadonlyMap<K, A>, k: K, a: A): Readonl
    return r;
 }
 
+export function unsafeInsertAt<K, A>(k: K, a: A): (m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+   return (m) => unsafeInsertAt_(m, k, a);
+}
+
 export function insertAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => ReadonlyMap<K, A> {
    const lookupWithKeyE_ = lookupWithKey_(E);
    return (m, k, a) => {
@@ -146,6 +150,18 @@ export function unsafeDeleteAt_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K
 
 export function unsafeDeleteAt<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
    return (m) => unsafeDeleteAt_(m, k);
+}
+
+export function unsafeDeleteMany_<K, A>(m: ReadonlyMap<K, A>, ks: ReadonlyArray<K>): ReadonlyMap<K, A> {
+   const r = new Map(m);
+   for (let i = 0; i < ks.length; i++) {
+      r.delete(ks[i]);
+   }
+   return r;
+}
+
+export function unsafeDeleteMany<K>(ks: ReadonlyArray<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+   return (m) => unsafeDeleteMany_(m, ks);
 }
 
 export function updateAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => Option<ReadonlyMap<K, A>> {

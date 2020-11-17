@@ -1,4 +1,4 @@
-import { flow, pipe } from "@principia/prelude";
+import { pipe } from "@principia/prelude";
 
 import * as O from "../../../Option";
 import type * as Ex from "../../Exit";

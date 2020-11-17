@@ -1,5 +1,5 @@
+import * as A from "../../../Array";
 import { pipe } from "../../../Function";
-import * as L from "../../../List";
 import * as O from "../../../Option";
 import * as M from "../../Managed";
 import * as T from "../../Task";
@@ -17,7 +17,7 @@ export function aggregate_<R, E, O, R1, E1, P>(
          const pull = yield* _(stream.proc);
          const push = yield* _(transducer.push);
          const done = yield* _(XR.makeManagedRef(false));
-         const go: T.Task<R & R1, O.Option<E | E1>, L.List<P>> = pipe(
+         const go: T.Task<R & R1, O.Option<E | E1>, ReadonlyArray<P>> = pipe(
             done.get,
             T.chain((b) =>
                b
@@ -26,13 +26,13 @@ export function aggregate_<R, E, O, R1, E1, P>(
                        pull,
                        T.foldM(
                           O.fold(
-                             (): T.Task<R1, O.Option<E | E1>, L.List<P>> =>
+                             (): T.Task<R1, O.Option<E | E1>, ReadonlyArray<P>> =>
                                 T.apSecond_(done.set(true), T.asSomeError(push(O.none()))),
                              (e) => Pull.fail(e)
                           ),
                           (as) => T.asSomeError(push(O.some(as)))
                        ),
-                       T.chain((ps) => (L.isEmpty(ps) ? go : T.succeed(ps)))
+                       T.chain((ps) => (A.isEmpty(ps) ? go : T.succeed(ps)))
                     )
             )
          );

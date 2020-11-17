@@ -1,6 +1,5 @@
 import * as E from "../../../Either";
 import { pipe } from "../../../Function";
-import * as L from "../../../List";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as Tu from "../../../Tuple";
@@ -23,11 +22,11 @@ export function foldM_<R, E, I, L, Z, R1, E1, L1, Z1>(
             XR.makeRef<Push.Push<R1, E1, I, L1, Z1>>((_) => T.unit())
          );
          const openThatPush = yield* _(M.switchable<R1, never, Push.Push<R1, E1, I, L1, Z1>>());
-         return (in_: Option<L.List<I>>) =>
+         return (in_: Option<ReadonlyArray<I>>) =>
             T.chain_(switched.get, (sw) => {
                if (!sw) {
                   return T.catchAll_(thisPush(in_), (v) => {
-                     const leftover = (Tu.snd(v) as unknown) as L.List<I>;
+                     const leftover = (Tu.snd(v) as unknown) as ReadonlyArray<I>;
                      const nextSink = E.fold_(Tu.fst(v), onFailure, onSuccess);
                      return pipe(
                         openThatPush(nextSink.push),
