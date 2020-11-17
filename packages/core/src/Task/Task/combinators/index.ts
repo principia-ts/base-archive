@@ -37,6 +37,7 @@ export * from "./foreachUnitPar";
 export * from "./foreachUnitParN";
 export * from "./forever";
 export * from "./fork";
+export * from "./forkManaged";
 export * from "./forkWithErrorHandler";
 export * from "./from";
 export * from "./gen";

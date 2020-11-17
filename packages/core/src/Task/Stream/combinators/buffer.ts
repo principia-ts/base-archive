@@ -16,25 +16,29 @@ import { toQueue_ } from "./toQueue";
  */
 export function buffer_<R, E, O>(ma: Stream<R, E, O>, capacity: number): Stream<R, E, O> {
    return new Stream(
-      M.gen(function* (_) {
-         const done = yield* _(XR.makeRef(false));
-         const queue = yield* _(toQueue_(ma, capacity));
-         const pull = T.chain_(done.get, (b) =>
-            b
-               ? Pull.end
-               : pipe(
-                    queue.take,
-                    T.chain(T.done),
-                    T.catchSome(
-                       O.fold(
-                          () => pipe(done.set(true), T.andThen(Pull.end), O.some),
-                          (e) => O.some(T.fail(O.some(e)))
+      pipe(
+         M.do,
+         M.bindS("done", () => XR.makeManagedRef(false)),
+         M.bindS("queue", () => toQueue_(ma, capacity)),
+         M.letS("pull", ({ done, queue }) => {
+            const pull = T.chain_(done.get, (b) =>
+               b
+                  ? Pull.end
+                  : pipe(
+                       queue.take,
+                       T.chain(T.done),
+                       T.catchSome(
+                          O.fold(
+                             () => pipe(done.set(true), T.andThen(Pull.end), O.some),
+                             (e) => O.some(T.fail(O.some(e)))
+                          )
                        )
                     )
-                 )
-         );
-         return pull;
-      })
+            );
+            return pull;
+         }),
+         M.map(({ pull }) => pull)
+      )
    );
 }
 

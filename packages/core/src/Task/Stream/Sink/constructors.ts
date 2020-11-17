@@ -135,26 +135,24 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
 
 export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
    return new Sink(
-      M.gen(function* (_) {
-         const state = yield* _(XR.makeRef<O.Option<I>>(O.none()));
-         return (is: O.Option<ReadonlyArray<I>>) =>
-            pipe(
-               state.get,
-               T.chain((last) =>
-                  O.fold_(
-                     is,
-                     () => Push.emit(last, A.empty<never>()),
-                     flow(
-                        A.last,
-                        O.fold(
-                           () => Push.more,
-                           (l) => T.apSecond_(state.set(O.some(l)), Push.more)
-                        )
+      M.map_(M.fromTask(XR.makeRef<O.Option<I>>(O.none())), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+         pipe(
+            state.get,
+            T.chain((last) =>
+               O.fold_(
+                  is,
+                  () => Push.emit(last, A.empty<never>()),
+                  flow(
+                     A.last,
+                     O.fold(
+                        () => Push.more,
+                        (l) => T.apSecond_(state.set(O.some(l)), Push.more)
                      )
                   )
                )
-            );
-      })
+            )
+         )
+      )
    );
 }
 
@@ -163,28 +161,26 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
  */
 export function take<I>(n: number): Sink<unknown, never, I, I, ReadonlyArray<I>> {
    return new Sink(
-      M.gen(function* (_) {
-         const state = yield* _(XR.makeRef<ReadonlyArray<I>>(A.empty()));
-         return (is: O.Option<ReadonlyArray<I>>) =>
-            pipe(
-               state.get,
-               T.chain((take) =>
-                  O.fold_(
-                     is,
-                     () => (n >= 0 ? Push.emit(take, A.empty<I>()) : Push.emit(A.empty<I>(), take)),
-                     (ch) => {
-                        const remaining = n - take.length;
-                        if (remaining <= ch.length) {
-                           const [chunk, leftover] = A.splitAt(remaining)(ch);
-                           return T.apSecond_(state.set(A.empty()), Push.emit(A.concat_(take, chunk), leftover));
-                        } else {
-                           return T.apSecond_(state.set(A.concat_(take, ch)), Push.more);
-                        }
+      M.map_(M.fromTask(XR.makeRef<ReadonlyArray<I>>(A.empty())), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+         pipe(
+            state.get,
+            T.chain((take) =>
+               O.fold_(
+                  is,
+                  () => (n >= 0 ? Push.emit(take, A.empty<I>()) : Push.emit(A.empty<I>(), take)),
+                  (ch) => {
+                     const remaining = n - take.length;
+                     if (remaining <= ch.length) {
+                        const [chunk, leftover] = A.splitAt(remaining)(ch);
+                        return T.apSecond_(state.set(A.empty()), Push.emit(A.concat_(take, chunk), leftover));
+                     } else {
+                        return T.apSecond_(state.set(A.concat_(take, ch)), Push.more);
                      }
-                  )
+                  }
                )
-            );
-      })
+            )
+         )
+      )
    );
 }
 
@@ -195,21 +191,19 @@ export function fromFoldChunksM_<R, E, I, Z>(
 ): Sink<R, E, I, I, Z> {
    return cont(z)
       ? new Sink(
-           M.gen(function* (_) {
-              const state = yield* _(XR.makeRef(z));
-              return (is: O.Option<ReadonlyArray<I>>) =>
-                 O.fold_(
-                    is,
-                    () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
-                    (is) =>
-                       pipe(
-                          state.get,
-                          T.chain((s) => f(s, is)),
-                          T.mapError((e) => Tu.tuple_(E.left(e), A.empty<I>())),
-                          T.chain((s) => (cont(s) ? T.apSecond_(state.set(s), Push.more) : Push.emit(s, A.empty<I>())))
-                       )
-                 );
-           })
+           M.map_(M.fromTask(XR.makeRef(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+              O.fold_(
+                 is,
+                 () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
+                 (is) =>
+                    pipe(
+                       state.get,
+                       T.chain((s) => f(s, is)),
+                       T.mapError((e) => Tu.tuple_(E.left(e), A.empty<I>())),
+                       T.chain((s) => (cont(s) ? T.apSecond_(state.set(s), Push.more) : Push.emit(s, A.empty<I>())))
+                    )
+              )
+           )
         )
       : succeed(z);
 }
@@ -274,31 +268,31 @@ export function fromFoldM<R, E, I, Z>(
       }
    };
 
-   return cont(z)
-      ? new Sink(
-           M.gen(function* (_) {
-              const state = yield* _(XR.makeRef(z));
-              return (is: O.Option<ReadonlyArray<I>>) =>
-                 O.fold_(
-                    is,
-                    () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
-                    (is) =>
-                       T.chain_(state.get, (z) =>
-                          T.foldM_(
-                             foldChunk(z, is, 0, is.length),
-                             (err) => Push.fail(Tu.fst(err), Tu.snd(err)),
-                             ([st, l]) =>
-                                O.fold_(
-                                   l,
-                                   () => T.apSecond_(state.set(st), Push.more),
-                                   (leftover) => Push.emit(st, leftover)
-                                )
-                          )
-                       )
-                 );
-           })
-        )
-      : succeed(z);
+   if (cont(z)) {
+      return new Sink(
+         M.map_(M.fromTask(XR.makeRef(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+            O.fold_(
+               is,
+               () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
+               (is) =>
+                  T.chain_(state.get, (z) =>
+                     T.foldM_(
+                        foldChunk(z, is, 0, is.length),
+                        (err) => Push.fail(Tu.fst(err), Tu.snd(err)),
+                        ([st, l]) =>
+                           O.fold_(
+                              l,
+                              () => T.apSecond_(state.set(st), Push.more),
+                              (leftover) => Push.emit(st, leftover)
+                           )
+                     )
+                  )
+            )
+         )
+      );
+   } else {
+      return succeed(z);
+   }
 }
 
 /**
@@ -320,29 +314,28 @@ export function fromFold<I, Z>(z: Z, cont: (z: Z) => boolean, f: (z: Z, i: I) =>
          }
       });
 
-   return cont(z)
-      ? new Sink(
-           M.gen(function* (_) {
-              const state = yield* _(XR.makeRef(z));
-              return (is: O.Option<ReadonlyArray<I>>) =>
-                 O.fold_(
-                    is,
-                    () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
-                    (is) =>
-                       T.chain_(state.get, (z) =>
-                          T.gen(function* (_) {
-                             const [st, l] = yield* _(foldChunk(z, is, 0, is.length));
-                             return O.fold_(
-                                l,
-                                () => T.apSecond_(state.set(st), Push.more),
-                                (leftover) => Push.emit(st, leftover)
-                             );
-                          })
-                       )
-                 );
-           })
-        )
-      : succeed(z);
+   if (cont(z)) {
+      return new Sink(
+         M.map_(M.fromTask(XR.makeRef(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+            O.fold_(
+               is,
+               () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
+               (is) =>
+                  T.chain_(state.get, (z) =>
+                     T.chain_(foldChunk(z, is, 0, is.length), ([st, l]) =>
+                        O.fold_(
+                           l,
+                           () => T.apSecond_(state.set(st), Push.more),
+                           (leftover) => Push.emit(st, leftover)
+                        )
+                     )
+                  )
+            )
+         )
+      );
+   } else {
+      return succeed(z);
+   }
 }
 
 /**

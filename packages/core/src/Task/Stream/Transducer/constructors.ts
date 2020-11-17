@@ -161,26 +161,24 @@ export function branchAfter<R, E, I, O>(
 
 export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never, I, I> {
    return new Transducer(
-      M.gen(function* (_) {
-         const dropping = yield* _(XR.makeManagedRef(true));
-         return (is: O.Option<ReadonlyArray<I>>) =>
-            O.fold_(
-               is,
-               () => T.succeed(A.empty()),
-               (is) =>
-                  XR.modify_(dropping, (b) => {
-                     switch (b) {
-                        case true: {
-                           const is1 = A.dropWhile_(is, predicate);
-                           return [is1, is1.length === 0];
-                        }
-                        case false: {
-                           return [is, false];
-                        }
+      M.map_(XR.makeManagedRef(true), (dropping) => (is: O.Option<ReadonlyArray<I>>) =>
+         O.fold_(
+            is,
+            () => T.succeed(A.empty()),
+            (is) =>
+               XR.modify_(dropping, (b) => {
+                  switch (b) {
+                     case true: {
+                        const is1 = A.dropWhile_(is, predicate);
+                        return [is1, is1.length === 0];
                      }
-                  })
-            );
-      })
+                     case false: {
+                        return [is, false];
+                     }
+                  }
+               })
+         )
+      )
    );
 }
 
