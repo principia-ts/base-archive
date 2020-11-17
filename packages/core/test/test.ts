@@ -16,7 +16,7 @@ import * as XP from "../src/Task/XPromise";
 
 (async () => {
    const s = S.fromArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-   const p = S.distributedWithDynamic_(s, 3, (_) => T.succeed((_) => false))
+   const p = S.distributedWithDynamic(s, 3, (_) => T.succeed((_) => false))
       ["|>"](M.useNow)
       ["|>"](T.chain((a) => a))
       ["|>"](T.chain(([_, q]) => q.takeAll))
