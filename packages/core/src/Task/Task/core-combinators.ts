@@ -229,20 +229,20 @@ export function result<R, E, A>(ma: Task<R, E, A>): Task<R, never, Exit<E, A>> {
    );
 }
 
-export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => Task<R, E, B>): Task<R, E, B> {
+export function foldLeft_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => Task<R, E, B>): Task<R, E, B> {
    return A.reduce_(Array.from(as), succeed(b) as Task<R, E, B>, (acc, el) => chain_(acc, (a) => f(a, el)));
 }
 
-export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => Task<R, E, B>): (as: Iterable<A>) => Task<R, E, B> {
-   return (as) => foldl_(as, b, f);
+export function foldLeft<R, E, A, B>(b: B, f: (b: B, a: A) => Task<R, E, B>): (as: Iterable<A>) => Task<R, E, B> {
+   return (as) => foldLeft_(as, b, f);
 }
 
-export function foldr_<A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => Task<R, E, Z>): Task<R, E, Z> {
+export function foldRight_<A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => Task<R, E, Z>): Task<R, E, Z> {
    return A.reduceRight_(Array.from(i), succeed(zero) as Task<R, E, Z>, (el, acc) => chain_(acc, (a) => f(el, a)));
 }
 
-export function foldr<A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Task<R, E, Z>): (i: Iterable<A>) => Task<R, E, Z> {
-   return (i) => foldr_(i, zero, f);
+export function foldRight<A, Z, R, E>(zero: Z, f: (a: A, z: Z) => Task<R, E, Z>): (i: Iterable<A>) => Task<R, E, Z> {
+   return (i) => foldRight_(i, zero, f);
 }
 
 export function whenM_<R, E, A, R1, E1>(ma: Task<R, E, A>, mb: Task<R1, E1, boolean>) {

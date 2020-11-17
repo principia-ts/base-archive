@@ -13,13 +13,3 @@ import * as S from "../src/Task/Stream";
 import * as Tr from "../src/Task/Stream/Transducer";
 import * as T from "../src/Task/Task";
 import * as XP from "../src/Task/XPromise";
-
-(async () => {
-   const s = S.fromArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-   const p = S.distributedWithDynamic(s, 3, (_) => T.succeed((_) => false))
-      ["|>"](M.useNow)
-      ["|>"](T.chain((a) => a))
-      ["|>"](T.chain(([_, q]) => q.takeAll))
-      ["|>"](T.chain((ex) => T.total(() => console.log(inspect(ex, false, 4)))))
-      ["|>"](T.runMain);
-})();

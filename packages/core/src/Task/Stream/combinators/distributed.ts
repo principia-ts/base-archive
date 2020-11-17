@@ -1,5 +1,3 @@
-import "@principia/prelude/Operators";
-
 import { pipe } from "@principia/prelude";
 
 import * as A from "../../../Array";
@@ -16,12 +14,36 @@ import * as XR from "../../XRef";
 import { foreachManaged } from "../destructors";
 import type { Stream } from "../model";
 
-export function distributedWithDynamic<R, E, O>(
+export function distributedWithDynamic_<R, E, O>(
    stream: Stream<R, E, O>,
    maximumLag: number,
    decide: (o: O) => T.IO<(_: symbol) => boolean>,
    done: (_: Ex.Exit<O.Option<E>, never>) => T.IO<any> = (_: any) => T.unit()
 ): M.Managed<R, never, T.IO<readonly [symbol, XQ.Dequeue<Ex.Exit<O.Option<E>, O>>]>> {
+   const offer = (queuesRef: XR.Ref<ReadonlyMap<symbol, XQ.Queue<Ex.Exit<O.Option<E>, O>>>>) => (o: O) =>
+      pipe(
+         T.do,
+         T.bindS("shouldProcess", () => decide(o)),
+         T.bindS("queues", () => T.map_(queuesRef.get, (m) => m.entries())),
+         T.chain(({ shouldProcess, queues }) =>
+            pipe(
+               T.foldLeft_(queues, A.empty<symbol>(), (acc, [id, queue]) => {
+                  if (shouldProcess(id)) {
+                     return pipe(
+                        queue.offer(Ex.succeed(o)),
+                        T.foldCauseM(
+                           (c) => (C.isInterrupt(c) ? T.succeed(A.append_(acc, id)) : T.halt(c)),
+                           () => T.succeed(acc)
+                        )
+                     );
+                  } else {
+                     return T.succeed(acc);
+                  }
+               }),
+               T.chain((ids) => (A.isNonEmpty(ids) ? XR.update_(queuesRef, Map.unsafeDeleteMany(ids)) : T.unit()))
+            )
+         )
+      );
    return pipe(
       M.do,
       M.bindS("queuesRef", () =>
@@ -30,42 +52,21 @@ export function distributedWithDynamic<R, E, O>(
          )
       ),
       M.bindS("add", ({ queuesRef }) => {
-         const offer = (o: O) =>
-            pipe(
-               T.do,
-               T.bindS("shouldProcess", () => decide(o)),
-               T.bindS("queues", () => queuesRef.get),
-               T.chain(({ shouldProcess, queues }) =>
-                  pipe(
-                     T.foldl_(queues, A.empty<symbol>(), (acc, [id, queue]) => {
-                        if (shouldProcess(id)) {
-                           return pipe(
-                              queue.offer(Ex.succeed(o)),
-                              T.foldCauseM(
-                                 (c) => (C.isInterrupt(c) ? T.succeed(A.append_(acc, id)) : T.halt(c)),
-                                 () => T.succeed(acc)
-                              )
-                           );
-                        } else {
-                           return T.succeed(acc);
-                        }
-                     }),
-                     T.chain((ids) => (A.isNonEmpty(ids) ? XR.update_(queuesRef, Map.unsafeDeleteMany(ids)) : T.unit()))
-                  )
-               )
-            );
          return pipe(
             M.do,
-            M.bindS("queuesLock", () => M.fromTask(Sem.makeSemaphore(1))),
+            M.bindS("queuesLock", () => T.toManaged_(Sem.makeSemaphore(1))),
             M.bindS("newQueue", () =>
                pipe(
                   XR.makeRef<T.IO<readonly [symbol, XQ.Queue<Ex.Exit<O.Option<E>, O>>]>>(
-                     T.tap_(
-                        T.both_(T.succeed(Symbol()), XQ.makeBounded<Ex.Exit<O.Option<E>, O>>(maximumLag)),
-                        ([id, q]) => XR.update_(queuesRef, Map.unsafeInsertAt(id, q))
+                     pipe(
+                        T.do,
+                        T.bindS("queue", () => XQ.makeBounded<Ex.Exit<O.Option<E>, O>>(maximumLag)),
+                        T.letS("id", () => Symbol()),
+                        T.tap(({ queue, id }) => XR.update_(queuesRef, Map.unsafeInsertAt(id, queue))),
+                        T.map(({ id, queue }) => [id, queue])
                      )
                   ),
-                  M.fromTask
+                  T.toManaged()
                )
             ),
             M.letS("finalize", ({ queuesLock, newQueue }) => {
@@ -85,9 +86,9 @@ export function distributedWithDynamic<R, E, O>(
                         () =>
                            pipe(
                               T.do,
-                              T.bindS("queues", () => T.map_(queuesRef.get, (m) => m.values)),
+                              T.bindS("queues", () => T.map_(queuesRef.get, (m) => [...m.values()])),
                               T.tap(({ queues }) =>
-                                 T.foreach_(queues(), (queue) =>
+                                 T.foreach_(queues, (queue) =>
                                     pipe(
                                        queue.offer(endTake),
                                        T.catchSomeCause((c) =>
@@ -105,10 +106,10 @@ export function distributedWithDynamic<R, E, O>(
             M.tap(({ finalize }) =>
                pipe(
                   stream,
-                  foreachManaged(offer),
+                  foreachManaged(offer(queuesRef)),
                   M.foldCauseM(
-                     (cause) => M.fromTask(finalize(Ex.failure(C.map_(cause, O.some)))),
-                     () => M.fromTask(finalize(Ex.fail(O.none())))
+                     (cause) => T.toManaged_(finalize(Ex.failure(C.map_(cause, O.some)))),
+                     () => T.toManaged_(finalize(Ex.fail(O.none())))
                   ),
                   M.fork
                )
@@ -120,7 +121,7 @@ export function distributedWithDynamic<R, E, O>(
    );
 }
 
-export function distributedWith<R, E, O>(
+export function distributedWith_<R, E, O>(
    stream: Stream<R, E, O>,
    n: number,
    maximumLag: number,
@@ -131,7 +132,7 @@ export function distributedWith<R, E, O>(
       M.fromTask,
       M.chain((prom) =>
          pipe(
-            distributedWithDynamic(
+            distributedWithDynamic_(
                stream,
                maximumLag,
                (o) => T.chain_(XP.await(prom), (_) => _(o)),
