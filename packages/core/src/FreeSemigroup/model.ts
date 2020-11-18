@@ -8,14 +8,14 @@ import { fromCombine } from "@principia/prelude/Semigroup";
  */
 
 export interface Element<A> {
-   readonly _tag: "Element";
-   readonly value: A;
+  readonly _tag: "Element";
+  readonly value: A;
 }
 
 export interface Combine<A> {
-   readonly _tag: "Combine";
-   readonly left: FreeSemigroup<A>;
-   readonly right: FreeSemigroup<A>;
+  readonly _tag: "Combine";
+  readonly left: FreeSemigroup<A>;
+  readonly right: FreeSemigroup<A>;
 }
 
 export type FreeSemigroup<A> = Element<A> | Combine<A>;
@@ -31,11 +31,11 @@ export type FreeSemigroup<A> = Element<A> | Combine<A>;
  * @since 1.0.0
  */
 export function combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): FreeSemigroup<A> {
-   return {
-      _tag: "Combine",
-      left,
-      right
-   };
+  return {
+    _tag: "Combine",
+    left,
+    right
+  };
 }
 
 /**
@@ -43,10 +43,10 @@ export function combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): Fre
  * @since 1.0.0
  */
 export function element<A>(a: A): FreeSemigroup<A> {
-   return {
-      _tag: "Element",
-      value: a
-   };
+  return {
+    _tag: "Element",
+    value: a
+  };
 }
 
 /*
@@ -60,17 +60,17 @@ export function element<A>(a: A): FreeSemigroup<A> {
  * @since 1.0.0
  */
 export function fold<A, R>(
-   onOf: (value: A) => R,
-   onConcat: (left: FreeSemigroup<A>, right: FreeSemigroup<A>) => R
+  onOf: (value: A) => R,
+  onConcat: (left: FreeSemigroup<A>, right: FreeSemigroup<A>) => R
 ): (f: FreeSemigroup<A>) => R {
-   return (f) => {
-      switch (f._tag) {
-         case "Element":
-            return onOf(f.value);
-         case "Combine":
-            return onConcat(f.left, f.right);
-      }
-   };
+  return (f) => {
+    switch (f._tag) {
+      case "Element":
+        return onOf(f.value);
+      case "Combine":
+        return onConcat(f.left, f.right);
+    }
+  };
 }
 
 /*
@@ -84,5 +84,5 @@ export function fold<A, R>(
  * @since 1.0.0
  */
 export function getSemigroup<A = never>(): Semigroup<FreeSemigroup<A>> {
-   return fromCombine(combine);
+  return fromCombine(combine);
 }

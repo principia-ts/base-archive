@@ -22,7 +22,7 @@ import type { Option, URI, V } from "./model";
  * @since 1.0.0
  */
 export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
-   return isNone(fa) ? fa : some(f(fa.value));
+  return isNone(fa) ? fa : some(f(fa.value));
 }
 
 /**
@@ -36,10 +36,10 @@ export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
  * @since 1.0.0
  */
 export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
-   return (fa) => map_(fa, f);
+  return (fa) => map_(fa, f);
 }
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map,
-   map_: map_
+  map,
+  map_: map_
 });

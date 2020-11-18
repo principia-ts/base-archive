@@ -4,5 +4,5 @@ import { XPromise } from "../model";
 import { Pending } from "../state";
 
 export function unsafeMake<E, A>(fiberId: FiberId) {
-   return new XPromise<E, A>(new AtomicReference(new Pending([])), [fiberId]);
+  return new XPromise<E, A>(new AtomicReference(new Pending([])), [fiberId]);
 }

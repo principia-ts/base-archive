@@ -16,7 +16,7 @@ import type { List, MutableList } from "./model";
 export function filter_<A, B extends A>(fa: List<A>, refinement: Refinement<A, B>): List<B>;
 export function filter_<A>(fa: List<A>, predicate: Predicate<A>): List<A>;
 export function filter_<A>(fa: List<A>, predicate: (a: A) => boolean): List<A> {
-   return reduce_(fa, emptyPushable(), (acc, a) => (predicate(a) ? push(a, acc) : acc));
+  return reduce_(fa, emptyPushable(), (acc, a) => (predicate(a) ? push(a, acc) : acc));
 }
 
 /**
@@ -28,7 +28,7 @@ export function filter_<A>(fa: List<A>, predicate: (a: A) => boolean): List<A> {
 export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: List<A>) => List<B>;
 export function filter<A>(predicate: Predicate<A>): (fa: List<A>) => List<A>;
 export function filter<A>(predicate: (a: A) => boolean): (fa: List<A>) => List<A> {
-   return (fa) => filter_(fa, predicate);
+  return (fa) => filter_(fa, predicate);
 }
 
 /**
@@ -38,13 +38,13 @@ export function filter<A>(predicate: (a: A) => boolean): (fa: List<A>) => List<A
  * @complexity O(n)
  */
 export function mapOption_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B> {
-   return reduce_(fa, emptyPushable(), (acc, a) => {
-      const fa = f(a);
-      if (fa._tag === "Some") {
-         push(fa.value, acc);
-      }
-      return acc;
-   });
+  return reduce_(fa, emptyPushable(), (acc, a) => {
+    const fa = f(a);
+    if (fa._tag === "Some") {
+      push(fa.value, acc);
+    }
+    return acc;
+  });
 }
 
 /**
@@ -54,7 +54,7 @@ export function mapOption_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B>
  * @complexity O(n)
  */
 export function mapOption<A, B>(f: (a: A) => O.Option<B>): (fa: List<A>) => List<B> {
-   return (fa) => mapOption_(fa, f);
+  return (fa) => mapOption_(fa, f);
 }
 
 /**
@@ -65,16 +65,22 @@ export function mapOption<A, B>(f: (a: A) => O.Option<B>): (fa: List<A>) => List
  * @complexity O(n)
  */
 export function partition_<A, B extends A>(
-   l: List<A>,
-   refinement: Refinement<A, B>
+  l: List<A>,
+  refinement: Refinement<A, B>
 ): Separated<List<B>, List<Exclude<A, B>>>;
 export function partition_<A>(l: List<A>, predicate: Predicate<A>): Separated<List<A>, List<A>>;
-export function partition_<A>(l: List<A>, predicate: (a: A) => boolean): Separated<List<A>, List<A>> {
-   return reduce_(
-      l,
-      { left: emptyPushable<A>(), right: emptyPushable<A>() } as Separated<MutableList<A>, MutableList<A>>,
-      (arr, a) => (predicate(a) ? push(a, arr.left) : push(a, arr.right), arr)
-   );
+export function partition_<A>(
+  l: List<A>,
+  predicate: (a: A) => boolean
+): Separated<List<A>, List<A>> {
+  return reduce_(
+    l,
+    { left: emptyPushable<A>(), right: emptyPushable<A>() } as Separated<
+      MutableList<A>,
+      MutableList<A>
+    >,
+    (arr, a) => (predicate(a) ? push(a, arr.left) : push(a, arr.right), arr)
+  );
 }
 
 /**
@@ -85,11 +91,13 @@ export function partition_<A>(l: List<A>, predicate: (a: A) => boolean): Separat
  * @complexity O(n)
  */
 export function partition<A, B extends A>(
-   refinement: Refinement<A, B>
+  refinement: Refinement<A, B>
 ): (l: List<A>) => Separated<List<B>, List<Exclude<A, B>>>;
 export function partition<A>(predicate: Predicate<A>): (l: List<A>) => Separated<List<A>, List<A>>;
-export function partition<A>(predicate: (a: A) => boolean): (l: List<A>) => Separated<List<A>, List<A>> {
-   return (l) => partition_(l, predicate);
+export function partition<A>(
+  predicate: (a: A) => boolean
+): (l: List<A>) => Separated<List<A>, List<A>> {
+  return (l) => partition_(l, predicate);
 }
 
 /**
@@ -98,20 +106,26 @@ export function partition<A>(predicate: (a: A) => boolean): (l: List<A>) => Sepa
  *
  * @complexity O(n)
  */
-export function mapEither_<A, B, C>(l: List<A>, f: (a: A) => E.Either<B, C>): Separated<List<B>, List<C>> {
-   return reduce_(
-      l,
-      { left: emptyPushable<B>(), right: emptyPushable<C>() } as Separated<MutableList<B>, MutableList<C>>,
-      (arr, a) => {
-         const fa = f(a);
-         if (fa._tag === "Left") {
-            push(fa.left, arr.left);
-         } else {
-            push(fa.right, arr.right);
-         }
-         return arr;
+export function mapEither_<A, B, C>(
+  l: List<A>,
+  f: (a: A) => E.Either<B, C>
+): Separated<List<B>, List<C>> {
+  return reduce_(
+    l,
+    { left: emptyPushable<B>(), right: emptyPushable<C>() } as Separated<
+      MutableList<B>,
+      MutableList<C>
+    >,
+    (arr, a) => {
+      const fa = f(a);
+      if (fa._tag === "Left") {
+        push(fa.left, arr.left);
+      } else {
+        push(fa.right, arr.right);
       }
-   );
+      return arr;
+    }
+  );
 }
 
 /**
@@ -120,6 +134,8 @@ export function mapEither_<A, B, C>(l: List<A>, f: (a: A) => E.Either<B, C>): Se
  *
  * @complexity O(n)
  */
-export function mapEither<A, B, C>(f: (_: A) => E.Either<B, C>): (l: List<A>) => Separated<List<B>, List<C>> {
-   return (l) => mapEither_(l, f);
+export function mapEither<A, B, C>(
+  f: (_: A) => E.Either<B, C>
+): (l: List<A>) => Separated<List<B>, List<C>> {
+  return (l) => mapEither_(l, f);
 }

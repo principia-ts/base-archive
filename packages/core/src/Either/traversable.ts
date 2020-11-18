@@ -26,14 +26,14 @@ import type { URI, V } from "./model";
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (F) => {
-   const pure = pureF(F);
-   return (ta, f) =>
-      isLeft(ta)
-         ? pure(left(ta.left))
-         : pipe(
-              f(ta.right),
-              F.map((b) => right(b))
-           );
+  const pure = pureF(F);
+  return (ta, f) =>
+    isLeft(ta)
+      ? pure(left(ta.left))
+      : pipe(
+          f(ta.right),
+          F.map((b) => right(b))
+        );
 });
 
 /**
@@ -65,9 +65,9 @@ export const sequence: P.SequenceFn<[URI], V> = (F) => (ta) => traverse_(F)(ta, 
  * @since 1.0.0
  */
 export const Traversable: P.Traversable<[URI], V> = HKT.instance({
-   ...Functor,
-   ...Foldable,
-   traverse_,
-   sequence,
-   traverse
+  ...Functor,
+  ...Foldable,
+  traverse_,
+  sequence,
+  traverse
 });

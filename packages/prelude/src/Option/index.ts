@@ -14,12 +14,12 @@ import type * as HKT from "../HKT";
  */
 
 export interface None {
-   readonly _tag: "None";
+  readonly _tag: "None";
 }
 
 export interface Some<A> {
-   readonly _tag: "Some";
-   readonly value: A;
+  readonly _tag: "Some";
+  readonly value: A;
 }
 
 export type Option<A> = None | Some<A>;
@@ -33,10 +33,10 @@ export type URI = typeof URI;
 export type V = HKT.Auto;
 
 declare module "../HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Option<A>;
-   }
-   interface URItoKind1<TC, A> {
-      readonly [URI]: Option<A>;
-   }
+  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: Option<A>;
+  }
+  interface URItoKind1<TC, A> {
+    readonly [URI]: Option<A>;
+  }
 }

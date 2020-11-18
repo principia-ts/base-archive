@@ -17,8 +17,10 @@ import { Monad } from "./monad";
  * @category Instances
  * @since 1.0.0
  */
-export const getFilterable: <E>(M: P.Monoid<E>) => P.Filterable<[URI], HKT.Fix<"E", E>> = getFilterableF({
-   ...Monad,
-   ...Fallible,
-   ...Applicative
+export const getFilterable: <E>(
+  M: P.Monoid<E>
+) => P.Filterable<[URI], HKT.Fix<"E", E>> = getFilterableF({
+  ...Monad,
+  ...Fallible,
+  ...Applicative
 });

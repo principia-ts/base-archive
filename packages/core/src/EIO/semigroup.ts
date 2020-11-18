@@ -23,7 +23,7 @@ import type { EIO } from "./model";
  * @since 1.0.0
  */
 export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> {
-   return fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
+  return fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
 }
 
 /**
@@ -37,16 +37,16 @@ export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> {
  * @since 1.0.0
  */
 export function getApplySemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> {
-   return fromCombine((x, y) =>
-      foldM_(
-         y,
-         () => x,
-         (y_) =>
-            foldM_(
-               x,
-               () => y,
-               (x_) => succeed(S.combine_(x_, y_))
-            )
-      )
-   );
+  return fromCombine((x, y) =>
+    foldM_(
+      y,
+      () => x,
+      (y_) =>
+        foldM_(
+          x,
+          () => y,
+          (x_) => succeed(S.combine_(x_, y_))
+        )
+    )
+  );
 }

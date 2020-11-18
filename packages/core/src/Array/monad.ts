@@ -13,35 +13,35 @@ import { unit } from "./unit";
  */
 
 export function chainWithIndex_<A, B>(
-   fa: ReadonlyArray<A>,
-   f: (i: number, a: A) => ReadonlyArray<B>
+  fa: ReadonlyArray<A>,
+  f: (i: number, a: A) => ReadonlyArray<B>
 ): ReadonlyArray<B> {
-   let outLen = 0;
-   const len = fa.length;
-   const temp = new Array(len);
-   for (let i = 0; i < len; i++) {
-      const e = fa[i];
-      const arr = f(i, e);
-      outLen += arr.length;
-      temp[i] = arr;
-   }
-   const out = Array(outLen);
-   let start = 0;
-   for (let i = 0; i < len; i++) {
-      const arr = temp[i];
-      const l = arr.length;
-      for (let j = 0; j < l; j++) {
-         out[j + start] = arr[j];
-      }
-      start += l;
-   }
-   return out;
+  let outLen = 0;
+  const len = fa.length;
+  const temp = new Array(len);
+  for (let i = 0; i < len; i++) {
+    const e = fa[i];
+    const arr = f(i, e);
+    outLen += arr.length;
+    temp[i] = arr;
+  }
+  const out = Array(outLen);
+  let start = 0;
+  for (let i = 0; i < len; i++) {
+    const arr = temp[i];
+    const l = arr.length;
+    for (let j = 0; j < l; j++) {
+      out[j + start] = arr[j];
+    }
+    start += l;
+  }
+  return out;
 }
 
 export function chainWithIndex<A, B>(
-   f: (i: number, a: A) => ReadonlyArray<B>
+  f: (i: number, a: A) => ReadonlyArray<B>
 ): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-   return (fa) => chainWithIndex_(fa, f);
+  return (fa) => chainWithIndex_(fa, f);
 }
 
 /**
@@ -54,8 +54,11 @@ export function chainWithIndex<A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
-   return chainWithIndex_(fa, (_, a) => f(a));
+export function chain_<A, B>(
+  fa: ReadonlyArray<A>,
+  f: (a: A) => ReadonlyArray<B>
+): ReadonlyArray<B> {
+  return chainWithIndex_(fa, (_, a) => f(a));
 }
 
 /**
@@ -68,8 +71,10 @@ export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>
  * @category Monad
  * @since 1.0.0
  */
-export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-   return (fa) => chain_(fa, f);
+export function chain<A, B>(
+  f: (a: A) => ReadonlyArray<B>
+): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => chain_(fa, f);
 }
 
 /**
@@ -83,22 +88,22 @@ export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A
  * @since 1.0.0
  */
 export function flatten<A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<A> {
-   let rLen = 0;
-   const len = mma.length;
-   for (let i = 0; i < len; i++) {
-      rLen += mma[i].length;
-   }
-   const r = Array(rLen);
-   let start = 0;
-   for (let i = 0; i < len; i++) {
-      const arr = mma[i];
-      const l = arr.length;
-      for (let j = 0; j < l; j++) {
-         r[j + start] = arr[j];
-      }
-      start += l;
-   }
-   return r;
+  let rLen = 0;
+  const len = mma.length;
+  for (let i = 0; i < len; i++) {
+    rLen += mma[i].length;
+  }
+  const r = Array(rLen);
+  let start = 0;
+  for (let i = 0; i < len; i++) {
+    const arr = mma[i];
+    const l = arr.length;
+    for (let j = 0; j < l; j++) {
+      r[j + start] = arr[j];
+    }
+    start += l;
+  }
+  return r;
 }
 
 /**
@@ -113,12 +118,12 @@ export function flatten<A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
  * @since 1.0.0
  */
 export function tap_<A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<A> {
-   return chain_(ma, (a) =>
-      pipe(
-         f(a),
-         map(() => a)
-      )
-   );
+  return chain_(ma, (a) =>
+    pipe(
+      f(a),
+      map(() => a)
+    )
+  );
 }
 
 /**
@@ -132,12 +137,14 @@ export function tap_<A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>):
  * @category Monad
  * @since 1.0.0
  */
-export function tap<A, B>(f: (a: A) => ReadonlyArray<B>): (ma: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (ma) => tap_(ma, f);
+export function tap<A, B>(
+  f: (a: A) => ReadonlyArray<B>
+): (ma: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (ma) => tap_(ma, f);
 }
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-   ...Functor,
-   flatten,
-   unit
+  ...Functor,
+  flatten,
+  unit
 });

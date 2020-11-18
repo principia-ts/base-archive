@@ -14,5 +14,5 @@ import type { Const } from "./model";
  * @since 1.0.0
  */
 export function getOrd<E, A>(O: Ord<E>): Ord<Const<E, A>> {
-   return identity(O) as any;
+  return identity(O) as any;
 }

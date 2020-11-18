@@ -9,4 +9,4 @@ import { InterruptStatusRestoreImpl, makeInterruptible } from "./interrupt";
  * the effect is composed into.
  */
 export const interruptibleMask = <R, E, A>(f: (restore: InterruptStatusRestore) => Task<R, E, A>) =>
-   checkInterruptible((flag) => makeInterruptible(f(new InterruptStatusRestoreImpl(flag))));
+  checkInterruptible((flag) => makeInterruptible(f(new InterruptStatusRestoreImpl(flag))));

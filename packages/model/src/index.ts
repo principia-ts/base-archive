@@ -17,9 +17,9 @@ export const getEncoder = Enc.deriveFor(make)({});
 export const getEq = Eq.deriveFor(make)({});
 export const getGuard = G.deriveFor(make)({});
 export const getArbitrary = Arb.deriveFor(make)({
-   [ArbURI]: {
-      module: fc
-   }
+  [ArbURI]: {
+    module: fc
+  }
 });
 
 export {} from "./interpreter/Eq/HKT";

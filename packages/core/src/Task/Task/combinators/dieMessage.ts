@@ -8,5 +8,5 @@ import { RuntimeError } from "../../Exit/Cause";
  * because a defect has been detected in the code.
  */
 export function dieMessage(message: string): EIO<never, never> {
-   return die(new RuntimeError(message));
+  return die(new RuntimeError(message));
 }

@@ -11,8 +11,8 @@ import type { ReadonlyRecord } from "./model";
  */
 
 export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
-   return fromShow((a) => {
-      const elements = collect_(a, (k, a) => `${JSON.stringify(k)}: ${S.show(a)}`).join(", ");
-      return elements === "" ? "{}" : `{ ${elements} }`;
-   });
+  return fromShow((a) => {
+    const elements = collect_(a, (k, a) => `${JSON.stringify(k)}: ${S.show(a)}`).join(", ");
+    return elements === "" ? "{}" : `{ ${elements} }`;
+  });
 }

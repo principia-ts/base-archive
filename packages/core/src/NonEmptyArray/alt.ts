@@ -21,7 +21,10 @@ import type { NonEmptyArray, URI, V } from "./model";
  * @category Alt
  * @since 1.0.0
  */
-export const alt_: <A>(fa: NonEmptyArray<A>, that: () => NonEmptyArray<A>) => NonEmptyArray<A> = A.alt_ as any;
+export const alt_: <A>(
+  fa: NonEmptyArray<A>,
+  that: () => NonEmptyArray<A>
+) => NonEmptyArray<A> = A.alt_ as any;
 
 /**
  * ```haskell
@@ -33,10 +36,12 @@ export const alt_: <A>(fa: NonEmptyArray<A>, that: () => NonEmptyArray<A>) => No
  * @category Alt
  * @since 1.0.0
  */
-export const alt: <A>(that: () => NonEmptyArray<A>) => (fa: NonEmptyArray<A>) => NonEmptyArray<A> = A.alt as any;
+export const alt: <A>(
+  that: () => NonEmptyArray<A>
+) => (fa: NonEmptyArray<A>) => NonEmptyArray<A> = A.alt as any;
 
 export const Alt: P.Alt<[URI], V> = HKT.instance({
-   ...Functor,
-   alt_,
-   alt
+  ...Functor,
+  alt_,
+  alt
 });

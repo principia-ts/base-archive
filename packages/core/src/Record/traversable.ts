@@ -20,34 +20,35 @@ import { keys } from "./utils";
  *    g -> (t a, ((k, a) -> g b)) -> g (t b)
  * ```
  */
-export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()(
-   (_) => (G) => {
-      const pure = pureF(G);
-      const ap = apF(G);
+export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<
+  [URI],
+  V
+>()((_) => (G) => {
+  const pure = pureF(G);
+  const ap = apF(G);
 
-      return (ta, f) => {
-         type _ = typeof _;
+  return (ta, f) => {
+    type _ = typeof _;
 
-         const ks = keys(ta);
-         if (ks.length === 0) {
-            return pure(empty);
-         }
-         let gr: HKT.HKT<_["G"], Record<_["N"], _["B"]>> = pure({}) as any;
-         for (let i = 0; i < ks.length; i++) {
-            const key = ks[i];
-            gr = pipe(
-               gr,
-               G.map((r) => (b: _["B"]) => {
-                  r[key] = b;
-                  return r;
-               }),
-               ap(f(key, ta[key]))
-            );
-         }
-         return gr;
-      };
-   }
-);
+    const ks = keys(ta);
+    if (ks.length === 0) {
+      return pure(empty);
+    }
+    let gr: HKT.HKT<_["G"], Record<_["N"], _["B"]>> = pure({}) as any;
+    for (let i = 0; i < ks.length; i++) {
+      const key = ks[i];
+      gr = pipe(
+        gr,
+        G.map((r) => (b: _["B"]) => {
+          r[key] = b;
+          return r;
+        }),
+        ap(f(key, ta[key]))
+      );
+    }
+    return gr;
+  };
+});
 
 /**
  * ```haskell
@@ -55,7 +56,8 @@ export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementT
  *    g -> ((k, a) -> g b) -> t a -> g (t b)
  * ```
  */
-export const traverseWithIndex: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => (ta) => traverseWithIndex_(G)(ta, f);
+export const traverseWithIndex: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => (ta) =>
+  traverseWithIndex_(G)(ta, f);
 
 /**
  * ```haskell
@@ -63,7 +65,8 @@ export const traverseWithIndex: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => 
  *    g -> (t a, (a -> g b)) -> g (t b)
  * ```
  */
-export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) => traverseWithIndex_(G)(ta, (_, a) => f(a));
+export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) =>
+  traverseWithIndex_(G)(ta, (_, a) => f(a));
 
 /**
  * ```haskell
@@ -78,17 +81,18 @@ export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(
  * sequence :: (Applicative g, Traversable t) => g -> t a -> g (t a)
  * ```
  */
-export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => traverseWithIndex_(G)(ta, (_, a) => a);
+export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) =>
+  traverseWithIndex_(G)(ta, (_, a) => a);
 
 export const Traversable: P.Traversable<[URI], V> = HKT.instance({
-   ...Functor,
-   traverse_: traverse_,
-   traverse,
-   sequence
+  ...Functor,
+  traverse_: traverse_,
+  traverse,
+  sequence
 });
 
 export const TraversableWithIndex: P.TraversableWithIndex<[URI], V> = HKT.instance({
-   ...FunctorWithIndex,
-   traverseWithIndex_,
-   traverseWithIndex
+  ...FunctorWithIndex,
+  traverseWithIndex_,
+  traverseWithIndex
 });

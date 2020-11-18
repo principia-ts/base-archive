@@ -12,5 +12,5 @@ import type { Task } from "../model";
  * @since 1.0.0
  */
 export function swap<R, E, A>(pab: Task<R, E, A>): Task<R, A, E> {
-   return foldM_(pab, pure, fail);
+  return foldM_(pab, pure, fail);
 }

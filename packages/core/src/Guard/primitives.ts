@@ -12,7 +12,7 @@ import type { Guard } from "./Guard";
  * @since 1.0.0
  */
 export const string: Guard<unknown, string> = {
-   is: (i): i is string => typeof i === "string"
+  is: (i): i is string => typeof i === "string"
 };
 
 /**
@@ -22,7 +22,7 @@ export const string: Guard<unknown, string> = {
  * @since 1.0.0
  */
 export const number: Guard<unknown, number> = {
-   is: (i): i is number => typeof i === "number" && !isNaN(i)
+  is: (i): i is number => typeof i === "number" && !isNaN(i)
 };
 
 /**
@@ -30,7 +30,7 @@ export const number: Guard<unknown, number> = {
  * @since 1.0.0
  */
 export const boolean: Guard<unknown, boolean> = {
-   is: (i): i is boolean => typeof i === "boolean"
+  is: (i): i is boolean => typeof i === "boolean"
 };
 
 /**
@@ -38,7 +38,7 @@ export const boolean: Guard<unknown, boolean> = {
  * @since 1.0.0
  */
 export const UnknownArray: Guard<unknown, ReadonlyArray<unknown>> = {
-   is: Array.isArray
+  is: Array.isArray
 };
 
 /**
@@ -46,5 +46,5 @@ export const UnknownArray: Guard<unknown, ReadonlyArray<unknown>> = {
  * @since 1.0.0
  */
 export const UnknownRecord: Guard<unknown, ReadonlyRecord<string, unknown>> = {
-   is: (i): i is Record<string, unknown> => Object.prototype.toString.call(i) === "[object Object]"
+  is: (i): i is Record<string, unknown> => Object.prototype.toString.call(i) === "[object Object]"
 };

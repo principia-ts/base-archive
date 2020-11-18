@@ -24,7 +24,7 @@ import type { IO, URI, V } from "./model";
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> {
-   return map_(X.both_(fab, fa), ([f, a]) => f(a));
+  return map_(X.both_(fab, fa), ([f, a]) => f(a));
 }
 
 /**
@@ -38,7 +38,7 @@ export function ap_<A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> {
  * @since 1.0.0
  */
 export function ap<A>(fa: IO<A>): <B>(fab: IO<(a: A) => B>) => IO<B> {
-   return (fab) => ap_(fab, fa);
+  return (fab) => ap_(fab, fa);
 }
 
 /**
@@ -52,11 +52,11 @@ export function ap<A>(fa: IO<A>): <B>(fab: IO<(a: A) => B>) => IO<B> {
  * @since 1.0.0
  */
 export function apFirst_<A, B>(fa: IO<A>, fb: IO<B>): IO<A> {
-   return pipe(
-      fa,
-      map((a) => () => a),
-      ap(fb)
-   );
+  return pipe(
+    fa,
+    map((a) => () => a),
+    ap(fb)
+  );
 }
 
 /**
@@ -70,7 +70,7 @@ export function apFirst_<A, B>(fa: IO<A>, fb: IO<B>): IO<A> {
  * @since 1.0.0
  */
 export function apFirst<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<A> {
-   return (fa) => apFirst_(fa, fb);
+  return (fa) => apFirst_(fa, fb);
 }
 
 /**
@@ -84,11 +84,11 @@ export function apFirst<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<A> {
  * @since 1.0.0
  */
 export function apSecond_<A, B>(fa: IO<A>, fb: IO<B>): IO<B> {
-   return pipe(
-      fa,
-      map(() => (b: B) => b),
-      ap(fb)
-   );
+  return pipe(
+    fa,
+    map(() => (b: B) => b),
+    ap(fb)
+  );
 }
 
 /**
@@ -102,7 +102,7 @@ export function apSecond_<A, B>(fa: IO<A>, fb: IO<B>): IO<B> {
  * @since 1.0.0
  */
 export function apSecond<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<B> {
-   return (fa) => apSecond_(fa, fb);
+  return (fa) => apSecond_(fa, fb);
 }
 
 /**
@@ -128,7 +128,7 @@ export const mapBoth_: <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C) => 
  * @since 1.0.0
  */
 export function mapBoth<A, B, C>(fb: IO<B>, f: (a: A, b: B) => C): (fa: IO<A>) => IO<C> {
-   return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => mapBoth_(fa, fb, f);
 }
 
 /**
@@ -142,7 +142,7 @@ export function mapBoth<A, B, C>(fb: IO<B>, f: (a: A, b: B) => C): (fa: IO<A>) =
  * @since 1.0.0
  */
 export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: IO<A>) => (fb: IO<B>) => IO<C> {
-   return (fa) => (fb) => map_(both_(fa, fb), ([a, b]) => f(a)(b));
+  return (fa) => (fb) => map_(both_(fa, fb), ([a, b]) => f(a)(b));
 }
 
 /**
@@ -159,25 +159,25 @@ export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: IO<A>) => (fb: I
  * @since 1.0.0
  */
 export function apS<N extends string, A, B>(
-   name: Exclude<N, keyof A>,
-   fb: IO<B>
+  name: Exclude<N, keyof A>,
+  fb: IO<B>
 ): (
-   fa: IO<A>
+  fa: IO<A>
 ) => IO<
-   {
-      [K in keyof A | N]: K extends keyof A ? A[K] : B;
-   }
+  {
+    [K in keyof A | N]: K extends keyof A ? A[K] : B;
+  }
 > {
-   return flow(
-      map((a) => (b: B) => bind_(a, name, b)),
-      ap(fb)
-   );
+  return flow(
+    map((a) => (b: B) => bind_(a, name, b)),
+    ap(fb)
+  );
 }
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
-   ...Functor,
-   ap_: ap_,
-   ap,
-   mapBoth_: mapBoth_,
-   mapBoth
+  ...Functor,
+  ap_: ap_,
+  ap,
+  mapBoth_: mapBoth_,
+  mapBoth
 });

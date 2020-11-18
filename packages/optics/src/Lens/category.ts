@@ -18,7 +18,7 @@ import type { Lens, URI, V } from "./model";
  * @since 1.0.0
  */
 export function compose_<S, A, B>(sa: Lens<S, A>, ab: Lens<A, B>): Lens<S, B> {
-   return _.lensComposeLens(ab)(sa);
+  return _.lensComposeLens(ab)(sa);
 }
 
 /**
@@ -34,7 +34,7 @@ export const compose = _.lensComposeLens;
  * @since 1.0.0
  */
 export const Category: P.Category<[URI], V> = HKT.instance({
-   id,
-   compose,
-   compose_
+  id,
+  compose,
+  compose_
 });

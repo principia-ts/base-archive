@@ -8,5 +8,5 @@ import type { Option } from "./model";
  */
 
 export function unit(): Option<void> {
-   return some(undefined);
+  return some(undefined);
 }

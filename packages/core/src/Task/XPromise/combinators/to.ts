@@ -10,6 +10,6 @@ import { done } from "./done";
  * the specified promise will be interrupted, too.
  */
 export function to<E, A>(p: XPromise<E, A>) {
-   return <R>(effect: Task<R, E, A>): Task<R, never, boolean> =>
-      uninterruptibleMask(({ restore }) => T.chain_(T.result(restore(effect)), (x) => done(x)(p)));
+  return <R>(effect: Task<R, E, A>): Task<R, never, boolean> =>
+    uninterruptibleMask(({ restore }) => T.chain_(T.result(restore(effect)), (x) => done(x)(p)));
 }

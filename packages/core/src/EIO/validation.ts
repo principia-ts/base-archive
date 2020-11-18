@@ -19,15 +19,21 @@ import { Monad } from "./monad";
  * @since 1.0.0
  */
 export const getApplicativeValidation: <E>(
-   S: P.Semigroup<E>
-) => P.Applicative<[URI], HKT.Fix<"E", E>> = getApplicativeValidationF({ ...Monad, ...Applicative, ...Fallible });
+  S: P.Semigroup<E>
+) => P.Applicative<[URI], HKT.Fix<"E", E>> = getApplicativeValidationF({
+  ...Monad,
+  ...Applicative,
+  ...Fallible
+});
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const getAltValidation: <E>(S: P.Semigroup<E>) => P.Alt<[URI], HKT.Fix<"E", E>> = getAltValidationF({
-   ...Monad,
-   ...Alt,
-   ...Fallible
+export const getAltValidation: <E>(
+  S: P.Semigroup<E>
+) => P.Alt<[URI], HKT.Fix<"E", E>> = getAltValidationF({
+  ...Monad,
+  ...Alt,
+  ...Fallible
 });

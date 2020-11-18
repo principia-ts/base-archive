@@ -22,8 +22,10 @@ import { unit } from "./unit";
  * @category Monad
  * @since 1.0.0
  */
-export const chain_ = <A, B>(ma: LazyPromise<A>, f: (a: A) => LazyPromise<B>): LazyPromise<B> => () =>
-   ma().then((a) => f(a)());
+export const chain_ = <A, B>(
+  ma: LazyPromise<A>,
+  f: (a: A) => LazyPromise<B>
+): LazyPromise<B> => () => ma().then((a) => f(a)());
 
 /**
  * ```haskell
@@ -35,7 +37,8 @@ export const chain_ = <A, B>(ma: LazyPromise<A>, f: (a: A) => LazyPromise<B>): L
  * @category Monad
  * @since 1.0.0
  */
-export const chain = <A, B>(f: (a: A) => LazyPromise<B>) => (ma: LazyPromise<A>): LazyPromise<B> => chain_(ma, f);
+export const chain = <A, B>(f: (a: A) => LazyPromise<B>) => (ma: LazyPromise<A>): LazyPromise<B> =>
+  chain_(ma, f);
 
 /**
  * ```haskell
@@ -49,7 +52,7 @@ export const chain = <A, B>(f: (a: A) => LazyPromise<B>) => (ma: LazyPromise<A>)
  * @since 1.0.0
  */
 export const tap_ = <A, B>(ma: LazyPromise<A>, f: (a: A) => LazyPromise<B>): LazyPromise<A> =>
-   chain_(ma, (a) => map_(f(a), () => a));
+  chain_(ma, (a) => map_(f(a), () => a));
 
 /**
  * ```haskell
@@ -62,7 +65,8 @@ export const tap_ = <A, B>(ma: LazyPromise<A>, f: (a: A) => LazyPromise<B>): Laz
  * @category Monad
  * @since 1.0.0
  */
-export const tap = <A, B>(f: (a: A) => LazyPromise<B>) => (ma: LazyPromise<A>): LazyPromise<A> => tap_(ma, f);
+export const tap = <A, B>(f: (a: A) => LazyPromise<B>) => (ma: LazyPromise<A>): LazyPromise<A> =>
+  tap_(ma, f);
 
 /**
  * ```haskell
@@ -74,10 +78,11 @@ export const tap = <A, B>(f: (a: A) => LazyPromise<B>) => (ma: LazyPromise<A>): 
  * @category Monad
  * @since 1.0.0
  */
-export const flatten = <A>(mma: LazyPromise<LazyPromise<A>>): LazyPromise<A> => chain_(mma, identity);
+export const flatten = <A>(mma: LazyPromise<LazyPromise<A>>): LazyPromise<A> =>
+  chain_(mma, identity);
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-   ...Functor,
-   unit,
-   flatten
+  ...Functor,
+  unit,
+  flatten
 });

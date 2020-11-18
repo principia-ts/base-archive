@@ -17,7 +17,7 @@ import type { Lens } from "./model";
  * @since 1.0.0
  */
 export function composePrism_<S, A, B>(sa: Lens<S, A>, ab: Prism<A, B>): Optional<S, B> {
-   return _.lensComposePrism(ab)(sa);
+  return _.lensComposePrism(ab)(sa);
 }
 
 /**
@@ -35,7 +35,7 @@ export const composePrism = _.lensComposePrism;
  * @since 1.0.0
  */
 export function composeOptional_<S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): Optional<S, B> {
-   return _.optionalComposeOptional(ab)(asOptional(sa));
+  return _.optionalComposeOptional(ab)(asOptional(sa));
 }
 
 /**
@@ -45,5 +45,5 @@ export function composeOptional_<S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): O
  * @since 1.0.0
  */
 export function composeOptional<A, B>(ab: Optional<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B> {
-   return (sa) => composeOptional_(sa, ab);
+  return (sa) => composeOptional_(sa, ab);
 }

@@ -8,5 +8,5 @@ import type { Fiber } from "./model";
  */
 
 export function unit(): Fiber<never, void> {
-   return succeed(undefined);
+  return succeed(undefined);
 }

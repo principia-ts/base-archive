@@ -15,10 +15,10 @@ import type { Lens, URI, V } from "./model";
  * @since 1.0.0
  */
 export function imap_<I, A, B>(ea: Lens<I, A>, ab: (a: A) => B, ba: (b: B) => A): Lens<I, B> {
-   return {
-      get: flow(ea.get, ab),
-      set: flow(ba, ea.set)
-   };
+  return {
+    get: flow(ea.get, ab),
+    set: flow(ba, ea.set)
+  };
 }
 
 /**
@@ -26,7 +26,7 @@ export function imap_<I, A, B>(ea: Lens<I, A>, ab: (a: A) => B, ba: (b: B) => A)
  * @since 1.0.0
  */
 export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, A>) => Lens<I, B> {
-   return (ea) => imap_(ea, ab, ba);
+  return (ea) => imap_(ea, ab, ba);
 }
 
 /*
@@ -40,6 +40,6 @@ export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, A>
  * @since 1.0.0
  */
 export const Invariant: P.Invariant<[URI], V> = HKT.instance({
-   imap_,
-   imap
+  imap_,
+  imap
 });

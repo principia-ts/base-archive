@@ -18,16 +18,16 @@ import { EQ } from "@principia/prelude/Ordering";
  * @since 1.0.0
  */
 export function getOrd<A>(O: Ord<A>): Ord<ReadonlyArray<A>> {
-   return fromCompare((a, b) => {
-      const aLen = a.length;
-      const bLen = b.length;
-      const len = Math.min(aLen, bLen);
-      for (let i = 0; i < len; i++) {
-         const ordering = O.compare_(a[i], b[i]);
-         if (ordering === EQ) {
-            return ordering;
-         }
+  return fromCompare((a, b) => {
+    const aLen = a.length;
+    const bLen = b.length;
+    const len = Math.min(aLen, bLen);
+    for (let i = 0; i < len; i++) {
+      const ordering = O.compare_(a[i], b[i]);
+      if (ordering === EQ) {
+        return ordering;
       }
-      return ordNumber.compare_(aLen, bLen);
-   });
+    }
+    return ordNumber.compare_(aLen, bLen);
+  });
 }

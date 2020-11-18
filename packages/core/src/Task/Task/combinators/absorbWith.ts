@@ -16,7 +16,7 @@ import { sandbox } from "./sandbox";
  * @since 1.0.0
  */
 export function absorbWith_<R, E, A>(ef: Task<R, E, A>, f: (e: E) => unknown) {
-   return pipe(ef, sandbox, foldM(flow(C.squash(f), fail), pure));
+  return pipe(ef, sandbox, foldM(flow(C.squash(f), fail), pure));
 }
 
 /**
@@ -29,6 +29,8 @@ export function absorbWith_<R, E, A>(ef: Task<R, E, A>, f: (e: E) => unknown) {
  * @category Combinators
  * @since 1.0.0
  */
-export function absorbWith<E>(f: (e: E) => unknown): <R, A>(ef: Task<R, E, A>) => Task<R, unknown, A> {
-   return (ef) => absorbWith_(ef, f);
+export function absorbWith<E>(
+  f: (e: E) => unknown
+): <R, A>(ef: Task<R, E, A>) => Task<R, unknown, A> {
+  return (ef) => absorbWith_(ef, f);
 }

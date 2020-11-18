@@ -18,7 +18,7 @@ import type { Option } from "./model";
  * @since 1.0.0
  */
 export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
-   return isNone(fa) ? none() : fromNullable(f(fa.value));
+  return isNone(fa) ? none() : fromNullable(f(fa.value));
 }
 
 /**
@@ -28,8 +28,10 @@ export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | und
  * @category Combinators
  * @since 1.0.0
  */
-export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
-   return (fa) => chainNullableK_(fa, f);
+export function chainNullableK<A, B>(
+  f: (a: A) => B | null | undefined
+): (fa: Option<A>) => Option<B> {
+  return (fa) => chainNullableK_(fa, f);
 }
 
 /**
@@ -40,7 +42,7 @@ export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Op
  * @since 1.0.0
  */
 export function orElse_<A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option<A | B> {
-   return isNone(fa) ? onNothing() : fa;
+  return isNone(fa) ? onNothing() : fa;
 }
 
 /**
@@ -51,7 +53,7 @@ export function orElse_<A, B>(fa: Option<A>, onNothing: Lazy<Option<B>>): Option
  * @since 1.0.0
  */
 export function orElse<B>(onNothing: Lazy<Option<B>>): <A>(fa: Option<A>) => Option<B | A> {
-   return (fa) => orElse_(fa, onNothing);
+  return (fa) => orElse_(fa, onNothing);
 }
 
 /**
@@ -62,7 +64,7 @@ export function orElse<B>(onNothing: Lazy<Option<B>>): <A>(fa: Option<A>) => Opt
  * @since 1.0.0
  */
 export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
-   return fea._tag === "Right" ? none() : some(fea.left);
+  return fea._tag === "Right" ? none() : some(fea.left);
 }
 
 /**
@@ -73,5 +75,5 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
  * @since 1.0.0
  */
 export function getRight<E, A>(fea: Either<E, A>): Option<A> {
-   return fea._tag === "Left" ? none() : some(fea.right);
+  return fea._tag === "Left" ? none() : some(fea.right);
 }

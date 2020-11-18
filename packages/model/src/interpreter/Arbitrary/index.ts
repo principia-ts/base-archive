@@ -17,26 +17,29 @@ import { SetArbitrary } from "./set";
 import { SumArbitrary } from "./sum";
 
 export const _allArbitraryInterpreters = <Env extends AnyEnv>() =>
-   merge(
-      PrimitivesArbitrary<Env>(),
-      RefinementArbitrary<Env>(),
-      RecordArbitrary<Env>(),
-      ObjectArbitrary<Env>(),
-      NewtypeArbitrary<Env>(),
-      RecursiveArbitrary<Env>(),
-      SetArbitrary<Env>(),
-      SumArbitrary<Env>(),
-      NullableArbitrary<Env>(),
-      IntersectionArbitrary<Env>()
-   );
+  merge(
+    PrimitivesArbitrary<Env>(),
+    RefinementArbitrary<Env>(),
+    RecordArbitrary<Env>(),
+    ObjectArbitrary<Env>(),
+    NewtypeArbitrary<Env>(),
+    RecursiveArbitrary<Env>(),
+    SetArbitrary<Env>(),
+    SumArbitrary<Env>(),
+    NullableArbitrary<Env>(),
+    IntersectionArbitrary<Env>()
+  );
 
-export const allArbitraryInterpreters = memoize(_allArbitraryInterpreters) as typeof _allArbitraryInterpreters;
+export const allArbitraryInterpreters = memoize(
+  _allArbitraryInterpreters
+) as typeof _allArbitraryInterpreters;
 
 export function deriveFor<Su extends Summoner<any>>(_S: Su) {
-   return (
-      env: {
-         [K in ArbURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
-      }
-   ) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Arbitrary<A> =>
-      pipe(env, F.derive(allArbitraryInterpreters()));
+  return (
+    env: {
+      [K in ArbURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
+    }
+  ) => <S, R, E, A>(
+    F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
+  ): Arbitrary<A> => pipe(env, F.derive(allArbitraryInterpreters()));
 }

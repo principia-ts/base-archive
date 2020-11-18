@@ -6,7 +6,7 @@ import { List } from "./model";
  * @internal
  */
 export function emptyPushable<A>(): MutableList<A> {
-   return new List(0, 0, 0, [], undefined, []) as any;
+  return new List(0, 0, 0, [], undefined, []) as any;
 }
 
 /**
@@ -16,11 +16,11 @@ export function emptyPushable<A>(): MutableList<A> {
  * @category Constructors
  */
 export function list<A>(...elements: A[]): List<A> {
-   const l = emptyPushable<A>();
-   for (const element of elements) {
-      push(element, l);
-   }
-   return l;
+  const l = emptyPushable<A>();
+  for (const element of elements) {
+    push(element, l);
+  }
+  return l;
 }
 
 /**
@@ -30,7 +30,7 @@ export function list<A>(...elements: A[]): List<A> {
  * @category Constructors
  */
 export function empty<A = any>(): List<A> {
-   return new List(0, 0, 0, emptyAffix, undefined, emptyAffix);
+  return new List(0, 0, 0, emptyAffix, undefined, emptyAffix);
 }
 
 /**
@@ -40,7 +40,7 @@ export function empty<A = any>(): List<A> {
  * @category Constructors
  */
 export function of<A>(a: A): List<A> {
-   return list(a);
+  return list(a);
 }
 
 /**
@@ -50,7 +50,7 @@ export function of<A>(a: A): List<A> {
  * @category Constructors
  */
 export function pair<A>(first: A, second: A): List<A> {
-   return new List(2, 0, 2, emptyAffix, undefined, [first, second]);
+  return new List(2, 0, 2, emptyAffix, undefined, [first, second]);
 }
 
 /**
@@ -61,20 +61,20 @@ export function pair<A>(first: A, second: A): List<A> {
  */
 export function from<A>(sequence: A[] | ArrayLike<A> | Iterable<A>): List<A>;
 export function from<A>(sequence: any): List<A> {
-   const l = emptyPushable<A>();
-   if (sequence.length > 0 && (sequence[0] !== undefined || 0 in sequence)) {
-      for (let i = 0; i < sequence.length; ++i) {
-         push(sequence[i], l);
-      }
-   } else if (Symbol.iterator in sequence) {
-      const iterator = sequence[Symbol.iterator]();
-      let cur;
-      // tslint:disable-next-line:no-conditional-assignment
-      while (!(cur = iterator.next()).done) {
-         push(cur.value, l);
-      }
-   }
-   return l;
+  const l = emptyPushable<A>();
+  if (sequence.length > 0 && (sequence[0] !== undefined || 0 in sequence)) {
+    for (let i = 0; i < sequence.length; ++i) {
+      push(sequence[i], l);
+    }
+  } else if (Symbol.iterator in sequence) {
+    const iterator = sequence[Symbol.iterator]();
+    let cur;
+    // tslint:disable-next-line:no-conditional-assignment
+    while (!(cur = iterator.next()).done) {
+      push(cur.value, l);
+    }
+  }
+  return l;
 }
 
 /**
@@ -84,11 +84,11 @@ export function from<A>(sequence: any): List<A> {
  * @category Constructors
  */
 export function range(start: number, end: number): List<number> {
-   const list = emptyPushable<number>();
-   for (let i = start; i < end; ++i) {
-      push(i, list);
-   }
-   return list;
+  const list = emptyPushable<number>();
+  for (let i = start; i < end; ++i) {
+    push(i, list);
+  }
+  return list;
 }
 
 /**
@@ -99,12 +99,12 @@ export function range(start: number, end: number): List<number> {
  * @category Constructors
  */
 export function repeat<A>(value: A, times: number): List<A> {
-   let t = times;
-   const l = emptyPushable<A>();
-   while (--t >= 0) {
-      push(value, l);
-   }
-   return l;
+  let t = times;
+  const l = emptyPushable<A>();
+  while (--t >= 0) {
+    push(value, l);
+  }
+  return l;
 }
 
 /**
@@ -115,9 +115,9 @@ export function repeat<A>(value: A, times: number): List<A> {
  * @category Constructors
  */
 export function times<A>(func: (index: number) => A, times: number): List<A> {
-   const l = emptyPushable<A>();
-   for (let i = 0; i < times; i++) {
-      push(func(i), l);
-   }
-   return l;
+  const l = emptyPushable<A>();
+  for (let i = 0; i < times; i++) {
+    push(func(i), l);
+  }
+  return l;
 }

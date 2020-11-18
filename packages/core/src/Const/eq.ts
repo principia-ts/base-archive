@@ -14,5 +14,5 @@ import type { Const } from "./model";
  * @since 1.0.0
  */
 export function getEq<E, A>(E: Eq<E>): Eq<Const<E, A>> {
-   return identity(E);
+  return identity(E);
 }

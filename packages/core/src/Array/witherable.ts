@@ -20,8 +20,8 @@ import { traverseWithIndex_ } from "./traversable";
  * ```
  */
 export const witherWithIndex_: TC.WitherWithIndexFn_<[URI], V> = (G) => {
-   const traverseG = traverseWithIndex_(G);
-   return (wa, f) => pipe(traverseG(wa, f), G.map(compact));
+  const traverseG = traverseWithIndex_(G);
+  return (wa, f) => pipe(traverseG(wa, f), G.map(compact));
 };
 
 /**
@@ -34,7 +34,8 @@ export const witherWithIndex_: TC.WitherWithIndexFn_<[URI], V> = (G) => {
  *    -> g (w b)
  * ```
  */
-export const witherWithIndex: TC.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => witherWithIndex_(G)(wa, f);
+export const witherWithIndex: TC.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) =>
+  witherWithIndex_(G)(wa, f);
 
 /**
  * ```haskell
@@ -44,7 +45,8 @@ export const witherWithIndex: TC.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa
  *    -> g (w b)
  * ```
  */
-export const wither_: TC.WitherFn_<[URI], V> = (G) => (wa, f) => witherWithIndex_(G)(wa, (_, a) => f(a));
+export const wither_: TC.WitherFn_<[URI], V> = (G) => (wa, f) =>
+  witherWithIndex_(G)(wa, (_, a) => f(a));
 
 /**
  * ```haskell
@@ -66,8 +68,8 @@ export const wither: TC.WitherFn<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa
  * ```
  */
 export const wiltWithIndex_: TC.WiltWithIndexFn_<[URI], V> = (G) => {
-   const traverseG = traverseWithIndex_(G);
-   return (wa, f) => pipe(traverseG(wa, f), G.map(separate));
+  const traverseG = traverseWithIndex_(G);
+  return (wa, f) => pipe(traverseG(wa, f), G.map(separate));
 };
 
 /**
@@ -79,7 +81,8 @@ export const wiltWithIndex_: TC.WiltWithIndexFn_<[URI], V> = (G) => {
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const wiltWithIndex: TC.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f);
+export const wiltWithIndex: TC.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) =>
+  wiltWithIndex_(G)(wa, f);
 
 /**
  * ```haskell

@@ -8,23 +8,23 @@ import { Managed } from "../model";
 import type { ReleaseMap } from "../ReleaseMap";
 
 export function retry_<R, E, A, R1, O>(
-   ma: Managed<R, E, A>,
-   policy: Schedule<R1, E, O>
+  ma: Managed<R, E, A>,
+  policy: Schedule<R1, E, O>
 ): Managed<R & R1 & Has<Clock>, E, A> {
-   return new Managed(
-      T.asksM(([env, releaseMap]: readonly [R & R1 & Has<Clock>, ReleaseMap]) =>
-         pipe(
-            ma.task,
-            T.gives((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
-            T.retry(policy),
-            T.giveAll(env)
-         )
+  return new Managed(
+    T.asksM(([env, releaseMap]: readonly [R & R1 & Has<Clock>, ReleaseMap]) =>
+      pipe(
+        ma.task,
+        T.gives((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
+        T.retry(policy),
+        T.giveAll(env)
       )
-   );
+    )
+  );
 }
 
 export function retry<R1, E, O>(
-   policy: Schedule<R1, E, O>
+  policy: Schedule<R1, E, O>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1 & Has<Clock>, E, A> {
-   return (ma) => retry_(ma, policy);
+  return (ma) => retry_(ma, policy);
 }

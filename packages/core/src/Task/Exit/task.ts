@@ -8,17 +8,17 @@ import type { Exit } from "./model";
  * returns the result in a new `Exit`.
  */
 export function foreachTask_<E2, A2, R, E, A>(
-   exit: Exit<E2, A2>,
-   f: (a: A2) => Task<R, E, A>
+  exit: Exit<E2, A2>,
+  f: (a: A2) => Task<R, E, A>
 ): Task<R, never, Exit<E | E2, A>> {
-   switch (exit._tag) {
-      case "Failure": {
-         return T.pure(failure(exit.cause));
-      }
-      case "Success": {
-         return T.result(f(exit.value));
-      }
-   }
+  switch (exit._tag) {
+    case "Failure": {
+      return T.pure(failure(exit.cause));
+    }
+    case "Success": {
+      return T.result(f(exit.value));
+    }
+  }
 }
 
 /**
@@ -26,25 +26,25 @@ export function foreachTask_<E2, A2, R, E, A>(
  * returns the result in a new `Exit`.
  */
 export function foreachTask<A2, R, E, A>(
-   f: (a: A2) => Task<R, E, A>
+  f: (a: A2) => Task<R, E, A>
 ): <E2>(exit: Exit<E2, A2>) => Task<R, never, Exit<E | E2, A>> {
-   return (exit) => foreachTask_(exit, f);
+  return (exit) => foreachTask_(exit, f);
 }
 
 export const mapTask_ = <R, E, E1, A, A1>(
-   exit: Exit<E, A>,
-   f: (a: A) => Task<R, E1, A1>
+  exit: Exit<E, A>,
+  f: (a: A) => Task<R, E1, A1>
 ): Task<R, never, Exit<E | E1, A1>> => {
-   switch (exit._tag) {
-      case "Failure":
-         return T.pure(failure(exit.cause));
-      case "Success":
-         return T.result(f(exit.value));
-   }
+  switch (exit._tag) {
+    case "Failure":
+      return T.pure(failure(exit.cause));
+    case "Success":
+      return T.result(f(exit.value));
+  }
 };
 
 export function mapTask<R, E1, A, A1>(
-   f: (a: A) => Task<R, E1, A1>
+  f: (a: A) => Task<R, E1, A1>
 ): <E>(exit: Exit<E, A>) => Task<R, never, Exit<E1 | E, A1>> {
-   return (exit) => mapTask_(exit, f);
+  return (exit) => mapTask_(exit, f);
 }

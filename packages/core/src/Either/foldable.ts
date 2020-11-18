@@ -16,7 +16,7 @@ import type { Either, URI, V } from "./model";
  * ```
  */
 export function reduce_<E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): B {
-   return isLeft(fa) ? b : f(b, fa.right);
+  return isLeft(fa) ? b : f(b, fa.right);
 }
 
 /**
@@ -25,7 +25,7 @@ export function reduce_<E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): 
  * ```
  */
 export function reduce<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) => B {
-   return (fa) => reduce_(fa, b, f);
+  return (fa) => reduce_(fa, b, f);
 }
 
 /**
@@ -34,7 +34,7 @@ export function reduce<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) 
  * ```
  */
 export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) => M) => M {
-   return (fa, f) => (isLeft(fa) ? M.nat : f(fa.right));
+  return (fa, f) => (isLeft(fa) ? M.nat : f(fa.right));
 }
 
 /**
@@ -43,7 +43,7 @@ export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) 
  * ```
  */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Either<E, A>) => M {
-   return (f) => (fa) => foldMap_(M)(fa, f);
+  return (f) => (fa) => foldMap_(M)(fa, f);
 }
 
 /**
@@ -52,7 +52,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Eithe
  * ```
  */
 export function reduceRight_<E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) => B): B {
-   return isLeft(fa) ? b : f(fa.right, b);
+  return isLeft(fa) ? b : f(fa.right, b);
 }
 
 /**
@@ -61,7 +61,7 @@ export function reduceRight_<E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) =>
  * ```
  */
 export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) => B {
-   return (fa) => reduceRight_(fa, b, f);
+  return (fa) => reduceRight_(fa, b, f);
 }
 
 /**
@@ -69,10 +69,10 @@ export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E,
  * @since 1.0.0
  */
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
-   reduce_,
-   foldMap_,
-   reduceRight_,
-   reduce,
-   foldMap,
-   reduceRight
+  reduce_,
+  foldMap_,
+  reduceRight_,
+  reduce,
+  foldMap,
+  reduceRight
 });

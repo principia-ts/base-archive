@@ -9,12 +9,12 @@ import type { XRef } from "./model";
  * method is extremely useful for implementing new combinators.
  */
 export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ca: (_: C) => E.Either<EC, A>,
-   bd: (_: B) => E.Either<ED, D>
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
 ): (ref: XRef<EA, EB, A, B>) => XRef<EC, ED, C, D> {
-   return (ref) => ref.fold(ea, eb, ca, bd);
+  return (ref) => ref.fold(ea, eb, ca, bd);
 }
 
 /**
@@ -25,13 +25,13 @@ export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
  * method is extremely useful for implementing new combinators.
  */
 export function fold_<EA, EB, A, B, EC, ED, C = A, D = B>(
-   ref: XRef<EA, EB, A, B>,
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ca: (_: C) => E.Either<EC, A>,
-   bd: (_: B) => E.Either<ED, D>
+  ref: XRef<EA, EB, A, B>,
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
 ): XRef<EC, ED, C, D> {
-   return ref.fold(ea, eb, ca, bd);
+  return ref.fold(ea, eb, ca, bd);
 }
 
 /**
@@ -40,13 +40,13 @@ export function fold_<EA, EB, A, B, EC, ED, C = A, D = B>(
  * of `fold` but requires unifying the error types.
  */
 export function foldAll<EA, EB, A, B, EC, ED, C = A, D = B>(
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ec: (_: EB) => EC,
-   ca: (_: C) => (_: B) => E.Either<EC, A>,
-   bd: (_: B) => E.Either<ED, D>
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ec: (_: EB) => EC,
+  ca: (_: C) => (_: B) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
 ): (ref: XRef<EA, EB, A, B>) => XRef<EC, ED, C, D> {
-   return (ref) => ref.foldAll(ea, eb, ec, ca, bd);
+  return (ref) => ref.foldAll(ea, eb, ec, ca, bd);
 }
 
 /**
@@ -55,12 +55,12 @@ export function foldAll<EA, EB, A, B, EC, ED, C = A, D = B>(
  * of `fold` but requires unifying the error types.
  */
 export function foldAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
-   ref: XRef<EA, EB, A, B>,
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ec: (_: EB) => EC,
-   ca: (_: C) => (_: B) => E.Either<EC, A>,
-   bd: (_: B) => E.Either<ED, D>
+  ref: XRef<EA, EB, A, B>,
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ec: (_: EB) => EC,
+  ca: (_: C) => (_: B) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
 ): XRef<EC, ED, C, D> {
-   return ref.foldAll(ea, eb, ec, ca, bd);
+  return ref.foldAll(ea, eb, ec, ca, bd);
 }

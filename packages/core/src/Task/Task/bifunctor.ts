@@ -10,16 +10,23 @@ import type { Task } from "./model";
  * -------------------------------------------
  */
 
-export function bimap_<R, E, A, G, B>(pab: Task<R, E, A>, f: (e: E) => G, g: (a: A) => B): Task<R, G, B> {
-   return foldM_(
-      pab,
-      (e) => fail(f(e)),
-      (a) => succeed(g(a))
-   );
+export function bimap_<R, E, A, G, B>(
+  pab: Task<R, E, A>,
+  f: (e: E) => G,
+  g: (a: A) => B
+): Task<R, G, B> {
+  return foldM_(
+    pab,
+    (e) => fail(f(e)),
+    (a) => succeed(g(a))
+  );
 }
 
-export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: Task<R, E, A>) => Task<R, G, B> {
-   return (pab) => bimap_(pab, f, g);
+export function bimap<E, G, A, B>(
+  f: (e: E) => G,
+  g: (a: A) => B
+): <R>(pab: Task<R, E, A>) => Task<R, G, B> {
+  return (pab) => bimap_(pab, f, g);
 }
 
 /**
@@ -37,7 +44,7 @@ export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: Task
  * @since 1.0.0
  */
 export function mapError_<R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<R, D, A> {
-   return foldCauseM_(fea, flow(C.map(f), halt), succeed);
+  return foldCauseM_(fea, flow(C.map(f), halt), succeed);
 }
 
 /**
@@ -55,5 +62,5 @@ export function mapError_<R, E, A, D>(fea: Task<R, E, A>, f: (e: E) => D): Task<
  * @since 1.0.0
  */
 export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: Task<R, E, A>) => Task<R, D, A> {
-   return (fea) => mapError_(fea, f);
+  return (fea) => mapError_(fea, f);
 }

@@ -13,33 +13,33 @@ import { unfoldChunkM } from "./unfoldChunkM";
  * the combining process, with the initial state being specified by `s`.
  */
 export function combineChunks<R1, E1, B>(
-   that: Stream<R1, E1, B>
+  that: Stream<R1, E1, B>
 ): <Z>(
-   z: Z
+  z: Z
 ) => <R, E, A, C>(
-   f: (
-      z: Z,
-      s: T.Task<R, Option<E>, ReadonlyArray<A>>,
-      t: T.Task<R1, Option<E1>, ReadonlyArray<B>>
-   ) => T.Task<R & R1, never, Exit<Option<E1 | E>, readonly [ReadonlyArray<C>, Z]>>
+  f: (
+    z: Z,
+    s: T.Task<R, Option<E>, ReadonlyArray<A>>,
+    t: T.Task<R1, Option<E1>, ReadonlyArray<B>>
+  ) => T.Task<R & R1, never, Exit<Option<E1 | E>, readonly [ReadonlyArray<C>, Z]>>
 ) => (stream: Stream<R, E, A>) => Stream<R & R1, E1 | E, C> {
-   return (z) => (f) => (stream) =>
-      new Stream(
-         pipe(
-            M.do,
-            M.bindS("left", () => stream.proc),
-            M.bindS("right", () => that.proc),
-            M.bindS(
-               "pull",
-               ({ left, right }) =>
-                  unfoldChunkM(z)((z) =>
-                     pipe(
-                        f(z, left, right),
-                        T.chain((ex) => T.optional(T.done(ex)))
-                     )
-                  ).proc
-            ),
-            M.map(({ pull }) => pull)
-         )
-      );
+  return (z) => (f) => (stream) =>
+    new Stream(
+      pipe(
+        M.do,
+        M.bindS("left", () => stream.proc),
+        M.bindS("right", () => that.proc),
+        M.bindS(
+          "pull",
+          ({ left, right }) =>
+            unfoldChunkM(z)((z) =>
+              pipe(
+                f(z, left, right),
+                T.chain((ex) => T.optional(T.done(ex)))
+              )
+            ).proc
+        ),
+        M.map(({ pull }) => pull)
+      )
+    );
 }

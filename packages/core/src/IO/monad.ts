@@ -76,7 +76,7 @@ export const tap: <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>) => IO<A> = X.tap;
 export const flatten: <A>(mma: IO<IO<A>>) => IO<A> = X.flatten;
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-   ...Functor,
-   unit,
-   flatten
+  ...Functor,
+  unit,
+  flatten
 });

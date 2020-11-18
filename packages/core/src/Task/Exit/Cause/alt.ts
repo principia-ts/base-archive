@@ -16,7 +16,7 @@ import { chain_ } from "./monad";
  * @since 1.0.0
  */
 export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
-   return chain_(fa, () => that());
+  return chain_(fa, () => that());
 }
 
 /**
@@ -28,5 +28,5 @@ export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
  * @since 1.0.0
  */
 export function alt<E>(that: () => Cause<E>): (fa: Cause<E>) => Cause<E> {
-   return (fa) => alt_(fa, that);
+  return (fa) => alt_(fa, that);
 }

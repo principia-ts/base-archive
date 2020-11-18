@@ -14,4 +14,4 @@ import type { Fiber } from "../model";
  * fiber, "inner interruption" can be caught and recovered.
  */
 export const join = <E, A>(fiber: Fiber<E, A>): EIO<E, A> =>
-   T.tap_(T.chain_(fiber.await, T.done), () => fiber.inheritRefs);
+  T.tap_(T.chain_(fiber.await, T.done), () => fiber.inheritRefs);

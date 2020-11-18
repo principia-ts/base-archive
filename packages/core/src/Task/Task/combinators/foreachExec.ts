@@ -9,18 +9,22 @@ import { foreachParN_ } from "./foreachParN";
  *
  * For a sequential version of this method, see `foreach`.
  */
-export function foreachExec_<R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>, f: (a: A) => T.Task<R, E, B>) {
-   switch (es._tag) {
-      case "Sequential": {
-         return T.foreach_(as, f) as any;
-      }
-      case "Parallel": {
-         return foreachPar_(as, f) as any;
-      }
-      case "ParallelN": {
-         return foreachParN_(es.n)(as, f) as any;
-      }
-   }
+export function foreachExec_<R, E, A, B>(
+  es: ExecutionStrategy,
+  as: Iterable<A>,
+  f: (a: A) => T.Task<R, E, B>
+) {
+  switch (es._tag) {
+    case "Sequential": {
+      return T.foreach_(as, f) as any;
+    }
+    case "Parallel": {
+      return foreachPar_(as, f) as any;
+    }
+    case "ParallelN": {
+      return foreachParN_(es.n)(as, f) as any;
+    }
+  }
 }
 
 /**
@@ -30,7 +34,7 @@ export function foreachExec_<R, E, A, B>(es: ExecutionStrategy, as: Iterable<A>,
  * For a sequential version of this method, see `foreach`.
  */
 export function foreachExec(
-   es: ExecutionStrategy
+  es: ExecutionStrategy
 ): <R, E, A, B>(f: (a: A) => T.Task<R, E, B>) => (as: Iterable<A>) => T.Task<R, E, B> {
-   return (f) => (as) => foreachExec_(es, as, f) as any;
+  return (f) => (as) => foreachExec_(es, as, f) as any;
 }

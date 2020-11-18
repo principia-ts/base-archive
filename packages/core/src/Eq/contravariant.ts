@@ -9,9 +9,9 @@ import type { Eq } from "./model";
  */
 
 export function contramap_<A, B>(fa: Eq<A>, f: (b: B) => A): Eq<B> {
-   return fromEquals((x, y) => fa.equals_(f(x), f(y)));
+  return fromEquals((x, y) => fa.equals_(f(x), f(y)));
 }
 
 export function contramap<A, B>(f: (b: B) => A): (fa: Eq<A>) => Eq<B> {
-   return (fa) => contramap_(fa, f);
+  return (fa) => contramap_(fa, f);
 }

@@ -24,7 +24,7 @@ import type { Option, URI, V } from "./model";
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
-   return isNone(fab) ? none() : isNone(fa) ? none() : some(fab.value(fa.value));
+  return isNone(fab) ? none() : isNone(fa) ? none() : some(fab.value(fa.value));
 }
 
 /**
@@ -38,29 +38,29 @@ export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
  * @since 1.0.0
  */
 export function ap<A>(fa: Option<A>): <B>(fab: Option<(a: A) => B>) => Option<B> {
-   return (fab) => ap_(fab, fa);
+  return (fab) => ap_(fab, fa);
 }
 
 export function apFirst_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
-   return ap_(
-      map_(fa, (a) => () => a),
-      fb
-   );
+  return ap_(
+    map_(fa, (a) => () => a),
+    fb
+  );
 }
 
 export function apFirst<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
-   return (fa) => apFirst_(fa, fb);
+  return (fa) => apFirst_(fa, fb);
 }
 
 export function apSecond_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
-   return ap_(
-      map_(fa, () => (b: B) => b),
-      fb
-   );
+  return ap_(
+    map_(fa, () => (b: B) => b),
+    fb
+  );
 }
 
 export function apSecond<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
-   return (fa) => apSecond_(fa, fb);
+  return (fa) => apSecond_(fa, fb);
 }
 
 /**
@@ -74,10 +74,10 @@ export function apSecond<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * @since 1.0.0
  */
 export function mapBoth_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
-   return ap_(
-      map_(fa, (a) => (b: B) => f(a, b)),
-      fb
-   );
+  return ap_(
+    map_(fa, (a) => (b: B) => f(a, b)),
+    fb
+  );
 }
 
 /**
@@ -91,8 +91,11 @@ export function mapBoth_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) 
  * @since 1.0.0
  */
 
-export function mapBoth<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Option<A>) => Option<C> {
-   return (fa) => mapBoth_(fa, fb, f);
+export function mapBoth<A, B, C>(
+  fb: Option<B>,
+  f: (a: A, b: B) => C
+): (fa: Option<A>) => Option<C> {
+  return (fa) => mapBoth_(fa, fb, f);
 }
 
 /**
@@ -105,8 +108,10 @@ export function mapBoth<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Opti
  * @category Apply
  * @since 1.0.0
  */
-export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (fb: Option<B>) => Option<C> {
-   return (fa) => (fb) => (isNone(fa) ? none() : isNone(fb) ? none() : some(f(fa.value)(fb.value)));
+export function liftA2<A, B, C>(
+  f: (a: A) => (b: B) => C
+): (fa: Option<A>) => (fb: Option<B>) => Option<C> {
+  return (fa) => (fb) => (isNone(fa) ? none() : isNone(fb) ? none() : some(f(fa.value)(fb.value)));
 }
 
 /**
@@ -123,27 +128,27 @@ export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (f
  * @since 1.0.0
  */
 export function apS<N extends string, A, B>(
-   name: Exclude<N, keyof A>,
-   fb: Option<B>
+  name: Exclude<N, keyof A>,
+  fb: Option<B>
 ): (
-   fa: Option<A>
+  fa: Option<A>
 ) => Option<
-   {
-      [K in keyof A | N]: K extends keyof A ? A[K] : B;
-   }
+  {
+    [K in keyof A | N]: K extends keyof A ? A[K] : B;
+  }
 > {
-   return flow(
-      map((a) => (b: B) => bind_(a, name, b)),
-      ap(fb)
-   );
+  return flow(
+    map((a) => (b: B) => bind_(a, name, b)),
+    ap(fb)
+  );
 }
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
-   ...Functor,
-   ap_,
-   ap,
-   mapBoth_,
-   mapBoth
+  ...Functor,
+  ap_,
+  ap,
+  mapBoth_,
+  mapBoth
 });
 
 export const struct = P.structF(Apply);

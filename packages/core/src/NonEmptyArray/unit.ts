@@ -15,5 +15,5 @@ import type { NonEmptyArray } from "./model";
  * @since 1.0.0
  */
 export function unit(): NonEmptyArray<void> {
-   return [undefined];
+  return [undefined];
 }

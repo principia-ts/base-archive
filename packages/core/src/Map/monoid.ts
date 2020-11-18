@@ -8,8 +8,8 @@ import { lookupWithKey_ } from "./combinators";
 import { empty } from "./constructors";
 
 interface Next<A> {
-   readonly done?: boolean;
-   readonly value: A;
+  readonly done?: boolean;
+  readonly value: A;
 }
 
 /*
@@ -25,26 +25,26 @@ interface Next<A> {
  * @since 1.0.0
  */
 export function getMonoid<K, A>(SK: Eq<K>, SA: Semigroup<A>): Monoid<ReadonlyMap<K, A>> {
-   const lookupWithKeyK_ = lookupWithKey_(SK);
-   return makeMonoid<ReadonlyMap<K, A>>((mx, my) => {
-      if (mx.size === 0) {
-         return my;
+  const lookupWithKeyK_ = lookupWithKey_(SK);
+  return makeMonoid<ReadonlyMap<K, A>>((mx, my) => {
+    if (mx.size === 0) {
+      return my;
+    }
+    if (my.size === 0) {
+      return mx;
+    }
+    const r = new Map(mx);
+    const entries = my.entries();
+    let e: Next<readonly [K, A]>;
+    while (!(e = entries.next()).done) {
+      const [k, a] = e.value;
+      const mxOptA = lookupWithKeyK_(mx, k);
+      if (isSome(mxOptA)) {
+        r.set(mxOptA.value[0], SA.combine_(mxOptA.value[1], a));
+      } else {
+        r.set(k, a);
       }
-      if (my.size === 0) {
-         return mx;
-      }
-      const r = new Map(mx);
-      const entries = my.entries();
-      let e: Next<readonly [K, A]>;
-      while (!(e = entries.next()).done) {
-         const [k, a] = e.value;
-         const mxOptA = lookupWithKeyK_(mx, k);
-         if (isSome(mxOptA)) {
-            r.set(mxOptA.value[0], SA.combine_(mxOptA.value[1], a));
-         } else {
-            r.set(k, a);
-         }
-      }
-      return r;
-   }, empty());
+    }
+    return r;
+  }, empty());
 }

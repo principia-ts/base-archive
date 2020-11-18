@@ -11,10 +11,10 @@ import type { Iso } from "./model";
  * @since 1.0.0
  */
 export function reverse<S, A>(sa: Iso<S, A>): Iso<A, S> {
-   return {
-      get: sa.reverseGet,
-      reverseGet: sa.get
-   };
+  return {
+    get: sa.reverseGet,
+    reverseGet: sa.get
+  };
 }
 
 /**
@@ -22,5 +22,5 @@ export function reverse<S, A>(sa: Iso<S, A>): Iso<A, S> {
  * @since 1.0.0
  */
 export function modify<A>(f: (a: A) => A): <S>(sa: Iso<S, A>) => (s: S) => S {
-   return (sa) => (s) => sa.reverseGet(f(sa.get(s)));
+  return (sa) => (s) => sa.reverseGet(f(sa.get(s)));
 }

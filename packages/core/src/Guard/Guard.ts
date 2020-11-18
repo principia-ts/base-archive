@@ -5,7 +5,7 @@
  */
 
 export interface Guard<I, A extends I> {
-   is: (i: I) => i is A;
+  is: (i: I) => i is A;
 }
 
 export type TypeOf<G> = G extends Guard<any, infer A> ? A : never;
@@ -17,10 +17,10 @@ export const URI = "Guard";
 export type URI = typeof URI;
 
 declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Guard<unknown, A>;
-   }
-   interface URItoKind1<TC, A> {
-      readonly [URI]: Guard<unknown, A>;
-   }
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: Guard<unknown, A>;
+  }
+  interface URItoKind1<TC, A> {
+    readonly [URI]: Guard<unknown, A>;
+  }
 }

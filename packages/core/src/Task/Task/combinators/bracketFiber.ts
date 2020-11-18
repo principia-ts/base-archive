@@ -21,10 +21,10 @@ import { fiberId } from "./fiberId";
  * @since 1.0.0
  */
 export function bracketFiber_<R, E, A, R1, E1, B>(
-   ef: Task<R, E, A>,
-   use: (f: RuntimeFiber<E, A>) => Task<R1, E1, B>
+  ef: Task<R, E, A>,
+  use: (f: RuntimeFiber<E, A>) => Task<R1, E1, B>
 ): Task<R & R1, E1, Exit<E, A>> {
-   return bracket_(forkDaemon(ef), (f) => chain_(fiberId(), (id) => f.interruptAs(id)), use);
+  return bracket_(forkDaemon(ef), (f) => chain_(fiberId(), (id) => f.interruptAs(id)), use);
 }
 
 /**
@@ -40,7 +40,7 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
  * @since 1.0.0
  */
 export function bracketFiber<E, A, R1, E1, A1>(
-   use: (f: RuntimeFiber<E, A>) => Task<R1, E1, A1>
+  use: (f: RuntimeFiber<E, A>) => Task<R1, E1, A1>
 ): <R>(ef: Task<R, E, A>) => Task<R & R1, E1, Exit<E, A>> {
-   return (ef) => bracketFiber_(ef, use);
+  return (ef) => bracketFiber_(ef, use);
 }

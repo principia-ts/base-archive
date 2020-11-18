@@ -20,8 +20,8 @@ import type { NonEmptyArray, URI, V } from "./model";
  * @since 1.0.0
  */
 export const extend_: <A, B>(
-   wa: NonEmptyArray<A>,
-   f: (wa: NonEmptyArray<A>) => B
+  wa: NonEmptyArray<A>,
+  f: (wa: NonEmptyArray<A>) => B
 ) => NonEmptyArray<B> = A.extend_ as any;
 
 /**
@@ -33,7 +33,7 @@ export const extend_: <A, B>(
  * @since 1.0.0
  */
 export const extend: <A, B>(
-   f: (wa: NonEmptyArray<A>) => B
+  f: (wa: NonEmptyArray<A>) => B
 ) => (wa: NonEmptyArray<A>) => NonEmptyArray<B> = A.extend as any;
 
 /**
@@ -44,10 +44,12 @@ export const extend: <A, B>(
  * @category Extend
  * @since 1.0.0
  */
-export const duplicate: <A>(wa: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray<A>> = A.duplicate as any;
+export const duplicate: <A>(
+  wa: NonEmptyArray<A>
+) => NonEmptyArray<NonEmptyArray<A>> = A.duplicate as any;
 
 export const Extend: P.Extend<[URI], V> = HKT.instance({
-   ...Functor,
-   extend_,
-   extend
+  ...Functor,
+  extend_,
+  extend
 });

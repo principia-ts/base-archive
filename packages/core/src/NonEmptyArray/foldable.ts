@@ -19,8 +19,11 @@ import type { NonEmptyArray, URI, V } from "./model";
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceWithIndex_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (i: number, b: B, a: A) => B) => B =
-   A.reduceWithIndex_;
+export const reduceWithIndex_: <A, B>(
+  fa: NonEmptyArray<A>,
+  b: B,
+  f: (i: number, b: B, a: A) => B
+) => B = A.reduceWithIndex_;
 
 /**
  * ```haskell
@@ -31,8 +34,10 @@ export const reduceWithIndex_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (i: number,
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceWithIndex: <A, B>(b: B, f: (i: number, b: B, a: A) => B) => (fa: NonEmptyArray<A>) => B =
-   A.reduceWithIndex;
+export const reduceWithIndex: <A, B>(
+  b: B,
+  f: (i: number, b: B, a: A) => B
+) => (fa: NonEmptyArray<A>) => B = A.reduceWithIndex;
 
 /**
  * ```haskell
@@ -63,8 +68,11 @@ export const reduce: <A, B>(b: B, f: (b: B, a: A) => B) => (fa: NonEmptyArray<A>
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceRightWithIndex_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (i: number, a: A, b: B) => B) => B =
-   A.reduceRightWithIndex_;
+export const reduceRightWithIndex_: <A, B>(
+  fa: NonEmptyArray<A>,
+  b: B,
+  f: (i: number, a: A, b: B) => B
+) => B = A.reduceRightWithIndex_;
 
 /**
  * ```haskell
@@ -75,8 +83,10 @@ export const reduceRightWithIndex_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (i: nu
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const reduceRightWithIndex: <A, B>(b: B, f: (i: number, a: A, b: B) => B) => (fa: NonEmptyArray<A>) => B =
-   A.reduceRightWithIndex;
+export const reduceRightWithIndex: <A, B>(
+  b: B,
+  f: (i: number, a: A, b: B) => B
+) => (fa: NonEmptyArray<A>) => B = A.reduceRightWithIndex;
 
 /**
  * ```haskell
@@ -86,7 +96,8 @@ export const reduceRightWithIndex: <A, B>(b: B, f: (i: number, a: A, b: B) => B)
  * @category Foldable
  * @since 1.0.0
  */
-export const reduceRight_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, b: B) => B) => B = A.reduceRight_;
+export const reduceRight_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, b: B) => B) => B =
+  A.reduceRight_;
 
 /**
  * ```haskell
@@ -96,7 +107,8 @@ export const reduceRight_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, b: B) =>
  * @category Foldable
  * @since 1.0.0
  */
-export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: NonEmptyArray<A>) => B = A.reduceRight;
+export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: NonEmptyArray<A>) => B =
+  A.reduceRight;
 
 /**
  * ```haskell
@@ -107,8 +119,11 @@ export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: NonEmptyArr
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldMapWithIndex_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (i: number, a: A) => S) => S {
-   return (fa, f) => A.reduceWithIndex_(fa.slice(1), f(0, fa[0]), (i, s, a) => S.combine_(s, f(i + 1, a)));
+export function foldMapWithIndex_<S>(
+  S: P.Semigroup<S>
+): <A>(fa: NonEmptyArray<A>, f: (i: number, a: A) => S) => S {
+  return (fa, f) =>
+    A.reduceWithIndex_(fa.slice(1), f(0, fa[0]), (i, s, a) => S.combine_(s, f(i + 1, a)));
 }
 
 /**
@@ -120,8 +135,10 @@ export function foldMapWithIndex_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldMapWithIndex<S>(S: P.Semigroup<S>): <A>(f: (i: number, a: A) => S) => (fa: NonEmptyArray<A>) => S {
-   return (f) => (fa) => foldMapWithIndex_(S)(fa, f);
+export function foldMapWithIndex<S>(
+  S: P.Semigroup<S>
+): <A>(f: (i: number, a: A) => S) => (fa: NonEmptyArray<A>) => S {
+  return (f) => (fa) => foldMapWithIndex_(S)(fa, f);
 }
 
 /**
@@ -133,7 +150,7 @@ export function foldMapWithIndex<S>(S: P.Semigroup<S>): <A>(f: (i: number, a: A)
  * @since 1.0.0
  */
 export function foldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (a: A) => S) => S {
-   return (fa, f) => A.reduce_(fa.slice(1), f(fa[0]), (s, a) => S.combine_(s, f(a)));
+  return (fa, f) => A.reduce_(fa.slice(1), f(fa[0]), (s, a) => S.combine_(s, f(a)));
 }
 
 /**
@@ -145,24 +162,24 @@ export function foldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (a:
  * @since 1.0.0
  */
 export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEmptyArray<A>) => S {
-   return (f) => (fa) => foldMap_(S)(fa, f);
+  return (f) => (fa) => foldMap_(S)(fa, f);
 }
 
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
-   reduce_: reduce_,
-   foldMap_: foldMap_,
-   reduceRight_: reduceRight_,
-   reduce,
-   foldMap,
-   reduceRight
+  reduce_: reduce_,
+  foldMap_: foldMap_,
+  reduceRight_: reduceRight_,
+  reduce,
+  foldMap,
+  reduceRight
 });
 
 export const FoldableWithIndex: P.FoldableWithIndex<[URI], V> = HKT.instance({
-   ...Foldable,
-   reduceWithIndex_: reduceWithIndex_,
-   foldMapWithIndex_: foldMapWithIndex_,
-   reduceRightWithIndex_: reduceRightWithIndex_,
-   reduceWithIndex,
-   foldMapWithIndex,
-   reduceRightWithIndex
+  ...Foldable,
+  reduceWithIndex_: reduceWithIndex_,
+  foldMapWithIndex_: foldMapWithIndex_,
+  reduceRightWithIndex_: reduceRightWithIndex_,
+  reduceWithIndex,
+  foldMapWithIndex,
+  reduceRightWithIndex
 });

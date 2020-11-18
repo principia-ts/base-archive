@@ -8,7 +8,7 @@ export type URI = typeof URI;
 export type V = HKT.V<"I", "+">;
 
 declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Tuple<A, I>;
-   }
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: Tuple<A, I>;
+  }
 }

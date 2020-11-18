@@ -19,6 +19,6 @@ export const map: <A, B>(f: (a: A) => B) => <E>(fa: EIO<E, A>) => EIO<E, B> = X.
  * @since 1.0.0
  */
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map_: map_,
-   map
+  map_: map_,
+  map
 });

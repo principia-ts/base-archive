@@ -12,9 +12,11 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export const both_: <E, A, G, B>(fa: EIO<E, A>, fb: EIO<G, B>) => EIO<E | G, readonly [A, B]> = X.both_;
+export const both_: <E, A, G, B>(fa: EIO<E, A>, fb: EIO<G, B>) => EIO<E | G, readonly [A, B]> =
+  X.both_;
 
-export const both: <G, B>(fb: EIO<G, B>) => <E, A>(fa: EIO<E, A>) => EIO<E | G, readonly [A, B]> = X.both;
+export const both: <G, B>(fb: EIO<G, B>) => <E, A>(fa: EIO<E, A>) => EIO<E | G, readonly [A, B]> =
+  X.both;
 
 export const pure: <E = never, A = never>(a: A) => EIO<E, A> = X.pure;
 
@@ -23,8 +25,8 @@ export const pure: <E = never, A = never>(a: A) => EIO<E, A> = X.pure;
  * @since 1.0.0
  */
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_,
-   both,
-   unit
+  ...Functor,
+  both_,
+  both,
+  unit
 });

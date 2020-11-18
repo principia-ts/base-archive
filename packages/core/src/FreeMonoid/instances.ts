@@ -17,7 +17,7 @@ import type { FreeMonoid } from "./model";
  * @since 1.0.0
  */
 export function getSemigroup<A = never>(): Semigroup<FreeMonoid<A>> {
-   return fromCombine(combine);
+  return fromCombine(combine);
 }
 
 /**
@@ -25,5 +25,5 @@ export function getSemigroup<A = never>(): Semigroup<FreeMonoid<A>> {
  * @since 1.0.0
  */
 export function getMonoid<A = never>(): Monoid<FreeMonoid<A>> {
-   return makeMonoid(getSemigroup<A>().combine_, empty());
+  return makeMonoid(getSemigroup<A>().combine_, empty());
 }

@@ -13,38 +13,38 @@ const of: ReadonlyArray<{}> = pure({});
 export { of as do };
 
 export function bindS<A, K, N extends string>(
-   name: Exclude<N, keyof K>,
-   f: (_: K) => ReadonlyArray<A>
+  name: Exclude<N, keyof K>,
+  f: (_: K) => ReadonlyArray<A>
 ): (
-   mk: ReadonlyArray<K>
+  mk: ReadonlyArray<K>
 ) => ReadonlyArray<
-   {
-      [k in N | keyof K]: k extends keyof K ? K[k] : A;
-   }
+  {
+    [k in N | keyof K]: k extends keyof K ? K[k] : A;
+  }
 > {
-   return chain((a) =>
-      pipe(
-         f(a),
-         map((b) => bind_(a, name, b))
-      )
-   );
+  return chain((a) =>
+    pipe(
+      f(a),
+      map((b) => bind_(a, name, b))
+    )
+  );
 }
 
 export function bindTo<K, N extends string>(
-   name: Exclude<N, keyof K>
+  name: Exclude<N, keyof K>
 ): <A>(
-   fa: ReadonlyArray<A>
+  fa: ReadonlyArray<A>
 ) => ReadonlyArray<
-   {
-      [k in Exclude<N, keyof K>]: A;
-   }
+  {
+    [k in Exclude<N, keyof K>]: A;
+  }
 > {
-   return map(bindTo_(name));
+  return map(bindTo_(name));
 }
 
 export function letS<K, N extends string, A>(
-   name: Exclude<N, keyof K>,
-   f: (_: K) => A
+  name: Exclude<N, keyof K>,
+  f: (_: K) => A
 ): (mk: ReadonlyArray<K>) => ReadonlyArray<{ [k in N | keyof K]: k extends keyof K ? K[k] : A }> {
-   return bindS(name, flow(f, pure));
+  return bindS(name, flow(f, pure));
 }

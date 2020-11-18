@@ -9,5 +9,5 @@ import { useNow } from "./use";
  * outside its scope.
  */
 export function release<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, A> {
-   return fromTask(useNow(ma));
+  return fromTask(useNow(ma));
 }

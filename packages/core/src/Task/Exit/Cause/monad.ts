@@ -10,23 +10,26 @@ import type { Cause } from "./model";
  * -------------------------------------------
  */
 
-export function chainSafe_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<unknown, never, Cause<D>> {
-   return Sy.gen(function* (_) {
-      switch (fa._tag) {
-         case "Empty":
-            return empty;
-         case "Fail":
-            return f(fa.value);
-         case "Die":
-            return fa;
-         case "Interrupt":
-            return fa;
-         case "Then":
-            return then(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
-         case "Both":
-            return both(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
-      }
-   });
+export function chainSafe_<E, D>(
+  fa: Cause<E>,
+  f: (e: E) => Cause<D>
+): Sy.Sync<unknown, never, Cause<D>> {
+  return Sy.gen(function* (_) {
+    switch (fa._tag) {
+      case "Empty":
+        return empty;
+      case "Fail":
+        return f(fa.value);
+      case "Die":
+        return fa;
+      case "Interrupt":
+        return fa;
+      case "Then":
+        return then(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
+      case "Both":
+        return both(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
+    }
+  });
 }
 
 /**
@@ -40,7 +43,7 @@ export function chainSafe_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<u
  * @since 1.0.0
  */
 export function chain_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-   return Sy.runIO(chainSafe_(fa, f));
+  return Sy.runIO(chainSafe_(fa, f));
 }
 
 /**
@@ -54,7 +57,7 @@ export function chain_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
  * @since 1.0.0
  */
 export function chain<E, D>(f: (e: E) => Cause<D>): (fa: Cause<E>) => Cause<D> {
-   return (fa) => chain_(fa, f);
+  return (fa) => chain_(fa, f);
 }
 
 /**
@@ -68,5 +71,5 @@ export function chain<E, D>(f: (e: E) => Cause<D>): (fa: Cause<E>) => Cause<D> {
  * @since 1.0.0
  */
 export function flatten<E>(ffa: Cause<Cause<E>>): Cause<E> {
-   return chain_(ffa, identity);
+  return chain_(ffa, identity);
 }

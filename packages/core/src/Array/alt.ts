@@ -22,7 +22,7 @@ import type { URI, V } from "./model";
  * @since 1.0.0
  */
 export function alt_<A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): ReadonlyArray<A> {
-   return concat_(fa, that());
+  return concat_(fa, that());
 }
 
 /**
@@ -36,11 +36,11 @@ export function alt_<A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): Rea
  * @since 1.0.0
  */
 export function alt<A>(that: () => ReadonlyArray<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (fa) => alt_(fa, that);
+  return (fa) => alt_(fa, that);
 }
 
 export const Alt: P.Alt<[URI], V> = HKT.instance({
-   ...Functor,
-   alt_,
-   alt
+  ...Functor,
+  alt_,
+  alt
 });

@@ -22,8 +22,8 @@ import type { NonEmptyArray, URI, V } from "./model";
  * @since 1.0.0
  */
 export const mapWithIndex_: <A, B>(
-   fa: NonEmptyArray<A>,
-   f: (i: number, a: A) => B
+  fa: NonEmptyArray<A>,
+  f: (i: number, a: A) => B
 ) => NonEmptyArray<B> = A.mapWithIndex_ as any;
 
 /**
@@ -38,7 +38,7 @@ export const mapWithIndex_: <A, B>(
  * @since 1.0.0
  */
 export const mapWithIndex: <A, B>(
-   f: (i: number, a: A) => B
+  f: (i: number, a: A) => B
 ) => (fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.mapWithIndex as any;
 
 /**
@@ -63,14 +63,16 @@ export const map_: <A, B>(fa: NonEmptyArray<A>, f: (a: A) => B) => NonEmptyArray
  * @category Functor
  * @since 1.0.0
  */
-export const map: <A, B>(f: (a: A) => B) => (fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.map as any;
+export const map: <A, B>(
+  f: (a: A) => B
+) => (fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.map as any;
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map,
-   map_
+  map,
+  map_
 });
 
 export const FunctorWithIndex: P.FunctorWithIndex<[URI], V> = HKT.instance({
-   mapWithIndex,
-   mapWithIndex_
+  mapWithIndex,
+  mapWithIndex_
 });

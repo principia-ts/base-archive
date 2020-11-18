@@ -24,8 +24,11 @@ import { unit } from "./unit";
  * @category Apply
  * @since 1.0.0
  */
-export function both_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, readonly [A, B]> {
-   return mapBoth_(fa, fb, tuple);
+export function both_<E, A, G, B>(
+  fa: Either<E, A>,
+  fb: Either<G, B>
+): Either<E | G, readonly [A, B]> {
+  return mapBoth_(fa, fb, tuple);
 }
 
 /**
@@ -38,8 +41,10 @@ export function both_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E 
  * @category Apply
  * @since 1.0.0
  */
-export function both<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, readonly [A, B]> {
-   return (fa) => both_(fa, fb);
+export function both<G, B>(
+  fb: Either<G, B>
+): <E, A>(fa: Either<E, A>) => Either<G | E, readonly [A, B]> {
+  return (fa) => both_(fa, fb);
 }
 
 /**
@@ -59,8 +64,8 @@ export const pure: <E = never, A = never>(a: A) => Either<E, A> = right;
  * @since 1.0.0
  */
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_,
-   both,
-   unit
+  ...Functor,
+  both_,
+  both,
+  unit
 });

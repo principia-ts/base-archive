@@ -10,46 +10,46 @@ export type FiberState<E, A> = FiberStateExecuting<E, A> | FiberStateDone<E, A>;
 export type Callback<E, A> = (exit: Exit<E, A>) => void;
 
 export class FiberStateExecuting<E, A> {
-   readonly _tag = "Executing";
+  readonly _tag = "Executing";
 
-   constructor(
-      readonly status: FiberStatus,
-      readonly observers: Callback<never, Exit<E, A>>[],
-      readonly interrupted: Cause<never>
-   ) {}
+  constructor(
+    readonly status: FiberStatus,
+    readonly observers: Callback<never, Exit<E, A>>[],
+    readonly interrupted: Cause<never>
+  ) {}
 }
 
 export class FiberStateDone<E, A> {
-   readonly _tag = "Done";
+  readonly _tag = "Done";
 
-   readonly interrupted = C.empty;
-   readonly status: FiberStatus = new Done();
+  readonly interrupted = C.empty;
+  readonly status: FiberStatus = new Done();
 
-   constructor(readonly value: Exit<E, A>) {}
+  constructor(readonly value: Exit<E, A>) {}
 }
 
 export function initial<E, A>(): FiberState<E, A> {
-   return new FiberStateExecuting(new Running(false), [], C.empty);
+  return new FiberStateExecuting(new Running(false), [], C.empty);
 }
 
 export function interrupting<E, A>(state: FiberState<E, A>): boolean {
-   const loop = (status: FiberStatus): Sy.Sync<unknown, never, boolean> =>
-      Sy.gen(function* (_) {
-         switch (status._tag) {
-            case "Running": {
-               return status.interrupting;
-            }
-            case "Finishing": {
-               return status.interrupting;
-            }
-            case "Suspended": {
-               return yield* _(loop(status.previous));
-            }
-            case "Done": {
-               return false;
-            }
-         }
-      });
+  const loop = (status: FiberStatus): Sy.Sync<unknown, never, boolean> =>
+    Sy.gen(function* (_) {
+      switch (status._tag) {
+        case "Running": {
+          return status.interrupting;
+        }
+        case "Finishing": {
+          return status.interrupting;
+        }
+        case "Suspended": {
+          return yield* _(loop(status.previous));
+        }
+        case "Done": {
+          return false;
+        }
+      }
+    });
 
-   return Sy.runIO(loop(state.status));
+  return Sy.runIO(loop(state.status));
 }

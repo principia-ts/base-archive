@@ -1,7 +1,7 @@
 import type * as HKT from "@principia/prelude/HKT";
 
 export interface Encoder<O, A> {
-   readonly encode: (a: A) => O;
+  readonly encode: (a: A) => O;
 }
 
 export type OutputOf<E> = E extends Encoder<infer O, any> ? O : never;
@@ -15,10 +15,10 @@ export type URI = typeof URI;
 export type V = HKT.V<"E", "+">;
 
 declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: Encoder<E, A>;
-   }
-   interface URItoKind2<TC, E, A> {
-      readonly [URI]: Encoder<E, A>;
-   }
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: Encoder<E, A>;
+  }
+  interface URItoKind2<TC, E, A> {
+    readonly [URI]: Encoder<E, A>;
+  }
 }

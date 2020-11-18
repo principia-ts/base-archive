@@ -10,4 +10,5 @@ export const toLayerRaw: <R, E, A>(ma: Task<R, E, A>) => L.Layer<R, E, A> = L.fr
 /**
  * Constructs a `Layer` from an `Task`
  */
-export const toLayer: <A>(tag: Tag<A>) => <R, E>(ma: Task<R, E, A>) => L.Layer<R, E, Has<A>> = L.fromTask;
+export const toLayer: <A>(tag: Tag<A>) => <R, E>(ma: Task<R, E, A>) => L.Layer<R, E, Has<A>> =
+  L.fromTask;

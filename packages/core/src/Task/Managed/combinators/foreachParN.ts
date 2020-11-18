@@ -13,9 +13,9 @@ import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
  * Unlike `foreachPar`, this method will use at most up to `n` fibers.
  */
 export function foreachParN(
-   n: number
+  n: number
 ): <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (as: Iterable<A>) => Managed<R, E, readonly B[]> {
-   return (f) => (as) => foreachParN_(n)(as, f);
+  return (f) => (as) => foreachParN_(n)(as, f);
 }
 
 /**
@@ -25,18 +25,21 @@ export function foreachParN(
  * Unlike `foreachPar_`, this method will use at most up to `n` fibers.
  */
 export function foreachParN_(n: number) {
-   return <R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> =>
-      mapM_(makeManagedReleaseMap(parallelN(n)), (parallelReleaseMap) => {
-         const makeInnerMap = T.gives_(
-            T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
-            (x: unknown) => tuple(x, parallelReleaseMap)
-         );
+  return <R, E, A, B>(
+    as: Iterable<A>,
+    f: (a: A) => Managed<R, E, B>
+  ): Managed<R, E, readonly B[]> =>
+    mapM_(makeManagedReleaseMap(parallelN(n)), (parallelReleaseMap) => {
+      const makeInnerMap = T.gives_(
+        T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
+        (x: unknown) => tuple(x, parallelReleaseMap)
+      );
 
-         return effectForeachParN(n)(as, (a) =>
-            T.map_(
-               T.chain_(makeInnerMap, (innerMap) => T.gives_(f(a).task, (u: R) => tuple(u, innerMap))),
-               ([_, b]) => b
-            )
-         );
-      });
+      return effectForeachParN(n)(as, (a) =>
+        T.map_(
+          T.chain_(makeInnerMap, (innerMap) => T.gives_(f(a).task, (u: R) => tuple(u, innerMap))),
+          ([_, b]) => b
+        )
+      );
+    });
 }

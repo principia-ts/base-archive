@@ -15,31 +15,31 @@ import { toQueue_ } from "./toQueue";
  * @note Prefer capacities that are powers of 2 for better performance.
  */
 export function buffer_<R, E, O>(ma: Stream<R, E, O>, capacity: number): Stream<R, E, O> {
-   return new Stream(
-      pipe(
-         M.do,
-         M.bindS("done", () => XR.makeManagedRef(false)),
-         M.bindS("queue", () => toQueue_(ma, capacity)),
-         M.letS("pull", ({ done, queue }) => {
-            const pull = T.chain_(done.get, (b) =>
-               b
-                  ? Pull.end
-                  : pipe(
-                       queue.take,
-                       T.chain(T.done),
-                       T.catchSome(
-                          O.fold(
-                             () => pipe(done.set(true), T.andThen(Pull.end), O.some),
-                             (e) => O.some(T.fail(O.some(e)))
-                          )
-                       )
-                    )
-            );
-            return pull;
-         }),
-         M.map(({ pull }) => pull)
-      )
-   );
+  return new Stream(
+    pipe(
+      M.do,
+      M.bindS("done", () => XR.makeManagedRef(false)),
+      M.bindS("queue", () => toQueue_(ma, capacity)),
+      M.letS("pull", ({ done, queue }) => {
+        const pull = T.chain_(done.get, (b) =>
+          b
+            ? Pull.end
+            : pipe(
+                queue.take,
+                T.chain(T.done),
+                T.catchSome(
+                  O.fold(
+                    () => pipe(done.set(true), T.andThen(Pull.end), O.some),
+                    (e) => O.some(T.fail(O.some(e)))
+                  )
+                )
+              )
+        );
+        return pull;
+      }),
+      M.map(({ pull }) => pull)
+    )
+  );
 }
 
 /**
@@ -49,5 +49,5 @@ export function buffer_<R, E, O>(ma: Stream<R, E, O>, capacity: number): Stream<
  * @note Prefer capacities that are powers of 2 for better performance.
  */
 export function buffer(capacity: number): <R, E, O>(ma: Stream<R, E, O>) => Stream<R, E, O> {
-   return (ma) => buffer_(ma, capacity);
+  return (ma) => buffer_(ma, capacity);
 }

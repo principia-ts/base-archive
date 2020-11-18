@@ -7,5 +7,5 @@ import type { XPromise } from "../model";
  * already been completed with a value or an error and false otherwise.
  */
 export function isDone<E, A>(promise: XPromise<E, A>): IO<boolean> {
-   return T.total(() => promise.state.get._tag === "Done");
+  return T.total(() => promise.state.get._tag === "Done");
 }

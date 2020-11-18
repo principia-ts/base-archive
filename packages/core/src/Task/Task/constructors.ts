@@ -5,12 +5,12 @@ import * as C from "../Exit/Cause";
 import type { FiberId } from "../Fiber/FiberId";
 import type { EIO, IO, Task } from "./model";
 import {
-   AsyncInstruction,
-   FailInstruction,
-   PartialInstruction,
-   SucceedInstruction,
-   SuspendInstruction,
-   TotalInstruction
+  AsyncInstruction,
+  FailInstruction,
+  PartialInstruction,
+  SucceedInstruction,
+  SuspendInstruction,
+  TotalInstruction
 } from "./model";
 
 /*
@@ -30,7 +30,7 @@ import {
  * @since 1.0.0
  */
 export function succeed<E = never, A = never>(a: A): EIO<E, A> {
-   return new SucceedInstruction(a);
+  return new SucceedInstruction(a);
 }
 
 /**
@@ -44,13 +44,13 @@ export function succeed<E = never, A = never>(a: A): EIO<E, A> {
  * @since 1.0.0
  */
 export function async<R, E, A>(
-   register: (resolve: (_: Task<R, E, A>) => void) => void,
-   blockingOn: ReadonlyArray<FiberId> = []
+  register: (resolve: (_: Task<R, E, A>) => void) => void,
+  blockingOn: ReadonlyArray<FiberId> = []
 ): Task<R, E, A> {
-   return new AsyncInstruction((cb) => {
-      register(cb);
-      return O.none();
-   }, blockingOn);
+  return new AsyncInstruction((cb) => {
+    register(cb);
+    return O.none();
+  }, blockingOn);
 }
 
 /**
@@ -68,10 +68,10 @@ export function async<R, E, A>(
  * @since 1.0.0
  */
 export function asyncOption<R, E, A>(
-   register: (resolve: (_: Task<R, E, A>) => void) => O.Option<Task<R, E, A>>,
-   blockingOn: ReadonlyArray<FiberId> = []
+  register: (resolve: (_: Task<R, E, A>) => void) => O.Option<Task<R, E, A>>,
+  blockingOn: ReadonlyArray<FiberId> = []
 ): Task<R, E, A> {
-   return new AsyncInstruction(register, blockingOn);
+  return new AsyncInstruction(register, blockingOn);
 }
 
 /**
@@ -85,7 +85,7 @@ export function asyncOption<R, E, A>(
  * @since 1.0.0
  */
 export function total<A>(thunk: () => A): IO<A> {
-   return new TotalInstruction(thunk);
+  return new TotalInstruction(thunk);
 }
 
 /**
@@ -99,7 +99,7 @@ export function total<A>(thunk: () => A): IO<A> {
  * @since 1.0.0
  */
 export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): EIO<E, A> {
-   return new PartialInstruction(thunk, onThrow);
+  return new PartialInstruction(thunk, onThrow);
 }
 
 /**
@@ -113,7 +113,7 @@ export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): 
  * @since 1.0.0
  */
 export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => EIO<E, A> {
-   return (thunk) => partial_(thunk, onThrow);
+  return (thunk) => partial_(thunk, onThrow);
 }
 
 /**
@@ -127,7 +127,7 @@ export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) 
  * @since 1.0.0
  */
 export function suspend<R, E, A>(factory: Lazy<Task<R, E, A>>): Task<R, E, A> {
-   return new SuspendInstruction(factory);
+  return new SuspendInstruction(factory);
 }
 
 /**
@@ -141,7 +141,7 @@ export function suspend<R, E, A>(factory: Lazy<Task<R, E, A>>): Task<R, E, A> {
  * @since 1.0.0
  */
 export function halt<E>(cause: C.Cause<E>): EIO<E, never> {
-   return new FailInstruction(cause);
+  return new FailInstruction(cause);
 }
 
 /**
@@ -155,7 +155,7 @@ export function halt<E>(cause: C.Cause<E>): EIO<E, never> {
  * @since 1.0.0
  */
 export function fail<E>(e: E): EIO<E, never> {
-   return halt(C.fail(e));
+  return halt(C.fail(e));
 }
 
 /**
@@ -169,7 +169,7 @@ export function fail<E>(e: E): EIO<E, never> {
  * @since 1.0.0
  */
 export function die(e: unknown): EIO<never, never> {
-   return halt(C.die(e));
+  return halt(C.die(e));
 }
 
 /**
@@ -183,14 +183,14 @@ export function die(e: unknown): EIO<never, never> {
  * @since 1.0.0
  */
 export function done<E = never, A = unknown>(exit: Exit<E, A>): EIO<E, A> {
-   return suspend(() => {
-      switch (exit._tag) {
-         case "Success": {
-            return succeed(exit.value);
-         }
-         case "Failure": {
-            return halt(exit.cause);
-         }
+  return suspend(() => {
+    switch (exit._tag) {
+      case "Success": {
+        return succeed(exit.value);
       }
-   });
+      case "Failure": {
+        return halt(exit.cause);
+      }
+    }
+  });
 }

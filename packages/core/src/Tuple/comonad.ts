@@ -7,11 +7,11 @@ import { Functor } from "./functor";
 import type { Tuple, URI, V } from "./model";
 
 export function extend_<A, I, B>(wa: Tuple<A, I>, f: (wa: Tuple<A, I>) => B): Tuple<B, I> {
-   return [f(wa), snd(wa)];
+  return [f(wa), snd(wa)];
 }
 
 export function extend<A, I, B>(f: (wa: Tuple<A, I>) => B): (wa: Tuple<A, I>) => Tuple<B, I> {
-   return (wa) => extend_(wa, f);
+  return (wa) => extend_(wa, f);
 }
 
 export const extract: <A, I>(wa: Tuple<A, I>) => A = fst;
@@ -19,8 +19,8 @@ export const extract: <A, I>(wa: Tuple<A, I>) => A = fst;
 export const duplicate: <A, I>(wa: Tuple<A, I>) => Tuple<Tuple<A, I>, I> = extend(identity);
 
 export const Comonad: P.Comonad<[URI], V> = HKT.instance({
-   ...Functor,
-   extend_,
-   extend,
-   extract
+  ...Functor,
+  extend_,
+  extend,
+  extract
 });

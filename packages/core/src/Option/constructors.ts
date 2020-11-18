@@ -19,9 +19,9 @@ import type { Option } from "./model";
  * @since 1.0.0
  */
 export function none<A = never>(): Option<A> {
-   return {
-      _tag: "None"
-   };
+  return {
+    _tag: "None"
+  };
 }
 
 /**
@@ -35,10 +35,10 @@ export function none<A = never>(): Option<A> {
  * @since 1.0.0
  */
 export function some<A>(a: A): Option<A> {
-   return {
-      _tag: "Some",
-      value: a
-   };
+  return {
+    _tag: "Some",
+    value: a
+  };
 }
 
 /**
@@ -53,13 +53,13 @@ export function some<A>(a: A): Option<A> {
  * @since 1.0.0
  */
 export function fromNullable<A>(a: A | null | undefined): Option<NonNullable<A>> {
-   return a == null ? none() : some(a as NonNullable<A>);
+  return a == null ? none() : some(a as NonNullable<A>);
 }
 
 export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
-   f: (...args: A) => B | null | undefined
+  f: (...args: A) => B | null | undefined
 ): (...args: A) => Option<NonNullable<B>> {
-   return (...args) => fromNullable(f(...args));
+  return (...args) => fromNullable(f(...args));
 }
 
 /**
@@ -73,11 +73,11 @@ export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
  * @since 1.0.0
  */
 export function partial<A>(thunk: Lazy<A>): Option<A> {
-   try {
-      return some(thunk());
-   } catch (_) {
-      return none();
-   }
+  try {
+    return some(thunk());
+  } catch (_) {
+    return none();
+  }
 }
 
 /**
@@ -90,8 +90,10 @@ export function partial<A>(thunk: Lazy<A>): Option<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function partialK<A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): (...args: A) => Option<B> {
-   return (...a) => partial(() => f(...a));
+export function partialK<A extends ReadonlyArray<unknown>, B>(
+  f: FunctionN<A, B>
+): (...args: A) => Option<B> {
+  return (...a) => partial(() => f(...a));
 }
 
 /**
@@ -108,7 +110,7 @@ export function partialK<A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>
 export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>;
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>;
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
-   return predicate(a) ? none() : some(a);
+  return predicate(a) ? none() : some(a);
 }
 
 /**
@@ -125,7 +127,7 @@ export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
 export function fromPredicate<A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<A>;
 export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A>;
 export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
-   return (a) => fromPredicate_(a, predicate);
+  return (a) => fromPredicate_(a, predicate);
 }
 
 /**
@@ -139,5 +141,5 @@ export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
  * @since 1.0.0
  */
 export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
-   return ma._tag === "Left" ? none() : some(ma.right);
+  return ma._tag === "Left" ? none() : some(ma.right);
 }

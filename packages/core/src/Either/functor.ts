@@ -22,7 +22,7 @@ import type { Either, URI, V } from "./model";
  * @since 1.0.0
  */
 export function map_<E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> {
-   return isLeft(fa) ? fa : right(f(fa.right));
+  return isLeft(fa) ? fa : right(f(fa.right));
 }
 
 /**
@@ -36,7 +36,7 @@ export function map_<E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> {
  * @since 1.0.0
  */
 export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B> {
-   return (fa) => map_(fa, f);
+  return (fa) => map_(fa, f);
 }
 
 /**
@@ -44,6 +44,6 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
  * @since 1.0.0
  */
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map,
-   map_
+  map,
+  map_
 });

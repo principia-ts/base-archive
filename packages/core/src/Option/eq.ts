@@ -11,5 +11,7 @@ import type { Option } from "./model";
  */
 
 export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
-   return fromEquals((x, y) => (x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)));
+  return fromEquals((x, y) =>
+    x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)
+  );
 }

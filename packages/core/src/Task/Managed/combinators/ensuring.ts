@@ -9,7 +9,7 @@ import { onExit_ } from "./onExit";
  * For usecases that need access to the Managed's result, see [[onExit]].
  */
 export function ensuring_<R, E, A, R1>(self: Managed<R, E, A>, f: T.Task<R1, never, any>) {
-   return onExit_(self, () => f);
+  return onExit_(self, () => f);
 }
 
 /**
@@ -18,6 +18,8 @@ export function ensuring_<R, E, A, R1>(self: Managed<R, E, A>, f: T.Task<R1, nev
  *
  * For usecases that need access to the Managed's result, see [[onExit]].
  */
-export function ensuring<R1>(f: T.Task<R1, never, any>): <R, E, A>(self: Managed<R, E, A>) => Managed<R & R1, E, A> {
-   return (self) => ensuring_(self, f);
+export function ensuring<R1>(
+  f: T.Task<R1, never, any>
+): <R, E, A>(self: Managed<R, E, A>) => Managed<R & R1, E, A> {
+  return (self) => ensuring_(self, f);
 }

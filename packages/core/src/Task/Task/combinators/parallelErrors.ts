@@ -7,17 +7,17 @@ import type { Task } from "../model";
  * Exposes all parallel errors in a single call
  */
 export function parallelErrors<R, E, A>(task: Task<R, E, A>): Task<R, ReadonlyArray<E>, A> {
-   return T.foldCauseM_(
-      task,
-      (cause) => {
-         const f = C.failures(cause);
+  return T.foldCauseM_(
+    task,
+    (cause) => {
+      const f = C.failures(cause);
 
-         if (f.length === 0) {
-            return T.halt(cause as Cause<never>);
-         } else {
-            return T.fail(f);
-         }
-      },
-      T.succeed
-   );
+      if (f.length === 0) {
+        return T.halt(cause as Cause<never>);
+      } else {
+        return T.fail(f);
+      }
+    },
+    T.succeed
+  );
 }

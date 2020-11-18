@@ -14,6 +14,6 @@ import { isSubmap_ } from "./guards";
  * @since 1.0.0
  */
 export function getEq<K, A>(EK: Eq<K>, EA: Eq<A>): Eq<ReadonlyMap<K, A>> {
-   const isSubmapKA_ = isSubmap_(EK, EA);
-   return fromEquals((x, y) => isSubmapKA_(x, y) && isSubmapKA_(y, x));
+  const isSubmapKA_ = isSubmap_(EK, EA);
+  return fromEquals((x, y) => isSubmapKA_(x, y) && isSubmapKA_(y, x));
 }

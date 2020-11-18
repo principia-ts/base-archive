@@ -14,5 +14,5 @@ import type { Const } from "./model";
  * @since 1.0.0
  */
 export function getBounded<E, A>(B: Bounded<E>): Bounded<Const<E, A>> {
-   return identity(B) as any;
+  return identity(B) as any;
 }

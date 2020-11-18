@@ -7,5 +7,5 @@ import type { Optional } from "../Optional";
  */
 
 export interface Ix<S, I, A> {
-   readonly index: (i: I) => Optional<S, A>;
+  readonly index: (i: I) => Optional<S, A>;
 }

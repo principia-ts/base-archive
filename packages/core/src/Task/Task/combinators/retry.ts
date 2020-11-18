@@ -9,28 +9,28 @@ import type { Task } from "../model";
 import { orDie } from "./orDie";
 
 const _loop = <R, E, A, R1, O, R2, E2, A2>(
-   fa: Task<R, E, A>,
-   orElse: (e: E, o: O) => Task<R2, E2, A2>,
-   driver: ScheduleExecutor<R1 & HasClock, E, O>
+  fa: Task<R, E, A>,
+  orElse: (e: E, o: O) => Task<R2, E2, A2>,
+  driver: ScheduleExecutor<R1 & HasClock, E, O>
 ): Task<R & R1 & R2 & HasClock, E2, Either<A2, A>> =>
-   pipe(
-      fa,
-      map(E.right),
-      catchAll((e) =>
-         pipe(
-            driver.next(e),
-            foldM(
-               () =>
-                  pipe(
-                     driver.last,
-                     orDie,
-                     chain((o) => pipe(orElse(e, o), map(E.left)))
-                  ),
-               () => _loop(fa, orElse, driver)
-            )
-         )
+  pipe(
+    fa,
+    map(E.right),
+    catchAll((e) =>
+      pipe(
+        driver.next(e),
+        foldM(
+          () =>
+            pipe(
+              driver.last,
+              orDie,
+              chain((o) => pipe(orElse(e, o), map(E.left)))
+            ),
+          () => _loop(fa, orElse, driver)
+        )
       )
-   );
+    )
+  );
 
 /**
  * Returns a task that retries this effect with the specified schedule when it fails, until
@@ -38,15 +38,15 @@ const _loop = <R, E, A, R1, O, R2, E2, A2>(
  * error are passed to the specified recovery function.
  */
 export function retryOrElseEither_<R, E, A, R1, O, R2, E2, A2>(
-   fa: Task<R, E, A>,
-   policy: Schedule<R1, E, O>,
-   orElse: (e: E, o: O) => Task<R2, E2, A2>
+  fa: Task<R, E, A>,
+  policy: Schedule<R1, E, O>,
+  orElse: (e: E, o: O) => Task<R2, E2, A2>
 ): Task<R & R1 & R2 & HasClock, E2, E.Either<A2, A>> {
-   return pipe(
-      policy,
-      S.driver,
-      chain((a) => _loop(fa, orElse, a))
-   );
+  return pipe(
+    policy,
+    S.driver,
+    chain((a) => _loop(fa, orElse, a))
+  );
 }
 
 /**
@@ -55,10 +55,10 @@ export function retryOrElseEither_<R, E, A, R1, O, R2, E2, A2>(
  * error are passed to the specified recovery function.
  */
 export function retryOrElseEither<E, R1, O, R2, E2, A2>(
-   policy: S.Schedule<R1, E, O>,
-   orElse: (e: E, o: O) => Task<R2, E2, A2>
+  policy: S.Schedule<R1, E, O>,
+  orElse: (e: E, o: O) => Task<R2, E2, A2>
 ) {
-   return <R, A>(fa: Task<R, E, A>) => retryOrElseEither_(fa, policy, orElse);
+  return <R, A>(fa: Task<R, E, A>) => retryOrElseEither_(fa, policy, orElse);
 }
 
 /**
@@ -67,11 +67,11 @@ export function retryOrElseEither<E, R1, O, R2, E2, A2>(
  * the recovery function.
  */
 export function retryOrElse_<R, E, A, R1, O, R2, E2, A2>(
-   fa: Task<R, E, A>,
-   policy: S.Schedule<R1, E, O>,
-   orElse: (e: E, o: O) => Task<R2, E2, A2>
+  fa: Task<R, E, A>,
+  policy: S.Schedule<R1, E, O>,
+  orElse: (e: E, o: O) => Task<R2, E2, A2>
 ): Task<R & R1 & R2 & HasClock, E2, A | A2> {
-   return map_(retryOrElseEither_(fa, policy, orElse), E.fold(identity, identity));
+  return map_(retryOrElseEither_(fa, policy, orElse), E.fold(identity, identity));
 }
 
 /**
@@ -80,10 +80,10 @@ export function retryOrElse_<R, E, A, R1, O, R2, E2, A2>(
  * the recovery function.
  */
 export function retryOrElse<E, R1, O, R2, E2, A2>(
-   policy: S.Schedule<R1, E, O>,
-   orElse: (e: E, o: O) => Task<R2, E2, A2>
+  policy: S.Schedule<R1, E, O>,
+  orElse: (e: E, o: O) => Task<R2, E2, A2>
 ) {
-   return <R, A>(fa: Task<R, E, A>) => retryOrElse_(fa, policy, orElse);
+  return <R, A>(fa: Task<R, E, A>) => retryOrElse_(fa, policy, orElse);
 }
 
 /**
@@ -92,8 +92,11 @@ export function retryOrElse<E, R1, O, R2, E2, A2>(
  * `once` or `recurs` for example), so that that `io.retry(Schedule.once)` means
  * "execute `io` and in case of failure, try again once".
  */
-export function retry_<R, E, A, R1, O>(fa: Task<R, E, A>, policy: S.Schedule<R1, E, O>): Task<R & R1 & HasClock, E, A> {
-   return retryOrElse_(fa, policy, (e, _) => fail(e));
+export function retry_<R, E, A, R1, O>(
+  fa: Task<R, E, A>,
+  policy: S.Schedule<R1, E, O>
+): Task<R & R1 & HasClock, E, A> {
+  return retryOrElse_(fa, policy, (e, _) => fail(e));
 }
 
 /**
@@ -103,71 +106,71 @@ export function retry_<R, E, A, R1, O>(fa: Task<R, E, A>, policy: S.Schedule<R1,
  * "execute `io` and in case of failure, try again once".
  */
 export function retry<R1, E, O>(policy: S.Schedule<R1, E, O>) {
-   return <R, A>(fa: Task<R, E, A>): Task<R & R1 & HasClock, E, A> => retry_(fa, policy);
+  return <R, A>(fa: Task<R, E, A>): Task<R & R1 & HasClock, E, A> => retry_(fa, policy);
 }
 
 /**
  * Retries this effect until its error satisfies the specified effectful predicate.
  */
 export function retryUntilM_<R, E, A, R1, E1>(
-   fa: Task<R, E, A>,
-   f: (e: E) => Task<R1, E1, boolean>
+  fa: Task<R, E, A>,
+  f: (e: E) => Task<R1, E1, boolean>
 ): Task<R & R1, E | E1, A> {
-   return catchAll_(fa, (e) => chain_(f(e), (b) => (b ? fail(e) : retryUntilM_(fa, f))));
+  return catchAll_(fa, (e) => chain_(f(e), (b) => (b ? fail(e) : retryUntilM_(fa, f))));
 }
 
 /**
  * Retries this effect until its error satisfies the specified effectful predicate.
  */
 export function retryUntilM<E, R1, E1>(
-   f: (e: E) => Task<R1, E1, boolean>
+  f: (e: E) => Task<R1, E1, boolean>
 ): <R, A>(fa: Task<R, E, A>) => Task<R & R1, E | E1, A> {
-   return (fa) => retryUntilM_(fa, f);
+  return (fa) => retryUntilM_(fa, f);
 }
 
 /**
  * Retries this effect until its error satisfies the specified predicate.
  */
 export function retryUntil_<R, E, A>(fa: Task<R, E, A>, f: (e: E) => boolean): Task<R, E, A> {
-   return retryUntilM_(fa, flow(f, pure));
+  return retryUntilM_(fa, flow(f, pure));
 }
 
 /**
  * Retries this effect until its error satisfies the specified effectful predicate.
  */
 export function retryUntil<E>(f: (e: E) => boolean): <R, A>(fa: Task<R, E, A>) => Task<R, E, A> {
-   return (fa) => retryUntil_(fa, f);
+  return (fa) => retryUntil_(fa, f);
 }
 
 /**
  * Retries this effect while its error satisfies the specified effectful predicate.
  */
 export function retryWhileM_<R, E, A, R1, E1>(
-   fa: Task<R, E, A>,
-   f: (e: E) => Task<R1, E1, boolean>
+  fa: Task<R, E, A>,
+  f: (e: E) => Task<R1, E1, boolean>
 ): Task<R & R1, E | E1, A> {
-   return catchAll_(fa, (e) => chain_(f(e), (b) => (b ? retryWhileM_(fa, f) : fail(e))));
+  return catchAll_(fa, (e) => chain_(f(e), (b) => (b ? retryWhileM_(fa, f) : fail(e))));
 }
 
 /**
  * Retries this effect while its error satisfies the specified effectful predicate.
  */
 export function retryWhileM<E, R1, E1>(
-   f: (e: E) => Task<R1, E1, boolean>
+  f: (e: E) => Task<R1, E1, boolean>
 ): <R, A>(fa: Task<R, E, A>) => Task<R & R1, E | E1, A> {
-   return (fa) => retryWhileM_(fa, f);
+  return (fa) => retryWhileM_(fa, f);
 }
 
 /**
  * Retries this effect while its error satisfies the specified predicate.
  */
 export function retryWhile_<R, E, A>(fa: Task<R, E, A>, f: (e: E) => boolean) {
-   return retryWhileM_(fa, flow(f, pure));
+  return retryWhileM_(fa, flow(f, pure));
 }
 
 /**
  * Retries this effect while its error satisfies the specified predicate.
  */
 export function retryWhile<E>(f: (e: E) => boolean): <R, A>(fa: Task<R, E, A>) => Task<R, E, A> {
-   return (fa) => retryWhile_(fa, f);
+  return (fa) => retryWhile_(fa, f);
 }

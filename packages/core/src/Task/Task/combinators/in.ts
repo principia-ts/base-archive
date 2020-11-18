@@ -10,37 +10,37 @@ import type { Task } from "../model";
 import { onInterrupt, uninterruptibleMask } from "./interrupt";
 
 export function in_<R, E, A>(task: Task<R, E, A>, scope: Scope<any>): Task<R, E, A> {
-   return uninterruptibleMask(({ restore }) =>
-      pipe(
-         task,
-         restore,
-         forkDaemon,
-         chain((executor) =>
+  return uninterruptibleMask(({ restore }) =>
+    pipe(
+      task,
+      restore,
+      forkDaemon,
+      chain((executor) =>
+        pipe(
+          scope.extend(executor.scope),
+          chain(() =>
             pipe(
-               scope.extend(executor.scope),
-               chain(() =>
-                  pipe(
-                     restore(F.join(executor)),
-                     onInterrupt((interruptors) =>
-                        pipe(
-                           Array.from(interruptors),
-                           A.head,
-                           O.fold(
-                              () => F.interrupt(executor),
-                              (id) => executor.interruptAs(id)
-                           )
-                        )
-                     )
+              restore(F.join(executor)),
+              onInterrupt((interruptors) =>
+                pipe(
+                  Array.from(interruptors),
+                  A.head,
+                  O.fold(
+                    () => F.interrupt(executor),
+                    (id) => executor.interruptAs(id)
                   )
-               )
+                )
+              )
             )
-         )
+          )
+        )
       )
-   );
+    )
+  );
 }
 
 function _in(scope: Scope<any>): <R, E, A>(task: Task<R, E, A>) => Task<R, E, A> {
-   return (task) => in_(task, scope);
+  return (task) => in_(task, scope);
 }
 
 export { _in as in };

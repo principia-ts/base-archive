@@ -10,5 +10,5 @@
  * ```
  */
 export function unit(): ReadonlyArray<void> {
-   return [undefined];
+  return [undefined];
 }

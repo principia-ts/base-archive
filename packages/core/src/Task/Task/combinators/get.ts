@@ -9,9 +9,9 @@ import * as C from "../../Exit/Cause";
  * Unwraps the optional success of an `Task`, but can fail with a `None` value.
  */
 export function get<R, E, A>(ma: Task<R, E, O.Option<A>>): Task<R, O.Option<E>, A> {
-   return foldCauseM_(
-      ma,
-      flow(C.map(O.some), halt),
-      O.fold(() => fail(O.none()), pure)
-   );
+  return foldCauseM_(
+    ma,
+    flow(C.map(O.some), halt),
+    O.fold(() => fail(O.none()), pure)
+  );
 }

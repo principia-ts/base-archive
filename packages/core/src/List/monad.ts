@@ -11,7 +11,7 @@ import type { List } from "./model";
  * @complexity O(n * log(m)), where n is the length of the outer list and m the length of the inner lists.
  */
 export function flatten<A>(nested: List<List<A>>): List<A> {
-   return reduce_<List<A>, List<A>>(nested, empty(), concat_);
+  return reduce_<List<A>, List<A>>(nested, empty(), concat_);
 }
 
 /**
@@ -19,7 +19,7 @@ export function flatten<A>(nested: List<List<A>>): List<A> {
  * lists together.
  */
 export function chain_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
-   return flatten(map_(l, f));
+  return flatten(map_(l, f));
 }
 
 /**
@@ -27,5 +27,5 @@ export function chain_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
  * lists together.
  */
 export function chain<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
-   return (l) => chain_(l, f);
+  return (l) => chain_(l, f);
 }

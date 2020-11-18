@@ -12,11 +12,11 @@ import type { Identity, URI, V } from "./model";
  */
 
 export function extend_<A, B>(wa: A, f: (wa: A) => B): B {
-   return f(wa);
+  return f(wa);
 }
 
 export function extend<A, B>(f: (wa: A) => B): (wa: A) => B {
-   return (wa) => f(wa);
+  return (wa) => f(wa);
 }
 
 export const extract: <A>(wa: A) => A = identity;
@@ -24,8 +24,8 @@ export const extract: <A>(wa: A) => A = identity;
 export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(identity);
 
 export const Comonad: P.Comonad<[URI], V> = HKT.instance({
-   ...Functor,
-   extend_,
-   extend,
-   extract
+  ...Functor,
+  extend_,
+  extend,
+  extract
 });

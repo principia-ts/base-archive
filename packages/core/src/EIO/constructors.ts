@@ -23,19 +23,21 @@ export const rightIO: <E = never, A = never>(io: IO<A>) => EIO<E, A> = X.chain(s
 
 export const fromEither: <E, A>(pab: Either<E, A>) => EIO<E, A> = E.fold(fail, succeed);
 
-export const _partial: <E, A>(thunk: Lazy<A>, onThrow: (reason: unknown) => E) => EIO<E, A> = X.partial_;
+export const _partial: <E, A>(thunk: Lazy<A>, onThrow: (reason: unknown) => E) => EIO<E, A> =
+  X.partial_;
 
-export const partial = <E>(onThrow: (reason: unknown) => E) => <A>(thunk: Lazy<A>) => _partial(thunk, onThrow);
+export const partial = <E>(onThrow: (reason: unknown) => E) => <A>(thunk: Lazy<A>) =>
+  _partial(thunk, onThrow);
 
 export function _partialK<A extends ReadonlyArray<unknown>, B, E>(
-   f: FunctionN<A, B>,
-   onThrow: (reason: unknown) => E
+  f: FunctionN<A, B>,
+  onThrow: (reason: unknown) => E
 ): (...args: A) => EIO<E, B> {
-   return (...a) => _partial(() => f(...a), onThrow);
+  return (...a) => _partial(() => f(...a), onThrow);
 }
 
 export function partialK<E>(
-   onThrow: (reason: unknown) => E
+  onThrow: (reason: unknown) => E
 ): <A extends readonly unknown[], B>(f: FunctionN<A, B>) => (...args: A) => EIO<E, B> {
-   return (f) => _partialK(f, onThrow);
+  return (f) => _partialK(f, onThrow);
 }

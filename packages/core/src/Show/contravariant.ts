@@ -8,9 +8,9 @@ import { fromShow } from "@principia/prelude/Show";
  */
 
 export function contramap_<A, B>(fa: Show<A>, f: (b: B) => A): Show<B> {
-   return fromShow((b) => fa.show(f(b)));
+  return fromShow((b) => fa.show(f(b)));
 }
 
 export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
-   return (fa) => contramap_(fa, f);
+  return (fa) => contramap_(fa, f);
 }

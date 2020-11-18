@@ -21,7 +21,7 @@ import type { Option, URI, V } from "./model";
  * @since 1.0.0
  */
 export function alt_<A>(fa: Option<A>, that: () => Option<A>): Option<A> {
-   return isNone(fa) ? that() : fa;
+  return isNone(fa) ? that() : fa;
 }
 
 /**
@@ -35,11 +35,11 @@ export function alt_<A>(fa: Option<A>, that: () => Option<A>): Option<A> {
  * @since 1.0.0
  */
 export function alt<A>(that: () => Option<A>): (fa: Option<A>) => Option<A> {
-   return (fa) => alt_(fa, that);
+  return (fa) => alt_(fa, that);
 }
 
 export const Alt: P.Alt<[URI], V> = HKT.instance({
-   ...Functor,
-   alt_,
-   alt
+  ...Functor,
+  alt_,
+  alt
 });

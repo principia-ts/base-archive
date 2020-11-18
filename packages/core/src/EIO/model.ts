@@ -17,7 +17,7 @@ export type URI = typeof URI;
 export type V = HKT.V<"E", "+">;
 
 declare module "@principia/prelude/HKT" {
-   export interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: EIO<E, A>;
-   }
+  export interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: EIO<E, A>;
+  }
 }

@@ -19,7 +19,7 @@ import { chain_ } from "./monad";
  * @since 1.0.0
  */
 export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
-   return chain_(fab, (f) => map_(fa, f));
+  return chain_(fab, (f) => map_(fa, f));
 }
 
 /**
@@ -33,5 +33,5 @@ export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
  * @since 1.0.0
  */
 export function ap<E>(fa: Cause<E>): <D>(fab: Cause<(a: E) => D>) => Cause<D> {
-   return (fab) => ap_(fab, fa);
+  return (fab) => ap_(fab, fa);
 }

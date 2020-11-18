@@ -9,16 +9,16 @@ import type { XPromise } from "../model";
  * promise has already been completed or a `None` otherwise.
  */
 export function poll<E, A>(promise: XPromise<E, A>): IO<Option<EIO<E, A>>> {
-   return T.total(() => {
-      const state = promise.state.get;
+  return T.total(() => {
+    const state = promise.state.get;
 
-      switch (state._tag) {
-         case "Done": {
-            return some(state.value);
-         }
-         case "Pending": {
-            return none();
-         }
+    switch (state._tag) {
+      case "Done": {
+        return some(state.value);
       }
-   });
+      case "Pending": {
+        return none();
+      }
+    }
+  });
 }

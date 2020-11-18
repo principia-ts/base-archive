@@ -8,35 +8,35 @@ import type { ReadonlyRecord } from "../Record";
 import type { NonEmptyArray } from "./model";
 
 export function head<A>(as: NonEmptyArray<A>): A {
-   return as[0];
+  return as[0];
 }
 
 export function tail<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
-   return as.slice(1);
+  return as.slice(1);
 }
 
 export const reverse: <A>(as: NonEmptyArray<A>) => NonEmptyArray<A> = A.reverse as any;
 
 export function min<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
-   const S = getMeetSemigroup(O);
-   return (as) => as.reduce(S.combine_);
+  const S = getMeetSemigroup(O);
+  return (as) => as.reduce(S.combine_);
 }
 
 export function max<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
-   const S = getJoinSemigroup(O);
-   return (as) => as.reduce(S.combine_);
+  const S = getJoinSemigroup(O);
+  return (as) => as.reduce(S.combine_);
 }
 
 export function append_<A>(xs: ReadonlyArray<A>, ys: NonEmptyArray<A>): NonEmptyArray<A>;
 export function append_<A>(xs: NonEmptyArray<A>, ys: ReadonlyArray<A>): NonEmptyArray<A>;
 export function append_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
-   return A.concat_(xs, ys);
+  return A.concat_(xs, ys);
 }
 
 export function append<A>(ys: NonEmptyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>;
 export function append<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>;
 export function append<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return (xs) => A.concat_(xs, ys);
+  return (xs) => A.concat_(xs, ys);
 }
 
 /**
@@ -46,33 +46,33 @@ export function append<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => Reado
  * @since 1.0.0
  */
 export function group<A>(
-   E: Eq<A>
+  E: Eq<A>
 ): {
-   (as: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<A>>;
-   (as: ReadonlyArray<A>): ReadonlyArray<NonEmptyArray<A>>;
+  (as: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<A>>;
+  (as: ReadonlyArray<A>): ReadonlyArray<NonEmptyArray<A>>;
 };
 export function group<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
-   return (as) => {
-      const len = as.length;
-      if (len === 0) {
-         return A.empty();
+  return (as) => {
+    const len = as.length;
+    if (len === 0) {
+      return A.empty();
+    }
+    const r: Array<NonEmptyArray<A>> = [];
+    let head: A = as[0];
+    let nea: [A, ...ReadonlyArray<A>] = [head];
+    for (let i = 1; i < len; i++) {
+      const x = as[i];
+      if (E.equals_(x, head)) {
+        nea.push(x);
+      } else {
+        r.push(nea);
+        head = x;
+        nea = [head];
       }
-      const r: Array<NonEmptyArray<A>> = [];
-      let head: A = as[0];
-      let nea: [A, ...ReadonlyArray<A>] = [head];
-      for (let i = 1; i < len; i++) {
-         const x = as[i];
-         if (E.equals_(x, head)) {
-            nea.push(x);
-         } else {
-            r.push(nea);
-            head = x;
-            nea = [head];
-         }
-      }
-      r.push(nea);
-      return r;
-   };
+    }
+    r.push(nea);
+    return r;
+  };
 }
 
 /**
@@ -82,9 +82,9 @@ export function group<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonE
  * @since 1.0.0
  */
 export function groupSort<A>(O: Ord<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
-   const sortO = A.sort(O);
-   const groupO = group(O);
-   return (as) => groupO(sortO(as));
+  const sortO = A.sort(O);
+  const groupO = group(O);
+  return (as) => groupO(sortO(as));
 }
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -96,19 +96,21 @@ const _hasOwnProperty = Object.prototype.hasOwnProperty;
  * @category Combinators
  * @since 1.0.0
  */
-export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => ReadonlyRecord<string, NonEmptyArray<A>> {
-   return (as) => {
-      const r: Record<string, [A, ...ReadonlyArray<A>]> = {};
-      for (const a of as) {
-         const k = f(a);
-         if (_hasOwnProperty.call(r, k)) {
-            r[k].push(a);
-         } else {
-            r[k] = [a];
-         }
+export function groupBy<A>(
+  f: (a: A) => string
+): (as: ReadonlyArray<A>) => ReadonlyRecord<string, NonEmptyArray<A>> {
+  return (as) => {
+    const r: Record<string, [A, ...ReadonlyArray<A>]> = {};
+    for (const a of as) {
+      const k = f(a);
+      if (_hasOwnProperty.call(r, k)) {
+        r[k].push(a);
+      } else {
+        r[k] = [a];
       }
-      return r;
-   };
+    }
+    return r;
+  };
 }
 
 /**
@@ -117,7 +119,7 @@ export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => Reado
  * @since 1.0.0
  */
 export function last<A>(as: NonEmptyArray<A>): A {
-   return as[as.length - 1];
+  return as[as.length - 1];
 }
 
 /**
@@ -126,7 +128,7 @@ export function last<A>(as: NonEmptyArray<A>): A {
  * @since 1.0.0
  */
 export function init<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
-   return as.slice(0, -1);
+  return as.slice(0, -1);
 }
 
 /**
@@ -134,23 +136,23 @@ export function init<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function sort<A>(O: Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<A> {
-   return (as) => A.sort(O)(as) as any;
+  return (as) => A.sort(O)(as) as any;
 }
 
 export function insertAt_<A>(as: NonEmptyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> {
-   return A.insertAt_(as, i, a) as any;
+  return A.insertAt_(as, i, a) as any;
 }
 
 export function insertAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
-   return (as) => insertAt_(as, i, a);
+  return (as) => insertAt_(as, i, a);
 }
 
 export function updateAt_<A>(as: NonEmptyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> {
-   return A.updateAt_(as, i, a) as any;
+  return A.updateAt_(as, i, a) as any;
 }
 
 export function updateAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
-   return (as) => updateAt_(as, i, a);
+  return (as) => updateAt_(as, i, a);
 }
 
 /**
@@ -159,8 +161,12 @@ export function updateAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => Option<N
  *
  * @since 1.0.0
  */
-export function modifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): Option<NonEmptyArray<A>> {
-   return A.modifyAt_(as, i, f) as any;
+export function modifyAt_<A>(
+  as: NonEmptyArray<A>,
+  i: number,
+  f: (a: A) => A
+): Option<NonEmptyArray<A>> {
+  return A.modifyAt_(as, i, f) as any;
 }
 
 /**
@@ -169,13 +175,16 @@ export function modifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): O
  *
  * @since 1.0.0
  */
-export function modifyAt<A>(i: number, f: (a: A) => A): (as: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
-   return (as) => modifyAt_(as, i, f);
+export function modifyAt<A>(
+  i: number,
+  f: (a: A) => A
+): (as: NonEmptyArray<A>) => Option<NonEmptyArray<A>> {
+  return (as) => modifyAt_(as, i, f);
 }
 
 /**
  * @since 1.0.0
  */
 export const unzip: <A, B>(
-   as: NonEmptyArray<readonly [A, B]>
+  as: NonEmptyArray<readonly [A, B]>
 ) => readonly [NonEmptyArray<A>, NonEmptyArray<B>] = A.unzip as any;

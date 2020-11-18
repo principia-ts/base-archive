@@ -8,32 +8,32 @@ import { foreachUnitPar_ } from "./foreachUnitPar";
  * For a sequential version of this method, see `foreach`.
  */
 export const foreachPar_ = <R, E, A, B>(
-   as: Iterable<A>,
-   f: (a: A) => T.Task<R, E, B>
+  as: Iterable<A>,
+  f: (a: A) => T.Task<R, E, B>
 ): T.Task<R, E, ReadonlyArray<B>> => {
-   const arr = Array.from(as);
+  const arr = Array.from(as);
 
-   return T.chain_(
-      T.total<B[]>(() => []),
-      (array) => {
-         function fn([a, n]: [A, number]) {
-            return T.chain_(
-               T.suspend(() => f(a)),
-               (b) =>
-                  T.total(() => {
-                     array[n] = b;
-                  })
-            );
-         }
-         return T.chain_(
-            foreachUnitPar_(
-               arr.map((a, n) => [a, n] as [A, number]),
-               fn
-            ),
-            () => T.total(() => array)
-         );
+  return T.chain_(
+    T.total<B[]>(() => []),
+    (array) => {
+      function fn([a, n]: [A, number]) {
+        return T.chain_(
+          T.suspend(() => f(a)),
+          (b) =>
+            T.total(() => {
+              array[n] = b;
+            })
+        );
       }
-   );
+      return T.chain_(
+        foreachUnitPar_(
+          arr.map((a, n) => [a, n] as [A, number]),
+          fn
+        ),
+        () => T.total(() => array)
+      );
+    }
+  );
 };
 
 /**
@@ -43,7 +43,7 @@ export const foreachPar_ = <R, E, A, B>(
  * For a sequential version of this method, see `foreach`.
  */
 export function foreachPar<R, E, A, B>(
-   f: (a: A) => T.Task<R, E, B>
+  f: (a: A) => T.Task<R, E, B>
 ): (as: Iterable<A>) => T.Task<R, E, ReadonlyArray<B>> {
-   return (as) => foreachPar_(as, f);
+  return (as) => foreachPar_(as, f);
 }

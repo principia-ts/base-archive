@@ -22,7 +22,7 @@ import type { Either, URI, V } from "./model";
  * @since 1.0.0
  */
 export function extend_<E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): Either<E, B> {
-   return isLeft(wa) ? wa : right(f(wa));
+  return isLeft(wa) ? wa : right(f(wa));
 }
 
 /**
@@ -34,7 +34,7 @@ export function extend_<E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): 
  * @since 1.0.0
  */
 export function extend<E, A, B>(f: (wa: Either<E, A>) => B): (wa: Either<E, A>) => Either<E, B> {
-   return (wa) => extend_(wa, f);
+  return (wa) => extend_(wa, f);
 }
 
 /**
@@ -46,7 +46,7 @@ export function extend<E, A, B>(f: (wa: Either<E, A>) => B): (wa: Either<E, A>) 
  * @since 1.0.0
  */
 export function duplicate<E, A>(wa: Either<E, A>): Either<E, Either<E, A>> {
-   return extend_(wa, identity);
+  return extend_(wa, identity);
 }
 
 /**
@@ -54,7 +54,7 @@ export function duplicate<E, A>(wa: Either<E, A>): Either<E, Either<E, A>> {
  * @since 1.0.0
  */
 export const Extend: P.Extend<[URI], V> = HKT.instance({
-   ...Functor,
-   extend_,
-   extend
+  ...Functor,
+  extend_,
+  extend
 });

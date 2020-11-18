@@ -8,10 +8,10 @@ import type { Cause } from "./model";
  * ```
  */
 export function fail<E>(value: E): Cause<E> {
-   return {
-      _tag: "Fail",
-      value
-   };
+  return {
+    _tag: "Fail",
+    value
+  };
 }
 
 /**
@@ -20,10 +20,10 @@ export function fail<E>(value: E): Cause<E> {
  * ```
  */
 export function die(value: unknown): Cause<never> {
-   return {
-      _tag: "Die",
-      value
-   };
+  return {
+    _tag: "Die",
+    value
+  };
 }
 
 /**
@@ -32,10 +32,10 @@ export function die(value: unknown): Cause<never> {
  * ```
  */
 export function interrupt(fiberId: FiberId): Cause<never> {
-   return {
-      _tag: "Interrupt",
-      fiberId
-   };
+  return {
+    _tag: "Interrupt",
+    fiberId
+  };
 }
 
 /**
@@ -44,7 +44,7 @@ export function interrupt(fiberId: FiberId): Cause<never> {
  * ```
  */
 export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
-   return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Then", left, right };
+  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Then", left, right };
 }
 
 /**
@@ -53,5 +53,5 @@ export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
  * ```
  */
 export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
-   return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Both", left, right };
+  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Both", left, right };
 }

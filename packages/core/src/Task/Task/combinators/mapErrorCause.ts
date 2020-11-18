@@ -14,8 +14,10 @@ import type { Cause } from "../../Exit/Cause/model";
  * @category Combinators
  * @since 1.0.0
  */
-export const mapErrorCause_ = <R, E, A, E1>(ef: Task<R, E, A>, f: (cause: Cause<E>) => Cause<E1>): Task<R, E1, A> =>
-   foldCauseM_(ef, (c) => halt(f(c)), pure);
+export const mapErrorCause_ = <R, E, A, E1>(
+  ef: Task<R, E, A>,
+  f: (cause: Cause<E>) => Cause<E1>
+): Task<R, E1, A> => foldCauseM_(ef, (c) => halt(f(c)), pure);
 
 /**
  * ```haskell
@@ -29,5 +31,6 @@ export const mapErrorCause_ = <R, E, A, E1>(ef: Task<R, E, A>, f: (cause: Cause<
  * @category Combinators
  * @since 1.0.0
  */
-export const mapErrorCause = <E, E1>(f: (cause: Cause<E>) => Cause<E1>) => <R, A>(ef: Task<R, E, A>): Task<R, E1, A> =>
-   mapErrorCause_(ef, f);
+export const mapErrorCause = <E, E1>(f: (cause: Cause<E>) => Cause<E1>) => <R, A>(
+  ef: Task<R, E, A>
+): Task<R, E1, A> => mapErrorCause_(ef, f);

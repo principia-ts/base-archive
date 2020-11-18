@@ -12,10 +12,13 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export const zip_: <A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>) => NonEmptyArray<readonly [A, B]> = A.zip_ as any;
+export const zip_: <A, B>(
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>
+) => NonEmptyArray<readonly [A, B]> = A.zip_ as any;
 
 export const zip: <B>(
-   fb: NonEmptyArray<B>
+  fb: NonEmptyArray<B>
 ) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<readonly [A, B]> = A.zip as any;
 
 /**
@@ -29,12 +32,12 @@ export const zip: <B>(
  * @since 1.0.0
  */
 export function pure<A>(a: A): NonEmptyArray<A> {
-   return [a];
+  return [a];
 }
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_: zip_,
-   both: zip,
-   unit
+  ...Functor,
+  both_: zip_,
+  both: zip,
+  unit
 });

@@ -16,7 +16,7 @@ export const alt_: <A>(fa: A, that: () => A) => A = identity;
 export const alt = <A>(that: () => A) => (fa: A): A => alt_(fa, that);
 
 export const Alt: P.Alt<[URI], V> = HKT.instance({
-   ...Functor,
-   alt_: alt_,
-   alt
+  ...Functor,
+  alt_: alt_,
+  alt
 });

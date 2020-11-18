@@ -9,5 +9,5 @@ import { orElse_ } from "./orElse";
  * `Task` to succeed.
  */
 export function firstSuccess<R, E, A>(fas: NonEmptyArray<Task<R, E, A>>): Task<R, E, A> {
-   return A.reduce_(NEA.tail(fas), NEA.head(fas), (b, a) => orElse_(b, () => a));
+  return A.reduce_(NEA.tail(fas), NEA.head(fas), (b, a) => orElse_(b, () => a));
 }

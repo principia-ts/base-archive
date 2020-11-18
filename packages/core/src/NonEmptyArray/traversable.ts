@@ -82,14 +82,14 @@ export const traverse: P.TraverseFn<[URI], V> = A.traverse as any;
 export const sequence: P.SequenceFn<[URI], V> = A.sequence as any;
 
 export const Traversable: P.Traversable<[URI], V> = HKT.instance({
-   ...Functor,
-   traverse_,
-   traverse,
-   sequence
+  ...Functor,
+  traverse_,
+  traverse,
+  sequence
 });
 
 export const TraversableWithIndex: P.TraversableWithIndex<[URI], V> = HKT.instance({
-   ...FunctorWithIndex,
-   traverseWithIndex_,
-   traverseWithIndex
+  ...FunctorWithIndex,
+  traverseWithIndex_,
+  traverseWithIndex
 });

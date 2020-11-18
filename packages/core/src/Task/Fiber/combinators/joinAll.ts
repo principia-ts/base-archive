@@ -8,4 +8,4 @@ import { awaitAll } from "./awaitAll";
  * a catchable error, _if_ that error does not result from interruption.
  */
 export const joinAllFibers = <E, A>(as: Iterable<Fiber<E, A>>) =>
-   T.tap_(T.chain_(awaitAll(as), T.done), () => T.foreach_(as, (f) => f.inheritRefs));
+  T.tap_(T.chain_(awaitAll(as), T.done), () => T.foreach_(as, (f) => f.inheritRefs));

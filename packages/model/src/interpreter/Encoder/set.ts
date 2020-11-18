@@ -8,8 +8,12 @@ import { implementInterpreter } from "../../HKT";
 import { applyEncoderConfig } from "./HKT";
 
 export const SetEncoder = implementInterpreter<E.URI, Alg.SetURI>()((_) => ({
-   set: (a, ord, config) => (env) =>
-      pipe(a(env), (encoder) =>
-         applyEncoderConfig(config?.config)({ encode: flow(S.toArray(ord), A.map(encoder.encode)) }, env, encoder)
+  set: (a, ord, config) => (env) =>
+    pipe(a(env), (encoder) =>
+      applyEncoderConfig(config?.config)(
+        { encode: flow(S.toArray(ord), A.map(encoder.encode)) },
+        env,
+        encoder
       )
+    )
 }));

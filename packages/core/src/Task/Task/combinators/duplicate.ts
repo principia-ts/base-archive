@@ -8,5 +8,5 @@ import { extend_ } from "./extend";
  * ```
  */
 export function duplicate<R, E, A>(wa: Task<R, E, A>): Task<R, E, Task<R, E, A>> {
-   return extend_(wa, identity);
+  return extend_(wa, identity);
 }

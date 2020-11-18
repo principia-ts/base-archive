@@ -9,4 +9,5 @@ import type { SyntheticFiber } from "../model";
  *
  * Lifts an `Task` into a `Fiber`.
  */
-export const fromTask = <E, A>(effect: T.EIO<E, A>): T.IO<SyntheticFiber<E, A>> => T.map_(T.result(effect), done);
+export const fromTask = <E, A>(effect: T.EIO<E, A>): T.IO<SyntheticFiber<E, A>> =>
+  T.map_(T.result(effect), done);

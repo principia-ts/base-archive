@@ -12,34 +12,36 @@ import { XQueue } from "./model";
  * collected.
  */
 export function takeBetween(min: number, max: number) {
-   return <RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>): T.Task<RB, EB, readonly B[]> => {
-      function takeRemaining(n: number): T.Task<RB, EB, ReadonlyArray<B>> {
-         if (n <= 0) {
-            return T.pure([]);
-         } else {
-            return T.chain_(self.take, (a) => T.map_(takeRemaining(n - 1), (_) => [a, ..._]));
-         }
-      }
-
-      if (max < min) {
-         return T.pure([]);
+  return <RA, RB, EA, EB, A, B>(
+    self: XQueue<RA, RB, EA, EB, A, B>
+  ): T.Task<RB, EB, readonly B[]> => {
+    function takeRemaining(n: number): T.Task<RB, EB, ReadonlyArray<B>> {
+      if (n <= 0) {
+        return T.pure([]);
       } else {
-         return pipe(
-            self.takeUpTo(max),
-            T.chain((bs) => {
-               const remaining = min - bs.length;
-
-               if (remaining === 1) {
-                  return T.map_(self.take, (b) => [...bs, b]);
-               } else if (remaining > 1) {
-                  return T.map_(takeRemaining(remaining - 1), (list) => [...bs, ...A.reverse(list)]);
-               } else {
-                  return T.pure(bs);
-               }
-            })
-         );
+        return T.chain_(self.take, (a) => T.map_(takeRemaining(n - 1), (_) => [a, ..._]));
       }
-   };
+    }
+
+    if (max < min) {
+      return T.pure([]);
+    } else {
+      return pipe(
+        self.takeUpTo(max),
+        T.chain((bs) => {
+          const remaining = min - bs.length;
+
+          if (remaining === 1) {
+            return T.map_(self.take, (b) => [...bs, b]);
+          } else if (remaining > 1) {
+            return T.map_(takeRemaining(remaining - 1), (list) => [...bs, ...A.reverse(list)]);
+          } else {
+            return T.pure(bs);
+          }
+        })
+      );
+    }
+  };
 }
 
 /**
@@ -48,11 +50,11 @@ export function takeBetween(min: number, max: number) {
  * collected.
  */
 export function takeBetween_<RA, RB, EA, EB, A, B>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   min: number,
-   max: number
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  min: number,
+  max: number
 ): T.Task<RB, EB, readonly B[]> {
-   return takeBetween(min, max)(self);
+  return takeBetween(min, max)(self);
 }
 
 /**
@@ -61,35 +63,40 @@ export function takeBetween_<RA, RB, EA, EB, A, B>(
  * If the queue is already shutdown, the `IO` will resume right away.
  */
 export function awaitShutdown<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return self.awaitShutdown;
+  return self.awaitShutdown;
 }
 
 /**
  * How many elements can hold in the queue
  */
 export function capacity<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return self.capacity;
+  return self.capacity;
 }
 
 /**
  * `true` if `shutdown` has been called.
  */
 export function isShutdown<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return self.isShutdown;
+  return self.isShutdown;
 }
 
 /**
  * Places one value in the queue.
  */
-export function offer<A>(a: A): <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => T.Task<RA, EA, boolean> {
-   return (self) => self.offer(a);
+export function offer<A>(
+  a: A
+): <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => T.Task<RA, EA, boolean> {
+  return (self) => self.offer(a);
 }
 
 /**
  * Places one value in the queue.
  */
-export function offer_<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>, a: A): T.Task<RA, EA, boolean> {
-   return self.offer(a);
+export function offer_<RA, RB, EA, EB, A, B>(
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  a: A
+): T.Task<RA, EA, boolean> {
+  return self.offer(a);
 }
 
 /**
@@ -110,9 +117,9 @@ export function offer_<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>,
  *
  */
 export function offerAll<A>(
-   as: Iterable<A>
+  as: Iterable<A>
 ): <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => T.Task<RA, EA, boolean> {
-   return (self) => self.offerAll(as);
+  return (self) => self.offerAll(as);
 }
 
 /**
@@ -132,8 +139,11 @@ export function offerAll<A>(
  * It places the values in the queue but if there is no room it will not enqueue them and return false.
  *
  */
-export function offerAll_<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>, as: Iterable<A>) {
-   return self.offerAll(as);
+export function offerAll_<RA, RB, EA, EB, A, B>(
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  as: Iterable<A>
+) {
+  return self.offerAll(as);
 }
 
 /**
@@ -141,7 +151,7 @@ export function offerAll_<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, 
  * Future calls to `offer*` and `take*` will be interrupted immediately.
  */
 export function shutdown<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return self.shutdown;
+  return self.shutdown;
 }
 
 /**
@@ -150,7 +160,7 @@ export function shutdown<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B
  * elements to be added to the queue.
  */
 export function size<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return self.size;
+  return self.size;
 }
 
 /**
@@ -158,7 +168,7 @@ export function size<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
  * return a computation that resumes when an item has been added to the queue.
  */
 export function take<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return self.take;
+  return self.take;
 }
 
 /**
@@ -166,23 +176,23 @@ export function take<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
  * is empty returns empty list.
  */
 export function takeAll<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return self.takeAll;
+  return self.takeAll;
 }
 
 /**
  * Takes up to max number of values in the queue.
  */
 export function takeAllUpTo(
-   n: number
+  n: number
 ): <RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) => T.Task<RB, EB, readonly B[]> {
-   return (self) => self.takeUpTo(n);
+  return (self) => self.takeUpTo(n);
 }
 
 /**
  * Takes up to max number of values in the queue.
  */
 export function takeAllUpTo_<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>, n: number) {
-   return self.takeUpTo(n);
+  return self.takeUpTo(n);
 }
 
 /**
@@ -195,12 +205,12 @@ export function takeAllUpTo_<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, 
  * to different elements.
  */
 export function mapBothM<RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
-   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
-   f: (b: B, c: C) => T.Task<R3, E3, D>
+  that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
+  f: (b: B, c: C) => T.Task<R3, E3, D>
 ): <RA, RB, EA, EB>(
-   self: XQueue<RA, RB, EA, EB, A, B>
+  self: XQueue<RA, RB, EA, EB, A, B>
 ) => XQueue<RA & RA1, RB & RB1 & R3, EA1 | EA, EB1 | EB | E3, A1, D> {
-   return (self) => mapBothM_(self, that, f);
+  return (self) => mapBothM_(self, that, f);
 }
 
 /**
@@ -213,91 +223,96 @@ export function mapBothM<RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
  * to different elements.
  */
 export function mapBothM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
-   f: (b: B, c: C) => T.Task<R3, E3, D>
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
+  f: (b: B, c: C) => T.Task<R3, E3, D>
 ): XQueue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, A1, D> {
-   return new (class extends XQueue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, A1, D> {
-      awaitShutdown: T.IO<void> = T.chain_(self.awaitShutdown, () => that.awaitShutdown);
+  return new (class extends XQueue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, A1, D> {
+    awaitShutdown: T.IO<void> = T.chain_(self.awaitShutdown, () => that.awaitShutdown);
 
-      capacity: number = Math.min(self.capacity, that.capacity);
+    capacity: number = Math.min(self.capacity, that.capacity);
 
-      isShutdown: T.IO<boolean> = self.isShutdown;
+    isShutdown: T.IO<boolean> = self.isShutdown;
 
-      offer: (a: A1) => T.Task<RA & RA1, EA1 | EA, boolean> = (a) =>
-         T.mapBothPar_(self.offer(a), that.offer(a), (x, y) => x && y);
+    offer: (a: A1) => T.Task<RA & RA1, EA1 | EA, boolean> = (a) =>
+      T.mapBothPar_(self.offer(a), that.offer(a), (x, y) => x && y);
 
-      offerAll: (as: Iterable<A1>) => T.Task<RA & RA1, EA1 | EA, boolean> = (as) =>
-         T.mapBothPar_(self.offerAll(as), that.offerAll(as), (x, y) => x && y);
+    offerAll: (as: Iterable<A1>) => T.Task<RA & RA1, EA1 | EA, boolean> = (as) =>
+      T.mapBothPar_(self.offerAll(as), that.offerAll(as), (x, y) => x && y);
 
-      shutdown: T.IO<void> = T.mapBothPar_(self.shutdown, that.shutdown, () => undefined);
+    shutdown: T.IO<void> = T.mapBothPar_(self.shutdown, that.shutdown, () => undefined);
 
-      size: T.IO<number> = T.mapBothPar_(self.size, that.size, (x, y) => Math.max(x, y));
+    size: T.IO<number> = T.mapBothPar_(self.size, that.size, (x, y) => Math.max(x, y));
 
-      take: T.Task<RB & RB1 & R3, E3 | EB | EB1, D> = T.chain_(T.bothPar_(self.take, that.take), ([b, c]) => f(b, c));
+    take: T.Task<RB & RB1 & R3, E3 | EB | EB1, D> = T.chain_(
+      T.bothPar_(self.take, that.take),
+      ([b, c]) => f(b, c)
+    );
 
-      takeAll: T.Task<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = T.chain_(
-         T.bothPar_(self.takeAll, that.takeAll),
-         ([bs, cs]) => {
-            const abs = Array.from(bs);
-            const acs = Array.from(cs);
-            const all = A.zip_(abs, acs);
+    takeAll: T.Task<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = T.chain_(
+      T.bothPar_(self.takeAll, that.takeAll),
+      ([bs, cs]) => {
+        const abs = Array.from(bs);
+        const acs = Array.from(cs);
+        const all = A.zip_(abs, acs);
 
-            return T.foreach_(all, ([b, c]) => f(b, c));
-         }
-      );
+        return T.foreach_(all, ([b, c]) => f(b, c));
+      }
+    );
 
-      takeUpTo: (n: number) => T.Task<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = (max) =>
-         T.chain_(T.bothPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
-            const abs = Array.from(bs);
-            const acs = Array.from(cs);
-            const all = A.zip_(abs, acs);
+    takeUpTo: (n: number) => T.Task<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = (max) =>
+      T.chain_(T.bothPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
+        const abs = Array.from(bs);
+        const acs = Array.from(cs);
+        const all = A.zip_(abs, acs);
 
-            return T.foreach_(all, ([b, c]) => f(b, c));
-         });
-   })();
+        return T.foreach_(all, ([b, c]) => f(b, c));
+      });
+  })();
 }
 
 /**
  * Like `bothWithM`, but uses a pure function.
  */
 export function mapBoth<RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
-   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
-   f: (b: B, c: C) => D
-): <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA & RA1, RB & RB1, EA1 | EA, EB1 | EB, A1, D> {
-   return (self) => mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
+  that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
+  f: (b: B, c: C) => D
+): <RA, RB, EA, EB>(
+  self: XQueue<RA, RB, EA, EB, A, B>
+) => XQueue<RA & RA1, RB & RB1, EA1 | EA, EB1 | EB, A1, D> {
+  return (self) => mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
 }
 
 /**
  * Like `bothWithM`, but uses a pure function.
  */
 export function mapBoth_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
-   f: (b: B, c: C) => D
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
+  f: (b: B, c: C) => D
 ): XQueue<RA & RA1, RB & RB1, EA | EA1, EB | EB1, A1, D> {
-   return mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
+  return mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
 }
 
 /**
  * Like `bothWith`, but tuples the elements instead of applying a function.
  */
 export function both<RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
-   that: XQueue<RA1, RB1, EA1, EB1, A1, C>
+  that: XQueue<RA1, RB1, EA1, EB1, A1, C>
 ): <RA, RB, EA, EB>(
-   self: XQueue<RA, RB, EA, EB, A, B>
+  self: XQueue<RA, RB, EA, EB, A, B>
 ) => XQueue<RA & RA1, RB & RB1, EA1 | EA, EB1 | EB, A1, readonly [B, C]> {
-   return (self) => mapBoth_(self, that, (b, c) => tuple(b, c));
+  return (self) => mapBoth_(self, that, (b, c) => tuple(b, c));
 }
 
 /**
  * Like `bothWith`, but tuples the elements instead of applying a function.
  */
 export function both_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   that: XQueue<RA1, RB1, EA1, EB1, A1, C>
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  that: XQueue<RA1, RB1, EA1, EB1, A1, C>
 ) {
-   return mapBoth_(self, that, (b, c) => tuple(b, c));
+  return mapBoth_(self, that, (b, c) => tuple(b, c));
 }
 
 /**
@@ -305,27 +320,31 @@ export function both_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, A>
  * specified effectual functions.
  */
 export function bimap<A, B, C, D>(
-   f: (c: C) => A,
-   g: (b: B) => D
+  f: (c: C) => A,
+  g: (b: B) => D
 ): <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA, RB, EA, EB, C, D> {
-   return (self) =>
-      bimapM_(
-         self,
-         (c: C) => T.pure(f(c)),
-         (b) => T.pure(g(b))
-      );
+  return (self) =>
+    bimapM_(
+      self,
+      (c: C) => T.pure(f(c)),
+      (b) => T.pure(g(b))
+    );
 }
 
 /**
  * Transforms elements enqueued into and dequeued from this queue with the
  * specified effectual functions.
  */
-export function bimap_<RA, RB, EA, EB, A, B, C, D>(self: XQueue<RA, RB, EA, EB, A, B>, f: (c: C) => A, g: (b: B) => D) {
-   return bimapM_(
-      self,
-      (c: C) => T.pure(f(c)),
-      (b) => T.pure(g(b))
-   );
+export function bimap_<RA, RB, EA, EB, A, B, C, D>(
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  f: (c: C) => A,
+  g: (b: B) => D
+) {
+  return bimapM_(
+    self,
+    (c: C) => T.pure(f(c)),
+    (b) => T.pure(g(b))
+  );
 }
 
 /**
@@ -333,10 +352,12 @@ export function bimap_<RA, RB, EA, EB, A, B, C, D>(self: XQueue<RA, RB, EA, EB, 
  * specified effectual functions.
  */
 export function bimapM<A, B, C, RC, EC, RD, ED, D>(
-   f: (c: C) => T.Task<RC, EC, A>,
-   g: (b: B) => T.Task<RD, ED, D>
-): <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
-   return (self) => bimapM_(self, f, g);
+  f: (c: C) => T.Task<RC, EC, A>,
+  g: (b: B) => T.Task<RD, ED, D>
+): <RA, RB, EA, EB>(
+  self: XQueue<RA, RB, EA, EB, A, B>
+) => XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
+  return (self) => bimapM_(self, f, g);
 }
 
 /**
@@ -344,107 +365,111 @@ export function bimapM<A, B, C, RC, EC, RD, ED, D>(
  * specified effectual functions.
  */
 export function bimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   f: (c: C) => T.Task<RC, EC, A>,
-   g: (b: B) => T.Task<RD, ED, D>
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  f: (c: C) => T.Task<RC, EC, A>,
+  g: (b: B) => T.Task<RD, ED, D>
 ): XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
-   return new (class extends XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
-      awaitShutdown: T.IO<void> = self.awaitShutdown;
+  return new (class extends XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
+    awaitShutdown: T.IO<void> = self.awaitShutdown;
 
-      capacity: number = self.capacity;
+    capacity: number = self.capacity;
 
-      isShutdown: T.IO<boolean> = self.isShutdown;
+    isShutdown: T.IO<boolean> = self.isShutdown;
 
-      offer: (a: C) => T.Task<RC & RA, EA | EC, boolean> = (c) => T.chain_(f(c), self.offer);
+    offer: (a: C) => T.Task<RC & RA, EA | EC, boolean> = (c) => T.chain_(f(c), self.offer);
 
-      offerAll: (as: Iterable<C>) => T.Task<RC & RA, EC | EA, boolean> = (cs) =>
-         T.chain_(T.foreach_(cs, f), self.offerAll);
+    offerAll: (as: Iterable<C>) => T.Task<RC & RA, EC | EA, boolean> = (cs) =>
+      T.chain_(T.foreach_(cs, f), self.offerAll);
 
-      shutdown: T.IO<void> = self.shutdown;
+    shutdown: T.IO<void> = self.shutdown;
 
-      size: T.IO<number> = self.size;
+    size: T.IO<number> = self.size;
 
-      take: T.Task<RD & RB, ED | EB, D> = T.chain_(self.take, g);
+    take: T.Task<RD & RB, ED | EB, D> = T.chain_(self.take, g);
 
-      takeAll: T.Task<RD & RB, ED | EB, readonly D[]> = T.chain_(self.takeAll, (a) => T.foreach_(a, g));
+    takeAll: T.Task<RD & RB, ED | EB, readonly D[]> = T.chain_(self.takeAll, (a) =>
+      T.foreach_(a, g)
+    );
 
-      takeUpTo: (n: number) => T.Task<RD & RB, ED | EB, readonly D[]> = (max) =>
-         T.chain_(self.takeUpTo(max), (bs) => T.foreach_(bs, g));
-   })();
+    takeUpTo: (n: number) => T.Task<RD & RB, ED | EB, readonly D[]> = (max) =>
+      T.chain_(self.takeUpTo(max), (bs) => T.foreach_(bs, g));
+  })();
 }
 
 /**
  * Transforms elements enqueued into this queue with a taskful function.
  */
 export function contramapM<C, RA2, EA2, A>(f: (c: C) => T.Task<RA2, EA2, A>) {
-   return <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => bimapM_(self, f, T.pure);
+  return <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => bimapM_(self, f, T.pure);
 }
 
 /**
  * Transforms elements enqueued into this queue with a pure function.
  */
 export function contramap<C, A>(
-   f: (c: C) => A
+  f: (c: C) => A
 ): <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA, RB, EA, EB, C, B> {
-   return (self) => bimapM_(self, (c: C) => T.pure(f(c)), T.pure);
+  return (self) => bimapM_(self, (c: C) => T.pure(f(c)), T.pure);
 }
 
 /**
  * Like `filterInput`, but uses a taskful function to filter the elements.
  */
 export function filterInputM<A, A1 extends A, R2, E2>(
-   f: (_: A1) => T.Task<R2, E2, boolean>
-): <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA & R2, RB, E2 | EA, EB, A1, B> {
-   return (self) => filterInputM_(self, f);
+  f: (_: A1) => T.Task<R2, E2, boolean>
+): <RA, RB, EA, EB, B>(
+  self: XQueue<RA, RB, EA, EB, A, B>
+) => XQueue<RA & R2, RB, E2 | EA, EB, A1, B> {
+  return (self) => filterInputM_(self, f);
 }
 
 /**
  * Like `filterInput`, but uses a taskful function to filter the elements.
  */
 export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   f: (_: A1) => T.Task<R2, E2, boolean>
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  f: (_: A1) => T.Task<R2, E2, boolean>
 ): XQueue<RA & R2, RB, EA | E2, EB, A1, B> {
-   return new (class extends XQueue<RA & R2, RB, EA | E2, EB, A1, B> {
-      awaitShutdown: T.IO<void> = self.awaitShutdown;
+  return new (class extends XQueue<RA & R2, RB, EA | E2, EB, A1, B> {
+    awaitShutdown: T.IO<void> = self.awaitShutdown;
 
-      capacity: number = self.capacity;
+    capacity: number = self.capacity;
 
-      isShutdown: T.IO<boolean> = self.isShutdown;
+    isShutdown: T.IO<boolean> = self.isShutdown;
 
-      offer: (a: A1) => T.Task<RA & R2, EA | E2, boolean> = (a) =>
-         T.chain_(f(a), (b) => (b ? self.offer(a) : T.pure(false)));
+    offer: (a: A1) => T.Task<RA & R2, EA | E2, boolean> = (a) =>
+      T.chain_(f(a), (b) => (b ? self.offer(a) : T.pure(false)));
 
-      offerAll: (as: Iterable<A1>) => T.Task<RA & R2, EA | E2, boolean> = (as) =>
-         pipe(
-            as,
-            T.foreach((a) =>
-               pipe(
-                  f(a),
-                  T.map((b) => (b ? O.some(a) : O.none()))
-               )
-            ),
-            T.chain((maybeAs) => {
-               const filtered = A.mapOption_(maybeAs, identity);
+    offerAll: (as: Iterable<A1>) => T.Task<RA & R2, EA | E2, boolean> = (as) =>
+      pipe(
+        as,
+        T.foreach((a) =>
+          pipe(
+            f(a),
+            T.map((b) => (b ? O.some(a) : O.none()))
+          )
+        ),
+        T.chain((maybeAs) => {
+          const filtered = A.mapOption_(maybeAs, identity);
 
-               if (A.isEmpty(filtered)) {
-                  return T.pure(false);
-               } else {
-                  return self.offerAll(filtered);
-               }
-            })
-         );
+          if (A.isEmpty(filtered)) {
+            return T.pure(false);
+          } else {
+            return self.offerAll(filtered);
+          }
+        })
+      );
 
-      shutdown: T.IO<void> = self.shutdown;
+    shutdown: T.IO<void> = self.shutdown;
 
-      size: T.IO<number> = self.size;
+    size: T.IO<number> = self.size;
 
-      take: T.Task<RB, EB, B> = self.take;
+    take: T.Task<RB, EB, B> = self.take;
 
-      takeAll: T.Task<RB, EB, readonly B[]> = self.takeAll;
+    takeAll: T.Task<RB, EB, readonly B[]> = self.takeAll;
 
-      takeUpTo: (n: number) => T.Task<RB, EB, readonly B[]> = (max) => self.takeUpTo(max);
-   })();
+    takeUpTo: (n: number) => T.Task<RB, EB, readonly B[]> = (max) => self.takeUpTo(max);
+  })();
 }
 
 /**
@@ -452,9 +477,9 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
  * pass the filter will be immediately dropped.
  */
 export function filterInput<A, A1 extends A>(
-   f: (_: A1) => boolean
+  f: (_: A1) => boolean
 ): <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA, RB, EA, EB, A1, B> {
-   return (self) => filterInputM_(self, (a) => T.pure(f(a)));
+  return (self) => filterInputM_(self, (a) => T.pure(f(a)));
 }
 
 /**
@@ -462,32 +487,33 @@ export function filterInput<A, A1 extends A>(
  * pass the filter will be immediately dropped.
  */
 export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   f: (_: A1) => boolean
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  f: (_: A1) => boolean
 ): XQueue<RA, RB, EA, EB, A1, B> {
-   return filterInputM_(self, (a) => T.pure(f(a)));
+  return filterInputM_(self, (a) => T.pure(f(a)));
 }
 
 /**
  * Transforms elements dequeued from this queue with a taskful function.
  */
 export function mapM<B, R2, E2, C>(f: (b: B) => T.Task<R2, E2, C>) {
-   return <RA, RB, EA, EB, A>(self: XQueue<RA, RB, EA, EB, A, B>) => bimapM_(self, (a: A) => T.pure(a), f);
+  return <RA, RB, EA, EB, A>(self: XQueue<RA, RB, EA, EB, A, B>) =>
+    bimapM_(self, (a: A) => T.pure(a), f);
 }
 
 /**
  * Transforms elements dequeued from this queue with a taskful function.
  */
 export function mapM_<RA, RB, EA, EB, A, B, R2, E2, C>(
-   self: XQueue<RA, RB, EA, EB, A, B>,
-   f: (b: B) => T.Task<R2, E2, C>
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  f: (b: B) => T.Task<R2, E2, C>
 ): XQueue<RA, R2 & RB, EA, EB | E2, A, C> {
-   return bimapM_(self, (a: A) => T.pure(a), f);
+  return bimapM_(self, (a: A) => T.pure(a), f);
 }
 
 /**
  * Take the head option of values in the queue.
  */
 export function poll<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-   return T.map_(self.takeUpTo(1), A.head);
+  return T.map_(self.takeUpTo(1), A.head);
 }

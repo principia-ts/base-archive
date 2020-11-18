@@ -5,18 +5,21 @@ import type { Task } from "../../Task/model";
 export type Decision<R, I, O> = Done<O> | Continue<R, I, O>;
 
 export interface Continue<R, I, O> {
-   readonly _tag: "Continue";
-   readonly out: O;
-   readonly interval: number;
-   readonly next: StepFunction<R, I, O>;
+  readonly _tag: "Continue";
+  readonly out: O;
+  readonly interval: number;
+  readonly next: StepFunction<R, I, O>;
 }
 
 export interface Done<O> {
-   readonly _tag: "Done";
-   readonly out: O;
+  readonly _tag: "Done";
+  readonly out: O;
 }
 
-export type StepFunction<R, I, O> = (interval: number, input: I) => Task<R, never, Decision<R, I, O>>;
+export type StepFunction<R, I, O> = (
+  interval: number,
+  input: I
+) => Task<R, never, Decision<R, I, O>>;
 
 export const URI = "Decision";
 export type URI = typeof URI;

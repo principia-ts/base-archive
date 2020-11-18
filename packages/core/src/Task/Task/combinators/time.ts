@@ -12,23 +12,23 @@ import { summarized_ } from "./summarized";
  * A more powerful variation of `timed` that allows specifying the clock.
  */
 export function timedWith_<R, E, A, R1, E1>(ma: Task<R, E, A>, msTime: Task<R1, E1, number>) {
-   return summarized_(ma, msTime, (start, end) => end - start);
+  return summarized_(ma, msTime, (start, end) => end - start);
 }
 
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
  */
 export function timedWith<R1, E1>(
-   msTime: Task<R1, E1, number>
+  msTime: Task<R1, E1, number>
 ): <R, E, A>(ma: Task<R, E, A>) => Task<R & R1, E1 | E, [number, A]> {
-   return (ma) => timedWith_(ma, msTime);
+  return (ma) => timedWith_(ma, msTime);
 }
 
 /**
  * Returns a new effect that executes this one and times the execution.
  */
 export function timed<R, E, A>(ma: Task<R, E, A>) {
-   return timedWith_(ma, currentTime);
+  return timedWith_(ma, currentTime);
 }
 
 /**
@@ -41,22 +41,22 @@ export function timed<R, E, A>(ma: Task<R, E, A>) {
  * will be safely interrupted
  */
 export function timeoutTo_<R, E, A, B, B1>(
-   ma: Task<R, E, A>,
-   d: number,
-   b: B,
-   f: (a: A) => B1
+  ma: Task<R, E, A>,
+  d: number,
+  b: B,
+  f: (a: A) => B1
 ): Task<R & HasClock, E, B | B1> {
-   return pipe(
-      ma,
-      map(f),
-      raceFirst(
-         pipe(
-            sleep(d),
-            makeInterruptible,
-            as(() => b)
-         )
+  return pipe(
+    ma,
+    map(f),
+    raceFirst(
+      pipe(
+        sleep(d),
+        makeInterruptible,
+        as(() => b)
       )
-   );
+    )
+  );
 }
 
 /**
@@ -69,7 +69,7 @@ export function timeoutTo_<R, E, A, B, B1>(
  * will be safely interrupted
  */
 export function timeoutTo<A, B, B1>(d: number, b: B, f: (a: A) => B1) {
-   return <R, E>(ma: Task<R, E, A>) => timeoutTo_(ma, d, b, f);
+  return <R, E>(ma: Task<R, E, A>) => timeoutTo_(ma, d, b, f);
 }
 
 /**
@@ -89,7 +89,7 @@ export function timeoutTo<A, B, B1>(d: number, b: B, f: (a: A) => B1) {
  * effect has been successfully interrupted.
  */
 export function timeout_<R, E, A>(ma: Task<R, E, A>, d: number) {
-   return timeoutTo_(ma, d, O.none(), O.some);
+  return timeoutTo_(ma, d, O.none(), O.some);
 }
 
 /**
@@ -109,22 +109,26 @@ export function timeout_<R, E, A>(ma: Task<R, E, A>, d: number) {
  * effect has been successfully interrupted.
  */
 export function timeout(d: number) {
-   return <R, E, A>(ma: Task<R, E, A>) => timeout_(ma, d);
+  return <R, E, A>(ma: Task<R, E, A>) => timeout_(ma, d);
 }
 
 /**
  * The same as `timeout`, but instead of producing a `None` in the event
  * of timeout, it will produce the specified error.
  */
-export function timeoutFail_<R, E, A, E1>(ma: Task<R, E, A>, d: number, e: () => E1): Task<R & HasClock, E | E1, A> {
-   return flatten(
-      timeoutTo_(
-         ma,
-         d,
-         suspend(() => fail(e())),
-         pure
-      )
-   );
+export function timeoutFail_<R, E, A, E1>(
+  ma: Task<R, E, A>,
+  d: number,
+  e: () => E1
+): Task<R & HasClock, E | E1, A> {
+  return flatten(
+    timeoutTo_(
+      ma,
+      d,
+      suspend(() => fail(e())),
+      pure
+    )
+  );
 }
 
 /**
@@ -132,5 +136,5 @@ export function timeoutFail_<R, E, A, E1>(ma: Task<R, E, A>, d: number, e: () =>
  * of timeout, it will produce the specified error.
  */
 export function timeoutFail<E1>(d: number, e: () => E1) {
-   return <R, E, A>(ma: Task<R, E, A>) => timeoutFail_(ma, d, e);
+  return <R, E, A>(ma: Task<R, E, A>) => timeoutFail_(ma, d, e);
 }

@@ -8,5 +8,5 @@ import type { Async } from "./model";
  */
 
 export function unit(): Async<unknown, never, void> {
-   return succeed(undefined);
+  return succeed(undefined);
 }

@@ -22,7 +22,7 @@ export interface IO<A> extends XPure<unknown, never, unknown, never, A> {}
 export type InferA<T> = [T] extends [IO<infer A>] ? A : never;
 
 declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: IO<A>;
-   }
+  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: IO<A>;
+  }
 }

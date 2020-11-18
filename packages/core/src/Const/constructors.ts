@@ -8,5 +8,5 @@ import type { Const } from "./model";
  */
 
 export function make<E, A = never>(e: E): Const<E, A> {
-   return unsafeCoerce(e);
+  return unsafeCoerce(e);
 }

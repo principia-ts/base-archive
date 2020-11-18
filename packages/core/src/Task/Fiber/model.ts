@@ -18,15 +18,15 @@ export type V = HKT.V<"E", "+">;
  * InterruptStatus tracks interruptability of the current stack region
  */
 export class InterruptStatus {
-   constructor(readonly isInterruptible: boolean) {}
+  constructor(readonly isInterruptible: boolean) {}
 
-   get isUninteruptible(): boolean {
-      return !this.isInterruptible;
-   }
+  get isUninteruptible(): boolean {
+    return !this.isInterruptible;
+  }
 
-   get toBoolean(): boolean {
-      return this.isInterruptible;
-   }
+  get toBoolean(): boolean {
+    return this.isInterruptible;
+  }
 }
 
 export const interruptible = new InterruptStatus(true);
@@ -34,20 +34,20 @@ export const interruptible = new InterruptStatus(true);
 export const uninterruptible = new InterruptStatus(false);
 
 export function interruptStatus(b: boolean): InterruptStatus {
-   return b ? interruptible : uninterruptible;
+  return b ? interruptible : uninterruptible;
 }
 
 /**
  * A record containing information about a `Fiber`.
  */
 export class FiberDescriptor {
-   constructor(
-      readonly id: FiberId,
-      readonly status: FiberStatus,
-      readonly interruptors: ReadonlySet<FiberId>,
-      readonly interruptStatus: InterruptStatus,
-      readonly scope: Scope<Exit<any, any>>
-   ) {}
+  constructor(
+    readonly id: FiberId,
+    readonly status: FiberStatus,
+    readonly interruptors: ReadonlySet<FiberId>,
+    readonly interruptStatus: InterruptStatus,
+    readonly scope: Scope<Exit<any, any>>
+  ) {}
 }
 
 /**
@@ -62,49 +62,49 @@ export class FiberDescriptor {
 export type Fiber<E, A> = RuntimeFiber<E, A> | SyntheticFiber<E, A>;
 
 export interface CommonFiber<E, A> {
-   /**
-    * Awaits the fiber, which suspends the awaiting fiber until the result of the
-    * fiber has been determined.
-    */
-   readonly await: IO<Exit<E, A>>;
-   /**
-    * Gets the value of the fiber ref for this fiber, or the initial value of
-    * the fiber ref, if the fiber is not storing the ref.
-    */
-   readonly getRef: <K>(fiberRef: FiberRef<K>) => IO<K>;
-   /**
-    * Inherits values from all {@link FiberRef} instances into current fiber.
-    * This will resume immediately.
-    */
-   readonly inheritRefs: IO<void>;
-   /**
-    * Interrupts the fiber as if interrupted from the specified fiber. If the
-    * fiber has already exited, the returned effect will resume immediately.
-    * Otherwise, the effect will resume when the fiber exits.
-    */
-   readonly interruptAs: (fiberId: FiberId) => IO<Exit<E, A>>;
-   /**
-    * Tentatively observes the fiber, but returns immediately if it is not already done.
-    */
-   readonly poll: IO<Option<Exit<E, A>>>;
+  /**
+   * Awaits the fiber, which suspends the awaiting fiber until the result of the
+   * fiber has been determined.
+   */
+  readonly await: IO<Exit<E, A>>;
+  /**
+   * Gets the value of the fiber ref for this fiber, or the initial value of
+   * the fiber ref, if the fiber is not storing the ref.
+   */
+  readonly getRef: <K>(fiberRef: FiberRef<K>) => IO<K>;
+  /**
+   * Inherits values from all {@link FiberRef} instances into current fiber.
+   * This will resume immediately.
+   */
+  readonly inheritRefs: IO<void>;
+  /**
+   * Interrupts the fiber as if interrupted from the specified fiber. If the
+   * fiber has already exited, the returned effect will resume immediately.
+   * Otherwise, the effect will resume when the fiber exits.
+   */
+  readonly interruptAs: (fiberId: FiberId) => IO<Exit<E, A>>;
+  /**
+   * Tentatively observes the fiber, but returns immediately if it is not already done.
+   */
+  readonly poll: IO<Option<Exit<E, A>>>;
 }
 
 export interface RuntimeFiber<E, A> extends CommonFiber<E, A> {
-   _tag: "RuntimeFiber";
-   /**
-    * The identity of the fiber.
-    */
-   readonly id: FiberId;
+  _tag: "RuntimeFiber";
+  /**
+   * The identity of the fiber.
+   */
+  readonly id: FiberId;
 
-   readonly scope: Scope<Exit<E, A>>;
-   /**
-    * The status of the fiber.
-    */
-   readonly status: IO<FiberStatus>;
+  readonly scope: Scope<Exit<E, A>>;
+  /**
+   * The status of the fiber.
+   */
+  readonly status: IO<FiberStatus>;
 }
 
 export interface SyntheticFiber<E, A> extends CommonFiber<E, A> {
-   _tag: "SyntheticFiber";
+  _tag: "SyntheticFiber";
 }
 
 /**
@@ -115,5 +115,5 @@ export interface SyntheticFiber<E, A> extends CommonFiber<E, A> {
  * A type helper for building a Synthetic Fiber
  */
 export function makeSynthetic<E, A>(_: SyntheticFiber<E, A>): Fiber<E, A> {
-   return _;
+  return _;
 }

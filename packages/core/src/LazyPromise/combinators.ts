@@ -21,11 +21,11 @@ import { chain } from "./monad";
  * @since 1.0.0
  */
 export const delay_ = <A>(ma: LazyPromise<A>, ms: number): LazyPromise<A> => () =>
-   new Promise((resolve) => {
-      setTimeout(() => {
-         ma().then(resolve);
-      }, ms);
-   });
+  new Promise((resolve) => {
+    setTimeout(() => {
+      ma().then(resolve);
+    }, ms);
+  });
 
 /**
  * ```haskell
@@ -49,9 +49,9 @@ export const delay = (ms: number) => <A>(ma: LazyPromise<A>): LazyPromise<A> => 
  * @category Combinators
  * @since 1.0.0
  */
-export const fromIOK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, IO<B>>): FunctionN<A, LazyPromise<B>> => (
-   ...a
-) => fromIO(f(...a));
+export const fromIOK = <A extends ReadonlyArray<unknown>, B>(
+  f: FunctionN<A, IO<B>>
+): FunctionN<A, LazyPromise<B>> => (...a) => fromIO(f(...a));
 
 /**
  * ```haskell
@@ -62,4 +62,5 @@ export const fromIOK = <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, IO<
  * @category Combinators
  * @since 1.0.0
  */
-export const chainIOK = <A, B>(f: (a: A) => IO<B>): ((ma: LazyPromise<A>) => LazyPromise<B>) => chain(fromIOK(f));
+export const chainIOK = <A, B>(f: (a: A) => IO<B>): ((ma: LazyPromise<A>) => LazyPromise<B>) =>
+  chain(fromIOK(f));

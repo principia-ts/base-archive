@@ -10,14 +10,14 @@ import type { URI, V } from "./model";
  */
 
 export function map_<A, B>(fa: A, f: (a: A) => B) {
-   return f(fa);
+  return f(fa);
 }
 
 export function map<A, B>(f: (a: A) => B): (fa: A) => B {
-   return (fa) => f(fa);
+  return (fa) => f(fa);
 }
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map_: map_,
-   map
+  map_: map_,
+  map
 });

@@ -14,5 +14,5 @@ import type { Const } from "./model";
  * @since 1.0.0
  */
 export function getSemigroup<E, A>(S: Semigroup<E>): Semigroup<Const<E, A>> {
-   return identity(S) as any;
+  return identity(S) as any;
 }

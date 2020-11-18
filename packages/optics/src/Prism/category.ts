@@ -19,10 +19,10 @@ import type { Prism, URI, V } from "./model";
  * @since 1.0.0
  */
 export function compose_<S, A, B>(sa: Prism<S, A>, ab: Prism<A, B>): Prism<S, B> {
-   return {
-      getOption: flow(sa.getOption, O.chain(ab.getOption)),
-      reverseGet: flow(ab.reverseGet, sa.reverseGet)
-   };
+  return {
+    getOption: flow(sa.getOption, O.chain(ab.getOption)),
+    reverseGet: flow(ab.reverseGet, sa.reverseGet)
+  };
 }
 
 /**
@@ -32,7 +32,7 @@ export function compose_<S, A, B>(sa: Prism<S, A>, ab: Prism<A, B>): Prism<S, B>
  * @since 1.0.0
  */
 export function compose<A, B>(ab: Prism<A, B>): <S>(sa: Prism<S, A>) => Prism<S, B> {
-   return (sa) => compose_(sa, ab);
+  return (sa) => compose_(sa, ab);
 }
 
 /**
@@ -40,7 +40,7 @@ export function compose<A, B>(ab: Prism<A, B>): <S>(sa: Prism<S, A>) => Prism<S,
  * @since 1.0.0
  */
 export const Category: TC.Category<[URI], V> = HKT.instance({
-   compose,
-   compose_,
-   id
+  compose,
+  compose_,
+  id
 });

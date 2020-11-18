@@ -11,17 +11,17 @@ import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
 export const SetDecoder = implementInterpreter<D.URI, Alg.SetURI>()((_) => ({
-   set: (a, O, config) => (env) =>
-      pipe(a(env), (decoder) =>
-         applyDecoderConfig(config?.config)(
-            pipe(
-               D.UnknownArray(),
-               D.mapLeftWithInput((i, e) => FS.combine(e, D.error(i, "Set", extractInfo(config)))),
-               D.parse(flow(A.traverse(M)(decoder.decode))),
-               D.map(S.fromArray(O))
-            ),
-            env,
-            decoder
-         )
+  set: (a, O, config) => (env) =>
+    pipe(a(env), (decoder) =>
+      applyDecoderConfig(config?.config)(
+        pipe(
+          D.UnknownArray(),
+          D.mapLeftWithInput((i, e) => FS.combine(e, D.error(i, "Set", extractInfo(config)))),
+          D.parse(flow(A.traverse(M)(decoder.decode))),
+          D.map(S.fromArray(O))
+        ),
+        env,
+        decoder
       )
+    )
 }));

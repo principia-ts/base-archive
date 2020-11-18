@@ -23,7 +23,7 @@ import type { Either, URI, V } from "./model";
  * @since 1.0.0
  */
 export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
-   return isLeft(pab) ? right(pab.left) : left(pab.right);
+  return isLeft(pab) ? right(pab.left) : left(pab.right);
 }
 
 /**
@@ -36,8 +36,12 @@ export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
  * @category Bifunctor
  * @since 1.0.0
  */
-export function bimap_<E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) => B): Either<G, B> {
-   return isLeft(pab) ? left(f(pab.left)) : right(g(pab.right));
+export function bimap_<E, A, G, B>(
+  pab: Either<E, A>,
+  f: (e: E) => G,
+  g: (a: A) => B
+): Either<G, B> {
+  return isLeft(pab) ? left(f(pab.left)) : right(g(pab.right));
 }
 
 /**
@@ -50,8 +54,11 @@ export function bimap_<E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) 
  * @category Bifunctor
  * @since 1.0.0
  */
-export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Either<E, A>) => Either<G, B> {
-   return (pab) => bimap_(pab, f, g);
+export function bimap<E, A, G, B>(
+  f: (e: E) => G,
+  g: (a: A) => B
+): (pab: Either<E, A>) => Either<G, B> {
+  return (pab) => bimap_(pab, f, g);
 }
 
 /**
@@ -65,7 +72,7 @@ export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Either<
  * @since 1.0.0
  */
 export function mapLeft_<E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> {
-   return isLeft(pab) ? left(f(pab.left)) : pab;
+  return isLeft(pab) ? left(f(pab.left)) : pab;
 }
 
 /**
@@ -79,7 +86,7 @@ export function mapLeft_<E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, 
  * @since 1.0.0
  */
 export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<G, A> {
-   return (pab) => mapLeft_(pab, f);
+  return (pab) => mapLeft_(pab, f);
 }
 
 /**
@@ -87,9 +94,9 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<
  * @since 1.0.0
  */
 export const Bifunctor: P.Bifunctor<[URI], V> = HKT.instance({
-   ...Functor,
-   bimap_,
-   bimap,
-   mapLeft_,
-   mapLeft
+  ...Functor,
+  bimap_,
+  bimap,
+  mapLeft_,
+  mapLeft
 });

@@ -24,28 +24,28 @@ import { uninterruptibleMask } from "./interrupt";
  * @since 1.0.0
  */
 export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
-   acquire: Task<R, E, A>,
-   use: (a: A) => Task<R1, E1, A1>,
-   release: (a: A, e: Exit<E1, A1>) => Task<R2, E2, any>
+  acquire: Task<R, E, A>,
+  use: (a: A) => Task<R1, E1, A1>,
+  release: (a: A, e: Exit<E1, A1>) => Task<R2, E2, any>
 ): Task<R & R1 & R2, E | E1 | E2, A1> {
-   return uninterruptibleMask(({ restore }) =>
-      chain_(acquire, (a) =>
-         chain_(result(restore(use(a))), (e) =>
-            foldCauseM_(
-               release(a, e),
-               (cause2) =>
-                  halt(
-                     Ex.fold_(
-                        e,
-                        (_) => C.then(_, cause2),
-                        (_) => cause2
-                     )
-                  ),
-               (_) => done(e)
-            )
-         )
+  return uninterruptibleMask(({ restore }) =>
+    chain_(acquire, (a) =>
+      chain_(result(restore(use(a))), (e) =>
+        foldCauseM_(
+          release(a, e),
+          (cause2) =>
+            halt(
+              Ex.fold_(
+                e,
+                (_) => C.then(_, cause2),
+                (_) => cause2
+              )
+            ),
+          (_) => done(e)
+        )
       )
-   );
+    )
+  );
 }
 
 /**
@@ -66,10 +66,10 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
  * @since 1.0.0
  */
 export function bracketExit<A, R1, E1, B, R2, E2, C>(
-   use: (a: A) => Task<R1, E1, B>,
-   release: (a: A, e: Exit<E1, B>) => Task<R2, E2, C>
+  use: (a: A) => Task<R1, E1, B>,
+  release: (a: A, e: Exit<E1, B>) => Task<R2, E2, C>
 ): <R, E>(acquire: Task<R, E, A>) => Task<R & R1 & R2, E1 | E2 | E, B> {
-   return (acquire) => bracketExit_(acquire, use, release);
+  return (acquire) => bracketExit_(acquire, use, release);
 }
 
 /**
@@ -104,11 +104,11 @@ export function bracketExit<A, R1, E1, B, R2, E2, C>(
  * @since 1.0.0
  */
 export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
-   acquire: Task<R, E, A>,
-   use: (a: A) => Task<R1, E1, A1>,
-   release: (a: A) => Task<R2, E2, A2>
+  acquire: Task<R, E, A>,
+  use: (a: A) => Task<R1, E1, A1>,
+  release: (a: A) => Task<R2, E2, A2>
 ): Task<R & R1 & R2, E | E1 | E2, A1> {
-   return bracketExit_(acquire, use, release);
+  return bracketExit_(acquire, use, release);
 }
 
 /**
@@ -142,10 +142,10 @@ export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
  * @since 1.0.0
  */
 export function bracket<A, R1, E1, B, R2, E2, C>(
-   use: (a: A) => Task<R1, E1, B>,
-   release: (a: A) => Task<R2, E2, C>
+  use: (a: A) => Task<R1, E1, B>,
+  release: (a: A) => Task<R2, E2, C>
 ): <R, E>(acquire: Task<R, E, A>) => Task<R & R1 & R2, E1 | E2 | E, B> {
-   return (acquire) => bracketExit_(acquire, use, release);
+  return (acquire) => bracketExit_(acquire, use, release);
 }
 
 /**
@@ -159,23 +159,25 @@ export function bracket<A, R1, E1, B, R2, E2, C>(
  * should generally not be used for releasing resources. For higher-level
  * logic built on `ensuring`, see `bracket`.
  */
-export function ensuring<R>(finalizer: Task<R, never, any>): <R1, E, A>(effect: Task<R1, E, A>) => Task<R1 & R, E, A> {
-   return (effect) =>
-      uninterruptibleMask(({ restore }) =>
-         foldCauseM_(
-            restore(effect),
-            (cause1) =>
-               foldCauseM_(
-                  finalizer,
-                  (cause2) => halt(C.then(cause1, cause2)),
-                  (_) => halt(cause1)
-               ),
-            (value) =>
-               foldCauseM_(
-                  finalizer,
-                  (cause1) => halt(cause1),
-                  (_) => pure(value)
-               )
-         )
-      );
+export function ensuring<R>(
+  finalizer: Task<R, never, any>
+): <R1, E, A>(effect: Task<R1, E, A>) => Task<R1 & R, E, A> {
+  return (effect) =>
+    uninterruptibleMask(({ restore }) =>
+      foldCauseM_(
+        restore(effect),
+        (cause1) =>
+          foldCauseM_(
+            finalizer,
+            (cause2) => halt(C.then(cause1, cause2)),
+            (_) => halt(cause1)
+          ),
+        (value) =>
+          foldCauseM_(
+            finalizer,
+            (cause1) => halt(cause1),
+            (_) => pure(value)
+          )
+      )
+    );
 }

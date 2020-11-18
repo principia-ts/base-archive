@@ -8,5 +8,5 @@ import type { Cause } from "./model";
  */
 
 export function unit(): Cause<void> {
-   return fail(undefined);
+  return fail(undefined);
 }

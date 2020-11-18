@@ -11,11 +11,11 @@ import type { Const, URI, V } from "./model";
  */
 
 export function contramap_<E, A, B>(fa: Const<E, A>, _: (b: B) => A): Const<E, B> {
-   return unsafeCoerce(fa);
+  return unsafeCoerce(fa);
 }
 
 export function contramap<A, B>(_: (b: B) => A): <E>(fa: Const<E, A>) => Const<E, B> {
-   return unsafeCoerce;
+  return unsafeCoerce;
 }
 
 /**
@@ -23,6 +23,6 @@ export function contramap<A, B>(_: (b: B) => A): <E>(fa: Const<E, A>) => Const<E
  * @since 1.0.0
  */
 export const Contravariant: P.Contravariant<[URI], V> = HKT.instance({
-   contramap,
-   contramap_
+  contramap,
+  contramap_
 });

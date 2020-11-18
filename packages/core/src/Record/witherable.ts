@@ -19,8 +19,8 @@ import { traverseWithIndex_ } from "./traversable";
  * ```
  */
 export const witherWithIndex_: P.WitherWithIndexFn_<[URI], V> = (G) => {
-   const traverseG = traverseWithIndex_(G);
-   return (wa, f) => pipe(traverseG(wa, f), G.map(compact));
+  const traverseG = traverseWithIndex_(G);
+  return (wa, f) => pipe(traverseG(wa, f), G.map(compact));
 };
 
 /**
@@ -29,7 +29,8 @@ export const witherWithIndex_: P.WitherWithIndexFn_<[URI], V> = (G) => {
  *    g -> ((k, a) -> g (w k (Option b))) -> w k a -> g (w k b)
  * ```
  */
-export const witherWithIndex: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => witherWithIndex_(G)(wa, f);
+export const witherWithIndex: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) =>
+  witherWithIndex_(G)(wa, f);
 
 /**
  * ```haskell
@@ -37,7 +38,8 @@ export const witherWithIndex: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa)
  *    g -> (w a, (a -> g (w (Option b)))) -> g (w b)
  * ```
  */
-export const wither_: P.WitherFn_<[URI], V> = (G) => (wa, f) => witherWithIndex_(G)(wa, (_, a) => f(a));
+export const wither_: P.WitherFn_<[URI], V> = (G) => (wa, f) =>
+  witherWithIndex_(G)(wa, (_, a) => f(a));
 
 /**
  * ```haskell
@@ -53,10 +55,12 @@ export const wither: P.WitherFn<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa,
  *    g -> (w k a, ((k, a) -> g (w k (Either b c)))) -> g (Separated (w k b) (w k c))
  * ```
  */
-export const wiltWithIndex_: P.WiltWithIndexFn_<[URI], V> = P.implementWiltWithIndex_<[URI], V>()(() => (G) => {
-   const traverseG = traverseWithIndex_(G);
-   return (wa, f) => pipe(traverseG(wa, f), G.map(separate));
-});
+export const wiltWithIndex_: P.WiltWithIndexFn_<[URI], V> = P.implementWiltWithIndex_<[URI], V>()(
+  () => (G) => {
+    const traverseG = traverseWithIndex_(G);
+    return (wa, f) => pipe(traverseG(wa, f), G.map(separate));
+  }
+);
 
 /**
  * ```haskell
@@ -64,7 +68,8 @@ export const wiltWithIndex_: P.WiltWithIndexFn_<[URI], V> = P.implementWiltWithI
  *    g -> ((k, a) -> g (w k (Either b c))) -> w k a -> g (Separated (w k b) (w k c))
  * ```
  */
-export const wiltWithIndex: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f);
+export const wiltWithIndex: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) =>
+  wiltWithIndex_(G)(wa, f);
 
 /**
  * ```haskell
@@ -83,15 +88,15 @@ export const wilt_: P.WiltFn_<[URI], V> = (G) => (wa, f) => wiltWithIndex_(G)(wa
 export const wilt: P.WiltFn<[URI], V> = (G) => (f) => (wa) => wilt_(G)(wa, f);
 
 export const Witherable: P.Witherable<[URI], V> = HKT.instance({
-   wither_,
-   wilt_,
-   wither,
-   wilt
+  wither_,
+  wilt_,
+  wither,
+  wilt
 });
 
 export const WitherableWithIndex: P.WitherableWithIndex<[URI], V> = HKT.instance({
-   wiltWithIndex_,
-   witherWithIndex_,
-   witherWithIndex,
-   wiltWithIndex
+  wiltWithIndex_,
+  witherWithIndex_,
+  witherWithIndex,
+  wiltWithIndex
 });

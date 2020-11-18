@@ -13,15 +13,15 @@ import type { Both, Cause, Then } from "./model";
 
 /**
  * ```haskell
- * didFail :: Cause e -> Boolean
+ * failed :: Cause e -> Boolean
  * ```
  *
  * Returns if the cause has a failure in it
  */
-export const didFail: <E>(cause: Cause<E>) => boolean = flow(
-   failureOption,
-   O.map(() => true),
-   O.getOrElse(() => false)
+export const failed: <E>(cause: Cause<E>) => boolean = flow(
+  failureOption,
+  O.map(() => true),
+  O.getOrElse(() => false)
 );
 
 /**
@@ -30,7 +30,7 @@ export const didFail: <E>(cause: Cause<E>) => boolean = flow(
  * ```
  */
 export function isThen<E>(cause: Cause<E>): cause is Then<E> {
-   return cause._tag === "Then";
+  return cause._tag === "Then";
 }
 
 /**
@@ -39,7 +39,7 @@ export function isThen<E>(cause: Cause<E>): cause is Then<E> {
  * ```
  */
 export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
-   return cause._tag === "Both";
+  return cause._tag === "Both";
 }
 
 /**
@@ -48,54 +48,54 @@ export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
  * ```
  */
 export function isEmpty<E>(cause: Cause<E>): boolean {
-   return (
-      equalsCause(cause, empty) ||
-      foldl_(cause, true as boolean, (acc, c) => {
-         switch (c._tag) {
-            case "Empty":
-               return O.some(acc);
-            case "Die":
-               return O.some(false);
-            case "Fail":
-               return O.some(false);
-            case "Interrupt":
-               return O.some(false);
-            case "Then":
-               return O.none();
-            case "Both":
-               return O.none();
-         }
-      })
-   );
+  return (
+    equalsCause(cause, empty) ||
+    foldl_(cause, true as boolean, (acc, c) => {
+      switch (c._tag) {
+        case "Empty":
+          return O.some(acc);
+        case "Die":
+          return O.some(false);
+        case "Fail":
+          return O.some(false);
+        case "Interrupt":
+          return O.some(false);
+        case "Then":
+          return O.none();
+        case "Both":
+          return O.none();
+      }
+    })
+  );
 }
 
 /**
  * ```haskell
- * isDie :: Cause e -> Boolean
+ * died :: Cause e -> Boolean
  * ```
  *
  * Returns if a cause contains a defect
  */
-export const isDie: <E>(cause: Cause<E>) => boolean = flow(
-   dieOption,
-   O.map(() => true),
-   O.getOrElse(() => false)
+export const died: <E>(cause: Cause<E>) => boolean = flow(
+  dieOption,
+  O.map(() => true),
+  O.getOrElse(() => false)
 );
 
 /**
  * ```haskell
- * isInterrupt :: Cause e -> Boolean
+ * interrupted :: Cause e -> Boolean
  * ```
  *
  * Returns if the cause contains an interruption in it
  */
-export function isInterrupt<E>(cause: Cause<E>): boolean {
-   return pipe(
-      cause,
-      interruptOption,
-      O.map(() => true),
-      O.getOrElse(() => false)
-   );
+export function interrupted<E>(cause: Cause<E>): boolean {
+  return pipe(
+    cause,
+    interruptOption,
+    O.map(() => true),
+    O.getOrElse(() => false)
+  );
 }
 
 /**
@@ -106,7 +106,7 @@ export function isInterrupt<E>(cause: Cause<E>): boolean {
  * Determines if this cause contains or is equal to the specified cause.
  */
 export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
-   return (cause) =>
-      equalsCause(that, cause) ||
-      foldl_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()));
+  return (cause) =>
+    equalsCause(that, cause) ||
+    foldl_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()));
 }

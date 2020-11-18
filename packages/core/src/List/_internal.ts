@@ -7,100 +7,100 @@ import type { List, MutableList } from "./model";
  * @internal
  */
 export abstract class ListIterator<A> implements Iterator<A> {
-   stack: any[][] | undefined;
-   indices: number[] | undefined;
-   idx: number;
-   prefixSize: number;
-   middleSize: number;
-   result: IteratorResult<A> = { done: false, value: undefined as any };
-   constructor(protected l: List<A>, direction: 1 | -1) {
-      this.idx = direction === 1 ? -1 : l.length;
-      this.prefixSize = getPrefixSize(l);
-      this.middleSize = l.length - getSuffixSize(l);
-      if (l.root !== undefined) {
-         const depth = getDepth(l);
-         this.stack = new Array(depth + 1);
-         this.indices = new Array(depth + 1);
-         let currentNode = l.root.array;
-         for (let i = depth; 0 <= i; --i) {
-            this.stack[i] = currentNode;
-            const idx = direction === 1 ? 0 : currentNode.length - 1;
-            this.indices[i] = idx;
-            currentNode = currentNode[idx].array;
-         }
-         this.indices[0] -= direction;
+  stack: any[][] | undefined;
+  indices: number[] | undefined;
+  idx: number;
+  prefixSize: number;
+  middleSize: number;
+  result: IteratorResult<A> = { done: false, value: undefined as any };
+  constructor(protected l: List<A>, direction: 1 | -1) {
+    this.idx = direction === 1 ? -1 : l.length;
+    this.prefixSize = getPrefixSize(l);
+    this.middleSize = l.length - getSuffixSize(l);
+    if (l.root !== undefined) {
+      const depth = getDepth(l);
+      this.stack = new Array(depth + 1);
+      this.indices = new Array(depth + 1);
+      let currentNode = l.root.array;
+      for (let i = depth; 0 <= i; --i) {
+        this.stack[i] = currentNode;
+        const idx = direction === 1 ? 0 : currentNode.length - 1;
+        this.indices[i] = idx;
+        currentNode = currentNode[idx].array;
       }
-   }
-   abstract next(): IteratorResult<A>;
+      this.indices[0] -= direction;
+    }
+  }
+  abstract next(): IteratorResult<A>;
 }
 
 /**
  * @internal
  */
 export class ForwardListIterator<A> extends ListIterator<A> {
-   constructor(l: List<A>) {
-      super(l, 1);
-   }
-   nextInTree(): void {
-      for (var i = 0; ++this.indices![i] === this.stack![i].length; ++i) {
-         this.indices![i] = 0;
-      }
-      for (; 0 < i; --i) {
-         this.stack![i - 1] = this.stack![i][this.indices![i]].array;
-      }
-   }
-   next(): IteratorResult<A> {
-      let newVal;
-      const idx = ++this.idx;
-      if (idx < this.prefixSize) {
-         newVal = this.l.prefix[this.prefixSize - idx - 1];
-      } else if (idx < this.middleSize) {
-         this.nextInTree();
-         newVal = this.stack![0][this.indices![0]];
-      } else if (idx < this.l.length) {
-         newVal = this.l.suffix[idx - this.middleSize];
-      } else {
-         this.result.done = true;
-      }
-      this.result.value = newVal;
-      return this.result;
-   }
+  constructor(l: List<A>) {
+    super(l, 1);
+  }
+  nextInTree(): void {
+    for (var i = 0; ++this.indices![i] === this.stack![i].length; ++i) {
+      this.indices![i] = 0;
+    }
+    for (; 0 < i; --i) {
+      this.stack![i - 1] = this.stack![i][this.indices![i]].array;
+    }
+  }
+  next(): IteratorResult<A> {
+    let newVal;
+    const idx = ++this.idx;
+    if (idx < this.prefixSize) {
+      newVal = this.l.prefix[this.prefixSize - idx - 1];
+    } else if (idx < this.middleSize) {
+      this.nextInTree();
+      newVal = this.stack![0][this.indices![0]];
+    } else if (idx < this.l.length) {
+      newVal = this.l.suffix[idx - this.middleSize];
+    } else {
+      this.result.done = true;
+    }
+    this.result.value = newVal;
+    return this.result;
+  }
 }
 
 /**
  * @internal
  */
 export class BackwardsListIterator<A> extends ListIterator<A> {
-   constructor(l: List<A>) {
-      super(l, -1);
-   }
-   prevInTree(): void {
-      for (var i = 0; this.indices![i] === 0; ++i) {
-         //
-      }
-      --this.indices![i];
-      for (; 0 < i; --i) {
-         const n = this.stack![i][this.indices![i]].array;
-         this.stack![i - 1] = n;
-         this.indices![i - 1] = n.length - 1;
-      }
-   }
-   next(): IteratorResult<A> {
-      let newVal;
-      const idx = --this.idx;
-      if (this.middleSize <= idx) {
-         newVal = this.l.suffix[idx - this.middleSize];
-      } else if (this.prefixSize <= idx) {
-         this.prevInTree();
-         newVal = this.stack![0][this.indices![0]];
-      } else if (0 <= idx) {
-         newVal = this.l.prefix[this.prefixSize - idx - 1];
-      } else {
-         this.result.done = true;
-      }
-      this.result.value = newVal;
-      return this.result;
-   }
+  constructor(l: List<A>) {
+    super(l, -1);
+  }
+  prevInTree(): void {
+    for (var i = 0; this.indices![i] === 0; ++i) {
+      //
+    }
+    --this.indices![i];
+    for (; 0 < i; --i) {
+      const n = this.stack![i][this.indices![i]].array;
+      this.stack![i - 1] = n;
+      this.indices![i - 1] = n.length - 1;
+    }
+  }
+  next(): IteratorResult<A> {
+    let newVal;
+    const idx = --this.idx;
+    if (this.middleSize <= idx) {
+      newVal = this.l.suffix[idx - this.middleSize];
+    } else if (this.prefixSize <= idx) {
+      this.prevInTree();
+      newVal = this.stack![0][this.indices![0]];
+    } else if (0 <= idx) {
+      newVal = this.l.prefix[this.prefixSize - idx - 1];
+    } else {
+      this.result.done = true;
+    }
+    this.result.value = newVal;
+    return this.result;
+  }
 }
 
 /**
@@ -125,25 +125,25 @@ export type Sizes = number[] | undefined;
 
 /** @internal */
 export class Node {
-   constructor(public sizes: Sizes, public array: any[]) {}
+  constructor(public sizes: Sizes, public array: any[]) {}
 }
 
 /**
  * @internal
  */
 export function elementEquals(a: any, b: any): boolean {
-   return a === b;
+  return a === b;
 }
 
 /**
  * @internal
  */
 export function createPath(depth: number, value: any): any {
-   let current = value;
-   for (let i = 0; i < depth; ++i) {
-      current = new Node(undefined, [current]);
-   }
-   return current;
+  let current = value;
+  for (let i = 0; i < depth; ++i) {
+    current = new Node(undefined, [current]);
+  }
+  return current;
 }
 
 // Array Helpers
@@ -152,48 +152,48 @@ export function createPath(depth: number, value: any): any {
  * @internal
  */
 export function copyArray(source: any[]): any[] {
-   const array = [];
-   for (let i = 0; i < source.length; ++i) {
-      array[i] = source[i];
-   }
-   return array;
+  const array = [];
+  for (let i = 0; i < source.length; ++i) {
+    array[i] = source[i];
+  }
+  return array;
 }
 
 /**
  * @internal
  */
 export function pushElements<A>(source: A[], target: A[], offset: number, amount: number): void {
-   for (let i = offset; i < offset + amount; ++i) {
-      target.push(source[i]);
-   }
+  for (let i = offset; i < offset + amount; ++i) {
+    target.push(source[i]);
+  }
 }
 
 /**
  * @internal
  */
 export function copyIndices(
-   source: any[],
-   sourceStart: number,
-   target: any[],
-   targetStart: number,
-   length: number
+  source: any[],
+  sourceStart: number,
+  target: any[],
+  targetStart: number,
+  length: number
 ): void {
-   for (let i = 0; i < length; ++i) {
-      target[targetStart + i] = source[sourceStart + i];
-   }
+  for (let i = 0; i < length; ++i) {
+    target[targetStart + i] = source[sourceStart + i];
+  }
 }
 
 /**
  * @internal
  */
 export function arrayPrepend<A>(value: A, array: A[]): A[] {
-   const newLength = array.length + 1;
-   const result = new Array(newLength);
-   result[0] = value;
-   for (let i = 1; i < newLength; ++i) {
-      result[i] = array[i - 1];
-   }
-   return result;
+  const newLength = array.length + 1;
+  const result = new Array(newLength);
+  result[0] = value;
+  for (let i = 1; i < newLength; ++i) {
+    result[i] = array[i - 1];
+  }
+  return result;
 }
 
 /**
@@ -201,21 +201,21 @@ export function arrayPrepend<A>(value: A, array: A[]): A[] {
  * @internal
  */
 export function reverseArray<A>(array: A[]): A[] {
-   return array.slice().reverse();
+  return array.slice().reverse();
 }
 
 /**
  * @internal
  */
 export function arrayFirst<A>(array: A[]): A {
-   return array[0];
+  return array[0];
 }
 
 /**
  * @internal
  */
 export function arrayLast<A>(array: A[]): A {
-   return array[array.length - 1];
+  return array[array.length - 1];
 }
 
 const pathResult = { path: 0, index: 0, updatedOffset: 0 };
@@ -225,40 +225,47 @@ type PathResult = typeof pathResult;
  * @internal
  */
 export function getPath(index: number, offset: number, depth: number, sizes: Sizes): PathResult {
-   let i = index;
-   if (sizes === undefined && offset !== 0) {
-      pathResult.updatedOffset = 0;
-      i = handleOffset(depth, offset, i);
-   }
-   let path = (i >> (depth * branchBits)) & mask;
-   if (sizes !== undefined) {
-      while (sizes[path] <= i) {
-         path++;
-      }
-      const traversed = path === 0 ? 0 : sizes[path - 1];
-      i -= traversed;
-      pathResult.updatedOffset = offset;
-   }
-   pathResult.path = path;
-   pathResult.index = i;
-   return pathResult;
+  let i = index;
+  if (sizes === undefined && offset !== 0) {
+    pathResult.updatedOffset = 0;
+    i = handleOffset(depth, offset, i);
+  }
+  let path = (i >> (depth * branchBits)) & mask;
+  if (sizes !== undefined) {
+    while (sizes[path] <= i) {
+      path++;
+    }
+    const traversed = path === 0 ? 0 : sizes[path - 1];
+    i -= traversed;
+    pathResult.updatedOffset = offset;
+  }
+  pathResult.path = path;
+  pathResult.index = i;
+  return pathResult;
 }
 
 /**
  * @internal
  */
-export function updateNode(node: Node, depth: number, index: number, offset: number, value: any): Node {
-   const { path, index: newIndex, updatedOffset } = getPath(index, offset, depth, node.sizes);
-   const array = copyArray(node.array);
-   array[path] = depth > 0 ? updateNode(array[path], depth - 1, newIndex, updatedOffset, value) : value;
-   return new Node(node.sizes, array);
+export function updateNode(
+  node: Node,
+  depth: number,
+  index: number,
+  offset: number,
+  value: any
+): Node {
+  const { path, index: newIndex, updatedOffset } = getPath(index, offset, depth, node.sizes);
+  const array = copyArray(node.array);
+  array[path] =
+    depth > 0 ? updateNode(array[path], depth - 1, newIndex, updatedOffset, value) : value;
+  return new Node(node.sizes, array);
 }
 
 /**
  * @internal
  */
 export function cloneNode({ sizes, array }: Node): Node {
-   return new Node(sizes === undefined ? undefined : copyArray(sizes), copyArray(array));
+  return new Node(sizes === undefined ? undefined : copyArray(sizes), copyArray(array));
 }
 
 // This array should not be mutated. Thus a dummy element is placed in
@@ -288,70 +295,70 @@ export const affixMask = 0b111111;
  * @internal
  */
 export function getSuffixSize(l: List<any>): number {
-   return l.bits & affixMask;
+  return l.bits & affixMask;
 }
 
 /**
  * @internal
  */
 export function getPrefixSize(l: List<any>): number {
-   return (l.bits >> affixBits) & affixMask;
+  return (l.bits >> affixBits) & affixMask;
 }
 
 /**
  * @internal
  */
 export function getDepth(l: List<any>): number {
-   return l.bits >> (affixBits * 2);
+  return l.bits >> (affixBits * 2);
 }
 
 /**
  * @internal
  */
 export function setPrefix(size: number, bits: number): number {
-   return (size << affixBits) | (bits & ~(affixMask << affixBits));
+  return (size << affixBits) | (bits & ~(affixMask << affixBits));
 }
 
 /**
  * @internal
  */
 export function setSuffix(size: number, bits: number): number {
-   return size | (bits & ~affixMask);
+  return size | (bits & ~affixMask);
 }
 
 /**
  * @internal
  */
 export function setDepth(depth: number, bits: number): number {
-   return (depth << (affixBits * 2)) | (bits & (affixMask | (affixMask << affixBits)));
+  return (depth << (affixBits * 2)) | (bits & (affixMask | (affixMask << affixBits)));
 }
 
 /**
  * @internal
  */
 export function incrementPrefix(bits: number): number {
-   return bits + (1 << affixBits);
+  return bits + (1 << affixBits);
 }
 
 /**
  * @internal
  */
 export function incrementSuffix(bits: number): number {
-   return bits + 1;
+  return bits + 1;
 }
 
 /**
  * @internal
  */
 export function incrementDepth(bits: number): number {
-   return bits + (1 << (affixBits * 2));
+  return bits + (1 << (affixBits * 2));
 }
 
 /**
  * @internal
  */
 export function decrementDepth(bits: number): number {
-   return bits - (1 << (affixBits * 2));
+  return bits - (1 << (affixBits * 2));
 }
 
 /**
@@ -360,107 +367,107 @@ export function decrementDepth(bits: number): number {
  * @internal
  */
 export function push<A>(value: A, l: MutableList<A>): MutableList<A> {
-   const suffixSize = getSuffixSize(l);
-   if (l.length === 0) {
-      l.bits = setPrefix(1, l.bits);
-      l.prefix = [value];
-   } else if (suffixSize < 32) {
-      l.bits = incrementSuffix(l.bits);
-      l.suffix.push(value);
-   } else if (l.root === undefined) {
-      l.root = new Node(undefined, l.suffix);
-      l.suffix = [value];
-      l.bits = setSuffix(1, l.bits);
-   } else {
-      const newNode = new Node(undefined, l.suffix);
-      const index = l.length - 1 - 32 + 1;
-      let current = l.root!;
-      let depth = getDepth(l);
-      l.suffix = [value];
-      l.bits = setSuffix(1, l.bits);
-      if (index - 1 < branchingFactor ** (depth + 1)) {
-         for (; depth >= 0; --depth) {
-            const path = (index >> (depth * branchBits)) & mask;
-            if (path < current.array.length) {
-               current = current.array[path];
-            } else {
-               current.array.push(createPath(depth - 1, newNode));
-               break;
-            }
-         }
-      } else {
-         l.bits = incrementDepth(l.bits);
-         l.root = new Node(undefined, [l.root, createPath(depth, newNode)]);
+  const suffixSize = getSuffixSize(l);
+  if (l.length === 0) {
+    l.bits = setPrefix(1, l.bits);
+    l.prefix = [value];
+  } else if (suffixSize < 32) {
+    l.bits = incrementSuffix(l.bits);
+    l.suffix.push(value);
+  } else if (l.root === undefined) {
+    l.root = new Node(undefined, l.suffix);
+    l.suffix = [value];
+    l.bits = setSuffix(1, l.bits);
+  } else {
+    const newNode = new Node(undefined, l.suffix);
+    const index = l.length - 1 - 32 + 1;
+    let current = l.root!;
+    let depth = getDepth(l);
+    l.suffix = [value];
+    l.bits = setSuffix(1, l.bits);
+    if (index - 1 < branchingFactor ** (depth + 1)) {
+      for (; depth >= 0; --depth) {
+        const path = (index >> (depth * branchBits)) & mask;
+        if (path < current.array.length) {
+          current = current.array[path];
+        } else {
+          current.array.push(createPath(depth - 1, newNode));
+          break;
+        }
       }
-   }
-   l.length++;
-   return l;
+    } else {
+      l.bits = incrementDepth(l.bits);
+      l.root = new Node(undefined, [l.root, createPath(depth, newNode)]);
+    }
+  }
+  l.length++;
+  return l;
 }
 
 /**
  * @internal
  */
 export function nodeNthDense(node: Node, depth: number, index: number): any {
-   let d = depth;
-   let current = node;
-   for (; depth >= 0; --d) {
-      current = current.array[(index >> (depth * branchBits)) & mask];
-   }
-   return current;
+  let d = depth;
+  let current = node;
+  for (; depth >= 0; --d) {
+    current = current.array[(index >> (depth * branchBits)) & mask];
+  }
+  return current;
 }
 
 /**
  * @internal
  */
 export function handleOffset(depth: number, offset: number, index: number): number {
-   let d = depth;
-   let i = index;
-   i += offset;
-   for (; depth >= 0; --d) {
-      i = index - (offset & (mask << (depth * branchBits)));
-      if (((index >> (depth * branchBits)) & mask) !== 0) {
-         break;
-      }
-   }
-   return i;
+  let d = depth;
+  let i = index;
+  i += offset;
+  for (; depth >= 0; --d) {
+    i = index - (offset & (mask << (depth * branchBits)));
+    if (((index >> (depth * branchBits)) & mask) !== 0) {
+      break;
+    }
+  }
+  return i;
 }
 
 /**
  * @internal
  */
 export function nodeNth(node: Node, depth: number, offset: number, index: number): any {
-   let path;
-   let current = node;
-   let i = index;
-   let ofs = offset;
-   let dep = depth;
-   while (current.sizes !== undefined) {
-      path = (i >> (dep * branchBits)) & mask;
-      while (current.sizes[path] <= i) {
-         path++;
-      }
-      if (path !== 0) {
-         i -= current.sizes[path - 1];
-         ofs = 0; // Offset is discarded if the left spine isn't traversed
-      }
-      dep--;
-      current = current.array[path];
-   }
-   return nodeNthDense(current, dep, ofs === 0 ? i : handleOffset(dep, ofs, i));
+  let path;
+  let current = node;
+  let i = index;
+  let ofs = offset;
+  let dep = depth;
+  while (current.sizes !== undefined) {
+    path = (i >> (dep * branchBits)) & mask;
+    while (current.sizes[path] <= i) {
+      path++;
+    }
+    if (path !== 0) {
+      i -= current.sizes[path - 1];
+      ofs = 0; // Offset is discarded if the left spine isn't traversed
+    }
+    dep--;
+    current = current.array[path];
+  }
+  return nodeNthDense(current, dep, ofs === 0 ? i : handleOffset(dep, ofs, i));
 }
 
 /**
  * @internal
  */
 export function setSizes(node: Node, height: number): Node {
-   let sum = 0;
-   const sizeTable = [];
-   for (let i = 0; i < node.array.length; ++i) {
-      sum += sizeOfSubtree(node.array[i], height - 1);
-      sizeTable[i] = sum;
-   }
-   node.sizes = sizeTable;
-   return node;
+  let sum = 0;
+  const sizeTable = [];
+  for (let i = 0; i < node.array.length; ++i) {
+    sum += sizeOfSubtree(node.array[i], height - 1);
+    sizeTable[i] = sum;
+  }
+  node.sizes = sizeTable;
+  return node;
 }
 
 /**
@@ -469,17 +476,17 @@ export function setSizes(node: Node, height: number): Node {
  * @internal
  */
 export function sizeOfSubtree(node: Node, height: number): number {
-   if (height !== 0) {
-      if (node.sizes !== undefined) {
-         return arrayLast(node.sizes);
-      } else {
-         // the node is leftwise dense so all all but the last child are full
-         const lastSize = sizeOfSubtree(arrayLast(node.array), height - 1);
-         return ((node.array.length - 1) << (height * branchBits)) + lastSize;
-      }
-   } else {
-      return node.array.length;
-   }
+  if (height !== 0) {
+    if (node.sizes !== undefined) {
+      return arrayLast(node.sizes);
+    } else {
+      // the node is leftwise dense so all all but the last child are full
+      const lastSize = sizeOfSubtree(arrayLast(node.array), height - 1);
+      return ((node.array.length - 1) << (height * branchBits)) + lastSize;
+    }
+  } else {
+    return node.array.length;
+  }
 }
 
 // prepend & append
@@ -488,15 +495,15 @@ export function sizeOfSubtree(node: Node, height: number): number {
  * @internal
  */
 export function affixPush<A>(a: A, array: A[], length: number): A[] {
-   if (array.length === length) {
-      array.push(a);
-      return array;
-   } else {
-      const newArray: A[] = [];
-      copyIndices(array, 0, newArray, 0, length);
-      newArray.push(a);
-      return newArray;
-   }
+  if (array.length === length) {
+    array.push(a);
+    return array;
+  } else {
+    const newArray: A[] = [];
+    copyIndices(array, 0, newArray, 0, length);
+    newArray.push(a);
+    return newArray;
+  }
 }
 
 /**
@@ -506,22 +513,22 @@ export function affixPush<A>(a: A, array: A[], length: number): A[] {
  * @internal
  */
 export function copyLeft(l: MutableList<any>, k: number): Node {
-   let currentNode = cloneNode(l.root!); // copy root
-   l.root = currentNode; // install copy of root
+  let currentNode = cloneNode(l.root!); // copy root
+  l.root = currentNode; // install copy of root
 
-   for (let i = 1; i < k; ++i) {
-      const index = 0; // go left
-      if (currentNode.sizes !== undefined) {
-         for (let i = 0; i < currentNode.sizes.length; ++i) {
-            currentNode.sizes[i] += 32;
-         }
+  for (let i = 1; i < k; ++i) {
+    const index = 0; // go left
+    if (currentNode.sizes !== undefined) {
+      for (let i = 0; i < currentNode.sizes.length; ++i) {
+        currentNode.sizes[i] += 32;
       }
-      const newNode = cloneNode(currentNode.array[index]);
-      // Install the copied node
-      currentNode.array[index] = newNode;
-      currentNode = newNode;
-   }
-   return currentNode;
+    }
+    const newNode = cloneNode(currentNode.array[index]);
+    // Install the copied node
+    currentNode.array[index] = newNode;
+    currentNode = newNode;
+  }
+  return currentNode;
 }
 
 /**
@@ -530,16 +537,16 @@ export function copyLeft(l: MutableList<any>, k: number): Node {
  * @internal
  */
 export function nodePrepend(value: any, size: number, node: Node): Node {
-   const array = arrayPrepend(value, node.array);
-   let sizes = undefined;
-   if (node.sizes !== undefined) {
-      sizes = new Array(node.sizes.length + 1);
-      sizes[0] = size;
-      for (let i = 0; i < node.sizes.length; ++i) {
-         sizes[i + 1] = node.sizes[i] + size;
-      }
-   }
-   return new Node(sizes, array);
+  const array = arrayPrepend(value, node.array);
+  let sizes = undefined;
+  if (node.sizes !== undefined) {
+    sizes = new Array(node.sizes.length + 1);
+    sizes[0] = size;
+    for (let i = 0; i < node.sizes.length; ++i) {
+      sizes[i + 1] = node.sizes[i] + size;
+    }
+  }
+  return new Node(sizes, array);
 }
 
 /**
@@ -549,20 +556,20 @@ export function nodePrepend(value: any, size: number, node: Node): Node {
  * @internal
  */
 export function prependTopTree<A>(l: MutableList<A>, depth: number, node: Node): number {
-   let newOffset;
-   if (l.root!.array.length < branchingFactor) {
-      // There is space in the root, there is never a size table in this
-      // case
-      newOffset = 32 ** depth - 32;
-      l.root = new Node(undefined, arrayPrepend(createPath(depth - 1, node), l.root!.array));
-   } else {
-      // We need to create a new root
-      l.bits = incrementDepth(l.bits);
-      const sizes = l.root!.sizes === undefined ? undefined : [32, arrayLast(l.root!.sizes!) + 32];
-      newOffset = depth === 0 ? 0 : 32 ** (depth + 1) - 32;
-      l.root = new Node(sizes, [createPath(depth, node), l.root]);
-   }
-   return newOffset;
+  let newOffset;
+  if (l.root!.array.length < branchingFactor) {
+    // There is space in the root, there is never a size table in this
+    // case
+    newOffset = 32 ** depth - 32;
+    l.root = new Node(undefined, arrayPrepend(createPath(depth - 1, node), l.root!.array));
+  } else {
+    // We need to create a new root
+    l.bits = incrementDepth(l.bits);
+    const sizes = l.root!.sizes === undefined ? undefined : [32, arrayLast(l.root!.sizes!) + 32];
+    newOffset = depth === 0 ? 0 : 32 ** (depth + 1) - 32;
+    l.root = new Node(sizes, [createPath(depth, node), l.root]);
+  }
+  return newOffset;
 }
 
 /**
@@ -572,81 +579,86 @@ export function prependTopTree<A>(l: MutableList<A>, depth: number, node: Node):
  * @internal
  */
 export function prependNodeToTree<A>(l: MutableList<A>, array: A[]): List<A> {
-   if (l.root === undefined) {
-      if (getSuffixSize(l) === 0) {
-         // ensure invariant 1
-         l.bits = setSuffix(array.length, l.bits);
-         l.suffix = array;
+  if (l.root === undefined) {
+    if (getSuffixSize(l) === 0) {
+      // ensure invariant 1
+      l.bits = setSuffix(array.length, l.bits);
+      l.suffix = array;
+    } else {
+      l.root = new Node(undefined, array);
+    }
+    return l;
+  } else {
+    const node = new Node(undefined, array);
+    const depth = getDepth(l);
+    let newOffset = 0;
+    if (l.root.sizes === undefined) {
+      if (l.offset !== 0) {
+        newOffset = l.offset - branchingFactor;
+        l.root = prependDense(l.root, depth, l.offset, node);
       } else {
-         l.root = new Node(undefined, array);
+        // in this case we can be sure that the is not room in the tree
+        // for the new node
+        newOffset = prependTopTree(l, depth, node);
       }
-      return l;
-   } else {
-      const node = new Node(undefined, array);
-      const depth = getDepth(l);
-      let newOffset = 0;
-      if (l.root.sizes === undefined) {
-         if (l.offset !== 0) {
-            newOffset = l.offset - branchingFactor;
-            l.root = prependDense(l.root, depth, l.offset, node);
-         } else {
-            // in this case we can be sure that the is not room in the tree
-            // for the new node
-            newOffset = prependTopTree(l, depth, node);
-         }
+    } else {
+      // represents how many nodes _with size-tables_ that we should copy.
+      let copyableCount = 0;
+      // go down while there is size tables
+      let nodesTraversed = 0;
+      let currentNode = l.root;
+      while (currentNode.sizes !== undefined && nodesTraversed < depth) {
+        ++nodesTraversed;
+        if (currentNode.array.length < 32) {
+          // there is room if offset is > 0 or if the first node does not
+          // contain as many nodes as it possibly can
+          copyableCount = nodesTraversed;
+        }
+        currentNode = currentNode.array[0];
+      }
+      if (l.offset !== 0) {
+        const copiedNode = copyLeft(l, nodesTraversed);
+        for (let i = 0; i < copiedNode.sizes!.length; ++i) {
+          copiedNode.sizes![i] += branchingFactor;
+        }
+        copiedNode.array[0] = prependDense(
+          copiedNode.array[0],
+          depth - nodesTraversed,
+          l.offset,
+          node
+        );
+        l.offset = l.offset - branchingFactor;
+        return l;
       } else {
-         // represents how many nodes _with size-tables_ that we should copy.
-         let copyableCount = 0;
-         // go down while there is size tables
-         let nodesTraversed = 0;
-         let currentNode = l.root;
-         while (currentNode.sizes !== undefined && nodesTraversed < depth) {
-            ++nodesTraversed;
-            if (currentNode.array.length < 32) {
-               // there is room if offset is > 0 or if the first node does not
-               // contain as many nodes as it possibly can
-               copyableCount = nodesTraversed;
-            }
-            currentNode = currentNode.array[0];
-         }
-         if (l.offset !== 0) {
-            const copiedNode = copyLeft(l, nodesTraversed);
-            for (let i = 0; i < copiedNode.sizes!.length; ++i) {
-               copiedNode.sizes![i] += branchingFactor;
-            }
-            copiedNode.array[0] = prependDense(copiedNode.array[0], depth - nodesTraversed, l.offset, node);
-            l.offset = l.offset - branchingFactor;
-            return l;
-         } else {
-            if (copyableCount === 0) {
-               l.offset = prependTopTree(l, depth, node);
-            } else {
-               let parent: Node | undefined;
-               let prependableNode: Node;
-               // Copy the part of the path with size tables
-               if (copyableCount > 1) {
-                  parent = copyLeft(l, copyableCount - 1);
-                  prependableNode = parent.array[0];
-               } else {
-                  parent = undefined;
-                  prependableNode = l.root!;
-               }
-               const path = createPath(depth - copyableCount, node);
-               // add offset
-               l.offset = 32 ** (depth - copyableCount + 1) - 32;
-               const prepended = nodePrepend(path, 32, prependableNode);
-               if (parent === undefined) {
-                  l.root = prepended;
-               } else {
-                  parent.array[0] = prepended;
-               }
-            }
-            return l;
-         }
+        if (copyableCount === 0) {
+          l.offset = prependTopTree(l, depth, node);
+        } else {
+          let parent: Node | undefined;
+          let prependableNode: Node;
+          // Copy the part of the path with size tables
+          if (copyableCount > 1) {
+            parent = copyLeft(l, copyableCount - 1);
+            prependableNode = parent.array[0];
+          } else {
+            parent = undefined;
+            prependableNode = l.root!;
+          }
+          const path = createPath(depth - copyableCount, node);
+          // add offset
+          l.offset = 32 ** (depth - copyableCount + 1) - 32;
+          const prepended = nodePrepend(path, 32, prependableNode);
+          if (parent === undefined) {
+            l.root = prepended;
+          } else {
+            parent.array[0] = prepended;
+          }
+        }
+        return l;
       }
-      l.offset = newOffset;
-      return l;
-   }
+    }
+    l.offset = newOffset;
+    return l;
+  }
 }
 
 /**
@@ -655,16 +667,16 @@ export function prependNodeToTree<A>(l: MutableList<A>, array: A[]): List<A> {
  * @internal
  */
 export function prependDense(node: Node, depth: number, offset: number, value: Node): Node {
-   // We're indexing down `offset - 1`. At each step `path` is either 0 or -1.
-   const curOffset = (offset >> (depth * branchBits)) & mask;
-   const path = (((offset - 1) >> (depth * branchBits)) & mask) - curOffset;
-   if (path < 0) {
-      return new Node(undefined, arrayPrepend(createPath(depth - 1, value), node.array));
-   } else {
-      const array = copyArray(node.array);
-      array[0] = prependDense(array[0], depth - 1, offset, value);
-      return new Node(undefined, array);
-   }
+  // We're indexing down `offset - 1`. At each step `path` is either 0 or -1.
+  const curOffset = (offset >> (depth * branchBits)) & mask;
+  const path = (((offset - 1) >> (depth * branchBits)) & mask) - curOffset;
+  if (path < 0) {
+    return new Node(undefined, arrayPrepend(createPath(depth - 1, value), node.array));
+  } else {
+    const array = copyArray(node.array);
+    array[0] = prependDense(array[0], depth - 1, offset, value);
+    return new Node(undefined, array);
+  }
 }
 
 /**
@@ -674,72 +686,72 @@ export function prependDense(node: Node, depth: number, offset: number, value: N
  * @internal
  */
 export function appendNodeToTree<A>(l: MutableList<A>, array: A[]): MutableList<A> {
-   if (l.root === undefined) {
-      // The old list has no content in tree, all content is in affixes
-      if (getPrefixSize(l) === 0) {
-         l.bits = setPrefix(array.length, l.bits);
-         l.prefix = reverseArray(array);
-      } else {
-         l.root = new Node(undefined, array);
-      }
-      return l;
-   }
-   const depth = getDepth(l);
-   let index = handleOffset(depth, l.offset, l.length - 1 - getPrefixSize(l));
-   let nodesToCopy = 0;
-   let nodesVisited = 0;
-   let shift = depth * 5;
-   let currentNode = l.root;
-   if (32 ** (depth + 1) < index) {
-      shift = 0; // there is no room
-      nodesVisited = depth;
-   }
-   while (shift > 5) {
-      let childIndex: number;
-      if (currentNode.sizes === undefined) {
-         // does not have size table
-         childIndex = (index >> shift) & mask;
-         index &= ~(mask << shift); // wipe just used bits
-      } else {
-         childIndex = currentNode.array.length - 1;
-         index -= currentNode.sizes[childIndex - 1];
-      }
-      nodesVisited++;
-      if (childIndex < mask) {
-         // we are not going down the far right path, this implies that
-         // there is still room in the current node
-         nodesToCopy = nodesVisited;
-      }
-      currentNode = currentNode.array[childIndex];
-      if (currentNode === undefined) {
-         // This will only happened in a pvec subtree. The index does not
-         // exist so we'll have to create a new path from here on.
-         nodesToCopy = nodesVisited;
-         shift = 5; // Set shift to break out of the while-loop
-      }
-      shift -= 5;
-   }
+  if (l.root === undefined) {
+    // The old list has no content in tree, all content is in affixes
+    if (getPrefixSize(l) === 0) {
+      l.bits = setPrefix(array.length, l.bits);
+      l.prefix = reverseArray(array);
+    } else {
+      l.root = new Node(undefined, array);
+    }
+    return l;
+  }
+  const depth = getDepth(l);
+  let index = handleOffset(depth, l.offset, l.length - 1 - getPrefixSize(l));
+  let nodesToCopy = 0;
+  let nodesVisited = 0;
+  let shift = depth * 5;
+  let currentNode = l.root;
+  if (32 ** (depth + 1) < index) {
+    shift = 0; // there is no room
+    nodesVisited = depth;
+  }
+  while (shift > 5) {
+    let childIndex: number;
+    if (currentNode.sizes === undefined) {
+      // does not have size table
+      childIndex = (index >> shift) & mask;
+      index &= ~(mask << shift); // wipe just used bits
+    } else {
+      childIndex = currentNode.array.length - 1;
+      index -= currentNode.sizes[childIndex - 1];
+    }
+    nodesVisited++;
+    if (childIndex < mask) {
+      // we are not going down the far right path, this implies that
+      // there is still room in the current node
+      nodesToCopy = nodesVisited;
+    }
+    currentNode = currentNode.array[childIndex];
+    if (currentNode === undefined) {
+      // This will only happened in a pvec subtree. The index does not
+      // exist so we'll have to create a new path from here on.
+      nodesToCopy = nodesVisited;
+      shift = 5; // Set shift to break out of the while-loop
+    }
+    shift -= 5;
+  }
 
-   if (shift !== 0) {
-      nodesVisited++;
-      if (currentNode.array.length < branchingFactor) {
-         // there is room in the found node
-         nodesToCopy = nodesVisited;
-      }
-   }
+  if (shift !== 0) {
+    nodesVisited++;
+    if (currentNode.array.length < branchingFactor) {
+      // there is room in the found node
+      nodesToCopy = nodesVisited;
+    }
+  }
 
-   const node = new Node(undefined, array);
-   if (nodesToCopy === 0) {
-      // there was no room in the found node
-      const newPath = nodesVisited === 0 ? node : createPath(nodesVisited, node);
-      const newRoot = new Node(undefined, [l.root, newPath]);
-      l.root = newRoot;
-      l.bits = incrementDepth(l.bits);
-   } else {
-      const copiedNode = copyFirstK(l, nodesToCopy, array.length);
-      copiedNode.array.push(createPath(depth - nodesToCopy, node));
-   }
-   return l;
+  const node = new Node(undefined, array);
+  if (nodesToCopy === 0) {
+    // there was no room in the found node
+    const newPath = nodesVisited === 0 ? node : createPath(nodesVisited, node);
+    const newRoot = new Node(undefined, [l.root, newPath]);
+    l.root = newRoot;
+    l.bits = incrementDepth(l.bits);
+  } else {
+    const copiedNode = copyFirstK(l, nodesToCopy, array.length);
+    copiedNode.array.push(createPath(depth - nodesToCopy, node));
+  }
+  return l;
 }
 
 /**
@@ -748,23 +760,23 @@ export function appendNodeToTree<A>(l: MutableList<A>, array: A[]): MutableList<
  * @internal
  */
 function copyFirstK(newList: MutableList<any>, k: number, leafSize: number): Node {
-   let currentNode = cloneNode(newList.root!); // copy root
-   newList.root = currentNode; // install root
+  let currentNode = cloneNode(newList.root!); // copy root
+  newList.root = currentNode; // install root
 
-   for (let i = 1; i < k; ++i) {
-      const index = currentNode.array.length - 1;
-      if (currentNode.sizes !== undefined) {
-         currentNode.sizes[index] += leafSize;
-      }
-      const newNode = cloneNode(currentNode.array[index]);
-      // Install the copied node
-      currentNode.array[index] = newNode;
-      currentNode = newNode;
-   }
-   if (currentNode.sizes !== undefined) {
-      currentNode.sizes.push(arrayLast(currentNode.sizes) + leafSize);
-   }
-   return currentNode;
+  for (let i = 1; i < k; ++i) {
+    const index = currentNode.array.length - 1;
+    if (currentNode.sizes !== undefined) {
+      currentNode.sizes[index] += leafSize;
+    }
+    const newNode = cloneNode(currentNode.array[index]);
+    // Install the copied node
+    currentNode.array[index] = newNode;
+    currentNode = newNode;
+  }
+  if (currentNode.sizes !== undefined) {
+    currentNode.sizes.push(arrayLast(currentNode.sizes) + leafSize);
+  }
+  return currentNode;
 }
 
 const eMax = 2;
@@ -773,40 +785,40 @@ const eMax = 2;
  * @internal
  */
 export function createConcatPlan(array: Node[]): number[] | undefined {
-   const sizes = [];
-   let sum = 0;
-   for (let i = 0; i < array.length; ++i) {
-      sum += array[i].array.length; // FIXME: maybe only access array once
-      sizes[i] = array[i].array.length;
-   }
-   const optimalLength = Math.ceil(sum / branchingFactor);
-   let n = array.length;
-   let i = 0;
-   if (optimalLength + eMax >= n) {
-      return undefined; // no rebalancing needed
-   }
-   while (optimalLength + eMax < n) {
-      while (sizes[i] > branchingFactor - eMax / 2) {
-         // Skip nodes that are already sufficiently balanced
-         ++i;
-      }
-      // the node at this index is too short
-      let remaining = sizes[i]; // number of elements to re-distribute
-      do {
-         const size = Math.min(remaining + sizes[i + 1], branchingFactor);
-         sizes[i] = size;
-         remaining = remaining - (size - sizes[i + 1]);
-         ++i;
-      } while (remaining > 0);
-      // Shift nodes after
-      for (let j = i; j <= n - 1; ++j) {
-         sizes[j] = sizes[j + 1];
-      }
-      --i;
-      --n;
-   }
-   sizes.length = n;
-   return sizes;
+  const sizes = [];
+  let sum = 0;
+  for (let i = 0; i < array.length; ++i) {
+    sum += array[i].array.length; // FIXME: maybe only access array once
+    sizes[i] = array[i].array.length;
+  }
+  const optimalLength = Math.ceil(sum / branchingFactor);
+  let n = array.length;
+  let i = 0;
+  if (optimalLength + eMax >= n) {
+    return undefined; // no rebalancing needed
+  }
+  while (optimalLength + eMax < n) {
+    while (sizes[i] > branchingFactor - eMax / 2) {
+      // Skip nodes that are already sufficiently balanced
+      ++i;
+    }
+    // the node at this index is too short
+    let remaining = sizes[i]; // number of elements to re-distribute
+    do {
+      const size = Math.min(remaining + sizes[i + 1], branchingFactor);
+      sizes[i] = size;
+      remaining = remaining - (size - sizes[i + 1]);
+      ++i;
+    } while (remaining > 0);
+    // Shift nodes after
+    for (let j = i; j <= n - 1; ++j) {
+      sizes[j] = sizes[j + 1];
+    }
+    --i;
+    --n;
+  }
+  sizes.length = n;
+  return sizes;
 }
 
 /**
@@ -816,60 +828,64 @@ export function createConcatPlan(array: Node[]): number[] | undefined {
  *
  * @internal
  */
-export function concatNodeMerge(left: Node | undefined, center: Node, right: Node | undefined): Node[] {
-   const array = [];
-   if (left !== undefined) {
-      for (let i = 0; i < left.array.length - 1; ++i) {
-         array.push(left.array[i]);
-      }
-   }
-   for (let i = 0; i < center.array.length; ++i) {
-      array.push(center.array[i]);
-   }
-   if (right !== undefined) {
-      for (let i = 1; i < right.array.length; ++i) {
-         array.push(right.array[i]);
-      }
-   }
-   return array;
+export function concatNodeMerge(
+  left: Node | undefined,
+  center: Node,
+  right: Node | undefined
+): Node[] {
+  const array = [];
+  if (left !== undefined) {
+    for (let i = 0; i < left.array.length - 1; ++i) {
+      array.push(left.array[i]);
+    }
+  }
+  for (let i = 0; i < center.array.length; ++i) {
+    array.push(center.array[i]);
+  }
+  if (right !== undefined) {
+    for (let i = 1; i < right.array.length; ++i) {
+      array.push(right.array[i]);
+    }
+  }
+  return array;
 }
 
 /**
  * @internal
  */
 export function executeConcatPlan(merged: Node[], plan: number[], height: number): any[] {
-   const result = [];
-   let sourceIdx = 0; // the current node we're copying from
-   let offset = 0; // elements in source already used
-   for (let toMove of plan) {
-      let source = merged[sourceIdx].array;
-      if (toMove === source.length && offset === 0) {
-         // source matches target exactly, reuse source
-         result.push(merged[sourceIdx]);
-         ++sourceIdx;
-      } else {
-         const node = new Node(undefined, []);
-         while (toMove > 0) {
-            const available = source.length - offset;
-            const itemsToCopy = Math.min(toMove, available);
-            pushElements(source, node.array, offset, itemsToCopy);
-            if (toMove >= available) {
-               ++sourceIdx;
-               source = merged[sourceIdx].array;
-               offset = 0;
-            } else {
-               offset += itemsToCopy;
-            }
-            toMove -= itemsToCopy;
-         }
-         if (height > 1) {
-            // Set sizes on children unless they are leaf nodes
-            setSizes(node, height - 1);
-         }
-         result.push(node);
+  const result = [];
+  let sourceIdx = 0; // the current node we're copying from
+  let offset = 0; // elements in source already used
+  for (let toMove of plan) {
+    let source = merged[sourceIdx].array;
+    if (toMove === source.length && offset === 0) {
+      // source matches target exactly, reuse source
+      result.push(merged[sourceIdx]);
+      ++sourceIdx;
+    } else {
+      const node = new Node(undefined, []);
+      while (toMove > 0) {
+        const available = source.length - offset;
+        const itemsToCopy = Math.min(toMove, available);
+        pushElements(source, node.array, offset, itemsToCopy);
+        if (toMove >= available) {
+          ++sourceIdx;
+          source = merged[sourceIdx].array;
+          offset = 0;
+        } else {
+          offset += itemsToCopy;
+        }
+        toMove -= itemsToCopy;
       }
-   }
-   return result;
+      if (height > 1) {
+        // Set sizes on children unless they are leaf nodes
+        setSizes(node, height - 1);
+      }
+      result.push(node);
+    }
+  }
+  return result;
 }
 
 /**
@@ -880,47 +896,59 @@ export function executeConcatPlan(merged: Node[], plan: number[], height: number
  * @internal
  */
 export function rebalance(
-   left: Node | undefined,
-   center: Node,
-   right: Node | undefined,
-   height: number,
-   top: boolean
+  left: Node | undefined,
+  center: Node,
+  right: Node | undefined,
+  height: number,
+  top: boolean
 ): Node {
-   const merged = concatNodeMerge(left, center, right);
-   const plan = createConcatPlan(merged);
-   const balanced = plan !== undefined ? executeConcatPlan(merged, plan, height) : merged;
-   if (balanced.length <= branchingFactor) {
-      if (top === true) {
-         return new Node(undefined, balanced);
-      } else {
-         // Return a single node with extra height for balancing at next
-         // level
-         return new Node(undefined, [setSizes(new Node(undefined, balanced), height)]);
-      }
-   } else {
-      return new Node(undefined, [
-         setSizes(new Node(undefined, balanced.slice(0, branchingFactor)), height),
-         setSizes(new Node(undefined, balanced.slice(branchingFactor)), height)
-      ]);
-   }
+  const merged = concatNodeMerge(left, center, right);
+  const plan = createConcatPlan(merged);
+  const balanced = plan !== undefined ? executeConcatPlan(merged, plan, height) : merged;
+  if (balanced.length <= branchingFactor) {
+    if (top === true) {
+      return new Node(undefined, balanced);
+    } else {
+      // Return a single node with extra height for balancing at next
+      // level
+      return new Node(undefined, [setSizes(new Node(undefined, balanced), height)]);
+    }
+  } else {
+    return new Node(undefined, [
+      setSizes(new Node(undefined, balanced.slice(0, branchingFactor)), height),
+      setSizes(new Node(undefined, balanced.slice(branchingFactor)), height)
+    ]);
+  }
 }
 
 /**
  * @internal
  */
-export function concatSubTree<A>(left: Node, lDepth: number, right: Node, rDepth: number, isTop: boolean): Node {
-   if (lDepth > rDepth) {
-      const c = concatSubTree(arrayLast(left.array), lDepth - 1, right, rDepth, false);
-      return rebalance(left, c, undefined, lDepth, isTop);
-   } else if (lDepth < rDepth) {
-      const c = concatSubTree(left, lDepth, arrayFirst(right.array), rDepth - 1, false);
-      return rebalance(undefined, c, right, rDepth, isTop);
-   } else if (lDepth === 0) {
-      return new Node(undefined, [left, right]);
-   } else {
-      const c = concatSubTree<A>(arrayLast(left.array), lDepth - 1, arrayFirst(right.array), rDepth - 1, false);
-      return rebalance(left, c, right, lDepth, isTop);
-   }
+export function concatSubTree<A>(
+  left: Node,
+  lDepth: number,
+  right: Node,
+  rDepth: number,
+  isTop: boolean
+): Node {
+  if (lDepth > rDepth) {
+    const c = concatSubTree(arrayLast(left.array), lDepth - 1, right, rDepth, false);
+    return rebalance(left, c, undefined, lDepth, isTop);
+  } else if (lDepth < rDepth) {
+    const c = concatSubTree(left, lDepth, arrayFirst(right.array), rDepth - 1, false);
+    return rebalance(undefined, c, right, rDepth, isTop);
+  } else if (lDepth === 0) {
+    return new Node(undefined, [left, right]);
+  } else {
+    const c = concatSubTree<A>(
+      arrayLast(left.array),
+      lDepth - 1,
+      arrayFirst(right.array),
+      rDepth - 1,
+      false
+    );
+    return rebalance(left, c, right, lDepth, isTop);
+  }
 }
 
 /**
@@ -932,45 +960,45 @@ export const concatBuffer = new Array(3);
  * @internal
  */
 export function concatAffixes<A>(left: List<A>, right: List<A>): number {
-   // TODO: Try and find a neat way to reduce the LOC here
-   let nr = 0;
-   let arrIdx = 0;
-   let i = 0;
-   let length = getSuffixSize(left);
-   concatBuffer[nr] = [];
-   for (i = 0; i < length; ++i) {
-      concatBuffer[nr][arrIdx++] = left.suffix[i];
-   }
-   length = getPrefixSize(right);
-   for (i = 0; i < length; ++i) {
-      if (arrIdx === 32) {
-         arrIdx = 0;
-         ++nr;
-         concatBuffer[nr] = [];
-      }
-      concatBuffer[nr][arrIdx++] = right.prefix[length - 1 - i];
-   }
-   length = getSuffixSize(right);
-   for (i = 0; i < length; ++i) {
-      if (arrIdx === 32) {
-         arrIdx = 0;
-         ++nr;
-         concatBuffer[nr] = [];
-      }
-      concatBuffer[nr][arrIdx++] = right.suffix[i];
-   }
-   return nr;
+  // TODO: Try and find a neat way to reduce the LOC here
+  let nr = 0;
+  let arrIdx = 0;
+  let i = 0;
+  let length = getSuffixSize(left);
+  concatBuffer[nr] = [];
+  for (i = 0; i < length; ++i) {
+    concatBuffer[nr][arrIdx++] = left.suffix[i];
+  }
+  length = getPrefixSize(right);
+  for (i = 0; i < length; ++i) {
+    if (arrIdx === 32) {
+      arrIdx = 0;
+      ++nr;
+      concatBuffer[nr] = [];
+    }
+    concatBuffer[nr][arrIdx++] = right.prefix[length - 1 - i];
+  }
+  length = getSuffixSize(right);
+  for (i = 0; i < length; ++i) {
+    if (arrIdx === 32) {
+      arrIdx = 0;
+      ++nr;
+      concatBuffer[nr] = [];
+    }
+    concatBuffer[nr][arrIdx++] = right.suffix[i];
+  }
+  return nr;
 }
 
 /**
  * @internal
  */
 export function getHeight(node: Node): number {
-   if (node.array[0] instanceof Node) {
-      return 1 + getHeight(node.array[0]);
-   } else {
-      return 0;
-   }
+  if (node.array[0] instanceof Node) {
+    return 1 + getHeight(node.array[0]);
+  } else {
+    return 0;
+  }
 }
 
 /**
@@ -983,52 +1011,53 @@ export let newAffix: any[];
 // }
 
 export function sliceNode(
-   node: Node,
-   index: number,
-   depth: number,
-   pathLeft: number,
-   pathRight: number,
-   childLeft: Node | undefined,
-   childRight: Node | undefined
+  node: Node,
+  index: number,
+  depth: number,
+  pathLeft: number,
+  pathRight: number,
+  childLeft: Node | undefined,
+  childRight: Node | undefined
 ): Node {
-   const array = node.array.slice(pathLeft, pathRight + 1);
-   if (childLeft !== undefined) {
-      array[0] = childLeft;
-   }
-   if (childRight !== undefined) {
-      array[array.length - 1] = childRight;
-   }
-   let sizes = node.sizes;
-   if (sizes !== undefined) {
-      sizes = sizes.slice(pathLeft, pathRight + 1);
-      let slicedOffLeft = pathLeft !== 0 ? node.sizes![pathLeft - 1] : 0;
-      if (childLeft !== undefined) {
-         // If the left child has been sliced into a new child we need to know
-         // how many elements have been removed from the child.
-         if (childLeft.sizes !== undefined) {
-            // If the left child has a size table we can simply look at that.
-            const oldChild: Node = node.array[pathLeft];
-            slicedOffLeft += arrayLast(oldChild.sizes!) - arrayLast(childLeft.sizes);
-         } else {
-            // If the left child does not have a size table we can
-            // calculate how many elements have been removed from it by
-            // looking at the index. Note that when we slice into a leaf
-            // the leaf is moved up as a prefix. Thus slicing, for
-            // instance, at index 20 will remove 32 elements from the
-            // child. Similarly slicing at index 50 will remove 64
-            // elements at slicing at 64 will remove 92 elements.
-            slicedOffLeft += ((index - slicedOffLeft) & ~0b011111) + 32;
-         }
+  const array = node.array.slice(pathLeft, pathRight + 1);
+  if (childLeft !== undefined) {
+    array[0] = childLeft;
+  }
+  if (childRight !== undefined) {
+    array[array.length - 1] = childRight;
+  }
+  let sizes = node.sizes;
+  if (sizes !== undefined) {
+    sizes = sizes.slice(pathLeft, pathRight + 1);
+    let slicedOffLeft = pathLeft !== 0 ? node.sizes![pathLeft - 1] : 0;
+    if (childLeft !== undefined) {
+      // If the left child has been sliced into a new child we need to know
+      // how many elements have been removed from the child.
+      if (childLeft.sizes !== undefined) {
+        // If the left child has a size table we can simply look at that.
+        const oldChild: Node = node.array[pathLeft];
+        slicedOffLeft += arrayLast(oldChild.sizes!) - arrayLast(childLeft.sizes);
+      } else {
+        // If the left child does not have a size table we can
+        // calculate how many elements have been removed from it by
+        // looking at the index. Note that when we slice into a leaf
+        // the leaf is moved up as a prefix. Thus slicing, for
+        // instance, at index 20 will remove 32 elements from the
+        // child. Similarly slicing at index 50 will remove 64
+        // elements at slicing at 64 will remove 92 elements.
+        slicedOffLeft += ((index - slicedOffLeft) & ~0b011111) + 32;
       }
-      for (let i = 0; i < sizes.length; ++i) {
-         sizes[i] -= slicedOffLeft;
-      }
-      if (childRight !== undefined) {
-         const slicedOffRight = sizeOfSubtree(node.array[pathRight], depth - 1) - sizeOfSubtree(childRight, depth - 1);
-         sizes[sizes.length - 1] -= slicedOffRight;
-      }
-   }
-   return new Node(sizes, array);
+    }
+    for (let i = 0; i < sizes.length; ++i) {
+      sizes[i] -= slicedOffLeft;
+    }
+    if (childRight !== undefined) {
+      const slicedOffRight =
+        sizeOfSubtree(node.array[pathRight], depth - 1) - sizeOfSubtree(childRight, depth - 1);
+      sizes[sizes.length - 1] -= slicedOffRight;
+    }
+  }
+  return new Node(sizes, array);
 }
 
 /**
@@ -1036,171 +1065,206 @@ export function sliceNode(
  */
 export let newOffset = 0;
 
-export function sliceLeft(tree: Node, depth: number, index: number, offset: number, top: boolean): Node | undefined {
-   let { index: newIndex, path, updatedOffset } = getPath(index, offset, depth, tree.sizes);
-   if (depth === 0) {
-      newAffix = tree.array.slice(path).reverse();
-      // This leaf node is moved up as a suffix so there is nothing here
-      // after slicing
-      return undefined;
-   } else {
-      const child = sliceLeft(tree.array[path], depth - 1, newIndex, updatedOffset, false);
-      if (child === undefined) {
-         // There is nothing in the child after slicing so we don't include it
-         ++path;
-         if (path === tree.array.length) {
-            return undefined;
-         }
+export function sliceLeft(
+  tree: Node,
+  depth: number,
+  index: number,
+  offset: number,
+  top: boolean
+): Node | undefined {
+  let { index: newIndex, path, updatedOffset } = getPath(index, offset, depth, tree.sizes);
+  if (depth === 0) {
+    newAffix = tree.array.slice(path).reverse();
+    // This leaf node is moved up as a suffix so there is nothing here
+    // after slicing
+    return undefined;
+  } else {
+    const child = sliceLeft(tree.array[path], depth - 1, newIndex, updatedOffset, false);
+    if (child === undefined) {
+      // There is nothing in the child after slicing so we don't include it
+      ++path;
+      if (path === tree.array.length) {
+        return undefined;
       }
-      // If we've sliced something away and it's not a the root, update offset
-      if (tree.sizes === undefined && top === false) {
-         newOffset |= (32 - (tree.array.length - path)) << (depth * branchBits);
-      }
-      return sliceNode(tree, index, depth, path, tree.array.length - 1, child, undefined);
-   }
+    }
+    // If we've sliced something away and it's not a the root, update offset
+    if (tree.sizes === undefined && top === false) {
+      newOffset |= (32 - (tree.array.length - path)) << (depth * branchBits);
+    }
+    return sliceNode(tree, index, depth, path, tree.array.length - 1, child, undefined);
+  }
 }
 
 /** Slice elements off of a tree from the right */
-export function sliceRight(node: Node, depth: number, index: number, offset: number): Node | undefined {
-   let { index: newIndex, path } = getPath(index, offset, depth, node.sizes);
-   if (depth === 0) {
-      newAffix = node.array.slice(0, path + 1);
-      // this leaf node is moved up as a suffix so there is nothing here
-      // after slicing
-      return undefined;
-   } else {
-      // slice the child, note that we subtract 1 then the radix lookup
-      // algorithm can find the last element that we want to include
-      // and sliceRight will do a slice that is inclusive on the index.
-      const child = sliceRight(node.array[path], depth - 1, newIndex, path === 0 ? offset : 0);
-      if (child === undefined) {
-         // there is nothing in the child after slicing so we don't include it
-         --path;
-         if (path === -1) {
-            return undefined;
-         }
+export function sliceRight(
+  node: Node,
+  depth: number,
+  index: number,
+  offset: number
+): Node | undefined {
+  let { index: newIndex, path } = getPath(index, offset, depth, node.sizes);
+  if (depth === 0) {
+    newAffix = node.array.slice(0, path + 1);
+    // this leaf node is moved up as a suffix so there is nothing here
+    // after slicing
+    return undefined;
+  } else {
+    // slice the child, note that we subtract 1 then the radix lookup
+    // algorithm can find the last element that we want to include
+    // and sliceRight will do a slice that is inclusive on the index.
+    const child = sliceRight(node.array[path], depth - 1, newIndex, path === 0 ? offset : 0);
+    if (child === undefined) {
+      // there is nothing in the child after slicing so we don't include it
+      --path;
+      if (path === -1) {
+        return undefined;
       }
-      // note that we add 1 to the path since we want the slice to be
-      // inclusive on the end index. Only at the leaf level do we want
-      // to do an exclusive slice.
-      const array = node.array.slice(0, path + 1);
+    }
+    // note that we add 1 to the path since we want the slice to be
+    // inclusive on the end index. Only at the leaf level do we want
+    // to do an exclusive slice.
+    const array = node.array.slice(0, path + 1);
+    if (child !== undefined) {
+      array[array.length - 1] = child;
+    }
+    let sizes: Sizes | undefined = node.sizes;
+    if (sizes !== undefined) {
+      sizes = sizes.slice(0, path + 1);
       if (child !== undefined) {
-         array[array.length - 1] = child;
+        const slicedOff =
+          sizeOfSubtree(node.array[path], depth - 1) - sizeOfSubtree(child, depth - 1);
+        sizes[sizes.length - 1] -= slicedOff;
       }
-      let sizes: Sizes | undefined = node.sizes;
-      if (sizes !== undefined) {
-         sizes = sizes.slice(0, path + 1);
-         if (child !== undefined) {
-            const slicedOff = sizeOfSubtree(node.array[path], depth - 1) - sizeOfSubtree(child, depth - 1);
-            sizes[sizes.length - 1] -= slicedOff;
-         }
-      }
-      return new Node(sizes, array);
-   }
+    }
+    return new Node(sizes, array);
+  }
 }
 
 export function sliceTreeList<A>(
-   from: number,
-   to: number,
-   tree: Node,
-   depth: number,
-   offset: number,
-   l: MutableList<A>
+  from: number,
+  to: number,
+  tree: Node,
+  depth: number,
+  offset: number,
+  l: MutableList<A>
 ): List<A> {
-   const sizes = tree.sizes;
-   let { index: newFrom, path: pathLeft } = getPath(from, offset, depth, sizes);
-   let { index: newTo, path: pathRight } = getPath(to, offset, depth, sizes);
-   if (depth === 0) {
-      // we are slicing a piece off a leaf node
-      l.prefix = emptyAffix;
-      l.suffix = tree.array.slice(pathLeft, pathRight + 1);
-      l.root = undefined;
-      l.bits = setSuffix(pathRight - pathLeft + 1, 0);
-      return l;
-   } else if (pathLeft === pathRight) {
-      // Both ends are located in the same subtree, this means that we
-      // can reduce the height
-      l.bits = decrementDepth(l.bits);
-      return sliceTreeList(newFrom, newTo, tree.array[pathLeft], depth - 1, pathLeft === 0 ? offset : 0, l);
-   } else {
-      const childRight = sliceRight(tree.array[pathRight], depth - 1, newTo, 0);
-      l.bits = setSuffix(newAffix.length, l.bits);
-      l.suffix = newAffix;
-      if (childRight === undefined) {
-         --pathRight;
-      }
-      newOffset = 0;
+  const sizes = tree.sizes;
+  let { index: newFrom, path: pathLeft } = getPath(from, offset, depth, sizes);
+  let { index: newTo, path: pathRight } = getPath(to, offset, depth, sizes);
+  if (depth === 0) {
+    // we are slicing a piece off a leaf node
+    l.prefix = emptyAffix;
+    l.suffix = tree.array.slice(pathLeft, pathRight + 1);
+    l.root = undefined;
+    l.bits = setSuffix(pathRight - pathLeft + 1, 0);
+    return l;
+  } else if (pathLeft === pathRight) {
+    // Both ends are located in the same subtree, this means that we
+    // can reduce the height
+    l.bits = decrementDepth(l.bits);
+    return sliceTreeList(
+      newFrom,
+      newTo,
+      tree.array[pathLeft],
+      depth - 1,
+      pathLeft === 0 ? offset : 0,
+      l
+    );
+  } else {
+    const childRight = sliceRight(tree.array[pathRight], depth - 1, newTo, 0);
+    l.bits = setSuffix(newAffix.length, l.bits);
+    l.suffix = newAffix;
+    if (childRight === undefined) {
+      --pathRight;
+    }
+    newOffset = 0;
 
-      const childLeft = sliceLeft(
-         tree.array[pathLeft],
-         depth - 1,
-         newFrom,
-         pathLeft === 0 ? offset : 0,
-         pathLeft === pathRight
-      );
-      l.offset = newOffset;
-      l.bits = setPrefix(newAffix.length, l.bits);
-      l.prefix = newAffix;
+    const childLeft = sliceLeft(
+      tree.array[pathLeft],
+      depth - 1,
+      newFrom,
+      pathLeft === 0 ? offset : 0,
+      pathLeft === pathRight
+    );
+    l.offset = newOffset;
+    l.bits = setPrefix(newAffix.length, l.bits);
+    l.prefix = newAffix;
 
-      if (childLeft === undefined) {
-         ++pathLeft;
-      }
-      if (pathLeft >= pathRight) {
-         if (pathLeft > pathRight) {
-            // This only happens when `pathLeft` originally was equal to
-            // `pathRight + 1` and `childLeft === childRight === undefined`.
-            // In this case there is no tree left.
-            l.bits = setDepth(0, l.bits);
-            l.root = undefined;
-         } else {
-            // Height can be reduced
-            l.bits = decrementDepth(l.bits);
-            const newRoot =
-               childRight !== undefined ? childRight : childLeft !== undefined ? childLeft : tree.array[pathLeft];
-            l.root = new Node(newRoot.sizes, newRoot.array); // Is this size handling good enough?
-         }
+    if (childLeft === undefined) {
+      ++pathLeft;
+    }
+    if (pathLeft >= pathRight) {
+      if (pathLeft > pathRight) {
+        // This only happens when `pathLeft` originally was equal to
+        // `pathRight + 1` and `childLeft === childRight === undefined`.
+        // In this case there is no tree left.
+        l.bits = setDepth(0, l.bits);
+        l.root = undefined;
       } else {
-         l.root = sliceNode(tree, from, depth, pathLeft, pathRight, childLeft, childRight);
+        // Height can be reduced
+        l.bits = decrementDepth(l.bits);
+        const newRoot =
+          childRight !== undefined
+            ? childRight
+            : childLeft !== undefined
+            ? childLeft
+            : tree.array[pathLeft];
+        l.root = new Node(newRoot.sizes, newRoot.array); // Is this size handling good enough?
       }
-      return l;
-   }
+    } else {
+      l.root = sliceNode(tree, from, depth, pathLeft, pathRight, childLeft, childRight);
+    }
+    return l;
+  }
 }
 
 /**
  * @internal
  */
 export function zeroOffset(): void {
-   newOffset = 0;
+  newOffset = 0;
 }
 
 export type FoldCb<Input, State> = (input: Input, state: State) => boolean;
 
-export function foldlArrayCb<A, B>(cb: FoldCb<A, B>, state: B, array: A[], from: number, to: number): boolean {
-   for (var i = from; i < to && cb(array[i], state); ++i) {
-      //
-   }
-   return i === to;
+export function foldlArrayCb<A, B>(
+  cb: FoldCb<A, B>,
+  state: B,
+  array: A[],
+  from: number,
+  to: number
+): boolean {
+  for (var i = from; i < to && cb(array[i], state); ++i) {
+    //
+  }
+  return i === to;
 }
 
-export function foldrArrayCb<A, B>(cb: FoldCb<A, B>, state: B, array: A[], from: number, to: number): boolean {
-   for (var i = from - 1; to <= i && cb(array[i], state); --i) {
-      //
-   }
-   return i === to - 1;
+export function foldrArrayCb<A, B>(
+  cb: FoldCb<A, B>,
+  state: B,
+  array: A[],
+  from: number,
+  to: number
+): boolean {
+  for (var i = from - 1; to <= i && cb(array[i], state); --i) {
+    //
+  }
+  return i === to - 1;
 }
 
 export function foldlNodeCb<A, B>(cb: FoldCb<A, B>, state: B, node: Node, depth: number): boolean {
-   const { array } = node;
-   if (depth === 0) {
-      return foldlArrayCb(cb, state, array, 0, array.length);
-   }
-   const to = array.length;
-   for (let i = 0; i < to; ++i) {
-      if (!foldlNodeCb(cb, state, array[i], depth - 1)) {
-         return false;
-      }
-   }
-   return true;
+  const { array } = node;
+  if (depth === 0) {
+    return foldlArrayCb(cb, state, array, 0, array.length);
+  }
+  const to = array.length;
+  for (let i = 0; i < to; ++i) {
+    if (!foldlNodeCb(cb, state, array[i], depth - 1)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -1211,143 +1275,158 @@ export function foldlNodeCb<A, B>(cb: FoldCb<A, B>, state: B, node: Node, depth:
  * continue.
  */
 export function foldlCb<A, B>(cb: FoldCb<A, B>, state: B, l: List<A>): B {
-   const prefixSize = getPrefixSize(l);
-   if (
-      !foldrArrayCb(cb, state, l.prefix, prefixSize, 0) ||
-      (l.root !== undefined && !foldlNodeCb(cb, state, l.root, getDepth(l)))
-   ) {
-      return state;
-   }
-   const suffixSize = getSuffixSize(l);
-   foldlArrayCb(cb, state, l.suffix, 0, suffixSize);
-   return state;
+  const prefixSize = getPrefixSize(l);
+  if (
+    !foldrArrayCb(cb, state, l.prefix, prefixSize, 0) ||
+    (l.root !== undefined && !foldlNodeCb(cb, state, l.root, getDepth(l)))
+  ) {
+    return state;
+  }
+  const suffixSize = getSuffixSize(l);
+  foldlArrayCb(cb, state, l.suffix, 0, suffixSize);
+  return state;
 }
 
 export function foldrNodeCb<A, B>(cb: FoldCb<A, B>, state: B, node: Node, depth: number): boolean {
-   const { array } = node;
-   if (depth === 0) {
-      return foldrArrayCb(cb, state, array, array.length, 0);
-   }
-   for (let i = array.length - 1; 0 <= i; --i) {
-      if (!foldrNodeCb(cb, state, array[i], depth - 1)) {
-         return false;
-      }
-   }
-   return true;
+  const { array } = node;
+  if (depth === 0) {
+    return foldrArrayCb(cb, state, array, array.length, 0);
+  }
+  for (let i = array.length - 1; 0 <= i; --i) {
+    if (!foldrNodeCb(cb, state, array[i], depth - 1)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function foldrCb<A, B>(cb: FoldCb<A, B>, state: B, l: List<A>): B {
-   const suffixSize = getSuffixSize(l);
-   const prefixSize = getPrefixSize(l);
-   if (
-      !foldrArrayCb(cb, state, l.suffix, suffixSize, 0) ||
-      (l.root !== undefined && !foldrNodeCb(cb, state, l.root, getDepth(l)))
-   ) {
-      return state;
-   }
-   const prefix = l.prefix;
-   foldlArrayCb(cb, state, l.prefix, prefix.length - prefixSize, prefix.length);
-   return state;
+  const suffixSize = getSuffixSize(l);
+  const prefixSize = getPrefixSize(l);
+  if (
+    !foldrArrayCb(cb, state, l.suffix, suffixSize, 0) ||
+    (l.root !== undefined && !foldrNodeCb(cb, state, l.root, getDepth(l)))
+  ) {
+    return state;
+  }
+  const prefix = l.prefix;
+  foldlArrayCb(cb, state, l.prefix, prefix.length - prefixSize, prefix.length);
+  return state;
 }
 
 // functions based on foldlCb
 
 export type FoldlWhileState<A, B> = {
-   predicate: (b: B, a: A) => boolean;
-   result: B;
-   f: (acc: B, value: A) => B;
+  predicate: (b: B, a: A) => boolean;
+  result: B;
+  f: (acc: B, value: A) => B;
 };
 
 export function foldlSuffix<A, B>(f: (acc: B, value: A) => B, b: B, array: A[], length: number): B {
-   let acc = b;
-   for (let i = 0; i < length; ++i) {
-      acc = f(acc, array[i]);
-   }
-   return acc;
+  let acc = b;
+  for (let i = 0; i < length; ++i) {
+    acc = f(acc, array[i]);
+  }
+  return acc;
 }
 
 export function foldlPrefix<A, B>(f: (acc: B, value: A) => B, b: B, array: A[], length: number): B {
-   let acc = b;
-   for (let i = length - 1; 0 <= i; --i) {
-      acc = f(acc, array[i]);
-   }
-   return acc;
+  let acc = b;
+  for (let i = length - 1; 0 <= i; --i) {
+    acc = f(acc, array[i]);
+  }
+  return acc;
 }
 
 export function foldlNode<A, B>(f: (acc: B, value: A) => B, b: B, node: Node, depth: number): B {
-   const { array } = node;
-   let acc = b;
-   if (depth === 0) {
-      return foldlSuffix(f, b, array, array.length);
-   }
-   for (let i = 0; i < array.length; ++i) {
-      acc = foldlNode(f, acc, array[i], depth - 1);
-   }
-   return acc;
+  const { array } = node;
+  let acc = b;
+  if (depth === 0) {
+    return foldlSuffix(f, b, array, array.length);
+  }
+  for (let i = 0; i < array.length; ++i) {
+    acc = foldlNode(f, acc, array[i], depth - 1);
+  }
+  return acc;
 }
 
-export function foldrSuffix<A, B>(f: (value: A, acc: B) => B, initial: B, array: A[], length: number): B {
-   let acc = initial;
-   for (let i = length - 1; 0 <= i; --i) {
-      acc = f(array[i], acc);
-   }
-   return acc;
+export function foldrSuffix<A, B>(
+  f: (value: A, acc: B) => B,
+  initial: B,
+  array: A[],
+  length: number
+): B {
+  let acc = initial;
+  for (let i = length - 1; 0 <= i; --i) {
+    acc = f(array[i], acc);
+  }
+  return acc;
 }
 
-export function foldrPrefix<A, B>(f: (value: A, acc: B) => B, initial: B, array: A[], length: number): B {
-   let acc = initial;
-   for (let i = 0; i < length; ++i) {
-      acc = f(array[i], acc);
-   }
-   return acc;
+export function foldrPrefix<A, B>(
+  f: (value: A, acc: B) => B,
+  initial: B,
+  array: A[],
+  length: number
+): B {
+  let acc = initial;
+  for (let i = 0; i < length; ++i) {
+    acc = f(array[i], acc);
+  }
+  return acc;
 }
 
-export function foldrNode<A, B>(f: (value: A, acc: B) => B, initial: B, { array }: Node, depth: number): B {
-   if (depth === 0) {
-      return foldrSuffix(f, initial, array, array.length);
-   }
-   let acc = initial;
-   for (let i = array.length - 1; 0 <= i; --i) {
-      acc = foldrNode(f, acc, array[i], depth - 1);
-   }
-   return acc;
+export function foldrNode<A, B>(
+  f: (value: A, acc: B) => B,
+  initial: B,
+  { array }: Node,
+  depth: number
+): B {
+  if (depth === 0) {
+    return foldrSuffix(f, initial, array, array.length);
+  }
+  let acc = initial;
+  for (let i = array.length - 1; 0 <= i; --i) {
+    acc = foldrNode(f, acc, array[i], depth - 1);
+  }
+  return acc;
 }
 
 export function mapArray<A, B>(f: (a: A) => B, array: A[]): B[] {
-   const result = new Array(array.length);
-   for (let i = 0; i < array.length; ++i) {
-      result[i] = f(array[i]);
-   }
-   return result;
+  const result = new Array(array.length);
+  for (let i = 0; i < array.length; ++i) {
+    result[i] = f(array[i]);
+  }
+  return result;
 }
 
 export function mapNode<A, B>(f: (a: A) => B, node: Node, depth: number): Node {
-   if (depth !== 0) {
-      const { array } = node;
-      const result = new Array(array.length);
-      for (let i = 0; i < array.length; ++i) {
-         result[i] = mapNode(f, array[i], depth - 1);
-      }
-      return new Node(node.sizes, result);
-   } else {
-      return new Node(undefined, mapArray(f, node.array));
-   }
+  if (depth !== 0) {
+    const { array } = node;
+    const result = new Array(array.length);
+    for (let i = 0; i < array.length; ++i) {
+      result[i] = mapNode(f, array[i], depth - 1);
+    }
+    return new Node(node.sizes, result);
+  } else {
+    return new Node(undefined, mapArray(f, node.array));
+  }
 }
 
 export function mapPrefix<A, B>(f: (a: A) => B, prefix: A[], length: number): B[] {
-   const newPrefix = new Array(length);
-   for (let i = length - 1; 0 <= i; --i) {
-      newPrefix[i] = f(prefix[i]);
-   }
-   return newPrefix;
+  const newPrefix = new Array(length);
+  for (let i = length - 1; 0 <= i; --i) {
+    newPrefix[i] = f(prefix[i]);
+  }
+  return newPrefix;
 }
 
 export function mapAffix<A, B>(f: (a: A) => B, suffix: A[], length: number): B[] {
-   const newSuffix = new Array(length);
-   for (let i = 0; i < length; ++i) {
-      newSuffix[i] = f(suffix[i]);
-   }
-   return newSuffix;
+  const newSuffix = new Array(length);
+  for (let i = 0; i < length; ++i) {
+    newSuffix[i] = f(suffix[i]);
+  }
+  return newSuffix;
 }
 
 /**
@@ -1365,97 +1444,97 @@ export function mapAffix<A, B>(f: (a: A) => B, suffix: A[], length: number): B[]
  * foldlWhile(isOdd, (n, m) => n + m, 111, ys) //=> 111
  */
 export function foldlWhileCb<A, B>(a: A, state: FoldlWhileState<A, B>): boolean {
-   if (state.predicate(state.result, a) === false) {
-      return false;
-   }
-   state.result = state.f(state.result, a);
-   return true;
+  if (state.predicate(state.result, a) === false) {
+    return false;
+  }
+  state.result = state.f(state.result, a);
+  return true;
 }
 
 export type PredState = {
-   predicate: (a: any) => boolean;
-   result: any;
+  predicate: (a: any) => boolean;
+  result: any;
 };
 
 export function everyCb<A>(value: A, state: any): boolean {
-   return (state.result = state.predicate(value));
+  return (state.result = state.predicate(value));
 }
 
 export function someCb<A>(value: A, state: any): boolean {
-   return !(state.result = state.predicate(value));
+  return !(state.result = state.predicate(value));
 }
 
 export function findCb<A>(value: A, state: PredState): boolean {
-   if (state.predicate(value)) {
-      state.result = value;
-      return false;
-   } else {
-      return true;
-   }
+  if (state.predicate(value)) {
+    state.result = value;
+    return false;
+  } else {
+    return true;
+  }
 }
 
 type IndexOfState = {
-   element: any;
-   found: boolean;
-   index: number;
+  element: any;
+  found: boolean;
+  index: number;
 };
 
 export function indexOfCb(value: any, state: IndexOfState): boolean {
-   ++state.index;
-   return !(state.found = elementEquals(value, state.element));
+  ++state.index;
+  return !(state.found = elementEquals(value, state.element));
 }
 
 export type FindIndexState = {
-   predicate: (a: any) => boolean;
-   found: boolean;
-   index: number;
+  predicate: (a: any) => boolean;
+  found: boolean;
+  index: number;
 };
 
 export function findIndexCb<A>(value: A, state: FindIndexState): boolean {
-   ++state.index;
-   return !(state.found = state.predicate(value));
+  ++state.index;
+  return !(state.found = state.predicate(value));
 }
 
 export type ContainsState = {
-   element: any;
-   result: boolean;
+  element: any;
+  result: boolean;
 };
 
 export const containsState: ContainsState = {
-   element: undefined,
-   result: false
+  element: undefined,
+  result: false
 };
 
 export function containsCb(value: any, state: ContainsState): boolean {
-   return !(state.result = value === state.element);
+  return !(state.result = value === state.element);
 }
 
 export type EqualsState<A> = {
-   iterator: Iterator<A>;
-   f: (a: A, b: A) => boolean;
-   equals: boolean;
+  iterator: Iterator<A>;
+  f: (a: A, b: A) => boolean;
+  equals: boolean;
 };
 
 export function equalsCb<A>(value2: A, state: EqualsState<A>): boolean {
-   const { value } = state.iterator.next();
-   return (state.equals = state.f(value, value2));
+  const { value } = state.iterator.next();
+  return (state.equals = state.f(value, value2));
 }
 
 export type FindNotIndexState = {
-   predicate: (a: any) => boolean;
-   index: number;
+  predicate: (a: any) => boolean;
+  index: number;
 };
 
 export function findNotIndexCb(value: any, state: FindNotIndexState): boolean {
-   if (state.predicate(value)) {
-      ++state.index;
-      return true;
-   } else {
-      return false;
-   }
+  if (state.predicate(value)) {
+    ++state.index;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 export function arrayPush<A>(array: A[], a: A): A[] {
-   array.push(a);
-   return array;
+  array.push(a);
+  return array;
 }

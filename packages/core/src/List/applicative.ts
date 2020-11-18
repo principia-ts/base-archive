@@ -8,7 +8,7 @@ import type { List } from "./model";
  * list.
  */
 export function zip_<A, B>(as: List<A>, bs: List<B>): List<readonly [A, B]> {
-   return zipWith_(as, bs, (a, b) => [a, b] as [A, B]);
+  return zipWith_(as, bs, (a, b) => [a, b] as [A, B]);
 }
 
 /**
@@ -18,5 +18,5 @@ export function zip_<A, B>(as: List<A>, bs: List<B>): List<readonly [A, B]> {
  * list.
  */
 export function zip<B>(bs: List<B>): <A>(as: List<A>) => List<readonly [A, B]> {
-   return (as) => zip_(as, bs);
+  return (as) => zip_(as, bs);
 }

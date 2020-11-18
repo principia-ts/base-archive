@@ -17,9 +17,9 @@ import type { Ix } from "./model";
  * @since 1.0.0
  */
 export function fromAt<T, J, B>(at: At<T, J, Option<B>>): Ix<T, J, B> {
-   return {
-      index: (i) => _.lensComposePrism(_.prismSome<B>())(at.at(i))
-   };
+  return {
+    index: (i) => _.lensComposePrism(_.prismSome<B>())(at.at(i))
+  };
 }
 
 /**
@@ -27,9 +27,9 @@ export function fromAt<T, J, B>(at: At<T, J, Option<B>>): Ix<T, J, B> {
  * @since 1.0.0
  */
 export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: Ix<S, I, A>) => Ix<T, I, A> {
-   return (sia) => ({
-      index: (i) => pipe(iso, _.isoAsOptional, _.optionalComposeOptional(sia.index(i)))
-   });
+  return (sia) => ({
+    index: (i) => pipe(iso, _.isoAsOptional, _.optionalComposeOptional(sia.index(i)))
+  });
 }
 
 /**

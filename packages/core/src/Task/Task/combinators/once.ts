@@ -7,4 +7,4 @@ import type { IO, Task } from "../model";
  * evaluated multiple times.
  */
 export const once = <R, E, A>(task: Task<R, E, A>): IO<Task<R, E, void>> =>
-   T.map_(makeRef(true), (ref) => T.whenM_(task, getAndSet_(ref, false)));
+  T.map_(makeRef(true), (ref) => T.whenM_(task, getAndSet_(ref, false)));

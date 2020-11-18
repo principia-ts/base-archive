@@ -9,43 +9,43 @@ import { reduce_ } from "./foldable";
  * Represents a list of elements.
  */
 export class List<A> implements Iterable<A> {
-   constructor(
-      /** @private */
-      readonly bits: number,
-      /** @private */
-      readonly offset: number,
-      readonly length: number,
-      /** @private */
-      readonly prefix: A[],
-      /** @private */
-      readonly root: Node | undefined,
-      /** @private */
-      readonly suffix: A[]
-   ) {}
+  constructor(
+    /** @private */
+    readonly bits: number,
+    /** @private */
+    readonly offset: number,
+    readonly length: number,
+    /** @private */
+    readonly prefix: A[],
+    /** @private */
+    readonly root: Node | undefined,
+    /** @private */
+    readonly suffix: A[]
+  ) {}
 
-   [Symbol.iterator](): Iterator<A> {
-      return new ForwardListIterator(this);
-   }
+  [Symbol.iterator](): Iterator<A> {
+    return new ForwardListIterator(this);
+  }
 
-   toJSON(): readonly A[] {
-      return reduce_<A, A[]>(this, [], arrayPush);
-   }
+  toJSON(): readonly A[] {
+    return reduce_<A, A[]>(this, [], arrayPush);
+  }
 }
 
 export type MutableList<A> = { -readonly [K in keyof List<A>]: List<A>[K] } & {
-   [Symbol.iterator]: () => Iterator<A>;
-   /**
-    * This property doesn't exist at run-time. It exists to prevent a
-    * MutableList from being assignable to a List.
-    */
-   "@@mutable": true;
+  [Symbol.iterator]: () => Iterator<A>;
+  /**
+   * This property doesn't exist at run-time. It exists to prevent a
+   * MutableList from being assignable to a List.
+   */
+  "@@mutable": true;
 };
 
 export const URI = "List";
 export type URI = typeof URI;
 
 declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: List<A>;
-   }
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: List<A>;
+  }
 }

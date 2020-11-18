@@ -5,13 +5,13 @@ import type { Cause } from "./Cause";
 export type Exit<E, A> = Success<A> | Failure<E>;
 
 export interface Success<A> {
-   readonly _tag: "Success";
-   readonly value: A;
+  readonly _tag: "Success";
+  readonly value: A;
 }
 
 export interface Failure<E> {
-   readonly _tag: "Failure";
-   readonly cause: Cause<E>;
+  readonly _tag: "Failure";
+  readonly cause: Cause<E>;
 }
 
 export const URI = "Exit";

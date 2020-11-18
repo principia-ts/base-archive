@@ -17,7 +17,7 @@ import type { Either, Left, Right } from "./model";
  * @since 1.0.0
  */
 export function isLeft<E, A>(fa: Either<E, A>): fa is Left<E> {
-   return fa._tag === "Left";
+  return fa._tag === "Left";
 }
 
 /**
@@ -31,5 +31,5 @@ export function isLeft<E, A>(fa: Either<E, A>): fa is Left<E> {
  * @since 1.0.0
  */
 export function isRight<E, A>(fa: Either<E, A>): fa is Right<A> {
-   return fa._tag === "Right";
+  return fa._tag === "Right";
 }

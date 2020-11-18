@@ -13,43 +13,46 @@ import { iterable } from "./utils";
  * -------------------------------------------
  */
 
-export function filterWithIndex_<A>(fa: Iterable<A>, predicate: PredicateWithIndex<number, A>): Iterable<A> {
-   return iterable(function* () {
-      let i = 0;
-      for (const el of fa) {
-         if (predicate(i, el)) {
-            yield el;
-         }
-         i++;
+export function filterWithIndex_<A>(
+  fa: Iterable<A>,
+  predicate: PredicateWithIndex<number, A>
+): Iterable<A> {
+  return iterable(function* () {
+    let i = 0;
+    for (const el of fa) {
+      if (predicate(i, el)) {
+        yield el;
       }
-   });
+      i++;
+    }
+  });
 }
 
 export function partitionMapWithIndex_<A, B, C>(
-   fa: Iterable<A>,
-   f: (i: number, a: A) => Either<B, C>
+  fa: Iterable<A>,
+  f: (i: number, a: A) => Either<B, C>
 ): Separated<Iterable<B>, Iterable<C>> {
-   const mapped = mapWithIndex_(fa, f);
-   return {
-      left: iterable(function* () {
-         for (const el of mapped) {
-            if (el._tag === "Left") {
-               yield el.left;
-            }
-         }
-      }),
-      right: iterable(function* () {
-         for (const el of mapped) {
-            if (el._tag === "Right") {
-               yield el.right;
-            }
-         }
-      })
-   };
+  const mapped = mapWithIndex_(fa, f);
+  return {
+    left: iterable(function* () {
+      for (const el of mapped) {
+        if (el._tag === "Left") {
+          yield el.left;
+        }
+      }
+    }),
+    right: iterable(function* () {
+      for (const el of mapped) {
+        if (el._tag === "Right") {
+          yield el.right;
+        }
+      }
+    })
+  };
 }
 
 export function partitionMap<A, B, C>(
-   f: (a: A) => Either<B, C>
+  f: (a: A) => Either<B, C>
 ): (as: Iterable<A>) => Separated<Iterable<B>, Iterable<C>> {
-   return (as) => partitionMapWithIndex_(as, (_, a) => f(a));
+  return (as) => partitionMapWithIndex_(as, (_, a) => f(a));
 }

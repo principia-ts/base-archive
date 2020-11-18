@@ -7,5 +7,5 @@ import { completeWith } from "./completeWith";
  * fibers waiting on the value of the promise.
  */
 export function die(e: unknown) {
-   return <E, A>(promise: XPromise<E, A>) => completeWith<E, A>(T.die(e))(promise);
+  return <E, A>(promise: XPromise<E, A>) => completeWith<E, A>(T.die(e))(promise);
 }

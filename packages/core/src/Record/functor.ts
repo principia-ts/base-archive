@@ -20,16 +20,16 @@ import type { ReadonlyRecord, URI, V } from "./model";
  * @since 1.0.0
  */
 export function mapWithIndex_<N extends string, A, B>(
-   fa: ReadonlyRecord<N, A>,
-   f: (k: N, a: A) => B
+  fa: ReadonlyRecord<N, A>,
+  f: (k: N, a: A) => B
 ): ReadonlyRecord<N, B> {
-   const out = {} as Record<N, B>;
-   const keys = Object.keys(fa);
-   for (let i = 0; i < keys.length; i++) {
-      const k = keys[i] as keyof typeof fa;
-      out[k] = f(k, fa[k]);
-   }
-   return out;
+  const out = {} as Record<N, B>;
+  const keys = Object.keys(fa);
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i] as keyof typeof fa;
+    out[k] = f(k, fa[k]);
+  }
+  return out;
 }
 
 /**
@@ -43,9 +43,9 @@ export function mapWithIndex_<N extends string, A, B>(
  * @since 1.0.0
  */
 export function mapWithIndex<N extends string, A, B>(
-   f: (k: N, a: A) => B
+  f: (k: N, a: A) => B
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<N, B> {
-   return (fa) => mapWithIndex_(fa, f);
+  return (fa) => mapWithIndex_(fa, f);
 }
 
 /**
@@ -58,8 +58,11 @@ export function mapWithIndex<N extends string, A, B>(
  * @category Functor
  * @since 1.0.0
  */
-export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A) => B): ReadonlyRecord<N, B> {
-   return mapWithIndex_(fa, (_, a) => f(a));
+export function map_<N extends string, A, B>(
+  fa: ReadonlyRecord<N, A>,
+  f: (a: A) => B
+): ReadonlyRecord<N, B> {
+  return mapWithIndex_(fa, (_, a) => f(a));
 }
 
 /**
@@ -72,17 +75,19 @@ export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A)
  * @category Functor
  * @since 1.0.0
  */
-export function map<A, B>(f: (a: A) => B): <N extends string>(fa: Readonly<Record<N, A>>) => Readonly<Record<N, B>> {
-   return (fa) => map_(fa, f);
+export function map<A, B>(
+  f: (a: A) => B
+): <N extends string>(fa: Readonly<Record<N, A>>) => Readonly<Record<N, B>> {
+  return (fa) => map_(fa, f);
 }
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map,
-   map_: map_
+  map,
+  map_: map_
 });
 
 export const FunctorWithIndex: P.FunctorWithIndex<[URI], V> = HKT.instance({
-   ...Functor,
-   mapWithIndex,
-   mapWithIndex_: mapWithIndex_
+  ...Functor,
+  mapWithIndex,
+  mapWithIndex_: mapWithIndex_
 });

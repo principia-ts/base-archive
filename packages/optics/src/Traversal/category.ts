@@ -18,7 +18,7 @@ import type { Traversal, URI, V } from "./model";
  * @since 1.0.0
  */
 export function compose_<S, A, B>(sa: Traversal<S, A>, ab: Traversal<A, B>): Traversal<S, B> {
-   return _.traversalComposeTraversal(ab)(sa);
+  return _.traversalComposeTraversal(ab)(sa);
 }
 
 /**
@@ -30,7 +30,7 @@ export function compose_<S, A, B>(sa: Traversal<S, A>, ab: Traversal<A, B>): Tra
 export const compose = _.traversalComposeTraversal;
 
 export const Category: TC.Category<[URI], V> = HKT.instance({
-   compose,
-   compose_: (ab, bc) => compose(bc)(ab),
-   id
+  compose,
+  compose_: (ab, bc) => compose(bc)(ab),
+  id
 });

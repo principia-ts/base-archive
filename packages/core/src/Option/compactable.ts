@@ -17,16 +17,16 @@ import { flatten } from "./monad";
  */
 
 export function separate<A, B>(fa: Option<Either<A, B>>): Separated<Option<A>, Option<B>> {
-   const o = map_(fa, (e) => ({
-      left: getLeft(e),
-      right: getRight(e)
-   }));
-   return isNone(o) ? { left: none(), right: none() } : o.value;
+  const o = map_(fa, (e) => ({
+    left: getLeft(e),
+    right: getRight(e)
+  }));
+  return isNone(o) ? { left: none(), right: none() } : o.value;
 }
 
 export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten;
 
 export const Compactable: P.Compactable<[URI], V> = HKT.instance({
-   compact,
-   separate
+  compact,
+  separate
 });

@@ -14,7 +14,7 @@ import type { Task } from "../model";
  * @since 1.0.0
  */
 export function delay_<R, E, A>(ef: Task<R, E, A>, ms: number): Task<R & HasClock, E, A> {
-   return chain_(sleep(ms), () => ef);
+  return chain_(sleep(ms), () => ef);
 }
 
 /**
@@ -28,5 +28,5 @@ export function delay_<R, E, A>(ef: Task<R, E, A>, ms: number): Task<R & HasCloc
  * @since 1.0.0
  */
 export function delay(ms: number): <R, E, A>(ef: Task<R, E, A>) => Task<R & HasClock, E, A> {
-   return (ef) => delay_(ef, ms);
+  return (ef) => delay_(ef, ms);
 }

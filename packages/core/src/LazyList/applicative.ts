@@ -8,5 +8,5 @@ import type { LazyList } from "./model";
  */
 
 export function pure<A>(a: A): LazyList<A> {
-   return list(a);
+  return list(a);
 }

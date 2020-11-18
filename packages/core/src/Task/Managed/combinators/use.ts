@@ -9,27 +9,27 @@ import { releaseAll } from "./releaseAll";
  * Run an effect while acquiring the resource before and releasing it after
  */
 export function use<A, R2, E2, B>(
-   f: (a: A) => T.Task<R2, E2, B>
+  f: (a: A) => T.Task<R2, E2, B>
 ): <R, E>(self: Managed<R, E, A>) => T.Task<R & R2, E | E2, B> {
-   return (self) => use_(self, f);
+  return (self) => use_(self, f);
 }
 
 /**
  * Run an effect while acquiring the resource before and releasing it after
  */
 export function use_<R, E, A, R2, E2, B>(
-   self: Managed<R, E, A>,
-   f: (a: A) => T.Task<R2, E2, B>
+  self: Managed<R, E, A>,
+  f: (a: A) => T.Task<R2, E2, B>
 ): T.Task<R & R2, E | E2, B> {
-   return T.bracketExit_(
-      RM.make,
-      (rm) =>
-         T.chain_(
-            T.gives_(self.task, (r: R) => tuple(r, rm)),
-            (a) => f(a[1])
-         ),
-      (rm, ex) => releaseAll(ex, sequential())(rm)
-   );
+  return T.bracketExit_(
+    RM.make,
+    (rm) =>
+      T.chain_(
+        T.gives_(self.task, (r: R) => tuple(r, rm)),
+        (a) => f(a[1])
+      ),
+    (rm, ex) => releaseAll(ex, sequential())(rm)
+  );
 }
 
 /**
@@ -43,4 +43,6 @@ export const useNow: <R, E, A>(ma: Managed<R, E, A>) => T.Task<R, E, A> = use(T.
  * Use the resource until interruption.
  * Useful for resources that you want to acquire and use as long as the application is running, like a HTTP server.
  */
-export const useForever: <R, E, A>(ma: Managed<R, E, A>) => T.Task<R, E, never> = use(() => T.never);
+export const useForever: <R, E, A>(ma: Managed<R, E, A>) => T.Task<R, E, never> = use(
+  () => T.never
+);

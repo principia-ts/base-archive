@@ -10,5 +10,5 @@ import { to } from "./to";
  * that if you do not need to memoize the result of the specified effect.
  */
 export function complete<E, A>(e: EIO<E, A>) {
-   return (promise: XPromise<E, A>) => to(promise)(e);
+  return (promise: XPromise<E, A>) => to(promise)(e);
 }

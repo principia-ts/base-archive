@@ -10,7 +10,7 @@ import { unrefineWith_ } from "./unrefineWith";
  * @since 1.0.0
  */
 export function unrefine_<R, E, A, E1>(fa: Task<R, E, A>, pf: (u: unknown) => Option<E1>) {
-   return unrefineWith_(fa, pf, identity);
+  return unrefineWith_(fa, pf, identity);
 }
 
 /**
@@ -19,6 +19,8 @@ export function unrefine_<R, E, A, E1>(fa: Task<R, E, A>, pf: (u: unknown) => Op
  * @category Combinators
  * @since 1.0.0
  */
-export function unrefine<E1>(pf: (u: unknown) => Option<E1>): <R, E, A>(fa: Task<R, E, A>) => Task<R, E1 | E, A> {
-   return (fa) => unrefine_(fa, pf);
+export function unrefine<E1>(
+  pf: (u: unknown) => Option<E1>
+): <R, E, A>(fa: Task<R, E, A>) => Task<R, E1 | E, A> {
+  return (fa) => unrefine_(fa, pf);
 }

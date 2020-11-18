@@ -17,11 +17,11 @@ import type { Task } from "../model";
  * @since 1.0.0
  */
 export function some<R, E, A>(ef: Task<R, E, Option<A>>): Task<R, Option<E>, A> {
-   return foldM_(
-      ef,
-      (e) => fail(O.some(e)),
-      O.fold(() => fail(O.none()), pure)
-   );
+  return foldM_(
+    ef,
+    (e) => fail(O.some(e)),
+    O.fold(() => fail(O.none()), pure)
+  );
 }
 
 /**
@@ -34,8 +34,11 @@ export function some<R, E, A>(ef: Task<R, E, Option<A>>): Task<R, Option<E>, A> 
  * @category Combinators
  * @since 1.0.0
  */
-export function someOrElse_<R, E, A, B>(ef: Task<R, E, Option<A>>, orElse: () => B): Task<R, E, A | B> {
-   return pipe(ef, map(O.getOrElse(orElse)));
+export function someOrElse_<R, E, A, B>(
+  ef: Task<R, E, Option<A>>,
+  orElse: () => B
+): Task<R, E, A | B> {
+  return pipe(ef, map(O.getOrElse(orElse)));
 }
 
 /**
@@ -48,8 +51,10 @@ export function someOrElse_<R, E, A, B>(ef: Task<R, E, Option<A>>, orElse: () =>
  * @category Combinators
  * @since 1.0.0
  */
-export function someOrElse<B>(orElse: () => B): <R, E, A>(ef: Task<R, E, Option<A>>) => Task<R, E, B | A> {
-   return (ef) => someOrElse_(ef, orElse);
+export function someOrElse<B>(
+  orElse: () => B
+): <R, E, A>(ef: Task<R, E, Option<A>>) => Task<R, E, B | A> {
+  return (ef) => someOrElse_(ef, orElse);
 }
 
 /**
@@ -64,10 +69,10 @@ export function someOrElse<B>(orElse: () => B): <R, E, A>(ef: Task<R, E, Option<
  * @since 1.0.0
  */
 export function someOrElseM_<R, E, A, R1, E1, B>(
-   ef: Task<R, E, Option<A>>,
-   orElse: Task<R1, E1, B>
+  ef: Task<R, E, Option<A>>,
+  orElse: Task<R1, E1, B>
 ): Task<R & R1, E | E1, A | B> {
-   return chain_(ef as Task<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))));
+  return chain_(ef as Task<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))));
 }
 
 /**
@@ -82,25 +87,32 @@ export function someOrElseM_<R, E, A, R1, E1, B>(
  * @since 1.0.0
  */
 export function someOrElseM<R1, E1, B>(
-   orElse: Task<R1, E1, B>
+  orElse: Task<R1, E1, B>
 ): <R, E, A>(ef: Task<R, E, Option<A>>) => Task<R & R1, E1 | E, B | A> {
-   return (ef) => someOrElseM_(ef, orElse);
+  return (ef) => someOrElseM_(ef, orElse);
 }
 
 /**
  * Extracts the optional value, or fails with the given error 'e'.
  */
-export function someOrFail_<R, E, A, E1>(ma: Task<R, E, Option<A>>, orFail: () => E1): Task<R, E | E1, A> {
-   return chain_(
-      ma,
-      O.fold(() => chain_(total(orFail), fail), pure)
-   );
+export function someOrFail_<R, E, A, E1>(
+  ma: Task<R, E, Option<A>>,
+  orFail: () => E1
+): Task<R, E | E1, A> {
+  return chain_(
+    ma,
+    O.fold(() => chain_(total(orFail), fail), pure)
+  );
 }
 
-export function someOrFail<E1>(orFail: () => E1): <R, E, A>(ma: Task<R, E, Option<A>>) => Task<R, E1 | E, A> {
-   return (ma) => someOrFail_(ma, orFail);
+export function someOrFail<E1>(
+  orFail: () => E1
+): <R, E, A>(ma: Task<R, E, Option<A>>) => Task<R, E1 | E, A> {
+  return (ma) => someOrFail_(ma, orFail);
 }
 
-export function someOrFailException<R, E, A>(ma: Task<R, E, Option<A>>): Task<R, E | NoSuchElementException, A> {
-   return someOrFail_(ma, () => new NoSuchElementException("Task.someOrFailException"));
+export function someOrFailException<R, E, A>(
+  ma: Task<R, E, Option<A>>
+): Task<R, E | NoSuchElementException, A> {
+  return someOrFail_(ma, () => new NoSuchElementException("Task.someOrFailException"));
 }

@@ -7,13 +7,13 @@ import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
 export const NullableDecoder = implementInterpreter<D.URI, Alg.NullableURI>()((_) => ({
-   nullable: (a, config) => (env) =>
-      pipe(a(env), (decoder) =>
-         applyDecoderConfig(config?.config)(D.nullable(extractInfo(config))(decoder), env, decoder)
-      ),
+  nullable: (a, config) => (env) =>
+    pipe(a(env), (decoder) =>
+      applyDecoderConfig(config?.config)(D.nullable(extractInfo(config))(decoder), env, decoder)
+    ),
 
-   optional: (a, config) => (env) =>
-      pipe(a(env), (decoder) =>
-         applyDecoderConfig(config?.config)(D.optional(extractInfo(config))(decoder), env, decoder)
-      )
+  optional: (a, config) => (env) =>
+    pipe(a(env), (decoder) =>
+      applyDecoderConfig(config?.config)(D.optional(extractInfo(config))(decoder), env, decoder)
+    )
 }));

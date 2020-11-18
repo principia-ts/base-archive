@@ -25,7 +25,7 @@ import { unit } from "./unit";
  * @since 1.0.0
  */
 export function both_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
-   return mapBoth_(fa, fb, tuple);
+  return mapBoth_(fa, fb, tuple);
 }
 
 /**
@@ -39,7 +39,7 @@ export function both_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B
  * @since 1.0.0
  */
 export function both<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A, B]> {
-   return (fa) => both_(fa, fb);
+  return (fa) => both_(fa, fb);
 }
 
 /**
@@ -55,8 +55,8 @@ export function both<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A
 export const pure: <A>(a: A) => Option<A> = some;
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_,
-   both,
-   unit
+  ...Functor,
+  both_,
+  both,
+  unit
 });

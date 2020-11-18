@@ -23,7 +23,7 @@ import { unit } from "./unit";
  * @since 1.0.0
  */
 export function chain_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
-   return isNone(ma) ? ma : f(ma.value);
+  return isNone(ma) ? ma : f(ma.value);
 }
 
 /**
@@ -37,7 +37,7 @@ export function chain_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
  * @since 1.0.0
  */
 export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
-   return (ma) => chain_(ma, f);
+  return (ma) => chain_(ma, f);
 }
 
 /**
@@ -52,12 +52,12 @@ export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B
  * @since 1.0.0
  */
 export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
-   return chain_(ma, (a) =>
-      pipe(
-         f(a),
-         map(() => a)
-      )
-   );
+  return chain_(ma, (a) =>
+    pipe(
+      f(a),
+      map(() => a)
+    )
+  );
 }
 
 /**
@@ -72,7 +72,7 @@ export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
  * @since 1.0.0
  */
 export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> {
-   return (ma) => tap_(ma, f);
+  return (ma) => tap_(ma, f);
 }
 
 /**
@@ -88,7 +88,7 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
 export const flatten: <A>(mma: Option<Option<A>>) => Option<A> = flow(chain(identity));
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-   ...Functor,
-   unit,
-   flatten
+  ...Functor,
+  unit,
+  flatten
 });

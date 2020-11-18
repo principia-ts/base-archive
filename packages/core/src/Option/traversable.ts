@@ -24,7 +24,7 @@ import type { URI, V } from "./model";
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) =>
-   isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some));
+  isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some));
 
 /**
  * ```haskell
@@ -49,11 +49,11 @@ export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(
  * @since 1.0.0
  */
 export const sequence: P.SequenceFn<[URI], V> = (G) => (fa) =>
-   isNone(fa) ? G.map_(G.unit(), () => none()) : pipe(fa.value, G.map(some));
+  isNone(fa) ? G.map_(G.unit(), () => none()) : pipe(fa.value, G.map(some));
 
 export const Traversable: P.Traversable<[URI], V> = HKT.instance({
-   ...Functor,
-   traverse_,
-   traverse,
-   sequence
+  ...Functor,
+  traverse_,
+  traverse,
+  sequence
 });

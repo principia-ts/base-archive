@@ -3,36 +3,36 @@ import { EQ, GT, LT, Ordering } from "../Ordering";
 import type { Ord } from "./Ord";
 
 export const fromCompare = <A>(cmp: (x: A, y: A) => Ordering): Ord<A> => {
-   return {
-      compare_: cmp,
-      compare: (y) => (x) => cmp(x, y),
-      equals_: (x, y) => Ordering.unwrap(cmp(x, y)) === "EQ",
-      equals: (y) => (x) => Ordering.unwrap(cmp(x, y)) === "EQ"
-   };
+  return {
+    compare_: cmp,
+    compare: (y) => (x) => cmp(x, y),
+    equals_: (x, y) => Ordering.unwrap(cmp(x, y)) === "EQ",
+    equals: (y) => (x) => Ordering.unwrap(cmp(x, y)) === "EQ"
+  };
 };
 
 const _compare = (y: any): ((x: any) => Ordering) => {
-   return (x) => (x < y ? LT : x > y ? GT : EQ);
+  return (x) => (x < y ? LT : x > y ? GT : EQ);
 };
 
 const _compare_ = (x: any, y: any) => (x < y ? LT : x > y ? GT : EQ);
 
 export const ordString: Ord<string> = {
-   ...string,
-   compare: _compare,
-   compare_: _compare_
+  ...string,
+  compare: _compare,
+  compare_: _compare_
 };
 
 export const ordNumber: Ord<number> = {
-   ...number,
-   compare: _compare,
-   compare_: _compare_
+  ...number,
+  compare: _compare,
+  compare_: _compare_
 };
 
 export const ordBoolean: Ord<boolean> = {
-   ...boolean,
-   compare: _compare,
-   compare_: _compare_
+  ...boolean,
+  compare: _compare,
+  compare_: _compare_
 };
 
 export const lt = <A>(O: Ord<A>) => (y: A) => (x: A): boolean => O.compare_(x, y) === LT;

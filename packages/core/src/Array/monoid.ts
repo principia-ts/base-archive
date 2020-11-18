@@ -11,5 +11,5 @@ import { empty } from "./constructors";
  */
 
 export function getMonoid<A = never>(): Monoid<ReadonlyArray<A>> {
-   return makeMonoid(concat_, empty());
+  return makeMonoid(concat_, empty());
 }

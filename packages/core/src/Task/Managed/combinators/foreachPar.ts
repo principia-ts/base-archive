@@ -12,9 +12,9 @@ import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
  * For a sequential version of this method, see `foreach`.
  */
 export function foreachPar<R, E, A, B>(
-   f: (a: A) => Managed<R, E, B>
+  f: (a: A) => Managed<R, E, B>
 ): (as: Iterable<A>) => Managed<R, E, readonly B[]> {
-   return (as) => foreachPar_(as, f);
+  return (as) => foreachPar_(as, f);
 }
 
 /**
@@ -23,18 +23,21 @@ export function foreachPar<R, E, A, B>(
  *
  * For a sequential version of this method, see `foreach_`.
  */
-export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> {
-   return mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
-      const makeInnerMap = T.gives_(
-         T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
-         (x: unknown) => tuple(x, parallelReleaseMap)
-      );
+export function foreachPar_<R, E, A, B>(
+  as: Iterable<A>,
+  f: (a: A) => Managed<R, E, B>
+): Managed<R, E, readonly B[]> {
+  return mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
+    const makeInnerMap = T.gives_(
+      T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
+      (x: unknown) => tuple(x, parallelReleaseMap)
+    );
 
-      return T.foreachPar_(as, (a) =>
-         T.map_(
-            T.chain_(makeInnerMap, (innerMap) => T.gives_(f(a).task, (u: R) => tuple(u, innerMap))),
-            ([_, b]) => b
-         )
-      );
-   });
+    return T.foreachPar_(as, (a) =>
+      T.map_(
+        T.chain_(makeInnerMap, (innerMap) => T.gives_(f(a).task, (u: R) => tuple(u, innerMap))),
+        ([_, b]) => b
+      )
+    );
+  });
 }

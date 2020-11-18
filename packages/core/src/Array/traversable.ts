@@ -26,19 +26,20 @@ import type { URI, V } from "./model";
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implementTraverseWithIndex_<[URI], V>()(
-   (_) => (G) => {
-      const ap_ = apF_(G);
-      const pure = pureF(G);
-      return (ta, f) =>
-         reduceWithIndex_(ta, pure(empty<typeof _.B>()), (i, fbs, a) =>
-            ap_(
-               G.map_(fbs, (bs) => (b: typeof _.B) => snoc_(bs, b)),
-               f(i, a)
-            )
-         );
-   }
-);
+export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implementTraverseWithIndex_<
+  [URI],
+  V
+>()((_) => (G) => {
+  const ap_ = apF_(G);
+  const pure = pureF(G);
+  return (ta, f) =>
+    reduceWithIndex_(ta, pure(empty<typeof _.B>()), (i, fbs, a) =>
+      ap_(
+        G.map_(fbs, (bs) => (b: typeof _.B) => snoc_(bs, b)),
+        f(i, a)
+      )
+    );
+});
 
 /**
  * ```haskell
@@ -53,8 +54,8 @@ export const traverseWithIndex_: TC.TraverseWithIndexFn_<[URI], V> = TC.implemen
  * @since 1.0.0
  */
 export const traverseWithIndex: TC.TraverseWithIndexFn<[URI], V> = (G) => {
-   const traverseWithIndexG_ = traverseWithIndex_(G);
-   return (f) => (ta) => traverseWithIndexG_(ta, f);
+  const traverseWithIndexG_ = traverseWithIndex_(G);
+  return (f) => (ta) => traverseWithIndexG_(ta, f);
 };
 
 /**
@@ -71,8 +72,8 @@ export const traverseWithIndex: TC.TraverseWithIndexFn<[URI], V> = (G) => {
  * @since 1.0.0
  */
 export const traverse_: TC.TraverseFn_<[URI], V> = (G) => {
-   const traverseWithIndexG_ = traverseWithIndex_(G);
-   return (ta, f) => traverseWithIndexG_(ta, (_, a) => f(a));
+  const traverseWithIndexG_ = traverseWithIndex_(G);
+  return (ta, f) => traverseWithIndexG_(ta, (_, a) => f(a));
 };
 
 /**
@@ -90,8 +91,8 @@ export const traverse_: TC.TraverseFn_<[URI], V> = (G) => {
  * @since 1.0.0
  */
 export const traverse: TC.TraverseFn<[URI], V> = (G) => {
-   const traverseWithIndexG_ = traverseWithIndex_(G);
-   return (f) => (ta) => traverseWithIndexG_(ta, (_, a) => f(a));
+  const traverseWithIndexG_ = traverseWithIndex_(G);
+  return (f) => (ta) => traverseWithIndexG_(ta, (_, a) => f(a));
 };
 
 /**
@@ -105,19 +106,19 @@ export const traverse: TC.TraverseFn<[URI], V> = (G) => {
  * @since 1.0.0
  */
 export const sequence: TC.SequenceFn<[URI], V> = TC.implementSequence<[URI], V>()((_) => (G) => {
-   const traverseG = traverse(G);
-   return traverseG(identity);
+  const traverseG = traverse(G);
+  return traverseG(identity);
 });
 
 export const Traversable: P.Traversable<[URI], V> = HKT.instance({
-   ...Functor,
-   traverse_,
-   traverse,
-   sequence
+  ...Functor,
+  traverse_,
+  traverse,
+  sequence
 });
 
 export const TraversableWithIndex: P.TraversableWithIndex<[URI], V> = HKT.instance({
-   ...FunctorWithIndex,
-   traverseWithIndex_,
-   traverseWithIndex
+  ...FunctorWithIndex,
+  traverseWithIndex_,
+  traverseWithIndex
 });

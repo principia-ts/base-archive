@@ -21,8 +21,8 @@ import { getSemigroup } from "./semigroup";
  * @since 1.0.0
  */
 export function getMonoid<A>(M: Monoid<A>): Monoid<IO<A>> {
-   return {
-      ...getSemigroup(M),
-      nat: pure(M.nat)
-   };
+  return {
+    ...getSemigroup(M),
+    nat: pure(M.nat)
+  };
 }

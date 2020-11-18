@@ -35,6 +35,6 @@ export const map_: <A, B>(fa: IO<A>, f: (a: A) => B) => IO<B> = X.map_;
 export const map: <A, B>(f: (a: A) => B) => (fa: IO<A>) => IO<B> = X.map;
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map_: map_,
-   map
+  map_: map_,
+  map
 });

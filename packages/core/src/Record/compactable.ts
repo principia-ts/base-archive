@@ -20,26 +20,26 @@ import { keys } from "./utils";
  * ```
  */
 export function separate<N extends string, A, B>(
-   fa: ReadonlyRecord<N, Either<A, B>>
+  fa: ReadonlyRecord<N, Either<A, B>>
 ): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>> {
-   const left: Record<string, A> = {} as any;
-   const right: Record<string, B> = {} as any;
-   const keys = Object.keys(fa);
-   for (const key of keys) {
-      const e = fa[key];
-      switch (e.tag_) {
-         case "Left":
-            left[key] = e.left;
-            break;
-         case "Right":
-            right[key] = e.right;
-            break;
-      }
-   }
-   return {
-      left,
-      right
-   };
+  const left: Record<string, A> = {} as any;
+  const right: Record<string, B> = {} as any;
+  const keys = Object.keys(fa);
+  for (const key of keys) {
+    const e = fa[key];
+    switch (e.tag_) {
+      case "Left":
+        left[key] = e.left;
+        break;
+      case "Right":
+        right[key] = e.right;
+        break;
+    }
+  }
+  return {
+    left,
+    right
+  };
 }
 
 /**
@@ -47,19 +47,21 @@ export function separate<N extends string, A, B>(
  * compact :: Compactable c => c (Option a) -> c a
  * ```
  */
-export function compact<N extends string, A>(fa: ReadonlyRecord<N, Option<A>>): ReadonlyRecord<string, A> {
-   const r: Record<string, A> = {} as any;
-   const ks = keys(fa);
-   for (const key of ks) {
-      const optionA = fa[key];
-      if (isSome(optionA)) {
-         r[key] = optionA.value;
-      }
-   }
-   return r;
+export function compact<N extends string, A>(
+  fa: ReadonlyRecord<N, Option<A>>
+): ReadonlyRecord<string, A> {
+  const r: Record<string, A> = {} as any;
+  const ks = keys(fa);
+  for (const key of ks) {
+    const optionA = fa[key];
+    if (isSome(optionA)) {
+      r[key] = optionA.value;
+    }
+  }
+  return r;
 }
 
 export const Compactable: P.Compactable<[URI], V> = HKT.instance({
-   compact,
-   separate
+  compact,
+  separate
 });

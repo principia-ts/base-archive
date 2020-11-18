@@ -16,31 +16,31 @@ const of: Sync<unknown, never, {}> = succeed({});
 export { of as do };
 
 export const letS: <K, N extends string, A>(
-   name: Exclude<N, keyof K>,
-   f: (_: K) => A
+  name: Exclude<N, keyof K>,
+  f: (_: K) => A
 ) => <R, E>(
-   mk: Sync<R, E, K>
+  mk: Sync<R, E, K>
 ) => Sync<
-   R,
-   E,
-   {
-      [k in N | keyof K]: k extends keyof K ? K[k] : A;
-   }
+  R,
+  E,
+  {
+    [k in N | keyof K]: k extends keyof K ? K[k] : A;
+  }
 > = Do.letS;
 
 export const bindS: <R, E, A, K, N extends string>(
-   name: Exclude<N, keyof K>,
-   f: (_: K) => Sync<R, E, A>
+  name: Exclude<N, keyof K>,
+  f: (_: K) => Sync<R, E, A>
 ) => <R2, E2>(
-   mk: Sync<R2, E2, K>
+  mk: Sync<R2, E2, K>
 ) => Sync<
-   R & R2,
-   E | E2,
-   {
-      [k in N | keyof K]: k extends keyof K ? K[k] : A;
-   }
+  R & R2,
+  E | E2,
+  {
+    [k in N | keyof K]: k extends keyof K ? K[k] : A;
+  }
 > = Do.bindS;
 
 export const bindToS: <K, N extends string>(
-   name: Exclude<N, keyof K>
+  name: Exclude<N, keyof K>
 ) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = Do.bindToS;

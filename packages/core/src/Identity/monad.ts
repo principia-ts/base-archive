@@ -13,27 +13,27 @@ import { unit } from "./unit";
  */
 
 export function chain_<A, B>(ma: A, f: (a: A) => B): B {
-   return f(ma);
+  return f(ma);
 }
 
 export function chain<A, B>(f: (a: A) => B): (ma: A) => B {
-   return (ma) => f(ma);
+  return (ma) => f(ma);
 }
 
 export function tap_<A, B>(ma: A, f: (a: A) => B): A {
-   return chain_(ma, (a) => map_(f(a), () => a));
+  return chain_(ma, (a) => map_(f(a), () => a));
 }
 
 export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
-   return (ma) => tap_(ma, f);
+  return (ma) => tap_(ma, f);
 }
 
 export function flatten<A>(mma: A): A {
-   return chain_(mma, identity);
+  return chain_(mma, identity);
 }
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-   ...Functor,
-   unit,
-   flatten
+  ...Functor,
+  unit,
+  flatten
 });

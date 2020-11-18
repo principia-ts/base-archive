@@ -12,5 +12,5 @@ import type { Semigroup } from "../Semigroup";
  * ```
  */
 export interface Monoid<M> extends Semigroup<M> {
-   readonly nat: M;
+  readonly nat: M;
 }

@@ -28,6 +28,7 @@ export * from "./MonadEnv/index";
 export * from "./MonadFail/index";
 export * from "./Monoid/index";
 export * from "./Newtype/index";
+export * from "./Operators/index";
 export * from "./Pure/index";
 export * from "./Ring/index";
 export * from "./Semigroup/index";

@@ -13,8 +13,11 @@ import { SuperviseInstruction } from "../model";
  * @category Combinators
  * @since 1.0.0
  */
-export function supervised_<R, E, A>(fa: Task<R, E, A>, supervisor: Supervisor<any>): Task<R, E, A> {
-   return new SuperviseInstruction(fa, supervisor);
+export function supervised_<R, E, A>(
+  fa: Task<R, E, A>,
+  supervisor: Supervisor<any>
+): Task<R, E, A> {
+  return new SuperviseInstruction(fa, supervisor);
 }
 
 /**
@@ -28,6 +31,8 @@ export function supervised_<R, E, A>(fa: Task<R, E, A>, supervisor: Supervisor<a
  * @category Combinators
  * @since 1.0.0
  */
-export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: Task<R, E, A>) => Task<R, E, A> {
-   return (fa) => supervised_(fa, supervisor);
+export function supervised(
+  supervisor: Supervisor<any>
+): <R, E, A>(fa: Task<R, E, A>) => Task<R, E, A> {
+  return (fa) => supervised_(fa, supervisor);
 }

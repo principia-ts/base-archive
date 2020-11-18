@@ -7,5 +7,5 @@ import type { Managed } from "../model";
  * success channel to their common combined type.
  */
 export function merge<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, E | A> {
-   return foldM_(ma, succeed, succeed);
+  return foldM_(ma, succeed, succeed);
 }

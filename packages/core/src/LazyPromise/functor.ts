@@ -19,7 +19,8 @@ import type { LazyPromise, URI, V } from "./model";
  * @category Functor
  * @since 1.0.0
  */
-export const map_ = <A, B>(fa: LazyPromise<A>, f: (a: A) => B): LazyPromise<B> => () => fa().then(f);
+export const map_ = <A, B>(fa: LazyPromise<A>, f: (a: A) => B): LazyPromise<B> => () =>
+  fa().then(f);
 
 /**
  * ```haskell
@@ -34,6 +35,6 @@ export const map_ = <A, B>(fa: LazyPromise<A>, f: (a: A) => B): LazyPromise<B> =
 export const map = <A, B>(f: (a: A) => B) => (fa: LazyPromise<A>): LazyPromise<B> => map_(fa, f);
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-   map_,
-   map
+  map_,
+  map
 });

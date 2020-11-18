@@ -16,10 +16,10 @@ import type { Prism } from "./model";
  * @since 1.0.0
  */
 export function id<S>(): Prism<S, S> {
-   return {
-      getOption: O.some,
-      reverseGet: identity
-   };
+  return {
+    getOption: O.some,
+    reverseGet: identity
+  };
 }
 
 /**
@@ -27,6 +27,6 @@ export function id<S>(): Prism<S, S> {
  * @since 1.0.0
  */
 export const fromPredicate: {
-   <S, A extends S>(refinement: Refinement<S, A>): Prism<S, A>;
-   <A>(predicate: Predicate<A>): Prism<A, A>;
+  <S, A extends S>(refinement: Refinement<S, A>): Prism<S, A>;
+  <A>(predicate: Predicate<A>): Prism<A, A>;
 } = _.prismFromPredicate;

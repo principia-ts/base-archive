@@ -17,7 +17,7 @@ export const recover: <E, A>(fa: EIO<E, A>) => EIO<never, Either<E, A>> = X.reco
 export const absolve: <E, E1, A>(fa: EIO<E, Either<E1, A>>) => EIO<E | E1, A> = X.absolve;
 
 export const Fallible: P.Fallible<[URI], V> = HKT.instance({
-   ...Fail,
-   absolve,
-   recover
+  ...Fail,
+  absolve,
+  recover
 });

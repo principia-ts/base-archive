@@ -13,8 +13,8 @@ import type { Iso } from "./model";
  * @since 1.0.0
  */
 export function id<S>(): Iso<S, S> {
-   return {
-      get: identity,
-      reverseGet: identity
-   };
+  return {
+    get: identity,
+    reverseGet: identity
+  };
 }

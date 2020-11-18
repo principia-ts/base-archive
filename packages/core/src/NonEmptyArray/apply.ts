@@ -21,7 +21,10 @@ import type { NonEmptyArray, URI, V } from "./model";
  * @category Apply
  * @since 1.0.0
  */
-export const ap_: <A, B>(fab: NonEmptyArray<(a: A) => B>, fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.ap_ as any;
+export const ap_: <A, B>(
+  fab: NonEmptyArray<(a: A) => B>,
+  fa: NonEmptyArray<A>
+) => NonEmptyArray<B> = A.ap_ as any;
 
 /**
  * ```haskell
@@ -33,7 +36,9 @@ export const ap_: <A, B>(fab: NonEmptyArray<(a: A) => B>, fa: NonEmptyArray<A>) 
  * @category Apply
  * @since 1.0.0
  */
-export const ap: <A>(fa: NonEmptyArray<A>) => <B>(fab: NonEmptyArray<(a: A) => B>) => NonEmptyArray<B> = A.ap_ as any;
+export const ap: <A>(
+  fa: NonEmptyArray<A>
+) => <B>(fab: NonEmptyArray<(a: A) => B>) => NonEmptyArray<B> = A.ap_ as any;
 
 /**
  * ```haskell
@@ -45,7 +50,10 @@ export const ap: <A>(fa: NonEmptyArray<A>) => <B>(fab: NonEmptyArray<(a: A) => B
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst_: <A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>) => NonEmptyArray<A> = A.apFirst_ as any;
+export const apFirst_: <A, B>(
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>
+) => NonEmptyArray<A> = A.apFirst_ as any;
 
 /**
  * ```haskell
@@ -57,7 +65,9 @@ export const apFirst_: <A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>) => Non
  * @category Apply
  * @since 1.0.0
  */
-export const apFirst: <B>(fb: NonEmptyArray<B>) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<A> = A.apFirst as any;
+export const apFirst: <B>(
+  fb: NonEmptyArray<B>
+) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<A> = A.apFirst as any;
 
 /**
  * ```haskell
@@ -69,7 +79,10 @@ export const apFirst: <B>(fb: NonEmptyArray<B>) => <A>(fa: NonEmptyArray<A>) => 
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond_: <A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>) => NonEmptyArray<B> = A.apSecond_ as any;
+export const apSecond_: <A, B>(
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>
+) => NonEmptyArray<B> = A.apSecond_ as any;
 
 /**
  * ```haskell
@@ -81,23 +94,25 @@ export const apSecond_: <A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>) => No
  * @category Apply
  * @since 1.0.0
  */
-export const apSecond: <B>(fb: NonEmptyArray<B>) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.apSecond as any;
+export const apSecond: <B>(
+  fb: NonEmptyArray<B>
+) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.apSecond as any;
 
 export const zipWith_: <A, B, C>(
-   fa: NonEmptyArray<A>,
-   fb: NonEmptyArray<B>,
-   f: (a: A, b: B) => C
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>,
+  f: (a: A, b: B) => C
 ) => NonEmptyArray<C> = A.zipWith_ as any;
 
 export const zipWith: <A, B, C>(
-   fb: NonEmptyArray<B>,
-   f: (a: A, b: B) => C
+  fb: NonEmptyArray<B>,
+  f: (a: A, b: B) => C
 ) => (fa: NonEmptyArray<A>) => NonEmptyArray<C> = A.zipWith as any;
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
-   ...Functor,
-   ap,
-   ap_,
-   mapBoth: zipWith,
-   mapBoth_: zipWith_
+  ...Functor,
+  ap,
+  ap_,
+  mapBoth: zipWith,
+  mapBoth_: zipWith_
 });

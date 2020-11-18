@@ -11,5 +11,5 @@ import type { URI, V } from "./model";
  */
 
 export const Fail: P.Fail<[URI], V> = HKT.instance({
-   fail
+  fail
 });

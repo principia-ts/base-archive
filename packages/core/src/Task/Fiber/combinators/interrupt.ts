@@ -15,7 +15,8 @@ import type { Fiber } from "../model";
  * fiber has already exited, the returned effect will resume immediately.
  * Otherwise, the effect will resume when the fiber exits.
  */
-export const interrupt = <E, A>(fiber: Fiber<E, A>) => T.chain_(fiberId(), (id) => fiber.interruptAs(id));
+export const interrupt = <E, A>(fiber: Fiber<E, A>) =>
+  T.chain_(fiberId(), (id) => fiber.interruptAs(id));
 
 /**
  * ```haskell
@@ -25,7 +26,7 @@ export const interrupt = <E, A>(fiber: Fiber<E, A>) => T.chain_(fiberId(), (id) 
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.
  */
 export const interruptAllAs_ = (fs: Iterable<Fiber<any, any>>, id: FiberId) =>
-   I.reduce_(fs, T.unit() as IO<void>, (io, f) => T.asUnit(T.chain_(io, () => f.interruptAs(id))));
+  I.reduce_(fs, T.unit() as IO<void>, (io, f) => T.asUnit(T.chain_(io, () => f.interruptAs(id))));
 
 /**
  * ```haskell
@@ -34,7 +35,8 @@ export const interruptAllAs_ = (fs: Iterable<Fiber<any, any>>, id: FiberId) =>
  *
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.
  */
-export const interruptAllAs = (id: FiberId) => (fs: Iterable<Fiber<any, any>>) => interruptAllAs_(fs, id);
+export const interruptAllAs = (id: FiberId) => (fs: Iterable<Fiber<any, any>>) =>
+  interruptAllAs_(fs, id);
 
 /**
  * ```haskell

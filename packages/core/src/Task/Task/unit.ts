@@ -8,5 +8,5 @@ import type { IO } from "./model";
  */
 
 export function unit(): IO<void> {
-   return succeed(undefined);
+  return succeed(undefined);
 }

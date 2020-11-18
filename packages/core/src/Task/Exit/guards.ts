@@ -8,13 +8,13 @@ import type { Exit, Failure, Success } from "./model";
  */
 
 export function isSuccess<E, A>(exit: Exit<E, A>): exit is Success<A> {
-   return exit._tag === "Success";
+  return exit._tag === "Success";
 }
 
 export function isFailure<E, A>(exit: Exit<E, A>): exit is Failure<E> {
-   return exit._tag === "Failure";
+  return exit._tag === "Failure";
 }
 
 export function isInterrupt<E, A>(exit: Exit<E, A>): exit is Failure<E> {
-   return isFailure(exit) ? C.isInterrupt(exit.cause) : false;
+  return isFailure(exit) ? C.interrupted(exit.cause) : false;
 }

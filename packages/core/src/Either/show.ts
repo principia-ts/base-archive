@@ -18,7 +18,7 @@ import type { Either } from "./model";
  * @since 1.0.0
  */
 export function getShow<E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>> {
-   return {
-      show: (fa) => (isLeft(fa) ? `left(${showE.show(fa.left)})` : `right(${showA.show(fa.right)})`)
-   };
+  return {
+    show: (fa) => (isLeft(fa) ? `left(${showE.show(fa.left)})` : `right(${showA.show(fa.right)})`)
+  };
 }

@@ -13,5 +13,5 @@ import type { Either } from "./model";
  * ```
  */
 export function unit<E = never>(): Either<E, void> {
-   return right(undefined);
+  return right(undefined);
 }

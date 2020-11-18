@@ -9,5 +9,5 @@ import { completeWith } from "./completeWith";
  * fibers waiting on the value of the promise.
  */
 export function done<E, A>(e: Exit<E, A>) {
-   return (promise: XPromise<E, A>): IO<boolean> => completeWith<E, A>(T.done(e))(promise);
+  return (promise: XPromise<E, A>): IO<boolean> => completeWith<E, A>(T.done(e))(promise);
 }

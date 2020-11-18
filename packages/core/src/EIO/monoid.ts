@@ -15,8 +15,8 @@ import { getApplySemigroup } from "./semigroup";
  * @since 1.0.0
  */
 export function getApplyMonoid<E, A>(M: P.Monoid<A>): P.Monoid<EIO<E, A>> {
-   return {
-      ...getApplySemigroup(M),
-      nat: succeed(M.nat)
-   };
+  return {
+    ...getApplySemigroup(M),
+    nat: succeed(M.nat)
+  };
 }

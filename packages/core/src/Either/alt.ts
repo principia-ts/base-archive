@@ -16,7 +16,7 @@ import type { Either, URI, V } from "./model";
  * @since 1.0.0
  */
 export function alt_<E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Either<E | G, A> {
-   return isLeft(fa) ? that() : fa;
+  return isLeft(fa) ? that() : fa;
 }
 
 /**
@@ -30,7 +30,7 @@ export function alt_<E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Eithe
  * @since 1.0.0
  */
 export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Either<G | E, A> {
-   return (fa) => alt_(fa, that);
+  return (fa) => alt_(fa, that);
 }
 
 /**
@@ -38,7 +38,7 @@ export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Ei
  * @since 1.0.0
  */
 export const Alt: P.Alt<[URI], V> = HKT.instance({
-   ...Functor,
-   alt_,
-   alt
+  ...Functor,
+  alt_,
+  alt
 });

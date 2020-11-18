@@ -15,10 +15,10 @@ import { unrefineWith_ } from "./unrefineWith";
  * @since 1.0.0
  */
 export function catchSomeDefect_<R, E, A, R1, E1, A1>(
-   fa: Task<R, E, A>,
-   f: (_: unknown) => Option<Task<R1, E1, A1>>
+  fa: Task<R, E, A>,
+  f: (_: unknown) => Option<Task<R1, E1, A1>>
 ): Task<R & R1, E | E1, A | A1> {
-   return catchAll_(unrefineWith_(fa, f, fail), (s): Task<R1, E | E1, A1> => s);
+  return catchAll_(unrefineWith_(fa, f, fail), (s): Task<R1, E | E1, A1> => s);
 }
 
 /**
@@ -33,7 +33,7 @@ export function catchSomeDefect_<R, E, A, R1, E1, A1>(
  * @since 1.0.0
  */
 export function catchSomeDefect<R1, E1, A1>(
-   f: (_: unknown) => Option<Task<R1, E1, A1>>
+  f: (_: unknown) => Option<Task<R1, E1, A1>>
 ): <R, E, A>(fa: Task<R, E, A>) => Task<R & R1, E1 | E, A1 | A> {
-   return (fa) => catchSomeDefect_(fa, f);
+  return (fa) => catchSomeDefect_(fa, f);
 }

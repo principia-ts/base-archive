@@ -9,5 +9,5 @@ import type { Tuple } from "./model";
  */
 
 export function unit<M>(M: Monoid<M>): () => Tuple<void, M> {
-   return () => [undefined, M.nat] as const;
+  return () => [undefined, M.nat] as const;
 }

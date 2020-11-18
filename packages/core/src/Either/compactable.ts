@@ -12,17 +12,17 @@ import type { URI, V } from "./model";
  */
 
 export function getCompactable<E>(M: P.Monoid<E>) {
-   return HKT.instance<P.Compactable<[URI], V & HKT.Fix<"E", E>>>({
-      compact: (fa) => {
-         return isLeft(fa) ? fa : fa.right._tag === "None" ? left(M.nat) : right(fa.right.value);
-      },
+  return HKT.instance<P.Compactable<[URI], V & HKT.Fix<"E", E>>>({
+    compact: (fa) => {
+      return isLeft(fa) ? fa : fa.right._tag === "None" ? left(M.nat) : right(fa.right.value);
+    },
 
-      separate: (fa) => {
-         return isLeft(fa)
-            ? { left: fa, right: fa }
-            : isLeft(fa.right)
-            ? { left: right(fa.right.left), right: left(M.nat) }
-            : { left: left(M.nat), right: right(fa.right.right) };
-      }
-   });
+    separate: (fa) => {
+      return isLeft(fa)
+        ? { left: fa, right: fa }
+        : isLeft(fa.right)
+        ? { left: right(fa.right.left), right: left(M.nat) }
+        : { left: left(M.nat), right: right(fa.right.right) };
+    }
+  });
 }

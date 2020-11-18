@@ -21,7 +21,7 @@ import { chain_ } from "./monad";
  * @since 1.0.0
  */
 export function map_<R, E, A, B>(fa: Task<R, E, A>, f: (a: A) => B): Task<R, E, B> {
-   return chain_(fa, (a) => succeed(f(a)));
+  return chain_(fa, (a) => succeed(f(a)));
 }
 
 /**
@@ -37,5 +37,5 @@ export function map_<R, E, A, B>(fa: Task<R, E, A>, f: (a: A) => B): Task<R, E, 
  * @since 1.0.0
  */
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Task<R, E, A>) => Task<R, E, B> {
-   return (fa) => map_(fa, f);
+  return (fa) => map_(fa, f);
 }

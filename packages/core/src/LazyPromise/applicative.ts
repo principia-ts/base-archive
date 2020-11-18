@@ -23,7 +23,7 @@ import { unit } from "./unit";
  * @since 1.0.0
  */
 export function both_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> {
-   return mapBoth_(fa, fb, (a, b) => [a, b]);
+  return mapBoth_(fa, fb, (a, b) => [a, b]);
 }
 
 /**
@@ -36,8 +36,10 @@ export function both_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise
  * @category Apply
  * @since 1.0.0
  */
-export function both<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
-   return (fa) => both_(fa, fb);
+export function both<B>(
+  fb: LazyPromise<B>
+): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
+  return (fa) => both_(fa, fb);
 }
 
 /**
@@ -50,8 +52,11 @@ export function both<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyProm
  * @category Apply
  * @since 1.0.0
  */
-export function bothSeq_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> {
-   return mapBothSeq_(fa, fb, (a, b) => [a, b]);
+export function bothSeq_<A, B>(
+  fa: LazyPromise<A>,
+  fb: LazyPromise<B>
+): LazyPromise<readonly [A, B]> {
+  return mapBothSeq_(fa, fb, (a, b) => [a, b]);
 }
 
 /**
@@ -64,8 +69,10 @@ export function bothSeq_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyProm
  * @category Apply
  * @since 1.0.0
  */
-export function bothSeq<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
-   return (fa) => bothSeq_(fa, fb);
+export function bothSeq<B>(
+  fb: LazyPromise<B>
+): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
+  return (fa) => bothSeq_(fa, fb);
 }
 
 /**
@@ -79,19 +86,19 @@ export function bothSeq<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => LazyP
  * @since 1.0.0
  */
 export function pure<A>(a: A): LazyPromise<A> {
-   return () => Promise.resolve(a);
+  return () => Promise.resolve(a);
 }
 
 export const ApplicativePar: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_,
-   both,
-   unit
+  ...Functor,
+  both_,
+  both,
+  unit
 });
 
 export const ApplicativeSeq: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_: bothSeq_,
-   both: bothSeq,
-   unit
+  ...Functor,
+  both_: bothSeq_,
+  both: bothSeq,
+  unit
 });

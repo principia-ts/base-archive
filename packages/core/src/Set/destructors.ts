@@ -8,13 +8,13 @@ import { toNumber } from "@principia/prelude/Ordering";
  */
 
 export function toArray<A>(O: Ord<A>): (set: ReadonlySet<A>) => ReadonlyArray<A> {
-   return (set) => {
-      const r: Array<A> = [];
-      set.forEach((e) => r.push(e));
-      return r.sort((a, b) => toNumber(O.compare(a)(b)));
-   };
+  return (set) => {
+    const r: Array<A> = [];
+    set.forEach((e) => r.push(e));
+    return r.sort((a, b) => toNumber(O.compare(a)(b)));
+  };
 }
 
 export function toSet<A>(s: ReadonlySet<A>): Set<A> {
-   return new Set(s);
+  return new Set(s);
 }

@@ -13,9 +13,9 @@ import type { Traversal } from "./model";
  * @since 1.0.0
  */
 export function id<S>(): Traversal<S, S> {
-   return {
-      modifyF: implementModifyF<S, S>()((_) => (_) => (f) => f)
-   };
+  return {
+    modifyF: implementModifyF<S, S>()((_) => (_) => (f) => f)
+  };
 }
 
 /**

@@ -10,14 +10,14 @@ import { asks, asksM, asksManaged } from "../reader";
  * Lifts an `Either` into a `ZManaged` value.
  */
 export function fromEither<E, A>(ea: () => Either<E, A>): Managed<unknown, E, A> {
-   return chain_(total(ea), E.fold(fail, succeed));
+  return chain_(total(ea), E.fold(fail, succeed));
 }
 
 /**
  * Lifts a function `R => A` into a `Managed<R, never, A>`.
  */
 export function fromFunction<R, A>(f: (r: R) => A): Managed<R, never, A> {
-   return asks(f);
+  return asks(f);
 }
 
 /**
@@ -25,13 +25,15 @@ export function fromFunction<R, A>(f: (r: R) => A): Managed<R, never, A> {
  * an effect that requires the input to the function.
  */
 export function fromFunctionM<R, E, A>(f: (r: R) => Task<unknown, E, A>): Managed<R, E, A> {
-   return asksM(f);
+  return asksM(f);
 }
 
 /**
  * Lifts an effectful function whose effect requires no environment into
  * an effect that requires the input to the function.
  */
-export function fromFunctionManaged<R, E, A>(f: (r: R) => Managed<unknown, E, A>): Managed<R, E, A> {
-   return asksManaged(f);
+export function fromFunctionManaged<R, E, A>(
+  f: (r: R) => Managed<unknown, E, A>
+): Managed<R, E, A> {
+  return asksManaged(f);
 }

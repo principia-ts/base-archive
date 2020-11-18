@@ -9,12 +9,12 @@ import type { LazyList } from "./model";
  */
 
 export const toArray = <A>(xs: LazyList<A>): ReadonlyArray<A> => {
-   if (isEmpty(xs)) return [];
-   const r = [];
-   let l: LazyList<A> = xs;
-   while (isNonEmpty(l)) {
-      r.push(head(l));
-      l = tail(l);
-   }
-   return r;
+  if (isEmpty(xs)) return [];
+  const r = [];
+  let l: LazyList<A> = xs;
+  while (isNonEmpty(l)) {
+    r.push(head(l));
+    l = tail(l);
+  }
+  return r;
 };

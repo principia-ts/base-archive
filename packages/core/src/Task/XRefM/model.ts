@@ -21,187 +21,190 @@ import type { Ref } from "../XRef";
  *while multiple readers can read simultaneously.
  */
 export interface XRefM<RA, RB, EA, EB, A, B> {
-   /**
-    * Folds over the error and value types of the `XRefM`. This is a highly
-    * polymorphic method that is capable of arbitrarily transforming the error
-    * and value types of the `XRefM`. For most use cases one of the more
-    * specific combinators implemented in terms of `foldM` will be more
-    * ergonomic but this method is extremely useful for implementing new
-    * combinators.
-    */
-   readonly foldM: <RC, RD, EC, ED, C, D>(
-      ea: (_: EA) => EC,
-      eb: (_: EB) => ED,
-      ca: (_: C) => T.Task<RC, EC, A>,
-      bd: (_: B) => T.Task<RD, ED, D>
-   ) => XRefM<RA & RC, RB & RD, EC, ED, C, D>;
+  /**
+   * Folds over the error and value types of the `XRefM`. This is a highly
+   * polymorphic method that is capable of arbitrarily transforming the error
+   * and value types of the `XRefM`. For most use cases one of the more
+   * specific combinators implemented in terms of `foldM` will be more
+   * ergonomic but this method is extremely useful for implementing new
+   * combinators.
+   */
+  readonly foldM: <RC, RD, EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ca: (_: C) => T.Task<RC, EC, A>,
+    bd: (_: B) => T.Task<RD, ED, D>
+  ) => XRefM<RA & RC, RB & RD, EC, ED, C, D>;
 
-   /**
-    * Folds over the error and value types of the `XRefM`, allowing access to
-    * the state in transforming the `set` value. This is a more powerful version
-    * of `foldM` but requires unifying the environment and error types.
-    */
-   readonly foldAllM: <RC, RD, EC, ED, C, D>(
-      ea: (_: EA) => EC,
-      eb: (_: EB) => ED,
-      ec: (_: EB) => EC,
-      ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
-      bd: (_: B) => T.Task<RD, ED, D>
-   ) => XRefM<RB & RA & RC, RB & RD, EC, ED, C, D>;
+  /**
+   * Folds over the error and value types of the `XRefM`, allowing access to
+   * the state in transforming the `set` value. This is a more powerful version
+   * of `foldM` but requires unifying the environment and error types.
+   */
+  readonly foldAllM: <RC, RD, EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ec: (_: EB) => EC,
+    ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
+    bd: (_: B) => T.Task<RD, ED, D>
+  ) => XRefM<RB & RA & RC, RB & RD, EC, ED, C, D>;
 
-   /**
-    * Reads the value from the `XRefM`.
-    */
-   readonly get: T.Task<RB, EB, B>;
+  /**
+   * Reads the value from the `XRefM`.
+   */
+  readonly get: T.Task<RB, EB, B>;
 
-   /**
-    * Writes a new value to the `XRefM`, with a guarantee of immediate
-    * consistency (at some cost to performance).
-    */
-   readonly set: (a: A) => T.Task<RA, EA, void>;
+  /**
+   * Writes a new value to the `XRefM`, with a guarantee of immediate
+   * consistency (at some cost to performance).
+   */
+  readonly set: (a: A) => T.Task<RA, EA, void>;
 }
 
 export class DerivedAll<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A, B> {
-   readonly _tag = "DerivedAll";
+  readonly _tag = "DerivedAll";
 
-   constructor(
-      readonly value: Atomic<S>,
-      readonly getEither: (s: S) => T.Task<RB, EB, B>,
-      readonly setEither: (a: A) => (s: S) => T.Task<RA, EA, S>
-   ) {}
+  constructor(
+    readonly value: Atomic<S>,
+    readonly getEither: (s: S) => T.Task<RB, EB, B>,
+    readonly setEither: (a: A) => (s: S) => T.Task<RA, EA, S>
+  ) {}
 
-   readonly foldM = <RC, RD, EC, ED, C, D>(
-      ea: (_: EA) => EC,
-      eb: (_: EB) => ED,
-      ca: (_: C) => T.Task<RC, EC, A>,
-      bd: (_: B) => T.Task<RD, ED, D>
-   ): XRefM<RA & RC, RB & RD, EC, ED, C, D> =>
-      new DerivedAll<RA & RC, RB & RD, EC, ED, C, D, S>(
-         this.value,
-         (s) =>
-            T.foldM_(
-               this.getEither(s),
-               (e) => T.fail(eb(e)),
-               (a) => bd(a)
-            ),
-         (a) => (s) => T.chain_(ca(a), (a) => T.mapError_(this.setEither(a)(s), ea))
-      );
+  readonly foldM = <RC, RD, EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ca: (_: C) => T.Task<RC, EC, A>,
+    bd: (_: B) => T.Task<RD, ED, D>
+  ): XRefM<RA & RC, RB & RD, EC, ED, C, D> =>
+    new DerivedAll<RA & RC, RB & RD, EC, ED, C, D, S>(
+      this.value,
+      (s) =>
+        T.foldM_(
+          this.getEither(s),
+          (e) => T.fail(eb(e)),
+          (a) => bd(a)
+        ),
+      (a) => (s) => T.chain_(ca(a), (a) => T.mapError_(this.setEither(a)(s), ea))
+    );
 
-   readonly foldAllM = <RC, RD, EC, ED, C, D>(
-      ea: (_: EA) => EC,
-      eb: (_: EB) => ED,
-      ec: (_: EB) => EC,
-      ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
-      bd: (_: B) => T.Task<RD, ED, D>
-   ): XRefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
-      new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
-         this.value,
-         (s) =>
-            T.foldM_(
-               this.getEither(s),
-               (e) => T.fail(eb(e)),
-               (a) => bd(a)
-            ),
-         (c) => (s) =>
-            T.chain_(
-               T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
-               (a) => T.mapError_(this.setEither(a)(s), ea)
-            )
-      );
+  readonly foldAllM = <RC, RD, EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ec: (_: EB) => EC,
+    ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
+    bd: (_: B) => T.Task<RD, ED, D>
+  ): XRefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
+    new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
+      this.value,
+      (s) =>
+        T.foldM_(
+          this.getEither(s),
+          (e) => T.fail(eb(e)),
+          (a) => bd(a)
+        ),
+      (c) => (s) =>
+        T.chain_(
+          T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
+          (a) => T.mapError_(this.setEither(a)(s), ea)
+        )
+    );
 
-   get: T.Task<RB, EB, B> = T.chain_(this.value.get, (a) => this.getEither(a));
+  get: T.Task<RB, EB, B> = T.chain_(this.value.get, (a) => this.getEither(a));
 
-   set: (a: A) => T.Task<RA, EA, void> = (a) =>
-      withPermit(this.value.semaphore)(T.chain_(T.chain_(this.value.get, this.setEither(a)), (a) => this.value.set(a)));
+  set: (a: A) => T.Task<RA, EA, void> = (a) =>
+    withPermit(this.value.semaphore)(
+      T.chain_(T.chain_(this.value.get, this.setEither(a)), (a) => this.value.set(a))
+    );
 }
 
 export class Derived<RA, RB, EA, EB, A, B, S> implements XRefM<RA, RB, EA, EB, A, B> {
-   readonly _tag = "Derived";
+  readonly _tag = "Derived";
 
-   constructor(
-      readonly value: Atomic<S>,
-      readonly getEither: (s: S) => T.Task<RB, EB, B>,
-      readonly setEither: (a: A) => T.Task<RA, EA, S>
-   ) {}
+  constructor(
+    readonly value: Atomic<S>,
+    readonly getEither: (s: S) => T.Task<RB, EB, B>,
+    readonly setEither: (a: A) => T.Task<RA, EA, S>
+  ) {}
 
-   readonly foldM = <RC, RD, EC, ED, C, D>(
-      ea: (_: EA) => EC,
-      eb: (_: EB) => ED,
-      ca: (_: C) => T.Task<RC, EC, A>,
-      bd: (_: B) => T.Task<RD, ED, D>
-   ): XRefM<RA & RC, RB & RD, EC, ED, C, D> =>
-      new Derived<RA & RC, RB & RD, EC, ED, C, D, S>(
-         this.value,
-         (s) =>
-            T.foldM_(
-               this.getEither(s),
-               (e) => T.fail(eb(e)),
-               (a) => bd(a)
-            ),
-         (a) => T.chain_(ca(a), (a) => T.mapError_(this.setEither(a), ea))
-      );
+  readonly foldM = <RC, RD, EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ca: (_: C) => T.Task<RC, EC, A>,
+    bd: (_: B) => T.Task<RD, ED, D>
+  ): XRefM<RA & RC, RB & RD, EC, ED, C, D> =>
+    new Derived<RA & RC, RB & RD, EC, ED, C, D, S>(
+      this.value,
+      (s) =>
+        T.foldM_(
+          this.getEither(s),
+          (e) => T.fail(eb(e)),
+          (a) => bd(a)
+        ),
+      (a) => T.chain_(ca(a), (a) => T.mapError_(this.setEither(a), ea))
+    );
 
-   readonly foldAllM = <RC, RD, EC, ED, C, D>(
-      ea: (_: EA) => EC,
-      eb: (_: EB) => ED,
-      ec: (_: EB) => EC,
-      ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
-      bd: (_: B) => T.Task<RD, ED, D>
-   ): XRefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
-      new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
-         this.value,
-         (s) =>
-            T.foldM_(
-               this.getEither(s),
-               (e) => T.fail(eb(e)),
-               (a) => bd(a)
-            ),
-         (c) => (s) =>
-            T.chain_(
-               T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
-               (a) => T.mapError_(this.setEither(a), ea)
-            )
-      );
+  readonly foldAllM = <RC, RD, EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ec: (_: EB) => EC,
+    ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
+    bd: (_: B) => T.Task<RD, ED, D>
+  ): XRefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
+    new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
+      this.value,
+      (s) =>
+        T.foldM_(
+          this.getEither(s),
+          (e) => T.fail(eb(e)),
+          (a) => bd(a)
+        ),
+      (c) => (s) =>
+        T.chain_(
+          T.foldM_(this.getEither(s), (e) => T.fail(ec(e)), ca(c)),
+          (a) => T.mapError_(this.setEither(a), ea)
+        )
+    );
 
-   get: T.Task<RB, EB, B> = T.chain_(this.value.get, (a) => this.getEither(a));
+  get: T.Task<RB, EB, B> = T.chain_(this.value.get, (a) => this.getEither(a));
 
-   set: (a: A) => T.Task<RA, EA, void> = (a) =>
-      withPermit(this.value.semaphore)(T.chain_(this.setEither(a), (a) => this.value.set(a)));
+  set: (a: A) => T.Task<RA, EA, void> = (a) =>
+    withPermit(this.value.semaphore)(T.chain_(this.setEither(a), (a) => this.value.set(a)));
 }
 
 export class Atomic<A> implements XRefM<unknown, unknown, never, never, A, A> {
-   readonly _tag = "Atomic";
+  readonly _tag = "Atomic";
 
-   constructor(readonly ref: Ref<A>, readonly semaphore: Semaphore) {}
+  constructor(readonly ref: Ref<A>, readonly semaphore: Semaphore) {}
 
-   readonly foldM = <RC, RD, EC, ED, C, D>(
-      _ea: (_: never) => EC,
-      _eb: (_: never) => ED,
-      ca: (_: C) => T.Task<RC, EC, A>,
-      bd: (_: A) => T.Task<RD, ED, D>
-   ): XRefM<RC, RD, EC, ED, C, D> =>
-      new Derived<RC, RD, EC, ED, C, D, A>(
-         this,
-         (s) => bd(s),
-         (a) => ca(a)
-      );
+  readonly foldM = <RC, RD, EC, ED, C, D>(
+    _ea: (_: never) => EC,
+    _eb: (_: never) => ED,
+    ca: (_: C) => T.Task<RC, EC, A>,
+    bd: (_: A) => T.Task<RD, ED, D>
+  ): XRefM<RC, RD, EC, ED, C, D> =>
+    new Derived<RC, RD, EC, ED, C, D, A>(
+      this,
+      (s) => bd(s),
+      (a) => ca(a)
+    );
 
-   readonly foldAllM = <RC, RD, EC, ED, C, D>(
-      _ea: (_: never) => EC,
-      _eb: (_: never) => ED,
-      _ec: (_: never) => EC,
-      ca: (_: C) => (_: A) => T.Task<RC, EC, A>,
-      bd: (_: A) => T.Task<RD, ED, D>
-   ): XRefM<RC, RD, EC, ED, C, D> =>
-      new DerivedAll<RC, RD, EC, ED, C, D, A>(
-         this,
-         (s) => bd(s),
-         (a) => (s) => ca(a)(s)
-      );
+  readonly foldAllM = <RC, RD, EC, ED, C, D>(
+    _ea: (_: never) => EC,
+    _eb: (_: never) => ED,
+    _ec: (_: never) => EC,
+    ca: (_: C) => (_: A) => T.Task<RC, EC, A>,
+    bd: (_: A) => T.Task<RD, ED, D>
+  ): XRefM<RC, RD, EC, ED, C, D> =>
+    new DerivedAll<RC, RD, EC, ED, C, D, A>(
+      this,
+      (s) => bd(s),
+      (a) => (s) => ca(a)(s)
+    );
 
-   readonly get: T.Task<unknown, never, A> = this.ref.get;
+  readonly get: T.Task<unknown, never, A> = this.ref.get;
 
-   readonly set: (a: A) => T.Task<unknown, never, void> = (a) => withPermit(this.semaphore)(this.set(a));
+  readonly set: (a: A) => T.Task<unknown, never, void> = (a) =>
+    withPermit(this.semaphore)(this.set(a));
 }
 
 export interface RefMRE<R, E, A> extends XRefM<R, R, E, E, A, A> {}
@@ -210,4 +213,4 @@ export interface RefMR<R, A> extends XRefM<R, R, never, never, A, A> {}
 export interface RefM<A> extends XRefM<unknown, unknown, never, never, A, A> {}
 
 export const concrete = <RA, RB, EA, EB, A>(_: XRefM<RA, RB, EA, EB, A, A>) =>
-   _ as Atomic<A> | Derived<RA, RB, EA, EB, A, A, A> | DerivedAll<RA, RB, EA, EB, A, A, A>;
+  _ as Atomic<A> | Derived<RA, RB, EA, EB, A, A, A> | DerivedAll<RA, RB, EA, EB, A, A, A>;

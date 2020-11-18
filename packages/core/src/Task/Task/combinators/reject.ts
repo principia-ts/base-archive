@@ -17,10 +17,10 @@ import { chain } from "../monad";
  * @since 1.0.0
  */
 export function rejectM_<R, E, A, R1, E1>(
-   fa: Task<R, E, A>,
-   pf: (a: A) => Option<Task<R1, E1, E1>>
+  fa: Task<R, E, A>,
+  pf: (a: A) => Option<Task<R1, E1, E1>>
 ): Task<R & R1, E | E1, A> {
-   return chain_(fa, (a) => O.fold_(pf(a), () => pure(a), chain(fail)));
+  return chain_(fa, (a) => O.fold_(pf(a), () => pure(a), chain(fail)));
 }
 
 /**
@@ -36,9 +36,9 @@ export function rejectM_<R, E, A, R1, E1>(
  * @since 1.0.0
  */
 export function rejectM<R1, E1, A>(
-   pf: (a: A) => Option<Task<R1, E1, E1>>
+  pf: (a: A) => Option<Task<R1, E1, E1>>
 ): <R, E>(fa: Task<R, E, A>) => Task<R & R1, E1 | E, A> {
-   return (fa) => rejectM_(fa, pf);
+  return (fa) => rejectM_(fa, pf);
 }
 
 /**
@@ -52,8 +52,11 @@ export function rejectM<R1, E1, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export function reject_<R, E, A, E1>(fa: Task<R, E, A>, pf: (a: A) => Option<E1>): Task<R, E | E1, A> {
-   return rejectM_(fa, (a) => O.map_(pf(a), fail));
+export function reject_<R, E, A, E1>(
+  fa: Task<R, E, A>,
+  pf: (a: A) => Option<E1>
+): Task<R, E | E1, A> {
+  return rejectM_(fa, (a) => O.map_(pf(a), fail));
 }
 
 /**
@@ -67,6 +70,8 @@ export function reject_<R, E, A, E1>(fa: Task<R, E, A>, pf: (a: A) => Option<E1>
  * @category Combinators
  * @since 1.0.0
  */
-export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: Task<R, E, A>) => Task<R, E1 | E, A> {
-   return (fa) => reject_(fa, pf);
+export function reject<A, E1>(
+  pf: (a: A) => Option<E1>
+): <R, E>(fa: Task<R, E, A>) => Task<R, E1 | E, A> {
+  return (fa) => reject_(fa, pf);
 }

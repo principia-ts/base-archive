@@ -10,22 +10,22 @@ import { releaseMap } from "./releaseMap";
  * Returns a memoized version of the specified Managed.
  */
 export function memoize<R, E, A>(ma: Managed<R, E, A>): IO<Managed<R, E, A>> {
-   return mapM_(releaseMap, (finalizers) =>
-      T.gen(function* (_) {
-         const promise = yield* _(XP.make<E, A>());
-         const complete = yield* _(
-            T.once(
-               T.asksM((r: R) =>
-                  pipe(
-                     ma.task,
-                     T.giveAll([r, finalizers] as const),
-                     T.map(([_, a]) => a),
-                     T.to(promise)
-                  )
-               )
+  return mapM_(releaseMap, (finalizers) =>
+    T.gen(function* (_) {
+      const promise = yield* _(XP.make<E, A>());
+      const complete = yield* _(
+        T.once(
+          T.asksM((r: R) =>
+            pipe(
+              ma.task,
+              T.giveAll([r, finalizers] as const),
+              T.map(([_, a]) => a),
+              T.to(promise)
             )
-         );
-         return pipe(complete, T.apSecond(XP.await(promise)), T.toManaged());
-      })
-   );
+          )
+        )
+      );
+      return pipe(complete, T.apSecond(XP.await(promise)), T.toManaged());
+    })
+  );
 }

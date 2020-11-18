@@ -16,10 +16,10 @@ import type { URI, V } from "./model";
  * @since 1.0.0
  */
 export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[URI], V & HKT.Fix<"E", E>> {
-   return HKT.instance<P.Applicative<[URI], V & HKT.Fix<"E", E>>>({
-      ...Functor,
-      unit: () => make(M.nat),
-      both_: (fa, fb) => make(M.combine_(fa, fb)),
-      both: (fb) => (fa) => make(M.combine_(fa, fb))
-   });
+  return HKT.instance<P.Applicative<[URI], V & HKT.Fix<"E", E>>>({
+    ...Functor,
+    unit: () => make(M.nat),
+    both_: (fa, fb) => make(M.combine_(fa, fb)),
+    both: (fb) => (fa) => make(M.combine_(fa, fb))
+  });
 }

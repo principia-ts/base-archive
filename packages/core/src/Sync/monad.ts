@@ -13,21 +13,30 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export const chain_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> =
-   X.chain_;
+export const chain_: <R, E, A, Q, D, B>(
+  ma: Sync<R, E, A>,
+  f: (a: A) => Sync<Q, D, B>
+) => Sync<Q & R, D | E, B> = X.chain_;
 
-export const chain: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
-   X.chain;
+export const chain: <A, Q, D, B>(
+  f: (a: A) => Sync<Q, D, B>
+) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> = X.chain;
 
-export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = chain(identity);
+export const flatten: <R, E, R1, E1, A>(
+  mma: Sync<R, E, Sync<R1, E1, A>>
+) => Sync<R & R1, E | E1, A> = chain(identity);
 
-export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = X.tap_;
+export const tap_: <R, E, A, Q, D, B>(
+  ma: Sync<R, E, A>,
+  f: (a: A) => Sync<Q, D, B>
+) => Sync<Q & R, D | E, A> = X.tap_;
 
-export const tap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> =
-   X.tap;
+export const tap: <A, Q, D, B>(
+  f: (a: A) => Sync<Q, D, B>
+) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> = X.tap;
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-   ...Functor,
-   unit,
-   flatten
+  ...Functor,
+  unit,
+  flatten
 });

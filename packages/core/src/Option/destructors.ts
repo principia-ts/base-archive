@@ -18,7 +18,7 @@ import type { Option } from "./model";
  * @since 1.0.0
  */
 export function fold_<A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A) => C): B | C {
-   return isNone(fa) ? onNothing() : onJust(fa.value);
+  return isNone(fa) ? onNothing() : onJust(fa.value);
 }
 
 /**
@@ -32,7 +32,7 @@ export function fold_<A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A)
  * @since 1.0.0
  */
 export function fold<A, B, C>(onNothing: () => B, onJust: (a: A) => C): (fa: Option<A>) => B | C {
-   return (fa) => fold_(fa, onNothing, onJust);
+  return (fa) => fold_(fa, onNothing, onJust);
 }
 
 /**
@@ -46,7 +46,7 @@ export function fold<A, B, C>(onNothing: () => B, onJust: (a: A) => C): (fa: Opt
  * @since 1.0.0
  */
 export function toNullable<A>(fa: Option<A>): A | null {
-   return isNone(fa) ? null : fa.value;
+  return isNone(fa) ? null : fa.value;
 }
 
 /**
@@ -60,7 +60,7 @@ export function toNullable<A>(fa: Option<A>): A | null {
  * @since 1.0.0
  */
 export function toUndefined<A>(fa: Option<A>): A | undefined {
-   return isNone(fa) ? undefined : fa.value;
+  return isNone(fa) ? undefined : fa.value;
 }
 
 /**
@@ -74,7 +74,7 @@ export function toUndefined<A>(fa: Option<A>): A | undefined {
  * @since 1.0.0
  */
 export function getOrElse_<A, B>(fa: Option<A>, onNothing: () => B): A | B {
-   return isNone(fa) ? onNothing() : fa.value;
+  return isNone(fa) ? onNothing() : fa.value;
 }
 
 /**
@@ -88,5 +88,5 @@ export function getOrElse_<A, B>(fa: Option<A>, onNothing: () => B): A | B {
  * @since 1.0.0
  */
 export function getOrElse<B>(onNothing: () => B): <A>(fa: Option<A>) => B | A {
-   return (fa) => getOrElse_(fa, onNothing);
+  return (fa) => getOrElse_(fa, onNothing);
 }

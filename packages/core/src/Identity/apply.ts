@@ -11,47 +11,47 @@ import type { URI, V } from "./model";
  */
 
 export function ap_<A, B>(fab: (a: A) => B, fa: A): B {
-   return fab(fa);
+  return fab(fa);
 }
 
 export function ap<A>(fa: A): <B>(fab: (a: A) => B) => B {
-   return (fab) => fab(fa);
+  return (fab) => fab(fa);
 }
 
 export function apFirst_<A, B>(fa: A, fb: B): A {
-   return ap_(
-      map_(fa, (a) => () => a),
-      fb
-   );
+  return ap_(
+    map_(fa, (a) => () => a),
+    fb
+  );
 }
 
 export function apFirst<B>(fb: B): <A>(fa: A) => A {
-   return (fa) => apFirst_(fa, fb);
+  return (fa) => apFirst_(fa, fb);
 }
 
 export function apSecond_<A, B>(fa: A, fb: B): B {
-   return ap_(
-      map_(fa, (_) => (b: B) => b),
-      fb
-   );
+  return ap_(
+    map_(fa, (_) => (b: B) => b),
+    fb
+  );
 }
 
 export function apSecond<B>(fb: B): <A>(fa: A) => B {
-   return (fa) => apSecond_(fa, fb);
+  return (fa) => apSecond_(fa, fb);
 }
 
 export function mapBoth_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
-   return f(fa, fb);
+  return f(fa, fb);
 }
 
 export function mapBoth<A, B, C>(fb: B, f: (a: A, b: B) => C): (fa: A) => C {
-   return (fa) => f(fa, fb);
+  return (fa) => f(fa, fb);
 }
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
-   ...Functor,
-   ap_: ap_,
-   ap,
-   mapBoth_: mapBoth_,
-   mapBoth
+  ...Functor,
+  ap_: ap_,
+  ap,
+  mapBoth_: mapBoth_,
+  mapBoth
 });

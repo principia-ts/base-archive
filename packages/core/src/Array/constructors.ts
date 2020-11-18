@@ -13,7 +13,7 @@
  * @since 1.0.0
  */
 export function empty<A>(): ReadonlyArray<A> {
-   return [];
+  return [];
 }
 
 /**
@@ -25,7 +25,7 @@ export function empty<A>(): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function fromArray<A>(as: Array<A>): ReadonlyArray<A> {
-   return Array.from(as);
+  return Array.from(as);
 }
 
 /**
@@ -37,7 +37,7 @@ export function fromArray<A>(as: Array<A>): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function from<A>(as: Iterable<A>): ReadonlyArray<A> {
-   return Array.from(as);
+  return Array.from(as);
 }
 
 /**
@@ -47,11 +47,11 @@ export function from<A>(as: Iterable<A>): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function makeBy<A>(n: number, f: (i: number) => A): ReadonlyArray<A> {
-   const r: Array<A> = [];
-   for (let i = 0; i < n; i++) {
-      r.push(f(i));
-   }
-   return r;
+  const r: Array<A> = [];
+  for (let i = 0; i < n; i++) {
+    r.push(f(i));
+  }
+  return r;
 }
 
 /**
@@ -61,7 +61,7 @@ export function makeBy<A>(n: number, f: (i: number) => A): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function range(start: number, end: number): ReadonlyArray<number> {
-   return makeBy(end - start + 1, (i) => start + i);
+  return makeBy(end - start + 1, (i) => start + i);
 }
 
 /**
@@ -71,5 +71,5 @@ export function range(start: number, end: number): ReadonlyArray<number> {
  * @since 1.0.0
  */
 export function replicate<A>(n: number, a: A): ReadonlyArray<A> {
-   return makeBy(n, () => a);
+  return makeBy(n, () => a);
 }

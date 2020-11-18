@@ -24,7 +24,7 @@ import type { Either, URI, V } from "./model";
  * @since 1.0.0
  */
 export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): Either<E | G, B> {
-   return isLeft(fab) ? fab : isLeft(fa) ? fa : right(fab.right(fa.right));
+  return isLeft(fab) ? fab : isLeft(fa) ? fa : right(fab.right(fa.right));
 }
 
 /**
@@ -37,8 +37,10 @@ export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): 
  * @category Apply
  * @since 1.0.0
  */
-export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) => Either<E | G, B> {
-   return (fab) => ap_(fab, fa);
+export function ap<E, A>(
+  fa: Either<E, A>
+): <G, B>(fab: Either<G, (a: A) => B>) => Either<E | G, B> {
+  return (fab) => ap_(fab, fa);
 }
 
 /**
@@ -52,10 +54,10 @@ export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) 
  * @since 1.0.0
  */
 export function apFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> {
-   return ap_(
-      map_(fa, (a) => () => a),
-      fb
-   );
+  return ap_(
+    map_(fa, (a) => () => a),
+    fb
+  );
 }
 
 /**
@@ -69,7 +71,7 @@ export function apFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either
  * @since 1.0.0
  */
 export function apFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
-   return (fa) => apFirst_(fa, fb);
+  return (fa) => apFirst_(fa, fb);
 }
 
 /**
@@ -83,10 +85,10 @@ export function apFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eit
  * @since 1.0.0
  */
 export function apSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> {
-   return ap_(
-      map_(fa, () => (b: B) => b),
-      fb
-   );
+  return ap_(
+    map_(fa, () => (b: B) => b),
+    fb
+  );
 }
 
 /**
@@ -100,7 +102,7 @@ export function apSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Eithe
  * @since 1.0.0
  */
 export function apSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
-   return (fa) => apSecond_(fa, fb);
+  return (fa) => apSecond_(fa, fb);
 }
 
 /**
@@ -113,11 +115,15 @@ export function apSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Ei
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: A, b: B) => C): Either<E | G, C> {
-   return ap_(
-      map_(fa, (a) => (b: B) => f(a, b)),
-      fb
-   );
+export function mapBoth_<E, A, G, B, C>(
+  fa: Either<E, A>,
+  fb: Either<G, B>,
+  f: (a: A, b: B) => C
+): Either<E | G, C> {
+  return ap_(
+    map_(fa, (a) => (b: B) => f(a, b)),
+    fb
+  );
 }
 
 /**
@@ -130,8 +136,11 @@ export function mapBoth_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth<A, G, B, C>(fb: Either<G, B>, f: (a: A, b: B) => C): <E>(fa: Either<E, A>) => Either<G | E, C> {
-   return (fa) => mapBoth_(fa, fb, f);
+export function mapBoth<A, G, B, C>(
+  fb: Either<G, B>,
+  f: (a: A, b: B) => C
+): <E>(fa: Either<E, A>) => Either<G | E, C> {
+  return (fa) => mapBoth_(fa, fb, f);
 }
 
 /**
@@ -145,17 +154,18 @@ export function mapBoth<A, G, B, C>(fb: Either<G, B>, f: (a: A, b: B) => C): <E>
  * @since 1.0.0
  */
 export function liftA2<A, B, C>(
-   f: (a: A) => (b: B) => C
+  f: (a: A) => (b: B) => C
 ): <E>(fa: Either<E, A>) => <G>(fb: Either<G, B>) => Either<E | G, C> {
-   return (fa) => (fb) => (isLeft(fa) ? left(fa.left) : isLeft(fb) ? left(fb.left) : right(f(fa.right)(fb.right)));
+  return (fa) => (fb) =>
+    isLeft(fa) ? left(fa.left) : isLeft(fb) ? left(fb.left) : right(f(fa.right)(fb.right));
 }
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
-   ...Functor,
-   ap,
-   ap_,
-   mapBoth,
-   mapBoth_
+  ...Functor,
+  ap,
+  ap_,
+  mapBoth,
+  mapBoth_
 });
 
 export const tuple = P.tupleF(Apply);
@@ -178,18 +188,18 @@ export const struct = P.structF(Apply);
  * @since 1.0.0
  */
 export function apS<N extends string, A, E1, B>(
-   name: Exclude<N, keyof A>,
-   fb: Either<E1, B>
+  name: Exclude<N, keyof A>,
+  fb: Either<E1, B>
 ): <E>(
-   fa: Either<E, A>
+  fa: Either<E, A>
 ) => Either<
-   E | E1,
-   {
-      [K in keyof A | N]: K extends keyof A ? A[K] : B;
-   }
+  E | E1,
+  {
+    [K in keyof A | N]: K extends keyof A ? A[K] : B;
+  }
 > {
-   return flow(
-      map((a) => (b: B) => bind_(a, name, b)),
-      ap(fb)
-   );
+  return flow(
+    map((a) => (b: B) => bind_(a, name, b)),
+    ap(fb)
+  );
 }

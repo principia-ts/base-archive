@@ -13,13 +13,13 @@ import { foreachParN_ } from "./foreachParN";
  * Collects all successes and failures in a separated fashion.
  */
 export function partition_<R, E, A, B>(
-   as: Iterable<A>,
-   f: (a: A) => Task<R, E, B>
+  as: Iterable<A>,
+  f: (a: A) => Task<R, E, B>
 ): Task<R, never, Separated<Iterable<E>, Iterable<B>>> {
-   return map_(
-      foreach_(as, (a) => either(f(a))),
-      I.partitionMap(identity)
-   );
+  return map_(
+    foreach_(as, (a) => either(f(a))),
+    I.partitionMap(identity)
+  );
 }
 
 /**
@@ -27,9 +27,9 @@ export function partition_<R, E, A, B>(
  * Collects all successes and failures in a separated fashion.
  */
 export function partition<R, E, A, B>(
-   f: (a: A) => Task<R, E, B>
+  f: (a: A) => Task<R, E, B>
 ): (fas: Iterable<A>) => Task<R, never, Separated<Iterable<E>, Iterable<B>>> {
-   return (fas) => partition_(fas, f);
+  return (fas) => partition_(fas, f);
 }
 
 /**
@@ -38,13 +38,13 @@ export function partition<R, E, A, B>(
  * a tuple.
  */
 export function partitionPar_<R, E, A, B>(
-   as: Iterable<A>,
-   f: (a: A) => Task<R, E, B>
+  as: Iterable<A>,
+  f: (a: A) => Task<R, E, B>
 ): Task<R, never, Separated<Iterable<E>, Iterable<B>>> {
-   return map_(
-      foreachPar_(as, (a) => either(f(a))),
-      I.partitionMap(identity)
-   );
+  return map_(
+    foreachPar_(as, (a) => either(f(a))),
+    I.partitionMap(identity)
+  );
 }
 
 /**
@@ -53,9 +53,9 @@ export function partitionPar_<R, E, A, B>(
  * a tuple.
  */
 export function partitionPar<R, E, A, B>(
-   f: (a: A) => Task<R, E, B>
+  f: (a: A) => Task<R, E, B>
 ): (as: Iterable<A>) => Task<R, never, Separated<Iterable<E>, Iterable<B>>> {
-   return (as) => partitionPar_(as, f);
+  return (as) => partitionPar_(as, f);
 }
 
 /**
@@ -66,13 +66,16 @@ export function partitionPar<R, E, A, B>(
  * Unlike `partitionPar`, this method will use at most up to `n` fibers.
  */
 export function partitionParN_(
-   n: number
-): <R, E, A, B>(as: Iterable<A>, f: (a: A) => Task<R, E, B>) => Task<R, never, Separated<Iterable<E>, Iterable<B>>> {
-   return (as, f) =>
-      map_(
-         foreachParN_(n)(as, (a) => either(f(a))),
-         I.partitionMap(identity)
-      );
+  n: number
+): <R, E, A, B>(
+  as: Iterable<A>,
+  f: (a: A) => Task<R, E, B>
+) => Task<R, never, Separated<Iterable<E>, Iterable<B>>> {
+  return (as, f) =>
+    map_(
+      foreachParN_(n)(as, (a) => either(f(a))),
+      I.partitionMap(identity)
+    );
 }
 
 /**
@@ -83,9 +86,9 @@ export function partitionParN_(
  * Unlike `partitionPar`, this method will use at most up to `n` fibers.
  */
 export function partitionParN(
-   n: number
+  n: number
 ): <R, E, A, B>(
-   f: (a: A) => Task<R, E, B>
+  f: (a: A) => Task<R, E, B>
 ) => (as: Iterable<A>) => Task<R, never, Separated<Iterable<E>, Iterable<B>>> {
-   return (f) => (as) => partitionParN_(n)(as, f);
+  return (f) => (as) => partitionParN_(n)(as, f);
 }

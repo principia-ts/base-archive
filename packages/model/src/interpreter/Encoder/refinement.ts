@@ -6,8 +6,8 @@ import { implementInterpreter } from "../../HKT";
 import { applyEncoderConfig } from "./HKT";
 
 export const RefinementEncoder = implementInterpreter<E.URI, Alg.RefinementURI>()((_) => ({
-   refine: (a, refinement, name, config) => (env) =>
-      pipe(a(env), (encoder) => applyEncoderConfig(config?.config)(encoder, env, encoder)),
-   constrain: (a, predicate, name, config) => (env) =>
-      pipe(a(env), (encoder) => applyEncoderConfig(config?.config)(encoder, env, encoder))
+  refine: (a, refinement, name, config) => (env) =>
+    pipe(a(env), (encoder) => applyEncoderConfig(config?.config)(encoder, env, encoder)),
+  constrain: (a, predicate, name, config) => (env) =>
+    pipe(a(env), (encoder) => applyEncoderConfig(config?.config)(encoder, env, encoder))
 }));

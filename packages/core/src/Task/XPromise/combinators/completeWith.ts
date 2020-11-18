@@ -17,21 +17,21 @@ import { Done } from "../state";
  * `Promise.complete`.
  */
 export function completeWith<E, A>(io: EIO<E, A>) {
-   return (promise: XPromise<E, A>): IO<boolean> =>
-      T.total(() => {
-         const state = promise.state.get;
+  return (promise: XPromise<E, A>): IO<boolean> =>
+    T.total(() => {
+      const state = promise.state.get;
 
-         switch (state._tag) {
-            case "Done": {
-               return false;
-            }
-            case "Pending": {
-               promise.state.set(new Done(io));
-               state.joiners.forEach((f) => {
-                  f(io);
-               });
-               return true;
-            }
-         }
-      });
+      switch (state._tag) {
+        case "Done": {
+          return false;
+        }
+        case "Pending": {
+          promise.state.set(new Done(io));
+          state.joiners.forEach((f) => {
+            f(io);
+          });
+          return true;
+        }
+      }
+    });
 }

@@ -8,5 +8,5 @@ import type { Exit } from "./model";
  */
 
 export function unit(): Exit<never, void> {
-   return succeed(undefined);
+  return succeed(undefined);
 }

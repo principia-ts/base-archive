@@ -9,13 +9,13 @@ import * as XR from "../../XRef";
 type State<A> = Empty | Full<A>;
 
 class Empty {
-   readonly _tag = "Empty";
-   constructor(readonly notifyConsumer: XP.XPromise<never, void>) {}
+  readonly _tag = "Empty";
+  constructor(readonly notifyConsumer: XP.XPromise<never, void>) {}
 }
 
 class Full<A> {
-   readonly _tag = "Full";
-   constructor(readonly a: A, readonly notifyProducer: XP.XPromise<never, void>) {}
+  readonly _tag = "Full";
+  constructor(readonly a: A, readonly notifyProducer: XP.XPromise<never, void>) {}
 }
 
 /**
@@ -24,104 +24,104 @@ class Full<A> {
  * for an element to be available.
  */
 class Handoff<A> {
-   readonly _tag = "Handoff";
-   constructor(readonly ref: XR.Ref<State<A>>) {}
+  readonly _tag = "Handoff";
+  constructor(readonly ref: XR.Ref<State<A>>) {}
 }
 
 export function make<A>(): T.IO<Handoff<A>> {
-   return pipe(
-      XP.make<never, void>(),
-      T.chain((p) => XR.makeRef<State<A>>(new Empty(p))),
-      T.map((ref) => new Handoff(ref))
-   );
+  return pipe(
+    XP.make<never, void>(),
+    T.chain((p) => XR.makeRef<State<A>>(new Empty(p))),
+    T.map((ref) => new Handoff(ref))
+  );
 }
 
 export function offer<A>(a: A) {
-   return (h: Handoff<A>): T.IO<void> =>
-      pipe(
-         XP.make<never, void>(),
-         T.chain((p) =>
-            pipe(
-               h.ref,
-               XR.modify<T.IO<void>, State<A>>(
-                  matchTag({
-                     Empty: ({ notifyConsumer }) =>
-                        [
-                           pipe(notifyConsumer, XP.succeed(constVoid()), T.apSecond(XP.await(p))),
-                           new Full(a, p)
-                        ] as const,
-                     Full: (s) =>
-                        [
-                           pipe(
-                              XP.await(s.notifyProducer),
-                              T.chain(() => offer(a)(h))
-                           ),
-                           s
-                        ] as const
-                  })
-               ),
-               T.flatten
-            )
-         )
-      );
+  return (h: Handoff<A>): T.IO<void> =>
+    pipe(
+      XP.make<never, void>(),
+      T.chain((p) =>
+        pipe(
+          h.ref,
+          XR.modify<T.IO<void>, State<A>>(
+            matchTag({
+              Empty: ({ notifyConsumer }) =>
+                [
+                  pipe(notifyConsumer, XP.succeed(constVoid()), T.apSecond(XP.await(p))),
+                  new Full(a, p)
+                ] as const,
+              Full: (s) =>
+                [
+                  pipe(
+                    XP.await(s.notifyProducer),
+                    T.chain(() => offer(a)(h))
+                  ),
+                  s
+                ] as const
+            })
+          ),
+          T.flatten
+        )
+      )
+    );
 }
 
 export function take<A>(h: Handoff<A>): T.IO<A> {
-   return pipe(
-      XP.make<never, void>(),
-      T.chain((p) =>
-         pipe(
-            h.ref,
-            XR.modify<T.IO<A>, State<A>>(
-               matchTag({
-                  Empty: (s) =>
-                     [
-                        pipe(
-                           s.notifyConsumer,
-                           XP.await,
-                           T.chain(() => take(h))
-                        ),
-                        s
-                     ] as const,
-                  Full: ({ a, notifyProducer }) =>
-                     [
-                        pipe(
-                           notifyProducer,
-                           XP.succeed(constVoid()),
-                           T.as(() => a)
-                        ),
-                        new Empty(p)
-                     ] as const
-               })
-            ),
-            T.flatten
-         )
+  return pipe(
+    XP.make<never, void>(),
+    T.chain((p) =>
+      pipe(
+        h.ref,
+        XR.modify<T.IO<A>, State<A>>(
+          matchTag({
+            Empty: (s) =>
+              [
+                pipe(
+                  s.notifyConsumer,
+                  XP.await,
+                  T.chain(() => take(h))
+                ),
+                s
+              ] as const,
+            Full: ({ a, notifyProducer }) =>
+              [
+                pipe(
+                  notifyProducer,
+                  XP.succeed(constVoid()),
+                  T.as(() => a)
+                ),
+                new Empty(p)
+              ] as const
+          })
+        ),
+        T.flatten
       )
-   );
+    )
+  );
 }
 
 export function poll<A>(h: Handoff<A>): T.IO<Option<A>> {
-   return pipe(
-      XP.make<never, void>(),
-      T.chain((p) =>
-         pipe(
-            h.ref,
-            XR.modify<T.IO<Option<A>>, State<A>>(
-               matchTag({
-                  Empty: (s) => [T.succeed(none()), s] as const,
-                  Full: ({ a, notifyProducer }) =>
-                     [
-                        pipe(
-                           notifyProducer,
-                           XP.succeed(constVoid()),
-                           T.as(() => some(a))
-                        ),
-                        new Empty(p)
-                     ] as const
-               })
-            ),
-            T.flatten
-         )
+  return pipe(
+    XP.make<never, void>(),
+    T.chain((p) =>
+      pipe(
+        h.ref,
+        XR.modify<T.IO<Option<A>>, State<A>>(
+          matchTag({
+            Empty: (s) => [T.succeed(none()), s] as const,
+            Full: ({ a, notifyProducer }) =>
+              [
+                pipe(
+                  notifyProducer,
+                  XP.succeed(constVoid()),
+                  T.as(() => some(a))
+                ),
+                new Empty(p)
+              ] as const
+          })
+        ),
+        T.flatten
       )
-   );
+    )
+  );
 }

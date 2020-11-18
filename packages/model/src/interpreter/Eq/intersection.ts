@@ -7,15 +7,15 @@ import { implementInterpreter } from "../../HKT";
 import { applyEqConfig } from "./HKT";
 
 export const IntersectionEq = implementInterpreter<Eq.URI, Alg.IntersectionURI>()((_) => ({
-   intersection: (types, config) => (env) =>
-      pipe(
-         types,
-         A.map((f) => f(env)),
-         (eqs) =>
-            applyEqConfig(config?.config)(
-               A.reduce_(eqs, Eq.any, (b, a) => Eq.intersect_(b, a)),
-               env,
-               eqs as any
-            )
-      )
+  intersection: (types, config) => (env) =>
+    pipe(
+      types,
+      A.map((f) => f(env)),
+      (eqs) =>
+        applyEqConfig(config?.config)(
+          A.reduce_(eqs, Eq.any, (b, a) => Eq.intersect_(b, a)),
+          env,
+          eqs as any
+        )
+    )
 }));

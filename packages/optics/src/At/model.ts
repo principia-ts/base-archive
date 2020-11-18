@@ -7,5 +7,5 @@ import type { Lens } from "../Lens";
  */
 
 export interface At<S, I, A> {
-   readonly at: (i: I) => Lens<S, A>;
+  readonly at: (i: I) => Lens<S, A>;
 }

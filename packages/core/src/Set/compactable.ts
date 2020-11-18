@@ -14,32 +14,32 @@ import { elem } from "./guards";
  */
 
 export function compact<A>(E: Eq<A>): (fa: ReadonlySet<Option<A>>) => ReadonlySet<A> {
-   return mapOption(E)(identity);
+  return mapOption(E)(identity);
 }
 
 export function separate<E, A>(
-   EE: Eq<E>,
-   EA: Eq<A>
+  EE: Eq<E>,
+  EA: Eq<A>
 ): (fa: ReadonlySet<Either<E, A>>) => Separated<ReadonlySet<E>, ReadonlySet<A>> {
-   return (fa) => {
-      const elemEE = elem(EE);
-      const elemEA = elem(EA);
-      const left: Set<E> = new Set();
-      const right: Set<A> = new Set();
-      fa.forEach((e) => {
-         switch (e._tag) {
-            case "Left":
-               if (!elemEE(e.left)(left)) {
-                  left.add(e.left);
-               }
-               break;
-            case "Right":
-               if (!elemEA(e.right)(right)) {
-                  right.add(e.right);
-               }
-               break;
-         }
-      });
-      return { left, right };
-   };
+  return (fa) => {
+    const elemEE = elem(EE);
+    const elemEA = elem(EA);
+    const left: Set<E> = new Set();
+    const right: Set<A> = new Set();
+    fa.forEach((e) => {
+      switch (e._tag) {
+        case "Left":
+          if (!elemEE(e.left)(left)) {
+            left.add(e.left);
+          }
+          break;
+        case "Right":
+          if (!elemEA(e.right)(right)) {
+            right.add(e.right);
+          }
+          break;
+      }
+    });
+    return { left, right };
+  };
 }

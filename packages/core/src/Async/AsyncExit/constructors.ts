@@ -7,15 +7,15 @@ import type { AsyncExit, Rejection } from "./model";
  */
 
 export const failure = <E = never>(e: E): Rejection<E> => ({
-   _tag: "Failure",
-   error: e
+  _tag: "Failure",
+  error: e
 });
 
 export const success = <E = never, A = never>(a: A): AsyncExit<E, A> => ({
-   _tag: "Success",
-   value: a
+  _tag: "Success",
+  value: a
 });
 
 export const interrupted = <E = never>(): Rejection<E> => ({
-   _tag: "Interrupt"
+  _tag: "Interrupt"
 });

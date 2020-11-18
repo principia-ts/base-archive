@@ -18,10 +18,10 @@ import type { Iso, URI, V } from "./model";
  * @since 1.0.0
  */
 export function compose_<I, A, B>(sa: Iso<I, A>, ab: Iso<A, B>): Iso<I, B> {
-   return {
-      get: flow(sa.get, ab.get),
-      reverseGet: flow(ab.reverseGet, sa.reverseGet)
-   };
+  return {
+    get: flow(sa.get, ab.get),
+    reverseGet: flow(ab.reverseGet, sa.reverseGet)
+  };
 }
 
 /**
@@ -31,7 +31,7 @@ export function compose_<I, A, B>(sa: Iso<I, A>, ab: Iso<A, B>): Iso<I, B> {
  * @since 1.0.0
  */
 export function compose<A, B>(ab: Iso<A, B>): <I>(sa: Iso<I, A>) => Iso<I, B> {
-   return (sa) => compose_(sa, ab);
+  return (sa) => compose_(sa, ab);
 }
 
 /**
@@ -39,7 +39,7 @@ export function compose<A, B>(ab: Iso<A, B>): <I>(sa: Iso<I, A>) => Iso<I, B> {
  * @since 1.0.0
  */
 export const Category: TC.Category<[URI], V> = HKT.instance({
-   id,
-   compose,
-   compose_
+  id,
+  compose,
+  compose_
 });

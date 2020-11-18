@@ -23,7 +23,7 @@ import { chain_ } from "./monad";
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>): ReadonlyArray<B> {
-   return chain_(fab, (f) => map_(fa, f));
+  return chain_(fab, (f) => map_(fa, f));
 }
 
 /**
@@ -36,8 +36,10 @@ export function ap_<A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>)
  * @category Apply
  * @since 1.0.0
  */
-export function ap<A>(fa: ReadonlyArray<A>): <B>(fab: ReadonlyArray<(a: A) => B>) => ReadonlyArray<B> {
-   return (fab) => ap_(fab, fa);
+export function ap<A>(
+  fa: ReadonlyArray<A>
+): <B>(fab: ReadonlyArray<(a: A) => B>) => ReadonlyArray<B> {
+  return (fab) => ap_(fab, fa);
 }
 
 /**
@@ -51,10 +53,10 @@ export function ap<A>(fa: ReadonlyArray<A>): <B>(fab: ReadonlyArray<(a: A) => B>
  * @since 1.0.0
  */
 export function apFirst_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<A> {
-   return ap_(
-      map_(fa, (a) => () => a),
-      fb
-   );
+  return ap_(
+    map_(fa, (a) => () => a),
+    fb
+  );
 }
 
 /**
@@ -68,10 +70,10 @@ export function apFirst_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Read
  * @since 1.0.0
  */
 export function apFirst<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<A> {
-   return flow(
-      map((a) => () => a),
-      ap(fb)
-   );
+  return flow(
+    map((a) => () => a),
+    ap(fb)
+  );
 }
 
 /**
@@ -85,10 +87,10 @@ export function apFirst<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => R
  * @since 1.0.0
  */
 export function apSecond_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<B> {
-   return ap_(
-      map_(fa, () => (b: B) => b),
-      fb
-   );
+  return ap_(
+    map_(fa, () => (b: B) => b),
+    fb
+  );
 }
 
 /**
@@ -102,36 +104,40 @@ export function apSecond_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Rea
  * @since 1.0.0
  */
 export function apSecond<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-   return flow(
-      map(() => (b: B) => b),
-      ap(fb)
-   );
+  return flow(
+    map(() => (b: B) => b),
+    ap(fb)
+  );
 }
 
-export function zipWith_<A, B, C>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>, f: (a: A, b: B) => C): ReadonlyArray<C> {
-   const fc = [];
-   const len = Math.min(fa.length, fb.length);
-   for (let i = 0; i < len; i++) {
-      fc[i] = f(fa[i], fb[i]);
-   }
-   return fc;
+export function zipWith_<A, B, C>(
+  fa: ReadonlyArray<A>,
+  fb: ReadonlyArray<B>,
+  f: (a: A, b: B) => C
+): ReadonlyArray<C> {
+  const fc = [];
+  const len = Math.min(fa.length, fb.length);
+  for (let i = 0; i < len; i++) {
+    fc[i] = f(fa[i], fb[i]);
+  }
+  return fc;
 }
 
 export const mapBoth_ = zipWith_;
 
 export function zipWith<A, B, C>(
-   fb: ReadonlyArray<B>,
-   f: (a: A, b: B) => C
+  fb: ReadonlyArray<B>,
+  f: (a: A, b: B) => C
 ): (fa: ReadonlyArray<A>) => ReadonlyArray<C> {
-   return (fa) => zipWith_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 export const mapBoth = zipWith;
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
-   ...Functor,
-   ap,
-   ap_,
-   mapBoth: zipWith,
-   mapBoth_: zipWith_
+  ...Functor,
+  ap,
+  ap_,
+  mapBoth: zipWith,
+  mapBoth_: zipWith_
 });

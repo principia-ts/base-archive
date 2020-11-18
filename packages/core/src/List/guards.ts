@@ -4,7 +4,7 @@ import type { List } from "./model";
  * Returns `true` if the given list is empty and `false` otherwise.
  */
 export function isEmpty(l: List<any>): boolean {
-   return l.length === 0;
+  return l.length === 0;
 }
 
 /**
@@ -14,5 +14,5 @@ export function isEmpty(l: List<any>): boolean {
  * @complexity O(1)
  */
 export function isList<A>(l: any): l is List<A> {
-   return typeof l === "object" && Array.isArray(l.suffix);
+  return typeof l === "object" && Array.isArray(l.suffix);
 }

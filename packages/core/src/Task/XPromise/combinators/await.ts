@@ -9,19 +9,19 @@ import { interruptJoiner } from "./interrupt";
  * until the result is available.
  */
 function wait<E, A>(promise: XPromise<E, A>) {
-   return maybeAsyncInterrupt<unknown, E, A>((k) => {
-      const state = promise.state.get;
+  return maybeAsyncInterrupt<unknown, E, A>((k) => {
+    const state = promise.state.get;
 
-      switch (state._tag) {
-         case "Done": {
-            return right(state.value);
-         }
-         case "Pending": {
-            promise.state.set(new Pending([k, ...state.joiners]));
-            return left(interruptJoiner(k)(promise));
-         }
+    switch (state._tag) {
+      case "Done": {
+        return right(state.value);
       }
-   }, promise.blockingOn);
+      case "Pending": {
+        promise.state.set(new Pending([k, ...state.joiners]));
+        return left(interruptJoiner(k)(promise));
+      }
+    }
+  }, promise.blockingOn);
 }
 
 export { wait as await };

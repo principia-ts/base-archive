@@ -17,7 +17,7 @@ import type { Option, URI, V } from "./model";
  * ```
  */
 export function reduce_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
-   return isNone(fa) ? b : f(b, fa.value);
+  return isNone(fa) ? b : f(b, fa.value);
 }
 
 /**
@@ -26,7 +26,7 @@ export function reduce_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
  * ```
  */
 export function reduce<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
-   return (fa) => reduce_(fa, b, f);
+  return (fa) => reduce_(fa, b, f);
 }
 
 /**
@@ -35,7 +35,7 @@ export function reduce<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
  * ```
  */
 export function reduceRight_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
-   return isNone(fa) ? b : f(fa.value, b);
+  return isNone(fa) ? b : f(fa.value, b);
 }
 
 /**
@@ -44,7 +44,7 @@ export function reduceRight_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B
  * ```
  */
 export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
-   return (fa) => reduceRight_(fa, b, f);
+  return (fa) => reduceRight_(fa, b, f);
 }
 
 /**
@@ -53,7 +53,7 @@ export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) =
  * ```
  */
 export function foldMap_<M>(M: Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) => M {
-   return (fa, f) => (isNone(fa) ? M.nat : f(fa.value));
+  return (fa, f) => (isNone(fa) ? M.nat : f(fa.value));
 }
 
 /**
@@ -62,14 +62,14 @@ export function foldMap_<M>(M: Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) =>
  * ```
  */
 export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A>) => M {
-   return (f) => (fa) => foldMap_(M)(fa, f);
+  return (f) => (fa) => foldMap_(M)(fa, f);
 }
 
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
-   reduce_,
-   reduceRight_,
-   foldMap_,
-   reduce,
-   reduceRight,
-   foldMap
+  reduce_,
+  reduceRight_,
+  foldMap_,
+  reduce,
+  reduceRight,
+  foldMap
 });

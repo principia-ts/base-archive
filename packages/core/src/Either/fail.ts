@@ -16,7 +16,7 @@ import { Monad } from "./monad";
  * @since 1.0.0
  */
 export const Fail: P.Fail<[URI], V> = HKT.instance({
-   fail: left
+  fail: left
 });
 
 /**
@@ -24,6 +24,6 @@ export const Fail: P.Fail<[URI], V> = HKT.instance({
  * @since 1.0.0
  */
 export const MonadFail: P.MonadFail<[URI], V> = HKT.instance({
-   ...Monad,
-   ...Fail
+  ...Monad,
+  ...Fail
 });

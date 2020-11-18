@@ -18,7 +18,7 @@ import type { Option, URI, V } from "./model";
  * ```
  */
 export function extend_<A, B>(wa: Option<A>, f: (wa: Option<A>) => B): Option<B> {
-   return isNone(wa) ? none() : some(f(wa));
+  return isNone(wa) ? none() : some(f(wa));
 }
 
 /**
@@ -27,7 +27,7 @@ export function extend_<A, B>(wa: Option<A>, f: (wa: Option<A>) => B): Option<B>
  * ```
  */
 export function extend<A, B>(f: (wa: Option<A>) => B): (wa: Option<A>) => Option<B> {
-   return (wa) => extend_(wa, f);
+  return (wa) => extend_(wa, f);
 }
 
 /**
@@ -36,11 +36,11 @@ export function extend<A, B>(f: (wa: Option<A>) => B): (wa: Option<A>) => Option
  * ```
  */
 export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
-   return extend_(wa, identity);
+  return extend_(wa, identity);
 }
 
 export const Extend: P.Extend<[URI], V> = HKT.instance({
-   ...Functor,
-   extend_,
-   extend
+  ...Functor,
+  extend_,
+  extend
 });

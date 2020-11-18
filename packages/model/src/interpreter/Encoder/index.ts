@@ -16,24 +16,27 @@ import { SetEncoder } from "./set";
 import { SumEncoder } from "./sum";
 
 export const _allEncoderInterpreters = <Env extends AnyEnv>() =>
-   merge(
-      PrimitivesEncoder<Env>(),
-      RefinementEncoder<Env>(),
-      RecordEncoder<Env>(),
-      ObjectEncoder<Env>(),
-      NewtypeEncoder<Env>(),
-      RecursiveEncoder<Env>(),
-      SetEncoder<Env>(),
-      SumEncoder<Env>(),
-      NullableEncoder<Env>(),
-      IntersectionEncoder<Env>()
-   );
+  merge(
+    PrimitivesEncoder<Env>(),
+    RefinementEncoder<Env>(),
+    RecordEncoder<Env>(),
+    ObjectEncoder<Env>(),
+    NewtypeEncoder<Env>(),
+    RecursiveEncoder<Env>(),
+    SetEncoder<Env>(),
+    SumEncoder<Env>(),
+    NullableEncoder<Env>(),
+    IntersectionEncoder<Env>()
+  );
 
-export const allEncoderInterpreters = memoize(_allEncoderInterpreters) as typeof _allEncoderInterpreters;
+export const allEncoderInterpreters = memoize(
+  _allEncoderInterpreters
+) as typeof _allEncoderInterpreters;
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
-   env: {
-      [K in E.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
-   }
-) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): E.Encoder<E, A> =>
-   pipe(env, F.derive(allEncoderInterpreters()));
+  env: {
+    [K in E.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
+  }
+) => <S, R, E, A>(
+  F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
+): E.Encoder<E, A> => pipe(env, F.derive(allEncoderInterpreters()));

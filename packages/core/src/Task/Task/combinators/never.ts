@@ -7,12 +7,12 @@ import { asyncInterrupt } from "./interrupt";
  * `while(true) {}`, only without the wasted CPU cycles.
  */
 export const never: IO<never> = suspend(() =>
-   asyncInterrupt<unknown, never, never>(() => {
-      const interval = setInterval(() => {
-         //
-      }, 60000);
-      return total(() => {
-         clearInterval(interval);
-      });
-   })
+  asyncInterrupt<unknown, never, never>(() => {
+    const interval = setInterval(() => {
+      //
+    }, 60000);
+    return total(() => {
+      clearInterval(interval);
+    });
+  })
 );

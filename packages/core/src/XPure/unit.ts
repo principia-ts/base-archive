@@ -8,5 +8,5 @@ import type { XPure } from "./model";
  */
 
 export function unit(): XPure<unknown, never, unknown, never, void> {
-   return succeed(undefined);
+  return succeed(undefined);
 }

@@ -1,7 +1,7 @@
 import type { Show } from "./model";
 
 export const any: Show<any> = {
-   show: (a) => JSON.stringify(a)
+  show: (a) => JSON.stringify(a)
 };
 
 export const string: Show<string> = any;

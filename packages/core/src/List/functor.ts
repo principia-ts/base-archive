@@ -14,14 +14,14 @@ import { List } from "./model";
  * @complexity O(n)
  */
 export function map_<A, B>(l: List<A>, f: (a: A) => B): List<B> {
-   return new List(
-      l.bits,
-      l.offset,
-      l.length,
-      mapPrefix(f, l.prefix, getPrefixSize(l)),
-      l.root === undefined ? undefined : mapNode(f, l.root, getDepth(l)),
-      mapAffix(f, l.suffix, getSuffixSize(l))
-   );
+  return new List(
+    l.bits,
+    l.offset,
+    l.length,
+    mapPrefix(f, l.prefix, getPrefixSize(l)),
+    l.root === undefined ? undefined : mapNode(f, l.root, getDepth(l)),
+    mapAffix(f, l.suffix, getSuffixSize(l))
+  );
 }
 
 /**
@@ -31,5 +31,5 @@ export function map_<A, B>(l: List<A>, f: (a: A) => B): List<B> {
  * @complexity O(n)
  */
 export function map<A, B>(f: (a: A) => B): (l: List<A>) => List<B> {
-   return (l) => map_(l, f);
+  return (l) => map_(l, f);
 }

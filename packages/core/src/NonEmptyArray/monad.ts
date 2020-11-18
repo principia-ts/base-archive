@@ -22,15 +22,17 @@ import { unit } from "./unit";
  * @category Monad
  * @since 1.0.0
  */
-export const flatten: <A>(mma: NonEmptyArray<NonEmptyArray<A>>) => NonEmptyArray<A> = A.flatten as any;
+export const flatten: <A>(
+  mma: NonEmptyArray<NonEmptyArray<A>>
+) => NonEmptyArray<A> = A.flatten as any;
 
 export const chainWithIndex_: <A, B>(
-   ma: NonEmptyArray<A>,
-   f: (i: number, a: A) => NonEmptyArray<B>
+  ma: NonEmptyArray<A>,
+  f: (i: number, a: A) => NonEmptyArray<B>
 ) => NonEmptyArray<B> = A.chainWithIndex_ as any;
 
 export const chainWithIndex: <A, B>(
-   f: (i: number, a: A) => NonEmptyArray<B>
+  f: (i: number, a: A) => NonEmptyArray<B>
 ) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.chainWithIndex as any;
 
 /**
@@ -43,7 +45,10 @@ export const chainWithIndex: <A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export const chain_: <A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>) => NonEmptyArray<B> = A.chain_ as any;
+export const chain_: <A, B>(
+  ma: NonEmptyArray<A>,
+  f: (a: A) => NonEmptyArray<B>
+) => NonEmptyArray<B> = A.chain_ as any;
 
 /**
  * ```haskell
@@ -56,7 +61,7 @@ export const chain_: <A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>)
  * @since 1.0.0
  */
 export const chain: <A, B>(
-   f: (a: A) => NonEmptyArray<B>
+  f: (a: A) => NonEmptyArray<B>
 ) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.chain as any;
 
 /**
@@ -70,7 +75,10 @@ export const chain: <A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export const tap_: <A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>) => NonEmptyArray<A> = A.tap_ as any;
+export const tap_: <A, B>(
+  ma: NonEmptyArray<A>,
+  f: (a: A) => NonEmptyArray<B>
+) => NonEmptyArray<A> = A.tap_ as any;
 
 /**
  * ```haskell
@@ -83,10 +91,12 @@ export const tap_: <A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>) =
  * @category Monad
  * @since 1.0.0
  */
-export const tap: <A, B>(f: (a: A) => NonEmptyArray<B>) => (ma: NonEmptyArray<A>) => NonEmptyArray<A> = A.tap as any;
+export const tap: <A, B>(
+  f: (a: A) => NonEmptyArray<B>
+) => (ma: NonEmptyArray<A>) => NonEmptyArray<A> = A.tap as any;
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-   ...Functor,
-   flatten,
-   unit
+  ...Functor,
+  flatten,
+  unit
 });

@@ -11,21 +11,21 @@ import { foreachParN_ } from "./foreachParN";
  * For a sequential version of this method, see `foreach`.
  */
 export function foreachExec_<R, E, A, B>(
-   es: ExecutionStrategy,
-   as: Iterable<A>,
-   f: (a: A) => Managed<R, E, B>
+  es: ExecutionStrategy,
+  as: Iterable<A>,
+  f: (a: A) => Managed<R, E, B>
 ): Managed<R, E, ReadonlyArray<B>> {
-   switch (es._tag) {
-      case "Sequential": {
-         return foreach_(as, f);
-      }
-      case "Parallel": {
-         return foreachPar_(as, f);
-      }
-      case "ParallelN": {
-         return foreachParN_(es.n)(as, f);
-      }
-   }
+  switch (es._tag) {
+    case "Sequential": {
+      return foreach_(as, f);
+    }
+    case "Parallel": {
+      return foreachPar_(as, f);
+    }
+    case "ParallelN": {
+      return foreachParN_(es.n)(as, f);
+    }
+  }
 }
 
 /**
@@ -35,7 +35,9 @@ export function foreachExec_<R, E, A, B>(
  * For a sequential version of this method, see `foreach`.
  */
 export function foreachExec(
-   es: ExecutionStrategy
-): <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (as: Iterable<A>) => Managed<R, E, ReadonlyArray<B>> {
-   return (f) => (as) => foreachExec_(es, as, f) as any;
+  es: ExecutionStrategy
+): <R, E, A, B>(
+  f: (a: A) => Managed<R, E, B>
+) => (as: Iterable<A>) => Managed<R, E, ReadonlyArray<B>> {
+  return (f) => (as) => foreachExec_(es, as, f) as any;
 }

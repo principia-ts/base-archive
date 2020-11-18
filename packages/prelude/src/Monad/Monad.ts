@@ -4,5 +4,5 @@ import type { Unit } from "../Unit";
 import type { FlattenFn } from "./FlattenFn";
 
 export interface Monad<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Unit<F, C> {
-   readonly flatten: FlattenFn<F, C>;
+  readonly flatten: FlattenFn<F, C>;
 }

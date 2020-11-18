@@ -10,5 +10,6 @@ import { uninterruptibleMask } from "./interrupt";
  * the specified promise will be interrupted, too.
  */
 export function to<E, A>(p: XPromise<E, A>): <R>(effect: Task<R, E, A>) => Task<R, never, boolean> {
-   return (effect) => uninterruptibleMask(({ restore }) => chain_(result(restore(effect)), (x) => done(x)(p)));
+  return (effect) =>
+    uninterruptibleMask(({ restore }) => chain_(result(restore(effect)), (x) => done(x)(p)));
 }

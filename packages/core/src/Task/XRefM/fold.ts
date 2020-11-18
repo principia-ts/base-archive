@@ -6,36 +6,36 @@ import type { XRefM } from "./model";
  * Folds over the error and value types of the `XRefM`.
  */
 export function fold_<RA, RB, EA, EB, A, B, EC, ED, C = A, D = B>(
-   self: XRefM<RA, RB, EA, EB, A, B>,
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ca: (_: C) => Either<EC, A>,
-   bd: (_: B) => Either<ED, D>
+  self: XRefM<RA, RB, EA, EB, A, B>,
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => Either<EC, A>,
+  bd: (_: B) => Either<ED, D>
 ): XRefM<RA, RB, EC, ED, C, D> {
-   return self.foldM(
-      ea,
-      eb,
-      (c) => T.fromEither(() => ca(c)),
-      (b) => T.fromEither(() => bd(b))
-   );
+  return self.foldM(
+    ea,
+    eb,
+    (c) => T.fromEither(() => ca(c)),
+    (b) => T.fromEither(() => bd(b))
+  );
 }
 
 /**
  * Folds over the error and value types of the `XRefM`.
  */
 export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ca: (_: C) => Either<EC, A>,
-   bd: (_: B) => Either<ED, D>
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => Either<EC, A>,
+  bd: (_: B) => Either<ED, D>
 ): <RA, RB>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA, RB, EC, ED, C, D> {
-   return (self) =>
-      self.foldM(
-         ea,
-         eb,
-         (c) => T.fromEither(() => ca(c)),
-         (b) => T.fromEither(() => bd(b))
-      );
+  return (self) =>
+    self.foldM(
+      ea,
+      eb,
+      (c) => T.fromEither(() => ca(c)),
+      (b) => T.fromEither(() => bd(b))
+    );
 }
 
 /**
@@ -47,13 +47,13 @@ export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
  * combinators.
  */
 export function foldM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
-   self: XRefM<RA, RB, EA, EB, A, B>,
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ca: (_: C) => T.Task<RC, EC, A>,
-   bd: (_: B) => T.Task<RD, ED, D>
+  self: XRefM<RA, RB, EA, EB, A, B>,
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => T.Task<RC, EC, A>,
+  bd: (_: B) => T.Task<RD, ED, D>
 ): XRefM<RA & RC, RB & RD, EC, ED, C, D> {
-   return self.foldM(ea, eb, ca, bd);
+  return self.foldM(ea, eb, ca, bd);
 }
 
 /**
@@ -65,12 +65,12 @@ export function foldM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
  * combinators.
  */
 export function foldM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ca: (_: C) => T.Task<RC, EC, A>,
-   bd: (_: B) => T.Task<RD, ED, D>
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => T.Task<RC, EC, A>,
+  bd: (_: B) => T.Task<RD, ED, D>
 ): <RA, RB>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RA & RC, RB & RD, EC, ED, C, D> {
-   return (self) => self.foldM(ea, eb, ca, bd);
+  return (self) => self.foldM(ea, eb, ca, bd);
 }
 
 /**
@@ -79,14 +79,14 @@ export function foldM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
  * of `foldM` but requires unifying the environment and error types.
  */
 export function foldAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
-   self: XRefM<RA, RB, EA, EB, A, B>,
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ec: (_: EB) => EC,
-   ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
-   bd: (_: B) => T.Task<RD, ED, D>
+  self: XRefM<RA, RB, EA, EB, A, B>,
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ec: (_: EB) => EC,
+  ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
+  bd: (_: B) => T.Task<RD, ED, D>
 ): XRefM<RB & RA & RC, RB & RD, EC, ED, C, D> {
-   return self.foldAllM(ea, eb, ec, ca, bd);
+  return self.foldAllM(ea, eb, ec, ca, bd);
 }
 
 /**
@@ -95,11 +95,11 @@ export function foldAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
  * of `foldM` but requires unifying the environment and error types.
  */
 export function foldAllM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
-   ea: (_: EA) => EC,
-   eb: (_: EB) => ED,
-   ec: (_: EB) => EC,
-   ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
-   bd: (_: B) => T.Task<RD, ED, D>
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ec: (_: EB) => EC,
+  ca: (_: C) => (_: B) => T.Task<RC, EC, A>,
+  bd: (_: B) => T.Task<RD, ED, D>
 ): <RA, RB>(self: XRefM<RA, RB, EA, EB, A, B>) => XRefM<RB & RA & RC, RB & RD, EC, ED, C, D> {
-   return (self) => self.foldAllM(ea, eb, ec, ca, bd);
+  return (self) => self.foldAllM(ea, eb, ec, ca, bd);
 }

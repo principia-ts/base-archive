@@ -10,13 +10,13 @@ import { foreachUnitPar_ } from "./foreachUnitPar";
  * Unlike `foreachPar_`, this method will use at most up to `n` fibers.
  */
 export function foreachUnitParN_(
-   n: number
+  n: number
 ): <A, R, E>(as: Iterable<A>, f: (a: A) => T.Task<R, E, any>) => T.Task<R, E, void> {
-   return (as, f) =>
-      pipe(
-         Sema.makeSemaphore(n),
-         T.chain((s) => foreachUnitPar_(as, (a) => Sema.withPermit(s)(f(a))))
-      );
+  return (as, f) =>
+    pipe(
+      Sema.makeSemaphore(n),
+      T.chain((s) => foreachUnitPar_(as, (a) => Sema.withPermit(s)(f(a))))
+    );
 }
 
 /**
@@ -26,7 +26,7 @@ export function foreachUnitParN_(
  * Unlike `foreachPar_`, this method will use at most up to `n` fibers.
  */
 export function foreachUnitParN(
-   n: number
+  n: number
 ): <A, R, E>(f: (a: A) => T.Task<R, E, any>) => (as: Iterable<A>) => T.Task<R, E, void> {
-   return (f) => (as) => foreachUnitParN_(n)(as, f);
+  return (f) => (as) => foreachUnitParN_(n)(as, f);
 }

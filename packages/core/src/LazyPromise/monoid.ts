@@ -23,8 +23,8 @@ import { getSemigroup } from "./semigroup";
  * @since 1.0.0
  */
 export const getMonoid = <A>(M: Monoid<A>): Monoid<LazyPromise<A>> => ({
-   ...getSemigroup(M),
-   nat: pure(M.nat)
+  ...getSemigroup(M),
+  nat: pure(M.nat)
 });
 
 /**
@@ -40,4 +40,4 @@ export const getMonoid = <A>(M: Monoid<A>): Monoid<LazyPromise<A>> => ({
  * @since 1.0.0
  */
 export const getRaceMonoid = <A = never>(): Monoid<LazyPromise<A>> =>
-   makeMonoid<LazyPromise<A>>((x, y) => () => Promise.race([x(), y()]), never);
+  makeMonoid<LazyPromise<A>>((x, y) => () => Promise.race([x(), y()]), never);

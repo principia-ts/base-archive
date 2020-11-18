@@ -8,8 +8,8 @@ import type { Tree } from "./model";
  */
 
 export function unit(): Tree<void> {
-   return {
-      value: undefined,
-      forest: A.empty()
-   };
+  return {
+    value: undefined,
+    forest: A.empty()
+  };
 }

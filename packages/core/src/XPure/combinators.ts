@@ -17,10 +17,10 @@ import { chain_ } from "./monad";
  * @since 1.0.0
  */
 export function catchAll_<S1, S2, R, E, A, S3, R1, E1, B>(
-   fa: XPure<S1, S2, R, E, A>,
-   onFailure: (e: E) => XPure<S1, S3, R1, E1, B>
+  fa: XPure<S1, S2, R, E, A>,
+  onFailure: (e: E) => XPure<S1, S3, R1, E1, B>
 ): XPure<S1, S3, R & R1, E1, A | B> {
-   return foldM_(fa, onFailure, (a) => succeed(a));
+  return foldM_(fa, onFailure, (a) => succeed(a));
 }
 
 /**
@@ -35,9 +35,9 @@ export function catchAll_<S1, S2, R, E, A, S3, R1, E1, B>(
  * @since 1.0.0
  */
 export function catchAll<S1, E, S3, R1, E1, B>(
-   onFailure: (e: E) => XPure<S1, S3, R1, E1, B>
+  onFailure: (e: E) => XPure<S1, S3, R1, E1, B>
 ): <S2, R, A>(fa: XPure<S1, S2, R, E, A>) => XPure<S1, S3, R & R1, E1, B | A> {
-   return (fa) => catchAll_(fa, onFailure);
+  return (fa) => catchAll_(fa, onFailure);
 }
 
 /**
@@ -51,7 +51,7 @@ export function catchAll<S1, E, S3, R1, E1, B>(
  * @since 1.0.0
  */
 export function update<S1, S2>(f: (s: S1) => S2): XPure<S1, S2, unknown, never, void> {
-   return modify((s) => [f(s), undefined]);
+  return modify((s) => [f(s), undefined]);
 }
 
 /**
@@ -66,10 +66,10 @@ export function update<S1, S2>(f: (s: S1) => S2): XPure<S1, S2, unknown, never, 
  * @since 1.0.0
  */
 export function contramapInput_<S0, S1, S2, R, E, A>(
-   fa: XPure<S1, S2, R, E, A>,
-   f: (s: S0) => S1
+  fa: XPure<S1, S2, R, E, A>,
+  f: (s: S0) => S1
 ): XPure<S0, S2, R, E, A> {
-   return chain_(update(f), () => fa);
+  return chain_(update(f), () => fa);
 }
 
 /**
@@ -84,9 +84,9 @@ export function contramapInput_<S0, S1, S2, R, E, A>(
  * @since 1.0.0
  */
 export function contramapInput<S0, S1>(
-   f: (s: S0) => S1
+  f: (s: S0) => S1
 ): <S2, R, E, A>(fa: XPure<S1, S2, R, E, A>) => XPure<S0, S2, R, E, A> {
-   return (fa) => contramapInput_(fa, f);
+  return (fa) => contramapInput_(fa, f);
 }
 
 /**
@@ -101,21 +101,23 @@ export function contramapInput<S0, S1>(
  * @category Combinators
  * @since 1.0.0
  */
-export function either<S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>): XPure<S1, S1 | S2, R, never, E.Either<E, A>> {
-   return fold_(fa, E.left, E.right);
+export function either<S1, S2, R, E, A>(
+  fa: XPure<S1, S2, R, E, A>
+): XPure<S1, S1 | S2, R, never, E.Either<E, A>> {
+  return fold_(fa, E.left, E.right);
 }
 
 export function orElse_<S1, S2, R, E, A, S3, S4, R1, E1>(
-   fa: XPure<S1, S2, R, E, A>,
-   onFailure: (e: E) => XPure<S3, S4, R1, E1, A>
+  fa: XPure<S1, S2, R, E, A>,
+  onFailure: (e: E) => XPure<S3, S4, R1, E1, A>
 ): XPure<S1 & S3, S2 | S4, R & R1, E1, A> {
-   return foldM_(fa, onFailure, succeed);
+  return foldM_(fa, onFailure, succeed);
 }
 
 export function orElse<E, A, S3, S4, R1, E1>(
-   onFailure: (e: E) => XPure<S3, S4, R1, E1, A>
+  onFailure: (e: E) => XPure<S3, S4, R1, E1, A>
 ): <S1, S2, R>(fa: XPure<S1, S2, R, E, A>) => XPure<S1 & S3, S4 | S2, R & R1, E1, A> {
-   return (fa) => orElse_(fa, onFailure);
+  return (fa) => orElse_(fa, onFailure);
 }
 
 /**
@@ -131,14 +133,14 @@ export function orElse<E, A, S3, S4, R1, E1>(
  * @since 1.0.0
  */
 export function orElseEither_<S1, S2, R, E, A, S3, S4, R1, E1, A1>(
-   fa: XPure<S1, S2, R, E, A>,
-   that: XPure<S3, S4, R1, E1, A1>
+  fa: XPure<S1, S2, R, E, A>,
+  that: XPure<S3, S4, R1, E1, A1>
 ): XPure<S1 & S3, S2 | S4, R & R1, E1, E.Either<A, A1>> {
-   return foldM_(
-      fa,
-      () => map_(that, E.right),
-      (a) => succeed(E.left(a))
-   );
+  return foldM_(
+    fa,
+    () => map_(that, E.right),
+    (a) => succeed(E.left(a))
+  );
 }
 
 /**
@@ -154,7 +156,9 @@ export function orElseEither_<S1, S2, R, E, A, S3, S4, R1, E1, A1>(
  * @since 1.0.0
  */
 export function orElseEither<S3, S4, R1, E1, A1>(
-   that: XPure<S3, S4, R1, E1, A1>
-): <S1, S2, R, E, A>(fa: XPure<S1, S2, R, E, A>) => XPure<S1 & S3, S4 | S2, R & R1, E1, E.Either<A, A1>> {
-   return (fa) => orElseEither_(fa, that);
+  that: XPure<S3, S4, R1, E1, A1>
+): <S1, S2, R, E, A>(
+  fa: XPure<S1, S2, R, E, A>
+) => XPure<S1 & S3, S4 | S2, R & R1, E1, E.Either<A, A1>> {
+  return (fa) => orElseEither_(fa, that);
 }

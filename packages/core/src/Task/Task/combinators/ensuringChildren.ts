@@ -14,24 +14,24 @@ import { supervised } from "./supervised";
  * @since 1.0.0
  */
 export function ensuringChildren_<R, E, A, R1>(
-   task: Task<R, E, A>,
-   children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>
+  task: Task<R, E, A>,
+  children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>
 ): Task<R & R1, E, A> {
-   return pipe(
-      Supervisor.track,
-      chain((s) =>
-         pipe(
-            task,
-            supervised(s),
-            ensuring(
-               pipe(
-                  s.value,
-                  chain((fiber) => children(fiber))
-               )
-            )
-         )
+  return pipe(
+    Supervisor.track,
+    chain((s) =>
+      pipe(
+        task,
+        supervised(s),
+        ensuring(
+          pipe(
+            s.value,
+            chain((fiber) => children(fiber))
+          )
+        )
       )
-   );
+    )
+  );
 }
 
 /**
@@ -42,7 +42,7 @@ export function ensuringChildren_<R, E, A, R1>(
  * @since 1.0.0
  */
 export function ensuringChildren<R1>(
-   children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>
+  children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => Task<R1, never, any>
 ): <R, E, A>(task: Task<R, E, A>) => Task<R & R1, E, A> {
-   return (task) => ensuringChildren_(task, children);
+  return (task) => ensuringChildren_(task, children);
 }

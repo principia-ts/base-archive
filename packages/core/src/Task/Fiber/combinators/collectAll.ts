@@ -18,41 +18,41 @@ import { awaitAll } from "./awaitAll";
  * results.
  */
 export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
-   makeSynthetic({
-      _tag: "SyntheticFiber",
-      getRef: (ref) =>
-         T.foldLeft_(fibers, ref.initial, (a, fiber) =>
-            pipe(
-               fiber.getRef(ref),
-               T.map((a2) => ref.join(a, a2))
-            )
-         ),
-      inheritRefs: T.foreachUnit_(fibers, (f) => f.inheritRefs),
-      interruptAs: (fiberId) =>
-         pipe(
-            T.foreach_(fibers, (f) => f.interruptAs(fiberId)),
-            T.map(
-               A.reduceRight(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
-                  Ex.mapBothCause_(a, b, (_a, _b) => [_a, ..._b], C.both)
-               )
-            )
-         ),
-      poll: pipe(
-         T.foreach_(fibers, (f) => f.poll),
-         T.map(
-            A.reduceRight(some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
-               O.fold_(
-                  a,
-                  () => none(),
-                  (ra) =>
-                     O.fold_(
-                        b,
-                        () => none(),
-                        (rb) => some(Ex.mapBothCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
-                     )
-               )
-            )
-         )
+  makeSynthetic({
+    _tag: "SyntheticFiber",
+    getRef: (ref) =>
+      T.foldLeft_(fibers, ref.initial, (a, fiber) =>
+        pipe(
+          fiber.getRef(ref),
+          T.map((a2) => ref.join(a, a2))
+        )
       ),
-      await: awaitAll(fibers)
-   });
+    inheritRefs: T.foreachUnit_(fibers, (f) => f.inheritRefs),
+    interruptAs: (fiberId) =>
+      pipe(
+        T.foreach_(fibers, (f) => f.interruptAs(fiberId)),
+        T.map(
+          A.reduceRight(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
+            Ex.mapBothCause_(a, b, (_a, _b) => [_a, ..._b], C.both)
+          )
+        )
+      ),
+    poll: pipe(
+      T.foreach_(fibers, (f) => f.poll),
+      T.map(
+        A.reduceRight(some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
+          O.fold_(
+            a,
+            () => none(),
+            (ra) =>
+              O.fold_(
+                b,
+                () => none(),
+                (rb) => some(Ex.mapBothCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
+              )
+          )
+        )
+      )
+    ),
+    await: awaitAll(fibers)
+  });

@@ -26,10 +26,12 @@ export const sandbox: <R, E, A>(fa: Task<R, E, A>) => Task<R, Cause<E>, A> = fol
  * @category Combinators
  * @since 1.0.0
  */
-export const unsandbox: <R, E, A>(ef: Task<R, Cause<E>, A>) => Task<R, E, A> = mapErrorCause(C.flatten);
+export const unsandbox: <R, E, A>(ef: Task<R, Cause<E>, A>) => Task<R, E, A> = mapErrorCause(
+  C.flatten
+);
 
 export function sandboxWith<R, E, A, E1>(
-   f: (_: Task<R, Cause<E>, A>) => Task<R, Cause<E1>, A>
+  f: (_: Task<R, Cause<E>, A>) => Task<R, Cause<E1>, A>
 ): (ef: Task<R, E, A>) => Task<R, E1, A> {
-   return (ef) => unsandbox(f(sandbox(ef)));
+  return (ef) => unsandbox(f(sandbox(ef)));
 }

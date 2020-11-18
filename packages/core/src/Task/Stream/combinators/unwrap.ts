@@ -4,5 +4,5 @@ import type { Stream } from "../model";
 import { flatten } from "../monad";
 
 export function unwrap<R, E, O>(fa: T.Task<R, E, Stream<R, E, O>>): Stream<R, E, O> {
-   return flatten(fromTask(fa));
+  return flatten(fromTask(fa));
 }

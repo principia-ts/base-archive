@@ -35,7 +35,7 @@ export const both_: <A, B>(fa: IO<A>, fb: IO<B>) => IO<readonly [A, B]> = X.both
  * @since 1.0.0
  */
 export function both<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<readonly [A, B]> {
-   return (fa) => both_(fa, fb);
+  return (fa) => both_(fa, fb);
 }
 
 /**
@@ -51,8 +51,8 @@ export function both<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<readonly [A, B]> {
 export const pure: <A>(a: A) => IO<A> = X.pure;
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_,
-   both,
-   unit
+  ...Functor,
+  both_,
+  both,
+  unit
 });

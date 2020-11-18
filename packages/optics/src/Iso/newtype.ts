@@ -9,8 +9,8 @@ import type { Iso } from "./model";
  */
 
 export function newtype<T extends Newtype<any, any>>(): Iso<T["_A"], T> {
-   return {
-      get: (_) => _ as any,
-      reverseGet: (_) => _ as any
-   };
+  return {
+    get: (_) => _ as any,
+    reverseGet: (_) => _ as any
+  };
 }

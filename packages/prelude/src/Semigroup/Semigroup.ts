@@ -12,6 +12,6 @@ import type { CombineFn, CombineFn_ } from "./CombineFn";
  * `combine` with arguments interchanged for `pipeable` application.
  */
 export interface Semigroup<A> {
-   readonly combine_: CombineFn_<A>;
-   readonly combine: CombineFn<A>;
+  readonly combine_: CombineFn_<A>;
+  readonly combine: CombineFn<A>;
 }

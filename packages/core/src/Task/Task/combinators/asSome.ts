@@ -11,5 +11,5 @@ import type { Task } from "../model";
  * Maps the success value of this effect to an optional value.
  */
 export function asSome<R, E, A>(ef: Task<R, E, A>): Task<R, E, Option<A>> {
-   return map_(ef, some);
+  return map_(ef, some);
 }

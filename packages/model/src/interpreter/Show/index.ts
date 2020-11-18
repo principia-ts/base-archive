@@ -16,24 +16,25 @@ import { SetShow } from "./set";
 import { SumShow } from "./sum";
 
 export const _allShowInterpreters = <Env extends AnyEnv>() =>
-   merge(
-      PrimitivesShow<Env>(),
-      RefinementShow<Env>(),
-      RecordShow<Env>(),
-      ObjectShow<Env>(),
-      NewtypeShow<Env>(),
-      RecursiveShow<Env>(),
-      SetShow<Env>(),
-      SumShow<Env>(),
-      NullableShow<Env>(),
-      IntersectionShow<Env>()
-   );
+  merge(
+    PrimitivesShow<Env>(),
+    RefinementShow<Env>(),
+    RecordShow<Env>(),
+    ObjectShow<Env>(),
+    NewtypeShow<Env>(),
+    RecursiveShow<Env>(),
+    SetShow<Env>(),
+    SumShow<Env>(),
+    NullableShow<Env>(),
+    IntersectionShow<Env>()
+  );
 
 export const allShowInterpreters = memoize(_allShowInterpreters) as typeof _allShowInterpreters;
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
-   env: {
-      [K in S.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
-   }
-) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): S.Show<A> =>
-   pipe(env, F.derive(allShowInterpreters()));
+  env: {
+    [K in S.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
+  }
+) => <S, R, E, A>(
+  F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
+): S.Show<A> => pipe(env, F.derive(allShowInterpreters()));

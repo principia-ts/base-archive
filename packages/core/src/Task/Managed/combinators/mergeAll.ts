@@ -13,18 +13,22 @@ import { makeManagedReleaseMap } from "./makeManagedReleaseMap";
 /**
  * Merges an `Iterable<Managed>` to a single `Managed`, working sequentially.
  */
-export function mergeAll_<R, E, A, B>(mas: Iterable<Managed<R, E, A>>, b: B, f: (b: B, a: A) => B): Managed<R, E, B> {
-   return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => mapBoth_(b, a, f));
+export function mergeAll_<R, E, A, B>(
+  mas: Iterable<Managed<R, E, A>>,
+  b: B,
+  f: (b: B, a: A) => B
+): Managed<R, E, B> {
+  return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => mapBoth_(b, a, f));
 }
 
 /**
  * Merges an `Iterable<Managed>` to a single `Managed`, working sequentially.
  */
 export function mergeAll<A, B>(
-   b: B,
-   f: (b: B, a: A) => B
+  b: B,
+  f: (b: B, a: A) => B
 ): <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, B> {
-   return (mas) => mergeAll_(mas, b, f);
+  return (mas) => mergeAll_(mas, b, f);
 }
 
 /**
@@ -35,11 +39,11 @@ export function mergeAll<A, B>(
  * - associative: `f(a, f(b, c)) == f(f(a, b), c)`
  */
 export function mergeAllPar_<R, E, A, B>(
-   mas: Iterable<Managed<R, E, A>>,
-   b: B,
-   f: (b: B, a: A) => B
+  mas: Iterable<Managed<R, E, A>>,
+  b: B,
+  f: (b: B, a: A) => B
 ): Managed<R, E, B> {
-   return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => mapBothPar_(b, a, f));
+  return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => mapBothPar_(b, a, f));
 }
 
 /**
@@ -50,10 +54,10 @@ export function mergeAllPar_<R, E, A, B>(
  * - associative: `f(a, f(b, c)) == f(f(a, b), c)`
  */
 export function mergeAllPar<A, B>(
-   b: B,
-   f: (b: B, a: A) => B
+  b: B,
+  f: (b: B, a: A) => B
 ): <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, B> {
-   return (mas) => mergeAllPar_(mas, b, f);
+  return (mas) => mergeAllPar_(mas, b, f);
 }
 
 /**
@@ -66,18 +70,22 @@ export function mergeAllPar<A, B>(
  * Unlike `mergeAllPar`, this method will use at most up to `n` fibers.
  */
 export function mergeAllParN_(n: number) {
-   return <R, E, A, B>(mas: Iterable<Managed<R, E, A>>, b: B, f: (b: B, a: A) => B): Managed<R, E, B> =>
-      pipe(
-         makeManagedReleaseMap(parallelN(n)),
-         mapM((rm) =>
-            pipe(
-               mas,
-               I.map((m) => T.map_(m.task, ([_, a]) => a)),
-               T.mergeAllParN(n)(b, f),
-               T.gives((_: R) => [_, rm] as const)
-            )
-         )
-      );
+  return <R, E, A, B>(
+    mas: Iterable<Managed<R, E, A>>,
+    b: B,
+    f: (b: B, a: A) => B
+  ): Managed<R, E, B> =>
+    pipe(
+      makeManagedReleaseMap(parallelN(n)),
+      mapM((rm) =>
+        pipe(
+          mas,
+          I.map((m) => T.map_(m.task, ([_, a]) => a)),
+          T.mergeAllParN(n)(b, f),
+          T.gives((_: R) => [_, rm] as const)
+        )
+      )
+    );
 }
 
 /**
@@ -90,7 +98,10 @@ export function mergeAllParN_(n: number) {
  * Unlike `mergeAllPar`, this method will use at most up to `n` fibers.
  */
 export function mergeAllParN(
-   n: number
-): <A, B>(b: B, f: (b: B, a: A) => B) => <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, B> {
-   return (b, f) => (mas) => mergeAllParN_(n)(mas, b, f);
+  n: number
+): <A, B>(
+  b: B,
+  f: (b: B, a: A) => B
+) => <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, B> {
+  return (b, f) => (mas) => mergeAllParN_(n)(mas, b, f);
 }

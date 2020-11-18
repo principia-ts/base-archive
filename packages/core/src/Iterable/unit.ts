@@ -7,7 +7,7 @@ import { iterable } from "./utils";
  */
 
 export function unit(): Iterable<void> {
-   return iterable(function* () {
-      yield undefined;
-   });
+  return iterable(function* () {
+    yield undefined;
+  });
 }

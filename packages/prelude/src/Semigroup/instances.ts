@@ -10,8 +10,8 @@ import type { Semigroup } from "./Semigroup";
  * @since 1.0.0
  */
 export const semigroupAll: Semigroup<boolean> = {
-   combine_: (x, y) => x && y,
-   combine: (y) => (x) => x && y
+  combine_: (x, y) => x && y,
+  combine: (y) => (x) => x && y
 };
 
 /**
@@ -21,8 +21,8 @@ export const semigroupAll: Semigroup<boolean> = {
  * @since 1.0.0
  */
 export const semigroupAny: Semigroup<boolean> = {
-   combine_: (x, y) => x || y,
-   combine: (y) => (x) => x || y
+  combine_: (x, y) => x || y,
+  combine: (y) => (x) => x || y
 };
 
 /**
@@ -32,8 +32,8 @@ export const semigroupAny: Semigroup<boolean> = {
  * @since 1.0.0
  */
 export const semigroupSum: Semigroup<number> = {
-   combine_: (x, y) => x + y,
-   combine: (x) => (y) => x + y
+  combine_: (x, y) => x + y,
+  combine: (x) => (y) => x + y
 };
 
 /**
@@ -43,8 +43,8 @@ export const semigroupSum: Semigroup<number> = {
  * @since 1.0.0
  */
 export const semigroupProduct: Semigroup<number> = {
-   combine_: (x, y) => x * y,
-   combine: (y) => (x) => x * y
+  combine_: (x, y) => x * y,
+  combine: (y) => (x) => x * y
 };
 
 /**
@@ -52,8 +52,8 @@ export const semigroupProduct: Semigroup<number> = {
  * @since 1.0.0
  */
 export const semigroupString: Semigroup<string> = {
-   combine_: (x, y) => x + y,
-   combine: (y) => (x) => x + y
+  combine_: (x, y) => x + y,
+  combine: (y) => (x) => x + y
 };
 
 /**
@@ -61,8 +61,8 @@ export const semigroupString: Semigroup<string> = {
  * @since 1.0.0
  */
 export const semigroupVoid: Semigroup<void> = {
-   combine_: () => undefined,
-   combine: () => () => undefined
+  combine_: () => undefined,
+  combine: () => () => undefined
 };
 
 /**
@@ -70,8 +70,8 @@ export const semigroupVoid: Semigroup<void> = {
  * @since 1.0.0
  */
 export const getFirstSemigroup = <A = never>(): Semigroup<A> => ({
-   combine_: (x, _) => x,
-   combine: (_) => (x) => x
+  combine_: (x, _) => x,
+  combine: (_) => (x) => x
 });
 
 /**
@@ -79,8 +79,8 @@ export const getFirstSemigroup = <A = never>(): Semigroup<A> => ({
  * @since 1.0.0
  */
 export const getLastSemigroup = <A = never>(): Semigroup<A> => ({
-   combine_: (_, y) => y,
-   combine: (y) => (_) => y
+  combine_: (_, y) => y,
+  combine: (y) => (_) => y
 });
 
 /**
@@ -88,14 +88,16 @@ export const getLastSemigroup = <A = never>(): Semigroup<A> => ({
  * @since 1.0.0
  */
 export const getTupleSemigroup = <T extends ReadonlyArray<Semigroup<any>>>(
-   ...semigroups: T
+  ...semigroups: T
 ): Semigroup<{ [K in keyof T]: T[K] extends Semigroup<infer A> ? A : never }> => {
-   const combine_: CombineFn_<{ [K in keyof T]: T[K] extends Semigroup<infer A> ? A : never }> = (x, y) =>
-      semigroups.map((s, i) => s.combine_(x[i], y[i])) as any;
-   return {
-      combine_,
-      combine: (y) => (x) => combine_(x, y)
-   };
+  const combine_: CombineFn_<{ [K in keyof T]: T[K] extends Semigroup<infer A> ? A : never }> = (
+    x,
+    y
+  ) => semigroups.map((s, i) => s.combine_(x[i], y[i])) as any;
+  return {
+    combine_,
+    combine: (y) => (x) => combine_(x, y)
+  };
 };
 
 /**
@@ -103,17 +105,19 @@ export const getTupleSemigroup = <T extends ReadonlyArray<Semigroup<any>>>(
  * @since 1.0.0
  */
 export const getDualSemigroup = <A>(S: Semigroup<A>): Semigroup<A> => ({
-   combine_: (x, y) => S.combine_(y, x),
-   combine: (y) => (x) => S.combine_(y, x)
+  combine_: (x, y) => S.combine_(y, x),
+  combine: (y) => (x) => S.combine_(y, x)
 });
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const getFunctionSemigroup = <S>(S: Semigroup<S>) => <A = never>(): Semigroup<(a: A) => S> => ({
-   combine_: (f, g) => (a) => S.combine_(f(a), g(a)),
-   combine: (g) => (f) => (a) => S.combine_(f(a), g(a))
+export const getFunctionSemigroup = <S>(S: Semigroup<S>) => <A = never>(): Semigroup<
+  (a: A) => S
+> => ({
+  combine_: (f, g) => (a) => S.combine_(f(a), g(a)),
+  combine: (g) => (f) => (a) => S.combine_(f(a), g(a))
 });
 
 /**
@@ -121,19 +125,19 @@ export const getFunctionSemigroup = <S>(S: Semigroup<S>) => <A = never>(): Semig
  * @since 1.0.0
  */
 export const getStructSemigroup = <O extends Readonly<Record<string, any>>>(
-   semigroups: { [K in keyof O]: Semigroup<O[K]> }
+  semigroups: { [K in keyof O]: Semigroup<O[K]> }
 ): Semigroup<O> => {
-   const combine_: CombineFn_<O> = (x, y) => {
-      const r: any = {};
-      for (const key of Object.keys(semigroups)) {
-         r[key] = semigroups[key].combine_(x[key], y[key]);
-      }
-      return r;
-   };
-   return {
-      combine_,
-      combine: (y) => (x) => combine_(x, y)
-   };
+  const combine_: CombineFn_<O> = (x, y) => {
+    const r: any = {};
+    for (const key of Object.keys(semigroups)) {
+      r[key] = semigroups[key].combine_(x[key], y[key]);
+    }
+    return r;
+  };
+  return {
+    combine_,
+    combine: (y) => (x) => combine_(x, y)
+  };
 };
 
 /**
@@ -141,11 +145,11 @@ export const getStructSemigroup = <O extends Readonly<Record<string, any>>>(
  * @since 1.0.0
  */
 export const getMeetSemigroup = <A>(O: Ord<A>): Semigroup<A> => {
-   const minO = min_(O);
-   return {
-      combine_: (x, y) => minO(x, y),
-      combine: (y) => (x) => minO(x, y)
-   };
+  const minO = min_(O);
+  return {
+    combine_: (x, y) => minO(x, y),
+    combine: (y) => (x) => minO(x, y)
+  };
 };
 
 /**
@@ -153,11 +157,11 @@ export const getMeetSemigroup = <A>(O: Ord<A>): Semigroup<A> => {
  * @since 1.0.0
  */
 export const getJoinSemigroup = <A>(O: Ord<A>): Semigroup<A> => {
-   const maxO = max_(O);
-   return {
-      combine_: (x, y) => maxO(x, y),
-      combine: (y) => (x) => maxO(x, y)
-   };
+  const maxO = max_(O);
+  return {
+    combine_: (x, y) => maxO(x, y),
+    combine: (y) => (x) => maxO(x, y)
+  };
 };
 
 /**
@@ -165,8 +169,8 @@ export const getJoinSemigroup = <A>(O: Ord<A>): Semigroup<A> => {
  * @since 1.0.0
  */
 export const getObjectSemigroup = <A extends object = never>(): Semigroup<A> => ({
-   combine_: (x, y) => Object.assign({}, x, y),
-   combine: (y) => (x) => Object.assign({}, x, y)
+  combine_: (x, y) => Object.assign({}, x, y),
+  combine: (y) => (x) => Object.assign({}, x, y)
 });
 
 /**
@@ -174,6 +178,6 @@ export const getObjectSemigroup = <A extends object = never>(): Semigroup<A> => 
  * @since 1.0.0
  */
 export const getIntercalateSemigroup = <A>(a: A) => (S: Semigroup<A>): Semigroup<A> => ({
-   combine_: (x, y) => S.combine_(x, S.combine_(a, y)),
-   combine: (y) => (x) => S.combine_(x, S.combine_(a, y))
+  combine_: (x, y) => S.combine_(x, S.combine_(a, y)),
+  combine: (y) => (x) => S.combine_(x, S.combine_(a, y))
 });

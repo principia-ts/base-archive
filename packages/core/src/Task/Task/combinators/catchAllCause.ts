@@ -12,8 +12,11 @@ import type { Cause } from "../../Exit/Cause";
  * @category Combinators
  * @since 1.0.0
  */
-export function catchAllCause_<R, E, A, R1, E1, A1>(ef: T.Task<R, E, A>, f: (_: Cause<E>) => T.Task<R1, E1, A1>) {
-   return T.foldCauseM_(ef, f, T.pure);
+export function catchAllCause_<R, E, A, R1, E1, A1>(
+  ef: T.Task<R, E, A>,
+  f: (_: Cause<E>) => T.Task<R1, E1, A1>
+) {
+  return T.foldCauseM_(ef, f, T.pure);
 }
 
 /**
@@ -28,7 +31,7 @@ export function catchAllCause_<R, E, A, R1, E1, A1>(ef: T.Task<R, E, A>, f: (_: 
  * @since 1.0.0
  */
 export function catchAllCause<E, R1, E1, A1>(
-   f: (_: Cause<E>) => T.Task<R1, E1, A1>
+  f: (_: Cause<E>) => T.Task<R1, E1, A1>
 ): <R, A>(ef: T.Task<R, E, A>) => T.Task<R & R1, E1, A1 | A> {
-   return (ef) => catchAllCause_(ef, f);
+  return (ef) => catchAllCause_(ef, f);
 }

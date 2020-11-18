@@ -7,10 +7,16 @@ import type { ArbURI } from "./HKT";
 import { accessFastCheck, applyArbitraryConfig } from "./HKT";
 
 export const NullableArbitrary = implementInterpreter<ArbURI, Alg.NullableURI>()((_) => ({
-   nullable: (a, config) => (env) =>
-      pipe(a(env), (arb) => applyArbitraryConfig(config?.config)(accessFastCheck(env).option(arb), env, arb)),
-   optional: (a, config) => (env) =>
-      pipe(a(env), (arb) =>
-         applyArbitraryConfig(config?.config)(accessFastCheck(env).option(arb).map(O.fromNullable), env, arb)
+  nullable: (a, config) => (env) =>
+    pipe(a(env), (arb) =>
+      applyArbitraryConfig(config?.config)(accessFastCheck(env).option(arb), env, arb)
+    ),
+  optional: (a, config) => (env) =>
+    pipe(a(env), (arb) =>
+      applyArbitraryConfig(config?.config)(
+        accessFastCheck(env).option(arb).map(O.fromNullable),
+        env,
+        arb
       )
+    )
 }));

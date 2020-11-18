@@ -7,6 +7,8 @@ import { implementInterpreter } from "../../HKT";
 import { applyShowConfig } from "./HKT";
 
 export const SetShow = implementInterpreter<Show.URI, Alg.SetURI>()((_) => ({
-   set: (a, ord, config) => (env) =>
-      pipe(a(env), (show) => applyShowConfig(config?.config)(Show.named_(S.getShow(show), config?.name), env, show))
+  set: (a, ord, config) => (env) =>
+    pipe(a(env), (show) =>
+      applyShowConfig(config?.config)(Show.named_(S.getShow(show), config?.name), env, show)
+    )
 }));

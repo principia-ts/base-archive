@@ -12,6 +12,6 @@ import { empty } from "./constructors";
  */
 
 export function getUnionMonoid<A>(E: Eq<A>): Monoid<ReadonlySet<A>> {
-   const unionE_ = union_(E);
-   return makeMonoid<ReadonlySet<A>>((x, y) => unionE_(x, y), empty());
+  const unionE_ = union_(E);
+  return makeMonoid<ReadonlySet<A>>((x, y) => unionE_(x, y), empty());
 }

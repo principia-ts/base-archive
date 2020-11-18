@@ -10,16 +10,21 @@ import { LayerFreshInstruction } from "./core";
 /**
  * Embed the requird environment in a region
  */
-export function region<K, T>(h: Tag<Region<T, K>>): <R, E>(_: L.Layer<R, E, T>) => L.Layer<R, E, Has<Region<T, K>>> {
-   return (_) =>
-      pipe(L.fromRawTask(T.asks((r: T): Has<Region<T, K>> => ({ [h.key]: r } as any))), L.andTo(_, "no-erase"));
+export function region<K, T>(
+  h: Tag<Region<T, K>>
+): <R, E>(_: L.Layer<R, E, T>) => L.Layer<R, E, Has<Region<T, K>>> {
+  return (_) =>
+    pipe(
+      L.fromRawTask(T.asks((r: T): Has<Region<T, K>> => ({ [h.key]: r } as any))),
+      L.andTo(_, "no-erase")
+    );
 }
 
 /**
  * Converts a layer to a managed runtime
  */
 export function toRuntime<R, E, A>(_: L.Layer<R, E, A>): M.Managed<R, E, Runtime<A>> {
-   return M.map_(L.build(_), makeRuntime);
+  return M.map_(L.build(_), makeRuntime);
 }
 
 /**
@@ -27,5 +32,5 @@ export function toRuntime<R, E, A>(_: L.Layer<R, E, A>): M.Managed<R, E, Runtime
  * note that this will override the memoMap for the layer and its children
  */
 export function fresh<R, E, A>(layer: L.Layer<R, E, A>): L.Layer<R, E, A> {
-   return new LayerFreshInstruction(layer);
+  return new LayerFreshInstruction(layer);
 }

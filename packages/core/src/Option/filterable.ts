@@ -19,41 +19,56 @@ import type { Option, URI, V } from "./model";
 export function filter_<A, B extends A>(fa: Option<A>, refinement: Refinement<A, B>): Option<B>;
 export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A>;
 export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A> {
-   return isNone(fa) ? none() : predicate(fa.value) ? fa : none();
+  return isNone(fa) ? none() : predicate(fa.value) ? fa : none();
 }
 
 export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Option<A>) => Option<B>;
 export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A>;
 export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A> {
-   return (fa) => filter_(fa, predicate);
+  return (fa) => filter_(fa, predicate);
 }
 
 export function partition_<A, B extends A>(
-   fa: Option<A>,
-   refinement: Refinement<A, B>
+  fa: Option<A>,
+  refinement: Refinement<A, B>
 ): Separated<Option<A>, Option<B>>;
-export function partition_<A>(fa: Option<A>, predicate: Predicate<A>): Separated<Option<A>, Option<A>>;
-export function partition_<A>(fa: Option<A>, predicate: Predicate<A>): Separated<Option<A>, Option<A>> {
-   return {
-      left: filter_(fa, (a) => !predicate(a)),
-      right: filter_(fa, predicate)
-   };
+export function partition_<A>(
+  fa: Option<A>,
+  predicate: Predicate<A>
+): Separated<Option<A>, Option<A>>;
+export function partition_<A>(
+  fa: Option<A>,
+  predicate: Predicate<A>
+): Separated<Option<A>, Option<A>> {
+  return {
+    left: filter_(fa, (a) => !predicate(a)),
+    right: filter_(fa, predicate)
+  };
 }
 
 export function partition<A, B extends A>(
-   refinement: Refinement<A, B>
+  refinement: Refinement<A, B>
 ): (fa: Option<A>) => Separated<Option<A>, Option<B>>;
-export function partition<A>(predicate: Predicate<A>): (fa: Option<A>) => Separated<Option<A>, Option<A>>;
-export function partition<A>(predicate: Predicate<A>): (fa: Option<A>) => Separated<Option<A>, Option<A>> {
-   return (fa) => partition_(fa, predicate);
+export function partition<A>(
+  predicate: Predicate<A>
+): (fa: Option<A>) => Separated<Option<A>, Option<A>>;
+export function partition<A>(
+  predicate: Predicate<A>
+): (fa: Option<A>) => Separated<Option<A>, Option<A>> {
+  return (fa) => partition_(fa, predicate);
 }
 
-export function mapEither_<A, B, C>(fa: Option<A>, f: (a: A) => Either<B, C>): Separated<Option<B>, Option<C>> {
-   return separate(map_(fa, f));
+export function mapEither_<A, B, C>(
+  fa: Option<A>,
+  f: (a: A) => Either<B, C>
+): Separated<Option<B>, Option<C>> {
+  return separate(map_(fa, f));
 }
 
-export function mapEither<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>) => Separated<Option<B>, Option<C>> {
-   return (fa) => mapEither_(fa, f);
+export function mapEither<A, B, C>(
+  f: (a: A) => Either<B, C>
+): (fa: Option<A>) => Separated<Option<B>, Option<C>> {
+  return (fa) => mapEither_(fa, f);
 }
 
 /**
@@ -62,7 +77,7 @@ export function mapEither<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>) =
  * ```
  */
 export function mapOption_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
-   return isNone(fa) ? none() : f(fa.value);
+  return isNone(fa) ? none() : f(fa.value);
 }
 
 /**
@@ -71,16 +86,16 @@ export function mapOption_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<
  * ```
  */
 export function mapOption<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Option<B> {
-   return (fa) => mapOption_(fa, f);
+  return (fa) => mapOption_(fa, f);
 }
 
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
-   mapOption_,
-   filter_,
-   mapEither_,
-   partition_,
-   filter,
-   mapOption,
-   partition,
-   mapEither
+  mapOption_,
+  filter_,
+  mapEither_,
+  partition_,
+  filter,
+  mapOption,
+  partition,
+  mapEither
 });

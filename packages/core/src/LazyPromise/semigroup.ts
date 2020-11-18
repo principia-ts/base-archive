@@ -20,4 +20,4 @@ import type { LazyPromise } from "./model";
  * @since 1.0.0
  */
 export const getSemigroup = <A>(S: Semigroup<A>): Semigroup<LazyPromise<A>> =>
-   fromCombine((x, y) => () => x().then((rx) => y().then((ry) => S.combine_(rx, ry))));
+  fromCombine((x, y) => () => x().then((rx) => y().then((ry) => S.combine_(rx, ry))));

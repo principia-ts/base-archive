@@ -19,10 +19,10 @@ export type URI = typeof URI;
 export type V = HKT.Auto;
 
 declare module "@principia/prelude/HKT" {
-   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-      readonly [URI]: ReadonlyArray<A>;
-   }
-   interface URItoIndex<N extends string, K> {
-      readonly [URI]: number;
-   }
+  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: ReadonlyArray<A>;
+  }
+  interface URItoIndex<N extends string, K> {
+    readonly [URI]: number;
+  }
 }

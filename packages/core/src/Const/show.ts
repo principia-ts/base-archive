@@ -13,7 +13,7 @@ import type { Const } from "./model";
  * @since 1.0.0
  */
 export function getShow<E, A>(S: Show<E>): Show<Const<E, A>> {
-   return {
-      show: (c) => `make(${S.show(c)})`
-   };
+  return {
+    show: (c) => `make(${S.show(c)})`
+  };
 }

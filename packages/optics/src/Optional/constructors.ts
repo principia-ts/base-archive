@@ -10,8 +10,8 @@ import type { Optional } from "./Optional";
  */
 
 export function id<S>(): Optional<S, S> {
-   return {
-      getOption: O.some,
-      set: constant
-   };
+  return {
+    getOption: O.some,
+    set: constant
+  };
 }

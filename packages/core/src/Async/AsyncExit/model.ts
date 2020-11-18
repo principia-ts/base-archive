@@ -1,15 +1,15 @@
 export interface Interrupt {
-   readonly _tag: "Interrupt";
+  readonly _tag: "Interrupt";
 }
 
 export interface Success<A> {
-   readonly _tag: "Success";
-   readonly value: A;
+  readonly _tag: "Success";
+  readonly value: A;
 }
 
 export interface Failure<E> {
-   readonly _tag: "Failure";
-   readonly error: E;
+  readonly _tag: "Failure";
+  readonly error: E;
 }
 
 export type Rejection<E> = Interrupt | Failure<E>;

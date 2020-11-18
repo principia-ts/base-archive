@@ -12,12 +12,17 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export function zip_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<readonly [A, B]> {
-   return zipWith_(fa, fb, (a, b) => [a, b]);
+export function zip_<A, B>(
+  fa: ReadonlyArray<A>,
+  fb: ReadonlyArray<B>
+): ReadonlyArray<readonly [A, B]> {
+  return zipWith_(fa, fb, (a, b) => [a, b]);
 }
 
-export function zip<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<readonly [A, B]> {
-   return (fa) => zip_(fa, fb);
+export function zip<B>(
+  fb: ReadonlyArray<B>
+): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<readonly [A, B]> {
+  return (fa) => zip_(fa, fb);
 }
 
 export const both_ = zip_;
@@ -35,12 +40,12 @@ export const both = zip;
  * @since 1.0.0
  */
 export function pure<A>(a: A): ReadonlyArray<A> {
-   return [a];
+  return [a];
 }
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
-   ...Functor,
-   both_: zip_,
-   both: zip,
-   unit
+  ...Functor,
+  both_: zip_,
+  both: zip,
+  unit
 });

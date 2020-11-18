@@ -21,8 +21,11 @@ import { SucceedInstruction } from "./model";
  * @category Apply
  * @since 1.0.0
  */
-export function both_<R, E, A, Q, D, B>(fa: Task<R, E, A>, fb: Task<Q, D, B>): Task<Q & R, D | E, readonly [A, B]> {
-   return mapBoth_(fa, fb, tuple);
+export function both_<R, E, A, Q, D, B>(
+  fa: Task<R, E, A>,
+  fb: Task<Q, D, B>
+): Task<Q & R, D | E, readonly [A, B]> {
+  return mapBoth_(fa, fb, tuple);
 }
 
 /**
@@ -37,8 +40,10 @@ export function both_<R, E, A, Q, D, B>(fa: Task<R, E, A>, fb: Task<Q, D, B>): T
  * @category Apply
  * @since 1.0.0
  */
-export function both<Q, D, B>(fb: Task<Q, D, B>): <R, E, A>(fa: Task<R, E, A>) => Task<Q & R, D | E, readonly [A, B]> {
-   return (fa) => both_(fa, fb);
+export function both<Q, D, B>(
+  fb: Task<Q, D, B>
+): <R, E, A>(fa: Task<R, E, A>) => Task<Q & R, D | E, readonly [A, B]> {
+  return (fa) => both_(fa, fb);
 }
 
 /**
@@ -52,5 +57,5 @@ export function both<Q, D, B>(fb: Task<Q, D, B>): <R, E, A>(fa: Task<R, E, A>) =
  * @since 1.0.0
  */
 export function pure<A>(a: A): IO<A> {
-   return new SucceedInstruction(a);
+  return new SucceedInstruction(a);
 }

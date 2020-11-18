@@ -18,5 +18,5 @@ import type { Cause } from "./model";
  * @since 1.0.0
  */
 export function pure<E>(e: E): Cause<E> {
-   return fail(e);
+  return fail(e);
 }

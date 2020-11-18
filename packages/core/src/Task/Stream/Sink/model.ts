@@ -13,5 +13,5 @@ import type * as Push from "../internal/Push";
 //   sort of result (even a failure) when receiving a `None`.
 // - Sinks can assume they will not be pushed again after emitting a value.
 export class Sink<R, E, I, L, Z> {
-   constructor(readonly push: M.Managed<R, never, Push.Push<R, E, I, L, Z>>) {}
+  constructor(readonly push: M.Managed<R, never, Push.Push<R, E, I, L, Z>>) {}
 }
