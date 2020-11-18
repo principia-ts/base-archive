@@ -39,7 +39,7 @@ export function distributedWithDynamic_<R, E, O>(
       T.bindS("queues", () => T.map_(queuesRef.get, (m) => m.entries())),
       T.chain(({ shouldProcess, queues }) =>
         pipe(
-          T.foldLeft_(queues, A.empty<symbol>(), (acc, [id, queue]) => {
+          T.reduce_(queues, A.empty<symbol>(), (acc, [id, queue]) => {
             if (shouldProcess(id)) {
               return pipe(
                 queue.offer(Ex.succeed(o)),
@@ -53,7 +53,7 @@ export function distributedWithDynamic_<R, E, O>(
             }
           }),
           T.chain((ids) =>
-            A.isNonEmpty(ids) ? R.update_(queuesRef, Map.unsafeDeleteMany(ids)) : T.unit()
+            A.isNonEmpty(ids) ? R.update_(queuesRef, Map.removeMany(ids)) : T.unit()
           )
         )
       )
@@ -76,7 +76,7 @@ export function distributedWithDynamic_<R, E, O>(
                 T.do,
                 T.bindS("queue", () => Q.makeBounded<Ex.Exit<O.Option<E>, O>>(maximumLag)),
                 T.letS("id", () => Symbol()),
-                T.tap(({ queue, id }) => R.update_(queuesRef, Map.unsafeInsertAt(id, queue))),
+                T.tap(({ queue, id }) => R.update_(queuesRef, Map.insert(id, queue))),
                 T.map(({ id, queue }) => [id, queue])
               )
             ),
@@ -93,7 +93,7 @@ export function distributedWithDynamic_<R, E, O>(
                     T.bindS("queue", () => Q.makeBounded<Ex.Exit<O.Option<E>, O>>(1)),
                     T.tap(({ queue }) => queue.offer(endTake)),
                     T.letS("id", () => Symbol()),
-                    T.tap(({ id, queue }) => R.update_(queuesRef, Map.unsafeInsertAt(id, queue))),
+                    T.tap(({ id, queue }) => R.update_(queuesRef, Map.insert(id, queue))),
                     T.map(({ id, queue }) => [id, queue] as const)
                   )
                 ),

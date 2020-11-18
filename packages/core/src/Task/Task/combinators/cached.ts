@@ -1,4 +1,4 @@
-import * as _ from "../_core";
+import * as T from "../_core";
 import { pipe, tuple } from "../../../Function";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
@@ -13,10 +13,10 @@ import { to } from "./to";
 
 const _compute = <R, E, A>(fa: Task<R, E, A>, ttl: number, start: number) =>
   pipe(
-    _.do,
-    _.bindS("p", () => XP.make<E, A>()),
-    _.tap(({ p }) => to(p)(fa)),
-    _.map(({ p }) => O.some(tuple(start + ttl, p)))
+    T.do,
+    T.bindS("p", () => XP.make<E, A>()),
+    T.tap(({ p }) => to(p)(fa)),
+    T.map(({ p }) => O.some(tuple(start + ttl, p)))
   );
 
 const _get = <R, E, A>(
@@ -27,7 +27,7 @@ const _get = <R, E, A>(
   uninterruptibleMask(({ restore }) =>
     pipe(
       currentTime,
-      _.chain((time) =>
+      T.chain((time) =>
         pipe(
           cache,
           XRM.updateSomeAndGet((o) =>
@@ -42,7 +42,7 @@ const _get = <R, E, A>(
               )
             )
           ),
-          _.chain((a) => (a._tag === "None" ? _.die("bug") : restore(XP.await(a.value[1]))))
+          T.chain((a) => (a._tag === "None" ? T.die("bug") : restore(XP.await(a.value[1]))))
         )
       )
     )
@@ -54,7 +54,7 @@ const _get = <R, E, A>(
  * ```
  *
  * Returns a task that, if evaluated, will return the cached result of
- * this effect. Cached results will expire after `timeToLive` duration.
+ * this task. Cached results will expire after `timeToLive` duration.
  *
  * @category Combinators
  * @since 1.0.0
@@ -64,10 +64,10 @@ export function cached_<R, E, A>(
   timeToLive: number
 ): RIO<R & HasClock, EIO<E, A>> {
   return pipe(
-    _.do,
-    _.bindS("r", () => _.ask<R & HasClock>()),
-    _.bindS("cache", () => XRM.makeRefM<Option<readonly [number, XPromise<E, A>]>>(O.none())),
-    _.map(({ cache, r }) => _.giveAll(r)(_get(fa, timeToLive, cache)))
+    T.do,
+    T.bindS("r", () => T.ask<R & HasClock>()),
+    T.bindS("cache", () => XRM.makeRefM<Option<readonly [number, XPromise<E, A>]>>(O.none())),
+    T.map(({ cache, r }) => T.giveAll(r)(_get(fa, timeToLive, cache)))
   );
 }
 
@@ -77,13 +77,13 @@ export function cached_<R, E, A>(
  * ```
  *
  * Returns a task that, if evaluated, will return the cached result of
- * this effect. Cached results will expire after `timeToLive` duration.
+ * this task. Cached results will expire after `timeToLive` duration.
  *
  * @category Combinators
  * @since 1.0.0
  */
 export function cached(
   timeToLive: number
-): <R, E, A>(fa: _.Task<R, E, A>) => RIO<R & HasClock, EIO<E, A>> {
+): <R, E, A>(fa: T.Task<R, E, A>) => RIO<R & HasClock, EIO<E, A>> {
   return <R, E, A>(fa: Task<R, E, A>) => cached_(fa, timeToLive);
 }

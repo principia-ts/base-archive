@@ -18,6 +18,8 @@ export * from "./collectAllPar";
 export * from "./collectAllParN";
 export * from "./compose";
 export * from "./cond";
+export * from "./core-scope";
+export * from "./core";
 export * from "./delay";
 export * from "./dieMessage";
 export * from "./duplicate";

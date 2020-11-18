@@ -450,7 +450,7 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
           )
         ),
         T.chain((maybeAs) => {
-          const filtered = A.mapOption_(maybeAs, identity);
+          const filtered = A.filterMap_(maybeAs, identity);
 
           if (A.isEmpty(filtered)) {
             return T.pure(false);

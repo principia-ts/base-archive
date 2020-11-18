@@ -24,7 +24,7 @@ import {
  * succeed :: a -> Task _ _ a
  * ```
  *
- * Creates an `Task` that has succeeded with a pure value
+ * Creates a `Task` that has succeeded with a pure value
  *
  * @category Constructors
  * @since 1.0.0
@@ -38,7 +38,7 @@ export function succeed<E = never, A = never>(a: A): EIO<E, A> {
  * async :: Task t => (((t r e a -> ()) -> ()), ?[FiberId]) -> t r e a
  * ```
  *
- * Imports an asynchronous side-effect into an `Task`
+ * Imports an asynchronous side-effect into a `Task`
  *
  * @category Constructors
  * @since 1.0.0
@@ -79,7 +79,7 @@ export function asyncOption<R, E, A>(
  * total :: (() -> a) -> Task _ _ a
  * ```
  *
- * Creates an `Task` from the return value of a total function
+ * Creates a `Task` from the return value of a total function
  *
  * @category Constructors
  * @since 1.0.0
@@ -93,7 +93,7 @@ export function total<A>(thunk: () => A): IO<A> {
  * partial_ :: (() -> a, (Any -> e)) -> Task _ e a
  * ```
  *
- * Creates an `Task` from the return value of a function that may throw, mapping the error
+ * Creates a `Task` from the return value of a function that may throw, mapping the error
  *
  * @category Constructors
  * @since 1.0.0
@@ -107,7 +107,7 @@ export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): 
  * partial :: (Any -> e) -> (() -> a) -> Task _ e a
  * ```
  *
- * Creates an `Task` from the return value of a function that may throw, mapping the error
+ * Creates a `Task` from the return value of a function that may throw, mapping the error
  *
  * @category Constructors
  * @since 1.0.0
@@ -121,7 +121,7 @@ export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) 
  * suspend :: (() -> Task r e a) -> Task r e a
  * ```
  *
- * Creates an lazily-constructed `Task`, whose construction itself may require effects
+ * Creates a lazily-constructed `Task`, whose construction itself may require effects
  *
  * @category Constructors
  * @since 1.0.0
@@ -135,7 +135,7 @@ export function suspend<R, E, A>(factory: Lazy<Task<R, E, A>>): Task<R, E, A> {
  * halt :: Cause e -> Task _ e _
  * ```
  *
- * Creates an `Task` that has failed with the specified `Cause`
+ * Creates a `Task` that has failed with the specified `Cause`
  *
  * @category Constructors
  * @since 1.0.0
@@ -149,7 +149,7 @@ export function halt<E>(cause: C.Cause<E>): EIO<E, never> {
  * fail :: e -> Task _ e _
  * ```
  *
- * Creates an `Task` that has failed with value `e`. The moral equivalent of `throw`, except not immoral :)
+ * Creates a `Task` that has failed with value `e`. The moral equivalent of `throw`, except not immoral :)
  *
  * @category Constructors
  * @since 1.0.0
@@ -163,7 +163,7 @@ export function fail<E>(e: E): EIO<E, never> {
  * die :: Any -> Task _ _ _
  * ```
  *
- * Creates an `Task` that has died with the specified defect
+ * Creates a `Task` that has died with the specified defect
  *
  * @category Constructors
  * @since 1.0.0
@@ -177,12 +177,12 @@ export function die(e: unknown): EIO<never, never> {
  * done :: Exit a b -> Task _ a b
  * ```
  *
- * Creates an `Task` from an exit value
+ * Creates a `Task` from an exit value
  *
  * @category Constructors
  * @since 1.0.0
  */
-export function done<E = never, A = unknown>(exit: Exit<E, A>): EIO<E, A> {
+export function done<E, A>(exit: Exit<E, A>): EIO<E, A> {
   return suspend(() => {
     switch (exit._tag) {
       case "Success": {

@@ -16,8 +16,8 @@ import { uninterruptibleMask } from "./interrupt";
  *
  * Acquires a resource, uses the resource, and then releases the resource.
  * Neither the acquisition nor the release will be interrupted, and the
- * resource is guaranteed to be released, so long as the `acquire` effect
- * succeeds. If `use` fails, then after release, the returned effect will fail
+ * resource is guaranteed to be released, so long as the `acquire` task
+ * succeeds. If `use` fails, then after release, the returned task will fail
  * with the same error.
  *
  * @category Combinators
@@ -58,8 +58,8 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
  *
  * Acquires a resource, uses the resource, and then releases the resource.
  * Neither the acquisition nor the release will be interrupted, and the
- * resource is guaranteed to be released, so long as the `acquire` effect
- * succeeds. If `use` fails, then after release, the returned effect will fail
+ * resource is guaranteed to be released, so long as the `acquire` task
+ * succeeds. If `use` fails, then after release, the returned task will fail
  * with the same error.
  *
  * @category Combinators
@@ -81,24 +81,24 @@ export function bracketExit<A, R1, E1, B, R2, E2, C>(
  * ) -> Task (r & r1 & r2) (e | e1 | e2) a1
  * ```
  *
- * When this effect represents acquisition of a resource (for example,
+ * When this task represents acquisition of a resource (for example,
  * opening a file, launching a thread, etc.), `bracket` can be used to ensure
  * the acquisition is not interrupted and the resource is always released.
  *
  * The function does two things:
  *
- * 1. Ensures this effect, which acquires the resource, will not be
+ * 1. Ensures this task, which acquires the resource, will not be
  * interrupted. Of course, acquisition may fail for internal reasons (an
  * uncaught exception).
- * 2. Ensures the `release` effect will not be interrupted, and will be
- * executed so long as this effect successfully acquires the resource.
+ * 2. Ensures the `release` task will not be interrupted, and will be
+ * executed so long as this task successfully acquires the resource.
  *
- * In between acquisition and release of the resource, the `use` effect is
+ * In between acquisition and release of the resource, the `use` task is
  * executed.
  *
- * If the `release` effect fails, then the entire effect will fail even
- * if the `use` effect succeeds. If this fail-fast behavior is not desired,
- * errors produced by the `release` effect can be caught and ignored.
+ * If the `release` task fails, then the entire task will fail even
+ * if the `use` task succeeds. If this fail-fast behavior is not desired,
+ * errors produced by the `release` task can be caught and ignored.
  *
  * @category Combinators
  * @since 1.0.0
@@ -119,24 +119,24 @@ export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
  * ) -> Task r e a -> Task (r & r1 & r2) (e | e1 | e2) b
  * ```
  *
- * When this effect represents acquisition of a resource (for example,
+ * When this task represents acquisition of a resource (for example,
  * opening a file, launching a thread, etc.), `bracket` can be used to ensure
  * the acquisition is not interrupted and the resource is always released.
  *
  * The function does two things:
  *
- * 1. Ensures this effect, which acquires the resource, will not be
+ * 1. Ensures this task, which acquires the resource, will not be
  * interrupted. Of course, acquisition may fail for internal reasons (an
  * uncaught exception).
- * 2. Ensures the `release` effect will not be interrupted, and will be
- * executed so long as this effect successfully acquires the resource.
+ * 2. Ensures the `release` task will not be interrupted, and will be
+ * executed so long as this task successfully acquires the resource.
  *
- * In between acquisition and release of the resource, the `use` effect is
+ * In between acquisition and release of the resource, the `use` task is
  * executed.
  *
- * If the `release` effect fails, then the entire effect will fail even
- * if the `use` effect succeeds. If this fail-fast behavior is not desired,
- * errors produced by the `release` effect can be caught and ignored.
+ * If the `release` task fails, then the entire task will fail even
+ * if the `use` task succeeds. If this fail-fast behavior is not desired,
+ * errors produced by the `release` task can be caught and ignored.
  *
  * @category Combinators
  * @since 1.0.0
@@ -149,11 +149,11 @@ export function bracket<A, R1, E1, B, R2, E2, C>(
 }
 
 /**
- * Returns a task that, if this effect _starts_ execution, then the
- * specified `finalizer` is guaranteed to begin execution, whether this effect
+ * Returns a task that, if this task _starts_ execution, then the
+ * specified `finalizer` is guaranteed to begin execution, whether this task
  * succeeds, fails, or is interrupted.
  *
- * For use cases that need access to the effect's result, see onExit.
+ * For use cases that need access to the task's result, see onExit.
  *
  * Finalizers offer very powerful guarantees, but they are low-level, and
  * should generally not be used for releasing resources. For higher-level
@@ -161,11 +161,11 @@ export function bracket<A, R1, E1, B, R2, E2, C>(
  */
 export function ensuring<R>(
   finalizer: Task<R, never, any>
-): <R1, E, A>(effect: Task<R1, E, A>) => Task<R1 & R, E, A> {
-  return (effect) =>
+): <R1, E, A>(ma: Task<R1, E, A>) => Task<R1 & R, E, A> {
+  return (ma) =>
     uninterruptibleMask(({ restore }) =>
       foldCauseM_(
-        restore(effect),
+        restore(ma),
         (cause1) =>
           foldCauseM_(
             finalizer,

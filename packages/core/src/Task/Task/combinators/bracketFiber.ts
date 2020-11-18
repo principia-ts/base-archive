@@ -1,7 +1,7 @@
 import { chain_ } from "../_core";
 import type { Exit } from "../../Exit";
 import type { RuntimeFiber } from "../../Fiber";
-import { forkDaemon } from "../core-scope";
+import { forkDaemon } from "./core-scope";
 import type { Task } from "../model";
 import { bracket_ } from "./bracket";
 import { fiberId } from "./fiberId";
@@ -14,7 +14,7 @@ import { fiberId } from "./fiberId";
  * ) -> Task (r & r1) e1 (Exit e a)
  * ```
  *
- * Fork the effect into a separate fiber wrapping it in a bracket and returining
+ * Fork the task into a separate fiber wrapping it in a bracket and returining
  * the `use` handle. Acquisition will fork and release will interrupt the fiber
  *
  * @category Combinators
@@ -33,7 +33,7 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
  *    Task r e a -> Task (r & r1) e1 (Exit e a)
  * ```
  *
- * Fork the effect into a separate fiber wrapping it in a bracket and returining the
+ * Fork the task into a separate fiber wrapping it in a bracket and returining the
  * `use` handle. Acquisition will fork and release will interrupt the fiber
  *
  * @category Combinators

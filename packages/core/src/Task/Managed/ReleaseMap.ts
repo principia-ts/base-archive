@@ -73,11 +73,11 @@ export function release(key: number, exit: Exit<any, any>) {
           case "Running": {
             return [
               O.fold_(
-                M.lookup_(Eq.number)(finalizers(s), key),
+                M.lookup_(Eq.number)(s.finalizers(), key),
                 () => T.unit(),
                 (f) => f(exit)
               ),
-              new Running(s.nextKey, M.remove(key)(finalizers(s)))
+              new Running(s.nextKey, M.remove_(s.finalizers(), key))
             ];
           }
         }

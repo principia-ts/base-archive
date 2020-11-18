@@ -4,7 +4,7 @@ import type { Separated } from "@principia/prelude/Utils";
 import type { Either } from "../Either";
 import { identity } from "../Function";
 import type { Option } from "../Option";
-import { mapOption } from "./filterable";
+import { filterMap } from "./filterable";
 import { elem } from "./guards";
 
 /*
@@ -14,7 +14,7 @@ import { elem } from "./guards";
  */
 
 export function compact<A>(E: Eq<A>): (fa: ReadonlySet<Option<A>>) => ReadonlySet<A> {
-  return mapOption(E)(identity);
+  return filterMap(E)(identity);
 }
 
 export function separate<E, A>(

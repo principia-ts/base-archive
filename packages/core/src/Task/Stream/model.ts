@@ -140,7 +140,7 @@ export class Chain<R_, E_, O, O2> {
             ),
             T.tap(({ pull }) => this.currInnerStream.set(pull)),
             T.tap(({ releaseMap }) =>
-              this.innerFinalizer.set((e) => M.releaseAll(e, sequential())(releaseMap))
+              this.innerFinalizer.set((e) => M.releaseAll(e, sequential)(releaseMap))
             ),
             T.asUnit
           )

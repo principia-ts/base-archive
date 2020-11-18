@@ -10,6 +10,13 @@ import type { Task } from "./model";
  * -------------------------------------------
  */
 
+/**
+ * Returns a task whose failure and success channels have been mapped by
+ * the specified pair of functions, `f` and `g`.
+ *
+ * @category Bifunctor
+ * @since 1.0.0
+ */
 export function bimap_<R, E, A, G, B>(
   pab: Task<R, E, A>,
   f: (e: E) => G,
@@ -22,6 +29,13 @@ export function bimap_<R, E, A, G, B>(
   );
 }
 
+/**
+ * Returns a task whose failure and success channels have been mapped by
+ * the specified pair of functions, `f` and `g`.
+ *
+ * @category Bifunctor
+ * @since 1.0.0
+ */
 export function bimap<E, G, A, B>(
   f: (e: E) => G,
   g: (a: A) => B

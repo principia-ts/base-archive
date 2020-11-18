@@ -5,7 +5,7 @@ import * as A from "../../../Array/_core";
 import * as O from "../../../Option";
 import * as F from "../../Fiber";
 import type { Scope } from "../../Scope";
-import { forkDaemon } from "../core-scope";
+import { forkDaemon } from "./core-scope";
 import type { Task } from "../model";
 import { onInterrupt, uninterruptibleMask } from "./interrupt";
 

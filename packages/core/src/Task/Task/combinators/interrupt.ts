@@ -24,9 +24,9 @@ import { join } from "../../Fiber/combinators/join";
 import type { FiberId } from "../../Fiber/FiberId";
 import type { InterruptStatus } from "../../Fiber/model";
 import { interruptible, uninterruptible } from "../../Fiber/model";
-import { forkDaemon } from "../core-scope";
 import type { Canceler, EIO, IO, Task } from "../model";
 import { SetInterruptInstruction } from "../model";
+import { forkDaemon } from "./core-scope";
 import { fiberId } from "./fiberId";
 
 export function interruptAs(fiberId: FiberId): EIO<never, never> {

@@ -58,17 +58,17 @@ export function partition<A>(
   return (fa) => partition_(fa, predicate);
 }
 
-export function mapEither_<A, B, C>(
+export function partitionMap_<A, B, C>(
   fa: Option<A>,
   f: (a: A) => Either<B, C>
 ): Separated<Option<B>, Option<C>> {
   return separate(map_(fa, f));
 }
 
-export function mapEither<A, B, C>(
+export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
 ): (fa: Option<A>) => Separated<Option<B>, Option<C>> {
-  return (fa) => mapEither_(fa, f);
+  return (fa) => partitionMap_(fa, f);
 }
 
 /**
@@ -76,7 +76,7 @@ export function mapEither<A, B, C>(
  * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  */
-export function mapOption_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
+export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
   return isNone(fa) ? none() : f(fa.value);
 }
 
@@ -85,17 +85,17 @@ export function mapOption_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<
  * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  */
-export function mapOption<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Option<B> {
-  return (fa) => mapOption_(fa, f);
+export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Option<B> {
+  return (fa) => filterMap_(fa, f);
 }
 
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
-  mapOption_,
+  filterMap_,
   filter_,
-  mapEither_,
+  partitionMap_,
   partition_,
   filter,
-  mapOption,
+  filterMap,
   partition,
-  mapEither
+  partitionMap
 });

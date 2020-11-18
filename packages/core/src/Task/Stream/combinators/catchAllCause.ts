@@ -55,7 +55,7 @@ export function catchAllCause_<R, E, A, R1, E2, B>(
               RM.make,
               T.chain((releaseMap) =>
                 pipe(
-                  finalizerRef.set((exit) => M.releaseAll(exit, sequential())(releaseMap)),
+                  finalizerRef.set((exit) => M.releaseAll(exit, sequential)(releaseMap)),
                   T.chain(() =>
                     pipe(
                       restore(stream.proc.task),

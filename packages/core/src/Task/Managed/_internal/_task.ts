@@ -8,7 +8,7 @@ export * from "../../Task/combinators/mapErrorCause";
 export * from "../../Task/combinators/time";
 export * from "../../Task/combinators/service";
 export * from "../../Task/combinators/race";
-export * from "../../Task/core-scope";
+export * from "../../Task/combinators/core-scope";
 export * from "../../Task/combinators/sleep";
 export * from "../../Task/combinators/fiberId";
 export * from "../../Task/combinators/bracket";

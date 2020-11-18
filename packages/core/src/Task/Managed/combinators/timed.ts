@@ -45,7 +45,7 @@ export function timeout(d: number) {
           T.bindS("earlyRelease", ({ outerReleaseMap, innerReleaseMap }) =>
             pipe(
               outerReleaseMap,
-              RM.add((ex) => releaseAll(ex, sequential())(innerReleaseMap))
+              RM.add((ex) => releaseAll(ex, sequential)(innerReleaseMap))
             )
           ),
           T.bindS("id", () => T.fiberId()),
@@ -72,7 +72,7 @@ export function timeout(d: number) {
               (fiber) =>
                 pipe(
                   fiber.interruptAs(id),
-                  T.ensuring(pipe(innerReleaseMap, releaseAll(Ex.interrupt(id), sequential()))),
+                  T.ensuring(pipe(innerReleaseMap, releaseAll(Ex.interrupt(id), sequential))),
                   T.forkDaemon,
                   T.as(() => O.none())
                 ),

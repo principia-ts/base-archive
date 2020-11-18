@@ -1,18 +1,18 @@
-import type { Option } from "../../Option";
-import * as O from "../../Option";
-import type { Exit } from "../Exit";
-import type { Executor } from "../Fiber/executor";
-import type { Fiber, RuntimeFiber } from "../Fiber/model";
-import type { Scope } from "../Scope";
-import { globalScope } from "../Scope";
-import { pure } from "./_core";
-import type { IO, RIO, Task } from "./model";
+import { pure } from "../_core";
+import type { Option } from "../../../Option";
+import * as O from "../../../Option";
+import type { Exit } from "../../Exit";
+import type { Executor } from "../../Fiber/executor";
+import type { Fiber, RuntimeFiber } from "../../Fiber/model";
+import type { Scope } from "../../Scope";
+import { globalScope } from "../../Scope";
+import type { IO, RIO, Task } from "../model";
 import {
   ForkInstruction,
   GetForkScopeInstruction,
   OverrideForkScopeInstruction,
   RaceInstruction
-} from "./model";
+} from "../model";
 
 export const forkScope: IO<Scope<Exit<any, any>>> = new GetForkScopeInstruction(pure);
 

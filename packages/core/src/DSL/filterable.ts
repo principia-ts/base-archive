@@ -1,11 +1,11 @@
 import type {
   Filterable,
   FilterFn_,
-  MapEitherFn_,
-  MapOptionFn_,
+  FilterMapFn_,
   Monad,
   Monoid,
   PartitionFn_,
+  PartitionMapFn_,
   Predicate
 } from "@principia/prelude";
 import { chainF, flow, not, pureF } from "@principia/prelude";
@@ -29,7 +29,7 @@ export function getFilterableF<F>(
     const chain = chainF(F);
     const empty = F.fail(M.nat);
 
-    const mapOption_: MapOptionFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, f) =>
+    const filterMap_: FilterMapFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, f) =>
       pipe(
         F.recover(fa),
         chain(
@@ -42,9 +42,9 @@ export function getFilterableF<F>(
           )
         )
       );
-    const mapEither_: MapEitherFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, f) => ({
-      left: mapOption_(fa, flow(f, O.getLeft)),
-      right: mapOption_(fa, flow(f, O.getRight))
+    const partitionMap_: PartitionMapFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, f) => ({
+      left: filterMap_(fa, flow(f, O.getLeft)),
+      right: filterMap_(fa, flow(f, O.getRight))
     });
 
     const filter_: FilterFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = <A>(
@@ -61,12 +61,12 @@ export function getFilterableF<F>(
     });
 
     return HKT.instance<Filterable<HKT.UHKT2<F>, HKT.Fix<"E", E>>>({
-      mapEither_,
-      mapOption_,
+      partitionMap_,
+      filterMap_,
       filter_,
       partition_,
-      mapEither: (f) => (fa) => mapEither_(fa, f),
-      mapOption: (f) => (fa) => mapOption_(fa, f),
+      partitionMap: (f) => (fa) => partitionMap_(fa, f),
+      filterMap: (f) => (fa) => filterMap_(fa, f),
       filter: <A>(predicate: Predicate<A>) => (fa: HKT.HKT2<F, E, A>) => filter_(fa, predicate),
       partition: <A>(predicate: Predicate<A>) => (fa: HKT.HKT2<F, E, A>) =>
         partition_(fa, predicate)

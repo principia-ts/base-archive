@@ -631,10 +631,7 @@ export class MemoMap {
                                   XP.halt(e.cause),
                                   T.chain(
                                     () =>
-                                      M.releaseAll(e, sequential())(innerReleaseMap) as T.EIO<
-                                        E,
-                                        any
-                                      >
+                                      M.releaseAll(e, sequential)(innerReleaseMap) as T.EIO<E, any>
                                   ),
                                   T.chain(() => T.halt(e.cause))
                                 );
@@ -649,7 +646,7 @@ export class MemoMap {
                                           observers,
                                           XR.modify((n) => [n === 1, n - 1])
                                         )
-                                      )(M.releaseAll(e, sequential())(innerReleaseMap) as T.IO<any>)
+                                      )(M.releaseAll(e, sequential)(innerReleaseMap) as T.IO<any>)
                                     )
                                   ),
                                   T.tap(() =>

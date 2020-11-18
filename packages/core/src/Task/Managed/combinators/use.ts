@@ -28,7 +28,7 @@ export function use_<R, E, A, R2, E2, B>(
         T.gives_(self.task, (r: R) => tuple(r, rm)),
         (a) => f(a[1])
       ),
-    (rm, ex) => releaseAll(ex, sequential())(rm)
+    (rm, ex) => releaseAll(ex, sequential)(rm)
   );
 }
 

@@ -2,14 +2,14 @@ import type * as E from "../Either";
 import { identity } from "../Function";
 import type * as O from "../Option";
 import type { Separated } from "../Utils";
-import { mapEither_, mapOption_ } from "./filterable";
+import { filterMap_, partitionMap_ } from "./filterable";
 import type { List } from "./model";
 
 /**
  * Filter out optional values
  */
 export function compact<A>(fa: List<O.Option<A>>): List<A> {
-  return mapOption_(fa, identity);
+  return filterMap_(fa, identity);
 }
 
 /**
@@ -19,5 +19,5 @@ export function compact<A>(fa: List<O.Option<A>>): List<A> {
  * @complexity O(n)
  */
 export function separate<B, C>(fa: List<E.Either<B, C>>): Separated<List<B>, List<C>> {
-  return mapEither_(fa, identity);
+  return partitionMap_(fa, identity);
 }

@@ -29,7 +29,7 @@ export function getFilterable<E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fi
 
   const empty = left(M.nat);
 
-  const mapEither_: P.MapEitherFn_<[URI], V_> = (fa, f) => {
+  const partitionMap_: P.PartitionMapFn_<[URI], V_> = (fa, f) => {
     if (isLeft(fa)) {
       return { left: fa, right: fa };
     }
@@ -50,7 +50,7 @@ export function getFilterable<E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fi
       : { left: right(fa.right), right: empty };
   };
 
-  const mapOption_: P.MapOptionFn_<[URI], V_> = (fa, f) => {
+  const filterMap_: P.FilterMapFn_<[URI], V_> = (fa, f) => {
     if (isLeft(fa)) {
       return fa;
     }
@@ -66,12 +66,12 @@ export function getFilterable<E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fi
   return HKT.instance<P.Filterable<[URI], V_>>({
     ...Functor,
     filter_: filter_,
-    mapOption_: mapOption_,
+    filterMap_,
     partition_: partition_,
-    mapEither_: mapEither_,
+    partitionMap_,
     filter: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => filter_(fa, predicate),
-    mapOption: (f) => (fa) => mapOption_(fa, f),
+    filterMap: (f) => (fa) => filterMap_(fa, f),
     partition: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => partition_(fa, predicate),
-    mapEither: (f) => (fa) => mapEither_(fa, f)
+    partitionMap: (f) => (fa) => partitionMap_(fa, f)
   });
 }

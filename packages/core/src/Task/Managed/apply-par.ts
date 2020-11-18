@@ -26,8 +26,8 @@ export function mapBothPar_<R, E, A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Managed<R & R1, E | E1, C> {
-  return mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
-    const innerMap = T.gives_(makeManagedReleaseMap(sequential()).task, (r: R & R1) =>
+  return mapM_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
+    const innerMap = T.gives_(makeManagedReleaseMap(sequential).task, (r: R & R1) =>
       tuple(r, parallelReleaseMap)
     );
 

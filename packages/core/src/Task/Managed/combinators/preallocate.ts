@@ -32,7 +32,7 @@ export function preallocate<R, E, A>(
       T.bindS("preallocated", ({ releaseMap, tp }) =>
         Ex.foldM_(
           tp,
-          (c) => pipe(releaseMap, releaseAll(Ex.failure(c), sequential()), T.apSecond(T.halt(c))),
+          (c) => pipe(releaseMap, releaseAll(Ex.failure(c), sequential), T.apSecond(T.halt(c))),
           ([release, a]) =>
             T.succeed(
               new Managed(

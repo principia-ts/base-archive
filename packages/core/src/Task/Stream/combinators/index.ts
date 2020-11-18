@@ -18,7 +18,7 @@ export * from "./mapBoth";
 export * from "./mapBothPar";
 export * from "./mapConcat";
 export * from "./mapMPar";
-export * from "./mapOption";
+export * from "./filterMap";
 export * from "./merge";
 export * from "./toQueue";
 export * from "./unfoldChunkM";

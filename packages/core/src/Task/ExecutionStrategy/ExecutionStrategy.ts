@@ -11,17 +11,13 @@ export interface ParallelN {
   readonly n: number;
 }
 
-export function sequential(): Sequential {
-  return {
-    _tag: "Sequential"
-  };
-}
+export const sequential: Sequential = {
+  _tag: "Sequential"
+};
 
-export function parallel(): Parallel {
-  return {
-    _tag: "Parallel"
-  };
-}
+export const parallel: Parallel = {
+  _tag: "Parallel"
+};
 
 export function parallelN(n: number): ParallelN {
   return {

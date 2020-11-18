@@ -13,7 +13,7 @@ import { Managed } from "../../Managed/model";
 import * as RM from "../../Managed/ReleaseMap";
 import * as XP from "../../XPromise";
 import * as XR from "../../XRef/_core";
-import { forkDaemon } from "../core-scope";
+import { forkDaemon } from "./core-scope";
 import { bracketExit_, ensuring } from "./bracket";
 import { fiberId } from "./fiberId";
 import {

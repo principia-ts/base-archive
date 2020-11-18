@@ -32,7 +32,7 @@ export function onExitFirst_<R, E, A, R1>(
             T.flatten(
               T.mapBoth_(
                 T.result(T.giveAll_(cleanup(s.exitEA), s.r)),
-                T.result(releaseAll(e, sequential())(s.innerReleaseMap)),
+                T.result(releaseAll(e, sequential)(s.innerReleaseMap)),
                 (l, r) => T.done(Ex.apSecond_(l, r))
               )
             )

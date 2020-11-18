@@ -1,6 +1,6 @@
 export * from "../../Task/_core";
 export * from "../../Task/model";
-export { forkDaemon } from "../../Task/core-scope";
+export { forkDaemon } from "../../Task/combinators/core-scope";
 export {
   makeUninterruptible,
   uninterruptibleMask,

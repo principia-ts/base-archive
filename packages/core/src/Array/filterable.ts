@@ -100,14 +100,14 @@ export function filter<A>(f: Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyAr
 
 /**
  * ```haskell
- * mapOptionWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * filterMapWithIndex_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Option b)) -> f k b
  * ```
  *
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function mapOptionWithIndex_<A, B>(
+export function filterMapWithIndex_<A, B>(
   fa: ReadonlyArray<A>,
   f: (i: number, a: A) => Option<B>
 ): ReadonlyArray<B> {
@@ -123,43 +123,43 @@ export function mapOptionWithIndex_<A, B>(
 
 /**
  * ```haskell
- * mapOptionWithIndex :: (FilterableWithIndex f, Index k) =>
+ * filterMapWithIndex :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Option b) -> f a -> f k b
  * ```
  *
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function mapOptionWithIndex<A, B>(
+export function filterMapWithIndex<A, B>(
   f: (i: number, a: A) => Option<B>
 ): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => mapOptionWithIndex_(fa, f);
+  return (fa) => filterMapWithIndex_(fa, f);
 }
 
 /**
  * ```haskell
- * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
+ * filterMap_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  *
  * @category Filterable
  * @since 1.0.0
  */
-export function mapOption_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> {
-  return mapOptionWithIndex_(fa, (_, a) => f(a));
+export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> {
+  return filterMapWithIndex_(fa, (_, a) => f(a));
 }
 
 /**
  * ```haskell
- * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
+ * filterMap :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  *
  * @category Filterable
  * @since 1.0.0
  */
-export function mapOption<A, B>(
+export function filterMap<A, B>(
   f: (a: A) => Option<B>
 ): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => mapOptionWithIndex_(fa, (_, a) => f(a));
+  return (fa) => filterMapWithIndex_(fa, (_, a) => f(a));
 }
 
 /**
@@ -253,11 +253,11 @@ export function partition<A>(
 
 /**
  * ```haskell
- * mapEitherWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * partitionMapWithIndex_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export function mapEitherWithIndex_<A, B, C>(
+export function partitionMapWithIndex_<A, B, C>(
   ta: ReadonlyArray<A>,
   f: (i: number, a: A) => Either<B, C>
 ): Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
@@ -279,57 +279,57 @@ export function mapEitherWithIndex_<A, B, C>(
 
 /**
  * ```haskell
- * mapEitherWithIndex :: (FilterableWithIndex f, Index k) =>
+ * partitionMapWithIndex :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export function mapEitherWithIndex<A, B, C>(
+export function partitionMapWithIndex<A, B, C>(
   f: (i: number, a: A) => Either<B, C>
 ): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
-  return (ta) => mapEitherWithIndex_(ta, f);
+  return (ta) => partitionMapWithIndex_(ta, f);
 }
 
 /**
  * ```haskell
- * mapEither_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
+ * partitionMap_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export function mapEither_<A, B, C>(
+export function partitionMap_<A, B, C>(
   ta: ReadonlyArray<A>,
   f: (a: A) => Either<B, C>
 ): Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
-  return mapEitherWithIndex_(ta, (_, a) => f(a));
+  return partitionMapWithIndex_(ta, (_, a) => f(a));
 }
 
 /**
  * ```haskell
- * mapEither :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
+ * partitionMap :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export function mapEither<A, B, C>(
+export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
 ): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
-  return (ta) => mapEitherWithIndex_(ta, (_, a) => f(a));
+  return (ta) => partitionMapWithIndex_(ta, (_, a) => f(a));
 }
 
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
   filter_,
-  mapOption_,
+  filterMap_,
   partition_,
-  mapEither_,
+  partitionMap_,
   filter,
-  mapOption,
+  filterMap,
   partition,
-  mapEither
+  partitionMap
 });
 
 export const FilterableWithIndex: P.FilterableWithIndex<[URI], V> = HKT.instance({
   filterWithIndex_,
-  mapOptionWithIndex_,
-  mapEitherWithIndex_,
-  mapOptionWithIndex,
+  filterMapWithIndex_,
+  partitionMapWithIndex_,
+  filterMapWithIndex,
   filterWithIndex,
-  mapEitherWithIndex,
+  partitionMapWithIndex,
   partitionWithIndex_,
   partitionWithIndex
 });

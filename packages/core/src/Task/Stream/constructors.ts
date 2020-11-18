@@ -95,7 +95,7 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
     pipe(
       M.do,
       M.bindS("doneRef", () => XR.makeManagedRef(false)),
-      M.bindS("finalizer", () => M.makeManagedReleaseMap(sequential())),
+      M.bindS("finalizer", () => M.makeManagedReleaseMap(sequential)),
       M.letS("pull", ({ doneRef, finalizer }) =>
         T.uninterruptibleMask(({ restore }) =>
           pipe(

@@ -37,7 +37,7 @@ export function filter<A>(predicate: (a: A) => boolean): (fa: List<A>) => List<A
  *
  * @complexity O(n)
  */
-export function mapOption_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B> {
+export function filterMap_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B> {
   return reduce_(fa, emptyPushable(), (acc, a) => {
     const fa = f(a);
     if (fa._tag === "Some") {
@@ -53,8 +53,8 @@ export function mapOption_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B>
  *
  * @complexity O(n)
  */
-export function mapOption<A, B>(f: (a: A) => O.Option<B>): (fa: List<A>) => List<B> {
-  return (fa) => mapOption_(fa, f);
+export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: List<A>) => List<B> {
+  return (fa) => filterMap_(fa, f);
 }
 
 /**
@@ -106,7 +106,7 @@ export function partition<A>(
  *
  * @complexity O(n)
  */
-export function mapEither_<A, B, C>(
+export function partitionMap_<A, B, C>(
   l: List<A>,
   f: (a: A) => E.Either<B, C>
 ): Separated<List<B>, List<C>> {
@@ -134,8 +134,8 @@ export function mapEither_<A, B, C>(
  *
  * @complexity O(n)
  */
-export function mapEither<A, B, C>(
+export function partitionMap<A, B, C>(
   f: (_: A) => E.Either<B, C>
 ): (l: List<A>) => Separated<List<B>, List<C>> {
-  return (l) => mapEither_(l, f);
+  return (l) => partitionMap_(l, f);
 }

@@ -50,7 +50,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
           T.bindS("inner", () => RelMap.make),
           T.bindS("a", ({ inner, r }) => restore(T.giveAll_(newResource.task, [r, inner]))),
           T.tap(({ inner }) =>
-            RelMap.replace(key, (exit) => releaseAll(exit, sequential())(inner))(releaseMap)
+            RelMap.replace(key, (exit) => releaseAll(exit, sequential)(inner))(releaseMap)
           ),
           T.map(({ a }) => a[1])
         )

@@ -12,7 +12,7 @@ import { bracketExit_ } from "./bracket";
  * ) -> Task (r & r1 & r2) (e | e1 | e2) b
  * ```
  *
- * Same as `_bracketExit` but executes the release effect only if there was an error.
+ * Same as `_bracketExit` but executes the release task only if there was an error.
  *
  * @category Combinators
  * @since 1.0.0
@@ -33,7 +33,7 @@ export function bracketOnError_<R, E, A, R1, E1, A1, R2, E2, A2>(
  * ) -> t x r e a -> t (x | x1 | x2) (r & r1 & r2) (e | e1 | e2) b
  * ```
  *
- * Same as `bracketExit` but executes the release effect only if there was an error.
+ * Same as `bracketExit` but executes the release task only if there was an error.
  *
  * @category Combinators
  * @since 1.0.0

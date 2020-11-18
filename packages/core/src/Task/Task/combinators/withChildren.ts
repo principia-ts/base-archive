@@ -1,6 +1,6 @@
 import type { RuntimeFiber } from "../../Fiber";
 import { track } from "../../Supervisor";
-import { descriptor } from "../core-combinators";
+import { descriptor } from "./core";
 import { map_ } from "../functor";
 import type { IO, Task } from "../model";
 import { chain_ } from "../monad";

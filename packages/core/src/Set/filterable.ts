@@ -83,7 +83,7 @@ export function partition<A>(
 /**
  * @since 1.0.0
  */
-export function mapEither_<B, C>(EB: Eq<B>, EC: Eq<C>) {
+export function partitionMap_<B, C>(EB: Eq<B>, EC: Eq<C>) {
   return <A>(
     set: ReadonlySet<A>,
     f: (a: A) => Either<B, C>
@@ -116,19 +116,19 @@ export function mapEither_<B, C>(EB: Eq<B>, EC: Eq<C>) {
 /**
  * @since 1.0.0
  */
-export function mapEither<B, C>(
+export function partitionMap<B, C>(
   EB: Eq<B>,
   EC: Eq<C>
 ): <A>(
   f: (a: A) => Either<B, C>
 ) => (set: ReadonlySet<A>) => Separated<ReadonlySet<B>, ReadonlySet<C>> {
-  return (f) => (set) => mapEither_(EB, EC)(set, f);
+  return (f) => (set) => partitionMap_(EB, EC)(set, f);
 }
 
 /**
  * @since 1.0.0
  */
-export function mapOption_<B>(E: Eq<B>) {
+export function filterMap_<B>(E: Eq<B>) {
   const elemE_ = elem_(E);
   return <A>(fa: ReadonlySet<A>, f: (a: A) => Option<B>) => {
     const r: Set<B> = new Set();
@@ -145,7 +145,7 @@ export function mapOption_<B>(E: Eq<B>) {
 /**
  * @since 1.0.0
  */
-export function mapOption<B>(E: Eq<B>) {
-  const filterMapE_ = mapOption_(E);
+export function filterMap<B>(E: Eq<B>) {
+  const filterMapE_ = filterMap_(E);
   return <A>(f: (a: A) => Option<B>) => (fa: ReadonlySet<A>) => filterMapE_(fa, f);
 }

@@ -5,7 +5,7 @@ import type { Separated } from "@principia/prelude/Utils";
 import type { Either } from "../Either";
 import { identity } from "../Function";
 import type { Option } from "../Option";
-import { mapOption_ } from "./filterable";
+import { filterMap_ } from "./filterable";
 import type { URI, V } from "./model";
 
 /*
@@ -20,7 +20,7 @@ import type { URI, V } from "./model";
  * ```
  */
 export function compact<A>(as: ReadonlyArray<Option<A>>): ReadonlyArray<A> {
-  return mapOption_(as, identity);
+  return filterMap_(as, identity);
 }
 
 /**

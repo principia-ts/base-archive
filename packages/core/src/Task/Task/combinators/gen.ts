@@ -115,7 +115,7 @@ export function gen(...args: any[]): any {
         bracketExit_(
           unit(),
           () => run(rm, state),
-          (_, e) => releaseAll(e, sequential())(rm)
+          (_, e) => releaseAll(e, sequential)(rm)
         )
       );
     });

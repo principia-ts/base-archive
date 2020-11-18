@@ -27,9 +27,9 @@ export function foreachPar_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => Managed<R, E, B>
 ): Managed<R, E, readonly B[]> {
-  return mapM_(makeManagedReleaseMap(parallel()), (parallelReleaseMap) => {
+  return mapM_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
     const makeInnerMap = T.gives_(
-      T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
+      T.map_(makeManagedReleaseMap(sequential).task, ([_, x]) => x),
       (x: unknown) => tuple(x, parallelReleaseMap)
     );
 

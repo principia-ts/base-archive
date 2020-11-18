@@ -1,5 +1,5 @@
 export * from "./model";
-export * from "./core-combinators";
+export * from "./combinators/core";
 export * from "./applicative-seq";
 export * from "./apply-seq";
 export * from "./bifunctor";

@@ -23,7 +23,7 @@ interface Next<A> {
 /**
  * Filter out `None` and map
  */
-export function mapOptionWithIndex_<K, A, B>(
+export function filterMapWithIndex_<K, A, B>(
   fa: ReadonlyMap<K, A>,
   f: (k: K, a: A) => Option<B>
 ): ReadonlyMap<K, B> {
@@ -43,29 +43,29 @@ export function mapOptionWithIndex_<K, A, B>(
 /**
  * Filter out `None` and map
  */
-export function mapOptionWithIndex<K, A, B>(
+export function filterMapWithIndex<K, A, B>(
   f: (k: K, a: A) => Option<B>
 ): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
-  return (fa) => mapOptionWithIndex_(fa, f);
+  return (fa) => filterMapWithIndex_(fa, f);
 }
 
 /**
  * Filter out `None` and map
  */
-export function mapOption_<K, A, B>(
+export function filterMap_<K, A, B>(
   fa: ReadonlyMap<K, A>,
   f: (a: A) => Option<B>
 ): ReadonlyMap<K, B> {
-  return mapOptionWithIndex_(fa, (_, a) => f(a));
+  return filterMapWithIndex_(fa, (_, a) => f(a));
 }
 
 /**
  * Filter out `None` and map
  */
-export function mapOption<A, B>(
+export function filterMap<A, B>(
   f: (a: A) => Option<B>
 ): <K>(fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
-  return (fa) => mapOption_(fa, f);
+  return (fa) => filterMap_(fa, f);
 }
 
 export function filterWithIndex_<K, A, B extends A>(
@@ -195,7 +195,7 @@ export function partition<A>(
   return (fa) => partition_(fa, predicate);
 }
 
-export function mapEitherWithIndex_<K, A, B, C>(
+export function partitionMapWithIndex_<K, A, B, C>(
   fa: ReadonlyMap<K, A>,
   f: (k: K, a: A) => Either<B, C>
 ): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
@@ -218,23 +218,23 @@ export function mapEitherWithIndex_<K, A, B, C>(
   };
 }
 
-export function mapEitherWithIndex<K, A, B, C>(
+export function partitionMapWithIndex<K, A, B, C>(
   f: (k: K, a: A) => Either<B, C>
 ): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
-  return (fa) => mapEitherWithIndex_(fa, f);
+  return (fa) => partitionMapWithIndex_(fa, f);
 }
 
-export function mapEither_<K, A, B, C>(
+export function partitionMap_<K, A, B, C>(
   fa: ReadonlyMap<K, A>,
   f: (a: A) => Either<B, C>
 ): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
-  return mapEitherWithIndex_(fa, (_, a) => f(a));
+  return partitionMapWithIndex_(fa, (_, a) => f(a));
 }
 
-export function mapEither<A, B, C>(
+export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
 ): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
-  return (fa) => mapEither_(fa, f);
+  return (fa) => partitionMap_(fa, f);
 }
 
 /**
@@ -244,13 +244,13 @@ export function mapEither<A, B, C>(
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
   ...Functor,
   filter_,
-  mapOption_,
+  filterMap_,
   partition_,
-  mapEither_,
+  partitionMap_,
   filter,
-  mapOption,
+  filterMap,
   partition,
-  mapEither
+  partitionMap
 });
 
 /**
@@ -262,13 +262,13 @@ export function getFilterableWithIndex<K = never>(): P.FilterableWithIndex<
   V & HKT.Fix<"K", K>
 > {
   return HKT.instance({
-    mapOptionWithIndex_,
+    filterMapWithIndex_,
     filterWithIndex_,
-    mapEitherWithIndex_,
+    partitionMapWithIndex_,
     partitionWithIndex_,
     filterWithIndex,
-    mapOptionWithIndex,
+    filterMapWithIndex,
     partitionWithIndex,
-    mapEitherWithIndex
+    partitionMapWithIndex
   });
 }

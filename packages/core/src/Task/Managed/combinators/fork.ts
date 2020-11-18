@@ -32,7 +32,7 @@ export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.Execu
         ),
         T.bindS("releaseMapEntry", ({ fiber, innerReleaseMap, outerReleaseMap }) =>
           RM.add((e) =>
-            pipe(fiber, F.interrupt, T.andThen(releaseAll(e, sequential())(innerReleaseMap)))
+            pipe(fiber, F.interrupt, T.andThen(releaseAll(e, sequential)(innerReleaseMap)))
           )(outerReleaseMap)
         ),
         T.map(({ fiber, releaseMapEntry }) => [releaseMapEntry, fiber])

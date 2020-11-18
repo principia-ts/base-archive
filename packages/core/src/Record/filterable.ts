@@ -110,7 +110,7 @@ export function filter<A>(
  *    (f a, ((k, a) -> Option b)) -> f b
  * ```
  */
-export function mapOptionWithIndex_<N extends string, A, B>(
+export function filterMapWithIndex_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => Option<B>
 ): ReadonlyRecord<string, B> {
@@ -132,10 +132,10 @@ export function mapOptionWithIndex_<N extends string, A, B>(
  *    ((k, a) -> Option b) -> f a -> f b
  * ```
  */
-export function mapOptionWithIndex<N extends string, A, B>(
+export function filterMapWithIndex<N extends string, A, B>(
   f: (k: N, a: A) => Option<B>
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B> {
-  return (fa) => mapOptionWithIndex_(fa, f);
+  return (fa) => filterMapWithIndex_(fa, f);
 }
 
 /**
@@ -143,11 +143,11 @@ export function mapOptionWithIndex<N extends string, A, B>(
  * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  */
-export function mapOption_<N extends string, A, B>(
+export function filterMap_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
   f: (a: A) => Option<B>
 ): ReadonlyRecord<string, B> {
-  return mapOptionWithIndex_(fa, (_, a) => f(a));
+  return filterMapWithIndex_(fa, (_, a) => f(a));
 }
 
 /**
@@ -155,10 +155,10 @@ export function mapOption_<N extends string, A, B>(
  * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  */
-export function mapOption<A, B>(
+export function filterMap<A, B>(
   f: (a: A) => Option<B>
 ): <N extends string>(fa: Readonly<Record<N, A>>) => ReadonlyRecord<string, B> {
-  return (fa) => mapOption_(fa, f);
+  return (fa) => filterMap_(fa, f);
 }
 
 /**
@@ -263,7 +263,7 @@ export function partition<A>(
  *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export function mapEitherWithIndex_<N extends string, A, B, C>(
+export function partitionMapWithIndex_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => Either<B, C>
 ): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
@@ -294,10 +294,10 @@ export function mapEitherWithIndex_<N extends string, A, B, C>(
  *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export function mapEitherWithIndex<N extends string, A, B, C>(
+export function partitionMapWithIndex<N extends string, A, B, C>(
   f: (k: N, a: A) => Either<B, C>
 ): (fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
-  return (fa) => mapEitherWithIndex_(fa, f);
+  return (fa) => partitionMapWithIndex_(fa, f);
 }
 
 /**
@@ -305,11 +305,11 @@ export function mapEitherWithIndex<N extends string, A, B, C>(
  * mapEither_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export function mapEither_<N extends string, A, B, C>(
+export function partitionMap_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
   f: (a: A) => Either<B, C>
 ): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
-  return mapEitherWithIndex_(fa, (_, a) => f(a));
+  return partitionMapWithIndex_(fa, (_, a) => f(a));
 }
 
 /**
@@ -317,32 +317,32 @@ export function mapEither_<N extends string, A, B, C>(
  * mapEither :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export function mapEither<A, B, C>(
+export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
 ): <N extends string>(
   fa: Readonly<Record<N, A>>
 ) => Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
-  return (fa) => mapEither_(fa, f);
+  return (fa) => partitionMap_(fa, f);
 }
 
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
   filter_,
-  mapOption_,
+  filterMap_,
   partition_,
-  mapEither_,
+  partitionMap_,
   filter,
-  mapOption,
+  filterMap,
   partition,
-  mapEither
+  partitionMap
 });
 
 export const FilterableWithIndex: P.FilterableWithIndex<[URI], V> = HKT.instance({
   filterWithIndex_,
-  mapOptionWithIndex_,
+  filterMapWithIndex_,
   partitionWithIndex_,
-  mapEitherWithIndex_,
+  partitionMapWithIndex_,
   filterWithIndex,
-  mapOptionWithIndex,
+  filterMapWithIndex,
   partitionWithIndex,
-  mapEitherWithIndex
+  partitionMapWithIndex
 });

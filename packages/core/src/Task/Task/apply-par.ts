@@ -4,7 +4,7 @@ import { join } from "../Fiber/combinators/join";
 import type { FiberId } from "../Fiber/FiberId";
 import type { Fiber } from "../Fiber/model";
 import * as T from "./_core";
-import { raceWith_, transplant } from "./core-scope";
+import { raceWith_, transplant } from "./combinators/core-scope";
 
 /*
  * -------------------------------------------

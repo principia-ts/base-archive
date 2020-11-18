@@ -96,8 +96,8 @@ export function insertAt<K>(
   return (k, a) => (m) => insertAtE_(m, k, a);
 }
 
-export function copy<K, V>(me: ReadonlyMap<K, V>): Map<K, V> {
-  const m = new Map<K, V>();
+export function copy<K, A>(me: ReadonlyMap<K, A>): Map<K, A> {
+  const m = new Map<K, A>();
 
   me.forEach((v, k) => {
     m.set(k, v);
@@ -106,26 +106,26 @@ export function copy<K, V>(me: ReadonlyMap<K, V>): Map<K, V> {
   return m;
 }
 
-export function insert_<K, V>(me: ReadonlyMap<K, V>, k: K, v: V): ReadonlyMap<K, V> {
-  const m = copy<K, V>(me);
+export function insert_<K, A>(me: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
+  const m = copy<K, A>(me);
 
-  m.set(k, v);
+  m.set(k, a);
 
   return m;
 }
 
-export function insert<K, V>(k: K, v: V): (me: ReadonlyMap<K, V>) => ReadonlyMap<K, V> {
-  return (me) => insert_(me, k, v);
+export function insert<K, A>(k: K, a: A): (me: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (me) => insert_(me, k, a);
 }
 
-export function remove<K>(k: K): <V>(me: ReadonlyMap<K, V>) => ReadonlyMap<K, V> {
-  return (me) => {
-    const m = copy(me);
+export function remove_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
+  const r = new Map(m);
+  r.delete(k);
+  return m;
+}
 
-    m.delete(k);
-
-    return m;
-  };
+export function remove<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (m) => remove_(m, k);
 }
 
 export function deleteAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => ReadonlyMap<K, A> {
@@ -146,20 +146,7 @@ export function deleteAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => Re
   return (k) => (m) => deleteAtE_(m, k);
 }
 
-export function unsafeDeleteAt_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
-  const r = new Map(m);
-  r.delete(k);
-  return r;
-}
-
-export function unsafeDeleteAt<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (m) => unsafeDeleteAt_(m, k);
-}
-
-export function unsafeDeleteMany_<K, A>(
-  m: ReadonlyMap<K, A>,
-  ks: ReadonlyArray<K>
-): ReadonlyMap<K, A> {
+export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: ReadonlyArray<K>): ReadonlyMap<K, A> {
   const r = new Map(m);
   for (let i = 0; i < ks.length; i++) {
     r.delete(ks[i]);
@@ -167,10 +154,10 @@ export function unsafeDeleteMany_<K, A>(
   return r;
 }
 
-export function unsafeDeleteMany<K>(
+export function removeMany<K>(
   ks: ReadonlyArray<K>
 ): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (m) => unsafeDeleteMany_(m, ks);
+  return (m) => removeMany_(m, ks);
 }
 
 export function updateAt_<K>(

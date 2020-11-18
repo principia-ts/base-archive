@@ -11,7 +11,7 @@ import * as Fiber from "../../Fiber";
 import { join } from "../../Fiber/combinators/join";
 import * as XP from "../../XPromise";
 import * as XR from "../../XRef";
-import { raceWith_ } from "../core-scope";
+import { raceWith_ } from "./core-scope";
 import type { IO, Task } from "../model";
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from "./interrupt";
 import { mapErrorCause_ } from "./mapErrorCause";

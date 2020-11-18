@@ -31,7 +31,7 @@ export function foreachParN_(n: number) {
   ): Managed<R, E, readonly B[]> =>
     mapM_(makeManagedReleaseMap(parallelN(n)), (parallelReleaseMap) => {
       const makeInnerMap = T.gives_(
-        T.map_(makeManagedReleaseMap(sequential()).task, ([_, x]) => x),
+        T.map_(makeManagedReleaseMap(sequential).task, ([_, x]) => x),
         (x: unknown) => tuple(x, parallelReleaseMap)
       );
 
