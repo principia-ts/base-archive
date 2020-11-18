@@ -1,4 +1,3 @@
-import type * as L from "../../../List";
 import type { Option } from "../../../Option";
 import type * as M from "../../Managed";
 import type * as T from "../../Task";

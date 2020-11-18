@@ -1,6 +1,5 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import * as L from "../../Array";
 import { pipe } from "../../Function";
 import type { Option } from "../../Option";
 import * as O from "../../Option";

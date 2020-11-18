@@ -25,11 +25,11 @@ export function chain_<R, E, A, Q, D, B>(
       M.bindS("outerStream", () => ma.proc),
       M.bindS("currOuterChunk", () =>
         T.toManaged()(
-          XR.makeRef<[ReadonlyArray<A>, number]>([A.empty(), 0])
+          XR.make<[ReadonlyArray<A>, number]>([A.empty(), 0])
         )
       ),
       M.bindS("currInnerStream", () =>
-        T.toManaged()(XR.makeRef<T.Task<R_, Option<E_>, ReadonlyArray<B>>>(Pull.end))
+        T.toManaged()(XR.make<T.Task<R_, Option<E_>, ReadonlyArray<B>>>(Pull.end))
       ),
       M.bindS(
         "innerFinalizer",

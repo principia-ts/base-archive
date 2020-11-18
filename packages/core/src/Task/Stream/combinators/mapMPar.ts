@@ -26,7 +26,7 @@ export function mapMPar_(n: number) {
         M.do,
         M.bindS("out", () => T.toManaged()(XQ.makeBounded<T.Task<R1, Option<E1 | E>, B>>(n))),
         M.bindS("errorSignal", () => T.toManaged()(XP.make<E1, never>())),
-        M.bindS("permits", () => T.toManaged()(Semaphore.makeSemaphore(n))),
+        M.bindS("permits", () => T.toManaged()(Semaphore.make(n))),
         M.tap(({ errorSignal, out, permits }) =>
           pipe(
             stream,
@@ -65,7 +65,7 @@ export function mapMPar_(n: number) {
               (c) => T.toManaged()(out.offer(Pull.halt(c))),
               () =>
                 pipe(
-                  Semaphore.withPermits(n)(permits)(T.unit()),
+                  Semaphore.withPermits_(T.unit(), n, permits),
                   T.chain(() => out.offer(Pull.end)),
                   T.toManaged()
                 )

@@ -66,7 +66,7 @@ export function cached_<R, E, A>(
   return pipe(
     T.do,
     T.bindS("r", () => T.ask<R & HasClock>()),
-    T.bindS("cache", () => XRM.makeRefM<Option<readonly [number, XPromise<E, A>]>>(O.none())),
+    T.bindS("cache", () => XRM.make<Option<readonly [number, XPromise<E, A>]>>(O.none())),
     T.map(({ cache, r }) => T.giveAll(r)(_get(fa, timeToLive, cache)))
   );
 }

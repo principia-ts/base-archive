@@ -140,7 +140,7 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
 export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
   return new Sink(
     M.map_(
-      M.fromTask(XR.makeRef<O.Option<I>>(O.none())),
+      M.fromTask(XR.make<O.Option<I>>(O.none())),
       (state) => (is: O.Option<ReadonlyArray<I>>) =>
         pipe(
           state.get,
@@ -168,7 +168,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
 export function take<I>(n: number): Sink<unknown, never, I, I, ReadonlyArray<I>> {
   return new Sink(
     M.map_(
-      M.fromTask(XR.makeRef<ReadonlyArray<I>>(A.empty())),
+      M.fromTask(XR.make<ReadonlyArray<I>>(A.empty())),
       (state) => (is: O.Option<ReadonlyArray<I>>) =>
         pipe(
           state.get,
@@ -202,7 +202,7 @@ export function fromFoldChunksM_<R, E, I, Z>(
 ): Sink<R, E, I, I, Z> {
   return cont(z)
     ? new Sink(
-        M.map_(M.fromTask(XR.makeRef(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+        M.map_(M.fromTask(XR.make(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
           O.fold_(
             is,
             () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
@@ -287,7 +287,7 @@ export function fromFoldM<R, E, I, Z>(
 
   if (cont(z)) {
     return new Sink(
-      M.map_(M.fromTask(XR.makeRef(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+      M.map_(M.fromTask(XR.make(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
         O.fold_(
           is,
           () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),
@@ -339,7 +339,7 @@ export function fromFold<I, Z>(
 
   if (cont(z)) {
     return new Sink(
-      M.map_(M.fromTask(XR.makeRef(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+      M.map_(M.fromTask(XR.make(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
         O.fold_(
           is,
           () => T.chain_(state.get, (s) => Push.emit(s, A.empty())),

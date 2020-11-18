@@ -49,7 +49,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
 ): Sink<R, E, I, L, S> {
   return new Sink(
     pipe(
-      XR.makeManagedRef(z),
+      XR.makeManaged(z),
       M.chain((acc) => {
         return pipe(
           Push.restartable(sz.push),

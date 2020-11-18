@@ -1,9 +1,9 @@
 import type { Eq } from "@principia/prelude/Eq";
 
-import * as _ from "../_core";
+import * as T from "../_core";
 import { pipe, tuple } from "../../../Function";
-import * as XP from "../../XPromise";
-import * as XRM from "../../XRefM";
+import * as P from "../../XPromise";
+import * as RM from "../../XRefM";
 import type { IO, Task } from "../model";
 import { to } from "./to";
 
@@ -12,28 +12,28 @@ import { to } from "./to";
  */
 export const memoize = <R, E, A, B>(f: (a: A) => Task<R, E, B>): IO<(a: A) => Task<R, E, B>> =>
   pipe(
-    XRM.makeRefM(new Map<A, XP.XPromise<E, B>>()),
-    _.map((ref) => (a: A) =>
+    RM.make(new Map<A, P.XPromise<E, B>>()),
+    T.map((ref) => (a: A) =>
       pipe(
-        _.do,
-        _.bindS("promise", () =>
+        T.do,
+        T.bindS("promise", () =>
           pipe(
             ref,
-            XRM.modify((m) => {
+            RM.modify((m) => {
               const memo = m.get(a);
               return memo
-                ? _.pure(tuple(memo, m))
+                ? T.pure(tuple(memo, m))
                 : pipe(
-                    _.do,
-                    _.bindS("promise", () => XP.make<E, B>()),
-                    _.tap(({ promise }) => _.fork(to(promise)(f(a)))),
-                    _.map(({ promise }) => tuple(promise, m.set(a, promise)))
+                    T.do,
+                    T.bindS("promise", () => P.make<E, B>()),
+                    T.tap(({ promise }) => T.fork(to(promise)(f(a)))),
+                    T.map(({ promise }) => tuple(promise, m.set(a, promise)))
                   );
             })
           )
         ),
-        _.bindS("b", ({ promise }) => XP.await(promise)),
-        _.map(({ b }) => b)
+        T.bindS("b", ({ promise }) => P.await(promise)),
+        T.map(({ b }) => b)
       )
     )
   );
@@ -47,30 +47,30 @@ export const memoizeEq = <A>(eq: Eq<A>) => <R, E, B>(
   f: (a: A) => Task<R, E, B>
 ): IO<(a: A) => Task<R, E, B>> =>
   pipe(
-    XRM.makeRefM(new Map<A, XP.XPromise<E, B>>()),
-    _.map((ref) => (a: A) =>
+    RM.make(new Map<A, P.XPromise<E, B>>()),
+    T.map((ref) => (a: A) =>
       pipe(
-        _.do,
-        _.bindS("promise", () =>
+        T.do,
+        T.bindS("promise", () =>
           pipe(
             ref,
-            XRM.modify((m) => {
+            RM.modify((m) => {
               for (const [k, v] of Array.from(m)) {
                 if (eq.equals_(k, a)) {
-                  return _.pure(tuple(v, m));
+                  return T.pure(tuple(v, m));
                 }
               }
               return pipe(
-                _.do,
-                _.bindS("promise", () => XP.make<E, B>()),
-                _.tap(({ promise }) => _.fork(to(promise)(f(a)))),
-                _.map(({ promise }) => tuple(promise, m.set(a, promise)))
+                T.do,
+                T.bindS("promise", () => P.make<E, B>()),
+                T.tap(({ promise }) => T.fork(to(promise)(f(a)))),
+                T.map(({ promise }) => tuple(promise, m.set(a, promise)))
               );
             })
           )
         ),
-        _.bindS("b", ({ promise }) => XP.await(promise)),
-        _.map(({ b }) => b)
+        T.bindS("b", ({ promise }) => P.await(promise)),
+        T.map(({ b }) => b)
       )
     )
   );

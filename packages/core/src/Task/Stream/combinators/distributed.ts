@@ -6,31 +6,47 @@ import * as O from "../../../Option";
 import * as Ex from "../../Exit";
 import * as C from "../../Exit/Cause";
 import * as M from "../../Managed";
-import * as Sem from "../../Semaphore";
+import * as Semaphore from "../../Semaphore";
 import * as T from "../../Task";
 import * as P from "../../XPromise";
-import * as Q from "../../XQueue";
-import * as R from "../../XRef";
+import * as Queue from "../../XQueue";
+import * as Ref from "../../XRef";
 import { foreachManaged } from "../destructors";
 import type { Stream } from "../model";
 
+/**
+ * More powerful version of `istributedWith`. This returns a function that will produce
+ * new queues and corresponding indices.
+ * You can also provide a function that will be executed after the final events are enqueued in all queues.
+ * Shutdown of the queues is handled by the driver.
+ * Downstream users can also shutdown queues manually. In this case the driver will
+ * continue but no longer backpressure on them.
+ */
 export function distributedWithDynamic<E, O>(
   maximumLag: number,
   decide: (_: O) => T.IO<(_: symbol) => boolean>,
   done: (_: Ex.Exit<O.Option<E>, never>) => T.IO<any> = (_: any) => T.unit()
 ): <R>(
   stream: Stream<R, E, O>
-) => M.Managed<R, never, T.IO<readonly [symbol, Q.Dequeue<Ex.Exit<O.Option<E>, O>>]>> {
+) => M.Managed<R, never, T.IO<readonly [symbol, Queue.Dequeue<Ex.Exit<O.Option<E>, O>>]>> {
   return (stream) => distributedWithDynamic_(stream, maximumLag, decide, done);
 }
 
+/**
+ * More powerful version of `istributedWith`. This returns a function that will produce
+ * new queues and corresponding indices.
+ * You can also provide a function that will be executed after the final events are enqueued in all queues.
+ * Shutdown of the queues is handled by the driver.
+ * Downstream users can also shutdown queues manually. In this case the driver will
+ * continue but no longer backpressure on them.
+ */
 export function distributedWithDynamic_<R, E, O>(
   stream: Stream<R, E, O>,
   maximumLag: number,
   decide: (o: O) => T.IO<(_: symbol) => boolean>,
   done: (_: Ex.Exit<O.Option<E>, never>) => T.IO<any> = (_: any) => T.unit()
-): M.Managed<R, never, T.IO<readonly [symbol, Q.Dequeue<Ex.Exit<O.Option<E>, O>>]>> {
-  const offer = (queuesRef: R.Ref<ReadonlyMap<symbol, Q.Queue<Ex.Exit<O.Option<E>, O>>>>) => (
+): M.Managed<R, never, T.IO<readonly [symbol, Queue.Dequeue<Ex.Exit<O.Option<E>, O>>]>> {
+  const offer = (queuesRef: Ref.Ref<ReadonlyMap<symbol, Queue.Queue<Ex.Exit<O.Option<E>, O>>>>) => (
     o: O
   ) =>
     pipe(
@@ -53,7 +69,7 @@ export function distributedWithDynamic_<R, E, O>(
             }
           }),
           T.chain((ids) =>
-            A.isNonEmpty(ids) ? R.update_(queuesRef, Map.removeMany(ids)) : T.unit()
+            A.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : T.unit()
           )
         )
       )
@@ -61,22 +77,22 @@ export function distributedWithDynamic_<R, E, O>(
   return pipe(
     M.do,
     M.bindS("queuesRef", () =>
-      pipe(R.makeRef(Map.empty<symbol, Q.Queue<Ex.Exit<O.Option<E>, O>>>()), (acquire) =>
+      pipe(Ref.make(Map.empty<symbol, Queue.Queue<Ex.Exit<O.Option<E>, O>>>()), (acquire) =>
         M.make_(acquire, (_) => T.chain_(_.get, (qs) => T.foreach_(qs.values(), (q) => q.shutdown)))
       )
     ),
     M.bindS("add", ({ queuesRef }) => {
       return pipe(
         M.do,
-        M.bindS("queuesLock", () => T.toManaged_(Sem.makeSemaphore(1))),
+        M.bindS("queuesLock", () => T.toManaged_(Semaphore.make(1))),
         M.bindS("newQueue", () =>
           pipe(
-            R.makeRef<T.IO<readonly [symbol, Q.Queue<Ex.Exit<O.Option<E>, O>>]>>(
+            Ref.make<T.IO<readonly [symbol, Queue.Queue<Ex.Exit<O.Option<E>, O>>]>>(
               pipe(
                 T.do,
-                T.bindS("queue", () => Q.makeBounded<Ex.Exit<O.Option<E>, O>>(maximumLag)),
+                T.bindS("queue", () => Queue.makeBounded<Ex.Exit<O.Option<E>, O>>(maximumLag)),
                 T.letS("id", () => Symbol()),
-                T.tap(({ queue, id }) => R.update_(queuesRef, Map.insert(id, queue))),
+                T.tap(({ queue, id }) => Ref.update_(queuesRef, Map.insert(id, queue))),
                 T.map(({ id, queue }) => [id, queue])
               )
             ),
@@ -85,15 +101,15 @@ export function distributedWithDynamic_<R, E, O>(
         ),
         M.letS("finalize", ({ queuesLock, newQueue }) => {
           return (endTake: Ex.Exit<O.Option<E>, never>) =>
-            Sem.withPermit(queuesLock)(
+            Semaphore.withPermit(queuesLock)(
               T.chain_(
                 newQueue.set(
                   pipe(
                     T.do,
-                    T.bindS("queue", () => Q.makeBounded<Ex.Exit<O.Option<E>, O>>(1)),
+                    T.bindS("queue", () => Queue.makeBounded<Ex.Exit<O.Option<E>, O>>(1)),
                     T.tap(({ queue }) => queue.offer(endTake)),
                     T.letS("id", () => Symbol()),
-                    T.tap(({ id, queue }) => R.update_(queuesRef, Map.insert(id, queue))),
+                    T.tap(({ id, queue }) => Ref.update_(queuesRef, Map.insert(id, queue))),
                     T.map(({ id, queue }) => [id, queue] as const)
                   )
                 ),
@@ -128,29 +144,41 @@ export function distributedWithDynamic_<R, E, O>(
             M.fork
           )
         ),
-        M.map(({ queuesLock, newQueue }) => Sem.withPermit(queuesLock)(T.flatten(newQueue.get)))
+        M.map(({ queuesLock, newQueue }) =>
+          Semaphore.withPermit(queuesLock)(T.flatten(newQueue.get))
+        )
       );
     }),
     M.map(({ add }) => add)
   );
 }
 
+/**
+ * More powerful version of `broadcast`. Allows to provide a function that determines what
+ * queues should receive which elements. The decide function will receive the indices of the queues
+ * in the resulting list.
+ */
 export function distributedWith<O>(
   n: number,
   maximumLag: number,
   decide: (_: O) => T.IO<(_: number) => boolean>
 ): <R, E>(
   stream: Stream<R, E, O>
-) => M.Managed<R, never, ReadonlyArray<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+) => M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
   return (stream) => distributedWith_(stream, n, maximumLag, decide);
 }
 
+/**
+ * More powerful version of `broadcast`. Allows to provide a function that determines what
+ * queues should receive which elements. The decide function will receive the indices of the queues
+ * in the resulting list.
+ */
 export function distributedWith_<R, E, O>(
   stream: Stream<R, E, O>,
   n: number,
   maximumLag: number,
   decide: (_: O) => T.IO<(_: number) => boolean>
-): M.Managed<R, never, ReadonlyArray<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+): M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
   return pipe(
     P.make<never, (_: O) => T.IO<(_: symbol) => boolean>>(),
     M.fromTask,
@@ -175,7 +203,7 @@ export function distributedWith_<R, E, O>(
                 entries,
                 [
                   Map.empty<symbol, number>(),
-                  A.empty<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>()
+                  A.empty<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>()
                 ] as const,
                 ([mapping, queue], [mappings, queues]) => [
                   Map.unsafeInsertAt_(mappings, mapping[0], mapping[1]),

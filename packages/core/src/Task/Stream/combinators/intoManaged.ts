@@ -9,6 +9,20 @@ import type * as XQ from "../../XQueue";
 import * as Take from "../internal/Take";
 import type { Stream } from "../model";
 
+/**
+ * Like `into`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
+export function intoManaged<E, O, R1, E1>(
+  queue: XQ.XQueue<R1, never, never, unknown, Take.Take<E | E1, O>, any>
+): <R>(ma: Stream<R, E, O>) => Managed<R & R1, E | E1, void> {
+  return (ma) => intoManaged_(ma, queue);
+}
+
+/**
+ * Like `into`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
 export function intoManaged_<R, E, O, R1, E1>(
   ma: Stream<R, E, O>,
   queue: XQ.XQueue<R1, never, never, unknown, Take.Take<E | E1, O>, any>

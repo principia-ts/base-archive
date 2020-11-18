@@ -17,11 +17,11 @@ export function foldM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
   return new Sink(
     pipe(
       M.do,
-      M.bindS("switched", () => M.fromTask(XR.makeRef(false))),
+      M.bindS("switched", () => M.fromTask(XR.make(false))),
       M.bindS("thisPush", () => sz.push),
       M.bindS("thatPush", () =>
         M.fromTask(
-          XR.makeRef<Push.Push<R1 & R2, E1 | E2, I & I1 & I2, L1 | L2, Z1 | Z2>>((_) => T.unit())
+          XR.make<Push.Push<R1 & R2, E1 | E2, I & I1 & I2, L1 | L2, Z1 | Z2>>((_) => T.unit())
         )
       ),
       M.bindS("openThatPush", () =>

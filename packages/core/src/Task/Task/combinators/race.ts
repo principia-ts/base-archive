@@ -164,7 +164,7 @@ export function raceAll<R, E, A>(
   return pipe(
     _.do,
     _.bindS("done", () => XP.make<E, readonly [A, Fiber.Fiber<E, A>]>()),
-    _.bindS("fails", () => XR.makeRef(ios.length)),
+    _.bindS("fails", () => XR.make(ios.length)),
     _.bindS("c", ({ done, fails }) =>
       uninterruptibleMask(({ restore }) =>
         pipe(

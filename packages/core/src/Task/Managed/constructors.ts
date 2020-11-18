@@ -2,7 +2,7 @@ import { pipe } from "../../Function";
 import type { Exit } from "../Exit";
 import type { Cause } from "../Exit/Cause";
 import * as C from "../Exit/Cause";
-import { makeRef } from "../XRef/_core";
+import { make } from "../XRef/_core";
 import * as T from "./_internal/task";
 import { Managed } from "./model";
 import type { Finalizer, ReleaseMap } from "./ReleaseMap";
@@ -85,7 +85,7 @@ export function die(error: unknown): Managed<unknown, never, never> {
  * control flows that require mutating finalizers.
  */
 export function finalizerRef(initial: Finalizer) {
-  return makeExit_(makeRef(initial), (ref, exit) => T.chain_(ref.get, (f) => f(exit)));
+  return makeExit_(make(initial), (ref, exit) => T.chain_(ref.get, (f) => f(exit)));
 }
 
 /**

@@ -5,6 +5,7 @@ import * as T from "../../Task";
 import * as XR from "../../XRef";
 import * as BPull from "../internal/BufferedPull";
 import { Stream } from "../model";
+
 /**
  * Statefully and effectfully maps over the elements of this stream to produce
  * new elements.
@@ -17,7 +18,7 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
   return new Stream<R & R1, E | E1, B>(
     pipe(
       M.do,
-      M.bindS("state", () => XR.makeManagedRef(z)),
+      M.bindS("state", () => XR.makeManaged(z)),
       M.bindS("pull", () => pipe(stream.proc, M.mapM(BPull.make))),
       M.map(({ pull, state }) =>
         pipe(
@@ -39,6 +40,10 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
   );
 }
 
+/**
+ * Statefully and effectfully maps over the elements of this stream to produce
+ * new elements.
+ */
 export function mapAccumM<Z>(
   z: Z
 ): <A, R1, E1, B>(
@@ -47,10 +52,16 @@ export function mapAccumM<Z>(
   return (f) => (stream) => mapAccumM_(stream, z, f);
 }
 
+/**
+ * Statefully maps over the elements of this stream to produce new elements.
+ */
 export function mapAccum_<R, E, A, B, Z>(stream: Stream<R, E, A>, z: Z, f: (z: Z, a: A) => [Z, B]) {
   return mapAccumM_(stream, z, (z, a) => T.pure(f(z, a)));
 }
 
+/**
+ * Statefully maps over the elements of this stream to produce new elements.
+ */
 export function mapAccum<Z>(
   z: Z
 ): <A, B>(f: (z: Z, a: A) => [Z, B]) => <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {

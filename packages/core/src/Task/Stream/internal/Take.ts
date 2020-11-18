@@ -1,4 +1,4 @@
-import * as L from "../../../Array";
+import * as A from "../../../Array";
 import { flow, pipe } from "../../../Function";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
@@ -69,7 +69,7 @@ export function foldM<E, A, R, E1, Z>(
 }
 
 export function map_<E, A, B>(take: Take<E, A>, f: (a: A) => B): Take<E, B> {
-  return Ex.map_(take, L.map(f));
+  return Ex.map_(take, A.map(f));
 }
 
 export function map<A, B>(

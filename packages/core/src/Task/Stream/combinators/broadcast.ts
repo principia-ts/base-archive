@@ -11,6 +11,15 @@ import type { Stream } from "../model";
 import { distributedWith_ } from "./distributed";
 import { flattenExitOption } from "./flattenExitOption";
 
+/**
+ * Converts the stream to a managed list of queues. Every value will be replicated to every queue with the
+ * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
+ * The downstream queues will be provided with chunks in the same order they are returned, so
+ * the fastest queue might have seen up to (`maximumLag` + 1) chunks more than the slowest queue if it
+ * has a lower index than the slowest queue.
+ *
+ * Queues can unsubscribe from upstream by shutting down.
+ */
 export function broadcastedQueues(
   n: number,
   maximumLag: number
@@ -20,6 +29,15 @@ export function broadcastedQueues(
   return (stream) => broadcastedQueues_(stream, n, maximumLag);
 }
 
+/**
+ * Converts the stream to a managed list of queues. Every value will be replicated to every queue with the
+ * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
+ * The downstream queues will be provided with chunks in the same order they are returned, so
+ * the fastest queue might have seen up to (`maximumLag` + 1) chunks more than the slowest queue if it
+ * has a lower index than the slowest queue.
+ *
+ * Queues can unsubscribe from upstream by shutting down.
+ */
 export function broadcastedQueues_<R, E, O>(
   stream: Stream<R, E, O>,
   n: number,
@@ -29,6 +47,11 @@ export function broadcastedQueues_<R, E, O>(
   return distributedWith_(stream, n, maximumLag, (_) => decider);
 }
 
+/**
+ * Fan out the stream, producing a list of streams that have the same elements as this stream.
+ * The driver stream will only ever advance of the `maximumLag` chunks before the
+ * slowest downstream stream.
+ */
 export function broadcast(
   n: number,
   maximumLag: number
@@ -36,6 +59,11 @@ export function broadcast(
   return (stream) => broadcast_(stream, n, maximumLag);
 }
 
+/**
+ * Fan out the stream, producing a list of streams that have the same elements as this stream.
+ * The driver stream will only ever advance of the `maximumLag` chunks before the
+ * slowest downstream stream.
+ */
 export function broadcast_<R, E, O>(
   stream: Stream<R, E, O>,
   n: number,

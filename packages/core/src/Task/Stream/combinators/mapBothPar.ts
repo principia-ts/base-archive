@@ -174,6 +174,14 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
   );
 }
 
+/**
+ * Zips this stream with another point-wise and applies the function to the paired elements.
+ *
+ * The new stream will end when one of the sides ends.
+ *
+ * By default pull is executed in parallel to preserve async semantics, see `zipWithSeq` for
+ * a sequential alternative
+ */
 export function mapBothPar<O, O2, O3, R1, E1>(
   that: Stream<R1, E1, O2>,
   f: (a: O, a1: O2) => O3,

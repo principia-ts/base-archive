@@ -17,8 +17,8 @@ export function unfoldChunkM<Z>(
     new Stream(
       pipe(
         M.do,
-        M.bindS("done", () => XR.makeManagedRef(false)),
-        M.bindS("ref", () => XR.makeManagedRef(z)),
+        M.bindS("done", () => XR.makeManaged(false)),
+        M.bindS("ref", () => XR.makeManaged(z)),
         M.letS("pull", ({ done, ref }) =>
           pipe(
             done.get,

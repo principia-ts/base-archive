@@ -1,4 +1,4 @@
-import * as L from "../../../Array";
+import * as A from "../../../Array";
 import { pipe } from "../../../Function";
 import type { Option } from "../../../Option";
 import { none, some } from "../../../Option";
@@ -18,7 +18,7 @@ export function halt<E>(e: Cause<E>): T.Task<unknown, Option<E>, never> {
 }
 
 export function empty<A>(): T.IO<ReadonlyArray<A>> {
-  return T.pure(L.empty());
+  return T.pure(A.empty());
 }
 
 export function emit<A>(a: A): T.IO<ReadonlyArray<A>> {
@@ -26,5 +26,5 @@ export function emit<A>(a: A): T.IO<ReadonlyArray<A>> {
 }
 
 export function emitArray<A>(as: ReadonlyArray<A>): T.IO<ReadonlyArray<A>> {
-  return T.pure(L.from(as));
+  return T.pure(A.from(as));
 }

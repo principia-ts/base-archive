@@ -31,7 +31,7 @@ class Handoff<A> {
 export function make<A>(): T.IO<Handoff<A>> {
   return pipe(
     XP.make<never, void>(),
-    T.chain((p) => XR.makeRef<State<A>>(new Empty(p))),
+    T.chain((p) => XR.make<State<A>>(new Empty(p))),
     T.map((ref) => new Handoff(ref))
   );
 }

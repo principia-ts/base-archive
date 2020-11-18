@@ -67,7 +67,7 @@ export const mergeAllParN_ = (n: number) => <R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): Task<R, E, B> =>
-  chain_(XR.makeRef(b), (acc) =>
+  chain_(XR.make(b), (acc) =>
     chain_(
       foreachUnitParN_(n)(
         fas,

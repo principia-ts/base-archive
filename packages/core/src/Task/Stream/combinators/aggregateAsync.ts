@@ -20,6 +20,18 @@ import type { Transducer } from "../Transducer/model";
 import { filterMap_ } from "./filterMap";
 import { flattenTake } from "./flattenTake";
 
+/**
+ * Aggregates elements using the provided transducer until it signals completion, or the
+ * delay signalled by the schedule has passed.
+ *
+ * This operator divides the stream into two asynchronous islands. Operators upstream
+ * of this operator run on one fiber, while downstream operators run on another. Elements
+ * will be aggregated by the transducer until the downstream fiber pulls the aggregated value,
+ * or until the schedule's delay has passed.
+ *
+ * Aggregated elements will be fed into the schedule to determine the delays between
+ * pulls.
+ */
 export function aggregateAsyncWithinEither<O, R1, E1, P, Q>(
   transducer: Transducer<R1, E1, O, P>,
   schedule: Schedule<R1, ReadonlyArray<P>, Q>
@@ -27,6 +39,18 @@ export function aggregateAsyncWithinEither<O, R1, E1, P, Q>(
   return (stream) => aggregateAsyncWithinEither_(stream, transducer, schedule);
 }
 
+/**
+ * Aggregates elements using the provided transducer until it signals completion, or the
+ * delay signalled by the schedule has passed.
+ *
+ * This operator divides the stream into two asynchronous islands. Operators upstream
+ * of this operator run on one fiber, while downstream operators run on another. Elements
+ * will be aggregated by the transducer until the downstream fiber pulls the aggregated value,
+ * or until the schedule's delay has passed.
+ *
+ * Aggregated elements will be fed into the schedule to determine the delays between
+ * pulls.
+ */
 export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>,
@@ -37,12 +61,12 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
     M.bindS("pull", () => stream.proc),
     M.bindS("push", () => transducer.push),
     M.bindS("handoff", () => M.fromTask(Ha.make<Take.Take<E, O>>())),
-    M.bindS("raceNextTime", () => XR.makeManagedRef(false)),
+    M.bindS("raceNextTime", () => XR.makeManaged(false)),
     M.bindS("waitingFiber", () =>
-      XR.makeManagedRef<O.Option<Fiber<never, Take.Take<E | E1, O>>>>(O.none())
+      XR.makeManaged<O.Option<Fiber<never, Take.Take<E | E1, O>>>>(O.none())
     ),
     M.bindS("sdriver", () => M.fromTask(Sc.driver(schedule))),
-    M.bindS("lastChunk", () => XR.makeManagedRef<ReadonlyArray<P>>(A.empty())),
+    M.bindS("lastChunk", () => XR.makeManaged<ReadonlyArray<P>>(A.empty())),
     M.letS("producer", ({ pull, handoff }) =>
       T.repeatWhileM_(Take.fromPull(pull), (take) =>
         pipe(
@@ -98,66 +122,53 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
         if (!race) {
           return pipe(waitForProducer, T.chain(handleTake), T.apFirst(raceNextTime.set(true)));
         } else {
-          return pipe(
+          return T.raceWith_(
             updateSchedule,
-            T.raceWith(
-              waitForProducer,
-              (scheduleDone, producerWaiting) =>
-                pipe(
-                  T.done(scheduleDone),
-                  T.chain(
-                    O.fold(
-                      () =>
-                        pipe(
-                          T.do,
-                          T.bindS("lastQ", () =>
-                            pipe(
-                              lastChunk.set(A.empty()),
-                              T.andThen(T.orDie(sdriver.last)),
-                              T.apFirst(sdriver.reset)
-                            )
-                          ),
-                          T.letS(
-                            "scheduleResult",
-                            ({ lastQ }): Take.Take<E1, E.Either<Q, P>> =>
-                              Ex.succeed([E.left(lastQ)])
-                          ),
-                          T.bindS("take", () =>
-                            pipe(
-                              push(O.none()),
-                              T.asSomeError,
-                              Take.fromPull,
-                              T.tap(updateLastChunk)
-                            )
-                          ),
-                          T.tap(() => raceNextTime.set(false)),
-                          T.tap(() => waitingFiber.set(O.some(producerWaiting))),
-                          T.map(({ take, scheduleResult }) => [
-                            scheduleResult,
-                            Take.map_(take, E.right)
-                          ])
+            waitForProducer,
+            (scheduleDone, producerWaiting) =>
+              pipe(
+                T.done(scheduleDone),
+                T.chain(
+                  O.fold(
+                    () =>
+                      pipe(
+                        T.do,
+                        T.bindS("lastQ", () =>
+                          pipe(
+                            lastChunk.set(A.empty()),
+                            T.andThen(T.orDie(sdriver.last)),
+                            T.apFirst(sdriver.reset)
+                          )
                         ),
-                      (_) =>
-                        pipe(
-                          T.do,
-                          T.bindS("ps", () =>
-                            pipe(
-                              push(O.none()),
-                              T.asSomeError,
-                              Take.fromPull,
-                              T.tap(updateLastChunk)
-                            )
-                          ),
-                          T.tap(() => raceNextTime.set(false)),
-                          T.tap(() => waitingFiber.set(O.some(producerWaiting))),
-                          T.map(({ ps }) => [Take.map_(ps, E.right)])
-                        )
-                    )
+                        T.letS(
+                          "scheduleResult",
+                          ({ lastQ }): Take.Take<E1, E.Either<Q, P>> => Ex.succeed([E.left(lastQ)])
+                        ),
+                        T.bindS("take", () =>
+                          pipe(push(O.none()), T.asSomeError, Take.fromPull, T.tap(updateLastChunk))
+                        ),
+                        T.tap(() => raceNextTime.set(false)),
+                        T.tap(() => waitingFiber.set(O.some(producerWaiting))),
+                        T.map(({ take, scheduleResult }) => [
+                          scheduleResult,
+                          Take.map_(take, E.right)
+                        ])
+                      ),
+                    (_) =>
+                      pipe(
+                        T.do,
+                        T.bindS("ps", () =>
+                          pipe(push(O.none()), T.asSomeError, Take.fromPull, T.tap(updateLastChunk))
+                        ),
+                        T.tap(() => raceNextTime.set(false)),
+                        T.tap(() => waitingFiber.set(O.some(producerWaiting))),
+                        T.map(({ ps }) => [Take.map_(ps, E.right)])
+                      )
                   )
-                ),
-              (producerDone, scheduleWaiting) =>
-                T.apSecond_(Fi.interrupt(scheduleWaiting), handleTake(Ex.flatten(producerDone)))
-            )
+                )
+              ),
+            (producerDone, scheduleWaiting) =>
+              T.apSecond_(Fi.interrupt(scheduleWaiting), handleTake(Ex.flatten(producerDone)))
           );
         }
       };
@@ -177,6 +188,19 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
   );
 }
 
+/**
+ * Uses `aggregateAsyncWithinEither` but only returns the `Right` results.
+ */
+export function aggregateAsyncWithin<O, R1, E1, P>(
+  transducer: Transducer<R1, E1, O, P>,
+  schedule: Schedule<R1, ReadonlyArray<P>, any>
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, P> {
+  return (stream) => aggregateAsyncWithin_(stream, transducer, schedule);
+}
+
+/**
+ * Uses `aggregateAsyncWithinEither` but only returns the `Right` results.
+ */
 export function aggregateAsyncWithin_<R, E, O, R1, E1, P>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>,
@@ -188,6 +212,36 @@ export function aggregateAsyncWithin_<R, E, O, R1, E1, P>(
   );
 }
 
+/**
+ * Aggregates elements of this stream using the provided sink for as long
+ * as the downstream operators on the stream are busy.
+ *
+ * This operator divides the stream into two asynchronous "islands". Operators upstream
+ * of this operator run on one fiber, while downstream operators run on another. Whenever
+ * the downstream fiber is busy processing elements, the upstream fiber will feed elements
+ * into the sink until it signals completion.
+ *
+ * Any transducer can be used here, but see `Transducer.foldWeightedM` and `Transducer.foldUntilM` for
+ * transducers that cover the common usecases.
+ */
+export function aggregateAsync<O, R1, E1, P>(
+  transducer: Transducer<R1, E1, O, P>
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, P> {
+  return (stream) => aggregateAsync_(stream, transducer);
+}
+
+/**
+ * Aggregates elements of this stream using the provided sink for as long
+ * as the downstream operators on the stream are busy.
+ *
+ * This operator divides the stream into two asynchronous "islands". Operators upstream
+ * of this operator run on one fiber, while downstream operators run on another. Whenever
+ * the downstream fiber is busy processing elements, the upstream fiber will feed elements
+ * into the sink until it signals completion.
+ *
+ * Any transducer can be used here, but see `Transducer.foldWeightedM` and `Transducer.foldUntilM` for
+ * transducers that cover the common usecases.
+ */
 export function aggregateAsync_<R, E, O, R1, E1, P>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>

@@ -601,9 +601,9 @@ export class MemoMap {
           } else {
             return pipe(
               T.do,
-              T.bindS("observers", () => XR.makeRef(0)),
+              T.bindS("observers", () => XR.make(0)),
               T.bindS("promise", () => XP.make<E, A>()),
-              T.bindS("finalizerRef", () => XR.makeRef<Finalizer>(RelMap.noopFinalizer)),
+              T.bindS("finalizerRef", () => XR.make<Finalizer>(RelMap.noopFinalizer)),
               T.letS("resource", ({ finalizerRef, observers, promise }) =>
                 T.uninterruptibleMask(({ restore }) =>
                   pipe(
@@ -719,7 +719,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>;
 
 export function makeMemoMap() {
   return pipe(
-    XRM.makeRefM<ReadonlyMap<PropertyKey, readonly [T.EIO<any, any>, Finalizer]>>(new Map()),
+    XRM.make<ReadonlyMap<PropertyKey, readonly [T.EIO<any, any>, Finalizer]>>(new Map()),
     T.chain((r) => T.total(() => new MemoMap(r)))
   );
 }

@@ -99,8 +99,8 @@ export function make<R, E, A>(
 ): T.Task<unknown, never, BufferedPull<R, E, A>> {
   return pipe(
     T.do,
-    T.bindS("done", () => R.makeRef(false)),
-    T.bindS("cursor", () => R.makeRef<[ReadonlyArray<A>, number]>([A.empty(), 0])),
+    T.bindS("done", () => R.make(false)),
+    T.bindS("cursor", () => R.make<[ReadonlyArray<A>, number]>([A.empty(), 0])),
     T.map(({ cursor, done }) => new BufferedPull(pull, done, cursor))
   );
 }

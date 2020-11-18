@@ -16,9 +16,6 @@ import type { Ref } from "../XRef/model";
 export type Entry = [XPromise<never, void>, number];
 export type State = Either<ImmutableQueue<Entry>, number>;
 
-export const assertNonNegative = (n: number) =>
-  n < 0 ? T.die(`Unexpected negative value ${n} passed to acquireN or releaseN.`) : T.unit();
-
 export class Acquisition {
   constructor(readonly waitAcquire: T.IO<void>, readonly release: T.IO<void>) {}
 }
@@ -137,24 +134,41 @@ export class Semaphore {
 /**
  * Acquires `n` permits, executes the action and releases the permits right after.
  */
-export function withPermits(n: number) {
-  return (s: Semaphore) => <R, E, A>(e: T.Task<R, E, A>) =>
-    bracket_(
-      s.prepare(n),
-      (a) => T.chain_(a.waitAcquire, () => e),
-      (a) => a.release
-    );
+export function withPermits_<R, E, A>(
+  task: T.Task<R, E, A>,
+  n: number,
+  s: Semaphore
+): T.Task<R, E, A> {
+  return bracket_(
+    s.prepare(n),
+    (a) => T.chain_(a.waitAcquire, () => task),
+    (a) => a.release
+  );
+}
+
+/**
+ * Acquires `n` permits, executes the action and releases the permits right after.
+ */
+export function withPermits(n: number, s: Semaphore) {
+  return <R, E, A>(task: T.Task<R, E, A>) => withPermits_(task, n, s);
 }
 
 /**
  * Acquires a permit, executes the action and releases the permit right after.
  */
-export function withPermit(s: Semaphore) {
-  return withPermits(1)(s);
+export function withPermit_<R, E, A>(task: T.Task<R, E, A>, s: Semaphore): T.Task<R, E, A> {
+  return withPermits_(task, 1, s);
 }
 
 /**
- * Acquires `n` permits in a [[Managed]] and releases the permits in the finalizer.
+ * Acquires a permit, executes the action and releases the permit right after.
+ */
+export function withPermit(s: Semaphore): <R, E, A>(task: T.Task<R, E, A>) => T.Task<R, E, A> {
+  return (task) => withPermit_(task, s);
+}
+
+/**
+ * Acquires `n` permits in a `Managed` and releases the permits in the finalizer.
  */
 export function withPermitsManaged(n: number): (s: Semaphore) => M.Managed<unknown, never, void> {
   return (s) =>
@@ -162,7 +176,7 @@ export function withPermitsManaged(n: number): (s: Semaphore) => M.Managed<unkno
 }
 
 /**
- * Acquires a permit in a [[Managed]] and releases the permit in the finalizer.
+ * Acquires a permit in a `Managed` and releases the permit in the finalizer.
  */
 export function withPermitManaged(s: Semaphore) {
   return withPermitsManaged(1)(s);
@@ -178,15 +192,19 @@ export function available(s: Semaphore): T.Task<unknown, never, number> {
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
-export function makeSemaphore(permits: number): T.Task<unknown, never, Semaphore> {
-  return T.map_(XR.makeRef<State>(E.right(permits)), (state) => new Semaphore(state));
+export function make(permits: number): T.Task<unknown, never, Semaphore> {
+  return T.map_(XR.make<State>(E.right(permits)), (state) => new Semaphore(state));
 }
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
-export function unsafeMakeSemaphore(permits: number): Semaphore {
-  const state = XR.unsafeMakeRef<State>(E.right(permits));
+export function unsafeMake(permits: number): Semaphore {
+  const state = XR.unsafeMake<State>(E.right(permits));
 
   return new Semaphore(state);
+}
+
+function assertNonNegative(n: number) {
+  return n < 0 ? T.die(`Unexpected negative value ${n} passed to acquireN or releaseN.`) : T.unit();
 }

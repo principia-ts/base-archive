@@ -26,7 +26,7 @@ export function driver<R, I, O>(
   schedule: Schedule<R, I, O>
 ): T.IO<ScheduleExecutor<HasClock & R, I, O>> {
   return pipe(
-    XR.makeRef([O.none<O>(), schedule.step] as const),
+    XR.make([O.none<O>(), schedule.step] as const),
     T.map((ref) => {
       const reset = ref.set([O.none(), schedule.step]);
 

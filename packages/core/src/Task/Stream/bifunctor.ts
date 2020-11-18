@@ -7,14 +7,23 @@ import * as T from "../Task";
 import { map } from "./functor";
 import { Stream } from "./model";
 
+/**
+ * Transforms the errors emitted by this stream using `f`.
+ */
 export function mapError_<R, E, A, D>(pab: Stream<R, E, A>, f: (e: E) => D) {
   return new Stream(pipe(pab.proc, M.map(T.mapError(O.map(f)))));
 }
 
+/**
+ * Transforms the errors emitted by this stream using `f`.
+ */
 export function mapError<E, D>(f: (e: E) => D) {
   return <R, A>(pab: Stream<R, E, A>) => mapError_(pab, f);
 }
 
+/**
+ * Transforms the full causes of failures emitted by this stream.
+ */
 export function mapErrorCause_<R, E, A, E1>(
   stream: Stream<R, E, A>,
   f: (e: Cause<E>) => Cause<E1>
@@ -37,6 +46,9 @@ export function mapErrorCause_<R, E, A, E1>(
   );
 }
 
+/**
+ * Transforms the full causes of failures emitted by this stream.
+ */
 export function mapErrorCause<E, D>(
   f: (e: Cause<E>) => Cause<D>
 ): <R, A>(stream: Stream<R, E, A>) => Stream<R, D, A> {

@@ -1,4 +1,4 @@
-import * as L from "../../../Array";
+import * as A from "../../../Array";
 import * as E from "../../../Either";
 import type * as O from "../../../Option";
 import type { Cause } from "../../Exit/Cause";
@@ -28,7 +28,7 @@ export function fail<E, I>(
 }
 
 export function halt<E>(c: Cause<E>): T.EIO<[E.Either<E, never>, ReadonlyArray<never>], never> {
-  return T.mapError_(T.halt(c), (e) => [E.left(e), L.empty()]);
+  return T.mapError_(T.halt(c), (e) => [E.left(e), A.empty()]);
 }
 
 export function restartable<R, E, I, L, Z>(
@@ -37,7 +37,7 @@ export function restartable<R, E, I, L, Z>(
   return M.gen(function* (_) {
     const switchSink = yield* _(M.switchable<R, never, Push<R, E, I, L, Z>>());
     const initialSink = yield* _(switchSink(sink));
-    const currSink = yield* _(XR.makeRef(initialSink));
+    const currSink = yield* _(XR.make(initialSink));
 
     const restart = T.chain_(switchSink(sink), currSink.set);
     const push = (input: O.Option<ReadonlyArray<I>>) => T.chain_(currSink.get, (f) => f(input));

@@ -11,46 +11,73 @@ import type { Cause } from "../../Exit/Cause";
 import * as M from "../../Managed";
 import type { Finalizer } from "../../Managed/ReleaseMap";
 import * as T from "../../Task";
-import * as XR from "../../XRef";
-import * as XRM from "../../XRefM";
+import * as XRef from "../../XRef";
+import * as XRefM from "../../XRefM";
 import { filter } from "./filterable";
 import { map, map_, mapM_ } from "./functor";
 import { Transducer } from "./model";
 
+/**
+ * Creates a transducer that always fails with the specified failure.
+ */
 export function fail<E>(e: E): Transducer<unknown, E, unknown, never> {
   return new Transducer(M.succeed((_) => T.fail(e)));
 }
 
+/**
+ * Creates a transducer that always dies with the specified exception.
+ */
 export function die(error: unknown): Transducer<unknown, never, unknown, never> {
   return new Transducer(M.succeed((_) => T.die(error)));
 }
 
+/**
+ * Creates a transducer that always fails with the specified cause.
+ */
 export function halt<E>(c: Cause<E>): Transducer<unknown, E, unknown, never> {
   return new Transducer(M.succeed((_) => T.halt(c)));
 }
 
+/**
+ * The identity transducer. Passes elements through.
+ */
 export function identity<I>(): Transducer<unknown, never, I, I> {
   return fromPush(O.fold(() => T.succeed(A.empty()), T.succeed));
 }
 
+/**
+ * Creates a transducer from a chunk processing function.
+ */
 export function fromPush<R, E, I, O>(
   push: (input: O.Option<ReadonlyArray<I>>) => T.Task<R, E, ReadonlyArray<O>>
 ): Transducer<R, E, I, O> {
   return new Transducer(M.succeed(push));
 }
 
+/**
+ * Creates a transducer that always evaluates the specified effect.
+ */
 export function fromTask<R, E, A>(task: T.Task<R, E, A>): Transducer<R, E, unknown, A> {
   return new Transducer(M.succeed((_: any) => T.map_(task, A.pure)));
 }
 
+/**
+ * Creates a transducer that purely transforms incoming values.
+ */
 export function fromFunction<I, O>(f: (i: I) => O): Transducer<unknown, never, I, O> {
   return map_(identity(), f);
 }
 
+/**
+ * Creates a transducer that effectfully transforms incoming values.
+ */
 export function fromFunctionM<R, E, I, O>(f: (i: I) => T.Task<R, E, O>): Transducer<R, E, I, O> {
   return mapM_(identity(), f);
 }
 
+/**
+ * Creates a transducer that returns the first element of the stream, if it exists.
+ */
 export function head<O>(): Transducer<unknown, never, O, O.Option<O>> {
   return reduce(O.none(), (acc, o) =>
     O.fold_(
@@ -61,20 +88,26 @@ export function head<O>(): Transducer<unknown, never, O, O.Option<O>> {
   );
 }
 
+/**
+ * Creates a transducer that returns the last element of the stream, if it exists.
+ */
 export function last<O>(): Transducer<unknown, never, O, O.Option<O>> {
   return reduce(O.none(), (_, a) => O.some(a));
 }
 
+/**
+ * Emits the provided chunk before emitting any other value.
+ */
 export function prepend<O>(values: ReadonlyArray<O>): Transducer<unknown, never, O, O> {
   return new Transducer(
-    M.map_(XR.makeManagedRef(values), (state) => (is: O.Option<ReadonlyArray<O>>) =>
+    M.map_(XRef.makeManaged(values), (state) => (is: O.Option<ReadonlyArray<O>>) =>
       O.fold_(
         is,
-        () => XR.getAndSet_(state, A.empty()),
+        () => XRef.getAndSet_(state, A.empty()),
         (xs) =>
           pipe(
             state,
-            XR.getAndSet(A.empty()),
+            XRef.getAndSet(A.empty()),
             T.map((c) => (A.isEmpty(c) ? xs : A.concat_(c, xs)))
           )
       )
@@ -82,6 +115,10 @@ export function prepend<O>(values: ReadonlyArray<O>): Transducer<unknown, never,
   );
 }
 
+/**
+ * Reads the first n values from the stream and uses them to choose the transducer that will be used for the remainder of the stream.
+ * If the stream ends before it has collected n values the partial chunk will be provided to f.
+ */
 export function branchAfter<R, E, I, O>(
   n: number,
   f: (c: ReadonlyArray<I>) => Transducer<R, E, I, O>
@@ -105,70 +142,72 @@ export function branchAfter<R, E, I, O>(
 
   return new Transducer(
     M.chain_(M.scope(), (scope) =>
-      M.map_(
-        XRM.makeManagedRefM<State>(initialState),
-        (state) => (is: O.Option<ReadonlyArray<I>>) =>
-          O.fold_(
-            is,
-            () =>
-              pipe(
-                XRM.getAndSet_(state, initialState),
-                T.chain((s) => {
-                  switch (s._tag) {
-                    case "Collecting": {
-                      return M.use_(f(s.data).push, (f) => f(O.none()));
-                    }
-                    case "Emitting": {
-                      return T.apFirst_(s.push(O.none()), s.finalizer(Ex.unit()));
-                    }
-                  }
-                })
-              ),
-            (data) =>
-              XRM.modify_(state, (s) => {
+      M.map_(XRefM.makeManaged<State>(initialState), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+        O.fold_(
+          is,
+          () =>
+            pipe(
+              XRefM.getAndSet_(state, initialState),
+              T.chain((s) => {
                 switch (s._tag) {
-                  case "Emitting": {
-                    return T.map_(s.push(O.some(data)), (_) => [_, s] as const);
-                  }
                   case "Collecting": {
-                    if (A.isEmpty(data)) {
-                      return T.succeed([A.empty<O>(), s] as const);
-                    } else {
-                      const remaining = toCollect - s.data.length;
-                      if (remaining <= data.length) {
-                        const [newCollected, remainder] = A.splitAt(remaining)(data);
-                        return T.chain_(
-                          scope.apply(f(A.concat_(s.data, newCollected)).push),
-                          ([finalizer, push]) =>
-                            T.map_(
-                              push(O.some(remainder)),
-                              (_) => [_, { _tag: "Emitting", finalizer, push }] as const
-                            )
-                        );
-                      } else {
-                        return T.succeed([
-                          A.empty<O>(),
-                          { _tag: "Collecting", data: A.concat_(s.data, data) }
-                        ] as const);
-                      }
-                    }
+                    return M.use_(f(s.data).push, (f) => f(O.none()));
+                  }
+                  case "Emitting": {
+                    return T.apFirst_(s.push(O.none()), s.finalizer(Ex.unit()));
                   }
                 }
               })
-          )
+            ),
+          (data) =>
+            XRefM.modify_(state, (s) => {
+              switch (s._tag) {
+                case "Emitting": {
+                  return T.map_(s.push(O.some(data)), (_) => [_, s] as const);
+                }
+                case "Collecting": {
+                  if (A.isEmpty(data)) {
+                    return T.succeed([A.empty<O>(), s] as const);
+                  } else {
+                    const remaining = toCollect - s.data.length;
+                    if (remaining <= data.length) {
+                      const [newCollected, remainder] = A.splitAt(remaining)(data);
+                      return T.chain_(
+                        scope.apply(f(A.concat_(s.data, newCollected)).push),
+                        ([finalizer, push]) =>
+                          T.map_(
+                            push(O.some(remainder)),
+                            (_) => [_, { _tag: "Emitting", finalizer, push }] as const
+                          )
+                      );
+                    } else {
+                      return T.succeed([
+                        A.empty<O>(),
+                        { _tag: "Collecting", data: A.concat_(s.data, data) }
+                      ] as const);
+                    }
+                  }
+                }
+              }
+            })
+        )
       )
     )
   );
 }
 
+/**
+ * Creates a transducer that starts consuming values as soon as one fails
+ * the predicate `p`.
+ */
 export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never, I, I> {
   return new Transducer(
-    M.map_(XR.makeManagedRef(true), (dropping) => (is: O.Option<ReadonlyArray<I>>) =>
+    M.map_(XRef.makeManaged(true), (dropping) => (is: O.Option<ReadonlyArray<I>>) =>
       O.fold_(
         is,
         () => T.succeed(A.empty()),
         (is) =>
-          XR.modify_(dropping, (b) => {
+          XRef.modify_(dropping, (b) => {
             switch (b) {
               case true: {
                 const is1 = A.dropWhile_(is, predicate);
@@ -184,11 +223,15 @@ export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never
   );
 }
 
+/**
+ * Creates a transducer that starts consuming values as soon as one fails
+ * the effectful predicate `p`.
+ */
 export function dropWhileM<R, E, I>(p: (i: I) => T.Task<R, E, boolean>): Transducer<R, E, I, I> {
   return new Transducer(
     pipe(
       M.do,
-      M.bindS("dropping", () => XR.makeManagedRef(true)),
+      M.bindS("dropping", () => XRef.makeManaged(true)),
       M.letS("push", ({ dropping }) => (is: O.Option<ReadonlyArray<I>>) =>
         O.fold_(
           is,
@@ -210,9 +253,14 @@ export function dropWhileM<R, E, I>(p: (i: I) => T.Task<R, E, boolean>): Transdu
   );
 }
 
+/**
+ * Creates a transducer by folding over a structure of type `O` for as long as
+ * `contFn` results in `true`. The transducer will emit a value when `contFn`
+ * evaluates to `false` and then restart the folding.
+ */
 export function fold<I, O>(
   initial: O,
-  cont: (o: O) => boolean,
+  contFn: (o: O) => boolean,
   f: (output: O, input: I) => O
 ): Transducer<unknown, never, I, O> {
   const go = (
@@ -224,7 +272,7 @@ export function fold<I, O>(
       in_,
       A.reduce([A.empty<O>(), state, progress] as const, ([os0, state, _], i) => {
         const o = f(state, i);
-        if (cont(o)) {
+        if (contFn(o)) {
           return [os0, o, true] as const;
         } else {
           return [A.append_(os0, o), initial, false] as const;
@@ -233,12 +281,12 @@ export function fold<I, O>(
     );
   };
   return new Transducer(
-    M.map_(XR.makeManagedRef(O.some(initial)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+    M.map_(XRef.makeManaged(O.some(initial)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
       O.fold_(
         is,
-        () => pipe(XR.getAndSet_(state, O.none()), T.map(O.fold(() => A.empty(), A.pure))),
+        () => pipe(XRef.getAndSet_(state, O.none()), T.map(O.fold(() => A.empty(), A.pure))),
         (in_) =>
-          XR.modify_(state, (s) => {
+          XRef.modify_(state, (s) => {
             const [o, s2, progress] = go(
               in_,
               O.getOrElse_(s, () => initial),
@@ -255,6 +303,10 @@ export function fold<I, O>(
   );
 }
 
+/**
+ * Creates a transducer by folding over a structure of type `O`. The transducer will
+ * fold the inputs until the stream ends, resulting in a stream with one element.
+ */
 export function reduce<I, O>(
   initial: O,
   f: (output: O, input: I) => O
@@ -262,6 +314,9 @@ export function reduce<I, O>(
   return fold(initial, () => true, f);
 }
 
+/**
+ * Creates a sink by effectfully folding over a structure of type `S`.
+ */
 export function foldM<R, E, I, O>(
   initial: O,
   cont: (o: O) => boolean,
@@ -292,14 +347,14 @@ export function foldM<R, E, I, O>(
         )
     );
   return new Transducer(
-    M.map_(XR.makeManagedRef(init), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+    M.map_(XRef.makeManaged(init), (state) => (is: O.Option<ReadonlyArray<I>>) =>
       O.fold_(
         is,
-        () => pipe(state, XR.getAndSet(O.none()), T.map(O.fold(() => A.empty(), A.pure))),
+        () => pipe(state, XRef.getAndSet(O.none()), T.map(O.fold(() => A.empty(), A.pure))),
         (in_) =>
           pipe(
             state,
-            XR.get,
+            XRef.get,
             T.chain((s) =>
               go(
                 in_,
@@ -318,6 +373,10 @@ export function foldM<R, E, I, O>(
   );
 }
 
+/**
+ * Creates a transducer by effectfully folding over a structure of type `O`. The transducer will
+ * fold the inputs until the stream ends, resulting in a stream with one element.
+ */
 export function reduceM<R, E, I, O>(
   initial: O,
   f: (output: O, input: I) => T.Task<R, E, O>
@@ -325,6 +384,12 @@ export function reduceM<R, E, I, O>(
   return foldM(initial, () => true, f);
 }
 
+/**
+ * Creates a transducer that folds elements of type `I` into a structure
+ * of type `O` until `max` elements have been folded.
+ *
+ * Like `foldWeighted`, but with a constant cost function of 1.
+ */
 export function foldUntil<I, O>(
   initial: O,
   max: number,
@@ -340,7 +405,13 @@ export function foldUntil<I, O>(
   );
 }
 
-export function foldUnitM<R, E, I, O>(
+/**
+ * Creates a transducer that effectfully folds elements of type `I` into a structure
+ * of type `O` until `max` elements have been folded.
+ *
+ * Like `foldWeightedM`, but with a constant cost function of 1.
+ */
+export function foldUntilM<R, E, I, O>(
   initial: O,
   max: number,
   f: (output: O, input: I) => T.Task<R, E, O>
@@ -355,9 +426,27 @@ export function foldUnitM<R, E, I, O>(
   );
 }
 
+/**
+ * Creates a transducer that folds elements of type `I` into a structure
+ * of type `O`, until `max` worth of elements (determined by the `costFn`)
+ * have been folded.
+ *
+ * The `decompose` function will be used for decomposing elements that
+ * cause an `O` aggregate to cross `max` into smaller elements.
+ *
+ * Be vigilant with this function, it has to generate "simpler" values
+ * or the fold may never end. A value is considered indivisible if
+ * `decompose` yields the empty chunk or a single-valued chunk. In
+ * these cases, there is no other choice than to yield a value that
+ * will cross the threshold.
+ *
+ * The `foldWeightedDecomposeM` allows the decompose function
+ * to return a `Task`, and consequently it allows the transducer
+ * to fail.
+ */
 export function foldWeightedDecompose<I, O>(
   initial: O,
-  cost: (output: O, input: I) => number,
+  costFn: (output: O, input: I) => number,
   max: number,
   decompose: (input: I) => ReadonlyArray<I>,
   f: (output: O, input: I) => O
@@ -379,7 +468,7 @@ export function foldWeightedDecompose<I, O>(
     dirty: boolean
   ): readonly [ReadonlyArray<O>, FoldWeightedState, boolean] =>
     A.reduce_(in_, [os0, state, dirty] as const, ([os0, state, _], i) => {
-      const total = state.cost + cost(state.result, i);
+      const total = state.cost + costFn(state.result, i);
 
       if (total > max) {
         const is = decompose(i);
@@ -393,7 +482,7 @@ export function foldWeightedDecompose<I, O>(
           const elem = A.isNonEmpty(is) ? is[0] : i;
           return [
             A.append_(os0, state.result),
-            { result: f(initialState.result, elem), cost: cost(initialState.result, elem) },
+            { result: f(initialState.result, elem), cost: costFn(initialState.result, elem) },
             true
           ] as const;
         } else {
@@ -405,13 +494,13 @@ export function foldWeightedDecompose<I, O>(
     });
 
   return new Transducer(
-    M.map_(XR.makeManagedRef(O.some(initialState)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+    M.map_(XRef.makeManaged(O.some(initialState)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
       O.fold_(
         is,
         () =>
           pipe(
             state,
-            XR.getAndSet(O.none()),
+            XRef.getAndSet(O.none()),
             T.map(
               O.fold(
                 () => A.empty(),
@@ -420,7 +509,7 @@ export function foldWeightedDecompose<I, O>(
             )
           ),
         (in_) =>
-          XR.modify_(state, (s) => {
+          XRef.modify_(state, (s) => {
             const [o, s2, dirty] = go(
               in_,
               A.empty(),
@@ -438,6 +527,20 @@ export function foldWeightedDecompose<I, O>(
   );
 }
 
+/**
+ * Creates a transducer that effectfully folds elements of type `I` into a structure
+ * of type `S`, until `max` worth of elements (determined by the `costFn`) have
+ * been folded.
+ *
+ * The `decompose` function will be used for decomposing elements that
+ * cause an `S` aggregate to cross `max` into smaller elements. Be vigilant with
+ * this function, it has to generate "simpler" values or the fold may never end.
+ * A value is considered indivisible if `decompose` yields the empty chunk or a
+ * single-valued chunk. In these cases, there is no other choice than to yield
+ * a value that will cross the threshold.
+ *
+ * See `foldWeightedDecompose` for an example.
+ */
 export function foldWeightedDecomposeM<R, E, I, O>(
   initial: O,
   costFn: (output: O, input: I) => T.Task<R, E, number>,
@@ -501,13 +604,13 @@ export function foldWeightedDecomposeM<R, E, I, O>(
     );
 
   return new Transducer(
-    M.map_(XR.makeManagedRef(O.some(initialState)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+    M.map_(XRef.makeManaged(O.some(initialState)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
       O.fold_(
         is,
         () =>
           pipe(
             state,
-            XR.getAndSet(O.none()),
+            XRef.getAndSet(O.none()),
             T.map(
               O.fold(
                 () => A.empty(),
@@ -518,7 +621,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
         (in_) =>
           pipe(
             state,
-            XR.get,
+            XRef.get,
             T.chain((s) =>
               go(
                 in_,
@@ -538,6 +641,15 @@ export function foldWeightedDecomposeM<R, E, I, O>(
   );
 }
 
+/**
+ * Creates a transducer that folds elements of type `I` into a structure
+ * of type `O`, until `max` worth of elements (determined by the `costFn`)
+ * have been folded.
+ *
+ * @note Elements that have an individual cost larger than `max` will
+ * force the transducer to cross the `max` cost. See `foldWeightedDecompose`
+ * for a variant that can handle these cases.
+ */
 export function foldWeighted<I, O>(
   initial: O,
   costFn: (o: O, i: I) => number,
@@ -567,19 +679,24 @@ export function collectAllN<I>(n: number): Transducer<unknown, never, I, Readonl
   };
 
   return new Transducer(
-    M.map_(XR.makeManagedRef(A.empty<I>()), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+    M.map_(XRef.makeManaged(A.empty<I>()), (state) => (is: O.Option<ReadonlyArray<I>>) =>
       O.fold_(
         is,
         () =>
-          T.map_(XR.getAndSet_(state, A.empty()), (leftover) =>
+          T.map_(XRef.getAndSet_(state, A.empty()), (leftover) =>
             !A.isEmpty(leftover) ? [leftover] : A.empty()
           ),
-        (in_) => XR.modify_(state, (leftover) => go(in_, leftover, A.empty()))
+        (in_) => XRef.modify_(state, (leftover) => go(in_, leftover, A.empty()))
       )
     )
   );
 }
 
+/**
+ * Creates a transducer accumulating incoming values into maps of up to `n` keys. Elements
+ * are mapped to keys using the function `key`; elements mapped to the same key will
+ * be merged with the function `f`.
+ */
 export function collectAllToMapN<K, I>(
   n: number,
   key: (i: I) => K,
@@ -592,14 +709,17 @@ export function collectAllToMapN<K, I>(
       n,
       (acc, i) => {
         const k = key(i);
-        if (acc.has(k)) return Map.unsafeInsertAt_(acc, k, merge(acc.get(k) as I, i));
-        else return Map.unsafeInsertAt_(acc, k, i);
+        if (acc.has(k)) return Map.insert_(acc, k, merge(acc.get(k) as I, i));
+        else return Map.insert_(acc, k, i);
       }
     ),
     filter(not(Map.isEmpty))
   );
 }
 
+/**
+ * Creates a transducer accumulating incoming values into sets of maximum size `n`.
+ */
 export function collectAllToSetN<I>(
   E: Eq.Eq<I>
 ): (n: number) => Transducer<unknown, never, I, ReadonlySet<I>> {
@@ -616,6 +736,9 @@ export function collectAllToSetN<I>(
     );
 }
 
+/**
+ * Accumulates incoming elements into a chunk as long as they verify predicate `p`.
+ */
 export function collectAllWhile<I>(
   p: Predicate<I>
 ): Transducer<unknown, never, I, ReadonlyArray<I>> {
@@ -628,6 +751,9 @@ export function collectAllWhile<I>(
   );
 }
 
+/**
+ * Accumulates incoming elements into a chunk as long as they verify effectful predicate `p`.
+ */
 export function collectAllWhileM<R, E, I>(
   p: (i: I) => T.Task<R, E, boolean>
 ): Transducer<R, E, I, ReadonlyArray<I>> {

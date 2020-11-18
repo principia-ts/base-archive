@@ -28,7 +28,7 @@ export function fromArray<A>(c: ReadonlyArray<A>): IO<A> {
   return new Stream(
     pipe(
       T.do,
-      T.bindS("doneRef", () => XR.makeRef(false)),
+      T.bindS("doneRef", () => XR.make(false)),
       T.letS("pull", ({ doneRef }) =>
         pipe(
           doneRef,
@@ -51,6 +51,9 @@ export function succeed<O>(o: O): IO<O> {
   return fromArray([o]);
 }
 
+/**
+ * The stream that always fails with the `error`
+ */
 export function fail<E>(e: E): EIO<E, never> {
   return fromTask(T.fail(e));
 }
@@ -79,7 +82,7 @@ export const empty: IO<never> = new Stream(M.succeed(Pull.end));
  */
 export function iterate<A>(a: A, f: (a: A) => A): IO<A> {
   return new Stream(
-    pipe(XR.makeRef(a), T.toManaged(), M.map(flow(XR.getAndUpdate(f), T.map(A.pure))))
+    pipe(XR.make(a), T.toManaged(), M.map(flow(XR.getAndUpdate(f), T.map(A.pure))))
   );
 }
 
@@ -94,7 +97,7 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
   return new Stream(
     pipe(
       M.do,
-      M.bindS("doneRef", () => XR.makeManagedRef(false)),
+      M.bindS("doneRef", () => XR.makeManaged(false)),
       M.bindS("finalizer", () => M.makeManagedReleaseMap(sequential)),
       M.letS("pull", ({ doneRef, finalizer }) =>
         T.uninterruptibleMask(({ restore }) =>
@@ -141,7 +144,7 @@ export function fromTaskOption<R, E, A>(fa: T.Task<R, Option<E>, A>): Stream<R, 
   return new Stream(
     pipe(
       M.do,
-      M.bindS("doneRef", () => pipe(XR.makeRef(false), T.toManaged())),
+      M.bindS("doneRef", () => pipe(XR.make(false), T.toManaged())),
       M.letS("pull", ({ doneRef }) =>
         pipe(
           doneRef,
@@ -209,7 +212,7 @@ export function asyncOption<R, E, A>(
           () =>
             pipe(
               M.do,
-              M.bindS("done", () => XR.makeManagedRef(false)),
+              M.bindS("done", () => XR.makeManaged(false)),
               M.map(({ done }) =>
                 pipe(
                   done.get,
@@ -296,7 +299,7 @@ export function asyncInterruptEither<R, E, A>(
           (canceler) =>
             pipe(
               M.do,
-              M.bindS("done", () => XR.makeManagedRef(false)),
+              M.bindS("done", () => XR.makeManaged(false)),
               M.map(({ done }) =>
                 pipe(
                   done.get,
@@ -358,7 +361,7 @@ export function repeatTaskChunkOption<R, E, A>(
   return new Stream(
     pipe(
       M.do,
-      M.bindS("done", () => XR.makeManagedRef(false)),
+      M.bindS("done", () => XR.makeManaged(false)),
       M.letS("pull", ({ done }) =>
         pipe(
           done.get,
@@ -522,7 +525,7 @@ export function asyncM<R, E, A, R1 = R, E1 = E>(
         )
       )
     ),
-    M.bindS("done", () => XR.makeManagedRef(false)),
+    M.bindS("done", () => XR.makeManaged(false)),
     M.letS("pull", ({ done, output }) =>
       pipe(
         done.get,

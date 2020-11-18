@@ -52,10 +52,8 @@ export function concatAll<R, E, A>(streams: ReadonlyArray<Stream<R, E, A>>): Str
   return new Stream(
     pipe(
       M.do,
-      M.bindS("currIndex", () => XR.makeManagedRef(0)),
-      M.bindS("currStream", () =>
-        XR.makeManagedRef<T.Task<R, Option<E>, ReadonlyArray<A>>>(Pull.end)
-      ),
+      M.bindS("currIndex", () => XR.makeManaged(0)),
+      M.bindS("currStream", () => XR.makeManaged<T.Task<R, Option<E>, ReadonlyArray<A>>>(Pull.end)),
       M.bindS("switchStream", () =>
         M.switchable<R, never, T.Task<R, Option<E>, ReadonlyArray<A>>>()
       ),

@@ -1,4 +1,4 @@
-import * as L from "../../../Array";
+import * as A from "../../../Array";
 import type { Either } from "../../../Either";
 import * as E from "../../../Either";
 import { identity, pipe } from "../../../Function";
@@ -9,7 +9,7 @@ import * as C from "../../Exit/Cause";
 import * as F from "../../Fiber";
 import * as M from "../../Managed";
 import * as T from "../../Task";
-import * as XRM from "../../XRefM";
+import * as RM from "../../XRefM";
 import * as H from "../internal/Handoff";
 import type * as Pull from "../internal/Pull";
 import * as Take from "../internal/Take";
@@ -35,7 +35,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
     pipe(
       M.do,
       M.bindS("handoff", () => M.fromTask(H.make<Take.Take<E | E1, C | C1>>())),
-      M.bindS("done", () => M.fromTask(XRM.makeRefM<O.Option<boolean>>(O.none()))),
+      M.bindS("done", () => M.fromTask(RM.make<O.Option<boolean>>(O.none()))),
       M.bindS("chunksL", () => sa.proc),
       M.bindS("chunksR", () => sb.proc),
       M.letS(
@@ -53,7 +53,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                   T.chain((exit) =>
                     pipe(
                       done,
-                      XRM.modify((o) => {
+                      RM.modify((o) => {
                         const causeOrChunk = pipe(
                           exit,
                           Ex.fold(
@@ -106,10 +106,10 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
           )
       ),
       M.tap(({ chunksL, handler }) =>
-        handler(pipe(chunksL, T.map(L.map(l))), strategy === "Left" || strategy === "Either")
+        handler(pipe(chunksL, T.map(A.map(l))), strategy === "Left" || strategy === "Either")
       ),
       M.tap(({ chunksR, handler }) =>
-        handler(pipe(chunksR, T.map(L.map(r))), strategy === "Right" || strategy === "Either")
+        handler(pipe(chunksR, T.map(A.map(r))), strategy === "Right" || strategy === "Either")
       ),
       M.map(({ done, handoff }) =>
         pipe(

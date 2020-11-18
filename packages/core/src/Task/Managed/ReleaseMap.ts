@@ -120,4 +120,4 @@ export function replace(
     );
 }
 
-export const make = T.map_(XR.makeRef<State>(new Running(0, new Map())), (s) => new ReleaseMap(s));
+export const make = T.map_(XR.make<State>(new Running(0, new Map())), (s) => new ReleaseMap(s));

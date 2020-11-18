@@ -34,7 +34,7 @@ export function catchAllCause_<R, E, A, R1, E2, B>(
       ),
       M.bindS("ref", () =>
         pipe(
-          XR.makeRef<State<E>>({ _tag: "NotStarted" }),
+          XR.make<State<E>>({ _tag: "NotStarted" }),
           T.toManaged()
         )
       ),

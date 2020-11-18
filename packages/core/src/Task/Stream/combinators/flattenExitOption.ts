@@ -9,6 +9,9 @@ import * as BPull from "../internal/BufferedPull";
 import * as Pull from "../internal/Pull";
 import { Stream } from "../model";
 
+/**
+ * Unwraps `Exit` values that also signify end-of-stream by failing with `None`.
+ */
 export function flattenExitOption<R, E, E1, O>(
   stream: Stream<R, E, Ex.Exit<O.Option<E1>, O>>
 ): Stream<R, E | E1, O> {
@@ -16,7 +19,7 @@ export function flattenExitOption<R, E, E1, O>(
     pipe(
       M.do,
       M.bindS("upstream", () => M.mapM_(stream.proc, BPull.make)),
-      M.bindS("done", () => XR.makeManagedRef(false)),
+      M.bindS("done", () => XR.makeManaged(false)),
       M.map(({ upstream, done }) =>
         T.chain_(done.get, (b) =>
           b

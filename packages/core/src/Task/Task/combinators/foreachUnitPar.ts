@@ -49,9 +49,9 @@ export function foreachUnitPar_<R, E, A>(
   return pipe(
     T.do,
     T.bindS("parentId", () => fiberId()),
-    T.bindS("causes", () => XR.makeRef<C.Cause<E>>(C.empty)),
+    T.bindS("causes", () => XR.make<C.Cause<E>>(C.empty)),
     T.bindS("result", () => XP.make<void, void>()),
-    T.bindS("status", () => XR.makeRef([0, 0, false] as [number, number, boolean])),
+    T.bindS("status", () => XR.make([0, 0, false] as [number, number, boolean])),
     T.letS("startTask", (s) =>
       pipe(
         s.status,

@@ -1,6 +1,6 @@
 import * as T from "../_core";
 import { pipe } from "../../../Function";
-import * as Sema from "../../Semaphore";
+import * as Semaphore from "../../Semaphore";
 import { foreachUnitPar_ } from "./foreachUnitPar";
 
 /**
@@ -14,8 +14,8 @@ export function foreachUnitParN_(
 ): <A, R, E>(as: Iterable<A>, f: (a: A) => T.Task<R, E, any>) => T.Task<R, E, void> {
   return (as, f) =>
     pipe(
-      Sema.makeSemaphore(n),
-      T.chain((s) => foreachUnitPar_(as, (a) => Sema.withPermit(s)(f(a))))
+      Semaphore.make(n),
+      T.chain((s) => foreachUnitPar_(as, (a) => Semaphore.withPermit_(f(a), s)))
     );
 }
 

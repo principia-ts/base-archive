@@ -18,7 +18,7 @@ export function buffer_<R, E, O>(ma: Stream<R, E, O>, capacity: number): Stream<
   return new Stream(
     pipe(
       M.do,
-      M.bindS("done", () => XR.makeManagedRef(false)),
+      M.bindS("done", () => XR.makeManaged(false)),
       M.bindS("queue", () => toQueue_(ma, capacity)),
       M.letS("pull", ({ done, queue }) => {
         const pull = T.chain_(done.get, (b) =>
