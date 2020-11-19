@@ -1,5 +1,11 @@
 import type * as HKT from "@principia/prelude/HKT";
 
+/*
+ * -------------------------------------------
+ * Encoder Model
+ * -------------------------------------------
+ */
+
 export interface Encoder<O, A> {
   readonly encode: (a: A) => O;
 }

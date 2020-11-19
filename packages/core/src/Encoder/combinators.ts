@@ -1,4 +1,3 @@
-import { identity } from "../Function";
 import { _intersect, memoize } from "../Utils";
 import type { Encoder, OutputOf, TypeOf } from "./model";
 
@@ -125,29 +124,5 @@ export function lazy<O, A>(f: () => Encoder<O, A>): Encoder<O, A> {
   const get = memoize<void, Encoder<O, A>>(f);
   return {
     encode: (a) => get().encode(a)
-  };
-}
-
-export function contramap_<E, A, B>(fa: Encoder<E, A>, f: (b: B) => A): Encoder<E, B> {
-  return {
-    encode: (b) => fa.encode(f(b))
-  };
-}
-
-export function contramap<A, B>(f: (b: B) => A): <E>(fa: Encoder<E, A>) => Encoder<E, B> {
-  return (fa) => contramap_(fa, f);
-}
-
-export function compose_<E, A, B>(ab: Encoder<A, B>, ea: Encoder<E, A>): Encoder<E, B> {
-  return contramap_(ea, ab.encode);
-}
-
-export function compose<E, A>(ea: Encoder<E, A>): <B>(ab: Encoder<A, B>) => Encoder<E, B> {
-  return (ab) => compose_(ab, ea);
-}
-
-export function id<A>(): Encoder<A, A> {
-  return {
-    encode: identity
   };
 }

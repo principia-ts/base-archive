@@ -74,6 +74,7 @@ const t = M.make((F) =>
   ] as const)
 );
 
+console.time("a");
 pipe(
   M.getDecoder(t)(SyM).decode({ a: "hello", b: 21, c: 43 }),
   Sy.tap((a) => Sy.total(() => console.log(a))),
@@ -84,3 +85,4 @@ pipe(
   ),
   Sy.runEither
 );
+console.timeEnd("a");

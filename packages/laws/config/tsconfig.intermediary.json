@@ -1,0 +1,15 @@
+{
+   "extends": "../../../tsconfig.json",
+   "compilerOptions": {
+      "incremental": true,
+      "declaration": false,
+      "sourceMap": true,
+      "module": "es2015",
+      "target": "es2020",
+      "rootDir": "../src",
+      "outDir": "../dist/dist/.intermediary",
+      "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo"
+   },
+   "exclude": ["../build", "../dist", "../node_modules", "../test"],
+   "include": ["../src"]
+}

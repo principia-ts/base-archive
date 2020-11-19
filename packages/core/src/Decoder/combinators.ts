@@ -1,5 +1,5 @@
 import type * as P from "@principia/prelude";
-import { pipe, pureF } from "@principia/prelude";
+import { pipe } from "@principia/prelude";
 import type * as HKT from "@principia/prelude/HKT";
 
 import * as A from "../Array/_core";
@@ -10,25 +10,9 @@ import type { Option } from "../Option";
 import type { ReadonlyRecord } from "../Record";
 import * as R from "../Record";
 import type { UnionToIntersection } from "../Utils";
+import { compose_ } from "./category";
 import type { Decoder, InputOf, TypeOf, V } from "./model";
 import { UnknownArray, UnknownRecord } from "./primitives";
-
-export function compose_<M extends HKT.URIS, C>(
-  M: P.Monad<M, V<C>>
-): <I, A, B>(from: Decoder<M, C, I, A>, to: Decoder<M, C, A, B>) => Decoder<M, C, I, B> {
-  return (from, to) => ({
-    decode: K.compose_(M)(from, to).decode,
-    _meta: {
-      name: `(${from._meta.name} >>> ${to._meta.name})`
-    }
-  });
-}
-
-export function compose<M extends HKT.URIS, C>(
-  M: P.Monad<M, V<C>>
-): <A, B>(to: Decoder<M, C, A, B>) => <I>(from: Decoder<M, C, I, A>) => Decoder<M, C, I, B> {
-  return (to) => (from) => compose_(M)(from, to);
-}
 
 export function mapLeftWithInput_<M extends HKT.URIS, C>(
   M: P.Bifunctor<M, C>
@@ -420,7 +404,7 @@ export function intersectAll<M extends HKT.URIS, C>(
       (b, a) => K.intersect_(M as P.Applicative<M, V<C>>)(b, a)
     );
     const name = info?.name ?? A.map_(decoders, (d) => d._meta.name).join(" & ");
-    return pipe({ decode: decoder.decode, _meta: { name } }, wrapInfo(M)({ ...info, name }) as any);
+    return pipe({ decode: decoder.decode, _meta: { name } }, wrapInfo(M)({ name, ...info }) as any);
   };
 }
 
@@ -501,47 +485,4 @@ export function lazy<M extends HKT.URIS, C>(
       },
       wrapInfo(M)({ name: id, ...info })
     );
-}
-
-export function id<M extends HKT.URIS, C>(M: P.Applicative<M, V<C>>): <A>() => Decoder<M, C, A, A> {
-  return () => ({
-    decode: pureF(M),
-    _meta: {
-      name: "id"
-    }
-  });
-}
-
-export function map_<F extends HKT.URIS, C>(
-  F: P.Functor<F, V<C>>
-): <I, A, B>(ia: Decoder<F, C, I, A>, f: (a: A) => B) => Decoder<F, C, I, B> {
-  return (ia, f) => ({
-    decode: (i) => F.map_(ia.decode(i), f),
-    _meta: {
-      name: ia._meta.name
-    }
-  });
-}
-
-export function map<F extends HKT.URIS, C>(
-  F: P.Functor<F, V<C>>
-): <A, B>(f: (a: A) => B) => <I>(ia: Decoder<F, C, I, A>) => Decoder<F, C, I, B> {
-  return (f) => (ia) => map_(F)(ia, f);
-}
-
-export function alt_<F extends HKT.URIS, C>(
-  A: P.Alt<F, V<C>>
-): <I, A>(me: Decoder<F, C, I, A>, that: () => Decoder<F, C, I, A>) => Decoder<F, C, I, A> {
-  return (me, that) => ({
-    decode: K.alt_(A)(me, that).decode,
-    _meta: {
-      name: `${me._meta.name} <!> ${that()._meta.name}`
-    }
-  });
-}
-
-export function alt<F extends HKT.URIS, C>(
-  A: P.Alt<F, V<C>>
-): <I, A>(that: () => Decoder<F, C, I, A>) => (me: Decoder<F, C, I, A>) => Decoder<F, C, I, A> {
-  return (that) => (me) => alt_(A)(me, that);
 }
