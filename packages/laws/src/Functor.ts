@@ -1,63 +1,52 @@
 import * as Eq from "@principia/core/Eq";
+import type * as P from "@principia/prelude";
 import type { FunctionN } from "@principia/prelude/Function";
-import type { Functor } from "@principia/prelude/Functor";
 import type * as HKT from "@principia/prelude/HKT";
 import * as fc from "fast-check";
 
-export const FunctorLaws = {
-  identity: <F, A>(F: Functor<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, A>>) => (
-    fa: HKT.HKT<F, A>
-  ): boolean => {
-    return S.equals_(
-      F.map_(fa, (a) => a),
-      fa
-    );
-  },
-  composition: <F extends HKT.URIS, TC, A, B, C>(
-    F: Functor<F, TC>,
-    S: Eq.Eq<
-      HKT.Kind<
-        F,
-        TC,
-        HKT.Initial<TC, "N">,
-        HKT.Initial<TC, "K">,
-        HKT.Initial<TC, "Q">,
-        HKT.Initial<TC, "W">,
-        HKT.Initial<TC, "X">,
-        HKT.Initial<TC, "I">,
-        HKT.Initial<TC, "S">,
-        HKT.Initial<TC, "R">,
-        HKT.Initial<TC, "E">,
-        C
-      >
-    >,
-    ab: FunctionN<[A], B>,
-    bc: FunctionN<[B], C>
-  ) => (
-    fa: HKT.Kind<
-      F,
-      TC,
-      HKT.Initial<TC, "N">,
-      HKT.Initial<TC, "K">,
-      HKT.Initial<TC, "Q">,
-      HKT.Initial<TC, "W">,
-      HKT.Initial<TC, "X">,
-      HKT.Initial<TC, "I">,
-      HKT.Initial<TC, "S">,
-      HKT.Initial<TC, "R">,
-      HKT.Initial<TC, "E">,
-      A
-    >
-  ): boolean => {
+function CompositionLaw<F extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A, B, C>(
+  F: P.Functor<F, TC>,
+  S: Eq.Eq<HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, C>>,
+  ab: FunctionN<[A], B>,
+  bc: FunctionN<[B], C>
+): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean;
+function CompositionLaw<F, A, B, C>(
+  F: P.Functor<HKT.UHKT<F>>,
+  S: Eq.Eq<HKT.HKT<F, C>>,
+  ab: FunctionN<[A], B>,
+  bc: FunctionN<[B], C>
+): (fa: HKT.HKT<F, A>) => boolean {
+  return (fa) => {
     return S.equals_(
       F.map_(fa, (a) => bc(ab(a))),
       F.map_(F.map_(fa, ab), bc)
     );
-  }
+  };
+}
+
+function IdentityLaw<F extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A>(
+  F: P.Functor<F, TC>,
+  S: Eq.Eq<HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>>
+): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean;
+function IdentityLaw<F, A>(
+  F: P.Functor<HKT.UHKT<F>>,
+  S: Eq.Eq<HKT.HKT<F, A>>
+): (fa: HKT.HKT<F, A>) => boolean {
+  return (fa) => {
+    return S.equals_(
+      F.map_(fa, (a) => a),
+      fa
+    );
+  };
+}
+
+export const Functor = {
+  identity: IdentityLaw,
+  composition: CompositionLaw
 };
 
 export function testFunctorComposition<F extends HKT.URIS, C>(
-  F: Functor<F, C>
+  F: P.Functor<F, C>
 ): (
   lift: <A>(
     a: fc.Arbitrary<A>
@@ -104,7 +93,7 @@ export function testFunctorComposition<F extends HKT.URIS, C>(
     const bc = (n: number | null | undefined): number =>
       n === undefined ? 1 : n === null ? 2 : n * 2;
 
-    const composition = fc.property(arb, FunctorLaws.composition(F, Sc, ab, bc));
+    const composition = fc.property(arb, Functor.composition(F, Sc, ab, bc));
 
     fc.assert(composition, { seed: -525356605, path: "26:2:2", endOnFailure: true, verbose: true });
   };

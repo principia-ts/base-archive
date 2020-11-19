@@ -1,9 +1,7 @@
 import type { DecodeErrors, ErrorInfo } from "@principia/core/DecodeError";
 import * as DE from "@principia/core/DecodeError";
-import * as D from "@principia/core/Decoder";
 import * as E from "@principia/core/Either";
-import * as ED from "@principia/core/EitherDecoder";
-import { flow, identity, pipe } from "@principia/core/Function";
+import { pipe } from "@principia/core/Function";
 import * as Sy from "@principia/core/Sync";
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";

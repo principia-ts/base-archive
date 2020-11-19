@@ -1,11 +1,10 @@
 import * as Eq from "@principia/core/Eq";
-import { pureF } from "@principia/prelude";
 import type { Applicative } from "@principia/prelude/Applicative";
 import { compose_, tuple, tupleFlip, tupleUnit } from "@principia/prelude/Equivalence";
 import type * as HKT from "@principia/prelude/HKT";
 import * as fc from "fast-check";
 
-export function ApplicativeAssociativity<F extends HKT.URIS, TC, A, B, C>(
+function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
   F: Applicative<F, TC>,
   S: Eq.Eq<
     HKT.Kind<
@@ -24,15 +23,15 @@ export function ApplicativeAssociativity<F extends HKT.URIS, TC, A, B, C>(
     >
   >
 ): <
-  NA extends string,
-  KA,
-  QA,
-  WA,
-  XA,
-  IA,
-  SA,
-  RA,
-  EA,
+  N extends string,
+  K,
+  Q,
+  W,
+  X,
+  I,
+  S,
+  R,
+  E,
   A,
   NB extends string,
   KB,
@@ -55,22 +54,98 @@ export function ApplicativeAssociativity<F extends HKT.URIS, TC, A, B, C>(
   EC,
   C
 >(
-  fa: HKT.Kind<F, TC, NA, KA, QA, WA, XA, IA, SA, RA, EA, A>,
-  fb: HKT.Kind<F, TC, NB, KB, QB, WB, XB, IB, SB, RB, EB, B>,
-  fc: HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, C>
+  fs: [
+    HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
+    HKT.Kind<F, TC, NB, KB, QB, WB, XB, IB, SB, RB, EB, B>,
+    HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, C>
+  ]
 ) => boolean;
-export function ApplicativeAssociativity<F, A, B, C>(
+function AssociativityLaw<F, A, B, C>(
   F: Applicative<HKT.UHKT<F>>,
   S: Eq.Eq<HKT.HKT<F, readonly [readonly [A, B], C]>>
-): (fa: HKT.HKT<F, A>, fb: HKT.HKT<F, B>, fc: HKT.HKT<F, C>) => boolean {
+): (fs: [HKT.HKT<F, A>, HKT.HKT<F, B>, HKT.HKT<F, C>]) => boolean {
   const equiv = tuple<A, B, C>();
-  return (fa, fb, fc) => {
+  return ([fa, fb, fc]) => {
     const left = F.both_(fa, F.both_(fb, fc));
     const right = F.both_(F.both_(fa, fb), fc);
     const left2 = F.map_(left, equiv.to);
     return S.equals_(left2, right);
   };
 }
+
+function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
+  F: Applicative<F, TC>,
+  S: Eq.Eq<
+    HKT.Kind<
+      F,
+      TC,
+      HKT.Initial<TC, "N">,
+      HKT.Initial<TC, "K">,
+      HKT.Initial<TC, "Q">,
+      HKT.Initial<TC, "W">,
+      HKT.Initial<TC, "X">,
+      HKT.Initial<TC, "I">,
+      HKT.Initial<TC, "S">,
+      HKT.Initial<TC, "R">,
+      HKT.Initial<TC, "E">,
+      A
+    >
+  >
+): <N extends string, K, Q, W, X, I, S, R, E>(
+  fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>
+) => boolean;
+function LeftIdentityLaw<F, A>(
+  F: Applicative<HKT.UHKT<F>>,
+  S: Eq.Eq<HKT.HKT<F, A>>
+): (fa: HKT.HKT<F, A>) => boolean {
+  const equiv = compose_(tupleFlip<void, A>(), tupleUnit());
+  return (fa) => {
+    const left = F.both_(F.unit(), fa);
+    const right = fa;
+    const left2 = F.map_(left, equiv.to);
+    return S.equals_(left2, right);
+  };
+}
+
+function RightIdentityLaw<F extends HKT.URIS, TC, A>(
+  F: Applicative<F, TC>,
+  S: Eq.Eq<
+    HKT.Kind<
+      F,
+      TC,
+      HKT.Initial<TC, "N">,
+      HKT.Initial<TC, "K">,
+      HKT.Initial<TC, "Q">,
+      HKT.Initial<TC, "W">,
+      HKT.Initial<TC, "X">,
+      HKT.Initial<TC, "I">,
+      HKT.Initial<TC, "S">,
+      HKT.Initial<TC, "R">,
+      HKT.Initial<TC, "E">,
+      A
+    >
+  >
+): <N extends string, K, Q, W, X, I, S, R, E>(
+  fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>
+) => boolean;
+function RightIdentityLaw<F, A>(
+  F: Applicative<HKT.UHKT<F>>,
+  S: Eq.Eq<HKT.HKT<F, A>>
+): (fa: HKT.HKT<F, A>) => boolean {
+  const equiv = tupleUnit<A>();
+  return (fa) => {
+    const left = F.both_(fa, F.unit());
+    const right = fa;
+    const left2 = F.map_(left, equiv.to);
+    return S.equals_(left2, right);
+  };
+}
+
+export const ApplicativeLaws = {
+  associativity: AssociativityLaw,
+  leftIdentity: LeftIdentityLaw,
+  rightIdentity: RightIdentityLaw
+};
 
 export function testApplicativeAssociativity<F extends HKT.URIS, TC>(
   F: Applicative<F, TC>
@@ -119,8 +194,9 @@ export function testApplicativeAssociativity<F extends HKT.URIS, TC>(
     const arbNumber = lift(fc.double());
     const Sabc = liftEqs(Eq.string, Eq.number, Eq.number);
 
-    const associativity = fc.property(fc.tuple(arbString, arbNumber, arbNumber), ([fa, fb, fc]) =>
-      ApplicativeAssociativity(F, Sabc)(fa, fb, fc)
+    const associativity = fc.property(
+      fc.tuple(arbString, arbNumber, arbNumber),
+      ApplicativeLaws.associativity(F, Sabc)
     );
 
     fc.assert(associativity, {
@@ -131,34 +207,3 @@ export function testApplicativeAssociativity<F extends HKT.URIS, TC>(
     });
   };
 }
-
-export const ApplicativeLaws = {
-  associativeComposition: <F, A, B, C>(
-    F: Applicative<HKT.UHKT<F>>,
-    S: Eq.Eq<HKT.HKT<F, readonly [readonly [A, B], C]>>
-  ) => (fa: HKT.HKT<F, A>, fb: HKT.HKT<F, B>, fc: HKT.HKT<F, C>): boolean => {
-    const equiv = tuple<A, B, C>();
-    const left = F.both_(fa, F.both_(fb, fc));
-    const right = F.both_(F.both_(fa, fb), fc);
-    const left2 = F.map_(left, equiv.to);
-    return S.equals_(left2, right);
-  },
-  leftIdentity: <F, A>(F: Applicative<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, A>>) => (
-    fa: HKT.HKT<F, A>
-  ): boolean => {
-    const equiv = compose_(tupleFlip<void, A>(), tupleUnit());
-    const left = F.both_(F.unit(), fa);
-    const right = fa;
-    const left2 = F.map_(left, equiv.to);
-    return S.equals_(left2, right);
-  },
-  rightIdentity: <F, A>(F: Applicative<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, A>>) => (
-    fa: HKT.HKT<F, A>
-  ): boolean => {
-    const equiv = tupleUnit<A>();
-    const left = F.both_(fa, F.unit());
-    const right = fa;
-    const left2 = F.map_(left, equiv.to);
-    return S.equals_(left2, right);
-  }
-};
