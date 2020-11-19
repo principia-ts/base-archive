@@ -1,4 +1,4 @@
-import { succeed } from "./constructors";
+import { fail, succeed } from "./constructors";
 import { foldM_ } from "./fold";
 import type { XPure } from "./model";
 

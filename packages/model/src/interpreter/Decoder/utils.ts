@@ -1,4 +1,4 @@
-import type { ErrorInfo } from "@principia/core/Decoder";
+import type { ErrorInfo } from "@principia/core/DecodeError";
 
 import type { Config } from "../../HKT";
 

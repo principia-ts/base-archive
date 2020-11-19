@@ -4,17 +4,22 @@ import * as R from "@principia/core/Record";
 
 import type * as Alg from "../../algebra";
 import { implementInterpreter } from "../../HKT";
+import type { URI } from "./HKT";
 import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
-export const ObjectDecoder = implementInterpreter<D.URI, Alg.ObjectURI>()((_) => ({
+export const ObjectDecoder = implementInterpreter<URI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
       (decoders) =>
         applyDecoderConfig(config?.config)(
-          D.type(decoders, extractInfo(config)) as any,
+          (M) =>
+            D.type(M)(
+              R.map_(decoders, (_) => _(M)),
+              extractInfo(config)
+            ) as any,
           env,
           decoders as any
         )
@@ -25,7 +30,11 @@ export const ObjectDecoder = implementInterpreter<D.URI, Alg.ObjectURI>()((_) =>
       R.map((f) => f(env)),
       (decoders) =>
         applyDecoderConfig(config?.config)(
-          D.partial(decoders, extractInfo(config)) as any,
+          (M) =>
+            D.partial(M)(
+              R.map_(decoders, (_) => _(M)),
+              extractInfo(config)
+            ) as any,
           env,
           decoders as any
         )
@@ -40,7 +49,11 @@ export const ObjectDecoder = implementInterpreter<D.URI, Alg.ObjectURI>()((_) =>
           R.map((f) => f(env)),
           (o) =>
             applyDecoderConfig(config?.config)(
-              pipe(D.type(r), D.intersect(D.partial(o))) as any,
+              (M) =>
+                pipe(
+                  D.type(M)(R.map_(r, (_) => _(M))),
+                  D.intersect(M)(D.partial(M)(R.map_(o, (_) => _(M))))
+                ) as any,
               env,
               {
                 required: r as any,

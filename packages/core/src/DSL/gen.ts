@@ -1,9 +1,8 @@
-import { chainF } from "@principia/prelude/Chain";
+import { chainF_ } from "@principia/prelude/Chain";
 import type * as HKT from "@principia/prelude/HKT";
 import type { Monad } from "@principia/prelude/Monad";
 import { pureF } from "@principia/prelude/Pure";
 
-import { pipe } from "../Function";
 import { PrematureGeneratorExit } from "../GlobalExceptions";
 import * as L from "../List/_core";
 
@@ -56,34 +55,31 @@ export function genWithHistoryF<F>(
 ): <Eff extends GenHKT<HKT.HKT<F, any>, any>, AEff>(
   f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
 ) => HKT.HKT<F, AEff> {
-  const chain = chainF(F);
+  const chain_ = chainF_(F);
   const pure = pureF(F);
 
   return <Eff extends GenHKT<HKT.HKT<F, any>, any>, AEff>(
     f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
   ): HKT.HKT<F, AEff> => {
-    return pipe(
-      pure(undefined),
-      chain(() => {
-        function run(replayStack: L.List<any>): HKT.HKT<F, AEff> {
-          const iterator = f((config?.adapter ? config.adapter : adapter) as any);
-          let state = iterator.next();
-          L.forEach_(replayStack, (a) => {
-            if (state.done) {
-              throw new PrematureGeneratorExit("GenHKT.genWithHistoryF");
-            }
-            state = iterator.next(a);
-          });
+    return chain_(pure(undefined), () => {
+      function run(replayStack: L.List<any>): HKT.HKT<F, AEff> {
+        const iterator = f((config?.adapter ? config.adapter : adapter) as any);
+        let state = iterator.next();
+        L.forEach_(replayStack, (a) => {
           if (state.done) {
-            return pure(state.value);
+            throw new PrematureGeneratorExit("GenHKT.genWithHistoryF");
           }
-          return chain((val) => {
-            return run(L.append_(replayStack, val));
-          })(state.value["T"]);
+          state = iterator.next(a);
+        });
+        if (state.done) {
+          return pure(state.value);
         }
-        return run(L.empty());
-      })
-    );
+        return chain_(state.value.T, (val) => {
+          return run(L.append_(replayStack, val));
+        });
+      }
+      return run(L.empty());
+    });
   };
 }
 
@@ -124,30 +120,27 @@ export function genF<F>(
 ): <Eff extends GenHKT<HKT.HKT<F, any>, any>, AEff>(
   f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
 ) => HKT.HKT<F, AEff> {
-  const chain = chainF(F);
+  const chain_ = chainF_(F);
   const pure = pureF(F);
 
   return <T extends GenHKT<HKT.HKT<F, any>, any>, A>(
     f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<T, A, any>
   ): HKT.HKT<F, A> => {
-    return pipe(
-      pure({}),
-      chain(() => {
-        const iterator = f((config?.adapter ? config.adapter : adapter) as any);
-        const state = iterator.next();
+    return chain_(pure(undefined), () => {
+      const iterator = f((config?.adapter ? config.adapter : adapter) as any);
+      const state = iterator.next();
 
-        function run(state: IteratorYieldResult<T> | IteratorReturnResult<A>): HKT.HKT<F, A> {
-          if (state.done) {
-            return pure(state.value);
-          }
-          return chain((val) => {
-            const next = iterator.next(val);
-            return run(next);
-          })(state.value.T);
+      function run(state: IteratorYieldResult<T> | IteratorReturnResult<A>): HKT.HKT<F, A> {
+        if (state.done) {
+          return pure(state.value);
         }
+        return chain_(state.value.T, (val) => {
+          const next = iterator.next(val);
+          return run(next);
+        });
+      }
 
-        return run(state);
-      })
-    );
+      return run(state);
+    });
   };
 }

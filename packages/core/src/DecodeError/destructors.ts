@@ -1,4 +1,4 @@
-import type { FreeSemigroup } from "../../FreeSemigroup";
+import type { FreeSemigroup } from "../FreeSemigroup";
 import type { DecodeError, Kind } from "./model";
 
 export function fold<E, R>(patterns: {

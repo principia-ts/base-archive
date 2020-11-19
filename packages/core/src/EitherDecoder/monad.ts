@@ -1,9 +1,9 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
+import type { DecodeErrors, ErrorInfo } from "../DecodeError";
+import * as DE from "../DecodeError";
 import * as E from "../Either";
-import type { DecodeError, ErrorInfo } from "./decode-error";
-import * as DE from "./DecodeError";
 import type { C } from "./model";
 
 /**
@@ -15,9 +15,9 @@ export const SE = DE.getSemigroup<ErrorInfo>();
  * @internal
  */
 function both_<A, B>(
-  fa: E.Either<DecodeError, A>,
-  fb: E.Either<DecodeError, B>
-): E.Either<DecodeError, readonly [A, B]> {
+  fa: E.Either<DecodeErrors, A>,
+  fb: E.Either<DecodeErrors, B>
+): E.Either<DecodeErrors, readonly [A, B]> {
   return E.isLeft(fa)
     ? E.isLeft(fb)
       ? E.left(SE.combine_(fa.left, fb.left))
@@ -31,9 +31,9 @@ function both_<A, B>(
  * @internal
  */
 function alt_<A>(
-  me: E.Either<DecodeError, A>,
-  that: () => E.Either<DecodeError, A>
-): E.Either<DecodeError, A> {
+  me: E.Either<DecodeErrors, A>,
+  that: () => E.Either<DecodeErrors, A>
+): E.Either<DecodeErrors, A> {
   if (E.isRight(me)) {
     return me;
   }
@@ -52,7 +52,8 @@ export const M: P.MonadFail<[E.URI], C> &
   ...E.Bifunctor,
   unit: E.unit,
   both_,
-  both: <B>(fb: E.Either<DecodeError, B>) => <A>(fa: E.Either<DecodeError, A>) => both_(fa, fb),
+  both: <B>(fb: E.Either<DecodeErrors, B>) => <A>(fa: E.Either<DecodeErrors, A>) => both_(fa, fb),
   alt_,
-  alt: <A>(that: () => E.Either<DecodeError, A>) => (me: E.Either<DecodeError, A>) => alt_(me, that)
+  alt: <A>(that: () => E.Either<DecodeErrors, A>) => (me: E.Either<DecodeErrors, A>) =>
+    alt_(me, that)
 });

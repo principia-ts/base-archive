@@ -146,7 +146,7 @@ export function parse<E, M>(
 }
 
 export function nullable_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <I, A>(
   or: KleisliDecoder<M, C, I, E, A>,
   onError: (i: I, e: E) => E
@@ -170,7 +170,7 @@ export function nullable_<E, M>(
 }
 
 export function nullable<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <I>(
   onError: (i: I, e: E) => E
 ) => <A>(
@@ -187,7 +187,7 @@ export function nullable<E, M>(
 }
 
 export function optional_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <I, A>(
   or: KleisliDecoder<M, C, I, E, A>,
   onError: (i: I, e: E) => E
@@ -211,7 +211,7 @@ export function optional_<E, M>(
 }
 
 export function optional<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <I>(
   onError: (i: I, e: E) => E
 ) => <A>(
@@ -228,7 +228,7 @@ export function optional<E, M>(
 }
 
 export function fromType_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
@@ -254,7 +254,7 @@ export function fromType_<E, M>(
 }
 
 export function fromType<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): (
   onPropertyError: (key: string, e: E) => E
 ) => <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
@@ -277,7 +277,7 @@ export function fromType<E, M>(
 }
 
 export function fromPartial_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
@@ -319,7 +319,7 @@ export function fromPartial_<E, M>(
 }
 
 export function fromPartial<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): (
   onPropertyError: (key: string, e: E) => E
 ) => <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
@@ -343,7 +343,7 @@ export function fromPartial<E, M>(
 }
 
 export function fromArray_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <I, A>(
   item: KleisliDecoder<M, C, I, E, A>,
   onItemError: (index: number, e: E) => E
@@ -362,7 +362,7 @@ export function fromArray_<E, M>(
 }
 
 export function fromArray<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): (
   onItemError: (index: number, e: E) => E
 ) => <I, A>(
@@ -380,7 +380,7 @@ export function fromArray<E, M>(
 }
 
 export function fromRecord_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): <I, A>(
   codomain: KleisliDecoder<M, C, I, E, A>,
   onKeyError: (key: string, e: E) => E
@@ -399,7 +399,7 @@ export function fromRecord_<E, M>(
 }
 
 export function fromRecord<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, HKT.Unfix<C, "E">>
+  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
 ): (
   onKeyError: (key: string, e: E) => E
 ) => <I, A>(

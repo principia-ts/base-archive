@@ -1,4 +1,4 @@
-import type { FreeSemigroup } from "../../FreeSemigroup";
+import type { FreeSemigroup } from "../FreeSemigroup";
 
 /*
  * -------------------------------------------

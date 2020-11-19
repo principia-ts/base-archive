@@ -22,10 +22,10 @@ export const getArbitrary = Arb.deriveFor(make)({
   }
 });
 
-export {} from "./interpreter/Eq/HKT";
-export {} from "./interpreter/Show/HKT";
-export {} from "./interpreter/Guard/HKT";
-export {} from "./interpreter/Encoder/HKT";
-export {} from "./interpreter/Decoder/HKT";
-export {} from "./interpreter/Arbitrary/HKT";
 export {} from "./HKT";
+export {} from "./interpreter/Arbitrary/HKT";
+export {} from "./interpreter/Decoder/HKT";
+export {} from "./interpreter/Encoder/HKT";
+export {} from "./interpreter/Eq/HKT";
+export {} from "./interpreter/Guard/HKT";
+export {} from "./interpreter/Show/HKT";

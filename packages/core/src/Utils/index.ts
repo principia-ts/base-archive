@@ -29,3 +29,4 @@ export * from "./infer";
 export * from "./types";
 export * from "./guards";
 export * from "./matchers";
+export * from "./combinators";

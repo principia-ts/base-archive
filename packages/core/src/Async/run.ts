@@ -44,13 +44,13 @@ export function runPromiseExitEnv_<R, E, A>(
 
     const isInterrupted = () => interrupted || interruptionState.interrupted;
 
-    const popFrame = (): Frame | undefined => {
+    const popContinuation = (): Frame | undefined => {
       const current = frames?.value;
       frames = frames?.previous;
       return current;
     };
 
-    const pushFrame = (continuation: Frame): void => {
+    const pushContinuation = (continuation: Frame): void => {
       frames = stack(continuation, frames);
     };
 
@@ -67,12 +67,12 @@ export function runPromiseExitEnv_<R, E, A>(
     const unwindStack = () => {
       let unwinding = true;
       while (unwinding) {
-        const next = popFrame();
+        const next = popContinuation();
         if (next == null) {
           unwinding = false;
         } else if (next._tag === "FoldFrame") {
           unwinding = false;
-          pushFrame(new ApplyFrame(next.recover));
+          pushContinuation(new ApplyFrame(next.recover));
         }
       }
     };
@@ -111,7 +111,7 @@ export function runPromiseExitEnv_<R, E, A>(
             }
             default: {
               current = nested;
-              pushFrame(new ApplyFrame(continuation));
+              pushContinuation(new ApplyFrame(continuation));
             }
           }
           break;
@@ -122,7 +122,7 @@ export function runPromiseExitEnv_<R, E, A>(
         }
         case AsyncInstructionTag.Succeed: {
           result = I.value;
-          const next = popFrame();
+          const next = popContinuation();
           if (next) {
             current = next.apply(result);
           } else {
@@ -144,7 +144,7 @@ export function runPromiseExitEnv_<R, E, A>(
         }
         case AsyncInstructionTag.Fail: {
           unwindStack();
-          const next = popFrame();
+          const next = popContinuation();
           if (next) {
             current = next.apply(I.e);
           } else {
@@ -265,7 +265,7 @@ export function runPromiseExitEnv_<R, E, A>(
   })();
 }
 
-export function runPromiseExit_<E, A>(
+export function runPromiseExit<E, A>(
   async: Async<unknown, E, A>,
   interruptionState = new InterruptionState()
 ): Promise<Ex.AsyncExit<E, A>> {
@@ -288,7 +288,7 @@ export function runAsync<E, A>(
   onExit?: (exit: Ex.AsyncExit<E, A>) => void
 ): () => void {
   const interruptionState = new InterruptionState();
-  runPromiseExit_(async, interruptionState).then(onExit);
+  runPromiseExit(async, interruptionState).then(onExit);
   return () => {
     interruptionState.interrupt();
   };

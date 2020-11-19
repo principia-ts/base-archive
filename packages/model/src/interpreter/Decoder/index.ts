@@ -1,9 +1,12 @@
 import type * as D from "@principia/core/Decoder";
 import { pipe } from "@principia/core/Function";
+import type * as P from "@principia/prelude";
+import type * as HKT from "@principia/prelude/HKT";
 
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";
 import { memoize, merge } from "../../utils";
+import type { URI } from "./HKT";
 import { IntersectionDecoder } from "./intersection";
 import { NewtypeDecoder } from "./newtype";
 import { NullableDecoder } from "./nullable";
@@ -35,8 +38,10 @@ export const allDecoderInterpreters = memoize(
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
   env: {
-    [K in D.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
+    [K in URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
   }
 ) => <S, R, E, A>(
   F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
-): D.Decoder<unknown, A> => pipe(env, F.derive(allDecoderInterpreters()));
+): (<M extends HKT.URIS, C>(
+  M: P.MonadFail<M, D.V<C>> & P.Applicative<M, D.V<C>> & P.Bifunctor<M, C> & P.Alt<M, C>
+) => D.Decoder<M, C, unknown, A>) => pipe(env, F.derive(allDecoderInterpreters()));

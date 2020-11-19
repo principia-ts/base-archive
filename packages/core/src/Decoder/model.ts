@@ -1,32 +1,24 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import type * as E from "../Either";
+import type { DecodeErrors } from "../DecodeError";
 import type * as K from "../KleisliDecoder";
-import type { DecodeError } from "./decode-error";
 
-export interface Decoder<I, A> extends K.KleisliDecoder<[E.URI], C, I, DecodeError, A> {
+export type V<C> = C & HKT.Fix<"E", DecodeErrors>;
+
+export interface Decoder<F extends HKT.URIS, C, I, O>
+  extends K.KleisliDecoder<F, V<C>, I, DecodeErrors, O> {
   readonly _meta: {
     readonly name: string;
   };
 }
 
-export type C = E.V & HKT.Fix<"E", DecodeError>;
+export type InputOf<M extends HKT.URIS, D> = K.InputOf<M, D>;
 
-export type InputOf<D> = K.InputOf<[E.URI], D>;
+export type TypeOf<M extends HKT.URIS, D> = K.TypeOf<M, D>;
 
-export type TypeOf<D> = K.TypeOf<[E.URI], D>;
-
-export const URI = "Decoder";
-
-export type URI = typeof URI;
-
-export type V = HKT.V<"E", "+">;
-
-declare module "@principia/prelude/HKT" {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Decoder<E, A>;
-  }
-  interface URItoKind2<TC, E, A> {
-    readonly [URI]: Decoder<E, A>;
-  }
+export interface DecoderHKT<F, I, O> {
+  readonly decode: (i: I) => HKT.HKT2<F, DecodeErrors, O>;
+  readonly _meta: {
+    readonly name: string;
+  };
 }
