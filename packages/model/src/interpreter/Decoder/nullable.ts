@@ -8,7 +8,7 @@ import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
 export const NullableDecoder = implementInterpreter<URI, Alg.NullableURI>()((_) => ({
-  nullable: (a, config) => (env) =>
+  nullable_: (a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(
         (M) => D.nullable(M)(extractInfo(config))(decoder(M)),
@@ -17,7 +17,7 @@ export const NullableDecoder = implementInterpreter<URI, Alg.NullableURI>()((_) 
       )
     ),
 
-  optional: (a, config) => (env) =>
+  optional_: (a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(
         (M) => D.optional(M)(extractInfo(config))(decoder(M)),

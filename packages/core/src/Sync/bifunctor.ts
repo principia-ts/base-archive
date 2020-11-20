@@ -1,5 +1,9 @@
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import * as X from "../XPure";
-import type { Sync } from "./model";
+import { Functor } from "./functor";
+import type { Sync, URI, V } from "./model";
 
 /*
  * -------------------------------------------
@@ -23,3 +27,11 @@ export const mapError_: <R, E, A, B>(pab: Sync<R, E, A>, f: (e: E) => B) => Sync
 
 export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => Sync<R, B, A> =
   X.mapError;
+
+export const Bifunctor: P.Bifunctor<[URI], V> = HKT.instance({
+  ...Functor,
+  bimap_,
+  bimap,
+  mapLeft_: mapError_,
+  mapLeft: mapError
+});

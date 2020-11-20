@@ -7,9 +7,9 @@ import { implementInterpreter } from "../../HKT";
 import { applyGuardConfig } from "./HKT";
 
 export const NullableGuard = implementInterpreter<G.URI, Alg.NullableURI>()((_) => ({
-  nullable: (a, config) => (env) =>
+  nullable_: (a, config) => (env) =>
     pipe(a(env), (guard) => applyGuardConfig(config?.config)(G.nullable(guard), env, guard)),
-  optional: (a, config) => (env) =>
+  optional_: (a, config) => (env) =>
     pipe(a(env), (guard) =>
       applyGuardConfig(config?.config)(
         {

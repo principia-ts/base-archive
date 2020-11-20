@@ -38,3 +38,15 @@ export function take_<A>(fa: Iterable<A>, n: number): Iterable<A> {
 export function take(n: number): <A>(fa: Iterable<A>) => Iterable<A> {
   return (fa) => take_(fa, n);
 }
+
+export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
+  const as: A[] = [];
+  const iterator = fa[Symbol.iterator]();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const result = iterator.next();
+    if (result.done) break;
+    as.push(result.value);
+  }
+  return as;
+}

@@ -15,7 +15,7 @@ import type {
   ResultURIS,
   URItoProgram
 } from "../HKT";
-import type { InferA, InferE, InferR, InferS, InhabitedTypes } from "../utils";
+import type { _A, _E, _R, _S, InhabitedTypes } from "../utils";
 import { assignCallable, wrapFun } from "../utils";
 import type { ADT } from "./model";
 import { makeADT } from "./model";
@@ -72,10 +72,10 @@ export type UnionTypes<
     PURI,
     RURI,
     Env,
-    InferS<Types[k]>,
-    InferR<Types[k]>,
-    InferE<Types[k]>,
-    InferA<Types[k]> & { [t in Tag]: k }
+    _S<Types[k]>,
+    _R<Types[k]>,
+    _E<Types[k]>,
+    _A<Types[k]> & { [t in Tag]: k }
   >;
 };
 

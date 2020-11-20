@@ -53,15 +53,15 @@ export interface InhabitedTypes<Env, S, R, E, A> {
   _A: A;
 }
 
-export type InferA<X extends InhabitedTypes<any, any, any, any, any>> = X["_A"];
+export type _A<X extends InhabitedTypes<any, any, any, any, any>> = X["_A"];
 
-export type InferE<X extends InhabitedTypes<any, any, any, any, any>> = X["_E"];
+export type _E<X extends InhabitedTypes<any, any, any, any, any>> = X["_E"];
 
-export type InferR<X extends InhabitedTypes<any, any, any, any, any>> = X["_R"];
+export type _R<X extends InhabitedTypes<any, any, any, any, any>> = X["_R"];
 
-export type InferS<X extends InhabitedTypes<any, any, any, any, any>> = X["_S"];
+export type _S<X extends InhabitedTypes<any, any, any, any, any>> = X["_S"];
 
-export type InferEnv<X extends InhabitedTypes<any, any, any, any, any>> = Parameters<X["_Env"]>[0];
+export type _Env<X extends InhabitedTypes<any, any, any, any, any>> = Parameters<X["_Env"]>[0];
 
 export function inhabitTypes<Env, S, R, E, A, T>(t: T): T & InhabitedTypes<Env, S, R, E, A> {
   return t as T & InhabitedTypes<Env, S, R, E, A>;

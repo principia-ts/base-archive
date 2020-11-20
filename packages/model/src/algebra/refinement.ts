@@ -16,7 +16,7 @@ export interface RefineConfig<E, A, B> {}
 export interface ConstrainConfig<E, A> {}
 
 export interface RefinementAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly refine: <S, R, E, A, B extends A>(
+  readonly refine_: <S, R, E, A, B extends A>(
     a: InterpretedKind<F, Env, S, R, E, A>,
     refinement: Refinement<A, B>,
     name: string,

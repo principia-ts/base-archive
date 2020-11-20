@@ -1,6 +1,8 @@
 import type { DecodeErrors, ErrorInfo } from "@principia/core/DecodeError";
 import * as DE from "@principia/core/DecodeError";
+import * as D from "@principia/core/Decoder";
 import * as E from "@principia/core/Either";
+import * as FS from "@principia/core/FreeSemigroup";
 import { pipe } from "@principia/core/Function";
 import * as Sy from "@principia/core/Sync";
 import type * as P from "@principia/prelude";
@@ -63,18 +65,19 @@ const SyM: P.MonadFail<[Sy.URI], SV> &
 const t = M.make((F) =>
   F.intersection([
     F.type({
-      a: F.optional(F.string({ name: "a string" }), { name: "an optional string" }),
-      b: F.number({ name: "a number" })
+      a: F.optional_(F.string({ name: "a string" }), { name: "an optional string" }),
+      b: F.number({
+        name: "a number"
+      })
     }),
     F.type({
-      c: pipe(F.number(), (h) => F.refine(h, (a): a is number => a === 42, "the meaning of life"))
+      c: pipe(F.number(), (h) => F.refine_(h, (a): a is number => a === 42, "the meaning of life"))
     })
   ] as const)
 );
 
-console.time("a");
 pipe(
-  M.getDecoder(t)(SyM).decode({ a: "hello", b: 21, c: 43 }),
+  M.getDecoder(t)(SyM).decode({ a: "hello", b: "not a number", c: 43 }),
   Sy.tap((a) => Sy.total(() => console.log(a))),
   Sy.map(M.getEncoder(t).encode),
   Sy.fold(
@@ -83,4 +86,3 @@ pipe(
   ),
   Sy.runEither
 );
-console.timeEnd("a");

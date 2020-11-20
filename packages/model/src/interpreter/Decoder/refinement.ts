@@ -8,7 +8,7 @@ import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
 export const RefinementDecoder = implementInterpreter<URI, Alg.RefinementURI>()((_) => ({
-  refine: (decoder, refinement, name, config) => (env) =>
+  refine_: (decoder, refinement, name, config) => (env) =>
     applyDecoderConfig(config?.config)(
       (M) => pipe(decoder(env)(M), D.refine(M)(refinement, name, extractInfo(config))),
       env,

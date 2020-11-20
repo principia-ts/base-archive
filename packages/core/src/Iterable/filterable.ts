@@ -1,10 +1,8 @@
 import type { Separated } from "@principia/prelude/Utils";
 
-import * as A from "../Array/_core";
 import type { Either } from "../Either";
 import type { PredicateWithIndex } from "../Function";
-import { Predicate } from "../Function";
-import { map_, mapWithIndex_ } from "./functor";
+import { mapWithIndex_ } from "./functor";
 import { iterable } from "./utils";
 
 /*
@@ -18,12 +16,13 @@ export function filterWithIndex_<A>(
   predicate: PredicateWithIndex<number, A>
 ): Iterable<A> {
   return iterable(function* () {
-    let i = 0;
-    for (const el of fa) {
-      if (predicate(i, el)) {
-        yield el;
-      }
-      i++;
+    let i = -1;
+    const iterator = fa[Symbol.iterator]();
+    while (true) {
+      const result = iterator.next();
+      if (result.done) break;
+      i += 1;
+      if (predicate(i, result.value)) yield result.value;
     }
   });
 }
@@ -35,17 +34,19 @@ export function partitionMapWithIndex_<A, B, C>(
   const mapped = mapWithIndex_(fa, f);
   return {
     left: iterable(function* () {
-      for (const el of mapped) {
-        if (el._tag === "Left") {
-          yield el.left;
-        }
+      const iterator = mapped[Symbol.iterator]();
+      while (true) {
+        const result = iterator.next();
+        if (result.done) break;
+        if (result.value._tag === "Left") yield result.value.left;
       }
     }),
     right: iterable(function* () {
-      for (const el of mapped) {
-        if (el._tag === "Right") {
-          yield el.right;
-        }
+      const iterator = mapped[Symbol.iterator]();
+      while (true) {
+        const result = iterator.next();
+        if (result.done) break;
+        if (result.value._tag === "Right") yield result.value.right;
       }
     })
   };

@@ -36,12 +36,16 @@ export const allDecoderInterpreters = memoize(
   _allDecoderInterpreters
 ) as typeof _allDecoderInterpreters;
 
-export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
+export function deriveFor<Su extends Summoner<any>>(
+  S: Su
+): (
   env: {
     [K in URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
   }
 ) => <S, R, E, A>(
   F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
-): (<M extends HKT.URIS, C>(
-  M: P.MonadFail<M, D.V<C>> & P.Applicative<M, D.V<C>> & P.Bifunctor<M, C> & P.Alt<M, C>
-) => D.Decoder<M, C, unknown, A>) => pipe(env, F.derive(allDecoderInterpreters()));
+) => <M extends HKT.URIS, C>(
+  M: P.MonadFail<M, D.V<C>> & P.Applicative<M, D.V<C>> & P.Bifunctor<M, C> & P.Alt<M, D.V<C>>
+) => D.Decoder<M, C, unknown, A> {
+  return (env) => (F) => pipe(env, F.derive(allDecoderInterpreters()));
+}

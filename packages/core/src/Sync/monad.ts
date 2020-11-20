@@ -3,6 +3,7 @@ import * as HKT from "@principia/prelude/HKT";
 
 import { identity } from "../Function";
 import * as X from "../XPure";
+import { fail } from "./constructors";
 import { Functor } from "./functor";
 import type { Sync, URI, V } from "./model";
 import { unit } from "./unit";
@@ -39,4 +40,9 @@ export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Functor,
   unit,
   flatten
+});
+
+export const MonadFail: P.MonadFail<[URI], V> = HKT.instance({
+  ...Monad,
+  fail
 });
