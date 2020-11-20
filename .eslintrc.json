@@ -59,6 +59,7 @@
     "import/order": "off",
     "import/no-cycle": "error",
     "no-param-reassign": ["error"],
+    "no-unexpected-multiline": "off",
     "prettier/prettier": [
       "warn",
       {},

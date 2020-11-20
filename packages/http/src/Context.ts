@@ -1,9 +1,9 @@
 import { tag } from "@principia/core/Has";
 import type * as http from "http";
 
-export interface Request {
+export interface Context {
   req: http.IncomingMessage;
   res: http.ServerResponse;
 }
 
-export const Request = tag<Request>();
+export const Context = tag<Context>();

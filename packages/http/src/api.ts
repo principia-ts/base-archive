@@ -6,11 +6,11 @@ import * as M from "@principia/model";
 import type { Show } from "@principia/prelude";
 import { flow, pipe } from "@principia/prelude";
 
+import { Context } from "./Context";
 import type { HttpRouteException } from "./exceptions/HttpRouteException";
-import { Request } from "./Request";
 
 export const readBody = T.gen(function* ($) {
-  const { req } = yield* $(Request);
+  const { req } = yield* $(Context);
   return yield* $(
     T.asyncInterrupt<unknown, never, Buffer>((resolve) => {
       const body: Uint8Array[] = [];
@@ -32,7 +32,7 @@ export const readBody = T.gen(function* ($) {
   );
 });
 
-export const readJsonBody = T.gen(function* ($) {
+export const parseJsonBody = T.gen(function* ($) {
   const body = yield* $(readBody);
   return yield* $(
     T.partial_(
@@ -46,10 +46,10 @@ export const readJsonBody = T.gen(function* ($) {
   );
 });
 
-export function jsonBody<E, A>(_: M.M<{}, E, A>, S: Show<DecodeErrors>) {
+export function decodeJsonBody<E, A>(_: M.M<{}, E, A>, S: Show<DecodeErrors>) {
   const decode = M.getDecoder(_)(SyncDecoderF).decode;
   return T.gen(function* ($) {
-    const body = yield* $(readJsonBody);
+    const body = yield* $(parseJsonBody);
     return yield* $(
       pipe(
         body,
@@ -67,11 +67,13 @@ export function jsonBody<E, A>(_: M.M<{}, E, A>, S: Show<DecodeErrors>) {
   });
 }
 
-export function jsonResponse<E, A>(_: M.M<{}, E, A>): (a: A) => T.Task<Has<Request>, never, void> {
+export function encodeJsonResponse<E, A>(
+  _: M.M<{}, E, A>
+): (a: A) => T.Task<Has<Context>, never, void> {
   const encode = M.getEncoder(_).encode;
   return flow(encode, (l) =>
     T.gen(function* ($) {
-      const { res } = yield* $(Request);
+      const { res } = yield* $(Context);
       return yield* $(
         T.total(() => {
           res.setHeader("content-type", "application/json");

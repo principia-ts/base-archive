@@ -1,3 +1,7 @@
+/**
+ * Global `Pipe` and `Flow` operators
+ */
+
 declare global {
   interface Object {
     ["|>"]<A, B>(this: A, f: (a: A) => B): B;

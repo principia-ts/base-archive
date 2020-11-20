@@ -6,9 +6,13 @@ import * as T from "@principia/core/Task";
 import * as FR from "@principia/core/Task/FiberRef";
 import type { Predicate } from "@principia/prelude";
 import { flow, identity, pipe } from "@principia/prelude";
+import { Infer } from "@principia/prelude/HKT";
+import type { UnionToIntersection } from "@principia/prelude/Utils";
+import { Erase } from "@principia/prelude/Utils";
+import { RSA_X931_PADDING } from "constants";
 
+import { Context } from "./Context";
 import { RequestQueue } from "./HttpServer";
-import { Request } from "./Request";
 
 export class Empty<R, E> {
   readonly R!: (_: R) => void;
@@ -17,7 +21,7 @@ export class Empty<R, E> {
   readonly _tag = "Empty";
 }
 
-export type RouteFn<R, E> = (_: Request, next: T.EIO<E, void>) => T.Task<R, E, void>;
+export type RouteFn<R, E> = (_: Context, next: T.EIO<E, void>) => T.Task<R, E, void>;
 
 export type MiddlewareFn<R, E> = (route: RouteFn<R, E>) => RouteFn<R, E>;
 
@@ -46,59 +50,59 @@ export type Routes<R, E> = Route<R, E> | Combine<R, E> | Empty<R, E>;
 
 export function route_<R, E, R1, E1>(
   routes: Routes<R, E>,
-  f: (req: Request, next: T.Task<R, E, void>) => T.Task<R1, E1, void>
+  f: (req: Context, next: T.Task<R, E, void>) => T.Task<R1, E1, void>
 ): Routes<R1, E1> {
   return new Combine(routes, new Route(f as any) as any) as any;
 }
 
 export function route<R, E, R1, E1>(
-  f: (req: Request, next: T.Task<R, E, void>) => T.Task<R1, E1, void>
+  f: (req: Context, next: T.Task<R, E, void>) => T.Task<R1, E1, void>
 ): (routes: Routes<R, E>) => Routes<R1, E1> {
   return (routes) => route_(routes, f);
 }
 
 export function addRoute_<R, E, R1, E1>(
   routes: Routes<R, E>,
-  path: Predicate<Request>,
-  f: (ctx: Request) => T.Task<R1 & Has<Request>, E1, void>
+  path: Predicate<Context>,
+  f: (ctx: Context) => T.Task<R1 & Has<Context>, E1, void>
 ): Routes<R & R1, E | E1> {
   return route_(
     routes,
     (ctx, n): T.Task<R & R1, E | E1, void> =>
-      ctx.req.url ? (path(ctx) ? T.giveService(Request)(ctx)(f(ctx)) : n) : n
+      ctx.req.url ? (path(ctx) ? T.giveService(Context)(ctx)(f(ctx)) : n) : n
   );
 }
 
 export function addRoute<R1, E1>(
-  path: Predicate<Request>,
-  f: (ctx: Request) => T.Task<R1 & Has<Request>, E1, void>
+  path: Predicate<Context>,
+  f: (ctx: Context) => T.Task<R1 & Has<Context>, E1, void>
 ): <R, E>(routes: Routes<R, E>) => Routes<R & R1, E | E1> {
   return (routes) => addRoute_(routes, path, f);
 }
 
 export function addRouteM_<R, E, R1, R2, E2>(
   routes: Routes<R, E>,
-  path: (ctx: Request) => T.RIO<R1, boolean>,
-  f: (ctx: Request) => T.Task<R2 & Has<Request>, E2, void>
+  path: (ctx: Context) => T.RIO<R1, boolean>,
+  f: (ctx: Context) => T.Task<R2 & Has<Context>, E2, void>
 ): Routes<R & R1 & R2, E | E2> {
   return route_(routes, (ctx, next) =>
     T.chain_(
       path(ctx),
-      (b): T.Task<R & R1 & R2, E | E2, void> => (b ? T.giveService(Request)(ctx)(f(ctx)) : next)
+      (b): T.Task<R & R1 & R2, E | E2, void> => (b ? T.giveService(Context)(ctx)(f(ctx)) : next)
     )
   );
 }
 
 export function addRouteM<R1, R2, E2>(
-  path: (ctx: Request) => T.RIO<R1, boolean>,
-  f: (ctx: Request) => T.Task<R2 & Has<Request>, E2, void>
+  path: (ctx: Context) => T.RIO<R1, boolean>,
+  f: (ctx: Context) => T.Task<R2 & Has<Context>, E2, void>
 ): <R, E>(routes: Routes<R, E>) => Routes<R & R1 & R2, E | E2> {
   return (routes) => addRouteM_(routes, path, f);
 }
 
 export function addMiddlewareSafe<R, E, R1, E1>(
   routes: Routes<R, E>,
-  middle: (cont: RouteFn<R, E>) => (ctx: Request, next: T.EIO<E, void>) => T.Task<R1, E1, void>
+  middle: (cont: RouteFn<R, E>) => (ctx: Context, next: T.EIO<E, void>) => T.Task<R1, E1, void>
 ): Sy.IO<Routes<R1, E1>> {
   return Sy.gen(function* (_) {
     switch (routes._tag) {
@@ -123,13 +127,13 @@ export function addMiddlewareSafe<R, E, R1, E1>(
 
 export function addMiddleware_<R, E, R1, E1>(
   routes: Routes<R, E>,
-  middle: (cont: RouteFn<R, E>) => (ctx: Request, next: T.EIO<E, void>) => T.Task<R1, E1, void>
+  middle: (cont: RouteFn<R, E>) => (ctx: Context, next: T.EIO<E, void>) => T.Task<R1, E1, void>
 ): Routes<R1, E1> {
   return Sy.runIO(addMiddlewareSafe(routes, middle));
 }
 
 export function addMiddleware<R, E, R1, E1>(
-  middle: (cont: RouteFn<R, E>) => (ctx: Request, next: T.EIO<E, void>) => T.Task<R1, E1, void>
+  middle: (cont: RouteFn<R, E>) => (ctx: Context, next: T.EIO<E, void>) => T.Task<R1, E1, void>
 ): (routes: Routes<R, E>) => Routes<R1, E1> {
   return (routes) => addMiddleware_(routes, middle);
 }
@@ -158,7 +162,7 @@ export const empty: Routes<unknown, never> = new Empty();
 
 export const isRouterDraining = new FR.FiberRef(false, identity, (a, b) => a && b);
 
-export type ProcessFn = (_: Request) => T.IO<void>;
+export type ProcessFn = (_: Context) => T.IO<void>;
 
 export function drain<R>(rs: Routes<R, never>) {
   const routes = Sy.runIO(toArraySafe(rs));
@@ -168,12 +172,12 @@ export function drain<R>(rs: Routes<R, never>) {
       T.total(() =>
         A.reduce_(
           routes,
-          <ProcessFn>((_) =>
+          <ProcessFn>((ctx) =>
             T.total(() => {
-              _.res.statusCode = 404;
-              _.res.end();
+              ctx.res.statusCode = 404;
+              ctx.res.end();
             })),
-          (b, a) => (_) => T.giveAll_(a(_, b(_)), env)
+          (b, a) => (ctx) => T.giveAll_(a(ctx, b(ctx)), env)
         )
       )
     );
@@ -191,7 +195,7 @@ export function drain<R>(rs: Routes<R, never>) {
 export type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE" | "OPTIONS";
 
 export function matchUrl(url: RegExp, methods: ReadonlyArray<Method> = []) {
-  return (ctx: Request) =>
+  return (ctx: Context) =>
     ctx.req.url
       ? methods.length === 0
         ? url.test(ctx.req.url)

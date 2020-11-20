@@ -9,7 +9,7 @@ import * as Q from "@principia/core/Task/XQueue";
 import { intersect } from "@principia/core/Utils";
 import * as http from "http";
 
-import type { Request } from "./Request";
+import type { Context } from "./Context";
 
 export interface ServerConfig {
   config: {
@@ -33,14 +33,14 @@ export interface Server {
 export const Server = tag<Server>();
 
 export interface RequestQueue {
-  queue: Q.Queue<Request>;
+  queue: Q.Queue<Context>;
 }
 
 export const RequestQueue = tag<RequestQueue>();
 
 export const Http = L.fromRawManaged(
   M.gen(function* ($) {
-    const queue = yield* $(Q.makeUnbounded<Request>());
+    const queue = yield* $(Q.makeUnbounded<Context>());
     const server = yield* $(
       T.total(() =>
         http.createServer((req, res) => {
