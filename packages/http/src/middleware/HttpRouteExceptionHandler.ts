@@ -2,7 +2,7 @@ import * as T from "@principia/core/Task";
 
 import type { HttpRouteException } from "../exceptions/HttpRouteException";
 import { isHttpRouteException } from "../exceptions/HttpRouteException";
-import * as Http from "../router";
+import * as Http from "../Router";
 
 export function withHttpRouteExceptionHandler<R, E>(routes: Http.Routes<R, E>) {
   return Http.addMiddleware_(routes, (cont) => (ctx, next) =>

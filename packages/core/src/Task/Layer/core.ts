@@ -370,7 +370,7 @@ export function create<T>(has: H.Tag<T>) {
 
 export function fromTask<T>(
   has: H.Tag<T>
-): <R, E>(resource: T.Task<R, E, T>) => LayerManagedInstruction<R, E, H.Has<T>> {
+): <R, E>(resource: T.Task<R, E, T>) => Layer<R, E, H.Has<T>> {
   return (resource) =>
     new LayerManagedInstruction(M.chain_(M.fromTask(resource), (a) => environmentFor(has, a)));
 }

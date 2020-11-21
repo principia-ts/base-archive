@@ -1,6 +1,5 @@
 import "@principia/prelude/Operators";
 
-import { pipe } from "@principia/core/Function";
 import * as T from "@principia/core/Task";
 import * as url from "url";
 

@@ -44,7 +44,7 @@ export const Http = L.fromRawManaged(
     const server = yield* $(
       T.total(() =>
         http.createServer((req, res) => {
-          T.run(queue.offer({ req, res }));
+          T.run(queue.offer({ req, res } as any));
         })
       )
     );

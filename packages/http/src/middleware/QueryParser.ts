@@ -3,10 +3,11 @@ import { tag } from "@principia/core/Has";
 import * as O from "@principia/core/Option";
 import * as T from "@principia/core/Task";
 import { pipe } from "@principia/prelude";
+import type { Erase } from "@principia/prelude/Utils";
 import * as qs from "querystring";
 import * as url from "url";
 
-import * as Http from "../router";
+import * as Http from "../Router";
 
 export interface UrlQuery {
   query: O.Option<qs.ParsedUrlQuery>;
@@ -15,8 +16,8 @@ export interface UrlQuery {
 export const UrlQuery = tag<UrlQuery>();
 
 export function withQueryParser<R, E>(
-  routes: Http.Routes<R & Has<UrlQuery>, E>
-): Http.Routes<R, E> {
+  routes: Http.Routes<R, E>
+): Http.Routes<Erase<R, Has<UrlQuery>>, E> {
   return Http.addMiddleware_(routes, (cont) => ({ req, res }, next) => {
     const query = pipe(
       O.fromNullable(req.url),

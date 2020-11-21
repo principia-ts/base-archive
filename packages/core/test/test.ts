@@ -1,41 +1,20 @@
 /* eslint-disable no-unexpected-multiline */
 import "@principia/prelude/Operators";
 
+import * as fs from "fs";
+import * as path from "path";
 import { inspect } from "util";
 
 import * as A from "../src/Array";
 import * as E from "../src/Either";
 import * as I from "../src/Iterable";
+import * as T from "../src/Task";
+import * as S from "../src/Task/Stream";
 
-function* infinite() {
-  let i = 0;
-  while (true) {
-    yield i;
-    i += 1;
-  }
-}
+const rs = fs.createReadStream(path.resolve(process.cwd(), "package.json"));
 
-console.time("a");
+const s = S.readFile(path.resolve(process.cwd(), "package.json"), { highWaterMark: 8 });
 
-function partitionEvenOdd(n: number) {
-  return n % 2 === 0 ? E.right(n) : E.left(n);
-}
-
-const is = I.iterable(infinite)
-  ["|>"](I.take(100000))
-  ["|>"](I.partitionMap(partitionEvenOdd))
-  ["|>"]((x) => ({
-    left: I.toArray(x.left),
-    right: I.toArray(x.right)
-  }));
-
-console.log(is);
-
-console.timeEnd("a");
-
-console.time("b");
-
-const as = A.range(0, 100000)["|>"](A.partitionMap(partitionEvenOdd));
-console.log(as);
-
-console.timeEnd("b");
+s["|>"](S.runCollect)
+  ["|>"](T.chain((buffers) => T.total(() => console.log(buffers.map((b) => b.toString("utf-8"))))))
+  ["|>"](T.run);
