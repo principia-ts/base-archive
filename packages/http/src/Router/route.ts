@@ -1,9 +1,9 @@
 import type { Has } from "@principia/core/Has";
 import * as T from "@principia/core/Task";
 import type { Predicate } from "@principia/prelude";
-import type { Routes } from "packages/http/build/src";
 
 import { Context } from "../Context";
+import type { Routes } from "./model";
 import { Combine, Route } from "./model";
 
 export function route_<R, E, R1, E1>(
