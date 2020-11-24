@@ -24,16 +24,18 @@ export const URI = "Task";
 
 export type URI = typeof URI;
 
-export interface Task<R, E, A> {
+export abstract class Task<R, E, A> {
   readonly [_U]: URI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
   readonly [_R]: (_: R) => void;
 
-  readonly [_I]: Instruction;
+  readonly _S1!: (_: unknown) => void;
+  readonly _S2!: () => never;
 
-  readonly _S1: (_: unknown) => void;
-  readonly _S2: () => never;
+  get [_I](): Instruction {
+    return this as any;
+  }
 }
 
 export type Instruction =
@@ -82,49 +84,35 @@ declare module "@principia/prelude/HKT" {
  * -------------------------------------------
  */
 
-export abstract class BaseInstruction<R, E, A> implements Task<R, E, A> {
-  readonly _S1!: (_: unknown) => void;
-  readonly _S2!: () => never;
-
-  readonly [_U]: URI;
-  readonly [_E]: () => E;
-  readonly [_A]: () => A;
-  readonly [_R]: (_: R) => void;
-
-  get [_I]() {
-    return this as any;
-  }
-}
-
-export class ChainInstruction<R, R1, E, E1, A, A1> extends BaseInstruction<R & R1, E | E1, A1> {
+export class ChainInstruction<R, R1, E, E1, A, A1> extends Task<R & R1, E | E1, A1> {
   readonly _tag = TaskInstructionTag.Chain;
   constructor(readonly task: Task<R, E, A>, readonly f: (a: A) => Task<R1, E1, A1>) {
     super();
   }
 }
 
-export class SucceedInstruction<A> extends BaseInstruction<unknown, never, A> {
+export class SucceedInstruction<A> extends Task<unknown, never, A> {
   readonly _tag = TaskInstructionTag.Succeed;
   constructor(readonly value: A) {
     super();
   }
 }
 
-export class PartialInstruction<E, A> extends BaseInstruction<unknown, E, A> {
+export class PartialInstruction<E, A> extends Task<unknown, E, A> {
   readonly _tag = TaskInstructionTag.Partial;
   constructor(readonly thunk: () => A, readonly onThrow: (u: unknown) => E) {
     super();
   }
 }
 
-export class TotalInstruction<A> extends BaseInstruction<unknown, never, A> {
+export class TotalInstruction<A> extends Task<unknown, never, A> {
   readonly _tag = TaskInstructionTag.Total;
   constructor(readonly thunk: () => A) {
     super();
   }
 }
 
-export class AsyncInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class AsyncInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.Async;
   constructor(
     readonly register: (f: (_: Task<R, E, A>) => void) => Option<Task<R, E, A>>,
@@ -134,7 +122,7 @@ export class AsyncInstruction<R, E, A> extends BaseInstruction<R, E, A> {
   }
 }
 
-export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends BaseInstruction<
+export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends Task<
   R & R1 & R2,
   E1 | E2,
   B | C
@@ -154,7 +142,7 @@ export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends BaseInstruct
   }
 }
 
-export class ForkInstruction<R, E, A> extends BaseInstruction<R, never, Executor<E, A>> {
+export class ForkInstruction<R, E, A> extends Task<R, never, Executor<E, A>> {
   readonly _tag = TaskInstructionTag.Fork;
 
   constructor(readonly task: Task<R, E, A>, readonly scope: Option<Scope<Exit<any, any>>>) {
@@ -162,7 +150,7 @@ export class ForkInstruction<R, E, A> extends BaseInstruction<R, never, Executor
   }
 }
 
-export class FailInstruction<E> extends BaseInstruction<unknown, E, never> {
+export class FailInstruction<E> extends Task<unknown, E, never> {
   readonly _tag = TaskInstructionTag.Fail;
 
   constructor(readonly cause: Cause<E>) {
@@ -170,7 +158,7 @@ export class FailInstruction<E> extends BaseInstruction<unknown, E, never> {
   }
 }
 
-export class YieldInstruction extends BaseInstruction<unknown, never, void> {
+export class YieldInstruction extends Task<unknown, never, void> {
   readonly _tag = TaskInstructionTag.Yield;
 
   constructor() {
@@ -178,7 +166,7 @@ export class YieldInstruction extends BaseInstruction<unknown, never, void> {
   }
 }
 
-export class ReadInstruction<R0, R, E, A> extends BaseInstruction<R & R0, E, A> {
+export class ReadInstruction<R0, R, E, A> extends Task<R & R0, E, A> {
   readonly _tag = TaskInstructionTag.Read;
 
   constructor(readonly f: (_: R0) => Task<R, E, A>) {
@@ -186,7 +174,7 @@ export class ReadInstruction<R0, R, E, A> extends BaseInstruction<R & R0, E, A> 
   }
 }
 
-export class GiveInstruction<R, E, A> extends BaseInstruction<unknown, E, A> {
+export class GiveInstruction<R, E, A> extends Task<unknown, E, A> {
   readonly _tag = TaskInstructionTag.Give;
 
   constructor(readonly task: Task<R, E, A>, readonly env: R) {
@@ -194,7 +182,7 @@ export class GiveInstruction<R, E, A> extends BaseInstruction<unknown, E, A> {
   }
 }
 
-export class SuspendInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class SuspendInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.Suspend;
 
   constructor(readonly factory: () => Task<R, E, A>) {
@@ -202,7 +190,7 @@ export class SuspendInstruction<R, E, A> extends BaseInstruction<R, E, A> {
   }
 }
 
-export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends BaseInstruction<
+export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends Task<
   R & R1 & R2 & R3,
   E2 | E3,
   A2 | A3
@@ -220,7 +208,7 @@ export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extend
   }
 }
 
-export class SetInterruptInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class SetInterruptInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.SetInterrupt;
 
   constructor(readonly task: Task<R, E, A>, readonly flag: InterruptStatus) {
@@ -228,7 +216,7 @@ export class SetInterruptInstruction<R, E, A> extends BaseInstruction<R, E, A> {
   }
 }
 
-export class GetInterruptInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class GetInterruptInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.GetInterrupt;
 
   constructor(readonly f: (_: InterruptStatus) => Task<R, E, A>) {
@@ -236,7 +224,7 @@ export class GetInterruptInstruction<R, E, A> extends BaseInstruction<R, E, A> {
   }
 }
 
-export class CheckDescriptorInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class CheckDescriptorInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.CheckDescriptor;
 
   constructor(readonly f: (_: FiberDescriptor) => Task<R, E, A>) {
@@ -244,7 +232,7 @@ export class CheckDescriptorInstruction<R, E, A> extends BaseInstruction<R, E, A
   }
 }
 
-export class SuperviseInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class SuperviseInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.Supervise;
 
   constructor(readonly task: Task<R, E, A>, readonly supervisor: Supervisor<any>) {
@@ -252,7 +240,7 @@ export class SuperviseInstruction<R, E, A> extends BaseInstruction<R, E, A> {
   }
 }
 
-export class SuspendPartialInstruction<R, E, A, E2> extends BaseInstruction<R, E | E2, A> {
+export class SuspendPartialInstruction<R, E, A, E2> extends Task<R, E | E2, A> {
   readonly _tag = TaskInstructionTag.SuspendPartial;
 
   constructor(readonly factory: () => Task<R, E, A>, readonly onThrow: (u: unknown) => E2) {
@@ -260,7 +248,7 @@ export class SuspendPartialInstruction<R, E, A, E2> extends BaseInstruction<R, E
   }
 }
 
-export class NewFiberRefInstruction<A> extends BaseInstruction<unknown, never, FiberRef<A>> {
+export class NewFiberRefInstruction<A> extends Task<unknown, never, FiberRef<A>> {
   readonly _tag = TaskInstructionTag.NewFiberRef;
 
   constructor(
@@ -272,7 +260,7 @@ export class NewFiberRefInstruction<A> extends BaseInstruction<unknown, never, F
   }
 }
 
-export class ModifyFiberRefInstruction<A, B> extends BaseInstruction<unknown, never, B> {
+export class ModifyFiberRefInstruction<A, B> extends Task<unknown, never, B> {
   readonly _tag = TaskInstructionTag.ModifyFiberRef;
 
   constructor(readonly fiberRef: FiberRef<A>, readonly f: (a: A) => [B, A]) {
@@ -280,7 +268,7 @@ export class ModifyFiberRefInstruction<A, B> extends BaseInstruction<unknown, ne
   }
 }
 
-export class GetForkScopeInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class GetForkScopeInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.GetForkScope;
 
   constructor(readonly f: (_: Scope<Exit<any, any>>) => Task<R, E, A>) {
@@ -288,7 +276,7 @@ export class GetForkScopeInstruction<R, E, A> extends BaseInstruction<R, E, A> {
   }
 }
 
-export class OverrideForkScopeInstruction<R, E, A> extends BaseInstruction<R, E, A> {
+export class OverrideForkScopeInstruction<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.OverrideForkScope;
 
   constructor(readonly task: Task<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
@@ -301,7 +289,7 @@ export const integrationNotImplemented = new FailInstruction({
   value: new Error("Integration not implemented or unsupported")
 });
 
-export abstract class Integration<R, E, A> extends BaseInstruction<R, E, A> {
+export abstract class Integration<R, E, A> extends Task<R, E, A> {
   readonly _tag = TaskInstructionTag.Integration;
   readonly _S1!: (_: unknown) => void;
   readonly _S2!: () => never;
