@@ -6,6 +6,7 @@ import { flow, identity, pipe } from "@principia/prelude";
 
 import type { Context } from "../Context";
 import { RequestQueue } from "../HttpServer";
+import { Status } from "../utils";
 import type { RouteFn, Routes } from "./model";
 
 function toArraySafe<R, E>(routes: Routes<R, E>): Sy.IO<ReadonlyArray<RouteFn<R, E>>> {
@@ -17,7 +18,7 @@ function toArraySafe<R, E>(routes: Routes<R, E>): Sy.IO<ReadonlyArray<RouteFn<R,
       case "Route": {
         const middlewares = routes.middleware();
         if (A.isNonEmpty(middlewares)) {
-          return [A.reduce_(middlewares, routes.route, (b, m) => (r, n) => m.middleware(b)(r, n))];
+          return [A.reduce_(middlewares, routes.route, (b, m) => (r, n) => m.apply(b)(r, n))];
         }
         return [routes.route];
       }
@@ -40,11 +41,7 @@ export function drain<R>(rs: Routes<R, never>) {
       T.total(() =>
         A.reduce_(
           routes,
-          <ProcessFn>((ctx) =>
-            T.total(() => {
-              ctx.res.statusCode = 404;
-              ctx.res.end();
-            })),
+          <ProcessFn>((ctx) => T.andThen_(ctx.res.status(Status.NotFound), ctx.res.end())),
           (b, a) => (ctx) => T.giveAll_(a(ctx, b(ctx)), env)
         )
       )

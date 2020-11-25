@@ -4,16 +4,18 @@ import type { HttpRouteException } from "../exceptions/HttpRouteException";
 import { isHttpRouteException } from "../exceptions/HttpRouteException";
 import * as Http from "../Router";
 
-export function withHttpRouteExceptionHandler<R, E>(routes: Http.Routes<R, E>) {
+export function withHttpRouteExceptionHandler<R, E>(
+  routes: Http.Routes<R, E>
+): Http.Routes<R, Exclude<E, HttpRouteException>> {
   return Http.addMiddleware_(routes, (cont) => (ctx, next) =>
     T.catchAll_(cont(ctx, next), (e) =>
-      T.suspend(() => {
+      T.gen(function* ($) {
         if (isHttpRouteException(e)) {
-          ctx.res.statusCode = e.status;
-          ctx.res.end(e.message);
-          return T.unit();
+          yield* $(ctx.res.status(e.status));
+          yield* $(ctx.res.write(e.message)["|>"](T.orDie));
+          yield* $(ctx.res.end());
         } else {
-          return T.fail(<Exclude<E, HttpRouteException>>e);
+          yield* $(T.fail(<Exclude<E, HttpRouteException>>e));
         }
       })
     )

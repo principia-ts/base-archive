@@ -11,24 +11,24 @@ import type { HttpRouteException } from "./exceptions/HttpRouteException";
 
 export const readBody = T.gen(function* ($) {
   const { req } = yield* $(Context);
+  let removeOnData = T.unit();
+  let removeOnEnd = T.unit();
   return yield* $(
-    T.asyncInterrupt<unknown, never, Buffer>((resolve) => {
-      const body: Uint8Array[] = [];
-      function onData(chunk: Uint8Array) {
-        body.push(chunk);
-      }
-      function onEnd() {
-        resolve(T.succeed(Buffer.concat(body)));
-      }
-
-      req.on("data", onData);
-      req.on("end", onEnd);
-
-      return T.total(() => {
-        req.removeListener("data", onData);
-        req.removeListener("end", onEnd);
-      });
-    })
+    T.asyncM<unknown, never, unknown, never, Buffer>((resolve) =>
+      T.gen(function* ($) {
+        const body: Uint8Array[] = [];
+        removeOnData = yield* $(req.on("data", onData));
+        removeOnEnd = yield* $(req.on("end", onEnd));
+        function onData(chunk: any) {
+          return T.total(() => {
+            body.push(chunk);
+          });
+        }
+        function onEnd() {
+          return T.total(() => resolve(T.succeed(Buffer.concat(body))));
+        }
+      })["|>"](T.onInterrupt(() => T.andThenPar_(removeOnData, removeOnEnd)))
+    )
   );
 });
 
@@ -69,16 +69,16 @@ export function decodeJsonBody<E, A>(_: M.M<{}, E, A>, S: Show<DecodeErrors>) {
 
 export function encodeJsonResponse<E, A>(
   _: M.M<{}, E, A>
-): (a: A) => T.Task<Has<Context>, never, void> {
+): (a: A) => T.Task<Has<Context>, HttpRouteException, void> {
   const encode = M.getEncoder(_).encode;
   return flow(encode, (l) =>
     T.gen(function* ($) {
       const { res } = yield* $(Context);
       return yield* $(
-        T.total(() => {
-          res.setHeader("content-type", "application/json");
-          res.end(JSON.stringify(l));
-        })
+        res
+          .set({ "content-type": "application/json" })
+          ["|>"](T.andThen(res.write(JSON.stringify(l))))
+          ["|>"](T.andThen(res.end()))
       );
     })
   );

@@ -15,7 +15,7 @@ export type RouteFn<R, E> = (ctx: Context, next: T.EIO<E, void>) => T.Task<R, E,
 export type MiddlewareFn<R, E> = (cont: RouteFn<R, E>) => RouteFn<R, E>;
 
 export class Middleware<R, E> {
-  constructor(readonly middleware: MiddlewareFn<R, E>) {}
+  constructor(readonly apply: MiddlewareFn<R, E>) {}
 }
 
 export class Route<R, E> {
@@ -38,5 +38,3 @@ export class Combine<R, E> {
 export type Routes<R, E> = Route<R, E> | Combine<R, E> | Empty<R, E>;
 
 export const empty: Routes<unknown, never> = new Empty();
-
-export type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE" | "OPTIONS";

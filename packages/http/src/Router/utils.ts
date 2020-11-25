@@ -1,13 +1,15 @@
+import * as T from "@principia/core/Task";
+
 import type { Context } from "../Context";
-import type { Method } from "./model";
+import type { Method } from "../utils";
 
 export function matchUrl(url: RegExp, methods: ReadonlyArray<Method> = []) {
-  return (ctx: Context) =>
-    ctx.req.url
-      ? methods.length === 0
-        ? url.test(ctx.req.url)
-        : ctx.req.method
-        ? url.test(ctx.req.url) && (<string[]>methods).includes(ctx.req.method.toUpperCase())
-        : false
-      : false;
+  return (ctx: Context): T.IO<boolean> =>
+    T.gen(function* ($) {
+      const urlString = yield* $(ctx.req.urlString);
+      const method = yield* $(ctx.req.method);
+      return methods.length === 0
+        ? url.test(urlString)
+        : url.test(urlString) && (<string[]>methods).includes(method.toUpperCase());
+    });
 }

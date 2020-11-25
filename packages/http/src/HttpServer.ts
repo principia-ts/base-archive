@@ -10,20 +10,17 @@ import { intersect } from "@principia/core/Utils";
 import * as http from "http";
 
 import type { Context } from "./Context";
+import { Request, Response } from "./Context";
 
 export interface ServerConfig {
-  config: {
-    port: number;
-    host: string;
-  };
+  port: number;
+  hostName: string;
 }
 
 export const ServerConfig = tag<ServerConfig>();
 
-export function serverConfig(
-  config: ServerConfig["config"]
-): L.Layer<unknown, never, Has<ServerConfig>> {
-  return L.create(ServerConfig).pure({ config });
+export function serverConfig(config: ServerConfig): L.Layer<unknown, never, Has<ServerConfig>> {
+  return L.create(ServerConfig).pure(config);
 }
 
 export interface Server {
@@ -44,11 +41,11 @@ export const Http = L.fromRawManaged(
     const server = yield* $(
       T.total(() =>
         http.createServer((req, res) => {
-          T.run(queue.offer({ req, res } as any));
+          T.run(queue.offer({ req: new Request(req), res: new Response(res) }));
         })
       )
     );
-    const { config } = yield* $(ServerConfig);
+    const config = yield* $(ServerConfig);
 
     const startServer = T.async<unknown, never, void>((resolve) => {
       function clean() {
@@ -66,7 +63,7 @@ export const Http = L.fromRawManaged(
         resolve(T.unit());
       }
 
-      server.listen(config.port, config.host);
+      server.listen(config.port, config.hostName);
 
       server.once("error", onError);
       server.once("listening", onDone);
