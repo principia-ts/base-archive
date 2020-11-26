@@ -1,18 +1,5 @@
-import { pipe } from "@principia/prelude";
+import { flow, pipe } from "@principia/prelude";
 
-import {
-  asyncOption,
-  chain,
-  chain_,
-  checkInterruptible,
-  flatten,
-  foldCauseM_,
-  halt,
-  pure,
-  suspend,
-  total,
-  unit
-} from "../_core";
 import type { Either } from "../../../Either";
 import { left } from "../../../Either";
 import type { Option } from "../../../Option";
@@ -24,6 +11,21 @@ import { join } from "../../Fiber/combinators/join";
 import type { FiberId } from "../../Fiber/FiberId";
 import type { InterruptStatus } from "../../Fiber/model";
 import { interruptible, uninterruptible } from "../../Fiber/model";
+import {
+  async,
+  asyncOption,
+  chain,
+  chain_,
+  checkInterruptible,
+  die,
+  flatten,
+  foldCauseM_,
+  halt,
+  pure,
+  suspend,
+  total,
+  unit
+} from "../_core";
 import type { Canceler, EIO, IO, Task } from "../model";
 import { SetInterruptInstruction } from "../model";
 import { forkDaemon } from "./core-scope";
@@ -224,4 +226,20 @@ export function asyncInterrupt<R, E, A>(
   blockingOn: ReadonlyArray<FiberId> = []
 ): Task<R, E, A> {
   return maybeAsyncInterrupt<R, E, A>((cb) => left(register(cb)), blockingOn);
+}
+
+export function promiseInterrupt<R, E, A>(
+  register: (cb: (_: Task<R, E, A>) => void) => Promise<Canceler<R>>,
+  blockingOn: ReadonlyArray<FiberId> = []
+): Task<R, E, A> {
+  return maybeAsyncInterrupt<R, E, A>(
+    (cb) => left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten)),
+    blockingOn
+  );
+}
+
+function fromPromiseDie<A>(promise: () => Promise<A>): IO<A> {
+  return async((resolve) => {
+    promise().then(flow(pure, resolve)).catch(flow(die, resolve));
+  });
 }

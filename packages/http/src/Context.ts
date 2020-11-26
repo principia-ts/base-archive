@@ -1,15 +1,21 @@
 import * as E from "@principia/core/Either";
+import type { Has } from "@principia/core/Has";
 import { tag } from "@principia/core/Has";
 import * as O from "@principia/core/Option";
 import type { ReadonlyRecord } from "@principia/core/Record";
 import * as T from "@principia/core/Task";
+import type { Clock } from "@principia/core/Task/Clock";
+import * as Ex from "@principia/core/Task/Exit";
+import * as C from "@principia/core/Task/Exit/Cause";
 import * as M from "@principia/core/Task/Managed";
+import * as Sc from "@principia/core/Task/Schedule";
 import * as S from "@principia/core/Task/Stream";
 import * as Sink from "@principia/core/Task/Stream/Sink";
 import * as Q from "@principia/core/Task/XQueue";
 import * as XR from "@principia/core/Task/XRef";
 import * as XRM from "@principia/core/Task/XRefM";
-import { pipe } from "@principia/prelude";
+import { flow, not, pipe } from "@principia/prelude";
+import { once } from "events";
 import type * as http from "http";
 import type { Socket } from "net";
 import type { Readable } from "stream";
@@ -281,21 +287,49 @@ export class Response {
   }
 
   pipeFrom<R, E>(stream: S.Stream<R, E, string | Buffer>): T.Task<R, HttpRouteException, void> {
-    return T.chain_(this._res.get, (res) =>
-      pipe(
-        S.run_(
-          stream,
-          Sink.fromWritableWithoutClose(() => res)
-        ),
-        T.catchAll((e) =>
-          T.fail<HttpRouteException>({
-            _tag: "HttpRouteException",
-            status: 400,
-            message: `Failed to write response body\n\t${JSON.stringify(e)}`
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const _this = this;
+    return S.toQueue_(stream)
+      ["|>"](
+        M.use((q) =>
+          T.gen(function* ($) {
+            const res = yield* $(_this._res.get);
+            const go = () =>
+              q.take["|>"](
+                T.chain(
+                  Ex.foldM(
+                    flow(
+                      C.sequenceCauseOption,
+                      O.fold(() => T.unit(), T.halt)
+                    ),
+                    (chunks) =>
+                      T.async<unknown, Error | E, void>(async (cb) => {
+                        for (let i = 0; i < chunks.length; i++) {
+                          const needsDrain = res.write(chunks[i], (err) =>
+                            err ? cb(T.fail(err)) : undefined
+                          );
+                          if (needsDrain) {
+                            await once(res, "drain");
+                          }
+                        }
+                        cb(go());
+                      })
+                  )
+                )
+              );
+            yield* $(go());
           })
         )
       )
-    );
+      ["|>"](
+        T.catchAll((e) =>
+          T.fail<HttpRouteException>({
+            _tag: "HttpRouteException",
+            status: 500,
+            message: `Failed to write response body: ${e}`
+          })
+        )
+      );
   }
 
   end(): T.IO<void> {

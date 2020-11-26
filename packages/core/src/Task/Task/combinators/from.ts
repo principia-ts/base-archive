@@ -1,10 +1,10 @@
-import type { IO, RIO } from "../_core";
-import { asks, async, chain_, die, fail, pure, total } from "../_core";
 import * as E from "../../../Either";
 import { flow } from "../../../Function";
 import type { Option } from "../../../Option";
 import * as O from "../../../Option";
 import * as Fiber from "../../Fiber";
+import type { IO, RIO } from "../_core";
+import { asks, async, chain_, die, fail, pure, total } from "../_core";
 import type { EIO, Task } from "../model";
 import { asksM } from "../reader";
 

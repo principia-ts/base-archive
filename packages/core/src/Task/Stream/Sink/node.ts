@@ -13,155 +13,78 @@ import { Sink } from "./model";
 
 export function fromWritable<I extends string | Buffer | Uint8Array>(
   writable: () => Writable
-): Sink<unknown, Error, I, I, void> {
+): Sink<unknown, Error, I, never, void> {
   return new Sink(
     M.gen(function* (_) {
       const writableRef = yield* _(XR.make<O.Option<Writable>>(O.none()));
       const errorRef = yield* _(XR.make<O.Option<Error>>(O.none()));
-      const initWritable = T.async<unknown, never, void>((resolve) => {
-        try {
-          const wr = writable();
-          wr.on("error", (err) => {
-            resolve(errorRef.set(O.some(err)));
-          });
-          setImmediate(() => {
-            wr.removeAllListeners("error");
-            resolve(writableRef.set(O.some(wr)));
-          });
-        } catch (err) {
-          resolve(errorRef.set(O.some(err)));
-        }
-      });
-      yield* _(initWritable);
-      return yield* _(
-        T.ifM_(
-          pipe(errorRef.get, T.map(O.isSome)),
-          () =>
-            T.succeed(
-              (
-                _: O.Option<ReadonlyArray<I>>
-              ): T.Task<unknown, readonly [E.Either<Error, void>, ReadonlyArray<I>], void> =>
-                T.chain_(errorRef.get, (a) => Push.fail((a as O.Some<Error>).value, A.empty()))
-            ),
-          () =>
-            T.succeed(
-              (
-                is: O.Option<ReadonlyArray<I>>
-              ): T.Task<unknown, readonly [E.Either<Error, void>, ReadonlyArray<I>], void> =>
-                pipe(
-                  writableRef.get,
-                  T.chain(O.fold(() => T.die("Writable not initialized"), T.succeed)),
-                  T.chain((w) =>
-                    O.fold_(
-                      is,
-                      () =>
-                        pipe(
-                          T.total(() => {
-                            if (!w.writableEnded) w.end();
-                          }),
-                          T.andThen(Push.emit<I, void>(undefined, A.empty()))
-                        ),
-                      (in_) =>
-                        T.async<unknown, readonly [E.Either<Error, void>, ReadonlyArray<I>], void>(
-                          async (resolve) => {
-                            try {
-                              const listen = (err: Error) => {
-                                resolve(Push.fail(err, A.empty()));
-                              };
-                              w.on("error", listen);
-                              for (let i = 0; i < in_.length; i++) {
-                                if (!w.write(in_[i])) {
-                                  await once(w, "drain");
-                                }
-                              }
-                              w.removeListener("error", listen);
-                              resolve(Push.more);
-                            } catch (err) {
-                              resolve(Push.fail(err, A.empty()));
-                            }
-                          }
-                        )
-                    )
-                  )
-                )
-            )
-        )
-      );
-    })
-  );
-}
 
-export function fromWritableWithoutClose<I extends string | Buffer | Uint8Array>(
-  writable: () => Writable
-): Sink<unknown, Error, I, I, void> {
-  return new Sink(
-    M.gen(function* (_) {
-      const writableRef = yield* _(XR.make<O.Option<Writable>>(O.none()));
-      const errorRef = yield* _(XR.make<O.Option<Error>>(O.none()));
-      const initWritable = T.async<unknown, never, void>((resolve) => {
-        function onError(err: Error) {
-          resolve(errorRef.set(O.some(err)));
-        }
-        try {
-          const wr = writable();
-          wr.on("error", onError);
-          setImmediate(() => {
-            wr.removeListener("error", onError);
-            resolve(writableRef.set(O.some(wr)));
-          });
-        } catch (err) {
-          resolve(errorRef.set(O.some(err)));
-        }
-      });
-      yield* _(initWritable);
-      return yield* _(
-        T.ifM_(
-          pipe(errorRef.get, T.map(O.isSome)),
-          () =>
-            T.succeed(
-              (
-                _: O.Option<ReadonlyArray<I>>
-              ): T.Task<unknown, readonly [E.Either<Error, void>, ReadonlyArray<I>], void> =>
-                T.chain_(errorRef.get, (a) => Push.fail((a as O.Some<Error>).value, A.empty()))
-            ),
-          () =>
-            T.succeed(
-              (
-                is: O.Option<ReadonlyArray<I>>
-              ): T.Task<unknown, readonly [E.Either<Error, void>, ReadonlyArray<I>], void> =>
-                pipe(
-                  writableRef.get,
-                  T.chain(O.fold(() => T.die("Writable not initialized"), T.succeed)),
-                  T.chain((w) =>
-                    O.fold_(
-                      is,
-                      () => Push.emit<I, void>(undefined, A.empty()),
-                      (in_) =>
-                        T.async<unknown, readonly [E.Either<Error, void>, ReadonlyArray<I>], void>(
-                          async (resolve) => {
-                            try {
-                              const listen = (err: Error) => {
-                                resolve(Push.fail(err, A.empty()));
-                              };
-                              w.on("error", listen);
-                              for (let i = 0; i < in_.length; i++) {
-                                if (!w.write(in_[i])) {
-                                  await once(w, "drain");
-                                }
-                              }
-                              w.removeListener("error", listen);
-                              resolve(Push.more);
-                            } catch (err) {
-                              resolve(Push.fail(err, A.empty()));
-                            }
-                          }
-                        )
-                    )
-                  )
-                )
-            )
-        )
+      // initialize Writable by executing the thunk and catching any initial errors
+      yield* _(
+        T.async<unknown, never, void>((resolve) => {
+          try {
+            const wr = writable();
+            wr.on("error", (err) => {
+              resolve(errorRef.set(O.some(err)));
+            });
+            setImmediate(() => {
+              wr.removeAllListeners("error");
+              resolve(writableRef.set(O.some(wr)));
+            });
+          } catch (err) {
+            resolve(errorRef.set(O.some(err)));
+          }
+        })
       );
+
+      // determine if an error was caught in initialization and proceed accordingly
+      const maybeError = yield* _(errorRef.get);
+      if (O.isSome(maybeError)) {
+        return (_: O.Option<ReadonlyArray<I>>) => Push.fail(maybeError.value, A.empty());
+      } else {
+        return (is: O.Option<ReadonlyArray<I>>) =>
+          pipe(
+            writableRef.get,
+            T.chain(O.fold(() => T.die("Defect: Writable not initialized"), T.succeed)),
+            T.chain((w) =>
+              O.fold_(
+                is,
+                () =>
+                  pipe(
+                    T.total(() => {
+                      if (!w.writableEnded) w.end();
+                    }),
+                    T.andThen(Push.emit<never, void>(undefined, A.empty()))
+                  ),
+                (in_) =>
+                  T.promiseInterrupt<
+                    unknown,
+                    readonly [E.Either<Error, void>, ReadonlyArray<never>],
+                    void
+                  >(async (resolve) => {
+                    try {
+                      const cb = (err: Error | null | undefined) => {
+                        err ? resolve(Push.fail(err, A.empty())) : undefined;
+                      };
+                      for (let i = 0; i < in_.length; i++) {
+                        const needsDrain = w.write(in_[i], cb);
+                        if (needsDrain) {
+                          await once(w, "drain");
+                        }
+                      }
+                      resolve(Push.more);
+                    } catch (err) {
+                      resolve(Push.fail(err, A.empty()));
+                    }
+
+                    return T.total(() => {
+                      w.end();
+                    });
+                  })
+              )
+            )
+          );
+      }
     })
   );
 }

@@ -3,6 +3,7 @@ import * as T from "@principia/core/Task";
 import type { HttpRouteException } from "../exceptions/HttpRouteException";
 import { isHttpRouteException } from "../exceptions/HttpRouteException";
 import * as Http from "../Router";
+import { ContentType } from "../utils";
 
 export function withHttpRouteExceptionHandler<R, E>(
   routes: Http.Routes<R, E>
@@ -10,8 +11,10 @@ export function withHttpRouteExceptionHandler<R, E>(
   return Http.addMiddleware_(routes, (cont) => (ctx, next) =>
     T.catchAll_(cont(ctx, next), (e) =>
       T.gen(function* ($) {
+        yield* $(T.total(() => console.error(e)));
         if (isHttpRouteException(e)) {
           yield* $(ctx.res.status(e.status));
+          yield* $(ctx.res.set({ "Content-Type": ContentType.TEXT_PLAIN })["|>"](T.orDie));
           yield* $(ctx.res.write(e.message)["|>"](T.orDie));
           yield* $(ctx.res.end());
         } else {
