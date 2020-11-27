@@ -82,7 +82,7 @@ const showConsoleLogEntry = T.gen(function* (_) {
   const { chalk } = yield* _(Chalk);
   const time = yield* _(timestamp);
   const entry = yield* _(LogEntry);
-  const theme = yield* _(config.theme)
+  const theme = yield* _(config.theme);
   return `[${theme[entry.level](
     entry.level.toUpperCase()
   )}] ${entry.message} ${chalk.gray.dim(time)}`;

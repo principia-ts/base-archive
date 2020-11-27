@@ -1,3 +1,4 @@
+import type { Integer } from "../Integer";
 import type { ReadonlyRecord } from "../Record";
 import type { Guard } from "./Guard";
 
@@ -23,6 +24,15 @@ export const string: Guard<unknown, string> = {
  */
 export const number: Guard<unknown, number> = {
   is: (i): i is number => typeof i === "number" && !isNaN(i)
+};
+
+/**
+ *
+ * @category Primitives
+ * @since 1.0.0
+ */
+export const safeInteger: Guard<unknown, Integer> = {
+  is: (i): i is Integer => typeof i === "number" && Number.isSafeInteger(i)
 };
 
 /**

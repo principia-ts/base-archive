@@ -3,6 +3,7 @@ import type * as HKT from "@principia/prelude/HKT";
 
 import type { ErrorInfo } from "../DecodeError";
 import * as G from "../Guard";
+import type { Integer } from "../Integer";
 import { fromGuard } from "./constructors";
 import type { Decoder, V } from "./model";
 
@@ -16,6 +17,12 @@ export function number<M extends HKT.URIS, C>(
   M: P.MonadFail<M, V<C>>
 ): (info?: ErrorInfo) => Decoder<M, C, unknown, number> {
   return (info) => fromGuard(M)(G.number, "number", info);
+}
+
+export function integer<M extends HKT.URIS, C>(
+  M: P.MonadFail<M, V<C>>
+): (info?: ErrorInfo) => Decoder<M, C, unknown, Integer> {
+  return (info) => fromGuard(M)(G.safeInteger, "integer", info);
 }
 
 export function boolean<M extends HKT.URIS, C>(

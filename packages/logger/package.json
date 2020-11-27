@@ -7,16 +7,16 @@
   "author": "Peter Krol <peter@peterkrol.com>",
   "exports": {
     ".": {
-      "import": "./dist/_dist_/esm-fix/index.js",
-      "require": "./dist/_dist_/cjs/index.js"
+      "import": "./dist/dist/esm-fix/index.js",
+      "require": "./dist/dist/cjs/index.js"
     },
     "./": {
-      "import": "./dist/_dist_/esm-fix/",
-      "require": "./dist/_dist_/cjs/"
+      "import": "./dist/dist/esm-fix/",
+      "require": "./dist/dist/cjs/"
     }
   },
-  "main": "dist/_dist_/cjs/index.js",
-  "module": "./dist/_dist_/esm-shake/index.js",
+  "main": "dist/dist/cjs/index.js",
+  "module": "./dist/dist/esm-shake/index.js",
   "types": "dist/index.d.ts",
   "publishConfig": {
     "directory": "dist",

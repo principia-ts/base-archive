@@ -1,6 +1,6 @@
+import type { ErrorInfo } from "../DecodeError";
 import * as G from "../Guard";
 import { fromGuard } from "./constructors";
-import type { ErrorInfo } from "../DecodeError";
 
 export function string(info?: ErrorInfo) {
   return fromGuard(G.string, "string", info);
@@ -8,6 +8,10 @@ export function string(info?: ErrorInfo) {
 
 export function number(info?: ErrorInfo) {
   return fromGuard(G.number, "number", info);
+}
+
+export function safeInteger(info?: ErrorInfo) {
+  return fromGuard(G.safeInteger, "integer", info);
 }
 
 export function boolean(info?: ErrorInfo) {
