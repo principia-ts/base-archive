@@ -44,6 +44,7 @@
     "@principia/core": "^0.1.0",
     "@principia/prelude": "^0.1.0",
     "@principia/model": "0.1.0",
+    "@principia/node": "^0.0.0",
     "chalk": "^4.1.0",
     "strip-ansi": "^6.0.0",
     "date-fns": "^2.16.1",

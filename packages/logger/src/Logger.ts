@@ -5,11 +5,10 @@ import type { Clock } from "@principia/core/Task/Clock";
 import { HasClock } from "@principia/core/Task/Clock";
 import * as C from "@principia/core/Task/Console";
 import * as L from "@principia/core/Task/Layer";
+import * as fs from "@principia/node/fs";
 import { pipe } from "@principia/prelude";
 import type ChalkType from "chalk";
 import { formatISO9075, getMilliseconds } from "date-fns";
-import { once } from "events";
-import * as fs from "fs";
 import stripAnsi from "strip-ansi";
 
 import type { ChalkFn } from "./utils";
@@ -103,23 +102,7 @@ const logToConsole = T.gen(function* (_) {
 const logToFile = T.gen(function* (_) {
   const show = yield* _(showFileLogEntry);
   const config = yield* _(LoggerConfig);
-  return yield* _(
-    T.async<unknown, Error, void>(async (resolve) => {
-      const file = fs.createWriteStream(config.path, { flags: "a" });
-      file.on("finish", () => {
-        resolve(T.unit());
-      });
-      file.on("error", (err) => {
-        resolve(T.fail(err));
-      });
-      for await (const c of show) {
-        if (!file.write(c)) {
-          await once(file, "drain");
-        }
-      }
-      file.end();
-    })
-  );
+  return yield* _(fs.appendFile(config.path, show));
 });
 
 function _log(message: ChalkFn, level: LogLevel) {

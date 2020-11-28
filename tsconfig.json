@@ -19,7 +19,8 @@
          "@principia/core*": ["packages/core/dist*"],
          "@principia/effect*": ["packages/effect/dist*"],
          "@principia/optics/*": ["packages/optics/dist/*"],
-         "@principia/model/*": ["packages/model/dist/*"]
+         "@principia/model/*": ["packages/model/dist/*"],
+         "@principia/node/*": ["packages/node/dist/*"]
       }
    },
    "exclude": ["build", "node_modules", "dist"]
