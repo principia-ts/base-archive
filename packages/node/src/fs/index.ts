@@ -8,6 +8,7 @@ import * as M from "@principia/core/Task/Managed";
 import * as S from "@principia/core/Task/Stream";
 import * as Push from "@principia/core/Task/Stream/internal/Push";
 import * as Sink from "@principia/core/Task/Stream/Sink";
+import * as XQ from "@principia/core/Task/XQueue";
 import * as XR from "@principia/core/Task/XRef";
 import * as N from "@principia/prelude/Newtype";
 import * as fs from "fs";
@@ -450,28 +451,22 @@ export function stat(
   });
 }
 
-export function symlink(
-  target: fs.PathLike,
-  path: fs.PathLike
-): T.EIO<ErrnoException, void> {
+export function symlink(target: fs.PathLike, path: fs.PathLike): T.EIO<ErrnoException, void> {
   return T.async<unknown, ErrnoException, void>((cb) => {
     fs.symlink(target, path, unitErrorCallback(cb));
-  })
+  });
 }
 
-export function truncate(
-  path: fs.PathLike,
-  len?: number
-): T.EIO<ErrnoException, void> {
+export function truncate(path: fs.PathLike, len?: number): T.EIO<ErrnoException, void> {
   return T.async<unknown, ErrnoException, void>((cb) => {
     fs.truncate(path, len, unitErrorCallback(cb));
-  })
+  });
 }
 
 export function unlink(path: fs.PathLike): T.EIO<ErrnoException, void> {
   return T.async<unknown, ErrnoException, void>((cb) => {
     fs.unlink(path, unitErrorCallback(cb));
-  })
+  });
 }
 
 export function utimes(
@@ -481,7 +476,7 @@ export function utimes(
 ): T.EIO<ErrnoException, void> {
   return T.async<unknown, ErrnoException, void>((cb) => {
     fs.utimes(path, atime, mtime, unitErrorCallback(cb));
-  })
+  });
 }
 
 export function write(
@@ -516,4 +511,92 @@ export function writev(
       );
     }
   });
+}
+
+export function watch(
+  filename: fs.PathLike,
+  options: {
+    persistent?: boolean;
+    recursive?: boolean;
+    encoding: "buffer";
+  }
+): S.Stream<unknown, Error, { eventType: "rename" | "change"; filename: Buffer }>;
+export function watch(
+  filename: fs.PathLike,
+  options?: {
+    persistent?: boolean;
+    recursive?: boolean;
+    encoding?: BufferEncoding;
+  }
+): S.Stream<unknown, Error, { eventType: "rename" | "change"; filename: string }>;
+export function watch(
+  filename: fs.PathLike,
+  options?: any
+): S.Stream<unknown, Error, { eventType: "rename" | "change"; filename: string | Buffer }> {
+  return S.chain_(
+    S.fromTask(
+      T.partial_(
+        () => fs.watch(filename, options ?? {}),
+        (err) => err as Error
+      )
+    ),
+    (watcher) =>
+      S.repeatTaskOption(
+        T.async<
+          unknown,
+          O.Option<Error>,
+          { eventType: "rename" | "change"; filename: string | Buffer }
+        >((cb) => {
+          watcher.once("change", (eventType, filename) => {
+            watcher.removeAllListeners();
+            cb(T.succeed({ eventType: eventType as any, filename }));
+          });
+          watcher.once("error", (error) => {
+            watcher.removeAllListeners();
+            cb(T.fail(O.some(error)));
+          });
+          watcher.once("close", () => {
+            watcher.removeAllListeners();
+            cb(T.fail(O.none()));
+          });
+        })
+      )
+  );
+}
+
+export function watchFile(
+  filename: fs.PathLike,
+  options: {
+    bigint: true;
+    persistent?: boolean;
+    interval?: Integer;
+  }
+): S.Stream<unknown, never, [fs.BigIntStats, fs.BigIntStats]>;
+export function watchFile(
+  filename: fs.PathLike,
+  options?: {
+    bigint?: false;
+    persistent?: boolean;
+    interval?: Integer;
+  }
+): S.Stream<unknown, never, [fs.Stats, fs.Stats]>;
+export function watchFile(
+  filename: fs.PathLike,
+  options?: any
+): S.Stream<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]> {
+  return S.chain_(
+    S.bracket_(
+      T.gen(function* (_) {
+        const q = yield* _(
+          XQ.makeUnbounded<[fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>()
+        );
+        fs.watchFile(filename, options ?? {}, (curr, prev) => {
+          T.run(q.offer([curr, prev]));
+        });
+        return q;
+      }),
+      (q) => q.shutdown
+    ),
+    (q) => S.repeatTaskOption(q.take)
+  );
 }

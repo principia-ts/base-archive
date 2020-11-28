@@ -8,39 +8,51 @@ import { inspect } from "util";
 
 import * as FS from "../src/fs";
 
-(() => {
-  console.time("a");
-  FS.createReadStream(path.resolve(process.cwd(), "packages/node/test/test.txt"))
-    ["|>"](
-      S.run(FS.createWriteSink(path.resolve(process.cwd(), "packages/node/test/test_sink.txt")))
-    )
-    ["|>"]((x) =>
-      T.run(x, (ex) => {
-        console.log(inspect(ex));
-        console.timeEnd("a");
-      })
-    );
-})();
+// (() => {
+//   console.time("a");
+//   FS.createReadStream(path.resolve(process.cwd(), "packages/node/test/test.txt"))
+//     ["|>"](
+//       S.run(FS.createWriteSink(path.resolve(process.cwd(), "packages/node/test/test_sink.txt")))
+//     )
+//     ["|>"]((x) =>
+//       T.run(x, (ex) => {
+//         console.log(inspect(ex));
+//         console.timeEnd("a");
+//       })
+//     );
+// })();
+
+// (() => {
+//   console.time("b");
+//   const s = fs.createReadStream(path.resolve(process.cwd(), "packages/node/test/test.txt"));
+//   const w = fs.createWriteStream(
+//     path.resolve(process.cwd(), "packages/node/test/test_writestream.txt")
+//   );
+//   s.on("data", (chunk: Buffer) => w.write(chunk));
+//   s.on("error", (err) => {
+//     console.log(err);
+//     w.destroy(err);
+//     s.destroy();
+//   });
+//   w.on("error", (err) => {
+//     console.log(err);
+//     s.destroy(err);
+//     w.destroy();
+//   });
+//   s.on("close", () => {
+//     w.close();
+//     console.timeEnd("b");
+//   });
+// })();
 
 (() => {
-  console.time("b");
-  const s = fs.createReadStream(path.resolve(process.cwd(), "packages/node/test/test.txt"));
-  const w = fs.createWriteStream(
-    path.resolve(process.cwd(), "packages/node/test/test_writestream.txt")
-  );
-  s.on("data", (chunk: Buffer) => w.write(chunk));
-  s.on("error", (err) => {
-    console.log(err);
-    w.destroy(err);
-    s.destroy();
-  });
-  w.on("error", (err) => {
-    console.log(err);
-    s.destroy(err);
-    w.destroy();
-  });
-  s.on("close", () => {
-    w.close();
-    console.timeEnd("b");
-  });
+  FS.watchFile(path.resolve(process.cwd(), "packages/node/test/test.txt"))
+    ["|>"](S.foreach((stats) => T.total(() => console.log(inspect(stats)))))
+    ["|>"](T.fork)
+    ["|>"](
+      T.chain((exec) =>
+        T.sleep(10000)["|>"](T.andThen(T.chain_(T.fiberId(), (id) => exec.interruptAs(id))))
+      )
+    )
+    ["|>"](T.runMain);
 })();
