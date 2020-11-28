@@ -25,10 +25,6 @@ export function zip<B>(
   return (fa) => zip_(fa, fb);
 }
 
-export const both_ = zip_;
-
-export const both = zip;
-
 /**
  * ```haskell
  * pure :: a -> Array a
@@ -45,7 +41,7 @@ export function pure<A>(a: A): ReadonlyArray<A> {
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_: zip_,
-  both: zip,
+  zip_,
+  zip,
   unit
 });

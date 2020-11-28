@@ -12,13 +12,13 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export const both_: <A, B>(fa: A, fb: B) => readonly [A, B] = tuple;
+export const zip_: <A, B>(fa: A, fb: B) => readonly [A, B] = tuple;
 
-export const both = <B>(fb: B) => <A>(fa: A): readonly [A, B] => both_(fa, fb);
+export const zip = <B>(fb: B) => <A>(fa: A): readonly [A, B] => zip_(fa, fb);
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_,
-  both,
+  zip_,
+  zip,
   unit
 });

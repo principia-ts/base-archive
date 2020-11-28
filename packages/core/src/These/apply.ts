@@ -13,7 +13,7 @@ import type { These, URI } from "./model";
  */
 
 export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[URI], HKT.Fix<"E", E>> {
-  const mapBoth_: P.MapBothFn_<[URI], HKT.Fix<"E", E>> = (fa, fb, f) =>
+  const zipWith_: P.ZipWithFn_<[URI], HKT.Fix<"E", E>> = (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
         ? left(SE.combine_(fa.left, fb.left))
@@ -34,10 +34,10 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[URI], HKT.Fix<"E", E>>
 
   return HKT.instance({
     ...Functor,
-    mapBoth_,
-    mapBoth: <A, B, C>(fb: These<E, B>, f: (a: A, b: B) => C) => (fa: These<E, A>) =>
-      mapBoth_(fa, fb, f),
-    ap_: (fab, fa) => mapBoth_(fab, fa, (f, a) => f(a)),
-    ap: <A>(fa: These<E, A>) => <B>(fab: These<E, (a: A) => B>) => mapBoth_(fab, fa, (f, a) => f(a))
+    zipWith_,
+    zipWith: <A, B, C>(fb: These<E, B>, f: (a: A, b: B) => C) => (fa: These<E, A>) =>
+      zipWith_(fa, fb, f),
+    ap_: (fab, fa) => zipWith_(fab, fa, (f, a) => f(a)),
+    ap: <A>(fa: These<E, A>) => <B>(fab: These<E, (a: A) => B>) => zipWith_(fab, fa, (f, a) => f(a))
   });
 }

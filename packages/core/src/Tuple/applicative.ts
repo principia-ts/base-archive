@@ -8,14 +8,14 @@ import type { Tuple, URI, V } from "./model";
 import { unit } from "./unit";
 
 export function getApplicative<M>(M: Monoid<M>): P.Applicative<[URI], V & HKT.Fix<"I", M>> {
-  const both_: P.BothFn_<[URI], V & HKT.Fix<"I", M>> = (fa, fb) => [
+  const zip_: P.ZipFn_<[URI], V & HKT.Fix<"I", M>> = (fa, fb) => [
     [fst(fa), fst(fb)],
     M.combine_(snd(fa), snd(fb))
   ];
   return HKT.instance<P.Applicative<[URI], V & HKT.Fix<"I", M>>>({
     ...Functor,
-    both_,
-    both: (fb) => (fa) => both_(fa, fb),
+    zip_,
+    zip: (fb) => (fa) => zip_(fa, fb),
     unit: unit(M)
   });
 }

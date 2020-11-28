@@ -1,7 +1,7 @@
 import * as O from "../../Option";
 import * as Ex from "../Exit";
 import * as C from "../Exit/Cause";
-import { mapBothPar_ } from "../Task/apply-par";
+import { zipWithPar_ } from "../Task/apply-par";
 import * as T from "./_internal/task";
 import type { Fiber, SyntheticFiber } from "./model";
 
@@ -56,23 +56,23 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Fiber<E, A>) => SyntheticFibe
  * the specified combiner function. Both joins and interruptions are performed
  * in sequential order from left to right.
  */
-export function mapBoth_<E, E1, A, A1, B>(
+export function zipWith_<E, E1, A, A1, B>(
   fa: Fiber<E, A>,
   fb: Fiber<E1, A1>,
   f: (a: A, b: A1) => B
 ): SyntheticFiber<E | E1, B> {
   return {
     _tag: "SyntheticFiber",
-    getRef: (ref) => T.mapBoth_(fa.getRef(ref), fb.getRef(ref), (a, b) => ref.join(a, b)),
+    getRef: (ref) => T.zipWith_(fa.getRef(ref), fb.getRef(ref), (a, b) => ref.join(a, b)),
     inheritRefs: T.chain_(fa.inheritRefs, () => fb.inheritRefs),
     interruptAs: (id) =>
-      T.mapBoth_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) =>
-        Ex.mapBothCause_(ea, eb, f, C.both)
+      T.zipWith_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) =>
+        Ex.zipWithCause_(ea, eb, f, C.both)
       ),
-    poll: T.mapBoth_(fa.poll, fb.poll, (fa, fb) =>
-      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.mapBothCause_(ea, eb, f, C.both)))
+    poll: T.zipWith_(fa.poll, fb.poll, (fa, fb) =>
+      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.zipWithCause_(ea, eb, f, C.both)))
     ),
-    await: T.result(mapBothPar_(T.chain_(fa.await, T.done), T.chain_(fb.await, T.done), f))
+    await: T.result(zipWithPar_(T.chain_(fa.await, T.done), T.chain_(fb.await, T.done), f))
   };
 }
 
@@ -81,31 +81,31 @@ export function mapBoth_<E, E1, A, A1, B>(
  * the specified combiner function. Both joins and interruptions are performed
  * in sequential order from left to right.
  */
-export function mapBoth<A, D, B, C>(
+export function zipWith<A, D, B, C>(
   fb: Fiber<D, B>,
   f: (a: A, b: B) => C
 ): <E>(fa: Fiber<E, A>) => SyntheticFiber<D | E, C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 /**
  * Zips this fiber and the specified fiber together, producing a tuple of their output.
  */
-export function both_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
-  return mapBoth_(fa, fb, (a, b) => [a, b]);
+export function zip_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+  return zipWith_(fa, fb, (a, b) => [a, b]);
 }
 
 /**
  * Zips this fiber and the specified fiber together, producing a tuple of their output.
  */
-export function both<D, B>(
+export function zip<D, B>(
   fb: Fiber<D, B>
 ): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, (B | A)[]> {
-  return (fa) => both_(fa, fb);
+  return (fa) => zip_(fa, fb);
 }
 
 export function apFirst_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
-  return mapBoth_(fa, fb, (a, _) => a);
+  return zipWith_(fa, fb, (a, _) => a);
 }
 
 export function apFirst<D, B>(
@@ -115,7 +115,7 @@ export function apFirst<D, B>(
 }
 
 export function apSecond_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
-  return mapBoth_(fa, fb, (_, b) => b);
+  return zipWith_(fa, fb, (_, b) => b);
 }
 
 export function apSecond<D, B>(

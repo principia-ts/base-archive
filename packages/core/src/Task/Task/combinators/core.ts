@@ -12,7 +12,7 @@ import * as C from "../../Exit/Cause";
 import type { Exit } from "../../Exit/model";
 import type { Executor } from "../../Fiber/executor";
 import type { FiberDescriptor, InterruptStatus } from "../../Fiber/model";
-import { mapBoth_ } from "../apply-seq";
+import { zipWith_ } from "../apply-seq";
 import { mapError } from "../bifunctor";
 import { halt, succeed, suspend, total } from "../constructors";
 import { foldCauseM_, foldM_ } from "../fold";
@@ -233,7 +233,7 @@ export function foreach_<R, E, A, B>(
 ): Task<R, E, ReadonlyArray<B>> {
   return map_(
     I.reduce_(as, succeed(FS.empty<B>()) as Task<R, E, FreeMonoid<B>>, (b, a) =>
-      mapBoth_(
+      zipWith_(
         b,
         suspend(() => f(a)),
         (acc, r) => FS.append_(acc, r)

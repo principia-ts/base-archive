@@ -7,15 +7,15 @@ import type { Tree } from "./model";
  * -------------------------------------------
  */
 
-export function both_<A, B>(fa: Tree<A>, fb: Tree<B>): Tree<readonly [A, B]> {
+export function zip_<A, B>(fa: Tree<A>, fb: Tree<B>): Tree<readonly [A, B]> {
   return {
     value: [fa.value, fb.value],
-    forest: A.comprehension([fa.forest, fb.forest], (a, b) => both_(a, b))
+    forest: A.comprehension([fa.forest, fb.forest], (a, b) => zip_(a, b))
   };
 }
 
-export function both<B>(fb: Tree<B>): <A>(fa: Tree<A>) => Tree<readonly [A, B]> {
-  return (fa) => both_(fa, fb);
+export function zip<B>(fb: Tree<B>): <A>(fa: Tree<A>) => Tree<readonly [A, B]> {
+  return (fa) => zip_(fa, fb);
 }
 
 export function pure<A>(a: A): Tree<A> {

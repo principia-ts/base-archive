@@ -1,8 +1,8 @@
-import { chain, chain_, mapBoth_, pure } from "../_core";
 import { pipe } from "../../../Function";
 import * as I from "../../../Iterable";
 import * as XR from "../../XRef";
-import { mapBothPar_ } from "../apply-par";
+import { chain, chain_, pure, zipWith_ } from "../_core";
+import { zipWithPar_ } from "../apply-par";
 import type { Task } from "../model";
 import { foreachUnitParN_ } from "./foreachUnitParN";
 
@@ -13,7 +13,7 @@ export const mergeAll_ = <R, E, A, B>(
   fas: Iterable<Task<R, E, A>>,
   b: B,
   f: (b: B, a: A) => B
-): Task<R, E, B> => I.reduce_(fas, pure(b) as Task<R, E, B>, (_b, a) => mapBoth_(_b, a, f));
+): Task<R, E, B> => I.reduce_(fas, pure(b) as Task<R, E, B>, (_b, a) => zipWith_(_b, a, f));
 
 /**
  * Merges an `Iterable<Task>` to a single IO, working sequentially.
@@ -36,7 +36,7 @@ export const mergeAllPar_ = <R, E, A, B>(
   fas: Iterable<Task<R, E, A>>,
   b: B,
   f: (b: B, a: A) => B
-): Task<R, E, B> => I.reduce_(fas, pure(b) as Task<R, E, B>, (b, a) => mapBothPar_(b, a, f));
+): Task<R, E, B> => I.reduce_(fas, pure(b) as Task<R, E, B>, (b, a) => zipWithPar_(b, a, f));
 
 /**
  * Merges an `Iterable<Task>` to a single Task, working in parallel.

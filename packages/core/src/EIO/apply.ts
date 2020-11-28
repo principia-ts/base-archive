@@ -12,7 +12,7 @@ import type { EIO, URI, V } from "./model";
  */
 
 export function ap_<E, A, G, B>(fab: EIO<G, (a: A) => B>, fa: EIO<E, A>): EIO<E | G, B> {
-  return X.map_(X.both_(fab, fa), ([f, a]) => f(a));
+  return X.map_(X.zip_(fab, fa), ([f, a]) => f(a));
 }
 
 export function ap<E, A>(fa: EIO<E, A>): <G, B>(fab: EIO<G, (a: A) => B>) => EIO<E | G, B> {
@@ -41,16 +41,16 @@ export function apSecond<G, B>(fb: EIO<G, B>): <E, A>(fa: EIO<E, A>) => EIO<G | 
   return (fa) => apSecond_(fa, fb);
 }
 
-export const mapBoth_: <E, A, G, B, C>(
+export const zipWith_: <E, A, G, B, C>(
   fa: EIO<E, A>,
   fb: EIO<G, B>,
   f: (a: A, b: B) => C
-) => EIO<E | G, C> = X.mapBoth_;
+) => EIO<E | G, C> = X.zipWith_;
 
-export const mapBoth: <A, G, B, C>(
+export const zipWith: <A, G, B, C>(
   fb: EIO<G, B>,
   f: (a: A, b: B) => C
-) => <E>(fa: EIO<E, A>) => EIO<E | G, C> = X.mapBoth;
+) => <E>(fa: EIO<E, A>) => EIO<E | G, C> = X.zipWith;
 
 export function lift2<A, B, C, E, G>(
   f: (a: A) => (b: B) => C
@@ -70,6 +70,6 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_: ap_,
   ap,
-  mapBoth_: mapBoth_,
-  mapBoth
+  zipWith_,
+  zipWith
 });

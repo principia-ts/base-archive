@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import { mapBoth_, mapBothSeq_ } from "./apply";
+import { zipWith_, zipWithSeq_ } from "./apply";
 import { Functor } from "./functor";
 import type { LazyPromise, URI, V } from "./model";
 import { unit } from "./unit";
@@ -14,7 +14,7 @@ import { unit } from "./unit";
 
 /**
  * ```haskell
- * both_ :: Apply f => (f a, f b) -> f (a, b)
+ * zip_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
  * Applies both `LazyPromise`s and collects their results into a tuple
@@ -22,13 +22,13 @@ import { unit } from "./unit";
  * @category Apply
  * @since 1.0.0
  */
-export function both_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> {
-  return mapBoth_(fa, fb, (a, b) => [a, b]);
+export function zip_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise<readonly [A, B]> {
+  return zipWith_(fa, fb, (a, b) => [a, b]);
 }
 
 /**
  * ```haskell
- * both :: Apply f => f b -> f a -> f (a, b)
+ * zip :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
  * Applies both `LazyPromise`s and collects their results into a tuple
@@ -36,15 +36,15 @@ export function both_<A, B>(fa: LazyPromise<A>, fb: LazyPromise<B>): LazyPromise
  * @category Apply
  * @since 1.0.0
  */
-export function both<B>(
+export function zip<B>(
   fb: LazyPromise<B>
 ): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
-  return (fa) => both_(fa, fb);
+  return (fa) => zip_(fa, fb);
 }
 
 /**
  * ```haskell
- * bothSeq_ :: Apply f => (f a, f b) -> f (a, b)
+ * zipSeq_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
  * Sequentially applies both `LazyPromise`s and collects their results into a tuple. For a parallel version, see `both_`
@@ -52,16 +52,16 @@ export function both<B>(
  * @category Apply
  * @since 1.0.0
  */
-export function bothSeq_<A, B>(
+export function zipSeq_<A, B>(
   fa: LazyPromise<A>,
   fb: LazyPromise<B>
 ): LazyPromise<readonly [A, B]> {
-  return mapBothSeq_(fa, fb, (a, b) => [a, b]);
+  return zipWithSeq_(fa, fb, (a, b) => [a, b]);
 }
 
 /**
  * ```haskell
- * bothSeq :: Apply f => f b -> f a -> f (a, b)
+ * zipSeq :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
  * Sequentially applies both `LazyPromise`s and collects their results into a tuple. For a parallel version, see `both`
@@ -69,10 +69,10 @@ export function bothSeq_<A, B>(
  * @category Apply
  * @since 1.0.0
  */
-export function bothSeq<B>(
+export function zipSeq<B>(
   fb: LazyPromise<B>
 ): <A>(fa: LazyPromise<A>) => LazyPromise<readonly [A, B]> {
-  return (fa) => bothSeq_(fa, fb);
+  return (fa) => zipSeq_(fa, fb);
 }
 
 /**
@@ -91,14 +91,14 @@ export function pure<A>(a: A): LazyPromise<A> {
 
 export const ApplicativePar: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_,
-  both,
+  zip_,
+  zip,
   unit
 });
 
 export const ApplicativeSeq: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_: bothSeq_,
-  both: bothSeq,
+  zip_: zipSeq_,
+  zip: zipSeq,
   unit
 });

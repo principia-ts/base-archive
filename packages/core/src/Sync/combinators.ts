@@ -1,6 +1,6 @@
 import { flow, pipe } from "../Function";
 import * as X from "../XPure";
-import { both_ } from "./applicative";
+import { zip_ } from "./applicative";
 import { succeed } from "./constructors";
 import { recover } from "./fallible";
 import type { Sync } from "./model";
@@ -100,7 +100,7 @@ export function foldTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4,
   onBothSuccess: (a: A, b: B) => Sync<R5, E5, G>
 ): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
   return pipe(
-    both_(recover(left), recover(right)),
+    zip_(recover(left), recover(right)),
     chain(
       ([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
         switch (ea._tag) {

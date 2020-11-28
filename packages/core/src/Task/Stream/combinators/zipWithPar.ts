@@ -37,19 +37,19 @@ function _zipChunks<A, B, C>(
  * By default pull is executed in parallel to preserve async semantics, see `zipWithSeq` for
  * a sequential alternative
  */
-export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
+export function zipWithPar_<R, E, O, O2, O3, R1, E1>(
   stream: Stream<R, E, O>,
   that: Stream<R1, E1, O2>,
   f: (a: O, a1: O2) => O3,
   ps: "seq"
 ): Stream<R & R1, E1 | E, O3>;
-export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
+export function zipWithPar_<R, E, O, O2, O3, R1, E1>(
   stream: Stream<R, E, O>,
   that: Stream<R1, E1, O2>,
   f: (a: O, a1: O2) => O3,
   ps?: "par" | "seq"
 ): Stream<R & R1, E1 | E, O3>;
-export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
+export function zipWithPar_<R, E, O, O2, O3, R1, E1>(
   stream: Stream<R, E, O>,
   that: Stream<R1, E1, O2>,
   f: (a: O, a1: O2) => O3,
@@ -148,8 +148,8 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
             p1,
             T.optional,
             ps === "par"
-              ? T.mapBothPar(T.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
-              : T.mapBoth(T.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
+              ? T.zipWithPar(T.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
+              : T.zipWith(T.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
             T.catchAllCause((e) => T.pure(Ex.failure(pipe(e, C.map(O.some)))))
           );
         }
@@ -182,20 +182,20 @@ export function mapBothPar_<R, E, O, O2, O3, R1, E1>(
  * By default pull is executed in parallel to preserve async semantics, see `zipWithSeq` for
  * a sequential alternative
  */
-export function mapBothPar<O, O2, O3, R1, E1>(
+export function zipWithPar<O, O2, O3, R1, E1>(
   that: Stream<R1, E1, O2>,
   f: (a: O, a1: O2) => O3,
   ps: "seq"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3>;
-export function mapBothPar<O, O2, O3, R1, E1>(
+export function zipWithPar<O, O2, O3, R1, E1>(
   that: Stream<R1, E1, O2>,
   f: (a: O, a1: O2) => O3,
   ps?: "par" | "seq"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3>;
-export function mapBothPar<O, O2, O3, R1, E1>(
+export function zipWithPar<O, O2, O3, R1, E1>(
   that: Stream<R1, E1, O2>,
   f: (a: O, a1: O2) => O3,
   ps: "par" | "seq" = "par"
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E1 | E, O3> {
-  return (stream) => mapBothPar_(stream, that, f, ps);
+  return (stream) => zipWithPar_(stream, that, f, ps);
 }

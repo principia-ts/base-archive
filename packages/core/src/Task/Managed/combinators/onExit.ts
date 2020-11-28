@@ -32,7 +32,7 @@ export function onExit_<R, E, A, R1>(
             pipe(
               releaseAll(e, sequential)(s.innerReleaseMap),
               T.result,
-              T.mapBoth(pipe(cleanup(s.exitEA), T.giveAll(s.r), T.result), (l, r) =>
+              T.zipWith(pipe(cleanup(s.exitEA), T.giveAll(s.r), T.result), (l, r) =>
                 Ex.apSecond_(l, r)
               )
             )

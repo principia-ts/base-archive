@@ -1,15 +1,15 @@
 export * from "../../Task/_core";
-export * from "../../Task/model";
+export { zipWithPar_ as mapBothPar_ } from "../../Task/apply-par";
+export { bracket_, bracketExit_ } from "../../Task/combinators/bracket";
 export { forkDaemon } from "../../Task/combinators/core-scope";
-export {
-  makeUninterruptible,
-  uninterruptibleMask,
-  interrupt
-} from "../../Task/combinators/interrupt";
-export { mapBothPar_ } from "../../Task/apply-par";
-export { bracketExit_, bracket_ } from "../../Task/combinators/bracket";
-export { sandbox } from "../../Task/combinators/sandbox";
-export * from "../../Task/combinators/orDieWith";
-export * from "../../Task/combinators/orDie";
 export * from "../../Task/combinators/eventually";
+export {
+  interrupt,
+  makeUninterruptible,
+  uninterruptibleMask
+} from "../../Task/combinators/interrupt";
 export * from "../../Task/combinators/never";
+export * from "../../Task/combinators/orDie";
+export * from "../../Task/combinators/orDieWith";
+export { sandbox } from "../../Task/combinators/sandbox";
+export * from "../../Task/model";

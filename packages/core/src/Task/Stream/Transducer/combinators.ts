@@ -17,7 +17,7 @@ export function then_<R, E, I, O, R1, E1, O1>(
   return new Transducer(
     pipe(
       self.push,
-      M.mapBoth(that.push, (pushLeft, pushRight) =>
+      M.zipWith(that.push, (pushLeft, pushRight) =>
         O.fold(
           () =>
             pipe(
@@ -25,7 +25,7 @@ export function then_<R, E, I, O, R1, E1, O1>(
               T.chain((cl) =>
                 cl.length === 0
                   ? pushRight(O.none())
-                  : pipe(pushRight(O.some(cl)), T.mapBoth(pushRight(O.none()), A.concat_))
+                  : pipe(pushRight(O.some(cl)), T.zipWith(pushRight(O.none()), A.concat_))
               )
             ),
           (inputs) =>
@@ -58,7 +58,7 @@ export function thenSink_<R, E, I, O, R1, E1, L, Z>(
 ): Sink<R & R1, E | E1, I, L, Z> {
   return new Sink(
     pipe(
-      M.mapBoth_(me.push, that.push, (pushMe, pushThat) => (is: O.Option<ReadonlyArray<I>>) =>
+      M.zipWith_(me.push, that.push, (pushMe, pushThat) => (is: O.Option<ReadonlyArray<I>>) =>
         O.fold_(
           is,
           () =>

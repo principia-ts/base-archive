@@ -15,7 +15,7 @@ export function runManaged_<R, E, A, R1, E1, B>(
   sink: Sink.Sink<R1, E1, A, any, B>
 ): M.Managed<R & R1, E1 | E, B> {
   return pipe(
-    M.both_(stream.proc, sink.push),
+    M.zip_(stream.proc, sink.push),
     M.mapM(([pull, push]) => {
       const go: T.Task<R1 & R, E1 | E, B> = T.foldCauseM_(
         pull,

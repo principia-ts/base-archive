@@ -93,10 +93,10 @@ export enum LayerInstructionTag {
   Fresh = "LayerRefresh",
   Managed = "LayerManaged",
   Suspend = "LayerSuspend",
-  MapBothPar = "LayerMapBothPar",
+  ZipWithPar = "LayerZipWithPar",
   AllPar = "LayerAllPar",
   AllSeq = "LayerAllSeq",
-  MapBothSeq = "LayerMapBothSeq"
+  ZipWithSeq = "LayerZipWithSeq"
 }
 
 /**
@@ -114,8 +114,8 @@ export type LayerInstruction =
   | LayerFreshInstruction<any, any, any>
   | LayerManagedInstruction<any, any, any>
   | LayerSuspendInstruction<any, any, any>
-  | LayerMapBothParInstruction<any, any, any, any, any, any, any>
-  | LayerMapBothSeqInstruction<any, any, any, any, any, any, any>
+  | LayerZipWithParInstruction<any, any, any, any, any, any, any>
+  | LayerZipWithSeqInstruction<any, any, any, any, any, any, any>
   | LayerAllParInstruction<Layer<any, any, any>[]>
   | LayerAllSeqInstruction<Layer<any, any, any>[]>;
 
@@ -199,8 +199,8 @@ export type MergeA<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
   }[number]
 >;
 
-export class LayerMapBothParInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
-  readonly _tag = LayerInstructionTag.MapBothPar;
+export class LayerZipWithParInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+  readonly _tag = LayerInstructionTag.ZipWithPar;
 
   constructor(
     readonly layer: Layer<R, E, A>,
@@ -223,8 +223,8 @@ export class LayerAllParInstruction<Ls extends Layer<any, any, any>[]> extends L
   }
 }
 
-export class LayerMapBothSeqInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
-  readonly _tag = LayerInstructionTag.MapBothSeq;
+export class LayerZipWithSeqInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+  readonly _tag = LayerInstructionTag.ZipWithSeq;
 
   constructor(
     readonly layer: Layer<R, E, A>,
@@ -272,14 +272,14 @@ export function _build<R, E, A>(
         M.chain_(memo.getOrElseMemoize(I.layer), (a) => memo.getOrElseMemoize(I.f(a)))
       );
     }
-    case LayerInstructionTag.MapBothPar: {
+    case LayerInstructionTag.ZipWithPar: {
       return M.succeed((memo) =>
-        M.mapBothPar_(memo.getOrElseMemoize(I.layer), memo.getOrElseMemoize(I.that), I.f)
+        M.zipWithPar_(memo.getOrElseMemoize(I.layer), memo.getOrElseMemoize(I.that), I.f)
       );
     }
-    case LayerInstructionTag.MapBothSeq: {
+    case LayerInstructionTag.ZipWithSeq: {
       return M.succeed((memo) =>
-        M.mapBoth_(memo.getOrElseMemoize(I.layer), memo.getOrElseMemoize(I.that), I.f)
+        M.zipWith_(memo.getOrElseMemoize(I.layer), memo.getOrElseMemoize(I.that), I.f)
       );
     }
     case LayerInstructionTag.AllPar: {
@@ -442,7 +442,7 @@ export function both_<R, E, A, R2, E2, A2>(
   left: Layer<R, E, A>,
   right: Layer<R2, E2, A2>
 ): Layer<R & R2, E | E2, readonly [A, A2]> {
-  return new LayerMapBothSeqInstruction(left, right, tuple);
+  return new LayerZipWithSeqInstruction(left, right, tuple);
 }
 
 export function both<R2, E2, A2>(
@@ -455,7 +455,7 @@ export function and_<R, E, A, R2, E2, A2>(
   left: Layer<R, E, A>,
   right: Layer<R2, E2, A2>
 ): Layer<R & R2, E | E2, A & A2> {
-  return new LayerMapBothParInstruction(left, right, (l, r) => ({ ...l, ...r }));
+  return new LayerZipWithParInstruction(left, right, (l, r) => ({ ...l, ...r }));
 }
 
 export function and<R2, E2, A2>(
@@ -526,7 +526,7 @@ export function andSeq_<R, E, A, R1, E1, A1>(
   layer: Layer<R, E, A>,
   that: Layer<R1, E1, A1>
 ): Layer<R & R1, E | E1, A & A1> {
-  return new LayerMapBothSeqInstruction(layer, that, (l, r) => ({ ...l, ...r }));
+  return new LayerZipWithSeqInstruction(layer, that, (l, r) => ({ ...l, ...r }));
 }
 
 export function andSeq<R1, E1, A1>(

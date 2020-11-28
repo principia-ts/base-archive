@@ -1,10 +1,10 @@
 import { pipe } from "@principia/prelude";
 
-import * as T from "../_internal/_task";
 import * as I from "../../../Iterable";
 import { parallelN } from "../../ExecutionStrategy";
-import { mapBothPar_ } from "../apply-par";
-import { mapBoth_ } from "../apply-seq";
+import * as T from "../_internal/_task";
+import { zipWithPar_ } from "../apply-par";
+import { zipWith_ } from "../apply-seq";
 import { succeed } from "../constructors";
 import { mapM } from "../functor";
 import type { Managed } from "../model";
@@ -18,7 +18,7 @@ export function mergeAll_<R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): Managed<R, E, B> {
-  return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => mapBoth_(b, a, f));
+  return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => zipWith_(b, a, f));
 }
 
 /**
@@ -43,7 +43,7 @@ export function mergeAllPar_<R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): Managed<R, E, B> {
-  return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => mapBothPar_(b, a, f));
+  return I.reduce_(mas, succeed(b) as Managed<R, E, B>, (b, a) => zipWithPar_(b, a, f));
 }
 
 /**

@@ -113,6 +113,6 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap,
   ap_,
-  mapBoth: zipWith,
-  mapBoth_: zipWith_
+  zipWith,
+  zipWith_
 });

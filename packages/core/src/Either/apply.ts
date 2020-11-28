@@ -107,7 +107,7 @@ export function apSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Ei
 
 /**
  * ```haskell
- * mapBoth_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * zipWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
  * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
@@ -115,7 +115,7 @@ export function apSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Ei
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth_<E, A, G, B, C>(
+export function zipWith_<E, A, G, B, C>(
   fa: Either<E, A>,
   fb: Either<G, B>,
   f: (a: A, b: B) => C
@@ -128,7 +128,7 @@ export function mapBoth_<E, A, G, B, C>(
 
 /**
  * ```haskell
- * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * zipWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
  * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
@@ -136,11 +136,11 @@ export function mapBoth_<E, A, G, B, C>(
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth<A, G, B, C>(
+export function zipWith<A, G, B, C>(
   fb: Either<G, B>,
   f: (a: A, b: B) => C
 ): <E>(fa: Either<E, A>) => Either<G | E, C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 /**
@@ -164,8 +164,8 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap,
   ap_,
-  mapBoth,
-  mapBoth_
+  zipWith,
+  zipWith_
 });
 
 export const tuple = P.tupleF(Apply);

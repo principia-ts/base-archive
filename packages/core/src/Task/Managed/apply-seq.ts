@@ -19,18 +19,18 @@ import { chain_ } from "./monad";
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export function mapBoth<A, R1, E1, B, C>(
+export function zipWith<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export function mapBoth_<R, E, A, R1, E1, B, C>(
+export function zipWith_<R, E, A, R1, E1, B, C>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -42,7 +42,7 @@ export function ap_<R, E, A, Q, D, B>(
   fab: Managed<Q, D, (a: A) => B>,
   fa: Managed<R, E, A>
 ): Managed<Q & R, D | E, B> {
-  return mapBoth_(fab, fa, (f, a) => f(a));
+  return zipWith_(fab, fa, (f, a) => f(a));
 }
 
 export function ap<R, E, A>(
@@ -55,7 +55,7 @@ export function apFirst_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A> {
-  return mapBoth_(fa, fb, (a, _) => a);
+  return zipWith_(fa, fb, (a, _) => a);
 }
 
 export function apFirst<R1, E1, B>(
@@ -68,7 +68,7 @@ export function apSecond_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
-  return mapBoth_(fa, fb, (_, b) => b);
+  return zipWith_(fa, fb, (_, b) => b);
 }
 
 export function apSecond<R1, E1, B>(

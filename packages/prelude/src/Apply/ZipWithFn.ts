@@ -1,7 +1,7 @@
 import type { Applicative } from "../Applicative";
 import type * as HKT from "../HKT";
 
-export interface MapBothFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ZipWithFn<F extends HKT.URIS, TC = HKT.Auto> {
   <A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
     fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
     f: (a: A, b: B) => C
@@ -36,7 +36,7 @@ export interface MapBothFn<F extends HKT.URIS, TC = HKT.Auto> {
   >;
 }
 
-export interface MapBothFn_<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ZipWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
   <
     N extends string,
     K,
@@ -92,7 +92,7 @@ export interface MapBothFn_<F extends HKT.URIS, TC = HKT.Auto> {
   >;
 }
 
-export interface MapBothFnComposition<
+export interface ZipWithFnComposition<
   F extends HKT.URIS,
   G extends HKT.URIS,
   TCF = HKT.Auto,
@@ -212,7 +212,7 @@ export interface MapBothFnComposition<
   >;
 }
 
-export interface MapBothFnComposition_<
+export interface ZipWithFnComposition_<
   F extends HKT.URIS,
   G extends HKT.URIS,
   TCF = HKT.Auto,
@@ -330,16 +330,16 @@ export interface MapBothFnComposition_<
   >;
 }
 
-export function mapBothF<F extends HKT.URIS, TC = HKT.Auto>(
+export function zipWithF<F extends HKT.URIS, TC = HKT.Auto>(
   F: Applicative<F, TC>
-): MapBothFn<F, TC>;
-export function mapBothF<F>(F: Applicative<HKT.UHKT<F>>): MapBothFn<HKT.UHKT<F>> {
-  return (fb, f) => (fa) => F.map_(F.both_(fa, fb), ([a, b]) => f(a, b));
+): ZipWithFn<F, TC>;
+export function zipWithF<F>(F: Applicative<HKT.UHKT<F>>): ZipWithFn<HKT.UHKT<F>> {
+  return (fb, f) => (fa) => F.map_(F.zip_(fa, fb), ([a, b]) => f(a, b));
 }
 
-export function mapBothF_<F extends HKT.URIS, TC = HKT.Auto>(
+export function zipWithF_<F extends HKT.URIS, TC = HKT.Auto>(
   F: Applicative<F, TC>
-): MapBothFn_<F, TC>;
-export function mapBothF_<F>(F: Applicative<HKT.UHKT<F>>): MapBothFn_<HKT.UHKT<F>> {
-  return (fa, fb, f) => F.map_(F.both_(fa, fb), ([a, b]) => f(a, b));
+): ZipWithFn_<F, TC>;
+export function zipWithF_<F>(F: Applicative<HKT.UHKT<F>>): ZipWithFn_<HKT.UHKT<F>> {
+  return (fa, fb, f) => F.map_(F.zip_(fa, fb), ([a, b]) => f(a, b));
 }

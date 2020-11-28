@@ -29,7 +29,7 @@
     "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary",
     "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
     "build:esm-fix": "ttsc --build ./config/tsconfig.esm-fix.json",
-    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && prettier --write ./dist && yarn sort-package-json ./dist/package.json",
+    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && yarn sort-package-json ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
     "clean": "rimraf dist build tsbuildinfo",

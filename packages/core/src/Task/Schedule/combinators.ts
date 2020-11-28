@@ -259,7 +259,7 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
   const left = sc(now, i);
   const right = that(now, i);
 
-  return T.map_(T.both_(left, right), ([l, r]) => {
+  return T.map_(T.zip_(left, right), ([l, r]) => {
     switch (l._tag) {
       case "Done": {
         switch (r._tag) {
@@ -332,11 +332,11 @@ export function eitherWith<R1, I1, O1>(
   return (f) => (sc) => eitherWith_(sc, that, f);
 }
 
-const bothLoop = <R, I, O, R1, I1, O1>(
+const zipLoop = <R, I, O, R1, I1, O1>(
   sc: StepFunction<R, I, O>,
   that: StepFunction<R1, I1, O1>
 ): StepFunction<R & R1, readonly [I, I1], readonly [O, O1]> => (now, [in1, in2]) =>
-  T.map_(T.both_(sc(now, in1), that(now, in2)), ([d1, d2]) => {
+  T.map_(T.zip_(sc(now, in1), that(now, in2)), ([d1, d2]) => {
     switch (d1._tag) {
       case "Done": {
         switch (d2._tag) {
@@ -358,7 +358,7 @@ const bothLoop = <R, I, O, R1, I1, O1>(
             return makeContinue(
               tuple(d1.out, d2.out),
               Math.min(d1.interval, d2.interval),
-              bothLoop(d1.next, d2.next)
+              zipLoop(d1.next, d2.next)
             );
           }
         }
@@ -370,42 +370,21 @@ const bothLoop = <R, I, O, R1, I1, O1>(
  * Returns a new schedule that has both the inputs and outputs of this and the specified
  * schedule.
  */
-export function bothInOut_<R, I, O, R1, I1, O1>(
+export function zipInOut_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, readonly [I, I1], readonly [O, O1]> {
-  return makeSchedule(bothLoop(sc.step, that.step));
+  return makeSchedule(zipLoop(sc.step, that.step));
 }
 
 /**
  * Returns a new schedule that has both the inputs and outputs of this and the specified
  * schedule.
  */
-export function bothInOut<R1, I1, O1>(
+export function zipInOut<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, readonly [I, I1], readonly [O, O1]> {
-  return (sc) => bothInOut_(sc, that);
-}
-
-/**
- * Returns a new schedule that performs a geometric intersection on the intervals defined
- * by both schedules.
- */
-export function both_<R, I, O, R1, I1, O1>(
-  sc: Schedule<R, I, O>,
-  that: Schedule<R1, I1, O1>
-): Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return combineWith_(sc, that, (l, r) => Math.max(l, r));
-}
-
-/**
- * Returns a new schedule that performs a geometric intersection on the intervals defined
- * by both schedules.
- */
-export function both<R1, I1, O1>(
-  that: Schedule<R1, I1, O1>
-): <R, I, O>(self: Schedule<R, I, O>) => Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return (self) => both_(self, that);
+  return (sc) => zipInOut_(sc, that);
 }
 
 const checkMLoop = <R, I, O, R1>(
@@ -996,7 +975,7 @@ export function right<A>(): <R, I, O>(
 export function fst<A>(): <R, I, O>(
   sc: Schedule<R, I, O>
 ) => Schedule<R, readonly [I, A], readonly [O, A]> {
-  return (sc) => bothInOut_(sc, identity<A>());
+  return (sc) => zipInOut_(sc, identity<A>());
 }
 
 /**
@@ -1006,7 +985,7 @@ export function fst<A>(): <R, I, O>(
 export function snd<A>(): <R, I, O>(
   sc: Schedule<R, I, O>
 ) => Schedule<R, readonly [A, I], readonly [A, O]> {
-  return (sc) => bothInOut_(identity<A>(), sc);
+  return (sc) => zipInOut_(identity<A>(), sc);
 }
 
 /**
@@ -1421,7 +1400,7 @@ export function zip<R1, I1, O1>(
 /**
  * Same as zip but ignores the right output.
  */
-export function zipLeft_<R, I, O, R1, I1, O1>(
+export function apFirst_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O> {
@@ -1431,16 +1410,16 @@ export function zipLeft_<R, I, O, R1, I1, O1>(
 /**
  * Same as zip but ignores the right output.
  */
-export function zipLeft<R1, I1, O1>(
+export function apFirst<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O> {
-  return (sc) => zipLeft_(sc, that);
+  return (sc) => apFirst_(sc, that);
 }
 
 /**
  * Same as zip but ignores the left output.
  */
-export function zipRight_<R, I, O, R1, I1, O1>(
+export function apSecond_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O1> {
@@ -1450,10 +1429,10 @@ export function zipRight_<R, I, O, R1, I1, O1>(
 /**
  * Same as zip but ignores the left output.
  */
-export function zipRight<R1, I1, O1>(
+export function apSecond<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O1> {
-  return (sc) => zipRight_(sc, that);
+  return (sc) => apSecond_(sc, that);
 }
 
 /**

@@ -1,8 +1,8 @@
-import * as T from "../_internal/task";
 import { pipe } from "../../../Function";
 import { sequential } from "../../ExecutionStrategy";
 import type { Exit } from "../../Exit";
 import * as Ex from "../../Exit";
+import * as T from "../_internal/task";
 import { Managed } from "../model";
 import type { ReleaseMap } from "../ReleaseMap";
 import { add, make } from "../ReleaseMap";
@@ -30,7 +30,7 @@ export function onExitFirst_<R, E, A, R1>(
         T.bindS("releaseMapEntry", (s) =>
           add((e) =>
             T.flatten(
-              T.mapBoth_(
+              T.zipWith_(
                 T.result(T.giveAll_(cleanup(s.exitEA), s.r)),
                 T.result(releaseAll(e, sequential)(s.innerReleaseMap)),
                 (l, r) => T.done(Ex.apSecond_(l, r))

@@ -1,2 +1,2 @@
 export * from "./Applicative";
-export * from "./BothFn";
+export * from "./ZipFn";

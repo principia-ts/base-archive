@@ -2,7 +2,7 @@ import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
 import { tuple } from "../Function";
-import { mapBoth_ } from "./apply";
+import { zipWith_ } from "./apply";
 import { right } from "./constructors";
 import { Functor } from "./functor";
 import type { Either, URI, V } from "./model";
@@ -16,7 +16,7 @@ import { unit } from "./unit";
 
 /**
  * ```haskell
- * both_ :: Apply f => (f a, f b) -> f (a, b)
+ * zip_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
  * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
@@ -24,16 +24,16 @@ import { unit } from "./unit";
  * @category Apply
  * @since 1.0.0
  */
-export function both_<E, A, G, B>(
+export function zip_<E, A, G, B>(
   fa: Either<E, A>,
   fb: Either<G, B>
 ): Either<E | G, readonly [A, B]> {
-  return mapBoth_(fa, fb, tuple);
+  return zipWith_(fa, fb, tuple);
 }
 
 /**
  * ```haskell
- * both :: Apply f => f b -> f a -> f (a, b)
+ * zip :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
  * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
@@ -41,10 +41,10 @@ export function both_<E, A, G, B>(
  * @category Apply
  * @since 1.0.0
  */
-export function both<G, B>(
+export function zip<G, B>(
   fb: Either<G, B>
 ): <E, A>(fa: Either<E, A>) => Either<G | E, readonly [A, B]> {
-  return (fa) => both_(fa, fb);
+  return (fa) => zip_(fa, fb);
 }
 
 /**
@@ -65,7 +65,7 @@ export const pure: <E = never, A = never>(a: A) => Either<E, A> = right;
  */
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_,
-  both,
+  zip_,
+  zip,
   unit
 });

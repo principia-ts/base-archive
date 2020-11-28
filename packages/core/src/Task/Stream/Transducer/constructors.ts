@@ -584,7 +584,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
                   );
                 } else if (is.length <= 1 && dirty) {
                   const elem = A.isNonEmpty(is) ? is[0] : i;
-                  return T.mapBoth_(
+                  return T.zipWith_(
                     f(initialState.result, elem),
                     costFn(initialState.result, elem),
                     (result, cost) => [A.append_(os, state.result), { result, cost }, true]

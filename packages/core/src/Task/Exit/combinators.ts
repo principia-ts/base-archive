@@ -1,7 +1,7 @@
 import * as A from "../../Array/_core";
 import { pipe } from "../../Function";
 import * as O from "../../Option";
-import { mapBothCause } from "./apply";
+import { zipWithCause } from "./apply";
 import { mapError_ } from "./bifunctor";
 import * as C from "./Cause";
 import { map, map_ } from "./functor";
@@ -31,7 +31,7 @@ export function collectAll<E, A>(
           (acc, el) =>
             pipe(
               acc,
-              mapBothCause(el, (acc, el) => [el, ...acc], C.then)
+              zipWithCause(el, (acc, el) => [el, ...acc], C.then)
             )
         ),
         map(A.reverse)
@@ -56,7 +56,7 @@ export function collectAllPar<E, A>(
           (acc, el) =>
             pipe(
               acc,
-              mapBothCause(el, (acc, el) => [el, ...acc], C.both)
+              zipWithCause(el, (acc, el) => [el, ...acc], C.both)
             )
         ),
         map(A.reverse)

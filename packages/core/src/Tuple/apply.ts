@@ -7,7 +7,7 @@ import { Functor } from "./functor";
 import type { URI, V } from "./model";
 
 export function getApply<M>(M: Monoid<M>): P.Apply<[URI], V & HKT.Fix<"I", M>> {
-  const mapBoth_: P.MapBothFn_<[URI], HKT.Fix<"I", M>> = (fa, fb, f) => [
+  const zipWith_: P.ZipWithFn_<[URI], HKT.Fix<"I", M>> = (fa, fb, f) => [
     f(fst(fa), fst(fb)),
     M.combine_(snd(fa), snd(fb))
   ];
@@ -18,8 +18,8 @@ export function getApply<M>(M: Monoid<M>): P.Apply<[URI], V & HKT.Fix<"I", M>> {
 
   return HKT.instance<P.Apply<[URI], V & HKT.Fix<"I", M>>>({
     ...Functor,
-    mapBoth_,
-    mapBoth: (fb, f) => (fa) => mapBoth_(fa, fb, f),
+    zipWith_,
+    zipWith: (fb, f) => (fa) => zipWith_(fa, fb, f),
     ap_,
     ap: (fa) => (fab) => ap_(fab, fa)
   });

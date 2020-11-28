@@ -66,8 +66,8 @@ function AssociativityLaw<F, A, B, C>(
 ): (fs: [HKT.HKT<F, A>, HKT.HKT<F, B>, HKT.HKT<F, C>]) => boolean {
   const equiv = tuple<A, B, C>();
   return ([fa, fb, fc]) => {
-    const left = F.both_(fa, F.both_(fb, fc));
-    const right = F.both_(F.both_(fa, fb), fc);
+    const left = F.zip_(fa, F.zip_(fb, fc));
+    const right = F.zip_(F.zip_(fa, fb), fc);
     const left2 = F.map_(left, equiv.to);
     return S.equals_(left2, right);
   };
@@ -100,7 +100,7 @@ function LeftIdentityLaw<F, A>(
 ): (fa: HKT.HKT<F, A>) => boolean {
   const equiv = compose_(tupleFlip<void, A>(), tupleUnit());
   return (fa) => {
-    const left = F.both_(F.unit(), fa);
+    const left = F.zip_(F.unit(), fa);
     const right = fa;
     const left2 = F.map_(left, equiv.to);
     return S.equals_(left2, right);
@@ -134,7 +134,7 @@ function RightIdentityLaw<F, A>(
 ): (fa: HKT.HKT<F, A>) => boolean {
   const equiv = tupleUnit<A>();
   return (fa) => {
-    const left = F.both_(fa, F.unit());
+    const left = F.zip_(fa, F.unit());
     const right = fa;
     const left2 = F.map_(left, equiv.to);
     return S.equals_(left2, right);

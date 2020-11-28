@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import { fromCombine } from "@principia/prelude";
 
-import { mapBoth_ } from "./apply";
+import { zipWith_ } from "./apply";
 import { foldM_ } from "./combinators";
 import { succeed } from "./constructors";
 import type { EIO } from "./model";
@@ -23,7 +23,7 @@ import type { EIO } from "./model";
  * @since 1.0.0
  */
 export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<EIO<E, A>> {
-  return fromCombine((x, y) => mapBoth_(x, y, (x_, y_) => S.combine_(x_, y_)));
+  return fromCombine((x, y) => zipWith_(x, y, (x_, y_) => S.combine_(x_, y_)));
 }
 
 /**

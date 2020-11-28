@@ -3,13 +3,13 @@ import type { Functor, FunctorComposition } from "../Functor";
 import { getCovariantFunctorComposition } from "../Functor";
 import * as HKT from "../HKT";
 import type { Unit, UnitComposition } from "../Unit";
-import type { BothFn, BothFn_, BothFnComposition, BothFnComposition_ } from "./BothFn";
+import type { ZipFn, ZipFn_, ZipFnComposition, ZipFnComposition_ } from "./ZipFn";
 
 export interface Applicative<F extends HKT.URIS, TC = HKT.Auto>
   extends Functor<F, TC>,
     Unit<F, TC> {
-  readonly both_: BothFn_<F, TC>;
-  readonly both: BothFn<F, TC>;
+  readonly zip_: ZipFn_<F, TC>;
+  readonly zip: ZipFn<F, TC>;
 }
 
 export interface ApplicativeComposition<
@@ -19,8 +19,8 @@ export interface ApplicativeComposition<
   TCG = HKT.Auto
 > extends FunctorComposition<F, G, TCF, TCG>,
     UnitComposition<F, G, TCF, TCG> {
-  readonly both_: BothFnComposition_<F, G, TCF, TCG>;
-  readonly both: BothFnComposition<F, G, TCF, TCG>;
+  readonly zip_: ZipFnComposition_<F, G, TCF, TCG>;
+  readonly zip: ZipFnComposition<F, G, TCF, TCG>;
 }
 
 export function getApplicativeComposition<
@@ -33,15 +33,15 @@ export function getApplicativeComposition<F, G>(
   F: Applicative<HKT.UHKT<F>>,
   G: Applicative<HKT.UHKT<G>>
 ) {
-  const both_: BothFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (fga, fgb) =>
+  const zip_: ZipFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (fga, fgb) =>
     pipe(
-      F.both_(fga, fgb),
-      F.map(([ga, gb]) => G.both_(ga, gb))
+      F.zip_(fga, fgb),
+      F.map(([ga, gb]) => G.zip_(ga, gb))
     );
   return HKT.instance<ApplicativeComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
     ...getCovariantFunctorComposition(F, G),
     unit: () => F.map_(F.unit(), G.unit),
-    both_,
-    both: (fgb) => (fga) => both_(fga, fgb)
+    zip_,
+    zip: (fgb) => (fga) => zip_(fga, fgb)
   });
 }

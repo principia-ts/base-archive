@@ -1,5 +1,5 @@
-export * from "./Guard";
-export * from "./constructors";
 export * from "./combinators";
+export * from "./constructors";
 export * from "./methods";
+export * from "./model";
 export * from "./primitives";

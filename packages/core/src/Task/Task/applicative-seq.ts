@@ -1,5 +1,5 @@
 import { tuple } from "../../Function";
-import { mapBoth_ } from "./apply-seq";
+import { zipWith_ } from "./apply-seq";
 import type { IO, Task } from "./model";
 import { SucceedInstruction } from "./model";
 
@@ -11,7 +11,7 @@ import { SucceedInstruction } from "./model";
 
 /**
  * ```haskell
- * both_ :: Apply f => (f a, f b) -> f [a, b]
+ * zip_ :: Apply f => (f a, f b) -> f [a, b]
  * ```
  *
  * Tuples the arguments of two `Functors`
@@ -21,16 +21,16 @@ import { SucceedInstruction } from "./model";
  * @category Apply
  * @since 1.0.0
  */
-export function both_<R, E, A, Q, D, B>(
+export function zip_<R, E, A, Q, D, B>(
   fa: Task<R, E, A>,
   fb: Task<Q, D, B>
 ): Task<Q & R, D | E, readonly [A, B]> {
-  return mapBoth_(fa, fb, tuple);
+  return zipWith_(fa, fb, tuple);
 }
 
 /**
  * ```haskell
- * both :: Apply f => f b -> f a -> f [a, b]
+ * zip :: Apply f => f b -> f a -> f [a, b]
  * ```
  *
  * Tuples the arguments of two `Functors`
@@ -40,10 +40,10 @@ export function both_<R, E, A, Q, D, B>(
  * @category Apply
  * @since 1.0.0
  */
-export function both<Q, D, B>(
+export function zip<Q, D, B>(
   fb: Task<Q, D, B>
 ): <R, E, A>(fa: Task<R, E, A>) => Task<Q & R, D | E, readonly [A, B]> {
-  return (fa) => both_(fa, fb);
+  return (fa) => zip_(fa, fb);
 }
 
 /**

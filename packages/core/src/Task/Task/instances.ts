@@ -6,20 +6,20 @@ import {
   ap_,
   bimap,
   bimap_,
-  both,
-  both_,
   fail,
   flatten,
   map,
   map_,
-  mapBoth,
-  mapBoth_,
   mapError,
   mapError_,
-  unit
+  unit,
+  zip,
+  zip_,
+  zipWith,
+  zipWith_
 } from "./_core";
-import { bothPar, bothPar_ } from "./applicative-par";
-import { apPar, apPar_, mapBothPar, mapBothPar_ } from "./apply-par";
+import { zipPar, zipPar_ } from "./applicative-par";
+import { apPar, apPar_, zipWithPar, zipWithPar_ } from "./apply-par";
 import type { URI, V } from "./model";
 import { asks, give } from "./reader";
 
@@ -43,31 +43,31 @@ export const Unit: P.Unit<[URI], V> = HKT.instance({
 export const ApplicativeSeq: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
   ...Unit,
-  both,
-  both_
+  zip,
+  zip_
 });
 
 export const ApplySeq: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_,
   ap,
-  mapBoth_,
-  mapBoth
+  zipWith_,
+  zipWith
 });
 
 export const ApplicativePar: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
   ...Unit,
-  both: bothPar,
-  both_: bothPar_
+  zip: zipPar,
+  zip_: zipPar_
 });
 
 export const ApplyPar: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_: apPar_,
   ap: apPar,
-  mapBoth_: mapBothPar_,
-  mapBoth: mapBothPar
+  zipWith_: zipWithPar_,
+  zipWith: zipWithPar
 });
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({

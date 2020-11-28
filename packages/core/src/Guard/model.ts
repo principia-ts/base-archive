@@ -20,7 +20,4 @@ declare module "@principia/prelude/HKT" {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Guard<unknown, A>;
   }
-  interface URItoKind1<TC, A> {
-    readonly [URI]: Guard<unknown, A>;
-  }
 }

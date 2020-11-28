@@ -1,6 +1,6 @@
 import type { Integer } from "../Integer";
 import type { ReadonlyRecord } from "../Record";
-import type { Guard } from "./Guard";
+import type { Guard } from "./model";
 
 /*
  * -------------------------------------------

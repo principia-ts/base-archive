@@ -2,7 +2,7 @@ import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
 import { tuple } from "../Function";
-import { mapBoth_ } from "./apply";
+import { zipWith_ } from "./apply";
 import { some } from "./constructors";
 import { Functor } from "./functor";
 import type { Option, URI, V } from "./model";
@@ -16,7 +16,7 @@ import { unit } from "./unit";
 
 /**
  * ```haskell
- * both_ :: Apply f => (f a, f b) -> f (a, b)
+ * zip_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
  * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise, returns `Nothing`
@@ -24,8 +24,8 @@ import { unit } from "./unit";
  * @category Apply
  * @since 1.0.0
  */
-export function both_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
-  return mapBoth_(fa, fb, tuple);
+export function zip_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
+  return zipWith_(fa, fb, tuple);
 }
 
 /**
@@ -38,8 +38,8 @@ export function both_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B
  * @category Apply
  * @since 1.0.0
  */
-export function both<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A, B]> {
-  return (fa) => both_(fa, fb);
+export function zip<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A, B]> {
+  return (fa) => zip_(fa, fb);
 }
 
 /**
@@ -56,7 +56,7 @@ export const pure: <A>(a: A) => Option<A> = some;
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_,
-  both,
+  zip_,
+  zip,
   unit
 });

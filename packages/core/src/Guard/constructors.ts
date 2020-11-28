@@ -1,5 +1,5 @@
 import type { Literal } from "../Utils";
-import type { Guard } from "./Guard";
+import type { Guard } from "./model";
 
 /*
  * -------------------------------------------

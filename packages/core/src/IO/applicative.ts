@@ -14,7 +14,7 @@ import { unit } from "./unit";
 
 /**
  * ```haskell
- * both_ :: Apply f => (f a, f b) -> f (a, b)
+ * zip_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
  * Applies both `IO`s and collects their results into a tuple
@@ -22,11 +22,11 @@ import { unit } from "./unit";
  * @category Apply
  * @since 1.0.0
  */
-export const both_: <A, B>(fa: IO<A>, fb: IO<B>) => IO<readonly [A, B]> = X.both_;
+export const zip_: <A, B>(fa: IO<A>, fb: IO<B>) => IO<readonly [A, B]> = X.zip_;
 
 /**
  * ```haskell
- * both :: Apply f => f b -> f a -> f (a, b)
+ * zip :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
  * Applies both `IO`s and collects their results into a tuple
@@ -34,8 +34,8 @@ export const both_: <A, B>(fa: IO<A>, fb: IO<B>) => IO<readonly [A, B]> = X.both
  * @category Apply
  * @since 1.0.0
  */
-export function both<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<readonly [A, B]> {
-  return (fa) => both_(fa, fb);
+export function zip<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<readonly [A, B]> {
+  return (fa) => zip_(fa, fb);
 }
 
 /**
@@ -52,7 +52,7 @@ export const pure: <A>(a: A) => IO<A> = X.pure;
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_,
-  both,
+  zip_,
+  zip,
   unit
 });

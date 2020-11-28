@@ -65,7 +65,7 @@ export function apSecond<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
 
 /**
  * ```haskell
- * mapBoth_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * zipWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
  * Applies both `Option`s and if both are `Some`,  maps their results with function `f`, otherwise returns `Nothing`
@@ -73,7 +73,7 @@ export function apSecond<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
+export function zipWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
   return ap_(
     map_(fa, (a) => (b: B) => f(a, b)),
     fb
@@ -82,7 +82,7 @@ export function mapBoth_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) 
 
 /**
  * ```haskell
- * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * zipWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
  * Applies both `Option`s and if both are `Some`, maps their results with function `f`, otherwise returns `Nothing`
@@ -91,11 +91,11 @@ export function mapBoth_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) 
  * @since 1.0.0
  */
 
-export function mapBoth<A, B, C>(
+export function zipWith<A, B, C>(
   fb: Option<B>,
   f: (a: A, b: B) => C
 ): (fa: Option<A>) => Option<C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 /**
@@ -147,8 +147,8 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_,
   ap,
-  mapBoth_,
-  mapBoth
+  zipWith_,
+  zipWith
 });
 
 export const struct = P.structF(Apply);

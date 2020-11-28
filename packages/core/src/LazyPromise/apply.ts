@@ -123,7 +123,7 @@ export function liftA2<A, B, C>(
 
 /**
  * ```haskell
- * mapBoth_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * zipWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
  * Applies both `LazyPromise`s and maps their results with function `f`
@@ -131,7 +131,7 @@ export function liftA2<A, B, C>(
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth_<A, B, C>(
+export function zipWith_<A, B, C>(
   fa: LazyPromise<A>,
   fb: LazyPromise<B>,
   f: (a: A, b: B) => C
@@ -141,7 +141,7 @@ export function mapBoth_<A, B, C>(
 
 /**
  * ```haskell
- * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * zipWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
  * Applies both `LazyPromise`s and maps their results with function `f`
@@ -149,11 +149,11 @@ export function mapBoth_<A, B, C>(
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth<A, B, C>(
+export function zipWith<A, B, C>(
   fb: LazyPromise<B>,
   f: (a: A, b: B) => C
 ): (fa: LazyPromise<A>) => LazyPromise<C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 /**
@@ -248,15 +248,15 @@ export function apSecondSeq<B>(fb: LazyPromise<B>): <A>(fa: LazyPromise<A>) => L
 
 /**
  * ```haskell
- * mapBothSeq_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * zipWithSeq_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
- * Sequentially applies both `LazyPromise`s and maps their results with function `f`. For a parallel version, see `mapBoth_`
+ * Sequentially applies both `LazyPromise`s and maps their results with function `f`. For a parallel version, see `zipWith_`
  *
  * @category Apply
  * @since 1.0.0
  */
-export function mapBothSeq_<A, B, C>(
+export function zipWithSeq_<A, B, C>(
   fa: LazyPromise<A>,
   fb: LazyPromise<B>,
   f: (a: A, b: B) => C
@@ -274,11 +274,11 @@ export function mapBothSeq_<A, B, C>(
  * @category Apply
  * @since 1.0.0
  */
-export function mapBothSeq<A, B, C>(
+export function zipWithSeq<A, B, C>(
   fb: LazyPromise<B>,
   f: (a: A, b: B) => C
 ): (fa: LazyPromise<A>) => LazyPromise<C> {
-  return (fa) => mapBothSeq_(fa, fb, f);
+  return (fa) => zipWithSeq_(fa, fb, f);
 }
 
 /**
@@ -301,14 +301,14 @@ export const ApplyPar: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_,
   ap,
-  mapBoth_,
-  mapBoth
+  zipWith_,
+  zipWith
 });
 
 export const ApplySeq: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_: apSeq_,
   ap: apSeq,
-  mapBoth_: mapBothSeq_,
-  mapBoth: mapBothSeq
+  zipWith_: zipWithSeq_,
+  zipWith: zipWithSeq
 });

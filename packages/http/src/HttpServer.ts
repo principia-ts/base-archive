@@ -76,8 +76,8 @@ export const Http = L.fromRawManaged(
             server.close((err) => (err ? resolve(T.die(err)) : resolve(T.unit())));
           }),
           T.result,
-          T.both(T.result(queue.shutdown)),
-          T.chain(([ea, eb]) => T.done(Exit.both_(ea, eb)))
+          T.zip(T.result(queue.shutdown)),
+          T.chain(([ea, eb]) => T.done(Exit.zip_(ea, eb)))
         )
       ),
       M.map(() => intersect(Server.of({ server }), RequestQueue.of({ queue })))

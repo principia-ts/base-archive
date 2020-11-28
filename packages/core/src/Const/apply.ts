@@ -21,14 +21,14 @@ export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<"E", 
 
   const ap_: P.ApFn_<[URI], CE> = (fab, fa) => make(S.combine_(fab, fa));
 
-  const mapBoth_: P.MapBothFn_<[URI], CE> = (fa, _, __) => unsafeCoerce(fa);
+  const zipWith_: P.ZipWithFn_<[URI], CE> = (fa, _, __) => unsafeCoerce(fa);
 
   return HKT.instance<P.Apply<[URI], CE>>({
     map_: map_,
     map,
     ap_: ap_,
     ap: (fa) => (fab) => ap_(fab, fa),
-    mapBoth_: mapBoth_,
-    mapBoth: (fb, f) => (fa) => mapBoth_(fa, fb, f)
+    zipWith_,
+    zipWith: (fb, f) => (fa) => zipWith_(fa, fb, f)
   });
 }

@@ -21,7 +21,7 @@ export function tuplePar<A extends ReadonlyArray<Async<any, any, any>>>(
   return new AllInstruction(asyncs) as any;
 }
 
-export function mapBothPar_<R, E, A, R1, E1, B, C>(
+export function zipWithPar_<R, E, A, R1, E1, B, C>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -29,18 +29,18 @@ export function mapBothPar_<R, E, A, R1, E1, B, C>(
   return map_(tuplePar(fa, fb), ([a, b]) => f(a, b));
 }
 
-export function mapBothPar<A, R1, E1, B, C>(
+export function zipWithPar<A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, C> {
-  return (fa) => mapBothPar_(fa, fb, f);
+  return (fa) => zipWithPar_(fa, fb, f);
 }
 
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Async<R1, E1, (a: A) => B>,
   fa: Async<R, E, A>
 ): Async<R & R1, E | E1, B> {
-  return mapBothPar_(fab, fa, (f, a) => f(a));
+  return zipWithPar_(fab, fa, (f, a) => f(a));
 }
 
 export function apPar<R, E, A>(
@@ -53,7 +53,7 @@ export function apFirstPar_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, A> {
-  return mapBothPar_(fa, fb, (a, _) => a);
+  return zipWithPar_(fa, fb, (a, _) => a);
 }
 
 export function apFirstPar<R1, E1, A1>(
@@ -66,7 +66,7 @@ export function apSecondPar_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, A1> {
-  return mapBothPar_(fa, fb, (_, b) => b);
+  return zipWithPar_(fa, fb, (_, b) => b);
 }
 
 export function apSecondPar<R1, E1, A1>(

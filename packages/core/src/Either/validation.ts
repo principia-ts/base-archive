@@ -23,7 +23,7 @@ export function getApplicativeValidation<E>(
 ): P.Applicative<[URI], V & HKT.Fix<"E", E>> {
   type V_ = V & HKT.Fix<"E", E>;
 
-  const bothV_: P.BothFn_<[URI], V_> = (fa, fb) =>
+  const zipV_: P.ZipFn_<[URI], V_> = (fa, fb) =>
     isLeft(fa)
       ? isLeft(fb)
         ? left(S.combine_(fa.left, fb.left))
@@ -34,8 +34,8 @@ export function getApplicativeValidation<E>(
 
   return HKT.instance<P.Applicative<[URI], V_>>({
     ...Functor,
-    both_: bothV_,
-    both: (fb) => (fa) => bothV_(fa, fb),
+    zip_: zipV_,
+    zip: (fb) => (fa) => zipV_(fa, fb),
     unit
   });
 }

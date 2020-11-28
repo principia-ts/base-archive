@@ -325,10 +325,10 @@ export interface ApFnComposition_<
 
 export function apF<F extends HKT.URIS, TC = HKT.Auto>(F: Applicative<F, TC>): ApFn<F, TC>;
 export function apF<F>(F: Applicative<HKT.UHKT<F>>): ApFn<HKT.UHKT<F>> {
-  return (fa) => (fab) => F.map_(F.both_(fa, fab), ([a, f]) => f(a));
+  return (fa) => (fab) => F.map_(F.zip_(fa, fab), ([a, f]) => f(a));
 }
 
 export function apF_<F extends HKT.URIS, TC = HKT.Auto>(F: Applicative<F, TC>): ApFn_<F, TC>;
 export function apF_<F>(F: Applicative<HKT.UHKT<F>>): ApFn_<HKT.UHKT<F>> {
-  return (fab, fa) => F.map_(F.both_(fa, fab), ([a, f]) => f(a));
+  return (fab, fa) => F.map_(F.zip_(fa, fab), ([a, f]) => f(a));
 }

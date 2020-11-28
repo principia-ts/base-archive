@@ -25,9 +25,6 @@ declare module "@principia/prelude/HKT" {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [ArbURI]: fc.Arbitrary<A>;
   }
-  interface URItoKind1<TC, A> {
-    readonly [ArbURI]: fc.Arbitrary<A>;
-  }
 }
 
 declare module "../../HKT" {

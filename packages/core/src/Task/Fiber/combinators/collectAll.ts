@@ -1,10 +1,10 @@
-import * as T from "../_internal/task";
 import * as A from "../../../Array/_core";
 import { pipe } from "../../../Function";
 import { none, some } from "../../../Option";
 import * as O from "../../../Option";
 import * as Ex from "../../Exit";
 import * as C from "../../Exit/Cause";
+import * as T from "../_internal/task";
 import type { Fiber } from "../model";
 import { makeSynthetic } from "../model";
 import { awaitAll } from "./awaitAll";
@@ -33,7 +33,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
         T.foreach_(fibers, (f) => f.interruptAs(fiberId)),
         T.map(
           A.reduceRight(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
-            Ex.mapBothCause_(a, b, (_a, _b) => [_a, ..._b], C.both)
+            Ex.zipWithCause_(a, b, (_a, _b) => [_a, ..._b], C.both)
           )
         )
       ),
@@ -48,7 +48,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
               O.fold_(
                 b,
                 () => none(),
-                (rb) => some(Ex.mapBothCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
+                (rb) => some(Ex.zipWithCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
               )
           )
         )

@@ -9,15 +9,15 @@ import { chain_ } from "./monad";
  * -------------------------------------------
  */
 
-export function mapBoth_<A, B, C>(fa: Tree<A>, fb: Tree<B>, f: (a: A, b: B) => C): Tree<C> {
+export function zipWith_<A, B, C>(fa: Tree<A>, fb: Tree<B>, f: (a: A, b: B) => C): Tree<C> {
   return {
     value: f(fa.value, fb.value),
-    forest: A.comprehension([fa.forest, fb.forest], (a, b) => mapBoth_(a, b, f))
+    forest: A.comprehension([fa.forest, fb.forest], (a, b) => zipWith_(a, b, f))
   };
 }
 
-export function mapBoth<A, B, C>(fb: Tree<B>, f: (a: A, b: B) => C): (fa: Tree<A>) => Tree<C> {
-  return (fa) => mapBoth_(fa, fb, f);
+export function zipWith<A, B, C>(fb: Tree<B>, f: (a: A, b: B) => C): (fa: Tree<A>) => Tree<C> {
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 export function ap_<A, B>(fab: Tree<(a: A) => B>, fa: Tree<A>): Tree<B> {
@@ -29,7 +29,7 @@ export function ap<A>(fa: Tree<A>): <B>(fab: Tree<(a: A) => B>) => Tree<B> {
 }
 
 export function apFirst_<A, B>(fa: Tree<A>, fb: Tree<B>): Tree<A> {
-  return mapBoth_(fa, fb, (a, _) => a);
+  return zipWith_(fa, fb, (a, _) => a);
 }
 
 export function apFirst<B>(fb: Tree<B>): <A>(fa: Tree<A>) => Tree<A> {
@@ -37,5 +37,5 @@ export function apFirst<B>(fb: Tree<B>): <A>(fa: Tree<A>) => Tree<A> {
 }
 
 export function apSecond_<A, B>(fa: Tree<A>, fb: Tree<B>): Tree<B> {
-  return mapBoth_(fa, fb, (_, b) => b);
+  return zipWith_(fa, fb, (_, b) => b);
 }

@@ -84,7 +84,7 @@ export function createReadStream(
 ): S.Stream<unknown, ErrnoException, Buffer> {
   return S.chain_(
     S.bracket_(
-      T.bothPar_(
+      T.zipPar_(
         open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
         T.suspend(() => {
           const start = options?.start ? Integer.unwrap(options?.start) : 0;
@@ -135,7 +135,7 @@ export function createWriteSink(
       const st = yield* _(
         M.catchAll_(
           M.makeExit_(
-            T.bothPar_(
+            T.zipPar_(
               open(
                 path,
                 options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY,

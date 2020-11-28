@@ -1,6 +1,6 @@
 import type * as HKT from "../HKT";
 
-export interface BothFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface ZipFn<F extends HKT.URIS, C = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>
   ): <N extends string, K, Q, W, X, I, S, R, E, A>(
@@ -34,7 +34,7 @@ export interface BothFn<F extends HKT.URIS, C = HKT.Auto> {
   >;
 }
 
-export interface BothFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface ZipFn_<F extends HKT.URIS, C = HKT.Auto> {
   <
     N extends string,
     K,
@@ -88,7 +88,7 @@ export interface BothFn_<F extends HKT.URIS, C = HKT.Auto> {
   >;
 }
 
-export interface BothFnComposition<
+export interface ZipFnComposition<
   F extends HKT.URIS,
   G extends HKT.URIS,
   CF = HKT.Auto,
@@ -206,7 +206,7 @@ export interface BothFnComposition<
   >;
 }
 
-export interface BothFnComposition_<
+export interface ZipFnComposition_<
   F extends HKT.URIS,
   G extends HKT.URIS,
   CF = HKT.Auto,

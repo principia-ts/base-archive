@@ -40,11 +40,11 @@ export function apSecond<B>(fb: B): <A>(fa: A) => B {
   return (fa) => apSecond_(fa, fb);
 }
 
-export function mapBoth_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
+export function zipWith_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
   return f(fa, fb);
 }
 
-export function mapBoth<A, B, C>(fb: B, f: (a: A, b: B) => C): (fa: A) => C {
+export function zipWith<A, B, C>(fb: B, f: (a: A, b: B) => C): (fa: A) => C {
   return (fa) => f(fa, fb);
 }
 
@@ -52,6 +52,6 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_: ap_,
   ap,
-  mapBoth_: mapBoth_,
-  mapBoth
+  zipWith_,
+  zipWith
 });

@@ -37,7 +37,7 @@ export function pure<A>(a: A): NonEmptyArray<A> {
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_: zip_,
-  both: zip,
+  zip_,
+  zip,
   unit
 });

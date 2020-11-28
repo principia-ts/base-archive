@@ -19,7 +19,7 @@ export function ap<E, A>(fa: Exit<E, A>): <G, B>(fab: Exit<G, (a: A) => B>) => E
 }
 
 export function apFirst_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
-  return mapBothCause_(fa, fb, (a, _) => a, C.then);
+  return zipWithCause_(fa, fb, (a, _) => a, C.then);
 }
 
 export function apFirst<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
@@ -27,14 +27,14 @@ export function apFirst<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G 
 }
 
 export function apSecond_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
-  return mapBothCause_(fa, fb, (_, b) => b, C.then);
+  return zipWithCause_(fa, fb, (_, b) => b, C.then);
 }
 
 export function apSecond<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
   return (fa) => apSecond_(fa, fb);
 }
 
-export function mapBothCause_<E, A, G, B, C>(
+export function zipWithCause_<E, A, G, B, C>(
   fa: Exit<E, A>,
   fb: Exit<G, B>,
   f: (a: A, b: B) => C,
@@ -65,31 +65,31 @@ export function mapBothCause_<E, A, G, B, C>(
   }
 }
 
-export function mapBothCause<E, A, G, B, C>(
+export function zipWithCause<E, A, G, B, C>(
   fb: Exit<G, B>,
   f: (a: A, b: B) => C,
   g: (ea: C.Cause<E>, eb: C.Cause<G>) => C.Cause<E | G>
 ): (fa: Exit<E, A>) => Exit<E | G, C> {
-  return (fa) => mapBothCause_(fa, fb, f, g);
+  return (fa) => zipWithCause_(fa, fb, f, g);
 }
 
-export function mapBoth_<EA, A, EB, B, C>(
+export function zipWith_<EA, A, EB, B, C>(
   fa: Exit<EA, A>,
   fb: Exit<EB, B>,
   f: (a: A, b: B) => C
 ): Exit<EA | EB, C> {
-  return mapBothCause_(fa, fb, f, C.then);
+  return zipWithCause_(fa, fb, f, C.then);
 }
 
-export function mapBoth<A, G, B, C>(
+export function zipWith<A, G, B, C>(
   fb: Exit<G, B>,
   f: (a: A, b: B) => C
 ): <E>(fa: Exit<E, A>) => Exit<G | E, C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 export function apParFirst_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
-  return mapBothCause_(fa, fb, (a, _) => a, C.both);
+  return zipWithCause_(fa, fb, (a, _) => a, C.both);
 }
 
 export function apParFirst<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
@@ -97,7 +97,7 @@ export function apParFirst<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit
 }
 
 export function apParSecond_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
-  return mapBothCause_(fa, fb, (_, b) => b, C.both);
+  return zipWithCause_(fa, fb, (_, b) => b, C.both);
 }
 
 export function apParSecond<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {

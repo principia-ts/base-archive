@@ -204,13 +204,13 @@ export function takeAllUpTo_<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, 
  * For example, a dropping queue and a bounded queue composed together may apply `f`
  * to different elements.
  */
-export function mapBothM<RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
+export function zipWithM<RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => T.Task<R3, E3, D>
 ): <RA, RB, EA, EB>(
   self: XQueue<RA, RB, EA, EB, A, B>
 ) => XQueue<RA & RA1, RB & RB1 & R3, EA1 | EA, EB1 | EB | E3, A1, D> {
-  return (self) => mapBothM_(self, that, f);
+  return (self) => zipWithM_(self, that, f);
 }
 
 /**
@@ -222,7 +222,7 @@ export function mapBothM<RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
  * For example, a dropping queue and a bounded queue composed together may apply `f`
  * to different elements.
  */
-export function mapBothM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
+export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
   self: XQueue<RA, RB, EA, EB, A, B>,
   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => T.Task<R3, E3, D>
@@ -235,22 +235,22 @@ export function mapBothM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
     isShutdown: T.IO<boolean> = self.isShutdown;
 
     offer: (a: A1) => T.Task<RA & RA1, EA1 | EA, boolean> = (a) =>
-      T.mapBothPar_(self.offer(a), that.offer(a), (x, y) => x && y);
+      T.zipWithPar_(self.offer(a), that.offer(a), (x, y) => x && y);
 
     offerAll: (as: Iterable<A1>) => T.Task<RA & RA1, EA1 | EA, boolean> = (as) =>
-      T.mapBothPar_(self.offerAll(as), that.offerAll(as), (x, y) => x && y);
+      T.zipWithPar_(self.offerAll(as), that.offerAll(as), (x, y) => x && y);
 
-    shutdown: T.IO<void> = T.mapBothPar_(self.shutdown, that.shutdown, () => undefined);
+    shutdown: T.IO<void> = T.zipWithPar_(self.shutdown, that.shutdown, () => undefined);
 
-    size: T.IO<number> = T.mapBothPar_(self.size, that.size, (x, y) => Math.max(x, y));
+    size: T.IO<number> = T.zipWithPar_(self.size, that.size, (x, y) => Math.max(x, y));
 
     take: T.Task<RB & RB1 & R3, E3 | EB | EB1, D> = T.chain_(
-      T.bothPar_(self.take, that.take),
+      T.zipPar_(self.take, that.take),
       ([b, c]) => f(b, c)
     );
 
     takeAll: T.Task<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = T.chain_(
-      T.bothPar_(self.takeAll, that.takeAll),
+      T.zipPar_(self.takeAll, that.takeAll),
       ([bs, cs]) => {
         const abs = Array.from(bs);
         const acs = Array.from(cs);
@@ -261,7 +261,7 @@ export function mapBothM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
     );
 
     takeUpTo: (n: number) => T.Task<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = (max) =>
-      T.chain_(T.bothPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
+      T.chain_(T.zipPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
         const abs = Array.from(bs);
         const acs = Array.from(cs);
         const all = A.zip_(abs, acs);
@@ -272,47 +272,47 @@ export function mapBothM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
 }
 
 /**
- * Like `bothWithM`, but uses a pure function.
+ * Like `zipWithM`, but uses a pure function.
  */
-export function mapBoth<RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
+export function zipWith<RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => D
 ): <RA, RB, EA, EB>(
   self: XQueue<RA, RB, EA, EB, A, B>
 ) => XQueue<RA & RA1, RB & RB1, EA1 | EA, EB1 | EB, A1, D> {
-  return (self) => mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
+  return (self) => zipWithM_(self, that, (b, c) => T.pure(f(b, c)));
 }
 
 /**
- * Like `bothWithM`, but uses a pure function.
+ * Like `zipWithM`, but uses a pure function.
  */
-export function mapBoth_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
+export function zipWith_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
   self: XQueue<RA, RB, EA, EB, A, B>,
   that: XQueue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => D
 ): XQueue<RA & RA1, RB & RB1, EA | EA1, EB | EB1, A1, D> {
-  return mapBothM_(self, that, (b, c) => T.pure(f(b, c)));
+  return zipWithM_(self, that, (b, c) => T.pure(f(b, c)));
 }
 
 /**
- * Like `bothWith`, but tuples the elements instead of applying a function.
+ * Like `zipWith`, but tuples the elements instead of applying a function.
  */
-export function both<RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
+export function zip<RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
   that: XQueue<RA1, RB1, EA1, EB1, A1, C>
 ): <RA, RB, EA, EB>(
   self: XQueue<RA, RB, EA, EB, A, B>
 ) => XQueue<RA & RA1, RB & RB1, EA1 | EA, EB1 | EB, A1, readonly [B, C]> {
-  return (self) => mapBoth_(self, that, (b, c) => tuple(b, c));
+  return (self) => zipWith_(self, that, (b, c) => tuple(b, c));
 }
 
 /**
- * Like `bothWith`, but tuples the elements instead of applying a function.
+ * Like `zipWith`, but tuples the elements instead of applying a function.
  */
-export function both_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
+export function zip_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
   self: XQueue<RA, RB, EA, EB, A, B>,
   that: XQueue<RA1, RB1, EA1, EB1, A1, C>
 ) {
-  return mapBoth_(self, that, (b, c) => tuple(b, c));
+  return zipWith_(self, that, (b, c) => tuple(b, c));
 }
 
 /**

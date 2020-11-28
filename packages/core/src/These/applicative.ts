@@ -19,7 +19,7 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[URI], HKT.
   return HKT.instance({
     ...Functor,
     unit,
-    both_: (fa, fb) => apply.mapBoth_(fa, fb, tuple),
-    both: <B>(fb: These<E, B>) => <A>(fa: These<E, A>) => apply.mapBoth_(fa, fb, tuple)
+    zip_: (fa, fb) => apply.zipWith_(fa, fb, tuple),
+    zip: <B>(fb: These<E, B>) => <A>(fa: These<E, A>) => apply.zipWith_(fa, fb, tuple)
   });
 }

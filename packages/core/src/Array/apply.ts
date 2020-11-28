@@ -123,8 +123,6 @@ export function zipWith_<A, B, C>(
   return fc;
 }
 
-export const mapBoth_ = zipWith_;
-
 export function zipWith<A, B, C>(
   fb: ReadonlyArray<B>,
   f: (a: A, b: B) => C
@@ -132,12 +130,10 @@ export function zipWith<A, B, C>(
   return (fa) => zipWith_(fa, fb, f);
 }
 
-export const mapBoth = zipWith;
-
 export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap,
   ap_,
-  mapBoth: zipWith,
-  mapBoth_: zipWith_
+  zipWith,
+  zipWith_
 });

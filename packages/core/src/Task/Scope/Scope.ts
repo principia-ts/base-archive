@@ -311,7 +311,7 @@ export class LocalScope<A> implements CommonScope<A> {
 
       return T.uncause(
         A.reduce_(sorted, noCauseTask, (acc, o) =>
-          o != null ? T.mapBoth_(acc, T.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
+          o != null ? T.zipWith_(acc, T.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
         )
       );
     } else {

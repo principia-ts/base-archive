@@ -40,7 +40,4 @@ declare module "../HKT" {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Either<E, A>;
   }
-  interface URItoKind2<TC, E, A> {
-    readonly [URI]: Either<E, A>;
-  }
 }

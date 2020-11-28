@@ -10,7 +10,7 @@ import type { Reader, URI, V } from "./model";
  * -------------------------------------------
  */
 
-export function mapBoth_<R, A, R1, B, C>(
+export function zipWith_<R, A, R1, B, C>(
   fa: Reader<R, A>,
   fb: Reader<R1, B>,
   f: (a: A, b: B) => C
@@ -18,11 +18,11 @@ export function mapBoth_<R, A, R1, B, C>(
   return (r) => f(fa(r), fb(r));
 }
 
-export function mapBoth<A, R1, B, C>(
+export function zipWith<A, R1, B, C>(
   fb: Reader<R1, B>,
   f: (a: A, b: B) => C
 ): <R>(fa: Reader<R, A>) => Reader<R & R1, C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 export function ap_<R, A, R1, B>(
@@ -39,7 +39,7 @@ export function ap<R, A>(
 }
 
 export function apFirst_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
-  return mapBoth_(fa, fb, (a, _) => a);
+  return zipWith_(fa, fb, (a, _) => a);
 }
 
 export function apFirst<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
@@ -47,7 +47,7 @@ export function apFirst<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => R
 }
 
 export function apSecond_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
-  return mapBoth_(fa, fb, (_, b) => b);
+  return zipWith_(fa, fb, (_, b) => b);
 }
 
 export function apSecond<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
@@ -56,8 +56,8 @@ export function apSecond<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => 
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
-  mapBoth_,
-  mapBoth,
+  zipWith_,
+  zipWith,
   ap_,
   ap
 });

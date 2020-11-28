@@ -13,7 +13,7 @@ export function mapTask_<A, R, E, B>(
   f: (a: A) => T.Task<R, E, B>
 ): T.Task<R, E, ReadonlyArray<B>> {
   return reduce_(as, T.succeed(empty()) as T.Task<R, E, ReadonlyArray<B>>, (b, a) =>
-    T.mapBoth_(
+    T.zipWith_(
       b,
       T.suspend(() => f(a)),
       append_

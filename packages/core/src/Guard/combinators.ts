@@ -7,7 +7,7 @@
 import { pipe } from "../Function";
 import type { ReadonlyRecord } from "../Record";
 import { memoize } from "../Utils";
-import type { Guard } from "./Guard";
+import type { Guard } from "./model";
 import { UnknownArray, UnknownRecord } from "./primitives";
 
 export function refine<I, A extends I, B extends A>(

@@ -6,7 +6,7 @@ import * as FS from "../FreeSemigroup";
 import * as Sy from "../Sync";
 import type { DecodeErrors } from "./default";
 
-function both_<R, A, R1, B>(
+function zip_<R, A, R1, B>(
   fa: Sy.Sync<R, DecodeErrors, A>,
   fb: Sy.Sync<R1, DecodeErrors, B>
 ): Sy.Sync<R & R1, DecodeErrors, readonly [A, B]> {
@@ -37,9 +37,9 @@ export const SyncDecoderF: P.MonadFail<[Sy.URI], D.V<Sy.V>> &
   P.Alt<[Sy.URI], D.V<Sy.V>> = HKT.instance({
   ...Sy.MonadFail,
   ...Sy.Bifunctor,
-  both_,
-  both: <R1, B>(fb: Sy.Sync<R1, DecodeErrors, B>) => <R, A>(fa: Sy.Sync<R, DecodeErrors, A>) =>
-    both_(fa, fb),
+  zip_,
+  zip: <R1, B>(fb: Sy.Sync<R1, DecodeErrors, B>) => <R, A>(fa: Sy.Sync<R, DecodeErrors, A>) =>
+    zip_(fa, fb),
   alt_,
   alt: <R1, A>(that: () => Sy.Sync<R1, DecodeErrors, A>) => <R>(me: Sy.Sync<R, DecodeErrors, A>) =>
     alt_(me, that)

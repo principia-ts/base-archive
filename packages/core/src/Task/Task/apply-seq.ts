@@ -93,7 +93,7 @@ export function apSecond<Q, D, B>(
 export const andThen_ = apSecond_;
 export const andThen = apSecond;
 
-export function mapBoth_<R, E, A, Q, D, B, C>(
+export function zipWith_<R, E, A, Q, D, B, C>(
   fa: Task<R, E, A>,
   fb: Task<Q, D, B>,
   f: (a: A, b: B) => C
@@ -101,9 +101,9 @@ export function mapBoth_<R, E, A, Q, D, B, C>(
   return chain_(fa, (ra) => map_(fb, (rb) => f(ra, rb)));
 }
 
-export function mapBoth<A, Q, D, B, C>(
+export function zipWith<A, Q, D, B, C>(
   fb: Task<Q, D, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Task<R, E, A>) => Task<Q & R, D | E, C> {
-  return (fa) => mapBoth_(fa, fb, f);
+  return (fa) => zipWith_(fa, fb, f);
 }

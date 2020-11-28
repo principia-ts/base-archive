@@ -1,9 +1,9 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import { bind_, flow, identity, pipe } from "../Function";
+import { bind_, flow, pipe } from "../Function";
 import * as X from "../XPure";
-import { both_ } from "./applicative";
+import { zip_ } from "./applicative";
 import { Functor, map, map_ } from "./functor";
 import type { IO, URI, V } from "./model";
 
@@ -24,7 +24,7 @@ import type { IO, URI, V } from "./model";
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: IO<(a: A) => B>, fa: IO<A>): IO<B> {
-  return map_(X.both_(fab, fa), ([f, a]) => f(a));
+  return map_(X.zip_(fab, fa), ([f, a]) => f(a));
 }
 
 /**
@@ -107,7 +107,7 @@ export function apSecond<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<B> {
 
 /**
  * ```haskell
- * mapBoth_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * zipWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
  * Applies both `IO`s and maps their results with function `f`
@@ -115,11 +115,11 @@ export function apSecond<B>(fb: IO<B>): <A>(fa: IO<A>) => IO<B> {
  * @category Apply
  * @since 1.0.0
  */
-export const mapBoth_: <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C) => IO<C> = X.mapBoth_;
+export const zipWith_: <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C) => IO<C> = X.zipWith_;
 
 /**
  * ```haskell
- * mapBoth :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * zipWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
  * Applies both `IO`s and maps their results with function `f`
@@ -127,8 +127,8 @@ export const mapBoth_: <A, B, C>(fa: IO<A>, fb: IO<B>, f: (a: A, b: B) => C) => 
  * @category Apply
  * @since 1.0.0
  */
-export function mapBoth<A, B, C>(fb: IO<B>, f: (a: A, b: B) => C): (fa: IO<A>) => IO<C> {
-  return (fa) => mapBoth_(fa, fb, f);
+export function zipWith<A, B, C>(fb: IO<B>, f: (a: A, b: B) => C): (fa: IO<A>) => IO<C> {
+  return (fa) => zipWith_(fa, fb, f);
 }
 
 /**
@@ -142,7 +142,7 @@ export function mapBoth<A, B, C>(fb: IO<B>, f: (a: A, b: B) => C): (fa: IO<A>) =
  * @since 1.0.0
  */
 export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: IO<A>) => (fb: IO<B>) => IO<C> {
-  return (fa) => (fb) => map_(both_(fa, fb), ([a, b]) => f(a)(b));
+  return (fa) => (fb) => map_(zip_(fa, fb), ([a, b]) => f(a)(b));
 }
 
 /**
@@ -178,6 +178,6 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_: ap_,
   ap,
-  mapBoth_: mapBoth_,
-  mapBoth
+  zipWith_,
+  zipWith
 });

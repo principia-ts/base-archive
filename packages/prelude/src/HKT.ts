@@ -108,22 +108,6 @@ export interface URItoKind<
   [HKT4_URI]: HKT4<AccessCustom<FC, "F">, S, R, E, A>;
 }
 
-export interface URItoKind1<TC, A> {
-  [HKT_URI]: HKT<"HKT1", A>;
-}
-
-export interface URItoKind2<TC, E, A> {
-  [HKT2_URI]: HKT2<"HKT2", E, A>;
-}
-
-export interface URItoKind3<TC, R, E, A> {
-  [HKT3_URI]: HKT3<"HKT3", R, E, A>;
-}
-
-export interface URItoKind4<TC, S, R, E, A> {
-  [HKT4_URI]: HKT4<"HKT4", S, R, E, A>;
-}
-
 /**
  * A type-level dictionary for indexed HKTs
  */
@@ -207,22 +191,6 @@ export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A>
         Rest extends URIS ? Kind<Rest, C, N, K, Q, W, X, I, S, R, E, A> : A
       >[U]
     : never
-  : never;
-
-export type URIS1 = keyof URItoKind1<any, any>;
-export type URIS2 = keyof URItoKind2<any, any, any>;
-export type URIS3 = keyof URItoKind3<any, any, any, any>;
-export type URIS4 = keyof URItoKind4<any, any, any, any, any>;
-
-export type Kind1<F extends URIS1, C, A> = F extends URIS1 ? URItoKind1<C, A>[F] : never;
-export type Kind2<F extends URIS2, C, E, A> = F extends URIS2
-  ? URItoKind2<C, OrFix<"E", C, E>, A>[F]
-  : never;
-export type Kind3<F extends URIS3, C, R, E, A> = F extends URIS3
-  ? URItoKind3<C, OrFix<"R", C, R>, OrFix<"E", C, E>, A>[F]
-  : never;
-export type Kind4<F extends URIS4, C, S, R, E, A> = F extends URIS4
-  ? URItoKind4<C, OrFix<"S", C, S>, OrFix<"R", C, R>, OrFix<"E", C, E>, A>[F]
   : never;
 
 /*

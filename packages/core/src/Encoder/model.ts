@@ -24,7 +24,4 @@ declare module "@principia/prelude/HKT" {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Encoder<E, A>;
   }
-  interface URItoKind2<TC, E, A> {
-    readonly [URI]: Encoder<E, A>;
-  }
 }

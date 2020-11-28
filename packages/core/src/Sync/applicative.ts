@@ -12,20 +12,20 @@ import { unit } from "./unit";
  * -------------------------------------------
  */
 
-export const both_: <R, E, A, Q, D, B>(
+export const zip_: <R, E, A, Q, D, B>(
   fa: Sync<R, E, A>,
   fb: Sync<Q, D, B>
-) => Sync<Q & R, D | E, readonly [A, B]> = X.both_;
+) => Sync<Q & R, D | E, readonly [A, B]> = X.zip_;
 
-export const both: <Q, D, B>(
+export const zip: <Q, D, B>(
   fb: Sync<Q, D, B>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = X.both;
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = X.zip;
 
 export const pure: <A>(a: A) => Sync<unknown, never, A> = X.pure;
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Functor,
-  both_,
-  both,
+  zip_,
+  zip,
   unit
 });

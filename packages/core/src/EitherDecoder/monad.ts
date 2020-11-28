@@ -14,7 +14,7 @@ export const SE = DE.getSemigroup<ErrorInfo>();
 /**
  * @internal
  */
-function both_<A, B>(
+function zip_<A, B>(
   fa: E.Either<DecodeErrors, A>,
   fb: E.Either<DecodeErrors, B>
 ): E.Either<DecodeErrors, readonly [A, B]> {
@@ -51,8 +51,8 @@ export const M: P.MonadFail<[E.URI], C> &
   ...E.MonadFail,
   ...E.Bifunctor,
   unit: E.unit,
-  both_,
-  both: <B>(fb: E.Either<DecodeErrors, B>) => <A>(fa: E.Either<DecodeErrors, A>) => both_(fa, fb),
+  zip_,
+  zip: <B>(fb: E.Either<DecodeErrors, B>) => <A>(fa: E.Either<DecodeErrors, A>) => zip_(fa, fb),
   alt_,
   alt: <A>(that: () => E.Either<DecodeErrors, A>) => (me: E.Either<DecodeErrors, A>) =>
     alt_(me, that)

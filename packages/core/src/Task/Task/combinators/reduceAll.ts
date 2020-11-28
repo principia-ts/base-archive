@@ -1,13 +1,13 @@
-import { map_, mapBoth_ } from "../_core";
 import * as A from "../../../Array/_core";
 import { NoSuchElementException } from "../../../GlobalExceptions";
 import * as NA from "../../../NonEmptyArray";
 import * as O from "../../../Option";
+import { map_, zipWith_ } from "../_core";
 import type { Task } from "../model";
 import { mergeAllPar_, mergeAllParN_ } from "./mergeAll";
 
 export function reduceAll_<R, E, A>(as: NA.NonEmptyArray<Task<R, E, A>>, f: (b: A, a: A) => A) {
-  return A.reduce_(NA.tail(as), NA.head(as), (b, a) => mapBoth_(b, a, f));
+  return A.reduce_(NA.tail(as), NA.head(as), (b, a) => zipWith_(b, a, f));
 }
 
 export function reduceAll<A>(

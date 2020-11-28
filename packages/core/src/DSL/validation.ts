@@ -1,6 +1,6 @@
 import type { Alt, AltFn_ } from "@principia/prelude";
 import { chainF, pureF, tuple } from "@principia/prelude";
-import type { Applicative, BothFn_ } from "@principia/prelude/Applicative";
+import type { Applicative, ZipFn_ } from "@principia/prelude/Applicative";
 import type { Fallible } from "@principia/prelude/Fallible";
 import * as HKT from "@principia/prelude/HKT";
 import type { Monad } from "@principia/prelude/Monad";
@@ -17,10 +17,10 @@ export function getApplicativeValidationF<F>(
   F: Monad<HKT.UHKT2<F>> & Fallible<HKT.UHKT2<F>> & Applicative<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Applicative<HKT.UHKT2<F>, HKT.Fix<"E", E>> {
   return <E>(S: Semigroup<E>) => {
-    const both_: BothFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, fb) =>
+    const zip_: ZipFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, fb) =>
       pipe(
         F.recover(fa),
-        F.both(F.recover(fb)),
+        F.zip(F.recover(fb)),
         F.map(([ea, eb]) =>
           E.fold_(
             ea,
@@ -40,8 +40,8 @@ export function getApplicativeValidationF<F>(
       unit: F.unit,
       map: F.map,
       map_: F.map_,
-      both_,
-      both: (fb) => (fa) => both_(fa, fb)
+      zip_,
+      zip: (fb) => (fa) => zip_(fa, fb)
     });
   };
 }

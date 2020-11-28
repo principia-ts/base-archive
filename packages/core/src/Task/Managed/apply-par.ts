@@ -21,7 +21,7 @@ import type { Managed } from "./model";
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
  */
-export function mapBothPar_<R, E, A, R1, E1, B, C>(
+export function zipWithPar_<R, E, A, R1, E1, B, C>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -31,7 +31,7 @@ export function mapBothPar_<R, E, A, R1, E1, B, C>(
       tuple(r, parallelReleaseMap)
     );
 
-    return T.chain_(T.both_(innerMap, innerMap), ([[_, l], [__, r]]) =>
+    return T.chain_(T.zip_(innerMap, innerMap), ([[_, l], [__, r]]) =>
       T.mapBothPar_(
         T.gives_(fa.task, (_: R & R1) => tuple(_, l)),
         T.gives_(fb.task, (_: R & R1) => tuple(_, r)),
@@ -45,18 +45,18 @@ export function mapBothPar_<R, E, A, R1, E1, B, C>(
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
  */
-export function mapBothPar<A, R1, E1, B, C>(
+export function zipWithPar<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, C> {
-  return (fa) => mapBothPar_(fa, fb, f);
+  return (fa) => zipWithPar_(fa, fb, f);
 }
 
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Managed<R1, E1, (a: A) => B>,
   fa: Managed<R, E, A>
 ): Managed<R & R1, E | E1, B> {
-  return mapBothPar_(fab, fa, (f, a) => f(a));
+  return zipWithPar_(fab, fa, (f, a) => f(a));
 }
 
 export function apPar<R, E, A>(
@@ -69,7 +69,7 @@ export function apFirstPar_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A> {
-  return mapBothPar_(fa, fb, (a, _) => a);
+  return zipWithPar_(fa, fb, (a, _) => a);
 }
 
 export function apFirstPar<R1, E1, B>(
@@ -82,7 +82,7 @@ export function apSecondPar_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
-  return mapBothPar_(fa, fb, (_, b) => b);
+  return zipWithPar_(fa, fb, (_, b) => b);
 }
 
 export function apSecondPar<R1, E1, B>(

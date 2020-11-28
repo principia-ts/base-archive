@@ -1,10 +1,10 @@
-import { chain, chain_, foreach_, fork, map_, unit } from "../_core";
 import * as A from "../../../Array/_core";
 import { pipe } from "../../../Function";
 import * as I from "../../../Iterable";
 import * as O from "../../../Option";
 import * as Fiber from "../../Fiber";
 import * as FiberRef from "../../FiberRef";
+import { chain, chain_, foreach_, fork, map_, unit } from "../_core";
 import type { RIO, Task } from "../model";
 import { uninterruptibleMask } from "./interrupt";
 
@@ -18,7 +18,7 @@ export function forkAll<R, E, A>(
   return map_(
     foreach_(efs, fork),
     A.reduce(Fiber.succeed([]) as Fiber.Fiber<E, ReadonlyArray<A>>, (b, a) =>
-      Fiber.mapBoth_(b, a, (_a, _b) => [..._a, _b])
+      Fiber.zipWith_(b, a, (_a, _b) => [..._a, _b])
     )
   );
 }
