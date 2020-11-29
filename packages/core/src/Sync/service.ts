@@ -5,7 +5,7 @@ import { pipe } from "../Function";
 import type { Has, Region, Tag } from "../Has";
 import { mergeEnvironments, tag } from "../Has";
 import * as R from "../Record";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import type { Sync } from "./model";
 
 /**
@@ -293,7 +293,7 @@ export function asksServiceInM<A>(
 
 /**
  * ```haskell
- * asService :: Tag a -> Task r e a -> Task r e (Has a)
+ * asService :: Tag a -> AIO r e a -> AIO r e (Has a)
  * ```
  *
  * Maps the success value of this effect to a service.

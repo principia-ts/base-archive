@@ -13,11 +13,6 @@ import * as S from "../src/Task/Stream";
 import * as Sink from "../src/Task/Stream/Sink";
 import * as Tr from "../src/Task/Stream/Transducer";
 
-const ws = () => fs.createWriteStream(path.resolve(process.cwd(), "test/file"));
+const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 7, 3, 5, 2];
 
-const rs = S.readFile(path.resolve(process.cwd(), "package.json"), { highWaterMark: 8 });
-
-(async () => {
-  const p = S.run_(rs, Sink.fromWritable(ws))["|>"](T.runPromiseExit);
-  console.log(await p);
-})();
+console.log(A.dropLastWhile_(arr, (n) => n < 10));

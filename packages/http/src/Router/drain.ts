@@ -1,7 +1,7 @@
+import * as T from "@principia/core/AIO";
+import * as FR from "@principia/core/AIO/FiberRef";
 import * as A from "@principia/core/Array";
 import * as Sy from "@principia/core/Sync";
-import * as T from "@principia/core/Task";
-import * as FR from "@principia/core/Task/FiberRef";
 import { flow, identity, pipe } from "@principia/prelude";
 
 import type { Context } from "../Context";

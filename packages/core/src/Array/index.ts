@@ -1,4 +1,5 @@
 // codegen:start { preset: barrel, exclude: _core.ts }
+export * from "./aio";
 export * from "./alt";
 export * from "./alternative";
 export * from "./applicative";
@@ -20,7 +21,6 @@ export * from "./monad";
 export * from "./monoid";
 export * from "./ord";
 export * from "./show";
-export * from "./task";
 export * from "./traversable";
 export * from "./unfoldable";
 export * from "./unit";

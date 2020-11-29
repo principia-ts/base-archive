@@ -1,4 +1,4 @@
-import * as T from "@principia/core/Task";
+import * as T from "@principia/core/AIO";
 
 import type { HttpRouteException } from "../exceptions/HttpRouteException";
 import { isHttpRouteException } from "../exceptions/HttpRouteException";

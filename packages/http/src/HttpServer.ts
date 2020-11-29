@@ -1,11 +1,11 @@
+import * as T from "@principia/core/AIO";
+import * as Exit from "@principia/core/AIO/Exit";
+import * as L from "@principia/core/AIO/Layer";
+import * as M from "@principia/core/AIO/Managed";
+import * as Q from "@principia/core/AIO/XQueue";
 import { pipe } from "@principia/core/Function";
 import type { Has } from "@principia/core/Has";
 import { tag } from "@principia/core/Has";
-import * as T from "@principia/core/Task";
-import * as Exit from "@principia/core/Task/Exit";
-import * as L from "@principia/core/Task/Layer";
-import * as M from "@principia/core/Task/Managed";
-import * as Q from "@principia/core/Task/XQueue";
 import { intersect } from "@principia/core/Utils";
 import * as http from "http";
 

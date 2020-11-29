@@ -1,15 +1,15 @@
+import * as T from "@principia/core/AIO";
+import * as M from "@principia/core/AIO/Managed";
+import * as S from "@principia/core/AIO/Stream";
+import * as Push from "@principia/core/AIO/Stream/internal/Push";
+import * as Sink from "@principia/core/AIO/Stream/Sink";
+import * as XQ from "@principia/core/AIO/XQueue";
+import * as XR from "@principia/core/AIO/XRef";
 import * as A from "@principia/core/Array";
 import * as E from "@principia/core/Either";
 import { pipe } from "@principia/core/Function";
 import { Integer } from "@principia/core/Integer";
 import * as O from "@principia/core/Option";
-import * as T from "@principia/core/Task";
-import * as M from "@principia/core/Task/Managed";
-import * as S from "@principia/core/Task/Stream";
-import * as Push from "@principia/core/Task/Stream/internal/Push";
-import * as Sink from "@principia/core/Task/Stream/Sink";
-import * as XQ from "@principia/core/Task/XQueue";
-import * as XR from "@principia/core/Task/XRef";
 import * as N from "@principia/prelude/Newtype";
 import * as fs from "fs";
 
@@ -19,7 +19,7 @@ const FileDescriptor = N.typeDef<number>()("FileDescriptor");
 interface FileDescriptor extends N.TypeOf<typeof FileDescriptor> {}
 
 function unitErrorCallback(
-  cb: (_: T.Task<unknown, ErrnoException, void>) => void
+  cb: (_: T.AIO<unknown, ErrnoException, void>) => void
 ): (err: ErrnoException | null) => void {
   return (err) => (err ? cb(T.fail(err)) : cb(T.unit()));
 }
@@ -99,7 +99,7 @@ export function createReadStream(
       ([fd, _]) => T.orDie(close(fd))
     ),
     ([fd, state]) =>
-      S.repeatTaskChunkOption(
+      S.repeatEffectChunkOption(
         T.gen(function* (_) {
           const [pos, end] = yield* _(state.get);
           const n = Math.min(end - pos + 1, options?.chunkSize ?? 64);
@@ -534,14 +534,14 @@ export function watch(
   options?: any
 ): S.Stream<unknown, Error, { eventType: "rename" | "change"; filename: string | Buffer }> {
   return S.chain_(
-    S.fromTask(
+    S.fromEffect(
       T.partial_(
         () => fs.watch(filename, options ?? {}),
         (err) => err as Error
       )
     ),
     (watcher) =>
-      S.repeatTaskOption(
+      S.repeatEffectOption(
         T.async<
           unknown,
           O.Option<Error>,
@@ -597,6 +597,6 @@ export function watchFile(
       }),
       (q) => q.shutdown
     ),
-    (q) => S.repeatTaskOption(q.take)
+    (q) => S.repeatEffectOption(q.take)
   );
 }

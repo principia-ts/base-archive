@@ -1,6 +1,6 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import type { XPure } from "../XPure";
+import type { SIO } from "../SIO";
 
 /*
  * -------------------------------------------
@@ -8,7 +8,7 @@ import type { XPure } from "../XPure";
  * -------------------------------------------
  */
 
-export interface EIO<E, A> extends XPure<unknown, never, unknown, E, A> {}
+export interface EIO<E, A> extends SIO<unknown, never, unknown, E, A> {}
 
 export const URI = "EIO";
 

@@ -1,19 +1,19 @@
+import * as T from "@principia/core/AIO";
+import type { Clock } from "@principia/core/AIO/Clock";
+import * as Ex from "@principia/core/AIO/Exit";
+import * as C from "@principia/core/AIO/Exit/Cause";
+import * as M from "@principia/core/AIO/Managed";
+import * as Sc from "@principia/core/AIO/Schedule";
+import * as S from "@principia/core/AIO/Stream";
+import * as Sink from "@principia/core/AIO/Stream/Sink";
+import * as Q from "@principia/core/AIO/XQueue";
+import * as XR from "@principia/core/AIO/XRef";
+import * as XRM from "@principia/core/AIO/XRefM";
 import * as E from "@principia/core/Either";
 import type { Has } from "@principia/core/Has";
 import { tag } from "@principia/core/Has";
 import * as O from "@principia/core/Option";
 import type { ReadonlyRecord } from "@principia/core/Record";
-import * as T from "@principia/core/Task";
-import type { Clock } from "@principia/core/Task/Clock";
-import * as Ex from "@principia/core/Task/Exit";
-import * as C from "@principia/core/Task/Exit/Cause";
-import * as M from "@principia/core/Task/Managed";
-import * as Sc from "@principia/core/Task/Schedule";
-import * as S from "@principia/core/Task/Stream";
-import * as Sink from "@principia/core/Task/Stream/Sink";
-import * as Q from "@principia/core/Task/XQueue";
-import * as XR from "@principia/core/Task/XRef";
-import * as XRM from "@principia/core/Task/XRefM";
 import { flow, not, pipe } from "@principia/prelude";
 import { once } from "events";
 import type * as http from "http";
@@ -42,7 +42,7 @@ export class Request {
     this._req = XR.unsafeMake(req);
   }
 
-  accessReq<R, E, A>(f: (req: http.IncomingMessage) => T.Task<R, E, A>): T.Task<R, E, A> {
+  accessReq<R, E, A>(f: (req: http.IncomingMessage) => T.AIO<R, E, A>): T.AIO<R, E, A> {
     return T.chain_(this._req.get, f);
   }
 
@@ -217,13 +217,13 @@ export class Response {
     );
   }
 
-  access<R, E, A>(f: (res: http.ServerResponse) => T.Task<R, E, A>): T.Task<R, E, A> {
+  access<R, E, A>(f: (res: http.ServerResponse) => T.AIO<R, E, A>): T.AIO<R, E, A> {
     return T.chain_(this._res.get, f);
   }
 
   modify<R, E>(
-    f: (res: http.ServerResponse) => T.Task<R, E, http.ServerResponse>
-  ): T.Task<R, E, void> {
+    f: (res: http.ServerResponse) => T.AIO<R, E, http.ServerResponse>
+  ): T.AIO<R, E, void> {
     return XRM.update_(this._res, f);
   }
 
@@ -286,7 +286,7 @@ export class Response {
     );
   }
 
-  pipeFrom<R, E>(stream: S.Stream<R, E, string | Buffer>): T.Task<R, HttpRouteException, void> {
+  pipeFrom<R, E>(stream: S.Stream<R, E, string | Buffer>): T.AIO<R, HttpRouteException, void> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const _this = this;
     return S.toQueue_(stream)

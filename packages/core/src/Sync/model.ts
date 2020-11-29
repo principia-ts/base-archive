@@ -1,6 +1,6 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import type { XPure } from "../XPure";
+import type { SIO } from "../SIO";
 
 /*
  * -------------------------------------------
@@ -8,7 +8,7 @@ import type { XPure } from "../XPure";
  * -------------------------------------------
  */
 
-export interface Sync<R, E, A> extends XPure<unknown, never, R, E, A> {}
+export interface Sync<R, E, A> extends SIO<unknown, never, R, E, A> {}
 
 export type IO<A> = Sync<unknown, never, A>;
 export type EIO<E, A> = Sync<unknown, E, A>;

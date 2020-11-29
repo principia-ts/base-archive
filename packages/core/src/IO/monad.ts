@@ -2,7 +2,7 @@ import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
 import { identity } from "../Function";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import { Functor, map_ } from "./functor";
 import type { IO, URI, V } from "./model";
 import { unit } from "./unit";

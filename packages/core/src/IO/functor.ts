@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import * as X from "../XPure";
+import * as X from "../SIO";
 import type { IO, URI, V } from "./model";
 
 /*

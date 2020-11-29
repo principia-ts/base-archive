@@ -1,14 +1,14 @@
 import type * as HKT from "@principia/prelude/HKT";
 
+import { _A, _E, _I, _R, _U, AIOInstructionTag } from "../AIO/AIO/constants";
+import type * as T from "../AIO/AIO/model";
 import type { Sync } from "../Sync";
-import { _A, _E, _I, _R, _U, TaskInstructionTag } from "../Task/Task/constants";
-import type * as T from "../Task/Task/model";
 import type * as Ex from "./AsyncExit";
 import { _AI, AsyncInstructionTag } from "./constants";
-import { asyncIntegrationNotImplemented, asyncTaskIntegration } from "./integration";
+import { asyncIntegrationNotImplemented, AsynctoAIO } from "./integration";
 
 export abstract class Async<R, E, A> implements T.Integration<R, E, A> {
-  readonly _tag = TaskInstructionTag.Integration;
+  readonly _tag = AIOInstructionTag.Integration;
   readonly _S1!: (_: unknown) => void;
   readonly _S2!: () => never;
 
@@ -18,7 +18,7 @@ export abstract class Async<R, E, A> implements T.Integration<R, E, A> {
   readonly [_A]!: () => A;
 
   get [_I](): T.Instruction {
-    const ai = asyncTaskIntegration.get;
+    const ai = AsynctoAIO.get;
     if (ai._tag === "Some") {
       return ai.value(this)[_I];
     }

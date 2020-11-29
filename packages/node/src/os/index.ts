@@ -1,6 +1,5 @@
-import os from "os";
 import * as Sy from "@principia/core/Sync";
-import { Integer } from "@principia/core/Integer";
+import os from "os";
 
 export const arch = Sy.total(os.arch);
 

@@ -1,9 +1,9 @@
 import * as A from "../Array/_core";
 import { fold_ as foldEither } from "../Either";
 import { pipe } from "../Function";
+import * as X from "../SIO";
 import type { Stack } from "../Utils/Stack";
 import { stack } from "../Utils/Stack";
-import * as X from "../XPure";
 import * as Ex from "./AsyncExit";
 import { CancellablePromise } from "./CancellablePromise";
 import { _AI, AsyncInstructionTag } from "./constants";
@@ -245,7 +245,7 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break;
         }
-        case "XPure": {
+        case "SIO": {
           const res = X.runEitherEnv_(I, env?.value || {});
           if (res._tag === "Left") {
             current = fail(res.left);

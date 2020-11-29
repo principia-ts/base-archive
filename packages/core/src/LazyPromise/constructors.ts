@@ -1,5 +1,5 @@
 import type { IO } from "../IO";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import type { LazyPromise } from "./model";
 
 /*

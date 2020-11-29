@@ -1,11 +1,11 @@
-import * as Sy from "@principia/core/Sync";
-import * as S from "@principia/core/Task/Stream";
-import * as T from "@principia/core/Task";
-import * as XQ from "@principia/core/Task/XQueue";
+import * as T from "@principia/core/AIO";
+import * as S from "@principia/core/AIO/Stream";
+import * as Push from "@principia/core/AIO/Stream/internal/Push";
+import * as Sink from "@principia/core/AIO/Stream/Sink";
+import * as XQ from "@principia/core/AIO/XQueue";
 import * as E from "@principia/core/Either";
-import * as Sink from "@principia/core/Task/Stream/Sink";
-import * as Push from "@principia/core/Task/Stream/internal/Push";
 import * as O from "@principia/core/Option";
+import * as Sy from "@principia/core/Sync";
 import { once } from "events";
 
 function stdinDataCb(queue: XQ.Queue<E.Either<Error, Buffer>>): (data: Buffer) => void {
@@ -39,11 +39,11 @@ export const stdin: S.Stream<unknown, never, E.Either<Error, Buffer>> = S.chain_
         })
       )
   ),
-  (q) => S.repeatTaskOption(q.take)
+  (q) => S.repeatEffectOption(q.take)
 );
 
 function stdoutErrorCb(
-  cb: (_: T.Task<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>) => void
+  cb: (_: T.AIO<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>) => void
 ): (err?: Error) => void {
   return (err) => (err ? cb(Push.fail(err, [])) : undefined);
 }

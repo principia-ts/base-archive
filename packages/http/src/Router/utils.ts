@@ -1,4 +1,4 @@
-import * as T from "@principia/core/Task";
+import * as T from "@principia/core/AIO";
 
 import type { Context } from "../Context";
 import type { Method } from "../utils";

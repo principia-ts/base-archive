@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import * as X from "../XPure";
+import * as X from "../SIO";
 import { Functor, map_ } from "./functor";
 import type { EIO, URI, V } from "./model";
 

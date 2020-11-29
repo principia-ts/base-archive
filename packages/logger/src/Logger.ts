@@ -1,10 +1,10 @@
+import * as T from "@principia/core/AIO";
+import type { Clock } from "@principia/core/AIO/Clock";
+import { HasClock } from "@principia/core/AIO/Clock";
+import * as C from "@principia/core/AIO/Console";
+import * as L from "@principia/core/AIO/Layer";
 import type { Has } from "@principia/core/Has";
 import { tag } from "@principia/core/Has";
-import * as T from "@principia/core/Task";
-import type { Clock } from "@principia/core/Task/Clock";
-import { HasClock } from "@principia/core/Task/Clock";
-import * as C from "@principia/core/Task/Console";
-import * as L from "@principia/core/Task/Layer";
 import * as fs from "@principia/node/fs";
 import { pipe } from "@principia/prelude";
 import type ChalkType from "chalk";
@@ -127,7 +127,7 @@ function _log(message: ChalkFn, level: LogLevel) {
   });
 }
 
-export const LiveLogger = L.create(Logger).fromTask(
+export const LiveLogger = L.create(Logger).fromEffect(
   T.asksServices({ config: LoggerConfig, console: C.Console, chalk: Chalk })(
     ({ config, console, chalk }): Logger => ({
       debug: (m) =>

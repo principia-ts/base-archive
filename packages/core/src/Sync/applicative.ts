@@ -1,7 +1,7 @@
 import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
-import * as X from "../XPure";
+import * as X from "../SIO";
 import { Functor } from "./functor";
 import type { Sync, URI, V } from "./model";
 import { unit } from "./unit";

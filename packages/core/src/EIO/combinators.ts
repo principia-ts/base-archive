@@ -2,7 +2,7 @@ import type { Either } from "../Either";
 import type { FunctionN, Lazy, Predicate, Refinement } from "../Function";
 import type { IO } from "../IO";
 import type { Option } from "../Option";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import { fail, fromEither, succeed } from "./constructors";
 import type { EIO } from "./model";
 import { chain_ } from "./monad";

@@ -2,7 +2,7 @@ import type * as P from "@principia/prelude";
 import * as HKT from "@principia/prelude/HKT";
 
 import type { Either } from "../Either";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import { Fail } from "./fail";
 import type { EIO, URI, V } from "./model";
 

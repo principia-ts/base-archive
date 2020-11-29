@@ -1,5 +1,5 @@
 import type { Either } from "../Either";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import type { Sync } from "./model";
 
 /*

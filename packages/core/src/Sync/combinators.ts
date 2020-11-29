@@ -1,5 +1,5 @@
 import { flow, pipe } from "../Function";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import { zip_ } from "./applicative";
 import { succeed } from "./constructors";
 import { recover } from "./fallible";

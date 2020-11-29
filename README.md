@@ -18,4 +18,4 @@ Throughout my journey of learning and applying functional programming, several i
 
 [Giulio Canti](https://github.com/gcanti) - author of `fp-ts`, `fp-ts-contrib`, `newtype-ts`, `monocle-ts`, `io-ts`, and other packages - is a forefather of the TypeScript functional programming community. Many of the modules in this project are descendants of his work.
 
-[Michael Arnaldi](https://github.com/Matechs-Garage) is the author of `effect-ts`, a TypeScript port of the `ZIO` library of Scala fame. He also implemented the encoding for Higher-Kinded Types that is used liberally in this package. The contents of `packages/core/src/Task` is forked from the `effect-ts` library as well.
+[Michael Arnaldi](https://github.com/Matechs-Garage) is the author of `effect-ts`, a TypeScript port of the `ZIO` library of Scala fame. He also implemented the encoding for Higher-Kinded Types that is used liberally in this package. The contents of `packages/core/src/AIO` is forked from the `effect-ts` library as well.

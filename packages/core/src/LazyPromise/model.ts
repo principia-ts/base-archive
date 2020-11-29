@@ -2,7 +2,7 @@ import type * as HKT from "@principia/prelude/HKT";
 
 /*
  * -------------------------------------------
- * Task Model
+ * LazyPromise Model
  * -------------------------------------------
  */
 

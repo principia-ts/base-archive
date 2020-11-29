@@ -32,7 +32,7 @@ export const getMonoid = <A>(M: Monoid<A>): Monoid<LazyPromise<A>> => ({
  * getRaceMonoid :: <a>() -> Monoid (LazyPromise a)
  * ```
  *
- * Monoid returning the first completed task.
+ * Monoid returning the first completed AIO.
  *
  * Note: uses `Promise.race` internally.
  *

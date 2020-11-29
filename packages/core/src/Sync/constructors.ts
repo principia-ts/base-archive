@@ -1,6 +1,6 @@
 import * as E from "../Either";
 import * as O from "../Option";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import type { Sync } from "./model";
 
 /*

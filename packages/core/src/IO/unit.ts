@@ -1,4 +1,4 @@
-import * as X from "../XPure";
+import * as X from "../SIO";
 import type { IO } from "./model";
 
 /*

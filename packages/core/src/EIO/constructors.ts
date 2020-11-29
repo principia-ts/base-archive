@@ -2,7 +2,7 @@ import type { Either } from "../Either";
 import * as E from "../Either";
 import type { FunctionN, Lazy } from "../Function";
 import type { IO } from "../IO";
-import * as X from "../XPure";
+import * as X from "../SIO";
 import type { EIO } from "./model";
 
 /*

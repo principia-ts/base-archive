@@ -1,7 +1,7 @@
+import * as T from "@principia/core/AIO";
 import type { DecodeErrors } from "@principia/core/DecodeError";
 import { SyncDecoderF } from "@principia/core/DecodeError";
 import type { Has } from "@principia/core/Has";
-import * as T from "@principia/core/Task";
 import * as M from "@principia/model";
 import type { Show } from "@principia/prelude";
 import { flow, pipe } from "@principia/prelude";
@@ -69,7 +69,7 @@ export function decodeJsonBody<E, A>(_: M.M<{}, E, A>, S: Show<DecodeErrors>) {
 
 export function encodeJsonResponse<E, A>(
   _: M.M<{}, E, A>
-): (a: A) => T.Task<Has<Context>, HttpRouteException, void> {
+): (a: A) => T.AIO<Has<Context>, HttpRouteException, void> {
   const encode = M.getEncoder(_).encode;
   return flow(encode, (l) =>
     T.gen(function* ($) {
