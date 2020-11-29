@@ -1,23 +1,21 @@
 # principia - TypeScript Functional Programming Principles
 
-`principia` is an academic pursuit and represents my ongoing efforts in learning the principles behind category theory and functional programming, as well as creating a correct and structured implementation of those principles. However, it also aims to be a functional functional library (pun absolutely intended) with high performance and powerful data types.
+`principia` represents my ongoing efforts in learning the principles behind category theory and functional programming, as well as creating a correct and structured implementation of those principles. However, I also aim for it to be a functional functional library (🙂) with high performance and powerful data types.
 
-There are no tests written for this code as of yet, so _caveat emptor_, use at your own risk.
+There are no tests written for this code as of yet. Use at your own risk!
 
-## Contributions, Included Works, and Derivations
+## Included Works and Forks
 
-For giving credit in this project, I use the word _derive_ to mean:
+Many portions of this software are forked from other projects. Essentially, this is an amalgamation of others' works along with my own contributions, which may include, but are not limited to, modifications to behavior, structure, or documentation. In essence, I wanted to use the concept provided by other packages, but maintain the code myself, to learn a useful skill and add features at my own leisure.
 
--  to obtain, develop, or modify from a source or origin
+Assume that everything marked as _derived_ or _forked_ from somewhere is in some way altered by me. Please don't report any issues you may encounter to the original author(s), as it may very well be my fault!
 
-Assume that everything marked as _derived from_ somewhere is in some way altered by me. Please don't report any issues you may encounter to the original author(s), as it may very well be my fault.
+Throughout the source code of this package, marked sections or `CREDITS` text files will provide links to code from which that section is forked. These are included to be a sort of bibliography.
 
-_Throughout the source code of this package, marked sections or_ `CREDITS` _text files will provide links to files from which that section is derived._
+## Awesome People
 
-Portions of this software are included, adapted, ported, or otherwise derived from other projects. Essentially, this is an amalgamation of others' works along with my own contributions. My contributions may include, but are not limited to, modifications to behavior, structure, or documentation.
+Throughout my journey of learning and applying functional programming, several individuals have been instrumental in my development.
 
-Throughout my journey of learning and applying functional programming, several individuals have been absolutely pivotal to my development.
+[Giulio Canti](https://github.com/gcanti) - author of `fp-ts`, `fp-ts-contrib`, `newtype-ts`, `monocle-ts`, `io-ts`, and other packages - has been instrumental to the TypeScript functional programming community. Many of the modules in this project are direct descendants of his work.
 
-Giulio Canti - author of `fp-ts`, `fp-ts-contrib`, `newtype-ts`, `monocle-ts`, `io-ts`, and other packages - has been instrumental to the TypeScript functional programming community. Many of the modules in this project are direct descendants of his work.
-
-Michael Arnaldi (and the contributors to Matechs Garage) is the author of `effect-ts`, a TypeScript port of the `ZIO` library of Scala fame. He also implemented the encoding for Higher-Kinded Types that is used liberally in this package. The contents of `packages/core/source/Task` is forked from the `effect-ts` library as well.
+[Michael Arnaldi](https://github.com/Matechs-Garage) is the author of `effect-ts`, a TypeScript port of the `ZIO` library of Scala fame. He also implemented the encoding for Higher-Kinded Types that is used liberally in this package. The contents of `packages/core/src/Task` is forked from the `effect-ts` library as well.
