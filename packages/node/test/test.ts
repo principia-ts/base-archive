@@ -4,55 +4,31 @@ import * as S from "@principia/core/Task/Stream";
 import * as Sink from "@principia/core/Task/Stream/Sink";
 import * as fs from "fs";
 import * as path from "path";
+import * as Con from "@principia/core/Task/Console";
+import * as E from "@principia/core/Either";
 import { inspect } from "util";
 
-import * as FS from "../src/fs";
+import * as PS from "../src/process";
 
-// (() => {
-//   console.time("a");
-//   FS.createReadStream(path.resolve(process.cwd(), "packages/node/test/test.txt"))
-//     ["|>"](
-//       S.run(FS.createWriteSink(path.resolve(process.cwd(), "packages/node/test/test_sink.txt")))
-//     )
-//     ["|>"]((x) =>
-//       T.run(x, (ex) => {
-//         console.log(inspect(ex));
-//         console.timeEnd("a");
-//       })
-//     );
-// })();
+/*
+ * const readLine = PS.stdin["|>"](S.run(Sink.take(1)));
+ * 
+ * const program = T.gen(function* (_) {
+ *   const console = yield* _(Con.Console);
+ *   yield* _(console.log("Enter some space-separated numbers:"));
+ *   const [input] = yield* _(readLine);
+ *   yield* _(
+ *     E.fold_(
+ *       input,
+ *       (err) => console.log(err),
+ *       (b) =>
+ *         b
+ *           .toString()
+ *           .split(" ")
+ *           .reduce((acc, v) => acc + parseFloat(v), 0)
+ *           ["|>"](console.log)
+ *     )
+ *   );
+ * });
+ */
 
-// (() => {
-//   console.time("b");
-//   const s = fs.createReadStream(path.resolve(process.cwd(), "packages/node/test/test.txt"));
-//   const w = fs.createWriteStream(
-//     path.resolve(process.cwd(), "packages/node/test/test_writestream.txt")
-//   );
-//   s.on("data", (chunk: Buffer) => w.write(chunk));
-//   s.on("error", (err) => {
-//     console.log(err);
-//     w.destroy(err);
-//     s.destroy();
-//   });
-//   w.on("error", (err) => {
-//     console.log(err);
-//     s.destroy(err);
-//     w.destroy();
-//   });
-//   s.on("close", () => {
-//     w.close();
-//     console.timeEnd("b");
-//   });
-// })();
-
-(() => {
-  FS.watchFile(path.resolve(process.cwd(), "packages/node/test/test.txt"))
-    ["|>"](S.foreach((stats) => T.total(() => console.log(inspect(stats)))))
-    ["|>"](T.fork)
-    ["|>"](
-      T.chain((exec) =>
-        T.sleep(10000)["|>"](T.andThen(T.chain_(T.fiberId(), (id) => exec.interruptAs(id))))
-      )
-    )
-    ["|>"](T.runMain);
-})();
