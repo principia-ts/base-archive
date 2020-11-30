@@ -1,4 +1,4 @@
-import * as T from "@principia/core/AIO";
+import * as I from "@principia/core/IO";
 
 import type { HttpRouteException } from "../exceptions/HttpRouteException";
 import { isHttpRouteException } from "../exceptions/HttpRouteException";
@@ -9,16 +9,16 @@ export function withHttpRouteExceptionHandler<R, E>(
   routes: Http.Routes<R, E>
 ): Http.Routes<R, Exclude<E, HttpRouteException>> {
   return Http.addMiddleware_(routes, (cont) => (ctx, next) =>
-    T.catchAll_(cont(ctx, next), (e) =>
-      T.gen(function* ($) {
-        yield* $(T.total(() => console.error(e)));
+    I.catchAll_(cont(ctx, next), (e) =>
+      I.gen(function* ($) {
+        yield* $(I.total(() => console.error(e)));
         if (isHttpRouteException(e)) {
           yield* $(ctx.res.status(e.status));
-          yield* $(ctx.res.set({ "Content-Type": ContentType.TEXT_PLAIN })["|>"](T.orDie));
-          yield* $(ctx.res.write(e.message)["|>"](T.orDie));
+          yield* $(ctx.res.set({ "Content-Type": ContentType.TEXT_PLAIN })["|>"](I.orDie));
+          yield* $(ctx.res.write(e.message)["|>"](I.orDie));
           yield* $(ctx.res.end());
         } else {
-          yield* $(T.fail(<Exclude<E, HttpRouteException>>e));
+          yield* $(I.fail(<Exclude<E, HttpRouteException>>e));
         }
       })
     )

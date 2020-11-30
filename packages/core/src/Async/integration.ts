@@ -1,16 +1,16 @@
-import { _A, _E, _I, _R, _U, AIOInstructionTag } from "../AIO/AIO/constants";
-import type { AIO, Instruction, URI } from "../AIO/AIO/model";
-import type { Cause } from "../AIO/Exit/Cause";
+import type { Cause } from "../IO/Cause";
+import { _A, _E, _I, _R, _U, IOInstructionTag } from "../IO/constants";
+import type { Instruction, IO, URI } from "../IO/model";
 import * as O from "../Option";
 import { AtomicReference } from "../Utils/support/AtomicReference";
 import type { Async } from "./model";
 
-export const AsynctoAIO = new AtomicReference<
-  O.Option<<R, E, A>(_: Async<R, E, A>) => AIO<R, E, A>>
->(O.none());
+export const AsynctoIO = new AtomicReference<O.Option<<R, E, A>(_: Async<R, E, A>) => IO<R, E, A>>>(
+  O.none()
+);
 
 export class _FailInstruction<E> {
-  readonly _tag = AIOInstructionTag.Fail;
+  readonly _tag = IOInstructionTag.Fail;
   readonly _S1!: (_: unknown) => void;
   readonly _S2!: () => never;
 
@@ -28,5 +28,5 @@ export class _FailInstruction<E> {
 
 export const asyncIntegrationNotImplemented = new _FailInstruction({
   _tag: "Die",
-  value: new Error("Async-AIO integration not implemented or unsupported")
+  value: new Error("Async-IO integration not implemented or unsupported")
 });

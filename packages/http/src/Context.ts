@@ -1,20 +1,19 @@
-import * as T from "@principia/core/AIO";
-import type { Clock } from "@principia/core/AIO/Clock";
-import * as Ex from "@principia/core/AIO/Exit";
-import * as C from "@principia/core/AIO/Exit/Cause";
-import * as M from "@principia/core/AIO/Managed";
-import * as Sc from "@principia/core/AIO/Schedule";
-import * as S from "@principia/core/AIO/Stream";
-import * as Sink from "@principia/core/AIO/Stream/Sink";
-import * as Q from "@principia/core/AIO/XQueue";
-import * as XR from "@principia/core/AIO/XRef";
-import * as XRM from "@principia/core/AIO/XRefM";
 import * as E from "@principia/core/Either";
-import type { Has } from "@principia/core/Has";
 import { tag } from "@principia/core/Has";
+import type { FIO, IO, UIO } from "@principia/core/IO";
+import * as T from "@principia/core/IO";
+import * as Ex from "@principia/core/IO/Exit";
+import * as C from "@principia/core/IO/Cause";
+import type { URef } from "@principia/core/IORef";
+import * as Ref from "@principia/core/IORef";
+import type { URefM } from "@principia/core/IORefM";
+import * as RefM from "@principia/core/IORefM";
+import * as M from "@principia/core/Managed";
 import * as O from "@principia/core/Option";
+import * as Q from "@principia/core/Queue";
 import type { ReadonlyRecord } from "@principia/core/Record";
-import { flow, not, pipe } from "@principia/prelude";
+import * as S from "@principia/core/Stream";
+import { flow } from "@principia/prelude";
 import { once } from "events";
 import type * as http from "http";
 import type { Socket } from "net";
@@ -32,28 +31,28 @@ export interface Context {
 export const Context = tag<Context>();
 
 export class Request {
-  readonly _req: XR.Ref<http.IncomingMessage>;
+  readonly _req: URef<http.IncomingMessage>;
 
-  private memoizedUrl: XR.Ref<E.Either<HttpRouteException, O.Option<Url.Url>>> = XR.unsafeMake(
+  private memoizedUrl: URef<E.Either<HttpRouteException, O.Option<Url.Url>>> = Ref.unsafeMake(
     E.right(O.none())
   );
 
   constructor(req: http.IncomingMessage) {
-    this._req = XR.unsafeMake(req);
+    this._req = Ref.unsafeMake(req);
   }
 
-  accessReq<R, E, A>(f: (req: http.IncomingMessage) => T.AIO<R, E, A>): T.AIO<R, E, A> {
+  accessReq<R, E, A>(f: (req: http.IncomingMessage) => IO<R, E, A>): IO<R, E, A> {
     return T.chain_(this._req.get, f);
   }
 
-  on(event: "close", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "data", listener: (chunk: any) => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "end", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "error", listener: (err: Error) => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "pause", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "readable", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "resume", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: string | symbol, listener: (...args: any[]) => T.IO<void>): T.IO<T.IO<void>> {
+  on(event: "close", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: "data", listener: (chunk: any) => UIO<void>): UIO<UIO<void>>;
+  on(event: "end", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: "error", listener: (err: Error) => UIO<void>): UIO<UIO<void>>;
+  on(event: "pause", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: "readable", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: "resume", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: string | symbol, listener: (...args: any[]) => UIO<void>): UIO<UIO<void>> {
     return T.chain_(this._req.get, (req) =>
       T.total(() => {
         const _l = (...args: any[]) => {
@@ -71,21 +70,21 @@ export class Request {
     );
   }
 
-  get headers(): T.IO<http.IncomingHttpHeaders> {
+  get headers(): UIO<http.IncomingHttpHeaders> {
     return T.map_(this._req.get, (req) => req.headers);
   }
 
-  get method(): T.IO<Method> {
+  get method(): UIO<Method> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return T.map_(this._req.get, (req) => req.method!.toUpperCase() as any);
   }
 
-  get urlString(): T.IO<string> {
+  get urlString(): UIO<string> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return T.map_(this._req.get, (req) => req.url!);
   }
 
-  get url(): T.EIO<HttpRouteException, Url.Url> {
+  get url(): FIO<HttpRouteException, Url.Url> {
     return T.chain_(
       this.memoizedUrl.get,
       E.fold(
@@ -117,15 +116,15 @@ export class Request {
     );
   }
 
-  header(name: string): T.IO<O.Option<string | string[]>> {
+  header(name: string): UIO<O.Option<string | string[]>> {
     return T.map_(this._req.get, (req) => O.fromNullable(req.headers[name]));
   }
 
-  get socket(): T.IO<Socket | TLSSocket> {
+  get socket(): UIO<Socket | TLSSocket> {
     return T.map_(this._req.get, (req) => req.socket);
   }
 
-  get protocol(): T.IO<string> {
+  get protocol(): UIO<string> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const previousThis = this;
     return T.gen(function* ($) {
@@ -135,11 +134,11 @@ export class Request {
     });
   }
 
-  get secure(): T.IO<boolean> {
+  get secure(): UIO<boolean> {
     return T.map_(this.protocol, (p) => p === "https");
   }
 
-  get ip(): T.IO<string> {
+  get ip(): UIO<string> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return T.map_(this.socket, (s) => s.remoteAddress!);
   }
@@ -151,7 +150,7 @@ export class Request {
       M.gen(function* ($) {
         const req = yield* $(previousThis._req.get);
         const queue = yield* $(
-          M.makeExit_(Q.makeUnbounded<T.EIO<O.Option<Error>, [Buffer]>>(), (q, _) => q.shutdown)
+          M.makeExit_(Q.makeUnbounded<FIO<O.Option<Error>, [Buffer]>>(), (q, _) => q.shutdown)
         );
 
         function dataListener(chunk: any) {
@@ -187,19 +186,19 @@ export class Request {
 }
 
 export class Response {
-  readonly _res: XRM.RefM<http.ServerResponse>;
+  readonly _res: URefM<http.ServerResponse>;
 
   constructor(res: http.ServerResponse) {
-    this._res = XRM.unsafeMake(res);
+    this._res = RefM.unsafeMake(res);
   }
 
-  on(event: "close", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "drain", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "error", listener: (err: Error) => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "finish", listener: () => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "pipe", listener: (src: Readable) => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: "unpipe", listener: (src: Readable) => T.IO<void>): T.IO<T.IO<void>>;
-  on(event: string | symbol, listener: (...args: any[]) => T.IO<void>): T.IO<T.IO<void>> {
+  on(event: "close", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: "drain", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: "error", listener: (err: Error) => UIO<void>): UIO<UIO<void>>;
+  on(event: "finish", listener: () => UIO<void>): UIO<UIO<void>>;
+  on(event: "pipe", listener: (src: Readable) => UIO<void>): UIO<UIO<void>>;
+  on(event: "unpipe", listener: (src: Readable) => UIO<void>): UIO<UIO<void>>;
+  on(event: string | symbol, listener: (...args: any[]) => UIO<void>): UIO<UIO<void>> {
     return T.chain_(this._res.get, (res) =>
       T.total(() => {
         const _l = (...args: any[]) => {
@@ -217,18 +216,16 @@ export class Response {
     );
   }
 
-  access<R, E, A>(f: (res: http.ServerResponse) => T.AIO<R, E, A>): T.AIO<R, E, A> {
+  access<R, E, A>(f: (res: http.ServerResponse) => IO<R, E, A>): IO<R, E, A> {
     return T.chain_(this._res.get, f);
   }
 
-  modify<R, E>(
-    f: (res: http.ServerResponse) => T.AIO<R, E, http.ServerResponse>
-  ): T.AIO<R, E, void> {
-    return XRM.update_(this._res, f);
+  modify<R, E>(f: (res: http.ServerResponse) => IO<R, E, http.ServerResponse>): IO<R, E, void> {
+    return RefM.update_(this._res, f);
   }
 
-  status(s: Status): T.IO<void> {
-    return XRM.update_(this._res, (res) =>
+  status(s: Status): UIO<void> {
+    return RefM.update_(this._res, (res) =>
       T.total(() => {
         res.statusCode = s;
         return res;
@@ -236,16 +233,16 @@ export class Response {
     );
   }
 
-  get headers(): T.IO<http.OutgoingHttpHeaders> {
+  get headers(): UIO<http.OutgoingHttpHeaders> {
     return T.map_(this._res.get, (res) => res.getHeaders());
   }
 
-  get(name: string): T.IO<O.Option<http.OutgoingHttpHeader>> {
+  get(name: string): UIO<O.Option<http.OutgoingHttpHeader>> {
     return T.map_(this._res.get, (res) => O.fromNullable(res.getHeaders()[name]));
   }
 
-  set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): T.EIO<HttpRouteException, void> {
-    return XRM.update_(this._res, (res) =>
+  set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpRouteException, void> {
+    return RefM.update_(this._res, (res) =>
       T.suspend(() => {
         const hs = Object.entries(headers);
         try {
@@ -264,11 +261,11 @@ export class Response {
     );
   }
 
-  has(name: string): T.IO<boolean> {
+  has(name: string): UIO<boolean> {
     return T.map_(this._res.get, (res) => res.hasHeader(name));
   }
 
-  write(chunk: string | Buffer): T.EIO<HttpRouteException, void> {
+  write(chunk: string | Buffer): FIO<HttpRouteException, void> {
     return T.chain_(this._res.get, (res) =>
       T.async<unknown, HttpRouteException, void>((cb) => {
         res.write(chunk, (err) =>
@@ -286,7 +283,7 @@ export class Response {
     );
   }
 
-  pipeFrom<R, E>(stream: S.Stream<R, E, string | Buffer>): T.AIO<R, HttpRouteException, void> {
+  pipeFrom<R, E>(stream: S.Stream<R, E, string | Buffer>): IO<R, HttpRouteException, void> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const _this = this;
     return S.toQueue_(stream)
@@ -332,7 +329,7 @@ export class Response {
       );
   }
 
-  end(): T.IO<void> {
+  end(): UIO<void> {
     return T.chain_(this._res.get, (res) =>
       T.total(() => {
         res.end();

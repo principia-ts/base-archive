@@ -25,8 +25,8 @@ export const memoize = <A, B>(f: (a: A) => B): ((a: A) => B) => {
   };
 };
 
-export * from "./infer";
-export * from "./types";
-export * from "./guards";
-export * from "./matchers";
 export * from "./combinators";
+export * from "./guards";
+export * from "./infer";
+export * from "./matchers";
+export * from "./types";

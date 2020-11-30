@@ -1,5 +1,5 @@
-import * as X from "../SIO";
-import type { IO } from "./model";
+import { succeed } from "./constructors";
+import type { UIO } from "./model";
 
 /*
  * -------------------------------------------
@@ -7,9 +7,6 @@ import type { IO } from "./model";
  * -------------------------------------------
  */
 
-/**
- * ```haskell
- * unit :: () -> IO ()
- * ```
- */
-export const unit: () => IO<void> = X.unit;
+export function unit(): UIO<void> {
+  return succeed(undefined);
+}

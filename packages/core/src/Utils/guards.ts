@@ -1,6 +1,6 @@
-import { Managed } from "../AIO/Managed/model";
 import type { Either } from "../Either";
 import type { Tag } from "../Has";
+import { Managed } from "../Managed/model";
 import type { Option } from "../Option";
 import type { SIO } from "../SIO";
 import type { Sync } from "../Sync";

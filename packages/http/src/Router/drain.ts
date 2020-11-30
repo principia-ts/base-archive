@@ -1,6 +1,7 @@
-import * as T from "@principia/core/AIO";
-import * as FR from "@principia/core/AIO/FiberRef";
 import * as A from "@principia/core/Array";
+import type { UIO } from "@principia/core/IO";
+import * as I from "@principia/core/IO";
+import * as FR from "@principia/core/IO/FiberRef";
 import * as Sy from "@principia/core/Sync";
 import { flow, identity, pipe } from "@principia/prelude";
 
@@ -31,18 +32,18 @@ function toArraySafe<R, E>(routes: Routes<R, E>): Sy.IO<ReadonlyArray<RouteFn<R,
 
 export const isRouterDraining = new FR.FiberRef(false, identity, (a, b) => a && b);
 
-export type ProcessFn = (_: Context) => T.IO<void>;
+export type ProcessFn = (_: Context) => UIO<void>;
 
 export function drain<R>(rs: Routes<R, never>) {
   const routes = Sy.runIO(toArraySafe(rs));
-  return T.gen(function* ($) {
-    const env = yield* $(T.ask<R>());
+  return I.gen(function* ($) {
+    const env = yield* $(I.ask<R>());
     const pfn = yield* $(
-      T.total(() =>
+      I.total(() =>
         A.reduce_(
           routes,
-          <ProcessFn>((ctx) => T.andThen_(ctx.res.status(Status.NotFound), ctx.res.end())),
-          (b, a) => (ctx) => T.giveAll_(a(ctx, b(ctx)), env)
+          <ProcessFn>((ctx) => I.andThen_(ctx.res.status(Status.NotFound), ctx.res.end())),
+          (b, a) => (ctx) => I.giveAll_(a(ctx, b(ctx)), env)
         )
       )
     );
@@ -51,7 +52,7 @@ export function drain<R>(rs: Routes<R, never>) {
       pipe(
         isRouterDraining,
         FR.set(true),
-        T.andThen(pipe(queue.take, T.chain(flow(pfn, T.fork)), T.forever))
+        I.andThen(pipe(queue.take, I.chain(flow(pfn, I.fork)), I.forever))
       )
     );
   });

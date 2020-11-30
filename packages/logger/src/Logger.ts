@@ -1,10 +1,10 @@
-import * as T from "@principia/core/AIO";
-import type { Clock } from "@principia/core/AIO/Clock";
-import { HasClock } from "@principia/core/AIO/Clock";
-import * as C from "@principia/core/AIO/Console";
-import * as L from "@principia/core/AIO/Layer";
 import type { Has } from "@principia/core/Has";
 import { tag } from "@principia/core/Has";
+import * as I from "@principia/core/IO";
+import type { Clock } from "@principia/core/IO/Clock";
+import { HasClock } from "@principia/core/IO/Clock";
+import * as C from "@principia/core/IO/Console";
+import * as L from "@principia/core/Layer";
 import * as fs from "@principia/node/fs";
 import { pipe } from "@principia/prelude";
 import type ChalkType from "chalk";
@@ -13,7 +13,7 @@ import stripAnsi from "strip-ansi";
 
 import type { ChalkFn } from "./utils";
 
-export type LogFn = (m: ChalkFn) => T.RIO<Has<Clock>, void>;
+export type LogFn = (m: ChalkFn) => I.URIO<Has<Clock>, void>;
 
 export type ColorMap = Record<LogLevel, ChalkType.Chalk>;
 
@@ -42,7 +42,7 @@ const severity: Record<LogLevel, number> = {
 export interface LoggerOptions {
   path: string;
   level?: LogLevel;
-  theme?: T.RIO<Has<Chalk>, ColorMap>;
+  theme?: I.URIO<Has<Chalk>, ColorMap>;
 }
 
 export type LoggerConfig = {
@@ -56,7 +56,7 @@ export function loggerConfig(config: LoggerOptions) {
     level: config.level ?? "error",
     theme:
       config.theme ??
-      T.asksService(Chalk)(({ chalk }) => ({
+      I.asksService(Chalk)(({ chalk }) => ({
         debug: chalk.gray,
         info: chalk.blue,
         warning: chalk.yellow,
@@ -71,12 +71,12 @@ export interface LogEntry {
 }
 const LogEntry = tag<LogEntry>();
 
-const timestamp = T.map_(
-  T.asksServiceM(HasClock)((clock) => clock.currentTime),
+const timestamp = I.map_(
+  I.asksServiceM(HasClock)((clock) => clock.currentTime),
   (ms) => `${formatISO9075(ms)}.${getMilliseconds(ms).toString().padStart(3, "0")}`
 );
 
-const showConsoleLogEntry = T.gen(function* (_) {
+const showConsoleLogEntry = I.gen(function* (_) {
   const config = yield* _(LoggerConfig);
   const { chalk } = yield* _(Chalk);
   const time = yield* _(timestamp);
@@ -87,26 +87,26 @@ const showConsoleLogEntry = T.gen(function* (_) {
   )}] ${entry.message} ${chalk.gray.dim(time)}`;
 });
 
-const showFileLogEntry = T.gen(function* (_) {
+const showFileLogEntry = I.gen(function* (_) {
   const time = yield* _(timestamp);
   const entry = yield* _(LogEntry);
   return `${time} [${entry.level.toUpperCase()}] ${stripAnsi(entry.message)}\n`;
 });
 
-const logToConsole = T.gen(function* (_) {
+const logToConsole = I.gen(function* (_) {
   const console = yield* _(C.Console);
   const entry = yield* _(showConsoleLogEntry);
   return yield* _(console.log(entry));
 });
 
-const logToFile = T.gen(function* (_) {
+const logToFile = I.gen(function* (_) {
   const show = yield* _(showFileLogEntry);
   const config = yield* _(LoggerConfig);
   return yield* _(fs.appendFile(config.path, show));
 });
 
 function _log(message: ChalkFn, level: LogLevel) {
-  return T.gen(function* (_) {
+  return I.gen(function* (_) {
     const { level: configLevel, path } = yield* _(LoggerConfig);
     const { chalk } = yield* _(Chalk);
     const console = yield* _(C.Console);
@@ -118,51 +118,51 @@ function _log(message: ChalkFn, level: LogLevel) {
     yield* _(
       pipe(
         logToConsole,
-        T.andThen(logToFile),
-        T.catchAll((error) => console.log(`Error when writing to path ${path}\n${error}`)),
-        T.when(() => severity[configLevel] >= severity[level]),
-        T.giveService(LogEntry)(entry)
+        I.andThen(logToFile),
+        I.catchAll((error) => console.log(`Error when writing to path ${path}\n${error}`)),
+        I.when(() => severity[configLevel] >= severity[level]),
+        I.giveService(LogEntry)(entry)
       )
     );
   });
 }
 
 export const LiveLogger = L.create(Logger).fromEffect(
-  T.asksServices({ config: LoggerConfig, console: C.Console, chalk: Chalk })(
+  I.asksServices({ config: LoggerConfig, console: C.Console, chalk: Chalk })(
     ({ config, console, chalk }): Logger => ({
       debug: (m) =>
         pipe(
           _log(m, "debug"),
-          T.giveService(C.Console)(console),
-          T.giveService(LoggerConfig)(config),
-          T.giveService(Chalk)(chalk)
+          I.giveService(C.Console)(console),
+          I.giveService(LoggerConfig)(config),
+          I.giveService(Chalk)(chalk)
         ),
       info: (m) =>
         pipe(
           _log(m, "info"),
-          T.giveService(C.Console)(console),
-          T.giveService(LoggerConfig)(config),
-          T.giveService(Chalk)(chalk)
+          I.giveService(C.Console)(console),
+          I.giveService(LoggerConfig)(config),
+          I.giveService(Chalk)(chalk)
         ),
       warning: (m) =>
         pipe(
           _log(m, "warning"),
-          T.giveService(C.Console)(console),
-          T.giveService(LoggerConfig)(config),
-          T.giveService(Chalk)(chalk)
+          I.giveService(C.Console)(console),
+          I.giveService(LoggerConfig)(config),
+          I.giveService(Chalk)(chalk)
         ),
       error: (m) =>
         pipe(
           _log(m, "error"),
-          T.giveService(C.Console)(console),
-          T.giveService(LoggerConfig)(config),
-          T.giveService(Chalk)(chalk)
+          I.giveService(C.Console)(console),
+          I.giveService(LoggerConfig)(config),
+          I.giveService(Chalk)(chalk)
         )
     })
   )
 );
 
-export const { debug, info, warning, error } = T.deriveLifted(Logger)(
+export const { debug, info, warning, error } = I.deriveLifted(Logger)(
   ["debug", "info", "warning", "error"],
   [],
   []

@@ -293,7 +293,7 @@ export function asksServiceInM<A>(
 
 /**
  * ```haskell
- * asService :: Tag a -> AIO r e a -> AIO r e (Has a)
+ * asService :: Tag a -> IO r e a -> IO r e (Has a)
  * ```
  *
  * Maps the success value of this effect to a service.

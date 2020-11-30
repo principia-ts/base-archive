@@ -1,11 +1,11 @@
-import * as T from "@principia/core/AIO";
-import * as Exit from "@principia/core/AIO/Exit";
-import * as L from "@principia/core/AIO/Layer";
-import * as M from "@principia/core/AIO/Managed";
-import * as Q from "@principia/core/AIO/XQueue";
 import { pipe } from "@principia/core/Function";
 import type { Has } from "@principia/core/Has";
 import { tag } from "@principia/core/Has";
+import * as I from "@principia/core/IO";
+import * as Exit from "@principia/core/IO/Exit";
+import * as L from "@principia/core/Layer";
+import * as M from "@principia/core/Managed";
+import * as Q from "@principia/core/Queue";
 import { intersect } from "@principia/core/Utils";
 import * as http from "http";
 
@@ -39,15 +39,15 @@ export const Http = L.fromRawManaged(
   M.gen(function* ($) {
     const queue = yield* $(Q.makeUnbounded<Context>());
     const server = yield* $(
-      T.total(() =>
+      I.total(() =>
         http.createServer((req, res) => {
-          T.run(queue.offer({ req: new Request(req), res: new Response(res) }));
+          I.run(queue.offer({ req: new Request(req), res: new Response(res) }));
         })
       )
     );
     const config = yield* $(ServerConfig);
 
-    const startServer = T.async<unknown, never, void>((resolve) => {
+    const startServer = I.async<unknown, never, void>((resolve) => {
       function clean() {
         server.removeListener("error", onError);
         server.removeListener("listening", onDone);
@@ -55,12 +55,12 @@ export const Http = L.fromRawManaged(
 
       function onError(error: Error) {
         clean();
-        resolve(T.die(error));
+        resolve(I.die(error));
       }
 
       function onDone() {
         clean();
-        resolve(T.unit());
+        resolve(I.unit());
       }
 
       server.listen(config.port, config.hostName);
@@ -72,12 +72,12 @@ export const Http = L.fromRawManaged(
     const managedServer = pipe(
       M.make_(startServer, () =>
         pipe(
-          T.async<unknown, never, void>((resolve) => {
-            server.close((err) => (err ? resolve(T.die(err)) : resolve(T.unit())));
+          I.async<unknown, never, void>((resolve) => {
+            server.close((err) => (err ? resolve(I.die(err)) : resolve(I.unit())));
           }),
-          T.result,
-          T.zip(T.result(queue.shutdown)),
-          T.chain(([ea, eb]) => T.done(Exit.zip_(ea, eb)))
+          I.result,
+          I.zip(I.result(queue.shutdown)),
+          I.chain(([ea, eb]) => I.done(Exit.zip_(ea, eb)))
         )
       ),
       M.map(() => intersect(Server.of({ server }), RequestQueue.of({ queue })))

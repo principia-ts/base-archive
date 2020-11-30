@@ -1,5 +1,5 @@
-import type * as T from "@principia/core/AIO";
 import * as FM from "@principia/core/FreeMonoid";
+import type { FIO, IO } from "@principia/core/IO";
 
 import type { Context } from "../Context";
 
@@ -10,7 +10,7 @@ export class Empty<R, E> {
   readonly _tag = "Empty";
 }
 
-export type RouteFn<R, E> = (ctx: Context, next: T.EIO<E, void>) => T.AIO<R, E, void>;
+export type RouteFn<R, E> = (ctx: Context, next: FIO<E, void>) => IO<R, E, void>;
 
 export type MiddlewareFn<R, E> = (cont: RouteFn<R, E>) => RouteFn<R, E>;
 

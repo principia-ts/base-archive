@@ -2,8 +2,8 @@ import type * as HKT from "@principia/prelude/HKT";
 
 import type * as Ac from "../Async";
 import { _AI } from "../Async/constants";
-import { _A, _E, _I, _R, _U, AIOInstructionTag } from "../AIO/AIO/constants";
-import type * as T from "../AIO/AIO/model";
+import { _A, _E, _I, _R, _U, IOInstructionTag } from "../IO/constants";
+import type * as I from "../IO/model";
 import { SIOIntegrationNotImplemented, SIOtoAIO } from "./integration";
 
 export const URI = "SIO";
@@ -29,17 +29,17 @@ export type _SI = typeof _SI;
  * including context, state, and failure.
  */
 export abstract class SIO<S1, S2, R, E, A> {
-  readonly _tag = AIOInstructionTag.Integration;
+  readonly _tag = IOInstructionTag.Integration;
   readonly _asyncTag = "SIO";
 
   readonly _S1!: (_: S1) => void;
   readonly _S2!: () => S2;
 
-  readonly [_U]!: T.URI;
+  readonly [_U]!: I.URI;
   readonly [_E]!: () => E;
   readonly [_A]!: () => A;
   readonly [_R]!: (_: R) => void;
-  get [_I](): T.Instruction {
+  get [_I](): I.Instruction {
     const xi = SIOtoAIO.get;
     if (xi._tag === "Some") {
       return xi.value(this as any)[_I];

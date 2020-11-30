@@ -1,38 +1,39 @@
-import * as T from "@principia/core/AIO";
-import * as S from "@principia/core/AIO/Stream";
-import * as Push from "@principia/core/AIO/Stream/internal/Push";
-import * as Sink from "@principia/core/AIO/Stream/Sink";
-import * as XQ from "@principia/core/AIO/XQueue";
 import * as E from "@principia/core/Either";
+import type { IO } from "@principia/core/IO";
+import * as I from "@principia/core/IO";
 import * as O from "@principia/core/Option";
+import * as Queue from "@principia/core/Queue";
+import * as S from "@principia/core/Stream";
+import * as Push from "@principia/core/Stream/Push";
+import * as Sink from "@principia/core/Stream/Sink";
 import * as Sy from "@principia/core/Sync";
 import { once } from "events";
 
-function stdinDataCb(queue: XQ.Queue<E.Either<Error, Buffer>>): (data: Buffer) => void {
+function stdinDataCb(queue: Queue.Queue<E.Either<Error, Buffer>>): (data: Buffer) => void {
   return (data) => {
-    T.run(queue.offer(E.right(data)));
+    I.run(queue.offer(E.right(data)));
   };
 }
 
-function stdinErrorCb(queue: XQ.Queue<E.Either<Error, Buffer>>): (err: Error) => void {
+function stdinErrorCb(queue: Queue.Queue<E.Either<Error, Buffer>>): (err: Error) => void {
   return (err) => {
-    T.run(queue.offer(E.left(err)));
+    I.run(queue.offer(E.left(err)));
   };
 }
 
 export const stdin: S.Stream<unknown, never, E.Either<Error, Buffer>> = S.chain_(
   S.bracket_(
-    T.gen(function* (_) {
-      const q = yield* _(XQ.makeUnbounded<E.Either<Error, Buffer>>());
+    I.gen(function* (_) {
+      const q = yield* _(Queue.makeUnbounded<E.Either<Error, Buffer>>());
       process.stdin.resume();
       process.stdin.on("data", stdinDataCb(q));
       process.stdin.on("error", stdinErrorCb(q));
       return q;
     }),
     (q) =>
-      T.andThen_(
+      I.andThen_(
         q.shutdown,
-        T.total(() => {
+        I.total(() => {
           process.stdin.removeListener("data", stdinDataCb);
           process.stdin.removeListener("error", stdinErrorCb);
           process.stdin.pause();
@@ -43,7 +44,7 @@ export const stdin: S.Stream<unknown, never, E.Either<Error, Buffer>> = S.chain_
 );
 
 function stdoutErrorCb(
-  cb: (_: T.AIO<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>) => void
+  cb: (_: IO<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>) => void
 ): (err?: Error) => void {
   return (err) => (err ? cb(Push.fail(err, [])) : undefined);
 }
@@ -53,7 +54,7 @@ export const stdout: Sink.Sink<unknown, Error, Buffer, never, void> = Sink.fromP
     is,
     () => Push.emit(undefined, []),
     (bufs) =>
-      T.async<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>(async (cb) => {
+      I.async<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>(async (cb) => {
         for (let i = 0; i < bufs.length; i++) {
           if (!process.stdout.write(bufs[i], stdoutErrorCb(cb)))
             await once(process.stdout, "drain");

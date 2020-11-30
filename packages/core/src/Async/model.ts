@@ -1,24 +1,24 @@
 import type * as HKT from "@principia/prelude/HKT";
 
-import { _A, _E, _I, _R, _U, AIOInstructionTag } from "../AIO/AIO/constants";
-import type * as T from "../AIO/AIO/model";
+import { _A, _E, _I, _R, _U, IOInstructionTag } from "../IO/constants";
+import type * as I from "../IO/model";
 import type { Sync } from "../Sync";
 import type * as Ex from "./AsyncExit";
 import { _AI, AsyncInstructionTag } from "./constants";
-import { asyncIntegrationNotImplemented, AsynctoAIO } from "./integration";
+import { asyncIntegrationNotImplemented, AsynctoIO } from "./integration";
 
-export abstract class Async<R, E, A> implements T.Integration<R, E, A> {
-  readonly _tag = AIOInstructionTag.Integration;
+export abstract class Async<R, E, A> implements I.Integration<R, E, A> {
+  readonly _tag = IOInstructionTag.Integration;
   readonly _S1!: (_: unknown) => void;
   readonly _S2!: () => never;
 
-  readonly [_U]!: T.URI;
+  readonly [_U]!: I.URI;
   readonly [_R]!: (_: R) => void;
   readonly [_E]!: () => E;
   readonly [_A]!: () => A;
 
-  get [_I](): T.Instruction {
-    const ai = AsynctoAIO.get;
+  get [_I](): I.Instruction {
+    const ai = AsynctoIO.get;
     if (ai._tag === "Some") {
       return ai.value(this)[_I];
     }

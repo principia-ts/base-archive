@@ -1,12 +1,15 @@
-// codegen:start { preset: barrel }
-export * from "./applicative";
-export * from "./apply";
+export * from "./applicative-par";
+export * from "./applicative-seq";
+export * from "./apply-par";
+export * from "./apply-seq";
+export * from "./bifunctor";
+export * from "./combinators";
 export * from "./constructors";
 export * from "./do";
+export * from "./fold";
 export * from "./functor";
+export * from "./integrations";
 export * from "./model";
 export * from "./monad";
-export * from "./monoid";
-export * from "./semigroup";
+export * from "./reader";
 export * from "./unit";
-// codegen:end

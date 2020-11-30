@@ -20,7 +20,7 @@ export function foldMapWithIndex_<M>(
       const result = iterator.next();
       if (result.done) {
         break;
-    }
+      }
       n += 1;
       res = M.combine_(res, f(n, result.value));
     }
