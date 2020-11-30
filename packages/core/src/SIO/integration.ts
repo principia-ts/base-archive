@@ -5,7 +5,7 @@ import * as O from "../Option";
 import { AtomicReference } from "../Utils/support/AtomicReference";
 import type { SIO } from "./model";
 
-export const SIOtoAIO = new AtomicReference<
+export const SIOtoIO = new AtomicReference<
   O.Option<<R, E, A>(_: SIO<unknown, never, R, E, A>) => IO<R, E, A>>
 >(O.none());
 

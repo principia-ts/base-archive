@@ -72,7 +72,7 @@ const renderFail = (error: string[]): Sequential =>
 const renderFailError = (error: Error): Sequential =>
   Sequential([Failure(["A checked error was not handled.", ...renderError(error)])]);
 
-const causeToSequential = <E>(cause: Cause<E>): Sy.IO<Sequential> =>
+const causeToSequential = <E>(cause: Cause<E>): Sy.USync<Sequential> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {
@@ -100,7 +100,7 @@ const causeToSequential = <E>(cause: Cause<E>): Sy.IO<Sequential> =>
     }
   });
 
-const linearSegments = <E>(cause: Cause<E>): Sy.IO<Step[]> =>
+const linearSegments = <E>(cause: Cause<E>): Sy.USync<Step[]> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Then": {
@@ -115,7 +115,7 @@ const linearSegments = <E>(cause: Cause<E>): Sy.IO<Step[]> =>
     }
   });
 
-const parallelSegments = <E>(cause: Cause<E>): Sy.IO<Sequential[]> =>
+const parallelSegments = <E>(cause: Cause<E>): Sy.USync<Sequential[]> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Both": {
@@ -160,7 +160,7 @@ const format = (segment: Segment): readonly string[] => {
   }
 };
 
-const prettyLines = <E>(cause: Cause<E>): Sy.IO<readonly string[]> =>
+const prettyLines = <E>(cause: Cause<E>): Sy.USync<readonly string[]> =>
   Sy.gen(function* (_) {
     const s = yield* _(causeToSequential(cause));
 
@@ -171,7 +171,7 @@ const prettyLines = <E>(cause: Cause<E>): Sy.IO<readonly string[]> =>
     return O.getOrElse_(A.updateAt(0, "╥")(format(s)), (): string[] => []);
   });
 
-export function prettyM<E>(cause: Cause<E>): Sy.IO<string> {
+export function prettyM<E>(cause: Cause<E>): Sy.USync<string> {
   return Sy.gen(function* (_) {
     const lines = yield* _(prettyLines(cause));
     return lines.join("\n");

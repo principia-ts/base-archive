@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import type { Monoid } from "@principia/prelude";
+
 import type { FoldlWhileState } from "./_internal";
 import {
   foldlCb,
@@ -82,4 +84,13 @@ export function reduceWhile<A, B>(
   f: (acc: B, value: A) => B
 ): (l: List<A>) => B {
   return (l) => reduceWhile_(l, initial, predicate, f);
+}
+
+export function foldMap_<M>(M: Monoid<M>): <A>(fa: List<A>, f: (a: A) => M) => M {
+  return (fa, f) => reduce_(fa, M.nat, (b, a) => M.combine_(b, f(a)));
+}
+
+export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: List<A>) => M {
+  const foldMapM_ = foldMap_(M);
+  return (f) => (fa) => foldMapM_(fa, f);
 }

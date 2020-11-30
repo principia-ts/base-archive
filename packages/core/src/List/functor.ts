@@ -1,4 +1,8 @@
+import type * as P from "@principia/prelude";
+import * as HKT from "@principia/prelude/HKT";
+
 import { getDepth, getPrefixSize, getSuffixSize, mapAffix, mapNode, mapPrefix } from "./_internal";
+import type { URI, V } from "./model";
 import { List } from "./model";
 
 /*
@@ -33,3 +37,8 @@ export function map_<A, B>(l: List<A>, f: (a: A) => B): List<B> {
 export function map<A, B>(f: (a: A) => B): (l: List<A>) => List<B> {
   return (l) => map_(l, f);
 }
+
+export const Functor: P.Functor<[URI], V> = HKT.instance({
+  map_,
+  map
+});

@@ -4,7 +4,13 @@ import type * as Ac from "../Async";
 import { _AI } from "../Async/constants";
 import { _A, _E, _I, _R, _U, IOInstructionTag } from "../IO/constants";
 import type * as I from "../IO/model";
-import { SIOIntegrationNotImplemented, SIOtoAIO } from "./integration";
+import { SIOIntegrationNotImplemented, SIOtoIO } from "./integration";
+
+/*
+ * -------------------------------------------
+ * SIO Model
+ * -------------------------------------------
+ */
 
 export const URI = "SIO";
 
@@ -27,6 +33,11 @@ export type _SI = typeof _SI;
  * fail with an `E` or succeed with an updated state `S2` and an `A`. Because
  * of its polymorphism `SIO` can be used to model a variety of effects
  * including context, state, and failure.
+ *
+ * Stateless `SIO` (without `S1` and `S2` parameters) is made to be type-compatible with `IO`,
+ * and can automatically be lifted into `IO` computations.
+ *
+ * @since 1.0.0
  */
 export abstract class SIO<S1, S2, R, E, A> {
   readonly _tag = IOInstructionTag.Integration;
@@ -40,7 +51,7 @@ export abstract class SIO<S1, S2, R, E, A> {
   readonly [_A]!: () => A;
   readonly [_R]!: (_: R) => void;
   get [_I](): I.Instruction {
-    const xi = SIOtoAIO.get;
+    const xi = SIOtoIO.get;
     if (xi._tag === "Some") {
       return xi.value(this as any)[_I];
     }
@@ -111,7 +122,7 @@ export class ModifyInstruction<S1, S2, A> extends SIO<S1, S2, unknown, never, A>
 
 export class ChainInstruction<S1, S2, R, E, A, S3, Q, D, B> extends SIO<S1, S3, Q & R, D | E, B> {
   readonly _sio = SIOInstructionTag.Chain;
-  constructor(readonly ma: SIO<S1, S2, R, E, A>, readonly f: (a: A) => SIO<S2, S3, Q, D, B>) {
+  constructor(readonly sio: SIO<S1, S2, R, E, A>, readonly f: (a: A) => SIO<S2, S3, Q, D, B>) {
     super();
   }
 }
@@ -124,7 +135,7 @@ export class FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C> 
 > {
   readonly _sio = SIOInstructionTag.Fold;
   constructor(
-    readonly fa: SIO<S1, S2, R, E, A>,
+    readonly sio: SIO<S1, S2, R, E, A>,
     readonly onFailure: (e: E) => SIO<S5, S3, R1, E1, B>,
     readonly onSuccess: (a: A) => SIO<S2, S4, R2, E2, C>
   ) {
@@ -141,7 +152,7 @@ export class AsksInstruction<R0, S1, S2, R, E, A> extends SIO<S1, S2, R0 & R, E,
 
 export class GiveInstruction<S1, S2, R, E, A> extends SIO<S1, S2, unknown, E, A> {
   readonly _sio = SIOInstructionTag.Give;
-  constructor(readonly fa: SIO<S1, S2, R, E, A>, readonly r: R) {
+  constructor(readonly sio: SIO<S1, S2, R, E, A>, readonly r: R) {
     super();
   }
 }

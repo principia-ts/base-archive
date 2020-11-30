@@ -40,7 +40,7 @@ export class FromSyncInstruction<R, E, A> extends SyncLayer<R, E, A> {
     super();
   }
 
-  scope(): Sy.IO<(_: SyncMemoMap) => Sy.Sync<R, E, A>> {
+  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R, E, A>> {
     return Sy.succeed(() => this.sync);
   }
 }
@@ -52,7 +52,7 @@ export class FreshInstruction<R, E, A> extends SyncLayer<R, E, A> {
     super();
   }
 
-  scope(): Sy.IO<(_: SyncMemoMap) => Sy.Sync<R, E, A>> {
+  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R, E, A>> {
     return Sy.succeed(getMemoOrElseCreate(this.layer));
   }
 }
@@ -64,7 +64,7 @@ export class SuspendInstruction<R, E, A> extends SyncLayer<R, E, A> {
     super();
   }
 
-  scope(): Sy.IO<(_: SyncMemoMap) => Sy.Sync<R, E, A>> {
+  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R, E, A>> {
     return Sy.succeed(getMemoOrElseCreate(this.factory()));
   }
 }
@@ -87,7 +87,7 @@ export class BothInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & R1, E | 
     );
   }
 
-  scope(): Sy.IO<(_: SyncMemoMap) => Sy.Sync<R & R1, E | E1, A & A1>> {
+  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R & R1, E | E1, A & A1>> {
     return this.scopeBoth(this);
   }
 }
@@ -126,7 +126,7 @@ export class FromInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1
     super();
   }
 
-  scope(): Sy.IO<(_: SyncMemoMap) => Sy.Sync<R & Erase<R1, A>, E | E1, A1>> {
+  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R & Erase<R1, A>, E | E1, A1>> {
     return Sy.succeed((_) =>
       pipe(
         getMemoOrElseCreate(this.left)(_),
@@ -169,7 +169,7 @@ export class AllInstruction<
     super();
   }
 
-  scope(): Sy.IO<(_: SyncMemoMap) => Sy.Sync<MergeR<Layers>, MergeE<Layers>, MergeA<Layers>>> {
+  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<MergeR<Layers>, MergeE<Layers>, MergeA<Layers>>> {
     return Sy.succeed((_) =>
       pipe(
         this.layers,

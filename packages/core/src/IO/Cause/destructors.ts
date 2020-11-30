@@ -71,7 +71,7 @@ export function foldSafe_<E, A>(
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A
-): Sy.IO<A> {
+): Sy.USync<A> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty":
@@ -127,22 +127,22 @@ export function fold<E, A>(
 /**
  * @internal
  */
-export function foldlSafe_<E, B>(
+export function foldLeftSafe_<E, B>(
   cause: Cause<E>,
   b: B,
   f: (b: B, cause: Cause<E>) => O.Option<B>
-): Sy.IO<B> {
+): Sy.USync<B> {
   return Sy.gen(function* (_) {
     const apply = O.getOrElse_(f(b, cause), () => b);
     switch (cause._tag) {
       case "Then": {
-        const l = yield* _(foldlSafe_(cause.left, apply, f));
-        const r = yield* _(foldlSafe_(cause.right, l, f));
+        const l = yield* _(foldLeftSafe_(cause.left, apply, f));
+        const r = yield* _(foldLeftSafe_(cause.right, l, f));
         return r;
       }
       case "Both": {
-        const l = yield* _(foldlSafe_(cause.left, apply, f));
-        const r = yield* _(foldlSafe_(cause.right, l, f));
+        const l = yield* _(foldLeftSafe_(cause.left, apply, f));
+        const r = yield* _(foldLeftSafe_(cause.right, l, f));
         return r;
       }
       default: {
@@ -154,7 +154,7 @@ export function foldlSafe_<E, B>(
 
 /**
  * ```haskell
- * foldl_ :: (Cause c) => (c e, a, ((a, c e) -> Option a)) -> a
+ * foldLeft_ :: (Cause c) => (c e, a, ((a, c e) -> Option a)) -> a
  * ```
  *
  * Accumulates a state over a Cause
@@ -162,14 +162,14 @@ export function foldlSafe_<E, B>(
  * @category Destructors
  * @since 1.0.0
  */
-export const foldl_ = F.trampoline(function loop<E, A>(
+export const foldLeft_ = F.trampoline(function loop<E, A>(
   cause: Cause<E>,
   a: A,
   f: (a: A, cause: Cause<E>) => O.Option<A>
 ): F.Trampoline<A> {
   const apply = O.getOrElse_(f(a, cause), () => a);
   return cause._tag === "Both" || cause._tag === "Then"
-    ? F.more(() => loop(cause.right, foldl_(cause.left, apply, f), f))
+    ? F.more(() => loop(cause.right, foldLeft_(cause.left, apply, f), f))
     : F.done(apply);
 });
 
@@ -180,7 +180,7 @@ export const foldl_ = F.trampoline(function loop<E, A>(
 
 /**
  * ```haskell
- * foldl :: (Cause c) => (a, ((a, c e) -> Option a)) -> c e -> a
+ * foldLeft :: (Cause c) => (a, ((a, c e) -> Option a)) -> c e -> a
  * ```
  *
  * Accumulates a state over a Cause
@@ -188,11 +188,11 @@ export const foldl_ = F.trampoline(function loop<E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export function foldl<E, A>(
+export function foldLeft<E, A>(
   a: A,
   f: (a: A, cause: Cause<E>) => O.Option<A>
 ): (cause: Cause<E>) => A {
-  return (cause) => foldl_(cause, a, f);
+  return (cause) => foldLeft_(cause, a, f);
 }
 
 /**

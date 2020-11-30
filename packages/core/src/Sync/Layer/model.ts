@@ -13,7 +13,7 @@ export abstract class SyncLayer<R, E, A> {
     return this;
   }
 
-  abstract scope(): Sy.IO<(_: SyncMemoMap) => Sy.Sync<R, E, A>>;
+  abstract scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R, E, A>>;
 
   build(): Sy.Sync<R, E, A> {
     const scope = () => this.scope();

@@ -7,6 +7,14 @@ import { isEmpty } from "./guards";
  * -------------------------------------------
  */
 
+export function foldLeft_<A, B>(
+  as: ReadonlyArray<A>,
+  onNil: () => B,
+  onCons: (head: A, tail: ReadonlyArray<A>) => B
+): B {
+  return isEmpty(as) ? onNil() : onCons(as[0], as.slice(1));
+}
+
 export function foldLeft<A, B>(
   onNil: Lazy<B>,
   onCons: (head: A, tail: ReadonlyArray<A>) => B

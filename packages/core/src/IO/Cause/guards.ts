@@ -1,6 +1,6 @@
 import { flow, pipe } from "../../Function";
 import * as O from "../../Option";
-import { dieOption, failureOption, foldl_, interruptOption } from "./destructors";
+import { dieOption, failureOption, foldLeft_, interruptOption } from "./destructors";
 import { empty } from "./empty";
 import { equalsCause } from "./eq";
 import type { Both, Cause, Then } from "./model";
@@ -50,7 +50,7 @@ export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
 export function isEmpty<E>(cause: Cause<E>): boolean {
   return (
     equalsCause(cause, empty) ||
-    foldl_(cause, true as boolean, (acc, c) => {
+    foldLeft_(cause, true as boolean, (acc, c) => {
       switch (c._tag) {
         case "Empty":
           return O.some(acc);
@@ -108,5 +108,5 @@ export function interrupted<E>(cause: Cause<E>): boolean {
 export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
   return (cause) =>
     equalsCause(that, cause) ||
-    foldl_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()));
+    foldLeft_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()));
 }

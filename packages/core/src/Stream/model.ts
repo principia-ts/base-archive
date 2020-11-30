@@ -63,12 +63,12 @@ export class Stream<R, E, A> {
 /**
  * Type aliases
  */
-export type IO<A> = Stream<unknown, never, A>;
-export type RIO<R, A> = Stream<R, never, A>;
-export type EIO<E, A> = Stream<unknown, E, A>;
+export type UStream<A> = Stream<unknown, never, A>;
+export type URStream<R, A> = Stream<R, never, A>;
+export type FStream<E, A> = Stream<unknown, E, A>;
 
 /**
- * The default chunk size used by the various combinators and constructors of [[Stream]].
+ * The default chunk size used by the various combinators and constructors of `Stream`.
  */
 export const DefaultChunkSize = 4096;
 

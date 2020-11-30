@@ -8,6 +8,7 @@ import type { NonEmptyArray } from "../NonEmptyArray";
 import type { Option } from "../Option";
 import { isSome, none, some } from "../Option";
 import { empty } from "./constructors";
+import { filter_ } from "./filterable";
 import { reduce_ } from "./foldable";
 import { isEmpty, isNonEmpty, isOutOfBound_ } from "./guards";
 import { chain_ } from "./monad";
@@ -271,6 +272,11 @@ export function findFirstMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A
   };
 }
 
+/**
+ * Find the first index for which a predicate holds
+ *
+ * @since 1.0.0
+ */
 export function findFirstIndex_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>): Option<number> {
   const len = as.length;
   for (let i = 0; i < len; i++) {
@@ -281,15 +287,23 @@ export function findFirstIndex_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>
   return none();
 }
 
+/**
+ * Find the first index for which a predicate holds
+ *
+ * @since 1.0.0
+ */
 export function findFirstIndex<A>(
   predicate: Predicate<A>
 ): (as: ReadonlyArray<A>) => Option<number> {
   return (as) => findFirstIndex_(as, predicate);
 }
 
-export const findLastIndex = <A>(predicate: Predicate<A>) => (
-  as: ReadonlyArray<A>
-): Option<number> => {
+/**
+ * Find the last index for which a predicate holds
+ *
+ * @since 1.0.0
+ */
+export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>): Option<number> {
   const len = as.length;
   for (let i = len - 1; i >= 0; i--) {
     if (predicate(as[i])) {
@@ -297,7 +311,18 @@ export const findLastIndex = <A>(predicate: Predicate<A>) => (
     }
   }
   return none();
-};
+}
+
+/**
+ * Find the last index for which a predicate holds
+ *
+ * @since 1.0.0
+ */
+export function findLastIndex<A>(
+  predicate: Predicate<A>
+): (as: ReadonlyArray<A>) => Option<number> {
+  return (as) => findLastIndex_(as, predicate);
+}
 
 export function unsafeInsertAt<A>(i: number, a: A, as: ReadonlyArray<A>): ReadonlyArray<A> {
   const xs = Array.from(as);
@@ -325,22 +350,47 @@ export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<Read
   return isOutOfBound_(i, as) ? none() : some(unsafeInsertAt(i, a, as));
 }
 
+/**
+ * Insert an element at the specified index, creating a new array, or returning `None` if the index is out of bounds
+ *
+ * @since 1.0.0
+ */
 export function insertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
   return (as) => insertAt_(as, i, a);
 }
 
+/**
+ * Change the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
+ *
+ * @since 1.0.0
+ */
 export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<ReadonlyArray<A>> {
   return isOutOfBound_(i, as) ? none() : some(unsafeUpdateAt(i, a, as));
 }
 
+/**
+ * Change the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
+ *
+ * @since 1.0.0
+ */
 export function updateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
   return (as) => updateAt_(as, i, a);
 }
 
+/**
+ * Delete the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
+ *
+ * @since 1.0.0
+ */
 export function deleteAt_<A>(as: ReadonlyArray<A>, i: number): Option<ReadonlyArray<A>> {
   return isOutOfBound_(i, as) ? none() : some(unsafeDeleteAt(i, as));
 }
 
+/**
+ * Delete the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
+ *
+ * @since 1.0.0
+ */
 export function deleteAt(i: number): <A>(as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
   return (as) => deleteAt_(as, i);
 }
@@ -371,10 +421,22 @@ export function modifyAt<A>(
   return (as) => modifyAt_(as, i, f);
 }
 
+/**
+ * Reverse an array, creating a new array
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export function reverse<A>(as: ReadonlyArray<A>): ReadonlyArray<A> {
   return isEmpty(as) ? as : as.slice().reverse();
 }
 
+/**
+ * Extracts from an array of `Either` all the `Right` elements. All the `Right` elements are extracted in order
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export function rights<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<A> {
   const rs: Array<A> = [];
   for (let i = 0; i < as.length; i++) {
@@ -386,6 +448,12 @@ export function rights<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<A> 
   return rs;
 }
 
+/**
+ * Extracts from an array of `Either` all the `Left` elements. All the `Right` elements are extracted in order
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export function lefts<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> {
   const ls: Array<E> = [];
   for (let i = 0; i < as.length; i++) {
@@ -397,10 +465,21 @@ export function lefts<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> {
   return ls;
 }
 
+/**
+ * Sort the elements of an array in increasing order, creating a new array
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export function sort<B>(O: Ord.Ord<B>): <A extends B>(as: readonly A[]) => readonly A[] {
   return (as) => (isEmpty(as) ? empty() : as.slice().sort((a, b) => toNumber(O.compare(a)(b))));
 }
 
+/**
+ * The function is reverse of `zip`. Takes an array of pairs and return two corresponding arrays
+ *
+ * @since 1.0.0
+ */
 export function unzip<A, B>(
   as: ReadonlyArray<readonly [A, B]>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<B>] {
@@ -415,8 +494,15 @@ export function unzip<A, B>(
   return [fa, fb];
 }
 
-export function elem<A>(E: Eq<A>): (a: A) => (as: ReadonlyArray<A>) => boolean {
-  return (a) => (as) => {
+/**
+ * Test if a value is a member of an array. Takes a `Eq<A>` as a single
+ * argument which returns the function to use to search for a value of type `A` in
+ * an array of type `ReadonlyArray<A>`.
+ *
+ * @since 1.0.0
+ */
+export function elem_<A>(E: Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
+  return (as, a) => {
     const predicate = (element: A) => E.equals(element)(a);
     let i = 0;
     const len = as.length;
@@ -429,6 +515,24 @@ export function elem<A>(E: Eq<A>): (a: A) => (as: ReadonlyArray<A>) => boolean {
   };
 }
 
+/**
+ * Test if a value is a member of an array. Takes a `Eq<A>` as a single
+ * argument which returns the function to use to search for a value of type `A` in
+ * an array of type `ReadonlyArray<A>`.
+ *
+ * @since 1.0.0
+ */
+export function elem<A>(E: Eq<A>): (a: A) => (as: ReadonlyArray<A>) => boolean {
+  const elemE_ = elem_(E);
+  return (a) => (as) => elemE_(as, a);
+}
+
+/**
+ * Remove duplicates from an array, keeping the first occurrence of an element.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export function uniq<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => {
     const elemS = elem(E);
@@ -445,6 +549,13 @@ export function uniq<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   };
 }
 
+/**
+ * Sort the elements of an array in increasing order, where elements are compared using first `ords[0]`, then `ords[1]`,
+ * etc...
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export function sortBy<B>(
   ords: ReadonlyArray<Ord.Ord<B>>
 ): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<B> {
@@ -492,25 +603,36 @@ export function comprehension<R>(
   return go(empty(), input);
 }
 
+export function union_<A>(
+  E: Eq<A>
+): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
+  const elemE_ = elem_(E);
+  return (xs, ys) =>
+    concat_(
+      xs,
+      filter_(ys, (a) => !elemE_(xs, a))
+    );
+}
+
 export function union<A>(
   E: Eq<A>
 ): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (ys) => (xs) => {
-    const elemE = elem(E);
-    return concat_(
-      xs,
-      ys.filter((a) => !elemE(a)(xs))
-    );
-  };
+  const unionE_ = union_(E);
+  return (ys) => (xs) => unionE_(xs, ys);
+}
+
+export function intersection_<A>(
+  E: Eq<A>
+): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
+  const elemE_ = elem_(E);
+  return (xs, ys) => filter_(xs, (a) => elemE_(ys, a));
 }
 
 export function intersection<A>(
   E: Eq<A>
 ): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (ys) => (xs) => {
-    const elemE = elem(E);
-    return xs.filter((a) => elemE(a)(ys));
-  };
+  const intersectionE_ = intersection_(E);
+  return (ys) => (xs) => intersectionE_(xs, ys);
 }
 
 export function chop_<A, B>(
@@ -544,12 +666,19 @@ export function chunksOf(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<
     as.length === 0 ? empty() : isOutOfBound_(n - 1, as) ? [as] : chop_(as, splitAt(n));
 }
 
-export const difference = <A>(E: Eq<A>) => (ys: ReadonlyArray<A>) => (
-  xs: ReadonlyArray<A>
-): ReadonlyArray<A> => {
-  const elemE = elem(E);
-  return xs.filter((a) => !elemE(a)(ys));
-};
+export function difference_<A>(
+  E: Eq<A>
+): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
+  const elemE_ = elem_(E);
+  return (xs, ys) => filter_(xs, (a) => !elemE_(ys, a));
+}
+
+export function difference<A>(
+  E: Eq<A>
+): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
+  const differenceE_ = difference_(E);
+  return (ys) => (xs) => differenceE_(xs, ys);
+}
 
 export function drop_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
   return as.slice(n, as.length);

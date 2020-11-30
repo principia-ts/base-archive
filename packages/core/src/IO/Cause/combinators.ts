@@ -5,7 +5,7 @@ import * as O from "../../Option";
 import * as Sy from "../../Sync";
 import type { FiberId } from "../Fiber/FiberId";
 import { both, fail, then } from "./constructors";
-import { failureOption, find, foldl_ } from "./destructors";
+import { failureOption, find, foldLeft_ } from "./destructors";
 import { empty } from "./empty";
 import { InterruptedException } from "./errors";
 import { map } from "./functor";
@@ -36,7 +36,7 @@ export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
  * Extracts a list of non-recoverable errors from the `Cause`.
  */
 export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
-  return foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
+  return foldLeft_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
     c._tag === "Die" ? O.some([...a, c.value]) : O.none()
   );
 }
@@ -45,7 +45,7 @@ export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
  * Produces a list of all recoverable errors `E` in the `Cause`.
  */
 export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
-  return foldl_(cause, [] as readonly E[], (a, c) =>
+  return foldLeft_(cause, [] as readonly E[], (a, c) =>
     c._tag === "Fail" ? O.some([...a, c.value]) : O.none()
   );
 }
@@ -55,7 +55,7 @@ export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
  * by this `Cause`.
  */
 export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
-  return foldl_(cause, new Set(), (s, c) =>
+  return foldLeft_(cause, new Set(), (s, c) =>
     c._tag === "Interrupt" ? O.some(s.add(c.fiberId)) : O.none()
   );
 }
@@ -75,7 +75,7 @@ export function interruptedOnly<E>(cause: Cause<E>): boolean {
 /**
  * @internal
  */
-export function stripFailuresSafe<E>(cause: Cause<E>): Sy.IO<Cause<never>> {
+export function stripFailuresSafe<E>(cause: Cause<E>): Sy.USync<Cause<never>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {
@@ -116,7 +116,7 @@ export function stripFailures<E>(cause: Cause<E>): Cause<never> {
 /**
  * @internal
  */
-export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.IO<Cause<E>> {
+export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {
@@ -157,7 +157,7 @@ export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
 /**
  * @internal
  */
-export function keepDefectsSafe<E>(cause: Cause<E>): Sy.IO<O.Option<Cause<never>>> {
+export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<never>>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {
@@ -214,7 +214,7 @@ export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
 
 export function sequenceCauseEitherSafe<E, A>(
   cause: Cause<E.Either<E, A>>
-): Sy.IO<E.Either<Cause<E>, A>> {
+): Sy.USync<E.Either<Cause<E>, A>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {
@@ -262,7 +262,7 @@ export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Eithe
   return Sy.runIO(sequenceCauseEitherSafe(cause));
 }
 
-export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.IO<O.Option<Cause<E>>> {
+export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<O.Option<Cause<E>>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {

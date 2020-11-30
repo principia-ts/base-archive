@@ -2,14 +2,14 @@ import * as I from "../IO";
 import * as M from "../Managed";
 import { fromEffect } from "./constructors";
 import { map_, mapM_ } from "./functor";
-import type { RIO } from "./model";
+import type { URStream } from "./model";
 import { Stream } from "./model";
 import { chain_ } from "./monad";
 
 /**
  * Accesses the whole environment of the stream.
  */
-export function ask<R>(): RIO<R, R> {
+export function ask<R>(): URStream<R, R> {
   return fromEffect(I.ask<R>());
 }
 

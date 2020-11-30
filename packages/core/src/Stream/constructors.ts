@@ -15,7 +15,7 @@ import type { Option } from "../Option";
 import * as O from "../Option";
 import type { XQueue } from "../Queue";
 import * as XQ from "../Queue";
-import type { EIO, IO, RIO } from "./model";
+import type { FStream, URStream, UStream } from "./model";
 import { Stream } from "./model";
 import { chain, flatten } from "./monad";
 import * as Pull from "./Pull";
@@ -24,7 +24,7 @@ import * as Take from "./Take";
 /**
  * Creates a stream from an array of values
  */
-export function fromArray<A>(c: ReadonlyArray<A>): IO<A> {
+export function fromArray<A>(c: ReadonlyArray<A>): UStream<A> {
   return new Stream(
     pipe(
       I.do,
@@ -47,21 +47,21 @@ export function fromArray<A>(c: ReadonlyArray<A>): IO<A> {
 /**
  * Creates a single-valued pure stream
  */
-export function succeed<O>(o: O): IO<O> {
+export function succeed<O>(o: O): UStream<O> {
   return fromArray([o]);
 }
 
 /**
  * The stream that always fails with the `error`
  */
-export function fail<E>(e: E): EIO<E, never> {
+export function fail<E>(e: E): FStream<E, never> {
   return fromEffect(I.fail(e));
 }
 
 /**
  * The `Stream` that dies with the error.
  */
-export function die(e: unknown): IO<never> {
+export function die(e: unknown): UStream<never> {
   return fromEffect(I.die(e));
 }
 
@@ -75,12 +75,12 @@ export function dieMessage(message: string): Stream<unknown, never, never> {
 /**
  * The empty stream
  */
-export const empty: IO<never> = new Stream(M.succeed(Pull.end));
+export const empty: UStream<never> = new Stream(M.succeed(Pull.end));
 
 /**
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
  */
-export function iterate<A>(a: A, f: (a: A) => A): IO<A> {
+export function iterate<A>(a: A, f: (a: A) => A): UStream<A> {
   return new Stream(
     pipe(XR.make(a), I.toManaged(), M.map(flow(XR.getAndUpdate(f), I.map(A.pure))))
   );
@@ -133,7 +133,7 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
 /**
  * Creates a one-element stream that never fails and executes the finalizer when it ends.
  */
-export function finalizer<R>(finalizer: I.URIO<R, unknown>): RIO<R, unknown> {
+export function finalizer<R>(finalizer: I.URIO<R, unknown>): URStream<R, unknown> {
   return bracket((_) => finalizer)(I.unit());
 }
 

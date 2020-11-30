@@ -1,8 +1,13 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable no-var */
+/**
+ * `List` is an implementation of a Relaxed Radix-Balanced Tree, a fast immutable data structure.
+ *
+ * It is forked from [List](https://github.com/funkia/list)
+ */
+
+import type * as HKT from "@principia/prelude/HKT";
+
 import type { Node } from "./_internal";
 import { arrayPush, ForwardListIterator } from "./_internal";
-import { unsafeNth_ } from "./destructors";
 import { reduce_ } from "./foldable";
 
 /**
@@ -43,6 +48,8 @@ export type MutableList<A> = { -readonly [K in keyof List<A>]: List<A>[K] } & {
 
 export const URI = "List";
 export type URI = typeof URI;
+
+export type V = HKT.Auto;
 
 declare module "@principia/prelude/HKT" {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

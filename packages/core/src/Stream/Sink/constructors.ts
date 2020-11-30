@@ -16,7 +16,7 @@ import { Sink } from "./model";
 /**
  * Creates a sink from a Push
  */
-export function fromPush<R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>) {
+export function fromPush<R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>): Sink<R, E, I, L, Z> {
   return new Sink(M.succeed(push));
 }
 
@@ -325,7 +325,7 @@ export function fromFold<I, Z>(
     chunk: ReadonlyArray<I>,
     i: number,
     len: number
-  ): Sy.IO<readonly [Z, O.Option<ReadonlyArray<I>>]> =>
+  ): Sy.USync<readonly [Z, O.Option<ReadonlyArray<I>>]> =>
     Sy.gen(function* (_) {
       if (i === len) {
         return [z, O.none()];

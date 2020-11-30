@@ -71,7 +71,7 @@ export function runStateEither_<S1, S2, E, A>(
 
     switch (I._sio) {
       case SIOInstructionTag.Chain: {
-        const nested = I.ma[_SI];
+        const nested = I.sio[_SI];
         const continuation = I.f;
 
         switch (nested._sio) {
@@ -153,7 +153,7 @@ export function runStateEither_<S1, S2, E, A>(
         break;
       }
       case SIOInstructionTag.Fold: {
-        current = I.fa;
+        current = I.sio;
         pushContinuation(new FoldFrame(I.onFailure, I.onSuccess));
         break;
       }
@@ -163,7 +163,7 @@ export function runStateEither_<S1, S2, E, A>(
       }
       case SIOInstructionTag.Give: {
         environment = I.r;
-        current = I.fa;
+        current = I.sio;
         break;
       }
       case SIOInstructionTag.Modify: {

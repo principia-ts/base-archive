@@ -1,7 +1,7 @@
 export interface CombineFn_<A> {
-  (l: A, r: A): A;
+  (x: A, y: A): A;
 }
 
 export interface CombineFn<A> {
-  (r: A): (l: A) => A;
+  (y: A): (x: A) => A;
 }

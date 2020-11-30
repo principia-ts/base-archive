@@ -189,6 +189,18 @@ export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: ReadonlyAr
   return (f) => (fa) => foldMap_(M)(fa, f);
 }
 
+/**
+ * ```haskell
+ * fold :: (Monoid m, Foldable f) => m a -> f a -> a
+ * ```
+ *
+ * @category Foldable
+ * @since 1.0.0
+ */
+export function fold<M>(M: Monoid<M>): (fa: ReadonlyArray<M>) => M {
+  return (fa) => reduceWithIndex_(fa, M.nat, (_, b, a) => M.combine_(b, a));
+}
+
 export const FoldableWithIndex: P.FoldableWithIndex<[URI], V> = HKT.instance({
   reduceWithIndex_,
   reduceWithIndex,
