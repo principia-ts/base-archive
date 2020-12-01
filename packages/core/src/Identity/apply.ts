@@ -50,7 +50,7 @@ export function zipWith<A, B, C>(fb: B, f: (a: A, b: B) => C): (fa: A) => C {
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
-  ap_: ap_,
+  ap_,
   ap,
   zipWith_,
   zipWith

@@ -1,3 +1,6 @@
+import * as A from "../Array/_core";
+import type { _A, _E, _R } from "../Utils";
+import { succeed } from "./constructors";
 import { map_ } from "./functor";
 import type { Async } from "./model";
 import { chain_ } from "./monad";
@@ -7,6 +10,20 @@ import { chain_ } from "./monad";
  * Sequential Apply Async
  * -------------------------------------------
  */
+
+export function tuple<A extends ReadonlyArray<Async<any, any, any>>>(
+  ...fas: A & { 0: Async<any, any, any> }
+): Async<_R<A[number]>, _E<A[number]>, { [K in keyof A]: _A<A[K]> }> {
+  return A.reduce_(
+    fas,
+    (succeed(A.empty<any>()) as unknown) as Async<
+      _R<A[number]>,
+      _E<A[number]>,
+      { [K in keyof A]: _A<A[K]> }
+    >,
+    (b, a) => zipWith_(b, a, (acc, r) => A.append_(acc, r)) as any
+  );
+}
 
 export function zipWith_<R, E, A, R1, E1, B, C>(
   fa: Async<R, E, A>,

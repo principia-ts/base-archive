@@ -22,7 +22,7 @@ export function ap_<Q, D, A, B, R, E>(
   fab: IO<Q, D, (a: A) => B>,
   fa: IO<R, E, A>
 ): IO<Q & R, D | E, B> {
-  return chain_(fab, (ab) => map_(fa, ab));
+  return zipWith_(fab, fa, (f, a) => f(a));
 }
 
 /**
@@ -42,7 +42,7 @@ export function ap<R, E, A>(
 }
 
 export function apFirst_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, A> {
-  return chain_(fa, (a) => map_(fb, () => a));
+  return zipWith_(fa, fb, (a, _) => a);
 }
 
 export function apFirst<Q, D, B>(
@@ -62,10 +62,7 @@ export function apFirst<Q, D, B>(
  * @since 1.0.0
  */
 export function apSecond_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, B> {
-  return ap_(
-    map_(fa, () => (b: B) => b),
-    fb
-  );
+  return zipWith_(fa, fb, (_, b) => b);
 }
 
 /**

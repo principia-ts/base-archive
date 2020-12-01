@@ -35,10 +35,10 @@ export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: A) => B {
 }
 
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
-  reduce_: reduce_,
+  reduce_,
   reduce,
-  foldMap_: foldMap_,
+  foldMap_,
   foldMap,
-  reduceRight_: reduceRight_,
+  reduceRight_,
   reduceRight
 });

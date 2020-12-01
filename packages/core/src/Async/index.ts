@@ -12,6 +12,7 @@ export * from "./do";
 export * from "./fallible";
 export * from "./fold";
 export * from "./functor";
+export * from "./gen";
 export * from "./integration";
 export * from "./InterruptionState";
 export * from "./model";

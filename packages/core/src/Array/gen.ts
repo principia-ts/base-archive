@@ -4,13 +4,15 @@ import { isOption } from "../Utils/guards";
 import { Monad } from "./monad";
 
 const adapter: {
-  <A>(_: O.Option<A>): DSL.GenHKT<ReadonlyArray<A>, A>;
-  <A>(_: ReadonlyArray<A>): DSL.GenHKT<ReadonlyArray<A>, A>;
-} = (_: any) => {
-  if (isOption(_)) {
-    return new DSL.GenHKT(_._tag === "None" ? [] : [_.value]);
-  }
-  return new DSL.GenHKT(_);
-};
+  <A>(_: () => O.Option<A>): DSL.GenLazyHKT<ReadonlyArray<A>, A>;
+  <A>(_: () => ReadonlyArray<A>): DSL.GenLazyHKT<ReadonlyArray<A>, A>;
+} = (_: () => any) =>
+  new DSL.GenLazyHKT(() => {
+    const x = _();
+    if (isOption(x)) {
+      return new DSL.GenHKT(x._tag === "None" ? [] : [x.value]);
+    }
+    return x;
+  });
 
 export const gen = DSL.genWithHistoryF(Monad, { adapter });

@@ -7,6 +7,10 @@ import type * as Ex from "./AsyncExit";
 import { _AI, AsyncInstructionTag } from "./constants";
 import { asyncIntegrationNotImplemented, AsynctoIO } from "./integration";
 
+/**
+ * `Async` is a lightweight `IO` datatype for interruptible asynchronous computation.
+ * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fiber`s.
+ */
 export abstract class Async<R, E, A> implements I.Integration<R, E, A> {
   readonly _tag = IOInstructionTag.Integration;
   readonly _S1!: (_: unknown) => void;
@@ -29,6 +33,10 @@ export abstract class Async<R, E, A> implements I.Integration<R, E, A> {
     return this as any;
   }
 }
+
+export type UAsync<A> = Async<unknown, never, A>;
+export type FAsync<E, A> = Async<unknown, E, A>;
+export type URAsync<R, A> = Async<R, never, A>;
 
 export const URI = "Async";
 export type URI = typeof URI;
@@ -55,6 +63,7 @@ export type AsyncInstruction =
   | FailInstruction<any>
   | TotalInstruction<any>
   | PartialInstruction<any, any>
+  | InterruptInstruction
   | Sync<any, any, any>;
 
 export class SucceedInstruction<A> extends Async<unknown, never, A> {
@@ -95,6 +104,10 @@ export class FailInstruction<E> extends Async<unknown, E, never> {
   constructor(readonly e: E) {
     super();
   }
+}
+
+export class InterruptInstruction extends Async<unknown, never, never> {
+  readonly _asyncTag = AsyncInstructionTag.Interrupt;
 }
 
 export class AsksInstruction<R0, R, E, A> extends Async<R & R0, E, A> {

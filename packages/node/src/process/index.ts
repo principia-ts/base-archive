@@ -7,6 +7,7 @@ import * as S from "@principia/core/Stream";
 import * as Push from "@principia/core/Stream/Push";
 import * as Sink from "@principia/core/Stream/Sink";
 import * as Sy from "@principia/core/Sync";
+import {FSync, USync} from "@principia/core/Sync";
 import { once } from "events";
 
 function stdinDataCb(queue: Queue.Queue<E.Either<Error, Buffer>>): (data: Buffer) => void {
@@ -64,22 +65,22 @@ export const stdout: Sink.Sink<unknown, Error, Buffer, never, void> = Sink.fromP
   )
 );
 
-export function abort(): Sy.IO<never> {
+export function abort(): USync<never> {
   return Sy.total(process.abort);
 }
 
-export function chdir(directory: string): Sy.EIO<Error, void> {
+export function chdir(directory: string): FSync<Error, void> {
   return Sy.partial_(
     () => process.chdir(directory),
     (err) => err as Error
   );
 }
 
-export function cpuUsage(previousValue?: NodeJS.CpuUsage): Sy.IO<NodeJS.CpuUsage> {
+export function cpuUsage(previousValue?: NodeJS.CpuUsage): USync<NodeJS.CpuUsage> {
   return Sy.total(() => process.cpuUsage(previousValue));
 }
 
-export function cwd(): Sy.IO<string> {
+export function cwd(): USync<string> {
   return Sy.total(() => process.cwd());
 }
 
@@ -91,17 +92,17 @@ export function emitWarning(
     ctor?: Function;
     detail?: string;
   }
-): Sy.IO<void> {
+): USync<void> {
   return Sy.total(() => process.emitWarning(warning, options as any));
 }
 
-export function exit(code?: number): Sy.IO<never> {
+export function exit(code?: number): USync<never> {
   return Sy.total(() => process.exit(code));
 }
 
 export const exitCode = Sy.total(() => process.exitCode);
 
-export function hrtime(time?: readonly [number, number]): Sy.IO<readonly [number, number]> {
+export function hrtime(time?: readonly [number, number]): USync<readonly [number, number]> {
   return Sy.total(() => process.hrtime(time as any));
 }
 

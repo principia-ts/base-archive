@@ -12,7 +12,7 @@
  */
 
 /**
- * @category type classes
+ * @category Type Classes
  * @since 1.0.0
  */
 export interface JoinSemilattice<A> {

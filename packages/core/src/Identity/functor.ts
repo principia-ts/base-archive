@@ -18,6 +18,6 @@ export function map<A, B>(f: (a: A) => B): (fa: A) => B {
 }
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-  map_: map_,
+  map_,
   map
 });

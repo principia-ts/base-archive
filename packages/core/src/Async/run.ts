@@ -1,5 +1,4 @@
 import * as A from "../Array/_core";
-import { fold_ as foldEither } from "../Either";
 import { pipe } from "../Function";
 import * as X from "../SIO";
 import type { Stack } from "../Utils/Stack";
@@ -170,6 +169,12 @@ export function runPromiseExitEnv_<R, E, A>(
               break;
             }
           }
+          break;
+        }
+        case AsyncInstructionTag.Interrupt: {
+          interrupted = true;
+          interruptionState.interrupt();
+          current = undefined;
           break;
         }
         case AsyncInstructionTag.Asks: {

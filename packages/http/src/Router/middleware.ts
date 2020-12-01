@@ -1,5 +1,6 @@
 import * as FM from "@principia/core/FreeMonoid";
 import type { FIO, IO } from "@principia/core/IO";
+import type { USync } from "@principia/core/Sync";
 import * as Sy from "@principia/core/Sync";
 
 import type { Context } from "../Context";
@@ -9,7 +10,7 @@ import { Combine, Middleware, Route } from "./model";
 export function addMiddlewareSafe<R, E, R1, E1>(
   routes: Routes<R, E>,
   middle: (cont: RouteFn<R, E>) => (ctx: Context, next: FIO<E, void>) => IO<R1, E1, void>
-): Sy.IO<Routes<R1, E1>> {
+): USync<Routes<R1, E1>> {
   return Sy.gen(function* (_) {
     switch (routes._tag) {
       case "Empty": {

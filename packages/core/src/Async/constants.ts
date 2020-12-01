@@ -13,5 +13,6 @@ export enum AsyncInstructionTag {
   Give = "Give",
   Finalize = "Finalize",
   All = "All",
-  Fail = "Fail"
+  Fail = "Fail",
+  Interrupt = "Interrupt"
 }

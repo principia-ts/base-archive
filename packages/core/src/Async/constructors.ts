@@ -3,6 +3,7 @@ import type { Async } from "./model";
 import {
   DoneInstruction,
   FailInstruction,
+  InterruptInstruction,
   PartialInstruction,
   PromiseInstruction,
   SucceedInstruction,
@@ -66,4 +67,8 @@ export function partial<E>(
   onThrow: (error: unknown) => E
 ): <A>(thunk: () => A) => Async<unknown, E, A> {
   return (thunk) => partial_(thunk, onThrow);
+}
+
+export function interrupt(): Async<unknown, never, never> {
+  return new InterruptInstruction();
 }

@@ -25,7 +25,7 @@ export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => pipe(ta, G.map(id
 
 export const Traversable: P.Traversable<[URI], V> = HKT.instance({
   ...Functor,
-  traverse_: traverse_,
+  traverse_,
   traverse,
   sequence
 });

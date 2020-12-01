@@ -2,6 +2,7 @@ import * as A from "@principia/core/Array";
 import type { UIO } from "@principia/core/IO";
 import * as I from "@principia/core/IO";
 import * as FR from "@principia/core/IO/FiberRef";
+import type { USync } from "@principia/core/Sync";
 import * as Sy from "@principia/core/Sync";
 import { flow, identity, pipe } from "@principia/prelude";
 
@@ -10,7 +11,7 @@ import { RequestQueue } from "../HttpServer";
 import { Status } from "../utils";
 import type { RouteFn, Routes } from "./model";
 
-function toArraySafe<R, E>(routes: Routes<R, E>): Sy.IO<ReadonlyArray<RouteFn<R, E>>> {
+function toArraySafe<R, E>(routes: Routes<R, E>): USync<ReadonlyArray<RouteFn<R, E>>> {
   return Sy.gen(function* (_) {
     switch (routes._tag) {
       case "Empty": {
