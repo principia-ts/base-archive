@@ -135,7 +135,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
   ): IORef<EC, ED, C, D> =>
     new DerivedAll<EC, ED, C, D, S>(
       this.value,
-      (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), E.right) as E.Either<ED, D>,
+      (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => (s) =>
         pipe(
           this.getEither(s),
