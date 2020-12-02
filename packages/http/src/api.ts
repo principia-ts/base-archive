@@ -16,19 +16,22 @@ export const readBody = I.gen(function* ($) {
   let removeOnEnd = I.unit();
   return yield* $(
     I.asyncM<unknown, never, unknown, never, Buffer>((resolve) =>
-      I.gen(function* ($) {
-        const body: Uint8Array[] = [];
-        removeOnData = yield* $(req.on("data", onData));
-        removeOnEnd = yield* $(req.on("end", onEnd));
-        function onData(chunk: any) {
-          return I.total(() => {
-            body.push(chunk);
-          });
-        }
-        function onEnd() {
-          return I.total(() => resolve(I.succeed(Buffer.concat(body))));
-        }
-      })["|>"](I.onInterrupt(() => I.andThenPar_(removeOnData, removeOnEnd)))
+      I.onInterrupt_(
+        I.gen(function* ($) {
+          const body: Uint8Array[] = [];
+          removeOnData = yield* $(req.on("data", onData));
+          removeOnEnd = yield* $(req.on("end", onEnd));
+          function onData(chunk: any) {
+            return I.total(() => {
+              body.push(chunk);
+            });
+          }
+          function onEnd() {
+            return I.total(() => resolve(I.succeed(Buffer.concat(body))));
+          }
+        }),
+        () => I.andThenPar_(removeOnData, removeOnEnd)
+      )
     )
   );
 });
