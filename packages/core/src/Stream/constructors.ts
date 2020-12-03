@@ -3,6 +3,7 @@ import type { Either } from "../Either";
 import * as E from "../Either";
 import { flow, pipe } from "../Function";
 import * as I from "../IO";
+import type { Cause } from "../IO/Cause";
 import * as C from "../IO/Cause";
 import type { HasClock } from "../IO/Clock";
 import { sequential } from "../IO/ExecutionStrategy";
@@ -70,6 +71,10 @@ export function die(e: unknown): UStream<never> {
  */
 export function dieMessage(message: string): Stream<unknown, never, never> {
   return fromEffect(I.dieMessage(message));
+}
+
+export function halt<E>(cause: Cause<E>): Stream<unknown, E, never> {
+  return fromEffect(I.halt(cause));
 }
 
 /**

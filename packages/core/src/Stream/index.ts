@@ -8,5 +8,4 @@ export * from "./functor";
 export * from "./gen";
 export * from "./model";
 export * from "./monad";
-export * from "./node";
 export * from "./reader";
