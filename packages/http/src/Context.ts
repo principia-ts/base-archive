@@ -13,6 +13,7 @@ import * as O from "@principia/core/Option";
 import * as Q from "@principia/core/Queue";
 import type { ReadonlyRecord } from "@principia/core/Record";
 import * as S from "@principia/core/Stream";
+import * as NS from "@principia/node/stream";
 import { flow } from "@principia/prelude";
 import { once } from "events";
 import type * as http from "http";
@@ -144,44 +145,7 @@ export class Request {
   }
 
   get stream(): S.Stream<unknown, Error, Buffer> {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const previousThis = this;
-    return new S.Stream(
-      M.gen(function* ($) {
-        const req = yield* $(previousThis._req.get);
-        const queue = yield* $(
-          M.makeExit_(Q.makeUnbounded<FIO<O.Option<Error>, [Buffer]>>(), (q, _) => q.shutdown)
-        );
-
-        function dataListener(chunk: any) {
-          return T.run(queue.offer(T.succeed([chunk])));
-        }
-        function endListener() {
-          return T.run(queue.offer(T.fail(O.none())));
-        }
-        function errorListener(err: Error) {
-          return T.run(queue.offer(T.fail(O.some(err))));
-        }
-
-        yield* $(
-          M.makeExit_(
-            T.total(() => {
-              req.on("data", dataListener);
-              req.on("end", endListener);
-              req.on("error", errorListener);
-            }),
-            () =>
-              T.total(() => {
-                req.removeListener("data", dataListener);
-                req.removeListener("end", endListener);
-                req.removeListener("error", errorListener);
-              })
-          )
-        );
-
-        return T.flatten(queue.take);
-      })
-    );
+    return S.chain_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req));
   }
 }
 
@@ -286,47 +250,50 @@ export class Response {
   pipeFrom<R, E>(stream: S.Stream<R, E, string | Buffer>): IO<R, HttpRouteException, void> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const _this = this;
-    return S.toQueue_(stream)
-      ["|>"](
-        M.use((q) =>
-          T.gen(function* ($) {
-            const res = yield* $(_this._res.get);
-            const go = () =>
-              q.take["|>"](
-                T.chain(
-                  Ex.foldM(
-                    flow(
-                      C.sequenceCauseOption,
-                      O.fold(() => T.unit(), T.halt)
-                    ),
-                    (chunks) =>
-                      T.async<unknown, Error | E, void>(async (cb) => {
-                        for (let i = 0; i < chunks.length; i++) {
-                          const needsDrain = res.write(chunks[i], (err) =>
-                            err ? cb(T.fail(err)) : undefined
-                          );
-                          if (needsDrain) {
-                            await once(res, "drain");
-                          }
-                        }
-                        cb(go());
-                      })
-                  )
-                )
-              );
-            yield* $(go());
-          })
-        )
-      )
-      ["|>"](
-        T.catchAll((e) =>
-          T.fail<HttpRouteException>({
-            _tag: "HttpRouteException",
-            status: 500,
-            message: `Failed to write response body: ${e}`
-          })
-        )
-      );
+
+    /*
+     * return S.toQueue_(stream)
+     *   ["|>"](
+     *     M.use((q) =>
+     *       T.gen(function* ($) {
+     *         const res = yield* $(_this._res.get);
+     *         const go = () =>
+     *           q.take["|>"](
+     *             T.chain(
+     *               Ex.foldM(
+     *                 flow(
+     *                   C.sequenceCauseOption,
+     *                   O.fold(() => T.unit(), T.halt)
+     *                 ),
+     *                 (chunks) =>
+     *                   T.async<unknown, Error | E, void>(async (cb) => {
+     *                     for (let i = 0; i < chunks.length; i++) {
+     *                       const needsDrain = res.write(chunks[i], (err) =>
+     *                         err ? cb(T.fail(err)) : undefined
+     *                       );
+     *                       if (needsDrain) {
+     *                         await once(res, "drain");
+     *                       }
+     *                     }
+     *                     cb(go());
+     *                   })
+     *               )
+     *             )
+     *           );
+     *         yield* $(go());
+     *       })
+     *     )
+     *   )
+     *   ["|>"](
+     *     T.catchAll((e) =>
+     *       T.fail<HttpRouteException>({
+     *         _tag: "HttpRouteException",
+     *         status: 500,
+     *         message: `Failed to write response body: ${e}`
+     *       })
+     *     )
+     *   );
+     */
   }
 
   end(): UIO<void> {

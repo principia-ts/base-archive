@@ -9,7 +9,7 @@ import * as Ex from "../../IO/Exit";
 import type { Option } from "../../Option";
 import * as O from "../../Option";
 import type { Stream } from "../model";
-import { combineChunks } from "./combineChunks";
+import { combineChunks_ } from "./combineChunks";
 
 function _zipChunks<A, B, C>(
   fa: ReadonlyArray<A>,
@@ -133,12 +133,14 @@ export function zipWithPar_<R, E, O, O2, O3, R1, E1>(
     }
   };
 
-  return pipe(
+  return combineChunks_(
     stream,
-    combineChunks(that)<State<O, O2>>({
+    that,
+    <State<O, O2>>{
       _tag: "Running",
       excess: E.left(A.empty())
-    })((st, p1, p2) => {
+    },
+    (st, p1, p2) => {
       switch (st._tag) {
         case "End": {
           return I.pure(Ex.fail(O.none()));
@@ -170,7 +172,7 @@ export function zipWithPar_<R, E, O, O2, O3, R1, E1>(
           );
         }
       }
-    })
+    }
   );
 }
 

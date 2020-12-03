@@ -724,3 +724,25 @@ export function dropLastWhile<A>(
 ): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => dropLastWhile_(as, predicate);
 }
+
+export function collectWhile_<A, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A) => Option<B>
+): ReadonlyArray<B> {
+  const result: Array<B> = [];
+  for (let i = 0; i < as.length; i++) {
+    const o = f(as[i]);
+    if (o._tag === "Some") {
+      result.push(o.value);
+    } else {
+      break;
+    }
+  }
+  return result;
+}
+
+export function collectWhile<A, B>(
+  f: (a: A) => Option<B>
+): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (as) => collectWhile_(as, f);
+}
