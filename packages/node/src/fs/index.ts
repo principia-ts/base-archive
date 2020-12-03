@@ -83,6 +83,7 @@ export function createReadStream(
   path: fs.PathLike,
   options?: CreateReadStreamOptions
 ): S.Stream<unknown, ErrnoException, Buffer> {
+  const chunkSize = options?.chunkSize ?? 1024 * 64;
   return S.chain_(
     S.bracket_(
       I.zipPar_(
@@ -100,20 +101,20 @@ export function createReadStream(
       ([fd, _]) => I.orDie(close(fd))
     ),
     ([fd, state]) =>
-      S.repeatEffectChunkOption(
+      S.repeatEffectOption(
         I.gen(function* (_) {
           const [pos, end] = yield* _(state.get);
-          const n = Math.min(end - pos + 1, options?.chunkSize ?? 64);
-          const [bytes, chunk] = yield* _(pipe(read(fd, n, pos), I.mapError(O.some)));
+          const n = Math.min(end - pos + 1, chunkSize);
+          const [bytes, chunk] = yield* _(I.mapError_(read(fd, n, pos), O.some));
 
           yield* _(I.when_(I.fail(O.none()), () => bytes === 0));
           yield* _(state.set([pos + n, end]));
           if (bytes !== chunk.length) {
             const dst = Buffer.allocUnsafeSlow(bytes);
             chunk.copy(dst, 0, 0, bytes);
-            return [dst];
+            return dst;
           } else {
-            return [chunk];
+            return chunk;
           }
         })
       )

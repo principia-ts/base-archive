@@ -3,6 +3,7 @@ import { SyncDecoderF } from "@principia/core/DecodeError";
 import type { Has } from "@principia/core/Has";
 import type { IO } from "@principia/core/IO";
 import * as I from "@principia/core/IO";
+import * as S from "@principia/core/Stream";
 import * as M from "@principia/model";
 import type { Show } from "@principia/prelude";
 import { flow, pipe } from "@principia/prelude";
@@ -12,28 +13,8 @@ import type { HttpRouteException } from "./exceptions/HttpRouteException";
 
 export const readBody = I.gen(function* ($) {
   const { req } = yield* $(Context);
-  let removeOnData = I.unit();
-  let removeOnEnd = I.unit();
-  return yield* $(
-    I.asyncM<unknown, never, unknown, never, Buffer>((resolve) =>
-      I.onInterrupt_(
-        I.gen(function* ($) {
-          const body: Uint8Array[] = [];
-          removeOnData = yield* $(req.on("data", onData));
-          removeOnEnd = yield* $(req.on("end", onEnd));
-          function onData(chunk: any) {
-            return I.total(() => {
-              body.push(chunk);
-            });
-          }
-          function onEnd() {
-            return I.total(() => resolve(I.succeed(Buffer.concat(body))));
-          }
-        }),
-        () => I.andThenPar_(removeOnData, removeOnEnd)
-      )
-    )
-  );
+  const chunks = yield* $(S.runCollect(req.stream));
+  return Buffer.concat(chunks);
 });
 
 export const parseJsonBody = I.gen(function* ($) {

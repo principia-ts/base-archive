@@ -2,8 +2,6 @@ import * as E from "@principia/core/Either";
 import { tag } from "@principia/core/Has";
 import type { FIO, IO, UIO } from "@principia/core/IO";
 import * as T from "@principia/core/IO";
-import * as C from "@principia/core/IO/Cause";
-import * as Ex from "@principia/core/IO/Exit";
 import type { URef } from "@principia/core/IORef";
 import * as Ref from "@principia/core/IORef";
 import type { URefM } from "@principia/core/IORefM";
@@ -13,13 +11,12 @@ import * as O from "@principia/core/Option";
 import * as Q from "@principia/core/Queue";
 import type { ReadonlyRecord } from "@principia/core/Record";
 import * as S from "@principia/core/Stream";
+import * as Pull from "@principia/core/Stream/Pull";
 import * as NS from "@principia/node/stream";
-import { flow } from "@principia/prelude";
-import { once } from "events";
 import type * as http from "http";
 import type { Socket } from "net";
 import type { Readable } from "stream";
-import type { TLSSocket } from "tls";
+import { TLSSocket } from "tls";
 import * as Url from "url";
 
 import type { HttpRouteException } from "./exceptions";
@@ -31,6 +28,45 @@ export interface Context {
 }
 export const Context = tag<Context>();
 
+interface CloseEvent {
+  readonly _tag: "Close";
+}
+
+interface DataEvent {
+  readonly _tag: "Data";
+  readonly chunk: Buffer;
+}
+
+interface EndEvent {
+  readonly _tag: "End";
+}
+
+interface ErrorEvent {
+  readonly _tag: "Error";
+  readonly error: Error;
+}
+
+interface PauseEvent {
+  readonly _tag: "Pause";
+}
+
+interface ReadableEvent {
+  readonly _tag: "Readble";
+}
+
+interface ResumeEvent {
+  readonly _tag: "Resume";
+}
+
+export type RequestEvent =
+  | CloseEvent
+  | DataEvent
+  | EndEvent
+  | ErrorEvent
+  | PauseEvent
+  | ReadableEvent
+  | ResumeEvent;
+
 export class Request {
   readonly _req: URef<http.IncomingMessage>;
 
@@ -38,37 +74,62 @@ export class Request {
     E.right(O.none())
   );
 
+  eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, RequestEvent>>>;
+
   constructor(req: http.IncomingMessage) {
     this._req = Ref.unsafeMake(req);
-  }
 
-  accessReq<R, E, A>(f: (req: http.IncomingMessage) => IO<R, E, A>): IO<R, E, A> {
-    return T.chain_(this._req.get, f);
-  }
-
-  on(event: "close", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: "data", listener: (chunk: any) => UIO<void>): UIO<UIO<void>>;
-  on(event: "end", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: "error", listener: (err: Error) => UIO<void>): UIO<UIO<void>>;
-  on(event: "pause", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: "readable", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: "resume", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: string | symbol, listener: (...args: any[]) => UIO<void>): UIO<UIO<void>> {
-    return T.chain_(this._req.get, (req) =>
-      T.total(() => {
-        const _l = (...args: any[]) => {
-          if (args) {
-            T.run(listener(...args));
-          } else {
-            T.run(listener());
-          }
-        };
-        req.on(event, _l);
-        return T.total(() => {
-          req.removeListener(event, _l);
-        });
-      })
+    this.eventStream = S.broadcastDynamic_(
+      new S.Stream(
+        M.gen(function* ($) {
+          const queue = yield* $(Q.makeUnbounded<RequestEvent>());
+          const done = yield* $(Ref.make(false));
+          yield* $(
+            T.total(() => {
+              req.on("close", () => {
+                T.run(queue.offer({ _tag: "Close" }));
+              });
+              req.on("data", (chunk) => {
+                T.run(queue.offer({ _tag: "Data", chunk }));
+              });
+              req.on("end", () => {
+                T.run(queue.offer({ _tag: "End" }));
+              });
+              req.on("pause", () => {
+                T.run(queue.offer({ _tag: "Pause" }));
+              });
+              req.on("error", (error) => {
+                T.run(queue.offer({ _tag: "Error", error }));
+              });
+              req.on("readable", () => {
+                T.run(queue.offer({ _tag: "Readble" }));
+              });
+              req.on("resume", () => {
+                T.run(queue.offer({ _tag: "Resume" }));
+              });
+            })
+          );
+          return T.chain_(done.get, (b) =>
+            b
+              ? Pull.end
+              : T.chain_(
+                  queue.take,
+                  (event): T.UIO<ReadonlyArray<RequestEvent>> => {
+                    if (event._tag === "Close") {
+                      return T.andThen_(done.set(true), Pull.emit(event));
+                    }
+                    return Pull.emit(event);
+                  }
+                )
+          );
+        })
+      ),
+      1
     );
+  }
+
+  access<R, E, A>(f: (req: http.IncomingMessage) => IO<R, E, A>): IO<R, E, A> {
+    return T.chain_(this._req.get, f);
   }
 
   get headers(): UIO<http.IncomingHttpHeaders> {
@@ -130,7 +191,7 @@ export class Request {
     const previousThis = this;
     return T.gen(function* ($) {
       const socket = yield* $(previousThis.socket);
-      if ((socket as TLSSocket).encrypted) return "https";
+      if (socket instanceof TLSSocket && socket.encrypted) return "https";
       else return "http";
     });
   }
@@ -149,34 +210,82 @@ export class Request {
   }
 }
 
+interface DrainEvent {
+  readonly _tag: "Drain";
+}
+
+interface FinishEvent {
+  readonly _tag: "Finish";
+}
+
+interface PipeEvent {
+  readonly _tag: "Pipe";
+  readonly src: Readable;
+}
+
+interface UnpipeEvent {
+  readonly _tag: "Unpipe";
+  readonly src: Readable;
+}
+
+export type ResponseEvent =
+  | CloseEvent
+  | DrainEvent
+  | ErrorEvent
+  | FinishEvent
+  | PipeEvent
+  | UnpipeEvent;
+
 export class Response {
   readonly _res: URefM<http.ServerResponse>;
 
+  eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, ResponseEvent>>>;
+
   constructor(res: http.ServerResponse) {
     this._res = RefM.unsafeMake(res);
-  }
-
-  on(event: "close", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: "drain", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: "error", listener: (err: Error) => UIO<void>): UIO<UIO<void>>;
-  on(event: "finish", listener: () => UIO<void>): UIO<UIO<void>>;
-  on(event: "pipe", listener: (src: Readable) => UIO<void>): UIO<UIO<void>>;
-  on(event: "unpipe", listener: (src: Readable) => UIO<void>): UIO<UIO<void>>;
-  on(event: string | symbol, listener: (...args: any[]) => UIO<void>): UIO<UIO<void>> {
-    return T.chain_(this._res.get, (res) =>
-      T.total(() => {
-        const _l = (...args: any[]) => {
-          if (args) {
-            T.run(listener(...args));
-          } else {
-            T.run(listener());
-          }
-        };
-        res.on(event, _l);
-        return T.total(() => {
-          res.removeListener(event, _l);
-        });
-      })
+    this.eventStream = S.broadcastDynamic_(
+      new S.Stream(
+        M.gen(function* ($) {
+          const queue = yield* $(Q.makeUnbounded<ResponseEvent>());
+          const done = yield* $(Ref.make(false));
+          yield* $(
+            T.total(() => {
+              res.on("close", () => {
+                T.run(queue.offer({ _tag: "Close" }));
+              });
+              res.on("drain", () => {
+                T.run(queue.offer({ _tag: "Drain" }));
+              });
+              res.on("finish", () => {
+                T.run(queue.offer({ _tag: "Finish" }));
+              });
+              res.on("error", (error) => {
+                T.run(queue.offer({ _tag: "Error", error }));
+              });
+              res.on("pipe", (src) => {
+                T.run(queue.offer({ _tag: "Pipe", src }));
+              });
+              res.on("unpipe", (src) => {
+                T.run(queue.offer({ _tag: "Unpipe", src }));
+              });
+            })
+          );
+          return T.chain_(done.get, (b) =>
+            b
+              ? Pull.end
+              : T.chain_(
+                  queue.take,
+                  (event): T.UIO<ReadonlyArray<ResponseEvent>> => {
+                    if (event._tag === "Close") {
+                      return T.andThen_(done.set(true), Pull.emit(event));
+                    }
+                    return Pull.emit(event);
+                  }
+                )
+          );
+        })
+      ),
+      1
     );
   }
 
@@ -247,53 +356,21 @@ export class Response {
     );
   }
 
-  pipeFrom<R, E>(stream: S.Stream<R, E, string | Buffer>): IO<R, HttpRouteException, void> {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const _this = this;
-
-    /*
-     * return S.toQueue_(stream)
-     *   ["|>"](
-     *     M.use((q) =>
-     *       T.gen(function* ($) {
-     *         const res = yield* $(_this._res.get);
-     *         const go = () =>
-     *           q.take["|>"](
-     *             T.chain(
-     *               Ex.foldM(
-     *                 flow(
-     *                   C.sequenceCauseOption,
-     *                   O.fold(() => T.unit(), T.halt)
-     *                 ),
-     *                 (chunks) =>
-     *                   T.async<unknown, Error | E, void>(async (cb) => {
-     *                     for (let i = 0; i < chunks.length; i++) {
-     *                       const needsDrain = res.write(chunks[i], (err) =>
-     *                         err ? cb(T.fail(err)) : undefined
-     *                       );
-     *                       if (needsDrain) {
-     *                         await once(res, "drain");
-     *                       }
-     *                     }
-     *                     cb(go());
-     *                   })
-     *               )
-     *             )
-     *           );
-     *         yield* $(go());
-     *       })
-     *     )
-     *   )
-     *   ["|>"](
-     *     T.catchAll((e) =>
-     *       T.fail<HttpRouteException>({
-     *         _tag: "HttpRouteException",
-     *         status: 500,
-     *         message: `Failed to write response body: ${e}`
-     *       })
-     *     )
-     *   );
-     */
+  pipeFrom<R, E>(stream: S.Stream<R, E, Buffer>): IO<R, HttpRouteException, void> {
+    return T.catchAll_(
+      T.chain_(this._res.get, (res) =>
+        S.run_(
+          stream,
+          NS.sinkFromWritable(() => res)
+        )
+      ),
+      (e) =>
+        T.fail<HttpRouteException>({
+          _tag: "HttpRouteException",
+          status: 500,
+          message: `Failed to write response body: ${e}`
+        })
+    );
   }
 
   end(): UIO<void> {

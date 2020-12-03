@@ -1,4 +1,4 @@
-import { pipe } from "@principia/prelude";
+import { flow, pipe } from "@principia/prelude";
 
 import * as A from "../../Array";
 import * as I from "../../IO";
@@ -115,4 +115,28 @@ export function broadcast_<R, E, O>(
     broadcastedQueues_(stream, n, maximumLag),
     M.map(A.map((q) => flattenExitOption(fromXQueueWithShutdown(q))))
   );
+}
+
+export function broadcastDynamic_<R, E, O>(
+  stream: Stream<R, E, O>,
+  maximumLag: number
+): M.Managed<R, never, I.UIO<Stream<unknown, E, O>>> {
+  return M.map_(
+    M.map_(
+      distributedWithDynamic_(
+        stream,
+        maximumLag,
+        (_) => I.succeed((_) => true),
+        (_) => I.unit()
+      ),
+      I.map(snd)
+    ),
+    I.map(flow(fromXQueueWithShutdown, flattenExitOption))
+  );
+}
+
+export function broadcastDynamic(
+  maximumLag: number
+): <R, E, O>(stream: Stream<R, E, O>) => M.Managed<R, never, I.UIO<Stream<unknown, E, O>>> {
+  return (stream) => broadcastDynamic_(stream, maximumLag);
 }

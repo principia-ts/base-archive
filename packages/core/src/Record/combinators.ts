@@ -105,11 +105,11 @@ export function modifyAt<N extends string, A>(
   return (r) => modifyAt_(r, k, f);
 }
 
-export function lookup_<N extends string, A>(r: ReadonlyRecord<N, A>, k: N): Option<A> {
+export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): Option<A> {
   return hasOwnProperty_.call(r, k) ? O.some(r[k]) : O.none();
 }
 
-export function lookup<N extends string>(k: N): <A>(r: ReadonlyRecord<N, A>) => Option<A> {
+export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => Option<A> {
   return (r) => lookup_(r, k);
 }
 
