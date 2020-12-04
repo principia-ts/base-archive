@@ -746,3 +746,11 @@ export function collectWhile<A, B>(
 ): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (as) => collectWhile_(as, f);
 }
+
+export function join_(as: ReadonlyArray<string>, s: string): string {
+  return as.join(s);
+}
+
+export function join(s: string): (as: ReadonlyArray<string>) => string {
+  return (as) => as.join(s);
+}

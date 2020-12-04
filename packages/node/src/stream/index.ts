@@ -9,7 +9,6 @@ import * as Push from "@principia/core/Stream/Push";
 import * as Sink from "@principia/core/Stream/Sink";
 import { once } from "events";
 import type * as stream from "stream";
-import { inspect } from "util";
 
 function readableDataCb(
   queue: Queue.Queue<E.Either<Error, O.Option<Buffer>>>
