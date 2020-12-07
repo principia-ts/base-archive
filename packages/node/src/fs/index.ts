@@ -1,4 +1,7 @@
 import * as A from "@principia/core/Array";
+import type { Byte } from "@principia/core/Byte";
+import type { Chunk } from "@principia/core/Chunk";
+import * as C from "@principia/core/Chunk";
 import * as E from "@principia/core/Either";
 import { pipe } from "@principia/core/Function";
 import { Integer } from "@principia/core/Integer";
@@ -82,7 +85,7 @@ interface CreateReadStreamOptions {
 export function createReadStream(
   path: fs.PathLike,
   options?: CreateReadStreamOptions
-): S.Stream<unknown, ErrnoException, Buffer> {
+): S.Stream<unknown, ErrnoException, Byte> {
   const chunkSize = options?.chunkSize ?? 1024 * 64;
   return S.chain_(
     S.bracket_(
@@ -101,7 +104,7 @@ export function createReadStream(
       ([fd, _]) => I.orDie(close(fd))
     ),
     ([fd, state]) =>
-      S.repeatEffectOption(
+      S.repeatEffectChunkOption(
         I.gen(function* (_) {
           const [pos, end] = yield* _(state.get);
           const n = Math.min(end - pos + 1, chunkSize);
@@ -112,9 +115,9 @@ export function createReadStream(
           if (bytes !== chunk.length) {
             const dst = Buffer.allocUnsafeSlow(bytes);
             chunk.copy(dst, 0, 0, bytes);
-            return dst;
+            return (dst as unknown) as Chunk<Byte>;
           } else {
-            return chunk;
+            return (chunk as unknown) as Chunk<Byte>;
           }
         })
       )
@@ -130,7 +133,7 @@ interface CreateWriteSinkOptions {
 export function createWriteSink(
   path: fs.PathLike,
   options?: CreateWriteSinkOptions
-): Sink.Sink<unknown, ErrnoException, Buffer, never, void> {
+): Sink.Sink<unknown, ErrnoException, Byte, never, void> {
   return new Sink.Sink(
     M.gen(function* (_) {
       const errorRef = yield* _(Ref.make<O.Option<ErrnoException>>(O.none()));
@@ -152,19 +155,19 @@ export function createWriteSink(
       );
       const maybeError = yield* _(errorRef.get);
       if (!st && O.isSome(maybeError)) {
-        return (_: O.Option<ReadonlyArray<Buffer>>) => Push.fail(maybeError.value, []);
+        return (_: O.Option<Chunk<Byte>>) => Push.fail(maybeError.value, []);
       } else {
-        return (is: O.Option<ReadonlyArray<Buffer>>) =>
+        return (is: O.Option<Chunk<Byte>>) =>
           O.fold_(
             is,
             () => Push.emit(undefined, []),
-            (bufs) =>
+            (chunk) =>
               pipe(
                 (st[1] as Ref.URef<number | undefined>).get,
-                I.chain((pos) => writev(st[0], bufs, pos)),
+                I.chain((pos) => write(st[0], C.asBuffer(chunk), pos)),
                 I.chain((_) =>
                   Ref.update_(st[1] as Ref.URef<number | undefined>, (n) =>
-                    n ? A.reduce_(bufs, n, (b, a) => b + a.length) : undefined
+                    n ? n + chunk.length : undefined
                   )
                 ),
                 I.chain((_) => Push.more),

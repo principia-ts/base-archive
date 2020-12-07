@@ -1,7 +1,7 @@
 import type { Predicate, Refinement } from "@principia/prelude";
 import { flow } from "@principia/prelude";
 
-import * as A from "../../Array";
+import * as C from "../../Chunk";
 import * as I from "../../IO";
 import * as M from "../../Managed";
 import * as O from "../../Option";
@@ -22,7 +22,7 @@ export function filter_<R, E, I, O>(
   fa: Transducer<R, E, I, O>,
   predicate: Predicate<O>
 ): Transducer<R, E, I, O> {
-  return new Transducer(M.map_(fa.push, (push) => (is) => I.map_(push(is), A.filter(predicate))));
+  return new Transducer(M.map_(fa.push, (push) => (is) => I.map_(push(is), C.filter(predicate))));
 }
 
 /**
@@ -55,7 +55,7 @@ export function filterInput_<R, E, I, O>(
   fa: Transducer<R, E, I, O>,
   predicate: Predicate<I>
 ): Transducer<R, E, I, O> {
-  return new Transducer(M.map_(fa.push, (push) => (is) => push(O.map_(is, A.filter(predicate)))));
+  return new Transducer(M.map_(fa.push, (push) => (is) => push(O.map_(is, C.filter(predicate)))));
 }
 
 /**

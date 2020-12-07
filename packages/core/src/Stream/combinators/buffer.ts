@@ -1,5 +1,6 @@
 import { pipe } from "@principia/prelude";
 
+import type { Chunk } from "../../Chunk";
 import * as I from "../../IO";
 import * as Ex from "../../IO/Exit";
 import * as Ref from "../../IORef";
@@ -69,7 +70,7 @@ export function bufferUnbounded<R, E, O>(ma: Stream<R, E, O>): Stream<R, E, O> {
           ? Pull.end
           : I.chain_(
               queue.take,
-              Take.foldM(() => I.andThen_(done.set(true), Pull.end), Pull.halt, Pull.emitArray)
+              Take.foldM(() => I.andThen_(done.set(true), Pull.end), Pull.halt, Pull.emitChunk)
             )
       );
     })
@@ -79,7 +80,7 @@ export function bufferUnbounded<R, E, O>(ma: Stream<R, E, O>): Stream<R, E, O> {
 function bufferSignal_<R, E, O>(
   ma: Stream<R, E, O>,
   queue: Q.Queue<[Take.Take<E, O>, Promise<never, void>]>
-): M.Managed<R, never, I.IO<R, O.Option<E>, ReadonlyArray<O>>> {
+): M.Managed<R, never, I.IO<R, O.Option<E>, Chunk<O>>> {
   return pipe(
     M.do,
     M.bindS("as", () => ma.proc),

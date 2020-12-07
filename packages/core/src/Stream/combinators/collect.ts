@@ -1,17 +1,18 @@
-import * as I from "../../IO";
-import * as M from "../../Managed";
-import { Stream } from "../model";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import * as E from "../../Either";
-import { filterMap_ } from "../filterable";
-import * as A from "../../Array";
-import * as O from "../../Option";
 import { flow, identity } from "../../Function";
-import { Exit } from "../../IO/Exit";
-import * as Ref from "../../IORef";
-import * as Pull from "../Pull";
+import type { IO } from "../../IO";
+import * as I from "../../IO";
+import type { Exit } from "../../IO/Exit";
 import * as Ex from "../../IO/Exit";
-import { IO } from "../../IO";
+import * as Ref from "../../IORef";
+import * as M from "../../Managed";
+import * as O from "../../Option";
 import * as BPull from "../BufferedPull";
+import { filterMap_ } from "../filterable";
+import { Stream } from "../model";
+import * as Pull from "../Pull";
 
 export function collectLeft<R, E, L, O>(ma: Stream<R, E, E.Either<L, O>>): Stream<R, E, L> {
   return filterMap_(ma, O.getLeft);
@@ -42,7 +43,7 @@ export function collectWhile_<R, E, O, O1>(
           ? Pull.end
           : I.gen(function* (_) {
               const chunk = yield* _(chunks);
-              const remaining = A.collectWhile_(chunk, f);
+              const remaining = C.collectWhileMap_(chunk, f);
               yield* _(I.when_(done.set(true), () => remaining.length < chunk.length));
               return remaining;
             })
@@ -93,7 +94,7 @@ export function collectWhileM_<R, E, O, R1, E1, O1>(
                   I.bimap(O.some, (o1) => [o1])
                 )
               )
-            ) as IO<R & R1, O.Option<E | E1>, ReadonlyArray<O1>>)
+            ) as IO<R & R1, O.Option<E | E1>, Chunk<O1>>)
       );
     })
   );

@@ -1,4 +1,5 @@
-import * as A from "../Array";
+import type { Chunk } from "../Chunk";
+import * as C from "../Chunk";
 import * as E from "../Either";
 import * as I from "../IO";
 import type { Cause } from "../IO/Cause";
@@ -8,27 +9,21 @@ import * as M from "../Managed";
 import type * as O from "../Option";
 
 export type Push<R, E, I, L, Z> = (
-  _: O.Option<ReadonlyArray<I>>
-) => I.IO<R, readonly [E.Either<E, Z>, ReadonlyArray<L>], void>;
+  _: O.Option<Chunk<I>>
+) => I.IO<R, readonly [E.Either<E, Z>, Chunk<L>], void>;
 
-export function emit<I, Z>(
-  z: Z,
-  leftover: ReadonlyArray<I>
-): I.FIO<[E.Either<never, Z>, ReadonlyArray<I>], never> {
+export function emit<I, Z>(z: Z, leftover: Chunk<I>): I.FIO<[E.Either<never, Z>, Chunk<I>], never> {
   return I.fail([E.right(z), leftover]);
 }
 
 export const more = I.unit();
 
-export function fail<E, I>(
-  e: E,
-  leftover: ReadonlyArray<I>
-): I.FIO<[E.Either<E, never>, ReadonlyArray<I>], never> {
+export function fail<E, I>(e: E, leftover: Chunk<I>): I.FIO<[E.Either<E, never>, Chunk<I>], never> {
   return I.fail([E.left(e), leftover]);
 }
 
-export function halt<E>(c: Cause<E>): I.FIO<[E.Either<E, never>, ReadonlyArray<never>], never> {
-  return I.mapError_(I.halt(c), (e) => [E.left(e), A.empty()]);
+export function halt<E>(c: Cause<E>): I.FIO<[E.Either<E, never>, Chunk<never>], never> {
+  return I.mapError_(I.halt(c), (e) => [E.left(e), C.empty()]);
 }
 
 export function restartable<R, E, I, L, Z>(
@@ -40,7 +35,7 @@ export function restartable<R, E, I, L, Z>(
     const currSink = yield* _(XR.make(initialSink));
 
     const restart = I.chain_(switchSink(sink), currSink.set);
-    const push = (input: O.Option<ReadonlyArray<I>>) => I.chain_(currSink.get, (f) => f(input));
+    const push = (input: O.Option<Chunk<I>>) => I.chain_(currSink.get, (f) => f(input));
 
     return [push, restart];
   });

@@ -1,3 +1,4 @@
+import type { Chunk } from "../../Chunk";
 import * as E from "../../Either";
 import * as I from "../../IO";
 import * as M from "../../Managed";
@@ -18,7 +19,7 @@ export function map_<R, E, I, L, Z, Z2>(
   f: (z: Z) => Z2
 ): Sink<R, E, I, L, Z2> {
   return new Sink(
-    M.map_(sz.push, (sink) => (inputs: O.Option<ReadonlyArray<I>>) =>
+    M.map_(sz.push, (sink) => (inputs: O.Option<Chunk<I>>) =>
       I.mapError_(sink(inputs), (e) => [E.map_(e[0], f), e[1]])
     )
   );

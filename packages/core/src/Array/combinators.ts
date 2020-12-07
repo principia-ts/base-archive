@@ -754,3 +754,11 @@ export function join_(as: ReadonlyArray<string>, s: string): string {
 export function join(s: string): (as: ReadonlyArray<string>) => string {
   return (as) => as.join(s);
 }
+
+export function prepend_<A>(as: ReadonlyArray<A>, a: A): ReadonlyArray<A> {
+  return [a, ...as];
+}
+
+export function prepend<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (as) => prepend_(as, a);
+}

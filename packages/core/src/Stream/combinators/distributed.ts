@@ -1,8 +1,9 @@
 import { pipe } from "@principia/prelude";
 
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import * as I from "../../IO";
-import * as C from "../../IO/Cause";
+import * as Ca from "../../IO/Cause";
 import * as Ex from "../../IO/Exit";
 import * as Semaphore from "../../IO/Semaphore";
 import * as Ref from "../../IORef";
@@ -55,12 +56,12 @@ export function distributedWithDynamic_<R, E, O>(
       I.bindS("queues", () => I.map_(queuesRef.get, (m) => m.entries())),
       I.chain(({ shouldProcess, queues }) =>
         pipe(
-          I.reduce_(queues, A.empty<symbol>(), (acc, [id, queue]) => {
+          I.reduce_(queues, C.empty<symbol>(), (acc, [id, queue]) => {
             if (shouldProcess(id)) {
               return pipe(
                 queue.offer(Ex.succeed(o)),
                 I.foldCauseM(
-                  (c) => (C.interrupted(c) ? I.succeed(A.append_(acc, id)) : I.halt(c)),
+                  (c) => (Ca.interrupted(c) ? I.succeed(C.append_(acc, id)) : I.halt(c)),
                   () => I.succeed(acc)
                 )
               );
@@ -69,7 +70,7 @@ export function distributedWithDynamic_<R, E, O>(
             }
           }),
           I.chain((ids) =>
-            A.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()
+            C.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()
           )
         )
       )
@@ -122,7 +123,7 @@ export function distributedWithDynamic_<R, E, O>(
                         pipe(
                           queue.offer(endTake),
                           I.catchSomeCause((c) =>
-                            C.interrupted(c) ? O.some(I.unit()) : O.none<I.UIO<void>>()
+                            Ca.interrupted(c) ? O.some(I.unit()) : O.none<I.UIO<void>>()
                           )
                         )
                       )
@@ -138,7 +139,7 @@ export function distributedWithDynamic_<R, E, O>(
             stream,
             foreachManaged(offer(queuesRef)),
             M.foldCauseM(
-              (cause) => I.toManaged_(finalize(Ex.failure(C.map_(cause, O.some)))),
+              (cause) => I.toManaged_(finalize(Ex.failure(Ca.map_(cause, O.some)))),
               () => I.toManaged_(finalize(Ex.fail(O.none())))
             ),
             M.fork
@@ -164,7 +165,7 @@ export function distributedWith<O>(
   decide: (_: O) => I.UIO<(_: number) => boolean>
 ): <R, E>(
   stream: Stream<R, E, O>
-) => M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+) => M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
   return (stream) => distributedWith_(stream, n, maximumLag, decide);
 }
 
@@ -178,7 +179,7 @@ export function distributedWith_<R, E, O>(
   n: number,
   maximumLag: number,
   decide: (_: O) => I.UIO<(_: number) => boolean>
-): M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+): M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
   return pipe(
     P.make<never, (_: O) => I.UIO<(_: symbol) => boolean>>(),
     M.fromEffect,
@@ -194,20 +195,20 @@ export function distributedWith_<R, E, O>(
           pipe(
             I.collectAll(
               pipe(
-                A.range(0, n),
-                A.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
+                C.range(0, n),
+                C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
               )
             ),
             I.chain((entries) => {
-              const [mappings, queues] = A.reduceRight_(
+              const [mappings, queues] = C.reduceRight_(
                 entries,
                 [
                   Map.empty<symbol, number>(),
-                  A.empty<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>()
+                  C.empty<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>()
                 ] as const,
                 ([mapping, queue], [mappings, queues]) => [
                   Map.unsafeInsertAt_(mappings, mapping[0], mapping[1]),
-                  A.append_(queues, queue)
+                  C.append_(queues, queue)
                 ]
               );
               return pipe(

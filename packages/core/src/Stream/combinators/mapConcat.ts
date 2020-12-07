@@ -1,4 +1,4 @@
-import * as A from "../../Array";
+import * as C from "../../Chunk";
 import { identity, pipe } from "../../Function";
 import * as I from "../../IO";
 import { mapChunks_, mapM } from "../functor";
@@ -9,7 +9,7 @@ import type { Stream } from "../model";
  * output of this stream.
  */
 export function mapConcat_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => Iterable<B>) {
-  return mapChunks_(ma, (chunks) => A.chain_(chunks, (a) => A.from(f(a))));
+  return mapChunks_(ma, (chunks) => C.chain_(chunks, (a) => Array.from(f(a))));
 }
 
 /**
@@ -30,7 +30,7 @@ export function mapConcatChunk_<R, E, A, B>(
   ma: Stream<R, E, A>,
   f: (a: A) => ReadonlyArray<B>
 ): Stream<R, E, B> {
-  return mapChunks_(ma, (chunks) => A.chain_(chunks, f));
+  return mapChunks_(ma, (chunks) => C.chain_(chunks, f));
 }
 
 /**
@@ -74,7 +74,7 @@ export function mapConcatM_<R, E, A, R1, E1, B>(
 ): Stream<R & R1, E | E1, B> {
   return pipe(
     ma,
-    mapConcatChunkM((a) => I.map_(f(a), (_) => A.from(_)))
+    mapConcatChunkM((a) => I.map_(f(a), (_) => Array.from(_)))
   );
 }
 

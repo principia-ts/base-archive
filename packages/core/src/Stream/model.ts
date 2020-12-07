@@ -1,5 +1,6 @@
 import type * as HKT from "@principia/prelude/HKT";
 
+import type { Chunk } from "../Chunk";
 import { pipe } from "../Function";
 import * as I from "../IO";
 import * as C from "../IO/Cause";
@@ -25,7 +26,7 @@ export type V = HKT.V<"R", "-"> & HKT.V<"E", "+">;
  * One way to think of `Stream` is as a `IO` program that could emit multiple values.
  *
  * This data type can emit multiple `A` values through multiple calls to `next`.
- * Similarly, embedded inside every `Stream` is an IO program: `IO<R, Option<E>, ReadonlyArray<A>>`.
+ * Similarly, embedded inside every `Stream` is an IO program: `IO<R, Option<E>, Chunk<A>>`.
  * This program will be repeatedly evaluated as part of the stream execution. For
  * every evaluation, it will emit a chunk of values or end with an optional failure.
  * A failure of type `None` signals the end of the stream.
@@ -57,7 +58,7 @@ export class Stream<R, E, A> {
   readonly [I._A]: () => A;
   readonly [I._R]: (_: R) => void;
 
-  constructor(readonly proc: M.Managed<R, never, I.IO<R, Option<E>, ReadonlyArray<A>>>) {}
+  constructor(readonly proc: M.Managed<R, never, I.IO<R, Option<E>, Chunk<A>>>) {}
 }
 
 /**
@@ -78,9 +79,9 @@ export const DefaultChunkSize = 4096;
 export class Chain<R_, E_, O, O2> {
   constructor(
     readonly f0: (a: O) => Stream<R_, E_, O2>,
-    readonly outerStream: I.IO<R_, Option<E_>, ReadonlyArray<O>>,
-    readonly currOuterChunk: XR.URef<[ReadonlyArray<O>, number]>,
-    readonly currInnerStream: XR.URef<I.IO<R_, Option<E_>, ReadonlyArray<O2>>>,
+    readonly outerStream: I.IO<R_, Option<E_>, Chunk<O>>,
+    readonly currOuterChunk: XR.URef<[Chunk<O>, number]>,
+    readonly currInnerStream: XR.URef<I.IO<R_, Option<E_>, Chunk<O2>>>,
     readonly innerFinalizer: XR.URef<RM.Finalizer>
   ) {
     this.apply = this.apply.bind(this);
@@ -97,9 +98,7 @@ export class Chain<R_, E_, O, O2> {
     );
   }
 
-  pullNonEmpty<R, E, O>(
-    pull: I.IO<R, Option<E>, ReadonlyArray<O>>
-  ): I.IO<R, Option<E>, ReadonlyArray<O>> {
+  pullNonEmpty<R, E, O>(pull: I.IO<R, Option<E>, Chunk<O>>): I.IO<R, Option<E>, Chunk<O>> {
     return pipe(
       pull,
       I.chain((os) => (os.length > 0 ? I.pure(os) : this.pullNonEmpty(pull)))
@@ -109,7 +108,7 @@ export class Chain<R_, E_, O, O2> {
   pullOuter() {
     return pipe(
       this.currOuterChunk,
-      XR.modify(([chunk, nextIdx]): [I.IO<R_, Option<E_>, O>, [ReadonlyArray<O>, number]] => {
+      XR.modify(([chunk, nextIdx]): [I.IO<R_, Option<E_>, O>, [Chunk<O>, number]] => {
         if (nextIdx < chunk.length) {
           return [I.pure(chunk[nextIdx]), [chunk, nextIdx + 1]];
         } else {
@@ -149,7 +148,7 @@ export class Chain<R_, E_, O, O2> {
     );
   }
 
-  apply(): I.IO<R_, Option<E_>, ReadonlyArray<O2>> {
+  apply(): I.IO<R_, Option<E_>, Chunk<O2>> {
     return pipe(
       this.currInnerStream.get,
       I.flatten,

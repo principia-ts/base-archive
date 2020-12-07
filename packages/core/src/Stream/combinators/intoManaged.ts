@@ -1,7 +1,7 @@
 import { flow, pipe } from "@principia/prelude";
 
 import * as I from "../../IO";
-import * as C from "../../IO/Cause";
+import * as Ca from "../../IO/Cause";
 import type { Managed } from "../../Managed";
 import * as M from "../../Managed";
 import * as O from "../../Option";
@@ -34,7 +34,7 @@ export function intoManaged_<R, E, O, R1, E1>(
       const go: I.IO<R & R1, never, void> = I.foldCauseM_(
         as,
         flow(
-          C.sequenceCauseOption,
+          Ca.sequenceCauseOption,
           O.fold(
             () => I.asUnit(queue.offer(Take.end)),
             (c) => I.andThen_(queue.offer(Take.halt(c)), go)

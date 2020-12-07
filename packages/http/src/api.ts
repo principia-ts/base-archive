@@ -1,3 +1,4 @@
+import * as C from "@principia/core/Chunk";
 import type { DecodeErrors } from "@principia/core/DecodeError";
 import { SyncDecoderF } from "@principia/core/DecodeError";
 import type { Has } from "@principia/core/Has";
@@ -13,15 +14,15 @@ import type { HttpRouteException } from "./exceptions/HttpRouteException";
 
 export const readBody = I.gen(function* ($) {
   const { req } = yield* $(Context);
-  const chunks = yield* $(S.runCollect(req.stream));
-  return Buffer.concat(chunks);
+  const bytes = yield* $(S.runCollect(req.stream));
+  return bytes;
 });
 
 export const parseJsonBody = I.gen(function* ($) {
   const body = yield* $(readBody);
   return yield* $(
     I.partial_(
-      () => JSON.parse(body.toString("utf-8")),
+      () => JSON.parse(C.asBuffer(body).toString("utf-8")),
       (err): HttpRouteException => ({
         _tag: "HttpRouteException",
         status: 400,

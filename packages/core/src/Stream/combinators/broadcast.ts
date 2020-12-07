@@ -1,6 +1,7 @@
 import { flow, pipe } from "@principia/prelude";
 
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import * as I from "../../IO";
 import type * as Ex from "../../IO/Exit";
 import * as M from "../../Managed";
@@ -9,7 +10,7 @@ import type * as Q from "../../Queue";
 import { snd } from "../../Tuple";
 import { fromXQueueWithShutdown } from "../constructors";
 import type { Stream } from "../model";
-import { distributedWithDynamic_, distributedWith_ } from "./distributed";
+import { distributedWith_, distributedWithDynamic_ } from "./distributed";
 import { flattenExitOption } from "./flattenExitOption";
 
 /**
@@ -26,7 +27,7 @@ export function broadcastedQueues(
   maximumLag: number
 ): <R, E, O>(
   stream: Stream<R, E, O>
-) => M.Managed<R, never, ReadonlyArray<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+) => M.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
   return (stream) => broadcastedQueues_(stream, n, maximumLag);
 }
 
@@ -43,7 +44,7 @@ export function broadcastedQueues_<R, E, O>(
   stream: Stream<R, E, O>,
   n: number,
   maximumLag: number
-): M.Managed<R, never, ReadonlyArray<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+): M.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
   const decider = I.succeed((_: number) => true);
   return distributedWith_(stream, n, maximumLag, (_) => decider);
 }
@@ -97,7 +98,7 @@ export function broadcastedQueuesDynamic(
 export function broadcast(
   n: number,
   maximumLag: number
-): <R, E, O>(stream: Stream<R, E, O>) => M.Managed<R, never, ReadonlyArray<Stream<unknown, E, O>>> {
+): <R, E, O>(stream: Stream<R, E, O>) => M.Managed<R, never, Chunk<Stream<unknown, E, O>>> {
   return (stream) => broadcast_(stream, n, maximumLag);
 }
 
@@ -110,10 +111,10 @@ export function broadcast_<R, E, O>(
   stream: Stream<R, E, O>,
   n: number,
   maximumLag: number
-): M.Managed<R, never, ReadonlyArray<Stream<unknown, E, O>>> {
+): M.Managed<R, never, Chunk<Stream<unknown, E, O>>> {
   return pipe(
     broadcastedQueues_(stream, n, maximumLag),
-    M.map(A.map((q) => flattenExitOption(fromXQueueWithShutdown(q))))
+    M.map(C.map((q) => flattenExitOption(fromXQueueWithShutdown(q))))
   );
 }
 

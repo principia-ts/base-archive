@@ -1,11 +1,12 @@
-import * as A from "../Array";
+import type { Chunk } from "../Chunk";
+import * as C from "../Chunk";
 import { pipe } from "../Function";
 import * as I from "../IO";
 import type { Cause } from "../IO/Cause";
 import type { Option } from "../Option";
 import { none, some } from "../Option";
 
-export type Pull<R, E, O> = I.IO<R, Option<E>, ReadonlyArray<O>>;
+export type Pull<R, E, O> = I.IO<R, Option<E>, Chunk<O>>;
 
 export const end = I.fail(none());
 
@@ -17,14 +18,14 @@ export function halt<E>(e: Cause<E>): I.IO<unknown, Option<E>, never> {
   return pipe(I.halt(e), I.mapError(some));
 }
 
-export function empty<A>(): I.UIO<ReadonlyArray<A>> {
-  return I.pure(A.empty());
+export function empty<A>(): I.UIO<Chunk<A>> {
+  return I.pure(C.empty());
 }
 
-export function emit<A>(a: A): I.UIO<ReadonlyArray<A>> {
-  return I.pure([a]);
+export function emit<A>(a: A): I.UIO<Chunk<A>> {
+  return I.pure(C.single(a));
 }
 
-export function emitArray<A>(as: ReadonlyArray<A>): I.UIO<ReadonlyArray<A>> {
-  return I.pure(A.from(as));
+export function emitChunk<A>(as: Chunk<A>): I.UIO<Chunk<A>> {
+  return I.pure(as);
 }

@@ -1,3 +1,4 @@
+import type { Chunk } from "../../Chunk";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
 import * as C from "../../IO/Cause";
@@ -10,14 +11,14 @@ import { Stream } from "../model";
 import * as Pull from "../Pull";
 
 function go<R, E, A>(
-  streams: ReadonlyArray<Stream<R, E, A>>,
+  streams: Chunk<Stream<R, E, A>>,
   chunkSize: number,
   currIndex: URef<number>,
-  currStream: URef<I.IO<R, Option<E>, ReadonlyArray<A>>>,
+  currStream: URef<I.IO<R, Option<E>, Chunk<A>>>,
   switchStream: (
-    x: M.Managed<R, never, I.IO<R, Option<E>, ReadonlyArray<A>>>
-  ) => I.IO<R, never, I.IO<R, Option<E>, ReadonlyArray<A>>>
-): I.IO<R, Option<E>, ReadonlyArray<A>> {
+    x: M.Managed<R, never, I.IO<R, Option<E>, Chunk<A>>>
+  ) => I.IO<R, never, I.IO<R, Option<E>, Chunk<A>>>
+): I.IO<R, Option<E>, Chunk<A>> {
   return pipe(
     currStream.get,
     I.flatten,
@@ -47,14 +48,14 @@ function go<R, E, A>(
 /**
  * Concatenates all of the streams in the chunk to one stream.
  */
-export function concatAll<R, E, A>(streams: ReadonlyArray<Stream<R, E, A>>): Stream<R, E, A> {
+export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E, A> {
   const chunkSize = streams.length;
   return new Stream(
     pipe(
       M.do,
       M.bindS("currIndex", () => XR.makeManaged(0)),
-      M.bindS("currStream", () => XR.makeManaged<I.IO<R, Option<E>, ReadonlyArray<A>>>(Pull.end)),
-      M.bindS("switchStream", () => M.switchable<R, never, I.IO<R, Option<E>, ReadonlyArray<A>>>()),
+      M.bindS("currStream", () => XR.makeManaged<I.IO<R, Option<E>, Chunk<A>>>(Pull.end)),
+      M.bindS("switchStream", () => M.switchable<R, never, I.IO<R, Option<E>, Chunk<A>>>()),
       M.map(({ currIndex, currStream, switchStream }) =>
         go(streams, chunkSize, currIndex, currStream, switchStream)
       )

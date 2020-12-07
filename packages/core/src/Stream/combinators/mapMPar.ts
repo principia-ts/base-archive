@@ -1,4 +1,4 @@
-import * as A from "../../Array";
+import * as C from "../../Chunk";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
 import * as Semaphore from "../../IO/Semaphore";
@@ -73,7 +73,7 @@ export function mapMPar_(n: number) {
             M.fork
           )
         ),
-        M.map(({ out }) => pipe(out.take, I.flatten, I.map(A.pure)))
+        M.map(({ out }) => pipe(out.take, I.flatten, I.map(C.single)))
       )
     );
 }

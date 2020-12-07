@@ -1,3 +1,4 @@
+import type { Chunk } from "../../Chunk";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
 import * as XR from "../../IORef";
@@ -12,7 +13,7 @@ import * as Pull from "../Pull";
  */
 export function unfoldChunkM<Z>(
   z: Z
-): <R, E, A>(f: (z: Z) => I.IO<R, E, Option<readonly [ReadonlyArray<A>, Z]>>) => Stream<R, E, A> {
+): <R, E, A>(f: (z: Z) => I.IO<R, E, Option<readonly [Chunk<A>, Z]>>) => Stream<R, E, A> {
   return (f) =>
     new Stream(
       pipe(

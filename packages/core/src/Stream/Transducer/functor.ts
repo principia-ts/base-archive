@@ -1,4 +1,5 @@
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import * as I from "../../IO";
 import * as M from "../../Managed";
 import { Transducer } from "./model";
@@ -10,7 +11,7 @@ export function map_<R, E, I, O, O1>(
   fa: Transducer<R, E, I, O>,
   f: (o: O) => O1
 ): Transducer<R, E, I, O1> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => I.map_(push(input), A.map(f))));
+  return new Transducer(M.map_(fa.push, (push) => (input) => I.map_(push(input), C.map(f))));
 }
 
 /**
@@ -27,7 +28,7 @@ export function map<O, P>(
  */
 export function mapChunks_<R, E, I, O, O1>(
   fa: Transducer<R, E, I, O>,
-  f: (chunks: ReadonlyArray<O>) => ReadonlyArray<O1>
+  f: (chunks: Chunk<O>) => Chunk<O1>
 ): Transducer<R, E, I, O1> {
   return new Transducer(M.map_(fa.push, (push) => (input) => I.map_(push(input), f)));
 }
@@ -36,7 +37,7 @@ export function mapChunks_<R, E, I, O, O1>(
  * Transforms the chunks emitted by this transducer.
  */
 export function mapChunks<O, O1>(
-  f: (chunks: ReadonlyArray<O>) => ReadonlyArray<O1>
+  f: (chunks: Chunk<O>) => Chunk<O1>
 ): <R, E, I>(fa: Transducer<R, E, I, O>) => Transducer<R, E, I, O1> {
   return (fa) => mapChunks_(fa, f);
 }
@@ -46,7 +47,7 @@ export function mapChunks<O, O1>(
  */
 export function mapChunksM_<R, E, I, O, R1, E1, O1>(
   fa: Transducer<R, E, I, O>,
-  f: (chunk: ReadonlyArray<O>) => I.IO<R1, E1, ReadonlyArray<O1>>
+  f: (chunk: Chunk<O>) => I.IO<R1, E1, Chunk<O1>>
 ): Transducer<R & R1, E | E1, I, O1> {
   return new Transducer(M.map_(fa.push, (push) => (input) => I.chain_(push(input), f)));
 }
@@ -55,7 +56,7 @@ export function mapChunksM_<R, E, I, O, R1, E1, O1>(
  * Effectfully transforms the chunks emitted by this transducer.
  */
 export function mapChunksM<O, R1, E1, O1>(
-  f: (chunk: ReadonlyArray<O>) => I.IO<R1, E1, ReadonlyArray<O1>>
+  f: (chunk: Chunk<O>) => I.IO<R1, E1, Chunk<O1>>
 ): <R, E, I>(fa: Transducer<R, E, I, O>) => Transducer<R & R1, E | E1, I, O1> {
   return (fa) => mapChunksM_(fa, f);
 }

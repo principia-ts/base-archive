@@ -1,10 +1,11 @@
-import * as A from "../Array";
+import type { Chunk } from "../Chunk";
+import * as C from "../Chunk";
 import type { Either } from "../Either";
 import * as E from "../Either";
 import { flow, pipe } from "../Function";
 import * as I from "../IO";
 import type { Cause } from "../IO/Cause";
-import * as C from "../IO/Cause";
+import * as Ca from "../IO/Cause";
 import type { HasClock } from "../IO/Clock";
 import { sequential } from "../IO/ExecutionStrategy";
 import type { Exit } from "../IO/Exit";
@@ -25,7 +26,7 @@ import * as Take from "./Take";
 /**
  * Creates a stream from an array of values
  */
-export function fromArray<A>(c: ReadonlyArray<A>): UStream<A> {
+export function fromChunk<A>(c: Chunk<A>): UStream<A> {
   return new Stream(
     pipe(
       I.do,
@@ -33,8 +34,8 @@ export function fromArray<A>(c: ReadonlyArray<A>): UStream<A> {
       I.letS("pull", ({ doneRef }) =>
         pipe(
           doneRef,
-          XR.modify<I.FIO<Option<never>, ReadonlyArray<A>>, boolean>((done) =>
-            done || c.length === 0 ? [Pull.end, true] : [I.pure(A.from(c)), true]
+          XR.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
+            done || c.length === 0 ? [Pull.end, true] : [I.pure(c), true]
           ),
           I.flatten
         )
@@ -49,7 +50,7 @@ export function fromArray<A>(c: ReadonlyArray<A>): UStream<A> {
  * Creates a single-valued pure stream
  */
 export function succeed<O>(o: O): UStream<O> {
-  return fromArray([o]);
+  return fromChunk([o]);
 }
 
 /**
@@ -87,7 +88,7 @@ export const empty: UStream<never> = new Stream(M.succeed(Pull.end));
  */
 export function iterate<A>(a: A, f: (a: A) => A): UStream<A> {
   return new Stream(
-    pipe(XR.make(a), I.toManaged(), M.map(flow(XR.getAndUpdate(f), I.map(A.pure))))
+    pipe(XR.make(a), I.toManaged(), M.map(flow(XR.getAndUpdate(f), I.map(C.single))))
   );
 }
 
@@ -153,7 +154,7 @@ export function fromEffectOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R, 
       M.letS("pull", ({ doneRef }) =>
         pipe(
           doneRef,
-          XR.modify((b) => (b ? [Pull.end, true] : [pipe(fa, I.map(A.pure)), true])),
+          XR.modify((b) => (b ? [Pull.end, true] : [pipe(fa, I.map(C.single)), true])),
           I.flatten
         )
       ),
@@ -193,7 +194,7 @@ export const fromSchedule: <R, A>(
 export function asyncOption<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Exit<never, boolean>) => void
     ) => I.UIO<Exit<never, boolean>>
   ) => Option<Stream<R, E, A>>,
@@ -259,7 +260,7 @@ export function asyncOption<R, E, A>(
 export function async<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Exit<never, boolean>) => void
     ) => I.UIO<Exit<never, boolean>>
   ) => void,
@@ -280,7 +281,7 @@ export function async<R, E, A>(
 export function asyncInterruptEither<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Exit<never, boolean>) => void
     ) => I.UIO<Exit<never, boolean>>
   ) => Either<I.Canceler<R>, Stream<R, E, A>>,
@@ -348,7 +349,7 @@ export function asyncInterruptEither<R, E, A>(
 export function asyncInterrupt<R, E, A>(
   register: (
     cb: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Exit<never, boolean>) => void
     ) => I.UIO<Exit<never, boolean>>
   ) => I.Canceler<R>,
@@ -361,7 +362,7 @@ export function asyncInterrupt<R, E, A>(
  * Creates a stream from an IO producing chunks of `A` values until it fails with None.
  */
 export function repeatEffectChunkOption<R, E, A>(
-  ef: I.IO<R, Option<E>, ReadonlyArray<A>>
+  ef: I.IO<R, Option<E>, Chunk<A>>
 ): Stream<R, E, A> {
   return new Stream(
     pipe(
@@ -399,19 +400,19 @@ const ensuringFirst_ = <R, E, A, R1>(
  * Creates a stream from an IO producing values of type `A` until it fails with None.
  */
 export const repeatEffectOption: <R, E, A>(fa: I.IO<R, Option<E>, A>) => Stream<R, E, A> = flow(
-  I.map(A.pure),
+  I.map(C.single),
   repeatEffectChunkOption
 );
 
 /**
  * Creates a stream from a `Queue` of values
  */
-export function fromArrayQueue<R, E, O>(
-  queue: XQueue<never, R, unknown, E, never, Array<O>>
+export function fromChunkQueue<R, E, O>(
+  queue: XQueue<never, R, unknown, E, never, Chunk<O>>
 ): Stream<R, E, O> {
   return repeatEffectChunkOption(
-    I.catchAllCause_(I.map_(queue.take, A.from), (c) =>
-      I.chain_(queue.isShutdown, (down) => (down && C.interrupted(c) ? Pull.end : Pull.halt(c)))
+    I.catchAllCause_(queue.take, (c) =>
+      I.chain_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
     )
   );
 }
@@ -419,10 +420,10 @@ export function fromArrayQueue<R, E, O>(
 /**
  * Creates a stream from a `Queue` of values. The queue will be shutdown once the stream is closed.
  */
-export function fromArrayQueueWithShutdown<R, E, A>(
+export function fromChunkQueueWithShutdown<R, E, A>(
   queue: XQueue<never, R, unknown, E, never, Array<A>>
 ): Stream<R, E, A> {
-  return ensuringFirst_(fromArrayQueue(queue), queue.shutdown);
+  return ensuringFirst_(fromChunkQueue(queue), queue.shutdown);
 }
 
 /**
@@ -434,9 +435,8 @@ export function fromXQueue<R, E, A>(
   return pipe(
     queue,
     XQ.takeBetween(1, Number.MAX_SAFE_INTEGER),
-    I.map(A.from),
     I.catchAllCause((c) =>
-      I.chain_(queue.isShutdown, (down) => (down && C.interrupted(c) ? Pull.end : Pull.halt(c)))
+      I.chain_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
     ),
     repeatEffectChunkOption
   );
@@ -460,7 +460,7 @@ export function fromXQueueWithShutdown<R, E, A>(
  * `Managed`.
  */
 export function apply<R, E, A>(
-  proc: M.Managed<R, never, I.IO<R, Option<E>, ReadonlyArray<A>>>
+  proc: M.Managed<R, never, I.IO<R, Option<E>, Chunk<A>>>
 ): Stream<R, E, A> {
   return new Stream(proc);
 }
@@ -513,7 +513,7 @@ export function bracketExit<A, R1>(
 export function asyncM<R, E, A, R1 = R, E1 = E>(
   register: (
     cb: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Exit<never, boolean>) => void
     ) => I.UIO<Exit<never, boolean>>
   ) => I.IO<R1, E1, unknown>,

@@ -1,6 +1,6 @@
 import { pipe } from "../../Function";
 import * as I from "../../IO";
-import * as C from "../../IO/Cause";
+import * as Ca from "../../IO/Cause";
 import { sequential } from "../../IO/ExecutionStrategy";
 import * as Ex from "../../IO/Exit";
 import * as XR from "../../IORef";
@@ -18,7 +18,7 @@ import type * as Pull from "../Pull";
  */
 export function catchAllCause_<R, E, A, R1, E2, B>(
   stream: Stream<R, E, A>,
-  f: (e: C.Cause<E>) => Stream<R1, E2, B>
+  f: (e: Ca.Cause<E>) => Stream<R1, E2, B>
 ): Stream<R & R1, E2, B | A> {
   type NotStarted = { _tag: "NotStarted" };
   type Self<E0> = { _tag: "Self"; pull: Pull.Pull<R, E0, A> };
@@ -39,7 +39,7 @@ export function catchAllCause_<R, E, A, R1, E2, B>(
         )
       ),
       M.letS("pull", ({ finalizerRef, ref }) => {
-        const closeCurrent = (cause: C.Cause<any>) =>
+        const closeCurrent = (cause: Ca.Cause<any>) =>
           pipe(
             finalizerRef,
             XR.getAndSet(RM.noopFinalizer),
@@ -69,10 +69,10 @@ export function catchAllCause_<R, E, A, R1, E2, B>(
             )
           );
 
-        const failover = (cause: C.Cause<Option<E>>) =>
+        const failover = (cause: Ca.Cause<Option<E>>) =>
           pipe(
             cause,
-            C.sequenceCauseOption,
+            Ca.sequenceCauseOption,
             O.fold(
               () => I.fail(O.none()),
               (cause) =>
@@ -116,7 +116,7 @@ export function catchAllCause_<R, E, A, R1, E2, B>(
 }
 
 export function catchAllCause<E, R1, E1, B>(
-  f: (e: C.Cause<E>) => Stream<R1, E1, B>
+  f: (e: Ca.Cause<E>) => Stream<R1, E1, B>
 ): <R, A>(stream: Stream<R, E, A>) => Stream<R & R1, E1, B | A> {
   return (stream) => catchAllCause_(stream, f);
 }

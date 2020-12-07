@@ -1,63 +1,70 @@
-import * as E from "@principia/core/Either";
-import type { IO } from "@principia/core/IO";
+import type { Byte } from "@principia/core/Byte";
+import type { Chunk } from "@principia/core/Chunk";
+import * as C from "@principia/core/Chunk";
+import type * as E from "@principia/core/Either";
+import { tuple } from "@principia/core/Function";
 import * as I from "@principia/core/IO";
 import * as O from "@principia/core/Option";
-import * as Queue from "@principia/core/Queue";
 import * as S from "@principia/core/Stream";
 import * as Push from "@principia/core/Stream/Push";
 import * as Sink from "@principia/core/Stream/Sink";
+import type { FSync, USync } from "@principia/core/Sync";
 import * as Sy from "@principia/core/Sync";
-import {FSync, USync} from "@principia/core/Sync";
 import { once } from "events";
 
-function stdinDataCb(queue: Queue.Queue<E.Either<Error, Buffer>>): (data: Buffer) => void {
-  return (data) => {
-    I.run(queue.offer(E.right(data)));
-  };
+export class StdinError {
+  readonly _tag = "StdinError";
+  constructor(readonly error: Error) {}
 }
 
-function stdinErrorCb(queue: Queue.Queue<E.Either<Error, Buffer>>): (err: Error) => void {
-  return (err) => {
-    I.run(queue.offer(E.left(err)));
-  };
-}
-
-export const stdin: S.Stream<unknown, never, E.Either<Error, Buffer>> = S.chain_(
-  S.bracket_(
-    I.gen(function* (_) {
-      const q = yield* _(Queue.makeUnbounded<E.Either<Error, Buffer>>());
-      process.stdin.resume();
-      process.stdin.on("data", stdinDataCb(q));
-      process.stdin.on("error", stdinErrorCb(q));
-      return q;
-    }),
-    (q) =>
-      I.andThen_(
-        q.shutdown,
-        I.total(() => {
-          process.stdin.removeListener("data", stdinDataCb);
-          process.stdin.removeListener("error", stdinErrorCb);
-          process.stdin.pause();
-        })
-      )
-  ),
-  (q) => S.repeatEffectOption(q.take)
+export const stdin: S.FStream<StdinError, Byte> = S.chain_(
+  S.fromEffect(I.total(() => tuple(process.stdin.resume(), new Array<() => void>()))),
+  ([rs, cleanup]) =>
+    S.ensuring_(
+      S.async<unknown, StdinError, Byte>((cb) => {
+        const onData = (data: Buffer) => {
+          cb(I.succeed(C.fromBuffer(data)));
+        };
+        const onError = (err: Error) => {
+          cb(I.fail(O.some(new StdinError(err))));
+        };
+        cleanup.push(
+          () => {
+            rs.removeListener("error", onError);
+          },
+          () => {
+            rs.removeListener("data", onData);
+          },
+          () => {
+            rs.pause();
+          }
+        );
+        rs.on("data", onData);
+        rs.on("error", onError);
+      }),
+      I.total(() => {
+        cleanup.forEach((h) => {
+          h();
+        });
+      })
+    )
 );
 
-function stdoutErrorCb(
-  cb: (_: IO<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>) => void
-): (err?: Error) => void {
-  return (err) => (err ? cb(Push.fail(err, [])) : undefined);
+export class StdoutError {
+  readonly _tag = "StdoutError";
+  constructor(readonly error: Error) {}
 }
 
-export const stdout: Sink.Sink<unknown, Error, Buffer, never, void> = Sink.fromPush((is) =>
+export const stdout: Sink.Sink<unknown, StdoutError, Buffer, never, void> = Sink.fromPush((is) =>
   O.fold_(
     is,
     () => Push.emit(undefined, []),
     (bufs) =>
-      I.async<unknown, readonly [E.Either<Error, void>, ReadonlyArray<never>], void>(async (cb) => {
+      I.async<unknown, readonly [E.Either<StdoutError, void>, Chunk<never>], void>(async (cb) => {
         for (let i = 0; i < bufs.length; i++) {
-          if (!process.stdout.write(bufs[i], stdoutErrorCb(cb)))
+          if (
+            !process.stdout.write(bufs[i], (err) => err && cb(Push.fail(new StdoutError(err), [])))
+          )
             await once(process.stdout, "drain");
         }
         cb(Push.more);

@@ -1,3 +1,4 @@
+import type { Chunk } from "../../Chunk";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
 import type { Exit } from "../../IO/Exit";
@@ -18,9 +19,9 @@ export function combineChunks_<R, E, O, R1, E1, O1, Z, C>(
   z: Z,
   f: (
     z: Z,
-    s: I.IO<R, Option<E>, ReadonlyArray<O>>,
-    t: I.IO<R1, Option<E1>, ReadonlyArray<O1>>
-  ) => I.IO<R & R1, never, Exit<Option<E | E1>, readonly [ReadonlyArray<C>, Z]>>
+    s: I.IO<R, Option<E>, Chunk<O>>,
+    t: I.IO<R1, Option<E1>, Chunk<O1>>
+  ) => I.IO<R & R1, never, Exit<Option<E | E1>, readonly [Chunk<C>, Z]>>
 ): Stream<R & R1, E | E1, C> {
   return new Stream(
     pipe(
@@ -53,9 +54,9 @@ export function combineChunks<R, E, O, R1, E1, O1, Z, C>(
   z: Z,
   f: (
     z: Z,
-    s: I.IO<R, Option<E>, ReadonlyArray<O>>,
-    t: I.IO<R1, Option<E1>, ReadonlyArray<O1>>
-  ) => I.IO<R & R1, never, Exit<Option<E | E1>, readonly [ReadonlyArray<C>, Z]>>
+    s: I.IO<R, Option<E>, Chunk<O>>,
+    t: I.IO<R1, Option<E1>, Chunk<O1>>
+  ) => I.IO<R & R1, never, Exit<Option<E | E1>, readonly [Chunk<C>, Z]>>
 ): (stream: Stream<R, E, O>) => Stream<R & R1, E | E1, C> {
   return (stream) => combineChunks_(stream, that, z, f);
 }

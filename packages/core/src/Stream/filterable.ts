@@ -1,19 +1,20 @@
+import type { Chunk } from "../Chunk";
+import * as C from "../Chunk";
+import { flow } from "../Function";
+import type { IO } from "../IO";
 import * as I from "../IO";
 import * as M from "../Managed";
-import { Option } from "../Option";
-import { mapChunks_ } from "./functor";
-import * as A from "../Array";
-import { Stream } from "./model";
+import type { Option } from "../Option";
 import * as O from "../Option";
-import { IO } from "../IO";
 import * as BPull from "./BufferedPull";
-import { flow, pipe } from "../Function";
+import { mapChunks_ } from "./functor";
+import { Stream } from "./model";
 
 export function filterMap_<R, E, O, O1>(
   fa: Stream<R, E, O>,
   f: (o: O) => Option<O1>
 ): Stream<R, E, O1> {
-  return mapChunks_(fa, A.filterMap(f));
+  return mapChunks_(fa, C.filterMap(f));
 }
 
 export function filterMap<O, O1>(
@@ -29,7 +30,7 @@ export function filterMapM_<R, E, O, R1, E1, O1>(
   return new Stream(
     M.gen(function* (_) {
       const os = yield* _(M.mapM_(fa.proc, BPull.make));
-      const go = (): IO<R & R1, O.Option<E | E1>, ReadonlyArray<O1>> =>
+      const go = (): IO<R & R1, O.Option<E | E1>, Chunk<O1>> =>
         I.chain_(
           BPull.pullElement(os),
           flow(

@@ -1,9 +1,10 @@
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import type { Either } from "../../Either";
 import * as E from "../../Either";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
-import * as C from "../../IO/Cause";
+import * as Ca from "../../IO/Cause";
 import * as Ex from "../../IO/Exit";
 import * as F from "../../IO/Fiber";
 import * as XR from "../../IORef";
@@ -32,8 +33,8 @@ export function as<Z1>(z1: Z1): <R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>) => Sink
 /**
  * A sink that collects all of its inputs into an array.
  */
-export function collectAll<A>(): Sink<unknown, never, A, A, ReadonlyArray<A>> {
-  return fromFoldLeftChunks(A.empty<A>(), (s, i: ReadonlyArray<A>) => A.concat_(s, i));
+export function collectAll<A>(): Sink<unknown, never, A, A, Chunk<A>> {
+  return fromFoldLeftChunks(C.empty<A>(), (s, i: Chunk<A>) => C.concat_(s, i));
 }
 
 /**
@@ -56,9 +57,9 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
           M.map(([push, restart]) => {
             const go = (
               s: S,
-              in_: O.Option<ReadonlyArray<I>>,
+              in_: O.Option<Chunk<I>>,
               end: boolean
-            ): I.IO<R, [E.Either<E, S>, ReadonlyArray<L>], S> =>
+            ): I.IO<R, [E.Either<E, S>, Chunk<L>], S> =>
               I.catchAll_(
                 I.as_(push(in_), () => s),
                 ([e, leftover]) =>
@@ -71,14 +72,14 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
 
                         if (leftover.length === 0) {
                           if (end) {
-                            return Push.emit(s1, A.empty());
+                            return Push.emit(s1, C.empty());
                           } else {
                             return I.as_(restart, () => s1);
                           }
                         } else {
                           return I.apSecond_(
                             restart,
-                            go(s1, O.some((leftover as unknown) as ReadonlyArray<I>), end)
+                            go(s1, O.some((leftover as unknown) as Chunk<I>), end)
                           );
                         }
                       } else {
@@ -88,7 +89,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                   )
               );
 
-            return (in_: O.Option<ReadonlyArray<I>>) =>
+            return (in_: O.Option<Chunk<I>>) =>
               I.chain_(acc.get, (s) => I.chain_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)));
           })
         );
@@ -123,9 +124,9 @@ export function raceBoth<R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
         M.do,
         M.bindS("p1", () => self.push),
         M.bindS("p2", () => that.push),
-        M.map(({ p1, p2 }) => (i: Option<ReadonlyArray<I1>>): I.IO<
+        M.map(({ p1, p2 }) => (i: Option<Chunk<I1>>): I.IO<
           R1 & R,
-          readonly [Either<E | E1, Either<Z, Z1>>, ReadonlyArray<L | L1>],
+          readonly [Either<E | E1, Either<Z, Z1>>, Chunk<L | L1>],
           void
         > =>
           I.raceWith_(
@@ -140,7 +141,7 @@ export function raceBoth<R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                     I.halt(
                       pipe(
                         f,
-                        C.map(([r, leftover]) => [E.map_(r, E.left), leftover] as const)
+                        Ca.map(([r, leftover]) => [E.map_(r, E.left), leftover] as const)
                       )
                     )
                   ),
@@ -159,7 +160,7 @@ export function raceBoth<R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
                     I.halt(
                       pipe(
                         f,
-                        C.map(([r, leftover]) => [E.map_(r, E.right), leftover] as const)
+                        Ca.map(([r, leftover]) => [E.map_(r, E.right), leftover] as const)
                       )
                     )
                   ),
@@ -177,8 +178,8 @@ export function raceBoth<R1, E1, I1 extends I, L1, Z1, I>(that: Sink<R1, E1, I1,
 
 export function dropLeftover<R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>): Sink<R, E, I, never, Z> {
   return new Sink(
-    M.map_(sz.push, (p) => (in_: O.Option<ReadonlyArray<I>>) =>
-      I.mapError_(p(in_), ([v, _]) => [v, A.empty()])
+    M.map_(sz.push, (p) => (in_: O.Option<Chunk<I>>) =>
+      I.mapError_(p(in_), ([v, _]) => [v, C.empty()])
     )
   );
 }

@@ -1,10 +1,11 @@
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import type { Either } from "../../Either";
 import * as E from "../../Either";
 import { identity, pipe } from "../../Function";
 import * as I from "../../IO";
 import type { Cause } from "../../IO/Cause";
-import * as C from "../../IO/Cause";
+import * as Ca from "../../IO/Cause";
 import * as Ex from "../../IO/Exit";
 import * as F from "../../IO/Fiber";
 import * as RM from "../../IORefM";
@@ -57,8 +58,8 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                         const causeOrChunk = pipe(
                           exit,
                           Ex.fold(
-                            (c): Either<O.Option<Cause<E | E1>>, ReadonlyArray<C | C1>> =>
-                              E.left(C.sequenceCauseOption(c)),
+                            (c): Either<O.Option<Cause<E | E1>>, Chunk<C | C1>> =>
+                              E.left(Ca.sequenceCauseOption(c)),
                             E.right
                           )
                         );
@@ -106,10 +107,10 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
           )
       ),
       M.tap(({ chunksL, handler }) =>
-        handler(pipe(chunksL, I.map(A.map(l))), strategy === "Left" || strategy === "Either")
+        handler(pipe(chunksL, I.map(C.map(l))), strategy === "Left" || strategy === "Either")
       ),
       M.tap(({ chunksR, handler }) =>
-        handler(pipe(chunksR, I.map(A.map(r))), strategy === "Right" || strategy === "Either")
+        handler(pipe(chunksR, I.map(C.map(r))), strategy === "Right" || strategy === "Either")
       ),
       M.map(({ done, handoff }) =>
         pipe(

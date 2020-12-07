@@ -1,3 +1,4 @@
+import type { Chunk } from "../Chunk";
 import * as E from "../Either";
 import { pipe } from "../Function";
 import * as I from "../IO";
@@ -6,6 +7,7 @@ import * as M from "../Managed";
 import * as O from "../Option";
 import type { Stream } from "./model";
 import * as Sink from "./Sink";
+import { fromForeachChunk } from "./Sink";
 
 /**
  * Runs the sink on the stream to produce either the sink's result or an error.
@@ -84,7 +86,7 @@ export function run<A, R1, E1, B>(
   return (stream) => run_(stream, sink);
 }
 
-export function runCollect<R, E, A>(stream: Stream<R, E, A>): I.IO<R, E, ReadonlyArray<A>> {
+export function runCollect<R, E, A>(stream: Stream<R, E, A>): I.IO<R, E, Chunk<A>> {
   return run_(stream, Sink.collectAll<A>());
 }
 
@@ -136,4 +138,30 @@ export function foreachManaged<A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, B>
 ): <R, E>(stream: Stream<R, E, A>) => M.Managed<R & R1, E1 | E, void> {
   return (stream) => foreachManaged_(stream, f);
+}
+
+export function foreachChunk_<R, E, O, R1, E1, O1>(
+  stream: Stream<R, E, O>,
+  f: (chunk: Chunk<O>) => I.IO<R1, E1, O1>
+): I.IO<R & R1, E | E1, void> {
+  return run_(stream, fromForeachChunk(f));
+}
+
+export function foreachChunk<O, R1, E1, O1>(
+  f: (chunk: Chunk<O>) => I.IO<R1, E1, O1>
+): <R, E>(stream: Stream<R, E, O>) => I.IO<R & R1, E | E1, void> {
+  return (stream) => foreachChunk_(stream, f);
+}
+
+export function foreachChunkManaged_<R, E, O, R1, E1, O1>(
+  stream: Stream<R, E, O>,
+  f: (chunk: Chunk<O>) => I.IO<R1, E1, O1>
+): M.Managed<R & R1, E | E1, void> {
+  return runManaged_(stream, fromForeachChunk(f));
+}
+
+export function foreachChunkManaged<O, R1, E1, O1>(
+  f: (chunk: Chunk<O>) => I.IO<R1, E1, O1>
+): <R, E>(stream: Stream<R, E, O>) => M.Managed<R & R1, E | E1, void> {
+  return (stream) => foreachChunkManaged_(stream, f);
 }

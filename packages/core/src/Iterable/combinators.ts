@@ -1,6 +1,6 @@
 import { iterable } from "./utils";
 
-function* genConcat<A>(ia: Iterator<A>, ib: Iterator<A>) {
+export function* genConcat<A>(ia: Iterator<A>, ib: Iterator<A>) {
   while (true) {
     const result = ia.next();
     if (result.done) {

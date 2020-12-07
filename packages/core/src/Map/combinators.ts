@@ -146,17 +146,15 @@ export function deleteAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => Re
   return (k) => (m) => deleteAtE_(m, k);
 }
 
-export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: ReadonlyArray<K>): ReadonlyMap<K, A> {
+export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: Iterable<K>): ReadonlyMap<K, A> {
   const r = new Map(m);
-  for (let i = 0; i < ks.length; i++) {
-    r.delete(ks[i]);
+  for (const k of ks) {
+    r.delete(k);
   }
   return r;
 }
 
-export function removeMany<K>(
-  ks: ReadonlyArray<K>
-): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+export function removeMany<K>(ks: Iterable<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   return (m) => removeMany_(m, ks);
 }
 

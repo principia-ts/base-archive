@@ -1,4 +1,5 @@
-import * as A from "../Array";
+import type { Chunk } from "../Chunk";
+import * as C from "../Chunk";
 import { flow, pipe } from "../Function";
 import * as I from "../IO";
 import * as M from "../Managed";
@@ -12,7 +13,7 @@ import { Stream } from "./model";
  */
 export function mapChunksM_<R, E, A, R1, E1, B>(
   fa: Stream<R, E, A>,
-  f: (chunks: ReadonlyArray<A>) => I.IO<R1, E1, ReadonlyArray<B>>
+  f: (chunks: Chunk<A>) => I.IO<R1, E1, Chunk<B>>
 ): Stream<R & R1, E | E1, B> {
   return new Stream(
     pipe(
@@ -31,7 +32,7 @@ export function mapChunksM_<R, E, A, R1, E1, B>(
  * Effectfully transforms the chunks emitted by this stream.
  */
 export function mapChunksM<A, R1, E1, A1>(
-  f: (chunks: ReadonlyArray<A>) => I.IO<R1, E1, ReadonlyArray<A1>>
+  f: (chunks: Chunk<A>) => I.IO<R1, E1, Chunk<A1>>
 ): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E1 | E, A1> {
   return (fa) => mapChunksM_(fa, f);
 }
@@ -41,7 +42,7 @@ export function mapChunksM<A, R1, E1, A1>(
  */
 export function mapChunks_<R, E, A, B>(
   fa: Stream<R, E, A>,
-  f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>
+  f: (chunks: Chunk<A>) => Chunk<B>
 ): Stream<R, E, B> {
   return mapChunksM_(fa, flow(f, I.pure));
 }
@@ -50,7 +51,7 @@ export function mapChunks_<R, E, A, B>(
  * Transforms the chunks emitted by this stream.
  */
 export function mapChunks<A, B>(
-  f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>
+  f: (chunks: Chunk<A>) => Chunk<B>
 ): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
   return (fa) => mapChunks_(fa, f);
 }
@@ -59,7 +60,7 @@ export function mapChunks<A, B>(
  * Transforms the chunks emitted by this stream.
  */
 export function map_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => B): Stream<R, E, B> {
-  return mapChunks_(fa, A.map(f));
+  return mapChunks_(fa, C.map(f));
 }
 
 /**
@@ -84,7 +85,7 @@ export function mapM_<R, E, A, R1, E1, B>(
         pipe(
           pull,
           BPull.pullElement,
-          I.chain((o) => pipe(f(o), I.bimap(O.some, A.pure)))
+          I.chain((o) => pipe(f(o), I.bimap(O.some, C.single)))
         )
       )
     )

@@ -6,6 +6,7 @@ export * from "./bifunctor";
 export * from "./combinators";
 export * from "./constructors";
 export * from "./do";
+export * from "./fallible";
 export * from "./fold";
 export * from "./functor";
 export * from "./integrations";

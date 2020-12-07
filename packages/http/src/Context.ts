@@ -1,3 +1,5 @@
+import type { Byte } from "@principia/core/Byte";
+import type { Chunk } from "@principia/core/Chunk";
 import * as E from "@principia/core/Either";
 import { tag } from "@principia/core/Has";
 import type { FIO, IO, UIO } from "@principia/core/IO";
@@ -114,7 +116,7 @@ export class Request {
               ? Pull.end
               : T.chain_(
                   queue.take,
-                  (event): T.UIO<ReadonlyArray<RequestEvent>> => {
+                  (event): T.UIO<Chunk<RequestEvent>> => {
                     if (event._tag === "Close") {
                       return T.andThen_(done.set(true), Pull.emit(event));
                     }
@@ -205,7 +207,7 @@ export class Request {
     return T.map_(this.socket, (s) => s.remoteAddress!);
   }
 
-  get stream(): S.Stream<unknown, Error, Buffer> {
+  get stream(): S.Stream<unknown, Error, Byte> {
     return S.chain_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req));
   }
 }
@@ -275,7 +277,7 @@ export class Response {
               ? Pull.end
               : T.chain_(
                   queue.take,
-                  (event): T.UIO<ReadonlyArray<ResponseEvent>> => {
+                  (event): T.UIO<Chunk<ResponseEvent>> => {
                     if (event._tag === "Close") {
                       return T.andThen_(done.set(true), Pull.emit(event));
                     }
@@ -356,7 +358,7 @@ export class Response {
     );
   }
 
-  pipeFrom<R, E>(stream: S.Stream<R, E, Buffer>): IO<R, HttpRouteException, void> {
+  pipeFrom<R, E>(stream: S.Stream<R, E, Byte>): IO<R, HttpRouteException, void> {
     return T.catchAll_(
       T.chain_(this._res.get, (res) =>
         S.run_(

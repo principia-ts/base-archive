@@ -1,4 +1,5 @@
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
 import * as XR from "../../IORef";
@@ -23,7 +24,7 @@ export function aggregate_<R, E, O, R1, E1, P>(
       M.bindS("push", () => transducer.push),
       M.bindS("done", () => XR.makeManaged(false)),
       M.letS("go", ({ pull, push, done }) => {
-        const go: I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<P>> = pipe(
+        const go: I.IO<R & R1, O.Option<E | E1>, Chunk<P>> = pipe(
           done.get,
           I.chain((b) =>
             b
@@ -32,13 +33,13 @@ export function aggregate_<R, E, O, R1, E1, P>(
                   pull,
                   I.foldM(
                     O.fold(
-                      (): I.IO<R1, O.Option<E | E1>, ReadonlyArray<P>> =>
+                      (): I.IO<R1, O.Option<E | E1>, Chunk<P>> =>
                         I.apSecond_(done.set(true), I.asSomeError(push(O.none()))),
                       (e) => Pull.fail(e)
                     ),
                     (as) => I.asSomeError(push(O.some(as)))
                   ),
-                  I.chain((ps) => (A.isEmpty(ps) ? go : I.succeed(ps)))
+                  I.chain((ps) => (C.isEmpty(ps) ? go : I.succeed(ps)))
                 )
           )
         );

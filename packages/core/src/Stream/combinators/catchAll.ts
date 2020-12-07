@@ -1,6 +1,6 @@
 import * as E from "../../Either";
 import { flow } from "../../Function";
-import * as C from "../../IO/Cause";
+import * as Ca from "../../IO/Cause";
 import { halt } from "../constructors";
 import type { Stream } from "../model";
 import { catchAllCause_ } from "./catchAllCause";
@@ -13,7 +13,7 @@ export function catchAll_<R, E, O, R1, E1, O1>(
   ma: Stream<R, E, O>,
   f: (e: E) => Stream<R1, E1, O1>
 ): Stream<R & R1, E1, O | O1> {
-  return catchAllCause_(ma, flow(C.failureOrCause, E.fold(f, halt)));
+  return catchAllCause_(ma, flow(Ca.failureOrCause, E.fold(f, halt)));
 }
 
 /**

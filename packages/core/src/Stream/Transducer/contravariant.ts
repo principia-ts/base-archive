@@ -1,6 +1,6 @@
 import { flow } from "@principia/prelude";
 
-import * as A from "../../Array";
+import * as C from "../../Chunk";
 import * as I from "../../IO";
 import * as M from "../../Managed";
 import * as O from "../../Option";
@@ -13,7 +13,7 @@ export function contramap_<R, E, I, O, J>(
   fa: Transducer<R, E, I, O>,
   f: (j: J) => I
 ): Transducer<R, E, J, O> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => push(O.map_(input, A.map(f)))));
+  return new Transducer(M.map_(fa.push, (push) => (input) => push(O.map_(input, C.map(f)))));
 }
 
 /**

@@ -1,6 +1,7 @@
 import { flow, identity } from "@principia/prelude";
 
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import * as E from "../../Either";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
@@ -25,7 +26,7 @@ export function fromPush<R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>): Sink<R,
  */
 export function fromEffect<R, E, I, Z>(io: I.IO<R, E, Z>): Sink<R, E, I, I, Z> {
   return fromPush<R, E, I, I, Z>((in_) => {
-    const leftover = O.fold_(in_, () => A.empty(), identity);
+    const leftover = O.fold_(in_, () => C.empty(), identity);
     return I.fold_(
       io,
       (e) => Push.fail(e, leftover),
@@ -39,7 +40,7 @@ export function fromEffect<R, E, I, Z>(io: I.IO<R, E, Z>): Sink<R, E, I, I, Z> {
  */
 export function succeed<Z, I>(z: Z): Sink<unknown, never, I, I, Z> {
   return fromPush<unknown, never, I, I, Z>((c) => {
-    const leftover = O.fold_(c, () => A.empty<I>(), identity);
+    const leftover = O.fold_(c, () => C.empty<I>(), identity);
     return Push.emit(z, leftover);
   });
 }
@@ -49,7 +50,7 @@ export function succeed<Z, I>(z: Z): Sink<unknown, never, I, I, Z> {
  */
 export function fail<E, I>(e: E): Sink<unknown, E, I, I, void> {
   return fromPush((c) => {
-    const leftover = O.fold_(c, () => A.empty<I>(), identity);
+    const leftover = O.fold_(c, () => C.empty<I>(), identity);
     return Push.fail(e, leftover);
   });
 }
@@ -66,17 +67,17 @@ export function halt<E>(cause: Cause<E>): Sink<unknown, E, unknown, never, never
  */
 export function fromForeach<I, R1, E1>(f: (i: I) => I.IO<R1, E1, any>): Sink<R1, E1, I, I, void> {
   const go = (
-    chunk: ReadonlyArray<I>,
+    chunk: Chunk<I>,
     idx: number,
     len: number
-  ): I.IO<R1, [E.Either<E1, never>, ReadonlyArray<I>], void> => {
+  ): I.IO<R1, [E.Either<E1, never>, Chunk<I>], void> => {
     if (idx === len) {
       return Push.more;
     } else {
       return pipe(
         f(chunk[idx]),
         I.foldM(
-          (e) => Push.fail(e, A.drop_(chunk, idx + 1)),
+          (e) => Push.fail(e, C.drop_(chunk, idx + 1)),
           () => go(chunk, idx + 1, len)
         )
       );
@@ -85,8 +86,8 @@ export function fromForeach<I, R1, E1>(f: (i: I) => I.IO<R1, E1, any>): Sink<R1,
 
   return fromPush(
     O.fold(
-      () => Push.emit<never, void>(undefined, A.empty()),
-      (is: ReadonlyArray<I>) => go(is, 0, is.length)
+      () => Push.emit<never, void>(undefined, C.empty()),
+      (is: Chunk<I>) => go(is, 0, is.length)
     )
   );
 }
@@ -95,14 +96,14 @@ export function fromForeach<I, R1, E1>(f: (i: I) => I.IO<R1, E1, any>): Sink<R1,
  * A sink that executes the provided effectful function for every chunk fed to it.
  */
 export function fromForeachChunk<R, E, I>(
-  f: (chunk: ReadonlyArray<I>) => I.IO<R, E, any>
+  f: (chunk: Chunk<I>) => I.IO<R, E, any>
 ): Sink<R, E, I, never, void> {
   return fromPush(
     O.fold(
-      () => Push.emit(undefined, A.empty()),
+      () => Push.emit(undefined, C.empty()),
       (is) =>
         I.apSecond_(
-          I.mapError_(f(is), (e) => [E.left(e), A.empty()]),
+          I.mapError_(f(is), (e) => [E.left(e), C.empty()]),
           Push.more
         )
     )
@@ -111,8 +112,8 @@ export function fromForeachChunk<R, E, I>(
 
 const dropLeftover = <R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>): Sink<R, E, I, never, Z> =>
   new Sink(
-    M.map_(sz.push, (p) => (in_: O.Option<ReadonlyArray<I>>) =>
-      I.mapError_(p(in_), ([v, _]) => [v, A.empty()])
+    M.map_(sz.push, (p) => (in_: O.Option<Chunk<I>>) =>
+      I.mapError_(p(in_), ([v, _]) => [v, C.empty()])
     )
   );
 
@@ -130,8 +131,8 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
   return new Sink(
     M.succeed(
       O.fold(
-        () => Push.emit(O.none(), A.empty()),
-        (is) => (A.isEmpty(is) ? Push.more : Push.emit(A.head(is), A.drop_(is, 1)))
+        () => Push.emit(O.none(), C.empty()),
+        (is) => (C.isEmpty(is) ? Push.more : Push.emit(C.head(is), C.drop_(is, 1)))
       )
     )
   );
@@ -139,25 +140,23 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
 
 export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
   return new Sink(
-    M.map_(
-      M.fromEffect(XR.make<O.Option<I>>(O.none())),
-      (state) => (is: O.Option<ReadonlyArray<I>>) =>
-        pipe(
-          state.get,
-          I.chain((last) =>
-            O.fold_(
-              is,
-              () => Push.emit(last, A.empty<never>()),
-              flow(
-                A.last,
-                O.fold(
-                  () => Push.more,
-                  (l) => I.apSecond_(state.set(O.some(l)), Push.more)
-                )
+    M.map_(M.fromEffect(XR.make<O.Option<I>>(O.none())), (state) => (is: O.Option<Chunk<I>>) =>
+      pipe(
+        state.get,
+        I.chain((last) =>
+          O.fold_(
+            is,
+            () => Push.emit(last, C.empty<never>()),
+            flow(
+              C.last,
+              O.fold(
+                () => Push.more,
+                (l) => I.apSecond_(state.set(O.some(l)), Push.more)
               )
             )
           )
         )
+      )
     )
   );
 }
@@ -165,32 +164,30 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
 /**
  * A sink that takes the specified number of values.
  */
-export function take<I>(n: number): Sink<unknown, never, I, I, ReadonlyArray<I>> {
+export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
   return new Sink(
-    M.map_(
-      M.fromEffect(XR.make<ReadonlyArray<I>>(A.empty())),
-      (state) => (is: O.Option<ReadonlyArray<I>>) =>
-        pipe(
-          state.get,
-          I.chain((take) =>
-            O.fold_(
-              is,
-              () => (n >= 0 ? Push.emit(take, A.empty<I>()) : Push.emit(A.empty<I>(), take)),
-              (ch) => {
-                const remaining = n - take.length;
-                if (remaining <= ch.length) {
-                  const [chunk, leftover] = A.splitAt(remaining)(ch);
-                  return I.apSecond_(
-                    state.set(A.empty()),
-                    Push.emit(A.concat_(take, chunk), leftover)
-                  );
-                } else {
-                  return I.apSecond_(state.set(A.concat_(take, ch)), Push.more);
-                }
+    M.map_(M.fromEffect(XR.make<Chunk<I>>(C.empty())), (state) => (is: O.Option<Chunk<I>>) =>
+      pipe(
+        state.get,
+        I.chain((take) =>
+          O.fold_(
+            is,
+            () => (n >= 0 ? Push.emit(take, C.empty<I>()) : Push.emit(C.empty<I>(), take)),
+            (ch) => {
+              const remaining = n - take.length;
+              if (remaining <= ch.length) {
+                const [chunk, leftover] = C.splitAt_(ch, remaining);
+                return I.apSecond_(
+                  state.set(C.empty()),
+                  Push.emit(C.concat_(take, chunk), leftover)
+                );
+              } else {
+                return I.apSecond_(state.set(C.concat_(take, ch)), Push.more);
               }
-            )
+            }
           )
         )
+      )
     )
   );
 }
@@ -198,21 +195,21 @@ export function take<I>(n: number): Sink<unknown, never, I, I, ReadonlyArray<I>>
 export function fromFoldChunksM_<R, E, I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
-  f: (z: Z, i: ReadonlyArray<I>) => I.IO<R, E, Z>
+  f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>
 ): Sink<R, E, I, I, Z> {
   return cont(z)
     ? new Sink(
-        M.map_(M.fromEffect(XR.make(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+        M.map_(M.fromEffect(XR.make(z)), (state) => (is: O.Option<Chunk<I>>) =>
           O.fold_(
             is,
-            () => I.chain_(state.get, (s) => Push.emit(s, A.empty())),
+            () => I.chain_(state.get, (s) => Push.emit(s, C.empty())),
             (is) =>
               pipe(
                 state.get,
                 I.chain((s) => f(s, is)),
-                I.mapError((e) => Tu.tuple_(E.left(e), A.empty<I>())),
+                I.mapError((e) => Tu.tuple_(E.left(e), C.empty<I>())),
                 I.chain((s) =>
-                  cont(s) ? I.apSecond_(state.set(s), Push.more) : Push.emit(s, A.empty<I>())
+                  cont(s) ? I.apSecond_(state.set(s), Push.more) : Push.emit(s, C.empty<I>())
                 )
               )
           )
@@ -227,7 +224,7 @@ export function fromFoldChunksM_<R, E, I, Z>(
  */
 export function fromFoldLeftChunksM<R, E, I, Z>(
   z: Z,
-  f: (z: Z, i: ReadonlyArray<I>) => I.IO<R, E, Z>
+  f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>
 ): Sink<R, E, I, never, Z> {
   return dropLeftover(fromFoldChunksM_(z, (_) => true, f));
 }
@@ -240,7 +237,7 @@ export function fromFoldLeftChunksM<R, E, I, Z>(
 export function fromFoldChunks<I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
-  f: (z: Z, i: ReadonlyArray<I>) => Z
+  f: (z: Z, i: Chunk<I>) => Z
 ): Sink<unknown, never, I, I, Z> {
   return fromFoldChunksM_(z, cont, (z, i) => I.succeed(f(z, i)));
 }
@@ -251,7 +248,7 @@ export function fromFoldChunks<I, Z>(
  */
 export function fromFoldLeftChunks<I, Z>(
   z: Z,
-  f: (z: Z, i: ReadonlyArray<I>) => Z
+  f: (z: Z, i: Chunk<I>) => Z
 ): Sink<unknown, never, I, never, Z> {
   return dropLeftover(fromFoldChunks(z, () => true, f));
 }
@@ -269,28 +266,28 @@ export function fromFoldM<R, E, I, Z>(
 ): Sink<R, E, I, I, Z> {
   const foldChunk = (
     z: Z,
-    chunk: ReadonlyArray<I>,
+    chunk: Chunk<I>,
     i: number,
     len: number
-  ): I.IO<R, readonly [E, ReadonlyArray<I>], readonly [Z, O.Option<ReadonlyArray<I>>]> => {
+  ): I.IO<R, readonly [E, Chunk<I>], readonly [Z, O.Option<Chunk<I>>]> => {
     if (i === len) {
       return I.succeed([z, O.none()]);
     } else {
       return I.foldM_(
         f(z, chunk[i]),
-        (e) => I.fail([e, A.drop_(chunk, i + 1)]),
+        (e) => I.fail([e, C.drop_(chunk, i + 1)]),
         (s) =>
-          cont(s) ? foldChunk(s, chunk, i + 1, len) : I.succeed([s, O.some(A.drop_(chunk, i + 1))])
+          cont(s) ? foldChunk(s, chunk, i + 1, len) : I.succeed([s, O.some(C.drop_(chunk, i + 1))])
       );
     }
   };
 
   if (cont(z)) {
     return new Sink(
-      M.map_(M.fromEffect(XR.make(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+      M.map_(M.fromEffect(XR.make(z)), (state) => (is: O.Option<Chunk<I>>) =>
         O.fold_(
           is,
-          () => I.chain_(state.get, (s) => Push.emit(s, A.empty())),
+          () => I.chain_(state.get, (s) => Push.emit(s, C.empty())),
           (is) =>
             I.chain_(state.get, (z) =>
               I.foldM_(
@@ -322,10 +319,10 @@ export function fromFold<I, Z>(
 ): Sink<unknown, never, I, I, Z> {
   const foldChunk = (
     z: Z,
-    chunk: ReadonlyArray<I>,
+    chunk: Chunk<I>,
     i: number,
     len: number
-  ): Sy.USync<readonly [Z, O.Option<ReadonlyArray<I>>]> =>
+  ): Sy.USync<readonly [Z, O.Option<Chunk<I>>]> =>
     Sy.gen(function* (_) {
       if (i === len) {
         return [z, O.none()];
@@ -333,16 +330,16 @@ export function fromFold<I, Z>(
         const z1 = f(z, chunk[i]);
         return cont(z1)
           ? yield* _(foldChunk(z1, chunk, i + 1, len))
-          : [z1, O.some(A.drop_(chunk, i + 1))];
+          : [z1, O.some(C.drop_(chunk, i + 1))];
       }
     });
 
   if (cont(z)) {
     return new Sink(
-      M.map_(M.fromEffect(XR.make(z)), (state) => (is: O.Option<ReadonlyArray<I>>) =>
+      M.map_(M.fromEffect(XR.make(z)), (state) => (is: O.Option<Chunk<I>>) =>
         O.fold_(
           is,
-          () => I.chain_(state.get, (s) => Push.emit(s, A.empty())),
+          () => I.chain_(state.get, (s) => Push.emit(s, C.empty())),
           (is) =>
             I.chain_(state.get, (z) =>
               I.chain_(foldChunk(z, is, 0, is.length), ([st, l]) =>

@@ -1,6 +1,7 @@
 import { flow, pipe } from "@principia/prelude";
 
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import * as E from "../../Either";
 import * as I from "../../IO";
 import type { HasClock } from "../../IO/Clock";
@@ -34,7 +35,7 @@ import { flattenTake } from "./flattenTake";
  */
 export function aggregateAsyncWithinEither<O, R1, E1, P, Q>(
   transducer: Transducer<R1, E1, O, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, Q>
+  schedule: Schedule<R1, Chunk<P>, Q>
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> {
   return (stream) => aggregateAsyncWithinEither_(stream, transducer, schedule);
 }
@@ -54,7 +55,7 @@ export function aggregateAsyncWithinEither<O, R1, E1, P, Q>(
 export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, Q>
+  schedule: Schedule<R1, Chunk<P>, Q>
 ): Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> {
   return pipe(
     M.do,
@@ -66,7 +67,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
       XR.makeManaged<O.Option<Fiber<never, Take.Take<E | E1, O>>>>(O.none())
     ),
     M.bindS("sdriver", () => M.fromEffect(Sc.driver(schedule))),
-    M.bindS("lastChunk", () => XR.makeManaged<ReadonlyArray<P>>(A.empty())),
+    M.bindS("lastChunk", () => XR.makeManaged<Chunk<P>>(C.empty())),
     M.letS("producer", ({ pull, handoff }) =>
       I.repeatWhileM_(Take.fromPull(pull), (take) =>
         pipe(
@@ -102,7 +103,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
             () =>
               pipe(
                 push(O.none()),
-                I.map((ps) => [Take.chunk(A.map_(ps, E.right)), Take.end])
+                I.map((ps) => [Take.chunk(C.map_(ps, E.right)), Take.end])
               ),
             I.halt,
             (os) =>
@@ -114,11 +115,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
         );
       const go = (
         race: boolean
-      ): I.IO<
-        R & R1 & HasClock,
-        O.Option<E | E1>,
-        ReadonlyArray<Take.Take<E1, E.Either<Q, P>>>
-      > => {
+      ): I.IO<R & R1 & HasClock, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
         if (!race) {
           return pipe(waitForProducer, I.chain(handleTake), I.apFirst(raceNextTime.set(true)));
         } else {
@@ -135,7 +132,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
                         I.do,
                         I.bindS("lastQ", () =>
                           pipe(
-                            lastChunk.set(A.empty()),
+                            lastChunk.set(C.empty()),
                             I.andThen(I.orDie(sdriver.last)),
                             I.apFirst(sdriver.reset)
                           )
@@ -193,7 +190,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
  */
 export function aggregateAsyncWithin<O, R1, E1, P>(
   transducer: Transducer<R1, E1, O, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, any>
+  schedule: Schedule<R1, Chunk<P>, any>
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, P> {
   return (stream) => aggregateAsyncWithin_(stream, transducer, schedule);
 }
@@ -204,7 +201,7 @@ export function aggregateAsyncWithin<O, R1, E1, P>(
 export function aggregateAsyncWithin_<R, E, O, R1, E1, P>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, any>
+  schedule: Schedule<R1, Chunk<P>, any>
 ): Stream<R & R1 & HasClock, E | E1, P> {
   return filterMap_(
     aggregateAsyncWithinEither_(stream, transducer, schedule),

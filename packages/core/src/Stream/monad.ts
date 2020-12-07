@@ -1,10 +1,12 @@
-import * as A from "../Array";
+import type { Chunk } from "../Chunk";
+import * as C from "../Chunk";
 import { identity, pipe } from "../Function";
 import * as I from "../IO";
 import * as XR from "../IORef";
 import * as M from "../Managed";
 import * as RM from "../Managed/ReleaseMap";
 import type { Option } from "../Option";
+import { mapM_ } from "./functor";
 import { Chain, Stream } from "./model";
 import * as Pull from "./Pull";
 
@@ -25,11 +27,11 @@ export function chain_<R, E, A, Q, D, B>(
       M.bindS("outerStream", () => ma.proc),
       M.bindS("currOuterChunk", () =>
         I.toManaged()(
-          XR.make<[ReadonlyArray<A>, number]>([A.empty(), 0])
+          XR.make<[Chunk<A>, number]>([C.empty(), 0])
         )
       ),
       M.bindS("currInnerStream", () =>
-        I.toManaged()(XR.make<I.IO<R_, Option<E_>, ReadonlyArray<B>>>(Pull.end))
+        I.toManaged()(XR.make<I.IO<R_, Option<E_>, Chunk<B>>>(Pull.end))
       ),
       M.bindS(
         "innerFinalizer",
@@ -60,4 +62,17 @@ export function flatten<R, E, Q, D, A>(
   ffa: Stream<R, E, Stream<Q, D, A>>
 ): Stream<Q & R, D | E, A> {
   return chain_(ffa, identity);
+}
+
+export function tap_<R, E, O, R1, E1, O1>(
+  ma: Stream<R, E, O>,
+  f: (o: O) => I.IO<R1, E1, O1>
+): Stream<R & R1, E | E1, O> {
+  return mapM_(ma, (o) => I.as_(f(o), () => o));
+}
+
+export function tap<O, R1, E1, O1>(
+  f: (o: O) => I.IO<R1, E1, O1>
+): <R, E>(ma: Stream<R, E, O>) => Stream<R & R1, E | E1, O> {
+  return (ma) => tap_(ma, f);
 }

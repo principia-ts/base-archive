@@ -17,21 +17,24 @@ import { Done } from "../state";
  * `Promise.complete`.
  */
 export function completeWith<E, A>(io: FIO<E, A>) {
-  return (promise: Promise<E, A>): UIO<boolean> =>
-    I.total(() => {
-      const state = promise.state.get;
+  return (promise: Promise<E, A>): UIO<boolean> => completeWith_(promise, io);
+}
 
-      switch (state._tag) {
-        case "Done": {
-          return false;
-        }
-        case "Pending": {
-          promise.state.set(new Done(io));
-          state.joiners.forEach((f) => {
-            f(io);
-          });
-          return true;
-        }
+export function completeWith_<E, A>(promise: Promise<E, A>, io: FIO<E, A>): UIO<boolean> {
+  return I.total(() => {
+    const state = promise.state.get;
+
+    switch (state._tag) {
+      case "Done": {
+        return false;
       }
-    });
+      case "Pending": {
+        promise.state.set(new Done(io));
+        state.joiners.forEach((f) => {
+          f(io);
+        });
+        return true;
+      }
+    }
+  });
 }

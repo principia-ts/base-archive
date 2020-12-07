@@ -1,4 +1,5 @@
-import * as A from "../../Array";
+import type { Chunk } from "../../Chunk";
+import * as C from "../../Chunk";
 import * as E from "../../Either";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
@@ -25,7 +26,7 @@ export function then_<R, E, I, O, R1, E1, O1>(
               I.chain((cl) =>
                 cl.length === 0
                   ? pushRight(O.none())
-                  : pipe(pushRight(O.some(cl)), I.zipWith(pushRight(O.none()), A.concat_))
+                  : pipe(pushRight(O.some(cl)), I.zipWith(pushRight(O.none()), C.concat_))
               )
             ),
           (inputs) =>
@@ -58,19 +59,19 @@ export function thenSink_<R, E, I, O, R1, E1, L, Z>(
 ): Sink<R & R1, E | E1, I, L, Z> {
   return new Sink(
     pipe(
-      M.zipWith_(me.push, that.push, (pushMe, pushThat) => (is: O.Option<ReadonlyArray<I>>) =>
+      M.zipWith_(me.push, that.push, (pushMe, pushThat) => (is: O.Option<Chunk<I>>) =>
         O.fold_(
           is,
           () =>
             pipe(
               pushMe(O.none()),
-              I.mapError((e) => [E.left<E | E1>(e), A.empty<L>()] as const),
+              I.mapError((e) => [E.left<E | E1>(e), C.empty<L>()] as const),
               I.chain((chunk) => I.andThen_(pushThat(O.some(chunk)), pushThat(O.none())))
             ),
           (in_) =>
             pipe(
               pushMe(O.some(in_)),
-              I.mapError((e) => [E.left(e), A.empty<L>()] as const),
+              I.mapError((e) => [E.left(e), C.empty<L>()] as const),
               I.chain((chunk) => pushThat(O.some(chunk)))
             )
         )

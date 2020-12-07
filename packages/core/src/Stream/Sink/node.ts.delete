@@ -2,7 +2,7 @@ import { pipe } from "@principia/prelude";
 import { once } from "events";
 import type { Writable } from "stream";
 
-import * as A from "../../Array";
+import * as A from "../../Chunk";
 import type * as E from "../../Either";
 import * as I from "../../IO";
 import * as XR from "../../IORef";
