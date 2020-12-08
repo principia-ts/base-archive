@@ -12,4 +12,8 @@ export * from "./guards";
 export * from "./io";
 export * from "./model";
 export * from "./monad";
+export * from "./traversable";
+export * from "./witherable";
 // codegen:end
+
+export { push } from "./_internal";

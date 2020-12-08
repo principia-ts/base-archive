@@ -1,3 +1,4 @@
+export { push } from "./_internal";
 export * from "./applicative";
 export * from "./apply";
 export * from "./combinators";

@@ -47,6 +47,7 @@ export function chain_<R, E, A, U, G, B>(
  *
  * @category Monad
  * @since 1.0.0
+ * @dataFirst chain_
  */
 export function chain<A, U, G, B>(
   f: (a: A) => IO<U, G, B>
@@ -105,6 +106,7 @@ export function tap_<R, E, A, Q, D, B>(
  *
  * @category Monad
  * @since 1.0.0
+ * @dataFirst tap_
  */
 export function tap<A, Q, D, B>(
   f: (a: A) => IO<Q, D, B>

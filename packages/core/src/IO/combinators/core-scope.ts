@@ -39,7 +39,7 @@ export function forkScopeMask(
 export function forkIn(
   scope: Scope<Exit<any, any>>
 ): <R, E, A>(io: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {
-  return (io) => new ForkInstruction(io, O.some(scope));
+  return (io) => new ForkInstruction(io, O.some(scope), O.none());
 }
 
 export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
@@ -73,5 +73,5 @@ export function transplant<R, E, A>(f: (_: Grafter) => IO<R, E, A>): IO<R, E, A>
  * returned effect terminates, the forked fiber will continue running.
  */
 export function forkDaemon<R, E, A>(ma: IO<R, E, A>): URIO<R, Executor<E, A>> {
-  return new ForkInstruction(ma, O.some(globalScope));
+  return new ForkInstruction(ma, O.some(globalScope), O.none());
 }

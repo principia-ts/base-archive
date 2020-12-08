@@ -38,6 +38,9 @@ export function concat_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): Readonly
   return r;
 }
 
+/**
+ * @dataFirst concat_
+ */
 export function concat<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (xs) => concat_(xs, ys);
 }
@@ -46,16 +49,22 @@ export function append_<A>(as: ReadonlyArray<A>, a: A): ReadonlyArray<A> {
   return concat_(as, [a]);
 }
 
+/**
+ * @dataFirst append_
+ */
 export function append<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => append_(as, a);
 }
 
-export function lookup_<A>(i: number, as: ReadonlyArray<A>): Option<A> {
+export function lookup_<A>(as: ReadonlyArray<A>, i: number): Option<A> {
   return isOutOfBound_(i, as) ? none() : some(as[i]);
 }
 
+/**
+ * @dataFirst lookup_
+ */
 export function lookup(i: number): <A>(as: ReadonlyArray<A>) => Option<A> {
-  return (as) => lookup_(i, as);
+  return (as) => lookup_(as, i);
 }
 
 export function scanLeft<A, B>(
@@ -112,6 +121,9 @@ export function snoc_<A>(init: ReadonlyArray<A>, end: A): NonEmptyArray<A> {
   return (r as unknown) as NonEmptyArray<A>;
 }
 
+/**
+ * @dataFirst snoc_
+ */
 export function snoc<A>(end: A): (init: ReadonlyArray<A>) => NonEmptyArray<A> {
   return (init) => snoc_(init, end);
 }
@@ -125,7 +137,7 @@ export function tail<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
 }
 
 export function last<A>(as: ReadonlyArray<A>): Option<A> {
-  return lookup_(as.length - 1, as);
+  return lookup_(as, as.length - 1);
 }
 
 export function init<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
@@ -137,6 +149,9 @@ export function takeLeft_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> 
   return as.slice(0, n);
 }
 
+/**
+ * @dataFirst takeLeft_
+ */
 export function takeLeft(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => takeLeft_(as, n);
 }
@@ -145,6 +160,9 @@ export function takeRight_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A>
   return isEmpty(as) ? empty() : as.slice(-n);
 }
 
+/**
+ * @dataFirst takeRight_
+ */
 export function takeRight(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => takeRight_(as, n);
 }
@@ -291,6 +309,7 @@ export function findFirstIndex_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>
  * Find the first index for which a predicate holds
  *
  * @since 1.0.0
+ * @dataFirst findFirstIndex_
  */
 export function findFirstIndex<A>(
   predicate: Predicate<A>
@@ -317,6 +336,7 @@ export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>)
  * Find the last index for which a predicate holds
  *
  * @since 1.0.0
+ * @dataFirst findLastIndex_
  */
 export function findLastIndex<A>(
   predicate: Predicate<A>
@@ -354,6 +374,7 @@ export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<Read
  * Insert an element at the specified index, creating a new array, or returning `None` if the index is out of bounds
  *
  * @since 1.0.0
+ * @dataFirst insertAt_
  */
 export function insertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
   return (as) => insertAt_(as, i, a);
@@ -372,6 +393,7 @@ export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<Read
  * Change the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
  *
  * @since 1.0.0
+ * @dataFirst updateAt_
  */
 export function updateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
   return (as) => updateAt_(as, i, a);

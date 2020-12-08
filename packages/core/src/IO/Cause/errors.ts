@@ -1,9 +1,9 @@
 import type { Cause } from "./model";
-import { showCause } from "./show";
+import { pretty } from "./show";
 
 export class FiberFailure<E> extends Error {
   readonly _tag = "FiberFailure";
-  readonly pretty = showCause.show(this.cause);
+  readonly pretty = pretty(this.cause);
 
   constructor(readonly cause: Cause<E>) {
     super();
@@ -14,7 +14,7 @@ export class FiberFailure<E> extends Error {
 }
 
 export function isFiberFailure(u: unknown): u is FiberFailure<unknown> {
-  return u instanceof FiberFailure && u._tag === "FiberFailure";
+  return u instanceof Error && u["_tag"] === "FiberFailure";
 }
 
 export class Untraced extends Error {
@@ -28,7 +28,7 @@ export class Untraced extends Error {
 }
 
 export function isUntraced(u: unknown): u is Untraced {
-  return u instanceof Untraced && u._tag === "Untraced";
+  return u instanceof Error && u["_tag"] === "Untraced";
 }
 
 export class RuntimeError extends Error {
@@ -42,7 +42,7 @@ export class RuntimeError extends Error {
 }
 
 export function isRuntime(u: unknown): u is RuntimeError {
-  return u instanceof RuntimeError && u._tag === "RuntimeError";
+  return u instanceof Error && u["_tag"] === "RuntimeError";
 }
 
 export class InterruptedException extends Error {
@@ -55,7 +55,7 @@ export class InterruptedException extends Error {
 }
 
 export function isInterruptedException(u: unknown): u is InterruptedException {
-  return u instanceof InterruptedException && u._tag === "InterruptedException";
+  return u instanceof Error && u["_tag"] === "InterruptedException";
 }
 
 export class IllegalStateException extends Error {
@@ -68,5 +68,17 @@ export class IllegalStateException extends Error {
 }
 
 export function isIllegalStateException(u: unknown): u is IllegalStateException {
-  return u instanceof IllegalStateException && u._tag === "IllegalStateException";
+  return u instanceof Error && u["_tag"] === "IllegalStateException";
+}
+
+export class IllegalArgumentException extends Error {
+  readonly _tag = "IllegalArgumentException";
+  constructor(message?: string) {
+    super(message);
+    this.name = this._tag;
+  }
+}
+
+export function isIllegalArgumentException(u: unknown): u is IllegalArgumentException {
+  return u instanceof Error && u["_tag"] === "IllegalArgumentException";
 }

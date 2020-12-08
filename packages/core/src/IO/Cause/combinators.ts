@@ -4,7 +4,7 @@ import { pipe } from "../../Function";
 import * as O from "../../Option";
 import * as Sy from "../../Sync";
 import type { FiberId } from "../Fiber/FiberId";
-import { both, fail, then } from "./constructors";
+import { both, fail, then, traced } from "./constructors";
 import { failureOption, find, foldLeft_ } from "./destructors";
 import { empty } from "./empty";
 import { InterruptedException } from "./errors";
@@ -102,6 +102,9 @@ export function stripFailuresSafe<E>(cause: Cause<E>): Sy.USync<Cause<never>> {
           yield* _(stripFailuresSafe(cause.right))
         );
       }
+      case "Traced": {
+        return traced(yield* _(stripFailuresSafe(cause.cause)), cause.trace);
+      }
     }
   });
 }
@@ -143,6 +146,9 @@ export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
           yield* _(stripInterruptsSafe(cause.right))
         );
       }
+      case "Traced": {
+        return traced(yield* _(stripInterruptsSafe(cause.cause)), cause.trace);
+      }
     }
   });
 }
@@ -171,6 +177,9 @@ export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<nev
       }
       case "Die": {
         return O.some(cause);
+      }
+      case "Traced": {
+        return O.map_(yield* _(keepDefectsSafe(cause.cause)), (_) => traced(_, cause.trace));
       }
       case "Then": {
         const lefts = yield* _(keepDefectsSafe(cause.left));
@@ -251,6 +260,11 @@ export function sequenceCauseEitherSafe<E, A>(
             : E.left(both(lefts.left, rights.left))
           : E.right(lefts.right);
       }
+      case "Traced": {
+        return E.mapLeft_(yield* _(sequenceCauseEitherSafe(cause.cause)), (_) =>
+          traced(_, cause.trace)
+        );
+      }
     }
   });
 }
@@ -262,7 +276,9 @@ export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Eithe
   return Sy.runIO(sequenceCauseEitherSafe(cause));
 }
 
-export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<O.Option<Cause<E>>> {
+export function sequenceCauseOptionSafe<E>(
+  cause: Cause<O.Option<E>>
+): Sy.USync<O.Option<Cause<E>>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {
@@ -298,6 +314,11 @@ export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<
           : rights._tag === "Some"
           ? rights
           : O.none();
+      }
+      case "Traced": {
+        return O.map_(yield* _(sequenceCauseOptionSafe(cause.cause)), (_) =>
+          traced(_, cause.trace)
+        );
       }
     }
   });
@@ -350,4 +371,33 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
       O.alt(() => A.head(defects(cause))),
       O.getOrElse(() => new InterruptedException())
     );
+}
+
+/**
+ * Returns a `Cause` that has been stripped of all tracing information.
+ */
+export function untraced<E>(cause: Cause<E>): Cause<E> {
+  return Sy.runIO(untracedSafe(cause));
+}
+
+/**
+ * Returns a `Cause` that has been stripped of all tracing information.
+ */
+export function untracedSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
+  return Sy.gen(function* (_) {
+    switch (cause._tag) {
+      case "Traced": {
+        return yield* _(untracedSafe(cause.cause));
+      }
+      case "Both": {
+        return both(yield* _(untracedSafe(cause.left)), yield* _(untracedSafe(cause.right)));
+      }
+      case "Then": {
+        return then(yield* _(untracedSafe(cause.left)), yield* _(untracedSafe(cause.right)));
+      }
+      default: {
+        return cause;
+      }
+    }
+  });
 }

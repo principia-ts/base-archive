@@ -1,3 +1,6 @@
+/**
+ * @optimize flow
+ */
 export function flow<A extends ReadonlyArray<unknown>, B>(ab: (...a: A) => B): (...a: A) => B;
 export function flow<A extends ReadonlyArray<unknown>, B, C>(
   ab: (...a: A) => B,

@@ -38,6 +38,7 @@ export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
  *
  * @category Functor
  * @since 1.0.0
+ * @dataFirst map_
  */
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B> {
   return (fa) => map_(fa, f);

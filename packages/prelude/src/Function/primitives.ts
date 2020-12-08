@@ -1,9 +1,15 @@
 import type { Lazy, Predicate } from "./model";
 
+/**
+ * @optimize identity
+ */
 export function identity<A>(a: A) {
   return a;
 }
 
+/**
+ * @optimize identity
+ */
 export const unsafeCoerce: <A, B>(a: A) => B = identity as any;
 
 export function not<A>(predicate: Predicate<A>): Predicate<A> {

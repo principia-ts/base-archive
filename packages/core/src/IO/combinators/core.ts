@@ -13,16 +13,21 @@ import * as C from "../Cause";
 import { halt, succeed, suspend, total } from "../constructors";
 import * as Ex from "../Exit/_core";
 import type { Exit } from "../Exit/model";
+import type { FailureReporter } from "../Fiber/_internal/io";
 import type { Executor } from "../Fiber/executor";
 import type { FiberDescriptor, InterruptStatus } from "../Fiber/model";
+import type { Trace } from "../Fiber/tracing";
 import { foldCauseM_, foldM_ } from "../fold";
 import { map_ } from "../functor";
-import type { IO, URIO } from "../model";
+import type { IO, UIO, URIO } from "../model";
 import {
   CheckDescriptorInstruction,
   FoldInstruction,
   ForkInstruction,
-  GetInterruptInstruction
+  GetInterruptInstruction,
+  GetTracingStatusInstruction,
+  SetTracingStatusInstruction,
+  TraceInstruction
 } from "../model";
 import { chain_ } from "../monad";
 import { unit } from "../unit";
@@ -441,5 +446,68 @@ export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, 
  * methods.
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, Executor<E, A>> {
-  return new ForkInstruction(ma, O.none());
+  return new ForkInstruction(ma, O.none(), O.none());
+}
+
+/**
+ * Returns an IO that forks this IO into its own separate fiber,
+ * returning the fiber immediately, without waiting for it to begin executing
+ * the IO.
+ *
+ * You can use the `fork` method whenever you want to execute an IO in a
+ * new fiber, concurrently and without "blocking" the fiber executing other
+ * IOs. Using fibers can be tricky, so instead of using this method
+ * directly, consider other higher-level methods, such as `raceWith`,
+ * `zipPar`, and so forth.
+ *
+ * The fiber returned by this method has methods interrupt the fiber and to
+ * wait for it to finish executing the IO. See `Fiber` for more
+ * information.
+ *
+ * Whenever you use this method to launch a new fiber, the new fiber is
+ * attached to the parent fiber's scope. This means when the parent fiber
+ * terminates, the child fiber will be terminated as well, ensuring that no
+ * fibers leak. This behavior is called "auto supervision", and if this
+ * behavior is not desired, you may use the `forkDaemon` or `forkIn`
+ * methods.
+ */
+export function forkReport(
+  reportFailure: FailureReporter
+): <R, E, A>(ma: IO<R, E, A>) => URIO<R, Executor<E, A>> {
+  return (ma) => new ForkInstruction(ma, O.none(), O.some(reportFailure));
+}
+
+/**
+ * Enables effect tracing for this IO. Because this is the default, this
+ * operation only has an additional meaning if the effect is located within
+ * an `untraced` section, or the current fiber has been spawned by a parent
+ * inside an `untraced` section.
+ */
+export function traced<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
+  return new SetTracingStatusInstruction(ma, true);
+}
+
+/**
+ * Disables effect tracing facilities for the duration of the IO.
+ *
+ * Note: Effect tracing is cached, as such after the first iteration
+ * it has a negligible effect on performance of hot-spots (Additional
+ * hash map lookup per flatMap). As such, using `untraced` sections
+ * is not guaranteed to result in a noticeable performance increase.
+ */
+export function untraced<R, E, A>(self: IO<R, E, A>): IO<R, E, A> {
+  return new SetTracingStatusInstruction(self, false);
+}
+
+/**
+ * Capture trace at the current point
+ */
+export const trace: UIO<Trace> = new TraceInstruction();
+
+/**
+ * Checks the tracing status, and produces the effect returned by the
+ * specified callback.
+ */
+export function checkTraced<R, E, A>(f: (_: boolean) => IO<R, E, A>): IO<R, E, A> {
+  return new GetTracingStatusInstruction(f);
 }

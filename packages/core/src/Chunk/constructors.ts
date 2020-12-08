@@ -1,6 +1,9 @@
 import * as A from "../Array";
 import type { Chunk, TypedArray } from "./model";
 
+/**
+ * @optimize identity
+ */
 export function fromBuffer<A>(id: TypedArray): Chunk<A> {
   return id as any;
 }

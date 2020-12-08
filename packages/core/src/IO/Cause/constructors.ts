@@ -1,4 +1,5 @@
 import type { FiberId } from "../Fiber/FiberId";
+import type { Trace } from "../Fiber/tracing";
 import { isEmpty } from "./guards";
 import type { Cause } from "./model";
 
@@ -54,4 +55,12 @@ export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
  */
 export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
   return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Both", left, right };
+}
+
+export function traced<E>(cause: Cause<E>, trace: Trace): Cause<E> {
+  return {
+    _tag: "Traced",
+    cause,
+    trace
+  };
 }

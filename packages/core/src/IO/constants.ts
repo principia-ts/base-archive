@@ -27,5 +27,8 @@ export enum IOInstructionTag {
   ModifyFiberRef = "ModifyFiberRef",
   GetForkScope = "GetForkScope",
   OverrideForkScope = "OverrideForkScope",
-  Integration = "Integration"
+  Integration = "Integration",
+  Trace = "Trace",
+  SetTracingStatus = "SetTracingStatus",
+  GetTracingStatus = "GetTracingStatus"
 }

@@ -34,6 +34,7 @@ export function alt_<A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): Rea
  *
  * @category Alt
  * @since 1.0.0
+ * @dataFirst alt_
  */
 export function alt<A>(that: () => ReadonlyArray<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (fa) => alt_(fa, that);

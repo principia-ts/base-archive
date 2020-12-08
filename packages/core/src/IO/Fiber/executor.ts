@@ -1,11 +1,17 @@
+/**
+ * tracing: off
+ */
 import * as A from "../../Array/_core";
 import * as E from "../../Either";
+import { constVoid } from "../../Function";
+import * as L from "../../List/_core";
 import type { Option } from "../../Option";
 import { none } from "../../Option";
 import * as O from "../../Option";
 import type { Stack } from "../../Utils/Stack";
 import { stack } from "../../Utils/Stack";
 import { AtomicReference } from "../../Utils/support/AtomicReference";
+import { RingBuffer } from "../../Utils/support/RingBuffer";
 import { defaultScheduler } from "../../Utils/support/Scheduler";
 import * as C from "../Cause";
 import * as Ex from "../Exit";
@@ -21,14 +27,22 @@ import type { FiberId } from "./FiberId";
 import { newFiberId } from "./FiberId";
 import type { Fiber, InterruptStatus, RuntimeFiber } from "./model";
 import { FiberDescriptor, interruptStatus } from "./model";
+import type { Platform } from "./platform";
 import type { Callback } from "./state";
 import { FiberStateDone, FiberStateExecuting, initial, interrupting } from "./state";
 import * as Status from "./status";
+import type { TraceElement } from "./tracing";
+import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from "./tracing";
 
 export type FiberRefLocals = Map<FiberRef<any>, any>;
 
 export class InterruptExit {
   readonly _tag = "InterruptExit";
+  constructor(readonly apply: (a: any) => I.IO<any, any, any>) {}
+}
+
+export class TracingExit {
+  readonly _tag = "TracingExit";
   constructor(readonly apply: (a: any) => I.IO<any, any, any>) {}
 }
 
@@ -44,6 +58,7 @@ export class ApplyFrame {
 
 export type Frame =
   | InterruptExit
+  | TracingExit
   | I.FoldInstruction<any, any, any, any, any, any, any, any, any>
   | HandlerFrame
   | ApplyFrame;
@@ -102,6 +117,10 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
   private supervisors: Stack<Supervisor<any>> = stack(this.initialSupervisor);
   private forkScopeOverride?: Stack<Option<Scope.Scope<Exit<any, any>>>> = undefined;
   private scopeKey: Scope.Key | undefined = undefined;
+  private executionTraces = new RingBuffer<TraceElement>(this.platform.executionTraceLength);
+  private stackTraces = new RingBuffer<TraceElement>(this.platform.stackTraceLength);
+  private traceStatusStack: Stack<boolean> | undefined = stack(true);
+  private traceStatusEnabled = this.platform.traceExecution || this.platform.traceStack;
 
   constructor(
     private readonly fiberId: FiberId,
@@ -110,13 +129,28 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     private readonly fiberRefLocals: FiberRefLocals,
     private readonly initialSupervisor: Supervisor<any>,
     private readonly openScope: Scope.Open<Exit<E, A>>,
-    private readonly maxOperations: number
+    private readonly maxOperations: number,
+    private readonly reportFailure: (e: C.Cause<E>) => void,
+    private readonly platform: Platform,
+    private readonly parentTrace: O.Option<Trace>
   ) {
     _tracing.trace(this);
   }
 
   get poll() {
     return I.total(() => this._poll());
+  }
+
+  addTrace(f: Function) {
+    if (this.inTracingRegion && "$trace" in f) {
+      this.executionTraces.push(new SourceLocation(f["$trace"]));
+    }
+  }
+
+  addTraceValue(trace: TraceElement) {
+    if (this.inTracingRegion) {
+      this.executionTraces.push(trace);
+    }
   }
 
   getRef<K>(fiberRef: FR.FiberRef<K>): I.UIO<K> {
@@ -148,6 +182,19 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     }
   });
 
+  private popTracingStatus() {
+    this.traceStatusStack = this.traceStatusStack?.previous;
+  }
+
+  private pushTracingStatus(flag: boolean) {
+    this.traceStatusStack = stack(flag, this.traceStatusStack);
+  }
+
+  private tracingExit = new TracingExit((v: any) => {
+    this.popTracingStatus();
+    return I.succeed(v);
+  });
+
   get isInterruptible() {
     return this.interruptStatus ? this.interruptStatus.value : true;
   }
@@ -168,12 +215,26 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     return !this.continuationFrames;
   }
 
+  get inTracingRegion() {
+    return (
+      this.traceStatusEnabled &&
+      (this.traceStatusStack ? this.traceStatusStack.value : this.platform.initialTracingStatus)
+    );
+  }
+
   get id() {
     return this.fiberId;
   }
 
   private pushContinuation(k: Frame) {
+    if (this.platform.traceStack && this.inTracingRegion) {
+      this.stackTraces.push(traceLocation(k.apply));
+    }
     this.continuationFrames = stack(k, this.continuationFrames);
+  }
+
+  private popStackTrace() {
+    this.stackTraces.pop();
   }
 
   private popContinuation() {
@@ -228,15 +289,30 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
           this.popInterruptStatus();
           break;
         }
+        case "TracingExit": {
+          this.popTracingStatus();
+          break;
+        }
         case "Fold": {
           if (!this.shouldInterrupt) {
             // Push error handler back onto the stack and halt iteration:
+            if (this.platform.traceStack && this.inTracingRegion) {
+              this.popStackTrace();
+            }
             this.pushContinuation(new HandlerFrame(frame.onFailure));
             unwinding = false;
           } else {
+            if (this.platform.traceStack && this.inTracingRegion) {
+              this.popStackTrace();
+            }
             discardedFolds = true;
           }
           break;
+        }
+        default: {
+          if (this.platform.traceStack && this.inTracingRegion) {
+            this.popStackTrace();
+          }
         }
       }
     }
@@ -265,6 +341,13 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     if (!this.isStackEmpty) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const k = this.popContinuation()!;
+
+      if (this.inTracingRegion && this.platform.traceExecution) {
+        this.addTrace(k.apply);
+      }
+      if (this.platform.traceStack && k._tag !== "InterruptExit" && k._tag !== "TracingExit") {
+        this.popStackTrace();
+      }
 
       return k.apply(value)[I._I];
     } else {
@@ -377,7 +460,7 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
            * and there are no more pending effects that we have to execute on the fiber.
            */
           this.state.set(new FiberStateDone(v));
-
+          this.reportUnhandled(v);
           this.notifyObservers(v, oldState.observers);
 
           return undefined;
@@ -399,6 +482,12 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
           return I.chain_(this.openScope.close(v), () => I.done(v))[I._I];
         }
       }
+    }
+  }
+
+  private reportUnhandled(exit: Ex.Exit<E, A>) {
+    if (exit._tag === "Failure") {
+      this.reportFailure(exit.cause);
     }
   }
 
@@ -497,7 +586,8 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
 
   private fork(
     i0: I.Instruction,
-    forkScope: Option<Scope.Scope<Exit<any, any>>>
+    forkScope: Option<Scope.Scope<Exit<any, any>>>,
+    reportFailure: O.Option<(e: C.Cause<E>) => void>
   ): Executor<any, any> {
     const childFiberRefLocals: FiberRefLocals = new Map();
 
@@ -514,6 +604,10 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     const currentSupervisor = this.supervisors.value;
     const childId = newFiberId();
     const childScope = Scope.unsafeMakeScope<Exit<E, A>>();
+    const ancestry =
+      this.inTracingRegion && (this.platform.traceExecution || this.platform.traceStack)
+        ? O.some(this.cutAncestryTrace(this.captureTrace(undefined)))
+        : O.none();
 
     const childContext = new Executor(
       childId,
@@ -522,7 +616,10 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
       childFiberRefLocals,
       currentSupervisor,
       childScope,
-      this.maxOperations
+      this.maxOperations,
+      O.getOrElse_(reportFailure, () => this.reportFailure),
+      this.platform,
+      ancestry
     );
 
     if (currentSupervisor !== Super.none) {
@@ -658,8 +755,8 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     race: I.RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>
   ): I.IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
     const raceIndicator = new AtomicReference(true);
-    const left = this.fork(race.left[I._I], race.scope);
-    const right = this.fork(race.right[I._I], race.scope);
+    const left = this.fork(race.left[I._I], race.scope, O.some(constVoid));
+    const right = this.fork(race.right[I._I], race.scope, O.some(constVoid));
 
     return I.async<R & R1 & R2 & R3, E2 | E3, A2 | A3>(
       (cb) => {
@@ -701,12 +798,57 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
     );
   }
 
+  captureTrace(last: TraceElement | undefined): Trace {
+    const exec = this.executionTraces.listReverse;
+    const stack_ = this.stackTraces.listReverse;
+    const stack = last ? L.prepend_(stack_, last) : stack_;
+    return new Trace(this.id, exec, stack, this.parentTrace);
+  }
+
+  cutAncestryTrace(trace: Trace): Trace {
+    const maxExecLength = this.platform.ancestorExecutionTraceLength;
+    const maxStackLength = this.platform.ancestorStackTraceLength;
+    const maxAncestors = this.platform.ancestryLength - 1;
+
+    const truncated = truncatedParentTrace(trace, maxAncestors);
+
+    return new Trace(
+      trace.fiberId,
+      L.take_(trace.executionTrace, maxExecLength),
+      L.take_(trace.stackTrace, maxStackLength),
+      truncated
+    );
+  }
+
+  fastPathTrace(
+    k: any,
+    effect: any,
+    fastPathFlatMapContinuationTrace: AtomicReference<TraceElement | undefined>
+  ): TraceElement | undefined {
+    if (this.inTracingRegion) {
+      const kTrace = traceLocation(k);
+
+      if (this.platform.traceEffects) {
+        this.addTrace(effect);
+      }
+      if (this.platform.traceStack) {
+        fastPathFlatMapContinuationTrace.set(kTrace);
+      }
+      return kTrace;
+    }
+    return undefined;
+  }
+
   /**
    * Begins the `IO` run loop
    */
   evaluateNow(start: I.Instruction): void {
     try {
       let current: I.Instruction | undefined = start;
+
+      const fastPathChainContinuationTrace = new AtomicReference<TraceElement | undefined>(
+        undefined
+      );
 
       currentFiber.set(this);
 
@@ -722,21 +864,61 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                 switch (current._tag) {
                   case IOInstructionTag.Chain: {
                     const nested: I.Instruction = current.io[I._I];
+                    const c = current;
                     const continuation: (a: any) => I.IO<any, any, any> = current.f;
 
                     switch (nested._tag) {
                       case IOInstructionTag.Succeed: {
+                        if (this.platform.traceEffects && this.inTracingRegion && nested.trace) {
+                          this.addTraceValue(new SourceLocation(nested.trace));
+                        }
+                        if (this.platform.traceExecution && this.inTracingRegion) {
+                          this.addTrace(continuation);
+                        }
                         current = continuation(nested.value)[I._I];
                         break;
                       }
                       case IOInstructionTag.Total: {
+                        const kTrace = this.fastPathTrace(
+                          continuation,
+                          nested.thunk,
+                          fastPathChainContinuationTrace
+                        );
+                        if (this.platform.traceStack && kTrace != null) {
+                          fastPathChainContinuationTrace.set(undefined);
+                        }
+                        if (
+                          this.platform.traceExecution &&
+                          this.inTracingRegion &&
+                          kTrace != null
+                        ) {
+                          this.addTraceValue(kTrace);
+                        }
                         current = continuation(nested.thunk())[I._I];
                         break;
                       }
                       case IOInstructionTag.Partial: {
+                        const kTrace = this.fastPathTrace(
+                          continuation,
+                          nested.thunk,
+                          fastPathChainContinuationTrace
+                        );
                         try {
+                          if (this.platform.traceStack && kTrace != null) {
+                            fastPathChainContinuationTrace.set(undefined);
+                          }
+                          if (
+                            this.platform.traceExecution &&
+                            this.inTracingRegion &&
+                            kTrace != null
+                          ) {
+                            this.addTraceValue(kTrace);
+                          }
                           current = continuation(nested.thunk())[I._I];
                         } catch (e) {
+                          if (this.platform.traceExecution && this.inTracingRegion) {
+                            this.addTrace(nested.onThrow);
+                          }
                           current = I.fail(nested.onThrow(e))[I._I];
                         }
                         break;
@@ -749,20 +931,27 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                     break;
                   }
 
-                  // case "SIO": {
-                  //    const res: E.Either<any, any> = X.runEither(
-                  //       X.giveAll_(current, this.environments?.value || {})
-                  //    );
-                  //    if (res._tag === "Left") {
-                  //       current = I.fail(res.left)[I._I];
-                  //    } else {
-                  //       current = this.next(res.right);
-                  //    }
-                  //    break;
-                  // }
-
                   case IOInstructionTag.Integration: {
                     current = current[I._I];
+                    break;
+                  }
+
+                  case IOInstructionTag.SetTracingStatus: {
+                    if (this.inTracingRegion) {
+                      this.pushTracingStatus(current.flag);
+                      this.continuationFrames = stack(this.tracingExit, this.continuationFrames);
+                    }
+                    current = current.io[I._I];
+                    break;
+                  }
+
+                  case IOInstructionTag.GetTracingStatus: {
+                    current = current.f(this.inTracingRegion)[I._I];
+                    break;
+                  }
+
+                  case IOInstructionTag.Trace: {
+                    current = this.next(this.captureTrace(undefined));
                     break;
                   }
 
@@ -772,13 +961,22 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOInstructionTag.Total: {
+                    if (this.platform.traceEffects) {
+                      this.addTrace(current.thunk);
+                    }
                     current = this.next(current.thunk());
                     break;
                   }
 
                   case IOInstructionTag.Fail: {
+                    if (this.platform.traceEffects && this.inTracingRegion) {
+                      this.addTrace(current.fill);
+                    }
+
+                    const fast = fastPathChainContinuationTrace.get;
+                    fastPathChainContinuationTrace.set(undefined);
                     const discardedFolds = this.unwindStack();
-                    const fullCause = current.cause;
+                    const fullCause = current.fill(() => this.captureTrace(fast));
 
                     const maybeRedactedCause = discardedFolds
                       ? C.stripFailures(fullCause)
@@ -823,8 +1021,14 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                   case IOInstructionTag.Partial: {
                     const c = current;
                     try {
+                      if (this.inTracingRegion && this.platform.traceEffects) {
+                        this.addTrace(c.thunk);
+                      }
                       current = this.next(c.thunk());
                     } catch (e) {
+                      if (this.inTracingRegion && this.platform.traceEffects) {
+                        this.addTrace(c.onThrow);
+                      }
                       current = I.fail(c.onThrow(e))[I._I];
                     }
                     break;
@@ -859,11 +1063,16 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOInstructionTag.Fork: {
-                    current = this.next(this.fork(current.io[I._I], current.scope));
+                    current = this.next(
+                      this.fork(current.io[I._I], current.scope, current.reportFailure)
+                    );
                     break;
                   }
 
                   case IOInstructionTag.CheckDescriptor: {
+                    if (this.platform.traceExecution && this.inTracingRegion) {
+                      this.addTrace(current.f);
+                    }
                     current = current.f(this.getDescriptor())[I._I];
                     break;
                   }
@@ -875,6 +1084,9 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOInstructionTag.Read: {
+                    if (this.platform.traceExecution && this.inTracingRegion) {
+                      this.addTrace(current.f);
+                    }
                     current = current.f(this.environments?.value || {})[I._I];
                     break;
                   }
@@ -895,6 +1107,9 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOInstructionTag.Suspend: {
+                    if (this.platform.traceExecution && this.inTracingRegion) {
+                      this.addTrace(current.factory);
+                    }
                     current = current.factory()[I._I];
                     break;
                   }
@@ -903,8 +1118,14 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                     const c = current;
 
                     try {
+                      if (this.platform.traceExecution && this.inTracingRegion) {
+                        this.addTrace(current.factory);
+                      }
                       current = c.factory()[I._I];
                     } catch (e) {
+                      if (this.platform.traceExecution && this.inTracingRegion) {
+                        this.addTrace(c.onThrow);
+                      }
                       current = I.fail(c.onThrow(e))[I._I];
                     }
 
@@ -928,6 +1149,9 @@ export class Executor<E, A> implements RuntimeFiber<E, A> {
                   case IOInstructionTag.ModifyFiberRef: {
                     const c = current;
                     const oldValue = O.fromNullable(this.fiberRefLocals.get(c.fiberRef));
+                    if (this.platform.traceExecution && this.inTracingRegion) {
+                      this.addTrace(current.f);
+                    }
                     const [result, newValue] = current.f(
                       O.getOrElse_(oldValue, () => c.fiberRef.initial)
                     );

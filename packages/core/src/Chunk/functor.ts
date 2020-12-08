@@ -7,6 +7,9 @@ export function map_<A, B>(fa: Chunk<A>, f: (a: A) => B): Chunk<B> {
   return Array.from(fa).map(f);
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B) {
   return (self: Chunk<A>) => map_(self, f);
 }

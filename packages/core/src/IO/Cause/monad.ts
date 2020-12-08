@@ -1,6 +1,6 @@
 import { identity } from "../../Function";
 import * as Sy from "../../Sync";
-import { both, then } from "./constructors";
+import { both, then, traced } from "./constructors";
 import { empty } from "./empty";
 import type { Cause } from "./model";
 
@@ -11,23 +11,25 @@ import type { Cause } from "./model";
  */
 
 export function chainSafe_<E, D>(
-  fa: Cause<E>,
+  ma: Cause<E>,
   f: (e: E) => Cause<D>
 ): Sy.Sync<unknown, never, Cause<D>> {
   return Sy.gen(function* (_) {
-    switch (fa._tag) {
+    switch (ma._tag) {
       case "Empty":
         return empty;
       case "Fail":
-        return f(fa.value);
+        return f(ma.value);
       case "Die":
-        return fa;
+        return ma;
       case "Interrupt":
-        return fa;
+        return ma;
       case "Then":
-        return then(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
+        return then(yield* _(chainSafe_(ma.left, f)), yield* _(chainSafe_(ma.right, f)));
       case "Both":
-        return both(yield* _(chainSafe_(fa.left, f)), yield* _(chainSafe_(fa.right, f)));
+        return both(yield* _(chainSafe_(ma.left, f)), yield* _(chainSafe_(ma.right, f)));
+      case "Traced":
+        return traced(yield* _(chainSafe_(ma.cause, f)), ma.trace);
     }
   });
 }
@@ -42,8 +44,8 @@ export function chainSafe_<E, D>(
  * @category Monad
  * @since 1.0.0
  */
-export function chain_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-  return Sy.runIO(chainSafe_(fa, f));
+export function chain_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
+  return Sy.runIO(chainSafe_(ma, f));
 }
 
 /**
@@ -56,8 +58,8 @@ export function chain_<E, D>(fa: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
  * @category Monad
  * @since 1.0.0
  */
-export function chain<E, D>(f: (e: E) => Cause<D>): (fa: Cause<E>) => Cause<D> {
-  return (fa) => chain_(fa, f);
+export function chain<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
+  return (ma) => chain_(ma, f);
 }
 
 /**
@@ -70,6 +72,6 @@ export function chain<E, D>(f: (e: E) => Cause<D>): (fa: Cause<E>) => Cause<D> {
  * @category Monad
  * @since 1.0.0
  */
-export function flatten<E>(ffa: Cause<Cause<E>>): Cause<E> {
-  return chain_(ffa, identity);
+export function flatten<E>(mma: Cause<Cause<E>>): Cause<E> {
+  return chain_(mma, identity);
 }

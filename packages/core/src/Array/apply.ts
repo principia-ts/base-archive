@@ -35,6 +35,7 @@ export function ap_<A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>)
  *
  * @category Apply
  * @since 1.0.0
+ * @dataFirst ap_
  */
 export function ap<A>(
   fa: ReadonlyArray<A>
@@ -68,6 +69,7 @@ export function apFirst_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Read
  *
  * @category Apply
  * @since 1.0.0
+ * @dataFirst apFirst_
  */
 export function apFirst<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<A> {
   return flow(
@@ -102,6 +104,7 @@ export function apSecond_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Rea
  *
  * @category Apply
  * @since 1.0.0
+ * @dataFirst apSecond_
  */
 export function apSecond<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<B> {
   return flow(
@@ -123,6 +126,9 @@ export function zipWith_<A, B, C>(
   return fc;
 }
 
+/**
+ * @dataFirst zipWith_
+ */
 export function zipWith<A, B, C>(
   fb: ReadonlyArray<B>,
   f: (a: A, b: B) => C

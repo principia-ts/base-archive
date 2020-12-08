@@ -1,8 +1,9 @@
 import type * as HKT from "@principia/prelude/HKT";
 
 import type { FiberId } from "../Fiber/FiberId";
+import type { Trace } from "../Fiber/tracing";
 
-export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E>;
+export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E> | Traced<E>;
 
 export interface Empty {
   readonly _tag: "Empty";
@@ -33,6 +34,12 @@ export interface Both<E> {
   readonly _tag: "Both";
   readonly left: Cause<E>;
   readonly right: Cause<E>;
+}
+
+export interface Traced<E> {
+  readonly _tag: "Traced";
+  readonly cause: Cause<E>;
+  readonly trace: Trace;
 }
 
 export const URI = "Cause";

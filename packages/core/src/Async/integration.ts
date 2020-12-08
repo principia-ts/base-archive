@@ -1,5 +1,6 @@
 import type { Cause } from "../IO/Cause";
 import { _A, _E, _I, _R, _U, IOInstructionTag } from "../IO/constants";
+import type { Trace } from "../IO/Fiber/tracing";
 import type { Instruction, IO, URI } from "../IO/model";
 import * as O from "../Option";
 import { AtomicReference } from "../Utils/support/AtomicReference";
@@ -19,14 +20,14 @@ export class _FailInstruction<E> {
   readonly [_E]!: () => E;
   readonly [_A]!: () => never;
 
-  constructor(readonly cause: Cause<E>) {}
+  constructor(readonly fill: (_: () => Trace) => Cause<E>) {}
 
   get [_I](): Instruction {
     return this as any;
   }
 }
 
-export const asyncIntegrationNotImplemented = new _FailInstruction({
+export const asyncIntegrationNotImplemented = new _FailInstruction(() => ({
   _tag: "Die",
   value: new Error("Async-IO integration not implemented or unsupported")
-});
+}));

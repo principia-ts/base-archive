@@ -60,10 +60,9 @@ export function isEmpty<E>(cause: Cause<E>): boolean {
           return O.some(false);
         case "Interrupt":
           return O.some(false);
-        case "Then":
+        default: {
           return O.none();
-        case "Both":
-          return O.none();
+        }
       }
     })
   );
@@ -109,4 +108,13 @@ export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>
   return (cause) =>
     equalsCause(that, cause) ||
     foldLeft_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()));
+}
+
+export function isCause(u: unknown): u is Cause<unknown> {
+  return (
+    typeof u === "object" &&
+    u !== null &&
+    "_tag" in u &&
+    ["Empty", "Fail", "Die", "Interrupt", "Then", "Both", "Traced"].includes(u["_tag"])
+  );
 }

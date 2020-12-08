@@ -22,6 +22,7 @@ import {
   unit
 } from "../_core";
 import * as C from "../Cause";
+import { haltWith } from "../constructors";
 import { join } from "../Fiber/combinators/join";
 import type { FiberId } from "../Fiber/FiberId";
 import type { InterruptStatus } from "../Fiber/model";
@@ -32,7 +33,7 @@ import { forkDaemon } from "./core-scope";
 import { fiberId } from "./fiberId";
 
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
-  return halt(C.interrupt(fiberId));
+  return haltWith((trace) => C.traced(C.interrupt(fiberId), trace()));
 }
 
 export const interrupt: IO<unknown, never, never> = chain_(fiberId(), interruptAs);

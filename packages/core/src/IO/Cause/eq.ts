@@ -37,6 +37,9 @@ export function equalsCause<E>(x: Cause<E>, y: Cause<E>): boolean {
     case "Then": {
       return y._tag === "Then" && equalsCause(x.left, y.left) && equalsCause(x.right, y.right);
     }
+    case "Traced": {
+      return equalsCause(x.cause, y);
+    }
   }
 }
 

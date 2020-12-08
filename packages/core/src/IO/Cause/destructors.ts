@@ -1,6 +1,7 @@
 import * as F from "../../Function";
 import * as O from "../../Option";
 import * as Sy from "../../Sync";
+import type { Trace } from "../Fiber";
 import type { FiberId } from "../Fiber/FiberId";
 import type { Cause } from "./model";
 
@@ -30,6 +31,9 @@ export function findSafe_<E, A>(
         } else {
           return yield* _(findSafe_(cause.right, f));
         }
+      }
+      case "Traced": {
+        return yield* _(findSafe_(cause.cause, f));
       }
       case "Both": {
         const isLeft = yield* _(findSafe_(cause.left, f));
@@ -70,7 +74,8 @@ export function foldSafe_<E, A>(
   onDie: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
-  onBoth: (l: A, r: A) => A
+  onBoth: (l: A, r: A) => A,
+  onTraced: (_: A, __: Trace) => A
 ): Sy.USync<A> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
@@ -84,13 +89,28 @@ export function foldSafe_<E, A>(
         return onInterrupt(cause.fiberId);
       case "Both":
         return onBoth(
-          yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
-          yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
+          yield* _(
+            foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
+          ),
+          yield* _(
+            foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
+          )
         );
       case "Then":
         return onThen(
-          yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
-          yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
+          yield* _(
+            foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
+          ),
+          yield* _(
+            foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
+          )
+        );
+      case "Traced":
+        return onTraced(
+          yield* _(
+            foldSafe_(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
+          ),
+          cause.trace
         );
     }
   });
@@ -119,9 +139,11 @@ export function fold<E, A>(
   onDie: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
-  onBoth: (l: A, r: A) => A
+  onBoth: (l: A, r: A) => A,
+  onTraced: (_: A, __: Trace) => A
 ): (cause: Cause<E>) => A {
-  return (cause) => Sy.runIO(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth));
+  return (cause) =>
+    Sy.runIO(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced));
 }
 
 /**
@@ -144,6 +166,9 @@ export function foldLeftSafe_<E, B>(
         const l = yield* _(foldLeftSafe_(cause.left, apply, f));
         const r = yield* _(foldLeftSafe_(cause.right, l, f));
         return r;
+      }
+      case "Traced": {
+        return yield* _(foldLeftSafe_(cause.cause, apply, f));
       }
       default: {
         return apply;

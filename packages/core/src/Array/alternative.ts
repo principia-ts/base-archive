@@ -12,7 +12,7 @@ import type { URI, V } from "./model";
  * -------------------------------------------
  */
 
-export const Alterenative: P.Alternative<[URI], V> = HKT.instance({
+export const Alternative: P.Alternative<[URI], V> = HKT.instance({
   ...Applicative,
   ...Alt,
   empty

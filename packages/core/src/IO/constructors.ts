@@ -1,8 +1,11 @@
+import { accessCallTrace, traceAsFrom, traceFrom } from "@principia/compile/tracing-utils";
+
 import type { Lazy } from "../Function";
 import * as O from "../Option";
 import * as C from "./Cause";
 import type { Exit } from "./Exit";
 import type { FiberId } from "./Fiber/FiberId";
+import type { Trace } from "./Fiber/tracing";
 import type { FIO, IO, UIO } from "./model";
 import {
   AsyncInstruction,
@@ -30,7 +33,7 @@ import {
  * @since 1.0.0
  */
 export function succeed<E = never, A = never>(a: A): FIO<E, A> {
-  return new SucceedInstruction(a);
+  return new SucceedInstruction(a, accessCallTrace("succeed"));
 }
 
 /**
@@ -139,8 +142,14 @@ export function suspend<R, E, A>(factory: Lazy<IO<R, E, A>>): IO<R, E, A> {
  *
  * @category Constructors
  * @since 1.0.0
+ *
+ * @tracecall halt
  */
 export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
+  return new FailInstruction(traceFrom("halt", () => cause));
+}
+
+export function haltWith<E>(cause: (_: () => Trace) => C.Cause<E>): FIO<E, never> {
   return new FailInstruction(cause);
 }
 
@@ -155,7 +164,7 @@ export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
  * @since 1.0.0
  */
 export function fail<E>(e: E): FIO<E, never> {
-  return halt(C.fail(e));
+  return haltWith(traceAsFrom("fail", fail, (trace) => C.traced(C.fail(e), trace())));
 }
 
 /**
@@ -169,7 +178,7 @@ export function fail<E>(e: E): FIO<E, never> {
  * @since 1.0.0
  */
 export function die(e: unknown): FIO<never, never> {
-  return halt(C.die(e));
+  return haltWith(traceFrom("die", (trace) => C.traced(C.die(e), trace())));
 }
 
 /**

@@ -19,6 +19,9 @@ export function zip_<A, B>(
   return zipWith_(fa, fb, (a, b) => [a, b]);
 }
 
+/**
+ * @dataFirst zip_
+ */
 export function zip<B>(
   fb: ReadonlyArray<B>
 ): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<readonly [A, B]> {

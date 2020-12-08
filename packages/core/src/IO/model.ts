@@ -8,6 +8,7 @@ import type { Exit } from "./Exit/model";
 import type { Executor } from "./Fiber/executor";
 import type { FiberId } from "./Fiber/FiberId";
 import type { Fiber, FiberDescriptor, InterruptStatus } from "./Fiber/model";
+import type { Trace } from "./Fiber/tracing";
 import type { FiberRef } from "./FiberRef/model";
 import type { Scope } from "./Scope";
 import type { Supervisor } from "./Supervisor";
@@ -62,7 +63,10 @@ export type Instruction =
   | GetForkScopeInstruction<any, any, any>
   | OverrideForkScopeInstruction<any, any, any>
   | SIO<unknown, never, any, any, any>
-  | Integration<any, any, any>;
+  | Integration<any, any, any>
+  | TraceInstruction
+  | GetTracingStatusInstruction<any, any, any>
+  | SetTracingStatusInstruction<any, any, any>;
 
 export type V = Variance<"E", "+"> & Variance<"R", "-">;
 
@@ -93,7 +97,28 @@ export class ChainInstruction<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1
 
 export class SucceedInstruction<A> extends IO<unknown, never, A> {
   readonly _tag = IOInstructionTag.Succeed;
-  constructor(readonly value: A) {
+  constructor(readonly value: A, readonly trace?: string) {
+    super();
+  }
+}
+
+export class TraceInstruction extends IO<unknown, never, Trace> {
+  readonly _tag = IOInstructionTag.Trace;
+  constructor() {
+    super();
+  }
+}
+
+export class SetTracingStatusInstruction<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOInstructionTag.SetTracingStatus;
+  constructor(readonly io: IO<R, E, A>, readonly flag: boolean) {
+    super();
+  }
+}
+
+export class GetTracingStatusInstruction<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOInstructionTag.GetTracingStatus;
+  constructor(readonly f: (tracingStatus: boolean) => IO<R, E, A>) {
     super();
   }
 }
@@ -142,10 +167,16 @@ export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends IO<
   }
 }
 
+export type FailureReporter = (e: Cause<unknown>) => void;
+
 export class ForkInstruction<R, E, A> extends IO<R, never, Executor<E, A>> {
   readonly _tag = IOInstructionTag.Fork;
 
-  constructor(readonly io: IO<R, E, A>, readonly scope: Option<Scope<Exit<any, any>>>) {
+  constructor(
+    readonly io: IO<R, E, A>,
+    readonly scope: Option<Scope<Exit<any, any>>>,
+    readonly reportFailure: Option<FailureReporter>
+  ) {
     super();
   }
 }
@@ -153,7 +184,7 @@ export class ForkInstruction<R, E, A> extends IO<R, never, Executor<E, A>> {
 export class FailInstruction<E> extends IO<unknown, E, never> {
   readonly _tag = IOInstructionTag.Fail;
 
-  constructor(readonly cause: Cause<E>) {
+  constructor(readonly fill: (_: () => Trace) => Cause<E>) {
     super();
   }
 }
@@ -284,10 +315,10 @@ export class OverrideForkScopeInstruction<R, E, A> extends IO<R, E, A> {
   }
 }
 
-export const integrationNotImplemented = new FailInstruction({
+export const integrationNotImplemented = new FailInstruction(() => ({
   _tag: "Die",
   value: new Error("Integration not implemented or unsupported")
-});
+}));
 
 export abstract class Integration<R, E, A> extends IO<R, E, A> {
   readonly _tag = IOInstructionTag.Integration;
