@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "es2017",
+    "plugins": [
+      {
+        "transform": "./packages/compile/src/index.ts",
+        "moduleMap": {
+          "^packages/prelude/src/(.*)": "(@principia/prelude): src/$1",
+          "^packages/prelude/test/(.*)": "(@principia/prelude): test/$1",
+          "^packages/core/src/(.*)": "(@principia/core): src/$1",
+          "^packages/core/test/(.*)": "(@principia/core): test/$1",
+          "^packages/node/src/(.*)": "(@principia/node): src/$1",
+          "^packages/node/test/(.*)": "(@principia/node): test/$1",
+          "^packages/optics/src/(.*)": "(@principia/optics): src/$1",
+          "^packages/optics/test/(.*)": "(@principia/optics): test/$1",
+          "^packages/model/src/(.*)": "(@principia/model): src/$1",
+          "^packages/model/test/(.*)": "(@principia/model): test/$1"
+        }
+      }
+    ]
+  }
+}

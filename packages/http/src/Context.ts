@@ -207,7 +207,7 @@ export class Request {
     return T.map_(this.socket, (s) => s.remoteAddress!);
   }
 
-  get stream(): S.Stream<unknown, Error, Byte> {
+  get stream(): S.Stream<unknown, NS.ReadableError, Byte> {
     return S.chain_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req));
   }
 }

@@ -4,7 +4,7 @@
 
 import * as A from "@principia/core/Array";
 import type { CustomRuntime } from "@principia/core/IO";
-import * as T from "@principia/core/IO";
+import * as I from "@principia/core/IO";
 import { defaultRuntime } from "@principia/core/IO";
 import * as Cause from "@principia/core/IO/Cause";
 import * as Fiber from "@principia/core/IO/Fiber";
@@ -20,7 +20,7 @@ export function defaultTeardown(
   id: Fiber.FiberId,
   onExit: (status: number) => void
 ) {
-  T.run(interruptAllAs(id)(Fiber._tracing.running), () => {
+  I.run(interruptAllAs(id)(Fiber._tracing.running), () => {
     setTimeout(() => {
       if (Fiber._tracing.running.size === 0) {
         onExit(status);
@@ -41,7 +41,7 @@ export function prettyTraceNode(
   trace: Fiber.Trace,
   adapt: (mod: string, path: string) => string
 ): string {
-  return S.run(prettyTraceNodeSafe(trace, adapt));
+  return S.runIO(prettyTraceNodeSafe(trace, adapt));
 }
 
 export function prettyLocationNode(
@@ -70,22 +70,22 @@ export function prettyLocationNode(
 export function prettyTraceNodeSafe(
   trace: Fiber.Trace,
   adapt: (mod: string, path: string) => string
-): S.UIO<string> {
+): S.USync<string> {
   return S.gen(function* ($) {
     const execTrace = !L.isEmpty(trace.executionTrace);
     const stackTrace = !L.isEmpty(trace.stackTrace);
 
     const execPrint = execTrace
       ? [
-          `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} Execution trace:`,
+          `Fiber: ${Fiber.showFiberId(trace.fiberId)} Execution trace:`,
           "",
           ...L.toArray(L.map_(trace.executionTrace, (a) => `  ${prettyLocationNode(a, adapt)}`))
         ]
-      : [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} Execution trace: <empty trace>`];
+      : [`Fiber: ${Fiber.showFiberId(trace.fiberId)} Execution trace: <empty trace>`];
 
     const stackPrint = stackTrace
       ? [
-          `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was supposed to continue to:`,
+          `Fiber: ${Fiber.showFiberId(trace.fiberId)} was supposed to continue to:`,
           "",
           ...L.toArray(
             L.map_(
@@ -94,15 +94,15 @@ export function prettyTraceNodeSafe(
             )
           )
         ]
-      : [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`];
+      : [`Fiber: ${Fiber.showFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`];
 
     const parent = trace.parentTrace;
 
     const ancestry =
       parent._tag === "None"
-        ? [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
+        ? [`Fiber: ${Fiber.showFiberId(trace.fiberId)} was spawned by: <empty trace>`]
         : [
-            `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by:\n`,
+            `Fiber: ${Fiber.showFiberId(trace.fiberId)} was spawned by:\n`,
             yield* $(prettyTraceNodeSafe(parent.value, adapt))
           ];
 
@@ -166,7 +166,7 @@ export class NodeRuntime<R> {
    * Note: this should be used only in node.js as it depends on global process
    */
   runMain<E>(
-    effect: T.Effect<T.DefaultEnv, E, void>,
+    effect: I.IO<I.DefaultEnv, E, void>,
     customHook: (cont: NodeJS.SignalsListener) => NodeJS.SignalsListener = defaultHook,
     customTeardown: typeof defaultTeardown = defaultTeardown
   ): void {
@@ -176,7 +176,7 @@ export class NodeRuntime<R> {
       process.exit(s);
     };
 
-    context.evaluateLater(effect[T._I]);
+    context.evaluateLater(effect[I._I]);
     context.runAsync((exit) => {
       switch (exit._tag) {
         case "Failure": {
@@ -220,4 +220,3 @@ export const {
   custom: { run, runAsap, runCancel, runFiber, runPromise, runPromiseExit },
   runMain
 } = nodeRuntime;
-a;

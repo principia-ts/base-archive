@@ -45,6 +45,6 @@
     "core-js": "3"
   },
   "devDependencies": {
-    "typescript": "next"
+    "typescript": "^4.1.2"
   }
 }

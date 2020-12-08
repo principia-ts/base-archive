@@ -385,7 +385,7 @@ export function fromTraversable<T>(T: P.Traversable<HKT.UHKT<T>>) {
 export function indexArray<A = never>(): Ix<ReadonlyArray<A>, number, A> {
   return {
     index: (i) => ({
-      getOption: (as) => A.lookup_(i, as),
+      getOption: (as) => A.lookup_(as, i),
       set: (a) => (as) =>
         pipe(
           A.updateAt(i, a)(as),

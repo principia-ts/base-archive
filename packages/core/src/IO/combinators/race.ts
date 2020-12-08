@@ -5,7 +5,7 @@ import { flow, pipe, tuple } from "../../Function";
 import * as XR from "../../IORef";
 import type { NonEmptyArray } from "../../NonEmptyArray";
 import * as XP from "../../Promise";
-import * as _ from "../_core";
+import * as I from "../_core";
 import * as C from "../Cause";
 import type { Exit } from "../Exit";
 import * as Ex from "../Exit";
@@ -19,9 +19,9 @@ import { mapErrorCause_ } from "./mapErrorCause";
 const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): IO<unknown, E1, A> => {
   switch (x._tag) {
     case "Success":
-      return _.pure(a);
+      return I.pure(a);
     case "Failure":
-      return C.interruptedOnly(x.cause) ? _.pure(a) : _.halt(x.cause);
+      return C.interruptedOnly(x.cause) ? I.pure(a) : I.halt(x.cause);
   }
 };
 
@@ -38,7 +38,7 @@ export function race_<R, E, A, R1, E1, A1>(
   ef: IO<R, E, A>,
   that: IO<R1, E1, A1>
 ): IO<R & R1, E | E1, A | A1> {
-  return _.descriptorWith((d) =>
+  return I.descriptorWith((d) =>
     raceWith_(
       ef,
       that,
@@ -46,13 +46,13 @@ export function race_<R, E, A, R1, E1, A1>(
         Ex.foldM_(
           exit,
           (cause) => mapErrorCause_(join(right), (_) => C.both(cause, _)),
-          (a) => _.chain_(right.interruptAs(d.id), mergeInterruption(a))
+          (a) => I.chain_(right.interruptAs(d.id), mergeInterruption(a))
         ),
       (exit, left) =>
         Ex.foldM_(
           exit,
           (cause) => mapErrorCause_(join(left), (_) => C.both(cause, _)),
-          (a) => _.chain_(left.interruptAs(d.id), mergeInterruption(a))
+          (a) => I.chain_(left.interruptAs(d.id), mergeInterruption(a))
         )
     )
   );
@@ -85,7 +85,7 @@ export function raceEither_<R, E, A, R1, E1, A1>(
   fa: IO<R, E, A>,
   that: IO<R1, E1, A1>
 ): IO<R & R1, E | E1, Either<A, A1>> {
-  return race_(_.map_(fa, E.left), _.map_(that, E.right));
+  return race_(I.map_(fa, E.left), I.map_(that, E.right));
 }
 
 /**
@@ -117,8 +117,8 @@ export function raceEither<R1, E1, A1>(
 export function raceFirst<R1, E1, A1>(that: IO<R1, E1, A1>) {
   return <R, E, A>(ef: IO<R, E, A>): IO<R & R1, E | E1, A | A1> =>
     pipe(
-      race_(_.result(ef), _.result(that)),
-      _.chain((a) => _.done(a as Exit<E | E1, A | A1>))
+      race_(I.result(ef), I.result(that)),
+      I.chain((a) => I.done(a as Exit<E | E1, A | A1>))
     );
 }
 
@@ -133,19 +133,19 @@ const arbiter = <E, A>(
     (e) =>
       pipe(
         fails,
-        XR.modify((c) => tuple(c === 0 ? pipe(promise, XP.halt(e), _.asUnit) : _.unit(), c - 1)),
-        _.flatten
+        XR.modify((c) => tuple(c === 0 ? pipe(promise, XP.halt(e), I.asUnit) : I.unit(), c - 1)),
+        I.flatten
       ),
     (a) =>
       pipe(
         promise,
         XP.succeed(tuple(a, winner)),
-        _.chain((set) =>
+        I.chain((set) =>
           set
-            ? A.reduce_(fibers, _.unit(), (io, f) =>
-                f === winner ? io : _.tap_(io, () => Fiber.interrupt(f))
+            ? A.reduce_(fibers, I.unit(), (io, f) =>
+                f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))
               )
-            : _.unit()
+            : I.unit()
         )
       )
   );
@@ -162,40 +162,40 @@ export function raceAll<R, E, A>(
   interruptStrategy: "background" | "wait" = "background"
 ): IO<R, E, A> {
   return pipe(
-    _.do,
-    _.bindS("done", () => XP.make<E, readonly [A, Fiber.Fiber<E, A>]>()),
-    _.bindS("fails", () => XR.make(ios.length)),
-    _.bindS("c", ({ done, fails }) =>
+    I.do,
+    I.bindS("done", () => XP.make<E, readonly [A, Fiber.Fiber<E, A>]>()),
+    I.bindS("fails", () => XR.make(ios.length)),
+    I.bindS("c", ({ done, fails }) =>
       uninterruptibleMask(({ restore }) =>
         pipe(
-          _.do,
-          _.bindS("fs", () => _.foreach_(ios, flow(makeInterruptible, _.fork))),
-          _.tap(({ fs }) =>
-            A.reduce_(fs, _.unit(), (io, f) =>
-              _.chain_(io, () => pipe(f.await, _.chain(arbiter(fs, f, done, fails)), _.fork))
+          I.do,
+          I.bindS("fs", () => I.foreach_(ios, flow(makeInterruptible, I.fork))),
+          I.tap(({ fs }) =>
+            A.reduce_(fs, I.unit(), (io, f) =>
+              I.chain_(io, () => pipe(f.await, I.chain(arbiter(fs, f, done, fails)), I.fork))
             )
           ),
-          _.letS("inheritRefs", () => (res: readonly [A, Fiber.Fiber<E, A>]) =>
+          I.letS("inheritRefs", () => (res: readonly [A, Fiber.Fiber<E, A>]) =>
             pipe(
               res[1].inheritRefs,
-              _.as(() => res[0])
+              I.as(() => res[0])
             )
           ),
-          _.bindS("c", ({ fs, inheritRefs }) =>
+          I.bindS("c", ({ fs, inheritRefs }) =>
             pipe(
-              restore(pipe(done, XP.await, _.chain(inheritRefs))),
+              restore(pipe(done, XP.await, I.chain(inheritRefs))),
               onInterrupt(() =>
-                A.reduce_(fs, _.unit(), (io, f) => _.tap_(io, () => Fiber.interrupt(f)))
+                A.reduce_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f)))
               )
             )
           ),
-          _.map(({ c, fs }) => ({ c, fs }))
+          I.map(({ c, fs }) => ({ c, fs }))
         )
       )
     ),
-    _.tap(({ c: { fs } }) =>
-      interruptStrategy === "wait" ? _.foreach_(fs, (f) => f.await) : _.unit()
+    I.tap(({ c: { fs } }) =>
+      interruptStrategy === "wait" ? I.foreach_(fs, (f) => f.await) : I.unit()
     ),
-    _.map(({ c: { c } }) => c)
+    I.map(({ c: { c } }) => c)
   );
 }

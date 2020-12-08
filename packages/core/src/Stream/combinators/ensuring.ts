@@ -1,4 +1,4 @@
-import { IO } from "../../IO";
+import type { IO } from "../../IO";
 import * as M from "../../Managed";
 import { Stream } from "../model";
 

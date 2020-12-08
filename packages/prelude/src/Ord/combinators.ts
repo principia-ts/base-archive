@@ -11,28 +11,28 @@ export const fromCompare = <A>(cmp: (x: A, y: A) => Ordering): Ord<A> => {
   };
 };
 
-const _compare = (y: any): ((x: any) => Ordering) => {
+const defaultCompare = (y: any): ((x: any) => Ordering) => {
   return (x) => (x < y ? LT : x > y ? GT : EQ);
 };
 
-const _compare_ = (x: any, y: any) => (x < y ? LT : x > y ? GT : EQ);
+const defaultCompare_ = (x: any, y: any) => (x < y ? LT : x > y ? GT : EQ);
 
 export const ordString: Ord<string> = {
   ...string,
-  compare: _compare,
-  compare_: _compare_
+  compare: defaultCompare,
+  compare_: defaultCompare_
 };
 
 export const ordNumber: Ord<number> = {
   ...number,
-  compare: _compare,
-  compare_: _compare_
+  compare: defaultCompare,
+  compare_: defaultCompare_
 };
 
 export const ordBoolean: Ord<boolean> = {
   ...boolean,
-  compare: _compare,
-  compare_: _compare_
+  compare: defaultCompare,
+  compare_: defaultCompare_
 };
 
 export const lt = <A>(O: Ord<A>) => (y: A) => (x: A): boolean => O.compare_(x, y) === LT;

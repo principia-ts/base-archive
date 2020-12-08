@@ -9,3 +9,4 @@ export * from "./methods";
 export * from "./model";
 export * from "./platform";
 export * from "./tracing";
+export * from "./FiberId";

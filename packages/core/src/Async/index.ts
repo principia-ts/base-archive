@@ -20,5 +20,6 @@ export * from "./monad";
 export * from "./PromiseTracingContext";
 export * from "./reader";
 export * from "./run";
+export * from "./service";
 export * from "./unit";
 // codegen:end

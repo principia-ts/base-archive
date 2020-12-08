@@ -1,6 +1,7 @@
 // codegen:start { preset: barrel, exclude: _core.ts }
 export * from "./applicative";
 export * from "./apply";
+export * from "./assertions";
 export * from "./bifunctor";
 export * from "./combinators";
 export * from "./constructors";

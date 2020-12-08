@@ -1,6 +1,6 @@
 import { pipe } from "../../Function";
 import * as O from "../../Option";
-import { as, flatten, map, pure, suspend } from "../_core";
+import { as, flatten, map, pure, suspend, fail } from "../_core";
 import type { HasClock } from "../Clock";
 import { currentTime, sleep } from "../Clock";
 import type { IO } from "../model";

@@ -49,6 +49,6 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.9",
-    "typescript": "next"
+    "typescript": "^4.1.2"
   }
 }
