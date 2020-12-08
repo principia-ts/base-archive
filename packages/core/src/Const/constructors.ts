@@ -7,6 +7,9 @@ import type { Const } from "./model";
  * -------------------------------------------
  */
 
+/**
+ * @optimize identity
+ */
 export function make<E, A = never>(e: E): Const<E, A> {
   return unsafeCoerce(e);
 }

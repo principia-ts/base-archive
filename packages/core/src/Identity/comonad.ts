@@ -19,6 +19,9 @@ export function extend<A, B>(f: (wa: A) => B): (wa: A) => B {
   return (wa) => f(wa);
 }
 
+/**
+ * @optimize identity
+ */
 export const extract: <A>(wa: A) => A = identity;
 
 export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(identity);

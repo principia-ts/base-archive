@@ -1,27 +1,30 @@
 {
-   "compilerOptions": {
-      "target": "es2020",
-      "lib": ["es2020", "DOM"],
-      "strict": true,
-      "declaration": true,
-      "noErrorTruncation": true,
-      "noEmitOnError": false,
-      "suppressImplicitAnyIndexErrors": true,
-      "noEmit": false,
-      "moduleResolution": "node",
-      "esModuleInterop": true,
-      "preserveSymlinks": true,
-      "skipLibCheck": true,
-      "baseUrl": ".",
-      "paths": {
-         "@principia/prelude*": ["packages/prelude/dist*"],
-         "@principia/prelude": ["packages/prelude/dist/index"],
-         "@principia/core*": ["packages/core/dist*"],
-         "@principia/effect*": ["packages/effect/dist*"],
-         "@principia/optics/*": ["packages/optics/dist/*"],
-         "@principia/model/*": ["packages/model/dist/*"],
-         "@principia/node/*": ["packages/node/dist/*"]
-      }
-   },
-   "exclude": ["build", "node_modules", "dist"]
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": ["es2020"],
+    "strict": true,
+    "declaration": true,
+    "noErrorTruncation": true,
+    "noEmitOnError": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "noEmit": false,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "preserveSymlinks": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@principia/prelude*": ["packages/prelude/dist*"],
+      "@principia/prelude": ["packages/prelude/dist/index"],
+      "@principia/core*": ["packages/core/dist*"],
+      "@principia/effect*": ["packages/effect/dist*"],
+      "@principia/optics/*": ["packages/optics/dist/*"],
+      "@principia/model/*": ["packages/model/dist/*"],
+      "@principia/node/*": ["packages/node/dist/*"],
+      "@principia/graphql/*": ["packages/graphql/dist/*"],
+      "@principia/http/*": ["packages/http/dist/*"],
+      "@principia/compile/*": ["packages/compile/dist/*"]
+    }
+  },
+  "exclude": ["build", "node_modules", "dist"]
 }
