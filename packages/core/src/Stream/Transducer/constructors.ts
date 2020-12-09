@@ -242,7 +242,7 @@ export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transduce
               dropping.get,
               I.chain((b) =>
                 b
-                  ? I.map_(C.dropWhileEffect_(is, p), (l) => [l, C.isEmpty(l)] as const)
+                  ? I.map_(C.dropWhileIO_(is, p), (l) => [l, C.isEmpty(l)] as const)
                   : I.succeed([is, false] as const)
               ),
               I.chain(([is, pt]) => I.as_(dropping.set(pt), () => is))

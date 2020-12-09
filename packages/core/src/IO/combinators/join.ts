@@ -3,7 +3,7 @@ import { asksM, giveAll_, map_ } from "../_core";
 import type { IO } from "../model";
 
 /**
- * Joins two `AIOs` into one, where one or the other is returned depending on the provided environment
+ * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  */
 export const join_ = <R, E, A, R1, E1, A1>(
   io: IO<R, E, A>,
@@ -19,14 +19,14 @@ export const join_ = <R, E, A, R1, E1, A1>(
   );
 
 /**
- * Joins two `AIOs` into one, where one or the other is returned depending on the provided environment
+ * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  */
 export const join = <R1, E1, A1>(that: IO<R1, E1, A1>) => <R, E, A>(
   io: IO<R, E, A>
 ): IO<E.Either<R, R1>, E | E1, A | A1> => join_(io, that);
 
 /**
- * Joins two `AIOs` into one, where one or the other is returned depending on the provided environment
+ * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  */
 export const joinEither_ = <R, E, A, R1, E1, A1>(
   io: IO<R, E, A>,
@@ -42,7 +42,7 @@ export const joinEither_ = <R, E, A, R1, E1, A1>(
   );
 
 /**
- * Joins two `AIOs` into one, where one or the other is returned depending on the provided environment
+ * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  */
 export const joinEither = <R1, E1, A1>(that: IO<R1, E1, A1>) => <R, E, A>(
   io: IO<R, E, A>

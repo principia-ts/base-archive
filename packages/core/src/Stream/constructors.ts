@@ -445,7 +445,7 @@ export function fromXQueue<R, E, A>(
 /**
  * Creates a stream from an `XQueue` of values. The queue will be shutdown once the stream is closed.
  */
-export function fromXQueueWithShutdown<R, E, A>(
+export function fromQueueWithShutdown<R, E, A>(
   queue: XQueue<never, R, unknown, E, never, A>
 ): Stream<R, E, A> {
   return ensuringFirst_(fromXQueue(queue), queue.shutdown);

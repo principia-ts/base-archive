@@ -13,8 +13,9 @@ import type { Exit } from "../Exit/model";
 import { interrupt as interruptFiber } from "../Fiber/combinators/interrupt";
 import type { Executor } from "../Fiber/executor";
 import type { Fiber } from "../Fiber/model";
-import { bracketExit_, ensuring } from "./bracket";
+import { bracketExit_ } from "./bracketExit";
 import { forkDaemon } from "./core-scope";
+import { ensuring } from "./ensuring";
 import { fiberId } from "./fiberId";
 import {
   makeInterruptible,

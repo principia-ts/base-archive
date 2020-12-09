@@ -12,5 +12,5 @@ export function unfoldM<R, E, O, Z>(
   z: Z,
   f: (z: Z) => I.IO<R, E, Option<readonly [O, Z]>>
 ): Stream<R, E, O> {
-  return unfoldChunkM(z)(flow(f, I.map(O.map(([o, z]) => [[o], z]))));
+  return unfoldChunkM(z, flow(f, I.map(O.map(([o, z]) => [[o], z]))));
 }

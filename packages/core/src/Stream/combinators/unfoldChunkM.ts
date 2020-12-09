@@ -11,44 +11,44 @@ import * as Pull from "../Pull";
 /**
  * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
  */
-export function unfoldChunkM<Z>(
-  z: Z
-): <R, E, A>(f: (z: Z) => I.IO<R, E, Option<readonly [Chunk<A>, Z]>>) => Stream<R, E, A> {
-  return (f) =>
-    new Stream(
-      pipe(
-        M.do,
-        M.bindS("done", () => XR.makeManaged(false)),
-        M.bindS("ref", () => XR.makeManaged(z)),
-        M.letS("pull", ({ done, ref }) =>
-          pipe(
-            done.get,
-            I.chain((isDone) =>
-              isDone
-                ? Pull.end
-                : pipe(
-                    ref.get,
-                    I.chain(f),
-                    I.foldM(
-                      Pull.fail,
-                      O.fold(
-                        () =>
-                          pipe(
-                            done.set(true),
-                            I.chain(() => Pull.end)
-                          ),
-                        ([a, z]) =>
-                          pipe(
-                            ref.set(z),
-                            I.map(() => a)
-                          )
-                      )
+export function unfoldChunkM<Z, R, E, A>(
+  z: Z,
+  f: (z: Z) => I.IO<R, E, Option<readonly [Chunk<A>, Z]>>
+): Stream<R, E, A> {
+  return new Stream(
+    pipe(
+      M.do,
+      M.bindS("done", () => XR.makeManaged(false)),
+      M.bindS("ref", () => XR.makeManaged(z)),
+      M.letS("pull", ({ done, ref }) =>
+        pipe(
+          done.get,
+          I.chain((isDone) =>
+            isDone
+              ? Pull.end
+              : pipe(
+                  ref.get,
+                  I.chain(f),
+                  I.foldM(
+                    Pull.fail,
+                    O.fold(
+                      () =>
+                        pipe(
+                          done.set(true),
+                          I.chain(() => Pull.end)
+                        ),
+                      ([a, z]) =>
+                        pipe(
+                          ref.set(z),
+                          I.map(() => a)
+                        )
                     )
                   )
-            )
+                )
           )
-        ),
-        M.map(({ pull }) => pull)
-      )
-    );
+        )
+      ),
+      M.map(({ pull }) => pull)
+    )
+  );
 }

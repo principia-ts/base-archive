@@ -1,5 +1,5 @@
 import type { Either } from "../Either";
-import * as I from "./_internal/aio";
+import * as I from "./_internal/io";
 import type { IORefM } from "./model";
 
 /**

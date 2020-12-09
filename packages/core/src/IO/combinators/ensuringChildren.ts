@@ -3,7 +3,7 @@ import { chain } from "../_core";
 import type { RuntimeFiber } from "../Fiber";
 import type { IO } from "../model";
 import * as Supervisor from "../Supervisor";
-import { ensuring } from "./bracket";
+import { ensuring } from "./ensuring";
 import { supervised } from "./supervised";
 
 /**

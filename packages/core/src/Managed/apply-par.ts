@@ -32,7 +32,7 @@ export function zipWithPar_<R, E, A, R1, E1, B, C>(
     );
 
     return I.chain_(I.zip_(innerMap, innerMap), ([[_, l], [__, r]]) =>
-      I.mapBothPar_(
+      I.zipWithPar_(
         I.gives_(fa.io, (_: R & R1) => tuple(_, l)),
         I.gives_(fb.io, (_: R & R1) => tuple(_, r)),
         ([_, a], [__, a2]) => f(a, a2)
