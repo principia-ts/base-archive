@@ -36,35 +36,38 @@ describe("IO", () => {
     const b = jest.fn();
     const c = jest.fn();
 
-    const program = I.raceAll([
-      I.asyncInterrupt((cb) => {
-        const t = setTimeout(() => {
-          cb(I.succeed(1));
-        }, 5000);
-        return I.total(() => {
-          a();
-          clearTimeout(t);
-        });
-      }),
-      I.asyncInterrupt((cb) => {
-        const t = setTimeout(() => {
-          cb(I.succeed(2));
-        }, 100);
-        return I.total(() => {
-          b();
-          clearTimeout(t);
-        });
-      }),
-      I.asyncInterrupt((cb) => {
-        const t = setTimeout(() => {
-          cb(I.succeed(3));
-        }, 5000);
-        return I.total(() => {
-          c();
-          clearTimeout(t);
-        });
-      })
-    ], "wait");
+    const program = I.raceAll(
+      [
+        I.asyncInterrupt((cb) => {
+          const t = setTimeout(() => {
+            cb(I.succeed(1));
+          }, 5000);
+          return I.total(() => {
+            a();
+            clearTimeout(t);
+          });
+        }),
+        I.asyncInterrupt((cb) => {
+          const t = setTimeout(() => {
+            cb(I.succeed(2));
+          }, 100);
+          return I.total(() => {
+            b();
+            clearTimeout(t);
+          });
+        }),
+        I.asyncInterrupt((cb) => {
+          const t = setTimeout(() => {
+            cb(I.succeed(3));
+          }, 5000);
+          return I.total(() => {
+            c();
+            clearTimeout(t);
+          });
+        })
+      ],
+      "wait"
+    );
 
     const res = await pipe(program, I.result, I.map(Ex.untraced), I.runPromise);
 

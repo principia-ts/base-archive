@@ -38,6 +38,7 @@ export function zipWithPar_<R, E, A, R2, E2, A2, B>(
 /**
  * Parallelly zips this effect with the specified effect using the
  * specified combiner function.
+ * @dataFirst zipWithPar_
  */
 export function zipWithPar<A, R1, E1, A1, B>(
   mb: I.IO<R1, E1, A1>,
@@ -83,6 +84,9 @@ export function apPar_<R, E, A, R1, E1, B>(
   return zipWithPar_(fab, fa, (f, a) => f(a));
 }
 
+/**
+ * @dataFirst apPar_
+ */
 export function apPar<R, E, A>(
   fa: I.IO<R, E, A>
 ): <Q, D, B>(fab: I.IO<Q, D, (a: A) => B>) => I.IO<Q & R, E | D, B> {
@@ -96,6 +100,9 @@ export function apFirstPar_<R, E, A, R1, E1, B>(
   return zipWithPar_(fa, fb, (a, _) => a);
 }
 
+/**
+ * @dataFirst apFirstPar_
+ */
 export function apFirstPar<R1, E1, B>(
   fb: I.IO<R1, E1, B>
 ): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, A> {
@@ -109,6 +116,9 @@ export function apSecondPar_<R, E, A, R1, E1, B>(
   return zipWithPar_(fa, fb, (_, b) => b);
 }
 
+/**
+ * @dataFirst apSecondPar_
+ */
 export function apSecondPar<R1, E1, B>(
   fb: I.IO<R1, E1, B>
 ): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
@@ -116,4 +126,7 @@ export function apSecondPar<R1, E1, B>(
 }
 
 export const andThenPar_ = apSecondPar_;
+/**
+ * @dataFirst andThenPar_
+ */
 export const andThenPar = apSecondPar;

@@ -1,7 +1,7 @@
 import { unit } from "../_core";
 import type { Exit } from "../Exit";
 import type { IO } from "../model";
-import { bracketExit_ } from "./bracket";
+import { bracketExit_ } from "./bracketExit";
 
 export function onExit_<R, E, A, R2, E2>(
   self: IO<R, E, A>,

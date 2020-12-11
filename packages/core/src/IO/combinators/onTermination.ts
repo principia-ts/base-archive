@@ -6,7 +6,7 @@ import type { Cause } from "../Cause";
 import * as C from "../Cause";
 import * as Ex from "../Exit";
 import type { IO } from "../model";
-import { bracketExit_ } from "./bracket";
+import { bracketExit_ } from "./bracketExit";
 
 export function onTermination_<R, E, A, R1>(
   io: IO<R, E, A>,

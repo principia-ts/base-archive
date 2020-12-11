@@ -16,6 +16,7 @@ export function zipPar_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, mb: IO<R1, E1, A1>
 
 /**
  * Parallely zips two `IOs`
+ * @dataFirst zipPar_
  */
 export function zipPar<R1, E1, A1>(
   mb: IO<R1, E1, A1>

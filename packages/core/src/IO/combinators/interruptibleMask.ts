@@ -8,5 +8,8 @@ import { InterruptStatusRestoreImpl, makeInterruptible } from "./interrupt";
  * can be used to restore the inherited interruptibility from whatever region
  * the effect is composed into.
  */
-export const interruptibleMask = <R, E, A>(f: (restore: InterruptStatusRestore) => IO<R, E, A>) =>
-  checkInterruptible((flag) => makeInterruptible(f(new InterruptStatusRestoreImpl(flag))));
+export function interruptibleMask<R, E, A>(
+  f: (restore: InterruptStatusRestore) => IO<R, E, A>
+): IO<R, E, A> {
+  return checkInterruptible((flag) => makeInterruptible(f(new InterruptStatusRestoreImpl(flag))));
+}

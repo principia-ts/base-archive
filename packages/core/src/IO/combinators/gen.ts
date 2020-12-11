@@ -6,7 +6,7 @@ import { isEither, isOption, isTag } from "../../Utils/guards";
 import type { _E, _R } from "../../Utils/infer";
 import { chain_, fail, pure, suspend } from "../_core";
 import type { IO } from "../model";
-import { fromEither } from "./from";
+import { fromEither } from "./fromEither";
 import { getOrFail } from "./getOrFail";
 import { askService } from "./service";
 

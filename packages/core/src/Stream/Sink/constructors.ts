@@ -6,12 +6,16 @@ import * as E from "../../Either";
 import { pipe } from "../../Function";
 import * as I from "../../IO";
 import type { Cause } from "../../IO/Cause";
+import * as Ca from "../../IO/Cause";
+import type { HasClock } from "../../IO/Clock";
 import * as XR from "../../IORef";
 import * as M from "../../Managed";
 import * as O from "../../Option";
 import * as Sy from "../../Sync";
 import * as Tu from "../../Tuple";
 import * as Push from "../Push";
+import { timed } from "./combinators";
+import { map_ } from "./functor";
 import { Sink } from "./model";
 
 /**
@@ -19,6 +23,15 @@ import { Sink } from "./model";
  */
 export function fromPush<R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>): Sink<R, E, I, L, Z> {
   return new Sink(M.succeed(push));
+}
+
+/**
+ * Creates a Sink from a managed `Push`
+ */
+export function fromManagedPush<R, E, I, L, Z>(
+  push: M.Managed<R, never, Push.Push<R, E, I, L, Z>>
+): Sink<R, E, I, L, Z> {
+  return new Sink(push);
 }
 
 /**
@@ -48,11 +61,12 @@ export function succeed<Z, I>(z: Z): Sink<unknown, never, I, I, Z> {
 /**
  * A sink that always fails with the specified error.
  */
-export function fail<E, I>(e: E): Sink<unknown, E, I, I, void> {
-  return fromPush((c) => {
-    const leftover = O.fold_(c, () => C.empty<I>(), identity);
-    return Push.fail(e, leftover);
-  });
+export function fail<E>(e: E) {
+  return <I>(): Sink<unknown, E, I, I, void> =>
+    fromPush((c) => {
+      const leftover = O.fold_(c, () => C.empty<I>(), identity);
+      return Push.fail(e, leftover);
+    });
 }
 
 /**
@@ -106,6 +120,42 @@ export function fromForeachChunk<R, E, I>(
           I.mapError_(f(is), (e) => [E.left(e), C.empty()]),
           Push.more
         )
+    )
+  );
+}
+
+/**
+ * A sink that executes the provided effectful function for every element fed to it
+ * until `f` evaluates to `false`.
+ */
+export function foreachWhile<R, E, I>(f: (i: I) => I.IO<R, E, boolean>): Sink<R, E, I, I, void> {
+  const go = (
+    chunk: C.Chunk<I>,
+    idx: number,
+    len: number
+  ): I.IO<R, readonly [E.Either<E, void>, C.Chunk<I>], void> => {
+    if (idx === len) {
+      return Push.more;
+    } else {
+      return I.foldM_(
+        f(chunk[idx]),
+        (e) => Push.fail(e, C.drop_(chunk, idx + 1)),
+        (b) => {
+          if (b) {
+            return go(chunk, idx + 1, len);
+          } else {
+            return Push.emit<I, void>(undefined, C.drop_(chunk, idx));
+          }
+        }
+      );
+    }
+  };
+
+  return fromPush((in_: O.Option<C.Chunk<I>>) =>
+    O.fold_(
+      in_,
+      () => Push.emit<never, void>(undefined, C.empty()),
+      (is) => go(is, 0, is.length)
     )
   );
 }
@@ -192,7 +242,7 @@ export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
   );
 }
 
-export function fromFoldChunksM_<R, E, I, Z>(
+export function reduceChunksM_<R, E, I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>
@@ -222,11 +272,11 @@ export function fromFoldChunksM_<R, E, I, Z>(
  * A sink that effectfully folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function fromFoldLeftChunksM<R, E, I, Z>(
+export function reduceChunksM<R, E, I, Z>(
   z: Z,
   f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>
 ): Sink<R, E, I, never, Z> {
-  return dropLeftover(fromFoldChunksM_(z, (_) => true, f));
+  return dropLeftover(reduceChunksM_(z, (_) => true, f));
 }
 
 /**
@@ -234,23 +284,23 @@ export function fromFoldLeftChunksM<R, E, I, Z>(
  * `contFn` condition is checked only for the initial value and at the end of processing of each chunk.
  * `f` and `contFn` must preserve chunking-invariance.
  */
-export function fromFoldChunks<I, Z>(
+export function reduceChunksWhile<I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: Chunk<I>) => Z
 ): Sink<unknown, never, I, I, Z> {
-  return fromFoldChunksM_(z, cont, (z, i) => I.succeed(f(z, i)));
+  return reduceChunksM_(z, cont, (z, i) => I.succeed(f(z, i)));
 }
 
 /**
  * A sink that folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function fromFoldLeftChunks<I, Z>(
+export function reduceChunks<I, Z>(
   z: Z,
   f: (z: Z, i: Chunk<I>) => Z
 ): Sink<unknown, never, I, never, Z> {
-  return dropLeftover(fromFoldChunks(z, () => true, f));
+  return dropLeftover(reduceChunksWhile(z, () => true, f));
 }
 
 /**
@@ -259,7 +309,7 @@ export function fromFoldLeftChunks<I, Z>(
  * This sink may terminate in the middle of a chunk and discard the rest of it. See the discussion on the
  * ZSink class scaladoc on sinks vs. transducers.
  */
-export function fromFoldM<R, E, I, Z>(
+export function reduceWhileM<R, E, I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: I) => I.IO<R, E, Z>
@@ -312,7 +362,7 @@ export function fromFoldM<R, E, I, Z>(
 /**
  * A sink that folds its inputs with the provided function, termination predicate and initial state.
  */
-export function fromFold<I, Z>(
+export function reduceWhile<I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: I) => Z
@@ -361,6 +411,68 @@ export function fromFold<I, Z>(
 /**
  * A sink that folds its inputs with the provided function and initial state.
  */
-export function fromFoldLeft<I, Z>(z: Z, f: (z: Z, i: I) => Z): Sink<unknown, never, I, never, Z> {
-  return dropLeftover(fromFold(z, (_) => true, f));
+export function reduce<I, Z>(z: Z, f: (z: Z, i: I) => Z): Sink<unknown, never, I, never, Z> {
+  return dropLeftover(reduceWhile(z, (_) => true, f));
 }
+
+/**
+ * A sink that collects all of its inputs into an array.
+ */
+export function collectAll<A>(): Sink<unknown, never, A, never, Chunk<A>> {
+  return reduceChunks(C.empty(), (s, i) => C.concat_(s, i));
+}
+
+/**
+ * A sink that collects all of its inputs into a map. The keys are extracted from inputs
+ * using the keying function `key`; if multiple inputs use the same key, they are merged
+ * using the `f` function.
+ */
+export function collectAllToMap<A, K>(key: (a: A) => K) {
+  return (f: (a: A, a1: A) => A): Sink<unknown, never, A, never, ReadonlyMap<K, A>> =>
+    new Sink(
+      M.suspend(
+        () =>
+          reduceChunks(new Map<K, A>(), (acc, as: Chunk<A>) =>
+            C.reduce_(as, acc, (acc, a) => {
+              const k = key(a);
+              const v = acc.get(k);
+
+              return acc.set(k, v ? f(v, a) : a);
+            })
+          ).push
+      )
+    );
+}
+
+/**
+ * A sink that collects all of its inputs into a set.
+ */
+export function collectAllToSet<A>(): Sink<unknown, never, A, never, Set<A>> {
+  return map_(collectAll<A>(), (as) => new Set(as));
+}
+
+/**
+ * A sink that counts the number of elements fed to it.
+ */
+export const count: Sink<unknown, never, unknown, never, number> = reduce(0, (s, _) => s + 1);
+
+/**
+ * Creates a sink halting with the specified message, wrapped in a
+ * `RuntimeException`.
+ */
+export function dieMessage(m: string): Sink<unknown, never, unknown, never, never> {
+  return halt(Ca.die(new Ca.RuntimeError(m)));
+}
+
+/**
+ * A sink that sums incoming numeric values.
+ */
+export const sum: Sink<unknown, never, number, never, number> = reduce(0, (a, b) => a + b);
+
+/**
+ * A sink with timed execution.
+ */
+export const timedDrain: Sink<HasClock, never, unknown, never, number> = map_(
+  timed(drain),
+  ([_, a]) => a
+);

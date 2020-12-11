@@ -4,6 +4,7 @@ import { pipe } from "../Function";
 import * as I from "../IO";
 import * as O from "../Option";
 import { fromBuffer } from "./constructors";
+import { reduce_ } from "./foldable";
 import { isEmpty, isTyped } from "./guards";
 import type { Chunk } from "./model";
 
@@ -188,7 +189,7 @@ export function append<A>(a: A): (as: Chunk<A>) => Chunk<A> {
   return (as) => append_(as, a);
 }
 
-export function dropWhileEffect_<A, R, E>(
+export function dropWhileIO_<A, R, E>(
   as: Chunk<A>,
   p: (a: A) => I.IO<R, E, boolean>
 ): I.IO<R, E, Chunk<A>> {
@@ -212,4 +213,19 @@ export function dropWhileEffect_<A, R, E>(
     }
     return I.as_(dropping, () => ret);
   });
+}
+
+export function reduceIO_<A, R, E, B>(
+  as: Chunk<A>,
+  b: B,
+  f: (b: B, a: A) => I.IO<R, E, B>
+): I.IO<R, E, B> {
+  return reduce_(as, I.succeed(b) as I.IO<R, E, B>, (b, a) => I.chain_(b, (_) => f(_, a)));
+}
+
+export function reduceIO<A, R, E, B>(
+  b: B,
+  f: (b: B, a: A) => I.IO<R, E, B>
+): (as: Chunk<A>) => I.IO<R, E, B> {
+  return (as) => reduceIO_(as, b, f);
 }

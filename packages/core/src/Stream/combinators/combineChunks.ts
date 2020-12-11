@@ -31,7 +31,7 @@ export function combineChunks_<R, E, O, R1, E1, O1, Z, C>(
       M.bindS(
         "pull",
         ({ left, right }) =>
-          unfoldChunkM(z)((z) =>
+          unfoldChunkM(z, (z) =>
             pipe(
               f(z, left, right),
               I.chain((ex) => I.optional(I.done(ex)))

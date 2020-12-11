@@ -1,7 +1,7 @@
 import { unit } from "../_core";
 import type { Exit } from "../Exit";
 import type { IO } from "../model";
-import { bracketExit_ } from "./bracket";
+import { bracketExit_ } from "./bracketExit";
 
 /**
  * ```haskell

@@ -34,6 +34,7 @@ export function ap_<Q, D, A, B, R, E>(
  *
  * @category Apply
  * @since 1.0.0
+ * @dataFirst ap_
  */
 export function ap<R, E, A>(
   fa: IO<R, E, A>
@@ -45,6 +46,9 @@ export function apFirst_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO
   return zipWith_(fa, fb, (a, _) => a);
 }
 
+/**
+ * @dataFirst apFirst_
+ */
 export function apFirst<Q, D, B>(
   fb: IO<Q, D, B>
 ): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, A> {
@@ -74,6 +78,7 @@ export function apSecond_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): I
  *
  * @category Apply
  * @since 1.0.0
+ * @dataFirst apSecond_
  */
 export function apSecond<Q, D, B>(
   fb: IO<Q, D, B>
@@ -82,6 +87,9 @@ export function apSecond<Q, D, B>(
 }
 
 export const andThen_ = apSecond_;
+/**
+ * @dataFirst andThen_
+ */
 export const andThen = apSecond;
 
 export function zipWith_<R, E, A, Q, D, B, C>(
@@ -92,6 +100,9 @@ export function zipWith_<R, E, A, Q, D, B, C>(
   return chain_(fa, (ra) => map_(fb, (rb) => f(ra, rb)));
 }
 
+/**
+ * @dataFirst zipWith_
+ */
 export function zipWith<A, Q, D, B, C>(
   fb: IO<Q, D, B>,
   f: (a: A, b: B) => C

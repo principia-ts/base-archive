@@ -39,6 +39,7 @@ export function zip_<R, E, A, Q, D, B>(
  *
  * @category Apply
  * @since 1.0.0
+ * @dataFirst zip_
  */
 export function zip<Q, D, B>(
   fb: IO<Q, D, B>

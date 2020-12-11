@@ -7,7 +7,7 @@ import * as M from "../Managed";
 import * as O from "../Option";
 import type { Stream } from "./model";
 import * as Sink from "./Sink";
-import { fromForeachChunk } from "./Sink";
+import { foreachWhile, fromForeachChunk } from "./Sink";
 
 /**
  * Runs the sink on the stream to produce either the sink's result or an error.
@@ -164,4 +164,11 @@ export function foreachChunkManaged<O, R1, E1, O1>(
   f: (chunk: Chunk<O>) => I.IO<R1, E1, O1>
 ): <R, E>(stream: Stream<R, E, O>) => M.Managed<R & R1, E | E1, void> {
   return (stream) => foreachChunkManaged_(stream, f);
+}
+
+export function foreachWhileManaged_<R, E, O, R1, E1>(
+  stream: Stream<R, E, O>,
+  f: (o: O) => I.IO<R1, E1, boolean>
+): M.Managed<R & R1, E | E1, void> {
+  return runManaged_(stream, foreachWhile(f));
 }

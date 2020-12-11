@@ -31,23 +31,3 @@ export function forkAll<R, E, A>(
 export function forkAllUnit<R, E, A>(efs: Iterable<IO<R, E, A>>): URIO<R, void> {
   return I.reduce_(efs, unit() as URIO<R, void>, (b, a) => chain_(fork(a), () => b));
 }
-
-/**
- * Forks the effect into a new independent fiber, with the specified name.
- */
-export function forkAs_<R, E, A>(fa: IO<R, E, A>, name: string): URIO<R, Fiber.Executor<E, A>> {
-  return uninterruptibleMask(({ restore }) =>
-    pipe(
-      Fiber.fiberName,
-      FiberRef.set(O.some(name)),
-      chain(() => fork(restore(fa)))
-    )
-  );
-}
-
-/**
- * Forks the effect into a new independent fiber, with the specified name.
- */
-export function forkAs(name: string): <R, E, A>(ef: IO<R, E, A>) => URIO<R, Fiber.Executor<E, A>> {
-  return (ef) => forkAs_(ef, name);
-}
