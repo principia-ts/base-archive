@@ -1,6 +1,6 @@
 import * as E from "../../Either";
 import { map_ } from "../functor";
-import type { EIO, Managed } from "../model";
+import type { FManaged, Managed } from "../model";
 import { chain_ } from "../monad";
 import { ask, giveAll_ } from "../reader";
 
@@ -14,7 +14,7 @@ export function join_<R, E, A, R1, E1, A1>(
   return chain_(
     ask<E.Either<R, R1>>(),
     E.fold(
-      (r): EIO<E | E1, A | A1> => giveAll_(ma, r),
+      (r): FManaged<E | E1, A | A1> => giveAll_(ma, r),
       (r1) => giveAll_(that, r1)
     )
   );
@@ -39,7 +39,7 @@ export function joinEither_<R, E, A, R1, E1, A1>(
   return chain_(
     ask<E.Either<R, R1>>(),
     E.fold(
-      (r): EIO<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.left), r),
+      (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.left), r),
       (r1) => giveAll_(map_(that, E.right), r1)
     )
   );

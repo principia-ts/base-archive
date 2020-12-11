@@ -1,18 +1,17 @@
-import { pipe } from "@principia/prelude";
-
-import * as XP from "../../Promise";
+import { pipe } from "../../Function";
+import * as P from "../../Promise";
 import * as I from "../_internal/_io";
 import { mapM_ } from "../functor";
-import type { IO, Managed } from "../model";
+import type { Managed, UManaged } from "../model";
 import { releaseMap } from "./releaseMap";
 
 /**
  * Returns a memoized version of the specified Managed.
  */
-export function memoize<R, E, A>(ma: Managed<R, E, A>): IO<Managed<R, E, A>> {
+export function memoize<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> {
   return mapM_(releaseMap, (finalizers) =>
     I.gen(function* (_) {
-      const promise = yield* _(XP.make<E, A>());
+      const promise = yield* _(P.make<E, A>());
       const complete = yield* _(
         I.once(
           I.asksM((r: R) =>
@@ -25,7 +24,7 @@ export function memoize<R, E, A>(ma: Managed<R, E, A>): IO<Managed<R, E, A>> {
           )
         )
       );
-      return pipe(complete, I.apSecond(XP.await(promise)), I.toManaged());
+      return pipe(complete, I.apSecond(P.await(promise)), I.toManaged());
     })
   );
 }
