@@ -1,6 +1,8 @@
+import type { FreeBooleanAlgebraM } from "@principia/core/FreeBooleanAlgebra";
 import * as FB from "@principia/core/FreeBooleanAlgebra";
 import * as Str from "@principia/core/String";
 
+import type { AssertionValue } from "./AssertionValue";
 import type { AssertResultM } from "./model";
 import type { Render } from "./Render/Render";
 import { infix } from "./Render/Render";
@@ -8,7 +10,7 @@ import { assertionParam, valueParam } from "./Render/RenderParam";
 
 export class AssertionM<A> {
   readonly _tag = "AssertionM";
-  constructor(readonly render: Render<A>, readonly runM: (actual: A) => AssertResultM<A>) {}
+  constructor(readonly render: Render, readonly runM: (actual: A) => AssertResultM<A>) {}
 
   ["&&"]<A1 extends A>(this: AssertionM<A1>, that: AssertionM<A1>): AssertionM<A1> {
     return new AssertionM(infix(assertionParam(this), "&&", assertionParam(that)), (actual) =>

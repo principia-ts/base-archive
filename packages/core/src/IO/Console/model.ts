@@ -1,7 +1,10 @@
 import type { InspectOptions } from "util";
 import { inspect } from "util";
 
+import type { Has } from "../../Has";
 import { tag } from "../../Has";
+import type { Layer } from "../../Layer";
+import * as L from "../../Layer";
 import * as I from "../index";
 
 export interface Console {
@@ -76,4 +79,6 @@ export class NodeConsole implements Console {
       console.log(inspect(object, options ?? {}));
     });
   }
+
+  static live: Layer<unknown, never, Has<Console>> = L.pure(Console)(new NodeConsole());
 }

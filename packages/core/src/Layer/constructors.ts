@@ -4,7 +4,7 @@ import { identity } from "../Function";
 import type { Has, Tag } from "../Has";
 import type { IO } from "../IO";
 import * as I from "../IO/combinators/service";
-import * as M from "../Managed";
+import * as M from "./_internal/managed";
 import * as L from "./core";
 
 export function fromConstructor<S>(

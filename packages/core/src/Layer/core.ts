@@ -66,7 +66,7 @@ export abstract class Layer<R, E, A> {
   }
 
   ["+++"]<R1, E1, A1>(and: Layer<R1, E1, A1>): Layer<R & R1, E | E1, A & A1> {
-    return and_(this, and);
+    return and_(and, this);
   }
 
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
@@ -554,6 +554,10 @@ function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, any> {
       [has.key]: mergeEnvironments(has, r, a as any)[has.key]
     }))
   );
+}
+
+export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, Layer<R, E, A>> {
+  return M.map_(M.memoize(build(layer)), (_) => fromRawManaged(_));
 }
 
 /**

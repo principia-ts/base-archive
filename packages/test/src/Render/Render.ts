@@ -11,7 +11,7 @@ export interface RenderFunction {
   readonly toString: () => string;
 }
 
-export function fn<A>(name: string, paramLists: List<List<RenderParam>>): Render<A> {
+export function fn(name: string, paramLists: List<List<RenderParam>>): Render {
   return {
     _tag: "RenderFunction",
     name,
@@ -39,7 +39,7 @@ export interface RenderInfix {
   readonly toString: () => string;
 }
 
-export function infix<A>(left: RenderParam, op: string, right: RenderParam): Render<A> {
+export function infix(left: RenderParam, op: string, right: RenderParam): Render {
   return {
     _tag: "RenderInfix",
     left,
@@ -51,4 +51,4 @@ export function infix<A>(left: RenderParam, op: string, right: RenderParam): Ren
   };
 }
 
-export type Render<A> = RenderFunction | RenderInfix;
+export type Render = RenderFunction | RenderInfix;

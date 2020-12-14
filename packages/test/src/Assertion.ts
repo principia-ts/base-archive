@@ -1,6 +1,7 @@
 import * as A from "@principia/core/Array";
 import * as E from "@principia/core/Either";
 import type { Eq } from "@principia/core/Eq";
+import type { FreeBooleanAlgebra } from "@principia/core/FreeBooleanAlgebra";
 import * as BA from "@principia/core/FreeBooleanAlgebra";
 import * as I from "@principia/core/IO";
 import type { Cause } from "@principia/core/IO/Cause";
@@ -12,7 +13,7 @@ import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
 import * as Str from "@principia/core/String";
 import type { Show } from "@principia/prelude";
-import { fromShow } from "@principia/prelude";
+import { flow, fromShow, pipe } from "@principia/prelude";
 
 import { asFailure, AssertionData } from "./AssertionData";
 import { AssertionM } from "./AssertionM";
@@ -22,7 +23,7 @@ import type { Render, RenderParam } from "./Render";
 import { assertionParam, fn, infix, valueParam } from "./Render";
 
 export class Assertion<A> extends AssertionM<A> {
-  constructor(readonly render: Render<A>, readonly run: (actual: A) => AssertResult<A>) {
+  constructor(readonly render: Render, readonly run: (actual: A) => AssertResult<A>) {
     super(render, (actual) => I.succeed(run(actual)));
   }
 
@@ -34,7 +35,7 @@ export class Assertion<A> extends AssertionM<A> {
 
   ["||"]<A1 extends A>(this: Assertion<A1>, that: Assertion<A1>): Assertion<A1> {
     return new Assertion(infix(assertionParam(this), "||", assertionParam(that)), (actual) =>
-      BA.and_(this.run(actual), that.run(actual))
+      BA.or_(this.run(actual), that.run(actual))
     );
   }
 
@@ -46,6 +47,14 @@ export class Assertion<A> extends AssertionM<A> {
   }
 }
 
+export function and<A>(that: Assertion<A>): (self: Assertion<A>) => Assertion<A> {
+  return (self) => self["&&"](that);
+}
+
+export function or<A>(that: Assertion<A>): (self: Assertion<A>) => Assertion<A> {
+  return (self) => self["||"](that);
+}
+
 export function assertion<A>(
   name: string,
   params: ReadonlyArray<RenderParam>,
@@ -53,7 +62,7 @@ export function assertion<A>(
 ): Assertion<A> {
   const assertion = (): Assertion<A> =>
     assertionDirect(name, params, (actual) => {
-      const result = (): AssertResult<A> => {
+      const result = (): FreeBooleanAlgebra<AssertionValue<A>> => {
         if (run(actual)) return BA.success(AssertionValue(assertion, actual, result));
         else return BA.failure(AssertionValue(assertion, actual, result));
       };
@@ -65,7 +74,7 @@ export function assertion<A>(
 export function assertionDirect<A>(
   name: string,
   params: ReadonlyArray<RenderParam>,
-  run: (actual: A) => AssertResult<A>
+  run: (actual: A) => FreeBooleanAlgebra<AssertionValue<A>>
 ): Assertion<A> {
   return new Assertion(fn(name, L.of(L.from(params))), run);
 }
@@ -75,7 +84,7 @@ export function assertionRec<A, B>(
   params: ReadonlyArray<RenderParam>,
   assertion: Assertion<B>,
   get: (_: A) => Option<B>,
-  orElse: (data: AssertionData<A>) => AssertResult<A> = asFailure
+  orElse: (data: AssertionData<A>) => FreeBooleanAlgebra<AssertionValue<A>> = asFailure
 ): Assertion<A> {
   const resultAssertion = (): Assertion<A> =>
     assertionDirect(name, params, (a) =>
@@ -84,7 +93,7 @@ export function assertionRec<A, B>(
         () => orElse(AssertionData(resultAssertion(), a)),
         (b) => {
           const innerResult = assertion.run(b);
-          const result = (): AssertResult<any> => {
+          const result = (): FreeBooleanAlgebra<AssertionValue<any>> => {
             if (BA.isTrue(innerResult))
               return BA.success(AssertionValue(resultAssertion, a, result));
             else
@@ -138,4 +147,27 @@ export function dies(assertion0: Assertion<any>): Assertion<Exit<any, any>> {
     assertion0,
     Ex.fold(C.dieOption, () => O.none())
   );
+}
+
+export function hasMessage(message: Assertion<string>): Assertion<Error> {
+  return assertionRec("hasMessage", [assertionParam(message)], message, (error) =>
+    O.some(error.message)
+  );
+}
+
+export function endsWith<A>(
+  suffix: ReadonlyArray<A>,
+  E: Eq<A>,
+  S?: Show<A>
+): Assertion<ReadonlyArray<A>> {
+  return assertion("endsWith", [valueParam(suffix, S ? A.getShow(S) : undefined)], (as) => {
+    const dropped = A.drop_(as, as.length - suffix.length);
+    if (dropped.length !== suffix.length) return false;
+    for (let i = 0; i < dropped.length; i++) {
+      if (!E.equals_(dropped[i], suffix[i])) {
+        return false;
+      }
+    }
+    return true;
+  });
 }

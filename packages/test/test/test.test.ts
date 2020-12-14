@@ -1,26 +1,28 @@
-import * as BA from "@principia/core/FreeBooleanAlgebra";
+import "@principia/prelude/Operators";
+
+import * as Eq from "@principia/core/Eq";
 import * as I from "@principia/core/IO";
-import { isSuccess } from "@principia/core/IO/Exit";
-import * as Ex from "@principia/core/IO/Exit";
+import { HasClock, LiveClock } from "@principia/core/IO/Clock";
+import { NodeConsole } from "@principia/core/IO/Console";
 import * as L from "@principia/core/Layer";
-import { constVoid, fromShow, identity } from "@principia/prelude";
 
-import * as M from "../src/Assertion";
-import * as R from "../src/Render/Render";
-import { valueParam } from "../src/Render/RenderParam";
-import * as RP from "../src/Render/RenderParam";
+import * as M from "../src";
+import { defaultTestExecutor } from "../src/TestExecutor";
+import { fromConsole } from "../src/TestLogger";
 
-const greaterThan = (n: number): M.Assertion<number> =>
-  M.assertion("greaterThan", [valueParam(n)], (n1) => n1 > n);
-const lessThan = (n: number): M.Assertion<number> =>
-  M.assertion("lessThan", [valueParam(n)], (n1) => n1 < n);
+const spec = M.suite("Test")(
+  M.test("One", () => M.assert(1, M.approximatelyEquals(1, 0))),
+  M.test("Two", () => M.assert("hello", M.containsString("goodbye"))),
+  M.testM("Three", () =>
+    M.assertM(I.succeed(["a", "b", "c"]), M.contains("b" as string, Eq.string))
+  )
+);
 
-const assertion = greaterThan(10)["&&"](lessThan(20));
-const c = assertion.run(9);
+const runner = new M.TestRunner<unknown, never>(defaultTestExecutor(L.identity<unknown>()));
 
-const a2 = M.dies(M.containsString("die"));
-
-const c2 = a2.run(Ex.die("die"));
-
-console.log(a2.toString());
-console.log(BA.isTrue(c2));
+runner
+  .run(spec)
+  ["|>"](
+    I.giveLayer(NodeConsole.live[">>>"](fromConsole)["+++"](L.pure(HasClock)(new LiveClock())))
+  )
+  ["|>"](I.run);

@@ -3,6 +3,7 @@ import { flow, pipe } from "../Function";
 import type { Cause } from "../IO/Cause";
 import { failureOrCause } from "../IO/Cause";
 import * as I from "./_internal/io";
+import { sandbox } from "./combinators/sandbox";
 import { halt, succeed } from "./constructors";
 import { Managed } from "./model";
 
@@ -77,4 +78,19 @@ export function fold<E, A, B, C>(
   onSuccess: (a: A) => C
 ): <R>(ma: Managed<R, E, A>) => Managed<R, never, B | C> {
   return (ma) => fold_(ma, onError, onSuccess);
+}
+
+export function foldCause_<R, E, A, B, C>(
+  ma: Managed<R, E, A>,
+  onFailure: (cause: Cause<E>) => B,
+  onSuccess: (a: A) => C
+): Managed<R, never, B | C> {
+  return fold_(sandbox(ma), onFailure, onSuccess);
+}
+
+export function foldCause<E, A, B, C>(
+  onFailure: (cause: Cause<E>) => B,
+  onSuccess: (a: A) => C
+): <R>(ma: Managed<R, E, A>) => Managed<R, never, B | C> {
+  return (ma) => foldCause_(ma, onFailure, onSuccess);
 }
