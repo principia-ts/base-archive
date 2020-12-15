@@ -1,27 +1,21 @@
 import * as A from "@principia/core/Array";
 import type { Eq } from "@principia/core/Eq";
-import type { FreeBooleanAlgebra } from "@principia/core/FreeBooleanAlgebra";
 import * as BA from "@principia/core/FreeBooleanAlgebra";
 import * as I from "@principia/core/IO";
-import type { Cause } from "@principia/core/IO/Cause";
 import * as C from "@principia/core/IO/Cause";
-import type { Exit } from "@principia/core/IO/Exit";
 import * as Ex from "@principia/core/IO/Exit";
 import * as L from "@principia/core/List";
-import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
+import * as S from "@principia/core/Show";
 import * as Str from "@principia/core/String";
-import type { Show } from "@principia/prelude";
-import { fromShow } from "@principia/prelude";
-import * as S from "@principia/prelude/Show";
 
+import type { Render, RenderParam } from "../Render";
+import { assertionParam, fn, infix, valueParam } from "../Render";
 import { asFailure, AssertionData } from "./AssertionData";
 import { AssertionM } from "./AssertionM";
 import { AssertionValue } from "./AssertionValue";
-import type { AssertResult } from "./model";
-import type { Render, RenderParam } from "./Render";
-import { assertionParam, fn, infix, valueParam } from "./Render";
-import type { WidenLiteral } from "./utils";
+
+export type AssertResult<A> = BA.FreeBooleanAlgebra<AssertionValue<A>>;
 
 export class Assertion<A> extends AssertionM<A> {
   constructor(readonly render: Render, readonly run: (actual: A) => AssertResult<A>) {
@@ -60,11 +54,11 @@ export function assertion<A>(
   name: string,
   params: ReadonlyArray<RenderParam>,
   run: (actual: A) => boolean,
-  show?: Show<A>
+  show?: S.Show<A>
 ): Assertion<A> {
   const assertion = (): Assertion<A> =>
     assertionDirect(name, params, (actual) => {
-      const result = (): FreeBooleanAlgebra<AssertionValue<A>> => {
+      const result = (): BA.FreeBooleanAlgebra<AssertionValue<A>> => {
         if (run(actual)) return BA.success(new AssertionValue(actual, assertion, result, show));
         else return BA.failure(new AssertionValue(actual, assertion, result, show));
       };
@@ -76,7 +70,7 @@ export function assertion<A>(
 export function assertionDirect<A>(
   name: string,
   params: ReadonlyArray<RenderParam>,
-  run: (actual: A) => FreeBooleanAlgebra<AssertionValue<A>>
+  run: (actual: A) => BA.FreeBooleanAlgebra<AssertionValue<A>>
 ): Assertion<A> {
   return new Assertion(fn(name, L.of(L.from(params))), run);
 }
@@ -85,9 +79,9 @@ export function assertionRec<A, B>(
   name: string,
   params: ReadonlyArray<RenderParam>,
   assertion: Assertion<B>,
-  get: (_: A) => Option<B>,
-  { showA, showB }: { showA?: Show<A>; showB?: Show<B> } = {},
-  orElse: (data: AssertionData<A>) => FreeBooleanAlgebra<AssertionValue<A>> = asFailure
+  get: (_: A) => O.Option<B>,
+  { showA, showB }: { showA?: S.Show<A>; showB?: S.Show<B> } = {},
+  orElse: (data: AssertionData<A>) => BA.FreeBooleanAlgebra<AssertionValue<A>> = asFailure
 ): Assertion<A> {
   const resultAssertion = (): Assertion<A> =>
     assertionDirect(name, params, (a) =>
@@ -96,7 +90,7 @@ export function assertionRec<A, B>(
         () => orElse(AssertionData(resultAssertion(), a)),
         (b) => {
           const innerResult = assertion.run(b);
-          const result = (): FreeBooleanAlgebra<AssertionValue<any>> => {
+          const result = (): BA.FreeBooleanAlgebra<AssertionValue<any>> => {
             if (BA.isTrue(innerResult))
               return BA.success(new AssertionValue(a, resultAssertion, result, showA));
             else
@@ -125,11 +119,11 @@ export function approximatelyEquals<A extends number>(reference: A, tolerance: A
       const min = reference - tolerance;
       return actual >= min && actual <= max;
     },
-    S.number as Show<A>
+    S.number as S.Show<A>
   );
 }
 
-export function contains<A>(element: A, eq: Eq<A>, show?: Show<A>): Assertion<ReadonlyArray<A>> {
+export function contains<A>(element: A, eq: Eq<A>, show?: S.Show<A>): Assertion<ReadonlyArray<A>> {
   return assertion(
     "contains",
     [valueParam(element, show)],
@@ -138,8 +132,8 @@ export function contains<A>(element: A, eq: Eq<A>, show?: Show<A>): Assertion<Re
   );
 }
 
-export function containsCause<E>(cause: Cause<E>): Assertion<Cause<E>> {
-  return assertion("containsCause", [valueParam(cause, fromShow(C.pretty))], C.contains(cause));
+export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
+  return assertion("containsCause", [valueParam(cause, S.fromShow(C.pretty))], C.contains(cause));
 }
 
 export function containsString(element: string): Assertion<string> {
@@ -151,7 +145,7 @@ export function containsString(element: string): Assertion<string> {
   );
 }
 
-export function dies(assertion0: Assertion<any>): Assertion<Exit<any, any>> {
+export function dies(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> {
   return assertionRec(
     "dies",
     [assertionParam(assertion0)],
@@ -169,7 +163,7 @@ export function hasMessage(message: Assertion<string>): Assertion<Error> {
 export function endsWith<A>(
   suffix: ReadonlyArray<A>,
   eq: Eq<A>,
-  show?: Show<A>
+  show?: S.Show<A>
 ): Assertion<ReadonlyArray<A>> {
   return assertion(
     "endsWith",
@@ -188,7 +182,7 @@ export function endsWith<A>(
   );
 }
 
-export function equalTo<A>(expected: A, eq: Eq<A>, show?: Show<A>): Assertion<A> {
+export function equalTo<A>(expected: A, eq: Eq<A>, show?: S.Show<A>): Assertion<A> {
   return assertion("equalTo", [valueParam(expected, show)], (actual) =>
     eq.equals_(actual, expected)
   );

@@ -1,7 +1,7 @@
 import type { Show } from "@principia/prelude";
 import { fromShow } from "@principia/prelude";
 
-import type { AssertionM } from "../AssertionM";
+import type { AssertionM } from "../Assertion/AssertionM";
 
 export interface RenderAssertionM {
   readonly _tag: "AssertionM";

@@ -96,7 +96,7 @@ const showFileLogEntry = I.gen(function* (_) {
 const logToConsole = I.gen(function* (_) {
   const console = yield* _(C.Console);
   const entry = yield* _(showConsoleLogEntry);
-  return yield* _(console.log(entry));
+  return yield* _(console.putStrLn(entry));
 });
 
 const logToFile = I.gen(function* (_) {
@@ -119,7 +119,7 @@ function _log(message: ChalkFn, level: LogLevel) {
       pipe(
         logToConsole,
         I.andThen(logToFile),
-        I.catchAll((error) => console.log(`Error when writing to path ${path}\n${error}`)),
+        I.catchAll((error) => console.putStrLn(`Error when writing to path ${path}\n${error}`)),
         I.when(() => severity[configLevel] >= severity[level]),
         I.giveService(LogEntry)(entry)
       )

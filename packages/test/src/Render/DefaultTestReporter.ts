@@ -9,16 +9,16 @@ import * as Sy from "@principia/core/Sync";
 import { matchTag, matchTag_ } from "@principia/core/Utils";
 import { absurd, identity, pipe } from "@principia/prelude";
 
+import { TestAnnotationMap } from "../Annotation";
 import type { ExecutedSpec } from "../ExecutedSpec";
 import * as ES from "../ExecutedSpec";
-import type { FailureDetails } from "../FailureDetails";
 import type { TestReporter } from "../model";
-import { TestAnnotationMap } from "../TestAnnotationMap";
-import type { TestAnnotationRenderer } from "../TestAnnotationRenderer";
 import { TestLogger } from "../TestLogger";
+import type { FailureDetails } from "./FailureDetails";
 import type { Fragment, Message } from "./FailureMessage";
 import * as FM from "./FailureMessage";
 import { ANSI_RESET, cyan, green, red } from "./RenderUtils";
+import type { TestAnnotationRenderer } from "./TestAnnotationRenderer";
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {

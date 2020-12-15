@@ -4,18 +4,16 @@ import * as O from "@principia/core/Option";
 import * as Str from "@principia/core/String";
 import { pipe } from "@principia/prelude";
 
-import type { TestAnnotation } from "./TestAnnotation";
-import * as TA from "./TestAnnotation";
-import type { TestAnnotationMap } from "./TestAnnotationMap";
+import * as TA from "../Annotation";
 
 export class LeafRenderer<V> {
   readonly _tag = "LeafRenderer";
   constructor(
-    readonly annotation: TestAnnotation<V>,
+    readonly annotation: TA.TestAnnotation<V>,
     readonly render: (_: ReadonlyArray<V>) => Option<string>
   ) {}
 
-  run(ancestors: ReadonlyArray<TestAnnotationMap>, child: TestAnnotationMap) {
+  run(ancestors: ReadonlyArray<TA.TestAnnotationMap>, child: TA.TestAnnotationMap) {
     return O.fold_(
       this.render(
         A.prepend(child.get(this.annotation))(A.map_(ancestors, (m) => m.get(this.annotation)))
@@ -31,8 +29,8 @@ export class CompositeRenderer {
   constructor(readonly renderers: ReadonlyArray<TestAnnotationRenderer>) {}
 
   run(
-    ancestors: ReadonlyArray<TestAnnotationMap>,
-    child: TestAnnotationMap
+    ancestors: ReadonlyArray<TA.TestAnnotationMap>,
+    child: TA.TestAnnotationMap
   ): ReadonlyArray<string> {
     return A.chain_(this.renderers, (r) => r.run(ancestors, child));
   }

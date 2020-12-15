@@ -9,18 +9,17 @@ import * as M from "@principia/core/Managed";
 import { matchTag } from "@principia/core/Utils";
 import { flow, pipe } from "@principia/prelude";
 
-import type { Annotated, Annotations } from "./Annotations";
+import type { Annotated, Annotations } from "./Annotation";
+import { TestAnnotationMap } from "./Annotation";
 import type { ExecutedSpec } from "./ExecutedSpec";
 import * as ES from "./ExecutedSpec";
-import type { XSpec } from "./model";
 import * as S from "./Spec";
-import { TestAnnotationMap } from "./TestAnnotationMap";
 import * as TF from "./TestFailure";
 import type { TestSuccess } from "./TestSuccess";
 
 export interface TestExecutor<R> {
   readonly run: <E>(
-    spec: XSpec<R & Has<Annotations>, E>,
+    spec: S.XSpec<R & Has<Annotations>, E>,
     defExec: ExecutionStrategy
   ) => UIO<ExecutedSpec<E>>;
   readonly environment: Layer<unknown, never, R>;
@@ -31,7 +30,7 @@ export function defaultTestExecutor<R>(
 ): TestExecutor<R> {
   return {
     run: <E>(
-      spec: XSpec<R & Has<Annotations>, E>,
+      spec: S.XSpec<R & Has<Annotations>, E>,
       defExec: ExecutionStrategy
     ): UIO<ExecutedSpec<E>> =>
       pipe(

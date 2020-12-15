@@ -8,40 +8,25 @@ import * as L from "../../Layer";
 import * as I from "../index";
 
 export interface Console {
-  readonly log: (...data: Array<any>) => I.UIO<void>;
-  readonly error: (...data: Array<any>) => I.UIO<void>;
-  readonly info: (...data: Array<any>) => I.UIO<void>;
-  readonly debug: (...data: Array<any>) => I.UIO<void>;
-
-  readonly time: (label?: string) => I.UIO<void>;
-  readonly timeEnd: (label?: string) => I.UIO<void>;
-  readonly timeLog: (label?: string) => I.UIO<void>;
-
-  readonly count: (label?: string) => I.UIO<void>;
-  readonly countReset: (label?: string) => I.UIO<void>;
-
-  readonly inspect: (object: any, options?: InspectOptions) => I.UIO<void>;
+  readonly putStrLn: (line: string) => I.UIO<void>;
+  readonly putStrLnErr: (line: string) => I.UIO<void>;
+  readonly putStrLnDebug: (line: string) => I.UIO<void>;
 }
 
 export const Console = tag<Console>();
 
 export class NodeConsole implements Console {
-  log(...data: any[]) {
+  putStrLn(...data: any[]) {
     return I.total(() => {
       console.log(...data);
     });
   }
-  error(...data: any[]) {
+  putStrLnErr(...data: any[]) {
     return I.total(() => {
       console.error(...data);
     });
   }
-  info(...data: any[]) {
-    return I.total(() => {
-      console.info(...data);
-    });
-  }
-  debug(...data: any[]) {
+  putStrLnDebug(...data: any[]) {
     return I.total(() => {
       console.debug(...data);
     });

@@ -1,30 +1,23 @@
 import * as A from "@principia/core/Array";
 import type { Has } from "@principia/core/Has";
-import { HasURI, Tag } from "@principia/core/Has";
-import type { IO } from "@principia/core/IO";
 import * as I from "@principia/core/IO";
 import type { Cause } from "@principia/core/IO/Cause";
-import { foldSafe_ } from "@principia/core/IO/Cause";
 import type { ExecutionStrategy } from "@principia/core/IO/ExecutionStrategy";
-import type { Layer } from "@principia/core/Layer";
 import * as L from "@principia/core/Layer";
-import type { Managed } from "@principia/core/Managed";
-import { ignore } from "@principia/core/Managed";
 import * as M from "@principia/core/Managed";
 import type { Option } from "@principia/core/Option";
 import * as O from "@principia/core/Option";
-import * as Sy from "@principia/core/Sync";
 import { matchTag, matchTag_ } from "@principia/core/Utils";
 import { flow, identity, pipe } from "@principia/prelude";
 
-import * as Annotations from "./Annotations";
-import type { XSpec } from "./model";
-import * as TA from "./TestAnnotation";
-import { TestAnnotationMap } from "./TestAnnotationMap";
+import * as Annotations from "./Annotation";
+import { TestAnnotationMap } from "./Annotation";
 import type { TestAspect } from "./TestAspect";
 import type { TestFailure } from "./TestFailure";
 import type { TestSuccess } from "./TestSuccess";
 import { Ignored } from "./TestSuccess";
+
+export type XSpec<R, E> = Spec<R, TestFailure<E>, TestSuccess>;
 
 export class Spec<R, E, T> {
   constructor(readonly caseValue: SpecCase<R, E, T, Spec<R, E, T>>) {}
@@ -37,7 +30,7 @@ export class SuiteCase<R, E, A> {
   readonly _tag = "Suite";
   constructor(
     readonly label: string,
-    readonly specs: Managed<R, E, ReadonlyArray<A>>,
+    readonly specs: M.Managed<R, E, ReadonlyArray<A>>,
     readonly exec: Option<ExecutionStrategy>
   ) {}
 }
@@ -46,18 +39,16 @@ export class TestCase<R, E, T> {
   readonly _tag = "Test";
   constructor(
     readonly label: string,
-    readonly test: IO<R, E, T>,
+    readonly test: I.IO<R, E, T>,
     readonly annotations: TestAnnotationMap
   ) {}
 }
 
 export type SpecCase<R, E, T, A> = SuiteCase<R, E, A> | TestCase<R, E, T>;
 
-export type AbstractSpec<R, E, T> = TestCase<R, E, T> | SuiteCase<R, E, AbstractSpec<R, E, T>>;
-
 export function suite<R, E, T>(
   label: string,
-  specs: Managed<R, E, ReadonlyArray<Spec<R, E, T>>>,
+  specs: M.Managed<R, E, ReadonlyArray<Spec<R, E, T>>>,
   exec: Option<ExecutionStrategy>
 ): Spec<R, E, T> {
   return new Spec(new SuiteCase(label, specs, exec));
@@ -65,7 +56,7 @@ export function suite<R, E, T>(
 
 export function test<R, E, T>(
   label: string,
-  test: IO<R, E, T>,
+  test: I.IO<R, E, T>,
   annotations: TestAnnotationMap
 ): Spec<R, E, T> {
   return new Spec(new TestCase(label, test, annotations));
@@ -89,11 +80,8 @@ export function annotated<R, E, T>(
   );
 }
 
-export function fold_<R, E, T, Z>(
-  spec: AbstractSpec<R, E, T>,
-  f: (_: SpecCase<R, E, T, Z>) => Z
-): Z {
-  return matchTag_(spec, {
+export function fold_<R, E, T, Z>(spec: Spec<R, E, T>, f: (_: SpecCase<R, E, T, Z>) => Z): Z {
+  return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
       f(
         new SuiteCase(
@@ -110,9 +98,9 @@ export function fold_<R, E, T, Z>(
 }
 
 export function countTests_<R, E, T>(
-  spec: AbstractSpec<R, E, T>,
+  spec: Spec<R, E, T>,
   f: (t: T) => boolean
-): Managed<R, E, number> {
+): M.Managed<R, E, number> {
   return fold_(
     spec,
     matchTag({
@@ -152,9 +140,9 @@ export function filterLabels_<R, E, T>(
 
 export function foldM_<R, E, T, R1, E1, Z>(
   spec: Spec<R, E, T>,
-  f: (_: SpecCase<R, E, T, Z>) => Managed<R1, E1, Z>,
+  f: (_: SpecCase<R, E, T, Z>) => M.Managed<R1, E1, Z>,
   defExec: ExecutionStrategy
-): Managed<R & R1, E1, Z> {
+): M.Managed<R & R1, E1, Z> {
   return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
       M.foldCauseM_(
@@ -173,10 +161,10 @@ export function foldM_<R, E, T, R1, E1, Z>(
 
 export function foreachExec_<R, E, T, R1, E1, A>(
   spec: Spec<R, E, T>,
-  onFailure: (c: Cause<E>) => IO<R1, E1, A>,
-  onSuccess: (t: T) => IO<R1, E1, A>,
+  onFailure: (c: Cause<E>) => I.IO<R1, E1, A>,
+  onSuccess: (t: T) => I.IO<R1, E1, A>,
   defExec: ExecutionStrategy
-): Managed<R & R1, never, Spec<R & R1, E1, A>> {
+): M.Managed<R & R1, never, Spec<R & R1, E1, A>> {
   return foldM_(
     spec,
     matchTag({
@@ -200,10 +188,10 @@ export function foreachExec_<R, E, T, R1, E1, A>(
 }
 
 export function foreachExec<E, T, R1, E1, A>(
-  onFailure: (c: Cause<E>) => IO<R1, E1, A>,
-  onSuccess: (t: T) => IO<R1, E1, A>,
+  onFailure: (c: Cause<E>) => I.IO<R1, E1, A>,
+  onSuccess: (t: T) => I.IO<R1, E1, A>,
   defExec: ExecutionStrategy
-): <R>(spec: Spec<R, E, T>) => Managed<R & R1, never, Spec<R & R1, E1, A>> {
+): <R>(spec: Spec<R, E, T>) => M.Managed<R & R1, never, Spec<R & R1, E1, A>> {
   return (spec) => foreachExec_(spec, onFailure, onSuccess, defExec);
 }
 
@@ -262,7 +250,7 @@ export function giveAll<R>(r: R): <E, T>(spec: Spec<R, E, T>) => Spec<unknown, E
 }
 
 export function giveLayer<R1, E1, A1>(
-  layer: Layer<R1, E1, A1>
+  layer: L.Layer<R1, E1, A1>
 ): <R, E, T>(spec: Spec<R & A1, E, T>) => Spec<R & R1, E | E1, T> {
   return (spec) =>
     transform_(
@@ -276,13 +264,13 @@ export function giveLayer<R1, E1, A1>(
 }
 
 export function giveSomeLayer<R1, E1, A1>(
-  layer: Layer<R1, E1, A1>
+  layer: L.Layer<R1, E1, A1>
 ): <R, E, T>(spec: Spec<R & A1, E, T>) => Spec<R & R1, E | E1, T> {
   return <R, E, T>(spec: Spec<R & A1, E, T>) => giveLayer(layer["+++"](L.identity<R>()))(spec);
 }
 
 export function giveSomeLayerShared<R1, E1, A1>(
-  layer: Layer<R1, E1, A1>
+  layer: L.Layer<R1, E1, A1>
 ): <R, E, T>(spec: Spec<R & A1, E, T>) => Spec<R & R1, E | E1, T> {
   return <R, E, T>(spec: Spec<R & A1, E, T>) =>
     matchTag_(spec.caseValue, {
@@ -303,13 +291,13 @@ export function giveSomeLayerShared<R1, E1, A1>(
 export function execute<R, E, T>(
   spec: Spec<R, E, T>,
   defExec: ExecutionStrategy
-): Managed<R, never, Spec<unknown, E, T>> {
+): M.Managed<R, never, Spec<unknown, E, T>> {
   return M.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.halt, I.succeed, defExec)));
 }
 
 export function whenM_<R, E, R1, E1>(
   spec: Spec<R, E, TestSuccess>,
-  b: IO<R1, E1, boolean>
+  b: I.IO<R1, E1, boolean>
 ): Spec<R & R1 & Has<Annotations.Annotations>, E | E1, TestSuccess> {
   return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
@@ -328,7 +316,7 @@ export function whenM_<R, E, R1, E1>(
         I.ifM_(
           b,
           () => t.test,
-          () => I.as_(Annotations.annotate(TA.ignored, 1), () => new Ignored())
+          () => I.as_(Annotations.annotate(Annotations.ignored, 1), () => new Ignored())
         ),
         t.annotations
       )

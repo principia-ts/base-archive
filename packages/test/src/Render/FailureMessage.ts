@@ -8,10 +8,10 @@ import * as O from "@principia/core/Option";
 import type { USync } from "@principia/core/Sync";
 import * as Sy from "@principia/core/Sync";
 
-import type { AssertionValue } from "../AssertionValue";
-import type { FailureDetails } from "../FailureDetails";
+import type { AssertionValue } from "../Assertion";
 import type { GenFailureDetails } from "../GenFailureDetails";
 import { TestTimeoutException } from "../TestTimeoutException";
+import type { FailureDetails } from "./FailureDetails";
 import { tabSize } from "./RenderUtils";
 
 export class Message {

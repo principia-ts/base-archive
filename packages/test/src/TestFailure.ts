@@ -1,7 +1,7 @@
 import type { Cause } from "@principia/core/IO/Cause";
 import * as C from "@principia/core/IO/Cause";
 
-import type { TestResult } from "./model";
+import type { TestResult } from "./Render";
 
 export class AssertionFailure {
   readonly _tag = "AssertionFailure";

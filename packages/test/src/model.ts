@@ -1,4 +1,3 @@
-import type { FreeBooleanAlgebra, FreeBooleanAlgebraM } from "@principia/core/FreeBooleanAlgebra";
 import * as BA from "@principia/core/FreeBooleanAlgebra";
 import type { Has } from "@principia/core/Has";
 import type { IO, URIO } from "@principia/core/IO";
@@ -7,30 +6,21 @@ import * as M from "@principia/core/Managed";
 import * as NA from "@principia/core/NonEmptyArray";
 import * as O from "@principia/core/Option";
 import { none } from "@principia/core/Option";
+import type { Show } from "@principia/core/Show";
 import type { UnionToIntersection } from "@principia/core/Utils";
-import type { Show } from "@principia/prelude";
 import { flow } from "@principia/prelude";
 
-import type { Assertion } from "./Assertion";
-import type { AssertionM } from "./AssertionM";
-import { AssertionValue } from "./AssertionValue";
+import { TestAnnotationMap } from "./Annotation";
+import type { Assertion, AssertionM, AssertResult } from "./Assertion";
+import { AssertionValue } from "./Assertion";
 import type { ExecutedSpec } from "./ExecutedSpec";
-import { FailureDetails } from "./FailureDetails";
-import * as S from "./Spec";
-import { TestAnnotationMap } from "./TestAnnotationMap";
-import type { TestFailure } from "./TestFailure";
+import type { TestResult } from "./Render";
+import { FailureDetails } from "./Render";
+import * as Spec from "./Spec";
 import * as TF from "./TestFailure";
 import type { TestLogger } from "./TestLogger";
-import type { TestSuccess } from "./TestSuccess";
 import * as TS from "./TestSuccess";
 import type { WidenLiteral } from "./utils";
-
-export type AssertResult<A> = FreeBooleanAlgebra<AssertionValue<A>>;
-export type AssertResultM<A> = FreeBooleanAlgebraM<unknown, never, AssertionValue<A>>;
-
-export type TestResult = FreeBooleanAlgebra<FailureDetails>;
-
-export type XSpec<R, E> = S.Spec<R, TestFailure<E>, TestSuccess>;
 
 export type TestReporter<E> = (
   duration: number,
@@ -99,9 +89,9 @@ export function assertM<R, E, A>(
   });
 }
 
-type MergeR<Specs extends ReadonlyArray<S.Spec<any, any, any>>> = UnionToIntersection<
+type MergeR<Specs extends ReadonlyArray<Spec.XSpec<any, any>>> = UnionToIntersection<
   {
-    [K in keyof Specs]: [Specs[K]] extends [S.Spec<infer R, any, any>]
+    [K in keyof Specs]: [Specs[K]] extends [Spec.XSpec<infer R, any>]
       ? unknown extends R
         ? never
         : R
@@ -109,24 +99,23 @@ type MergeR<Specs extends ReadonlyArray<S.Spec<any, any, any>>> = UnionToInterse
   }[number]
 >;
 
-type MergeE<Specs extends ReadonlyArray<S.Spec<any, any, any>>> = {
-  [K in keyof Specs]: [Specs[K]] extends [S.Spec<any, infer E, any>] ? E : never;
-}[number];
-
-type MergeT<Specs extends ReadonlyArray<S.Spec<any, any, any>>> = {
-  [K in keyof Specs]: [Specs[K]] extends [S.Spec<any, any, infer T>] ? T : never;
+type MergeE<Specs extends ReadonlyArray<Spec.XSpec<any, any>>> = {
+  [K in keyof Specs]: [Specs[K]] extends [Spec.XSpec<any, infer E>] ? E : never;
 }[number];
 
 export function suite(
   label: string
-): <Specs extends ReadonlyArray<S.Spec<any, any, any>>>(
+): <Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
   ...specs: Specs
-) => S.Spec<MergeR<Specs>, MergeE<Specs>, MergeT<Specs>> {
-  return (...specs) => S.suite(label, M.succeed(specs), none());
+) => Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
+  return (...specs) => Spec.suite(label, M.succeed(specs), none());
 }
 
-export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): XSpec<R, E> {
-  return S.test(
+export function testM<R, E>(
+  label: string,
+  assertion: () => IO<R, E, TestResult>
+): Spec.XSpec<R, E> {
+  return Spec.test(
     label,
     I.foldCauseM_(
       I.suspend(assertion),
@@ -143,6 +132,6 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
   );
 }
 
-export function test(label: string, assertion: () => TestResult): XSpec<unknown, never> {
+export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {
   return testM(label, () => I.total(assertion));
 }

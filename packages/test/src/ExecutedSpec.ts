@@ -1,13 +1,11 @@
 import * as A from "@principia/core/Array";
 import type { Either } from "@principia/core/Either";
-import { fromPredicate } from "@principia/core/Option";
 import type { USync } from "@principia/core/Sync";
 import * as Sy from "@principia/core/Sync";
 import { matchTag, matchTag_ } from "@principia/core/Utils";
 import { identity, pipe } from "@principia/prelude";
 
-import { XSpec } from "./model";
-import { TestAnnotationMap } from "./TestAnnotationMap";
+import type { TestAnnotationMap } from "./Annotation/TestAnnotationMap";
 import type { TestFailure } from "./TestFailure";
 import type { TestSuccess } from "./TestSuccess";
 
@@ -40,7 +38,11 @@ export function suite<E>(label: string, specs: ReadonlyArray<ExecutedSpec<E>>): 
   return new SuiteCase(label, specs);
 }
 
-export function test<E>(label: string, test: Either<TestFailure<E>, TestSuccess>, annotations: TestAnnotationMap): ExecutedSpec<E> {
+export function test<E>(
+  label: string,
+  test: Either<TestFailure<E>, TestSuccess>,
+  annotations: TestAnnotationMap
+): ExecutedSpec<E> {
   return new TestCase(label, test, annotations);
 }
 

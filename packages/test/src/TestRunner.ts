@@ -10,11 +10,11 @@ import type { Layer } from "@principia/core/Layer";
 import * as L from "@principia/core/Layer";
 import { pipe } from "@principia/prelude";
 
-import type { Annotations } from "./Annotations";
+import type { Annotations } from "./Annotation";
 import type { ExecutedSpec } from "./ExecutedSpec";
-import type { XSpec, TestReporter } from "./model";
-import { report } from "./Render/DefaultTestReporter";
-import * as AR from "./TestAnnotationRenderer";
+import type { TestReporter } from "./model";
+import { defaultTestAnnotationRenderer, report } from "./Render";
+import type { XSpec } from "./Spec";
 import type { TestExecutor } from "./TestExecutor";
 import type { TestLogger } from "./TestLogger";
 import { fromConsole } from "./TestLogger";
@@ -23,7 +23,7 @@ export class TestRunner<R, E> {
   constructor(
     readonly executor: TestExecutor<R>,
     readonly platform: Platform = I.defaultRuntime.platform,
-    readonly reporter: TestReporter<E> = report(AR.defaultTestAnnotationRenderer),
+    readonly reporter: TestReporter<E> = report(defaultTestAnnotationRenderer),
     readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = NodeConsole.live[
       ">>>"
     ](fromConsole)["+++"](L.pure(HasClock)(new LiveClock()))

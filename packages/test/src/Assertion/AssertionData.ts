@@ -1,4 +1,3 @@
-import type { FreeBooleanAlgebra } from "@principia/core/FreeBooleanAlgebra";
 import * as BA from "@principia/core/FreeBooleanAlgebra";
 
 import type { Assertion } from "./Assertion";
@@ -18,7 +17,7 @@ export function AssertionData<A>(assertion: Assertion<A>, value: A): AssertionDa
   };
 }
 
-export function asSuccess<A>(_: AssertionData<A>): FreeBooleanAlgebra<AssertionValue<A>> {
+export function asSuccess<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<AssertionValue<A>> {
   return BA.success(
     new AssertionValue<A>(
       _.value,
@@ -28,7 +27,7 @@ export function asSuccess<A>(_: AssertionData<A>): FreeBooleanAlgebra<AssertionV
   );
 }
 
-export function asFailure<A>(_: AssertionData<A>): FreeBooleanAlgebra<AssertionValue<A>> {
+export function asFailure<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<AssertionValue<A>> {
   return BA.failure(
     new AssertionValue(
       _.value,

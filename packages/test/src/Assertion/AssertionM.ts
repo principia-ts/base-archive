@@ -1,10 +1,12 @@
-import * as FB from "@principia/core/FreeBooleanAlgebra";
+import * as BA from "@principia/core/FreeBooleanAlgebra";
 import * as Str from "@principia/core/String";
 
-import type { AssertResultM } from "./model";
-import type { Render } from "./Render";
-import { infix } from "./Render";
-import { assertionParam, valueParam } from "./Render/RenderParam";
+import type { Render } from "../Render";
+import { infix } from "../Render";
+import { assertionParam, valueParam } from "../Render/RenderParam";
+import type { AssertionValue } from "./AssertionValue";
+
+export type AssertResultM<A> = BA.FreeBooleanAlgebraM<unknown, never, AssertionValue<A>>;
 
 export class AssertionM<A> {
   readonly _tag = "AssertionM";
@@ -12,7 +14,7 @@ export class AssertionM<A> {
 
   ["&&"](this: AssertionM<A>, that: AssertionM<A>): AssertionM<A> {
     return new AssertionM(infix(assertionParam(this), "&&", assertionParam(that)), (actual) =>
-      FB.andM_(this.runM(actual), that.runM(actual))
+      BA.andM_(this.runM(actual), that.runM(actual))
     );
   }
   [":"](string: string): AssertionM<A> {
@@ -23,7 +25,7 @@ export class AssertionM<A> {
   }
   ["||"](this: AssertionM<A>, that: AssertionM<A>): AssertionM<A> {
     return new AssertionM(infix(assertionParam(this), "||", assertionParam(that)), (actual) =>
-      FB.orM_(this.runM(actual), that.runM(actual))
+      BA.orM_(this.runM(actual), that.runM(actual))
     );
   }
 
