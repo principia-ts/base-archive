@@ -6,13 +6,18 @@ import * as Sy from "@principia/core/Sync";
 import { matchTag, matchTag_ } from "@principia/core/Utils";
 import { identity, pipe } from "@principia/prelude";
 
-import { Spec } from "./model";
+import { XSpec } from "./model";
+import { TestAnnotationMap } from "./TestAnnotationMap";
 import type { TestFailure } from "./TestFailure";
 import type { TestSuccess } from "./TestSuccess";
 
 class TestCase<E> {
   readonly _tag = "Test";
-  constructor(readonly label: string, readonly test: Either<TestFailure<E>, TestSuccess>) {}
+  constructor(
+    readonly label: string,
+    readonly test: Either<TestFailure<E>, TestSuccess>,
+    readonly annotations: TestAnnotationMap
+  ) {}
 }
 
 class SuiteCase<A> {
@@ -35,8 +40,8 @@ export function suite<E>(label: string, specs: ReadonlyArray<ExecutedSpec<E>>): 
   return new SuiteCase(label, specs);
 }
 
-export function test<E>(label: string, test: Either<TestFailure<E>, TestSuccess>): ExecutedSpec<E> {
-  return new TestCase(label, test);
+export function test<E>(label: string, test: Either<TestFailure<E>, TestSuccess>, annotations: TestAnnotationMap): ExecutedSpec<E> {
+  return new TestCase(label, test, annotations);
 }
 
 export function foldSafe<E, Z>(

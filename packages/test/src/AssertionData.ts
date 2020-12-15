@@ -20,9 +20,9 @@ export function AssertionData<A>(assertion: Assertion<A>, value: A): AssertionDa
 
 export function asSuccess<A>(_: AssertionData<A>): FreeBooleanAlgebra<AssertionValue<A>> {
   return BA.success(
-    AssertionValue(
-      () => _.assertion,
+    new AssertionValue<A>(
       _.value,
+      () => _.assertion,
       () => asSuccess(_)
     )
   );
@@ -30,9 +30,9 @@ export function asSuccess<A>(_: AssertionData<A>): FreeBooleanAlgebra<AssertionV
 
 export function asFailure<A>(_: AssertionData<A>): FreeBooleanAlgebra<AssertionValue<A>> {
   return BA.failure(
-    AssertionValue(
-      () => _.assertion,
+    new AssertionValue(
       _.value,
+      () => _.assertion,
       () => asFailure(_)
     )
   );

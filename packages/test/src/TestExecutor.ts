@@ -1,4 +1,5 @@
 import * as E from "@principia/core/Either";
+import type { Has } from "@principia/core/Has";
 import type { UIO } from "@principia/core/IO";
 import * as I from "@principia/core/IO";
 import * as C from "@principia/core/IO/Cause";
@@ -8,32 +9,48 @@ import * as M from "@principia/core/Managed";
 import { matchTag } from "@principia/core/Utils";
 import { flow, pipe } from "@principia/prelude";
 
+import type { Annotated, Annotations } from "./Annotations";
 import type { ExecutedSpec } from "./ExecutedSpec";
 import * as ES from "./ExecutedSpec";
-import type { Spec } from "./model";
+import type { XSpec } from "./model";
 import * as S from "./Spec";
+import { TestAnnotationMap } from "./TestAnnotationMap";
 import * as TF from "./TestFailure";
+import type { TestSuccess } from "./TestSuccess";
 
 export interface TestExecutor<R> {
-  readonly run: <E>(spec: Spec<R, E>, defExec: ExecutionStrategy) => UIO<ExecutedSpec<E>>;
+  readonly run: <E>(
+    spec: XSpec<R & Has<Annotations>, E>,
+    defExec: ExecutionStrategy
+  ) => UIO<ExecutedSpec<E>>;
   readonly environment: Layer<unknown, never, R>;
 }
 
-export function defaultTestExecutor<R>(env: Layer<unknown, never, R>): TestExecutor<R> {
+export function defaultTestExecutor<R>(
+  env: Layer<unknown, never, R & Has<Annotations>>
+): TestExecutor<R> {
   return {
-    run: (spec, defExec) =>
+    run: <E>(
+      spec: XSpec<R & Has<Annotations>, E>,
+      defExec: ExecutionStrategy
+    ): UIO<ExecutedSpec<E>> =>
       pipe(
-        spec,
+        S.annotated(spec),
         S.giveLayer(env),
         S.foreachExec(
           flow(
             C.failureOrCause,
             E.fold(
-              (failure) => I.succeed(E.left(failure)),
-              (cause) => I.succeed(E.left(new TF.RuntimeFailure(cause)))
+              ([failure, annotations]) => I.succeed([E.left(failure), annotations] as const),
+              (cause) =>
+                I.succeed([E.left(new TF.RuntimeFailure(cause)), TestAnnotationMap.empty] as const)
             )
           ),
-          (success) => I.succeed(E.right(success)),
+          ([success, annotations]) =>
+            I.succeed<never, Annotated<E.Either<TF.TestFailure<E>, TestSuccess>>>([
+              E.right(success),
+              annotations
+            ] as const),
           defExec
         ),
         M.use((s) =>
@@ -42,8 +59,12 @@ export function defaultTestExecutor<R>(env: Layer<unknown, never, R>): TestExecu
               s,
               matchTag({
                 Suite: ({ label, specs }) => M.map_(specs, (specs) => ES.suite(label, specs)),
-                Test: ({ label, test }) =>
-                  I.toManaged_(I.map_(test, (result) => ES.test(label, result)))
+                Test: ({ label, test, annotations }) =>
+                  I.toManaged_(
+                    I.map_(test, ([result, dynamicAnnotations]) =>
+                      ES.test(label, result, annotations.combine(dynamicAnnotations))
+                    )
+                  )
               }),
               defExec
             )

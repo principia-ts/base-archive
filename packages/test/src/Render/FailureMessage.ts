@@ -29,7 +29,7 @@ export class Message {
   drop(n: number): Message {
     return new Message(A.drop_(this.lines, n));
   }
-  map(f: (_: Line) => Line): Message {
+  map(f: (line: Line) => Line): Message {
     return new Message(A.map_(this.lines, f));
   }
   withOffset(offset: number): Message {
@@ -103,9 +103,9 @@ function renderAssertionFailureDetails(
   ): USync<Message> => {
     return Sy.gen(function* (_) {
       const [fragment, whole, ...details] = failureDetails;
-      if (fragment != null && whole != null && details.length > 0) {
+      if (fragment != null && whole != null) {
         return yield* _(
-          loop([whole, ...failureDetails], rendered["+:"](renderWhole(fragment, whole, offset)))
+          loop([whole, ...details], rendered["+:"](renderWhole(fragment, whole, offset)))
         );
       } else {
         return rendered;
@@ -124,7 +124,7 @@ function renderWhole(
   offset: number
 ): Line {
   return withOffset(offset + tabSize)(
-    blue(`${whole.value}`)
+    blue(whole.showValue())
       ["+"](renderSatisfied(whole))
       ["++"](highlight(cyan(whole.assertion().toString()), fragment.assertion().toString()))
   );
@@ -161,14 +161,14 @@ function renderGenFailureDetails(
 
 function renderFragment(fragment: AssertionValue<any>, offset: number): Line {
   return withOffset(offset + tabSize)(
-    blue(`${fragment.value}`)
+    blue(fragment.showValue())
       ["+"](renderSatisfied(fragment))
       ["+"](cyan(fragment.assertion().toString()))
   );
 }
 
 function highlight(fragment: Fragment, substring: string, colorCode = "\u001B[33m"): Line {
-  const parts = fragment.text.split(`"${substring}"`);
+  const parts = fragment.text.split(substring);
   if (parts.length === 1) return fragment.toLine();
   else {
     return A.reduce_(parts, Line.empty, (line, part) =>

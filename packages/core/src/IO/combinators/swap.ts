@@ -1,4 +1,4 @@
-import { foldM_, pure } from "../_core";
+import { fail, foldM_, pure } from "../_core";
 import type { IO } from "../model";
 
 /**

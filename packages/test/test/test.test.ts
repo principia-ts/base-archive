@@ -1,28 +1,22 @@
 import "@principia/prelude/Operators";
 
+import * as A from "@principia/core/Array";
 import * as Eq from "@principia/core/Eq";
 import * as I from "@principia/core/IO";
-import { HasClock, LiveClock } from "@principia/core/IO/Clock";
-import { NodeConsole } from "@principia/core/IO/Console";
 import * as L from "@principia/core/Layer";
+import * as Show from "@principia/core/Show";
+import { pipe } from "@principia/prelude";
 
-import * as M from "../src";
+import { assert, endsWith, equalTo, not, suite, test, TestRunner } from "../src";
+import { live as liveAnnotations } from "../src/Annotations";
+import { after, ignore } from "../src/TestAspect";
 import { defaultTestExecutor } from "../src/TestExecutor";
-import { fromConsole } from "../src/TestLogger";
 
-const spec = M.suite("Test")(
-  M.test("One", () => M.assert(1, M.approximatelyEquals(1, 0))),
-  M.test("Two", () => M.assert("hello", M.containsString("goodbye"))),
-  M.testM("Three", () =>
-    M.assertM(I.succeed(["a", "b", "c"]), M.contains("b" as string, Eq.string))
-  )
-);
+const spec = suite("Suite")(
+  test("test1", () => assert(100, not(equalTo(100 as number, Eq.number)))),
+  test("ignoreMe", () => assert(["a", "b", "c"], endsWith(["c", "d"], Eq.string)))["@@"](ignore)
+)["@@"](after(I.total(() => console.log("Wow! a test ran"))));
 
-const runner = new M.TestRunner<unknown, never>(defaultTestExecutor(L.identity<unknown>()));
+const runner = new TestRunner(defaultTestExecutor(liveAnnotations));
 
-runner
-  .run(spec)
-  ["|>"](
-    I.giveLayer(NodeConsole.live[">>>"](fromConsole)["+++"](L.pure(HasClock)(new LiveClock())))
-  )
-  ["|>"](I.run);
+runner.run(spec)["|>"](I.giveLayer(runner.bootstrap))["|>"](I.run);
