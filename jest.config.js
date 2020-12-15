@@ -21,12 +21,14 @@ module.exports = {
     "@principia/optics$": "<rootDir>/packages/optics/dist/dist/cjs",
     "@principia/prelude/(.*)$": "<rootDir>/packages/prelude/dist/dist/cjs/$1",
     "@principia/prelude$": "<rootDir>/packages/prelude/dist/dist/cjs",
-    "@principia/core/(.*)$": "<rooDir>/packages/core/dist/dist/cjs/$1",
+    "@principia/core/(.*)$": "<rootDir>/packages/core/dist/dist/cjs/$1",
     "@principia/core$": "<rootDir>/packages/core/dist/dist/cjs",
     "@principia/node/(.*)$": "<rootDir>/packages/node/dist/dist/cjs/$1",
     "@principia/node$": "<rootDir>/packages/node/dist/dist/cjs",
     "@principia/compile/(.*)$": "<rootDir>/packages/compile/dist/dist/cjs/$1",
-    "@principia/compile$": "<rootDir>/packages/compile/dist/dist/cjs"
+    "@principia/compile$": "<rootDir>/packages/compile/dist/dist/cjs",
+    "@principia/test$": "<rootDir>/packages/test/dist/dist/cjs",
+    "@principia/test/(.*)$": "<rootDir>/packages/test/dist/dist/cjs/$1"
   },
   globals: {
     "ts-jest": {

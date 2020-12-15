@@ -1,7 +1,13 @@
 import * as B from "../Boolean";
+import type { Either } from "../Either";
+import * as E from "../Either";
+import { Option } from "../Option";
+import * as O from "../Option";
 import type { USync } from "../Sync";
 import * as Sy from "../Sync";
+import { success } from "./constructors";
 import type { FreeBooleanAlgebra } from "./model";
+import { and_, or_ } from "./operations";
 
 export function foldSafe_<A, B>(
   ba: FreeBooleanAlgebra<A>,
@@ -55,4 +61,32 @@ export function isTrue<A>(ba: FreeBooleanAlgebra<A>): boolean {
 
 export function isFalse<A>(ba: FreeBooleanAlgebra<A>): boolean {
   return !isTrue(ba);
+}
+
+export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlgebra<A>> {
+  return E.fold_(
+    fold_<A, Either<FreeBooleanAlgebra<A>, FreeBooleanAlgebra<A>>>(
+      ba,
+      (a) => E.right(success(a)),
+      (l, r) =>
+        E.isRight(l)
+          ? E.isRight(r)
+            ? E.right(and_(l.right, r.right))
+            : r
+          : E.isRight(r)
+          ? l
+          : E.left(and_(l.left, r.left)),
+      (l, r) =>
+        E.isRight(l)
+          ? E.isRight(r)
+            ? E.right(or_(l.right, r.right))
+            : l
+          : E.isRight(r)
+          ? r
+          : E.left(or_(l.left, r.left)),
+      E.swap
+    ),
+    O.some,
+    () => O.none()
+  );
 }

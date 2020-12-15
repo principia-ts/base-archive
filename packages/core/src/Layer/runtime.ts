@@ -3,7 +3,7 @@ import type { Has, Region, Tag } from "../Has";
 import * as I from "../IO/_core";
 import type { Runtime } from "../IO/combinators/runtime";
 import { makeRuntime } from "../IO/combinators/runtime";
-import * as M from "../Managed";
+import * as M from "./_internal/managed";
 import * as L from "./core";
 import { LayerFreshInstruction } from "./core";
 

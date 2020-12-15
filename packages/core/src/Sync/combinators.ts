@@ -1,8 +1,13 @@
-import { flow, pipe } from "../Function";
+import * as A from "../Array/_core";
+import * as FM from "../FreeMonoid";
+import { flow, identity, pipe } from "../Function";
+import * as I from "../Iterable";
 import * as X from "../SIO";
 import { zip_ } from "./applicative";
-import { succeed } from "./constructors";
+import { zipWith_ } from "./apply";
+import { succeed, suspend } from "./constructors";
 import { recover } from "./fallible";
+import { map_ } from "./functor";
 import type { Sync } from "./model";
 import { chain } from "./monad";
 
@@ -187,4 +192,32 @@ export function foldTogether<E, A, R1, E1, B, C, D, F, G>(
 ): <R>(left: Sync<R, E, A>) => Sync<R & R1, never, C | D | F | G> {
   return (left) =>
     foldTogether_(left, right, onBothFailure, onRightFailure, onLeftFailure, onBothSuccess);
+}
+
+export function foreach_<A, R, E, B>(
+  as: Iterable<A>,
+  f: (a: A) => Sync<R, E, B>
+): Sync<R, E, ReadonlyArray<B>> {
+  return map_(
+    I.reduce_(as, succeed(FM.empty<B>()) as Sync<R, E, FM.FreeMonoid<B>>, (b, a) =>
+      zipWith_(
+        b,
+        suspend(() => f(a)),
+        (acc, r) => FM.append_(acc, r)
+      )
+    ),
+    FM.toArray
+  );
+}
+
+export function foreach<A, R, E, B>(
+  f: (a: A) => Sync<R, E, B>
+): (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> {
+  return (as) => foreach_(as, f);
+}
+
+export function collectAll<R, E, A>(
+  as: ReadonlyArray<Sync<R, E, A>>
+): Sync<R, E, ReadonlyArray<A>> {
+  return foreach_(as, identity);
 }

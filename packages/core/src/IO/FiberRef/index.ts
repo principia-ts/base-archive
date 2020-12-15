@@ -1,3 +1,4 @@
 export * from "./combinators";
 export * from "./constructors";
+export * from "./locally";
 export * from "./model";

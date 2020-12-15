@@ -784,3 +784,7 @@ export function prepend_<A>(as: ReadonlyArray<A>, a: A): ReadonlyArray<A> {
 export function prepend<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => prepend_(as, a);
 }
+
+export function sum(as: ReadonlyArray<number>): number {
+  return reduce_(as, 0, (b, a) => b + a);
+}

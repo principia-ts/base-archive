@@ -20,6 +20,8 @@ export * from "./fork";
 export * from "./from";
 export * from "./gen";
 export * from "./get";
+export * from "./giveLayer";
+export * from "./giveSomeLayer";
 export * from "./if";
 export * from "./ignore";
 export * from "./interrupt";

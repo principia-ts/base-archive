@@ -66,6 +66,7 @@ export * from "./gen";
 export * from "./get";
 export * from "./getOrFail";
 export * from "./giveLayer";
+export * from "./giveSomeLayer";
 export * from "./in";
 export * from "./interrupt";
 export * from "./interruptAllChildren";
