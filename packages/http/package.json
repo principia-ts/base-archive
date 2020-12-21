@@ -1,6 +1,6 @@
 {
   "name": "@principia/http",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "HTTP",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -41,12 +41,12 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.2.2",
-    "@principia/compile": "^0.2.2",
-    "@principia/free": "^0.2.2",
-    "@principia/io": "^0.2.2",
-    "@principia/model": "^0.2.2",
-    "@principia/node": "^0.2.2",
+    "@principia/base": "^0.2.3",
+    "@principia/compile": "^0.2.3",
+    "@principia/free": "^0.2.3",
+    "@principia/io": "^0.2.3",
+    "@principia/model": "^0.2.3",
+    "@principia/node": "^0.2.3",
     "core-js": "3"
   },
   "devDependencies": {

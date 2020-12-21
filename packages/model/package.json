@@ -1,6 +1,6 @@
 {
   "name": "@principia/model",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Effect",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -42,10 +42,10 @@
     "copy:system": "ts-node ../../scripts/copy-system.ts"
   },
   "dependencies": {
-    "@principia/base": "^0.2.2",
-    "@principia/compile": "^0.2.2",
-    "@principia/decoders": "^0.2.2",
-    "@principia/optics": "^0.2.2",
+    "@principia/base": "^0.2.3",
+    "@principia/compile": "^0.2.3",
+    "@principia/decoders": "^0.2.3",
+    "@principia/optics": "^0.2.3",
     "core-js": "3"
   },
   "devDependencies": {
