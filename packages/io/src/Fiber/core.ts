@@ -3,7 +3,7 @@ import type { UIO } from "../IO/core";
 import type { Scope } from "../Scope";
 import type { FiberId } from "./FiberId";
 import type { Option } from "@principia/base/data/Option";
-import type * as HKT from "@principia/prelude/HKT";
+import type * as HKT from "@principia/base/HKT";
 
 import { identity } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";

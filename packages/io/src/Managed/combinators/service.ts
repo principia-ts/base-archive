@@ -1,7 +1,7 @@
 import type * as I from "../_internal/io";
 import type { Managed } from "../core";
 import type { Has, Tag } from "@principia/base/data/Has";
-import type { UnionToIntersection } from "@principia/prelude/Utils";
+import type { UnionToIntersection } from "@principia/base/util/types";
 
 import * as A from "@principia/base/data/Array";
 import { flow } from "@principia/base/data/Function";

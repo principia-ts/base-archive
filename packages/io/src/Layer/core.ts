@@ -4,7 +4,7 @@ import type { DefaultEnv, Runtime } from "../IO/combinators/runtime";
 import type { Managed } from "../Managed/core";
 import type { Finalizer, ReleaseMap } from "../Managed/ReleaseMap";
 import type * as H from "@principia/base/data/Has";
-import type { Erase, UnionToIntersection } from "@principia/prelude/Utils";
+import type { Erase, UnionToIntersection } from "@principia/base/util/types";
 
 import * as A from "@principia/base/data/Array";
 import { pipe, tuple } from "@principia/base/data/Function";
@@ -76,7 +76,7 @@ export abstract class Layer<R, E, A> {
   }
 }
 
-declare module "@principia/prelude/HKT" {
+declare module "@principia/base/HKT" {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Layer<R, E, A>;
   }

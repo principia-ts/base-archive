@@ -1,5 +1,5 @@
 import type { IO, UIO } from "../core";
-import type { Eq } from "@principia/prelude/Eq";
+import type { Eq } from "@principia/base/data/Eq";
 
 import { pipe, tuple } from "@principia/base/data/Function";
 

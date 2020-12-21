@@ -1,5 +1,5 @@
 import type { IO } from "../core";
-import type { Separated } from "@principia/prelude/Utils";
+import type { Separated } from "@principia/base/util/types";
 
 import { identity } from "@principia/base/data/Function";
 

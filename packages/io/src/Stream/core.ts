@@ -4,7 +4,7 @@ import type { Predicate, Refinement } from "@principia/base/data/Function";
 import type { Has, Tag } from "@principia/base/data/Has";
 import type { Option } from "@principia/base/data/Option";
 import type { _E, _R } from "@principia/base/util/types";
-import type * as HKT from "@principia/prelude/HKT";
+import type * as HKT from "@principia/base/HKT";
 
 import * as E from "@principia/base/data/Either";
 import { flow, identity, not, pipe } from "@principia/base/data/Function";

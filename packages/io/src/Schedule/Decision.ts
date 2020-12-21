@@ -1,5 +1,5 @@
 import type { IO } from "../IO/core";
-import type * as HKT from "@principia/prelude/HKT";
+import type * as HKT from "@principia/base/HKT";
 
 import { matchTag_ } from "@principia/base/util/matchers";
 

@@ -1,5 +1,5 @@
 import type { Has, Region, Tag } from "@principia/base/data/Has";
-import type { UnionToIntersection } from "@principia/prelude/Utils";
+import type { UnionToIntersection } from "@principia/base/util/types";
 
 import * as A from "@principia/base/data/Array";
 import { pipe } from "@principia/base/data/Function";
