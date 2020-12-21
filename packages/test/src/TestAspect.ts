@@ -1,26 +1,27 @@
-import type { Has } from "@principia/core/Has";
-import type { IO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import type { Clock } from "@principia/core/IO/Clock";
-import type { ExecutionStrategy } from "@principia/core/IO/ExecutionStrategy";
-import * as Ex from "@principia/core/IO/Exit";
-import type { Schedule } from "@principia/core/IO/Schedule";
-import * as Sc from "@principia/core/IO/Schedule";
-import * as M from "@principia/core/Managed";
-import * as O from "@principia/core/Option";
-import { matchTag, matchTag_ } from "@principia/core/Utils";
-import type { Predicate } from "@principia/prelude";
-import { constTrue, pipe } from "@principia/prelude";
-
 import type { Annotations } from "./Annotation";
+import type { TestConfig } from "./TestConfig";
+import type { TestFailure } from "./TestFailure";
+import type { TestSuccess } from "./TestSuccess";
+import type { Predicate } from "@principia/base/data/Function";
+import type { Has } from "@principia/base/data/Has";
+import type { Clock } from "@principia/io/Clock";
+import type { ExecutionStrategy } from "@principia/io/ExecutionStrategy";
+import type { IO } from "@principia/io/IO";
+import type { Schedule } from "@principia/io/Schedule";
+
+import { constTrue, pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import { matchTag, matchTag_ } from "@principia/base/util/matchers";
+import * as Ex from "@principia/io/Exit";
+import * as I from "@principia/io/IO";
+import * as M from "@principia/io/Managed";
+import * as Sc from "@principia/io/Schedule";
+
 import { annotate, repeated } from "./Annotation";
 import * as S from "./Spec";
-import type { TestConfig } from "./TestConfig";
 import * as TC from "./TestConfig";
-import type { TestFailure } from "./TestFailure";
 import * as TF from "./TestFailure";
 import { RuntimeFailure } from "./TestFailure";
-import type { TestSuccess } from "./TestSuccess";
 
 export class TestAspect<R, E> {
   readonly _R!: (_: R) => void;
@@ -111,11 +112,11 @@ export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
     pipe(
       test,
       I.result,
-      I.zipWith(
+      I.map2(
         I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))),
         Ex.apFirst_
       ),
-      I.chain(I.done)
+      I.flatMap(I.done)
     )
   );
 }
@@ -225,7 +226,7 @@ export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = 
   (test) =>
     pipe(
       TC.repeats,
-      I.chain((n) =>
+      I.flatMap((n) =>
         I.andThen_(
           test,
           pipe(

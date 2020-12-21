@@ -2,16 +2,17 @@
  * tracing: off
  */
 
-import * as A from "@principia/core/Array";
-import type { CustomRuntime } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import { defaultRuntime } from "@principia/core/IO";
-import * as Cause from "@principia/core/IO/Cause";
-import * as Fiber from "@principia/core/IO/Fiber";
-import { interruptAllAs } from "@principia/core/IO/Fiber";
-import * as L from "@principia/core/List";
-import * as S from "@principia/core/Sync";
-import { AtomicBoolean } from "@principia/core/Utils/support/AtomicBoolean";
+import type { CustomRuntime } from "@principia/io/IO";
+
+import * as A from "@principia/base/data/Array";
+import * as L from "@principia/base/data/List";
+import { AtomicBoolean } from "@principia/base/util/support/AtomicBoolean";
+import * as Cause from "@principia/io/Cause";
+import * as Fiber from "@principia/io/Fiber";
+import { interruptAllAs } from "@principia/io/Fiber";
+import * as I from "@principia/io/IO";
+import { defaultRuntime } from "@principia/io/IO";
+import * as S from "@principia/io/Sync";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -41,7 +42,7 @@ export function prettyTraceNode(
   trace: Fiber.Trace,
   adapt: (mod: string, path: string) => string
 ): string {
-  return S.runIO(prettyTraceNodeSafe(trace, adapt));
+  return S.unsafeRun(prettyTraceNodeSafe(trace, adapt));
 }
 
 export function prettyLocationNode(
@@ -77,15 +78,15 @@ export function prettyTraceNodeSafe(
 
     const execPrint = execTrace
       ? [
-          `Fiber: ${Fiber.showFiberId(trace.fiberId)} Execution trace:`,
+          `Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} Execution trace:`,
           "",
           ...L.toArray(L.map_(trace.executionTrace, (a) => `  ${prettyLocationNode(a, adapt)}`))
         ]
-      : [`Fiber: ${Fiber.showFiberId(trace.fiberId)} Execution trace: <empty trace>`];
+      : [`Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} Execution trace: <empty trace>`];
 
     const stackPrint = stackTrace
       ? [
-          `Fiber: ${Fiber.showFiberId(trace.fiberId)} was supposed to continue to:`,
+          `Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} was supposed to continue to:`,
           "",
           ...L.toArray(
             L.map_(
@@ -94,15 +95,19 @@ export function prettyTraceNodeSafe(
             )
           )
         ]
-      : [`Fiber: ${Fiber.showFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`];
+      : [
+          `Fiber: ${Fiber.prettyPrintFiberId(
+            trace.fiberId
+          )} was supposed to continue to: <empty trace>`
+        ];
 
     const parent = trace.parentTrace;
 
     const ancestry =
       parent._tag === "None"
-        ? [`Fiber: ${Fiber.showFiberId(trace.fiberId)} was spawned by: <empty trace>`]
+        ? [`Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} was spawned by: <empty trace>`]
         : [
-            `Fiber: ${Fiber.showFiberId(trace.fiberId)} was spawned by:\n`,
+            `Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} was spawned by:\n`,
             yield* $(prettyTraceNodeSafe(parent.value, adapt))
           ];
 

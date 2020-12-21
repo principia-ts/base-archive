@@ -1,21 +1,22 @@
-import * as E from "@principia/core/Either";
-import type { Has } from "@principia/core/Has";
-import type { UIO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import * as C from "@principia/core/IO/Cause";
-import type { ExecutionStrategy } from "@principia/core/IO/ExecutionStrategy";
-import type { Layer } from "@principia/core/Layer";
-import * as M from "@principia/core/Managed";
-import { matchTag } from "@principia/core/Utils";
-import { flow, pipe } from "@principia/prelude";
-
 import type { Annotated, Annotations } from "./Annotation";
-import { TestAnnotationMap } from "./Annotation";
 import type { ExecutedSpec } from "./ExecutedSpec";
+import type { TestSuccess } from "./TestSuccess";
+import type { Has } from "@principia/base/data/Has";
+import type { ExecutionStrategy } from "@principia/io/ExecutionStrategy";
+import type { UIO } from "@principia/io/IO";
+import type { Layer } from "@principia/io/Layer";
+
+import * as E from "@principia/base/data/Either";
+import { flow, pipe } from "@principia/base/data/Function";
+import { matchTag } from "@principia/base/util/matchers";
+import * as C from "@principia/io/Cause";
+import * as I from "@principia/io/IO";
+import * as M from "@principia/io/Managed";
+
+import { TestAnnotationMap } from "./Annotation";
 import * as ES from "./ExecutedSpec";
 import * as S from "./Spec";
 import * as TF from "./TestFailure";
-import type { TestSuccess } from "./TestSuccess";
 
 export interface TestExecutor<R> {
   readonly run: <E>(

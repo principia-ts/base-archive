@@ -1,15 +1,16 @@
-import * as A from "@principia/core/Array";
-import type { UIO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import * as FR from "@principia/core/IO/FiberRef";
-import type { USync } from "@principia/core/Sync";
-import * as Sy from "@principia/core/Sync";
-import { flow, identity, pipe } from "@principia/prelude";
-
 import type { Context } from "../Context";
+import type { RouteFn, Routes } from "./model";
+import type { UIO } from "@principia/io/IO";
+import type { USync } from "@principia/io/Sync";
+
+import * as A from "@principia/base/data/Array";
+import { flow, identity, pipe } from "@principia/base/data/Function";
+import * as FR from "@principia/io/FiberRef";
+import * as I from "@principia/io/IO";
+import * as Sy from "@principia/io/Sync";
+
 import { RequestQueue } from "../HttpServer";
 import { Status } from "../utils";
-import type { RouteFn, Routes } from "./model";
 
 function toArraySafe<R, E>(routes: Routes<R, E>): USync<ReadonlyArray<RouteFn<R, E>>> {
   return Sy.gen(function* (_) {
@@ -20,7 +21,7 @@ function toArraySafe<R, E>(routes: Routes<R, E>): USync<ReadonlyArray<RouteFn<R,
       case "Route": {
         const middlewares = routes.middleware();
         if (A.isNonEmpty(middlewares)) {
-          return [A.reduce_(middlewares, routes.route, (b, m) => (r, n) => m.apply(b)(r, n))];
+          return [A.foldLeft_(middlewares, routes.route, (b, m) => (r, n) => m.apply(b)(r, n))];
         }
         return [routes.route];
       }
@@ -36,12 +37,12 @@ export const isRouterDraining = new FR.FiberRef(false, identity, (a, b) => a && 
 export type ProcessFn = (_: Context) => UIO<void>;
 
 export function drain<R>(rs: Routes<R, never>) {
-  const routes = Sy.runIO(toArraySafe(rs));
+  const routes = Sy.unsafeRun(toArraySafe(rs));
   return I.gen(function* ($) {
     const env = yield* $(I.ask<R>());
     const pfn = yield* $(
       I.total(() =>
-        A.reduce_(
+        A.foldLeft_(
           routes,
           <ProcessFn>((ctx) => I.andThen_(ctx.res.status(Status.NotFound), ctx.res.end())),
           (b, a) => (ctx) => I.giveAll_(a(ctx, b(ctx)), env)
@@ -53,7 +54,7 @@ export function drain<R>(rs: Routes<R, never>) {
       pipe(
         isRouterDraining,
         FR.set(true),
-        I.andThen(pipe(queue.take, I.chain(flow(pfn, I.fork)), I.forever))
+        I.andThen(pipe(queue.take, I.flatMap(flow(pfn, I.fork)), I.forever))
       )
     );
   });

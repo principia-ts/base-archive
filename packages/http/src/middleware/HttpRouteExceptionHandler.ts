@@ -1,6 +1,7 @@
-import * as I from "@principia/core/IO";
-
 import type { HttpRouteException } from "../exceptions/HttpRouteException";
+
+import * as I from "@principia/io/IO";
+
 import { isHttpRouteException } from "../exceptions/HttpRouteException";
 import * as Http from "../Router";
 import { ContentType } from "../utils";

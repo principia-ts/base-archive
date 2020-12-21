@@ -1,8 +1,8 @@
-import type * as D from "@principia/core/Decoder";
-import type * as P from "@principia/prelude";
-import type * as HKT from "@principia/prelude/HKT";
-
 import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from "../../HKT";
+import type * as HKT from "@principia/base/HKT";
+import type * as P from "@principia/base/typeclass";
+import type * as D from "@principia/decoders/Decoder";
+
 import { getApplyConfig } from "../../HKT";
 
 export const URI = "ModelDecoder";
@@ -13,12 +13,12 @@ declare module "../../HKT" {
     readonly [URI]: (
       _: Env
     ) => <M extends HKT.URIS, C>(
-      M: P.MonadFail<M, D.V<C>> & P.Bifunctor<M, C> & P.Alt<M, D.V<C>> & P.Applicative<M, D.V<C>>
+      M: P.MonadFail<M, D.V<C>> & P.Bifunctor<M, D.V<C>> & P.Alt<M, D.V<C>>
     ) => D.Decoder<M, C, unknown, A>;
   }
   interface URItoConfig<S, R, E, A> {
     readonly [URI]: <M extends HKT.URIS, C>(
-      M: P.MonadFail<M, D.V<C>> & P.Bifunctor<M, C> & P.Alt<M, D.V<C>> & P.Applicative<M, D.V<C>>
+      M: P.MonadFail<M, D.V<C>> & P.Bifunctor<M, D.V<C>> & P.Alt<M, D.V<C>>
     ) => D.Decoder<M, C, unknown, A>;
   }
 }

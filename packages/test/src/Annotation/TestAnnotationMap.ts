@@ -1,9 +1,9 @@
-import * as A from "@principia/core/Array";
-import * as RMap from "@principia/core/Map";
-import * as O from "@principia/core/Option";
-import { identity, pipe } from "@principia/prelude";
-
 import type { TestAnnotation } from "./TestAnnotation";
+
+import * as A from "@principia/base/data/Array";
+import { identity, pipe } from "@principia/base/data/Function";
+import * as RMap from "@principia/base/data/Map";
+import * as O from "@principia/base/data/Option";
 
 export class TestAnnotationMap {
   constructor(private readonly map: ReadonlyMap<TestAnnotation<any>, any>) {}
@@ -13,7 +13,7 @@ export class TestAnnotationMap {
       pipe(
         A.from(this.map),
         A.concat(A.from(that.map)),
-        A.reduce(new Map<TestAnnotation<any>, any>(), (acc, [key, value]) =>
+        A.foldLeft(new Map<TestAnnotation<any>, any>(), (acc, [key, value]) =>
           acc.set(
             key,
             O.fold_(

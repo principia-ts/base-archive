@@ -1,7 +1,7 @@
-import type { Show } from "@principia/prelude";
-import { fromShow } from "@principia/prelude";
-
 import type { AssertionM } from "../Assertion/AssertionM";
+import type { Show } from "@principia/base/data/Show";
+
+import { makeShow } from "@principia/base/data/Show";
 
 export interface RenderAssertionM {
   readonly _tag: "AssertionM";
@@ -28,7 +28,7 @@ export function assertionParam<A>(assertion: AssertionM<A>): RenderAssertionM {
   };
 }
 
-const showAny = fromShow((_: any) => (_.toString ? _.toString() : `${_}`));
+const showAny = makeShow((_: any) => (_.toString ? _.toString() : `${_}`));
 
 export function valueParam<A>(value: A, show?: Show<A>): RenderValue {
   return {

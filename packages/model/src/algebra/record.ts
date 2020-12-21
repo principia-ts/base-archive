@@ -1,6 +1,5 @@
-import type { ReadonlyRecord } from "@principia/core/Record";
-
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from "../HKT";
+import type { ReadonlyRecord } from "@principia/base/data/Record";
 
 export const RecordURI = "model/algebra/record";
 

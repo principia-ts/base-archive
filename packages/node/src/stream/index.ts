@@ -1,13 +1,14 @@
-import type { Byte } from "@principia/core/Byte";
-import * as C from "@principia/core/Chunk";
-import { pipe, tuple } from "@principia/core/Function";
-import * as I from "@principia/core/IO";
-import * as M from "@principia/core/Managed";
-import * as O from "@principia/core/Option";
-import * as S from "@principia/core/Stream";
-import * as Push from "@principia/core/Stream/Push";
-import * as Sink from "@principia/core/Stream/Sink";
+import type { Byte } from "@principia/base/data/Byte";
 import type * as stream from "stream";
+
+import { pipe, tuple } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as C from "@principia/io/Chunk";
+import * as I from "@principia/io/IO";
+import * as M from "@principia/io/Managed";
+import * as S from "@principia/io/Stream";
+import * as Push from "@principia/io/Stream/Push";
+import * as Sink from "@principia/io/Stream/Sink";
 
 export class ReadableError {
   readonly _tag = "ReadableError";
@@ -124,7 +125,7 @@ export function transform(
           Sink.fromPush<unknown, TransformError, Byte, never, void>(
             O.fold(
               () =>
-                I.chain_(
+                I.flatMap_(
                   I.total(() => {
                     st.end();
                   }),

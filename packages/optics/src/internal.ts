@@ -1,17 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
-import * as A from "@principia/core/Array";
-import type { Either } from "@principia/core/Either";
-import * as E from "@principia/core/Either";
-import type { Predicate } from "@principia/core/Function";
-import { constant, flow, identity, pipe } from "@principia/core/Function";
-import type { Option } from "@principia/core/Option";
-import * as O from "@principia/core/Option";
-import * as R from "@principia/core/Record";
-import type * as P from "@principia/prelude";
-import { pureF } from "@principia/prelude";
-import type * as HKT from "@principia/prelude/HKT";
-
 import type { At } from "./At";
 import type { Iso } from "./Iso";
 import type { Ix } from "./Ix";
@@ -19,6 +7,17 @@ import type { Lens } from "./Lens";
 import type { Optional } from "./Optional";
 import type { Prism } from "./Prism";
 import type { Traversal } from "./Traversal";
+import type { Either } from "@principia/base/data/Either";
+import type { Predicate } from "@principia/base/data/Function";
+import type { Option } from "@principia/base/data/Option";
+import type * as HKT from "@principia/base/HKT";
+import type * as P from "@principia/base/typeclass";
+
+import * as A from "@principia/base/data/Array";
+import * as E from "@principia/base/data/Either";
+import { constant, flow, identity, pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as R from "@principia/base/data/Record";
 
 export interface ModifyF<S, A> {
   <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <
@@ -196,7 +195,7 @@ export function prismAsTraversal<S, A>(sa: Prism<S, A>): Traversal<S, A> {
       pipe(
         sa.getOption(s),
         O.fold(
-          () => pureF(F)(s),
+          () => F.pure(s),
           (a) => F.map_(f(a), (a) => prismSet(a)(sa)(s))
         )
       )
@@ -292,7 +291,7 @@ export function optionalAsTraversal<S, A>(sa: Optional<S, A>): Traversal<S, A> {
       pipe(
         sa.getOption(s),
         O.fold(
-          () => pureF(F)(s),
+          () => F.pure(s),
           (a) => F.map_(f(a), (a: A) => sa.set(a)(s))
         )
       )
@@ -327,7 +326,7 @@ export function optionalModify<A>(f: (a: A) => A) {
 /** @internal */
 export function optionalComposeOptional<A, B>(ab: Optional<A, B>) {
   return <S>(sa: Optional<S, A>): Optional<S, B> => ({
-    getOption: flow(sa.getOption, O.chain(ab.getOption)),
+    getOption: flow(sa.getOption, O.flatMap(ab.getOption)),
     set: (b) => optionalModify(ab.set(b))(sa)
   });
 }

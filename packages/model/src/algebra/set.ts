@@ -1,6 +1,5 @@
-import type { Ord } from "@principia/prelude/Ord";
-
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from "../HKT";
+import type { Ord } from "@principia/base/Ord";
 
 export const SetURI = "model/algebra/set";
 

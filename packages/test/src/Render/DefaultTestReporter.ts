@@ -1,28 +1,29 @@
-import * as A from "@principia/core/Array";
-import * as E from "@principia/core/Either";
-import * as BA from "@principia/core/FreeBooleanAlgebra";
-import * as I from "@principia/core/IO";
-import type { Cause } from "@principia/core/IO/Cause";
-import * as O from "@principia/core/Option";
-import type { USync } from "@principia/core/Sync";
-import * as Sy from "@principia/core/Sync";
-import { matchTag, matchTag_ } from "@principia/core/Utils";
-import { absurd, identity, pipe } from "@principia/prelude";
-
-import { TestAnnotationMap } from "../Annotation";
 import type { ExecutedSpec } from "../ExecutedSpec";
-import * as ES from "../ExecutedSpec";
 import type { TestReporter } from "../model";
-import { TestLogger } from "../TestLogger";
 import type { FailureDetails } from "./FailureDetails";
 import type { Fragment, Message } from "./FailureMessage";
+import type { TestAnnotationRenderer } from "./TestAnnotationRenderer";
+import type { Cause } from "@principia/io/Cause";
+import type { USync } from "@principia/io/Sync";
+
+import * as A from "@principia/base/data/Array";
+import * as E from "@principia/base/data/Either";
+import { absurd, identity, pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import { matchTag, matchTag_ } from "@principia/base/util/matchers";
+import * as I from "@principia/io/IO";
+import * as Sy from "@principia/io/Sync";
+
+import { TestAnnotationMap } from "../Annotation";
+import * as ES from "../ExecutedSpec";
+import * as BA from "../FreeBooleanAlgebra";
+import { TestLogger } from "../TestLogger";
 import * as FM from "./FailureMessage";
 import { ANSI_RESET, cyan, green, red } from "./RenderUtils";
-import type { TestAnnotationRenderer } from "./TestAnnotationRenderer";
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {
-    const rendered = A.chain_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered);
+    const rendered = A.flatMap_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered);
     const stats = logStats(duration, executedSpec);
 
     return I.asksServiceM(TestLogger)((l) => l.logLine(A.append(stats)(rendered).join("\n")));
@@ -34,7 +35,7 @@ export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): st
     executedSpec,
     matchTag({
       Suite: ({ specs }) =>
-        A.reduce_(
+        A.foldLeft_(
           specs,
           [0, 0, 0] as readonly [number, number, number],
           ([x1, x2, x3], [y1, y2, y3]) => [x1 + y1, x2 + y2, x3 + y3] as const
@@ -66,7 +67,7 @@ export function render<E>(
     depth: number,
     ancestors: ReadonlyArray<TestAnnotationMap>
   ): USync<ReadonlyArray<RenderedResult<string>>> =>
-    Sy.chain_(executedSpec, (executedSpec) =>
+    Sy.flatMap_(executedSpec, (executedSpec) =>
       matchTag_(executedSpec, {
         Suite: ({ label, specs }) => {
           const hasFailures = ES.exists_(
@@ -80,7 +81,7 @@ export function render<E>(
             executedSpec,
             matchTag({
               Suite: ({ specs }) =>
-                A.reduce_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
+                A.foldLeft_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
               Test: ({ annotations }) => annotations
             })
           );
@@ -148,7 +149,7 @@ export function render<E>(
       })
     );
 
-  return Sy.runIO(loop(Sy.succeed(executedSpec), 0, A.empty()));
+  return Sy.unsafeRun(loop(Sy.succeed(executedSpec), 0, A.empty()));
 }
 
 function rendered(
@@ -196,7 +197,7 @@ function renderToStringLines(message: Message): ReadonlyArray<string> {
   const renderFragment = (f: Fragment) =>
     f.colorCode !== "" ? f.colorCode + f.text + ANSI_RESET : f.text;
   return A.map_(message.lines, (line) =>
-    withOffset(line.offset)(A.reduce_(line.fragments, "", (str, f) => str + renderFragment(f)))
+    withOffset(line.offset)(A.foldLeft_(line.fragments, "", (str, f) => str + renderFragment(f)))
   );
 }
 

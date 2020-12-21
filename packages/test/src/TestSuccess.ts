@@ -1,4 +1,4 @@
-import type { FreeBooleanAlgebra } from "@principia/core/FreeBooleanAlgebra";
+import type { FreeBooleanAlgebra } from "./FreeBooleanAlgebra";
 
 export class Succeeded {
   readonly _tag = "Succeeded";

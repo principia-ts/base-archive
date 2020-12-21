@@ -1,6 +1,6 @@
-import * as BA from "@principia/core/FreeBooleanAlgebra";
-
 import type { Assertion } from "./Assertion";
+
+import * as BA from "../FreeBooleanAlgebra";
 import { AssertionValue } from "./AssertionValue";
 
 export interface AssertionData<A> {

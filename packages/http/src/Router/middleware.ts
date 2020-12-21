@@ -1,10 +1,11 @@
-import * as FM from "@principia/core/FreeMonoid";
-import type { FIO, IO } from "@principia/core/IO";
-import type { USync } from "@principia/core/Sync";
-import * as Sy from "@principia/core/Sync";
-
 import type { Context } from "../Context";
 import type { RouteFn, Routes } from "./model";
+import type { FIO, IO } from "@principia/io/IO";
+import type { USync } from "@principia/io/Sync";
+
+import * as FL from "@principia/free/FreeList";
+import * as Sy from "@principia/io/Sync";
+
 import { Combine, Middleware, Route } from "./model";
 
 export function addMiddlewareSafe<R, E, R1, E1>(
@@ -19,7 +20,7 @@ export function addMiddlewareSafe<R, E, R1, E1>(
       case "Route": {
         return new Route(
           routes.route,
-          FM.append_(routes.middlewares, new Middleware(middle as any))
+          FL.append_(routes.middlewares, new Middleware(middle as any))
         ) as any;
       }
       case "Combine": {
@@ -36,7 +37,7 @@ export function addMiddleware_<R, E, R1, E1>(
   routes: Routes<R, E>,
   middle: (cont: RouteFn<R, E>) => (ctx: Context, next: FIO<E, void>) => IO<R1, E1, void>
 ): Routes<R1, E1> {
-  return Sy.runIO(addMiddlewareSafe(routes, middle));
+  return Sy.unsafeRun(addMiddlewareSafe(routes, middle));
 }
 
 export function addMiddleware<R, E, R1, E1>(

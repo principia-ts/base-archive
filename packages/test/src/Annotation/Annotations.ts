@@ -1,19 +1,20 @@
-import * as A from "@principia/core/Array";
-import * as E from "@principia/core/Either";
-import * as Eq from "@principia/core/Eq";
-import type { Has } from "@principia/core/Has";
-import { tag } from "@principia/core/Has";
-import type { IO, UIO, URIO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import type { RuntimeFiber } from "@principia/core/IO/Fiber";
-import { eqFiberId } from "@principia/core/IO/Fiber";
-import * as FR from "@principia/core/IO/FiberRef";
-import type { Layer } from "@principia/core/Layer";
-import * as L from "@principia/core/Layer";
-import * as RS from "@principia/core/Set";
-import { flow, pipe } from "@principia/prelude";
-
 import type { TestAnnotation } from "./TestAnnotation";
+import type { Has } from "@principia/base/data/Has";
+import type { RuntimeFiber } from "@principia/io/Fiber";
+import type { IO, UIO, URIO } from "@principia/io/IO";
+import type { Layer } from "@principia/io/Layer";
+
+import * as A from "@principia/base/data/Array";
+import * as E from "@principia/base/data/Either";
+import * as Eq from "@principia/base/data/Eq";
+import { flow, pipe } from "@principia/base/data/Function";
+import { tag } from "@principia/base/data/Has";
+import * as RS from "@principia/base/data/Set";
+import { eqFiberId } from "@principia/io/Fiber";
+import * as FR from "@principia/io/FiberRef";
+import * as I from "@principia/io/IO";
+import * as L from "@principia/io/Layer";
+
 import { fibers } from "./TestAnnotation";
 import { TestAnnotationMap } from "./TestAnnotationMap";
 
@@ -80,13 +81,13 @@ export const live: Layer<unknown, never, Has<Annotations>> = L.fromEffect(Annota
           pipe(
             FR.get(fiberRef),
             I.map((m) => m.get(fibers)),
-            I.chain(
+            I.flatMap(
               E.fold(
                 (_) => I.succeed(RS.empty()),
                 flow(
                   I.foreach((_) => _.get),
                   I.map(
-                    A.reduce(
+                    A.foldLeft(
                       RS.empty<RuntimeFiber<any, any>>(),
                       RS.union_(Eq.contramap_(eqFiberId, (_: RuntimeFiber<any, any>) => _.id))
                     )

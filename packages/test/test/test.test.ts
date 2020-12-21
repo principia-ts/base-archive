@@ -1,11 +1,11 @@
-import "@principia/prelude/Operators";
+import "@principia/base/unsafe/Operators";
 
+import * as Eq from "@principia/base/data/Eq";
+import { pipe } from "@principia/base/data/Function";
+import * as Show from "@principia/base/data/Show";
 import * as A from "@principia/core/Array";
-import * as Eq from "@principia/core/Eq";
-import * as I from "@principia/core/IO";
-import * as L from "@principia/core/Layer";
-import * as Show from "@principia/core/Show";
-import { pipe } from "@principia/prelude";
+import * as I from "@principia/io/IO";
+import * as L from "@principia/io/Layer";
 
 import { assert, endsWith, equalTo, not, suite, test, TestRunner } from "../src";
 import { live as liveAnnotations } from "../src/Annotation";

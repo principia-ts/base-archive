@@ -1,17 +1,18 @@
-import * as A from "@principia/core/Array";
-import * as BA from "@principia/core/FreeBooleanAlgebra";
-import type { Cause } from "@principia/core/IO/Cause";
-import * as C from "@principia/core/IO/Cause";
-import type { NonEmptyArray } from "@principia/core/NonEmptyArray";
-import type { Option } from "@principia/core/Option";
-import * as O from "@principia/core/Option";
-import type { USync } from "@principia/core/Sync";
-import * as Sy from "@principia/core/Sync";
-
 import type { AssertionValue } from "../Assertion";
 import type { GenFailureDetails } from "../GenFailureDetails";
-import { TestTimeoutException } from "../TestTimeoutException";
 import type { FailureDetails } from "./FailureDetails";
+import type { NonEmptyArray } from "@principia/base/data/NonEmptyArray";
+import type { Option } from "@principia/base/data/Option";
+import type { Cause } from "@principia/io/Cause";
+import type { USync } from "@principia/io/Sync";
+
+import * as A from "@principia/base/data/Array";
+import * as O from "@principia/base/data/Option";
+import * as C from "@principia/io/Cause";
+import * as Sy from "@principia/io/Sync";
+
+import * as BA from "../FreeBooleanAlgebra";
+import { TestTimeoutException } from "../TestTimeoutException";
 import { tabSize } from "./RenderUtils";
 
 export class Message {
@@ -115,7 +116,7 @@ function renderAssertionFailureDetails(
 
   return renderFragment(failureDetails[0], offset)
     .toMessage()
-    ["++"](Sy.runIO(loop(failureDetails, Message.empty)));
+    ["++"](Sy.unsafeRun(loop(failureDetails, Message.empty)));
 }
 
 function renderWhole(
@@ -171,7 +172,7 @@ function highlight(fragment: Fragment, substring: string, colorCode = "\u001B[33
   const parts = fragment.text.split(substring);
   if (parts.length === 1) return fragment.toLine();
   else {
-    return A.reduce_(parts, Line.empty, (line, part) =>
+    return A.foldLeft_(parts, Line.empty, (line, part) =>
       line.fragments.length < parts.length * 2 - 2
         ? line["+"](new Fragment(part, fragment.colorCode))["+"](new Fragment(substring, colorCode))
         : line["+"](new Fragment(part, fragment.colorCode))

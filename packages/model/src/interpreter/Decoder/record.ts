@@ -1,5 +1,5 @@
-import * as D from "@principia/core/Decoder";
-import { pipe } from "@principia/core/Function";
+import * as D from "@principia/decoders/Decoder";
+import { pipe } from "@principia/base/data/Function";
 
 import type * as Alg from "../../algebra";
 import { implementInterpreter } from "../../HKT";

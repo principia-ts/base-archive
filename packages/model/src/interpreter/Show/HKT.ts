@@ -1,6 +1,7 @@
-import * as S from "@principia/core/Show";
-
 import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from "../../HKT";
+
+import * as S from "@principia/base/data/Show";
+
 import { getApplyConfig } from "../../HKT";
 
 declare module "../../HKT" {

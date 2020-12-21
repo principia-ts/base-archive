@@ -1,9 +1,10 @@
-import { pipe } from "@principia/core/Function";
-
 import type * as Alg from "../../algebra";
+import type { ArbURI } from "./HKT";
+
+import { pipe } from "@principia/base/data/Function";
+
 import { implementInterpreter } from "../../HKT";
 import { memoize } from "../../utils";
-import type { ArbURI } from "./HKT";
 import { accessFastCheck, applyArbitraryConfig } from "./HKT";
 
 export const RecursiveArbitrary = implementInterpreter<ArbURI, Alg.RecursiveURI>()((_) => ({

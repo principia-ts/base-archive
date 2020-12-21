@@ -1,8 +1,7 @@
-import type { NonEmptyArray } from "@principia/core/NonEmptyArray";
-import type { Branded } from "@principia/prelude/Branded";
-
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from "../HKT";
 import type { Literal } from "../utils";
+import type { Branded } from "@principia/base/data/Brand";
+import type { NonEmptyArray } from "@principia/base/data/NonEmptyArray";
 
 export const PrimitivesURI = "model/algebra/primitives";
 

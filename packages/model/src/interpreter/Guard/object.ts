@@ -1,8 +1,9 @@
-import { pipe } from "@principia/core/Function";
-import * as G from "@principia/core/Guard";
-import * as R from "@principia/core/Record";
-
 import type * as Alg from "../../algebra";
+
+import { pipe } from "@principia/base/data/Function";
+import * as G from "@principia/base/data/Guard";
+import * as R from "@principia/base/data/Record";
+
 import { implementInterpreter } from "../../HKT";
 import { applyGuardConfig } from "./HKT";
 

@@ -1,8 +1,9 @@
-import type * as Eq from "@principia/core/Eq";
-import { pipe } from "@principia/core/Function";
-
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";
+import type * as Eq from "@principia/base/data/Eq";
+
+import { pipe } from "@principia/base/data/Function";
+
 import { memoize, merge } from "../../utils";
 import { IntersectionEq } from "./intersection";
 import { NewtypeEq } from "./newtype";

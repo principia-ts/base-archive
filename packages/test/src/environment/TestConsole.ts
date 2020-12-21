@@ -1,9 +1,10 @@
-import type { UIO } from "@principia/core/IO";
-import type { Console } from "@principia/core/IO/Console";
-import type { FiberRef } from "@principia/core/IO/FiberRef";
-import type { URef } from "@principia/core/IORef";
-import * as Ref from "@principia/core/IORef";
-import * as L from "@principia/core/List";
+import type { Console } from "@principia/io/Console";
+import type { FiberRef } from "@principia/io/FiberRef";
+import type { UIO } from "@principia/io/IO";
+import type { URef } from "@principia/io/IORef";
+
+import * as L from "@principia/base/data/List";
+import * as Ref from "@principia/io/IORef";
 
 export class TestConsole implements Console {
   putStrLn(line: string): UIO<void> {

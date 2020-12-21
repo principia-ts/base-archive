@@ -1,8 +1,9 @@
-import { pipe } from "@principia/core/Function";
-
 import type * as Alg from "../../algebra";
-import { implementInterpreter } from "../../HKT";
 import type { ArbURI } from "./HKT";
+
+import { pipe } from "@principia/base/data/Function";
+
+import { implementInterpreter } from "../../HKT";
 import { applyArbitraryConfig } from "./HKT";
 
 export const RefinementArbitrary = implementInterpreter<ArbURI, Alg.RefinementURI>()((_) => ({

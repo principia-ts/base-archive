@@ -1,10 +1,11 @@
-import { pipe } from "@principia/core/Function";
-import type { Arbitrary } from "fast-check";
-
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";
-import { memoize, merge } from "../../utils";
 import type { ArbURI } from "./HKT";
+import type { Arbitrary } from "fast-check";
+
+import { pipe } from "@principia/base/data/Function";
+
+import { memoize, merge } from "../../utils";
 import { IntersectionArbitrary } from "./intersection";
 import { NewtypeArbitrary } from "./newtype";
 import { NullableArbitrary } from "./nullable";

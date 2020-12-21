@@ -1,13 +1,13 @@
-import * as A from "@principia/core/Array";
-import type { Either } from "@principia/core/Either";
-import type { USync } from "@principia/core/Sync";
-import * as Sy from "@principia/core/Sync";
-import { matchTag, matchTag_ } from "@principia/core/Utils";
-import { identity, pipe } from "@principia/prelude";
-
 import type { TestAnnotationMap } from "./Annotation/TestAnnotationMap";
 import type { TestFailure } from "./TestFailure";
 import type { TestSuccess } from "./TestSuccess";
+import type { Either } from "@principia/base/data/Either";
+import type { USync } from "@principia/io/Sync";
+
+import * as A from "@principia/base/data/Array";
+import { identity, pipe } from "@principia/base/data/Function";
+import { matchTag, matchTag_ } from "@principia/base/util/matchers";
+import * as Sy from "@principia/io/Sync";
 
 class TestCase<E> {
   readonly _tag = "Test";
@@ -64,7 +64,7 @@ export function foldSafe<E, Z>(
 }
 
 export function fold_<E, Z>(es: ExecutedSpec<E>, f: (_: SpecCase<E, Z>) => Z): Z {
-  return Sy.runIO(foldSafe(es, (_: USync<SpecCase<E, Z>>) => Sy.map_(_, f)));
+  return Sy.unsafeRun(foldSafe(es, (_: USync<SpecCase<E, Z>>) => Sy.map_(_, f)));
 }
 
 export function fold<E, Z>(f: (_: SpecCase<E, Z>) => Z): (es: ExecutedSpec<E>) => Z {
@@ -92,7 +92,7 @@ export function transform_<E, E1>(
   es: ExecutedSpec<E>,
   f: (_: SpecCase<E, ExecutedSpec<E1>>) => SpecCase<E1, ExecutedSpec<E1>>
 ): ExecutedSpec<E1> {
-  return Sy.runIO(transformSafe(es, Sy.map(f)));
+  return Sy.unsafeRun(transformSafe(es, Sy.map(f)));
 }
 
 export function exists_<E>(es: ExecutedSpec<E>, f: (_: SpecCase<E, boolean>) => boolean): boolean {

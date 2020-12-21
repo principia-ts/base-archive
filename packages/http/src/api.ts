@@ -1,16 +1,18 @@
-import * as C from "@principia/core/Chunk";
-import type { DecodeErrors } from "@principia/core/DecodeError";
-import { SyncDecoderF } from "@principia/core/DecodeError";
-import type { Has } from "@principia/core/Has";
-import type { IO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import * as S from "@principia/core/Stream";
-import * as M from "@principia/model";
+import type { HttpRouteException } from "./exceptions/HttpRouteException";
+import type { Has } from "@principia/base/data/Has";
+import type { DecodeErrors } from "@principia/decoders/DecodeErrors";
+import type { IO } from "@principia/io/IO";
 import type { Show } from "@principia/prelude";
+
+import { getDecodeErrorsValidation } from "@principia/decoders/DecodeErrors";
+import * as C from "@principia/io/Chunk";
+import * as I from "@principia/io/IO";
+import * as S from "@principia/io/Stream";
+import * as Sy from "@principia/io/Sync";
+import * as M from "@principia/model";
 import { flow, pipe } from "@principia/prelude";
 
 import { Context } from "./Context";
-import type { HttpRouteException } from "./exceptions/HttpRouteException";
 
 export const readBody = I.gen(function* ($) {
   const { req } = yield* $(Context);
@@ -32,8 +34,10 @@ export const parseJsonBody = I.gen(function* ($) {
   );
 });
 
+const SyM = getDecodeErrorsValidation({ ...Sy.MonadFail, ...Sy.Bifunctor, ...Sy.Fallible });
+
 export function decodeJsonBody<E, A>(_: M.M<{}, E, A>, S: Show<DecodeErrors>) {
-  const decode = M.getDecoder(_)(SyncDecoderF).decode;
+  const decode = M.getDecoder(_)(SyM).decode;
   return I.gen(function* ($) {
     const body = yield* $(parseJsonBody);
     return yield* $(

@@ -1,7 +1,7 @@
-import * as FM from "@principia/core/FreeMonoid";
-import type { FIO, IO } from "@principia/core/IO";
-
 import type { Context } from "../Context";
+import type { FIO, IO } from "@principia/io/IO";
+
+import * as FL from "@principia/free/FreeList";
 
 export class Empty<R, E> {
   readonly R!: (_: R) => void;
@@ -23,10 +23,10 @@ export class Route<R, E> {
   readonly E!: () => E;
   constructor(
     readonly route: RouteFn<R, any>,
-    readonly middlewares = FM.empty<Middleware<any, any>>()
+    readonly middlewares = FL.empty<Middleware<any, any>>()
   ) {}
   middleware<R1 extends R = R, E1 extends E = E>(): ReadonlyArray<Middleware<R1, E1>> {
-    return FM.toArray(this.middlewares);
+    return FL.toArray(this.middlewares);
   }
 }
 

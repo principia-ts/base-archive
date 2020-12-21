@@ -1,12 +1,13 @@
-import * as E from "@principia/core/Either";
-import { pipe } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-import * as R from "@principia/core/Record";
+import type * as Alg from "../../algebra";
+import type { ArbURI } from "./HKT";
 import type { Arbitrary } from "fast-check";
 
-import type * as Alg from "../../algebra";
+import * as E from "@principia/base/data/Either";
+import { pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as R from "@principia/base/data/Record";
+
 import { implementInterpreter } from "../../HKT";
-import type { ArbURI } from "./HKT";
 import { accessFastCheck, applyArbitraryConfig } from "./HKT";
 
 export const SumArbitrary = implementInterpreter<ArbURI, Alg.SumURI>()((_) => ({

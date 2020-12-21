@@ -1,8 +1,8 @@
-import type { List } from "@principia/core/List";
-import * as L from "@principia/core/List";
-import { flow, pipe } from "@principia/prelude";
-
 import type { RenderParam } from "./RenderParam";
+import type { List } from "@principia/base/data/List";
+
+import { flow, pipe } from "@principia/base/data/Function";
+import * as L from "@principia/base/data/List";
 
 export interface RenderFunction {
   readonly _tag: "RenderFunction";

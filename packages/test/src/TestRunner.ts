@@ -1,22 +1,23 @@
-import type { Has } from "@principia/core/Has";
-import type { URIO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import type { Clock } from "@principia/core/IO/Clock";
-import { HasClock, LiveClock } from "@principia/core/IO/Clock";
-import { NodeConsole } from "@principia/core/IO/Console";
-import { parallel } from "@principia/core/IO/ExecutionStrategy";
-import type { Platform } from "@principia/core/IO/Fiber";
-import type { Layer } from "@principia/core/Layer";
-import * as L from "@principia/core/Layer";
-import { pipe } from "@principia/prelude";
-
 import type { Annotations } from "./Annotation";
 import type { ExecutedSpec } from "./ExecutedSpec";
 import type { TestReporter } from "./model";
-import { defaultTestAnnotationRenderer, report } from "./Render";
 import type { XSpec } from "./Spec";
 import type { TestExecutor } from "./TestExecutor";
 import type { TestLogger } from "./TestLogger";
+import type { Has } from "@principia/base/data/Has";
+import type { Clock } from "@principia/io/Clock";
+import type { Platform } from "@principia/io/Fiber";
+import type { URIO } from "@principia/io/IO";
+import type { Layer } from "@principia/io/Layer";
+
+import { pipe } from "@principia/base/data/Function";
+import { HasClock, LiveClock } from "@principia/io/Clock";
+import { NodeConsole } from "@principia/io/Console";
+import { parallel } from "@principia/io/ExecutionStrategy";
+import * as I from "@principia/io/IO";
+import * as L from "@principia/io/Layer";
+
+import { defaultTestAnnotationRenderer, report } from "./Render";
 import { fromConsole } from "./TestLogger";
 
 export class TestRunner<R, E> {
@@ -33,7 +34,7 @@ export class TestRunner<R, E> {
     return pipe(
       this.executor.run(spec, parallel),
       I.timed,
-      I.chain(([duration, results]) => I.as_(this.reporter(duration, results), () => results))
+      I.flatMap(([duration, results]) => I.as_(this.reporter(duration, results), () => results))
     );
   }
 }

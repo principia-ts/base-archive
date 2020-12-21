@@ -1,7 +1,7 @@
-import type { FreeBooleanAlgebra } from "@principia/core/FreeBooleanAlgebra";
-import * as S from "@principia/core/Show";
-
+import type { FreeBooleanAlgebra } from "../FreeBooleanAlgebra";
 import type { AssertionM } from "./AssertionM";
+
+import * as S from "@principia/base/data/Show";
 
 export class AssertionValue<A> {
   readonly _tag = "AssertionValue";

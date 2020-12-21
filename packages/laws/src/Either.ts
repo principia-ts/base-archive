@@ -1,4 +1,4 @@
-import * as E from "@principia/core/Either";
+import * as E from "@principia/base/data/Either";
 import * as fc from "fast-check";
 
 export function getRight<E, A>(arb: fc.Arbitrary<A>): fc.Arbitrary<E.Either<E, A>> {

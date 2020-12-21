@@ -1,9 +1,9 @@
-import type { UnionToIntersection } from "@principia/prelude/Utils";
-
 import type { TaggedBuilder } from "./adt/summoner";
+import type { CacheType, InhabitedTypes, SelectKeyOfMatchingValues } from "./utils";
+import type { UnionToIntersection } from "@principia/base/util/types";
+
 import { makeTagged } from "./adt/summoner";
 import { OpticsFor } from "./optics";
-import type { CacheType, InhabitedTypes, SelectKeyOfMatchingValues } from "./utils";
 import { assignCallable, assignFunction, inhabitTypes, memoize, wrapFun } from "./utils";
 
 /*

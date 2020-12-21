@@ -1,7 +1,7 @@
-import type * as P from "@principia/prelude";
-import type * as Eq from "@principia/prelude/Eq";
-import type { FunctionN } from "@principia/prelude/Function";
-import type * as HKT from "@principia/prelude/HKT";
+import type * as Eq from "@principia/base/data/Eq";
+import type { MorphismN } from "@principia/base/data/Function";
+import type * as HKT from "@principia/base/HKT";
+import type * as P from "@principia/base/typeclass";
 
 function LeftIdentityLaw<M extends HKT.URIS, TC, A, N extends string, K, Q, W, X, I, S, R, E, B>(
   M: P.Monad<M, TC>,
@@ -26,7 +26,7 @@ function LeftIdentityLaw<M extends HKT.URIS, TC, A, N extends string, K, Q, W, X
 function LeftIdentityLaw<M, A, B>(
   M: P.Monad<HKT.UHKT<M>>,
   S: Eq.Eq<HKT.HKT<M, B>>,
-  afb: FunctionN<[A], HKT.HKT<M, B>>
+  afb: MorphismN<[A], HKT.HKT<M, B>>
 ): (a: A) => boolean {
   return (a) => {
     return S.equals_(

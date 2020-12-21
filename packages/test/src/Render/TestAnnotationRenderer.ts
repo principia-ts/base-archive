@@ -1,8 +1,9 @@
-import * as A from "@principia/core/Array";
-import type { Option } from "@principia/core/Option";
-import * as O from "@principia/core/Option";
-import * as Str from "@principia/core/String";
-import { pipe } from "@principia/prelude";
+import type { Option } from "@principia/base/data/Option";
+
+import * as A from "@principia/base/data/Array";
+import { pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as Str from "@principia/base/data/String";
 
 import * as TA from "../Annotation";
 
@@ -32,7 +33,7 @@ export class CompositeRenderer {
     ancestors: ReadonlyArray<TA.TestAnnotationMap>,
     child: TA.TestAnnotationMap
   ): ReadonlyArray<string> {
-    return A.chain_(this.renderers, (r) => r.run(ancestors, child));
+    return A.flatMap_(this.renderers, (r) => r.run(ancestors, child));
   }
 }
 

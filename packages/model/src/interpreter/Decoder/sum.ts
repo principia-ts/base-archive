@@ -1,14 +1,14 @@
-import * as DE from "@principia/core/DecodeError";
-import * as D from "@principia/core/Decoder";
-import * as E from "@principia/core/Either";
-import { pipe } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-import * as R from "@principia/core/Record";
-import { pureF } from "@principia/prelude";
-
 import type * as Alg from "../../algebra";
-import { implementInterpreter } from "../../HKT";
 import type { URI } from "./HKT";
+
+import * as E from "@principia/base/data/Either";
+import { pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as R from "@principia/base/data/Record";
+import { error } from "@principia/decoders/DecodeErrors";
+import * as D from "@principia/decoders/Decoder";
+
+import { implementInterpreter } from "../../HKT";
 import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
@@ -44,7 +44,7 @@ export const SumDecoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
                     return M.map_(r(M).decode(u["right"]), E.right);
                   }
                 } else {
-                  return M.fail(DE.error(u, "Either", extractInfo(config)));
+                  return M.fail(error(u, "Either", extractInfo(config)));
                 }
               })
             ),
@@ -64,10 +64,10 @@ export const SumDecoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
                 if (u["_tag"] === "Some") {
                   return M.map_(decoder(M).decode(u["value"]), O.some);
                 } else {
-                  return pureF(M)(O.none());
+                  return M.pure(O.none());
                 }
               } else {
-                return M.fail(DE.error(u, "Option", extractInfo(config)));
+                return M.fail(error(u, "Option", extractInfo(config)));
               }
             })
           ),

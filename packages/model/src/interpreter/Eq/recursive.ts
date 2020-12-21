@@ -1,7 +1,8 @@
-import * as Eq from "@principia/core/Eq";
-import { pipe } from "@principia/core/Function";
-
 import type * as Alg from "../../algebra";
+
+import * as Eq from "@principia/base/data/Eq";
+import { pipe } from "@principia/base/data/Function";
+
 import { implementInterpreter } from "../../HKT";
 import { memoize } from "../../utils";
 import { applyEqConfig } from "./HKT";

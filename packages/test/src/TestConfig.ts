@@ -1,8 +1,9 @@
-import type { Has } from "@principia/core/Has";
-import { tag } from "@principia/core/Has";
-import * as I from "@principia/core/IO";
-import type { Layer } from "@principia/core/Layer";
-import * as L from "@principia/core/Layer";
+import type { Has } from "@principia/base/data/Has";
+import type { Layer } from "@principia/io/Layer";
+
+import { tag } from "@principia/base/data/Has";
+import * as I from "@principia/io/IO";
+import * as L from "@principia/io/Layer";
 
 export interface TestConfig {
   readonly repeats: number;

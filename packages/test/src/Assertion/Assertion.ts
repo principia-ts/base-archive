@@ -1,15 +1,16 @@
-import * as A from "@principia/core/Array";
-import type { Eq } from "@principia/core/Eq";
-import * as BA from "@principia/core/FreeBooleanAlgebra";
-import * as I from "@principia/core/IO";
-import * as C from "@principia/core/IO/Cause";
-import * as Ex from "@principia/core/IO/Exit";
-import * as L from "@principia/core/List";
-import * as O from "@principia/core/Option";
-import * as S from "@principia/core/Show";
-import * as Str from "@principia/core/String";
-
 import type { Render, RenderParam } from "../Render";
+import type { Eq } from "@principia/base/data/Eq";
+
+import * as A from "@principia/base/data/Array";
+import * as L from "@principia/base/data/List";
+import * as O from "@principia/base/data/Option";
+import * as S from "@principia/base/data/Show";
+import * as Str from "@principia/base/data/String";
+import * as C from "@principia/io/Cause";
+import * as Ex from "@principia/io/Exit";
+import * as I from "@principia/io/IO";
+
+import * as BA from "../FreeBooleanAlgebra";
 import { assertionParam, fn, infix, valueParam } from "../Render";
 import { asFailure, AssertionData } from "./AssertionData";
 import { AssertionM } from "./AssertionM";
@@ -133,7 +134,7 @@ export function contains<A>(element: A, eq: Eq<A>, show?: S.Show<A>): Assertion<
 }
 
 export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
-  return assertion("containsCause", [valueParam(cause, S.fromShow(C.pretty))], C.contains(cause));
+  return assertion("containsCause", [valueParam(cause, S.makeShow(C.pretty))], C.contains(cause));
 }
 
 export function containsString(element: string): Assertion<string> {

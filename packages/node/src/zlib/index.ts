@@ -1,9 +1,10 @@
-import type { Byte } from "@principia/core/Byte";
-import type { Stream } from "@principia/core/Stream";
+import type { TransformError } from "../stream";
+import type { Byte } from "@principia/base/data/Byte";
+import type { Stream } from "@principia/io/Stream";
 import type { Transform } from "stream";
+
 import * as zlib from "zlib";
 
-import type { TransformError } from "../stream";
 import { transform } from "../stream";
 
 function _transformZlib<O>(

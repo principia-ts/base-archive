@@ -42,12 +42,14 @@
     "copy:system": "ts-node ../../scripts/copy-system.ts"
   },
   "dependencies": {
-    "@principia/core": "^0.1.0",
+    "@principia/compile": "^0.1.0",
+    "@principia/base": "^0.1.0",
+    "@principia/decoders": "^0.1.0",
     "@principia/optics": "^0.1.0",
     "core-js": "3"
   },
   "devDependencies": {
-    "fast-check": "^2.8.0",
-    "typescript": "^4.1.2"
+    "fast-check": "^2.10.0",
+    "typescript": "^4.1.3"
   }
 }

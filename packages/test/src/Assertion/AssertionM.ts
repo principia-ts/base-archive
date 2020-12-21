@@ -1,10 +1,11 @@
-import * as BA from "@principia/core/FreeBooleanAlgebra";
-import * as Str from "@principia/core/String";
-
 import type { Render } from "../Render";
+import type { AssertionValue } from "./AssertionValue";
+
+import * as Str from "@principia/base/data/String";
+
+import * as BA from "../FreeBooleanAlgebra";
 import { infix } from "../Render";
 import { assertionParam, valueParam } from "../Render/RenderParam";
-import type { AssertionValue } from "./AssertionValue";
 
 export type AssertResultM<A> = BA.FreeBooleanAlgebraM<unknown, never, AssertionValue<A>>;
 

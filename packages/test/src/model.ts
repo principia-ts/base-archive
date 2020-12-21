@@ -1,26 +1,27 @@
-import * as BA from "@principia/core/FreeBooleanAlgebra";
-import type { Has } from "@principia/core/Has";
-import type { IO, URIO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import * as M from "@principia/core/Managed";
-import * as NA from "@principia/core/NonEmptyArray";
-import * as O from "@principia/core/Option";
-import { none } from "@principia/core/Option";
-import type { Show } from "@principia/core/Show";
-import type { UnionToIntersection } from "@principia/core/Utils";
-import { flow } from "@principia/prelude";
-
-import { TestAnnotationMap } from "./Annotation";
 import type { Assertion, AssertionM, AssertResult } from "./Assertion";
-import { AssertionValue } from "./Assertion";
 import type { ExecutedSpec } from "./ExecutedSpec";
 import type { TestResult } from "./Render";
+import type { TestLogger } from "./TestLogger";
+import type { WidenLiteral } from "./util";
+import type { Has } from "@principia/base/data/Has";
+import type { Show } from "@principia/base/data/Show";
+import type { UnionToIntersection } from "@principia/base/util/types";
+import type { IO, URIO } from "@principia/io/IO";
+
+import { flow } from "@principia/base/data/Function";
+import * as NA from "@principia/base/data/NonEmptyArray";
+import * as O from "@principia/base/data/Option";
+import { none } from "@principia/base/data/Option";
+import * as I from "@principia/io/IO";
+import * as M from "@principia/io/Managed";
+
+import { TestAnnotationMap } from "./Annotation";
+import { AssertionValue } from "./Assertion";
+import * as BA from "./FreeBooleanAlgebra";
 import { FailureDetails } from "./Render";
 import * as Spec from "./Spec";
 import * as TF from "./TestFailure";
-import type { TestLogger } from "./TestLogger";
 import * as TS from "./TestSuccess";
-import type { WidenLiteral } from "./utils";
 
 export type TestReporter<E> = (
   duration: number,

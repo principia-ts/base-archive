@@ -1,5 +1,5 @@
-import type { Eq } from "@principia/prelude/Eq";
-import type { Semigroup } from "@principia/prelude/Semigroup";
+import type { Eq } from "@principia/base/data/Eq";
+import type { Semigroup } from "@principia/base/Semigroup";
 
 export const SemigroupLaws = {
   associativity: <A>(S: Semigroup<A>, E: Eq<A>) => (a: A, b: A, c: A): boolean => {

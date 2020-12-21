@@ -1,8 +1,9 @@
-import { pipe } from "@principia/core/Function";
-import * as R from "@principia/core/Record";
-import * as S from "@principia/core/Show";
-
 import type * as Alg from "../../algebra";
+
+import { pipe } from "@principia/base/data/Function";
+import * as R from "@principia/base/data/Record";
+import * as S from "@principia/base/data/Show";
+
 import { implementInterpreter } from "../../HKT";
 import { applyShowConfig } from "./HKT";
 

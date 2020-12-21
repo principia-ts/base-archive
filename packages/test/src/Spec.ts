@@ -1,20 +1,21 @@
-import * as A from "@principia/core/Array";
-import type { Has } from "@principia/core/Has";
-import * as I from "@principia/core/IO";
-import type { Cause } from "@principia/core/IO/Cause";
-import type { ExecutionStrategy } from "@principia/core/IO/ExecutionStrategy";
-import * as L from "@principia/core/Layer";
-import * as M from "@principia/core/Managed";
-import type { Option } from "@principia/core/Option";
-import * as O from "@principia/core/Option";
-import { matchTag, matchTag_ } from "@principia/core/Utils";
-import { flow, identity, pipe } from "@principia/prelude";
-
-import * as Annotations from "./Annotation";
-import { TestAnnotationMap } from "./Annotation";
 import type { TestAspect } from "./TestAspect";
 import type { TestFailure } from "./TestFailure";
 import type { TestSuccess } from "./TestSuccess";
+import type { Has } from "@principia/base/data/Has";
+import type { Option } from "@principia/base/data/Option";
+import type { Cause } from "@principia/io/Cause";
+import type { ExecutionStrategy } from "@principia/io/ExecutionStrategy";
+
+import * as A from "@principia/base/data/Array";
+import { flow, identity, pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import { matchTag, matchTag_ } from "@principia/base/util/matchers";
+import * as I from "@principia/io/IO";
+import * as L from "@principia/io/Layer";
+import * as M from "@principia/io/Managed";
+
+import * as Annotations from "./Annotation";
+import { TestAnnotationMap } from "./Annotation";
 import { Ignored } from "./TestSuccess";
 
 export type XSpec<R, E> = Spec<R, TestFailure<E>, TestSuccess>;
@@ -123,7 +124,7 @@ export function filterLabels_<R, E, T>(
               s.label,
               M.map_(
                 s.specs,
-                A.chain((spec) =>
+                A.flatMap((spec) =>
                   O.fold_(
                     filterLabels_(spec, f),
                     () => A.empty<Spec<R, E, T>>(),

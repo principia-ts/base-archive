@@ -1,4 +1,4 @@
-import { Supervisor } from "@principia/core/IO/Supervisor";
+import { Supervisor } from "@principia/io/Supervisor";
 
 export class TestTimeoutException extends Error {
   constructor(message: string) {
