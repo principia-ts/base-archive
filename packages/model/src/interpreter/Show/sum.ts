@@ -1,10 +1,11 @@
-import * as E from "@principia/core/Either";
-import { pipe } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-import * as R from "@principia/core/Record";
-import * as S from "@principia/core/Show";
-
 import type * as Alg from "../../algebra";
+
+import * as E from "@principia/base/data/Either";
+import { pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as R from "@principia/base/data/Record";
+import * as S from "@principia/base/data/Show";
+
 import { implementInterpreter } from "../../HKT";
 import { applyShowConfig } from "./HKT";
 

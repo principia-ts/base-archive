@@ -1,10 +1,11 @@
-import type { Has } from "@principia/core/Has";
-import type { IO, URIO } from "@principia/core/IO";
-import * as T from "@principia/core/IO";
-import type { Predicate } from "@principia/prelude";
+import type { Routes } from "./model";
+import type { Predicate } from "@principia/base/data/Function";
+import type { Has } from "@principia/base/data/Has";
+import type { IO, URIO } from "@principia/io/IO";
+
+import * as I from "@principia/io/IO";
 
 import { Context } from "../Context";
-import type { Routes } from "./model";
 import { Combine, Route } from "./model";
 
 export function route_<R, E, R1, E1>(
@@ -28,7 +29,7 @@ export function addRoute_<R, E, R1, E1>(
   return route_(
     routes,
     (ctx, n): IO<R & R1, E | E1, void> =>
-      ctx.req.url ? (path(ctx) ? T.giveService(Context)(ctx)(f(ctx)) : n) : n
+      ctx.req.url ? (path(ctx) ? I.giveService(Context)(ctx)(f(ctx)) : n) : n
   );
 }
 
@@ -45,9 +46,9 @@ export function addRouteM_<R, E, R1, R2, E2>(
   f: (ctx: Context) => IO<R2 & Has<Context>, E2, void>
 ): Routes<R & R1 & R2, E | E2> {
   return route_(routes, (ctx, next) =>
-    T.chain_(
+    I.flatMap_(
       path(ctx),
-      (b): IO<R & R1 & R2, E | E2, void> => (b ? T.giveService(Context)(ctx)(f(ctx)) : next)
+      (b): IO<R & R1 & R2, E | E2, void> => (b ? I.giveService(Context)(ctx)(f(ctx)) : next)
     )
   );
 }

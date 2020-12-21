@@ -1,6 +1,6 @@
-import { mapWithIndex } from "@principia/core/Record";
-
 import type { ElemType, ExtractUnion, KeysDefinition } from "./utils";
+
+import { mapWithIndex } from "@principia/base/data/Record";
 
 export type Is<A, Tag extends keyof A> = {
   [key in A[Tag] & string]: (a: A) => a is ExtractUnion<A, Tag, key>;

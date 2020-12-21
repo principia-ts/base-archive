@@ -1,5 +1,6 @@
-import type { Ord } from "@principia/prelude/Ord";
-import { toNumber } from "@principia/prelude/Ordering";
+import type { Ord } from "@principia/base/Ord";
+
+import { toNumber } from "@principia/base/Ordering";
 
 export const OrdLaws = {
   totality: <A>(O: Ord<A>) => (a: A, b: A): boolean => {

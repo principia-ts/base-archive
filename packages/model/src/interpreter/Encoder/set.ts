@@ -1,9 +1,10 @@
-import * as A from "@principia/core/Array";
-import type * as E from "@principia/core/Encoder";
-import { flow, pipe } from "@principia/core/Function";
-import * as S from "@principia/core/Set";
-
 import type * as Alg from "../../algebra";
+import type * as E from "@principia/codec/Encoder";
+
+import * as A from "@principia/base/data/Array";
+import { flow, pipe } from "@principia/base/data/Function";
+import * as S from "@principia/base/data/Set";
+
 import { implementInterpreter } from "../../HKT";
 import { applyEncoderConfig } from "./HKT";
 

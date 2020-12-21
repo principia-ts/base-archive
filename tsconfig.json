@@ -14,16 +14,19 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@principia/prelude*": ["packages/prelude/dist*"],
-      "@principia/prelude": ["packages/prelude/dist/index"],
-      "@principia/core*": ["packages/core/dist*"],
-      "@principia/effect*": ["packages/effect/dist*"],
+      "@principia/base/*": ["packages/base/dist/*"],
+      "@principia/base": ["packages/base/dist/index"],
+      "@principia/io/*": ["packages/io/dist/*"],
+      "@principia/io": ["packages/io/dist/index"],
       "@principia/optics/*": ["packages/optics/dist/*"],
       "@principia/model/*": ["packages/model/dist/*"],
       "@principia/node/*": ["packages/node/dist/*"],
       "@principia/graphql/*": ["packages/graphql/dist/*"],
       "@principia/http/*": ["packages/http/dist/*"],
-      "@principia/compile/*": ["packages/compile/dist/*"]
+      "@principia/compile/*": ["packages/compile/dist/*"],
+      "@principia/free/*": ["packages/free/dist/*"],
+      "@principia/codec/*": ["packages/codec/dist/*"],
+      "@principia/codec": ["packages/codec/dist/index"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]

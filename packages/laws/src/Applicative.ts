@@ -1,7 +1,8 @@
-import * as Eq from "@principia/core/Eq";
-import type { Applicative } from "@principia/prelude/Applicative";
-import { compose_, tuple, tupleFlip, tupleUnit } from "@principia/prelude/Equivalence";
-import type * as HKT from "@principia/prelude/HKT";
+import type * as HKT from "@principia/base/HKT";
+import type { Applicative } from "@principia/base/typeclass";
+
+import * as Eq from "@principia/base/data/Eq";
+import { compose_, tuple, tupleFlip, tupleUnit } from "@principia/base/Equivalence";
 import * as fc from "fast-check";
 
 function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
@@ -66,8 +67,8 @@ function AssociativityLaw<F, A, B, C>(
 ): (fs: [HKT.HKT<F, A>, HKT.HKT<F, B>, HKT.HKT<F, C>]) => boolean {
   const equiv = tuple<A, B, C>();
   return ([fa, fb, fc]) => {
-    const left = F.zip_(fa, F.zip_(fb, fc));
-    const right = F.zip_(F.zip_(fa, fb), fc);
+    const left = F.product_(fa, F.product_(fb, fc));
+    const right = F.product_(F.product_(fa, fb), fc);
     const left2 = F.map_(left, equiv.to);
     return S.equals_(left2, right);
   };
@@ -100,7 +101,7 @@ function LeftIdentityLaw<F, A>(
 ): (fa: HKT.HKT<F, A>) => boolean {
   const equiv = compose_(tupleFlip<void, A>(), tupleUnit());
   return (fa) => {
-    const left = F.zip_(F.unit(), fa);
+    const left = F.product_(F.unit(), fa);
     const right = fa;
     const left2 = F.map_(left, equiv.to);
     return S.equals_(left2, right);
@@ -134,7 +135,7 @@ function RightIdentityLaw<F, A>(
 ): (fa: HKT.HKT<F, A>) => boolean {
   const equiv = tupleUnit<A>();
   return (fa) => {
-    const left = F.zip_(fa, F.unit());
+    const left = F.product_(fa, F.unit());
     const right = fa;
     const left2 = F.map_(left, equiv.to);
     return S.equals_(left2, right);

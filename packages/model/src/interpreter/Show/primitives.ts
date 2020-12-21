@@ -1,7 +1,8 @@
-import { absurd, pipe } from "@principia/core/Function";
-import * as S from "@principia/core/Show";
-
 import type * as Alg from "../../algebra";
+
+import { absurd, pipe } from "@principia/base/data/Function";
+import * as S from "@principia/base/data/Show";
+
 import { implementInterpreter } from "../../HKT";
 import { applyShowConfig } from "./HKT";
 
@@ -15,7 +16,7 @@ export const PrimitivesShow = implementInterpreter<S.URI, Alg.PrimitivesURI>()((
   literal: (..._) => (config) => (env) =>
     applyShowConfig(config?.config)(
       S.named_(
-        S.fromShow((a) =>
+        S.makeShow((a) =>
           typeof a === "number"
             ? S.number.show(a)
             : typeof a === "string"

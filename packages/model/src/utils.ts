@@ -1,5 +1,6 @@
-import * as R from "@principia/core/Record";
-import type { UnionToIntersection } from "@principia/prelude/Utils";
+import type { UnionToIntersection } from "@principia/base/util/types";
+
+import * as R from "@principia/base/data/Record";
 
 export type Literal = string | number | boolean | null;
 

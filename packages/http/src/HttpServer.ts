@@ -1,15 +1,16 @@
-import { pipe } from "@principia/core/Function";
-import type { Has } from "@principia/core/Has";
-import { tag } from "@principia/core/Has";
-import * as I from "@principia/core/IO";
-import * as Exit from "@principia/core/IO/Exit";
-import * as L from "@principia/core/Layer";
-import * as M from "@principia/core/Managed";
-import * as Q from "@principia/core/Queue";
-import { intersect } from "@principia/core/Utils";
+import type { Context } from "./Context";
+import type { Has } from "@principia/base/data/Has";
+
+import { pipe } from "@principia/base/data/Function";
+import { tag } from "@principia/base/data/Has";
+import { intersect } from "@principia/base/util/intersect";
+import * as Exit from "@principia/io/Exit";
+import * as I from "@principia/io/IO";
+import * as L from "@principia/io/Layer";
+import * as M from "@principia/io/Managed";
+import * as Q from "@principia/io/Queue";
 import * as http from "http";
 
-import type { Context } from "./Context";
 import { Request, Response } from "./Context";
 
 export interface ServerConfig {
@@ -76,8 +77,8 @@ export const Http = L.fromRawManaged(
             server.close((err) => (err ? resolve(I.die(err)) : resolve(I.unit())));
           }),
           I.result,
-          I.zip(I.result(queue.shutdown)),
-          I.chain(([ea, eb]) => I.done(Exit.zip_(ea, eb)))
+          I.product(I.result(queue.shutdown)),
+          I.flatMap(([ea, eb]) => I.done(Exit.product_(ea, eb)))
         )
       ),
       M.map(() => intersect(Server.of({ server }), RequestQueue.of({ queue })))

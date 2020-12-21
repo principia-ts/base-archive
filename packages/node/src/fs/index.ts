@@ -1,20 +1,21 @@
-import * as A from "@principia/core/Array";
-import type { Byte } from "@principia/core/Byte";
-import type { Chunk } from "@principia/core/Chunk";
-import * as C from "@principia/core/Chunk";
-import * as E from "@principia/core/Either";
-import { pipe } from "@principia/core/Function";
-import { Integer } from "@principia/core/Integer";
-import type { IO } from "@principia/core/IO";
-import * as I from "@principia/core/IO";
-import * as Ref from "@principia/core/IORef";
-import * as M from "@principia/core/Managed";
-import * as O from "@principia/core/Option";
-import * as Queue from "@principia/core/Queue";
-import * as S from "@principia/core/Stream";
-import * as Push from "@principia/core/Stream/Push";
-import * as Sink from "@principia/core/Stream/Sink";
-import * as N from "@principia/prelude/Newtype";
+import type { Byte } from "@principia/base/data/Byte";
+import type { Chunk } from "@principia/io/Chunk";
+import type { IO } from "@principia/io/IO";
+
+import * as A from "@principia/base/data/Array";
+import * as E from "@principia/base/data/Either";
+import { pipe } from "@principia/base/data/Function";
+import { Integer } from "@principia/base/data/Integer";
+import * as O from "@principia/base/data/Option";
+import * as N from "@principia/base/Newtype";
+import * as C from "@principia/io/Chunk";
+import * as I from "@principia/io/IO";
+import * as Ref from "@principia/io/IORef";
+import * as M from "@principia/io/Managed";
+import * as Queue from "@principia/io/Queue";
+import * as S from "@principia/io/Stream";
+import * as Push from "@principia/io/Stream/Push";
+import * as Sink from "@principia/io/Stream/Sink";
 import * as fs from "fs";
 
 type ErrnoException = NodeJS.ErrnoException;
@@ -89,7 +90,7 @@ export function createReadStream(
   const chunkSize = options?.chunkSize ?? 1024 * 64;
   return S.chain_(
     S.bracket_(
-      I.zipPar_(
+      I.productPar_(
         open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
         I.suspend(() => {
           const start = options?.start ? Integer.unwrap(options?.start) : 0;
@@ -140,7 +141,7 @@ export function createWriteSink(
       const st = yield* _(
         M.catchAll_(
           M.makeExit_(
-            I.zipPar_(
+            I.productPar_(
               open(
                 path,
                 options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY,
@@ -164,13 +165,13 @@ export function createWriteSink(
             (chunk) =>
               pipe(
                 (st[1] as Ref.URef<number | undefined>).get,
-                I.chain((pos) => write(st[0], C.asBuffer(chunk), pos)),
-                I.chain((_) =>
+                I.flatMap((pos) => write(st[0], C.asBuffer(chunk), pos)),
+                I.flatMap((_) =>
                   Ref.update_(st[1] as Ref.URef<number | undefined>, (n) =>
                     n ? n + chunk.length : undefined
                   )
                 ),
-                I.chain((_) => Push.more),
+                I.flatMap((_) => Push.more),
                 I.mapError((err) => [E.left(err), []])
               )
           );

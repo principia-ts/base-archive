@@ -1,9 +1,10 @@
-import { pipe } from "@principia/core/Function";
-import type * as G from "@principia/core/Guard";
+import type * as Alg from "../../algebra";
+import type * as G from "@principia/base/data/Guard";
 import type { Iso } from "@principia/optics/Iso";
 import type { Prism } from "@principia/optics/Prism";
 
-import type * as Alg from "../../algebra";
+import { pipe } from "@principia/base/data/Function";
+
 import { implementInterpreter } from "../../HKT";
 import { applyGuardConfig } from "./HKT";
 

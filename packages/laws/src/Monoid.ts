@@ -1,5 +1,5 @@
-import type { Eq } from "@principia/prelude/Eq";
-import type { Monoid } from "@principia/prelude/Monoid";
+import type { Eq } from "@principia/base/data/Eq";
+import type { Monoid } from "@principia/base/Monoid";
 
 export const MonoidLaws = {
   rightIdentity: <A>(M: Monoid<A>, E: Eq<A>) => (a: A): boolean => {

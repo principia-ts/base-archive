@@ -1,8 +1,9 @@
-import type * as E from "@principia/core/Encoder";
-import { pipe } from "@principia/core/Function";
-
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";
+import type * as E from "@principia/codec/Encoder";
+
+import { pipe } from "@principia/base/data/Function";
+
 import { memoize, merge } from "../../utils";
 import { IntersectionEncoder } from "./intersection";
 import { NewtypeEncoder } from "./newtype";

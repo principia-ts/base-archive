@@ -1,20 +1,21 @@
-import * as Eq from "@principia/core/Eq";
-import type * as P from "@principia/prelude";
-import type { FunctionN } from "@principia/prelude/Function";
-import type * as HKT from "@principia/prelude/HKT";
+import type { MorphismN } from "@principia/base/data/Function";
+import type * as HKT from "@principia/base/HKT";
+import type * as P from "@principia/base/typeclass";
+
+import * as Eq from "@principia/base/data/Eq";
 import * as fc from "fast-check";
 
 function CompositionLaw<F extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A, B, C>(
   F: P.Functor<F, TC>,
   S: Eq.Eq<HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, C>>,
-  ab: FunctionN<[A], B>,
-  bc: FunctionN<[B], C>
+  ab: MorphismN<[A], B>,
+  bc: MorphismN<[B], C>
 ): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean;
 function CompositionLaw<F, A, B, C>(
   F: P.Functor<HKT.UHKT<F>>,
   S: Eq.Eq<HKT.HKT<F, C>>,
-  ab: FunctionN<[A], B>,
-  bc: FunctionN<[B], C>
+  ab: MorphismN<[A], B>,
+  bc: MorphismN<[B], C>
 ): (fa: HKT.HKT<F, A>) => boolean {
   return (fa) => {
     return S.equals_(

@@ -1,10 +1,11 @@
-import type { Either } from "@principia/core/Either";
-import { pipe } from "@principia/core/Function";
-import * as G from "@principia/core/Guard";
-import type { Option } from "@principia/core/Option";
-import * as R from "@principia/core/Record";
-
 import type * as Alg from "../../algebra";
+import type { Either } from "@principia/base/data/Either";
+import type { Option } from "@principia/base/data/Option";
+
+import { pipe } from "@principia/base/data/Function";
+import * as G from "@principia/base/data/Guard";
+import * as R from "@principia/base/data/Record";
+
 import { implementInterpreter } from "../../HKT";
 import { applyGuardConfig } from "./HKT";
 

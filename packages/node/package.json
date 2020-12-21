@@ -1,6 +1,6 @@
 {
   "name": "@principia/node",
-  "version": "0.0.0",
+  "version": "0.2.3",
   "description": "Node",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -42,11 +42,13 @@
     "copy:system": "ts-node ../../scripts/copy-system.ts"
   },
   "dependencies": {
-    "@principia/core": "^0.1.0",
-    "@principia/optics": "^0.1.0",
+    "@principia/base": "^0.2.3",
+    "@principia/compile": "^0.2.3",
+    "@principia/io": "^0.2.3",
     "core-js": "3"
   },
   "devDependencies": {
-    "typescript": "next"
-  }
+    "typescript": "^4.1.3"
+  },
+  "gitHead": "185e8063ab953917c77482a33f8885fdd554ddf3"
 }

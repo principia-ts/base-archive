@@ -1,28 +1,28 @@
-import type { Byte } from "@principia/core/Byte";
-import type { Chunk } from "@principia/core/Chunk";
-import * as E from "@principia/core/Either";
-import { tag } from "@principia/core/Has";
-import type { FIO, IO, UIO } from "@principia/core/IO";
-import * as T from "@principia/core/IO";
-import type { URef } from "@principia/core/IORef";
-import * as Ref from "@principia/core/IORef";
-import type { URefM } from "@principia/core/IORefM";
-import * as RefM from "@principia/core/IORefM";
-import * as M from "@principia/core/Managed";
-import * as O from "@principia/core/Option";
-import * as Q from "@principia/core/Queue";
-import type { ReadonlyRecord } from "@principia/core/Record";
-import * as S from "@principia/core/Stream";
-import * as Pull from "@principia/core/Stream/Pull";
-import * as NS from "@principia/node/stream";
+import type { HttpRouteException } from "./exceptions";
+import type { Method, Status } from "./utils";
+import type { Byte } from "@principia/base/data/Byte";
+import type { ReadonlyRecord } from "@principia/base/data/Record";
+import type { Chunk } from "@principia/io/Chunk";
+import type { FIO, IO, UIO } from "@principia/io/IO";
+import type { URef } from "@principia/io/IORef";
+import type { URefM } from "@principia/io/IORefM";
 import type * as http from "http";
 import type { Socket } from "net";
 import type { Readable } from "stream";
+
+import * as E from "@principia/base/data/Either";
+import { tag } from "@principia/base/data/Has";
+import * as O from "@principia/base/data/Option";
+import * as T from "@principia/io/IO";
+import * as Ref from "@principia/io/IORef";
+import * as RefM from "@principia/io/IORefM";
+import * as M from "@principia/io/Managed";
+import * as Q from "@principia/io/Queue";
+import * as S from "@principia/io/Stream";
+import * as Pull from "@principia/io/Stream/Pull";
+import * as NS from "@principia/node/stream";
 import { TLSSocket } from "tls";
 import * as Url from "url";
-
-import type { HttpRouteException } from "./exceptions";
-import type { Method, Status } from "./utils";
 
 export interface Context {
   req: Request;
@@ -111,10 +111,10 @@ export class Request {
               });
             })
           );
-          return T.chain_(done.get, (b) =>
+          return T.flatMap_(done.get, (b) =>
             b
               ? Pull.end
-              : T.chain_(
+              : T.flatMap_(
                   queue.take,
                   (event): T.UIO<Chunk<RequestEvent>> => {
                     if (event._tag === "Close") {
@@ -131,7 +131,7 @@ export class Request {
   }
 
   access<R, E, A>(f: (req: http.IncomingMessage) => IO<R, E, A>): IO<R, E, A> {
-    return T.chain_(this._req.get, f);
+    return T.flatMap_(this._req.get, f);
   }
 
   get headers(): UIO<http.IncomingHttpHeaders> {
@@ -149,13 +149,13 @@ export class Request {
   }
 
   get url(): FIO<HttpRouteException, Url.Url> {
-    return T.chain_(
+    return T.flatMap_(
       this.memoizedUrl.get,
       E.fold(
         T.fail,
         O.fold(
           () =>
-            T.chain_(this._req.get, (req) =>
+            T.flatMap_(this._req.get, (req) =>
               T.suspend(() => {
                 try {
                   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -207,7 +207,7 @@ export class Request {
     return T.map_(this.socket, (s) => s.remoteAddress!);
   }
 
-  get stream(): S.Stream<unknown, Error, Byte> {
+  get stream(): S.Stream<unknown, NS.ReadableError, Byte> {
     return S.chain_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req));
   }
 }
@@ -272,10 +272,10 @@ export class Response {
               });
             })
           );
-          return T.chain_(done.get, (b) =>
+          return T.flatMap_(done.get, (b) =>
             b
               ? Pull.end
-              : T.chain_(
+              : T.flatMap_(
                   queue.take,
                   (event): T.UIO<Chunk<ResponseEvent>> => {
                     if (event._tag === "Close") {
@@ -292,7 +292,7 @@ export class Response {
   }
 
   access<R, E, A>(f: (res: http.ServerResponse) => IO<R, E, A>): IO<R, E, A> {
-    return T.chain_(this._res.get, f);
+    return T.flatMap_(this._res.get, f);
   }
 
   modify<R, E>(f: (res: http.ServerResponse) => IO<R, E, http.ServerResponse>): IO<R, E, void> {
@@ -341,7 +341,7 @@ export class Response {
   }
 
   write(chunk: string | Buffer): FIO<HttpRouteException, void> {
-    return T.chain_(this._res.get, (res) =>
+    return T.flatMap_(this._res.get, (res) =>
       T.async<unknown, HttpRouteException, void>((cb) => {
         res.write(chunk, (err) =>
           err
@@ -360,7 +360,7 @@ export class Response {
 
   pipeFrom<R, E>(stream: S.Stream<R, E, Byte>): IO<R, HttpRouteException, void> {
     return T.catchAll_(
-      T.chain_(this._res.get, (res) =>
+      T.flatMap_(this._res.get, (res) =>
         S.run_(
           stream,
           NS.sinkFromWritable(() => res)
@@ -376,7 +376,7 @@ export class Response {
   }
 
   end(): UIO<void> {
-    return T.chain_(this._res.get, (res) =>
+    return T.flatMap_(this._res.get, (res) =>
       T.total(() => {
         res.end();
       })

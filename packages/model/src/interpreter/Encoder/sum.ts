@@ -1,10 +1,11 @@
-import * as E from "@principia/core/Either";
-import * as Enc from "@principia/core/Encoder";
-import { flow, pipe } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-import * as R from "@principia/core/Record";
-
 import type * as Alg from "../../algebra";
+
+import * as E from "@principia/base/data/Either";
+import { flow, pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as R from "@principia/base/data/Record";
+import * as Enc from "@principia/codec/Encoder";
+
 import { implementInterpreter } from "../../HKT";
 import { applyEncoderConfig } from "./HKT";
 

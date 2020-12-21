@@ -1,11 +1,11 @@
-import type * as fc from "fast-check";
-
 import type {
   AnyEnv,
   InterfaceConfigKind,
   IntersectionConfigKind,
   TaggedUnionConfigKind
 } from "../../HKT";
+import type * as fc from "fast-check";
+
 import { getApplyConfig } from "../../HKT";
 
 export const ArbURI = "Arbitrary";
@@ -21,7 +21,7 @@ export function accessFastCheck<Env extends AnyEnv>(env: Env): typeof fc {
   return (env as FastCheckEnv)[ArbURI].module;
 }
 
-declare module "@principia/prelude/HKT" {
+declare module "@principia/base/HKT" {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [ArbURI]: fc.Arbitrary<A>;
   }

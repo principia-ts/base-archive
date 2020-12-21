@@ -1,15 +1,15 @@
-import * as A from "@principia/core/Array";
-import * as DE from "@principia/core/DecodeError";
-import * as D from "@principia/core/Decoder";
-import * as E from "@principia/core/Either";
-import * as FS from "@principia/core/FreeSemigroup";
-import { pipe } from "@principia/core/Function";
-import { pureF } from "@principia/prelude";
-import type { Branded } from "@principia/prelude/Branded";
-
 import type * as Alg from "../../algebra";
-import { implementInterpreter } from "../../HKT";
 import type { URI } from "./HKT";
+import type { Branded } from "@principia/base/data/Brand";
+
+import * as A from "@principia/base/data/Array";
+import * as E from "@principia/base/data/Either";
+import { pipe } from "@principia/base/data/Function";
+import * as DE from "@principia/codec/DecodeError";
+import * as D from "@principia/codec/Decoder";
+import * as FS from "@principia/free/FreeSemigroup";
+
+import { implementInterpreter } from "../../HKT";
 import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
@@ -39,7 +39,7 @@ export const PrimitivesDecoder = implementInterpreter<URI, Alg.PrimitivesURI>()(
           D.string(M)(),
           D.parse(M)((a) => {
             try {
-              return pureF(M)(BigInt(a));
+              return M.pure(BigInt(a));
             } catch (e) {
               return M.fail(
                 FS.combine(
@@ -73,7 +73,7 @@ export const PrimitivesDecoder = implementInterpreter<URI, Alg.PrimitivesURI>()(
                     pipe(config, extractInfo, DE.info, FS.element)
                   )
                 )
-              : pureF(M)(d);
+              : M.pure(d);
           })
         ),
       env,

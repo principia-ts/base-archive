@@ -1,15 +1,16 @@
-import type { Byte } from "@principia/core/Byte";
-import type { Chunk } from "@principia/core/Chunk";
-import * as C from "@principia/core/Chunk";
-import type * as E from "@principia/core/Either";
-import { tuple } from "@principia/core/Function";
-import * as I from "@principia/core/IO";
-import * as O from "@principia/core/Option";
-import * as S from "@principia/core/Stream";
-import * as Push from "@principia/core/Stream/Push";
-import * as Sink from "@principia/core/Stream/Sink";
-import type { FSync, USync } from "@principia/core/Sync";
-import * as Sy from "@principia/core/Sync";
+import type { Byte } from "@principia/base/data/Byte";
+import type * as E from "@principia/base/data/Either";
+import type { Chunk } from "@principia/io/Chunk";
+import type { FSync, USync } from "@principia/io/Sync";
+
+import { tuple } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as C from "@principia/io/Chunk";
+import * as I from "@principia/io/IO";
+import * as S from "@principia/io/Stream";
+import * as Push from "@principia/io/Stream/Push";
+import * as Sink from "@principia/io/Stream/Sink";
+import * as Sy from "@principia/io/Sync";
 import { once } from "events";
 
 export class StdinError {

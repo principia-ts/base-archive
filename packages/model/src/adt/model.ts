@@ -1,14 +1,15 @@
-import * as A from "@principia/core/Array";
-import * as Eq from "@principia/core/Eq";
-import { tuple } from "@principia/core/Function";
-import * as R from "@principia/core/Record";
-import { getFirstSemigroup } from "@principia/prelude/Semigroup";
+import type { ElemType, ExcludeUnion, ExtractUnion, KeysDefinition, Tagged } from "./utils";
+
+import * as A from "@principia/base/data/Array";
+import * as Eq from "@principia/base/data/Eq";
+import { tuple } from "@principia/base/data/Function";
+import * as R from "@principia/base/data/Record";
+import { getFirstSemigroup } from "@principia/base/Semigroup";
 
 import * as Co from "./constructors";
 import * as Ma from "./matcher";
 import * as Op from "./optics";
 import * as Pr from "./predicates";
-import type { ElemType, ExcludeUnion, ExtractUnion, KeysDefinition, Tagged } from "./utils";
 
 export interface ADT<A, Tag extends keyof A & string>
   extends Ma.Matchers<A, Tag>,
@@ -60,7 +61,7 @@ export const unionADT = <
 >(
   as: AS
 ): ADT<Co.ConstructorType<AS[number]>, AS[number]["tag"]> => {
-  const newKeys = A.reduceRight(as[0].keys, (x: AS[number], y) => mergeKeys(x.keys, y))(as);
+  const newKeys = A.foldRight(as[0].keys, (x: AS[number], y) => mergeKeys(x.keys, y))(as);
   return makeADT(as[0].tag)(newKeys);
 };
 

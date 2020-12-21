@@ -1,14 +1,15 @@
-import * as DE from "@principia/core/DecodeError";
-import * as D from "@principia/core/Decoder";
-import * as E from "@principia/core/Either";
-import * as FS from "@principia/core/FreeSemigroup";
-import { pipe } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-import { pureF } from "@principia/prelude";
-
 import type * as Alg from "../../algebra";
-import { implementInterpreter } from "../../HKT";
 import type { URI } from "./HKT";
+
+import * as E from "@principia/base/data/Either";
+import { pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as DE from "@principia/codec/DecodeError";
+import { error } from "@principia/codec/DecodeErrors";
+import * as D from "@principia/codec/Decoder";
+import * as FS from "@principia/free/FreeSemigroup";
+
+import { implementInterpreter } from "../../HKT";
 import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
@@ -37,12 +38,12 @@ export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) =>
                 prism.getOption(a),
                 () =>
                   M.fail(
-                    DE.error(a, "", {
+                    error(a, "", {
                       message: "newtype does not satisfy prism conditions",
                       ...extractInfo(config)
                     })
                   ),
-                (n) => pureF(M)(n)
+                (n) => M.pure(n)
               )
             )
           ),

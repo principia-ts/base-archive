@@ -1,5 +1,5 @@
-import type { Eq } from "@principia/prelude/Eq";
-import type { Semiring } from "@principia/prelude/Semiring";
+import type { Eq } from "@principia/base/data/Eq";
+import type { Semiring } from "@principia/base/Semiring";
 
 import { allEquals } from "./utils";
 

@@ -1,6 +1,6 @@
 {
   "name": "@principia/laws",
-  "version": "0.0.0",
+  "version": "0.2.3",
   "description": "Laws",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -41,12 +41,13 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/core": "^0.1.0",
-    "@principia/prelude": "^0.1.0",
-    "fast-check": "2.7.0",
-    "core-js": "3"
+    "@principia/base": "^0.2.3",
+    "@principia/compile": "^0.2.3",
+    "core-js": "3",
+    "fast-check": "2.10.0"
   },
   "devDependencies": {
-    "typescript": "next"
-  }
+    "typescript": "^4.1.3"
+  },
+  "gitHead": "185e8063ab953917c77482a33f8885fdd554ddf3"
 }

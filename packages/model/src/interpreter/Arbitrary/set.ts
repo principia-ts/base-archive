@@ -1,9 +1,10 @@
-import { pipe } from "@principia/core/Function";
-import * as S from "@principia/core/Set";
-
 import type * as Alg from "../../algebra";
-import { implementInterpreter } from "../../HKT";
 import type { ArbURI } from "./HKT";
+
+import { pipe } from "@principia/base/data/Function";
+import * as S from "@principia/base/data/Set";
+
+import { implementInterpreter } from "../../HKT";
 import { accessFastCheck, applyArbitraryConfig } from "./HKT";
 
 export const SetArbitrary = implementInterpreter<ArbURI, Alg.SetURI>()((_) => ({

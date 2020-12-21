@@ -1,10 +1,11 @@
-import * as E from "@principia/core/Either";
-import * as Eq from "@principia/core/Eq";
-import { pipe } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-import * as R from "@principia/core/Record";
-
 import type * as Alg from "../../algebra";
+
+import * as E from "@principia/base/data/Either";
+import * as Eq from "@principia/base/data/Eq";
+import { pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as R from "@principia/base/data/Record";
+
 import { implementInterpreter } from "../../HKT";
 import { applyEqConfig } from "./HKT";
 

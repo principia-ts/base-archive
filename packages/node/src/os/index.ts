@@ -1,5 +1,6 @@
-import type { FSync, USync } from "@principia/core/Sync";
-import * as Sy from "@principia/core/Sync";
+import type { FSync, USync } from "@principia/io/Sync";
+
+import * as Sy from "@principia/io/Sync";
 import os from "os";
 
 export const arch = Sy.total(os.arch);

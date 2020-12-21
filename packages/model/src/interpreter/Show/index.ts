@@ -1,5 +1,5 @@
-import { pipe } from "@principia/core/Function";
-import type * as S from "@principia/core/Show";
+import { pipe } from "@principia/base/data/Function";
+import type * as S from "@principia/base/data/Show";
 
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
 import type { Summoner } from "../../summoner";

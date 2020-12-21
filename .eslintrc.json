@@ -26,6 +26,10 @@
   ],
   "rules": {
     "codegen/codegen": "error",
+
+    "sort-imports": "off",
+    "import/order": "off",
+
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/ban-ts-ignore": "off",
     "@typescript-eslint/ban-types": "off",
@@ -56,7 +60,6 @@
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
     "import/no-unresolved": "error",
-    "import/order": "off",
     "import/no-cycle": "error",
     "no-param-reassign": ["error"],
     "no-unexpected-multiline": "off",
@@ -67,7 +70,12 @@
         "usePrettierrc": true
       }
     ],
-    "simple-import-sort/imports": "error",
+    "simple-import-sort/imports": [
+      "error",
+      {
+        "groups": [["^.*\\u0000$"], ["^\\u0000"], ["^@?\\w"], ["^"], ["^\\."]]
+      }
+    ],
     "simple-import-sort/exports": "error"
   },
   "settings": {

@@ -1,8 +1,9 @@
-import * as E from "@principia/core/Encoder";
-import { pipe } from "@principia/core/Function";
-import * as O from "@principia/core/Option";
-
 import type * as Alg from "../../algebra";
+
+import { pipe } from "@principia/base/data/Function";
+import * as O from "@principia/base/data/Option";
+import * as E from "@principia/codec/Encoder";
+
 import { implementInterpreter } from "../../HKT";
 import { applyEncoderConfig } from "./HKT";
 

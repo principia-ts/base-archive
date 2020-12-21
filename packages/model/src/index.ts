@@ -1,17 +1,17 @@
-import type * as D from "@principia/core/Decoder";
-import type * as P from "@principia/prelude";
-import type * as HKT from "@principia/prelude/HKT";
+import type { M } from "./summoner";
+import type * as HKT from "@principia/base/HKT";
+import type * as P from "@principia/base/typeclass";
+import type * as D from "@principia/codec/Decoder";
+
 import * as fc from "fast-check";
 
 import * as Arb from "./interpreter/Arbitrary";
-import type { FastCheckEnv } from "./interpreter/Arbitrary/HKT";
 import { ArbURI } from "./interpreter/Arbitrary/HKT";
 import * as Dec from "./interpreter/Decoder";
 import * as Enc from "./interpreter/Encoder";
 import * as Eq from "./interpreter/Eq";
 import * as G from "./interpreter/Guard";
 import * as S from "./interpreter/Show";
-import type { M } from "./summoner";
 import { summonFor } from "./summoner";
 
 export const { make, makeADT } = summonFor({});

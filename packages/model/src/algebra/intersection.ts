@@ -1,6 +1,5 @@
-import type { UnionToIntersection } from "@principia/core/Utils";
-
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from "../HKT";
+import type { UnionToIntersection } from "@principia/base/util/types";
 
 export const IntersectionURI = "model/algebra/intersection";
 

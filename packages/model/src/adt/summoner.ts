@@ -1,9 +1,3 @@
-import * as A from "@principia/core/Array";
-import * as Eq from "@principia/core/Eq";
-import { tuple } from "@principia/core/Function";
-import * as R from "@principia/core/Record";
-import { getFirstSemigroup } from "@principia/prelude/Semigroup";
-
 import type { SumURI, TaggedUnionConfig } from "../algebra";
 import type {
   Algebra,
@@ -16,10 +10,17 @@ import type {
   URItoProgram
 } from "../HKT";
 import type { _A, _E, _R, _S, InhabitedTypes } from "../utils";
-import { assignCallable, wrapFun } from "../utils";
 import type { ADT } from "./model";
-import { makeADT } from "./model";
 import type { ElemType } from "./utils";
+
+import * as A from "@principia/base/data/Array";
+import * as Eq from "@principia/base/data/Eq";
+import { tuple } from "@principia/base/data/Function";
+import * as R from "@principia/base/data/Record";
+import { getFirstSemigroup } from "@principia/base/Semigroup";
+
+import { assignCallable, wrapFun } from "../utils";
+import { makeADT } from "./model";
 
 export type TaggedUnionProgram<PURI extends ProgramURIS, Env, S, R, E, A> = URItoProgram<
   Env,

@@ -1,10 +1,11 @@
-import * as A from "@principia/core/Array";
-import * as D from "@principia/core/Decoder";
-import { pipe } from "@principia/core/Function";
-
 import type * as Alg from "../../algebra";
-import { implementInterpreter } from "../../HKT";
 import type { URI } from "./HKT";
+
+import * as A from "@principia/base/data/Array";
+import { pipe } from "@principia/base/data/Function";
+import * as D from "@principia/codec/Decoder";
+
+import { implementInterpreter } from "../../HKT";
 import { applyDecoderConfig } from "./HKT";
 import { extractInfo } from "./utils";
 
