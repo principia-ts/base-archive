@@ -1,4 +1,4 @@
-import * as D from "@principia/decoders/Decoder";
+import * as D from "@principia/codec/Decoder";
 import { pipe } from "@principia/base/data/Function";
 
 import type * as Alg from "../../algebra";

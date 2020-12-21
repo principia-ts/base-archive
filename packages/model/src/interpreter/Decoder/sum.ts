@@ -5,8 +5,8 @@ import * as E from "@principia/base/data/Either";
 import { pipe } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
 import * as R from "@principia/base/data/Record";
-import { error } from "@principia/decoders/DecodeErrors";
-import * as D from "@principia/decoders/Decoder";
+import { error } from "@principia/codec/DecodeErrors";
+import * as D from "@principia/codec/Decoder";
 
 import { implementInterpreter } from "../../HKT";
 import { applyDecoderConfig } from "./HKT";

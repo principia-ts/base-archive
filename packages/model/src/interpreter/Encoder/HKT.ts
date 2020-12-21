@@ -1,6 +1,6 @@
 import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from "../../HKT";
 
-import * as E from "@principia/decoders/Encoder";
+import * as E from "@principia/codec/Encoder";
 
 import { getApplyConfig } from "../../HKT";
 

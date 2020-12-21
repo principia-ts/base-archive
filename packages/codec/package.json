@@ -1,5 +1,5 @@
 {
-  "name": "@principia/decoders",
+  "name": "@principia/codec",
   "version": "0.2.3",
   "description": "Decoders",
   "repository": "git://github.com/0x706b/principia",

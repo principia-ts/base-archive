@@ -1,5 +1,5 @@
 import type * as Alg from "../../algebra";
-import type * as E from "@principia/decoders/Encoder";
+import type * as E from "@principia/codec/Encoder";
 
 import { pipe } from "@principia/base/data/Function";
 

@@ -1,7 +1,7 @@
 import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from "../../HKT";
 import type * as HKT from "@principia/base/HKT";
 import type * as P from "@principia/base/typeclass";
-import type * as D from "@principia/decoders/Decoder";
+import type * as D from "@principia/codec/Decoder";
 
 import { getApplyConfig } from "../../HKT";
 

@@ -4,9 +4,9 @@ import type { URI } from "./HKT";
 import * as E from "@principia/base/data/Either";
 import { pipe } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
-import * as DE from "@principia/decoders/DecodeError";
-import { error } from "@principia/decoders/DecodeErrors";
-import * as D from "@principia/decoders/Decoder";
+import * as DE from "@principia/codec/DecodeError";
+import { error } from "@principia/codec/DecodeErrors";
+import * as D from "@principia/codec/Decoder";
 import * as FS from "@principia/free/FreeSemigroup";
 
 import { implementInterpreter } from "../../HKT";

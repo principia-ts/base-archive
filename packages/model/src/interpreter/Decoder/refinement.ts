@@ -2,7 +2,7 @@ import type * as Alg from "../../algebra";
 import type { URI } from "./HKT";
 
 import { pipe } from "@principia/base/data/Function";
-import * as D from "@principia/decoders/Decoder";
+import * as D from "@principia/codec/Decoder";
 
 import { implementInterpreter } from "../../HKT";
 import { applyDecoderConfig } from "./HKT";

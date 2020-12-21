@@ -5,8 +5,8 @@ import type { Branded } from "@principia/base/data/Brand";
 import * as A from "@principia/base/data/Array";
 import * as E from "@principia/base/data/Either";
 import { pipe } from "@principia/base/data/Function";
-import * as DE from "@principia/decoders/DecodeError";
-import * as D from "@principia/decoders/Decoder";
+import * as DE from "@principia/codec/DecodeError";
+import * as D from "@principia/codec/Decoder";
 import * as FS from "@principia/free/FreeSemigroup";
 
 import { implementInterpreter } from "../../HKT";

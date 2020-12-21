@@ -1,7 +1,7 @@
 import type { M } from "./summoner";
 import type * as HKT from "@principia/base/HKT";
 import type * as P from "@principia/base/typeclass";
-import type * as D from "@principia/decoders/Decoder";
+import type * as D from "@principia/codec/Decoder";
 
 import * as fc from "fast-check";
 
