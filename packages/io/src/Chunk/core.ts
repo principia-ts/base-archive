@@ -70,7 +70,10 @@ export function asBuffer(chunk: Chunk<Byte>): Buffer {
   if (Buffer && Buffer.isBuffer(chunk)) {
     return chunk;
   }
-  return Buffer.from(chunk);
+  if (isTyped(chunk)) {
+    return Buffer.from(chunk);
+  }
+  return Buffer.from(A.from<number>(chunk as any));
 }
 
 export function asArray<A>(chunk: Chunk<A>): ReadonlyArray<A> {
