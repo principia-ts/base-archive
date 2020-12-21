@@ -2,9 +2,9 @@ import type { DecodeErrors, ErrorInfo } from "./DecodeErrors";
 import type { Refinement } from "@principia/base/data/Function";
 import type { Guard } from "@principia/base/data/Guard";
 import type * as O from "@principia/base/data/Option";
+import type * as HKT from "@principia/base/HKT";
 import type * as P from "@principia/base/typeclass";
 import type { Literal, UnionToIntersection } from "@principia/base/util/types";
-import type * as HKT from "@principia/prelude/HKT";
 
 import * as A from "@principia/base/data/Array";
 import * as E from "@principia/base/data/Either";

@@ -51,5 +51,6 @@
   "devDependencies": {
     "fast-check": "^2.10.0",
     "typescript": "^4.1.3"
-  }
+  },
+  "gitHead": "a0806cec00e39fb0cac9d289037747a37326d32c"
 }

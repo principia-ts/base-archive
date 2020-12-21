@@ -1,11 +1,11 @@
 import type { HttpRouteException } from "../exceptions";
 import type { Has } from "@principia/base/data/Has";
-import type { Erase } from "@principia/prelude/Utils";
+import type { Erase } from "@principia/base/util/types";
 
+import { pipe } from "@principia/base/data/Function";
 import { tag } from "@principia/base/data/Has";
 import * as O from "@principia/base/data/Option";
 import * as I from "@principia/io/IO";
-import { pipe } from "@principia/prelude";
 import * as qs from "querystring";
 
 import * as Http from "../Router";

@@ -1,14 +1,14 @@
 import type { Lens } from "./Lens";
 import type { Optional } from "./Optional";
 import type { Traversal } from "./Traversal";
+import type { Predicate, Refinement } from "@principia/base/data/Function";
 import type { Option } from "@principia/base/data/Option";
 import type * as P from "@principia/base/typeclass";
-import type { Predicate, Refinement } from "@principia/core/Function";
 
 import * as E from "@principia/base/data/Either";
+import { flow, identity, pipe } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
 import * as HKT from "@principia/base/HKT";
-import { flow, identity, pipe } from "@principia/core/Function";
 
 import * as _ from "./internal";
 

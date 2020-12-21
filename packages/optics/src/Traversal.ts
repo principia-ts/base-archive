@@ -1,14 +1,14 @@
 import type { ModifyF } from "./internal";
+import type { Predicate, Refinement } from "@principia/base/data/Function";
 import type * as O from "@principia/base/data/Option";
 import type * as P from "@principia/base/typeclass";
-import type { Predicate, Refinement } from "@principia/core/Function";
 
 import * as A from "@principia/base/data/Array";
 import * as C from "@principia/base/data/Const";
 import * as E from "@principia/base/data/Either";
+import { identity, pipe } from "@principia/base/data/Function";
 import * as I from "@principia/base/data/Identity";
 import * as HKT from "@principia/base/HKT";
-import { identity, pipe } from "@principia/core/Function";
 
 import * as _ from "./internal";
 

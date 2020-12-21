@@ -2,7 +2,7 @@ import type { HttpRouteException } from "./exceptions/HttpRouteException";
 import type { Has } from "@principia/base/data/Has";
 import type { DecodeErrors } from "@principia/decoders/DecodeErrors";
 import type { IO } from "@principia/io/IO";
-import type { Show } from "@principia/prelude";
+import type { Show } from "@principia/base/data/Show";
 
 import { getDecodeErrorsValidation } from "@principia/decoders/DecodeErrors";
 import * as C from "@principia/io/Chunk";
@@ -10,7 +10,7 @@ import * as I from "@principia/io/IO";
 import * as S from "@principia/io/Stream";
 import * as Sy from "@principia/io/Sync";
 import * as M from "@principia/model";
-import { flow, pipe } from "@principia/prelude";
+import { flow, pipe } from "@principia/base/data/Function";
 
 import { Context } from "./Context";
 

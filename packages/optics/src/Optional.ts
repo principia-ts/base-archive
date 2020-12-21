@@ -1,8 +1,8 @@
+import type { Option } from "@principia/base/data/Option";
 import type * as HKT from "@principia/base/HKT";
-import type { Option } from "@principia/core/Option";
 
+import { constant } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
-import { constant } from "@principia/core/Function";
 
 /*
  * -------------------------------------------

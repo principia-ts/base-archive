@@ -3,7 +3,7 @@ import type { Iso } from "./Iso";
 import type { Optional } from "./Optional";
 import type * as O from "@principia/base/data/Option";
 
-import { pipe } from "@principia/core/Function";
+import { pipe } from "@principia/base/data/Function";
 
 import * as _ from "./internal";
 

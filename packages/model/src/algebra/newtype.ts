@@ -1,7 +1,7 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from "../HKT";
+import type { Newtype } from "@principia/base/Newtype";
 import type { Iso } from "@principia/optics/Iso";
 import type { Prism } from "@principia/optics/Prism";
-import type { Newtype } from "@principia/prelude";
 
 export const NewtypeURI = "model/algebra/newtype";
 

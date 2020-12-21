@@ -1,7 +1,7 @@
 import type { Routes } from "./model";
+import type { Predicate } from "@principia/base/data/Function";
 import type { Has } from "@principia/base/data/Has";
 import type { IO, URIO } from "@principia/io/IO";
-import type { Predicate } from "@principia/prelude";
 
 import * as I from "@principia/io/IO";
 

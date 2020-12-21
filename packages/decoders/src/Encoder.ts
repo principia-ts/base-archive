@@ -1,4 +1,4 @@
-import type * as HKT from "@principia/prelude/HKT";
+import type * as HKT from "@principia/base/HKT";
 
 import { identity, memoize } from "@principia/base/data/Function";
 
@@ -24,7 +24,7 @@ export type URI = typeof URI;
 
 export type V = HKT.V<"E", "+">;
 
-declare module "@principia/prelude/HKT" {
+declare module "@principia/base/HKT" {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Encoder<E, A>;
   }
