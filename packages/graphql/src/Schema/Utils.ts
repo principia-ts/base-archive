@@ -1,6 +1,6 @@
-import type { Compute, ExcludeMatchingProperties } from "@principia/prelude/Utils";
-
 import type { FieldRecord, InputRecord } from "./containers";
+import type { Compute } from "@principia/base/util/compute";
+import type { ExcludeMatchingProperties } from "@principia/base/util/types";
 
 export type NonRequiredInputKeys<T extends InputRecord<any, T>> = keyof ExcludeMatchingProperties<
   {

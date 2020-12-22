@@ -1,5 +1,4 @@
-import type { Lazy } from "@principia/core/Function";
-import { reduceWithIndex_ as reduceRecord } from "@principia/core/Record";
+import type { Lazy } from "@principia/base/data/Function";
 import type {
   BooleanValueNode,
   DefinitionNode,
@@ -29,6 +28,8 @@ import type {
   TypeNode,
   ValueNode
 } from "graphql";
+
+import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
 import { Kind } from "graphql";
 import { inspect } from "util";
 

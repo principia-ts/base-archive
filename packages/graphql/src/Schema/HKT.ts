@@ -1,4 +1,4 @@
-import type { UnionToIntersection } from "@principia/core/Utils";
+import type { UnionToIntersection } from "@principia/base/util/types";
 
 export interface AURItoInputAlgebra<URI extends string> {}
 

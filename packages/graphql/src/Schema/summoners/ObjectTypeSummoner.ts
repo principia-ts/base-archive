@@ -1,12 +1,3 @@
-import * as A from "@principia/core/Array";
-import { reduceWithIndex_ as reduceRecord } from "@principia/core/Record";
-import type { FieldDefinitionNode, ObjectTypeDefinitionNode } from "graphql";
-
-import {
-  addNameToUnnamedFieldDefinitionNode,
-  createFieldDefinitionNode,
-  createObjectTypeDefinitionNode
-} from "../AST";
 import type { OutputTypeConfig } from "../Config";
 import type {
   AnyOutputFieldType,
@@ -14,10 +5,20 @@ import type {
   FieldRecord,
   FieldResolverRecord
 } from "../containers";
-import { ObjectType } from "../containers";
 import type { FieldPURIS, InferredFieldAlgebra } from "../HKT";
 import type { FieldResolversEnv } from "../Resolver";
 import type { TypeofFieldRecord } from "../Utils";
+import type { FieldDefinitionNode, ObjectTypeDefinitionNode } from "graphql";
+
+import * as A from "@principia/base/data/Array";
+import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
+
+import {
+  addNameToUnnamedFieldDefinitionNode,
+  createFieldDefinitionNode,
+  createObjectTypeDefinitionNode
+} from "../AST";
+import { ObjectType } from "../containers";
 
 export interface ObjectTypeSummoner<URI extends string, PURI extends FieldPURIS, Root, Ctx> {
   <Name extends string, Fields extends FieldRecord<URI, Root, Ctx, Fields>>(definition: {

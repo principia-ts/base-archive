@@ -38,5 +38,6 @@ export {} from "./interpreter/Encoder/HKT";
 export {} from "./interpreter/Eq/HKT";
 export {} from "./interpreter/Guard/HKT";
 export {} from "./interpreter/Show/HKT";
-export { M, M_, MM, MM_, opaque, opaque_ } from "./summoner";
-export { _A, _E, _Env, _R, _S } from "./utils";
+export type { M, M_, MM, MM_ } from "./summoner";
+export { opaque, opaque_ } from "./summoner";
+export type { _A, _E, _Env, _R, _S } from "./utils";

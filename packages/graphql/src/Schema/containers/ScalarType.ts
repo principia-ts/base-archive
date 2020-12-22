@@ -1,6 +1,5 @@
-import type { DirectiveNode, ScalarTypeDefinitionNode } from "graphql";
-
 import type { ScalarFunctions } from "../Scalar";
+import type { DirectiveNode, ScalarTypeDefinitionNode } from "graphql";
 
 export interface ScalarTypeConfig {
   description?: string;

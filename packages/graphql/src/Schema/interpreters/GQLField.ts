@@ -1,7 +1,8 @@
-import { reduceWithIndex_ as reduceRecord } from "@principia/core/Record";
+import type { GQLFieldAlgebra } from "../algebras";
 import type { InputValueDefinitionNode } from "graphql";
 
-import type { GQLFieldAlgebra } from "../algebras";
+import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
+
 import {
   createInputValueDefinitionNode,
   createUnnamedFieldDefinitionNode,

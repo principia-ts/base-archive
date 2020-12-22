@@ -1,8 +1,8 @@
+import type { Compute } from "@principia/base/util/compute";
+import type * as U from "@principia/base/util/types";
 import type { FunctionN } from "@principia/core/Function";
-import type * as T from "@principia/core/IO";
 import type { SerializableError } from "@principia/core/SerializableError";
-import type * as U from "@principia/core/Utils";
-import type { Compute } from "@principia/prelude/Utils";
+import type * as T from "@principia/io/IO";
 import type { ValueNode } from "graphql";
 
 export type ScalarSerializeF<R, A> = (u: unknown) => T.IO<R, SerializableError<any>, A>;

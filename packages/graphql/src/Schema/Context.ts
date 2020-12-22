@@ -1,4 +1,4 @@
-import type * as O from "@principia/core/Option";
+import type * as O from "@principia/base/data/Option";
 
 export const ContextURI = "graphql/Context";
 export type ContextURI = typeof ContextURI;

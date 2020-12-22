@@ -42,10 +42,12 @@
     "copy:system": "ts-node ../../scripts/copy-system.ts"
   },
   "dependencies": {
-    "@principia/core": "^0.1.0",
-    "@principia/model": "^0.1.0",
+    "@principia/base": "^0.2.3",
+    "@principia/io": "^0.2.3",
+    "@principia/model": "^0.2.3",
+    "core-js": "3",
     "graphql": "^15.4.0",
-    "core-js": "3"
+    "graphql-tools": "^7.0.2"
   },
   "devDependencies": {
     "typescript": "next"

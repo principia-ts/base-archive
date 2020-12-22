@@ -1,6 +1,5 @@
-import type { InputObjectTypeDefinitionNode } from "graphql";
-
 import type { InputRecord } from "./Utils";
+import type { InputObjectTypeDefinitionNode } from "graphql";
 
 /**
  * @name InputObjectType

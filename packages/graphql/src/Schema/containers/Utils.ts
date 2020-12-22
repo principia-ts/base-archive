@@ -1,5 +1,3 @@
-import type { Compute, ExcludeMatchingProperties } from "@principia/prelude/Utils";
-
 import type { InputTypeConfig, OutputTypeConfig } from "../Config";
 import type { AnyExtendObjectType } from "./ExtendObjectType";
 import type { AnyFieldType, FieldType } from "./FieldType";
@@ -11,6 +9,8 @@ import type { AnyObjectType } from "./ObjectType";
 import type { RecursiveType } from "./RecursiveObjectType";
 import type { AnyScalarFieldType, ScalarFieldType } from "./ScalarFieldType";
 import type { AnyScalarType } from "./ScalarType";
+import type { Compute } from "@principia/base/util/compute";
+import type { ExcludeMatchingProperties } from "@principia/base/util/types";
 
 export type AnyField<ApolloURI extends string, Ctx> =
   | AnyScalarFieldType<ApolloURI>

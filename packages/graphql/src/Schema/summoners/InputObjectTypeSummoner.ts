@@ -1,15 +1,16 @@
-import { reduceWithIndex_ as reduceRecord } from "@principia/core/Record";
+import type { InputRecord } from "../containers";
+import type { InferredInputAlgebra, InputPURIS } from "../HKT";
+import type { TypeofInputRecord } from "../Utils";
 import type { InputValueDefinitionNode } from "graphql";
+
+import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
 
 import {
   createInputObjectTypeDefinitionNode,
   createInputValueDefinitionNode,
   getTypeName
 } from "../AST";
-import type { InputRecord } from "../containers";
 import { InputObjectType } from "../containers";
-import type { InferredInputAlgebra, InputPURIS } from "../HKT";
-import type { TypeofInputRecord } from "../Utils";
 
 export interface InputObjectTypeSummoner<URI extends string, PURI extends InputPURIS> {
   <Name extends string, Fields extends InputRecord<URI, Fields>>(definition: {

@@ -1,15 +1,16 @@
-import * as DE from "@principia/core/DecodeError";
-import { flow, pipe } from "@principia/core/Function";
-import { SerializableError } from "@principia/core/SerializableError";
-import * as Sy from "@principia/core/Sync";
-import * as M from "@principia/model";
+import type { ScalarTypeConfig } from "../containers";
+import type { ScalarA, ScalarE, ScalarFunctions, ScalarParseLiteralF } from "../Scalar";
 import type { ValueNode } from "graphql";
+
+import { flow, pipe } from "@principia/base/data/Function";
+import * as DE from "@principia/codec/DecodeErrors";
+import { SerializableError } from "@principia/io/SerializableError";
+import * as Sy from "@principia/io/Sync";
+import * as M from "@principia/model";
 import { valueFromASTUntyped } from "graphql";
 
 import { createScalarTypeDefinitionNode } from "../AST";
-import type { ScalarTypeConfig } from "../containers";
 import { ScalarType } from "../containers";
-import type { ScalarA, ScalarE, ScalarFunctions, ScalarParseLiteralF } from "../Scalar";
 
 export interface ScalarTypeSummoner<URI extends string> {
   <Name extends string, Funcs extends ScalarFunctions<any, any>>(
@@ -60,11 +61,13 @@ interface ScalarTypeFromCodecConfig<E, A> {
   userMessage?: string;
 }
 
+const SyM = DE.getDecodeErrorsValidation({ ...Sy.MonadFail, ...Sy.Bifunctor, ...Sy.Fallible });
+
 export function makeScalarTypeFromCodecSummoner<
   URI extends string
 >(): ScalarTypeFromModelSummoner<URI> {
   return (name, model, config) => {
-    const { decode } = M.getDecoder(model)(DE.SyncDecoderF);
+    const { decode } = M.getDecoder(model)(SyM);
     const { encode } = M.getEncoder(model);
     const serialize = (u: unknown) =>
       pipe(

@@ -1,15 +1,3 @@
-import { reduceWithIndex_ as reduceRecord } from "@principia/core/Record";
-import type { UnionToIntersection } from "@principia/core/Utils";
-import type { Compute } from "@principia/prelude/Utils";
-import type {
-  DocumentNode,
-  FieldDefinitionNode,
-  InputObjectTypeDefinitionNode,
-  ObjectTypeDefinitionNode,
-  ScalarTypeDefinitionNode
-} from "graphql";
-
-import { createDocumentNode, createSchemaDefinitionNode } from "./AST";
 import type {
   AnyExtendObjectType,
   AnyInputObjectType,
@@ -21,6 +9,19 @@ import type {
   ObjectType,
   ScalarType
 } from "./containers";
+import type { Compute } from "@principia/base/util/compute";
+import type { UnionToIntersection } from "@principia/base/util/types";
+import type {
+  DocumentNode,
+  FieldDefinitionNode,
+  InputObjectTypeDefinitionNode,
+  ObjectTypeDefinitionNode,
+  ScalarTypeDefinitionNode
+} from "graphql";
+
+import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
+
+import { createDocumentNode, createSchemaDefinitionNode } from "./AST";
 
 export type AllResolvers<
   URI extends string,

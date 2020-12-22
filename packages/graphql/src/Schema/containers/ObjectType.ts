@@ -1,6 +1,5 @@
-import type { ObjectTypeDefinitionNode } from "graphql";
-
 import type { FieldRecord, FieldResolverRecord } from "./Utils";
+import type { ObjectTypeDefinitionNode } from "graphql";
 
 /**
  * @name ObjectType

@@ -1,8 +1,7 @@
-import type * as T from "@principia/core/IO";
-import type * as O from "@principia/core/Option";
-import type * as U from "@principia/core/Utils";
-
 import type { Context } from "./Context";
+import type * as O from "@principia/base/data/Option";
+import type * as U from "@principia/base/util/types";
+import type * as T from "@principia/io/IO";
 
 export interface ResolverInput<Root, Args, Ctx> {
   args: Args;
