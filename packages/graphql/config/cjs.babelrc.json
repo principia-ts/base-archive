@@ -1,0 +1,14 @@
+{
+   "presets": [
+      [
+         "@babel/preset-env",
+         {
+            "modules": "commonjs",
+            "useBuiltIns": "usage",
+            "corejs": 3
+         }
+      ]
+   ],
+   "sourceMaps": true,
+   "inputSourceMap": true
+}

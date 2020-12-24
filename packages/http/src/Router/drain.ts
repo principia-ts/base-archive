@@ -34,7 +34,7 @@ function toArraySafe<R, E>(routes: Routes<R, E>): USync<ReadonlyArray<RouteFn<R,
 
 export const isRouterDraining = new FR.FiberRef(false, identity, (a, b) => a && b);
 
-export type ProcessFn = (_: Context) => UIO<void>;
+export type ProcessFn = (_: Context<{}>) => UIO<void>;
 
 export function drain<R>(rs: Routes<R, never>) {
   const routes = Sy.unsafeRun(toArraySafe(rs));

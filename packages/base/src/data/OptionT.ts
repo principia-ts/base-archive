@@ -15,7 +15,7 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
     );
 
   return HKT.instance<OptionT<HKT.UHKT<M>, HKT.Auto>>({
-    ...P.getApplicativeComposition(M, O.ApplicativeOption),
+    ...P.getApplicativeComposition(M, O.Applicative),
     flatMap_,
     flatMap: (f) => (ma) => flatMap_(ma, f),
     flatten: (mma) => flatMap_(mma, identity),

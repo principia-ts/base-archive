@@ -13,7 +13,7 @@
       {
         "transform": "../../compile/src/index.ts",
         "moduleMap": {
-          "^src/(.*)": "(@principia/prelude): dist/_src/$1"
+          "^src/(.*)": "(@principia/base): dist/_src/$1"
         }
       }
     ]

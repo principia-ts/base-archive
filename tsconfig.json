@@ -21,12 +21,13 @@
       "@principia/optics/*": ["packages/optics/dist/*"],
       "@principia/model/*": ["packages/model/dist/*"],
       "@principia/node/*": ["packages/node/dist/*"],
-      "@principia/graphql/*": ["packages/graphql/dist/*"],
       "@principia/http/*": ["packages/http/dist/*"],
       "@principia/compile/*": ["packages/compile/dist/*"],
       "@principia/free/*": ["packages/free/dist/*"],
       "@principia/codec/*": ["packages/codec/dist/*"],
-      "@principia/codec": ["packages/codec/dist/index"]
+      "@principia/codec": ["packages/codec/dist/index"],
+      "@principia/koa/*": ["packages/koa/dist/*"],
+      "@principia/koa": ["packages/koa/dist/index"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]

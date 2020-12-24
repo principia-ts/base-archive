@@ -343,7 +343,6 @@ export function evaluate<A>(e: Eval<A>): A {
       }
     }
   }
-  if (result == null) throw new Error("unexpected null result");
   return result;
 }
 
@@ -353,15 +352,15 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------
  */
 
-export const FunctorEval = HKT.instance<P.Functor<[EvalURI]>>({
+export const Functor = HKT.instance<P.Functor<[EvalURI]>>({
   imap_: (fa, f, _) => map_(fa, f),
   imap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 });
 
-export const ApplyEval = HKT.instance<P.Apply<[EvalURI]>>({
-  ...FunctorEval,
+export const Apply = HKT.instance<P.Apply<[EvalURI]>>({
+  ...Functor,
   ap_,
   ap,
   map2_,
@@ -370,17 +369,17 @@ export const ApplyEval = HKT.instance<P.Apply<[EvalURI]>>({
   product
 });
 
-export const ApplicativeEval = HKT.instance<P.Applicative<[EvalURI]>>({
-  ...ApplyEval,
+export const Applicative = HKT.instance<P.Applicative<[EvalURI]>>({
+  ...Apply,
   pure,
   unit
 });
 
-export const MonadEval = HKT.instance<P.Monad<[EvalURI]>>({
-  ...ApplicativeEval,
+export const Monad = HKT.instance<P.Monad<[EvalURI]>>({
+  ...Applicative,
   flatMap_,
   flatMap,
   flatten
 });
 
-export const gen = DSL.genF(MonadEval);
+export const gen = DSL.genF(Monad);

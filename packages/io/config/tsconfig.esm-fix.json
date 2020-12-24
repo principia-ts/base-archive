@@ -16,7 +16,7 @@
       {
         "transform": "../../compile/src/index.ts",
         "moduleMap": {
-          "^src/(.*)": "(@principia/core): _src/$1"
+          "^src/(.*)": "(@principia/io): _src/$1"
         }
       }
     ],

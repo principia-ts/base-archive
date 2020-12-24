@@ -1073,7 +1073,7 @@ export const Alt: P.Alt<[OptionURI], V> = HKT.instance({
   alt
 });
 
-export const ApplyOption: P.Apply<[OptionURI], V> = HKT.instance({
+export const Apply: P.Apply<[OptionURI], V> = HKT.instance({
   ...Functor,
   ap_,
   ap,
@@ -1083,27 +1083,27 @@ export const ApplyOption: P.Apply<[OptionURI], V> = HKT.instance({
   product
 });
 
-export const struct = P.structF(ApplyOption);
+export const struct = P.structF(Apply);
 
-export const tuple = P.tupleF(ApplyOption);
+export const tuple = P.tupleF(Apply);
 
-export const mapN = P.mapNF(ApplyOption);
+export const mapN = P.mapNF(Apply);
 
-export const ApplicativeOption: P.Applicative<[OptionURI], V> = HKT.instance({
-  ...ApplyOption,
+export const Applicative: P.Applicative<[OptionURI], V> = HKT.instance({
+  ...Apply,
   unit,
   pure
 });
 
-export const MonadOption: P.Monad<[OptionURI], V> = HKT.instance({
-  ...ApplicativeOption,
+export const Monad: P.Monad<[OptionURI], V> = HKT.instance({
+  ...Applicative,
   flatMap_,
   flatMap,
   unit,
   flatten
 });
 
-export const Do = P.deriveDo(MonadOption);
+export const Do = P.deriveDo(Monad);
 
 const of: Option<{}> = some({});
 export { of as do };
