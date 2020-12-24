@@ -7,12 +7,17 @@ import * as Koa from "@principia/koa";
 import { runMain } from "@principia/node/Runtime";
 import KoaRouter from "koa-router";
 
-import { GQLInputInterpreter, GraphQlFieldInterpreter } from "../src/schema";
+import { GQLInputInterpreter, GraphQlFieldInterpreter } from "../src/Schema";
 import { makeApollo } from "../src/server/koa";
 
 const apollo = makeApollo({ ...GraphQlFieldInterpreter(), ...GQLInputInterpreter() })(
   {},
-  ({ ctx }) => I.succeed(ctx)
+  ({ ctx }) =>
+    I.succeed({
+      req: ctx.req,
+      res: ctx.res,
+      engine: { ...ctx.engine, custom: "A custom context thing" }
+    })
 );
 
 const Obj = apollo.object<{}>()("Obj", (F) => ({
@@ -29,6 +34,10 @@ const Query = apollo.object<{}>()("Query", (F) => ({
   obj: F.field({
     type: F.objectField(() => Obj),
     resolve: () => I.succeed({ a: "hello", b: 42 })
+  }),
+  custom: F.field({
+    type: F.string(),
+    resolve: (r, a, c) => c.req.ip
   })
 }));
 

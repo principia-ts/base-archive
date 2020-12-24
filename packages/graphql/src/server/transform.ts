@@ -1,8 +1,9 @@
-import type { ResolverF, ScalarFunctions } from "../schema";
+import type { ResolverF, ScalarFunctions } from "../Schema";
 
 import * as E from "@principia/base/data/Either";
 import { identity, pipe } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
+import { Request, Response } from "@principia/http";
 import * as T from "@principia/io/IO";
 import * as Sy from "@principia/io/Sync";
 import { Context } from "@principia/koa";
@@ -19,38 +20,56 @@ export function transformResolvers<Ctx>(
     const resolvers = {};
     for (const [fieldName, resolver] of entries(fields)) {
       if (typeof resolver === "function") {
-        (resolvers as any)[fieldName] = (root: any, args: any, ctx: Context<Ctx>) =>
-          pipe(
-            (resolver as any)(O.fromNullable(root), args || {}, ctx),
+        (resolvers as any)[fieldName] = (root: any, args: any, ctx: any) => {
+          const context = {
+            engine: ctx,
+            res: new Response(ctx.res),
+            req: new Request(ctx.req)
+          };
+          return pipe(
+            (resolver as any)(O.fromNullable(root), args || {}, context),
             T.give({
               ...(env as any)
             }),
-            T.giveService(Context)(ctx),
+            T.giveService(Context)(context),
             T.runPromise
           );
+        };
       } else {
         (resolvers as any)[fieldName] = {
-          subscribe: (root: any, args: any, ctx: Context<Ctx>) =>
-            pipe(
-              (resolver as any).subscribe(O.fromNullable(root), args || {}, ctx),
+          subscribe: (root: any, args: any, ctx: any) => {
+            const context = {
+              engine: ctx,
+              res: new Response(ctx.res),
+              req: new Request(ctx.req)
+            };
+            return pipe(
+              (resolver as any).subscribe(O.fromNullable(root), args || {}, context),
               T.give({
                 ...(env as any)
               }),
-              T.giveService(Context)(ctx),
+              T.giveService(Context)(context),
               T.runPromise
-            )
+            );
+          }
         };
 
         if ((resolver as any).resolve) {
-          (resolvers as any)[fieldName].resolve = (x: any, _: any, ctx: Context) =>
-            pipe(
-              (resolver as any).resolve(x, ctx),
+          (resolvers as any)[fieldName].resolve = (x: any, _: any, ctx: any) => {
+            const context = {
+              engine: ctx,
+              res: new Response(ctx.res),
+              req: new Request(ctx.req)
+            };
+            return pipe(
+              (resolver as any).resolve(x, context),
               T.give({
                 ...(env as any)
               }),
-              T.giveService(Context)(ctx),
+              T.giveService(Context)(context),
               T.runPromise
             );
+          };
         }
       }
     }

@@ -43,7 +43,7 @@ export interface KoaConfig {
 export const KoaConfig = H.tag<KoaConfig>();
 
 export interface Context<C = koa.DefaultContext> {
-  readonly ctx: koa.ParameterizedContext<any, C>;
+  readonly engine: koa.ParameterizedContext<any, C>;
   readonly req: Request;
   readonly res: Response;
 }
@@ -71,7 +71,7 @@ export function route<R, A>(
                 handler,
                 I.give(env),
                 I.giveService(Context)({
-                  ctx,
+                  engine: ctx,
                   req: new Request(ctx.req),
                   res: new Response(ctx.res)
                 }),
@@ -170,7 +170,7 @@ export function use<State = koa.DefaultState, Custom = koa.DefaultContext>(
 }
 
 export function useM<R, E, A>(
-  middleware: (cont: I.UIO<void>) => I.IO<R & H.Has<Context>, E, A>
+  middleware: (cont: I.UIO<void>) => I.IO<R, E, A>
 ): L.Layer<Erase<R, H.Has<Context>> & H.Has<KoaConfig>, never, H.Has<KoaConfig>> {
   return L.fromEffect(KoaConfig)(
     I.gen(function* (_) {
@@ -180,7 +180,11 @@ export function useM<R, E, A>(
         await pipe(
           middleware(I.fromPromiseDie(next)),
           I.give(env),
-          I.giveService(Context)({ ctx, req: new Request(ctx.req), res: new Response(ctx.res) }),
+          I.giveService(Context)({
+            engine: ctx,
+            req: new Request(ctx.req),
+            res: new Response(ctx.res)
+          }),
           I.runPromise
         );
       return yield* _(

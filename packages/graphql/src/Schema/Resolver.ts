@@ -1,7 +1,6 @@
 import type { Has } from "@principia/base/data/Has";
 import type * as O from "@principia/base/data/Option";
 import type * as U from "@principia/base/util/types";
-import type { Context } from "@principia/http";
 import type * as I from "@principia/io/IO";
 
 export interface ResolverInput<Root, Args, Ctx> {
@@ -15,25 +14,21 @@ export interface SubscriptionResolverInput<Root, Ctx> {
   readonly result: Root;
 }
 
-export type ResolverF<Root, Args, T, R, E, A> = (
+export type ResolverF<Root, Args, Ctx, R, E, A> = (
   root: Root,
   args: Args,
-  ctx: Context<T>
-) => I.IO<R & Has<Context<T>>, E, A>;
+  ctx: Ctx
+) => I.IO<R & Has<Ctx>, E, A>;
 
-export interface SubscriptionResolverF<Root, Args, T, SR, SE, SA, RR, RE, RA> {
-  resolve?: (root: Root, ctx: Context<T>) => I.IO<RR & Has<Context<T>>, RE, RA>;
-  subscribe: (
-    root: Root,
-    args: Args,
-    ctx: Context<T>
-  ) => I.IO<SR & Has<Context<T>>, SE, AsyncIterable<SA>>;
+export interface SubscriptionResolverF<Root, Args, Ctx, SR, SE, SA, RR, RE, RA> {
+  resolve?: (root: Root, ctx: Ctx) => I.IO<RR & Has<Ctx>, RE, RA>;
+  subscribe: (root: Root, args: Args, ctx: Ctx) => I.IO<SR & Has<Ctx>, SE, AsyncIterable<SA>>;
 }
 
-export type FieldResolvers<Args, T, K> = {
+export type FieldResolvers<Args, Ctx, K> = {
   [k in keyof K]:
-    | ResolverF<any, Args, T, any, any, any>
-    | SubscriptionResolverF<any, Args, T, any, any, any, any, any, any>;
+    | ResolverF<any, Args, Ctx, any, any, any>
+    | SubscriptionResolverF<any, Args, Ctx, any, any, any, any, any, any>;
 };
 
 export type SchemaResolvers<Args, T, N, K> = {

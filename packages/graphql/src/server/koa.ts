@@ -9,7 +9,7 @@ import type {
   ScalarTypeSummoner,
   SchemaGenerator,
   SchemaParts
-} from "../schema";
+} from "../Schema";
 import type { Has } from "@principia/base/data/Has";
 import type { Config } from "apollo-server-core";
 import type { IResolvers } from "graphql-tools";
@@ -31,7 +31,7 @@ import {
   makeObjectTypeSummoner,
   makeScalarTypeSummoner,
   makeSchemaGenerator
-} from "../schema";
+} from "../Schema";
 import { transformResolvers, transformScalarResolvers } from "./transform";
 
 export type ApolloKoaConfig = Omit<Config, "context" | "schema" | "subscriptions"> & {
@@ -74,14 +74,14 @@ export interface ApolloKoaDriver<
   C extends ApolloKoaConfig,
   RE
 > {
-  readonly accessContext: I.URIO<Has<Koa.Context<CTX>>, CTX>;
-  readonly extentObject: ExtendObjectTypeSummoner<FieldAURI, InputAURI, CTX>;
-  readonly generateSchema: SchemaGenerator<CTX>;
+  readonly accessContext: I.URIO<Has<Koa.Context<CTX>>, Koa.Context<CTX>>;
+  readonly extentObject: ExtendObjectTypeSummoner<FieldAURI, InputAURI, Koa.Context<CTX>>;
+  readonly generateSchema: SchemaGenerator<Koa.Context<CTX>>;
   readonly inputObject: InputObjectTypeSummoner<InputAURI>;
-  readonly object: <ROOT>() => ObjectTypeSummoner<FieldAURI, InputAURI, ROOT, CTX>;
+  readonly object: <ROOT>() => ObjectTypeSummoner<FieldAURI, InputAURI, ROOT, Koa.Context<CTX>>;
   readonly scalar: ScalarTypeSummoner;
   readonly instance: <R>(
-    config: ApolloKoaInstanceConfig<CTX, R>
+    config: ApolloKoaInstanceConfig<Koa.Context<CTX>, R>
   ) => L.Layer<R & SubscriptionsEnv<C> & RE & Has<Koa.Koa>, never, Has<ApolloKoaServerInstance>>;
 }
 
@@ -94,12 +94,12 @@ type ContextFn<Conf extends ApolloKoaConfig, RE, Ctx> = (_: {
   connection?: Conf["subscriptions"] extends {
     onConnect: (...args: any[]) => I.IO<any, never, infer A>;
   }
-    ? Omit<Koa.Context["ctx"]["connection"], "context"> & {
+    ? Omit<Koa.Context["engine"]["connection"], "context"> & {
         context: A;
       }
-    : Koa.Context["ctx"]["connection"];
-  ctx: Koa.Context["ctx"];
-}) => I.IO<RE, never, Ctx>;
+    : Koa.Context["engine"]["connection"];
+  ctx: Koa.Context;
+}) => I.IO<RE, never, Koa.Context<Ctx>>;
 
 export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldPURI] & AURItoInputAlgebra[InputPURI]
@@ -108,11 +108,11 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
     config: C,
     context: ContextFn<C, RE, CTX>
   ): ApolloKoaDriver<FieldPURI, InputPURI, CTX, C, RE> => {
-    const accessContext: I.URIO<Has<Koa.Context<CTX>>, CTX> = I.asksService(Koa.Context)(
-      (ctx) => ctx.ctx
-    ) as any;
+    const accessContext: I.URIO<Has<Koa.Context<CTX>>, Koa.Context<CTX>> = I.asksService(
+      Koa.Context
+    )(identity) as any;
 
-    const apolloKoaInstance = <R>(instanceConfig: ApolloKoaInstanceConfig<CTX, R>) => {
+    const apolloKoaInstance = <R>(instanceConfig: ApolloKoaInstanceConfig<Koa.Context<CTX>, R>) => {
       const acquire = I.gen(function* (_) {
         const env = yield* _(I.ask<R & SubscriptionsEnv<C> & RE>());
 
@@ -121,7 +121,10 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
         );
 
         const scalars = transformScalarResolvers(instanceConfig.schemaParts.scalars ?? {}, env);
-        const resolvers = transformResolvers<CTX>(instanceConfig.schemaParts.resolvers, env);
+        const resolvers = transformResolvers<Koa.Context<CTX>>(
+          instanceConfig.schemaParts.resolvers,
+          env
+        );
         const apolloConfig = { ...config } as Omit<Config, "context" | "schema">;
         if (config.subscriptions && config.subscriptions.onConnect) {
           const onConnect = config.subscriptions.onConnect;
@@ -181,11 +184,13 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
 
     return {
       accessContext,
-      extentObject: makeExtendObjectTypeSummoner<FieldPURI, InputPURI, CTX>(interpreters),
-      generateSchema: makeSchemaGenerator<CTX>(),
+      extentObject: makeExtendObjectTypeSummoner<FieldPURI, InputPURI, Koa.Context<CTX>>(
+        interpreters
+      ),
+      generateSchema: makeSchemaGenerator<Koa.Context<CTX>>(),
       inputObject: makeInputObjectTypeSummoner(interpreters),
       instance: apolloKoaInstance,
-      object: <ROOT>() => makeObjectTypeSummoner(interpreters)<ROOT, CTX>(),
+      object: <ROOT>() => makeObjectTypeSummoner(interpreters)<ROOT, Koa.Context<CTX>>(),
       scalar: makeScalarTypeSummoner
     };
   };

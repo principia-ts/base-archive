@@ -10,7 +10,7 @@ export class Empty<R, E> {
   readonly _tag = "Empty";
 }
 
-export type RouteFn<R, E> = (ctx: Context<{}>, next: FIO<E, void>) => IO<R, E, void>;
+export type RouteFn<R, E> = (ctx: Context, next: FIO<E, void>) => IO<R, E, void>;
 
 export type MiddlewareFn<R, E> = (cont: RouteFn<R, E>) => RouteFn<R, E>;
 

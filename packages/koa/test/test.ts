@@ -19,8 +19,8 @@ const home = Koa.route(
   "get",
   "/file",
   I.gen(function* (_) {
-    const { res, ctx } = yield* _(Koa.Context);
-    const p = path.resolve(process.cwd(), ctx.request.query["name"]);
+    const { res, engine } = yield* _(Koa.Context);
+    const p = path.resolve(process.cwd(), engine.request.query["name"]);
     const exists = yield* _(
       NFS.stat(p)
         ["|>"](I.map((stats) => stats.isFile()))
@@ -47,8 +47,8 @@ const home = Koa.route(
 );
 const middleware = Koa.useM((cont) =>
   I.gen(function* (_) {
-    const { ctx } = yield* _(Koa.Context);
-    yield* _(I.total(() => console.log(ctx.req.rawHeaders)));
+    const { engine } = yield* _(Koa.Context);
+    yield* _(I.total(() => console.log(engine.req.rawHeaders)));
     yield* _(cont);
   })
 );

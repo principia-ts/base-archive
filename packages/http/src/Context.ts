@@ -31,12 +31,11 @@ import * as Url from "url";
 
 import { decodeCharset, MEDIA_TYPE_REGEXP, PARAM_REGEXP, QESC_REGEXP, SyncDecoderM } from "./utils";
 
-export interface Context<T> {
+export interface Context {
   readonly req: Request;
   readonly res: Response;
-  readonly engine: T;
 }
-export const Context = <T>() => tag<Context<T>>();
+export const Context = tag<Context>();
 
 interface CloseEvent {
   readonly _tag: "Close";
