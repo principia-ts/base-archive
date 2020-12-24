@@ -1,49 +1,48 @@
-import type { FieldRecord, InputRecord } from "./containers";
+import type { FieldRecord, GQLField, InputRecord } from "./Types";
 import type { Compute } from "@principia/base/util/compute";
-import type { ExcludeMatchingProperties } from "@principia/base/util/types";
+import type {
+  _A,
+  ExcludeMatchingProperties,
+  UnionToIntersection
+} from "@principia/base/util/types";
 
-export type NonRequiredInputKeys<T extends InputRecord<any, T>> = keyof ExcludeMatchingProperties<
-  {
-    [k in keyof T]: T[k]["config"]["required"] extends false ? k : never;
-  },
-  never
->;
-
-export type RequiredInputKeys<T extends InputRecord<any, T>> = Exclude<
-  keyof T,
-  NonRequiredInputKeys<T>
->;
-
-export type TypeofInputRecord<T extends InputRecord<any, T>> = Compute<
-  {
-    [k in NonRequiredInputKeys<T>]?: T[k]["_A"];
-  } &
-    {
-      [k in RequiredInputKeys<T>]: T[k]["_A"];
-    },
-  "flat"
->;
-
-export type NullableFieldKeys<
-  T extends FieldRecord<any, any, any, T>
-> = keyof ExcludeMatchingProperties<
+export type NonRequiredInputKeys<T extends InputRecord<T>> = keyof ExcludeMatchingProperties<
   {
     [k in keyof T]: T[k]["config"]["nullable"] extends true ? k : never;
   },
   never
 >;
 
-export type NonNullableFieldKeys<T extends FieldRecord<any, any, any, T>> = Exclude<
-  keyof T,
-  NullableFieldKeys<T>
->;
+export type RequiredInputKeys<T extends InputRecord<T>> = Exclude<keyof T, NonRequiredInputKeys<T>>;
 
-export type TypeofFieldRecord<T extends FieldRecord<any, any, any, T>> = Compute<
+export type TypeofInputRecord<T extends InputRecord<T>> = Compute<
   {
-    [k in NullableFieldKeys<T>]?: T[k]["_A"];
+    [k in NonRequiredInputKeys<T>]?: _A<T[k]>;
   } &
     {
-      [k in NonNullableFieldKeys<T>]: T[k]["_A"];
+      [k in RequiredInputKeys<T>]: _A<T[k]>;
     },
   "flat"
+>;
+
+export type __R<Fs extends FieldRecord<any, any, any>> = UnionToIntersection<
+  {
+    [K in keyof Fs]: [Fs[K]] extends [{ _R: (_: infer R) => void }]
+      ? unknown extends R
+        ? never
+        : R
+      : never;
+  }[keyof Fs]
+>;
+
+export type __E<Fs extends FieldRecord<any, any, any>> = Compute<
+  {
+    [K in keyof Fs]: [Fs[K]] extends [GQLField<any, any, any, any, infer E, any>] ? E : never;
+  }[keyof Fs]
+>;
+
+export type __A<Fs extends FieldRecord<any, any, any>> = Compute<
+  {
+    [K in keyof Fs]: _A<Fs[K]>;
+  }
 >;

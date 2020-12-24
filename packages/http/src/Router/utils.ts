@@ -5,7 +5,7 @@ import type { UIO } from "@principia/io/IO";
 import * as I from "@principia/io/IO";
 
 export function matchUrl(url: RegExp, methods: ReadonlyArray<Method> = []) {
-  return (ctx: Context): UIO<boolean> =>
+  return (ctx: Context<{}>): UIO<boolean> =>
     I.gen(function* ($) {
       const urlString = yield* $(ctx.req.urlString);
       const method = yield* $(ctx.req.method);

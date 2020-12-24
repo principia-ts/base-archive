@@ -31,11 +31,12 @@ import * as Url from "url";
 
 import { decodeCharset, MEDIA_TYPE_REGEXP, PARAM_REGEXP, QESC_REGEXP, SyncDecoderM } from "./utils";
 
-export interface Context {
-  req: Request;
-  res: Response;
+export interface Context<T> {
+  readonly req: Request;
+  readonly res: Response;
+  readonly engine: T;
 }
-export const Context = tag<Context>();
+export const Context = <T>() => tag<Context<T>>();
 
 interface CloseEvent {
   readonly _tag: "Close";
@@ -82,6 +83,8 @@ export class Request {
   private memoizedUrl: URef<E.Either<HttpRouteException, O.Option<Url.Url>>> = Ref.unsafeMake(
     E.right(O.none())
   );
+
+  private memoizedParsedContentType: URef<O.Option<ParsedContentType>> = Ref.unsafeMake(O.none());
 
   eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, RequestEvent>>>;
 
@@ -220,54 +223,63 @@ export class Request {
 
   get parsedContentType(): UIO<O.Option<ParsedContentType>> {
     return pipe(
-      this.access((req) => T.succeed(O.fromNullable(req.headers["content-type"]))),
-      T.IOOption.flatMap((raw) =>
-        T.total(() => {
-          /*
-           * The following code is adapted from
-           * https://github.com/jshttp/content-type/blob/master/index.js
-           */
-          let index = raw.indexOf(";");
-          const type = index !== -1 ? raw.substr(0, index).trim() : raw.trim();
-          if (!MEDIA_TYPE_REGEXP.test(type)) {
-            return O.none();
-          }
-          const obj: ParsedContentType = {
-            type: type.toLowerCase(),
-            parameters: {}
-          };
-          if (index !== -1) {
-            let key: string;
-            let match: RegExpExecArray | null;
-            let value: string;
+      this.memoizedParsedContentType.get,
+      T.flatMap(
+        O.fold(
+          () =>
+            pipe(
+              this.access((req) => T.succeed(O.fromNullable(req.headers["content-type"]))),
+              T.IOOption.flatMap((raw) =>
+                T.total(() => {
+                  /*
+                   * The following code is adapted from
+                   * https://github.com/jshttp/content-type/blob/master/index.js
+                   */
+                  let index = raw.indexOf(";");
+                  const type = index !== -1 ? raw.substr(0, index).trim() : raw.trim();
+                  if (!MEDIA_TYPE_REGEXP.test(type)) {
+                    return O.none();
+                  }
+                  const obj: ParsedContentType = {
+                    type: type.toLowerCase(),
+                    parameters: {}
+                  };
+                  if (index !== -1) {
+                    let key: string;
+                    let match: RegExpExecArray | null;
+                    let value: string;
 
-            PARAM_REGEXP.lastIndex = index;
+                    PARAM_REGEXP.lastIndex = index;
 
-            while ((match = PARAM_REGEXP.exec(raw))) {
-              if (match.index !== index) {
-                return O.none();
-              }
+                    while ((match = PARAM_REGEXP.exec(raw))) {
+                      if (match.index !== index) {
+                        return O.none();
+                      }
 
-              index += match[0].length;
-              key = match[1].toLowerCase();
-              value = match[2];
+                      index += match[0].length;
+                      key = match[1].toLowerCase();
+                      value = match[2];
 
-              if (value[0] === '"') {
-                value = value.substr(1, value.length - 2).replace(QESC_REGEXP, "$1");
-              }
+                      if (value[0] === '"') {
+                        value = value.substr(1, value.length - 2).replace(QESC_REGEXP, "$1");
+                      }
 
-              obj.parameters[key] = value;
-            }
-            if (index !== raw.length) {
-              return O.none();
-            }
-          }
+                      obj.parameters[key] = value;
+                    }
+                    if (index !== raw.length) {
+                      return O.none();
+                    }
+                  }
 
-          return O.some(obj);
-          /*
-           * End of adaptation
-           */
-        })
+                  return O.some(obj);
+                  /*
+                   * End of adaptation
+                   */
+                })
+              )
+            ),
+          (pct) => T.succeed(O.some(pct))
+        )
       )
     );
   }

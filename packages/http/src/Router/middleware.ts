@@ -10,7 +10,7 @@ import { Combine, Middleware, Route } from "./model";
 
 export function addMiddlewareSafe<R, E, R1, E1>(
   routes: Routes<R, E>,
-  middle: (cont: RouteFn<R, E>) => (ctx: Context, next: FIO<E, void>) => IO<R1, E1, void>
+  middle: (cont: RouteFn<R, E>) => (ctx: Context<{}>, next: FIO<E, void>) => IO<R1, E1, void>
 ): USync<Routes<R1, E1>> {
   return Sy.gen(function* (_) {
     switch (routes._tag) {
@@ -35,13 +35,13 @@ export function addMiddlewareSafe<R, E, R1, E1>(
 
 export function addMiddleware_<R, E, R1, E1>(
   routes: Routes<R, E>,
-  middle: (cont: RouteFn<R, E>) => (ctx: Context, next: FIO<E, void>) => IO<R1, E1, void>
+  middle: (cont: RouteFn<R, E>) => (ctx: Context<{}>, next: FIO<E, void>) => IO<R1, E1, void>
 ): Routes<R1, E1> {
   return Sy.unsafeRun(addMiddlewareSafe(routes, middle));
 }
 
 export function addMiddleware<R, E, R1, E1>(
-  middle: (cont: RouteFn<R, E>) => (ctx: Context, next: FIO<E, void>) => IO<R1, E1, void>
+  middle: (cont: RouteFn<R, E>) => (ctx: Context<{}>, next: FIO<E, void>) => IO<R1, E1, void>
 ): (routes: Routes<R, E>) => Routes<R1, E1> {
   return (routes) => addMiddleware_(routes, middle);
 }

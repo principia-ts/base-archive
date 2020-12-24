@@ -1,20 +1,24 @@
-import type { Compute } from "@principia/base/util/compute";
+import type { MorphismN } from "@principia/base/data/Function";
 import type * as U from "@principia/base/util/types";
-import type { FunctionN } from "@principia/core/Function";
 import type { SerializableError } from "@principia/core/SerializableError";
-import type * as T from "@principia/io/IO";
-import type { ValueNode } from "graphql";
+import type * as Sy from "@principia/io/Sync";
+import type { DirectiveNode, ValueNode } from "graphql";
 
-export type ScalarSerializeF<R, A> = (u: unknown) => T.IO<R, SerializableError<any>, A>;
-export type ScalarParseValueF<R, E> = (u: unknown) => T.IO<R, SerializableError<any>, E>;
+export interface ScalarConfig {
+  readonly description?: string;
+  readonly directives?: Array<DirectiveNode>;
+}
+
+export type ScalarSerializeF<R, A> = (u: unknown) => Sy.Sync<R, SerializableError<any>, A>;
+export type ScalarParseValueF<R, E> = (u: unknown) => Sy.Sync<R, SerializableError<any>, E>;
 export type ScalarParseLiteralF<R, E> = (
   valueNode: ValueNode
-) => T.IO<R, SerializableError<any>, E>;
+) => Sy.Sync<R, SerializableError<any>, E>;
 
-export interface ScalarFunctions<E, A> {
-  parseLiteral: ScalarParseLiteralF<any, E>;
-  parseValue: ScalarParseValueF<any, E>;
-  serialize: ScalarSerializeF<any, A>;
+export interface ScalarFunctions<I, O> {
+  parseLiteral: ScalarParseLiteralF<any, I>;
+  parseValue: ScalarParseValueF<any, I>;
+  serialize: ScalarSerializeF<any, O>;
 }
 
 export type Scalar<Name, E, A> = {
@@ -22,34 +26,25 @@ export type Scalar<Name, E, A> = {
   name: Name;
 };
 
-export type ScalarE<Fs> = Fs extends ScalarFunctions<infer E, any> ? E : never;
-export type ScalarA<Fs> = Fs extends ScalarFunctions<any, infer A> ? A : never;
+export type _I<Fs> = Fs extends ScalarFunctions<infer I, any> ? I : never;
+export type _O<Fs> = Fs extends ScalarFunctions<any, infer O> ? O : never;
 
-export type ScalarEnv<S> = Compute<
-  S extends Scalar<any, any, any>
-    ? U.UnionToIntersection<
-        {
-          [k in keyof S["functions"]]: S["functions"][k] extends FunctionN<any, infer Ret>
-            ? Ret extends T.IO<infer R, infer _E, infer _A>
-              ? unknown extends R
-                ? never
-                : R
-              : never
-            : never;
-        }[keyof S["functions"]]
-      >
-    : never,
-  "flat"
+export type ScalarEnv<S extends Scalar<any, any, any>> = U.UnionToIntersection<
+  {
+    [k in keyof S["functions"]]: S["functions"][k] extends MorphismN<any, infer Ret>
+      ? Ret extends Sy.Sync<infer R, any, any>
+        ? R
+        : never
+      : never;
+  }[keyof S["functions"]]
 >;
 
 export type SchemaScalars = {
   [n: string]: Scalar<any, any, any>;
 };
 
-export type SchemaScalarsEnv<S> = S extends SchemaScalars
-  ? U.UnionToIntersection<
-      {
-        [k in keyof S]: ScalarEnv<S[k]>;
-      }[keyof S]
-    >
-  : never;
+export type SchemaScalarsEnv<S extends SchemaScalars> = U.UnionToIntersection<
+  {
+    [k in keyof S]: ScalarEnv<S[k]>;
+  }[keyof S]
+>;

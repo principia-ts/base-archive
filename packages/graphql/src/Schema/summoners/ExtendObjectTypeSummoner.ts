@@ -1,71 +1,66 @@
-import type {
-  AnyObjectType,
-  AnyOutputFieldType,
-  AnyOutputType,
-  FieldRecord,
-  FieldResolverRecord
-} from "../containers";
-import type { FieldPURIS, InferredFieldAlgebra } from "../HKT";
-import type { TypeofFieldRecord } from "../Utils";
-import type { FieldDefinitionNode } from "graphql";
+import type { AURItoFieldAlgebra, AURItoInputAlgebra, FieldAURIS, InputAURIS } from "../HKT";
+import type { AnyOutput, FieldRecord, GQLObject } from "../Types";
+import type { __A, __E, __R } from "../Utils";
+import type { _A, _E, _R, UnionToIntersection } from "@principia/base/util/types";
 
-import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
+import * as A from "@principia/base/data/Array";
+import * as R from "@principia/base/data/Record";
 
-import { addNameToUnnamedFieldDefinitionNode, createFieldDefinitionNode } from "../AST";
-import { ExtendObjectType } from "../containers";
+import { addNameToUnnamedFieldDefinitionNode } from "../AST";
+import { GQLExtendObject } from "../Types";
 
-export interface ExtendObjectTypeSummoner<URI extends string, PURI extends FieldPURIS, Ctx> {
+export interface ExtendObjectTypeSummoner<
+  FieldAURI extends FieldAURIS,
+  InputAURI extends InputAURIS,
+  T
+> {
   <
-    Type extends AnyObjectType<URI, Ctx>,
-    Fields extends FieldRecord<URI, Type["_ROOT"], Ctx, Fields>
-  >(definition: {
-    fields: (F: InferredFieldAlgebra<URI, PURI, Type["_ROOT"], Ctx>) => Fields;
-    type: () => Type;
-  }): ExtendObjectType<
-    URI,
-    Type["_ROOT"],
-    Ctx,
-    Type,
-    Fields,
-    FieldResolverRecord<URI, Fields>,
-    TypeofFieldRecord<Type["fields"] & Fields>
-  >;
+    Type extends GQLObject<any, any, T, any, any, any>,
+    Fields extends FieldRecord<Type["_Root"], T, Fields>
+  >(
+    type: () => Type,
+    fields: (
+      F: AURItoFieldAlgebra<Type["_Root"], T>[FieldAURI] & AURItoInputAlgebra[InputAURI]
+    ) => Fields
+  ): GQLExtendObject<Type, _R<Type> & __R<Fields>, _E<Type> & __E<Fields>, _A<Type> & __A<Fields>>;
 }
 
-export function makeExtendObjectTypeSummoner<URI extends string, PURI extends FieldPURIS, Ctx>() {
-  return (
-    interpreters: InferredFieldAlgebra<URI, PURI, any, any>
-  ): ExtendObjectTypeSummoner<URI, PURI, Ctx> => (definition) => {
-    const fields = definition.fields(interpreters);
-    return new ExtendObjectType(
-      definition.type(),
-      reduceRecord(
-        fields,
-        [] as FieldDefinitionNode[],
-        (k, acc, v: NonNullable<AnyOutputFieldType<URI, Ctx>>) => {
-          switch (v._tag) {
-            case "RecursiveType":
-              return [
-                ...acc,
-                createFieldDefinitionNode({
-                  description: v.config?.description,
-                  list: v.config?.list,
-                  name: k,
-                  nonNullable: !v.config?.nullable,
-                  typeName: v.name
-                })
-              ];
-            case "FieldType":
-              return [...acc, addNameToUnnamedFieldDefinitionNode(v.node, k)];
-            case "ScalarFieldType":
-              return [...acc, addNameToUnnamedFieldDefinitionNode(v.node, k)];
-            case "ObjectFieldType":
-              return [...acc, addNameToUnnamedFieldDefinitionNode(v.node, k)];
-          }
+export function makeExtendObjectTypeSummoner<
+  FieldAURI extends FieldAURIS,
+  InputAURI extends InputAURIS,
+  T
+>(
+  interpreters: AURItoFieldAlgebra<any, any>[FieldAURI] & AURItoInputAlgebra[InputAURI]
+): ExtendObjectTypeSummoner<FieldAURI, InputAURI, T> {
+  return (type, fields) => {
+    const interpretedFields = fields(interpreters);
+    return new GQLExtendObject(
+      type(),
+      R.foldLeftWithIndex_(interpretedFields, A.empty(), (k, acc, v: NonNullable<AnyOutput<T>>) => {
+        switch (v._tag) {
+          /*
+           * case "RecursiveType":
+           *   return [
+           *     ...acc,
+           *     createFieldDefinitionNode({
+           *       description: v.config?.description,
+           *       list: v.config?.list,
+           *       name: k,
+           *       nullable: v.config?.nullable,
+           *       typeName: v.name
+           *     })
+           *   ];
+           */
+          case "GQLField":
+            return [...acc, addNameToUnnamedFieldDefinitionNode(v.ast, k)];
+          case "GQLScalarField":
+            return [...acc, addNameToUnnamedFieldDefinitionNode(v.ast, k)];
+          case "GQLObjectField":
+            return [...acc, addNameToUnnamedFieldDefinitionNode(v.ast, k)];
         }
-      ),
-      reduceRecord(fields, {}, (k, acc, v: AnyOutputType<URI, Ctx>) => {
-        if (v._tag === "FieldType") {
+      }),
+      R.foldLeftWithIndex_(interpretedFields, {}, (k, acc, v: AnyOutput<T>) => {
+        if (v._tag === "GQLField") {
           return { ...acc, [k]: v.resolve };
         }
         return acc;

@@ -4,7 +4,7 @@ export interface InputTypeConfig<A> {
   defaultValue?: A;
   description?: string;
   list?: boolean | [boolean];
-  required?: boolean;
+  nullable?: boolean;
 }
 export interface OutputTypeConfig {
   deprecation?: string;
@@ -16,33 +16,24 @@ export interface OutputTypeConfig {
 export type EvaluateConfig<
   Config extends OutputTypeConfig | InputTypeConfig<A>,
   A
-> = Config extends OutputTypeConfig
-  ? EvaluateNullableConfig<Config, EvaluateListConfig<Config, A>>
-  : Config extends InputTypeConfig<any>
-  ? EvaluateRequiredConfig<Config, EvaluateListConfig<Config, A>>
-  : A;
-
-export type EvaluateListConfig<
-  Config extends OutputTypeConfig | InputTypeConfig<A>,
-  A
 > = OutputTypeConfig extends Config
   ? A
   : InputTypeConfig<A> extends Config
   ? A
-  : Config["list"] extends true
+  : EvaluateNullableConfig<Config, EvaluateListConfig<Config, A>>;
+
+export type EvaluateListConfig<
+  Config extends OutputTypeConfig | InputTypeConfig<A>,
+  A
+> = true extends Config["list"]
   ? Array<A>
-  : Config["list"] extends [true]
+  : [true] extends Config["list"]
   ? NonEmptyArray<A>
-  : Config["list"] extends [false]
+  : [false] extends Config["list"]
   ? Array<A>
   : A;
 
 export type EvaluateNullableConfig<
   Config extends OutputTypeConfig,
   A
-> = OutputTypeConfig extends Config ? A : Config["nullable"] extends true ? A | undefined : A;
-
-export type EvaluateRequiredConfig<
-  Config extends InputTypeConfig<any>,
-  A
-> = InputTypeConfig<A> extends Config ? A : Config["required"] extends false ? A | undefined : A;
+> = Config["nullable"] extends true ? A | undefined : A;

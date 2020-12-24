@@ -45,9 +45,11 @@
     "@principia/base": "^0.2.3",
     "@principia/io": "^0.2.3",
     "@principia/model": "^0.2.3",
+    "@principia/koa": "^0.0.0",
     "core-js": "3",
     "graphql": "^15.4.0",
-    "graphql-tools": "^7.0.2"
+    "graphql-tools": "^7.0.2",
+    "apollo-server-koa": "2.18.1"
   },
   "devDependencies": {
     "typescript": "next"

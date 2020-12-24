@@ -39,7 +39,7 @@ interface FieldDefinitionNodeArgs {
   directives?: ReadonlyArray<DirectiveNode>;
   list?: boolean | [boolean];
   name: string;
-  nonNullable?: boolean;
+  nullable?: boolean;
   typeName: string;
 }
 
@@ -64,13 +64,13 @@ interface InputValueDefinitionNodeArgs {
   directives?: Array<DirectiveNode>;
   list?: boolean | [boolean];
   name: string;
-  nonNullable?: boolean;
+  nullable?: boolean;
   typeName: string;
 }
 
 interface TypeNodeArgs {
   list?: boolean | [boolean];
-  nonNullable?: boolean;
+  nullable?: boolean;
   typeName: string;
 }
 
@@ -192,7 +192,7 @@ export function createNamedTypeNode(typeName: string): NamedTypeNode {
 
 export function processListAndNonNullableArgs(args: {
   list?: boolean | [boolean];
-  nonNullable?: boolean;
+  nullable?: boolean;
   typeNode: NamedTypeNode | ListTypeNode;
 }): TypeNode {
   let type: TypeNode = Object.assign({}, args.typeNode);
@@ -205,11 +205,8 @@ export function processListAndNonNullableArgs(args: {
       type = args.list ? createListTypeNode(createNonNullTypeNode(type)) : type;
     }
   }
-  if (args.nonNullable) {
+  if (!args.nullable) {
     type = createNonNullTypeNode(type);
-  }
-  if (args.typeNode.kind === "NamedType" && args.typeNode.name.value === "Int") {
-    console.log(inspect(type, false, 6, true));
   }
   return type;
 }
@@ -217,7 +214,7 @@ export function processListAndNonNullableArgs(args: {
 export function createTypeNode(args: TypeNodeArgs): TypeNode {
   return processListAndNonNullableArgs({
     list: args.list,
-    nonNullable: args.nonNullable,
+    nullable: args.nullable,
     typeNode: createNamedTypeNode(args.typeName)
   });
 }
@@ -231,7 +228,7 @@ export function createFieldDefinitionNode(args: FieldDefinitionNodeArgs): FieldD
     name: createNameNode(args.name),
     type: createTypeNode({
       list: args.list,
-      nonNullable: args.nonNullable,
+      nullable: args.nullable,
       typeName: args.typeName
     })
   };
@@ -247,7 +244,7 @@ export function createUnnamedFieldDefinitionNode(
     kind: "UnnamedFieldDefinition",
     type: createTypeNode({
       list: args.list,
-      nonNullable: args.nonNullable,
+      nullable: args.nullable,
       typeName: args.typeName
     })
   };
@@ -293,7 +290,7 @@ export function createInputValueDefinitionNode(
     name: createNameNode(args.name),
     type: createTypeNode({
       list: args.list,
-      nonNullable: args.nonNullable,
+      nullable: args.nullable,
       typeName: args.typeName
     })
   };
@@ -335,7 +332,7 @@ export function createUnnamedInputValueDefinitionNode(
     kind: "UnnamedInputValueDefinition",
     type: createTypeNode({
       list: args.list,
-      nonNullable: args.nonNullable,
+      nullable: args.nullable,
       typeName: args.typeName
     })
   };

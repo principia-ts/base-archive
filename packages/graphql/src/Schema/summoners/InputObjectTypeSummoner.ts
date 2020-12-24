@@ -1,49 +1,48 @@
-import type { InputRecord } from "../containers";
-import type { InferredInputAlgebra, InputPURIS } from "../HKT";
-import type { TypeofInputRecord } from "../Utils";
+import type { AURItoInputAlgebra, InputAURIS } from "../HKT";
+import type { InputRecord } from "../Types";
+import type { _A } from "@principia/base/util/types";
 import type { InputValueDefinitionNode } from "graphql";
 
-import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
+import * as R from "@principia/base/data/Record";
 
 import {
   createInputObjectTypeDefinitionNode,
   createInputValueDefinitionNode,
   getTypeName
 } from "../AST";
-import { InputObjectType } from "../containers";
+import { GQLInputObject } from "../Types";
 
-export interface InputObjectTypeSummoner<URI extends string, PURI extends InputPURIS> {
-  <Name extends string, Fields extends InputRecord<URI, Fields>>(definition: {
-    fields: (F: InferredInputAlgebra<URI, PURI>) => Fields;
-    name: Name;
-  }): InputObjectType<URI, Name, Fields, TypeofInputRecord<Fields>>;
+export interface InputObjectTypeSummoner<InputAURI extends InputAURIS> {
+  <Name extends string, Fields extends InputRecord<Fields>>(
+    name: Name,
+    fields: (F: AURItoInputAlgebra[InputAURI]) => Fields
+  ): GQLInputObject<Name, { [K in keyof Fields]: _A<Fields[K]> }>;
 }
 
-export function makeInputObjectTypeSummoner<URI extends string, PURI extends InputPURIS>() {
-  return (interpreters: InferredInputAlgebra<URI, PURI>): InputObjectTypeSummoner<URI, PURI> => (
-    definition
-  ) => {
-    return new InputObjectType(
-      definition.name,
+export function makeInputObjectTypeSummoner<InputAURI extends InputAURIS>(
+  interpreters: AURItoInputAlgebra[InputAURI]
+): InputObjectTypeSummoner<InputAURI> {
+  return (name, fields) =>
+    new GQLInputObject(
       createInputObjectTypeDefinitionNode({
-        fields: reduceRecord(
-          definition.fields(interpreters),
+        fields: R.foldLeftWithIndex_(
+          fields(interpreters),
           [] as InputValueDefinitionNode[],
           (k, acc, v) => {
             return [
               ...acc,
               createInputValueDefinitionNode({
                 defaultValue: v.config?.defaultValue,
-                description: v.config?.description || v.node.description?.value,
+                description: v.config?.description || v.ast.description?.value,
                 name: k,
-                nonNullable: v.config?.required,
-                typeName: getTypeName(v.node)
+                nullable: v.config.nullable,
+                typeName: getTypeName(v.ast)
               })
             ];
           }
         ),
-        name: definition.name
-      })
+        name
+      }),
+      name
     );
-  };
 }

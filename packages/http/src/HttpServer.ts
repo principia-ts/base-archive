@@ -31,18 +31,18 @@ export interface Server {
 export const Server = tag<Server>();
 
 export interface RequestQueue {
-  queue: Q.Queue<Context>;
+  queue: Q.Queue<Context<{}>>;
 }
 
 export const RequestQueue = tag<RequestQueue>();
 
 export const Http = L.fromRawManaged(
   M.gen(function* ($) {
-    const queue = yield* $(Q.makeUnbounded<Context>());
+    const queue = yield* $(Q.makeUnbounded<Context<{}>>());
     const server = yield* $(
       I.total(() =>
         http.createServer((req, res) => {
-          I.run(queue.offer({ req: new Request(req), res: new Response(res) }));
+          I.run(queue.offer({ req: new Request(req), res: new Response(res), engine: {} }));
         })
       )
     );

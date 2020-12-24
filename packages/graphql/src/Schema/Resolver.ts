@@ -1,78 +1,60 @@
-import type { Context } from "./Context";
+import type { Has } from "@principia/base/data/Has";
 import type * as O from "@principia/base/data/Option";
 import type * as U from "@principia/base/util/types";
-import type * as T from "@principia/io/IO";
+import type { Context } from "@principia/http";
+import type * as I from "@principia/io/IO";
 
 export interface ResolverInput<Root, Args, Ctx> {
-  args: Args;
-  ctx: Ctx;
-  root: O.Option<Root>;
+  readonly args: Args;
+  readonly ctx: Ctx;
+  readonly root: O.Option<Root>;
 }
 
 export interface SubscriptionResolverInput<Root, Ctx> {
-  ctx: Ctx;
-  result: Root;
+  readonly ctx: Ctx;
+  readonly result: Root;
 }
 
-export type ResolverF<URI extends string, Root, Args, Ctx, R, E, A> = (
-  _: ResolverInput<Root, Args, Ctx>
-) => T.IO<R & Context<URI, Ctx>, E, A>;
+export type ResolverF<Root, Args, T, R, E, A> = (
+  root: Root,
+  args: Args,
+  ctx: Context<T>
+) => I.IO<R & Has<Context<T>>, E, A>;
 
-export interface SubscriptionResolverF<
-  URI extends string,
-  Root,
-  Args,
-  Ctx,
-  SR,
-  SE,
-  SA,
-  RR,
-  RE,
-  RA
-> {
-  resolve?: (_: SubscriptionResolverInput<SA, Ctx>) => T.IO<RR & Context<URI, Ctx>, RE, RA>;
+export interface SubscriptionResolverF<Root, Args, T, SR, SE, SA, RR, RE, RA> {
+  resolve?: (root: Root, ctx: Context<T>) => I.IO<RR & Has<Context<T>>, RE, RA>;
   subscribe: (
-    _: ResolverInput<Root, Args, Ctx>
-  ) => T.IO<SR & Context<URI, Ctx>, SE, AsyncIterable<SA>>;
+    root: Root,
+    args: Args,
+    ctx: Context<T>
+  ) => I.IO<SR & Has<Context<T>>, SE, AsyncIterable<SA>>;
 }
 
-export type FieldResolvers<URI extends string, Args, Ctx, K> = {
+export type FieldResolvers<Args, T, K> = {
   [k in keyof K]:
-    | ResolverF<URI, any, Args, Ctx, any, any, any>
-    | SubscriptionResolverF<URI, any, Args, Ctx, any, any, any, any, any, any>;
+    | ResolverF<any, Args, T, any, any, any>
+    | SubscriptionResolverF<any, Args, T, any, any, any, any, any, any>;
 };
 
-export type SchemaResolvers<URI extends string, Args, Ctx, N, K> = {
-  [k in keyof N]: FieldResolvers<URI, Args, Ctx, K>;
+export type SchemaResolvers<Args, T, N, K> = {
+  [k in keyof N]: FieldResolvers<Args, T, K>;
 };
 
-export type SchemaResolversEnv<URI extends string, Res, Ctx> = Res extends SchemaResolvers<
-  URI,
-  any,
-  Ctx,
-  any,
-  any
->
-  ? FieldResolversEnv<URI, U.UnionToIntersection<Res[keyof Res]>, Ctx>
+export type SchemaResolversEnv<Res, T> = Res extends SchemaResolvers<any, T, any, any>
+  ? FieldResolversEnv<U.UnionToIntersection<Res[keyof Res]>, T>
   : never;
 
-export type FieldResolversEnv<URI extends string, Res, Ctx> = Res extends FieldResolvers<
-  URI,
-  any,
-  Ctx,
-  any
->
+export type FieldResolversEnv<Res, T> = Res extends FieldResolvers<any, T, any>
   ? U.UnionToIntersection<
       {
-        [k in keyof Res]: Res[k] extends ResolverF<URI, any, any, Ctx, infer R, any, any>
+        [k in keyof Res]: Res[k] extends ResolverF<any, any, T, infer R, any, any>
           ? unknown extends R
             ? never
             : R
           : Res[k] extends SubscriptionResolverF<
-              URI,
               any,
               any,
-              Ctx,
+              T,
               infer RS,
               any,
               any,
@@ -92,14 +74,8 @@ export type FieldResolversEnv<URI extends string, Res, Ctx> = Res extends FieldR
     >
   : never;
 
-export type AofResolver<Res> = Res extends ResolverF<any, any, any, any, any, any, infer A>
-  ? A
-  : never;
+export type AofResolver<Res> = Res extends ResolverF<any, any, any, any, any, infer A> ? A : never;
 
-export type EofResolver<Res> = Res extends ResolverF<any, any, any, any, any, infer E, any>
-  ? E
-  : never;
+export type EofResolver<Res> = Res extends ResolverF<any, any, any, any, infer E, any> ? E : never;
 
-export type RofResolver<Res> = Res extends ResolverF<any, any, any, any, infer R, any, any>
-  ? R
-  : never;
+export type RofResolver<Res> = Res extends ResolverF<any, any, any, infer R, any, any> ? R : never;

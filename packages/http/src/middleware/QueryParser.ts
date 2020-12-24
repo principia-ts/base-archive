@@ -23,9 +23,9 @@ export const UrlQuery = tag<UrlQuery>();
 export function withQueryParser<R, E>(
   routes: Http.Routes<R, E>
 ): Http.Routes<Erase<R, Has<UrlQuery>>, E | HttpRouteException> {
-  return Http.addMiddleware_(routes, (cont) => ({ req, res }, next) => {
+  return Http.addMiddleware_(routes, (cont) => (ctx, next) => {
     return I.gen(function* ($) {
-      const url = yield* $(req.url);
+      const url = yield* $(ctx.req.url);
       const urlQuery = pipe(
         O.fromNullable(url.query),
         O.map((q) => (typeof q === "string" ? qs.parse(q) : q)),
@@ -39,7 +39,7 @@ export function withQueryParser<R, E>(
           )
         )
       );
-      yield* $(I.giveService(UrlQuery)({ urlQuery })(cont({ req, res }, next)));
+      yield* $(I.giveService(UrlQuery)({ urlQuery })(cont(ctx, next)));
     });
   });
 }

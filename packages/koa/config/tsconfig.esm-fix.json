@@ -3,20 +3,18 @@
   "compilerOptions": {
     "incremental": true,
     "declaration": false,
-    "sourceMap": true,
     "module": "es2015",
     "target": "es2020",
     "rootDir": "../src",
-    "outDir": "../dist/dist/.intermediary",
-    "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
+    "outDir": "../dist/dist/esm-fix",
+    "sourceMap": true,
     "plugins": [
       {
-        "transform": "../../compile/src/index.ts",
-        "moduleMap": {
-          "^src/(.*)": "(@principia/base): dist/_src/$1"
-        }
+        "after": true,
+        "transform": "@0x706b/ts-transform-fix-esm"
       }
-    ]
+    ],
+    "tsBuildInfoFile": "../tsbuildinfo/esm-fix.tsbuildinfo"
   },
   "exclude": ["../build", "../dist", "../node_modules", "../test"],
   "include": ["../src"]
