@@ -1,6 +1,7 @@
+import type { GraphQlException } from "./GraphQlException";
+import type { Exception } from "@principia/base/data/Exception";
 import type { MorphismN } from "@principia/base/data/Function";
 import type * as U from "@principia/base/util/types";
-import type { SerializableError } from "@principia/core/SerializableError";
 import type * as Sy from "@principia/io/Sync";
 import type { DirectiveNode, ValueNode } from "graphql";
 
@@ -9,11 +10,9 @@ export interface ScalarConfig {
   readonly directives?: Array<DirectiveNode>;
 }
 
-export type ScalarSerializeF<R, A> = (u: unknown) => Sy.Sync<R, SerializableError<any>, A>;
-export type ScalarParseValueF<R, E> = (u: unknown) => Sy.Sync<R, SerializableError<any>, E>;
-export type ScalarParseLiteralF<R, E> = (
-  valueNode: ValueNode
-) => Sy.Sync<R, SerializableError<any>, E>;
+export type ScalarSerializeF<R, A> = (u: unknown) => Sy.Sync<R, GraphQlException, A>;
+export type ScalarParseValueF<R, E> = (u: unknown) => Sy.Sync<R, GraphQlException, E>;
+export type ScalarParseLiteralF<R, E> = (valueNode: ValueNode) => Sy.Sync<R, GraphQlException, E>;
 
 export interface ScalarFunctions<I, O> {
   parseLiteral: ScalarParseLiteralF<any, I>;

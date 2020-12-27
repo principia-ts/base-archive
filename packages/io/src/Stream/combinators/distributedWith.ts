@@ -4,12 +4,12 @@ import type * as Queue from "../../Queue";
 import type { Stream } from "../core";
 
 import { pipe } from "@principia/base/data/Function";
+import * as Map from "@principia/base/data/Map";
 import * as O from "@principia/base/data/Option";
 
 import * as C from "../../Chunk";
 import * as I from "../../IO";
 import * as M from "../../Managed";
-import * as Map from "@principia/base/data/Map";
 import * as P from "../../Promise";
 import { distributedWithDynamic_ } from "./distributedWithDynamic";
 
@@ -59,14 +59,14 @@ export function distributedWith_<R, E, O>(
               )
             ),
             I.flatMap((entries) => {
-              const [mappings, queues] = C.reduceRight_(
+              const [mappings, queues] = C.foldRight_(
                 entries,
                 [
                   Map.empty<symbol, number>(),
                   C.empty<Queue.Dequeue<Ex.Exit<O.Option<E>, O>>>()
                 ] as const,
                 ([mapping, queue], [mappings, queues]) => [
-                  Map.unsafeInsertAt_(mappings, mapping[0], mapping[1]),
+                  Map.insert_(mappings, mapping[0], mapping[1]),
                   C.append_(queues, queue)
                 ]
               );

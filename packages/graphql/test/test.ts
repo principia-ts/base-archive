@@ -7,10 +7,11 @@ import * as Koa from "@principia/koa";
 import { runMain } from "@principia/node/Runtime";
 import KoaRouter from "koa-router";
 
-import { GQLInputInterpreter, GraphQlFieldInterpreter } from "../src/Schema";
+import { GraphQlFieldInterpreter, GraphQlInputInterpreter } from "../src/schema";
+import { GraphQlException } from "../src/schema/GraphQlException";
 import { makeApollo } from "../src/server/koa";
 
-const apollo = makeApollo({ ...GraphQlFieldInterpreter(), ...GQLInputInterpreter() })(
+const apollo = makeApollo({ ...GraphQlFieldInterpreter(), ...GraphQlInputInterpreter() })(
   {},
   ({ ctx }) =>
     I.succeed({
@@ -69,7 +70,12 @@ const MoreQueries = apollo.extentObject(
     }),
     error: F.field({
       type: F.string(),
-      resolve: () => I.fail(new Error("an error"))
+      resolve: () =>
+        I.fail(
+          new GraphQlException("A test exception", 500, {
+            someData: "this is some additional data"
+          })
+        )
     })
   })
 );

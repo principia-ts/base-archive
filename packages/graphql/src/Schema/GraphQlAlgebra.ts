@@ -177,7 +177,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
     )
 });
 
-export const GQLInputInterpreter = (): GraphQlInputAlgebra => ({
+export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
   booleanArg: (config) =>
     new GQLInputValue(
       createUnnamedInputValueDefinitionNode({

@@ -1,0 +1,21 @@
+{
+   "extends": "../../../tsconfig.json",
+   "compilerOptions": {
+      "incremental": true,
+      "declaration": false,
+      "module": "es2015",
+      "target": "es2020",
+      "rootDir": "../src",
+      "outDir": "../dist/dist/esm-fix",
+      "sourceMap": true,
+      "plugins": [
+         {
+            "after": true,
+            "transform": "@0x706b/ts-transform-fix-esm"
+         }
+      ],
+      "tsBuildInfoFile": "../tsbuildinfo/esm-fix.tsbuildinfo"
+   },
+   "exclude": ["../build", "../dist", "../node_modules", "../test"],
+   "include": ["../src"]
+}

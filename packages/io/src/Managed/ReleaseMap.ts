@@ -75,7 +75,7 @@ export function release(key: number, exit: Exit<any, any>) {
           case "Running": {
             return [
               O.fold_(
-                M.lookup_(Eq.number)(s.finalizers(), key),
+                M.lookup_(s.finalizers(), key),
                 () => I.unit(),
                 (f) => f(exit)
               ),
@@ -111,7 +111,7 @@ export function replace(
             return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit)];
           case "Running":
             return [
-              I.succeed(M.lookup_(Eq.number)(finalizers(s), key)),
+              I.succeed(M.lookup_(finalizers(s), key)),
               new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
             ];
           default:

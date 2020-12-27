@@ -1,7 +1,10 @@
 import type { Byte } from "@principia/base/data/Byte";
+import type { Either } from "@principia/base/data/Either";
 import type { Predicate, Refinement } from "@principia/base/data/Function";
+import type { Separated } from "@principia/base/util/types";
 
 import * as A from "@principia/base/data/Array";
+import { tuple } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
 
 /*
@@ -111,6 +114,34 @@ export function isNonEmpty<A>(as: Chunk<A>): as is NonEmptyChunk<A> {
 
 /*
  * -------------------------------------------
+ * Apply
+ * -------------------------------------------
+ */
+
+export function zipWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
+  return Array.isArray(fa)
+    ? Array.isArray(fb)
+      ? A.zipWith_(fa, fb, f)
+      : A.zipWith_(fa, A.from(fb), f)
+    : Array.isArray(fb)
+    ? A.zipWith_(A.from(fa), fb, f)
+    : A.zipWith_(A.from(fa), A.from(fb), f);
+}
+
+export function zipWith<A, B, C>(fb: Chunk<B>, f: (a: A, b: B) => C): (fa: Chunk<A>) => Chunk<C> {
+  return (fa) => zipWith_(fa, fb, f);
+}
+
+export function zip_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<readonly [A, B]> {
+  return zipWith_(fa, fb, tuple);
+}
+
+export function zip<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<readonly [A, B]> {
+  return (fa) => zip_(fa, fb);
+}
+
+/*
+ * -------------------------------------------
  * Filterable
  * -------------------------------------------
  */
@@ -135,7 +166,7 @@ export function filter<A>(predicate: Predicate<A>): (fa: Chunk<A>) => Chunk<A> {
 
 export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
   if (Array.isArray(fa)) {
-    return A.filterMap_(Array.from(fa), f);
+    return A.filterMap_(fa, f);
   }
   return A.filterMap_(Array.from(fa), f);
 }
@@ -144,13 +175,56 @@ export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: Chunk<A>) => Chu
   return (self) => filterMap_(self, f);
 }
 
+export function partition_<A, B extends A>(
+  fa: Chunk<A>,
+  refinement: Refinement<A, B>
+): Separated<Chunk<A>, Chunk<B>>;
+export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): Separated<Chunk<A>, Chunk<A>>;
+export function partition_<A>(
+  fa: Chunk<A>,
+  predicate: Predicate<A>
+): Separated<Chunk<A>, Chunk<A>> {
+  if (Array.isArray(fa)) {
+    return A.partition_(fa, predicate);
+  }
+  return A.partition_(A.from(fa), predicate);
+}
+
+export function partition<A, B extends A>(
+  refinement: Refinement<A, B>
+): (fa: Chunk<A>) => Separated<Chunk<A>, Chunk<B>>;
+export function partition<A>(
+  predicate: Predicate<A>
+): (fa: Chunk<A>) => Separated<Chunk<A>, Chunk<A>>;
+export function partition<A>(
+  predicate: Predicate<A>
+): (fa: Chunk<A>) => Separated<Chunk<A>, Chunk<A>> {
+  return (fa) => partition_(fa, predicate);
+}
+
+export function partitionMap_<A, B, C>(
+  fa: Chunk<A>,
+  f: (a: A) => Either<B, C>
+): Separated<Chunk<B>, Chunk<C>> {
+  if (Array.isArray(fa)) {
+    return A.partitionMap_(fa, f);
+  }
+  return A.partitionMap_(A.from(fa), f);
+}
+
+export function partitionMap<A, B, C>(
+  f: (a: A) => Either<B, C>
+): (fa: Chunk<A>) => Separated<Chunk<B>, Chunk<C>> {
+  return (fa) => partitionMap_(fa, f);
+}
+
 /*
  * -------------------------------------------
  * Foldable
  * -------------------------------------------
  */
 
-export function reduce_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
+export function foldLeft_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
   let x = b;
   for (const y of fa) {
     x = f(x, y);
@@ -158,11 +232,11 @@ export function reduce_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
   return x;
 }
 
-export function reduce<A, B>(b: B, f: (b: B, a: A) => B): (fa: Chunk<A>) => B {
-  return (fa) => reduce_(fa, b, f);
+export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Chunk<A>) => B {
+  return (fa) => foldLeft_(fa, b, f);
 }
 
-export function reduceRight_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
+export function foldRight_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
   if (isEmpty(fa)) {
     return b;
   }
@@ -173,8 +247,8 @@ export function reduceRight_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B 
   return x;
 }
 
-export function reduceRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
-  return (fa) => reduceRight_(fa, b, f);
+export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
+  return (fa) => foldRight_(fa, b, f);
 }
 
 /*
@@ -415,4 +489,12 @@ export function append_<A>(as: Chunk<A>, a: A): Chunk<A> {
 
 export function append<A>(a: A): (as: Chunk<A>) => Chunk<A> {
   return (as) => append_(as, a);
+}
+
+export function grouped_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
+  return A.grouped_(A.from(as), n);
+}
+
+export function grouped(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
+  return (as) => grouped_(as, n);
 }

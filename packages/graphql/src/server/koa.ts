@@ -9,7 +9,7 @@ import type {
   ScalarTypeSummoner,
   SchemaGenerator,
   SchemaParts
-} from "../Schema";
+} from "../schema";
 import type { Has } from "@principia/base/data/Has";
 import type { Config } from "apollo-server-core";
 import type { IResolvers } from "graphql-tools";
@@ -22,6 +22,7 @@ import * as I from "@principia/io/IO";
 import * as L from "@principia/io/Layer";
 import * as Koa from "@principia/koa";
 import { ApolloServer } from "apollo-server-koa";
+import { formatError } from "graphql";
 import { makeExecutableSchema } from "graphql-tools";
 
 import {
@@ -31,7 +32,8 @@ import {
   makeObjectTypeSummoner,
   makeScalarTypeSummoner,
   makeSchemaGenerator
-} from "../Schema";
+} from "../schema";
+import { formatGraphQlException, GraphQlException } from "../schema/GraphQlException";
 import { transformResolvers, transformScalarResolvers } from "./transform";
 
 export type ApolloKoaConfig = Omit<Config, "context" | "schema" | "subscriptions"> & {
@@ -166,7 +168,14 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
               const server = new ApolloServer({
                 context: (ctx) => pipe(context(ctx), I.give(env), I.runPromise),
                 schema,
-                ...apolloConfig
+                ...apolloConfig,
+                formatError: (error) => {
+                  console.log(error);
+                  if (apolloConfig.formatError) return apolloConfig.formatError(error);
+                  return error.originalError instanceof GraphQlException
+                    ? formatGraphQlException(error as any)
+                    : formatError(error);
+                }
               });
               server.applyMiddleware({ app });
               apolloConfig.subscriptions && server.installSubscriptionHandlers(httpServer);

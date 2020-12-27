@@ -292,7 +292,7 @@ export function fold<I, O>(
   f: (output: O, input: I) => O
 ): Transducer<unknown, never, I, O> {
   const go = (in_: Chunk<I>, state: O, progress: boolean): readonly [Chunk<O>, O, boolean] =>
-    C.reduce_(in_, [C.empty<O>(), state, progress] as const, ([os0, state, _], i) => {
+    C.foldLeft_(in_, [C.empty<O>(), state, progress] as const, ([os0, state, _], i) => {
       const o = f(state, i);
       if (contFn(o)) {
         return [os0, o, true] as const;
@@ -349,7 +349,7 @@ export function foldM<R, E, I, O>(
     state: O,
     progress: boolean
   ): I.IO<R, E, readonly [Chunk<O>, O, boolean]> =>
-    C.reduce_(
+    C.foldLeft_(
       in_,
       I.succeed([C.empty(), state, progress]) as I.IO<R, E, readonly [Chunk<O>, O, boolean]>,
       (b, i) =>
@@ -484,7 +484,7 @@ export function foldWeightedDecompose<I, O>(
     state: FoldWeightedState,
     dirty: boolean
   ): readonly [Chunk<O>, FoldWeightedState, boolean] =>
-    C.reduce_(in_, [os0, state, dirty] as const, ([os0, state, _], i) => {
+    C.foldLeft_(in_, [os0, state, dirty] as const, ([os0, state, _], i) => {
       const total = state.cost + costFn(state.result, i);
 
       if (total > max) {
@@ -581,7 +581,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
     state: FoldWeightedState,
     dirty: boolean
   ): I.IO<R, E, readonly [Chunk<O>, FoldWeightedState, boolean]> =>
-    C.reduce_(
+    C.foldLeft_(
       in_,
       I.succeed([os, state, dirty]) as I.IO<R, E, readonly [Chunk<O>, FoldWeightedState, boolean]>,
       (o, i) =>

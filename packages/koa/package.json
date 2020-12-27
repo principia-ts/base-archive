@@ -47,6 +47,7 @@
     "@principia/io": "^0.2.3",
     "@principia/model": "^0.2.4",
     "@principia/node": "^0.2.3",
+    "@principia/http": "^0.2.4",
     "koa": "^2.13.0",
     "koa-bodyparser": "4.3.0",
     "koa-compose": "4.1.0",

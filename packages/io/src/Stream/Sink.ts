@@ -6,6 +6,7 @@ import * as E from "@principia/base/data/Either";
 import { flow, identity, pipe, tuple } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
 import * as Tu from "@principia/base/data/Tuple";
+import { matchTag } from "@principia/base/util/matchers";
 
 import * as Ca from "../Cause";
 import * as C from "../Chunk";
@@ -17,10 +18,9 @@ import * as Ref from "../IORef";
 import * as L from "../Layer";
 import * as M from "../Managed";
 import * as Sy from "../Sync";
-import { matchTag } from "@principia/base/util/matchers";
-import * as Push from "./Push";
-import { Transducer } from "./internal/Transducer";
 import { Sink } from "./internal/Sink";
+import { Transducer } from "./internal/Transducer";
+import * as Push from "./Push";
 
 export { Sink };
 
@@ -438,7 +438,7 @@ export function collectAllToMap<A, K>(key: (a: A) => K) {
       M.suspend(
         () =>
           reduceChunks(new Map<K, A>(), (acc, as: Chunk<A>) =>
-            C.reduce_(as, acc, (acc, a) => {
+            C.foldLeft_(as, acc, (acc, a) => {
               const k = key(a);
               const v = acc.get(k);
 

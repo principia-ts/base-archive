@@ -383,3 +383,17 @@ export function replace_(s: string, test: string | RegExp, r: string): string {
 export function replace(test: string | RegExp, r: string): (s: string) => string {
   return (s) => s.replace(test, r);
 }
+
+/**
+ * Capitalize the first letter of the string
+ */
+export function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Capitalize the first letter of every word in a string
+ */
+export function capitalizeAll(s: string): string {
+  return pipe(s, split(" "), A.map(capitalize), A.join(" "));
+}

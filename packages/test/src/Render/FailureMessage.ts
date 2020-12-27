@@ -8,13 +8,14 @@ import type { USync } from "@principia/io/Sync";
 
 import * as A from "@principia/base/data/Array";
 import * as O from "@principia/base/data/Option";
+import { BLUE, CYAN, RED, YELLOW } from "@principia/base/util/AnsiFormat";
 import * as C from "@principia/io/Cause";
 import * as Sy from "@principia/io/Sync";
 
 import * as BA from "../FreeBooleanAlgebra";
 import { TestTimeoutException } from "../TestTimeoutException";
-import { tabSize } from "./RenderUtils";
 
+const tabSize = 2;
 export class Message {
   constructor(readonly lines: ReadonlyArray<Line> = []) {}
 
@@ -168,7 +169,7 @@ function renderFragment(fragment: AssertionValue<any>, offset: number): Line {
   );
 }
 
-function highlight(fragment: Fragment, substring: string, colorCode = "\u001B[33m"): Line {
+function highlight(fragment: Fragment, substring: string, colorCode = YELLOW): Line {
   const parts = fragment.text.split(substring);
   if (parts.length === 1) return fragment.toLine();
   else {
@@ -205,13 +206,13 @@ function withOffset(i: number): (line: Line) => Line {
 }
 
 function blue(s: string): Fragment {
-  return new Fragment(s, "\u001B[34m");
+  return new Fragment(s, BLUE);
 }
 
 function red(s: string): Fragment {
-  return new Fragment(s, "\u001B[31m");
+  return new Fragment(s, RED);
 }
 
 function cyan(s: string): Fragment {
-  return new Fragment(s, "\u001B[36m");
+  return new Fragment(s, CYAN);
 }

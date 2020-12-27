@@ -10,6 +10,7 @@ import * as A from "@principia/base/data/Array";
 import * as E from "@principia/base/data/Either";
 import { absurd, identity, pipe } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
+import { cyan, green, red, RESET } from "@principia/base/util/AnsiFormat";
 import { matchTag, matchTag_ } from "@principia/base/util/matchers";
 import * as I from "@principia/io/IO";
 import * as Sy from "@principia/io/Sync";
@@ -19,7 +20,6 @@ import * as ES from "../ExecutedSpec";
 import * as BA from "../FreeBooleanAlgebra";
 import { TestLogger } from "../TestLogger";
 import * as FM from "./FailureMessage";
-import { ANSI_RESET, cyan, green, red } from "./RenderUtils";
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {
@@ -195,7 +195,7 @@ function withOffset(n: number): (s: string) => string {
 
 function renderToStringLines(message: Message): ReadonlyArray<string> {
   const renderFragment = (f: Fragment) =>
-    f.colorCode !== "" ? f.colorCode + f.text + ANSI_RESET : f.text;
+    f.colorCode !== "" ? f.colorCode + f.text + RESET : f.text;
   return A.map_(message.lines, (line) =>
     withOffset(line.offset)(A.foldLeft_(line.fragments, "", (str, f) => str + renderFragment(f)))
   );

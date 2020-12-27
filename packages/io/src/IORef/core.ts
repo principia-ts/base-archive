@@ -653,7 +653,7 @@ export function modify<B, A>(f: (a: A) => readonly [B, A]) {
  */
 export function modify_<EA, EB, B, A>(
   self: IORef<EA, EB, A, A>,
-  f: (a: A) => [B, A]
+  f: (a: A) => readonly [B, A]
 ): FIO<EA | EB, B> {
   return modify(f)(self);
 }

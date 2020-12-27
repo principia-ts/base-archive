@@ -2249,6 +2249,18 @@ export function sum(as: ReadonlyArray<number>): number {
   return foldLeft_(as, 0, (b, a) => b + a);
 }
 
+export function grouped_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<ReadonlyArray<A>> {
+  const r: A[][] = [];
+  for (let i = 0; i < as.length; i += n) {
+    r.push(as.slice(i, i + n));
+  }
+  return r;
+}
+
+export function grouped(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<ReadonlyArray<A>> {
+  return (as) => grouped_(as, n);
+}
+
 /*
  * -------------------------------------------
  * Instances

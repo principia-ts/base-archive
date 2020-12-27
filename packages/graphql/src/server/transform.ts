@@ -1,4 +1,4 @@
-import type { ResolverF, ScalarFunctions } from "../Schema";
+import type { ResolverF, ScalarFunctions } from "../schema";
 
 import * as E from "@principia/base/data/Either";
 import { identity, pipe } from "@principia/base/data/Function";

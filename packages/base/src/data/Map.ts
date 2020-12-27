@@ -713,7 +713,7 @@ export function size<K, A>(d: Map<K, A>): number {
   return d.size;
 }
 
-export function lookup_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<A> {
+export function lookupAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<A> {
   const lookupWithKeyE_ = lookupWithKey_(E);
   return (m, k) =>
     pipe(
@@ -722,19 +722,9 @@ export function lookup_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Optio
     );
 }
 
-export function lookup<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
-  const lookupE_ = lookup_(E);
+export function lookupAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
+  const lookupE_ = lookupAt_(E);
   return (k) => (m) => lookupE_(m, k);
-}
-
-export function unsafeInsertAt_<K, A>(m: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
-  const r = new Map(m);
-  r.set(k, a);
-  return r;
-}
-
-export function unsafeInsertAt<K, A>(k: K, a: A): (m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (m) => unsafeInsertAt_(m, k, a);
 }
 
 export function insertAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => ReadonlyMap<K, A> {
@@ -771,28 +761,6 @@ export function copy<K, A>(me: ReadonlyMap<K, A>): Map<K, A> {
   return m;
 }
 
-export function insert_<K, A>(me: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
-  const m = copy<K, A>(me);
-
-  m.set(k, a);
-
-  return m;
-}
-
-export function insert<K, A>(k: K, a: A): (me: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (me) => insert_(me, k, a);
-}
-
-export function remove_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
-  const r = new Map(m);
-  r.delete(k);
-  return m;
-}
-
-export function remove<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (m) => remove_(m, k);
-}
-
 export function deleteAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => ReadonlyMap<K, A> {
   const lookupWithKeyE_ = lookupWithKey_(E);
   return (m, k) => {
@@ -809,18 +777,6 @@ export function deleteAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => Reado
 export function deleteAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   const deleteAtE_ = deleteAt_(E);
   return (k) => (m) => deleteAtE_(m, k);
-}
-
-export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: Iterable<K>): ReadonlyMap<K, A> {
-  const r = new Map(m);
-  for (const k of ks) {
-    r.delete(k);
-  }
-  return r;
-}
-
-export function removeMany<K>(ks: Iterable<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (m) => removeMany_(m, ks);
 }
 
 export function updateAt_<K>(
@@ -870,7 +826,7 @@ export function modifyAt<K>(
 export function pop_<K>(
   E: Eq<K>
 ): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
-  const lookupE_ = lookup_(E);
+  const lookupE_ = lookupAt_(E);
   const deleteAtE_ = deleteAt_(E);
   return (m, k) =>
     pipe(
@@ -884,4 +840,59 @@ export function pop<K>(
 ): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
   const popE_ = pop_(E);
   return (k) => (m) => popE_(m, k);
+}
+
+export function insert_<K, A>(me: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
+  const m = copy<K, A>(me);
+  m.set(k, a);
+  return m;
+}
+
+export function insert<K, A>(k: K, a: A): (me: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (me) => insert_(me, k, a);
+}
+
+export function remove_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
+  const r = new Map(m);
+  r.delete(k);
+  return m;
+}
+
+export function remove<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (m) => remove_(m, k);
+}
+
+export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: Iterable<K>): ReadonlyMap<K, A> {
+  const r = new Map(m);
+  for (const k of ks) {
+    r.delete(k);
+  }
+  return r;
+}
+
+export function removeMany<K>(ks: Iterable<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (m) => removeMany_(m, ks);
+}
+
+export function lookup_<K, A>(m: ReadonlyMap<K, A>, k: K): O.Option<A> {
+  return O.fromNullable(m.get(k));
+}
+
+export function lookup<K>(k: K): <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
+  return (m) => lookup_(m, k);
+}
+
+export function concat_<K, A>(xs: ReadonlyMap<K, A>, ys: ReadonlyMap<K, A>): ReadonlyMap<K, A> {
+  const r = new Map<K, A>();
+  for (const [k, a] of xs) {
+    r.set(k, a);
+  }
+  for (const [k, a] of ys) {
+    r.set(k, a);
+  }
+  return r;
+}
+
+export function concat<K, A>(ys: ReadonlyMap<K, A>): (xs: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (xs) => concat_(xs, ys);
 }

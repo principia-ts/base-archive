@@ -4,12 +4,12 @@ import type { ValueNode } from "graphql";
 
 import { flow, pipe } from "@principia/base/data/Function";
 import * as DE from "@principia/codec/DecodeErrors";
-import { SerializableError } from "@principia/io/SerializableError";
 import * as Sy from "@principia/io/Sync";
 import * as M from "@principia/model";
 import { valueFromASTUntyped } from "graphql";
 
 import { createScalarTypeDefinitionNode } from "../AST";
+import { GraphQlException } from "../GraphQlException";
 import { GQLScalar } from "../Types";
 
 export interface ScalarTypeSummoner {
@@ -34,7 +34,7 @@ export interface ScalarTypeSummoner {
 }
 
 export interface ScalarTypeFromModelSummoner {
-  <Name extends string, Config extends ScalarTypeFromCodecConfig<I, O> & ScalarConfig, I, O>(
+  <Name extends string, Config extends ScalarTypeFromCodecConfig<I, O>, I, O>(
     name: Name,
     model: M.M<{}, I, O>,
     config?: Config
@@ -42,10 +42,10 @@ export interface ScalarTypeFromModelSummoner {
     Name,
     {
       parseLiteral: undefined extends Config["parseLiteral"]
-        ? (u: ValueNode) => Sy.Sync<unknown, SerializableError<{ errors: string }>, I>
+        ? (u: ValueNode) => Sy.Sync<unknown, GraphQlException, I>
         : NonNullable<Config["parseLiteral"]>;
-      parseValue: (u: unknown) => Sy.Sync<unknown, SerializableError<{}>, I>;
-      serialize: (u: unknown) => Sy.Sync<unknown, SerializableError<{}>, O>;
+      parseValue: (u: unknown) => Sy.Sync<unknown, GraphQlException, I>;
+      serialize: (u: unknown) => Sy.Sync<unknown, GraphQlException, O>;
     },
     I,
     O
@@ -63,11 +63,9 @@ export const makeScalarTypeSummoner: ScalarTypeSummoner = (name, definition, con
     definition
   );
 
-interface ScalarTypeFromCodecConfig<E, A> {
-  errorCode?: string;
+interface ScalarTypeFromCodecConfig<E, A> extends ScalarConfig {
   message?: string;
   parseLiteral?: ScalarParseLiteralF<unknown, E>;
-  userMessage?: string;
 }
 
 const SyM = DE.getDecodeErrorsValidation({ ...Sy.MonadFail, ...Sy.Bifunctor, ...Sy.Fallible });
@@ -84,13 +82,10 @@ export const makeScalarTypeFromCodecSummoner: ScalarTypeFromModelSummoner = (
       decode(u),
       Sy.mapError(
         (errors) =>
-          new SerializableError<{ errors: string }>(
-            config?.errorCode ?? "INVALID_SCALAR_VALUE",
+          new GraphQlException(
             config?.message ?? `Invalid value ${u} provided to Scalar ${name}`,
-            "TODO: id",
-            { errors: DE.draw(errors) },
-            serialize,
-            config?.userMessage ?? `Invalid value ${u} provided to Scalar ${name}`
+            400,
+            { errors: DE.draw(errors) }
           )
       )
     );
@@ -102,15 +97,11 @@ export const makeScalarTypeFromCodecSummoner: ScalarTypeFromModelSummoner = (
       decode,
       Sy.bimap(
         (errors) =>
-          new SerializableError<{ errors: string }>(
-            config?.errorCode ?? "INVALID_SCALAR_VALUE",
+          new GraphQlException(
             config?.message ??
               `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`,
-            "TODO: id",
-            { errors: DE.draw(errors) },
-            parseLiteral,
-            config?.userMessage ??
-              `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`
+            400,
+            { errors: DE.draw(errors) }
           ),
         encode
       )
