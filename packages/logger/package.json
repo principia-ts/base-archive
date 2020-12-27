@@ -1,6 +1,6 @@
 {
   "name": "@principia/logger",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Logger",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -41,10 +41,10 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.2.3",
-    "@principia/compile": "^0.2.3",
-    "@principia/io": "^0.2.3",
-    "@principia/node": "^0.2.3",
+    "@principia/base": "^0.2.4",
+    "@principia/compile": "^0.2.4",
+    "@principia/io": "^0.2.4",
+    "@principia/node": "^0.2.4",
     "chalk": "^4.1.0",
     "core-js": "3",
     "date-fns": "^2.16.1",
