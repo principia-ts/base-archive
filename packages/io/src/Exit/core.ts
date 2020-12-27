@@ -420,7 +420,3 @@ export function orElseFail_<E, A, G>(exit: Exit<E, A>, orElse: G) {
 export function orElseFail<G>(orElse: G): <E, A>(exit: Exit<E, A>) => Exit<G, A> {
   return (exit) => orElseFail_(exit, orElse);
 }
-
-export function untraced<E, A>(exit: Exit<E, A>): Exit<E, A> {
-  return exit._tag === "Success" ? exit : failure(C.untraced(exit.cause));
-}

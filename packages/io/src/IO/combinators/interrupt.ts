@@ -23,7 +23,6 @@ import {
   flatten,
   foldCauseM_,
   halt,
-  haltWith,
   pure,
   SetInterruptInstruction,
   suspend,
@@ -34,7 +33,7 @@ import { forkDaemon } from "./core-scope";
 import { fiberId } from "./fiberId";
 
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
-  return haltWith((trace) => C.traced(C.interrupt(fiberId), trace()));
+  return halt(C.interrupt(fiberId));
 }
 
 export const interrupt: IO<unknown, never, never> = flatMap_(fiberId(), interruptAs);

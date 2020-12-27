@@ -12,6 +12,9 @@
       {
         "after": true,
         "transform": "@0x706b/ts-transform-fix-esm"
+      },
+      {
+        "transform": "../../compile/src/index.ts"
       }
     ],
     "tsBuildInfoFile": "../tsbuildinfo/esm-fix.tsbuildinfo"

@@ -1,10 +1,8 @@
-import type { Renderer } from "../../Cause/core";
 import type { Exit } from "../../Exit";
 import type { FailureReporter } from "../../Fiber/_internal/io";
 import type { Callback } from "../../Fiber/core";
 
 import { constVoid, identity } from "@principia/base/data/Function";
-import { none } from "@principia/base/data/Option";
 
 import * as C from "../../Cause/core";
 import { pretty } from "../../Cause/core";
@@ -15,7 +13,6 @@ import { Platform } from "../../Platform";
 import { defaultRandom, HasRandom } from "../../Random";
 import * as Scope from "../../Scope";
 import * as Super from "../../Supervisor";
-import { prettyTrace } from "../../Trace";
 import * as I from "../core";
 import { _I } from "../core";
 
@@ -33,42 +30,19 @@ export function defaultEnv() {
 }
 
 export const prettyReporter: FailureReporter = (e) => {
-  console.error(pretty(e, prettyTrace));
+  console.error(pretty(e));
 };
 
-const defaultPlatform = new Platform(
-  10,
-  10,
-  true,
-  true,
-  true,
-  true,
-  10,
-  10,
-  10,
-  prettyTrace,
-  constVoid,
-  10_000
-);
+const defaultPlatform = new Platform(constVoid, 10_000);
 
 export class CustomRuntime<R> {
   constructor(readonly env: R, readonly platform: Platform) {
-    this.traceExecution = this.traceExecution.bind(this);
-    this.traceExecutionLength = this.traceExecutionLength.bind(this);
-    this.traceStack = this.traceStack.bind(this);
-    this.traceStackLength = this.traceStackLength.bind(this);
-    this.traceEffect = this.traceEffect.bind(this);
-    this.initialTracingStatus = this.initialTracingStatus.bind(this);
-    this.ancestorExecutionTraceLength = this.ancestorExecutionTraceLength.bind(this);
-    this.ancestorStackTraceLength = this.ancestorStackTraceLength.bind(this);
-    this.ancestryLength = this.ancestryLength.bind(this);
     this.fiberContext = this.fiberContext.bind(this);
     this.run = this.run.bind(this);
     this.runAsap = this.runAsap.bind(this);
     this.runCancel = this.runCancel.bind(this);
     this.runPromise = this.runPromise.bind(this);
     this.runPromiseExit = this.runPromiseExit.bind(this);
-    this.traceRenderer = this.traceRenderer.bind(this);
     this.runFiber = this.runFiber.bind(this);
   }
 
@@ -87,8 +61,7 @@ export class CustomRuntime<R> {
       scope,
       this.platform.maxOp,
       this.platform.reportFailure,
-      this.platform,
-      none()
+      this.platform
     );
 
     return context;
@@ -175,246 +148,6 @@ export class CustomRuntime<R> {
 
   withEnvironment<R2>(f: (_: R) => R2) {
     return new CustomRuntime(f(this.env), this.platform);
-  }
-
-  traceRenderer(renderer: Renderer) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  traceExecution(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        b,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  traceExecutionLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        n,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  traceStack(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        b,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  traceStackLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        n,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  traceEffect(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        b,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  initialTracingStatus(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        b,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  ancestorExecutionTraceLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        n,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  ancestorStackTraceLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        n,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  ancestryLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        n,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  reportFailure(reportFailure: (_: C.Cause<unknown>) => void) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        reportFailure,
-        this.platform.maxOp
-      )
-    );
-  }
-
-  maxOp(maxOp: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform(
-        this.platform.executionTraceLength,
-        this.platform.stackTraceLength,
-        this.platform.traceExecution,
-        this.platform.traceStack,
-        this.platform.traceEffects,
-        this.platform.initialTracingStatus,
-        this.platform.ancestorExecutionTraceLength,
-        this.platform.ancestorStackTraceLength,
-        this.platform.ancestryLength,
-        this.platform.renderer,
-        this.platform.reportFailure,
-        maxOp
-      )
-    );
   }
 }
 

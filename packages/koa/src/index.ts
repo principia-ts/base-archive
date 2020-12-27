@@ -99,8 +99,7 @@ export function route<R, A>(
                           ctx.body = { status: "interrupted" };
                         }),
                       (_, r) => r,
-                      (_, r) => r,
-                      (_) => _
+                      (_, r) => r
                     ),
                     (r) =>
                       r

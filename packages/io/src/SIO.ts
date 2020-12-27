@@ -69,10 +69,10 @@ export abstract class SIO<S1, S2, R, E, A> {
     if (si._tag === "Some") {
       return si.value(this as any)["_I"];
     }
-    return new ExternalFailInstruction(() => ({
+    return new ExternalFailInstruction({
       _tag: "Die",
       value: "SIO-IO integration not implemented. Did you import the integration?"
-    }));
+    });
   }
 }
 

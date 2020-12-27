@@ -1,5 +1,4 @@
 import type { FiberId } from "../Fiber/FiberId";
-import type { Trace } from "../Trace";
 import type { Eq } from "@principia/base/data/Eq";
 import type { NonEmptyArray } from "@principia/base/data/NonEmptyArray";
 import type * as HKT from "@principia/base/HKT";
@@ -13,9 +12,8 @@ import * as O from "@principia/base/data/Option";
 
 import { eqFiberId } from "../Fiber/FiberId";
 import * as Sy from "../Sync";
-import { prettyTrace } from "../Trace";
 
-export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E> | Traced<E>;
+export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E>;
 
 export interface Empty {
   readonly _tag: "Empty";
@@ -46,12 +44,6 @@ export interface Both<E> {
   readonly _tag: "Both";
   readonly left: Cause<E>;
   readonly right: Cause<E>;
-}
-
-export interface Traced<E> {
-  readonly _tag: "Traced";
-  readonly cause: Cause<E>;
-  readonly trace: Trace;
 }
 
 export const URI = "Cause";
@@ -122,14 +114,6 @@ export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
  */
 export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
   return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Both", left, right };
-}
-
-export function traced<E>(cause: Cause<E>, trace: Trace): Cause<E> {
-  return {
-    _tag: "Traced",
-    cause,
-    trace
-  };
 }
 
 /*
@@ -242,7 +226,7 @@ export function isCause(u: unknown): u is Cause<unknown> {
     typeof u === "object" &&
     u !== null &&
     "_tag" in u &&
-    ["Empty", "Fail", "Die", "Interrupt", "Then", "Both", "Traced"].includes(u["_tag"])
+    ["Empty", "Fail", "Die", "Interrupt", "Then", "Both"].includes(u["_tag"])
   );
 }
 
@@ -272,9 +256,6 @@ export function findSafe_<E, A>(
         } else {
           return yield* _(findSafe_(cause.right, f));
         }
-      }
-      case "Traced": {
-        return yield* _(findSafe_(cause.cause, f));
       }
       case "Both": {
         const isLeft = yield* _(findSafe_(cause.left, f));
@@ -319,8 +300,7 @@ export function foldSafe_<E, A>(
   onDie: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
-  onBoth: (l: A, r: A) => A,
-  onTraced: (_: A, __: Trace) => A
+  onBoth: (l: A, r: A) => A
 ): Sy.USync<A> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
@@ -334,28 +314,13 @@ export function foldSafe_<E, A>(
         return onInterrupt(cause.fiberId);
       case "Both":
         return onBoth(
-          yield* _(
-            foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
-          ),
-          yield* _(
-            foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
-          )
+          yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+          yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
         );
       case "Then":
         return onThen(
-          yield* _(
-            foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
-          ),
-          yield* _(
-            foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
-          )
-        );
-      case "Traced":
-        return onTraced(
-          yield* _(
-            foldSafe_(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)
-          ),
-          cause.trace
+          yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+          yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
         );
     }
   });
@@ -384,11 +349,10 @@ export function fold<E, A>(
   onDie: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
-  onBoth: (l: A, r: A) => A,
-  onTraced: (_: A, __: Trace) => A
+  onBoth: (l: A, r: A) => A
 ): (cause: Cause<E>) => A {
   return (cause) =>
-    Sy.unsafeRun(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced));
+    Sy.unsafeRun(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth));
 }
 
 /**
@@ -411,9 +375,6 @@ export function foldLeftSafe_<E, B>(
         const l = yield* _(foldLeftSafe_(cause.left, apply, f));
         const r = yield* _(foldLeftSafe_(cause.right, l, f));
         return r;
-      }
-      case "Traced": {
-        return yield* _(foldLeftSafe_(cause.cause, apply, f));
       }
       default: {
         return apply;
@@ -440,8 +401,6 @@ export const foldLeft_ = F.trampoline(function loop<E, A>(
   const apply = O.getOrElse_(f(a, cause), () => a);
   return cause._tag === "Both" || cause._tag === "Then"
     ? F.more(() => loop(cause.right, foldLeft_(cause.left, apply, f), f))
-    : cause._tag === "Traced"
-    ? F.more(() => loop(cause.cause, apply, f))
     : F.done(apply);
 });
 
@@ -620,9 +579,6 @@ export function equalsCause<E>(x: Cause<E>, y: Cause<E>): boolean {
     case "Then": {
       return y._tag === "Then" && equalsCause(x.left, y.left) && equalsCause(x.right, y.right);
     }
-    case "Traced": {
-      return equalsCause(x.cause, y);
-    }
   }
 }
 
@@ -686,8 +642,6 @@ export function flatMapSafe_<E, D>(
         return then(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)));
       case "Both":
         return both(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)));
-      case "Traced":
-        return traced(yield* _(flatMapSafe_(ma.cause, f)), ma.trace);
     }
   });
 }
@@ -834,9 +788,6 @@ export function stripFailuresSafe<E>(cause: Cause<E>): Sy.USync<Cause<never>> {
           yield* _(stripFailuresSafe(cause.right))
         );
       }
-      case "Traced": {
-        return traced(yield* _(stripFailuresSafe(cause.cause)), cause.trace);
-      }
     }
   });
 }
@@ -878,9 +829,6 @@ export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
           yield* _(stripInterruptsSafe(cause.right))
         );
       }
-      case "Traced": {
-        return traced(yield* _(stripInterruptsSafe(cause.cause)), cause.trace);
-      }
     }
   });
 }
@@ -909,9 +857,6 @@ export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<nev
       }
       case "Die": {
         return O.some(cause);
-      }
-      case "Traced": {
-        return O.map_(yield* _(keepDefectsSafe(cause.cause)), (_) => traced(_, cause.trace));
       }
       case "Then": {
         const lefts = yield* _(keepDefectsSafe(cause.left));
@@ -992,11 +937,6 @@ export function sequenceCauseEitherSafe<E, A>(
             : E.left(both(lefts.left, rights.left))
           : E.right(lefts.right);
       }
-      case "Traced": {
-        return E.mapLeft_(yield* _(sequenceCauseEitherSafe(cause.cause)), (_) =>
-          traced(_, cause.trace)
-        );
-      }
     }
   });
 }
@@ -1046,11 +986,6 @@ export function sequenceCauseOptionSafe<E>(
           : rights._tag === "Some"
           ? rights
           : O.none();
-      }
-      case "Traced": {
-        return O.map_(yield* _(sequenceCauseOptionSafe(cause.cause)), (_) =>
-          traced(_, cause.trace)
-        );
       }
     }
   });
@@ -1103,35 +1038,6 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
       O.alt(() => A.head(defects(cause))),
       O.getOrElse(() => new InterruptedException())
     );
-}
-
-/**
- * Returns a `Cause` that has been stripped of all tracing information.
- */
-export function untraced<E>(cause: Cause<E>): Cause<E> {
-  return Sy.unsafeRun(untracedSafe(cause));
-}
-
-/**
- * Returns a `Cause` that has been stripped of all tracing information.
- */
-export function untracedSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
-  return Sy.gen(function* (_) {
-    switch (cause._tag) {
-      case "Traced": {
-        return yield* _(untracedSafe(cause.cause));
-      }
-      case "Both": {
-        return both(yield* _(untracedSafe(cause.left)), yield* _(untracedSafe(cause.right)));
-      }
-      case "Then": {
-        return then(yield* _(untracedSafe(cause.left)), yield* _(untracedSafe(cause.right)));
-      }
-      default: {
-        return cause;
-      }
-    }
-  });
 }
 
 /*
@@ -1268,8 +1174,6 @@ const headTail = <A>(a: NonEmptyArray<A>): [A, A[]] => {
   return [head, x];
 };
 
-export type Renderer = (_: Trace) => string;
-
 const lines = (s: string) => s.split("\n").map((s) => s.replace("\r", "")) as string[];
 
 const prefixBlock = (values: readonly string[], p1: string, p2: string): string[] =>
@@ -1277,60 +1181,24 @@ const prefixBlock = (values: readonly string[], p1: string, p2: string): string[
     ? pipe(headTail(values), ([head, tail]) => [`${p1}${head}`, ...tail.map((_) => `${p2}${_}`)])
     : [];
 
-function renderTrace(trace: O.Option<Trace>, renderer: Renderer) {
-  return trace._tag === "None" ? ["No Trace available."] : lines(renderer(trace.value));
-}
-
-const renderInterrupt = (
-  fiberId: FiberId,
-  trace: O.Option<Trace>,
-  renderer: Renderer
-): Sequential =>
-  Sequential([
-    Failure([
-      `An interrupt was produced by #${fiberId.seqNumber}.`,
-      "",
-      ...renderTrace(trace, renderer)
-    ])
-  ]);
+const renderInterrupt = (fiberId: FiberId): Sequential =>
+  Sequential([Failure([`An interrupt was produced by #${fiberId.seqNumber}.`])]);
 
 const renderError = (error: Error): string[] => lines(error.stack ? error.stack : String(error));
 
-const renderDie = (error: Error, trace: O.Option<Trace>, renderer: Renderer): Sequential =>
-  Sequential([
-    Failure([
-      "An unchecked error was produced.",
-      "",
-      ...renderError(error),
-      ...renderTrace(trace, renderer)
-    ])
-  ]);
+const renderDie = (error: Error): Sequential =>
+  Sequential([Failure(["An unchecked error was produced.", "", ...renderError(error)])]);
 
-const renderDieUnknown = (
-  error: string[],
-  trace: O.Option<Trace>,
-  renderer: Renderer
-): Sequential =>
-  Sequential([
-    Failure(["An unchecked error was produced.", "", ...error, ...renderTrace(trace, renderer)])
-  ]);
+const renderDieUnknown = (error: string[]): Sequential =>
+  Sequential([Failure(["An unchecked error was produced.", "", ...error])]);
 
-const renderFail = (error: string[], trace: O.Option<Trace>, renderer: Renderer): Sequential =>
-  Sequential([
-    Failure(["A checked error was not handled.", "", ...error, ...renderTrace(trace, renderer)])
-  ]);
+const renderFail = (error: string[]): Sequential =>
+  Sequential([Failure(["A checked error was not handled.", "", ...error])]);
 
-const renderFailError = (error: Error, trace: O.Option<Trace>, renderer: Renderer): Sequential =>
-  Sequential([
-    Failure([
-      "A checked error was not handled.",
-      "",
-      ...renderError(error),
-      ...renderTrace(trace, renderer)
-    ])
-  ]);
+const renderFailError = (error: Error): Sequential =>
+  Sequential([Failure(["A checked error was not handled.", "", ...renderError(error)])]);
 
-const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer): Sy.USync<Sequential> =>
+const causeToSequential = <E>(cause: Cause<E>): Sy.USync<Sequential> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Empty": {
@@ -1338,86 +1206,52 @@ const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer): Sy.USync<Seq
       }
       case "Fail": {
         return cause.value instanceof Error
-          ? renderFailError(cause.value, O.none(), renderer)
-          : renderFail(lines(JSON.stringify(cause.value, null, 2)), O.none(), renderer);
+          ? renderFailError(cause.value)
+          : renderFail(lines(JSON.stringify(cause.value, null, 2)));
       }
       case "Die": {
         return cause.value instanceof Error
-          ? renderDie(cause.value, O.none(), renderer)
-          : renderDieUnknown(lines(JSON.stringify(cause.value, null, 2)), O.none(), renderer);
+          ? renderDie(cause.value)
+          : renderDieUnknown(lines(JSON.stringify(cause.value, null, 2)));
       }
       case "Interrupt": {
-        return renderInterrupt(cause.fiberId, O.none(), renderer);
+        return renderInterrupt(cause.fiberId);
       }
       case "Then": {
-        return Sequential(yield* _(linearSegments(cause, renderer)));
+        return Sequential(yield* _(linearSegments(cause)));
       }
       case "Both": {
-        return Sequential([Parallel(yield* _(parallelSegments(cause, renderer)))]);
-      }
-      case "Traced": {
-        switch (cause.cause._tag) {
-          case "Fail": {
-            return cause.cause.value instanceof Error
-              ? renderFailError(cause.cause.value, O.some(cause.trace), renderer)
-              : renderFail(
-                  lines(JSON.stringify(cause.cause.value, null, 2)),
-                  O.some(cause.trace),
-                  renderer
-                );
-          }
-          case "Die": {
-            return cause.cause.value instanceof Error
-              ? renderDie(cause.cause.value, O.some(cause.trace), renderer)
-              : renderDieUnknown(
-                  lines(JSON.stringify(cause.cause.value, null, 2)),
-                  O.some(cause.trace),
-                  renderer
-                );
-          }
-          case "Interrupt": {
-            return renderInterrupt(cause.cause.fiberId, O.some(cause.trace), renderer);
-          }
-          default: {
-            return Sequential([
-              Failure([
-                "An error was rethrown with a new trace.",
-                ...renderTrace(O.some(cause.trace), renderer)
-              ]),
-              ...(yield* _(causeToSequential(cause.cause, renderer))).all
-            ]);
-          }
-        }
+        return Sequential([Parallel(yield* _(parallelSegments(cause)))]);
       }
     }
   });
 
-const linearSegments = <E>(cause: Cause<E>, renderer: Renderer): Sy.USync<Step[]> =>
+const linearSegments = <E>(cause: Cause<E>): Sy.USync<Step[]> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Then": {
         return [
-          ...(yield* _(linearSegments(cause.left, renderer))),
-          ...(yield* _(linearSegments(cause.right, renderer)))
+          ...(yield* _(linearSegments(cause.left))),
+          ...(yield* _(linearSegments(cause.right)))
         ];
       }
       default: {
-        return (yield* _(causeToSequential(cause, renderer))).all;
+        return (yield* _(causeToSequential(cause))).all;
       }
     }
   });
 
-const parallelSegments = <E>(cause: Cause<E>, renderer: Renderer): Sy.USync<Sequential[]> =>
+const parallelSegments = <E>(cause: Cause<E>): Sy.USync<Sequential[]> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
       case "Both": {
         return [
-          ...(yield* _(parallelSegments(cause.left, renderer))),
-          ...(yield* _(parallelSegments(cause.right, renderer)))
+          ...(yield* _(parallelSegments(cause.left))),
+          ...(yield* _(parallelSegments(cause.right)))
         ];
       }
       default: {
-        return [yield* _(causeToSequential(cause, renderer))];
+        return [yield* _(causeToSequential(cause))];
       }
     }
   });
@@ -1452,9 +1286,9 @@ const format = (segment: Segment): readonly string[] => {
   }
 };
 
-const prettyLines = <E>(cause: Cause<E>, renderer: Renderer): Sy.USync<readonly string[]> =>
+const prettyLines = <E>(cause: Cause<E>): Sy.USync<readonly string[]> =>
   Sy.gen(function* (_) {
-    const s = yield* _(causeToSequential(cause, renderer));
+    const s = yield* _(causeToSequential(cause));
 
     if (s.all.length === 1 && s.all[0]._tag === "Failure") {
       return s.all[0].lines;
@@ -1463,13 +1297,13 @@ const prettyLines = <E>(cause: Cause<E>, renderer: Renderer): Sy.USync<readonly 
     return O.getOrElse_(A.updateAt(0, "╥")(format(s)), (): string[] => []);
   });
 
-export function prettyM<E>(cause: Cause<E>, renderer: Renderer): Sy.USync<string> {
+export function prettyM<E>(cause: Cause<E>): Sy.USync<string> {
   return Sy.gen(function* (_) {
-    const lines = yield* _(prettyLines(cause, renderer));
+    const lines = yield* _(prettyLines(cause));
     return lines.join("\n");
   });
 }
 
-export function pretty<E>(cause: Cause<E>, renderer: Renderer = prettyTrace): string {
-  return Sy.unsafeRun(prettyM(cause, renderer));
+export function pretty<E>(cause: Cause<E>): string {
+  return Sy.unsafeRun(prettyM(cause));
 }

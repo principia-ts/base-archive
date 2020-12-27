@@ -11,10 +11,7 @@
     "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
     "plugins": [
       {
-        "transform": "../../compile/src/index.ts",
-        "moduleMap": {
-          "^src/(.*)": "(@principia/io): _src/$1"
-        }
+        "transform": "../../compile/src/index.ts"
       }
     ]
   },

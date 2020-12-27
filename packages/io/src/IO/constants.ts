@@ -1,5 +1,4 @@
 import type { Cause } from "../Cause";
-import type { Trace } from "../Trace";
 import type { Instruction } from "./core";
 
 export const _R = "_R";
@@ -31,10 +30,7 @@ export enum IOInstructionTag {
   ModifyFiberRef = "ModifyFiberRef",
   GetForkScope = "GetForkScope",
   OverrideForkScope = "OverrideForkScope",
-  Integration = "Integration",
-  Trace = "Trace",
-  SetTracingStatus = "SetTracingStatus",
-  GetTracingStatus = "GetTracingStatus"
+  Integration = "Integration"
 }
 
 export class ExternalFailInstruction<E> {
@@ -51,5 +47,5 @@ export class ExternalFailInstruction<E> {
     return this as any;
   }
 
-  constructor(readonly fill: (_: () => Trace) => Cause<E>) {}
+  constructor(readonly cause: Cause<E>) {}
 }

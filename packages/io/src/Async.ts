@@ -55,7 +55,7 @@ export abstract class Async<R, E, A> extends I.Integration<R, E, A> {
     if (ai._tag === "Some") {
       return ai.value(this)["_I"];
     }
-    return new I.FailInstruction(() =>
+    return new I.FailInstruction(
       C.die("Async-IO integration unimplemented. Did you import the integration?")
     );
   }

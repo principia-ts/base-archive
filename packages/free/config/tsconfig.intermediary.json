@@ -8,7 +8,12 @@
     "target": "es2020",
     "rootDir": "../src",
     "outDir": "../dist/dist/.intermediary",
-    "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo"
+    "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
+    "plugins": [
+      {
+        "transform": "../../compile/src/index.ts"
+      }
+    ]
   },
   "exclude": ["../build", "../dist", "../node_modules", "../test"],
   "include": ["../src"]

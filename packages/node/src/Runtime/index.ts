@@ -1,20 +1,11 @@
-/**
- * tracing: off
- */
-
 import type { CustomRuntime } from "@principia/io/IO";
 
-import * as A from "@principia/base/data/Array";
-import * as L from "@principia/base/data/List";
 import { AtomicBoolean } from "@principia/base/util/support/AtomicBoolean";
 import * as Cause from "@principia/io/Cause";
 import * as Fiber from "@principia/io/Fiber";
 import { interruptAllAs } from "@principia/io/Fiber";
 import * as I from "@principia/io/IO";
 import { defaultRuntime } from "@principia/io/IO";
-import * as S from "@principia/io/Sync";
-import * as fs from "fs";
-import * as path from "path";
 
 export function defaultTeardown(
   status: number,
@@ -35,126 +26,6 @@ export function defaultTeardown(
 export const defaultHook = (cont: NodeJS.SignalsListener): ((signal: NodeJS.Signals) => void) => (
   signal
 ) => cont(signal);
-
-export const nodeTracer = (trace: Fiber.Trace) => prettyTraceNode(trace, (_, __) => __);
-
-export function prettyTraceNode(
-  trace: Fiber.Trace,
-  adapt: (mod: string, path: string) => string
-): string {
-  return S.unsafeRun(prettyTraceNodeSafe(trace, adapt));
-}
-
-export function prettyLocationNode(
-  traceElement: Fiber.TraceElement,
-  adapt: (mod: string, path: string) => string
-) {
-  try {
-    if (traceElement._tag === "SourceLocation") {
-      const isModule = traceElement.location.match(/\((.*)\): (.*):(\d+):(\d+):(.*)/);
-
-      if (isModule) {
-        const [, mod, file, line_, col, name] = isModule;
-        const line = parseInt(line_);
-        const modulePath = require.resolve(`${mod}/package.json`);
-        const realPath = adapt(mod, path.join(modulePath, "..", file));
-
-        return `${realPath}:${line}:${col}:${name}`;
-      }
-    }
-  } catch {
-    //
-  }
-  return traceElement._tag === "NoLocation" ? "No Location Present" : `${traceElement.location}`;
-}
-
-export function prettyTraceNodeSafe(
-  trace: Fiber.Trace,
-  adapt: (mod: string, path: string) => string
-): S.USync<string> {
-  return S.gen(function* ($) {
-    const execTrace = !L.isEmpty(trace.executionTrace);
-    const stackTrace = !L.isEmpty(trace.stackTrace);
-
-    const execPrint = execTrace
-      ? [
-          `Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} Execution trace:`,
-          "",
-          ...L.toArray(L.map_(trace.executionTrace, (a) => `  ${prettyLocationNode(a, adapt)}`))
-        ]
-      : [`Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} Execution trace: <empty trace>`];
-
-    const stackPrint = stackTrace
-      ? [
-          `Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} was supposed to continue to:`,
-          "",
-          ...L.toArray(
-            L.map_(
-              trace.stackTrace,
-              (e) => `  a future continuation at ${prettyLocationNode(e, adapt)}`
-            )
-          )
-        ]
-      : [
-          `Fiber: ${Fiber.prettyPrintFiberId(
-            trace.fiberId
-          )} was supposed to continue to: <empty trace>`
-        ];
-
-    const parent = trace.parentTrace;
-
-    const ancestry =
-      parent._tag === "None"
-        ? [`Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} was spawned by: <empty trace>`]
-        : [
-            `Fiber: ${Fiber.prettyPrintFiberId(trace.fiberId)} was spawned by:\n`,
-            yield* $(prettyTraceNodeSafe(parent.value, adapt))
-          ];
-
-    const firstFailure = L.first(trace.executionTrace);
-
-    try {
-      if (firstFailure._tag === "Some" && firstFailure.value._tag === "SourceLocation") {
-        const isModule = firstFailure.value.location.match(/\((.*)\): (.*):(\d+):(\d+):(.*)/);
-
-        if (isModule) {
-          const [, mod, file, line_, col] = isModule;
-          const line = parseInt(line_);
-          const modulePath = require.resolve(`${mod}/package.json`);
-          const realPath = adapt(mod, path.join(modulePath, "..", file));
-          const lines = fs.readFileSync(realPath).toString("utf-8").split("\n");
-
-          if (lines.length > line + 6 && line > 3) {
-            return [
-              "",
-              `${realPath}:${line}:${col}`,
-              "",
-              lines[line - 2],
-              lines[line - 1],
-              `${A.range(0, parseInt(col) - 1)
-                .map(() => " ")
-                .join("")}^^^`,
-              lines[line],
-              lines[line + 1],
-              "",
-              ...stackPrint,
-              "",
-              ...execPrint,
-              "",
-              ...ancestry
-            ].join("\n");
-          }
-
-          return ["", ...stackPrint, "", ...execPrint, "", ...ancestry].join("\n");
-        }
-      }
-    } catch {
-      //
-    }
-
-    return ["", ...stackPrint, "", ...execPrint, "", ...ancestry].join("\n");
-  });
-}
 
 export class NodeRuntime<R> {
   constructor(readonly custom: CustomRuntime<R>) {
@@ -185,12 +56,12 @@ export class NodeRuntime<R> {
     context.runAsync((exit) => {
       switch (exit._tag) {
         case "Failure": {
-          if (Cause.died(exit.cause) || Cause.failed(exit.cause)) {
-            console.error(Cause.pretty(exit.cause, this.custom.platform.renderer));
-            customTeardown(1, context.id, onExit);
+          if (Cause.interruptedOnly(exit.cause)) {
+            customTeardown(0, context.id, onExit);
             break;
           } else {
-            customTeardown(0, context.id, onExit);
+            console.error(Cause.pretty(exit.cause));
+            customTeardown(1, context.id, onExit);
             break;
           }
         }
@@ -219,7 +90,7 @@ export class NodeRuntime<R> {
   }
 }
 
-export const nodeRuntime = new NodeRuntime(defaultRuntime.traceRenderer(nodeTracer));
+export const nodeRuntime = new NodeRuntime(defaultRuntime);
 
 export const {
   custom: { run, runAsap, runCancel, runFiber, runPromise, runPromiseExit },

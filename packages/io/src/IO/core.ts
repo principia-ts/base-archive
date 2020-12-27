@@ -7,7 +7,6 @@ import type { FiberRef } from "../FiberRef/core";
 import type { Scope } from "../Scope";
 import type { SIO } from "../SIO";
 import type { Supervisor } from "../Supervisor";
-import type { Trace } from "../Trace";
 import type { Lazy } from "@principia/base/data/Function";
 import type { Option } from "@principia/base/data/Option";
 import type * as HKT from "@principia/base/HKT";
@@ -17,7 +16,6 @@ import * as E from "@principia/base/data/Either";
 import { _bind, _bindTo, flow, identity, pipe, tuple } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
 import { makeMonoid } from "@principia/base/Monoid";
-import { accessCallTrace, traceAsFrom, traceFrom } from "@principia/compile/tracing-utils";
 import * as FL from "@principia/free/FreeList";
 
 import * as C from "../Cause/core";
@@ -75,10 +73,7 @@ export type Instruction =
   | GetForkScopeInstruction<any, any, any>
   | OverrideForkScopeInstruction<any, any, any>
   | SIO<unknown, never, any, any, any>
-  | Integration<any, any, any>
-  | TraceInstruction
-  | GetTracingStatusInstruction<any, any, any>
-  | SetTracingStatusInstruction<any, any, any>;
+  | Integration<any, any, any>;
 
 export type V = HKT.V<"E", "+"> & HKT.V<"R", "-">;
 
@@ -103,28 +98,7 @@ export class FlatMapInstruction<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, 
 
 export class SucceedInstruction<A> extends IO<unknown, never, A> {
   readonly _tag = IOInstructionTag.Succeed;
-  constructor(readonly value: A, readonly trace?: string) {
-    super();
-  }
-}
-
-export class TraceInstruction extends IO<unknown, never, Trace> {
-  readonly _tag = IOInstructionTag.Trace;
-  constructor() {
-    super();
-  }
-}
-
-export class SetTracingStatusInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.SetTracingStatus;
-  constructor(readonly io: IO<R, E, A>, readonly flag: boolean) {
-    super();
-  }
-}
-
-export class GetTracingStatusInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.GetTracingStatus;
-  constructor(readonly f: (tracingStatus: boolean) => IO<R, E, A>) {
+  constructor(readonly value: A) {
     super();
   }
 }
@@ -190,7 +164,7 @@ export class ForkInstruction<R, E, A> extends IO<R, never, FiberContext<E, A>> {
 export class FailInstruction<E> extends IO<unknown, E, never> {
   readonly _tag = IOInstructionTag.Fail;
 
-  constructor(readonly fill: (_: () => Trace) => Cause<E>) {
+  constructor(readonly cause: Cause<E>) {
     super();
   }
 }
@@ -321,10 +295,10 @@ export class OverrideForkScopeInstruction<R, E, A> extends IO<R, E, A> {
   }
 }
 
-export const integrationNotImplemented = new FailInstruction(() => ({
+export const integrationNotImplemented = new FailInstruction({
   _tag: "Die",
   value: new Error("Integration not implemented or unsupported")
-}));
+});
 
 export abstract class Integration<R, E, A> extends IO<R, E, A> {
   readonly _tag = IOInstructionTag.Integration;
@@ -358,7 +332,7 @@ export abstract class Integration<R, E, A> extends IO<R, E, A> {
  * @since 1.0.0
  */
 export function succeed<E = never, A = never>(a: A): FIO<E, A> {
-  return new SucceedInstruction(a, accessCallTrace("succeed"));
+  return new SucceedInstruction(a);
 }
 
 /**
@@ -467,14 +441,8 @@ export function suspend<R, E, A>(factory: Lazy<IO<R, E, A>>): IO<R, E, A> {
  *
  * @category Constructors
  * @since 1.0.0
- *
- * @tracecall halt
  */
 export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
-  return new FailInstruction(traceFrom("halt", () => cause));
-}
-
-export function haltWith<E>(cause: (_: () => Trace) => C.Cause<E>): FIO<E, never> {
   return new FailInstruction(cause);
 }
 
@@ -489,7 +457,7 @@ export function haltWith<E>(cause: (_: () => Trace) => C.Cause<E>): FIO<E, never
  * @since 1.0.0
  */
 export function fail<E>(e: E): FIO<E, never> {
-  return haltWith(traceAsFrom("fail", fail, (trace) => C.traced(C.fail(e), trace())));
+  return halt(C.fail(e));
 }
 
 /**
@@ -503,7 +471,7 @@ export function fail<E>(e: E): FIO<E, never> {
  * @since 1.0.0
  */
 export function die(e: unknown): FIO<never, never> {
-  return haltWith(traceFrom("die", (trace) => C.traced(C.die(e), trace())));
+  return halt(C.die(e));
 }
 
 /**
@@ -1644,39 +1612,4 @@ export function forkReport(
   reportFailure: FailureReporter
 ): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
   return (ma) => new ForkInstruction(ma, O.none(), O.some(reportFailure));
-}
-
-/**
- * Enables effect tracing for this IO. Because this is the default, this
- * operation only has an additional meaning if the effect is located within
- * an `untraced` section, or the current fiber has been spawned by a parent
- * inside an `untraced` section.
- */
-export function traced<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return new SetTracingStatusInstruction(ma, true);
-}
-
-/**
- * Disables effect tracing facilities for the duration of the IO.
- *
- * Note: Effect tracing is cached, as such after the first iteration
- * it has a negligible effect on performance of hot-spots (Additional
- * hash map lookup per flatMap). As such, using `untraced` sections
- * is not guaranteed to result in a noticeable performance increase.
- */
-export function untraced<R, E, A>(self: IO<R, E, A>): IO<R, E, A> {
-  return new SetTracingStatusInstruction(self, false);
-}
-
-/**
- * Capture trace at the current point
- */
-export const trace: UIO<Trace> = new TraceInstruction();
-
-/**
- * Checks the tracing status, and produces the effect returned by the
- * specified callback.
- */
-export function checkTraced<R, E, A>(f: (_: boolean) => IO<R, E, A>): IO<R, E, A> {
-  return new GetTracingStatusInstruction(f);
 }

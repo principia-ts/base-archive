@@ -114,7 +114,6 @@ export * from "./raceFirst";
 export * from "./reduceAll";
 export * from "./reduceAllPar";
 export * from "./reduceAllParN";
-export * from "./refailWithTrace";
 export * from "./refineOrDie";
 export * from "./refineOrDieWith";
 export * from "./reject";
