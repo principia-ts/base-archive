@@ -11,6 +11,7 @@ import { identity, tuple } from "../data/Function";
 import * as O from "../data/Option";
 import * as DSL from "../DSL";
 import * as HKT from "../HKT";
+import { MutableStack } from "../util/support/MutableStack";
 import { makeStack } from "../util/support/Stack";
 
 /**
@@ -257,20 +258,16 @@ export function evaluate<A>(e: Eval<A>): A {
     return new Now(a);
   };
 
-  let frames: Stack<Frame> | undefined = makeStack(new Frame((_) => new Now(_)));
+  const frames = new MutableStack(new Frame((_) => new Now(_)));
   let current = e as Eval<any> | undefined;
   let result = null;
 
   function popContinuation() {
-    const nextInstr = frames;
-    if (nextInstr) {
-      frames = frames?.previous;
-    }
-    return nextInstr?.value;
+    return frames.pop();
   }
 
   function pushContinuation(cont: Frame) {
-    frames = makeStack(cont, frames);
+    frames.push(cont);
   }
 
   while (current != null) {

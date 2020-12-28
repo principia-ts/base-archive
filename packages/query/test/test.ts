@@ -77,7 +77,7 @@ const ds: DS.Batched<Has<Console>, Req> = new (class extends DS.Batched<Has<Cons
       return pipe(
         backendGetAll,
         I.map((allItems) =>
-          R.foldLeftWithIndex_(allItems, CompletedRequestMap.empty(), (id, result, value) =>
+          R.foldLeftWithIndex_(allItems, CompletedRequestMap.empty(), (result, id, value) =>
             result.insert(new Get(id), E.right(value))
           ).insert(new GetAll(), E.right(allItems))
         )
@@ -128,4 +128,4 @@ const program = () => {
   });
 };
 
-program()["|>"](I.giveLayer(NodeConsole.live))["|>"](I.run);
+program()["|>"](I.giveLayer(NodeConsole.live))["|>"]((x) => I.run(x, (ex) => console.log(ex)));

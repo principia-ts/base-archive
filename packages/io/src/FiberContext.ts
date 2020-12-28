@@ -5,7 +5,6 @@ import type { FiberRef } from "./FiberRef";
 import type { Platform } from "./Platform";
 import type { Supervisor } from "./Supervisor";
 import type { Option } from "@principia/base/data/Option";
-import type { Stack } from "@principia/base/util/support/Stack";
 
 import * as A from "@principia/base/data/Array";
 import * as E from "@principia/base/data/Either";
@@ -13,8 +12,8 @@ import { constVoid } from "@principia/base/data/Function";
 import { none } from "@principia/base/data/Option";
 import * as O from "@principia/base/data/Option";
 import { AtomicReference } from "@principia/base/util/support/AtomicReference";
+import { MutableStack } from "@principia/base/util/support/MutableStack";
 import { defaultScheduler } from "@principia/base/util/support/Scheduler";
-import { makeStack } from "@principia/base/util/support/Stack";
 
 import * as C from "./Cause/core";
 import * as Ex from "./Exit/core";
@@ -105,11 +104,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private readonly scheduler = defaultScheduler;
 
   private asyncEpoch = 0 | 0;
-  private continuationFrames?: Stack<Frame> = undefined;
-  private environments?: Stack<any> = makeStack(this.initialEnv);
-  private interruptStatus?: Stack<boolean> = makeStack(this.initialInterruptStatus.toBoolean);
-  private supervisors: Stack<Supervisor<any>> = makeStack(this.initialSupervisor);
-  private forkScopeOverride?: Stack<Option<Scope.Scope<Exit<any, any>>>> = undefined;
+  private continuationFrames = new MutableStack<Frame>();
+  private environments = new MutableStack<any>(this.initialEnv);
+  private interruptStatus = new MutableStack<boolean>(this.initialInterruptStatus.toBoolean);
+  private supervisors = new MutableStack<Supervisor<any>>(this.initialSupervisor);
+  private forkScopeOverride = new MutableStack<Option<Scope.Scope<Exit<any, any>>>>();
   private scopeKey: Scope.Key | undefined = undefined;
 
   constructor(
@@ -160,7 +159,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   });
 
   get isInterruptible() {
-    return this.interruptStatus ? this.interruptStatus.value : true;
+    return this.interruptStatus.peekOrElse(true);
   }
 
   get isInterrupted() {
@@ -176,7 +175,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get isStackEmpty() {
-    return !this.continuationFrames;
+    return this.continuationFrames.isEmpty;
   }
 
   get id() {
@@ -184,33 +183,27 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private pushContinuation(k: Frame) {
-    this.continuationFrames = makeStack(k, this.continuationFrames);
+    this.continuationFrames.push(k);
   }
 
   private popContinuation() {
-    const current = this.continuationFrames?.value;
-    this.continuationFrames = this.continuationFrames?.previous;
-    return current;
+    return this.continuationFrames.pop();
   }
 
   private pushEnv(k: any) {
-    this.environments = makeStack(k, this.environments);
+    this.environments.push(k);
   }
 
   private popEnv() {
-    const current = this.environments?.value;
-    this.environments = this.environments?.previous;
-    return current;
+    this.environments.pop();
   }
 
   private pushInterruptStatus(flag: boolean) {
-    this.interruptStatus = makeStack(flag, this.interruptStatus);
+    this.interruptStatus.push(flag);
   }
 
   private popInterruptStatus() {
-    const current = this.interruptStatus?.value;
-    this.interruptStatus = this.interruptStatus?.previous;
-    return current;
+    return this.interruptStatus.pop();
   }
 
   runAsync(k: Callback<E, A>) {
@@ -273,7 +266,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private next(value: any): I.Instruction | undefined {
-    if (!this.isStackEmpty) {
+    if (!this.continuationFrames.isEmpty) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const k = this.popContinuation()!;
 
@@ -524,12 +517,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     });
 
     const parentScope: Scope.Scope<Exit<any, any>> = O.getOrElse_(
-      forkScope._tag === "Some" ? forkScope : this.forkScopeOverride?.value || O.none(),
+      forkScope._tag === "Some" ? forkScope : this.forkScopeOverride.peekOrElse(O.none()),
       () => this.scope
     );
 
-    const currentEnv = this.environments?.value || {};
-    const currentSupervisor = this.supervisors.value;
+    const currentEnv = this.environments.peekOrElse({});
+    const currentSupervisor = this.supervisors.peekOrElse(Super.none);
     const childId = newFiberId();
     const childScope = Scope.unsafeMakeScope<Exit<E, A>>();
 
@@ -885,7 +878,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOInstructionTag.Read: {
-                    current = current.f(this.environments?.value || {})[I._I];
+                    current = current.f(this.environments.peekOrElse({}))[I._I];
                     break;
                   }
 
@@ -953,17 +946,17 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                   case IOInstructionTag.Supervise: {
                     const c = current;
-                    const lastSupervisor = this.supervisors.value;
+                    const lastSupervisor = this.supervisors.peekOrElse(Super.none);
                     const newSupervisor = c.supervisor.and(lastSupervisor);
                     current = I.bracket_(
                       I.total(() => {
-                        this.supervisors = makeStack(newSupervisor, this.supervisors);
+                        this.supervisors.push(newSupervisor);
                       }),
                       () => c.io,
                       () =>
                         I.total(() => {
                           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                          this.supervisors = this.supervisors.previous!;
+                          this.supervisors.pop();
                         })
                     )[I._I];
                     break;
@@ -971,7 +964,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                   case IOInstructionTag.GetForkScope: {
                     current = current.f(
-                      O.getOrElse_(this.forkScopeOverride?.value || none(), () => this.scope)
+                      O.getOrElse_(this.forkScopeOverride.peekOrElse(none()), () => this.scope)
                     )[I._I];
                     break;
                   }
@@ -980,12 +973,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const c = current;
                     current = I.bracket_(
                       I.total(() => {
-                        this.forkScopeOverride = makeStack(c.forkScope, this.forkScopeOverride);
+                        this.forkScopeOverride.push(c.forkScope);
                       }),
                       () => c.io,
                       () =>
                         I.total(() => {
-                          this.forkScopeOverride = this.forkScopeOverride?.previous;
+                          this.forkScopeOverride.pop();
                         })
                     )[I._I];
                     break;
