@@ -11,7 +11,7 @@ import { toNumber } from "../Ordering";
 import { makeMonoid, makeSemigroup } from "../typeclass";
 import * as A from "./Array";
 import { makeEq } from "./Eq";
-import { identity, not } from "./Function";
+import { identity, not, tuple } from "./Function";
 
 /*
  * -------------------------------------------
@@ -241,11 +241,11 @@ export function filter_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
 export function partition_<A, B extends A>(
   fa: ReadonlySet<A>,
   refinement: Refinement<A, B>
-): Separated<ReadonlySet<A>, ReadonlySet<B>>;
+): readonly [ReadonlySet<A>, ReadonlySet<B>];
 export function partition_<A>(
   fa: ReadonlySet<A>,
   predicate: Predicate<A>
-): Separated<ReadonlySet<A>, ReadonlySet<A>>;
+): readonly [ReadonlySet<A>, ReadonlySet<A>];
 export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
   const values = fa.values();
   let e: IteratorResult<A>;
@@ -259,7 +259,7 @@ export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
       left.add(value);
     }
   }
-  return { left, right };
+  return tuple(left, right);
 }
 
 /**
@@ -267,13 +267,13 @@ export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
  */
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
-): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<B>>;
+): (fa: ReadonlySet<A>) => readonly [ReadonlySet<A>, ReadonlySet<B>];
 export function partition<A>(
   predicate: Predicate<A>
-): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<A>>;
+): (fa: ReadonlySet<A>) => readonly [ReadonlySet<A>, ReadonlySet<A>];
 export function partition<A>(
   predicate: Predicate<A>
-): (fa: ReadonlySet<A>) => Separated<ReadonlySet<A>, ReadonlySet<A>> {
+): (fa: ReadonlySet<A>) => readonly [ReadonlySet<A>, ReadonlySet<A>] {
   return (fa) => partition_(fa, predicate);
 }
 
@@ -284,7 +284,7 @@ export function partitionMap_<B, C>(EB: Eq<B>, EC: Eq<C>) {
   return <A>(
     set: ReadonlySet<A>,
     f: (a: A) => E.Either<B, C>
-  ): Separated<ReadonlySet<B>, ReadonlySet<C>> => {
+  ): readonly [ReadonlySet<B>, ReadonlySet<C>] => {
     const values = set.values();
     let e: IteratorResult<A>;
     const left = new Set<B>();
@@ -306,7 +306,7 @@ export function partitionMap_<B, C>(EB: Eq<B>, EC: Eq<C>) {
           break;
       }
     }
-    return { left, right };
+    return [left, right];
   };
 }
 
@@ -318,7 +318,7 @@ export function partitionMap<B, C>(
   EC: Eq<C>
 ): <A>(
   f: (a: A) => E.Either<B, C>
-) => (set: ReadonlySet<A>) => Separated<ReadonlySet<B>, ReadonlySet<C>> {
+) => (set: ReadonlySet<A>) => readonly [ReadonlySet<B>, ReadonlySet<C>] {
   return (f) => (set) => partitionMap_(EB, EC)(set, f);
 }
 
@@ -353,16 +353,16 @@ export function filterMap<B>(E: Eq<B>) {
  * -------------------------------------------
  */
 
-export function reduce_<A>(O: P.Ord<A>) {
+export function foldLeft_<A>(O: P.Ord<A>) {
   const toArrayO = toArray(O);
   return <B>(set: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B =>
     A.foldLeft_(toArrayO(set), b, f);
 }
 
-export function reduce<A>(
+export function foldLeft<A>(
   O: P.Ord<A>
 ): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
-  return (b, f) => (set) => reduce_(O)(set, b, f);
+  return (b, f) => (set) => foldLeft_(O)(set, b, f);
 }
 
 export function foldMap_<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {

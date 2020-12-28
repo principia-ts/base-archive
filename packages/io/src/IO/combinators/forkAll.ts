@@ -1,9 +1,9 @@
 import type { IO, URIO } from "../core";
 
 import * as A from "@principia/base/data/Array";
+import * as I from "@principia/base/data/Iterable";
 
 import * as Fiber from "../../Fiber";
-import * as I from "../../Iterable";
 import { flatMap_, foreach_, fork, map_, unit } from "../core";
 
 /**

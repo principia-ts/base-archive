@@ -4,7 +4,6 @@ import * as A from "@principia/base/data/Array";
 import { pipe } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
 
-import * as I from "../../Iterable";
 import { map, map_ } from "../core";
 import { foreachPar } from "./foreachPar";
 

@@ -33,7 +33,7 @@ function buildObjectType<FieldAURI extends FieldAURIS, InputAURI extends InputAU
     fields: R.foldLeftWithIndex_(
       fields(interpreters) as any,
       [] as ReadonlyArray<FieldDefinitionNode>,
-      (k, b, a: NonNullable<AnyOutput<any>>) => {
+      (b, k, a: NonNullable<AnyOutput<any>>) => {
         switch (a._tag) {
           /*
            * case "RecursiveType":
@@ -73,7 +73,7 @@ export function makeObjectTypeSummoner<FieldAURI extends FieldAURIS, InputAURI e
       buildObjectType(name, fields, interpreters),
       name,
       interpretedFields,
-      R.foldLeftWithIndex_(interpretedFields, {}, (k, acc, v: AnyOutput<T>) => {
+      R.foldLeftWithIndex_(interpretedFields, {}, (acc, k, v: AnyOutput<T>) => {
         if (v._tag === "GQLField") {
           return { ...acc, [k]: v.resolve };
         }

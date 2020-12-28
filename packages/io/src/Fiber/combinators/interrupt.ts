@@ -2,10 +2,11 @@ import type { UIO } from "../../IO/core";
 import type { Fiber } from "../core";
 import type { FiberId } from "../FiberId";
 
+import * as Iter from "@principia/base/data/Iterable";
+
 import { forkDaemon } from "../../IO/combinators/core-scope";
 import { fiberId } from "../../IO/combinators/fiberId";
 import * as I from "../../IO/core";
-import * as Iter from "../../Iterable";
 
 /**
  * ```haskell

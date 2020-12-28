@@ -231,21 +231,21 @@ function generateStyles() {
 
   const colorsBright: {
     [K in keyof typeof colors as `bright${Capitalize<K>}`]: [number, number];
-  } = R.foldLeftWithIndex_(colors, {} as any, (k, b, [c, r]) => ({
+  } = R.foldLeftWithIndex_(colors, {} as any, (b, k, [c, r]) => ({
     ...b,
     [`bright${Str.capitalize(k)}`]: [c + ANSI_BRIGHT_OFFSET, r]
   }));
 
   const colorsBg: {
     [K in keyof typeof colors as `bg${Capitalize<K>}`]: [number, number];
-  } = R.foldLeftWithIndex_(colors, {} as any, (k, b, [c, r]) => ({
+  } = R.foldLeftWithIndex_(colors, {} as any, (b, k, [c, r]) => ({
     ...b,
     [`bg${Str.capitalize(k)}`]: [c + ANSI_BACKGROUND_OFFSET, r + ANSI_BACKGROUND_OFFSET]
   }));
 
   const colorsBrightBg: {
     [K in keyof typeof colors as `bgBright${Capitalize<K>}`]: [number, number];
-  } = R.foldLeftWithIndex_(colors, {} as any, (k, b, [c, r]) => ({
+  } = R.foldLeftWithIndex_(colors, {} as any, (b, k, [c, r]) => ({
     ...b,
     [`bgBright${Str.capitalize(k)}`]: [
       c + ANSI_BRIGHT_OFFSET + ANSI_BACKGROUND_OFFSET,

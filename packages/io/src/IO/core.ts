@@ -14,13 +14,13 @@ import type * as HKT from "@principia/base/HKT";
 import * as A from "@principia/base/data/Array";
 import * as E from "@principia/base/data/Either";
 import { _bind, _bindTo, flow, identity, pipe, tuple } from "@principia/base/data/Function";
+import * as I from "@principia/base/data/Iterable";
 import * as O from "@principia/base/data/Option";
 import { makeMonoid } from "@principia/base/Monoid";
 import * as FL from "@principia/free/FreeList";
 
 import * as C from "../Cause/core";
 import * as Ex from "../Exit/core";
-import * as I from "../Iterable";
 import { _A, _E, _I, _R, _U, IOInstructionTag } from "./constants";
 
 export { _A, _E, _I, _R, _U, IOInstructionTag } from "./constants";

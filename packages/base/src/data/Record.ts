@@ -1,5 +1,4 @@
 import type * as HKT from "../HKT";
-import type { Separated } from "../util/types";
 import type * as E from "./Either";
 import type { Eq } from "./Eq";
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "./Function";
@@ -7,7 +6,7 @@ import type { Show } from "./Show";
 
 import * as P from "../typeclass";
 import { makeMonoid } from "../typeclass";
-import { identity, pipe } from "./Function";
+import { identity, pipe, tuple } from "./Function";
 import * as O from "./Option";
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -258,7 +257,7 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
  */
 export function separate<N extends string, A, B>(
   fa: ReadonlyRecord<N, E.Either<A, B>>
-): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>> {
+): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>] {
   const left: Record<string, A> = {} as any;
   const right: Record<string, B> = {} as any;
   const keys = Object.keys(fa);
@@ -273,10 +272,7 @@ export function separate<N extends string, A, B>(
         break;
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 /**
@@ -476,11 +472,11 @@ export function filterMap<A, B>(
 export function partitionWithIndex_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
   refinement: RefinementWithIndex<N, A, B>
-): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>];
 export function partitionWithIndex_<N extends string, A>(
   fa: ReadonlyRecord<N, A>,
   predicate: PredicateWithIndex<N, A>
-): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>];
 export function partitionWithIndex_<A>(
   fa: ReadonlyRecord<string, A>,
   predicate: PredicateWithIndex<string, A>
@@ -497,10 +493,7 @@ export function partitionWithIndex_<A>(
       left[key] = a;
     }
   }
-  return {
-    left,
-    right
-  };
+  return tuple(left, right);
 }
 
 /**
@@ -511,15 +504,15 @@ export function partitionWithIndex_<A>(
  */
 export function partitionWithIndex<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
-): (fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+): (fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>];
 export function partitionWithIndex<N extends string, A>(
   predicate: PredicateWithIndex<N, A>
-): (fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+): (fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>];
 export function partitionWithIndex<A>(
   predicate: PredicateWithIndex<string, A>
 ): (
   fa: ReadonlyRecord<string, A>
-) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>> {
+) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>] {
   return (fa) => partitionWithIndex_(fa, predicate);
 }
 
@@ -531,11 +524,11 @@ export function partitionWithIndex<A>(
 export function partition_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
   refinement: Refinement<A, B>
-): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>];
 export function partition_<N extends string, A>(
   fa: ReadonlyRecord<N, A>,
   predicate: Predicate<A>
-): Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>];
 export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A>) {
   return partitionWithIndex_(fa, (_, a) => predicate(a));
 }
@@ -549,17 +542,17 @@ export function partition<A, B extends A>(
   refinement: Refinement<A, B>
 ): <N extends string>(
   fa: ReadonlyRecord<N, A>
-) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, B>>;
+) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>];
 export function partition<A>(
   predicate: Predicate<A>
 ): <N extends string>(
   fa: ReadonlyRecord<N, A>
-) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>>;
+) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>];
 export function partition<A>(
   predicate: Predicate<A>
 ): (
   fa: ReadonlyRecord<string, A>
-) => Separated<ReadonlyRecord<string, A>, ReadonlyRecord<string, A>> {
+) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>] {
   return (fa) => partition_(fa, predicate);
 }
 
@@ -572,7 +565,7 @@ export function partition<A>(
 export function partitionMapWithIndex_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => E.Either<B, C>
-): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
+): readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
   const left: Record<string, B> = {};
   const right: Record<string, C> = {};
   const ks = keys(fa);
@@ -588,10 +581,7 @@ export function partitionMapWithIndex_<N extends string, A, B, C>(
         break;
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 /**
@@ -602,7 +592,7 @@ export function partitionMapWithIndex_<N extends string, A, B, C>(
  */
 export function partitionMapWithIndex<N extends string, A, B, C>(
   f: (k: N, a: A) => E.Either<B, C>
-): (fa: ReadonlyRecord<N, A>) => Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
+): (fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
   return (fa) => partitionMapWithIndex_(fa, f);
 }
 
@@ -614,7 +604,7 @@ export function partitionMapWithIndex<N extends string, A, B, C>(
 export function partitionMap_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
   f: (a: A) => E.Either<B, C>
-): Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
+): readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
   return partitionMapWithIndex_(fa, (_, a) => f(a));
 }
 
@@ -627,7 +617,7 @@ export function partitionMap<A, B, C>(
   f: (a: A) => E.Either<B, C>
 ): <N extends string>(
   fa: Readonly<Record<N, A>>
-) => Separated<ReadonlyRecord<string, B>, ReadonlyRecord<string, C>> {
+) => readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
   return (fa) => partitionMap_(fa, f);
 }
 
@@ -639,40 +629,40 @@ export function partitionMap<A, B, C>(
 
 /**
  * ```haskell
- * reduceWithIndex_ :: (FoldableWithIndex t, Index k) => (t a, b, ((k, b, a) -> b)) -> b
+ * foldLeftWithIndex_ :: (FoldableWithIndex t, Index k) => (t a, b, ((k, b, a) -> b)) -> b
  * ```
  */
 export function foldLeftWithIndex_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
   b: B,
-  f: (k: N, b: B, a: A) => B
+  f: (b: B, k: N, a: A) => B
 ): B {
   let out = b;
   const ks = keys(fa);
   const len = ks.length;
   for (let i = 0; i < len; i++) {
     const k = ks[i];
-    out = f(k, out, fa[k]);
+    out = f(out, k, fa[k]);
   }
   return out;
 }
 
 /**
  * ```haskell
- * reduceWithIndex :: (FoldableWithIndex t, Index k) =>
+ * foldLeftWithIndex :: (FoldableWithIndex t, Index k) =>
  *    (b, ((k, b, a) -> b)) -> t a -> b
  * ```
  */
 export function foldLeftWithIndex<N extends string, A, B>(
   b: B,
-  f: (k: N, b: B, a: A) => B
+  f: (b: B, k: N, a: A) => B
 ): (fa: ReadonlyRecord<N, A>) => B {
   return (fa) => foldLeftWithIndex_(fa, b, f);
 }
 
 /**
  * ```haskell
- * reduce_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
+ * foldLeft_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
  * ```
  */
 export function foldLeft_<N extends string, A, B>(
@@ -680,12 +670,12 @@ export function foldLeft_<N extends string, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): B {
-  return foldLeftWithIndex_(fa, b, (_, acc, a) => f(acc, a));
+  return foldLeftWithIndex_(fa, b, (b, _, a) => f(b, a));
 }
 
 /**
  * ```haskell
- * reduce :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
+ * foldLeft :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
  * ```
  */
 export function foldLeft<A, B>(
@@ -697,41 +687,41 @@ export function foldLeft<A, B>(
 
 /**
  * ```haskell
- * reduceRightWithIndex_ :: (FoldableWithIndex t, Index k) =>
+ * foldRightWithIndex_ :: (FoldableWithIndex t, Index k) =>
  *    (t a, b, ((k, a, b) -> b)) -> b
  * ```
  */
 export function foldRightWithIndex_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
   b: B,
-  f: (k: N, a: A, b: B) => B
+  f: (a: A, k: N, b: B) => B
 ): B {
   let out = b;
   const ks = keys(fa);
   const len = ks.length;
   for (let i = len - 1; i >= 0; i--) {
     const k = ks[i];
-    out = f(k, fa[k], out);
+    out = f(fa[k], k, out);
   }
   return out;
 }
 
 /**
  * ```haskell
- * reduceRightWithIndex :: (FoldableWithIndex t, Index k) =>
+ * foldRightWithIndex :: (FoldableWithIndex t, Index k) =>
  *    (b, ((k, a, b) -> b)) -> t a -> b
  * ```
  */
 export function foldRightWithIndex<N extends string, A, B>(
   b: B,
-  f: (k: N, a: A, b: B) => B
+  f: (a: A, k: N, b: B) => B
 ): (fa: ReadonlyRecord<N, A>) => B {
   return (fa) => foldRightWithIndex_(fa, b, f);
 }
 
 /**
  * ```haskell
- * reduceRight_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
+ * foldRight_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
  * ```
  */
 export function foldRight_<N extends string, A, B>(
@@ -739,12 +729,12 @@ export function foldRight_<N extends string, A, B>(
   b: B,
   f: (a: A, b: B) => B
 ): B {
-  return foldRightWithIndex_(fa, b, (_, a, acc) => f(a, acc));
+  return foldRightWithIndex_(fa, b, (a, _, b) => f(a, b));
 }
 
 /**
  * ```haskell
- * reduceRight :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
+ * foldRight :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
  * ```
  */
 export function foldRight<A, B>(

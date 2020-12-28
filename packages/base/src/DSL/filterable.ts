@@ -13,7 +13,7 @@ import type {
 import type { Erase } from "../util/types";
 
 import * as E from "../data/Either";
-import { flow, not, pipe } from "../data/Function";
+import { flow, not, pipe, tuple } from "../data/Function";
 import * as O from "../data/Option";
 import * as HKT from "../HKT";
 
@@ -39,10 +39,10 @@ export function getFilterableF<F>(
           )
         )
       );
-    const partitionMap_: PartitionMapFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, f) => ({
-      left: filterMap_(fa, flow(f, O.getLeft)),
-      right: filterMap_(fa, flow(f, O.getRight))
-    });
+    const partitionMap_: PartitionMapFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = (fa, f) => [
+      filterMap_(fa, flow(f, O.getLeft)),
+      filterMap_(fa, flow(f, O.getRight))
+    ];
 
     const filter_: FilterFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = <A>(
       fa: HKT.HKT2<F, E, A>,
@@ -52,10 +52,7 @@ export function getFilterableF<F>(
     const partition_: PartitionFn_<HKT.UHKT2<F>, HKT.Fix<"E", E>> = <A>(
       fa: HKT.HKT2<F, E, A>,
       predicate: Predicate<A>
-    ) => ({
-      left: filter_(fa, not(predicate)),
-      right: filter_(fa, predicate)
-    });
+    ) => tuple(filter_(fa, not(predicate)), filter_(fa, predicate));
 
     return HKT.instance<Filterable<HKT.UHKT2<F>, HKT.Fix<"E", E>>>({
       partitionMap_,

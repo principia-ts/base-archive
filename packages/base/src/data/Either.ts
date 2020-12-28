@@ -6,7 +6,6 @@
  * and the _Right_ constructor is used to hold a correct value
  */
 
-import type { Separated } from "../util/types";
 import type { Eq } from "./Eq/core";
 import type { MorphismN, Predicate, Refinement } from "./Function";
 import type { Option } from "./Option";
@@ -94,11 +93,11 @@ export function right<E = never, A = never>(a: A): Either<E, A> {
 }
 
 /**
- * 
+ *
  * ```haskell
  * fromNullable_ :: (?a, (() -> e)) -> Either e a
  * ```
- 
+ *
  * Takes a default and a nullable value, if the value is not nully, turn it into a `Right`, if the value is nully use the provided default as a `Left`
  *
  * @category Constructors
@@ -109,11 +108,11 @@ export function fromNullable_<E, A>(a: A, e: () => E): Either<E, NonNullable<A>>
 }
 
 /**
- * 
+ *
  * ```haskell
  * fromNullable :: (() -> e) -> ?a -> Either e a
  * ```
- 
+ *
  * Takes a default and a nullable value, if the value is not nully, turn it into a `Right`, if the value is nully use the provided default as a `Left`
  *
  * @category Constructors
@@ -297,8 +296,8 @@ export function fromOption<E>(onNothing: () => E): <A>(fa: Option<A>) => Either<
 
 /**
  * ```haskell
- * _fromPredicate :: (a, (a is b), (a -> e)) -> Either e b
- * _fromPredicate :: (a, (a -> Boolean), (a -> e)) -> Either e a
+ * fromPredicate_ :: (a, (a is b), (a -> e)) -> Either e b
+ * fromPredicate_ :: (a, (a -> Boolean), (a -> e)) -> Either e a
  * ```
  *
  * @category Constructors
@@ -397,7 +396,7 @@ export function isEither(u: unknown): u is Either<unknown, unknown> {
 
 /**
  * ```haskell
- * _fold :: (Either e a, (e -> b), (a -> c)) -> b | c
+ * fold_ :: (Either e a, (e -> b), (a -> c)) -> b | c
  * ```
  *
  * Takes two functions and an `Either` value, if the value is a `Left` the inner value is applied to the first function,
@@ -434,7 +433,7 @@ export function fold<E, A, B, C>(
 
 /**
  * ```haskell
- * _getOrElse :: (Either e a, (e -> b)) -> a | b
+ * getOrElse_ :: (Either e a, (e -> b)) -> a | b
  * ```
  *
  * @category Destructors
@@ -446,7 +445,7 @@ export function getOrElse_<E, A, B>(pab: Either<E, A>, onLeft: (e: E) => B): A |
 
 /**
  * ```haskell
- * _getOrElse :: (e -> b) -> Either e a -> a | b
+ * getOrElse :: (e -> b) -> Either e a -> a | b
  * ```
  *
  * @category Destructors
@@ -833,10 +832,10 @@ export function getCompactable<E>(M: P.Monoid<E>) {
 
     separate: (fa) => {
       return isLeft(fa)
-        ? { left: fa, right: fa }
+        ? [fa, fa]
         : isLeft(fa.right)
-        ? { left: right(fa.right.left), right: left(M.nat) }
-        : { left: left(M.nat), right: right(fa.right.right) };
+        ? [right(fa.right.left), left(M.nat)]
+        : [left(M.nat), right(fa.right.right)];
     }
   });
 }
@@ -932,23 +931,21 @@ export function getFilterable<E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fi
 
   const partitionMap_: P.PartitionMapFn_<[URI], V_> = (fa, f) => {
     if (isLeft(fa)) {
-      return { left: fa, right: fa };
+      return [fa, fa];
     }
     const e = f(fa.right);
-    return isLeft(e)
-      ? { left: right(e.left), right: empty }
-      : { left: empty, right: right(e.right) };
+    return isLeft(e) ? [right(e.left), empty] : [empty, right(e.right)];
   };
 
   const partition_: P.PartitionFn_<[URI], V_> = <A>(
     fa: Either<E, A>,
     predicate: Predicate<A>
-  ): Separated<Either<E, A>, Either<E, A>> => {
+  ): readonly [Either<E, A>, Either<E, A>] => {
     return isLeft(fa)
-      ? { left: fa, right: fa }
+      ? [fa, fa]
       : predicate(fa.right)
-      ? { left: empty, right: right(fa.right) }
-      : { left: right(fa.right), right: empty };
+      ? [empty, right(fa.right)]
+      : [right(fa.right), empty];
   };
 
   const filterMap_: P.FilterMapFn_<[URI], V_> = (fa, f) => {

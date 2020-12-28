@@ -86,34 +86,33 @@ export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) =
   const extendFieldASTs = R.foldLeftWithIndex_(
     extendTypes,
     {} as Record<string, ReadonlyArray<FieldDefinitionNode>>,
-    (k, acc, v) => ({
-      ...acc,
+    (b, k, v) => ({
+      ...b,
       [k]: v.fields
     })
   );
-  const extendObjectNames = R.foldLeftWithIndex_(extendTypes, [] as string[], (k, acc, _v) => [
+  const extendObjectNames = R.foldLeftWithIndex_(extendTypes, [] as string[], (acc, k, _v) => [
     ...acc,
     k
   ]);
   const objectASTs = R.foldLeftWithIndex_(
     objectTypes,
     [] as ObjectTypeDefinitionNode[],
-    (k, acc, v) => {
+    (b, k, v) => {
       return extendObjectNames.includes(k)
-        ? [...acc, { ...v.ast, fields: [...(v.ast.fields || []), ...extendFieldASTs[k]] }]
-        : [...acc, v.ast];
+        ? [...b, { ...v.ast, fields: [...(v.ast.fields || []), ...extendFieldASTs[k]] }]
+        : [...b, v.ast];
     }
   );
-  const inputASTs = R.foldLeftWithIndex_(
+  const inputASTs = R.foldLeft_(
     inputObjectTypes,
     [] as InputObjectTypeDefinitionNode[],
-    (k, acc, v) => [...acc, v.ast]
+    (acc, v) => [...acc, v.ast]
   );
-  const scalarASTs = R.foldLeftWithIndex_(
-    scalarTypes,
-    [] as ScalarTypeDefinitionNode[],
-    (k, acc, v) => [...acc, v.ast]
-  );
+  const scalarASTs = R.foldLeft_(scalarTypes, [] as ScalarTypeDefinitionNode[], (acc, v) => [
+    ...acc,
+    v.ast
+  ]);
   const schemaDefinitionNode = createSchemaDefinitionNode({
     mutation: Object.keys(resolvers).includes("Mutation"),
     query: Object.keys(resolvers).includes("Query")

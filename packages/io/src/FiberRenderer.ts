@@ -2,12 +2,12 @@ import type { FiberStatus, RuntimeFiber } from "./Fiber/core";
 import type { UIO } from "./IO/core";
 
 import { constant, tuple } from "@principia/base/data/Function";
+import * as IT from "@principia/base/data/Iterable";
 import * as O from "@principia/base/data/Option";
 
 import { FiberDump, fiberName } from "./Fiber/core";
 import { productPar_ } from "./IO/combinators/apply-par";
 import * as T from "./IO/core";
-import * as IT from "./Iterable";
 import { parseMs } from "./util/parse-ms";
 
 export function dump<E, A>(fiber: RuntimeFiber<E, A>): T.UIO<FiberDump> {

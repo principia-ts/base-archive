@@ -1,4 +1,3 @@
-import type { Separated } from "../util/types";
 import type { Either } from "./Either";
 import type { Eq } from "./Eq/core";
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "./Function";
@@ -374,7 +373,7 @@ export function compact<A>(as: ReadonlyArray<Option<A>>): ReadonlyArray<A> {
  */
 export function separate<E, A>(
   fa: ReadonlyArray<Either<E, A>>
-): Separated<ReadonlyArray<E>, ReadonlyArray<A>> {
+): readonly [ReadonlyArray<E>, ReadonlyArray<A>] {
   const len = fa.length;
   const left = [];
   const right = [];
@@ -386,10 +385,7 @@ export function separate<E, A>(
       right.push(e.right);
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 /*
@@ -648,15 +644,15 @@ export function filterMap<A, B>(
 export function partitionWithIndex_<A, B extends A>(
   ta: ReadonlyArray<A>,
   refinement: RefinementWithIndex<number, A, B>
-): Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+): readonly [ReadonlyArray<A>, ReadonlyArray<B>];
 export function partitionWithIndex_<A>(
   ta: ReadonlyArray<A>,
   predicate: PredicateWithIndex<number, A>
-): Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+): readonly [ReadonlyArray<A>, ReadonlyArray<A>];
 export function partitionWithIndex_<A>(
   ta: ReadonlyArray<A>,
   predicate: PredicateWithIndex<number, A>
-): Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
+): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
   const left: Array<A> = [];
   const right: Array<A> = [];
   for (let i = 0; i < ta.length; i++) {
@@ -667,10 +663,7 @@ export function partitionWithIndex_<A>(
       left.push(a);
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 /**
@@ -681,13 +674,13 @@ export function partitionWithIndex_<A>(
  */
 export function partitionWithIndex<A, B extends A>(
   refinement: RefinementWithIndex<number, A, B>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<B>];
 export function partitionWithIndex<A>(
   predicate: PredicateWithIndex<number, A>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>];
 export function partitionWithIndex<A>(
   predicate: PredicateWithIndex<number, A>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
   return (ta) => partitionWithIndex_(ta, predicate);
 }
 
@@ -699,15 +692,15 @@ export function partitionWithIndex<A>(
 export function partition_<A, B extends A>(
   ta: ReadonlyArray<A>,
   refinement: Refinement<A, B>
-): Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+): readonly [ReadonlyArray<A>, ReadonlyArray<B>];
 export function partition_<A>(
   ta: ReadonlyArray<A>,
   predicate: Predicate<A>
-): Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+): readonly [ReadonlyArray<A>, ReadonlyArray<A>];
 export function partition_<A>(
   ta: ReadonlyArray<A>,
   predicate: Predicate<A>
-): Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
+): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
   return partitionWithIndex_(ta, (_, a) => predicate(a));
 }
 
@@ -718,13 +711,13 @@ export function partition_<A>(
  */
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<B>>;
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<B>];
 export function partition<A>(
   predicate: Predicate<A>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>>;
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>];
 export function partition<A>(
   predicate: Predicate<A>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<A>, ReadonlyArray<A>> {
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
   return (ta) => partitionWithIndex_(ta, (_, a) => predicate(a));
 }
 
@@ -737,7 +730,7 @@ export function partition<A>(
 export function partitionMapWithIndex_<A, B, C>(
   ta: ReadonlyArray<A>,
   f: (i: number, a: A) => Either<B, C>
-): Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
+): readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
   const left = [];
   const right = [];
   for (let i = 0; i < ta.length; i++) {
@@ -748,10 +741,7 @@ export function partitionMapWithIndex_<A, B, C>(
       right.push(e.right);
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 /**
@@ -762,7 +752,7 @@ export function partitionMapWithIndex_<A, B, C>(
  */
 export function partitionMapWithIndex<A, B, C>(
   f: (i: number, a: A) => Either<B, C>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
   return (ta) => partitionMapWithIndex_(ta, f);
 }
 
@@ -774,7 +764,7 @@ export function partitionMapWithIndex<A, B, C>(
 export function partitionMap_<A, B, C>(
   ta: ReadonlyArray<A>,
   f: (a: A) => Either<B, C>
-): Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
+): readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
   return partitionMapWithIndex_(ta, (_, a) => f(a));
 }
 
@@ -785,7 +775,7 @@ export function partitionMap_<A, B, C>(
  */
 export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
-): (ta: ReadonlyArray<A>) => Separated<ReadonlyArray<B>, ReadonlyArray<C>> {
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
   return (ta) => partitionMapWithIndex_(ta, (_, a) => f(a));
 }
 
@@ -797,7 +787,7 @@ export function partitionMap<A, B, C>(
 
 /**
  * ```haskell
- * reduceWithIndex_ :: (FoldableWithIndex t, Index k) =>
+ * foldLeftWithIndex_ :: (FoldableWithIndex t, Index k) =>
  *    (t a, b, ((k, b, a) -> b)) -> b
  * ```
  *
@@ -807,19 +797,19 @@ export function partitionMap<A, B, C>(
 export function foldLeftWithIndex_<A, B>(
   fa: ReadonlyArray<A>,
   b: B,
-  f: (i: number, b: B, a: A) => B
+  f: (b: B, i: number, a: A) => B
 ): B {
   const len = fa.length;
   let r = b;
   for (let i = 0; i < len; i++) {
-    r = f(i, r, fa[i]);
+    r = f(r, i, fa[i]);
   }
   return r;
 }
 
 /**
  * ```haskell
- * reduceWithIndex :: (FoldableWithIndex t, Index k) =>
+ * foldLeftWithIndex :: (FoldableWithIndex t, Index k) =>
  *    (b, ((k, b, a) -> b)) -> t a -> b
  * ```
  *
@@ -828,38 +818,38 @@ export function foldLeftWithIndex_<A, B>(
  */
 export function foldLeftWithIndex<A, B>(
   b: B,
-  f: (i: number, b: B, a: A) => B
+  f: (b: B, i: number, a: A) => B
 ): (fa: ReadonlyArray<A>) => B {
   return (fa) => foldLeftWithIndex_(fa, b, f);
 }
 
 /**
  * ```haskell
- * reduce_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
+ * foldLeft_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
  * ```
  *
  * @category Foldable
  * @since 1.0.0
  */
 export function foldLeft_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): B {
-  return foldLeftWithIndex_(fa, b, (_, b, a) => f(b, a));
+  return foldLeftWithIndex_(fa, b, (b, _, a) => f(b, a));
 }
 
 /**
  * ```haskell
- * reduce :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
+ * foldLeft :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
  * ```
  *
  * @category Foldable
  * @since 1.0.0
  */
 export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => foldLeftWithIndex_(fa, b, (_, b, a) => f(b, a));
+  return (fa) => foldLeftWithIndex_(fa, b, (b, _, a) => f(b, a));
 }
 
 /**
  * ```haskell
- * reduceRightWithIndex_ :: (FoldableWithIndex t, Index k) =>
+ * foldRightWithIndex_ :: (FoldableWithIndex t, Index k) =>
  *    (t a, b, ((k, a, b) -> b)) -> b
  * ```
  *
@@ -869,18 +859,18 @@ export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: ReadonlyArray<A
 export function foldRightWithIndex_<A, B>(
   fa: ReadonlyArray<A>,
   b: B,
-  f: (i: number, a: A, b: B) => B
+  f: (a: A, i: number, b: B) => B
 ): B {
   let r = b;
   for (let i = fa.length - 1; i >= 0; i--) {
-    r = f(i, fa[i], r);
+    r = f(fa[i], i, r);
   }
   return r;
 }
 
 /**
  * ```haskell
- * reduceRightWithIndex :: (FoldableWithIndex t, Index k) =>
+ * foldRightWithIndex :: (FoldableWithIndex t, Index k) =>
  *    (b, ((k, a, b) -> b)) -> t a -> b
  * ```
  *
@@ -889,26 +879,26 @@ export function foldRightWithIndex_<A, B>(
  */
 export function foldRightWithIndex<A, B>(
   b: B,
-  f: (i: number, a: A, b: B) => B
+  f: (a: A, i: number, b: B) => B
 ): (fa: ReadonlyArray<A>) => B {
   return (fa) => foldRightWithIndex_(fa, b, f);
 }
 
 /**
  * ```haskell
- * reduceRight_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
+ * foldRight_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
  * ```
  *
  * @category Foldable
  * @since 1.0.0
  */
 export function foldRight_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): B {
-  return foldRightWithIndex_(fa, b, (_, a, b) => f(a, b));
+  return foldRightWithIndex_(fa, b, (a, _, b) => f(a, b));
 }
 
 /**
  * ```haskell
- * reduceRight :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
+ * foldRight :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
  * ```
  *
  * @category Foldable
@@ -930,7 +920,7 @@ export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<
 export function foldMapWithIndex_<M>(
   M: P.Monoid<M>
 ): <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => foldLeftWithIndex_(fa, M.nat, (i, b, a) => M.combine_(b, f(i, a)));
+  return (fa, f) => foldLeftWithIndex_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)));
 }
 
 /**
@@ -983,7 +973,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Readonly
  * @since 1.0.0
  */
 export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
-  return (fa) => foldLeftWithIndex_(fa, M.nat, (_, b, a) => M.combine_(b, a));
+  return (fa) => foldLeftWithIndex_(fa, M.nat, (b, _, a) => M.combine_(b, a));
 }
 
 /*
@@ -1273,7 +1263,7 @@ export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementT
   V
 >()((_) => (G) => {
   return (ta, f) =>
-    foldLeftWithIndex_(ta, G.pure(empty<typeof _.B>()), (i, fbs, a) =>
+    foldLeftWithIndex_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) =>
       G.ap_(
         G.map_(fbs, (bs) => (b: typeof _.B) => snoc_(bs, b)),
         f(i, a)

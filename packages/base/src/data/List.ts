@@ -423,7 +423,7 @@ export function compact<A>(fa: List<O.Option<A>>): List<A> {
  *
  * @complexity O(n)
  */
-export function separate<B, C>(fa: List<Either<B, C>>): Separated<List<B>, List<C>> {
+export function separate<B, C>(fa: List<Either<B, C>>): readonly [List<B>, List<C>] {
   return partitionMap_(fa, identity);
 }
 
@@ -493,19 +493,16 @@ export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: List<A>) => List
 export function partition_<A, B extends A>(
   l: List<A>,
   refinement: Refinement<A, B>
-): Separated<List<B>, List<Exclude<A, B>>>;
-export function partition_<A>(l: List<A>, predicate: Predicate<A>): Separated<List<A>, List<A>>;
+): readonly [List<B>, List<Exclude<A, B>>];
+export function partition_<A>(l: List<A>, predicate: Predicate<A>): readonly [List<A>, List<A>];
 export function partition_<A>(
   l: List<A>,
   predicate: (a: A) => boolean
-): Separated<List<A>, List<A>> {
+): readonly [List<A>, List<A>] {
   return foldLeft_(
     l,
-    { left: emptyPushable<A>(), right: emptyPushable<A>() } as Separated<
-      MutableList<A>,
-      MutableList<A>
-    >,
-    (arr, a) => (predicate(a) ? push(a, arr.left) : push(a, arr.right), arr)
+    [emptyPushable<A>(), emptyPushable<A>()],
+    (arr, a) => (predicate(a) ? push(a, arr[0]) : push(a, arr[1]), arr)
   );
 }
 
@@ -518,11 +515,11 @@ export function partition_<A>(
  */
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
-): (l: List<A>) => Separated<List<B>, List<Exclude<A, B>>>;
-export function partition<A>(predicate: Predicate<A>): (l: List<A>) => Separated<List<A>, List<A>>;
+): (l: List<A>) => readonly [List<B>, List<Exclude<A, B>>];
+export function partition<A>(predicate: Predicate<A>): (l: List<A>) => readonly [List<A>, List<A>];
 export function partition<A>(
   predicate: (a: A) => boolean
-): (l: List<A>) => Separated<List<A>, List<A>> {
+): (l: List<A>) => readonly [List<A>, List<A>] {
   return (l) => partition_(l, predicate);
 }
 
@@ -535,23 +532,16 @@ export function partition<A>(
 export function partitionMap_<A, B, C>(
   l: List<A>,
   f: (a: A) => Either<B, C>
-): Separated<List<B>, List<C>> {
-  return foldLeft_(
-    l,
-    { left: emptyPushable<B>(), right: emptyPushable<C>() } as Separated<
-      MutableList<B>,
-      MutableList<C>
-    >,
-    (arr, a) => {
-      const fa = f(a);
-      if (fa._tag === "Left") {
-        push(fa.left, arr.left);
-      } else {
-        push(fa.right, arr.right);
-      }
-      return arr;
+): readonly [List<B>, List<C>] {
+  return foldLeft_(l, [emptyPushable<B>(), emptyPushable<C>()], (arr, a) => {
+    const fa = f(a);
+    if (fa._tag === "Left") {
+      push(fa.left, arr[0]);
+    } else {
+      push(fa.right, arr[1]);
     }
-  );
+    return arr;
+  });
 }
 
 /**
@@ -562,7 +552,7 @@ export function partitionMap_<A, B, C>(
  */
 export function partitionMap<A, B, C>(
   f: (_: A) => Either<B, C>
-): (l: List<A>) => Separated<List<B>, List<C>> {
+): (l: List<A>) => readonly [List<B>, List<C>] {
   return (l) => partitionMap_(l, f);
 }
 

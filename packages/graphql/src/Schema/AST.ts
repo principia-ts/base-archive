@@ -31,7 +31,6 @@ import type {
 
 import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
 import { Kind } from "graphql";
-import { inspect } from "util";
 
 interface FieldDefinitionNodeArgs {
   arguments?: ReadonlyArray<InputValueDefinitionNode>;
@@ -267,7 +266,7 @@ export function createValueNode(value: any): ValueNode {
         const valueNodes = value.map((v) => createValueNode(v));
         return createListValueNode(valueNodes);
       } else {
-        const fieldNodes = reduceRecord(value, [] as ObjectFieldNode[], (k, acc, v) => [
+        const fieldNodes = reduceRecord(value, [] as ObjectFieldNode[], (acc, k, v) => [
           ...acc,
           createObjectFieldNode(k, createValueNode(v))
         ]);

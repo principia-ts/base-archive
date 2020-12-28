@@ -1,6 +1,7 @@
 import type { IO } from "../core";
 
-import * as I from "../../Iterable";
+import * as I from "@principia/base/data/Iterable";
+
 import { map2_, pure } from "../core";
 
 /**

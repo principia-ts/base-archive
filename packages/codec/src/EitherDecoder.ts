@@ -319,7 +319,7 @@ export function fromType<P extends Record<string, EitherDecoder<any, any>>>(
 > {
   const name: string = pipe(
     properties,
-    R.foldLeftWithIndex([] as string[], (k, b, a) => [...b, `${k}: ${a._meta.name}`]),
+    R.foldLeftWithIndex([] as string[], (b, k, a) => [...b, `${k}: ${a._meta.name}`]),
     (as) => `{ ${as.join(", ")} }`
   );
   return pipe(
@@ -362,7 +362,7 @@ export function fromPartial<P extends Record<string, EitherDecoder<any, any>>>(
 > {
   const name: string = pipe(
     properties,
-    R.foldLeftWithIndex([] as string[], (k, b, a) => [...b, `${k}?: ${a._meta.name}`]),
+    R.foldLeftWithIndex([] as string[], (b, k, a) => [...b, `${k}?: ${a._meta.name}`]),
     (as) => `{ ${as.join(", ")} }`
   );
   return pipe(

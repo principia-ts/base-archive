@@ -185,10 +185,10 @@ export interface WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
     SG,
     RG,
     EG,
-    Separated<
+    readonly [
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    >
+    ]
   >;
 }
 
@@ -233,10 +233,10 @@ export interface WiltWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
     SG,
     RG,
     EG,
-    Separated<
+    readonly [
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    >
+    ]
   >;
 }
 
@@ -266,10 +266,10 @@ export function implementWiltWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
     wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.HKT<
     G,
-    Separated<
+    readonly [
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    >
+    ]
   >
 ) => WiltWithIndexFn<F, C>;
 export function implementWiltWithIndex() {
@@ -301,10 +301,10 @@ export function implementWiltWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
     ) => HKT.HKT<G, Either<B, B2>>
   ) => HKT.HKT<
     G,
-    Separated<
+    readonly [
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    >
+    ]
   >
 ) => WiltWithIndexFn_<F, C>;
 export function implementWiltWithIndex_() {

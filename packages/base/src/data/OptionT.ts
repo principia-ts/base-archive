@@ -1,7 +1,6 @@
 import * as HKT from "../HKT";
 import * as P from "../typeclass";
-import * as E from "./Either";
-import { identity, pipe } from "./Function";
+import { identity } from "./Function";
 import * as O from "./Option";
 
 export type OptionTURI<M extends HKT.URIS> = HKT.AppendURI<M, O.OptionURI>;

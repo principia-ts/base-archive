@@ -11,7 +11,7 @@ import { mapChunks_, mapM } from "../core";
  * output of this stream.
  */
 export function mapConcat_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => Iterable<B>) {
-  return mapChunks_(ma, (chunks) => C.chain_(chunks, (a) => Array.from(f(a))));
+  return mapChunks_(ma, (chunks) => C.flatMap_(chunks, (a) => Array.from(f(a))));
 }
 
 /**
@@ -32,7 +32,7 @@ export function mapConcatChunk_<R, E, A, B>(
   ma: Stream<R, E, A>,
   f: (a: A) => ReadonlyArray<B>
 ): Stream<R, E, B> {
-  return mapChunks_(ma, (chunks) => C.chain_(chunks, f));
+  return mapChunks_(ma, (chunks) => C.flatMap_(chunks, f));
 }
 
 /**

@@ -7,7 +7,6 @@ import type { Sequential } from "./Sequential";
 import type { List } from "@principia/base/data/List";
 
 import * as Ev from "@principia/base/control/Eval";
-import * as Eq from "@principia/base/data/Eq";
 import { identity, pipe } from "@principia/base/data/Function";
 import * as L from "@principia/base/data/List";
 import * as Set from "@principia/base/data/Set";
@@ -146,7 +145,7 @@ export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, vo
               )
             );
 
-            const blockedRequests = pipe(sequential, C.chain(identity));
+            const blockedRequests = pipe(sequential, C.flatten);
 
             let leftovers = completedRequests.requests;
             for (const r of C.map_(blockedRequests, (br) => br.request)) {

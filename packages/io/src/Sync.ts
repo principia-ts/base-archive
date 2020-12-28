@@ -6,6 +6,7 @@ import * as A from "@principia/base/data/Array";
 import * as E from "@principia/base/data/Either";
 import { flow, identity, pipe } from "@principia/base/data/Function";
 import { isTag, mergeEnvironments, tag } from "@principia/base/data/Has";
+import * as I from "@principia/base/data/Iterable";
 import * as O from "@principia/base/data/Option";
 import * as R from "@principia/base/data/Record";
 import * as HKT from "@principia/base/HKT";
@@ -13,7 +14,6 @@ import * as P from "@principia/base/typeclass";
 import { NoSuchElementException } from "@principia/base/util/GlobalExceptions";
 import * as FL from "@principia/free/FreeList";
 
-import * as I from "./Iterable";
 import * as S from "./SIO";
 
 /*

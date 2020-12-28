@@ -1,7 +1,9 @@
+import type { Show } from "./core";
+
 import * as A from "../Array";
 import { memoize, pipe } from "../Function";
 import * as R from "../Record";
-import { makeShow, Show } from "./core";
+import { makeShow } from "./core";
 
 /*
  * -------------------------------------------

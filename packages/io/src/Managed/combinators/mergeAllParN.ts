@@ -1,9 +1,9 @@
 import type { Managed } from "../core";
 
 import { pipe } from "@principia/base/data/Function";
+import * as Iter from "@principia/base/data/Iterable";
 
 import { parallelN } from "../../ExecutionStrategy";
-import * as Iter from "../../Iterable";
 import * as I from "../_internal/_io";
 import { mapM } from "../core";
 import { makeManagedReleaseMap } from "./makeManagedReleaseMap";

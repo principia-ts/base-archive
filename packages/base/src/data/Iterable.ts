@@ -1,20 +1,15 @@
+import type { Monoid } from "../Monoid";
+import type { Either } from "./Either";
+import type { PredicateWithIndex } from "./Function";
+
+import * as A from "./Array";
+import { identity, tuple } from "./Function";
+
 /*
  * -------------------------------------------
  * Constructors
  * -------------------------------------------
  */
-
-import type { Either } from "@principia/base/data/Either";
-import type { PredicateWithIndex } from "@principia/base/data/Function";
-import type { Monoid } from "@principia/base/Monoid";
-import type { Separated } from "@principia/base/util/types";
-
-import * as A from "@principia/base/data/Array";
-import { identity } from "@principia/base/data/Function";
-
-export function* genOf<A>(a: A) {
-  yield a;
-}
 
 export const never: Iterable<never> = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -79,8 +74,15 @@ export function zipWith_<A, B, C>(
   };
 }
 
+export function zipWith<A, B, C>(
+  fb: Iterable<B>,
+  f: (a: A, b: B) => C
+): (fa: Iterable<A>) => Iterable<C> {
+  return (fa) => zipWith_(fa, fb, f);
+}
+
 export function ap_<A, B>(fab: Iterable<(a: A) => B>, fa: Iterable<A>): Iterable<B> {
-  return chain_(fab, (f) => map_(fa, f));
+  return flatMap_(fab, (f) => map_(fa, f));
 }
 
 export function ap<A>(fa: Iterable<A>): <B>(fab: Iterable<(a: A) => B>) => Iterable<B> {
@@ -114,7 +116,7 @@ export function filterWithIndex_<A>(
   return iterable(function* () {
     let i = -1;
     const iterator = fa[Symbol.iterator]();
-    while (true) {
+    for (;;) {
       const result = iterator.next();
       if (result.done) break;
       i += 1;
@@ -126,31 +128,32 @@ export function filterWithIndex_<A>(
 export function partitionMapWithIndex_<A, B, C>(
   fa: Iterable<A>,
   f: (i: number, a: A) => Either<B, C>
-): Separated<Iterable<B>, Iterable<C>> {
-  const mapped = mapWithIndex_(fa, f);
-  return {
-    left: iterable(function* () {
+): readonly [Iterable<B>, Iterable<C>] {
+  return tuple(
+    iterable(function* () {
+      const mapped = mapWithIndex_(fa, f);
       const iterator = mapped[Symbol.iterator]();
-      while (true) {
+      for (;;) {
         const result = iterator.next();
         if (result.done) break;
         if (result.value._tag === "Left") yield result.value.left;
       }
     }),
-    right: iterable(function* () {
+    iterable(function* () {
+      const mapped = mapWithIndex_(fa, f);
       const iterator = mapped[Symbol.iterator]();
-      while (true) {
+      for (;;) {
         const result = iterator.next();
         if (result.done) break;
         if (result.value._tag === "Right") yield result.value.right;
       }
     })
-  };
+  );
 }
 
 export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
-): (as: Iterable<A>) => Separated<Iterable<B>, Iterable<C>> {
+): (as: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
   return (as) => partitionMapWithIndex_(as, (_, a) => f(a));
 }
 
@@ -167,8 +170,7 @@ export function foldMapWithIndex_<M>(
     let res = M.nat;
     let n = -1;
     const iterator = fa[Symbol.iterator]();
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (;;) {
       const result = iterator.next();
       if (result.done) {
         break;
@@ -197,32 +199,32 @@ export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Iterable<A
 export function foldLeftWithIndex_<A, B>(
   fa: Iterable<A>,
   b: B,
-  f: (i: number, b: B, a: A) => B
+  f: (b: B, i: number, a: A) => B
 ): B {
   let res = b;
   let n = -1;
   const iterator = fa[Symbol.iterator]();
   // eslint-disable-next-line no-constant-condition
-  while (true) {
+  for (;;) {
     const result = iterator.next();
     if (result.done) {
       break;
     }
     n += 1;
-    res = f(n, res, result.value);
+    res = f(res, n, result.value);
   }
   return res;
 }
 
 export function foldLeftWithIndex<A, B>(
   b: B,
-  f: (i: number, b: B, a: A) => B
+  f: (b: B, i: number, a: A) => B
 ): (fa: Iterable<A>) => B {
   return (fa) => foldLeftWithIndex_(fa, b, f);
 }
 
 export function foldLeft_<A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A) => B): B {
-  return foldLeftWithIndex_(fa, b, (_, b, a) => f(b, a));
+  return foldLeftWithIndex_(fa, b, (b, _, a) => f(b, a));
 }
 
 export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Iterable<A>) => B {
@@ -231,17 +233,25 @@ export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Iterable<A>) =>
 
 export function foldRightWithIndex<A, B>(
   b: B,
-  f: (i: number, a: A, b: B) => B
+  f: (a: A, i: number, b: B) => B
 ): (fa: Iterable<A>) => B {
-  return (fa) => A.foldRightWithIndex_(Array.from(fa), b, f);
+  return (fa) => A.foldRightWithIndex_(A.from(fa), b, f);
 }
 
 export function foldRightWithIndex_<A, B>(
   fa: Iterable<A>,
   b: B,
-  f: (i: number, a: A, b: B) => B
+  f: (a: A, i: number, b: B) => B
 ): B {
-  return A.foldRightWithIndex_(Array.from(fa), b, f);
+  return A.foldRightWithIndex_(A.from(fa), b, f);
+}
+
+export function foldRight_<A, B>(fa: Iterable<A>, b: B, f: (a: A, b: B) => B): B {
+  return A.foldRight_(A.from(fa), b, f);
+}
+
+export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Iterable<A>) => B {
+  return (fa) => foldRight_(fa, b, f);
 }
 
 /*
@@ -252,7 +262,7 @@ export function foldRightWithIndex_<A, B>(
 
 function* genMap<A, B>(ia: Iterator<A>, f: (i: number, a: A) => B) {
   let n = -1;
-  while (true) {
+  for (;;) {
     const result = ia.next();
     if (result.done) {
       break;
@@ -263,15 +273,11 @@ function* genMap<A, B>(ia: Iterator<A>, f: (i: number, a: A) => B) {
 }
 
 export function mapWithIndex_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => B): Iterable<B> {
-  return {
-    [Symbol.iterator]: () => genMap(fa[Symbol.iterator](), f)
-  };
+  return iterable(() => genMap(fa[Symbol.iterator](), f));
 }
 
 export function mapWithIndex<A, B>(f: (i: number, a: A) => B): (fa: Iterable<A>) => Iterable<B> {
-  return (fa) => ({
-    [Symbol.iterator]: () => genMap(fa[Symbol.iterator](), f)
-  });
+  return (fa) => iterable(() => genMap(fa[Symbol.iterator](), f));
 }
 
 export function map_<A, B>(fa: Iterable<A>, f: (a: A) => B): Iterable<B> {
@@ -288,28 +294,28 @@ export function map<A, B>(f: (a: A) => B): (fa: Iterable<A>) => Iterable<B> {
  * -------------------------------------------
  */
 
-export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
-  return (ma) => chain_(ma, f);
+export function flatMap<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
+  return (ma) => flatMap_(ma, f);
 }
 
-export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
+export function flatMap_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
   return iterable(function* () {
-    yield* genChain(ma[Symbol.iterator](), f);
+    yield* genFlatMap(ma[Symbol.iterator](), f);
   });
 }
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
-  return chain_(mma, identity);
+  return flatMap_(mma, identity);
 }
 
-function* genChain<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
-  while (true) {
+function* genFlatMap<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
+  for (;;) {
     const result = ia.next();
     if (result.done) {
       break;
     }
     const ib = f(result.value)[Symbol.iterator]();
-    while (true) {
+    for (;;) {
       const result = ib.next();
       if (result.done) {
         break;
@@ -326,9 +332,7 @@ function* genChain<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
  */
 
 export function unit(): Iterable<void> {
-  return iterable(function* () {
-    yield undefined;
-  });
+  return pure(undefined);
 }
 
 /*
@@ -337,35 +341,34 @@ export function unit(): Iterable<void> {
  * -------------------------------------------
  */
 
-export function* genConcat<A>(ia: Iterator<A>, ib: Iterator<A>) {
-  while (true) {
-    const result = ia.next();
-    if (result.done) {
-      break;
-    }
-    yield result.value;
-  }
-  while (true) {
-    const result = ib.next();
-    if (result.done) {
-      break;
-    }
-    yield result.value;
-  }
-}
-
-export function concat_<A>(fa: Iterable<A>, fb: Iterable<A>): Iterable<A> {
-  return {
-    [Symbol.iterator]: () => genConcat(fa[Symbol.iterator](), fb[Symbol.iterator]())
-  };
-}
-
-export function take_<A>(fa: Iterable<A>, n: number): Iterable<A> {
+export function concat_<A>(ia: Iterable<A>, ib: Iterable<A>): Iterable<A> {
   return iterable(function* () {
-    const ia = fa[Symbol.iterator]();
+    yield* ia;
+    yield* ib;
+  });
+}
 
-    for (let i = 0; i <= n; i++) {
-      const el = ia.next();
+export function concat<A>(ib: Iterable<A>): (ia: Iterable<A>) => Iterable<A> {
+  return (ia) => concat_(ia, ib);
+}
+
+export function append_<A>(ia: Iterable<A>, element: A): Iterable<A> {
+  return iterable(function* () {
+    yield* ia;
+    yield element;
+  });
+}
+
+export function append<A>(element: A): (ia: Iterable<A>) => Iterable<A> {
+  return (ia) => append_(ia, element);
+}
+
+export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {
+  return iterable(function* () {
+    const as = ia[Symbol.iterator]();
+
+    for (let i = 0; i < n; i++) {
+      const el = as.next();
       if (el.done) break;
       yield el.value;
     }
@@ -379,8 +382,7 @@ export function take(n: number): <A>(fa: Iterable<A>) => Iterable<A> {
 export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
   const as: A[] = [];
   const iterator = fa[Symbol.iterator]();
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  for (;;) {
     const result = iterator.next();
     if (result.done) break;
     as.push(result.value);

@@ -1,7 +1,6 @@
 import type { Request } from "./Request";
 
 import * as E from "@principia/base/data/Either";
-import { any } from "@principia/base/data/Eq";
 import * as Map from "@principia/base/data/Map";
 import * as O from "@principia/base/data/Option";
 

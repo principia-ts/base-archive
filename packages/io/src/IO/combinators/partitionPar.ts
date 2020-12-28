@@ -1,9 +1,8 @@
 import type { IO } from "../core";
-import type { Separated } from "@principia/base/util/types";
 
 import { identity } from "@principia/base/data/Function";
+import * as I from "@principia/base/data/Iterable";
 
-import * as I from "../../Iterable";
 import { map_ } from "../core";
 import { either } from "./either";
 import { foreachPar_ } from "./foreachPar";
@@ -16,7 +15,7 @@ import { foreachPar_ } from "./foreachPar";
 export function partitionPar_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
-): IO<R, never, Separated<Iterable<E>, Iterable<B>>> {
+): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
   return map_(
     foreachPar_(as, (a) => either(f(a))),
     I.partitionMap(identity)
@@ -30,6 +29,6 @@ export function partitionPar_<R, E, A, B>(
  */
 export function partitionPar<R, E, A, B>(
   f: (a: A) => IO<R, E, B>
-): (as: Iterable<A>) => IO<R, never, Separated<Iterable<E>, Iterable<B>>> {
+): (as: Iterable<A>) => IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
   return (as) => partitionPar_(as, f);
 }

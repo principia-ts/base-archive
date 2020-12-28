@@ -59,7 +59,7 @@ export function eitherWith_<R, A, R1, B, C>(
     identifier: `${ds1.identifier}.eitherWith(${ds2.identifier}, ${f.description})`,
     runAll: flow(
       I.foreach((rs) => {
-        const { left, right } = C.partitionMap_(rs, f.value);
+        const [left, right] = C.partitionMap_(rs, f.value);
         return pipe(
           ds1.runAll(C.single(left)),
           I.map2Par(ds2.runAll(C.single(right)), (a, b) => a.concat(b))

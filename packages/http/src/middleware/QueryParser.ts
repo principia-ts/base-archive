@@ -30,7 +30,7 @@ export function withQueryParser<R, E>(
         O.fromNullable(url.query),
         O.map((q) => (typeof q === "string" ? qs.parse(q) : q)),
         O.map((q) =>
-          R.foldLeftWithIndex_(q, {} as Record<string, string>, (k, b, a) =>
+          R.foldLeftWithIndex_(q, {} as Record<string, string>, (b, k, a) =>
             a
               ? Array.isArray(a)
                 ? { ...b, [k]: A.foldLeft_(a, "", Str.append_) }

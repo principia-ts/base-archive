@@ -101,7 +101,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
     new GQLField(
       createUnnamedFieldDefinitionNode({
         arguments: args
-          ? R.foldLeftWithIndex_(args, A.empty(), (k, b, a) => [
+          ? R.foldLeftWithIndex_(args, A.empty(), (b, k, a) => [
               ...b,
               createInputValueDefinitionNode({
                 defaultValue: a.config.defaultValue,

@@ -20,6 +20,6 @@ export interface UnfoldFn<F extends HKT.URIS, C = HKT.Auto> {
     E = HKT.Initial<C, "E">
   >(
     b: B,
-    f: (b: B) => Option<[A, B]>
+    f: (b: B) => Option<readonly [A, B]>
   ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>;
 }

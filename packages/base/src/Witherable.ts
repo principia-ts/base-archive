@@ -166,10 +166,10 @@ export interface WiltFn<F extends HKT.URIS, C = HKT.Auto> {
     SG,
     RG,
     EG,
-    Separated<
+    readonly [
       HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
       HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B1>
-    >
+    ]
   >;
 }
 
@@ -211,10 +211,10 @@ export interface WiltFn_<F extends HKT.URIS, C = HKT.Auto> {
     SG,
     RG,
     EG,
-    Separated<
+    readonly [
       HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
       HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B1>
-    >
+    ]
   >;
 }
 
@@ -241,10 +241,10 @@ export function implementWilt<F extends HKT.URIS, C = HKT.Auto>(): (
     wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.HKT<
     G,
-    Separated<
+    readonly [
       HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
       HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B1>
-    >
+    ]
   >
 ) => WiltFn<F, C>;
 export function implementWilt() {

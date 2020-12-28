@@ -345,7 +345,7 @@ export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => O.Option<N
 
 /**
  * ```haskell
- * reduceWithIndex_ :: (FoldableWithIndex t, Index k) =>
+ * foldLeftWithIndex_ :: (FoldableWithIndex t, Index k) =>
  *    (t a, b, ((k, b, a) -> b)) -> b
  * ```
  *
@@ -355,7 +355,7 @@ export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => O.Option<N
 export const foldLeftWithIndex_: <A, B>(
   fa: NonEmptyArray<A>,
   b: B,
-  f: (i: number, b: B, a: A) => B
+  f: (b: B, i: number, a: A) => B
 ) => B = A.foldLeftWithIndex_;
 
 /**
@@ -369,7 +369,7 @@ export const foldLeftWithIndex_: <A, B>(
  */
 export const foldLeftWithIndex: <A, B>(
   b: B,
-  f: (i: number, b: B, a: A) => B
+  f: (b: B, i: number, a: A) => B
 ) => (fa: NonEmptyArray<A>) => B = A.foldLeftWithIndex;
 
 /**
@@ -405,7 +405,7 @@ export const foldLeft: <A, B>(b: B, f: (b: B, a: A) => B) => (fa: NonEmptyArray<
 export const foldRightWithIndex_: <A, B>(
   fa: NonEmptyArray<A>,
   b: B,
-  f: (i: number, a: A, b: B) => B
+  f: (a: A, i: number, b: B) => B
 ) => B = A.foldRightWithIndex_;
 
 /**
@@ -419,7 +419,7 @@ export const foldRightWithIndex_: <A, B>(
  */
 export const foldRightWithIndex: <A, B>(
   b: B,
-  f: (i: number, a: A, b: B) => B
+  f: (a: A, i: number, b: B) => B
 ) => (fa: NonEmptyArray<A>) => B = A.foldRightWithIndex;
 
 /**
@@ -457,7 +457,7 @@ export function foldMapWithIndex_<S>(
   S: P.Semigroup<S>
 ): <A>(fa: NonEmptyArray<A>, f: (i: number, a: A) => S) => S {
   return (fa, f) =>
-    A.foldLeftWithIndex_(fa.slice(1), f(0, fa[0]), (i, s, a) => S.combine_(s, f(i + 1, a)));
+    A.foldLeftWithIndex_(fa.slice(1), f(0, fa[0]), (s, i, a) => S.combine_(s, f(i + 1, a)));
 }
 
 /**

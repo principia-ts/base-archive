@@ -5,7 +5,6 @@
  * representing an empty value, and _Some_ representing the original datatype
  */
 
-import type { Separated } from "../util/types";
 import type { Either } from "./Either";
 import type { Eq } from "./Eq";
 import type { MorphismN, Predicate, Refinement } from "./Function";
@@ -527,12 +526,9 @@ export function apS<N extends string, A, B>(
  * -------------------------------------------
  */
 
-export function separate<A, B>(fa: Option<Either<A, B>>): Separated<Option<A>, Option<B>> {
-  const o = map_(fa, (e) => ({
-    left: getLeft(e),
-    right: getRight(e)
-  }));
-  return isNone(o) ? { left: none(), right: none() } : o.value;
+export function separate<A, B>(fa: Option<Either<A, B>>): readonly [Option<A>, Option<B>] {
+  const o = map_(fa, (e) => [getLeft(e), getRight(e)] as const);
+  return isNone(o) ? [none(), none()] : o.value;
 }
 
 export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten;
@@ -602,43 +598,40 @@ export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A>
 export function partition_<A, B extends A>(
   fa: Option<A>,
   refinement: Refinement<A, B>
-): Separated<Option<A>, Option<B>>;
+): readonly [Option<A>, Option<B>];
 export function partition_<A>(
   fa: Option<A>,
   predicate: Predicate<A>
-): Separated<Option<A>, Option<A>>;
+): readonly [Option<A>, Option<A>];
 export function partition_<A>(
   fa: Option<A>,
   predicate: Predicate<A>
-): Separated<Option<A>, Option<A>> {
-  return {
-    left: filter_(fa, (a) => !predicate(a)),
-    right: filter_(fa, predicate)
-  };
+): readonly [Option<A>, Option<A>] {
+  return [filter_(fa, (a) => !predicate(a)), filter_(fa, predicate)];
 }
 
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
-): (fa: Option<A>) => Separated<Option<A>, Option<B>>;
+): (fa: Option<A>) => readonly [Option<A>, Option<B>];
 export function partition<A>(
   predicate: Predicate<A>
-): (fa: Option<A>) => Separated<Option<A>, Option<A>>;
+): (fa: Option<A>) => readonly [Option<A>, Option<A>];
 export function partition<A>(
   predicate: Predicate<A>
-): (fa: Option<A>) => Separated<Option<A>, Option<A>> {
+): (fa: Option<A>) => readonly [Option<A>, Option<A>] {
   return (fa) => partition_(fa, predicate);
 }
 
 export function partitionMap_<A, B, C>(
   fa: Option<A>,
   f: (a: A) => Either<B, C>
-): Separated<Option<B>, Option<C>> {
+): readonly [Option<B>, Option<C>] {
   return separate(map_(fa, f));
 }
 
 export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
-): (fa: Option<A>) => Separated<Option<B>, Option<C>> {
+): (fa: Option<A>) => readonly [Option<B>, Option<C>] {
   return (fa) => partitionMap_(fa, f);
 }
 
@@ -964,18 +957,10 @@ export const wilt_: P.WiltFn_<[OptionURI], V> = (A) => (wa, f) => {
     wa,
     flow(
       f,
-      A.map((e) => ({
-        left: getLeft(e),
-        right: getRight(e)
-      }))
+      A.map((e) => mkTuple(getLeft(e), getRight(e)))
     )
   );
-  return isNone(o)
-    ? A.map_(A.unit(), () => ({
-        left: none(),
-        right: none()
-      }))
-    : o.value;
+  return isNone(o) ? A.pure(mkTuple(none(), none())) : o.value;
 };
 
 export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa, f);
@@ -1085,7 +1070,7 @@ export const Apply: P.Apply<[OptionURI], V> = HKT.instance({
 
 export const struct = P.structF(Apply);
 
-export const tuple = P.tupleF(Apply);
+export const tupleN = P.tupleF(Apply);
 
 export const mapN = P.mapNF(Apply);
 

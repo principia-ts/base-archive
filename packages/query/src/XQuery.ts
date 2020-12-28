@@ -7,12 +7,12 @@ import type { URef } from "@principia/io/IORef";
 import * as A from "@principia/base/data/Array";
 import * as E from "@principia/base/data/Either";
 import { flow, identity, pipe } from "@principia/base/data/Function";
+import * as It from "@principia/base/data/Iterable";
 import * as O from "@principia/base/data/Option";
 import { matchTag, matchTag_ } from "@principia/base/util/matchers";
 import * as Ca from "@principia/io/Cause";
 import * as Ex from "@principia/io/Exit";
 import * as I from "@principia/io/IO";
-import * as It from "@principia/io/Iterable";
 import * as L from "@principia/io/Layer";
 import * as M from "@principia/io/Managed";
 

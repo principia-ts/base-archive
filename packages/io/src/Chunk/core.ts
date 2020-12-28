@@ -1,10 +1,10 @@
 import type { Byte } from "@principia/base/data/Byte";
 import type { Either } from "@principia/base/data/Either";
 import type { Predicate, Refinement } from "@principia/base/data/Function";
-import type { Separated } from "@principia/base/util/types";
+import type { Monoid } from "@principia/base/Monoid";
 
 import * as A from "@principia/base/data/Array";
-import { tuple } from "@principia/base/data/Function";
+import { identity, tuple } from "@principia/base/data/Function";
 import * as O from "@principia/base/data/Option";
 
 /*
@@ -140,6 +140,14 @@ export function zip<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<readonly [A, B]
   return (fa) => zip_(fa, fb);
 }
 
+export function ap_<A, B>(fab: Chunk<(a: A) => B>, fa: Chunk<A>): Chunk<B> {
+  return zipWith_(fab, fa, (f, a) => f(a));
+}
+
+export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
+  return (fab) => ap_(fab, fa);
+}
+
 /*
  * -------------------------------------------
  * Filterable
@@ -178,12 +186,12 @@ export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: Chunk<A>) => Chu
 export function partition_<A, B extends A>(
   fa: Chunk<A>,
   refinement: Refinement<A, B>
-): Separated<Chunk<A>, Chunk<B>>;
-export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): Separated<Chunk<A>, Chunk<A>>;
+): readonly [Chunk<A>, Chunk<B>];
+export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>];
 export function partition_<A>(
   fa: Chunk<A>,
   predicate: Predicate<A>
-): Separated<Chunk<A>, Chunk<A>> {
+): readonly [Chunk<A>, Chunk<A>] {
   if (Array.isArray(fa)) {
     return A.partition_(fa, predicate);
   }
@@ -192,20 +200,20 @@ export function partition_<A>(
 
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
-): (fa: Chunk<A>) => Separated<Chunk<A>, Chunk<B>>;
+): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<B>];
 export function partition<A>(
   predicate: Predicate<A>
-): (fa: Chunk<A>) => Separated<Chunk<A>, Chunk<A>>;
+): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<A>];
 export function partition<A>(
   predicate: Predicate<A>
-): (fa: Chunk<A>) => Separated<Chunk<A>, Chunk<A>> {
+): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
   return (fa) => partition_(fa, predicate);
 }
 
 export function partitionMap_<A, B, C>(
   fa: Chunk<A>,
   f: (a: A) => Either<B, C>
-): Separated<Chunk<B>, Chunk<C>> {
+): readonly [Chunk<B>, Chunk<C>] {
   if (Array.isArray(fa)) {
     return A.partitionMap_(fa, f);
   }
@@ -214,7 +222,7 @@ export function partitionMap_<A, B, C>(
 
 export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
-): (fa: Chunk<A>) => Separated<Chunk<B>, Chunk<C>> {
+): (fa: Chunk<A>) => readonly [Chunk<B>, Chunk<C>] {
   return (fa) => partitionMap_(fa, f);
 }
 
@@ -225,6 +233,9 @@ export function partitionMap<A, B, C>(
  */
 
 export function foldLeft_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
+  if (Array.isArray(fa)) {
+    return A.foldLeft_(fa, b, f);
+  }
   let x = b;
   for (const y of fa) {
     x = f(x, y);
@@ -249,6 +260,15 @@ export function foldRight_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
 
 export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
   return (fa) => foldRight_(fa, b, f);
+}
+
+export function foldMap_<M>(M: Monoid<M>): <A>(fa: Chunk<A>, f: (a: A) => M) => M {
+  return (fa, f) => foldLeft_(fa, M.nat, (b, a) => M.combine_(b, f(a)));
+}
+
+export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>) => M {
+  const foldMapM_ = foldMap_(M);
+  return (f) => (fa) => foldMapM_(fa, f);
 }
 
 /*
@@ -277,7 +297,7 @@ export function map<A, B>(f: (a: A) => B) {
  * -------------------------------------------
  */
 
-export function chain_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
+export function flatMap_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   let rlen = 0;
   const l = ma.length;
   const temp = new Array(l);
@@ -300,8 +320,12 @@ export function chain_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   return r;
 }
 
-export function chain<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
-  return (ma) => chain_(ma, f);
+export function flatMap<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
+  return (ma) => flatMap_(ma, f);
+}
+
+export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
+  return flatMap_(mma, identity);
 }
 
 /*

@@ -1,6 +1,7 @@
 import type { Managed } from "../core";
 
-import * as Iter from "../../Iterable";
+import * as Iter from "@principia/base/data/Iterable";
+
 import { map2_, succeed } from "../core";
 
 /**

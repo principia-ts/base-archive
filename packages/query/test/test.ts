@@ -71,9 +71,7 @@ type Req = Get | GetAll;
 const ds: DS.Batched<Has<Console>, Req> = new (class extends DS.Batched<Has<Console>, Req> {
   identifier = "test";
   run(requests: Chunk<Req>): IO<Has<Console>, never, CompletedRequestMap> {
-    const { left: all, right: one } = C.partition_(requests, (req) =>
-      req._tag === "GetAll" ? false : true
-    );
+    const [all, one] = C.partition_(requests, (req) => (req._tag === "GetAll" ? false : true));
 
     if (C.isNonEmpty(all)) {
       return pipe(
@@ -88,7 +86,7 @@ const ds: DS.Batched<Has<Console>, Req> = new (class extends DS.Batched<Has<Cons
       return I.gen(function* (_) {
         const items = yield* _(
           backendGetSome(
-            C.chain_(
+            C.flatMap_(
               one,
               matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })
             )

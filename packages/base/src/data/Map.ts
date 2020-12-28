@@ -1,4 +1,3 @@
-import type { Separated } from "../util/types";
 import type { Eq } from "./Eq";
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from "./Function";
 import type { Show } from "./Show";
@@ -172,7 +171,7 @@ export function compact<K, A>(fa: ReadonlyMap<K, O.Option<A>>): ReadonlyMap<K, A
  */
 export function separate<K, A, B>(
   fa: ReadonlyMap<K, E.Either<A, B>>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>> {
+): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, B>] {
   const left = new Map<K, A>();
   const right = new Map<K, B>();
   const entries = fa.entries();
@@ -186,10 +185,7 @@ export function separate<K, A, B>(
       right.set(k, ei.right);
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 /*
@@ -322,15 +318,15 @@ export function filter<A>(
 export function partitionWithIndex_<K, A, B extends A>(
   fa: ReadonlyMap<K, A>,
   refinement: RefinementWithIndex<K, A, B>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, B>];
 export function partitionWithIndex_<K, A>(
   fa: ReadonlyMap<K, A>,
   predicate: PredicateWithIndex<K, A>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>];
 export function partitionWithIndex_<K, A>(
   fa: ReadonlyMap<K, A>,
   predicate: PredicateWithIndex<K, A>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
+): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>] {
   const left = new Map<K, A>();
   const right = new Map<K, A>();
   const entries = fa.entries();
@@ -343,55 +339,52 @@ export function partitionWithIndex_<K, A>(
       left.set(k, a);
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 export function partitionWithIndex<K, A, B extends A>(
   refinement: RefinementWithIndex<K, A, B>
-): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+): (fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, A>, ReadonlyMap<K, B>];
 export function partitionWithIndex<K, A>(
   predicate: PredicateWithIndex<K, A>
-): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+): (fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>];
 export function partitionWithIndex<K, A>(
   predicate: PredicateWithIndex<K, A>
-): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
+): (fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>] {
   return (fa) => partitionWithIndex_(fa, predicate);
 }
 
 export function partition_<K, A, B extends A>(
   fa: ReadonlyMap<K, A>,
   refinement: Refinement<A, B>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, B>];
 export function partition_<K, A>(
   fa: ReadonlyMap<K, A>,
   predicate: Predicate<A>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>];
 export function partition_<K, A>(
   fa: ReadonlyMap<K, A>,
   predicate: Predicate<A>
-): Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
+): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>] {
   return partitionWithIndex_(fa, (_, a) => predicate(a));
 }
 
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
-): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, B>>;
+): <K>(fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, A>, ReadonlyMap<K, B>];
 export function partition<A>(
   predicate: Predicate<A>
-): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>>;
+): <K>(fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>];
 export function partition<A>(
   predicate: Predicate<A>
-): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, A>, ReadonlyMap<K, A>> {
+): <K>(fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>] {
   return (fa) => partition_(fa, predicate);
 }
 
 export function partitionMapWithIndex_<K, A, B, C>(
   fa: ReadonlyMap<K, A>,
   f: (k: K, a: A) => E.Either<B, C>
-): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
+): readonly [ReadonlyMap<K, B>, ReadonlyMap<K, C>] {
   const left = new Map<K, B>();
   const right = new Map<K, C>();
   const entries = fa.entries();
@@ -405,28 +398,25 @@ export function partitionMapWithIndex_<K, A, B, C>(
       right.set(k, ei.right);
     }
   }
-  return {
-    left,
-    right
-  };
+  return [left, right];
 }
 
 export function partitionMapWithIndex<K, A, B, C>(
   f: (k: K, a: A) => E.Either<B, C>
-): (fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
+): (fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, B>, ReadonlyMap<K, C>] {
   return (fa) => partitionMapWithIndex_(fa, f);
 }
 
 export function partitionMap_<K, A, B, C>(
   fa: ReadonlyMap<K, A>,
   f: (a: A) => E.Either<B, C>
-): Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
+): readonly [ReadonlyMap<K, B>, ReadonlyMap<K, C>] {
   return partitionMapWithIndex_(fa, (_, a) => f(a));
 }
 
 export function partitionMap<A, B, C>(
   f: (a: A) => E.Either<B, C>
-): <K>(fa: ReadonlyMap<K, A>) => Separated<ReadonlyMap<K, B>, ReadonlyMap<K, C>> {
+): <K>(fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, B>, ReadonlyMap<K, C>] {
   return (fa) => partitionMap_(fa, f);
 }
 
@@ -448,7 +438,7 @@ export function getFoldableWithIndex<K>(
   const foldLeftWithIndex_: P.FoldLeftWithIndexFn_<[URI], CK> = <A, B>(
     fa: ReadonlyMap<K, A>,
     b: B,
-    f: (k: K, b: B, a: A) => B
+    f: (b: B, k: K, a: A) => B
   ): B => {
     let out: B = b;
     const ks = keysO(fa);
@@ -456,7 +446,7 @@ export function getFoldableWithIndex<K>(
     for (let i = 0; i < len; i++) {
       const k = ks[i];
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      out = f(k, out, fa.get(k)!);
+      out = f(out, k, fa.get(k)!);
     }
     return out;
   };
@@ -477,7 +467,7 @@ export function getFoldableWithIndex<K>(
   const foldRightWithIndex_: P.FoldRightWithIndexFn_<[URI], CK> = <A, B>(
     fa: ReadonlyMap<K, A>,
     b: B,
-    f: (k: K, a: A, b: B) => B
+    f: (a: A, k: K, b: B) => B
   ): B => {
     let out: B = b;
     const ks = keysO(fa);
@@ -485,7 +475,7 @@ export function getFoldableWithIndex<K>(
     for (let i = len - 1; i >= 0; i--) {
       const k = ks[i];
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      out = f(k, fa.get(k)!, out);
+      out = f(fa.get(k)!, k, out);
     }
     return out;
   };
@@ -596,14 +586,11 @@ export function getMonoid<K, A>(SK: Eq<K>, SA: P.Semigroup<A>): P.Monoid<Readonl
 export function getShow<K, A>(SK: Show<K>, SA: Show<A>): Show<ReadonlyMap<K, A>> {
   return {
     show: (m) => {
-      let elements = "";
+      const elements: string[] = [];
       m.forEach((a, k) => {
-        elements += `[${SK.show(k)}, ${SA.show(a)}], `;
+        elements.push(`{ ${SK.show(k)} => ${SA.show(a)} }`);
       });
-      if (elements !== "") {
-        elements = elements.substring(0, elements.length - 2);
-      }
-      return `Map([${elements}])`;
+      return `Map(\n  ${elements.join("\n  ")}\n)`;
     }
   };
 }
@@ -751,14 +738,8 @@ export function insertAt<K>(
   return (k, a) => (m) => insertAtE_(m, k, a);
 }
 
-export function copy<K, A>(me: ReadonlyMap<K, A>): Map<K, A> {
-  const m = new Map<K, A>();
-
-  me.forEach((v, k) => {
-    m.set(k, v);
-  });
-
-  return m;
+export function copy<K, A>(me: ReadonlyMap<K, A>): ReadonlyMap<K, A> {
+  return new Map(me);
 }
 
 export function deleteAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => ReadonlyMap<K, A> {
@@ -843,7 +824,7 @@ export function pop<K>(
 }
 
 export function insert_<K, A>(me: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
-  const m = copy<K, A>(me);
+  const m = new Map(me);
   m.set(k, a);
   return m;
 }
@@ -882,17 +863,22 @@ export function lookup<K>(k: K): <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
   return (m) => lookup_(m, k);
 }
 
-export function concat_<K, A>(xs: ReadonlyMap<K, A>, ys: ReadonlyMap<K, A>): ReadonlyMap<K, A> {
-  const r = new Map<K, A>();
-  for (const [k, a] of xs) {
-    r.set(k, a);
-  }
-  for (const [k, a] of ys) {
-    r.set(k, a);
-  }
-  return r;
+export function concat_<K>(
+  E: Eq<K>
+): <A>(xs: ReadonlyMap<K, A>, ys: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  const insertAtE_ = insertAt_(E);
+  return (xs, ys) => {
+    let r = copy(xs);
+    for (const [k, a] of ys) {
+      r = insertAtE_(r, k, a);
+    }
+    return r;
+  };
 }
 
-export function concat<K, A>(ys: ReadonlyMap<K, A>): (xs: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (xs) => concat_(xs, ys);
+export function concat<K>(
+  E: Eq<K>
+): <A>(ys: ReadonlyMap<K, A>) => (xs: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  const concatE_ = concat_(E);
+  return (ys) => (xs) => concatE_(xs, ys);
 }

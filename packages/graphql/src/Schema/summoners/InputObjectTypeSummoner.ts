@@ -28,7 +28,7 @@ export function makeInputObjectTypeSummoner<InputAURI extends InputAURIS>(
         fields: R.foldLeftWithIndex_(
           fields(interpreters),
           [] as InputValueDefinitionNode[],
-          (k, acc, v) => {
+          (acc, k, v) => {
             return [
               ...acc,
               createInputValueDefinitionNode({
