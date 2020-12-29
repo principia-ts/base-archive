@@ -1,5 +1,6 @@
 import type { Lazy } from "@principia/base/data/Function";
 import type {
+  ArgumentNode,
   BooleanValueNode,
   DefinitionNode,
   DirectiveNode,
@@ -22,11 +23,15 @@ import type {
   ObjectTypeExtensionNode,
   ObjectValueNode,
   OperationTypeDefinitionNode,
+  OperationTypeNode,
   ScalarTypeDefinitionNode,
   SchemaDefinitionNode,
+  SelectionNode,
+  SelectionSetNode,
   StringValueNode,
   TypeNode,
-  ValueNode
+  ValueNode,
+  VariableDefinitionNode
 } from "graphql";
 
 import { foldLeftWithIndex_ as reduceRecord } from "@principia/base/data/Record";
@@ -453,3 +458,37 @@ export const createScalarTypeDefinitionNode = (
   kind: Kind.SCALAR_TYPE_DEFINITION,
   name: createNameNode(args.name)
 });
+
+export type VariableNodeArgs = {
+  readonly loc?: Location;
+  readonly name: NameNode;
+};
+
+export type SelectionSetNodeArgs = {
+  readonly loc?: Location;
+  readonly selections: ReadonlyArray<SelectionNode>;
+};
+
+export type FieldNodeArgs = {
+  readonly loc?: Location;
+  readonly alias?: NameNode;
+  readonly name: NameNode;
+  readonly arguments?: ReadonlyArray<ArgumentNode>;
+  readonly directives?: ReadonlyArray<DirectiveNode>;
+  readonly selectionSet?: SelectionSetNode;
+};
+
+export type ArgumentNodeArgs = {
+  readonly loc?: Location;
+  readonly name: NameNode;
+  readonly value: ValueNode;
+};
+
+export type OperationDefinitionNodeArgs = {
+  readonly loc?: Location;
+  readonly operation: OperationTypeNode;
+  readonly name?: NameNode;
+  readonly variableDefinitions?: ReadonlyArray<VariableDefinitionNode>;
+  readonly directives?: ReadonlyArray<DirectiveNode>;
+  readonly selectionSet: SelectionSetNode;
+};

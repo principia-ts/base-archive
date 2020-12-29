@@ -4942,6 +4942,10 @@ eslint-module-utils@^2.6.0:
     debug "^2.6.9"
     pkg-dir "^2.0.0"
 
+"eslint-plugin-align-assignments@link:./eslint-plugin-align-assignments":
+  version "0.0.0"
+  uid ""
+
 eslint-plugin-codegen@^0.14.4:
   version "0.14.4"
   resolved "https://registry.yarnpkg.com/eslint-plugin-codegen/-/eslint-plugin-codegen-0.14.4.tgz#f4ca136e5390aa0227799903369d41ae37f88d32"

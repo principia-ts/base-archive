@@ -16,6 +16,7 @@
     "sourceType": "module"
   },
   "plugins": [
+    "align-assignments",
     "codegen",
     "import",
     "simple-import-sort",
@@ -29,6 +30,36 @@
 
     "sort-imports": "off",
     "import/order": "off",
+    "import/first": "error",
+    "import/newline-after-import": "error",
+    "import/no-duplicates": "error",
+    "import/no-unresolved": "error",
+
+    "simple-import-sort/imports": [
+      "error",
+      {
+        "groups": [["^.*\\u0000$"], ["^\\u0000"], ["^@?\\w"], ["^"], ["^\\."]]
+      }
+    ],
+    "simple-import-sort/exports": "error",
+
+    "no-param-reassign": ["error"],
+    "no-unexpected-multiline": "off",
+
+    "prettier/prettier": [
+      "warn",
+      {},
+      {
+        "usePrettierrc": true
+      }
+    ],
+
+    // "curly": ["warn", "all"],
+    // "indent": ["warn", 2, { "SwitchCase": 1 }],
+    // "quotes": ["warn", "double", { "avoidEscape": true }],
+    // "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
+
+    // "align-assignments/align-assignments": [2, { "requiresOnly": false }],
 
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/ban-ts-ignore": "off",
@@ -55,27 +86,7 @@
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^ignored?$"
       }
-    ],
-    "import/first": "error",
-    "import/newline-after-import": "error",
-    "import/no-duplicates": "error",
-    "import/no-unresolved": "error",
-    "no-param-reassign": ["error"],
-    "no-unexpected-multiline": "off",
-    "prettier/prettier": [
-      "warn",
-      {},
-      {
-        "usePrettierrc": true
-      }
-    ],
-    "simple-import-sort/imports": [
-      "error",
-      {
-        "groups": [["^.*\\u0000$"], ["^\\u0000"], ["^@?\\w"], ["^"], ["^\\."]]
-      }
-    ],
-    "simple-import-sort/exports": "error"
+    ]
   },
   "settings": {
     "import/parsers": {
