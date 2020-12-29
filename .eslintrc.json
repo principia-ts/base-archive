@@ -6,8 +6,7 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier/@typescript-eslint"
+    "plugin:@typescript-eslint/recommended"
   ],
   "ignorePatterns": ["dist/", "build/", "lib/", "commonjs/"],
   "parser": "@typescript-eslint/parser",
@@ -16,24 +15,23 @@
     "sourceType": "module"
   },
   "plugins": [
-    "align-assignments",
+    "functional",
     "codegen",
     "import",
     "simple-import-sort",
     "sort-keys-fix",
     "typescript-sort-keys",
-    "eslint-plugin-prettier",
     "@typescript-eslint"
   ],
   "rules": {
-    "codegen/codegen": "error",
+    "codegen/codegen": "warn",
 
     "sort-imports": "off",
     "import/order": "off",
     "import/first": "error",
-    "import/newline-after-import": "error",
-    "import/no-duplicates": "error",
-    "import/no-unresolved": "error",
+    "import/newline-after-import": "warn",
+    "import/no-duplicates": "warn",
+    "import/no-unresolved": "warn",
 
     "simple-import-sort/imports": [
       "error",
@@ -46,21 +44,6 @@
     "no-param-reassign": ["error"],
     "no-unexpected-multiline": "off",
 
-    "prettier/prettier": [
-      "warn",
-      {},
-      {
-        "usePrettierrc": true
-      }
-    ],
-
-    // "curly": ["warn", "all"],
-    // "indent": ["warn", 2, { "SwitchCase": 1 }],
-    // "quotes": ["warn", "double", { "avoidEscape": true }],
-    // "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
-
-    // "align-assignments/align-assignments": [2, { "requiresOnly": false }],
-
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/ban-ts-ignore": "off",
     "@typescript-eslint/ban-types": "off",
@@ -71,10 +54,10 @@
       "warn",
       {
         "multiline": {
-          "delimiter": "semi"
+          "delimiter": "none"
         },
         "singleline": {
-          "delimiter": "semi"
+          "delimiter": "comma"
         }
       }
     ],
@@ -86,7 +69,10 @@
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^ignored?$"
       }
-    ]
+    ],
+    "functional/immutable-data": ["warn", {
+      "ignorePattern": "^mut"
+    }]
   },
   "settings": {
     "import/parsers": {
