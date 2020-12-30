@@ -1,4 +1,4 @@
-import type { Erase, UnionToIntersection } from "./util/types";
+import type { Erase, UnionToIntersection } from './util/types'
 
 /*
  * -------------------------------------------
@@ -8,25 +8,25 @@ import type { Erase, UnionToIntersection } from "./util/types";
  */
 
 export interface Auto {
-  readonly Auto: unique symbol;
+  readonly Auto: unique symbol
 }
 
 export interface Base<F, C = Auto> {
-  readonly _F: F;
-  readonly _C: C;
+  readonly _F: F
+  readonly _C: C
 }
 
 export interface BaseHKT<F, C = Auto> {
-  readonly _HKT: unique symbol;
-  readonly _URI: F;
-  readonly _C: C;
+  readonly _HKT: unique symbol
+  readonly _URI: F
+  readonly _C: C
 }
 
 export interface CompositionBase2<F, G, CF = Auto, CG = Auto> {
-  readonly _F: F;
-  readonly _G: G;
-  readonly _CF: CF;
-  readonly _CG: CG;
+  readonly _F: F
+  readonly _G: G
+  readonly _CF: CF
+  readonly _CG: CG
 }
 
 /*
@@ -36,35 +36,35 @@ export interface CompositionBase2<F, G, CF = Auto, CG = Auto> {
  * -------------------------------------------
  */
 
-export const HKT_URI = "HKT";
-export type HKT_URI = typeof HKT_URI;
+export const HKT_URI = 'HKT'
+export type HKT_URI = typeof HKT_URI
 export interface HKT<URI, A> {
-  readonly _URI: URI;
-  readonly _A: A;
+  readonly _URI: URI
+  readonly _A: A
 }
 
-export const HKT2_URI = "HKT2";
-export type HKT2_URI = typeof HKT2_URI;
+export const HKT2_URI = 'HKT2'
+export type HKT2_URI = typeof HKT2_URI
 export interface HKT2<URI, E, A> extends HKT<URI, A> {
-  readonly _E: E;
+  readonly _E: E
 }
 
-export const HKT3_URI = "HKT3";
-export type HKT3_URI = typeof HKT3_URI;
+export const HKT3_URI = 'HKT3'
+export type HKT3_URI = typeof HKT3_URI
 export interface HKT3<URI, R, E, A> extends HKT2<URI, E, A> {
-  readonly _R: R;
+  readonly _R: R
 }
 
-export const HKT4_URI = "HKT4";
-export type HKT4_URI = typeof HKT4_URI;
+export const HKT4_URI = 'HKT4'
+export type HKT4_URI = typeof HKT4_URI
 export interface HKT4<URI, S, R, E, A> extends HKT3<URI, R, E, A> {
-  readonly _S: S;
+  readonly _S: S
 }
 
-export type UHKT<F> = [URI<"HKT", CustomType<"F", F>>];
-export type UHKT2<F> = [URI<"HKT2", CustomType<"F", F>>];
-export type UHKT3<F> = [URI<"HKT3", CustomType<"F", F>>];
-export type UHKT4<F> = [URI<"HKT4", CustomType<"F", F>>];
+export type UHKT<F> = [URI<'HKT', CustomType<'F', F>>]
+export type UHKT2<F> = [URI<'HKT2', CustomType<'F', F>>]
+export type UHKT3<F> = [URI<'HKT3', CustomType<'F', F>>]
+export type UHKT4<F> = [URI<'HKT4', CustomType<'F', F>>]
 
 /*
  * -------------------------------------------
@@ -102,20 +102,20 @@ export interface URItoKind<
   // encodes output
   A
 > {
-  [HKT_URI]: HKT<AccessCustom<FC, "F">, A>;
-  [HKT2_URI]: HKT2<AccessCustom<FC, "F">, E, A>;
-  [HKT3_URI]: HKT3<AccessCustom<FC, "F">, R, E, A>;
-  [HKT4_URI]: HKT4<AccessCustom<FC, "F">, S, R, E, A>;
+  [HKT_URI]: HKT<AccessCustom<FC, 'F'>, A>
+  [HKT2_URI]: HKT2<AccessCustom<FC, 'F'>, E, A>
+  [HKT3_URI]: HKT3<AccessCustom<FC, 'F'>, R, E, A>
+  [HKT4_URI]: HKT4<AccessCustom<FC, 'F'>, S, R, E, A>
 }
 
 /**
  * A type-level dictionary for indexed HKTs
  */
 export interface URItoIndex<N extends string, K> {
-  [HKT_URI]: K;
-  [HKT2_URI]: K;
-  [HKT3_URI]: K;
-  [HKT4_URI]: K;
+  [HKT_URI]: K
+  [HKT2_URI]: K
+  [HKT3_URI]: K
+  [HKT4_URI]: K
 }
 
 /*
@@ -125,73 +125,57 @@ export interface URItoIndex<N extends string, K> {
  * -------------------------------------------
  */
 
-export type ConcreteURIS = keyof URItoKind<
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->;
+export type ConcreteURIS = keyof URItoKind<any, any, any, any, any, any, any, any, any, any, any, any>
 
-export type URIS = [RealURIS, ...RealURIS[]];
+export type URIS = [RealURIS, ...RealURIS[]]
 
 export interface URI<F extends ConcreteURIS, C> {
-  readonly _F: F;
-  readonly _C: C;
+  readonly _F: F
+  readonly _C: C
 }
 
-export type RealURIS = ConcreteURIS | URI<ConcreteURIS, any>;
+export type RealURIS = ConcreteURIS | URI<ConcreteURIS, any>
 
-export type AppendURI<F extends RealURIS[], G extends RealURIS> = F extends RealURIS[]
-  ? [...F, G]
-  : F;
+export type AppendURI<F extends RealURIS[], G extends RealURIS> = F extends RealURIS[] ? [...F, G] : F
 
-export type PrependURI<G extends RealURIS, F extends RealURIS[]> = F extends RealURIS[]
-  ? [G, ...F]
-  : F;
+export type PrependURI<G extends RealURIS, F extends RealURIS[]> = F extends RealURIS[] ? [G, ...F] : F
 
-export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = ((
-  ...x: F
-) => any) extends (fst: infer XURI, ...rest: infer Rest) => any
+export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = ((...x: F) => any) extends (
+  fst: infer XURI,
+  ...rest: infer Rest
+) => any
   ? XURI extends ConcreteURIS
     ? URItoKind<
         Auto,
         C,
-        OrFix<"N", C, N>,
-        OrFix<"K", C, K>,
-        OrFix<"Q", C, Q>,
-        OrFix<"W", C, W>,
-        OrFix<"X", C, X>,
-        OrFix<"I", C, I>,
-        OrFix<"S", C, S>,
-        OrFix<"R", C, R>,
-        OrFix<"E", C, E>,
+        OrFix<'N', C, N>,
+        OrFix<'K', C, K>,
+        OrFix<'Q', C, Q>,
+        OrFix<'W', C, W>,
+        OrFix<'X', C, X>,
+        OrFix<'I', C, I>,
+        OrFix<'S', C, S>,
+        OrFix<'R', C, R>,
+        OrFix<'E', C, E>,
         Rest extends URIS ? Kind<Rest, C, N, K, Q, W, X, I, S, R, E, A> : A
       >[XURI]
     : XURI extends URI<infer U, infer FC>
     ? URItoKind<
         FC,
         C,
-        OrFix<"N", FC, OrFix<"N", C, N>>,
-        OrFix<"K", FC, OrFix<"K", C, K>>,
-        OrFix<"Q", FC, OrFix<"Q", C, Q>>,
-        OrFix<"W", FC, OrFix<"W", C, W>>,
-        OrFix<"X", FC, OrFix<"X", C, X>>,
-        OrFix<"I", FC, OrFix<"I", C, I>>,
-        OrFix<"S", FC, OrFix<"S", C, S>>,
-        OrFix<"R", FC, OrFix<"R", C, R>>,
-        OrFix<"E", FC, OrFix<"E", C, E>>,
+        OrFix<'N', FC, OrFix<'N', C, N>>,
+        OrFix<'K', FC, OrFix<'K', C, K>>,
+        OrFix<'Q', FC, OrFix<'Q', C, Q>>,
+        OrFix<'W', FC, OrFix<'W', C, W>>,
+        OrFix<'X', FC, OrFix<'X', C, X>>,
+        OrFix<'I', FC, OrFix<'I', C, I>>,
+        OrFix<'S', FC, OrFix<'S', C, S>>,
+        OrFix<'R', FC, OrFix<'R', C, R>>,
+        OrFix<'E', FC, OrFix<'E', C, E>>,
         Rest extends URIS ? Kind<Rest, C, N, K, Q, W, X, I, S, R, E, A> : A
       >[U]
     : never
-  : never;
+  : never
 
 /*
  * -------------------------------------------
@@ -200,65 +184,62 @@ export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A>
  * -------------------------------------------
  */
 
-export type Infer<F extends URIS, C, P extends Param | "A" | "C", K> = [K] extends [
-  Kind<
-    F,
-    C,
-    infer N,
-    infer K,
-    infer Q,
-    infer W,
-    infer X,
-    infer I,
-    infer S,
-    infer R,
-    infer E,
-    infer A
-  >
+export type Infer<F extends URIS, C, P extends Param | 'A' | 'C', K> = [K] extends [
+  Kind<F, C, infer N, infer K, infer Q, infer W, infer X, infer I, infer S, infer R, infer E, infer A>
 ]
-  ? P extends "C"
+  ? P extends 'C'
     ? C
-    : P extends "N"
+    : P extends 'N'
     ? N
-    : P extends "K"
+    : P extends 'K'
     ? K
-    : P extends "Q"
+    : P extends 'Q'
     ? Q
-    : P extends "W"
+    : P extends 'W'
     ? W
-    : P extends "X"
+    : P extends 'X'
     ? X
-    : P extends "I"
+    : P extends 'I'
     ? I
-    : P extends "S"
+    : P extends 'S'
     ? S
-    : P extends "R"
+    : P extends 'R'
     ? R
-    : P extends "E"
+    : P extends 'E'
     ? E
-    : P extends "A"
+    : P extends 'A'
     ? A
     : never
-  : never;
+  : never
 
-export type URIOf<
-  K extends Kind<any, any, any, any, any, any, any, any, any, any, any, any>
-> = K extends Kind<infer F, any, any, any, any, any, any, any, any, any, any, any> ? F : never;
-
-export type IndexForBase<F extends ConcreteURIS, N extends string, K> = F extends keyof URItoIndex<
+export type URIOf<K extends Kind<any, any, any, any, any, any, any, any, any, any, any, any>> = K extends Kind<
+  infer F,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
   any,
   any
 >
+  ? F
+  : never
+
+export type IndexForBase<F extends ConcreteURIS, N extends string, K> = F extends keyof URItoIndex<any, any>
   ? URItoIndex<N, K>[F]
-  : K;
+  : K
 
 export type IndexFor<F extends URIS, N extends string, K> = IndexForBase<
   {
-    [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never;
+    [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never
   }[number],
   N,
   K
->;
+>
 
 /*
  * -------------------------------------------
@@ -269,17 +250,17 @@ export type IndexFor<F extends URIS, N extends string, K> = IndexForBase<
 
 export interface CustomType<P extends string, V> {
   CustomType: {
-    [p in P]: () => V;
-  };
+    [p in P]: () => V
+  }
 }
 
-export type AccessCustom<C, P extends string, D = any> = C extends CustomType<P, infer V> ? V : D;
+export type AccessCustom<C, P extends string, D = any> = C extends CustomType<P, infer V> ? V : D
 
 export type AccessCustomExtends<C, P extends string, D = any> = C extends CustomType<P, infer V>
   ? V extends D
     ? V
     : D
-  : D;
+  : D
 
 /*
  * -------------------------------------------
@@ -288,46 +269,38 @@ export type AccessCustomExtends<C, P extends string, D = any> = C extends Custom
  * -------------------------------------------
  */
 
-export type Param = "N" | "K" | "Q" | "W" | "I" | "X" | "S" | "R" | "E";
+export type Param = 'N' | 'K' | 'Q' | 'W' | 'I' | 'X' | 'S' | 'R' | 'E'
 
 export interface Fix<P extends Param, F> {
   Fix: {
     [p in P]: {
-      F: () => F;
-    };
-  };
+      F: () => F
+    }
+  }
 }
 
 export type OrFix<P extends Param, A, B> = A extends Fix<P, infer X>
-  ? P extends "N"
+  ? P extends 'N'
     ? X extends string
       ? X
       : B
     : X
-  : B;
+  : B
 
-export type Unfix<C, P extends Param> = (Exclude<keyof C, "Fix"> extends never
+export type Unfix<C, P extends Param> = (Exclude<keyof C, 'Fix'> extends never
   ? unknown
   : {
-      [K in Exclude<keyof C, "Fix">]: C[K];
+      [K in Exclude<keyof C, 'Fix'>]: C[K]
     }) &
-  (keyof C & "Fix" extends never
+  (keyof C & 'Fix' extends never
     ? unknown
     : {
-        [K in keyof C & "Fix"]: {
-          [KK in Exclude<keyof C[K], P>]: C[K][KK];
-        };
-      });
+        [K in keyof C & 'Fix']: {
+          [KK in Exclude<keyof C[K], P>]: C[K][KK]
+        }
+      })
 
-export type CleanParam<C, P extends Param> = C extends (
-  | Auto
-  | V<P, "_">
-  | V<P, "+">
-  | Fix<P, any>
-) &
-  infer X
-  ? X
-  : C;
+export type CleanParam<C, P extends Param> = C extends (Auto | V<P, '_'> | V<P, '+'> | Fix<P, any>) & infer X ? X : C
 
 /*
  * -------------------------------------------
@@ -336,7 +309,7 @@ export type CleanParam<C, P extends Param> = C extends (
  * -------------------------------------------
  */
 
-export type OrNever<K> = unknown extends K ? never : K;
+export type OrNever<K> = unknown extends K ? never : K
 
 /*
  * -------------------------------------------
@@ -345,22 +318,22 @@ export type OrNever<K> = unknown extends K ? never : K;
  * -------------------------------------------
  */
 
-export type Variance = "+" | "-" | "_";
+export type Variance = '+' | '-' | '_'
 
 export interface V<F extends Param, V extends Variance> {
   Variance: {
-    [v in V]: () => F;
-  };
+    [v in V]: () => F
+  }
 }
 
 /**
  * Composes types according to variance specified in C
  */
-export type Mix<C, P extends Param, X extends [any, ...any[]]> = C extends V<P, "_">
+export type Mix<C, P extends Param, X extends [any, ...any[]]> = C extends V<P, '_'>
   ? X[0]
-  : C extends V<P, "+">
+  : C extends V<P, '+'>
   ? X[number]
-  : C extends V<P, "-">
+  : C extends V<P, '-'>
   ? X extends [any]
     ? X[0]
     : X extends [any, any]
@@ -374,44 +347,44 @@ export type Mix<C, P extends Param, X extends [any, ...any[]]> = C extends V<P, 
     : X extends [any, any, any, any, any, any]
     ? X[0] & X[1] & X[2] & X[3] & X[4] & X[5]
     : UnionToIntersection<{ [k in keyof X]: OrNever<X[k]> }[keyof X]>
-  : X[0];
+  : X[0]
 
 /**
  * Composes a record of types to the base respecting variance from C
  */
-export type MixStruct<C, P extends Param, X, Y> = C extends V<P, "_">
+export type MixStruct<C, P extends Param, X, Y> = C extends V<P, '_'>
   ? X
-  : C extends V<P, "+">
+  : C extends V<P, '+'>
   ? Y[keyof Y]
-  : C extends V<P, "-">
-  ? P extends "N"
+  : C extends V<P, '-'>
+  ? P extends 'N'
     ? string
     : UnionToIntersection<{ [k in keyof Y]: OrNever<Y[k]> }[keyof Y]>
-  : X;
+  : X
 
 /**
  * Used in subsequent definitions to either vary a paramter or keep it fixed to "Fixed"
  */
-export type Intro<C, P extends Param, Fixed, Current> = C extends V<P, "_">
+export type Intro<C, P extends Param, Fixed, Current> = C extends V<P, '_'>
   ? Fixed
-  : C extends V<P, "+">
+  : C extends V<P, '+'>
   ? Current
-  : C extends V<P, "-">
+  : C extends V<P, '-'>
   ? Current
-  : Fixed;
+  : Fixed
 
 /**
  * Initial type depending on variance of P in C (eg: initial Contravariant R = unknown, initial Covariant E = never)
  */
-export type Initial<C, P extends Param> = C extends V<P, "-">
-  ? P extends "N"
+export type Initial<C, P extends Param> = C extends V<P, '-'>
+  ? P extends 'N'
     ? string
     : unknown
-  : C extends V<P, "+">
+  : C extends V<P, '+'>
   ? never
-  : any;
+  : any
 
-export type Strip<C, P extends Param> = Erase<C, V<P, "_"> & V<P, "-"> & V<P, "+">>;
+export type Strip<C, P extends Param> = Erase<C, V<P, '_'> & V<P, '-'> & V<P, '+'>>
 
 /*
  * -------------------------------------------
@@ -420,9 +393,9 @@ export type Strip<C, P extends Param> = Erase<C, V<P, "_"> & V<P, "-"> & V<P, "+
  * -------------------------------------------
  */
 
-export type Ignores = "_F" | "_G" | "Commutative" | "_C" | "_CF" | "_CG";
+export type Ignores = '_F' | '_G' | 'Commutative' | '_C' | '_CF' | '_CG'
 
 /**
  * A helper for constructing typeclass instances
  */
-export const instance = <T>(_: Omit<T, Ignores>): T => _ as any;
+export const instance = <T>(_: Omit<T, Ignores>): T => _ as any

@@ -1,10 +1,10 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { flow, pipe } from "@principia/base/data/Function";
+import { flow, pipe } from '@principia/base/data/Function'
 
-import * as C from "../../Cause/core";
-import { fail, foldM, pure } from "../core";
-import { sandbox } from "./sandbox";
+import * as C from '../../Cause/core'
+import { fail, foldM, pure } from '../core'
+import { sandbox } from './sandbox'
 
 /**
  * ```haskell
@@ -18,7 +18,7 @@ import { sandbox } from "./sandbox";
  * @since 1.0.0
  */
 export function absorbWith_<R, E, A>(ef: IO<R, E, A>, f: (e: E) => unknown) {
-  return pipe(ef, sandbox, foldM(flow(C.squash(f), fail), pure));
+  return pipe(ef, sandbox, foldM(flow(C.squash(f), fail), pure))
 }
 
 /**
@@ -32,5 +32,5 @@ export function absorbWith_<R, E, A>(ef: IO<R, E, A>, f: (e: E) => unknown) {
  * @since 1.0.0
  */
 export function absorbWith<E>(f: (e: E) => unknown): <R, A>(ef: IO<R, E, A>) => IO<R, unknown, A> {
-  return (ef) => absorbWith_(ef, f);
+  return (ef) => absorbWith_(ef, f)
 }

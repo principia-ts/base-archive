@@ -1,14 +1,14 @@
-import type { Managed } from "../../Managed";
-import type * as XQ from "../../Queue";
-import type { Stream } from "../core";
+import type { Managed } from '../../Managed'
+import type * as XQ from '../../Queue'
+import type { Stream } from '../core'
 
-import { flow, pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import { flow, pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import * as Ca from "../../Cause";
-import * as I from "../../IO";
-import * as M from "../../Managed";
-import * as Take from "../Take";
+import * as Ca from '../../Cause'
+import * as I from '../../IO'
+import * as M from '../../Managed'
+import * as Take from '../Take'
 
 /**
  * Like `into`, but provides the result as a `Managed` to allow for scope
@@ -17,7 +17,7 @@ import * as Take from "../Take";
 export function intoManaged<E, O, R1, E1>(
   queue: XQ.XQueue<R1, never, never, unknown, Take.Take<E | E1, O>, any>
 ): <R>(ma: Stream<R, E, O>) => Managed<R & R1, E | E1, void> {
-  return (ma) => intoManaged_(ma, queue);
+  return (ma) => intoManaged_(ma, queue)
 }
 
 /**
@@ -30,8 +30,8 @@ export function intoManaged_<R, E, O, R1, E1>(
 ): Managed<R & R1, E | E1, void> {
   return pipe(
     M.do,
-    M.bindS("as", () => ma.proc),
-    M.letS("pull", ({ as }) => {
+    M.bindS('as', () => ma.proc),
+    M.letS('pull', ({ as }) => {
       const go: I.IO<R & R1, never, void> = I.foldCauseM_(
         as,
         flow(
@@ -42,9 +42,9 @@ export function intoManaged_<R, E, O, R1, E1>(
           )
         ),
         (a) => I.andThen_(queue.offer(Take.chunk(a)), go)
-      );
-      return go;
+      )
+      return go
     }),
     M.chain(({ pull }) => I.toManaged_(pull))
-  );
+  )
 }

@@ -1,11 +1,11 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import * as E from "@principia/base/data/Either";
-import { flow, pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import * as E from '@principia/base/data/Either'
+import { flow, pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import * as C from "../../Cause/core";
-import { foldCauseM_, halt, succeed } from "../core";
+import * as C from '../../Cause/core'
+import { foldCauseM_, halt, succeed } from '../core'
 
 /**
  * Recovers from some or all of the error cases.
@@ -29,7 +29,7 @@ export function catchSome_<R, E, A, R1, E1, A1>(
         )
       ),
     succeed
-  );
+  )
 }
 
 /**
@@ -38,5 +38,5 @@ export function catchSome_<R, E, A, R1, E1, A1>(
 export function catchSome<E, R1, E1, A1>(
   f: (e: E) => O.Option<IO<R1, E1, A1>>
 ): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A | A1> {
-  return (fa) => catchSome_(fa, f);
+  return (fa) => catchSome_(fa, f)
 }

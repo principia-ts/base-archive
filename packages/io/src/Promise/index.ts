@@ -1,2 +1,2 @@
-export * from "./combinators";
-export * from "./model";
+export * from './combinators'
+export * from './model'

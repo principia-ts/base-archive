@@ -1,6 +1,6 @@
-import type { Cause } from "../../Cause/core";
+import type { Cause } from '../../Cause/core'
 
-import * as I from "../core";
+import * as I from '../core'
 
 /**
  * ```haskell
@@ -13,11 +13,8 @@ import * as I from "../core";
  * @category Combinators
  * @since 1.0.0
  */
-export function catchAllCause_<R, E, A, R1, E1, A1>(
-  ef: I.IO<R, E, A>,
-  f: (_: Cause<E>) => I.IO<R1, E1, A1>
-) {
-  return I.foldCauseM_(ef, f, I.pure);
+export function catchAllCause_<R, E, A, R1, E1, A1>(ef: I.IO<R, E, A>, f: (_: Cause<E>) => I.IO<R1, E1, A1>) {
+  return I.foldCauseM_(ef, f, I.pure)
 }
 
 /**
@@ -34,5 +31,5 @@ export function catchAllCause_<R, E, A, R1, E1, A1>(
 export function catchAllCause<E, R1, E1, A1>(
   f: (_: Cause<E>) => I.IO<R1, E1, A1>
 ): <R, A>(ef: I.IO<R, E, A>) => I.IO<R & R1, E1, A1 | A> {
-  return (ef) => catchAllCause_(ef, f);
+  return (ef) => catchAllCause_(ef, f)
 }

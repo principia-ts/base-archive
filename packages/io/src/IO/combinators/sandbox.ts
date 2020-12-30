@@ -1,9 +1,9 @@
-import type { Cause } from "../../Cause/core";
-import type { IO } from "../core";
+import type { Cause } from '../../Cause/core'
+import type { IO } from '../core'
 
-import * as C from "../../Cause/core";
-import { fail, foldCauseM, pure } from "../core";
-import { mapErrorCause } from "./mapErrorCause";
+import * as C from '../../Cause/core'
+import { fail, foldCauseM, pure } from '../core'
+import { mapErrorCause } from './mapErrorCause'
 
 /**
  * ```haskell
@@ -15,7 +15,7 @@ import { mapErrorCause } from "./mapErrorCause";
  * @category Combinators
  * @since 1.0.0
  */
-export const sandbox: <R, E, A>(fa: IO<R, E, A>) => IO<R, Cause<E>, A> = foldCauseM(fail, pure);
+export const sandbox: <R, E, A>(fa: IO<R, E, A>) => IO<R, Cause<E>, A> = foldCauseM(fail, pure)
 
 /**
  * ```haskell
@@ -27,10 +27,10 @@ export const sandbox: <R, E, A>(fa: IO<R, E, A>) => IO<R, Cause<E>, A> = foldCau
  * @category Combinators
  * @since 1.0.0
  */
-export const unsandbox: <R, E, A>(ef: IO<R, Cause<E>, A>) => IO<R, E, A> = mapErrorCause(C.flatten);
+export const unsandbox: <R, E, A>(ef: IO<R, Cause<E>, A>) => IO<R, E, A> = mapErrorCause(C.flatten)
 
 export function sandboxWith<R, E, A, E1>(
   f: (_: IO<R, Cause<E>, A>) => IO<R, Cause<E1>, A>
 ): (ef: IO<R, E, A>) => IO<R, E1, A> {
-  return (ef) => unsandbox(f(sandbox(ef)));
+  return (ef) => unsandbox(f(sandbox(ef)))
 }

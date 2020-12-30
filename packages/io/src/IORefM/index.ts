@@ -1,3 +1,3 @@
 // codegen:start { preset: barrel }
-export * from "./core";
+export * from './core'
 // codegen:end

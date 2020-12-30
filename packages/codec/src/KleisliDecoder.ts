@@ -1,16 +1,16 @@
-import type { Refinement } from "@principia/base/data/Function";
-import type * as HKT from "@principia/base/HKT";
-import type * as P from "@principia/base/typeclass";
-import type { Literal } from "@principia/base/util/types";
+import type { Refinement } from '@principia/base/data/Function'
+import type * as HKT from '@principia/base/HKT'
+import type * as P from '@principia/base/typeclass'
+import type { Literal } from '@principia/base/util/types'
 
-import * as A from "@principia/base/data/Array";
-import * as E from "@principia/base/data/Either";
-import { memoize } from "@principia/base/data/Function";
-import * as G from "@principia/base/data/Guard";
-import * as O from "@principia/base/data/Option";
-import * as R from "@principia/base/data/Record";
+import * as A from '@principia/base/data/Array'
+import * as E from '@principia/base/data/Either'
+import { memoize } from '@principia/base/data/Function'
+import * as G from '@principia/base/data/Guard'
+import * as O from '@principia/base/data/Option'
+import * as R from '@principia/base/data/Record'
 
-import { _intersect } from "./util";
+import { _intersect } from './util'
 
 /*
  * -------------------------------------------
@@ -24,37 +24,29 @@ export interface KleisliDecoder<F extends HKT.URIS, C, I, E, O> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Initial<C, "N">,
-    HKT.Initial<C, "K">,
-    HKT.Initial<C, "Q">,
-    HKT.Initial<C, "W">,
-    HKT.Initial<C, "X">,
-    HKT.Initial<C, "I">,
-    HKT.Initial<C, "S">,
-    HKT.Initial<C, "R">,
+    HKT.Initial<C, 'N'>,
+    HKT.Initial<C, 'K'>,
+    HKT.Initial<C, 'Q'>,
+    HKT.Initial<C, 'W'>,
+    HKT.Initial<C, 'X'>,
+    HKT.Initial<C, 'I'>,
+    HKT.Initial<C, 'S'>,
+    HKT.Initial<C, 'R'>,
     E,
     O
-  >;
+  >
 }
 
-export type InputOf<M extends HKT.URIS, KD> = [KD] extends [
-  KleisliDecoder<M, any, infer I, any, any>
-]
-  ? I
-  : never;
+export type InputOf<M extends HKT.URIS, KD> = [KD] extends [KleisliDecoder<M, any, infer I, any, any>] ? I : never
 
-export type TypeOf<M extends HKT.URIS, KD> = [KD] extends [
-  KleisliDecoder<M, any, any, any, infer A>
-]
-  ? A
-  : never;
+export type TypeOf<M extends HKT.URIS, KD> = [KD] extends [KleisliDecoder<M, any, any, any, infer A>] ? A : never
 
-export type InputOf2<M, KD> = KD extends KleisliDecoderHKT<M, infer I, any, any> ? I : never;
+export type InputOf2<M, KD> = KD extends KleisliDecoderHKT<M, infer I, any, any> ? I : never
 
-export type TypeOf2<M, KD> = KD extends KleisliDecoderHKT<M, any, any, infer A> ? A : never;
+export type TypeOf2<M, KD> = KD extends KleisliDecoderHKT<M, any, any, infer A> ? A : never
 
 export interface KleisliDecoderHKT<F, I0, E, A> {
-  readonly decode: (i: I0) => HKT.HKT2<F, E, A>;
+  readonly decode: (i: I0) => HKT.HKT2<F, E, A>
 }
 
 /*
@@ -64,25 +56,21 @@ export interface KleisliDecoderHKT<F, I0, E, A> {
  */
 
 export function fromRefinement<E, M extends HKT.URIS, C>(
-  M: P.MonadFail<M, C & HKT.Fix<"E", E>>
-): <I, A extends I>(
-  refinement: Refinement<I, A>,
-  onError: (i: I) => E
-) => KleisliDecoder<M, C, I, E, A> {
+  M: P.MonadFail<M, C & HKT.Fix<'E', E>>
+): <I, A extends I>(refinement: Refinement<I, A>, onError: (i: I) => E) => KleisliDecoder<M, C, I, E, A> {
   return (refinement, onError) => ({
     decode: (i) => (refinement(i) ? M.pure(i) : M.fail(onError(i)))
-  });
+  })
 }
 
-export function literal<E, M extends HKT.URIS, C>(M: P.MonadFail<M, C & HKT.Fix<"E", E>>) {
+export function literal<E, M extends HKT.URIS, C>(M: P.MonadFail<M, C & HKT.Fix<'E', E>>) {
   return <I>(onError: (i: I, values: readonly [Literal, ...Literal[]]) => E) => <
     A extends readonly [Literal, ...Literal[]]
   >(
-    ...values: A
-  ): KleisliDecoder<M, C, I, E, A[number]> => ({
-    decode: (i) =>
-      G.literal(...values).is(i) ? M.pure(i as A[number]) : M.fail(onError(i, values))
-  });
+      ...values: A
+    ): KleisliDecoder<M, C, I, E, A[number]> => ({
+      decode: (i) => (G.literal(...values).is(i) ? M.pure(i as A[number]) : M.fail(onError(i, values)))
+    })
 }
 
 /*
@@ -93,52 +81,47 @@ export function literal<E, M extends HKT.URIS, C>(M: P.MonadFail<M, C & HKT.Fix<
 
 export function mapLeftWithInput_<M extends HKT.URIS, C>(
   M: P.Bifunctor<M, C>
-): <I, E, A>(
-  decoder: KleisliDecoder<M, C, I, E, A>,
-  f: (i: I, e: E) => E
-) => KleisliDecoder<M, C, I, E, A> {
+): <I, E, A>(decoder: KleisliDecoder<M, C, I, E, A>, f: (i: I, e: E) => E) => KleisliDecoder<M, C, I, E, A> {
   return (decoder, f) => ({
     decode: (i) => M.mapLeft_(decoder.decode(i), (e) => f(i, e))
-  });
+  })
 }
 
 export function mapLeftWithInput<M extends HKT.URIS, C>(
   M: P.Bifunctor<M, C>
-): <I, E>(
-  f: (i: I, e: E) => E
-) => <A>(decoder: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, A> {
-  return (f) => (decoder) => mapLeftWithInput_(M)(decoder, f);
+): <I, E>(f: (i: I, e: E) => E) => <A>(decoder: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, A> {
+  return (f) => (decoder) => mapLeftWithInput_(M)(decoder, f)
 }
 
 export function refine_<E, M extends HKT.URIS, C>(
-  M: P.MonadFail<M, C & HKT.Fix<"E", E>>
+  M: P.MonadFail<M, C & HKT.Fix<'E', E>>
 ): <I, A, B extends A>(
   from: KleisliDecoder<M, C, I, E, A>,
   refinement: (a: A) => a is B,
   onError: (a: A) => E
-) => KleisliDecoder<M, C, I, E, B>;
-export function refine_<E, M>(M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<"E", E>>) {
+) => KleisliDecoder<M, C, I, E, B>
+export function refine_<E, M>(M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<'E', E>>) {
   return <I, A>(
     from: KleisliDecoderHKT<M, I, E, A>,
     refinement: (a: A) => a is A,
     onError: (a: A) => E
-  ): KleisliDecoderHKT<M, I, E, A> => compose_(M)(from, fromRefinement(M)(refinement, onError));
+  ): KleisliDecoderHKT<M, I, E, A> => compose_(M)(from, fromRefinement(M)(refinement, onError))
 }
 
 export function refine<E, M extends HKT.URIS, C>(
-  M: P.MonadFail<M, C & HKT.Fix<"E", E>>
+  M: P.MonadFail<M, C & HKT.Fix<'E', E>>
 ): <A, B extends A>(
   refinement: (a: A) => a is B,
   onError: (a: A) => E
-) => <I>(from: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, B>;
-export function refine<E, M>(M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<"E", E>>) {
+) => <I>(from: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, B>
+export function refine<E, M>(M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<'E', E>>) {
   return <A>(refinement: (a: A) => a is A, onError: (a: A) => E) => <I>(
     from: KleisliDecoderHKT<M, I, E, A>
-  ): KleisliDecoderHKT<M, I, E, A> => refine_(M)(from, refinement, onError);
+  ): KleisliDecoderHKT<M, I, E, A> => refine_(M)(from, refinement, onError)
 }
 
 export function parse_<E, M extends HKT.URIS, C>(
-  M: P.Monad<M, C & HKT.Fix<"E", E>>
+  M: P.Monad<M, C & HKT.Fix<'E', E>>
 ): <I, A, B>(
   from: KleisliDecoder<M, C, I, E, A>,
   decode: (
@@ -146,63 +129,63 @@ export function parse_<E, M extends HKT.URIS, C>(
   ) => HKT.Kind<
     M,
     C,
-    HKT.Initial<C, "N">,
-    HKT.Initial<C, "K">,
-    HKT.Initial<C, "Q">,
-    HKT.Initial<C, "W">,
-    HKT.Initial<C, "X">,
-    HKT.Initial<C, "I">,
-    HKT.Initial<C, "S">,
-    HKT.Initial<C, "R">,
+    HKT.Initial<C, 'N'>,
+    HKT.Initial<C, 'K'>,
+    HKT.Initial<C, 'Q'>,
+    HKT.Initial<C, 'W'>,
+    HKT.Initial<C, 'X'>,
+    HKT.Initial<C, 'I'>,
+    HKT.Initial<C, 'S'>,
+    HKT.Initial<C, 'R'>,
     E,
     B
   >
-) => KleisliDecoder<M, C, I, E, B>;
+) => KleisliDecoder<M, C, I, E, B>
 export function parse_<E, M>(
-  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): <I, A, B>(
   from: KleisliDecoderHKT<M, I, E, A>,
   decode: (a: A) => HKT.HKT2<M, E, B>
 ) => KleisliDecoderHKT<M, I, E, B> {
-  return (from, decode) => compose_(M)(from, { decode });
+  return (from, decode) => compose_(M)(from, { decode })
 }
 
 export function parse<E, M extends HKT.URIS, C>(
-  M: P.Monad<M, C & HKT.Fix<"E", E>>
+  M: P.Monad<M, C & HKT.Fix<'E', E>>
 ): <A, B>(
   decode: (
     a: A
   ) => HKT.Kind<
     M,
     C,
-    HKT.Initial<C, "N">,
-    HKT.Initial<C, "K">,
-    HKT.Initial<C, "Q">,
-    HKT.Initial<C, "W">,
-    HKT.Initial<C, "X">,
-    HKT.Initial<C, "I">,
-    HKT.Initial<C, "S">,
-    HKT.Initial<C, "R">,
+    HKT.Initial<C, 'N'>,
+    HKT.Initial<C, 'K'>,
+    HKT.Initial<C, 'Q'>,
+    HKT.Initial<C, 'W'>,
+    HKT.Initial<C, 'X'>,
+    HKT.Initial<C, 'I'>,
+    HKT.Initial<C, 'S'>,
+    HKT.Initial<C, 'R'>,
     E,
     B
   >
-) => <I>(from: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, B>;
+) => <I>(from: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, B>
 export function parse<E, M>(
-  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): <A, B>(
   decode: (a: A) => HKT.HKT2<M, E, B>
 ) => <I>(from: KleisliDecoderHKT<M, I, E, A>) => KleisliDecoderHKT<M, I, E, B> {
-  return (decode) => (from) => parse_(M)(from, decode);
+  return (decode) => (from) => parse_(M)(from, decode)
 }
 
 export function nullable_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <I, A>(
   or: KleisliDecoder<M, C, I, E, A>,
   onError: (i: I, e: E) => E
-) => KleisliDecoder<M, C, I | null | undefined, E, A | null>;
+) => KleisliDecoder<M, C, I | null | undefined, E, A | null>
 export function nullable_<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): <I, A>(
   or: KleisliDecoderHKT<M, I, E, A>,
   onError: (i: I, e: E) => E
@@ -212,38 +195,34 @@ export function nullable_<E, M>(
       i == null
         ? M.pure(null)
         : M.bimap_(
-            or.decode(i),
-            (e: E) => onError(i, e),
-            (a) => a
-          )
-  });
+          or.decode(i),
+          (e: E) => onError(i, e),
+          (a) => a
+        )
+  })
 }
 
 export function nullable<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <I>(
   onError: (i: I, e: E) => E
-) => <A>(
-  or: KleisliDecoder<M, C, I, E, A>
-) => KleisliDecoder<M, C, I | null | undefined, E, A | null>;
+) => <A>(or: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I | null | undefined, E, A | null>
 export function nullable<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): <I>(
   onError: (i: I, e: E) => E
-) => <A>(
-  or: KleisliDecoderHKT<M, I, E, A>
-) => KleisliDecoderHKT<M, I | null | undefined, E, A | null> {
-  return (onError) => (or) => nullable_(M)(or, onError);
+) => <A>(or: KleisliDecoderHKT<M, I, E, A>) => KleisliDecoderHKT<M, I | null | undefined, E, A | null> {
+  return (onError) => (or) => nullable_(M)(or, onError)
 }
 
 export function optional_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <I, A>(
   or: KleisliDecoder<M, C, I, E, A>,
   onError: (i: I, e: E) => E
-) => KleisliDecoder<M, C, I | null | undefined, E, O.Option<A>>;
+) => KleisliDecoder<M, C, I | null | undefined, E, O.Option<A>>
 export function optional_<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): <I, A>(
   or: KleisliDecoderHKT<M, I, E, A>,
   onError: (i: I, e: E) => E
@@ -253,44 +232,34 @@ export function optional_<E, M>(
       i == null
         ? M.pure(O.none())
         : M.bimap_(
-            or.decode(i),
-            (e) => onError(i, e),
-            (a) => O.some(a)
-          )
-  });
+          or.decode(i),
+          (e) => onError(i, e),
+          (a) => O.some(a)
+        )
+  })
 }
 
 export function optional<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <I>(
   onError: (i: I, e: E) => E
-) => <A>(
-  or: KleisliDecoder<M, C, I, E, A>
-) => KleisliDecoder<M, C, I | null | undefined, E, O.Option<A>>;
+) => <A>(or: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I | null | undefined, E, O.Option<A>>
 export function optional<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): <I>(
   onError: (i: I, e: E) => E
-) => <A>(
-  or: KleisliDecoderHKT<M, I, E, A>
-) => KleisliDecoderHKT<M, I | null | undefined, E, O.Option<A>> {
-  return (onError) => (or) => optional_(M)(or, onError);
+) => <A>(or: KleisliDecoderHKT<M, I, E, A>) => KleisliDecoderHKT<M, I | null | undefined, E, O.Option<A>> {
+  return (onError) => (or) => optional_(M)(or, onError)
 }
 
 export function fromType_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
-) => KleisliDecoder<
-  M,
-  C,
-  { [K in keyof P]: InputOf<M, P[K]> },
-  E,
-  { [K in keyof P]: TypeOf<M, P[K]> }
->;
+) => KleisliDecoder<M, C, { [K in keyof P]: InputOf<M, P[K]> }, E, { [K in keyof P]: TypeOf<M, P[K]> }>
 export function fromType_<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): <P extends Record<string, KleisliDecoderHKT<M, any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
@@ -300,34 +269,28 @@ export function fromType_<E, M>(
       R.traverseWithIndex_(M)(properties, (key, decoder) =>
         M.mapLeft_(decoder.decode(i[key]), (e) => onPropertyError(key, e))
       ) as any
-  });
+  })
 }
 
 export function fromType<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): (
   onPropertyError: (key: string, e: E) => E
 ) => <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
   properties: P
-) => KleisliDecoder<
-  M,
-  C,
-  { [K in keyof P]: InputOf<M, P[K]> },
-  E,
-  { [K in keyof P]: TypeOf<M, P[K]> }
->;
+) => KleisliDecoder<M, C, { [K in keyof P]: InputOf<M, P[K]> }, E, { [K in keyof P]: TypeOf<M, P[K]> }>
 export function fromType<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): (
   onPropertyError: (key: string, e: E) => E
 ) => <P extends Record<string, KleisliDecoderHKT<M, any, E, any>>>(
   properties: P
 ) => KleisliDecoderHKT<M, { [K in keyof P]: any }, E, { [K in keyof P]: any }> {
-  return (onPropertyError) => (properties) => fromType_(M)(properties, onPropertyError);
+  return (onPropertyError) => (properties) => fromType_(M)(properties, onPropertyError)
 }
 
 export function fromPartial_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
@@ -337,38 +300,38 @@ export function fromPartial_<E, M extends HKT.URIS, C>(
   Partial<{ [K in keyof P]: InputOf<M, P[K]> }>,
   E,
   Partial<{ [K in keyof P]: TypeOf<M, P[K]> }>
->;
+>
 export function fromPartial_<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): <P extends Record<string, KleisliDecoderHKT<M, any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
 ) => KleisliDecoderHKT<M, Partial<{ [K in keyof P]: any }>, E, Partial<{ [K in keyof P]: any }>> {
-  const traverse = R.traverseWithIndex_(M);
-  const undefinedProperty = M.pure(E.right(undefined));
-  const skipProperty = M.pure(E.left(undefined));
+  const traverse          = R.traverseWithIndex_(M)
+  const undefinedProperty = M.pure(E.right(undefined))
+  const skipProperty      = M.pure(E.left(undefined))
 
   return (properties, onPropertyError) => ({
     decode: (i) =>
       M.map_(
         traverse(properties, (key, decoder) => {
-          const ikey = i[key];
+          const ikey = i[key]
           if (ikey === undefined) {
-            return key in i ? undefinedProperty : skipProperty;
+            return key in i ? undefinedProperty : skipProperty
           }
           return M.bimap_(
             decoder.decode(ikey),
             (e) => onPropertyError(key, e),
             (a) => E.right<void, unknown>(a)
-          );
+          )
         }),
         compactRecord
       ) as any
-  });
+  })
 }
 
 export function fromPartial<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): (
   onPropertyError: (key: string, e: E) => E
 ) => <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
@@ -379,163 +342,138 @@ export function fromPartial<E, M extends HKT.URIS, C>(
   Partial<{ [K in keyof P]: InputOf<M, P[K]> }>,
   E,
   Partial<{ [K in keyof P]: TypeOf<M, P[K]> }>
->;
+>
 export function fromPartial<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): (
   onPropertyError: (key: string, e: E) => E
 ) => <P extends Record<string, KleisliDecoderHKT<M, any, E, any>>>(
   properties: P
 ) => KleisliDecoderHKT<M, Partial<{ [K in keyof P]: any }>, E, Partial<{ [K in keyof P]: any }>> {
-  const fromPartialM = fromPartial_(M);
-  return (onPropertyError) => (properties) => fromPartialM(properties, onPropertyError);
+  const fromPartialM = fromPartial_(M)
+  return (onPropertyError) => (properties) => fromPartialM(properties, onPropertyError)
 }
 
 export function fromArray_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <I, A>(
   item: KleisliDecoder<M, C, I, E, A>,
   onItemError: (index: number, e: E) => E
-) => KleisliDecoder<M, C, ReadonlyArray<I>, E, ReadonlyArray<A>>;
+) => KleisliDecoder<M, C, ReadonlyArray<I>, E, ReadonlyArray<A>>
 export function fromArray_<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): <I, A>(
   item: KleisliDecoderHKT<M, I, E, A>,
   onItemError: (index: number, e: E) => E
 ) => KleisliDecoderHKT<M, ReadonlyArray<I>, E, ReadonlyArray<A>> {
-  const traverse = A.traverseWithIndex_(M);
+  const traverse = A.traverseWithIndex_(M)
   return (item, onItemError) => ({
-    decode: (is) =>
-      traverse(is, (index, i) => M.mapLeft_(item.decode(i), (e: E) => onItemError(index, e)))
-  });
+    decode: (is) => traverse(is, (index, i) => M.mapLeft_(item.decode(i), (e: E) => onItemError(index, e)))
+  })
 }
 
 export function fromArray<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): (
   onItemError: (index: number, e: E) => E
-) => <I, A>(
-  item: KleisliDecoder<M, C, I, E, A>
-) => KleisliDecoder<M, C, ReadonlyArray<I>, E, ReadonlyArray<A>>;
+) => <I, A>(item: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, ReadonlyArray<I>, E, ReadonlyArray<A>>
 export function fromArray<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): (
   onItemError: (index: number, e: E) => E
-) => <I, A>(
-  item: KleisliDecoderHKT<M, I, E, A>
-) => KleisliDecoderHKT<M, ReadonlyArray<I>, E, ReadonlyArray<A>> {
-  const fromArrayM = fromArray_(M);
-  return (onItemError) => (item) => fromArrayM(item, onItemError);
+) => <I, A>(item: KleisliDecoderHKT<M, I, E, A>) => KleisliDecoderHKT<M, ReadonlyArray<I>, E, ReadonlyArray<A>> {
+  const fromArrayM = fromArray_(M)
+  return (onItemError) => (item) => fromArrayM(item, onItemError)
 }
 
 export function fromRecord_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): <I, A>(
   codomain: KleisliDecoder<M, C, I, E, A>,
   onKeyError: (key: string, e: E) => E
-) => KleisliDecoder<M, C, Record<string, I>, E, Record<string, A>>;
+) => KleisliDecoder<M, C, Record<string, I>, E, Record<string, A>>
 export function fromRecord_<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): <I, A>(
   codomain: KleisliDecoderHKT<M, I, E, A>,
   onKeyError: (key: string, e: E) => E
 ) => KleisliDecoderHKT<M, Record<string, I>, E, Record<string, A>> {
-  const traverse = R.traverseWithIndex_(M);
+  const traverse = R.traverseWithIndex_(M)
   return (codomain, onKeyError) => ({
-    decode: (ir) =>
-      traverse(ir, (key, i) => M.mapLeft_(codomain.decode(i as any), (e) => onKeyError(key, e)))
-  });
+    decode: (ir) => traverse(ir, (key, i) => M.mapLeft_(codomain.decode(i as any), (e) => onKeyError(key, e)))
+  })
 }
 
 export function fromRecord<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): (
   onKeyError: (key: string, e: E) => E
-) => <I, A>(
-  codomain: KleisliDecoder<M, C, I, E, A>
-) => KleisliDecoder<M, C, Record<string, I>, E, Record<string, A>>;
+) => <I, A>(codomain: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, Record<string, I>, E, Record<string, A>>
 export function fromRecord<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): (
   onKeyError: (key: string, e: E) => E
-) => <I, A>(
-  codomain: KleisliDecoderHKT<M, I, E, A>
-) => KleisliDecoderHKT<M, Record<string, I>, E, Record<string, A>> {
-  const fromRecordM = fromRecord_(M);
-  return (onKeyError) => (codomain) => fromRecordM(codomain, onKeyError);
+) => <I, A>(codomain: KleisliDecoderHKT<M, I, E, A>) => KleisliDecoderHKT<M, Record<string, I>, E, Record<string, A>> {
+  const fromRecordM = fromRecord_(M)
+  return (onKeyError) => (codomain) => fromRecordM(codomain, onKeyError)
 }
 
 export function fromTuple<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): (
   onIndexError: (index: number, e: E) => E
 ) => <P extends ReadonlyArray<KleisliDecoder<M, C, any, E, any>>>(
   ...components: P
-) => KleisliDecoder<
-  M,
-  C,
-  { [K in keyof P]: InputOf<M, P[K]> },
-  E,
-  { [K in keyof P]: TypeOf<M, P[K]> }
->;
+) => KleisliDecoder<M, C, { [K in keyof P]: InputOf<M, P[K]> }, E, { [K in keyof P]: TypeOf<M, P[K]> }>
 export function fromTuple<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): (
   onIndexError: (index: number, e: E) => E
 ) => <P extends ReadonlyArray<KleisliDecoderHKT<M, any, E, any>>>(
   ...components: P
 ) => KleisliDecoderHKT<M, { [K in keyof P]: any }, E, { [K in keyof P]: any }> {
-  const traverse = A.traverseWithIndex_(M);
+  const traverse = A.traverseWithIndex_(M)
   return (onIndexError) => (...components) => ({
     decode: (is) =>
       traverse(components, (index, decoder) =>
         M.mapLeft_(decoder.decode(is[index]), (e) => onIndexError(index, e))
       ) as any
-  });
+  })
 }
 
 export function union<E, M extends HKT.URIS, C>(
-  M: P.Alt<M, C & HKT.Fix<"E", E>> & P.Bifunctor<M, C>
+  M: P.Alt<M, C & HKT.Fix<'E', E>> & P.Bifunctor<M, C>
 ): (
   onMemberError: (index: number, e: E) => E
-) => <
-  P extends readonly [
-    KleisliDecoder<M, C, any, E, any>,
-    ...ReadonlyArray<KleisliDecoder<M, C, any, E, any>>
-  ]
->(
+) => <P extends readonly [KleisliDecoder<M, C, any, E, any>, ...ReadonlyArray<KleisliDecoder<M, C, any, E, any>>]>(
   ...members: P
-) => KleisliDecoder<M, C, InputOf<M, P[keyof P]>, E, TypeOf<M, P[keyof P]>>;
+) => KleisliDecoder<M, C, InputOf<M, P[keyof P]>, E, TypeOf<M, P[keyof P]>>
 export function union<E, M>(
-  M: P.Alt<HKT.UHKT2<M>, HKT.Fix<"E", E>> & P.Bifunctor<HKT.UHKT2<M>>
+  M: P.Alt<HKT.UHKT2<M>, HKT.Fix<'E', E>> & P.Bifunctor<HKT.UHKT2<M>>
 ): (
   onMemberError: (index: number, e: E) => E
-) => <
-  P extends [KleisliDecoderHKT<M, any, E, any>, ...ReadonlyArray<KleisliDecoderHKT<M, any, E, any>>]
->(
+) => <P extends [KleisliDecoderHKT<M, any, E, any>, ...ReadonlyArray<KleisliDecoderHKT<M, any, E, any>>]>(
   ...components: P
 ) => KleisliDecoderHKT<M, any, E, any> {
   return (onMemberError) => (...members) => ({
     decode: (i) => {
-      let out = M.mapLeft_(members[0].decode(i), (e) => onMemberError(0, e));
+      let out = M.mapLeft_(members[0].decode(i), (e) => onMemberError(0, e))
       for (let index = 1; index < members.length; index++) {
-        out = M.alt_(out, () =>
-          M.mapLeft_(members[index].decode(i), (e) => onMemberError(index, e))
-        );
+        out = M.alt_(out, () => M.mapLeft_(members[index].decode(i), (e) => onMemberError(index, e)))
       }
-      return out;
+      return out
     }
-  });
+  })
 }
 
 export function intersect_<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>>
 ): <IA, A, IB, B>(
   left: KleisliDecoder<M, C, IA, E, A>,
   right: KleisliDecoder<M, C, IB, E, B>
-) => KleisliDecoder<M, C, IA & IB, E, A & B>;
+) => KleisliDecoder<M, C, IA & IB, E, A & B>
 export function intersect_<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): <IA, A, IB, B>(
   ia: KleisliDecoderHKT<M, IA, E, A>,
   ab: KleisliDecoderHKT<M, IB, E, B>
@@ -549,78 +487,76 @@ export function intersect_<E, M>(
         M.map_(left.decode(i), (a: A) => (b: B) => _intersect(a, b)),
         right.decode(i)
       )
-  });
+  })
 }
 
 export function intersect<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>>
 ): <IB, B>(
   right: KleisliDecoder<M, C, IB, E, B>
-) => <IA, A>(left: KleisliDecoder<M, C, IA, E, A>) => KleisliDecoder<M, C, IA & IB, E, A & B>;
+) => <IA, A>(left: KleisliDecoder<M, C, IA, E, A>) => KleisliDecoder<M, C, IA & IB, E, A & B>
 export function intersect<E, M>(
-  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.Applicative<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): <IB, B>(
   right: KleisliDecoderHKT<M, IB, E, B>
 ) => <IA, A>(left: KleisliDecoderHKT<M, IA, E, A>) => KleisliDecoderHKT<M, IA & IB, E, A & B> {
-  return (right) => (left) => intersect_(M)(left, right);
+  return (right) => (left) => intersect_(M)(left, right)
 }
 
 export function sum_<E, M extends HKT.URIS, C>(
-  M: P.MonadFail<M, C & HKT.Fix<"E", E>>
+  M: P.MonadFail<M, C & HKT.Fix<'E', E>>
 ): <T extends string, P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
   tag: T,
   members: P,
   onTagError: (tag: string, vaue: unknown, tags: ReadonlyArray<string>) => E
-) => KleisliDecoder<M, C, InputOf<M, P[keyof P]>, E, TypeOf<M, P[keyof P]>>;
+) => KleisliDecoder<M, C, InputOf<M, P[keyof P]>, E, TypeOf<M, P[keyof P]>>
 export function sum_<E, M>(
-  M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): <T extends string, P extends Record<string, KleisliDecoderHKT<M, any, E, any>>>(
   tag: T,
   members: P,
   onTagError: (tag: string, value: unknown, tags: ReadonlyArray<string>) => E
 ) => KleisliDecoderHKT<M, any, E, any> {
   return (tag, members, onTagError) => {
-    const keys = Object.keys(members);
+    const keys = Object.keys(members)
     return {
       decode: (ir) => {
-        const v = ir[tag];
+        const v = ir[tag]
         if (v in members) {
-          return (members as any)[v].decode(ir);
+          return (members as any)[v].decode(ir)
         }
-        return M.fail(onTagError(tag, v, keys));
+        return M.fail(onTagError(tag, v, keys))
       }
-    };
-  };
+    }
+  }
 }
 
 export function sum<E, M extends HKT.URIS, C>(
-  M: P.MonadFail<M, C & HKT.Fix<"E", E>>
+  M: P.MonadFail<M, C & HKT.Fix<'E', E>>
 ): (
   onTagError: (tag: string, value: unknown, tags: ReadonlyArray<string>) => E
 ) => <T extends string>(
   tag: T
 ) => <P extends Record<string, KleisliDecoder<M, C, any, E, any>>>(
   members: P
-) => KleisliDecoder<M, C, InputOf<M, P[keyof P]>, E, TypeOf<M, P[keyof P]>>;
+) => KleisliDecoder<M, C, InputOf<M, P[keyof P]>, E, TypeOf<M, P[keyof P]>>
 export function sum<E, M>(
-  M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.MonadFail<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): (
   onTagError: (tag: string, value: unknown, tags: ReadonlyArray<string>) => E
 ) => <T extends string>(
   tag: T
-) => <P extends Record<string, KleisliDecoderHKT<M, any, E, any>>>(
-  members: P
-) => KleisliDecoderHKT<M, any, E, any> {
-  return (onTagError) => (tag) => (members) => sum_(M)(tag, members, onTagError);
+) => <P extends Record<string, KleisliDecoderHKT<M, any, E, any>>>(members: P) => KleisliDecoderHKT<M, any, E, any> {
+  return (onTagError) => (tag) => (members) => sum_(M)(tag, members, onTagError)
 }
 
 export function lazy_<M extends HKT.URIS, C>(
   M: P.Bifunctor<M, C>
 ): <I, E, A>(
   id: string,
-  f: () => KleisliDecoder<M, C & HKT.Fix<"E", E>, I, E, A>,
+  f: () => KleisliDecoder<M, C & HKT.Fix<'E', E>, I, E, A>,
   onError: (id: string, e: E) => E
-) => KleisliDecoder<M, C & HKT.Fix<"E", E>, I, E, A>;
+) => KleisliDecoder<M, C & HKT.Fix<'E', E>, I, E, A>
 export function lazy_<E, M>(
   M: P.Bifunctor<HKT.UHKT2<M>>
 ): <I, A>(
@@ -633,11 +569,11 @@ export function lazy_<E, M>(
     f: () => KleisliDecoderHKT<M, I, E, A>,
     onError: (id: string, e: E) => E
   ): KleisliDecoderHKT<M, I, E, A> => {
-    const get = memoize<void, KleisliDecoderHKT<M, I, E, A>>(f);
+    const get = memoize<void, KleisliDecoderHKT<M, I, E, A>>(f)
     return {
       decode: (i) => M.mapLeft_(get().decode(i), (e: E) => onError(id, e))
-    };
-  };
+    }
+  }
 }
 
 export function lazy<M extends HKT.URIS, C>(
@@ -646,14 +582,14 @@ export function lazy<M extends HKT.URIS, C>(
   onError: (id: string, e: E) => E
 ) => <I, A>(
   id: string,
-  f: () => KleisliDecoder<M, C & HKT.Fix<"E", E>, I, E, A>
-) => KleisliDecoder<M, C & HKT.Fix<"E", E>, I, E, A>;
+  f: () => KleisliDecoder<M, C & HKT.Fix<'E', E>, I, E, A>
+) => KleisliDecoder<M, C & HKT.Fix<'E', E>, I, E, A>
 export function lazy<E, M>(
   M: P.Bifunctor<HKT.UHKT2<M>>
 ): (
   onError: (id: string, e: E) => E
 ) => <I, A>(id: string, f: () => KleisliDecoderHKT<M, I, E, A>) => KleisliDecoderHKT<M, I, E, A> {
-  return (onError) => (id, f) => lazy_(M)(id, f, onError);
+  return (onError) => (id, f) => lazy_(M)(id, f, onError)
 }
 
 /*
@@ -663,41 +599,35 @@ export function lazy<E, M>(
  */
 
 export function id<E, M extends HKT.URIS, C>(
-  M: P.Applicative<M, C & HKT.Fix<"E", E>>
+  M: P.Applicative<M, C & HKT.Fix<'E', E>>
 ): <A>() => KleisliDecoder<M, C, A, E, A> {
   return () => ({
     decode: M.pure
-  });
+  })
 }
 
 export function compose_<E, M extends HKT.URIS, C>(
-  M: P.Monad<M, C & HKT.Fix<"E", E>>
-): <I, A, B>(
-  ia: KleisliDecoder<M, C, I, E, A>,
-  ab: KleisliDecoder<M, C, A, E, B>
-) => KleisliDecoder<M, C, I, E, B>;
+  M: P.Monad<M, C & HKT.Fix<'E', E>>
+): <I, A, B>(ia: KleisliDecoder<M, C, I, E, A>, ab: KleisliDecoder<M, C, A, E, B>) => KleisliDecoder<M, C, I, E, B>
 export function compose_<E, M>(
-  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<"E", E>>
-): <I, A, B>(
-  ia: KleisliDecoderHKT<M, I, E, A>,
-  ab: KleisliDecoderHKT<M, A, E, B>
-) => KleisliDecoderHKT<M, I, E, B> {
+  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<'E', E>>
+): <I, A, B>(ia: KleisliDecoderHKT<M, I, E, A>, ab: KleisliDecoderHKT<M, A, E, B>) => KleisliDecoderHKT<M, I, E, B> {
   return (ia, ab) => ({
     decode: (i0) => M.flatMap_(ia.decode(i0), ab.decode)
-  });
+  })
 }
 
 export function compose<E, M extends HKT.URIS, C>(
-  M: P.Monad<M, C & HKT.Fix<"E", E>>
+  M: P.Monad<M, C & HKT.Fix<'E', E>>
 ): <A, B>(
   ab: KleisliDecoder<M, C, A, E, B>
-) => <I, A, B>(ia: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, B>;
+) => <I, A, B>(ia: KleisliDecoder<M, C, I, E, A>) => KleisliDecoder<M, C, I, E, B>
 export function compose<E, M>(
-  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<"E", E>>
+  M: P.Monad<HKT.UHKT2<M>, HKT.Fix<'E', E>>
 ): <A, B>(
   ab: KleisliDecoderHKT<M, A, E, B>
 ) => <I>(ia: KleisliDecoderHKT<M, I, E, A>) => KleisliDecoderHKT<M, I, E, B> {
-  return (ab) => (ia) => compose_(M)(ia, ab);
+  return (ab) => (ia) => compose_(M)(ia, ab)
 }
 
 /*
@@ -707,19 +637,17 @@ export function compose<E, M>(
  */
 
 export function map_<E, F extends HKT.URIS, C>(
-  F: P.Functor<F, C & HKT.Fix<"E", E>>
+  F: P.Functor<F, C & HKT.Fix<'E', E>>
 ): <I, A, B>(ia: KleisliDecoder<F, C, I, E, A>, f: (a: A) => B) => KleisliDecoder<F, C, I, E, B> {
   return (ia, f) => ({
     decode: (i) => F.map_(ia.decode(i), f)
-  });
+  })
 }
 
 export function map<E, F extends HKT.URIS, C>(
-  F: P.Functor<F, C & HKT.Fix<"E", E>>
-): <A, B>(
-  f: (a: A) => B
-) => <I>(ia: KleisliDecoder<F, C, I, E, A>) => KleisliDecoder<F, C, I, E, B> {
-  return (f) => (ia) => map_(F)(ia, f);
+  F: P.Functor<F, C & HKT.Fix<'E', E>>
+): <A, B>(f: (a: A) => B) => <I>(ia: KleisliDecoder<F, C, I, E, A>) => KleisliDecoder<F, C, I, E, B> {
+  return (f) => (ia) => map_(F)(ia, f)
 }
 
 /*
@@ -729,45 +657,42 @@ export function map<E, F extends HKT.URIS, C>(
  */
 
 export function alt_<E, F extends HKT.URIS, C>(
-  A: P.Alt<F, C & HKT.Fix<"E", E>>
-): <I, A>(
-  me: KleisliDecoder<F, C, I, E, A>,
-  that: () => KleisliDecoder<F, C, I, E, A>
-) => KleisliDecoder<F, C, I, E, A>;
+  A: P.Alt<F, C & HKT.Fix<'E', E>>
+): <I, A>(me: KleisliDecoder<F, C, I, E, A>, that: () => KleisliDecoder<F, C, I, E, A>) => KleisliDecoder<F, C, I, E, A>
 export function alt_<E, F>(
-  A: P.Alt<HKT.UHKT2<F>, HKT.Fix<"E", E>>
+  A: P.Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>>
 ): <I, A>(
   me: KleisliDecoderHKT<F, I, E, A>,
   that: () => KleisliDecoderHKT<F, I, E, A>
 ) => KleisliDecoderHKT<F, I, E, A> {
   return (me, that) => ({
     decode: (i) => A.alt_(me.decode(i), () => that().decode(i))
-  });
+  })
 }
 
 export function alt<E, F extends HKT.URIS, C>(
-  A: P.Alt<F, C & HKT.Fix<"E", E>>
+  A: P.Alt<F, C & HKT.Fix<'E', E>>
 ): <I, A>(
   that: () => KleisliDecoder<F, C, I, E, A>
-) => (me: KleisliDecoder<F, C, I, E, A>) => KleisliDecoder<F, C, I, E, A>;
+) => (me: KleisliDecoder<F, C, I, E, A>) => KleisliDecoder<F, C, I, E, A>
 export function alt<E, F>(
-  A: P.Alt<HKT.UHKT2<F>, HKT.Fix<"E", E>>
+  A: P.Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>>
 ): <I, A>(
   that: () => KleisliDecoderHKT<F, I, E, A>
 ) => (me: KleisliDecoderHKT<F, I, E, A>) => KleisliDecoderHKT<F, I, E, A> {
-  return (that) => (me) => alt_(A)(me, that);
+  return (that) => (me) => alt_(A)(me, that)
 }
 
 /**
  * @internal
  */
 const compactRecord = <A>(r: Record<string, E.Either<void, A>>): Record<string, A> => {
-  const out: Record<string, A> = {};
+  const out: Record<string, A> = {}
   for (const k in r) {
-    const rk = r[k];
+    const rk = r[k]
     if (E.isRight(rk)) {
-      out[k] = rk.right;
+      out[k] = rk.right
     }
   }
-  return out;
-};
+  return out
+}

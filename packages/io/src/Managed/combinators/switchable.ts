@@ -1,15 +1,15 @@
-import type { Managed } from "../core";
+import type { Managed } from '../core'
 
-import { pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import { sequential } from "../../ExecutionStrategy";
-import * as Ex from "../../Exit";
-import * as I from "../_internal/io";
-import * as _ from "../core";
-import * as RelMap from "../ReleaseMap";
-import { releaseAll } from "./releaseAll";
-import { releaseMap } from "./releaseMap";
+import { sequential } from '../../ExecutionStrategy'
+import * as Ex from '../../Exit'
+import * as I from '../_internal/io'
+import * as _ from '../core'
+import * as RelMap from '../ReleaseMap'
+import { releaseAll } from './releaseAll'
+import { releaseMap } from './releaseMap'
 
 /**
  * Returns a `Managed` value that represents a managed resource that can
@@ -27,8 +27,8 @@ import { releaseMap } from "./releaseMap";
 export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => I.IO<R, E, A>> {
   return pipe(
     _.do,
-    _.bindS("releaseMap", () => releaseMap),
-    _.bindS("key", ({ releaseMap }) =>
+    _.bindS('releaseMap', () => releaseMap),
+    _.bindS('key', ({ releaseMap }) =>
       pipe(
         releaseMap,
         RelMap.addIfOpen((_) => I.unit()),
@@ -48,15 +48,13 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
             )
           ),
           I.apSecond(I.do),
-          I.bindS("r", () => I.ask<R>()),
-          I.bindS("inner", () => RelMap.make),
-          I.bindS("a", ({ inner, r }) => restore(I.giveAll_(newResource.io, [r, inner]))),
-          I.tap(({ inner }) =>
-            RelMap.replace(key, (exit) => releaseAll(exit, sequential)(inner))(releaseMap)
-          ),
+          I.bindS('r', () => I.ask<R>()),
+          I.bindS('inner', () => RelMap.make),
+          I.bindS('a', ({ inner, r }) => restore(I.giveAll_(newResource.io, [r, inner]))),
+          I.tap(({ inner }) => RelMap.replace(key, (exit) => releaseAll(exit, sequential)(inner))(releaseMap)),
           I.map(({ a }) => a[1])
         )
       )
     )
-  );
+  )
 }

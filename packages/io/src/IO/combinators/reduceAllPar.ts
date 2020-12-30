@@ -1,11 +1,11 @@
-import type { IO } from "../core";
-import type * as NA from "@principia/base/data/NonEmptyArray";
+import type { IO } from '../core'
+import type * as NA from '@principia/base/data/NonEmptyArray'
 
-import * as O from "@principia/base/data/Option";
-import { NoSuchElementException } from "@principia/base/util/GlobalExceptions";
+import * as O from '@principia/base/data/Option'
+import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
-import { map_ } from "../core";
-import { mergeAllPar_ } from "./mergeAllPar";
+import { map_ } from '../core'
+import { mergeAllPar_ } from './mergeAllPar'
 
 export function reduceAllPar_<R, E, A>(as: NA.NonEmptyArray<IO<R, E, A>>, f: (b: A, a: A) => A) {
   return map_(
@@ -19,13 +19,11 @@ export function reduceAllPar_<R, E, A>(as: NA.NonEmptyArray<IO<R, E, A>>, f: (b:
       )
     ),
     O.getOrElse(() => {
-      throw new NoSuchElementException("IO.reduceAllPar_");
+      throw new NoSuchElementException('IO.reduceAllPar_')
     })
-  );
+  )
 }
 
-export function reduceAllPar<A>(
-  f: (b: A, a: A) => A
-): <R, E>(as: NA.NonEmptyArray<IO<R, E, A>>) => IO<R, E, A> {
-  return (as) => reduceAllPar_(as, f);
+export function reduceAllPar<A>(f: (b: A, a: A) => A): <R, E>(as: NA.NonEmptyArray<IO<R, E, A>>) => IO<R, E, A> {
+  return (as) => reduceAllPar_(as, f)
 }

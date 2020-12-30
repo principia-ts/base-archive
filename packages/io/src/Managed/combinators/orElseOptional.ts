@@ -1,8 +1,8 @@
-import type { Managed } from "../core";
+import type { Managed } from '../core'
 
-import * as O from "@principia/base/data/Option";
+import * as O from '@principia/base/data/Option'
 
-import { catchAll_, fail } from "../core";
+import { catchAll_, fail } from '../core'
 
 export function orElseOptional<R, E, A, R1, E1, B>(
   ma: Managed<R, O.Option<E>, A>,
@@ -14,5 +14,5 @@ export function orElseOptional<R, E, A, R1, E1, B>(
       () => that(),
       (e) => fail(O.some<E | E1>(e))
     )
-  );
+  )
 }

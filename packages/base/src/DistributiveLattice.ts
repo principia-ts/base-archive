@@ -6,10 +6,10 @@
  *
  * @since 1.0.0
  */
-import type { Lattice } from "./Lattice";
-import type { Ord } from "./Ord";
+import type { Lattice } from './Lattice'
+import type { Ord } from './Ord'
 
-import { max_, min_ } from "./Ord";
+import { max_, min_ } from './Ord'
 
 /**
  * @category Type Classes
@@ -25,5 +25,5 @@ export function getMinMaxDistributiveLattice<A>(O: Ord<A>): DistributiveLattice<
   return {
     meet: min_(O),
     join: max_(O)
-  };
+  }
 }

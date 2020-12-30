@@ -1,8 +1,8 @@
-import type { Exit } from "../../Exit";
-import type { IO } from "../core";
+import type { Exit } from '../../Exit'
+import type { IO } from '../core'
 
-import { unit } from "../core";
-import { bracketExit_ } from "./bracketExit";
+import { unit } from '../core'
+import { bracketExit_ } from './bracketExit'
 
 /**
  * ```haskell
@@ -23,7 +23,7 @@ export function bracketOnError_<R, E, A, R1, E1, A1, R2, E2, A2>(
   use: (a: A) => IO<R1, E1, A1>,
   release: (a: A, e: Exit<E1, A1>) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E | E1 | E2, A1> {
-  return bracketExit_(acquire, use, (a, e) => (e._tag === "Success" ? unit() : release(a, e)));
+  return bracketExit_(acquire, use, (a, e) => (e._tag === 'Success' ? unit() : release(a, e)))
 }
 
 /**
@@ -43,5 +43,5 @@ export function bracketOnError<A, R1, E1, A1, R2, E2, A2>(
   use: (a: A) => IO<R1, E1, A1>,
   release: (a: A, e: Exit<E1, A1>) => IO<R2, E2, A2>
 ): <R, E>(acquire: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2 | E, A1> {
-  return (acquire) => bracketOnError_(acquire, use, release);
+  return (acquire) => bracketOnError_(acquire, use, release)
 }

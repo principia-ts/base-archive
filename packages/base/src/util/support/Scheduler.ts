@@ -1,60 +1,60 @@
-import { LinkedList } from "./LinkedList";
+import { LinkedList } from './LinkedList'
 
 export class Scheduler {
-  running = false;
+  running = false
 
-  array = new LinkedList<() => void>();
+  array = new LinkedList<() => void>()
 
   isRunning(): boolean {
-    return this.running;
+    return this.running
   }
 
   setImmediate(thunk: () => void) {
-    const handle = setImmediate(() => this.dispatch(thunk));
+    const handle = setImmediate(() => this.dispatch(thunk))
     return () => {
-      clearImmediate(handle);
-    };
+      clearImmediate(handle)
+    }
   }
 
   setImmediatePromise(thunk: () => void) {
-    let cancelled = false;
+    let cancelled = false
     Promise.resolve(thunk).then((t) => {
       if (!cancelled) {
-        this.dispatch(t);
+        this.dispatch(t)
       }
-    });
+    })
     return () => {
-      cancelled = true;
-    };
+      cancelled = true
+    }
   }
 
   dispatchFn =
-    typeof setImmediate === "function"
+    typeof setImmediate === 'function'
       ? (thunk: () => void) => this.setImmediate(thunk)
-      : (thunk: () => void) => this.setImmediatePromise(thunk);
+      : (thunk: () => void) => this.setImmediatePromise(thunk)
 
   run(): void {
-    this.running = true;
-    let next = this.array.deleteHead()?.value;
+    this.running = true
+    let next     = this.array.deleteHead()?.value
 
     while (next) {
-      next();
-      next = this.array.deleteHead()?.value;
+      next()
+      next = this.array.deleteHead()?.value
     }
-    this.running = false;
+    this.running = false
   }
 
   dispatch(thunk: () => void): void {
-    this.array.append(thunk);
+    this.array.append(thunk)
 
     if (!this.running) {
-      this.run();
+      this.run()
     }
   }
 
   dispatchLater(thunk: () => void): () => void {
-    return this.dispatchFn(thunk);
+    return this.dispatchFn(thunk)
   }
 }
 
-export const defaultScheduler: Scheduler = (() => new Scheduler())();
+export const defaultScheduler: Scheduler = (() => new Scheduler())()

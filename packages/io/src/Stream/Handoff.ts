@@ -1,22 +1,22 @@
-import type { Option } from "@principia/base/data/Option";
+import type { Option } from '@principia/base/data/Option'
 
-import { constVoid, pipe } from "@principia/base/data/Function";
-import { none, some } from "@principia/base/data/Option";
+import { constVoid, pipe } from '@principia/base/data/Function'
+import { none, some } from '@principia/base/data/Option'
+import { matchTag } from '@principia/base/util/matchers'
 
-import * as I from "../IO";
-import * as XR from "../IORef";
-import * as XP from "../Promise";
-import { matchTag } from "@principia/base/util/matchers";
+import * as I from '../IO'
+import * as XR from '../IORef'
+import * as XP from '../Promise'
 
-type State<A> = Empty | Full<A>;
+type State<A> = Empty | Full<A>
 
 class Empty {
-  readonly _tag = "Empty";
+  readonly _tag = 'Empty'
   constructor(readonly notifyConsumer: XP.Promise<never, void>) {}
 }
 
 class Full<A> {
-  readonly _tag = "Full";
+  readonly _tag = 'Full'
   constructor(readonly a: A, readonly notifyProducer: XP.Promise<never, void>) {}
 }
 
@@ -26,7 +26,7 @@ class Full<A> {
  * for an element to be available.
  */
 class Handoff<A> {
-  readonly _tag = "Handoff";
+  readonly _tag = 'Handoff'
   constructor(readonly ref: XR.URef<State<A>>) {}
 }
 
@@ -35,7 +35,7 @@ export function make<A>(): I.UIO<Handoff<A>> {
     XP.make<never, void>(),
     I.flatMap((p) => XR.make<State<A>>(new Empty(p))),
     I.map((ref) => new Handoff(ref))
-  );
+  )
 }
 
 export function offer<A>(a: A) {
@@ -48,10 +48,7 @@ export function offer<A>(a: A) {
           XR.modify<I.UIO<void>, State<A>>(
             matchTag({
               Empty: ({ notifyConsumer }) =>
-                [
-                  pipe(notifyConsumer, XP.succeed(constVoid()), I.apSecond(XP.await(p))),
-                  new Full(a, p)
-                ] as const,
+                [pipe(notifyConsumer, XP.succeed(constVoid()), I.apSecond(XP.await(p))), new Full(a, p)] as const,
               Full: (s) =>
                 [
                   pipe(
@@ -65,7 +62,7 @@ export function offer<A>(a: A) {
           I.flatten
         )
       )
-    );
+    )
 }
 
 export function take<A>(h: Handoff<A>): I.UIO<A> {
@@ -99,7 +96,7 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
         I.flatten
       )
     )
-  );
+  )
 }
 
 export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
@@ -125,5 +122,5 @@ export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
         I.flatten
       )
     )
-  );
+  )
 }

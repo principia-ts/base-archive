@@ -6,8 +6,8 @@
  *
  * @since 1.0.0
  */
-import type { JoinSemilattice } from "./JoinSemilattice";
-import type { MeetSemilattice } from "./MeetSemilattice";
+import type { JoinSemilattice } from './JoinSemilattice'
+import type { MeetSemilattice } from './MeetSemilattice'
 
 /**
  * @category Type Classes

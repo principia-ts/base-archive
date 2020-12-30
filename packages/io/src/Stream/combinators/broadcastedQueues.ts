@@ -1,13 +1,13 @@
-import type { Chunk } from "../../Chunk";
-import type * as Ex from "../../Exit";
-import type * as M from "../../Managed";
-import type * as Q from "../../Queue";
-import type { Stream } from "../core";
+import type { Chunk } from '../../Chunk'
+import type * as Ex from '../../Exit'
+import type * as M from '../../Managed'
+import type * as Q from '../../Queue'
+import type { Stream } from '../core'
 
-import * as O from "@principia/base/data/Option";
+import * as O from '@principia/base/data/Option'
 
-import * as I from "../../IO";
-import { distributedWith_ } from "./distributedWith";
+import * as I from '../../IO'
+import { distributedWith_ } from './distributedWith'
 
 /**
  * Converts the stream to a managed list of queues. Every value will be replicated to every queue with the
@@ -21,10 +21,8 @@ import { distributedWith_ } from "./distributedWith";
 export function broadcastedQueues(
   n: number,
   maximumLag: number
-): <R, E, O>(
-  stream: Stream<R, E, O>
-) => M.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
-  return (stream) => broadcastedQueues_(stream, n, maximumLag);
+): <R, E, O>(stream: Stream<R, E, O>) => M.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+  return (stream) => broadcastedQueues_(stream, n, maximumLag)
 }
 
 /**
@@ -41,6 +39,6 @@ export function broadcastedQueues_<R, E, O>(
   n: number,
   maximumLag: number
 ): M.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
-  const decider = I.succeed((_: number) => true);
-  return distributedWith_(stream, n, maximumLag, (_) => decider);
+  const decider = I.succeed((_: number) => true)
+  return distributedWith_(stream, n, maximumLag, (_) => decider)
 }

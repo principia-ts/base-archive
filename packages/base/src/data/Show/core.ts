@@ -5,16 +5,16 @@
  */
 
 export interface Show<A> {
-  readonly show: (a: A) => string;
+  readonly show: (a: A) => string
 }
 
-export const URI = "Show";
+export const URI = 'Show'
 
-export type URI = typeof URI;
+export type URI = typeof URI
 
-declare module "../../HKT" {
+declare module '../../HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Show<A>;
+    readonly [URI]: Show<A>
   }
 }
 
@@ -27,7 +27,7 @@ declare module "../../HKT" {
 export function makeShow<A>(show: (a: A) => string): Show<A> {
   return {
     show
-  };
+  }
 }
 
 /*
@@ -38,13 +38,13 @@ export function makeShow<A>(show: (a: A) => string): Show<A> {
 
 export const any: Show<any> = {
   show: (a) => JSON.stringify(a)
-};
+}
 
-export const string: Show<string> = any;
+export const string: Show<string> = any
 
-export const number: Show<number> = any;
+export const number: Show<number> = any
 
-export const boolean: Show<boolean> = any;
+export const boolean: Show<boolean> = any
 
 /*
  * -------------------------------------------
@@ -53,9 +53,9 @@ export const boolean: Show<boolean> = any;
  */
 
 export function contramap_<A, B>(fa: Show<A>, f: (b: B) => A): Show<B> {
-  return makeShow((b) => fa.show(f(b)));
+  return makeShow((b) => fa.show(f(b)))
 }
 
 export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
-  return (fa) => contramap_(fa, f);
+  return (fa) => contramap_(fa, f)
 }

@@ -1,17 +1,17 @@
-import type * as Alg from "../../algebra";
-import type { URI } from "./HKT";
+import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
-import * as E from "@principia/base/data/Either";
-import { pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
-import * as DE from "@principia/codec/DecodeError";
-import { error } from "@principia/codec/DecodeErrors";
-import * as D from "@principia/codec/Decoder";
-import * as FS from "@principia/free/FreeSemigroup";
+import * as E from '@principia/base/data/Either'
+import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
+import * as DE from '@principia/codec/DecodeError'
+import { error } from '@principia/codec/DecodeErrors'
+import * as D from '@principia/codec/Decoder'
+import * as FS from '@principia/free/FreeSemigroup'
 
-import { implementInterpreter } from "../../HKT";
-import { applyDecoderConfig } from "./HKT";
-import { extractInfo } from "./utils";
+import { implementInterpreter } from '../../HKT'
+import { applyDecoderConfig } from './HKT'
+import { extractInfo } from './utils'
 
 export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) => ({
   newtypeIso: (iso, a, config) => (env) =>
@@ -38,8 +38,8 @@ export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) =>
                 prism.getOption(a),
                 () =>
                   M.fail(
-                    error(a, "", {
-                      message: "newtype does not satisfy prism conditions",
+                    error(a, '', {
+                      message: 'newtype does not satisfy prism conditions',
                       ...extractInfo(config)
                     })
                   ),
@@ -51,4 +51,4 @@ export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) =>
         decoder
       )
     )
-}));
+}))

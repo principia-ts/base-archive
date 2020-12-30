@@ -1,12 +1,12 @@
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import { pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import * as C from "../../Cause/core";
-import { fail, halt } from "../core";
-import { catchAllCause_ } from "./catchAllCause";
+import * as C from '../../Cause/core'
+import { fail, halt } from '../core'
+import { catchAllCause_ } from './catchAllCause'
 
 /**
  * Takes some fiber failures and converts them into errors, using the
@@ -28,7 +28,7 @@ export function unrefineWith_<R, E, A, E1, E2>(
         C.find(pf),
         O.fold(() => pipe(cause, C.map(f), halt), fail)
       )
-  );
+  )
 }
 
 /**
@@ -41,5 +41,5 @@ export function unrefineWith_<R, E, A, E1, E2>(
 export function unrefineWith<E1>(
   fa: (u: unknown) => Option<E1>
 ): <E, E2>(f: (e: E) => E2) => <R, A>(ef: IO<R, E, A>) => IO<R, E1 | E2, A> {
-  return (f) => (ef) => unrefineWith_(ef, fa, f);
+  return (f) => (ef) => unrefineWith_(ef, fa, f)
 }

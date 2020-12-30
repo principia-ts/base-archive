@@ -1,19 +1,16 @@
-import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from "../HKT";
+import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from '../HKT'
 
-export const ObjectURI = "model/algebra/object";
+export const ObjectURI = 'model/algebra/object'
 
-export type ObjectURI = typeof ObjectURI;
+export type ObjectURI = typeof ObjectURI
 
-declare module "../HKT" {
+declare module '../HKT' {
   interface URItoAlgebra<IURI, Env> {
-    readonly [ObjectURI]: ObjectAlgebra<IURI, Env>;
+    readonly [ObjectURI]: ObjectAlgebra<IURI, Env>
   }
 }
 
-export type AnyMProps<F extends InterpreterURIS, Env> = Record<
-  string,
-  InterpretedKind<F, Env, any, any, any, any>
->;
+export type AnyMProps<F extends InterpreterURIS, Env> = Record<string, InterpretedKind<F, Env, any, any, any, any>>
 
 type InferStruct<
   F extends InterpreterURIS,
@@ -23,18 +20,18 @@ type InferStruct<
 > = Readonly<
   {
     [K in keyof T]: T[K] extends InterpretedKind<F, Env, infer S, infer R, infer E, infer A>
-      ? "S" extends P
+      ? 'S' extends P
         ? S
-        : "R" extends P
+        : 'R' extends P
         ? R
-        : "E" extends P
+        : 'E' extends P
         ? E
-        : "A" extends P
+        : 'A' extends P
         ? A
         : never
-      : never;
+      : never
   }
->;
+>
 
 export interface TypeConfig<Props> {}
 export interface PartialConfig<Props> {}
@@ -47,18 +44,11 @@ export interface ObjectAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
       Env,
       unknown,
       unknown,
-      InferStruct<F, Env, Props, "E">,
-      InferStruct<F, Env, Props, "A">,
+      InferStruct<F, Env, Props, 'E'>,
+      InferStruct<F, Env, Props, 'A'>,
       TypeConfig<Props>
     >
-  ) => InterpretedKind<
-    F,
-    Env,
-    unknown,
-    unknown,
-    InferStruct<F, Env, Props, "E">,
-    InferStruct<F, Env, Props, "A">
-  >;
+  ) => InterpretedKind<F, Env, unknown, unknown, InferStruct<F, Env, Props, 'E'>, InferStruct<F, Env, Props, 'A'>>
 
   readonly partial: <Props extends AnyMProps<F, Env>>(
     properties: Props,
@@ -66,8 +56,8 @@ export interface ObjectAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
       Env,
       unknown,
       unknown,
-      Partial<InferStruct<F, Env, Props, "E">>,
-      Partial<InferStruct<F, Env, Props, "A">>,
+      Partial<InferStruct<F, Env, Props, 'E'>>,
+      Partial<InferStruct<F, Env, Props, 'A'>>,
       PartialConfig<Props>
     >
   ) => InterpretedKind<
@@ -75,9 +65,9 @@ export interface ObjectAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     Env,
     unknown,
     unknown,
-    Partial<InferStruct<F, Env, Props, "E">>,
-    Partial<InferStruct<F, Env, Props, "A">>
-  >;
+    Partial<InferStruct<F, Env, Props, 'E'>>,
+    Partial<InferStruct<F, Env, Props, 'A'>>
+  >
 
   readonly both: <Props extends AnyMProps<F, Env>, PropsPartial extends AnyMProps<F, Env>>(
     required: Props,
@@ -86,8 +76,8 @@ export interface ObjectAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
       Env,
       unknown,
       unknown,
-      InferStruct<F, Env, Props, "E"> & Partial<InferStruct<F, Env, PropsPartial, "E">>,
-      InferStruct<F, Env, Props, "A"> & Partial<InferStruct<F, Env, PropsPartial, "A">>,
+      InferStruct<F, Env, Props, 'E'> & Partial<InferStruct<F, Env, PropsPartial, 'E'>>,
+      InferStruct<F, Env, Props, 'A'> & Partial<InferStruct<F, Env, PropsPartial, 'A'>>,
       BothConfig<Props, PropsPartial>
     >
   ) => InterpretedKind<
@@ -95,7 +85,7 @@ export interface ObjectAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     Env,
     unknown,
     unknown,
-    InferStruct<F, Env, Props, "E"> & Partial<InferStruct<F, Env, PropsPartial, "E">>,
-    InferStruct<F, Env, Props, "A"> & Partial<InferStruct<F, Env, PropsPartial, "A">>
-  >;
+    InferStruct<F, Env, Props, 'E'> & Partial<InferStruct<F, Env, PropsPartial, 'E'>>,
+    InferStruct<F, Env, Props, 'A'> & Partial<InferStruct<F, Env, PropsPartial, 'A'>>
+  >
 }

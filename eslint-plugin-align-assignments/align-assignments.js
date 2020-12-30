@@ -2,18 +2,18 @@
  * @fileoverview align-assignments
  * @author Lucas Florio
  */
-"use strict";
+'use strict';
 
 // ------------------------------------------------------------------------------
 // Rule Definition
 // ------------------------------------------------------------------------------
 
 const hasRequire   = /require\(/;
-const spaceMatcher = /(\s*)((?:\+|-|\*|\/|%|&|\^|\||<<|>>|\*\*|>>>)?=)/;
+const spaceMatcher = /(\s*)((?!=>)(?:\+|-|\*|\/|%|&|\^|\||<<|>>|\*\*|>>>)?=)/;
 
 module.exports = {
   meta: {
-    fixable: "code"
+    fixable: 'code'
   },
 
   create(context) {
@@ -25,32 +25,42 @@ module.exports = {
 
     return {
       VariableDeclaration(node) {
-        if(previousNode && previousNode?.type === "ExportNamedDeclaration") return;
+        if(previousNode && previousNode?.type === 'ExportNamedDeclaration') {
+          return;
+        }
         const source = sourceCode.getText(node);
-        if (requiresOnly && !hasRequire.test(source)) return;
+        if (requiresOnly && !hasRequire.test(source)) {
+          return;
+        }
 
         addNode(node, node);
       },
 
       ExpressionStatement(node) {
         // Does it contain an assignment expression?
-        const hasAssignmentExpression = node.expression.type === "AssignmentExpression";
-        if (!hasAssignmentExpression) return;
+        const hasAssignmentExpression = node.expression.type === 'AssignmentExpression';
+        if (!hasAssignmentExpression) {
+          return;
+        }
 
         addNode(node, node.expression);
       },
 
       ExportNamedDeclaration(node) {
-        const hasVariableDeclaration = node?.declaration?.type === "VariableDeclaration";
-        if(!hasVariableDeclaration) return;
+        const hasVariableDeclaration = node?.declaration?.type === 'VariableDeclaration';
+        if(!hasVariableDeclaration) {
+          return;
+        }
   
         addNode(node, node);
       },
       ClassProperty(node) {
-        if(node.value == null) return;
+        if(node.value == null) {
+          return;
+        }
         addNode(node, node);
       },
-      "Program:exit": checkAll
+      'Program:exit': checkAll
     };
 
     function checkAll() {
@@ -58,14 +68,13 @@ module.exports = {
     }
 
     function isAssignmentExpression(node) {
-      return node.type === "AssignmentExpression";
+      return node.type === 'AssignmentExpression';
     }
 
     function addNode(groupNode, node) {
       if (shouldStartNewGroup(groupNode)) {
         groups.push([node]);
-      }
-      else {
+      } else {
         getLast(groups).push(node);
       }
 
@@ -84,7 +93,9 @@ module.exports = {
       }
 
       // If previous node was a for and included the declarations, new group
-      if (previousNode.parent.type === "ForStatement" && previousNode.declarations) return true;
+      if (previousNode.parent.type === 'ForStatement' && previousNode.declarations) {
+        return true;
+      }
 
       // previous line was blank.
       const lineOfNode = sourceCode.getFirstToken(node).loc.start.line;
@@ -100,27 +111,27 @@ module.exports = {
             start: group[0].loc.start,
             end: getLast(group).loc.end
           },
-          message: "This group of assignments is not aligned",
+          message: 'This group of assignments is not aligned',
           fix: (fixer) => {
             const fixings = group.map(function (node) {
               const tokens          = sourceCode.getTokens(node);
               const firstToken      = tokens[0];
               const assignmentToken = tokens.find((token) =>
-                ["=", "+=", "-=", "*=", "/=", "%=", "&=", "^=", "|=", "<<=", ">>=", "**=", ">>>="].includes(token.value)
+                ['=', '+=', '-=', '*=', '/=', '%=', '&=', '^=', '|=', '<<=', '>>=', '**=', '>>>='].includes(token.value)
               );
               const line            = sourceCode.getText(node);
-              const lineIsAligned   = line.charAt(maxPos) === "=";
-              if (lineIsAligned || !assignmentToken || isMultiline(firstToken, assignmentToken))
+              const lineIsAligned   = line.charAt(maxPos) === '=';
+              if (lineIsAligned || !assignmentToken || isMultiline(firstToken, assignmentToken)) {
                 return fixer.replaceText(node, line);
-              else {
+              } else {
                 // source line may include spaces, we need to accomodate for that.
                 const spacePrefix    = firstToken.loc.start.column;
                 const startDelimiter = assignmentToken.loc.start.column - spacePrefix;
                 const endDelimiter   = assignmentToken.loc.end.column - spacePrefix;
-                const start          = line.slice(0, startDelimiter).replace(/\s+$/m, "");
-                const ending         = line.slice(endDelimiter).replace(/^\s+/m, "");
+                const start          = line.slice(0, startDelimiter).replace(/\s+$/m, '');
+                const ending         = line.slice(endDelimiter).replace(/^\s+/m, '');
                 const spacesRequired = maxPos - start.length - assignmentToken.value.length + 1;
-                const spaces         = " ".repeat(spacesRequired);
+                const spaces         = ' '.repeat(spacesRequired);
                 const fixedText      = `${start}${spaces}${assignmentToken.value} ${ending}`;
                 return fixer.replaceText(node, fixedText);
               }
@@ -147,11 +158,11 @@ module.exports = {
     function getPrefix(node) {
       const nodeBefore = isAssignmentExpression(node)
         ? node.left
-        : node?.type === "ExportNamedDeclaration"
-        ? node.declaration.declarations.find((dcl) => dcl.type === "VariableDeclarator").id
-        : node?.type === "ClassProperty"
-        ? node.key
-        : node.declarations.find((dcl) => dcl.type === "VariableDeclarator").id;
+        : node?.type === 'ExportNamedDeclaration'
+          ? node.declaration.declarations.find((dcl) => dcl.type === 'VariableDeclarator').id
+          : node?.type === 'ClassProperty'
+            ? node.key
+            : node.declarations.find((dcl) => dcl.type === 'VariableDeclarator').id;
 
       const prefix = nodeBefore.loc.end.column - nodeBefore.loc.start.column;
       return prefix;
@@ -162,15 +173,16 @@ module.exports = {
         .filter(assignmentOnFirstLine)
         .map((node) => sourceCode.getText(node))
         .every((source) => {
-          return source.charAt(maxPos) === "="
+          return source.charAt(maxPos) === '='
         });
     }
 
     function getMaxPos(nodes) {
-      return nodes
+      const maxPos = nodes
         .filter(assignmentOnFirstLine)
         .map(findAssigment)
         .reduce((last, current) => Math.max(last, current), []);
+      return maxPos;
     }
 
     function assignmentOnFirstLine(node) {
@@ -179,8 +191,8 @@ module.exports = {
         return onFirstLine;
       } else {
         const source = sourceCode.getText(node);
-        const lines  = source.split("\n");
-        return lines[0].includes("=");
+        const lines  = source.split('\n');
+        return lines[0].includes('=');
       }
     }
 

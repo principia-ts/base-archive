@@ -1,6 +1,6 @@
-import type { Semigroup } from "@principia/base/Semigroup";
+import type { Semigroup } from '@principia/base/Semigroup'
 
-import { makeSemigroup } from "@principia/base/Semigroup";
+import { makeSemigroup } from '@principia/base/Semigroup'
 
 /*
  * -------------------------------------------
@@ -9,17 +9,17 @@ import { makeSemigroup } from "@principia/base/Semigroup";
  */
 
 export interface Element<A> {
-  readonly _tag: "Element";
-  readonly value: A;
+  readonly _tag: 'Element'
+  readonly value: A
 }
 
 export interface Combine<A> {
-  readonly _tag: "Combine";
-  readonly left: FreeSemigroup<A>;
-  readonly right: FreeSemigroup<A>;
+  readonly _tag: 'Combine'
+  readonly left: FreeSemigroup<A>
+  readonly right: FreeSemigroup<A>
 }
 
-export type FreeSemigroup<A> = Element<A> | Combine<A>;
+export type FreeSemigroup<A> = Element<A> | Combine<A>
 
 /*
  * -------------------------------------------
@@ -33,10 +33,10 @@ export type FreeSemigroup<A> = Element<A> | Combine<A>;
  */
 export function combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): FreeSemigroup<A> {
   return {
-    _tag: "Combine",
+    _tag: 'Combine',
     left,
     right
-  };
+  }
 }
 
 /**
@@ -45,9 +45,9 @@ export function combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): Fre
  */
 export function element<A>(a: A): FreeSemigroup<A> {
   return {
-    _tag: "Element",
+    _tag: 'Element',
     value: a
-  };
+  }
 }
 
 /*
@@ -66,12 +66,12 @@ export function fold<A, R>(
 ): (f: FreeSemigroup<A>) => R {
   return (f) => {
     switch (f._tag) {
-      case "Element":
-        return onOf(f.value);
-      case "Combine":
-        return onConcat(f.left, f.right);
+      case 'Element':
+        return onOf(f.value)
+      case 'Combine':
+        return onConcat(f.left, f.right)
     }
-  };
+  }
 }
 
 /*
@@ -85,5 +85,5 @@ export function fold<A, R>(
  * @since 1.0.0
  */
 export function getSemigroup<A = never>(): Semigroup<FreeSemigroup<A>> {
-  return makeSemigroup(combine);
+  return makeSemigroup(combine)
 }

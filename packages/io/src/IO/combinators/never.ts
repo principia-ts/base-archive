@@ -1,7 +1,7 @@
-import type { UIO } from "../core";
+import type { UIO } from '../core'
 
-import { suspend, total } from "../core";
-import { asyncInterrupt } from "./interrupt";
+import { suspend, total } from '../core'
+import { asyncInterrupt } from './interrupt'
 
 /**
  * Returns a `IO` that will never produce anything. The moral equivalent of
@@ -11,9 +11,9 @@ export const never: UIO<never> = suspend(() =>
   asyncInterrupt<unknown, never, never>(() => {
     const interval = setInterval(() => {
       //
-    }, 60000);
+    }, 60000)
     return total(() => {
-      clearInterval(interval);
-    });
+      clearInterval(interval)
+    })
   })
-);
+)

@@ -1,9 +1,9 @@
-import type { IO } from "../../IO";
-import type { Stream } from "../core";
+import type { IO } from '../../IO'
+import type { Stream } from '../core'
 
-import * as I from "../../IO";
-import * as M from "../../Managed";
-import { reduceWhileManagedM_ } from "./reduceWhileManagedM";
+import * as I from '../../IO'
+import * as M from '../../Managed'
+import { reduceWhileManagedM_ } from './reduceWhileManagedM'
 
 /**
  * Reduces the elements in the stream to a value of type `S`.
@@ -18,7 +18,7 @@ export function reduceWhile_<R, E, O, S>(
   return M.use_(
     reduceWhileManagedM_(ma, s, cont, (s, o) => I.succeed(f(s, o))),
     I.succeed
-  );
+  )
 }
 
 /**
@@ -30,5 +30,5 @@ export function reduceWhile<O, S>(
   cont: (s: S) => boolean,
   f: (s: S, o: O) => S
 ): <R, E>(ma: Stream<R, E, O>) => IO<R, E, S> {
-  return (ma) => reduceWhile_(ma, s, cont, f);
+  return (ma) => reduceWhile_(ma, s, cont, f)
 }

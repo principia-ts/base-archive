@@ -3,11 +3,11 @@
  *
  * @since 1.0.0
  */
-import type { BoundedLattice } from "./BoundedLattice";
-import type { DistributiveLattice } from "./DistributiveLattice";
-import type { Ord } from "./Ord";
+import type { BoundedLattice } from './BoundedLattice'
+import type { DistributiveLattice } from './DistributiveLattice'
+import type { Ord } from './Ord'
 
-import { getMinMaxDistributiveLattice } from "./DistributiveLattice";
+import { getMinMaxDistributiveLattice } from './DistributiveLattice'
 
 /**
  * @category Type Classes
@@ -19,14 +19,12 @@ export interface BoundedDistributiveLattice<A> extends BoundedLattice<A>, Distri
  * @category Instances
  * @since 1.0.0
  */
-export function getMinMaxBoundedDistributiveLattice<A>(
-  O: Ord<A>
-): (min: A, max: A) => BoundedDistributiveLattice<A> {
-  const L = getMinMaxDistributiveLattice(O);
+export function getMinMaxBoundedDistributiveLattice<A>(O: Ord<A>): (min: A, max: A) => BoundedDistributiveLattice<A> {
+  const L = getMinMaxDistributiveLattice(O)
   return (min, max) => ({
     join: L.join,
     meet: L.meet,
     zero: min,
     one: max
-  });
+  })
 }

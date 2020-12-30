@@ -1,91 +1,91 @@
-import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from "../../HKT";
+import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 
-import * as S from "@principia/base/data/Show";
+import * as S from '@principia/base/data/Show'
 
-import { getApplyConfig } from "../../HKT";
+import { getApplyConfig } from '../../HKT'
 
-declare module "../../HKT" {
+declare module '../../HKT' {
   interface URItoInterpreted<Env, S, R, E, A> {
-    readonly [S.URI]: (_: Env) => S.Show<A>;
+    readonly [S.URI]: (_: Env) => S.Show<A>
   }
   interface URItoConfig<S, R, E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
 }
 
-declare module "../../algebra/primitives" {
+declare module '../../algebra/primitives' {
   interface NonEmptyArrayConfig<E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
   interface ArrayConfig<E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
 }
 
-declare module "../../algebra/object" {
+declare module '../../algebra/object' {
   interface TypeConfig<Props> {
-    readonly [S.URI]: InterfaceConfigKind<S.URI, Props>;
+    readonly [S.URI]: InterfaceConfigKind<S.URI, Props>
   }
   interface PartialConfig<Props> {
-    readonly [S.URI]: InterfaceConfigKind<S.URI, Props>;
+    readonly [S.URI]: InterfaceConfigKind<S.URI, Props>
   }
   interface BothConfig<Props, PropsPartial> {
     readonly [S.URI]: {
-      required: InterfaceConfigKind<S.URI, Props>;
-      optional: InterfaceConfigKind<S.URI, PropsPartial>;
-    };
+      required: InterfaceConfigKind<S.URI, Props>
+      optional: InterfaceConfigKind<S.URI, PropsPartial>
+    }
   }
 }
 
-declare module "../../algebra/newtype" {
+declare module '../../algebra/newtype' {
   interface IsoConfig<E, A, N> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
   interface PrismConfig<E, A, N> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
 }
 
-declare module "../../algebra/record" {
+declare module '../../algebra/record' {
   interface RecordConfig<E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
 }
 
-declare module "../../algebra/set" {
+declare module '../../algebra/set' {
   interface SetConfig<E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
 }
 
-declare module "../../algebra/sum" {
+declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
-    readonly [S.URI]: TaggedUnionConfigKind<S.URI, Types>;
+    readonly [S.URI]: TaggedUnionConfigKind<S.URI, Types>
   }
   interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
     readonly [S.URI]: {
-      readonly left: S.Show<EA>;
-      readonly right: S.Show<AA>;
-    };
+      readonly left: S.Show<EA>
+      readonly right: S.Show<AA>
+    }
   }
   interface OptionConfig<S, R, E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
 }
 
-declare module "../../algebra/nullable" {
+declare module '../../algebra/nullable' {
   interface NullableConfig<S, R, E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
   interface OptionalConfig<S, R, E, A> {
-    readonly [S.URI]: S.Show<A>;
+    readonly [S.URI]: S.Show<A>
   }
 }
 
-declare module "../../algebra/intersection" {
+declare module '../../algebra/intersection' {
   interface IntersectionConfig<S, R, E, A> {
-    readonly [S.URI]: IntersectionConfigKind<S.URI, S, R, E, A>;
+    readonly [S.URI]: IntersectionConfigKind<S.URI, S, R, E, A>
   }
 }
 
-export const applyShowConfig = getApplyConfig(S.URI);
+export const applyShowConfig = getApplyConfig(S.URI)

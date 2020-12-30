@@ -1,7 +1,7 @@
-import type { Managed } from "../core";
+import type { Managed } from '../core'
 
-import { fromEffect } from "../core";
-import { useNow } from "./use";
+import { fromEffect } from '../core'
+import { useNow } from './use'
 
 /**
  * Runs all the finalizers associated with this scope. This is useful to
@@ -10,5 +10,5 @@ import { useNow } from "./use";
  * outside its scope.
  */
 export function release<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, A> {
-  return fromEffect(useNow(ma));
+  return fromEffect(useNow(ma))
 }

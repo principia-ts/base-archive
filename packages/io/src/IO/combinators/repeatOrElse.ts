@@ -1,12 +1,12 @@
-import type { HasClock } from "../../Clock";
-import type * as S from "../../Schedule";
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { HasClock } from '../../Clock'
+import type * as S from '../../Schedule'
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import * as E from "@principia/base/data/Either";
+import * as E from '@principia/base/data/Either'
 
-import { map_ } from "../core";
-import { repeatOrElseEither_ } from "./repeatOrElseEither";
+import { map_ } from '../core'
+import { repeatOrElseEither_ } from './repeatOrElseEither'
 
 /**
  * ```haskell
@@ -30,5 +30,5 @@ export function repeatOrElse_<R, SR, R1, E, E1, A, B, C>(
   sc: S.Schedule<SR, A, B>,
   f: (_: E, __: Option<B>) => IO<R1, E1, C>
 ): IO<R & SR & R1 & HasClock, E1, C | B> {
-  return map_(repeatOrElseEither_(ef, sc, f), E.merge);
+  return map_(repeatOrElseEither_(ef, sc, f), E.merge)
 }

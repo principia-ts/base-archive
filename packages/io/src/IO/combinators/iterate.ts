@@ -1,6 +1,6 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { flatMap_, pure } from "../core";
+import { flatMap_, pure } from '../core'
 
 /**
  * Iterates with the specified effectual function. The moral equivalent of:
@@ -15,12 +15,8 @@ import { flatMap_, pure } from "../core";
  * return s;
  * ```
  */
-export const iterate_ = <R, E, A>(
-  initial: A,
-  cont: (a: A) => boolean,
-  body: (a: A) => IO<R, E, A>
-): IO<R, E, A> =>
-  cont(initial) ? flatMap_(body(initial), (a) => iterate(a)(cont)(body)) : pure(initial);
+export const iterate_ = <R, E, A>(initial: A, cont: (a: A) => boolean, body: (a: A) => IO<R, E, A>): IO<R, E, A> =>
+  cont(initial) ? flatMap_(body(initial), (a) => iterate(a)(cont)(body)) : pure(initial)
 
 /**
  * Iterates with the specified effectual function. The moral equivalent of:
@@ -37,4 +33,4 @@ export const iterate_ = <R, E, A>(
  */
 export const iterate = <A>(initial: A) => (cont: (b: A) => boolean) => <R, E>(
   body: (b: A) => IO<R, E, A>
-): IO<R, E, A> => iterate_(initial, cont, body);
+): IO<R, E, A> => iterate_(initial, cont, body)

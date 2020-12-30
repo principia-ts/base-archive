@@ -1,8 +1,8 @@
-import type { Stream } from "../core";
+import type { Stream } from '../core'
 
-import { tuple } from "@principia/base/data/Function";
+import { tuple } from '@principia/base/data/Function'
 
-import { chain_, map_ } from "../core";
+import { chain_, map_ } from '../core'
 
 /**
  * Composes this stream with the specified stream to create a cartesian product of elements
@@ -16,7 +16,7 @@ export function crossWith_<R, E, O, R1, E1, O1, C>(
   that: Stream<R1, E1, O1>,
   f: (o: O, o1: O1) => C
 ): Stream<R & R1, E | E1, C> {
-  return chain_(stream, (o) => map_(that, (o1) => f(o, o1)));
+  return chain_(stream, (o) => map_(that, (o1) => f(o, o1)))
 }
 
 /**
@@ -30,7 +30,7 @@ export function crossWith<O, R1, E1, O1, C>(
   that: Stream<R1, E1, O1>,
   f: (o: O, o1: O1) => C
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E | E1, C> {
-  return (stream) => crossWith_(stream, that, f);
+  return (stream) => crossWith_(stream, that, f)
 }
 
 /**
@@ -43,7 +43,7 @@ export function cross_<R, E, O, R1, E1, O1>(
   stream: Stream<R, E, O>,
   that: Stream<R1, E1, O1>
 ): Stream<R & R1, E | E1, readonly [O, O1]> {
-  return crossWith_(stream, that, tuple);
+  return crossWith_(stream, that, tuple)
 }
 
 /**
@@ -55,7 +55,7 @@ export function cross_<R, E, O, R1, E1, O1>(
 export function cross<R1, E1, O1>(
   that: Stream<R1, E1, O1>
 ): <R, E, O>(stream: Stream<R, E, O>) => Stream<R & R1, E | E1, readonly [O, O1]> {
-  return (stream) => cross_(stream, that);
+  return (stream) => cross_(stream, that)
 }
 
 /**
@@ -69,7 +69,7 @@ export function crossFirst_<R, E, O, R1, E1, O1>(
   stream: Stream<R, E, O>,
   that: Stream<R1, E1, O1>
 ): Stream<R & R1, E | E1, O> {
-  return crossWith_(stream, that, (o, _) => o);
+  return crossWith_(stream, that, (o, _) => o)
 }
 
 /**
@@ -82,7 +82,7 @@ export function crossFirst_<R, E, O, R1, E1, O1>(
 export function crossFirst<R1, E1, O1>(
   that: Stream<R1, E1, O1>
 ): <R, E, O>(stream: Stream<R, E, O>) => Stream<R & R1, E | E1, O> {
-  return (stream) => crossFirst_(stream, that);
+  return (stream) => crossFirst_(stream, that)
 }
 
 /**
@@ -96,7 +96,7 @@ export function crossSecond_<R, E, O, R1, E1, O1>(
   stream: Stream<R, E, O>,
   that: Stream<R1, E1, O1>
 ): Stream<R & R1, E | E1, O1> {
-  return crossWith_(stream, that, (_, o1) => o1);
+  return crossWith_(stream, that, (_, o1) => o1)
 }
 
 /**
@@ -109,5 +109,5 @@ export function crossSecond_<R, E, O, R1, E1, O1>(
 export function crossSecond<R1, E1, O1>(
   that: Stream<R1, E1, O1>
 ): <R, E, O>(stream: Stream<R, E, O>) => Stream<R & R1, E | E1, O1> {
-  return (stream) => crossSecond_(stream, that);
+  return (stream) => crossSecond_(stream, that)
 }

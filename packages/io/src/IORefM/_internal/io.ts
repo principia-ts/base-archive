@@ -1,2 +1,2 @@
-export * from "../../IO/combinators/fromEither";
-export * from "../../IO/core";
+export * from '../../IO/combinators/fromEither'
+export * from '../../IO/core'

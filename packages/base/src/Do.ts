@@ -1,15 +1,15 @@
-import type { Monad } from "./Monad";
+import type { Monad } from './Monad'
 
-import { _bind, _bindTo, flow, pipe } from "./data/Function";
-import * as HKT from "./HKT";
+import { _bind, _bindTo, flow, pipe } from './data/Function'
+import * as HKT from './HKT'
 
 export interface Do<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C> {
-  readonly bindS: BindSFn<F, C>;
-  readonly letS: LetSFn<F, C>;
-  readonly bindToS: BindToSFn<F, C>;
+  readonly bindS: BindSFn<F, C>
+  readonly letS: LetSFn<F, C>
+  readonly bindToS: BindToSFn<F, C>
 }
 
-export function deriveDo<F extends HKT.URIS, C = HKT.Auto>(M: Monad<F, C>): Do<F, C>;
+export function deriveDo<F extends HKT.URIS, C = HKT.Auto>(M: Monad<F, C>): Do<F, C>
 export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
   const bindS: BindSFn<HKT.UHKT<F>> = (name, f) =>
     flow(
@@ -20,7 +20,7 @@ export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
         )
       ),
       M.flatten
-    );
+    )
   return HKT.instance<Do<HKT.UHKT<F>>>({
     ...M,
     bindS,
@@ -30,7 +30,7 @@ export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
         flow(f, (b) => M.map_(M.unit(), () => b))
       ),
     bindToS: (name) => (ma) => M.map_(ma, _bindTo(name))
-  });
+  })
 }
 
 export interface BindSFn<F extends HKT.URIS, C = HKT.Auto> {
@@ -41,64 +41,41 @@ export interface BindSFn<F extends HKT.URIS, C = HKT.Auto> {
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, "N", N1, N>,
-      HKT.Intro<C, "K", K1, K>,
-      HKT.Intro<C, "Q", Q1, Q>,
-      HKT.Intro<C, "W", W1, W>,
-      HKT.Intro<C, "X", X1, X>,
-      HKT.Intro<C, "I", I1, I>,
-      HKT.Intro<C, "S", S1, S>,
-      HKT.Intro<C, "R", R1, R>,
-      HKT.Intro<C, "E", E1, E>,
+      HKT.Intro<C, 'N', N1, N>,
+      HKT.Intro<C, 'K', K1, K>,
+      HKT.Intro<C, 'Q', Q1, Q>,
+      HKT.Intro<C, 'W', W1, W>,
+      HKT.Intro<C, 'X', X1, X>,
+      HKT.Intro<C, 'I', I1, I>,
+      HKT.Intro<C, 'S', S1, S>,
+      HKT.Intro<C, 'R', R1, R>,
+      HKT.Intro<C, 'E', E1, E>,
       A
     >
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, "N", [N1, N]>,
-    HKT.Mix<C, "K", [K1, K]>,
-    HKT.Mix<C, "Q", [Q1, Q]>,
-    HKT.Mix<C, "W", [W1, W]>,
-    HKT.Mix<C, "X", [X1, X]>,
-    HKT.Mix<C, "I", [I1, I]>,
-    HKT.Mix<C, "S", [S1, S]>,
-    HKT.Mix<C, "R", [R1, R]>,
-    HKT.Mix<C, "E", [E1, E]>,
+    HKT.Mix<C, 'N', [N1, N]>,
+    HKT.Mix<C, 'K', [K1, K]>,
+    HKT.Mix<C, 'Q', [Q1, Q]>,
+    HKT.Mix<C, 'W', [W1, W]>,
+    HKT.Mix<C, 'X', [X1, X]>,
+    HKT.Mix<C, 'I', [I1, I]>,
+    HKT.Mix<C, 'S', [S1, S]>,
+    HKT.Mix<C, 'R', [R1, R]>,
+    HKT.Mix<C, 'E', [E1, E]>,
     { [K in keyof A | BN]: K extends keyof A ? A[K] : A1 }
-  >;
+  >
 }
 
 export interface LetSFn<F extends HKT.URIS, C = HKT.Auto> {
-  <BN extends string, A1, A>(name: Exclude<BN, keyof A>, f: (a: A) => A1): <
-    N extends string,
-    K,
-    Q,
-    W,
-    X,
-    I,
-    S,
-    R,
-    E
-  >(
+  <BN extends string, A1, A>(name: Exclude<BN, keyof A>, f: (a: A) => A1): <N extends string, K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<
-    F,
-    C,
-    N,
-    K,
-    Q,
-    W,
-    X,
-    I,
-    S,
-    R,
-    E,
-    { [K in keyof A | BN]: K extends keyof A ? A[K] : A1 }
-  >;
+  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in keyof A | BN]: K extends keyof A ? A[K] : A1 }>
 }
 
 export interface BindToSFn<F extends HKT.URIS, C = HKT.Auto> {
   <BN extends string>(name: BN): <N extends string, K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>;
+  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
 }

@@ -1,9 +1,9 @@
-import type { Managed } from "../core";
+import type { Managed } from '../core'
 
-import * as Iter from "@principia/base/data/Iterable";
+import * as Iter from '@principia/base/data/Iterable'
 
-import { succeed } from "../core";
-import { zipWithPar_ } from "./apply-par";
+import { succeed } from '../core'
+import { zipWithPar_ } from './apply-par'
 
 /**
  * Merges an `Iterable<Managed>` to a single `Managed`, working in parallel.
@@ -17,7 +17,7 @@ export function mergeAllPar_<R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): Managed<R, E, B> {
-  return Iter.foldLeft_(mas, succeed(b) as Managed<R, E, B>, (b, a) => zipWithPar_(b, a, f));
+  return Iter.foldLeft_(mas, succeed(b) as Managed<R, E, B>, (b, a) => zipWithPar_(b, a, f))
 }
 
 /**
@@ -31,5 +31,5 @@ export function mergeAllPar<A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, B> {
-  return (mas) => mergeAllPar_(mas, b, f);
+  return (mas) => mergeAllPar_(mas, b, f)
 }

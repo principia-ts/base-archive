@@ -1,8 +1,8 @@
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import { catchAll_ } from "../core";
-import { unrefineWith_ } from "./unrefineWith";
+import { catchAll_ } from '../core'
+import { unrefineWith_ } from './unrefineWith'
 
 /**
  * Recovers from some or all of the defects with provided partial function.
@@ -19,7 +19,7 @@ export function catchSomeDefect_<R, E, A, R1, E1, A1>(
   fa: IO<R, E, A>,
   f: (_: unknown) => Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
-  return catchAll_(unrefineWith_(fa, f, fail), (s): IO<R1, E | E1, A1> => s);
+  return catchAll_(unrefineWith_(fa, f, fail), (s): IO<R1, E | E1, A1> => s)
 }
 
 /**
@@ -36,5 +36,5 @@ export function catchSomeDefect_<R, E, A, R1, E1, A1>(
 export function catchSomeDefect<R1, E1, A1>(
   f: (_: unknown) => Option<IO<R1, E1, A1>>
 ): <R, E, A>(fa: IO<R, E, A>) => IO<R & R1, E1 | E, A1 | A> {
-  return (fa) => catchSomeDefect_(fa, f);
+  return (fa) => catchSomeDefect_(fa, f)
 }

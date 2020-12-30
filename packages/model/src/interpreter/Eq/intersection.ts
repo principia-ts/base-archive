@@ -1,11 +1,11 @@
-import type * as Alg from "../../algebra";
+import type * as Alg from '../../algebra'
 
-import * as A from "@principia/base/data/Array";
-import * as Eq from "@principia/base/data/Eq";
-import { pipe } from "@principia/base/data/Function";
+import * as A from '@principia/base/data/Array'
+import * as Eq from '@principia/base/data/Eq'
+import { pipe } from '@principia/base/data/Function'
 
-import { implementInterpreter } from "../../HKT";
-import { applyEqConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { applyEqConfig } from './HKT'
 
 export const IntersectionEq = implementInterpreter<Eq.URI, Alg.IntersectionURI>()((_) => ({
   intersection: (types, config) => (env) =>
@@ -19,4 +19,4 @@ export const IntersectionEq = implementInterpreter<Eq.URI, Alg.IntersectionURI>(
           eqs as any
         )
     )
-}));
+}))

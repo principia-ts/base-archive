@@ -1,31 +1,31 @@
-import type { ResolverF, ScalarFunctions } from "../schema";
+import type { ResolverF, ScalarFunctions } from '../schema'
 
-import * as E from "@principia/base/data/Either";
-import { identity, pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
-import { Request, Response } from "@principia/http";
-import * as T from "@principia/io/IO";
-import * as Sy from "@principia/io/Sync";
-import { Context } from "@principia/koa";
-import { GraphQLScalarType } from "graphql";
+import * as E from '@principia/base/data/Either'
+import { identity, pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
+import { Request, Response } from '@principia/http'
+import * as T from '@principia/io/IO'
+import * as Sy from '@principia/io/Sync'
+import { Context } from '@principia/koa'
+import { GraphQLScalarType } from 'graphql'
 
-const entries = <A>(_: A): ReadonlyArray<[keyof A, A[keyof A]]> => Object.entries(_) as any;
+const entries = <A>(_: A): ReadonlyArray<[keyof A, A[keyof A]]> => Object.entries(_) as any
 
 export function transformResolvers<Ctx>(
   res: Record<string, Record<string, ResolverF<any, any, Ctx, any, any, any>>>,
   env: any
 ) {
-  const toBind = {};
+  const toBind = {}
   for (const [typeName, fields] of entries(res)) {
-    const resolvers = {};
+    const resolvers = {}
     for (const [fieldName, resolver] of entries(fields)) {
-      if (typeof resolver === "function") {
+      if (typeof resolver === 'function') {
         (resolvers as any)[fieldName] = (root: any, args: any, ctx: any) => {
           const context = {
             engine: ctx,
             res: new Response(ctx.res),
             req: new Request(ctx.req)
-          };
+          }
           return pipe(
             (resolver as any)(O.fromNullable(root), args || {}, context),
             T.give({
@@ -33,8 +33,8 @@ export function transformResolvers<Ctx>(
             }),
             T.giveService(Context)(context),
             T.runPromise
-          );
-        };
+          )
+        }
       } else {
         (resolvers as any)[fieldName] = {
           subscribe: (root: any, args: any, ctx: any) => {
@@ -42,7 +42,7 @@ export function transformResolvers<Ctx>(
               engine: ctx,
               res: new Response(ctx.res),
               req: new Request(ctx.req)
-            };
+            }
             return pipe(
               (resolver as any).subscribe(O.fromNullable(root), args || {}, context),
               T.give({
@@ -50,9 +50,9 @@ export function transformResolvers<Ctx>(
               }),
               T.giveService(Context)(context),
               T.runPromise
-            );
+            )
           }
-        };
+        }
 
         if ((resolver as any).resolve) {
           (resolvers as any)[fieldName].resolve = (x: any, _: any, ctx: any) => {
@@ -60,7 +60,7 @@ export function transformResolvers<Ctx>(
               engine: ctx,
               res: new Response(ctx.res),
               req: new Request(ctx.req)
-            };
+            }
             return pipe(
               (resolver as any).resolve(x, context),
               T.give({
@@ -68,21 +68,21 @@ export function transformResolvers<Ctx>(
               }),
               T.giveService(Context)(context),
               T.runPromise
-            );
-          };
+            )
+          }
         }
       }
     }
-    (toBind as any)[typeName] = resolvers;
+    (toBind as any)[typeName] = resolvers
   }
-  return toBind;
+  return toBind
 }
 
 export function transformScalarResolvers(
-  scalars: Record<string, { name: string; functions: ScalarFunctions<any, any> }>,
+  scalars: Record<string, { name: string, functions: ScalarFunctions<any, any> }>,
   env: any
 ) {
-  const toBind = {};
+  const toBind = {}
   for (const [typeName, resolver] of entries(scalars)) {
     (toBind as any)[typeName] = new GraphQLScalarType({
       name: resolver.name,
@@ -92,7 +92,7 @@ export function transformScalarResolvers(
           Sy.giveAll(env),
           Sy.unsafeRunEither,
           E.fold((e) => {
-            throw e;
+            throw e
           }, identity)
         ),
       parseValue: (u) =>
@@ -101,7 +101,7 @@ export function transformScalarResolvers(
           Sy.giveAll(env),
           Sy.unsafeRunEither,
           E.fold((e) => {
-            throw e;
+            throw e
           }, identity)
         ),
       serialize: (u) =>
@@ -110,10 +110,10 @@ export function transformScalarResolvers(
           Sy.giveAll(env),
           Sy.unsafeRunEither,
           E.fold((e) => {
-            throw e;
+            throw e
           }, identity)
         )
-    });
+    })
   }
-  return toBind;
+  return toBind
 }

@@ -10,7 +10,7 @@
  *
  * @since 1.0.0
  */
-import type { HeytingAlgebra } from "./HeytingAlgebra";
+import type { HeytingAlgebra } from './HeytingAlgebra'
 
 /**
  * @category Type Classes
@@ -29,7 +29,7 @@ export const booleanAlgebraBoolean: BooleanAlgebra<boolean> = {
   one: true,
   implies: (x, y) => !x || y,
   not: (x) => !x
-};
+}
 
 /**
  * @category Instances
@@ -42,15 +42,13 @@ export const booleanAlgebraVoid: BooleanAlgebra<void> = {
   one: undefined,
   implies: () => undefined,
   not: () => undefined
-};
+}
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export function getFunctionBooleanAlgebra<B>(
-  B: BooleanAlgebra<B>
-): <A = never>() => BooleanAlgebra<(a: A) => B> {
+export function getFunctionBooleanAlgebra<B>(B: BooleanAlgebra<B>): <A = never>() => BooleanAlgebra<(a: A) => B> {
   return () => ({
     meet: (x, y) => (a) => B.meet(x(a), y(a)),
     join: (x, y) => (a) => B.join(x(a), y(a)),
@@ -58,7 +56,7 @@ export function getFunctionBooleanAlgebra<B>(
     one: () => B.one,
     implies: (x, y) => (a) => B.implies(x(a), y(a)),
     not: (x) => (a) => B.not(x(a))
-  });
+  })
 }
 
 /**
@@ -75,5 +73,5 @@ export function getDualBooleanAlgebra<A>(B: BooleanAlgebra<A>): BooleanAlgebra<A
     one: B.zero,
     implies: (x, y) => B.join(B.not(x), y),
     not: B.not
-  };
+  }
 }

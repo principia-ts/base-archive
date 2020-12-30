@@ -1,3 +1,3 @@
 // codegen:start { preset: barrel }
-export * from "./HttpRouteException";
+export * from './HttpRouteException'
 // codegen:end

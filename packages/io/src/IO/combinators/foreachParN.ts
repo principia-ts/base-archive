@@ -1,13 +1,13 @@
-import * as A from "@principia/base/data/Array";
-import { pipe, tuple } from "@principia/base/data/Function";
+import * as A from '@principia/base/data/Array'
+import { pipe, tuple } from '@principia/base/data/Function'
 
-import { interrupt as interruptFiber } from "../../Fiber/combinators/interrupt";
-import * as XP from "../../Promise";
-import * as Q from "../../Queue";
-import * as I from "../core";
-import { bracket } from "./bracket";
-import { collectAll } from "./collectAll";
-import { forever } from "./forever";
+import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
+import * as XP from '../../Promise'
+import * as Q from '../../Queue'
+import * as I from '../core'
+import { bracket } from './bracket'
+import { collectAll } from './collectAll'
+import { forever } from './forever'
 
 export function foreachParN_(n: number) {
   return <A, R, E, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> =>
@@ -17,7 +17,7 @@ export function foreachParN_(n: number) {
         (q) =>
           pipe(
             I.do,
-            I.bindS("pairs", () =>
+            I.bindS('pairs', () =>
               pipe(
                 as,
                 I.foreach((a) =>
@@ -29,7 +29,7 @@ export function foreachParN_(n: number) {
               )
             ),
             I.tap(({ pairs }) => pipe(pairs, I.foreachUnit(q.offer), I.fork)),
-            I.bindS("fibers", ({ pairs }) =>
+            I.bindS('fibers', ({ pairs }) =>
               pipe(
                 A.makeBy(n, () =>
                   pipe(
@@ -54,7 +54,7 @@ export function foreachParN_(n: number) {
                 collectAll
               )
             ),
-            I.bindS("res", ({ fibers, pairs }) =>
+            I.bindS('res', ({ fibers, pairs }) =>
               pipe(
                 pairs,
                 I.foreach(([p]) => XP.await(p)),
@@ -67,11 +67,11 @@ export function foreachParN_(n: number) {
           ),
         (q) => q.shutdown
       )
-    );
+    )
 }
 
 export function foreachParN(
   n: number
 ): <R, E, A, B>(f: (a: A) => I.IO<R, E, B>) => (as: Iterable<A>) => I.IO<R, E, readonly B[]> {
-  return (f) => (as) => foreachParN_(n)(as, f);
+  return (f) => (as) => foreachParN_(n)(as, f)
 }

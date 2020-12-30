@@ -1,12 +1,12 @@
-import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from "../HKT";
+import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
 
-export const RecursiveURI = "model/algebra/recursive";
+export const RecursiveURI = 'model/algebra/recursive'
 
-export type RecursiveURI = typeof RecursiveURI;
+export type RecursiveURI = typeof RecursiveURI
 
-declare module "../HKT" {
+declare module '../HKT' {
   interface URItoAlgebra<IURI, Env> {
-    readonly [RecursiveURI]: RecursiveAlgebra<IURI, Env>;
+    readonly [RecursiveURI]: RecursiveAlgebra<IURI, Env>
   }
 }
 
@@ -17,5 +17,5 @@ export interface RecursiveAlgebra<F extends InterpreterURIS, Env extends AnyEnv>
     id: string,
     a: (x: InterpretedKind<F, Env, S, R, E, A>) => InterpretedKind<F, Env, S, R, E, A>,
     config?: Config<Env, S, R, E, A, RecursiveConfig<S, R, E, A>>
-  ) => InterpretedKind<F, Env, S, R, E, A>;
+  ) => InterpretedKind<F, Env, S, R, E, A>
 }
