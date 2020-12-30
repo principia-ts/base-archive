@@ -1,7 +1,7 @@
-import type { FIO } from "../../IO/core";
-import type { Promise } from "../model";
+import type { FIO } from '../../IO/core'
+import type { Promise } from '../model'
 
-import { to } from "./to";
+import { to } from './to'
 
 /**
  * Completes the promise with the result of the specified effect. If the
@@ -11,5 +11,5 @@ import { to } from "./to";
  * that if you do not need to memoize the result of the specified effect.
  */
 export function complete<E, A>(e: FIO<E, A>) {
-  return (promise: Promise<E, A>) => to(promise)(e);
+  return (promise: Promise<E, A>) => to(promise)(e)
 }

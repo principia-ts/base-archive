@@ -1,20 +1,20 @@
-import type { Assertion } from "./Assertion";
+import type { Assertion } from './Assertion'
 
-import * as BA from "../FreeBooleanAlgebra";
-import { AssertionValue } from "./AssertionValue";
+import * as BA from '../FreeBooleanAlgebra'
+import { AssertionValue } from './AssertionValue'
 
 export interface AssertionData<A> {
-  readonly _tag: "AssertionData";
-  readonly value: A;
-  readonly assertion: Assertion<A>;
+  readonly _tag: 'AssertionData'
+  readonly value: A
+  readonly assertion: Assertion<A>
 }
 
 export function AssertionData<A>(assertion: Assertion<A>, value: A): AssertionData<A> {
   return {
-    _tag: "AssertionData",
+    _tag: 'AssertionData',
     assertion,
     value
-  };
+  }
 }
 
 export function asSuccess<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<AssertionValue<A>> {
@@ -24,7 +24,7 @@ export function asSuccess<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<Asserti
       () => _.assertion,
       () => asSuccess(_)
     )
-  );
+  )
 }
 
 export function asFailure<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<AssertionValue<A>> {
@@ -34,5 +34,5 @@ export function asFailure<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<Asserti
       () => _.assertion,
       () => asFailure(_)
     )
-  );
+  )
 }

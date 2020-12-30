@@ -1,30 +1,25 @@
-import type { FIO, UIO } from "../core";
+import type { FIO, UIO } from '../core'
 
-import { flow } from "@principia/base/data/Function";
+import { flow } from '@principia/base/data/Function'
 
-import { async, die, fail, pure } from "../core";
+import { async, die, fail, pure } from '../core'
 
 /**
  * Create an IO that when executed will construct `promise` and wait for its result,
  * errors will be handled using `onReject`
  */
-export function fromPromiseWith_<E, A>(
-  promise: () => Promise<A>,
-  onReject: (reason: unknown) => E
-): FIO<E, A> {
+export function fromPromiseWith_<E, A>(promise: () => Promise<A>, onReject: (reason: unknown) => E): FIO<E, A> {
   return async((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(onReject, fail, resolve));
-  });
+    promise().then(flow(pure, resolve)).catch(flow(onReject, fail, resolve))
+  })
 }
 
 /**
  * Create an IO that when executed will construct `promise` and wait for its result,
  * errors will be handled using `onReject`
  */
-export function fromPromiseWith<E>(
-  onReject: (reason: unknown) => E
-): <A>(promise: () => Promise<A>) => FIO<E, A> {
-  return (promise) => fromPromiseWith_(promise, onReject);
+export function fromPromiseWith<E>(onReject: (reason: unknown) => E): <A>(promise: () => Promise<A>) => FIO<E, A> {
+  return (promise) => fromPromiseWith_(promise, onReject)
 }
 
 /**
@@ -33,8 +28,8 @@ export function fromPromiseWith<E>(
  */
 export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
   return async((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(fail, resolve));
-  });
+    promise().then(flow(pure, resolve)).catch(flow(fail, resolve))
+  })
 }
 
 /**
@@ -42,6 +37,6 @@ export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
  */
 export function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
   return async((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(die, resolve));
-  });
+    promise().then(flow(pure, resolve)).catch(flow(die, resolve))
+  })
 }

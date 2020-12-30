@@ -9,18 +9,18 @@ import type {
   RefinementURI,
   SetURI,
   SumURI
-} from "../algebra";
-import type { AnyEnv, InferredAlgebra, InferredProgram } from "../HKT";
+} from '../algebra'
+import type { AnyEnv, InferredAlgebra, InferredProgram } from '../HKT'
 
-export const PURI = "model/NoUnion";
+export const PURI = 'model/NoUnion'
 
-export type PURI = typeof PURI;
+export type PURI = typeof PURI
 
 export interface NoUnion<Env extends AnyEnv> extends InferredAlgebra<PURI, Env> {}
 
 export interface P<Env extends AnyEnv, S, R, E, A> extends InferredProgram<PURI, Env, S, R, E, A> {}
 
-declare module "../HKT" {
+declare module '../HKT' {
   interface URItoAURIS {
     readonly [PURI]:
       | PrimitivesURI
@@ -32,12 +32,12 @@ declare module "../HKT" {
       | SetURI
       | SumURI
       | NullableURI
-      | IntersectionURI;
+      | IntersectionURI
   }
   interface URItoProgramAlgebra<Env> {
-    readonly [PURI]: NoUnion<Env>;
+    readonly [PURI]: NoUnion<Env>
   }
   interface URItoProgram<Env, S, R, E, A> {
-    readonly [PURI]: P<Env, S, R, E, A>;
+    readonly [PURI]: P<Env, S, R, E, A>
   }
 }

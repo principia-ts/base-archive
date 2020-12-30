@@ -1,9 +1,9 @@
-import type { IO } from "../../IO";
-import type { Stream } from "../core";
+import type { IO } from '../../IO'
+import type { Stream } from '../core'
 
-import * as I from "../../IO";
-import * as M from "../../Managed";
-import { reduceWhileManagedM_ } from "./reduceWhileManagedM";
+import * as I from '../../IO'
+import * as M from '../../Managed'
+import { reduceWhileManagedM_ } from './reduceWhileManagedM'
 
 /**
  * Executes an effectful fold over the stream of values.
@@ -15,7 +15,7 @@ export function reduceWhileM_<R, E, O, R1, E1, S>(
   cont: (s: S) => boolean,
   f: (s: S, o: O) => IO<R1, E1, S>
 ): IO<R & R1, E | E1, S> {
-  return M.use_(reduceWhileManagedM_(ma, s, cont, f), I.succeed);
+  return M.use_(reduceWhileManagedM_(ma, s, cont, f), I.succeed)
 }
 
 /**
@@ -27,5 +27,5 @@ export function reduceWhileM<O, R1, E1, S>(
   cont: (s: S) => boolean,
   f: (s: S, o: O) => IO<R1, E1, S>
 ): <R, E>(ma: Stream<R, E, O>) => IO<R & R1, E | E1, S> {
-  return (ma) => reduceWhileM_(ma, s, cont, f);
+  return (ma) => reduceWhileM_(ma, s, cont, f)
 }

@@ -1,88 +1,72 @@
-import type { EvaluateConfig, InputTypeConfig, OutputTypeConfig } from "./Config";
-import type { ResolverF } from "./Resolver";
-import type { AnyField, GQLInputObject, GQLObject, InputRecord } from "./Types";
-import type { TypeofInputRecord } from "./Utils";
-import type { _A, _E, _R } from "@principia/base/util/types";
+import type { EvaluateConfig, InputTypeConfig, OutputTypeConfig } from './Config'
+import type { ResolverF } from './Resolver'
+import type { AnyField, GQLInputObject, GQLObject, InputRecord } from './Types'
+import type { TypeofInputRecord } from './Utils'
+import type { _A, _E, _R } from '@principia/base/util/types'
 
-import * as A from "@principia/base/data/Array";
-import * as R from "@principia/base/data/Record";
+import * as A from '@principia/base/data/Array'
+import * as R from '@principia/base/data/Record'
 
 import {
   createInputValueDefinitionNode,
   createUnnamedFieldDefinitionNode,
   createUnnamedInputValueDefinitionNode,
   getTypeName
-} from "./AST";
-import { GQLField, GQLInputValue, GQLObjectField, GQLScalarField } from "./Types";
+} from './AST'
+import { GQLField, GQLInputValue, GQLObjectField, GQLScalarField } from './Types'
 
-export const GraphQlFieldAURI = "graphql/algebra/field";
-export type GraphQlFieldAURI = typeof GraphQlFieldAURI;
+export const GraphQlFieldAURI = 'graphql/algebra/field'
+export type GraphQlFieldAURI = typeof GraphQlFieldAURI
 
-export const GraphQlInputAURI = "graphql/algebra/input";
-export type GraphQlInputAURI = typeof GraphQlInputAURI;
+export const GraphQlInputAURI = 'graphql/algebra/input'
+export type GraphQlInputAURI = typeof GraphQlInputAURI
 
-declare module "./HKT" {
+declare module './HKT' {
   interface AURItoFieldAlgebra<Root, T> {
-    readonly [GraphQlFieldAURI]: GraphQlFieldAlgebra<Root, T>;
+    readonly [GraphQlFieldAURI]: GraphQlFieldAlgebra<Root, T>
   }
   interface AURItoInputAlgebra {
-    readonly [GraphQlInputAURI]: GraphQlInputAlgebra;
+    readonly [GraphQlInputAURI]: GraphQlInputAlgebra
   }
 }
 
 export interface GraphQlFieldAlgebra<Root, T> {
-  readonly boolean: <C extends OutputTypeConfig>(
-    config?: C
-  ) => GQLScalarField<EvaluateConfig<C, boolean>>;
+  readonly boolean: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, boolean>>
   readonly field: <X extends AnyField<T>, Args extends InputRecord<Args>, R, E>(def: {
-    type: X;
-    resolve: ResolverF<Root, TypeofInputRecord<Args>, T, R, E, _A<X>>;
-    args?: Args;
-  }) => GQLField<Root, TypeofInputRecord<Args>, T, R, E, _A<X>>;
-  readonly float: <C extends OutputTypeConfig>(
-    config?: C
-  ) => GQLScalarField<EvaluateConfig<C, number>>;
-  readonly id: <C extends OutputTypeConfig>(
-    config?: C
-  ) => GQLScalarField<EvaluateConfig<C, number>>;
-  readonly int: <C extends OutputTypeConfig>(
-    config?: C
-  ) => GQLScalarField<EvaluateConfig<C, number>>;
-  readonly string: <C extends OutputTypeConfig>(
-    config?: C
-  ) => GQLScalarField<EvaluateConfig<C, string>>;
-  readonly objectField: <
-    C extends OutputTypeConfig,
-    X extends GQLObject<any, any, T, any, any, any>
-  >(
+    type: X
+    resolve: ResolverF<Root, TypeofInputRecord<Args>, T, R, E, _A<X>>
+    args?: Args
+  }) => GQLField<Root, TypeofInputRecord<Args>, T, R, E, _A<X>>
+  readonly float: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, number>>
+  readonly id: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, number>>
+  readonly int: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, number>>
+  readonly string: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, string>>
+  readonly objectField: <C extends OutputTypeConfig, X extends GQLObject<any, any, T, any, any, any>>(
     type: () => X,
     config?: C
-  ) => GQLObjectField<X["_Root"], T, _R<X>, _E<X>, EvaluateConfig<C, _A<X>>>;
+  ) => GQLObjectField<X['_Root'], T, _R<X>, _E<X>, EvaluateConfig<C, _A<X>>>
 }
 
 export interface GraphQlInputAlgebra {
   readonly booleanArg: <C extends InputTypeConfig<EvaluateConfig<C, boolean>>>(
     config?: C
-  ) => GQLInputValue<EvaluateConfig<C, boolean>>;
+  ) => GQLInputValue<EvaluateConfig<C, boolean>>
   readonly floatArg: <C extends InputTypeConfig<EvaluateConfig<C, number>>>(
     config?: C
-  ) => GQLInputValue<EvaluateConfig<C, number>>;
+  ) => GQLInputValue<EvaluateConfig<C, number>>
   readonly idArg: <C extends InputTypeConfig<EvaluateConfig<C, string>>>(
     config?: C
-  ) => GQLInputValue<EvaluateConfig<C, string>>;
+  ) => GQLInputValue<EvaluateConfig<C, string>>
   readonly intArg: <C extends InputTypeConfig<EvaluateConfig<C, number>>>(
     config?: C
-  ) => GQLInputValue<EvaluateConfig<C, number>>;
-  readonly objectArg: <
-    X extends GQLInputObject<any, any>,
-    C extends InputTypeConfig<EvaluateConfig<C, _A<X>>>
-  >(
+  ) => GQLInputValue<EvaluateConfig<C, number>>
+  readonly objectArg: <X extends GQLInputObject<any, any>, C extends InputTypeConfig<EvaluateConfig<C, _A<X>>>>(
     type: () => X,
     config?: C
-  ) => GQLInputValue<EvaluateConfig<C, _A<X>>>;
+  ) => GQLInputValue<EvaluateConfig<C, _A<X>>>
   readonly stringArg: <C extends InputTypeConfig<EvaluateConfig<C, string>>>(
     config?: C
-  ) => GQLInputValue<EvaluateConfig<C, string>>;
+  ) => GQLInputValue<EvaluateConfig<C, string>>
 }
 
 export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
@@ -92,7 +76,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "Boolean"
+        typeName: 'Boolean'
       }),
       config ?? {}
     ),
@@ -102,16 +86,16 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
       createUnnamedFieldDefinitionNode({
         arguments: args
           ? R.foldLeftWithIndex_(args, A.empty(), (b, k, a) => [
-              ...b,
-              createInputValueDefinitionNode({
-                defaultValue: a.config.defaultValue,
-                description: a.config.description,
-                list: a.config.list,
-                name: k,
-                nullable: a.config.nullable,
-                typeName: getTypeName(a.ast)
-              })
-            ])
+            ...b,
+            createInputValueDefinitionNode({
+              defaultValue: a.config.defaultValue,
+              description: a.config.description,
+              list: a.config.list,
+              name: k,
+              nullable: a.config.nullable,
+              typeName: getTypeName(a.ast)
+            })
+          ])
           : [],
         description: type.config.description,
         list: type.config.list,
@@ -127,7 +111,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "Float"
+        typeName: 'Float'
       }),
       config ?? {}
     ),
@@ -138,7 +122,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "ID"
+        typeName: 'ID'
       }),
       config ?? {}
     ),
@@ -149,7 +133,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "Int"
+        typeName: 'Int'
       }),
       config ?? {}
     ),
@@ -160,7 +144,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "String"
+        typeName: 'String'
       }),
       config ?? {}
     ),
@@ -175,7 +159,7 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
       }),
       config ?? {}
     )
-});
+})
 
 export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
   booleanArg: (config) =>
@@ -185,7 +169,7 @@ export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "Boolean"
+        typeName: 'Boolean'
       }),
       config ?? {}
     ),
@@ -196,7 +180,7 @@ export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "Float"
+        typeName: 'Float'
       }),
       config ?? ({} as any)
     ),
@@ -207,7 +191,7 @@ export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "ID"
+        typeName: 'ID'
       }),
       config ?? {}
     ),
@@ -218,7 +202,7 @@ export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "Int"
+        typeName: 'Int'
       }),
       config ?? {}
     ),
@@ -240,8 +224,8 @@ export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
         description: config?.description,
         list: config?.list,
         nullable: config?.nullable,
-        typeName: "String"
+        typeName: 'String'
       }),
       config ?? {}
     )
-});
+})

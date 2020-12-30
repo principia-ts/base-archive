@@ -1,3 +1,3 @@
-import type ChalkType from "chalk";
+import type ChalkType from 'chalk'
 
-export type ChalkFn = (c: typeof ChalkType) => string;
+export type ChalkFn = (c: typeof ChalkType) => string

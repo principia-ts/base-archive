@@ -1,13 +1,13 @@
-import type * as Alg from "../../algebra";
-import type { URI } from "./HKT";
+import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
-import { pipe } from "@principia/base/data/Function";
-import * as R from "@principia/base/data/Record";
-import * as D from "@principia/codec/Decoder";
+import { pipe } from '@principia/base/data/Function'
+import * as R from '@principia/base/data/Record'
+import * as D from '@principia/codec/Decoder'
 
-import { implementInterpreter } from "../../HKT";
-import { applyDecoderConfig } from "./HKT";
-import { extractInfo } from "./utils";
+import { implementInterpreter } from '../../HKT'
+import { applyDecoderConfig } from './HKT'
+import { extractInfo } from './utils'
 
 export const ObjectDecoder = implementInterpreter<URI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
@@ -51,10 +51,7 @@ export const ObjectDecoder = implementInterpreter<URI, Alg.ObjectURI>()((_) => (
           (o) =>
             applyDecoderConfig(config?.config)(
               (M) =>
-                pipe(
-                  D.type(M)(R.map_(r, (_) => _(M))),
-                  D.intersect(M)(D.partial(M)(R.map_(o, (_) => _(M))))
-                ) as any,
+                pipe(D.type(M)(R.map_(r, (_) => _(M))), D.intersect(M)(D.partial(M)(R.map_(o, (_) => _(M))))) as any,
               env,
               {
                 required: r as any,
@@ -63,4 +60,4 @@ export const ObjectDecoder = implementInterpreter<URI, Alg.ObjectURI>()((_) => (
             )
         )
     )
-}));
+}))

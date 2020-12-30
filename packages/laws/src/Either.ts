@@ -1,14 +1,14 @@
-import * as E from "@principia/base/data/Either";
-import * as fc from "fast-check";
+import * as E from '@principia/base/data/Either'
+import * as fc from 'fast-check'
 
 export function getRight<E, A>(arb: fc.Arbitrary<A>): fc.Arbitrary<E.Either<E, A>> {
-  return arb.map(E.right);
+  return arb.map(E.right)
 }
 
 export function getLeft<E, A>(arb: fc.Arbitrary<E>): fc.Arbitrary<E.Either<E, A>> {
-  return arb.map(E.left);
+  return arb.map(E.left)
 }
 
 export function getEither<E, A>(leftArb: fc.Arbitrary<E>, rightArb: fc.Arbitrary<A>) {
-  return fc.oneof(getLeft<E, A>(leftArb), getRight<E, A>(rightArb));
+  return fc.oneof(getLeft<E, A>(leftArb), getRight<E, A>(rightArb))
 }

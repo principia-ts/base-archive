@@ -1,8 +1,8 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import * as C from "../../Cause/core";
-import { foldCauseM_, halt, pure } from "../core";
-import { uninterruptibleMask } from "./interrupt";
+import * as C from '../../Cause/core'
+import { foldCauseM_, halt, pure } from '../core'
+import { uninterruptibleMask } from './interrupt'
 
 /**
  * Returns an IO that, if this IO _starts_ execution, then the
@@ -15,10 +15,7 @@ import { uninterruptibleMask } from "./interrupt";
  * should generally not be used for releasing resources. For higher-level
  * logic built on `ensuring`, see `bracket`.
  */
-export function ensuring_<R, E, A, R1>(
-  ma: IO<R, E, A>,
-  finalizer: IO<R1, never, any>
-): IO<R & R1, E, A> {
+export function ensuring_<R, E, A, R1>(ma: IO<R, E, A>, finalizer: IO<R1, never, any>): IO<R & R1, E, A> {
   return uninterruptibleMask(({ restore }) =>
     foldCauseM_(
       restore(ma),
@@ -35,7 +32,7 @@ export function ensuring_<R, E, A, R1>(
           (_) => pure(value)
         )
     )
-  );
+  )
 }
 
 /**
@@ -49,8 +46,6 @@ export function ensuring_<R, E, A, R1>(
  * should generally not be used for releasing resources. For higher-level
  * logic built on `ensuring`, see `bracket`.
  */
-export function ensuring<R1>(
-  finalizer: IO<R1, never, any>
-): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E, A> {
-  return (ma) => ensuring_(ma, finalizer);
+export function ensuring<R1>(finalizer: IO<R1, never, any>): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E, A> {
+  return (ma) => ensuring_(ma, finalizer)
 }

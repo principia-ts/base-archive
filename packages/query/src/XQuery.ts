@@ -1,33 +1,33 @@
-import type { Cache } from "./Cache";
-import type { DataSource } from "./DataSource";
-import type { Request } from "./Request";
-import type { IO } from "@principia/io/IO";
-import type { URef } from "@principia/io/IORef";
+import type { Cache } from './Cache'
+import type { DataSource } from './DataSource'
+import type { Request } from './Request'
+import type { IO } from '@principia/io/IO'
+import type { URef } from '@principia/io/IORef'
 
-import * as A from "@principia/base/data/Array";
-import * as E from "@principia/base/data/Either";
-import { flow, identity, pipe } from "@principia/base/data/Function";
-import * as It from "@principia/base/data/Iterable";
-import * as O from "@principia/base/data/Option";
-import { matchTag, matchTag_ } from "@principia/base/util/matchers";
-import * as Ca from "@principia/io/Cause";
-import * as Ex from "@principia/io/Exit";
-import * as I from "@principia/io/IO";
-import * as L from "@principia/io/Layer";
-import * as M from "@principia/io/Managed";
+import * as A from '@principia/base/data/Array'
+import * as E from '@principia/base/data/Either'
+import { flow, identity, pipe } from '@principia/base/data/Function'
+import * as It from '@principia/base/data/Iterable'
+import * as O from '@principia/base/data/Option'
+import { matchTag, matchTag_ } from '@principia/base/util/matchers'
+import * as Ca from '@principia/io/Cause'
+import * as Ex from '@principia/io/Exit'
+import * as I from '@principia/io/IO'
+import * as L from '@principia/io/Layer'
+import * as M from '@principia/io/Managed'
 
-import { empty } from "./Cache";
-import { Described } from "./Described";
-import { BlockedRequest } from "./internal/BlockedRequest";
-import * as BRS from "./internal/BlockedRequests";
-import { QueryContext } from "./internal/QueryContext";
+import { empty } from './Cache'
+import { Described } from './Described'
+import { BlockedRequest } from './internal/BlockedRequest'
+import * as BRS from './internal/BlockedRequests'
+import { QueryContext } from './internal/QueryContext'
 
 export class XQuery<R, E, A> {
   constructor(readonly step: IO<readonly [R, QueryContext], never, Result<R, E, A>>) {}
 
   map = <B>(f: (a: A) => B): XQuery<R, E, B> => {
-    return new XQuery(I.map_(this.step, (r) => r.map(f)));
-  };
+    return new XQuery(I.map_(this.step, (r) => r.map(f)))
+  }
 
   foldCauseM = <R1, E1, B>(
     onFailure: (cause: Ca.Cause<E>) => XQuery<R1, E1, B>,
@@ -44,47 +44,46 @@ export class XQuery<R, E, A> {
           Fail: ({ cause }) => onFailure(cause).step
         })
       )
-    );
-  };
+    )
+  }
 
   foldM = <R1, E1, B>(
     onFailure: (e: E) => XQuery<R1, E1, B>,
     onSuccess: (a: A) => XQuery<R1, E1, B>
   ): XQuery<R & R1, E1, B> => {
-    return this.foldCauseM(flow(Ca.failureOrCause, E.fold(onFailure, halt)), onSuccess);
-  };
+    return this.foldCauseM(flow(Ca.failureOrCause, E.fold(onFailure, halt)), onSuccess)
+  }
 
   fold = <B>(onFailure: (e: E) => B, onSuccess: (a: A) => B): XQuery<R, never, B> => {
     return this.foldM(
       (e) => succeed(onFailure(e)),
       (a) => succeed(onSuccess(a))
-    );
-  };
+    )
+  }
 
   bimap = <E1, B>(f: (e: E) => E1, g: (a: A) => B): XQuery<R, E1, B> => {
     return this.foldM(
       (e) => fail(f(e)),
       (a) => succeed(g(a))
-    );
-  };
+    )
+  }
 
   mapError = <E1>(f: (e: E) => E1): XQuery<R, E1, A> => {
-    return this.bimap(f, identity);
-  };
+    return this.bimap(f, identity)
+  }
 
   flatMap = <R1, E1, B>(f: (a: A) => XQuery<R1, E1, B>): XQuery<R & R1, E | E1, B> => {
     return new XQuery(
       I.flatMap_(
         this.step,
         matchTag({
-          Blocked: ({ blockedRequests, cont }) =>
-            I.succeed(blockedResult(blockedRequests, cont.mapM(f))),
+          Blocked: ({ blockedRequests, cont }) => I.succeed(blockedResult(blockedRequests, cont.mapM(f))),
           Done: ({ value }) => f(value).step,
           Fail: ({ cause }) => I.succeed(failResult(cause))
         })
       )
-    );
-  };
+    )
+  }
 
   gives = <R0>(f: Described<(r0: R0) => R>): XQuery<R0, E, A> => {
     return new XQuery(
@@ -93,8 +92,8 @@ export class XQuery<R, E, A> {
         I.map((r) => r.gives(f)),
         I.gives(([r0, qc]) => [f.value(r0), qc] as const)
       )
-    );
-  };
+    )
+  }
 
   runCache = (cache: Cache): I.IO<R, E, A> => {
     return pipe(
@@ -102,50 +101,40 @@ export class XQuery<R, E, A> {
       I.gives((r: R) => [r, new QueryContext(cache)] as const),
       I.flatMap(
         matchTag({
-          Blocked: ({ blockedRequests, cont }) =>
-            I.andThen_(BRS.run_(blockedRequests, cache), cont.runCache(cache)),
+          Blocked: ({ blockedRequests, cont }) => I.andThen_(BRS.run_(blockedRequests, cache), cont.runCache(cache)),
           Done: ({ value }) => I.succeed(value),
           Fail: ({ cause }) => I.halt(cause)
         })
       )
-    );
-  };
+    )
+  }
 
   runLog = (): I.IO<R, E, readonly [Cache, A]> => {
-    const runCache = this.runCache;
+    const runCache = this.runCache
     return I.gen(function* (_) {
-      const cache = yield* _(empty);
-      const a = yield* _(runCache(cache));
-      return [cache, a];
-    });
-  };
+      const cache = yield* _(empty)
+      const a     = yield* _(runCache(cache))
+      return [cache, a]
+    })
+  }
 
   run = (): I.IO<R, E, A> => {
-    return I.map_(this.runLog(), ([_, a]) => a);
-  };
+    return I.map_(this.runLog(), ([_, a]) => a)
+  }
 
-  map2 = <R1, E1, B, C>(
-    that: XQuery<R1, E1, B>,
-    f: (a: A, b: B) => C
-  ): XQuery<R & R1, E | E1, C> => {
+  map2 = <R1, E1, B, C>(that: XQuery<R1, E1, B>, f: (a: A, b: B) => C): XQuery<R & R1, E | E1, C> => {
     return new XQuery(
       I.flatMap_(
         this.step,
         matchTag({
           Blocked: ({ blockedRequests, cont }) => {
-            if (cont._tag === "Effect") {
-              return I.succeed(
-                blockedResult(blockedRequests, effectContinue(cont.query.map2(that, f)))
-              );
+            if (cont._tag === 'Effect') {
+              return I.succeed(blockedResult(blockedRequests, effectContinue(cont.query.map2(that, f))))
             } else {
               return I.map_(
                 that.step,
                 matchTag({
-                  Blocked: (br) =>
-                    blockedResult(
-                      BRS.then(blockedRequests, br.blockedRequests),
-                      cont.map2(br.cont, f)
-                    ),
+                  Blocked: (br) => blockedResult(BRS.then(blockedRequests, br.blockedRequests), cont.map2(br.cont, f)),
                   Done: ({ value }) =>
                     blockedResult(
                       blockedRequests,
@@ -153,7 +142,7 @@ export class XQuery<R, E, A> {
                     ),
                   Fail: ({ cause }) => failResult(cause)
                 })
-              );
+              )
             }
           },
           Done: (a) =>
@@ -172,76 +161,64 @@ export class XQuery<R, E, A> {
           Fail: ({ cause }) => I.succeed(failResult(cause))
         })
       )
-    );
-  };
+    )
+  }
 
-  map2Par = <R1, E1, B, C>(
-    that: XQuery<R1, E1, B>,
-    f: (a: A, b: B) => C
-  ): XQuery<R & R1, E | E1, C> => {
+  map2Par = <R1, E1, B, C>(that: XQuery<R1, E1, B>, f: (a: A, b: B) => C): XQuery<R & R1, E | E1, C> => {
     return new XQuery(
       I.map2Par_(this.step, that.step, (ra, rb) => {
-        return ra._tag === "Blocked"
-          ? rb._tag === "Blocked"
-            ? blockedResult(
-                BRS.then(ra.blockedRequests, rb.blockedRequests),
-                ra.cont.map2Par(rb.cont, f)
-              )
-            : rb._tag === "Done"
-            ? blockedResult(
+        return ra._tag === 'Blocked'
+          ? rb._tag === 'Blocked'
+            ? blockedResult(BRS.then(ra.blockedRequests, rb.blockedRequests), ra.cont.map2Par(rb.cont, f))
+            : rb._tag === 'Done'
+              ? blockedResult(
                 ra.blockedRequests,
                 ra.cont.map((a) => f(a, rb.value))
               )
-            : failResult(rb.cause)
-          : ra._tag === "Done"
-          ? rb._tag === "Blocked"
-            ? blockedResult(
+              : failResult(rb.cause)
+          : ra._tag === 'Done'
+            ? rb._tag === 'Blocked'
+              ? blockedResult(
                 rb.blockedRequests,
                 rb.cont.map((b) => f(ra.value, b))
               )
-            : rb._tag === "Done"
-            ? doneResult(f(ra.value, rb.value))
-            : failResult(rb.cause)
-          : rb._tag === "Fail"
-          ? failResult(Ca.both(ra.cause, rb.cause))
-          : failResult(ra.cause);
+              : rb._tag === 'Done'
+                ? doneResult(f(ra.value, rb.value))
+                : failResult(rb.cause)
+            : rb._tag === 'Fail'
+              ? failResult(Ca.both(ra.cause, rb.cause))
+              : failResult(ra.cause)
       })
-    );
-  };
+    )
+  }
 
-  map2Batched = <R1, E1, B, C>(
-    that: XQuery<R1, E1, B>,
-    f: (a: A, b: B) => C
-  ): XQuery<R & R1, E | E1, C> => {
+  map2Batched = <R1, E1, B, C>(that: XQuery<R1, E1, B>, f: (a: A, b: B) => C): XQuery<R & R1, E | E1, C> => {
     return new XQuery(
       I.map2_(this.step, that.step, (ra, rb) => {
-        return ra._tag === "Blocked"
-          ? rb._tag === "Blocked"
-            ? blockedResult(
-                BRS.then(ra.blockedRequests, rb.blockedRequests),
-                ra.cont.map2Batched(rb.cont, f)
-              )
-            : rb._tag === "Done"
-            ? blockedResult(
+        return ra._tag === 'Blocked'
+          ? rb._tag === 'Blocked'
+            ? blockedResult(BRS.then(ra.blockedRequests, rb.blockedRequests), ra.cont.map2Batched(rb.cont, f))
+            : rb._tag === 'Done'
+              ? blockedResult(
                 ra.blockedRequests,
                 ra.cont.map((a) => f(a, rb.value))
               )
-            : failResult(rb.cause)
-          : ra._tag === "Done"
-          ? rb._tag === "Blocked"
-            ? blockedResult(
+              : failResult(rb.cause)
+          : ra._tag === 'Done'
+            ? rb._tag === 'Blocked'
+              ? blockedResult(
                 rb.blockedRequests,
                 rb.cont.map((b) => f(ra.value, b))
               )
-            : rb._tag === "Done"
-            ? doneResult(f(ra.value, rb.value))
-            : failResult(rb.cause)
-          : rb._tag === "Fail"
-          ? failResult(Ca.both(ra.cause, rb.cause))
-          : failResult(ra.cause);
+              : rb._tag === 'Done'
+                ? doneResult(f(ra.value, rb.value))
+                : failResult(rb.cause)
+            : rb._tag === 'Fail'
+              ? failResult(Ca.both(ra.cause, rb.cause))
+              : failResult(ra.cause)
       })
-    );
-  };
+    )
+  }
 }
 
 /*
@@ -255,14 +232,14 @@ export function foldCauseM_<R, E, A, R1, E1, B>(
   onFailure: (cause: Ca.Cause<E>) => XQuery<R1, E1, B>,
   onSuccess: (a: A) => XQuery<R1, E1, B>
 ): XQuery<R & R1, E1, B> {
-  return ma.foldCauseM(onFailure, onSuccess);
+  return ma.foldCauseM(onFailure, onSuccess)
 }
 
 export function foldCauseM<E, A, R1, E1, B>(
   onFailure: (cause: Ca.Cause<E>) => XQuery<R1, E1, B>,
   onSuccess: (a: A) => XQuery<R1, E1, B>
 ): <R>(ma: XQuery<R, E, A>) => XQuery<R & R1, E1, B> {
-  return (ma) => ma.foldCauseM(onFailure, onSuccess);
+  return (ma) => ma.foldCauseM(onFailure, onSuccess)
 }
 
 export function foldM_<R, E, A, R1, E1, B>(
@@ -270,14 +247,14 @@ export function foldM_<R, E, A, R1, E1, B>(
   onFailure: (error: E) => XQuery<R1, E1, B>,
   onSuccess: (a: A) => XQuery<R1, E1, B>
 ): XQuery<R & R1, E1, B> {
-  return ma.foldM(onFailure, onSuccess);
+  return ma.foldM(onFailure, onSuccess)
 }
 
 export function foldM<E, A, R1, E1, B>(
   onFailure: (error: E) => XQuery<R1, E1, B>,
   onSuccess: (a: A) => XQuery<R1, E1, B>
 ): <R>(ma: XQuery<R, E, A>) => XQuery<R & R1, E1, B> {
-  return (ma) => ma.foldM(onFailure, onSuccess);
+  return (ma) => ma.foldM(onFailure, onSuccess)
 }
 
 export function fold_<R, E, A, B>(
@@ -285,40 +262,40 @@ export function fold_<R, E, A, B>(
   onFailure: (error: E) => B,
   onSuccess: (a: A) => B
 ): XQuery<R, never, B> {
-  return ma.fold(onFailure, onSuccess);
+  return ma.fold(onFailure, onSuccess)
 }
 
 export function fold<E, A, B>(
   onFailure: (error: E) => B,
   onSuccess: (a: A) => B
 ): <R>(ma: XQuery<R, E, A>) => XQuery<R, never, B> {
-  return (ma) => ma.fold(onFailure, onSuccess);
+  return (ma) => ma.fold(onFailure, onSuccess)
 }
 
 export function catchAllCause_<R, E, A, R1, E1, B>(
   ma: XQuery<R, E, A>,
   h: (cause: Ca.Cause<E>) => XQuery<R1, E1, B>
 ): XQuery<R & R1, E1, A | B> {
-  return ma.foldCauseM<R1, E1, A | B>(h, succeed);
+  return ma.foldCauseM<R1, E1, A | B>(h, succeed)
 }
 
 export function catchAllCause<E, R1, E1, B>(
   h: (cause: Ca.Cause<E>) => XQuery<R1, E1, B>
 ): <R, A>(ma: XQuery<R, E, A>) => XQuery<R & R1, E1, A | B> {
-  return <R, A>(ma: XQuery<R, E, A>) => ma.foldCauseM<R1, E1, A | B>(h, succeed);
+  return <R, A>(ma: XQuery<R, E, A>) => ma.foldCauseM<R1, E1, A | B>(h, succeed)
 }
 
 export function catchAll_<R, E, A, R1, E1, B>(
   ma: XQuery<R, E, A>,
   h: (e: E) => XQuery<R1, E1, B>
 ): XQuery<R & R1, E1, A | B> {
-  return ma.foldM<R1, E1, A | B>(h, succeed);
+  return ma.foldM<R1, E1, A | B>(h, succeed)
 }
 
 export function catchAll<E, R1, E1, B>(
   h: (e: E) => XQuery<R1, E1, B>
 ): <R, A>(ma: XQuery<R, E, A>) => XQuery<R & R1, E1, A | B> {
-  return <R, A>(ma: XQuery<R, E, A>) => ma.foldM<R1, E1, A | B>(h, succeed);
+  return <R, A>(ma: XQuery<R, E, A>) => ma.foldM<R1, E1, A | B>(h, succeed)
 }
 
 /*
@@ -327,27 +304,20 @@ export function catchAll<E, R1, E1, B>(
  * -------------------------------------------
  */
 
-export function bimap_<R, E, A, E1, B>(
-  pab: XQuery<R, E, A>,
-  f: (e: E) => E1,
-  g: (a: A) => B
-): XQuery<R, E1, B> {
-  return pab.bimap(f, g);
+export function bimap_<R, E, A, E1, B>(pab: XQuery<R, E, A>, f: (e: E) => E1, g: (a: A) => B): XQuery<R, E1, B> {
+  return pab.bimap(f, g)
 }
 
-export function bimap<E, A, E1, B>(
-  f: (e: E) => E1,
-  g: (a: A) => B
-): <R>(pab: XQuery<R, E, A>) => XQuery<R, E1, B> {
-  return (pab) => pab.bimap(f, g);
+export function bimap<E, A, E1, B>(f: (e: E) => E1, g: (a: A) => B): <R>(pab: XQuery<R, E, A>) => XQuery<R, E1, B> {
+  return (pab) => pab.bimap(f, g)
 }
 
 export function mapError_<R, E, A, E1>(pab: XQuery<R, E, A>, f: (e: E) => E1): XQuery<R, E1, A> {
-  return pab.mapError(f);
+  return pab.mapError(f)
 }
 
 export function mapError<E, E1>(f: (e: E) => E1): <R, A>(pab: XQuery<R, E, A>) => XQuery<R, E1, A> {
-  return (pab) => pab.mapError(f);
+  return (pab) => pab.mapError(f)
 }
 
 /*
@@ -357,19 +327,19 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(pab: XQuery<R, E, A>) =
  */
 
 export function map_<R, E, A, B>(fa: XQuery<R, E, A>, f: (a: A) => B): XQuery<R, E, B> {
-  return fa.map(f);
+  return fa.map(f)
 }
 
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: XQuery<R, E, A>) => XQuery<R, E, B> {
-  return (fa) => fa.map(f);
+  return (fa) => fa.map(f)
 }
 
 export function as_<R, E, A, B>(fa: XQuery<R, E, A>, b: B): XQuery<R, E, B> {
-  return fa.map(() => b);
+  return fa.map(() => b)
 }
 
 export function as<B>(b: B): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R, E, B> {
-  return (fa) => fa.map(() => b);
+  return (fa) => fa.map(() => b)
 }
 
 /*
@@ -379,19 +349,19 @@ export function as<B>(b: B): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R, E, B> {
  */
 
 export function succeed<A>(value: A): XQuery<unknown, never, A> {
-  return new XQuery(I.succeed(doneResult(value)));
+  return new XQuery(I.succeed(doneResult(value)))
 }
 
 export function halt<E>(cause: Ca.Cause<E>): XQuery<unknown, E, never> {
-  return new XQuery(I.succeed(failResult(cause)));
+  return new XQuery(I.succeed(failResult(cause)))
 }
 
 export function fail<E>(error: E): XQuery<unknown, E, never> {
-  return halt(Ca.fail(error));
+  return halt(Ca.fail(error))
 }
 
 export function die(error: unknown): XQuery<unknown, never, never> {
-  return new XQuery(I.die(error));
+  return new XQuery(I.die(error))
 }
 
 export function fromEffect<R, E, A>(effect: IO<R, E, A>): XQuery<R, E, A> {
@@ -401,13 +371,10 @@ export function fromEffect<R, E, A>(effect: IO<R, E, A>): XQuery<R, E, A> {
       I.foldCause(failResult, doneResult),
       I.gives(([r, _]) => r)
     )
-  );
+  )
 }
 
-export function fromRequest<R, E, A, B>(
-  request: A & Request<E, B>,
-  dataSource: DataSource<R, A>
-): XQuery<R, E, B> {
+export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: DataSource<R, A>): XQuery<R, E, B> {
   return new XQuery(
     pipe(
       I.asksM(([_, qc]: readonly [R, QueryContext]) => qc.cache.lookup(request)),
@@ -433,7 +400,7 @@ export function fromRequest<R, E, A, B>(
         )
       )
     )
-  );
+  )
 }
 
 /*
@@ -446,13 +413,13 @@ export function flatMap_<R, E, A, R1, E1, B>(
   ma: XQuery<R, E, A>,
   f: (a: A) => XQuery<R1, E1, B>
 ): XQuery<R & R1, E | E1, B> {
-  return ma.flatMap(f);
+  return ma.flatMap(f)
 }
 
 export function flatMap<A, R1, E1, B>(
   f: (a: A) => XQuery<R1, E1, B>
 ): <R, E>(ma: XQuery<R, E, A>) => XQuery<R & R1, E | E1, B> {
-  return (ma) => ma.flatMap(f);
+  return (ma) => ma.flatMap(f)
 }
 
 /*
@@ -461,32 +428,24 @@ export function flatMap<A, R1, E1, B>(
  * -------------------------------------------
  */
 
-export function gives_<R, E, A, R0>(
-  ra: XQuery<R, E, A>,
-  f: Described<(r0: R0) => R>
-): XQuery<R0, E, A> {
-  return ra.gives(f);
+export function gives_<R, E, A, R0>(ra: XQuery<R, E, A>, f: Described<(r0: R0) => R>): XQuery<R0, E, A> {
+  return ra.gives(f)
 }
 
-export function gives<R, R0>(
-  f: Described<(r0: R0) => R>
-): <E, A>(ra: XQuery<R, E, A>) => XQuery<R0, E, A> {
-  return (ra) => ra.gives(f);
+export function gives<R, R0>(f: Described<(r0: R0) => R>): <E, A>(ra: XQuery<R, E, A>) => XQuery<R0, E, A> {
+  return (ra) => ra.gives(f)
 }
 
 export function giveAll_<R, E, A>(ra: XQuery<R, E, A>, r: Described<R>): XQuery<unknown, E, A> {
-  return ra.gives(Described(() => r.value, `() => ${r.description}`));
+  return ra.gives(Described(() => r.value, `() => ${r.description}`))
 }
 
 export function giveAll<R>(r: Described<R>): <E, A>(ra: XQuery<R, E, A>) => XQuery<unknown, E, A> {
-  return (ra) => giveAll_(ra, r);
+  return (ra) => giveAll_(ra, r)
 }
 
-export function give_<E, A, R = unknown, R0 = unknown>(
-  ra: XQuery<R & R0, E, A>,
-  r: Described<R>
-): XQuery<R0, E, A> {
-  return ra.gives(Described((r0: R0) => ({ ...r0, ...r.value }), r.description));
+export function give_<E, A, R = unknown, R0 = unknown>(ra: XQuery<R & R0, E, A>, r: Described<R>): XQuery<R0, E, A> {
+  return ra.gives(Described((r0: R0) => ({ ...r0, ...r.value }), r.description))
 }
 
 export function giveLayer_<R, E, A, R1, E1, A1>(
@@ -500,8 +459,7 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
       M.result,
       M.use(
         Ex.foldM(
-          (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> =>
-            I.succeed(failResult(c)),
+          (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(failResult(c)),
           (r) =>
             gives_(
               ra,
@@ -510,7 +468,7 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
         )
       )
     )
-  );
+  )
 }
 
 export function giveLayer<R1, E1, A1>(
@@ -524,8 +482,7 @@ export function giveLayer<R1, E1, A1>(
         M.result,
         M.use(
           Ex.foldM(
-            (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> =>
-              I.succeed(failResult(c)),
+            (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(failResult(c)),
             (r) =>
               gives_(
                 ra,
@@ -534,7 +491,7 @@ export function giveLayer<R1, E1, A1>(
           )
         )
       )
-    );
+    )
 }
 
 /*
@@ -543,16 +500,11 @@ export function giveLayer<R1, E1, A1>(
  * -------------------------------------------
  */
 
-export function foreachPar_<A, R, E, B>(
-  as: Iterable<A>,
-  f: (a: A) => XQuery<R, E, B>
-): XQuery<R, E, ReadonlyArray<B>> {
+export function foreachPar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => XQuery<R, E, B>): XQuery<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldLeft(succeed([]) as XQuery<R, E, ReadonlyArray<B>>, (b, a) =>
-      b.map2Par(f(a), (bs, b) => A.append(b)(bs))
-    )
-  );
+    It.foldLeft(succeed([]) as XQuery<R, E, ReadonlyArray<B>>, (b, a) => b.map2Par(f(a), (bs, b) => A.append(b)(bs)))
+  )
 }
 
 /*
@@ -569,47 +521,43 @@ abstract class AbstractContinue {
   ): Continue<R & R1, E1, B> {
     return matchTag_(this, {
       Effect: ({ query }) => effectContinue(query.foldCauseM(onFailure, onSuccess)),
-      Get: ({ io }) =>
-        pipe(fromEffect(io), (q) => q.foldCauseM(onFailure, onSuccess), effectContinue)
-    });
+      Get: ({ io }) => pipe(fromEffect(io), (q) => q.foldCauseM(onFailure, onSuccess), effectContinue)
+    })
   }
 
   map<R, E, A, B>(this: Continue<R, E, A>, f: (a: A) => B): Continue<R, E, B> {
     return matchTag_(this, {
       Effect: ({ query }) => effectContinue(query.map(f)),
       Get: ({ io }) => getContinue(I.map_(io, f))
-    });
+    })
   }
 
-  mapM<R, E, A, R1, E1, B>(
-    this: Continue<R, E, A>,
-    f: (a: A) => XQuery<R1, E1, B>
-  ): Continue<R & R1, E | E1, B> {
+  mapM<R, E, A, R1, E1, B>(this: Continue<R, E, A>, f: (a: A) => XQuery<R1, E1, B>): Continue<R & R1, E | E1, B> {
     return matchTag_(this, {
       Effect: ({ query }) => effectContinue(query.flatMap(f)),
       Get: ({ io }) => effectContinue(fromEffect(io).flatMap(f))
-    });
+    })
   }
 
   mapError<R, E, A, E1>(this: Continue<R, E, A>, f: (e: E) => E1): Continue<R, E1, A> {
     return matchTag_(this, {
       Effect: ({ query }) => effectContinue(query.mapError(f)),
       Get: ({ io }) => pipe(io, I.mapError(f), getContinue)
-    });
+    })
   }
 
   gives<R, E, A, R0>(this: Continue<R, E, A>, f: Described<(r0: R0) => R>): Continue<R0, E, A> {
     return matchTag_(this, {
       Effect: ({ query }) => effectContinue(query.gives(f)),
       Get: ({ io }) => getContinue(io)
-    });
+    })
   }
 
   runCache<R, E, A>(this: Continue<R, E, A>, cache: Cache): I.IO<R, E, A> {
     return matchTag_(this, {
       Effect: ({ query }) => query.runCache(cache),
       Get: ({ io }) => io
-    });
+    })
   }
 
   map2<R, E, A, R1, E1, B, C>(
@@ -617,13 +565,13 @@ abstract class AbstractContinue {
     that: Continue<R1, E1, B>,
     f: (a: A, b: B) => C
   ): Continue<R & R1, E | E1, C> {
-    return this._tag === "Effect"
-      ? that._tag === "Effect"
+    return this._tag === 'Effect'
+      ? that._tag === 'Effect'
         ? effectContinue(this.query.map2(that.query, f))
         : effectContinue(this.query.map2(fromEffect(that.io), f))
-      : that._tag === "Effect"
-      ? effectContinue(fromEffect(this.io).map2(that.query, f))
-      : getContinue(I.map2_(this.io, that.io, f));
+      : that._tag === 'Effect'
+        ? effectContinue(fromEffect(this.io).map2(that.query, f))
+        : getContinue(I.map2_(this.io, that.io, f))
   }
 
   map2Par<R, E, A, R1, E1, B, C>(
@@ -631,13 +579,13 @@ abstract class AbstractContinue {
     that: Continue<R1, E1, B>,
     f: (a: A, b: B) => C
   ): Continue<R & R1, E | E1, C> {
-    return this._tag === "Effect"
-      ? that._tag === "Effect"
+    return this._tag === 'Effect'
+      ? that._tag === 'Effect'
         ? effectContinue(this.query.map2Par(that.query, f))
         : effectContinue(this.query.map2(fromEffect(that.io), f))
-      : that._tag === "Effect"
-      ? effectContinue(fromEffect(this.io).map2(that.query, f))
-      : getContinue(I.map2_(this.io, that.io, f));
+      : that._tag === 'Effect'
+        ? effectContinue(fromEffect(this.io).map2(that.query, f))
+        : getContinue(I.map2_(this.io, that.io, f))
   }
 
   map2Batched<R, E, A, R1, E1, B, C>(
@@ -645,39 +593,39 @@ abstract class AbstractContinue {
     that: Continue<R1, E1, B>,
     f: (a: A, b: B) => C
   ): Continue<R & R1, E | E1, C> {
-    return this._tag === "Effect"
-      ? that._tag === "Effect"
+    return this._tag === 'Effect'
+      ? that._tag === 'Effect'
         ? effectContinue(this.query.map2Batched(that.query, f))
         : effectContinue(this.query.map2(fromEffect(that.io), f))
-      : that._tag === "Effect"
-      ? effectContinue(fromEffect(this.io).map2(that.query, f))
-      : getContinue(I.map2_(this.io, that.io, f));
+      : that._tag === 'Effect'
+        ? effectContinue(fromEffect(this.io).map2(that.query, f))
+        : getContinue(I.map2_(this.io, that.io, f))
   }
 }
 
 export class Effect<R, E, A> extends AbstractContinue {
-  readonly _tag = "Effect";
+  readonly _tag = 'Effect'
   constructor(readonly query: XQuery<R, E, A>) {
-    super();
+    super()
   }
 }
 
 export function effectContinue<R, E, A>(query: XQuery<R, E, A>): Continue<R, E, A> {
-  return new Effect(query);
+  return new Effect(query)
 }
 
 export class Get<E, A> extends AbstractContinue {
-  readonly _tag = "Get";
+  readonly _tag = 'Get'
   constructor(readonly io: I.FIO<E, A>) {
-    super();
+    super()
   }
 }
 
 export function getContinue<E, A>(io: I.FIO<E, A>): Continue<unknown, E, A> {
-  return new Get(io);
+  return new Get(io)
 }
 
-export type Continue<R, E, A> = Effect<R, E, A> | Get<E, A>;
+export type Continue<R, E, A> = Effect<R, E, A> | Get<E, A>
 
 function makeContinue<R, E, A extends Request<E, B>, B>(
   request: A,
@@ -689,12 +637,12 @@ function makeContinue<R, E, A extends Request<E, B>, B>(
       ref.get,
       I.flatMap(
         O.fold(
-          () => I.die("TODO: Query Failure"),
+          () => I.die('TODO: Query Failure'),
           (a) => I.fromEither(() => a)
         )
       )
     )
-  );
+  )
 }
 
 /*
@@ -709,55 +657,54 @@ abstract class AbstractResult {
       Blocked: ({ blockedRequests, cont }) => blockedResult(blockedRequests, cont.map(f)),
       Fail: ({ cause }) => failResult(cause),
       Done: ({ value }) => doneResult(f(value))
-    });
+    })
   }
 
   gives<R, E, A, R0>(this: Result<R, E, A>, f: Described<(r0: R0) => R>): Result<R0, E, A> {
     return matchTag_(this, {
-      Blocked: ({ blockedRequests, cont }) =>
-        blockedResult(BRS.gives_(blockedRequests, f), cont.gives(f)),
+      Blocked: ({ blockedRequests, cont }) => blockedResult(BRS.gives_(blockedRequests, f), cont.gives(f)),
       Fail: ({ cause }) => failResult(cause),
       Done: ({ value }) => doneResult(value)
-    });
+    })
   }
 }
 
 export class Blocked<R, E, A> extends AbstractResult {
-  readonly _tag = "Blocked";
+  readonly _tag = 'Blocked'
   constructor(readonly blockedRequests: BRS.BlockedRequests<R>, readonly cont: Continue<R, E, A>) {
-    super();
+    super()
   }
 }
 
 export class Done<A> extends AbstractResult {
-  readonly _tag = "Done";
+  readonly _tag = 'Done'
   constructor(readonly value: A) {
-    super();
+    super()
   }
 }
 
 export class Fail<E> extends AbstractResult {
-  readonly _tag = "Fail";
+  readonly _tag = 'Fail'
   constructor(readonly cause: Ca.Cause<E>) {
-    super();
+    super()
   }
 }
 
-export type Result<R, E, A> = Blocked<R, E, A> | Done<A> | Fail<E>;
+export type Result<R, E, A> = Blocked<R, E, A> | Done<A> | Fail<E>
 
 export function blockedResult<R, E, A>(
   blockedRequests: BRS.BlockedRequests<R>,
   cont: Continue<R, E, A>
 ): Result<R, E, A> {
-  return new Blocked(blockedRequests, cont);
+  return new Blocked(blockedRequests, cont)
 }
 
 export function failResult<E>(cause: Ca.Cause<E>): Result<unknown, E, never> {
-  return new Fail(cause);
+  return new Fail(cause)
 }
 
 export function doneResult<A>(value: A): Done<A> {
-  return new Done(value);
+  return new Done(value)
 }
 
 export function resultFromEither<E, A>(either: E.Either<E, A>): Result<unknown, E, A> {
@@ -765,5 +712,5 @@ export function resultFromEither<E, A>(either: E.Either<E, A>): Result<unknown, 
     either,
     (e) => failResult(Ca.fail(e)),
     (a) => doneResult(a)
-  );
+  )
 }

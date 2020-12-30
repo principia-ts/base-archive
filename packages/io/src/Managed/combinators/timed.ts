@@ -1,17 +1,15 @@
-import type { Clock } from "../../Clock";
-import type * as RM from "../ReleaseMap";
-import type { Has } from "@principia/base/data/Has";
+import type { Clock } from '../../Clock'
+import type * as RM from '../ReleaseMap'
+import type { Has } from '@principia/base/data/Has'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import { HasClock } from "../../Clock";
-import * as I from "../_internal/_io";
-import { Managed } from "../core";
-import { asksServiceManaged } from "./service";
+import { HasClock } from '../../Clock'
+import * as I from '../_internal/_io'
+import { Managed } from '../core'
+import { asksServiceManaged } from './service'
 
-export function timed<R, E, A>(
-  ma: Managed<R, E, A>
-): Managed<R & Has<Clock>, E, readonly [number, A]> {
+export function timed<R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E, readonly [number, A]> {
   return asksServiceManaged(HasClock)(
     (clock) =>
       new Managed(
@@ -25,5 +23,5 @@ export function timed<R, E, A>(
           )
         )
       )
-  );
+  )
 }

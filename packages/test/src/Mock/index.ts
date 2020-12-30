@@ -1,1 +1,1 @@
-export * from "./MockException";
+export * from './MockException'

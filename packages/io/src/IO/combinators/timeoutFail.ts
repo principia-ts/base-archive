@@ -1,18 +1,14 @@
-import type { HasClock } from "../../Clock";
-import type { IO } from "../core";
+import type { HasClock } from '../../Clock'
+import type { IO } from '../core'
 
-import { fail, flatten, pure, suspend } from "../core";
-import { timeoutTo_ } from "./timeoutTo";
+import { fail, flatten, pure, suspend } from '../core'
+import { timeoutTo_ } from './timeoutTo'
 
 /**
  * The same as `timeout`, but instead of producing a `None` in the event
  * of timeout, it will produce the specified error.
  */
-export function timeoutFail_<R, E, A, E1>(
-  ma: IO<R, E, A>,
-  d: number,
-  e: () => E1
-): IO<R & HasClock, E | E1, A> {
+export function timeoutFail_<R, E, A, E1>(ma: IO<R, E, A>, d: number, e: () => E1): IO<R & HasClock, E | E1, A> {
   return flatten(
     timeoutTo_(
       ma,
@@ -20,7 +16,7 @@ export function timeoutFail_<R, E, A, E1>(
       suspend(() => fail(e())),
       pure
     )
-  );
+  )
 }
 
 /**
@@ -28,5 +24,5 @@ export function timeoutFail_<R, E, A, E1>(
  * of timeout, it will produce the specified error.
  */
 export function timeoutFail<E1>(d: number, e: () => E1) {
-  return <R, E, A>(ma: IO<R, E, A>) => timeoutFail_(ma, d, e);
+  return <R, E, A>(ma: IO<R, E, A>) => timeoutFail_(ma, d, e)
 }

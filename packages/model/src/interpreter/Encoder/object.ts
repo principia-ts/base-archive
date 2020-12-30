@@ -1,26 +1,24 @@
-import type * as Alg from "../../algebra";
+import type * as Alg from '../../algebra'
 
-import { pipe } from "@principia/base/data/Function";
-import * as R from "@principia/base/data/Record";
-import * as E from "@principia/codec/Encoder";
+import { pipe } from '@principia/base/data/Function'
+import * as R from '@principia/base/data/Record'
+import * as E from '@principia/codec/Encoder'
 
-import { implementInterpreter } from "../../HKT";
-import { applyEncoderConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { applyEncoderConfig } from './HKT'
 
 export const ObjectEncoder = implementInterpreter<E.URI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (encoders) =>
-        applyEncoderConfig(config?.config)(E.type(encoders) as any, env, encoders as any)
+      (encoders) => applyEncoderConfig(config?.config)(E.type(encoders) as any, env, encoders as any)
     ),
   partial: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (encoders) =>
-        applyEncoderConfig(config?.config)(E.partial(encoders) as any, env, encoders as any)
+      (encoders) => applyEncoderConfig(config?.config)(E.partial(encoders) as any, env, encoders as any)
     ),
   both: (required, optional, config) => (env) =>
     pipe(
@@ -37,4 +35,4 @@ export const ObjectEncoder = implementInterpreter<E.URI, Alg.ObjectURI>()((_) =>
             })
         )
     )
-}));
+}))

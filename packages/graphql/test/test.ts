@@ -11,14 +11,12 @@ import { GraphQlFieldInterpreter, GraphQlInputInterpreter } from "../src/schema"
 import { GraphQlException } from "../src/schema/GraphQlException";
 import { makeApollo } from "../src/server/koa";
 
-const apollo = makeApollo({ ...GraphQlFieldInterpreter(), ...GraphQlInputInterpreter() })(
-  {},
-  ({ ctx }) =>
-    I.succeed({
-      req: ctx.req,
-      res: ctx.res,
-      engine: { ...ctx.engine, custom: "A custom context thing" }
-    })
+const apollo = makeApollo({ ...GraphQlFieldInterpreter(), ...GraphQlInputInterpreter() })({}, ({ ctx }) =>
+  I.succeed({
+    req: ctx.req,
+    res: ctx.res,
+    engine: { ...ctx.engine, custom: "A custom context thing" }
+  })
 );
 
 const Obj = apollo.object<{}>()("Obj", (F) => ({

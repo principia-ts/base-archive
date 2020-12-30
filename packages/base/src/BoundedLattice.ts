@@ -6,8 +6,8 @@
  *
  * @since 1.0.0
  */
-import type { BoundedJoinSemilattice } from "./BoundedJoinSemilattice";
-import type { BoundedMeetSemilattice } from "./BoundedMeetSemilattice";
+import type { BoundedJoinSemilattice } from './BoundedJoinSemilattice'
+import type { BoundedMeetSemilattice } from './BoundedMeetSemilattice'
 
 /**
  * @category Type Classes

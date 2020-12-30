@@ -1,8 +1,8 @@
-import type { FIO, UIO } from "../../IO/core";
-import type { Promise } from "../model";
+import type { FIO, UIO } from '../../IO/core'
+import type { Promise } from '../model'
 
-import * as I from "../../IO/core";
-import { Done } from "../model";
+import * as I from '../../IO/core'
+import { Done } from '../model'
 
 /**
  * Completes the promise with the specified effect. If the promise has
@@ -18,24 +18,24 @@ import { Done } from "../model";
  * `Promise.complete`.
  */
 export function completeWith<E, A>(io: FIO<E, A>) {
-  return (promise: Promise<E, A>): UIO<boolean> => completeWith_(promise, io);
+  return (promise: Promise<E, A>): UIO<boolean> => completeWith_(promise, io)
 }
 
 export function completeWith_<E, A>(promise: Promise<E, A>, io: FIO<E, A>): UIO<boolean> {
   return I.total(() => {
-    const state = promise.state.get;
+    const state = promise.state.get
 
     switch (state._tag) {
-      case "Done": {
-        return false;
+      case 'Done': {
+        return false
       }
-      case "Pending": {
-        promise.state.set(new Done(io));
+      case 'Pending': {
+        promise.state.set(new Done(io))
         state.joiners.forEach((f) => {
-          f(io);
-        });
-        return true;
+          f(io)
+        })
+        return true
       }
     }
-  });
+  })
 }

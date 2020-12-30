@@ -3,45 +3,45 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import type { Exit } from "./Exit";
-import type { RuntimeFiber } from "./Fiber";
-import type { Atomic } from "./IORef";
-import type * as O from "@principia/base/data/Option";
+import type { Exit } from './Exit'
+import type { RuntimeFiber } from './Fiber'
+import type { Atomic } from './IORef'
+import type * as O from '@principia/base/data/Option'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import * as I from "./IO/core";
-import * as R from "./IORef/atomic";
+import * as I from './IO/core'
+import * as R from './IORef/atomic'
 
 /**
  * A hint indicating whether or not to propagate supervision events across
  * supervisor hierarchies.
  */
-export type Propagation = Stop | Continue;
+export type Propagation = Stop | Continue
 
 /**
  * A hint indicating supervision events no longer require propagation.
  */
 export class Stop {
-  readonly _tag = "Stop";
+  readonly _tag = 'Stop'
 }
 
 /**
  * A hint indicating supervision events require further propagation.
  */
 export class Continue {
-  readonly _tag = "Continue";
+  readonly _tag = 'Continue'
 }
 
-export const _stop = new Stop();
+export const _stop = new Stop()
 
-export const _continue = new Continue();
+export const _continue = new Continue()
 
 export const propagationAnd = (self: Propagation, that: Propagation) =>
-  self._tag === "Continue" && that._tag === "Continue" ? _continue : _stop;
+  self._tag === 'Continue' && that._tag === 'Continue' ? _continue : _stop
 
 export const propagationOr = (self: Propagation, that: Propagation) =>
-  self._tag === "Continue" || that._tag === "Continue" ? _continue : _stop;
+  self._tag === 'Continue' || that._tag === 'Continue' ? _continue : _stop
 
 /**
  * A `Supervisor<A>` is allowed to supervise the launching and termination of
@@ -76,9 +76,8 @@ export class Supervisor<A> {
           this.unsafeOnStart(environment, effect, parent, fiber),
           that.unsafeOnStart(environment, effect, parent, fiber)
         ),
-      (value, fiber) =>
-        propagationAnd(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
-    );
+      (value, fiber) => propagationAnd(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
+    )
   }
 
   /**
@@ -98,9 +97,8 @@ export class Supervisor<A> {
           this.unsafeOnStart(environment, effect, parent, fiber),
           that.unsafeOnStart(environment, effect, parent, fiber)
         ),
-      (value, fiber) =>
-        propagationOr(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
-    );
+      (value, fiber) => propagationOr(this.unsafeOnEnd(value, fiber), that.unsafeOnEnd(value, fiber))
+    )
   }
 }
 
@@ -114,20 +112,20 @@ export class Supervisor<A> {
  * Creates a new supervisor that tracks children in a set.
  */
 export const track = I.total(() => {
-  const set = new Set<RuntimeFiber<any, any>>();
+  const set = new Set<RuntimeFiber<any, any>>()
 
   return new Supervisor<RuntimeFiber<any, any>[]>(
     I.total(() => Array.from(set)),
     (_, __, ___, fiber) => {
-      set.add(fiber);
-      return _continue;
+      set.add(fiber)
+      return _continue
     },
     (_, fiber) => {
-      set.delete(fiber);
-      return _continue;
+      set.delete(fiber)
+      return _continue
     }
-  );
-});
+  )
+})
 
 /**
  * Creates a new supervisor that tracks children in a set.
@@ -141,21 +139,21 @@ export const fibersIn = (ref: Atomic<Set<RuntimeFiber<any, any>>>) =>
           pipe(
             ref,
             R.unsafeUpdate((s) => s.add(fiber))
-          );
-          return _continue;
+          )
+          return _continue
         },
         (_, fiber) => {
           pipe(
             ref,
             R.unsafeUpdate((s) => {
-              s.delete(fiber);
-              return s;
+              s.delete(fiber)
+              return s
             })
-          );
-          return _continue;
+          )
+          return _continue
         }
       )
-  );
+  )
 
 /**
  * A supervisor that doesn't do anything in response to supervision events.
@@ -164,4 +162,4 @@ export const none = new Supervisor<void>(
   I.unit(),
   () => _continue,
   () => _continue
-);
+)

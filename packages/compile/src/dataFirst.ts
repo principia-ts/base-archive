@@ -1,17 +1,17 @@
-import ts from "typescript";
+import ts from 'typescript'
 
 export default function dataFirst(
   _program: ts.Program,
   _opts?: {
-    dataFirst?: boolean;
+    dataFirst?: boolean
   }
 ) {
-  const dataFirstOn = !(_opts?.dataFirst === false);
-  const checker = _program.getTypeChecker();
+  const dataFirstOn = !(_opts?.dataFirst === false)
+  const checker     = _program.getTypeChecker()
 
   return {
     before(ctx: ts.TransformationContext) {
-      const factory = ctx.factory;
+      const factory = ctx.factory
 
       return (sourceFile: ts.SourceFile) => {
         function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
@@ -22,23 +22,20 @@ export default function dataFirst(
             node.arguments.length === 1 &&
             !ts.isSpreadElement(node.arguments[0])
           ) {
-            const symbol = checker.getTypeAtLocation(node.expression.expression).getSymbol();
+            const symbol = checker.getTypeAtLocation(node.expression.expression).getSymbol()
 
             const dataFirstTag = symbol
               ?.getDeclarations()
               ?.map((e) => {
                 try {
                   return ts
-                    .getAllJSDocTags(
-                      e,
-                      (t): t is ts.JSDocTag => t.tagName?.getText() === "dataFirst"
-                    )
-                    .map((e) => e.comment);
+                    .getAllJSDocTags(e, (t): t is ts.JSDocTag => t.tagName?.getText() === 'dataFirst')
+                    .map((e) => e.comment)
                 } catch {
-                  return [];
+                  return []
                 }
               })
-              .reduce((flatten, entry) => flatten.concat(entry), [])[0];
+              .reduce((flatten, entry) => flatten.concat(entry), [])[0]
 
             if (dataFirstTag) {
               return ts.visitEachChild(
@@ -52,15 +49,15 @@ export default function dataFirst(
                 ),
                 visitor,
                 ctx
-              );
+              )
             }
           }
 
-          return ts.visitEachChild(node, visitor, ctx);
+          return ts.visitEachChild(node, visitor, ctx)
         }
 
-        return dataFirstOn ? ts.visitEachChild(sourceFile, visitor, ctx) : sourceFile;
-      };
+        return dataFirstOn ? ts.visitEachChild(sourceFile, visitor, ctx) : sourceFile
+      }
     }
-  };
+  }
 }

@@ -1,13 +1,13 @@
-import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from "../HKT";
-import type { Predicate, Refinement } from "@principia/base/data/Function";
+import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
+import type { Predicate, Refinement } from '@principia/base/data/Function'
 
-export const RefinementURI = "model/algebra/refinement";
+export const RefinementURI = 'model/algebra/refinement'
 
-export type RefinementURI = typeof RefinementURI;
+export type RefinementURI = typeof RefinementURI
 
-declare module "../HKT" {
+declare module '../HKT' {
   interface URItoAlgebra<IURI, Env> {
-    readonly [RefinementURI]: RefinementAlgebra<IURI, Env>;
+    readonly [RefinementURI]: RefinementAlgebra<IURI, Env>
   }
 }
 
@@ -19,13 +19,13 @@ export interface RefinementAlgebra<F extends InterpreterURIS, Env extends AnyEnv
     a: InterpretedKind<F, Env, S, R, E, A>,
     refinement: Refinement<A, B>,
     name: string,
-    config?: Omit<Config<Env, unknown, unknown, E, B, RefineConfig<E, A, B>>, "name">
-  ) => InterpretedKind<F, Env, unknown, unknown, E, B>;
+    config?: Omit<Config<Env, unknown, unknown, E, B, RefineConfig<E, A, B>>, 'name'>
+  ) => InterpretedKind<F, Env, unknown, unknown, E, B>
 
   readonly constrain: <S, R, E, A>(
     a: InterpretedKind<F, Env, S, R, E, A>,
     predicate: Predicate<A>,
     name: string,
-    config?: Omit<Config<Env, unknown, unknown, E, A, ConstrainConfig<E, A>>, "name">
-  ) => InterpretedKind<F, Env, unknown, unknown, E, A>;
+    config?: Omit<Config<Env, unknown, unknown, E, A, ConstrainConfig<E, A>>, 'name'>
+  ) => InterpretedKind<F, Env, unknown, unknown, E, A>
 }

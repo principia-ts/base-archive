@@ -1,9 +1,9 @@
-import type * as P from "../typeclass";
-import type { Eq } from "./Eq";
-import type { Show } from "./Show";
+import type * as P from '../typeclass'
+import type { Eq } from './Eq'
+import type { Show } from './Show'
 
-import * as HKT from "../HKT";
-import { identity, unsafeCoerce } from "./Function";
+import * as HKT from '../HKT'
+import { identity, unsafeCoerce } from './Function'
 
 /*
  * -------------------------------------------
@@ -11,17 +11,17 @@ import { identity, unsafeCoerce } from "./Function";
  * -------------------------------------------
  */
 
-export type Const<E, A> = E & { readonly _A: A };
+export type Const<E, A> = E & { readonly _A: A }
 
-export const URI = "Const";
+export const URI = 'Const'
 
-export type URI = typeof URI;
+export type URI = typeof URI
 
-export type V = HKT.Auto;
+export type V = HKT.Auto
 
-declare module "../HKT" {
+declare module '../HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Const<E, A>;
+    readonly [URI]: Const<E, A>
   }
 }
 
@@ -35,7 +35,7 @@ declare module "../HKT" {
  * @optimize identity
  */
 export function make<E, A = never>(e: E): Const<E, A> {
-  return unsafeCoerce(e);
+  return unsafeCoerce(e)
 }
 
 /*
@@ -48,12 +48,12 @@ export function make<E, A = never>(e: E): Const<E, A> {
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[URI], V & HKT.Fix<"E", E>> {
-  return HKT.instance<P.Applicative<[URI], V & HKT.Fix<"E", E>>>({
+export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[URI], V & HKT.Fix<'E', E>> {
+  return HKT.instance<P.Applicative<[URI], V & HKT.Fix<'E', E>>>({
     ...getApply(M),
     pure: () => make(M.nat),
     unit: () => make(M.nat)
-  });
+  })
 }
 
 /*
@@ -66,8 +66,8 @@ export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[URI], V & HKT.
  * @category Apply
  * @since 1.0.0
  */
-export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<"E", E>> {
-  type CE = V & HKT.Fix<"E", E>;
+export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<'E', E>> {
+  type CE = V & HKT.Fix<'E', E>
   return HKT.instance<P.Apply<[URI], CE>>({
     imap_: (fa, f, _) => map_(fa, f),
     imap: (f, _) => (fa) => map_(fa, f),
@@ -79,7 +79,7 @@ export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<"E", 
     product: (fb) => (fa) => make(S.combine_(fa, fb)),
     map2_: (fa, fb, _) => make(S.combine_(fa, fb)),
     map2: (fb, _) => (fa) => make(S.combine_(fa, fb))
-  });
+  })
 }
 
 /*
@@ -89,22 +89,19 @@ export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<"E", 
  */
 
 export function bimap_<E, A, D, B>(pab: Const<E, A>, f: (e: E) => D, _: (a: A) => B): Const<D, B> {
-  return make(f(pab));
+  return make(f(pab))
 }
 
-export function bimap<E, A, D, B>(
-  f: (e: E) => D,
-  g: (a: A) => B
-): (pab: Const<E, A>) => Const<D, B> {
-  return (pab) => bimap_(pab, f, g);
+export function bimap<E, A, D, B>(f: (e: E) => D, g: (a: A) => B): (pab: Const<E, A>) => Const<D, B> {
+  return (pab) => bimap_(pab, f, g)
 }
 
 export function mapLeft_<E, A, D>(pab: Const<E, A>, f: (e: E) => D): Const<D, A> {
-  return make(f(pab));
+  return make(f(pab))
 }
 
 export function mapLeft<E, D>(f: (e: E) => D): <A>(pab: Const<E, A>) => Const<D, A> {
-  return (pab) => make(f(pab));
+  return (pab) => make(f(pab))
 }
 
 /*
@@ -118,7 +115,7 @@ export function mapLeft<E, D>(f: (e: E) => D): <A>(pab: Const<E, A>) => Const<D,
  * @since 1.0.0
  */
 export function getBounded<E, A>(B: P.Bounded<E>): P.Bounded<Const<E, A>> {
-  return identity(B) as any;
+  return identity(B) as any
 }
 
 /*
@@ -128,11 +125,11 @@ export function getBounded<E, A>(B: P.Bounded<E>): P.Bounded<Const<E, A>> {
  */
 
 export function contramap_<E, A, B>(fa: Const<E, A>, _: (b: B) => A): Const<E, B> {
-  return unsafeCoerce(fa);
+  return unsafeCoerce(fa)
 }
 
 export function contramap<A, B>(_: (b: B) => A): <E>(fa: Const<E, A>) => Const<E, B> {
-  return unsafeCoerce;
+  return unsafeCoerce
 }
 
 /*
@@ -146,7 +143,7 @@ export function contramap<A, B>(_: (b: B) => A): <E>(fa: Const<E, A>) => Const<E
  * @since 1.0.0
  */
 export function getEq<E, A>(E: Eq<E>): Eq<Const<E, A>> {
-  return identity(E);
+  return identity(E)
 }
 
 /*
@@ -156,11 +153,11 @@ export function getEq<E, A>(E: Eq<E>): Eq<Const<E, A>> {
  */
 
 export function map_<E, A, B>(fa: Const<E, A>, _: (a: A) => B): Const<E, B> {
-  return unsafeCoerce(fa);
+  return unsafeCoerce(fa)
 }
 
 export function map<A, B>(_: (a: A) => B): <E>(fa: Const<E, A>) => Const<E, B> {
-  return unsafeCoerce;
+  return unsafeCoerce
 }
 
 /*
@@ -174,7 +171,7 @@ export function map<A, B>(_: (a: A) => B): <E>(fa: Const<E, A>) => Const<E, B> {
  * @since 1.0.0
  */
 export function getMonoid<E, A>(M: P.Monoid<E>): P.Monoid<Const<E, A>> {
-  return identity(M) as any;
+  return identity(M) as any
 }
 
 /*
@@ -188,7 +185,7 @@ export function getMonoid<E, A>(M: P.Monoid<E>): P.Monoid<Const<E, A>> {
  * @since 1.0.0
  */
 export function getOrd<E, A>(O: P.Ord<E>): P.Ord<Const<E, A>> {
-  return identity(O) as any;
+  return identity(O) as any
 }
 
 /*
@@ -202,7 +199,7 @@ export function getOrd<E, A>(O: P.Ord<E>): P.Ord<Const<E, A>> {
  * @since 1.0.0
  */
 export function getRing<E, A>(S: P.Ring<E>): P.Ring<Const<E, A>> {
-  return identity(S) as any;
+  return identity(S) as any
 }
 
 /*
@@ -216,7 +213,7 @@ export function getRing<E, A>(S: P.Ring<E>): P.Ring<Const<E, A>> {
  * @since 1.0.0
  */
 export function getSemigroup<E, A>(S: P.Semigroup<E>): P.Semigroup<Const<E, A>> {
-  return identity(S) as any;
+  return identity(S) as any
 }
 
 /*
@@ -232,5 +229,5 @@ export function getSemigroup<E, A>(S: P.Semigroup<E>): P.Semigroup<Const<E, A>> 
 export function getShow<E, A>(S: Show<E>): Show<Const<E, A>> {
   return {
     show: (c) => `Const(${S.show(c)})`
-  };
+  }
 }

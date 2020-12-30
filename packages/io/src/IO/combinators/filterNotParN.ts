@@ -1,9 +1,9 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { flow } from "@principia/base/data/Function";
+import { flow } from '@principia/base/data/Function'
 
-import { map } from "../core";
-import { filterParN_ } from "./filterParN";
+import { map } from '../core'
+import { filterParN_ } from './filterParN'
 
 /**
  * Filters the collection in parallel using the specified effectual predicate.
@@ -19,7 +19,7 @@ export function filterNotParN_(
         f,
         map((b) => !b)
       )
-    );
+    )
 }
 
 /**
@@ -29,5 +29,5 @@ export function filterNotParN_(
 export function filterNotParN(
   n: number
 ): <A, R, E>(f: (a: A) => IO<R, E, boolean>) => (as: Iterable<A>) => IO<R, E, readonly A[]> {
-  return (f) => (as) => filterNotParN_(n)(as, f);
+  return (f) => (as) => filterNotParN_(n)(as, f)
 }

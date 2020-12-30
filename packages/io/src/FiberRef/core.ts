@@ -1,9 +1,9 @@
-import type { UIO } from "../IO/core";
+import type { UIO } from '../IO/core'
 
-import { identity, pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import { identity, pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import { ModifyFiberRefInstruction, NewFiberRefInstruction } from "../IO/core";
+import { ModifyFiberRefInstruction, NewFiberRefInstruction } from '../IO/core'
 
 /*
  * -------------------------------------------
@@ -30,7 +30,7 @@ export function make<A>(
   onFork: (a: A) => A = identity,
   onJoin: (a: A, a1: A) => A = (_, a) => a
 ): UIO<FiberRef<A>> {
-  return new NewFiberRefInstruction(initial, onFork, onJoin);
+  return new NewFiberRefInstruction(initial, onFork, onJoin)
 }
 
 /*
@@ -40,56 +40,56 @@ export function make<A>(
  */
 
 export function modify_<A, B>(fiberRef: FiberRef<A>, f: (a: A) => [B, A]): UIO<B> {
-  return new ModifyFiberRefInstruction(fiberRef, f);
+  return new ModifyFiberRefInstruction(fiberRef, f)
 }
 
 export function modify<A, B>(f: (a: A) => [B, A]): (fiberRef: FiberRef<A>) => UIO<B> {
-  return (fr) => modify_(fr, f);
+  return (fr) => modify_(fr, f)
 }
 
 export function update_<A>(fiberRef: FiberRef<A>, f: (a: A) => A): UIO<void> {
-  return modify_(fiberRef, (a) => [undefined, f(a)]);
+  return modify_(fiberRef, (a) => [undefined, f(a)])
 }
 
 export function update<A>(f: (a: A) => A): (fiberRef: FiberRef<A>) => UIO<void> {
-  return (fr) => update_(fr, f);
+  return (fr) => update_(fr, f)
 }
 
 export function set_<A>(fiberRef: FiberRef<A>, a: A): UIO<void> {
-  return modify_(fiberRef, () => [undefined, a]);
+  return modify_(fiberRef, () => [undefined, a])
 }
 
 export function set<A>(a: A): (fiberRef: FiberRef<A>) => UIO<void> {
-  return (fr) => set_(fr, a);
+  return (fr) => set_(fr, a)
 }
 
 export function get<A>(fiberRef: FiberRef<A>): UIO<A> {
   return pipe(
     fiberRef,
     modify((a) => [a, a])
-  );
+  )
 }
 
 export function getAndSet_<A>(fiberRef: FiberRef<A>, a: A): UIO<A> {
-  return modify_(fiberRef, (v) => [v, a]);
+  return modify_(fiberRef, (v) => [v, a])
 }
 
 export function getAndSet<A>(a: A): (fiberRef: FiberRef<A>) => UIO<A> {
-  return (fr) => getAndSet_(fr, a);
+  return (fr) => getAndSet_(fr, a)
 }
 
 export function getAndUpdate_<A>(fiberRef: FiberRef<A>, f: (a: A) => A): UIO<A> {
-  return modify_(fiberRef, (a) => [a, f(a)]);
+  return modify_(fiberRef, (a) => [a, f(a)])
 }
 
 export function getAndUpdate<A>(f: (a: A) => A): (fiberRef: FiberRef<A>) => UIO<A> {
-  return (fr) => getAndUpdate_(fr, f);
+  return (fr) => getAndUpdate_(fr, f)
 }
 
 export function getAndUpdateSome_<A>(fiberRef: FiberRef<A>, f: (a: A) => O.Option<A>): UIO<A> {
-  return modify_(fiberRef, (a) => [a, O.getOrElse_(f(a), () => a)]);
+  return modify_(fiberRef, (a) => [a, O.getOrElse_(f(a), () => a)])
 }
 
 export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>): (fiberRef: FiberRef<A>) => UIO<A> {
-  return (fr) => getAndUpdateSome_(fr, f);
+  return (fr) => getAndUpdateSome_(fr, f)
 }

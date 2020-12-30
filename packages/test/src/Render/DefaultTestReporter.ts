@@ -1,33 +1,33 @@
-import type { ExecutedSpec } from "../ExecutedSpec";
-import type { TestReporter } from "../model";
-import type { FailureDetails } from "./FailureDetails";
-import type { Fragment, Message } from "./FailureMessage";
-import type { TestAnnotationRenderer } from "./TestAnnotationRenderer";
-import type { Cause } from "@principia/io/Cause";
-import type { USync } from "@principia/io/Sync";
+import type { ExecutedSpec } from '../ExecutedSpec'
+import type { TestReporter } from '../model'
+import type { FailureDetails } from './FailureDetails'
+import type { Fragment, Message } from './FailureMessage'
+import type { TestAnnotationRenderer } from './TestAnnotationRenderer'
+import type { Cause } from '@principia/io/Cause'
+import type { USync } from '@principia/io/Sync'
 
-import * as A from "@principia/base/data/Array";
-import * as E from "@principia/base/data/Either";
-import { absurd, identity, pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
-import { cyan, green, red, RESET } from "@principia/base/util/AnsiFormat";
-import { matchTag, matchTag_ } from "@principia/base/util/matchers";
-import * as I from "@principia/io/IO";
-import * as Sy from "@principia/io/Sync";
+import * as A from '@principia/base/data/Array'
+import * as E from '@principia/base/data/Either'
+import { absurd, identity, pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
+import { cyan, green, red, RESET } from '@principia/base/util/AnsiFormat'
+import { matchTag, matchTag_ } from '@principia/base/util/matchers'
+import * as I from '@principia/io/IO'
+import * as Sy from '@principia/io/Sync'
 
-import { TestAnnotationMap } from "../Annotation";
-import * as ES from "../ExecutedSpec";
-import * as BA from "../FreeBooleanAlgebra";
-import { TestLogger } from "../TestLogger";
-import * as FM from "./FailureMessage";
+import { TestAnnotationMap } from '../Annotation'
+import * as ES from '../ExecutedSpec'
+import * as BA from '../FreeBooleanAlgebra'
+import { TestLogger } from '../TestLogger'
+import * as FM from './FailureMessage'
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {
-    const rendered = A.flatMap_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered);
-    const stats = logStats(duration, executedSpec);
+    const rendered = A.flatMap_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
+    const stats    = logStats(duration, executedSpec)
 
-    return I.asksServiceM(TestLogger)((l) => l.logLine(A.append(stats)(rendered).join("\n")));
-  };
+    return I.asksServiceM(TestLogger)((l) => l.logLine(A.append(stats)(rendered).join('\n')))
+  }
 }
 
 export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): string {
@@ -47,15 +47,15 @@ export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): st
           matchTag({ Succeeded: () => [1, 0, 0], Ignored: () => [0, 1, 0] })
         ) as readonly [number, number, number]
     })
-  );
+  )
 
-  const total = success + ignore + failure;
+  const total = success + ignore + failure
 
   return cyan(
     `Ran ${total} test${
-      total === 1 ? "" : "s"
+      total === 1 ? '' : 's'
     } in ${duration}ms: ${success} succeeded, ${ignore} ignored, ${failure} failed`
-  );
+  )
 }
 
 export function render<E>(
@@ -70,48 +70,43 @@ export function render<E>(
     Sy.flatMap_(executedSpec, (executedSpec) =>
       matchTag_(executedSpec, {
         Suite: ({ label, specs }) => {
-          const hasFailures = ES.exists_(
+          const hasFailures    = ES.exists_(
             executedSpec,
             matchTag({
               Test: ({ test }) => E.isLeft(test),
               Suite: () => false
             })
-          );
-          const annotations = ES.fold_<E, TestAnnotationMap>(
+          )
+          const annotations    = ES.fold_<E, TestAnnotationMap>(
             executedSpec,
             matchTag({
-              Suite: ({ specs }) =>
-                A.foldLeft_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
+              Suite: ({ specs }) => A.foldLeft_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
               Test: ({ annotations }) => annotations
             })
-          );
-          const status: Status = hasFailures ? Failed : Passed;
-          const renderedLabel = A.isEmpty(specs)
+          )
+          const status: Status = hasFailures ? Failed : Passed
+          const renderedLabel  = A.isEmpty(specs)
             ? []
             : hasFailures
-            ? [renderFailureLabel(label, depth)]
-            : [renderSuccessLabel(label, depth)];
+              ? [renderFailureLabel(label, depth)]
+              : [renderSuccessLabel(label, depth)]
 
-          const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations);
+          const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
 
           const rest = pipe(
             specs,
-            Sy.foreach((es) =>
-              loop(Sy.succeed(es), depth + tabSize, A.prepend(annotations)(ancestors))
-            ),
+            Sy.foreach((es) => loop(Sy.succeed(es), depth + tabSize, A.prepend(annotations)(ancestors))),
             Sy.map((rr) => A.flatten(rr))
-          );
+          )
 
           return Sy.map_(rest, (rest) => [
-            rendered(Suite, label, status, depth, [...renderedLabel]).withAnnotations(
-              renderedAnnotations
-            ),
+            rendered(Suite, label, status, depth, [...renderedLabel]).withAnnotations(renderedAnnotations),
             ...rest
-          ]);
+          ])
         },
         Test: ({ label, test, annotations }) => {
-          const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations);
-          const renderedResult = E.fold_(
+          const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
+          const renderedResult      = E.fold_(
             test,
             matchTag({
               AssertionFailure: ({ result }) =>
@@ -120,36 +115,29 @@ export function render<E>(
                     result,
                     (details: FailureDetails) =>
                       rendered(Test, label, Failed, depth, renderFailure(label, depth, details)),
-                    (_, __) => _["&&"](__),
-                    (_, __) => _["||"](__),
-                    (_) => _["!"]()
+                    (_, __) => _['&&'](__),
+                    (_, __) => _['||'](__),
+                    (_) => _['!']()
                   )
                 ),
               RuntimeFailure: ({ cause }) =>
                 Sy.succeed(
-                  rendered(Test, label, Failed, depth, [
-                    renderFailureLabel(label, depth),
-                    renderCause(cause, depth)
-                  ])
+                  rendered(Test, label, Failed, depth, [renderFailureLabel(label, depth), renderCause(cause, depth)])
                 )
             }),
             matchTag({
               Succeeded: () =>
-                Sy.succeed(
-                  rendered(Test, label, Passed, depth, [
-                    withOffset(depth)(`${green("+")} ${label}`)
-                  ])
-                ),
+                Sy.succeed(rendered(Test, label, Passed, depth, [withOffset(depth)(`${green('+')} ${label}`)])),
               Ignored: () => Sy.succeed(rendered(Test, label, Ignored, depth, []))
             })
-          );
+          )
 
-          return Sy.map_(renderedResult, (r) => [r.withAnnotations(renderedAnnotations)]);
+          return Sy.map_(renderedResult, (r) => [r.withAnnotations(renderedAnnotations)])
         }
       })
-    );
+    )
 
-  return Sy.unsafeRun(loop(Sy.succeed(executedSpec), 0, A.empty()));
+  return Sy.unsafeRun(loop(Sy.succeed(executedSpec), 0, A.empty()))
 }
 
 function rendered(
@@ -159,49 +147,41 @@ function rendered(
   offset: number,
   rendered: ReadonlyArray<string>
 ): RenderedResult<string> {
-  return new RenderedResult(caseType, label, status, offset, rendered);
+  return new RenderedResult(caseType, label, status, offset, rendered)
 }
 
-function renderFailure(
-  label: string,
-  offset: number,
-  details: FailureDetails
-): ReadonlyArray<string> {
-  return A.prepend(renderFailureLabel(label, offset))(renderFailureDetails(details, offset));
+function renderFailure(label: string, offset: number, details: FailureDetails): ReadonlyArray<string> {
+  return A.prepend(renderFailureLabel(label, offset))(renderFailureDetails(details, offset))
 }
 
 function renderSuccessLabel(label: string, offset: number): string {
-  return withOffset(offset)(`${green("+")} ${label}`);
+  return withOffset(offset)(`${green('+')} ${label}`)
 }
 
 function renderFailureLabel(label: string, offset: number): string {
-  return withOffset(offset)(red(`- ${label}`));
+  return withOffset(offset)(red(`- ${label}`))
 }
 
-function renderFailureDetails(
-  failureDetails: FailureDetails,
-  offset: number
-): ReadonlyArray<string> {
-  return renderToStringLines(FM.renderFailureDetails(failureDetails, offset));
+function renderFailureDetails(failureDetails: FailureDetails, offset: number): ReadonlyArray<string> {
+  return renderToStringLines(FM.renderFailureDetails(failureDetails, offset))
 }
 
 function renderCause(cause: Cause<any>, offset: number): string {
-  return renderToStringLines(FM.renderCause(cause, offset)).join("\n");
+  return renderToStringLines(FM.renderCause(cause, offset)).join('\n')
 }
 
 function withOffset(n: number): (s: string) => string {
-  return (s) => " ".repeat(n) + s;
+  return (s) => ' '.repeat(n) + s
 }
 
 function renderToStringLines(message: Message): ReadonlyArray<string> {
-  const renderFragment = (f: Fragment) =>
-    f.colorCode !== "" ? f.colorCode + f.text + RESET : f.text;
+  const renderFragment = (f: Fragment) => (f.colorCode !== '' ? f.colorCode + f.text + RESET : f.text)
   return A.map_(message.lines, (line) =>
-    withOffset(line.offset)(A.foldLeft_(line.fragments, "", (str, f) => str + renderFragment(f)))
-  );
+    withOffset(line.offset)(A.foldLeft_(line.fragments, '', (str, f) => str + renderFragment(f)))
+  )
 }
 
-const tabSize = 2;
+const tabSize = 2
 
 class RenderedResult<T> {
   constructor(
@@ -212,129 +192,119 @@ class RenderedResult<T> {
     readonly rendered: ReadonlyArray<T>
   ) {}
 
-  ["&&"](that: RenderedResult<T>): RenderedResult<T> {
-    const selfTag = this.status._tag;
-    const thatTag = that.status._tag;
+  ['&&'](that: RenderedResult<T>): RenderedResult<T> {
+    const selfTag = this.status._tag
+    const thatTag = that.status._tag
 
-    return selfTag === "Ignored"
+    return selfTag === 'Ignored'
       ? that
-      : thatTag === "Ignored"
-      ? this
-      : selfTag === "Failed" && thatTag === "Failed"
-      ? new RenderedResult(
-          this.caseType,
-          this.label,
-          this.status,
-          this.offset,
-          A.concat_(
-            this.rendered,
-            O.getOrElse_(A.tail(that.rendered), () => [])
+      : thatTag === 'Ignored'
+        ? this
+        : selfTag === 'Failed' && thatTag === 'Failed'
+          ? new RenderedResult(
+            this.caseType,
+            this.label,
+            this.status,
+            this.offset,
+            A.concat_(
+              this.rendered,
+              O.getOrElse_(A.tail(that.rendered), () => [])
+            )
           )
-        )
-      : selfTag === "Passed"
-      ? that
-      : thatTag === "Passed"
-      ? this
-      : absurd(undefined as never);
+          : selfTag === 'Passed'
+            ? that
+            : thatTag === 'Passed'
+              ? this
+              : absurd(undefined as never)
   }
 
-  ["||"](that: RenderedResult<T>): RenderedResult<T> {
-    const selfTag = this.status._tag;
-    const thatTag = that.status._tag;
+  ['||'](that: RenderedResult<T>): RenderedResult<T> {
+    const selfTag = this.status._tag
+    const thatTag = that.status._tag
 
-    return selfTag === "Ignored"
+    return selfTag === 'Ignored'
       ? that
-      : thatTag === "Ignored"
-      ? this
-      : selfTag === "Failed" && thatTag === "Failed"
-      ? new RenderedResult(
-          this.caseType,
-          this.label,
-          this.status,
-          this.offset,
-          A.concat_(
-            this.rendered,
-            O.getOrElse_(A.tail(that.rendered), () => [])
+      : thatTag === 'Ignored'
+        ? this
+        : selfTag === 'Failed' && thatTag === 'Failed'
+          ? new RenderedResult(
+            this.caseType,
+            this.label,
+            this.status,
+            this.offset,
+            A.concat_(
+              this.rendered,
+              O.getOrElse_(A.tail(that.rendered), () => [])
+            )
           )
-        )
-      : selfTag === "Passed"
-      ? this
-      : thatTag === "Passed"
-      ? that
-      : absurd(undefined as never);
+          : selfTag === 'Passed'
+            ? this
+            : thatTag === 'Passed'
+              ? that
+              : absurd(undefined as never)
   }
 
-  ["!"](): RenderedResult<T> {
+  ['!'](): RenderedResult<T> {
     return matchTag_(this.status, {
       Ignored: () => this,
-      Failed: () =>
-        new RenderedResult(this.caseType, this.label, Passed, this.offset, this.rendered),
-      Passed: () =>
-        new RenderedResult(this.caseType, this.label, Failed, this.offset, this.rendered)
-    });
+      Failed: () => new RenderedResult(this.caseType, this.label, Passed, this.offset, this.rendered),
+      Passed: () => new RenderedResult(this.caseType, this.label, Failed, this.offset, this.rendered)
+    })
   }
 
-  withAnnotations(
-    this: RenderedResult<string>,
-    annotations: ReadonlyArray<string>
-  ): RenderedResult<string> {
-    if (A.isEmpty(this.rendered) || A.isEmpty(annotations)) return this;
-    else {
-      const renderedAnnotations = ` - ${annotations.join(", ")}`;
-      const head = O.fold_(A.head(this.rendered), () => "", identity);
-      const tail = O.fold_(A.tail(this.rendered), () => [], identity);
-      const renderedWithAnnotations = A.prepend_(tail, head + renderedAnnotations);
-      return new RenderedResult(
-        this.caseType,
-        this.label,
-        this.status,
-        this.offset,
-        renderedWithAnnotations
-      );
+  withAnnotations(this: RenderedResult<string>, annotations: ReadonlyArray<string>): RenderedResult<string> {
+    if (A.isEmpty(this.rendered) || A.isEmpty(annotations)) {
+      return this
+    } else {
+      const renderedAnnotations     = ` - ${annotations.join(', ')}`
+      const head                    = O.fold_(A.head(this.rendered), () => '', identity)
+      const tail                    = O.fold_(A.tail(this.rendered), () => [], identity)
+      const renderedWithAnnotations = A.prepend_(tail, head + renderedAnnotations)
+      return new RenderedResult(this.caseType, this.label, this.status, this.offset, renderedWithAnnotations)
     }
   }
 }
 
 interface Failed {
-  readonly _tag: "Failed";
+  readonly _tag: 'Failed'
 }
 
 const Failed: Failed = {
-  _tag: "Failed"
-};
+  _tag: 'Failed'
+}
 
 interface Passed {
-  readonly _tag: "Passed";
+  readonly _tag: 'Passed'
 }
 
 const Passed: Passed = {
-  _tag: "Passed"
-};
+  _tag: 'Passed'
+}
 
 interface Ignored {
-  readonly _tag: "Ignored";
+  readonly _tag: 'Ignored'
 }
 
 const Ignored: Ignored = {
-  _tag: "Ignored"
-};
+  _tag: 'Ignored'
+}
 
-type Status = Failed | Passed | Ignored;
+type Status = Failed | Passed | Ignored
 
 interface Test {
-  readonly _tag: "Test";
+  readonly _tag: 'Test'
 }
 
 const Test: Test = {
-  _tag: "Test"
-};
+  _tag: 'Test'
+}
 
 interface Suite {
-  readonly _tag: "Suite";
+  readonly _tag: 'Suite'
 }
 
 const Suite: Suite = {
-  _tag: "Suite"
-};
+  _tag: 'Suite'
+}
 
-type CaseType = Test | Suite;
+type CaseType = Test | Suite

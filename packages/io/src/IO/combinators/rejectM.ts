@@ -1,9 +1,9 @@
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import * as O from "@principia/base/data/Option";
+import * as O from '@principia/base/data/Option'
 
-import { fail, flatMap, flatMap_, pure } from "../core";
+import { fail, flatMap, flatMap_, pure } from '../core'
 
 /**
  * ```haskell
@@ -21,7 +21,7 @@ export function rejectM_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   pf: (a: A) => Option<IO<R1, E1, E1>>
 ): IO<R & R1, E | E1, A> {
-  return flatMap_(fa, (a) => O.fold_(pf(a), () => pure(a), flatMap(fail)));
+  return flatMap_(fa, (a) => O.fold_(pf(a), () => pure(a), flatMap(fail)))
 }
 
 /**
@@ -39,5 +39,5 @@ export function rejectM_<R, E, A, R1, E1>(
 export function rejectM<R1, E1, A>(
   pf: (a: A) => Option<IO<R1, E1, E1>>
 ): <R, E>(fa: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
-  return (fa) => rejectM_(fa, pf);
+  return (fa) => rejectM_(fa, pf)
 }

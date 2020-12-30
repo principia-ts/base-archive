@@ -21,6 +21,7 @@
     "simple-import-sort",
     "sort-keys-fix",
     "typescript-sort-keys",
+    "functional",
     "@typescript-eslint"
   ],
   "rules": {
@@ -46,11 +47,12 @@
 
     "curly": ["warn", "all"],
     "indent": ["warn", 2, { "SwitchCase": 1 }],
-    "quotes": ["warn", "double", { "avoidEscape": true }],
+    "quotes": ["warn", "single", { "avoidEscape": true }],
     "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
     "max-len": ["warn", 120],
+    "semi": ["error", "never", { "beforeStatementContinuationChars": "always" }],
 
-    "align-assignments/align-assignments": [2, { "requiresOnly": false }],
+    "align-assignments/align-assignments": ["error", { "requiresOnly": false }],
 
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/ban-ts-ignore": "off",
@@ -62,10 +64,10 @@
       "warn",
       {
         "multiline": {
-          "delimiter": "semi"
+          "delimiter": "none"
         },
         "singleline": {
-          "delimiter": "semi"
+          "delimiter": "comma"
         }
       }
     ],
@@ -77,7 +79,9 @@
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^ignored?$"
       }
-    ]
+    ],
+
+    "functional/immutable-data": ["error", { "ignorePattern": "^mut", "ignoreAccessorPattern": "**.mut_*" }]
   },
   "settings": {
     "import/parsers": {

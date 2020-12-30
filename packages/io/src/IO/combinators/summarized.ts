@@ -1,8 +1,8 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import * as I from "../core";
+import * as I from '../core'
 
 export function summarized_<R, E, A, R1, E1, B, C>(
   self: IO<R, E, A>,
@@ -11,16 +11,16 @@ export function summarized_<R, E, A, R1, E1, B, C>(
 ): IO<R & R1, E | E1, [C, A]> {
   return pipe(
     I.do,
-    I.bindS("start", () => summary),
-    I.bindS("value", () => self),
-    I.bindS("end", () => summary),
+    I.bindS('start', () => summary),
+    I.bindS('value', () => self),
+    I.bindS('end', () => summary),
     I.map((s) => [f(s.start, s.end), s.value])
-  );
+  )
 }
 
 export function summarized<R1, E1, B, C>(
   summary: IO<R1, E1, B>,
   f: (start: B, end: B) => C
 ): <R, E, A>(self: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, [C, A]> {
-  return (self) => summarized_(self, summary, f);
+  return (self) => summarized_(self, summary, f)
 }

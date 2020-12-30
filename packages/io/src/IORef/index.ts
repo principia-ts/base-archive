@@ -1,2 +1,2 @@
-export * from "./makeManaged";
-export * from "./core";
+export * from './core'
+export * from './makeManaged'

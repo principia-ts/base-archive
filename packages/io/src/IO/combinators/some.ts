@@ -1,9 +1,9 @@
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import * as O from "@principia/base/data/Option";
+import * as O from '@principia/base/data/Option'
 
-import { fail, foldM_, pure } from "../core";
+import { fail, foldM_, pure } from '../core'
 
 /**
  * ```haskell
@@ -20,5 +20,5 @@ export function some<R, E, A>(ef: IO<R, E, Option<A>>): IO<R, Option<E>, A> {
     ef,
     (e) => fail(O.some(e)),
     O.fold(() => fail(O.none()), pure)
-  );
+  )
 }

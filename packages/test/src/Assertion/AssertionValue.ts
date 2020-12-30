@@ -1,10 +1,10 @@
-import type { FreeBooleanAlgebra } from "../FreeBooleanAlgebra";
-import type { AssertionM } from "./AssertionM";
+import type { FreeBooleanAlgebra } from '../FreeBooleanAlgebra'
+import type { AssertionM } from './AssertionM'
 
-import * as S from "@principia/base/data/Show";
+import * as S from '@principia/base/data/Show'
 
 export class AssertionValue<A> {
-  readonly _tag = "AssertionValue";
+  readonly _tag = 'AssertionValue'
   constructor(
     readonly value: A,
     readonly assertion: () => AssertionM<A>,
@@ -13,10 +13,10 @@ export class AssertionValue<A> {
   ) {}
 
   showValue(): string {
-    return this.showA.show(this.value);
+    return this.showA.show(this.value)
   }
 
   isSameAssertionAs(that: AssertionValue<A>) {
-    return this.assertion().toString() === that.assertion().toString();
+    return this.assertion().toString() === that.assertion().toString()
   }
 }

@@ -9,8 +9,8 @@
 // - Sinks should always end when receiving a `None`. It is a defect to not end with some
 //   sort of result (even a failure) when receiving a `None`.
 
-import { Managed } from "../../Managed";
-import { Push } from "../Push";
+import type { Managed } from '../../Managed'
+import type { Push } from '../Push'
 
 // - Sinks can assume they will not be pushed again after emitting a value.
 export class Sink<R, E, I, L, Z> {

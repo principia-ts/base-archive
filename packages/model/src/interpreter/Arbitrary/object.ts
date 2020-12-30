@@ -1,23 +1,18 @@
-import type * as Alg from "../../algebra";
-import type { ArbURI } from "./HKT";
+import type * as Alg from '../../algebra'
+import type { ArbURI } from './HKT'
 
-import { pipe } from "@principia/base/data/Function";
-import * as R from "@principia/base/data/Record";
+import { pipe } from '@principia/base/data/Function'
+import * as R from '@principia/base/data/Record'
 
-import { implementInterpreter } from "../../HKT";
-import { accessFastCheck, applyArbitraryConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
 export const ObjectArbitrary = implementInterpreter<ArbURI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (arbs) =>
-        applyArbitraryConfig(config?.config)(
-          accessFastCheck(env).record(arbs) as any,
-          env,
-          arbs as any
-        )
+      (arbs) => applyArbitraryConfig(config?.config)(accessFastCheck(env).record(arbs) as any, env, arbs as any)
     ),
   partial: (properties, config) => (env) =>
     pipe(
@@ -52,4 +47,4 @@ export const ObjectArbitrary = implementInterpreter<ArbURI, Alg.ObjectURI>()((_)
             )
         )
     )
-}));
+}))
