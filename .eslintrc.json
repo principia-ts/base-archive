@@ -16,6 +16,7 @@
   },
   "plugins": [
     "functional",
+    "align-assignments",
     "codegen",
     "import",
     "simple-import-sort",
