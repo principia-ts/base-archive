@@ -1,10 +1,10 @@
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import { constant, flow } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import { constant, flow } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import { flatMap_, pure } from "../core";
+import { flatMap_, pure } from '../core'
 
 /**
  * ```haskell
@@ -21,7 +21,7 @@ export function someOrElseM_<R, E, A, R1, E1, B>(
   ef: IO<R, E, Option<A>>,
   orElse: IO<R1, E1, B>
 ): IO<R & R1, E | E1, A | B> {
-  return flatMap_(ef as IO<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))));
+  return flatMap_(ef as IO<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))))
 }
 
 /**
@@ -38,5 +38,5 @@ export function someOrElseM_<R, E, A, R1, E1, B>(
 export function someOrElseM<R1, E1, B>(
   orElse: IO<R1, E1, B>
 ): <R, E, A>(ef: IO<R, E, Option<A>>) => IO<R & R1, E1 | E, B | A> {
-  return (ef) => someOrElseM_(ef, orElse);
+  return (ef) => someOrElseM_(ef, orElse)
 }

@@ -85,12 +85,7 @@ const ds: DS.Batched<Has<Console>, Req> = new (class extends DS.Batched<Has<Cons
     } else {
       return I.gen(function* (_) {
         const items = yield* _(
-          backendGetSome(
-            C.flatMap_(
-              one,
-              matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })
-            )
-          )
+          backendGetSome(C.flatMap_(one, matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })))
         );
         return pipe(
           one,
@@ -128,4 +123,6 @@ const program = () => {
   });
 };
 
-program()["|>"](I.giveLayer(NodeConsole.live))["|>"]((x) => I.run(x, (ex) => console.log(ex)));
+program()
+  ["|>"](I.giveLayer(NodeConsole.live))
+  ["|>"]((x) => I.run(x, (ex) => console.log(ex)));

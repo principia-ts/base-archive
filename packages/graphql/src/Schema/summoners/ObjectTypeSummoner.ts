@@ -1,32 +1,25 @@
-import type { AURItoFieldAlgebra, AURItoInputAlgebra, FieldAURIS, InputAURIS } from "../HKT";
-import type { AnyOutput, FieldRecord } from "../Types";
-import type { __A, __E, __R } from "../Utils";
-import type { Compute } from "@principia/base/util/compute";
-import type { FieldDefinitionNode, ObjectTypeDefinitionNode } from "graphql";
+import type { AURItoFieldAlgebra, AURItoInputAlgebra, FieldAURIS, InputAURIS } from '../HKT'
+import type { AnyOutput, FieldRecord } from '../Types'
+import type { __A, __E, __R } from '../Utils'
+import type { Compute } from '@principia/base/util/compute'
+import type { FieldDefinitionNode, ObjectTypeDefinitionNode } from 'graphql'
 
-import * as A from "@principia/base/data/Array";
-import * as R from "@principia/base/data/Record";
+import * as A from '@principia/base/data/Array'
+import * as R from '@principia/base/data/Record'
 
-import { addNameToUnnamedFieldDefinitionNode, createObjectTypeDefinitionNode } from "../AST";
-import { GQLObject } from "../Types";
+import { addNameToUnnamedFieldDefinitionNode, createObjectTypeDefinitionNode } from '../AST'
+import { GQLObject } from '../Types'
 
-export interface ObjectTypeSummoner<
-  FieldAURI extends FieldAURIS,
-  InputAURI extends InputAURIS,
-  Root,
-  T
-> {
+export interface ObjectTypeSummoner<FieldAURI extends FieldAURIS, InputAURI extends InputAURIS, Root, T> {
   <Name extends string, Fields extends FieldRecord<Root, T, Fields>>(
     name: Name,
     fields: (F: AURItoFieldAlgebra<Root, T>[FieldAURI] & AURItoInputAlgebra[InputAURI]) => Fields
-  ): GQLObject<Name, Root, T, __R<Fields>, __E<Fields>, __A<Fields>>;
+  ): GQLObject<Name, Root, T, __R<Fields>, __E<Fields>, __A<Fields>>
 }
 
 function buildObjectType<FieldAURI extends FieldAURIS, InputAURI extends InputAURIS>(
   name: string,
-  fields: (
-    F: AURItoFieldAlgebra<any, any>[FieldAURI] & AURItoInputAlgebra[InputAURI]
-  ) => FieldRecord<any, any, any>,
+  fields: (F: AURItoFieldAlgebra<any, any>[FieldAURI] & AURItoInputAlgebra[InputAURI]) => FieldRecord<any, any, any>,
   interpreters: AURItoFieldAlgebra<any, any>[FieldAURI] & AURItoInputAlgebra[InputAURI]
 ): ObjectTypeDefinitionNode {
   return createObjectTypeDefinitionNode({
@@ -48,37 +41,34 @@ function buildObjectType<FieldAURI extends FieldAURIS, InputAURI extends InputAU
            *     })
            *   );
            */
-          case "GQLField":
-            return A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k));
-          case "GQLScalarField":
-            return A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k));
-          case "GQLObjectField":
-            return A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k));
+          case 'GQLField':
+            return A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
+          case 'GQLScalarField':
+            return A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
+          case 'GQLObjectField':
+            return A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
         }
       }
     ),
     name
-  });
+  })
 }
 
 export function makeObjectTypeSummoner<FieldAURI extends FieldAURIS, InputAURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldAURI] & AURItoInputAlgebra[InputAURI]
 ) {
-  return <Root = {}, T = {}>(): ObjectTypeSummoner<FieldAURI, InputAURI, Root, T> => (
-    name,
-    fields
-  ) => {
-    const interpretedFields = fields(interpreters);
+  return <Root = {}, T = {}>(): ObjectTypeSummoner<FieldAURI, InputAURI, Root, T> => (name, fields) => {
+    const interpretedFields = fields(interpreters)
     return new GQLObject(
       buildObjectType(name, fields, interpreters),
       name,
       interpretedFields,
       R.foldLeftWithIndex_(interpretedFields, {}, (acc, k, v: AnyOutput<T>) => {
-        if (v._tag === "GQLField") {
-          return { ...acc, [k]: v.resolve };
+        if (v._tag === 'GQLField') {
+          return { ...acc, [k]: v.resolve }
         }
-        return acc;
+        return acc
       })
-    );
-  };
+    )
+  }
 }

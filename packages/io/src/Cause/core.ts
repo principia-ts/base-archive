@@ -1,56 +1,56 @@
-import type { FiberId } from "../Fiber/FiberId";
-import type { Eq } from "@principia/base/data/Eq";
-import type { NonEmptyArray } from "@principia/base/data/NonEmptyArray";
-import type * as HKT from "@principia/base/HKT";
+import type { FiberId } from '../Fiber/FiberId'
+import type { Eq } from '@principia/base/data/Eq'
+import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
+import type * as HKT from '@principia/base/HKT'
 
-import * as A from "@principia/base/data/Array";
-import * as E from "@principia/base/data/Either";
-import { makeEq } from "@principia/base/data/Eq";
-import { flow, identity, pipe } from "@principia/base/data/Function";
-import * as F from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import * as A from '@principia/base/data/Array'
+import * as E from '@principia/base/data/Either'
+import { makeEq } from '@principia/base/data/Eq'
+import { flow, identity, pipe } from '@principia/base/data/Function'
+import * as F from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import { eqFiberId } from "../Fiber/FiberId";
-import * as Sy from "../Sync";
+import { eqFiberId } from '../Fiber/FiberId'
+import * as Sy from '../Sync'
 
-export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E>;
+export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E>
 
 export interface Empty {
-  readonly _tag: "Empty";
+  readonly _tag: 'Empty'
 }
 
 export interface Fail<E> {
-  readonly _tag: "Fail";
-  readonly value: E;
+  readonly _tag: 'Fail'
+  readonly value: E
 }
 
 export interface Die {
-  readonly _tag: "Die";
-  readonly value: unknown;
+  readonly _tag: 'Die'
+  readonly value: unknown
 }
 
 export interface Interrupt {
-  readonly _tag: "Interrupt";
-  readonly fiberId: FiberId;
+  readonly _tag: 'Interrupt'
+  readonly fiberId: FiberId
 }
 
 export interface Then<E> {
-  readonly _tag: "Then";
-  readonly left: Cause<E>;
-  readonly right: Cause<E>;
+  readonly _tag: 'Then'
+  readonly left: Cause<E>
+  readonly right: Cause<E>
 }
 
 export interface Both<E> {
-  readonly _tag: "Both";
-  readonly left: Cause<E>;
-  readonly right: Cause<E>;
+  readonly _tag: 'Both'
+  readonly left: Cause<E>
+  readonly right: Cause<E>
 }
 
-export const URI = "Cause";
+export const URI = 'Cause'
 
-export type URI = typeof URI;
+export type URI = typeof URI
 
-export type V = HKT.Auto;
+export type V = HKT.Auto
 
 /*
  * -------------------------------------------
@@ -59,8 +59,8 @@ export type V = HKT.Auto;
  */
 
 export const empty: Cause<never> = {
-  _tag: "Empty"
-};
+  _tag: 'Empty'
+}
 
 /**
  * ```haskell
@@ -69,9 +69,9 @@ export const empty: Cause<never> = {
  */
 export function fail<E>(value: E): Cause<E> {
   return {
-    _tag: "Fail",
+    _tag: 'Fail',
     value
-  };
+  }
 }
 
 /**
@@ -81,9 +81,9 @@ export function fail<E>(value: E): Cause<E> {
  */
 export function die(value: unknown): Cause<never> {
   return {
-    _tag: "Die",
+    _tag: 'Die',
     value
-  };
+  }
 }
 
 /**
@@ -93,9 +93,9 @@ export function die(value: unknown): Cause<never> {
  */
 export function interrupt(fiberId: FiberId): Cause<never> {
   return {
-    _tag: "Interrupt",
+    _tag: 'Interrupt',
     fiberId
-  };
+  }
 }
 
 /**
@@ -104,7 +104,7 @@ export function interrupt(fiberId: FiberId): Cause<never> {
  * ```
  */
 export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
-  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Then", left, right };
+  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: 'Then', left, right }
 }
 
 /**
@@ -113,7 +113,7 @@ export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
  * ```
  */
 export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
-  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: "Both", left, right };
+  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: 'Both', left, right }
 }
 
 /*
@@ -133,7 +133,7 @@ export const failed: <E>(cause: Cause<E>) => boolean = flow(
   failureOption,
   O.map(() => true),
   O.getOrElse(() => false)
-);
+)
 
 /**
  * ```haskell
@@ -141,7 +141,7 @@ export const failed: <E>(cause: Cause<E>) => boolean = flow(
  * ```
  */
 export function isThen<E>(cause: Cause<E>): cause is Then<E> {
-  return cause._tag === "Then";
+  return cause._tag === 'Then'
 }
 
 /**
@@ -150,7 +150,7 @@ export function isThen<E>(cause: Cause<E>): cause is Then<E> {
  * ```
  */
 export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
-  return cause._tag === "Both";
+  return cause._tag === 'Both'
 }
 
 /**
@@ -163,20 +163,20 @@ export function isEmpty<E>(cause: Cause<E>): boolean {
     equalsCause(cause, empty) ||
     foldLeft_(cause, true as boolean, (acc, c) => {
       switch (c._tag) {
-        case "Empty":
-          return O.some(acc);
-        case "Die":
-          return O.some(false);
-        case "Fail":
-          return O.some(false);
-        case "Interrupt":
-          return O.some(false);
+        case 'Empty':
+          return O.some(acc)
+        case 'Die':
+          return O.some(false)
+        case 'Fail':
+          return O.some(false)
+        case 'Interrupt':
+          return O.some(false)
         default: {
-          return O.none();
+          return O.none()
         }
       }
     })
-  );
+  )
 }
 
 /**
@@ -190,7 +190,7 @@ export const died: <E>(cause: Cause<E>) => boolean = flow(
   dieOption,
   O.map(() => true),
   O.getOrElse(() => false)
-);
+)
 
 /**
  * ```haskell
@@ -205,7 +205,7 @@ export function interrupted<E>(cause: Cause<E>): boolean {
     interruptOption,
     O.map(() => true),
     O.getOrElse(() => false)
-  );
+  )
 }
 
 /**
@@ -218,16 +218,16 @@ export function interrupted<E>(cause: Cause<E>): boolean {
 export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
   return (cause) =>
     equalsCause(that, cause) ||
-    foldLeft_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()));
+    foldLeft_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()))
 }
 
 export function isCause(u: unknown): u is Cause<unknown> {
   return (
-    typeof u === "object" &&
+    typeof u === 'object' &&
     u !== null &&
-    "_tag" in u &&
-    ["Empty", "Fail", "Die", "Interrupt", "Then", "Both"].includes(u["_tag"])
-  );
+    '_tag' in u &&
+    ['Empty', 'Fail', 'Die', 'Interrupt', 'Then', 'Both'].includes(u['_tag'])
+  )
 }
 
 /*
@@ -244,36 +244,36 @@ export function findSafe_<E, A>(
   f: (cause: Cause<E>) => O.Option<A>
 ): Sy.Sync<unknown, never, O.Option<A>> {
   return Sy.gen(function* (_) {
-    const apply = f(cause);
-    if (apply._tag === "Some") {
-      return apply;
+    const apply = f(cause)
+    if (apply._tag === 'Some') {
+      return apply
     }
     switch (cause._tag) {
-      case "Then": {
-        const isLeft = yield* _(findSafe_(cause.left, f));
-        if (isLeft._tag === "Some") {
-          return isLeft;
+      case 'Then': {
+        const isLeft = yield* _(findSafe_(cause.left, f))
+        if (isLeft._tag === 'Some') {
+          return isLeft
         } else {
-          return yield* _(findSafe_(cause.right, f));
+          return yield* _(findSafe_(cause.right, f))
         }
       }
-      case "Both": {
-        const isLeft = yield* _(findSafe_(cause.left, f));
-        if (isLeft._tag === "Some") {
-          return isLeft;
+      case 'Both': {
+        const isLeft = yield* _(findSafe_(cause.left, f))
+        if (isLeft._tag === 'Some') {
+          return isLeft
         } else {
-          return yield* _(findSafe_(cause.right, f));
+          return yield* _(findSafe_(cause.right, f))
         }
       }
       default: {
-        return apply;
+        return apply
       }
     }
-  });
+  })
 }
 
 export function find_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): O.Option<A> {
-  return Sy.unsafeRun(findSafe_(cause, f));
+  return Sy.unsafeRun(findSafe_(cause, f))
 }
 
 /**
@@ -287,7 +287,7 @@ export function find_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>
  * @since 1.0.0
  */
 export function find<A, E>(f: (cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => O.Option<A> {
-  return (cause) => find_(cause, f);
+  return (cause) => find_(cause, f)
 }
 
 /**
@@ -304,26 +304,26 @@ export function foldSafe_<E, A>(
 ): Sy.USync<A> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Empty":
-        return onEmpty();
-      case "Fail":
-        return onFail(cause.value);
-      case "Die":
-        return onDie(cause.value);
-      case "Interrupt":
-        return onInterrupt(cause.fiberId);
-      case "Both":
+      case 'Empty':
+        return onEmpty()
+      case 'Fail':
+        return onFail(cause.value)
+      case 'Die':
+        return onDie(cause.value)
+      case 'Interrupt':
+        return onInterrupt(cause.fiberId)
+      case 'Both':
         return onBoth(
           yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
           yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
-        );
-      case "Then":
+        )
+      case 'Then':
         return onThen(
           yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
           yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
-        );
+        )
     }
-  });
+  })
 }
 
 /**
@@ -351,36 +351,31 @@ export function fold<E, A>(
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A
 ): (cause: Cause<E>) => A {
-  return (cause) =>
-    Sy.unsafeRun(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth));
+  return (cause) => Sy.unsafeRun(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
 }
 
 /**
  * @internal
  */
-export function foldLeftSafe_<E, B>(
-  cause: Cause<E>,
-  b: B,
-  f: (b: B, cause: Cause<E>) => O.Option<B>
-): Sy.USync<B> {
+export function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Sy.USync<B> {
   return Sy.gen(function* (_) {
-    const apply = O.getOrElse_(f(b, cause), () => b);
+    const apply = O.getOrElse_(f(b, cause), () => b)
     switch (cause._tag) {
-      case "Then": {
-        const l = yield* _(foldLeftSafe_(cause.left, apply, f));
-        const r = yield* _(foldLeftSafe_(cause.right, l, f));
-        return r;
+      case 'Then': {
+        const l = yield* _(foldLeftSafe_(cause.left, apply, f))
+        const r = yield* _(foldLeftSafe_(cause.right, l, f))
+        return r
       }
-      case "Both": {
-        const l = yield* _(foldLeftSafe_(cause.left, apply, f));
-        const r = yield* _(foldLeftSafe_(cause.right, l, f));
-        return r;
+      case 'Both': {
+        const l = yield* _(foldLeftSafe_(cause.left, apply, f))
+        const r = yield* _(foldLeftSafe_(cause.right, l, f))
+        return r
       }
       default: {
-        return apply;
+        return apply
       }
     }
-  });
+  })
 }
 
 /**
@@ -398,11 +393,11 @@ export const foldLeft_ = F.trampoline(function loop<E, A>(
   a: A,
   f: (a: A, cause: Cause<E>) => O.Option<A>
 ): F.Trampoline<A> {
-  const apply = O.getOrElse_(f(a, cause), () => a);
-  return cause._tag === "Both" || cause._tag === "Then"
+  const apply = O.getOrElse_(f(a, cause), () => a)
+  return cause._tag === 'Both' || cause._tag === 'Then'
     ? F.more(() => loop(cause.right, foldLeft_(cause.left, apply, f), f))
-    : F.done(apply);
-});
+    : F.done(apply)
+})
 
 /*
  * export const foldl_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): B =>
@@ -419,11 +414,8 @@ export const foldLeft_ = F.trampoline(function loop<E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export function foldLeft<E, A>(
-  a: A,
-  f: (a: A, cause: Cause<E>) => O.Option<A>
-): (cause: Cause<E>) => A {
-  return (cause) => foldLeft_(cause, a, f);
+export function foldLeft<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => A {
+  return (cause) => foldLeft_(cause, a, f)
 }
 
 /**
@@ -435,7 +427,7 @@ export function foldLeft<E, A>(
  * exists.
  */
 export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
-  return find_(cause, (c) => (c._tag === "Interrupt" ? O.some(c.fiberId) : O.none()));
+  return find_(cause, (c) => (c._tag === 'Interrupt' ? O.some(c.fiberId) : O.none()))
 }
 
 /**
@@ -447,7 +439,7 @@ export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
  * exists.
  */
 export function failureOption<E>(cause: Cause<E>): O.Option<E> {
-  return find_(cause, (c) => (c._tag === "Fail" ? O.some(c.value) : O.none()));
+  return find_(cause, (c) => (c._tag === 'Fail' ? O.some(c.value) : O.none()))
 }
 
 /**
@@ -459,7 +451,7 @@ export function failureOption<E>(cause: Cause<E>): O.Option<E> {
  * one exists.
  */
 export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
-  return find_(cause, (c) => (c._tag === "Die" ? O.some(c.value) : O.none()));
+  return find_(cause, (c) => (c._tag === 'Die' ? O.some(c.value) : O.none()))
 }
 
 /*
@@ -477,7 +469,7 @@ export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
  * @since 1.0.0
  */
 export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
-  return flatMap_(fa, () => that());
+  return flatMap_(fa, () => that())
 }
 
 /**
@@ -489,7 +481,7 @@ export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
  * @since 1.0.0
  */
 export function alt<E>(that: () => Cause<E>): (fa: Cause<E>) => Cause<E> {
-  return (fa) => alt_(fa, that);
+  return (fa) => alt_(fa, that)
 }
 
 /*
@@ -509,7 +501,7 @@ export function alt<E>(that: () => Cause<E>): (fa: Cause<E>) => Cause<E> {
  * @since 1.0.0
  */
 export function pure<E>(e: E): Cause<E> {
-  return fail(e);
+  return fail(e)
 }
 
 /*
@@ -529,7 +521,7 @@ export function pure<E>(e: E): Cause<E> {
  * @since 1.0.0
  */
 export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
-  return flatMap_(fab, (f) => map_(fa, f));
+  return flatMap_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -543,7 +535,7 @@ export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
  * @since 1.0.0
  */
 export function ap<E>(fa: Cause<E>): <D>(fab: Cause<(a: E) => D>) => Cause<D> {
-  return (fab) => ap_(fab, fa);
+  return (fab) => ap_(fab, fa)
 }
 
 /*
@@ -554,35 +546,35 @@ export function ap<E>(fa: Cause<E>): <D>(fab: Cause<(a: E) => D>) => Cause<D> {
 
 export function equalsCause<E>(x: Cause<E>, y: Cause<E>): boolean {
   switch (x._tag) {
-    case "Fail": {
-      return y._tag === "Fail" && x.value === y.value;
+    case 'Fail': {
+      return y._tag === 'Fail' && x.value === y.value
     }
-    case "Empty": {
-      return y._tag === "Empty";
+    case 'Empty': {
+      return y._tag === 'Empty'
     }
-    case "Die": {
+    case 'Die': {
       return (
-        y._tag === "Die" &&
+        y._tag === 'Die' &&
         ((x.value instanceof Error &&
           y.value instanceof Error &&
           x.value.name === y.value.name &&
           x.value.message === y.value.message) ||
           x.value === y.value)
-      );
+      )
     }
-    case "Interrupt": {
-      return y._tag === "Interrupt" && eqFiberId.equals(x.fiberId)(y.fiberId);
+    case 'Interrupt': {
+      return y._tag === 'Interrupt' && eqFiberId.equals(x.fiberId)(y.fiberId)
     }
-    case "Both": {
-      return y._tag === "Both" && equalsCause(x.left, y.left) && equalsCause(x.right, y.right);
+    case 'Both': {
+      return y._tag === 'Both' && equalsCause(x.left, y.left) && equalsCause(x.right, y.right)
     }
-    case "Then": {
-      return y._tag === "Then" && equalsCause(x.left, y.left) && equalsCause(x.right, y.right);
+    case 'Then': {
+      return y._tag === 'Then' && equalsCause(x.left, y.left) && equalsCause(x.right, y.right)
     }
   }
 }
 
-export const eqCause: Eq<Cause<any>> = makeEq(equalsCause);
+export const eqCause: Eq<Cause<any>> = makeEq(equalsCause)
 
 /*
  * -------------------------------------------
@@ -601,7 +593,7 @@ export const eqCause: Eq<Cause<any>> = makeEq(equalsCause);
  * @since 1.0.0
  */
 export function map_<E, D>(fa: Cause<E>, f: (e: E) => D) {
-  return flatMap_(fa, (e) => fail(f(e)));
+  return flatMap_(fa, (e) => fail(f(e)))
 }
 
 /**
@@ -615,7 +607,7 @@ export function map_<E, D>(fa: Cause<E>, f: (e: E) => D) {
  * @since 1.0.0
  */
 export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
-  return (fa) => map_(fa, f);
+  return (fa) => map_(fa, f)
 }
 
 /*
@@ -624,26 +616,23 @@ export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
  * -------------------------------------------
  */
 
-export function flatMapSafe_<E, D>(
-  ma: Cause<E>,
-  f: (e: E) => Cause<D>
-): Sy.Sync<unknown, never, Cause<D>> {
+export function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<unknown, never, Cause<D>> {
   return Sy.gen(function* (_) {
     switch (ma._tag) {
-      case "Empty":
-        return empty;
-      case "Fail":
-        return f(ma.value);
-      case "Die":
-        return ma;
-      case "Interrupt":
-        return ma;
-      case "Then":
-        return then(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)));
-      case "Both":
-        return both(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)));
+      case 'Empty':
+        return empty
+      case 'Fail':
+        return f(ma.value)
+      case 'Die':
+        return ma
+      case 'Interrupt':
+        return ma
+      case 'Then':
+        return then(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)))
+      case 'Both':
+        return both(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)))
     }
-  });
+  })
 }
 
 /**
@@ -657,7 +646,7 @@ export function flatMapSafe_<E, D>(
  * @since 1.0.0
  */
 export function flatMap_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-  return Sy.unsafeRun(flatMapSafe_(ma, f));
+  return Sy.unsafeRun(flatMapSafe_(ma, f))
 }
 
 /**
@@ -671,7 +660,7 @@ export function flatMap_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
  * @since 1.0.0
  */
 export function flatMap<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
-  return (ma) => flatMap_(ma, f);
+  return (ma) => flatMap_(ma, f)
 }
 
 /**
@@ -685,7 +674,7 @@ export function flatMap<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D>
  * @since 1.0.0
  */
 export function flatten<E>(mma: Cause<Cause<E>>): Cause<E> {
-  return flatMap_(mma, identity);
+  return flatMap_(mma, identity)
 }
 
 /*
@@ -695,7 +684,7 @@ export function flatten<E>(mma: Cause<Cause<E>>): Cause<E> {
  */
 
 export function unit(): Cause<void> {
-  return fail(undefined);
+  return fail(undefined)
 }
 
 /*
@@ -715,7 +704,7 @@ export function unit(): Cause<void> {
  * @since 1.0.0
  */
 export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
-  return map(() => e);
+  return map(() => e)
 }
 
 /**
@@ -723,17 +712,15 @@ export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
  */
 export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
   return foldLeft_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
-    c._tag === "Die" ? O.some([...a, c.value]) : O.none()
-  );
+    c._tag === 'Die' ? O.some([...a, c.value]) : O.none()
+  )
 }
 
 /**
  * Produces a list of all recoverable errors `E` in the `Cause`.
  */
 export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
-  return foldLeft_(cause, [] as readonly E[], (a, c) =>
-    c._tag === "Fail" ? O.some([...a, c.value]) : O.none()
-  );
+  return foldLeft_(cause, [] as readonly E[], (a, c) => (c._tag === 'Fail' ? O.some([...a, c.value]) : O.none()))
 }
 
 /**
@@ -741,9 +728,7 @@ export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
  * by this `Cause`.
  */
 export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
-  return foldLeft_(cause, new Set(), (s, c) =>
-    c._tag === "Interrupt" ? O.some(s.add(c.fiberId)) : O.none()
-  );
+  return foldLeft_(cause, new Set(), (s, c) => (c._tag === 'Interrupt' ? O.some(s.add(c.fiberId)) : O.none()))
 }
 
 /**
@@ -755,7 +740,7 @@ export function interruptedOnly<E>(cause: Cause<E>): boolean {
     cause,
     find((c) => (died(c) || failed(c) ? O.some(false) : O.none())),
     O.getOrElse(() => true)
-  );
+  )
 }
 
 /**
@@ -764,39 +749,33 @@ export function interruptedOnly<E>(cause: Cause<E>): boolean {
 export function stripFailuresSafe<E>(cause: Cause<E>): Sy.USync<Cause<never>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Empty": {
-        return empty;
+      case 'Empty': {
+        return empty
       }
-      case "Fail": {
-        return empty;
+      case 'Fail': {
+        return empty
       }
-      case "Interrupt": {
-        return cause;
+      case 'Interrupt': {
+        return cause
       }
-      case "Die": {
-        return cause;
+      case 'Die': {
+        return cause
       }
-      case "Both": {
-        return both(
-          yield* _(stripFailuresSafe(cause.left)),
-          yield* _(stripFailuresSafe(cause.right))
-        );
+      case 'Both': {
+        return both(yield* _(stripFailuresSafe(cause.left)), yield* _(stripFailuresSafe(cause.right)))
       }
-      case "Then": {
-        return then(
-          yield* _(stripFailuresSafe(cause.left)),
-          yield* _(stripFailuresSafe(cause.right))
-        );
+      case 'Then': {
+        return then(yield* _(stripFailuresSafe(cause.left)), yield* _(stripFailuresSafe(cause.right)))
       }
     }
-  });
+  })
 }
 
 /**
  * Discards all typed failures kept on this `Cause`.
  */
 export function stripFailures<E>(cause: Cause<E>): Cause<never> {
-  return Sy.unsafeRun(stripFailuresSafe(cause));
+  return Sy.unsafeRun(stripFailuresSafe(cause))
 }
 
 /**
@@ -805,39 +784,33 @@ export function stripFailures<E>(cause: Cause<E>): Cause<never> {
 export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Empty": {
-        return empty;
+      case 'Empty': {
+        return empty
       }
-      case "Fail": {
-        return cause;
+      case 'Fail': {
+        return cause
       }
-      case "Interrupt": {
-        return empty;
+      case 'Interrupt': {
+        return empty
       }
-      case "Die": {
-        return cause;
+      case 'Die': {
+        return cause
       }
-      case "Both": {
-        return both(
-          yield* _(stripInterruptsSafe(cause.left)),
-          yield* _(stripInterruptsSafe(cause.right))
-        );
+      case 'Both': {
+        return both(yield* _(stripInterruptsSafe(cause.left)), yield* _(stripInterruptsSafe(cause.right)))
       }
-      case "Then": {
-        return then(
-          yield* _(stripInterruptsSafe(cause.left)),
-          yield* _(stripInterruptsSafe(cause.right))
-        );
+      case 'Then': {
+        return then(yield* _(stripInterruptsSafe(cause.left)), yield* _(stripInterruptsSafe(cause.right)))
       }
     }
-  });
+  })
 }
 
 /**
  * Discards all interrupts kept on this `Cause`.
  */
 export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
-  return Sy.unsafeRun(stripInterruptsSafe(cause));
+  return Sy.unsafeRun(stripInterruptsSafe(cause))
 }
 
 /**
@@ -846,48 +819,48 @@ export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
 export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<never>>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Empty": {
-        return O.none();
+      case 'Empty': {
+        return O.none()
       }
-      case "Fail": {
-        return O.none();
+      case 'Fail': {
+        return O.none()
       }
-      case "Interrupt": {
-        return O.none();
+      case 'Interrupt': {
+        return O.none()
       }
-      case "Die": {
-        return O.some(cause);
+      case 'Die': {
+        return O.some(cause)
       }
-      case "Then": {
-        const lefts = yield* _(keepDefectsSafe(cause.left));
-        const rights = yield* _(keepDefectsSafe(cause.right));
+      case 'Then': {
+        const lefts = yield* _(keepDefectsSafe(cause.left))
+        const rights = yield* _(keepDefectsSafe(cause.right))
 
-        if (lefts._tag === "Some" && rights._tag === "Some") {
-          return O.some(then(lefts.value, rights.value));
-        } else if (lefts._tag === "Some") {
-          return lefts;
-        } else if (rights._tag === "Some") {
-          return rights;
+        if (lefts._tag === 'Some' && rights._tag === 'Some') {
+          return O.some(then(lefts.value, rights.value))
+        } else if (lefts._tag === 'Some') {
+          return lefts
+        } else if (rights._tag === 'Some') {
+          return rights
         } else {
-          return O.none();
+          return O.none()
         }
       }
-      case "Both": {
-        const lefts = yield* _(keepDefectsSafe(cause.left));
-        const rights = yield* _(keepDefectsSafe(cause.right));
+      case 'Both': {
+        const lefts = yield* _(keepDefectsSafe(cause.left))
+        const rights = yield* _(keepDefectsSafe(cause.right))
 
-        if (lefts._tag === "Some" && rights._tag === "Some") {
-          return O.some(both(lefts.value, rights.value));
-        } else if (lefts._tag === "Some") {
-          return lefts;
-        } else if (rights._tag === "Some") {
-          return rights;
+        if (lefts._tag === 'Some' && rights._tag === 'Some') {
+          return O.some(both(lefts.value, rights.value))
+        } else if (lefts._tag === 'Some') {
+          return lefts
+        } else if (rights._tag === 'Some') {
+          return rights
         } else {
-          return O.none();
+          return O.none()
         }
       }
     }
-  });
+  })
 }
 
 /**
@@ -895,107 +868,101 @@ export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<nev
  * return only `Die` cause/finalizer defects.
  */
 export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
-  return Sy.unsafeRun(keepDefectsSafe(cause));
+  return Sy.unsafeRun(keepDefectsSafe(cause))
 }
 
-export function sequenceCauseEitherSafe<E, A>(
-  cause: Cause<E.Either<E, A>>
-): Sy.USync<E.Either<Cause<E>, A>> {
+export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Sy.USync<E.Either<Cause<E>, A>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Empty": {
-        return E.left(empty);
+      case 'Empty': {
+        return E.left(empty)
       }
-      case "Interrupt": {
-        return E.left(cause);
+      case 'Interrupt': {
+        return E.left(cause)
       }
-      case "Fail": {
-        return cause.value._tag === "Left"
-          ? E.left(fail(cause.value.left))
-          : E.right(cause.value.right);
+      case 'Fail': {
+        return cause.value._tag === 'Left' ? E.left(fail(cause.value.left)) : E.right(cause.value.right)
       }
-      case "Die": {
-        return E.left(cause);
+      case 'Die': {
+        return E.left(cause)
       }
-      case "Then": {
-        const lefts = yield* _(sequenceCauseEitherSafe(cause.left));
-        const rights = yield* _(sequenceCauseEitherSafe(cause.right));
+      case 'Then': {
+        const lefts = yield* _(sequenceCauseEitherSafe(cause.left))
+        const rights = yield* _(sequenceCauseEitherSafe(cause.right))
 
-        return lefts._tag === "Left"
-          ? rights._tag === "Right"
+        return lefts._tag === 'Left'
+          ? rights._tag === 'Right'
             ? E.right(rights.right)
             : E.left(then(lefts.left, rights.left))
-          : E.right(lefts.right);
+          : E.right(lefts.right)
       }
-      case "Both": {
-        const lefts = yield* _(sequenceCauseEitherSafe(cause.left));
-        const rights = yield* _(sequenceCauseEitherSafe(cause.right));
+      case 'Both': {
+        const lefts = yield* _(sequenceCauseEitherSafe(cause.left))
+        const rights = yield* _(sequenceCauseEitherSafe(cause.right))
 
-        return lefts._tag === "Left"
-          ? rights._tag === "Right"
+        return lefts._tag === 'Left'
+          ? rights._tag === 'Right'
             ? E.right(rights.right)
             : E.left(both(lefts.left, rights.left))
-          : E.right(lefts.right);
+          : E.right(lefts.right)
       }
     }
-  });
+  })
 }
 
 /**
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
 export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> {
-  return Sy.unsafeRun(sequenceCauseEitherSafe(cause));
+  return Sy.unsafeRun(sequenceCauseEitherSafe(cause))
 }
 
-export function sequenceCauseOptionSafe<E>(
-  cause: Cause<O.Option<E>>
-): Sy.USync<O.Option<Cause<E>>> {
+export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<O.Option<Cause<E>>> {
   return Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Empty": {
-        return O.some(empty);
+      case 'Empty': {
+        return O.some(empty)
       }
-      case "Interrupt": {
-        return O.some(cause);
+      case 'Interrupt': {
+        return O.some(cause)
       }
-      case "Fail": {
-        return O.map_(cause.value, fail);
+      case 'Fail': {
+        return O.map_(cause.value, fail)
       }
-      case "Die": {
-        return O.some(cause);
+      case 'Die': {
+        return O.some(cause)
       }
-      case "Then": {
-        const lefts = yield* _(sequenceCauseOptionSafe(cause.left));
-        const rights = yield* _(sequenceCauseOptionSafe(cause.right));
-        return lefts._tag === "Some"
-          ? rights._tag === "Some"
+      case 'Then': {
+        const lefts = yield* _(sequenceCauseOptionSafe(cause.left))
+        const rights = yield* _(sequenceCauseOptionSafe(cause.right))
+        return lefts._tag === 'Some'
+          ? rights._tag === 'Some'
             ? O.some(then(lefts.value, rights.value))
             : lefts
-          : rights._tag === "Some"
-          ? rights
-          : O.none();
+          : rights._tag === 'Some'
+            ? rights
+            : O.none()
       }
-      case "Both": {
-        const lefts = yield* _(sequenceCauseOptionSafe(cause.left));
-        const rights = yield* _(sequenceCauseOptionSafe(cause.right));
-        return lefts._tag === "Some"
-          ? rights._tag === "Some"
+      case 'Both': {
+        const lefts = yield* _(sequenceCauseOptionSafe(cause.left))
+        const rights = yield* _(sequenceCauseOptionSafe(cause.right))
+        return lefts._tag === 'Some'
+          ? rights._tag === 'Some'
             ? O.some(both(lefts.value, rights.value))
             : lefts
-          : rights._tag === "Some"
-          ? rights
-          : O.none();
+          : rights._tag === 'Some'
+            ? rights
+            : O.none()
       }
     }
-  });
+  })
 }
 
 /**
  * Converts the specified `Cause<Option<E>>` to an `Option<Cause<E>>`.
  */
 export function sequenceCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> {
-  return Sy.unsafeRun(sequenceCauseOptionSafe(cause));
+  return Sy.unsafeRun(sequenceCauseOptionSafe(cause))
 }
 
 /**
@@ -1009,7 +976,7 @@ export function failureOrCause<E>(cause: Cause<E>): E.Either<E, Cause<never>> {
     failureOption,
     O.map(E.left),
     O.getOrElse(() => E.right(cause as Cause<never>)) // no E inside this cause, can safely cast
-  );
+  )
 }
 
 /**
@@ -1025,19 +992,19 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
       O.alt(() =>
         interrupted(cause)
           ? O.some<unknown>(
-              new InterruptedException(
-                "Interrupted by fibers: " +
+            new InterruptedException(
+              'Interrupted by fibers: ' +
                   Array.from(interruptors(cause))
                     .map((_) => _.seqNumber.toString())
-                    .map((_) => "#" + _)
-                    .join(", ")
-              )
+                    .map((_) => '#' + _)
+                    .join(', ')
             )
+          )
           : O.none()
       ),
       O.alt(() => A.head(defects(cause))),
       O.getOrElse(() => new InterruptedException())
-    );
+    )
 }
 
 /*
@@ -1047,85 +1014,85 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
  */
 
 export class FiberFailure<E> extends Error {
-  readonly _tag = "FiberFailure";
-  readonly pretty = pretty(this.cause);
+  readonly _tag   = 'FiberFailure'
+  readonly pretty = pretty(this.cause)
 
   constructor(readonly cause: Cause<E>) {
-    super();
+    super()
 
-    this.name = this._tag;
-    this.stack = undefined;
+    this.name  = this._tag
+    this.stack = undefined
   }
 }
 
 export function isFiberFailure(u: unknown): u is FiberFailure<unknown> {
-  return u instanceof Error && u["_tag"] === "FiberFailure";
+  return u instanceof Error && u['_tag'] === 'FiberFailure'
 }
 
 export class Untraced extends Error {
-  readonly _tag = "Untraced";
+  readonly _tag = 'Untraced'
 
   constructor(message?: string) {
-    super(message);
-    this.name = this._tag;
-    this.stack = undefined;
+    super(message)
+    this.name  = this._tag
+    this.stack = undefined
   }
 }
 
 export function isUntraced(u: unknown): u is Untraced {
-  return u instanceof Error && u["_tag"] === "Untraced";
+  return u instanceof Error && u['_tag'] === 'Untraced'
 }
 
 export class RuntimeError extends Error {
-  readonly _tag = "RuntimeError";
+  readonly _tag = 'RuntimeError'
 
   constructor(message?: string) {
-    super(message);
+    super(message)
 
-    this.name = this._tag;
+    this.name = this._tag
   }
 }
 
 export function isRuntime(u: unknown): u is RuntimeError {
-  return u instanceof Error && u["_tag"] === "RuntimeError";
+  return u instanceof Error && u['_tag'] === 'RuntimeError'
 }
 
 export class InterruptedException extends Error {
-  readonly _tag = "InterruptedException";
+  readonly _tag = 'InterruptedException'
 
   constructor(message?: string) {
-    super(message);
-    this.name = this._tag;
+    super(message)
+    this.name = this._tag
   }
 }
 
 export function isInterruptedException(u: unknown): u is InterruptedException {
-  return u instanceof Error && u["_tag"] === "InterruptedException";
+  return u instanceof Error && u['_tag'] === 'InterruptedException'
 }
 
 export class IllegalStateException extends Error {
-  readonly _tag = "IllegalStateException";
+  readonly _tag = 'IllegalStateException'
 
   constructor(message?: string) {
-    super(message);
-    this.name = this._tag;
+    super(message)
+    this.name = this._tag
   }
 }
 
 export function isIllegalStateException(u: unknown): u is IllegalStateException {
-  return u instanceof Error && u["_tag"] === "IllegalStateException";
+  return u instanceof Error && u['_tag'] === 'IllegalStateException'
 }
 
 export class IllegalArgumentException extends Error {
-  readonly _tag = "IllegalArgumentException";
+  readonly _tag = 'IllegalArgumentException'
   constructor(message?: string) {
-    super(message);
-    this.name = this._tag;
+    super(message)
+    this.name = this._tag
   }
 }
 
 export function isIllegalArgumentException(u: unknown): u is IllegalArgumentException {
-  return u instanceof Error && u["_tag"] === "IllegalArgumentException";
+  return u instanceof Error && u['_tag'] === 'IllegalArgumentException'
 }
 
 /*
@@ -1134,176 +1101,170 @@ export function isIllegalArgumentException(u: unknown): u is IllegalArgumentExce
  * -------------------------------------------
  */
 
-type Segment = Sequential | Parallel | Failure;
+type Segment = Sequential | Parallel | Failure
 
-type Step = Parallel | Failure;
+type Step = Parallel | Failure
 
 interface Failure {
-  _tag: "Failure";
-  lines: string[];
+  _tag: 'Failure'
+  lines: string[]
 }
 
 interface Parallel {
-  _tag: "Parallel";
-  all: Sequential[];
+  _tag: 'Parallel'
+  all: Sequential[]
 }
 
 interface Sequential {
-  _tag: "Sequential";
-  all: Step[];
+  _tag: 'Sequential'
+  all: Step[]
 }
 
 const Failure = (lines: string[]): Failure => ({
-  _tag: "Failure",
+  _tag: 'Failure',
   lines
-});
+})
 
 const Sequential = (all: Step[]): Sequential => ({
-  _tag: "Sequential",
+  _tag: 'Sequential',
   all
-});
+})
 
 const Parallel = (all: Sequential[]): Parallel => ({
-  _tag: "Parallel",
+  _tag: 'Parallel',
   all
-});
+})
 
 const headTail = <A>(a: NonEmptyArray<A>): [A, A[]] => {
-  const x = [...a];
-  const head = x.shift() as A;
-  return [head, x];
-};
+  const x    = [...a]
+  const head = x.shift() as A
+  return [head, x]
+}
 
-const lines = (s: string) => s.split("\n").map((s) => s.replace("\r", "")) as string[];
+const lines = (s: string) => s.split('\n').map((s) => s.replace('\r', '')) as string[]
 
 const prefixBlock = (values: readonly string[], p1: string, p2: string): string[] =>
   A.isNonEmpty(values)
     ? pipe(headTail(values), ([head, tail]) => [`${p1}${head}`, ...tail.map((_) => `${p2}${_}`)])
-    : [];
+    : []
 
 const renderInterrupt = (fiberId: FiberId): Sequential =>
-  Sequential([Failure([`An interrupt was produced by #${fiberId.seqNumber}.`])]);
+  Sequential([Failure([`An interrupt was produced by #${fiberId.seqNumber}.`])])
 
-const renderError = (error: Error): string[] => lines(error.stack ? error.stack : String(error));
+const renderError = (error: Error): string[] => lines(error.stack ? error.stack : String(error))
 
 const renderDie = (error: Error): Sequential =>
-  Sequential([Failure(["An unchecked error was produced.", "", ...renderError(error)])]);
+  Sequential([Failure(['An unchecked error was produced.', '', ...renderError(error)])])
 
 const renderDieUnknown = (error: string[]): Sequential =>
-  Sequential([Failure(["An unchecked error was produced.", "", ...error])]);
+  Sequential([Failure(['An unchecked error was produced.', '', ...error])])
 
 const renderFail = (error: string[]): Sequential =>
-  Sequential([Failure(["A checked error was not handled.", "", ...error])]);
+  Sequential([Failure(['A checked error was not handled.', '', ...error])])
 
 const renderFailError = (error: Error): Sequential =>
-  Sequential([Failure(["A checked error was not handled.", "", ...renderError(error)])]);
+  Sequential([Failure(['A checked error was not handled.', '', ...renderError(error)])])
 
 const causeToSequential = <E>(cause: Cause<E>): Sy.USync<Sequential> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Empty": {
-        return Sequential([]);
+      case 'Empty': {
+        return Sequential([])
       }
-      case "Fail": {
+      case 'Fail': {
         return cause.value instanceof Error
           ? renderFailError(cause.value)
-          : renderFail(lines(JSON.stringify(cause.value, null, 2)));
+          : renderFail(lines(JSON.stringify(cause.value, null, 2)))
       }
-      case "Die": {
+      case 'Die': {
         return cause.value instanceof Error
           ? renderDie(cause.value)
-          : renderDieUnknown(lines(JSON.stringify(cause.value, null, 2)));
+          : renderDieUnknown(lines(JSON.stringify(cause.value, null, 2)))
       }
-      case "Interrupt": {
-        return renderInterrupt(cause.fiberId);
+      case 'Interrupt': {
+        return renderInterrupt(cause.fiberId)
       }
-      case "Then": {
-        return Sequential(yield* _(linearSegments(cause)));
+      case 'Then': {
+        return Sequential(yield* _(linearSegments(cause)))
       }
-      case "Both": {
-        return Sequential([Parallel(yield* _(parallelSegments(cause)))]);
+      case 'Both': {
+        return Sequential([Parallel(yield* _(parallelSegments(cause)))])
       }
     }
-  });
+  })
 
 const linearSegments = <E>(cause: Cause<E>): Sy.USync<Step[]> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Then": {
-        return [
-          ...(yield* _(linearSegments(cause.left))),
-          ...(yield* _(linearSegments(cause.right)))
-        ];
+      case 'Then': {
+        return [...(yield* _(linearSegments(cause.left))), ...(yield* _(linearSegments(cause.right)))]
       }
       default: {
-        return (yield* _(causeToSequential(cause))).all;
+        return (yield* _(causeToSequential(cause))).all
       }
     }
-  });
+  })
 
 const parallelSegments = <E>(cause: Cause<E>): Sy.USync<Sequential[]> =>
   Sy.gen(function* (_) {
     switch (cause._tag) {
-      case "Both": {
-        return [
-          ...(yield* _(parallelSegments(cause.left))),
-          ...(yield* _(parallelSegments(cause.right)))
-        ];
+      case 'Both': {
+        return [...(yield* _(parallelSegments(cause.left))), ...(yield* _(parallelSegments(cause.right)))]
       }
       default: {
-        return [yield* _(causeToSequential(cause))];
+        return [yield* _(causeToSequential(cause))]
       }
     }
-  });
+  })
 
 const times = (s: string, n: number) => {
-  let h = "";
+  let h = ''
 
   for (let i = 0; i < n; i += 1) {
-    h += s;
+    h += s
   }
 
-  return h;
-};
+  return h
+}
 
 const format = (segment: Segment): readonly string[] => {
   switch (segment._tag) {
-    case "Failure": {
-      return prefixBlock(segment.lines, "─", " ");
+    case 'Failure': {
+      return prefixBlock(segment.lines, '─', ' ')
     }
-    case "Parallel": {
+    case 'Parallel': {
       return [
-        times("══╦", segment.all.length - 1) + "══╗",
+        times('══╦', segment.all.length - 1) + '══╗',
         ...A.foldRight_(segment.all, [] as string[], (current, acc) => [
-          ...prefixBlock(acc, "  ║", "  ║"),
-          ...prefixBlock(format(current), "  ", "  ")
+          ...prefixBlock(acc, '  ║', '  ║'),
+          ...prefixBlock(format(current), '  ', '  ')
         ])
-      ];
+      ]
     }
-    case "Sequential": {
-      return A.flatMap_(segment.all, (seg) => ["║", ...prefixBlock(format(seg), "╠", "║"), "▼"]);
+    case 'Sequential': {
+      return A.flatMap_(segment.all, (seg) => ['║', ...prefixBlock(format(seg), '╠', '║'), '▼'])
     }
   }
-};
+}
 
 const prettyLines = <E>(cause: Cause<E>): Sy.USync<readonly string[]> =>
   Sy.gen(function* (_) {
-    const s = yield* _(causeToSequential(cause));
+    const s = yield* _(causeToSequential(cause))
 
-    if (s.all.length === 1 && s.all[0]._tag === "Failure") {
-      return s.all[0].lines;
+    if (s.all.length === 1 && s.all[0]._tag === 'Failure') {
+      return s.all[0].lines
     }
 
-    return O.getOrElse_(A.updateAt(0, "╥")(format(s)), (): string[] => []);
-  });
+    return O.getOrElse_(A.updateAt(0, '╥')(format(s)), (): string[] => [])
+  })
 
 export function prettyM<E>(cause: Cause<E>): Sy.USync<string> {
   return Sy.gen(function* (_) {
-    const lines = yield* _(prettyLines(cause));
-    return lines.join("\n");
-  });
+    const lines = yield* _(prettyLines(cause))
+    return lines.join('\n')
+  })
 }
 
 export function pretty<E>(cause: Cause<E>): string {
-  return Sy.unsafeRun(prettyM(cause));
+  return Sy.unsafeRun(prettyM(cause))
 }

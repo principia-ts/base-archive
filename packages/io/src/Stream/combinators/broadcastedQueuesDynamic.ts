@@ -1,13 +1,13 @@
-import type * as Ex from "../../Exit";
-import type * as Q from "../../Queue";
-import type { Stream } from "../core";
+import type * as Ex from '../../Exit'
+import type * as Q from '../../Queue'
+import type { Stream } from '../core'
 
-import * as O from "@principia/base/data/Option";
+import * as O from '@principia/base/data/Option'
+import { snd } from '@principia/base/data/Tuple'
 
-import * as I from "../../IO";
-import * as M from "../../Managed";
-import { snd } from "@principia/base/data/Tuple";
-import { distributedWithDynamic_ } from "./distributedWithDynamic";
+import * as I from '../../IO'
+import * as M from '../../Managed'
+import { distributedWithDynamic_ } from './distributedWithDynamic'
 
 /**
  * Converts the stream to a managed dynamic amount of queues. Every chunk will be replicated to every queue with the
@@ -30,7 +30,7 @@ export function broadcastedQueuesDynamic_<R, E, O>(
       () => I.unit()
     ),
     I.map(snd)
-  );
+  )
 }
 
 /**
@@ -44,8 +44,6 @@ export function broadcastedQueuesDynamic_<R, E, O>(
  */
 export function broadcastedQueuesDynamic(
   maximumLag: number
-): <R, E, O>(
-  stream: Stream<R, E, O>
-) => M.Managed<R, never, I.UIO<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
-  return (ma) => broadcastedQueuesDynamic_(ma, maximumLag);
+): <R, E, O>(stream: Stream<R, E, O>) => M.Managed<R, never, I.UIO<Q.Dequeue<Ex.Exit<O.Option<E>, O>>>> {
+  return (ma) => broadcastedQueuesDynamic_(ma, maximumLag)
 }

@@ -1,6 +1,6 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { fail, foldM_, pure } from "../core";
+import { fail, foldM_, pure } from '../core'
 
 /**
  * ```haskell
@@ -12,7 +12,7 @@ export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B):
     wa,
     (e) => fail(e),
     (_) => pure(f(wa))
-  );
+  )
 }
 
 /**
@@ -21,5 +21,5 @@ export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B):
  * ```
  */
 export function extend<R, E, A, B>(f: (wa: IO<R, E, A>) => B): (wa: IO<R, E, A>) => IO<R, E, B> {
-  return (wa) => extend_(wa, f);
+  return (wa) => extend_(wa, f)
 }

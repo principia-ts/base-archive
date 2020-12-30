@@ -1,14 +1,14 @@
-import type { Clock } from "../../Clock";
-import type { Has } from "@principia/base/data/Has";
+import type { Clock } from '../../Clock'
+import type { Has } from '@principia/base/data/Has'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import * as C from "../../Chunk";
-import * as T from "../../IO";
-import * as M from "../../Managed";
-import * as SC from "../../Schedule";
-import * as BPull from "../BufferedPull";
-import { Stream } from "../core";
+import * as C from '../../Chunk'
+import * as T from '../../IO'
+import * as M from '../../Managed'
+import * as SC from '../../Schedule'
+import * as BPull from '../BufferedPull'
+import { Stream } from '../core'
 
 /**
  * Schedules the output of the stream using the provided `schedule` and emits its output at
@@ -22,9 +22,9 @@ export function scheduleWith<R1, O, B>(schedule: SC.Schedule<R1, O, B>) {
     return new Stream(
       pipe(
         M.do,
-        M.bindS("as", () => M.mapM_(self.proc, BPull.make)),
-        M.bindS("driver", () => T.toManaged_(SC.driver(schedule))),
-        M.letS("pull", ({ as, driver }) =>
+        M.bindS('as', () => M.mapM_(self.proc, BPull.make)),
+        M.bindS('driver', () => T.toManaged_(SC.driver(schedule))),
+        M.letS('pull', ({ as, driver }) =>
           T.flatMap_(BPull.pullElement(as), (o) =>
             T.orElse_(
               T.as_(driver.next(o), () => C.single(f(o))),
@@ -38,6 +38,6 @@ export function scheduleWith<R1, O, B>(schedule: SC.Schedule<R1, O, B>) {
         ),
         M.map(({ pull }) => pull)
       )
-    );
-  };
+    )
+  }
 }

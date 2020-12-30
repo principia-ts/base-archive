@@ -1,15 +1,15 @@
-import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from "../HKT";
-import type { Newtype } from "@principia/base/Newtype";
-import type { Iso } from "@principia/optics/Iso";
-import type { Prism } from "@principia/optics/Prism";
+import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
+import type { Newtype } from '@principia/base/Newtype'
+import type { Iso } from '@principia/optics/Iso'
+import type { Prism } from '@principia/optics/Prism'
 
-export const NewtypeURI = "model/algebra/newtype";
+export const NewtypeURI = 'model/algebra/newtype'
 
-export type NewtypeURI = typeof NewtypeURI;
+export type NewtypeURI = typeof NewtypeURI
 
-declare module "../HKT" {
+declare module '../HKT' {
   interface URItoAlgebra<IURI, Env> {
-    readonly [NewtypeURI]: NewtypeAlgebra<IURI, Env>;
+    readonly [NewtypeURI]: NewtypeAlgebra<IURI, Env>
   }
 }
 
@@ -21,11 +21,11 @@ export interface NewtypeAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     iso: Iso<A, N>,
     a: InterpretedKind<F, Env, unknown, unknown, E, A>,
     config?: Config<Env, unknown, unknown, E, N, IsoConfig<E, A, N>>
-  ) => InterpretedKind<F, Env, unknown, unknown, E, N>;
+  ) => InterpretedKind<F, Env, unknown, unknown, E, N>
 
   readonly newtypePrism: <E, A, N extends Newtype<any, A>>(
     prism: Prism<A, N>,
     a: InterpretedKind<F, Env, unknown, unknown, E, A>,
     config?: Config<Env, unknown, unknown, E, N, PrismConfig<E, A, N>>
-  ) => InterpretedKind<F, Env, unknown, unknown, E, N>;
+  ) => InterpretedKind<F, Env, unknown, unknown, E, N>
 }

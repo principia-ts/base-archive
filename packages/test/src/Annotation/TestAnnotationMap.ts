@@ -1,9 +1,9 @@
-import type { TestAnnotation } from "./TestAnnotation";
+import type { TestAnnotation } from './TestAnnotation'
 
-import * as A from "@principia/base/data/Array";
-import { identity, pipe } from "@principia/base/data/Function";
-import * as RMap from "@principia/base/data/Map";
-import * as O from "@principia/base/data/Option";
+import * as A from '@principia/base/data/Array'
+import { identity, pipe } from '@principia/base/data/Function'
+import * as RMap from '@principia/base/data/Map'
+import * as O from '@principia/base/data/Option'
 
 export class TestAnnotationMap {
   constructor(private readonly map: ReadonlyMap<TestAnnotation<any>, any>) {}
@@ -24,24 +24,24 @@ export class TestAnnotationMap {
           )
         )
       )
-    );
+    )
   }
 
   get<V>(key: TestAnnotation<V>): V {
-    return O.fold_(O.fromNullable(this.map.get(key)), () => key.initial, identity);
+    return O.fold_(O.fromNullable(this.map.get(key)), () => key.initial, identity)
   }
 
   private overwrite<V>(key: TestAnnotation<V>, value: V): TestAnnotationMap {
-    return new TestAnnotationMap(RMap.insert_(this.map, key, value));
+    return new TestAnnotationMap(RMap.insert_(this.map, key, value))
   }
 
   private update<V>(key: TestAnnotation<V>, f: (v: V) => V): TestAnnotationMap {
-    return this.overwrite(key, f(this.get(key)));
+    return this.overwrite(key, f(this.get(key)))
   }
 
   annotate<V>(key: TestAnnotation<V>, value: V): TestAnnotationMap {
-    return this.update(key, (_) => key.combine(_, value));
+    return this.update(key, (_) => key.combine(_, value))
   }
 
-  static empty: TestAnnotationMap = new TestAnnotationMap(RMap.empty());
+  static empty: TestAnnotationMap = new TestAnnotationMap(RMap.empty())
 }

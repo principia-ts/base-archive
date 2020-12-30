@@ -1,11 +1,11 @@
-import type { IO } from "../../IO";
-import type { Stream } from "../core";
+import type { IO } from '../../IO'
+import type { Stream } from '../core'
 
-import { constTrue } from "@principia/base/data/Function";
+import { constTrue } from '@principia/base/data/Function'
 
-import * as I from "../../IO";
-import * as M from "../../Managed";
-import { reduceWhileManagedM_ } from "./reduceWhileManagedM";
+import * as I from '../../IO'
+import * as M from '../../Managed'
+import { reduceWhileManagedM_ } from './reduceWhileManagedM'
 
 /**
  * Executes a pure fold over the stream of values - reduces all elements in the stream to a value of type `S`.
@@ -14,15 +14,12 @@ export function reduce_<R, E, O, S>(ma: Stream<R, E, O>, s: S, f: (s: S, o: O) =
   return M.use_(
     reduceWhileManagedM_(ma, s, constTrue, (s, o) => I.succeed(f(s, o))),
     I.succeed
-  );
+  )
 }
 
 /**
  * Executes a pure fold over the stream of values - reduces all elements in the stream to a value of type `S`.
  */
-export function reduce<O, S>(
-  s: S,
-  f: (s: S, o: O) => S
-): <R, E>(ma: Stream<R, E, O>) => IO<R, E, S> {
-  return (ma) => reduce_(ma, s, f);
+export function reduce<O, S>(s: S, f: (s: S, o: O) => S): <R, E>(ma: Stream<R, E, O>) => IO<R, E, S> {
+  return (ma) => reduce_(ma, s, f)
 }

@@ -1,8 +1,8 @@
-import type { Managed } from "../core";
+import type { Managed } from '../core'
 
-import * as I from "../_internal/io";
-import { fromEffect } from "../core";
-import { onExitFirst_ } from "./onExitFirst";
+import * as I from '../_internal/io'
+import { fromEffect } from '../core'
+import { onExitFirst_ } from './onExitFirst'
 
 /**
  * Lifts a `IO<R, E, A>` into `Managed<R, E, A>` with a release action.
@@ -15,14 +15,14 @@ export function makeInterruptible_<R, E, A, R1>(
 ): Managed<R & R1, E, A> {
   return onExitFirst_(fromEffect(acquire), (e) => {
     switch (e._tag) {
-      case "Failure": {
-        return I.unit();
+      case 'Failure': {
+        return I.unit()
       }
-      case "Success": {
-        return release(e.value);
+      case 'Success': {
+        return release(e.value)
       }
     }
-  });
+  })
 }
 
 /**
@@ -33,5 +33,5 @@ export function makeInterruptible_<R, E, A, R1>(
 export function makeInterruptible<A, R1>(
   release: (a: A) => I.IO<R1, never, unknown>
 ): <R, E>(acquire: I.IO<R, E, A>) => Managed<R & R1, E, A> {
-  return (acquire) => makeInterruptible_(acquire, release);
+  return (acquire) => makeInterruptible_(acquire, release)
 }

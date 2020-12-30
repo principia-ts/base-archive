@@ -1,10 +1,10 @@
-import type { RuntimeFiber } from "../../Fiber/core";
+import type { RuntimeFiber } from '../../Fiber/core'
 
-import { supervised_ } from "../../IO/combinators/supervised";
-import { track } from "../../Supervisor";
-import * as I from "../_internal/io";
-import { Managed } from "../core";
-import { unwrap } from "./unwrap";
+import { supervised_ } from '../../IO/combinators/supervised'
+import { track } from '../../Supervisor'
+import * as I from '../_internal/io'
+import { Managed } from '../core'
+import { unwrap } from './unwrap'
 
 /**
  * Locally installs a supervisor and an effect that succeeds with all the
@@ -28,5 +28,5 @@ export function withChildren<R, E, A>(
           )
         )
     )
-  );
+  )
 }

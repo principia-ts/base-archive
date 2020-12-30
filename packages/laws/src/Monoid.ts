@@ -1,11 +1,11 @@
-import type { Eq } from "@principia/base/data/Eq";
-import type { Monoid } from "@principia/base/Monoid";
+import type { Eq } from '@principia/base/data/Eq'
+import type { Monoid } from '@principia/base/Monoid'
 
 export const MonoidLaws = {
   rightIdentity: <A>(M: Monoid<A>, E: Eq<A>) => (a: A): boolean => {
-    return E.equals_(M.combine_(a, M.nat), a);
+    return E.equals_(M.combine_(a, M.nat), a)
   },
   leftIdentity: <A>(M: Monoid<A>, E: Eq<A>) => (a: A): boolean => {
-    return E.equals_(M.combine_(M.nat, a), a);
+    return E.equals_(M.combine_(M.nat, a), a)
   }
-};
+}

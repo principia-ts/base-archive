@@ -1,7 +1,7 @@
-import type { Supervisor } from "../../Supervisor";
-import type { IO } from "../core";
+import type { Supervisor } from '../../Supervisor'
+import type { IO } from '../core'
 
-import { SuperviseInstruction } from "../core";
+import { SuperviseInstruction } from '../core'
 
 /**
  * ```haskell
@@ -15,7 +15,7 @@ import { SuperviseInstruction } from "../core";
  * @since 1.0.0
  */
 export function supervised_<R, E, A>(fa: IO<R, E, A>, supervisor: Supervisor<any>): IO<R, E, A> {
-  return new SuperviseInstruction(fa, supervisor);
+  return new SuperviseInstruction(fa, supervisor)
 }
 
 /**
@@ -30,5 +30,5 @@ export function supervised_<R, E, A>(fa: IO<R, E, A>, supervisor: Supervisor<any
  * @since 1.0.0
  */
 export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, A> {
-  return (fa) => supervised_(fa, supervisor);
+  return (fa) => supervised_(fa, supervisor)
 }

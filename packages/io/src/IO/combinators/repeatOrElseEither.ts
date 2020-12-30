@@ -1,16 +1,16 @@
-import type { HasClock } from "../../Clock";
-import type { Schedule } from "../../Schedule";
-import type { IO } from "../core";
-import type { Either } from "@principia/base/data/Either";
-import type { Option } from "@principia/base/data/Option";
+import type { HasClock } from '../../Clock'
+import type { Schedule } from '../../Schedule'
+import type { IO } from '../core'
+import type { Either } from '@principia/base/data/Either'
+import type { Option } from '@principia/base/data/Option'
 
-import * as E from "@principia/base/data/Either";
-import { pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import * as E from '@principia/base/data/Either'
+import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import * as S from "../../Schedule";
-import { flatMap, foldM, map } from "../core";
-import { orDie } from "./orDie";
+import * as S from '../../Schedule'
+import { flatMap, foldM, map } from '../core'
+import { orDie } from './orDie'
 
 /**
  * ```haskell
@@ -54,7 +54,7 @@ export function repeatOrElseEither_<R, R1, R2, E, E2, A, B, C>(
                 )
               )
           )
-        );
+        )
       }
       return pipe(
         fa,
@@ -62,7 +62,7 @@ export function repeatOrElseEither_<R, R1, R2, E, E2, A, B, C>(
           (e) => pipe(f(e, O.none()), map(E.left)),
           (a) => loop(a)
         )
-      );
+      )
     })
-  );
+  )
 }

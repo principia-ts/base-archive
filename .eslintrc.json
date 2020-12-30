@@ -21,6 +21,7 @@
     "simple-import-sort",
     "sort-keys-fix",
     "typescript-sort-keys",
+    "functional",
     "@typescript-eslint"
   ],
   "rules": {
@@ -43,6 +44,15 @@
 
     "no-param-reassign": ["error"],
     "no-unexpected-multiline": "off",
+
+    "curly": ["warn", "all"],
+    "indent": ["warn", 2, { "SwitchCase": 1 }],
+    "quotes": ["warn", "single", { "avoidEscape": true }],
+    "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
+    "max-len": ["warn", 120],
+    "semi": ["error", "never", { "beforeStatementContinuationChars": "always" }],
+
+    "align-assignments/align-assignments": ["error", { "requiresOnly": false }],
 
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/ban-ts-ignore": "off",
@@ -70,9 +80,8 @@
         "varsIgnorePattern": "^ignored?$"
       }
     ],
-    "functional/immutable-data": ["warn", {
-      "ignorePattern": "^mut"
-    }]
+
+    "functional/immutable-data": ["error", { "ignorePattern": "^mut", "ignoreAccessorPattern": "**.mut_*" }]
   },
   "settings": {
     "import/parsers": {

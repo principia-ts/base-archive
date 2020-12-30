@@ -1,10 +1,10 @@
-import type { IO } from "../core";
-import type { Predicate, Refinement } from "@principia/base/data/Function";
+import type { IO } from '../core'
+import type { Predicate, Refinement } from '@principia/base/data/Function'
 
-import { flow } from "@principia/base/data/Function";
+import { flow } from '@principia/base/data/Function'
 
-import { die } from "../core";
-import { filterOrElse_ } from "./filterOrElse";
+import { die } from '../core'
+import { filterOrElse_ } from './filterOrElse'
 
 /**
  * Dies with specified `unknown` if the predicate fails.
@@ -13,18 +13,14 @@ export function filterOrDie_<R, E, A, B extends A>(
   fa: IO<R, E, A>,
   refinement: Refinement<A, B>,
   dieWith: (a: A) => unknown
-): IO<R, E, A>;
-export function filterOrDie_<R, E, A>(
-  fa: IO<R, E, A>,
-  predicate: Predicate<A>,
-  dieWith: (a: A) => unknown
-): IO<R, E, A>;
+): IO<R, E, A>
+export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => unknown): IO<R, E, A>
 export function filterOrDie_<R, E, A>(
   fa: IO<R, E, A>,
   predicate: Predicate<A>,
   dieWith: (a: A) => unknown
 ): IO<R, E, A> {
-  return filterOrElse_(fa, predicate, flow(dieWith, die));
+  return filterOrElse_(fa, predicate, flow(dieWith, die))
 }
 
 /**
@@ -32,14 +28,14 @@ export function filterOrDie_<R, E, A>(
  */
 export function filterOrDie<A, B extends A>(
   refinement: Refinement<A, B>
-): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>;
+): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDie<A>(
   predicate: Predicate<A>
-): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>;
+): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDie<A>(
   predicate: Predicate<A>
 ): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
-  return (dieWith) => (fa) => filterOrDie_(fa, predicate, dieWith);
+  return (dieWith) => (fa) => filterOrDie_(fa, predicate, dieWith)
 }
 
 /**
@@ -50,18 +46,14 @@ export function filterOrDieMessage_<R, E, A, B extends A>(
   fa: IO<R, E, A>,
   refinement: Refinement<A, B>,
   message: (a: A) => string
-): IO<R, E, A>;
+): IO<R, E, A>
 export function filterOrDieMessage_<R, E, A>(
   fa: IO<R, E, A>,
   predicate: Predicate<A>,
   message: (a: A) => string
-): IO<R, E, A>;
-export function filterOrDieMessage_<R, E, A>(
-  fa: IO<R, E, A>,
-  predicate: Predicate<A>,
-  message: (a: A) => string
-) {
-  return filterOrDie_(fa, predicate, (a) => new Error(message(a)));
+): IO<R, E, A>
+export function filterOrDieMessage_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, message: (a: A) => string) {
+  return filterOrDie_(fa, predicate, (a) => new Error(message(a)))
 }
 
 /**
@@ -70,12 +62,12 @@ export function filterOrDieMessage_<R, E, A>(
  */
 export function filterOrDieMessage<A, B extends A>(
   refinement: Refinement<A, B>
-): (message: (a: A) => string) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>;
+): (message: (a: A) => string) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDieMessage<A>(
   predicate: Predicate<A>
-): (message: (a: A) => string) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>;
+): (message: (a: A) => string) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDieMessage<A>(
   predicate: Predicate<A>
 ): (message: (a: A) => string) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
-  return (message) => (fa) => filterOrDieMessage_(fa, predicate, message);
+  return (message) => (fa) => filterOrDieMessage_(fa, predicate, message)
 }

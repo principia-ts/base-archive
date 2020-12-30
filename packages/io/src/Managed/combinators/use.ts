@@ -1,11 +1,11 @@
-import type { Managed } from "../core";
+import type { Managed } from '../core'
 
-import { tuple } from "@principia/base/data/Function";
+import { tuple } from '@principia/base/data/Function'
 
-import { sequential } from "../../ExecutionStrategy";
-import * as I from "../_internal/io";
-import * as RM from "../ReleaseMap";
-import { releaseAll } from "./releaseAll";
+import { sequential } from '../../ExecutionStrategy'
+import * as I from '../_internal/io'
+import * as RM from '../ReleaseMap'
+import { releaseAll } from './releaseAll'
 
 /**
  * Run an effect while acquiring the resource before and releasing it after
@@ -13,7 +13,7 @@ import { releaseAll } from "./releaseAll";
 export function use<A, R2, E2, B>(
   f: (a: A) => I.IO<R2, E2, B>
 ): <R, E>(self: Managed<R, E, A>) => I.IO<R & R2, E | E2, B> {
-  return (self) => use_(self, f);
+  return (self) => use_(self, f)
 }
 
 /**
@@ -31,7 +31,7 @@ export function use_<R, E, A, R2, E2, B>(
         (a) => f(a[1])
       ),
     (rm, ex) => releaseAll(ex, sequential)(rm)
-  );
+  )
 }
 
 /**
@@ -39,10 +39,10 @@ export function use_<R, E, A, R2, E2, B>(
  * managed effect. Note that this is only safe if the result of this managed
  * effect is valid outside its scope.
  */
-export const useNow: <R, E, A>(ma: Managed<R, E, A>) => I.IO<R, E, A> = use(I.pure);
+export const useNow: <R, E, A>(ma: Managed<R, E, A>) => I.IO<R, E, A> = use(I.pure)
 
 /**
  * Use the resource until interruption.
  * Useful for resources that you want to acquire and use as long as the application is running, like a HTTP server.
  */
-export const useForever: <R, E, A>(ma: Managed<R, E, A>) => I.IO<R, E, never> = use(() => I.never);
+export const useForever: <R, E, A>(ma: Managed<R, E, A>) => I.IO<R, E, never> = use(() => I.never)

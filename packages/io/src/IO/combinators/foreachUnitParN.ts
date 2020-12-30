@@ -1,8 +1,8 @@
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import * as Semaphore from "../../Semaphore";
-import * as I from "../core";
-import { foreachUnitPar_ } from "./foreachUnitPar";
+import * as Semaphore from '../../Semaphore'
+import * as I from '../core'
+import { foreachUnitPar_ } from './foreachUnitPar'
 
 /**
  * Applies the function `f` to each element of the `Iterable[A]` and runs
@@ -17,7 +17,7 @@ export function foreachUnitParN_(
     pipe(
       Semaphore.make(n),
       I.flatMap((s) => foreachUnitPar_(as, (a) => Semaphore.withPermit_(f(a), s)))
-    );
+    )
 }
 
 /**
@@ -29,5 +29,5 @@ export function foreachUnitParN_(
 export function foreachUnitParN(
   n: number
 ): <A, R, E>(f: (a: A) => I.IO<R, E, any>) => (as: Iterable<A>) => I.IO<R, E, void> {
-  return (f) => (as) => foreachUnitParN_(n)(as, f);
+  return (f) => (as) => foreachUnitParN_(n)(as, f)
 }

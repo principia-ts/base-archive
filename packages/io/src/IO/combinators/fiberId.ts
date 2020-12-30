@@ -1,5 +1,5 @@
-import { descriptorWith, pure } from "../core";
+import { descriptorWith, pure } from '../core'
 
 export function fiberId() {
-  return descriptorWith((d) => pure(d.id));
+  return descriptorWith((d) => pure(d.id))
 }

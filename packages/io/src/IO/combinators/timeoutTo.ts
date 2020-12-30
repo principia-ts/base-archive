@@ -1,12 +1,12 @@
-import type { HasClock } from "../../Clock";
-import type { IO } from "../core";
+import type { HasClock } from '../../Clock'
+import type { IO } from '../core'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import { sleep } from "../../Clock";
-import { as, map } from "../core";
-import { makeInterruptible } from "./interrupt";
-import { raceFirst } from "./raceFirst";
+import { sleep } from '../../Clock'
+import { as, map } from '../core'
+import { makeInterruptible } from './interrupt'
+import { raceFirst } from './raceFirst'
 
 /**
  * Returns an IO that will timeout this effect, returning either the
@@ -33,7 +33,7 @@ export function timeoutTo_<R, E, A, B, B1>(
         as(() => b)
       )
     )
-  );
+  )
 }
 
 /**
@@ -46,5 +46,5 @@ export function timeoutTo_<R, E, A, B, B1>(
  * will be safely interrupted
  */
 export function timeoutTo<A, B, B1>(d: number, b: B, f: (a: A) => B1) {
-  return <R, E>(ma: IO<R, E, A>) => timeoutTo_(ma, d, b, f);
+  return <R, E>(ma: IO<R, E, A>) => timeoutTo_(ma, d, b, f)
 }

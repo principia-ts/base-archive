@@ -1,13 +1,13 @@
-import type * as Alg from "../../algebra";
-import type { Either } from "@principia/base/data/Either";
-import type { Option } from "@principia/base/data/Option";
+import type * as Alg from '../../algebra'
+import type { Either } from '@principia/base/data/Either'
+import type { Option } from '@principia/base/data/Option'
 
-import { pipe } from "@principia/base/data/Function";
-import * as G from "@principia/base/data/Guard";
-import * as R from "@principia/base/data/Record";
+import { pipe } from '@principia/base/data/Function'
+import * as G from '@principia/base/data/Guard'
+import * as R from '@principia/base/data/Record'
 
-import { implementInterpreter } from "../../HKT";
-import { applyGuardConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { applyGuardConfig } from './HKT'
 
 export const SumGuard = implementInterpreter<G.URI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) =>
@@ -22,11 +22,10 @@ export const SumGuard = implementInterpreter<G.URI, Alg.SumURI>()((_) => ({
         applyGuardConfig(config?.config)(
           {
             is: (u): u is Either<G.TypeOf<typeof l>, G.TypeOf<typeof r>> =>
-              typeof u === "object" &&
+              typeof u === 'object' &&
               u !== null &&
-              "_tag" in u &&
-              ((u["_tag"] === "Left" && l.is(u["left"])) ||
-                (u["_tag"] === "Right" && r.is(u["right"])))
+              '_tag' in u &&
+              ((u['_tag'] === 'Left' && l.is(u['left'])) || (u['_tag'] === 'Right' && r.is(u['right'])))
           },
           env,
           { left: l, right: r }
@@ -38,13 +37,13 @@ export const SumGuard = implementInterpreter<G.URI, Alg.SumURI>()((_) => ({
       applyGuardConfig(config?.config)(
         {
           is: (u): u is Option<G.TypeOf<typeof guard>> =>
-            typeof u === "object" &&
+            typeof u === 'object' &&
             u !== null &&
-            "_tag" in u &&
-            ((u["_tag"] === "Some" && guard.is(u["value"])) || u["_tag"] === "None")
+            '_tag' in u &&
+            ((u['_tag'] === 'Some' && guard.is(u['value'])) || u['_tag'] === 'None')
         },
         env,
         guard
       )
     )
-}));
+}))

@@ -1,6 +1,6 @@
-import type { Semigroup } from "./Semigroup";
+import type { Semigroup } from './Semigroup'
 
-import { makeSemigroup } from "./Semigroup";
+import { makeSemigroup } from './Semigroup'
 
 /**
  * `Monoid` defines a binary operation on type `M`, and an `identity element` (or `natural element`, hence the name `nat`).
@@ -14,10 +14,10 @@ import { makeSemigroup } from "./Semigroup";
  * ```
  */
 export interface Monoid<M> extends Semigroup<M> {
-  readonly nat: M;
+  readonly nat: M
 }
 
 export const makeMonoid = <A>(c: (l: A, r: A) => A, nat: A): Monoid<A> => ({
   ...makeSemigroup(c),
   nat
-});
+})

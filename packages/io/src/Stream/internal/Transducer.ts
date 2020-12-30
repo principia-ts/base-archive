@@ -4,10 +4,10 @@
 //
 //   Stated differently, after a first push(None), all subsequent push(None) must
 
-import { Option } from "@principia/base/data/Option";
-import { Chunk } from "../../Chunk";
-import { IO } from "../../IO";
-import { Managed } from "../../Managed";
+import type { Chunk } from '../../Chunk'
+import type { IO } from '../../IO'
+import type { Managed } from '../../Managed'
+import type { Option } from '@principia/base/data/Option'
 
 //   result in empty [].
 export class Transducer<R, E, I, O> {

@@ -1,21 +1,21 @@
-import type { NonEmptyArray } from "./NonEmptyArray";
+import type { NonEmptyArray } from './NonEmptyArray'
 
-import { max_, ordNumber } from "../Ord";
-import * as A from "./Array";
-import { flow, pipe } from "./Function";
-import * as NA from "./NonEmptyArray";
-import * as O from "./Option";
+import { max_, ordNumber } from '../Ord'
+import * as A from './Array'
+import { flow, pipe } from './Function'
+import * as NA from './NonEmptyArray'
+import * as O from './Option'
 
 /**
  * The empty string
  */
-export const empty = "";
+export const empty = ''
 
 /**
  * Converts a number into a string
  */
 export function fromNumber(x: number): string {
-  return String(x);
+  return String(x)
 }
 
 /*
@@ -28,56 +28,56 @@ export function fromNumber(x: number): string {
  * Check if a value is a string
  */
 export function isString(u: unknown): u is string {
-  return typeof u === "string";
+  return typeof u === 'string'
 }
 
 /**
  * Check is a string is empty
  */
 export function isEmpty(s: string): boolean {
-  return s === "";
+  return s === ''
 }
 
 /**
  * Check if a string contains the given substring
  */
 export function contains_(s: string, substr: string): boolean {
-  return s.includes(substr);
+  return s.includes(substr)
 }
 
 /**
  * Check if a string contains the given substring
  */
 export function contains(substr: string): (s: string) => boolean {
-  return (s) => s.includes(substr);
+  return (s) => s.includes(substr)
 }
 
 /**
  * Check if a string starts with the given substring
  */
 export function startsWith_(s: string, substr: string): boolean {
-  return s.startsWith(substr);
+  return s.startsWith(substr)
 }
 
 /**
  * Check if a string starts with the given substring
  */
 export function startsWith(substr: string): (s: string) => boolean {
-  return (s) => startsWith_(s, substr);
+  return (s) => startsWith_(s, substr)
 }
 
 /**
  * Check if a string ends with the given substring
  */
 export function endsWith_(s: string, substr: string): boolean {
-  return s.endsWith(substr);
+  return s.endsWith(substr)
 }
 
 /**
  * Check if a string ends with the given substring
  */
 export function endsWith(substr: string): (s: string) => boolean {
-  return (s) => endsWith_(s, substr);
+  return (s) => endsWith_(s, substr)
 }
 
 /*
@@ -90,77 +90,77 @@ export function endsWith(substr: string): (s: string) => boolean {
  * Trim whitespace from both sides of a string
  */
 export function trim(s: string): string {
-  return s.trim();
+  return s.trim()
 }
 
 /**
  * Trim whitespace from the left side of the string
  */
 export function trimLeft(s: string): string {
-  return s.trimLeft();
+  return s.trimLeft()
 }
 
 /**
  * Trim whitespace from the right side of the string
  */
 export function trimRight(s: string): string {
-  return s.trimRight();
+  return s.trimRight()
 }
 
 /**
  * Prepend one string to another
  */
 export function prepend_(s: string, prepend: string): string {
-  return prepend + s;
+  return prepend + s
 }
 
 /**
  * Prepend one string to another
  */
 export function prepend(prepend: string): (s: string) => string {
-  return (s) => prepend + s;
+  return (s) => prepend + s
 }
 
 /**
  * Removes the given string from the beginning, if it exists
  */
 export function unprepend_(s: string, s1: string): string {
-  return s.startsWith(s1) ? s.substr(s1.length) : s;
+  return s.startsWith(s1) ? s.substr(s1.length) : s
 }
 
 /**
  * Removes the given string from the beginning, if it exists
  */
 export function unprepend(s1: string): (s: string) => string {
-  return (s) => unprepend_(s, s1);
+  return (s) => unprepend_(s, s1)
 }
 
 /**
  * Append one string to another.
  */
 export function append_(s: string, x: string): string {
-  return s + x;
+  return s + x
 }
 
 /**
  * Append one string to another.
  */
 export function append(x: string): (s: string) => string {
-  return (s) => s + x;
+  return (s) => s + x
 }
 
 /**
  * Remove the end of a string, if it exists.
  */
 export function unappend_(s: string, x: string): string {
-  return s.endsWith(x) ? s.substring(0, s.lastIndexOf(x)) : s;
+  return s.endsWith(x) ? s.substring(0, s.lastIndexOf(x)) : s
 }
 
 /**
  * Remove the end of a string, if it exists.
  */
 export function unappend(x: string): (s: string) => string {
-  return (s) => unappend_(s, x);
+  return (s) => unappend_(s, x)
 }
 
 /**
@@ -168,7 +168,7 @@ export function unappend(x: string): (s: string) => string {
  * same outer value.
  */
 export function surround_(s: string, x: string): string {
-  return pipe(s, prepend(x), append(x));
+  return pipe(s, prepend(x), append(x))
 }
 
 /**
@@ -176,21 +176,21 @@ export function surround_(s: string, x: string): string {
  * same outer value.
  */
 export function surround(x: string): (s: string) => string {
-  return (s) => surround_(s, x);
+  return (s) => surround_(s, x)
 }
 
 /**
  * Remove the start and end of a string, if they both exist.
  */
 export function unsurround_(s: string, x: string): string {
-  return s.startsWith(x) && s.endsWith(x) ? pipe(s, unprepend(x), unappend(x)) : s;
+  return s.startsWith(x) && s.endsWith(x) ? pipe(s, unprepend(x), unappend(x)) : s
 }
 
 /**
  * Remove the start and end of a string, if they both exist.
  */
 export function unsurround(x: string): (s: string) => string {
-  return (s) => unsurround_(s, x);
+  return (s) => unsurround_(s, x)
 }
 
 /**
@@ -198,7 +198,7 @@ export function unsurround(x: string): (s: string) => string {
  * (exclusive).
  */
 export function slice_(s: string, start: number, end: number): string {
-  return s.slice(start, end);
+  return s.slice(start, end)
 }
 
 /**
@@ -206,7 +206,7 @@ export function slice_(s: string, start: number, end: number): string {
  * (exclusive).
  */
 export function slice(start: number, end: number): (s: string) => string {
-  return (s) => s.slice(start, end);
+  return (s) => s.slice(start, end)
 }
 
 /**
@@ -220,7 +220,7 @@ export function slice(start: number, end: number): (s: string) => string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeLeft_(s: string, n: number): string {
-  return s.slice(0, max_(ordNumber)(0, n));
+  return s.slice(0, max_(ordNumber)(0, n))
 }
 
 /**
@@ -234,7 +234,7 @@ export function takeLeft_(s: string, n: number): string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeLeft(n: number): (s: string) => string {
-  return (s) => takeLeft_(s, n);
+  return (s) => takeLeft_(s, n)
 }
 
 /**
@@ -248,7 +248,7 @@ export function takeLeft(n: number): (s: string) => string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeRight_(s: string, n: number): string {
-  return s.slice(max_(ordNumber)(0, s.length - Math.floor(n)), Infinity);
+  return s.slice(max_(ordNumber)(0, s.length - Math.floor(n)), Infinity)
 }
 
 /**
@@ -262,21 +262,21 @@ export function takeRight_(s: string, n: number): string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeRight(n: number): (s: string) => string {
-  return (s) => takeRight_(s, n);
+  return (s) => takeRight_(s, n)
 }
 
 /**
  * Match a string with a RegExp
  */
 export function match_(s: string, r: RegExp): O.Option<RegExpMatchArray> {
-  return O.fromNullable(s.match(r));
+  return O.fromNullable(s.match(r))
 }
 
 /**
  * Match a string with a RegExp
  */
 export function match(r: RegExp): (s: string) => O.Option<RegExpMatchArray> {
-  return (s) => match_(s, r);
+  return (s) => match_(s, r)
 }
 
 /**
@@ -286,14 +286,14 @@ export function matchAll_(s: string, r: RegExp): O.Option<NonEmptyArray<RegExpMa
   return O.flatMap_(
     O.partial(() => s.matchAll(r)),
     flow(A.from, NA.fromArray)
-  );
+  )
 }
 
 /**
  * Matches a string with a global RegExp
  */
 export function matchAll(r: RegExp): (s: string) => O.Option<NonEmptyArray<RegExpMatchArray>> {
-  return (s) => matchAll_(s, r);
+  return (s) => matchAll_(s, r)
 }
 
 /**
@@ -301,7 +301,7 @@ export function matchAll(r: RegExp): (s: string) => O.Option<NonEmptyArray<RegEx
  * as an array.
  */
 export function split_(s: string, on: string | RegExp): ReadonlyArray<string> {
-  return s.split(on);
+  return s.split(on)
 }
 
 /**
@@ -309,7 +309,7 @@ export function split_(s: string, on: string | RegExp): ReadonlyArray<string> {
  * as an array.
  */
 export function split(on: string | RegExp): (s: string) => ReadonlyArray<string> {
-  return (s) => s.split(on);
+  return (s) => s.split(on)
 }
 
 /**
@@ -317,11 +317,8 @@ export function split(on: string | RegExp): (s: string) => ReadonlyArray<string>
  * This is useful as it allows you to run many polymorphic functions targeting
  * arrays against strings without having to rewrite them.
  */
-export function under_(
-  s: string,
-  f: (chars: ReadonlyArray<string>) => ReadonlyArray<string>
-): string {
-  return pipe(s, split(""), f, A.join(""));
+export function under_(s: string, f: (chars: ReadonlyArray<string>) => ReadonlyArray<string>): string {
+  return pipe(s, split(''), f, A.join(''))
 }
 
 /**
@@ -329,71 +326,69 @@ export function under_(
  * This is useful as it allows you to run many polymorphic functions targeting
  * arrays against strings without having to rewrite them.
  */
-export function under(
-  f: (chars: ReadonlyArray<string>) => ReadonlyArray<string>
-): (s: string) => string {
-  return (s) => under_(s, f);
+export function under(f: (chars: ReadonlyArray<string>) => ReadonlyArray<string>): (s: string) => string {
+  return (s) => under_(s, f)
 }
 
 /**
  * Reverse a string
  */
 export function reverse(s: string): string {
-  return under_(s, A.reverse);
+  return under_(s, A.reverse)
 }
 
 /**
  * Split a string into substrings using any recognised newline as the separator.
  */
 export function lines(s: string): ReadonlyArray<string> {
-  return split_(s, /\r\n|\r|\n/);
+  return split_(s, /\r\n|\r|\n/)
 }
 
 /**
  * Join newline-separated strings together.
  */
 export function unlines(as: ReadonlyArray<string>): string {
-  return A.join_(as, "\n");
+  return A.join_(as, '\n')
 }
 
 /**
  * Test a string with a RegExp
  */
 export function test_(s: string, r: RegExp): boolean {
-  return r.test(s);
+  return r.test(s)
 }
 
 /**
  * Test a string with a RegExp
  */
 export function test(r: RegExp): (s: string) => boolean {
-  return (s) => r.test(s);
+  return (s) => r.test(s)
 }
 
 /**
  * Replace the first (or all, with a global RegExp) occurrence of a matched substring with a replacement.
  */
 export function replace_(s: string, test: string | RegExp, r: string): string {
-  return s.replace(test, r);
+  return s.replace(test, r)
 }
 
 /**
  * Replace the first (or all, with a global RegExp) occurrence of a matched substring with a replacement.
  */
 export function replace(test: string | RegExp, r: string): (s: string) => string {
-  return (s) => s.replace(test, r);
+  return (s) => s.replace(test, r)
 }
 
 /**
  * Capitalize the first letter of the string
  */
 export function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 /**
  * Capitalize the first letter of every word in a string
  */
 export function capitalizeAll(s: string): string {
-  return pipe(s, split(" "), A.map(capitalize), A.join(" "));
+  return pipe(s, split(' '), A.map(capitalize), A.join(' '))
 }

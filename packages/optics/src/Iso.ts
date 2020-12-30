@@ -1,15 +1,15 @@
-import type { Lens } from "./Lens";
-import type { Optional } from "./Optional";
-import type { Prism } from "./Prism";
-import type { Traversal } from "./Traversal";
-import type { Newtype } from "@principia/base/Newtype";
-import type * as P from "@principia/base/typeclass";
+import type { Lens } from './Lens'
+import type { Optional } from './Optional'
+import type { Prism } from './Prism'
+import type { Traversal } from './Traversal'
+import type { Newtype } from '@principia/base/Newtype'
+import type * as P from '@principia/base/typeclass'
 
-import { flow, identity } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
-import * as HKT from "@principia/base/HKT";
+import { flow, identity } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
+import * as HKT from '@principia/base/HKT'
 
-import * as _ from "./internal";
+import * as _ from './internal'
 
 /*
  * -------------------------------------------
@@ -18,19 +18,19 @@ import * as _ from "./internal";
  */
 
 export interface Iso<S, A> {
-  readonly get: (s: S) => A;
-  readonly reverseGet: (a: A) => S;
+  readonly get: (s: S) => A
+  readonly reverseGet: (a: A) => S
 }
 
-export const URI = "optics/Iso";
+export const URI = 'optics/Iso'
 
-export type URI = typeof URI;
+export type URI = typeof URI
 
-export type V = HKT.V<"I", "_">;
+export type V = HKT.V<'I', '_'>
 
-declare module "@principia/base/HKT" {
+declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Iso<I, A>;
+    readonly [URI]: Iso<I, A>
   }
 }
 
@@ -52,7 +52,7 @@ declare module "@principia/base/HKT" {
  * @category Converters
  * @since 1.0.0
  */
-export const asLens: <S, A>(sa: Iso<S, A>) => Lens<S, A> = _.isoAsLens;
+export const asLens: <S, A>(sa: Iso<S, A>) => Lens<S, A> = _.isoAsLens
 
 /**
  * View an `Iso` as a `Prism`
@@ -64,7 +64,7 @@ export function asPrism<S, A>(sa: Iso<S, A>): Prism<S, A> {
   return {
     getOption: flow(sa.get, O.some),
     reverseGet: sa.reverseGet
-  };
+  }
 }
 
 /**
@@ -73,7 +73,7 @@ export function asPrism<S, A>(sa: Iso<S, A>): Prism<S, A> {
  * @category Converters
  * @since 1.0.0
  */
-export const asOptional: <S, A>(sa: Iso<S, A>) => Optional<S, A> = _.isoAsOptional;
+export const asOptional: <S, A>(sa: Iso<S, A>) => Optional<S, A> = _.isoAsOptional
 
 /**
  * View an `Iso` as a `Traversal`
@@ -83,10 +83,8 @@ export const asOptional: <S, A>(sa: Iso<S, A>) => Optional<S, A> = _.isoAsOption
  */
 export function asTraversal<S, A>(sa: Iso<S, A>): Traversal<S, A> {
   return {
-    modifyF: _.implementModifyF<S, A>()((_) => (F) => (f) => (s) =>
-      F.map_(f(sa.get(s)), (a) => sa.reverseGet(a))
-    )
-  };
+    modifyF: _.implementModifyF<S, A>()((_) => (F) => (f) => (s) => F.map_(f(sa.get(s)), (a) => sa.reverseGet(a)))
+  }
 }
 
 /*
@@ -105,7 +103,7 @@ export function compose_<I, A, B>(sa: Iso<I, A>, ab: Iso<A, B>): Iso<I, B> {
   return {
     get: flow(sa.get, ab.get),
     reverseGet: flow(ab.reverseGet, sa.reverseGet)
-  };
+  }
 }
 
 /**
@@ -115,7 +113,7 @@ export function compose_<I, A, B>(sa: Iso<I, A>, ab: Iso<A, B>): Iso<I, B> {
  * @since 1.0.0
  */
 export function compose<A, B>(ab: Iso<A, B>): <I>(sa: Iso<I, A>) => Iso<I, B> {
-  return (sa) => compose_(sa, ab);
+  return (sa) => compose_(sa, ab)
 }
 
 /**
@@ -126,7 +124,7 @@ export function id<S>(): Iso<S, S> {
   return {
     get: identity,
     reverseGet: identity
-  };
+  }
 }
 
 /**
@@ -137,7 +135,7 @@ export const Category: P.Category<[URI], V> = HKT.instance({
   id,
   compose,
   compose_
-});
+})
 
 /*
  * -------------------------------------------
@@ -153,7 +151,7 @@ export function imap_<I, A, B>(ea: Iso<I, A>, ab: (a: A) => B, ba: (b: B) => A):
   return {
     get: flow(ea.get, ab),
     reverseGet: flow(ba, ea.reverseGet)
-  };
+  }
 }
 
 /**
@@ -161,7 +159,7 @@ export function imap_<I, A, B>(ea: Iso<I, A>, ab: (a: A) => B, ba: (b: B) => A):
  * @since 1.0.0
  */
 export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Iso<I, A>) => Iso<I, B> {
-  return (ea) => imap_(ea, ab, ba);
+  return (ea) => imap_(ea, ab, ba)
 }
 
 /**
@@ -171,7 +169,7 @@ export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Iso<I, A>)
 export const Invariant: P.Invariant<[URI], V> = HKT.instance({
   imap_,
   imap
-});
+})
 
 /*
  * -------------------------------------------
@@ -187,7 +185,7 @@ export function reverse<S, A>(sa: Iso<S, A>): Iso<A, S> {
   return {
     get: sa.reverseGet,
     reverseGet: sa.get
-  };
+  }
 }
 
 /**
@@ -195,12 +193,12 @@ export function reverse<S, A>(sa: Iso<S, A>): Iso<A, S> {
  * @since 1.0.0
  */
 export function modify<A>(f: (a: A) => A): <S>(sa: Iso<S, A>) => (s: S) => S {
-  return (sa) => (s) => sa.reverseGet(f(sa.get(s)));
+  return (sa) => (s) => sa.reverseGet(f(sa.get(s)))
 }
 
-export function newtype<T extends Newtype<any, any>>(): Iso<T["_A"], T> {
+export function newtype<T extends Newtype<any, any>>(): Iso<T['_A'], T> {
   return {
     get: (_) => _ as any,
     reverseGet: (_) => _ as any
-  };
+  }
 }

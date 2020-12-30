@@ -1,35 +1,30 @@
-import type { CustomRuntime } from "@principia/io/IO";
+import type { CustomRuntime } from '@principia/io/IO'
 
-import { AtomicBoolean } from "@principia/base/util/support/AtomicBoolean";
-import * as Cause from "@principia/io/Cause";
-import * as Fiber from "@principia/io/Fiber";
-import { interruptAllAs } from "@principia/io/Fiber";
-import * as I from "@principia/io/IO";
-import { defaultRuntime } from "@principia/io/IO";
+import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
+import * as Cause from '@principia/io/Cause'
+import * as Fiber from '@principia/io/Fiber'
+import { interruptAllAs } from '@principia/io/Fiber'
+import * as I from '@principia/io/IO'
+import { defaultRuntime } from '@principia/io/IO'
 
-export function defaultTeardown(
-  status: number,
-  id: Fiber.FiberId,
-  onExit: (status: number) => void
-) {
+export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (status: number) => void) {
   I.run(interruptAllAs(id)(Fiber._tracing.running), () => {
     setTimeout(() => {
       if (Fiber._tracing.running.size === 0) {
-        onExit(status);
+        onExit(status)
       } else {
-        defaultTeardown(status, id, onExit);
+        defaultTeardown(status, id, onExit)
       }
-    }, 0);
-  });
+    }, 0)
+  })
 }
 
-export const defaultHook = (cont: NodeJS.SignalsListener): ((signal: NodeJS.Signals) => void) => (
-  signal
-) => cont(signal);
+export const defaultHook = (cont: NodeJS.SignalsListener): ((signal: NodeJS.Signals) => void) => (signal) =>
+  cont(signal)
 
 export class NodeRuntime<R> {
   constructor(readonly custom: CustomRuntime<R>) {
-    this.runMain = this.runMain.bind(this);
+    this.runMain = this.runMain.bind(this)
   }
 
   /**
@@ -46,53 +41,53 @@ export class NodeRuntime<R> {
     customHook: (cont: NodeJS.SignalsListener) => NodeJS.SignalsListener = defaultHook,
     customTeardown: typeof defaultTeardown = defaultTeardown
   ): void {
-    const context = this.custom.fiberContext<E, void>();
+    const context = this.custom.fiberContext<E, void>()
 
     const onExit = (s: number) => {
-      process.exit(s);
-    };
+      process.exit(s)
+    }
 
-    context.evaluateLater(effect[I._I]);
+    context.evaluateLater(effect[I._I])
     context.runAsync((exit) => {
       switch (exit._tag) {
-        case "Failure": {
+        case 'Failure': {
           if (Cause.interruptedOnly(exit.cause)) {
-            customTeardown(0, context.id, onExit);
-            break;
+            customTeardown(0, context.id, onExit)
+            break
           } else {
-            console.error(Cause.pretty(exit.cause));
-            customTeardown(1, context.id, onExit);
-            break;
+            console.error(Cause.pretty(exit.cause))
+            customTeardown(1, context.id, onExit)
+            break
           }
         }
-        case "Success": {
-          customTeardown(0, context.id, onExit);
-          break;
+        case 'Success': {
+          customTeardown(0, context.id, onExit)
+          break
         }
       }
-    });
+    })
 
-    const interrupted = new AtomicBoolean(false);
+    const interrupted = new AtomicBoolean(false)
 
     const handler: NodeJS.SignalsListener = (signal) => {
       customHook(() => {
-        process.removeListener("SIGTERM", handler);
-        process.removeListener("SIGINT", handler);
+        process.removeListener('SIGTERM', handler)
+        process.removeListener('SIGINT', handler)
 
         if (interrupted.compareAndSet(false, true)) {
-          this.custom.run(context.interruptAs(context.id));
+          this.custom.run(context.interruptAs(context.id))
         }
-      })(signal);
-    };
+      })(signal)
+    }
 
-    process.once("SIGTERM", handler);
-    process.once("SIGINT", handler);
+    process.once('SIGTERM', handler)
+    process.once('SIGINT', handler)
   }
 }
 
-export const nodeRuntime = new NodeRuntime(defaultRuntime);
+export const nodeRuntime = new NodeRuntime(defaultRuntime)
 
 export const {
   custom: { run, runAsap, runCancel, runFiber, runPromise, runPromiseExit },
   runMain
-} = nodeRuntime;
+} = nodeRuntime

@@ -1,8 +1,8 @@
-import type { Managed } from "../../Managed";
-import type { Stream } from "../core";
+import type { Managed } from '../../Managed'
+import type { Stream } from '../core'
 
-import * as I from "../../IO";
-import { reduceWhileManagedM_ } from "./reduceWhileManagedM";
+import * as I from '../../IO'
+import { reduceWhileManagedM_ } from './reduceWhileManagedM'
 
 /**
  * Executes a pure fold over the stream of values.
@@ -15,7 +15,7 @@ export function reduceWhileManaged_<R, E, O, S>(
   cont: (s: S) => boolean,
   f: (s: S, o: O) => S
 ): Managed<R, E, S> {
-  return reduceWhileManagedM_(ma, s, cont, (s, o) => I.succeed(f(s, o)));
+  return reduceWhileManagedM_(ma, s, cont, (s, o) => I.succeed(f(s, o)))
 }
 
 /**
@@ -28,5 +28,5 @@ export function reduceWhileManaged<O, S>(
   cont: (s: S) => boolean,
   f: (s: S, o: O) => S
 ): <R, E>(ma: Stream<R, E, O>) => Managed<R, E, S> {
-  return (ma) => reduceWhileManaged_(ma, s, cont, f);
+  return (ma) => reduceWhileManaged_(ma, s, cont, f)
 }

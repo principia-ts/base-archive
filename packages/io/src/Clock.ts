@@ -3,48 +3,48 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import type { HasTag } from "@principia/base/data/Has";
+import type { HasTag } from '@principia/base/data/Has'
 
-import { tag } from "@principia/base/data/Has";
+import { tag } from '@principia/base/data/Has'
 
-import { asyncInterrupt } from "./IO/combinators/interrupt";
-import { asksService, asksServiceM } from "./IO/combinators/service";
-import * as I from "./IO/core";
+import { asyncInterrupt } from './IO/combinators/interrupt'
+import { asksService, asksServiceM } from './IO/combinators/service'
+import * as I from './IO/core'
 
 /**
  * Clock Model
  */
-export const URI = Symbol();
+export const URI = Symbol()
 
 export abstract class Clock {
-  readonly _tag!: typeof URI;
+  readonly _tag!: typeof URI
 
-  abstract readonly currentTime: I.UIO<number>;
-  abstract readonly sleep: (ms: number) => I.UIO<void>;
+  abstract readonly currentTime: I.UIO<number>
+  abstract readonly sleep: (ms: number) => I.UIO<void>
 }
 
 /**
  * Has Clock
  */
-export const HasClock = tag<Clock>();
+export const HasClock = tag<Clock>()
 
-export type HasClock = HasTag<typeof HasClock>;
+export type HasClock = HasTag<typeof HasClock>
 
 /**
  * Live clock implementation
  */
 export class LiveClock extends Clock {
-  currentTime: I.UIO<number> = I.total(() => new Date().getTime());
-  sleep = (ms: number): I.UIO<void> =>
+  currentTime: I.UIO<number> = I.total(() => new Date().getTime())
+  sleep                      = (ms: number): I.UIO<void> =>
     asyncInterrupt((cb) => {
       const timeout = setTimeout(() => {
-        cb(I.unit());
-      }, ms);
+        cb(I.unit())
+      }, ms)
 
       return I.total(() => {
-        clearTimeout(timeout);
-      });
-    });
+        clearTimeout(timeout)
+      })
+    })
 }
 
 /**
@@ -52,26 +52,26 @@ export class LiveClock extends Clock {
  */
 export class ProxyClock extends Clock {
   constructor(readonly currentTime: I.UIO<number>, readonly sleep: (ms: number) => I.UIO<void>) {
-    super();
+    super()
   }
 }
 
 /**
  * Get the current time in ms since epoch
  */
-export const currentTime = asksServiceM(HasClock)((_) => _.currentTime);
+export const currentTime = asksServiceM(HasClock)((_) => _.currentTime)
 
 /**
  * Sleeps for the provided amount of ms
  */
-export const sleep = (ms: number) => asksServiceM(HasClock)((_) => _.sleep(ms));
+export const sleep = (ms: number) => asksServiceM(HasClock)((_) => _.sleep(ms))
 
 /**
  * Access clock from environment
  */
-export const withClockM = asksServiceM(HasClock);
+export const withClockM = asksServiceM(HasClock)
 
 /**
  * Access clock from environment
  */
-export const withClock = asksService(HasClock);
+export const withClock = asksService(HasClock)

@@ -1,29 +1,29 @@
-import type { Cause } from "../Cause/core";
-import type { Exit } from "../Exit/core";
-import type { Fiber, FiberDescriptor, InterruptStatus } from "../Fiber/core";
-import type { FiberId } from "../Fiber/FiberId";
-import type { FiberContext } from "../FiberContext";
-import type { FiberRef } from "../FiberRef/core";
-import type { Scope } from "../Scope";
-import type { SIO } from "../SIO";
-import type { Supervisor } from "../Supervisor";
-import type { Lazy } from "@principia/base/data/Function";
-import type { Option } from "@principia/base/data/Option";
-import type * as HKT from "@principia/base/HKT";
+import type { Cause } from '../Cause/core'
+import type { Exit } from '../Exit/core'
+import type { Fiber, FiberDescriptor, InterruptStatus } from '../Fiber/core'
+import type { FiberId } from '../Fiber/FiberId'
+import type { FiberContext } from '../FiberContext'
+import type { FiberRef } from '../FiberRef/core'
+import type { Scope } from '../Scope'
+import type { SIO } from '../SIO'
+import type { Supervisor } from '../Supervisor'
+import type { Lazy } from '@principia/base/data/Function'
+import type { Option } from '@principia/base/data/Option'
+import type * as HKT from '@principia/base/HKT'
 
-import * as A from "@principia/base/data/Array";
-import * as E from "@principia/base/data/Either";
-import { _bind, _bindTo, flow, identity, pipe, tuple } from "@principia/base/data/Function";
-import * as I from "@principia/base/data/Iterable";
-import * as O from "@principia/base/data/Option";
-import { makeMonoid } from "@principia/base/Monoid";
-import * as FL from "@principia/free/FreeList";
+import * as A from '@principia/base/data/Array'
+import * as E from '@principia/base/data/Either'
+import { _bind, _bindTo, flow, identity, pipe, tuple } from '@principia/base/data/Function'
+import * as I from '@principia/base/data/Iterable'
+import * as O from '@principia/base/data/Option'
+import { makeMonoid } from '@principia/base/Monoid'
+import * as FL from '@principia/free/FreeList'
 
-import * as C from "../Cause/core";
-import * as Ex from "../Exit/core";
-import { _A, _E, _I, _R, _U, IOInstructionTag } from "./constants";
+import * as C from '../Cause/core'
+import * as Ex from '../Exit/core'
+import { _A, _E, _I, _R, _U, IOInstructionTag } from './constants'
 
-export { _A, _E, _I, _R, _U, IOInstructionTag } from "./constants";
+export { _A, _E, _I, _R, _U, IOInstructionTag } from './constants'
 
 /*
  * -------------------------------------------
@@ -31,21 +31,21 @@ export { _A, _E, _I, _R, _U, IOInstructionTag } from "./constants";
  * -------------------------------------------
  */
 
-export const URI = "IO";
+export const URI = 'IO'
 
-export type URI = typeof URI;
+export type URI = typeof URI
 
 export abstract class IO<R, E, A> {
   readonly [_U]: URI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
-  readonly [_R]: (_: R) => void;
+  readonly [_R]: (_: R) => void
 
-  readonly _S1!: (_: unknown) => void;
-  readonly _S2!: () => never;
+  readonly _S1!: (_: unknown) => void
+  readonly _S2!: () => never
 
   get [_I](): Instruction {
-    return this as any;
+    return this as any
   }
 }
 
@@ -73,131 +73,127 @@ export type Instruction =
   | GetForkScopeInstruction<any, any, any>
   | OverrideForkScopeInstruction<any, any, any>
   | SIO<unknown, never, any, any, any>
-  | Integration<any, any, any>;
+  | Integration<any, any, any>
 
-export type V = HKT.V<"E", "+"> & HKT.V<"R", "-">;
+export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
 
-export type UIO<A> = IO<unknown, never, A>;
-export type URIO<R, A> = IO<R, never, A>;
-export type FIO<E, A> = IO<unknown, E, A>;
+export type UIO<A> = IO<unknown, never, A>
+export type URIO<R, A> = IO<R, never, A>
+export type FIO<E, A> = IO<unknown, E, A>
 
-export type Canceler<R> = URIO<R, void>;
+export type Canceler<R> = URIO<R, void>
 
-declare module "@principia/base/HKT" {
+declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: IO<R, E, A>;
+    readonly [URI]: IO<R, E, A>
   }
 }
 
 export class FlatMapInstruction<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
-  readonly _tag = IOInstructionTag.FlatMap;
+  readonly _tag = IOInstructionTag.FlatMap
   constructor(readonly io: IO<R, E, A>, readonly f: (a: A) => IO<R1, E1, A1>) {
-    super();
+    super()
   }
 }
 
 export class SucceedInstruction<A> extends IO<unknown, never, A> {
-  readonly _tag = IOInstructionTag.Succeed;
+  readonly _tag = IOInstructionTag.Succeed
   constructor(readonly value: A) {
-    super();
+    super()
   }
 }
 
 export class PartialInstruction<E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOInstructionTag.Partial;
+  readonly _tag = IOInstructionTag.Partial
   constructor(readonly thunk: () => A, readonly onThrow: (u: unknown) => E) {
-    super();
+    super()
   }
 }
 
 export class TotalInstruction<A> extends IO<unknown, never, A> {
-  readonly _tag = IOInstructionTag.Total;
+  readonly _tag = IOInstructionTag.Total
   constructor(readonly thunk: () => A) {
-    super();
+    super()
   }
 }
 
 export class AsyncInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.Async;
+  readonly _tag = IOInstructionTag.Async
   constructor(
     readonly register: (f: (_: IO<R, E, A>) => void) => Option<IO<R, E, A>>,
     readonly blockingOn: ReadonlyArray<FiberId>
   ) {
-    super();
+    super()
   }
 }
 
-export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends IO<
-  R & R1 & R2,
-  E1 | E2,
-  B | C
-> {
-  readonly _tag = IOInstructionTag.Fold;
+export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2, B | C> {
+  readonly _tag = IOInstructionTag.Fold
 
   constructor(
     readonly io: IO<R, E, A>,
     readonly onFailure: (cause: Cause<E>) => IO<R1, E1, B>,
     readonly onSuccess: (a: A) => IO<R2, E2, C>
   ) {
-    super();
+    super()
   }
 
   apply(v: A): IO<R & R1 & R2, E1 | E2, B | C> {
-    return this.onSuccess(v);
+    return this.onSuccess(v)
   }
 }
 
-export type FailureReporter = (e: Cause<unknown>) => void;
+export type FailureReporter = (e: Cause<unknown>) => void
 
 export class ForkInstruction<R, E, A> extends IO<R, never, FiberContext<E, A>> {
-  readonly _tag = IOInstructionTag.Fork;
+  readonly _tag = IOInstructionTag.Fork
 
   constructor(
     readonly io: IO<R, E, A>,
     readonly scope: Option<Scope<Exit<any, any>>>,
     readonly reportFailure: Option<FailureReporter>
   ) {
-    super();
+    super()
   }
 }
 
 export class FailInstruction<E> extends IO<unknown, E, never> {
-  readonly _tag = IOInstructionTag.Fail;
+  readonly _tag = IOInstructionTag.Fail
 
   constructor(readonly cause: Cause<E>) {
-    super();
+    super()
   }
 }
 
 export class YieldInstruction extends IO<unknown, never, void> {
-  readonly _tag = IOInstructionTag.Yield;
+  readonly _tag = IOInstructionTag.Yield
 
   constructor() {
-    super();
+    super()
   }
 }
 
 export class ReadInstruction<R0, R, E, A> extends IO<R & R0, E, A> {
-  readonly _tag = IOInstructionTag.Read;
+  readonly _tag = IOInstructionTag.Read
 
   constructor(readonly f: (_: R0) => IO<R, E, A>) {
-    super();
+    super()
   }
 }
 
 export class GiveInstruction<R, E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOInstructionTag.Give;
+  readonly _tag = IOInstructionTag.Give
 
   constructor(readonly io: IO<R, E, A>, readonly env: R) {
-    super();
+    super()
   }
 }
 
 export class SuspendInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.Suspend;
+  readonly _tag = IOInstructionTag.Suspend
 
   constructor(readonly factory: () => IO<R, E, A>) {
-    super();
+    super()
   }
 }
 
@@ -206,7 +202,7 @@ export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extend
   E2 | E3,
   A2 | A3
 > {
-  readonly _tag = "Race";
+  readonly _tag = 'Race'
 
   constructor(
     readonly left: IO<R, E, A>,
@@ -215,103 +211,99 @@ export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extend
     readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
     readonly scope: Option<Scope<Exit<any, any>>>
   ) {
-    super();
+    super()
   }
 }
 
 export class SetInterruptInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.SetInterrupt;
+  readonly _tag = IOInstructionTag.SetInterrupt
 
   constructor(readonly io: IO<R, E, A>, readonly flag: InterruptStatus) {
-    super();
+    super()
   }
 }
 
 export class GetInterruptInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.GetInterrupt;
+  readonly _tag = IOInstructionTag.GetInterrupt
 
   constructor(readonly f: (_: InterruptStatus) => IO<R, E, A>) {
-    super();
+    super()
   }
 }
 
 export class CheckDescriptorInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.CheckDescriptor;
+  readonly _tag = IOInstructionTag.CheckDescriptor
 
   constructor(readonly f: (_: FiberDescriptor) => IO<R, E, A>) {
-    super();
+    super()
   }
 }
 
 export class SuperviseInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.Supervise;
+  readonly _tag = IOInstructionTag.Supervise
 
   constructor(readonly io: IO<R, E, A>, readonly supervisor: Supervisor<any>) {
-    super();
+    super()
   }
 }
 
 export class SuspendPartialInstruction<R, E, A, E2> extends IO<R, E | E2, A> {
-  readonly _tag = IOInstructionTag.SuspendPartial;
+  readonly _tag = IOInstructionTag.SuspendPartial
 
   constructor(readonly factory: () => IO<R, E, A>, readonly onThrow: (u: unknown) => E2) {
-    super();
+    super()
   }
 }
 
 export class NewFiberRefInstruction<A> extends IO<unknown, never, FiberRef<A>> {
-  readonly _tag = IOInstructionTag.NewFiberRef;
+  readonly _tag = IOInstructionTag.NewFiberRef
 
-  constructor(
-    readonly initial: A,
-    readonly onFork: (a: A) => A,
-    readonly onJoin: (a: A, a2: A) => A
-  ) {
-    super();
+  constructor(readonly initial: A, readonly onFork: (a: A) => A, readonly onJoin: (a: A, a2: A) => A) {
+    super()
   }
 }
 
 export class ModifyFiberRefInstruction<A, B> extends IO<unknown, never, B> {
-  readonly _tag = IOInstructionTag.ModifyFiberRef;
+  readonly _tag = IOInstructionTag.ModifyFiberRef
 
   constructor(readonly fiberRef: FiberRef<A>, readonly f: (a: A) => [B, A]) {
-    super();
+    super()
   }
 }
 
 export class GetForkScopeInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.GetForkScope;
+  readonly _tag = IOInstructionTag.GetForkScope
 
   constructor(readonly f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
-    super();
+    super()
   }
 }
 
 export class OverrideForkScopeInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.OverrideForkScope;
+  readonly _tag = IOInstructionTag.OverrideForkScope
 
   constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
-    super();
+    super()
   }
 }
 
 export const integrationNotImplemented = new FailInstruction({
-  _tag: "Die",
-  value: new Error("Integration not implemented or unsupported")
-});
+  _tag: 'Die',
+  value: new Error('Integration not implemented or unsupported')
+})
 
 export abstract class Integration<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.Integration;
-  readonly _S1!: (_: unknown) => void;
+  readonly _tag = IOInstructionTag.Integration
+  readonly _S1!: (_: unknown) => void
   readonly _S2!: () => never;
 
   readonly [_U]!: URI;
   readonly [_E]!: () => E;
   readonly [_A]!: () => A;
-  readonly [_R]!: (_: R) => void;
+  readonly [_R]!: (_: R) => void
 
   get [_I](): Instruction {
-    return integrationNotImplemented;
+    return integrationNotImplemented
   }
 }
 
@@ -332,7 +324,7 @@ export abstract class Integration<R, E, A> extends IO<R, E, A> {
  * @since 1.0.0
  */
 export function succeed<E = never, A = never>(a: A): FIO<E, A> {
-  return new SucceedInstruction(a);
+  return new SucceedInstruction(a)
 }
 
 /**
@@ -350,9 +342,9 @@ export function async<R, E, A>(
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return new AsyncInstruction((cb) => {
-    register(cb);
-    return O.none();
-  }, blockingOn);
+    register(cb)
+    return O.none()
+  }, blockingOn)
 }
 
 /**
@@ -373,7 +365,7 @@ export function asyncOption<R, E, A>(
   register: (resolve: (_: IO<R, E, A>) => void) => O.Option<IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return new AsyncInstruction(register, blockingOn);
+  return new AsyncInstruction(register, blockingOn)
 }
 
 /**
@@ -387,7 +379,7 @@ export function asyncOption<R, E, A>(
  * @since 1.0.0
  */
 export function total<A>(thunk: () => A): UIO<A> {
-  return new TotalInstruction(thunk);
+  return new TotalInstruction(thunk)
 }
 
 /**
@@ -401,7 +393,7 @@ export function total<A>(thunk: () => A): UIO<A> {
  * @since 1.0.0
  */
 export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
-  return new PartialInstruction(thunk, onThrow);
+  return new PartialInstruction(thunk, onThrow)
 }
 
 /**
@@ -415,7 +407,7 @@ export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): 
  * @since 1.0.0
  */
 export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => FIO<E, A> {
-  return (thunk) => partial_(thunk, onThrow);
+  return (thunk) => partial_(thunk, onThrow)
 }
 
 /**
@@ -429,7 +421,7 @@ export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) 
  * @since 1.0.0
  */
 export function suspend<R, E, A>(factory: Lazy<IO<R, E, A>>): IO<R, E, A> {
-  return new SuspendInstruction(factory);
+  return new SuspendInstruction(factory)
 }
 
 /**
@@ -443,7 +435,7 @@ export function suspend<R, E, A>(factory: Lazy<IO<R, E, A>>): IO<R, E, A> {
  * @since 1.0.0
  */
 export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
-  return new FailInstruction(cause);
+  return new FailInstruction(cause)
 }
 
 /**
@@ -457,7 +449,7 @@ export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
  * @since 1.0.0
  */
 export function fail<E>(e: E): FIO<E, never> {
-  return halt(C.fail(e));
+  return halt(C.fail(e))
 }
 
 /**
@@ -471,7 +463,7 @@ export function fail<E>(e: E): FIO<E, never> {
  * @since 1.0.0
  */
 export function die(e: unknown): FIO<never, never> {
-  return halt(C.die(e));
+  return halt(C.die(e))
 }
 
 /**
@@ -487,14 +479,14 @@ export function die(e: unknown): FIO<never, never> {
 export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
   return suspend(() => {
     switch (exit._tag) {
-      case "Success": {
-        return succeed(exit.value);
+      case 'Success': {
+        return succeed(exit.value)
       }
-      case "Failure": {
-        return halt(exit.cause);
+      case 'Failure': {
+        return halt(exit.cause)
       }
     }
-  });
+  })
 }
 
 /*
@@ -514,7 +506,7 @@ export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
  * @since 1.0.0
  */
 export function pure<A>(a: A): UIO<A> {
-  return new SucceedInstruction(a);
+  return new SucceedInstruction(a)
 }
 
 /*
@@ -533,11 +525,8 @@ export function pure<A>(a: A): UIO<A> {
  * @category Apply
  * @since 1.0.0
  */
-export function product_<R, E, A, Q, D, B>(
-  fa: IO<R, E, A>,
-  fb: IO<Q, D, B>
-): IO<Q & R, D | E, readonly [A, B]> {
-  return map2_(fa, fb, tuple);
+export function product_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, readonly [A, B]> {
+  return map2_(fa, fb, tuple)
 }
 
 /**
@@ -551,10 +540,8 @@ export function product_<R, E, A, Q, D, B>(
  * @since 1.0.0
  * @dataFirst product_
  */
-export function product<Q, D, B>(
-  fb: IO<Q, D, B>
-): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, readonly [A, B]> {
-  return (fa) => product_(fa, fb);
+export function product<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, readonly [A, B]> {
+  return (fa) => product_(fa, fb)
 }
 
 /**
@@ -567,11 +554,8 @@ export function product<Q, D, B>(
  * @category Apply
  * @since 1.0.0
  */
-export function ap_<Q, D, A, B, R, E>(
-  fab: IO<Q, D, (a: A) => B>,
-  fa: IO<R, E, A>
-): IO<Q & R, D | E, B> {
-  return map2_(fab, fa, (f, a) => f(a));
+export function ap_<Q, D, A, B, R, E>(fab: IO<Q, D, (a: A) => B>, fa: IO<R, E, A>): IO<Q & R, D | E, B> {
+  return map2_(fab, fa, (f, a) => f(a))
 }
 
 /**
@@ -585,23 +569,19 @@ export function ap_<Q, D, A, B, R, E>(
  * @since 1.0.0
  * @dataFirst ap_
  */
-export function ap<R, E, A>(
-  fa: IO<R, E, A>
-): <Q, D, B>(fab: IO<Q, D, (a: A) => B>) => IO<Q & R, E | D, B> {
-  return (fab) => ap_(fab, fa);
+export function ap<R, E, A>(fa: IO<R, E, A>): <Q, D, B>(fab: IO<Q, D, (a: A) => B>) => IO<Q & R, E | D, B> {
+  return (fab) => ap_(fab, fa)
 }
 
 export function apFirst_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, A> {
-  return map2_(fa, fb, (a, _) => a);
+  return map2_(fa, fb, (a, _) => a)
 }
 
 /**
  * @dataFirst apFirst_
  */
-export function apFirst<Q, D, B>(
-  fb: IO<Q, D, B>
-): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, A> {
-  return (fa) => apFirst_(fa, fb);
+export function apFirst<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
 /**
@@ -615,7 +595,7 @@ export function apFirst<Q, D, B>(
  * @since 1.0.0
  */
 export function apSecond_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, B> {
-  return map2_(fa, fb, (_, b) => b);
+  return map2_(fa, fb, (_, b) => b)
 }
 
 /**
@@ -629,24 +609,22 @@ export function apSecond_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): I
  * @since 1.0.0
  * @dataFirst apSecond_
  */
-export function apSecond<Q, D, B>(
-  fb: IO<Q, D, B>
-): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, B> {
-  return (fa) => apSecond_(fa, fb);
+export function apSecond<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
-export const andThen_ = apSecond_;
+export const andThen_ = apSecond_
 /**
  * @dataFirst andThen_
  */
-export const andThen = apSecond;
+export const andThen = apSecond
 
 export function map2_<R, E, A, Q, D, B, C>(
   fa: IO<R, E, A>,
   fb: IO<Q, D, B>,
   f: (a: A, b: B) => C
 ): IO<Q & R, D | E, C> {
-  return flatMap_(fa, (ra) => map_(fb, (rb) => f(ra, rb)));
+  return flatMap_(fa, (ra) => map_(fb, (rb) => f(ra, rb)))
 }
 
 /**
@@ -656,7 +634,7 @@ export function map2<A, Q, D, B, C>(
   fb: IO<Q, D, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: IO<R, E, A>) => IO<Q & R, D | E, C> {
-  return (fa) => map2_(fa, fb, f);
+  return (fa) => map2_(fa, fb, f)
 }
 
 /*
@@ -672,16 +650,12 @@ export function map2<A, Q, D, B, C>(
  * @category Bifunctor
  * @since 1.0.0
  */
-export function bimap_<R, E, A, G, B>(
-  pab: IO<R, E, A>,
-  f: (e: E) => G,
-  g: (a: A) => B
-): IO<R, G, B> {
+export function bimap_<R, E, A, G, B>(pab: IO<R, E, A>, f: (e: E) => G, g: (a: A) => B): IO<R, G, B> {
   return foldM_(
     pab,
     (e) => fail(f(e)),
     (a) => succeed(g(a))
-  );
+  )
 }
 
 /**
@@ -691,11 +665,8 @@ export function bimap_<R, E, A, G, B>(
  * @category Bifunctor
  * @since 1.0.0
  */
-export function bimap<E, G, A, B>(
-  f: (e: E) => G,
-  g: (a: A) => B
-): <R>(pab: IO<R, E, A>) => IO<R, G, B> {
-  return (pab) => bimap_(pab, f, g);
+export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: IO<R, E, A>) => IO<R, G, B> {
+  return (pab) => bimap_(pab, f, g)
 }
 
 /**
@@ -713,7 +684,7 @@ export function bimap<E, G, A, B>(
  * @since 1.0.0
  */
 export function mapError_<R, E, A, D>(fea: IO<R, E, A>, f: (e: E) => D): IO<R, D, A> {
-  return foldCauseM_(fea, flow(C.map(f), halt), succeed);
+  return foldCauseM_(fea, flow(C.map(f), halt), succeed)
 }
 
 /**
@@ -731,7 +702,7 @@ export function mapError_<R, E, A, D>(fea: IO<R, E, A>, f: (e: E) => D): IO<R, D
  * @since 1.0.0
  */
 export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: IO<R, E, A>) => IO<R, D, A> {
-  return (fea) => mapError_(fea, f);
+  return (fea) => mapError_(fea, f)
 }
 
 /*
@@ -751,7 +722,7 @@ export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: IO<R, E, A>) => IO<R
  * @since 1.0.0
  */
 export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
-  return flatMap_(ma, E.fold(fail, succeed));
+  return flatMap_(ma, E.fold(fail, succeed))
 }
 
 /**
@@ -762,7 +733,7 @@ export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E
  * Folds an `IO` that may fail with `E` or succeed with `A` into one that never fails but succeeds with `Either<E, A>`
  */
 export function recover<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
-  return fold_(ma, E.left, E.right);
+  return fold_(ma, E.left, E.right)
 }
 
 /*
@@ -779,7 +750,7 @@ export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new FoldInstruction(ma, onFailure, onSuccess);
+  return new FoldInstruction(ma, onFailure, onSuccess)
 }
 
 /**
@@ -789,7 +760,7 @@ export function foldCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => new FoldInstruction(ma, onFailure, onSuccess);
+  return (ma) => new FoldInstruction(ma, onFailure, onSuccess)
 }
 
 export function foldM_<R, R1, R2, E, E1, E2, A, A1, A2>(
@@ -797,14 +768,14 @@ export function foldM_<R, R1, R2, E, E1, E2, A, A1, A2>(
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return foldCauseM_(ma, (cause) => E.fold_(C.failureOrCause(cause), onFailure, halt), onSuccess);
+  return foldCauseM_(ma, (cause) => E.fold_(C.failureOrCause(cause), onFailure, halt), onSuccess)
 }
 
 export function foldM<R1, R2, E, E1, E2, A, A1, A2>(
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => foldM_(ma, onFailure, onSuccess);
+  return (ma) => foldM_(ma, onFailure, onSuccess)
 }
 
 /**
@@ -817,7 +788,7 @@ export function fold_<R, E, A, B, C>(
   onFailure: (reason: E) => B,
   onSuccess: (a: A) => C
 ): IO<R, never, B | C> {
-  return foldM_(fa, flow(onFailure, succeed), flow(onSuccess, succeed));
+  return foldM_(fa, flow(onFailure, succeed), flow(onSuccess, succeed))
 }
 
 /**
@@ -829,7 +800,7 @@ export function fold<E, A, B, C>(
   onFailure: (reason: E) => B,
   onSuccess: (a: A) => C
 ): <R>(ef: IO<R, E, A>) => IO<R, never, B | C> {
-  return (ef) => fold_(ef, onFailure, onSuccess);
+  return (ef) => fold_(ef, onFailure, onSuccess)
 }
 
 /*
@@ -851,7 +822,7 @@ export function fold<E, A, B, C>(
  * @since 1.0.0
  */
 export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
-  return flatMap_(fa, (a) => succeed(f(a)));
+  return flatMap_(fa, (a) => succeed(f(a)))
 }
 
 /**
@@ -868,7 +839,7 @@ export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
  * @dataFirst map_
  */
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B> {
-  return (fa) => map_(fa, f);
+  return (fa) => map_(fa, f)
 }
 
 /*
@@ -891,11 +862,8 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap_<R, E, A, U, G, B>(
-  ma: IO<R, E, A>,
-  f: (a: A) => IO<U, G, B>
-): IO<R & U, E | G, B> {
-  return new FlatMapInstruction(ma, f);
+export function flatMap_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B>): IO<R & U, E | G, B> {
+  return new FlatMapInstruction(ma, f)
 }
 
 /**
@@ -913,10 +881,8 @@ export function flatMap_<R, E, A, U, G, B>(
  * @since 1.0.0
  * @dataFirst flatMap_
  */
-export function flatMap<A, U, G, B>(
-  f: (a: A) => IO<U, G, B>
-): <R, E>(ma: IO<R, E, A>) => IO<R & U, G | E, B> {
-  return (ma) => flatMap_(ma, f);
+export function flatMap<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, E, A>) => IO<R & U, G | E, B> {
+  return (ma) => flatMap_(ma, f)
 }
 
 /**
@@ -930,7 +896,7 @@ export function flatMap<A, U, G, B>(
  * @since 1.0.0
  */
 export function flatten<R, E, Q, D, A>(ffa: IO<R, E, IO<Q, D, A>>) {
-  return flatMap_(ffa, identity);
+  return flatMap_(ffa, identity)
 }
 
 /**
@@ -946,16 +912,13 @@ export function flatten<R, E, Q, D, A>(ffa: IO<R, E, IO<Q, D, A>>) {
  * @category Monad
  * @since 1.0.0
  */
-export function tap_<R, E, A, Q, D, B>(
-  fa: IO<R, E, A>,
-  f: (a: A) => IO<Q, D, B>
-): IO<Q & R, D | E, A> {
+export function tap_<R, E, A, Q, D, B>(fa: IO<R, E, A>, f: (a: A) => IO<Q, D, B>): IO<Q & R, D | E, A> {
   return flatMap_(fa, (a) =>
     pipe(
       f(a),
       flatMap(() => succeed(a))
     )
-  );
+  )
 }
 
 /**
@@ -972,10 +935,8 @@ export function tap_<R, E, A, Q, D, B>(
  * @since 1.0.0
  * @dataFirst tap_
  */
-export function tap<A, Q, D, B>(
-  f: (a: A) => IO<Q, D, B>
-): <R, E>(fa: IO<R, E, A>) => IO<Q & R, D | E, A> {
-  return (fa) => tap_(fa, f);
+export function tap<A, Q, D, B>(f: (a: A) => IO<Q, D, B>): <R, E>(fa: IO<R, E, A>) => IO<Q & R, D | E, A> {
+  return (fa) => tap_(fa, f)
 }
 
 /*
@@ -995,7 +956,7 @@ export function tap<A, Q, D, B>(
  * @since 1.0.0
  */
 export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
-  return new ReadInstruction((_: R) => new SucceedInstruction(f(_)));
+  return new ReadInstruction((_: R) => new SucceedInstruction(f(_)))
 }
 
 /**
@@ -1009,7 +970,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  * @since 1.0.0
  */
 export function asksM<Q, R, E, A>(f: (r: Q) => IO<R, E, A>): IO<R & Q, E, A> {
-  return new ReadInstruction(f);
+  return new ReadInstruction(f)
 }
 
 /**
@@ -1026,7 +987,7 @@ export function asksM<Q, R, E, A>(f: (r: Q) => IO<R, E, A>): IO<R & Q, E, A> {
  * @since 1.0.0
  */
 export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
-  return new GiveInstruction(ma, r);
+  return new GiveInstruction(ma, r)
 }
 
 /**
@@ -1043,7 +1004,7 @@ export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
  * @since 1.0.0
  */
 export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
-  return (ma) => giveAll_(ma, r);
+  return (ma) => giveAll_(ma, r)
 }
 
 /**
@@ -1060,7 +1021,7 @@ export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
  * @since 1.0.0
  */
 export function gives_<R0, R, E, A>(ma: IO<R, E, A>, f: (r0: R0) => R) {
-  return asksM((r0: R0) => giveAll_(ma, f(r0)));
+  return asksM((r0: R0) => giveAll_(ma, f(r0)))
 }
 
 /**
@@ -1077,7 +1038,7 @@ export function gives_<R0, R, E, A>(ma: IO<R, E, A>, f: (r0: R0) => R) {
  * @since 1.0.0
  */
 export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: IO<R, E, A>) => IO<R0, E, A> {
-  return (ma) => gives_(ma, f);
+  return (ma) => gives_(ma, f)
 }
 
 /**
@@ -1094,7 +1055,7 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: IO<R, E, A>) => IO<R0
  * @since 1.0.0
  */
 export function give_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: R): IO<R0, E, A> {
-  return gives_(ma, (r0) => ({ ...r0, ...r }));
+  return gives_(ma, (r0) => ({ ...r0, ...r }))
 }
 
 /**
@@ -1110,14 +1071,12 @@ export function give_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: 
  * @category MonadEnv
  * @since 1.0.0
  */
-export function give<R = unknown>(
-  r: R
-): <E, A, R0 = unknown>(ma: IO<R & R0, E, A>) => IO<R0, E, A> {
-  return (ma) => give_(ma, r);
+export function give<R = unknown>(r: R): <E, A, R0 = unknown>(ma: IO<R & R0, E, A>) => IO<R0, E, A> {
+  return (ma) => give_(ma, r)
 }
 
 export function ask<R>(): IO<R, never, R> {
-  return asks((_: R) => _);
+  return asks((_: R) => _)
 }
 
 /*
@@ -1127,7 +1086,7 @@ export function ask<R>(): IO<R, never, R> {
  */
 
 export function unit(): UIO<void> {
-  return succeed(undefined);
+  return succeed(undefined)
 }
 
 /*
@@ -1136,8 +1095,8 @@ export function unit(): UIO<void> {
  * -------------------------------------------
  */
 
-const of: UIO<{}> = succeed({});
-export { of as do };
+const of: UIO<{}> = succeed({})
+export { of as do }
 
 export function bindS<R, E, A, K, N extends string>(
   name: Exclude<N, keyof K>,
@@ -1148,7 +1107,7 @@ export function bindS<R, E, A, K, N extends string>(
   R & R2,
   E | E2,
   {
-    [k in N | keyof K]: k extends keyof K ? K[k] : A;
+    [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
 > {
   return flatMap((a) =>
@@ -1156,17 +1115,17 @@ export function bindS<R, E, A, K, N extends string>(
       f(a),
       map((b) => _bind(a, name, b))
     )
-  );
+  )
 }
 
 export function bindTo<K, N extends string>(
   name: Exclude<N, keyof K>
 ): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, { [k in Exclude<N, keyof K>]: A }> {
-  return (fa) => map_(fa, _bindTo(name));
+  return (fa) => map_(fa, _bindTo(name))
 }
 
 export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K) => A) {
-  return bindS(name, flow(f, succeed));
+  return bindS(name, flow(f, succeed))
 }
 
 /*
@@ -1181,11 +1140,8 @@ export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K
  * @category Combinators
  * @since 1.0.0
  */
-export function catchAll_<R, E, A, R1, E1, A1>(
-  ma: IO<R, E, A>,
-  f: (e: E) => IO<R1, E1, A1>
-): IO<R & R1, E1, A | A1> {
-  return foldM_(ma, f, (x) => succeed(x));
+export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<R1, E1, A1>): IO<R & R1, E1, A | A1> {
+  return foldM_(ma, f, (x) => succeed(x))
 }
 
 /**
@@ -1197,7 +1153,7 @@ export function catchAll_<R, E, A, R1, E1, A1>(
 export function catchAll<R, E, E2, A>(
   f: (e: E2) => IO<R, E, A>
 ): <R2, A2>(ma: IO<R2, E2, A2>) => IO<R2 & R, E, A | A2> {
-  return (ma) => catchAll_(ma, f);
+  return (ma) => catchAll_(ma, f)
 }
 
 /**
@@ -1208,7 +1164,7 @@ export function catchAll<R, E, E2, A>(
  * This operation is the opposite of `cause`.
  */
 export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
-  return flatMap_(ma, (a) => (C.isEmpty(a) ? unit() : halt(a)));
+  return flatMap_(ma, (a) => (C.isEmpty(a) ? unit() : halt(a)))
 }
 
 /**
@@ -1218,7 +1174,7 @@ export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
  * @since 1.0.0
  */
 export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
-  return flatMap_(ma, () => unit());
+  return flatMap_(ma, () => unit())
 }
 
 /**
@@ -1232,7 +1188,7 @@ export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
  * @since 1.0.0
  */
 export function as_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
-  return map_(ma, () => b());
+  return map_(ma, () => b())
 }
 
 /**
@@ -1246,7 +1202,7 @@ export function as_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
  * @since 1.0.0
  */
 export function as<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
-  return (ma) => as_(ma, b);
+  return (ma) => as_(ma, b)
 }
 
 /**
@@ -1259,10 +1215,10 @@ export function as<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
  * @category Combinators
  * @since 1.0.0
  */
-export const asSomeError: <R, E, A>(ma: IO<R, E, A>) => IO<R, O.Option<E>, A> = mapError(O.some);
+export const asSomeError: <R, E, A>(ma: IO<R, E, A>) => IO<R, O.Option<E>, A> = mapError(O.some)
 
 export function cause<R, E, A>(ma: IO<R, E, A>): IO<R, never, Cause<E>> {
-  return foldCauseM_(ma, succeed, () => succeed(C.empty));
+  return foldCauseM_(ma, succeed, () => succeed(C.empty))
 }
 
 /**
@@ -1285,7 +1241,7 @@ export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return flatMap_(mb, (x) => (x ? (onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()));
+  return flatMap_(mb, (x) => (x ? (onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()))
 }
 
 /**
@@ -1307,7 +1263,7 @@ export function ifM<R1, E1, A1, R2, E2, A2>(
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
 ): <R, E>(b: IO<R, E, boolean>) => IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return (b) => ifM_(b, onTrue, onFalse);
+  return (b) => ifM_(b, onTrue, onFalse)
 }
 
 export function if_<R, E, A, R1, E1, A1>(
@@ -1315,16 +1271,16 @@ export function if_<R, E, A, R1, E1, A1>(
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): IO<R & R1, E | E1, A | A1> {
-  return ifM_(total(b), onTrue, onFalse);
+  return ifM_(total(b), onTrue, onFalse)
 }
 
 function _if<R, E, A, R1, E1, A1>(
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): (b: () => boolean) => IO<R & R1, E | E1, A | A1> {
-  return (b) => if_(b, onTrue, onFalse);
+  return (b) => if_(b, onTrue, onFalse)
 }
-export { _if as if };
+export { _if as if }
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -1337,7 +1293,7 @@ export { _if as if };
  * @since 1.0.0
  */
 export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => IO<R, E, any>): IO<R, E, void> {
-  return I.foldMap(makeMonoid<IO<R, E, void>>((x, y) => flatMap_(x, () => y), unit()))(f)(as);
+  return I.foldMap(makeMonoid<IO<R, E, void>>((x, y) => flatMap_(x, () => y), unit()))(f)(as)
 }
 
 /**
@@ -1350,10 +1306,8 @@ export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => IO<R, E, any
  * @category Combinators
  * @since 1.0.0
  */
-export function foreachUnit<R, E, A>(
-  f: (a: A) => IO<R, E, any>
-): (as: Iterable<A>) => IO<R, E, void> {
-  return (as) => foreachUnit_(as, f);
+export function foreachUnit<R, E, A>(f: (a: A) => IO<R, E, any>): (as: Iterable<A>) => IO<R, E, void> {
+  return (as) => foreachUnit_(as, f)
 }
 
 /**
@@ -1366,10 +1320,7 @@ export function foreachUnit<R, E, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export function foreach_<R, E, A, B>(
-  as: Iterable<A>,
-  f: (a: A) => IO<R, E, B>
-): IO<R, E, ReadonlyArray<B>> {
+export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, ReadonlyArray<B>> {
   return map_(
     I.foldLeft_(as, succeed(FL.empty<B>()) as IO<R, E, FL.FreeList<B>>, (b, a) =>
       map2_(
@@ -1379,7 +1330,7 @@ export function foreach_<R, E, A, B>(
       )
     ),
     FL.toArray
-  );
+  )
 }
 
 /**
@@ -1392,10 +1343,8 @@ export function foreach_<R, E, A, B>(
  * @category Combinators
  * @since 1.0.0
  */
-export function foreach<R, E, A, B>(
-  f: (a: A) => IO<R, E, B>
-): (as: Iterable<A>) => IO<R, E, ReadonlyArray<B>> {
-  return (as) => foreach_(as, f);
+export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, ReadonlyArray<B>> {
+  return (as) => foreach_(as, f)
 }
 
 /**
@@ -1410,7 +1359,7 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
     ma,
     (cause) => succeed(Ex.failure(cause)),
     (succ) => succeed(Ex.succeed(succ))
-  );
+  )
 }
 
 /**
@@ -1419,14 +1368,8 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
  * @category Combinators
  * @since 1.0.0
  */
-export function reduce_<A, B, R, E>(
-  as: Iterable<A>,
-  b: B,
-  f: (b: B, a: A) => IO<R, E, B>
-): IO<R, E, B> {
-  return A.foldLeft_(Array.from(as), succeed(b) as IO<R, E, B>, (acc, el) =>
-    flatMap_(acc, (a) => f(a, el))
-  );
+export function reduce_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<R, E, B>): IO<R, E, B> {
+  return A.foldLeft_(Array.from(as), succeed(b) as IO<R, E, B>, (acc, el) => flatMap_(acc, (a) => f(a, el)))
 }
 
 /**
@@ -1435,11 +1378,8 @@ export function reduce_<A, B, R, E>(
  * @category Combinators
  * @since 1.0.0
  */
-export function reduce<R, E, A, B>(
-  b: B,
-  f: (b: B, a: A) => IO<R, E, B>
-): (as: Iterable<A>) => IO<R, E, B> {
-  return (as) => reduce_(as, b, f);
+export function reduce<R, E, A, B>(b: B, f: (b: B, a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, B> {
+  return (as) => reduce_(as, b, f)
 }
 
 /**
@@ -1448,14 +1388,8 @@ export function reduce<R, E, A, B>(
  * @category Combinators
  * @since 1.0.0
  */
-export function reduceRight_<A, Z, R, E>(
-  i: Iterable<A>,
-  zero: Z,
-  f: (a: A, z: Z) => IO<R, E, Z>
-): IO<R, E, Z> {
-  return A.foldRight_(Array.from(i), succeed(zero) as IO<R, E, Z>, (el, acc) =>
-    flatMap_(acc, (a) => f(el, a))
-  );
+export function reduceRight_<A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => IO<R, E, Z>): IO<R, E, Z> {
+  return A.foldRight_(Array.from(i), succeed(zero) as IO<R, E, Z>, (el, acc) => flatMap_(acc, (a) => f(el, a)))
 }
 
 /**
@@ -1464,11 +1398,8 @@ export function reduceRight_<A, Z, R, E>(
  * @category Combinators
  * @since 1.0.0
  */
-export function reduceRight<A, Z, R, E>(
-  zero: Z,
-  f: (a: A, z: Z) => IO<R, E, Z>
-): (i: Iterable<A>) => IO<R, E, Z> {
-  return (i) => reduceRight_(i, zero, f);
+export function reduceRight<A, Z, R, E>(zero: Z, f: (a: A, z: Z) => IO<R, E, Z>): (i: Iterable<A>) => IO<R, E, Z> {
+  return (i) => reduceRight_(i, zero, f)
 }
 
 /**
@@ -1478,7 +1409,7 @@ export function reduceRight<A, Z, R, E>(
  * @since 1.0.0
  */
 export function whenM_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>) {
-  return flatMap_(mb, (a) => (a ? asUnit(ma) : unit()));
+  return flatMap_(mb, (a) => (a ? asUnit(ma) : unit()))
 }
 
 /**
@@ -1487,18 +1418,16 @@ export function whenM_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>
  * @category Combinators,
  * @since 1.0.0
  */
-export function whenM<R, E>(
-  mb: IO<R, E, boolean>
-): <R1, E1, A>(ma: IO<R1, E1, A>) => IO<R & R1, E | E1, void> {
-  return (ma) => whenM_(ma, mb);
+export function whenM<R, E>(mb: IO<R, E, boolean>): <R1, E1, A>(ma: IO<R1, E1, A>) => IO<R & R1, E | E1, void> {
+  return (ma) => whenM_(ma, mb)
 }
 
 export function when_<R, E, A>(ma: IO<R, E, A>, b: () => boolean) {
-  return whenM_(ma, total(b));
+  return whenM_(ma, total(b))
 }
 
 export function when(b: () => boolean): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, void> {
-  return (ma) => when_(ma, b);
+  return (ma) => when_(ma, b)
 }
 
 /**
@@ -1512,7 +1441,7 @@ export function tapCause_<R2, A2, R, E, E2>(
   ma: IO<R2, E2, A2>,
   f: (e: Cause<E2>) => IO<R, E, any>
 ): IO<R2 & R, E | E2, A2> {
-  return foldCauseM_(ma, (c) => flatMap_(f(c), () => halt(c)), succeed);
+  return foldCauseM_(ma, (c) => flatMap_(f(c), () => halt(c)), succeed)
 }
 
 /**
@@ -1525,7 +1454,7 @@ export function tapCause_<R2, A2, R, E, E2>(
 export function tapCause<R, E, E1>(
   f: (e: Cause<E1>) => IO<R, E, any>
 ): <R1, A1>(ma: IO<R1, E1, A1>) => IO<R1 & R, E | E1, A1> {
-  return (ma) => tapCause_(ma, f);
+  return (ma) => tapCause_(ma, f)
 }
 
 /**
@@ -1536,7 +1465,7 @@ export function tapCause<R, E, E1>(
  * @since 1.0.0
  */
 export function descriptorWith<R, E, A>(f: (d: FiberDescriptor) => IO<R, E, A>): IO<R, E, A> {
-  return new CheckDescriptorInstruction(f);
+  return new CheckDescriptorInstruction(f)
 }
 
 /**
@@ -1546,7 +1475,7 @@ export function descriptorWith<R, E, A>(f: (d: FiberDescriptor) => IO<R, E, A>):
  * @since 1.0.0
  */
 export function descriptor(): IO<unknown, never, FiberDescriptor> {
-  return descriptorWith(succeed);
+  return descriptorWith(succeed)
 }
 
 /**
@@ -1557,7 +1486,7 @@ export function descriptor(): IO<unknown, never, FiberDescriptor> {
  * @since 1.0.0
  */
 export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, A>): IO<R, E, A> {
-  return new GetInterruptInstruction(f);
+  return new GetInterruptInstruction(f)
 }
 
 /**
@@ -1583,7 +1512,7 @@ export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, 
  * methods.
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
-  return new ForkInstruction(ma, O.none(), O.none());
+  return new ForkInstruction(ma, O.none(), O.none())
 }
 
 /**
@@ -1608,8 +1537,6 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  * behavior is not desired, you may use the `forkDaemon` or `forkIn`
  * methods.
  */
-export function forkReport(
-  reportFailure: FailureReporter
-): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
-  return (ma) => new ForkInstruction(ma, O.none(), O.some(reportFailure));
+export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
+  return (ma) => new ForkInstruction(ma, O.none(), O.some(reportFailure))
 }

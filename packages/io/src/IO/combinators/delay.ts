@@ -1,8 +1,8 @@
-import type { HasClock } from "../../Clock";
-import type { IO } from "../core";
+import type { HasClock } from '../../Clock'
+import type { IO } from '../core'
 
-import { sleep } from "../../Clock";
-import { flatMap_ } from "../core";
+import { sleep } from '../../Clock'
+import { flatMap_ } from '../core'
 
 /**
  * ```haskell
@@ -15,7 +15,7 @@ import { flatMap_ } from "../core";
  * @since 1.0.0
  */
 export function delay_<R, E, A>(ef: IO<R, E, A>, ms: number): IO<R & HasClock, E, A> {
-  return flatMap_(sleep(ms), () => ef);
+  return flatMap_(sleep(ms), () => ef)
 }
 
 /**
@@ -29,5 +29,5 @@ export function delay_<R, E, A>(ef: IO<R, E, A>, ms: number): IO<R & HasClock, E
  * @since 1.0.0
  */
 export function delay(ms: number): <R, E, A>(ef: IO<R, E, A>) => IO<R & HasClock, E, A> {
-  return (ef) => delay_(ef, ms);
+  return (ef) => delay_(ef, ms)
 }

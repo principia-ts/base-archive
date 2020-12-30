@@ -1,8 +1,8 @@
-import type { Exit } from "../../Exit";
-import type { IO } from "../core";
+import type { Exit } from '../../Exit'
+import type { IO } from '../core'
 
-import { unit } from "../core";
-import { bracketExit_ } from "./bracketExit";
+import { unit } from '../core'
+import { bracketExit_ } from './bracketExit'
 
 export function onExit_<R, E, A, R2, E2>(
   self: IO<R, E, A>,
@@ -12,9 +12,9 @@ export function onExit_<R, E, A, R2, E2>(
     unit(),
     () => self,
     (_, e) => cleanup(e)
-  );
+  )
 }
 
 export const onExit = <E, A, R2, E2>(cleanup: (exit: Exit<E, A>) => IO<R2, E2, any>) => <R>(
   self: IO<R, E, A>
-): IO<R & R2, E | E2, A> => onExit_(self, cleanup);
+): IO<R & R2, E | E2, A> => onExit_(self, cleanup)

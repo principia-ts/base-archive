@@ -3,7 +3,7 @@
 // Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 
 export const parseMs = (milliseconds: number) => {
-  const roundTowardsZero = milliseconds > 0 ? Math.floor : Math.ceil;
+  const roundTowardsZero = milliseconds > 0 ? Math.floor : Math.ceil
 
   return {
     days: roundTowardsZero(milliseconds / 86400000),
@@ -13,5 +13,5 @@ export const parseMs = (milliseconds: number) => {
     milliseconds: roundTowardsZero(milliseconds) % 1000,
     microseconds: roundTowardsZero(milliseconds * 1000) % 1000,
     nanoseconds: roundTowardsZero(milliseconds * 1e6) % 1000
-  };
-};
+  }
+}

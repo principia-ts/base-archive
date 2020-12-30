@@ -1,9 +1,9 @@
-import type { ExecutionStrategy } from "../../ExecutionStrategy";
-import type { Managed } from "../core";
+import type { ExecutionStrategy } from '../../ExecutionStrategy'
+import type { Managed } from '../core'
 
-import { foreach_ } from "../core";
-import { foreachPar_ } from "./foreachPar";
-import { foreachParN_ } from "./foreachParN";
+import { foreach_ } from '../core'
+import { foreachPar_ } from './foreachPar'
+import { foreachParN_ } from './foreachParN'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -17,14 +17,14 @@ export function foreachExec_<R, E, A, B>(
   f: (a: A) => Managed<R, E, B>
 ): Managed<R, E, ReadonlyArray<B>> {
   switch (es._tag) {
-    case "Sequential": {
-      return foreach_(as, f);
+    case 'Sequential': {
+      return foreach_(as, f)
     }
-    case "Parallel": {
-      return foreachPar_(as, f);
+    case 'Parallel': {
+      return foreachPar_(as, f)
     }
-    case "ParallelN": {
-      return foreachParN_(es.n)(as, f);
+    case 'ParallelN': {
+      return foreachParN_(es.n)(as, f)
     }
   }
 }
@@ -37,8 +37,6 @@ export function foreachExec_<R, E, A, B>(
  */
 export function foreachExec(
   es: ExecutionStrategy
-): <R, E, A, B>(
-  f: (a: A) => Managed<R, E, B>
-) => (as: Iterable<A>) => Managed<R, E, ReadonlyArray<B>> {
-  return (f) => (as) => foreachExec_(es, as, f) as any;
+): <R, E, A, B>(f: (a: A) => Managed<R, E, B>) => (as: Iterable<A>) => Managed<R, E, ReadonlyArray<B>> {
+  return (f) => (as) => foreachExec_(es, as, f) as any
 }

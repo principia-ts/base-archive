@@ -1,20 +1,20 @@
-import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from "../../HKT";
-import type { Summoner } from "../../summoner";
-import type * as Eq from "@principia/base/data/Eq";
+import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
+import type { Summoner } from '../../summoner'
+import type * as Eq from '@principia/base/data/Eq'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import { memoize, merge } from "../../utils";
-import { IntersectionEq } from "./intersection";
-import { NewtypeEq } from "./newtype";
-import { NullableEq } from "./nullable";
-import { ObjectEq } from "./object";
-import { PrimitivesEq } from "./primitives";
-import { RecordEq } from "./record";
-import { RecursiveEq } from "./recursive";
-import { RefinementEq } from "./refinement";
-import { SetEq } from "./set";
-import { SumEq } from "./sum";
+import { memoize, merge } from '../../utils'
+import { IntersectionEq } from './intersection'
+import { NewtypeEq } from './newtype'
+import { NullableEq } from './nullable'
+import { ObjectEq } from './object'
+import { PrimitivesEq } from './primitives'
+import { RecordEq } from './record'
+import { RecursiveEq } from './recursive'
+import { RefinementEq } from './refinement'
+import { SetEq } from './set'
+import { SumEq } from './sum'
 
 export const _allEqInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -28,14 +28,13 @@ export const _allEqInterpreters = <Env extends AnyEnv>() =>
     SumEq<Env>(),
     NullableEq<Env>(),
     IntersectionEq<Env>()
-  );
+  )
 
-export const allEqInterpreters = memoize(_allEqInterpreters) as typeof _allEqInterpreters;
+export const allEqInterpreters = memoize(_allEqInterpreters) as typeof _allEqInterpreters
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
   env: {
-    [K in Eq.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K];
+    [K in Eq.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
   }
-) => <S, R, E, A>(
-  F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
-): Eq.Eq<A> => pipe(env, F.derive(allEqInterpreters()));
+) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Eq.Eq<A> =>
+  pipe(env, F.derive(allEqInterpreters()))

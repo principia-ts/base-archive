@@ -1,15 +1,13 @@
-import type { ErrorInfo } from "./DecodeErrors";
-import type * as E from "./Encoder";
-import type * as HKT from "@principia/base/HKT";
-import type * as P from "@principia/base/typeclass";
+import type { ErrorInfo } from './DecodeErrors'
+import type * as E from './Encoder'
+import type * as HKT from '@principia/base/HKT'
+import type * as P from '@principia/base/typeclass'
 
-import { identity } from "@principia/base/data/Function";
+import { identity } from '@principia/base/data/Function'
 
-import * as D from "./Decoder";
+import * as D from './Decoder'
 
-export interface Codec<M extends HKT.URIS, C, I, O, A>
-  extends D.Decoder<M, C, I, O>,
-    E.Encoder<O, A> {}
+export interface Codec<M extends HKT.URIS, C, I, O, A> extends D.Decoder<M, C, I, O>, E.Encoder<O, A> {}
 
 /*
  * -------------------------------------------
@@ -25,17 +23,15 @@ export function makeCodec<M extends HKT.URIS, C, I, O, A>(
     decode: decoder.decode,
     encode: encoder.encode,
     _meta: decoder._meta
-  };
+  }
 }
 
-export function fromDecoder<M extends HKT.URIS, C, I, O>(
-  decoder: D.Decoder<M, C, I, O>
-): Codec<M, C, I, O, O> {
+export function fromDecoder<M extends HKT.URIS, C, I, O>(decoder: D.Decoder<M, C, I, O>): Codec<M, C, I, O, O> {
   return {
     decode: decoder.decode,
     encode: identity,
     _meta: decoder._meta
-  };
+  }
 }
 
 /*
@@ -47,7 +43,7 @@ export function fromDecoder<M extends HKT.URIS, C, I, O>(
 export function string<M extends HKT.URIS, C>(
   M: P.MonadFail<M, D.V<C>>
 ): (info?: ErrorInfo) => Codec<M, C, unknown, string, string> {
-  return (info) => fromDecoder(D.string(M)(info));
+  return (info) => fromDecoder(D.string(M)(info))
 }
 
 // TODO: The rest of Codec
