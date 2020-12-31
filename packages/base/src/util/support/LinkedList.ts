@@ -1,3 +1,4 @@
+/* eslint-disable functional/immutable-data */
 export class LinkedListNode<T> {
   constructor(public value: T | null, public next: LinkedListNode<T> | null = null) {}
 }

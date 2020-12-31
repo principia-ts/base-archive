@@ -77,28 +77,28 @@ const timestamp = I.map_(
 )
 
 const showConsoleLogEntry = I.gen(function* (_) {
-  const config = yield* _(LoggerConfig)
+  const config    = yield* _(LoggerConfig)
   const { chalk } = yield* _(Chalk)
-  const time = yield* _(timestamp)
-  const entry = yield* _(LogEntry)
-  const theme = yield* _(config.theme)
+  const time      = yield* _(timestamp)
+  const entry     = yield* _(LogEntry)
+  const theme     = yield* _(config.theme)
   return `[${theme[entry.level](entry.level.toUpperCase())}] ${entry.message} ${chalk.gray.dim(time)}`
 })
 
 const showFileLogEntry = I.gen(function* (_) {
-  const time = yield* _(timestamp)
+  const time  = yield* _(timestamp)
   const entry = yield* _(LogEntry)
   return `${time} [${entry.level.toUpperCase()}] ${stripAnsi(entry.message)}\n`
 })
 
 const logToConsole = I.gen(function* (_) {
   const console = yield* _(C.Console)
-  const entry = yield* _(showConsoleLogEntry)
+  const entry   = yield* _(showConsoleLogEntry)
   return yield* _(console.putStrLn(entry))
 })
 
 const logToFile = I.gen(function* (_) {
-  const show = yield* _(showFileLogEntry)
+  const show   = yield* _(showFileLogEntry)
   const config = yield* _(LoggerConfig)
   return yield* _(fs.appendFile(config.path, show))
 })
@@ -106,8 +106,9 @@ const logToFile = I.gen(function* (_) {
 function _log(message: ChalkFn, level: LogLevel) {
   return I.gen(function* (_) {
     const { level: configLevel, path } = yield* _(LoggerConfig)
-    const { chalk } = yield* _(Chalk)
-    const console = yield* _(C.Console)
+
+    const { chalk }       = yield* _(Chalk)
+    const console         = yield* _(C.Console)
     const entry: LogEntry = {
       message: message(chalk),
       level

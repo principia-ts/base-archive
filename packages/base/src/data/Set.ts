@@ -19,15 +19,15 @@ import { identity, not, tuple } from './Function'
  * -------------------------------------------
  */
 
-export const SetURI = 'Set'
+export const URI = 'Set'
 
-export type SetURI = typeof SetURI
+export type URI = typeof URI
 
 export type V = HKT.Auto
 
 declare module '../HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [SetURI]: ReadonlySet<A>
+    readonly [URI]: ReadonlySet<A>
   }
 }
 

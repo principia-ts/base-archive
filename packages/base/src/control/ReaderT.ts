@@ -12,9 +12,11 @@ export interface ReaderT<M extends HKT.URIS, C = HKT.Auto> extends P.Monad<Reade
 
 export function getMonadReaderT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): ReaderT<M, C>
 export function getMonadReaderT<M>(M: P.Monad<HKT.UHKT<M>>): ReaderT<HKT.UHKT<M>> {
-  const map_: P.MapFn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>>         = (fa, f) => (r) => M.map_(fa(r), f)
-  const map2_: P.Map2Fn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>>       = (fa, fb, f) => (r) =>
+  const map_: P.MapFn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>> = (fa, f) => (r) => M.map_(fa(r), f)
+
+  const map2_: P.Map2Fn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>> = (fa, fb, f) => (r) =>
     M.flatMap_(fa(r), (a) => M.map_(fb(r), (b) => f(a, b)))
+
   const flatMap_: P.FlatMapFn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>> = (ma, f) => (r) =>
     M.flatMap_(ma(r), (a) => f(a)(r))
 

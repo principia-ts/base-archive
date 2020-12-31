@@ -6,6 +6,7 @@ import type { Show } from './Show'
 
 import * as P from '../typeclass'
 import { makeMonoid } from '../typeclass'
+import { makeEq } from './Eq'
 import { identity, pipe, tuple } from './Function'
 import * as O from './Option'
 
@@ -238,21 +239,21 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
 export function separate<N extends string, A, B>(
   fa: ReadonlyRecord<N, E.Either<A, B>>
 ): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>] {
-  const left: Record<string, A> = {} as any
-  const right: Record<string, B> = {} as any
+  const mut_left: Record<string, A> = {} as any
+  const mut_right: Record<string, B> = {} as any
   const keys = Object.keys(fa)
   for (const key of keys) {
     const e = fa[key]
     switch (e.tag_) {
       case 'Left':
-        left[key] = e.left
+        mut_left[key] = e.left
         break
       case 'Right':
-        right[key] = e.right
+        mut_right[key] = e.right
         break
     }
   }
-  return [left, right]
+  return [mut_left, mut_right]
 }
 
 /**
@@ -261,15 +262,15 @@ export function separate<N extends string, A, B>(
  * ```
  */
 export function compact<N extends string, A>(fa: ReadonlyRecord<N, O.Option<A>>): ReadonlyRecord<string, A> {
-  const r: Record<string, A> = {} as any
-  const ks                   = keys(fa)
+  const mut_r = {} as Record<string, any>
+  const ks    = keys(fa)
   for (const key of ks) {
     const optionA = fa[key]
     if (O.isSome(optionA)) {
-      r[key] = optionA.value
+      mut_r[key] = optionA.value
     }
   }
-  return r
+  return mut_r
 }
 
 /*
@@ -282,12 +283,7 @@ export function getEq<N extends string, A>(E: Eq<A>): Eq<ReadonlyRecord<N, A>>
 export function getEq<A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>>
 export function getEq<A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>> {
   const isSubrecordE = isSubrecord(E)
-  const equals_      = (x: ReadonlyRecord<string, A>, y: ReadonlyRecord<string, A>): boolean =>
-    isSubrecordE(x)(y) && isSubrecordE(y)(x)
-  return {
-    equals_,
-    equals: (y) => (x) => equals_(x, y)
-  }
+  return makeEq((x, y) => isSubrecordE(x)(y) && isSubrecordE(y)(x))
 }
 
 /*
@@ -314,19 +310,19 @@ export function filterWithIndex_<A>(
   fa: ReadonlyRecord<string, A>,
   predicate: PredicateWithIndex<string, A>
 ): ReadonlyRecord<string, A> {
-  const out: Record<string, A> = {}
-  let changed                  = false
+  const mut_out = {} as Record<string, A>
+  let changed   = false
   for (const key in fa) {
     if (_hasOwnProperty.call(fa, key)) {
       const a = fa[key]
       if (predicate(key, a)) {
-        out[key] = a
+        mut_out[key] = a
       } else {
         changed = true
       }
     }
   }
-  return changed ? out : fa
+  return changed ? mut_out : fa
 }
 
 /**
@@ -389,16 +385,16 @@ export function filterMapWithIndex_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => O.Option<B>
 ): ReadonlyRecord<string, B> {
-  const r: Record<string, B> = {} as any
-  const ks                   = keys(fa)
+  const mut_r = {} as Record<string, B>
+  const ks    = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key     = ks[i]
     const optionB = f(key, fa[key])
     if (optionB._tag === 'Some') {
-      r[key] = optionB.value
+      mut_r[key] = optionB.value
     }
   }
-  return r
+  return mut_r
 }
 
 /**
@@ -451,19 +447,19 @@ export function partitionWithIndex_<N extends string, A>(
   predicate: PredicateWithIndex<N, A>
 ): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>]
 export function partitionWithIndex_<A>(fa: ReadonlyRecord<string, A>, predicate: PredicateWithIndex<string, A>) {
-  const left: Record<string, A>  = {}
-  const right: Record<string, A> = {}
-  const ks                       = keys(fa)
+  const mut_left  = {} as Record<string, A>
+  const mut_right = {} as Record<string, A>
+  const ks        = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
     const a   = fa[key]
     if (predicate(key, a)) {
-      right[key] = a
+      mut_right[key] = a
     } else {
-      left[key] = a
+      mut_left[key] = a
     }
   }
-  return tuple(left, right)
+  return tuple(mut_left, mut_right)
 }
 
 /**
@@ -528,22 +524,22 @@ export function partitionMapWithIndex_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => E.Either<B, C>
 ): readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
-  const left: Record<string, B>  = {}
-  const right: Record<string, C> = {}
-  const ks                       = keys(fa)
+  const mut_left  = {} as Record<string, B>
+  const mut_right = {} as Record<string, C>
+  const ks        = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
     const e   = f(key, fa[key])
     switch (e._tag) {
       case 'Left':
-        left[key] = e.left
+        mut_left[key] = e.left
         break
       case 'Right':
-        right[key] = e.right
+        mut_right[key] = e.right
         break
     }
   }
-  return [left, right]
+  return [mut_left, mut_right]
 }
 
 /**
@@ -726,10 +722,10 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigr
   ): ReadonlyRecord<N, B> =>
     pipe(
       fa,
-      F.foldLeft<A, Record<N, B>>({} as any, (r, a) => {
+      F.foldLeft<A, Record<N, B>>({} as any, (mut_r, a) => {
         const [k, b] = f(a)
-        r[k]         = _hasOwnProperty.call(r, k) ? S.combine_(r[k], b) : b
-        return r
+        mut_r[k]     = _hasOwnProperty.call(mut_r, k) ? S.combine_(mut_r[k], b) : b
+        return mut_r
       })
     )
 }
@@ -761,13 +757,13 @@ export function mapWithIndex_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => B
 ): ReadonlyRecord<N, B> {
-  const out  = {} as Record<N, B>
-  const keys = Object.keys(fa)
+  const mut_out = {} as Record<N, B>
+  const keys    = Object.keys(fa)
   for (let i = 0; i < keys.length; i++) {
-    const k = keys[i] as keyof typeof fa
-    out[k]  = f(k, fa[k])
+    const k    = keys[i] as keyof typeof fa
+    mut_out[k] = f(k, fa[k])
   }
-  return out
+  return mut_out
 }
 
 /**
@@ -835,12 +831,12 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string,
     if (len === 0) {
       return x
     }
-    const r: Record<string, A> = Object.assign({}, x)
+    const mut_r = Object.assign({}, x) as Record<string, A>
     for (let i = 0; i < len; i++) {
-      const k = keys[i]
-      r[k]    = _hasOwnProperty.call(x, k) ? S.combine_(x[k], y[k]) : y[k]
+      const k  = keys[i]
+      mut_r[k] = _hasOwnProperty.call(x, k) ? S.combine_(x[k], y[k]) : y[k]
     }
-    return r
+    return mut_r
   }, empty)
 }
 
@@ -880,19 +876,19 @@ export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementT
       if (ks.length === 0) {
         return G.pure(empty)
       }
-      let gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
+      let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
       for (let i = 0; i < ks.length; i++) {
         const key = ks[i]
-        gr = pipe(
-          gr,
-          G.map((r) => (b: _['B']) => {
-            r[key] = b
-            return r
+        mut_gr = pipe(
+          mut_gr,
+          G.map((mut_r) => (b: _['B']) => {
+            mut_r[key] = b
+            return mut_r
           }),
           G.ap(f(key, ta[key]))
         )
       }
-      return gr
+      return mut_gr
     }
   }
 )
@@ -1046,9 +1042,9 @@ export function insertAt_<N extends string, K extends string, A>(
   if (r[k as any] === a) {
     return r as any
   }
-  const out: Record<N | K, A> = Object.assign({}, r) as any
-  out[k] = a
-  return out
+  const mut_out = Object.assign({}, r) as Record<N | K, A>
+  mut_out[k] = a
+  return mut_out
 }
 
 export function insertAt<K extends string, A>(
@@ -1065,9 +1061,9 @@ export function deleteAt_<N extends string, A, K extends N>(
   if (!_hasOwnProperty.call(r, k)) {
     return r
   }
-  const out: Record<N, A> = Object.assign({}, r)
-  delete out[k as any]
-  return out as any
+  const mut_out = Object.assign({}, r) as Record<N, A>
+  delete mut_out[k as any]
+  return mut_out as any
 }
 
 export function deleteAt<N extends string, K extends N>(
@@ -1083,9 +1079,9 @@ export function updateAt_<N extends string, A>(r: ReadonlyRecord<N, A>, k: N, a:
   if (r[k] === a) {
     return O.some(r)
   }
-  const out: Record<N, A> = Object.assign({}, r)
-  out[k]                  = a
-  return O.some(out)
+  const mut_out = Object.assign({}, r) as Record<N, A>
+  mut_out[k]    = a
+  return O.some(mut_out)
 }
 
 export function updateAt<N extends string, A>(k: N, a: A): (r: ReadonlyRecord<N, A>) => O.Option<ReadonlyRecord<N, A>> {
@@ -1100,9 +1096,9 @@ export function modifyAt_<N extends string, A>(
   if (!_hasOwnProperty.call(r, k)) {
     return O.none()
   }
-  const out: Record<N, A> = Object.assign({}, r)
-  out[k]                  = f(r[k])
-  return O.some(out)
+  const mut_out = Object.assign({}, r) as Record<N, A>
+  mut_out[k]    = f(r[k])
+  return O.some(mut_out)
 }
 
 export function modifyAt<N extends string, A>(

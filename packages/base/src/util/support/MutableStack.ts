@@ -1,3 +1,4 @@
+/* eslint-disable functional/immutable-data */
 export class MutableStack<A> {
   private array: Array<any> = Array(13)
   private size              = 0

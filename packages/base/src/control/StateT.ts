@@ -36,11 +36,15 @@ export interface StateT<M extends HKT.URIS, C = HKT.Auto> extends P.MonadState<S
 export function getMonadStateT<F extends HKT.URIS, C>(M: P.Monad<F, C>): P.MonadState<StateTURI<F>, V<C>>
 export function getMonadStateT<F>(M: P.Monad<HKT.UHKT<F>>): P.MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> {
   const map_: P.MapFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fa, f) => (s) => M.map_(fa(s), ([a, s]) => [f(a), s])
+
   const map2_: P.Map2Fn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fa, fb, f) => (s) =>
     M.flatMap_(fa(s), ([a, s1]) => M.map_(fb(s1), ([b, s2]) => [f(a, b), s2]))
+
   const ap_: P.ApFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fab, fa) => map2_(fab, fa, (f, a) => f(a))
+
   const flatMap_: P.FlatMapFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (ma, f) => (s) =>
     M.flatMap_(ma(s), ([a, s]) => f(a)(s))
+
   const flatten: P.FlattenFn<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (mma) => (s) =>
     M.flatMap_(mma(s), ([f, s2]) => f(s2))
 

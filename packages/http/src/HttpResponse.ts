@@ -111,6 +111,7 @@ export class Response {
   status(s: Status): UIO<void> {
     return RefM.update_(this._res, (res) =>
       T.total(() => {
+        // eslint-disable-next-line functional/immutable-data
         res.statusCode = s
         return res
       })

@@ -81,6 +81,13 @@
         "varsIgnorePattern": "^ignored?$"
       }
     ],
+    "@typescript-eslint/no-this-alias": [
+      "error",
+      {
+        "allowDestructuring": true,
+        "allowedNames": ["self"]
+      }
+    ],
 
     "functional/immutable-data": ["error", { "ignorePattern": "^mut", "ignoreAccessorPattern": "**.mut_*" }]
   },

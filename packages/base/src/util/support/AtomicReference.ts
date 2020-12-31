@@ -1,3 +1,4 @@
+/* eslint-disable functional/immutable-data */
 export class AtomicReference<A> {
   private current: A
   constructor(readonly initial: A) {

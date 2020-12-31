@@ -2,7 +2,7 @@ import { DoublyLinkedList } from './DoublyLinkedList'
 
 export interface MutableQueue<A> {
   /**
-   * The '''maximum''' number of elements that a queue can hold.
+   * The maximum number of elements that a queue can hold.
    *
    * @note that unbounded queues can still implement this interface
    * with `capacity = MAX_NUMBER`.
@@ -26,7 +26,7 @@ export interface MutableQueue<A> {
    */
   readonly poll: (a: A | undefined) => A | undefined
   /**
-   * @return the '''current''' number of elements inside the queue.
+   * @return the current number of elements inside the queue.
    *
    * @note that this method can be non-atomic and return the
    * approximate number in a concurrent setting.

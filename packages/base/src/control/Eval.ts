@@ -11,7 +11,6 @@ import { identity, tuple } from '../data/Function'
 import * as O from '../data/Option'
 import * as DSL from '../DSL'
 import * as HKT from '../HKT'
-import { MutableStack } from '../util/support/MutableStack'
 import { makeStack } from '../util/support/Stack'
 
 /**
@@ -23,19 +22,19 @@ import { makeStack } from '../util/support/Stack'
  * use `Sync`, `Async`, or `IO` from the `io` package
  */
 export abstract class Eval<A> {
-  readonly _U = EvalURI
+  readonly _U = URI
   readonly _A!: () => A
 
   abstract value: () => A
   abstract memoize: () => Eval<A>
 }
 
-export const EvalURI = 'Eval'
-export type EvalURI = typeof EvalURI
+export const URI = 'Eval'
+export type URI = typeof URI
 
 declare module '../HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [EvalURI]: Eval<A>
+    readonly [URI]: Eval<A>
   }
 }
 
@@ -58,7 +57,8 @@ class Later<A> extends Eval<A> {
 
   value = () => {
     const result = this.thunk()
-    this.thunk   = null as any
+    // eslint-disable-next-line functional/immutable-data
+    this.thunk = null as any // GC
     return result
   }
 
@@ -97,13 +97,16 @@ class Memoize<A> extends Eval<A> {
   constructor(readonly ma: Eval<A>) {
     super()
   }
-  public result: O.Option<A> = O.none()
-  memoize                    = () => this
-  value                      = (): A =>
+  public result: O.Option<A> = O.none<A>()
+
+  memoize = () => this
+
+  value = (): A =>
     O.fold_(
       this.result,
       () => {
-        const a     = evaluate(this)
+        const a = evaluate(this)
+        // eslint-disable-next-line functional/immutable-data
         this.result = O.some(a)
         return a
       },
@@ -254,20 +257,23 @@ class Frame {
 
 export function evaluate<A>(e: Eval<A>): A {
   const addToMemo = <A1>(m: Memoize<A1>) => (a: A1): Eval<A1> => {
+    // eslint-disable-next-line functional/immutable-data
     m.result = O.some(a)
     return new Now(a)
   }
 
-  const frames = new MutableStack(new Frame((_) => new Now(_)))
-  let current  = e as Eval<any> | undefined
-  let result   = null
+  let frames  = makeStack(new Frame((_) => new Now(_))) as Stack<Frame> | undefined
+  let current = e as Eval<any> | undefined
+  let result  = null
 
   function popContinuation() {
-    return frames.pop()
+    const current = frames?.value
+    frames        = frames?.previous
+    return current
   }
 
   function pushContinuation(cont: Frame) {
-    frames.push(cont)
+    frames = makeStack(cont, frames)
   }
 
   while (current != null) {
@@ -349,14 +355,14 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[EvalURI]>>({
+export const Functor = HKT.instance<P.Functor<[URI]>>({
   imap_: (fa, f, _) => map_(fa, f),
   imap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })
 
-export const Apply = HKT.instance<P.Apply<[EvalURI]>>({
+export const Apply = HKT.instance<P.Apply<[URI]>>({
   ...Functor,
   ap_,
   ap,
@@ -366,13 +372,13 @@ export const Apply = HKT.instance<P.Apply<[EvalURI]>>({
   product
 })
 
-export const Applicative = HKT.instance<P.Applicative<[EvalURI]>>({
+export const Applicative = HKT.instance<P.Applicative<[URI]>>({
   ...Apply,
   pure,
   unit
 })
 
-export const Monad = HKT.instance<P.Monad<[EvalURI]>>({
+export const Monad = HKT.instance<P.Monad<[URI]>>({
   ...Applicative,
   flatMap_,
   flatMap,

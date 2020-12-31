@@ -80,7 +80,8 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
         I.flatMap(sdriver.next),
         I.fold((_) => O.none(), O.some)
       )
-      const waitForProducer: I.URIO<R1, Take.Take<E | E1, O>>  = pipe(
+
+      const waitForProducer: I.URIO<R1, Take.Take<E | E1, O>> = pipe(
         waitingFiber,
         XR.getAndSet(O.none()),
         I.flatMap(
@@ -90,8 +91,10 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
           )
         )
       )
-      const updateLastChunk                                    = (take: Take.Take<E1, P>): I.UIO<void> => Take.tap_(take, lastChunk.set)
-      const handleTake                                         = (take: Take.Take<E | E1, O>): Pull.Pull<R1, E | E1, Take.Take<E1, E.Either<never, P>>> =>
+
+      const updateLastChunk = (take: Take.Take<E1, P>): I.UIO<void> => Take.tap_(take, lastChunk.set)
+
+      const handleTake = (take: Take.Take<E | E1, O>): Pull.Pull<R1, E | E1, Take.Take<E1, E.Either<never, P>>> =>
         pipe(
           take,
           Take.foldM(
@@ -108,7 +111,8 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
           ),
           I.mapError(O.some)
         )
-      const go                                                 = (race: boolean): I.IO<R & R1 & HasClock, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
+
+      const go = (race: boolean): I.IO<R & R1 & HasClock, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
         if (!race) {
           return pipe(waitForProducer, I.flatMap(handleTake), I.apFirst(raceNextTime.set(true)))
         } else {

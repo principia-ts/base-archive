@@ -542,10 +542,11 @@ export function intersectAll<M extends HKT.URIS, C>(
 > {
   return (decoders, info) => {
     const [left, right, ...rest] = decoders
-    const decoder                = A.foldLeft_(rest, K.intersect_(M as P.Applicative<M, V<C>>)(left, right), (b, a) =>
+
+    const decoder = A.foldLeft_(rest, K.intersect_(M as P.Applicative<M, V<C>>)(left, right), (b, a) =>
       K.intersect_(M as P.Applicative<M, V<C>>)(b, a)
     )
-    const name                   = info?.name ?? A.map_(decoders, (d) => d._meta.name).join(' & ')
+    const name    = info?.name ?? A.map_(decoders, (d) => d._meta.name).join(' & ')
     return pipe({ decode: decoder.decode, _meta: { name } }, wrapInfo(M)({ name, ...info }) as any)
   }
 }

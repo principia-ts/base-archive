@@ -5,15 +5,15 @@ import type { FiberRef } from './FiberRef'
 import type { Platform } from './Platform'
 import type { Supervisor } from './Supervisor'
 import type { Option } from '@principia/base/data/Option'
+import type { Stack } from '@principia/base/util/support/Stack'
 
 import * as A from '@principia/base/data/Array'
 import * as E from '@principia/base/data/Either'
 import { constVoid } from '@principia/base/data/Function'
-import { none } from '@principia/base/data/Option'
 import * as O from '@principia/base/data/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
-import { MutableStack } from '@principia/base/util/support/MutableStack'
 import { defaultScheduler } from '@principia/base/util/support/Scheduler'
+import { makeStack } from '@principia/base/util/support/Stack'
 
 import * as C from './Cause/core'
 import * as Ex from './Exit/core'
@@ -107,11 +107,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private mut_asyncEpoch                      = 0 | 0
   private mut_scopeKey: Scope.Key | undefined = undefined
 
-  private continuationFrames = new MutableStack<Frame>()
-  private environments       = new MutableStack<any>(this.initialEnv)
-  private interruptStatus    = new MutableStack<boolean>(this.initialInterruptStatus.toBoolean)
-  private supervisors        = new MutableStack<Supervisor<any>>(this.initialSupervisor)
-  private forkScopeOverride  = new MutableStack<Option<Scope.Scope<Exit<any, any>>>>()
+  private mut_continuationFrames = undefined as Stack<Frame> | undefined
+  private mut_environments       = makeStack(this.initialEnv) as Stack<any> | undefined
+  private mut_interruptStatus    = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
+  private mut_supervisors        = makeStack(this.initialSupervisor)
+  private mut_forkScopeOverride  = undefined as Stack<Option<Scope.Scope<Exit<any, any>>>> | undefined
 
   constructor(
     private readonly fiberId: FiberId,
@@ -161,7 +161,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   })
 
   get isInterruptible() {
-    return this.interruptStatus.peekOrElse(true)
+    return this.mut_interruptStatus ? this.mut_interruptStatus.value : false
   }
 
   get isInterrupted() {
@@ -177,7 +177,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get isStackEmpty() {
-    return this.continuationFrames.isEmpty
+    return !this.mut_continuationFrames
   }
 
   get id() {
@@ -185,27 +185,33 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private pushContinuation(k: Frame) {
-    this.continuationFrames.push(k)
+    this.mut_continuationFrames = makeStack(k, this.mut_continuationFrames?.previous)
   }
 
   private popContinuation() {
-    return this.continuationFrames.pop()
+    const current               = this.mut_continuationFrames?.value
+    this.mut_continuationFrames = this.mut_continuationFrames?.previous
+    return current
   }
 
   private pushEnv(k: any) {
-    this.environments.push(k)
+    this.mut_environments = makeStack(k, this.mut_environments)
   }
 
   private popEnv() {
-    this.environments.pop()
+    const current         = this.mut_environments?.value
+    this.mut_environments = this.mut_environments?.previous
+    return current
   }
 
   private pushInterruptStatus(flag: boolean) {
-    this.interruptStatus.push(flag)
+    this.mut_interruptStatus = makeStack(flag, this.mut_interruptStatus)
   }
 
   private popInterruptStatus() {
-    return this.interruptStatus.pop()
+    const current            = this.mut_interruptStatus?.value
+    this.mut_interruptStatus = this.mut_interruptStatus?.previous
+    return current
   }
 
   runAsync(k: Callback<E, A>) {
@@ -268,7 +274,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private next(value: any): I.Instruction | undefined {
-    if (!this.continuationFrames.isEmpty) {
+    if (!this.isStackEmpty) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const k = this.popContinuation()!
 
@@ -497,12 +503,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     })
 
     const parentScope: Scope.Scope<Exit<any, any>> = O.getOrElse_(
-      forkScope._tag === 'Some' ? forkScope : this.forkScopeOverride.peekOrElse(O.none()),
+      forkScope._tag === 'Some' ? forkScope : this.mut_forkScopeOverride?.value || O.none(),
       () => this.scope
     )
 
-    const currentEnv        = this.environments.peekOrElse({})
-    const currentSupervisor = this.supervisors.peekOrElse(Super.none)
+    const currentEnv        = this.mut_environments?.value || {}
+    const currentSupervisor = this.mut_supervisors.value
     const childId           = newFiberId()
     const childScope        = Scope.unsafeMakeScope<Exit<E, A>>()
 
@@ -849,7 +855,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOInstructionTag.Read: {
-                    current = current.f(this.environments.peekOrElse({}))[I._I]
+                    current = current.f(this.mut_environments?.value || {})[I._I]
                     break
                   }
 
@@ -911,24 +917,24 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                   case IOInstructionTag.Supervise: {
                     const c              = current
-                    const lastSupervisor = this.supervisors.peekOrElse(Super.none)
+                    const lastSupervisor = this.mut_supervisors.value
                     const newSupervisor  = c.supervisor.and(lastSupervisor)
                     current              = I.bracket_(
                       I.total(() => {
-                        this.supervisors.push(newSupervisor)
+                        this.mut_supervisors = makeStack(newSupervisor, this.mut_supervisors)
                       }),
                       () => c.io,
                       () =>
                         I.total(() => {
                           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                          this.supervisors.pop()
+                          this.mut_supervisors = this.mut_supervisors.previous!
                         })
                     )[I._I]
                     break
                   }
 
                   case IOInstructionTag.GetForkScope: {
-                    current = current.f(O.getOrElse_(this.forkScopeOverride.peekOrElse(none()), () => this.scope))[I._I]
+                    current = current.f(O.getOrElse_(this.mut_forkScopeOverride?.value || O.none(), () => this.scope))[I._I]
                     break
                   }
 
@@ -936,12 +942,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const c = current
                     current = I.bracket_(
                       I.total(() => {
-                        this.forkScopeOverride.push(c.forkScope)
+                        this.mut_forkScopeOverride = makeStack(c.forkScope, this.mut_forkScopeOverride)
                       }),
                       () => c.io,
                       () =>
                         I.total(() => {
-                          this.forkScopeOverride.pop()
+                          this.mut_forkScopeOverride = this.mut_forkScopeOverride?.previous
                         })
                     )[I._I]
                     break

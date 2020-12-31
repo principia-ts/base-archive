@@ -1,12 +1,14 @@
 import type { AsyncInstruction } from './Async'
 import type * as I from './IO/core'
 import type * as HKT from '@principia/base/HKT'
+import type { Stack } from '@principia/base/util/support/Stack'
 
 import * as E from '@principia/base/data/Either'
 import { identity, tuple } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { MutableStack } from '@principia/base/util/support/MutableStack'
+import { makeStack } from '@principia/base/util/support/Stack'
 
 import { ExternalFailInstruction, IOInstructionTag } from './IO/constants'
 
@@ -736,7 +738,7 @@ type Frame = FoldFrame | ApplyFrame
  * failure or the updated state and the result
  */
 export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s: S1): E.Either<E, readonly [S2, A]> {
-  const frames = new MutableStack<Frame>()
+  let frames = undefined as Stack<Frame> | undefined
 
   let state       = s as any
   let result      = null
@@ -745,11 +747,13 @@ export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s:
   let current     = fa as SIO<any, any, any, any, any> | undefined
 
   function popContinuation() {
-    return frames.pop()
+    const current = frames?.value
+    frames        = frames?.previous
+    return current
   }
 
   function pushContinuation(cont: Frame) {
-    return frames.push(cont)
+    frames = makeStack(cont, frames)
   }
 
   function findNextErrorHandler() {

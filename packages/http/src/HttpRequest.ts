@@ -175,10 +175,9 @@ export class Request {
   }
 
   get protocol(): UIO<string> {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const previousThis = this
+    const self = this
     return T.gen(function* ($) {
-      const socket = yield* $(previousThis.socket)
+      const socket = yield* $(self.socket)
       if (socket instanceof TLSSocket && socket.encrypted) {
         return 'https'
       } else {
@@ -264,10 +263,9 @@ export class Request {
   }
 
   get rawBody(): FIO<HttpRouteException, string> {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const prevThis = this
+    const self = this
     return T.gen(function* ($) {
-      const contentType = yield* $(prevThis.parsedContentType)
+      const contentType = yield* $(self.parsedContentType)
       const charset     = yield* $(
         pipe(
           contentType,
@@ -285,7 +283,7 @@ export class Request {
 
       return yield* $(
         pipe(
-          prevThis.stream,
+          self.stream,
           S.runCollect,
           T.map(flow(C.asBuffer, (b) => b.toString(charset))),
           T.catchAll((_) =>
