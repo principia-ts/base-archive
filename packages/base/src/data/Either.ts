@@ -63,7 +63,8 @@ declare module '../HKT' {
  * left :: e -> Left e
  * ```
  *
- * Constructs a new `Either` holding a `Left` value. This usually represents a failure, due to the right-bias of this structure
+ * Constructs a new `Either` holding a `Left` value.
+ * This usually represents a failure, due to the right-bias of this structure
  *
  * @category Constructors
  * @since 1.0.0
@@ -80,7 +81,8 @@ export function left<E = never, A = never>(e: E): Either<E, A> {
  * right :: a -> Right a
  * ```
  *
- * Constructs a new `Either` holding a `Right` value. This usually represents a successful value due to the right bias of this structure
+ * Constructs a new `Either` holding a `Right` value.
+ * This usually represents a successful value due to the right bias of this structure
  *
  * @category Constructors
  * @since 1.0.0
@@ -98,7 +100,8 @@ export function right<E = never, A = never>(a: A): Either<E, A> {
  * fromNullable_ :: (?a, (() -> e)) -> Either e a
  * ```
  *
- * Takes a default and a nullable value, if the value is not nully, turn it into a `Right`, if the value is nully use the provided default as a `Left`
+ * Takes a default and a nullable value, if the value is not nully,
+ * turn it into a `Right`, if the value is nully use the provided default as a `Left`
  *
  * @category Constructors
  * @since 1.0.0
@@ -113,7 +116,8 @@ export function fromNullable_<E, A>(a: A, e: () => E): Either<E, NonNullable<A>>
  * fromNullable :: (() -> e) -> ?a -> Either e a
  * ```
  *
- * Takes a default and a nullable value, if the value is not nully, turn it into a `Right`, if the value is nully use the provided default as a `Left`
+ * Takes a default and a nullable value, if the value is not nully,
+ * turn it into a `Right`, if the value is nully use the provided default as a `Left`
  *
  * @category Constructors
  * @since 1.0.0
@@ -449,7 +453,8 @@ export function merge<E, A>(pab: Either<E, A>): E | A {
  * alt_ :: Alt f => (f a, (() -> f a)) -> f a
  * ```
  *
- * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
+ * Identifies an associative operation on a type constructor.
+ * It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
  *
  * @category Alt
  * @since 1.0.0
@@ -463,7 +468,8 @@ export function alt_<E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Eithe
  * alt :: Alt f => (() -> f a) -> f a -> f a
  * ```
  *
- * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
+ * Identifies an associative operation on a type constructor.
+ * It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
  *
  * @category Alt
  * @since 1.0.0
@@ -591,7 +597,8 @@ export function apSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Ei
  * product_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
- * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
+ * Applies both `Either`s and if both are `Right`,
+ * collects their values into a tuple, otherwise, returns the first `Left`
  *
  * @category Apply
  * @since 1.0.0
@@ -605,7 +612,8 @@ export function product_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either
  * product :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
- * Applies both `Either`s and if both are `Right`, collects their values into a tuple, otherwise, returns the first `Left`
+ * Applies both `Either`s and if both are `Right`,
+ * collects their values into a tuple, otherwise, returns the first `Left`
  *
  * @category Apply
  * @since 1.0.0
@@ -619,7 +627,8 @@ export function product<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eit
  * product_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
- * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
+ * Applies both `Either`s and if both are `Right`,
+ * maps their results with function `f`, otherwise returns the first `Left`
  *
  * @category Apply
  * @since 1.0.0
@@ -636,7 +645,8 @@ export function map2_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: 
  * product :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
- * Applies both `Either`s and if both are `Right`, maps their results with function `f`, otherwise returns the first `Left`
+ * Applies both `Either`s and if both are `Right`,
+ * maps their results with function `f`, otherwise returns the first `Left`
  *
  * @category Apply
  * @since 1.0.0

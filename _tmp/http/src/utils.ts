@@ -1,5 +1,4 @@
-import * as A from '@principia/base/data/Array'
-import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 import * as DE from '@principia/codec/DecodeErrors'
 import * as Sy from '@principia/io/Sync'
 import * as M from '@principia/model'
@@ -226,25 +225,3 @@ export const SyncDecoderM = DE.getDecodeErrorsValidation({
   ...Sy.Fallible,
   ...Sy.Bifunctor
 })
-
-export function parseContentType(s: string): ParsedContentType {
-  return pipe(
-    s.split(';'),
-    A.foldLeftWithIndex({ parameters: {} } as ParsedContentType, (b, i, a) => {
-      if (i === 0) {
-        return { type: a, parameters: {} }
-      }
-      const mut_split = a.split('=')
-      if (mut_split[1][0] === '"') {
-        mut_split[1] = mut_split[1].substr(1, mut_split[1].length - 2)
-      }
-      return {
-        ...b,
-        parameters: {
-          ...b.parameters,
-          [mut_split[0]]: mut_split[1]
-        }
-      }
-    })
-  )
-}

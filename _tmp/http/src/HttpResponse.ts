@@ -1,3 +1,5 @@
+import type { HttpRouteException } from './exceptions'
+import type { Status } from './utils'
 import type { Byte } from '@principia/base/data/Byte'
 import type { ReadonlyRecord } from '@principia/base/data/Record'
 import type { Chunk } from '@principia/io/Chunk'
@@ -15,9 +17,6 @@ import * as Q from '@principia/io/Queue'
 import * as S from '@principia/io/Stream'
 import * as Pull from '@principia/io/Stream/Pull'
 import * as NS from '@principia/node/stream'
-
-import { HttpException } from './HttpException'
-import * as Status from './StatusCode'
 
 interface CloseEvent {
   readonly _tag: 'Close'
@@ -48,7 +47,7 @@ interface UnpipeEvent {
 
 export type ResponseEvent = CloseEvent | DrainEvent | ErrorEvent | FinishEvent | PipeEvent | UnpipeEvent
 
-export class HttpResponse {
+export class Response {
   readonly _res: URefM<http.ServerResponse>
 
   eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, ResponseEvent>>>
@@ -109,11 +108,11 @@ export class HttpResponse {
     return RefM.update_(this._res, f)
   }
 
-  status(s: Status.StatusCode): UIO<void> {
+  status(s: Status): UIO<void> {
     return RefM.update_(this._res, (res) =>
       T.total(() => {
         // eslint-disable-next-line functional/immutable-data
-        res.statusCode = s.code
+        res.statusCode = s
         return res
       })
     )
@@ -127,7 +126,7 @@ export class HttpResponse {
     return T.map_(this._res.get, (res) => O.fromNullable(res.getHeaders()[name]))
   }
 
-  set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {
+  set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpRouteException, void> {
     return RefM.update_(this._res, (res) =>
       T.suspend(() => {
         const hs = Object.entries(headers)
@@ -137,12 +136,11 @@ export class HttpResponse {
           }
           return T.succeed(res)
         } catch (err) {
-          return T.fail(
-            new HttpException('Failed to set headers', 'HttpResponse#set', {
-              status: Status.InternalServerError,
-              originalError: err
-            })
-          )
+          return T.fail<HttpRouteException>({
+            _tag: 'HttpRouteException',
+            status: 400,
+            message: `Failed to set headers\n\t${JSON.stringify(err)}`
+          })
         }
       })
     )
@@ -152,18 +150,17 @@ export class HttpResponse {
     return T.map_(this._res.get, (res) => res.hasHeader(name))
   }
 
-  write(chunk: string | Buffer): FIO<HttpException, void> {
+  write(chunk: string | Buffer): FIO<HttpRouteException, void> {
     return T.flatMap_(this._res.get, (res) =>
-      T.async<unknown, HttpException, void>((cb) => {
+      T.async<unknown, HttpRouteException, void>((cb) => {
         res.write(chunk, (err) =>
           err
             ? cb(
-              T.fail(
-                new HttpException('Failed to write body', 'HttpResponse#write', {
-                  status: Status.InternalServerError,
-                  originalError: err
-                })
-              )
+              T.fail<HttpRouteException>({
+                _tag: 'HttpRouteException',
+                status: 400,
+                message: `Failed to write body: ${err.message}`
+              })
             )
             : cb(T.unit())
         )
@@ -171,7 +168,7 @@ export class HttpResponse {
     )
   }
 
-  pipeFrom<R, E>(stream: S.Stream<R, E, Byte>): IO<R, HttpException, void> {
+  pipeFrom<R, E>(stream: S.Stream<R, E, Byte>): IO<R, HttpRouteException, void> {
     return T.catchAll_(
       T.flatMap_(this._res.get, (res) =>
         S.run_(
@@ -180,12 +177,11 @@ export class HttpResponse {
         )
       ),
       (e) =>
-        T.fail(
-          new HttpException('Failed to write response body', 'HttpResponse#pipeFrom', {
-            status: Status.InternalServerError,
-            originalError: e
-          })
-        )
+        T.fail<HttpRouteException>({
+          _tag: 'HttpRouteException',
+          status: 500,
+          message: `Failed to write response body: ${e}`
+        })
     )
   }
 

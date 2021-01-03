@@ -1,9 +1,20 @@
 import type { Monoid } from '../Monoid'
+import type * as P from '../typeclass'
 import type { Either } from './Either'
 import type { PredicateWithIndex } from './Function'
 
+import * as HKT from '../HKT'
 import * as A from './Array'
 import { identity, tuple } from './Function'
+
+export const URI = 'Iterable'
+export type URI = typeof URI
+
+declare module '../HKT' {
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: Iterable<A>
+  }
+}
 
 /*
  * -------------------------------------------
@@ -377,3 +388,18 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
   }
   return as
 }
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const Foldable = HKT.instance<P.Foldable<[URI]>>({
+  foldLeft_,
+  foldLeft,
+  foldRight_,
+  foldRight,
+  foldMap_,
+  foldMap
+})

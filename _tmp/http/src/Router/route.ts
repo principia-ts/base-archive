@@ -1,6 +1,6 @@
 import type { Routes } from './model'
 import type { Predicate } from '@principia/base/data/Function'
-import type { Has, Tag } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/data/Has'
 import type { IO, URIO } from '@principia/io/IO'
 
 import * as I from '@principia/io/IO'
@@ -33,7 +33,6 @@ export function addRoute_<R, E, R1, E1>(
 }
 
 export function addRoute<R1, E1>(
-  tag: Tag<Context>,
   path: Predicate<Context>,
   f: (ctx: Context) => IO<R1 & Has<Context>, E1, void>
 ): <R, E>(routes: Routes<R, E>) => Routes<R & R1, E | E1> {
@@ -51,7 +50,6 @@ export function addRouteM_<R, E, R1, R2, E2>(
 }
 
 export function addRouteM<R1, R2, E2>(
-  tag: Tag<Context>,
   path: (ctx: Context) => URIO<R1, boolean>,
   f: (ctx: Context) => IO<R2 & Has<Context>, E2, void>
 ): <R, E>(routes: Routes<R, E>) => Routes<R & R1 & R2, E | E2> {

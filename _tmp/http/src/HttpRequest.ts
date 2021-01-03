@@ -1,4 +1,5 @@
-import type { Method } from './utils'
+import type { HttpRouteException } from './exceptions'
+import type { Method, ParsedContentType } from './utils'
 import type { Byte } from '@principia/base/data/Byte'
 import type { Chunk } from '@principia/io/Chunk'
 import type { FIO, IO, UIO } from '@principia/io/IO'
@@ -8,11 +9,8 @@ import type { Socket } from 'net'
 
 import * as E from '@principia/base/data/Either'
 import { flow, pipe } from '@principia/base/data/Function'
-import * as Iter from '@principia/base/data/Iterable'
 import * as O from '@principia/base/data/Option'
-import * as R from '@principia/base/data/Record'
 import * as Str from '@principia/base/data/String'
-import { makeSemigroup } from '@principia/base/Semigroup'
 import * as C from '@principia/io/Chunk'
 import * as T from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
@@ -25,9 +23,7 @@ import * as NS from '@principia/node/stream'
 import { TLSSocket } from 'tls'
 import * as Url from 'url'
 
-import { HttpException } from './HttpException'
-import * as Status from './StatusCode'
-import { decodeCharset, parseContentType, SyncDecoderM } from './utils'
+import { decodeCharset, MEDIA_TYPE_REGEXP, PARAM_REGEXP, QESC_REGEXP, SyncDecoderM } from './utils'
 
 interface CloseEvent {
   readonly _tag: 'Close'
@@ -61,10 +57,12 @@ interface ResumeEvent {
 
 export type RequestEvent = CloseEvent | DataEvent | EndEvent | ErrorEvent | PauseEvent | ReadableEvent | ResumeEvent
 
-export class HttpRequest {
+export class Request {
   readonly _req: URef<http.IncomingMessage>
 
-  private memoizedUrl: URef<E.Either<HttpException, O.Option<Url.URL>>> = Ref.unsafeMake(E.right(O.none()))
+  private memoizedUrl: URef<E.Either<HttpRouteException, O.Option<Url.Url>>> = Ref.unsafeMake(E.right(O.none()))
+
+  private memoizedParsedContentType: URef<O.Option<ParsedContentType>> = Ref.unsafeMake(O.none())
 
   eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, RequestEvent>>>
 
@@ -130,7 +128,7 @@ export class HttpRequest {
 
   get method(): UIO<Method> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return T.map_(this._req.get, (req) => req.method!.toUpperCase() as Method)
+    return T.map_(this._req.get, (req) => req.method!.toUpperCase() as any)
   }
 
   get urlString(): UIO<string> {
@@ -138,7 +136,7 @@ export class HttpRequest {
     return T.map_(this._req.get, (req) => req.url!)
   }
 
-  get url(): FIO<HttpException, Url.URL> {
+  get url(): FIO<HttpRouteException, Url.Url> {
     return T.flatMap_(
       this.memoizedUrl.get,
       E.fold(
@@ -149,14 +147,14 @@ export class HttpRequest {
               T.suspend(() => {
                 try {
                   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  const parsedUrl = new Url.URL(req.url!)
+                  const parsedUrl = Url.parse(req.url!)
                   return T.andThen_(this.memoizedUrl.set(E.right(O.some(parsedUrl))), T.succeed(parsedUrl))
                 } catch (err) {
-                  const exception = new HttpException(
-                    `Error while parsing URL: ${JSON.stringify(err)}`,
-                    'HttpRequest#url',
-                    { status: Status.BadRequest }
-                  )
+                  const exception: HttpRouteException = {
+                    _tag: 'HttpRouteException',
+                    status: 400,
+                    message: `Error while parsing URL\n\t${JSON.stringify(err)}`
+                  }
                   return T.andThen_(this.memoizedUrl.set(E.left(exception)), T.fail(exception))
                 }
               })
@@ -167,21 +165,8 @@ export class HttpRequest {
     )
   }
 
-  get query(): FIO<HttpException, R.ReadonlyRecord<string, string>> {
-    return pipe(
-      this.url,
-      T.map((url) =>
-        R.fromFoldable(
-          makeSemigroup((_: string, y: string) => y),
-          Iter.Foldable
-        )(url.searchParams)
-      )
-    )
-  }
-
-  getHeader(name: 'set-cookie'): UIO<O.Option<ReadonlyArray<string>>>
-  getHeader(name: string): UIO<O.Option<string>>
-  getHeader(name: string): UIO<O.Option<string | ReadonlyArray<string>>> {
+  getHeader(name: Exclude<keyof http.IncomingHttpHeaders, 'set-cookie'>): UIO<O.Option<string>>
+  getHeader(name: keyof http.IncomingHttpHeaders): UIO<O.Option<string | string[]>> {
     return T.map_(this._req.get, (req) => O.fromNullable(req.headers[name]))
   }
 
@@ -214,20 +199,84 @@ export class HttpRequest {
     return S.chain_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req))
   }
 
-  get rawBody(): FIO<HttpException, string> {
+  get parsedContentType(): UIO<O.Option<ParsedContentType>> {
+    return pipe(
+      this.memoizedParsedContentType.get,
+      T.flatMap(
+        O.fold(
+          () =>
+            pipe(
+              this.access((req) => T.succeed(O.fromNullable(req.headers['content-type']))),
+              T.IOOption.flatMap((raw) =>
+                T.total(() => {
+                  /*
+                   * The following code is adapted from
+                   * https://github.com/jshttp/content-type/blob/master/index.js
+                   */
+                  let index  = raw.indexOf(';')
+                  const type = index !== -1 ? raw.substr(0, index).trim() : raw.trim()
+                  if (!MEDIA_TYPE_REGEXP.test(type)) {
+                    return O.none()
+                  }
+                  const obj: ParsedContentType = {
+                    type: type.toLowerCase(),
+                    parameters: {}
+                  }
+                  if (index !== -1) {
+                    let key: string
+                    let match: RegExpExecArray | null
+                    let value: string
+
+                    PARAM_REGEXP.lastIndex = index
+
+                    while ((match = PARAM_REGEXP.exec(raw))) {
+                      if (match.index !== index) {
+                        return O.none()
+                      }
+
+                      index += match[0].length
+                      key    = match[1].toLowerCase()
+                      value  = match[2]
+
+                      if (value[0] === '"') {
+                        value = value.substr(1, value.length - 2).replace(QESC_REGEXP, '$1')
+                      }
+
+                      obj.parameters[key] = value
+                    }
+                    if (index !== raw.length) {
+                      return O.none()
+                    }
+                  }
+
+                  return O.some(obj)
+                  /*
+                   * End of adaptation
+                   */
+                })
+              )
+            ),
+          (pct) => T.succeed(O.some(pct))
+        )
+      )
+    )
+  }
+
+  get rawBody(): FIO<HttpRouteException, string> {
     const self = this
     return T.gen(function* ($) {
-      const contentType = yield* $(self.getHeader('Content-Type'))
+      const contentType = yield* $(self.parsedContentType)
       const charset     = yield* $(
         pipe(
           contentType,
-          O.map(parseContentType),
           O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           decodeCharset(SyncDecoderM).decode,
           Sy.catchAll((_) =>
-            Sy.fail(
-              new HttpException('Invalid charset', 'HttpRequest#rawBody', { status: Status.UnsupportedMediaType })
-            )
+            Sy.fail<HttpRouteException>({
+              _tag: 'HttpRouteException',
+              status: 415,
+              message: 'Invalid charset'
+            })
           )
         )
       )
@@ -238,65 +287,69 @@ export class HttpRequest {
           S.runCollect,
           T.map(flow(C.asBuffer, (b) => b.toString(charset))),
           T.catchAll((_) =>
-            T.fail(
-              new HttpException('Failed to read body stream', 'HttpRequest#rawBody', {
-                status: Status.InternalServerError
-              })
-            )
+            T.fail<HttpRouteException>({
+              _tag: 'HttpRouteException',
+              status: 500,
+              message: 'Failed to read body stream'
+            })
           )
         )
       )
     })
   }
 
-  get bodyJson(): FIO<HttpException, Record<string, any>> {
-    const self = this
+  get bodyJson(): FIO<HttpRouteException, Record<string, any>> {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const prevThis = this
     return T.gen(function* ($) {
-      const contentType = yield* $(self.getHeader('Content-Type'))
+      const contentType = yield* $(prevThis.parsedContentType)
       const charset     = yield* $(
         pipe(
           contentType,
-          O.map(parseContentType),
           O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
           decodeCharset(SyncDecoderM).decode,
           Sy.catchAll((_) =>
-            Sy.fail(
-              new HttpException('Invalid charset', 'HttpRequest#bodyJson', { status: Status.UnsupportedMediaType })
-            )
+            Sy.fail<HttpRouteException>({
+              _tag: 'HttpRouteException',
+              status: 415,
+              message: 'Invalid charset'
+            })
           )
         )
       )
 
       if (!Str.startsWith_(charset, 'utf-')) {
         return yield* $(
-          T.fail(
-            new HttpException('Charset unsupported by JSON', 'HttpRequest#bodyJson', {
-              status: Status.UnsupportedMediaType
-            })
-          )
+          T.fail<HttpRouteException>({
+            _tag: 'HttpRouteException',
+            status: 415,
+            message: `Unsupported charset: ${charset.toUpperCase()}`
+          })
         )
       }
 
       return yield* $(
         pipe(
-          self.stream,
+          prevThis.stream,
           S.runCollect,
           T.map(flow(C.asBuffer, (b) => b.toString(charset))),
           T.catchAll((_) =>
-            T.fail(
-              new HttpException('Failed to read body stream', 'HttpRequest#bodyJson', {
-                status: Status.InternalServerError
-              })
-            )
+            T.fail<HttpRouteException>({
+              _tag: 'HttpRouteException',
+              status: 500,
+              message: 'Failed to read body stream'
+            })
           ),
           T.flatMap((raw) =>
             T.partial_(
               () => JSON.parse(raw),
               (_) =>
-                new HttpException('Failed to parse body JSON', 'HttpRequest#bodyJson', {
-                  status: Status.InternalServerError
-                })
+                <HttpRouteException>{
+                  _tag: 'HttpRouteException',
+                  status: 500,
+                  message: 'Failed to parse body JSON'
+                }
             )
           )
         )
