@@ -1,10 +1,10 @@
-import type * as Alg from "../../algebra";
+import type * as Alg from '../../algebra'
 
-import * as Eq from "@principia/base/data/Eq";
-import { pipe } from "@principia/base/data/Function";
+import * as Eq from '@principia/base/data/Eq'
+import { pipe } from '@principia/base/data/Function'
 
-import { implementInterpreter } from "../../HKT";
-import { applyEqConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { applyEqConfig } from './HKT'
 
 export const PrimitivesEq = implementInterpreter<Eq.URI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyEqConfig(config?.config)(Eq.string, env, {}),
@@ -23,10 +23,9 @@ export const PrimitivesEq = implementInterpreter<Eq.URI, Alg.PrimitivesURI>()((_
       env,
       {}
     ),
-  array: (item, config) => (env) =>
-    pipe(item(env), (eq) => applyEqConfig(config?.config)(Eq.array(eq), env, eq)),
+  array: (item, config) => (env) => pipe(item(env), (eq) => applyEqConfig(config?.config)(Eq.array(eq), env, eq)),
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (eq) => applyEqConfig(config?.config)(Eq.array(eq), env, eq)),
   keyof: (_, config) => (env) => applyEqConfig(config?.config)(Eq.strict, env, {}),
   UUID: (config) => (env) => applyEqConfig(config?.config)(Eq.string, env, {})
-}));
+}))

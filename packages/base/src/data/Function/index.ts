@@ -1,7 +1,7 @@
-export * from "./combinators";
-export * from "./do";
-export { flow } from "./flow";
-export * from "./model";
-export { pipe } from "./pipe";
-export * from "./primitives";
-export * from "./recursion";
+export * from './combinators'
+export * from './do'
+export { flow } from './flow'
+export * from './model'
+export { pipe } from './pipe'
+export * from './primitives'
+export * from './recursion'

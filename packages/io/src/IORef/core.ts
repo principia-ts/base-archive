@@ -1,13 +1,13 @@
-import type { FIO, UIO } from "../IO/core";
+import type { FIO, UIO } from '../IO/core'
 
-import * as E from "@principia/base/data/Either";
-import { identity, pipe, tuple } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
-import { AtomicReference } from "@principia/base/util/support/AtomicReference";
+import * as E from '@principia/base/data/Either'
+import { identity, pipe, tuple } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
+import { matchTag } from '@principia/base/util/matchers'
+import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
-import * as I from "../IO/core";
-import { matchTag } from "@principia/base/util/matchers";
-import * as At from "./atomic";
+import * as I from '../IO/core'
+import * as At from './atomic'
 
 export interface IORef<EA, EB, A, B> {
   /**
@@ -22,7 +22,7 @@ export interface IORef<EA, EB, A, B> {
     eb: (_: EB) => ED,
     ca: (_: C) => E.Either<EC, A>,
     bd: (_: B) => E.Either<ED, D>
-  ) => IORef<EC, ED, C, D>;
+  ) => IORef<EC, ED, C, D>
 
   /**
    * Folds over the error and value types ofthe `IORef`, allowing access to
@@ -35,22 +35,22 @@ export interface IORef<EA, EB, A, B> {
     ec: (_: EB) => EC,
     ca: (_: C) => (_: B) => E.Either<EC, A>,
     bd: (_: B) => E.Either<ED, D>
-  ) => IORef<EC, ED, C, D>;
+  ) => IORef<EC, ED, C, D>
 
   /**
    * Reads the value from the `IORef`.
    */
-  readonly get: FIO<EB, B>;
+  readonly get: FIO<EB, B>
 
   /**
    * Writes a new value to the `IORef`, with a guarantee of immediate
    * consistency (at some cost to performance).
    */
-  readonly set: (a: A) => FIO<EA, void>;
+  readonly set: (a: A) => FIO<EA, void>
 }
 
 export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
-  readonly _tag = "DerivedAll";
+  readonly _tag = 'DerivedAll'
 
   constructor(
     readonly value: Atomic<S>,
@@ -67,9 +67,8 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
     new DerivedAll(
       this.value,
       (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
-      (c) => (s) =>
-        E.flatMap_(ca(c), (a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
-    );
+      (c) => (s) => E.flatMap_(ca(c), (a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
+    )
 
   readonly foldAll = <EC, ED, C, D>(
     ea: (_: EA) => EC,
@@ -88,12 +87,12 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
           E.deunion,
           E.flatMap((a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
         )
-    );
+    )
 
   readonly get: FIO<EB, B> = pipe(
     this.value.get,
     I.flatMap((a) => E.fold_(this.getEither(a), I.fail, I.pure))
-  );
+  )
 
   readonly set: (a: A) => FIO<EA, void> = (a) =>
     pipe(
@@ -106,11 +105,11 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
         )
       ),
       I.absolve
-    );
+    )
 }
 
 export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
-  readonly _tag = "Derived";
+  readonly _tag = 'Derived'
 
   constructor(
     readonly value: Atomic<S>,
@@ -128,7 +127,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
       this.value,
       (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => E.flatMap_(ca(c), (a) => E.fold_(this.setEither(a), (e) => E.left(ea(e)), E.right))
-    );
+    )
 
   readonly foldAll = <EC, ED, C, D>(
     ea: (_: EA) => EC,
@@ -152,18 +151,18 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
             )
           )
         )
-    );
+    )
 
   readonly get: FIO<EB, B> = pipe(
     this.value.get,
     I.flatMap((s) => E.fold_(this.getEither(s), I.fail, I.pure))
-  );
+  )
 
-  readonly set: (a: A) => FIO<EA, void> = (a) => E.fold_(this.setEither(a), I.fail, this.value.set);
+  readonly set: (a: A) => FIO<EA, void> = (a) => E.fold_(this.setEither(a), I.fail, this.value.set)
 }
 
 export class Atomic<A> implements IORef<never, never, A, A> {
-  readonly _tag = "Atomic";
+  readonly _tag = 'Atomic'
 
   readonly fold = <EC, ED, C, D>(
     _ea: (_: never) => EC,
@@ -175,7 +174,7 @@ export class Atomic<A> implements IORef<never, never, A, A> {
       this,
       (s) => bd(s),
       (c) => ca(c)
-    );
+    )
 
   readonly foldAll = <EC, ED, C, D>(
     _ea: (_: never) => EC,
@@ -188,19 +187,19 @@ export class Atomic<A> implements IORef<never, never, A, A> {
       this,
       (s) => bd(s),
       (c) => (s) => ca(c)(s)
-    );
+    )
 
   constructor(readonly value: AtomicReference<A>) {}
 
   get get(): UIO<A> {
-    return I.total(() => this.value.get);
+    return I.total(() => this.value.get)
   }
 
   readonly set = (a: A): UIO<void> => {
     return I.total(() => {
-      this.value.set(a);
-    });
-  };
+      this.value.set(a)
+    })
+  }
 }
 
 /**
@@ -217,7 +216,7 @@ export interface URef<A> extends FRef<never, A> {}
  * Cast to a sealed union in case of ERef (where it make sense)
  */
 export const concrete = <EA, EB, A>(self: IORef<EA, EB, A, A>) =>
-  self as Atomic<A> | DerivedAll<EA, EB, A, A, A> | Derived<EA, EB, A, A, A>;
+  self as Atomic<A> | DerivedAll<EA, EB, A, A, A> | Derived<EA, EB, A, A, A>
 
 /*
  * -------------------------------------------
@@ -229,14 +228,14 @@ export const concrete = <EA, EB, A>(self: IORef<EA, EB, A, A>) =>
  * Creates a new `XRef` with the specified value.
  */
 export function make<A>(a: A): UIO<URef<A>> {
-  return I.total(() => new Atomic(new AtomicReference(a)));
+  return I.total(() => new Atomic(new AtomicReference(a)))
 }
 
 /**
  * Creates a new `XRef` with the specified value.
  */
 export function unsafeMake<A>(a: A): URef<A> {
-  return new Atomic(new AtomicReference(a));
+  return new Atomic(new AtomicReference(a))
 }
 
 /*
@@ -249,17 +248,14 @@ export function unsafeMake<A>(a: A): URef<A> {
  * Transforms both the `set` and `get` values of the `XRef` with the
  * specified fallible functions.
  */
-export function bimapEither<A, B, C, EC, D, ED>(
-  f: (_: C) => E.Either<EC, A>,
-  g: (_: B) => E.Either<ED, D>
-) {
+export function bimapEither<A, B, C, EC, D, ED>(f: (_: C) => E.Either<EC, A>, g: (_: B) => E.Either<ED, D>) {
   return <EA, EB>(_: IORef<EA, EB, A, B>): IORef<EC | EA, EB | ED, C, D> =>
     _.fold(
       (ea: EA | EC) => ea,
       (eb: EB | ED) => eb,
       f,
       g
-    );
+    )
 }
 
 /**
@@ -271,7 +267,7 @@ export function bimapEither_<EA, EB, A, B, C, EC, D, ED>(
   f: (_: C) => E.Either<EC, A>,
   g: (_: B) => E.Either<ED, D>
 ): IORef<EC | EA, ED | EB, C, D> {
-  return bimapEither(f, g)(_);
+  return bimapEither(f, g)(_)
 }
 
 /**
@@ -286,7 +282,7 @@ export function bimap<A, B, C, D>(f: (_: C) => A, g: (_: B) => D) {
         (c) => E.right(f(c)),
         (b) => E.right(g(b))
       )
-    );
+    )
 }
 
 /**
@@ -298,7 +294,7 @@ export function bimap_<EA, EB, A, B, C, D>(
   f: (_: C) => A,
   g: (_: B) => D
 ): IORef<EA, EB, C, D> {
-  return bimap(f, g)(_);
+  return bimap(f, g)(_)
 }
 
 /**
@@ -309,7 +305,7 @@ export function bimapError<EA, EB, EC, ED>(
   f: (_: EA) => EC,
   g: (_: EB) => ED
 ): <A, B>(_: IORef<EA, EB, A, B>) => IORef<EC, ED, A, B> {
-  return (_) => _.fold(f, g, E.right, E.right);
+  return (_) => _.fold(f, g, E.right, E.right)
 }
 
 /**
@@ -321,7 +317,7 @@ export function bimapError_<A, B, EA, EB, EC, ED>(
   f: (_: EA) => EC,
   g: (_: EB) => ED
 ): IORef<EC, ED, A, B> {
-  return bimapError(f, g)(_);
+  return bimapError(f, g)(_)
 }
 
 /*
@@ -341,7 +337,7 @@ export function contramapEither<A, EC, C>(
     pipe(
       _,
       bimapEither(f, (x) => E.right(x))
-    );
+    )
 }
 
 /**
@@ -352,24 +348,20 @@ export function contramapEither_<A, EC, C, EA, EB, B>(
   _: IORef<EA, EB, A, B>,
   f: (_: C) => E.Either<EC, A>
 ): IORef<EC | EA, EB, C, B> {
-  return contramapEither(f)(_);
+  return contramapEither(f)(_)
 }
 
 /**
  * Transforms the `set` value of the `XRef` with the specified function.
  */
-export const contramap: <A, C>(
-  f: (_: C) => A
-) => <EA, EB, B>(_: IORef<EA, EB, A, B>) => IORef<EA, EB, C, B> = (f) =>
-  contramapEither((c) => E.right(f(c)));
+export const contramap: <A, C>(f: (_: C) => A) => <EA, EB, B>(_: IORef<EA, EB, A, B>) => IORef<EA, EB, C, B> = (f) =>
+  contramapEither((c) => E.right(f(c)))
 
 /**
  * Transforms the `set` value of the `XRef` with the specified function.
  */
-export const contramap_: <EA, EB, B, A, C>(
-  _: IORef<EA, EB, A, B>,
-  f: (_: C) => A
-) => IORef<EA, EB, C, B> = (_, f) => contramap(f)(_);
+export const contramap_: <EA, EB, B, A, C>(_: IORef<EA, EB, A, B>, f: (_: C) => A) => IORef<EA, EB, C, B> = (_, f) =>
+  contramap(f)(_)
 
 /*
  * -------------------------------------------
@@ -386,7 +378,7 @@ export function filterInput_<EA, EB, B, A, A1 extends A>(
   _: IORef<EA, EB, A, B>,
   f: (_: A1) => boolean
 ): IORef<O.Option<EA>, EB, A1, B> {
-  return _.fold(O.some, identity, (a) => (f(a) ? E.right(a) : E.left(O.none())), E.right);
+  return _.fold(O.some, identity, (a) => (f(a) ? E.right(a) : E.left(O.none())), E.right)
 }
 
 /**
@@ -397,7 +389,7 @@ export function filterInput_<EA, EB, B, A, A1 extends A>(
 export function filterInput<A, A1 extends A>(
   f: (_: A1) => boolean
 ): <EA, EB, B>(_: IORef<EA, EB, A, B>) => IORef<O.Option<EA>, EB, A1, B> {
-  return (_) => filterInput_(_, f);
+  return (_) => filterInput_(_, f)
 }
 
 /**
@@ -409,7 +401,7 @@ export function filterOutput_<EA, EB, A, B>(
   _: IORef<EA, EB, A, B>,
   f: (_: B) => boolean
 ): IORef<EA, O.Option<EB>, A, B> {
-  return _.fold(identity, O.some, E.right, (b) => (f(b) ? E.right(b) : E.left(O.none())));
+  return _.fold(identity, O.some, E.right, (b) => (f(b) ? E.right(b) : E.left(O.none())))
 }
 
 /**
@@ -420,7 +412,7 @@ export function filterOutput_<EA, EB, A, B>(
 export function filterOutput<B>(
   f: (_: B) => boolean
 ): <EA, EB, A>(_: IORef<EA, EB, A, B>) => IORef<EA, O.Option<EB>, A, B> {
-  return (_) => filterOutput_(_, f);
+  return (_) => filterOutput_(_, f)
 }
 
 /*
@@ -442,7 +434,7 @@ export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
   ca: (_: C) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): (ref: IORef<EA, EB, A, B>) => IORef<EC, ED, C, D> {
-  return (ref) => ref.fold(ea, eb, ca, bd);
+  return (ref) => ref.fold(ea, eb, ca, bd)
 }
 
 /**
@@ -459,7 +451,7 @@ export function fold_<EA, EB, A, B, EC, ED, C = A, D = B>(
   ca: (_: C) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): IORef<EC, ED, C, D> {
-  return ref.fold(ea, eb, ca, bd);
+  return ref.fold(ea, eb, ca, bd)
 }
 
 /**
@@ -474,7 +466,7 @@ export function foldAll<EA, EB, A, B, EC, ED, C = A, D = B>(
   ca: (_: C) => (_: B) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): (ref: IORef<EA, EB, A, B>) => IORef<EC, ED, C, D> {
-  return (ref) => ref.foldAll(ea, eb, ec, ca, bd);
+  return (ref) => ref.foldAll(ea, eb, ec, ca, bd)
 }
 
 /**
@@ -490,7 +482,7 @@ export function foldAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
   ca: (_: C) => (_: B) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): IORef<EC, ED, C, D> {
-  return ref.foldAll(ea, eb, ec, ca, bd);
+  return ref.foldAll(ea, eb, ec, ca, bd)
 }
 
 /*
@@ -505,8 +497,7 @@ export function foldAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
  */
 export const mapEither: <B, EC, C>(
   f: (_: B) => E.Either<EC, C>
-) => <EA, EB, A>(_: IORef<EA, EB, A, B>) => IORef<EA, EC | EB, A, C> = (f) =>
-  bimapEither((a) => E.right(a), f);
+) => <EA, EB, A>(_: IORef<EA, EB, A, B>) => IORef<EA, EC | EB, A, C> = (f) => bimapEither((a) => E.right(a), f)
 
 /**
  * Transforms the `get` value of the `XRef` with the specified fallible
@@ -515,23 +506,19 @@ export const mapEither: <B, EC, C>(
 export const mapEither_: <EA, EB, A, B, EC, C>(
   _: IORef<EA, EB, A, B>,
   f: (_: B) => E.Either<EC, C>
-) => IORef<EA, EC | EB, A, C> = (_, f) => bimapEither_(_, (a) => E.right(a), f);
+) => IORef<EA, EC | EB, A, C> = (_, f) => bimapEither_(_, (a) => E.right(a), f)
 
 /**
  * Transforms the `get` value of the `XRef` with the specified function.
  */
-export const map: <B, C>(
-  f: (_: B) => C
-) => <EA, EB, A>(_: IORef<EA, EB, A, B>) => IORef<EA, EB, A, C> = (f) =>
-  mapEither((b) => E.right(f(b)));
+export const map: <B, C>(f: (_: B) => C) => <EA, EB, A>(_: IORef<EA, EB, A, B>) => IORef<EA, EB, A, C> = (f) =>
+  mapEither((b) => E.right(f(b)))
 
 /**
  * Transforms the `get` value of the `XRef` with the specified function.
  */
-export const map_: <EA, EB, A, B, C>(
-  _: IORef<EA, EB, A, B>,
-  f: (_: B) => C
-) => IORef<EA, EB, A, C> = (_, f) => mapEither_(_, (b) => E.right(f(b)));
+export const map_: <EA, EB, A, B, C>(_: IORef<EA, EB, A, B>, f: (_: B) => C) => IORef<EA, EB, A, C> = (_, f) =>
+  mapEither_(_, (b) => E.right(f(b)))
 
 /*
  * -------------------------------------------
@@ -547,7 +534,7 @@ export const map_: <EA, EB, A, B, C>(
 export function collect<B, C>(
   pf: (_: B) => O.Option<C>
 ): <EA, EB, A>(_: IORef<EA, EB, A, B>) => IORef<EA, O.Option<EB>, A, C> {
-  return (_) => _.fold(identity, O.some, E.right, (b) => E.fromOption_(pf(b), () => O.none()));
+  return (_) => _.fold(identity, O.some, E.right, (b) => E.fromOption_(pf(b), () => O.none()))
 }
 
 /**
@@ -559,14 +546,14 @@ export function collect_<EA, EB, A, B, C>(
   _: IORef<EA, EB, A, B>,
   pf: (_: B) => O.Option<C>
 ): IORef<EA, O.Option<EB>, A, C> {
-  return collect(pf)(_);
+  return collect(pf)(_)
 }
 
 /**
  * Returns a read only view of the `XRef`.
  */
 export function readOnly<EA, EB, A, B>(_: IORef<EA, EB, A, B>): IORef<EA, EB, never, B> {
-  return _;
+  return _
 }
 
 /**
@@ -578,7 +565,7 @@ export function writeOnly<EA, EB, A, B>(_: IORef<EA, EB, A, B>): IORef<EA, void,
     () => undefined,
     E.right,
     () => E.left(undefined)
-  );
+  )
 }
 
 /**
@@ -643,7 +630,7 @@ export function modify<B, A>(f: (a: A) => readonly [B, A]) {
             I.absolve
           )
       })
-    );
+    )
 }
 
 /**
@@ -651,11 +638,8 @@ export function modify<B, A>(f: (a: A) => readonly [B, A]) {
  * computes a return value for the modification. This is a more powerful
  * version of `update`.
  */
-export function modify_<EA, EB, B, A>(
-  self: IORef<EA, EB, A, A>,
-  f: (a: A) => readonly [B, A]
-): FIO<EA | EB, B> {
-  return modify(f)(self);
+export function modify_<EA, EB, B, A>(self: IORef<EA, EB, A, A>, f: (a: A) => readonly [B, A]): FIO<EA | EB, B> {
+  return modify(f)(self)
 }
 
 /**
@@ -680,7 +664,7 @@ export function modifySome<B>(
           )
         )
       )
-    );
+    )
 }
 
 /**
@@ -694,16 +678,14 @@ export function modifySome_<EA, EB, A, B>(
   def: B,
   f: (a: A) => O.Option<[B, A]>
 ): FIO<EA | EB, B> {
-  return modifySome(def)(f)(self);
+  return modifySome(def)(f)(self)
 }
 
 /**
  * Atomically writes the specified value to the `XRef`, returning the value
  * immediately before modification.
  */
-export function getAndSet<A>(
-  a: A
-): <EA, EB>(self: IORef<EA, EB, A, A>) => I.UIO<A> | I.FIO<EA | EB, A> {
+export function getAndSet<A>(a: A): <EA, EB>(self: IORef<EA, EB, A, A>) => I.UIO<A> | I.FIO<EA | EB, A> {
   return (self) =>
     pipe(
       self,
@@ -712,7 +694,7 @@ export function getAndSet<A>(
         { Atomic: At.getAndSet(a) },
         modify((v) => tuple(v, a))
       )
-    );
+    )
 }
 
 /**
@@ -720,7 +702,7 @@ export function getAndSet<A>(
  * immediately before modification.
  */
 export function getAndSet_<EA, EB, A>(self: IORef<EA, EB, A, A>, a: A) {
-  return getAndSet(a)(self);
+  return getAndSet(a)(self)
 }
 
 /**
@@ -736,7 +718,7 @@ export function getAndUpdate<A>(f: (a: A) => A) {
         { Atomic: At.getAndUpdate(f) },
         modify((v) => tuple(v, f(v)))
       )
-    );
+    )
 }
 
 /**
@@ -744,7 +726,7 @@ export function getAndUpdate<A>(f: (a: A) => A) {
  * the value immediately before modification.
  */
 export function getAndUpdate_<EA, EB, A>(self: IORef<EA, EB, A, A>, f: (a: A) => A) {
-  return getAndUpdate(f)(self);
+  return getAndUpdate(f)(self)
 }
 
 /**
@@ -767,7 +749,7 @@ export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>) {
           )
         )
       )
-    );
+    )
 }
 
 /**
@@ -776,7 +758,7 @@ export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>) {
  * undefined on the current value it doesn't change it.
  */
 export function getAndUpdateSome_<EA, EB, A>(self: IORef<EA, EB, A, A>, f: (a: A) => O.Option<A>) {
-  return getAndUpdateSome(f)(self);
+  return getAndUpdateSome(f)(self)
 }
 
 /**
@@ -791,14 +773,14 @@ export function update<A>(f: (a: A) => A) {
         { Atomic: At.update(f) },
         modify((v) => tuple(undefined, f(v)))
       )
-    );
+    )
 }
 
 /**
  * Atomically modifies the `XRef` with the specified function.
  */
 export function update_<EA, EB, A>(self: IORef<EA, EB, A, A>, f: (a: A) => A): FIO<EA | EB, void> {
-  return update(f)(self);
+  return update(f)(self)
 }
 
 /**
@@ -817,18 +799,15 @@ export function updateAndGet<A>(f: (a: A) => A) {
           I.flatMap(() => self.get)
         )
       )
-    );
+    )
 }
 
 /**
  * Atomically modifies the `XRef` with the specified function and returns
  * the updated value.
  */
-export function updateAndGet_<EA, EB, A>(
-  self: IORef<EA, EB, A, A>,
-  f: (a: A) => A
-): FIO<EA | EB, A> {
-  return updateAndGet(f)(self);
+export function updateAndGet_<EA, EB, A>(self: IORef<EA, EB, A, A>, f: (a: A) => A): FIO<EA | EB, A> {
+  return updateAndGet(f)(self)
 }
 
 /**
@@ -850,18 +829,15 @@ export function updateSome<A>(f: (a: A) => O.Option<A>) {
           )
         )
       )
-    );
+    )
 }
 
 /**
  * Atomically modifies the `XRef` with the specified partial function. If
  * the function is undefined on the current value it doesn't change it.
  */
-export function updateSome_<EA, EB, A>(
-  self: IORef<EA, EB, A, A>,
-  f: (a: A) => O.Option<A>
-): FIO<EA | EB, void> {
-  return updateSome(f)(self);
+export function updateSome_<EA, EB, A>(self: IORef<EA, EB, A, A>, f: (a: A) => O.Option<A>): FIO<EA | EB, void> {
+  return updateSome(f)(self)
 }
 
 /**
@@ -884,7 +860,7 @@ export function updateSomeAndGet<A>(f: (a: A) => O.Option<A>) {
           )
         )
       )
-    );
+    )
 }
 
 /**
@@ -892,11 +868,8 @@ export function updateSomeAndGet<A>(f: (a: A) => O.Option<A>) {
  * the function is undefined on the current value it returns the old value
  * without changing it.
  */
-export function updateSomeAndGet_<EA, EB, A>(
-  self: IORef<EA, EB, A, A>,
-  f: (a: A) => O.Option<A>
-): FIO<EA | EB, A> {
-  return updateSomeAndGet(f)(self);
+export function updateSomeAndGet_<EA, EB, A>(self: IORef<EA, EB, A, A>, f: (a: A) => O.Option<A>): FIO<EA | EB, A> {
+  return updateSomeAndGet(f)(self)
 }
 
 /**
@@ -917,26 +890,24 @@ export function unsafeUpdate<A>(f: (a: A) => A) {
         DerivedAll: (self) =>
           pipe(
             self.value,
-            At.unsafeUpdate((s) =>
-              pipe(s, self.getEither, E.merge, f, (a) => self.setEither(a)(s), E.merge)
-            )
+            At.unsafeUpdate((s) => pipe(s, self.getEither, E.merge, f, (a) => self.setEither(a)(s), E.merge))
           )
       })
-    );
+    )
 }
 
 /**
  * Unsafe update value in a Ref<A>
  */
 export function unsafeUpdate_<A>(self: URef<A>, f: (a: A) => A) {
-  return unsafeUpdate(f)(self);
+  return unsafeUpdate(f)(self)
 }
 
 /**
  * Reads the value from the `XRef`.
  */
 export function get<EA, EB, A, B>(self: IORef<EA, EB, A, B>) {
-  return self.get;
+  return self.get
 }
 
 /**
@@ -944,7 +915,7 @@ export function get<EA, EB, A, B>(self: IORef<EA, EB, A, B>) {
  * consistency (at some cost to performance).
  */
 export function set<A>(a: A): <EA, EB, B>(self: IORef<EA, EB, A, B>) => I.FIO<EA, void> {
-  return (self) => self.set(a);
+  return (self) => self.set(a)
 }
 
 /**
@@ -952,5 +923,5 @@ export function set<A>(a: A): <EA, EB, B>(self: IORef<EA, EB, A, B>) => I.FIO<EA
  * consistency (at some cost to performance).
  */
 export function set_<EA, EB, B, A>(self: IORef<EA, EB, A, B>, a: A) {
-  return self.set(a);
+  return self.set(a)
 }

@@ -1,10 +1,10 @@
-import type { Exit } from "../../Exit";
-import type { IO } from "../core";
+import type { Exit } from '../../Exit'
+import type { IO } from '../core'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import * as I from "../core";
-import { race_ } from "./race";
+import * as I from '../core'
+import { race_ } from './race'
 
 /**
  * Returns an IO that races this effect with the specified effect,
@@ -23,5 +23,5 @@ export function raceFirst<R1, E1, A1>(that: IO<R1, E1, A1>) {
     pipe(
       race_(I.result(ef), I.result(that)),
       I.flatMap((a) => I.done(a as Exit<E | E1, A | A1>))
-    );
+    )
 }

@@ -1,15 +1,15 @@
-import type { Fiber } from "../core";
+import type { Fiber } from '../core'
 
-import * as A from "@principia/base/data/Array";
-import { pipe } from "@principia/base/data/Function";
-import { none, some } from "@principia/base/data/Option";
-import * as O from "@principia/base/data/Option";
+import * as A from '@principia/base/data/Array'
+import { pipe } from '@principia/base/data/Function'
+import { none, some } from '@principia/base/data/Option'
+import * as O from '@principia/base/data/Option'
 
-import * as C from "../../Cause";
-import * as Ex from "../../Exit";
-import * as I from "../_internal/io";
-import { makeSynthetic } from "../core";
-import { awaitAll } from "./awaitAll";
+import * as C from '../../Cause'
+import * as Ex from '../../Exit'
+import * as I from '../_internal/io'
+import { makeSynthetic } from '../core'
+import { awaitAll } from './awaitAll'
 
 /**
  * ```haskell
@@ -21,7 +21,7 @@ import { awaitAll } from "./awaitAll";
  */
 export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
   makeSynthetic({
-    _tag: "SyntheticFiber",
+    _tag: 'SyntheticFiber',
     getRef: (ref) =>
       I.reduce_(fibers, ref.initial, (a, fiber) =>
         pipe(
@@ -57,4 +57,4 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
       )
     ),
     await: awaitAll(fibers)
-  });
+  })

@@ -7,6 +7,6 @@
  * @since 1.0.0
  */
 export interface Magma<A> {
-  readonly combine_: (x: A, y: A) => A;
-  readonly combine: (y: A) => (x: A) => A;
+  readonly combine_: (x: A, y: A) => A
+  readonly combine: (y: A) => (x: A) => A
 }

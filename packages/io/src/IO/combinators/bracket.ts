@@ -1,6 +1,6 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { bracketExit_ } from "./bracketExit";
+import { bracketExit_ } from './bracketExit'
 
 /**
  * ```haskell
@@ -38,7 +38,7 @@ export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
   use: (a: A) => IO<R1, E1, A1>,
   release: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E | E1 | E2, A1> {
-  return bracketExit_(acquire, use, release);
+  return bracketExit_(acquire, use, release)
 }
 
 /**
@@ -75,5 +75,5 @@ export function bracket<A, R1, E1, B, R2, E2, C>(
   use: (a: A) => IO<R1, E1, B>,
   release: (a: A) => IO<R2, E2, C>
 ): <R, E>(acquire: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2 | E, B> {
-  return (acquire) => bracketExit_(acquire, use, release);
+  return (acquire) => bracketExit_(acquire, use, release)
 }

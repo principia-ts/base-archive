@@ -1,15 +1,15 @@
-import type { Optional } from "./Optional";
-import type { Prism } from "./Prism";
-import type { Traversal } from "./Traversal";
-import type { Predicate, Refinement } from "@principia/base/data/Function";
-import type * as O from "@principia/base/data/Option";
-import type * as P from "@principia/base/typeclass";
+import type { Optional } from './Optional'
+import type { Prism } from './Prism'
+import type { Traversal } from './Traversal'
+import type { Predicate, Refinement } from '@principia/base/data/Function'
+import type * as O from '@principia/base/data/Option'
+import type * as P from '@principia/base/typeclass'
 
-import * as E from "@principia/base/data/Either";
-import { flow, pipe } from "@principia/base/data/Function";
-import * as HKT from "@principia/base/HKT";
+import * as E from '@principia/base/data/Either'
+import { flow, pipe } from '@principia/base/data/Function'
+import * as HKT from '@principia/base/HKT'
 
-import * as _ from "./internal";
+import * as _ from './internal'
 
 /*
  * -------------------------------------------
@@ -18,19 +18,19 @@ import * as _ from "./internal";
  */
 
 export interface Lens<S, A> {
-  readonly get: (s: S) => A;
-  readonly set: (a: A) => (s: S) => S;
+  readonly get: (s: S) => A
+  readonly set: (a: A) => (s: S) => S
 }
 
-export const URI = "optics/Lens";
+export const URI = 'optics/Lens'
 
-export type URI = typeof URI;
+export type URI = typeof URI
 
-export type V = HKT.V<"I", "_">;
+export type V = HKT.V<'I', '_'>
 
-declare module "@principia/base/HKT" {
+declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Lens<I, A>;
+    readonly [URI]: Lens<I, A>
   }
 }
 
@@ -47,7 +47,7 @@ declare module "@principia/base/HKT" {
  * @since 1.0.0
  */
 export function composePrism_<S, A, B>(sa: Lens<S, A>, ab: Prism<A, B>): Optional<S, B> {
-  return _.lensComposePrism(ab)(sa);
+  return _.lensComposePrism(ab)(sa)
 }
 
 /**
@@ -56,7 +56,7 @@ export function composePrism_<S, A, B>(sa: Lens<S, A>, ab: Prism<A, B>): Optiona
  * @category Compositions
  * @since 1.0.0
  */
-export const composePrism = _.lensComposePrism;
+export const composePrism = _.lensComposePrism
 
 /**
  * Compose an `Lens` with an `Optional`
@@ -65,7 +65,7 @@ export const composePrism = _.lensComposePrism;
  * @since 1.0.0
  */
 export function composeOptional_<S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): Optional<S, B> {
-  return _.optionalComposeOptional(ab)(asOptional(sa));
+  return _.optionalComposeOptional(ab)(asOptional(sa))
 }
 
 /**
@@ -75,7 +75,7 @@ export function composeOptional_<S, A, B>(sa: Lens<S, A>, ab: Optional<A, B>): O
  * @since 1.0.0
  */
 export function composeOptional<A, B>(ab: Optional<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B> {
-  return (sa) => composeOptional_(sa, ab);
+  return (sa) => composeOptional_(sa, ab)
 }
 
 /*
@@ -90,7 +90,7 @@ export function composeOptional<A, B>(ab: Optional<A, B>): <S>(sa: Lens<S, A>) =
  * @category Converters
  * @since 1.0.0
  */
-export const asOptional: <S, A>(sa: Lens<S, A>) => Optional<S, A> = _.lensAsOptional;
+export const asOptional: <S, A>(sa: Lens<S, A>) => Optional<S, A> = _.lensAsOptional
 
 /**
  * View a `Lens` as a Traversal
@@ -98,7 +98,7 @@ export const asOptional: <S, A>(sa: Lens<S, A>) => Optional<S, A> = _.lensAsOpti
  * @category Converters
  * @since 1.0.0
  */
-export const asTraversal: <S, A>(sa: Lens<S, A>) => Traversal<S, A> = _.lensAsTraversal;
+export const asTraversal: <S, A>(sa: Lens<S, A>) => Traversal<S, A> = _.lensAsTraversal
 
 /*
  * -------------------------------------------
@@ -106,7 +106,7 @@ export const asTraversal: <S, A>(sa: Lens<S, A>) => Traversal<S, A> = _.lensAsTr
  * -------------------------------------------
  */
 
-export const id: <S>() => Lens<S, S> = _.lensId;
+export const id: <S>() => Lens<S, S> = _.lensId
 
 /**
  * Compose an `Lens` with a `Lens`
@@ -115,7 +115,7 @@ export const id: <S>() => Lens<S, S> = _.lensId;
  * @since 1.0.0
  */
 export function compose_<S, A, B>(sa: Lens<S, A>, ab: Lens<A, B>): Lens<S, B> {
-  return _.lensComposeLens(ab)(sa);
+  return _.lensComposeLens(ab)(sa)
 }
 
 /**
@@ -124,7 +124,7 @@ export function compose_<S, A, B>(sa: Lens<S, A>, ab: Lens<A, B>): Lens<S, B> {
  * @category Semigroupoid
  * @since 1.0.0
  */
-export const compose = _.lensComposeLens;
+export const compose = _.lensComposeLens
 
 /**
  * @category Instances
@@ -134,7 +134,7 @@ export const Category: P.Category<[URI], V> = HKT.instance({
   id,
   compose,
   compose_
-});
+})
 
 /*
  * -------------------------------------------
@@ -150,7 +150,7 @@ export function imap_<I, A, B>(ea: Lens<I, A>, ab: (a: A) => B, ba: (b: B) => A)
   return {
     get: flow(ea.get, ab),
     set: flow(ba, ea.set)
-  };
+  }
 }
 
 /**
@@ -158,7 +158,7 @@ export function imap_<I, A, B>(ea: Lens<I, A>, ab: (a: A) => B, ba: (b: B) => A)
  * @since 1.0.0
  */
 export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, A>) => Lens<I, B> {
-  return (ea) => imap_(ea, ab, ba);
+  return (ea) => imap_(ea, ab, ba)
 }
 
 /**
@@ -168,7 +168,7 @@ export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, A>
 export const Invariant: P.Invariant<[URI], V> = HKT.instance({
   imap_,
   imap
-});
+})
 
 /*
  * -------------------------------------------
@@ -182,10 +182,10 @@ export const Invariant: P.Invariant<[URI], V> = HKT.instance({
  */
 export function modify<A>(f: (a: A) => A): <S>(sa: Lens<S, A>) => (s: S) => S {
   return (sa) => (s) => {
-    const o = sa.get(s);
-    const n = f(o);
-    return o === n ? s : sa.set(n)(s);
-  };
+    const o = sa.get(s)
+    const n = f(o)
+    return o === n ? s : sa.set(n)(s)
+  }
 }
 
 /**
@@ -195,19 +195,17 @@ export function modify<A>(f: (a: A) => A): <S>(sa: Lens<S, A>) => (s: S) => S {
  * @since 1.0.0
  */
 export function fromNullable<S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> {
-  return _.lensComposePrism(_.prismFromNullable<A>())(sa);
+  return _.lensComposePrism(_.prismFromNullable<A>())(sa)
 }
 
 /**
  * @category Combinators
  * @since 1.0.0
  */
-export function filter<A, B extends A>(
-  refinement: Refinement<A, B>
-): <S>(sa: Lens<S, A>) => Optional<S, B>;
-export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A>;
+export function filter<A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B>
+export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A> {
-  return composePrism(_.prismFromPredicate(predicate));
+  return composePrism(_.prismFromPredicate(predicate))
 }
 
 /**
@@ -216,8 +214,7 @@ export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optio
  * @category Combinators
  * @since 1.0.0
  */
-export const prop: <A, P extends keyof A>(prop: P) => <S>(sa: Lens<S, A>) => Lens<S, A[P]> =
-  _.lensProp;
+export const prop: <A, P extends keyof A>(prop: P) => <S>(sa: Lens<S, A>) => Lens<S, A[P]> = _.lensProp
 
 /**
  * Return a `Lens` from a `Lens` and a list of props
@@ -227,7 +224,7 @@ export const prop: <A, P extends keyof A>(prop: P) => <S>(sa: Lens<S, A>) => Len
  */
 export const props: <A, P extends keyof A>(
   ...props: [P, P, ...Array<P>]
-) => <S>(sa: Lens<S, A>) => Lens<S, { [K in P]: A[K] }> = _.lensProps;
+) => <S>(sa: Lens<S, A>) => Lens<S, { [K in P]: A[K] }> = _.lensProps
 
 /**
  * Return a `Lens` from a `Lens` and a component
@@ -237,7 +234,7 @@ export const props: <A, P extends keyof A>(
  */
 export const component: <A extends ReadonlyArray<unknown>, P extends keyof A>(
   prop: P
-) => <S>(sa: Lens<S, A>) => Lens<S, A[P]> = _.lensComponent;
+) => <S>(sa: Lens<S, A>) => Lens<S, A[P]> = _.lensComponent
 
 /**
  * Return a `Optional` from a `Lens` focused on a `ReadonlyArray`
@@ -247,7 +244,7 @@ export const component: <A extends ReadonlyArray<unknown>, P extends keyof A>(
  */
 export function index(i: number) {
   return <S, A>(sa: Lens<S, ReadonlyArray<A>>): Optional<S, A> =>
-    pipe(sa, asOptional, _.optionalComposeOptional(_.indexArray<A>().index(i)));
+    pipe(sa, asOptional, _.optionalComposeOptional(_.indexArray<A>().index(i)))
 }
 
 /**
@@ -258,7 +255,7 @@ export function index(i: number) {
  */
 export function key(key: string) {
   return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Optional<S, A> =>
-    pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)));
+    pipe(sa, asOptional, _.optionalComposeOptional(_.indexRecord<A>().index(key)))
 }
 
 /**
@@ -268,7 +265,7 @@ export function key(key: string) {
  */
 export function atKey(key: string) {
   return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Lens<S, O.Option<A>> =>
-    pipe(sa, compose(_.atRecord<A>().at(key)));
+    pipe(sa, compose(_.atRecord<A>().at(key)))
 }
 
 /**
@@ -277,9 +274,7 @@ export function atKey(key: string) {
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Lens<S, O.Option<A>>) => Optional<S, A> = composePrism(
-  _.prismSome()
-);
+export const some: <S, A>(soa: Lens<S, O.Option<A>>) => Optional<S, A> = composePrism(_.prismSome())
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type
@@ -287,9 +282,7 @@ export const some: <S, A>(soa: Lens<S, O.Option<A>>) => Optional<S, A> = compose
  * @category Combinators
  * @since 1.0.0
  */
-export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = composePrism(
-  _.prismRight()
-);
+export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = composePrism(_.prismRight())
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Left` of a `Either` type
@@ -297,9 +290,7 @@ export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = 
  * @category Combinators
  * @since 1.0.0
  */
-export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = composePrism(
-  _.prismLeft()
-);
+export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = composePrism(_.prismLeft())
 
 /**
  * Return a `Traversal` from a `Lens` focused on a `Traversable`
@@ -312,13 +303,14 @@ export function traverse<T extends HKT.URIS, C = HKT.Auto>(
 ): <S, N extends string, K, Q, W, X, I, S_, R, E, A>(
   sta: Lens<S, HKT.Kind<T, C, N, K, Q, W, X, I, S_, R, E, A>>
 ) => Traversal<S, A> {
-  return flow(asTraversal, _.traversalComposeTraversal(_.fromTraversable(T)()));
+  return flow(asTraversal, _.traversalComposeTraversal(_.fromTraversable(T)()))
 }
 
 /**
  * @category Combinators
  * @since 1.0.0
  */
-export const findl: <A>(
-  predicate: Predicate<A>
-) => <S>(sa: Lens<S, ReadonlyArray<A>>) => Optional<S, A> = flow(_.findFirst, composeOptional);
+export const findl: <A>(predicate: Predicate<A>) => <S>(sa: Lens<S, ReadonlyArray<A>>) => Optional<S, A> = flow(
+  _.findFirst,
+  composeOptional
+)

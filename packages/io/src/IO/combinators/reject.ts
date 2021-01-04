@@ -1,10 +1,10 @@
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import * as O from "@principia/base/data/Option";
+import * as O from '@principia/base/data/Option'
 
-import { fail } from "../core";
-import { rejectM_ } from "./rejectM";
+import { fail } from '../core'
+import { rejectM_ } from './rejectM'
 
 /**
  * ```haskell
@@ -18,7 +18,7 @@ import { rejectM_ } from "./rejectM";
  * @since 1.0.0
  */
 export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>): IO<R, E | E1, A> {
-  return rejectM_(fa, (a) => O.map_(pf(a), fail));
+  return rejectM_(fa, (a) => O.map_(pf(a), fail))
 }
 
 /**
@@ -32,8 +32,6 @@ export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>):
  * @category Combinators
  * @since 1.0.0
  */
-export function reject<A, E1>(
-  pf: (a: A) => Option<E1>
-): <R, E>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
-  return (fa) => reject_(fa, pf);
+export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
+  return (fa) => reject_(fa, pf)
 }

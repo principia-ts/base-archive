@@ -1,7 +1,7 @@
-import type { Managed } from "../core";
+import type { Managed } from '../core'
 
-import * as Ex from "../../Exit";
-import { foldCauseM_, succeed } from "../core";
+import * as Ex from '../../Exit'
+import { foldCauseM_, succeed } from '../core'
 
 /**
  * Returns a Managed that semantically runs the Managed on a fiber,
@@ -12,5 +12,5 @@ export function result<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, Ex.Exit
     ma,
     (cause) => succeed(Ex.failure(cause)),
     (a) => succeed(Ex.succeed(a))
-  );
+  )
 }

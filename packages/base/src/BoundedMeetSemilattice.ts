@@ -5,12 +5,12 @@
  *
  * @since 2.0.0
  */
-import type { MeetSemilattice } from "./MeetSemilattice";
+import type { MeetSemilattice } from './MeetSemilattice'
 
 /**
  * @category Type Classes
  * @since !.0.0
  */
 export interface BoundedMeetSemilattice<A> extends MeetSemilattice<A> {
-  readonly one: A;
+  readonly one: A
 }

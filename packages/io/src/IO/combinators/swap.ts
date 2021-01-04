@@ -1,6 +1,6 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { fail, foldM_, pure } from "../core";
+import { fail, foldM_, pure } from '../core'
 
 /**
  * ```haskell
@@ -13,5 +13,5 @@ import { fail, foldM_, pure } from "../core";
  * @since 1.0.0
  */
 export function swap<R, E, A>(pab: IO<R, E, A>): IO<R, A, E> {
-  return foldM_(pab, pure, fail);
+  return foldM_(pab, pure, fail)
 }

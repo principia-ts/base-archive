@@ -4,8 +4,8 @@
 export type ComputeRaw<A extends any> = A extends Function
   ? A
   : {
-      [K in keyof A]: A[K];
-    } & {};
+      [K in keyof A]: A[K]
+    } & {}
 
 /**
  * @hidden
@@ -13,8 +13,8 @@ export type ComputeRaw<A extends any> = A extends Function
 export type ComputeFlat<A extends any> = A extends BuiltInObject
   ? A
   : {
-      [K in keyof A]: A[K];
-    } & {};
+      [K in keyof A]: A[K]
+    } & {}
 
 /**
  * @hidden
@@ -22,8 +22,8 @@ export type ComputeFlat<A extends any> = A extends BuiltInObject
 export type ComputeDeep<A extends any> = A extends BuiltInObject
   ? A
   : {
-      [K in keyof A]: ComputeDeep<A[K]>;
-    } & {};
+      [K in keyof A]: ComputeDeep<A[K]>
+    } & {}
 
 /**
  * Force TS to load a type that has not been computed (to resolve composed
@@ -37,17 +37,17 @@ export type ComputeDeep<A extends any> = A extends BuiltInObject
  * type test0 = A.Compute<{x: 'x'} & {y: 'y'}> // {x: 'x', y: 'y'}
  * ```
  */
-export type Compute<A extends any, depth extends Depth = "deep"> = {
-  flat: ComputeFlat<A>;
-  deep: ComputeDeep<A>;
-}[depth];
+export type Compute<A extends any, depth extends Depth = 'deep'> = {
+  flat: ComputeFlat<A>
+  deep: ComputeDeep<A>
+}[depth]
 
-type Depth = "flat" | "deep";
+type Depth = 'flat' | 'deep'
 
 /**
  * @hidden
  */
-type Errors = Error;
+type Errors = Error
 // | EvalError
 // | RangeError
 // | ReferenceError
@@ -62,14 +62,14 @@ type Numeric =
   // | Number
   // | BigInt // not needed
   // | Math
-  Date;
+  Date
 
 /**
  * @hidden
  */
 type Textual =
   // | String
-  RegExp;
+  RegExp
 
 /**
  * @hidden
@@ -85,7 +85,7 @@ type Arrays =
   | Int32Array
   | Uint32Array
   | Float32Array
-  | Float64Array;
+  | Float64Array
 // | BigInt64Array
 // | BigUint64Array
 
@@ -95,7 +95,7 @@ type Arrays =
 type Maps =
   // | Map<unknown, unknown>
   // | Set<unknown>
-  ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | WeakMap<object, unknown> | WeakSet<object>;
+  ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | WeakMap<object, unknown> | WeakSet<object>
 
 /**
  * @hidden
@@ -104,29 +104,21 @@ type Structures =
   | ArrayBuffer
   // | SharedArrayBuffer
   // | Atomics
-  | DataView;
+  | DataView
 // | JSON
 
 /**
  * @hidden
  */
-type Abstractions = Function | Promise<unknown> | Generator;
+type Abstractions = Function | Promise<unknown> | Generator
 // | GeneratorFunction
 
 /**
  * @hidden
  */
-type WebAssembly = never;
+type WebAssembly = never
 
 /**
  * Built-in standard library objects
  */
-export type BuiltInObject =
-  | Errors
-  | Numeric
-  | Textual
-  | Arrays
-  | Maps
-  | Structures
-  | Abstractions
-  | WebAssembly;
+export type BuiltInObject = Errors | Numeric | Textual | Arrays | Maps | Structures | Abstractions | WebAssembly

@@ -1,12 +1,12 @@
-import type { IO, URIO } from "../core";
+import type { IO, URIO } from '../core'
 
-import { pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import * as Fiber from "../../Fiber";
-import * as FiberRef from "../../FiberRef";
-import { flatMap, fork } from "../core";
-import { uninterruptibleMask } from "./interrupt";
+import * as Fiber from '../../Fiber'
+import * as FiberRef from '../../FiberRef'
+import { flatMap, fork } from '../core'
+import { uninterruptibleMask } from './interrupt'
 
 /**
  * Forks the effect into a new independent fiber, with the specified name.
@@ -18,14 +18,12 @@ export function forkAs_<R, E, A>(fa: IO<R, E, A>, name: string): URIO<R, Fiber.F
       FiberRef.set(O.some(name)),
       flatMap(() => fork(restore(fa)))
     )
-  );
+  )
 }
 
 /**
  * Forks the effect into a new independent fiber, with the specified name.
  */
-export function forkAs(
-  name: string
-): <R, E, A>(ef: IO<R, E, A>) => URIO<R, Fiber.FiberContext<E, A>> {
-  return (ef) => forkAs_(ef, name);
+export function forkAs(name: string): <R, E, A>(ef: IO<R, E, A>) => URIO<R, Fiber.FiberContext<E, A>> {
+  return (ef) => forkAs_(ef, name)
 }

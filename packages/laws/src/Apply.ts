@@ -1,7 +1,7 @@
-import type * as Eq from "@principia/base/data/Eq";
-import type { MorphismN } from "@principia/base/data/Function";
-import type * as HKT from "@principia/base/HKT";
-import type * as P from "@principia/base/typeclass";
+import type * as Eq from '@principia/base/data/Eq'
+import type { MorphismN } from '@principia/base/data/Function'
+import type * as HKT from '@principia/base/HKT'
+import type * as P from '@principia/base/typeclass'
 
 function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
   F: P.Apply<F, TC>,
@@ -9,15 +9,15 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, "N">,
-      HKT.Initial<TC, "K">,
-      HKT.Initial<TC, "Q">,
-      HKT.Initial<TC, "W">,
-      HKT.Initial<TC, "X">,
-      HKT.Initial<TC, "I">,
-      HKT.Initial<TC, "S">,
-      HKT.Initial<TC, "R">,
-      HKT.Initial<TC, "E">,
+      HKT.Initial<TC, 'N'>,
+      HKT.Initial<TC, 'K'>,
+      HKT.Initial<TC, 'Q'>,
+      HKT.Initial<TC, 'W'>,
+      HKT.Initial<TC, 'X'>,
+      HKT.Initial<TC, 'I'>,
+      HKT.Initial<TC, 'S'>,
+      HKT.Initial<TC, 'R'>,
+      HKT.Initial<TC, 'E'>,
       C
     >
   >
@@ -55,15 +55,11 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
   fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
   fab: HKT.Kind<F, TC, NB, KB, QB, WB, XB, IB, SB, RB, EB, (a: A) => B>,
   fbc: HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, (b: B) => C>
-) => boolean;
+) => boolean
 function AssociativeCompositionLaw<F, A, B, C>(
   F: P.Apply<HKT.UHKT<F>>,
   S: Eq.Eq<HKT.HKT<F, C>>
-): (
-  fa: HKT.HKT<F, A>,
-  fab: HKT.HKT<F, MorphismN<[A], B>>,
-  fbc: HKT.HKT<F, MorphismN<[B], C>>
-) => boolean {
+): (fa: HKT.HKT<F, A>, fab: HKT.HKT<F, MorphismN<[A], B>>, fbc: HKT.HKT<F, MorphismN<[B], C>>) => boolean {
   return (fa, fab, fbc) => {
     return S.equals_(
       F.ap_(
@@ -74,10 +70,10 @@ function AssociativeCompositionLaw<F, A, B, C>(
         fa
       ),
       F.ap_(fbc, F.ap_(fab, fa))
-    );
-  };
+    )
+  }
 }
 
 export const Apply = {
   associativeComposition: AssociativeCompositionLaw
-};
+}

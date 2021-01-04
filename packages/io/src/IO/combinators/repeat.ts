@@ -1,9 +1,9 @@
-import type { HasClock } from "../../Clock";
-import type * as S from "../../Schedule";
-import type { IO } from "../core";
+import type { HasClock } from '../../Clock'
+import type * as S from '../../Schedule'
+import type { IO } from '../core'
 
-import { flatMap_, pure } from "../core";
-import { repeatOrElse_ } from "./repeatOrElse";
+import { flatMap_, pure } from '../core'
+import { repeatOrElse_ } from './repeatOrElse'
 
 /**
  * ```haskell
@@ -19,11 +19,8 @@ import { repeatOrElse_ } from "./repeatOrElse";
  * @category Combinators
  * @since 1.0.0
  */
-export function repeat_<R, SR, E, A, B>(
-  ef: IO<R, E, A>,
-  sc: S.Schedule<SR, A, B>
-): IO<R & SR & HasClock, E, B> {
-  return repeatOrElse_(ef, sc, (e) => fail(e));
+export function repeat_<R, SR, E, A, B>(ef: IO<R, E, A>, sc: S.Schedule<SR, A, B>): IO<R & SR & HasClock, E, B> {
+  return repeatOrElse_(ef, sc, (e) => fail(e))
 }
 
 /**
@@ -41,5 +38,5 @@ export function repeat_<R, SR, E, A, B>(
  * @since 1.0.0
  */
 export function repeat<SR, A, B>(sc: S.Schedule<SR, A, B>) {
-  return <R, E>(ef: IO<R, E, A>) => repeat_(ef, sc);
+  return <R, E>(ef: IO<R, E, A>) => repeat_(ef, sc)
 }

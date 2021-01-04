@@ -1,9 +1,9 @@
-import type { Iso } from "./Iso";
-import type { Lens } from "./Lens";
+import type { Iso } from './Iso'
+import type { Lens } from './Lens'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import * as _ from "./internal";
+import * as _ from './internal'
 
 /*
  * -------------------------------------------
@@ -12,7 +12,7 @@ import * as _ from "./internal";
  */
 
 export interface At<S, I, A> {
-  readonly at: (i: I) => Lens<S, A>;
+  readonly at: (i: I) => Lens<S, A>
 }
 
 /*
@@ -30,11 +30,11 @@ export interface At<S, I, A> {
 export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: At<S, I, A>) => At<T, I, A> {
   return (sia) => ({
     at: (i) => pipe(iso, _.isoAsLens, _.lensComposeLens(sia.at(i)))
-  });
+  })
 }
 
 /**
  * @category Constructors
  * @since 1.0.0
  */
-export const atRecord = _.atRecord;
+export const atRecord = _.atRecord

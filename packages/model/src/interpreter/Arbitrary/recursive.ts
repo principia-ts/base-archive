@@ -1,15 +1,15 @@
-import type * as Alg from "../../algebra";
-import type { ArbURI } from "./HKT";
+import type * as Alg from '../../algebra'
+import type { ArbURI } from './HKT'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import { implementInterpreter } from "../../HKT";
-import { memoize } from "../../utils";
-import { accessFastCheck, applyArbitraryConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { memoize } from '../../utils'
+import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
 export const RecursiveArbitrary = implementInterpreter<ArbURI, Alg.RecursiveURI>()((_) => ({
   recursive: (id, a, config) => {
-    const get = memoize<void, ReturnType<typeof a>>(() => a(res));
+    const get = memoize<void, ReturnType<typeof a>>(() => a(res))
     const res: ReturnType<typeof a> = (env) =>
       pipe(
         () => get()(env),
@@ -21,7 +21,7 @@ export const RecursiveArbitrary = implementInterpreter<ArbURI, Alg.RecursiveURI>
             env,
             {}
           )
-      );
-    return res;
+      )
+    return res
   }
-}));
+}))

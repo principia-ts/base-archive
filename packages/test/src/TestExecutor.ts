@@ -1,39 +1,31 @@
-import type { Annotated, Annotations } from "./Annotation";
-import type { ExecutedSpec } from "./ExecutedSpec";
-import type { TestSuccess } from "./TestSuccess";
-import type { Has } from "@principia/base/data/Has";
-import type { ExecutionStrategy } from "@principia/io/ExecutionStrategy";
-import type { UIO } from "@principia/io/IO";
-import type { Layer } from "@principia/io/Layer";
+import type { Annotated, Annotations } from './Annotation'
+import type { ExecutedSpec } from './ExecutedSpec'
+import type { TestSuccess } from './TestSuccess'
+import type { Has } from '@principia/base/data/Has'
+import type { ExecutionStrategy } from '@principia/io/ExecutionStrategy'
+import type { UIO } from '@principia/io/IO'
+import type { Layer } from '@principia/io/Layer'
 
-import * as E from "@principia/base/data/Either";
-import { flow, pipe } from "@principia/base/data/Function";
-import { matchTag } from "@principia/base/util/matchers";
-import * as C from "@principia/io/Cause";
-import * as I from "@principia/io/IO";
-import * as M from "@principia/io/Managed";
+import * as E from '@principia/base/data/Either'
+import { flow, pipe } from '@principia/base/data/Function'
+import { matchTag } from '@principia/base/util/matchers'
+import * as C from '@principia/io/Cause'
+import * as I from '@principia/io/IO'
+import * as M from '@principia/io/Managed'
 
-import { TestAnnotationMap } from "./Annotation";
-import * as ES from "./ExecutedSpec";
-import * as S from "./Spec";
-import * as TF from "./TestFailure";
+import { TestAnnotationMap } from './Annotation'
+import * as ES from './ExecutedSpec'
+import * as S from './Spec'
+import * as TF from './TestFailure'
 
 export interface TestExecutor<R> {
-  readonly run: <E>(
-    spec: S.XSpec<R & Has<Annotations>, E>,
-    defExec: ExecutionStrategy
-  ) => UIO<ExecutedSpec<E>>;
-  readonly environment: Layer<unknown, never, R>;
+  readonly run: <E>(spec: S.XSpec<R & Has<Annotations>, E>, defExec: ExecutionStrategy) => UIO<ExecutedSpec<E>>
+  readonly environment: Layer<unknown, never, R>
 }
 
-export function defaultTestExecutor<R>(
-  env: Layer<unknown, never, R & Has<Annotations>>
-): TestExecutor<R> {
+export function defaultTestExecutor<R>(env: Layer<unknown, never, R & Has<Annotations>>): TestExecutor<R> {
   return {
-    run: <E>(
-      spec: S.XSpec<R & Has<Annotations>, E>,
-      defExec: ExecutionStrategy
-    ): UIO<ExecutedSpec<E>> =>
+    run: <E>(spec: S.XSpec<R & Has<Annotations>, E>, defExec: ExecutionStrategy): UIO<ExecutedSpec<E>> =>
       pipe(
         S.annotated(spec),
         S.giveLayer(env),
@@ -42,8 +34,7 @@ export function defaultTestExecutor<R>(
             C.failureOrCause,
             E.fold(
               ([failure, annotations]) => I.succeed([E.left(failure), annotations] as const),
-              (cause) =>
-                I.succeed([E.left(new TF.RuntimeFailure(cause)), TestAnnotationMap.empty] as const)
+              (cause) => I.succeed([E.left(new TF.RuntimeFailure(cause)), TestAnnotationMap.empty] as const)
             )
           ),
           ([success, annotations]) =>
@@ -72,5 +63,5 @@ export function defaultTestExecutor<R>(
         )
       ),
     environment: env
-  };
+  }
 }

@@ -1,18 +1,18 @@
-import type { InterruptStatus } from "../../Fiber/core";
-import type { FiberId } from "../../Fiber/FiberId";
-import type { Canceler, FIO, IO, UIO } from "../core";
-import type { Either } from "@principia/base/data/Either";
-import type { Option } from "@principia/base/data/Option";
+import type { InterruptStatus } from '../../Fiber/core'
+import type { FiberId } from '../../Fiber/FiberId'
+import type { Canceler, FIO, IO, UIO } from '../core'
+import type { Either } from '@principia/base/data/Either'
+import type { Option } from '@principia/base/data/Option'
 
-import { left } from "@principia/base/data/Either";
-import { flow, pipe } from "@principia/base/data/Function";
-import { none, some } from "@principia/base/data/Option";
-import { AtomicReference } from "@principia/base/util/support/AtomicReference";
-import { OneShot } from "@principia/base/util/support/OneShot";
+import { left } from '@principia/base/data/Either'
+import { flow, pipe } from '@principia/base/data/Function'
+import { none, some } from '@principia/base/data/Option'
+import { AtomicReference } from '@principia/base/util/support/AtomicReference'
+import { OneShot } from '@principia/base/util/support/OneShot'
 
-import * as C from "../../Cause/core";
-import { join } from "../../Fiber/combinators/join";
-import { interruptible, uninterruptible } from "../../Fiber/core";
+import * as C from '../../Cause/core'
+import { join } from '../../Fiber/combinators/join'
+import { interruptible, uninterruptible } from '../../Fiber/core'
 import {
   async,
   asyncOption,
@@ -28,35 +28,30 @@ import {
   suspend,
   total,
   unit
-} from "../core";
-import { forkDaemon } from "./core-scope";
-import { fiberId } from "./fiberId";
+} from '../core'
+import { forkDaemon } from './core-scope'
+import { fiberId } from './fiberId'
 
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
-  return halt(C.interrupt(fiberId));
+  return halt(C.interrupt(fiberId))
 }
 
-export const interrupt: IO<unknown, never, never> = flatMap_(fiberId(), interruptAs);
+export const interrupt: IO<unknown, never, never> = flatMap_(fiberId(), interruptAs)
 
-export function setInterruptStatus_<R, E, A>(
-  effect: IO<R, E, A>,
-  flag: InterruptStatus
-): IO<R, E, A> {
-  return new SetInterruptInstruction(effect, flag);
+export function setInterruptStatus_<R, E, A>(effect: IO<R, E, A>, flag: InterruptStatus): IO<R, E, A> {
+  return new SetInterruptInstruction(effect, flag)
 }
 
-export function setInterruptStatus(
-  flag: InterruptStatus
-): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
-  return (ma) => setInterruptStatus_(ma, flag);
+export function setInterruptStatus(flag: InterruptStatus): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
+  return (ma) => setInterruptStatus_(ma, flag)
 }
 
 export function makeInterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return setInterruptStatus_(ma, interruptible);
+  return setInterruptStatus_(ma, interruptible)
 }
 
 export function makeUninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return setInterruptStatus_(ma, uninterruptible);
+  return setInterruptStatus_(ma, uninterruptible)
 }
 
 /**
@@ -64,10 +59,8 @@ export function makeUninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  * can be used to restore the inherited interruptibility from whatever region
  * the effect is composed into.
  */
-export function uninterruptibleMask<R, E, A>(
-  f: (restore: InterruptStatusRestore) => IO<R, E, A>
-): IO<R, E, A> {
-  return checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestoreImpl(flag))));
+export function uninterruptibleMask<R, E, A>(f: (restore: InterruptStatusRestore) => IO<R, E, A>): IO<R, E, A> {
+  return checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestoreImpl(flag))))
 }
 
 /**
@@ -81,43 +74,37 @@ export function onInterrupt_<R, E, A, R1>(
   return uninterruptibleMask(({ restore }) =>
     foldCauseM_(
       restore(ma),
-      (cause) =>
-        C.interrupted(cause)
-          ? flatMap_(cleanup(C.interruptors(cause)), () => halt(cause))
-          : halt(cause),
+      (cause) => (C.interrupted(cause) ? flatMap_(cleanup(C.interruptors(cause)), () => halt(cause)) : halt(cause)),
       pure
     )
-  );
+  )
 }
 
 export function onInterrupt<R1>(
   cleanup: (interruptors: ReadonlySet<FiberId>) => IO<R1, never, any>
 ): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E, A> {
-  return (ma) => onInterrupt_(ma, cleanup);
+  return (ma) => onInterrupt_(ma, cleanup)
 }
 
 /**
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted (allows for expanding error).
  */
-export function onInterruptExtended_<R, E, A, R2, E2>(
-  self: IO<R, E, A>,
-  cleanup: () => IO<R2, E2, any>
-) {
+export function onInterruptExtended_<R, E, A, R2, E2>(self: IO<R, E, A>, cleanup: () => IO<R2, E2, any>) {
   return uninterruptibleMask(({ restore }) =>
     foldCauseM_(
       restore(self),
       (cause) =>
         C.interrupted(cause)
           ? foldCauseM_(
-              cleanup(),
-              (_) => halt(_),
-              () => halt(cause)
-            )
+            cleanup(),
+            (_) => halt(_),
+            () => halt(cause)
+          )
           : halt(cause),
       pure
     )
-  );
+  )
 }
 
 /**
@@ -140,32 +127,32 @@ export function disconnect<R, E, A>(effect: IO<R, E, A>): IO<R, E, A> {
         onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
       )
     )
-  );
+  )
 }
 
 /**
  * Used to restore the inherited interruptibility
  */
 export interface InterruptStatusRestore {
-  readonly restore: <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>;
-  readonly force: <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>;
+  readonly restore: <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
+  readonly force: <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
 }
 
 export class InterruptStatusRestoreImpl implements InterruptStatusRestore {
   constructor(readonly flag: InterruptStatus) {
-    this.restore = this.restore.bind(this);
-    this.force = this.force.bind(this);
+    this.restore = this.restore.bind(this)
+    this.force   = this.force.bind(this)
   }
 
   restore<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-    return setInterruptStatus_(ma, this.flag);
+    return setInterruptStatus_(ma, this.flag)
   }
 
   force<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
     if (this.flag.isUninteruptible) {
-      return makeInterruptible(disconnect(makeUninterruptible(ma)));
+      return makeInterruptible(disconnect(makeUninterruptible(ma)))
     }
-    return setInterruptStatus_(ma, this.flag);
+    return setInterruptStatus_(ma, this.flag)
   }
 }
 
@@ -194,39 +181,39 @@ export function maybeAsyncInterrupt<R, E, A>(
     flatMap(([started, cancel]) =>
       pipe(
         asyncOption<R, E, IO<R, E, A>>((k) => {
-          started.set(true);
-          const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(none());
+          started.set(true)
+          const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(none())
           try {
-            const res = register((io) => k(pure(io)));
+            const res = register((io) => k(pure(io)))
             switch (res._tag) {
-              case "Right": {
-                ret.set(some(pure(res.right)));
-                break;
+              case 'Right': {
+                ret.set(some(pure(res.right)))
+                break
               }
-              case "Left": {
-                cancel.set(res.left);
-                break;
+              case 'Left': {
+                cancel.set(res.left)
+                break
               }
             }
           } finally {
             if (!cancel.isSet()) {
-              cancel.set(unit());
+              cancel.set(unit())
             }
           }
-          return ret.get;
+          return ret.get
         }, blockingOn),
         flatten,
         onInterrupt(() => suspend(() => (started.get ? cancel.get() : unit())))
       )
     )
-  );
+  )
 }
 
 export function asyncInterrupt<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Canceler<R>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return maybeAsyncInterrupt<R, E, A>((cb) => left(register(cb)), blockingOn);
+  return maybeAsyncInterrupt<R, E, A>((cb) => left(register(cb)), blockingOn)
 }
 
 export function promiseInterrupt<R, E, A>(
@@ -236,11 +223,11 @@ export function promiseInterrupt<R, E, A>(
   return maybeAsyncInterrupt<R, E, A>(
     (cb) => left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten)),
     blockingOn
-  );
+  )
 }
 
 function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
   return async((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(die, resolve));
-  });
+    promise().then(flow(pure, resolve)).catch(flow(die, resolve))
+  })
 }

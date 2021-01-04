@@ -5,16 +5,16 @@
  * representing an empty value, and _Some_ representing the original datatype
  */
 
-import type { Either } from "./Either";
-import type { Eq } from "./Eq";
-import type { MorphismN, Predicate, Refinement } from "./Function";
-import type { Show } from "./Show";
+import type { Either } from './Either'
+import type { Eq } from './Eq'
+import type { MorphismN, Predicate, Refinement } from './Function'
+import type { Show } from './Show'
 
-import * as HKT from "../HKT";
-import * as P from "../typeclass";
-import { makeEq } from "./Eq/core";
-import { _bind, flow, identity, pipe, tuple as mkTuple } from "./Function";
-import { makeShow } from "./Show/core";
+import * as HKT from '../HKT'
+import * as P from '../typeclass'
+import { makeEq } from './Eq/core'
+import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
+import { makeShow } from './Show/core'
 
 /*
  * -------------------------------------------
@@ -23,27 +23,27 @@ import { makeShow } from "./Show/core";
  */
 
 export interface None {
-  readonly _tag: "None";
+  readonly _tag: 'None'
 }
 
 export interface Some<A> {
-  readonly _tag: "Some";
-  readonly value: A;
+  readonly _tag: 'Some'
+  readonly value: A
 }
 
-export type Option<A> = None | Some<A>;
+export type Option<A> = None | Some<A>
 
-export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : never;
+export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : never
 
-export const OptionURI = "Option";
+export const OptionURI = 'Option'
 
-export type OptionURI = typeof OptionURI;
+export type OptionURI = typeof OptionURI
 
-export type V = HKT.Auto;
+export type V = HKT.Auto
 
-declare module "../HKT" {
+declare module '../HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [OptionURI]: Option<A>;
+    readonly [OptionURI]: Option<A>
   }
 }
 
@@ -65,8 +65,8 @@ declare module "../HKT" {
  */
 export function none<A = never>(): Option<A> {
   return {
-    _tag: "None"
-  };
+    _tag: 'None'
+  }
 }
 
 /**
@@ -81,9 +81,9 @@ export function none<A = never>(): Option<A> {
  */
 export function some<A>(a: A): Option<A> {
   return {
-    _tag: "Some",
+    _tag: 'Some',
     value: a
-  };
+  }
 }
 
 /**
@@ -98,13 +98,13 @@ export function some<A>(a: A): Option<A> {
  * @since 1.0.0
  */
 export function fromNullable<A>(a: A | null | undefined): Option<NonNullable<A>> {
-  return a == null ? none() : some(a as NonNullable<A>);
+  return a == null ? none() : some(a as NonNullable<A>)
 }
 
 export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
   f: (...args: A) => B | null | undefined
 ): (...args: A) => Option<NonNullable<B>> {
-  return (...args) => fromNullable(f(...args));
+  return (...args) => fromNullable(f(...args))
 }
 
 /**
@@ -119,9 +119,9 @@ export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
  */
 export function partial<A>(thunk: () => A): Option<A> {
   try {
-    return some(thunk());
+    return some(thunk())
   } catch (_) {
-    return none();
+    return none()
   }
 }
 
@@ -137,10 +137,8 @@ export function partial<A>(thunk: () => A): Option<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function partialK<A extends ReadonlyArray<unknown>, B>(
-  f: MorphismN<A, B>
-): (...args: A) => Option<B> {
-  return (...a) => partial(() => f(...a));
+export function partialK<A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B>): (...args: A) => Option<B> {
+  return (...a) => partial(() => f(...a))
 }
 
 /**
@@ -154,10 +152,10 @@ export function partialK<A extends ReadonlyArray<unknown>, B>(
  * @category Constructors
  * @since 1.0.0
  */
-export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>;
-export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>;
+export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>
+export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
-  return predicate(a) ? none() : some(a);
+  return predicate(a) ? none() : some(a)
 }
 
 /**
@@ -171,10 +169,10 @@ export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function fromPredicate<A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<A>;
-export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A>;
+export function fromPredicate<A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<A>
+export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A>
 export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
-  return (a) => fromPredicate_(a, predicate);
+  return (a) => fromPredicate_(a, predicate)
 }
 
 /**
@@ -188,7 +186,7 @@ export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
  * @since 1.0.0
  */
 export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
-  return ma._tag === "Left" ? none() : some(ma.right);
+  return ma._tag === 'Left' ? none() : some(ma.right)
 }
 
 /*
@@ -198,20 +196,15 @@ export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
  */
 
 export function isNone<A>(fa: Option<A>): fa is None {
-  return fa._tag === "None";
+  return fa._tag === 'None'
 }
 
 export function isSome<A>(fa: Option<A>): fa is Some<A> {
-  return fa._tag === "Some";
+  return fa._tag === 'Some'
 }
 
 export function isOption(u: unknown): u is Option<unknown> {
-  return (
-    typeof u === "object" &&
-    u != null &&
-    "_tag" in u &&
-    (u["_tag"] === "Some" || u["_tag"] === "None")
-  );
+  return typeof u === 'object' && u != null && '_tag' in u && (u['_tag'] === 'Some' || u['_tag'] === 'None')
 }
 
 /*
@@ -233,7 +226,7 @@ export function isOption(u: unknown): u is Option<unknown> {
  * @since 1.0.0
  */
 export function fold_<A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A) => C): B | C {
-  return isNone(fa) ? onNothing() : onJust(fa.value);
+  return isNone(fa) ? onNothing() : onJust(fa.value)
 }
 
 /**
@@ -249,7 +242,7 @@ export function fold_<A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A)
  * @since 1.0.0
  */
 export function fold<A, B, C>(onNothing: () => B, onJust: (a: A) => C): (fa: Option<A>) => B | C {
-  return (fa) => fold_(fa, onNothing, onJust);
+  return (fa) => fold_(fa, onNothing, onJust)
 }
 
 /**
@@ -263,7 +256,7 @@ export function fold<A, B, C>(onNothing: () => B, onJust: (a: A) => C): (fa: Opt
  * @since 1.0.0
  */
 export function toNullable<A>(fa: Option<A>): A | null {
-  return isNone(fa) ? null : fa.value;
+  return isNone(fa) ? null : fa.value
 }
 
 /**
@@ -277,7 +270,7 @@ export function toNullable<A>(fa: Option<A>): A | null {
  * @since 1.0.0
  */
 export function toUndefined<A>(fa: Option<A>): A | undefined {
-  return isNone(fa) ? undefined : fa.value;
+  return isNone(fa) ? undefined : fa.value
 }
 
 /**
@@ -291,7 +284,7 @@ export function toUndefined<A>(fa: Option<A>): A | undefined {
  * @since 1.0.0
  */
 export function getOrElse_<A, B>(fa: Option<A>, onNothing: () => B): A | B {
-  return isNone(fa) ? onNothing() : fa.value;
+  return isNone(fa) ? onNothing() : fa.value
 }
 
 /**
@@ -305,7 +298,7 @@ export function getOrElse_<A, B>(fa: Option<A>, onNothing: () => B): A | B {
  * @since 1.0.0
  */
 export function getOrElse<B>(onNothing: () => B): <A>(fa: Option<A>) => B | A {
-  return (fa) => getOrElse_(fa, onNothing);
+  return (fa) => getOrElse_(fa, onNothing)
 }
 
 /*
@@ -324,7 +317,7 @@ export function getOrElse<B>(onNothing: () => B): <A>(fa: Option<A>) => B | A {
  * @since 1.0.0
  */
 export function alt_<A>(fa: Option<A>, that: () => Option<A>): Option<A> {
-  return isNone(fa) ? that() : fa;
+  return isNone(fa) ? that() : fa
 }
 
 /**
@@ -338,7 +331,7 @@ export function alt_<A>(fa: Option<A>, that: () => Option<A>): Option<A> {
  * @since 1.0.0
  */
 export function alt<A>(that: () => Option<A>): (fa: Option<A>) => Option<A> {
-  return (fa) => alt_(fa, that);
+  return (fa) => alt_(fa, that)
 }
 
 /*
@@ -357,7 +350,7 @@ export function alt<A>(that: () => Option<A>): (fa: Option<A>) => Option<A> {
  * @category Applicative
  * @since 1.0.0
  */
-export const pure: <A>(a: A) => Option<A> = some;
+export const pure: <A>(a: A) => Option<A> = some
 
 /*
  * -------------------------------------------
@@ -376,7 +369,7 @@ export const pure: <A>(a: A) => Option<A> = some;
  * @since 1.0.0
  */
 export function product_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
-  return map2_(fa, fb, mkTuple);
+  return map2_(fa, fb, mkTuple)
 }
 
 /**
@@ -390,7 +383,7 @@ export function product_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A
  * @since 1.0.0
  */
 export function product<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A, B]> {
-  return (fa) => product_(fa, fb);
+  return (fa) => product_(fa, fb)
 }
 
 /**
@@ -404,7 +397,7 @@ export function product<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
-  return isNone(fab) ? none() : isNone(fa) ? none() : some(fab.value(fa.value));
+  return isNone(fab) ? none() : isNone(fa) ? none() : some(fab.value(fa.value))
 }
 
 /**
@@ -418,29 +411,29 @@ export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
  * @since 1.0.0
  */
 export function ap<A>(fa: Option<A>): <B>(fab: Option<(a: A) => B>) => Option<B> {
-  return (fab) => ap_(fab, fa);
+  return (fab) => ap_(fab, fa)
 }
 
 export function apFirst_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
   return ap_(
     map_(fa, (a) => () => a),
     fb
-  );
+  )
 }
 
 export function apFirst<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
-  return (fa) => apFirst_(fa, fb);
+  return (fa) => apFirst_(fa, fb)
 }
 
 export function apSecond_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
   return ap_(
     map_(fa, () => (b: B) => b),
     fb
-  );
+  )
 }
 
 export function apSecond<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
-  return (fa) => apSecond_(fa, fb);
+  return (fa) => apSecond_(fa, fb)
 }
 
 /**
@@ -457,7 +450,7 @@ export function map2_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => 
   return ap_(
     map_(fa, (a) => (b: B) => f(a, b)),
     fb
-  );
+  )
 }
 
 /**
@@ -472,7 +465,7 @@ export function map2_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => 
  */
 
 export function map2<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Option<A>) => Option<C> {
-  return (fa) => map2_(fa, fb, f);
+  return (fa) => map2_(fa, fb, f)
 }
 
 /**
@@ -485,10 +478,8 @@ export function map2<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Option<
  * @category Apply
  * @since 1.0.0
  */
-export function liftA2<A, B, C>(
-  f: (a: A) => (b: B) => C
-): (fa: Option<A>) => (fb: Option<B>) => Option<C> {
-  return (fa) => (fb) => (isNone(fa) ? none() : isNone(fb) ? none() : some(f(fa.value)(fb.value)));
+export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (fb: Option<B>) => Option<C> {
+  return (fa) => (fb) => (isNone(fa) ? none() : isNone(fb) ? none() : some(f(fa.value)(fb.value)))
 }
 
 /**
@@ -511,13 +502,13 @@ export function apS<N extends string, A, B>(
   fa: Option<A>
 ) => Option<
   {
-    [K in keyof A | N]: K extends keyof A ? A[K] : B;
+    [K in keyof A | N]: K extends keyof A ? A[K] : B
   }
 > {
   return flow(
     map((a) => (b: B) => _bind(a, name, b)),
     ap(fb)
-  );
+  )
 }
 
 /*
@@ -527,11 +518,11 @@ export function apS<N extends string, A, B>(
  */
 
 export function separate<A, B>(fa: Option<Either<A, B>>): readonly [Option<A>, Option<B>] {
-  const o = map_(fa, (e) => [getLeft(e), getRight(e)] as const);
-  return isNone(o) ? [none(), none()] : o.value;
+  const o = map_(fa, (e) => [getLeft(e), getRight(e)] as const)
+  return isNone(o) ? [none(), none()] : o.value
 }
 
-export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten;
+export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten
 
 /*
  * -------------------------------------------
@@ -540,9 +531,7 @@ export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten;
  */
 
 export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
-  return makeEq((x, y) =>
-    x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)
-  );
+  return makeEq((x, y) => (x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)))
 }
 
 /*
@@ -556,7 +545,7 @@ export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
  * ```
  */
 export function extend_<A, B>(wa: Option<A>, f: (wa: Option<A>) => B): Option<B> {
-  return isNone(wa) ? none() : some(f(wa));
+  return isNone(wa) ? none() : some(f(wa))
 }
 
 /**
@@ -565,7 +554,7 @@ export function extend_<A, B>(wa: Option<A>, f: (wa: Option<A>) => B): Option<B>
  * ```
  */
 export function extend<A, B>(f: (wa: Option<A>) => B): (wa: Option<A>) => Option<B> {
-  return (wa) => extend_(wa, f);
+  return (wa) => extend_(wa, f)
 }
 
 /**
@@ -574,7 +563,7 @@ export function extend<A, B>(f: (wa: Option<A>) => B): (wa: Option<A>) => Option
  * ```
  */
 export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
-  return extend_(wa, identity);
+  return extend_(wa, identity)
 }
 
 /*
@@ -583,56 +572,38 @@ export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
  * -------------------------------------------
  */
 
-export function filter_<A, B extends A>(fa: Option<A>, refinement: Refinement<A, B>): Option<B>;
-export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A>;
+export function filter_<A, B extends A>(fa: Option<A>, refinement: Refinement<A, B>): Option<B>
+export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A>
 export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A> {
-  return isNone(fa) ? none() : predicate(fa.value) ? fa : none();
+  return isNone(fa) ? none() : predicate(fa.value) ? fa : none()
 }
 
-export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Option<A>) => Option<B>;
-export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A>;
+export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Option<A>) => Option<B>
+export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A>
 export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A> {
-  return (fa) => filter_(fa, predicate);
+  return (fa) => filter_(fa, predicate)
 }
 
-export function partition_<A, B extends A>(
-  fa: Option<A>,
-  refinement: Refinement<A, B>
-): readonly [Option<A>, Option<B>];
-export function partition_<A>(
-  fa: Option<A>,
-  predicate: Predicate<A>
-): readonly [Option<A>, Option<A>];
-export function partition_<A>(
-  fa: Option<A>,
-  predicate: Predicate<A>
-): readonly [Option<A>, Option<A>] {
-  return [filter_(fa, (a) => !predicate(a)), filter_(fa, predicate)];
+export function partition_<A, B extends A>(fa: Option<A>, refinement: Refinement<A, B>): readonly [Option<A>, Option<B>]
+export function partition_<A>(fa: Option<A>, predicate: Predicate<A>): readonly [Option<A>, Option<A>]
+export function partition_<A>(fa: Option<A>, predicate: Predicate<A>): readonly [Option<A>, Option<A>] {
+  return [filter_(fa, (a) => !predicate(a)), filter_(fa, predicate)]
 }
 
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
-): (fa: Option<A>) => readonly [Option<A>, Option<B>];
-export function partition<A>(
-  predicate: Predicate<A>
-): (fa: Option<A>) => readonly [Option<A>, Option<A>];
-export function partition<A>(
-  predicate: Predicate<A>
-): (fa: Option<A>) => readonly [Option<A>, Option<A>] {
-  return (fa) => partition_(fa, predicate);
+): (fa: Option<A>) => readonly [Option<A>, Option<B>]
+export function partition<A>(predicate: Predicate<A>): (fa: Option<A>) => readonly [Option<A>, Option<A>]
+export function partition<A>(predicate: Predicate<A>): (fa: Option<A>) => readonly [Option<A>, Option<A>] {
+  return (fa) => partition_(fa, predicate)
 }
 
-export function partitionMap_<A, B, C>(
-  fa: Option<A>,
-  f: (a: A) => Either<B, C>
-): readonly [Option<B>, Option<C>] {
-  return separate(map_(fa, f));
+export function partitionMap_<A, B, C>(fa: Option<A>, f: (a: A) => Either<B, C>): readonly [Option<B>, Option<C>] {
+  return separate(map_(fa, f))
 }
 
-export function partitionMap<A, B, C>(
-  f: (a: A) => Either<B, C>
-): (fa: Option<A>) => readonly [Option<B>, Option<C>] {
-  return (fa) => partitionMap_(fa, f);
+export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>) => readonly [Option<B>, Option<C>] {
+  return (fa) => partitionMap_(fa, f)
 }
 
 /**
@@ -641,7 +612,7 @@ export function partitionMap<A, B, C>(
  * ```
  */
 export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
-  return isNone(fa) ? none() : f(fa.value);
+  return isNone(fa) ? none() : f(fa.value)
 }
 
 /**
@@ -650,7 +621,7 @@ export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<
  * ```
  */
 export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Option<B> {
-  return (fa) => filterMap_(fa, f);
+  return (fa) => filterMap_(fa, f)
 }
 
 /**
@@ -659,7 +630,7 @@ export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Opti
  * ```
  */
 export function foldLeft_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
-  return isNone(fa) ? b : f(b, fa.value);
+  return isNone(fa) ? b : f(b, fa.value)
 }
 
 /**
@@ -668,7 +639,7 @@ export function foldLeft_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
  * ```
  */
 export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
-  return (fa) => foldLeft_(fa, b, f);
+  return (fa) => foldLeft_(fa, b, f)
 }
 
 /**
@@ -677,7 +648,7 @@ export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B
  * ```
  */
 export function foldRight_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
-  return isNone(fa) ? b : f(fa.value, b);
+  return isNone(fa) ? b : f(fa.value, b)
 }
 
 /**
@@ -686,7 +657,7 @@ export function foldRight_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
  * ```
  */
 export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
-  return (fa) => foldRight_(fa, b, f);
+  return (fa) => foldRight_(fa, b, f)
 }
 
 /**
@@ -695,7 +666,7 @@ export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => 
  * ```
  */
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) => M {
-  return (fa, f) => (isNone(fa) ? M.nat : f(fa.value));
+  return (fa, f) => (isNone(fa) ? M.nat : f(fa.value))
 }
 
 /**
@@ -704,7 +675,7 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) 
  * ```
  */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A>) => M {
-  return (f) => (fa) => foldMap_(M)(fa, f);
+  return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
 /*
@@ -724,7 +695,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A
  * @since 1.0.0
  */
 export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
-  return isNone(fa) ? fa : some(f(fa.value));
+  return isNone(fa) ? fa : some(f(fa.value))
 }
 
 /**
@@ -738,7 +709,7 @@ export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
  * @since 1.0.0
  */
 export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
-  return (fa) => map_(fa, f);
+  return (fa) => map_(fa, f)
 }
 
 /*
@@ -757,7 +728,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  * @since 1.0.0
  */
 export function flatMap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
-  return isNone(ma) ? ma : f(ma.value);
+  return isNone(ma) ? ma : f(ma.value)
 }
 
 /**
@@ -771,7 +742,7 @@ export function flatMap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B>
  * @since 1.0.0
  */
 export function flatMap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
-  return (ma) => flatMap_(ma, f);
+  return (ma) => flatMap_(ma, f)
 }
 
 /**
@@ -791,7 +762,7 @@ export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
       f(a),
       map(() => a)
     )
-  );
+  )
 }
 
 /**
@@ -806,7 +777,7 @@ export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
  * @since 1.0.0
  */
 export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> {
-  return (ma) => tap_(ma, f);
+  return (ma) => tap_(ma, f)
 }
 
 /**
@@ -820,7 +791,7 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
  * @since 1.0.0
  */
 export function flatten<A>(mma: Option<Option<A>>): Option<A> {
-  return flatMap_(mma, identity);
+  return flatMap_(mma, identity)
 }
 
 /*
@@ -833,7 +804,7 @@ export function getApplyMonoid<A>(M: P.Monoid<A>): P.Monoid<Option<A>> {
   return {
     ...getApplySemigroup(M),
     nat: some(M.nat)
-  };
+  }
 }
 
 export function getFirstMonoid<A = never>(): P.Monoid<Option<A>> {
@@ -841,7 +812,7 @@ export function getFirstMonoid<A = never>(): P.Monoid<Option<A>> {
     combine_: (x, y) => (isNone(y) ? x : y),
     combine: (y) => (x) => (isNone(y) ? x : y),
     nat: none()
-  };
+  }
 }
 
 export function getLastMonoid<A = never>(): P.Monoid<Option<A>> {
@@ -849,17 +820,16 @@ export function getLastMonoid<A = never>(): P.Monoid<Option<A>> {
     combine_: (x, y) => (isNone(x) ? y : x),
     combine: (y) => (x) => (isNone(x) ? y : x),
     nat: none()
-  };
+  }
 }
 
 export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Option<A>> {
-  const combine_ = (x: Option<A>, y: Option<A>) =>
-    isNone(x) ? y : isNone(y) ? x : some(S.combine_(x.value, y.value));
+  const combine_ = (x: Option<A>, y: Option<A>) => (isNone(x) ? y : isNone(y) ? x : some(S.combine_(x.value, y.value)))
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y),
     nat: none()
-  };
+  }
 }
 
 /*
@@ -870,11 +840,11 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Option<A>> {
 
 export function getApplySemigroup<A>(S: P.Semigroup<A>): P.Semigroup<Option<A>> {
   const combine_ = (x: Option<A>, y: Option<A>) =>
-    isSome(x) && isSome(y) ? some(S.combine_(x.value, y.value)) : none();
+    isSome(x) && isSome(y) ? some(S.combine_(x.value, y.value)) : none()
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y)
-  };
+  }
 }
 
 /*
@@ -884,7 +854,7 @@ export function getApplySemigroup<A>(S: P.Semigroup<A>): P.Semigroup<Option<A>> 
  */
 
 export function getShow<A>(S: Show<A>): Show<Option<A>> {
-  return makeShow((a) => (isNone(a) ? "None" : `Some(${S.show(a.value)})`));
+  return makeShow((a) => (isNone(a) ? 'None' : `Some(${S.show(a.value)})`))
 }
 
 /*
@@ -904,7 +874,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<[OptionURI], V> = (G) => (ta, f) =>
-  isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some));
+  isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some))
 
 /**
  * ```haskell
@@ -916,7 +886,7 @@ export const traverse_: P.TraverseFn_<[OptionURI], V> = (G) => (ta, f) =>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[OptionURI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f);
+export const traverse: P.TraverseFn<[OptionURI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  * ```haskell
@@ -929,7 +899,7 @@ export const traverse: P.TraverseFn<[OptionURI], V> = (G) => (f) => (ta) => trav
  * @since 1.0.0
  */
 export const sequence: P.SequenceFn<[OptionURI], V> = (G) => (fa) =>
-  isNone(fa) ? G.map_(G.unit(), () => none()) : pipe(fa.value, G.map(some));
+  isNone(fa) ? G.map_(G.unit(), () => none()) : pipe(fa.value, G.map(some))
 
 /*
  * -------------------------------------------
@@ -938,7 +908,7 @@ export const sequence: P.SequenceFn<[OptionURI], V> = (G) => (fa) =>
  */
 
 export function unit(): Option<void> {
-  return some(undefined);
+  return some(undefined)
 }
 
 /*
@@ -948,9 +918,9 @@ export function unit(): Option<void> {
  */
 
 export const wither_: P.WitherFn_<[OptionURI], V> = (A) => (wa, f) =>
-  isNone(wa) ? A.map_(A.unit(), () => none()) : f(wa.value);
+  isNone(wa) ? A.map_(A.unit(), () => none()) : f(wa.value)
 
-export const wither: P.WitherFn<[OptionURI], V> = (A) => (f) => (wa) => wither_(A)(wa, f);
+export const wither: P.WitherFn<[OptionURI], V> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
 export const wilt_: P.WiltFn_<[OptionURI], V> = (A) => (wa, f) => {
   const o = map_(
@@ -959,11 +929,11 @@ export const wilt_: P.WiltFn_<[OptionURI], V> = (A) => (wa, f) => {
       f,
       A.map((e) => mkTuple(getLeft(e), getRight(e)))
     )
-  );
-  return isNone(o) ? A.pure(mkTuple(none(), none())) : o.value;
-};
+  )
+  return isNone(o) ? A.pure(mkTuple(none(), none())) : o.value
+}
 
-export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa, f);
+export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa, f)
 
 /*
  * -------------------------------------------
@@ -979,7 +949,7 @@ export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa,
  * @since 1.0.0
  */
 export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
-  return isNone(fa) ? none() : fromNullable(f(fa.value));
+  return isNone(fa) ? none() : fromNullable(f(fa.value))
 }
 
 /**
@@ -989,10 +959,8 @@ export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | und
  * @category Combinators
  * @since 1.0.0
  */
-export function chainNullableK<A, B>(
-  f: (a: A) => B | null | undefined
-): (fa: Option<A>) => Option<B> {
-  return (fa) => chainNullableK_(fa, f);
+export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
+  return (fa) => chainNullableK_(fa, f)
 }
 
 /**
@@ -1003,7 +971,7 @@ export function chainNullableK<A, B>(
  * @since 1.0.0
  */
 export function orElse_<A, B>(fa: Option<A>, onNothing: () => Option<B>): Option<A | B> {
-  return isNone(fa) ? onNothing() : fa;
+  return isNone(fa) ? onNothing() : fa
 }
 
 /**
@@ -1014,7 +982,7 @@ export function orElse_<A, B>(fa: Option<A>, onNothing: () => Option<B>): Option
  * @since 1.0.0
  */
 export function orElse<B>(onNothing: () => Option<B>): <A>(fa: Option<A>) => Option<B | A> {
-  return (fa) => orElse_(fa, onNothing);
+  return (fa) => orElse_(fa, onNothing)
 }
 
 /**
@@ -1025,7 +993,7 @@ export function orElse<B>(onNothing: () => Option<B>): <A>(fa: Option<A>) => Opt
  * @since 1.0.0
  */
 export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
-  return fea._tag === "Right" ? none() : some(fea.left);
+  return fea._tag === 'Right' ? none() : some(fea.left)
 }
 
 /**
@@ -1036,7 +1004,7 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
  * @since 1.0.0
  */
 export function getRight<E, A>(fea: Either<E, A>): Option<A> {
-  return fea._tag === "Left" ? none() : some(fea.right);
+  return fea._tag === 'Left' ? none() : some(fea.right)
 }
 
 /*
@@ -1050,13 +1018,13 @@ export const Functor: P.Functor<[OptionURI], V> = HKT.instance({
   imap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: Option<A>) => map_(fa, f),
   map,
   map_
-});
+})
 
 export const Alt: P.Alt<[OptionURI], V> = HKT.instance({
   ...Functor,
   alt_,
   alt
-});
+})
 
 export const Apply: P.Apply<[OptionURI], V> = HKT.instance({
   ...Functor,
@@ -1066,19 +1034,19 @@ export const Apply: P.Apply<[OptionURI], V> = HKT.instance({
   map2,
   product_,
   product
-});
+})
 
-export const struct = P.structF(Apply);
+export const struct = P.structF(Apply)
 
-export const tupleN = P.tupleF(Apply);
+export const tupleN = P.tupleF(Apply)
 
-export const mapN = P.mapNF(Apply);
+export const mapN = P.mapNF(Apply)
 
 export const Applicative: P.Applicative<[OptionURI], V> = HKT.instance({
   ...Apply,
   unit,
   pure
-});
+})
 
 export const Monad: P.Monad<[OptionURI], V> = HKT.instance({
   ...Applicative,
@@ -1086,12 +1054,12 @@ export const Monad: P.Monad<[OptionURI], V> = HKT.instance({
   flatMap,
   unit,
   flatten
-});
+})
 
-export const Do = P.deriveDo(Monad);
+export const Do = P.deriveDo(Monad)
 
-const of: Option<{}> = some({});
-export { of as do };
+const of: Option<{}> = some({})
+export { of as do }
 
 /**
  * ```haskell
@@ -1106,7 +1074,7 @@ export { of as do };
  * @category Do
  * @since 1.0.0
  */
-export const bindS = Do.bindS;
+export const bindS = Do.bindS
 
 /**
  * ```haskell
@@ -1121,7 +1089,7 @@ export const bindS = Do.bindS;
  * @category Do
  * @since 1.0.0
  */
-export const letS = Do.letS;
+export const letS = Do.letS
 
 /**
  * ```haskell
@@ -1133,13 +1101,13 @@ export const letS = Do.letS;
  * @category Do
  * @since 1.0.0
  */
-export const bindToS = Do.bindToS;
+export const bindToS = Do.bindToS
 
 export const Extend: P.Extend<[OptionURI], V> = HKT.instance({
   ...Functor,
   extend_,
   extend
-});
+})
 
 export const Filterable: P.Filterable<[OptionURI], V> = HKT.instance({
   filterMap_,
@@ -1150,7 +1118,7 @@ export const Filterable: P.Filterable<[OptionURI], V> = HKT.instance({
   filterMap,
   partition,
   partitionMap
-});
+})
 
 export const Foldable: P.Foldable<[OptionURI], V> = HKT.instance({
   foldLeft_,
@@ -1159,18 +1127,18 @@ export const Foldable: P.Foldable<[OptionURI], V> = HKT.instance({
   foldLeft,
   foldRight,
   foldMap
-});
+})
 
 export const Traversable: P.Traversable<[OptionURI], V> = HKT.instance({
   ...Functor,
   traverse_,
   traverse,
   sequence
-});
+})
 
 export const Witherable: P.Witherable<[OptionURI], V> = HKT.instance({
   wilt_,
   wither_,
   wilt,
   wither
-});
+})

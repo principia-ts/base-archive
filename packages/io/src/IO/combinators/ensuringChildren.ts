@@ -1,12 +1,12 @@
-import type { RuntimeFiber } from "../../Fiber";
-import type { IO } from "../core";
+import type { RuntimeFiber } from '../../Fiber'
+import type { IO } from '../core'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import * as Supervisor from "../../Supervisor";
-import { flatMap } from "../core";
-import { ensuring } from "./ensuring";
-import { supervised } from "./supervised";
+import * as Supervisor from '../../Supervisor'
+import { flatMap } from '../core'
+import { ensuring } from './ensuring'
+import { supervised } from './supervised'
 
 /**
  * Acts on the children of this fiber, guaranteeing the specified callback
@@ -33,7 +33,7 @@ export function ensuringChildren_<R, E, A, R1>(
         )
       )
     )
-  );
+  )
 }
 
 /**
@@ -46,5 +46,5 @@ export function ensuringChildren_<R, E, A, R1>(
 export function ensuringChildren<R1>(
   children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => IO<R1, never, any>
 ): <R, E, A>(io: IO<R, E, A>) => IO<R & R1, E, A> {
-  return (io) => ensuringChildren_(io, children);
+  return (io) => ensuringChildren_(io, children)
 }

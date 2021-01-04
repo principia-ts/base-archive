@@ -1,6 +1,6 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { flatMap_, pure } from "../core";
+import { flatMap_, pure } from '../core'
 
 /**
  * ```haskell
@@ -13,7 +13,7 @@ import { flatMap_, pure } from "../core";
  * @since 1.0.0
  */
 export function repeatN_<R, E, A>(ef: IO<R, E, A>, n: number): IO<R, E, A> {
-  return flatMap_(ef, (a) => (n <= 0 ? pure(a) : repeatN_(ef, n - 1)));
+  return flatMap_(ef, (a) => (n <= 0 ? pure(a) : repeatN_(ef, n - 1)))
 }
 
 /**
@@ -27,5 +27,5 @@ export function repeatN_<R, E, A>(ef: IO<R, E, A>, n: number): IO<R, E, A> {
  * @since 1.0.0
  */
 export function repeatN(n: number): <R, E, A>(ef: IO<R, E, A>) => IO<R, E, A> {
-  return (ef) => repeatN_(ef, n);
+  return (ef) => repeatN_(ef, n)
 }

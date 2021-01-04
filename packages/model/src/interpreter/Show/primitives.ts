@@ -1,37 +1,28 @@
-import type * as Alg from "../../algebra";
+import type * as Alg from '../../algebra'
 
-import { absurd, pipe } from "@principia/base/data/Function";
-import * as S from "@principia/base/data/Show";
+import { absurd, pipe } from '@principia/base/data/Function'
+import * as S from '@principia/base/data/Show'
 
-import { implementInterpreter } from "../../HKT";
-import { applyShowConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { applyShowConfig } from './HKT'
 
 export const PrimitivesShow = implementInterpreter<S.URI, Alg.PrimitivesURI>()((_) => ({
-  string: (config) => (env) =>
-    applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
-  number: (config) => (env) =>
-    applyShowConfig(config?.config)(S.named_(S.number, config?.name), env, {}),
-  boolean: (config) => (env) =>
-    applyShowConfig(config?.config)(S.named_(S.boolean, config?.name), env, {}),
+  string: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
+  number: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.number, config?.name), env, {}),
+  boolean: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.boolean, config?.name), env, {}),
   literal: (..._) => (config) => (env) =>
     applyShowConfig(config?.config)(
       S.named_(
         S.makeShow((a) =>
-          typeof a === "number"
-            ? S.number.show(a)
-            : typeof a === "string"
-            ? S.string.show(a)
-            : absurd(a as never)
+          typeof a === 'number' ? S.number.show(a) : typeof a === 'string' ? S.string.show(a) : absurd(a as never)
         ),
         config?.name
       ),
       env,
       {}
     ),
-  stringLiteral: (value, config) => (env) =>
-    applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
-  numberLiteral: (value, config) => (env) =>
-    applyShowConfig(config?.config)(S.named_(S.number, config?.name), env, {}),
+  stringLiteral: (value, config) => (env) => applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
+  numberLiteral: (value, config) => (env) => applyShowConfig(config?.config)(S.named_(S.number, config?.name), env, {}),
   bigint: (config) => (env) =>
     applyShowConfig(config?.config)(
       S.named_(
@@ -57,15 +48,9 @@ export const PrimitivesShow = implementInterpreter<S.URI, Alg.PrimitivesURI>()((
       {}
     ),
   array: (item, config) => (env) =>
-    pipe(item(env), (show) =>
-      applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)
-    ),
+    pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)),
   nonEmptyArray: (item, config) => (env) =>
-    pipe(item(env), (show) =>
-      applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)
-    ),
-  keyof: (keys, config) => (env) =>
-    applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
-  UUID: (config) => (env) =>
-    applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {})
-}));
+    pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)),
+  keyof: (keys, config) => (env) => applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
+  UUID: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {})
+}))

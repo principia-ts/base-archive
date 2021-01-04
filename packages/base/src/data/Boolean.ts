@@ -1,61 +1,61 @@
-import type { Predicate } from "./Function";
+import type { Predicate } from './Function'
 
 export function invert(b: boolean): boolean {
-  return !b;
+  return !b
 }
 
 export function and_(x: boolean, y: boolean): boolean {
-  return x && y;
+  return x && y
 }
 
 export function and(y: boolean): (x: boolean) => boolean {
-  return (x) => x && y;
+  return (x) => x && y
 }
 
 export function or_(x: boolean, y: boolean): boolean {
-  return x || y;
+  return x || y
 }
 
 export function or(y: boolean): (x: boolean) => boolean {
-  return (x) => x || y;
+  return (x) => x || y
 }
 
 export function xor_(x: boolean, y: boolean): boolean {
-  return (x && !y) || (!x && y);
+  return (x && !y) || (!x && y)
 }
 
 export function xor(y: boolean): (x: boolean) => boolean {
-  return (x) => (x && !y) || (!x && y);
+  return (x) => (x && !y) || (!x && y)
 }
 
 export function allPass_<A>(a: A, ps: ReadonlyArray<Predicate<A>>): boolean {
-  return ps.every((f) => f(a));
+  return ps.every((f) => f(a))
 }
 
 export function allPass<A>(ps: ReadonlyArray<Predicate<A>>): (a: A) => boolean {
-  return (a) => ps.every((f) => f(a));
+  return (a) => ps.every((f) => f(a))
 }
 
 export function anyPass_<A>(a: A, ps: ReadonlyArray<Predicate<A>>): boolean {
-  return ps.some((f) => f(a));
+  return ps.some((f) => f(a))
 }
 
 export function anyPass<A>(ps: ReadonlyArray<Predicate<A>>): (a: A) => boolean {
-  return (a) => ps.some((f) => f(a));
+  return (a) => ps.some((f) => f(a))
 }
 
 export function andPass_<A>(f: Predicate<A>, g: Predicate<A>): Predicate<A> {
-  return (a) => and_(f(a), g(a));
+  return (a) => and_(f(a), g(a))
 }
 
 export function andPass<A>(g: Predicate<A>): (f: Predicate<A>) => Predicate<A> {
-  return (f) => andPass_(f, g);
+  return (f) => andPass_(f, g)
 }
 
 export function orPass_<A>(f: Predicate<A>, g: Predicate<A>): Predicate<A> {
-  return (a) => or_(f(a), g(a));
+  return (a) => or_(f(a), g(a))
 }
 
 export function orPass<A>(g: Predicate<A>): (f: Predicate<A>) => Predicate<A> {
-  return (f) => orPass_(f, g);
+  return (f) => orPass_(f, g)
 }

@@ -1,15 +1,16 @@
-import type { AsyncInstruction } from "./Async";
-import type * as I from "./IO/core";
-import type * as HKT from "@principia/base/HKT";
-import type { Stack } from "@principia/base/util/support/Stack";
+import type { AsyncInstruction } from './Async'
+import type * as I from './IO/core'
+import type * as HKT from '@principia/base/HKT'
+import type { Stack } from '@principia/base/util/support/Stack'
 
-import * as E from "@principia/base/data/Either";
-import { identity, tuple } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
-import { AtomicReference } from "@principia/base/util/support/AtomicReference";
-import { makeStack } from "@principia/base/util/support/Stack";
+import * as E from '@principia/base/data/Either'
+import { identity, tuple } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
+import { AtomicReference } from '@principia/base/util/support/AtomicReference'
+import { MutableStack } from '@principia/base/util/support/MutableStack'
+import { makeStack } from '@principia/base/util/support/Stack'
 
-import { ExternalFailInstruction, IOInstructionTag } from "./IO/constants";
+import { ExternalFailInstruction, IOInstructionTag } from './IO/constants'
 
 /*
  * -------------------------------------------
@@ -17,20 +18,20 @@ import { ExternalFailInstruction, IOInstructionTag } from "./IO/constants";
  * -------------------------------------------
  */
 
-export const URI = "SIO";
+export const URI = 'SIO'
 
-export type URI = typeof URI;
+export type URI = typeof URI
 
-export type V = HKT.V<"S", "_"> & HKT.V<"R", "-"> & HKT.V<"E", "+">;
+export type V = HKT.V<'S', '_'> & HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
-declare module "@principia/base/HKT" {
+declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: SIO<S, S, R, E, A>;
+    readonly [URI]: SIO<S, S, R, E, A>
   }
 }
 
-export const _SI = "_SI";
-export type _SI = typeof _SI;
+export const _SI = '_SI'
+export type _SI = typeof _SI
 
 /**
  * `SIO<S1, S2, R, E, A>` is a purely functional description of a synchronous computation
@@ -45,96 +46,96 @@ export type _SI = typeof _SI;
  * @since 1.0.0
  */
 export abstract class SIO<S1, S2, R, E, A> {
-  readonly _tag = IOInstructionTag.Integration;
-  readonly _asyncTag = "SIO";
+  readonly _tag      = IOInstructionTag.Integration
+  readonly _asyncTag = 'SIO'
 
-  readonly _S1!: (_: S1) => void;
-  readonly _S2!: () => S2;
+  readonly _S1!: (_: S1) => void
+  readonly _S2!: () => S2
 
-  readonly _U = "IO";
-  readonly _E!: () => E;
-  readonly _A!: () => A;
-  readonly _R!: (_: R) => void;
+  readonly _U = 'IO'
+  readonly _E!: () => E
+  readonly _A!: () => A
+  readonly _R!: (_: R) => void
 
   get [_SI](): SIOInstruction {
-    return this as any;
+    return this as any
   }
 
-  get ["_AI"](): AsyncInstruction {
-    return this as any;
+  get ['_AI'](): AsyncInstruction {
+    return this as any
   }
 
-  get ["_I"](): I.Instruction {
-    const si = SIOtoIO.get;
-    if (si._tag === "Some") {
-      return si.value(this as any)["_I"];
+  get ['_I'](): I.Instruction {
+    const si = SIOtoIO.get
+    if (si._tag === 'Some') {
+      return si.value(this as any)['_I']
     }
     return new ExternalFailInstruction({
-      _tag: "Die",
-      value: "SIO-IO integration not implemented. Did you import the integration?"
-    });
+      _tag: 'Die',
+      value: 'SIO-IO integration not implemented. Did you import the integration?'
+    })
   }
 }
 
 export enum SIOInstructionTag {
-  Succeed = "Succeed",
-  Total = "Total",
-  Partial = "Partial",
-  Suspend = "Suspend",
-  Fail = "Fail",
-  Modify = "Modify",
-  Chain = "Chain",
-  Fold = "Fold",
-  Asks = "Asks",
-  Give = "Give"
+  Succeed = 'Succeed',
+  Total = 'Total',
+  Partial = 'Partial',
+  Suspend = 'Suspend',
+  Fail = 'Fail',
+  Modify = 'Modify',
+  Chain = 'Chain',
+  Fold = 'Fold',
+  Asks = 'Asks',
+  Give = 'Give'
 }
 
 class SucceedInstruction<A> extends SIO<unknown, never, unknown, never, A> {
-  readonly _sio = SIOInstructionTag.Succeed;
+  readonly _sio = SIOInstructionTag.Succeed
   constructor(readonly value: A) {
-    super();
+    super()
   }
 }
 
 class TotalInstruction<A> extends SIO<unknown, never, unknown, never, A> {
-  readonly _sio = SIOInstructionTag.Total;
+  readonly _sio = SIOInstructionTag.Total
   constructor(readonly thunk: () => A) {
-    super();
+    super()
   }
 }
 
 class PartialInstruction<E, A> extends SIO<unknown, never, unknown, E, A> {
-  readonly _sio = SIOInstructionTag.Partial;
+  readonly _sio = SIOInstructionTag.Partial
   constructor(readonly thunk: () => A, readonly onThrow: (u: unknown) => E) {
-    super();
+    super()
   }
 }
 
 class SuspendInstruction<S1, S2, R, E, A> extends SIO<S1, S2, R, E, A> {
-  readonly _sio = SIOInstructionTag.Suspend;
+  readonly _sio = SIOInstructionTag.Suspend
   constructor(readonly factory: () => SIO<S1, S2, R, E, A>) {
-    super();
+    super()
   }
 }
 
 class FailInstruction<E> extends SIO<unknown, never, unknown, E, never> {
-  readonly _sio = SIOInstructionTag.Fail;
+  readonly _sio = SIOInstructionTag.Fail
   constructor(readonly e: E) {
-    super();
+    super()
   }
 }
 
 class ModifyInstruction<S1, S2, A> extends SIO<S1, S2, unknown, never, A> {
-  readonly _sio = SIOInstructionTag.Modify;
+  readonly _sio = SIOInstructionTag.Modify
   constructor(readonly run: (s1: S1) => readonly [S2, A]) {
-    super();
+    super()
   }
 }
 
 class ChainInstruction<S1, S2, R, E, A, S3, Q, D, B> extends SIO<S1, S3, Q & R, D | E, B> {
-  readonly _sio = SIOInstructionTag.Chain;
+  readonly _sio = SIOInstructionTag.Chain
   constructor(readonly sio: SIO<S1, S2, R, E, A>, readonly f: (a: A) => SIO<S2, S3, Q, D, B>) {
-    super();
+    super()
   }
 }
 class FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C> extends SIO<
@@ -144,27 +145,27 @@ class FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C> extends
   E1 | E2,
   B | C
 > {
-  readonly _sio = SIOInstructionTag.Fold;
+  readonly _sio = SIOInstructionTag.Fold
   constructor(
     readonly sio: SIO<S1, S2, R, E, A>,
     readonly onFailure: (e: E) => SIO<S5, S3, R1, E1, B>,
     readonly onSuccess: (a: A) => SIO<S2, S4, R2, E2, C>
   ) {
-    super();
+    super()
   }
 }
 
 class AsksInstruction<R0, S1, S2, R, E, A> extends SIO<S1, S2, R0 & R, E, A> {
-  readonly _sio = SIOInstructionTag.Asks;
+  readonly _sio = SIOInstructionTag.Asks
   constructor(readonly f: (r: R0) => SIO<S1, S2, R, E, A>) {
-    super();
+    super()
   }
 }
 
 class GiveInstruction<S1, S2, R, E, A> extends SIO<S1, S2, unknown, E, A> {
-  readonly _sio = SIOInstructionTag.Give;
+  readonly _sio = SIOInstructionTag.Give
   constructor(readonly sio: SIO<S1, S2, R, E, A>, readonly r: R) {
-    super();
+    super()
   }
 }
 
@@ -178,7 +179,7 @@ export type SIOInstruction =
   | GiveInstruction<any, any, any, any, any>
   | SuspendInstruction<any, any, any, any, any>
   | TotalInstruction<any>
-  | PartialInstruction<any, any>;
+  | PartialInstruction<any, any>
 
 /*
  * -------------------------------------------
@@ -192,38 +193,31 @@ export type SIOInstruction =
  * ```
  */
 export function succeed<A, S1 = unknown, S2 = never>(a: A): SIO<S1, S2, unknown, never, A> {
-  return new SucceedInstruction(a);
+  return new SucceedInstruction(a)
 }
 
 export function total<A, S1 = unknown, S2 = never>(thunk: () => A): SIO<S1, S2, unknown, never, A> {
-  return new TotalInstruction(thunk);
+  return new TotalInstruction(thunk)
 }
 
 export function fail<E>(e: E): SIO<unknown, never, unknown, E, never> {
-  return new FailInstruction(e);
+  return new FailInstruction(e)
 }
 
 export function modify<S1, S2, A>(f: (s: S1) => readonly [S2, A]): SIO<S1, S2, unknown, never, A> {
-  return new ModifyInstruction(f);
+  return new ModifyInstruction(f)
 }
 
-export function suspend<S1, S2, R, E, A>(
-  factory: () => SIO<S1, S2, R, E, A>
-): SIO<S1, S2, R, E, A> {
-  return new SuspendInstruction(factory);
+export function suspend<S1, S2, R, E, A>(factory: () => SIO<S1, S2, R, E, A>): SIO<S1, S2, R, E, A> {
+  return new SuspendInstruction(factory)
 }
 
-export function partial_<A, E>(
-  f: () => A,
-  onThrow: (reason: unknown) => E
-): SIO<unknown, never, unknown, E, A> {
-  return new PartialInstruction(f, onThrow);
+export function partial_<A, E>(f: () => A, onThrow: (reason: unknown) => E): SIO<unknown, never, unknown, E, A> {
+  return new PartialInstruction(f, onThrow)
 }
 
-export function partial<E>(
-  onThrow: (reason: unknown) => E
-): <A>(f: () => A) => SIO<unknown, never, unknown, E, A> {
-  return (f) => partial_(f, onThrow);
+export function partial<E>(onThrow: (reason: unknown) => E): <A>(f: () => A) => SIO<unknown, never, unknown, E, A> {
+  return (f) => partial_(f, onThrow)
 }
 
 /*
@@ -252,7 +246,7 @@ export function foldM_<S1, S5, S2, R, E, A, S3, R1, E1, B, S4, R2, E2, C>(
   onFailure: (e: E) => SIO<S5, S3, R1, E1, B>,
   onSuccess: (a: A) => SIO<S2, S4, R2, E2, C>
 ): SIO<S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return new FoldInstruction(fa, onFailure, onSuccess);
+  return new FoldInstruction(fa, onFailure, onSuccess)
 }
 
 /**
@@ -273,7 +267,7 @@ export function foldM<S1, S2, E, A, S3, R1, E1, B, S4, R2, E2, C>(
   onFailure: (e: E) => SIO<S1, S3, R1, E1, B>,
   onSuccess: (a: A) => SIO<S2, S4, R2, E2, C>
 ): <R>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return (fa) => foldM_(fa, onFailure, onSuccess);
+  return (fa) => foldM_(fa, onFailure, onSuccess)
 }
 
 /**
@@ -301,7 +295,7 @@ export function fold_<S1, S2, R, E, A, B, C>(
     fa,
     (e) => succeed(onFailure(e)),
     (a) => succeed(onSuccess(a))
-  );
+  )
 }
 
 /**
@@ -320,7 +314,7 @@ export function fold<E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): <S1, S2, R>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, never, B | C> {
-  return (fa) => fold_(fa, onFailure, onSuccess);
+  return (fa) => fold_(fa, onFailure, onSuccess)
 }
 
 /*
@@ -330,7 +324,7 @@ export function fold<E, A, B, C>(
  */
 
 export function pure<A>(a: A): SIO<unknown, never, unknown, never, A> {
-  return succeed(a);
+  return succeed(a)
 }
 
 /*
@@ -343,13 +337,13 @@ export function product_<S1, S2, R, E, A, S3, Q, D, B>(
   fa: SIO<S1, S2, R, E, A>,
   fb: SIO<S2, S3, Q, D, B>
 ): SIO<S1, S3, Q & R, D | E, readonly [A, B]> {
-  return map2_(fa, fb, tuple);
+  return map2_(fa, fb, tuple)
 }
 
 export function product<S2, S3, Q, D, B>(
   fb: SIO<S2, S3, Q, D, B>
 ): <S1, R, E, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S3, Q & R, D | E, readonly [A, B]> {
-  return (fa) => product_(fa, fb);
+  return (fa) => product_(fa, fb)
 }
 
 export function map2_<S1, S2, R, E, A, S3, Q, D, B, C>(
@@ -357,53 +351,53 @@ export function map2_<S1, S2, R, E, A, S3, Q, D, B, C>(
   fb: SIO<S2, S3, Q, D, B>,
   f: (a: A, b: B) => C
 ): SIO<S1, S3, Q & R, D | E, C> {
-  return flatMap_(fa, (a) => map_(fb, (b) => f(a, b)));
+  return flatMap_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function map2<A, S2, S3, Q, D, B, C>(
   fb: SIO<S2, S3, Q, D, B>,
   f: (a: A, b: B) => C
 ): <S1, R, E>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S3, Q & R, D | E, C> {
-  return (fa) => map2_(fa, fb, f);
+  return (fa) => map2_(fa, fb, f)
 }
 
 export function ap_<S1, S2, R, E, A, S3, Q, D, B>(
   fab: SIO<S1, S2, R, E, (a: A) => B>,
   fa: SIO<S2, S3, Q, D, A>
 ): SIO<S1, S3, Q & R, D | E, B> {
-  return map2_(fab, fa, (f, a) => f(a));
+  return map2_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<S2, S3, Q, D, A>(
   fa: SIO<S2, S3, Q, D, A>
 ): <S1, R, E, B>(fab: SIO<S1, S2, R, E, (a: A) => B>) => SIO<S1, S3, Q & R, D | E, B> {
-  return (fab) => ap_(fab, fa);
+  return (fab) => ap_(fab, fa)
 }
 
 export function apFirst_<S1, S2, R, E, A, S3, Q, D, B>(
   fa: SIO<S1, S2, R, E, A>,
   fb: SIO<S2, S3, Q, D, B>
 ): SIO<S1, S3, Q & R, D | E, A> {
-  return map2_(fa, fb, (a, _) => a);
+  return map2_(fa, fb, (a, _) => a)
 }
 
 export function apFirst<S2, S3, Q, D, B>(
   fb: SIO<S2, S3, Q, D, B>
 ): <S1, R, E, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S3, Q & R, D | E, A> {
-  return (fa) => apFirst_(fa, fb);
+  return (fa) => apFirst_(fa, fb)
 }
 
 export function apSecond_<S1, S2, R, E, A, S3, Q, D, B>(
   fa: SIO<S1, S2, R, E, A>,
   fb: SIO<S2, S3, Q, D, B>
 ): SIO<S1, S3, Q & R, D | E, B> {
-  return map2_(fa, fb, (_, b) => b);
+  return map2_(fa, fb, (_, b) => b)
 }
 
 export function apSecond<S2, S3, Q, D, B>(
   fb: SIO<S2, S3, Q, D, B>
 ): <S1, R, E, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S3, Q & R, D | E, B> {
-  return (fa) => apSecond_(fa, fb);
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*
@@ -421,27 +415,22 @@ export function bimap_<S1, S2, R, E, A, G, B>(
     pab,
     (e) => fail(f(e)),
     (a) => succeed(g(a))
-  );
+  )
 }
 
 export function bimap<E, A, G, B>(
   f: (e: E) => G,
   g: (a: A) => B
 ): <S1, S2, R>(pab: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, G, B> {
-  return (pab) => bimap_(pab, f, g);
+  return (pab) => bimap_(pab, f, g)
 }
 
-export function mapError_<S1, S2, R, E, A, G>(
-  pab: SIO<S1, S2, R, E, A>,
-  f: (e: E) => G
-): SIO<S1, S2, R, G, A> {
-  return foldM_(pab, (e) => fail(f(e)), succeed);
+export function mapError_<S1, S2, R, E, A, G>(pab: SIO<S1, S2, R, E, A>, f: (e: E) => G): SIO<S1, S2, R, G, A> {
+  return foldM_(pab, (e) => fail(f(e)), succeed)
 }
 
-export function mapError<E, G>(
-  f: (e: E) => G
-): <S1, S2, R, A>(pab: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, G, A> {
-  return (pab) => mapError_(pab, f);
+export function mapError<E, G>(f: (e: E) => G): <S1, S2, R, A>(pab: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, G, A> {
+  return (pab) => mapError_(pab, f)
 }
 
 /*
@@ -450,20 +439,16 @@ export function mapError<E, G>(
  * -------------------------------------------
  */
 
-export function recover<S1, S2, R, E, A>(
-  fa: SIO<S1, S2, R, E, A>
-): SIO<S1, S2, R, never, E.Either<E, A>> {
+export function recover<S1, S2, R, E, A>(fa: SIO<S1, S2, R, E, A>): SIO<S1, S2, R, never, E.Either<E, A>> {
   return foldM_(
     fa,
     (e) => succeed(E.left(e)),
     (a) => succeed(E.right(a))
-  );
+  )
 }
 
-export function absolve<S1, S2, R, E, E1, A>(
-  fa: SIO<S1, S2, R, E, E.Either<E1, A>>
-): SIO<S1, S2, R, E | E1, A> {
-  return flatMap_(fa, E.fold(fail, succeed));
+export function absolve<S1, S2, R, E, E1, A>(fa: SIO<S1, S2, R, E, E.Either<E1, A>>): SIO<S1, S2, R, E | E1, A> {
+  return flatMap_(fa, E.fold(fail, succeed))
 }
 
 /*
@@ -472,17 +457,12 @@ export function absolve<S1, S2, R, E, E1, A>(
  * -------------------------------------------
  */
 
-export function map_<S1, S2, R, E, A, B>(
-  fa: SIO<S1, S2, R, E, A>,
-  f: (a: A) => B
-): SIO<S1, S2, R, E, B> {
-  return flatMap_(fa, (a) => succeed(f(a)));
+export function map_<S1, S2, R, E, A, B>(fa: SIO<S1, S2, R, E, A>, f: (a: A) => B): SIO<S1, S2, R, E, B> {
+  return flatMap_(fa, (a) => succeed(f(a)))
 }
 
-export function map<A, B>(
-  f: (a: A) => B
-): <S1, S2, R, E>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, E, B> {
-  return (fa) => map_(fa, f);
+export function map<A, B>(f: (a: A) => B): <S1, S2, R, E>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, E, B> {
+  return (fa) => map_(fa, f)
 }
 
 /*
@@ -495,32 +475,32 @@ export function flatMap_<S1, S2, R, E, A, S3, Q, D, B>(
   ma: SIO<S1, S2, R, E, A>,
   f: (a: A) => SIO<S2, S3, Q, D, B>
 ): SIO<S1, S3, Q & R, D | E, B> {
-  return new ChainInstruction(ma, f);
+  return new ChainInstruction(ma, f)
 }
 
 export function flatMap<A, S2, S3, Q, D, B>(
   f: (a: A) => SIO<S2, S3, Q, D, B>
 ): <S1, R, E>(ma: SIO<S1, S2, R, E, A>) => SIO<S1, S3, Q & R, D | E, B> {
-  return (ma) => flatMap_(ma, f);
+  return (ma) => flatMap_(ma, f)
 }
 
 export function tap_<S1, S2, R, E, A, S3, Q, D, B>(
   ma: SIO<S1, S2, R, E, A>,
   f: (a: A) => SIO<S2, S3, Q, D, B>
 ): SIO<S1, S3, Q & R, D | E, A> {
-  return flatMap_(ma, (a) => map_(f(a), () => a));
+  return flatMap_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<S2, A, S3, Q, D, B>(
   f: (a: A) => SIO<S2, S3, Q, D, B>
 ): <S1, R, E>(ma: SIO<S1, S2, R, E, A>) => SIO<S1, S3, Q & R, D | E, A> {
-  return (ma) => tap_(ma, f);
+  return (ma) => tap_(ma, f)
 }
 
 export function flatten<S1, S2, R, E, A, S3, Q, D>(
   mma: SIO<S1, S2, R, E, SIO<S2, S3, Q, D, A>>
 ): SIO<S1, S3, Q & R, D | E, A> {
-  return flatMap_(mma, identity);
+  return flatMap_(mma, identity)
 }
 
 /*
@@ -530,56 +510,39 @@ export function flatten<S1, S2, R, E, A, S3, Q, D>(
  */
 
 export function ask<R>(): SIO<unknown, never, R, never, R> {
-  return new AsksInstruction((r: R) => succeed(r));
+  return new AsksInstruction((r: R) => succeed(r))
 }
 
-export function asksM<R0, S1, S2, R, E, A>(
-  f: (r: R0) => SIO<S1, S2, R, E, A>
-): SIO<S1, S2, R & R0, E, A> {
-  return new AsksInstruction(f);
+export function asksM<R0, S1, S2, R, E, A>(f: (r: R0) => SIO<S1, S2, R, E, A>): SIO<S1, S2, R & R0, E, A> {
+  return new AsksInstruction(f)
 }
 
 export function asks<R0, A>(f: (r: R0) => A): SIO<unknown, never, R0, never, A> {
-  return asksM((r: R0) => succeed(f(r)));
+  return asksM((r: R0) => succeed(f(r)))
 }
 
-export function giveAll_<S1, S2, R, E, A>(
-  fa: SIO<S1, S2, R, E, A>,
-  r: R
-): SIO<S1, S2, unknown, E, A> {
-  return new GiveInstruction(fa, r);
+export function giveAll_<S1, S2, R, E, A>(fa: SIO<S1, S2, R, E, A>, r: R): SIO<S1, S2, unknown, E, A> {
+  return new GiveInstruction(fa, r)
 }
 
-export function giveAll<R>(
-  r: R
-): <S1, S2, E, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S2, unknown, E, A> {
-  return (fa) => giveAll_(fa, r);
+export function giveAll<R>(r: R): <S1, S2, E, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S2, unknown, E, A> {
+  return (fa) => giveAll_(fa, r)
 }
 
-export function gives_<R0, S1, S2, R, E, A>(
-  ma: SIO<S1, S2, R, E, A>,
-  f: (r0: R0) => R
-): SIO<S1, S2, R0, E, A> {
-  return asksM((r: R0) => giveAll_(ma, f(r)));
+export function gives_<R0, S1, S2, R, E, A>(ma: SIO<S1, S2, R, E, A>, f: (r0: R0) => R): SIO<S1, S2, R0, E, A> {
+  return asksM((r: R0) => giveAll_(ma, f(r)))
 }
 
-export function gives<R0, R>(
-  f: (r0: R0) => R
-): <S1, S2, E, A>(ma: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R0, E, A> {
-  return (ma) => gives_(ma, f);
+export function gives<R0, R>(f: (r0: R0) => R): <S1, S2, E, A>(ma: SIO<S1, S2, R, E, A>) => SIO<S1, S2, R0, E, A> {
+  return (ma) => gives_(ma, f)
 }
 
-export function give_<S1, S2, R, E, A, R0>(
-  ma: SIO<S1, S2, R & R0, E, A>,
-  r: R
-): SIO<S1, S2, R0, E, A> {
-  return gives_(ma, (r0) => ({ ...r, ...r0 }));
+export function give_<S1, S2, R, E, A, R0>(ma: SIO<S1, S2, R & R0, E, A>, r: R): SIO<S1, S2, R0, E, A> {
+  return gives_(ma, (r0) => ({ ...r, ...r0 }))
 }
 
-export function give<R>(
-  r: R
-): <S1, S2, R0, E, A>(ma: SIO<S1, S2, R & R0, E, A>) => SIO<S1, S2, R0, E, A> {
-  return (ma) => give_(ma, r);
+export function give<R>(r: R): <S1, S2, R0, E, A>(ma: SIO<S1, S2, R & R0, E, A>) => SIO<S1, S2, R0, E, A> {
+  return (ma) => give_(ma, r)
 }
 
 /*
@@ -589,7 +552,7 @@ export function give<R>(
  */
 
 export function unit(): SIO<unknown, never, unknown, never, void> {
-  return succeed(undefined);
+  return succeed(undefined)
 }
 
 /*
@@ -613,7 +576,7 @@ export function catchAll_<S1, S2, R, E, A, S3, R1, E1, B>(
   fa: SIO<S1, S2, R, E, A>,
   onFailure: (e: E) => SIO<S1, S3, R1, E1, B>
 ): SIO<S1, S3, R & R1, E1, A | B> {
-  return foldM_(fa, onFailure, (a) => succeed(a));
+  return foldM_(fa, onFailure, (a) => succeed(a))
 }
 
 /**
@@ -630,7 +593,7 @@ export function catchAll_<S1, S2, R, E, A, S3, R1, E1, B>(
 export function catchAll<S1, E, S3, R1, E1, B>(
   onFailure: (e: E) => SIO<S1, S3, R1, E1, B>
 ): <S2, R, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S1, S3, R & R1, E1, B | A> {
-  return (fa) => catchAll_(fa, onFailure);
+  return (fa) => catchAll_(fa, onFailure)
 }
 
 /**
@@ -644,7 +607,7 @@ export function catchAll<S1, E, S3, R1, E1, B>(
  * @since 1.0.0
  */
 export function update<S1, S2>(f: (s: S1) => S2): SIO<S1, S2, unknown, never, void> {
-  return modify((s) => [f(s), undefined]);
+  return modify((s) => [f(s), undefined])
 }
 
 /**
@@ -658,11 +621,8 @@ export function update<S1, S2>(f: (s: S1) => S2): SIO<S1, S2, unknown, never, vo
  * @category Combinators
  * @since 1.0.0
  */
-export function contramapInput_<S0, S1, S2, R, E, A>(
-  fa: SIO<S1, S2, R, E, A>,
-  f: (s: S0) => S1
-): SIO<S0, S2, R, E, A> {
-  return flatMap_(update(f), () => fa);
+export function contramapInput_<S0, S1, S2, R, E, A>(fa: SIO<S1, S2, R, E, A>, f: (s: S0) => S1): SIO<S0, S2, R, E, A> {
+  return flatMap_(update(f), () => fa)
 }
 
 /**
@@ -679,7 +639,7 @@ export function contramapInput_<S0, S1, S2, R, E, A>(
 export function contramapInput<S0, S1>(
   f: (s: S0) => S1
 ): <S2, R, E, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S0, S2, R, E, A> {
-  return (fa) => contramapInput_(fa, f);
+  return (fa) => contramapInput_(fa, f)
 }
 
 /**
@@ -694,23 +654,21 @@ export function contramapInput<S0, S1>(
  * @category Combinators
  * @since 1.0.0
  */
-export function either<S1, S2, R, E, A>(
-  fa: SIO<S1, S2, R, E, A>
-): SIO<S1, S1 | S2, R, never, E.Either<E, A>> {
-  return fold_(fa, E.left, E.right);
+export function either<S1, S2, R, E, A>(fa: SIO<S1, S2, R, E, A>): SIO<S1, S1 | S2, R, never, E.Either<E, A>> {
+  return fold_(fa, E.left, E.right)
 }
 
 export function orElse_<S1, S2, R, E, A, S3, S4, R1, E1>(
   fa: SIO<S1, S2, R, E, A>,
   onFailure: (e: E) => SIO<S3, S4, R1, E1, A>
 ): SIO<S1 & S3, S2 | S4, R & R1, E1, A> {
-  return foldM_(fa, onFailure, succeed);
+  return foldM_(fa, onFailure, succeed)
 }
 
 export function orElse<E, A, S3, S4, R1, E1>(
   onFailure: (e: E) => SIO<S3, S4, R1, E1, A>
 ): <S1, S2, R>(fa: SIO<S1, S2, R, E, A>) => SIO<S1 & S3, S4 | S2, R & R1, E1, A> {
-  return (fa) => orElse_(fa, onFailure);
+  return (fa) => orElse_(fa, onFailure)
 }
 
 /**
@@ -733,7 +691,7 @@ export function orElseEither_<S1, S2, R, E, A, S3, S4, R1, E1, A1>(
     fa,
     () => map_(that, E.right),
     (a) => succeed(E.left(a))
-  );
+  )
 }
 
 /**
@@ -750,10 +708,8 @@ export function orElseEither_<S1, S2, R, E, A, S3, S4, R1, E1, A1>(
  */
 export function orElseEither<S3, S4, R1, E1, A1>(
   that: SIO<S3, S4, R1, E1, A1>
-): <S1, S2, R, E, A>(
-  fa: SIO<S1, S2, R, E, A>
-) => SIO<S1 & S3, S4 | S2, R & R1, E1, E.Either<A, A1>> {
-  return (fa) => orElseEither_(fa, that);
+): <S1, S2, R, E, A>(fa: SIO<S1, S2, R, E, A>) => SIO<S1 & S3, S4 | S2, R & R1, E1, E.Either<A, A1>> {
+  return (fa) => orElseEither_(fa, that)
 }
 
 /*
@@ -763,7 +719,7 @@ export function orElseEither<S3, S4, R1, E1, A1>(
  */
 
 class FoldFrame {
-  readonly _sio = "FoldFrame";
+  readonly _sio = 'FoldFrame'
   constructor(
     readonly failure: (e: any) => SIO<any, any, any, any, any>,
     readonly apply: (e: any) => SIO<any, any, any, any, any>
@@ -771,185 +727,179 @@ class FoldFrame {
 }
 
 class ApplyFrame {
-  readonly _sio = "ApplyFrame";
+  readonly _sio = 'ApplyFrame'
   constructor(readonly apply: (e: any) => SIO<any, any, any, any, any>) {}
 }
 
-type Frame = FoldFrame | ApplyFrame;
+type Frame = FoldFrame | ApplyFrame
 
 /**
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export function runStateEither_<S1, S2, E, A>(
-  fa: SIO<S1, S2, unknown, E, A>,
-  s: S1
-): E.Either<E, readonly [S2, A]> {
-  let frames: Stack<Frame> | undefined = undefined;
-  let state = s as any;
-  let result = null;
-  let environment = null;
-  let failed = false;
-  let current = fa as SIO<any, any, any, any, any> | undefined;
+export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s: S1): E.Either<E, readonly [S2, A]> {
+  let frames = undefined as Stack<Frame> | undefined
+
+  let state       = s as any
+  let result      = null
+  let environment = null
+  let failed      = false
+  let current     = fa as SIO<any, any, any, any, any> | undefined
 
   function popContinuation() {
-    const nextInstr = frames;
-    if (nextInstr) {
-      frames = frames?.previous;
-    }
-    return nextInstr?.value;
+    const current = frames?.value
+    frames        = frames?.previous
+    return current
   }
 
   function pushContinuation(cont: Frame) {
-    frames = makeStack(cont, frames);
+    frames = makeStack(cont, frames)
   }
 
   function findNextErrorHandler() {
-    let unwinding = true;
+    let unwinding = true
     while (unwinding) {
-      const next = popContinuation();
+      const next = popContinuation()
 
       if (next == null) {
-        unwinding = false;
+        unwinding = false
       } else {
-        if (next._sio === "FoldFrame") {
-          unwinding = false;
-          pushContinuation(new ApplyFrame(next.failure));
+        if (next._sio === 'FoldFrame') {
+          unwinding = false
+          pushContinuation(new ApplyFrame(next.failure))
         }
       }
     }
   }
 
   while (current != null) {
-    const I = current[_SI];
+    const I = current[_SI]
 
     switch (I._sio) {
       case SIOInstructionTag.Chain: {
-        const nested = I.sio[_SI];
-        const continuation = I.f;
+        const nested       = I.sio[_SI]
+        const continuation = I.f
 
         switch (nested._sio) {
           case SIOInstructionTag.Succeed: {
-            current = continuation(nested.value);
-            break;
+            current = continuation(nested.value)
+            break
           }
           case SIOInstructionTag.Total: {
-            current = continuation(nested.thunk());
-            break;
+            current = continuation(nested.thunk())
+            break
           }
           case SIOInstructionTag.Partial: {
             try {
-              current = succeed(nested.thunk());
+              current = succeed(nested.thunk())
             } catch (e) {
-              current = fail(nested.onThrow(e));
+              current = fail(nested.onThrow(e))
             }
-            break;
+            break
           }
           case SIOInstructionTag.Modify: {
-            const updated = nested.run(state);
+            const updated = nested.run(state)
 
-            state = updated[0];
-            result = updated[1];
+            state  = updated[0]
+            result = updated[1]
 
-            current = continuation(result);
-            break;
+            current = continuation(result)
+            break
           }
           default: {
-            current = nested;
-            pushContinuation(new ApplyFrame(continuation));
+            current = nested
+            pushContinuation(new ApplyFrame(continuation))
           }
         }
 
-        break;
+        break
       }
       case SIOInstructionTag.Total: {
-        result = I.thunk();
-        const nextInstruction = popContinuation();
+        result                = I.thunk()
+        const nextInstruction = popContinuation()
         if (nextInstruction) {
-          current = nextInstruction.apply(result);
+          current = nextInstruction.apply(result)
         } else {
-          current = undefined;
+          current = undefined
         }
-        break;
+        break
       }
       case SIOInstructionTag.Partial: {
         try {
-          current = succeed(I.thunk());
+          current = succeed(I.thunk())
         } catch (e) {
-          current = fail(I.onThrow(e));
+          current = fail(I.onThrow(e))
         }
-        break;
+        break
       }
       case SIOInstructionTag.Suspend: {
-        current = I.factory();
-        break;
+        current = I.factory()
+        break
       }
       case SIOInstructionTag.Succeed: {
-        result = I.value;
-        const nextInstr = popContinuation();
+        result          = I.value
+        const nextInstr = popContinuation()
         if (nextInstr) {
-          current = nextInstr.apply(result);
+          current = nextInstr.apply(result)
         } else {
-          current = undefined;
+          current = undefined
         }
-        break;
+        break
       }
       case SIOInstructionTag.Fail: {
-        findNextErrorHandler();
-        const nextInst = popContinuation();
+        findNextErrorHandler()
+        const nextInst = popContinuation()
         if (nextInst) {
-          current = nextInst.apply(I.e);
+          current = nextInst.apply(I.e)
         } else {
-          failed = true;
-          result = I.e;
-          current = undefined;
+          failed  = true
+          result  = I.e
+          current = undefined
         }
-        break;
+        break
       }
       case SIOInstructionTag.Fold: {
-        current = I.sio;
-        pushContinuation(new FoldFrame(I.onFailure, I.onSuccess));
-        break;
+        current = I.sio
+        pushContinuation(new FoldFrame(I.onFailure, I.onSuccess))
+        break
       }
       case SIOInstructionTag.Asks: {
-        current = I.f(environment);
-        break;
+        current = I.f(environment)
+        break
       }
       case SIOInstructionTag.Give: {
-        environment = I.r;
-        current = I.sio;
-        break;
+        environment = I.r
+        current     = I.sio
+        break
       }
       case SIOInstructionTag.Modify: {
-        const updated = I.run(state);
-        state = updated[0];
-        result = updated[1];
-        const nextInst = popContinuation();
+        const updated  = I.run(state)
+        state          = updated[0]
+        result         = updated[1]
+        const nextInst = popContinuation()
         if (nextInst) {
-          current = nextInst.apply(result);
+          current = nextInst.apply(result)
         } else {
-          current = undefined;
+          current = undefined
         }
-        break;
+        break
       }
     }
   }
 
   if (failed) {
-    return E.left(result);
+    return E.left(result)
   }
 
-  return E.right([state, result]);
+  return E.right([state, result])
 }
 
 /**
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export function runStateEither<S1>(
-  s: S1
-): <S2, E, A>(fa: SIO<S1, S2, unknown, E, A>) => E.Either<E, readonly [S2, A]> {
-  return (fa) => runStateEither_(fa, s);
+export function runStateEither<S1>(s: S1): <S2, E, A>(fa: SIO<S1, S2, unknown, E, A>) => E.Either<E, readonly [S2, A]> {
+  return (fa) => runStateEither_(fa, s)
 }
 
 /**
@@ -957,7 +907,7 @@ export function runStateEither<S1>(
  * the updated state and the result.
  */
 export function run_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right;
+  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right
 }
 
 /**
@@ -965,14 +915,14 @@ export function run_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): re
  * updated state and the result
  */
 export function run<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => readonly [S2, A] {
-  return (self) => run_(self, s);
+  return (self) => run_(self, s)
 }
 
 /**
  * Runs this computation, returning the result.
  */
 export function runIO<A>(self: SIO<unknown, unknown, unknown, never, A>): A {
-  return run_(self, {})[1];
+  return run_(self, {})[1]
 }
 
 /**
@@ -980,7 +930,7 @@ export function runIO<A>(self: SIO<unknown, unknown, unknown, never, A>): A {
  * updated state and discarding the result.
  */
 export function runState_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): S2 {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[0];
+  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[0]
 }
 
 /**
@@ -988,28 +938,23 @@ export function runState_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1
  * updated state and discarding the result.
  */
 export function runState<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => S2 {
-  return (self) => runState_(self, s);
+  return (self) => runState_(self, s)
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and the result.
  */
-export function runStateResult_<S1, S2, A>(
-  self: SIO<S1, S2, unknown, never, A>,
-  s: S1
-): readonly [S2, A] {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right;
+export function runStateResult_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
+  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and the result.
  */
-export function runStateResult<S1>(
-  s: S1
-): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => readonly [S2, A] {
-  return (self) => runStateResult_(self, s);
+export function runStateResult<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => readonly [S2, A] {
+  return (self) => runStateResult_(self, s)
 }
 
 /**
@@ -1017,7 +962,7 @@ export function runStateResult<S1>(
  * result and discarding the updated state.
  */
 export function runResult_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): A {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[1];
+  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[1]
 }
 
 /**
@@ -1025,26 +970,24 @@ export function runResult_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S
  * result and discarding the updated state.
  */
 export function runResult<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => A {
-  return (self) => runResult_(self, s);
+  return (self) => runResult_(self, s)
 }
 
 /**
  * Runs this computation returning either the result or error
  */
 export function runEither<E, A>(self: SIO<never, unknown, unknown, E, A>): E.Either<E, A> {
-  return E.map_(runStateEither_(self, {} as never), ([_, x]) => x);
+  return E.map_(runStateEither_(self, {} as never), ([_, x]) => x)
 }
 
 export function runEitherEnv_<R, E, A>(self: SIO<never, unknown, R, E, A>, env: R): E.Either<E, A> {
-  return runEither(giveAll_(self, env));
+  return runEither(giveAll_(self, env))
 }
 
-export function runEitherEnv<R>(
-  env: R
-): <E, A>(self: SIO<never, unknown, R, E, A>) => E.Either<E, A> {
-  return (self) => runEitherEnv_(self, env);
+export function runEitherEnv<R>(env: R): <E, A>(self: SIO<never, unknown, R, E, A>) => E.Either<E, A> {
+  return (self) => runEitherEnv_(self, env)
 }
 
-export const SIOtoIO = new AtomicReference<
-  O.Option<<R, E, A>(_: SIO<unknown, never, R, E, A>) => I.IO<R, E, A>>
->(O.none());
+export const SIOtoIO = new AtomicReference<O.Option<<R, E, A>(_: SIO<unknown, never, R, E, A>) => I.IO<R, E, A>>>(
+  O.none()
+)

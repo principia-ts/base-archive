@@ -1,21 +1,21 @@
-import type { Exit } from "../../Exit";
-import type { IO } from "../core";
+import type { Exit } from '../../Exit'
+import type { IO } from '../core'
 
-import * as C from "../../Cause/core";
-import * as Ex from "../../Exit";
-import { join } from "../../Fiber/combinators/join";
-import * as I from "../core";
-import { raceWith_ } from "./core-scope";
-import { mapErrorCause_ } from "./mapErrorCause";
+import * as C from '../../Cause/core'
+import * as Ex from '../../Exit'
+import { join } from '../../Fiber/combinators/join'
+import * as I from '../core'
+import { raceWith_ } from './core-scope'
+import { mapErrorCause_ } from './mapErrorCause'
 
 const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): IO<unknown, E1, A> => {
   switch (x._tag) {
-    case "Success":
-      return I.pure(a);
-    case "Failure":
-      return C.interruptedOnly(x.cause) ? I.pure(a) : I.halt(x.cause);
+    case 'Success':
+      return I.pure(a)
+    case 'Failure':
+      return C.interruptedOnly(x.cause) ? I.pure(a) : I.halt(x.cause)
   }
-};
+}
 
 /**
  * Returns an IO that races this effect with the specified effect,
@@ -26,10 +26,7 @@ const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): IO<unknown, E1
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export function race_<R, E, A, R1, E1, A1>(
-  ef: IO<R, E, A>,
-  that: IO<R1, E1, A1>
-): IO<R & R1, E | E1, A | A1> {
+export function race_<R, E, A, R1, E1, A1>(ef: IO<R, E, A>, that: IO<R1, E1, A1>): IO<R & R1, E | E1, A | A1> {
   return I.descriptorWith((d) =>
     raceWith_(
       ef,
@@ -47,7 +44,7 @@ export function race_<R, E, A, R1, E1, A1>(
           (a) => I.flatMap_(left.interruptAs(d.id), mergeInterruption(a))
         )
     )
-  );
+  )
 }
 
 /**
@@ -59,8 +56,6 @@ export function race_<R, E, A, R1, E1, A1>(
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
  */
-export function race<R1, E1, A1>(
-  that: IO<R1, E1, A1>
-): <R, E, A>(ef: IO<R, E, A>) => IO<R & R1, E1 | E, A1 | A> {
-  return (ef) => race_(ef, that);
+export function race<R1, E1, A1>(that: IO<R1, E1, A1>): <R, E, A>(ef: IO<R, E, A>) => IO<R & R1, E1 | E, A1 | A> {
+  return (ef) => race_(ef, that)
 }

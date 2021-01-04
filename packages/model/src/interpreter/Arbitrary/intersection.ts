@@ -1,11 +1,11 @@
-import type * as Alg from "../../algebra";
-import type { ArbURI } from "./HKT";
+import type * as Alg from '../../algebra'
+import type { ArbURI } from './HKT'
 
-import * as A from "@principia/base/data/Array";
-import { pipe } from "@principia/base/data/Function";
+import * as A from '@principia/base/data/Array'
+import { pipe } from '@principia/base/data/Function'
 
-import { implementInterpreter } from "../../HKT";
-import { accessFastCheck, applyArbitraryConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
 export const IntersectionArbitrary = implementInterpreter<ArbURI, Alg.IntersectionURI>()((_) => ({
   intersection: (types, config) => (env) =>
@@ -21,4 +21,4 @@ export const IntersectionArbitrary = implementInterpreter<ArbURI, Alg.Intersecti
           arbs as any
         )
     )
-}));
+}))

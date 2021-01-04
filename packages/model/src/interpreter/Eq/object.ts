@@ -1,11 +1,11 @@
-import type * as Alg from "../../algebra";
+import type * as Alg from '../../algebra'
 
-import * as Eq from "@principia/base/data/Eq";
-import { pipe } from "@principia/base/data/Function";
-import * as R from "@principia/base/data/Record";
+import * as Eq from '@principia/base/data/Eq'
+import { pipe } from '@principia/base/data/Function'
+import * as R from '@principia/base/data/Record'
 
-import { implementInterpreter } from "../../HKT";
-import { applyEqConfig } from "./HKT";
+import { implementInterpreter } from '../../HKT'
+import { applyEqConfig } from './HKT'
 
 export const ObjectEq = implementInterpreter<Eq.URI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
@@ -35,4 +35,4 @@ export const ObjectEq = implementInterpreter<Eq.URI, Alg.ObjectURI>()((_) => ({
             })
         )
     )
-}));
+}))

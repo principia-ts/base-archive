@@ -1,9 +1,9 @@
-import type { HasClock } from "../../Clock";
-import type { Stream } from "../core";
-import type { Transducer } from "../Transducer";
+import type { HasClock } from '../../Clock'
+import type { Stream } from '../core'
+import type { Transducer } from '../Transducer'
 
-import * as Sc from "../../Schedule";
-import { aggregateAsyncWithin_ } from "./aggregateAsyncWithin";
+import * as Sc from '../../Schedule'
+import { aggregateAsyncWithin_ } from './aggregateAsyncWithin'
 
 /**
  * Aggregates elements of this stream using the provided sink for as long
@@ -20,7 +20,7 @@ import { aggregateAsyncWithin_ } from "./aggregateAsyncWithin";
 export function aggregateAsync<O, R1, E1, P>(
   transducer: Transducer<R1, E1, O, P>
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, P> {
-  return (stream) => aggregateAsync_(stream, transducer);
+  return (stream) => aggregateAsync_(stream, transducer)
 }
 
 /**
@@ -39,5 +39,5 @@ export function aggregateAsync_<R, E, O, R1, E1, P>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>
 ): Stream<R & R1 & HasClock, E | E1, P> {
-  return aggregateAsyncWithin_(stream, transducer, Sc.forever);
+  return aggregateAsyncWithin_(stream, transducer, Sc.forever)
 }

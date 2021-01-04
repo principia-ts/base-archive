@@ -1,11 +1,11 @@
-import type { Exit } from "../../Exit";
-import type { RuntimeFiber } from "../../Fiber";
-import type { IO } from "../core";
+import type { Exit } from '../../Exit'
+import type { RuntimeFiber } from '../../Fiber'
+import type { IO } from '../core'
 
-import { flatMap_ } from "../core";
-import { bracket_ } from "./bracket";
-import { forkDaemon } from "./core-scope";
-import { fiberId } from "./fiberId";
+import { flatMap_ } from '../core'
+import { bracket_ } from './bracket'
+import { forkDaemon } from './core-scope'
+import { fiberId } from './fiberId'
 
 /**
  * ```haskell
@@ -25,7 +25,7 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
   ef: IO<R, E, A>,
   use: (f: RuntimeFiber<E, A>) => IO<R1, E1, B>
 ): IO<R & R1, E1, Exit<E, A>> {
-  return bracket_(forkDaemon(ef), (f) => flatMap_(fiberId(), (id) => f.interruptAs(id)), use);
+  return bracket_(forkDaemon(ef), (f) => flatMap_(fiberId(), (id) => f.interruptAs(id)), use)
 }
 
 /**
@@ -43,5 +43,5 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
 export function bracketFiber<E, A, R1, E1, A1>(
   use: (f: RuntimeFiber<E, A>) => IO<R1, E1, A1>
 ): <R>(ef: IO<R, E, A>) => IO<R & R1, E1, Exit<E, A>> {
-  return (ef) => bracketFiber_(ef, use);
+  return (ef) => bracketFiber_(ef, use)
 }

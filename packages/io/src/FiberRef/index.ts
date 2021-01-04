@@ -1,2 +1,2 @@
-export * from "./core";
-export * from "./locally";
+export * from './core'
+export * from './locally'

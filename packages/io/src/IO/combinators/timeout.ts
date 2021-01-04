@@ -1,8 +1,8 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import * as O from "@principia/base/data/Option";
+import * as O from '@principia/base/data/Option'
 
-import { timeoutTo_ } from "./timeoutTo";
+import { timeoutTo_ } from './timeoutTo'
 
 /**
  * Returns an IO that will timeout this effect, returning `None` if the
@@ -21,7 +21,7 @@ import { timeoutTo_ } from "./timeoutTo";
  * effect has been successfully interrupted.
  */
 export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number) {
-  return timeoutTo_(ma, d, O.none(), O.some);
+  return timeoutTo_(ma, d, O.none(), O.some)
 }
 
 /**
@@ -41,5 +41,5 @@ export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number) {
  * effect has been successfully interrupted.
  */
 export function timeout(d: number) {
-  return <R, E, A>(ma: IO<R, E, A>) => timeout_(ma, d);
+  return <R, E, A>(ma: IO<R, E, A>) => timeout_(ma, d)
 }

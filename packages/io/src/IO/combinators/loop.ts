@@ -1,8 +1,8 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import { pipe } from "@principia/base/data/Function";
+import { pipe } from '@principia/base/data/Function'
 
-import { flatMap_, map, pure, unit } from "../core";
+import { flatMap_, map, pure, unit } from '../core'
 
 /**
  * Loops with the specified effectual function, collecting the results into a
@@ -23,14 +23,14 @@ import { flatMap_, map, pure, unit } from "../core";
 export const loop = <B>(initial: B) => (cont: (a: B) => boolean, inc: (b: B) => B) => <R, E, A>(
   body: (b: B) => IO<R, E, A>
 ): IO<R, E, ReadonlyArray<A>> =>
-  cont(initial)
-    ? flatMap_(body(initial), (a) =>
+    cont(initial)
+      ? flatMap_(body(initial), (a) =>
         pipe(
           loop(inc(initial))(cont, inc)(body),
           map((as) => [a, ...as])
         )
       )
-    : pure([]);
+      : pure([])
 
 /**
  * Loops with the specified effectual function purely for its effects. The
@@ -47,5 +47,4 @@ export const loop = <B>(initial: B) => (cont: (a: B) => boolean, inc: (b: B) => 
  */
 export const loopUnit = <A>(initial: A) => (cont: (a: A) => boolean, inc: (a: A) => A) => <R, E>(
   body: (a: A) => IO<R, E, any>
-): IO<R, E, void> =>
-  cont(initial) ? flatMap_(body(initial), () => loop(inc(initial))(cont, inc)(body)) : unit();
+): IO<R, E, void> => (cont(initial) ? flatMap_(body(initial), () => loop(inc(initial))(cont, inc)(body)) : unit())

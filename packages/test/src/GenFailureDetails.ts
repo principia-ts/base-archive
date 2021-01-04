@@ -1,12 +1,12 @@
-import type { Show } from "@principia/base/data/Show";
+import type { Show } from '@principia/base/data/Show'
 
-import { any } from "@principia/base/data/Show";
+import { any } from '@principia/base/data/Show'
 
 export interface GenFailureDetails {
-  readonly initialInput: any;
-  readonly shrunkenInput: any;
-  readonly iterations: number;
-  readonly show: Show<any>["show"];
+  readonly initialInput: any
+  readonly shrunkenInput: any
+  readonly iterations: number
+  readonly show: Show<any>['show']
 }
 
 export function GenFailureDetails<A>(
@@ -20,5 +20,5 @@ export function GenFailureDetails<A>(
     shrunkenInput,
     iterations,
     show: show ? show.show : any.show
-  };
+  }
 }

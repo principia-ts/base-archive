@@ -1,10 +1,10 @@
-import type { IO } from "../core";
-import type { Option } from "@principia/base/data/Option";
+import type { IO } from '../core'
+import type { Option } from '@principia/base/data/Option'
 
-import { pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import { map } from "../core";
+import { map } from '../core'
 
 /**
  * ```haskell
@@ -17,7 +17,7 @@ import { map } from "../core";
  * @since 1.0.0
  */
 export function someOrElse_<R, E, A, B>(ef: IO<R, E, Option<A>>, orElse: () => B): IO<R, E, A | B> {
-  return pipe(ef, map(O.getOrElse(orElse)));
+  return pipe(ef, map(O.getOrElse(orElse)))
 }
 
 /**
@@ -30,8 +30,6 @@ export function someOrElse_<R, E, A, B>(ef: IO<R, E, Option<A>>, orElse: () => B
  * @category Combinators
  * @since 1.0.0
  */
-export function someOrElse<B>(
-  orElse: () => B
-): <R, E, A>(ef: IO<R, E, Option<A>>) => IO<R, E, B | A> {
-  return (ef) => someOrElse_(ef, orElse);
+export function someOrElse<B>(orElse: () => B): <R, E, A>(ef: IO<R, E, Option<A>>) => IO<R, E, B | A> {
+  return (ef) => someOrElse_(ef, orElse)
 }

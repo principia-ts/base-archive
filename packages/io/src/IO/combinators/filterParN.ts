@@ -1,11 +1,11 @@
-import type { IO } from "../core";
+import type { IO } from '../core'
 
-import * as A from "@principia/base/data/Array";
-import { pipe } from "@principia/base/data/Function";
-import * as O from "@principia/base/data/Option";
+import * as A from '@principia/base/data/Array'
+import { pipe } from '@principia/base/data/Function'
+import * as O from '@principia/base/data/Option'
 
-import { map, map_ } from "../core";
-import { foreachParN } from "./foreachParN";
+import { map, map_ } from '../core'
+import { foreachParN } from './foreachParN'
 
 /**
  * Filters the collection in parallel using the specified effectual predicate.
@@ -21,7 +21,7 @@ export function filterParN_(
       as,
       foreachParN(n)((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
       map(A.compact)
-    );
+    )
 }
 
 /**
@@ -33,5 +33,5 @@ export function filterParN_(
 export function filterParN(
   n: number
 ): <A, R, E>(f: (a: A) => IO<R, E, boolean>) => (as: Iterable<A>) => IO<R, E, readonly A[]> {
-  return (f) => (as) => filterParN_(n)(as, f);
+  return (f) => (as) => filterParN_(n)(as, f)
 }
