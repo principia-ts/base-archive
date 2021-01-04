@@ -15,9 +15,8 @@
     "sourceType": "module"
   },
   "plugins": [
-    "functional",
-    "align-assignments",
     "codegen",
+    "align-assignments",
     "import",
     "simple-import-sort",
     "sort-keys-fix",
@@ -47,7 +46,7 @@
     "no-unexpected-multiline": "off",
 
     "curly": ["warn", "all"],
-    "indent": ["warn", 2, { "SwitchCase": 1 }],
+    "@typescript-eslint/indent": ["warn", 2, { "SwitchCase": 1 }],
     "quotes": ["warn", "single", { "avoidEscape": true }],
     "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
     "max-len": ["warn", 120],
