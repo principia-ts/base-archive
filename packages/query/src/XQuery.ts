@@ -1,18 +1,20 @@
 import type { Cache } from './Cache'
 import type { DataSource } from './DataSource'
+import type { DataSourceAspect } from './DataSourceAspect'
 import type { Request } from './Request'
 import type { IO } from '@principia/io/IO'
 import type { URef } from '@principia/io/IORef'
 
 import * as A from '@principia/base/data/Array'
 import * as E from '@principia/base/data/Either'
-import { flow, identity, pipe } from '@principia/base/data/Function'
+import { flow, identity, pipe, tuple } from '@principia/base/data/Function'
 import * as It from '@principia/base/data/Iterable'
 import * as O from '@principia/base/data/Option'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
 import * as Ca from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
+import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 
@@ -21,12 +23,41 @@ import { Described } from './Described'
 import { BlockedRequest } from './internal/BlockedRequest'
 import * as BRS from './internal/BlockedRequests'
 import { QueryContext } from './internal/QueryContext'
+import { QueryFailure } from './QueryFailure'
 
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+ */
+
+// NOTE: Because of the circular nature of how ZIO defines methods on ZQuery, it is simplest
+// to define class methods on `XQuery`, `Continue`, and `Result` in one single file.
+
+/**
+ * An `XQuery<R, E, A>` is a purely functional description of an effectual query
+ * that may contain requests from one or more data sources, requires an
+ * environment `R`, and may fail with an `E` or succeed with an `A`.
+ *
+ * Requests that can be performed in parallel, as expressed by `map2Par` and
+ * combinators derived from it, will automatically be batched. Requests that
+ * must be performed sequentially, as expressed by `map2` and combinators
+ * derived from it, will automatically be pipelined. This allows for aggressive
+ * data source specific optimizations. Requests can also be deduplicated and
+ * cached.
+ *
+ * This allows for writing queries in a high level, compositional style, with
+ * confidence that they will automatically be optimized.
+ */
 export class XQuery<R, E, A> {
   constructor(readonly step: IO<readonly [R, QueryContext], never, Result<R, E, A>>) {}
 
   map = <B>(f: (a: A) => B): XQuery<R, E, B> => {
     return new XQuery(I.map_(this.step, (r) => r.map(f)))
+  }
+
+  mapDataSources = <R1>(f: DataSourceAspect<R1>): XQuery<R & R1, E, A> => {
+    return new XQuery(I.map_(this.step, (r) => r.mapDataSources(f)))
   }
 
   foldCauseM = <R1, E1, B>(
@@ -300,6 +331,214 @@ export function catchAll<E, R1, E1, B>(
 
 /*
  * -------------------------------------------
+ * Sequential Apply
+ * -------------------------------------------
+ */
+
+export function map2_<R, E, A, R1, E1, B, C>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>,
+  f: (a: A, b: B) => C
+): XQuery<R & R1, E | E1, C> {
+  return fa.map2(fb, f)
+}
+
+export function map2<A, R1, E1, B, C>(
+  fb: XQuery<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, C> {
+  return (fa) => fa.map2(fb, f)
+}
+
+export function product_<R, E, A, R1, E1, B>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>
+): XQuery<R & R1, E | E1, readonly [A, B]> {
+  return map2_(fa, fb, tuple)
+}
+
+export function product<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, readonly [A, B]> {
+  return (fa) => product_(fa, fb)
+}
+
+export function ap_<R, E, A, R1, E1, B>(
+  fab: XQuery<R, E, (a: A) => B>,
+  fa: XQuery<R1, E1, A>
+): XQuery<R & R1, E | E1, B> {
+  return map2_(fab, fa, (f, a) => f(a))
+}
+
+export function ap<R, E, A>(
+  fa: XQuery<R, E, A>
+): <R1, E1, B>(fab: XQuery<R1, E1, (a: A) => B>) => XQuery<R & R1, E | E1, B> {
+  return (fab) => ap_(fab, fa)
+}
+
+export function apFirst_<R, E, A, R1, E1, B>(fa: XQuery<R, E, A>, fb: XQuery<R1, E1, B>): XQuery<R & R1, E | E1, A> {
+  return map2_(fa, fb, (a, _) => a)
+}
+
+export function apFirst<R1, E1, B>(fb: XQuery<R1, E1, B>): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, A> {
+  return (fa) => apFirst_(fa, fb)
+}
+
+export function apSecond_<R, E, A, R1, E1, B>(fa: XQuery<R, E, A>, fb: XQuery<R1, E1, B>): XQuery<R & R1, E | E1, B> {
+  return map2_(fa, fb, (_, b) => b)
+}
+
+export function apSecond<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, B> {
+  return (fa) => apSecond_(fa, fb)
+}
+
+/*
+ * -------------------------------------------
+ * Parallel Apply
+ * -------------------------------------------
+ */
+
+export function map2Par_<R, E, A, R1, E1, B, C>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>,
+  f: (a: A, b: B) => C
+): XQuery<R & R1, E | E1, C> {
+  return fa.map2Par(fb, f)
+}
+
+export function map2Par<A, R1, E1, B, C>(
+  fb: XQuery<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, C> {
+  return (fa) => fa.map2Par(fb, f)
+}
+
+export function productPar_<R, E, A, R1, E1, B>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>
+): XQuery<R & R1, E | E1, readonly [A, B]> {
+  return map2Par_(fa, fb, tuple)
+}
+
+export function productPar<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, readonly [A, B]> {
+  return (fa) => productPar_(fa, fb)
+}
+
+export function apPar_<R, E, A, R1, E1, B>(
+  fab: XQuery<R, E, (a: A) => B>,
+  fa: XQuery<R1, E1, A>
+): XQuery<R & R1, E | E1, B> {
+  return map2Par_(fab, fa, (f, a) => f(a))
+}
+
+export function apPar<R, E, A>(
+  fa: XQuery<R, E, A>
+): <R1, E1, B>(fab: XQuery<R1, E1, (a: A) => B>) => XQuery<R & R1, E | E1, B> {
+  return (fab) => apPar_(fab, fa)
+}
+
+export function apFirstPar_<R, E, A, R1, E1, B>(fa: XQuery<R, E, A>, fb: XQuery<R1, E1, B>): XQuery<R & R1, E | E1, A> {
+  return map2Par_(fa, fb, (a, _) => a)
+}
+
+export function apFirstPar<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, A> {
+  return (fa) => apFirstPar_(fa, fb)
+}
+
+export function apSecondPar_<R, E, A, R1, E1, B>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>
+): XQuery<R & R1, E | E1, B> {
+  return map2Par_(fa, fb, (_, b) => b)
+}
+
+export function apSecondPar<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, B> {
+  return (fa) => apSecondPar_(fa, fb)
+}
+
+/*
+ * -------------------------------------------
+ * Batched Apply
+ * -------------------------------------------
+ */
+
+export function map2Batched_<R, E, A, R1, E1, B, C>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>,
+  f: (a: A, b: B) => C
+): XQuery<R & R1, E | E1, C> {
+  return fa.map2Batched(fb, f)
+}
+
+export function map2Batched<A, R1, E1, B, C>(
+  fb: XQuery<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, C> {
+  return (fa) => fa.map2Batched(fb, f)
+}
+
+export function productBatched_<R, E, A, R1, E1, B>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>
+): XQuery<R & R1, E | E1, readonly [A, B]> {
+  return map2Batched_(fa, fb, tuple)
+}
+
+export function productBatched<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, readonly [A, B]> {
+  return (fa) => productBatched_(fa, fb)
+}
+
+export function apBatched_<R, E, A, R1, E1, B>(
+  fab: XQuery<R, E, (a: A) => B>,
+  fa: XQuery<R1, E1, A>
+): XQuery<R & R1, E | E1, B> {
+  return map2Batched_(fab, fa, (f, a) => f(a))
+}
+
+export function apBatched<R, E, A>(
+  fa: XQuery<R, E, A>
+): <R1, E1, B>(fab: XQuery<R1, E1, (a: A) => B>) => XQuery<R & R1, E | E1, B> {
+  return (fab) => apBatched_(fab, fa)
+}
+
+export function apFirstBatched_<R, E, A, R1, E1, B>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>
+): XQuery<R & R1, E | E1, A> {
+  return map2Batched_(fa, fb, (a, _) => a)
+}
+
+export function apFirstBatched<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, A> {
+  return (fa) => apFirstBatched_(fa, fb)
+}
+
+export function apSecondBatched_<R, E, A, R1, E1, B>(
+  fa: XQuery<R, E, A>,
+  fb: XQuery<R1, E1, B>
+): XQuery<R & R1, E | E1, B> {
+  return map2Batched_(fa, fb, (_, b) => b)
+}
+
+export function apSecondBatched<R1, E1, B>(
+  fb: XQuery<R1, E1, B>
+): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E | E1, B> {
+  return (fa) => apSecondBatched_(fa, fb)
+}
+
+/*
+ * -------------------------------------------
  * Bifunctor
  * -------------------------------------------
  */
@@ -318,6 +557,29 @@ export function mapError_<R, E, A, E1>(pab: XQuery<R, E, A>, f: (e: E) => E1): X
 
 export function mapError<E, E1>(f: (e: E) => E1): <R, A>(pab: XQuery<R, E, A>) => XQuery<R, E1, A> {
   return (pab) => pab.mapError(f)
+}
+
+export function mapErrorCause_<R, E, A, E1>(
+  pab: XQuery<R, E, A>,
+  h: (cause: Ca.Cause<E>) => Ca.Cause<E1>
+): XQuery<R, E1, A> {
+  return pab.foldCauseM(flow(h, halt), succeed)
+}
+
+export function mapErrorCause<E, E1>(
+  h: (cause: Ca.Cause<E>) => Ca.Cause<E1>
+): <R, A>(pab: XQuery<R, E, A>) => XQuery<R, E1, A> {
+  return (pab) => mapErrorCause_(pab, h)
+}
+
+/*
+ * -------------------------------------------
+ * Fallible
+ * -------------------------------------------
+ */
+
+export function absolve<R, E, E1, A>(v: XQuery<R, E, E.Either<E1, A>>): XQuery<R, E | E1, A> {
+  return v.flatMap(fromEither)
 }
 
 /*
@@ -340,6 +602,14 @@ export function as_<R, E, A, B>(fa: XQuery<R, E, A>, b: B): XQuery<R, E, B> {
 
 export function as<B>(b: B): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R, E, B> {
   return (fa) => fa.map(() => b)
+}
+
+export function mapDataSources_<R, E, A, R1>(fa: XQuery<R, E, A>, f: DataSourceAspect<R1>): XQuery<R & R1, E, A> {
+  return fa.mapDataSources(f)
+}
+
+export function mapDataSources<R1>(f: DataSourceAspect<R1>): <R, E, A>(fa: XQuery<R, E, A>) => XQuery<R & R1, E, A> {
+  return (fa) => fa.mapDataSources(f)
 }
 
 /*
@@ -374,6 +644,14 @@ export function fromEffect<R, E, A>(effect: IO<R, E, A>): XQuery<R, E, A> {
   )
 }
 
+export function fromEither<E, A>(either: E.Either<E, A>): XQuery<unknown, E, A> {
+  return succeed(either).flatMap(E.fold(fail, succeed))
+}
+
+export function fromOption<A>(option: O.Option<A>): XQuery<unknown, O.Option<never>, A> {
+  return succeed(option).flatMap(O.fold(() => fail(O.none()), succeed))
+}
+
 export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: DataSource<R, A>): XQuery<R, E, B> {
   return new XQuery(
     pipe(
@@ -403,6 +681,33 @@ export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: 
   )
 }
 
+export function fromRequestUncached<R, E, A, B>(
+  request: A & Request<E, B>,
+  dataSource: DataSource<R, A>
+): XQuery<R, E, B> {
+  return new XQuery(
+    pipe(
+      Ref.make(O.none<E.Either<E, B>>()),
+      I.map((ref) =>
+        blockedResult(
+          BRS.single(dataSource, BlockedRequest.apply(request, ref)),
+          makeContinue(request, dataSource, ref)
+        )
+      )
+    )
+  )
+}
+
+export const never: XQuery<unknown, never, never> = fromEffect(I.never)
+
+export function none<A = never>(): XQuery<unknown, never, O.Option<A>> {
+  return succeed(O.none())
+}
+
+export function some<A>(a: A): XQuery<unknown, never, O.Option<A>> {
+  return succeed(O.some(a))
+}
+
 /*
  * -------------------------------------------
  * Monad
@@ -427,6 +732,18 @@ export function flatMap<A, R1, E1, B>(
  * Reader
  * -------------------------------------------
  */
+
+export function ask<R>(): XQuery<R, never, R> {
+  return fromEffect(I.ask())
+}
+
+export function asks<R, A>(f: (_: R) => A): XQuery<R, never, A> {
+  return ask<R>().map(f)
+}
+
+export function asksM<R0, R, E, A>(f: (_: R0) => XQuery<R, E, A>): XQuery<R0 & R, E, A> {
+  return ask<R0>().flatMap(f)
+}
 
 export function gives_<R, E, A, R0>(ra: XQuery<R, E, A>, f: Described<(r0: R0) => R>): XQuery<R0, E, A> {
   return ra.gives(f)
@@ -496,15 +813,236 @@ export function giveLayer<R1, E1, A1>(
 
 /*
  * -------------------------------------------
+ * Filterable
+ * -------------------------------------------
+ */
+
+export function partitionM_<A, R, E, B>(
+  as: Iterable<A>,
+  f: (a: A) => XQuery<R, E, B>
+): XQuery<R, never, readonly [ReadonlyArray<E>, ReadonlyArray<B>]> {
+  return foreach_(as, flow(f, recover)).map(A.partitionMap(identity))
+}
+
+export function partitionM<A, R, E, B>(
+  f: (a: A) => XQuery<R, E, B>
+): (as: Iterable<A>) => XQuery<R, never, readonly [ReadonlyArray<E>, ReadonlyArray<B>]> {
+  return (as) => partitionM_(as, f)
+}
+
+export function partitonParM_<A, R, E, B>(
+  as: Iterable<A>,
+  f: (a: A) => XQuery<R, E, B>
+): XQuery<R, never, readonly [ReadonlyArray<E>, ReadonlyArray<B>]> {
+  return foreachPar_(as, flow(f, recover)).map(A.partitionMap(identity))
+}
+
+export function partitionParM<A, R, E, B>(
+  f: (a: A) => XQuery<R, E, B>
+): (as: Iterable<A>) => XQuery<R, never, readonly [ReadonlyArray<E>, ReadonlyArray<B>]> {
+  return (as) => partitonParM_(as, f)
+}
+
+/*
+ * -------------------------------------------
  * Combinators
  * -------------------------------------------
  */
+
+export function recover<R, E, A>(ma: XQuery<R, E, A>): XQuery<R, never, E.Either<E, A>> {
+  return ma.fold(
+    (e) => E.left(e),
+    (a) => E.right(a)
+  )
+}
+
+export function left<R, E, A, B>(ma: XQuery<R, E, E.Either<A, B>>): XQuery<R, O.Option<E>, A> {
+  return ma.foldM(
+    flow(O.some, fail),
+    E.fold(succeed, () => fail(O.none()))
+  )
+}
+
+export function right<R, E, A, B>(ma: XQuery<R, E, E.Either<A, B>>): XQuery<R, O.Option<E>, B> {
+  return ma.foldM(
+    flow(O.some, fail),
+    E.fold(() => fail(O.none()), succeed)
+  )
+}
+
+export function leftOrFail_<R, E, A, B, E1>(ma: XQuery<R, E, E.Either<A, B>>, e: E1): XQuery<R, E | E1, A> {
+  return ma.flatMap(E.fold(succeed, () => fail(e)))
+}
+
+export function leftOrFail<E1>(e: E1): <R, E, A, B>(ma: XQuery<R, E, E.Either<A, B>>) => XQuery<R, E | E1, A> {
+  return (ma) => leftOrFail_(ma, e)
+}
+
+export function leftOrFailWith_<R, E, A, B, E1>(
+  ma: XQuery<R, E, E.Either<A, B>>,
+  f: (right: B) => E1
+): XQuery<R, E | E1, A> {
+  return ma.flatMap(E.fold(succeed, flow(f, fail)))
+}
+
+export function leftOrFailWith<B, E1>(
+  f: (right: B) => E1
+): <R, E, A>(ma: XQuery<R, E, E.Either<A, B>>) => XQuery<R, E | E1, A> {
+  return (ma) => leftOrFailWith_(ma, f)
+}
+
+export function rightOrFail_<R, E, A, B, E1>(ma: XQuery<R, E, E.Either<A, B>>, e: E1): XQuery<R, E | E1, B> {
+  return ma.flatMap(E.fold(() => fail(e), succeed))
+}
+
+export function rightOrFail<E1>(e: E1): <R, E, A, B>(ma: XQuery<R, E, E.Either<A, B>>) => XQuery<R, E | E1, B> {
+  return (ma) => rightOrFail_(ma, e)
+}
+
+export function rightOrFailWith_<R, E, A, B, E1>(
+  ma: XQuery<R, E, E.Either<A, B>>,
+  f: (left: A) => E1
+): XQuery<R, E | E1, B> {
+  return ma.flatMap(E.fold(flow(f, fail), succeed))
+}
+
+export function rightOrFailWith<A, E1>(
+  f: (left: A) => E1
+): <R, E, B>(ma: XQuery<R, E, E.Either<A, B>>) => XQuery<R, E | E1, B> {
+  return (ma) => rightOrFailWith_(ma, f)
+}
+
+export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => XQuery<R, E, B>): XQuery<R, E, ReadonlyArray<B>> {
+  return pipe(
+    as,
+    It.foldLeft(succeed([]) as XQuery<R, E, ReadonlyArray<B>>, (b, a) => b.map2(f(a), (bs, b) => A.append(b)(bs)))
+  )
+}
+
+export function foreach<A, R, E, B>(f: (a: A) => XQuery<R, E, B>): (as: Iterable<A>) => XQuery<R, E, ReadonlyArray<B>> {
+  return (as) => foreach_(as, f)
+}
 
 export function foreachPar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => XQuery<R, E, B>): XQuery<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
     It.foldLeft(succeed([]) as XQuery<R, E, ReadonlyArray<B>>, (b, a) => b.map2Par(f(a), (bs, b) => A.append(b)(bs)))
   )
+}
+
+export function foreachPar<A, R, E, B>(
+  f: (a: A) => XQuery<R, E, B>
+): (as: Iterable<A>) => XQuery<R, E, ReadonlyArray<B>> {
+  return (as) => foreachPar_(as, f)
+}
+
+export function foreachBatched_<A, R, E, B>(
+  as: Iterable<A>,
+  f: (a: A) => XQuery<R, E, B>
+): XQuery<R, E, ReadonlyArray<B>> {
+  return pipe(
+    as,
+    It.foldLeft(succeed([]) as XQuery<R, E, ReadonlyArray<B>>, (b, a) =>
+      b.map2Batched(f(a), (bs, b) => A.append(b)(bs))
+    )
+  )
+}
+
+export function foreachBatched<A, R, E, B>(
+  f: (a: A) => XQuery<R, E, B>
+): (as: Iterable<A>) => XQuery<R, E, ReadonlyArray<B>> {
+  return (as) => foreachBatched_(as, f)
+}
+
+export function optional<R, E, A>(ma: XQuery<R, E, A>): XQuery<R, E, O.Option<A>> {
+  return ma.foldCauseM(
+    flow(
+      Ca.stripSomeDefects((_) => !(_ instanceof QueryFailure)),
+      O.fold(() => none(), halt)
+    ),
+    some
+  )
+}
+
+export function orDieWith_<R, E, A>(ma: XQuery<R, E, A>, f: (e: E) => unknown): XQuery<R, never, A> {
+  return ma.foldM(flow(f, die), succeed)
+}
+
+export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: XQuery<R, E, A>) => XQuery<R, never, A> {
+  return (ma) => ma.foldM(flow(f, die), succeed)
+}
+
+export function orDie<R, E, A>(ma: XQuery<R, E, A>): XQuery<R, never, A> {
+  return orDieWith_(ma, identity)
+}
+
+export function sandbox<R, E, A>(ma: XQuery<R, E, A>): XQuery<R, Ca.Cause<E>, A> {
+  return ma.foldCauseM(fail, succeed)
+}
+
+export function unsandbox<R, E, A>(v: XQuery<R, Ca.Cause<E>, A>): XQuery<R, E, A> {
+  return mapErrorCause_(v, Ca.flatten)
+}
+
+export function sandboxWith_<R, E, A, R1, E1, B>(
+  ma: XQuery<R, E, A>,
+  f: (query: XQuery<R, Ca.Cause<E>, A>) => XQuery<R1, Ca.Cause<E1>, B>
+): XQuery<R & R1, E | E1, B> {
+  return unsandbox(f(sandbox(ma)))
+}
+
+export function sandboxWith<R, E, A, R1, E1, B>(
+  f: (query: XQuery<R, Ca.Cause<E>, A>) => XQuery<R1, Ca.Cause<E1>, B>
+): (ma: XQuery<R, E, A>) => XQuery<R & R1, E | E1, B> {
+  return (ma) => sandboxWith_(ma, f)
+}
+
+export function summarized_<R, E, A, R1, E1, B, C>(
+  ma: XQuery<R, E, A>,
+  summary: I.IO<R1, E1, B>,
+  f: (start: B, end: B) => C
+): XQuery<R & R1, E | E1, readonly [C, A]> {
+  return pipe(
+    fromEffect(summary),
+    product(ma),
+    map2(fromEffect(summary), ([start, value], end) => [f(start, end), value])
+  )
+}
+
+export function summarized<R1, E1, B, C>(
+  summary: I.IO<R1, E1, B>,
+  f: (start: B, end: B) => C
+): <R, E, A>(ma: XQuery<R, E, A>) => XQuery<R & R1, E | E1, readonly [C, A]> {
+  return (ma) => summarized_(ma, summary, f)
+}
+
+export function unrefineWith_<R, E, A, E1>(
+  ma: XQuery<R, E, A>,
+  pf: (error: unknown) => O.Option<E1>,
+  f: (e: E) => E1
+): XQuery<R, E1, A> {
+  return catchAllCause_(ma, (cause) =>
+    pipe(
+      cause,
+      Ca.find(pf),
+      O.fold(() => pipe(cause, Ca.map(f), halt), fail)
+    )
+  )
+}
+
+export function unrefineWith<E, E1>(
+  pf: (error: unknown) => O.Option<E1>,
+  f: (e: E) => E1
+): <R, A>(ma: XQuery<R, E, A>) => XQuery<R, E1, A> {
+  return (ma) => unrefineWith_(ma, pf, f)
+}
+
+export function unrefine_<R, E, A>(ma: XQuery<R, E, A>, pf: (error: unknown) => O.Option<E>): XQuery<R, E, A> {
+  return unrefineWith_(ma, pf, identity)
+}
+
+export function unrefine<E>(pf: (error: unknown) => O.Option<E>): <R, A>(ma: XQuery<R, E, A>) => XQuery<R, E, A> {
+  return (ma) => unrefine_(ma, pf)
 }
 
 /*
@@ -529,6 +1067,13 @@ abstract class AbstractContinue {
     return matchTag_(this, {
       Effect: ({ query }) => effectContinue(query.map(f)),
       Get: ({ io }) => getContinue(I.map_(io, f))
+    })
+  }
+
+  mapDataSources<R, E, A, R1>(this: Continue<R, E, A>, f: DataSourceAspect<R1>): Continue<R & R1, E, A> {
+    return matchTag_(this, {
+      Effect: ({ query }) => effectContinue(query.mapDataSources(f)),
+      Get: ({ io }) => getContinue(io)
     })
   }
 
@@ -665,6 +1210,15 @@ abstract class AbstractResult {
       Blocked: ({ blockedRequests, cont }) => blockedResult(BRS.gives_(blockedRequests, f), cont.gives(f)),
       Fail: ({ cause }) => failResult(cause),
       Done: ({ value }) => doneResult(value)
+    })
+  }
+
+  mapDataSources<R, E, A, R1>(this: Result<R, E, A>, f: DataSourceAspect<R1>): Result<R & R1, E, A> {
+    return matchTag_(this, {
+      Blocked: ({ blockedRequests, cont }) =>
+        blockedResult(BRS.mapDataSources(blockedRequests, f), cont.mapDataSources(f)),
+      Done: ({ value }) => doneResult(value),
+      Fail: ({ cause }) => failResult(cause)
     })
   }
 }

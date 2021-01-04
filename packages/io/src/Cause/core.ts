@@ -1,5 +1,6 @@
 import type { FiberId } from '../Fiber/FiberId'
 import type { Eq } from '@principia/base/data/Eq'
+import type { Predicate } from '@principia/base/data/Function'
 import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
 import type * as HKT from '@principia/base/HKT'
 
@@ -813,6 +814,57 @@ export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
   return Sy.unsafeRun(stripInterruptsSafe(cause))
 }
 
+export function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>): Sy.USync<O.Option<Cause<E>>> {
+  return Sy.gen(function* (_) {
+    switch (cause._tag) {
+      case 'Empty': {
+        return O.none()
+      }
+      case 'Interrupt': {
+        return O.some(interrupt(cause.fiberId))
+      }
+      case 'Fail': {
+        return O.some(fail(cause.value))
+      }
+      case 'Die': {
+        return pf(cause.value) ? O.some(die(cause.value)) : O.none()
+      }
+      case 'Both': {
+        const left  = yield* _(stripSomeDefectsSafe(cause.left, pf))
+        const right = yield* _(stripSomeDefectsSafe(cause.right, pf))
+
+        return left._tag === 'Some'
+          ? right._tag === 'Some'
+            ? O.some(both(left.value, right.value))
+            : left
+          : right._tag === 'Some'
+            ? right
+            : O.none()
+      }
+      case 'Then': {
+        const left  = yield* _(stripSomeDefectsSafe(cause.left, pf))
+        const right = yield* _(stripSomeDefectsSafe(cause.right, pf))
+
+        return left._tag === 'Some'
+          ? right._tag === 'Some'
+            ? O.some(then(left.value, right.value))
+            : left
+          : right._tag === 'Some'
+            ? right
+            : O.none()
+      }
+    }
+  })
+}
+
+export function stripSomeDefects_<E>(cause: Cause<E>, pf: Predicate<unknown>): O.Option<Cause<E>> {
+  return Sy.unsafeRun(stripSomeDefectsSafe(cause, pf))
+}
+
+export function stripSomeDefects(pf: Predicate<unknown>): <E>(cause: Cause<E>) => O.Option<Cause<E>> {
+  return (cause) => Sy.unsafeRun(stripSomeDefectsSafe(cause, pf))
+}
+
 /**
  * @internal
  */
@@ -832,7 +884,7 @@ export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<nev
         return O.some(cause)
       }
       case 'Then': {
-        const lefts = yield* _(keepDefectsSafe(cause.left))
+        const lefts  = yield* _(keepDefectsSafe(cause.left))
         const rights = yield* _(keepDefectsSafe(cause.right))
 
         if (lefts._tag === 'Some' && rights._tag === 'Some') {
@@ -846,7 +898,7 @@ export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<nev
         }
       }
       case 'Both': {
-        const lefts = yield* _(keepDefectsSafe(cause.left))
+        const lefts  = yield* _(keepDefectsSafe(cause.left))
         const rights = yield* _(keepDefectsSafe(cause.right))
 
         if (lefts._tag === 'Some' && rights._tag === 'Some') {
@@ -887,7 +939,7 @@ export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Sy.
         return E.left(cause)
       }
       case 'Then': {
-        const lefts = yield* _(sequenceCauseEitherSafe(cause.left))
+        const lefts  = yield* _(sequenceCauseEitherSafe(cause.left))
         const rights = yield* _(sequenceCauseEitherSafe(cause.right))
 
         return lefts._tag === 'Left'
@@ -897,7 +949,7 @@ export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Sy.
           : E.right(lefts.right)
       }
       case 'Both': {
-        const lefts = yield* _(sequenceCauseEitherSafe(cause.left))
+        const lefts  = yield* _(sequenceCauseEitherSafe(cause.left))
         const rights = yield* _(sequenceCauseEitherSafe(cause.right))
 
         return lefts._tag === 'Left'
@@ -933,7 +985,7 @@ export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<
         return O.some(cause)
       }
       case 'Then': {
-        const lefts = yield* _(sequenceCauseOptionSafe(cause.left))
+        const lefts  = yield* _(sequenceCauseOptionSafe(cause.left))
         const rights = yield* _(sequenceCauseOptionSafe(cause.right))
         return lefts._tag === 'Some'
           ? rights._tag === 'Some'
@@ -944,7 +996,7 @@ export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<
             : O.none()
       }
       case 'Both': {
-        const lefts = yield* _(sequenceCauseOptionSafe(cause.left))
+        const lefts  = yield* _(sequenceCauseOptionSafe(cause.left))
         const rights = yield* _(sequenceCauseOptionSafe(cause.right))
         return lefts._tag === 'Some'
           ? rights._tag === 'Some'
