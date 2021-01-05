@@ -1,18 +1,43 @@
 import * as E from '@principia/base/data/Either'
 import { pipe } from '@principia/base/data/Function'
+import { inspect } from 'util'
 
-import { draw, getDecodeErrorsValidation } from '../src/DecodeErrors'
+import { paths } from '../src/DecodeErrors'
 import * as D from '../src/DecoderKF'
+import { decode } from '../src/EitherDecoder'
 
-const M = getDecodeErrorsValidation({
-  ...E.MonadFail,
-  ...E.Bifunctor,
-  ...E.Alt,
-  ...E.Fallible
+const dec = D.type({
+  a: D.string(),
+  b: D.number(),
+  c: D.type({
+    d: D.boolean(),
+    e: D.array(D.number()),
+    f: D.type({
+      g: pipe(
+        D.number(),
+        D.refine((n): n is number => n === 42, 'the meaning of life')
+      )
+    })
+  })
 })
 
-const d = D.fromRefinement((u: unknown): u is string => typeof u === 'string', 'string', {
-  message: "That's no string"
-})
+export const badInput = {
+  a: 12,
+  b: 'wrong',
+  c: {
+    d: true,
+    e: [1, 'wrong again', 3],
+    f: {
+      g: 43
+    }
+  }
+}
 
-console.log(d._meta)
+pipe(
+  badInput,
+  decode(dec),
+  E.fold(
+    (e) => console.log(inspect(paths(e), { depth: 4, colors: true })),
+    (a) => console.log(a)
+  )
+)

@@ -87,14 +87,14 @@ export function type<P extends Record<string, Encoder<any, any>>>(
   {
     [K in keyof P]: TypeOf<P[K]>
   }
-> {
+  > {
   return {
     encode: (a) => {
-      const o: Record<keyof P, any> = {} as any
+      const mut_o: Record<keyof P, any> = {} as any
       for (const k in properties) {
-        o[k] = properties[k].encode(a[k])
+        mut_o[k] = properties[k].encode(a[k])
       }
-      return o
+      return mut_o
     }
   }
 }
@@ -103,28 +103,28 @@ export function partial<P extends Record<string, Encoder<any, any>>>(
   properties: P
 ): Encoder<
   Partial<
-    {
-      [K in keyof P]: OutputOf<P[K]>
-    }
+  {
+    [K in keyof P]: OutputOf<P[K]>
+  }
   >,
   Partial<
-    {
-      [K in keyof P]: TypeOf<P[K]>
-    }
+  {
+    [K in keyof P]: TypeOf<P[K]>
+  }
   >
-> {
+  > {
   return {
     encode: (a) => {
-      const o: Record<keyof P, any> = {} as any
+      const mut_o: Record<keyof P, any> = {} as any
       for (const k in properties) {
         const v = a[k]
         // don't add missing properties
         if (k in a) {
           // don't strip undefined properties
-          o[k] = v === undefined ? undefined : properties[k].encode(v)
+          mut_o[k] = v === undefined ? undefined : properties[k].encode(v)
         }
       }
-      return o
+      return mut_o
     }
   }
 }
@@ -132,11 +132,11 @@ export function partial<P extends Record<string, Encoder<any, any>>>(
 export function record<O, A>(codomain: Encoder<O, A>): Encoder<Record<string, O>, Record<string, A>> {
   return {
     encode: (r) => {
-      const o: Record<string, O> = {}
+      const mut_o: Record<string, O> = {}
       for (const k in r) {
-        o[k] = codomain.encode(r[k])
+        mut_o[k] = codomain.encode(r[k])
       }
-      return o
+      return mut_o
     }
   }
 }
@@ -156,7 +156,7 @@ export function tuple<C extends ReadonlyArray<Encoder<any, any>>>(
   {
     [K in keyof C]: TypeOf<C[K]>
   }
-> {
+  > {
   return {
     encode: (as) => components.map((c, i) => c.encode(as[i])) as any
   }
@@ -180,8 +180,8 @@ export function sum_<T extends string, MS extends Record<string, Encoder<any, an
 export function sum<T extends string>(
   tag: T
 ): <MS extends Record<string, Encoder<any, any>>>(
-  members: MS
-) => Encoder<OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
+    members: MS
+  ) => Encoder<OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
   return (members) => ({
     encode: (a) => members[a[tag]].encode(a)
   })

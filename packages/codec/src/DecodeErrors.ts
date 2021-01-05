@@ -1,14 +1,19 @@
 import type { DecodeError } from './DecodeError'
+import type { MonadDecoder } from './DecoderK'
 import type { Tree } from '@principia/base/data/Tree'
 import type * as P from '@principia/base/typeclass'
 
+import * as Eval from '@principia/base/control/Eval'
+import * as A from '@principia/base/data/Array'
 import * as E from '@principia/base/data/Either'
 import { identity, pipe, tuple } from '@principia/base/data/Function'
-import { drawTree } from '@principia/base/data/Tree'
+import * as T from '@principia/base/data/Tree'
 import * as HKT from '@principia/base/HKT'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import { fold, info, leaf } from './DecodeError'
+
+export type DecodeErrors = FS.FreeSemigroup<DecodeError<ErrorInfo>>
 
 export interface ErrorInfo {
   name?: string
@@ -19,8 +24,6 @@ export interface ErrorInfo {
 const showErrorInfo = (info: ErrorInfo): string =>
   info.name && info.message ? `${info.name}: ${info.message}` : info.name ?? info.message ?? ''
 
-export type DecodeErrors = FS.FreeSemigroup<DecodeError<ErrorInfo>>
-
 const isInfoPopulated = (info?: ErrorInfo): info is ErrorInfo => !!info?.id || !!info?.name || !!info?.message
 
 export function error(actual: unknown, expected: string, errorInfo?: ErrorInfo): DecodeErrors {
@@ -29,29 +32,14 @@ export function error(actual: unknown, expected: string, errorInfo?: ErrorInfo):
     : FS.element(leaf(actual, expected))
 }
 
-export function success<A>(a: A): E.Either<DecodeErrors, A> {
-  return E.right(a)
-}
-
-export function failure<A = never>(actual: unknown, expected: string, info?: ErrorInfo): E.Either<DecodeErrors, A> {
-  return E.left(error(actual, expected, info))
-}
-
-const empty: ReadonlyArray<never> = []
-
-const make = <A>(value: A, forest: ReadonlyArray<Tree<A>> = empty): Tree<A> => ({
-  value,
-  forest
-})
-
 const toTree: (e: DecodeError<ErrorInfo>) => Tree<string> = fold({
-  Leaf: (input, expected) => make(`cannot decode ${JSON.stringify(input)}, should be ${expected}`, empty),
-  Key: (key, kind, errors) => make(`${kind} property ${JSON.stringify(key)}`, toForest(errors)),
-  Index: (index, kind, errors) => make(`${kind} index ${index}`, toForest(errors)),
-  Member: (index, errors) => make(`member ${index}`, toForest(errors)),
-  Lazy: (id, errors) => make(`lazy type ${id}`, toForest(errors)),
-  Wrap: (error, errors) => make(showErrorInfo(error), toForest(errors)),
-  Info: (error) => make(showErrorInfo(error))
+  Leaf: (input, expected) => T.make(`cannot decode ${JSON.stringify(input)}, should be ${expected}`, A.empty()),
+  Key: (key, kind, errors) => T.make(`${kind} property ${JSON.stringify(key)}`, toForest(errors)),
+  Index: (index, kind, errors) => T.make(`${kind} index ${index}`, toForest(errors)),
+  Member: (index, errors) => T.make(`member ${index}`, toForest(errors)),
+  Lazy: (id, errors) => T.make(`lazy type ${id}`, toForest(errors)),
+  Wrap: (error, errors) => T.make(showErrorInfo(error), toForest(errors)),
+  Info: (error) => T.make(showErrorInfo(error), A.empty())
 })
 
 export function toForest(e: DecodeErrors): ReadonlyArray<Tree<string>> {
@@ -78,10 +66,50 @@ export function toForest(e: DecodeErrors): ReadonlyArray<Tree<string>> {
   }
 }
 
-export function draw(e: DecodeErrors): string {
+export function prettyPrint(e: DecodeErrors): string {
   return toForest(e)
-    .map(drawTree({ show: identity }))
+    .map(T.drawTree({ show: identity }))
     .join('\n')
+}
+
+export function paths(e: DecodeErrors): Record<string, any> {
+  const go = (e: DecodeErrors): Eval.Eval<Record<string, any>> =>
+    Eval.gen(function* (_) {
+      switch (e._tag) {
+        case 'Combine': {
+          const l = yield* _(go(e.left))
+          const r = yield* _(go(e.right))
+          return { ...l, ...r }
+        }
+        case 'Element': {
+          const el = e.value
+          switch (el._tag) {
+            case 'Info': {
+              return {}
+            }
+            case 'Wrap': {
+              return yield* _(go(el.errors))
+            }
+            case 'Lazy': {
+              return yield* _(go(el.errors))
+            }
+            case 'Member': {
+              return yield* _(go(el.errors))
+            }
+            case 'Key': {
+              return { [el.key]: yield* _(go(el.errors)) }
+            }
+            case 'Leaf': {
+              return { expected: el.expected, actual: el.actual }
+            }
+            case 'Index': {
+              return { [el.index]: yield* _(go(el.errors)) }
+            }
+          }
+        }
+      }
+    })
+  return go(e).value()
 }
 
 /*
@@ -94,10 +122,10 @@ export type V<C> = HKT.CleanParam<C, 'E'> & HKT.Fix<'E', DecodeErrors>
 
 export function getDecodeErrorsValidation<M extends HKT.URIS, C = HKT.Auto>(
   M: P.MonadFail<M, C> & P.Bifunctor<M, C> & P.Fallible<M, C>
-): P.MonadFail<M, V<C>> & P.Alt<M, V<C>> & P.Bifunctor<M, V<C>>
+): MonadDecoder<M, C, DecodeErrors>
 export function getDecodeErrorsValidation<M>(
   M: P.MonadFail<HKT.UHKT2<M>> & P.Bifunctor<HKT.UHKT2<M>> & P.Fallible<HKT.UHKT2<M>>
-): P.MonadFail<HKT.UHKT2<M>, V<HKT.Auto>> & P.Alt<HKT.UHKT2<M>, V<HKT.Auto>> & P.Bifunctor<HKT.UHKT2<M>, HKT.Auto> {
+): MonadDecoder<HKT.UHKT2<M>, HKT.Auto, DecodeErrors> {
   const map2_: P.Map2Fn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, fb, f) =>
     M.flatten(
       M.map2_(M.recover(fa), M.recover(fb), (ea, eb) =>
@@ -106,8 +134,8 @@ export function getDecodeErrorsValidation<M>(
             ? M.fail(FS.combine(ea.left, eb.left))
             : M.fail(ea.left)
           : E.isLeft(eb)
-            ? M.fail(eb.left)
-            : M.pure(f(ea.right, eb.right))
+          ? M.fail(eb.left)
+          : M.pure(f(ea.right, eb.right))
       )
     )
 

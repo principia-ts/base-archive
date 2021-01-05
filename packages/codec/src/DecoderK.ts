@@ -13,6 +13,21 @@ import * as R from '@principia/base/data/Record'
 
 import { _intersect } from './util'
 
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+ */
+
+export const URI = 'DecoderK'
+export type URI = typeof URI
+
+declare module '@principia/base/HKT' {
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: DecoderK<I, E, A>
+  }
+}
+
 export type V<C, E> = C & HKT.Fix<'E', E>
 
 export type MonadDecoder<M extends HKT.URIS, C, E> = P.MonadFail<M, V<C, E>> &
@@ -20,7 +35,7 @@ export type MonadDecoder<M extends HKT.URIS, C, E> = P.MonadFail<M, V<C, E>> &
   P.Alt<M, V<C, E>>
 
 export interface DecoderK<I, E, O> {
-  readonly _I?: (_: I) => void
+  readonly _I?: () => I
   readonly _E?: () => E
   readonly _O?: () => O
   readonly decode: <M extends HKT.URIS, C = HKT.Auto>(
@@ -50,34 +65,25 @@ export type InputOfHKT<KD> = [KD] extends [DecoderKHKT<infer I, any, any>] ? I :
 export type TypeOfHKT<KD> = [KD] extends [DecoderKHKT<any, any, infer O>] ? O : never
 
 export interface DecoderKHKT<I, E, O> {
-  readonly _I?: (_: I) => void
+  readonly _I?: () => I
   readonly _E?: () => E
   readonly _O?: () => O
   readonly decode: <M>(M: MonadDecoder<HKT.UHKT2<M>, HKT.Auto, E>) => (i: I) => HKT.HKT2<M, E, O>
 }
 
-export function makeDecoderK<I, E, O>(
-  decode: <M extends HKT.URIS, C = HKT.Auto>(
-    M: MonadDecoder<M, C, E>
-  ) => (
-    i: I
-  ) => HKT.Kind<
-    M,
-    V<C, E>,
-    HKT.Initial<C, 'N'>,
-    HKT.Initial<C, 'K'>,
-    HKT.Initial<C, 'Q'>,
-    HKT.Initial<C, 'W'>,
-    HKT.Initial<C, 'X'>,
-    HKT.Initial<C, 'I'>,
-    HKT.Initial<C, 'S'>,
-    HKT.Initial<C, 'R'>,
-    E,
-    O
-  >
-): DecoderK<I, E, O> {
+interface DecodeFnHKT<I, E, O> {
+  (M: MonadDecoder<HKT.UHKT2<any>, HKT.Auto, E>): (i: I) => HKT.HKT2<any, E, O>
+}
+
+/*
+ * -------------------------------------------
+ * Constructors
+ * -------------------------------------------
+ */
+
+export function makeDecoderK<I, E, O>(decode: DecodeFnHKT<I, E, O>): DecoderK<I, E, O> {
   return {
-    decode
+    decode: decode as any
   }
 }
 
@@ -96,18 +102,19 @@ export function literal<I, E>(onError: (i: I, values: NonEmptyArray<Literal>) =>
   })
 }
 
-export function mapLeftWithInput_<I, E, A>(
-  decoder: DecoderK<I, E, A>,
-  f: (i: I, e: E) => E
-): DecoderK<I, E, A> {
+/*
+ * -------------------------------------------
+ * Combinators
+ * -------------------------------------------
+ */
+
+export function mapLeftWithInput_<I, E, A>(decoder: DecoderK<I, E, A>, f: (i: I, e: E) => E): DecoderK<I, E, A> {
   return {
     decode: (M) => (i) => M.mapLeft_(decoder.decode(M)(i), (e) => f(i, e))
   }
 }
 
-export function mapLeftWithInput<I, E>(
-  f: (i: I, e: E) => E
-): <A>(decoder: DecoderK<I, E, A>) => DecoderK<I, E, A> {
+export function mapLeftWithInput<I, E>(f: (i: I, e: E) => E): <A>(decoder: DecoderK<I, E, A>) => DecoderK<I, E, A> {
   return (decoder) => mapLeftWithInput_(decoder, f)
 }
 
@@ -340,9 +347,7 @@ export function union<E>(
 ) => DecoderK<InputOf<P[keyof P]>, E, TypeOf<P[keyof P]>>
 export function union<E>(
   onMemberError: (index: number, e: E) => E
-): <P extends readonly [DecoderK<any, E, any>, ...DecoderK<any, E, any>[]]>(
-  ...members: P
-) => DecoderKHKT<any, E, any> {
+): <P extends readonly [DecoderK<any, E, any>, ...DecoderK<any, E, any>[]]>(...members: P) => DecoderKHKT<any, E, any> {
   return (...members) => ({
     decode: (M) => (i) => {
       let out = M.mapLeft_(members[0].decode(M)(i), (e: E) => onMemberError(0, e))
@@ -410,27 +415,56 @@ export function lazy<I, E, A>(
   }
 }
 
+export function runDecoder<I, O, M extends HKT.URIS, C, E>(
+  M: MonadDecoder<M, C, E>,
+  decoder: DecoderK<I, E, O>
+): (
+  i: I
+) => HKT.Kind<
+  M,
+  C,
+  HKT.Initial<C, 'N'>,
+  HKT.Initial<C, 'K'>,
+  HKT.Initial<C, 'Q'>,
+  HKT.Initial<C, 'W'>,
+  HKT.Initial<C, 'X'>,
+  HKT.Initial<C, 'I'>,
+  HKT.Initial<C, 'S'>,
+  HKT.Initial<C, 'R'>,
+  E,
+  O
+> {
+  return (i) => decoder.decode(M)(i)
+}
+
+/*
+ * -------------------------------------------
+ * Category
+ * -------------------------------------------
+ */
+
 export function id<E, A>(): DecoderK<A, E, A> {
   return {
     decode: (M) => M.pure
   }
 }
 
-export function compose_<I, E, A, B>(
-  ia: DecoderK<I, E, A>,
-  ab: DecoderK<A, E, B>
-): DecoderK<I, E, B>
+export function compose_<I, E, A, B>(ia: DecoderK<I, E, A>, ab: DecoderK<A, E, B>): DecoderK<I, E, B>
 export function compose_<I, E, A, B>(ia: DecoderKHKT<I, E, A>, ab: DecoderKHKT<A, E, B>): DecoderKHKT<I, E, B> {
   return {
     decode: (M) => (i0) => M.flatMap_(ia.decode(M)(i0), ab.decode(M))
   }
 }
 
-export function compose<A, E, B>(
-  ab: DecoderK<A, E, B>
-): <I>(ia: DecoderK<I, E, A>) => DecoderK<I, E, B> {
+export function compose<A, E, B>(ab: DecoderK<A, E, B>): <I>(ia: DecoderK<I, E, A>) => DecoderK<I, E, B> {
   return (ia) => compose_(ia, ab)
 }
+
+/*
+ * -------------------------------------------
+ * Functor
+ * -------------------------------------------
+ */
 
 export function map_<I, E, A, B>(ia: DecoderK<I, E, A>, f: (a: A) => B): DecoderK<I, E, B> {
   return {
@@ -445,14 +479,14 @@ export function map<A, B>(f: (a: A) => B): <I, E>(ia: DecoderK<I, E, A>) => Deco
   return (ia) => map_(ia, f)
 }
 
-export function alt_<I, E, A>(
-  me: DecoderK<I, E, A>,
-  that: () => DecoderK<I, E, A>
-): DecoderK<I, E, A>
-export function alt_<I, E, A>(
-  me: DecoderK<I, E, A>,
-  that: () => DecoderK<I, E, A>
-): DecoderKHKT<I, E, A> {
+/*
+ * -------------------------------------------
+ * Alt
+ * -------------------------------------------
+ */
+
+export function alt_<I, E, A>(me: DecoderK<I, E, A>, that: () => DecoderK<I, E, A>): DecoderK<I, E, A>
+export function alt_<I, E, A>(me: DecoderK<I, E, A>, that: () => DecoderK<I, E, A>): DecoderKHKT<I, E, A> {
   return {
     decode: (M) => {
       const meM = me.decode(M)
@@ -461,9 +495,7 @@ export function alt_<I, E, A>(
   }
 }
 
-export function alt<I, E, A>(
-  that: () => DecoderK<I, E, A>
-): (me: DecoderK<I, E, A>) => DecoderK<I, E, A> {
+export function alt<I, E, A>(that: () => DecoderK<I, E, A>): (me: DecoderK<I, E, A>) => DecoderK<I, E, A> {
   return (me) => alt_(me, that)
 }
 
