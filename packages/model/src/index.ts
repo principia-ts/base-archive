@@ -1,7 +1,7 @@
 import type { M } from './summoner'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
-import type * as D from '@principia/codec/Decoder'
+import type * as D from '@principia/codec/DecoderKF'
 
 import * as fc from 'fast-check'
 
@@ -17,11 +17,7 @@ import { summonFor } from './summoner'
 export const { make, makeADT } = summonFor({})
 
 export const getShow      = S.deriveFor(make)({})
-export const getDecoder: <E, A>(
-  F: M<{}, E, A>
-) => <M extends HKT.URIS, C>(
-  M: P.MonadFail<M, D.V<C>> & P.Applicative<M, D.V<C>> & P.Bifunctor<M, C> & P.Alt<M, D.V<C>>
-) => D.Decoder<M, C, unknown, A> = Dec.deriveFor(make)({})
+export const getDecoder   = Dec.deriveFor(make)({})
 export const getEncoder   = Enc.deriveFor(make)({})
 export const getEq        = Eq.deriveFor(make)({})
 export const getGuard     = G.deriveFor(make)({})

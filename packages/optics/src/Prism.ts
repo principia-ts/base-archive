@@ -17,6 +17,9 @@ export interface Prism<S, A> {
   readonly reverseGet: (a: A) => S
 }
 
+export type _S<X> = X extends Prism<infer S, any> ? S : never
+export type _A<X> = X extends Prism<any, infer A> ? A : never
+
 export const URI = 'optics/Prism'
 
 export type URI = typeof URI

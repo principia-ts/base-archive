@@ -3,7 +3,7 @@ import type { Summoner } from '../../summoner'
 import type { URI } from './HKT'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
-import type * as D from '@principia/codec/Decoder'
+import type * as D from '@principia/codec/DecoderKF'
 
 import { pipe } from '@principia/base/data/Function'
 
@@ -43,8 +43,6 @@ export function deriveFor<Su extends Summoner<any>>(
   }
 ) => <S, R, E, A>(
   F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
-) => <M extends HKT.URIS, C>(
-  M: P.MonadFail<M, D.V<C>> & P.Bifunctor<M, C> & P.Alt<M, D.V<C>>
-) => D.Decoder<M, C, unknown, A> {
+) => D.DecoderKF<unknown, A> {
   return (env) => (F) => pipe(env, F.derive(allDecoderInterpreters()))
 }

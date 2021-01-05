@@ -3,7 +3,7 @@ import type { URI } from './HKT'
 
 import * as A from '@principia/base/data/Array'
 import { pipe } from '@principia/base/data/Function'
-import * as D from '@principia/codec/Decoder'
+import * as D from '@principia/codec/DecoderKF'
 
 import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'
@@ -16,7 +16,7 @@ export const IntersectionDecoder = implementInterpreter<URI, Alg.IntersectionURI
       A.map((f) => f(env)),
       (decoders) =>
         applyDecoderConfig(config?.config)(
-          (M) => D.intersectAll(M)(decoders.map((_) => _(M)) as any, extractInfo(config)) as any,
+          D.intersectAll(decoders as any, extractInfo(config)) as any,
           env,
           decoders as any
         )

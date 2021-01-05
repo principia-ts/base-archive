@@ -1,12 +1,11 @@
 import type * as Alg from '../../algebra'
 import type { URI } from './HKT'
 
-import * as E from '@principia/base/data/Either'
 import { pipe } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 import * as DE from '@principia/codec/DecodeError'
 import { error } from '@principia/codec/DecodeErrors'
-import * as D from '@principia/codec/Decoder'
+import * as D from '@principia/codec/DecoderKF'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import { implementInterpreter } from '../../HKT'
@@ -17,11 +16,10 @@ export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) =>
   newtypeIso: (iso, a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(
-        (M) =>
           pipe(
-            decoder(M),
-            D.map(M)(iso.get),
-            D.mapLeftWithInput(M)((i, e) => FS.combine(e, FS.element(DE.info(extractInfo(config)))))
+            decoder,
+            D.map(iso.get),
+            D.mapLeftWithInput((i, e) => FS.combine(e, FS.element(DE.info(extractInfo(config)))))
           ),
         env,
         decoder
@@ -30,10 +28,9 @@ export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) =>
   newtypePrism: (prism, a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(
-        (M) =>
           pipe(
-            decoder(M),
-            D.parse(M)((a) =>
+            decoder,
+            D.parse((M) => (a) =>
               O.fold_(
                 prism.getOption(a),
                 () =>
