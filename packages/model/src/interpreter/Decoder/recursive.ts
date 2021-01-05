@@ -2,7 +2,7 @@ import type * as Alg from '../../algebra'
 import type { URI } from './HKT'
 
 import { pipe } from '@principia/base/data/Function'
-import * as D from '@principia/codec/Decoder'
+import * as D from '@principia/codec/DecoderKF'
 
 import { implementInterpreter } from '../../HKT'
 import { memoize } from '../../utils'
@@ -12,11 +12,12 @@ import { extractInfo } from './utils'
 export const RecursiveDecoder = implementInterpreter<URI, Alg.RecursiveURI>()((_) => ({
   recursive: (id, f, config) => {
     const get = memoize<void, ReturnType<typeof f>>(() => f(res))
+
     const res: ReturnType<typeof f> = (env) =>
       pipe(
-        (M: any) => () => get()(env)(M),
+        () => get()(env),
         (getDecoder) =>
-          applyDecoderConfig(config?.config)((M) => D.lazy(M)(id, getDecoder(M), extractInfo(config)), env, {})
+          applyDecoderConfig(config?.config)(D.lazy(id, getDecoder, extractInfo(config)), env, {})
       )
 
     return res

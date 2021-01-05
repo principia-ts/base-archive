@@ -46,7 +46,6 @@
     "no-unexpected-multiline": "off",
 
     "curly": ["warn", "all"],
-    "@typescript-eslint/indent": ["warn", 2, { "SwitchCase": 1 }],
     "quotes": ["warn", "single", { "avoidEscape": true }],
     "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
     "max-len": ["warn", 120],

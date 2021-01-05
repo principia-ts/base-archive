@@ -23,7 +23,7 @@ export interface Leaf {
 
 export interface Info<E> {
   readonly _tag: 'Info'
-  error: E
+  info: E
 }
 
 export interface Key<E> {
@@ -116,10 +116,10 @@ export function wrap<E>(error: E, errors: FreeSemigroup<DecodeError<E>>): Decode
   }
 }
 
-export function info<E>(error: E): DecodeError<E> {
+export function info<E>(info: E): DecodeError<E> {
   return {
     _tag: 'Info',
-    error
+    info
   }
 }
 
@@ -136,7 +136,7 @@ export function fold<E, R>(patterns: {
   Member: (index: number, errors: FreeSemigroup<DecodeError<E>>) => R
   Lazy: (id: string, errors: FreeSemigroup<DecodeError<E>>) => R
   Wrap: (error: E, errors: FreeSemigroup<DecodeError<E>>) => R
-  Info: (error: E) => R
+  Info: (info: E) => R
 }): (e: DecodeError<E>) => R {
   const f = (e: DecodeError<E>): R => {
     switch (e._tag) {
@@ -153,7 +153,7 @@ export function fold<E, R>(patterns: {
       case 'Wrap':
         return patterns.Wrap(e.error, e.errors)
       case 'Info':
-        return patterns.Info(e.error)
+        return patterns.Info(e.info)
     }
   }
   return f
