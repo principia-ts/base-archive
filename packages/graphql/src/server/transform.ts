@@ -3,7 +3,8 @@ import type { ResolverF, ScalarFunctions } from '../schema'
 import * as E from '@principia/base/data/Either'
 import { identity, pipe } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
-import { Request, Response } from '@principia/http'
+import { HttpRequest } from '@principia/http/HttpRequest'
+import { HttpResponse } from '@principia/http/HttpResponse'
 import * as T from '@principia/io/IO'
 import * as Sy from '@principia/io/Sync'
 import { Context } from '@principia/koa'
@@ -16,15 +17,15 @@ export function transformResolvers<Ctx>(
   env: any
 ) {
   const toBind = {}
-  for (const [typeName, fields] of entries(res)) {
+  for (const [mut_typeName, fields] of entries(res)) {
     const resolvers = {}
-    for (const [fieldName, resolver] of entries(fields)) {
+    for (const [mut_fieldName, resolver] of entries(fields)) {
       if (typeof resolver === 'function') {
-        (resolvers as any)[fieldName] = (root: any, args: any, ctx: any) => {
+        (resolvers as any)[mut_fieldName] = (root: any, args: any, ctx: any) => {
           const context = {
             engine: ctx,
-            res: new Response(ctx.res),
-            req: new Request(ctx.req)
+            res: new HttpResponse(ctx.res),
+            req: new HttpRequest(ctx.req)
           }
           return pipe(
             (resolver as any)(O.fromNullable(root), args || {}, context),
@@ -36,12 +37,12 @@ export function transformResolvers<Ctx>(
           )
         }
       } else {
-        (resolvers as any)[fieldName] = {
+        (resolvers as any)[mut_fieldName] = {
           subscribe: (root: any, args: any, ctx: any) => {
             const context = {
               engine: ctx,
-              res: new Response(ctx.res),
-              req: new Request(ctx.req)
+              res: new HttpResponse(ctx.res),
+              req: new HttpRequest(ctx.req)
             }
             return pipe(
               (resolver as any).subscribe(O.fromNullable(root), args || {}, context),
@@ -55,11 +56,11 @@ export function transformResolvers<Ctx>(
         }
 
         if ((resolver as any).resolve) {
-          (resolvers as any)[fieldName].resolve = (x: any, _: any, ctx: any) => {
+          (resolvers as any)[mut_fieldName].resolve = (x: any, _: any, ctx: any) => {
             const context = {
               engine: ctx,
-              res: new Response(ctx.res),
-              req: new Request(ctx.req)
+              res: new HttpResponse(ctx.res),
+              req: new HttpRequest(ctx.req)
             }
             return pipe(
               (resolver as any).resolve(x, context),
@@ -73,7 +74,7 @@ export function transformResolvers<Ctx>(
         }
       }
     }
-    (toBind as any)[typeName] = resolvers
+    (toBind as any)[mut_typeName] = resolvers
   }
   return toBind
 }
@@ -83,8 +84,8 @@ export function transformScalarResolvers(
   env: any
 ) {
   const toBind = {}
-  for (const [typeName, resolver] of entries(scalars)) {
-    (toBind as any)[typeName] = new GraphQLScalarType({
+  for (const [mut_typeName, resolver] of entries(scalars)) {
+    (toBind as any)[mut_typeName] = new GraphQLScalarType({
       name: resolver.name,
       parseLiteral: (u) =>
         pipe(

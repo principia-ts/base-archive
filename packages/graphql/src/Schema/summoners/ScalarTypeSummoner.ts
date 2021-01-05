@@ -71,30 +71,30 @@ interface ScalarTypeFromCodecConfig<E, A> extends ScalarConfig {
 const SyM = DE.getDecodeErrorsValidation({ ...Sy.MonadFail, ...Sy.Bifunctor, ...Sy.Fallible })
 
 export const makeScalarTypeFromCodecSummoner: ScalarTypeFromModelSummoner = (name, model, config) => {
-  const { decode } = M.getDecoder(model)(SyM)
-  const { encode } = M.getEncoder(model)
-  const serialize = (u: unknown) =>
+  const { decode }   = M.getDecoder(model)
+  const { encode }   = M.getEncoder(model)
+  const serialize    = (u: unknown) =>
     pipe(
-      decode(u),
+      decode(SyM)(u),
       Sy.mapError(
         (errors) =>
           new GraphQlException(config?.message ?? `Invalid value ${u} provided to Scalar ${name}`, 400, {
-            errors: DE.draw(errors)
+            errors: DE.prettyPrint(errors)
           })
       )
     )
-  const parseValue = flow(serialize, Sy.map(encode))
+  const parseValue   = flow(serialize, Sy.map(encode))
   const parseLiteral = (valueNode: ValueNode) =>
     pipe(
       valueNode,
       valueFromASTUntyped,
-      decode,
+      decode(SyM),
       Sy.bimap(
         (errors) =>
           new GraphQlException(
             config?.message ?? `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`,
             400,
-            { errors: DE.draw(errors) }
+            { errors: DE.prettyPrint(errors) }
           ),
         encode
       )

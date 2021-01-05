@@ -223,7 +223,7 @@ export class HttpRequest {
           contentType,
           O.map(parseContentType),
           O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
-          decodeCharset(SyncDecoderM).decode,
+          decodeCharset.decode(SyncDecoderM),
           Sy.catchAll((_) =>
             Sy.fail(
               new HttpException('Invalid charset', 'HttpRequest#rawBody', { status: Status.UnsupportedMediaType })
@@ -259,7 +259,7 @@ export class HttpRequest {
           O.map(parseContentType),
           O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
-          decodeCharset(SyncDecoderM).decode,
+          decodeCharset.decode(SyncDecoderM),
           Sy.catchAll((_) =>
             Sy.fail(
               new HttpException('Invalid charset', 'HttpRequest#bodyJson', { status: Status.UnsupportedMediaType })

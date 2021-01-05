@@ -1,11 +1,13 @@
 import type { Erase } from '@principia/base/util/types'
-import type { HttpRouteException } from '@principia/http'
+import type { HttpException } from '@principia/http/HttpException'
 import type * as http from 'http'
 
 import * as A from '@principia/base/data/Array'
 import { pipe } from '@principia/base/data/Function'
 import * as H from '@principia/base/data/Has'
-import { Request, Response } from '@principia/http'
+import { HttpRequest } from '@principia/http/HttpRequest'
+import { HttpResponse } from '@principia/http/HttpResponse'
+import * as Status from '@principia/http/StatusCode'
 import * as C from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
@@ -23,7 +25,7 @@ export interface RouteError<E> {
 
 export interface RouteResponse<A> {
   readonly body: A
-  readonly status: number
+  readonly status: Status.StatusCode
 }
 
 export interface Koa {
@@ -44,8 +46,8 @@ export const KoaConfig = H.tag<KoaConfig>()
 
 export interface Context<C = koa.DefaultContext> {
   readonly engine: koa.ParameterizedContext<any, C>
-  readonly req: Request
-  readonly res: Response
+  readonly req: HttpRequest
+  readonly res: HttpResponse
 }
 
 export const Context = H.tag<Context>()
@@ -55,65 +57,74 @@ export type Method = 'get' | 'post' | 'put' | 'patch' | 'delete'
 export function route<R, A>(
   method: Method,
   path: string,
-  handler: I.IO<R, HttpRouteException, RouteResponse<A> | void>
+  handler: I.IO<R, HttpException, RouteResponse<A> | void>
 ): L.Layer<Erase<R, H.Has<Context>> & H.Has<KoaConfig>, never, H.Has<KoaConfig>> {
   return L.fromEffect(KoaConfig)(
     I.gen(function* (_) {
       const config = yield* _(KoaConfig)
-      const env = yield* _(I.ask<R>())
+      const env    = yield* _(I.ask<R>())
       yield* _(
         I.total(() => {
           config.router[method](
             path,
             koaBodyParser(),
-            async (ctx) =>
+            async (mut_ctx) =>
               await pipe(
-                handler,
-                I.give(env),
-                I.giveService(Context)({
-                  engine: ctx,
-                  req: new Request(ctx.req),
-                  res: new Response(ctx.res)
-                }),
-                I.onExit(
-                  Ex.fold(
-                    C.fold(
-                      () =>
-                        I.total(() => {
-                          ctx.status = 500
-                          ctx.body   = { status: 'empty' }
-                        }),
-                      (error) =>
-                        I.total(() => {
-                          ctx.status = error.status
-                          ctx.body   = error.message
-                        }),
-                      (error) =>
-                        I.total(() => {
-                          ctx.status = 500
-                          ctx.body   = { status: 'aborted', with: error }
-                        }),
-                      (_) =>
-                        I.total(() => {
-                          ctx.status = 500
-                          ctx.body   = { status: 'interrupted' }
-                        }),
-                      (_, r) => r,
-                      (_, r) => r
-                    ),
-                    (r) =>
-                      r
-                        ? I.total(() => {
-                          ctx.status = r.status
-                          ctx.body   = r.body
-                        })
-                        : I.unit()
+                I.asksServiceM(Context)(({ req, res }) =>
+                  pipe(
+                    handler,
+                    I.onExit(
+                      Ex.fold(
+                        C.fold(
+                          () =>
+                            pipe(
+                              res.status(Status.InternalServerError),
+                              I.andThen(res.write(JSON.stringify({ status: 'empty' }))),
+                              I.andThen(res.end())
+                            ),
+                          (error) =>
+                            pipe(
+                              res.status(error.data?.status ?? Status.InternalServerError),
+                              I.andThen(res.write(error.message)),
+                              I.andThen(res.end())
+                            ),
+                          (error) =>
+                            pipe(
+                              res.status(Status.InternalServerError),
+                              I.andThen(res.write(JSON.stringify({ status: 'aborted', with: error }))),
+                              I.andThen(res.end())
+                            ),
+                          (_) =>
+                            pipe(
+                              res.status(Status.InternalServerError),
+                              I.andThen(res.write(JSON.stringify({ status: 'interrupted' }))),
+                              I.andThen(res.end())
+                            ),
+                          (_, r) => r,
+                          (_, r) => r
+                        ),
+                        (r) =>
+                          r
+                            ? pipe(
+                                res.status(r.status),
+                                I.andThen(res.write(JSON.stringify(r.body))),
+                                I.andThen(res.end())
+                              )
+                            : I.unit()
+                      )
+                    )
                   )
                 ),
+                I.give(env),
+                I.giveService(Context)({
+                  engine: mut_ctx,
+                  req: new HttpRequest(mut_ctx.req),
+                  res: new HttpResponse(mut_ctx.res)
+                }),
                 I.catchAll((ex) =>
                   I.total(() => {
-                    ctx.status = ex.status
-                    ctx.body   = ex.message
+                    mut_ctx.status = ex.data?.status.code || 500
+                    mut_ctx.body   = ex.message
                   })
                 ),
                 I.runPromise
@@ -181,8 +192,8 @@ export function useM<R, E, A>(
           I.give(env),
           I.giveService(Context)({
             engine: ctx,
-            req: new Request(ctx.req),
-            res: new Response(ctx.res)
+            req: new HttpRequest(ctx.req),
+            res: new HttpResponse(ctx.res)
           }),
           I.runPromise
         )
