@@ -1,6 +1,6 @@
 import type { Managed, URManaged } from '../core'
 
-import { chain } from '../core'
+import { flatMap } from '../core'
 import { swapWith_ } from './swap'
 
 /**
@@ -10,7 +10,7 @@ export function chainError_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (e: E) => URManaged<R1, E1>
 ): Managed<R & R1, E1, A> {
-  return swapWith_(ma, chain(f))
+  return swapWith_(ma, flatMap(f))
 }
 
 /**

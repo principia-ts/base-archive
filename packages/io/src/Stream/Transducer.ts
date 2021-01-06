@@ -166,7 +166,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
   const toCollect = Math.max(0, n)
 
   return new Transducer(
-    M.chain_(M.scope(), (scope) =>
+    M.flatMap_(M.scope(), (scope) =>
       M.map_(XRefM.makeManaged<State>(initialState), (state) => (is: O.Option<Chunk<I>>) =>
         O.fold_(
           is,

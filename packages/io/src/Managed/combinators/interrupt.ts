@@ -3,13 +3,13 @@ import type { Managed } from '../core'
 
 import * as C from '../../Cause/core'
 import * as I from '../_internal/io'
-import { chain_, fromEffect, halt } from '../core'
+import { flatMap_, fromEffect, halt } from '../core'
 
 /**
  * Returns a Managed that is interrupted as if by the fiber calling this
  * method.
  */
-export const interrupt: Managed<unknown, never, never> = chain_(
+export const interrupt: Managed<unknown, never, never> = flatMap_(
   fromEffect(I.descriptorWith((d) => I.succeed(d.id))),
   (id) => halt(C.interrupt(id))
 )

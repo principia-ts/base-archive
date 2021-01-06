@@ -185,7 +185,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private pushContinuation(k: Frame) {
-    this.mut_continuationFrames = makeStack(k, this.mut_continuationFrames?.previous)
+    this.mut_continuationFrames = makeStack(k, this.mut_continuationFrames)
   }
 
   private popContinuation() {
@@ -934,7 +934,9 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOInstructionTag.GetForkScope: {
-                    current = current.f(O.getOrElse_(this.mut_forkScopeOverride?.value || O.none(), () => this.scope))[I._I]
+                    current = current.f(O.getOrElse_(this.mut_forkScopeOverride?.value || O.none(), () => this.scope))[
+                      I._I
+                    ]
                     break
                   }
 

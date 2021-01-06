@@ -1099,7 +1099,7 @@ export function gives<R0, R>(f: (r0: R0) => R) {
  * Accesses the environment of the sink in the context of a sink.
  */
 export function accessM<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
-  return new Sink(M.chain_(M.ask<R>(), (env) => f(env).push))
+  return new Sink(M.flatMap_(M.ask<R>(), (env) => f(env).push))
 }
 
 /**
@@ -1114,7 +1114,7 @@ export function giveLayer<R2, R>(layer: L.Layer<R2, never, R>) {
  */
 export function giveLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: L.Layer<R2, never, R>) {
   return new Sink<R2, E, I, L, Z>(
-    M.chain_(L.build(layer), (r) =>
+    M.flatMap_(L.build(layer), (r) =>
       M.map_(M.giveAll_(self.push, r), (push) => (i: O.Option<C.Chunk<I>>) => I.giveAll_(push(i), r))
     )
   )
@@ -1174,7 +1174,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
   return new Sink(
     pipe(
       Ref.makeManaged(z),
-      M.chain((acc) => {
+      M.flatMap((acc) => {
         return pipe(
           Push.restartable(sz.push),
           M.map(([push, restart]) => {
@@ -1418,7 +1418,7 @@ export function managed_<R, E, A, I, L extends I, Z>(
   fn: (a: A) => Sink<R, E, I, L, Z>
 ): Sink<R, E, I, I, Z> {
   return new Sink(
-    M.chain_(
+    M.flatMap_(
       M.fold_(
         resource,
         (err) => fail(err)<I>() as Sink<R, E, I, I, Z>,

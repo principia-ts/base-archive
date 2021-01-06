@@ -256,7 +256,7 @@ export function reserve<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, 
  * Lifts an `Either` into a `ZManaged` value.
  */
 export function fromEither<E, A>(ea: () => E.Either<E, A>): Managed<unknown, E, A> {
-  return chain_(total(ea), E.fold(fail, succeed))
+  return flatMap_(total(ea), E.fold(fail, succeed))
 }
 
 /**
@@ -312,7 +312,7 @@ export function map2<A, R1, E1, B, C>(
  * in sequence, combining their results with the specified `f` function.
  */
 export function map2_<R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) {
-  return chain_(fa, (a) => map_(fb, (a2) => f(a, a2)))
+  return flatMap_(fa, (a) => map_(fb, (a2) => f(a, a2)))
 }
 
 /**
@@ -441,7 +441,7 @@ export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(ma: Ma
  * Submerges the error case of an `Either` into the `Managed`. The inverse
  * operation of `Managed.either`.
  */
-export const absolve: <R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>) => Managed<R, E | E1, A> = chain((ea) =>
+export const absolve: <R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>) => Managed<R, E | E1, A> = flatMap((ea) =>
   fromEither(() => ea)
 )
 
@@ -595,10 +595,10 @@ export function mapM<R1, E1, A, B>(
  * the passing of its value to the specified continuation function `f`,
  * followed by the managed that it returns.
  */
-export function chain<R1, E1, A, A1>(
+export function flatMap<R1, E1, A, A1>(
   f: (a: A) => Managed<R1, E1, A1>
 ): <R, E>(self: Managed<R, E, A>) => Managed<R & R1, E1 | E, A1> {
-  return (self) => chain_(self, f)
+  return (self) => flatMap_(self, f)
 }
 
 /**
@@ -606,7 +606,7 @@ export function chain<R1, E1, A, A1>(
  * the passing of its value to the specified continuation function `f`,
  * followed by the managed that it returns.
  */
-export function chain_<R, E, A, R1, E1, A1>(
+export function flatMap_<R, E, A, R1, E1, A1>(
   self: Managed<R, E, A>,
   f: (a: A) => Managed<R1, E1, A1>
 ): Managed<R & R1, E | E1, A1> {
@@ -627,7 +627,7 @@ export function chain_<R, E, A, R1, E1, A1>(
  * Returns a managed that effectfully peeks at the acquired resource.
  */
 export function tap_<R, E, A, Q, D>(ma: Managed<R, E, A>, f: (a: A) => Managed<Q, D, any>): Managed<R & Q, E | D, A> {
-  return chain_(ma, (a) => map_(f(a), () => a))
+  return flatMap_(ma, (a) => map_(f(a), () => a))
 }
 
 /**
@@ -639,7 +639,7 @@ export function tap<R1, E1, A>(
   return (ma) => tap_(ma, f)
 }
 
-export const flatten: <R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>) => Managed<R & R1, E | E1, A> = chain(
+export const flatten: <R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>) => Managed<R & R1, E | E1, A> = flatMap(
   identity
 )
 
@@ -654,7 +654,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
 ): Managed<R & R1 & R2, E | E1 | E2, A> {
   return foldM_(
     ma,
-    (e) => chain_(f(e), () => fail(e)),
+    (e) => flatMap_(f(e), () => fail(e)),
     (a) => map_(g(a), () => a)
   )
 }
@@ -670,7 +670,7 @@ export function tapCause_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (c: Cause<E>) => Managed<R1, E1, any>
 ): Managed<R & R1, E | E1, A> {
-  return catchAllCause_(ma, (c) => chain_(f(c), () => halt(c)))
+  return catchAllCause_(ma, (c) => flatMap_(f(c), () => halt(c)))
 }
 
 export function tapCause<E, R1, E1>(
@@ -724,7 +724,7 @@ export function asksM<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R,
 }
 
 export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
-  return chain_(ask<R0>(), f)
+  return flatMap_(ask<R0>(), f)
 }
 
 /**
@@ -875,7 +875,7 @@ export function bindS<R, E, A, K, N extends string>(
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
 > {
-  return chain((a) =>
+  return flatMap((a) =>
     pipe(
       f(a),
       map((b) => _bind(a, name, b))

@@ -11,7 +11,7 @@ import { isTag } from '@principia/base/data/Has'
 import { isOption } from '@principia/base/data/Option'
 
 import { getOrFail } from '../../IO/combinators/getOrFail'
-import { chain_, fromEffect, fromEither, Managed, succeed } from '../core'
+import { flatMap_, fromEffect, fromEither, Managed, succeed } from '../core'
 import { asksService } from './service'
 import { suspend } from './suspend'
 
@@ -95,7 +95,7 @@ export function gen(...args: any[]): any {
         if (state.done) {
           return succeed(state.value)
         }
-        return chain_(state.value.M, (val) => {
+        return flatMap_(state.value.M, (val) => {
           const next = iterator.next(val)
           return run(next)
         })

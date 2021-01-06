@@ -35,7 +35,8 @@ export type HasClock = HasTag<typeof HasClock>
  */
 export class LiveClock extends Clock {
   currentTime: I.UIO<number> = I.total(() => new Date().getTime())
-  sleep                      = (ms: number): I.UIO<void> =>
+
+  sleep = (ms: number): I.UIO<void> =>
     asyncInterrupt((cb) => {
       const timeout = setTimeout(() => {
         cb(I.unit())

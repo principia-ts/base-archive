@@ -2,12 +2,12 @@ import type { Managed } from '../core'
 
 import * as O from '@principia/base/data/Option'
 
-import { chain_, fail, succeed, total } from '../core'
+import { flatMap_, fail, succeed, total } from '../core'
 
 export function require_<R, E, A>(ma: Managed<R, E, O.Option<A>>, error: () => E): Managed<R, E, A> {
-  return chain_(
+  return flatMap_(
     ma,
-    O.fold(() => chain_(total(error), fail), succeed)
+    O.fold(() => flatMap_(total(error), fail), succeed)
   )
 }
 

@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import { chain_, succeed } from '../core'
+import { flatMap_, succeed } from '../core'
 
 /**
  * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
@@ -10,7 +10,7 @@ export function ifM_<R, E, R1, E1, B, R2, E2, C>(
   onTrue: () => Managed<R1, E1, B>,
   onFalse: () => Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E | E1 | E2, B | C> {
-  return chain_(mb, (b) => (b ? (onTrue() as Managed<R & R1 & R2, E | E1 | E2, B | C>) : onFalse()))
+  return flatMap_(mb, (b) => (b ? (onTrue() as Managed<R & R1 & R2, E | E1 | E2, B | C>) : onFalse()))
 }
 
 /**

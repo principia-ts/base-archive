@@ -3,10 +3,10 @@ import type { Managed } from '../core'
 import * as O from '@principia/base/data/Option'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
-import { chain_, fail, succeed } from '../core'
+import { flatMap_, fail, succeed } from '../core'
 
 export function someOrFail_<R, E, A, E1>(ma: Managed<R, E, O.Option<A>>, e: () => E1): Managed<R, E | E1, A> {
-  return chain_(
+  return flatMap_(
     ma,
     O.fold(() => fail(e()), succeed)
   )

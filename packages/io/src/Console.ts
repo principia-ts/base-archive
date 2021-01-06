@@ -2,6 +2,7 @@ import type { Layer } from './Layer'
 import type { Has } from '@principia/base/data/Has'
 import type { InspectOptions } from 'util'
 
+import { pipe } from '@principia/base/data/Function'
 import { tag } from '@principia/base/data/Has'
 import { inspect } from 'util'
 
@@ -15,6 +16,12 @@ export interface Console {
 }
 
 export const Console = tag<Console>()
+
+export const { putStrLn, putStrLnDebug, putStrLnErr } = I.deriveLifted(Console)(
+  ['putStrLn', 'putStrLnErr', 'putStrLnDebug'],
+  [],
+  []
+)
 
 export class NodeConsole implements Console {
   putStrLn(...data: any[]) {

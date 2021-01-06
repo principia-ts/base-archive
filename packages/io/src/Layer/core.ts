@@ -248,7 +248,7 @@ function _build<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Mem
       return M.succeed((memo) => M.map_(memo.getOrElseMemoize(_I.layer), _I.f))
     }
     case LayerInstructionTag.Chain: {
-      return M.succeed((memo) => M.chain_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
+      return M.succeed((memo) => M.flatMap_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
     }
     case LayerInstructionTag.ZipWithPar: {
       return M.succeed((memo) => M.zipWithPar_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
@@ -279,7 +279,7 @@ function _build<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Mem
           (e) =>
             pipe(
               I.toManaged()(I.ask<any>()),
-              M.chain((r) => M.gives_(memo.getOrElseMemoize(_I.onFailure), () => tuple(r, e)))
+              M.flatMap((r) => M.gives_(memo.getOrElseMemoize(_I.onFailure), () => tuple(r, e)))
             ),
           (r) =>
             M.gives_(memo.getOrElseMemoize(_I.onSuccess), (x) =>
@@ -308,7 +308,7 @@ export function build<R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, A> {
 
 export function pure<T>(has: H.Tag<T>): (resource: T) => Layer<unknown, never, H.Has<T>> {
   return (resource) =>
-    new LayerManagedInstruction(M.chain_(M.fromEffect(I.pure(resource)), (a) => environmentFor(has, a)))
+    new LayerManagedInstruction(M.flatMap_(M.fromEffect(I.pure(resource)), (a) => environmentFor(has, a)))
 }
 
 export function identity<R>(): Layer<R, never, R> {
@@ -320,7 +320,7 @@ export function prepare<T>(has: H.Tag<T>) {
     open: <R1, E1>(open: (_: A) => I.IO<R1, E1, any>) => ({
       release: <R2>(release: (_: A) => I.IO<R2, never, any>) =>
         fromManaged(has)(
-          M.chain_(
+          M.flatMap_(
             M.makeExit_(acquire, (a) => release(a)),
             (a) => M.fromEffect(I.map_(open(a), () => a))
           )
@@ -340,11 +340,11 @@ export function create<T>(has: H.Tag<T>) {
 }
 
 export function fromEffect<T>(has: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new LayerManagedInstruction(M.chain_(M.fromEffect(resource), (a) => environmentFor(has, a)))
+  return (resource) => new LayerManagedInstruction(M.flatMap_(M.fromEffect(resource), (a) => environmentFor(has, a)))
 }
 
 export function fromManaged<T>(has: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new LayerManagedInstruction(M.chain_(resource, (a) => environmentFor(has, a)))
+  return (resource) => new LayerManagedInstruction(M.flatMap_(resource, (a) => environmentFor(has, a)))
 }
 
 export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> {
@@ -585,7 +585,7 @@ export class MemoMap {
                           I.giveAll_(
                             pipe(
                               _build(layer),
-                              M.chain((_) => _(this))
+                              M.flatMap((_) => _(this))
                             ).io,
                             [a, innerReleaseMap]
                           ),
@@ -732,7 +732,7 @@ export function fromManagedConstructor<S>(
 > {
   return (constructor) => (...tags) =>
     fromManaged(tag)(
-      M.chain_(
+      M.flatMap_(
         M.fromEffect(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any)))),
         (_) => _
       )

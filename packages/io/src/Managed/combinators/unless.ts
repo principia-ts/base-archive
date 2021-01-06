@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import { chain_, unit } from '../core'
+import { flatMap_, unit } from '../core'
 import { asUnit } from './as'
 import { suspend } from './suspend'
 
@@ -25,7 +25,7 @@ export function unlessM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   mb: Managed<R1, E1, boolean>
 ): Managed<R & R1, E | E1, void> {
-  return chain_(mb, (b) => (b ? unit() : asUnit(ma)))
+  return flatMap_(mb, (b) => (b ? unit() : asUnit(ma)))
 }
 
 /**

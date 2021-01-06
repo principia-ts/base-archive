@@ -2,7 +2,7 @@ import type { Managed } from '../core'
 
 import * as O from '@principia/base/data/Option'
 
-import { chain, chain_, fail, succeed } from '../core'
+import { flatMap, flatMap_, fail, succeed } from '../core'
 
 /**
  * Continue with the returned computation if the partial function `pf` matches,
@@ -13,7 +13,7 @@ export function rejectM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   pf: (a: A) => O.Option<Managed<R1, E1, E1>>
 ): Managed<R & R1, E | E1, A> {
-  return chain_(ma, (a) => O.fold_(pf(a), () => succeed(a), chain(fail)))
+  return flatMap_(ma, (a) => O.fold_(pf(a), () => succeed(a), flatMap(fail)))
 }
 
 /**

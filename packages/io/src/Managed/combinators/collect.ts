@@ -3,14 +3,14 @@ import type { Managed } from '../core'
 import { flow } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 
-import { chain_, fail, succeed } from '../core'
+import { flatMap_, fail, succeed } from '../core'
 
 export function collectM_<R, E, A, E1, R2, E2, B>(
   ma: Managed<R, E, A>,
   e: E1,
   pf: (a: A) => O.Option<Managed<R2, E2, B>>
 ): Managed<R & R2, E | E1 | E2, B> {
-  return chain_(ma, (a) => O.getOrElse_(pf(a), () => fail<E1 | E2>(e)))
+  return flatMap_(ma, (a) => O.getOrElse_(pf(a), () => fail<E1 | E2>(e)))
 }
 
 export function collectM<A, E1, R2, E2, B>(
