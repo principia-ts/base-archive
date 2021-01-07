@@ -27,11 +27,6 @@ export interface Done<O> {
 
 export type StepFunction<R, I, O> = (interval: number, input: I) => IO<R, never, Decision<R, I, O>>
 
-export const URI = 'Decision'
-export type URI = typeof URI
-
-export type V = HKT.V<'X', '+'> & HKT.V<'R', '-'> & HKT.V<'E', '-'>
-
 /*
  * -------------------------------------------
  * Constructors

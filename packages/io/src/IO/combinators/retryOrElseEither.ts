@@ -1,5 +1,5 @@
 import type { HasClock } from '../../Clock'
-import type { Schedule, ScheduleExecutor } from '../../Schedule'
+import type { Schedule, Driver } from '../../Schedule'
 import type { IO } from '../core'
 import type { Either } from '@principia/base/data/Either'
 
@@ -13,7 +13,7 @@ import { orDie } from './orDie'
 const _loop = <R, E, A, R1, O, R2, E2, A2>(
   fa: IO<R, E, A>,
   orElse: (e: E, o: O) => IO<R2, E2, A2>,
-  driver: ScheduleExecutor<R1 & HasClock, E, O>
+  driver: Driver<R1 & HasClock, E, O>
 ): IO<R & R1 & R2 & HasClock, E2, Either<A2, A>> =>
     pipe(
       fa,

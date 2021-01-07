@@ -5,6 +5,7 @@ import type { FiberId } from './FiberId'
 import type { Option } from '@principia/base/data/Option'
 import type * as HKT from '@principia/base/HKT'
 
+import * as Ev from '@principia/base/control/Eval'
 import { identity } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 
@@ -12,13 +13,6 @@ import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
 import { FiberRef } from '../FiberRef/core'
 import * as I from '../IO/core'
-import * as Sy from '../Sync'
-
-export const URI = 'Fiber'
-
-export type URI = typeof URI
-
-export type V = HKT.V<'E', '+'>
 
 /**
  * InterruptStatus tracks interruptability of the current stack region
@@ -253,8 +247,8 @@ export function initial<E, A>(): FiberState<E, A> {
 }
 
 export function interrupting<E, A>(state: FiberState<E, A>): boolean {
-  const loop = (status: FiberStatus): Sy.Sync<unknown, never, boolean> =>
-    Sy.gen(function* (_) {
+  const loop = (status: FiberStatus): Ev.Eval<boolean> =>
+    Ev.gen(function* (_) {
       switch (status._tag) {
         case 'Running': {
           return status.interrupting
@@ -271,7 +265,7 @@ export function interrupting<E, A>(state: FiberState<E, A>): boolean {
       }
     })
 
-  return Sy.unsafeRun(loop(state.status))
+  return loop(state.status).value()
 }
 
 /*
@@ -312,8 +306,8 @@ export class Suspended {
 /**
  * @internal
  */
-export function withInterruptingSafe_(s: FiberStatus, b: boolean): Sy.Sync<unknown, never, FiberStatus> {
-  return Sy.gen(function* (_) {
+export function withInterruptingSafe_(s: FiberStatus, b: boolean): Ev.Eval<FiberStatus> {
+  return Ev.gen(function* (_) {
     switch (s._tag) {
       case 'Done': {
         return s
@@ -332,11 +326,11 @@ export function withInterruptingSafe_(s: FiberStatus, b: boolean): Sy.Sync<unkno
 }
 
 export function withInterrupting(b: boolean): (s: FiberStatus) => FiberStatus {
-  return (s) => Sy.unsafeRun(withInterruptingSafe_(s, b))
+  return (s) => withInterruptingSafe_(s, b).value()
 }
 
-export function toFinishingSafe(s: FiberStatus): Sy.Sync<unknown, never, FiberStatus> {
-  return Sy.gen(function* (_) {
+export function toFinishingSafe(s: FiberStatus): Ev.Eval<FiberStatus> {
+  return Ev.gen(function* (_) {
     switch (s._tag) {
       case 'Done': {
         return s
@@ -355,7 +349,7 @@ export function toFinishingSafe(s: FiberStatus): Sy.Sync<unknown, never, FiberSt
 }
 
 export function toFinishing(s: FiberStatus): FiberStatus {
-  return Sy.unsafeRun(toFinishingSafe(s))
+  return toFinishingSafe(s).value()
 }
 
 /*

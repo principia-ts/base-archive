@@ -13,7 +13,7 @@ import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
 import * as Clock from '../Clock'
 import * as I from '../IO/core'
-import * as XR from '../IORef/core'
+import * as Ref from '../IORef/core'
 import { nextDouble } from '../Random'
 import { done, makeContinue, makeDone } from './Decision'
 
@@ -23,14 +23,11 @@ import { done, makeContinue, makeDone } from './Decision'
  * -------------------------------------------
  */
 
-export const URI = 'Schedule'
-export type URI = typeof URI
-
 export class Schedule<R, I, O> {
   constructor(readonly step: StepFunction<R, I, O>) {}
 }
 
-export class ScheduleExecutor<R, I, O> {
+export class Driver<R, I, O> {
   constructor(
     readonly next: (input: I) => IO<R, Option<never>, O>,
     readonly last: FIO<Error, O>,
@@ -48,17 +45,17 @@ export function makeExecutor<R, I, O>(
   next: (input: I) => I.IO<R, Option<never>, O>,
   last: I.FIO<Error, O>,
   reset: I.UIO<void>
-): ScheduleExecutor<R, I, O> {
-  return new ScheduleExecutor(next, last, reset)
+): Driver<R, I, O> {
+  return new Driver(next, last, reset)
 }
 
 export function makeSchedule<R, I, O>(step: StepFunction<R, I, O>): Schedule<R, I, O> {
   return new Schedule(step)
 }
 
-export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<ScheduleExecutor<HasClock & R, I, O>> {
+export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<HasClock & R, I, O>> {
   return pipe(
-    XR.make([O.none<O>(), schedule.step] as const),
+    Ref.make([O.none<O>(), schedule.step] as const),
     I.map((ref) => {
       const reset = ref.set([O.none(), schedule.step])
 
@@ -98,7 +95,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<ScheduleExec
           I.map(({ v }) => v)
         )
 
-      return new ScheduleExecutor(next, last, reset)
+      return new Driver(next, last, reset)
     })
   )
 }
@@ -1355,7 +1352,7 @@ export function windowed(interval: number): Schedule<unknown, unknown, number> {
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export function zip_<R, I, O, R1, I1, O1>(
+export function product_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, readonly [O, O1]> {
@@ -1366,10 +1363,10 @@ export function zip_<R, I, O, R1, I1, O1>(
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export function zip<R1, I1, O1>(
+export function product<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return (sc) => zip_(sc, that)
+  return (sc) => product_(sc, that)
 }
 
 /**
@@ -1379,7 +1376,7 @@ export function apFirst_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O> {
-  return map_(zip_(sc, that), ([_]) => _)
+  return map_(product_(sc, that), ([_]) => _)
 }
 
 /**
@@ -1398,7 +1395,7 @@ export function apSecond_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O1> {
-  return map_(zip_(sc, that), ([_, __]) => __)
+  return map_(product_(sc, that), ([_, __]) => __)
 }
 
 /**
@@ -1411,22 +1408,22 @@ export function apSecond<R1, I1, O1>(
 }
 
 /**
- * Equivalent to `zip` followed by `map`.
+ * Equivalent to `product` followed by `map`.
  */
-export function zipWith_<R, I, O, R1, I1, O1, O2>(
+export function map2_<R, I, O, R1, I1, O1, O2>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>,
   f: (o: O, o1: O1) => O2
 ): Schedule<R & R1, I & I1, O2> {
-  return map_(zip_(sc, that), ([o, o1]) => f(o, o1))
+  return map_(product_(sc, that), ([o, o1]) => f(o, o1))
 }
 
 /**
- * Equivalent to `zip` followed by `map`.
+ * Equivalent to `product` followed by `map`.
  */
-export function zipWith<R1, I1, O, O1, O2>(
+export function map2<R1, I1, O, O1, O2>(
   that: Schedule<R1, I1, O1>,
   f: (o: O, o1: O1) => O2
 ): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O2> {
-  return (sc) => zipWith_(sc, that, f)
+  return (sc) => map2_(sc, that, f)
 }
