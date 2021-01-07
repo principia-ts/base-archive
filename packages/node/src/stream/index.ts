@@ -22,22 +22,19 @@ export class ReadableError {
  * @since 1.0.0
  */
 export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, ReadableError, Byte> {
-  return S.chain_(
-    S.bracket_(
-      pipe(
-        I.partial_(r, (err) => new ReadableError(err as Error)),
-        I.tap((sr) =>
-          sr.readableEncoding != null
-            ? I.dieMessage(`stream.Readable encoding set to ${sr.readableEncoding} cannot be used to produce Buffer`)
-            : I.unit()
-        )
-      ),
-      (sr) =>
-        I.total(() => {
-          sr.destroy()
-        })
+  return pipe(
+    I.partial_(r, (err) => new ReadableError(err as Error)),
+    I.tap((sr) =>
+      sr.readableEncoding != null
+        ? I.dieMessage(`stream.Readable encoding set to ${sr.readableEncoding} cannot be used to produce Buffer`)
+        : I.unit()
     ),
-    (sr) =>
+    S.bracket((sr) =>
+      I.total(() => {
+        sr.destroy()
+      })
+    ),
+    S.flatMap((sr) =>
       S.async<unknown, ReadableError, Byte>((cb) => {
         sr.on('data', (chunk) => {
           cb(I.succeed(chunk))
@@ -49,6 +46,7 @@ export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, 
           cb(I.fail(O.none()))
         })
       })
+    )
   )
 }
 
@@ -65,26 +63,25 @@ export class WritableError {
  */
 export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, WritableError, Byte, never, void> {
   return new Sink.Sink(
-    M.map_(
-      M.makeExit_(
-        I.async<unknown, never, stream.Writable>((cb) => {
-          const onError = (err: Error) => {
-            clearImmediate(im)
-            cb(I.die(err))
-          }
+    pipe(
+      I.async<unknown, never, stream.Writable>((cb) => {
+        const onError = (err: Error) => {
+          clearImmediate(im)
+          cb(I.die(err))
+        }
 
-          const sw = w().once('error', onError)
-          const im = setImmediate(() => {
-            sw.removeListener('error', onError)
-            cb(I.succeed(sw))
-          })
-        }),
-        (sw) =>
-          I.total(() => {
-            sw.destroy()
-          })
+        const sw = w().once('error', onError)
+        const im = setImmediate(() => {
+          sw.removeListener('error', onError)
+          cb(I.succeed(sw))
+        })
+      }),
+      M.makeExit((sw) =>
+        I.total(() => {
+          sw.destroy()
+        })
       ),
-      (sw) =>
+      M.map((sw) =>
         O.fold(
           () => Push.emit(undefined, []),
           (chunk) =>
@@ -92,6 +89,7 @@ export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, W
               sw.write(chunk, (err) => (err ? cb(Push.fail(new WritableError(err), [])) : cb(Push.more)))
             })
         )
+      )
     )
   )
 }
@@ -137,7 +135,7 @@ export function transform(
     )
     return pipe(
       S.managed(managedSink),
-      S.chain(([transform, sink]) =>
+      S.flatMap(([transform, sink]) =>
         S.asyncM<unknown, TransformError, Byte, R, E | TransformError>((cb) =>
           I.andThen_(
             I.total(() => {

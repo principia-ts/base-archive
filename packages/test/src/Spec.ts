@@ -93,7 +93,7 @@ export function countTests_<R, E, T>(spec: Spec<R, E, T>, f: (t: T) => boolean):
   return fold_(
     spec,
     matchTag({
-      Suite: ({ specs }) => M.chain_(specs, flow(M.foreach(identity), M.map(A.sum))),
+      Suite: ({ specs }) => M.flatMap_(specs, flow(M.foreach(identity), M.map(A.sum))),
       Test: ({ test }) => I.toManaged_(I.map_(test, (t) => (f(t) ? 1 : 0)))
     })
   )
@@ -136,7 +136,7 @@ export function foldM_<R, E, T, R1, E1, Z>(
         (c) => f(new SuiteCase(label, M.halt(c), exec)),
         flow(
           M.foreachExec(O.getOrElse_(exec, () => defExec))((spec) => M.release(foldM_(spec, f, defExec))),
-          M.chain((z) => f(new SuiteCase(label, M.succeed(z), exec)))
+          M.flatMap((z) => f(new SuiteCase(label, M.succeed(z), exec)))
         )
       ),
     Test: f
@@ -262,7 +262,7 @@ export function giveSomeLayerShared<R1, E1, A1>(
           label,
           pipe(
             L.memoize(layer),
-            M.chain((layer) => M.map_(specs, A.map(giveSomeLayer(layer)))),
+            M.flatMap((layer) => M.map_(specs, A.map(giveSomeLayer(layer)))),
             M.giveSomeLayer(layer)
           ),
           exec

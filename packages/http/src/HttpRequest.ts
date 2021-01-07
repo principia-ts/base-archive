@@ -211,7 +211,7 @@ export class HttpRequest {
   }
 
   get stream(): S.Stream<unknown, NS.ReadableError, Byte> {
-    return S.chain_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req))
+    return S.flatMap_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req))
   }
 
   get rawBody(): FIO<HttpException, string> {

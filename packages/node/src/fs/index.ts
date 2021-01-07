@@ -80,23 +80,21 @@ export function createReadStream(
   options?: CreateReadStreamOptions
 ): S.Stream<unknown, ErrnoException, Byte> {
   const chunkSize = options?.chunkSize ?? 1024 * 64
-  return S.chain_(
-    S.bracket_(
-      I.productPar_(
-        open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
-        I.suspend(() => {
-          const start = options?.start ? Integer.unwrap(options?.start) : 0
-          const end   = options?.end ? Integer.unwrap(options?.end) : Infinity
-          if (end < start) {
-            return I.fail(new RangeError(`start (${start}) must be <= end (${end})`))
-          } else {
-            return Ref.make([start, end] as const)
-          }
-        })
-      ),
-      ([fd, _]) => I.orDie(close(fd))
+  return pipe(
+    open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
+    I.productPar(
+      I.suspend(() => {
+        const start = options?.start ? Integer.unwrap(options?.start) : 0
+        const end   = options?.end ? Integer.unwrap(options?.end) : Infinity
+        if (end < start) {
+          return I.fail(new RangeError(`start (${start}) must be <= end (${end})`))
+        } else {
+          return Ref.make([start, end] as const)
+        }
+      })
     ),
-    ([fd, state]) =>
+    S.bracket(([fd, _]) => I.orDie(close(fd))),
+    S.flatMap(([fd, state]) =>
       S.repeatEffectChunkOption(
         I.gen(function* (_) {
           const [pos, end]     = yield* _(state.get)
@@ -114,6 +112,7 @@ export function createReadStream(
           }
         })
       )
+    )
   )
 }
 
@@ -488,14 +487,13 @@ export function watch(
   filename: fs.PathLike,
   options?: any
 ): S.Stream<unknown, Error, { eventType: 'rename' | 'change', filename: string | Buffer }> {
-  return S.chain_(
-    S.fromEffect(
-      I.partial_(
-        () => fs.watch(filename, options ?? {}),
-        (err) => err as Error
-      )
+  return pipe(
+    I.partial_(
+      () => fs.watch(filename, options ?? {}),
+      (err) => err as Error
     ),
-    (watcher) =>
+    S.fromEffect,
+    S.flatMap((watcher) =>
       S.repeatEffectOption(
         I.async<unknown, O.Option<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
           watcher.once('change', (eventType, filename) => {
@@ -512,6 +510,7 @@ export function watch(
           })
         })
       )
+    )
   )
 }
 
@@ -535,17 +534,17 @@ export function watchFile(
   filename: fs.PathLike,
   options?: any
 ): S.Stream<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]> {
-  return S.chain_(
-    S.bracket_(
-      I.gen(function* (_) {
-        const q = yield* _(Queue.makeUnbounded<[fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>())
-        fs.watchFile(filename, options ?? {}, (curr, prev) => {
-          I.run(q.offer([curr, prev]))
-        })
-        return q
-      }),
-      (q) => q.shutdown
-    ),
-    (q) => S.repeatEffectOption(q.take)
+  return pipe(
+    I.gen(function* (_) {
+      const q = yield* _(Queue.makeUnbounded<[fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>())
+      fs.watchFile(filename, options ?? {}, (curr, prev) => {
+        I.run(q.offer([curr, prev]))
+      })
+      return q
+    }),
+    S.bracket((q) => q.shutdown),
+    S.flatMap((q) =>
+      S.repeatEffectOption<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(q.take)
+    )
   )
 }

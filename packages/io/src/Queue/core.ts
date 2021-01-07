@@ -3,7 +3,7 @@ import type { Promise } from '../Promise'
 import type { MutableQueue } from '@principia/base/util/support/MutableQueue'
 
 import * as A from '@principia/base/data/Array'
-import { identity, pipe, tuple } from '@principia/base/data/Function'
+import { flow, identity, pipe, tuple } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '@principia/base/util/support/MutableQueue'
@@ -995,6 +995,19 @@ export function mapM_<RA, RB, EA, EB, A, B, R2, E2, C>(
   f: (b: B) => I.IO<R2, E2, C>
 ): XQueue<RA, R2 & RB, EA, EB | E2, A, C> {
   return bimapM_(self, (a: A) => I.pure(a), f)
+}
+
+export function map_<RA, RB, EA, EB, A, B, C>(
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  f: (b: B) => C
+): XQueue<RA, RB, EA, EB, A, C> {
+  return mapM_(self, flow(f, I.succeed))
+}
+
+export function map<B, C>(
+  f: (b: B) => C
+): <RA, RB, EA, EB, A>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA, RB, EA, EB, A, C> {
+  return (self) => map_(self, f)
 }
 
 /**

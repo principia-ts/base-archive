@@ -29,10 +29,14 @@ export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
   })
 }
 
-export function reduceIO_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
+export function dropWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+  return (as) => dropWhileIO_(as, p)
+}
+
+export function foldLeftIO_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
   return foldLeft_(as, I.succeed(b) as I.IO<R, E, B>, (b, a) => I.flatMap_(b, (_) => f(_, a)))
 }
 
-export function reduceIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
-  return (as) => reduceIO_(as, b, f)
+export function foldLeftIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
+  return (as) => foldLeftIO_(as, b, f)
 }

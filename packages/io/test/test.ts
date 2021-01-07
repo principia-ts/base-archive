@@ -1,16 +1,17 @@
 import '@principia/base/unsafe/Operators'
 
+import { tuple } from '@principia/base/data/Function'
+import * as Iter from '@principia/base/data/Iterable'
+import * as Str from '@principia/base/data/String'
 import { inspect } from 'util'
 
 import * as C from '../src/Console'
 import * as I from '../src/IO'
-import * as Stream from '../src/Stream'
+import * as S from '../src/Stream'
 import * as Sink from '../src/Stream/Sink'
 
-const s1 = Stream.iterate(0, (n) => n + 1)['|>'](Stream.take(100))
-const s2 = Stream.iterate(1, (n) => n * 2)['|>'](Stream.take(100))
-
-s1['|>'](Stream.concat(s2))
-  ['|>'](Stream.foreach((n) => C.putStrLn(`${n}`)))
-  ['|>'](I.giveLayer(C.NodeConsole.live))
-  ['|>'](I.run)
+S.fromChunk(['hello', 'world', 'hi', 'holla'])
+  ['|>'](S.groupByKey((str) => str[0]))
+  ['|>'](S.GroupBy.merge((k, s) => s['|>'](S.take(2))['|>'](S.map((s) => tuple(k, s)))))
+  ['|>'](S.runCollect)
+  ['|>']((x) => I.run(x, (ex) => console.log(inspect(ex, { colors: true, depth: 4 }))))

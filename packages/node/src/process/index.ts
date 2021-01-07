@@ -3,7 +3,7 @@ import type * as E from '@principia/base/data/Either'
 import type { Chunk } from '@principia/io/Chunk'
 import type { FSync, USync } from '@principia/io/Sync'
 
-import { tuple } from '@principia/base/data/Function'
+import { pipe, tuple } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
@@ -18,12 +18,12 @@ export class StdinError {
   constructor(readonly error: Error) {}
 }
 
-export const stdin: S.FStream<StdinError, Byte> = S.chain_(
+export const stdin: S.FStream<StdinError, Byte> = pipe(
   S.fromEffect(I.total(() => tuple(process.stdin.resume(), new Array<() => void>()))),
-  ([rs, cleanup]) =>
+  S.flatMap(([rs, cleanup]) =>
     S.ensuring_(
       S.async<unknown, StdinError, Byte>((cb) => {
-        const onData = (data: Buffer) => {
+        const onData  = (data: Buffer) => {
           cb(I.succeed(C.fromBuffer(data)))
         }
         const onError = (err: Error) => {
@@ -49,6 +49,7 @@ export const stdin: S.FStream<StdinError, Byte> = S.chain_(
         })
       })
     )
+  )
 )
 
 export class StdoutError {
