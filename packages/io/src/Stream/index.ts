@@ -1,4 +1,4 @@
-export * as BufferedPull from './BufferedPull'
+export * as S from './BufferedPull'
 export * from './core'
 export * as GroupBy from './GroupBy'
 export * as Handoff from './Handoff'

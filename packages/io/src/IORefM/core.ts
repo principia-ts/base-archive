@@ -282,71 +282,6 @@ export function dequeueRef<A>(a: A): UIO<[URefM<A>, Q.Dequeue<A>]> {
 
 /*
  * -------------------------------------------
- * Bifunctor
- * -------------------------------------------
- */
-
-/**
- * Transforms both the `set` and `get` values of the `XRefM` with the
- * specified effectual functions.
- */
-export function bimapM_<RA, RB, EA, EB, B, RC, EC, A, RD, ED, C = A, D = B>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  f: (c: C) => I.IO<RC, EC, A>,
-  g: (b: B) => I.IO<RD, ED, D>
-): IORefM<RA & RC, RB & RD, EA | EC, EB | ED, C, D> {
-  return self.foldM(
-    (ea: EA | EC) => ea,
-    (eb: EB | ED) => eb,
-    f,
-    g
-  )
-}
-
-/**
- * Transforms both the `set` and `get` values of the `XRefM` with the
- * specified effectual functions.
- */
-export function bimapM<B, RC, EC, A, RD, ED, C = A, D = B>(
-  f: (c: C) => I.IO<RC, EC, A>,
-  g: (b: B) => I.IO<RD, ED, D>
-): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB & RD, EC | EA, ED | EB, C, D> {
-  return (self) => bimapM_(self, f, g)
-}
-
-/**
- * Transforms both the `set` and `get` errors of the `XRefM` with the
- * specified functions.
- */
-export function bimapError_<RA, RB, A, B, EA, EB, EC, ED>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  f: (ea: EA) => EC,
-  g: (eb: EB) => ED
-): IORefM<RA, RB, EC, ED, A, B> {
-  return pipe(
-    self,
-    fold(
-      (ea) => f(ea),
-      (eb) => g(eb),
-      (a) => E.right(a),
-      (b) => E.right(b)
-    )
-  )
-}
-
-/**
- * Transforms both the `set` and `get` errors of the `XRefM` with the
- * specified functions.
- */
-export function bimapError<EA, EB, EC, ED>(
-  f: (ea: EA) => EC,
-  g: (eb: EB) => ED
-): <RA, RB, A, B>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EC, ED, A, B> {
-  return (self) => bimapError_(self, f, g)
-}
-
-/*
- * -------------------------------------------
  * Contravariant
  * -------------------------------------------
  */
@@ -359,7 +294,7 @@ export function contramapM_<RA, RB, EA, EB, B, A, RC, EC, C>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>
 ): IORefM<RA & RC, RB, EC | EA, EB, C, B> {
-  return bimapM_(self, f, I.pure)
+  return dimapM_(self, f, I.pure)
 }
 
 /**
@@ -635,7 +570,7 @@ export function mapM_<RA, RB, EA, EB, A, B, RC, EC, C>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): IORefM<RA, RB & RC, EA, EB | EC, A, C> {
-  return pipe(self, bimapM(I.pure, f))
+  return pipe(self, dimapM(I.pure, f))
 }
 
 /**
@@ -733,6 +668,65 @@ export function tapOutput<B, RC, EC>(
  * Combinators
  * -------------------------------------------
  */
+
+/**
+ * Transforms both the `set` and `get` values of the `XRefM` with the
+ * specified effectual functions.
+ */
+export function dimapM_<RA, RB, EA, EB, B, RC, EC, A, RD, ED, C = A, D = B>(
+  self: IORefM<RA, RB, EA, EB, A, B>,
+  f: (c: C) => I.IO<RC, EC, A>,
+  g: (b: B) => I.IO<RD, ED, D>
+): IORefM<RA & RC, RB & RD, EA | EC, EB | ED, C, D> {
+  return self.foldM(
+    (ea: EA | EC) => ea,
+    (eb: EB | ED) => eb,
+    f,
+    g
+  )
+}
+
+/**
+ * Transforms both the `set` and `get` values of the `XRefM` with the
+ * specified effectual functions.
+ */
+export function dimapM<B, RC, EC, A, RD, ED, C = A, D = B>(
+  f: (c: C) => I.IO<RC, EC, A>,
+  g: (b: B) => I.IO<RD, ED, D>
+): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB & RD, EC | EA, ED | EB, C, D> {
+  return (self) => dimapM_(self, f, g)
+}
+
+/**
+ * Transforms both the `set` and `get` errors of the `XRefM` with the
+ * specified functions.
+ */
+export function dimapError_<RA, RB, A, B, EA, EB, EC, ED>(
+  self: IORefM<RA, RB, EA, EB, A, B>,
+  f: (ea: EA) => EC,
+  g: (eb: EB) => ED
+): IORefM<RA, RB, EC, ED, A, B> {
+  return pipe(
+    self,
+    fold(
+      (ea) => f(ea),
+      (eb) => g(eb),
+      (a) => E.right(a),
+      (b) => E.right(b)
+    )
+  )
+}
+
+/**
+ * Transforms both the `set` and `get` errors of the `XRefM` with the
+ * specified functions.
+ */
+export function dimapError<EA, EB, EC, ED>(
+  f: (ea: EA) => EC,
+  g: (eb: EB) => ED
+): <RA, RB, A, B>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EC, ED, A, B> {
+  return (self) => dimapError_(self, f, g)
+}
 
 /**
  * Atomically modifies the `RefM` with the specified function, which computes

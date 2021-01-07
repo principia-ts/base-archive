@@ -816,12 +816,12 @@ export function zip_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
  * Transforms elements enqueued into and dequeued from this queue with the
  * specified effectual functions.
  */
-export function bimap<A, B, C, D>(
+export function dimap<A, B, C, D>(
   f: (c: C) => A,
   g: (b: B) => D
 ): <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA, RB, EA, EB, C, D> {
   return (self) =>
-    bimapM_(
+    dimapM_(
       self,
       (c: C) => I.pure(f(c)),
       (b) => I.pure(g(b))
@@ -832,8 +832,8 @@ export function bimap<A, B, C, D>(
  * Transforms elements enqueued into and dequeued from this queue with the
  * specified effectual functions.
  */
-export function bimap_<RA, RB, EA, EB, A, B, C, D>(self: XQueue<RA, RB, EA, EB, A, B>, f: (c: C) => A, g: (b: B) => D) {
-  return bimapM_(
+export function dimap_<RA, RB, EA, EB, A, B, C, D>(self: XQueue<RA, RB, EA, EB, A, B>, f: (c: C) => A, g: (b: B) => D) {
+  return dimapM_(
     self,
     (c: C) => I.pure(f(c)),
     (b) => I.pure(g(b))
@@ -844,18 +844,18 @@ export function bimap_<RA, RB, EA, EB, A, B, C, D>(self: XQueue<RA, RB, EA, EB, 
  * Transforms elements enqueued into and dequeued from this queue with the
  * specified effectual functions.
  */
-export function bimapM<A, B, C, RC, EC, RD, ED, D>(
+export function dimapM<A, B, C, RC, EC, RD, ED, D>(
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
 ): <RA, RB, EA, EB>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
-  return (self) => bimapM_(self, f, g)
+  return (self) => dimapM_(self, f, g)
 }
 
 /**
  * Transforms elements enqueued into and dequeued from this queue with the
  * specified effectual functions.
  */
-export function bimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
+export function dimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
   self: XQueue<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
@@ -889,7 +889,7 @@ export function bimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
  * Transforms elements enqueued into this queue with an effectful function.
  */
 export function contramapM<C, RA2, EA2, A>(f: (c: C) => I.IO<RA2, EA2, A>) {
-  return <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => bimapM_(self, f, I.pure)
+  return <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => dimapM_(self, f, I.pure)
 }
 
 /**
@@ -898,7 +898,7 @@ export function contramapM<C, RA2, EA2, A>(f: (c: C) => I.IO<RA2, EA2, A>) {
 export function contramap<C, A>(
   f: (c: C) => A
 ): <RA, RB, EA, EB, B>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA, RB, EA, EB, C, B> {
-  return (self) => bimapM_(self, (c: C) => I.pure(f(c)), I.pure)
+  return (self) => dimapM_(self, (c: C) => I.pure(f(c)), I.pure)
 }
 
 /**
@@ -984,7 +984,7 @@ export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A>(
  * Transforms elements dequeued from this queue with an effectful function.
  */
 export function mapM<B, R2, E2, C>(f: (b: B) => I.IO<R2, E2, C>) {
-  return <RA, RB, EA, EB, A>(self: XQueue<RA, RB, EA, EB, A, B>) => bimapM_(self, (a: A) => I.pure(a), f)
+  return <RA, RB, EA, EB, A>(self: XQueue<RA, RB, EA, EB, A, B>) => dimapM_(self, (a: A) => I.pure(a), f)
 }
 
 /**
@@ -994,7 +994,7 @@ export function mapM_<RA, RB, EA, EB, A, B, R2, E2, C>(
   self: XQueue<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<R2, E2, C>
 ): XQueue<RA, R2 & RB, EA, EB | E2, A, C> {
-  return bimapM_(self, (a: A) => I.pure(a), f)
+  return dimapM_(self, (a: A) => I.pure(a), f)
 }
 
 export function map_<RA, RB, EA, EB, A, B, C>(

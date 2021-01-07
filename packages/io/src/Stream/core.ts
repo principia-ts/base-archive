@@ -966,7 +966,7 @@ export function foreach_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, B>
 ): I.IO<R & R1, E | E1, void> {
-  return run_(stream, Sink.fromForeach(f))
+  return run_(stream, Sink.foreach(f))
 }
 
 /**
@@ -986,7 +986,7 @@ export function foreachManaged_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, B>
 ): M.Managed<R & R1, E | E1, void> {
-  return runManaged_(stream, Sink.fromForeach(f))
+  return runManaged_(stream, Sink.foreach(f))
 }
 
 /**
@@ -1003,7 +1003,7 @@ export function foreachChunk_<R, E, O, R1, E1, O1>(
   stream: Stream<R, E, O>,
   f: (chunk: Chunk<O>) => I.IO<R1, E1, O1>
 ): I.IO<R & R1, E | E1, void> {
-  return run_(stream, Sink.fromForeachChunk(f))
+  return run_(stream, Sink.foreachChunk(f))
 }
 
 export function foreachChunk<O, R1, E1, O1>(
@@ -1016,7 +1016,7 @@ export function foreachChunkManaged_<R, E, O, R1, E1, O1>(
   stream: Stream<R, E, O>,
   f: (chunk: Chunk<O>) => I.IO<R1, E1, O1>
 ): M.Managed<R & R1, E | E1, void> {
-  return runManaged_(stream, Sink.fromForeachChunk(f))
+  return runManaged_(stream, Sink.foreachChunk(f))
 }
 
 export function foreachChunkManaged<O, R1, E1, O1>(
