@@ -12,7 +12,7 @@ import * as F from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 
 import { eqFiberId } from '../Fiber/FiberId'
-import * as Sy from '../Sync'
+import * as Ev from '@principia/base/control/Eval'
 
 export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E>
 
@@ -243,8 +243,8 @@ export function isCause(u: unknown): u is Cause<unknown> {
 export function findSafe_<E, A>(
   cause: Cause<E>,
   f: (cause: Cause<E>) => O.Option<A>
-): Sy.Sync<unknown, never, O.Option<A>> {
-  return Sy.gen(function* (_) {
+): Ev.Eval<O.Option<A>> {
+  return Ev.gen(function* (_) {
     const apply = f(cause)
     if (apply._tag === 'Some') {
       return apply
@@ -274,7 +274,7 @@ export function findSafe_<E, A>(
 }
 
 export function find_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): O.Option<A> {
-  return Sy.unsafeRun(findSafe_(cause, f))
+  return findSafe_(cause, f).value()
 }
 
 /**
@@ -302,8 +302,8 @@ export function foldSafe_<E, A>(
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A
-): Sy.USync<A> {
-  return Sy.gen(function* (_) {
+): Ev.Eval<A> {
+  return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty':
         return onEmpty()
@@ -352,14 +352,14 @@ export function fold<E, A>(
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A
 ): (cause: Cause<E>) => A {
-  return (cause) => Sy.unsafeRun(foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
+  return (cause) => foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth).value()
 }
 
 /**
  * @internal
  */
-export function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Sy.USync<B> {
-  return Sy.gen(function* (_) {
+export function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Ev.Eval<B> {
+  return Ev.gen(function* (_) {
     const apply = O.getOrElse_(f(b, cause), () => b)
     switch (cause._tag) {
       case 'Then': {
@@ -399,11 +399,6 @@ export const foldLeft_ = F.trampoline(function loop<E, A>(
     ? F.more(() => loop(cause.right, foldLeft_(cause.left, apply, f), f))
     : F.done(apply)
 })
-
-/*
- * export const foldl_ = <E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): B =>
- *    Sy.runIO(foldlSafe_(cause, b, f));
- */
 
 /**
  * ```haskell
@@ -617,8 +612,11 @@ export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
  * -------------------------------------------
  */
 
-export function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync<unknown, never, Cause<D>> {
-  return Sy.gen(function* (_) {
+/**
+ * @internal
+ */
+export function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
+  return Ev.gen(function* (_) {
     switch (ma._tag) {
       case 'Empty':
         return empty
@@ -638,7 +636,7 @@ export function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync
 
 /**
  * ```haskell
- * chain_ :: Monad m => (m a, (a -> m b)) -> m b
+ * flatMap_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -647,12 +645,12 @@ export function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Sy.Sync
  * @since 1.0.0
  */
 export function flatMap_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-  return Sy.unsafeRun(flatMapSafe_(ma, f))
+  return flatMapSafe_(ma, f).value()
 }
 
 /**
  * ```haskell
- * chain :: Monad m => (a -> m b) -> m a -> m b
+ * flatMap :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -747,8 +745,8 @@ export function interruptedOnly<E>(cause: Cause<E>): boolean {
 /**
  * @internal
  */
-export function stripFailuresSafe<E>(cause: Cause<E>): Sy.USync<Cause<never>> {
-  return Sy.gen(function* (_) {
+export function stripFailuresSafe<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
+  return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
         return empty
@@ -776,14 +774,14 @@ export function stripFailuresSafe<E>(cause: Cause<E>): Sy.USync<Cause<never>> {
  * Discards all typed failures kept on this `Cause`.
  */
 export function stripFailures<E>(cause: Cause<E>): Cause<never> {
-  return Sy.unsafeRun(stripFailuresSafe(cause))
+  return stripFailuresSafe(cause).value()
 }
 
 /**
  * @internal
  */
-export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
-  return Sy.gen(function* (_) {
+export function stripInterruptsSafe<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
+  return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
         return empty
@@ -811,11 +809,11 @@ export function stripInterruptsSafe<E>(cause: Cause<E>): Sy.USync<Cause<E>> {
  * Discards all interrupts kept on this `Cause`.
  */
 export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
-  return Sy.unsafeRun(stripInterruptsSafe(cause))
+  return stripInterruptsSafe(cause).value()
 }
 
-export function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>): Sy.USync<O.Option<Cause<E>>> {
-  return Sy.gen(function* (_) {
+export function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<O.Option<Cause<E>>> {
+  return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
         return O.none()
@@ -858,18 +856,18 @@ export function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>)
 }
 
 export function stripSomeDefects_<E>(cause: Cause<E>, pf: Predicate<unknown>): O.Option<Cause<E>> {
-  return Sy.unsafeRun(stripSomeDefectsSafe(cause, pf))
+  return stripSomeDefectsSafe(cause, pf).value()
 }
 
 export function stripSomeDefects(pf: Predicate<unknown>): <E>(cause: Cause<E>) => O.Option<Cause<E>> {
-  return (cause) => Sy.unsafeRun(stripSomeDefectsSafe(cause, pf))
+  return (cause) => stripSomeDefectsSafe(cause, pf).value()
 }
 
 /**
  * @internal
  */
-export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<never>>> {
-  return Sy.gen(function* (_) {
+export function keepDefectsSafe<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
+  return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
         return O.none()
@@ -920,11 +918,11 @@ export function keepDefectsSafe<E>(cause: Cause<E>): Sy.USync<O.Option<Cause<nev
  * return only `Die` cause/finalizer defects.
  */
 export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
-  return Sy.unsafeRun(keepDefectsSafe(cause))
+  return keepDefectsSafe(cause).value()
 }
 
-export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Sy.USync<E.Either<Cause<E>, A>> {
-  return Sy.gen(function* (_) {
+export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Either<Cause<E>, A>> {
+  return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
         return E.left(empty)
@@ -966,11 +964,11 @@ export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Sy.
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
 export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> {
-  return Sy.unsafeRun(sequenceCauseEitherSafe(cause))
+  return sequenceCauseEitherSafe(cause).value()
 }
 
-export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<O.Option<Cause<E>>> {
-  return Sy.gen(function* (_) {
+export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Cause<E>>> {
+  return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
         return O.some(empty)
@@ -1014,7 +1012,7 @@ export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Sy.USync<
  * Converts the specified `Cause<Option<E>>` to an `Option<Cause<E>>`.
  */
 export function sequenceCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> {
-  return Sy.unsafeRun(sequenceCauseOptionSafe(cause))
+  return sequenceCauseOptionSafe(cause).value()
 }
 
 /**
@@ -1217,8 +1215,8 @@ const renderFail = (error: string[]): Sequential =>
 const renderFailError = (error: Error): Sequential =>
   Sequential([Failure(['A checked error was not handled.', '', ...renderError(error)])])
 
-const causeToSequential = <E>(cause: Cause<E>): Sy.USync<Sequential> =>
-  Sy.gen(function* (_) {
+const causeToSequential = <E>(cause: Cause<E>): Ev.Eval<Sequential> =>
+  Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
         return Sequential([])
@@ -1245,8 +1243,8 @@ const causeToSequential = <E>(cause: Cause<E>): Sy.USync<Sequential> =>
     }
   })
 
-const linearSegments = <E>(cause: Cause<E>): Sy.USync<Step[]> =>
-  Sy.gen(function* (_) {
+const linearSegments = <E>(cause: Cause<E>): Ev.Eval<Step[]> =>
+  Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Then': {
         return [...(yield* _(linearSegments(cause.left))), ...(yield* _(linearSegments(cause.right)))]
@@ -1257,8 +1255,8 @@ const linearSegments = <E>(cause: Cause<E>): Sy.USync<Step[]> =>
     }
   })
 
-const parallelSegments = <E>(cause: Cause<E>): Sy.USync<Sequential[]> =>
-  Sy.gen(function* (_) {
+const parallelSegments = <E>(cause: Cause<E>): Ev.Eval<Sequential[]> =>
+  Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Both': {
         return [...(yield* _(parallelSegments(cause.left))), ...(yield* _(parallelSegments(cause.right)))]
@@ -1299,8 +1297,8 @@ const format = (segment: Segment): readonly string[] => {
   }
 }
 
-const prettyLines = <E>(cause: Cause<E>): Sy.USync<readonly string[]> =>
-  Sy.gen(function* (_) {
+const prettyLines = <E>(cause: Cause<E>): Ev.Eval<readonly string[]> =>
+  Ev.gen(function* (_) {
     const s = yield* _(causeToSequential(cause))
 
     if (s.all.length === 1 && s.all[0]._tag === 'Failure') {
@@ -1310,13 +1308,13 @@ const prettyLines = <E>(cause: Cause<E>): Sy.USync<readonly string[]> =>
     return O.getOrElse_(A.updateAt(0, '╥')(format(s)), (): string[] => [])
   })
 
-export function prettyM<E>(cause: Cause<E>): Sy.USync<string> {
-  return Sy.gen(function* (_) {
+export function prettySafe<E>(cause: Cause<E>): Ev.Eval<string> {
+  return Ev.gen(function* (_) {
     const lines = yield* _(prettyLines(cause))
     return lines.join('\n')
   })
 }
 
 export function pretty<E>(cause: Cause<E>): string {
-  return Sy.unsafeRun(prettyM(cause))
+  return prettySafe(cause).value()
 }
