@@ -5,19 +5,19 @@ import { none, some } from '@principia/base/data/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as I from '../IO'
-import * as XR from '../IORef'
-import * as XP from '../Promise'
+import * as Ref from '../IORef'
+import * as P from '../Promise'
 
 type State<A> = Empty | Full<A>
 
 class Empty {
   readonly _tag = 'Empty'
-  constructor(readonly notifyConsumer: XP.Promise<never, void>) {}
+  constructor(readonly notifyConsumer: P.Promise<never, void>) {}
 }
 
 class Full<A> {
   readonly _tag = 'Full'
-  constructor(readonly a: A, readonly notifyProducer: XP.Promise<never, void>) {}
+  constructor(readonly a: A, readonly notifyProducer: P.Promise<never, void>) {}
 }
 
 /**
@@ -27,13 +27,13 @@ class Full<A> {
  */
 class Handoff<A> {
   readonly _tag = 'Handoff'
-  constructor(readonly ref: XR.URef<State<A>>) {}
+  constructor(readonly ref: Ref.URef<State<A>>) {}
 }
 
 export function make<A>(): I.UIO<Handoff<A>> {
   return pipe(
-    XP.make<never, void>(),
-    I.flatMap((p) => XR.make<State<A>>(new Empty(p))),
+    P.make<never, void>(),
+    I.flatMap((p) => Ref.make<State<A>>(new Empty(p))),
     I.map((ref) => new Handoff(ref))
   )
 }
@@ -41,18 +41,18 @@ export function make<A>(): I.UIO<Handoff<A>> {
 export function offer<A>(a: A) {
   return (h: Handoff<A>): I.UIO<void> =>
     pipe(
-      XP.make<never, void>(),
+      P.make<never, void>(),
       I.flatMap((p) =>
         pipe(
           h.ref,
-          XR.modify<I.UIO<void>, State<A>>(
+          Ref.modify<I.UIO<void>, State<A>>(
             matchTag({
               Empty: ({ notifyConsumer }) =>
-                [pipe(notifyConsumer, XP.succeed(constVoid()), I.apSecond(XP.await(p))), new Full(a, p)] as const,
+                [pipe(notifyConsumer.succeed(undefined), I.apSecond(p.await)), new Full(a, p)] as const,
               Full: (s) =>
                 [
                   pipe(
-                    XP.await(s.notifyProducer),
+                    s.notifyProducer.await,
                     I.flatMap(() => offer(a)(h))
                   ),
                   s
@@ -67,17 +67,16 @@ export function offer<A>(a: A) {
 
 export function take<A>(h: Handoff<A>): I.UIO<A> {
   return pipe(
-    XP.make<never, void>(),
+    P.make<never, void>(),
     I.flatMap((p) =>
       pipe(
         h.ref,
-        XR.modify<I.UIO<A>, State<A>>(
+        Ref.modify<I.UIO<A>, State<A>>(
           matchTag({
             Empty: (s) =>
               [
                 pipe(
-                  s.notifyConsumer,
-                  XP.await,
+                  s.notifyConsumer.await,
                   I.flatMap(() => take(h))
                 ),
                 s
@@ -85,8 +84,7 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
             Full: ({ a, notifyProducer }) =>
               [
                 pipe(
-                  notifyProducer,
-                  XP.succeed(constVoid()),
+                  notifyProducer.succeed(undefined),
                   I.as(() => a)
                 ),
                 new Empty(p)
@@ -101,18 +99,17 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
 
 export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
   return pipe(
-    XP.make<never, void>(),
+    P.make<never, void>(),
     I.flatMap((p) =>
       pipe(
         h.ref,
-        XR.modify<I.UIO<Option<A>>, State<A>>(
+        Ref.modify<I.UIO<Option<A>>, State<A>>(
           matchTag({
             Empty: (s) => [I.succeed(none()), s] as const,
             Full: ({ a, notifyProducer }) =>
               [
                 pipe(
-                  notifyProducer,
-                  XP.succeed(constVoid()),
+                  notifyProducer.succeed(undefined),
                   I.as(() => some(a))
                 ),
                 new Empty(p)

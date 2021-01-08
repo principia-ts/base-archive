@@ -17,7 +17,7 @@ import { makeRuntime } from '../IO/combinators/runtime'
 import * as XR from '../IORef'
 import * as XRM from '../IORefM'
 import * as RelMap from '../Managed/ReleaseMap'
-import * as XP from '../Promise'
+import * as P from '../Promise'
 import * as I from './_internal/io'
 import * as M from './_internal/managed'
 
@@ -569,7 +569,7 @@ export class MemoMap {
             return pipe(
               I.do,
               I.bindS('observers', () => XR.make(0)),
-              I.bindS('promise', () => XP.make<E, A>()),
+              I.bindS('promise', () => P.make<E, A>()),
               I.bindS('finalizerRef', () => XR.make<Finalizer>(RelMap.noopFinalizer)),
               I.letS('resource', ({ finalizerRef, observers, promise }) =>
                 I.uninterruptibleMask(({ restore }) =>
@@ -594,8 +594,7 @@ export class MemoMap {
                             switch (e._tag) {
                               case 'Failure': {
                                 return pipe(
-                                  promise,
-                                  XP.halt(e.cause),
+                                  promise.halt(e.cause),
                                   I.flatMap(() => M.releaseAll(e, sequential)(innerReleaseMap) as I.FIO<E, any>),
                                   I.flatMap(() => I.halt(e.cause))
                                 )
@@ -622,7 +621,7 @@ export class MemoMap {
                                   I.bindS('outerFinalizer', () =>
                                     RelMap.add((e) => I.flatMap_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
                                   ),
-                                  I.tap(() => pipe(promise, XP.succeed(e.value[1]))),
+                                  I.tap(() => promise.succeed(e.value[1])),
                                   I.map(({ outerFinalizer }) => tuple(outerFinalizer, e.value[1]))
                                 )
                               }
@@ -640,8 +639,7 @@ export class MemoMap {
                 ({ finalizerRef, observers, promise }) =>
                   [
                     pipe(
-                      promise,
-                      XP.await,
+                      promise.await,
                       I.onExit((e) => {
                         switch (e._tag) {
                           case 'Failure': {

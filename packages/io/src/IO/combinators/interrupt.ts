@@ -97,14 +97,20 @@ export function onInterruptExtended_<R, E, A, R2, E2>(self: IO<R, E, A>, cleanup
       (cause) =>
         C.interrupted(cause)
           ? foldCauseM_(
-            cleanup(),
-            (_) => halt(_),
-            () => halt(cause)
-          )
+              cleanup(),
+              (_) => halt(_),
+              () => halt(cause)
+            )
           : halt(cause),
       pure
     )
   )
+}
+
+export function onInterruptExtended<R2, E2>(
+  cleanup: () => IO<R2, E2, any>
+): <R, E, A>(self: IO<R, E, A>) => IO<R & R2, E | E2, A> {
+  return (self) => onInterruptExtended_(self, cleanup)
 }
 
 /**

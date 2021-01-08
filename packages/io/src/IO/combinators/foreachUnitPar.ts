@@ -9,16 +9,21 @@ import * as O from '@principia/base/data/Option'
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
-import * as XR from '../../IORef/core'
+import * as Ref from '../../IORef/core'
 import { fromEffect, Managed } from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap'
-import * as XP from '../../Promise'
+import * as P from '../../Promise'
 import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
 import { forkDaemon } from './core-scope'
 import { ensuring } from './ensuring'
 import { fiberId } from './fiberId'
-import { makeInterruptible, makeUninterruptible, onInterruptExtended_, uninterruptibleMask } from './interrupt'
+import {
+  makeInterruptible,
+  makeUninterruptible,
+  onInterruptExtended,
+  uninterruptibleMask
+} from './interrupt'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -43,13 +48,13 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
   return pipe(
     I.do,
     I.bindS('parentId', () => fiberId()),
-    I.bindS('causes', () => XR.make<C.Cause<E>>(C.empty)),
-    I.bindS('result', () => XP.make<void, void>()),
-    I.bindS('status', () => XR.make([0, 0, false] as [number, number, boolean])),
+    I.bindS('causes', () => Ref.make<C.Cause<E>>(C.empty)),
+    I.bindS('result', () => P.make<void, void>()),
+    I.bindS('status', () => Ref.make([0, 0, false] as [number, number, boolean])),
     I.letS('startEffect', (s) =>
       pipe(
         s.status,
-        XR.modify(([started, done, failing]): [boolean, [number, number, boolean]] =>
+        Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] =>
           failing ? [false, [started, done, failing]] : [true, [started + 1, done, failing]]
         )
       )
@@ -57,8 +62,8 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     I.letS('startFailure', (s) =>
       pipe(
         s.status,
-        XR.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
-        I.tap(() => XP.fail<void>(undefined)(s.result))
+        Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
+        I.tap(() => s.result.fail(undefined))
       )
     ),
     I.letS('effect', (s) => (a: A) =>
@@ -70,20 +75,20 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
             I.tapCause((c) =>
               pipe(
                 s.causes,
-                XR.update((l) => C.both(l, c)),
+                Ref.update((l) => C.both(l, c)),
                 I.flatMap(() => s.startFailure)
               )
             ),
             ensuring(
-              I.whenM(
-                pipe(
-                  s.status,
-                  XR.modify(([started, done, failing]) => [
+              pipe(
+                s.result.succeed(undefined),
+                I.whenM(
+                  Ref.modify_(s.status, ([started, done, failing]) => [
                     (failing ? started : size) === done + 1,
                     [started, done + 1, failing] as [number, number, boolean]
                   ])
                 )
-              )(XP.succeed<void>(undefined)(s.result))
+              )
             )
           )
         )
@@ -92,8 +97,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     I.bindS('fibers', (s) => I.foreach_(arr, (a) => I.fork(s.effect(a)))),
     I.letS('interruptor', (s) =>
       pipe(
-        s.result,
-        XP.await,
+        s.result.await,
         I.catchAll(() =>
           I.flatMap_(
             I.foreach_(s.fibers, (f) => I.fork(f.interruptAs(s.parentId))),
@@ -106,23 +110,27 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     ),
     I.tap((s) =>
       useManaged_(s.interruptor, () =>
-        onInterruptExtended_(
+        pipe(
+          s.result.fail(undefined),
+          I.andThen(I.flatMap_(s.causes.get, I.halt)),
           I.whenM(
-            I.map_(
+            pipe(
               I.foreach_(s.fibers, (f) => f.await),
-              flow(
-                A.findFirst((e) => e._tag === 'Failure'),
-                (m) => m._tag === 'Some'
+              I.map(
+                flow(
+                  A.findFirst((e) => e._tag === 'Failure'),
+                  O.isSome
+                )
               )
             )
-          )(I.flatMap_(XP.fail<void>(undefined)(s.result), () => I.flatMap_(s.causes.get, (x) => I.halt(x)))),
-          () =>
-            I.flatMap_(XP.fail<void>(undefined)(s.result), () =>
-              I.flatMap_(
-                I.foreach_(s.fibers, (f) => f.await),
-                () => I.flatMap_(s.causes.get, (x) => I.halt(x))
-              )
+          ),
+          onInterruptExtended(() =>
+            pipe(
+              s.result.fail(undefined),
+              I.andThen(I.foreach_(s.fibers, (f) => f.await)),
+              I.andThen(I.flatMap_(s.causes.get, I.halt))
             )
+          )
         )
       )
     ),
@@ -157,13 +165,13 @@ function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I
 
   return I.flatMap_(
     I.total<B[]>(() => []),
-    (array) => {
+    (mut_array) => {
       const fn = ([a, n]: [A, number]) =>
         I.flatMap_(
           I.suspend(() => f(a)),
           (b) =>
             I.total(() => {
-              array[n] = b
+              mut_array[n] = b
             })
         )
       return I.flatMap_(
@@ -171,7 +179,7 @@ function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I
           arr.map((a, n) => [a, n] as [A, number]),
           fn
         ),
-        () => I.total(() => array)
+        () => I.total(() => mut_array)
       )
     }
   )
@@ -237,7 +245,7 @@ function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberCo
 function releaseAllSeq_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
   return pipe(
     _.ref,
-    XR.modify((s): [I.UIO<any>, RM.State] => {
+    Ref.modify((s): [I.UIO<any>, RM.State] => {
       switch (s._tag) {
         case 'Exited': {
           return [I.unit(), s]

@@ -8,7 +8,7 @@ import * as O from '@principia/base/data/Option'
 import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '@principia/base/util/support/MutableQueue'
 
-import * as XP from '../Promise'
+import * as P from '../Promise'
 import * as I from './_internal/io'
 
 /**
@@ -119,7 +119,7 @@ export function unsafePollAll<A>(q: MutableQueue<A>): readonly A[] {
 }
 
 export function unsafeCompletePromise<A>(p: Promise<never, A>, a: A) {
-  return XP.unsafeDone(I.pure(a))(p)
+  return p.unsafeDone(I.pure(a))
 }
 
 export function unsafeRemove<A>(q: MutableQueue<A>, a: A) {
@@ -198,7 +198,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
   ): I.UIO<boolean> {
     return I.descriptorWith((d) =>
       I.suspend(() => {
-        const p = XP.unsafeMake<never, boolean>(d.id)
+        const p = P.unsafeMake<never, boolean>(d.id)
 
         return I.onInterrupt_(
           I.suspend(() => {
@@ -208,7 +208,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
             if (isShutdown.get) {
               return I.interrupt
             } else {
-              return XP.await(p)
+              return p.await
             }
           }),
           () => I.total(() => this.unsafeRemove(p))
@@ -265,7 +265,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
       I.bindS('fiberId', () => I.fiberId()),
       I.bindS('putters', () => I.total(() => unsafePollAll(this.putters))),
       I.tap((s) =>
-        I.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? XP.interruptAs(s.fiberId)(p) : I.unit()))
+        I.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? p.interruptAs(s.fiberId) : I.unit()))
       ),
       I.asUnit
     )
@@ -350,7 +350,7 @@ export function unsafeCreate<A>(
   strategy: Strategy<A>
 ): Queue<A> {
   return new (class extends XQueue<unknown, unknown, never, never, A, A> {
-    awaitShutdown: I.UIO<void> = XP.await(shutdownHook)
+    awaitShutdown: I.UIO<void> = shutdownHook.await
 
     capacity: number = queue.capacity
 
@@ -413,8 +413,8 @@ export function unsafeCreate<A>(
         shutdownFlag.set(true)
 
         return I.makeUninterruptible(
-          I.whenM(XP.succeed<void>(undefined)(shutdownHook))(
-            I.flatMap_(I.foreachPar_(unsafePollAll(takers), XP.interruptAs(d.id)), () => strategy.shutdown)
+          I.whenM(shutdownHook.succeed(undefined))(
+            I.flatMap_(I.foreachPar_(unsafePollAll(takers), P.interruptAs(d.id)), () => strategy.shutdown)
           )
         )
       })
@@ -440,7 +440,7 @@ export function unsafeCreate<A>(
           strategy.unsafeOnQueueEmptySpace(queue)
           return I.pure(item)
         } else {
-          const p = XP.unsafeMake<never, A>(d.id)
+          const p = P.unsafeMake<never, A>(d.id)
 
           return I.onInterrupt_(
             I.suspend(() => {
@@ -449,7 +449,7 @@ export function unsafeCreate<A>(
               if (shutdownFlag.get) {
                 return I.interrupt
               } else {
-                return XP.await(p)
+                return p.await
               }
             }),
             () => I.total(() => unsafeRemove(takers, p))
@@ -487,7 +487,7 @@ export function unsafeCreate<A>(
 
 export function createQueue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) => I.IO<unknown, never, Queue<A>> {
   return (queue) =>
-    I.map_(XP.make<never, void>(), (p) => unsafeCreate(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
+    I.map_(P.make<never, void>(), (p) => unsafeCreate(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
 }
 
 export function makeSliding<A>(capacity: number): I.UIO<Queue<A>> {

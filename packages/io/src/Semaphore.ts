@@ -11,9 +11,7 @@ import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
 import * as XR from './IORef/core'
 import * as M from './Managed/core'
-import { await as promiseWait } from './Promise/combinators/await'
-import { make as promiseMake } from './Promise/combinators/make'
-import { succeed_ as promiseSucceed } from './Promise/combinators/succeed'
+import * as P from './Promise'
 
 export type Entry = [Promise<never, void>, number]
 export type State = Either<ImmutableQueue<Entry>, number>
@@ -55,9 +53,9 @@ export class Semaphore {
           (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
           ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
             if (n > m) {
-              return this.loop(n - m, E.left(q), I.apFirst_(acc, promiseSucceed(p, undefined)))
+              return this.loop(n - m, E.left(q), I.apFirst_(acc, p.succeed(undefined)))
             } else if (n === m) {
-              return [I.apFirst_(acc, promiseSucceed(p, undefined)), E.left(q)]
+              return [I.apFirst_(acc, p.succeed(undefined)), E.left(q)]
             } else {
               return [acc, E.left(q.prepend([p, m - n]))]
             }
@@ -104,20 +102,20 @@ export class Semaphore {
     if (n === 0) {
       return I.pure(new Acquisition(I.unit(), I.unit()))
     } else {
-      return I.flatMap_(promiseMake<never, void>(), (p) =>
+      return I.flatMap_(P.make<never, void>(), (p) =>
         pipe(
           this.state,
           XR.modify(
             E.fold(
               (q): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => [
-                new Acquisition(promiseWait(p), this.restore(p, n)),
+                new Acquisition(p.await, this.restore(p, n)),
                 E.left(q.push([p, n]))
               ],
               (m): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => {
                 if (m >= n) {
                   return [new Acquisition(I.unit(), this.releaseN(n)), E.right(m - n)]
                 }
-                return [new Acquisition(promiseWait(p), this.restore(p, n)), E.left(new ImmutableQueue([[p, n - m]]))]
+                return [new Acquisition(p.await, this.restore(p, n)), E.left(new ImmutableQueue([[p, n - m]]))]
               }
             )
           )

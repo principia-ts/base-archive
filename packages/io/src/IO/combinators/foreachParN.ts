@@ -2,7 +2,7 @@ import * as A from '@principia/base/data/Array'
 import { pipe, tuple } from '@principia/base/data/Function'
 
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
-import * as XP from '../../Promise'
+import * as P from '../../Promise'
 import * as Q from '../../Queue'
 import * as I from '../core'
 import { bracket } from './bracket'
@@ -12,7 +12,7 @@ import { forever } from './forever'
 export function foreachParN_(n: number) {
   return <A, R, E, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> =>
     pipe(
-      Q.makeBounded<readonly [XP.Promise<E, B>, A]>(n),
+      Q.makeBounded<readonly [P.Promise<E, B>, A]>(n),
       bracket(
         (q) =>
           pipe(
@@ -22,7 +22,7 @@ export function foreachParN_(n: number) {
                 as,
                 I.foreach((a) =>
                   pipe(
-                    XP.make<E, B>(),
+                    P.make<E, B>(),
                     I.map((p) => tuple(p, a))
                   )
                 )
@@ -41,9 +41,9 @@ export function foreachParN_(n: number) {
                           (c) =>
                             pipe(
                               pairs,
-                              I.foreach(([promise, _]) => pipe(promise, XP.halt(c)))
+                              I.foreach(([promise, _]) => promise.halt(c))
                             ),
-                          (b) => pipe(p, XP.succeed(b))
+                          p.succeed
                         )
                       )
                     ),
@@ -57,7 +57,7 @@ export function foreachParN_(n: number) {
             I.bindS('res', ({ fibers, pairs }) =>
               pipe(
                 pairs,
-                I.foreach(([p]) => XP.await(p)),
+                I.foreach(([p]) => p.await),
                 I.result,
                 I.tap(() => pipe(fibers, I.foreach(interruptFiber))),
                 I.flatMap(I.done)

@@ -8,14 +8,14 @@ import { flow, pipe, tuple } from '@principia/base/data/Function'
 import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'
 import * as XR from '../../IORef'
-import * as XP from '../../Promise'
+import * as P from '../../Promise'
 import * as I from '../core'
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 
 const arbiter = <E, A>(
   fibers: ReadonlyArray<Fiber.Fiber<E, A>>,
   winner: Fiber.Fiber<E, A>,
-  promise: XP.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
+  promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
   fails: XR.URef<number>
 ) => (res: Exit<E, A>): UIO<void> =>
     Ex.foldM_(
@@ -23,13 +23,12 @@ const arbiter = <E, A>(
       (e) =>
         pipe(
           fails,
-          XR.modify((c) => tuple(c === 0 ? pipe(promise, XP.halt(e), I.asUnit) : I.unit(), c - 1)),
+          XR.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
           I.flatten
         ),
       (a) =>
         pipe(
-          promise,
-          XP.succeed(tuple(a, winner)),
+          promise.succeed(tuple(a, winner)),
           I.flatMap((set) =>
             set
               ? A.foldLeft_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
@@ -51,7 +50,7 @@ export function raceAll<R, E, A>(
 ): IO<R, E, A> {
   return pipe(
     I.do,
-    I.bindS('done', () => XP.make<E, readonly [A, Fiber.Fiber<E, A>]>()),
+    I.bindS('done', () => P.make<E, readonly [A, Fiber.Fiber<E, A>]>()),
     I.bindS('fails', () => XR.make(ios.length)),
     I.bindS('c', ({ done, fails }) =>
       uninterruptibleMask(({ restore }) =>
@@ -71,7 +70,7 @@ export function raceAll<R, E, A>(
           ),
           I.bindS('c', ({ fs, inheritRefs }) =>
             pipe(
-              restore(pipe(done, XP.await, I.flatMap(inheritRefs))),
+              restore(pipe(done.await, I.flatMap(inheritRefs))),
               onInterrupt(() => A.foldLeft_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))
             )
           ),

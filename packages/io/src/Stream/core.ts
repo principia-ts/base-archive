@@ -10,7 +10,7 @@ import type * as HKT from '@principia/base/HKT'
 import type { _E, _R } from '@principia/base/util/types'
 
 import * as E from '@principia/base/data/Either'
-import { constTrue, flow, identity, not, pipe, tuple, tupled } from '@principia/base/data/Function'
+import { constTrue, flow, identity, not, pipe, tuple } from '@principia/base/data/Function'
 import { isTag } from '@principia/base/data/Has'
 import * as L from '@principia/base/data/List'
 import * as Map from '@principia/base/data/Map'
@@ -1931,7 +1931,7 @@ export function distributedWith_<R, E, O>(
         distributedWithDynamic_(
           stream,
           maximumLag,
-          (o) => I.flatMap_(P.await(prom), (_) => _(o)),
+          (o) => I.flatMap_(prom.await, (_) => _(o)),
           (_) => I.unit()
         ),
         M.flatMap((next) =>
@@ -1952,7 +1952,7 @@ export function distributedWith_<R, E, O>(
                 ]
               )
               return pipe(
-                P.succeed_(prom, (o: O) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key) as number))),
+                prom.succeed((o: O) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key) as number))),
                 I.as(() => queues)
               )
             }),
@@ -2161,7 +2161,7 @@ function bufferSignal_<R, E, O>(
   return M.gen(function* (_) {
     const as    = yield* _(ma.proc)
     const start = yield* _(P.make<never, void>())
-    yield* _(P.succeed_(start, undefined))
+    yield* _(start.succeed(undefined))
     const ref     = yield* _(Ref.make(start))
     const doneRef = yield* _(Ref.make(false))
     const offer   = (take: Take.Take<E, O>): I.UIO<void> =>
@@ -2170,11 +2170,11 @@ function bufferSignal_<R, E, O>(
         (_) =>
           I.gen(function* ($) {
             const latch = yield* $(ref.get)
-            yield* $(P.await(latch))
+            yield* $(latch.await)
             const p = yield* $(P.make<never, void>())
             yield* $(queue.offer([take, p]))
             yield* $(ref.set(p))
-            yield* $(P.await(p))
+            yield* $(p.await)
           }),
         (_) =>
           I.gen(function* ($) {
@@ -2200,7 +2200,7 @@ function bufferSignal_<R, E, O>(
             queue.take,
             I.flatMap(([take, p]) =>
               pipe(
-                P.succeed_(p, undefined),
+                p.succeed(undefined),
                 I.andThen(I.when(() => take === Take.end)(doneRef.set(true))),
                 I.andThen(Take.done(take))
               )
@@ -2439,17 +2439,17 @@ export function flatMapPar_<R, E, O, R1, E1, O1>(
                 const innerStream = pipe(
                   Semaphore.withPermitManaged(permits),
                   managed,
-                  tap(() => P.succeed_(latch, undefined)),
+                  tap(() => latch.succeed(undefined)),
                   flatMap(() => f(o)),
                   foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
                   I.foldCauseM(
                     (cause) =>
-                      pipe(cause, Pull.halt, outQueue.offer, I.andThen(P.fail_(innerFailure, cause)), I.asUnit),
+                      pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
                     () => I.unit()
                   )
                 )
                 yield* _(I.fork(innerStream))
-                yield* _(P.await(latch))
+                yield* _(latch.await)
               })
             ),
             M.foldCauseM(
@@ -2462,7 +2462,7 @@ export function flatMapPar_<R, E, O, R1, E1, O1>(
                 ),
               () =>
                 pipe(
-                  P.await(innerFailure),
+                  innerFailure.await,
                   I.makeInterruptible,
                   I.raceWith(
                     Semaphore.withPermits(n, permits)(I.makeInterruptible(I.unit())),
@@ -2534,17 +2534,17 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                   const innerStream = pipe(
                     Semaphore.withPermitManaged(permits),
                     managed,
-                    tap(() => P.succeed_(latch, undefined)),
+                    tap(() => latch.succeed(undefined)),
                     flatMap(() => f(o)),
                     foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
                     I.foldCauseM(
                       (cause) =>
-                        pipe(cause, Pull.halt, outQueue.offer, I.andThen(P.fail_(innerFailure, cause)), I.asUnit),
+                        pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
                       () => I.unit()
                     )
                   )
-                  yield* _(I.fork(I.race_(innerStream, P.await(canceler))))
-                  yield* _(P.await(latch))
+                  yield* _(I.fork(I.race_(innerStream, canceler.await)))
+                  yield* _(latch.await)
                 })
               ),
               M.foldCauseM(
@@ -2557,7 +2557,7 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                   ),
                 () =>
                   pipe(
-                    P.await(innerFailure),
+                    innerFailure.await,
                     I.raceWith(
                       Semaphore.withPermits(n, permits)(I.unit()),
                       (_, permitsAcquisition) =>
@@ -3230,8 +3230,7 @@ export function groupBy_<R, E, O, R1, E1, K, V>(
             buffer,
             ([k, v]) =>
               pipe(
-                decider,
-                P.await,
+                decider.await,
                 I.flatMap((f) => f(k, v))
               ),
             out.offer
@@ -3239,7 +3238,7 @@ export function groupBy_<R, E, O, R1, E1, K, V>(
         )
       )
       yield* _(
-        P.succeed_(decider, (k: K, v: V) =>
+        decider.succeed((k: K, __: V) =>
           pipe(
             ref.get,
             I.map(Map.lookup(k)),
@@ -3448,17 +3447,16 @@ export function mapMPar_(n: number) {
               I.gen(function* (_) {
                 const p     = yield* _(P.make<E1, B>())
                 const latch = yield* _(P.make<never, void>())
-                yield* _(out.offer(pipe(p, P.await, I.mapError(O.some))))
+                yield* _(out.offer(pipe(p.await, I.mapError(O.some))))
                 yield* _(
                   pipe(
                     latch,
                     P.succeed<void>(undefined),
                     I.andThen(
                       pipe(
-                        errorSignal,
-                        P.await,
+                        errorSignal.await,
                         I.raceFirst(f(o)),
-                        I.tapCause((e) => pipe(errorSignal, P.halt(e))),
+                        I.tapCause(errorSignal.halt),
                         I.to(p)
                       )
                     ),
@@ -3466,7 +3464,7 @@ export function mapMPar_(n: number) {
                     I.fork
                   )
                 )
-                yield* _(P.await(latch))
+                yield* _(latch.await)
               })
             ),
             M.foldCauseM(flow(Pull.halt, out.offer, I.toManaged()), () =>

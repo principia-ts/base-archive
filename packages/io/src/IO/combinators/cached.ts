@@ -7,8 +7,8 @@ import { pipe, tuple } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 
 import { currentTime } from '../../Clock'
-import * as XRM from '../../IORefM'
-import * as XP from '../../Promise'
+import * as RefM from '../../IORefM'
+import * as P from '../../Promise'
 import * as I from '../core'
 import { uninterruptibleMask } from './interrupt'
 import { to } from './to'
@@ -16,19 +16,19 @@ import { to } from './to'
 const _compute = <R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) =>
   pipe(
     I.do,
-    I.bindS('p', () => XP.make<E, A>()),
+    I.bindS('p', () => P.make<E, A>()),
     I.tap(({ p }) => to(p)(fa)),
     I.map(({ p }) => O.some(tuple(start + ttl, p)))
   )
 
-const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: XRM.URefM<Option<readonly [number, Promise<E, A>]>>) =>
+const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>) =>
   uninterruptibleMask(({ restore }) =>
     pipe(
       currentTime,
       I.flatMap((time) =>
         pipe(
           cache,
-          XRM.updateSomeAndGet((o) =>
+          RefM.updateSomeAndGet((o) =>
             pipe(
               o,
               O.fold(
@@ -36,11 +36,11 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: XRM.URefM<Option<rea
                 ([end]) =>
                   end - time <= 0
                     ? O.some(_compute(fa, ttl, time))
-                    : O.none<IO<R, never, Option<readonly [number, XP.Promise<E, A>]>>>()
+                    : O.none<IO<R, never, Option<readonly [number, P.Promise<E, A>]>>>()
               )
             )
           ),
-          I.flatMap((a) => (a._tag === 'None' ? I.die('bug') : restore(XP.await(a.value[1]))))
+          I.flatMap((a) => (a._tag === 'None' ? I.die('bug') : restore(a.value[1].await)))
         )
       )
     )
@@ -61,7 +61,7 @@ export function cached_<R, E, A>(fa: IO<R, E, A>, timeToLive: number): URIO<R & 
   return pipe(
     I.do,
     I.bindS('r', () => I.ask<R & HasClock>()),
-    I.bindS('cache', () => XRM.make<Option<readonly [number, Promise<E, A>]>>(O.none())),
+    I.bindS('cache', () => RefM.make<Option<readonly [number, Promise<E, A>]>>(O.none())),
     I.map(({ cache, r }) => I.giveAll(r)(_get(fa, timeToLive, cache)))
   )
 }

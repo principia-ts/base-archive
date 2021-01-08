@@ -6,7 +6,6 @@ import * as Ev from '@principia/base/control/Eval'
 import * as E from '@principia/base/data/Either'
 import { flow, identity, pipe, tuple } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
-import * as Tu from '@principia/base/data/Tuple'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as Ca from '../Cause'

@@ -1,7 +1,6 @@
-import type { Promise } from '../../Promise/model'
+import type { Promise } from '../../Promise'
 import type { IO } from '../core'
 
-import { done } from '../../Promise/combinators/done'
 import { flatMap_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
@@ -10,6 +9,15 @@ import { uninterruptibleMask } from './interrupt'
  * this effect. Synchronizes interruption, so if this effect is interrupted,
  * the specified promise will be interrupted, too.
  */
+export function to_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never, boolean> {
+  return uninterruptibleMask(({ restore }) => flatMap_(result(restore(effect)), p.done))
+}
+
+/**
+ * Returns an IO that keeps or breaks a promise based on the result of
+ * this effect. Synchronizes interruption, so if this effect is interrupted,
+ * the specified promise will be interrupted, too.
+ */
 export function to<E, A>(p: Promise<E, A>): <R>(effect: IO<R, E, A>) => IO<R, never, boolean> {
-  return (effect) => uninterruptibleMask(({ restore }) => flatMap_(result(restore(effect)), (x) => done(x)(p)))
+  return (effect) => to_(effect, p)
 }
