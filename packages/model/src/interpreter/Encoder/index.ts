@@ -2,7 +2,7 @@ import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../
 import type { Summoner } from '../../summoner'
 import type * as E from '@principia/codec/Encoder'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
 import { IntersectionEncoder } from './intersection'

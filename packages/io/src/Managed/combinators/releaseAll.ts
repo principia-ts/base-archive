@@ -1,8 +1,8 @@
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Exit } from '../../Exit'
 
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as Ex from '../../Exit'
 import { foreachPar_ as foreachParAIO_ } from '../../IO/combinators/foreachPar'

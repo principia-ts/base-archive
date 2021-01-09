@@ -1,4 +1,4 @@
-import type { Either } from './data/Either'
+import type { Either } from './Either'
 import type { Fail } from './Fail'
 import type * as HKT from './HKT'
 

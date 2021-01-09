@@ -1,5 +1,5 @@
 import type { HttpConnection } from './HttpConnection'
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 import type * as IO from '@principia/io/IO'
 
 interface HttpResponse {}

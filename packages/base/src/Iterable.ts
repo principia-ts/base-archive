@@ -1,16 +1,16 @@
-import type { Monoid } from '../Monoid'
-import type * as P from '../typeclass'
 import type { Either } from './Either'
 import type { PredicateWithIndex } from './Function'
+import type { Monoid } from './Monoid'
+import type * as P from './typeclass'
 
-import * as HKT from '../HKT'
 import * as A from './Array'
 import { identity, tuple } from './Function'
+import * as HKT from './HKT'
 
 export const URI = 'Iterable'
 export type URI = typeof URI
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Iterable<A>
   }

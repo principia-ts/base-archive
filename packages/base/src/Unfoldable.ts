@@ -1,5 +1,5 @@
-import type { Option } from './data/Option'
 import type * as HKT from './HKT'
+import type { Option } from './Option'
 
 export interface Unfoldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly unfold: UnfoldFn<F, C>

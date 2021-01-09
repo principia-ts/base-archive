@@ -2,14 +2,14 @@ import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { Show } from './Show'
 
-import * as HKT from '../HKT'
-import { toNumber } from '../Ordering'
-import * as P from '../typeclass'
-import { makeMonoid } from '../typeclass'
 import * as E from './Either'
 import { makeEq } from './Eq'
 import { pipe } from './Function'
+import * as HKT from './HKT'
 import * as O from './Option'
+import { toNumber } from './Ordering'
+import * as P from './typeclass'
+import { makeMonoid } from './typeclass'
 
 /*
  * -------------------------------------------
@@ -23,7 +23,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: ReadonlyMap<K, A>
   }
@@ -143,7 +143,7 @@ export function toMutable<K, A>(m: ReadonlyMap<K, A>): Map<K, A> {
  * @since 1.0.0
  */
 export function compact<K, A>(fa: ReadonlyMap<K, O.Option<A>>): ReadonlyMap<K, A> {
-  const m = new Map<K, A>()
+  const m       = new Map<K, A>()
   const entries = fa.entries()
   let e: IteratorResult<readonly [K, O.Option<A>]>
   while (!(e = entries.next()).done) {
@@ -160,8 +160,8 @@ export function compact<K, A>(fa: ReadonlyMap<K, O.Option<A>>): ReadonlyMap<K, A
  * @since 1.0.0
  */
 export function separate<K, A, B>(fa: ReadonlyMap<K, E.Either<A, B>>): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, B>] {
-  const left = new Map<K, A>()
-  const right = new Map<K, B>()
+  const left    = new Map<K, A>()
+  const right   = new Map<K, B>()
   const entries = fa.entries()
   let e: IteratorResult<readonly [K, E.Either<A, B>]>
   // tslint:disable-next-line: strict-boolean-expressions
@@ -201,12 +201,12 @@ export function getEq<K, A>(EK: Eq<K>, EA: Eq<A>): Eq<ReadonlyMap<K, A>> {
  * Filter out `None` and map
  */
 export function filterMapWithIndex_<K, A, B>(fa: ReadonlyMap<K, A>, f: (k: K, a: A) => O.Option<B>): ReadonlyMap<K, B> {
-  const m = new Map<K, B>()
+  const m       = new Map<K, B>()
   const entries = fa.entries()
   let e: IteratorResult<readonly [K, A]>
   while (!(e = entries.next()).done) {
     const [k, a] = e.value
-    const o = f(k, a)
+    const o      = f(k, a)
     if (o._tag === 'Some') {
       m.set(k, o.value)
     }
@@ -243,7 +243,7 @@ export function filterWithIndex_<K, A, B extends A>(
 ): ReadonlyMap<K, B>
 export function filterWithIndex_<K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A>
 export function filterWithIndex_<K, A>(fa: ReadonlyMap<K, A>, predicate: PredicateWithIndex<K, A>): ReadonlyMap<K, A> {
-  const m = new Map<K, A>()
+  const m       = new Map<K, A>()
   const entries = fa.entries()
   let e: IteratorResult<readonly [K, A]>
   while (!(e = entries.next()).done) {
@@ -292,8 +292,8 @@ export function partitionWithIndex_<K, A>(
   fa: ReadonlyMap<K, A>,
   predicate: PredicateWithIndex<K, A>
 ): readonly [ReadonlyMap<K, A>, ReadonlyMap<K, A>] {
-  const left = new Map<K, A>()
-  const right = new Map<K, A>()
+  const left    = new Map<K, A>()
+  const right   = new Map<K, A>()
   const entries = fa.entries()
   let e: IteratorResult<readonly [K, A]>
   while (!(e = entries.next()).done) {
@@ -350,13 +350,13 @@ export function partitionMapWithIndex_<K, A, B, C>(
   fa: ReadonlyMap<K, A>,
   f: (k: K, a: A) => E.Either<B, C>
 ): readonly [ReadonlyMap<K, B>, ReadonlyMap<K, C>] {
-  const left = new Map<K, B>()
-  const right = new Map<K, C>()
+  const left    = new Map<K, B>()
+  const right   = new Map<K, C>()
   const entries = fa.entries()
   let e: IteratorResult<readonly [K, A]>
   while (!(e = entries.next()).done) {
     const [k, a] = e.value
-    const ei = f(k, a)
+    const ei     = f(k, a)
     if (E.isLeft(ei)) {
       left.set(k, ei.left)
     } else {
@@ -397,15 +397,15 @@ export function partitionMap<A, B, C>(
  */
 export function getFoldableWithIndex<K>(O: P.Ord<K>): P.FoldableWithIndex<[URI], V & HKT.Fix<'K', K>> {
   type CK = V & HKT.Fix<'K', K>
-  const keysO = keys(O)
+  const keysO                                                 = keys(O)
   const foldLeftWithIndex_: P.FoldLeftWithIndexFn_<[URI], CK> = <A, B>(
     fa: ReadonlyMap<K, A>,
     b: B,
     f: (b: B, k: K, a: A) => B
   ): B => {
     let out: B = b
-    const ks = keysO(fa)
-    const len = ks.length
+    const ks   = keysO(fa)
+    const len  = ks.length
     for (let i = 0; i < len; i++) {
       const k = ks[i]
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

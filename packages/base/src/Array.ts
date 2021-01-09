@@ -5,14 +5,14 @@ import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Show } from './Show/core'
 
-import * as DSL from '../DSL/genWithHistoryF'
-import * as HKT from '../HKT'
-import * as Ord from '../Ord'
-import { EQ, toNumber } from '../Ordering'
-import * as P from '../typeclass'
-import { fromCompare, makeMonoid, ordNumber } from '../typeclass'
+import * as DSL from './DSL/genWithHistoryF'
 import { _bind, _bindTo, flow, identity, pipe } from './Function'
+import * as HKT from './HKT'
 import * as O from './Option'
+import * as Ord from './Ord'
+import { EQ, toNumber } from './Ordering'
+import * as P from './typeclass'
+import { fromCompare, makeMonoid, ordNumber } from './typeclass'
 
 /*
  * -------------------------------------------
@@ -28,7 +28,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: ReadonlyArray<A>
   }
@@ -312,7 +312,7 @@ export function apSecond<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => 
 
 export function zipWith_<A, B, C>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>, f: (a: A, b: B) => C): ReadonlyArray<C> {
   const mut_fc = []
-  const len = Math.min(fa.length, fb.length)
+  const len    = Math.min(fa.length, fb.length)
   for (let i = 0; i < len; i++) {
     mut_fc[i] = f(fa[i], fb[i])
   }
@@ -1279,7 +1279,7 @@ export const sequence: P.SequenceFn<[URI], V> = P.implementSequence<[URI], V>()(
 
 export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): ReadonlyArray<A> {
   const ret = []
-  let bb = b
+  let bb    = b
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
     const mt = f(bb)
@@ -1541,7 +1541,7 @@ export function takeRight(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray
 
 export const spanIndex_ = <A>(as: ReadonlyArray<A>, predicate: Predicate<A>): number => {
   const l = as.length
-  let i = 0
+  let i   = 0
   for (; i < l; i++) {
     if (!predicate(as[i])) {
       break
@@ -1564,7 +1564,7 @@ export function takeLeftWhile<A, B extends A>(refinement: Refinement<A, B>): (as
 export function takeLeftWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A>
 export function takeLeftWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => {
-    const i = spanIndex_(as, predicate)
+    const i        = spanIndex_(as, predicate)
     const mut_init = Array(i)
     for (let j = 0; j < i; j++) {
       mut_init[j] = as[j]

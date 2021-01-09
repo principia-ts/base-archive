@@ -1,7 +1,7 @@
 import type { Cause } from '../../Cause/core'
 import type { IO } from '../core'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as P from '../../Promise'
 import * as I from '../core'

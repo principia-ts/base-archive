@@ -3,7 +3,7 @@ import type { Summoner } from '../../summoner'
 import type { ArbURI } from './HKT'
 import type { Arbitrary } from 'fast-check'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
 import { IntersectionArbitrary } from './intersection'

@@ -1,9 +1,9 @@
 import type { Clock } from '../../Clock'
 import type { Schedule } from '../../Schedule'
 import type { ReleaseMap } from '../ReleaseMap'
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 
-import { pipe, tuple } from '@principia/base/data/Function'
+import { pipe, tuple } from '@principia/base/Function'
 
 import * as I from '../_internal/_io'
 import { Managed } from '../core'

@@ -2,7 +2,7 @@ import type { Applicative } from './Applicative'
 import type { Functor, FunctorComposition } from './Functor'
 import type * as HKT from './HKT'
 
-import { flow } from './data/Function'
+import { flow } from './Function'
 import { getFunctorComposition } from './Functor'
 
 export interface Traversable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {

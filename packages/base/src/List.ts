@@ -9,16 +9,15 @@
  * It is forked from [List](https://github.com/funkia/list)
  */
 
-import type * as HKT from '../HKT'
-import type { Ordering } from '../Ordering'
-import type { Separated } from '../util/types'
 import type { Either } from './Either'
 import type { Predicate, Refinement } from './Function'
+import type * as HKT from './HKT'
+import type { Ordering } from './Ordering'
 
-import { toNumber } from '../Ordering'
-import * as P from '../typeclass'
 import { identity } from './Function'
 import * as O from './Option'
+import { toNumber } from './Ordering'
+import * as P from './typeclass'
 
 /**
  * Represents a list of elements.
@@ -61,7 +60,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: List<A>
   }
@@ -170,7 +169,7 @@ export function range(start: number, end: number): List<number> {
  * @category Constructors
  */
 export function repeat<A>(value: A, times: number): List<A> {
-  let t = times
+  let t   = times
   const l = emptyPushable<A>()
   while (--t >= 0) {
     push(value, l)
@@ -244,7 +243,7 @@ export function unsafeNth_<A>(l: List<A>, index: number): A | undefined {
     return l.suffix[index - (l.length - suffixSize)]
   }
   const { offset } = l
-  const depth = getDepth(l)
+  const depth      = getDepth(l)
   return l.root!.sizes === undefined
     ? nodeNthDense(l.root!, depth, offset === 0 ? index - prefixSize : handleOffset(depth, offset, index - prefixSize))
     : nodeNth(l.root!, depth, offset, index - prefixSize)
@@ -360,7 +359,7 @@ export function ap<A, B>(fa: List<A>): (fab: List<(a: A) => B>) => List<B> {
  * list.
  */
 export function zipWith_<A, B, C>(as: List<A>, bs: List<B>, f: (a: A, b: B) => C): List<C> {
-  const swapped = bs.length < as.length
+  const swapped  = bs.length < as.length
   const iterator = (swapped ? as : bs)[Symbol.iterator]()
   return map_((swapped ? bs : as) as any, (a: any) => {
     const b: any = iterator.next().value
@@ -556,8 +555,8 @@ export function partitionMap<A, B, C>(f: (_: A) => Either<B, C>): (l: List<A>) =
 export function foldLeft_<A, B>(fa: List<A>, initial: B, f: (acc: B, a: A) => B): B {
   const suffixSize = getSuffixSize(fa)
   const prefixSize = getPrefixSize(fa)
-  let acc = initial
-  acc = foldlPrefix(f, acc, fa.prefix, prefixSize)
+  let acc          = initial
+  acc              = foldlPrefix(f, acc, fa.prefix, prefixSize)
   if (fa.root !== undefined) {
     acc = foldlNode(f, acc, fa.root, getDepth(fa))
   }
@@ -759,7 +758,7 @@ export function prepend_<A>(l: List<A>, value: A): List<A> {
     const newList = cloneList(l)
     prependNodeToTree(newList, reverseArray(l.prefix))
     const newPrefix = [value]
-    newList.prefix = newPrefix
+    newList.prefix  = newPrefix
     newList.length++
     newList.bits = setPrefix(1, newList.bits)
     return newList
@@ -2088,8 +2087,9 @@ function getPath(index: number, offset: number, depth: number, sizes: Sizes): Pa
  */
 function updateNode(node: Node, depth: number, index: number, offset: number, value: any): Node {
   const { path, index: newIndex, updatedOffset } = getPath(index, offset, depth, node.sizes)
-  const array                                    = copyArray(node.array)
-  array[path]                                    = depth > 0 ? updateNode(array[path], depth - 1, newIndex, updatedOffset, value) : value
+
+  const array = copyArray(node.array)
+  array[path] = depth > 0 ? updateNode(array[path], depth - 1, newIndex, updatedOffset, value) : value
   return new Node(node.sizes, array)
 }
 

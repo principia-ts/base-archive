@@ -1,7 +1,7 @@
 import type { IO } from '../core'
 
-import { identity } from '@principia/base/data/Function'
-import * as I from '@principia/base/data/Iterable'
+import { identity } from '@principia/base/Function'
+import * as I from '@principia/base/Iterable'
 
 import { map_, recover } from '../core'
 import { foreachPar_ } from './foreachPar'

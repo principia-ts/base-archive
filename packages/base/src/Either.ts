@@ -11,12 +11,12 @@ import type { MorphismN, Predicate, Refinement } from './Function'
 import type { Option } from './Option'
 import type { Show } from './Show'
 
-import { genF, GenHKT } from '../DSL/genF'
-import * as HKT from '../HKT'
-import * as P from '../typeclass'
-import { NoSuchElementException } from '../util/GlobalExceptions'
+import { genF, GenHKT } from './DSL/genF'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
+import * as HKT from './HKT'
 import { isOption } from './Option'
+import * as P from './typeclass'
+import { NoSuchElementException } from './util/GlobalExceptions'
 
 /*
  * -------------------------------------------
@@ -46,7 +46,7 @@ export type URI = typeof URI
 
 export type V = HKT.V<'E', '+'>
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Either<E, A>
   }
@@ -152,7 +152,7 @@ export function fromNullableK<E>(
  * @category Constructors
  * @since 1.0.0
  */
-export function partial_<E, A>(thunk: () => A, onThrow: (reason: unknown) => E): Either<E, A> {
+export function tryCatch_<E, A>(thunk: () => A, onThrow: (reason: unknown) => E): Either<E, A> {
   try {
     return right(thunk())
   } catch (e) {
@@ -170,7 +170,7 @@ export function partial_<E, A>(thunk: () => A, onThrow: (reason: unknown) => E):
  * @category Constructors
  * @since 1.0.0
  */
-export function partial<E>(onError: (reason: unknown) => E): <A>(thunk: () => A) => Either<E, A> {
+export function tryCatch<E>(onError: (reason: unknown) => E): <A>(thunk: () => A) => Either<E, A> {
   return (a) => {
     try {
       return right(a())
@@ -182,31 +182,31 @@ export function partial<E>(onError: (reason: unknown) => E): <A>(thunk: () => A)
 
 /**
  * ```haskell
- * _partialK :: (((a, b, ...) -> c), (* -> e)) -> ((a, b, ...) -> Either e c)
+ * tryCatchK_ :: (((a, b, ...) -> c), (* -> e)) -> ((a, b, ...) -> Either e c)
  * ```
  *
  * @category Constructors
  * @since 1.0.0
  */
-export function partialK_<A extends ReadonlyArray<unknown>, B, E>(
+export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
   f: MorphismN<A, B>,
   onThrow: (reason: unknown) => E
 ): (...args: A) => Either<E, B> {
-  return (...a) => partial_(() => f(...a), onThrow)
+  return (...a) => tryCatch_(() => f(...a), onThrow)
 }
 
 /**
  * ```haskell
- * partialK :: (* -> e) -> ((a, b, ...) -> c) -> ((a, b, ...) -> Either e c)
+ * tryCatchK :: (* -> e) -> ((a, b, ...) -> c) -> ((a, b, ...) -> Either e c)
  * ```
  *
  * @category Constructors
  * @since 1.0.0
  */
-export function partialK<E>(
+export function tryCatchK<E>(
   onThrow: (reason: unknown) => E
 ): <A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B>) => (...args: A) => Either<E, B> {
-  return (f) => partialK_(f, onThrow)
+  return (f) => tryCatchK_(f, onThrow)
 }
 
 export type Json = boolean | number | string | null | JsonArray | JsonRecord
@@ -226,7 +226,7 @@ export interface JsonArray extends ReadonlyArray<Json> {}
  * @since 1.0.0
  */
 export function parseJson_<E>(s: string, onThrow: (reason: unknown) => E): Either<E, Json> {
-  return partial_(() => JSON.parse(s), onThrow)
+  return tryCatch_(() => JSON.parse(s), onThrow)
 }
 
 /**
@@ -254,7 +254,7 @@ export function parseJson<E>(onThrow: (reason: unknown) => E): (s: string) => Ei
  * @since 1.0.0
  */
 export function stringifyJson_<E>(u: unknown, onThrow: (reason: unknown) => E): Either<E, string> {
-  return partial_(() => JSON.stringify(u), onThrow)
+  return tryCatch_(() => JSON.stringify(u), onThrow)
 }
 
 /**
@@ -1341,11 +1341,11 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   product: product
 })
 
-export const sequenceT = P.tupleF(Apply)
+export const sequenceT = P.sequenceTF(Apply)
 
 export const mapN = P.mapNF(Apply)
 
-export const sequenceS = P.structF(Apply)
+export const sequenceS = P.sequenceSF(Apply)
 
 /**
  * @category Instances

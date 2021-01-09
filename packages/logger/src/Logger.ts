@@ -1,10 +1,10 @@
 import type { ChalkFn } from './utils'
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 import type { Clock } from '@principia/io/Clock'
 import type ChalkType from 'chalk'
 
-import { pipe } from '@principia/base/data/Function'
-import { tag } from '@principia/base/data/Has'
+import { pipe } from '@principia/base/Function'
+import { tag } from '@principia/base/Has'
 import { HasClock } from '@principia/io/Clock'
 import * as C from '@principia/io/Console'
 import * as I from '@principia/io/IO'

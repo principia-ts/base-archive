@@ -1,7 +1,7 @@
 import type * as Alg from '../../algebra'
 import type { URI } from './HKT'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 import * as D from '@principia/codec/DecoderKF'
 
 import { implementInterpreter } from '../../HKT'

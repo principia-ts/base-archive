@@ -1,8 +1,8 @@
-import type { MorphismN } from '@principia/base/data/Function'
+import type { MorphismN } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
-import * as Eq from '@principia/base/data/Eq'
+import * as Eq from '@principia/base/Eq'
 import * as fc from 'fast-check'
 
 function CompositionLaw<F extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A, B, C>(

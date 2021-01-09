@@ -1,15 +1,15 @@
-import type { Refinement } from '@principia/base/data/Function'
-import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
+import type { Refinement } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type * as P from '@principia/base/typeclass'
 import type { Literal } from '@principia/base/util/types'
 
-import * as A from '@principia/base/data/Array'
-import * as E from '@principia/base/data/Either'
-import { identity, memoize, pipe } from '@principia/base/data/Function'
-import * as G from '@principia/base/data/Guard'
-import * as O from '@principia/base/data/Option'
-import * as R from '@principia/base/data/Record'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
+import { identity, memoize, pipe } from '@principia/base/Function'
+import * as G from '@principia/base/Guard'
+import * as O from '@principia/base/Option'
+import * as R from '@principia/base/Record'
 
 import { _intersect } from './util'
 

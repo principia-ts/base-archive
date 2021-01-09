@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import { flow } from '@principia/base/data/Function'
+import { flow } from '@principia/base/Function'
 
 import { pure } from '../core'
 import { retryUntilM_ } from './retryUntilM'

@@ -2,9 +2,9 @@ import type { DataSource } from '../DataSource'
 import type { BlockedRequest } from './BlockedRequest'
 import type { Chunk } from '@principia/io/Chunk'
 
-import * as It from '@principia/base/data/Iterable'
-import * as Map from '@principia/base/data/Map'
-import * as O from '@principia/base/data/Option'
+import * as It from '@principia/base/Iterable'
+import * as Map from '@principia/base/Map'
+import * as O from '@principia/base/Option'
 import * as C from '@principia/io/Chunk'
 
 import { eqDataSource } from '../DataSource'

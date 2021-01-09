@@ -1,8 +1,8 @@
-import type * as P from '../typeclass'
-import type { Erase } from '../util/types'
+import type * as P from './typeclass'
+import type { Erase } from './util/types'
 
-import { tuple } from '../data/Function'
-import * as HKT from '../HKT'
+import { tuple } from './Function'
+import * as HKT from './HKT'
 
 /*
  * -------------------------------------------
@@ -20,7 +20,7 @@ export type StateIn<S, A> = (s: S) => A
 
 export type StateOut<S, A> = readonly [A, S]
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [StateInURI]: (s: S) => A
     readonly [StateOutURI]: readonly [A, S]

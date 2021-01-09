@@ -1,10 +1,10 @@
 import type { FreeBooleanAlgebra } from './model'
-import type { Either } from '@principia/base/data/Either'
+import type { Either } from '@principia/base/Either'
 import type { USync } from '@principia/io/Sync'
 
-import * as B from '@principia/base/data/Boolean'
-import * as E from '@principia/base/data/Either'
-import * as O from '@principia/base/data/Option'
+import * as B from '@principia/base/Boolean'
+import * as E from '@principia/base/Either'
+import * as O from '@principia/base/Option'
 import * as Sy from '@principia/io/Sync'
 
 import { success } from './constructors'

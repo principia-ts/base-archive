@@ -1,4 +1,4 @@
-import type { Eq } from '@principia/base/data/Eq'
+import type { Eq } from '@principia/base/Eq'
 import type { Ring } from '@principia/base/Ring'
 
 import { allEquals } from './utils'

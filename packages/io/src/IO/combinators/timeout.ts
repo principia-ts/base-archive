@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import * as O from '@principia/base/data/Option'
+import * as O from '@principia/base/Option'
 
 import { timeoutTo_ } from './timeoutTo'
 

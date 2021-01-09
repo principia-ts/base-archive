@@ -1,9 +1,9 @@
-import type * as P from '../typeclass'
 import type { Eq } from './Eq'
 import type { Show } from './Show'
+import type * as P from './typeclass'
 
-import * as HKT from '../HKT'
 import { identity, unsafeCoerce } from './Function'
+import * as HKT from './HKT'
 
 /*
  * -------------------------------------------
@@ -19,7 +19,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Const<E, A>
   }

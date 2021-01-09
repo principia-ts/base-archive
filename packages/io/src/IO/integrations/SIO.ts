@@ -1,6 +1,6 @@
-import * as E from '@principia/base/data/Either'
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as X from '../../SIO'
 import * as I from './_internal/io'

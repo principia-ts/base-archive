@@ -1,10 +1,10 @@
 import type { NonEmptyArray } from './NonEmptyArray'
 
-import { max_, ordNumber } from '../Ord'
 import * as A from './Array'
 import { flow, pipe } from './Function'
 import * as NA from './NonEmptyArray'
 import * as O from './Option'
+import { max_, ordNumber } from './Ord'
 
 /**
  * The empty string
@@ -284,7 +284,7 @@ export function match(r: RegExp): (s: string) => O.Option<RegExpMatchArray> {
  */
 export function matchAll_(s: string, r: RegExp): O.Option<NonEmptyArray<RegExpMatchArray>> {
   return O.flatMap_(
-    O.partial(() => s.matchAll(r)),
+    O.tryCatch(() => s.matchAll(r)),
     flow(A.from, NA.fromArray)
   )
 }

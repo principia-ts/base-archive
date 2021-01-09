@@ -14,7 +14,7 @@ export interface Eq<A> {
   readonly equals: (y: A) => (x: A) => boolean
 }
 
-declare module '../../HKT' {
+declare module '../HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Eq<A>
   }

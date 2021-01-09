@@ -2,7 +2,7 @@ import type { Functor, FunctorComposition } from './Functor'
 import type { Semigroupal, SemigroupalComposition } from './Semigroupal'
 import type { EnforceNonEmptyRecord } from './util/types'
 
-import { tuple } from './data/Function'
+import { tuple } from './Function'
 import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 
@@ -811,10 +811,10 @@ export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
  */
 export function mapNF<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): MapNFn<F, C>
 export function mapNF<F>(F: Apply<HKT.UHKT<F>>): MapNFn<HKT.UHKT<F>> {
-  return (f) => (...t) => F.map_(tupleF(F)(...(t as any)), (as) => f(...(as as any)))
+  return (f) => (...t) => F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)))
 }
 
-export interface StructFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
   <
     KS extends Readonly<
       Record<
@@ -883,8 +883,8 @@ export interface StructFn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export function structF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): StructFn<F, C>
-export function structF<F>(F: Apply<HKT.UHKT<F>>): StructFn<HKT.UHKT<F>> {
+export function sequenceSF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): SequenceSFn<F, C>
+export function sequenceSF<F>(F: Apply<HKT.UHKT<F>>): SequenceSFn<HKT.UHKT<F>> {
   return (r) => {
     const keys = Object.keys(r)
     const len  = keys.length
@@ -897,7 +897,7 @@ export function structF<F>(F: Apply<HKT.UHKT<F>>): StructFn<HKT.UHKT<F>> {
   }
 }
 
-export interface TupleFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
   <
     KT extends readonly [
       HKT.Kind<
@@ -960,8 +960,8 @@ export interface TupleFn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export function tupleF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): TupleFn<F, C>
-export function tupleF<F>(F: Apply<HKT.UHKT<F>>): TupleFn<HKT.UHKT<F>> {
+export function sequenceTF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): SequenceTFn<F, C>
+export function sequenceTF<F>(F: Apply<HKT.UHKT<F>>): SequenceTFn<HKT.UHKT<F>> {
   return (...t) => {
     const len = t.length
     const f   = getTupleConstructor(len)

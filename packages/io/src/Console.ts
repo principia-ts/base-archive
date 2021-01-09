@@ -1,9 +1,9 @@
 import type { Layer } from './Layer'
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 import type { InspectOptions } from 'util'
 
-import { pipe } from '@principia/base/data/Function'
-import { tag } from '@principia/base/data/Has'
+import { pipe } from '@principia/base/Function'
+import { tag } from '@principia/base/Has'
 import { inspect } from 'util'
 
 import * as I from './IO'

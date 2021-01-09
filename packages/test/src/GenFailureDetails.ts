@@ -1,6 +1,6 @@
-import type { Show } from '@principia/base/data/Show'
+import type { Show } from '@principia/base/Show'
 
-import { any } from '@principia/base/data/Show'
+import { any } from '@principia/base/Show'
 
 export interface GenFailureDetails {
   readonly initialInput: any

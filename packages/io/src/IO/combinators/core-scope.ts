@@ -3,9 +3,9 @@ import type { Fiber, RuntimeFiber } from '../../Fiber/core'
 import type { FiberContext } from '../../FiberContext'
 import type { Scope } from '../../Scope'
 import type { IO, UIO, URIO } from '../core'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import * as O from '@principia/base/data/Option'
+import * as O from '@principia/base/Option'
 
 import { globalScope } from '../../Scope'
 import { ForkInstruction, GetForkScopeInstruction, OverrideForkScopeInstruction, pure, RaceInstruction } from '../core'

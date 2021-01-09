@@ -1,12 +1,12 @@
 import type { HasClock } from '../../Clock'
 import type { Schedule } from '../../Schedule'
 import type { IO } from '../core'
-import type { Either } from '@principia/base/data/Either'
-import type { Option } from '@principia/base/data/Option'
+import type { Either } from '@principia/base/Either'
+import type { Option } from '@principia/base/Option'
 
-import * as E from '@principia/base/data/Either'
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as S from '../../Schedule'
 import { flatMap, foldM, map, orDie } from '../core'

@@ -1,6 +1,6 @@
 import type { Managed, UManaged } from '../core'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as P from '../../Promise'
 import * as I from '../_internal/_io'

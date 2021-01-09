@@ -152,11 +152,11 @@ export const getStructSemigroup = <O extends Readonly<Record<string, any>>>(
   semigroups: { [K in keyof O]: Semigroup<O[K]> }
 ): Semigroup<O> => {
   const combine_: CombineFn_<O> = (x, y) => {
-    const r: any = {}
+    const mut_r: any = {}
     for (const key of Object.keys(semigroups)) {
-      r[key] = semigroups[key].combine_(x[key], y[key])
+      mut_r[key] = semigroups[key].combine_(x[key], y[key])
     }
-    return r
+    return mut_r
   }
   return {
     combine_,

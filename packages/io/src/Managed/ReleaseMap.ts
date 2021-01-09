@@ -1,12 +1,12 @@
 import type { Exit } from '../Exit'
 import type { URef } from '../IORef/core'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import * as Eq from '@principia/base/data/Eq'
-import { absurd, increment, pipe } from '@principia/base/data/Function'
-import * as M from '@principia/base/data/Map'
-import * as O from '@principia/base/data/Option'
-import { none, some } from '@principia/base/data/Option'
+import * as Eq from '@principia/base/Eq'
+import { absurd, increment, pipe } from '@principia/base/Function'
+import * as M from '@principia/base/Map'
+import * as O from '@principia/base/Option'
+import { none, some } from '@principia/base/Option'
 
 import * as I from '../IO/core'
 import * as XR from '../IORef/core'

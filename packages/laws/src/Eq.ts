@@ -1,4 +1,4 @@
-import type { Eq } from '@principia/base/data/Eq'
+import type { Eq } from '@principia/base/Eq'
 
 export const EqLaws = {
   reflexivity: <A>(E: Eq<A>) => (a: A): boolean => {

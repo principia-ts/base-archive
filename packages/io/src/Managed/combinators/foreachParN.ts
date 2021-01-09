@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import { tuple } from '@principia/base/data/Function'
+import { tuple } from '@principia/base/Function'
 
 import { parallelN, sequential } from '../../ExecutionStrategy'
 import { foreachParN_ as effectForeachParN } from '../../IO/combinators/foreachParN'

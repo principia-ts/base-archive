@@ -1,5 +1,5 @@
-import * as A from '@principia/base/data/Array'
-import { pipe } from '@principia/base/data/Function'
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/Function'
 import * as DE from '@principia/codec/DecodeErrors'
 import * as Sy from '@principia/io/Sync'
 import * as M from '@principia/model'

@@ -3,7 +3,7 @@ import type { InputRecord } from '../Types'
 import type { _A } from '@principia/base/util/types'
 import type { InputValueDefinitionNode } from 'graphql'
 
-import * as R from '@principia/base/data/Record'
+import * as R from '@principia/base/Record'
 
 import { createInputObjectTypeDefinitionNode, createInputValueDefinitionNode, getTypeName } from '../AST'
 import { GQLInputObject } from '../Types'

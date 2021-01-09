@@ -1,17 +1,17 @@
-import type * as HKT from '../HKT'
-import type * as P from '../typeclass'
-import type { Separated } from '../util/types'
 import type * as E from './Either'
 import type { Eq } from './Eq'
 import type { Predicate, Refinement } from './Function'
+import type * as HKT from './HKT'
 import type * as O from './Option'
 import type { Show } from './Show'
+import type * as P from './typeclass'
+import type { Separated } from './util/types'
 
-import { toNumber } from '../Ordering'
-import { makeMonoid, makeSemigroup } from '../typeclass'
 import * as A from './Array'
 import { makeEq } from './Eq'
 import { identity, not, tuple } from './Function'
+import { toNumber } from './Ordering'
+import { makeMonoid, makeSemigroup } from './typeclass'
 
 /*
  * -------------------------------------------
@@ -25,7 +25,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: ReadonlySet<A>
   }
@@ -51,7 +51,7 @@ export function singleton<A>(a: A): ReadonlySet<A> {
 
 export function fromArray_<A>(as: ReadonlyArray<A>, E: Eq<A>): ReadonlySet<A> {
   const len = as.length
-  const r = new Set<A>()
+  const r   = new Set<A>()
   const has = elem_(E)
   for (let i = 0; i < len; i++) {
     const a = as[i]
@@ -96,7 +96,7 @@ export function toSet<A>(s: ReadonlySet<A>): Set<A> {
 export function some_<A>(set: ReadonlySet<A>, predicate: Predicate<A>): boolean {
   const values = set.values()
   let e: IteratorResult<A>
-  let found = false
+  let found    = false
   while (!found && !(e = values.next()).done) {
     found = predicate(e.value)
   }

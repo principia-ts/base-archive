@@ -1,5 +1,5 @@
 import type { TransformError } from '../stream'
-import type { Byte } from '@principia/base/data/Byte'
+import type { Byte } from '@principia/base/Byte'
 import type { Stream } from '@principia/io/Stream'
 import type { Transform } from 'stream'
 

@@ -1,6 +1,6 @@
 import type { UIO } from '../IO/core'
 import type { Atomic } from './core'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
 import * as I from '../IO/core'
 

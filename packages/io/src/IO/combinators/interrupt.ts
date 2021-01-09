@@ -1,12 +1,12 @@
 import type { InterruptStatus } from '../../Fiber/core'
 import type { FiberId } from '../../Fiber/FiberId'
 import type { Canceler, FIO, IO, UIO } from '../core'
-import type { Either } from '@principia/base/data/Either'
-import type { Option } from '@principia/base/data/Option'
+import type { Either } from '@principia/base/Either'
+import type { Option } from '@principia/base/Option'
 
-import { left } from '@principia/base/data/Either'
-import { flow, pipe } from '@principia/base/data/Function'
-import { none, some } from '@principia/base/data/Option'
+import { left } from '@principia/base/Either'
+import { flow, pipe } from '@principia/base/Function'
+import { none, some } from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { OneShot } from '@principia/base/util/support/OneShot'
 

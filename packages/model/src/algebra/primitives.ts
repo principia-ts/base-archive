@@ -1,7 +1,7 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
 import type { Literal } from '../utils'
-import type { Branded } from '@principia/base/data/Brand'
-import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
+import type { Branded } from '@principia/base/Brand'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 export const PrimitivesURI = 'model/algebra/primitives'
 

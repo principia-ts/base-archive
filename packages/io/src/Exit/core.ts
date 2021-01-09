@@ -2,10 +2,10 @@ import type { FiberId } from '../Fiber/FiberId'
 import type { IO } from '../IO/core'
 import type * as HKT from '@principia/base/HKT'
 
-import * as A from '@principia/base/data/Array'
-import * as E from '@principia/base/data/Either'
-import { identity, pipe, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
+import { identity, pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as C from '../Cause'
 

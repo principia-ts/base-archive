@@ -1,4 +1,4 @@
-import type { Lazy } from '@principia/base/data/Function'
+import type { Lazy } from '@principia/base/Function'
 import type {
   ArgumentNode,
   BooleanValueNode,
@@ -34,7 +34,7 @@ import type {
   VariableDefinitionNode
 } from 'graphql'
 
-import { foldLeftWithIndex_ as reduceRecord } from '@principia/base/data/Record'
+import { foldLeftWithIndex_ as reduceRecord } from '@principia/base/Record'
 import { Kind } from 'graphql'
 
 interface FieldDefinitionNodeArgs {

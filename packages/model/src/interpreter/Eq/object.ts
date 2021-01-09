@@ -1,8 +1,8 @@
 import type * as Alg from '../../algebra'
 
-import * as Eq from '@principia/base/data/Eq'
-import { pipe } from '@principia/base/data/Function'
-import * as R from '@principia/base/data/Record'
+import * as Eq from '@principia/base/Eq'
+import { pipe } from '@principia/base/Function'
+import * as R from '@principia/base/Record'
 
 import { implementInterpreter } from '../../HKT'
 import { applyEqConfig } from './HKT'

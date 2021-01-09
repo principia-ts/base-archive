@@ -1,9 +1,9 @@
 import type { Fiber } from '../core'
 
-import * as A from '@principia/base/data/Array'
-import { pipe } from '@principia/base/data/Function'
-import { none, some } from '@principia/base/data/Option'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/Function'
+import { none, some } from '@principia/base/Option'
+import * as O from '@principia/base/Option'
 
 import * as C from '../../Cause'
 import * as Ex from '../../Exit'

@@ -3,9 +3,9 @@ import type * as I from './IO/core'
 import type * as HKT from '@principia/base/HKT'
 import type { Stack } from '@principia/base/util/support/Stack'
 
-import * as E from '@principia/base/data/Either'
-import { identity, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { identity, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { makeStack } from '@principia/base/util/support/Stack'
 
@@ -204,8 +204,8 @@ export function succeed<A, S1 = unknown, S2 = never>(a: A): SIO<S1, S2, unknown,
   return new SucceedInstruction(a)
 }
 
-export function effectTotal<A, S1 = unknown, S2 = never>(thunk: () => A): SIO<S1, S2, unknown, never, A> {
-  return new EffectTotalInstruction(thunk)
+export function effectTotal<A, S1 = unknown, S2 = never>(effect: () => A): SIO<S1, S2, unknown, never, A> {
+  return new EffectTotalInstruction(effect)
 }
 
 export function fail<E>(e: E): SIO<unknown, never, unknown, E, never> {
@@ -761,14 +761,14 @@ type Frame = FoldFrame | ApplyFrame
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s: S1): E.Either<E, readonly [S2, A]> {
+export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s: S1): E.Either<E, readonly [S2, A]> {
   let frames = undefined as Stack<Frame> | undefined
 
   let state       = s as any
   let result      = null
   let environment = null
   let failed      = false
-  let current     = fa as SIO<any, any, any, any, any> | undefined
+  let current     = sio as SIO<any, any, any, any, any> | undefined
 
   function popContinuation() {
     const current = frames?.value
@@ -938,86 +938,86 @@ export function runStateEither<S1>(s: S1): <S2, E, A>(fa: SIO<S1, S2, unknown, E
  * Runs this computation with the specified initial state, returning both
  * the updated state and the result.
  */
-export function run_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right
+export function run_<S1, S2, A>(sio: SIO<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
+  return (runStateEither_(sio, s) as E.Right<readonly [S2, A]>).right
 }
 
 /**
  * Runs this computation with the specified initial state, returning both
  * updated state and the result
  */
-export function run<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => readonly [S2, A] {
-  return (self) => run_(self, s)
+export function run<S1>(s: S1): <S2, A>(sio: SIO<S1, S2, unknown, never, A>) => readonly [S2, A] {
+  return (sio) => run_(sio, s)
 }
 
 /**
  * Runs this computation, returning the result.
  */
-export function runIO<A>(self: SIO<unknown, unknown, unknown, never, A>): A {
-  return run_(self, {})[1]
+export function runIO<A>(sio: SIO<unknown, unknown, unknown, never, A>): A {
+  return run_(sio, {})[1]
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and discarding the result.
  */
-export function runState_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): S2 {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[0]
+export function runState_<S1, S2, A>(sio: SIO<S1, S2, unknown, never, A>, s: S1): S2 {
+  return (runStateEither_(sio, s) as E.Right<readonly [S2, A]>).right[0]
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and discarding the result.
  */
-export function runState<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => S2 {
-  return (self) => runState_(self, s)
+export function runState<S1>(s: S1): <S2, A>(sio: SIO<S1, S2, unknown, never, A>) => S2 {
+  return (sio) => runState_(sio, s)
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and the result.
  */
-export function runStateResult_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right
+export function runStateResult_<S1, S2, A>(sio: SIO<S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
+  return (runStateEither_(sio, s) as E.Right<readonly [S2, A]>).right
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and the result.
  */
-export function runStateResult<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => readonly [S2, A] {
-  return (self) => runStateResult_(self, s)
+export function runStateResult<S1>(s: S1): <S2, A>(sio: SIO<S1, S2, unknown, never, A>) => readonly [S2, A] {
+  return (sio) => runStateResult_(sio, s)
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * result and discarding the updated state.
  */
-export function runResult_<S1, S2, A>(self: SIO<S1, S2, unknown, never, A>, s: S1): A {
-  return (runStateEither_(self, s) as E.Right<readonly [S2, A]>).right[1]
+export function runResult_<S1, S2, A>(sio: SIO<S1, S2, unknown, never, A>, s: S1): A {
+  return (runStateEither_(sio, s) as E.Right<readonly [S2, A]>).right[1]
 }
 
 /**
  * Runs this computation with the specified initial state, returning the
  * result and discarding the updated state.
  */
-export function runResult<S1>(s: S1): <S2, A>(self: SIO<S1, S2, unknown, never, A>) => A {
-  return (self) => runResult_(self, s)
+export function runResult<S1>(s: S1): <S2, A>(sio: SIO<S1, S2, unknown, never, A>) => A {
+  return (sio) => runResult_(sio, s)
 }
 
 /**
  * Runs this computation returning either the result or error
  */
-export function runEither<E, A>(self: SIO<never, unknown, unknown, E, A>): E.Either<E, A> {
-  return E.map_(runStateEither_(self, {} as never), ([_, x]) => x)
+export function runEither<E, A>(sio: SIO<never, unknown, unknown, E, A>): E.Either<E, A> {
+  return E.map_(runStateEither_(sio, {} as never), ([_, x]) => x)
 }
 
-export function runEitherEnv_<R, E, A>(self: SIO<never, unknown, R, E, A>, env: R): E.Either<E, A> {
-  return runEither(giveAll_(self, env))
+export function runEitherEnv_<R, E, A>(sio: SIO<never, unknown, R, E, A>, env: R): E.Either<E, A> {
+  return runEither(giveAll_(sio, env))
 }
 
-export function runEitherEnv<R>(env: R): <E, A>(self: SIO<never, unknown, R, E, A>) => E.Either<E, A> {
-  return (self) => runEitherEnv_(self, env)
+export function runEitherEnv<R>(env: R): <E, A>(sio: SIO<never, unknown, R, E, A>) => E.Either<E, A> {
+  return (sio) => runEitherEnv_(sio, env)
 }
 
 export const SIOtoIO = new AtomicReference<O.Option<<R, E, A>(_: SIO<unknown, never, R, E, A>) => I.IO<R, E, A>>>(

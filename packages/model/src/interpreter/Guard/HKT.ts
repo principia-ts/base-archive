@@ -1,6 +1,6 @@
 import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 
-import * as G from '@principia/base/data/Guard'
+import * as G from '@principia/base/Guard'
 
 import { getApplyConfig } from '../../HKT'
 

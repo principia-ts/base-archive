@@ -1,6 +1,6 @@
 import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 
-import * as Eq from '@principia/base/data/Eq'
+import * as Eq from '@principia/base/Eq'
 
 import { getApplyConfig } from '../../HKT'
 

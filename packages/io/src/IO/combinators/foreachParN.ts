@@ -1,5 +1,5 @@
-import * as A from '@principia/base/data/Array'
-import { pipe, tuple } from '@principia/base/data/Function'
+import * as A from '@principia/base/Array'
+import { pipe, tuple } from '@principia/base/Function'
 
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
 import * as Ref from '../../IORef'
@@ -7,7 +7,7 @@ import * as P from '../../Promise'
 import * as Q from '../../Queue'
 import * as I from '../core'
 import { bracket } from './bracket'
-import * as L from '@principia/base/data/List'
+import * as L from '@principia/base/List'
 
 export function foreachParN_(n: number) {
   return <A, R, E, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> => {

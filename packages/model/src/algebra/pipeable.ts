@@ -1,6 +1,6 @@
 import type { AnyEnv, Config, InterpretedHKT, InterpreterURIS } from '../HKT'
 import type { RefineConfig } from './refinement'
-import type { Refinement } from '@principia/base/data/Function'
+import type { Refinement } from '@principia/base/Function'
 
 export const PipeableURI = 'model/algebra/pipeable'
 

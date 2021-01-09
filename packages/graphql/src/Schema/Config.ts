@@ -1,4 +1,4 @@
-import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 export interface InputTypeConfig<A> {
   defaultValue?: A

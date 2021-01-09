@@ -3,9 +3,9 @@ import type { URef } from '../IORef'
 import type { UManaged } from '../Managed/core'
 import type { Semaphore } from '../Semaphore'
 
-import * as E from '@principia/base/data/Either'
-import { identity, pipe, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { identity, pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as Ref from '../IORef'

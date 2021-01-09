@@ -10,11 +10,11 @@ import type { Eq } from './Eq'
 import type { MorphismN, Predicate, Refinement } from './Function'
 import type { Show } from './Show'
 
-import * as HKT from '../HKT'
-import * as P from '../typeclass'
 import { makeEq } from './Eq/core'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
+import * as HKT from './HKT'
 import { makeShow } from './Show/core'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -41,7 +41,7 @@ export type OptionURI = typeof OptionURI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [OptionURI]: Option<A>
   }
@@ -109,7 +109,7 @@ export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
 
 /**
  * ```haskell
- * partial :: (() -> a) -> Option a
+ * tryCatch :: (() -> a) -> Option a
  * ```
  *
  * Constructs a new `Option` from a function that might throw
@@ -117,7 +117,7 @@ export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
  * @category Constructors
  * @since 1.0.0
  */
-export function partial<A>(thunk: () => A): Option<A> {
+export function tryCatch<A>(thunk: () => A): Option<A> {
   try {
     return some(thunk())
   } catch (_) {
@@ -127,7 +127,7 @@ export function partial<A>(thunk: () => A): Option<A> {
 
 /**
  * ```haskell
- * partialK :: ((a, b, ...) -> c) -> ((a, b, ...) -> Option c)
+ * tryCatchK :: ((a, b, ...) -> c) -> ((a, b, ...) -> Option c)
  * ```
  *
  * Transforms a non-curried function that may throw, takes a set of arguments `(a, b, ...)`,
@@ -137,8 +137,8 @@ export function partial<A>(thunk: () => A): Option<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function partialK<A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B>): (...args: A) => Option<B> {
-  return (...a) => partial(() => f(...a))
+export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B>): (...args: A) => Option<B> {
+  return (...a) => tryCatch(() => f(...a))
 }
 
 /**
@@ -942,25 +942,25 @@ export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa,
  */
 
 /**
- * chainNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
+ * flatMapNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
+export function flatMapNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
   return isNone(fa) ? none() : fromNullable(f(fa.value))
 }
 
 /**
- * chainNullableK :: Option m => (a -> ?b) -> m a -> m b
+ * flatMapNullableK :: Option m => (a -> ?b) -> m a -> m b
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
-  return (fa) => chainNullableK_(fa, f)
+export function flatMapNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
+  return (fa) => flatMapNullableK_(fa, f)
 }
 
 /**
@@ -1036,9 +1036,9 @@ export const Apply: P.Apply<[OptionURI], V> = HKT.instance({
   product
 })
 
-export const struct = P.structF(Apply)
+export const struct = P.sequenceSF(Apply)
 
-export const tupleN = P.tupleF(Apply)
+export const tupleN = P.sequenceTF(Apply)
 
 export const mapN = P.mapNF(Apply)
 

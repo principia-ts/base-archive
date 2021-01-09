@@ -1,8 +1,8 @@
-import type * as P from '../typeclass'
 import type * as R from './Reader'
+import type * as P from './typeclass'
 
-import { identity, tuple } from '../data/Function'
-import * as HKT from '../HKT'
+import { identity, tuple } from './Function'
+import * as HKT from './HKT'
 
 export type V<C> = HKT.CleanParam<C, 'R'> & HKT.V<'R', '-'>
 

@@ -1,11 +1,11 @@
-import type { Byte } from '@principia/base/data/Byte'
-import type { Either } from '@principia/base/data/Either'
-import type { Predicate, Refinement } from '@principia/base/data/Function'
+import type { Byte } from '@principia/base/Byte'
+import type { Either } from '@principia/base/Either'
+import type { Predicate, Refinement } from '@principia/base/Function'
 import type { Monoid } from '@principia/base/Monoid'
 
-import * as A from '@principia/base/data/Array'
-import { identity, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import { identity, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 /*
  * -------------------------------------------
@@ -281,26 +281,26 @@ export function map<A, B>(f: (a: A) => B) {
  */
 
 export function flatMap_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
-  let rlen   = 0
-  const l    = ma.length
-  const temp = new Array(l)
+  let rlen       = 0
+  const l        = ma.length
+  const mut_temp = new Array(l)
   for (let i = 0; i < l; i++) {
-    const e   = ma[i]
-    const arr = f(e)
-    rlen     += arr.length
-    temp[i]   = arr
+    const e     = ma[i]
+    const arr   = f(e)
+    rlen       += arr.length
+    mut_temp[i] = arr
   }
-  const r   = Array(rlen)
-  let start = 0
+  const mut_r = Array(rlen)
+  let start   = 0
   for (let i = 0; i < l; i++) {
-    const arr = temp[i]
+    const arr = mut_temp[i]
     const l   = arr.length
     for (let j = 0; j < l; j++) {
-      r[j + start] = arr[j]
+      mut_r[j + start] = arr[j]
     }
     start += l
   }
-  return r
+  return mut_r
 }
 
 export function flatMap<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
@@ -375,14 +375,14 @@ export function concat_<A>(xs: Chunk<A>, ys: Chunk<A>): Chunk<A> {
   if (leny === 0) {
     return xs
   }
-  const r = Array(lenx + leny)
+  const mut_r = Array(lenx + leny)
   for (let i = 0; i < lenx; i++) {
-    r[i] = xs[i]
+    mut_r[i] = xs[i]
   }
   for (let i = 0; i < leny; i++) {
-    r[i + lenx] = ys[i]
+    mut_r[i + lenx] = ys[i]
   }
-  return r
+  return mut_r
 }
 
 export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
@@ -391,7 +391,7 @@ export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
 
 export const spanIndex_ = <A>(as: Chunk<A>, predicate: Predicate<A>): number => {
   const l = as.length
-  let i = 0
+  let i   = 0
   for (; i < l; i++) {
     if (!predicate(as[i])) {
       break
@@ -409,12 +409,12 @@ export function dropWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
   if (isTyped(as)) {
     return fromBuffer(as.slice(i, as.length))
   }
-  const l = as.length
-  const rest = Array(l - i)
+  const l        = as.length
+  const mut_rest = Array(l - i)
   for (let j = i; j < l; j++) {
-    rest[j - i] = as[j]
+    mut_rest[j - i] = as[j]
   }
-  return rest
+  return mut_rest
 }
 
 export function dropWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
@@ -483,10 +483,10 @@ export function takeLeft(n: number): <A>(as: Chunk<A>) => Chunk<A> {
 
 export function append_<A>(as: Chunk<A>, a: A): Chunk<A> {
   if (Buffer && Buffer.isBuffer(as)) {
-    const b = Buffer.alloc(as.length + 1)
-    as.copy(b, 0, 0, as.length)
-    b[as.length] = a as any
-    return fromBuffer(b)
+    const mut_b = Buffer.alloc(as.length + 1)
+    as.copy(mut_b, 0, 0, as.length)
+    mut_b[as.length] = a as any
+    return fromBuffer(mut_b)
   }
   if (Array.isArray(as)) {
     return A.append_(as, a)

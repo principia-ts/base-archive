@@ -1,7 +1,7 @@
 import type { HasClock } from '../../Clock'
 import type { IO } from '../core'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { sleep } from '../../Clock'
 import { as, map } from '../core'

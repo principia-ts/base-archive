@@ -1,9 +1,9 @@
 import type { Clock } from '../../Clock'
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 
-import * as E from '@principia/base/data/Either'
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'

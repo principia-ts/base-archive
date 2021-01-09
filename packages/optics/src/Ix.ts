@@ -1,9 +1,9 @@
 import type { At } from './At'
 import type { Iso } from './Iso'
 import type { Optional } from './Optional'
-import type * as O from '@principia/base/data/Option'
+import type * as O from '@principia/base/Option'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as _ from './internal'
 

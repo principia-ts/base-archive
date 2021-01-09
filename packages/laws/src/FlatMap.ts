@@ -1,5 +1,5 @@
-import type * as Eq from '@principia/base/data/Eq'
-import type { MorphismN } from '@principia/base/data/Function'
+import type * as Eq from '@principia/base/Eq'
+import type { MorphismN } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 

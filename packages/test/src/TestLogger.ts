@@ -1,8 +1,8 @@
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 import type { UIO, URIO } from '@principia/io/IO'
 import type { Layer } from '@principia/io/Layer'
 
-import { tag } from '@principia/base/data/Has'
+import { tag } from '@principia/base/Has'
 import { Console } from '@principia/io/Console'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'

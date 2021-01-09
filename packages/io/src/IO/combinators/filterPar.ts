@@ -1,8 +1,8 @@
 import type { IO } from '../core'
 
-import * as A from '@principia/base/data/Array'
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import { map, map_ } from '../core'
 import { foreachPar } from './foreachPar'

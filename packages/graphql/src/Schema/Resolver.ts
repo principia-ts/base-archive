@@ -1,5 +1,5 @@
-import type { Has } from '@principia/base/data/Has'
-import type * as O from '@principia/base/data/Option'
+import type { Has } from '@principia/base/Has'
+import type * as O from '@principia/base/Option'
 import type * as U from '@principia/base/util/types'
 import type * as I from '@principia/io/IO'
 

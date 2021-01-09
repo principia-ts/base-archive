@@ -1,6 +1,6 @@
-import type { Eq } from '@principia/base/data/Eq'
+import type { Eq } from '@principia/base/Eq'
 
-import { makeEq } from '@principia/base/data/Eq'
+import { makeEq } from '@principia/base/Eq'
 import { AtomicNumber } from '@principia/base/util/support/AtomicNumber'
 
 /*

@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import * as I from '@principia/base/data/Iterable'
+import * as I from '@principia/base/Iterable'
 
 import { pure } from '../core'
 import { map2Par_ } from './apply-par'

@@ -2,14 +2,14 @@ import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Show } from './Show'
 
-import * as HKT from '../HKT'
-import * as P from '../typeclass'
-import { makeSemigroup } from '../typeclass'
 import * as E from './Either'
 import { makeEq } from './Eq/core'
 import { identity, tuple } from './Function'
+import * as HKT from './HKT'
 import * as O from './Option'
 import { makeShow } from './Show/core'
+import * as P from './typeclass'
+import { makeSemigroup } from './typeclass'
 
 /*
  * -------------------------------------------
@@ -30,7 +30,7 @@ export type URI = typeof URI
 
 export type V = HKT.V<'E', '+'>
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: These<E, A>
   }

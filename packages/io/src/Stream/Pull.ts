@@ -1,9 +1,9 @@
 import type { Cause } from '../Cause'
 import type { Chunk } from '../Chunk'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import { pipe } from '@principia/base/data/Function'
-import { none, some } from '@principia/base/data/Option'
+import { pipe } from '@principia/base/Function'
+import { none, some } from '@principia/base/Option'
 
 import * as C from '../Chunk'
 import * as I from '../IO'

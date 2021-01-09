@@ -1,7 +1,7 @@
-import * as HKT from '../HKT'
-import * as P from '../typeclass'
 import { identity } from './Function'
+import * as HKT from './HKT'
 import * as O from './Option'
+import * as P from './typeclass'
 
 export type OptionTURI<M extends HKT.URIS> = HKT.AppendURI<M, O.OptionURI>
 

@@ -3,9 +3,9 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import type { HasTag } from '@principia/base/data/Has'
+import type { HasTag } from '@principia/base/Has'
 
-import { tag } from '@principia/base/data/Has'
+import { tag } from '@principia/base/Has'
 
 import * as I from './IO/core'
 
@@ -191,5 +191,5 @@ export function setSeed(seed: string) {
 }
 
 export function withSeed(seed: string) {
-  return I.replaceService(HasRandom, () => new LiveRandom(seed))
+  return I.updateService(HasRandom, () => new LiveRandom(seed))
 }

@@ -1,10 +1,10 @@
 import type { Request } from './Request'
 import type { URef } from '@principia/io/IORef'
 
-import * as E from '@principia/base/data/Either'
-import { pipe, tuple } from '@principia/base/data/Function'
-import * as Map from '@principia/base/data/Map'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { pipe, tuple } from '@principia/base/Function'
+import * as Map from '@principia/base/Map'
+import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 

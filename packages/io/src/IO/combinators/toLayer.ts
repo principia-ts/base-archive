@@ -1,5 +1,5 @@
 import type { IO } from '../core'
-import type { Has, Tag } from '@principia/base/data/Has'
+import type { Has, Tag } from '@principia/base/Has'
 
 import * as L from '../../Layer/core'
 

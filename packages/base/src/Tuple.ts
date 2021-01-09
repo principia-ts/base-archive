@@ -1,6 +1,6 @@
-import * as HKT from '../HKT'
-import * as P from '../typeclass'
 import { identity } from './Function'
+import * as HKT from './HKT'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -15,7 +15,7 @@ export type URI = typeof URI
 
 export type V = HKT.V<'I', '+'>
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Tuple<A, I>
   }

@@ -2,9 +2,9 @@ import type { IO, UIO } from '../IO'
 import type { Promise } from '../Promise'
 import type { MutableQueue } from '@principia/base/util/support/MutableQueue'
 
-import * as A from '@principia/base/data/Array'
-import { flow, identity, pipe, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '@principia/base/util/support/MutableQueue'
 

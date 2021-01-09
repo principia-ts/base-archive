@@ -1,7 +1,7 @@
 import type * as HKT from '@principia/base/HKT'
 import type { Applicative } from '@principia/base/typeclass'
 
-import * as Eq from '@principia/base/data/Eq'
+import * as Eq from '@principia/base/Eq'
 import { compose_, tuple, tupleFlip, tupleUnit } from '@principia/base/Equivalence'
 import * as fc from 'fast-check'
 

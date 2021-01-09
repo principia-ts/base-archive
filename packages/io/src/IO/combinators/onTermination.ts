@@ -1,8 +1,8 @@
 import type { Cause } from '../../Cause/core'
 import type { IO } from '../core'
 
-import * as E from '@principia/base/data/Either'
-import { flow } from '@principia/base/data/Function'
+import * as E from '@principia/base/Either'
+import { flow } from '@principia/base/Function'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'

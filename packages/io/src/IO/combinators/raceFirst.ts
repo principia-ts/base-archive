@@ -1,7 +1,7 @@
 import type { Exit } from '../../Exit'
 import type { IO } from '../core'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as I from '../core'
 import { race_ } from './race'

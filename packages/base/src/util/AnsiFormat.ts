@@ -1,5 +1,5 @@
-import * as R from '../data/Record'
-import * as Str from '../data/String'
+import * as R from '../Record'
+import * as Str from '../String'
 
 const ANSI_BACKGROUND_OFFSET = 10
 const ANSI_BRIGHT_OFFSET     = 60

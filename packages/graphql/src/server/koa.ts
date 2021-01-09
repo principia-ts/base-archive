@@ -10,14 +10,14 @@ import type {
   SchemaGenerator,
   SchemaParts
 } from '../schema'
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 import type { Config } from 'apollo-server-core'
 import type { IResolvers } from 'graphql-tools'
 import type { ConnectionContext } from 'subscriptions-transport-ws'
 import type WebSocket from 'ws'
 
-import { identity, pipe } from '@principia/base/data/Function'
-import { tag } from '@principia/base/data/Has'
+import { identity, pipe } from '@principia/base/Function'
+import { tag } from '@principia/base/Has'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as Koa from '@principia/koa'

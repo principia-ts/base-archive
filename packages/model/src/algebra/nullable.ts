@@ -1,5 +1,5 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
 export const NullableURI = 'model/algebra/nullable'
 

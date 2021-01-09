@@ -1,6 +1,6 @@
-import * as A from '../../data/Array'
-import * as NA from '../../data/NonEmptyArray'
-import * as O from '../../data/Option'
+import * as A from '../../Array'
+import * as NA from '../../NonEmptyArray'
+import * as O from '../../Option'
 
 export class ImmutableQueue<A> {
   constructor(private readonly backing: readonly A[]) {}

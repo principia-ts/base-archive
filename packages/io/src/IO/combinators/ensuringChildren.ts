@@ -1,7 +1,7 @@
 import type { RuntimeFiber } from '../../Fiber'
 import type { IO } from '../core'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as Supervisor from '../../Supervisor'
 import { flatMap, supervised } from '../core'

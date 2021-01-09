@@ -1,4 +1,4 @@
-import { pipe, tuple } from '@principia/base/data/Function'
+import { pipe, tuple } from '@principia/base/Function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'

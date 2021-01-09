@@ -2,7 +2,7 @@ import type { _I, _O, ScalarConfig, ScalarFunctions, ScalarParseLiteralF } from 
 import type { UnionToIntersection } from '@principia/base/util/types'
 import type { ValueNode } from 'graphql'
 
-import { flow, pipe } from '@principia/base/data/Function'
+import { flow, pipe } from '@principia/base/Function'
 import * as DE from '@principia/codec/DecodeErrors'
 import * as Sy from '@principia/io/Sync'
 import * as M from '@principia/model'

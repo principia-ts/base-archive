@@ -10,7 +10,7 @@ import type {
   ScalarTypeDefinitionNode
 } from 'graphql'
 
-import * as R from '@principia/base/data/Record'
+import * as R from '@principia/base/Record'
 
 import { createDocumentNode, createSchemaDefinitionNode } from './AST'
 
@@ -37,9 +37,9 @@ export interface SchemaGenerator<T> {
 
 export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) => {
   const objectTypes: Record<string, GQLObject<any, any, any, any, any, any>> = {}
-  const extendTypes: Record<string, GQLExtendObject<any, any, any, any>> = {}
-  const inputObjectTypes: Record<string, GQLInputObject<any, any>> = {}
-  const scalarTypes: Record<string, GQLScalar<any, any, any, any>> = {}
+  const extendTypes: Record<string, GQLExtendObject<any, any, any, any>>     = {}
+  const inputObjectTypes: Record<string, GQLInputObject<any, any>>           = {}
+  const scalarTypes: Record<string, GQLScalar<any, any, any, any>>           = {}
   for (const type of types) {
     switch (type._tag) {
       case 'GQLExtendObject': {

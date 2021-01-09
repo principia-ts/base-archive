@@ -1,4 +1,4 @@
-import type { Eq } from '@principia/base/data/Eq'
+import type { Eq } from '@principia/base/Eq'
 import type { Semigroup } from '@principia/base/Semigroup'
 
 export const SemigroupLaws = {

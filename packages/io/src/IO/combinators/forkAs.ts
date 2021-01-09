@@ -1,7 +1,7 @@
 import type { IO, URIO } from '../core'
 
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as Fiber from '../../Fiber'
 import * as FiberRef from '../../FiberRef'

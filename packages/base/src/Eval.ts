@@ -4,14 +4,14 @@
  * -------------------------------------------
  */
 
-import type * as P from '../typeclass'
-import type { Stack } from '../util/support/Stack'
+import type * as P from './typeclass'
+import type { Stack } from './util/support/Stack'
 
-import { identity, tuple } from '../data/Function'
-import * as O from '../data/Option'
-import * as DSL from '../DSL'
-import * as HKT from '../HKT'
-import { makeStack } from '../util/support/Stack'
+import * as DSL from './DSL'
+import { identity, tuple } from './Function'
+import * as HKT from './HKT'
+import * as O from './Option'
+import { makeStack } from './util/support/Stack'
 
 /**
  * `Eval<A>` is a monad that controls evaluation, providing a way to perform
@@ -32,7 +32,7 @@ export abstract class Eval<A> {
 export const URI = 'Eval'
 export type URI = typeof URI
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Eval<A>
   }

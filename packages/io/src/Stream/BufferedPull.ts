@@ -1,7 +1,7 @@
 import type { Chunk } from '../Chunk'
 
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as C from '../Chunk'
 import * as I from '../IO'

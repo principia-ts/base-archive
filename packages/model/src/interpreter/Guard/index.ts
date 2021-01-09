@@ -1,8 +1,8 @@
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
 import type { Summoner } from '../../summoner'
-import type * as G from '@principia/base/data/Guard'
+import type * as G from '@principia/base/Guard'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
 import { IntersectionGuard } from './intersection'

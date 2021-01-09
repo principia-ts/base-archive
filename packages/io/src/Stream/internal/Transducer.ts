@@ -7,7 +7,7 @@
 import type { Chunk } from '../../Chunk'
 import type { IO } from '../../IO'
 import type { Managed } from '../../Managed'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
 //   result in empty [].
 export class Transducer<R, E, I, O> {

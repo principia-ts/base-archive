@@ -1,9 +1,9 @@
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import * as A from '@principia/base/data/Array'
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
-import * as Str from '@principia/base/data/String'
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
+import * as Str from '@principia/base/String'
 
 import * as TA from '../Annotation'
 

@@ -1,8 +1,8 @@
 import type * as Alg from '../../algebra'
 import type { URI } from './HKT'
 
-import { pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import * as DE from '@principia/codec/DecodeError'
 import { error } from '@principia/codec/DecodeErrors'
 import * as D from '@principia/codec/DecoderKF'

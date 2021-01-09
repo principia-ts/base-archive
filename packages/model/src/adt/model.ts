@@ -1,9 +1,9 @@
 import type { ElemType, ExcludeUnion, ExtractUnion, KeysDefinition, Tagged } from './utils'
 
-import * as A from '@principia/base/data/Array'
-import * as Eq from '@principia/base/data/Eq'
-import { tuple } from '@principia/base/data/Function'
-import * as R from '@principia/base/data/Record'
+import * as A from '@principia/base/Array'
+import * as Eq from '@principia/base/Eq'
+import { tuple } from '@principia/base/Function'
+import * as R from '@principia/base/Record'
 import { getFirstSemigroup } from '@principia/base/Semigroup'
 
 import * as Co from './constructors'

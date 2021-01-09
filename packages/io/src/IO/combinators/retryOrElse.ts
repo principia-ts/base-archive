@@ -2,8 +2,8 @@ import type { HasClock } from '../../Clock'
 import type * as S from '../../Schedule'
 import type { IO } from '../core'
 
-import * as E from '@principia/base/data/Either'
-import { identity } from '@principia/base/data/Function'
+import * as E from '@principia/base/Either'
+import { identity } from '@principia/base/Function'
 
 import { map_ } from '../core'
 import { retryOrElseEither_ } from './retryOrElseEither'

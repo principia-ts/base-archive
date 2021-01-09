@@ -1,10 +1,10 @@
 import type { Chunk } from '../Chunk'
 import type { Exit } from '../Exit'
 import type { Pull } from './Pull'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import { flow, pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import { flow, pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as Ca from '../Cause'
 import * as C from '../Chunk'

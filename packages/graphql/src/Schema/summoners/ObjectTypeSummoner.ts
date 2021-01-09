@@ -4,8 +4,8 @@ import type { __A, __E, __R } from '../Utils'
 import type { Compute } from '@principia/base/util/compute'
 import type { FieldDefinitionNode, ObjectTypeDefinitionNode } from 'graphql'
 
-import * as A from '@principia/base/data/Array'
-import * as R from '@principia/base/data/Record'
+import * as A from '@principia/base/Array'
+import * as R from '@principia/base/Record'
 
 import { addNameToUnnamedFieldDefinitionNode, createObjectTypeDefinitionNode } from '../AST'
 import { GQLObject } from '../Types'

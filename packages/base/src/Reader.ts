@@ -1,6 +1,6 @@
-import type * as HKT from '../HKT'
+import type * as HKT from './HKT'
 
-import { flow, identity, tuple } from '../data/Function'
+import { flow, identity, tuple } from './Function'
 
 /*
  * -------------------------------------------
@@ -17,7 +17,7 @@ export type V = HKT.V<'R', '-'>
 export const URI = 'Reader'
 export type URI = typeof URI
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Reader<R, A>
   }

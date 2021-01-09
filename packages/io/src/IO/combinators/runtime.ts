@@ -2,7 +2,7 @@ import type { Exit } from '../../Exit'
 import type { FailureReporter } from '../../Fiber/_internal/io'
 import type { Callback } from '../../Fiber/core'
 
-import { constVoid, identity } from '@principia/base/data/Function'
+import { constVoid, identity } from '@principia/base/Function'
 
 import * as C from '../../Cause/core'
 import { pretty } from '../../Cause/core'

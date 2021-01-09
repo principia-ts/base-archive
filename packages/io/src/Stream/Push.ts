@@ -1,9 +1,9 @@
 import type { Cause } from '../Cause'
 import type { Chunk } from '../Chunk'
 import type { Managed } from '../Managed'
-import type * as O from '@principia/base/data/Option'
+import type * as O from '@principia/base/Option'
 
-import * as E from '@principia/base/data/Either'
+import * as E from '@principia/base/Either'
 
 import * as C from '../Chunk'
 import * as I from '../IO'

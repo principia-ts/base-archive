@@ -1,8 +1,8 @@
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
 import type { Summoner } from '../../summoner'
-import type * as Eq from '@principia/base/data/Eq'
+import type * as Eq from '@principia/base/Eq'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
 import { IntersectionEq } from './intersection'

@@ -1,6 +1,6 @@
 import type * as HKT from '@principia/base/HKT'
 
-import { identity, memoize } from '@principia/base/data/Function'
+import { identity, memoize } from '@principia/base/Function'
 
 import { _intersect } from './util'
 

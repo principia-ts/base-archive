@@ -1,8 +1,8 @@
 import type { FiberContext } from '../../Fiber'
 import type { IO, URIO } from '../core'
 
-import * as E from '@principia/base/data/Either'
-import { flow, pipe } from '@principia/base/data/Function'
+import * as E from '@principia/base/Either'
+import { flow, pipe } from '@principia/base/Function'
 
 import * as C from '../../Cause/core'
 import { fork, halt } from '../core'

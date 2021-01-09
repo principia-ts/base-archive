@@ -1,9 +1,9 @@
-import type * as HKT from '../HKT'
+import type * as HKT from './HKT'
 import type { Show } from './Show'
 
-import * as P from '../typeclass'
 import * as A from './Array'
 import { identity } from './Function'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -27,7 +27,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Tree<A>
   }
@@ -185,7 +185,7 @@ export function extract<A>(wa: Tree<A>): A {
  */
 
 export function foldLeft_<A, B>(fa: Tree<A>, b: B, f: (b: B, a: A) => B): B {
-  let r: B = f(b, fa.value)
+  let r: B  = f(b, fa.value)
   const len = fa.forest.length
   for (let i = 0; i < len; i++) {
     r = foldLeft_(fa.forest[i], r, f)
@@ -274,7 +274,7 @@ export function tap<A, B>(f: (a: A) => Tree<B>): (ma: Tree<A>) => Tree<A> {
  */
 
 const draw = <A>(S: Show<A>) => (indentation: string, forest: Forest<A>): string => {
-  let r = ''
+  let r     = ''
   const len = forest.length
   let tree: Tree<A>
   for (let i = 0; i < len; i++) {
@@ -308,7 +308,7 @@ export function getShow<A>(S: Show<A>): Show<Tree<A>> {
 
 export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (G) => {
   const traverseG = A.traverse_(G)
-  const out = <A, B>(ta: Tree<A>, f: (a: A) => HKT.HKT<typeof _.G, B>): HKT.HKT<typeof _.G, Tree<B>> =>
+  const out       = <A, B>(ta: Tree<A>, f: (a: A) => HKT.HKT<typeof _.G, B>): HKT.HKT<typeof _.G, Tree<B>> =>
     G.ap_(
       G.map_(f(ta.value), (value) => (forest: Forest<B>) => ({
         value,

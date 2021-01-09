@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as XR from '../../IORef'
 import { flatMap, flatMap_ } from '../core'

@@ -4,8 +4,8 @@ import type { AnyField, GQLInputObject, GQLObject, InputRecord } from './Types'
 import type { TypeofInputRecord } from './Utils'
 import type { _A, _E, _R } from '@principia/base/util/types'
 
-import * as A from '@principia/base/data/Array'
-import * as R from '@principia/base/data/Record'
+import * as A from '@principia/base/Array'
+import * as R from '@principia/base/Record'
 
 import {
   createInputValueDefinitionNode,

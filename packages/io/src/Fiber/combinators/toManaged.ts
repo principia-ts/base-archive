@@ -1,6 +1,6 @@
 import type { Fiber } from '../core'
 
-import { flow } from '@principia/base/data/Function'
+import { flow } from '@principia/base/Function'
 
 import * as M from '../../Managed/core'
 import * as I from '../_internal/io'

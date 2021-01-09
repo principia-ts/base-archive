@@ -1,13 +1,13 @@
 import type { Applicative } from '../Applicative'
-import type { Predicate } from '../data/Function'
 import type { Fallible } from '../Fallible'
+import type { Predicate } from '../Function'
 import type { Filterable, FilterFn_, FilterMapFn_, Monad, Monoid, PartitionFn_, PartitionMapFn_ } from '../typeclass'
 import type { Erase } from '../util/types'
 
-import * as E from '../data/Either'
-import { flow, not, pipe, tuple } from '../data/Function'
-import * as O from '../data/Option'
+import * as E from '../Either'
+import { flow, not, pipe, tuple } from '../Function'
 import * as HKT from '../HKT'
+import * as O from '../Option'
 
 export function getFilterableF<F extends HKT.URIS, C = HKT.Auto>(
   F: Monad<F, C> & Fallible<F, C>

@@ -2,7 +2,7 @@ import type { UnnamedFieldDefinitionNode, UnnamedInputValueDefinitionNode } from
 import type { InputTypeConfig, OutputTypeConfig } from './Config'
 import type { ResolverF } from './Resolver'
 import type { ScalarFunctions } from './Scalar'
-import type { ReadonlyRecord } from '@principia/base/data/Record'
+import type { ReadonlyRecord } from '@principia/base/Record'
 import type { Compute } from '@principia/base/util/compute'
 import type { ExcludeMatchingProperties } from '@principia/base/util/types'
 import type {

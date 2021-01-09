@@ -3,8 +3,8 @@ import type { AnyOutput, FieldRecord, GQLObject } from '../Types'
 import type { __A, __E, __R } from '../Utils'
 import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
-import * as A from '@principia/base/data/Array'
-import * as R from '@principia/base/data/Record'
+import * as A from '@principia/base/Array'
+import * as R from '@principia/base/Record'
 
 import { addNameToUnnamedFieldDefinitionNode } from '../AST'
 import { GQLExtendObject } from '../Types'

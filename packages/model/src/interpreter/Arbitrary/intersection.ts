@@ -1,8 +1,8 @@
 import type * as Alg from '../../algebra'
 import type { ArbURI } from './HKT'
 
-import * as A from '@principia/base/data/Array'
-import { pipe } from '@principia/base/data/Function'
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/Function'
 
 import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'

@@ -1,8 +1,8 @@
-import type { Byte } from '@principia/base/data/Byte'
+import type { Byte } from '@principia/base/Byte'
 import type * as stream from 'stream'
 
-import { pipe, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import { pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'

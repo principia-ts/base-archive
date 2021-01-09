@@ -1,6 +1,6 @@
 import type { Fiber, SyntheticFiber } from '../core'
 
-import * as O from '@principia/base/data/Option'
+import * as O from '@principia/base/Option'
 
 import * as C from '../../Cause'
 import * as Ex from '../../Exit'

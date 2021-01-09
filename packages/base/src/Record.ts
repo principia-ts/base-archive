@@ -1,14 +1,14 @@
-import type * as HKT from '../HKT'
 import type * as E from './Either'
 import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
+import type * as HKT from './HKT'
 import type { Show } from './Show'
 
-import * as P from '../typeclass'
-import { makeMonoid } from '../typeclass'
 import { makeEq } from './Eq'
 import { identity, pipe, tuple } from './Function'
 import * as O from './Option'
+import * as P from './typeclass'
+import { makeMonoid } from './typeclass'
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty
 
@@ -32,7 +32,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: ReadonlyRecord<N, A>
   }
@@ -239,9 +239,9 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
 export function separate<N extends string, A, B>(
   fa: ReadonlyRecord<N, E.Either<A, B>>
 ): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>] {
-  const mut_left: Record<string, A> = {} as any
+  const mut_left: Record<string, A>  = {} as any
   const mut_right: Record<string, B> = {} as any
-  const keys = Object.keys(fa)
+  const keys                         = Object.keys(fa)
   for (const key of keys) {
     const e = fa[key]
     switch (e.tag_) {
@@ -879,7 +879,7 @@ export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementT
       let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
       for (let i = 0; i < ks.length; i++) {
         const key = ks[i]
-        mut_gr = pipe(
+        mut_gr    = pipe(
           mut_gr,
           G.map((mut_r) => (b: _['B']) => {
             mut_r[key] = b
@@ -1022,7 +1022,7 @@ export function size(r: ReadonlyRecord<string, unknown>): number {
 
 export function collect_<N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (k: N, a: A) => B): ReadonlyArray<B> {
   const out: Array<B> = []
-  const ks = keys(r)
+  const ks            = keys(r)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
     out.push(f(key, r[key]))
@@ -1043,7 +1043,7 @@ export function insertAt_<N extends string, K extends string, A>(
     return r as any
   }
   const mut_out = Object.assign({}, r) as Record<N | K, A>
-  mut_out[k] = a
+  mut_out[k]    = a
   return mut_out
 }
 

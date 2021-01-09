@@ -1,9 +1,9 @@
 import type { Cause } from './Cause'
 import type { UIO } from './IO/core'
-import type { Either } from '@principia/base/data/Either'
+import type { Either } from '@principia/base/Either'
 
-import * as A from '@principia/base/data/Array'
-import * as E from '@principia/base/data/Either'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
 import { AtomicNumber } from '@principia/base/util/support/AtomicNumber'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
@@ -29,6 +29,7 @@ export class Key {
   }
 
   setRemove(remove: UIO<boolean>) {
+    // eslint-disable-next-line functional/immutable-data
     this.remove = remove
   }
 }
@@ -338,9 +339,9 @@ export class Open<A> {
 }
 
 export function unsafeMakeScope<A>(): Open<A> {
-  const exitValue = new AtomicReference<A | null>(null)
+  const exitValue  = new AtomicReference<A | null>(null)
   const finalizers = new Map<Key, OrderedFinalizer>()
-  const scope = new LocalScope(new AtomicNumber(Number.MIN_SAFE_INTEGER), exitValue, new AtomicNumber(1), finalizers)
+  const scope      = new LocalScope(new AtomicNumber(Number.MIN_SAFE_INTEGER), exitValue, new AtomicNumber(1), finalizers)
 
   return new Open<A>((a) => {
     return I.effectSuspendTotal(() => {

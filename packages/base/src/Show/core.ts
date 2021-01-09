@@ -12,7 +12,7 @@ export const URI = 'Show'
 
 export type URI = typeof URI
 
-declare module '../../HKT' {
+declare module '../HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Show<A>
   }

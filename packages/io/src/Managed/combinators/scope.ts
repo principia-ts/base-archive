@@ -1,7 +1,7 @@
 import type { Managed } from '../core'
 import type { Finalizer } from '../ReleaseMap'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as I from '../_internal/io'
 import { map } from '../core'

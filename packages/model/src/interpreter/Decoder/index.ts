@@ -5,7 +5,7 @@ import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 import type * as D from '@principia/codec/DecoderKF'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
 import { IntersectionDecoder } from './intersection'

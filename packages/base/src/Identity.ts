@@ -1,6 +1,6 @@
-import * as HKT from '../HKT'
-import * as P from '../typeclass'
 import { identity, pipe, tuple } from './Function'
+import * as HKT from './HKT'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -16,7 +16,7 @@ export type URI = typeof URI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: Identity<A>
   }

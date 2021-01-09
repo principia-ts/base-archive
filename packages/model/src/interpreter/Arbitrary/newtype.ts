@@ -1,8 +1,8 @@
 import type * as Alg from '../../algebra'
 import type { ArbURI } from './HKT'
-import type { Some } from '@principia/base/data/Option'
+import type { Some } from '@principia/base/Option'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { implementInterpreter } from '../../HKT'
 import { applyArbitraryConfig } from './HKT'

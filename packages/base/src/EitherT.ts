@@ -1,7 +1,7 @@
-import * as HKT from '../HKT'
-import * as P from '../typeclass'
 import * as E from './Either'
 import { flow, identity, pipe } from './Function'
+import * as HKT from './HKT'
+import * as P from './typeclass'
 
 export type V<C> = HKT.CleanParam<C, 'E'> & HKT.V<'E', '+'>
 

@@ -1,10 +1,10 @@
 import type { HasClock } from '../../Clock'
 import type { Driver,Schedule } from '../../Schedule'
 import type { IO } from '../core'
-import type { Either } from '@principia/base/data/Either'
+import type { Either } from '@principia/base/Either'
 
-import * as E from '@principia/base/data/Either'
-import { pipe } from '@principia/base/data/Function'
+import * as E from '@principia/base/Either'
+import { pipe } from '@principia/base/Function'
 
 import * as S from '../../Schedule'
 import { catchAll, flatMap, foldM, map, orDie } from '../core'

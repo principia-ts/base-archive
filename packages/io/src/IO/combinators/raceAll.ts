@@ -1,9 +1,9 @@
 import type { Exit } from '../../Exit'
 import type { IO, UIO } from '../core'
-import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
-import * as A from '@principia/base/data/Array'
-import { flow, pipe, tuple } from '@principia/base/data/Function'
+import * as A from '@principia/base/Array'
+import { flow, pipe, tuple } from '@principia/base/Function'
 
 import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'

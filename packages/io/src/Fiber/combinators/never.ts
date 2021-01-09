@@ -1,6 +1,6 @@
 import type { Fiber } from '../core'
 
-import * as O from '@principia/base/data/Option'
+import * as O from '@principia/base/Option'
 
 import * as I from '../_internal/io'
 import { makeSynthetic } from '../core'

@@ -1,9 +1,9 @@
 import type { HasClock } from '../../Clock'
 import type * as S from '../../Schedule'
 import type { IO } from '../core'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import * as E from '@principia/base/data/Either'
+import * as E from '@principia/base/Either'
 
 import { map_ } from '../core'
 import { repeatOrElseEither_ } from './repeatOrElseEither'

@@ -1,4 +1,4 @@
-import * as O from '@principia/base/data/Option'
+import * as O from '@principia/base/Option'
 
 import * as Ac from '../../Async'
 import * as I from './_internal/io'

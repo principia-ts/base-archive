@@ -1,10 +1,10 @@
 import type { HasClock } from '../../Clock'
 import type { Promise } from '../../Promise'
 import type { FIO, IO, URIO } from '../core'
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import { pipe, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import { pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import { currentTime } from '../../Clock'
 import * as RefM from '../../IORefM'

@@ -1,14 +1,14 @@
-import type { Either } from '@principia/base/data/Either'
-import type { Tag } from '@principia/base/data/Has'
+import type { Either } from '@principia/base/Either'
+import type { Tag } from '@principia/base/Has'
 import type { Chunk } from '@principia/io/Chunk'
 import type * as Fiber from '@principia/io/Fiber'
 import type { URef } from '@principia/io/IORef'
 
-import * as E from '@principia/base/data/Either'
-import * as Eq from '@principia/base/data/Eq'
-import { absurd } from '@principia/base/data/Function'
-import { tag } from '@principia/base/data/Has'
-import * as Set from '@principia/base/data/Set'
+import * as E from '@principia/base/Either'
+import * as Eq from '@principia/base/Eq'
+import { absurd } from '@principia/base/Function'
+import { tag } from '@principia/base/Has'
+import * as Set from '@principia/base/Set'
 import * as C from '@principia/io/Chunk'
 
 export class TestAnnotation<V> {

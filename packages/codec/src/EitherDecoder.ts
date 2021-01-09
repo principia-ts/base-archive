@@ -2,7 +2,7 @@ import type { DecodeErrors, ErrorInfo } from './DecodeErrors'
 import type * as KF from './DecoderKF'
 import type * as HKT from '@principia/base/HKT'
 
-import * as E from '@principia/base/data/Either'
+import * as E from '@principia/base/Either'
 
 import * as DE from './DecodeError'
 import { getDecodeErrorsValidation } from './DecodeErrors'

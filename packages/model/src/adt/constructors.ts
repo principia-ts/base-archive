@@ -1,6 +1,6 @@
 import type { ExtractUnion, KeysDefinition, Remove, Tagged } from './utils'
 
-import * as R from '@principia/base/data/Record'
+import * as R from '@principia/base/Record'
 
 export type ConstructorType<C extends Constructors<any, any>> = C extends Constructors<infer A, any> ? A : never
 

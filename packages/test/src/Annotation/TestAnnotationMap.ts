@@ -1,9 +1,9 @@
 import type { TestAnnotation } from './TestAnnotation'
 
-import * as A from '@principia/base/data/Array'
-import { identity, pipe } from '@principia/base/data/Function'
-import * as RMap from '@principia/base/data/Map'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import { identity, pipe } from '@principia/base/Function'
+import * as RMap from '@principia/base/Map'
+import * as O from '@principia/base/Option'
 
 export class TestAnnotationMap {
   constructor(private readonly map: ReadonlyMap<TestAnnotation<any>, any>) {}

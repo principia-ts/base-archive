@@ -1,7 +1,7 @@
-import type { Option } from '@principia/base/data/Option'
+import type { Option } from '@principia/base/Option'
 
-import { pipe } from '@principia/base/data/Function'
-import { none, some } from '@principia/base/data/Option'
+import { pipe } from '@principia/base/Function'
+import { none, some } from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as I from '../IO'

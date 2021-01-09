@@ -1,15 +1,15 @@
 import type { SIO } from './SIO'
-import type { Has, Region, Tag } from '@principia/base/data/Has'
+import type { Has, Region, Tag } from '@principia/base/Has'
 import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
-import * as A from '@principia/base/data/Array'
-import * as E from '@principia/base/data/Either'
-import { flow, identity, pipe } from '@principia/base/data/Function'
-import { isTag, mergeEnvironments, tag } from '@principia/base/data/Has'
-import * as I from '@principia/base/data/Iterable'
-import * as O from '@principia/base/data/Option'
-import * as R from '@principia/base/data/Record'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
+import { flow, identity, pipe } from '@principia/base/Function'
+import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
 import * as HKT from '@principia/base/HKT'
+import * as I from '@principia/base/Iterable'
+import * as O from '@principia/base/Option'
+import * as R from '@principia/base/Record'
 import * as P from '@principia/base/typeclass'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import * as FL from '@principia/free/FreeList'
@@ -318,7 +318,7 @@ export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (a: USync<A>) => (b: 
 export function liftK<A extends [unknown, ...ReadonlyArray<unknown>], B>(
   f: (...args: A) => B
 ): (...args: { [K in keyof A]: USync<A[K]> }) => USync<B> {
-  return (...args) => map_(tupleN(...(args as any)), (a) => f(...(a as any))) as any
+  return (...args) => map_(sequenceT(...(args as any)), (a) => f(...(a as any))) as any
 }
 
 /*
@@ -573,7 +573,7 @@ export function askService<T>(s: Tag<T>): Sync<Has<T>, never, T> {
 }
 
 /**
- * Provides the service with the required Service Entry, depends on global HasRegistry
+ * Provides the service with the required Service Entry
  */
 export function giveServiceM<T>(
   _: Tag<T>
@@ -583,16 +583,16 @@ export function giveServiceM<T>(
 }
 
 /**
- * Provides the service with the required Service Entry, depends on global HasRegistry
+ * Provides the service with the required Service Entry
  */
 export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1, E1, A1> {
   return (f) => (ma) => giveServiceM(_)(S.pure(f))(ma)
 }
 
 /**
- * Replaces the service with the required Service Entry, depends on global HasRegistry
+ * Replaces the service with the required Service Entry
  */
-export function replaceServiceM<R, E, T>(
+export function updateServiceM<R, E, T>(
   _: Tag<T>,
   f: (_: T) => Sync<R, E, T>
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1 & Has<T>, E | E1, A1> {
@@ -600,9 +600,9 @@ export function replaceServiceM<R, E, T>(
 }
 
 /**
- * Replaces the service with the required Service Entry, depends on global HasRegistry
+ * Replaces the service with the required Service Entry
  */
-export function replaceServiceM_<R, E, T, R1, E1, A1>(
+export function updateServiceM_<R, E, T, R1, E1, A1>(
   ma: Sync<R1 & Has<T>, E1, A1>,
   _: Tag<T>,
   f: (_: T) => Sync<R, E, T>
@@ -611,9 +611,9 @@ export function replaceServiceM_<R, E, T, R1, E1, A1>(
 }
 
 /**
- * Replaces the service with the required Service Entry, depends on global HasRegistry
+ * Replaces the service with the required Service Entry
  */
-export function replaceService<T>(
+export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1 & Has<T>, E1, A1> {
@@ -621,9 +621,9 @@ export function replaceService<T>(
 }
 
 /**
- * Replaces the service with the required Service Entry, depends on global HasRegistry
+ * Replaces the service with the required Service Entry
  */
-export function replaceService_<R1, E1, A1, T>(
+export function updateService_<R1, E1, A1, T>(
   ma: Sync<R1 & Has<T>, E1, A1>,
   _: Tag<T>,
   f: (_: T) => T
@@ -787,9 +787,9 @@ export const Apply = HKT.instance<P.Apply<[URI], V>>({
   product: (fb) => (fa) => product_(fa, fb)
 })
 
-export const tupleN = P.tupleF(Apply)
+export const sequenceT = P.sequenceTF(Apply)
 
-export const struct = P.structF(Apply)
+export const sequenceS = P.sequenceSF(Apply)
 
 export const Applicative = HKT.instance<P.Applicative<[URI], V>>({
   ...Apply,

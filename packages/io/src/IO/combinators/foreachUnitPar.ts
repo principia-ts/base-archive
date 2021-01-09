@@ -2,9 +2,9 @@ import type { Exit } from '../../Exit/core'
 import type { Fiber } from '../../Fiber/core'
 import type { FiberContext } from '../../FiberContext'
 
-import * as A from '@principia/base/data/Array'
-import { flow, pipe, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import { flow, pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'

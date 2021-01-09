@@ -1,8 +1,8 @@
-import type { Eq } from './data/Eq'
+import type { Eq } from './Eq'
 import type { Monoid } from './Monoid'
 import type { CombineFn_ } from './Semigroup'
 
-import { boolean, number, string } from './data/Eq/core'
+import { boolean, number, string } from './Eq/core'
 import { EQ, GT, LT, MonoidOrdering, Ordering } from './Ordering'
 
 export const OrdURI = 'Ord'

@@ -1,6 +1,6 @@
 import type { ASTNode, GraphQLError, GraphQLFormattedError, Source, SourceLocation } from 'graphql'
 
-import { Exception } from '@principia/base/data/Exception'
+import { Exception } from '@principia/base/Exception'
 
 export class GraphQlException extends Exception<Source | undefined, Record<string, any>> implements GraphQLError {
   readonly code: number | undefined

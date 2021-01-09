@@ -1,7 +1,7 @@
 import type { AssertionM } from '../Assertion/AssertionM'
-import type { Show } from '@principia/base/data/Show'
+import type { Show } from '@principia/base/Show'
 
-import { makeShow } from '@principia/base/data/Show'
+import { makeShow } from '@principia/base/Show'
 
 export interface RenderAssertionM {
   readonly _tag: 'AssertionM'

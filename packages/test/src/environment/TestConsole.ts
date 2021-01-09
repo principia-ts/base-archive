@@ -3,7 +3,7 @@ import type { FiberRef } from '@principia/io/FiberRef'
 import type { UIO } from '@principia/io/IO'
 import type { URef } from '@principia/io/IORef'
 
-import * as L from '@principia/base/data/List'
+import * as L from '@principia/base/List'
 import * as Ref from '@principia/io/IORef'
 
 export class TestConsole implements Console {

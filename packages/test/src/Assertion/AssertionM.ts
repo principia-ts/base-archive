@@ -1,7 +1,7 @@
 import type { Render } from '../Render'
 import type { AssertionValue } from './AssertionValue'
 
-import * as Str from '@principia/base/data/String'
+import * as Str from '@principia/base/String'
 
 import * as BA from '../FreeBooleanAlgebra'
 import { infix } from '../Render'

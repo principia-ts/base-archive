@@ -1,8 +1,8 @@
-import type { Has, Tag } from '@principia/base/data/Has'
+import type { Has, Tag } from '@principia/base/Has'
 import type { Erase, UnionToIntersection } from '@principia/base/util/types'
 
-import * as A from '@principia/base/data/Array'
-import { pipe } from '@principia/base/data/Function'
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/Function'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
 import * as Sy from './Sync'

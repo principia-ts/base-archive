@@ -1,4 +1,4 @@
-import * as L from '../../data/List'
+import * as L from '../../List'
 import { DoublyLinkedList } from './DoublyLinkedList'
 
 export class RingBuffer<T> {

@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import * as Iter from '@principia/base/data/Iterable'
+import * as Iter from '@principia/base/Iterable'
 
 import { succeed } from '../core'
 import { zipWithPar_ } from './apply-par'

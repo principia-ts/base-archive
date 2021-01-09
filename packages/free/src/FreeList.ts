@@ -1,4 +1,4 @@
-import type { Predicate, Refinement } from '@principia/base/data/Function'
+import type { Predicate, Refinement } from '@principia/base/Function'
 import type { Monoid } from '@principia/base/Monoid'
 import type { Semigroup } from '@principia/base/Semigroup'
 import type { Stack } from '@principia/base/util/support/Stack'

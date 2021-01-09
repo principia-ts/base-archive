@@ -7,22 +7,22 @@ import type { FiberRef } from '../FiberRef/core'
 import type { Scope } from '../Scope'
 import type { SIO } from '../SIO'
 import type { Supervisor } from '../Supervisor'
-import type { Predicate,Refinement } from '@principia/base/data/Function'
-import type { Has, Region, Tag } from '@principia/base/data/Has'
-import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
-import type { Option } from '@principia/base/data/Option'
+import type { Predicate, Refinement } from '@principia/base/Function'
+import type { Has, Region, Tag } from '@principia/base/Has'
 import type * as HKT from '@principia/base/HKT'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type { Option } from '@principia/base/Option'
 import type { _E as InferE, _R as InferR, UnionToIntersection } from '@principia/base/util/types'
 
-import * as A from '@principia/base/data/Array'
-import * as E from '@principia/base/data/Either'
-import { _bind, _bindTo, constant , flow, identity, pipe, tuple } from '@principia/base/data/Function'
-import { isTag, mergeEnvironments, tag } from '@principia/base/data/Has'
-import * as I from '@principia/base/data/Iterable'
-import * as NEA from '@principia/base/data/NonEmptyArray'
-import * as O from '@principia/base/data/Option'
-import * as R from '@principia/base/data/Record'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
+import { _bind, _bindTo, constant, flow, identity, pipe, tuple } from '@principia/base/Function'
+import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
+import * as I from '@principia/base/Iterable'
 import { makeMonoid } from '@principia/base/Monoid'
+import * as NEA from '@principia/base/NonEmptyArray'
+import * as O from '@principia/base/Option'
+import * as R from '@principia/base/Record'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import * as FL from '@principia/free/FreeList'
 
@@ -2264,14 +2264,14 @@ export const join_ = <R, E, A, R1, E1, A1>(
   io: IO<R, E, A>,
   that: IO<R1, E1, A1>
 ): IO<E.Either<R, R1>, E | E1, A | A1> =>
-    asksM(
-      (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, A | A1> =>
-        E.fold_(
-          _,
-          (r) => giveAll_(io, r),
-          (r1) => giveAll_(that, r1)
-        )
-    )
+  asksM(
+    (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, A | A1> =>
+      E.fold_(
+        _,
+        (r) => giveAll_(io, r),
+        (r1) => giveAll_(that, r1)
+      )
+  )
 
 /**
  * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
@@ -2287,14 +2287,14 @@ export const joinEither_ = <R, E, A, R1, E1, A1>(
   io: IO<R, E, A>,
   that: IO<R1, E1, A1>
 ): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
-    asksM(
-      (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
-        E.fold_(
-          _,
-          (r) => map_(giveAll_(io, r), E.left),
-          (r1) => map_(giveAll_(that, r1), E.right)
-        )
-    )
+  asksM(
+    (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
+      E.fold_(
+        _,
+        (r) => map_(giveAll_(io, r), E.left),
+        (r1) => map_(giveAll_(that, r1), E.right)
+      )
+  )
 
 /**
  * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
@@ -2368,16 +2368,16 @@ export function loopUnit<A>(
   }
 }
 
-export function mapEffectCatch_<R, E, A, E1, B>(io: IO<R, E, A>,
+export function mapEffectCatch_<R, E, A, E1, B>(
+  io: IO<R, E, A>,
   f: (a: A) => B,
-  onThrow: (u: unknown) => E1): IO<R, E | E1, B> {
+  onThrow: (u: unknown) => E1
+): IO<R, E | E1, B> {
   return flatMap_(io, (a) => effectCatch_(() => f(a), onThrow))
 }
 
 export function mapEffectCatch<E1>(onThrow: (u: unknown) => E1) {
-  return <A, B>(f: (a: A) => B) => <R, E>(
-    io: IO<R, E, A>
-  ): IO<R, E | E1, B> => mapEffectCatch_(io, f, onThrow)
+  return <A, B>(f: (a: A) => B) => <R, E>(io: IO<R, E, A>): IO<R, E | E1, B> => mapEffectCatch_(io, f, onThrow)
 }
 
 /**
@@ -3194,7 +3194,7 @@ export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: IO<R1 & Ha
 /**
  * Replaces the service with the required Service Entry
  */
-export function replaceServiceM<R, E, T>(
+export function updateServiceM<R, E, T>(
   _: Tag<T>,
   f: (_: T) => IO<R, E, T>
 ): <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R & R1 & Has<T>, E1 | E, A1> {
@@ -3204,7 +3204,7 @@ export function replaceServiceM<R, E, T>(
 /**
  * Replaces the service with the required Service Entry
  */
-export function replaceServiceM_<R, E, T, R1, E1, A1>(
+export function updateServiceM_<R, E, T, R1, E1, A1>(
   ma: IO<R1 & Has<T>, E1, A1>,
   _: Tag<T>,
   f: (_: T) => IO<R, E, T>
@@ -3215,7 +3215,7 @@ export function replaceServiceM_<R, E, T, R1, E1, A1>(
 /**
  * Replaces the service with the required Service Entry
  */
-export function replaceService<T>(
+export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R1 & Has<T>, E1, A1> {

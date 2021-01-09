@@ -1,8 +1,8 @@
 import type { Clock } from '../../Clock'
 import type * as RM from '../ReleaseMap'
-import type { Has } from '@principia/base/data/Has'
+import type { Has } from '@principia/base/Has'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import { HasClock } from '../../Clock'
 import * as I from '../_internal/_io'

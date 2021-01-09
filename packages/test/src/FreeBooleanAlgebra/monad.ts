@@ -1,6 +1,6 @@
 import type { FreeBooleanAlgebra } from './model'
 
-import { identity } from '@principia/base/data/Function'
+import { identity } from '@principia/base/Function'
 
 import { fold_ } from './fold'
 import { and_, not, or_ } from './operations'

@@ -1,8 +1,8 @@
 import type { Request } from './Request'
 
-import * as E from '@principia/base/data/Either'
-import * as Map from '@principia/base/data/Map'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import * as Map from '@principia/base/Map'
+import * as O from '@principia/base/Option'
 
 import { eqRequest } from './Request'
 

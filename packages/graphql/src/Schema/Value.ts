@@ -1,6 +1,6 @@
 import type { GraphQlException } from './GraphQlException'
-import type { Integer } from '@principia/base/data/Integer'
-import type { ReadonlyRecord } from '@principia/base/data/Record'
+import type { Integer } from '@principia/base/Integer'
+import type { ReadonlyRecord } from '@principia/base/Record'
 import type { FStream } from '@principia/io/Stream'
 
 export type InputValue = ListInputValue | ObjectInputValue | VariableInputValue | Value

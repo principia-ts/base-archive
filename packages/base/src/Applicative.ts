@@ -3,7 +3,7 @@ import type { Functor } from './Functor'
 import type { Unit, UnitComposition } from './Unit'
 
 import { getApplyComposition } from './Apply'
-import { constant } from './data/Function'
+import { constant } from './Function'
 import * as HKT from './HKT'
 
 export interface Applicative<F extends HKT.URIS, TC = HKT.Auto> extends Apply<F, TC>, Unit<F, TC> {

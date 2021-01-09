@@ -1,9 +1,9 @@
 import type * as Alg from '../../algebra'
 
-import * as E from '@principia/base/data/Either'
-import { flow, pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
-import * as R from '@principia/base/data/Record'
+import * as E from '@principia/base/Either'
+import { flow, pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
+import * as R from '@principia/base/Record'
 import * as Enc from '@principia/codec/Encoder'
 
 import { implementInterpreter } from '../../HKT'

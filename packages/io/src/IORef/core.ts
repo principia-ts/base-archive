@@ -1,8 +1,8 @@
 import type { FIO, UIO } from '../IO/core'
 
-import * as E from '@principia/base/data/Either'
-import { identity, pipe, tuple } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { identity, pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 

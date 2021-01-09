@@ -1,8 +1,8 @@
 import type { ResolverF, ScalarFunctions } from '../schema'
 
-import * as E from '@principia/base/data/Either'
-import { identity, pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { identity, pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { HttpRequest } from '@principia/http/HttpRequest'
 import { HttpResponse } from '@principia/http/HttpResponse'
 import * as T from '@principia/io/IO'

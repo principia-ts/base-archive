@@ -1,8 +1,8 @@
 import type * as Alg from '../../algebra'
 
-import { pipe } from '@principia/base/data/Function'
-import * as G from '@principia/base/data/Guard'
-import * as S from '@principia/base/data/Set'
+import { pipe } from '@principia/base/Function'
+import * as G from '@principia/base/Guard'
+import * as S from '@principia/base/Set'
 
 import { implementInterpreter } from '../../HKT'
 import { applyGuardConfig } from './HKT'

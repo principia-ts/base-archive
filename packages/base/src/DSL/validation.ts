@@ -6,8 +6,8 @@ import type { Semigroup } from '../Semigroup'
 import type { Alt, AltFn_ } from '../typeclass'
 import type { Erase } from '../util/types'
 
-import * as E from '../data/Either'
-import { tuple } from '../data/Function'
+import * as E from '../Either'
+import { tuple } from '../Function'
 import * as HKT from '../HKT'
 
 export function getApplicativeValidationF<F extends HKT.URIS, C = HKT.Auto>(

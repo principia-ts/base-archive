@@ -1,8 +1,7 @@
-import type { Either } from './data/Either'
-import type { PredicateWithIndex, RefinementWithIndex } from './data/Function'
-import type { Option } from './data/Option'
+import type { Either } from './Either'
+import type { PredicateWithIndex, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
-import type { Separated } from './util/types'
+import type { Option } from './Option'
 
 export interface FilterableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly partitionMapWithIndex_: PartitionMapWithIndexFn_<F, C>

@@ -1,8 +1,8 @@
 import type { FreeBooleanAlgebra } from './model'
-import type { Eq } from '@principia/base/data/Eq'
+import type { Eq } from '@principia/base/Eq'
 
-import * as B from '@principia/base/data/Boolean'
-import { pipe } from '@principia/base/data/Function'
+import * as B from '@principia/base/Boolean'
+import { pipe } from '@principia/base/Function'
 
 import { isAnd, isNot, isOr, isValue } from './guards'
 import { And, Not, Or } from './model'

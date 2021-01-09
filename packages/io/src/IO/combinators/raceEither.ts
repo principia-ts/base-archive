@@ -1,7 +1,7 @@
 import type { IO } from '../core'
-import type { Either } from '@principia/base/data/Either'
+import type { Either } from '@principia/base/Either'
 
-import * as E from '@principia/base/data/Either'
+import * as E from '@principia/base/Either'
 
 import * as I from '../core'
 import { race_ } from './race'

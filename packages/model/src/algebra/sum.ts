@@ -1,6 +1,6 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from '../HKT'
-import type { Either } from '@principia/base/data/Either'
-import type { Option } from '@principia/base/data/Option'
+import type { Either } from '@principia/base/Either'
+import type { Option } from '@principia/base/Option'
 
 export const SumURI = 'model/algebra/sum'
 

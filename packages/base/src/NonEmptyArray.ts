@@ -1,12 +1,12 @@
-import type * as HKT from '../HKT'
-import type * as P from '../typeclass'
 import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
+import type * as HKT from './HKT'
 import type { ReadonlyRecord } from './Record'
+import type * as P from './typeclass'
 
-import { getJoinSemigroup, getMeetSemigroup } from '../typeclass'
 import * as A from './Array'
 import * as O from './Option'
+import { getJoinSemigroup, getMeetSemigroup } from './typeclass'
 
 /*
  * -------------------------------------------
@@ -24,7 +24,7 @@ export type NonEmptyArrayURI = typeof NonEmptyArrayURI
 
 export type V = HKT.Auto
 
-declare module '../HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     readonly [NonEmptyArrayURI]: NonEmptyArray<A>
   }
@@ -664,8 +664,8 @@ export function group<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonE
     if (len === 0) {
       return A.empty()
     }
-    const r: Array<NonEmptyArray<A>> = []
-    let head: A = as[0]
+    const r: Array<NonEmptyArray<A>>  = []
+    let head: A                       = as[0]
     let nea: [A, ...ReadonlyArray<A>] = [head]
     for (let i = 1; i < len; i++) {
       const x = as[i]
@@ -705,16 +705,16 @@ const _hasOwnProperty = Object.prototype.hasOwnProperty
  */
 export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => ReadonlyRecord<string, NonEmptyArray<A>> {
   return (as) => {
-    const r: Record<string, [A, ...ReadonlyArray<A>]> = {}
+    const mut_r: Record<string, [A, ...ReadonlyArray<A>]> = {}
     for (const a of as) {
       const k = f(a)
-      if (_hasOwnProperty.call(r, k)) {
-        r[k].push(a)
+      if (_hasOwnProperty.call(mut_r, k)) {
+        mut_r[k].push(a)
       } else {
-        r[k] = [a]
+        mut_r[k] = [a]
       }
     }
-    return r
+    return mut_r
   }
 }
 

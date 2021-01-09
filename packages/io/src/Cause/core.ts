@@ -1,18 +1,18 @@
 import type { FiberId } from '../Fiber/FiberId'
-import type { Eq } from '@principia/base/data/Eq'
-import type { Predicate } from '@principia/base/data/Function'
-import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
+import type { Eq } from '@principia/base/Eq'
+import type { Predicate } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
-import * as A from '@principia/base/data/Array'
-import * as E from '@principia/base/data/Either'
-import { makeEq } from '@principia/base/data/Eq'
-import { flow, identity, pipe } from '@principia/base/data/Function'
-import * as F from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
+import { makeEq } from '@principia/base/Eq'
+import * as Ev from '@principia/base/Eval'
+import { flow, identity, pipe } from '@principia/base/Function'
+import * as F from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 
 import { eqFiberId } from '../Fiber/FiberId'
-import * as Ev from '@principia/base/control/Eval'
 
 export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E>
 

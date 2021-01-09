@@ -1,10 +1,10 @@
 import type { URef } from './IORef/core'
 import type { Promise } from './Promise'
-import type { Either } from '@principia/base/data/Either'
+import type { Either } from '@principia/base/Either'
 
-import * as E from '@principia/base/data/Either'
-import { identity, pipe } from '@principia/base/data/Function'
-import * as O from '@principia/base/data/Option'
+import * as E from '@principia/base/Either'
+import { identity, pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
 import { bracket_ } from './IO/combinators/bracket'

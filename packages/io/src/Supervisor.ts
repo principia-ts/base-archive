@@ -6,9 +6,9 @@
 import type { Exit } from './Exit'
 import type { RuntimeFiber } from './Fiber'
 import type { Atomic } from './IORef'
-import type * as O from '@principia/base/data/Option'
+import type * as O from '@principia/base/Option'
 
-import { pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/Function'
 
 import * as I from './IO/core'
 import * as R from './IORef/atomic'

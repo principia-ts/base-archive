@@ -1,7 +1,7 @@
 import type { IO } from '../core'
-import type * as NA from '@principia/base/data/NonEmptyArray'
+import type * as NA from '@principia/base/NonEmptyArray'
 
-import * as O from '@principia/base/data/Option'
+import * as O from '@principia/base/Option'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
 import { map_ } from '../core'

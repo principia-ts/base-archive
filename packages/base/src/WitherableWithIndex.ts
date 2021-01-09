@@ -1,8 +1,7 @@
 import type { Applicative } from './Applicative'
-import type { Either } from './data/Either'
-import type { Option } from './data/Option'
+import type { Either } from './Either'
 import type * as HKT from './HKT'
-import type { Separated } from './util/types'
+import type { Option } from './Option'
 
 export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly witherWithIndex_: WitherWithIndexFn_<F, C>

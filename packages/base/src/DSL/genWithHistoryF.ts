@@ -1,7 +1,7 @@
 import type * as HKT from '../HKT'
 import type { Monad } from '../Monad'
 
-import * as L from '../data/List'
+import * as L from '../List'
 import { PrematureGeneratorExit } from '../util/GlobalExceptions'
 
 export class GenLazyHKT<T, A> {

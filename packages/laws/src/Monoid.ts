@@ -1,4 +1,4 @@
-import type { Eq } from '@principia/base/data/Eq'
+import type { Eq } from '@principia/base/Eq'
 import type { Monoid } from '@principia/base/Monoid'
 
 export const MonoidLaws = {

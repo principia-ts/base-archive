@@ -1,10 +1,10 @@
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { IO } from '../core'
-import type { Either } from '@principia/base/data/Either'
-import type { NonEmptyArray } from '@principia/base/data/NonEmptyArray'
+import type { Either } from '@principia/base/Either'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
-import * as A from '@principia/base/data/Array'
-import * as E from '@principia/base/data/Either'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
 
 import { absolve, foreach_, map_, recover } from '../core'
 import { foreachExec_ } from './foreachExec'
