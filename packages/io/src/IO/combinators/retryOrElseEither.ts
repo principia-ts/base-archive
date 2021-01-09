@@ -1,5 +1,5 @@
 import type { HasClock } from '../../Clock'
-import type { Schedule, Driver } from '../../Schedule'
+import type { Driver,Schedule } from '../../Schedule'
 import type { IO } from '../core'
 import type { Either } from '@principia/base/data/Either'
 
@@ -7,8 +7,7 @@ import * as E from '@principia/base/data/Either'
 import { pipe } from '@principia/base/data/Function'
 
 import * as S from '../../Schedule'
-import { catchAll, flatMap, foldM, map } from '../core'
-import { orDie } from './orDie'
+import { catchAll, flatMap, foldM, map, orDie } from '../core'
 
 const _loop = <R, E, A, R1, O, R2, E2, A2>(
   fa: IO<R, E, A>,

@@ -6,7 +6,6 @@ import * as Ex from '../../Exit'
 import { join } from '../../Fiber/combinators/join'
 import * as I from '../core'
 import { raceWith_ } from './core-scope'
-import { mapErrorCause_ } from './mapErrorCause'
 
 const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): IO<unknown, E1, A> => {
   switch (x._tag) {
@@ -34,13 +33,13 @@ export function race_<R, E, A, R1, E1, A1>(ef: IO<R, E, A>, that: IO<R1, E1, A1>
       (exit, right) =>
         Ex.foldM_(
           exit,
-          (cause) => mapErrorCause_(join(right), (_) => C.both(cause, _)),
+          (cause) => I.mapErrorCause_(join(right), (_) => C.both(cause, _)),
           (a) => I.flatMap_(right.interruptAs(d.id), mergeInterruption(a))
         ),
       (exit, left) =>
         Ex.foldM_(
           exit,
-          (cause) => mapErrorCause_(join(left), (_) => C.both(cause, _)),
+          (cause) => I.mapErrorCause_(join(left), (_) => C.both(cause, _)),
           (a) => I.flatMap_(left.interruptAs(d.id), mergeInterruption(a))
         )
     )

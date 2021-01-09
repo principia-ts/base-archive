@@ -23,14 +23,14 @@ export class ReadableError {
  */
 export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, ReadableError, Byte> {
   return pipe(
-    I.partial_(r, (err) => new ReadableError(err as Error)),
+    I.effectCatch_(r, (err) => new ReadableError(err as Error)),
     I.tap((sr) =>
       sr.readableEncoding != null
         ? I.dieMessage(`stream.Readable encoding set to ${sr.readableEncoding} cannot be used to produce Buffer`)
         : I.unit()
     ),
     S.bracket((sr) =>
-      I.total(() => {
+      I.effectTotal(() => {
         sr.destroy()
       })
     ),
@@ -64,7 +64,7 @@ export class WritableError {
 export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, WritableError, Byte, never, void> {
   return new Sink.Sink(
     pipe(
-      I.async<unknown, never, stream.Writable>((cb) => {
+      I.effectAsync<unknown, never, stream.Writable>((cb) => {
         const onError = (err: Error) => {
           clearImmediate(im)
           cb(I.die(err))
@@ -77,7 +77,7 @@ export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, W
         })
       }),
       M.makeExit((sw) =>
-        I.total(() => {
+        I.effectTotal(() => {
           sw.destroy()
         })
       ),
@@ -85,7 +85,7 @@ export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, W
         O.fold(
           () => Push.emit(undefined, []),
           (chunk) =>
-            I.async((cb) => {
+            I.effectAsync((cb) => {
               sw.write(chunk, (err) => (err ? cb(Push.fail(new WritableError(err), [])) : cb(Push.more)))
             })
         )
@@ -104,9 +104,9 @@ export function transform(
 ): <R, E>(stream: S.Stream<R, E, Byte>) => S.Stream<R, E | TransformError, Byte> {
   return <R, E>(stream: S.Stream<R, E, Byte>) => {
     const managedSink = pipe(
-      I.total(tr),
+      I.effectTotal(tr),
       M.makeExit((st) =>
-        I.total(() => {
+        I.effectTotal(() => {
           st.destroy()
         })
       ),
@@ -117,13 +117,13 @@ export function transform(
             O.fold(
               () =>
                 I.flatMap_(
-                  I.total(() => {
+                  I.effectTotal(() => {
                     st.end()
                   }),
                   () => Push.emit(undefined, [])
                 ),
               (chunk) =>
-                I.async((cb) => {
+                I.effectAsync((cb) => {
                   st.write(C.asBuffer(chunk), (err) =>
                     err ? cb(Push.fail(new TransformError(err), [])) : cb(Push.more)
                   )
@@ -138,7 +138,7 @@ export function transform(
       S.flatMap(([transform, sink]) =>
         S.asyncM<unknown, TransformError, Byte, R, E | TransformError>((cb) =>
           I.andThen_(
-            I.total(() => {
+            I.effectTotal(() => {
               transform.on('data', (chunk) => {
                 cb(I.succeed(chunk))
               })

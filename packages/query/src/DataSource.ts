@@ -97,7 +97,7 @@ export abstract class Batched<R, A> implements DataSource<R, A> {
   abstract readonly identifier: string
   abstract run(requests: C.Chunk<A>): I.IO<R, never, CompletedRequestMap>
   runAll(requests: C.Chunk<C.Chunk<A>>): I.IO<R, never, CompletedRequestMap> {
-    return I.reduce_(requests, CompletedRequestMap.empty(), (m, r) => {
+    return I.foldLeft_(requests, CompletedRequestMap.empty(), (m, r) => {
       const newRequests = C.filter_(r, not(m.contains))
       if (C.isEmpty(newRequests)) {
         return I.succeed(m)
@@ -224,7 +224,7 @@ export function fromFunctionM<R, E, A extends Request<E, B>, B>(
         I.foreachPar((a) =>
           pipe(
             f(a),
-            I.either,
+            I.recover,
             I.map((r) => tuple(a, r))
           )
         ),
@@ -246,7 +246,7 @@ export function fromFunctionOptionM<R, E, A extends Request<E, B>, B>(
         I.foreachPar((a) =>
           pipe(
             f(a),
-            I.either,
+            I.recover,
             I.map((r) => tuple(a, r))
           )
         ),

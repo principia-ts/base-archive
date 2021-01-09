@@ -7,7 +7,6 @@ import type { HasTag } from '@principia/base/data/Has'
 
 import { tag } from '@principia/base/data/Has'
 
-import { asksServiceM, replaceService } from './IO/combinators/service'
 import * as I from './IO/core'
 
 /*
@@ -146,22 +145,22 @@ export class LiveRandom extends Random {
     super()
   }
 
-  next: I.UIO<number> = I.total(() => this.PRNG.next())
+  next: I.UIO<number> = I.effectTotal(() => this.PRNG.next())
 
-  nextBoolean: I.UIO<boolean> = I.flatMap_(this.next, (n) => I.total(() => n > 0.5))
+  nextBoolean: I.UIO<boolean> = I.flatMap_(this.next, (n) => I.effectTotal(() => n > 0.5))
 
-  nextInt: I.UIO<number> = I.total(() => this.PRNG.int32())
+  nextInt: I.UIO<number> = I.effectTotal(() => this.PRNG.int32())
 
-  nextDouble: I.UIO<number> = I.total(() => this.PRNG.double())
+  nextDouble: I.UIO<number> = I.effectTotal(() => this.PRNG.double())
 
   nextRange: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.flatMap_(this.next, (n) => I.total(() => (high - low) * n + low))
+    I.flatMap_(this.next, (n) => I.effectTotal(() => (high - low) * n + low))
 
   nextIntBetween: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.flatMap_(this.next, (n) => I.total(() => Math.floor((high - low + 1) * n + low)))
+    I.flatMap_(this.next, (n) => I.effectTotal(() => Math.floor((high - low + 1) * n + low)))
 
   setSeed = (s: string) =>
-    I.total(() => {
+    I.effectTotal(() => {
       this.PRNG.setSeed(s)
     })
 }
@@ -171,26 +170,26 @@ export const defaultRandom = new LiveRandom(String(Math.random()))
 export const HasRandom = tag(Random)
 export type HasRandom = HasTag<typeof HasRandom>
 
-export const next = asksServiceM(HasRandom)((_) => _.next)
+export const next = I.asksServiceM(HasRandom)((_) => _.next)
 
-export const nextBoolean = asksServiceM(HasRandom)((_) => _.nextBoolean)
+export const nextBoolean = I.asksServiceM(HasRandom)((_) => _.nextBoolean)
 
 export function nextIntBetween(low: number, high: number) {
-  return asksServiceM(HasRandom)((_) => _.nextIntBetween(low, high))
+  return I.asksServiceM(HasRandom)((_) => _.nextIntBetween(low, high))
 }
 
-export const nextInt = asksServiceM(HasRandom)((_) => _.nextInt)
+export const nextInt = I.asksServiceM(HasRandom)((_) => _.nextInt)
 
-export const nextDouble = asksServiceM(HasRandom)((_) => _.nextDouble)
+export const nextDouble = I.asksServiceM(HasRandom)((_) => _.nextDouble)
 
 export function nextRange(low: number, high: number) {
-  return asksServiceM(HasRandom)((_) => _.nextRange(low, high))
+  return I.asksServiceM(HasRandom)((_) => _.nextRange(low, high))
 }
 
 export function setSeed(seed: string) {
-  return asksServiceM(HasRandom)((_) => _.setSeed(seed))
+  return I.asksServiceM(HasRandom)((_) => _.setSeed(seed))
 }
 
 export function withSeed(seed: string) {
-  return replaceService(HasRandom, () => new LiveRandom(seed))
+  return I.replaceService(HasRandom, () => new LiveRandom(seed))
 }

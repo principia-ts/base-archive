@@ -2,8 +2,7 @@ import type { RuntimeFiber } from '../../Fiber'
 import type { IO, UIO } from '../core'
 
 import { track } from '../../Supervisor'
-import { descriptor, flatMap_, map_ } from '../core'
-import { supervised_ } from './supervised'
+import { descriptor, flatMap_, map_, supervised_ } from '../core'
 
 export function withChildren<R, E, A>(
   get: (_: UIO<ReadonlyArray<RuntimeFiber<any, any>>>) => IO<R, E, A>

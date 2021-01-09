@@ -3,8 +3,7 @@ import type { IO } from '../core'
 import { identity } from '@principia/base/data/Function'
 import * as I from '@principia/base/data/Iterable'
 
-import { map_ } from '../core'
-import { either } from './either'
+import { map_, recover } from '../core'
 import { foreachPar_ } from './foreachPar'
 
 /**
@@ -17,7 +16,7 @@ export function partitionPar_<R, E, A, B>(
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
   return map_(
-    foreachPar_(as, (a) => either(f(a))),
+    foreachPar_(as, (a) => recover(f(a))),
     I.partitionMap(identity)
   )
 }

@@ -111,11 +111,11 @@ export class Supervisor<A> {
 /**
  * Creates a new supervisor that tracks children in a set.
  */
-export const track = I.total(() => {
+export const track = I.effectTotal(() => {
   const set = new Set<RuntimeFiber<any, any>>()
 
   return new Supervisor<RuntimeFiber<any, any>[]>(
-    I.total(() => Array.from(set)),
+    I.effectTotal(() => Array.from(set)),
     (_, __, ___, fiber) => {
       set.add(fiber)
       return _continue
@@ -131,7 +131,7 @@ export const track = I.total(() => {
  * Creates a new supervisor that tracks children in a set.
  */
 export const fibersIn = (ref: Atomic<Set<RuntimeFiber<any, any>>>) =>
-  I.total(
+  I.effectTotal(
     () =>
       new Supervisor(
         ref.get,

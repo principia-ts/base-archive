@@ -16,25 +16,24 @@ import { foreachUnitParN_ } from './foreachUnitParN'
  * It's unsafe to execute side effects inside `f`, as `f` may be executed
  * more than once for some of `in` elements during effect execution.
  */
-export const mergeAllParN_ = (n: number) => <R, E, A, B>(
-  fas: Iterable<IO<R, E, A>>,
-  b: B,
-  f: (b: B, a: A) => B
-): IO<R, E, B> =>
-    flatMap_(XR.make(b), (acc) =>
-      flatMap_(
-        foreachUnitParN_(n)(
-          fas,
-          flatMap((a) =>
-            pipe(
-              acc,
-              XR.update((b) => f(b, a))
-            )
-          )
-        ),
-        () => acc.get
+export function mergeAllParN_(n: number) {
+  return <R, E, A, B>(
+    fas: Iterable<IO<R, E, A>>,
+    b: B,
+    f: (b: B, a: A) => B
+  ): IO<R, E, B> => flatMap_(XR.make(b), (acc) => flatMap_(
+    foreachUnitParN_(n)(
+      fas,
+      flatMap((a) => pipe(
+        acc,
+        XR.update((b) => f(b, a))
       )
-    )
+      )
+    ),
+    () => acc.get
+  )
+  )
+}
 
 /**
  * Merges an `Iterable<IO>` to a single IO, working in with up to `n` fibers in parallel.
@@ -46,6 +45,8 @@ export const mergeAllParN_ = (n: number) => <R, E, A, B>(
  * It's unsafe to execute side effects inside `f`, as `f` may be executed
  * more than once for some of `in` elements during effect execution.
  */
-export const mergeAllParN = (n: number) => <A, B>(b: B, f: (b: B, a: A) => B) => <R, E>(
-  fas: Iterable<IO<R, E, A>>
-): IO<R, E, B> => mergeAllParN_(n)(fas, b, f)
+export function mergeAllParN(n: number) {
+  return <A, B>(b: B, f: (b: B, a: A) => B) => <R, E>(
+    fas: Iterable<IO<R, E, A>>
+  ): IO<R, E, B> => mergeAllParN_(n)(fas, b, f)
+}

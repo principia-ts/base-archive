@@ -411,7 +411,7 @@ export function foldLeftWhile<I, Z>(
               pipe(
                 state.get,
                 I.flatMap((s) =>
-                  pipe(foldChunk(z, is, 0, is.length), ([st, l]) =>
+                  pipe(foldChunk(s, is, 0, is.length), ([st, l]) =>
                     O.fold_(
                       l,
                       () => pipe(state.set(st), I.andThen(Push.more)),

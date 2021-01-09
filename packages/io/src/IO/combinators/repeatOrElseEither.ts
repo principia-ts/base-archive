@@ -9,8 +9,7 @@ import { pipe } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 
 import * as S from '../../Schedule'
-import { flatMap, foldM, map } from '../core'
-import { orDie } from './orDie'
+import { flatMap, foldM, map, orDie } from '../core'
 
 /**
  * ```haskell

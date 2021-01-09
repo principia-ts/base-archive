@@ -1264,8 +1264,8 @@ interface RemoveListener {
 }
 
 class InterruptionState {
-  private isInterrupted = false
-  readonly listeners    = new Set<() => void>()
+  private mut_isInterrupted = false
+  readonly listeners        = new Set<() => void>()
 
   listen(f: () => void): RemoveListener {
     this.listeners.add(f)
@@ -1275,11 +1275,11 @@ class InterruptionState {
   }
 
   get interrupted() {
-    return this.isInterrupted
+    return this.mut_isInterrupted
   }
 
   interrupt() {
-    this.isInterrupted = true
+    this.mut_isInterrupted = true
     this.listeners.forEach((f) => {
       f()
     })
@@ -1289,9 +1289,9 @@ class InterruptionState {
 class CancellablePromise<E, A> {
   readonly _E!: () => E
 
-  private reject: ((e: Ex.Rejection<any>) => void) | undefined = undefined
+  private mut_reject: ((e: Ex.Rejection<any>) => void) | undefined = undefined
 
-  private current: Promise<A> | undefined = undefined
+  private mut_current: Promise<A> | undefined = undefined
 
   constructor(
     readonly factory: (onInterrupt: (f: () => void) => void) => Promise<A>,
@@ -1299,21 +1299,23 @@ class CancellablePromise<E, A> {
   ) {}
 
   promise(): Promise<A> {
-    if (this.current) {
+    if (this.mut_current) {
       throw new Error('Bug: promise() has been called twice')
     }
     if (this.interruptionState.interrupted) {
       throw new Error('Bug: promise already interrupted on creation')
     }
     const onInterrupt: Array<() => void> = []
-    const removeListener                 = this.interruptionState.listen(() => {
+
+    const removeListener = this.interruptionState.listen(() => {
       onInterrupt.forEach((f) => {
         f()
       })
       this.interrupt()
     })
-    const p                              = new Promise<A>((resolve, reject) => {
-      this.reject = reject
+
+    const p = new Promise<A>((resolve, reject) => {
+      this.mut_reject = reject
       this.factory((f) => {
         onInterrupt.push(f)
       })
@@ -1330,12 +1332,12 @@ class CancellablePromise<E, A> {
           }
         })
     })
-    this.current = p
+    this.mut_current = p
     return p
   }
 
   interrupt() {
-    this.reject?.(Ex.interrupted())
+    this.mut_reject?.(Ex.interrupted())
   }
 }
 

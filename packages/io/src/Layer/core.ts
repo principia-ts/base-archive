@@ -677,7 +677,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 export function makeMemoMap() {
   return pipe(
     XRM.make<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
-    I.flatMap((r) => I.total(() => new MemoMap(r)))
+    I.flatMap((r) => I.effectTotal(() => new MemoMap(r)))
   )
 }
 

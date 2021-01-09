@@ -192,11 +192,11 @@ export class Atomic<A> implements IORef<never, never, A, A> {
   constructor(readonly value: AtomicReference<A>) {}
 
   get get(): UIO<A> {
-    return I.total(() => this.value.get)
+    return I.effectTotal(() => this.value.get)
   }
 
   readonly set = (a: A): UIO<void> => {
-    return I.total(() => {
+    return I.effectTotal(() => {
       this.value.set(a)
     })
   }
@@ -228,7 +228,7 @@ export const concrete = <EA, EB, A>(self: IORef<EA, EB, A, A>) =>
  * Creates a new `XRef` with the specified value.
  */
 export function make<A>(a: A): UIO<URef<A>> {
-  return I.total(() => new Atomic(new AtomicReference(a)))
+  return I.effectTotal(() => new Atomic(new AtomicReference(a)))
 }
 
 /**

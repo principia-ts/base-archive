@@ -50,13 +50,28 @@ export const succeed: <A>(a: A) => Sync<unknown, never, A> = S.succeed
 
 export const fail: <E>(e: E) => Sync<unknown, E, never> = S.fail
 
-export const total: <A>(thunk: () => A) => Sync<unknown, never, A> = S.total
+export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = S.effect
 
-export const partial_: <E, A>(thunk: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> = S.partial_
+export const effectTotal: <A>(effect: () => A) => Sync<unknown, never, A> = S.effectTotal
 
-export const partial: <E>(onThrow: (error: unknown) => E) => <A>(thunk: () => A) => Sync<unknown, E, A> = S.partial
+export const effectCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> =
+  S.effectCatch_
 
-export const suspend: <R, E, A>(factory: () => Sync<R, E, A>) => Sync<R, E, A> = S.suspend
+export const effectCatch: <E>(onThrow: (error: unknown) => E) => <A>(effect: () => A) => Sync<unknown, E, A> =
+  S.effectCatch
+
+export const effectSuspend: <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, unknown, A> = S.effectSuspend
+
+export const effectSuspendTotal: <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E, A> = S.effectSuspendTotal
+
+export const effectSuspendCatch_: <R, E, A, E1>(
+  sync: () => Sync<R, E, A>,
+  onThrow: (u: unknown) => E1
+) => Sync<R, E | E1, A> = S.effectSuspendCatch_
+
+export const effectSuspendCatch: <E1>(
+  onThrow: (u: unknown) => E1
+) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = S.effectSuspendCatch
 
 export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.fold(fail, succeed)
 
@@ -725,7 +740,7 @@ export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>
     I.foldLeft_(as, succeed(FL.empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
       map2_(
         b,
-        suspend(() => f(a)),
+        effectSuspendTotal(() => f(a)),
         (acc, r) => FL.append_(acc, r)
       )
     ),
@@ -910,9 +925,9 @@ export function gen<T extends GenSync<any, any, any>, A>(
 ): Sync<_R<T>, _E<T>, A>
 export function gen(...args: any[]): any {
   const _gen = <T extends GenSync<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): Sync<_R<T>, _E<T>, A> =>
-    suspend(() => {
+    effectSuspendTotal(() => {
       const iterator = f(adapter as any)
-      const state = iterator.next()
+      const state    = iterator.next()
 
       const run = (state: IteratorYieldResult<T> | IteratorReturnResult<A>): Sync<any, any, A> => {
         if (state.done) {

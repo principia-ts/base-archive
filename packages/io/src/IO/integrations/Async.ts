@@ -8,7 +8,7 @@ function _integrateAsync() {
     Ac.AsynctoIO.set(
       O.some(<R, E, A>(async: Ac.Async<R, E, A>) =>
         I.asksM((_: R) =>
-          I.asyncInterrupt<R, E, A>((resolve) => {
+          I.effectAsyncInterrupt<R, E, A>((resolve) => {
             const interrupt = Ac.runAsyncEnv(async, _, (exit) => {
               switch (exit._tag) {
                 case 'Success': {
@@ -24,7 +24,7 @@ function _integrateAsync() {
                 }
               }
             })
-            return I.total(() => {
+            return I.effectTotal(() => {
               interrupt()
             })
           })

@@ -123,9 +123,9 @@ export class GlobalScope implements CommonScope<never> {
     this.unsafeExtend = this.unsafeExtend.bind(this)
   }
 
-  private unsafeEnsureResult = E.right(new Key(I.total(() => true)))
+  private unsafeEnsureResult = E.right(new Key(I.effectTotal(() => true)))
 
-  private ensureResult = I.total(() => this.unsafeEnsureResult)
+  private ensureResult = I.effectTotal(() => this.unsafeEnsureResult)
 
   get closed(): UIO<boolean> {
     return I.pure(false)
@@ -144,7 +144,7 @@ export class GlobalScope implements CommonScope<never> {
   }
 
   extend(that: Scope<any>): UIO<boolean> {
-    return I.total(() => this.unsafeExtend(that))
+    return I.effectTotal(() => this.unsafeExtend(that))
   }
 
   get open(): UIO<boolean> {
@@ -192,7 +192,7 @@ export class LocalScope<A> implements CommonScope<A> {
   ) {}
 
   get closed(): UIO<boolean> {
-    return I.total(() => this.unsafeClosed)
+    return I.effectTotal(() => this.unsafeClosed)
   }
 
   get open(): UIO<boolean> {
@@ -200,23 +200,23 @@ export class LocalScope<A> implements CommonScope<A> {
   }
 
   deny(key: Key): UIO<boolean> {
-    return I.total(() => this.unsafeDeny(key))
+    return I.effectTotal(() => this.unsafeDeny(key))
   }
 
   get empty(): UIO<boolean> {
-    return I.total(() => this.finalizers.size === 0)
+    return I.effectTotal(() => this.finalizers.size === 0)
   }
 
   ensure(finalizer: (a: A) => UIO<any>): UIO<E.Either<A, Key>> {
-    return I.total(() => this.unsafeEnsure(finalizer))
+    return I.effectTotal(() => this.unsafeEnsure(finalizer))
   }
 
   extend(that: Scope<any>): UIO<boolean> {
-    return I.total(() => this.unsafeExtend(that))
+    return I.effectTotal(() => this.unsafeExtend(that))
   }
 
   get released(): UIO<boolean> {
-    return I.total(() => this.unsafeReleased())
+    return I.effectTotal(() => this.unsafeReleased())
   }
 
   unsafeExtend(that: Scope<any>): boolean {
@@ -239,7 +239,7 @@ export class LocalScope<A> implements CommonScope<A> {
   }
 
   get release(): UIO<boolean> {
-    return I.suspend(() => {
+    return I.effectSuspendTotal(() => {
       const result = this.unsafeRelease()
 
       if (result != null) {
@@ -343,7 +343,7 @@ export function unsafeMakeScope<A>(): Open<A> {
   const scope = new LocalScope(new AtomicNumber(Number.MIN_SAFE_INTEGER), exitValue, new AtomicNumber(1), finalizers)
 
   return new Open<A>((a) => {
-    return I.suspend(() => {
+    return I.effectSuspendTotal(() => {
       const result = scope.unsafeClose(a)
 
       if (result != null) {
@@ -356,5 +356,5 @@ export function unsafeMakeScope<A>(): Open<A> {
 }
 
 export function makeScope<A>(): UIO<Open<A>> {
-  return I.total(() => unsafeMakeScope<A>())
+  return I.effectTotal(() => unsafeMakeScope<A>())
 }

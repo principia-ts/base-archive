@@ -402,7 +402,7 @@ export function asyncOption<R, E, A>(
       const output      = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime     = yield* _(I.runtime<R>())
       const maybeStream = yield* _(
-        M.total(() =>
+        M.effectTotal(() =>
           register((k, cb) => pipe(Take.fromPull(k), I.flatMap(output.offer), (x) => runtime.runCancel(x, cb)))
         )
       )
@@ -475,7 +475,7 @@ export function asyncInterruptEither<R, E, A>(
       const output       = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
-        M.total(() =>
+        M.effectTotal(() =>
           register((k, cb) => pipe(Take.fromPull(k), I.flatMap(output.offer), (x) => runtime.runCancel(x, cb)))
         )
       )
@@ -753,32 +753,32 @@ export function fromQueueWithShutdown<R, E, A>(queue: Queue.XQueue<never, R, unk
   return ensuringFirst_(fromQueue(queue), queue.shutdown)
 }
 
-export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, never, A> {
+export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, unknown, A> {
   class StreamEnd extends Error {}
 
   return pipe(
     fromEffect(
       pipe(
-        I.total(() => iterable()[Symbol.iterator]()),
+        I.effectTotal(() => iterable()[Symbol.iterator]()),
         I.product(I.runtime<unknown>())
       )
     ),
     flatMap(([it, rt]) =>
       repeatEffectOption(
         pipe(
-          I.partial_(() => {
+          I.effect(() => {
             const v = it.next()
             if (!v.done) {
               return v.value
             } else {
               throw new StreamEnd()
             }
-          }, identity),
-          I.catchAll((err) => {
+          }),
+          I.mapError((err) => {
             if (err instanceof StreamEnd) {
-              return I.fail(O.none())
+              return O.none()
             } else {
-              return I.die(err)
+              return O.some(err)
             }
           })
         )
@@ -1810,7 +1810,7 @@ export function distributedWithDynamic_<R, E, O>(
       return yield* _(
         pipe(
           queues,
-          I.reduce(C.empty<symbol>(), (b, [id, queue]) => {
+          I.foldLeft(C.empty<symbol>(), (b, [id, queue]) => {
             if (shouldProcess(id)) {
               return pipe(
                 queue.offer(Ex.succeed(o)),
@@ -2443,8 +2443,7 @@ export function flatMapPar_<R, E, O, R1, E1, O1>(
                   flatMap(() => f(o)),
                   foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
                   I.foldCauseM(
-                    (cause) =>
-                      pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
+                    (cause) => pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
                     () => I.unit()
                   )
                 )
@@ -2538,8 +2537,7 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                     flatMap(() => f(o)),
                     foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
                     I.foldCauseM(
-                      (cause) =>
-                        pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
+                      (cause) => pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
                       () => I.unit()
                     )
                   )
@@ -3452,14 +3450,7 @@ export function mapMPar_(n: number) {
                   pipe(
                     latch,
                     P.succeed<void>(undefined),
-                    I.andThen(
-                      pipe(
-                        errorSignal.await,
-                        I.raceFirst(f(o)),
-                        I.tapCause(errorSignal.halt),
-                        I.to(p)
-                      )
-                    ),
+                    I.andThen(pipe(errorSignal.await, I.raceFirst(f(o)), I.tapCause(errorSignal.halt), I.to(p))),
                     Semaphore.withPermit(permits),
                     I.fork
                   )

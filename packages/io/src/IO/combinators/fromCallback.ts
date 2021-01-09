@@ -21,7 +21,7 @@ export function fromCallback<L, R>(f: Function): () => I.FIO<L, R> {
     // eslint-disable-next-line prefer-rest-params
     const args = Array.prototype.slice.call(arguments)
 
-    return I.async((resolve) => {
+    return I.effectAsync((resolve) => {
       const cb = (e: L, r: R) => (e != null ? resolve(I.fail(e)) : resolve(I.succeed(r)))
       // eslint-disable-next-line prefer-spread
       f.apply(null, args.concat(cb))

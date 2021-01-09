@@ -10,6 +10,11 @@ import { flatMap } from '../core'
 import { forkDaemon } from './core-scope'
 import { onInterrupt, uninterruptibleMask } from './interrupt'
 
+/**
+ * Returns a new effect whose scope will be extended by the specified scope.
+ * This means any finalizers associated with the effect will not be executed
+ * until the specified scope is closed.
+ */
 export function in_<R, E, A>(io: IO<R, E, A>, scope: Scope<any>): IO<R, E, A> {
   return uninterruptibleMask(({ restore }) =>
     pipe(
@@ -40,6 +45,11 @@ export function in_<R, E, A>(io: IO<R, E, A>, scope: Scope<any>): IO<R, E, A> {
   )
 }
 
+/**
+ * Returns a new effect whose scope will be extended by the specified scope.
+ * This means any finalizers associated with the effect will not be executed
+ * until the specified scope is closed.
+ */
 function _in(scope: Scope<any>): <R, E, A>(io: IO<R, E, A>) => IO<R, E, A> {
   return (io) => in_(io, scope)
 }

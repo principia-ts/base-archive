@@ -28,7 +28,7 @@ function unitErrorCallback(cb: (_: IO<unknown, ErrnoException, void>) => void): 
 }
 
 export function access(path: fs.PathLike, mode: number | undefined): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.access(path, mode, (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
@@ -38,31 +38,31 @@ export function appendFile(
   data: string | Buffer,
   options?: fs.WriteFileOptions
 ): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.appendFile(path as any, data, options ?? {}, (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
 
 export function chmod(path: fs.PathLike, mode: fs.Mode): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.chmod(path, mode, (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
 
 export function close(fd: FileDescriptor): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.close(FileDescriptor.unwrap(fd), (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
 
 export function chown(path: fs.PathLike, uid: number, gid: number): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.chown(path, uid, gid, (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
 
 export function copyFile(src: fs.PathLike, dest: fs.PathLike, flags: number): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.copyFile(src, dest, flags, (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
@@ -83,7 +83,7 @@ export function createReadStream(
   return pipe(
     open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
     I.productPar(
-      I.suspend(() => {
+      I.effectSuspendTotal(() => {
         const start = options?.start ? Integer.unwrap(options?.start) : 0
         const end   = options?.end ? Integer.unwrap(options?.end) : Infinity
         if (end < start) {
@@ -167,37 +167,37 @@ export function createWriteSink(
 }
 
 export function fchmod(fd: FileDescriptor, mode: fs.Mode): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.fchmod(FileDescriptor.unwrap(fd), mode, unitErrorCallback(cb))
   })
 }
 
 export function fchown(fd: FileDescriptor, uid: number, gid: number): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.fchown(FileDescriptor.unwrap(fd), uid, gid, unitErrorCallback(cb))
   })
 }
 
 export function fdatasync(fd: FileDescriptor): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.fdatasync(FileDescriptor.unwrap(fd), unitErrorCallback(cb))
   })
 }
 
 export function fstat(fd: FileDescriptor): I.FIO<ErrnoException, fs.Stats> {
-  return I.async<unknown, ErrnoException, fs.Stats>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, fs.Stats>((cb) => {
     fs.fstat(FileDescriptor.unwrap(fd), (err, stats) => (err ? cb(I.fail(err)) : cb(I.succeed(stats))))
   })
 }
 
 export function fsync(fd: FileDescriptor): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.fsync(FileDescriptor.unwrap(fd), unitErrorCallback(cb))
   })
 }
 
 export function ftruncate(fd: FileDescriptor, len: number): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.ftruncate(FileDescriptor.unwrap(fd), len, unitErrorCallback(cb))
   })
 }
@@ -207,19 +207,19 @@ export function futimes(
   atime: string | number | Date,
   mtime: string | number | Date
 ): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.futimes(FileDescriptor.unwrap(fd), atime, mtime, unitErrorCallback(cb))
   })
 }
 
 export function lchmod(path: fs.PathLike, mode: fs.Mode): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.lchmod(path, mode, unitErrorCallback(cb))
   })
 }
 
 export function lchown(path: fs.PathLike, uid: number, gid: number): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.lchown(path, uid, gid, unitErrorCallback(cb))
   })
 }
@@ -229,19 +229,19 @@ export function lutimes(
   atime: string | number | Date,
   mtime: string | number | Date
 ): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.lutimes(path, atime, mtime, unitErrorCallback(cb))
   })
 }
 
 export function link(path: fs.PathLike, newPath: fs.PathLike): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.link(path, newPath, (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
 
 export function lstat(path: fs.PathLike): I.FIO<ErrnoException, fs.Stats> {
-  return I.async<unknown, ErrnoException, fs.Stats>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, fs.Stats>((cb) => {
     fs.lstat(path, (err, stats) => (err ? cb(I.fail(err)) : cb(I.succeed(stats))))
   })
 }
@@ -250,13 +250,13 @@ export function mkdir(
   path: fs.PathLike,
   options?: { recursive?: boolean, mode?: fs.Mode }
 ): I.FIO<ErrnoException, O.Option<string>> {
-  return I.async<unknown, ErrnoException, O.Option<string>>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, O.Option<string>>((cb) => {
     fs.mkdir(path, options, (err, path) => (err ? cb(I.fail(err)) : cb(I.succeed(O.fromNullable(path)))))
   })
 }
 
 export function mkdtemp(prefix: string, options?: { encoding?: BufferEncoding }): I.FIO<ErrnoException, string> {
-  return I.async<unknown, ErrnoException, string>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, string>((cb) => {
     fs.mkdtemp(prefix, options, (err, folder) => (err ? cb(I.fail(err)) : cb(I.succeed(folder))))
   })
 }
@@ -266,7 +266,7 @@ export function open(
   flags: fs.OpenMode,
   mode?: string | number
 ): I.FIO<NodeJS.ErrnoException, FileDescriptor> {
-  return I.async<unknown, ErrnoException, FileDescriptor>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, FileDescriptor>((cb) => {
     fs.open(path, flags, mode ?? null, (err, fd) => (err ? cb(I.fail(err)) : cb(I.succeed(FileDescriptor.wrap(fd)))))
   })
 }
@@ -280,20 +280,20 @@ export class Dir {
   }
 
   close(): I.FIO<ErrnoException, void> {
-    return I.async<unknown, ErrnoException, void>((cb) => {
+    return I.effectAsync<unknown, ErrnoException, void>((cb) => {
       this._dir.close(unitErrorCallback(cb))
     })
   }
 
   read(): I.FIO<ErrnoException, O.Option<fs.Dirent>> {
-    return I.async<unknown, ErrnoException, O.Option<fs.Dirent>>((cb) => {
+    return I.effectAsync<unknown, ErrnoException, O.Option<fs.Dirent>>((cb) => {
       this._dir.read((err, dirEnt) => (err ? cb(I.fail(err)) : cb(I.succeed(O.fromNullable(dirEnt)))))
     })
   }
 }
 
 export function opendir(path: fs.PathLike, options?: fs.OpenDirOptions): I.FIO<ErrnoException, Dir> {
-  return I.async<unknown, ErrnoException, Dir>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, Dir>((cb) => {
     fs.opendir(path as any, options ?? {}, (err, dir) => (err ? cb(I.fail(err)) : cb(I.succeed(new Dir(dir)))))
   })
 }
@@ -303,7 +303,7 @@ export function read(
   length: number,
   position?: number
 ): I.FIO<ErrnoException, readonly [number, Buffer]> {
-  return I.async<unknown, ErrnoException, readonly [number, Buffer]>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, readonly [number, Buffer]>((cb) => {
     const buf = Buffer.alloc(length)
     fs.read(FileDescriptor.unwrap(fd), buf, 0, length, position ?? null, (err, bytesRead, buffer) =>
       err ? cb(I.fail(err)) : cb(I.succeed([bytesRead, buffer]))
@@ -339,7 +339,7 @@ export function readdir(
     withFileTypes?: boolean
   }
 ): I.FIO<ErrnoException, ReadonlyArray<any>> {
-  return I.async((cb) => {
+  return I.effectAsync((cb) => {
     fs.readdir(path, options ?? ({} as any), (err, files: any) =>
       err ? cb(I.fail(err)) : files[0] && files[0] instanceof fs.Dir ? A.map_(files, (a: fs.Dir) => new Dir(a)) : files
     )
@@ -359,7 +359,7 @@ export function realpath(
   }
 ): I.FIO<ErrnoException, Buffer>
 export function realpath(path: fs.PathLike, options?: any): I.FIO<ErrnoException, any> {
-  return I.async<unknown, ErrnoException, any>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, any>((cb) => {
     fs.realpath(path, options ?? {}, (err, resolvedPath) => (err ? cb(I.fail(err)) : cb(I.succeed(resolvedPath))))
   })
 }
@@ -377,7 +377,7 @@ export function realpathNative(
   }
 ): I.FIO<ErrnoException, Buffer>
 export function realpathNative(path: fs.PathLike, options?: any): I.FIO<ErrnoException, any> {
-  return I.async<unknown, ErrnoException, any>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, any>((cb) => {
     fs.realpath.native(path, options ?? {}, (err, resolvedPath) =>
       err ? cb(I.fail(err)) : cb(I.succeed(resolvedPath))
     )
@@ -385,19 +385,19 @@ export function realpathNative(path: fs.PathLike, options?: any): I.FIO<ErrnoExc
 }
 
 export function rename(oldPath: fs.PathLike, newPath: fs.PathLike): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.rename(oldPath, newPath, unitErrorCallback(cb))
   })
 }
 
 export function rm(path: fs.PathLike, options?: fs.RmOptions): I.FIO<ErrnoException, void> {
-  return I.async<unknown, NodeJS.ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, NodeJS.ErrnoException, void>((cb) => {
     fs.rm(path, options ?? {}, unitErrorCallback(cb))
   })
 }
 
 export function rmdir(path: fs.PathLike, options?: fs.RmDirOptions): I.FIO<ErrnoException, void> {
-  return I.async<unknown, NodeJS.ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, NodeJS.ErrnoException, void>((cb) => {
     fs.rmdir(path, options ?? {}, unitErrorCallback(cb))
   })
 }
@@ -408,25 +408,25 @@ export function stat(
   path: fs.PathLike,
   options?: { bigint?: boolean }
 ): I.FIO<ErrnoException, fs.Stats | fs.BigIntStats> {
-  return I.async<unknown, ErrnoException, fs.Stats | fs.BigIntStats>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, fs.Stats | fs.BigIntStats>((cb) => {
     fs.stat(path, options ?? ({} as any), (err, stats) => (err ? cb(I.fail(err)) : cb(I.succeed(stats))))
   })
 }
 
 export function symlink(target: fs.PathLike, path: fs.PathLike): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.symlink(target, path, unitErrorCallback(cb))
   })
 }
 
 export function truncate(path: fs.PathLike, len?: number): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.truncate(path, len, unitErrorCallback(cb))
   })
 }
 
 export function unlink(path: fs.PathLike): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.unlink(path, unitErrorCallback(cb))
   })
 }
@@ -436,13 +436,13 @@ export function utimes(
   atime: string | number | Date,
   mtime: string | number | Date
 ): I.FIO<ErrnoException, void> {
-  return I.async<unknown, ErrnoException, void>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, void>((cb) => {
     fs.utimes(path, atime, mtime, unitErrorCallback(cb))
   })
 }
 
 export function write(fd: FileDescriptor, buffer: Buffer, position?: number): I.FIO<ErrnoException, number> {
-  return I.async<unknown, ErrnoException, number>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, number>((cb) => {
     fs.write(FileDescriptor.unwrap(fd), buffer, position ?? null, buffer.byteLength, (err, bytesWritten) =>
       err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
     )
@@ -454,7 +454,7 @@ export function writev(
   buffers: ReadonlyArray<Buffer>,
   position?: number
 ): I.FIO<ErrnoException, number> {
-  return I.async<unknown, ErrnoException, number>((cb) => {
+  return I.effectAsync<unknown, ErrnoException, number>((cb) => {
     if (position) {
       fs.writev(FileDescriptor.unwrap(fd), buffers, position, (err, bytesWritten) =>
         err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
@@ -488,14 +488,14 @@ export function watch(
   options?: any
 ): S.Stream<unknown, Error, { eventType: 'rename' | 'change', filename: string | Buffer }> {
   return pipe(
-    I.partial_(
+    I.effectCatch_(
       () => fs.watch(filename, options ?? {}),
       (err) => err as Error
     ),
     S.fromEffect,
     S.flatMap((watcher) =>
       S.repeatEffectOption(
-        I.async<unknown, O.Option<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
+        I.effectAsync<unknown, O.Option<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
           watcher.once('change', (eventType, filename) => {
             watcher.removeAllListeners()
             cb(I.succeed({ eventType: eventType as any, filename }))

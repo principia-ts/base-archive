@@ -56,6 +56,7 @@ export function map2Par_<R, E, A, R2, E2, A2, B>(
 /**
  * Parallelly zips this effect with the specified effect using the
  * specified combiner function.
+ *
  * @dataFirst map2Par_
  */
 export function map2Par<A, R1, E1, A1, B>(

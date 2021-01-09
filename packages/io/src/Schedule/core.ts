@@ -855,7 +855,7 @@ const unfoldLoop = <A>(a: A, f: (a: A) => A): StepFunction<unknown, unknown, A> 
 export function unfold_<A>(a: () => A, f: (a: A) => A): Schedule<unknown, unknown, A> {
   return makeSchedule((now) =>
     pipe(
-      I.total(a),
+      I.effectTotal(a),
       I.map((a) => makeContinue(a, now, unfoldLoop(f(a), f)))
     )
   )

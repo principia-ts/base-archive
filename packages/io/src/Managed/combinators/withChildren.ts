@@ -1,10 +1,8 @@
 import type { RuntimeFiber } from '../../Fiber/core'
 
-import { supervised_ } from '../../IO/combinators/supervised'
 import { track } from '../../Supervisor'
 import * as I from '../_internal/io'
-import { Managed } from '../core'
-import { unwrap } from './unwrap'
+import { Managed, unwrap } from '../core'
 
 /**
  * Locally installs a supervisor and an effect that succeeds with all the
@@ -18,7 +16,7 @@ export function withChildren<R, E, A>(
       track,
       (supervisor) =>
         new Managed(
-          supervised_(
+          I.supervised_(
             get(
               I.flatMap_(supervisor.value, (children) =>
                 I.map_(I.descriptor(), (d) => children.filter((_) => _.id !== d.id))

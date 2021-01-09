@@ -211,7 +211,7 @@ export function makeRuntime<R0>(r0: R0): Runtime<R0> {
  */
 export function runtime<R0>() {
   return I.asksM((r0: R0) =>
-    I.total(
+    I.effectTotal(
       (): Runtime<R0> => {
         return makeRuntime<R0>(r0)
       }

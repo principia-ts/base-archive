@@ -14,10 +14,12 @@ import * as C from '../../Cause/core'
 import { join } from '../../Fiber/combinators/join'
 import { interruptible, uninterruptible } from '../../Fiber/core'
 import {
-  async,
-  asyncOption,
   checkInterruptible,
   die,
+  effectAsync,
+  effectAsyncOption,
+  effectSuspendTotal,
+  effectTotal,
   flatMap,
   flatMap_,
   flatten,
@@ -25,31 +27,67 @@ import {
   halt,
   pure,
   SetInterruptInstruction,
-  suspend,
-  total,
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
 import { fiberId } from './fiberId'
 
+/**
+ * Returns an effect that is interrupted as if by the specified fiber.
+ */
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
   return halt(C.interrupt(fiberId))
 }
 
+/**
+ * Returns an effect that is interrupted as if by the fiber calling this
+ * method.
+ */
 export const interrupt: IO<unknown, never, never> = flatMap_(fiberId(), interruptAs)
 
+/**
+ * Switches the interrupt status for this effect. If `true` is used, then the
+ * effect becomes interruptible (the default), while if `false` is used, then
+ * the effect becomes uninterruptible. These changes are compositional, so
+ * they only affect regions of the effect.
+ */
 export function setInterruptStatus_<R, E, A>(effect: IO<R, E, A>, flag: InterruptStatus): IO<R, E, A> {
   return new SetInterruptInstruction(effect, flag)
 }
 
+/**
+ * Switches the interrupt status for this effect. If `true` is used, then the
+ * effect becomes interruptible (the default), while if `false` is used, then
+ * the effect becomes uninterruptible. These changes are compositional, so
+ * they only affect regions of the effect.
+ */
 export function setInterruptStatus(flag: InterruptStatus): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
   return (ma) => setInterruptStatus_(ma, flag)
 }
 
+/**
+ * Returns a new effect that performs the same operations as this effect, but
+ * interruptibly, even if composed inside of an uninterruptible region.
+ *
+ * Note that effects are interruptible by default, so this function only has
+ * meaning if used within an uninterruptible region.
+ *
+ * WARNING: This operator "punches holes" into effects, allowing them to be
+ * interrupted in unexpected places. Do not use this operator unless you know
+ * exactly what you are doing. Instead, you should use `uninterruptibleMask`.
+ */
 export function makeInterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
   return setInterruptStatus_(ma, interruptible)
 }
 
+/**
+ * Performs this effect uninterruptibly. This will prevent the effect from
+ * being terminated externally, but the effect may fail for internal reasons
+ * (e.g. an uncaught error) or terminate due to defect.
+ *
+ * Uninterruptible effects may recover from all failure causes (including
+ * interruption of an inner effect that has been made interruptible).
+ */
 export function makeUninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
   return setInterruptStatus_(ma, uninterruptible)
 }
@@ -60,7 +98,7 @@ export function makeUninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  * the effect is composed into.
  */
 export function uninterruptibleMask<R, E, A>(f: (restore: InterruptStatusRestore) => IO<R, E, A>): IO<R, E, A> {
-  return checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestoreImpl(flag))))
+  return checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestore(flag))))
 }
 
 /**
@@ -80,6 +118,10 @@ export function onInterrupt_<R, E, A, R1>(
   )
 }
 
+/**
+ * Calls the specified function, and runs the effect it returns, if this
+ * effect is interrupted.
+ */
 export function onInterrupt<R1>(
   cleanup: (interruptors: ReadonlySet<FiberId>) => IO<R1, never, any>
 ): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E, A> {
@@ -107,6 +149,10 @@ export function onInterruptExtended_<R, E, A, R2, E2>(self: IO<R, E, A>, cleanup
   )
 }
 
+/**
+ * Calls the specified function, and runs the effect it returns, if this
+ * effect is interrupted (allows for expanding error).
+ */
 export function onInterruptExtended<R2, E2>(
   cleanup: () => IO<R2, E2, any>
 ): <R, E, A>(self: IO<R, E, A>) => IO<R & R2, E | E2, A> {
@@ -139,22 +185,12 @@ export function disconnect<R, E, A>(effect: IO<R, E, A>): IO<R, E, A> {
 /**
  * Used to restore the inherited interruptibility
  */
-export interface InterruptStatusRestore {
-  readonly restore: <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
-  readonly force: <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
-}
+export class InterruptStatusRestore {
+  constructor(readonly flag: InterruptStatus) {}
 
-export class InterruptStatusRestoreImpl implements InterruptStatusRestore {
-  constructor(readonly flag: InterruptStatus) {
-    this.restore = this.restore.bind(this)
-    this.force   = this.force.bind(this)
-  }
+  restore = <R, E, A>(ma: IO<R, E, A>): IO<R, E, A> => setInterruptStatus_(ma, this.flag)
 
-  restore<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-    return setInterruptStatus_(ma, this.flag)
-  }
-
-  force<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
+  force = <R, E, A>(ma: IO<R, E, A>): IO<R, E, A> => {
     if (this.flag.isUninteruptible) {
       return makeInterruptible(disconnect(makeUninterruptible(ma)))
     }
@@ -178,15 +214,15 @@ export class InterruptStatusRestoreImpl implements InterruptStatusRestore {
  * The list of fibers, that may complete the async callback, is used to
  * provide better diagnostics.
  */
-export function maybeAsyncInterrupt<R, E, A>(
+export function effectAsyncInterruptEither<R, E, A>(
   register: (cb: (resolve: IO<R, E, A>) => void) => Either<Canceler<R>, IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return pipe(
-    total(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
+    effectTotal(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
     flatMap(([started, cancel]) =>
       pipe(
-        asyncOption<R, E, IO<R, E, A>>((k) => {
+        effectAsyncOption<R, E, IO<R, E, A>>((k) => {
           started.set(true)
           const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(none())
           try {
@@ -209,31 +245,31 @@ export function maybeAsyncInterrupt<R, E, A>(
           return ret.get
         }, blockingOn),
         flatten,
-        onInterrupt(() => suspend(() => (started.get ? cancel.get() : unit())))
+        onInterrupt(() => effectSuspendTotal(() => (started.get ? cancel.get() : unit())))
       )
     )
   )
 }
 
-export function asyncInterrupt<R, E, A>(
+export function effectAsyncInterrupt<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Canceler<R>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return maybeAsyncInterrupt<R, E, A>((cb) => left(register(cb)), blockingOn)
+  return effectAsyncInterruptEither<R, E, A>((cb) => left(register(cb)), blockingOn)
 }
 
-export function promiseInterrupt<R, E, A>(
+export function effectAsyncInterruptPromise<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Promise<Canceler<R>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return maybeAsyncInterrupt<R, E, A>(
+  return effectAsyncInterruptEither<R, E, A>(
     (cb) => left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten)),
     blockingOn
   )
 }
 
 function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
-  return async((resolve) => {
+  return effectAsync((resolve) => {
     promise().then(flow(pure, resolve)).catch(flow(die, resolve))
   })
 }

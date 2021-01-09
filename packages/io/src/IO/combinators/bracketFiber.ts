@@ -22,10 +22,10 @@ import { fiberId } from './fiberId'
  * @since 1.0.0
  */
 export function bracketFiber_<R, E, A, R1, E1, B>(
-  ef: IO<R, E, A>,
+  ma: IO<R, E, A>,
   use: (f: RuntimeFiber<E, A>) => IO<R1, E1, B>
 ): IO<R & R1, E1, Exit<E, A>> {
-  return bracket_(forkDaemon(ef), (f) => flatMap_(fiberId(), (id) => f.interruptAs(id)), use)
+  return bracket_(forkDaemon(ma), (f) => flatMap_(fiberId(), (id) => f.interruptAs(id)), use)
 }
 
 /**
@@ -42,6 +42,6 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
  */
 export function bracketFiber<E, A, R1, E1, A1>(
   use: (f: RuntimeFiber<E, A>) => IO<R1, E1, A1>
-): <R>(ef: IO<R, E, A>) => IO<R & R1, E1, Exit<E, A>> {
-  return (ef) => bracketFiber_(ef, use)
+): <R>(ma: IO<R, E, A>) => IO<R & R1, E1, Exit<E, A>> {
+  return (ma) => bracketFiber_(ma, use)
 }

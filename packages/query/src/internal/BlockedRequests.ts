@@ -115,7 +115,7 @@ export function gives_<R, R0>(br: BlockedRequests<R>, f: Described<(r0: R0) => R
 }
 
 export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, void> {
-  return I.suspend(() =>
+  return I.effectSuspendTotal(() =>
     pipe(
       flatten(br),
       I.foreachUnit((requestsByDataSource) =>

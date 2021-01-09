@@ -1,7 +1,7 @@
 import type { IO } from '../core'
 
 import { currentTime } from '../../Clock'
-import { timedWith_ } from './timedWith'
+import { timedWith_ } from '../core'
 
 /**
  * Returns a new effect that executes this one and times the execution.

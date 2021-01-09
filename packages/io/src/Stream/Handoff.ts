@@ -1,6 +1,6 @@
 import type { Option } from '@principia/base/data/Option'
 
-import { constVoid, pipe } from '@principia/base/data/Function'
+import { pipe } from '@principia/base/data/Function'
 import { none, some } from '@principia/base/data/Option'
 import { matchTag } from '@principia/base/util/matchers'
 

@@ -94,7 +94,7 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
   return Spec.test(
     label,
     I.foldCauseM_(
-      I.suspend(assertion),
+      I.effectSuspendTotal(assertion),
       flow(TF.halt, I.fail),
       flow(
         BA.failures,
@@ -109,5 +109,5 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
 }
 
 export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {
-  return testM(label, () => I.total(assertion))
+  return testM(label, () => I.effectTotal(assertion))
 }

@@ -15,15 +15,10 @@ import * as RM from '../../Managed/ReleaseMap'
 import * as P from '../../Promise'
 import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
-import { forkDaemon } from './core-scope'
+import { forkDaemon, transplant } from './core-scope'
 import { ensuring } from './ensuring'
 import { fiberId } from './fiberId'
-import {
-  makeInterruptible,
-  makeUninterruptible,
-  onInterruptExtended,
-  uninterruptibleMask
-} from './interrupt'
+import { makeInterruptible, makeUninterruptible, onInterruptExtended, uninterruptibleMask } from './interrupt'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -45,77 +40,80 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     return I.unit()
   }
 
-  return pipe(
-    I.do,
-    I.bindS('parentId', () => fiberId()),
-    I.bindS('causes', () => Ref.make<C.Cause<E>>(C.empty)),
-    I.bindS('result', () => P.make<void, void>()),
-    I.bindS('status', () => Ref.make([0, 0, false] as [number, number, boolean])),
-    I.letS('startEffect', (s) =>
+  return I.gen(function* (_) {
+    const parentId    = yield* _(fiberId())
+    const causes      = yield* _(Ref.make<C.Cause<E>>(C.empty))
+    const result      = yield* _(P.make<void, void>())
+    const status      = yield* _(
+      Ref.make<[number, number, boolean]>([0, 0, false])
+    )
+    const startEffect = pipe(
+      status,
+      Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] => {
+        if (failing) {
+          return [false, [started, done, failing]]
+        } else {
+          return [true, [started + 1, done, failing]]
+        }
+      })
+    )
+
+    const startFailure = pipe(
+      status,
+      Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
+      I.apFirst(result.fail(undefined))
+    )
+
+    const effect = (a: A) =>
       pipe(
-        s.status,
-        Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] =>
-          failing ? [false, [started, done, failing]] : [true, [started + 1, done, failing]]
-        )
-      )
-    ),
-    I.letS('startFailure', (s) =>
-      pipe(
-        s.status,
-        Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
-        I.tap(() => s.result.fail(undefined))
-      )
-    ),
-    I.letS('effect', (s) => (a: A) =>
-      makeUninterruptible(
-        I.whenM(s.startEffect)(
+        I.effectSuspendTotal(() => f(a)),
+        makeInterruptible,
+        I.tapCause((cause) =>
           pipe(
-            I.suspend(() => f(a)),
-            makeInterruptible,
-            I.tapCause((c) =>
-              pipe(
-                s.causes,
-                Ref.update((l) => C.both(l, c)),
-                I.flatMap(() => s.startFailure)
-              )
-            ),
-            ensuring(
-              pipe(
-                s.result.succeed(undefined),
-                I.whenM(
-                  Ref.modify_(s.status, ([started, done, failing]) => [
-                    (failing ? started : size) === done + 1,
-                    [started, done + 1, failing] as [number, number, boolean]
-                  ])
-                )
-              )
-            )
-          )
-        )
-      )
-    ),
-    I.bindS('fibers', (s) => I.foreach_(arr, (a) => I.fork(s.effect(a)))),
-    I.letS('interruptor', (s) =>
-      pipe(
-        s.result.await,
-        I.catchAll(() =>
-          I.flatMap_(
-            I.foreach_(s.fibers, (f) => I.fork(f.interruptAs(s.parentId))),
-            joinAllFibers
+            causes,
+            Ref.update((l) => C.both(l, cause)),
+            I.apSecond(startFailure)
           )
         ),
-        fromEffect,
-        forkManaged
+        ensuring(
+          pipe(
+            result.succeed(undefined),
+            I.whenM(
+              Ref.modify_(status, ([started, done, failing]) => [
+                (failing ? started : size) === done + 1,
+                [started, done + 1, failing] as [number, number, boolean]
+              ])
+            )
+          )
+        ),
+        I.whenM(startEffect),
+        makeUninterruptible
       )
-    ),
-    I.tap((s) =>
-      useManaged_(s.interruptor, () =>
+
+    const fibers = yield* _(transplant((graft) => I.foreach_(arr, flow(effect, graft, I.fork))))
+
+    const interruptor = pipe(
+      result.await,
+      I.catchAll(() =>
         pipe(
-          s.result.fail(undefined),
-          I.andThen(I.flatMap_(s.causes.get, I.halt)),
+          fibers,
+          I.foreach((f) => I.fork(f.interruptAs(parentId))),
+          I.flatMap(joinAllFibers)
+        )
+      ),
+      fromEffect,
+      forkManaged
+    )
+
+    yield* _(
+      useManaged_(interruptor, () =>
+        pipe(
+          result.fail(undefined),
+          I.apSecond(I.flatMap_(causes.get, I.halt)),
           I.whenM(
             pipe(
-              I.foreach_(s.fibers, (f) => f.await),
+              fibers,
+              I.foreach((f) => f.await),
               I.map(
                 flow(
                   A.findFirst((e) => e._tag === 'Failure'),
@@ -126,16 +124,109 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
           ),
           onInterruptExtended(() =>
             pipe(
-              s.result.fail(undefined),
-              I.andThen(I.foreach_(s.fibers, (f) => f.await)),
-              I.andThen(I.flatMap_(s.causes.get, I.halt))
+              result.fail(undefined),
+              I.andThen(I.foreach_(fibers, (f) => f.await)),
+              I.andThen(I.flatMap_(causes.get, I.halt))
             )
           )
         )
       )
-    ),
-    I.asUnit
-  )
+    )
+  })
+  /*
+   *
+   *   return pipe(
+   *     I.do,
+   *     I.bindS('parentId', () => fiberId()),
+   *     I.bindS('causes', () => Ref.make<C.Cause<E>>(C.empty)),
+   *     I.bindS('result', () => P.make<void, void>()),
+   *     I.bindS('status', () => Ref.make([0, 0, false] as [number, number, boolean])),
+   *     I.letS('startEffect', (s) =>
+   *       pipe(
+   *         s.status,
+   *         Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] =>
+   *           failing ? [false, [started, done, failing]] : [true, [started + 1, done, failing]]
+   *         )
+   *       )
+   *     ),
+   *     I.letS('startFailure', (s) =>
+   *       pipe(
+   *         s.status,
+   *         Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
+   *         I.tap(() => s.result.fail(undefined))
+   *       )
+   *     ),
+   *     I.letS('effect', (s) => (a: A) =>
+   *       makeUninterruptible(
+   *         I.whenM(s.startEffect)(
+   *           pipe(
+   *             I.suspend(() => f(a)),
+   *             makeInterruptible,
+   *             I.tapCause((c) =>
+   *               pipe(
+   *                 s.causes,
+   *                 Ref.update((l) => C.both(l, c)),
+   *                 I.flatMap(() => s.startFailure)
+   *               )
+   *             ),
+   *             ensuring(
+   *               pipe(
+   *                 s.result.succeed(undefined),
+   *                 I.whenM(
+   *                   Ref.modify_(s.status, ([started, done, failing]) => [
+   *                     (failing ? started : size) === done + 1,
+   *                     [started, done + 1, failing] as [number, number, boolean]
+   *                   ])
+   *                 )
+   *               )
+   *             )
+   *           )
+   *         )
+   *       )
+   *     ),
+   *     I.bindS('fibers', (s) => I.foreach_(arr, (a) => I.fork(s.effect(a)))),
+   *     I.letS('interruptor', (s) =>
+   *       pipe(
+   *         s.result.await,
+   *         I.catchAll(() =>
+   *           I.flatMap_(
+   *             I.foreach_(s.fibers, (f) => I.fork(f.interruptAs(s.parentId))),
+   *             joinAllFibers
+   *           )
+   *         ),
+   *         fromEffect,
+   *         forkManaged
+   *       )
+   *     ),
+   *     I.tap((s) =>
+   *       useManaged_(s.interruptor, () =>
+   *         pipe(
+   *           s.result.fail(undefined),
+   *           I.andThen(I.flatMap_(s.causes.get, I.halt)),
+   *           I.whenM(
+   *             pipe(
+   *               I.foreach_(s.fibers, (f) => f.await),
+   *               I.map(
+   *                 flow(
+   *                   A.findFirst((e) => e._tag === 'Failure'),
+   *                   O.isSome
+   *                 )
+   *               )
+   *             )
+   *           ),
+   *           onInterruptExtended(() =>
+   *             pipe(
+   *               s.result.fail(undefined),
+   *               I.andThen(I.foreach_(s.fibers, (f) => f.await)),
+   *               I.andThen(I.flatMap_(s.causes.get, I.halt))
+   *             )
+   *           )
+   *         )
+   *       )
+   *     ),
+   *     I.asUnit
+   *   )
+   */
 }
 
 /**
@@ -164,13 +255,13 @@ function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I
   const arr = Array.from(as)
 
   return I.flatMap_(
-    I.total<B[]>(() => []),
+    I.effectTotal<B[]>(() => []),
     (mut_array) => {
       const fn = ([a, n]: [A, number]) =>
         I.flatMap_(
-          I.suspend(() => f(a)),
+          I.effectSuspendTotal(() => f(a)),
           (b) =>
-            I.total(() => {
+            I.effectTotal(() => {
               mut_array[n] = b
             })
         )
@@ -179,7 +270,7 @@ function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I
           arr.map((a, n) => [a, n] as [A, number]),
           fn
         ),
-        () => I.total(() => mut_array)
+        () => I.effectTotal(() => mut_array)
       )
     }
   )

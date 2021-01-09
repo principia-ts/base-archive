@@ -30,12 +30,12 @@ export function restartable<R, E, I, L, Z>(
   sink: Managed<R, never, Push<R, E, I, L, Z>>
 ): Managed<R, never, readonly [Push<R, E, I, L, Z>, I.URIO<R, void>]> {
   return M.gen(function* (_) {
-    const switchSink = yield* _(M.switchable<R, never, Push<R, E, I, L, Z>>())
+    const switchSink  = yield* _(M.switchable<R, never, Push<R, E, I, L, Z>>())
     const initialSink = yield* _(switchSink(sink))
-    const currSink = yield* _(XR.make(initialSink))
+    const currSink    = yield* _(XR.make(initialSink))
 
     const restart = I.flatMap_(switchSink(sink), currSink.set)
-    const push = (input: O.Option<Chunk<I>>) => I.flatMap_(currSink.get, (f) => f(input))
+    const push    = (input: O.Option<Chunk<I>>) => I.flatMap_(currSink.get, (f) => f(input))
 
     return [push, restart]
   })

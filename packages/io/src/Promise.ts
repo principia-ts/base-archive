@@ -10,7 +10,7 @@ import * as O from '@principia/base/data/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
 import { fiberId } from './IO/combinators/fiberId'
-import { interruptAs as interruptAsIO, maybeAsyncInterrupt, uninterruptibleMask } from './IO/combinators/interrupt'
+import { effectAsyncInterruptEither, interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 
 export class Promise<E, A> {
@@ -30,7 +30,7 @@ export class Promise<E, A> {
    * `Promise.complete`.
    */
   completeWith = (io: FIO<E, A>): I.UIO<boolean> =>
-    I.total(() => {
+    I.effectTotal(() => {
       const state = this.state.get
       switch (state._tag) {
         case 'Done': {
@@ -96,7 +96,7 @@ export class Promise<E, A> {
   interruptAs = (id: FiberId): I.UIO<boolean> => this.completeWith(interruptAsIO(id))
 
   private interruptJoiner = (joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> =>
-    I.total(() => {
+    I.effectTotal(() => {
       const state = this.state.get
       if (state._tag === 'Pending') {
         this.state.set(new Pending(state.joiners.filter((j) => j !== joiner)))
@@ -108,7 +108,7 @@ export class Promise<E, A> {
    * until the result is available.
    */
   get await() {
-    return maybeAsyncInterrupt<unknown, E, A>((k) => {
+    return effectAsyncInterruptEither<unknown, E, A>((k) => {
       const state = this.state.get
       switch (state._tag) {
         case 'Done': {
@@ -127,7 +127,7 @@ export class Promise<E, A> {
    * already been completed with a value or an error and false otherwise.
    */
   get isDone(): I.UIO<boolean> {
-    return I.total(() => this.state.get._tag === 'Done')
+    return I.effectTotal(() => this.state.get._tag === 'Done')
   }
 
   /**
@@ -135,7 +135,7 @@ export class Promise<E, A> {
    * promise has already been completed or a `None` otherwise.
    */
   poll = (): I.UIO<Option<FIO<E, A>>> =>
-    I.total(() => {
+    I.effectTotal(() => {
       const state = this.state.get
 
       switch (state._tag) {
@@ -319,7 +319,7 @@ export function make<E, A>() {
  * Makes a new promise to be completed by the fiber with the specified id.
  */
 export function makeAs<E, A>(fiberId: FiberId) {
-  return I.total(() => unsafeMake<E, A>(fiberId))
+  return I.effectTotal(() => unsafeMake<E, A>(fiberId))
 }
 
 export function unsafeMake<E, A>(fiberId: FiberId) {

@@ -19,7 +19,7 @@ export class StdinError {
 }
 
 export const stdin: S.FStream<StdinError, Byte> = pipe(
-  S.fromEffect(I.total(() => tuple(process.stdin.resume(), new Array<() => void>()))),
+  S.fromEffect(I.effectTotal(() => tuple(process.stdin.resume(), new Array<() => void>()))),
   S.flatMap(([rs, cleanup]) =>
     S.ensuring_(
       S.async<unknown, StdinError, Byte>((cb) => {
@@ -43,7 +43,7 @@ export const stdin: S.FStream<StdinError, Byte> = pipe(
         rs.on('data', onData)
         rs.on('error', onError)
       }),
-      I.total(() => {
+      I.effectTotal(() => {
         cleanup.forEach((h) => {
           h()
         })
@@ -62,7 +62,7 @@ export const stdout: Sink.Sink<unknown, StdoutError, Buffer, never, void> = Sink
     is,
     () => Push.emit(undefined, []),
     (bufs) =>
-      I.async<unknown, readonly [E.Either<StdoutError, void>, Chunk<never>], void>(async (cb) => {
+      I.effectAsync<unknown, readonly [E.Either<StdoutError, void>, Chunk<never>], void>(async (cb) => {
         for (let i = 0; i < bufs.length; i++) {
           if (!process.stdout.write(bufs[i], (err) => err && cb(Push.fail(new StdoutError(err), [])))) {
             await once(process.stdout, 'drain')
@@ -74,22 +74,22 @@ export const stdout: Sink.Sink<unknown, StdoutError, Buffer, never, void> = Sink
 )
 
 export function abort(): USync<never> {
-  return Sy.total(process.abort)
+  return Sy.effectTotal(process.abort)
 }
 
 export function chdir(directory: string): FSync<Error, void> {
-  return Sy.partial_(
+  return Sy.effectCatch_(
     () => process.chdir(directory),
     (err) => err as Error
   )
 }
 
 export function cpuUsage(previousValue?: NodeJS.CpuUsage): USync<NodeJS.CpuUsage> {
-  return Sy.total(() => process.cpuUsage(previousValue))
+  return Sy.effectTotal(() => process.cpuUsage(previousValue))
 }
 
 export function cwd(): USync<string> {
-  return Sy.total(() => process.cwd())
+  return Sy.effectTotal(() => process.cwd())
 }
 
 export function emitWarning(
@@ -101,24 +101,24 @@ export function emitWarning(
     detail?: string
   }
 ): USync<void> {
-  return Sy.total(() => process.emitWarning(warning, options as any))
+  return Sy.effectTotal(() => process.emitWarning(warning, options as any))
 }
 
 export function exit(code?: number): USync<never> {
-  return Sy.total(() => process.exit(code))
+  return Sy.effectTotal(() => process.exit(code))
 }
 
-export const exitCode = Sy.total(() => process.exitCode)
+export const exitCode = Sy.effectTotal(() => process.exitCode)
 
 export function hrtime(time?: readonly [number, number]): USync<readonly [number, number]> {
-  return Sy.total(() => process.hrtime(time as any))
+  return Sy.effectTotal(() => process.hrtime(time as any))
 }
 
-export const hrtimeBigint = Sy.total(() => process.hrtime.bigint())
+export const hrtimeBigint = Sy.effectTotal(() => process.hrtime.bigint())
 
-export const memoryUsage = Sy.total(process.memoryUsage)
+export const memoryUsage = Sy.effectTotal(process.memoryUsage)
 
-export const resourceUsage = Sy.total(process.resourceUsage)
+export const resourceUsage = Sy.effectTotal(process.resourceUsage)
 
 export {
   allowedNodeEnvironmentFlags,

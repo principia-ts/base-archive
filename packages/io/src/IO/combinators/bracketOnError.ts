@@ -28,10 +28,10 @@ export function bracketOnError_<R, E, A, R1, E1, A1, R2, E2, A2>(
 
 /**
  * ```haskell
- * bracketOnError :: IO t => (
- *    (a -> t x1 r1 e1 b),
- *    ((a, (Exit e1 b)) -> t x2 r2 e2 c),
- * ) -> t x r e a -> t (x | x1 | x2) (r & r1 & r2) (e | e1 | e2) b
+ * bracketOnError :: (
+ *    (a -> IO r1 e1 b),
+ *    ((a, (Exit e1 b)) -> IO r2 e2 c),
+ * ) -> IO r e a -> IO (r & r1 & r2) (e | e1 | e2) b
  * ```
  *
  * Same as `bracketExit` but executes the release IO only if there was an error.

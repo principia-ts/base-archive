@@ -11,22 +11,24 @@ import * as S from '../src/Stream'
 import * as Sink from '../src/Stream/Sink'
 
 const effects = [
-  I.async<unknown, never, string>((k) => {
+  I.effectAsync<unknown, never, string>((k) => {
     setTimeout(() => {
       k(I.succeed('Hello'))
     }, 1000)
   }),
-  I.async<unknown, never, string>((k) => {
+  I.effectAsync<unknown, never, string>((k) => {
     setTimeout(() => {
       k(I.succeed('world'))
     }, 2000)
   }),
-  I.async<unknown, never, string>((k) => {
+  I.effectAsync<unknown, never, string>((k) => {
     setTimeout(() => {
       k(I.succeed('!'))
     }, 3000)
   })
 ]
+
+const as = ['hello', 'world', '!']
 
 effects['|>'](I.collectAllPar)
   ['|>'](I.flatMap((xs) => C.putStrLn(xs.join(''))))

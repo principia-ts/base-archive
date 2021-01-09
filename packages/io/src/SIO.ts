@@ -7,7 +7,6 @@ import * as E from '@principia/base/data/Either'
 import { identity, tuple } from '@principia/base/data/Function'
 import * as O from '@principia/base/data/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
-import { MutableStack } from '@principia/base/util/support/MutableStack'
 import { makeStack } from '@principia/base/util/support/Stack'
 
 import { ExternalFailInstruction, IOInstructionTag } from './IO/constants'
@@ -79,12 +78,13 @@ export abstract class SIO<S1, S2, R, E, A> {
 
 export enum SIOInstructionTag {
   Succeed = 'Succeed',
-  Total = 'Total',
-  Partial = 'Partial',
-  Suspend = 'Suspend',
+  EffectTotal = 'EffectTotal',
+  EffectPartial = 'EffectPartial',
+  EffectSuspendTotal = 'EffectSuspendTotal',
+  EffectSuspendPartial = 'EffectSuspendPartial',
   Fail = 'Fail',
   Modify = 'Modify',
-  Chain = 'Chain',
+  FlatMap = 'FlatMap',
   Fold = 'Fold',
   Asks = 'Asks',
   Give = 'Give'
@@ -97,23 +97,30 @@ class SucceedInstruction<A> extends SIO<unknown, never, unknown, never, A> {
   }
 }
 
-class TotalInstruction<A> extends SIO<unknown, never, unknown, never, A> {
-  readonly _sio = SIOInstructionTag.Total
-  constructor(readonly thunk: () => A) {
+class EffectTotalInstruction<A> extends SIO<unknown, never, unknown, never, A> {
+  readonly _sio = SIOInstructionTag.EffectTotal
+  constructor(readonly effect: () => A) {
     super()
   }
 }
 
-class PartialInstruction<E, A> extends SIO<unknown, never, unknown, E, A> {
-  readonly _sio = SIOInstructionTag.Partial
-  constructor(readonly thunk: () => A, readonly onThrow: (u: unknown) => E) {
+class EffectPartialInstruction<E, A> extends SIO<unknown, never, unknown, E, A> {
+  readonly _sio = SIOInstructionTag.EffectPartial
+  constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
 }
 
-class SuspendInstruction<S1, S2, R, E, A> extends SIO<S1, S2, R, E, A> {
-  readonly _sio = SIOInstructionTag.Suspend
-  constructor(readonly factory: () => SIO<S1, S2, R, E, A>) {
+class EffectSuspendTotalInstruction<S1, S2, R, E, A> extends SIO<S1, S2, R, E, A> {
+  readonly _sio = SIOInstructionTag.EffectSuspendTotal
+  constructor(readonly sio: () => SIO<S1, S2, R, E, A>) {
+    super()
+  }
+}
+
+class EffectSuspendPartialInstruction<S1, S2, R, E, A, E1> extends SIO<S1, S2, R, E | E1, A> {
+  readonly _sio = SIOInstructionTag.EffectSuspendPartial
+  constructor(readonly sio: () => SIO<S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
 }
@@ -132,8 +139,8 @@ class ModifyInstruction<S1, S2, A> extends SIO<S1, S2, unknown, never, A> {
   }
 }
 
-class ChainInstruction<S1, S2, R, E, A, S3, Q, D, B> extends SIO<S1, S3, Q & R, D | E, B> {
-  readonly _sio = SIOInstructionTag.Chain
+class FlatMapInstruction<S1, S2, R, E, A, S3, Q, D, B> extends SIO<S1, S3, Q & R, D | E, B> {
+  readonly _sio = SIOInstructionTag.FlatMap
   constructor(readonly sio: SIO<S1, S2, R, E, A>, readonly f: (a: A) => SIO<S2, S3, Q, D, B>) {
     super()
   }
@@ -173,13 +180,14 @@ export type SIOInstruction =
   | SucceedInstruction<any>
   | FailInstruction<any>
   | ModifyInstruction<any, any, any>
-  | ChainInstruction<any, any, any, any, any, any, any, any, any>
+  | FlatMapInstruction<any, any, any, any, any, any, any, any, any>
   | FoldInstruction<any, any, any, any, any, any, any, any, any, any, any, any, any, any>
   | AsksInstruction<any, any, any, any, any, any>
   | GiveInstruction<any, any, any, any, any>
-  | SuspendInstruction<any, any, any, any, any>
-  | TotalInstruction<any>
-  | PartialInstruction<any, any>
+  | EffectSuspendTotalInstruction<any, any, any, any, any>
+  | EffectTotalInstruction<any>
+  | EffectPartialInstruction<any, any>
+  | EffectSuspendPartialInstruction<any, any, any, any, any, any>
 
 /*
  * -------------------------------------------
@@ -196,8 +204,8 @@ export function succeed<A, S1 = unknown, S2 = never>(a: A): SIO<S1, S2, unknown,
   return new SucceedInstruction(a)
 }
 
-export function total<A, S1 = unknown, S2 = never>(thunk: () => A): SIO<S1, S2, unknown, never, A> {
-  return new TotalInstruction(thunk)
+export function effectTotal<A, S1 = unknown, S2 = never>(thunk: () => A): SIO<S1, S2, unknown, never, A> {
+  return new EffectTotalInstruction(thunk)
 }
 
 export function fail<E>(e: E): SIO<unknown, never, unknown, E, never> {
@@ -208,16 +216,32 @@ export function modify<S1, S2, A>(f: (s: S1) => readonly [S2, A]): SIO<S1, S2, u
   return new ModifyInstruction(f)
 }
 
-export function suspend<S1, S2, R, E, A>(factory: () => SIO<S1, S2, R, E, A>): SIO<S1, S2, R, E, A> {
-  return new SuspendInstruction(factory)
+export function effectSuspendTotal<S1, S2, R, E, A>(sio: () => SIO<S1, S2, R, E, A>): SIO<S1, S2, R, E, A> {
+  return new EffectSuspendTotalInstruction(sio)
 }
 
-export function partial_<A, E>(f: () => A, onThrow: (reason: unknown) => E): SIO<unknown, never, unknown, E, A> {
-  return new PartialInstruction(f, onThrow)
+export function effectSuspend<S1, S2, R, E, A>(sio: () => SIO<S1, S2, R, E, A>): SIO<S1, S2, R, unknown, A> {
+  return new EffectSuspendPartialInstruction(sio, identity)
 }
 
-export function partial<E>(onThrow: (reason: unknown) => E): <A>(f: () => A) => SIO<unknown, never, unknown, E, A> {
-  return (f) => partial_(f, onThrow)
+export function effectSuspendCatch_<S1, S2, R, E, A, E1>(sio: () => SIO<S1, S2, R, E, A>, f: (e: unknown) => E1): SIO<S1, S2, R, E | E1, A> {
+  return new EffectSuspendPartialInstruction(sio, f)
+}
+
+export function effectSuspendCatch<E1>(onThrow: (e: unknown) => E1): <S1, S2, R, E, A>(sio: () => SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, E | E1, A> {
+  return (sio) => effectSuspendCatch_(sio, onThrow)
+}
+
+export function effect<A>(effect: () => A): SIO<unknown, never, unknown, unknown, A> {
+  return new EffectPartialInstruction(effect, identity)
+}
+
+export function effectCatch_<A, E>(effect: () => A, onThrow: (reason: unknown) => E): SIO<unknown, never, unknown, E, A> {
+  return new EffectPartialInstruction(effect, onThrow)
+}
+
+export function effectCatch<E>(onThrow: (reason: unknown) => E): <A>(effect: () => A) => SIO<unknown, never, unknown, E, A> {
+  return (effect) => effectCatch_(effect, onThrow)
 }
 
 /*
@@ -475,7 +499,7 @@ export function flatMap_<S1, S2, R, E, A, S3, Q, D, B>(
   ma: SIO<S1, S2, R, E, A>,
   f: (a: A) => SIO<S2, S3, Q, D, B>
 ): SIO<S1, S3, Q & R, D | E, B> {
-  return new ChainInstruction(ma, f)
+  return new FlatMapInstruction(ma, f)
 }
 
 export function flatMap<A, S2, S3, Q, D, B>(
@@ -776,7 +800,7 @@ export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s:
     const I = current[_SI]
 
     switch (I._sio) {
-      case SIOInstructionTag.Chain: {
+      case SIOInstructionTag.FlatMap: {
         const nested       = I.sio[_SI]
         const continuation = I.f
 
@@ -785,13 +809,13 @@ export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s:
             current = continuation(nested.value)
             break
           }
-          case SIOInstructionTag.Total: {
-            current = continuation(nested.thunk())
+          case SIOInstructionTag.EffectTotal: {
+            current = continuation(nested.effect())
             break
           }
-          case SIOInstructionTag.Partial: {
+          case SIOInstructionTag.EffectPartial: {
             try {
-              current = succeed(nested.thunk())
+              current = succeed(nested.effect())
             } catch (e) {
               current = fail(nested.onThrow(e))
             }
@@ -814,8 +838,8 @@ export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s:
 
         break
       }
-      case SIOInstructionTag.Total: {
-        result                = I.thunk()
+      case SIOInstructionTag.EffectTotal: {
+        result                = I.effect()
         const nextInstruction = popContinuation()
         if (nextInstruction) {
           current = nextInstruction.apply(result)
@@ -824,16 +848,24 @@ export function runStateEither_<S1, S2, E, A>(fa: SIO<S1, S2, unknown, E, A>, s:
         }
         break
       }
-      case SIOInstructionTag.Partial: {
+      case SIOInstructionTag.EffectPartial: {
         try {
-          current = succeed(I.thunk())
+          current = succeed(I.effect())
         } catch (e) {
           current = fail(I.onThrow(e))
         }
         break
       }
-      case SIOInstructionTag.Suspend: {
-        current = I.factory()
+      case SIOInstructionTag.EffectSuspendTotal: {
+        current = I.sio()
+        break
+      }
+      case SIOInstructionTag.EffectSuspendPartial: {
+        try {
+          current = I.sio()
+        } catch (e) {
+          current = fail(I.onThrow(e))
+        }
         break
       }
       case SIOInstructionTag.Succeed: {

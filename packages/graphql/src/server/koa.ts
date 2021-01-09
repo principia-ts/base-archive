@@ -114,11 +114,11 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
 
         const [app, httpServer] = yield* _(I.asksServiceM(Koa.Koa)((koa) => I.product_(koa.app, koa.server)))
 
-        const scalars = transformScalarResolvers(instanceConfig.schemaParts.scalars ?? {}, env)
-        const resolvers = transformResolvers<Koa.Context<CTX>>(instanceConfig.schemaParts.resolvers, env)
+        const scalars      = transformScalarResolvers(instanceConfig.schemaParts.scalars ?? {}, env)
+        const resolvers    = transformResolvers<Koa.Context<CTX>>(instanceConfig.schemaParts.resolvers, env)
         const apolloConfig = { ...config } as Omit<Config, 'context' | 'schema'>
         if (config.subscriptions && config.subscriptions.onConnect) {
-          const onConnect = config.subscriptions.onConnect
+          const onConnect    = config.subscriptions.onConnect
           const onDisconnect = config.subscriptions.onDisconnect
 
           apolloConfig.subscriptions = {
@@ -134,17 +134,15 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
 
         const schema = yield* _(
           pipe(
-            I.partial_(
-              () =>
-                makeExecutableSchema({
-                  resolvers: {
-                    ...resolvers,
-                    ...(instanceConfig.additionalResolvers ?? {}),
-                    ...scalars
-                  },
-                  typeDefs: instanceConfig.schemaParts.typeDefs
-                }),
-              identity
+            I.effect(() =>
+              makeExecutableSchema({
+                resolvers: {
+                  ...resolvers,
+                  ...(instanceConfig.additionalResolvers ?? {}),
+                  ...scalars
+                },
+                typeDefs: instanceConfig.schemaParts.typeDefs
+              })
             ),
             I.orDie
           )
@@ -152,7 +150,7 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
 
         return yield* _(
           pipe(
-            I.partial_(() => {
+            I.effect(() => {
               const server = new ApolloServer({
                 context: (ctx) => pipe(context(ctx), I.give(env), I.runPromise),
                 schema,
@@ -170,7 +168,7 @@ export function makeApollo<FieldPURI extends FieldAURIS, InputPURI extends Input
               server.applyMiddleware({ app })
               apolloConfig.subscriptions && server.installSubscriptionHandlers(httpServer)
               return server
-            }, identity),
+            }),
             I.orDie
           )
         )

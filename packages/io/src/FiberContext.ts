@@ -128,11 +128,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get poll() {
-    return I.total(() => this._poll())
+    return I.effectTotal(() => this._poll())
   }
 
   getRef<K>(fiberRef: FR.FiberRef<K>): I.UIO<K> {
-    return I.total(() => this.fiberRefLocals.get(fiberRef) || fiberRef.initial)
+    return I.effectTotal(() => this.fiberRefLocals.get(fiberRef) || fiberRef.initial)
   }
 
   private _poll() {
@@ -153,7 +153,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       this.popInterruptStatus()
       return I.pure(v)[I._I]
     } else {
-      return I.total(() => {
+      return I.effectTotal(() => {
         this.popInterruptStatus()
         return v
       })[I._I]
@@ -304,7 +304,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     return I.maybeAsyncInterrupt(
       (k): E.Either<I.UIO<void>, I.UIO<Exit<E, A>>> => {
         const cb: Callback<never, Exit<E, A>> = (x) => k(I.done(x))
-        return O.fold_(this.observe(cb), () => E.left(I.total(() => this.interruptObserver(cb))), E.right)
+        return O.fold_(this.observe(cb), () => E.left(I.effectTotal(() => this.interruptObserver(cb))), E.right)
       }
     )
   }
@@ -351,7 +351,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       }
     }
 
-    return I.suspend(() => {
+    return I.effectSuspendTotal(() => {
       setInterruptedLoop()
 
       return this.await
@@ -547,7 +547,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   ): I.Instruction {
     if (parentScope !== Scope.globalScope) {
       const exitOrKey = parentScope.unsafeEnsure((exit) =>
-        I.suspend(
+        I.effectSuspendTotal(
           (): I.UIO<any> => {
             const _interruptors = exit._tag === 'Failure' ? C.interruptors(exit.cause) : new Set<FiberId>()
 
@@ -638,7 +638,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get inheritRefs() {
-    return I.suspend(() => {
+    return I.effectSuspendTotal(() => {
       const locals = this.fiberRefLocals
       if (locals.size === 0) {
         return I.unit()
@@ -655,7 +655,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     const left          = this.fork(race.left[I._I], race.scope, O.some(constVoid))
     const right         = this.fork(race.right[I._I], race.scope, O.some(constVoid))
 
-    return I.async<R & R1 & R2 & R3, E2 | E3, A2 | A3>(
+    return I.effectAsync<R & R1 & R2 & R3, E2 | E3, A2 | A3>(
       (cb) => {
         const leftRegister = left.registerObserver((exit) => {
           switch (exit._tag) {
@@ -723,13 +723,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                         current = continuation(nested.value)[I._I]
                         break
                       }
-                      case IOInstructionTag.Total: {
-                        current = continuation(nested.thunk())[I._I]
+                      case IOInstructionTag.EffectTotal: {
+                        current = continuation(nested.effect())[I._I]
                         break
                       }
-                      case IOInstructionTag.Partial: {
+                      case IOInstructionTag.EffectPartial: {
                         try {
-                          current = continuation(nested.thunk())[I._I]
+                          current = continuation(nested.effect())[I._I]
                         } catch (e) {
                           current = I.fail(nested.onThrow(e))[I._I]
                         }
@@ -753,8 +753,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.Total: {
-                    current = this.next(current.thunk())
+                  case IOInstructionTag.EffectTotal: {
+                    current = this.next(current.effect())
                     break
                   }
 
@@ -800,10 +800,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.Partial: {
+                  case IOInstructionTag.EffectPartial: {
                     const c = current
                     try {
-                      current = this.next(c.thunk())
+                      current = this.next(c.effect())
                     } catch (e) {
                       current = I.fail(c.onThrow(e))[I._I]
                     }
@@ -862,28 +862,28 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   case IOInstructionTag.Give: {
                     const c = current
                     current = I.bracket_(
-                      I.total(() => {
+                      I.effectTotal(() => {
                         this.pushEnv(c.env)
                       }),
                       () => c.io,
                       () =>
-                        I.total(() => {
+                        I.effectTotal(() => {
                           this.popEnv()
                         })
                     )[I._I]
                     break
                   }
 
-                  case IOInstructionTag.Suspend: {
-                    current = current.factory()[I._I]
+                  case IOInstructionTag.EffectSuspend: {
+                    current = current.io()[I._I]
                     break
                   }
 
-                  case IOInstructionTag.SuspendPartial: {
+                  case IOInstructionTag.EffectSuspendPartial: {
                     const c = current
 
                     try {
-                      current = c.factory()[I._I]
+                      current = c.io()[I._I]
                     } catch (e) {
                       current = I.fail(c.onThrow(e))[I._I]
                     }
@@ -920,12 +920,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const lastSupervisor = this.mut_supervisors.value
                     const newSupervisor  = c.supervisor.and(lastSupervisor)
                     current              = I.bracket_(
-                      I.total(() => {
+                      I.effectTotal(() => {
                         this.mut_supervisors = makeStack(newSupervisor, this.mut_supervisors)
                       }),
                       () => c.io,
                       () =>
-                        I.total(() => {
+                        I.effectTotal(() => {
                           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                           this.mut_supervisors = this.mut_supervisors.previous!
                         })
@@ -943,12 +943,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   case IOInstructionTag.OverrideForkScope: {
                     const c = current
                     current = I.bracket_(
-                      I.total(() => {
+                      I.effectTotal(() => {
                         this.mut_forkScopeOverride = makeStack(c.forkScope, this.mut_forkScopeOverride)
                       }),
                       () => c.io,
                       () =>
-                        I.total(() => {
+                        I.effectTotal(() => {
                           this.mut_forkScopeOverride = this.mut_forkScopeOverride?.previous
                         })
                     )[I._I]

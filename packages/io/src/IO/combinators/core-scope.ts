@@ -10,8 +10,14 @@ import * as O from '@principia/base/data/Option'
 import { globalScope } from '../../Scope'
 import { ForkInstruction, GetForkScopeInstruction, OverrideForkScopeInstruction, pure, RaceInstruction } from '../core'
 
+/**
+ * Retrieves the scope that will be used to supervise forked effects.
+ */
 export const forkScope: UIO<Scope<Exit<any, any>>> = new GetForkScopeInstruction(pure)
 
+/**
+ * Retrieves the scope that will be used to supervise forked effects.
+ */
 export function forkScopeWith<R, E, A>(f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
   return new GetForkScopeInstruction(f)
 }
@@ -22,6 +28,11 @@ export class ForkScopeRestore {
   readonly restore = <R, E, A>(ma: IO<R, E, A>): IO<R, E, A> => new OverrideForkScopeInstruction(ma, O.some(this.scope))
 }
 
+/**
+ * Captures the fork scope, before overriding it with the specified new
+ * scope, passing a function that allows restoring the fork scope to
+ * what it was originally.
+ */
 export function forkScopeMask(
   newScope: Scope<Exit<any, any>>
 ): <R, E, A>(f: (restore: ForkScopeRestore) => IO<R, E, A>) => GetForkScopeInstruction<R, E, A> {
@@ -33,6 +44,10 @@ export function forkIn(scope: Scope<Exit<any, any>>): <R, E, A>(io: IO<R, E, A>)
   return (io) => new ForkInstruction(io, O.some(scope), O.none())
 }
 
+/**
+ * Returns an effect that races this effect with the specified effect, calling
+ * the specified finisher as soon as one result or the other has been computed.
+ */
 export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   left: IO<R, E, A>,
   right: IO<R1, E1, A1>,
@@ -43,6 +58,10 @@ export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   return new RaceInstruction(left, right, leftWins, rightWins, scope)
 }
 
+/**
+ * Returns an effect that races this effect with the specified effect, calling
+ * the specified finisher as soon as one result or the other has been computed.
+ */
 export function raceWith<E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   right: IO<R1, E1, A1>,
   leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
@@ -54,6 +73,14 @@ export function raceWith<E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
 
 export type Grafter = <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
 
+/**
+ * Transplants specified effects so that when those effects fork other
+ * effects, the forked effects will be governed by the scope of the
+ * fiber that executes this effect.
+ *
+ * This can be used to "graft" deep grandchildren onto a higher-level
+ * scope, effectively extending their lifespans into the parent scope.
+ */
 export function transplant<R, E, A>(f: (_: Grafter) => IO<R, E, A>): IO<R, E, A> {
   return forkScopeWith((scope) => f((e) => new OverrideForkScopeInstruction(e, O.some(scope))))
 }

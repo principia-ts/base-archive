@@ -64,7 +64,7 @@ export function route<R, A>(
       const config = yield* _(KoaConfig)
       const env    = yield* _(I.ask<R>())
       yield* _(
-        I.total(() => {
+        I.effectTotal(() => {
           config.router[method](
             path,
             koaBodyParser(),
@@ -122,7 +122,7 @@ export function route<R, A>(
                   res: new HttpResponse(mut_ctx.res)
                 }),
                 I.catchAll((ex) =>
-                  I.total(() => {
+                  I.effectTotal(() => {
                     mut_ctx.status = ex.data?.status.code || 500
                     mut_ctx.body   = ex.message
                   })
@@ -132,7 +132,7 @@ export function route<R, A>(
           )
         })
       )
-      return yield* _(I.total(() => config))
+      return yield* _(I.effectTotal(() => config))
     })
   )
 }
@@ -143,7 +143,7 @@ function _subRoute<R, E>(
 ): I.IO<R & H.Has<KoaConfig>, E, void> {
   return pipe(
     I.asksServiceM(KoaConfig)((config) =>
-      I.total(() => {
+      I.effectTotal(() => {
         config.parent!.use(path, config.router.allowedMethods())
         config.parent!.use(path, config.router.routes())
       })
@@ -171,7 +171,7 @@ export function use<State = koa.DefaultState, Custom = koa.DefaultContext>(
 ): L.Layer<H.Has<KoaConfig>, never, H.Has<KoaConfig>> {
   return L.fromEffect(KoaConfig)(
     I.asksServiceM(KoaConfig)((config) =>
-      I.total(() => ({
+      I.effectTotal(() => ({
         ...config,
         middleware: A.append_(config.middleware, m)
       }))
@@ -198,7 +198,7 @@ export function useM<R, E, A>(
           I.runPromise
         )
       return yield* _(
-        I.total(() => ({
+        I.effectTotal(() => ({
           ...config,
           middleware: A.append_(config.middleware, m)
         }))
@@ -218,7 +218,7 @@ export function live(port: number, hostname: string): L.Layer<H.Has<KoaConfig>, 
       I.gen(function* (_) {
         const config = yield* _(KoaConfig)
         return yield* _(
-          I.async<unknown, ServerError, { app: koa, server: http.Server }>((cb) => {
+          I.effectAsync<unknown, ServerError, { app: koa, server: http.Server }>((cb) => {
             const app = new koa()
             app.use(koaCompose([...config.middleware]))
             if (config.parent) {
@@ -238,15 +238,15 @@ export function live(port: number, hostname: string): L.Layer<H.Has<KoaConfig>, 
       I.makeUninterruptible,
       M.make(({ server }) =>
         pipe(
-          I.async<unknown, ServerError, void>((cb) => {
+          I.effectAsync<unknown, ServerError, void>((cb) => {
             server.close((err) => (err ? cb(I.fail({ _tag: 'ServerError', error: err })) : cb(I.unit())))
           }),
           I.orDie
         )
       ),
       M.map(({ app, server }) => ({
-        app: I.total(() => app),
-        server: I.total(() => server)
+        app: I.effectTotal(() => app),
+        server: I.effectTotal(() => server)
       }))
     )
   )

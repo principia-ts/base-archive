@@ -7,8 +7,7 @@ import type { HasTag } from '@principia/base/data/Has'
 
 import { tag } from '@principia/base/data/Has'
 
-import { asyncInterrupt } from './IO/combinators/interrupt'
-import { asksService, asksServiceM } from './IO/combinators/service'
+import { effectAsyncInterrupt } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 
 /**
@@ -34,15 +33,15 @@ export type HasClock = HasTag<typeof HasClock>
  * Live clock implementation
  */
 export class LiveClock extends Clock {
-  currentTime: I.UIO<number> = I.total(() => new Date().getTime())
+  currentTime: I.UIO<number> = I.effectTotal(() => new Date().getTime())
 
   sleep = (ms: number): I.UIO<void> =>
-    asyncInterrupt((cb) => {
+    effectAsyncInterrupt((cb) => {
       const timeout = setTimeout(() => {
         cb(I.unit())
       }, ms)
 
-      return I.total(() => {
+      return I.effectTotal(() => {
         clearTimeout(timeout)
       })
     })
@@ -60,19 +59,19 @@ export class ProxyClock extends Clock {
 /**
  * Get the current time in ms since epoch
  */
-export const currentTime = asksServiceM(HasClock)((_) => _.currentTime)
+export const currentTime = I.asksServiceM(HasClock)((_) => _.currentTime)
 
 /**
  * Sleeps for the provided amount of ms
  */
-export const sleep = (ms: number) => asksServiceM(HasClock)((_) => _.sleep(ms))
+export const sleep = (ms: number) => I.asksServiceM(HasClock)((_) => _.sleep(ms))
 
 /**
  * Access clock from environment
  */
-export const withClockM = asksServiceM(HasClock)
+export const withClockM = I.asksServiceM(HasClock)
 
 /**
  * Access clock from environment
  */
-export const withClock = asksService(HasClock)
+export const withClock = I.asksService(HasClock)

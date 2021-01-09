@@ -61,7 +61,7 @@ export class HttpResponse {
           const queue = yield* $(Q.makeUnbounded<ResponseEvent>())
           const done  = yield* $(Ref.make(false))
           yield* $(
-            T.total(() => {
+            T.effectTotal(() => {
               res.on('close', () => {
                 T.run(queue.offer({ _tag: 'Close' }))
               })
@@ -111,7 +111,7 @@ export class HttpResponse {
 
   status(s: Status.StatusCode): UIO<void> {
     return RefM.update_(this._res, (res) =>
-      T.total(() => {
+      T.effectTotal(() => {
         // eslint-disable-next-line functional/immutable-data
         res.statusCode = s.code
         return res
@@ -129,7 +129,7 @@ export class HttpResponse {
 
   set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {
     return RefM.update_(this._res, (res) =>
-      T.suspend(() => {
+      T.effectSuspendTotal(() => {
         const hs = Object.entries(headers)
         try {
           for (let i = 0; i < hs.length; i++) {
@@ -154,7 +154,7 @@ export class HttpResponse {
 
   write(chunk: string | Buffer): FIO<HttpException, void> {
     return T.flatMap_(this._res.get, (res) =>
-      T.async<unknown, HttpException, void>((cb) => {
+      T.effectAsync<unknown, HttpException, void>((cb) => {
         res.write(chunk, (err) =>
           err
             ? cb(
@@ -191,7 +191,7 @@ export class HttpResponse {
 
   end(): UIO<void> {
     return T.flatMap_(this._res.get, (res) =>
-      T.total(() => {
+      T.effectTotal(() => {
         res.end()
       })
     )

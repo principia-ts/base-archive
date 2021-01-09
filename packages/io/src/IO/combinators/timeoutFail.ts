@@ -1,7 +1,7 @@
 import type { HasClock } from '../../Clock'
 import type { IO } from '../core'
 
-import { fail, flatten, pure, suspend } from '../core'
+import { effectSuspendTotal, fail, flatten, pure } from '../core'
 import { timeoutTo_ } from './timeoutTo'
 
 /**
@@ -13,7 +13,7 @@ export function timeoutFail_<R, E, A, E1>(ma: IO<R, E, A>, d: number, e: () => E
     timeoutTo_(
       ma,
       d,
-      suspend(() => fail(e())),
+      effectSuspendTotal(() => fail(e())),
       pure
     )
   )

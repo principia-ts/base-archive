@@ -11,12 +11,12 @@ import { uninterruptibleMask } from './interrupt'
 /**
  * Forks the effect into a new independent fiber, with the specified name.
  */
-export function forkAs_<R, E, A>(fa: IO<R, E, A>, name: string): URIO<R, Fiber.FiberContext<E, A>> {
+export function forkAs_<R, E, A>(ma: IO<R, E, A>, name: string): URIO<R, Fiber.FiberContext<E, A>> {
   return uninterruptibleMask(({ restore }) =>
     pipe(
       Fiber.fiberName,
       FiberRef.set(O.some(name)),
-      flatMap(() => fork(restore(fa)))
+      flatMap(() => fork(restore(ma)))
     )
   )
 }
@@ -24,6 +24,6 @@ export function forkAs_<R, E, A>(fa: IO<R, E, A>, name: string): URIO<R, Fiber.F
 /**
  * Forks the effect into a new independent fiber, with the specified name.
  */
-export function forkAs(name: string): <R, E, A>(ef: IO<R, E, A>) => URIO<R, Fiber.FiberContext<E, A>> {
-  return (ef) => forkAs_(ef, name)
+export function forkAs(name: string): <R, E, A>(ma: IO<R, E, A>) => URIO<R, Fiber.FiberContext<E, A>> {
+  return (ma) => forkAs_(ma, name)
 }

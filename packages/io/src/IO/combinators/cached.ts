@@ -48,7 +48,7 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
 
 /**
  * ```haskell
- * cached_ :: (IO r e a, Number) -> IO (r & HasClock) _ (t ^ _ e a)
+ * cached_ :: (IO r e a, Number) -> URIO (r & HasClock) (FIO e a)
  * ```
  *
  * Returns an IO that, if evaluated, will return the cached result of
@@ -57,18 +57,18 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
  * @category Combinators
  * @since 1.0.0
  */
-export function cached_<R, E, A>(fa: IO<R, E, A>, timeToLive: number): URIO<R & HasClock, FIO<E, A>> {
+export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & HasClock, FIO<E, A>> {
   return pipe(
     I.do,
     I.bindS('r', () => I.ask<R & HasClock>()),
     I.bindS('cache', () => RefM.make<Option<readonly [number, Promise<E, A>]>>(O.none())),
-    I.map(({ cache, r }) => I.giveAll(r)(_get(fa, timeToLive, cache)))
+    I.map(({ cache, r }) => I.giveAll(r)(_get(ma, timeToLive, cache)))
   )
 }
 
 /**
  * ```haskell
- * cached :: Number -> IO r e a -> IO (r & HasClock) _ (IO _ e a)
+ * cached :: Number -> IO r e a -> URIO (r & HasClock) (FIO e a)
  * ```
  *
  * Returns an IO that, if evaluated, will return the cached result of
@@ -77,6 +77,6 @@ export function cached_<R, E, A>(fa: IO<R, E, A>, timeToLive: number): URIO<R & 
  * @category Combinators
  * @since 1.0.0
  */
-export function cached(timeToLive: number): <R, E, A>(fa: I.IO<R, E, A>) => URIO<R & HasClock, FIO<E, A>> {
-  return <R, E, A>(fa: IO<R, E, A>) => cached_(fa, timeToLive)
+export function cached(timeToLive: number): <R, E, A>(ma: I.IO<R, E, A>) => URIO<R & HasClock, FIO<E, A>> {
+  return <R, E, A>(ma: IO<R, E, A>) => cached_(ma, timeToLive)
 }

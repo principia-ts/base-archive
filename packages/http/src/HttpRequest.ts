@@ -77,7 +77,7 @@ export class HttpRequest {
           const queue = yield* $(Q.makeUnbounded<RequestEvent>())
           const done  = yield* $(Ref.make(false))
           yield* $(
-            T.total(() => {
+            T.effectTotal(() => {
               req.on('close', () => {
                 T.run(queue.offer({ _tag: 'Close' }))
               })
@@ -146,7 +146,7 @@ export class HttpRequest {
         O.fold(
           () =>
             T.flatMap_(this._req.get, (req) =>
-              T.suspend(() => {
+              T.effectSuspendTotal(() => {
                 try {
                   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                   const parsedUrl = new Url.URL(req.url!)
@@ -291,7 +291,7 @@ export class HttpRequest {
             )
           ),
           T.flatMap((raw) =>
-            T.partial_(
+            T.effectCatch_(
               () => JSON.parse(raw),
               (_) =>
                 new HttpException('Failed to parse body JSON', 'HttpRequest#bodyJson', {

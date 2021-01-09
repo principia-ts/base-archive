@@ -197,11 +197,11 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return I.descriptorWith((d) =>
-      I.suspend(() => {
+      I.effectSuspendTotal(() => {
         const p = P.unsafeMake<never, boolean>(d.id)
 
         return I.onInterrupt_(
-          I.suspend(() => {
+          I.effectSuspendTotal(() => {
             this.unsafeOffer(as, p)
             this.unsafeOnQueueEmptySpace(queue)
             unsafeCompleteTakers(this, queue, takers)
@@ -211,7 +211,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
               return p.await
             }
           }),
-          () => I.total(() => this.unsafeRemove(p))
+          () => I.effectTotal(() => this.unsafeRemove(p))
         )
       })
     )
@@ -263,7 +263,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     return pipe(
       I.do,
       I.bindS('fiberId', () => I.fiberId()),
-      I.bindS('putters', () => I.total(() => unsafePollAll(this.putters))),
+      I.bindS('putters', () => I.effectTotal(() => unsafePollAll(this.putters))),
       I.tap((s) =>
         I.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? p.interruptAs(s.fiberId) : I.unit()))
       ),
@@ -306,7 +306,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
     takers: MutableQueue<Promise<never, A>>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
-    return I.total(() => {
+    return I.effectTotal(() => {
       this.unsafeSlidingOffer(queue, as)
       unsafeCompleteTakers(this, queue, takers)
       return true
@@ -354,10 +354,10 @@ export function unsafeCreate<A>(
 
     capacity: number = queue.capacity
 
-    isShutdown: I.UIO<boolean> = I.total(() => shutdownFlag.get)
+    isShutdown: I.UIO<boolean> = I.effectTotal(() => shutdownFlag.get)
 
     offer: (a: A) => I.IO<unknown, never, boolean> = (a) =>
-      I.suspend(() => {
+      I.effectSuspendTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
@@ -380,7 +380,7 @@ export function unsafeCreate<A>(
 
     offerAll: (as: Iterable<A>) => I.IO<unknown, never, boolean> = (as) => {
       const arr = Array.from(as)
-      return I.suspend(() => {
+      return I.effectSuspendTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
@@ -409,7 +409,7 @@ export function unsafeCreate<A>(
     }
 
     shutdown: I.UIO<void> = I.descriptorWith((d) =>
-      I.suspend(() => {
+      I.effectSuspendTotal(() => {
         shutdownFlag.set(true)
 
         return I.makeUninterruptible(
@@ -420,7 +420,7 @@ export function unsafeCreate<A>(
       })
     )
 
-    size: I.UIO<number> = I.suspend(() => {
+    size: I.UIO<number> = I.effectSuspendTotal(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       } else {
@@ -429,7 +429,7 @@ export function unsafeCreate<A>(
     })
 
     take: I.IO<unknown, never, A> = I.descriptorWith((d) =>
-      I.suspend(() => {
+      I.effectSuspendTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         }
@@ -443,7 +443,7 @@ export function unsafeCreate<A>(
           const p = P.unsafeMake<never, A>(d.id)
 
           return I.onInterrupt_(
-            I.suspend(() => {
+            I.effectSuspendTotal(() => {
               takers.offer(p)
               unsafeCompleteTakers(strategy, queue, takers)
               if (shutdownFlag.get) {
@@ -452,17 +452,17 @@ export function unsafeCreate<A>(
                 return p.await
               }
             }),
-            () => I.total(() => unsafeRemove(takers, p))
+            () => I.effectTotal(() => unsafeRemove(takers, p))
           )
         }
       })
     )
 
-    takeAll: I.IO<unknown, never, readonly A[]> = I.suspend(() => {
+    takeAll: I.IO<unknown, never, readonly A[]> = I.effectSuspendTotal(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       } else {
-        return I.total(() => {
+        return I.effectTotal(() => {
           const as = unsafePollAll(queue)
           strategy.unsafeOnQueueEmptySpace(queue)
           return as
@@ -471,11 +471,11 @@ export function unsafeCreate<A>(
     })
 
     takeUpTo: (n: number) => I.IO<unknown, never, readonly A[]> = (max) =>
-      I.suspend(() => {
+      I.effectSuspendTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
-          return I.total(() => {
+          return I.effectTotal(() => {
             const as = unsafePollN(queue, max)
             strategy.unsafeOnQueueEmptySpace(queue)
             return as
@@ -492,28 +492,28 @@ export function createQueue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) 
 
 export function makeSliding<A>(capacity: number): I.UIO<Queue<A>> {
   return I.flatMap_(
-    I.total(() => new Bounded<A>(capacity)),
+    I.effectTotal(() => new Bounded<A>(capacity)),
     createQueue(new SlidingStrategy())
   )
 }
 
 export function makeUnbounded<A>(): I.UIO<Queue<A>> {
   return I.flatMap_(
-    I.total(() => new Unbounded<A>()),
+    I.effectTotal(() => new Unbounded<A>()),
     createQueue(new DroppingStrategy())
   )
 }
 
 export function makeDropping<A>(capacity: number): I.UIO<Queue<A>> {
   return I.flatMap_(
-    I.total(() => new Bounded<A>(capacity)),
+    I.effectTotal(() => new Bounded<A>(capacity)),
     createQueue(new DroppingStrategy())
   )
 }
 
 export function makeBounded<A>(capacity: number): I.UIO<Queue<A>> {
   return I.flatMap_(
-    I.total(() => new Bounded<A>(capacity)),
+    I.effectTotal(() => new Bounded<A>(capacity)),
     createQueue(new BackPressureStrategy())
   )
 }

@@ -25,50 +25,50 @@ export const { putStrLn, putStrLnDebug, putStrLnErr } = I.deriveLifted(Console)(
 
 export class NodeConsole implements Console {
   putStrLn(...data: any[]) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.log(...data)
     })
   }
   putStrLnErr(...data: any[]) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.error(...data)
     })
   }
   putStrLnDebug(...data: any[]) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.debug(...data)
     })
   }
 
   time(label?: string) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.time(label)
     })
   }
   timeEnd(label?: string) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.timeEnd(label)
     })
   }
   timeLog(label?: string) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.timeLog(label)
     })
   }
 
   count(label?: string) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.count(label)
     })
   }
   countReset(label?: string) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.countReset(label)
     })
   }
 
   inspect(object: any, options?: InspectOptions) {
-    return I.total(() => {
+    return I.effectTotal(() => {
       console.log(inspect(object, options ?? {}))
     })
   }
