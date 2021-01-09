@@ -22,7 +22,7 @@ export const stdin: S.FStream<StdinError, Byte> = pipe(
   S.fromEffect(I.effectTotal(() => tuple(process.stdin.resume(), new Array<() => void>()))),
   S.flatMap(([rs, cleanup]) =>
     S.ensuring_(
-      S.async<unknown, StdinError, Byte>((cb) => {
+      S.effectAsync<unknown, StdinError, Byte>((cb) => {
         const onData  = (data: Buffer) => {
           cb(I.succeed(C.fromBuffer(data)))
         }

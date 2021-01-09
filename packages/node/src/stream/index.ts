@@ -35,7 +35,7 @@ export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, 
       })
     ),
     S.flatMap((sr) =>
-      S.async<unknown, ReadableError, Byte>((cb) => {
+      S.effectAsync<unknown, ReadableError, Byte>((cb) => {
         sr.on('data', (chunk) => {
           cb(I.succeed(chunk))
         })

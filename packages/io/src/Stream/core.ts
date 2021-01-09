@@ -440,7 +440,7 @@ export function asyncOption<R, E, A>(
  * The optionality of the error type `E` can be used to signal the end of the stream,
  * by setting it to `None`.
  */
-export function async<R, E, A>(
+export function effectAsync<R, E, A>(
   register: (
     resolve: (
       next: I.IO<R, Option<E>, Chunk<A>>,
@@ -461,7 +461,7 @@ export function async<R, E, A>(
  * The optionality of the error type `E` can be used to signal the end of the stream, by
  * setting it to `None`.
  */
-export function asyncInterruptEither<R, E, A>(
+export function effectAsyncInterruptEither<R, E, A>(
   register: (
     resolve: (
       next: I.IO<R, Option<E>, Chunk<A>>,
@@ -518,7 +518,7 @@ export function asyncInterruptEither<R, E, A>(
  * The optionality of the error type `E` can be used to signal the end of the stream, by
  * setting it to `None`.
  */
-export function asyncInterrupt<R, E, A>(
+export function effectAsyncInterrupt<R, E, A>(
   register: (
     cb: (
       next: I.IO<R, Option<E>, Chunk<A>>,
@@ -527,7 +527,7 @@ export function asyncInterrupt<R, E, A>(
   ) => I.Canceler<R>,
   outputBuffer = 16
 ): Stream<R, E, A> {
-  return asyncInterruptEither((cb) => E.left(register(cb)), outputBuffer)
+  return effectAsyncInterruptEither((cb) => E.left(register(cb)), outputBuffer)
 }
 
 /**
