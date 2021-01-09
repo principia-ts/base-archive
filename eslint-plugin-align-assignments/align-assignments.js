@@ -26,7 +26,6 @@ module.exports = {
 
     return {
       VariableDeclaration(node) {
-        console.log({ previousNode, node })
         if (
           previousNode &&
           previousNode?.type === 'ExportNamedDeclaration' &&

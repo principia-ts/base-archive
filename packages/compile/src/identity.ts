@@ -19,18 +19,18 @@ export default function identity(
 
             const optimizeTagsOverload = overloadDeclarations
               ? (() => {
-                try {
-                  return ts
-                    .getAllJSDocTags(
-                      overloadDeclarations,
-                      (t): t is ts.JSDocTag => t.tagName.getText() === 'optimize'
-                    )
-                    .map((e) => e.comment)
-                    .filter((s): s is string => s != null)
-                } catch {
-                  return undefined
-                }
-              })()
+                  try {
+                    return ts
+                      .getAllJSDocTags(
+                        overloadDeclarations,
+                        (t): t is ts.JSDocTag => t.tagName.getText() === 'optimize'
+                      )
+                      .map((e) => e.comment)
+                      .filter((s): s is string => s != null)
+                  } catch {
+                    return undefined
+                  }
+                })()
               : undefined
 
             const optimizeTagsMain =

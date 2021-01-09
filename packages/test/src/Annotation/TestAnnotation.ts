@@ -57,8 +57,8 @@ function compose_<A>(left: Either<number, Chunk<A>>, right: Either<number, Chunk
       ? E.left(left.left + right.left)
       : right
     : E.isRight(left)
-      ? E.isRight(right)
-        ? E.right(C.concat_(left.right, right.right))
-        : right
-      : absurd(undefined as never)
+    ? E.isRight(right)
+      ? E.right(C.concat_(left.right, right.right))
+      : right
+    : absurd(undefined as never)
 }

@@ -285,9 +285,9 @@ function _build<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Mem
             M.gives_(memo.getOrElseMemoize(_I.onSuccess), (x) =>
               typeof x === 'object' && typeof r === 'object'
                 ? {
-                  ...x,
-                  ...r
-                }
+                    ...x,
+                    ...r
+                  }
                 : r
             )
         )

@@ -124,8 +124,8 @@ export function zipWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (a: A, b: B) =>
       ? A.zipWith_(fa, fb, f)
       : A.zipWith_(fa, A.from(fb), f)
     : Array.isArray(fb)
-      ? A.zipWith_(A.from(fa), fb, f)
-      : A.zipWith_(A.from(fa), A.from(fb), f)
+    ? A.zipWith_(A.from(fa), fb, f)
+    : A.zipWith_(A.from(fa), A.from(fb), f)
 }
 
 export function zipWith<A, B, C>(fb: Chunk<B>, f: (a: A, b: B) => C): (fa: Chunk<A>) => Chunk<C> {

@@ -85,9 +85,9 @@ export function testFunctorComposition<F extends HKT.URIS, C>(
 ) => void {
   return (lift, liftEq) => {
     const arb = lift(fc.string())
-    const Sc = liftEq(Eq.number)
-    const ab = (s: string): number | null | undefined => (s.length === 1 ? undefined : s.length === 2 ? null : s.length)
-    const bc = (n: number | null | undefined): number => (n === undefined ? 1 : n === null ? 2 : n * 2)
+    const Sc  = liftEq(Eq.number)
+    const ab  = (s: string): number | null | undefined => (s.length === 1 ? undefined : s.length === 2 ? null : s.length)
+    const bc  = (n: number | null | undefined): number => (n === undefined ? 1 : n === null ? 2 : n * 2)
 
     const composition = fc.property(arb, Functor.composition(F, Sc, ab, bc))
 

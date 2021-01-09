@@ -7,8 +7,8 @@ import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Const'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/Function'
-import * as I from '@principia/base/Identity'
 import * as HKT from '@principia/base/HKT'
+import * as I from '@principia/base/Identity'
 
 import * as _ from './internal'
 

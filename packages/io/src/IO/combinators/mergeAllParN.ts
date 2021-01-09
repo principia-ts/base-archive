@@ -17,22 +17,21 @@ import { foreachUnitParN_ } from './foreachUnitParN'
  * more than once for some of `in` elements during effect execution.
  */
 export function mergeAllParN_(n: number) {
-  return <R, E, A, B>(
-    fas: Iterable<IO<R, E, A>>,
-    b: B,
-    f: (b: B, a: A) => B
-  ): IO<R, E, B> => flatMap_(XR.make(b), (acc) => flatMap_(
-    foreachUnitParN_(n)(
-      fas,
-      flatMap((a) => pipe(
-        acc,
-        XR.update((b) => f(b, a))
+  return <R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> =>
+    flatMap_(XR.make(b), (acc) =>
+      flatMap_(
+        foreachUnitParN_(n)(
+          fas,
+          flatMap((a) =>
+            pipe(
+              acc,
+              XR.update((b) => f(b, a))
+            )
+          )
+        ),
+        () => acc.get
       )
-      )
-    ),
-    () => acc.get
-  )
-  )
+    )
 }
 
 /**
@@ -46,7 +45,6 @@ export function mergeAllParN_(n: number) {
  * more than once for some of `in` elements during effect execution.
  */
 export function mergeAllParN(n: number) {
-  return <A, B>(b: B, f: (b: B, a: A) => B) => <R, E>(
-    fas: Iterable<IO<R, E, A>>
-  ): IO<R, E, B> => mergeAllParN_(n)(fas, b, f)
+  return <A, B>(b: B, f: (b: B, a: A) => B) => <R, E>(fas: Iterable<IO<R, E, A>>): IO<R, E, B> =>
+    mergeAllParN_(n)(fas, b, f)
 }

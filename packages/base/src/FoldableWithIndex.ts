@@ -34,9 +34,9 @@ export function getFoldableWithIndexComposition<F, G>(
     b: B,
     f: (b: B, k: [KF, KG], a: A) => B
   ) =>
-      F.foldLeftWithIndex_(fga, b, (b: B, fi: KF, ga: HKT.HKT<G, A>) =>
-        G.foldLeftWithIndex_(ga, b, (b: B, gi: KG, a: A) => f(b, [fi, gi], a))
-      )
+    F.foldLeftWithIndex_(fga, b, (b: B, fi: KF, ga: HKT.HKT<G, A>) =>
+      G.foldLeftWithIndex_(ga, b, (b: B, gi: KG, a: A) => f(b, [fi, gi], a))
+    )
 
   const foldMapWithIndex_: FoldMapWithIndexFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = <M>(M: Monoid<M>) => <KF, KG, A>(
     fga: HKT.HKT<F, HKT.HKT<G, A>>,
@@ -48,9 +48,9 @@ export function getFoldableWithIndexComposition<F, G>(
     b: B,
     f: (a: A, k: [KF, KG], b: B) => B
   ) =>
-      F.foldRightWithIndex_(fga, b, (ga: HKT.HKT<G, A>, fi: KF, b) =>
-        G.foldRightWithIndex_(ga, b, (a: A, gi: KG, b) => f(a, [fi, gi], b))
-      )
+    F.foldRightWithIndex_(fga, b, (ga: HKT.HKT<G, A>, fi: KF, b) =>
+      G.foldRightWithIndex_(ga, b, (a: A, gi: KG, b) => f(a, [fi, gi], b))
+    )
   return HKT.instance<FoldableWithIndexComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
     foldLeftWithIndex_,
     foldMapWithIndex_,

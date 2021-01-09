@@ -86,14 +86,14 @@ export class HttpResponse {
             b
               ? Pull.end
               : T.flatMap_(
-                queue.take,
-                (event): T.UIO<Chunk<ResponseEvent>> => {
-                  if (event._tag === 'Close') {
-                    return T.andThen_(done.set(true), Pull.emit(event))
+                  queue.take,
+                  (event): T.UIO<Chunk<ResponseEvent>> => {
+                    if (event._tag === 'Close') {
+                      return T.andThen_(done.set(true), Pull.emit(event))
+                    }
+                    return Pull.emit(event)
                   }
-                  return Pull.emit(event)
-                }
-              )
+                )
           )
         })
       ),
@@ -158,13 +158,13 @@ export class HttpResponse {
         res.write(chunk, (err) =>
           err
             ? cb(
-              T.fail(
-                new HttpException('Failed to write body', 'HttpResponse#write', {
-                  status: Status.InternalServerError,
-                  originalError: err
-                })
+                T.fail(
+                  new HttpException('Failed to write body', 'HttpResponse#write', {
+                    status: Status.InternalServerError,
+                    originalError: err
+                  })
+                )
               )
-            )
             : cb(T.unit())
         )
       })

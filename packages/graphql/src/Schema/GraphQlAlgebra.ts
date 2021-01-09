@@ -86,16 +86,16 @@ export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
       createUnnamedFieldDefinitionNode({
         arguments: args
           ? R.foldLeftWithIndex_(args, A.empty(), (b, k, a) => [
-            ...b,
-            createInputValueDefinitionNode({
-              defaultValue: a.config.defaultValue,
-              description: a.config.description,
-              list: a.config.list,
-              name: k,
-              nullable: a.config.nullable,
-              typeName: getTypeName(a.ast)
-            })
-          ])
+              ...b,
+              createInputValueDefinitionNode({
+                defaultValue: a.config.defaultValue,
+                description: a.config.description,
+                list: a.config.list,
+                name: k,
+                nullable: a.config.nullable,
+                typeName: getTypeName(a.ast)
+              })
+            ])
           : [],
         description: type.config.description,
         list: type.config.list,

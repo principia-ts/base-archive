@@ -264,9 +264,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
       I.do,
       I.bindS('fiberId', () => I.fiberId()),
       I.bindS('putters', () => I.effectTotal(() => unsafePollAll(this.putters))),
-      I.tap((s) =>
-        I.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? p.interruptAs(s.fiberId) : I.unit()))
-      ),
+      I.tap((s) => I.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? p.interruptAs(s.fiberId) : I.unit()))),
       I.asUnit
     )
   }

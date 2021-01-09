@@ -15,23 +15,16 @@ import { extractInfo } from './utils'
 export const SumDecoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) => {
     const decoders = R.map_(types, (_) => _(env))
-    return applyDecoderConfig(config?.config)(
-      D.sum_(
-        tag,
-        decoders,
-        extractInfo(config)
-      ),
-      env,
-      decoders as any
-    )
+    return applyDecoderConfig(config?.config)(D.sum_(tag, decoders, extractInfo(config)), env, decoders as any)
   },
   either: (left, right, config) => (env) =>
     pipe(left(env), (l) =>
       pipe(right(env), (r) =>
         applyDecoderConfig(config?.config)(
-            pipe(
-              D.UnknownRecord(),
-              D.parse((M) => (u) => {
+          pipe(
+            D.UnknownRecord(),
+            D.parse(
+              (M) => (u) => {
                 if ('_tag' in u && ((u['_tag'] === 'Left' && 'left' in u) || (u['_tag'] === 'Right' && 'right' in u))) {
                   if (u['_tag'] === 'Left') {
                     return M.map_(l.decode(M)(u['left']), E.left) as any
@@ -41,8 +34,10 @@ export const SumDecoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
                 } else {
                   return M.fail(error(u, 'Either', extractInfo(config)))
                 }
-              }, `Either<${l._meta.name}, ${r._meta.name}>`)
-            ),
+              },
+              `Either<${l._meta.name}, ${r._meta.name}>`
+            )
+          ),
           env,
           { left: l, right: r }
         )
@@ -51,20 +46,20 @@ export const SumDecoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
   option: (a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(
-          pipe(
-            D.UnknownRecord(),
-            D.parse((M) => (u) => {
-              if ('_tag' in u && (u['_tag'] === 'None' || (u['_tag'] === 'Some' && 'value' in u))) {
-                if (u['_tag'] === 'Some') {
-                  return M.map_(decoder.decode(M)(u['value']), O.some)
-                } else {
-                  return M.pure(O.none())
-                }
+        pipe(
+          D.UnknownRecord(),
+          D.parse((M) => (u) => {
+            if ('_tag' in u && (u['_tag'] === 'None' || (u['_tag'] === 'Some' && 'value' in u))) {
+              if (u['_tag'] === 'Some') {
+                return M.map_(decoder.decode(M)(u['value']), O.some)
               } else {
-                return M.fail(error(u, 'Option', extractInfo(config)))
+                return M.pure(O.none())
               }
-            })
-          ),
+            } else {
+              return M.fail(error(u, 'Option', extractInfo(config)))
+            }
+          })
+        ),
         env,
         decoder
       )

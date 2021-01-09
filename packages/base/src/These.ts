@@ -76,8 +76,8 @@ export function fromOptions<E, A>(fe: O.Option<E>, fa: O.Option<A>): O.Option<Th
       ? O.none()
       : O.some(right(fa.value))
     : O.isNone(fa)
-      ? O.some(left(fe.value))
-      : O.some(both(fe.value, fa.value))
+    ? O.some(left(fe.value))
+    : O.some(both(fe.value, fa.value))
 }
 
 /*
@@ -181,19 +181,19 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[URI], HKT.Fix<'E', E>>
       ? isLeft(fb)
         ? left(SE.combine_(fa.left, fb.left))
         : isRight(fb)
-          ? fa
-          : left(SE.combine_(fa.left, fb.left))
+        ? fa
+        : left(SE.combine_(fa.left, fb.left))
       : isRight(fa)
-        ? isLeft(fb)
-          ? left(fb.left)
-          : isRight(fb)
-            ? right(f(fa.right, fb.right))
-            : both(fb.left, f(fa.right, fb.right))
-        : isLeft(fb)
-          ? left(SE.combine_(fa.left, fb.left))
-          : isRight(fb)
-            ? both(fa.left, f(fa.right, fb.right))
-            : both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
+      ? isLeft(fb)
+        ? left(fb.left)
+        : isRight(fb)
+        ? right(f(fa.right, fb.right))
+        : both(fb.left, f(fa.right, fb.right))
+      : isLeft(fb)
+      ? left(SE.combine_(fa.left, fb.left))
+      : isRight(fb)
+      ? both(fa.left, f(fa.right, fb.right))
+      : both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
 
   return HKT.instance({
     imap_: (fa, f, _) => map_(fa, f),
@@ -246,8 +246,8 @@ export function getEq<E, A>(EE: Eq<E>, EA: Eq<A>): Eq<These<E, A>> {
     isLeft(x)
       ? isLeft(y) && EE.equals_(x.left, y.left)
       : isRight(x)
-        ? isRight(y) && EA.equals_(x.right, y.right)
-        : isBoth(y) && EE.equals_(x.left, y.left) && EA.equals_(x.right, y.right)
+      ? isRight(y) && EA.equals_(x.right, y.right)
+      : isBoth(y) && EE.equals_(x.left, y.left) && EA.equals_(x.right, y.right)
   )
 }
 
@@ -313,8 +313,8 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E',
     return isLeft(fb)
       ? left(SE.combine_(ma.left, fb.left))
       : isRight(fb)
-        ? both(ma.left, fb.right)
-        : both(SE.combine_(ma.left, fb.left), fb.right)
+      ? both(ma.left, fb.right)
+      : both(SE.combine_(ma.left, fb.left), fb.right)
   }
   return HKT.instance<P.MonadFail<[URI], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
@@ -337,19 +337,19 @@ export function getSemigroup<E, A>(SE: P.Semigroup<E>, SA: P.Semigroup<A>): P.Se
       ? isLeft(y)
         ? left(SE.combine_(x.left, y.left))
         : isRight(y)
-          ? both(x.left, y.right)
-          : both(SE.combine_(x.left, y.left), y.right)
+        ? both(x.left, y.right)
+        : both(SE.combine_(x.left, y.left), y.right)
       : isRight(x)
-        ? isLeft(y)
-          ? both(y.left, x.right)
-          : isRight(y)
-            ? right(SA.combine_(x.right, y.right))
-            : both(y.left, SA.combine_(x.right, y.right))
-        : isLeft(y)
-          ? both(SE.combine_(x.left, y.left), x.right)
-          : isRight(y)
-            ? both(x.left, SA.combine_(x.right, y.right))
-            : both(SE.combine_(x.left, y.left), SA.combine_(x.right, y.right))
+      ? isLeft(y)
+        ? both(y.left, x.right)
+        : isRight(y)
+        ? right(SA.combine_(x.right, y.right))
+        : both(y.left, SA.combine_(x.right, y.right))
+      : isLeft(y)
+      ? both(SE.combine_(x.left, y.left), x.right)
+      : isRight(y)
+      ? both(x.left, SA.combine_(x.right, y.right))
+      : both(SE.combine_(x.left, y.left), SA.combine_(x.right, y.right))
   )
 }
 
@@ -380,8 +380,8 @@ export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => {
     return isLeft(ta)
       ? G.pure(ta)
       : isRight(ta)
-        ? G.map_(f(ta.right), right)
-        : G.map_(f(ta.right), (b) => both(ta.left, b))
+      ? G.map_(f(ta.right), right)
+      : G.map_(f(ta.right), (b) => both(ta.left, b))
   }
 })
 

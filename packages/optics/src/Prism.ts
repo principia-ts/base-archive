@@ -7,8 +7,8 @@ import type * as P from '@principia/base/typeclass'
 
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe } from '@principia/base/Function'
-import * as O from '@principia/base/Option'
 import * as HKT from '@principia/base/HKT'
+import * as O from '@principia/base/Option'
 
 import * as _ from './internal'
 

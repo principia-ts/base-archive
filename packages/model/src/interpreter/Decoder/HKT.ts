@@ -8,9 +8,7 @@ export type URI = typeof URI
 
 declare module '../../HKT' {
   interface URItoInterpreted<Env, S, R, E, A> {
-    readonly [URI]: (
-      _: Env
-    ) => D.DecoderKF<unknown, A>
+    readonly [URI]: (_: Env) => D.DecoderKF<unknown, A>
   }
   interface URItoConfig<S, R, E, A> {
     readonly [URI]: D.DecoderKF<unknown, A>

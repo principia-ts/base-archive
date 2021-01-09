@@ -27,37 +27,35 @@ export const PrimitivesDecoder = implementInterpreter<URI, Alg.PrimitivesURI>()(
     applyDecoderConfig(config?.config)(D.literal(value)(extractInfo(config)), env, {}),
   bigint: (config) => (env) =>
     applyDecoderConfig(config?.config)(
-        pipe(
-          D.string(),
-          D.parse((M) => (a) => {
-            try {
-              return M.pure(BigInt(a))
-            } catch (e) {
-              return M.fail(
-                FS.combine(FS.element(DE.leaf(a, 'integer string')), pipe(config, extractInfo, DE.info, FS.element))
-              )
-            }
-          })
-        ),
+      pipe(
+        D.string(),
+        D.parse((M) => (a) => {
+          try {
+            return M.pure(BigInt(a))
+          } catch (e) {
+            return M.fail(
+              FS.combine(FS.element(DE.leaf(a, 'integer string')), pipe(config, extractInfo, DE.info, FS.element))
+            )
+          }
+        })
+      ),
       env,
       {}
     ),
   date: (config) => (env) =>
     applyDecoderConfig(config?.config)(
-        pipe(
-          D.string(),
-          D.mapLeftWithInput((i, _) =>
-            FS.combine(FS.element(DE.leaf(i, 'date string')), pipe(config, extractInfo, DE.info, FS.element))
-          ),
-          D.parse((M) => (a) => {
-            const d = new Date(a)
-            return isNaN(d.getTime())
-              ? M.fail(
-                FS.combine(FS.element(DE.leaf(a, 'date string')), pipe(config, extractInfo, DE.info, FS.element))
-              )
-              : M.pure(d)
-          })
+      pipe(
+        D.string(),
+        D.mapLeftWithInput((i, _) =>
+          FS.combine(FS.element(DE.leaf(i, 'date string')), pipe(config, extractInfo, DE.info, FS.element))
         ),
+        D.parse((M) => (a) => {
+          const d = new Date(a)
+          return isNaN(d.getTime())
+            ? M.fail(FS.combine(FS.element(DE.leaf(a, 'date string')), pipe(config, extractInfo, DE.info, FS.element)))
+            : M.pure(d)
+        })
+      ),
       env,
       {}
     ),
@@ -67,30 +65,26 @@ export const PrimitivesDecoder = implementInterpreter<URI, Alg.PrimitivesURI>()(
     ),
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (decoder) =>
-      applyDecoderConfig(config?.config)(
-        pipe(D.array(decoder), D.refine(A.isNonEmpty, 'NonEmptyArray')),
-        env,
-        decoder
-      )
+      applyDecoderConfig(config?.config)(pipe(D.array(decoder), D.refine(A.isNonEmpty, 'NonEmptyArray')), env, decoder)
     ),
   keyof: (keys, config) => (env) =>
     applyDecoderConfig(config?.config)(
-        pipe(
-          D.string(),
-          D.refine(
-            (a): a is keyof typeof keys & string => Object.keys(keys).indexOf(a) !== -1,
-            Object.keys(keys).join(' | ')
-          )
-        ),
+      pipe(
+        D.string(),
+        D.refine(
+          (a): a is keyof typeof keys & string => Object.keys(keys).indexOf(a) !== -1,
+          Object.keys(keys).join(' | ')
+        )
+      ),
       env,
       {}
     ),
   UUID: (config) => (env) =>
     applyDecoderConfig(config?.config)(
-        pipe(
-          D.string(),
-          D.refine((a): a is Branded<string, Alg.UUIDBrand> => regexUUID.test(a), 'UUID', extractInfo(config))
-        ),
+      pipe(
+        D.string(),
+        D.refine((a): a is Branded<string, Alg.UUIDBrand> => regexUUID.test(a), 'UUID', extractInfo(config))
+      ),
       env,
       {}
     )

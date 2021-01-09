@@ -202,23 +202,23 @@ export class XQuery<R, E, A> {
           ? rb._tag === 'Blocked'
             ? blockedResult(BRS.then(ra.blockedRequests, rb.blockedRequests), ra.cont.map2Par(rb.cont, f))
             : rb._tag === 'Done'
-              ? blockedResult(
+            ? blockedResult(
                 ra.blockedRequests,
                 ra.cont.map((a) => f(a, rb.value))
               )
-              : failResult(rb.cause)
+            : failResult(rb.cause)
           : ra._tag === 'Done'
-            ? rb._tag === 'Blocked'
-              ? blockedResult(
+          ? rb._tag === 'Blocked'
+            ? blockedResult(
                 rb.blockedRequests,
                 rb.cont.map((b) => f(ra.value, b))
               )
-              : rb._tag === 'Done'
-                ? doneResult(f(ra.value, rb.value))
-                : failResult(rb.cause)
-            : rb._tag === 'Fail'
-              ? failResult(Ca.both(ra.cause, rb.cause))
-              : failResult(ra.cause)
+            : rb._tag === 'Done'
+            ? doneResult(f(ra.value, rb.value))
+            : failResult(rb.cause)
+          : rb._tag === 'Fail'
+          ? failResult(Ca.both(ra.cause, rb.cause))
+          : failResult(ra.cause)
       })
     )
   }
@@ -230,23 +230,23 @@ export class XQuery<R, E, A> {
           ? rb._tag === 'Blocked'
             ? blockedResult(BRS.then(ra.blockedRequests, rb.blockedRequests), ra.cont.map2Batched(rb.cont, f))
             : rb._tag === 'Done'
-              ? blockedResult(
+            ? blockedResult(
                 ra.blockedRequests,
                 ra.cont.map((a) => f(a, rb.value))
               )
-              : failResult(rb.cause)
+            : failResult(rb.cause)
           : ra._tag === 'Done'
-            ? rb._tag === 'Blocked'
-              ? blockedResult(
+          ? rb._tag === 'Blocked'
+            ? blockedResult(
                 rb.blockedRequests,
                 rb.cont.map((b) => f(ra.value, b))
               )
-              : rb._tag === 'Done'
-                ? doneResult(f(ra.value, rb.value))
-                : failResult(rb.cause)
-            : rb._tag === 'Fail'
-              ? failResult(Ca.both(ra.cause, rb.cause))
-              : failResult(ra.cause)
+            : rb._tag === 'Done'
+            ? doneResult(f(ra.value, rb.value))
+            : failResult(rb.cause)
+          : rb._tag === 'Fail'
+          ? failResult(Ca.both(ra.cause, rb.cause))
+          : failResult(ra.cause)
       })
     )
   }
@@ -1115,8 +1115,8 @@ abstract class AbstractContinue {
         ? effectContinue(this.query.map2(that.query, f))
         : effectContinue(this.query.map2(fromEffect(that.io), f))
       : that._tag === 'Effect'
-        ? effectContinue(fromEffect(this.io).map2(that.query, f))
-        : getContinue(I.map2_(this.io, that.io, f))
+      ? effectContinue(fromEffect(this.io).map2(that.query, f))
+      : getContinue(I.map2_(this.io, that.io, f))
   }
 
   map2Par<R, E, A, R1, E1, B, C>(
@@ -1129,8 +1129,8 @@ abstract class AbstractContinue {
         ? effectContinue(this.query.map2Par(that.query, f))
         : effectContinue(this.query.map2(fromEffect(that.io), f))
       : that._tag === 'Effect'
-        ? effectContinue(fromEffect(this.io).map2(that.query, f))
-        : getContinue(I.map2_(this.io, that.io, f))
+      ? effectContinue(fromEffect(this.io).map2(that.query, f))
+      : getContinue(I.map2_(this.io, that.io, f))
   }
 
   map2Batched<R, E, A, R1, E1, B, C>(
@@ -1143,8 +1143,8 @@ abstract class AbstractContinue {
         ? effectContinue(this.query.map2Batched(that.query, f))
         : effectContinue(this.query.map2(fromEffect(that.io), f))
       : that._tag === 'Effect'
-        ? effectContinue(fromEffect(this.io).map2(that.query, f))
-        : getContinue(I.map2_(this.io, that.io, f))
+      ? effectContinue(fromEffect(this.io).map2(that.query, f))
+      : getContinue(I.map2_(this.io, that.io, f))
   }
 }
 

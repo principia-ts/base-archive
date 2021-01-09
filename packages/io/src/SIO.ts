@@ -224,11 +224,16 @@ export function effectSuspend<S1, S2, R, E, A>(sio: () => SIO<S1, S2, R, E, A>):
   return new EffectSuspendPartialInstruction(sio, identity)
 }
 
-export function effectSuspendCatch_<S1, S2, R, E, A, E1>(sio: () => SIO<S1, S2, R, E, A>, f: (e: unknown) => E1): SIO<S1, S2, R, E | E1, A> {
+export function effectSuspendCatch_<S1, S2, R, E, A, E1>(
+  sio: () => SIO<S1, S2, R, E, A>,
+  f: (e: unknown) => E1
+): SIO<S1, S2, R, E | E1, A> {
   return new EffectSuspendPartialInstruction(sio, f)
 }
 
-export function effectSuspendCatch<E1>(onThrow: (e: unknown) => E1): <S1, S2, R, E, A>(sio: () => SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, E | E1, A> {
+export function effectSuspendCatch<E1>(
+  onThrow: (e: unknown) => E1
+): <S1, S2, R, E, A>(sio: () => SIO<S1, S2, R, E, A>) => SIO<S1, S2, R, E | E1, A> {
   return (sio) => effectSuspendCatch_(sio, onThrow)
 }
 
@@ -236,11 +241,16 @@ export function effect<A>(effect: () => A): SIO<unknown, never, unknown, unknown
   return new EffectPartialInstruction(effect, identity)
 }
 
-export function effectCatch_<A, E>(effect: () => A, onThrow: (reason: unknown) => E): SIO<unknown, never, unknown, E, A> {
+export function effectCatch_<A, E>(
+  effect: () => A,
+  onThrow: (reason: unknown) => E
+): SIO<unknown, never, unknown, E, A> {
   return new EffectPartialInstruction(effect, onThrow)
 }
 
-export function effectCatch<E>(onThrow: (reason: unknown) => E): <A>(effect: () => A) => SIO<unknown, never, unknown, E, A> {
+export function effectCatch<E>(
+  onThrow: (reason: unknown) => E
+): <A>(effect: () => A) => SIO<unknown, never, unknown, E, A> {
   return (effect) => effectCatch_(effect, onThrow)
 }
 

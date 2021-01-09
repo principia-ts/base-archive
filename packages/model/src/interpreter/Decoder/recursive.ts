@@ -16,8 +16,7 @@ export const RecursiveDecoder = implementInterpreter<URI, Alg.RecursiveURI>()((_
     const res: ReturnType<typeof f> = (env) =>
       pipe(
         () => get()(env),
-        (getDecoder) =>
-          applyDecoderConfig(config?.config)(D.lazy(id, getDecoder, extractInfo(config)), env, {})
+        (getDecoder) => applyDecoderConfig(config?.config)(D.lazy(id, getDecoder, extractInfo(config)), env, {})
       )
 
     return res

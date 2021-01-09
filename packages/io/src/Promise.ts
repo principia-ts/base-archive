@@ -10,7 +10,11 @@ import * as O from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
 import { fiberId } from './IO/combinators/fiberId'
-import { effectAsyncInterruptEither, interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
+import {
+  effectAsyncInterruptEither,
+  interruptAs as interruptAsIO,
+  uninterruptibleMask
+} from './IO/combinators/interrupt'
 import * as I from './IO/core'
 
 export class Promise<E, A> {

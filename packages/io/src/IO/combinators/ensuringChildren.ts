@@ -20,18 +20,7 @@ export function ensuringChildren_<R, E, A, R1>(
 ): IO<R & R1, E, A> {
   return pipe(
     Supervisor.track,
-    flatMap((s) =>
-      pipe(
-        ma,
-        supervised(s),
-        ensuring(
-          pipe(
-            s.value,
-            flatMap(children)
-          )
-        )
-      )
-    )
+    flatMap((s) => pipe(ma, supervised(s), ensuring(pipe(s.value, flatMap(children)))))
   )
 }
 

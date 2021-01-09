@@ -9,7 +9,7 @@ import { applyEqConfig } from './HKT'
 
 export const RecursiveEq = implementInterpreter<Eq.URI, Alg.RecursiveURI>()((_) => ({
   recursive: (_, f, config) => {
-    const get = memoize<void, ReturnType<typeof f>>(() => f(res))
+    const get                       = memoize<void, ReturnType<typeof f>>(() => f(res))
     const res: ReturnType<typeof f> = (env) =>
       pipe(
         () => get()(env),

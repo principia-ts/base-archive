@@ -18,24 +18,24 @@ const arbiter = <E, A>(
   promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
   fails: XR.URef<number>
 ) => (res: Exit<E, A>): UIO<void> =>
-    Ex.foldM_(
-      res,
-      (e) =>
-        pipe(
-          fails,
-          XR.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
-          I.flatten
-        ),
-      (a) =>
-        pipe(
-          promise.succeed(tuple(a, winner)),
-          I.flatMap((set) =>
-            set
-              ? A.foldLeft_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
-              : I.unit()
-          )
+  Ex.foldM_(
+    res,
+    (e) =>
+      pipe(
+        fails,
+        XR.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
+        I.flatten
+      ),
+    (a) =>
+      pipe(
+        promise.succeed(tuple(a, winner)),
+        I.flatMap((set) =>
+          set
+            ? A.foldLeft_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
+            : I.unit()
         )
-    )
+      )
+  )
 
 /**
  * Returns an IO that races this effect with all the specified effects,

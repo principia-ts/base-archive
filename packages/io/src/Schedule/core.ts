@@ -104,33 +104,33 @@ const repeatLoop = <R, I, O>(
   init: StepFunction<R, I, O>,
   self: StepFunction<R, I, O> = init
 ): StepFunction<R, I, O> => (now, i) =>
-    I.flatMap_(self(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return repeatLoop(init, self)(now, i)
-        }
-        case 'Continue': {
-          return I.pure(makeContinue(d.out, d.interval, repeatLoop(init, d.next)))
-        }
+  I.flatMap_(self(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return repeatLoop(init, self)(now, i)
       }
-    })
+      case 'Continue': {
+        return I.pure(makeContinue(d.out, d.interval, repeatLoop(init, d.next)))
+      }
+    }
+  })
 
 const modifyDelayMLoop = <R, I, O, R1>(
   sf: StepFunction<R, I, O>,
   f: (o: O, d: number) => I.IO<R1, never, number>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-    I.flatMap_(sf(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.pure<Decision<R & R1, I, O>>(makeDone(d.out))
-        }
-        case 'Continue': {
-          const delay = d.interval - now
-
-          return I.map_(f(d.out, delay), (n) => makeContinue(d.out, d.interval + n, modifyDelayMLoop(d.next, f)))
-        }
+  I.flatMap_(sf(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.pure<Decision<R & R1, I, O>>(makeDone(d.out))
       }
-    })
+      case 'Continue': {
+        const delay = d.interval - now
+
+        return I.map_(f(d.out, delay), (n) => makeContinue(d.out, d.interval + n, modifyDelayMLoop(d.next, f)))
+      }
+    }
+  })
 
 /**
  * Returns a new schedule that loops this one continuously, resetting the state
@@ -239,8 +239,8 @@ const andThenEitherLoop = <R, I, O, R1, I1, O1>(
   that: StepFunction<R1, I1, O1>,
   onLeft: boolean
 ): StepFunction<R & R1, I & I1, Either<O, O1>> => (now, i) =>
-    onLeft
-      ? I.flatMap_(sc(now, i), (d) => {
+  onLeft
+    ? I.flatMap_(sc(now, i), (d) => {
         switch (d._tag) {
           case 'Continue': {
             return I.pure(makeContinue(E.left(d.out), d.interval, andThenEitherLoop(d.next, that, true)))
@@ -250,7 +250,7 @@ const andThenEitherLoop = <R, I, O, R1, I1, O1>(
           }
         }
       })
-      : I.map_(that(now, i), (d) => {
+    : I.map_(that(now, i), (d) => {
         switch (d._tag) {
           case 'Done': {
             return makeDone(E.right(d.out))
@@ -281,16 +281,16 @@ const mapMLoop = <R, I, O, R1, O1>(
   self: StepFunction<R, I, O>,
   f: (o: O) => I.IO<R1, never, O1>
 ): StepFunction<R & R1, I, O1> => (now, i) =>
-    I.flatMap_(self(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.map_(f(d.out), (o): Decision<R & R1, I, O1> => makeDone(o))
-        }
-        case 'Continue': {
-          return I.map_(f(d.out), (o) => makeContinue(o, d.interval, mapMLoop(d.next, f)))
-        }
+  I.flatMap_(self(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.map_(f(d.out), (o): Decision<R & R1, I, O1> => makeDone(o))
       }
-    })
+      case 'Continue': {
+        return I.map_(f(d.out), (o) => makeContinue(o, d.interval, mapMLoop(d.next, f)))
+      }
+    }
+  })
 
 export function mapM_<R, I, O, R1, O1>(sc: Schedule<R, I, O>, f: (o: O) => I.IO<R1, never, O1>) {
   return makeSchedule(mapMLoop(sc.step, (o) => f(o)))
@@ -328,35 +328,35 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
   that: StepFunction<R1, I1, O1>,
   f: (d1: number, d2: number) => number
 ): StepFunction<R & R1, I & I1, [O, O1]> => (now, i) => {
-    const left = sc(now, i)
-    const right = that(now, i)
+  const left  = sc(now, i)
+  const right = that(now, i)
 
-    return I.map_(I.product_(left, right), ([l, r]) => {
-      switch (l._tag) {
-        case 'Done': {
-          switch (r._tag) {
-            case 'Done': {
-              return makeDone<[O, O1]>([l.out, r.out])
-            }
-            case 'Continue': {
-              return makeDone<[O, O1]>([l.out, r.out])
-            }
+  return I.map_(I.product_(left, right), ([l, r]) => {
+    switch (l._tag) {
+      case 'Done': {
+        switch (r._tag) {
+          case 'Done': {
+            return makeDone<[O, O1]>([l.out, r.out])
           }
-        }
-        /* eslint-disable-next-line no-fallthrough */
-        case 'Continue': {
-          switch (r._tag) {
-            case 'Done': {
-              return makeDone<[O, O1]>([l.out, r.out])
-            }
-            case 'Continue': {
-              return makeContinue([l.out, r.out], f(l.interval, r.interval), combineWithLoop(l.next, r.next, f))
-            }
+          case 'Continue': {
+            return makeDone<[O, O1]>([l.out, r.out])
           }
         }
       }
-    })
-  }
+      /* eslint-disable-next-line no-fallthrough */
+      case 'Continue': {
+        switch (r._tag) {
+          case 'Done': {
+            return makeDone<[O, O1]>([l.out, r.out])
+          }
+          case 'Continue': {
+            return makeContinue([l.out, r.out], f(l.interval, r.interval), combineWithLoop(l.next, r.next, f))
+          }
+        }
+      }
+    }
+  })
+}
 
 export function combineWith_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
@@ -402,31 +402,31 @@ const zipLoop = <R, I, O, R1, I1, O1>(
   sc: StepFunction<R, I, O>,
   that: StepFunction<R1, I1, O1>
 ): StepFunction<R & R1, readonly [I, I1], readonly [O, O1]> => (now, [in1, in2]) =>
-    I.map_(I.product_(sc(now, in1), that(now, in2)), ([d1, d2]) => {
-      switch (d1._tag) {
-        case 'Done': {
-          switch (d2._tag) {
-            case 'Done': {
-              return makeDone(tuple(d1.out, d2.out))
-            }
-            case 'Continue': {
-              return makeDone(tuple(d1.out, d2.out))
-            }
+  I.map_(I.product_(sc(now, in1), that(now, in2)), ([d1, d2]) => {
+    switch (d1._tag) {
+      case 'Done': {
+        switch (d2._tag) {
+          case 'Done': {
+            return makeDone(tuple(d1.out, d2.out))
           }
-        }
-        /* eslint-disable-next-line no-fallthrough */
-        case 'Continue': {
-          switch (d2._tag) {
-            case 'Done': {
-              return makeDone(tuple(d1.out, d2.out))
-            }
-            case 'Continue': {
-              return makeContinue(tuple(d1.out, d2.out), Math.min(d1.interval, d2.interval), zipLoop(d1.next, d2.next))
-            }
+          case 'Continue': {
+            return makeDone(tuple(d1.out, d2.out))
           }
         }
       }
-    })
+      /* eslint-disable-next-line no-fallthrough */
+      case 'Continue': {
+        switch (d2._tag) {
+          case 'Done': {
+            return makeDone(tuple(d1.out, d2.out))
+          }
+          case 'Continue': {
+            return makeContinue(tuple(d1.out, d2.out), Math.min(d1.interval, d2.interval), zipLoop(d1.next, d2.next))
+          }
+        }
+      }
+    }
+  })
 
 /**
  * Returns a new schedule that has both the inputs and outputs of this and the specified
@@ -453,18 +453,18 @@ const checkMLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   test: (i: I, o: O) => I.IO<R1, never, boolean>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-    I.flatMap_(self(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.pure(makeDone(d.out))
-        }
-        case 'Continue': {
-          return I.map_(test(i, d.out), (b) =>
-            b ? makeContinue(d.out, d.interval, checkMLoop(d.next, test)) : makeDone(d.out)
-          )
-        }
+  I.flatMap_(self(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.pure(makeDone(d.out))
       }
-    })
+      case 'Continue': {
+        return I.map_(test(i, d.out), (b) =>
+          b ? makeContinue(d.out, d.interval, checkMLoop(d.next, test)) : makeDone(d.out)
+        )
+      }
+    }
+  })
 
 /**
  * Returns a new schedule that passes each input and output of this schedule to the specified
@@ -647,31 +647,31 @@ const chooseLoop = <R, I, O, R1, I1, O1>(
   sc: StepFunction<R, I, O>,
   that: StepFunction<R1, I1, O1>
 ): StepFunction<R & R1, Either<I, I1>, Either<O, O1>> => (now, either) =>
-    E.fold_(
-      either,
-      (i) =>
-        I.map_(sc(now, i), (d) => {
-          switch (d._tag) {
-            case 'Done': {
-              return makeDone(E.left(d.out))
-            }
-            case 'Continue': {
-              return makeContinue(E.left(d.out), d.interval, chooseLoop(d.next, that))
-            }
+  E.fold_(
+    either,
+    (i) =>
+      I.map_(sc(now, i), (d) => {
+        switch (d._tag) {
+          case 'Done': {
+            return makeDone(E.left(d.out))
           }
-        }),
-      (i2) =>
-        I.map_(that(now, i2), (d) => {
-          switch (d._tag) {
-            case 'Done': {
-              return makeDone(E.right(d.out))
-            }
-            case 'Continue': {
-              return makeContinue(E.right(d.out), d.interval, chooseLoop(sc, d.next))
-            }
+          case 'Continue': {
+            return makeContinue(E.left(d.out), d.interval, chooseLoop(d.next, that))
           }
-        })
-    )
+        }
+      }),
+    (i2) =>
+      I.map_(that(now, i2), (d) => {
+        switch (d._tag) {
+          case 'Done': {
+            return makeDone(E.right(d.out))
+          }
+          case 'Continue': {
+            return makeContinue(E.right(d.out), d.interval, chooseLoop(sc, d.next))
+          }
+        }
+      })
+  )
 
 /**
  * Returns a new schedule that allows choosing between feeding inputs to this schedule, or
@@ -719,16 +719,16 @@ const ensuringLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   finalizer: I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-    I.flatMap_(self(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.as_(finalizer, () => makeDone(d.out))
-        }
-        case 'Continue': {
-          return I.pure(makeContinue(d.out, d.interval, ensuringLoop(d.next, finalizer)))
-        }
+  I.flatMap_(self(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.as_(finalizer, () => makeDone(d.out))
       }
-    })
+      case 'Continue': {
+        return I.pure(makeContinue(d.out, d.interval, ensuringLoop(d.next, finalizer)))
+      }
+    }
+  })
 
 /**
  * Returns a new schedule that will run the specified finalizer as soon as the schedule is
@@ -776,9 +776,9 @@ export function fixed(interval: number): Schedule<unknown, unknown, number> {
         () => makeContinue(n + 1, now + interval, loop(O.some({ startMillis: now, lastRun: now }), n + 1)),
         ({ lastRun, startMillis }) => {
           const runningBehind = now > lastRun + interval
-          const boundary = interval === 0 ? interval : interval - ((now - startMillis) % interval)
-          const sleepTime = boundary === 0 ? interval : boundary
-          const nextRun = runningBehind ? now : now + sleepTime
+          const boundary      = interval === 0 ? interval : interval - ((now - startMillis) % interval)
+          const sleepTime     = boundary === 0 ? interval : boundary
+          const nextRun       = runningBehind ? now : now + sleepTime
 
           return makeContinue(
             n + 1,
@@ -800,16 +800,16 @@ const foldMLoop = <R, I, O, R1, B>(
   b: B,
   f: (b: B, o: O) => I.IO<R1, never, B>
 ): StepFunction<R & R1, I, B> => (now, i) =>
-    I.flatMap_(sf(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.pure<Decision<R & R1, I, B>>(makeDone(b))
-        }
-        case 'Continue': {
-          return I.map_(f(b, d.out), (b2) => makeContinue(b2, d.interval, foldMLoop(d.next, b2, f)))
-        }
+  I.flatMap_(sf(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.pure<Decision<R & R1, I, B>>(makeDone(b))
       }
-    })
+      case 'Continue': {
+        return I.map_(f(b, d.out), (b2) => makeContinue(b2, d.interval, foldMLoop(d.next, b2, f)))
+      }
+    }
+  })
 
 /**
  * Returns a new `Schedule` that effectfully folds over the outputs of a `Schedule`.
@@ -1063,28 +1063,28 @@ const reconsiderMLoop = <R, I, O, R1, O1>(
   self: StepFunction<R, I, O>,
   f: (_: Decision<R, I, O>) => I.IO<R1, never, E.Either<O1, readonly [O1, number]>>
 ): StepFunction<R & R1, I, O1> => (now, i) =>
-    I.flatMap_(self(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.map_(
-            f(d),
-            E.fold(
-              (o2) => makeDone(o2),
-              ([o2]) => makeDone(o2)
-            )
+  I.flatMap_(self(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.map_(
+          f(d),
+          E.fold(
+            (o2) => makeDone(o2),
+            ([o2]) => makeDone(o2)
           )
-        }
-        case 'Continue': {
-          return I.map_(
-            f(d),
-            E.fold(
-              (o2) => makeDone(o2),
-              ([o2, int]) => makeContinue(o2, int, reconsiderMLoop(d.next, f))
-            )
-          )
-        }
+        )
       }
-    })
+      case 'Continue': {
+        return I.map_(
+          f(d),
+          E.fold(
+            (o2) => makeDone(o2),
+            ([o2, int]) => makeContinue(o2, int, reconsiderMLoop(d.next, f))
+          )
+        )
+      }
+    }
+  })
 
 /**
  * Returns a new schedule that effectfully reconsiders every decision made by this schedule,
@@ -1182,16 +1182,16 @@ const resetWhenLoop = <R, I, O>(
   step: StepFunction<R, I, O>,
   f: (o: O) => boolean
 ): StepFunction<R, I, O> => (now, i) =>
-    I.flatMap_(step(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return f(d.out) ? sc.step(now, i) : I.pure(makeDone(d.out))
-        }
-        case 'Continue': {
-          return f(d.out) ? sc.step(now, i) : I.pure(makeContinue(d.out, d.interval, resetWhenLoop(sc, d.next, f)))
-        }
+  I.flatMap_(step(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return f(d.out) ? sc.step(now, i) : I.pure(makeDone(d.out))
       }
-    })
+      case 'Continue': {
+        return f(d.out) ? sc.step(now, i) : I.pure(makeContinue(d.out, d.interval, resetWhenLoop(sc, d.next, f)))
+      }
+    }
+  })
 
 /**
  * Resets the schedule when the specified predicate on the schedule output evaluates to true.
@@ -1213,8 +1213,8 @@ const runLoop = <R, I, O>(
   xs: readonly I[],
   acc: readonly O[]
 ): I.IO<R, never, readonly O[]> =>
-    xs.length > 0
-      ? I.flatMap_(self(now, xs[0]), (d) => {
+  xs.length > 0
+    ? I.flatMap_(self(now, xs[0]), (d) => {
         switch (d._tag) {
           case 'Done': {
             return I.pure([...acc, d.out])
@@ -1224,7 +1224,7 @@ const runLoop = <R, I, O>(
           }
         }
       })
-      : I.pure(acc)
+    : I.pure(acc)
 
 export function run_<R, I, O>(sc: Schedule<R, I, O>, now: number, i: Iterable<I>): I.IO<R, never, readonly O[]> {
   return runLoop(sc.step, now, Array.from(i), [])
@@ -1238,16 +1238,16 @@ const onDecisionLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   f: (d: Decision<R, I, O>) => I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-    I.flatMap_(self(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.as_(f(d), () => makeDone(d.out))
-        }
-        case 'Continue': {
-          return I.as_(f(d), () => makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)))
-        }
+  I.flatMap_(self(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.as_(f(d), () => makeDone(d.out))
       }
-    })
+      case 'Continue': {
+        return I.as_(f(d), () => makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)))
+      }
+    }
+  })
 
 /**
  * Returns a new schedule that applies the current one but runs the specified effect
@@ -1276,18 +1276,18 @@ const tapInputLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   f: (i: I) => I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-    I.flatMap_(f(i), () =>
-      I.map_(self(now, i), (d) => {
-        switch (d._tag) {
-          case 'Done': {
-            return makeDone(d.out)
-          }
-          case 'Continue': {
-            return makeContinue(d.out, d.interval, tapInputLoop(d.next, f))
-          }
+  I.flatMap_(f(i), () =>
+    I.map_(self(now, i), (d) => {
+      switch (d._tag) {
+        case 'Done': {
+          return makeDone(d.out)
         }
-      })
-    )
+        case 'Continue': {
+          return makeContinue(d.out, d.interval, tapInputLoop(d.next, f))
+        }
+      }
+    })
+  )
 
 export function tapInput_<R, I, O, R1>(
   sc: Schedule<R, I, O>,
@@ -1306,16 +1306,16 @@ const tapOutputLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   f: (o: O) => I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-    I.flatMap_(self(now, i), (d) => {
-      switch (d._tag) {
-        case 'Done': {
-          return I.as_(f(d.out), () => makeDone(d.out))
-        }
-        case 'Continue': {
-          return I.as_(f(d.out), () => makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)))
-        }
+  I.flatMap_(self(now, i), (d) => {
+    switch (d._tag) {
+      case 'Done': {
+        return I.as_(f(d.out), () => makeDone(d.out))
       }
-    })
+      case 'Continue': {
+        return I.as_(f(d.out), () => makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)))
+      }
+    }
+  })
 
 export function tapOutput_<R, I, O, R1>(
   sc: Schedule<R, I, O>,

@@ -573,4 +573,3 @@ export const Category = HKT.instance<P.Category<[URI], V>>({
   compose,
   id
 })
-

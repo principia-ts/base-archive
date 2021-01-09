@@ -140,9 +140,9 @@ export function mergeEnvironments<T, R1>(_: Tag<T>, r: R1, t: T): R1 & Has<T> {
   return _.def && r[_.key]
     ? r
     : ({
-      ...r,
-      [_.key]: t
-    } as any)
+        ...r,
+        [_.key]: t
+      } as any)
 }
 
 export class DerivationContext {

@@ -184,68 +184,68 @@ function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<Blocked
     parallel: Par.Parallel<R>,
     sequential: List<BlockedRequests<R>>
   ): Ev.Eval<readonly [Par.Parallel<R>, List<BlockedRequests<R>>]> =>
-      Ev.gen(function* (_) {
-        switch (blockedRequests._tag) {
-          case 'Empty': {
-            if (L.isEmpty(stack)) {
-              return [parallel, sequential]
-            } else {
-              return yield* _(go(L.unsafeFirst(stack) as BlockedRequests<R>, L.tail(stack), parallel, sequential))
+    Ev.gen(function* (_) {
+      switch (blockedRequests._tag) {
+        case 'Empty': {
+          if (L.isEmpty(stack)) {
+            return [parallel, sequential]
+          } else {
+            return yield* _(go(L.unsafeFirst(stack) as BlockedRequests<R>, L.tail(stack), parallel, sequential))
+          }
+        }
+        case 'Then': {
+          switch (blockedRequests.left._tag) {
+            case 'Empty': {
+              return yield* _(go(blockedRequests.left, stack, parallel, sequential))
             }
-          }
-          case 'Then': {
-            switch (blockedRequests.left._tag) {
-              case 'Empty': {
-                return yield* _(go(blockedRequests.left, stack, parallel, sequential))
-              }
-              case 'Then': {
-                return yield* _(
-                  go(
-                    then(blockedRequests.left.left, then(blockedRequests.left.right, blockedRequests.right)),
-                    stack,
-                    parallel,
-                    sequential
-                  )
-                )
-              }
-              case 'Both': {
-                return yield* _(
-                  go(
-                    both(
-                      then(blockedRequests.left.left, blockedRequests.right),
-                      then(blockedRequests.left.right, blockedRequests.right)
-                    ),
-                    stack,
-                    parallel,
-                    sequential
-                  )
-                )
-              }
-              case 'Single': {
-                return yield* _(go(blockedRequests.left, stack, parallel, L.append(blockedRequests.right)(sequential)))
-              }
-            }
-          }
-          // eslint-disable-next-line no-fallthrough
-          case 'Both': {
-            return yield* _(go(blockedRequests.left, L.append(blockedRequests.right)(stack), parallel, sequential))
-          }
-          case 'Single': {
-            if (L.isEmpty(stack)) {
-              return [parallel['++'](Par.from(blockedRequests.dataSource, blockedRequests.blockedRequest)), sequential]
-            } else {
+            case 'Then': {
               return yield* _(
                 go(
+                  then(blockedRequests.left.left, then(blockedRequests.left.right, blockedRequests.right)),
+                  stack,
+                  parallel,
+                  sequential
+                )
+              )
+            }
+            case 'Both': {
+              return yield* _(
+                go(
+                  both(
+                    then(blockedRequests.left.left, blockedRequests.right),
+                    then(blockedRequests.left.right, blockedRequests.right)
+                  ),
+                  stack,
+                  parallel,
+                  sequential
+                )
+              )
+            }
+            case 'Single': {
+              return yield* _(go(blockedRequests.left, stack, parallel, L.append(blockedRequests.right)(sequential)))
+            }
+          }
+        }
+        // eslint-disable-next-line no-fallthrough
+        case 'Both': {
+          return yield* _(go(blockedRequests.left, L.append(blockedRequests.right)(stack), parallel, sequential))
+        }
+        case 'Single': {
+          if (L.isEmpty(stack)) {
+            return [parallel['++'](Par.from(blockedRequests.dataSource, blockedRequests.blockedRequest)), sequential]
+          } else {
+            return yield* _(
+              go(
                 L.unsafeFirst(stack) as BlockedRequests<R>,
                 L.tail(stack),
                 parallel['++'](Par.from(blockedRequests.dataSource, blockedRequests.blockedRequest)),
                 sequential
-                )
               )
-            }
+            )
           }
         }
-      })
+      }
+    })
 
   return Ev.evaluate(go(c, L.empty(), Par.empty(), L.empty()))
 }

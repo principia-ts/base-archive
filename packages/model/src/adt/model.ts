@@ -56,8 +56,8 @@ const keepKeys = <A extends Tagged<Tag>, Tag extends string>(
 export const unionADT = <
   AS extends [ConstructorsWithKeys<any, any>, ConstructorsWithKeys<any, any>, ...Array<ConstructorsWithKeys<any, any>>]
 >(
-    as: AS
-  ): ADT<Co.ConstructorType<AS[number]>, AS[number]['tag']> => {
+  as: AS
+): ADT<Co.ConstructorType<AS[number]>, AS[number]['tag']> => {
   const newKeys = A.foldRight(as[0].keys, (x: AS[number], y) => mergeKeys(x.keys, y))(as)
   return makeADT(as[0].tag)(newKeys)
 }
@@ -84,9 +84,9 @@ export const makeADT = <Tag extends string>(tag: Tag) => <R extends { [x in keyo
   const keys = _keys as KeysDefinition<Tagged<Tag>, Tag>
 
   const constructors = Co.Constructors(tag)(keys)
-  const predicates = Pr.Predicates<A, Tag>(tag)(keys)
-  const optics = Op.OpticsFor<A>()
-  const matchers = Ma.Matchers<B, Tag>(tag)(keys)
+  const predicates   = Pr.Predicates<A, Tag>(tag)(keys)
+  const optics       = Op.OpticsFor<A>()
+  const matchers     = Ma.Matchers<B, Tag>(tag)(keys)
 
   const select = <Keys extends A[Tag][]>(selectedKeys: Keys): ADT<ExtractUnion<A, Tag, ElemType<Keys>>, Tag> =>
     makeADT(tag)(keepKeys(keys, selectedKeys as string[]) as any)

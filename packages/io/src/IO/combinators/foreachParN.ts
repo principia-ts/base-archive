@@ -1,5 +1,6 @@
 import * as A from '@principia/base/Array'
 import { pipe, tuple } from '@principia/base/Function'
+import * as L from '@principia/base/List'
 
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
 import * as Ref from '../../IORef'
@@ -7,7 +8,6 @@ import * as P from '../../Promise'
 import * as Q from '../../Queue'
 import * as I from '../core'
 import { bracket } from './bracket'
-import * as L from '@principia/base/List'
 
 export function foreachParN_(n: number) {
   return <A, R, E, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> => {
@@ -46,7 +46,14 @@ export function foreachParN_(n: number) {
             )
             const ref   = yield* _(Ref.make(pairs.length))
             yield* _(I.fork(I.foreach_(pairs, (pair) => q.offer(pair))))
-            yield* _(I.collectAllUnit(pipe(L.range(0, n), L.map(() => I.fork(worker(q, pairs, ref))))))
+            yield* _(
+              I.collectAllUnit(
+                pipe(
+                  L.range(0, n),
+                  L.map(() => I.fork(worker(q, pairs, ref)))
+                )
+              )
+            )
             const res = yield* _(I.foreach_(pairs, (_) => _[0].await))
 
             return res

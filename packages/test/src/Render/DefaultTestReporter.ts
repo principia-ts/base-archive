@@ -88,8 +88,8 @@ export function render<E>(
           const renderedLabel  = A.isEmpty(specs)
             ? []
             : hasFailures
-              ? [renderFailureLabel(label, depth)]
-              : [renderSuccessLabel(label, depth)]
+            ? [renderFailureLabel(label, depth)]
+            : [renderSuccessLabel(label, depth)]
 
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
 
@@ -199,23 +199,23 @@ class RenderedResult<T> {
     return selfTag === 'Ignored'
       ? that
       : thatTag === 'Ignored'
-        ? this
-        : selfTag === 'Failed' && thatTag === 'Failed'
-          ? new RenderedResult(
-            this.caseType,
-            this.label,
-            this.status,
-            this.offset,
-            A.concat_(
-              this.rendered,
-              O.getOrElse_(A.tail(that.rendered), () => [])
-            )
+      ? this
+      : selfTag === 'Failed' && thatTag === 'Failed'
+      ? new RenderedResult(
+          this.caseType,
+          this.label,
+          this.status,
+          this.offset,
+          A.concat_(
+            this.rendered,
+            O.getOrElse_(A.tail(that.rendered), () => [])
           )
-          : selfTag === 'Passed'
-            ? that
-            : thatTag === 'Passed'
-              ? this
-              : absurd(undefined as never)
+        )
+      : selfTag === 'Passed'
+      ? that
+      : thatTag === 'Passed'
+      ? this
+      : absurd(undefined as never)
   }
 
   ['||'](that: RenderedResult<T>): RenderedResult<T> {
@@ -225,23 +225,23 @@ class RenderedResult<T> {
     return selfTag === 'Ignored'
       ? that
       : thatTag === 'Ignored'
-        ? this
-        : selfTag === 'Failed' && thatTag === 'Failed'
-          ? new RenderedResult(
-            this.caseType,
-            this.label,
-            this.status,
-            this.offset,
-            A.concat_(
-              this.rendered,
-              O.getOrElse_(A.tail(that.rendered), () => [])
-            )
+      ? this
+      : selfTag === 'Failed' && thatTag === 'Failed'
+      ? new RenderedResult(
+          this.caseType,
+          this.label,
+          this.status,
+          this.offset,
+          A.concat_(
+            this.rendered,
+            O.getOrElse_(A.tail(that.rendered), () => [])
           )
-          : selfTag === 'Passed'
-            ? this
-            : thatTag === 'Passed'
-              ? that
-              : absurd(undefined as never)
+        )
+      : selfTag === 'Passed'
+      ? this
+      : thatTag === 'Passed'
+      ? that
+      : absurd(undefined as never)
   }
 
   ['!'](): RenderedResult<T> {

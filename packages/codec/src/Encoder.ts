@@ -87,7 +87,7 @@ export function type<P extends Record<string, Encoder<any, any>>>(
   {
     [K in keyof P]: TypeOf<P[K]>
   }
-  > {
+> {
   return {
     encode: (a) => {
       const mut_o: Record<keyof P, any> = {} as any
@@ -103,16 +103,16 @@ export function partial<P extends Record<string, Encoder<any, any>>>(
   properties: P
 ): Encoder<
   Partial<
-  {
-    [K in keyof P]: OutputOf<P[K]>
-  }
+    {
+      [K in keyof P]: OutputOf<P[K]>
+    }
   >,
   Partial<
-  {
-    [K in keyof P]: TypeOf<P[K]>
-  }
+    {
+      [K in keyof P]: TypeOf<P[K]>
+    }
   >
-  > {
+> {
   return {
     encode: (a) => {
       const mut_o: Record<keyof P, any> = {} as any
@@ -156,7 +156,7 @@ export function tuple<C extends ReadonlyArray<Encoder<any, any>>>(
   {
     [K in keyof C]: TypeOf<C[K]>
   }
-  > {
+> {
   return {
     encode: (as) => components.map((c, i) => c.encode(as[i])) as any
   }
@@ -180,8 +180,8 @@ export function sum_<T extends string, MS extends Record<string, Encoder<any, an
 export function sum<T extends string>(
   tag: T
 ): <MS extends Record<string, Encoder<any, any>>>(
-    members: MS
-  ) => Encoder<OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
+  members: MS
+) => Encoder<OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
   return (members) => ({
     encode: (a) => members[a[tag]].encode(a)
   })

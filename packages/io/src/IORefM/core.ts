@@ -248,7 +248,7 @@ export function make<A>(a: A): UIO<URefM<A>> {
  * Creates a new `XRefM` with the specified value.
  */
 export function unsafeMake<A>(a: A): URefM<A> {
-  const ref = Ref.unsafeMake(a)
+  const ref       = Ref.unsafeMake(a)
   const semaphore = S.unsafeMake(1)
   return new Atomic(ref, semaphore)
 }

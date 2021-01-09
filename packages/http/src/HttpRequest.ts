@@ -11,8 +11,8 @@ import { flow, pipe } from '@principia/base/Function'
 import * as Iter from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
-import * as Str from '@principia/base/String'
 import { makeSemigroup } from '@principia/base/Semigroup'
+import * as Str from '@principia/base/String'
 import * as C from '@principia/io/Chunk'
 import * as T from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
@@ -105,14 +105,14 @@ export class HttpRequest {
             b
               ? Pull.end
               : T.flatMap_(
-                queue.take,
-                (event): T.UIO<Chunk<RequestEvent>> => {
-                  if (event._tag === 'Close') {
-                    return T.andThen_(done.set(true), Pull.emit(event))
+                  queue.take,
+                  (event): T.UIO<Chunk<RequestEvent>> => {
+                    if (event._tag === 'Close') {
+                      return T.andThen_(done.set(true), Pull.emit(event))
+                    }
+                    return Pull.emit(event)
                   }
-                  return Pull.emit(event)
-                }
-              )
+                )
           )
         })
       ),

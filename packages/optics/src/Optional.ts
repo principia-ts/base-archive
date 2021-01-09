@@ -1,5 +1,5 @@
-import type { Option } from '@principia/base/Option'
 import type * as HKT from '@principia/base/HKT'
+import type { Option } from '@principia/base/Option'
 
 import { constant } from '@principia/base/Function'
 import * as O from '@principia/base/Option'

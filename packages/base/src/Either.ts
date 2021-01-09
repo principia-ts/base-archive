@@ -793,8 +793,8 @@ export function getCompactable<E>(M: P.Monoid<E>) {
       return isLeft(fa)
         ? [fa, fa]
         : isLeft(fa.right)
-          ? [right(fa.right.left), left(M.nat)]
-          : [left(M.nat), right(fa.right.right)]
+        ? [right(fa.right.left), left(M.nat)]
+        : [left(M.nat), right(fa.right.right)]
     }
   })
 }
@@ -1205,9 +1205,9 @@ export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>
     isLeft(ta)
       ? F.pure(left(ta.left))
       : pipe(
-        f(ta.right),
-        F.map((b) => right(b))
-      )
+          f(ta.right),
+          F.map((b) => right(b))
+        )
 })
 
 /**
@@ -1519,8 +1519,8 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<[U
         ? left(S.combine_(fab.left, fa.left))
         : fab
       : isLeft(fa)
-        ? fa
-        : right(fab.right(fa.right))
+      ? fa
+      : right(fab.right(fa.right))
 
   return HKT.instance<P.Applicative<[URI], V_>>({
     ...Functor,

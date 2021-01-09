@@ -75,16 +75,16 @@ export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlge
             ? E.right(and_(l.right, r.right))
             : r
           : E.isRight(r)
-            ? l
-            : E.left(and_(l.left, r.left)),
+          ? l
+          : E.left(and_(l.left, r.left)),
       (l, r) =>
         E.isRight(l)
           ? E.isRight(r)
             ? E.right(or_(l.right, r.right))
             : l
           : E.isRight(r)
-            ? r
-            : E.left(or_(l.left, r.left)),
+          ? r
+          : E.left(or_(l.left, r.left)),
       E.swap
     ),
     O.some,

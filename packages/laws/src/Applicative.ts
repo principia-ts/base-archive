@@ -183,7 +183,7 @@ export function testApplicativeAssociativity<F extends HKT.URIS, TC>(
   return (lift, liftEqs) => {
     const arbString = lift(fc.string())
     const arbNumber = lift(fc.double())
-    const Sabc = liftEqs(Eq.string, Eq.number, Eq.number)
+    const Sabc      = liftEqs(Eq.string, Eq.number, Eq.number)
 
     const associativity = fc.property(fc.tuple(arbString, arbNumber, arbNumber), ApplicativeLaws.associativity(F, Sabc))
 

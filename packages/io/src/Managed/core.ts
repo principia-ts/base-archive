@@ -3,9 +3,9 @@ import type { Exit } from '../Exit'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Finalizer, ReleaseMap } from './ReleaseMap'
 import type { Has, Tag } from '@principia/base/Has'
-import type { ReadonlyRecord } from '@principia/base/Record'
 import type * as HKT from '@principia/base/HKT'
-import type { _E, _R, EnforceNonEmptyRecord , UnionToIntersection } from '@principia/base/util/types'
+import type { ReadonlyRecord } from '@principia/base/Record'
+import type { _E, _R, EnforceNonEmptyRecord, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -460,10 +460,7 @@ export const absolve: <R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>) => Manag
   fromEither(() => ea)
 )
 
-export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Either<E, A>> = fold(
-  E.left,
-  E.right
-)
+export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Either<E, A>> = fold(E.left, E.right)
 
 /*
  * -------------------------------------------
@@ -1402,9 +1399,7 @@ export function someOrFailWith<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, O.O
   return (ma) => someOrFailWith_(ma, e)
 }
 
-export function someOrFail<R, E, A>(
-  ma: Managed<R, E, O.Option<A>>
-): Managed<R, E | NoSuchElementException, A> {
+export function someOrFail<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, E | NoSuchElementException, A> {
   return someOrFailWith_(ma, () => new NoSuchElementException('Managed.someOrFailException'))
 }
 
@@ -1517,7 +1512,7 @@ export function zipEnv<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [A
  * -------------------------------------------
  * Service
  * -------------------------------------------
-*/
+ */
 
 export function askService<T>(t: Tag<T>): Managed<Has<T>, never, T> {
   return asks(t.read)
@@ -1717,7 +1712,7 @@ export function letS<K, N extends string, A>(
  * -------------------------------------------
  * Gen
  * -------------------------------------------
-*/
+ */
 
 export class GenManaged<R, E, A> {
   readonly _R!: (_R: R) => void

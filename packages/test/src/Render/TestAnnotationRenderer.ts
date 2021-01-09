@@ -37,8 +37,8 @@ export function combine_(self: TestAnnotationRenderer, that: TestAnnotationRende
       ? new CompositeRenderer(A.concat_(self.renderers, that.renderers))
       : new CompositeRenderer(A.append_(self.renderers, that))
     : that._tag === 'CompositeRenderer'
-      ? new CompositeRenderer(A.prepend_(that.renderers, self))
-      : new CompositeRenderer([self, that])
+    ? new CompositeRenderer(A.prepend_(that.renderers, self))
+    : new CompositeRenderer([self, that])
 }
 
 export const ignored: TestAnnotationRenderer = new LeafRenderer(TA.ignored, ([child, ..._]) =>

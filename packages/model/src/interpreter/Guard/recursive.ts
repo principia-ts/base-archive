@@ -9,7 +9,7 @@ import { applyGuardConfig } from './HKT'
 
 export const RecursiveGuard = implementInterpreter<G.URI, Alg.RecursiveURI>()((_) => ({
   recursive: (id, a, config) => {
-    const get = memoize<void, ReturnType<typeof a>>(() => a(res))
+    const get                       = memoize<void, ReturnType<typeof a>>(() => a(res))
     const res: ReturnType<typeof a> = (env) =>
       pipe(
         () => get()(env),

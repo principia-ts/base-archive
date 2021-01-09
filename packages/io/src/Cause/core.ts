@@ -240,10 +240,7 @@ export function isCause(u: unknown): u is Cause<unknown> {
 /**
  * @internal
  */
-export function findSafe_<E, A>(
-  cause: Cause<E>,
-  f: (cause: Cause<E>) => O.Option<A>
-): Ev.Eval<O.Option<A>> {
+export function findSafe_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): Ev.Eval<O.Option<A>> {
   return Ev.gen(function* (_) {
     const apply = f(cause)
     if (apply._tag === 'Some') {
@@ -836,8 +833,8 @@ export function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>)
             ? O.some(both(left.value, right.value))
             : left
           : right._tag === 'Some'
-            ? right
-            : O.none()
+          ? right
+          : O.none()
       }
       case 'Then': {
         const left  = yield* _(stripSomeDefectsSafe(cause.left, pf))
@@ -848,8 +845,8 @@ export function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>)
             ? O.some(then(left.value, right.value))
             : left
           : right._tag === 'Some'
-            ? right
-            : O.none()
+          ? right
+          : O.none()
       }
     }
   })
@@ -990,8 +987,8 @@ export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Ev.Eval<O
             ? O.some(then(lefts.value, rights.value))
             : lefts
           : rights._tag === 'Some'
-            ? rights
-            : O.none()
+          ? rights
+          : O.none()
       }
       case 'Both': {
         const lefts  = yield* _(sequenceCauseOptionSafe(cause.left))
@@ -1001,8 +998,8 @@ export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Ev.Eval<O
             ? O.some(both(lefts.value, rights.value))
             : lefts
           : rights._tag === 'Some'
-            ? rights
-            : O.none()
+          ? rights
+          : O.none()
       }
     }
   })
@@ -1042,14 +1039,14 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
       O.alt(() =>
         interrupted(cause)
           ? O.some<unknown>(
-            new InterruptedException(
-              'Interrupted by fibers: ' +
+              new InterruptedException(
+                'Interrupted by fibers: ' +
                   Array.from(interruptors(cause))
                     .map((_) => _.seqNumber.toString())
                     .map((_) => '#' + _)
                     .join(', ')
+              )
             )
-          )
           : O.none()
       ),
       O.alt(() => A.head(defects(cause))),

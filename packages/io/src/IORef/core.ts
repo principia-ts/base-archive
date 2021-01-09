@@ -543,7 +543,6 @@ export function dimapError_<A, B, EA, EB, EC, ED>(
   return dimapError(f, g)(ref)
 }
 
-
 /**
  * Returns a read only view of the `IORef`.
  */

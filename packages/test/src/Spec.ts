@@ -105,21 +105,21 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
       f(s.label)
         ? O.some(suite(s.label, s.specs, s.exec))
         : O.some(
-          suite(
-            s.label,
-            M.map_(
-              s.specs,
-              A.flatMap((spec) =>
-                O.fold_(
-                  filterLabels_(spec, f),
-                  () => A.empty<Spec<R, E, T>>(),
-                  (spec) => [spec]
+            suite(
+              s.label,
+              M.map_(
+                s.specs,
+                A.flatMap((spec) =>
+                  O.fold_(
+                    filterLabels_(spec, f),
+                    () => A.empty<Spec<R, E, T>>(),
+                    (spec) => [spec]
+                  )
                 )
-              )
-            ),
-            s.exec
-          )
-        ),
+              ),
+              s.exec
+            )
+          ),
     Test: (t) => (f(t.label) ? O.some(test(t.label, t.test, t.annotations)) : O.none())
   })
 }

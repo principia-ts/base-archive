@@ -16,12 +16,12 @@ export const SetDecoder = implementInterpreter<URI, Alg.SetURI>()((_) => ({
   set: (a, O, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(
-          pipe(
-            D.UnknownArray(),
-            D.mapLeftWithInput((i, e) => FS.combine(e, error(i, 'Set', extractInfo(config)))),
-            D.parse((M) => flow(A.traverse(M)((a) => decoder.decode(M)(a)))),
-            D.map(S.fromArray(O))
-          ),
+        pipe(
+          D.UnknownArray(),
+          D.mapLeftWithInput((i, e) => FS.combine(e, error(i, 'Set', extractInfo(config)))),
+          D.parse((M) => flow(A.traverse(M)((a) => decoder.decode(M)(a)))),
+          D.map(S.fromArray(O))
+        ),
         env,
         decoder
       )

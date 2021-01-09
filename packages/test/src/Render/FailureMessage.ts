@@ -136,8 +136,8 @@ function renderGenFailureDetails(failureDetails: Option<GenFailureDetails>, offs
       return initial === shrunken
         ? renderShrunken.toMessage()
         : renderShrunken['+|'](
-          withOffset(offset + tabSize)(new Fragment('Original input before shrinking was: ')['+'](red(initial)))
-        )
+            withOffset(offset + tabSize)(new Fragment('Original input before shrinking was: ')['+'](red(initial)))
+          )
     }
   )
 }

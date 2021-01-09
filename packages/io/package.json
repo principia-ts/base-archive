@@ -34,7 +34,6 @@
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
-    "format": "prettier --write ./src",
     "lint": "eslint .",
     "prepublish": "yarn clean && yarn build",
     "publish:package": "yarn version --no-git-tag-version && yarn clean && yarn build && yarn publish --no-git-tag-version dist",

@@ -2692,6 +2692,100 @@ export function rejectM<R1, E1, A>(
   return (fa) => rejectM_(fa, pf)
 }
 
+/**
+ * ```haskell
+ * repeatN_ :: (IO r e a, Number) -> IO r e a
+ * ```
+ *
+ * Repeats this effect the specified number of times.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function repeatN_<R, E, A>(ef: IO<R, E, A>, n: number): IO<R, E, A> {
+  return flatMap_(ef, (a) => (n <= 0 ? pure(a) : repeatN_(ef, n - 1)))
+}
+
+/**
+ * ```haskell
+ * repeatN :: Number -> IO r e a -> IO r e a
+ * ```
+ *
+ * Repeats this effect the specified number of times.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function repeatN(n: number): <R, E, A>(ef: IO<R, E, A>) => IO<R, E, A> {
+  return (ef) => repeatN_(ef, n)
+}
+
+/**
+ * Repeats this effect until its result satisfies the specified predicate.
+ */
+export function repeatUntil_<R, E, A>(ef: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
+  return repeatUntilM_(ef, (a) => pure(f(a)))
+}
+
+/**
+ * Repeats this effect until its result satisfies the specified predicate.
+ */
+export function repeatUntil<A>(f: (a: A) => boolean): <R, E>(ef: IO<R, E, A>) => IO<R, E, A> {
+  return (ef) => repeatUntil_(ef, f)
+}
+
+/**
+ * Repeats this effect until its error satisfies the specified effectful predicate.
+ */
+export function repeatUntilM_<R, E, A, R1, E1>(
+  ef: IO<R, E, A>,
+  f: (a: A) => IO<R1, E1, boolean>
+): IO<R & R1, E | E1, A> {
+  return flatMap_(ef, (a) => flatMap_(f(a), (b) => (b ? pure(a) : repeatUntilM_(ef, f))))
+}
+
+/**
+ * Repeats this effect until its result satisfies the specified effectful predicate.
+ */
+export function repeatUntilM<A, R1, E1>(
+  f: (a: A) => IO<R1, E1, boolean>
+): <R, E>(ef: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
+  return (ef) => repeatUntilM_(ef, f)
+}
+
+/**
+ * Repeats this effect while its error satisfies the specified predicate.
+ */
+export function repeatWhile_<R, E, A>(ef: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
+  return repeatWhileM_(ef, (a) => pure(f(a)))
+}
+
+/**
+ * Repeats this effect while its error satisfies the specified predicate.
+ */
+export function repeatWhile<A>(f: (a: A) => boolean): <R, E>(ef: IO<R, E, A>) => IO<R, E, A> {
+  return (ef) => repeatWhile_(ef, f)
+}
+
+/**
+ * Repeats this effect while its error satisfies the specified effectful predicate.
+ */
+export function repeatWhileM_<R, E, A, R1, E1>(
+  ef: IO<R, E, A>,
+  f: (a: A) => IO<R1, E1, boolean>
+): IO<R & R1, E | E1, A> {
+  return flatMap_(ef, (a) => flatMap_(f(a), (b) => (b ? repeatWhileM_(ef, f) : pure(a))))
+}
+
+/**
+ * Repeats this effect while its error satisfies the specified effectful predicate.
+ */
+export function repeatWhileM<A, R1, E1>(
+  f: (a: A) => IO<R1, E1, boolean>
+): <R, E>(ef: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
+  return (ef) => repeatWhileM_(ef, f)
+}
+
 export function replicate(n: number): <R, E, A>(ma: IO<R, E, A>) => readonly IO<R, E, A>[] {
   return (ma) => A.map_(A.range(0, n), () => ma)
 }
@@ -2714,6 +2808,72 @@ export { _require as require }
  */
 export function resurrect<R, E, A>(io: IO<R, E, A>): IO<R, unknown, A> {
   return unrefineWith_(io, O.some, identity)
+}
+
+/**
+ * Retries this effect until its error satisfies the specified predicate.
+ */
+export function retryUntil_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean): IO<R, E, A> {
+  return retryUntilM_(fa, flow(f, pure))
+}
+
+/**
+ * Retries this effect until its error satisfies the specified effectful predicate.
+ */
+export function retryUntil<E>(f: (e: E) => boolean): <R, A>(fa: IO<R, E, A>) => IO<R, E, A> {
+  return (fa) => retryUntil_(fa, f)
+}
+
+/**
+ * Retries this effect until its error satisfies the specified effectful predicate.
+ */
+export function retryUntilM_<R, E, A, R1, E1>(
+  fa: IO<R, E, A>,
+  f: (e: E) => IO<R1, E1, boolean>
+): IO<R & R1, E | E1, A> {
+  return catchAll_(fa, (e) => flatMap_(f(e), (b) => (b ? fail(e) : retryUntilM_(fa, f))))
+}
+
+/**
+ * Retries this effect until its error satisfies the specified effectful predicate.
+ */
+export function retryUntilM<E, R1, E1>(
+  f: (e: E) => IO<R1, E1, boolean>
+): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A> {
+  return (fa) => retryUntilM_(fa, f)
+}
+
+/**
+ * Retries this effect while its error satisfies the specified predicate.
+ */
+export function retryWhile_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean) {
+  return retryWhileM_(fa, flow(f, pure))
+}
+
+/**
+ * Retries this effect while its error satisfies the specified predicate.
+ */
+export function retryWhile<E>(f: (e: E) => boolean): <R, A>(fa: IO<R, E, A>) => IO<R, E, A> {
+  return (fa) => retryWhile_(fa, f)
+}
+
+/**
+ * Retries this effect while its error satisfies the specified effectful predicate.
+ */
+export function retryWhileM_<R, E, A, R1, E1>(
+  fa: IO<R, E, A>,
+  f: (e: E) => IO<R1, E1, boolean>
+): IO<R & R1, E | E1, A> {
+  return catchAll_(fa, (e) => flatMap_(f(e), (b) => (b ? retryWhileM_(fa, f) : fail(e))))
+}
+
+/**
+ * Retries this effect while its error satisfies the specified effectful predicate.
+ */
+export function retryWhileM<E, R1, E1>(
+  f: (e: E) => IO<R1, E1, boolean>
+): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A> {
+  return (fa) => retryWhileM_(fa, f)
 }
 
 /**
