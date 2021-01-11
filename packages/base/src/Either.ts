@@ -245,7 +245,7 @@ export function parseJson<E>(onThrow: (reason: unknown) => E): (s: string) => Ei
 
 /**
  * ```haskell
- * _stringifyJSON :: (*, (* -> E)) -> Either e String
+ * stringifyJson_ :: (*, (* -> E)) -> Either e String
  * ```
  *
  * Converts a JavaScript value to a JavaScript Object Notation (JSON) string.
@@ -259,7 +259,7 @@ export function stringifyJson_<E>(u: unknown, onThrow: (reason: unknown) => E): 
 
 /**
  * ```haskell
- * stringifyJSON :: (* -> E) -> * -> Either e String
+ * stringifyJson :: (* -> E) -> * -> Either e String
  * ```
  *
  * Converts a JavaScript value to a JavaScript Object Notation (JSON) string.
@@ -273,7 +273,7 @@ export function stringifyJson<E>(onThrow: (reason: unknown) => E): (u: unknown) 
 
 /**
  * ```haskell
- * _fromOption :: (Option a, (() -> e)) -> Either e a
+ * fromOption_ :: (Option a, (() -> e)) -> Either e a
  * ```
  *
  * @category Constructors
@@ -624,7 +624,7 @@ export function product<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eit
 
 /**
  * ```haskell
- * product_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * map2_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
  * Applies both `Either`s and if both are `Right`,
@@ -642,7 +642,7 @@ export function map2_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: 
 
 /**
  * ```haskell
- * product :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * map2 :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
  * Applies both `Either`s and if both are `Right`,
@@ -1344,6 +1344,8 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
 export const sequenceT = P.sequenceTF(Apply)
 
 export const mapN = P.mapNF(Apply)
+
+export const mapN_ = P.mapNF_(Apply)
 
 export const sequenceS = P.sequenceSF(Apply)
 

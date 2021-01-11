@@ -1,5 +1,6 @@
-import type { HasClock } from '../../Clock'
+import type { Clock } from '../../Clock'
 import type { IO } from '../core'
+import type { Has } from '@principia/base/Has'
 
 import { sleep } from '../../Clock'
 import { flatMap_ } from '../core'
@@ -14,7 +15,7 @@ import { flatMap_ } from '../core'
  * @category Combinators
  * @since 1.0.0
  */
-export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & HasClock, E, A> {
+export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & Has<Clock>, E, A> {
   return flatMap_(sleep(ms), () => ma)
 }
 
@@ -28,6 +29,6 @@ export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & HasClock, E
  * @category Combinators
  * @since 1.0.0
  */
-export function delay(ms: number): <R, E, A>(ma: IO<R, E, A>) => IO<R & HasClock, E, A> {
+export function delay(ms: number): <R, E, A>(ma: IO<R, E, A>) => IO<R & Has<Clock>, E, A> {
   return (ef) => delay_(ef, ms)
 }

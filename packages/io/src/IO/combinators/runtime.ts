@@ -1,16 +1,17 @@
 import type { Exit } from '../../Exit'
 import type { FailureReporter } from '../../Fiber/_internal/io'
 import type { Callback } from '../../Fiber/core'
+import type { Has } from '@principia/base/Has'
 
 import { constVoid, identity } from '@principia/base/Function'
 
 import * as C from '../../Cause/core'
 import { pretty } from '../../Cause/core'
-import { HasClock, LiveClock } from '../../Clock'
+import { Clock, LiveClock } from '../../Clock'
 import { interruptible, newFiberId } from '../../Fiber'
 import { FiberContext } from '../../FiberContext'
 import { Platform } from '../../Platform'
-import { defaultRandom, HasRandom } from '../../Random'
+import { defaultRandom, Random } from '../../Random'
 import * as Scope from '../../Scope'
 import * as Super from '../../Supervisor'
 import * as I from '../core'
@@ -20,12 +21,12 @@ export function empty() {
   return
 }
 
-export type DefaultEnv = HasClock & HasRandom
+export type DefaultEnv = Has<Clock> & Has<Random>
 
 export function defaultEnv() {
   return {
-    [HasClock.key]: new LiveClock(),
-    [HasRandom.key]: defaultRandom
+    [Clock.key]: new LiveClock(),
+    [Random.key]: defaultRandom
   }
 }
 

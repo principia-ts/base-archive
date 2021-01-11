@@ -1,4 +1,4 @@
-import type { HasClock } from '../Clock'
+import type { Clock } from '../Clock'
 import type { FIO, IO, UIO } from '../IO/core'
 import type { Random } from '../Random'
 import type { Decision, StepFunction } from './Decision'
@@ -11,7 +11,7 @@ import { constant, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
-import * as Clock from '../Clock'
+import { currentTime, sleep } from '../Clock'
 import * as I from '../IO/core'
 import * as Ref from '../IORef/core'
 import { nextDouble } from '../Random'
@@ -53,7 +53,7 @@ export function makeSchedule<R, I, O>(step: StepFunction<R, I, O>): Schedule<R, 
   return new Schedule(step)
 }
 
-export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<HasClock & R, I, O>> {
+export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<Clock> & R, I, O>> {
   return pipe(
     Ref.make([O.none<O>(), schedule.step] as const),
     I.map((ref) => {
@@ -74,7 +74,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<HasCl
         pipe(
           I.do,
           I.bindS('step', () => I.map_(ref.get, ([_, o]) => o)),
-          I.bindS('now', () => Clock.currentTime),
+          I.bindS('now', () => currentTime),
           I.bindS('dec', ({ now, step }) => step(now, input)),
           I.bindS('v', ({ dec, now }) => {
             switch (dec._tag) {
@@ -87,7 +87,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<HasCl
                 return pipe(
                   ref.set([O.some(dec.out), dec.next]),
                   I.map(() => dec.interval - now),
-                  I.flatMap((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
+                  I.flatMap((s) => (s > 0 ? sleep(s) : I.unit())),
                   I.map(() => dec.out)
                 )
             }

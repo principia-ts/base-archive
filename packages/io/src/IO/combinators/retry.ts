@@ -1,5 +1,6 @@
-import type { HasClock } from '../../Clock'
+import type { Clock } from '../../Clock'
 import type { IO } from '../core'
+import type { Has } from '@principia/base/Has'
 
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
@@ -13,7 +14,7 @@ import { catchAll, fail, flatMap, foldM, map, map_, orDie } from '../core'
  * `once` or `recurs` for example), so that that `io.retry(Schedule.once)` means
  * "execute `io` and in case of failure, try again once".
  */
-export function retry_<R, E, A, R1, O>(fa: IO<R, E, A>, policy: S.Schedule<R1, E, O>): IO<R & R1 & HasClock, E, A> {
+export function retry_<R, E, A, R1, O>(fa: IO<R, E, A>, policy: S.Schedule<R1, E, O>): IO<R & R1 & Has<Clock>, E, A> {
   return retryOrElse_(fa, policy, (e, _) => fail(e))
 }
 
@@ -24,7 +25,7 @@ export function retry_<R, E, A, R1, O>(fa: IO<R, E, A>, policy: S.Schedule<R1, E
  * "execute `io` and in case of failure, try again once".
  */
 export function retry<R1, E, O>(policy: S.Schedule<R1, E, O>) {
-  return <R, A>(fa: IO<R, E, A>): IO<R & R1 & HasClock, E, A> => retry_(fa, policy)
+  return <R, A>(fa: IO<R, E, A>): IO<R & R1 & Has<Clock>, E, A> => retry_(fa, policy)
 }
 
 /**
@@ -36,7 +37,7 @@ export function retryOrElse_<R, E, A, R1, O, R2, E2, A2>(
   fa: IO<R, E, A>,
   policy: S.Schedule<R1, E, O>,
   orElse: (e: E, o: O) => IO<R2, E2, A2>
-): IO<R & R1 & R2 & HasClock, E2, A | A2> {
+): IO<R & R1 & R2 & Has<Clock>, E2, A | A2> {
   return map_(retryOrElseEither_(fa, policy, orElse), E.merge)
 }
 
@@ -55,8 +56,8 @@ export function retryOrElse<E, R1, O, R2, E2, A2>(
 const _loop = <R, E, A, R1, O, R2, E2, A2>(
   fa: IO<R, E, A>,
   orElse: (e: E, o: O) => IO<R2, E2, A2>,
-  driver: S.Driver<R1 & HasClock, E, O>
-): IO<R & R1 & R2 & HasClock, E2, E.Either<A2, A>> =>
+  driver: S.Driver<R1 & Has<Clock>, E, O>
+): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<A2, A>> =>
   pipe(
     fa,
     map(E.right),
@@ -85,7 +86,7 @@ export function retryOrElseEither_<R, E, A, R1, O, R2, E2, A2>(
   fa: IO<R, E, A>,
   policy: S.Schedule<R1, E, O>,
   orElse: (e: E, o: O) => IO<R2, E2, A2>
-): IO<R & R1 & R2 & HasClock, E2, E.Either<A2, A>> {
+): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<A2, A>> {
   return pipe(
     policy,
     S.driver,

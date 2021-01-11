@@ -1,5 +1,6 @@
-import type { HasClock } from '../../Clock'
+import type { Clock } from '../../Clock'
 import type { IO } from '../core'
+import type { Has } from '@principia/base/Has'
 import type { Option } from '@principia/base/Option'
 
 import * as E from '@principia/base/Either'
@@ -7,11 +8,11 @@ import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import * as S from '../../Schedule'
-import { flatMap, flatMap_, foldM, map, map_, orDie, pure } from '../core'
+import { flatMap, foldM, map, map_, orDie } from '../core'
 
 /**
  * ```haskell
- * repeat_ :: (IO r e a, Schedule sr a b) -> IO (r & sr & HasClock) e b
+ * repeat_ :: (IO r e a, Schedule sr a b) -> IO (r & sr & Has<Clock>) e b
  * ```
  *
  * Returns a new effect that repeats this effect according to the specified
@@ -23,13 +24,13 @@ import { flatMap, flatMap_, foldM, map, map_, orDie, pure } from '../core'
  * @category Combinators
  * @since 1.0.0
  */
-export function repeat_<R, SR, E, A, B>(ef: IO<R, E, A>, sc: S.Schedule<SR, A, B>): IO<R & SR & HasClock, E, B> {
+export function repeat_<R, SR, E, A, B>(ef: IO<R, E, A>, sc: S.Schedule<SR, A, B>): IO<R & SR & Has<Clock>, E, B> {
   return repeatOrElse_(ef, sc, (e) => fail(e))
 }
 
 /**
  * ```haskell
- * repeat :: Schedule sr e a -> IO r e a -> IO (r & sr & HasClock) e b
+ * repeat :: Schedule sr e a -> IO r e a -> IO (r & sr & Has<Clock>) e b
  * ```
  *
  * Returns a new effect that repeats this effect according to the specified
@@ -48,7 +49,7 @@ export function repeat<SR, A, B>(sc: S.Schedule<SR, A, B>) {
 /**
  * ```haskell
  * repeatOrElse_ :: (IO r e a, Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
- *               -> IO (r & s1 & r2 & HasClock) e2 (c | b)
+ *               -> IO (r & s1 & r2 & Has<Clock>) e2 (c | b)
  * ```
  *
  * Returns a new effect that repeats this effect according to the specified
@@ -66,7 +67,7 @@ export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
   ma: IO<R, E, A>,
   sc: S.Schedule<R1, A, B>,
   f: (e: E, o: Option<B>) => IO<R2, E2, C>
-): IO<R & R1 & R2 & HasClock, E2, C | B> {
+): IO<R & R1 & R2 & Has<Clock>, E2, C | B> {
   return map_(repeatOrElseEither_(ma, sc, f), E.merge)
 }
 
@@ -74,7 +75,7 @@ export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
  * ```haskell
  * repeatOrElse_ :: (Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
  *               -> IO r e a
- *               -> IO (r & s1 & r2 & HasClock) e2 (c | b)
+ *               -> IO (r & s1 & r2 & Has<Clock>) e2 (c | b)
  * ```
  *
  * Returns a new effect that repeats this effect according to the specified
@@ -91,14 +92,14 @@ export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
 export function repeatOrElse<E, A, R1, B, R2, E2, C>(
   sc: S.Schedule<R1, A, B>,
   f: (e: E, o: Option<B>) => IO<R2, E2, C>
-): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2 & HasClock, E2, B | C> {
+): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2 & Has<Clock>, E2, B | C> {
   return (ma) => repeatOrElse_(ma, sc, f)
 }
 
 /**
  * ```haskell
  * repeatOrElseEither_ :: (IO r e a, Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
- *                     -> IO (r & r1 & r2 & HasClock) e2 (Either c b)
+ *                     -> IO (r & r1 & r2 & Has<Clock>) e2 (Either c b)
  * ```
  *
  * Returns a new effect that repeats this effect according to the specified
@@ -116,11 +117,11 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
   fa: IO<R, E, A>,
   sc: S.Schedule<R1, A, B>,
   f: (e: E, o: Option<B>) => IO<R2, E2, C>
-): IO<R & R1 & R2 & HasClock, E2, E.Either<C, B>> {
+): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
   return pipe(
     S.driver(sc),
     flatMap((driver) => {
-      function loop(a: A): IO<R & R1 & R2 & HasClock, E2, E.Either<C, B>> {
+      function loop(a: A): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
         return pipe(
           driver.next(a),
           foldM(
@@ -151,7 +152,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
  * ```haskell
  * repeatOrElseEither :: (Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
  *                    -> IO r e a
- *                    -> IO (r & r1 & r2 & HasClock) e2 (Either c b)
+ *                    -> IO (r & r1 & r2 & Has<Clock>) e2 (Either c b)
  * ```
  *
  * Returns a new effect that repeats this effect according to the specified
@@ -168,6 +169,6 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
 export function repeatOrElseEither<E, A, R1, B, R2, E2, C>(
   sc: S.Schedule<R1, A, B>,
   f: (e: E, o: Option<B>) => IO<R2, E2, C>
-): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2 & HasClock, E2, E.Either<C, B>> {
+): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
   return (ma) => repeatOrElseEither_(ma, sc, f)
 }

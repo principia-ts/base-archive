@@ -1,6 +1,7 @@
-import type { HasClock } from '../../Clock'
+import type { Clock } from '../../Clock'
 import type { Promise } from '../../Promise'
 import type { FIO, IO, URIO } from '../core'
+import type { Has } from '@principia/base/Has'
 import type { Option } from '@principia/base/Option'
 
 import { pipe, tuple } from '@principia/base/Function'
@@ -48,7 +49,7 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
 
 /**
  * ```haskell
- * cached_ :: (IO r e a, Number) -> URIO (r & HasClock) (FIO e a)
+ * cached_ :: (IO r e a, Number) -> URIO (r & Has<Clock>) (FIO e a)
  * ```
  *
  * Returns an IO that, if evaluated, will return the cached result of
@@ -57,10 +58,10 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
  * @category Combinators
  * @since 1.0.0
  */
-export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & HasClock, FIO<E, A>> {
+export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & Has<Clock>, FIO<E, A>> {
   return pipe(
     I.do,
-    I.bindS('r', () => I.ask<R & HasClock>()),
+    I.bindS('r', () => I.ask<R & Has<Clock>>()),
     I.bindS('cache', () => RefM.make<Option<readonly [number, Promise<E, A>]>>(O.none())),
     I.map(({ cache, r }) => I.giveAll(r)(_get(ma, timeToLive, cache)))
   )
@@ -68,7 +69,7 @@ export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & 
 
 /**
  * ```haskell
- * cached :: Number -> IO r e a -> URIO (r & HasClock) (FIO e a)
+ * cached :: Number -> IO r e a -> URIO (r & Has<Clock>) (FIO e a)
  * ```
  *
  * Returns an IO that, if evaluated, will return the cached result of
@@ -77,6 +78,6 @@ export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & 
  * @category Combinators
  * @since 1.0.0
  */
-export function cached(timeToLive: number): <R, E, A>(ma: I.IO<R, E, A>) => URIO<R & HasClock, FIO<E, A>> {
+export function cached(timeToLive: number): <R, E, A>(ma: I.IO<R, E, A>) => URIO<R & Has<Clock>, FIO<E, A>> {
   return <R, E, A>(ma: IO<R, E, A>) => cached_(ma, timeToLive)
 }

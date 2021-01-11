@@ -1,5 +1,6 @@
-import type { HasClock } from '../../Clock'
+import type { Clock } from '../../Clock'
 import type { IO } from '../core'
+import type { Has } from '@principia/base/Has'
 
 import { pipe } from '@principia/base/Function'
 
@@ -22,7 +23,7 @@ export function timeoutTo_<R, E, A, B, B1>(
   d: number,
   b: B,
   f: (a: A) => B1
-): IO<R & HasClock, E, B | B1> {
+): IO<R & Has<Clock>, E, B | B1> {
   return pipe(
     ma,
     map(f),

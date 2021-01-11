@@ -4,12 +4,12 @@ import type { Has } from '@principia/base/Has'
 
 import { pipe } from '@principia/base/Function'
 
-import { HasClock } from '../../Clock'
+import { Clock } from '../../Clock'
 import * as I from '../_internal/_io'
 import { asksServiceManaged, Managed } from '../core'
 
 export function timed<R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E, readonly [number, A]> {
-  return asksServiceManaged(HasClock)(
+  return asksServiceManaged(Clock)(
     (clock) =>
       new Managed(
         I.asksM(([r, releaseMap]: readonly [R, RM.ReleaseMap]) =>
@@ -18,7 +18,7 @@ export function timed<R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E,
             I.giveAll([r, releaseMap] as const),
             I.timed,
             I.map(([duration, [fin, a]]) => [fin, [duration, a]] as const),
-            I.giveService(HasClock)(clock)
+            I.giveService(Clock)(clock)
           )
         )
       )

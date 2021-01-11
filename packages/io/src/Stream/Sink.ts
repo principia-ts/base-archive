@@ -1,6 +1,7 @@
 import type { Cause } from '../Cause'
 import type { Chunk } from '../Chunk'
-import type { HasClock } from '../Clock'
+import type { Clock } from '../Clock'
+import type { Has } from '@principia/base/Has'
 
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
@@ -493,7 +494,7 @@ export const sum: Sink<unknown, never, number, never, number> = foldLeft(0, (a, 
 /**
  * A sink with timed execution.
  */
-export const timedDrain: Sink<HasClock, never, unknown, never, number> = map_(timed(drain), ([_, a]) => a)
+export const timedDrain: Sink<Has<Clock>, never, unknown, never, number> = map_(timed(drain), ([_, a]) => a)
 
 /*
  * -------------------------------------------
@@ -1371,7 +1372,7 @@ export function race<R1, E1, I1, L1, Z1>(that: Sink<R1, E1, I1, L1, Z1>) {
 /**
  * Returns the sink that executes this one and times its execution.
  */
-export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & HasClock, E, I, L, readonly [Z, number]> {
+export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & Has<Clock>, E, I, L, readonly [Z, number]> {
   return new Sink(
     pipe(
       self.push,
@@ -1379,7 +1380,7 @@ export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & HasClo
         return (in_: O.Option<Chunk<I>>) =>
           I.catchAll_(
             push(in_),
-            ([e, leftover]): I.IO<R & HasClock, [E.Either<E, readonly [Z, number]>, Chunk<L>], never> =>
+            ([e, leftover]): I.IO<R & Has<Clock>, [E.Either<E, readonly [Z, number]>, Chunk<L>], never> =>
               E.fold_(
                 e,
                 (e) => Push.fail(e, leftover),

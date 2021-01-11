@@ -1,5 +1,5 @@
 import type { Chunk } from '../Chunk'
-import type { Clock, HasClock } from '../Clock'
+import type { Clock } from '../Clock'
 import type { Fiber } from '../Fiber'
 import type { Schedule } from '../Schedule'
 import type { Transducer } from './Transducer'
@@ -373,7 +373,7 @@ export function fromEffect<R, E, A>(ef: I.IO<R, E, A>): Stream<R, E, A> {
  * input. The stream will emit an element for each value output from the
  * schedule, continuing for as long as the schedule continues.
  */
-export function fromSchedule<R, A>(schedule: Sc.Schedule<R, unknown, A>): Stream<R & HasClock, never, A> {
+export function fromSchedule<R, A>(schedule: Sc.Schedule<R, unknown, A>): Stream<R & Has<Clock>, never, A> {
   return pipe(
     schedule,
     Sc.driver,
@@ -1518,7 +1518,7 @@ export function flattenTake<R, E, E1, O>(stream: Stream<R, E, Take.Take<E1, O>>)
 export function aggregateAsyncWithinEither<O, R1, E1, P, Q>(
   transducer: Transducer<R1, E1, O, P>,
   schedule: Schedule<R1, Chunk<P>, Q>
-): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> {
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & Has<Clock>, E | E1, E.Either<Q, P>> {
   return (stream) => aggregateAsyncWithinEither_(stream, transducer, schedule)
 }
 
@@ -1538,7 +1538,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>,
   schedule: Schedule<R1, Chunk<P>, Q>
-): Stream<R & R1 & HasClock, E | E1, E.Either<Q, P>> {
+): Stream<R & R1 & Has<Clock>, E | E1, E.Either<Q, P>> {
   return flattenTake(
     new Stream(
       M.gen(function* (_) {
@@ -1561,7 +1561,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
           )
         )
 
-        const updateSchedule: I.URIO<R1 & HasClock, O.Option<Q>> = pipe(
+        const updateSchedule: I.URIO<R1 & Has<Clock>, O.Option<Q>> = pipe(
           lastChunk.get,
           I.flatMap(sdriver.next),
           I.fold((_) => O.none(), O.some)
@@ -1598,7 +1598,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
             I.mapError(O.some)
           )
 
-        const go = (race: boolean): I.IO<R & R1 & HasClock, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
+        const go = (race: boolean): I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
           if (!race) {
             return pipe(waitForProducer, I.flatMap(handleTake), I.apFirst(raceNextTime.set(true)))
           } else {
@@ -1661,7 +1661,7 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
 export function aggregateAsyncWithin<O, R1, E1, P>(
   transducer: Transducer<R1, E1, O, P>,
   schedule: Schedule<R1, Chunk<P>, any>
-): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, P> {
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & Has<Clock>, E | E1, P> {
   return (stream) => aggregateAsyncWithin_(stream, transducer, schedule)
 }
 
@@ -1672,7 +1672,7 @@ export function aggregateAsyncWithin_<R, E, O, R1, E1, P>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>,
   schedule: Schedule<R1, Chunk<P>, any>
-): Stream<R & R1 & HasClock, E | E1, P> {
+): Stream<R & R1 & Has<Clock>, E | E1, P> {
   return filterMap_(
     aggregateAsyncWithinEither_(stream, transducer, schedule),
     E.fold(() => O.none(), O.some)
@@ -1693,7 +1693,7 @@ export function aggregateAsyncWithin_<R, E, O, R1, E1, P>(
  */
 export function aggregateAsync<O, R1, E1, P>(
   transducer: Transducer<R1, E1, O, P>
-): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & HasClock, E | E1, P> {
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1 & Has<Clock>, E | E1, P> {
   return (stream) => aggregateAsync_(stream, transducer)
 }
 
@@ -1712,7 +1712,7 @@ export function aggregateAsync<O, R1, E1, P>(
 export function aggregateAsync_<R, E, O, R1, E1, P>(
   stream: Stream<R, E, O>,
   transducer: Transducer<R1, E1, O, P>
-): Stream<R & R1 & HasClock, E | E1, P> {
+): Stream<R & R1 & Has<Clock>, E | E1, P> {
   return aggregateAsyncWithin_(stream, transducer, Sc.forever)
 }
 
