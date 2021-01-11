@@ -22,7 +22,7 @@ import { makeManagedReleaseMap } from './makeManagedReleaseMap'
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
  */
-export function zipWithPar_<R, E, A, R1, E1, B, C>(
+export function map2Par_<R, E, A, R1, E1, B, C>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -44,18 +44,31 @@ export function zipWithPar_<R, E, A, R1, E1, B, C>(
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
  */
-export function zipWithPar<A, R1, E1, B, C>(
+export function map2Par<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, C> {
-  return (fa) => zipWithPar_(fa, fb, f)
+  return (fa) => map2Par_(fa, fb, f)
+}
+
+export function productPar_<R, E, A, R1, E1, B>(
+  fa: Managed<R, E, A>,
+  fb: Managed<R1, E1, B>
+): Managed<R & R1, E | E1, readonly [A, B]> {
+  return map2Par_(fa, fb, tuple)
+}
+
+export function productPar<R1, E1, B>(
+  fb: Managed<R1, E1, B>
+): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E | E1, readonly [A, B]> {
+  return (fa) => productPar_(fa, fb)
 }
 
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Managed<R1, E1, (a: A) => B>,
   fa: Managed<R, E, A>
 ): Managed<R & R1, E | E1, B> {
-  return zipWithPar_(fab, fa, (f, a) => f(a))
+  return map2Par_(fab, fa, (f, a) => f(a))
 }
 
 export function apPar<R, E, A>(
@@ -68,7 +81,7 @@ export function apFirstPar_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A> {
-  return zipWithPar_(fa, fb, (a, _) => a)
+  return map2Par_(fa, fb, (a, _) => a)
 }
 
 export function apFirstPar<R1, E1, B>(
@@ -81,7 +94,7 @@ export function apSecondPar_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
-  return zipWithPar_(fa, fb, (_, b) => b)
+  return map2Par_(fa, fb, (_, b) => b)
 }
 
 export function apSecondPar<R1, E1, B>(
@@ -90,7 +103,7 @@ export function apSecondPar<R1, E1, B>(
   return (fa) => apSecondPar_(fa, fb)
 }
 
-export function structPar<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
+export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
   mr: EnforceNonEmptyRecord<MR> & ReadonlyRecord<string, Managed<any, any, any>>
 ): Managed<
   _R<MR[keyof MR]>,
@@ -115,7 +128,7 @@ export function structPar<MR extends ReadonlyRecord<string, Managed<any, any, an
   ) as any
 }
 
-export function structParN(n: number) {
+export function sequenceSParN(n: number) {
   return <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
     mr: EnforceNonEmptyRecord<MR> & ReadonlyRecord<string, Managed<any, any, any>>
   ): Managed<
@@ -141,7 +154,7 @@ export function structParN(n: number) {
     ) as any
 }
 
-export function tupleNPar<T extends ReadonlyArray<Managed<any, any, any>>>(
+export function sequenceTPar<T extends ReadonlyArray<Managed<any, any, any>>>(
   ...t: T & {
     0: Managed<any, any, any>
   }
@@ -155,7 +168,7 @@ export function tupleNPar<T extends ReadonlyArray<Managed<any, any, any>>>(
   return foreachPar_(t, identity) as any
 }
 
-export function tupleNParN(n: number) {
+export function sequenceTParN(n: number) {
   return <T extends ReadonlyArray<Managed<any, any, any>>>(
     ...t: T & {
       0: Managed<any, any, any>

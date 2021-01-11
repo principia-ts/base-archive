@@ -12,7 +12,6 @@ import { flow, not, pipe, tuple } from '@principia/base/Function'
 import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
 import * as Set from '@principia/base/Set'
-import * as Tup from '@principia/base/Tuple'
 
 import * as C from '../Chunk'
 import * as Ex from '../Exit'
@@ -392,7 +391,7 @@ export function foldUntil<I, O>(
       ([_, n]) => n < max,
       ([o, count], i: I) => [f(o, i), count + 1] as const
     ),
-    map(Tup.fst)
+    map(([o, _]) => o)
   )
 }
 
@@ -413,7 +412,7 @@ export function foldUntilM<R, E, I, O>(
       ([_, n]) => n < max,
       ([o, count], i: I) => I.map_(f(o, i), (o) => [o, count + 1] as const)
     ),
-    map(Tup.fst)
+    map(([o, _]) => o)
   )
 }
 
@@ -712,10 +711,12 @@ export function collectAllToSetN<I>(E: Eq.Eq<I>): (n: number) => Transducer<unkn
  */
 export function collectAllWhile<I>(p: Predicate<I>): Transducer<unknown, never, I, Chunk<I>> {
   return pipe(
-    fold<I, [Chunk<I>, boolean]>([C.empty(), true], Tup.snd, ([is, _], i) =>
-      p(i) ? [C.append_(is, i), true] : [is, false]
+    fold<I, [Chunk<I>, boolean]>(
+      [C.empty(), true],
+      ([, b]) => b,
+      ([is, _], i) => (p(i) ? [C.append_(is, i), true] : [is, false])
     ),
-    map(Tup.fst),
+    map(([ci, _]) => ci),
     filter(C.isNonEmpty)
   )
 }
@@ -725,10 +726,12 @@ export function collectAllWhile<I>(p: Predicate<I>): Transducer<unknown, never, 
  */
 export function collectAllWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transducer<R, E, I, Chunk<I>> {
   return pipe(
-    foldM<R, E, I, [Chunk<I>, boolean]>([C.empty(), true], Tup.snd, ([is, _], i) =>
-      I.map_(p(i), (b) => (b ? [C.append_(is, i), true] : [is, false]))
+    foldM<R, E, I, [Chunk<I>, boolean]>(
+      [C.empty(), true],
+      ([, b]) => b,
+      ([is, _], i) => I.map_(p(i), (b) => (b ? [C.append_(is, i), true] : [is, false]))
     ),
-    map(Tup.fst),
+    map(([ci, _]) => ci),
     filter(C.isNonEmpty)
   )
 }

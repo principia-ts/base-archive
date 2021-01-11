@@ -73,5 +73,5 @@ export class NodeConsole implements Console {
     })
   }
 
-  static live: Layer<unknown, never, Has<Console>> = L.pure(Console)(new NodeConsole())
+  static live: Layer<unknown, never, Has<Console>> = L.succeed(Console)(new NodeConsole())
 }

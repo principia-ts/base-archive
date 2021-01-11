@@ -4,12 +4,13 @@ import type { FiberId } from '../Fiber/FiberId'
 import type { Finalizer, ReleaseMap } from './ReleaseMap'
 import type { Has, Tag } from '@principia/base/Has'
 import type * as HKT from '@principia/base/HKT'
+import type { Monoid } from '@principia/base/Monoid'
 import type { ReadonlyRecord } from '@principia/base/Record'
 import type { _E, _R, EnforceNonEmptyRecord, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { _bind, _bindTo, flow, identity, pipe } from '@principia/base/Function'
+import { _bind, _bindTo, flow, identity as identityFn, pipe, tuple } from '@principia/base/Function'
 import { isTag } from '@principia/base/Has'
 import * as Iter from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
@@ -127,12 +128,35 @@ export function die(error: unknown): Managed<unknown, never, never> {
 }
 
 /**
+ * Creates an effect that only executes the provided finalizer as its
+ * release action.
+ */
+export function finalizer<R>(f: I.URIO<R, unknown>): Managed<R, never, void> {
+  return finalizerExit((_) => f)
+}
+
+/**
+ * Creates an effect that only executes the provided function as its
+ * release action.
+ */
+export function finalizerExit<R>(f: (exit: Ex.Exit<unknown, unknown>) => I.URIO<R, unknown>): Managed<R, never, void> {
+  return makeExit_(I.unit(), (_, exit) => f(exit))
+}
+
+/**
  * Creates an IO that executes a finalizer stored in a `Ref`.
  * The `Ref` is yielded as the result of the effect, allowing for
  * control flows that require mutating finalizers.
  */
 export function finalizerRef(initial: Finalizer) {
   return makeExit_(Ref.make(initial), (ref, exit) => I.flatMap_(ref.get, (f) => f(exit)))
+}
+
+/**
+ * Returns the identity effectful function, which performs no effects
+ */
+export function identity<R>(): Managed<R, never, R> {
+  return asks(identityFn)
 }
 
 /**
@@ -199,29 +223,29 @@ export function makeExit_<R, E, A, R1>(
 export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation<R2, E2, A>>) {
   return new Managed<R & R2, E | E2, A>(
     I.uninterruptibleMask(({ restore }) =>
-      pipe(
-        I.do,
-        I.bindS('tp', () => I.ask<readonly [R & R2, ReleaseMap]>()),
-        I.letS('r', (s) => s.tp[0]),
-        I.letS('releaseMap', (s) => s.tp[1]),
-        I.bindS('reserved', (s) => I.giveAll_(reservation, s.r)),
-        I.bindS('releaseKey', (s) => addIfOpen((x) => I.giveAll_(s.reserved.release(x), s.r))(s.releaseMap)),
-        I.bindS('finalizerAndA', (s) => {
-          const k = s.releaseKey
-          switch (k._tag) {
-            case 'None': {
-              return I.interrupt
+      I.gen(function* (_) {
+        const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
+        const reserved        = yield* _(I.giveAll_(reservation, r))
+        const releaseKey      = yield* _(addIfOpen((x) => I.giveAll_(reserved.release(x), r))(releaseMap))
+        const finalizerAndA   = yield* _(
+          I.effectSuspendTotal(() => {
+            switch (releaseKey._tag) {
+              case 'None': {
+                return I.interrupt
+              }
+              case 'Some': {
+                return pipe(
+                  reserved.acquire,
+                  I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
+                  restore,
+                  I.map((a): readonly [Finalizer, A] => tuple((e) => release(releaseKey.value, e)(releaseMap), a))
+                )
+              }
             }
-            case 'Some': {
-              return I.map_(restore(I.gives_(s.reserved.acquire, ([r]: readonly [R & R2, ReleaseMap]) => r)), (a): [
-                Finalizer,
-                A
-              ] => [(e) => release(k.value, e)(s.releaseMap), a])
-            }
-          }
-        }),
-        I.map((s) => s.finalizerAndA)
-      )
+          })
+        )
+        return finalizerAndA
+      })
     )
   )
 }
@@ -285,7 +309,7 @@ export function fromFunction<R, A>(f: (r: R) => A): Managed<R, never, A> {
  * Lifts an effectful function whose effect requires no environment into
  * an effect that requires the input to the function.
  */
-export function fromFunctionM<R, E, A>(f: (r: R) => I.IO<unknown, E, A>): Managed<R, E, A> {
+export function fromFunctionM<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R, E, A> {
   return asksM(f)
 }
 
@@ -293,7 +317,7 @@ export function fromFunctionM<R, E, A>(f: (r: R) => I.IO<unknown, E, A>): Manage
  * Lifts an effectful function whose effect requires no environment into
  * an effect that requires the input to the function.
  */
-export function fromFunctionManaged<R, E, A>(f: (r: R) => Managed<unknown, E, A>): Managed<R, E, A> {
+export function fromFunctionManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
   return asksManaged(f)
 }
 
@@ -379,7 +403,7 @@ export function apSecond<R1, E1, B>(
   return (fa) => apSecond_(fa, fb)
 }
 
-export const struct = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
+export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
   mr: EnforceNonEmptyRecord<MR> & Record<string, Managed<any, any, any>>
 ): Managed<
   _R<MR[keyof MR]>,
@@ -403,12 +427,12 @@ export const struct = <MR extends ReadonlyRecord<string, Managed<any, any, any>>
     }
   ) as any
 
-export const tuple = <T extends ReadonlyArray<Managed<any, any, any>>>(
+export const sequenceT = <T extends ReadonlyArray<Managed<any, any, any>>>(
   ...mt: T & {
     0: Managed<any, any, any>
   }
 ): Managed<_R<T[number]>, _E<T[number]>, { [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never }> =>
-  foreach_(mt, identity) as any
+  foreach_(mt, identityFn) as any
 
 /*
  * -------------------------------------------
@@ -416,18 +440,32 @@ export const tuple = <T extends ReadonlyArray<Managed<any, any, any>>>(
  * -------------------------------------------
  */
 
+/**
+ * Returns an effect whose failure and success channels have been mapped by
+ * the specified pair of functions, `f` and `g`.
+ */
 export function bimap_<R, E, A, B, C>(pab: Managed<R, E, A>, f: (e: E) => B, g: (a: A) => C): Managed<R, B, C> {
   return new Managed(I.bimap_(pab.io, f, ([fin, a]) => [fin, g(a)]))
 }
 
+/**
+ * Returns an effect whose failure and success channels have been mapped by
+ * the specified pair of functions, `f` and `g`.
+ */
 export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Managed<R, E, A>) => Managed<R, B, C> {
   return (pab) => bimap_(pab, f, g)
 }
 
+/**
+ * Returns an effect whose failure is mapped by the specified `f` function.
+ */
 export function mapError_<R, E, A, D>(pab: Managed<R, E, A>, f: (e: E) => D): Managed<R, D, A> {
   return new Managed(I.mapError_(pab.io, f))
 }
 
+/**
+ * Returns an effect whose failure is mapped by the specified `f` function.
+ */
 export function mapError<E, D>(f: (e: E) => D): <R, A>(pab: Managed<R, E, A>) => Managed<R, D, A> {
   return (pab) => mapError_(pab, f)
 }
@@ -520,6 +558,11 @@ export function foldM<E, A, R1, E1, B, R2, E2, C>(
   return (ma) => foldM_(ma, f, g)
 }
 
+/**
+ * Folds over the failure value or the success value to yield an effect that
+ * does not fail, but succeeds with the value returned by the left or right
+ * function passed to `fold`.
+ */
 export function fold_<R, E, A, B, C>(
   ma: Managed<R, E, A>,
   onError: (e: E) => B,
@@ -528,6 +571,11 @@ export function fold_<R, E, A, B, C>(
   return foldM_(ma, flow(onError, succeed), flow(onSuccess, succeed))
 }
 
+/**
+ * Folds over the failure value or the success value to yield an effect that
+ * does not fail, but succeeds with the value returned by the left or right
+ * function passed to `fold`.
+ */
 export function fold<E, A, B, C>(
   onError: (e: E) => B,
   onSuccess: (a: A) => C
@@ -535,6 +583,9 @@ export function fold<E, A, B, C>(
   return (ma) => fold_(ma, onError, onSuccess)
 }
 
+/**
+ * A more powerful version of `fold` that allows recovering from any kind of failure except interruptions.
+ */
 export function foldCause_<R, E, A, B, C>(
   ma: Managed<R, E, A>,
   onFailure: (cause: Cause<E>) => B,
@@ -543,6 +594,9 @@ export function foldCause_<R, E, A, B, C>(
   return fold_(sandbox(ma), onFailure, onSuccess)
 }
 
+/**
+ * A more powerful version of `fold` that allows recovering from any kind of failure except interruptions.
+ */
 export function foldCause<E, A, B, C>(
   onFailure: (cause: Cause<E>) => B,
   onSuccess: (a: A) => C
@@ -651,14 +705,29 @@ export function tap<R1, E1, A>(
   return (ma) => tap_(ma, f)
 }
 
+/**
+ * Returns an effect that performs the outer effect first, followed by the
+ * inner effect, yielding the value of the inner effect.
+ *
+ * This method can be used to "flatten" nested effects.
+ */
 export const flatten: <R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>) => Managed<R & R1, E | E1, A> = flatMap(
-  identity
+  identityFn
 )
 
+/**
+ * Returns an effect that performs the outer effect first, followed by the
+ * inner effect, yielding the value of the inner effect.
+ *
+ * This method can be used to "flatten" nested effects.
+ */
 export const flattenM: <R, E, R1, E1, A>(mma: Managed<R, E, I.IO<R1, E1, A>>) => Managed<R & R1, E | E1, A> = mapM(
-  identity
+  identityFn
 )
 
+/**
+ * Returns an effect that effectfully peeks at the failure or success of the acquired resource.
+ */
 export function tapBoth_<R, E, A, R1, E1, R2, E2>(
   ma: Managed<R, E, A>,
   f: (e: E) => Managed<R1, E1, any>,
@@ -671,6 +740,9 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
   )
 }
 
+/**
+ * Returns an effect that effectfully peeks at the failure or success of the acquired resource.
+ */
 export function tapBoth<E, A, R1, E1, R2, E2>(
   f: (e: E) => Managed<R1, E1, any>,
   g: (a: A) => Managed<R2, E2, any>
@@ -678,6 +750,10 @@ export function tapBoth<E, A, R1, E1, R2, E2>(
   return (ma) => tapBoth_(ma, f, g)
 }
 
+/**
+ * Returns an effect that effectually peeks at the cause of the failure of
+ * the acquired resource.
+ */
 export function tapCause_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (c: Cause<E>) => Managed<R1, E1, any>
@@ -685,12 +761,19 @@ export function tapCause_<R, E, A, R1, E1>(
   return catchAllCause_(ma, (c) => flatMap_(f(c), () => halt(c)))
 }
 
+/**
+ * Returns an effect that effectually peeks at the cause of the failure of
+ * the acquired resource.
+ */
 export function tapCause<E, R1, E1>(
   f: (c: Cause<E>) => Managed<R1, E1, any>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A> {
   return (ma) => tapCause_(ma, f)
 }
 
+/**
+ * Returns an effect that effectfully peeks at the failure of the acquired resource.
+ */
 export function tapError_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (e: E) => Managed<R1, E1, any>
@@ -698,12 +781,19 @@ export function tapError_<R, E, A, R1, E1>(
   return tapBoth_(ma, f, succeed)
 }
 
+/**
+ * Returns an effect that effectfully peeks at the failure of the acquired resource.
+ */
 export function tapError<E, R1, E1>(
   f: (e: E) => Managed<R1, E1, any>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A> {
   return (ma) => tapError_(ma, f)
 }
 
+/**
+ * Like `Managed#tap`, but uses a function that returns an `IO` value rather than a
+ * `Managed` value.
+ */
 export function tapM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (a: A) => I.IO<R1, E1, any>
@@ -711,6 +801,10 @@ export function tapM_<R, E, A, R1, E1>(
   return mapM_(ma, (a) => I.as_(f(a), () => a))
 }
 
+/**
+ * Like `Managed#tap`, but uses a function that returns an `IO` value rather than a
+ * `Managed` value.
+ */
 export function tapM<A, R1, E1>(
   f: (a: A) => I.IO<R1, E1, any>
 ): <R, E>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A> {
@@ -723,18 +817,30 @@ export function tapM<A, R1, E1>(
  * -------------------------------------------
  */
 
+/**
+ * Accesses the whole environment of the effect.
+ */
 export function ask<R>(): Managed<R, never, R> {
   return fromEffect(I.ask<R>())
 }
 
+/**
+ * Create a managed that accesses the environment.
+ */
 export function asks<R, A>(f: (r: R) => A): Managed<R, never, A> {
   return map_(ask<R>(), f)
 }
 
+/**
+ * Create a managed that accesses the environment.
+ */
 export function asksM<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R, E, A> {
   return mapM_(ask<R0>(), f)
 }
 
+/**
+ * Create a managed that accesses the environment.
+ */
 export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
   return flatMap_(ask<R0>(), f)
 }
@@ -753,10 +859,18 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => 
   return (ma) => gives_(ma, f)
 }
 
+/**
+ * Provides the `Managed` effect with its required environment, which eliminates
+ * its dependency on `R`.
+ */
 export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> {
   return gives_(ma, () => env)
 }
 
+/**
+ * Provides the `Managed` effect with its required environment, which eliminates
+ * its dependency on `R`.
+ */
 export function giveAll<R>(env: R): <E, A>(ma: Managed<R, E, A>) => Managed<unknown, E, A> {
   return (ma) => giveAll_(ma, env)
 }
@@ -785,24 +899,41 @@ export function unit(): Managed<unknown, never, void> {
  * -------------------------------------------
  */
 
+/**
+ * Maps this effect to the specified constant while preserving the
+ * effects of this effect.
+ */
 export function as_<R, E, A, B>(ma: Managed<R, E, A>, b: B): Managed<R, E, B> {
   return map_(ma, () => b)
 }
 
+/**
+ * Maps this effect to the specified constant while preserving the
+ * effects of this effect.
+ */
 export function as<B>(b: B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, B> {
   return (ma) => as_(ma, b)
 }
 
+/**
+ * Maps the success value of this effect to an optional value.
+ */
 export function asSome<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, O.Option<A>> {
   return map_(ma, O.some)
 }
 
+/**
+ * Maps the error value of this effect to an optional value.
+ */
 export function asSomeError<R, E, A>(ma: Managed<R, E, A>): Managed<R, O.Option<E>, A> {
   return mapError_(ma, O.some)
 }
 
 export const asUnit: <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> = map(() => undefined)
 
+/**
+ * Recovers from all errors.
+ */
 export function catchAll_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   f: (e: E) => Managed<R1, E1, B>
@@ -810,12 +941,18 @@ export function catchAll_<R, E, A, R1, E1, B>(
   return foldM_(ma, f, succeed)
 }
 
+/**
+ * Recovers from all errors.
+ */
 export function catchAll<E, R1, E1, B>(
   f: (e: E) => Managed<R1, E1, B>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1, A | B> {
   return (ma) => catchAll_(ma, f)
 }
 
+/**
+ * Recovers from all errors with provided Cause.
+ */
 export function catchAllCause_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   f: (e: Cause<E>) => Managed<R1, E1, B>
@@ -823,12 +960,18 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
   return foldCauseM_(ma, f, succeed)
 }
 
+/**
+ * Recovers from all errors with provided Cause.
+ */
 export function catchAllCause<E, R1, E1, B>(
   f: (e: Cause<E>) => Managed<R1, E1, B>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1, A | B> {
   return (ma) => catchAllCause_(ma, f)
 }
 
+/**
+ * Recovers from some or all of the error cases.
+ */
 export function catchSome_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   pf: (e: E) => O.Option<Managed<R1, E1, B>>
@@ -836,12 +979,18 @@ export function catchSome_<R, E, A, R1, E1, B>(
   return catchAll_(ma, (e) => O.getOrElse_(pf(e), () => fail<E | E1>(e)))
 }
 
+/**
+ * Recovers from some or all of the error cases.
+ */
 export function catchSome<E, R1, E1, B>(
   pf: (e: E) => O.Option<Managed<R1, E1, B>>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A | B> {
   return (ma) => catchSome_(ma, pf)
 }
 
+/**
+ * Recovers from some or all of the error Causes.
+ */
 export function catchSomeCause_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   pf: (e: Cause<E>) => O.Option<Managed<R1, E1, B>>
@@ -849,6 +998,9 @@ export function catchSomeCause_<R, E, A, R1, E1, B>(
   return catchAllCause_(ma, (e) => O.getOrElse_(pf(e), () => halt<E | E1>(e)))
 }
 
+/**
+ * Recovers from some or all of the error Causes.
+ */
 export function catchSomeCause<E, R1, E1, B>(
   pf: (e: Cause<E>) => O.Option<Managed<R1, E1, B>>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A | B> {
@@ -856,9 +1008,90 @@ export function catchSomeCause<E, R1, E1, B>(
 }
 
 /**
+ * Fail with `e` if the supplied partial function does not match, otherwise
+ * continue with the returned value.
+ */
+export function collectM_<R, E, A, E1, R2, E2, B>(
+  ma: Managed<R, E, A>,
+  e: E1,
+  pf: (a: A) => O.Option<Managed<R2, E2, B>>
+): Managed<R & R2, E | E1 | E2, B> {
+  return flatMap_(ma, (a) => O.getOrElse_(pf(a), () => fail<E1 | E2>(e)))
+}
+
+/**
+ * Fail with `e` if the supplied partial function does not match, otherwise
+ * continue with the returned value.
+ */
+export function collectM<A, E1, R2, E2, B>(
+  e: E1,
+  pf: (a: A) => O.Option<Managed<R2, E2, B>>
+): <R, E>(ma: Managed<R, E, A>) => Managed<R & R2, E1 | E | E2, B> {
+  return (ma) => collectM_(ma, e, pf)
+}
+
+/**
+ * Fail with `e` if the supplied partial function does not match, otherwise
+ * succeed with the returned value.
+ */
+export function collect_<R, E, A, E1, B>(
+  ma: Managed<R, E, A>,
+  e: E1,
+  pf: (a: A) => O.Option<B>
+): Managed<R, E | E1, B> {
+  return collectM_(ma, e, flow(pf, O.map(succeed)))
+}
+
+/**
+ * Fail with `e` if the supplied partial function does not match, otherwise
+ * succeed with the returned value.
+ */
+export function collect<A, E1, B>(
+  e: E1,
+  pf: (a: A) => O.Option<B>
+): <R, E>(ma: Managed<R, E, A>) => Managed<R, E1 | E, B> {
+  return (ma) => collect_(ma, e, pf)
+}
+
+/**
+ * Evaluate each effect in the structure from left to right, and collect the
+ * results. For a parallel version, see `collectAllPar`.
+ */
+export function collectAll<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, ReadonlyArray<A>> {
+  return foreach_(mas, identityFn)
+}
+
+/**
+ * Evaluate each effect in the structure from left to right, and discard the
+ * results. For a parallel version, see `collectAllPar_`.
+ */
+export function collectAllUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, void> {
+  return foreachUnit_(mas, identityFn)
+}
+
+/**
+ * Executes the second effect and then provides its output as an environment to this effect
+ */
+export function compose<R, E, A, R1, E1>(ma: Managed<R, E, A>, that: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
+  return pipe(
+    ask<R1>(),
+    flatMap((r1) => give_(that, r1)),
+    flatMap((r) => give_(ma, r))
+  )
+}
+
+/**
+ * Returns a Managed that ignores errors raised by the acquire effect and
+ * runs it repeatedly until it eventually succeeds.
+ */
+export function eventually<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
+  return new Managed(I.eventually(ma.io))
+}
+
+/**
  * Effectfully map the error channel
  */
-export function chainError_<R, E, A, R1, E1>(
+export function flatMapError_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (e: E) => URManaged<R1, E1>
 ): Managed<R & R1, E1, A> {
@@ -868,52 +1101,10 @@ export function chainError_<R, E, A, R1, E1>(
 /**
  * Effectfully map the error channel
  */
-export function chainError<E, R1, E1>(
+export function flatMapError<E, R1, E1>(
   f: (e: E) => URManaged<R1, E1>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1, A> {
-  return (ma) => chainError_(ma, f)
-}
-
-export function collectM_<R, E, A, E1, R2, E2, B>(
-  ma: Managed<R, E, A>,
-  e: E1,
-  pf: (a: A) => O.Option<Managed<R2, E2, B>>
-): Managed<R & R2, E | E1 | E2, B> {
-  return flatMap_(ma, (a) => O.getOrElse_(pf(a), () => fail<E1 | E2>(e)))
-}
-
-export function collectM<A, E1, R2, E2, B>(
-  e: E1,
-  pf: (a: A) => O.Option<Managed<R2, E2, B>>
-): <R, E>(ma: Managed<R, E, A>) => Managed<R & R2, E1 | E | E2, B> {
-  return (ma) => collectM_(ma, e, pf)
-}
-
-export function collect_<R, E, A, E1, B>(
-  ma: Managed<R, E, A>,
-  e: E1,
-  pf: (a: A) => O.Option<B>
-): Managed<R, E | E1, B> {
-  return collectM_(ma, e, flow(pf, O.map(succeed)))
-}
-
-export function collect<A, E1, B>(
-  e: E1,
-  pf: (a: A) => O.Option<B>
-): <R, E>(ma: Managed<R, E, A>) => Managed<R, E1 | E, B> {
-  return (ma) => collect_(ma, e, pf)
-}
-
-export function compose<R, E, A, R1, E1>(ma: Managed<R, E, A>, that: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
-  return pipe(
-    ask<R1>(),
-    flatMap((r1) => give_(that, r1)),
-    flatMap((r) => give_(ma, r))
-  )
-}
-
-export function eventually<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
-  return new Managed(I.eventually(ma.io))
+  return (ma) => flatMapError_(ma, f)
 }
 
 /**
@@ -928,6 +1119,30 @@ export function foldLeft_<R, E, A, B>(as: Iterable<A>, b: B, f: (b: B, a: A) => 
  */
 export function foldLeft<R, E, A, B>(b: B, f: (b: B, a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, B> {
   return (as) => foldLeft_(as, b, f)
+}
+
+/**
+ * Combines an array of `Managed` effects using a `Monoid`
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function foldMap_<M>(
+  M: Monoid<M>
+): <R, E, A>(mas: Iterable<Managed<R, E, A>>, f: (a: A) => M) => Managed<R, E, M> {
+  return (mas, f) => foldLeft_(mas, M.nat, (x, ma) => pipe(ma, map(flow(f, (y) => M.combine_(x, y)))))
+}
+
+/**
+ * Combines an array of `Managed` effects using a `Monoid`
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function foldMap<M>(
+  M: Monoid<M>
+): <A>(f: (a: A) => M) => <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, M> {
+  return (f) => (mas) => foldMap_(M)(mas, f)
 }
 
 /**
@@ -960,6 +1175,38 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E,
       }
     )
   )
+}
+
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` and runs
+ * produced effects sequentially.
+ *
+ * Equivalent to `asUnit(foreach(f)(as))`, but without the cost of building
+ * the list of results.
+ */
+export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> {
+  return new Managed(
+    pipe(
+      as,
+      I.foreach((a) => f(a).io),
+      I.map((result) => {
+        const fins = A.map_(result, (k) => k[0])
+
+        return [(e) => I.foreach_(A.reverse(fins), (fin) => fin(e)), undefined]
+      })
+    )
+  )
+}
+
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` and runs
+ * produced effects sequentially.
+ *
+ * Equivalent to `asUnit(foreach(f)(as))`, but without the cost of building
+ * the list of results.
+ */
+export function foreachUnit<R, E, A>(f: (a: A) => Managed<R, E, unknown>): (as: Iterable<A>) => Managed<R, E, void> {
+  return (as) => foreachUnit_(as, f)
 }
 
 /**
@@ -1041,6 +1288,9 @@ export function interruptAs(fiberId: FiberId): Managed<unknown, never, never> {
   return halt(C.interrupt(fiberId))
 }
 
+/**
+ * Returns whether this managed effect is a failure.
+ */
 export function isFailure<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, boolean> {
   return fold_(
     ma,
@@ -1049,6 +1299,9 @@ export function isFailure<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, bool
   )
 }
 
+/**
+ * Returns whether this managed effect is a success.
+ */
 export function isSuccess<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, boolean> {
   return fold_(
     ma,
@@ -1135,7 +1388,7 @@ export function mapEffectWith<A, E1, B>(
  * `f` function.
  */
 export function mapEffect_<R, E, A, B>(ma: Managed<R, E, A>, f: (a: A) => B): Managed<R, unknown, B> {
-  return mapEffectWith_(ma, f, identity)
+  return mapEffectWith_(ma, f, identityFn)
 }
 
 /**
@@ -1185,22 +1438,52 @@ export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Opti
   )
 }
 
+/**
+ * Executes this effect, skipping the error but returning optionally the success.
+ */
 export function option<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, O.Option<A>> {
   return fold_(ma, () => O.none(), O.some)
 }
 
+/**
+ * Converts an option on errors into an option on values.
+ */
+export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E, O.Option<A>> {
+  return foldM_(
+    ma,
+    O.fold(() => succeed(O.none()), fail),
+    flow(O.some, succeed)
+  )
+}
+
+/**
+ * Keeps none of the errors, and terminates the fiber with them, using
+ * the specified function to convert the `E` into an unknown`.
+ */
 export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown): Managed<R, never, A> {
   return new Managed(I.orDieWith_(ma.io, f))
 }
 
+/**
+ * Keeps none of the errors, and terminates the fiber with them, using
+ * the specified function to convert the `E` into an unknown.
+ */
 export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
   return (ma) => orDieWith_(ma, f)
 }
 
+/**
+ * Translates effect failure into death of the fiber, making all failures unchecked and
+ * not a part of the type of the effect.
+ */
 export function orDie<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
-  return orDieWith_(ma, identity)
+  return orDieWith_(ma, identityFn)
 }
 
+/**
+ * Executes this effect and returns its value, if it succeeds, but
+ * otherwise executes the specified effect.
+ */
 export function orElse_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   that: () => Managed<R1, E1, B>
@@ -1208,12 +1491,20 @@ export function orElse_<R, E, A, R1, E1, B>(
   return foldM_(ma, () => that(), succeed)
 }
 
+/**
+ * Executes this effect and returns its value, if it succeeds, but
+ * otherwise executes the specified effect.
+ */
 export function orElse<R1, E1, B>(
   that: () => Managed<R1, E1, B>
 ): <R, E, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A | B> {
   return (ma) => orElse_(ma, that)
 }
 
+/**
+ * Returns an effect that will produce the value of this effect, unless it
+ * fails, in which case, it will produce the value of the specified effect.
+ */
 export function orElseEither_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   that: () => Managed<R1, E1, B>
@@ -1221,21 +1512,38 @@ export function orElseEither_<R, E, A, R1, E1, B>(
   return foldM_(ma, () => map_(that(), E.left), flow(E.right, succeed))
 }
 
+/**
+ * Returns an effect that will produce the value of this effect, unless it
+ * fails, in which case, it will produce the value of the specified effect.
+ */
 export function orElseEither<R1, E1, B>(
   that: () => Managed<R1, E1, B>
 ): <R, E, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1, E.Either<B, A>> {
   return (ma) => orElseEither_(ma, that)
 }
 
+/**
+ * Executes this effect and returns its value, if it succeeds, but
+ * otherwise fails with the specified error.
+ */
 export function orElseFail_<R, E, A, E1>(ma: Managed<R, E, A>, e: E1): Managed<R, E | E1, A> {
   return orElse_(ma, () => fail(e))
 }
 
+/**
+ * Executes this effect and returns its value, if it succeeds, but
+ * otherwise fails with the specified error.
+ */
 export function orElseFail<E1>(e: E1): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E1 | E, A> {
   return (ma) => orElseFail_(ma, e)
 }
 
-export function orElseOptional<R, E, A, R1, E1, B>(
+/**
+ * Returns an effect that will produce the value of this effect, unless it
+ * fails with the `None` value, in which case it will produce the value of
+ * the specified effect.
+ */
+export function orElseOptional_<R, E, A, R1, E1, B>(
   ma: Managed<R, O.Option<E>, A>,
   that: () => Managed<R1, O.Option<E1>, B>
 ): Managed<R & R1, O.Option<E | E1>, A | B> {
@@ -1246,6 +1554,17 @@ export function orElseOptional<R, E, A, R1, E1, B>(
       (e) => fail(O.some<E | E1>(e))
     )
   )
+}
+
+/**
+ * Returns an effect that will produce the value of this effect, unless it
+ * fails with the `None` value, in which case it will produce the value of
+ * the specified effect.
+ */
+export function orElseOptional<R1, E1, B>(
+  that: () => Managed<R1, O.Option<E1>, B>
+): <R, E, A>(ma: Managed<R, O.Option<E>, A>) => Managed<R & R1, O.Option<E | E1>, A | B> {
+  return (ma) => orElseOptional_(ma, that)
 }
 
 /**
@@ -1291,7 +1610,7 @@ export function refineOrDieWith<E, E1>(
  * Keeps some of the errors, and terminates the fiber with the rest
  */
 export function refineOrDie_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (e: E) => O.Option<E1>): Managed<R, E1, A> {
-  return refineOrDieWith_(ma, pf, identity)
+  return refineOrDieWith_(ma, pf, identityFn)
 }
 
 /**
@@ -1364,14 +1683,23 @@ export function result<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, Ex.Exit
   )
 }
 
+/**
+ * Extracts the optional value, or returns the given 'default'.
+ */
 export function someOrElse_<R, E, A, B>(ma: Managed<R, E, O.Option<A>>, onNone: () => B): Managed<R, E, A | B> {
   return map_(ma, O.getOrElse(onNone))
 }
 
+/**
+ * Extracts the optional value, or returns the given 'default'.
+ */
 export function someOrElse<B>(onNone: () => B): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E, A | B> {
   return (ma) => someOrElse_(ma, onNone)
 }
 
+/**
+ * Extracts the optional value, or executes the effect 'default'.
+ */
 export function someOrElseM_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, O.Option<A>>,
   onNone: Managed<R1, E1, B>
@@ -1382,12 +1710,18 @@ export function someOrElseM_<R, E, A, R1, E1, B>(
   )
 }
 
+/**
+ * Extracts the optional value, or executes the effect 'default'.
+ */
 export function someOrElseM<R1, E1, B>(
   onNone: Managed<R1, E1, B>
 ): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R & R1, E | E1, A | B> {
   return (ma) => someOrElseM_(ma, onNone)
 }
 
+/**
+ * Extracts the optional value, or fails with the given error 'e'.
+ */
 export function someOrFailWith_<R, E, A, E1>(ma: Managed<R, E, O.Option<A>>, e: () => E1): Managed<R, E | E1, A> {
   return flatMap_(
     ma,
@@ -1395,18 +1729,30 @@ export function someOrFailWith_<R, E, A, E1>(ma: Managed<R, E, O.Option<A>>, e: 
   )
 }
 
+/**
+ * Extracts the optional value, or fails with the given error 'e'.
+ */
 export function someOrFailWith<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E | E1, A> {
   return (ma) => someOrFailWith_(ma, e)
 }
 
+/**
+ * Extracts the optional value, or fails with a NoSuchElementException
+ */
 export function someOrFail<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, E | NoSuchElementException, A> {
-  return someOrFailWith_(ma, () => new NoSuchElementException('Managed.someOrFailException'))
+  return someOrFailWith_(ma, () => new NoSuchElementException('Managed.someOrFail'))
 }
 
+/**
+ * Swaps the error and result
+ */
 export function swap<R, E, A>(ma: Managed<R, E, A>): Managed<R, A, E> {
   return foldM_(ma, succeed, fail)
 }
 
+/**
+ * Swap the error and result, then apply an effectful function to the effect
+ */
 export function swapWith_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   f: (me: Managed<R, A, E>) => Managed<R1, B, E1>
@@ -1414,6 +1760,9 @@ export function swapWith_<R, E, A, R1, E1, B>(
   return swap(f(swap(ma)))
 }
 
+/**
+ * Swap the error and result, then apply an effectful function to the effect
+ */
 export function swapWith<R, E, A, R1, E1, B>(
   f: (me: Managed<R, A, E>) => Managed<R1, B, E1>
 ): (ma: Managed<R, E, A>) => Managed<R1, E1, B> {
@@ -1476,18 +1825,30 @@ export function unlessM<R1, E1>(
  */
 export const unsandbox: <R, E, A>(ma: Managed<R, Cause<E>, A>) => Managed<R, E, A> = mapErrorCause(C.flatten)
 
+/**
+ * Unwraps a `Managed` that is inside an `IO`.
+ */
 export function unwrap<R, E, R1, E1, A>(fa: I.IO<R, E, Managed<R1, E1, A>>): Managed<R & R1, E | E1, A> {
   return flatten(fromEffect(fa))
 }
 
+/**
+ * The moral equivalent of `if (p) exp`
+ */
 export function when_<R, E, A>(ma: Managed<R, E, A>, b: boolean): Managed<R, E, void> {
   return suspend(() => (b ? asUnit(ma) : unit()))
 }
 
+/**
+ * The moral equivalent of `if (p) exp`
+ */
 export function when(b: boolean): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> {
   return (ma) => when_(ma, b)
 }
 
+/**
+ * The moral equivalent of `if (p) exp` when `p` has side-effects
+ */
 export function whenM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   mb: Managed<R1, E1, boolean>
@@ -1495,6 +1856,9 @@ export function whenM_<R, E, A, R1, E1>(
   return flatMap_(mb, (b) => (b ? asUnit(ma) : unit()))
 }
 
+/**
+ * The moral equivalent of `if (p) exp` when `p` has side-effects
+ */
 export function whenM<R1, E1>(
   mb: Managed<R1, E1, boolean>
 ): <R, E, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1 | E, void> {
@@ -1728,7 +2092,7 @@ export class GenManaged<R, E, A> {
 
 const adapter = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new GenManaged(asksService(_)(identity))
+    return new GenManaged(asksService(_)(identityFn))
   }
   if (E.isEither(_)) {
     return new GenManaged(fromEither(() => _))

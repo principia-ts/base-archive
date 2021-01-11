@@ -51,7 +51,7 @@ export type LoggerConfig = {
 export const LoggerConfig = tag<LoggerConfig>()
 
 export function loggerConfig(config: LoggerOptions) {
-  return L.create(LoggerConfig).pure({
+  return L.succeed(LoggerConfig)({
     path: config.path,
     level: config.level ?? 'error',
     theme:

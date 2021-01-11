@@ -1,10 +1,10 @@
 import type { Managed } from '../core'
 
-import { tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/Function'
 
 import { parallel, sequential } from '../../ExecutionStrategy'
 import * as I from '../_internal/_io'
-import { mapM_ } from '../core'
+import { mapM, mapM_ } from '../core'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /**
@@ -26,17 +26,53 @@ export function foreachPar<R, E, A, B>(
  * For a sequential version of this method, see `foreach_`.
  */
 export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> {
-  return mapM_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
-    const makeInnerMap = I.gives_(
-      I.map_(makeManagedReleaseMap(sequential).io, ([_, x]) => x),
-      (x: unknown) => tuple(x, parallelReleaseMap)
-    )
-
-    return I.foreachPar_(as, (a) =>
-      I.map_(
-        I.flatMap_(makeInnerMap, (innerMap) => I.gives_(f(a).io, (u: R) => tuple(u, innerMap))),
-        ([_, b]) => b
+  return pipe(
+    makeManagedReleaseMap(parallel),
+    mapM((parallelReleaseMap) => {
+      const makeInnerMap = pipe(
+        makeManagedReleaseMap(sequential).io,
+        I.map(([_, x]) => x),
+        I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
-    )
-  })
+
+      return I.foreachPar_(as, (a) =>
+        pipe(
+          makeInnerMap,
+          I.flatMap((innerMap) =>
+            pipe(
+              f(a).io,
+              I.map(([_fin, r]) => r),
+              I.gives((r0: R) => tuple(r0, innerMap))
+            )
+          )
+        )
+      )
+    })
+  )
+}
+
+export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> {
+  return pipe(
+    makeManagedReleaseMap(parallel),
+    mapM((parallelReleaseMap) => {
+      const makeInnerMap = pipe(
+        makeManagedReleaseMap(sequential).io,
+        I.map(([_, x]) => x),
+        I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
+      )
+
+      return I.foreachUnitPar_(as, (a) =>
+        pipe(
+          makeInnerMap,
+          I.flatMap((innerMap) =>
+            pipe(
+              f(a).io,
+              I.map(([_fin, r]) => r),
+              I.gives((r0: R) => tuple(r0, innerMap))
+            )
+          )
+        )
+      )
+    })
+  )
 }

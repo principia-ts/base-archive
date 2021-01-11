@@ -8,16 +8,16 @@ import * as P from './typeclass'
  * -------------------------------------------
  */
 
-export interface Tuple<A, E> extends Readonly<[A, E]> {}
+export interface Tuple2<A, B> extends Readonly<[A, B]> {}
 
-export const URI = 'Tuple'
+export const URI = 'T2'
 export type URI = typeof URI
 
 export type V = HKT.V<'I', '+'>
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Tuple<A, I>
+    readonly [URI]: Tuple2<A, I>
   }
 }
 
@@ -27,11 +27,11 @@ declare module './HKT' {
  * -------------------------------------------
  */
 
-export function tuple_<A, I>(a: A, i: I): Tuple<A, I> {
+export function tuple_<A, I>(a: A, i: I): Tuple2<A, I> {
   return [a, i]
 }
 
-export function tuple<I>(i: I): <A>(a: A) => Tuple<A, I> {
+export function tuple<I>(i: I): <A>(a: A) => Tuple2<A, I> {
   return (a) => [a, i]
 }
 
@@ -41,11 +41,11 @@ export function tuple<I>(i: I): <A>(a: A) => Tuple<A, I> {
  * -------------------------------------------
  */
 
-export function fst<A, I>(ai: Tuple<A, I>): A {
+export function fst<A, I>(ai: Tuple2<A, I>): A {
   return ai[0]
 }
 
-export function snd<A, I>(ai: Tuple<A, I>): I {
+export function snd<A, I>(ai: Tuple2<A, I>): I {
   return ai[1]
 }
 
@@ -93,23 +93,23 @@ export function getApply<M>(M: P.Monoid<M>): P.Apply<[URI], V & HKT.Fix<'I', M>>
  * -------------------------------------------
  */
 
-export function bimap_<A, I, G, B>(pab: Tuple<A, I>, f: (i: I) => G, g: (a: A) => B): Tuple<B, G> {
+export function bimap_<A, I, G, B>(pab: Tuple2<A, I>, f: (i: I) => G, g: (a: A) => B): Tuple2<B, G> {
   return [g(fst(pab)), f(snd(pab))]
 }
 
-export function bimap<I, G, A, B>(f: (i: I) => G, g: (a: A) => B): (pab: Tuple<A, I>) => Tuple<B, G> {
+export function bimap<I, G, A, B>(f: (i: I) => G, g: (a: A) => B): (pab: Tuple2<A, I>) => Tuple2<B, G> {
   return (pab) => bimap_(pab, f, g)
 }
 
-export function mapLeft_<A, I, G>(pab: Tuple<A, I>, f: (i: I) => G): Tuple<A, G> {
+export function mapLeft_<A, I, G>(pab: Tuple2<A, I>, f: (i: I) => G): Tuple2<A, G> {
   return [fst(pab), f(snd(pab))]
 }
 
-export function mapLeft<I, G>(f: (i: I) => G): <A>(pab: Tuple<A, I>) => Tuple<A, G> {
+export function mapLeft<I, G>(f: (i: I) => G): <A>(pab: Tuple2<A, I>) => Tuple2<A, G> {
   return (pab) => mapLeft_(pab, f)
 }
 
-export function swap<A, I>(ai: Tuple<A, I>): Tuple<I, A> {
+export function swap<A, I>(ai: Tuple2<A, I>): Tuple2<I, A> {
   return [snd(ai), fst(ai)]
 }
 
@@ -119,17 +119,17 @@ export function swap<A, I>(ai: Tuple<A, I>): Tuple<I, A> {
  * -------------------------------------------
  */
 
-export function extend_<A, I, B>(wa: Tuple<A, I>, f: (wa: Tuple<A, I>) => B): Tuple<B, I> {
+export function extend_<A, I, B>(wa: Tuple2<A, I>, f: (wa: Tuple2<A, I>) => B): Tuple2<B, I> {
   return [f(wa), snd(wa)]
 }
 
-export function extend<A, I, B>(f: (wa: Tuple<A, I>) => B): (wa: Tuple<A, I>) => Tuple<B, I> {
+export function extend<A, I, B>(f: (wa: Tuple2<A, I>) => B): (wa: Tuple2<A, I>) => Tuple2<B, I> {
   return (wa) => extend_(wa, f)
 }
 
-export const extract: <A, I>(wa: Tuple<A, I>) => A = fst
+export const extract: <A, I>(wa: Tuple2<A, I>) => A = fst
 
-export const duplicate: <A, I>(wa: Tuple<A, I>) => Tuple<Tuple<A, I>, I> = extend(identity)
+export const duplicate: <A, I>(wa: Tuple2<A, I>) => Tuple2<Tuple2<A, I>, I> = extend(identity)
 
 /*
  * -------------------------------------------
@@ -137,27 +137,27 @@ export const duplicate: <A, I>(wa: Tuple<A, I>) => Tuple<Tuple<A, I>, I> = exten
  * -------------------------------------------
  */
 
-export function foldLeft_<A, I, B>(fa: Tuple<A, I>, b: B, f: (b: B, a: A) => B): B {
+export function foldLeft_<A, I, B>(fa: Tuple2<A, I>, b: B, f: (b: B, a: A) => B): B {
   return f(b, fst(fa))
 }
 
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): <I>(fa: Tuple<A, I>) => B {
+export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): <I>(fa: Tuple2<A, I>) => B {
   return (fa) => foldLeft_(fa, b, f)
 }
 
-export function foldMap_<M>(_M: P.Monoid<M>): <A, I>(fa: Tuple<A, I>, f: (a: A) => M) => M {
+export function foldMap_<M>(_M: P.Monoid<M>): <A, I>(fa: Tuple2<A, I>, f: (a: A) => M) => M {
   return (fa, f) => f(fst(fa))
 }
 
-export function foldMap<M>(_M: P.Monoid<M>): <A>(f: (a: A) => M) => <I>(fa: Tuple<A, I>) => M {
+export function foldMap<M>(_M: P.Monoid<M>): <A>(f: (a: A) => M) => <I>(fa: Tuple2<A, I>) => M {
   return (f) => (fa) => foldMap_(_M)(fa, f)
 }
 
-export function foldRight_<A, I, B>(fa: Tuple<A, I>, b: B, f: (a: A, b: B) => B): B {
+export function foldRight_<A, I, B>(fa: Tuple2<A, I>, b: B, f: (a: A, b: B) => B): B {
   return f(fst(fa), b)
 }
 
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): <I>(fa: Tuple<A, I>) => B {
+export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): <I>(fa: Tuple2<A, I>) => B {
   return (fa) => foldRight_(fa, b, f)
 }
 
@@ -167,11 +167,11 @@ export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): <I>(fa: Tuple<A, I>
  * -------------------------------------------
  */
 
-export function map_<A, I, B>(fa: Tuple<A, I>, f: (a: A) => B): Tuple<B, I> {
+export function map_<A, I, B>(fa: Tuple2<A, I>, f: (a: A) => B): Tuple2<B, I> {
   return [f(fst(fa)), snd(fa)]
 }
 
-export function map<A, B>(f: (a: A) => B): <I>(fa: Tuple<A, I>) => Tuple<B, I> {
+export function map<A, B>(f: (a: A) => B): <I>(fa: Tuple2<A, I>) => Tuple2<B, I> {
   return (fa) => map_(fa, f)
 }
 
@@ -203,11 +203,11 @@ export function getMonad<M>(M: P.Monoid<M>): P.Monad<[URI], V & HKT.Fix<'I', M>>
  * -------------------------------------------
  */
 
-export function compose_<B, A, C>(ab: Tuple<B, A>, bc: Tuple<C, B>): Tuple<C, A> {
+export function compose_<B, A, C>(ab: Tuple2<B, A>, bc: Tuple2<C, B>): Tuple2<C, A> {
   return [fst(bc), snd(ab)]
 }
 
-export function compose<C, B>(bc: Tuple<C, B>): <A>(ab: Tuple<B, A>) => Tuple<C, A> {
+export function compose<C, B>(bc: Tuple2<C, B>): <A>(ab: Tuple2<B, A>) => Tuple2<C, A> {
   return (ab) => compose_(ab, bc)
 }
 

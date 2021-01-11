@@ -15,7 +15,7 @@ export interface TestConfig {
 export const TestConfig = tag<TestConfig>()
 
 export function live(_: TestConfig): Layer<unknown, never, Has<TestConfig>> {
-  return L.pure(TestConfig)(_)
+  return L.succeed(TestConfig)(_)
 }
 
 export const { repeats, retries, samples, shrinks } = I.deriveLifted(TestConfig)(

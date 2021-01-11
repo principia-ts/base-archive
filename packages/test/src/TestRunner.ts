@@ -27,7 +27,7 @@ export class TestRunner<R, E> {
     readonly reporter: TestReporter<E> = report(defaultTestAnnotationRenderer),
     readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = NodeConsole.live['>>>'](fromConsole)[
       '+++'
-    ](L.pure(HasClock)(new LiveClock()))
+    ](L.succeed(HasClock)(new LiveClock()))
   ) {}
 
   run(spec: XSpec<R & Has<Annotations>, E>): URIO<Has<TestLogger> & Has<Clock>, ExecutedSpec<E>> {

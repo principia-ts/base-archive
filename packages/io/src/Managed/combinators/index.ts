@@ -1,8 +1,12 @@
 // codegen:start {preset: barrel, include: ./*.ts}
 export * from './apply-par'
+export * from './collectAllPar'
+export * from './collectAllParN'
 export * from './ensuring'
 export * from './ensuringFirst'
 export * from './fiberId'
+export * from './foldMapPar'
+export * from './foldMapParN'
 export * from './foreachExec'
 export * from './foreachPar'
 export * from './foreachParN'

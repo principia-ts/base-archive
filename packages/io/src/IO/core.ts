@@ -10,6 +10,7 @@ import type { Supervisor } from '../Supervisor'
 import type { Predicate, Refinement } from '@principia/base/Function'
 import type { Has, Region, Tag } from '@principia/base/Has'
 import type * as HKT from '@principia/base/HKT'
+import type { Monoid } from '@principia/base/Monoid'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Option } from '@principia/base/Option'
 import type { _E as InferE, _R as InferR, UnionToIntersection } from '@principia/base/util/types'
@@ -2035,12 +2036,26 @@ export function foldLeft<R, E, A, B>(b: B, f: (b: B, a: A) => IO<R, E, B>): (as:
   return (as) => foldLeft_(as, b, f)
 }
 
-export function foldLeftAll_<R, E, A>(as: NonEmptyArray<IO<R, E, A>>, f: (b: A, a: A) => A) {
-  return A.foldLeft_(NEA.tail(as), NEA.head(as), (b, a) => map2_(b, a, f))
+/**
+ * Combines an array of `IO`s using a `Monoid`
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function foldMap_<M>(M: Monoid<M>): <R, E, A>(as: ReadonlyArray<IO<R, E, A>>, f: (a: A) => M) => IO<R, E, M> {
+  return (as, f) => foldLeft_(as, M.nat, (x, a) => pipe(a, map(flow(f, (y) => M.combine_(x, y)))))
 }
 
-export function foldLeftAll<A>(f: (b: A, a: A) => A): <R, E>(as: NonEmptyArray<IO<R, E, A>>) => IO<R, E, A> {
-  return (as) => foldLeftAll_(as, f)
+/**
+ * Combines an array of `IO`s using a `Monoid`
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function foldMap<M>(
+  M: Monoid<M>
+): <A>(f: (a: A) => M) => <R, E>(as: ReadonlyArray<IO<R, E, A>>) => IO<R, E, M> {
+  return (f) => (as) => foldMap_(M)(as, f)
 }
 
 /**
@@ -2049,8 +2064,8 @@ export function foldLeftAll<A>(f: (b: A, a: A) => A): <R, E>(as: NonEmptyArray<I
  * @category Combinators
  * @since 1.0.0
  */
-export function foldRight_<A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) => IO<R, E, Z>): IO<R, E, Z> {
-  return A.foldRight_(Array.from(i), succeed(zero) as IO<R, E, Z>, (el, acc) => flatMap_(acc, (a) => f(el, a)))
+export function foldRight_<A, B, R, E>(i: Iterable<A>, b: B, f: (a: A, b: B) => IO<R, E, B>): IO<R, E, B> {
+  return A.foldRight_(Array.from(i), succeed(b) as IO<R, E, B>, (el, acc) => flatMap_(acc, (a) => f(el, a)))
 }
 
 /**
@@ -2059,8 +2074,8 @@ export function foldRight_<A, Z, R, E>(i: Iterable<A>, zero: Z, f: (a: A, z: Z) 
  * @category Combinators
  * @since 1.0.0
  */
-export function foldRight<A, Z, R, E>(zero: Z, f: (a: A, z: Z) => IO<R, E, Z>): (i: Iterable<A>) => IO<R, E, Z> {
-  return (i) => foldRight_(i, zero, f)
+export function foldRight<A, B, R, E>(b: B, f: (a: A, b: B) => IO<R, E, B>): (i: Iterable<A>) => IO<R, E, B> {
+  return (i) => foldRight_(i, b, f)
 }
 
 /**

@@ -1,11 +1,12 @@
 import type { Managed } from '../core'
 
-import { tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/Function'
 
 import { parallelN, sequential } from '../../ExecutionStrategy'
 import { foreachParN_ as effectForeachParN } from '../../IO/combinators/foreachParN'
+import { foreachUnitParN_ as effectForeachUnitParN } from '../../IO/combinators/foreachUnitParN'
 import * as I from '../_internal/io'
-import { mapM_ } from '../core'
+import { mapM, mapM_ } from '../core'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /**
@@ -28,17 +29,70 @@ export function foreachParN(
  */
 export function foreachParN_(n: number) {
   return <R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> =>
-    mapM_(makeManagedReleaseMap(parallelN(n)), (parallelReleaseMap) => {
-      const makeInnerMap = I.gives_(
-        I.map_(makeManagedReleaseMap(sequential).io, ([_, x]) => x),
-        (x: unknown) => tuple(x, parallelReleaseMap)
-      )
-
-      return effectForeachParN(n)(as, (a) =>
-        I.map_(
-          I.flatMap_(makeInnerMap, (innerMap) => I.gives_(f(a).io, (u: R) => tuple(u, innerMap))),
-          ([_, b]) => b
+    pipe(
+      makeManagedReleaseMap(parallelN(n)),
+      mapM((parallelReleaseMap) => {
+        const makeInnerMap = pipe(
+          makeManagedReleaseMap(sequential).io,
+          I.map(([_, x]) => x),
+          I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
         )
-      )
-    })
+
+        return effectForeachParN(n)(as, (a) =>
+          pipe(
+            makeInnerMap,
+            I.flatMap((innerMap) =>
+              pipe(
+                f(a).io,
+                I.map(([_fin, r]) => r),
+                I.gives((r0: R) => tuple(r0, innerMap))
+              )
+            )
+          )
+        )
+      })
+    )
+}
+
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` in parallel, discarding the results`.
+ *
+ * Unlike `foreachUnitPar`, this method will use at most up to `n` fibers.
+ */
+export function foreachUnitParN(
+  n: number
+): <R, E, A>(f: (a: A) => Managed<R, E, unknown>) => (as: Iterable<A>) => Managed<R, E, void> {
+  return (f) => (as) => foreachUnitParN_(n)(as, f)
+}
+
+/**
+ * Applies the function `f` to each element of the `Iterable<A>` in parallel, discarding the results`.
+ *
+ * Unlike `foreachUnitPar_`, this method will use at most up to `n` fibers.
+ */
+export function foreachUnitParN_(n: number) {
+  return <R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> =>
+    pipe(
+      makeManagedReleaseMap(parallelN(n)),
+      mapM((parallelReleaseMap) => {
+        const makeInnerMap = pipe(
+          makeManagedReleaseMap(sequential).io,
+          I.map(([_, x]) => x),
+          I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
+        )
+
+        return effectForeachUnitParN(n)(as, (a) =>
+          pipe(
+            makeInnerMap,
+            I.flatMap((innerMap) =>
+              pipe(
+                f(a).io,
+                I.map(([_fin, r]) => r),
+                I.gives((r0: R) => tuple(r0, innerMap))
+              )
+            )
+          )
+        )
+      })
+    )
 }
