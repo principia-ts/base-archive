@@ -133,100 +133,6 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
       )
     )
   })
-  /*
-   *
-   *   return pipe(
-   *     I.do,
-   *     I.bindS('parentId', () => fiberId()),
-   *     I.bindS('causes', () => Ref.make<C.Cause<E>>(C.empty)),
-   *     I.bindS('result', () => P.make<void, void>()),
-   *     I.bindS('status', () => Ref.make([0, 0, false] as [number, number, boolean])),
-   *     I.letS('startEffect', (s) =>
-   *       pipe(
-   *         s.status,
-   *         Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] =>
-   *           failing ? [false, [started, done, failing]] : [true, [started + 1, done, failing]]
-   *         )
-   *       )
-   *     ),
-   *     I.letS('startFailure', (s) =>
-   *       pipe(
-   *         s.status,
-   *         Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
-   *         I.tap(() => s.result.fail(undefined))
-   *       )
-   *     ),
-   *     I.letS('effect', (s) => (a: A) =>
-   *       makeUninterruptible(
-   *         I.whenM(s.startEffect)(
-   *           pipe(
-   *             I.suspend(() => f(a)),
-   *             makeInterruptible,
-   *             I.tapCause((c) =>
-   *               pipe(
-   *                 s.causes,
-   *                 Ref.update((l) => C.both(l, c)),
-   *                 I.flatMap(() => s.startFailure)
-   *               )
-   *             ),
-   *             ensuring(
-   *               pipe(
-   *                 s.result.succeed(undefined),
-   *                 I.whenM(
-   *                   Ref.modify_(s.status, ([started, done, failing]) => [
-   *                     (failing ? started : size) === done + 1,
-   *                     [started, done + 1, failing] as [number, number, boolean]
-   *                   ])
-   *                 )
-   *               )
-   *             )
-   *           )
-   *         )
-   *       )
-   *     ),
-   *     I.bindS('fibers', (s) => I.foreach_(arr, (a) => I.fork(s.effect(a)))),
-   *     I.letS('interruptor', (s) =>
-   *       pipe(
-   *         s.result.await,
-   *         I.catchAll(() =>
-   *           I.flatMap_(
-   *             I.foreach_(s.fibers, (f) => I.fork(f.interruptAs(s.parentId))),
-   *             joinAllFibers
-   *           )
-   *         ),
-   *         fromEffect,
-   *         forkManaged
-   *       )
-   *     ),
-   *     I.tap((s) =>
-   *       useManaged_(s.interruptor, () =>
-   *         pipe(
-   *           s.result.fail(undefined),
-   *           I.andThen(I.flatMap_(s.causes.get, I.halt)),
-   *           I.whenM(
-   *             pipe(
-   *               I.foreach_(s.fibers, (f) => f.await),
-   *               I.map(
-   *                 flow(
-   *                   A.findFirst((e) => e._tag === 'Failure'),
-   *                   O.isSome
-   *                 )
-   *               )
-   *             )
-   *           ),
-   *           onInterruptExtended(() =>
-   *             pipe(
-   *               s.result.fail(undefined),
-   *               I.andThen(I.foreach_(s.fibers, (f) => f.await)),
-   *               I.andThen(I.flatMap_(s.causes.get, I.halt))
-   *             )
-   *           )
-   *         )
-   *       )
-   *     ),
-   *     I.asUnit
-   *   )
-   */
 }
 
 /**
@@ -302,33 +208,26 @@ function useManaged_<R, E, A, R2, E2, B>(
 function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberContext<E, A>> {
   return new Managed(
     uninterruptibleMask(({ restore }) =>
-      pipe(
-        I.do,
-        I.bindS('tp', () => I.ask<readonly [R, RM.ReleaseMap]>()),
-        I.letS('r', ({ tp }) => tp[0]),
-        I.letS('outerReleaseMap', ({ tp }) => tp[1]),
-        I.bindS('innerReleaseMap', () => RM.make),
-        I.bindS('fiber', ({ innerReleaseMap, r }) =>
-          restore(
-            pipe(
-              self.io,
-              I.map(([_, a]) => a),
-              forkDaemon,
-              I.giveAll([r, innerReleaseMap] as const)
-            )
+      I.gen(function* (_) {
+        const [r, outerReleaseMap] = yield* _(I.ask<readonly [R, RM.ReleaseMap]>())
+        const innerReleaseMap      = yield* _(RM.make)
+        const fiber                = yield* _(
+          pipe(
+            self.io,
+            I.map(([, a]) => a),
+            forkDaemon,
+            I.giveAll(tuple(r, innerReleaseMap)),
+            restore
           )
-        ),
-        I.bindS('releaseMapEntry', ({ fiber, innerReleaseMap, outerReleaseMap }) =>
-          RM.add((e) =>
-            pipe(
-              fiber,
-              interruptFiber,
-              I.flatMap(() => releaseAllSeq_(innerReleaseMap, e))
-            )
-          )(outerReleaseMap)
-        ),
-        I.map(({ fiber, releaseMapEntry }) => [releaseMapEntry, fiber])
-      )
+        )
+        const releaseMapEntry      = yield* _(
+          RM.add((e) => pipe(fiber, interruptFiber, I.andThen(releaseAllSeq_(innerReleaseMap, e))))(
+            outerReleaseMap
+          )
+        )
+
+        return tuple(releaseMapEntry, fiber)
+      })
     )
   )
 }

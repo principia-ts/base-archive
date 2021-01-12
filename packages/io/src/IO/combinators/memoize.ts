@@ -15,27 +15,25 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
   return pipe(
     RM.make(new Map<A, P.Promise<E, B>>()),
     I.map((ref) => (a: A) =>
-      pipe(
-        I.do,
-        I.bindS('promise', () =>
+      I.gen(function* (_) {
+        const promise = yield* _(
           pipe(
-            ref,
-            RM.modify((m) => {
+            RM.modify_(ref, (m) => {
               const memo = m.get(a)
-              return memo
-                ? I.pure(tuple(memo, m))
-                : pipe(
-                    I.do,
-                    I.bindS('promise', () => P.make<E, B>()),
-                    I.tap(({ promise }) => I.fork(to(promise)(f(a)))),
-                    I.map(({ promise }) => tuple(promise, m.set(a, promise)))
-                  )
+              if (memo) {
+                return I.succeed(tuple(memo, m))
+              } else {
+                return I.gen(function* (_) {
+                  const p = yield* _(P.make<E, B>())
+                  yield* _(I.fork(to(p)(f(a))))
+                  return tuple(p, m.set(a, p))
+                })
+              }
             })
           )
-        ),
-        I.bindS('b', ({ promise }) => P.await(promise)),
-        I.map(({ b }) => b)
-      )
+        )
+        return yield* _(promise.await)
+      })
     )
   )
 }
@@ -49,30 +47,27 @@ export function memoizeEq<A>(eq: Eq<A>) {
   return <R, E, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> =>
     pipe(
       RM.make(new Map<A, P.Promise<E, B>>()),
-      I.map((ref) => (a: A) =>
-        pipe(
-          I.do,
-          I.bindS('promise', () =>
-            pipe(
-              ref,
-              RM.modify((m) => {
-                for (const [k, v] of Array.from(m)) {
-                  if (eq.equals_(k, a)) {
-                    return I.pure(tuple(v, m))
+      I.map(
+        (ref) => (a: A) =>
+          I.gen(function* (_) {
+            const promise = yield* _(
+              pipe(
+                RM.modify_(ref, (m) => {
+                  for (const [k, v] of Array.from(m)) {
+                    if (eq.equals_(k, a)) {
+                      return I.succeed(tuple(v, m))
+                    }
                   }
-                }
-                return pipe(
-                  I.do,
-                  I.bindS('promise', () => P.make<E, B>()),
-                  I.tap(({ promise }) => I.fork(to(promise)(f(a)))),
-                  I.map(({ promise }) => tuple(promise, m.set(a, promise)))
-                )
-              })
+                  return I.gen(function* (_) {
+                    const p = yield* _(P.make<E, B>())
+                    yield* _(I.fork(to(p)(f(a))))
+                    return tuple(p, m.set(a, p))
+                  })
+                })
+              )
             )
-          ),
-          I.bindS('b', ({ promise }) => P.await(promise)),
-          I.map(({ b }) => b)
-        )
+            return yield* _(promise.await)
+          })
       )
     )
 }

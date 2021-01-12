@@ -37,7 +37,7 @@ export type _AI = typeof _AI
  * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fibers`.
  */
 export abstract class Async<R, E, A> extends I.Integration<R, E, A> {
-  readonly _tag = I.IOInstructionTag.Integration
+  readonly _tag = I.IOTag.Integration
 
   readonly _S1!: (_: unknown) => void
   readonly _S2!: () => never
@@ -55,7 +55,7 @@ export abstract class Async<R, E, A> extends I.Integration<R, E, A> {
     if (ai._tag === 'Some') {
       return ai.value(this)['_I']
     }
-    return new I.FailInstruction(C.die('Async-IO integration unimplemented. Did you import the integration?'))
+    return new I.Fail(C.die('Async-IO integration unimplemented. Did you import the integration?'))
   }
 }
 

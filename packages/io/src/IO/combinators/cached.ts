@@ -15,12 +15,11 @@ import { uninterruptibleMask } from './interrupt'
 import { to } from './to'
 
 const _compute = <R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) =>
-  pipe(
-    I.do,
-    I.bindS('p', () => P.make<E, A>()),
-    I.tap(({ p }) => to(p)(fa)),
-    I.map(({ p }) => O.some(tuple(start + ttl, p)))
-  )
+  I.gen(function* (_) {
+    const p = yield* _(P.make<E, A>())
+    yield* _(to(p)(fa))
+    return O.some(tuple(start + ttl, p))
+  })
 
 const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>) =>
   uninterruptibleMask(({ restore }) =>
@@ -59,12 +58,11 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
  * @since 1.0.0
  */
 export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & Has<Clock>, FIO<E, A>> {
-  return pipe(
-    I.do,
-    I.bindS('r', () => I.ask<R & Has<Clock>>()),
-    I.bindS('cache', () => RefM.make<Option<readonly [number, Promise<E, A>]>>(O.none())),
-    I.map(({ cache, r }) => I.giveAll(r)(_get(ma, timeToLive, cache)))
-  )
+  return I.gen(function* (_) {
+    const r     = yield* _(I.ask<R & Has<Clock>>())
+    const cache = yield* _(RefM.make<Option<readonly [number, Promise<E, A>]>>(O.none()))
+    return I.giveAll(r)(_get(ma, timeToLive, cache))
+  })
 }
 
 /**

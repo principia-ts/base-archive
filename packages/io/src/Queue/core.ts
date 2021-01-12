@@ -260,13 +260,12 @@ export class BackPressureStrategy<A> implements Strategy<A> {
   }
 
   get shutdown(): I.UIO<void> {
-    return pipe(
-      I.do,
-      I.bindS('fiberId', () => I.fiberId()),
-      I.bindS('putters', () => I.effectTotal(() => unsafePollAll(this.putters))),
-      I.tap((s) => I.foreachPar_(s.putters, ([_, p, lastItem]) => (lastItem ? p.interruptAs(s.fiberId) : I.unit()))),
-      I.asUnit
-    )
+    const self = this
+    return I.gen(function* (_) {
+      const fiberId = yield* _(I.fiberId())
+      const putters = yield* _(I.effectTotal(() => unsafePollAll(self.putters)))
+      yield* _(I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? p.interruptAs(fiberId) : I.unit())))
+    })
   }
 
   get surplusSize(): number {

@@ -3,7 +3,7 @@ import type { UIO } from '../IO/core'
 import { identity, pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
-import { ModifyFiberRefInstruction, NewFiberRefInstruction } from '../IO/core'
+import { ModifyFiberRef, NewFiberRef } from '../IO/core'
 
 /*
  * -------------------------------------------
@@ -30,7 +30,7 @@ export function make<A>(
   onFork: (a: A) => A = identity,
   onJoin: (a: A, a1: A) => A = (_, a) => a
 ): UIO<FiberRef<A>> {
-  return new NewFiberRefInstruction(initial, onFork, onJoin)
+  return new NewFiberRef(initial, onFork, onJoin)
 }
 
 /*
@@ -40,7 +40,7 @@ export function make<A>(
  */
 
 export function modify_<A, B>(fiberRef: FiberRef<A>, f: (a: A) => [B, A]): UIO<B> {
-  return new ModifyFiberRefInstruction(fiberRef, f)
+  return new ModifyFiberRef(fiberRef, f)
 }
 
 export function modify<A, B>(f: (a: A) => [B, A]): (fiberRef: FiberRef<A>) => UIO<B> {

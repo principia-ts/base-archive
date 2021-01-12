@@ -29,9 +29,9 @@ import * as FL from '@principia/free/FreeList'
 
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
-import { _A, _E, _I, _R, _U, IOInstructionTag } from './constants'
+import { _A, _E, _I, _R, _U, IOTag } from './constants'
 
-export { _A, _E, _I, _R, _U, IOInstructionTag } from './constants'
+export { _A, _E, _I, _R, _U, IOTag } from './constants'
 
 /*
  * -------------------------------------------
@@ -57,29 +57,300 @@ export abstract class IO<R, E, A> {
   }
 }
 
+/*
+ * -------------------------------------------
+ * Internal
+ * -------------------------------------------
+ */
+
+/**
+ * @internal
+ */
+export class FlatMap<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
+  readonly _tag = IOTag.FlatMap
+  constructor(readonly io: IO<R, E, A>, readonly f: (a: A) => IO<R1, E1, A1>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Succeed<A> extends IO<unknown, never, A> {
+  readonly _tag = IOTag.Succeed
+  constructor(readonly value: A) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class EffectPartial<E, A> extends IO<unknown, E, A> {
+  readonly _tag = IOTag.EffectPartial
+  constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class EffectTotal<A> extends IO<unknown, never, A> {
+  readonly _tag = IOTag.EffectTotal
+  constructor(readonly effect: () => A) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class EffectAsync<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.Async
+  constructor(
+    readonly register: (f: (_: IO<R, E, A>) => void) => Option<IO<R, E, A>>,
+    readonly blockingOn: ReadonlyArray<FiberId>
+  ) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2, B | C> {
+  readonly _tag = IOTag.Fold
+
+  constructor(
+    readonly io: IO<R, E, A>,
+    readonly onFailure: (cause: Cause<E>) => IO<R1, E1, B>,
+    readonly onSuccess: (a: A) => IO<R2, E2, C>
+  ) {
+    super()
+  }
+
+  apply(v: A): IO<R & R1 & R2, E1 | E2, B | C> {
+    return this.onSuccess(v)
+  }
+}
+
+export type FailureReporter = (e: Cause<unknown>) => void
+
+/**
+ * @internal
+ */
+export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
+  readonly _tag = IOTag.Fork
+
+  constructor(
+    readonly io: IO<R, E, A>,
+    readonly scope: Option<Scope<Exit<any, any>>>,
+    readonly reportFailure: Option<FailureReporter>
+  ) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Fail<E> extends IO<unknown, E, never> {
+  readonly _tag = IOTag.Fail
+
+  constructor(readonly cause: Cause<E>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Yield extends IO<unknown, never, void> {
+  readonly _tag = IOTag.Yield
+
+  constructor() {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Read<R0, R, E, A> extends IO<R & R0, E, A> {
+  readonly _tag = IOTag.Read
+
+  constructor(readonly f: (_: R0) => IO<R, E, A>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Give<R, E, A> extends IO<unknown, E, A> {
+  readonly _tag = IOTag.Give
+
+  constructor(readonly io: IO<R, E, A>, readonly env: R) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class EffectSuspend<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.EffectSuspend
+
+  constructor(readonly io: () => IO<R, E, A>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
+  readonly _tag = 'Race'
+
+  constructor(
+    readonly left: IO<R, E, A>,
+    readonly right: IO<R1, E1, A1>,
+    readonly leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
+    readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
+    readonly scope: Option<Scope<Exit<any, any>>>
+  ) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class SetInterrupt<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.SetInterrupt
+
+  constructor(readonly io: IO<R, E, A>, readonly flag: InterruptStatus) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class GetInterrupt<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.GetInterrupt
+
+  constructor(readonly f: (_: InterruptStatus) => IO<R, E, A>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class CheckDescriptor<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.CheckDescriptor
+
+  constructor(readonly f: (_: FiberDescriptor) => IO<R, E, A>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class Supervise<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.Supervise
+
+  constructor(readonly io: IO<R, E, A>, readonly supervisor: Supervisor<any>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class EffectSuspendPartial<R, E, A, E2> extends IO<R, E | E2, A> {
+  readonly _tag = IOTag.EffectSuspendPartial
+
+  constructor(readonly io: () => IO<R, E, A>, readonly onThrow: (u: unknown) => E2) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class NewFiberRef<A> extends IO<unknown, never, FiberRef<A>> {
+  readonly _tag = IOTag.NewFiberRef
+
+  constructor(readonly initial: A, readonly onFork: (a: A) => A, readonly onJoin: (a: A, a2: A) => A) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class ModifyFiberRef<A, B> extends IO<unknown, never, B> {
+  readonly _tag = IOTag.ModifyFiberRef
+
+  constructor(readonly fiberRef: FiberRef<A>, readonly f: (a: A) => [B, A]) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class GetForkScope<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.GetForkScope
+
+  constructor(readonly f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
+export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.OverrideForkScope
+
+  constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
+    super()
+  }
+}
+
+export const integrationNotImplemented = new Fail({
+  _tag: 'Die',
+  value: new Error('Integration not implemented or unsupported')
+})
+
 export type Instruction =
-  | FlatMapInstruction<any, any, any, any, any, any>
-  | SucceedInstruction<any>
-  | EffectPartialInstruction<any, any>
-  | EffectTotalInstruction<any>
-  | EffectAsyncInstruction<any, any, any>
-  | FoldInstruction<any, any, any, any, any, any, any, any, any>
-  | ForkInstruction<any, any, any>
-  | SetInterruptInstruction<any, any, any>
-  | GetInterruptInstruction<any, any, any>
-  | FailInstruction<any>
-  | CheckDescriptorInstruction<any, any, any>
-  | YieldInstruction
-  | ReadInstruction<any, any, any, any>
-  | GiveInstruction<any, any, any>
-  | EffectSuspendInstruction<any, any, any>
-  | EffectSuspendPartialInstruction<any, any, any, any>
-  | NewFiberRefInstruction<any>
-  | ModifyFiberRefInstruction<any, any>
-  | RaceInstruction<any, any, any, any, any, any, any, any, any, any, any, any>
-  | SuperviseInstruction<any, any, any>
-  | GetForkScopeInstruction<any, any, any>
-  | OverrideForkScopeInstruction<any, any, any>
+  | FlatMap<any, any, any, any, any, any>
+  | Succeed<any>
+  | EffectPartial<any, any>
+  | EffectTotal<any>
+  | EffectAsync<any, any, any>
+  | Fold<any, any, any, any, any, any, any, any, any>
+  | Fork<any, any, any>
+  | SetInterrupt<any, any, any>
+  | GetInterrupt<any, any, any>
+  | Fail<any>
+  | CheckDescriptor<any, any, any>
+  | Yield
+  | Read<any, any, any, any>
+  | Give<any, any, any>
+  | EffectSuspend<any, any, any>
+  | EffectSuspendPartial<any, any, any, any>
+  | NewFiberRef<any>
+  | ModifyFiberRef<any, any>
+  | Race<any, any, any, any, any, any, any, any, any, any, any, any>
+  | Supervise<any, any, any>
+  | GetForkScope<any, any, any>
+  | OverrideForkScope<any, any, any>
   | SIO<unknown, never, any, any, any>
   | Integration<any, any, any>
 
@@ -97,211 +368,8 @@ declare module '@principia/base/HKT' {
   }
 }
 
-export class FlatMapInstruction<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
-  readonly _tag = IOInstructionTag.FlatMap
-  constructor(readonly io: IO<R, E, A>, readonly f: (a: A) => IO<R1, E1, A1>) {
-    super()
-  }
-}
-
-export class SucceedInstruction<A> extends IO<unknown, never, A> {
-  readonly _tag = IOInstructionTag.Succeed
-  constructor(readonly value: A) {
-    super()
-  }
-}
-
-export class EffectPartialInstruction<E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOInstructionTag.EffectPartial
-  constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
-    super()
-  }
-}
-
-export class EffectTotalInstruction<A> extends IO<unknown, never, A> {
-  readonly _tag = IOInstructionTag.EffectTotal
-  constructor(readonly effect: () => A) {
-    super()
-  }
-}
-
-export class EffectAsyncInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.Async
-  constructor(
-    readonly register: (f: (_: IO<R, E, A>) => void) => Option<IO<R, E, A>>,
-    readonly blockingOn: ReadonlyArray<FiberId>
-  ) {
-    super()
-  }
-}
-
-export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2, B | C> {
-  readonly _tag = IOInstructionTag.Fold
-
-  constructor(
-    readonly io: IO<R, E, A>,
-    readonly onFailure: (cause: Cause<E>) => IO<R1, E1, B>,
-    readonly onSuccess: (a: A) => IO<R2, E2, C>
-  ) {
-    super()
-  }
-
-  apply(v: A): IO<R & R1 & R2, E1 | E2, B | C> {
-    return this.onSuccess(v)
-  }
-}
-
-export type FailureReporter = (e: Cause<unknown>) => void
-
-export class ForkInstruction<R, E, A> extends IO<R, never, FiberContext<E, A>> {
-  readonly _tag = IOInstructionTag.Fork
-
-  constructor(
-    readonly io: IO<R, E, A>,
-    readonly scope: Option<Scope<Exit<any, any>>>,
-    readonly reportFailure: Option<FailureReporter>
-  ) {
-    super()
-  }
-}
-
-export class FailInstruction<E> extends IO<unknown, E, never> {
-  readonly _tag = IOInstructionTag.Fail
-
-  constructor(readonly cause: Cause<E>) {
-    super()
-  }
-}
-
-export class YieldInstruction extends IO<unknown, never, void> {
-  readonly _tag = IOInstructionTag.Yield
-
-  constructor() {
-    super()
-  }
-}
-
-export class ReadInstruction<R0, R, E, A> extends IO<R & R0, E, A> {
-  readonly _tag = IOInstructionTag.Read
-
-  constructor(readonly f: (_: R0) => IO<R, E, A>) {
-    super()
-  }
-}
-
-export class GiveInstruction<R, E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOInstructionTag.Give
-
-  constructor(readonly io: IO<R, E, A>, readonly env: R) {
-    super()
-  }
-}
-
-export class EffectSuspendInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.EffectSuspend
-
-  constructor(readonly io: () => IO<R, E, A>) {
-    super()
-  }
-}
-
-export class RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<
-  R & R1 & R2 & R3,
-  E2 | E3,
-  A2 | A3
-> {
-  readonly _tag = 'Race'
-
-  constructor(
-    readonly left: IO<R, E, A>,
-    readonly right: IO<R1, E1, A1>,
-    readonly leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
-    readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
-    readonly scope: Option<Scope<Exit<any, any>>>
-  ) {
-    super()
-  }
-}
-
-export class SetInterruptInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.SetInterrupt
-
-  constructor(readonly io: IO<R, E, A>, readonly flag: InterruptStatus) {
-    super()
-  }
-}
-
-export class GetInterruptInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.GetInterrupt
-
-  constructor(readonly f: (_: InterruptStatus) => IO<R, E, A>) {
-    super()
-  }
-}
-
-export class CheckDescriptorInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.CheckDescriptor
-
-  constructor(readonly f: (_: FiberDescriptor) => IO<R, E, A>) {
-    super()
-  }
-}
-
-export class SuperviseInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.Supervise
-
-  constructor(readonly io: IO<R, E, A>, readonly supervisor: Supervisor<any>) {
-    super()
-  }
-}
-
-export class EffectSuspendPartialInstruction<R, E, A, E2> extends IO<R, E | E2, A> {
-  readonly _tag = IOInstructionTag.EffectSuspendPartial
-
-  constructor(readonly io: () => IO<R, E, A>, readonly onThrow: (u: unknown) => E2) {
-    super()
-  }
-}
-
-export class NewFiberRefInstruction<A> extends IO<unknown, never, FiberRef<A>> {
-  readonly _tag = IOInstructionTag.NewFiberRef
-
-  constructor(readonly initial: A, readonly onFork: (a: A) => A, readonly onJoin: (a: A, a2: A) => A) {
-    super()
-  }
-}
-
-export class ModifyFiberRefInstruction<A, B> extends IO<unknown, never, B> {
-  readonly _tag = IOInstructionTag.ModifyFiberRef
-
-  constructor(readonly fiberRef: FiberRef<A>, readonly f: (a: A) => [B, A]) {
-    super()
-  }
-}
-
-export class GetForkScopeInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.GetForkScope
-
-  constructor(readonly f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
-    super()
-  }
-}
-
-export class OverrideForkScopeInstruction<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.OverrideForkScope
-
-  constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
-    super()
-  }
-}
-
-export const integrationNotImplemented = new FailInstruction({
-  _tag: 'Die',
-  value: new Error('Integration not implemented or unsupported')
-})
-
 export abstract class Integration<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOInstructionTag.Integration
+  readonly _tag = IOTag.Integration
   readonly _S1!: (_: unknown) => void
   readonly _S2!: () => never;
 
@@ -332,7 +400,7 @@ export abstract class Integration<R, E, A> extends IO<R, E, A> {
  * @since 1.0.0
  */
 export function succeed<E = never, A = never>(a: A): FIO<E, A> {
-  return new SucceedInstruction(a)
+  return new Succeed(a)
 }
 
 /**
@@ -349,7 +417,7 @@ export function effectAsync<R, E, A>(
   register: (k: (_: IO<R, E, A>) => void) => void,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return new EffectAsyncInstruction((cb) => {
+  return new EffectAsync((cb) => {
     register(cb)
     return O.none()
   }, blockingOn)
@@ -372,7 +440,7 @@ export function effectAsyncOption<R, E, A>(
   register: (k: (_: IO<R, E, A>) => void) => O.Option<IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return new EffectAsyncInstruction(register, blockingOn)
+  return new EffectAsync(register, blockingOn)
 }
 
 /**
@@ -380,7 +448,7 @@ export function effectAsyncOption<R, E, A>(
  * thrown exceptions into typed failed effects with `IO.fail`.
  */
 export function effect<A>(effect: () => A): FIO<unknown, A> {
-  return new EffectPartialInstruction(effect, identity)
+  return new EffectPartial(effect, identity)
 }
 
 /**
@@ -396,7 +464,7 @@ export function effect<A>(effect: () => A): FIO<unknown, A> {
  * @since 1.0.0
  */
 export function effectTotal<A>(effect: () => A): UIO<A> {
-  return new EffectTotalInstruction(effect)
+  return new EffectTotal(effect)
 }
 
 /**
@@ -411,7 +479,7 @@ export function effectTotal<A>(effect: () => A): UIO<A> {
  * @since 1.0.0
  */
 export function effectCatch_<E, A>(effect: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
-  return new EffectPartialInstruction(effect, onThrow)
+  return new EffectPartial(effect, onThrow)
 }
 
 /**
@@ -434,7 +502,7 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () =
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
 export function effectSuspend<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
-  return new EffectSuspendPartialInstruction(io, identity)
+  return new EffectSuspendPartial(io, identity)
 }
 
 /**
@@ -447,7 +515,7 @@ export function effectSuspendCatch_<R, E, A, E1>(
   io: () => IO<R, E, A>,
   onThrow: (error: unknown) => E1
 ): IO<R, E | E1, A> {
-  return new EffectSuspendPartialInstruction(io, onThrow)
+  return new EffectSuspendPartial(io, onThrow)
 }
 
 /**
@@ -476,7 +544,7 @@ export function effectSuspendCatch<E1>(
  * @since 1.0.0
  */
 export function effectSuspendTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
-  return new EffectSuspendInstruction(io)
+  return new EffectSuspend(io)
 }
 
 /**
@@ -490,7 +558,7 @@ export function effectSuspendTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> 
  * @since 1.0.0
  */
 export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
-  return new FailInstruction(cause)
+  return new Fail(cause)
 }
 
 /**
@@ -617,7 +685,7 @@ export function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
  * @since 1.0.0
  */
 export function supervised_<R, E, A>(fa: IO<R, E, A>, supervisor: Supervisor<any>): IO<R, E, A> {
-  return new SuperviseInstruction(fa, supervisor)
+  return new Supervise(fa, supervisor)
 }
 
 /**
@@ -652,7 +720,7 @@ export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, 
  * @since 1.0.0
  */
 export function pure<A>(a: A): UIO<A> {
-  return new SucceedInstruction(a)
+  return new Succeed(a)
 }
 
 /*
@@ -896,7 +964,7 @@ export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new FoldInstruction(ma, onFailure, onSuccess)
+  return new Fold(ma, onFailure, onSuccess)
 }
 
 /**
@@ -906,7 +974,7 @@ export function foldCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => new FoldInstruction(ma, onFailure, onSuccess)
+  return (ma) => new Fold(ma, onFailure, onSuccess)
 }
 
 export function foldM_<R, R1, R2, E, E1, E2, A, A1, A2>(
@@ -1009,7 +1077,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  * @since 1.0.0
  */
 export function flatMap_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B>): IO<R & U, E | G, B> {
-  return new FlatMapInstruction(ma, f)
+  return new FlatMap(ma, f)
 }
 
 /**
@@ -1157,7 +1225,7 @@ export function tapError<E, R1, E1>(f: (e: E) => IO<R1, E1, any>): <R, A>(fa: IO
  * @since 1.0.0
  */
 export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
-  return new ReadInstruction((_: R) => new SucceedInstruction(f(_)))
+  return new Read((_: R) => new Succeed(f(_)))
 }
 
 /**
@@ -1171,7 +1239,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  * @since 1.0.0
  */
 export function asksM<Q, R, E, A>(f: (r: Q) => IO<R, E, A>): IO<R & Q, E, A> {
-  return new ReadInstruction(f)
+  return new Read(f)
 }
 
 /**
@@ -1188,7 +1256,7 @@ export function asksM<Q, R, E, A>(f: (r: Q) => IO<R, E, A>): IO<R & Q, E, A> {
  * @since 1.0.0
  */
 export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
-  return new GiveInstruction(ma, r)
+  return new Give(ma, r)
 }
 
 /**
@@ -1587,7 +1655,7 @@ export function causeAsError<R, E, A>(ma: IO<R, E, A>): IO<R, Cause<E>, A> {
  * @since 1.0.0
  */
 export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, A>): IO<R, E, A> {
-  return new GetInterruptInstruction(f)
+  return new GetInterrupt(f)
 }
 
 export function collect_<R, E, A, E1, A1>(ma: IO<R, E, A>, f: () => E1, pf: (a: A) => Option<A1>): IO<R, E | E1, A1> {
@@ -1658,7 +1726,7 @@ export function cond<R, R1, E, A>(
  * @since 1.0.0
  */
 export function descriptorWith<R, E, A>(f: (d: FiberDescriptor) => IO<R, E, A>): IO<R, E, A> {
-  return new CheckDescriptorInstruction(f)
+  return new CheckDescriptor(f)
 }
 
 /**
@@ -2052,9 +2120,7 @@ export function foldMap_<M>(M: Monoid<M>): <R, E, A>(as: ReadonlyArray<IO<R, E, 
  * @category Combinators
  * @since 1.0.0
  */
-export function foldMap<M>(
-  M: Monoid<M>
-): <A>(f: (a: A) => M) => <R, E>(as: ReadonlyArray<IO<R, E, A>>) => IO<R, E, M> {
+export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => <R, E>(as: ReadonlyArray<IO<R, E, A>>) => IO<R, E, M> {
   return (f) => (as) => foldMap_(M)(as, f)
 }
 
@@ -2108,7 +2174,7 @@ export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  * methods.
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
-  return new ForkInstruction(ma, O.none(), O.none())
+  return new Fork(ma, O.none(), O.none())
 }
 
 /**
@@ -2134,7 +2200,7 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  * methods.
  */
 export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
-  return (ma) => new ForkInstruction(ma, O.none(), O.some(reportFailure))
+  return (ma) => new Fork(ma, O.none(), O.some(reportFailure))
 }
 
 /**
@@ -2596,7 +2662,7 @@ export function partition<R, E, A, B>(
  * @since 1.0.0
  */
 export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
-  return new FoldInstruction(
+  return new Fold(
     ma,
     (cause) => succeed(Ex.failure(cause)),
     (succ) => succeed(Ex.succeed(succ))
@@ -3039,20 +3105,19 @@ export function summarized_<R, E, A, R1, E1, B, C>(
   self: IO<R, E, A>,
   summary: IO<R1, E1, B>,
   f: (start: B, end: B) => C
-): IO<R & R1, E | E1, [C, A]> {
-  return pipe(
-    of,
-    bindS('start', () => summary),
-    bindS('value', () => self),
-    bindS('end', () => summary),
-    map((s) => [f(s.start, s.end), s.value])
-  )
+): IO<R & R1, E | E1, readonly [C, A]> {
+  return gen(function* (_) {
+    const start = yield* _(summary)
+    const value = yield* _(self)
+    const end   = yield* _(summary)
+    return tuple(f(start, end), value)
+  })
 }
 
 export function summarized<R1, E1, B, C>(
   summary: IO<R1, E1, B>,
   f: (start: B, end: B) => C
-): <R, E, A>(self: IO<R, E, A>) => IO<R & R1, E1 | E, [C, A]> {
+): <R, E, A>(self: IO<R, E, A>) => IO<R & R1, E1 | E, readonly [C, A]> {
   return (self) => summarized_(self, summary, f)
 }
 
@@ -3104,7 +3169,7 @@ export function timedWith_<R, E, A, R1, E1>(ma: IO<R, E, A>, msTime: IO<R1, E1, 
  */
 export function timedWith<R1, E1>(
   msTime: IO<R1, E1, number>
-): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, [number, A]> {
+): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, readonly [number, A]> {
   return (ma) => timedWith_(ma, msTime)
 }
 
@@ -3113,7 +3178,7 @@ export function tryOrElse_<R, E, A, R1, E1, A1, R2, E2, A2>(
   that: () => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new FoldInstruction(ma, (cause) => O.fold_(C.keepDefects(cause), that, halt), onSuccess)
+  return new Fold(ma, (cause) => O.fold_(C.keepDefects(cause), that, halt), onSuccess)
 }
 
 export function tryOrElse<A, R1, E1, A1, R2, E2, A2>(
@@ -3611,7 +3676,7 @@ export function gen(...args: any[]): any {
  * -------------------------------------------
  * Derive
  * -------------------------------------------
-*/
+ */
 
 export type ShapeFn<T> = Pick<
   T,

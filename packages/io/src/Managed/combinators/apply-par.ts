@@ -118,12 +118,12 @@ export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any,
       ([k, v]) => map_(v, (a) => [k, a] as const)
     ),
     (kvs) => {
-      const r = {}
+      const mut_r = {}
       for (let i = 0; i < kvs.length; i++) {
         const [k, v] = kvs[i]
-        r[k]         = v
+        mut_r[k]     = v
       }
-      return r
+      return mut_r
     }
   ) as any
 }
@@ -144,12 +144,12 @@ export function sequenceSParN(n: number) {
         ([k, v]) => map_(v, (a) => [k, a] as const)
       ),
       (kvs) => {
-        const r = {}
+        const mut_r = {}
         for (let i = 0; i < kvs.length; i++) {
           const [k, v] = kvs[i]
-          r[k]         = v
+          mut_r[k]     = v
         }
-        return r
+        return mut_r
       }
     ) as any
 }

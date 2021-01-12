@@ -200,13 +200,12 @@ export function makeExit_<R, E, A, R1>(
 ): Managed<R & R1, E, A> {
   return new Managed<R & R1, E, A>(
     I.makeUninterruptible(
-      pipe(
-        I.do,
-        I.bindS('r', () => I.ask<readonly [R & R1, ReleaseMap]>()),
-        I.bindS('a', (s) => I.giveAll_(acquire, s.r[0])),
-        I.bindS('rm', (s) => add((ex) => I.giveAll_(release(s.a, ex), s.r[0]))(s.r[1])),
-        I.map((s) => [s.rm, s.a])
-      )
+      I.gen(function* (_) {
+        const r  = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
+        const a  = yield* _(I.giveAll_(acquire, r[0]))
+        const rm = yield* _(add((ex) => I.giveAll_(release(a, ex), r[0]))(r[1]))
+        return tuple(rm, a)
+      })
     )
   )
 }

@@ -2,7 +2,7 @@ import type { Clock } from '../../Clock'
 import type { Has } from '@principia/base/Has'
 
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { flow, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import { sequential } from '../../ExecutionStrategy'
@@ -15,49 +15,51 @@ import { releaseAll } from './releaseAll'
 export function timeout(d: number) {
   return <R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E, O.Option<A>> =>
     new Managed(
-      I.uninterruptibleMask(({ restore }) =>
-        pipe(
-          I.do,
-          I.bindS('env', () => I.ask<readonly [R & Has<Clock>, RM.ReleaseMap]>()),
-          I.letS('outerReleaseMap', ({ env }) => env[1]),
-          I.letS('r', ({ env }) => env[0]),
-          I.bindS('innerReleaseMap', () => RM.make),
-          I.bindS('earlyRelease', ({ outerReleaseMap, innerReleaseMap }) =>
-            pipe(
-              outerReleaseMap,
-              RM.add((ex) => releaseAll(ex, sequential)(innerReleaseMap))
+      I.uninterruptibleMask(
+        ({ restore }) =>
+          I.gen(function* (_) {
+            const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & Has<Clock>, RM.ReleaseMap]>())
+            const innerReleaseMap      = yield* _(RM.make)
+            const earlyRelease         = yield* _(
+              pipe(
+                outerReleaseMap,
+                RM.add((ex) => releaseAll(ex, sequential)(innerReleaseMap))
+              )
             )
-          ),
-          I.bindS('id', () => I.fiberId()),
-          I.bindS('raceResult', ({ r, innerReleaseMap, id }) =>
-            pipe(
-              ma.io,
-              I.giveAll([r, innerReleaseMap] as const),
-              I.raceWith(
-                I.as_(I.sleep(d), () => O.none()),
-                (result, sleeper) =>
-                  I.apSecond_(sleeper.interruptAs(id), I.done(Ex.map_(result, ([_, a]) => E.right(a)))),
-                (_, resultFiber) => I.succeed(E.left(resultFiber))
-              ),
-              I.giveAll(r),
-              restore
-            )
-          ),
-          I.bindS('a', ({ raceResult, id, innerReleaseMap }) =>
-            E.fold_(
-              raceResult,
-              (fiber) =>
-                pipe(
-                  fiber.interruptAs(id),
-                  I.ensuring(pipe(innerReleaseMap, releaseAll(Ex.interrupt(id), sequential))),
-                  I.forkDaemon,
-                  I.as(() => O.none())
+
+            const id         = yield* _(I.fiberId())
+            const raceResult = yield* _(
+              pipe(
+                ma.io,
+                I.giveAll(tuple(r, innerReleaseMap)),
+                I.raceWith(
+                  pipe(
+                    I.sleep(d),
+                    I.as(() => O.none())
+                  ),
+                  (result, sleeper) =>
+                    pipe(sleeper.interruptAs(id), I.andThen(I.done(Ex.map_(result, ([, a]) => E.right(a))))),
+                  (_, resultFiber) => I.succeed(E.left(resultFiber))
                 ),
-              (result) => I.succeed(O.some(result))
+                I.giveAll(r),
+                restore
+              )
             )
-          ),
-          I.map(({ earlyRelease, a }) => [earlyRelease, a] as const)
-        )
+            const a          = yield* _(
+              E.fold_(
+                raceResult,
+                (fiber) =>
+                  pipe(
+                    fiber.interruptAs(id),
+                    I.ensuring(pipe(innerReleaseMap, releaseAll(Ex.interrupt(id), sequential))),
+                    I.forkDaemon,
+                    I.as(() => O.none())
+                  ),
+                flow(O.some, I.succeed)
+              )
+            )
+            return tuple(earlyRelease, a)
+          })
       )
     )
 }

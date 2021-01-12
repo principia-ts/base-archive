@@ -9,7 +9,7 @@ import * as O from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { makeStack } from '@principia/base/util/support/Stack'
 
-import { ExternalFailInstruction, IOInstructionTag } from './IO/constants'
+import { ExternalFail, IOTag } from './IO/constants'
 
 /*
  * -------------------------------------------
@@ -45,7 +45,7 @@ export type _SI = typeof _SI
  * @since 1.0.0
  */
 export abstract class SIO<S1, S2, R, E, A> {
-  readonly _tag      = IOInstructionTag.Integration
+  readonly _tag      = IOTag.Integration
   readonly _asyncTag = 'SIO'
 
   readonly _S1!: (_: S1) => void
@@ -69,7 +69,7 @@ export abstract class SIO<S1, S2, R, E, A> {
     if (si._tag === 'Some') {
       return si.value(this as any)['_I']
     }
-    return new ExternalFailInstruction({
+    return new ExternalFail({
       _tag: 'Die',
       value: 'SIO-IO integration not implemented. Did you import the integration?'
     })

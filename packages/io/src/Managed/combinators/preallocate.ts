@@ -14,38 +14,39 @@ import { releaseAll } from './releaseAll'
  * the resource as you might leak otherwise.
  */
 export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<unknown, never, A>> {
-  return I.uninterruptibleMask(({ restore }) =>
-    pipe(
-      I.do,
-      I.bindS('releaseMap', () => RM.make),
-      I.bindS('tp', ({ releaseMap }) =>
-        pipe(
-          ma.io,
-          I.gives((r: R) => tuple(r, releaseMap)),
-          restore,
-          I.result
+  return I.uninterruptibleMask(
+    ({ restore }) =>
+      I.gen(function* (_) {
+        const rm = yield* _(RM.make)
+        const tp = yield* _(
+          pipe(
+            ma.io,
+            I.gives((r: R) => tuple(r, rm)),
+            restore,
+            I.result
+          )
         )
-      ),
-      I.bindS('preallocated', ({ releaseMap, tp }) =>
-        Ex.foldM_(
-          tp,
-          (c) => pipe(releaseMap, releaseAll(Ex.failure(c), sequential), I.apSecond(I.halt(c))),
-          ([release, a]) =>
-            I.succeed(
-              new Managed(
-                I.asksM(([_, releaseMap]: readonly [unknown, RM.ReleaseMap]) =>
-                  pipe(
-                    releaseMap,
-                    RM.add(release),
-                    I.map((_) => tuple(_, a))
+
+        const preallocated = yield* _(
+          Ex.foldM_(
+            tp,
+            (c) => pipe(rm, releaseAll(Ex.failure(c), sequential), I.andThen(I.halt(c))),
+            ([release, a]) =>
+              I.succeed(
+                new Managed(
+                  I.asksM(([_, relMap]: readonly [unknown, RM.ReleaseMap]) =>
+                    pipe(
+                      relMap,
+                      RM.add(release),
+                      I.map((fin) => tuple(fin, a))
+                    )
                   )
                 )
               )
-            )
+          )
         )
-      ),
-      I.map(({ preallocated }) => preallocated)
-    )
+        return preallocated
+      })
   )
 }
 

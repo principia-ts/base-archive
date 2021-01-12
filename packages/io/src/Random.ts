@@ -9,75 +9,6 @@ import * as I from './IO/core'
 
 /*
  * -------------------------------------------
- * Model
- * -------------------------------------------
- */
-
-export interface Random {
-  readonly next: I.UIO<number>
-  readonly nextBoolean: I.UIO<boolean>
-  readonly nextInt: I.UIO<number>
-  readonly nextDouble: I.UIO<number>
-  readonly nextRange: (low: number, high: number) => I.UIO<number>
-  readonly nextIntBetween: (low: number, high: number) => I.UIO<number>
-  readonly setSeed: (s: string) => I.UIO<void>
-}
-
-export class LiveRandom implements Random {
-  private PRNG = new PRNG(this.seed)
-
-  constructor(private seed: string) {}
-
-  next: I.UIO<number> = I.effectTotal(() => this.PRNG.next())
-
-  nextBoolean: I.UIO<boolean> = I.flatMap_(this.next, (n) => I.effectTotal(() => n > 0.5))
-
-  nextInt: I.UIO<number> = I.effectTotal(() => this.PRNG.int32())
-
-  nextDouble: I.UIO<number> = I.effectTotal(() => this.PRNG.double())
-
-  nextRange: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.flatMap_(this.next, (n) => I.effectTotal(() => (high - low) * n + low))
-
-  nextIntBetween: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.flatMap_(this.next, (n) => I.effectTotal(() => Math.floor((high - low + 1) * n + low)))
-
-  setSeed = (s: string) =>
-    I.effectTotal(() => {
-      this.PRNG.setSeed(s)
-    })
-}
-
-export const defaultRandom = new LiveRandom(String(Math.random()))
-
-export const Random = tag<Random>()
-
-export const next = I.asksServiceM(Random)((_) => _.next)
-
-export const nextBoolean = I.asksServiceM(Random)((_) => _.nextBoolean)
-
-export function nextIntBetween(low: number, high: number) {
-  return I.asksServiceM(Random)((_) => _.nextIntBetween(low, high))
-}
-
-export const nextInt = I.asksServiceM(Random)((_) => _.nextInt)
-
-export const nextDouble = I.asksServiceM(Random)((_) => _.nextDouble)
-
-export function nextRange(low: number, high: number) {
-  return I.asksServiceM(Random)((_) => _.nextRange(low, high))
-}
-
-export function setSeed(seed: string) {
-  return I.asksServiceM(Random)((_) => _.setSeed(seed))
-}
-
-export function withSeed(seed: string) {
-  return I.updateService(Random, () => new LiveRandom(seed))
-}
-
-/*
- * -------------------------------------------
  * Internal
  * -------------------------------------------
  */
@@ -183,4 +114,73 @@ export class PRNG {
   double() {
     return this.next() + ((this.next() * 0x200000) | 0) * 1.1102230246251565e-16
   }
+}
+
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+ */
+
+export interface Random {
+  readonly next: I.UIO<number>
+  readonly nextBoolean: I.UIO<boolean>
+  readonly nextInt: I.UIO<number>
+  readonly nextDouble: I.UIO<number>
+  readonly nextRange: (low: number, high: number) => I.UIO<number>
+  readonly nextIntBetween: (low: number, high: number) => I.UIO<number>
+  readonly setSeed: (s: string) => I.UIO<void>
+}
+
+export class LiveRandom implements Random {
+  private PRNG = new PRNG(this.seed)
+
+  constructor(private seed: string) {}
+
+  next: I.UIO<number> = I.effectTotal(() => this.PRNG.next())
+
+  nextBoolean: I.UIO<boolean> = I.flatMap_(this.next, (n) => I.effectTotal(() => n > 0.5))
+
+  nextInt: I.UIO<number> = I.effectTotal(() => this.PRNG.int32())
+
+  nextDouble: I.UIO<number> = I.effectTotal(() => this.PRNG.double())
+
+  nextRange: (low: number, high: number) => I.UIO<number> = (low, high) =>
+    I.flatMap_(this.next, (n) => I.effectTotal(() => (high - low) * n + low))
+
+  nextIntBetween: (low: number, high: number) => I.UIO<number> = (low, high) =>
+    I.flatMap_(this.next, (n) => I.effectTotal(() => Math.floor((high - low + 1) * n + low)))
+
+  setSeed = (s: string) =>
+    I.effectTotal(() => {
+      this.PRNG.setSeed(s)
+    })
+}
+
+export const defaultRandom = new LiveRandom(String(Math.random()))
+
+export const Random = tag<Random>()
+
+export const next = I.asksServiceM(Random)((_) => _.next)
+
+export const nextBoolean = I.asksServiceM(Random)((_) => _.nextBoolean)
+
+export function nextIntBetween(low: number, high: number) {
+  return I.asksServiceM(Random)((_) => _.nextIntBetween(low, high))
+}
+
+export const nextInt = I.asksServiceM(Random)((_) => _.nextInt)
+
+export const nextDouble = I.asksServiceM(Random)((_) => _.nextDouble)
+
+export function nextRange(low: number, high: number) {
+  return I.asksServiceM(Random)((_) => _.nextRange(low, high))
+}
+
+export function setSeed(seed: string) {
+  return I.asksServiceM(Random)((_) => _.setSeed(seed))
+}
+
+export function withSeed(seed: string) {
+  return I.updateService(Random, () => new LiveRandom(seed))
 }

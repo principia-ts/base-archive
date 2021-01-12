@@ -142,16 +142,17 @@ export class Chain<R_, E_, O, O2> {
   }
 
   pullOuter() {
+    const self = this
     return pipe(
-      this.currOuterChunk,
+      self.currOuterChunk,
       Ref.modify(([chunk, nextIdx]): [I.IO<R_, Option<E_>, O>, [Chunk<O>, number]] => {
         if (nextIdx < chunk.length) {
           return [I.pure(chunk[nextIdx]), [chunk, nextIdx + 1]]
         } else {
           return [
             pipe(
-              this.pullNonEmpty(this.outerStream),
-              I.tap((os) => this.currOuterChunk.set([os, 1])),
+              self.pullNonEmpty(self.outerStream),
+              I.tap((os) => self.currOuterChunk.set([os, 1])),
               I.map((os) => os[0])
             ),
             [chunk, nextIdx]
@@ -161,22 +162,19 @@ export class Chain<R_, E_, O, O2> {
       I.flatten,
       I.flatMap((o) =>
         I.uninterruptibleMask(({ restore }) =>
-          pipe(
-            I.do,
-            I.bindS('releaseMap', () => RM.make),
-            I.bindS('pull', ({ releaseMap }) =>
-              restore(
-                pipe(
-                  this.f0(o).proc.io,
-                  I.gives((_: R_) => [_, releaseMap] as [R_, RM.ReleaseMap]),
-                  I.map(([_, x]) => x)
-                )
+          I.gen(function* (_) {
+            const releaseMap = yield* _(RM.make)
+            const pull       = yield* _(
+              pipe(
+                self.f0(o).proc.io,
+                I.gives((_: R_) => tuple(_, releaseMap)),
+                I.map(([, x]) => x),
+                restore
               )
-            ),
-            I.tap(({ pull }) => this.currInnerStream.set(pull)),
-            I.tap(({ releaseMap }) => this.innerFinalizer.set((e) => M.releaseAll(e, sequential)(releaseMap))),
-            I.asUnit
-          )
+            )
+            yield* _(self.currInnerStream.set(pull))
+            yield* _(self.innerFinalizer.set((e) => M.releaseAll(e, sequential)(releaseMap)))
+          })
         )
       )
     )
@@ -226,20 +224,19 @@ export class Chain<R_, E_, O, O2> {
  */
 export function fromChunk<A>(c: Chunk<A>): UStream<A> {
   return new Stream(
-    pipe(
-      I.do,
-      I.bindS('doneRef', () => Ref.make(false)),
-      I.letS('pull', ({ doneRef }) =>
-        pipe(
-          doneRef,
-          Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
-            done || c.length === 0 ? [Pull.end, true] : [I.pure(c), true]
-          ),
-          I.flatten
+    I.toManaged_(
+      I.gen(function* (_) {
+        const doneRef = yield* _(Ref.make(false))
+        const pull    = yield* _(
+          pipe(
+            doneRef,
+            Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
+              done || c.length === 0 ? tuple(Pull.end, true) : tuple(I.succeed(c), true)
+            )
+          )
         )
-      ),
-      I.map(({ pull }) => pull),
-      I.toManaged()
+        return pull
+      })
     )
   )
 }
@@ -1598,7 +1595,9 @@ export function aggregateAsyncWithinEither_<R, E, O, R1, E1, P, Q>(
             I.mapError(O.some)
           )
 
-        const go = (race: boolean): I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
+        const go = (
+          race: boolean
+        ): I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
           if (!race) {
             return pipe(waitForProducer, I.flatMap(handleTake), I.apFirst(raceNextTime.set(true)))
           } else {
@@ -2825,22 +2824,19 @@ export function combineChunks_<R, E, O, R1, E1, O1, Z, C>(
   ) => I.IO<R & R1, never, Ex.Exit<Option<E | E1>, readonly [Chunk<C>, Z]>>
 ): Stream<R & R1, E | E1, C> {
   return new Stream(
-    pipe(
-      M.do,
-      M.bindS('left', () => stream.proc),
-      M.bindS('right', () => that.proc),
-      M.bindS(
-        'pull',
-        ({ left, right }) =>
-          unfoldChunkM(z, (z) =>
-            pipe(
-              f(z, left, right),
-              I.flatMap((ex) => I.optional(I.done(ex)))
-            )
-          ).proc
-      ),
-      M.map(({ pull }) => pull)
-    )
+    M.gen(function* (_) {
+      const left  = yield* _(stream.proc)
+      const right = yield* _(that.proc)
+      const pull  = yield* _(
+        unfoldChunkM(z, (z) =>
+          pipe(
+            f(z, left, right),
+            I.flatMap((ex) => I.optional(I.done(ex)))
+          )
+        ).proc
+      )
+      return pull
+    })
   )
 }
 

@@ -8,24 +8,24 @@ import type { Option } from '@principia/base/Option'
 import * as O from '@principia/base/Option'
 
 import { globalScope } from '../../Scope'
-import { ForkInstruction, GetForkScopeInstruction, OverrideForkScopeInstruction, pure, RaceInstruction } from '../core'
+import { Fork, GetForkScope, OverrideForkScope, pure, Race } from '../core'
 
 /**
  * Retrieves the scope that will be used to supervise forked effects.
  */
-export const forkScope: UIO<Scope<Exit<any, any>>> = new GetForkScopeInstruction(pure)
+export const forkScope: UIO<Scope<Exit<any, any>>> = new GetForkScope(pure)
 
 /**
  * Retrieves the scope that will be used to supervise forked effects.
  */
 export function forkScopeWith<R, E, A>(f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
-  return new GetForkScopeInstruction(f)
+  return new GetForkScope(f)
 }
 
 export class ForkScopeRestore {
   constructor(private scope: Scope<Exit<any, any>>) {}
 
-  readonly restore = <R, E, A>(ma: IO<R, E, A>): IO<R, E, A> => new OverrideForkScopeInstruction(ma, O.some(this.scope))
+  readonly restore = <R, E, A>(ma: IO<R, E, A>): IO<R, E, A> => new OverrideForkScope(ma, O.some(this.scope))
 }
 
 /**
@@ -35,13 +35,13 @@ export class ForkScopeRestore {
  */
 export function forkScopeMask(
   newScope: Scope<Exit<any, any>>
-): <R, E, A>(f: (restore: ForkScopeRestore) => IO<R, E, A>) => GetForkScopeInstruction<R, E, A> {
+): <R, E, A>(f: (restore: ForkScopeRestore) => IO<R, E, A>) => GetForkScope<R, E, A> {
   return (f) =>
-    forkScopeWith((scope) => new OverrideForkScopeInstruction(f(new ForkScopeRestore(scope)), O.some(newScope)))
+    forkScopeWith((scope) => new OverrideForkScope(f(new ForkScopeRestore(scope)), O.some(newScope)))
 }
 
 export function forkIn(scope: Scope<Exit<any, any>>): <R, E, A>(io: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {
-  return (io) => new ForkInstruction(io, O.some(scope), O.none())
+  return (io) => new Fork(io, O.some(scope), O.none())
 }
 
 /**
@@ -55,7 +55,7 @@ export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
   scope: Option<Scope<Exit<any, any>>> = O.none()
 ): IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
-  return new RaceInstruction(left, right, leftWins, rightWins, scope)
+  return new Race(left, right, leftWins, rightWins, scope)
 }
 
 /**
@@ -68,7 +68,7 @@ export function raceWith<E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
   scope: Option<Scope<Exit<any, any>>> = O.none()
 ): <R>(left: IO<R, E, A>) => IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
-  return (left) => new RaceInstruction(left, right, leftWins, rightWins, scope)
+  return (left) => new Race(left, right, leftWins, rightWins, scope)
 }
 
 export type Grafter = <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
@@ -82,7 +82,7 @@ export type Grafter = <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
  * scope, effectively extending their lifespans into the parent scope.
  */
 export function transplant<R, E, A>(f: (_: Grafter) => IO<R, E, A>): IO<R, E, A> {
-  return forkScopeWith((scope) => f((e) => new OverrideForkScopeInstruction(e, O.some(scope))))
+  return forkScopeWith((scope) => f((e) => new OverrideForkScope(e, O.some(scope))))
 }
 
 /**
@@ -91,5 +91,5 @@ export function transplant<R, E, A>(f: (_: Grafter) => IO<R, E, A>): IO<R, E, A>
  * returned effect terminates, the forked fiber will continue running.
  */
 export function forkDaemon<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
-  return new ForkInstruction(ma, O.some(globalScope), O.none())
+  return new Fork(ma, O.some(globalScope), O.none())
 }

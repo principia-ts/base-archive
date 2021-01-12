@@ -16,8 +16,8 @@ import * as Set from '@principia/base/Set'
 import * as C from '../Chunk'
 import * as Ex from '../Exit'
 import * as I from '../IO'
-import * as XRef from '../IORef'
-import * as XRefM from '../IORefM'
+import * as Ref from '../IORef'
+import * as RefM from '../IORefM'
 import * as M from '../Managed'
 import { Sink } from './internal/Sink'
 import { Transducer } from './internal/Transducer'
@@ -127,14 +127,14 @@ export function last<O>(): Transducer<unknown, never, O, O.Option<O>> {
  */
 export function prepend<O>(values: Chunk<O>): Transducer<unknown, never, O, O> {
   return new Transducer(
-    M.map_(XRef.makeManaged(values), (state) => (is: O.Option<Chunk<O>>) =>
+    M.map_(Ref.makeManaged(values), (state) => (is: O.Option<Chunk<O>>) =>
       O.fold_(
         is,
-        () => XRef.getAndSet_(state, C.empty()),
+        () => Ref.getAndSet_(state, C.empty()),
         (xs) =>
           pipe(
             state,
-            XRef.getAndSet(C.empty()),
+            Ref.getAndSet(C.empty()),
             I.map((c) => (C.isEmpty(c) ? xs : C.concat_(c, xs)))
           )
       )
@@ -166,12 +166,12 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
 
   return new Transducer(
     M.flatMap_(M.scope(), (scope) =>
-      M.map_(XRefM.makeManaged<State>(initialState), (state) => (is: O.Option<Chunk<I>>) =>
+      M.map_(RefM.makeManaged<State>(initialState), (state) => (is: O.Option<Chunk<I>>) =>
         O.fold_(
           is,
           () =>
             pipe(
-              XRefM.getAndSet_(state, initialState),
+              RefM.getAndSet_(state, initialState),
               I.flatMap((s) => {
                 switch (s._tag) {
                   case 'Collecting': {
@@ -184,7 +184,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
               })
             ),
           (data) =>
-            XRefM.modify_(state, (s) => {
+            RefM.modify_(state, (s) => {
               switch (s._tag) {
                 case 'Emitting': {
                   return I.map_(s.push(O.some(data)), (_) => [_, s] as const)
@@ -218,12 +218,12 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
  */
 export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never, I, I> {
   return new Transducer(
-    M.map_(XRef.makeManaged(true), (dropping) => (is: O.Option<Chunk<I>>) =>
+    M.map_(Ref.makeManaged(true), (dropping) => (is: O.Option<Chunk<I>>) =>
       O.fold_(
         is,
         () => I.succeed(C.empty()),
         (is) =>
-          XRef.modify_(dropping, (b) => {
+          Ref.modify_(dropping, (b) => {
             switch (b) {
               case true: {
                 const is1 = C.dropWhile_(is, predicate)
@@ -246,23 +246,29 @@ export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never
 export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transducer<R, E, I, I> {
   return new Transducer(
     pipe(
-      M.do,
-      M.bindS('dropping', () => XRef.makeManaged(true)),
-      M.letS('push', ({ dropping }) => (is: O.Option<Chunk<I>>) =>
+      Ref.makeManaged(true),
+      M.map((droppingRef) => (is: O.Option<Chunk<I>>) =>
         O.fold_(
           is,
           () => I.succeed(C.empty<I>()),
           (is) =>
             pipe(
-              dropping.get,
-              I.flatMap((b) =>
-                b ? I.map_(C.dropWhileIO_(is, p), (l) => [l, C.isEmpty(l)] as const) : I.succeed([is, false] as const)
-              ),
-              I.flatMap(([is, pt]) => I.as_(dropping.set(pt), () => is))
+              droppingRef.get,
+              I.flatMap((dropping) => {
+                if (dropping) {
+                  return pipe(
+                    is,
+                    C.dropWhileIO(p),
+                    I.map((l) => tuple(l, C.isEmpty(l)))
+                  )
+                } else {
+                  return I.succeed(tuple(is, false))
+                }
+              }),
+              I.flatMap(([is, pt]) => I.as_(droppingRef.set(pt), () => is))
             )
         )
-      ),
-      M.map(({ push }) => push)
+      )
     )
   )
 }
@@ -288,12 +294,12 @@ export function fold<I, O>(
     })
 
   return new Transducer(
-    M.map_(XRef.makeManaged(O.some(initial)), (state) => (is: O.Option<Chunk<I>>) =>
+    M.map_(Ref.makeManaged(O.some(initial)), (state) => (is: O.Option<Chunk<I>>) =>
       O.fold_(
         is,
-        () => pipe(XRef.getAndSet_(state, O.none()), I.map(O.fold(() => C.empty(), C.single))),
+        () => pipe(Ref.getAndSet_(state, O.none()), I.map(O.fold(() => C.empty(), C.single))),
         (in_) =>
-          XRef.modify_(state, (s) => {
+          Ref.modify_(state, (s) => {
             const [o, s2, progress] = go(
               in_,
               O.getOrElse_(s, () => initial),
@@ -340,14 +346,14 @@ export function foldM<R, E, I, O>(
       )
     )
   return new Transducer(
-    M.map_(XRef.makeManaged(init), (state) => (is: O.Option<Chunk<I>>) =>
+    M.map_(Ref.makeManaged(init), (state) => (is: O.Option<Chunk<I>>) =>
       O.fold_(
         is,
-        () => pipe(state, XRef.getAndSet(O.none()), I.map(O.fold(() => C.empty(), C.single))),
+        () => pipe(state, Ref.getAndSet(O.none()), I.map(O.fold(() => C.empty(), C.single))),
         (in_) =>
           pipe(
             state,
-            XRef.get,
+            Ref.get,
             I.flatMap((s) =>
               go(
                 in_,
@@ -480,13 +486,13 @@ export function foldWeightedDecompose<I, O>(
     })
 
   return new Transducer(
-    M.map_(XRef.makeManaged(O.some(initialState)), (state) => (is: O.Option<Chunk<I>>) =>
+    M.map_(Ref.makeManaged(O.some(initialState)), (state) => (is: O.Option<Chunk<I>>) =>
       O.fold_(
         is,
         () =>
           pipe(
             state,
-            XRef.getAndSet(O.none()),
+            Ref.getAndSet(O.none()),
             I.map(
               O.fold(
                 () => C.empty(),
@@ -495,7 +501,7 @@ export function foldWeightedDecompose<I, O>(
             )
           ),
         (in_) =>
-          XRef.modify_(state, (s) => {
+          Ref.modify_(state, (s) => {
             const [o, s2, dirty] = go(
               in_,
               C.empty(),
@@ -583,13 +589,13 @@ export function foldWeightedDecomposeM<R, E, I, O>(
     )
 
   return new Transducer(
-    M.map_(XRef.makeManaged(O.some(initialState)), (state) => (is: O.Option<Chunk<I>>) =>
+    M.map_(Ref.makeManaged(O.some(initialState)), (state) => (is: O.Option<Chunk<I>>) =>
       O.fold_(
         is,
         () =>
           pipe(
             state,
-            XRef.getAndSet(O.none()),
+            Ref.getAndSet(O.none()),
             I.map(
               O.fold(
                 () => C.empty(),
@@ -600,7 +606,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
         (in_) =>
           pipe(
             state,
-            XRef.get,
+            Ref.get,
             I.flatMap((s) =>
               go(
                 in_,
@@ -651,11 +657,11 @@ export function collectAllN<I>(n: number): Transducer<unknown, never, I, Chunk<I
   }
 
   return new Transducer(
-    M.map_(XRef.makeManaged(C.empty<I>()), (state) => (is: O.Option<Chunk<I>>) =>
+    M.map_(Ref.makeManaged(C.empty<I>()), (state) => (is: O.Option<Chunk<I>>) =>
       O.fold_(
         is,
-        () => I.map_(XRef.getAndSet_(state, C.empty()), (leftover) => (!C.isEmpty(leftover) ? [leftover] : C.empty())),
-        (in_) => XRef.modify_(state, (leftover) => go(in_, leftover, C.empty()))
+        () => I.map_(Ref.getAndSet_(state, C.empty()), (leftover) => (!C.isEmpty(leftover) ? [leftover] : C.empty())),
+        (in_) => Ref.modify_(state, (leftover) => go(in_, leftover, C.empty()))
       )
     )
   )

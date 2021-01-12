@@ -1,7 +1,7 @@
 import type { Exit } from '../../Exit'
 import type { ReleaseMap } from '../ReleaseMap'
 
-import { pipe } from '@principia/base/Function'
+import { flow, pipe, tuple } from '@principia/base/Function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
@@ -19,30 +19,35 @@ export function onExitFirst_<R, E, A, R1>(
   cleanup: (exit: Exit<E, A>) => I.IO<R1, never, any>
 ): Managed<R & R1, E, A> {
   return new Managed<R & R1, E, A>(
-    I.uninterruptibleMask(({ restore }) =>
-      pipe(
-        I.do,
-        I.bindS('tp', () => I.ask<readonly [R & R1, ReleaseMap]>()),
-        I.letS('r', (s) => s.tp[0]),
-        I.letS('outerReleaseMap', (s) => s.tp[1]),
-        I.bindS('innerReleaseMap', () => make),
-        I.bindS('exitEA', (s) =>
-          restore(I.giveAll_(I.result(I.map_(self.io, ([_, a]) => a)), [s.r, s.innerReleaseMap]))
-        ),
-        I.bindS('releaseMapEntry', (s) =>
-          add((e) =>
-            I.flatten(
-              I.map2_(
-                I.result(I.giveAll_(cleanup(s.exitEA), s.r)),
-                I.result(releaseAll(e, sequential)(s.innerReleaseMap)),
-                (l, r) => I.done(Ex.apSecond_(l, r))
-              )
+    I.uninterruptibleMask(
+      ({ restore }) =>
+        I.gen(function* (_) {
+          const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
+          const innerReleaseMap      = yield* _(make)
+          const exitEA               = yield* _(
+            pipe(
+              self.io,
+              I.map(([, a]) => a),
+              I.result,
+              I.giveAll(tuple(r, innerReleaseMap)),
+              restore
             )
-          )(s.outerReleaseMap)
-        ),
-        I.bindS('a', (s) => I.done(s.exitEA)),
-        I.map((s) => [s.releaseMapEntry, s.a])
-      )
+          )
+          const releaseMapEntry      = yield* _(
+            add((e) =>
+              pipe(
+                cleanup(exitEA),
+                I.giveAll(r),
+                I.result,
+                I.map2(I.result(releaseAll(e, sequential)(innerReleaseMap)), flow(Ex.apSecond_, I.done)),
+                I.flatten
+              )
+            )(outerReleaseMap)
+          )
+
+          const a = yield* _(I.done(exitEA))
+          return tuple(releaseMapEntry, a)
+        })
     )
   )
 }

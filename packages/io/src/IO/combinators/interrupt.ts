@@ -26,7 +26,7 @@ import {
   foldCauseM_,
   halt,
   pure,
-  SetInterruptInstruction,
+  SetInterrupt,
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
@@ -52,7 +52,7 @@ export const interrupt: IO<unknown, never, never> = flatMap_(fiberId(), interrup
  * they only affect regions of the effect.
  */
 export function setInterruptStatus_<R, E, A>(effect: IO<R, E, A>, flag: InterruptStatus): IO<R, E, A> {
-  return new SetInterruptInstruction(effect, flag)
+  return new SetInterrupt(effect, flag)
 }
 
 /**

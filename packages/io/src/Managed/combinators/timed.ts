@@ -1,4 +1,3 @@
-import type { Clock } from '../../Clock'
 import type * as RM from '../ReleaseMap'
 import type { Has } from '@principia/base/Has'
 

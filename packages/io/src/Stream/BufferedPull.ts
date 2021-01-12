@@ -1,6 +1,6 @@
 import type { Chunk } from '../Chunk'
 
-import { pipe } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import * as C from '../Chunk'
@@ -12,7 +12,7 @@ export class BufferedPull<R, E, A> {
   constructor(
     readonly upstream: I.IO<R, O.Option<E>, Chunk<A>>,
     readonly done: R.URef<boolean>,
-    readonly cursor: R.URef<[Chunk<A>, number]>
+    readonly cursor: R.URef<readonly [Chunk<A>, number]>
   ) {}
 }
 
@@ -93,10 +93,9 @@ export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Optio
 }
 
 export function make<R, E, A>(pull: I.IO<R, O.Option<E>, Chunk<A>>): I.IO<unknown, never, BufferedPull<R, E, A>> {
-  return pipe(
-    I.do,
-    I.bindS('done', () => R.make(false)),
-    I.bindS('cursor', () => R.make<[Chunk<A>, number]>([C.empty(), 0])),
-    I.map(({ cursor, done }) => new BufferedPull(pull, done, cursor))
-  )
+  return I.gen(function* (_) {
+    const done   = yield* _(R.make(false))
+    const cursor = yield* _(R.make<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))
+    return new BufferedPull(pull, done, cursor)
+  })
 }

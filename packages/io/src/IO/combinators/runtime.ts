@@ -17,10 +17,6 @@ import * as Super from '../../Supervisor'
 import * as I from '../core'
 import { _I } from '../core'
 
-export function empty() {
-  return
-}
-
 export type DefaultEnv = Has<Clock> & Has<Random>
 
 export function defaultEnv() {
@@ -81,7 +77,7 @@ export class CustomRuntime<R> {
     const context = this.fiberContext<E, A>()
 
     context.evaluateLater(_[_I])
-    context.runAsync(cb || empty)
+    context.runAsync(cb || constVoid)
   }
 
   /**
@@ -91,7 +87,7 @@ export class CustomRuntime<R> {
     const context = this.fiberContext<E, A>()
 
     context.evaluateNow(_[_I])
-    context.runAsync(cb || empty)
+    context.runAsync(cb || constVoid)
   }
 
   /**
@@ -102,7 +98,7 @@ export class CustomRuntime<R> {
     const context = this.fiberContext<E, A>()
 
     context.evaluateLater(_[_I])
-    context.runAsync(cb || empty)
+    context.runAsync(cb || constVoid)
 
     return context.interruptAs(context.id)
   }

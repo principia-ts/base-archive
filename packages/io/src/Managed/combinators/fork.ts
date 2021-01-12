@@ -1,4 +1,4 @@
-import { pipe } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/Function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as F from '../../Fiber'
@@ -15,29 +15,26 @@ import { releaseAll } from './releaseAll'
 export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.FiberContext<E, A>> {
   return new Managed(
     I.uninterruptibleMask(({ restore }) =>
-      pipe(
-        I.do,
-        I.bindS('tp', () => I.ask<readonly [R, RM.ReleaseMap]>()),
-        I.letS('r', ({ tp }) => tp[0]),
-        I.letS('outerReleaseMap', ({ tp }) => tp[1]),
-        I.bindS('innerReleaseMap', () => RM.make),
-        I.bindS('fiber', ({ innerReleaseMap, r }) =>
-          restore(
-            pipe(
-              self.io,
-              I.map(([_, a]) => a),
-              I.forkDaemon,
-              I.giveAll([r, innerReleaseMap] as const)
-            )
+      I.gen(function* (_) {
+        const [r, outerReleaseMap] = yield* _(I.ask<readonly [R, RM.ReleaseMap]>())
+        const innerReleaseMap      = yield* _(RM.make)
+        const fiber                = yield* _(
+          pipe(
+            self.io,
+            I.map(([, a]) => a),
+            I.forkDaemon,
+            I.giveAll(tuple(r, innerReleaseMap)),
+            restore
           )
-        ),
-        I.bindS('releaseMapEntry', ({ fiber, innerReleaseMap, outerReleaseMap }) =>
+        )
+        const releaseMapEntry      = yield* _(
           RM.add((e) => pipe(fiber, F.interrupt, I.andThen(releaseAll(e, sequential)(innerReleaseMap))))(
             outerReleaseMap
           )
-        ),
-        I.map(({ fiber, releaseMapEntry }) => [releaseMapEntry, fiber])
-      )
+        )
+
+        return tuple(releaseMapEntry, fiber)
+      })
     )
   )
 }

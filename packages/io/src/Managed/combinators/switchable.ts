@@ -1,12 +1,12 @@
 import type { Managed } from '../core'
 
-import { pipe } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
 import * as I from '../_internal/io'
-import * as _ from '../core'
+import * as M from '../core'
 import * as RelMap from '../ReleaseMap'
 import { releaseAll } from './releaseAll'
 import { releaseMap } from './releaseMap'
@@ -25,36 +25,37 @@ import { releaseMap } from './releaseMap'
  * several instances of a managed resource.
  */
 export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => I.IO<R, E, A>> {
-  return pipe(
-    _.do,
-    _.bindS('releaseMap', () => releaseMap),
-    _.bindS('key', ({ releaseMap }) =>
+  return M.gen(function* (_) {
+    const rm  = yield* _(releaseMap)
+    const key = yield* _(
       pipe(
-        releaseMap,
+        rm,
         RelMap.addIfOpen((_) => I.unit()),
         I.flatMap(O.fold(() => I.interrupt, I.succeed)),
-        _.fromEffect
-      )
-    ),
-    _.map(({ key, releaseMap }) => (newResource) =>
-      I.uninterruptibleMask(({ restore }) =>
-        pipe(
-          releaseMap,
-          RelMap.replace(key, (_) => I.unit()),
-          I.flatMap(
-            O.fold(
-              () => I.unit(),
-              (fin) => fin(Ex.unit())
-            )
-          ),
-          I.apSecond(I.do),
-          I.bindS('r', () => I.ask<R>()),
-          I.bindS('inner', () => RelMap.make),
-          I.bindS('a', ({ inner, r }) => restore(I.giveAll_(newResource.io, [r, inner]))),
-          I.tap(({ inner }) => RelMap.replace(key, (exit) => releaseAll(exit, sequential)(inner))(releaseMap)),
-          I.map(({ a }) => a[1])
-        )
+        M.fromEffect
       )
     )
-  )
+    return (newResource: Managed<R, E, A>) =>
+      I.uninterruptibleMask(({ restore }) =>
+        I.gen(function* (_) {
+          yield* _(
+            pipe(
+              rm,
+              RelMap.replace(key, (_) => I.unit()),
+              I.flatMap(
+                O.fold(
+                  () => I.unit(),
+                  (fin) => fin(Ex.unit())
+                )
+              )
+            )
+          )
+          const r     = yield* _(I.ask<R>())
+          const inner = yield* _(RelMap.make)
+          const a     = yield* _(pipe(newResource.io, I.giveAll(tuple(r, inner)), restore))
+          yield* _(RelMap.replace(key, (exit) => releaseAll(exit, sequential)(inner))(rm))
+          return a[1]
+        })
+      )
+  })
 }

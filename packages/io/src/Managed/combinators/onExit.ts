@@ -1,7 +1,7 @@
 import type { Exit } from '../../Exit'
 import type { ReleaseMap } from '../ReleaseMap'
 
-import { pipe } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/Function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
@@ -17,27 +17,30 @@ import { releaseAll } from './releaseAll'
 export function onExit_<R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exit<E, A>) => I.IO<R1, never, any>) {
   return new Managed<R & R1, E, A>(
     I.uninterruptibleMask(({ restore }) =>
-      pipe(
-        I.do,
-        I.bindS('tp', () => I.ask<readonly [R & R1, ReleaseMap]>()),
-        I.letS('r', (s) => s.tp[0]),
-        I.letS('outerReleaseMap', (s) => s.tp[1]),
-        I.bindS('innerReleaseMap', () => make),
-        I.bindS('exitEA', (s) =>
-          restore(I.giveAll_(I.result(I.map_(self.io, ([_, a]) => a)), [s.r, s.innerReleaseMap]))
-        ),
-        I.bindS('releaseMapEntry', (s) =>
+      I.gen(function* (_) {
+        const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
+        const innerReleaseMap      = yield* _(make)
+        const exitEA               = yield* _(
+          pipe(
+            self.io,
+            I.map(([, a]) => a),
+            I.result,
+            I.giveAll(tuple(r, innerReleaseMap)),
+            restore
+          )
+        )
+        const releaseMapEntry      = yield* _(
           add((e) =>
             pipe(
-              releaseAll(e, sequential)(s.innerReleaseMap),
+              releaseAll(e, sequential)(innerReleaseMap),
               I.result,
-              I.map2(pipe(cleanup(s.exitEA), I.giveAll(s.r), I.result), (l, r) => Ex.apSecond_(l, r))
+              I.map2(pipe(cleanup(exitEA), I.giveAll(r), I.result), Ex.apSecond_)
             )
-          )(s.outerReleaseMap)
-        ),
-        I.bindS('a', (s) => I.done(s.exitEA)),
-        I.map((s) => [s.releaseMapEntry, s.a])
-      )
+          )(outerReleaseMap)
+        )
+        const a                    = yield* _(I.done(exitEA))
+        return tuple(releaseMapEntry, a)
+      })
     )
   )
 }

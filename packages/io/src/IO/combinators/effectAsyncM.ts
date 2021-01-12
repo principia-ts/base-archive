@@ -16,27 +16,22 @@ import { to } from './to'
 export function effectAsyncM<R, E, R1, E1, A>(
   register: (k: (_: IO<R1, E1, A>) => void) => IO<R, E, any>
 ): IO<R & R1, E | E1, A> {
-  return pipe(
-    I.do,
-    I.bindS('p', () => P.make<E | E1, A>()),
-    I.bindS('r', () => runtime<R & R1>()),
-    I.bindS('a', ({ p, r }) =>
+  return I.gen(function* (_) {
+    const p = yield* _(P.make<E | E1, A>())
+    const r = yield* _(runtime<R & R1>())
+    const a = yield* _(
       uninterruptibleMask(({ restore }) =>
         pipe(
-          I.fork(
-            restore(
-              pipe(
-                register((k) => {
-                  r.run(to(p)(k))
-                }),
-                I.catchAllCause((c) => p.halt(c as Cause<E | E1>))
-              )
-            )
-          ),
-          I.apSecond(restore(p.await))
+          register((k) => {
+            r.run(to(p)(k))
+          }),
+          I.catchAllCause((c) => p.halt(c)),
+          restore,
+          I.fork,
+          I.andThen(restore(p.await))
         )
       )
-    ),
-    I.map(({ a }) => a)
-  )
+    )
+    return a
+  })
 }

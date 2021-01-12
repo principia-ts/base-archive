@@ -5,13 +5,12 @@ import type { XSpec } from './Spec'
 import type { TestExecutor } from './TestExecutor'
 import type { TestLogger } from './TestLogger'
 import type { Has } from '@principia/base/Has'
-import type { Clock } from '@principia/io/Clock'
 import type { Platform } from '@principia/io/Fiber'
 import type { URIO } from '@principia/io/IO'
 import type { Layer } from '@principia/io/Layer'
 
 import { pipe } from '@principia/base/Function'
-import { HasClock, LiveClock } from '@principia/io/Clock'
+import { Clock, LiveClock } from '@principia/io/Clock'
 import { NodeConsole } from '@principia/io/Console'
 import { parallel } from '@principia/io/ExecutionStrategy'
 import * as I from '@principia/io/IO'
@@ -27,7 +26,7 @@ export class TestRunner<R, E> {
     readonly reporter: TestReporter<E> = report(defaultTestAnnotationRenderer),
     readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = NodeConsole.live['>>>'](fromConsole)[
       '+++'
-    ](L.succeed(HasClock)(new LiveClock()))
+    ](L.succeed(Clock)(new LiveClock()))
   ) {}
 
   run(spec: XSpec<R & Has<Annotations>, E>): URIO<Has<TestLogger> & Has<Clock>, ExecutedSpec<E>> {

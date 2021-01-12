@@ -71,29 +71,26 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
       )
 
       const next = (input: I) =>
-        pipe(
-          I.do,
-          I.bindS('step', () => I.map_(ref.get, ([_, o]) => o)),
-          I.bindS('now', () => currentTime),
-          I.bindS('dec', ({ now, step }) => step(now, input)),
-          I.bindS('v', ({ dec, now }) => {
-            switch (dec._tag) {
-              case 'Done':
-                return pipe(
-                  ref.set([O.some(dec.out), done(dec.out)]),
-                  I.flatMap(() => I.fail(O.none()))
-                )
-              case 'Continue':
-                return pipe(
-                  ref.set([O.some(dec.out), dec.next]),
-                  I.map(() => dec.interval - now),
-                  I.flatMap((s) => (s > 0 ? sleep(s) : I.unit())),
-                  I.map(() => dec.out)
-                )
+        I.gen(function* (_) {
+          const step = yield* _(I.map_(ref.get, ([, o]) => o))
+          const now  = yield* _(currentTime)
+          const dec  = yield* _(step(now, input))
+          switch (dec._tag) {
+            case 'Done': {
+              return yield* _(pipe(ref.set(tuple(O.some(dec.out), done(dec.out))), I.andThen(I.fail(O.none()))))
             }
-          }),
-          I.map(({ v }) => v)
-        )
+            case 'Continue': {
+              return yield* _(
+                pipe(
+                  ref.set(tuple(O.some(dec.out), dec.next)),
+                  I.as(() => dec.interval - now),
+                  I.flatMap((s) => (s > 0 ? sleep(s) : I.unit())),
+                  I.as(() => dec.out)
+                )
+              )
+            }
+          }
+        })
 
       return new Driver(next, last, reset)
     })

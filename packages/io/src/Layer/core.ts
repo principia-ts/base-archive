@@ -1,5 +1,5 @@
 import type { Cause } from '../Cause'
-import type { Clock , Clock } from '../Clock'
+import type { Clock } from '../Clock'
 import type { Exit } from '../Exit'
 import type { DefaultEnv, Runtime } from '../IO/combinators/runtime'
 import type { Managed } from '../Managed/core'
@@ -351,14 +351,13 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
 /**
  * Builds a layer into a managed value.
  */
-export function build<R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, A> {
-  return pipe(
-    M.do,
-    M.bindS('memoMap', () => M.fromEffect(makeMemoMap())),
-    M.bindS('run', () => scope(_)),
-    M.bindS('value', ({ memoMap, run }) => run(memoMap)),
-    M.map(({ value }) => value)
-  )
+export function build<R, E, A>(layer: Layer<R, E, A>): M.Managed<R, E, A> {
+  return M.gen(function* (_) {
+    const memoMap = yield* _(M.fromEffect(makeMemoMap()))
+    const run     = yield* _(scope(layer))
+    const value   = yield* _(run(memoMap))
+    return value
+  })
 }
 
 /**
@@ -1154,172 +1153,72 @@ export class MemoMap {
 
             return I.pure(tuple(cached, m))
           } else {
-            /*
-             * return I.gen(function* (_) {
-             *   const observers    = yield* _(XR.make(0))
-             *   const promise      = yield* _(P.make<E, A>())
-             *   const finalizerRef = yield* _(XR.make<Finalizer>(RelMap.noopFinalizer))
-             *
-             *   const resource = I.uninterruptibleMask(({ restore }) =>
-             *     I.gen(function* (_) {
-             *       const env                  = yield* _(I.ask<readonly [R, ReleaseMap]>())
-             *       const [a, outerReleaseMap] = env
-             *       const innerReleaseMap      = yield* _(RelMap.make)
-             *       const tp                   = yield* _(
-             *         pipe(
-             *           _build(layer),
-             *           M.flatMap((_) => _(self)),
-             *           (_) => _.io,
-             *           I.giveAll(tuple(a, innerReleaseMap)),
-             *           I.result,
-             *           I.flatMap((ex) =>
-             *             Ex.fold_(
-             *               ex,
-             *               (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
-             *                 pipe(
-             *                   promise.halt(cause),
-             *                   I.flatMap(() => M.releaseAll(ex, sequential)(innerReleaseMap) as I.FIO<E, any>),
-             *                   I.flatMap(() => I.halt(cause))
-             *                 ),
-             *               ([fin, a]) =>
-             *                 I.gen(function* (_) {
-             *                   yield* _(
-             *                     pipe(
-             *                       finalizerRef.set((e) => M.releaseAll(e, sequential)(innerReleaseMap)),
-             *                       I.whenM(XR.modify_(observers, (n) => [n === 1, n - 1]))
-             *                     )
-             *                   )
-             *                   yield* _(XR.update_(observers, (n) => n + 1))
-             *                   const outerFinalizer = yield* _(
-             *                     RelMap.add((e) => I.flatMap_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
-             *                   )
-             *                   yield* _(promise.succeed(a))
-             *                   return tuple(outerFinalizer, a)
-             *                 })
-             *             )
-             *           )
-             *         )
-             *       )
-             *     })
-             *   )
-             *
-             *   const memoized = tuple(
-             *     pipe(
-             *       promise.await,
-             *       I.onExit(
-             *         Ex.fold(
-             *           (_) => I.unit(),
-             *           (_) => XR.update_(observers, (n) => n + 1)
-             *         )
-             *       )
-             *     ),
-             *     (ex: Exit<any, any>) => I.flatMap_(finalizerRef.get, (f) => f(ex))
-             *   )
-             *
-             *   return tuple(
-             *     resource as I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>,
-             *     insert(layer.hash.get, memoized)(m) as ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>
-             *   )
-             * })
-             */
-            return pipe(
-              I.do,
-              I.bindS('observers', () => XR.make(0)),
-              I.bindS('promise', () => P.make<E, A>()),
-              I.bindS('finalizerRef', () => XR.make<Finalizer>(RelMap.noopFinalizer)),
-              I.letS('resource', ({ finalizerRef, observers, promise }) =>
-                I.uninterruptibleMask(({ restore }) =>
-                  pipe(
-                    I.do,
-                    I.bindS('env', () => I.ask<readonly [R, ReleaseMap]>()),
-                    I.letS('a', ({ env: [a] }) => a),
-                    I.letS('outerReleaseMap', ({ env: [_, outerReleaseMap] }) => outerReleaseMap),
-                    I.bindS('innerReleaseMap', () => RelMap.make),
-                    I.bindS('tp', ({ a, innerReleaseMap, outerReleaseMap }) =>
-                      restore(
-                        pipe(
-                          I.giveAll_(
+            return I.gen(function* (_) {
+              const observers    = yield* _(XR.make(0))
+              const promise      = yield* _(P.make<E, A>())
+              const finalizerRef = yield* _(XR.make<Finalizer>(RelMap.noopFinalizer))
+
+              const resource = I.uninterruptibleMask(({ restore }) =>
+                I.gen(function* (_) {
+                  const env                  = yield* _(I.ask<readonly [R, ReleaseMap]>())
+                  const [a, outerReleaseMap] = env
+                  const innerReleaseMap      = yield* _(RelMap.make)
+                  const tp                   = yield* _(
+                    pipe(
+                      scope(layer),
+                      M.flatMap((_) => _(self)),
+                      (_) => _.io,
+                      I.giveAll(tuple(a, innerReleaseMap)),
+                      I.result,
+                      I.flatMap((ex) =>
+                        Ex.fold_(
+                          ex,
+                          (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
                             pipe(
-                              scope(layer),
-                              M.flatMap((_) => _(this))
-                            ).io,
-                            [a, innerReleaseMap]
-                          ),
-                          I.result,
-                          I.flatMap((e) => {
-                            switch (e._tag) {
-                              case 'Failure': {
-                                return pipe(
-                                  promise.halt(e.cause),
-                                  I.flatMap(() => M.releaseAll(e, sequential)(innerReleaseMap) as I.FIO<E, any>),
-                                  I.flatMap(() => I.halt(e.cause))
+                              promise.halt(cause),
+                              I.flatMap(() => M.releaseAll(ex, sequential)(innerReleaseMap) as I.FIO<E, any>),
+                              I.flatMap(() => I.halt(cause))
+                            ),
+                          ([fin, a]) =>
+                            I.gen(function* (_) {
+                              yield* _(
+                                pipe(
+                                  finalizerRef.set((e) => M.releaseAll(e, sequential)(innerReleaseMap)),
+                                  I.whenM(XR.modify_(observers, (n) => [n === 1, n - 1]))
                                 )
-                              }
-                              case 'Success': {
-                                return pipe(
-                                  I.do,
-                                  I.tap(() =>
-                                    finalizerRef.set((e) =>
-                                      I.whenM(
-                                        pipe(
-                                          observers,
-                                          XR.modify((n) => [n === 1, n - 1])
-                                        )
-                                      )(M.releaseAll(e, sequential)(innerReleaseMap) as I.UIO<any>)
-                                    )
-                                  ),
-                                  I.tap(() =>
-                                    pipe(
-                                      observers,
-                                      XR.update((n) => n + 1)
-                                    )
-                                  ),
-                                  I.bindS('outerFinalizer', () =>
-                                    RelMap.add((e) => I.flatMap_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
-                                  ),
-                                  I.tap(() => promise.succeed(e.value[1])),
-                                  I.map(({ outerFinalizer }) => tuple(outerFinalizer, e.value[1]))
-                                )
-                              }
-                            }
-                          })
+                              )
+                              yield* _(XR.update_(observers, (n) => n + 1))
+                              const outerFinalizer = yield* _(
+                                RelMap.add((e) => I.flatMap_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
+                              )
+                              yield* _(promise.succeed(a))
+                              return tuple(outerFinalizer, a)
+                            })
                         )
                       )
-                    ),
-                    I.map(({ tp }) => tp)
+                    )
                   )
-                )
-              ),
-              I.letS(
-                'memoized',
-                ({ finalizerRef, observers, promise }) =>
-                  [
-                    pipe(
-                      promise.await,
-                      I.onExit((e) => {
-                        switch (e._tag) {
-                          case 'Failure': {
-                            return I.unit()
-                          }
-                          case 'Success': {
-                            return pipe(
-                              observers,
-                              XR.update((n) => n + 1)
-                            )
-                          }
-                        }
-                      })
-                    ),
-                    (e: Exit<any, any>) => I.flatMap_(finalizerRef.get, (f) => f(e))
-                  ] as readonly [I.FIO<any, any>, Finalizer]
-              ),
-              I.map(({ memoized, resource }) =>
-                tuple(
-                  resource as I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>,
-                  insert(layer.hash.get, memoized)(m) as ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>
-                )
+                })
               )
-            )
+
+              const memoized = tuple(
+                pipe(
+                  promise.await,
+                  I.onExit(
+                    Ex.fold(
+                      (_) => I.unit(),
+                      (_) => XR.update_(observers, (n) => n + 1)
+                    )
+                  )
+                ),
+                (ex: Exit<any, any>) => I.flatMap_(finalizerRef.get, (f) => f(ex))
+              )
+
+              return tuple(
+                resource as I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>,
+                insert(layer.hash.get, memoized)(m) as ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>
+              )
+            })
           }
         }),
         I.flatten

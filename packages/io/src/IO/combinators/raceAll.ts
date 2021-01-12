@@ -48,37 +48,36 @@ export function raceAll<R, E, A>(
   ios: NonEmptyArray<IO<R, E, A>>,
   interruptStrategy: 'background' | 'wait' = 'background'
 ): IO<R, E, A> {
-  return pipe(
-    I.do,
-    I.bindS('done', () => P.make<E, readonly [A, Fiber.Fiber<E, A>]>()),
-    I.bindS('fails', () => XR.make(ios.length)),
-    I.bindS('c', ({ done, fails }) =>
+  return I.gen(function* (_) {
+    const done    = yield* _(P.make<E, readonly [A, Fiber.Fiber<E, A>]>())
+    const fails   = yield* _(XR.make(ios.length))
+    const [c, fs] = yield* _(
       uninterruptibleMask(({ restore }) =>
-        pipe(
-          I.do,
-          I.bindS('fs', () => I.foreach_(ios, flow(makeInterruptible, I.fork))),
-          I.tap(({ fs }) =>
+        I.gen(function* (_) {
+          const fs = yield* _(I.foreach_(ios, flow(makeInterruptible, I.fork)))
+          yield* _(
             A.foldLeft_(fs, I.unit(), (io, f) =>
               I.flatMap_(io, () => pipe(f.await, I.flatMap(arbiter(fs, f, done, fails)), I.fork))
             )
-          ),
-          I.letS('inheritRefs', () => (res: readonly [A, Fiber.Fiber<E, A>]) =>
+          )
+          const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) =>
             pipe(
               res[1].inheritRefs,
               I.as(() => res[0])
             )
-          ),
-          I.bindS('c', ({ fs, inheritRefs }) =>
+          const c           = yield* _(
             pipe(
-              restore(pipe(done.await, I.flatMap(inheritRefs))),
+              done.await,
+              I.flatMap(inheritRefs),
+              restore,
               onInterrupt(() => A.foldLeft_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))
             )
-          ),
-          I.map(({ c, fs }) => ({ c, fs }))
-        )
+          )
+          return tuple(c, fs)
+        })
       )
-    ),
-    I.tap(({ c: { fs } }) => (interruptStrategy === 'wait' ? I.foreach_(fs, (f) => f.await) : I.unit())),
-    I.map(({ c: { c } }) => c)
-  )
+    )
+    yield* _(interruptStrategy === 'wait' ? I.foreach_(fs, (f) => f.await) : I.unit())
+    return c
+  })
 }

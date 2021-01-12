@@ -18,7 +18,7 @@ import { makeStack } from '@principia/base/util/support/Stack'
 import * as C from './Cause/core'
 import * as Ex from './Exit/core'
 import * as I from './Fiber/_internal/io'
-import { IOInstructionTag } from './Fiber/_internal/io'
+import { IOTag } from './Fiber/_internal/io'
 import {
   FiberDescriptor,
   FiberStateDone,
@@ -52,7 +52,7 @@ export class ApplyFrame {
 
 export type Frame =
   | InterruptExit
-  | I.FoldInstruction<any, any, any, any, any, any, any, any, any>
+  | I.Fold<any, any, any, any, any, any, any, any, any>
   | HandlerFrame
   | ApplyFrame
 
@@ -104,17 +104,16 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private readonly state     = new AtomicReference(initial<E, A>())
   private readonly scheduler = defaultScheduler
 
-  private mut_asyncEpoch                      = 0 | 0
-  private mut_scopeKey: Scope.Key | undefined = undefined
-
-  private mut_continuationFrames = undefined as Stack<Frame> | undefined
-  private mut_environments       = makeStack(this.initialEnv) as Stack<any> | undefined
-  private mut_interruptStatus    = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
-  private mut_supervisors        = makeStack(this.initialSupervisor)
-  private mut_forkScopeOverride  = undefined as Stack<Option<Scope.Scope<Exit<any, any>>>> | undefined
+  private mut_asyncEpoch        = 0 | 0
+  private mut_scopeKey          = undefined as Scope.Key | undefined
+  private mut_stack             = undefined as Stack<Frame> | undefined
+  private mut_environments      = makeStack(this.initialEnv) as Stack<any> | undefined
+  private mut_interruptStatus   = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
+  private mut_supervisors       = makeStack(this.initialSupervisor)
+  private mut_forkScopeOverride = undefined as Stack<Option<Scope.Scope<Exit<any, any>>>> | undefined
 
   constructor(
-    private readonly fiberId: FiberId,
+    protected readonly fiberId: FiberId,
     private readonly initialEnv: any,
     private readonly initialInterruptStatus: InterruptStatus,
     private readonly fiberRefLocals: FiberRefLocals,
@@ -177,7 +176,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get isStackEmpty() {
-    return !this.mut_continuationFrames
+    return !this.mut_stack
   }
 
   get id() {
@@ -185,12 +184,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private pushContinuation(k: Frame) {
-    this.mut_continuationFrames = makeStack(k, this.mut_continuationFrames)
+    this.mut_stack = makeStack(k, this.mut_stack)
   }
 
   private popContinuation() {
-    const current               = this.mut_continuationFrames?.value
-    this.mut_continuationFrames = this.mut_continuationFrames?.previous
+    const current  = this.mut_stack?.value
+    this.mut_stack = this.mut_stack?.previous
     return current
   }
 
@@ -301,7 +300,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get await(): I.UIO<Exit<E, A>> {
-    return I.maybeAsyncInterrupt(
+    return I.effectAsyncInterruptEither(
       (k): E.Either<I.UIO<void>, I.UIO<Exit<E, A>>> => {
         const cb: Callback<never, Exit<E, A>> = (x) => k(I.done(x))
         return O.fold_(this.observe(cb), () => E.left(I.effectTotal(() => this.interruptObserver(cb))), E.right)
@@ -649,7 +648,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private raceWithImpl<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
-    race: I.RaceInstruction<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>
+    race: I.Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>
   ): I.IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
     const raceIndicator = new AtomicReference(true)
     const left          = this.fork(race.left[I._I], race.scope, O.some(constVoid))
@@ -714,20 +713,20 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 current = undefined
               } else {
                 switch (current._tag) {
-                  case IOInstructionTag.FlatMap: {
+                  case IOTag.FlatMap: {
                     const nested: I.Instruction                         = current.io[I._I]
                     const continuation: (a: any) => I.IO<any, any, any> = current.f
 
                     switch (nested._tag) {
-                      case IOInstructionTag.Succeed: {
+                      case IOTag.Succeed: {
                         current = continuation(nested.value)[I._I]
                         break
                       }
-                      case IOInstructionTag.EffectTotal: {
+                      case IOTag.EffectTotal: {
                         current = continuation(nested.effect())[I._I]
                         break
                       }
-                      case IOInstructionTag.EffectPartial: {
+                      case IOTag.EffectPartial: {
                         try {
                           current = continuation(nested.effect())[I._I]
                         } catch (e) {
@@ -743,22 +742,22 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.Integration: {
+                  case IOTag.Integration: {
                     current = current[I._I]
                     break
                   }
 
-                  case IOInstructionTag.Succeed: {
+                  case IOTag.Succeed: {
                     current = this.next(current.value)
                     break
                   }
 
-                  case IOInstructionTag.EffectTotal: {
+                  case IOTag.EffectTotal: {
                     current = this.next(current.effect())
                     break
                   }
 
-                  case IOInstructionTag.Fail: {
+                  case IOTag.Fail: {
                     const discardedFolds = this.unwindStack()
                     const fullCause      = current.cause
 
@@ -782,25 +781,25 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.Fold: {
+                  case IOTag.Fold: {
                     this.pushContinuation(current)
                     current = current.io[I._I]
                     break
                   }
 
-                  case IOInstructionTag.SetInterrupt: {
+                  case IOTag.SetInterrupt: {
                     this.pushInterruptStatus(current.flag.toBoolean)
                     this.pushContinuation(this.interruptExit)
                     current = current.io[I._I]
                     break
                   }
 
-                  case IOInstructionTag.GetInterrupt: {
+                  case IOTag.GetInterrupt: {
                     current = current.f(interruptStatus(this.isInterruptible))[I._I]
                     break
                   }
 
-                  case IOInstructionTag.EffectPartial: {
+                  case IOTag.EffectPartial: {
                     const c = current
                     try {
                       current = this.next(c.effect())
@@ -810,7 +809,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.Async: {
+                  case IOTag.Async: {
                     const epoch         = this.mut_asyncEpoch
                     this.mut_asyncEpoch = epoch + 1
                     const c             = current
@@ -838,28 +837,28 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.Fork: {
+                  case IOTag.Fork: {
                     current = this.next(this.fork(current.io[I._I], current.scope, current.reportFailure))
                     break
                   }
 
-                  case IOInstructionTag.CheckDescriptor: {
+                  case IOTag.CheckDescriptor: {
                     current = current.f(this.getDescriptor())[I._I]
                     break
                   }
 
-                  case IOInstructionTag.Yield: {
+                  case IOTag.Yield: {
                     current = undefined
                     this.evaluateLater(I.unit()[I._I])
                     break
                   }
 
-                  case IOInstructionTag.Read: {
+                  case IOTag.Read: {
                     current = current.f(this.mut_environments?.value || {})[I._I]
                     break
                   }
 
-                  case IOInstructionTag.Give: {
+                  case IOTag.Give: {
                     const c = current
                     current = I.bracket_(
                       I.effectTotal(() => {
@@ -874,12 +873,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.EffectSuspend: {
+                  case IOTag.EffectSuspend: {
                     current = current.io()[I._I]
                     break
                   }
 
-                  case IOInstructionTag.EffectSuspendPartial: {
+                  case IOTag.EffectSuspendPartial: {
                     const c = current
 
                     try {
@@ -891,7 +890,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.NewFiberRef: {
+                  case IOTag.NewFiberRef: {
                     const fiberRef = new FR.FiberRef(current.initial, current.onFork, current.onJoin)
 
                     this.fiberRefLocals.set(fiberRef, current.initial)
@@ -901,7 +900,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.ModifyFiberRef: {
+                  case IOTag.ModifyFiberRef: {
                     const c                  = current
                     const oldValue           = O.fromNullable(this.fiberRefLocals.get(c.fiberRef))
                     const [result, newValue] = current.f(O.getOrElse_(oldValue, () => c.fiberRef.initial))
@@ -910,12 +909,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.Race: {
+                  case IOTag.Race: {
                     current = this.raceWithImpl(current)[I._I]
                     break
                   }
 
-                  case IOInstructionTag.Supervise: {
+                  case IOTag.Supervise: {
                     const c              = current
                     const lastSupervisor = this.mut_supervisors.value
                     const newSupervisor  = c.supervisor.and(lastSupervisor)
@@ -933,14 +932,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOInstructionTag.GetForkScope: {
+                  case IOTag.GetForkScope: {
                     current = current.f(O.getOrElse_(this.mut_forkScopeOverride?.value || O.none(), () => this.scope))[
                       I._I
                     ]
                     break
                   }
 
-                  case IOInstructionTag.OverrideForkScope: {
+                  case IOTag.OverrideForkScope: {
                     const c = current
                     current = I.bracket_(
                       I.effectTotal(() => {

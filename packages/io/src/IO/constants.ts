@@ -7,7 +7,7 @@ export const _A = '_A'
 export const _I = '_I'
 export const _U = '_U'
 
-export enum IOInstructionTag {
+export enum IOTag {
   Succeed = 'Succeed',
   FlatMap = 'FlatMap',
   EffectPartial = 'EffectPartial',
@@ -33,8 +33,8 @@ export enum IOInstructionTag {
   Integration = 'Integration'
 }
 
-export class ExternalFailInstruction<E> {
-  readonly _tag = IOInstructionTag.Fail;
+export class ExternalFail<E> {
+  readonly _tag = IOTag.Fail;
   readonly [_U]: 'IO';
   readonly [_E]: () => E;
   readonly [_A]: () => never;

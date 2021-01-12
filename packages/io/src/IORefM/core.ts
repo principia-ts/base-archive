@@ -236,12 +236,11 @@ export const concrete = <RA, RB, EA, EB, A>(_: IORefM<RA, RB, EA, EB, A, A>) =>
  * Creates a new `XRefM` with the specified value.
  */
 export function make<A>(a: A): UIO<URefM<A>> {
-  return pipe(
-    I.do,
-    I.bindS('ref', () => Ref.make(a)),
-    I.bindS('semaphore', () => S.make(1)),
-    I.map(({ ref, semaphore }) => new Atomic(ref, semaphore))
-  )
+  return I.gen(function* (_) {
+    const ref       = yield* _(Ref.make(a))
+    const semaphore = yield* _(S.make(1))
+    return new Atomic(ref, semaphore)
+  })
 }
 
 /**
@@ -265,19 +264,18 @@ export function makeManaged<A>(a: A): UManaged<URefM<A>> {
  * Creates a new `RefM` and a `Dequeue` that will emit every change to the
  * `RefM`.
  */
-export function dequeueRef<A>(a: A): UIO<[URefM<A>, Q.Dequeue<A>]> {
-  return pipe(
-    I.do,
-    I.bindS('ref', () => make(a)),
-    I.bindS('queue', () => Q.makeUnbounded<A>()),
-    I.map(({ queue, ref }) => [
+export function dequeueRef<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
+  return I.gen(function* (_) {
+    const ref   = yield* _(make(a))
+    const queue = yield* _(Q.makeUnbounded<A>())
+    return tuple(
       pipe(
         ref,
         tapInput((a) => queue.offer(a))
       ),
       queue
-    ])
-  )
+    )
+  })
 }
 
 /*

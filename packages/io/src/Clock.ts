@@ -3,8 +3,6 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import type { HasTag } from '@principia/base/Has'
-
 import { tag } from '@principia/base/Has'
 
 import { effectAsyncInterrupt } from './IO/combinators/interrupt'
@@ -19,12 +17,7 @@ export interface Clock {
   readonly sleep: (ms: number) => I.UIO<void>
 }
 
-/**
- * Has Clock
- */
 export const Clock = tag<Clock>()
-
-export type HasClock = HasTag<typeof Clock>
 
 /**
  * Live clock implementation

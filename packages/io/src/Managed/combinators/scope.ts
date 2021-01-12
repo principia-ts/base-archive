@@ -1,7 +1,7 @@
 import type { Managed } from '../core'
 import type { Finalizer } from '../ReleaseMap'
 
-import { pipe } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/Function'
 
 import * as I from '../_internal/io'
 import { map } from '../core'
@@ -18,7 +18,10 @@ export function scope(): Managed<unknown, never, ManagedScope> {
       (finalizers) =>
         new ManagedScope(
           <R, E, A>(managed: Managed<R, E, A>): I.IO<R, E, readonly [Finalizer, A]> =>
-            I.flatMap_(I.ask<R>(), (r) => I.giveAll_(managed.io, [r, finalizers] as const))
+            pipe(
+              I.ask<R>(),
+              I.flatMap((r) => I.giveAll_(managed.io, tuple(r, finalizers)))
+            )
         )
     )
   )
