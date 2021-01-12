@@ -480,7 +480,7 @@ export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Ei
 
 /*
  * -------------------------------------------
- * Applicative Either
+ * Applicative
  * -------------------------------------------
  */
 
@@ -498,7 +498,7 @@ export const pure: <E = never, A = never>(a: A) => Either<E, A> = right
 
 /*
  * -------------------------------------------
- * Apply Either
+ * Apply
  * -------------------------------------------
  */
 
@@ -703,7 +703,7 @@ export function apS<N extends string, A, E1, B>(
 
 /*
  * -------------------------------------------
- * Bifunctor Either
+ * Bifunctor
  * -------------------------------------------
  */
 
@@ -714,7 +714,7 @@ export function apS<N extends string, A, E1, B>(
  *
  * Swaps the positions of a Bifunctor's arguments
  *
- * @category AltBifunctor
+ * @category Bifunctor
  * @since 1.0.0
  */
 export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
@@ -779,7 +779,7 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<
 
 /*
  * -------------------------------------------
- * Compactable Either
+ * Compactable
  * -------------------------------------------
  */
 
@@ -801,7 +801,7 @@ export function getCompactable<E>(M: P.Monoid<E>) {
 
 /*
  * -------------------------------------------
- * Eq Either
+ * Eq
  * -------------------------------------------
  */
 
@@ -824,7 +824,7 @@ export function getEq<E, A>(eqE: Eq<E>, eqA: Eq<A>): Eq<Either<E, A>> {
 
 /*
  * -------------------------------------------
- * Extend Either
+ * Extend
  * -------------------------------------------
  */
 
@@ -866,7 +866,7 @@ export function duplicate<E, A>(wa: Either<E, A>): Either<E, Either<E, A>> {
 
 /*
  * -------------------------------------------
- * Filterable Either
+ * Filterable
  * -------------------------------------------
  */
 
@@ -926,7 +926,7 @@ export function getFilterable<E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fi
 
 /*
  * -------------------------------------------
- * Foldable Either
+ * Foldable
  * -------------------------------------------
  */
 
@@ -986,7 +986,7 @@ export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A
 
 /*
  * -------------------------------------------
- * Functor Either
+ * Functor
  * -------------------------------------------
  */
 
@@ -1020,7 +1020,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
 
 /*
  * -------------------------------------------
- * Monad Either
+ * Monad
  * -------------------------------------------
  */
 
@@ -1103,7 +1103,7 @@ export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A>
 
 /*
  * -------------------------------------------
- * Monoid Either
+ * Monoid
  * -------------------------------------------
  */
 
@@ -1120,7 +1120,7 @@ export function getApplyMonoid<E, A>(M: P.Monoid<A>): P.Monoid<Either<E, A>> {
 
 /*
  * -------------------------------------------
- * Semigroup Either
+ * Semigroup
  * -------------------------------------------
  */
 
@@ -1166,7 +1166,7 @@ export function getApplySemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E
 
 /*
  * -------------------------------------------
- * Show Either
+ * Show
  * -------------------------------------------
  */
 
@@ -1186,7 +1186,7 @@ export function getShow<E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>
 
 /*
  * -------------------------------------------
- * Traversable Either
+ * Traversable
  * -------------------------------------------
  */
 
@@ -1236,7 +1236,7 @@ export const sequence: P.SequenceFn<[URI], V> = (F) => (ta) => traverse_(F)(ta, 
 
 /*
  * -------------------------------------------
- * Unit Either
+ * Unit
  * -------------------------------------------
  */
 
@@ -1251,7 +1251,7 @@ export function unit<E = never>(): Either<E, void> {
 
 /*
  * -------------------------------------------
- * Witherable Either
+ * Witherable
  * -------------------------------------------
  */
 

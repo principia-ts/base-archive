@@ -316,7 +316,7 @@ export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => O.Option<N
 
 /*
  * -------------------------------------------
- * Foldable NonEmptyArray
+ * Foldable
  * -------------------------------------------
  */
 
@@ -516,7 +516,7 @@ export const flatMap: <A, B>(
 
 /*
  * -------------------------------------------
- * Traversable NonEmptyArray
+ * Traversable
  * -------------------------------------------
  */
 

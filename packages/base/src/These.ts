@@ -157,7 +157,7 @@ export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
 
 /*
  * -------------------------------------------
- * Applicative These
+ * Applicative
  * -------------------------------------------
  */
 
@@ -171,7 +171,7 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[URI], HKT.
 
 /*
  * -------------------------------------------
- * Apply These
+ * Apply
  * -------------------------------------------
  */
 
@@ -327,7 +327,7 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E',
 
 /*
  * -------------------------------------------
- * Semigroup These
+ * Semigroup
  * -------------------------------------------
  */
 
@@ -371,7 +371,7 @@ export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
 
 /*
  * -------------------------------------------
- * Traversable These
+ * Traversable
  * -------------------------------------------
  */
 

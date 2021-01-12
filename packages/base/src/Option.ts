@@ -526,7 +526,7 @@ export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten
 
 /*
  * -------------------------------------------
- * Eq Option
+ * Eq
  * -------------------------------------------
  */
 
@@ -536,7 +536,7 @@ export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
 
 /*
  * -------------------------------------------
- * Extend Option
+ * Extend
  * -------------------------------------------
  */
 /**
@@ -568,7 +568,7 @@ export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
 
 /*
  * -------------------------------------------
- * Filterable Option
+ * Filterable
  * -------------------------------------------
  */
 
@@ -608,7 +608,7 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>
 
 /**
  * ```haskell
- * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
+ * filterMap_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  */
 export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
@@ -617,7 +617,7 @@ export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<
 
 /**
  * ```haskell
- * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
+ * filterMap :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  */
 export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Option<B> {
@@ -714,7 +714,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
 
 /*
  * -------------------------------------------
- * Monad Option
+ * Monad
  * -------------------------------------------
  */
 /**
@@ -859,7 +859,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
 
 /*
  * -------------------------------------------
- * Traversable Option
+ * Traversable
  * -------------------------------------------
  */
 

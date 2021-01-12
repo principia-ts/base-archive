@@ -377,7 +377,7 @@ export function separate<E, A>(fa: ReadonlyArray<Either<E, A>>): readonly [Reado
 
 /*
  * -------------------------------------------
- * Do Array
+ * Do
  * -------------------------------------------
  */
 
@@ -1134,7 +1134,7 @@ export function getMonoid<A = never>(): P.Monoid<ReadonlyArray<A>> {
  */
 
 /**
- * Derives an `Ord` over the `ReadonlyArray` of a given element type from the `Ord` of that type. The ordering between two such
+ * Derives an `Ord` over the `Array` of a given element type from the `Ord` of that type. The ordering between two such
  * arrays is equal to: the first non equal comparison of each arrays elements taken pairwise in increasing order, in
  * case of equality over all the pairwise elements; the longest array is considered the greatest, if both arrays have
  * the same length, the result is equality.
@@ -2245,7 +2245,7 @@ export const Unfoldable: P.Unfoldable<[URI], V> = HKT.instance({
 
 /*
  * -------------------------------------------
- * Gen Array
+ * Gen
  * -------------------------------------------
  */
 

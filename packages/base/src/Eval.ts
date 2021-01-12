@@ -1,6 +1,6 @@
 /*
  * -------------------------------------------
- * `Eval` is a direct port of the Eval monad from typelevel's `cats` library
+ * `Eval` is a port of the Eval monad from typelevel's `cats` library
  * -------------------------------------------
  */
 
@@ -25,8 +25,8 @@ export abstract class Eval<A> {
   readonly _U = URI
   readonly _A!: () => A
 
-  abstract value: () => A
-  abstract memoize: () => Eval<A>
+  abstract value(): A
+  abstract memoize(): Eval<A>
 }
 
 export const URI = 'Eval'
@@ -43,8 +43,12 @@ class Now<A> extends Eval<A> {
   constructor(readonly a: A) {
     super()
   }
-  value   = () => this.a
-  memoize = () => this
+  value() {
+    return this.a
+  }
+  memoize() {
+    return this
+  }
 }
 
 class Later<A> extends Eval<A> {
@@ -54,25 +58,30 @@ class Later<A> extends Eval<A> {
     super()
     this.thunk = f
   }
-
-  value = () => {
+  value() {
     const result = this.thunk()
-    // eslint-disable-next-line functional/immutable-data
-    this.thunk = null as any // GC
+    /* eslint-disable functional/immutable-data */
+    this.thunk = null as any
+    this.value = () => result
+    /* eslint-enable */
     return result
   }
-
-  memoize = () => this
+  memoize() {
+    return this
+  }
 }
 
 class Always<A> extends Eval<A> {
   readonly _evalTag = 'Always'
-  constructor(readonly lazyVal: () => A) {
+  constructor(readonly thunk: () => A) {
     super()
   }
-
-  value   = () => this.lazyVal()
-  memoize = () => new Later(this.lazyVal)
+  value() {
+    return this.thunk()
+  }
+  memoize() {
+    return new Later(this.thunk)
+  }
 }
 
 class Defer<A> extends Eval<A> {
@@ -80,16 +89,25 @@ class Defer<A> extends Eval<A> {
   constructor(readonly thunk: () => Eval<A>) {
     super()
   }
-  memoize = (): Eval<A> => new Memoize(this)
-  value   = (): A => evaluate(this)
+  value() {
+    return evaluate(this.thunk())
+  }
+  memoize(): Eval<A> {
+    return new Memoize(this)
+  }
 }
 
-abstract class FlatMap<A, B> extends Eval<B> {
+class FlatMap<A, B> extends Eval<B> {
   readonly _evalTag = 'FlatMap'
-  abstract start: () => Eval<A>
-  abstract run: (a: A) => Eval<B>
-  memoize = (): Eval<B> => new Memoize(this)
-  value   = (): B => evaluate(this)
+  constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
+    super()
+  }
+  value(): B {
+    return evaluate(this)
+  }
+  memoize(): Eval<B> {
+    return new Memoize(this)
+  }
 }
 
 class Memoize<A> extends Eval<A> {
@@ -99,10 +117,12 @@ class Memoize<A> extends Eval<A> {
   }
   public result: O.Option<A> = O.none<A>()
 
-  memoize = () => this
+  memoize() {
+    return this
+  }
 
-  value = (): A =>
-    O.fold_(
+  value(): A {
+    return O.fold_(
       this.result,
       () => {
         const a = evaluate(this)
@@ -112,6 +132,7 @@ class Memoize<A> extends Eval<A> {
       },
       (a) => a
     )
+  }
 }
 
 /*
@@ -120,18 +141,55 @@ class Memoize<A> extends Eval<A> {
  * -------------------------------------------
  */
 
+/**
+ * Construct an eager Eval instance.
+ *
+ * In some sense it is equivalent to using a `const` in a typical computation.
+ *
+ * This type should be used when an A value is already in hand, or
+ * when the computation to produce an A value is pure and very fast.
+ */
 export function now<A>(a: A): Eval<A> {
   return new Now(a)
 }
 
+/**
+ * Construct a lazy Eval instance.
+ *
+ * This type should be used for most "lazy" values. In some sense it
+ * is equivalent to using a thunked value, but is cached for speed
+ * after the initial computation.
+ *
+ * When caching is not required or desired (e.g. if the value produced
+ * may be large) prefer `always`. When there is no computation
+ * necessary, prefer `now`.
+ *
+ * Once `later` has been evaluated, the closure (and any values captured
+ * by the closure) will not be retained, and will be available for
+ * garbage collection.
+ */
 export function later<A>(f: () => A): Eval<A> {
   return new Later(f)
 }
 
-export function always<A>(lazyVal: () => A): Eval<A> {
-  return new Always(lazyVal)
+/**
+ * Construct a lazy Eval[A] instance.
+ *
+ * This type can be used for "lazy" values. In some sense it is
+ * equivalent to using a thunked value.
+ *
+ * This type will evaluate the computation every time the value is
+ * required. It should be avoided except when laziness is required and
+ * caching must be avoided. Generally, prefer `later`.
+ */
+export function always<A>(thunk: () => A): Eval<A> {
+  return new Always(thunk)
 }
 
+/**
+ * Defer is a type of Eval that is used to defer computations
+ * which produce Eval.
+ */
 export function defer<A>(thunk: () => Eval<A>): Eval<A> {
   return new Defer(thunk)
 }
@@ -197,31 +255,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
  */
 
 export function flatMap_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
-  const I = ma as Concrete
-  switch (I._evalTag) {
-    case 'FlatMap': {
-      return new (class extends FlatMap<any, B> {
-        start = (I as FlatMap<A, B>).start
-        run   = (a: any): Eval<B> =>
-          new (class extends FlatMap<A, B> {
-            start = () => (I as FlatMap<any, A>).run(a)
-            run   = f
-          })()
-      })()
-    }
-    case 'Defer': {
-      return new (class extends FlatMap<A, B> {
-        start = (I as Defer<A>).thunk
-        run   = f
-      })()
-    }
-    default: {
-      return new (class extends FlatMap<A, B> {
-        start = () => ma
-        run   = f
-      })()
-    }
-  }
+  return new FlatMap(ma, f)
 }
 
 export function flatMap<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
@@ -248,7 +282,7 @@ export function unit(): Eval<void> {
  * -------------------------------------------
  */
 
-type Concrete = Now<any> | Later<any> | Defer<any> | Always<any> | FlatMap<any, any> | Memoize<any>
+type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | FlatMap<any, any> | Memoize<any>
 
 class Frame {
   readonly _evalTag = 'Frame'
@@ -262,7 +296,7 @@ export function evaluate<A>(e: Eval<A>): A {
     return new Now(a)
   }
 
-  let frames  = makeStack(new Frame((_) => new Now(_))) as Stack<Frame> | undefined
+  let frames  = undefined as Stack<Frame> | undefined
   let current = e as Eval<any> | undefined
   let result  = null
 
@@ -280,34 +314,70 @@ export function evaluate<A>(e: Eval<A>): A {
     const I = current as Concrete
     switch (I._evalTag) {
       case 'FlatMap': {
-        const nested = I.start() as Concrete
+        const nested       = I.ma as Concrete
+        const continuation = I.f
+
         switch (nested._evalTag) {
-          case 'FlatMap': {
-            pushContinuation(new Frame(I.run))
-            pushContinuation(new Frame(nested.run))
-            current = nested.start()
+          case 'Now': {
+            current = continuation(nested.a)
             break
           }
-          case 'Defer': {
-            current = nested.thunk()
-            pushContinuation(new Frame(I.run))
+          case 'Later': {
+            current = continuation(nested.value())
+            break
+          }
+          case 'Always': {
+            current = continuation(nested.thunk())
             break
           }
           case 'Memoize': {
             if (nested.result._tag === 'Some') {
-              current = I.run(nested.result.value)
+              current = I.f(nested.result.value)
               break
             } else {
-              pushContinuation(new Frame(I.run))
+              pushContinuation(new Frame(continuation))
               pushContinuation(new Frame(addToMemo(nested)))
               current = nested.ma
               break
             }
           }
           default: {
-            current = I.run(nested.value())
+            current = nested
+            pushContinuation(new Frame(continuation))
             break
           }
+        }
+        break
+      }
+      case 'Now': {
+        const continuation = popContinuation()
+        if(continuation) {
+          current = continuation.apply(I.a)
+        } else {
+          current = undefined
+          result  = I.a
+        }
+        break
+      }
+      case 'Later': {
+        const a            = I.value()
+        const continuation = popContinuation()
+        if(continuation) {
+          current = continuation.apply(a)
+        } else {
+          current = undefined
+          result  = a
+        }
+        break
+      }
+      case 'Always': {
+        const a            = I.thunk()
+        const continuation = popContinuation()
+        if(continuation) {
+          current = continuation.apply(a)
+        } else {
+          current = undefined
+          result  = a
         }
         break
       }
@@ -322,25 +392,13 @@ export function evaluate<A>(e: Eval<A>): A {
             current = f.apply(I.result.value)
             break
           } else {
-            current = undefined
             result  = I.result.value
+            current = undefined
             break
           }
         } else {
           pushContinuation(new Frame(addToMemo(I)))
           current = I.ma
-          break
-        }
-      }
-      default: {
-        const a1 = I.value()
-        const f  = popContinuation()
-        if (f) {
-          current = f.apply(a1)
-          break
-        } else {
-          current = undefined
-          result  = a1
           break
         }
       }

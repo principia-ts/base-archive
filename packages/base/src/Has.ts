@@ -5,8 +5,6 @@
  * Copyright 2017-2020 John A. De Goes and the ZIO Contributors
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
- *
- * Derived from the above sources
  */
 
 import type { Option } from './Option'

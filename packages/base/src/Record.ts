@@ -377,7 +377,7 @@ export function filter<A>(predicate: Predicate<A>): (fa: ReadonlyRecord<string, 
 
 /**
  * ```haskell
- * mapOptionWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * filterMapWithIndex_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Option b)) -> f b
  * ```
  */
@@ -399,7 +399,7 @@ export function filterMapWithIndex_<N extends string, A, B>(
 
 /**
  * ```haskell
- * mapOptionWithIndex :: (FilterableWithIndex f, Index k) =>
+ * filterMapWithIndex :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Option b) -> f a -> f b
  * ```
  */
@@ -411,7 +411,7 @@ export function filterMapWithIndex<N extends string, A, B>(
 
 /**
  * ```haskell
- * mapOption_ :: Filterable f => (f a, (a -> Option b)) -> f b
+ * fliterMap_ :: Filterable f => (f a, (a -> Option b)) -> f b
  * ```
  */
 export function filterMap_<N extends string, A, B>(
@@ -423,7 +423,7 @@ export function filterMap_<N extends string, A, B>(
 
 /**
  * ```haskell
- * mapOption :: Filterable f => (a -> Option b) -> f a -> f b
+ * filterMap :: Filterable f => (a -> Option b) -> f a -> f b
  * ```
  */
 export function filterMap<A, B>(
@@ -516,7 +516,7 @@ export function partition<A>(
 
 /**
  * ```haskell
- * mapEitherWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * partitionMapWithIndex_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
@@ -544,7 +544,7 @@ export function partitionMapWithIndex_<N extends string, A, B, C>(
 
 /**
  * ```haskell
- * mapEitherWithIndex :: (FilterableWithIndex f, Index k) =>
+ * partitionMapWithIndex :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
@@ -556,7 +556,7 @@ export function partitionMapWithIndex<N extends string, A, B, C>(
 
 /**
  * ```haskell
- * mapEither_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
+ * partitionMap_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
 export function partitionMap_<N extends string, A, B, C>(
@@ -568,7 +568,7 @@ export function partitionMap_<N extends string, A, B, C>(
 
 /**
  * ```haskell
- * mapEither :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
+ * partitionMap :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
 export function partitionMap<A, B, C>(
@@ -842,7 +842,7 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string,
 
 /*
  * -------------------------------------------
- * Show Record
+ * Show
  * -------------------------------------------
  */
 
@@ -857,7 +857,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
 
 /*
  * -------------------------------------------
- * Traversable Record
+ * Traversable
  * -------------------------------------------
  */
 
