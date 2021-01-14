@@ -1,4 +1,4 @@
-import type { Cache } from './Cache'
+import type { Cache as Query } from './Cache'
 import type { DataSource } from './DataSource'
 import type { DataSourceAspect } from './DataSourceAspect'
 import type { Request } from './Request'
@@ -126,7 +126,7 @@ export class XQuery<R, E, A> {
     )
   }
 
-  runCache = (cache: Cache): I.IO<R, E, A> => {
+  runCache = (cache: Query): I.IO<R, E, A> => {
     return pipe(
       this.step,
       I.gives((r: R) => [r, new QueryContext(cache)] as const),
@@ -140,7 +140,7 @@ export class XQuery<R, E, A> {
     )
   }
 
-  runLog = (): I.IO<R, E, readonly [Cache, A]> => {
+  runLog = (): I.IO<R, E, readonly [Query, A]> => {
     const runCache = this.runCache
     return I.gen(function* (_) {
       const cache = yield* _(empty)
@@ -1098,7 +1098,7 @@ abstract class AbstractContinue {
     })
   }
 
-  runCache<R, E, A>(this: Continue<R, E, A>, cache: Cache): I.IO<R, E, A> {
+  runCache<R, E, A>(this: Continue<R, E, A>, cache: Query): I.IO<R, E, A> {
     return matchTag_(this, {
       Effect: ({ query }) => query.runCache(cache),
       Get: ({ io }) => io

@@ -3,9 +3,12 @@ import type { ResolverF, ScalarFunctions } from '../schema'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
+import { HttpConnection } from '@principia/http/HttpConnection'
 import { HttpRequest } from '@principia/http/HttpRequest'
 import { HttpResponse } from '@principia/http/HttpResponse'
 import * as T from '@principia/io/IO'
+import * as Ref from '@principia/io/IORef'
+import * as RefM from '@principia/io/IORefM'
 import * as Sy from '@principia/io/Sync'
 import { Context } from '@principia/koa'
 import { GraphQLScalarType } from 'graphql'
@@ -22,53 +25,74 @@ export function transformResolvers<Ctx>(
     for (const [mut_fieldName, resolver] of entries(fields)) {
       if (typeof resolver === 'function') {
         (resolvers as any)[mut_fieldName] = (root: any, args: any, ctx: any) => {
-          const context = {
-            engine: ctx,
-            res: new HttpResponse(ctx.res),
-            req: new HttpRequest(ctx.req)
-          }
-          return pipe(
-            (resolver as any)(O.fromNullable(root), args || {}, context),
-            T.give({
-              ...(env as any)
-            }),
-            T.giveService(Context)(context),
-            T.runPromise
+          return T.runPromise(
+            T.gen(function* (_) {
+              const reqRef  = yield* _(Ref.make(ctx.req))
+              const resRef  = yield* _(RefM.make(ctx.res))
+              const context = yield* _(
+                T.effectTotal(() => ({
+                  engine: ctx,
+                  conn: new HttpConnection(reqRef, resRef)
+                }))
+              )
+              const result  = yield* _(
+                pipe(
+                  (resolver as any)(O.fromNullable(root), args || {}, context),
+                  T.give({ ...(env as any) }),
+                  T.giveService(Context)(context)
+                )
+              )
+              return result
+            })
           )
         }
       } else {
         (resolvers as any)[mut_fieldName] = {
           subscribe: (root: any, args: any, ctx: any) => {
-            const context = {
-              engine: ctx,
-              res: new HttpResponse(ctx.res),
-              req: new HttpRequest(ctx.req)
-            }
-            return pipe(
-              (resolver as any).subscribe(O.fromNullable(root), args || {}, context),
-              T.give({
-                ...(env as any)
-              }),
-              T.giveService(Context)(context),
-              T.runPromise
+            return T.runPromise(
+              T.gen(function* (_) {
+                const reqRef  = yield* _(Ref.make(ctx.req))
+                const resRef  = yield* _(RefM.make(ctx.res))
+                const context = yield* _(
+                  T.effectTotal(() => ({
+                    engine: ctx,
+                    conn: new HttpConnection(reqRef, resRef)
+                  }))
+                )
+                const result  = yield* _(
+                  pipe(
+                    (resolver as any).subscribe(O.fromNullable(root), args || {}, context),
+                    T.give({ ...(env as any) }),
+                    T.giveService(Context)(context)
+                  )
+                )
+                return result
+              })
             )
           }
         }
 
         if ((resolver as any).resolve) {
           (resolvers as any)[mut_fieldName].resolve = (x: any, _: any, ctx: any) => {
-            const context = {
-              engine: ctx,
-              res: new HttpResponse(ctx.res),
-              req: new HttpRequest(ctx.req)
-            }
-            return pipe(
-              (resolver as any).resolve(x, context),
-              T.give({
-                ...(env as any)
-              }),
-              T.giveService(Context)(context),
-              T.runPromise
+            return T.runPromise(
+              T.gen(function* (_) {
+                const reqRef  = yield* _(Ref.make(ctx.req))
+                const resRef  = yield* _(RefM.make(ctx.res))
+                const context = yield* _(
+                  T.effectTotal(() => ({
+                    engine: ctx,
+                    conn: new HttpConnection(reqRef, resRef)
+                  }))
+                )
+                const result  = yield* _(
+                  pipe(
+                    (resolver as any).resolve(x, context),
+                    T.give({ ...(env as any) }),
+                    T.giveService(Context)(context)
+                  )
+                )
+                return result
+              })
             )
           }
         }

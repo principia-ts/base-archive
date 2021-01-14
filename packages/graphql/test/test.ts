@@ -1,30 +1,29 @@
-import "@principia/base/unsafe/Operators";
+import '@principia/base/unsafe/Operators'
 
-import * as A from "@principia/base/data/Array";
-import * as I from "@principia/io/IO";
-import * as L from "@principia/io/Layer";
-import * as Koa from "@principia/koa";
-import { runMain } from "@principia/node/Runtime";
-import KoaRouter from "koa-router";
+import * as A from '@principia/base/Array'
+import * as I from '@principia/io/IO'
+import * as L from '@principia/io/Layer'
+import * as Koa from '@principia/koa'
+import { runMain } from '@principia/node/Runtime'
+import KoaRouter from 'koa-router'
 
-import { GraphQlFieldInterpreter, GraphQlInputInterpreter } from "../src/schema";
-import { GraphQlException } from "../src/schema/GraphQlException";
-import { makeApollo } from "../src/server/koa";
+import { GraphQlFieldInterpreter, GraphQlInputInterpreter } from '../src/schema'
+import { GraphQlException } from '../src/schema/GraphQlException'
+import { makeApollo } from '../src/server/koa'
 
 const apollo = makeApollo({ ...GraphQlFieldInterpreter(), ...GraphQlInputInterpreter() })({}, ({ ctx }) =>
   I.succeed({
-    req: ctx.req,
-    res: ctx.res,
-    engine: { ...ctx.engine, custom: "A custom context thing" }
+    conn: ctx.conn,
+    engine: { ...ctx.engine, custom: 'A custom context thing' }
   })
-);
+)
 
-const Obj = apollo.object<{}>()("Obj", (F) => ({
+const Obj = apollo.object<{}>()('Obj', (F) => ({
   a: F.string(),
   b: F.float()
-}));
+}))
 
-const Query = apollo.object<{}>()("Query", (F) => ({
+const Query = apollo.object<{}>()('Query', (F) => ({
   hello: F.field({
     type: F.string(),
     args: { name: F.stringArg() },
@@ -32,22 +31,22 @@ const Query = apollo.object<{}>()("Query", (F) => ({
   }),
   obj: F.field({
     type: F.objectField(() => Obj),
-    resolve: () => I.succeed({ a: "hello", b: 42 })
+    resolve: () => I.succeed({ a: 'hello', b: 42 })
   }),
   custom: F.field({
     type: F.string(),
-    resolve: (r, a, c) => c.req.ip
+    resolve: (r, a, c) => c.conn.request.ip
   })
-}));
+}))
 
 const fac = (n: number): I.UIO<number> =>
   I.gen(function* (_) {
     if (n === 0) {
-      return 1;
+      return 1
     } else {
-      return n * (yield* _(fac(n - 1)));
+      return n * (yield* _(fac(n - 1)))
     }
-  });
+  })
 
 const MoreQueries = apollo.extentObject(
   () => Query,
@@ -70,21 +69,21 @@ const MoreQueries = apollo.extentObject(
       type: F.string(),
       resolve: () =>
         I.fail(
-          new GraphQlException("A test exception", 500, {
-            someData: "this is some additional data"
+          new GraphQlException('A test exception', 500, {
+            someData: 'this is some additional data'
           })
         )
     })
   })
-);
+)
 
-const schemaParts = apollo.generateSchema(Query, MoreQueries, Obj);
+const schemaParts = apollo.generateSchema(Query, MoreQueries, Obj)
 
 const program = apollo
   .instance({ schemaParts })
-  ["<<<"](Koa.live(4000, "localhost"))
-  ["<<<"](L.pure(Koa.KoaConfig)({ middleware: [], router: new KoaRouter(), onClose: [] }));
+  ['<<<'](Koa.live(4000, 'localhost'))
+  ['<<<'](L.succeed(Koa.KoaConfig)({ middleware: [], router: new KoaRouter(), onClose: [] }))
 
-I.never["|>"](I.giveLayer(program))
-  ["|>"](I.giveAll({ env: "This is the environment" }))
-  ["|>"]((x) => runMain(x));
+I.never['|>'](I.giveLayer(program))
+  ['|>'](I.giveAll({ env: 'This is the environment' }))
+  ['|>']((x) => runMain(x))

@@ -61,9 +61,9 @@ export abstract class Layer<R, E, A> {
 
   /**
    * Feeds the output services of the specified layer into the input of this layer
-   * layer, resulting in a new layer with the inputs of the specified layer, and the
+* layer, resulting in a new layer with the inputs of the specified layer, and the
    * outputs of this layer.
-   */
+  */
   ['<<<']<R1, E1, A1>(from: Layer<R1, E1, A1>): Layer<Erase<R, A1> & R1, E | E1, A> {
     return from_(this, from)
   }
@@ -73,7 +73,7 @@ export abstract class Layer<R, E, A> {
   }
 
   /**
-   * Feeds the output services of this layer into the input of the specified
+  * Feeds the output services of this layer into the input of the specified
    * layer, resulting in a new layer with the inputs of this layer, and the
    * outputs of the specified layer.
    */
@@ -1195,9 +1195,11 @@ export class MemoMap {
                               return tuple(outerFinalizer, a)
                             })
                         )
-                      )
+                      ),
+                      restore
                     )
                   )
+                  return tp
                 })
               )
 

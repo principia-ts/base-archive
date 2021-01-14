@@ -6,8 +6,10 @@ import type { URefM } from '@principia/io/IORefM'
 import type * as http from 'http'
 import type { Readable } from 'stream'
 
+import { pipe } from '@principia/base/Function'
+import * as NT from '@principia/base/Newtype'
 import * as O from '@principia/base/Option'
-import * as T from '@principia/io/IO'
+import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 import * as RefM from '@principia/io/IORefM'
 import * as M from '@principia/io/Managed'
@@ -48,61 +50,67 @@ interface UnpipeEvent {
 
 export type ResponseEvent = CloseEvent | DrainEvent | ErrorEvent | FinishEvent | PipeEvent | UnpipeEvent
 
+export const HttpResponseCompleted = NT.typeDef<void>()('HttpResponseCompleted')
+export interface HttpResponseCompleted extends NT.TypeOf<typeof HttpResponseCompleted> {}
+
 export class HttpResponse {
-  readonly _res: URefM<http.ServerResponse>
+  eventStream: M.Managed<unknown, never, I.UIO<S.Stream<unknown, never, ResponseEvent>>>
 
-  eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, ResponseEvent>>>
-
-  constructor(res: http.ServerResponse) {
-    this._res        = RefM.unsafeMake(res)
-    this.eventStream = S.broadcastDynamic_(
-      new S.Stream(
-        M.gen(function* ($) {
-          const queue = yield* $(Q.makeUnbounded<ResponseEvent>())
-          const done  = yield* $(Ref.make(false))
-          yield* $(
-            T.effectTotal(() => {
-              res.on('close', () => {
-                T.run(queue.offer({ _tag: 'Close' }))
-              })
-              res.on('drain', () => {
-                T.run(queue.offer({ _tag: 'Drain' }))
-              })
-              res.on('finish', () => {
-                T.run(queue.offer({ _tag: 'Finish' }))
-              })
-              res.on('error', (error) => {
-                T.run(queue.offer({ _tag: 'Error', error }))
-              })
-              res.on('pipe', (src) => {
-                T.run(queue.offer({ _tag: 'Pipe', src }))
-              })
-              res.on('unpipe', (src) => {
-                T.run(queue.offer({ _tag: 'Unpipe', src }))
-              })
+  constructor(readonly _res: RefM.URefM<http.ServerResponse>) {
+    this.eventStream = pipe(
+      _res.get,
+      M.fromEffect,
+      M.flatMap((res) =>
+        S.broadcastDynamic_(
+          new S.Stream(
+            M.gen(function* ($) {
+              const queue = yield* $(Q.makeUnbounded<ResponseEvent>())
+              const done  = yield* $(Ref.make(false))
+              yield* $(
+                I.effectTotal(() => {
+                  res.on('close', () => {
+                    I.run(queue.offer({ _tag: 'Close' }))
+                  })
+                  res.on('drain', () => {
+                    I.run(queue.offer({ _tag: 'Drain' }))
+                  })
+                  res.on('finish', () => {
+                    I.run(queue.offer({ _tag: 'Finish' }))
+                  })
+                  res.on('error', (error) => {
+                    I.run(queue.offer({ _tag: 'Error', error }))
+                  })
+                  res.on('pipe', (src) => {
+                    I.run(queue.offer({ _tag: 'Pipe', src }))
+                  })
+                  res.on('unpipe', (src) => {
+                    I.run(queue.offer({ _tag: 'Unpipe', src }))
+                  })
+                })
+              )
+              return I.flatMap_(done.get, (b) =>
+                b
+                  ? Pull.end
+                  : I.flatMap_(
+                      queue.take,
+                      (event): I.UIO<Chunk<ResponseEvent>> => {
+                        if (event._tag === 'Close') {
+                          return I.andThen_(done.set(true), Pull.emit(event))
+                        }
+                        return Pull.emit(event)
+                      }
+                    )
+              )
             })
-          )
-          return T.flatMap_(done.get, (b) =>
-            b
-              ? Pull.end
-              : T.flatMap_(
-                  queue.take,
-                  (event): T.UIO<Chunk<ResponseEvent>> => {
-                    if (event._tag === 'Close') {
-                      return T.andThen_(done.set(true), Pull.emit(event))
-                    }
-                    return Pull.emit(event)
-                  }
-                )
-          )
-        })
-      ),
-      1
+          ),
+          1
+        )
+      )
     )
   }
 
   access<R, E, A>(f: (res: http.ServerResponse) => IO<R, E, A>): IO<R, E, A> {
-    return T.flatMap_(this._res.get, f)
+    return I.flatMap_(this._res.get, f)
   }
 
   modify<R, E>(f: (res: http.ServerResponse) => IO<R, E, http.ServerResponse>): IO<R, E, void> {
@@ -111,7 +119,7 @@ export class HttpResponse {
 
   status(s: Status.StatusCode): UIO<void> {
     return RefM.update_(this._res, (res) =>
-      T.effectTotal(() => {
+      I.effectTotal(() => {
         // eslint-disable-next-line functional/immutable-data
         res.statusCode = s.code
         return res
@@ -120,24 +128,24 @@ export class HttpResponse {
   }
 
   get headers(): UIO<http.OutgoingHttpHeaders> {
-    return T.map_(this._res.get, (res) => res.getHeaders())
+    return I.map_(this._res.get, (res) => res.getHeaders())
   }
 
   get(name: string): UIO<O.Option<http.OutgoingHttpHeader>> {
-    return T.map_(this._res.get, (res) => O.fromNullable(res.getHeaders()[name]))
+    return I.map_(this._res.get, (res) => O.fromNullable(res.getHeaders()[name]))
   }
 
   set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {
     return RefM.update_(this._res, (res) =>
-      T.effectSuspendTotal(() => {
+      I.effectSuspendTotal(() => {
         const hs = Object.entries(headers)
         try {
           for (let i = 0; i < hs.length; i++) {
             res.setHeader(hs[i][0], hs[i][1])
           }
-          return T.succeed(res)
+          return I.succeed(res)
         } catch (err) {
-          return T.fail(
+          return I.fail(
             new HttpException('Failed to set headers', 'HttpResponse#set', {
               status: Status.InternalServerError,
               originalError: err
@@ -149,50 +157,54 @@ export class HttpResponse {
   }
 
   has(name: string): UIO<boolean> {
-    return T.map_(this._res.get, (res) => res.hasHeader(name))
+    return I.map_(this._res.get, (res) => res.hasHeader(name))
   }
 
   write(chunk: string | Buffer): FIO<HttpException, void> {
-    return T.flatMap_(this._res.get, (res) =>
-      T.effectAsync<unknown, HttpException, void>((cb) => {
-        res.write(chunk, (err) =>
-          err
-            ? cb(
-                T.fail(
-                  new HttpException('Failed to write body', 'HttpResponse#write', {
-                    status: Status.InternalServerError,
-                    originalError: err
-                  })
-                )
+    return I.flatMap_(this._res.get, (res) =>
+      I.effectAsync<unknown, HttpException, void>((cb) => {
+        res.write(chunk, (err) => {
+          if (err) {
+            cb(
+              I.fail(
+                new HttpException('Failed to write body', 'HttpResponse#write', {
+                  status: Status.InternalServerError,
+                  originalError: err
+                })
               )
-            : cb(T.unit())
-        )
+            )
+          } else {
+            cb(I.unit())
+          }
+        })
       })
     )
   }
 
   pipeFrom<R, E>(stream: S.Stream<R, E, Byte>): IO<R, HttpException, void> {
-    return T.catchAll_(
-      T.flatMap_(this._res.get, (res) =>
+    return pipe(
+      this._res.get,
+      I.flatMap((res) =>
         S.run_(
           stream,
           NS.sinkFromWritable(() => res)
         )
       ),
-      (e) =>
-        T.fail(
+      I.catchAll((e) =>
+        I.fail(
           new HttpException('Failed to write response body', 'HttpResponse#pipeFrom', {
             status: Status.InternalServerError,
             originalError: e
           })
         )
+      )
     )
   }
 
-  end(): UIO<void> {
-    return T.flatMap_(this._res.get, (res) =>
-      T.effectTotal(() => {
-        res.end()
+  end(): UIO<HttpResponseCompleted> {
+    return I.flatMap_(this._res.get, (res) =>
+      I.effectTotal(() => {
+        return res.end() as any
       })
     )
   }

@@ -62,61 +62,63 @@ interface ResumeEvent {
 export type RequestEvent = CloseEvent | DataEvent | EndEvent | ErrorEvent | PauseEvent | ReadableEvent | ResumeEvent
 
 export class HttpRequest {
-  readonly _req: URef<http.IncomingMessage>
-
-  private memoizedUrl: URef<E.Either<HttpException, O.Option<Url.URL>>> = Ref.unsafeMake(E.right(O.none()))
+  private memoizedUrl: E.Either<HttpException, O.Option<Url.URL>> = E.right(O.none())
 
   eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, RequestEvent>>>
 
-  constructor(req: http.IncomingMessage) {
-    this._req = Ref.unsafeMake(req)
-
-    this.eventStream = S.broadcastDynamic_(
-      new S.Stream(
-        M.gen(function* ($) {
-          const queue = yield* $(Q.makeUnbounded<RequestEvent>())
-          const done  = yield* $(Ref.make(false))
-          yield* $(
-            T.effectTotal(() => {
-              req.on('close', () => {
-                T.run(queue.offer({ _tag: 'Close' }))
-              })
-              req.on('data', (chunk) => {
-                T.run(queue.offer({ _tag: 'Data', chunk }))
-              })
-              req.on('end', () => {
-                T.run(queue.offer({ _tag: 'End' }))
-              })
-              req.on('pause', () => {
-                T.run(queue.offer({ _tag: 'Pause' }))
-              })
-              req.on('error', (error) => {
-                T.run(queue.offer({ _tag: 'Error', error }))
-              })
-              req.on('readable', () => {
-                T.run(queue.offer({ _tag: 'Readble' }))
-              })
-              req.on('resume', () => {
-                T.run(queue.offer({ _tag: 'Resume' }))
-              })
+  constructor(readonly _req: Ref.URef<http.IncomingMessage>) {
+    this.eventStream = pipe(
+      _req.get,
+      M.fromEffect,
+      M.flatMap((req) =>
+        S.broadcastDynamic_(
+          new S.Stream(
+            M.gen(function* ($) {
+              const queue = yield* $(Q.makeUnbounded<RequestEvent>())
+              const done  = yield* $(Ref.make(false))
+              yield* $(
+                T.effectTotal(() => {
+                  req.on('close', () => {
+                    T.run(queue.offer({ _tag: 'Close' }))
+                  })
+                  req.on('data', (chunk) => {
+                    T.run(queue.offer({ _tag: 'Data', chunk }))
+                  })
+                  req.on('end', () => {
+                    T.run(queue.offer({ _tag: 'End' }))
+                  })
+                  req.on('pause', () => {
+                    T.run(queue.offer({ _tag: 'Pause' }))
+                  })
+                  req.on('error', (error) => {
+                    T.run(queue.offer({ _tag: 'Error', error }))
+                  })
+                  req.on('readable', () => {
+                    T.run(queue.offer({ _tag: 'Readble' }))
+                  })
+                  req.on('resume', () => {
+                    T.run(queue.offer({ _tag: 'Resume' }))
+                  })
+                })
+              )
+              return T.flatMap_(done.get, (b) =>
+                b
+                  ? Pull.end
+                  : T.flatMap_(
+                      queue.take,
+                      (event): T.UIO<Chunk<RequestEvent>> => {
+                        if (event._tag === 'Close') {
+                          return T.andThen_(done.set(true), Pull.emit(event))
+                        }
+                        return Pull.emit(event)
+                      }
+                    )
+              )
             })
-          )
-          return T.flatMap_(done.get, (b) =>
-            b
-              ? Pull.end
-              : T.flatMap_(
-                  queue.take,
-                  (event): T.UIO<Chunk<RequestEvent>> => {
-                    if (event._tag === 'Close') {
-                      return T.andThen_(done.set(true), Pull.emit(event))
-                    }
-                    return Pull.emit(event)
-                  }
-                )
-          )
-        })
-      ),
-      1
+          ),
+          1
+        )
+      )
     )
   }
 
@@ -139,28 +141,50 @@ export class HttpRequest {
   }
 
   get url(): FIO<HttpException, Url.URL> {
-    return T.flatMap_(
-      this.memoizedUrl.get,
+    const self = this
+    return pipe(
+      this.memoizedUrl,
       E.fold(
         T.fail,
         O.fold(
           () =>
-            T.flatMap_(this._req.get, (req) =>
-              T.effectSuspendTotal(() => {
-                try {
-                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  const parsedUrl = new Url.URL(req.url!)
-                  return T.andThen_(this.memoizedUrl.set(E.right(O.some(parsedUrl))), T.succeed(parsedUrl))
-                } catch (err) {
-                  const exception = new HttpException(
-                    `Error while parsing URL: ${JSON.stringify(err)}`,
-                    'HttpRequest#url',
-                    { status: Status.BadRequest }
+            T.gen(function* (_) {
+              const req      = yield* _(self._req.get)
+              const protocol = yield* _(self.protocol)
+              const url      = yield* _(self.urlString)
+              const host     = yield* _(
+                pipe(
+                  self.getHeader('host'),
+                  T.mapError(
+                    (_) =>
+                      new HttpException('Defect: request sent without a host', 'HttpRequest#url', {
+                        status: Status.BadRequest
+                      })
                   )
-                  return T.andThen_(this.memoizedUrl.set(E.left(exception)), T.fail(exception))
-                }
-              })
-            ),
+                )
+              )
+              return yield* _(
+                pipe(
+                  T.effect(() => new Url.URL(`${protocol}://${host}${url}`)),
+                  T.mapError(
+                    (error) =>
+                      new HttpException(`Error while parsing URL: ${JSON.stringify(error)}`, 'HttpRequest#url', {
+                        status: Status.BadRequest
+                      })
+                  ),
+                  T.tap((url) =>
+                    T.effectTotal(() => {
+                      self.memoizedUrl = E.right(O.some(url))
+                    })
+                  ),
+                  T.tapError((ex) =>
+                    T.effectTotal(() => {
+                      self.memoizedUrl = E.left(ex)
+                    })
+                  )
+                )
+              )
+            }),
           T.succeed
         )
       )
@@ -179,10 +203,20 @@ export class HttpRequest {
     )
   }
 
-  getHeader(name: 'set-cookie'): UIO<O.Option<ReadonlyArray<string>>>
-  getHeader(name: string): UIO<O.Option<string>>
-  getHeader(name: string): UIO<O.Option<string | ReadonlyArray<string>>> {
-    return T.map_(this._req.get, (req) => O.fromNullable(req.headers[name]))
+  getHeader(name: 'set-cookie'): FIO<HttpException, ReadonlyArray<string>>
+  getHeader(name: string): FIO<HttpException, string>
+  getHeader(name: string): FIO<HttpException, string | ReadonlyArray<string>> {
+    return pipe(
+      this._req.get,
+      T.flatMap((req) => {
+        const h = req.headers[name]
+        if (h) {
+          return T.succeed(h)
+        } else {
+          return T.fail(new HttpException('Invalid request', 'HttpRequest#getHeader', { status: Status.BadRequest }))
+        }
+      })
+    )
   }
 
   get socket(): UIO<Socket | TLSSocket> {
@@ -221,8 +255,10 @@ export class HttpRequest {
       const charset     = yield* $(
         pipe(
           contentType,
-          O.map(parseContentType),
-          O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
+          parseContentType,
+          (c) => c.parameters['charset']?.toLowerCase(),
+          O.fromNullable,
+          O.getOrElse(() => 'utf-8'),
           decodeCharset.decode(SyncDecoderM),
           Sy.catchAll((_) =>
             Sy.fail(
@@ -256,8 +292,9 @@ export class HttpRequest {
       const charset     = yield* $(
         pipe(
           contentType,
-          O.map(parseContentType),
-          O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
+          parseContentType,
+          (c) => c.parameters['charset']?.toLowerCase(),
+          O.fromNullable,
           O.getOrElse(() => 'utf-8'),
           decodeCharset.decode(SyncDecoderM),
           Sy.catchAll((_) =>

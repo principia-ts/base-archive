@@ -5,12 +5,15 @@ import type * as http from 'http'
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
 import * as H from '@principia/base/Has'
+import { HttpConnection } from '@principia/http/HttpConnection'
 import { HttpRequest } from '@principia/http/HttpRequest'
 import { HttpResponse } from '@principia/http/HttpResponse'
 import * as Status from '@principia/http/StatusCode'
 import * as C from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
+import * as Ref from '@principia/io/IORef'
+import * as RefM from '@principia/io/IORefM'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 import koa from 'koa'
@@ -46,8 +49,7 @@ export const KoaConfig = H.tag<KoaConfig>()
 
 export interface Context<C = koa.DefaultContext> {
   readonly engine: koa.ParameterizedContext<any, C>
-  readonly req: HttpRequest
-  readonly res: HttpResponse
+  readonly conn: HttpConnection
 }
 
 export const Context = H.tag<Context>()
@@ -70,7 +72,7 @@ export function route<R, A>(
             koaBodyParser(),
             async (mut_ctx) =>
               await pipe(
-                I.asksServiceM(Context)(({ req, res }) =>
+                I.asksServiceM(Context)(({ conn: { request, response } }) =>
                   pipe(
                     handler,
                     I.onExit(
@@ -78,27 +80,27 @@ export function route<R, A>(
                         C.fold(
                           () =>
                             pipe(
-                              res.status(Status.InternalServerError),
-                              I.andThen(res.write(JSON.stringify({ status: 'empty' }))),
-                              I.andThen(res.end())
+                              response.status(Status.InternalServerError),
+                              I.andThen(response.write(JSON.stringify({ status: 'empty' }))),
+                              I.andThen(response.end())
                             ),
                           (error) =>
                             pipe(
-                              res.status(error.data?.status ?? Status.InternalServerError),
-                              I.andThen(res.write(error.message)),
-                              I.andThen(res.end())
+                              response.status(error.data?.status ?? Status.InternalServerError),
+                              I.andThen(response.write(error.message)),
+                              I.andThen(response.end())
                             ),
                           (error) =>
                             pipe(
-                              res.status(Status.InternalServerError),
-                              I.andThen(res.write(JSON.stringify({ status: 'aborted', with: error }))),
-                              I.andThen(res.end())
+                              response.status(Status.InternalServerError),
+                              I.andThen(response.write(JSON.stringify({ status: 'aborted', with: error }))),
+                              I.andThen(response.end())
                             ),
                           (_) =>
                             pipe(
-                              res.status(Status.InternalServerError),
-                              I.andThen(res.write(JSON.stringify({ status: 'interrupted' }))),
-                              I.andThen(res.end())
+                              response.status(Status.InternalServerError),
+                              I.andThen(response.write(JSON.stringify({ status: 'interrupted' }))),
+                              I.andThen(response.end())
                             ),
                           (_, r) => r,
                           (_, r) => r
@@ -106,9 +108,9 @@ export function route<R, A>(
                         (r) =>
                           r
                             ? pipe(
-                                res.status(r.status),
-                                I.andThen(res.write(JSON.stringify(r.body))),
-                                I.andThen(res.end())
+                                response.status(r.status),
+                                I.andThen(response.write(JSON.stringify(r.body))),
+                                I.andThen(response.end())
                               )
                             : I.unit()
                       )
@@ -116,11 +118,13 @@ export function route<R, A>(
                   )
                 ),
                 I.give(env),
-                I.giveService(Context)({
-                  engine: mut_ctx,
-                  req: new HttpRequest(mut_ctx.req),
-                  res: new HttpResponse(mut_ctx.res)
-                }),
+                I.giveServiceM(Context)(
+                  I.gen(function* (_) {
+                    const reqRef = yield* _(Ref.make(mut_ctx.req))
+                    const resRef = yield* _(RefM.make(mut_ctx.res))
+                    return { engine: mut_ctx, conn: new HttpConnection(reqRef, resRef) }
+                  })
+                ),
                 I.catchAll((ex) =>
                   I.effectTotal(() => {
                     mut_ctx.status = ex.data?.status.code || 500
@@ -190,11 +194,13 @@ export function useM<R, E, A>(
         await pipe(
           middleware(I.fromPromiseDie(next)),
           I.give(env),
-          I.giveService(Context)({
-            engine: ctx,
-            req: new HttpRequest(ctx.req),
-            res: new HttpResponse(ctx.res)
-          }),
+          I.giveServiceM(Context)(
+            I.gen(function* (_) {
+              const reqRef = yield* _(Ref.make(ctx.req))
+              const resRef = yield* _(RefM.make(ctx.res))
+              return { engine: ctx, conn: new HttpConnection(reqRef, resRef) }
+            })
+          ),
           I.runPromise
         )
       return yield* _(
