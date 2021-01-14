@@ -33,15 +33,15 @@ export abstract class SyncLayer<R, E, A> {
 
 export type SyncMemoMap = Map<PropertyKey, any>
 
-export enum SyncLayerInstructionTag {
-  FromSync = 'FromSync',
-  Fresh = 'Fresh',
-  Suspend = 'Suspend',
-  Both = 'Both',
-  Using = 'Using',
-  From = 'From',
-  All = 'All'
-}
+export const SyncLayerTag = {
+  FromSync: 'FromSync',
+  Fresh: 'Fresh',
+  Suspend: 'Suspend',
+  Both: 'Both',
+  Using: 'Using',
+  From: 'From',
+  All: 'All'
+} as const
 
 export function getMemoOrElseCreate<R, E, A>(layer: SyncLayer<R, E, A>): (m: SyncMemoMap) => Sy.Sync<R, E, A> {
   return (m) =>
@@ -68,7 +68,7 @@ export function getMemoOrElseCreate<R, E, A>(layer: SyncLayer<R, E, A>): (m: Syn
 }
 
 export class FromSyncInstruction<R, E, A> extends SyncLayer<R, E, A> {
-  readonly _tag = SyncLayerInstructionTag.FromSync
+  readonly _tag = SyncLayerTag.FromSync
 
   constructor(readonly sync: Sy.Sync<R, E, A>) {
     super()
@@ -80,7 +80,7 @@ export class FromSyncInstruction<R, E, A> extends SyncLayer<R, E, A> {
 }
 
 export class FreshInstruction<R, E, A> extends SyncLayer<R, E, A> {
-  readonly _tag = SyncLayerInstructionTag.Fresh
+  readonly _tag = SyncLayerTag.Fresh
 
   constructor(readonly layer: SyncLayer<R, E, A>) {
     super()
@@ -92,7 +92,7 @@ export class FreshInstruction<R, E, A> extends SyncLayer<R, E, A> {
 }
 
 export class SuspendInstruction<R, E, A> extends SyncLayer<R, E, A> {
-  readonly _tag = SyncLayerInstructionTag.Suspend
+  readonly _tag = SyncLayerTag.Suspend
 
   constructor(readonly factory: () => SyncLayer<R, E, A>) {
     super()
@@ -104,7 +104,7 @@ export class SuspendInstruction<R, E, A> extends SyncLayer<R, E, A> {
 }
 
 export class BothInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & R1, E | E1, A & A1> {
-  readonly _tag = SyncLayerInstructionTag.Both
+  readonly _tag = SyncLayerTag.Both
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
     super()
@@ -127,7 +127,7 @@ export class BothInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & R1, E | 
 }
 
 export class UsingInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A & A1> {
-  readonly _tag = SyncLayerInstructionTag.Using
+  readonly _tag = SyncLayerTag.Using
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
     super()
@@ -150,7 +150,7 @@ export class UsingInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R
 }
 
 export class FromInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A1> {
-  readonly _tag = SyncLayerInstructionTag.From
+  readonly _tag = SyncLayerTag.From
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
     super()
@@ -187,7 +187,7 @@ export class AllInstruction<Layers extends ReadonlyArray<SyncLayer<any, any, any
   MergeE<Layers>,
   MergeA<Layers>
 > {
-  readonly _tag = SyncLayerInstructionTag.All
+  readonly _tag = SyncLayerTag.All
 
   constructor(readonly layers: Layers & { 0: SyncLayer<any, any, any> }) {
     super()

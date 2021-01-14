@@ -7,31 +7,31 @@ export const _A = '_A'
 export const _I = '_I'
 export const _U = '_U'
 
-export enum IOTag {
-  Succeed = 'Succeed',
-  FlatMap = 'FlatMap',
-  EffectPartial = 'EffectPartial',
-  EffectTotal = 'EffectTotal',
-  Async = 'Async',
-  Fold = 'Fold',
-  Fork = 'Fork',
-  Fail = 'Fail',
-  Yield = 'Yield',
-  Read = 'Read',
-  Give = 'Give',
-  EffectSuspend = 'EffectSuspend',
-  Race = 'Race',
-  SetInterrupt = 'SetInterrupt',
-  GetInterrupt = 'GetInterrupt',
-  CheckDescriptor = 'CheckDescriptor',
-  Supervise = 'Supervise',
-  EffectSuspendPartial = 'EffectSuspendPartial',
-  NewFiberRef = 'NewFiberRef',
-  ModifyFiberRef = 'ModifyFiberRef',
-  GetForkScope = 'GetForkScope',
-  OverrideForkScope = 'OverrideForkScope',
-  Integration = 'Integration'
-}
+export const IOTag = {
+  Succeed: 'Succeed',
+  FlatMap: 'FlatMap',
+  EffectPartial: 'EffectPartial',
+  EffectTotal: 'EffectTotal',
+  Async: 'Async',
+  Fold: 'Fold',
+  Fork: 'Fork',
+  Fail: 'Fail',
+  Yield: 'Yield',
+  Read: 'Read',
+  Give: 'Give',
+  EffectSuspend: 'EffectSuspend',
+  Race: 'Race',
+  SetInterrupt: 'SetInterrupt',
+  GetInterrupt: 'GetInterrupt',
+  CheckDescriptor: 'CheckDescriptor',
+  Supervise: 'Supervise',
+  EffectSuspendPartial: 'EffectSuspendPartial',
+  NewFiberRef: 'NewFiberRef',
+  ModifyFiberRef: 'ModifyFiberRef',
+  GetForkScope: 'GetForkScope',
+  OverrideForkScope: 'OverrideForkScope',
+  Integration: 'Integration'
+} as const
 
 export class ExternalFail<E> {
   readonly _tag = IOTag.Fail;

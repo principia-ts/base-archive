@@ -76,71 +76,71 @@ export abstract class SIO<S1, S2, R, E, A> {
   }
 }
 
-export enum SIOInstructionTag {
-  Succeed = 'Succeed',
-  EffectTotal = 'EffectTotal',
-  EffectPartial = 'EffectPartial',
-  EffectSuspendTotal = 'EffectSuspendTotal',
-  EffectSuspendPartial = 'EffectSuspendPartial',
-  Fail = 'Fail',
-  Modify = 'Modify',
-  FlatMap = 'FlatMap',
-  Fold = 'Fold',
-  Asks = 'Asks',
-  Give = 'Give'
-}
+export const SIOTag = {
+  Succeed: 'Succeed',
+  EffectTotal: 'EffectTotal',
+  EffectPartial: 'EffectPartial',
+  EffectSuspendTotal: 'EffectSuspendTotal',
+  EffectSuspendPartial: 'EffectSuspendPartial',
+  Fail: 'Fail',
+  Modify: 'Modify',
+  FlatMap: 'FlatMap',
+  Fold: 'Fold',
+  Asks: 'Asks',
+  Give: 'Give'
+} as const
 
 class SucceedInstruction<A> extends SIO<unknown, never, unknown, never, A> {
-  readonly _sio = SIOInstructionTag.Succeed
+  readonly _sio = SIOTag.Succeed
   constructor(readonly value: A) {
     super()
   }
 }
 
 class EffectTotalInstruction<A> extends SIO<unknown, never, unknown, never, A> {
-  readonly _sio = SIOInstructionTag.EffectTotal
+  readonly _sio = SIOTag.EffectTotal
   constructor(readonly effect: () => A) {
     super()
   }
 }
 
 class EffectPartialInstruction<E, A> extends SIO<unknown, never, unknown, E, A> {
-  readonly _sio = SIOInstructionTag.EffectPartial
+  readonly _sio = SIOTag.EffectPartial
   constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
 }
 
 class EffectSuspendTotalInstruction<S1, S2, R, E, A> extends SIO<S1, S2, R, E, A> {
-  readonly _sio = SIOInstructionTag.EffectSuspendTotal
+  readonly _sio = SIOTag.EffectSuspendTotal
   constructor(readonly sio: () => SIO<S1, S2, R, E, A>) {
     super()
   }
 }
 
 class EffectSuspendPartialInstruction<S1, S2, R, E, A, E1> extends SIO<S1, S2, R, E | E1, A> {
-  readonly _sio = SIOInstructionTag.EffectSuspendPartial
+  readonly _sio = SIOTag.EffectSuspendPartial
   constructor(readonly sio: () => SIO<S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
 }
 
 class FailInstruction<E> extends SIO<unknown, never, unknown, E, never> {
-  readonly _sio = SIOInstructionTag.Fail
+  readonly _sio = SIOTag.Fail
   constructor(readonly e: E) {
     super()
   }
 }
 
 class ModifyInstruction<S1, S2, A> extends SIO<S1, S2, unknown, never, A> {
-  readonly _sio = SIOInstructionTag.Modify
+  readonly _sio = SIOTag.Modify
   constructor(readonly run: (s1: S1) => readonly [S2, A]) {
     super()
   }
 }
 
 class FlatMapInstruction<S1, S2, R, E, A, S3, Q, D, B> extends SIO<S1, S3, Q & R, D | E, B> {
-  readonly _sio = SIOInstructionTag.FlatMap
+  readonly _sio = SIOTag.FlatMap
   constructor(readonly sio: SIO<S1, S2, R, E, A>, readonly f: (a: A) => SIO<S2, S3, Q, D, B>) {
     super()
   }
@@ -152,7 +152,7 @@ class FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C> extends
   E1 | E2,
   B | C
 > {
-  readonly _sio = SIOInstructionTag.Fold
+  readonly _sio = SIOTag.Fold
   constructor(
     readonly sio: SIO<S1, S2, R, E, A>,
     readonly onFailure: (e: E) => SIO<S5, S3, R1, E1, B>,
@@ -163,14 +163,14 @@ class FoldInstruction<S1, S2, S5, R, E, A, S3, R1, E1, B, S4, R2, E2, C> extends
 }
 
 class AsksInstruction<R0, S1, S2, R, E, A> extends SIO<S1, S2, R0 & R, E, A> {
-  readonly _sio = SIOInstructionTag.Asks
+  readonly _sio = SIOTag.Asks
   constructor(readonly f: (r: R0) => SIO<S1, S2, R, E, A>) {
     super()
   }
 }
 
 class GiveInstruction<S1, S2, R, E, A> extends SIO<S1, S2, unknown, E, A> {
-  readonly _sio = SIOInstructionTag.Give
+  readonly _sio = SIOTag.Give
   constructor(readonly sio: SIO<S1, S2, R, E, A>, readonly r: R) {
     super()
   }
@@ -810,20 +810,20 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
     const I = current[_SI]
 
     switch (I._sio) {
-      case SIOInstructionTag.FlatMap: {
+      case SIOTag.FlatMap: {
         const nested       = I.sio[_SI]
         const continuation = I.f
 
         switch (nested._sio) {
-          case SIOInstructionTag.Succeed: {
+          case SIOTag.Succeed: {
             current = continuation(nested.value)
             break
           }
-          case SIOInstructionTag.EffectTotal: {
+          case SIOTag.EffectTotal: {
             current = continuation(nested.effect())
             break
           }
-          case SIOInstructionTag.EffectPartial: {
+          case SIOTag.EffectPartial: {
             try {
               current = succeed(nested.effect())
             } catch (e) {
@@ -831,7 +831,7 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
             }
             break
           }
-          case SIOInstructionTag.Modify: {
+          case SIOTag.Modify: {
             const updated = nested.run(state)
 
             state  = updated[0]
@@ -848,7 +848,7 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
 
         break
       }
-      case SIOInstructionTag.EffectTotal: {
+      case SIOTag.EffectTotal: {
         result                = I.effect()
         const nextInstruction = popContinuation()
         if (nextInstruction) {
@@ -858,7 +858,7 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
         }
         break
       }
-      case SIOInstructionTag.EffectPartial: {
+      case SIOTag.EffectPartial: {
         try {
           current = succeed(I.effect())
         } catch (e) {
@@ -866,11 +866,11 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
         }
         break
       }
-      case SIOInstructionTag.EffectSuspendTotal: {
+      case SIOTag.EffectSuspendTotal: {
         current = I.sio()
         break
       }
-      case SIOInstructionTag.EffectSuspendPartial: {
+      case SIOTag.EffectSuspendPartial: {
         try {
           current = I.sio()
         } catch (e) {
@@ -878,7 +878,7 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
         }
         break
       }
-      case SIOInstructionTag.Succeed: {
+      case SIOTag.Succeed: {
         result          = I.value
         const nextInstr = popContinuation()
         if (nextInstr) {
@@ -888,7 +888,7 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
         }
         break
       }
-      case SIOInstructionTag.Fail: {
+      case SIOTag.Fail: {
         findNextErrorHandler()
         const nextInst = popContinuation()
         if (nextInst) {
@@ -900,21 +900,21 @@ export function runStateEither_<S1, S2, E, A>(sio: SIO<S1, S2, unknown, E, A>, s
         }
         break
       }
-      case SIOInstructionTag.Fold: {
+      case SIOTag.Fold: {
         current = I.sio
         pushContinuation(new FoldFrame(I.onFailure, I.onSuccess))
         break
       }
-      case SIOInstructionTag.Asks: {
+      case SIOTag.Asks: {
         current = I.f(environment)
         break
       }
-      case SIOInstructionTag.Give: {
+      case SIOTag.Give: {
         environment = I.r
         current     = I.sio
         break
       }
-      case SIOInstructionTag.Modify: {
+      case SIOTag.Modify: {
         const updated  = I.run(state)
         state          = updated[0]
         result         = updated[1]

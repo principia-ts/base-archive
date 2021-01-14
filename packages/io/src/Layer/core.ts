@@ -61,9 +61,9 @@ export abstract class Layer<R, E, A> {
 
   /**
    * Feeds the output services of the specified layer into the input of this layer
-* layer, resulting in a new layer with the inputs of the specified layer, and the
+   * layer, resulting in a new layer with the inputs of the specified layer, and the
    * outputs of this layer.
-  */
+   */
   ['<<<']<R1, E1, A1>(from: Layer<R1, E1, A1>): Layer<Erase<R, A1> & R1, E | E1, A> {
     return from_(this, from)
   }
@@ -73,7 +73,7 @@ export abstract class Layer<R, E, A> {
   }
 
   /**
-  * Feeds the output services of this layer into the input of the specified
+   * Feeds the output services of this layer into the input of the specified
    * layer, resulting in a new layer with the inputs of this layer, and the
    * outputs of the specified layer.
    */
@@ -131,18 +131,18 @@ declare module '@principia/base/HKT' {
  * -------------------------------------------
  */
 
-export enum LayerInstructionTag {
-  Fold = 'LayerFold',
-  Map = 'LayerMap',
-  FlatMap = 'LayerFlatMap',
-  Fresh = 'LayerFresh',
-  Managed = 'LayerManaged',
-  Suspend = 'LayerSuspend',
-  Map2Par = 'LayerMap2Par',
-  AllPar = 'LayerAllPar',
-  AllSeq = 'LayerAllSeq',
-  Map2Seq = 'Map2Seq'
-}
+export const LayerTag = {
+  Fold: 'Fold',
+  Map: 'Map',
+  FlatMap: 'FlatMap',
+  Fresh: 'Fresh',
+  Managed: 'Managed',
+  Suspend: 'Suspend',
+  Map2Par: 'Map2Par',
+  AllPar: 'AllPar',
+  AllSeq: 'AllSeq',
+  Map2Seq: 'Map2Seq'
+} as const
 
 /**
  * Type level bound to make sure a layer is complete
@@ -168,7 +168,7 @@ export class LayerFoldInstruction<R, E, A, R1, E1, A1, R2, E2, A2> extends Layer
   E1 | E2,
   A1 | A2
 > {
-  readonly _tag = LayerInstructionTag.Fold
+  readonly _tag = LayerTag.Fold
 
   constructor(
     readonly layer: Layer<R, E, A>,
@@ -180,7 +180,7 @@ export class LayerFoldInstruction<R, E, A, R1, E1, A1, R2, E2, A2> extends Layer
 }
 
 export class LayerMapInstruction<R, E, A, B> extends Layer<R, E, B> {
-  readonly _tag = LayerInstructionTag.Map
+  readonly _tag = LayerTag.Map
 
   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => B) {
     super()
@@ -188,7 +188,7 @@ export class LayerMapInstruction<R, E, A, B> extends Layer<R, E, B> {
 }
 
 export class LayerFlatMapInstruction<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
-  readonly _tag = LayerInstructionTag.FlatMap
+  readonly _tag = LayerTag.FlatMap
 
   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => Layer<R1, E1, B>) {
     super()
@@ -196,7 +196,7 @@ export class LayerFlatMapInstruction<R, E, A, R1, E1, B> extends Layer<R & R1, E
 }
 
 export class LayerFreshInstruction<R, E, A> extends Layer<R, E, A> {
-  readonly _tag = LayerInstructionTag.Fresh
+  readonly _tag = LayerTag.Fresh
 
   constructor(readonly layer: Layer<R, E, A>) {
     super()
@@ -204,7 +204,7 @@ export class LayerFreshInstruction<R, E, A> extends Layer<R, E, A> {
 }
 
 export class LayerManagedInstruction<R, E, A> extends Layer<R, E, A> {
-  readonly _tag = LayerInstructionTag.Managed
+  readonly _tag = LayerTag.Managed
 
   constructor(readonly managed: Managed<R, E, A>) {
     super()
@@ -212,7 +212,7 @@ export class LayerManagedInstruction<R, E, A> extends Layer<R, E, A> {
 }
 
 export class LayerSuspendInstruction<R, E, A> extends Layer<R, E, A> {
-  readonly _tag = LayerInstructionTag.Suspend
+  readonly _tag = LayerTag.Suspend
 
   constructor(readonly factory: () => Layer<R, E, A>) {
     super()
@@ -236,7 +236,7 @@ export type MergeA<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
 >
 
 export class LayerMap2ParInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
-  readonly _tag = LayerInstructionTag.Map2Par
+  readonly _tag = LayerTag.Map2Par
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
     super()
@@ -248,7 +248,7 @@ export class LayerAllParInstruction<Ls extends Layer<any, any, any>[]> extends L
   MergeE<Ls>,
   MergeA<Ls>
 > {
-  readonly _tag = LayerInstructionTag.AllPar
+  readonly _tag = LayerTag.AllPar
 
   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
     super()
@@ -256,7 +256,7 @@ export class LayerAllParInstruction<Ls extends Layer<any, any, any>[]> extends L
 }
 
 export class LayerMap2SeqInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
-  readonly _tag = LayerInstructionTag.Map2Seq
+  readonly _tag = LayerTag.Map2Seq
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
     super()
@@ -268,7 +268,7 @@ export class LayerAllSeqInstruction<Ls extends Layer<any, any, any>[]> extends L
   MergeE<Ls>,
   MergeA<Ls>
 > {
-  readonly _tag = LayerInstructionTag.AllSeq
+  readonly _tag = LayerTag.AllSeq
 
   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
     super()
@@ -281,28 +281,28 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
   const _I = layer._I()
 
   switch (_I._tag) {
-    case LayerInstructionTag.Fresh: {
+    case LayerTag.Fresh: {
       return M.succeed(() => build(_I.layer))
     }
-    case LayerInstructionTag.Managed: {
+    case LayerTag.Managed: {
       return M.succeed(() => _I.managed)
     }
-    case LayerInstructionTag.Suspend: {
+    case LayerTag.Suspend: {
       return M.succeed((memo) => memo.getOrElseMemoize(_I.factory()))
     }
-    case LayerInstructionTag.Map: {
+    case LayerTag.Map: {
       return M.succeed((memo) => M.map_(memo.getOrElseMemoize(_I.layer), _I.f))
     }
-    case LayerInstructionTag.FlatMap: {
+    case LayerTag.FlatMap: {
       return M.succeed((memo) => M.flatMap_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
     }
-    case LayerInstructionTag.Map2Par: {
+    case LayerTag.Map2Par: {
       return M.succeed((memo) => M.map2Par_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
     }
-    case LayerInstructionTag.Map2Seq: {
+    case LayerTag.Map2Seq: {
       return M.succeed((memo) => M.map2_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
     }
-    case LayerInstructionTag.AllPar: {
+    case LayerTag.AllPar: {
       return M.succeed((memo) => {
         return pipe(
           M.foreachPar_(_I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
@@ -310,7 +310,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
         )
       })
     }
-    case LayerInstructionTag.AllSeq: {
+    case LayerTag.AllSeq: {
       return M.succeed((memo) => {
         return pipe(
           M.foreach_(_I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
@@ -318,7 +318,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
         )
       })
     }
-    case LayerInstructionTag.Fold: {
+    case LayerTag.Fold: {
       return M.succeed((memo) =>
         M.foldCauseM_(
           memo.getOrElseMemoize(_I.layer),
