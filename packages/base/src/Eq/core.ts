@@ -40,21 +40,21 @@ export function makeEq<A>(equals: (x: A, y: A) => boolean): Eq<A> {
  * -------------------------------------------
  */
 
-export const any: Eq<any> = {
+export const eqAny: Eq<any> = {
   equals_: () => true,
   equals: () => () => true
 }
 
-export const strict: Eq<unknown> = {
+export const eqStrict: Eq<unknown> = {
   equals_: (x, y) => x === y,
   equals: (y) => (x) => x === y
 }
 
-export const string: Eq<string> = strict
+export const string: Eq<string> = eqStrict
 
-export const number: Eq<number> = strict
+export const number: Eq<number> = eqStrict
 
-export const boolean: Eq<boolean> = strict
+export const boolean: Eq<boolean> = eqStrict
 
 export const date: Eq<Date> = {
   equals_: (x, y) => x.valueOf() === y.valueOf(),
