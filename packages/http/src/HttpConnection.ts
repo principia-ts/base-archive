@@ -8,11 +8,11 @@ import { HttpRequest } from './HttpRequest'
 import { HttpResponse } from './HttpResponse'
 
 export class HttpConnection {
-  readonly request: HttpRequest
-  readonly response: HttpResponse
+  readonly req: HttpRequest
+  readonly res: HttpResponse
   constructor(reqRef: URef<http.IncomingMessage>, resRef: URefM<http.ServerResponse>) {
-    this.request  = new HttpRequest(reqRef)
-    this.response = new HttpResponse(resRef)
+    this.req = new HttpRequest(reqRef)
+    this.res = new HttpResponse(resRef)
   }
 }
 

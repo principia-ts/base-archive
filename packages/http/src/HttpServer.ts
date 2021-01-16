@@ -3,7 +3,6 @@ import type { Queue } from '@principia/io/Queue'
 
 import { pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
-import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 import * as RefM from '@principia/io/IORefM'
@@ -11,11 +10,8 @@ import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 import * as Q from '@principia/io/Queue'
 import * as http from 'http'
-import * as net from 'net'
 
 import { HttpConnection } from './HttpConnection'
-import { HttpRequest } from './HttpRequest'
-import { HttpResponse } from './HttpResponse'
 
 export interface HttpServerConfig {
   readonly host: string
@@ -92,4 +88,3 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
     )
   )
 }
-

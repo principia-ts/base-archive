@@ -6,18 +6,17 @@ import '@principia/base/unsafe/Operators'
 
 import { Console, NodeConsole, putStrLn } from '@principia/io/Console'
 import * as I from '@principia/io/IO'
+import { pathToRegexp } from 'path-to-regexp'
 
 import * as Http from '../src/HttpServer'
 import * as Routes from '../src/Route'
 import * as Status from '../src/StatusCode'
-import { ContentType } from '../src/utils'
+import { HttpContentType } from '../src/utils'
 
-import { pathToRegexp } from 'path-to-regexp'
-
-const r1 = Routes.route('GET', '/home', ({ response }) =>
+const r1 = Routes.route('GET', '/home', ({ res: response }) =>
   I.gen(function* (_) {
     yield* _(response.status(Status.Ok))
-    yield* _(response.set({ 'content-type': ContentType.TEXT_PLAIN }))
+    yield* _(response.set({ 'content-type': HttpContentType.TEXT_PLAIN }))
     yield* _(response.write('Hello World!'))
     return yield* _(response.end())
   })
@@ -35,7 +34,7 @@ function RequestTimer<R, E>(routes: Routes.Routes<R, E>) {
 
 function RequestURLLogger<R, E>(routes: Routes.Routes<R, E>) {
   return Routes.middleware_(routes, (cont) => (conn, next) =>
-    conn.request.url['|>'](I.flatMap((url) => putStrLn(url.toJSON())['|>'](I.andThen(cont(conn, next)))))
+    conn.req.url['|>'](I.flatMap((url) => putStrLn(url.toJSON())['|>'](I.andThen(cont(conn, next)))))
   )
 }
 

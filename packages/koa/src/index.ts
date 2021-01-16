@@ -105,14 +105,17 @@ export function route<R, A>(
                           (_, r) => r,
                           (_, r) => r
                         ),
-                        (r) =>
-                          r
-                            ? pipe(
-                                response.status(r.status),
-                                I.andThen(response.write(JSON.stringify(r.body))),
-                                I.andThen(response.end())
-                              )
-                            : I.unit()
+                        (r) => {
+                          if (r) {
+                            return pipe(
+                              response.status(r.status),
+                              I.andThen(response.write(JSON.stringify(r.body))),
+                              I.andThen(response.end())
+                            )
+                          } else {
+                            return I.unit()
+                          }
+                        }
                       )
                     )
                   )

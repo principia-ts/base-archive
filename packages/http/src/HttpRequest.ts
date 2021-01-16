@@ -1,4 +1,4 @@
-import type { Method } from './utils'
+import type { HttpMethod } from './utils'
 import type { Byte } from '@principia/base/Byte'
 import type { Chunk } from '@principia/io/Chunk'
 import type { FIO, IO, UIO } from '@principia/io/IO'
@@ -14,7 +14,7 @@ import * as R from '@principia/base/Record'
 import { makeSemigroup } from '@principia/base/Semigroup'
 import * as Str from '@principia/base/String'
 import * as C from '@principia/io/Chunk'
-import * as T from '@principia/io/IO'
+import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
 import * as Q from '@principia/io/Queue'
@@ -64,51 +64,51 @@ export type RequestEvent = CloseEvent | DataEvent | EndEvent | ErrorEvent | Paus
 export class HttpRequest {
   private memoizedUrl: E.Either<HttpException, O.Option<Url.URL>> = E.right(O.none())
 
-  eventStream: M.Managed<unknown, never, T.UIO<S.Stream<unknown, never, RequestEvent>>>
+  eventStream: M.Managed<unknown, never, I.UIO<S.Stream<unknown, never, RequestEvent>>>
 
-  constructor(readonly _req: Ref.URef<http.IncomingMessage>) {
+  constructor(readonly ref: Ref.URef<http.IncomingMessage>) {
     this.eventStream = pipe(
-      _req.get,
+      ref.get,
       M.fromEffect,
       M.flatMap((req) =>
         S.broadcastDynamic_(
           new S.Stream(
-            M.gen(function* ($) {
-              const queue = yield* $(Q.makeUnbounded<RequestEvent>())
-              const done  = yield* $(Ref.make(false))
-              yield* $(
-                T.effectTotal(() => {
+            M.gen(function* (_) {
+              const queue = yield* _(Q.makeUnbounded<RequestEvent>())
+              const done  = yield* _(Ref.make(false))
+              yield* _(
+                I.effectTotal(() => {
                   req.on('close', () => {
-                    T.run(queue.offer({ _tag: 'Close' }))
+                    I.run(queue.offer({ _tag: 'Close' }))
                   })
                   req.on('data', (chunk) => {
-                    T.run(queue.offer({ _tag: 'Data', chunk }))
+                    I.run(queue.offer({ _tag: 'Data', chunk }))
                   })
                   req.on('end', () => {
-                    T.run(queue.offer({ _tag: 'End' }))
+                    I.run(queue.offer({ _tag: 'End' }))
                   })
                   req.on('pause', () => {
-                    T.run(queue.offer({ _tag: 'Pause' }))
+                    I.run(queue.offer({ _tag: 'Pause' }))
                   })
                   req.on('error', (error) => {
-                    T.run(queue.offer({ _tag: 'Error', error }))
+                    I.run(queue.offer({ _tag: 'Error', error }))
                   })
                   req.on('readable', () => {
-                    T.run(queue.offer({ _tag: 'Readble' }))
+                    I.run(queue.offer({ _tag: 'Readble' }))
                   })
                   req.on('resume', () => {
-                    T.run(queue.offer({ _tag: 'Resume' }))
+                    I.run(queue.offer({ _tag: 'Resume' }))
                   })
                 })
               )
-              return T.flatMap_(done.get, (b) =>
+              return I.flatMap_(done.get, (b) =>
                 b
                   ? Pull.end
-                  : T.flatMap_(
+                  : I.flatMap_(
                       queue.take,
-                      (event): T.UIO<Chunk<RequestEvent>> => {
+                      (event): I.UIO<Chunk<RequestEvent>> => {
                         if (event._tag === 'Close') {
-                          return T.andThen_(done.set(true), Pull.emit(event))
+                          return I.andThen_(done.set(true), Pull.emit(event))
                         }
                         return Pull.emit(event)
                       }
@@ -123,21 +123,21 @@ export class HttpRequest {
   }
 
   access<R, E, A>(f: (req: http.IncomingMessage) => IO<R, E, A>): IO<R, E, A> {
-    return T.flatMap_(this._req.get, f)
+    return I.flatMap_(this.ref.get, f)
   }
 
   get headers(): UIO<http.IncomingHttpHeaders> {
-    return T.map_(this._req.get, (req) => req.headers)
+    return I.map_(this.ref.get, (req) => req.headers)
   }
 
-  get method(): UIO<Method> {
+  get method(): UIO<HttpMethod> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return T.map_(this._req.get, (req) => req.method!.toUpperCase() as Method)
+    return I.map_(this.ref.get, (req) => req.method!.toUpperCase() as HttpMethod)
   }
 
   get urlString(): UIO<string> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return T.map_(this._req.get, (req) => req.url!)
+    return I.map_(this.ref.get, (req) => req.url!)
   }
 
   get url(): FIO<HttpException, Url.URL> {
@@ -145,17 +145,16 @@ export class HttpRequest {
     return pipe(
       this.memoizedUrl,
       E.fold(
-        T.fail,
+        I.fail,
         O.fold(
           () =>
-            T.gen(function* (_) {
-              const req      = yield* _(self._req.get)
+            I.gen(function* (_) {
               const protocol = yield* _(self.protocol)
               const url      = yield* _(self.urlString)
               const host     = yield* _(
                 pipe(
                   self.getHeader('host'),
-                  T.mapError(
+                  I.mapError(
                     (_) =>
                       new HttpException('Defect: request sent without a host', 'HttpRequest#url', {
                         status: Status.BadRequest
@@ -165,27 +164,29 @@ export class HttpRequest {
               )
               return yield* _(
                 pipe(
-                  T.effect(() => new Url.URL(`${protocol}://${host}${url}`)),
-                  T.mapError(
+                  I.effect(() => new Url.URL(`${protocol}://${host}${url}`)),
+                  I.mapError(
                     (error) =>
                       new HttpException(`Error while parsing URL: ${JSON.stringify(error)}`, 'HttpRequest#url', {
                         status: Status.BadRequest
                       })
                   ),
-                  T.tap((url) =>
-                    T.effectTotal(() => {
+                  I.tap((url) =>
+                    I.effectTotal(() => {
+                      // eslint-disable-next-line functional/immutable-data
                       self.memoizedUrl = E.right(O.some(url))
                     })
                   ),
-                  T.tapError((ex) =>
-                    T.effectTotal(() => {
+                  I.tapError((ex) =>
+                    I.effectTotal(() => {
+                      // eslint-disable-next-line functional/immutable-data
                       self.memoizedUrl = E.left(ex)
                     })
                   )
                 )
               )
             }),
-          T.succeed
+          I.succeed
         )
       )
     )
@@ -194,7 +195,7 @@ export class HttpRequest {
   get query(): FIO<HttpException, R.ReadonlyRecord<string, string>> {
     return pipe(
       this.url,
-      T.map((url) =>
+      I.map((url) =>
         R.fromFoldable(
           makeSemigroup((_: string, y: string) => y),
           Iter.Foldable
@@ -207,26 +208,26 @@ export class HttpRequest {
   getHeader(name: string): FIO<HttpException, string>
   getHeader(name: string): FIO<HttpException, string | ReadonlyArray<string>> {
     return pipe(
-      this._req.get,
-      T.flatMap((req) => {
+      this.ref.get,
+      I.flatMap((req) => {
         const h = req.headers[name]
         if (h) {
-          return T.succeed(h)
+          return I.succeed(h)
         } else {
-          return T.fail(new HttpException('Invalid request', 'HttpRequest#getHeader', { status: Status.BadRequest }))
+          return I.fail(new HttpException('Invalid request', 'HttpRequest#getHeader', { status: Status.BadRequest }))
         }
       })
     )
   }
 
   get socket(): UIO<Socket | TLSSocket> {
-    return T.map_(this._req.get, (req) => req.socket)
+    return I.map_(this.ref.get, (req) => req.socket)
   }
 
   get protocol(): UIO<string> {
     const self = this
-    return T.gen(function* ($) {
-      const socket = yield* $(self.socket)
+    return I.gen(function* (_) {
+      const socket = yield* _(self.socket)
       if (socket instanceof TLSSocket && socket.encrypted) {
         return 'https'
       } else {
@@ -236,23 +237,23 @@ export class HttpRequest {
   }
 
   get secure(): UIO<boolean> {
-    return T.map_(this.protocol, (p) => p === 'https')
+    return I.map_(this.protocol, (p) => p === 'https')
   }
 
   get ip(): UIO<string> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return T.map_(this.socket, (s) => s.remoteAddress!)
+    return I.map_(this.socket, (s) => s.remoteAddress!)
   }
 
   get stream(): S.Stream<unknown, NS.ReadableError, Byte> {
-    return S.flatMap_(S.fromEffect(this._req.get), (req) => NS.streamFromReadable(() => req))
+    return S.flatMap_(S.fromEffect(this.ref.get), (req) => NS.streamFromReadable(() => req))
   }
 
   get rawBody(): FIO<HttpException, string> {
     const self = this
-    return T.gen(function* ($) {
-      const contentType = yield* $(self.getHeader('Content-Type'))
-      const charset     = yield* $(
+    return I.gen(function* (_) {
+      const contentType = yield* _(self.getHeader('Content-Type'))
+      const charset     = yield* _(
         pipe(
           contentType,
           parseContentType,
@@ -268,13 +269,13 @@ export class HttpRequest {
         )
       )
 
-      return yield* $(
+      return yield* _(
         pipe(
           self.stream,
           S.runCollect,
-          T.map(flow(C.asBuffer, (b) => b.toString(charset))),
-          T.catchAll((_) =>
-            T.fail(
+          I.map(flow(C.asBuffer, (b) => b.toString(charset))),
+          I.catchAll((_) =>
+            I.fail(
               new HttpException('Failed to read body stream', 'HttpRequest#rawBody', {
                 status: Status.InternalServerError
               })
@@ -287,9 +288,9 @@ export class HttpRequest {
 
   get bodyJson(): FIO<HttpException, Record<string, any>> {
     const self = this
-    return T.gen(function* ($) {
-      const contentType = yield* $(self.getHeader('Content-Type'))
-      const charset     = yield* $(
+    return I.gen(function* (_) {
+      const contentType = yield* _(self.getHeader('Content-Type'))
+      const charset     = yield* _(
         pipe(
           contentType,
           parseContentType,
@@ -306,8 +307,8 @@ export class HttpRequest {
       )
 
       if (!Str.startsWith_(charset, 'utf-')) {
-        return yield* $(
-          T.fail(
+        return yield* _(
+          I.fail(
             new HttpException('Charset unsupported by JSON', 'HttpRequest#bodyJson', {
               status: Status.UnsupportedMediaType
             })
@@ -315,20 +316,20 @@ export class HttpRequest {
         )
       }
 
-      return yield* $(
+      return yield* _(
         pipe(
           self.stream,
           S.runCollect,
-          T.map(flow(C.asBuffer, (b) => b.toString(charset))),
-          T.catchAll((_) =>
-            T.fail(
+          I.map(flow(C.asBuffer, (b) => b.toString(charset))),
+          I.catchAll((_) =>
+            I.fail(
               new HttpException('Failed to read body stream', 'HttpRequest#bodyJson', {
                 status: Status.InternalServerError
               })
             )
           ),
-          T.flatMap((raw) =>
-            T.effectCatch_(
+          I.flatMap((raw) =>
+            I.effectCatch_(
               () => JSON.parse(raw),
               (_) =>
                 new HttpException('Failed to parse body JSON', 'HttpRequest#bodyJson', {

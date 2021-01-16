@@ -47,27 +47,26 @@ export function memoizeEq<A>(eq: Eq<A>) {
   return <R, E, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> =>
     pipe(
       RM.make(new Map<A, P.Promise<E, B>>()),
-      I.map(
-        (ref) => (a: A) =>
-          I.gen(function* (_) {
-            const promise = yield* _(
-              pipe(
-                RM.modify_(ref, (m) => {
-                  for (const [k, v] of Array.from(m)) {
-                    if (eq.equals_(k, a)) {
-                      return I.succeed(tuple(v, m))
-                    }
+      I.map((ref) => (a: A) =>
+        I.gen(function* (_) {
+          const promise = yield* _(
+            pipe(
+              RM.modify_(ref, (m) => {
+                for (const [k, v] of Array.from(m)) {
+                  if (eq.equals_(k, a)) {
+                    return I.succeed(tuple(v, m))
                   }
-                  return I.gen(function* (_) {
-                    const p = yield* _(P.make<E, B>())
-                    yield* _(I.fork(to(p)(f(a))))
-                    return tuple(p, m.set(a, p))
-                  })
+                }
+                return I.gen(function* (_) {
+                  const p = yield* _(P.make<E, B>())
+                  yield* _(I.fork(to(p)(f(a))))
+                  return tuple(p, m.set(a, p))
                 })
-              )
+              })
             )
-            return yield* _(promise.await)
-          })
+          )
+          return yield* _(promise.await)
+        })
       )
     )
 }

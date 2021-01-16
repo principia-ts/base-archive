@@ -8,7 +8,7 @@ import { identity, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
-import * as Ref from '../IORef'
+import * as R from '../IORef'
 import * as M from '../Managed/core'
 import * as Q from '../Queue'
 import { withPermit } from '../Semaphore'
@@ -218,7 +218,7 @@ export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
   readonly set: (a: A) => I.IO<unknown, never, void> = (a) => withPermit(this.semaphore)(this.set(a))
 }
 
-export interface RefMRE<R, E, A> extends IORefM<R, R, E, E, A, A> {}
+export interface RFRefM<R, E, A> extends IORefM<R, R, E, E, A, A> {}
 export interface FRefM<E, A> extends IORefM<unknown, unknown, E, E, A, A> {}
 export interface URRefM<R, A> extends IORefM<R, R, never, never, A, A> {}
 export interface URefM<A> extends IORefM<unknown, unknown, never, never, A, A> {}
@@ -237,7 +237,7 @@ export const concrete = <RA, RB, EA, EB, A>(_: IORefM<RA, RB, EA, EB, A, A>) =>
  */
 export function make<A>(a: A): UIO<URefM<A>> {
   return I.gen(function* (_) {
-    const ref       = yield* _(Ref.make(a))
+    const ref       = yield* _(R.make(a))
     const semaphore = yield* _(S.make(1))
     return new Atomic(ref, semaphore)
   })
@@ -247,7 +247,7 @@ export function make<A>(a: A): UIO<URefM<A>> {
  * Creates a new `XRefM` with the specified value.
  */
 export function unsafeMake<A>(a: A): URefM<A> {
-  const ref       = Ref.unsafeMake(a)
+  const ref       = R.unsafeMake(a)
   const semaphore = S.unsafeMake(1)
   return new Atomic(ref, semaphore)
 }

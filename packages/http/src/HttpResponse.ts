@@ -17,6 +17,7 @@ import * as Q from '@principia/io/Queue'
 import * as S from '@principia/io/Stream'
 import * as Pull from '@principia/io/Stream/Pull'
 import * as NS from '@principia/node/stream'
+import { HeapCodeStatistics } from 'v8'
 
 import { HttpException } from './HttpException'
 import * as Status from './StatusCode'
@@ -56,9 +57,9 @@ export interface HttpResponseCompleted extends NT.TypeOf<typeof HttpResponseComp
 export class HttpResponse {
   eventStream: M.Managed<unknown, never, I.UIO<S.Stream<unknown, never, ResponseEvent>>>
 
-  constructor(readonly _res: RefM.URefM<http.ServerResponse>) {
+  constructor(readonly ref: RefM.URefM<http.ServerResponse>) {
     this.eventStream = pipe(
-      _res.get,
+      ref.get,
       M.fromEffect,
       M.flatMap((res) =>
         S.broadcastDynamic_(
@@ -109,16 +110,18 @@ export class HttpResponse {
     )
   }
 
+  complete(status: Status.StatusCode, headers: ReadonlyRecord<string, string>, entity: any): any {}
+
   access<R, E, A>(f: (res: http.ServerResponse) => IO<R, E, A>): IO<R, E, A> {
-    return I.flatMap_(this._res.get, f)
+    return I.flatMap_(this.ref.get, f)
   }
 
   modify<R, E>(f: (res: http.ServerResponse) => IO<R, E, http.ServerResponse>): IO<R, E, void> {
-    return RefM.update_(this._res, f)
+    return RefM.update_(this.ref, f)
   }
 
   status(s: Status.StatusCode): UIO<void> {
-    return RefM.update_(this._res, (res) =>
+    return RefM.update_(this.ref, (res) =>
       I.effectTotal(() => {
         // eslint-disable-next-line functional/immutable-data
         res.statusCode = s.code
@@ -128,15 +131,15 @@ export class HttpResponse {
   }
 
   get headers(): UIO<http.OutgoingHttpHeaders> {
-    return I.map_(this._res.get, (res) => res.getHeaders())
+    return I.map_(this.ref.get, (res) => res.getHeaders())
   }
 
   get(name: string): UIO<O.Option<http.OutgoingHttpHeader>> {
-    return I.map_(this._res.get, (res) => O.fromNullable(res.getHeaders()[name]))
+    return I.map_(this.ref.get, (res) => O.fromNullable(res.getHeaders()[name]))
   }
 
   set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {
-    return RefM.update_(this._res, (res) =>
+    return RefM.update_(this.ref, (res) =>
       I.effectSuspendTotal(() => {
         const hs = Object.entries(headers)
         try {
@@ -146,7 +149,7 @@ export class HttpResponse {
           return I.succeed(res)
         } catch (err) {
           return I.fail(
-            new HttpException('Failed to set headers', 'HttpResponse#set', {
+            new HttpException('Failed to set headers', 'HttpResponse.set', {
               status: Status.InternalServerError,
               originalError: err
             })
@@ -157,17 +160,17 @@ export class HttpResponse {
   }
 
   has(name: string): UIO<boolean> {
-    return I.map_(this._res.get, (res) => res.hasHeader(name))
+    return I.map_(this.ref.get, (res) => res.hasHeader(name))
   }
 
   write(chunk: string | Buffer): FIO<HttpException, void> {
-    return I.flatMap_(this._res.get, (res) =>
+    return I.flatMap_(this.ref.get, (res) =>
       I.effectAsync<unknown, HttpException, void>((cb) => {
         res.write(chunk, (err) => {
           if (err) {
             cb(
               I.fail(
-                new HttpException('Failed to write body', 'HttpResponse#write', {
+                new HttpException('Failed to write body', 'HttpResponse.write', {
                   status: Status.InternalServerError,
                   originalError: err
                 })
@@ -183,7 +186,7 @@ export class HttpResponse {
 
   pipeFrom<R, E>(stream: S.Stream<R, E, Byte>): IO<R, HttpException, void> {
     return pipe(
-      this._res.get,
+      this.ref.get,
       I.flatMap((res) =>
         S.run_(
           stream,
@@ -192,7 +195,7 @@ export class HttpResponse {
       ),
       I.catchAll((e) =>
         I.fail(
-          new HttpException('Failed to write response body', 'HttpResponse#pipeFrom', {
+          new HttpException('Failed to write response body', 'HttpResponse.pipeFrom', {
             status: Status.InternalServerError,
             originalError: e
           })
@@ -202,7 +205,7 @@ export class HttpResponse {
   }
 
   end(): UIO<HttpResponseCompleted> {
-    return I.flatMap_(this._res.get, (res) =>
+    return I.flatMap_(this.ref.get, (res) =>
       I.effectTotal(() => {
         return res.end() as any
       })

@@ -1,6 +1,6 @@
 import type { HttpConnection } from './HttpConnection'
 import type { HttpResponseCompleted } from './HttpResponse'
-import type { Method } from './utils'
+import type { HttpMethod } from './utils'
 import type { Has } from '@principia/base/Has'
 import type { FIO, IO, UIO, URIO } from '@principia/io/IO'
 import type { URL } from 'url'
@@ -17,7 +17,7 @@ import { HttpConnectionTag } from './HttpConnection'
 import { HttpException } from './HttpException'
 import { HttpServerTag } from './HttpServer'
 import * as Status from './StatusCode'
-import { ContentType } from './utils'
+import { HttpContentType } from './utils'
 
 /*
  * -------------------------------------------
@@ -41,9 +41,9 @@ export class Route<R, E> {
   readonly _tag = 'Route'
   readonly R!: (_: R) => void
   readonly E!: () => E
-  readonly match: (method: Method, url: URL) => boolean
+  readonly match: (method: HttpMethod, url: URL) => boolean
   constructor(
-    readonly method: Method,
+    readonly method: HttpMethod,
     readonly path: string,
     readonly route: RouteFn<R, any>,
     readonly middlewares = FL.empty<Middleware<any, any>>()
@@ -79,7 +79,7 @@ export class Middleware<R, E> {
 export const empty: Routes<unknown, never> = new Empty()
 
 export function _route<R, E, R1, E1>(
-  method: Method,
+  method: HttpMethod,
   path: string,
   handler: (
     conn: HttpConnection,
@@ -88,12 +88,15 @@ export function _route<R, E, R1, E1>(
 ): (routes: Routes<R, E>) => Routes<R1, E1> {
   return (routes) =>
     <any>(
-      new Combine(routes, new Route(method, path, (conn, n) => I.giveService(HttpConnectionTag)(conn)(<any>handler(conn, n))))
+      new Combine(
+        routes,
+        new Route(method, path, (conn, n) => I.giveService(HttpConnectionTag)(conn)(<any>handler(conn, n)))
+      )
     )
 }
 
 export function route<R, E>(
-  method: Method,
+  method: HttpMethod,
   path: string,
   handler: (conn: HttpConnection) => IO<Has<HttpConnection> & R, E, HttpResponseCompleted>
 ): <R0, E0>(routes: Routes<R0, E0>) => Routes<R & R0, E | E0> {
@@ -140,11 +143,11 @@ export function middleware_<R, E, R1, E1>(
  * -------------------------------------------
  */
 
-const Route404 = <R, E>(): RouteFn<R, E> => ({ response }, _) =>
+const Route404 = <R, E>(): RouteFn<R, E> => ({ res: response }, _) =>
   I.orDie(
     I.gen(function* (_) {
       yield* _(response.status(Status.NotFound))
-      yield* _(response.set({ 'content-type': ContentType.TEXT_PLAIN }))
+      yield* _(response.set({ 'content-type': HttpContentType.TEXT_PLAIN }))
       yield* _(response.write('404: Not Found'))
       return yield* _(response.end())
     })
@@ -158,10 +161,10 @@ export function HttpExceptionHandler<R, E>(routes: Routes<R, E>): Routes<R, Excl
         I.gen(function* ($) {
           yield* $(I.effectTotal(() => console.log(e)))
           if (e instanceof HttpException) {
-            yield* $(ctx.response.status(e.data!.status))
-            yield* $(ctx.response.set({ 'content-type': ContentType.TEXT_PLAIN }))
-            yield* $(ctx.response.write(e.message))
-            return yield* $(ctx.response.end())
+            yield* $(ctx.res.status(e.data!.status))
+            yield* $(ctx.res.set({ 'content-type': HttpContentType.TEXT_PLAIN }))
+            yield* $(ctx.res.write(e.message))
+            return yield* $(ctx.res.end())
           } else {
             yield* $(I.fail(e))
           }
@@ -169,7 +172,7 @@ export function HttpExceptionHandler<R, E>(routes: Routes<R, E>): Routes<R, Excl
       ),
       I.catchAll((e) => {
         if (e instanceof HttpException) {
-          return I.orDieWith_(ctx.response.end(), () => e)
+          return I.orDieWith_(ctx.res.end(), () => e)
         } else {
           return I.fail(<Exclude<E, HttpException>>e)
         }
@@ -184,7 +187,7 @@ export function HttpExceptionHandler<R, E>(routes: Routes<R, E>): Routes<R, Excl
  * -------------------------------------------
  */
 
-type RouteMatch<R, E> = (method: Method, url: URL) => RouteFn<R, E>
+type RouteMatch<R, E> = (method: HttpMethod, url: URL) => RouteFn<R, E>
 
 function toArray<R, E>(routes: Routes<R, E>): ReadonlyArray<RouteMatch<R, E>> {
   const go = (routes: Routes<R, E>): Ev.Eval<ReadonlyArray<RouteMatch<R, E>>> =>
@@ -195,7 +198,7 @@ function toArray<R, E>(routes: Routes<R, E>): ReadonlyArray<RouteMatch<R, E>> {
         }
         case 'Route': {
           const middlewares = routes.middleware()
-          const x           = (method: Method, url: URL) => (routes.match(method, url) ? routes.route : Route404())
+          const x           = (method: HttpMethod, url: URL) => (routes.match(method, url) ? routes.route : Route404())
           if (A.isNonEmpty(middlewares)) {
             return [A.foldLeft_(middlewares, x, (b, m) => (method, url) => (r, n) => m.apply(b(method, url))(r, n))]
           }
@@ -221,13 +224,13 @@ export function drain<R>(rs: Routes<R, never>) {
       I.effectTotal(() =>
         A.foldLeft_(
           routes,
-          <ProcessFn>(({ response }) => I.andThen_(response.status(Status.NotFound), response.end())),
+          <ProcessFn>(({ res: response }) => I.andThen_(response.status(Status.NotFound), response.end())),
           (b, a) => (ctx) =>
             I.gen(function* (_) {
-              const method = yield* _(ctx.request.method)
+              const method = yield* _(ctx.req.method)
               const url    = yield* _(
                 pipe(
-                  ctx.request.url,
+                  ctx.req.url,
                   I.tapError((ex) => I.effectTotal(() => console.log(ex))),
                   I.orDie
                 )
@@ -244,4 +247,3 @@ export function drain<R>(rs: Routes<R, never>) {
     )
   })
 }
-
