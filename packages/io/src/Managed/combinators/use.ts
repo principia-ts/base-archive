@@ -3,7 +3,7 @@ import type { Managed } from '../core'
 import { tuple } from '@principia/base/Function'
 
 import { sequential } from '../../ExecutionStrategy'
-import * as I from '../_internal/io'
+import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
 import { releaseAll } from './releaseAll'
 

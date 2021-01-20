@@ -2,11 +2,11 @@ import type { Show } from './Show'
 
 import { makeShow } from './Show'
 
-export class Exception<S = any, T = any> extends Error {
+export class Exception<T = any> extends Error {
   readonly stackTrace: ReadonlyArray<string>
   readonly stack!: string
 
-  constructor(readonly message: string, readonly source: S, readonly data?: T) {
+  constructor(readonly message: string, readonly data?: T) {
     super(message)
 
     Object.defineProperty(this, 'name', {
@@ -21,11 +21,11 @@ export class Exception<S = any, T = any> extends Error {
   }
 }
 
-export function getVerboseShow<S, T>(SS: Show<S>, ST: Show<T>): Show<Exception<S, T>> {
+export function getVerboseShow<T>(ST: Show<T>): Show<Exception<T>> {
   return makeShow(
     (ex) =>
-      `An exception occurred at ${ex.stackTrace[0]}\n  [${ex.name}] originating from ${SS.show(ex.source)}: ${
-        ex.message
-      }${ex.data ? '\n  ' + ST.show(ex.data) : ''}`
+      `An exception occurred at ${ex.stackTrace[0]}\n  [${ex.name}]: ${ex.message}${
+        ex.data ? '\n  ' + ST.show(ex.data) : ''
+      }`
   )
 }

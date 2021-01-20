@@ -72,7 +72,7 @@ export function route<R, A>(
             koaBodyParser(),
             async (mut_ctx) =>
               await pipe(
-                I.asksServiceM(Context)(({ conn: { request, response } }) =>
+                I.asksServiceM(Context)(({ conn: { req, res } }) =>
                   pipe(
                     handler,
                     I.onExit(
@@ -80,27 +80,27 @@ export function route<R, A>(
                         C.fold(
                           () =>
                             pipe(
-                              response.status(Status.InternalServerError),
-                              I.andThen(response.write(JSON.stringify({ status: 'empty' }))),
-                              I.andThen(response.end())
+                              res.status(Status.InternalServerError),
+                              I.andThen(res.write(JSON.stringify({ status: 'empty' }))),
+                              I.andThen(res.end())
                             ),
                           (error) =>
                             pipe(
-                              response.status(error.data?.status ?? Status.InternalServerError),
-                              I.andThen(response.write(error.message)),
-                              I.andThen(response.end())
+                              res.status(error.data?.status ?? Status.InternalServerError),
+                              I.andThen(res.write(error.message)),
+                              I.andThen(res.end())
                             ),
                           (error) =>
                             pipe(
-                              response.status(Status.InternalServerError),
-                              I.andThen(response.write(JSON.stringify({ status: 'aborted', with: error }))),
-                              I.andThen(response.end())
+                              res.status(Status.InternalServerError),
+                              I.andThen(res.write(JSON.stringify({ status: 'aborted', with: error }))),
+                              I.andThen(res.end())
                             ),
                           (_) =>
                             pipe(
-                              response.status(Status.InternalServerError),
-                              I.andThen(response.write(JSON.stringify({ status: 'interrupted' }))),
-                              I.andThen(response.end())
+                              res.status(Status.InternalServerError),
+                              I.andThen(res.write(JSON.stringify({ status: 'interrupted' }))),
+                              I.andThen(res.end())
                             ),
                           (_, r) => r,
                           (_, r) => r
@@ -108,9 +108,9 @@ export function route<R, A>(
                         (r) => {
                           if (r) {
                             return pipe(
-                              response.status(r.status),
-                              I.andThen(response.write(JSON.stringify(r.body))),
-                              I.andThen(response.end())
+                              res.status(r.status),
+                              I.andThen(res.write(JSON.stringify(r.body))),
+                              I.andThen(res.end())
                             )
                           } else {
                             return I.unit()
@@ -216,9 +216,11 @@ export function useM<R, E, A>(
   )
 }
 
-export interface ServerError {
-  readonly _tag: 'ServerError'
-  readonly error: Error
+export class ServerError extends Error {
+  readonly _tag = 'ServerError'
+  constructor(readonly error: Error) {
+    super(error.message)
+  }
 }
 
 export function live(port: number, hostname: string): L.Layer<H.Has<KoaConfig>, ServerError, H.Has<Koa>> {
@@ -239,7 +241,7 @@ export function live(port: number, hostname: string): L.Layer<H.Has<KoaConfig>, 
             }
 
             const server = app.listen(port, hostname, (error?: Error) =>
-              error ? cb(I.fail({ _tag: 'ServerError', error })) : cb(I.succeed({ app, server }))
+              error ? cb(I.fail(new ServerError(error))) : cb(I.succeed({ app, server }))
             )
           })
         )
@@ -248,7 +250,7 @@ export function live(port: number, hostname: string): L.Layer<H.Has<KoaConfig>, 
       M.make(({ server }) =>
         pipe(
           I.effectAsync<unknown, ServerError, void>((cb) => {
-            server.close((err) => (err ? cb(I.fail({ _tag: 'ServerError', error: err })) : cb(I.unit())))
+            server.close((error) => (error ? cb(I.fail(new ServerError(error))) : cb(I.unit())))
           }),
           I.orDie
         )

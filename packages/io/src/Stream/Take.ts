@@ -18,7 +18,7 @@ export function chunk<A>(as: Chunk<A>): Take<never, A> {
 }
 
 export function halt<E>(cause: Ca.Cause<E>): Take<E, never> {
-  return Ex.failure(pipe(cause, Ca.map(O.some)))
+  return Ex.halt(pipe(cause, Ca.map(O.some)))
 }
 
 export const end: Take<never, never> = Ex.fail(O.none())

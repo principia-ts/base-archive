@@ -7,8 +7,8 @@ import * as O from '@principia/base/Option'
 
 import * as C from '../../Cause'
 import * as Ex from '../../Exit'
-import * as I from '../_internal/io'
 import { makeSynthetic } from '../core'
+import * as I from '../internal/io'
 import { awaitAll } from './awaitAll'
 
 /**

@@ -46,7 +46,7 @@
     "@principia/koa": "^0.0.1",
     "@principia/model": "^0.2.5",
     "@types/koa-graphql": "^0.8.4",
-    "apollo-server-koa": "2.18.1",
+    "apollo-server-koa": "2.19.2",
     "core-js": "3",
     "graphql": "^15.4.0",
     "graphql-tools": "^7.0.2",

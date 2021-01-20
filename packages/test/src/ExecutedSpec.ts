@@ -61,7 +61,7 @@ export function foldSafe<E, Z>(es: ExecutedSpec<E>, f: (_: USync<SpecCase<E, Z>>
 }
 
 export function fold_<E, Z>(es: ExecutedSpec<E>, f: (_: SpecCase<E, Z>) => Z): Z {
-  return Sy.unsafeRun(foldSafe(es, (_: USync<SpecCase<E, Z>>) => Sy.map_(_, f)))
+  return Sy.run(foldSafe(es, (_: USync<SpecCase<E, Z>>) => Sy.map_(_, f)))
 }
 
 export function fold<E, Z>(f: (_: SpecCase<E, Z>) => Z): (es: ExecutedSpec<E>) => Z {
@@ -89,7 +89,7 @@ export function transform_<E, E1>(
   es: ExecutedSpec<E>,
   f: (_: SpecCase<E, ExecutedSpec<E1>>) => SpecCase<E1, ExecutedSpec<E1>>
 ): ExecutedSpec<E1> {
-  return Sy.unsafeRun(transformSafe(es, Sy.map(f)))
+  return Sy.run(transformSafe(es, Sy.map(f)))
 }
 
 export function exists_<E>(es: ExecutedSpec<E>, f: (_: SpecCase<E, boolean>) => boolean): boolean {

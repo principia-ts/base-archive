@@ -1,8 +1,8 @@
 import type { RuntimeFiber } from '../../Fiber/core'
 
 import { track } from '../../Supervisor'
-import * as I from '../_internal/io'
 import { Managed, unwrap } from '../core'
+import * as I from '../internal/io'
 
 /**
  * Locally installs a supervisor and an effect that succeeds with all the

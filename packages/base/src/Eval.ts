@@ -122,16 +122,12 @@ class Memoize<A> extends Eval<A> {
   }
 
   value(): A {
-    return O.fold_(
-      this.result,
-      () => {
-        const a = evaluate(this)
-        // eslint-disable-next-line functional/immutable-data
-        this.result = O.some(a)
-        return a
-      },
-      (a) => a
-    )
+    return O.getOrElse_(this.result, () => {
+      const a = evaluate(this)
+      // eslint-disable-next-line functional/immutable-data
+      this.result = O.some(a)
+      return a
+    })
   }
 }
 
@@ -173,7 +169,7 @@ export function later<A>(f: () => A): Eval<A> {
 }
 
 /**
- * Construct a lazy Eval[A] instance.
+ * Construct a lazy Eval<A> instance.
  *
  * This type can be used for "lazy" values. In some sense it is
  * equivalent to using a thunked value.
@@ -284,11 +280,6 @@ export function unit(): Eval<void> {
 
 type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | FlatMap<any, any> | Memoize<any>
 
-class Frame {
-  readonly _evalTag = 'Frame'
-  constructor(readonly apply: (e: any) => Eval<any>) {}
-}
-
 export function evaluate<A>(e: Eval<A>): A {
   const addToMemo = <A1>(m: Memoize<A1>) => (a: A1): Eval<A1> => {
     // eslint-disable-next-line functional/immutable-data
@@ -296,7 +287,7 @@ export function evaluate<A>(e: Eval<A>): A {
     return new Now(a)
   }
 
-  let frames  = undefined as Stack<Frame> | undefined
+  let frames  = undefined as Stack<(_: any) => Eval<any>> | undefined
   let current = e as Eval<any> | undefined
   let result  = null
 
@@ -306,7 +297,7 @@ export function evaluate<A>(e: Eval<A>): A {
     return current
   }
 
-  function pushContinuation(cont: Frame) {
+  function pushContinuation(cont: (_: any) => Eval<any>) {
     frames = makeStack(cont, frames)
   }
 
@@ -335,15 +326,15 @@ export function evaluate<A>(e: Eval<A>): A {
               current = I.f(nested.result.value)
               break
             } else {
-              pushContinuation(new Frame(continuation))
-              pushContinuation(new Frame(addToMemo(nested)))
+              pushContinuation(continuation)
+              pushContinuation(addToMemo(nested))
               current = nested.ma
               break
             }
           }
           default: {
             current = nested
-            pushContinuation(new Frame(continuation))
+            pushContinuation(continuation)
             break
           }
         }
@@ -351,8 +342,8 @@ export function evaluate<A>(e: Eval<A>): A {
       }
       case 'Now': {
         const continuation = popContinuation()
-        if(continuation) {
-          current = continuation.apply(I.a)
+        if (continuation) {
+          current = continuation(I.a)
         } else {
           current = undefined
           result  = I.a
@@ -362,8 +353,8 @@ export function evaluate<A>(e: Eval<A>): A {
       case 'Later': {
         const a            = I.value()
         const continuation = popContinuation()
-        if(continuation) {
-          current = continuation.apply(a)
+        if (continuation) {
+          current = continuation(a)
         } else {
           current = undefined
           result  = a
@@ -373,8 +364,8 @@ export function evaluate<A>(e: Eval<A>): A {
       case 'Always': {
         const a            = I.thunk()
         const continuation = popContinuation()
-        if(continuation) {
-          current = continuation.apply(a)
+        if (continuation) {
+          current = continuation(a)
         } else {
           current = undefined
           result  = a
@@ -389,7 +380,7 @@ export function evaluate<A>(e: Eval<A>): A {
         if (I.result._tag === 'Some') {
           const f = popContinuation()
           if (f) {
-            current = f.apply(I.result.value)
+            current = f(I.result.value)
             break
           } else {
             result  = I.result.value
@@ -397,7 +388,7 @@ export function evaluate<A>(e: Eval<A>): A {
             break
           }
         } else {
-          pushContinuation(new Frame(addToMemo(I)))
+          pushContinuation(addToMemo(I))
           current = I.ma
           break
         }
@@ -443,4 +434,31 @@ export const Monad = HKT.instance<P.Monad<[URI]>>({
   flatten
 })
 
-export const gen = DSL.genF(Monad)
+export class GenEval<A> {
+  readonly _A!: () => A
+  constructor(readonly ma: Eval<A>) {}
+  *[Symbol.iterator](): Generator<GenEval<A>, A, any> {
+    return yield this
+  }
+}
+
+function _run<T extends GenEval<any>, A>(
+  state: IteratorYieldResult<T> | IteratorReturnResult<A>,
+  iterator: Generator<T, A, any>
+): Eval<A> {
+  if (state.done) {
+    return now(state.value)
+  }
+  return flatMap_(state.value.ma, (val) => {
+    const next = iterator.next(val)
+    return _run(next, iterator)
+  })
+}
+
+export function gen<T extends GenEval<any>, A>(f: (i: <A>(_: Eval<A>) => GenEval<A>) => Generator<T, A, any>): Eval<A> {
+  return defer(() => {
+    const iterator = f((_) => new GenEval(_))
+    const state    = iterator.next()
+    return _run(state, iterator)
+  })
+}

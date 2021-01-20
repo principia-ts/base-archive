@@ -9,3 +9,4 @@ export {
 } from '../../IO/combinators/interrupt'
 export { never } from '../../IO/combinators/never'
 export * from '../../IO/core'
+export * from '../../IO/primitives'

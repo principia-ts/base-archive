@@ -7,6 +7,7 @@ import type { Option } from '@principia/base/Option'
 import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
+import { RuntimeException } from '../../Cause'
 import { currentTime } from '../../Clock'
 import * as RefM from '../../IORefM'
 import * as P from '../../Promise'
@@ -40,7 +41,7 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
               )
             )
           ),
-          I.flatMap((a) => (a._tag === 'None' ? I.die('bug') : restore(a.value[1].await)))
+          I.flatMap((a) => (a._tag === 'None' ? I.die(new RuntimeException('bug')) : restore(a.value[1].await)))
         )
       )
     )

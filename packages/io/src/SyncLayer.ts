@@ -67,7 +67,7 @@ export function getMemoOrElseCreate<R, E, A>(layer: SyncLayer<R, E, A>): (m: Syn
     })
 }
 
-export class FromSyncInstruction<R, E, A> extends SyncLayer<R, E, A> {
+export class FromSync<R, E, A> extends SyncLayer<R, E, A> {
   readonly _tag = SyncLayerTag.FromSync
 
   constructor(readonly sync: Sy.Sync<R, E, A>) {
@@ -79,7 +79,7 @@ export class FromSyncInstruction<R, E, A> extends SyncLayer<R, E, A> {
   }
 }
 
-export class FreshInstruction<R, E, A> extends SyncLayer<R, E, A> {
+export class Fresh<R, E, A> extends SyncLayer<R, E, A> {
   readonly _tag = SyncLayerTag.Fresh
 
   constructor(readonly layer: SyncLayer<R, E, A>) {
@@ -91,7 +91,7 @@ export class FreshInstruction<R, E, A> extends SyncLayer<R, E, A> {
   }
 }
 
-export class SuspendInstruction<R, E, A> extends SyncLayer<R, E, A> {
+export class Suspend<R, E, A> extends SyncLayer<R, E, A> {
   readonly _tag = SyncLayerTag.Suspend
 
   constructor(readonly factory: () => SyncLayer<R, E, A>) {
@@ -103,14 +103,14 @@ export class SuspendInstruction<R, E, A> extends SyncLayer<R, E, A> {
   }
 }
 
-export class BothInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & R1, E | E1, A & A1> {
+export class Both<R, E, A, R1, E1, A1> extends SyncLayer<R & R1, E | E1, A & A1> {
   readonly _tag = SyncLayerTag.Both
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
     super()
   }
 
-  scopeBoth(self: BothInstruction<R, E, A, R1, E1, A1>) {
+  scopeBoth(self: Both<R, E, A, R1, E1, A1>) {
     return Sy.succeed((memo: SyncMemoMap) =>
       Sy.gen(function* (_) {
         const l = yield* _(getMemoOrElseCreate(self.left)(memo))
@@ -126,7 +126,7 @@ export class BothInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & R1, E | 
   }
 }
 
-export class UsingInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A & A1> {
+export class Using<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A & A1> {
   readonly _tag = SyncLayerTag.Using
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
@@ -149,7 +149,7 @@ export class UsingInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R
   }
 }
 
-export class FromInstruction<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A1> {
+export class From<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A1> {
   readonly _tag = SyncLayerTag.From
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
@@ -182,7 +182,7 @@ export type MergeA<Ls extends ReadonlyArray<SyncLayer<any, any, any>>> = UnionTo
   }[number]
 >
 
-export class AllInstruction<Layers extends ReadonlyArray<SyncLayer<any, any, any>>> extends SyncLayer<
+export class All<Layers extends ReadonlyArray<SyncLayer<any, any, any>>> extends SyncLayer<
   MergeR<Layers>,
   MergeE<Layers>,
   MergeA<Layers>
@@ -209,57 +209,57 @@ export class AllInstruction<Layers extends ReadonlyArray<SyncLayer<any, any, any
 }
 
 export function fromRawSync<R, E, A>(sync: Sy.Sync<R, E, A>): SyncLayer<R, E, A> {
-  return new FromSyncInstruction(sync)
+  return new FromSync(sync)
 }
 
 export function fresh<R, E, A>(layer: SyncLayer<R, E, A>) {
-  return new FreshInstruction(layer)
+  return new Fresh(layer)
 }
 
 export function suspend<R, E, A>(layer: () => SyncLayer<R, E, A>) {
-  return new SuspendInstruction(layer)
+  return new Suspend(layer)
 }
 
 export function fromSync<T>(tag: Tag<T>): <R, E>(_: Sy.Sync<R, E, T>) => SyncLayer<R, E, Has<T>> {
-  return (_) => new FromSyncInstruction(pipe(_, Sy.map(tag.of)))
+  return (_) => new FromSync(pipe(_, Sy.map(tag.of)))
 }
 
 export function fromFunction<T>(tag: Tag<T>): <R>(f: (_: R) => T) => SyncLayer<R, never, Has<T>> {
-  return (f) => new FromSyncInstruction(pipe(Sy.asks(f), Sy.map(tag.of)))
+  return (f) => new FromSync(pipe(Sy.asks(f), Sy.map(tag.of)))
 }
 
 export function fromValue<T>(tag: Tag<T>): (_: T) => SyncLayer<unknown, never, Has<T>> {
-  return (_) => new FromSyncInstruction(Sy.succeed(tag.of(_)))
+  return (_) => new FromSync(Sy.succeed(tag.of(_)))
 }
 
 export function and<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
 ): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & R2, E2 | E, A & A2> {
-  return (right) => new BothInstruction(left, right)
+  return (right) => new Both(left, right)
 }
 
 export function andTo<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
 ): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & Erase<R2, A>, E2 | E, A & A2> {
-  return (right) => new UsingInstruction(right, left)
+  return (right) => new Using(right, left)
 }
 
 export function to<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
 ): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & Erase<R2, A>, E2 | E, A2> {
-  return (right) => new FromInstruction(right, left)
+  return (right) => new From(right, left)
 }
 
 export function using<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
 ): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<Erase<R, A2> & R2, E2 | E, A & A2> {
-  return (right) => new UsingInstruction(left, right)
+  return (right) => new Using(left, right)
 }
 
 export function from<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
 ): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<Erase<R, A2> & R2, E2 | E, A> {
-  return (right) => new FromInstruction(left, right)
+  return (right) => new From(left, right)
 }
 
 export function giveLayer<R, E, A>(
@@ -275,5 +275,5 @@ export function giveLayer<R, E, A>(
 export function all<Ls extends ReadonlyArray<SyncLayer<any, any, any>>>(
   ...ls: Ls & { 0: SyncLayer<any, any, any> }
 ): SyncLayer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
-  return new AllInstruction(ls)
+  return new All(ls)
 }

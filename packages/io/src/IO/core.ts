@@ -1,15 +1,12 @@
 import type { Cause } from '../Cause/core'
 import type { Exit } from '../Exit/core'
-import type { Fiber, FiberDescriptor, InterruptStatus } from '../Fiber/core'
+import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
-import type { FiberContext } from '../FiberContext'
-import type { FiberRef } from '../FiberRef/core'
-import type { Scope } from '../Scope'
-import type { SIO } from '../SIO'
+import type { FiberContext } from '../internal/FiberContext'
 import type { Supervisor } from '../Supervisor'
+import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 import type { Predicate, Refinement } from '@principia/base/Function'
 import type { Has, Region, Tag } from '@principia/base/Has'
-import type * as HKT from '@principia/base/HKT'
 import type { Monoid } from '@principia/base/Monoid'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Option } from '@principia/base/Option'
@@ -29,359 +26,26 @@ import * as FL from '@principia/free/FreeList'
 
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
-import { _A, _E, _I, _R, _U, IOTag } from './constants'
+import {
+  CheckDescriptor,
+  EffectAsync,
+  EffectPartial,
+  EffectSuspend,
+  EffectSuspendPartial,
+  EffectTotal,
+  Fail,
+  FlatMap,
+  Fold,
+  Fork,
+  GetInterrupt,
+  Give,
+  Read,
+  Succeed,
+  Supervise,
+  Yield
+} from './primitives'
 
-export { _A, _E, _I, _R, _U, IOTag } from './constants'
-
-/*
- * -------------------------------------------
- * Model
- * -------------------------------------------
- */
-
-export const URI = 'IO'
-
-export type URI = typeof URI
-
-export abstract class IO<R, E, A> {
-  readonly [_U]: URI;
-  readonly [_E]: () => E;
-  readonly [_A]: () => A;
-  readonly [_R]: (_: R) => void
-
-  readonly _S1!: (_: unknown) => void
-  readonly _S2!: () => never
-
-  get [_I](): Instruction {
-    return this as any
-  }
-}
-
-/*
- * -------------------------------------------
- * Internal
- * -------------------------------------------
- */
-
-/**
- * @internal
- */
-export class FlatMap<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
-  readonly _tag = IOTag.FlatMap
-  constructor(readonly io: IO<R, E, A>, readonly f: (a: A) => IO<R1, E1, A1>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Succeed<A> extends IO<unknown, never, A> {
-  readonly _tag = IOTag.Succeed
-  constructor(readonly value: A) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class EffectPartial<E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOTag.EffectPartial
-  constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class EffectTotal<A> extends IO<unknown, never, A> {
-  readonly _tag = IOTag.EffectTotal
-  constructor(readonly effect: () => A) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class EffectAsync<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.Async
-  constructor(
-    readonly register: (f: (_: IO<R, E, A>) => void) => Option<IO<R, E, A>>,
-    readonly blockingOn: ReadonlyArray<FiberId>
-  ) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2, B | C> {
-  readonly _tag = IOTag.Fold
-
-  constructor(
-    readonly io: IO<R, E, A>,
-    readonly onFailure: (cause: Cause<E>) => IO<R1, E1, B>,
-    readonly onSuccess: (a: A) => IO<R2, E2, C>
-  ) {
-    super()
-  }
-
-  apply(v: A): IO<R & R1 & R2, E1 | E2, B | C> {
-    return this.onSuccess(v)
-  }
-}
-
-export type FailureReporter = (e: Cause<unknown>) => void
-
-/**
- * @internal
- */
-export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
-  readonly _tag = IOTag.Fork
-
-  constructor(
-    readonly io: IO<R, E, A>,
-    readonly scope: Option<Scope<Exit<any, any>>>,
-    readonly reportFailure: Option<FailureReporter>
-  ) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Fail<E> extends IO<unknown, E, never> {
-  readonly _tag = IOTag.Fail
-
-  constructor(readonly cause: Cause<E>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Yield extends IO<unknown, never, void> {
-  readonly _tag = IOTag.Yield
-
-  constructor() {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Read<R0, R, E, A> extends IO<R & R0, E, A> {
-  readonly _tag = IOTag.Read
-
-  constructor(readonly f: (_: R0) => IO<R, E, A>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Give<R, E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOTag.Give
-
-  constructor(readonly io: IO<R, E, A>, readonly env: R) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class EffectSuspend<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.EffectSuspend
-
-  constructor(readonly io: () => IO<R, E, A>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
-  readonly _tag = 'Race'
-
-  constructor(
-    readonly left: IO<R, E, A>,
-    readonly right: IO<R1, E1, A1>,
-    readonly leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
-    readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
-    readonly scope: Option<Scope<Exit<any, any>>>
-  ) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class SetInterrupt<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.SetInterrupt
-
-  constructor(readonly io: IO<R, E, A>, readonly flag: InterruptStatus) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class GetInterrupt<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.GetInterrupt
-
-  constructor(readonly f: (_: InterruptStatus) => IO<R, E, A>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class CheckDescriptor<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.CheckDescriptor
-
-  constructor(readonly f: (_: FiberDescriptor) => IO<R, E, A>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class Supervise<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.Supervise
-
-  constructor(readonly io: IO<R, E, A>, readonly supervisor: Supervisor<any>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class EffectSuspendPartial<R, E, A, E2> extends IO<R, E | E2, A> {
-  readonly _tag = IOTag.EffectSuspendPartial
-
-  constructor(readonly io: () => IO<R, E, A>, readonly onThrow: (u: unknown) => E2) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class NewFiberRef<A> extends IO<unknown, never, FiberRef<A>> {
-  readonly _tag = IOTag.NewFiberRef
-
-  constructor(readonly initial: A, readonly onFork: (a: A) => A, readonly onJoin: (a: A, a2: A) => A) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class ModifyFiberRef<A, B> extends IO<unknown, never, B> {
-  readonly _tag = IOTag.ModifyFiberRef
-
-  constructor(readonly fiberRef: FiberRef<A>, readonly f: (a: A) => [B, A]) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class GetForkScope<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.GetForkScope
-
-  constructor(readonly f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
-    super()
-  }
-}
-
-/**
- * @internal
- */
-export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.OverrideForkScope
-
-  constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
-    super()
-  }
-}
-
-export const integrationNotImplemented = new Fail({
-  _tag: 'Die',
-  value: new Error('Integration not implemented or unsupported')
-})
-
-export type Instruction =
-  | FlatMap<any, any, any, any, any, any>
-  | Succeed<any>
-  | EffectPartial<any, any>
-  | EffectTotal<any>
-  | EffectAsync<any, any, any>
-  | Fold<any, any, any, any, any, any, any, any, any>
-  | Fork<any, any, any>
-  | SetInterrupt<any, any, any>
-  | GetInterrupt<any, any, any>
-  | Fail<any>
-  | CheckDescriptor<any, any, any>
-  | Yield
-  | Read<any, any, any, any>
-  | Give<any, any, any>
-  | EffectSuspend<any, any, any>
-  | EffectSuspendPartial<any, any, any, any>
-  | NewFiberRef<any>
-  | ModifyFiberRef<any, any>
-  | Race<any, any, any, any, any, any, any, any, any, any, any, any>
-  | Supervise<any, any, any>
-  | GetForkScope<any, any, any>
-  | OverrideForkScope<any, any, any>
-  | SIO<unknown, never, any, any, any>
-  | Integration<any, any, any>
-
-export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
-
-export type UIO<A> = IO<unknown, never, A>
-export type URIO<R, A> = IO<R, never, A>
-export type FIO<E, A> = IO<unknown, E, A>
-
-export type Canceler<R> = URIO<R, void>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: IO<R, E, A>
-  }
-}
-
-export abstract class Integration<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.Integration
-  readonly _S1!: (_: unknown) => void
-  readonly _S2!: () => never;
-
-  readonly [_U]!: URI;
-  readonly [_E]!: () => E;
-  readonly [_A]!: () => A;
-  readonly [_R]!: (_: R) => void
-
-  get [_I](): Instruction {
-    return integrationNotImplemented
-  }
-}
+export * from './primitives'
 
 /*
  * -------------------------------------------
@@ -401,6 +65,10 @@ export abstract class Integration<R, E, A> extends IO<R, E, A> {
  */
 export function succeed<E = never, A = never>(a: A): FIO<E, A> {
   return new Succeed(a)
+}
+
+export function yieldNow(): UIO<void> {
+  return new Yield()
 }
 
 /**
@@ -447,8 +115,8 @@ export function effectAsyncOption<R, E, A>(
  * Imports a synchronous side-effect into an `IO`, translating any
  * thrown exceptions into typed failed effects with `IO.fail`.
  */
-export function effect<A>(effect: () => A): FIO<unknown, A> {
-  return new EffectPartial(effect, identity)
+export function effect<A>(effect: () => A): FIO<Error, A> {
+  return new EffectPartial(effect, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)))
 }
 
 /**
@@ -492,6 +160,7 @@ export function effectCatch_<E, A>(effect: () => A, onThrow: (error: unknown) =>
  *
  * @category Constructors
  * @since 1.0.0
+ * @dataFirst effectCatch_
  */
 export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () => A) => FIO<E, A> {
   return (effect) => effectCatch_(effect, onThrow)
@@ -501,8 +170,10 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () =
  * Returns a lazily constructed effect, whose construction may itself require effects.
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
-export function effectSuspend<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
-  return new EffectSuspendPartial(io, identity)
+export function effectSuspend<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
+  return new EffectSuspendPartial(io, (u) =>
+    u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)
+  )
 }
 
 /**
@@ -585,7 +256,7 @@ export function fail<E>(e: E): FIO<E, never> {
  * @category Constructors
  * @since 1.0.0
  */
-export function die(e: unknown): FIO<never, never> {
+export function die(e: Error): UIO<never> {
   return halt(C.die(e))
 }
 
@@ -595,7 +266,7 @@ export function die(e: unknown): FIO<never, never> {
  * because a defect has been detected in the code.
  */
 export function dieMessage(message: string): FIO<never, never> {
-  return die(new C.RuntimeError(message))
+  return die(new C.RuntimeException(message))
 }
 
 /**
@@ -649,6 +320,7 @@ export function fromPromiseCatch_<E, A>(promise: () => Promise<A>, onReject: (re
 /**
  * Create an IO that when executed will construct `promise` and wait for its result,
  * errors will be handled using `onReject`
+ * @dataFirst fromPromiseCatch_
  */
 export function fromPromiseCatch<E>(onReject: (reason: unknown) => E): <A>(promise: () => Promise<A>) => FIO<E, A> {
   return (promise) => fromPromiseCatch_(promise, onReject)
@@ -698,6 +370,7 @@ export function supervised_<R, E, A>(fa: IO<R, E, A>, supervisor: Supervisor<any
  *
  * @category Combinators
  * @since 1.0.0
+ * @dataFirst supervised_
  */
 export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, A> {
   return (fa) => supervised_(fa, supervisor)
@@ -969,6 +642,7 @@ export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 
 /**
  * A more powerful version of `foldM` that allows recovering from any kind of failure except interruptions.
+ * @dataFirst foldCauseM_
  */
 export function foldCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
@@ -985,6 +659,9 @@ export function foldM_<R, R1, R2, E, E1, E2, A, A1, A2>(
   return foldCauseM_(ma, (cause) => E.fold_(C.failureOrCause(cause), onFailure, halt), onSuccess)
 }
 
+/**
+ * @dataFirst foldM_
+ */
 export function foldM<R1, R2, E, E1, E2, A, A1, A2>(
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
@@ -1009,6 +686,8 @@ export function fold_<R, E, A, B, C>(
  * Folds over the failure value or the success value to yield an IO that
  * does not fail, but succeeds with the value returned by the left or right
  * function passed to `fold`.
+ *
+ * @dataFirst fold_
  */
 export function fold<E, A, B, C>(
   onFailure: (reason: E) => B,
@@ -1177,6 +856,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
 /**
  * Returns an IO that effectfully "peeks" at the failure or success of
  * this effect.
+ * @dataFirst tapBoth_
  */
 export function tapBoth<E, A, R1, E1, R2, E2>(
   onFailure: (e: E) => IO<R1, E1, any>,
@@ -1203,6 +883,7 @@ export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, 
 
 /**
  * Returns an IO that effectfully "peeks" at the failure of this effect.
+ * @dataFirst tapError_
  */
 export function tapError<E, R1, E1>(f: (e: E) => IO<R1, E1, any>): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A> {
   return (fa) => tapError_(fa, f)
@@ -1271,6 +952,7 @@ export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
  *
  * @category MonadEnv
  * @since 1.0.0
+ * @dataFirst giveAll_
  */
 export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
   return (ma) => giveAll_(ma, r)
@@ -1305,6 +987,7 @@ export function gives_<R0, R, E, A>(ma: IO<R, E, A>, f: (r0: R0) => R) {
  *
  * @category MonadEnv
  * @since 1.0.0
+ * @dataFirst gives_
  */
 export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: IO<R, E, A>) => IO<R0, E, A> {
   return (ma) => gives_(ma, f)
@@ -1339,6 +1022,7 @@ export function give_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: 
  *
  * @category MonadEnv
  * @since 1.0.0
+ * @dataFirst give_
  */
 export function give<R = unknown>(r: R): <E, A, R0 = unknown>(ma: IO<R & R0, E, A>) => IO<R0, E, A> {
   return (ma) => give_(ma, r)
@@ -1427,6 +1111,7 @@ export function absorbWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown) {
  *
  * @category Combinators
  * @since 1.0.0
+ * @dataFirst absorbWith_
  */
 export function absorbWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => IO<R, unknown, A> {
   return (ma) => absorbWith_(ma, f)
@@ -1455,6 +1140,7 @@ export function as_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
  *
  * @category Combinators
  * @since 1.0.0
+ * @dataFirst as_
  */
 export function as<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
   return (ma) => as_(ma, b)
@@ -1508,6 +1194,7 @@ export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<
  *
  * @category Combinators
  * @since 1.0.0
+ * @dataFirst catchAll_
  */
 export function catchAll<R, E, E2, A>(
   f: (e: E2) => IO<R, E, A>
@@ -1538,6 +1225,7 @@ export function catchAllCause_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (_: Caus
  *
  * @category Combinators
  * @since 1.0.0
+ * @dataFirst catchAllCause_
  */
 export function catchAllCause<E, R1, E1, A1>(
   f: (_: Cause<E>) => IO<R1, E1, A1>
@@ -1572,6 +1260,7 @@ export function catchSome_<R, E, A, R1, E1, A1>(
 
 /**
  * Recovers from some or all of the error cases.
+ * @dataFirst catchSome_
  */
 export function catchSome<E, R1, E1, A1>(
   f: (e: E) => O.Option<IO<R1, E1, A1>>
@@ -1598,6 +1287,10 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
   )
 }
 
+/**
+ * Recovers from some or all of the error cases with provided cause.
+ * @dataFirst catchSomeCause_
+ */
 export function catchSomeCause<E, R1, E1, A1>(
   f: (_: Cause<E>) => O.Option<IO<R1, E1, A1>>
 ): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E | E1, A | A1> {
@@ -1632,6 +1325,7 @@ export function catchSomeDefect_<R, E, A, R1, E1, A1>(
  *
  * @category Combinators
  * @since 1.0.0
+ * @dataFirst catchSomeDefect_
  */
 export function catchSomeDefect<R1, E1, A1>(
   f: (_: unknown) => Option<IO<R1, E1, A1>>
@@ -1662,6 +1356,9 @@ export function collect_<R, E, A, E1, A1>(ma: IO<R, E, A>, f: () => E1, pf: (a: 
   return collectM_(ma, f, flow(pf, O.map(succeed)))
 }
 
+/**
+ * @dataFirst collect_
+ */
 export function collect<A, E1, A1>(
   f: () => E1,
   pf: (a: A) => Option<A1>
@@ -1886,14 +1583,10 @@ export function filterOrElse<A>(
 export function filterOrDie_<R, E, A, B extends A>(
   fa: IO<R, E, A>,
   refinement: Refinement<A, B>,
-  dieWith: (a: A) => unknown
+  dieWith: (a: A) => Error
 ): IO<R, E, A>
-export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => unknown): IO<R, E, A>
-export function filterOrDie_<R, E, A>(
-  fa: IO<R, E, A>,
-  predicate: Predicate<A>,
-  dieWith: (a: A) => unknown
-): IO<R, E, A> {
+export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => Error): IO<R, E, A>
+export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => Error): IO<R, E, A> {
   return filterOrElse_(fa, predicate, flow(dieWith, die))
 }
 
@@ -1902,13 +1595,13 @@ export function filterOrDie_<R, E, A>(
  */
 export function filterOrDie<A, B extends A>(
   refinement: Refinement<A, B>
-): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
+): (dieWith: (a: A) => Error) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDie<A>(
   predicate: Predicate<A>
-): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
+): (dieWith: (a: A) => Error) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDie<A>(
   predicate: Predicate<A>
-): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
+): (dieWith: (a: A) => Error) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
   return (dieWith) => (fa) => filterOrDie_(fa, predicate, dieWith)
 }
 
@@ -2538,19 +2231,19 @@ export function optional<R, E, A>(ef: IO<R, Option<E>, A>): IO<R, E, Option<A>> 
   )
 }
 
-export function orDie<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
+export function orDie<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, never, A> {
   return orDieWith_(ma, identity)
 }
 
-export function orDieKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
+export function orDieKeep<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
   return foldCauseM_(ma, (ce) => halt(C.flatMap_(ce, (e) => C.die(e))), pure)
 }
 
-export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R, never, A> {
+export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => Error): IO<R, never, A> {
   return foldM_(ma, (e) => die(f(e)), pure)
 }
 
-export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
+export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
   return (ma) => orDieWith_(ma, f)
 }
 
@@ -2664,7 +2357,7 @@ export function partition<R, E, A, B>(
 export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
   return new Fold(
     ma,
-    (cause) => succeed(Ex.failure(cause)),
+    (cause) => succeed(Ex.halt(cause)),
     (succ) => succeed(Ex.succeed(succ))
   )
 }
@@ -2672,14 +2365,14 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<E1>): IO<R, E1, A> {
+export function refineOrDie_<R, E extends Error, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<E1>): IO<R, E1, A> {
   return refineOrDieWith_(fa, pf, identity)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
+export function refineOrDie<E extends Error, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   return (fa) => refineOrDie_(fa, pf)
 }
 
@@ -2690,18 +2383,18 @@ export function refineOrDie<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E
 export function refineOrDieWith_<R, E, A, E1>(
   fa: IO<R, E, A>,
   pf: (e: E) => Option<E1>,
-  f: (e: E) => unknown
+  f: (e: E) => Error
 ): IO<R, E1, A> {
   return catchAll_(fa, (e) => O.fold_(pf(e), () => die(f(e)), fail))
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest, using
- * the specified function to convert the `E` into a `Throwable`.
+ * the specified function to convert the `E` into an `Error`.
  */
 export function refineOrDieWith<E, E1>(
   pf: (e: E) => Option<E1>,
-  f: (e: E) => unknown
+  f: (e: E) => Error
 ): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   return (fa) => refineOrDieWith_(fa, pf, f)
 }
@@ -3205,7 +2898,7 @@ export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
  * @category Combinators
  * @since 1.0.0
  */
-export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: unknown) => Option<E1>) {
+export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: Error) => Option<E1>) {
   return unrefineWith_(fa, pf, identity)
 }
 
@@ -3228,7 +2921,7 @@ export function unrefine<E1>(pf: (u: unknown) => Option<E1>): <R, E, A>(fa: IO<R
  */
 export function unrefineWith_<R, E, A, E1, E2>(
   fa: IO<R, E, A>,
-  pf: (u: unknown) => Option<E1>,
+  pf: (u: Error) => Option<E1>,
   f: (e: E) => E2
 ): IO<R, E1 | E2, A> {
   return catchAllCause_(
@@ -3236,7 +2929,7 @@ export function unrefineWith_<R, E, A, E1, E2>(
     (cause): IO<R, E1 | E2, A> =>
       pipe(
         cause,
-        C.find(pf),
+        C.find((c) => (C.died(c) ? pf(c.value) : O.none())),
         O.fold(() => pipe(cause, C.map(f), halt), fail)
       )
   )

@@ -13,7 +13,7 @@ import * as M from '../Managed/core'
 import * as Q from '../Queue'
 import { withPermit } from '../Semaphore'
 import * as S from '../Semaphore'
-import * as I from './_internal/io'
+import * as I from './internal/io'
 
 /**
  * An `IORefM<RA, RB, EA, EB, A, B>` is a polymorphic, purely functional

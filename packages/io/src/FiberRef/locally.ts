@@ -1,8 +1,8 @@
-import type { IO } from './_internal/io'
 import type { FiberRef } from './core'
+import type { IO } from './internal/io'
 
-import * as I from './_internal/io'
 import { get, set } from './core'
+import * as I from './internal/io'
 
 /**
  * Returns an `IO` that runs with `value` bound to the current fiber.

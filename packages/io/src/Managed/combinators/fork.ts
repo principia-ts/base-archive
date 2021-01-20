@@ -2,8 +2,8 @@ import { pipe, tuple } from '@principia/base/Function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as F from '../../Fiber'
-import * as I from '../_internal/io'
 import { Managed } from '../core'
+import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
 import { releaseAll } from './releaseAll'
 

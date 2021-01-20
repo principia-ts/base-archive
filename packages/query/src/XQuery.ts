@@ -630,7 +630,7 @@ export function fail<E>(error: E): XQuery<unknown, E, never> {
   return halt(Ca.fail(error))
 }
 
-export function die(error: unknown): XQuery<unknown, never, never> {
+export function die(error: Error): XQuery<unknown, never, never> {
   return new XQuery(I.die(error))
 }
 
@@ -964,15 +964,15 @@ export function optional<R, E, A>(ma: XQuery<R, E, A>): XQuery<R, E, O.Option<A>
   )
 }
 
-export function orDieWith_<R, E, A>(ma: XQuery<R, E, A>, f: (e: E) => unknown): XQuery<R, never, A> {
+export function orDieWith_<R, E, A>(ma: XQuery<R, E, A>, f: (e: E) => Error): XQuery<R, never, A> {
   return ma.foldM(flow(f, die), succeed)
 }
 
-export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: XQuery<R, E, A>) => XQuery<R, never, A> {
+export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: XQuery<R, E, A>) => XQuery<R, never, A> {
   return (ma) => ma.foldM(flow(f, die), succeed)
 }
 
-export function orDie<R, E, A>(ma: XQuery<R, E, A>): XQuery<R, never, A> {
+export function orDie<R, E extends Error, A>(ma: XQuery<R, E, A>): XQuery<R, never, A> {
   return orDieWith_(ma, identity)
 }
 
@@ -1182,7 +1182,7 @@ function makeContinue<R, E, A extends Request<E, B>, B>(
       ref.get,
       I.flatMap(
         O.fold(
-          () => I.die('TODO: Query Failure'),
+          () => I.die(new Error('TODO: Query Failure')),
           (a) => I.fromEither(() => a)
         )
       )

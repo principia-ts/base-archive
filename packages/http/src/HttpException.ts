@@ -7,4 +7,4 @@ export interface HttpExceptionData {
   readonly originalError?: unknown
 }
 
-export class HttpException extends Exception<string, HttpExceptionData> {}
+export class HttpException extends Exception<HttpExceptionData> {}

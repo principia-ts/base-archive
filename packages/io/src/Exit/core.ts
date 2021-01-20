@@ -45,7 +45,7 @@ export function succeed<E = never, A = never>(value: A): Exit<E, A> {
   }
 }
 
-export function failure<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
+export function halt<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
   return {
     _tag: 'Failure',
     cause
@@ -53,15 +53,15 @@ export function failure<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
 }
 
 export function fail<E = never, A = never>(e: E): Exit<E, A> {
-  return failure(C.fail(e))
+  return halt(C.fail(e))
 }
 
 export function interrupt(id: FiberId) {
-  return failure(C.interrupt(id))
+  return halt(C.interrupt(id))
 }
 
-export function die(error: unknown): Exit<unknown, never> {
-  return failure(C.die(error))
+export function die(error: Error): Exit<unknown, never> {
+  return halt(C.die(error))
 }
 
 export function fromEither<E, A>(e: E.Either<E, A>): Exit<E, A> {
@@ -209,7 +209,7 @@ export function map2Cause_<E, A, G, B, C>(
           return fa
         }
         case 'Failure': {
-          return failure(g(fa.cause, fb.cause))
+          return halt(g(fa.cause, fb.cause))
         }
       }
     }
@@ -266,7 +266,7 @@ export function apSecondPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exi
  */
 
 export function mapError_<E, A, G>(pab: Exit<E, A>, f: (e: E) => G): Exit<G, A> {
-  return isFailure(pab) ? failure(C.map_(pab.cause, f)) : pab
+  return isFailure(pab) ? halt(C.map_(pab.cause, f)) : pab
 }
 
 export function mapError<E, G>(f: (e: E) => G): <A>(pab: Exit<E, A>) => Exit<G, A> {

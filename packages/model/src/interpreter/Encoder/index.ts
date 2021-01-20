@@ -15,6 +15,7 @@ import { RecursiveEncoder } from './recursive'
 import { RefinementEncoder } from './refinement'
 import { SetEncoder } from './set'
 import { SumEncoder } from './sum'
+import {UnknownEncoder} from './unknown'
 
 export const _allEncoderInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -27,7 +28,8 @@ export const _allEncoderInterpreters = <Env extends AnyEnv>() =>
     SetEncoder<Env>(),
     SumEncoder<Env>(),
     NullableEncoder<Env>(),
-    IntersectionEncoder<Env>()
+    IntersectionEncoder<Env>(),
+    UnknownEncoder<Env>()
   )
 
 export const allEncoderInterpreters = memoize(_allEncoderInterpreters) as typeof _allEncoderInterpreters

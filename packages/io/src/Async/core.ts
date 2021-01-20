@@ -1,4 +1,4 @@
-import type { SIO } from './SIO'
+import type { Multi } from '../Multi'
 import type { Has, Region, Tag } from '@principia/base/Has'
 import type { Option } from '@principia/base/Option'
 import type { Stack } from '@principia/base/util/support/Stack'
@@ -15,13 +15,12 @@ import { isOption } from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as P from '@principia/base/typeclass'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
-import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { makeStack } from '@principia/base/util/support/Stack'
 
+import * as C from '../Cause/core'
+import * as I from '../IO/primitives'
+import * as M from '../Multi'
 import * as Ex from './AsyncExit'
-import * as C from './Cause/core'
-import * as I from './IO/core'
-import * as S from './SIO'
 
 /*
  * -------------------------------------------
@@ -36,9 +35,10 @@ export type _AI = typeof _AI
  * `Async` is a lightweight `IO` datatype for interruptible asynchronous computation.
  * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fibers`.
  */
-export abstract class Async<R, E, A> extends I.Integration<R, E, A> {
-  readonly _tag = I.IOTag.Integration
+export abstract class Async<R, E, A> extends I.FFI<R, E, A> {
+  readonly _tag = I.IOTag.FFI
 
+  readonly _W!: () => never
   readonly _S1!: (_: unknown) => void
   readonly _S2!: () => never
 
@@ -51,30 +51,47 @@ export abstract class Async<R, E, A> extends I.Integration<R, E, A> {
     return this as any
   }
   get ['_I'](): I.Instruction {
-    const ai = AsynctoIO.get
-    if (ai._tag === 'Some') {
-      return ai.value(this)['_I']
-    }
-    return new I.Fail(C.die('Async-IO integration unimplemented. Did you import the integration?'))
+    return new I.Read(
+      (env: R) =>
+        new I.EffectAsync((k) => {
+          runAsyncEnv(this, env, (ex) => {
+            switch (ex._tag) {
+              case 'Success': {
+                k(new I.Succeed(ex.value))
+                break
+              }
+              case 'Failure': {
+                k(new I.Fail(C.fail(ex.error)))
+                break
+              }
+              case 'Interrupt': {
+                k(new I.CheckDescriptor((d) => new I.Fail(C.interrupt(d.id))))
+                break
+              }
+            }
+          })
+          return O.none()
+        }, [])
+    )
   }
 }
 
-export enum AsyncInstructionTag {
-  Succeed = 'Succeed',
-  Total = 'Total',
-  Partial = 'Partial',
-  Suspend = 'Suspend',
-  Promise = 'Promise',
-  Chain = 'Chain',
-  Fold = 'Fold',
-  Asks = 'Asks',
-  Done = 'Done',
-  Give = 'Give',
-  Finalize = 'Finalize',
-  All = 'All',
-  Fail = 'Fail',
-  Interrupt = 'Interrupt'
-}
+export const AsyncTag = {
+  Succeed: 'Succeed',
+  Total: 'Total',
+  Partial: 'Partial',
+  Suspend: 'Suspend',
+  Promise: 'Promise',
+  FlatMap: 'FlatMap',
+  Fold: 'Fold',
+  Asks: 'Asks',
+  Done: 'Done',
+  Give: 'Give',
+  Finalize: 'Finalize',
+  All: 'All',
+  Fail: 'Fail',
+  Interrupt: 'Interrupt'
+} as const
 
 export type UAsync<A> = Async<unknown, never, A>
 export type FAsync<E, A> = Async<unknown, E, A>
@@ -92,100 +109,100 @@ declare module '@principia/base/HKT' {
 }
 
 export type AsyncInstruction =
-  | SucceedInstruction<any>
-  | SuspendInstruction<any, any, any>
-  | PromiseInstruction<any, any>
-  | ChainInstruction<any, any, any, any, any, any>
-  | FoldInstruction<any, any, any, any, any, any, any, any, any>
-  | AsksInstruction<any, any, any, any>
-  | DoneInstruction<any, any>
-  | GiveInstruction<any, any, any>
-  | FinalizeInstruction<any, any, any, any, any>
-  | AllInstruction<any, any, any>
-  | FailInstruction<any>
-  | TotalInstruction<any>
-  | PartialInstruction<any, any>
-  | InterruptInstruction
-  | SIO<unknown, never, any, any, any>
+  | Succeed<any>
+  | Suspend<any, any, any>
+  | LiftPromise<any, any>
+  | FlatMap<any, any, any, any, any, any>
+  | Fold<any, any, any, any, any, any, any, any, any>
+  | Asks<any, any, any, any>
+  | Done<any, any>
+  | Give<any, any, any>
+  | Finalize<any, any, any, any, any>
+  | All<any, any, any>
+  | Fail<any>
+  | Total<any>
+  | Partial<any, any>
+  | Interrupt
+  | Multi<never, unknown, never, any, any, any>
 
-export class SucceedInstruction<A> extends Async<unknown, never, A> {
-  readonly _asyncTag = AsyncInstructionTag.Succeed
+export class Succeed<A> extends Async<unknown, never, A> {
+  readonly _asyncTag = AsyncTag.Succeed
 
   constructor(readonly value: A) {
     super()
   }
 }
 
-export class TotalInstruction<A> extends Async<unknown, never, A> {
-  readonly _asyncTag = AsyncInstructionTag.Total
+export class Total<A> extends Async<unknown, never, A> {
+  readonly _asyncTag = AsyncTag.Total
 
   constructor(readonly thunk: () => A) {
     super()
   }
 }
 
-export class PartialInstruction<E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncInstructionTag.Partial
+export class Partial<E, A> extends Async<unknown, E, A> {
+  readonly _asyncTag = AsyncTag.Partial
 
   constructor(readonly thunk: () => A, readonly onThrow: (error: unknown) => E) {
     super()
   }
 }
 
-export class DoneInstruction<E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncInstructionTag.Done
+export class Done<E, A> extends Async<unknown, E, A> {
+  readonly _asyncTag = AsyncTag.Done
 
   constructor(readonly exit: Ex.AsyncExit<E, A>) {
     super()
   }
 }
 
-export class FailInstruction<E> extends Async<unknown, E, never> {
-  readonly _asyncTag = AsyncInstructionTag.Fail
+export class Fail<E> extends Async<unknown, E, never> {
+  readonly _asyncTag = AsyncTag.Fail
 
   constructor(readonly e: E) {
     super()
   }
 }
 
-export class InterruptInstruction extends Async<unknown, never, never> {
-  readonly _asyncTag = AsyncInstructionTag.Interrupt
+export class Interrupt extends Async<unknown, never, never> {
+  readonly _asyncTag = AsyncTag.Interrupt
 }
 
-export class AsksInstruction<R0, R, E, A> extends Async<R & R0, E, A> {
-  readonly _asyncTag = AsyncInstructionTag.Asks
+export class Asks<R0, R, E, A> extends Async<R & R0, E, A> {
+  readonly _asyncTag = AsyncTag.Asks
 
   constructor(readonly f: (_: R0) => Async<R, E, A>) {
     super()
   }
 }
 
-export class GiveInstruction<R, E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncInstructionTag.Give
+export class Give<R, E, A> extends Async<unknown, E, A> {
+  readonly _asyncTag = AsyncTag.Give
 
   constructor(readonly async: Async<R, E, A>, readonly env: R) {
     super()
   }
 }
 
-export class AllInstruction<R, E, A> extends Async<R, E, readonly A[]> {
-  readonly _asyncTag = AsyncInstructionTag.All
+export class All<R, E, A> extends Async<R, E, readonly A[]> {
+  readonly _asyncTag = AsyncTag.All
 
   constructor(readonly asyncs: readonly Async<R, E, A>[]) {
     super()
   }
 }
 
-export class SuspendInstruction<R, E, A> extends Async<R, E, A> {
-  readonly _asyncTag = AsyncInstructionTag.Suspend
+export class Suspend<R, E, A> extends Async<R, E, A> {
+  readonly _asyncTag = AsyncTag.Suspend
 
   constructor(readonly async: () => Async<R, E, A>) {
     super()
   }
 }
 
-export class PromiseInstruction<E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncInstructionTag.Promise
+export class LiftPromise<E, A> extends Async<unknown, E, A> {
+  readonly _asyncTag = AsyncTag.Promise
 
   constructor(
     readonly promise: (onInterrupt: (f: () => void) => void) => Promise<A>,
@@ -195,16 +212,16 @@ export class PromiseInstruction<E, A> extends Async<unknown, E, A> {
   }
 }
 
-export class ChainInstruction<R, E, A, Q, D, B> extends Async<Q & R, D | E, B> {
-  readonly _asyncTag = AsyncInstructionTag.Chain
+export class FlatMap<R, E, A, Q, D, B> extends Async<Q & R, D | E, B> {
+  readonly _asyncTag = AsyncTag.FlatMap
 
   constructor(readonly async: Async<R, E, A>, readonly f: (a: A) => Async<Q, D, B>) {
     super()
   }
 }
 
-export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1 & R2, E1 | E2, B | C> {
-  readonly _asyncTag = AsyncInstructionTag.Fold
+export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1 & R2, E1 | E2, B | C> {
+  readonly _asyncTag = AsyncTag.Fold
 
   constructor(
     readonly async: Async<R, E, A>,
@@ -215,8 +232,8 @@ export class FoldInstruction<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1
   }
 }
 
-export class FinalizeInstruction<R, E, A, R1, B> extends Async<R & R1, E, A> {
-  readonly _asyncTag = AsyncInstructionTag.Finalize
+export class Finalize<R, E, A, R1, B> extends Async<R & R1, E, A> {
+  readonly _asyncTag = AsyncTag.Finalize
 
   constructor(readonly async: Async<R, E, A>, readonly f: () => Async<R1, never, B>) {
     super()
@@ -230,52 +247,54 @@ export class FinalizeInstruction<R, E, A, R1, B> extends Async<R & R1, E, A> {
  */
 
 export function succeed<A>(a: A): Async<unknown, never, A> {
-  return new SucceedInstruction(a)
+  return new Succeed(a)
 }
 
 export function fail<E>(e: E): Async<unknown, E, never> {
-  return new FailInstruction(e)
+  return new Fail(e)
 }
 
 export function done<E, A>(exit: Ex.AsyncExit<E, A>): Async<unknown, E, A> {
-  return new DoneInstruction(exit)
+  return new Done(exit)
 }
 
-export function suspend<R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> {
-  return new SuspendInstruction(factory)
+export function effectSuspend<R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> {
+  return new Suspend(factory)
 }
 
-export function unfailable<A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>): Async<unknown, never, A> {
-  return new PromiseInstruction(promise, () => undefined as never)
+export function promiseUnfailable<A>(
+  promise: (onInterrupt: (f: () => void) => void) => Promise<A>
+): Async<unknown, never, A> {
+  return new LiftPromise(promise, () => undefined as never)
 }
 
 export function promise_<E, A>(
   promise: (onInterrupt: (f: () => void) => void) => Promise<A>,
   onError: (u: unknown) => E
 ): Async<unknown, E, A> {
-  return new PromiseInstruction(promise, onError)
+  return new LiftPromise(promise, onError)
 }
 
 export function promise<E>(
   onError: (u: unknown) => E
-): <A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>) => PromiseInstruction<E, A> {
-  return (promise) => new PromiseInstruction(promise, onError)
+): <A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>) => LiftPromise<E, A> {
+  return (promise) => new LiftPromise(promise, onError)
 }
 
-export function total<A>(thunk: () => A): Async<unknown, never, A> {
-  return new TotalInstruction(thunk)
+export function effectTotal<A>(thunk: () => A): Async<unknown, never, A> {
+  return new Total(thunk)
 }
 
-export function partial_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
-  return new PartialInstruction(thunk, onThrow)
+export function effectCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
+  return new Partial(thunk, onThrow)
 }
 
-export function partial<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => Async<unknown, E, A> {
-  return (thunk) => partial_(thunk, onThrow)
+export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => Async<unknown, E, A> {
+  return (thunk) => effectCatch_(thunk, onThrow)
 }
 
 export function interrupt(): Async<unknown, never, never> {
-  return new InterruptInstruction()
+  return new Interrupt()
 }
 
 /*
@@ -289,7 +308,7 @@ export function foldM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   f: (e: E) => Async<R1, E1, A1>,
   g: (a: A) => Async<R2, E2, A2>
 ): Async<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new FoldInstruction(async, f, g)
+  return new Fold(async, f, g)
 }
 
 export function foldM<E, A, R1, E1, A1, R2, E2, A2>(
@@ -336,7 +355,7 @@ export function pure<A>(a: A): Async<unknown, never, A> {
  * -------------------------------------------
  */
 
-export function tupleNPar<A extends ReadonlyArray<Async<any, any, any>>>(
+export function sequenceTPar<A extends ReadonlyArray<Async<any, any, any>>>(
   ...asyncs: A & { 0: Async<any, any, any> }
 ): Async<
   _R<A[number]>,
@@ -345,7 +364,7 @@ export function tupleNPar<A extends ReadonlyArray<Async<any, any, any>>>(
     [K in keyof A]: _A<A[K]>
   }
 > {
-  return new AllInstruction(asyncs) as any
+  return new All(asyncs) as any
 }
 
 export function productPar_<R, E, A, R1, E1, A1>(
@@ -366,7 +385,7 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Async<R & R1, E | E1, C> {
-  return map_(tupleNPar(fa, fb), ([a, b]) => f(a, b))
+  return map_(sequenceTPar(fa, fb), ([a, b]) => f(a, b))
 }
 
 export function map2Par<A, R1, E1, B, C>(
@@ -418,7 +437,7 @@ export function apSecondPar<R1, E1, A1>(
  * -------------------------------------------
  */
 
-export function tupleN<A extends ReadonlyArray<Async<any, any, any>>>(
+export function sequenceT<A extends ReadonlyArray<Async<any, any, any>>>(
   ...fas: A & { 0: Async<any, any, any> }
 ): Async<_R<A[number]>, _E<A[number]>, { [K in keyof A]: _A<A[K]> }> {
   return A.foldLeft_(
@@ -541,11 +560,11 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R
  */
 
 export function flatMap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, B> {
-  return new ChainInstruction(ma, f)
+  return new FlatMap(ma, f)
 }
 
 export function flatMap<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
-  return (ma) => new ChainInstruction(ma, f)
+  return (ma) => new FlatMap(ma, f)
 }
 
 export function flatten<R, E, R1, E1, A>(mma: Async<R, E, Async<R1, E1, A>>): Async<R & R1, E | E1, A> {
@@ -580,7 +599,7 @@ export function tapError<E, R1, E1, B>(
  */
 
 export function asksM<R0, R, E, A>(f: (_: R0) => Async<R, E, A>): Async<R & R0, E, A> {
-  return new AsksInstruction(f)
+  return new Asks(f)
 }
 
 export function asks<R, A>(f: (_: R) => A): Async<R, never, A> {
@@ -592,11 +611,11 @@ export function ask<R>(): Async<R, never, R> {
 }
 
 export function giveAll_<R, E, A>(ra: Async<R, E, A>, env: R): Async<unknown, E, A> {
-  return new GiveInstruction(ra, env)
+  return new Give(ra, env)
 }
 
 export function giveAll<R>(env: R): <E, A>(ra: Async<R, E, A>) => Async<unknown, E, A> {
-  return (ra) => new GiveInstruction(ra, env)
+  return (ra) => new Give(ra, env)
 }
 
 export function gives_<R0, R, E, A>(ra: Async<R, E, A>, f: (_: R0) => R): Async<R0, E, A> {
@@ -958,19 +977,19 @@ export function runPromiseExitEnv_<R, E, A>(
       instructionCount         += 1
       const I: AsyncInstruction = current[_AI]
       switch (I._asyncTag) {
-        case AsyncInstructionTag.Chain: {
+        case AsyncTag.FlatMap: {
           const nested: AsyncInstruction                       = I.async[_AI]
           const continuation: (a: any) => Async<any, any, any> = I.f
           switch (nested._asyncTag) {
-            case AsyncInstructionTag.Succeed: {
+            case AsyncTag.Succeed: {
               current = continuation(nested.value)
               break
             }
-            case AsyncInstructionTag.Total: {
+            case AsyncTag.Total: {
               current = continuation(nested.thunk())
               break
             }
-            case AsyncInstructionTag.Partial: {
+            case AsyncTag.Partial: {
               try {
                 current = continuation(nested.thunk())
               } catch (e) {
@@ -985,11 +1004,11 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case AsyncInstructionTag.Suspend: {
+        case AsyncTag.Suspend: {
           current = I.async()
           break
         }
-        case AsyncInstructionTag.Succeed: {
+        case AsyncTag.Succeed: {
           result     = I.value
           const next = popContinuation()
           if (next) {
@@ -999,11 +1018,11 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case AsyncInstructionTag.Total: {
+        case AsyncTag.Total: {
           current = succeed(I.thunk())
           break
         }
-        case AsyncInstructionTag.Partial: {
+        case AsyncTag.Partial: {
           try {
             current = succeed(I.thunk())
           } catch (e) {
@@ -1011,7 +1030,7 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case AsyncInstructionTag.Fail: {
+        case AsyncTag.Fail: {
           unwindStack()
           const next = popContinuation()
           if (next) {
@@ -1023,7 +1042,7 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case AsyncInstructionTag.Done: {
+        case AsyncTag.Done: {
           switch (I.exit._tag) {
             case 'Failure': {
               current = fail(I.exit.error)
@@ -1041,31 +1060,31 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case AsyncInstructionTag.Interrupt: {
+        case AsyncTag.Interrupt: {
           interrupted = true
           interruptionState.interrupt()
           current = undefined
           break
         }
-        case AsyncInstructionTag.Asks: {
+        case AsyncTag.Asks: {
           current = I.f(env.value || {})
           break
         }
-        case AsyncInstructionTag.Give: {
+        case AsyncTag.Give: {
           current = pipe(
-            total(() => {
+            effectTotal(() => {
               pushEnv(I.env)
             }),
             flatMap(() => I.async),
             tap(() =>
-              total(() => {
+              effectTotal(() => {
                 popEnv()
               })
             )
           )
           break
         }
-        case AsyncInstructionTag.All: {
+        case AsyncTag.All: {
           const exits: ReadonlyArray<Ex.AsyncExit<any, any>> = await Promise.all(
             A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, env?.value || {}, interruptionState))
           )
@@ -1096,7 +1115,7 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case AsyncInstructionTag.Promise: {
+        case AsyncTag.Promise: {
           try {
             current = succeed(
               await new CancellablePromise(
@@ -1120,8 +1139,8 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case 'SIO': {
-          const res = S.runEitherEnv_(I, env?.value || {})
+        case 'Multi': {
+          const res = M.runEitherEnv_(I, env?.value || {})
           if (res._tag === 'Left') {
             current = fail(res.left)
           } else {
@@ -1383,11 +1402,3 @@ class PromiseTracingContext {
 }
 
 export const defaultPromiseTracingContext = new PromiseTracingContext()
-
-/*
- * -------------------------------------------
- * IO Integration
- * -------------------------------------------
- */
-
-export const AsynctoIO = new AtomicReference<O.Option<<R, E, A>(_: Async<R, E, A>) => I.IO<R, E, A>>>(O.none())

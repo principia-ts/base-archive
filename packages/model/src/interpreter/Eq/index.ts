@@ -15,6 +15,7 @@ import { RecursiveEq } from './recursive'
 import { RefinementEq } from './refinement'
 import { SetEq } from './set'
 import { SumEq } from './sum'
+import {UnknownEq} from './unknown'
 
 export const _allEqInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -27,7 +28,8 @@ export const _allEqInterpreters = <Env extends AnyEnv>() =>
     SetEq<Env>(),
     SumEq<Env>(),
     NullableEq<Env>(),
-    IntersectionEq<Env>()
+    IntersectionEq<Env>(),
+    UnknownEq<Env>()
   )
 
 export const allEqInterpreters = memoize(_allEqInterpreters) as typeof _allEqInterpreters

@@ -7,6 +7,7 @@ import { identity, pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
+import { IllegalArgumentException } from './Cause'
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
 import * as XR from './IORef/core'
@@ -38,7 +39,7 @@ export class Semaphore {
   get available() {
     return I.map_(
       this.state.get,
-      E.fold(() => 0, identity)
+      E.getOrElse(() => 0)
     )
   }
 
@@ -195,5 +196,13 @@ export function unsafeMake(permits: number): Semaphore {
 }
 
 function assertNonNegative(n: number) {
-  return n < 0 ? I.die(`Unexpected negative value ${n} passed to acquireN or releaseN.`) : I.unit()
+  return n < 0
+    ? I.die(new NegativeArgument(`Unexpected negative value ${n} passed to acquireN or releaseN.`))
+    : I.unit()
+}
+
+class NegativeArgument extends IllegalArgumentException {
+  constructor(message: string) {
+    super(message)
+  }
 }

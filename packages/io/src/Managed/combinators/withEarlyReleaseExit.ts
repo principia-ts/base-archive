@@ -1,6 +1,6 @@
 import * as Ex from '../../Exit'
-import * as I from '../_internal/io'
 import { flatMap_, Managed } from '../core'
+import * as I from '../internal/io'
 import { fiberId } from './fiberId'
 
 export function withEarlyReleaseExit_<R, E, A>(

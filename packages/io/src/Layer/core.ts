@@ -26,8 +26,8 @@ import * as XR from '../IORef'
 import * as XRM from '../IORefM'
 import * as RelMap from '../Managed/ReleaseMap'
 import * as P from '../Promise'
-import * as I from './_internal/io'
-import * as M from './_internal/managed'
+import * as I from './internal/io'
+import * as M from './internal/managed'
 
 /*
  * -------------------------------------------
@@ -916,7 +916,7 @@ export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never,
  * Translates effect failure into death of the fiber, making all failures
  * unchecked and not a part of the type of the layer.
  */
-export function orDie<R, E, A>(la: Layer<R, E, A>): Layer<R, never, A> {
+export function orDie<R, E extends Error, A>(la: Layer<R, E, A>): Layer<R, never, A> {
   return catchAll_(la, second<E>()['>>'](fromRawFunctionM((e: E) => I.die(e))))
 }
 

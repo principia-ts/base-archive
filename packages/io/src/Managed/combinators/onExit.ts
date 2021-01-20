@@ -5,8 +5,8 @@ import { pipe, tuple } from '@principia/base/Function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
-import * as I from '../_internal/io'
 import { Managed } from '../core'
+import * as I from '../internal/io'
 import { add, make } from '../ReleaseMap'
 import { releaseAll } from './releaseAll'
 

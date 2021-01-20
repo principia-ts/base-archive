@@ -20,7 +20,7 @@ import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
 import * as Ref from '../IORef/core'
-import * as I from './_internal/io'
+import * as I from './internal/io'
 import { add, addIfOpen, noopFinalizer, release } from './ReleaseMap'
 
 /*
@@ -123,8 +123,8 @@ export function halt<E>(cause: Cause<E>): Managed<unknown, E, never> {
 /**
  * Returns a Managed that dies with the specified error
  */
-export function die(error: unknown): Managed<unknown, never, never> {
-  return halt(C.die(error))
+export function die(e: Error): Managed<unknown, never, never> {
+  return halt(C.die(e))
 }
 
 /**
@@ -1459,7 +1459,7 @@ export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E,
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown`.
  */
-export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown): Managed<R, never, A> {
+export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => Error): Managed<R, never, A> {
   return new Managed(I.orDieWith_(ma.io, f))
 }
 
@@ -1467,7 +1467,7 @@ export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown):
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown.
  */
-export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
+export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
   return (ma) => orDieWith_(ma, f)
 }
 
@@ -1475,7 +1475,7 @@ export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>)
  * Translates effect failure into death of the fiber, making all failures unchecked and
  * not a part of the type of the effect.
  */
-export function orDie<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
+export function orDie<R, E extends Error, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
   return orDieWith_(ma, identityFn)
 }
 
@@ -1589,7 +1589,7 @@ export function orElseSucceed<A1>(that: () => A1): <R, E, A>(ma: Managed<R, E, A
 export function refineOrDieWith_<R, E, A, E1>(
   ma: Managed<R, E, A>,
   pf: (e: E) => O.Option<E1>,
-  f: (e: E) => unknown
+  f: (e: E) => Error
 ): Managed<R, E1, A> {
   return catchAll_(ma, (e) => O.fold_(pf(e), () => die(f(e)), fail))
 }
@@ -1600,7 +1600,7 @@ export function refineOrDieWith_<R, E, A, E1>(
  */
 export function refineOrDieWith<E, E1>(
   pf: (e: E) => O.Option<E1>,
-  f: (e: E) => unknown
+  f: (e: E) => Error
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
   return (ma) => refineOrDieWith_(ma, pf, f)
 }
@@ -1608,14 +1608,19 @@ export function refineOrDieWith<E, E1>(
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (e: E) => O.Option<E1>): Managed<R, E1, A> {
+export function refineOrDie_<R, E extends Error, A, E1>(
+  ma: Managed<R, E, A>,
+  pf: (e: E) => O.Option<E1>
+): Managed<R, E1, A> {
   return refineOrDieWith_(ma, pf, identityFn)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie<E, E1>(pf: (e: E) => O.Option<E1>): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
+export function refineOrDie<E extends Error, E1>(
+  pf: (e: E) => O.Option<E1>
+): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
   return (ma) => refineOrDie_(ma, pf)
 }
 
@@ -1677,7 +1682,7 @@ export { _require as require }
 export function result<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, Ex.Exit<E, A>> {
   return foldCauseM_(
     ma,
-    (cause) => succeed(Ex.failure(cause)),
+    (cause) => succeed(Ex.halt(cause)),
     (a) => succeed(Ex.succeed(a))
   )
 }

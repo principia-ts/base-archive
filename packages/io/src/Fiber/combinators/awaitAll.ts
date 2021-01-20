@@ -2,7 +2,7 @@ import type { Exit } from '../../Exit'
 import type { Fiber } from '../core'
 
 import { foreachPar_ } from '../../IO/combinators/foreachPar'
-import * as I from '../_internal/io'
+import * as I from '../internal/io'
 
 /**
  * Awaits on all fibers to be completed, successfully or not.

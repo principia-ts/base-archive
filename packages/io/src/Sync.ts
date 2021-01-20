@@ -1,4 +1,4 @@
-import type { SIO } from './SIO'
+import type { Multi } from './Multi'
 import type { Has, Region, Tag } from '@principia/base/Has'
 import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
@@ -14,7 +14,7 @@ import * as P from '@principia/base/typeclass'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import * as FL from '@principia/free/FreeList'
 
-import * as S from './SIO'
+import * as M from './Multi'
 
 /*
  * -------------------------------------------
@@ -22,7 +22,7 @@ import * as S from './SIO'
  * -------------------------------------------
  */
 
-export interface Sync<R, E, A> extends SIO<unknown, never, R, E, A> {}
+export interface Sync<R, E, A> extends Multi<never, unknown, never, R, E, A> {}
 
 export type USync<A> = Sync<unknown, never, A>
 export type FSync<E, A> = Sync<unknown, E, A>
@@ -46,32 +46,32 @@ declare module '@principia/base/HKT' {
  * -------------------------------------------
  */
 
-export const succeed: <A>(a: A) => Sync<unknown, never, A> = S.succeed
+export const succeed: <A>(a: A) => Sync<unknown, never, A> = M.succeed
 
-export const fail: <E>(e: E) => Sync<unknown, E, never> = S.fail
+export const fail: <E>(e: E) => Sync<unknown, E, never> = M.fail
 
-export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = S.effect
+export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = M.effect
 
-export const effectTotal: <A>(effect: () => A) => Sync<unknown, never, A> = S.effectTotal
+export const effectTotal: <A>(effect: () => A) => Sync<unknown, never, A> = M.effectTotal
 
 export const effectCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> =
-  S.effectCatch_
+  M.effectCatch_
 
 export const effectCatch: <E>(onThrow: (error: unknown) => E) => <A>(effect: () => A) => Sync<unknown, E, A> =
-  S.effectCatch
+  M.effectCatch
 
-export const effectSuspend: <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, unknown, A> = S.effectSuspend
+export const effectSuspend: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = M.effectSuspend
 
-export const effectSuspendTotal: <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E, A> = S.effectSuspendTotal
+export const effectSuspendTotal: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = M.effectSuspendTotal
 
 export const effectSuspendCatch_: <R, E, A, E1>(
-  sync: () => Sync<R, E, A>,
+  effect: () => Sync<R, E, A>,
   onThrow: (u: unknown) => E1
-) => Sync<R, E | E1, A> = S.effectSuspendCatch_
+) => Sync<R, E | E1, A> = M.effectSuspendCatch_
 
 export const effectSuspendCatch: <E1>(
   onThrow: (u: unknown) => E1
-) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = S.effectSuspendCatch
+) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = M.effectSuspendCatch
 
 export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.fold(fail, succeed)
 
@@ -95,7 +95,7 @@ export const foldM_: <R, E, A, R1, E1, B, R2, E2, C>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => Sync<R & R1 & R2, E1 | E2, B | C> = S.foldM_
+) => Sync<R & R1 & R2, E1 | E2, B | C> = M.foldM_
 
 /**
  * Recovers from errors by accepting one computation to execute for the case
@@ -107,7 +107,7 @@ export const foldM_: <R, E, A, R1, E1, B, R2, E2, C>(
 export const foldM: <E, A, R1, E1, B, R2, E2, C>(
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = S.foldM
+) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = M.foldM
 
 /**
  * Folds over the failed or successful results of this computation to yield
@@ -121,7 +121,7 @@ export const fold_: <R, E, A, B, C>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
-) => Sync<R, never, B | C> = S.fold_
+) => Sync<R, never, B | C> = M.fold_
 
 /**
  * Folds over the failed or successful results of this computation to yield
@@ -134,7 +134,7 @@ export const fold_: <R, E, A, B, C>(
 export const fold: <E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
-) => <R>(fa: Sync<R, E, A>) => Sync<R, never, B | C> = S.fold
+) => <R>(fa: Sync<R, E, A>) => Sync<R, never, B | C> = M.fold
 
 /**
  * Recovers from all errors
@@ -145,7 +145,7 @@ export const fold: <E, A, B, C>(
 export const catchAll_: <R, E, A, Q, D, B>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => Sync<Q, D, B>
-) => Sync<Q & R, D, A | B> = S.catchAll_
+) => Sync<Q & R, D, A | B> = M.catchAll_
 
 /**
  * Recovers from all errors
@@ -155,7 +155,7 @@ export const catchAll_: <R, E, A, Q, D, B>(
  */
 export const catchAll: <E, Q, D, B>(
   onFailure: (e: E) => Sync<Q, D, B>
-) => <R, A>(fa: Sync<R, E, A>) => Sync<Q & R, D, A | B> = S.catchAll
+) => <R, A>(fa: Sync<R, E, A>) => Sync<Q & R, D, A | B> = M.catchAll
 
 /**
  * Effectfully folds two `Sync` computations together
@@ -265,7 +265,7 @@ export function foldTogether<E, A, R1, E1, B, C, D, F, G>(
  * -------------------------------------------
  */
 
-export const pure: <A>(a: A) => Sync<unknown, never, A> = S.pure
+export const pure: <A>(a: A) => Sync<unknown, never, A> = M.pure
 
 /*
  * -------------------------------------------
@@ -274,38 +274,38 @@ export const pure: <A>(a: A) => Sync<unknown, never, A> = S.pure
  */
 
 export const product_: <R, E, A, Q, D, B>(fa: Sync<R, E, A>, fb: Sync<Q, D, B>) => Sync<Q & R, D | E, readonly [A, B]> =
-  S.product_
+  M.product_
 
 export const product: <Q, D, B>(
   fb: Sync<Q, D, B>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = S.product
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = M.product
 
 export const map2_: <R, E, A, Q, D, B, C>(
   fa: Sync<R, E, A>,
   fb: Sync<Q, D, B>,
   f: (a: A, b: B) => C
-) => Sync<Q & R, D | E, C> = S.map2_
+) => Sync<Q & R, D | E, C> = M.map2_
 
 export const map2: <A, Q, D, B, C>(
   fb: Sync<Q, D, B>,
   f: (a: A, b: B) => C
-) => <R, E>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, C> = S.map2
+) => <R, E>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, C> = M.map2
 
-export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D, A>) => Sync<Q & R, D | E, B> = S.ap_
+export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D, A>) => Sync<Q & R, D | E, B> = M.ap_
 
-export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> = S.ap
+export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> = M.ap
 
 export const apFirst_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> =
-  S.apFirst_
+  M.apFirst_
 
 export const apFirst: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> =
-  S.apFirst
+  M.apFirst
 
 export const apSecond_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> =
-  S.apSecond_
+  M.apSecond_
 
 export const apSecond: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> =
-  S.apSecond
+  M.apSecond
 
 export function liftA2_<A, B, C>(f: (a: A, b: B) => C): (a: USync<A>, b: USync<B>) => USync<C> {
   return (a, b) => map2_(a, b, f)
@@ -327,13 +327,13 @@ export function liftK<A extends [unknown, ...ReadonlyArray<unknown>], B>(
  * -------------------------------------------
  */
 
-export const bimap_: <R, E, A, B, C>(pab: Sync<R, E, A>, f: (e: E) => B, g: (a: A) => C) => Sync<R, B, C> = S.bimap_
+export const bimap_: <R, E, A, B, C>(pab: Sync<R, E, A>, f: (e: E) => B, g: (a: A) => C) => Sync<R, B, C> = M.bimap_
 
-export const bimap: <E, A, B, C>(f: (e: E) => B, g: (a: A) => C) => <R>(pab: Sync<R, E, A>) => Sync<R, B, C> = S.bimap
+export const bimap: <E, A, B, C>(f: (e: E) => B, g: (a: A) => C) => <R>(pab: Sync<R, E, A>) => Sync<R, B, C> = M.bimap
 
-export const mapError_: <R, E, A, B>(pab: Sync<R, E, A>, f: (e: E) => B) => Sync<R, B, A> = S.mapError_
+export const mapError_: <R, E, A, B>(pab: Sync<R, E, A>, f: (e: E) => B) => Sync<R, B, A> = M.mapError_
 
-export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => Sync<R, B, A> = S.mapError
+export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => Sync<R, B, A> = M.mapError
 
 /*
  * -------------------------------------------
@@ -341,9 +341,9 @@ export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => S
  * -------------------------------------------
  */
 
-export const recover: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = S.recover
+export const recover: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = M.recover
 
-export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = S.absolve
+export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = M.absolve
 
 /*
  * -------------------------------------------
@@ -351,9 +351,9 @@ export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, 
  * -------------------------------------------
  */
 
-export const map_: <R, E, A, B>(fa: Sync<R, E, A>, f: (a: A) => B) => Sync<R, E, B> = S.map_
+export const map_: <R, E, A, B>(fa: Sync<R, E, A>, f: (a: A) => B) => Sync<R, E, B> = M.map_
 
-export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R, E, B> = S.map
+export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R, E, B> = M.map
 
 /*
  * -------------------------------------------
@@ -362,16 +362,16 @@ export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R,
  */
 
 export const flatMap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> =
-  S.flatMap_
+  M.flatMap_
 
 export const flatMap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
-  S.flatMap
+  M.flatMap
 
 export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = flatMap(identity)
 
-export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = S.tap_
+export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = M.tap_
 
-export const tap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> = S.tap
+export const tap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> = M.tap
 
 /*
  * -------------------------------------------
@@ -399,23 +399,23 @@ export function getFailableMonoid<E, A>(MA: P.Monoid<A>, ME: P.Monoid<E>): P.Mon
  * -------------------------------------------
  */
 
-export const ask: <R>() => Sync<R, never, R> = S.ask
+export const ask: <R>() => Sync<R, never, R> = M.ask
 
-export const asksM: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = S.asksM
+export const asksM: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = M.asksM
 
-export const asks: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = S.asks
+export const asks: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = M.asks
 
-export const gives_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<R0, E, A> = S.gives_
+export const gives_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<R0, E, A> = M.gives_
 
-export const gives: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = S.gives
+export const gives: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = M.gives
 
-export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = S.giveAll_
+export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = M.giveAll_
 
-export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = S.giveAll
+export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = M.giveAll
 
-export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = S.give_
+export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = M.give_
 
-export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = S.give
+export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = M.give
 
 /*
  * -------------------------------------------
@@ -446,7 +446,7 @@ export function getFailableSemigroup<E, A>(SA: P.Semigroup<A>, SE: P.Semigroup<E
  * -------------------------------------------
  */
 
-export const unit: () => Sync<unknown, never, void> = S.unit
+export const unit: () => Sync<unknown, never, void> = M.unit
 
 /*
  * -------------------------------------------
@@ -467,7 +467,7 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    S.asksM(
+    M.asksM(
       (
         r: UnionToIntersection<
           {
@@ -488,7 +488,7 @@ export function asksServicesTM<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    S.asksM(
+    M.asksM(
       (
         r: UnionToIntersection<
           {
@@ -509,7 +509,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    S.asks(
+    M.asks(
       (
         r: UnionToIntersection<
           {
@@ -533,7 +533,7 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    S.asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+    M.asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
       f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
@@ -542,7 +542,7 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
  * Access a service with the required Service Entry
  */
 export function asksServiceM<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Sync<R, E, B>) => Sync<R & Has<T>, E, B> {
-  return (f) => S.asksM((r: Has<T>) => f(r[s.key as any]))
+  return (f) => M.asksM((r: Has<T>) => f(r[s.key as any]))
 }
 
 /**
@@ -562,14 +562,14 @@ export function asksServiceF<T>(
  * Access a service with the required Service Entry
  */
 export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Sync<Has<T>, never, B> {
-  return (f) => asksServiceM(s)((a) => S.pure(f(a)))
+  return (f) => asksServiceM(s)((a) => M.pure(f(a)))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function askService<T>(s: Tag<T>): Sync<Has<T>, never, T> {
-  return asksServiceM(s)((a) => S.pure(a))
+  return asksServiceM(s)((a) => M.pure(a))
 }
 
 /**
@@ -579,14 +579,14 @@ export function giveServiceM<T>(
   _: Tag<T>
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-    S.asksM((r: R & R1) => S.flatMap_(f, (t) => S.giveAll_(ma, mergeEnvironments(_, r, t))))
+    M.asksM((r: R & R1) => M.flatMap_(f, (t) => M.giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
  * Provides the service with the required Service Entry
  */
 export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1, E1, A1> {
-  return (f) => (ma) => giveServiceM(_)(S.pure(f))(ma)
+  return (f) => (ma) => giveServiceM(_)(M.pure(f))(ma)
 }
 
 /**
@@ -617,7 +617,7 @@ export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(S.pure(f(t)))(ma))
+  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(M.pure(f(t)))(ma))
 }
 
 /**
@@ -628,7 +628,7 @@ export function updateService_<R1, E1, A1, T>(
   _: Tag<T>,
   f: (_: T) => T
 ): Sync<R1 & Has<T>, E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(S.pure(f(t)))(ma))
+  return asksServiceM(_)((t) => giveServiceM(_)(M.pure(f(t)))(ma))
 }
 
 export function region<K, T>(): Tag<Region<T, K>> {
@@ -638,24 +638,24 @@ export function region<K, T>(): Tag<Region<T, K>> {
 export function useRegion<K, T>(
   h: Tag<Region<T, K>>
 ): <R, E, A>(e: Sync<R & T, E, A>) => Sync<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(e, S.give((a as any) as T)))
+  return (e) => asksServiceM(h)((a) => pipe(e, M.give((a as any) as T)))
 }
 
 export function asksRegionM<K, T>(
   h: Tag<Region<T, K>>
 ): <R, E, A>(e: (_: T) => Sync<R & T, E, A>) => Sync<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(S.asksM(e), S.give((a as any) as T)))
+  return (e) => asksServiceM(h)((a) => pipe(M.asksM(e), M.give((a as any) as T)))
 }
 
 export function asksRegion<K, T>(h: Tag<Region<T, K>>): <A>(e: (_: T) => A) => Sync<Has<Region<T, K>>, never, A> {
-  return (e) => asksServiceM(h)((a) => pipe(S.asks(e), S.give((a as any) as T)))
+  return (e) => asksServiceM(h)((a) => pipe(M.asks(e), M.give((a as any) as T)))
 }
 
 export function askRegion<K, T>(h: Tag<Region<T, K>>): Sync<Has<Region<T, K>>, never, T> {
   return asksServiceM(h)((a) =>
     pipe(
-      S.asks((r: T) => r),
-      S.give((a as any) as T)
+      M.asks((r: T) => r),
+      M.give((a as any) as T)
     )
   )
 }
@@ -667,8 +667,8 @@ export function askServiceIn<A>(
     useRegion(h)(
       asksServiceM(_)((a) =>
         pipe(
-          S.asks((r: A) => r),
-          S.give((a as any) as A)
+          M.asks((r: A) => r),
+          M.give((a as any) as A)
         )
       )
     )
@@ -681,8 +681,8 @@ export function asksServiceIn<A>(
     useRegion(h)(
       asksServiceM(_)((a) =>
         pipe(
-          S.asks((r: A) => f(r)),
-          S.give((a as any) as A)
+          M.asks((r: A) => f(r)),
+          M.give((a as any) as A)
         )
       )
     )
@@ -697,8 +697,8 @@ export function asksServiceInM<A>(
     useRegion(h)(
       asksServiceM(_)((a) =>
         pipe(
-          S.asksM((r: A) => f(r)),
-          S.give((a as any) as A)
+          M.asksM((r: A) => f(r)),
+          M.give((a as any) as A)
         )
       )
     )
@@ -712,7 +712,7 @@ export function asksServiceInM<A>(
  * Maps the success value of this effect to a service.
  */
 export function asService<A>(has: Tag<A>): <R, E>(fa: Sync<R, E, A>) => Sync<R, E, Has<A>> {
-  return (fa) => S.map_(fa, has.of)
+  return (fa) => M.map_(fa, has.of)
 }
 
 /*
@@ -721,13 +721,13 @@ export function asService<A>(has: Tag<A>): <R, E>(fa: Sync<R, E, A>) => Sync<R, 
  * -------------------------------------------
  */
 
-export const unsafeRunEither: <E, A>(sync: Sync<unknown, E, A>) => E.Either<E, A> = S.runEither
+export const runEither: <E, A>(sync: Sync<unknown, E, A>) => E.Either<E, A> = M.runEither
 
-export const unsafeRunEitherEnv_: <R, E, A>(sync: Sync<R, E, A>, env: R) => E.Either<E, A> = S.runEitherEnv_
+export const runEitherEnv_: <R, E, A>(sync: Sync<R, E, A>, env: R) => E.Either<E, A> = M.runEitherEnv_
 
-export const unsafeRunEitherEnv: <R>(env: R) => <E, A>(sync: Sync<R, E, A>) => E.Either<E, A> = S.runEitherEnv
+export const runEitherEnv: <R>(env: R) => <E, A>(sync: Sync<R, E, A>) => E.Either<E, A> = M.runEitherEnv
 
-export const unsafeRun: <A>(sync: Sync<unknown, never, A>) => A = S.runIO
+export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
 
 /*
  * -------------------------------------------

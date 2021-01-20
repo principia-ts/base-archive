@@ -33,15 +33,15 @@ export function genWithHistoryF<
 ) => HKT.Kind<
   F,
   TC,
-  HKT.Infer<F, TC, 'N', T['T']>,
-  HKT.Infer<F, TC, 'K', T['T']>,
-  HKT.Infer<F, TC, 'Q', T['T']>,
-  HKT.Infer<F, TC, 'W', T['T']>,
-  HKT.Infer<F, TC, 'X', T['T']>,
-  HKT.Infer<F, TC, 'I', T['T']>,
-  HKT.Infer<F, TC, 'S', T['T']>,
-  HKT.Infer<F, TC, 'R', T['T']>,
-  HKT.Infer<F, TC, 'E', T['T']>,
+  HKT.Infer<F, TC, 'N', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'K', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'Q', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'W', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'X', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'I', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'S', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'R', ReturnType<T['T']>>,
+  HKT.Infer<F, TC, 'E', ReturnType<T['T']>>,
   A0
 >
 export function genWithHistoryF<F>(

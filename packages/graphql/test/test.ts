@@ -35,7 +35,7 @@ const Query = apollo.object<{}>()('Query', (F) => ({
   }),
   custom: F.field({
     type: F.string(),
-    resolve: (r, a, c) => c.conn.request.ip
+    resolve: (r, a, c) => c.conn.req.ip
   })
 }))
 

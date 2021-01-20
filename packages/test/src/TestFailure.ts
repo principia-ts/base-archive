@@ -19,8 +19,8 @@ export function assertion(result: TestResult): TestFailure<never> {
   return new AssertionFailure(result)
 }
 
-export function die(u: unknown): TestFailure<never> {
-  return new RuntimeFailure(C.die(u))
+export function die(error: Error): TestFailure<never> {
+  return new RuntimeFailure(C.die(error))
 }
 
 export function fail<E>(e: E): TestFailure<E> {

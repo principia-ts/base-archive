@@ -1,5 +1,5 @@
-import type * as I from '../_internal/io'
 import type { Managed } from '../core'
+import type * as I from '../internal/io'
 
 import { onExit_ } from './onExit'
 

@@ -27,7 +27,7 @@ export interface Fail<E> {
 
 export interface Die {
   readonly _tag: 'Die'
-  readonly value: unknown
+  readonly value: Error
 }
 
 export interface Interrupt {
@@ -80,7 +80,7 @@ export function fail<E>(value: E): Cause<E> {
  * die :: _ -> Cause Never
  * ```
  */
-export function die(value: unknown): Cause<never> {
+export function die(value: Error): Cause<never> {
   return {
     _tag: 'Die',
     value
@@ -187,11 +187,14 @@ export function isEmpty<E>(cause: Cause<E>): boolean {
  *
  * Returns if a cause contains a defect
  */
-export const died: <E>(cause: Cause<E>) => boolean = flow(
-  dieOption,
-  O.map(() => true),
-  O.getOrElse(() => false)
-)
+export function died<E>(cause: Cause<E>): cause is Die {
+  return pipe(
+    cause,
+    dieOption,
+    O.map(() => true),
+    O.getOrElse(() => false)
+  )
+}
 
 /**
  * ```haskell
@@ -291,7 +294,7 @@ export function find<A, E>(f: (cause: Cause<E>) => O.Option<A>): (cause: Cause<E
 /**
  * @internal
  */
-export function foldSafe_<E, A>(
+function foldSafe_<E, A>(
   cause: Cause<E>,
   onEmpty: () => A,
   onFail: (reason: E) => A,
@@ -355,7 +358,7 @@ export function fold<E, A>(
 /**
  * @internal
  */
-export function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Ev.Eval<B> {
+function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Ev.Eval<B> {
   return Ev.gen(function* (_) {
     const apply = O.getOrElse_(f(b, cause), () => b)
     switch (cause._tag) {
@@ -612,7 +615,7 @@ export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
 /**
  * @internal
  */
-export function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
+function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
   return Ev.gen(function* (_) {
     switch (ma._tag) {
       case 'Empty':
@@ -742,7 +745,7 @@ export function interruptedOnly<E>(cause: Cause<E>): boolean {
 /**
  * @internal
  */
-export function stripFailuresSafe<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
+function stripFailuresSafe<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
   return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
@@ -809,7 +812,7 @@ export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
   return stripInterruptsSafe(cause).value()
 }
 
-export function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<O.Option<Cause<E>>> {
+function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<O.Option<Cause<E>>> {
   return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
@@ -863,7 +866,7 @@ export function stripSomeDefects(pf: Predicate<unknown>): <E>(cause: Cause<E>) =
 /**
  * @internal
  */
-export function keepDefectsSafe<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
+function keepDefectsSafe<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
   return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
@@ -918,7 +921,7 @@ export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
   return keepDefectsSafe(cause).value()
 }
 
-export function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Either<Cause<E>, A>> {
+function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Either<Cause<E>, A>> {
   return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
@@ -964,7 +967,7 @@ export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Eithe
   return sequenceCauseEitherSafe(cause).value()
 }
 
-export function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Cause<E>>> {
+function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Cause<E>>> {
   return Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
@@ -1090,7 +1093,7 @@ export function isUntraced(u: unknown): u is Untraced {
   return u instanceof Error && u['_tag'] === 'Untraced'
 }
 
-export class RuntimeError extends Error {
+export class RuntimeException extends Error {
   readonly _tag = 'RuntimeError'
 
   constructor(message?: string) {
@@ -1100,7 +1103,7 @@ export class RuntimeError extends Error {
   }
 }
 
-export function isRuntime(u: unknown): u is RuntimeError {
+export function isRuntime(u: unknown): u is RuntimeException {
   return u instanceof Error && u['_tag'] === 'RuntimeError'
 }
 

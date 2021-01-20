@@ -15,6 +15,7 @@ import { RecursiveGuard } from './recursive'
 import { RefinementGuard } from './refinement'
 import { SetGuard } from './set'
 import { SumGuard } from './sum'
+import {UnknownGuard} from './unknown'
 
 export const _allGuardInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -27,7 +28,8 @@ export const _allGuardInterpreters = <Env extends AnyEnv>() =>
     SetGuard<Env>(),
     SumGuard<Env>(),
     NullableGuard<Env>(),
-    IntersectionGuard<Env>()
+    IntersectionGuard<Env>(),
+    UnknownGuard<Env>()
   )
 
 export const allGuardInterpreters = memoize(_allGuardInterpreters) as typeof _allGuardInterpreters

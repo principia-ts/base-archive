@@ -5,8 +5,8 @@ import { pipe, tuple } from '@principia/base/Function'
 import { parallelN, sequential } from '../../ExecutionStrategy'
 import { foreachParN_ as effectForeachParN } from '../../IO/combinators/foreachParN'
 import { foreachUnitParN_ as effectForeachUnitParN } from '../../IO/combinators/foreachUnitParN'
-import * as I from '../_internal/io'
-import { mapM, mapM_ } from '../core'
+import { mapM } from '../core'
+import * as I from '../internal/io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /**

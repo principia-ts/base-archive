@@ -12,13 +12,13 @@ export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
 
   return I.flatMap_(
     I.effectTotal<B[]>(() => []),
-    (array) => {
+    (mut_array) => {
       function fn([a, n]: [A, number]) {
         return I.flatMap_(
           I.effectSuspendTotal(() => f(a)),
           (b) =>
             I.effectTotal(() => {
-              array[n] = b
+              mut_array[n] = b
             })
         )
       }
@@ -27,7 +27,7 @@ export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
           arr.map((a, n) => [a, n] as [A, number]),
           fn
         ),
-        () => I.effectTotal(() => array)
+        () => I.effectTotal(() => mut_array)
       )
     }
   )

@@ -1,6 +1,6 @@
 import type { Fiber } from '../core'
 
-import * as I from '../_internal/io'
+import * as I from '../internal/io'
 import { awaitAll } from './awaitAll'
 
 /**

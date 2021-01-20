@@ -1,6 +1,6 @@
 import type { Exit } from '../../Exit'
 import type { Fiber, RuntimeFiber } from '../../Fiber/core'
-import type { FiberContext } from '../../FiberContext'
+import type { FiberContext } from '../../internal/FiberContext'
 import type { Scope } from '../../Scope'
 import type { IO, UIO, URIO } from '../core'
 import type { Option } from '@principia/base/Option'
@@ -36,8 +36,7 @@ export class ForkScopeRestore {
 export function forkScopeMask(
   newScope: Scope<Exit<any, any>>
 ): <R, E, A>(f: (restore: ForkScopeRestore) => IO<R, E, A>) => GetForkScope<R, E, A> {
-  return (f) =>
-    forkScopeWith((scope) => new OverrideForkScope(f(new ForkScopeRestore(scope)), O.some(newScope)))
+  return (f) => forkScopeWith((scope) => new OverrideForkScope(f(new ForkScopeRestore(scope)), O.some(newScope)))
 }
 
 export function forkIn(scope: Scope<Exit<any, any>>): <R, E, A>(io: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {

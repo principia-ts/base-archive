@@ -1,7 +1,7 @@
 import type { Fiber } from '../core'
 
-import * as I from '../_internal/io'
 import { halt } from '../core'
+import * as I from '../internal/io'
 
 /**
  * ```haskell

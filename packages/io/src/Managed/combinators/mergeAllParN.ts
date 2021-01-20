@@ -4,8 +4,8 @@ import { pipe } from '@principia/base/Function'
 import * as Iter from '@principia/base/Iterable'
 
 import { parallelN } from '../../ExecutionStrategy'
-import * as I from '../_internal/_io'
 import { mapM } from '../core'
+import * as I from '../internal/_io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /**

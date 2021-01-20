@@ -9,7 +9,7 @@ import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '@principia/base/util/support/MutableQueue'
 
 import * as P from '../Promise'
-import * as I from './_internal/io'
+import * as I from './internal/io'
 
 /**
  * A `XQueue<RA, RB, EA, EB, A, B>` is a lightweight, asynchronous queue into which values of

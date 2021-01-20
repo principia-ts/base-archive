@@ -16,6 +16,7 @@ import { RecursiveArbitrary } from './recursive'
 import { RefinementArbitrary } from './refinement'
 import { SetArbitrary } from './set'
 import { SumArbitrary } from './sum'
+import {UnknownArbitrary} from './unknown'
 
 export const _allArbitraryInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -28,7 +29,8 @@ export const _allArbitraryInterpreters = <Env extends AnyEnv>() =>
     SetArbitrary<Env>(),
     SumArbitrary<Env>(),
     NullableArbitrary<Env>(),
-    IntersectionArbitrary<Env>()
+    IntersectionArbitrary<Env>(),
+    UnknownArbitrary<Env>()
   )
 
 export const allArbitraryInterpreters = memoize(_allArbitraryInterpreters) as typeof _allArbitraryInterpreters

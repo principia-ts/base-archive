@@ -33,8 +33,8 @@ export class Promise<E, A> {
    * completes the promise with the result of an IO see
    * `Promise.complete`.
    */
-  completeWith = (io: FIO<E, A>): I.UIO<boolean> =>
-    I.effectTotal(() => {
+  completeWith(io: FIO<E, A>): I.UIO<boolean> {
+    return I.effectTotal(() => {
       const state = this.state.get
       switch (state._tag) {
         case 'Done': {
@@ -49,6 +49,7 @@ export class Promise<E, A> {
         }
       }
     })
+  }
 
   /**
    * Completes the promise with the result of the specified effect. If the
@@ -57,47 +58,60 @@ export class Promise<E, A> {
    * Note that `Promise.completeWith` will be much faster, so consider using
    * that if you do not need to memoize the result of the specified effect.
    */
-  complete: (effect: FIO<E, A>) => I.UIO<boolean> = to(this)
+  complete(effect: FIO<E, A>): I.UIO<boolean> {
+    return to(this)(effect)
+  }
 
   /**
    * Exits the promise with the specified exit, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  done = (ex: Exit<E, A>): I.UIO<boolean> => this.completeWith(I.done(ex))
+  done(ex: Exit<E, A>): I.UIO<boolean> {
+    return this.completeWith(I.done(ex))
+  }
 
   /**
    * Kills the promise with the specified error, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  die = (e: unknown): I.UIO<boolean> => this.completeWith(I.die(e))
+  die(e: Error): I.UIO<boolean> {
+    return this.completeWith(I.die(e))
+  }
 
   /**
    * Fails the promise with the specified error, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  fail = (e: E): I.UIO<boolean> => this.completeWith(I.fail(e))
+  fail(e: E): I.UIO<boolean> {
+    return this.completeWith(I.fail(e))
+  }
 
   /**
    * Halts the promise with the specified cause, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  halt = (e: Cause<E>): I.UIO<boolean> => this.complete(I.halt(e))
+  halt(e: Cause<E>): I.UIO<boolean> {
+    return this.complete(I.halt(e))
+  }
 
   /**
    * Completes the promise with interruption. This will interrupt all fibers
    * waiting on the value of the promise as by the fiber calling this method.
    */
-  interrupt = (): I.UIO<boolean> =>
-    pipe(
+  get interrupt(): I.UIO<boolean> {
+    return pipe(
       fiberId(),
       I.flatMap((id) => this.completeWith(interruptAsIO(id)))
     )
+  }
 
   /**
    * Completes the promise with interruption. This will interrupt all fibers
    * waiting on the value of the promise as by the specified fiber.
    */
-  interruptAs = (id: FiberId): I.UIO<boolean> => this.completeWith(interruptAsIO(id))
+  interruptAs(id: FiberId): I.UIO<boolean> {
+    return this.completeWith(interruptAsIO(id))
+  }
 
   private interruptJoiner = (joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> =>
     I.effectTotal(() => {
@@ -138,8 +152,8 @@ export class Promise<E, A> {
    * Checks for completion of this Promise. Returns the result effect if this
    * promise has already been completed or a `None` otherwise.
    */
-  poll = (): I.UIO<Option<FIO<E, A>>> =>
-    I.effectTotal(() => {
+  get poll(): I.UIO<Option<FIO<E, A>>> {
+    return I.effectTotal(() => {
       const state = this.state.get
 
       switch (state._tag) {
@@ -151,16 +165,19 @@ export class Promise<E, A> {
         }
       }
     })
+  }
 
   /**
    * Completes the promise with the specified value.
    */
-  succeed = (a: A): I.UIO<boolean> => this.completeWith(I.succeed(a))
+  succeed(a: A): I.UIO<boolean> {
+    return this.completeWith(I.succeed(a))
+  }
 
   /**
    * Unsafe version of done
    */
-  unsafeDone = (io: FIO<E, A>) => {
+  unsafeDone(io: FIO<E, A>) {
     const state = this.state.get
     if (state._tag === 'Pending') {
       this.state.set(new Done(io))
@@ -256,7 +273,7 @@ export function completeWith_<E, A>(promise: Promise<E, A>, io: FIO<E, A>): I.UI
  * Kills the promise with the specified error, which will be propagated to all
  * fibers waiting on the value of the promise.
  */
-export function die(e: unknown) {
+export function die(e: Error) {
   return <E, A>(promise: Promise<E, A>) => promise.die(e)
 }
 
@@ -293,7 +310,7 @@ export function halt<E>(e: Cause<E>) {
  * waiting on the value of the promise as by the fiber calling this method.
  */
 export function interrupt<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
-  return promise.interrupt()
+  return promise.interrupt
 }
 
 /**
@@ -335,7 +352,7 @@ export function unsafeMake<E, A>(fiberId: FiberId) {
  * promise has already been completed or a `None` otherwise.
  */
 export function poll<E, A>(promise: Promise<E, A>): I.UIO<Option<FIO<E, A>>> {
-  return promise.poll()
+  return promise.poll
 }
 
 /**

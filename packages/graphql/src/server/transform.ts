@@ -115,7 +115,7 @@ export function transformScalarResolvers(
         pipe(
           resolver.functions.parseLiteral(u),
           Sy.giveAll(env),
-          Sy.unsafeRunEither,
+          Sy.runEither,
           E.fold((e) => {
             throw e
           }, identity)
@@ -124,7 +124,7 @@ export function transformScalarResolvers(
         pipe(
           resolver.functions.parseValue(u),
           Sy.giveAll(env),
-          Sy.unsafeRunEither,
+          Sy.runEither,
           E.fold((e) => {
             throw e
           }, identity)
@@ -133,7 +133,7 @@ export function transformScalarResolvers(
         pipe(
           resolver.functions.serialize(u),
           Sy.giveAll(env),
-          Sy.unsafeRunEither,
+          Sy.runEither,
           E.fold((e) => {
             throw e
           }, identity)

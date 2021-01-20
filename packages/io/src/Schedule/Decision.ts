@@ -1,6 +1,6 @@
 import type { IO } from '../IO/core'
-import type * as HKT from '@principia/base/HKT'
 
+import { flow, pipe } from '@principia/base/Function'
 import { matchTag_ } from '@principia/base/util/matchers'
 
 import * as I from '../IO/core'
@@ -67,12 +67,10 @@ export function done<A>(a: A): StepFunction<unknown, unknown, A> {
  */
 
 export function map_<R, I, A, B>(fa: Decision<R, I, A>, f: (a: A) => B): Decision<R, I, B> {
-  switch (fa._tag) {
-    case 'Done':
-      return makeDone(f(fa.out))
-    case 'Continue':
-      return makeContinue(f(fa.out), fa.interval, (n, i) => I.map_(fa.next(n, i), (a) => map_(a, f)))
-  }
+  return matchTag_(fa, {
+    Done: ({ out }) => makeDone(f(out)),
+    Continue: ({ out, next, interval }) => makeContinue(f(out), interval, flow(next, I.map(map(f))))
+  })
 }
 
 export function map<A, B>(f: (a: A) => B): <R, I>(fa: Decision<R, I, A>) => Decision<R, I, B> {
@@ -94,12 +92,11 @@ export function as<O1>(o: O1): <R, I, O>(fa: Decision<R, I, O>) => Decision<R, I
  */
 
 export function contramapIn_<R, I, I1, O>(fa: Decision<R, I, O>, f: (i: I1) => I): Decision<R, I1, O> {
-  switch (fa._tag) {
-    case 'Done':
-      return fa
-    case 'Continue':
-      return makeContinue(fa.out, fa.interval, (n, i) => I.map_(fa.next(n, f(i)), (a) => contramapIn_(a, f)))
-  }
+  return matchTag_(fa, {
+    Done: (_) => _,
+    Continue: ({ out, interval, next }) =>
+      makeContinue(out, interval, (n, i: I1) => pipe(next(n, f(i)), I.map(contramapIn(f))))
+  })
 }
 
 export function contramapIn<I, I1>(f: (i: I1) => I): <R, O>(fa: Decision<R, I, O>) => Decision<R, I1, O> {

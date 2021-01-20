@@ -483,7 +483,7 @@ export const count: Sink<unknown, never, unknown, never, number> = foldLeft(0, (
  * `RuntimeException`.
  */
 export function dieMessage(m: string): Sink<unknown, never, unknown, never, never> {
-  return halt(Ca.die(new Ca.RuntimeError(m)))
+  return halt(Ca.die(new Ca.RuntimeException(m)))
 }
 
 /**

@@ -1,7 +1,7 @@
 import type { Managed } from '../core'
 
-import * as I from '../_internal/io'
 import { fromEffect } from '../core'
+import * as I from '../internal/io'
 import { onExitFirst_ } from './onExitFirst'
 
 /**

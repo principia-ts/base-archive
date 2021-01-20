@@ -54,8 +54,8 @@ export function fail<E>(e: E): Transducer<unknown, E, unknown, never> {
 /**
  * Creates a transducer that always dies with the specified exception.
  */
-export function die(error: unknown): Transducer<unknown, never, unknown, never> {
-  return new Transducer(M.succeed((_) => I.die(error)))
+export function die(e: Error): Transducer<unknown, never, unknown, never> {
+  return new Transducer(M.succeed((_) => I.die(e)))
 }
 
 /**
@@ -258,7 +258,7 @@ export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transduce
                 if (dropping) {
                   return pipe(
                     is,
-                    C.dropWhileIO(p),
+                    C.dropWhileEffect(p),
                     I.map((l) => tuple(l, C.isEmpty(l)))
                   )
                 } else {

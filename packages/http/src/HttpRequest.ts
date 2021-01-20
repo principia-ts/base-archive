@@ -154,11 +154,16 @@ export class HttpRequest {
               const host     = yield* _(
                 pipe(
                   self.getHeader('host'),
-                  I.mapError(
-                    (_) =>
-                      new HttpException('Defect: request sent without a host', 'HttpRequest#url', {
-                        status: Status.BadRequest
-                      })
+                  I.flatMap(
+                    O.fold(
+                      () =>
+                        I.fail(
+                          new HttpException('Defect: request sent without a host', {
+                            status: Status.BadRequest
+                          })
+                        ),
+                      I.succeed
+                    )
                   )
                 )
               )
@@ -167,8 +172,9 @@ export class HttpRequest {
                   I.effect(() => new Url.URL(`${protocol}://${host}${url}`)),
                   I.mapError(
                     (error) =>
-                      new HttpException(`Error while parsing URL: ${JSON.stringify(error)}`, 'HttpRequest#url', {
-                        status: Status.BadRequest
+                      new HttpException(`Error while parsing URL`, {
+                        status: Status.BadRequest,
+                        originalError: error
                       })
                   ),
                   I.tap((url) =>
@@ -204,19 +210,12 @@ export class HttpRequest {
     )
   }
 
-  getHeader(name: 'set-cookie'): FIO<HttpException, ReadonlyArray<string>>
-  getHeader(name: string): FIO<HttpException, string>
-  getHeader(name: string): FIO<HttpException, string | ReadonlyArray<string>> {
+  getHeader(name: 'set-cookie'): UIO<O.Option<ReadonlyArray<string>>>
+  getHeader(name: string): UIO<O.Option<string>>
+  getHeader(name: string): UIO<O.Option<string | ReadonlyArray<string>>> {
     return pipe(
       this.ref.get,
-      I.flatMap((req) => {
-        const h = req.headers[name]
-        if (h) {
-          return I.succeed(h)
-        } else {
-          return I.fail(new HttpException('Invalid request', 'HttpRequest#getHeader', { status: Status.BadRequest }))
-        }
-      })
+      I.map((req) => O.fromNullable(req.headers[name]))
     )
   }
 
@@ -252,20 +251,15 @@ export class HttpRequest {
   get rawBody(): FIO<HttpException, string> {
     const self = this
     return I.gen(function* (_) {
-      const contentType = yield* _(self.getHeader('Content-Type'))
+      const contentType = yield* _(self.getHeader('content-type'))
       const charset     = yield* _(
         pipe(
           contentType,
-          parseContentType,
-          (c) => c.parameters['charset']?.toLowerCase(),
-          O.fromNullable,
+          O.map(parseContentType),
+          O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
           decodeCharset.decode(SyncDecoderM),
-          Sy.catchAll((_) =>
-            Sy.fail(
-              new HttpException('Invalid charset', 'HttpRequest#rawBody', { status: Status.UnsupportedMediaType })
-            )
-          )
+          Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
         )
       )
 
@@ -276,8 +270,9 @@ export class HttpRequest {
           I.map(flow(C.asBuffer, (b) => b.toString(charset))),
           I.catchAll((_) =>
             I.fail(
-              new HttpException('Failed to read body stream', 'HttpRequest#rawBody', {
-                status: Status.InternalServerError
+              new HttpException('Failed to read body stream', {
+                status: Status.InternalServerError,
+                originalError: _
               })
             )
           )
@@ -293,23 +288,18 @@ export class HttpRequest {
       const charset     = yield* _(
         pipe(
           contentType,
-          parseContentType,
-          (c) => c.parameters['charset']?.toLowerCase(),
-          O.fromNullable,
+          O.map(parseContentType),
+          O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
           decodeCharset.decode(SyncDecoderM),
-          Sy.catchAll((_) =>
-            Sy.fail(
-              new HttpException('Invalid charset', 'HttpRequest#bodyJson', { status: Status.UnsupportedMediaType })
-            )
-          )
+          Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
         )
       )
 
       if (!Str.startsWith_(charset, 'utf-')) {
         return yield* _(
           I.fail(
-            new HttpException('Charset unsupported by JSON', 'HttpRequest#bodyJson', {
+            new HttpException('Charset unsupported by JSON', {
               status: Status.UnsupportedMediaType
             })
           )
@@ -323,7 +313,7 @@ export class HttpRequest {
           I.map(flow(C.asBuffer, (b) => b.toString(charset))),
           I.catchAll((_) =>
             I.fail(
-              new HttpException('Failed to read body stream', 'HttpRequest#bodyJson', {
+              new HttpException('Failed to read body stream', {
                 status: Status.InternalServerError
               })
             )
@@ -332,7 +322,7 @@ export class HttpRequest {
             I.effectCatch_(
               () => JSON.parse(raw),
               (_) =>
-                new HttpException('Failed to parse body JSON', 'HttpRequest#bodyJson', {
+                new HttpException('Failed to parse body JSON', {
                   status: Status.InternalServerError
                 })
             )

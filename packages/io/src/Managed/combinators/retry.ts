@@ -5,8 +5,8 @@ import type { Has } from '@principia/base/Has'
 
 import { pipe, tuple } from '@principia/base/Function'
 
-import * as I from '../_internal/_io'
 import { Managed } from '../core'
+import * as I from '../internal/_io'
 
 export function retry_<R, E, A, R1, O>(
   ma: Managed<R, E, A>,

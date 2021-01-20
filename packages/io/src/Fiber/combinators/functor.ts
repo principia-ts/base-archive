@@ -3,7 +3,7 @@ import type { Fiber, SyntheticFiber } from '../core'
 import * as O from '@principia/base/Option'
 
 import * as Ex from '../../Exit'
-import * as I from '../_internal/io'
+import * as I from '../internal/io'
 
 /**
  * Effectfully maps over the value the fiber computes.

@@ -3,8 +3,8 @@ import type { Finalizer } from '../ReleaseMap'
 
 import { pipe, tuple } from '@principia/base/Function'
 
-import * as I from '../_internal/io'
 import { map } from '../core'
+import * as I from '../internal/io'
 import { releaseMap } from './releaseMap'
 
 export class ManagedScope {

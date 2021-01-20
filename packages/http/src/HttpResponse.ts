@@ -110,8 +110,6 @@ export class HttpResponse {
     )
   }
 
-  complete(status: Status.StatusCode, headers: ReadonlyRecord<string, string>, entity: any): any {}
-
   access<R, E, A>(f: (res: http.ServerResponse) => IO<R, E, A>): IO<R, E, A> {
     return I.flatMap_(this.ref.get, f)
   }
@@ -149,7 +147,7 @@ export class HttpResponse {
           return I.succeed(res)
         } catch (err) {
           return I.fail(
-            new HttpException('Failed to set headers', 'HttpResponse.set', {
+            new HttpException('Failed to set headers', {
               status: Status.InternalServerError,
               originalError: err
             })
@@ -170,7 +168,7 @@ export class HttpResponse {
           if (err) {
             cb(
               I.fail(
-                new HttpException('Failed to write body', 'HttpResponse.write', {
+                new HttpException('Failed to write body', {
                   status: Status.InternalServerError,
                   originalError: err
                 })
@@ -195,7 +193,7 @@ export class HttpResponse {
       ),
       I.catchAll((e) =>
         I.fail(
-          new HttpException('Failed to write response body', 'HttpResponse.pipeFrom', {
+          new HttpException('Failed to write response body', {
             status: Status.InternalServerError,
             originalError: e
           })

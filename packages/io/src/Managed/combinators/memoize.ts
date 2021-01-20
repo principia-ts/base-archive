@@ -3,8 +3,8 @@ import type { Managed, UManaged } from '../core'
 import { pipe } from '@principia/base/Function'
 
 import * as P from '../../Promise'
-import * as I from '../_internal/_io'
 import { mapM_ } from '../core'
+import * as I from '../internal/_io'
 import { releaseMap } from './releaseMap'
 
 /**

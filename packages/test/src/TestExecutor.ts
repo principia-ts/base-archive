@@ -23,7 +23,7 @@ export interface TestExecutor<R> {
   readonly environment: Layer<unknown, never, R>
 }
 
-export function defaultTestExecutor<R>(env: Layer<unknown, never, R & Has<Annotations>>): TestExecutor<R> {
+export function defaultTestExecutor<R>(env: Layer<unknown, never, R & Has<Annotations>>): TestExecutor<R & Has<Annotations>> {
   return {
     run: <E>(spec: S.XSpec<R & Has<Annotations>, E>, defExec: ExecutionStrategy): UIO<ExecutedSpec<E>> =>
       pipe(

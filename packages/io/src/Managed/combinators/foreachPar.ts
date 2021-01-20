@@ -3,8 +3,8 @@ import type { Managed } from '../core'
 import { pipe, tuple } from '@principia/base/Function'
 
 import { parallel, sequential } from '../../ExecutionStrategy'
-import * as I from '../_internal/_io'
-import { mapM, mapM_ } from '../core'
+import { mapM } from '../core'
+import * as I from '../internal/_io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /**

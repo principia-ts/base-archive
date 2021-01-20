@@ -32,6 +32,6 @@ export function newFiberId() {
   return FiberId(new Date().getTime(), _fiberCounter.getAndIncrement())
 }
 
-export function prettyPrintFiberId(_: FiberId): string {
+export function prettyFiberId(_: FiberId): string {
   return `#${_.seqNumber} (started at: ${new Date(_.startTime).toISOString()})`
 }

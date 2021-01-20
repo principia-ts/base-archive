@@ -12,7 +12,7 @@ import type { Layer } from '@principia/io/Layer'
 import { pipe } from '@principia/base/Function'
 import { Clock, LiveClock } from '@principia/io/Clock'
 import { NodeConsole } from '@principia/io/Console'
-import { parallel } from '@principia/io/ExecutionStrategy'
+import { parallelN } from '@principia/io/ExecutionStrategy'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 
@@ -27,11 +27,13 @@ export class TestRunner<R, E> {
     readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = NodeConsole.live['>>>'](fromConsole)[
       '+++'
     ](L.succeed(Clock)(new LiveClock()))
-  ) {}
+  ) {
+    this.run = this.run.bind(this)
+  }
 
   run(spec: XSpec<R & Has<Annotations>, E>): URIO<Has<TestLogger> & Has<Clock>, ExecutedSpec<E>> {
     return pipe(
-      this.executor.run(spec, parallel),
+      this.executor.run(spec, parallelN(10)),
       I.timed,
       I.flatMap(([duration, results]) => I.as_(this.reporter(duration, results), () => results))
     )

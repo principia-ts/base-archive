@@ -132,7 +132,10 @@ export function onInterrupt<R1>(
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted (allows for expanding error).
  */
-export function onInterruptExtended_<R, E, A, R2, E2>(self: IO<R, E, A>, cleanup: () => IO<R2, E2, any>) {
+export function onInterruptExtended_<R, E, A, R2, E2>(
+  self: IO<R, E, A>,
+  cleanup: () => IO<R2, E2, any>
+): IO<R & R2, E | E2, A> {
   return uninterruptibleMask(({ restore }) =>
     foldCauseM_(
       restore(self),

@@ -1,7 +1,7 @@
 import type { SyntheticFiber } from '../core'
 
-import * as I from '../_internal/io'
 import { done } from '../core'
+import * as I from '../internal/io'
 
 /**
  * ```haskell

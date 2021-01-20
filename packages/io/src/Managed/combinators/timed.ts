@@ -4,8 +4,8 @@ import type { Has } from '@principia/base/Has'
 import { pipe } from '@principia/base/Function'
 
 import { Clock } from '../../Clock'
-import * as I from '../_internal/_io'
 import { asksServiceManaged, Managed } from '../core'
+import * as I from '../internal/_io'
 
 export function timed<R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E, readonly [number, A]> {
   return asksServiceManaged(Clock)(

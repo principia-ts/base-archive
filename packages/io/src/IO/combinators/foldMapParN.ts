@@ -1,11 +1,6 @@
 import type { IO } from '../core'
 import type { Monoid } from '@principia/base/Monoid'
-import type * as NA from '@principia/base/NonEmptyArray'
 
-import * as O from '@principia/base/Option'
-import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
-
-import { map_ } from '../core'
 import { mergeAllParN_ } from './mergeAllParN'
 
 /**

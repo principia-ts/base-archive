@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es2020",
     "lib": ["es2020"],
+    "module": "esnext",
     "strict": true,
     "declaration": true,
     "noErrorTruncation": true,
@@ -27,7 +28,9 @@
       "@principia/codec/*": ["packages/codec/dist/*"],
       "@principia/codec": ["packages/codec/dist/index"],
       "@principia/koa/*": ["packages/koa/dist/*"],
-      "@principia/koa": ["packages/koa/dist/index"]
+      "@principia/koa": ["packages/koa/dist/index"],
+      "@principia/test": ["packages/test/dist/index"],
+      "@principia/test/*": ["packages/test/dist/*"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]

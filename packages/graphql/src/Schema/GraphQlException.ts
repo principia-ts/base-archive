@@ -2,7 +2,7 @@ import type { ASTNode, GraphQLError, GraphQLFormattedError, Source, SourceLocati
 
 import { Exception } from '@principia/base/Exception'
 
-export class GraphQlException extends Exception<Source | undefined, Record<string, any>> implements GraphQLError {
+export class GraphQlException extends Exception<Record<string, any>> implements GraphQLError {
   readonly code: number | undefined
   readonly locations: ReadonlyArray<SourceLocation> | undefined
   readonly path: ReadonlyArray<string | number> | undefined
@@ -13,7 +13,7 @@ export class GraphQlException extends Exception<Source | undefined, Record<strin
   readonly extensions: Record<string, any> | undefined
 
   constructor(message: string, code?: number, extensions?: Record<string, any>) {
-    super(message, undefined, extensions)
+    super(message, extensions)
     this.code       = code
     this.extensions = extensions
   }

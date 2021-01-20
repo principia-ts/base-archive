@@ -1033,7 +1033,7 @@ export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
     InferMixTuple<F, TC, 'R', R, KT>,
     InferMixTuple<F, TC, 'E', E, KT>,
     {
-      [K in keyof KT & number]: HKT.Infer<F, TC, 'A', KT[K]>
+      [K in keyof KT]: HKT.Infer<F, TC, 'A', KT[K]>
     }
   >
 }

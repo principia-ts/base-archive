@@ -137,7 +137,7 @@ export function render<E>(
       })
     )
 
-  return Sy.unsafeRun(loop(Sy.succeed(executedSpec), 0, A.empty()))
+  return Sy.run(loop(Sy.succeed(executedSpec), 0, A.empty()))
 }
 
 function rendered(

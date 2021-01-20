@@ -2,7 +2,7 @@ import type { IO } from '../IO/core'
 import type { Exit } from './core'
 
 import * as I from '../IO/core'
-import { failure } from './core'
+import { halt } from './core'
 
 /**
  * Applies the function `f` to the successful result of the `Exit` and
@@ -14,7 +14,7 @@ export function foreachEffect_<E2, A2, R, E, A>(
 ): IO<R, never, Exit<E | E2, A>> {
   switch (exit._tag) {
     case 'Failure': {
-      return I.pure(failure(exit.cause))
+      return I.pure(halt(exit.cause))
     }
     case 'Success': {
       return I.result(f(exit.value))
@@ -38,7 +38,7 @@ export const mapEffect_ = <R, E, E1, A, A1>(
 ): IO<R, never, Exit<E | E1, A1>> => {
   switch (exit._tag) {
     case 'Failure':
-      return I.pure(failure(exit.cause))
+      return I.pure(halt(exit.cause))
     case 'Success':
       return I.result(f(exit.value))
   }

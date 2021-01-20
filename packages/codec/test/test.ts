@@ -1,5 +1,5 @@
-import * as E from '@principia/base/data/Either'
-import { pipe } from '@principia/base/data/Function'
+import * as E from '@principia/base/Either'
+import { pipe } from '@principia/base/Function'
 import { inspect } from 'util'
 
 import { paths } from '../src/DecodeErrors'

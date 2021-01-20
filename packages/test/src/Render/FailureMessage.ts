@@ -11,6 +11,7 @@ import * as O from '@principia/base/Option'
 import { BLUE, CYAN, RED, YELLOW } from '@principia/base/util/AnsiFormat'
 import * as C from '@principia/io/Cause'
 import * as Sy from '@principia/io/Sync'
+import * as Ev from '@principia/base/Eval'
 
 import * as BA from '../FreeBooleanAlgebra'
 import { TestTimeoutException } from '../TestTimeoutException'
@@ -96,8 +97,8 @@ export function renderFailureDetails(failureDetails: FailureDetails, offset: num
 }
 
 function renderAssertionFailureDetails(failureDetails: NonEmptyArray<AssertionValue<any>>, offset: number): Message {
-  const loop = (failureDetails: ReadonlyArray<AssertionValue<any>>, rendered: Message): USync<Message> => {
-    return Sy.gen(function* (_) {
+  const loop = (failureDetails: ReadonlyArray<AssertionValue<any>>, rendered: Message): Ev.Eval<Message> => {
+    return Ev.gen(function* (_) {
       const [fragment, whole, ...details] = failureDetails
       if (fragment != null && whole != null) {
         return yield* _(loop([whole, ...details], rendered['+:'](renderWhole(fragment, whole, offset))))
@@ -109,7 +110,7 @@ function renderAssertionFailureDetails(failureDetails: NonEmptyArray<AssertionVa
 
   return renderFragment(failureDetails[0], offset)
     .toMessage()
-    ['++'](Sy.unsafeRun(loop(failureDetails, Message.empty)))
+    ['++'](Ev.evaluate(loop(failureDetails, Message.empty)))
 }
 
 function renderWhole(fragment: AssertionValue<any>, whole: AssertionValue<any>, offset: number): Line {

@@ -28,7 +28,7 @@ export function assertionParam<A>(assertion: AssertionM<A>): RenderAssertionM {
   }
 }
 
-const showAny = makeShow((_: any) => (_.toString ? _.toString() : `${_}`))
+const showAny = makeShow((_: any) => JSON.stringify(_))
 
 export function valueParam<A>(value: A, show?: Show<A>): RenderValue {
   return {

@@ -5,7 +5,7 @@ import * as O from '@principia/base/Option'
 import * as C from '../../Cause'
 import * as Ex from '../../Exit'
 import { map2Par_ } from '../../IO/combinators/apply-par'
-import * as I from '../_internal/io'
+import * as I from '../internal/io'
 
 /**
  * Zips this fiber with the specified fiber, combining their results using

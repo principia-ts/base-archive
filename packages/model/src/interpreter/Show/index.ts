@@ -15,6 +15,7 @@ import { RecursiveShow } from './recursive'
 import { RefinementShow } from './refinement'
 import { SetShow } from './set'
 import { SumShow } from './sum'
+import {UnknownShow} from './unknown'
 
 export const _allShowInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -27,7 +28,8 @@ export const _allShowInterpreters = <Env extends AnyEnv>() =>
     SetShow<Env>(),
     SumShow<Env>(),
     NullableShow<Env>(),
-    IntersectionShow<Env>()
+    IntersectionShow<Env>(),
+    UnknownShow<Env>()
   )
 
 export const allShowInterpreters = memoize(_allShowInterpreters) as typeof _allShowInterpreters

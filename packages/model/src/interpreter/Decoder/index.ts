@@ -18,6 +18,7 @@ import { RecursiveDecoder } from './recursive'
 import { RefinementDecoder } from './refinement'
 import { SetDecoder } from './set'
 import { SumDecoder } from './sum'
+import {UnknownDecoder} from './unknown'
 
 export const _allDecoderInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -30,7 +31,8 @@ export const _allDecoderInterpreters = <Env extends AnyEnv>() =>
     SetDecoder<Env>(),
     SumDecoder<Env>(),
     NullableDecoder<Env>(),
-    IntersectionDecoder<Env>()
+    IntersectionDecoder<Env>(),
+    UnknownDecoder<Env>()
   )
 
 export const allDecoderInterpreters = memoize(_allDecoderInterpreters) as typeof _allDecoderInterpreters

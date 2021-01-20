@@ -10,10 +10,10 @@ export const PrimitivesEq = implementInterpreter<Eq.URI, Alg.PrimitivesURI>()((_
   string: (config) => (env) => applyEqConfig(config?.config)(Eq.string, env, {}),
   number: (config) => (env) => applyEqConfig(config?.config)(Eq.number, env, {}),
   boolean: (config) => (env) => applyEqConfig(config?.config)(Eq.boolean, env, {}),
-  literal: (..._) => (config) => (env) => applyEqConfig(config?.config)(Eq.strict, env, {}),
+  literal: (..._) => (config) => (env) => applyEqConfig(config?.config)(Eq.eqStrict, env, {}),
   stringLiteral: (_, config) => (env) => applyEqConfig(config?.config)(Eq.string, env, {}),
   numberLiteral: (_, config) => (env) => applyEqConfig(config?.config)(Eq.number, env, {}),
-  bigint: (config) => (env) => applyEqConfig(config?.config)(Eq.strict, env, {}),
+  bigint: (config) => (env) => applyEqConfig(config?.config)(Eq.eqStrict, env, {}),
   date: (config) => (env) =>
     applyEqConfig(config?.config)(
       pipe(
@@ -26,6 +26,6 @@ export const PrimitivesEq = implementInterpreter<Eq.URI, Alg.PrimitivesURI>()((_
   array: (item, config) => (env) => pipe(item(env), (eq) => applyEqConfig(config?.config)(Eq.array(eq), env, eq)),
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (eq) => applyEqConfig(config?.config)(Eq.array(eq), env, eq)),
-  keyof: (_, config) => (env) => applyEqConfig(config?.config)(Eq.strict, env, {}),
+  keyof: (_, config) => (env) => applyEqConfig(config?.config)(Eq.eqStrict, env, {}),
   UUID: (config) => (env) => applyEqConfig(config?.config)(Eq.string, env, {})
 }))

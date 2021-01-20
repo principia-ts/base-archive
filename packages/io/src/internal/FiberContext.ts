@@ -1,9 +1,9 @@
-import type { Exit } from './Exit/core'
-import type { Callback, Fiber, InterruptStatus, RuntimeFiber } from './Fiber/core'
-import type { FiberId } from './Fiber/FiberId'
-import type { FiberRef } from './FiberRef'
+import type { Exit } from '../Exit/core'
+import type { Callback, Fiber, InterruptStatus, RuntimeFiber } from '../Fiber/core'
+import type { FiberId } from '../Fiber/FiberId'
+import type { FiberRef } from '../FiberRef'
+import type { Supervisor } from '../Supervisor'
 import type { Platform } from './Platform'
-import type { Supervisor } from './Supervisor'
 import type { Option } from '@principia/base/Option'
 import type { Stack } from '@principia/base/util/support/Stack'
 
@@ -15,10 +15,8 @@ import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { defaultScheduler } from '@principia/base/util/support/Scheduler'
 import { makeStack } from '@principia/base/util/support/Stack'
 
-import * as C from './Cause/core'
-import * as Ex from './Exit/core'
-import * as I from './Fiber/_internal/io'
-import { IOTag } from './Fiber/_internal/io'
+import * as C from '../Cause/core'
+import * as Ex from '../Exit/core'
 import {
   FiberDescriptor,
   FiberStateDone,
@@ -26,12 +24,14 @@ import {
   initial,
   interrupting,
   interruptStatus
-} from './Fiber/core'
-import * as Status from './Fiber/core'
-import { newFiberId } from './Fiber/FiberId'
-import * as FR from './FiberRef'
-import * as Scope from './Scope'
-import * as Super from './Supervisor'
+} from '../Fiber/core'
+import * as Status from '../Fiber/core'
+import { newFiberId } from '../Fiber/FiberId'
+import * as I from '../Fiber/internal/io'
+import { IOTag } from '../Fiber/internal/io'
+import * as FR from '../FiberRef'
+import * as Scope from '../Scope'
+import * as Super from '../Supervisor'
 
 export type FiberRefLocals = Map<FiberRef<any>, any>
 
@@ -50,11 +50,7 @@ export class ApplyFrame {
   constructor(readonly apply: (a: any) => I.IO<any, any, any>) {}
 }
 
-export type Frame =
-  | InterruptExit
-  | I.Fold<any, any, any, any, any, any, any, any, any>
-  | HandlerFrame
-  | ApplyFrame
+export type Frame = InterruptExit | I.Fold<any, any, any, any, any, any, any, any, any> | HandlerFrame | ApplyFrame
 
 export class TracingContext {
   readonly running  = new Set<FiberContext<any, any>>()
@@ -428,7 +424,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
     switch (oldState._tag) {
       case 'Done': {
-        throw new C.RuntimeError(`Unexpected fiber completion ${this.fiberId}`)
+        throw new C.RuntimeException(`Unexpected fiber completion ${this.fiberId}`)
       }
       case 'Executing': {
         const newState = new FiberStateExecuting(
@@ -742,7 +738,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOTag.Integration: {
+                  case IOTag.FFI: {
                     current = current[I._I]
                     break
                   }
@@ -773,7 +769,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                       }
                       this.setInterrupting(true)
 
-                      current = this.done(Ex.failure(cause()))
+                      current = this.done(Ex.halt(cause()))
                     } else {
                       this.setInterrupting(false)
                       current = this.next(maybeRedactedCause)

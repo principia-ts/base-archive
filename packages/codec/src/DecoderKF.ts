@@ -79,12 +79,16 @@ export type TypeOf<X> = K.TypeOf<X>
  * -------------------------------------------
  */
 
-export function makeDecoder<I, O>(
-  decode: DecoderK<I, DecodeErrors, O>['decode'],
-  _meta: DecoderMetadata
-): DecoderKF<I, O> {
+function _makeDecoder<I, O>(decode: DecoderK<I, DecodeErrors, O>['decode'], _meta: DecoderMetadata): DecoderKF<I, O> {
   return {
     decode,
+    _meta
+  }
+}
+
+export function makeDecoder<I, O>(decode: DecodeFnHKT<I, O>, _meta: DecoderMetadata): DecoderKF<I, O> {
+  return {
+    decode: decode as any,
     _meta
   }
 }

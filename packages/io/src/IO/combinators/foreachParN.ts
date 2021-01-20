@@ -1,8 +1,6 @@
-import * as A from '@principia/base/Array'
 import { pipe, tuple } from '@principia/base/Function'
 import * as L from '@principia/base/List'
 
-import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
 import * as Ref from '../../IORef'
 import * as P from '../../Promise'
 import * as Q from '../../Queue'

@@ -1,6 +1,6 @@
 import type { Exit } from '../../Exit/core'
 import type { Fiber } from '../../Fiber/core'
-import type { FiberContext } from '../../FiberContext'
+import type { FiberContext } from '../../internal/FiberContext'
 
 import * as A from '@principia/base/Array'
 import { flow, pipe, tuple } from '@principia/base/Function'

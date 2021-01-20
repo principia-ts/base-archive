@@ -1,6 +1,4 @@
 /**
- * Or is it?
- *
  * _Option_ represents an optional value. It consists of constructors _None_
  * representing an empty value, and _Some_ representing the original datatype
  */
@@ -58,7 +56,7 @@ declare module './HKT' {
  * none :: <a> () -> None
  * ```
  *
- * Constructs a new `Option` holding no value (a.k.a `Nothing`)
+ * Constructs a new `Option` holding no value (a.k.a `None`)
  *
  * @category Constructors
  * @since 1.0.0
@@ -74,7 +72,7 @@ export function none<A = never>(): Option<A> {
  * some :: a -> Some a
  * ```
  *
- * Constructs a new `Option` holding a `Just` value.
+ * Constructs a new `Option` holding a `Some` value.
  *
  * @category Constructs
  * @since 1.0.0
@@ -91,8 +89,8 @@ export function some<A>(a: A): Option<A> {
  * fromNullable :: ?a -> Option a
  * ```
  *
- * Constructs a new `Option` from a nullable value. If the value is `null` or `undefined`, returns `Nothing`, otherwise
- * returns the value wrapped in a `Just`
+ * Constructs a new `Option` from a nullable value. If the value is `null` or `undefined`, returns `None`, otherwise
+ * returns the value wrapped in a `Some`
  *
  * @category Constructors
  * @since 1.0.0
@@ -219,14 +217,14 @@ export function isOption(u: unknown): u is Option<unknown> {
  * ```
  *
  * Takes a default value, a function, and an `Option` value,
- * if the `Option` value is `Nothing` the default value is returned,
- * otherwise the function is applied to the value inside the `Just` and the result is returned.
+ * if the `Option` value is `None` the default value is returned,
+ * otherwise the function is applied to the value inside the `Some` and the result is returned.
  *
  * @category Destructors
  * @since 1.0.0
  */
-export function fold_<A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A) => C): B | C {
-  return isNone(fa) ? onNothing() : onJust(fa.value)
+export function fold_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) => C): B | C {
+  return isNone(fa) ? onNone() : onSome(fa.value)
 }
 
 /**
@@ -235,14 +233,14 @@ export function fold_<A, B, C>(fa: Option<A>, onNothing: () => B, onJust: (a: A)
  * ```
  *
  * Takes a default value, a function, and an `Option` value,
- * if the `Option` value is `Nothing` the default value is returned,
- * otherwise the function is applied to the value inside the `Just` and the result is returned.
+ * if the `Option` value is `None` the default value is returned,
+ * otherwise the function is applied to the value inside the `Some` and the result is returned.
  *
  * @category Destructors
  * @since 1.0.0
  */
-export function fold<A, B, C>(onNothing: () => B, onJust: (a: A) => C): (fa: Option<A>) => B | C {
-  return (fa) => fold_(fa, onNothing, onJust)
+export function fold<A, B, C>(onNone: () => B, onSome: (a: A) => C): (fa: Option<A>) => B | C {
+  return (fa) => fold_(fa, onNone, onSome)
 }
 
 /**
@@ -283,8 +281,8 @@ export function toUndefined<A>(fa: Option<A>): A | undefined {
  * @category Destructors
  * @since 1.0.0
  */
-export function getOrElse_<A, B>(fa: Option<A>, onNothing: () => B): A | B {
-  return isNone(fa) ? onNothing() : fa.value
+export function getOrElse_<A, B>(fa: Option<A>, onNone: () => B): A | B {
+  return isNone(fa) ? onNone() : fa.value
 }
 
 /**
@@ -297,8 +295,8 @@ export function getOrElse_<A, B>(fa: Option<A>, onNothing: () => B): A | B {
  * @category Destructors
  * @since 1.0.0
  */
-export function getOrElse<B>(onNothing: () => B): <A>(fa: Option<A>) => B | A {
-  return (fa) => getOrElse_(fa, onNothing)
+export function getOrElse<B>(onNone: () => B): <A>(fa: Option<A>) => B | A {
+  return (fa) => getOrElse_(fa, onNone)
 }
 
 /*
@@ -363,7 +361,7 @@ export const pure: <A>(a: A) => Option<A> = some
  * product_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
- * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise, returns `Nothing`
+ * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise, returns `None`
  *
  * @category Apply
  * @since 1.0.0
@@ -377,7 +375,7 @@ export function product_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A
  * product :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
- * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise returns `Nothing`
+ * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise returns `None`
  *
  * @category Apply
  * @since 1.0.0
@@ -441,7 +439,7 @@ export function apSecond<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * map2_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
- * Applies both `Option`s and if both are `Some`,  maps their results with function `f`, otherwise returns `Nothing`
+ * Applies both `Option`s and if both are `Some`,  maps their results with function `f`, otherwise returns `None`
  *
  * @category Apply
  * @since 1.0.0
@@ -458,7 +456,7 @@ export function map2_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => 
  * map2 :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
- * Applies both `Option`s and if both are `Some`, maps their results with function `f`, otherwise returns `Nothing`
+ * Applies both `Option`s and if both are `Some`, maps their results with function `f`, otherwise returns `None`
  *
  * @category Apply
  * @since 1.0.0
@@ -970,8 +968,8 @@ export function flatMapNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: 
  * @category Combinators
  * @since 1.0.0
  */
-export function orElse_<A, B>(fa: Option<A>, onNothing: () => Option<B>): Option<A | B> {
-  return isNone(fa) ? onNothing() : fa
+export function orElse_<A, B>(fa: Option<A>, onNone: () => Option<B>): Option<A | B> {
+  return isNone(fa) ? onNone() : fa
 }
 
 /**
@@ -981,8 +979,8 @@ export function orElse_<A, B>(fa: Option<A>, onNothing: () => Option<B>): Option
  * @category Combinators
  * @since 1.0.0
  */
-export function orElse<B>(onNothing: () => Option<B>): <A>(fa: Option<A>) => Option<B | A> {
-  return (fa) => orElse_(fa, onNothing)
+export function orElse<B>(onNone: () => Option<B>): <A>(fa: Option<A>) => Option<B | A> {
+  return (fa) => orElse_(fa, onNone)
 }
 
 /**

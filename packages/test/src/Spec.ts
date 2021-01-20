@@ -225,6 +225,14 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, T>(spec: Spec<R, E, T>) => S
   return (spec) => gives_(spec, f)
 }
 
+export function give_<R0, R, E, T>(spec: Spec<R & R0, E, T>, r: R): Spec<R0, E, T> {
+  return gives_(spec, (r0) => ({ ...r, ...r0 }))
+}
+
+export function give<R>(r: R): <R0, E, T>(spec: Spec<R & R0, E, T>) => Spec<R0, E, T> {
+  return (spec) => gives_(spec, (r0) => ({ ...r, ...r0 }))
+}
+
 export function giveAll_<R, E, T>(spec: Spec<R, E, T>, r: R): Spec<unknown, E, T> {
   return gives_(spec, () => r)
 }

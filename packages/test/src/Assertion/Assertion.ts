@@ -1,4 +1,5 @@
 import type { Render, RenderParam } from '../Render'
+import type { WidenLiteral } from '../util'
 import type { Eq } from '@principia/base/Eq'
 
 import * as A from '@principia/base/Array'
@@ -170,7 +171,7 @@ export function endsWith<A>(suffix: ReadonlyArray<A>, eq: Eq<A>, show?: S.Show<A
   )
 }
 
-export function equalTo<A>(expected: A, eq: Eq<A>, show?: S.Show<A>): Assertion<A> {
+export function equalTo<A>(expected: WidenLiteral<A>, eq: Eq<A>, show?: S.Show<A>): Assertion<A> {
   return assertion('equalTo', [valueParam(expected, show)], (actual) => eq.equals_(actual, expected))
 }
 

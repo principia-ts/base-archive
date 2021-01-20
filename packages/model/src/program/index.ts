@@ -8,7 +8,8 @@ import type {
   RecursiveURI,
   RefinementURI,
   SetURI,
-  SumURI
+  SumURI,
+  UnknownURI
 } from '../algebra'
 import type { AnyEnv, InferredAlgebra, InferredProgram } from '../HKT'
 
@@ -33,6 +34,7 @@ declare module '../HKT' {
       | SumURI
       | NullableURI
       | IntersectionURI
+      | UnknownURI
   }
   interface URItoProgramAlgebra<Env> {
     readonly [PURI]: NoUnion<Env>
