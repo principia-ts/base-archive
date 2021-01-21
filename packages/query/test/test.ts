@@ -18,8 +18,8 @@ import { inspect } from 'util'
 
 import { CompletedRequestMap } from '../src/CompletedRequestMap'
 import * as DS from '../src/DataSource'
+import * as Query from '../src/Query'
 import { Request } from '../src/Request'
-import * as Query from '../src/XQuery'
 
 const testData = {
   a: 'A',
@@ -85,7 +85,7 @@ const ds = DS.makeBatched(
     } else {
       return I.gen(function* (_) {
         const items = yield* _(
-          backendGetSome(C.flatMap_(one, matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })))
+          backendGetSome(C.chain_(one, matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })))
         )
         return pipe(
           one,
@@ -115,10 +115,10 @@ const get = (id: string) => Query.fromRequest(new Get(id), ds)
 
 const program = () => {
   const getSome = Query.foreachPar_(['c', 'd'], get)
-  const query   = getAll.map2(getSome, (_, b) => b)
+  const query   = Query.map2_(getAll, getSome, (_, b) => b)
   return I.gen(function* (_) {
     const console = yield* _(Console)
-    const result  = yield* _(query.run())
+    const result  = yield* _(Query.run(query))
     yield* _(console.putStrLn(inspect(result)))
   })
 }

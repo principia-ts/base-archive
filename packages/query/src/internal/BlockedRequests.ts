@@ -7,7 +7,7 @@ import type { Sequential } from './Sequential'
 import type { List } from '@principia/base/List'
 
 import * as Ev from '@principia/base/Eval'
-import { identity, pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/Function'
 import * as L from '@principia/base/List'
 import * as Set from '@principia/base/Set'
 import * as C from '@principia/io/Chunk'
