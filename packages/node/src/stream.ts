@@ -34,7 +34,7 @@ export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, 
         sr.destroy()
       })
     ),
-    S.flatMap((sr) =>
+    S.chain((sr) =>
       S.effectAsync<unknown, ReadableError, Byte>((cb) => {
         sr.on('data', (chunk) => {
           cb(I.succeed(chunk))
@@ -116,7 +116,7 @@ export function transform(
           Sink.fromPush<unknown, TransformError, Byte, never, void>(
             O.fold(
               () =>
-                I.flatMap_(
+                I.chain_(
                   I.effectTotal(() => {
                     st.end()
                   }),
@@ -135,7 +135,7 @@ export function transform(
     )
     return pipe(
       S.managed(managedSink),
-      S.flatMap(([transform, sink]) =>
+      S.chain(([transform, sink]) =>
         S.asyncM<unknown, TransformError, Byte, R, E | TransformError>((cb) =>
           I.andThen_(
             I.effectTotal(() => {

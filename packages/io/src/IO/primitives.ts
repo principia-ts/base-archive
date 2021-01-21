@@ -23,7 +23,7 @@ export const _U = '_U'
 
 export const IOTag = {
   Succeed: 'Succeed',
-  FlatMap: 'FlatMap',
+  Chain: 'Chain',
   EffectPartial: 'EffectPartial',
   EffectTotal: 'EffectTotal',
   Async: 'Async',
@@ -99,8 +99,8 @@ export class FFIError extends Error {
 /**
  * @internal
  */
-export class FlatMap<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
-  readonly _tag = IOTag.FlatMap
+export class Chain<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
+  readonly _tag = IOTag.Chain
   constructor(readonly io: IO<R, E, A>, readonly f: (a: A) => IO<R1, E1, A1>) {
     super()
   }
@@ -362,7 +362,7 @@ export const ffiNotImplemented = new Fail({
 })
 
 export type Instruction =
-  | FlatMap<any, any, any, any, any, any>
+  | Chain<any, any, any, any, any, any>
   | Succeed<any>
   | EffectPartial<any, any>
   | EffectTotal<any>

@@ -78,7 +78,7 @@ export function unfoldTreeM<M>(
 ): <A, B>(b: B, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, Tree<A>> {
   const unfoldForestMM = unfoldForestM(M)
   return (b, f) =>
-    M.flatMap_(f(b), ([a, bs]) => M.flatMap_(unfoldForestMM(bs, f), (ts) => M.pure({ value: a, forest: ts })))
+    M.chain_(f(b), ([a, bs]) => M.chain_(unfoldForestMM(bs, f), (ts) => M.pure({ value: a, forest: ts })))
 }
 
 export function unfoldForestM<M extends HKT.URIS, C = HKT.Auto>(
@@ -136,7 +136,7 @@ export function map2<A, B, C>(fb: Tree<B>, f: (a: A, b: B) => C): (fa: Tree<A>) 
 }
 
 export function ap_<A, B>(fab: Tree<(a: A) => B>, fa: Tree<A>): Tree<B> {
-  return flatMap_(fab, (f) => map_(fa, (a) => f(a)))
+  return chain_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
 export function ap<A>(fa: Tree<A>): <B>(fab: Tree<(a: A) => B>) => Tree<B> {
@@ -241,26 +241,26 @@ export function map<A, B>(f: (a: A) => B): (fa: Tree<A>) => Tree<B> {
  * -------------------------------------------
  */
 
-export function flatMap_<A, B>(ma: Tree<A>, f: (a: A) => Tree<B>): Tree<B> {
+export function chain_<A, B>(ma: Tree<A>, f: (a: A) => Tree<B>): Tree<B> {
   const { value, forest } = f(ma.value)
   const combine           = A.getMonoid<Tree<B>>().combine_
   return {
     value,
     forest: combine(
       forest,
-      A.map_(ma.forest, (a) => flatMap_(a, f))
+      A.map_(ma.forest, (a) => chain_(a, f))
     )
   }
 }
 
-export function flatMap<A, B>(f: (a: A) => Tree<B>): (ma: Tree<A>) => Tree<B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<A, B>(f: (a: A) => Tree<B>): (ma: Tree<A>) => Tree<B> {
+  return (ma) => chain_(ma, f)
 }
 
-export const flatten: <A>(mma: Tree<Tree<A>>) => Tree<A> = flatMap(identity)
+export const flatten: <A>(mma: Tree<Tree<A>>) => Tree<A> = chain(identity)
 
 export function tap_<A, B>(ma: Tree<A>, f: (a: A) => Tree<B>): Tree<A> {
-  return flatMap_(ma, (a) => map_(f(a), () => a))
+  return chain_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<A, B>(f: (a: A) => Tree<B>): (ma: Tree<A>) => Tree<A> {

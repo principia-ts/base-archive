@@ -61,7 +61,7 @@ export class HttpResponse {
     this.eventStream = pipe(
       ref.get,
       M.fromEffect,
-      M.flatMap((res) =>
+      M.chain((res) =>
         S.broadcastDynamic_(
           new S.Stream(
             M.gen(function* ($) {
@@ -89,10 +89,10 @@ export class HttpResponse {
                   })
                 })
               )
-              return I.flatMap_(done.get, (b) =>
+              return I.chain_(done.get, (b) =>
                 b
                   ? Pull.end
-                  : I.flatMap_(
+                  : I.chain_(
                       queue.take,
                       (event): I.UIO<Chunk<ResponseEvent>> => {
                         if (event._tag === 'Close') {
@@ -111,7 +111,7 @@ export class HttpResponse {
   }
 
   access<R, E, A>(f: (res: http.ServerResponse) => IO<R, E, A>): IO<R, E, A> {
-    return I.flatMap_(this.ref.get, f)
+    return I.chain_(this.ref.get, f)
   }
 
   modify<R, E>(f: (res: http.ServerResponse) => IO<R, E, http.ServerResponse>): IO<R, E, void> {
@@ -162,7 +162,7 @@ export class HttpResponse {
   }
 
   write(chunk: string | Buffer): FIO<HttpException, void> {
-    return I.flatMap_(this.ref.get, (res) =>
+    return I.chain_(this.ref.get, (res) =>
       I.effectAsync<unknown, HttpException, void>((cb) => {
         res.write(chunk, (err) => {
           if (err) {
@@ -185,7 +185,7 @@ export class HttpResponse {
   pipeFrom<R, E>(stream: S.Stream<R, E, Byte>): IO<R, HttpException, void> {
     return pipe(
       this.ref.get,
-      I.flatMap((res) =>
+      I.chain((res) =>
         S.run_(
           stream,
           NS.sinkFromWritable(() => res)
@@ -203,7 +203,7 @@ export class HttpResponse {
   }
 
   end(): UIO<HttpResponseCompleted> {
-    return I.flatMap_(this.ref.get, (res) =>
+    return I.chain_(this.ref.get, (res) =>
       I.effectTotal(() => {
         return res.end() as any
       })

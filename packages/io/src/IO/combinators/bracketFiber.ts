@@ -2,7 +2,7 @@ import type { Exit } from '../../Exit'
 import type { RuntimeFiber } from '../../Fiber'
 import type { IO } from '../core'
 
-import { flatMap_ } from '../core'
+import { chain_ } from '../core'
 import { bracket_ } from './bracket'
 import { forkDaemon } from './core-scope'
 import { fiberId } from './fiberId'
@@ -25,7 +25,7 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
   ma: IO<R, E, A>,
   use: (f: RuntimeFiber<E, A>) => IO<R1, E1, B>
 ): IO<R & R1, E1, Exit<E, A>> {
-  return bracket_(forkDaemon(ma), (f) => flatMap_(fiberId(), (id) => f.interruptAs(id)), use)
+  return bracket_(forkDaemon(ma), (f) => chain_(fiberId(), (id) => f.interruptAs(id)), use)
 }
 
 /**

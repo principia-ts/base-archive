@@ -143,7 +143,7 @@ export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, vo
               I.foreachUnit_(leftovers, (r) =>
                 pipe(
                   Ref.make(completedRequests.lookup(r)),
-                  I.flatMap((ref) => cache.put(r, ref))
+                  I.chain((ref) => cache.put(r, ref))
                 )
               )
             )

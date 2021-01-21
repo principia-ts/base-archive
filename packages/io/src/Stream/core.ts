@@ -132,14 +132,14 @@ export class Chain<R_, E_, O, O2> {
     return pipe(
       this.innerFinalizer,
       Ref.getAndSet(RM.noopFinalizer),
-      I.flatMap((f) => f(Ex.unit()))
+      I.chain((f) => f(Ex.unit()))
     )
   }
 
   pullNonEmpty<R, E, O>(pull: I.IO<R, Option<E>, Chunk<O>>): I.IO<R, Option<E>, Chunk<O>> {
     return pipe(
       pull,
-      I.flatMap((os) => (os.length > 0 ? I.pure(os) : this.pullNonEmpty(pull)))
+      I.chain((os) => (os.length > 0 ? I.pure(os) : this.pullNonEmpty(pull)))
     )
   }
 
@@ -162,7 +162,7 @@ export class Chain<R_, E_, O, O2> {
         }
       }),
       I.flatten,
-      I.flatMap((o) =>
+      I.chain((o) =>
         I.uninterruptibleMask(({ restore }) =>
           I.gen(function* (_) {
             const releaseMap = yield* _(RM.make)
@@ -196,8 +196,8 @@ export class Chain<R_, E_, O, O2> {
             () =>
               pipe(
                 this.closeInner(),
-                I.flatMap(() => this.pullOuter()),
-                I.flatMap(() =>
+                I.chain(() => this.pullOuter()),
+                I.chain(() =>
                   new Chain(
                     this.f0,
                     this.outerStream,
@@ -303,7 +303,7 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
       const pull = I.uninterruptibleMask(({ restore }) =>
         pipe(
           doneRef.get,
-          I.flatMap((done) => {
+          I.chain((done) => {
             if (done) {
               return Pull.end
             } else {
@@ -402,7 +402,7 @@ export function asyncOption<R, E, A>(
       const runtime     = yield* _(I.runtime<R>())
       const maybeStream = yield* _(
         M.effectTotal(() =>
-          register((k, cb) => pipe(Take.fromPull(k), I.flatMap(output.offer), (x) => runtime.runCancel(x, cb)))
+          register((k, cb) => pipe(Take.fromPull(k), I.chain(output.offer), (x) => runtime.runCancel(x, cb)))
         )
       )
 
@@ -413,13 +413,13 @@ export function asyncOption<R, E, A>(
             M.map_(Ref.makeManaged(false), (doneRef) =>
               pipe(
                 doneRef.get,
-                I.flatMap((done) => {
+                I.chain((done) => {
                   if (done) {
                     return Pull.end
                   } else {
                     return pipe(
                       output.take,
-                      I.flatMap(Take.done),
+                      I.chain(Take.done),
                       I.onError(() => pipe(doneRef.set(true), I.andThen(output.shutdown)))
                     )
                   }
@@ -475,7 +475,7 @@ export function effectAsyncInterruptEither<R, E, A>(
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
         M.effectTotal(() =>
-          register((k, cb) => pipe(Take.fromPull(k), I.flatMap(output.offer), (x) => runtime.runCancel(x, cb)))
+          register((k, cb) => pipe(Take.fromPull(k), I.chain(output.offer), (x) => runtime.runCancel(x, cb)))
         )
       )
 
@@ -488,13 +488,13 @@ export function effectAsyncInterruptEither<R, E, A>(
               M.map((doneRef) =>
                 pipe(
                   doneRef.get,
-                  I.flatMap((done) => {
+                  I.chain((done) => {
                     if (done) {
                       return Pull.end
                     } else {
                       return pipe(
                         output.take,
-                        I.flatMap(Take.done),
+                        I.chain(Take.done),
                         I.onError(() => pipe(doneRef.set(true), I.andThen(output.shutdown)))
                       )
                     }
@@ -576,7 +576,7 @@ export function paginateChunkM<S, R, E, A>(
       const ref = yield* _(Ref.make(O.some(s)))
       return pipe(
         ref.get,
-        I.flatMap(
+        I.chain(
           O.fold(
             () => Pull.end,
             flow(
@@ -620,7 +620,7 @@ export function repeatEffectChunkOption<R, E, A>(ef: I.IO<R, Option<E>, Chunk<A>
   return new Stream(
     M.gen(function* (_) {
       const doneRef = yield* _(Ref.make(false))
-      const pull    = I.flatMap_(doneRef.get, (done) => {
+      const pull    = I.chain_(doneRef.get, (done) => {
         if (done) {
           return Pull.end
         } else {
@@ -671,7 +671,7 @@ export function repeatEffectWith_<R, E, A>(
     effect,
     I.product(Sc.driver(schedule)),
     fromEffect,
-    flatMap(([a, driver]) =>
+    chain(([a, driver]) =>
       pipe(
         succeed(a),
         concat(
@@ -717,7 +717,7 @@ export function repeatWith<R, A>(schedule: Schedule<R, A, any>): (a: A) => Strea
 export function fromChunkQueue<R, E, O>(queue: Queue.XQueue<never, R, unknown, E, never, Chunk<O>>): Stream<R, E, O> {
   return repeatEffectChunkOption(
     I.catchAllCause_(queue.take, (c) =>
-      I.flatMap_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
+      I.chain_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
     )
   )
 }
@@ -738,9 +738,7 @@ export function fromQueue<R, E, A>(queue: Queue.XQueue<never, R, unknown, E, nev
   return pipe(
     queue,
     Queue.takeBetween(1, Number.MAX_SAFE_INTEGER),
-    I.catchAllCause((c) =>
-      I.flatMap_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
-    ),
+    I.catchAllCause((c) => I.chain_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))),
     repeatEffectChunkOption
   )
 }
@@ -760,7 +758,7 @@ export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, Er
 
   return pipe(
     fromEffect(I.effectTotal(() => iterable()[Symbol.iterator]())),
-    flatMap((it) =>
+    chain((it) =>
       repeatEffectOption(
         pipe(
           I.effect(() => {
@@ -842,15 +840,15 @@ export function asyncM<R, E, A, R1 = R, E1 = E>(
     M.gen(function* (_) {
       const output  = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime = yield* _(I.runtime<R>())
-      yield* _(register((k, cb) => pipe(Take.fromPull(k), I.flatMap(output.offer), (x) => runtime.runCancel(x, cb))))
+      yield* _(register((k, cb) => pipe(Take.fromPull(k), I.chain(output.offer), (x) => runtime.runCancel(x, cb))))
       const doneRef = yield* _(Ref.make(false))
-      const pull    = I.flatMap_(doneRef.get, (done) => {
+      const pull    = I.chain_(doneRef.get, (done) => {
         if (done) {
           return Pull.end
         } else {
           return pipe(
             output.take,
-            I.flatMap(Take.done),
+            I.chain(Take.done),
             I.onError(() => pipe(doneRef.set(true), I.andThen(output.shutdown)))
           )
         }
@@ -858,7 +856,7 @@ export function asyncM<R, E, A, R1 = R, E1 = E>(
       return pull
     }),
     managed,
-    flatMap(repeatEffectChunkOption)
+    chain(repeatEffectChunkOption)
   )
 }
 
@@ -1111,7 +1109,7 @@ export function bimap<E, A, E1, A1>(f: (e: E) => E1, g: (a: A) => A1): <R>(pab: 
  * -------------------------------------------
  */
 
-export const absolve: <R, E, A, E1>(stream: Stream<R, E, E.Either<E1, A>>) => Stream<R, E | E1, A> = flatMap(
+export const absolve: <R, E, A, E1>(stream: Stream<R, E, E.Either<E1, A>>) => Stream<R, E | E1, A> = chain(
   E.fold(fail, succeed)
 )
 
@@ -1156,11 +1154,11 @@ export function filterM_<R, R1, E, E1, A>(
         const pull: Pull.Pull<R & R1, E | E1, A> = pipe(
           os,
           BPull.pullElement,
-          I.flatMap((o) =>
+          I.chain((o) =>
             pipe(
               f(o),
               I.mapError(O.some),
-              I.flatMap((_) => {
+              I.chain((_) => {
                 if (_) return I.succeed(C.single(o))
                 else return pull
               })
@@ -1221,7 +1219,7 @@ export function filterMapM_<R, E, A, R1, E1, A1>(
     M.gen(function* (_) {
       const os = yield* _(M.mapM_(fa.proc, BPull.make))
 
-      const go: I.IO<R & R1, O.Option<E | E1>, Chunk<A1>> = I.flatMap_(
+      const go: I.IO<R & R1, O.Option<E | E1>, Chunk<A1>> = I.chain_(
         BPull.pullElement(os),
         flow(
           f,
@@ -1261,7 +1259,7 @@ export function mapChunksM_<R, E, A, R1, E1, B>(
   return new Stream(
     pipe(
       fa.proc,
-      M.map((e) => pipe(e, I.flatMap(flow(f, I.mapError<E1, Option<E | E1>>(O.some)))))
+      M.map((e) => pipe(e, I.chain(flow(f, I.mapError<E1, Option<E | E1>>(O.some)))))
     )
   )
 }
@@ -1318,7 +1316,7 @@ export function mapM_<R, E, A, R1, E1, B>(
         pipe(
           pull,
           BPull.pullElement,
-          I.flatMap((o) => pipe(f(o), I.bimap(O.some, C.single)))
+          I.chain((o) => pipe(f(o), I.bimap(O.some, C.single)))
         )
       )
     )
@@ -1358,7 +1356,7 @@ export function as<B>(b: () => B): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export function flatMap_<R, E, A, R1, E1, B>(
+export function chain_<R, E, A, R1, E1, B>(
   ma: Stream<R, E, A>,
   f: (a: A) => Stream<R1, E1, B>
 ): Stream<R & R1, E | E1, B> {
@@ -1382,10 +1380,10 @@ export function flatMap_<R, E, A, R1, E1, B>(
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f0`
  */
-export function flatMap<A, R1, E1, B>(
+export function chain<A, R1, E1, B>(
   f: (a: A) => Stream<R1, E1, B>
 ): <R, E>(ma: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B> {
-  return (ma) => flatMap_(ma, f)
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -1393,7 +1391,7 @@ export function flatMap<A, R1, E1, B>(
  * strict order of all the streams.
  */
 export function flatten<R, E, R1, E1, A>(mma: Stream<R, E, Stream<R1, E1, A>>): Stream<R1 & R, E1 | E, A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 export function tap_<R, E, A, R1, E1, A1>(
@@ -1440,7 +1438,7 @@ export function asksM<R0, R, E, A>(f: (_: R0) => I.IO<R, E, A>): Stream<R & R0, 
  * Accesses the environment of the stream in the context of a stream.
  */
 export function asksStream<R0, R, E, A>(f: (_: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
-  return flatMap_(ask<R0>(), f)
+  return chain_(ask<R0>(), f)
 }
 
 /**
@@ -1483,7 +1481,7 @@ export function flattenExitOption<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<O.Option
       const doneRef  = yield* _(Ref.make(false))
       const pull     = pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
@@ -1578,14 +1576,14 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
 
         const updateSchedule: I.URIO<R1 & Has<Clock>, O.Option<Q>> = pipe(
           lastChunk.get,
-          I.flatMap(sdriver.next),
+          I.chain(sdriver.next),
           I.fold((_) => O.none(), O.some)
         )
 
         const waitForProducer: I.URIO<R1, Take.Take<E | E1, A>> = pipe(
           waitingFiber,
           Ref.getAndSet(O.none()),
-          I.flatMap(
+          I.chain(
             O.fold(
               () => Ha.take(handoff),
               (fiber) => Fi.join(fiber)
@@ -1606,7 +1604,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
                 ),
               I.halt,
               (os) =>
-                I.flatMap_(Take.fromPull(I.asSomeError(push(O.some(os)))), (take) =>
+                I.chain_(Take.fromPull(I.asSomeError(push(O.some(os)))), (take) =>
                   I.as_(updateLastChunk(take), () => [Take.map_(take, E.right)])
                 )
             ),
@@ -1617,7 +1615,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
           race: boolean
         ): I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
           if (!race) {
-            return pipe(waitForProducer, I.flatMap(handleTake), I.apFirst(raceNextTime.set(true)))
+            return pipe(waitForProducer, I.chain(handleTake), I.apFirst(raceNextTime.set(true)))
           } else {
             return I.raceWith_(
               updateSchedule,
@@ -1625,7 +1623,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
               (scheduleDone, producerWaiting) =>
                 pipe(
                   I.done(scheduleDone),
-                  I.flatMap(
+                  I.chain(
                     O.fold(
                       () =>
                         I.gen(function* (_) {
@@ -1664,8 +1662,8 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
 
         return pipe(
           raceNextTime.get,
-          I.flatMap(go),
-          I.onInterrupt((_) => pipe(waitingFiber.get, I.flatMap(flow(O.map(Fi.interrupt), O.getOrElse(I.unit)))))
+          I.chain(go),
+          I.onInterrupt((_) => pipe(waitingFiber.get, I.chain(flow(O.map(Fi.interrupt), O.getOrElse(I.unit)))))
         )
       })
     )
@@ -1749,7 +1747,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
 
       const go: I.IO<R & R1, O.Option<E | E1>, Chunk<P>> = pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
@@ -1763,7 +1761,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
                 ),
                 (as) => I.asSomeError(push(O.some(as)))
               ),
-              I.flatMap((ps) => (C.isEmpty(ps) ? go : I.succeed(ps)))
+              I.chain((ps) => (C.isEmpty(ps) ? go : I.succeed(ps)))
             )
           }
         })
@@ -1838,7 +1836,7 @@ export function distributedWithDynamic_<R, E, A>(
               return I.succeed(b)
             }
           }),
-          I.flatMap((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()))
+          I.chain((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()))
         )
       )
     })
@@ -1847,7 +1845,7 @@ export function distributedWithDynamic_<R, E, A>(
     const queuesRef = yield* _(
       pipe(
         Ref.make(Map.empty<symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>>()),
-        M.make((_) => I.flatMap_(_.get, (qs) => I.foreach_(qs.values(), (q) => q.shutdown)))
+        M.make((_) => I.chain_(_.get, (qs) => I.foreach_(qs.values(), (q) => q.shutdown)))
       )
     )
     const add       = yield* _(
@@ -1874,7 +1872,7 @@ export function distributedWithDynamic_<R, E, A>(
                 return tuple(id, queue)
               }),
               newQueue.set,
-              I.flatMap(() =>
+              I.chain(() =>
                 I.gen(function* (_) {
                   const queues = yield* _(
                     pipe(
@@ -1941,15 +1939,15 @@ export function distributedWith_<R, E, A>(
   return pipe(
     P.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     M.fromEffect,
-    M.flatMap((prom) =>
+    M.chain((prom) =>
       pipe(
         distributedWithDynamic_(
           ma,
           maximumLag,
-          (o) => I.flatMap_(prom.await, (_) => _(o)),
+          (o) => I.chain_(prom.await, (_) => _(o)),
           (_) => I.unit()
         ),
-        M.flatMap((next) =>
+        M.chain((next) =>
           pipe(
             I.collectAll(
               pipe(
@@ -1957,7 +1955,7 @@ export function distributedWith_<R, E, A>(
                 C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
               )
             ),
-            I.flatMap((entries) => {
+            I.chain((entries) => {
               const [mappings, queues] = C.foldRight_(
                 entries,
                 [Map.empty<symbol, number>(), C.empty<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>()] as const,
@@ -2122,13 +2120,13 @@ export function buffer_<R, E, A>(ma: Stream<R, E, A>, capacity: number): Stream<
       const queue   = yield* _(toQueue_(ma, capacity))
       return pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
             return pipe(
               queue.take,
-              I.flatMap(I.done),
+              I.chain(I.done),
               I.catchSome(
                 O.fold(() => pipe(doneRef.set(true), I.andThen(Pull.end), O.some), flow(O.some, I.fail, O.some))
               )
@@ -2161,13 +2159,13 @@ export function bufferUnbounded<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
       const queue   = yield* _(toQueueUnbounded(ma))
       return pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
             return pipe(
               queue.take,
-              I.flatMap(Take.foldM(() => pipe(doneRef.set(true), I.andThen(Pull.end)), Pull.halt, Pull.emitChunk))
+              I.chain(Take.foldM(() => pipe(doneRef.set(true), I.andThen(Pull.end)), Pull.halt, Pull.emitChunk))
             )
           }
         })
@@ -2214,13 +2212,13 @@ function bufferSignal_<R, E, A>(
     yield* _(M.fork(I.toManaged_(upstream)))
     return pipe(
       doneRef.get,
-      I.flatMap((done) => {
+      I.chain((done) => {
         if (done) {
           return Pull.end
         } else {
           return pipe(
             queue.take,
-            I.flatMap(([take, p]) =>
+            I.chain(([take, p]) =>
               pipe(
                 p.succeed(undefined),
                 I.andThen(I.when(() => take === Take.end)(doneRef.set(true))),
@@ -2312,7 +2310,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
         pipe(
           finalizerRef,
           Ref.getAndSet(RM.noopFinalizer),
-          I.flatMap((f) => f(Ex.halt(cause))),
+          I.chain((f) => f(Ex.halt(cause))),
           I.makeUninterruptible
         )
 
@@ -2320,10 +2318,10 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
         I.uninterruptibleMask(({ restore }) =>
           pipe(
             RM.make,
-            I.flatMap((releaseMap) =>
+            I.chain((releaseMap) =>
               pipe(
                 finalizerRef.set((exit) => M.releaseAll(exit, sequential)(releaseMap)),
-                I.flatMap(() =>
+                I.chain(() =>
                   pipe(
                     restore(stream.proc.io),
                     I.gives((_: R) => [_, releaseMap] as [R, RM.ReleaseMap]),
@@ -2345,7 +2343,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
             (cause) =>
               pipe(
                 closeCurrent(cause),
-                I.flatMap(() =>
+                I.chain(() =>
                   open(f(cause))((pull) => ({
                     _tag: 'Other',
                     pull
@@ -2358,7 +2356,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
 
       const pull = pipe(
         stateRef.get,
-        I.flatMap((s) => {
+        I.chain((s) => {
           switch (s._tag) {
             case 'NotStarted': {
               return pipe(
@@ -2463,7 +2461,7 @@ export function catchSomeCause<E, R1, E1, A1>(
  * concurrently. Up to `outputBuffer` elements of the produced streams may be
  * buffered in memory by this operator.
  */
-export function flatMapPar_<R, E, A, R1, E1, A1>(
+export function chainPar_<R, E, A, R1, E1, A1>(
   ma: Stream<R, E, A>,
   f: (o: A) => Stream<R1, E1, A1>,
   n: number,
@@ -2500,7 +2498,7 @@ export function flatMapPar_<R, E, A, R1, E1, A1>(
                   Semaphore.withPermitManaged(permits),
                   managed,
                   tap(() => latch.succeed(undefined)),
-                  flatMap(() => f(o)),
+                  chain(() => f(o)),
                   foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
                   I.foldCauseM(
                     (cause) => pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
@@ -2515,7 +2513,7 @@ export function flatMapPar_<R, E, A, R1, E1, A1>(
               (cause) =>
                 pipe(
                   getChildren,
-                  I.flatMap(Fi.interruptAll),
+                  I.chain(Fi.interruptAll),
                   I.andThen(I.asUnit(outQueue.offer(Pull.halt(cause)))),
                   I.toManaged()
                 ),
@@ -2528,7 +2526,7 @@ export function flatMapPar_<R, E, A, R1, E1, A1>(
                     (_, permitsAcquisition) =>
                       pipe(
                         getChildren,
-                        I.flatMap(Fi.interruptAll),
+                        I.chain(Fi.interruptAll),
                         I.andThen(I.asUnit(Fi.interrupt(permitsAcquisition)))
                       ),
                     (_, failureAwait) => pipe(outQueue.offer(Pull.end), I.andThen(I.asUnit(Fi.interrupt(failureAwait))))
@@ -2551,12 +2549,12 @@ export function flatMapPar_<R, E, A, R1, E1, A1>(
  * concurrently. Up to `outputBuffer` elements of the produced streams may be
  * buffered in memory by this operator.
  */
-export function flatMapPar<A, R1, E1, A1>(
+export function chainPar<A, R1, E1, A1>(
   f: (o: A) => Stream<R1, E1, A1>,
   n: number,
   outputBuffer = 16
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
-  return (stream) => flatMapPar_(stream, f, n, outputBuffer)
+  return (stream) => chainPar_(stream, f, n, outputBuffer)
 }
 
 /**
@@ -2565,7 +2563,7 @@ export function flatMapPar<A, R1, E1, A1>(
  * from an element of the source stream, the oldest executing stream is cancelled. Up to `bufferSize`
  * elements of the produced streams may be buffered in memory by this operator.
  */
-export function flatMapParSwitch_(n: number, bufferSize = 16) {
+export function chainParSwitch_(n: number, bufferSize = 16) {
   return <R, E, A, R1, E1, B>(ma: Stream<R, E, A>, f: (o: A) => Stream<R1, E1, B>): Stream<R & R1, E | E1, B> => {
     return new Stream(
       M.withChildren((getChildren) =>
@@ -2590,7 +2588,7 @@ export function flatMapParSwitch_(n: number, bufferSize = 16) {
                     yield* _(
                       pipe(
                         cancelers.take,
-                        I.flatMap(() => I.succeed(undefined)),
+                        I.chain(() => I.succeed(undefined)),
                         I.asUnit
                       )
                     )
@@ -2600,7 +2598,7 @@ export function flatMapParSwitch_(n: number, bufferSize = 16) {
                     Semaphore.withPermitManaged(permits),
                     managed,
                     tap(() => latch.succeed(undefined)),
-                    flatMap(() => f(o)),
+                    chain(() => f(o)),
                     foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
                     I.foldCauseM(
                       (cause) => pipe(cause, Pull.halt, outQueue.offer, I.andThen(innerFailure.fail(cause)), I.asUnit),
@@ -2615,7 +2613,7 @@ export function flatMapParSwitch_(n: number, bufferSize = 16) {
                 (cause) =>
                   pipe(
                     getChildren,
-                    I.flatMap(Fi.interruptAll),
+                    I.chain(Fi.interruptAll),
                     I.andThen(outQueue.offer(Pull.halt(cause))),
                     I.toManaged()
                   ),
@@ -2627,7 +2625,7 @@ export function flatMapParSwitch_(n: number, bufferSize = 16) {
                       (_, permitsAcquisition) =>
                         pipe(
                           getChildren,
-                          I.flatMap(Fi.interruptAll),
+                          I.chain(Fi.interruptAll),
                           I.andThen(I.asUnit(Fi.interrupt(permitsAcquisition)))
                         ),
                       (_, failureAwait) =>
@@ -2652,9 +2650,9 @@ export function flatMapParSwitch_(n: number, bufferSize = 16) {
  * from an element of the source stream, the oldest executing stream is cancelled. Up to `bufferSize`
  * elements of the produced streams may be buffered in memory by this operator.
  */
-export function flatMapParSwitch(n: number, bufferSize = 16) {
+export function chainParSwitch(n: number, bufferSize = 16) {
   return <A, R1, E1, B>(f: (a: A) => Stream<R1, E1, B>) => <R, E>(ma: Stream<R, E, A>): Stream<R & R1, E | E1, B> =>
-    flatMapParSwitch_(n, bufferSize)(ma, f)
+    chainParSwitch_(n, bufferSize)(ma, f)
 }
 
 /**
@@ -2708,7 +2706,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
           Ref.make<State<A>>({ buffer: C.empty(), done: false })
         )
         const p   = yield* _(ma.proc)
-        return I.flatMap_(ref.get, (s) => emitOrAccumulate(s.buffer, s.done, ref, p))
+        return I.chain_(ref.get, (s) => emitOrAccumulate(s.buffer, s.done, ref, p))
       })
     )
   }
@@ -2760,7 +2758,7 @@ export function collectWhile_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => O.Op
       const doneRef = yield* _(Ref.makeManaged(false))
       return pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
@@ -2830,13 +2828,13 @@ export function collectWhileM_<R, E, A, R1, E1, B>(
       const doneRef = yield* _(Ref.makeManaged(false))
       return pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
             return pipe(
               BPull.pullElement(os),
-              I.flatMap(
+              I.chain(
                 flow(
                   f,
                   O.fold(() => pipe(doneRef.set(true), I.andThen(Pull.end)), I.bimap(O.some, C.single))
@@ -2882,7 +2880,7 @@ export function combine_<R, E, A, R1, E1, B, Z, C>(
       const left  = yield* _(M.mapM_(ma.proc, BPull.make))
       const right = yield* _(M.mapM_(mb.proc, BPull.make))
       const pull  = yield* _(
-        unfoldM(z, (z) => I.flatMap_(f(z, BPull.pullElement(left), BPull.pullElement(right)), flow(I.done, I.optional)))
+        unfoldM(z, (z) => I.chain_(f(z, BPull.pullElement(left), BPull.pullElement(right)), flow(I.done, I.optional)))
           .proc
       )
       return pull
@@ -2934,7 +2932,7 @@ export function combineChunks_<R, E, A, R1, E1, B, Z, C>(
         unfoldChunkM(z, (z) =>
           pipe(
             f(z, left, right),
-            I.flatMap((ex) => I.optional(I.done(ex)))
+            I.chain((ex) => I.optional(I.done(ex)))
           )
         ).proc
       )
@@ -2975,7 +2973,7 @@ export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, 
         pipe(
           ma.proc,
           switchStream,
-          I.flatMap((x) => currStream.set(x))
+          I.chain((x) => currStream.set(x))
         )
       )
 
@@ -2990,9 +2988,7 @@ export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, 
                 pipe(
                   switched,
                   Ref.getAndSet(true),
-                  I.flatMap((b) =>
-                    b ? Pull.end : pipe(switchStream(mb.proc), I.flatMap(currStream.set), I.andThen(go))
-                  )
+                  I.chain((b) => (b ? Pull.end : pipe(switchStream(mb.proc), I.chain(currStream.set), I.andThen(go))))
                 ),
               Pull.halt
             )
@@ -3037,11 +3033,11 @@ export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E
                 pipe(
                   currIndex,
                   Ref.getAndUpdate((x) => x + 1),
-                  I.flatMap((i) => {
+                  I.chain((i) => {
                     if (i >= chunkSize) {
                       return Pull.end
                     } else {
-                      return pipe(switchStream(streams[i].proc), I.flatMap(currStream.set), I.andThen(go))
+                      return pipe(switchStream(streams[i].proc), I.chain(currStream.set), I.andThen(go))
                     }
                   })
                 ),
@@ -3067,7 +3063,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   mb: Stream<R1, E1, B>,
   f: (o: A, o1: B) => C
 ): Stream<R & R1, E | E1, C> {
-  return flatMap_(ma, (o) => map_(mb, (o1) => f(o, o1)))
+  return chain_(ma, (o) => map_(mb, (o1) => f(o, o1)))
 }
 
 /**
@@ -3183,7 +3179,7 @@ export function drainFork_<R, E, A, R1, E1, A1>(
   return pipe(
     P.make<E | E1, never>(),
     fromEffect,
-    flatMap((bgDied) =>
+    chain((bgDied) =>
       pipe(
         mb,
         foreachManaged(() => I.unit()),
@@ -3361,7 +3357,7 @@ export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
     M.gen(function* (_) {
       const currStream   = yield* _(Ref.make<I.IO<R, O.Option<E>, Chunk<A>>>(Pull.end))
       const switchStream = yield* _(M.switchable<R, never, I.IO<R, O.Option<E>, Chunk<A>>>())
-      yield* _(pipe(ma.proc, switchStream, I.flatMap(currStream.set)))
+      yield* _(pipe(ma.proc, switchStream, I.chain(currStream.set)))
       const go: I.IO<R, O.Option<E>, Chunk<A>> = pipe(
         currStream.get,
         I.flatten,
@@ -3369,7 +3365,7 @@ export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
           flow(
             Ca.sequenceCauseOption,
             O.fold(
-              () => pipe(ma.proc, switchStream, I.flatMap(currStream.set), I.andThen(I.yieldNow()), I.andThen(go)),
+              () => pipe(ma.proc, switchStream, I.chain(currStream.set), I.andThen(I.yieldNow()), I.andThen(go)),
               Pull.halt
             )
           )
@@ -3410,7 +3406,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
             ([k, v]) =>
               pipe(
                 decider.await,
-                I.flatMap((f) => f(k, v))
+                I.chain((f) => f(k, v))
               ),
             out.offer
           )
@@ -3421,10 +3417,10 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
           pipe(
             ref.get,
             I.map(Map.lookup(k)),
-            I.flatMap(
+            I.chain(
               O.fold(
                 () =>
-                  I.flatMap_(add, ([idx, q]) =>
+                  I.chain_(add, ([idx, q]) =>
                     pipe(
                       ref,
                       Ref.update(Map.insert(k, idx)),
@@ -3531,7 +3527,7 @@ export function haltWhen_<R, E, A, R1, E1>(ma: Stream<R, E, A>, io: I.IO<R1, E1,
       const runIO = yield* _(I.forkManaged(io))
       return pipe(
         runIO.poll,
-        I.flatMap(
+        I.chain(
           O.fold(
             (): I.IO<R & R1, O.Option<E | E1>, Chunk<A>> => as,
             Ex.fold(Pull.halt, () => Pull.end)
@@ -3589,13 +3585,13 @@ export function haltOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: P.Promise<E1, any>)
       const doneRef = yield* _(Ref.make(false))
       const pull    = pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
             return pipe(
               p.poll,
-              I.flatMap(
+              I.chain(
                 O.fold(
                   (): I.IO<R, O.Option<E | E1>, Chunk<A>> => as,
                   (v) => pipe(doneRef.set(true), I.andThen(I.mapError_(v, O.some)), I.andThen(Pull.end))
@@ -3774,7 +3770,7 @@ export function intersperse_<R, E, A, A1>(ma: Stream<R, E, A>, middle: A1): Stre
       const chunks = yield* _(ma.proc)
       const pull   = pipe(
         chunks,
-        I.flatMap((os) =>
+        I.chain((os) =>
           Ref.modify_(state, (first) => {
             const r      = []
             let mut_flag = first
@@ -3857,7 +3853,7 @@ export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: P.Promise<
       const pull    = pipe(
         doneRef.get,
         I.product(p.isDone),
-        I.flatMap(([b1, b2]) => {
+        I.chain(([b1, b2]) => {
           if (b1) {
             return Pull.end
           }
@@ -3957,7 +3953,7 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
       return pipe(
         pull,
         BPull.pullElement,
-        I.flatMap((o) =>
+        I.chain((o) =>
           pipe(
             I.gen(function* (_) {
               const s = yield* _(state.get)
@@ -4006,7 +4002,7 @@ export function mapAccum<Z>(
  * output of this stream.
  */
 export function mapConcat_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => Iterable<B>) {
-  return mapChunks_(ma, (chunks) => C.flatMap_(chunks, (a) => Array.from(f(a))))
+  return mapChunks_(ma, (chunks) => C.chain_(chunks, (a) => Array.from(f(a))))
 }
 
 /**
@@ -4022,7 +4018,7 @@ export function mapConcat<A, B>(f: (a: A) => Iterable<B>): <R, E>(ma: Stream<R, 
  * this stream.
  */
 export function mapConcatChunk_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => ReadonlyArray<B>): Stream<R, E, B> {
-  return mapChunks_(ma, (chunks) => C.flatMap_(chunks, f))
+  return mapChunks_(ma, (chunks) => C.chain_(chunks, f))
 }
 
 /**
@@ -4113,7 +4109,7 @@ export function mapMPar_(n: number) {
             M.foldCauseM(flow(Pull.halt, out.offer, I.toManaged()), () =>
               pipe(
                 Semaphore.withPermits_(I.unit(), n, permits),
-                I.flatMap(() => out.offer(Pull.end)),
+                I.chain(() => out.offer(Pull.end)),
                 I.toManaged()
               )
             ),
@@ -4162,14 +4158,14 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
       const handler = (pull: Pull.Pull<R & R1, E | E1, C | C1>, terminate: boolean) =>
         pipe(
           doneRef.get,
-          I.flatMap((o) => {
+          I.chain((o) => {
             if (o._tag === 'Some' && o.value) {
               return I.succeed(false)
             } else {
               return pipe(
                 pull,
                 I.result,
-                I.flatMap((exit) =>
+                I.chain((exit) =>
                   pipe(
                     doneRef,
                     RefM.modify((o) => {
@@ -4537,7 +4533,7 @@ export function foldWhileManagedM_<R, E, A, R1, E1, S>(
 ): M.Managed<R & R1, E | E1, S> {
   return pipe(
     ma.proc,
-    M.flatMap((is) => {
+    M.chain((is) => {
       const loop = (s1: S): I.IO<R & R1, E | E1, S> => {
         if (!cont(s)) {
           return I.succeed(s1)
@@ -4546,7 +4542,7 @@ export function foldWhileManagedM_<R, E, A, R1, E1, S>(
             is,
             I.foldM(
               O.fold(() => I.succeed(s1), I.fail),
-              flow(C.foldLeftEffect(s1, f), I.flatMap(loop))
+              flow(C.foldLeftEffect(s1, f), I.chain(loop))
             )
           )
         }
@@ -4628,7 +4624,7 @@ export function scheduleWith<R1, A, B>(schedule: Sc.Schedule<R1, A, B>) {
         const pull = pipe(
           os,
           BPull.pullElement,
-          I.flatMap((o) =>
+          I.chain((o) =>
             pipe(
               driver.next(o),
               I.as(() => C.single(f(o))),
@@ -4661,7 +4657,7 @@ export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> 
 
         const pull = pipe(
           counterRef.get,
-          I.flatMap((count) => {
+          I.chain((count) => {
             if (count >= n) {
               return Pull.end
             } else {
@@ -4799,13 +4795,13 @@ export function unfoldChunkM<S, R, E, A>(
 
       const pull = pipe(
         doneRef.get,
-        I.flatMap((done) => {
+        I.chain((done) => {
           if (done) {
             return Pull.end
           } else {
             return pipe(
               ref.get,
-              I.flatMap(f),
+              I.chain(f),
               I.foldM(
                 Pull.fail,
                 O.fold(
@@ -5311,7 +5307,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
   const pullNonEmpty = <R, E, O>(pull: I.IO<R, Option<E>, Chunk<O>>): I.IO<R, Option<E>, Chunk<O>> =>
     pipe(
       pull,
-      I.flatMap((chunk) => {
+      I.chain((chunk) => {
         if (C.isEmpty(chunk)) {
           return pullNonEmpty(pull)
         } else {
@@ -5344,12 +5340,12 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
               )
           ),
           fromEffectOption,
-          flatMap(([l, r, leftFirst]) =>
+          chain(([l, r, leftFirst]) =>
             pipe(
               Ref.make(l[l.length - 1]),
               I.product(Ref.make(r[r.length - 1])),
               fromEffect,
-              flatMap(([latestLeft, latestRight]) =>
+              chain(([latestLeft, latestRight]) =>
                 pipe(
                   fromChunk(
                     leftFirst ? C.map_(r, (o1) => f(l[l.length - 1], o1)) : C.map_(l, (o) => f(o, r[r.length - 1]))
@@ -5370,7 +5366,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
                         ([leftChunk, rightLatest]) => C.map_(leftChunk, (o) => f(o, rightLatest)),
                         ([rightChunk, leftLatest]) => C.map_(rightChunk, (o1) => f(leftLatest, o1))
                       ),
-                      flatMap(fromChunk)
+                      chain(fromChunk)
                     )
                   )
                 )
@@ -5486,7 +5482,7 @@ export function gen(...args: any[]): any {
 
         if (state.done) return succeed(state.value)
 
-        return flatMap_(state.value.S(), (val) => {
+        return chain_(state.value.S(), (val) => {
           return run(L.append_(replayStack, val))
         })
       }
@@ -5548,7 +5544,7 @@ export class GroupBy<R, E, K, V> {
   }
 
   merge<R1, E1, A>(f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>): Stream<R & R1, E | E1, A> {
-    return flatMapPar_(
+    return chainPar_(
       this.grouped,
       ([k, q]) => f(k, flattenExitOption(fromQueueWithShutdown(q))),
       Number.MAX_SAFE_INTEGER,

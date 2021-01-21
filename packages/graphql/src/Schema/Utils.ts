@@ -21,19 +21,19 @@ export type TypeofInputRecord<T extends InputRecord<T>> = Compute<
   'flat'
 >
 
-export type __R<Fs extends FieldRecord<any, any, any>> = UnionToIntersection<
+export type __R<Fs> = UnionToIntersection<
   {
     [K in keyof Fs]: [Fs[K]] extends [{ _R: (_: infer R) => void }] ? (unknown extends R ? never : R) : never
   }[keyof Fs]
 >
 
-export type __E<Fs extends FieldRecord<any, any, any>> = Compute<
+export type __E<Fs> = Compute<
   {
     [K in keyof Fs]: [Fs[K]] extends [GQLField<any, any, any, any, infer E, any>] ? E : never
   }[keyof Fs]
 >
 
-export type __A<Fs extends FieldRecord<any, any, any>> = Compute<
+export type __A<Fs> = Compute<
   {
     [K in keyof Fs]: _A<Fs[K]>
   }

@@ -35,17 +35,17 @@ export function map_<A, B>(fa: Trampoline<A>, f: (a: A) => B): Trampoline<B> {
   }
 }
 
-export function flatMap_<A, B>(fa: Trampoline<A>, f: (a: A) => Trampoline<B>): Trampoline<B> {
+export function chain_<A, B>(fa: Trampoline<A>, f: (a: A) => Trampoline<B>): Trampoline<B> {
   switch (fa._tag) {
     case 'More':
-      return more(() => flatMap_(fa, f))
+      return more(() => chain_(fa, f))
     case 'Done':
       return f(fa.value)
   }
 }
 
 export function product_<A, B>(ta: Trampoline<A>, tb: Trampoline<B>): Trampoline<readonly [A, B]> {
-  return flatMap_(ta, (a) => map_(tb, (b) => [a, b]))
+  return chain_(ta, (a) => map_(tb, (b) => [a, b]))
 }
 
 export function trampoline<A extends ReadonlyArray<unknown>, B>(fn: MorphismN<A, Trampoline<B>>): (...args: A) => B {

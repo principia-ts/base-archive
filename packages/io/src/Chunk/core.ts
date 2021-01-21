@@ -280,7 +280,7 @@ export function map<A, B>(f: (a: A) => B) {
  * -------------------------------------------
  */
 
-export function flatMap_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
+export function chain_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   let rlen       = 0
   const l        = ma.length
   const mut_temp = new Array(l)
@@ -303,12 +303,12 @@ export function flatMap_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   return mut_r
 }
 
-export function flatMap<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*

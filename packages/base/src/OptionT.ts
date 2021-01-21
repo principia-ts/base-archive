@@ -7,17 +7,17 @@ export type OptionTURI<M extends HKT.URIS> = HKT.AppendURI<M, O.OptionURI>
 
 export function getOptionT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): OptionT<M, C>
 export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UHKT<M>, HKT.Auto> {
-  const flatMap_: P.FlatMapFn_<OptionTURI<HKT.UHKT<M>>, HKT.Auto> = (ma, f) =>
-    M.flatMap_(
+  const chain_: P.ChainFn_<OptionTURI<HKT.UHKT<M>>, HKT.Auto> = (ma, f) =>
+    M.chain_(
       ma,
       O.fold(() => M.pure(O.none()), f)
     )
 
   return HKT.instance<OptionT<HKT.UHKT<M>, HKT.Auto>>({
     ...P.getApplicativeComposition(M, O.Applicative),
-    flatMap_,
-    flatMap: (f) => (ma) => flatMap_(ma, f),
-    flatten: (mma) => flatMap_(mma, identity),
+    chain_,
+    chain: (f) => (ma) => chain_(ma, f),
+    flatten: (mma) => chain_(mma, identity),
     none: () => M.pure(O.none()),
     some: (a) => M.pure(O.some(a)),
     someM: (ma) => M.map_(ma, O.some),
@@ -28,14 +28,14 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
       onNone: () => HKT.HKT<M, A2>,
       onSome: (a: A1) => HKT.HKT<M, A3>
     ) =>
-      M.flatMap_(
+      M.chain_(
         ma,
         O.fold((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
       ),
     foldOptionM: <A1, A2, A3>(onNone: () => HKT.HKT<M, A2>, onSome: (a: A1) => HKT.HKT<M, A3>) => (
       ma: HKT.HKT<M, O.Option<A1>>
     ) =>
-      M.flatMap_(
+      M.chain_(
         ma,
         O.fold((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
       )

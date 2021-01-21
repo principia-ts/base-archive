@@ -67,7 +67,7 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
     new DerivedAll(
       this.value,
       (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
-      (c) => (s) => E.flatMap_(ca(c), (a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
+      (c) => (s) => E.chain_(ca(c), (a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
     )
 
   readonly foldAll = <EC, ED, C, D>(
@@ -85,13 +85,13 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
           this.getEither(s),
           E.fold((e) => E.left(ec(e)), ca(c)),
           E.deunion,
-          E.flatMap((a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
+          E.chain((a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
         )
     )
 
   readonly get: FIO<EB, B> = pipe(
     this.value.get,
-    I.flatMap((a) => E.fold_(this.getEither(a), I.fail, I.pure))
+    I.chain((a) => E.fold_(this.getEither(a), I.fail, I.pure))
   )
 
   readonly set: (a: A) => FIO<EA, void> = (a) =>
@@ -126,7 +126,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
     new Derived<EC, ED, C, D, S>(
       this.value,
       (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
-      (c) => E.flatMap_(ca(c), (a) => E.fold_(this.setEither(a), (e) => E.left(ea(e)), E.right))
+      (c) => E.chain_(ca(c), (a) => E.fold_(this.setEither(a), (e) => E.left(ea(e)), E.right))
     )
 
   readonly foldAll = <EC, ED, C, D>(
@@ -144,7 +144,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
           this.getEither(s),
           E.fold((e) => E.left(ec(e)), ca(c)),
           E.deunion,
-          E.flatMap((a) =>
+          E.chain((a) =>
             pipe(
               this.setEither(a),
               E.fold((e) => E.left(ea(e)), E.right)
@@ -155,7 +155,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
 
   readonly get: FIO<EB, B> = pipe(
     this.value.get,
-    I.flatMap((s) => E.fold_(this.getEither(s), I.fail, I.pure))
+    I.chain((s) => E.fold_(this.getEither(s), I.fail, I.pure))
   )
 
   readonly set: (a: A) => FIO<EA, void> = (a) => E.fold_(this.setEither(a), I.fail, this.value.set)
@@ -790,7 +790,7 @@ export function updateAndGet<A>(f: (a: A) => A) {
         pipe(
           self,
           modify((v) => pipe(f(v), (result) => tuple(result, result))),
-          I.flatMap(() => self.get)
+          I.chain(() => self.get)
         )
       )
     )

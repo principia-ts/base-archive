@@ -411,7 +411,7 @@ export function unsafeCreate<A>(
 
         return I.makeUninterruptible(
           I.whenM(shutdownHook.succeed(undefined))(
-            I.flatMap_(I.foreachPar_(unsafePollAll(takers), P.interruptAs(d.id)), () => strategy.shutdown)
+            I.chain_(I.foreachPar_(unsafePollAll(takers), P.interruptAs(d.id)), () => strategy.shutdown)
           )
         )
       })
@@ -488,28 +488,28 @@ export function createQueue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) 
 }
 
 export function makeSliding<A>(capacity: number): I.UIO<Queue<A>> {
-  return I.flatMap_(
+  return I.chain_(
     I.effectTotal(() => new Bounded<A>(capacity)),
     createQueue(new SlidingStrategy())
   )
 }
 
 export function makeUnbounded<A>(): I.UIO<Queue<A>> {
-  return I.flatMap_(
+  return I.chain_(
     I.effectTotal(() => new Unbounded<A>()),
     createQueue(new DroppingStrategy())
   )
 }
 
 export function makeDropping<A>(capacity: number): I.UIO<Queue<A>> {
-  return I.flatMap_(
+  return I.chain_(
     I.effectTotal(() => new Bounded<A>(capacity)),
     createQueue(new DroppingStrategy())
   )
 }
 
 export function makeBounded<A>(capacity: number): I.UIO<Queue<A>> {
-  return I.flatMap_(
+  return I.chain_(
     I.effectTotal(() => new Bounded<A>(capacity)),
     createQueue(new BackPressureStrategy())
   )
@@ -526,7 +526,7 @@ export function takeBetween(min: number, max: number) {
       if (n <= 0) {
         return I.pure([])
       } else {
-        return I.flatMap_(self.take, (a) => I.map_(takeRemaining(n - 1), (_) => [a, ..._]))
+        return I.chain_(self.take, (a) => I.map_(takeRemaining(n - 1), (_) => [a, ..._]))
       }
     }
 
@@ -535,7 +535,7 @@ export function takeBetween(min: number, max: number) {
     } else {
       return pipe(
         self.takeUpTo(max),
-        I.flatMap((bs) => {
+        I.chain((bs) => {
           const remaining = min - bs.length
 
           if (remaining === 1) {
@@ -727,7 +727,7 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
   f: (b: B, c: C) => I.IO<R3, E3, D>
 ): XQueue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, A1, D> {
   return new (class extends XQueue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, A1, D> {
-    awaitShutdown: I.UIO<void> = I.flatMap_(self.awaitShutdown, () => that.awaitShutdown)
+    awaitShutdown: I.UIO<void> = I.chain_(self.awaitShutdown, () => that.awaitShutdown)
 
     capacity: number = Math.min(self.capacity, that.capacity)
 
@@ -743,9 +743,9 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
 
     size: I.UIO<number> = I.map2Par_(self.size, that.size, (x, y) => Math.max(x, y))
 
-    take: I.IO<RB & RB1 & R3, E3 | EB | EB1, D> = I.flatMap_(I.productPar_(self.take, that.take), ([b, c]) => f(b, c))
+    take: I.IO<RB & RB1 & R3, E3 | EB | EB1, D> = I.chain_(I.productPar_(self.take, that.take), ([b, c]) => f(b, c))
 
-    takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = I.flatMap_(
+    takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = I.chain_(
       I.productPar_(self.takeAll, that.takeAll),
       ([bs, cs]) => {
         const abs = Array.from(bs)
@@ -757,7 +757,7 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
     )
 
     takeUpTo: (n: number) => I.IO<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = (max) =>
-      I.flatMap_(I.productPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
+      I.chain_(I.productPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
         const abs = Array.from(bs)
         const acs = Array.from(cs)
         const all = A.zip_(abs, acs)
@@ -864,21 +864,20 @@ export function dimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
 
     isShutdown: I.UIO<boolean> = self.isShutdown
 
-    offer: (a: C) => I.IO<RC & RA, EA | EC, boolean> = (c) => I.flatMap_(f(c), self.offer)
+    offer: (a: C) => I.IO<RC & RA, EA | EC, boolean> = (c) => I.chain_(f(c), self.offer)
 
-    offerAll: (as: Iterable<C>) => I.IO<RC & RA, EC | EA, boolean> = (cs) =>
-      I.flatMap_(I.foreach_(cs, f), self.offerAll)
+    offerAll: (as: Iterable<C>) => I.IO<RC & RA, EC | EA, boolean> = (cs) => I.chain_(I.foreach_(cs, f), self.offerAll)
 
     shutdown: I.UIO<void> = self.shutdown
 
     size: I.UIO<number> = self.size
 
-    take: I.IO<RD & RB, ED | EB, D> = I.flatMap_(self.take, g)
+    take: I.IO<RD & RB, ED | EB, D> = I.chain_(self.take, g)
 
-    takeAll: I.IO<RD & RB, ED | EB, readonly D[]> = I.flatMap_(self.takeAll, (a) => I.foreach_(a, g))
+    takeAll: I.IO<RD & RB, ED | EB, readonly D[]> = I.chain_(self.takeAll, (a) => I.foreach_(a, g))
 
     takeUpTo: (n: number) => I.IO<RD & RB, ED | EB, readonly D[]> = (max) =>
-      I.flatMap_(self.takeUpTo(max), (bs) => I.foreach_(bs, g))
+      I.chain_(self.takeUpTo(max), (bs) => I.foreach_(bs, g))
   })()
 }
 
@@ -922,7 +921,7 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
     isShutdown: I.UIO<boolean> = self.isShutdown
 
     offer: (a: A1) => I.IO<RA & R2, EA | E2, boolean> = (a) =>
-      I.flatMap_(f(a), (b) => (b ? self.offer(a) : I.pure(false)))
+      I.chain_(f(a), (b) => (b ? self.offer(a) : I.pure(false)))
 
     offerAll: (as: Iterable<A1>) => I.IO<RA & R2, EA | E2, boolean> = (as) =>
       pipe(
@@ -933,7 +932,7 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
             I.map((b) => (b ? O.some(a) : O.none()))
           )
         ),
-        I.flatMap((maybeAs) => {
+        I.chain((maybeAs) => {
           const filtered = A.filterMap_(maybeAs, identity)
 
           if (A.isEmpty(filtered)) {

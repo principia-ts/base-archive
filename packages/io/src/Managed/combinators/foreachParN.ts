@@ -41,7 +41,7 @@ export function foreachParN_(n: number) {
         return effectForeachParN(n)(as, (a) =>
           pipe(
             makeInnerMap,
-            I.flatMap((innerMap) =>
+            I.chain((innerMap) =>
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),
@@ -84,7 +84,7 @@ export function foreachUnitParN_(n: number) {
         return effectForeachUnitParN(n)(as, (a) =>
           pipe(
             makeInnerMap,
-            I.flatMap((innerMap) =>
+            I.chain((innerMap) =>
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),

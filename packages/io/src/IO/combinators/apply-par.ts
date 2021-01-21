@@ -79,7 +79,7 @@ function coordinateMap2Par<E, E2>() {
         return I.map_(join(loser), (y) => f(winner.value, y))
       }
       case 'Failure': {
-        return I.flatMap_(loser.interruptAs(fiberId), (e) => {
+        return I.chain_(loser.interruptAs(fiberId), (e) => {
           switch (e._tag) {
             case 'Success': {
               return I.halt(winner.cause)

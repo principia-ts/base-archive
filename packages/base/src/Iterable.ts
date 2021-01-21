@@ -86,7 +86,7 @@ export function zipWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: It
 }
 
 export function ap_<A, B>(fab: Iterable<(a: A) => B>, fa: Iterable<A>): Iterable<B> {
-  return flatMap_(fab, (f) => map_(fa, f))
+  return chain_(fab, (f) => map_(fa, f))
 }
 
 export function ap<A>(fa: Iterable<A>): <B>(fab: Iterable<(a: A) => B>) => Iterable<B> {
@@ -289,21 +289,21 @@ export function map<A, B>(f: (a: A) => B): (fa: Iterable<A>) => Iterable<B> {
  * -------------------------------------------
  */
 
-export function flatMap<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
+  return (ma) => chain_(ma, f)
 }
 
-export function flatMap_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
+export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
   return iterable(function* () {
-    yield* genFlatMap(ma[Symbol.iterator](), f)
+    yield* genchain(ma[Symbol.iterator](), f)
   })
 }
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
-function* genFlatMap<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
+function* genchain<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
   for (;;) {
     const result = ia.next()
     if (result.done) {

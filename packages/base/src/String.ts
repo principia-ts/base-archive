@@ -283,7 +283,7 @@ export function match(r: RegExp): (s: string) => O.Option<RegExpMatchArray> {
  * Match a string with a global RegExp
  */
 export function matchAll_(s: string, r: RegExp): O.Option<NonEmptyArray<RegExpMatchArray>> {
-  return O.flatMap_(
+  return O.chain_(
     O.tryCatch(() => s.matchAll(r)),
     flow(A.from, NA.fromArray)
   )

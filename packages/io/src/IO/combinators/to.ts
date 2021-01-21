@@ -1,7 +1,7 @@
 import type { Promise } from '../../Promise'
 import type { IO } from '../core'
 
-import { flatMap_, result } from '../core'
+import { chain_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -10,7 +10,7 @@ import { uninterruptibleMask } from './interrupt'
  * the specified promise will be interrupted, too.
  */
 export function to_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never, boolean> {
-  return uninterruptibleMask(({ restore }) => flatMap_(result(restore(effect)), p.done))
+  return uninterruptibleMask(({ restore }) => chain_(result(restore(effect)), p.done))
 }
 
 /**

@@ -103,7 +103,7 @@ export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
       test,
       I.result,
       I.map2(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.apFirst_),
-      I.flatMap(I.done)
+      I.chain(I.done)
     )
   )
 }
@@ -206,7 +206,7 @@ export function repeat<R0>(
 export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = new PerTest((test) =>
   pipe(
     TC.repeats,
-    I.flatMap((n) =>
+    I.chain((n) =>
       I.andThen_(
         test,
         pipe(

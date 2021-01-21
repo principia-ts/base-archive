@@ -498,7 +498,7 @@ export function map<V, A>(f: (v: V) => A) {
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function flatMap_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) {
+export function chain_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) {
   return foldLeftWithIndex_(map, make<K, A>(map.config), (z, _, v) =>
     mutate_(z, (m) => {
       forEachWithIndex_(f(v), (_k, _a) => {
@@ -511,16 +511,16 @@ export function flatMap_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  *
- * @dataFirst flatMap_
+ * @dataFirst chain_
  */
-export function flatMap<K, V, A>(f: (v: V) => HashMap<K, A>) {
-  return (map: HashMap<K, V>) => flatMap_(map, f)
+export function chain<K, V, A>(f: (v: V) => HashMap<K, A>) {
+  return (map: HashMap<K, V>) => chain_(map, f)
 }
 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function flatMapWithIndex_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>) {
+export function chainWithIndex_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>) {
   return foldLeftWithIndex_(map, make<K, A>(map.config), (z, k, v) =>
     mutate_(z, (m) => {
       forEachWithIndex_(f(k, v), (_k, _a) => {
@@ -533,10 +533,10 @@ export function flatMapWithIndex_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) =
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  *
- * @dataFirst flatMapWithIndex_
+ * @dataFirst chainWithIndex_
  */
-export function flatMapWithIndex<K, V, A>(f: (k: K, v: V) => HashMap<K, A>) {
-  return (map: HashMap<K, V>) => flatMapWithIndex_(map, f)
+export function chainWithIndex<K, V, A>(f: (k: K, v: V) => HashMap<K, A>) {
+  return (map: HashMap<K, V>) => chainWithIndex_(map, f)
 }
 
 /**

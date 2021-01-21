@@ -16,7 +16,7 @@ export function foreachParN_(n: number) {
     ): I.URIO<R, void> =>
       pipe(
         q.take,
-        I.flatMap(([p, a]) =>
+        I.chain(([p, a]) =>
           pipe(
             f(a),
             I.foldCauseM(
@@ -25,7 +25,7 @@ export function foreachParN_(n: number) {
             )
           )
         ),
-        I.flatMap(() => worker(q, pairs, ref)),
+        I.chain(() => worker(q, pairs, ref)),
         I.whenM(Ref.modify_(ref, (n) => tuple(n > 0, n - 1)))
       )
 

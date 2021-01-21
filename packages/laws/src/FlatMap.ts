@@ -37,7 +37,7 @@ function AssociativeCompositionLaw<
   EC,
   C
 >(
-  F: P.FlatMap<F, TC>,
+  F: P.Chain<F, TC>,
   S: Eq.Eq<
     HKT.Kind<
       F,
@@ -58,20 +58,20 @@ function AssociativeCompositionLaw<
   bfc: (b: B) => HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, C>
 ): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean
 function AssociativeCompositionLaw<F, A, B, C>(
-  F: P.FlatMap<HKT.UHKT<F>>,
+  F: P.Chain<HKT.UHKT<F>>,
   S: Eq.Eq<HKT.HKT<F, C>>,
   afb: MorphismN<[A], HKT.HKT<F, B>>,
   bfc: MorphismN<[B], HKT.HKT<F, C>>
 ): (fa: HKT.HKT<F, A>) => boolean {
   return (fa) => {
     return S.equals_(
-      F.flatMap_(F.flatMap_(fa, afb), bfc),
-      F.flatMap_(fa, (a) => F.flatMap_(afb(a), bfc))
+      F.chain_(F.chain_(fa, afb), bfc),
+      F.chain_(fa, (a) => F.chain_(afb(a), bfc))
     )
   }
 }
 
-export const FlatMap = {
+export const Chain = {
   associativity: AssociativeCompositionLaw
   /*
    * derivedAp: <F, A, B>(

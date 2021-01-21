@@ -452,7 +452,7 @@ export function id<E, A>(): DecoderK<A, E, A> {
 export function compose_<I, E, A, B>(ia: DecoderK<I, E, A>, ab: DecoderK<A, E, B>): DecoderK<I, E, B>
 export function compose_<I, E, A, B>(ia: DecoderKHKT<I, E, A>, ab: DecoderKHKT<A, E, B>): DecoderKHKT<I, E, B> {
   return {
-    decode: (M) => (i0) => M.flatMap_(ia.decode(M)(i0), ab.decode(M))
+    decode: (M) => (i0) => M.chain_(ia.decode(M)(i0), ab.decode(M))
   }
 }
 

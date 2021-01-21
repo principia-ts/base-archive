@@ -3,7 +3,7 @@ import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
 import { sleep } from '../../Clock'
-import { flatMap_ } from '../core'
+import { chain_ } from '../core'
 
 /**
  * ```haskell
@@ -16,7 +16,7 @@ import { flatMap_ } from '../core'
  * @since 1.0.0
  */
 export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & Has<Clock>, E, A> {
-  return flatMap_(sleep(ms), () => ma)
+  return chain_(sleep(ms), () => ma)
 }
 
 /**

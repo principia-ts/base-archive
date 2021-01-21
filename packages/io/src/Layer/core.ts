@@ -134,7 +134,7 @@ declare module '@principia/base/HKT' {
 export const LayerTag = {
   Fold: 'Fold',
   Map: 'Map',
-  FlatMap: 'FlatMap',
+  Chain: 'Chain',
   Fresh: 'Fresh',
   Managed: 'Managed',
   Suspend: 'Suspend',
@@ -154,7 +154,7 @@ export function main<E, A>(layer: Layer<DefaultEnv, E, A>) {
 export type LayerInstruction =
   | LayerFoldInstruction<any, any, any, any, any, any, any, any, any>
   | LayerMapInstruction<any, any, any, any>
-  | LayerFlatMapInstruction<any, any, any, any, any, any>
+  | LayerChainInstruction<any, any, any, any, any, any>
   | LayerFreshInstruction<any, any, any>
   | LayerManagedInstruction<any, any, any>
   | LayerSuspendInstruction<any, any, any>
@@ -187,8 +187,8 @@ export class LayerMapInstruction<R, E, A, B> extends Layer<R, E, B> {
   }
 }
 
-export class LayerFlatMapInstruction<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
-  readonly _tag = LayerTag.FlatMap
+export class LayerChainInstruction<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
+  readonly _tag = LayerTag.Chain
 
   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => Layer<R1, E1, B>) {
     super()
@@ -293,8 +293,8 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     case LayerTag.Map: {
       return M.succeed((memo) => M.map_(memo.getOrElseMemoize(_I.layer), _I.f))
     }
-    case LayerTag.FlatMap: {
-      return M.succeed((memo) => M.flatMap_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
+    case LayerTag.Chain: {
+      return M.succeed((memo) => M.chain_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
     }
     case LayerTag.Map2Par: {
       return M.succeed((memo) => M.map2Par_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
@@ -325,7 +325,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
           (e) =>
             pipe(
               I.toManaged()(I.ask<any>()),
-              M.flatMap((r) => M.gives_(memo.getOrElseMemoize(_I.onFailure), () => tuple(r, e)))
+              M.chain((r) => M.gives_(memo.getOrElseMemoize(_I.onFailure), () => tuple(r, e)))
             ),
           (r) =>
             M.gives_(memo.getOrElseMemoize(_I.onSuccess), (x) =>
@@ -380,7 +380,7 @@ export function prepare<T>(tag: H.Tag<T>) {
     open: <R1, E1>(open: (_: A) => I.IO<R1, E1, any>) => ({
       release: <R2>(release: (_: A) => I.IO<R2, never, any>) =>
         fromManaged(tag)(
-          M.flatMap_(
+          M.chain_(
             M.makeExit_(acquire, (a) => release(a)),
             (a) => M.fromEffect(I.map_(open(a), () => a))
           )
@@ -403,14 +403,14 @@ export function create<T>(tag: H.Tag<T>) {
  * Constructs a layer from the specified effect.
  */
 export function fromEffect<T>(tag: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new LayerManagedInstruction(M.flatMap_(M.fromEffect(resource), (a) => environmentFor(tag, a)))
+  return (resource) => new LayerManagedInstruction(M.chain_(M.fromEffect(resource), (a) => environmentFor(tag, a)))
 }
 
 /**
  * Constructs a layer from a managed resource.
  */
 export function fromManaged<T>(has: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new LayerManagedInstruction(M.flatMap_(resource, (a) => environmentFor(has, a)))
+  return (resource) => new LayerManagedInstruction(M.chain_(resource, (a) => environmentFor(has, a)))
 }
 
 export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> {
@@ -486,7 +486,7 @@ export function fromManagedConstructor<S>(
 > {
   return (constructor) => (...tags) =>
     fromManaged(tag)(
-      M.flatMap_(
+      M.chain_(
         M.fromEffect(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any)))),
         (_) => _
       )
@@ -692,21 +692,21 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Layer<R, E, A>) => Layer<R
  * -------------------------------------------
  */
 
-export function flatMap_<R, E, A, R1, E1, B>(
+export function chain_<R, E, A, R1, E1, B>(
   ma: Layer<R, E, A>,
   f: (a: A) => Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, B> {
-  return new LayerFlatMapInstruction(ma, f)
+  return new LayerChainInstruction(ma, f)
 }
 
-export function flatMap<A, R1, E1, B>(
+export function chain<A, R1, E1, B>(
   f: (a: A) => Layer<R1, E1, B>
 ): <R, E>(ma: Layer<R, E, A>) => Layer<R & R1, E1 | E, B> {
-  return (ma) => flatMap_(ma, f)
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<R, E, R1, E1, A>(mma: Layer<R, E, Layer<R1, E1, A>>): Layer<R & R1, E | E1, A> {
-  return flatMap_(mma, (_) => _)
+  return chain_(mma, (_) => _)
 }
 
 /*
@@ -954,10 +954,10 @@ export function retry_<R, E, A, R1>(
     pipe(
       currentTime,
       I.orDie,
-      I.flatMap((now) =>
+      I.chain((now) =>
         pipe(
           s(now, e),
-          I.flatMap(
+          I.chain(
             matchTag({
               Done: (_) => I.fail(e),
               Continue: (c) => I.as_(sleep(c.interval), () => tuple(r, c.next))
@@ -1166,18 +1166,18 @@ export class MemoMap {
                   const tp                   = yield* _(
                     pipe(
                       scope(layer),
-                      M.flatMap((_) => _(self)),
+                      M.chain((_) => _(self)),
                       (_) => _.io,
                       I.giveAll(tuple(a, innerReleaseMap)),
                       I.result,
-                      I.flatMap((ex) =>
+                      I.chain((ex) =>
                         Ex.fold_(
                           ex,
                           (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
                             pipe(
                               promise.halt(cause),
-                              I.flatMap(() => M.releaseAll(ex, sequential)(innerReleaseMap) as I.FIO<E, any>),
-                              I.flatMap(() => I.halt(cause))
+                              I.chain(() => M.releaseAll(ex, sequential)(innerReleaseMap) as I.FIO<E, any>),
+                              I.chain(() => I.halt(cause))
                             ),
                           ([fin, a]) =>
                             I.gen(function* (_) {
@@ -1189,7 +1189,7 @@ export class MemoMap {
                               )
                               yield* _(XR.update_(observers, (n) => n + 1))
                               const outerFinalizer = yield* _(
-                                RelMap.add((e) => I.flatMap_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
+                                RelMap.add((e) => I.chain_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
                               )
                               yield* _(promise.succeed(a))
                               return tuple(outerFinalizer, a)
@@ -1213,7 +1213,7 @@ export class MemoMap {
                     )
                   )
                 ),
-                (ex: Exit<any, any>) => I.flatMap_(finalizerRef.get, (f) => f(ex))
+                (ex: Exit<any, any>) => I.chain_(finalizerRef.get, (f) => f(ex))
               )
 
               return tuple(
@@ -1235,6 +1235,6 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 export function makeMemoMap() {
   return pipe(
     XRM.make<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
-    I.flatMap((r) => I.effectTotal(() => new MemoMap(r)))
+    I.chain((r) => I.effectTotal(() => new MemoMap(r)))
   )
 }

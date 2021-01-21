@@ -8,7 +8,7 @@ import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import * as S from '../../Schedule'
-import { flatMap, foldM, map, map_, orDie } from '../core'
+import { chain, foldM, map, map_, orDie } from '../core'
 
 /**
  * ```haskell
@@ -120,7 +120,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
 ): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
   return pipe(
     S.driver(sc),
-    flatMap((driver) => {
+    chain((driver) => {
       function loop(a: A): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
         return pipe(
           driver.next(a),

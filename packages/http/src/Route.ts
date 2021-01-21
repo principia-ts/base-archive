@@ -243,7 +243,7 @@ export function drain<R>(rs: Routes<R, never>) {
 
     const { queue } = yield* $(HttpServerTag)
     return yield* $(
-      pipe(isRouterDraining, FR.set(true), I.andThen(pipe(queue.take, I.flatMap(flow(pfn, I.fork)), I.forever)))
+      pipe(isRouterDraining, FR.set(true), I.andThen(pipe(queue.take, I.chain(flow(pfn, I.fork)), I.forever)))
     )
   })
 }

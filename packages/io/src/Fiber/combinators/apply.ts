@@ -20,12 +20,12 @@ export function map2_<E, E1, A, A1, B>(
   return {
     _tag: 'SyntheticFiber',
     getRef: (ref) => I.map2_(fa.getRef(ref), fb.getRef(ref), (a, b) => ref.join(a, b)),
-    inheritRefs: I.flatMap_(fa.inheritRefs, () => fb.inheritRefs),
+    inheritRefs: I.chain_(fa.inheritRefs, () => fb.inheritRefs),
     interruptAs: (id) => I.map2_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) => Ex.map2Cause_(ea, eb, f, C.both)),
     poll: I.map2_(fa.poll, fb.poll, (fa, fb) =>
-      O.flatMap_(fa, (ea) => O.map_(fb, (eb) => Ex.map2Cause_(ea, eb, f, C.both)))
+      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.map2Cause_(ea, eb, f, C.both)))
     ),
-    await: I.result(map2Par_(I.flatMap_(fa.await, I.done), I.flatMap_(fb.await, I.done), f))
+    await: I.result(map2Par_(I.chain_(fa.await, I.done), I.chain_(fb.await, I.done), f))
   }
 }
 

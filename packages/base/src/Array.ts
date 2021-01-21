@@ -222,7 +222,7 @@ export function pure<A>(a: A): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>): ReadonlyArray<B> {
-  return flatMap_(fab, (f) => map_(fa, f))
+  return chain_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -394,7 +394,7 @@ export function bindS<A, K, N extends string>(
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
 > {
-  return flatMap((a) =>
+  return chain((a) =>
     pipe(
       f(a),
       map((b) => _bind(a, name, b))
@@ -993,7 +993,7 @@ export function map<A, B>(f: (a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArr
  * -------------------------------------------
  */
 
-export function flatMapWithIndex_<A, B>(
+export function chainWithIndex_<A, B>(
   fa: ReadonlyArray<A>,
   f: (i: number, a: A) => ReadonlyArray<B>
 ): ReadonlyArray<B> {
@@ -1019,10 +1019,10 @@ export function flatMapWithIndex_<A, B>(
   return mut_out
 }
 
-export function flatMapWithIndex<A, B>(
+export function chainWithIndex<A, B>(
   f: (i: number, a: A) => ReadonlyArray<B>
 ): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => flatMapWithIndex_(fa, f)
+  return (fa) => chainWithIndex_(fa, f)
 }
 
 /**
@@ -1035,8 +1035,8 @@ export function flatMapWithIndex<A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
-  return flatMapWithIndex_(fa, (_, a) => f(a))
+export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
+  return chainWithIndex_(fa, (_, a) => f(a))
 }
 
 /**
@@ -1049,8 +1049,8 @@ export function flatMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => flatMap_(fa, f)
+export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => chain_(fa, f)
 }
 
 /**
@@ -1094,7 +1094,7 @@ export function flatten<A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
  * @since 1.0.0
  */
 export function tap_<A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<A> {
-  return flatMap_(ma, (a) =>
+  return chain_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -1961,7 +1961,7 @@ export function comprehension<R>(
     if (input.length === 0) {
       return g(...scope) ? [f(...scope)] : empty()
     } else {
-      return flatMap_(input[0], (x) => go(snoc_(scope, x), input.slice(1)))
+      return chain_(input[0], (x) => go(snoc_(scope, x), input.slice(1)))
     }
   }
   return go(empty(), input)
@@ -2221,8 +2221,8 @@ export const Foldable: P.Foldable<[URI], V> = HKT.instance({
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Applicative,
-  flatMap_,
-  flatMap,
+  chain_,
+  chain,
   flatten
 })
 

@@ -465,7 +465,7 @@ export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
  * @since 1.0.0
  */
 export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
-  return flatMap_(fa, () => that())
+  return chain_(fa, () => that())
 }
 
 /**
@@ -517,7 +517,7 @@ export function pure<E>(e: E): Cause<E> {
  * @since 1.0.0
  */
 export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
-  return flatMap_(fab, (f) => map_(fa, f))
+  return chain_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -589,7 +589,7 @@ export const eqCause: Eq<Cause<any>> = makeEq(equalsCause)
  * @since 1.0.0
  */
 export function map_<E, D>(fa: Cause<E>, f: (e: E) => D) {
-  return flatMap_(fa, (e) => fail(f(e)))
+  return chain_(fa, (e) => fail(f(e)))
 }
 
 /**
@@ -615,7 +615,7 @@ export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
 /**
  * @internal
  */
-function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
+function chainSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
   return Ev.gen(function* (_) {
     switch (ma._tag) {
       case 'Empty':
@@ -627,16 +627,16 @@ function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<
       case 'Interrupt':
         return ma
       case 'Then':
-        return then(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)))
+        return then(yield* _(chainSafe_(ma.left, f)), yield* _(chainSafe_(ma.right, f)))
       case 'Both':
-        return both(yield* _(flatMapSafe_(ma.left, f)), yield* _(flatMapSafe_(ma.right, f)))
+        return both(yield* _(chainSafe_(ma.left, f)), yield* _(chainSafe_(ma.right, f)))
     }
   })
 }
 
 /**
  * ```haskell
- * flatMap_ :: Monad m => (m a, (a -> m b)) -> m b
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -644,13 +644,13 @@ function flatMapSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-  return flatMapSafe_(ma, f).value()
+export function chain_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
+  return chainSafe_(ma, f).value()
 }
 
 /**
  * ```haskell
- * flatMap :: Monad m => (a -> m b) -> m a -> m b
+ * chain :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -658,8 +658,8 @@ export function flatMap_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
-  return (ma) => flatMap_(ma, f)
+export function chain<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -673,7 +673,7 @@ export function flatMap<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D>
  * @since 1.0.0
  */
 export function flatten<E>(mma: Cause<Cause<E>>): Cause<E> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -1292,7 +1292,7 @@ const format = (segment: Segment): readonly string[] => {
       ]
     }
     case 'Sequential': {
-      return A.flatMap_(segment.all, (seg) => ['║', ...prefixBlock(format(seg), '╠', '║'), '▼'])
+      return A.chain_(segment.all, (seg) => ['║', ...prefixBlock(format(seg), '╠', '║'), '▼'])
     }
   }
 }

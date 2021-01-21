@@ -14,7 +14,7 @@ export function dropWhileEffect_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, 
       const a  = as[i]
       dropping = pipe(
         dropping,
-        I.flatMap((d) => (d ? p(a) : I.succeed(false))),
+        I.chain((d) => (d ? p(a) : I.succeed(false))),
         I.map((d) => {
           if (d) {
             return true
@@ -34,7 +34,7 @@ export function dropWhileEffect<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as:
 }
 
 export function foldLeftEffect_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return foldLeft_(as, I.succeed(b) as I.IO<R, E, B>, (b, a) => I.flatMap_(b, (_) => f(_, a)))
+  return foldLeft_(as, I.succeed(b) as I.IO<R, E, B>, (b, a) => I.chain_(b, (_) => f(_, a)))
 }
 
 export function foldLeftEffect<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {

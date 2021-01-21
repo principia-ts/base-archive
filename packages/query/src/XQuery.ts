@@ -103,9 +103,9 @@ export class XQuery<R, E, A> {
     return this.bimap(f, identity)
   }
 
-  flatMap = <R1, E1, B>(f: (a: A) => XQuery<R1, E1, B>): XQuery<R & R1, E | E1, B> => {
+  chain = <R1, E1, B>(f: (a: A) => XQuery<R1, E1, B>): XQuery<R & R1, E | E1, B> => {
     return new XQuery(
-      I.flatMap_(
+      I.chain_(
         this.step,
         matchTag({
           Blocked: ({ blockedRequests, cont }) => I.succeed(blockedResult(blockedRequests, cont.mapM(f))),
@@ -130,7 +130,7 @@ export class XQuery<R, E, A> {
     return pipe(
       this.step,
       I.gives((r: R) => [r, new QueryContext(cache)] as const),
-      I.flatMap(
+      I.chain(
         matchTag({
           Blocked: ({ blockedRequests, cont }) => I.andThen_(BRS.run_(blockedRequests, cache), cont.runCache(cache)),
           Done: ({ value }) => I.succeed(value),
@@ -155,7 +155,7 @@ export class XQuery<R, E, A> {
 
   map2 = <R1, E1, B, C>(that: XQuery<R1, E1, B>, f: (a: A, b: B) => C): XQuery<R & R1, E | E1, C> => {
     return new XQuery(
-      I.flatMap_(
+      I.chain_(
         this.step,
         matchTag({
           Blocked: ({ blockedRequests, cont }) => {
@@ -579,7 +579,7 @@ export function mapErrorCause<E, E1>(
  */
 
 export function absolve<R, E, E1, A>(v: XQuery<R, E, E.Either<E1, A>>): XQuery<R, E | E1, A> {
-  return v.flatMap(fromEither)
+  return v.chain(fromEither)
 }
 
 /*
@@ -645,18 +645,18 @@ export function fromEffect<R, E, A>(effect: IO<R, E, A>): XQuery<R, E, A> {
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): XQuery<unknown, E, A> {
-  return succeed(either).flatMap(E.fold(fail, succeed))
+  return succeed(either).chain(E.fold(fail, succeed))
 }
 
 export function fromOption<A>(option: O.Option<A>): XQuery<unknown, O.Option<never>, A> {
-  return succeed(option).flatMap(O.fold(() => fail(O.none()), succeed))
+  return succeed(option).chain(O.fold(() => fail(O.none()), succeed))
 }
 
 export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: DataSource<R, A>): XQuery<R, E, B> {
   return new XQuery(
     pipe(
       I.asksM(([_, qc]: readonly [R, QueryContext]) => qc.cache.lookup(request)),
-      I.flatMap(
+      I.chain(
         E.fold(
           (ref) =>
             I.succeed(
@@ -714,17 +714,17 @@ export function some<A>(a: A): XQuery<unknown, never, O.Option<A>> {
  * -------------------------------------------
  */
 
-export function flatMap_<R, E, A, R1, E1, B>(
+export function chain_<R, E, A, R1, E1, B>(
   ma: XQuery<R, E, A>,
   f: (a: A) => XQuery<R1, E1, B>
 ): XQuery<R & R1, E | E1, B> {
-  return ma.flatMap(f)
+  return ma.chain(f)
 }
 
-export function flatMap<A, R1, E1, B>(
+export function chain<A, R1, E1, B>(
   f: (a: A) => XQuery<R1, E1, B>
 ): <R, E>(ma: XQuery<R, E, A>) => XQuery<R & R1, E | E1, B> {
-  return (ma) => ma.flatMap(f)
+  return (ma) => ma.chain(f)
 }
 
 /*
@@ -742,7 +742,7 @@ export function asks<R, A>(f: (_: R) => A): XQuery<R, never, A> {
 }
 
 export function asksM<R0, R, E, A>(f: (_: R0) => XQuery<R, E, A>): XQuery<R0 & R, E, A> {
-  return ask<R0>().flatMap(f)
+  return ask<R0>().chain(f)
 }
 
 export function gives_<R, E, A, R0>(ra: XQuery<R, E, A>, f: Described<(r0: R0) => R>): XQuery<R0, E, A> {
@@ -871,7 +871,7 @@ export function right<R, E, A, B>(ma: XQuery<R, E, E.Either<A, B>>): XQuery<R, O
 }
 
 export function leftOrFail_<R, E, A, B, E1>(ma: XQuery<R, E, E.Either<A, B>>, e: E1): XQuery<R, E | E1, A> {
-  return ma.flatMap(E.fold(succeed, () => fail(e)))
+  return ma.chain(E.fold(succeed, () => fail(e)))
 }
 
 export function leftOrFail<E1>(e: E1): <R, E, A, B>(ma: XQuery<R, E, E.Either<A, B>>) => XQuery<R, E | E1, A> {
@@ -882,7 +882,7 @@ export function leftOrFailWith_<R, E, A, B, E1>(
   ma: XQuery<R, E, E.Either<A, B>>,
   f: (right: B) => E1
 ): XQuery<R, E | E1, A> {
-  return ma.flatMap(E.fold(succeed, flow(f, fail)))
+  return ma.chain(E.fold(succeed, flow(f, fail)))
 }
 
 export function leftOrFailWith<B, E1>(
@@ -892,7 +892,7 @@ export function leftOrFailWith<B, E1>(
 }
 
 export function rightOrFail_<R, E, A, B, E1>(ma: XQuery<R, E, E.Either<A, B>>, e: E1): XQuery<R, E | E1, B> {
-  return ma.flatMap(E.fold(() => fail(e), succeed))
+  return ma.chain(E.fold(() => fail(e), succeed))
 }
 
 export function rightOrFail<E1>(e: E1): <R, E, A, B>(ma: XQuery<R, E, E.Either<A, B>>) => XQuery<R, E | E1, B> {
@@ -903,7 +903,7 @@ export function rightOrFailWith_<R, E, A, B, E1>(
   ma: XQuery<R, E, E.Either<A, B>>,
   f: (left: A) => E1
 ): XQuery<R, E | E1, B> {
-  return ma.flatMap(E.fold(flow(f, fail), succeed))
+  return ma.chain(E.fold(flow(f, fail), succeed))
 }
 
 export function rightOrFailWith<A, E1>(
@@ -1079,8 +1079,8 @@ abstract class AbstractContinue {
 
   mapM<R, E, A, R1, E1, B>(this: Continue<R, E, A>, f: (a: A) => XQuery<R1, E1, B>): Continue<R & R1, E | E1, B> {
     return matchTag_(this, {
-      Effect: ({ query }) => effectContinue(query.flatMap(f)),
-      Get: ({ io }) => effectContinue(fromEffect(io).flatMap(f))
+      Effect: ({ query }) => effectContinue(query.chain(f)),
+      Get: ({ io }) => effectContinue(fromEffect(io).chain(f))
     })
   }
 
@@ -1180,7 +1180,7 @@ function makeContinue<R, E, A extends Request<E, B>, B>(
   return getContinue(
     pipe(
       ref.get,
-      I.flatMap(
+      I.chain(
         O.fold(
           () => I.die(new Error('TODO: Query Failure')),
           (a) => I.fromEither(() => a)

@@ -1026,7 +1026,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
 
 /**
  * ```haskell
- * flatMap_ :: Monad m => (m a, (a -> m b)) -> m b
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -1034,13 +1034,13 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
+export function chain_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
   return isLeft(fa) ? fa : f(fa.right)
 }
 
 /**
  * ```haskell
- * flatMap :: Monad m => (a -> m b) -> m a -> m b
+ * chain :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -1048,8 +1048,8 @@ export function flatMap_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, B> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -1064,7 +1064,7 @@ export function flatMap<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A
  * @since 1.0.0
  */
 export function tap_<E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, A> {
-  return flatMap_(ma, (a) =>
+  return chain_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -1098,7 +1098,7 @@ export function tap<A, G, B>(f: (a: A) => Either<G, B>): <E>(ma: Either<E, A>) =
  * @since 1.0.0
  */
 export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -1383,8 +1383,8 @@ export const Fail: P.Fail<[URI], V> = HKT.instance({
  */
 export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Applicative,
-  flatMap_,
-  flatMap,
+  chain_,
+  chain,
   flatten
 })
 

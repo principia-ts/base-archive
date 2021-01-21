@@ -5,7 +5,7 @@ import * as O from '@principia/base/Option'
 
 import * as Fiber from '../../Fiber'
 import * as FiberRef from '../../FiberRef'
-import { flatMap, fork } from '../core'
+import { chain, fork } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -16,7 +16,7 @@ export function forkAs_<R, E, A>(ma: IO<R, E, A>, name: string): URIO<R, Fiber.F
     pipe(
       Fiber.fiberName,
       FiberRef.set(O.some(name)),
-      flatMap(() => fork(restore(ma)))
+      chain(() => fork(restore(ma)))
     )
   )
 }

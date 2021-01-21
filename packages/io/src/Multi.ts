@@ -92,7 +92,7 @@ export const MultiTag = {
   EffectSuspendPartial: 'EffectSuspendPartial',
   Fail: 'Fail',
   Modify: 'Modify',
-  FlatMap: 'FlatMap',
+  Chain: 'Chain',
   Fold: 'Fold',
   Asks: 'Asks',
   Give: 'Give',
@@ -149,8 +149,8 @@ class Modify<S1, S2, A> extends Multi<never, S1, S2, unknown, never, A> {
   }
 }
 
-class FlatMap<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Multi<W | W1, S1, S3, Q & R, D | E, B> {
-  readonly _multiTag = MultiTag.FlatMap
+class Chain<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Multi<W | W1, S1, S3, Q & R, D | E, B> {
+  readonly _multiTag = MultiTag.Chain
   constructor(readonly ma: Multi<W, S1, S2, R, E, A>, readonly f: (a: A) => Multi<W1, S2, S3, Q, D, B>) {
     super()
   }
@@ -205,7 +205,7 @@ export type SIOInstruction =
   | Succeed<any>
   | Fail<any>
   | Modify<any, any, any>
-  | FlatMap<any, any, any, any, any, any, any, any, any, any, any>
+  | Chain<any, any, any, any, any, any, any, any, any, any, any>
   | Fold<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any, any, any, any>
   | Give<any, any, any, any, any, any>
@@ -449,7 +449,7 @@ export function map2_<W, S1, S2, R, E, A, W1, S3, Q, D, B, C>(
   fb: Multi<W1, S2, S3, Q, D, B>,
   f: (a: A, b: B) => C
 ): Multi<W | W1, S1, S3, Q & R, D | E, C> {
-  return flatMap_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function map2<W1, A, S2, S3, R1, E1, B, C>(
@@ -553,7 +553,7 @@ export function recover<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>): Mult
 export function absolve<W, S1, S2, R, E, E1, A>(
   fa: Multi<W, S1, S2, R, E, E.Either<E1, A>>
 ): Multi<W, S1, S2, R, E | E1, A> {
-  return flatMap_(fa, E.fold(fail, succeed))
+  return chain_(fa, E.fold(fail, succeed))
 }
 
 /*
@@ -563,7 +563,7 @@ export function absolve<W, S1, S2, R, E, E1, A>(
  */
 
 export function map_<W, S1, S2, R, E, A, B>(fa: Multi<W, S1, S2, R, E, A>, f: (a: A) => B): Multi<W, S1, S2, R, E, B> {
-  return flatMap_(fa, (a) => succeed(f(a)))
+  return chain_(fa, (a) => succeed(f(a)))
 }
 
 export function map<A, B>(
@@ -578,24 +578,24 @@ export function map<A, B>(
  * -------------------------------------------
  */
 
-export function flatMap_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
+export function chain_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   ma: Multi<W, S1, S2, R, E, A>,
   f: (a: A) => Multi<W1, S2, S3, R1, E1, B>
 ): Multi<W | W1, S1, S3, R1 & R, E1 | E, B> {
-  return new FlatMap(ma, f)
+  return new Chain(ma, f)
 }
 
-export function flatMap<A, W1, S2, S3, R1, E1, B>(
+export function chain<A, W1, S2, S3, R1, E1, B>(
   f: (a: A) => Multi<W1, S2, S3, R1, E1, B>
 ): <W, S1, R, E>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, R1 & R, E1 | E, B> {
-  return (ma) => flatMap_(ma, f)
+  return (ma) => chain_(ma, f)
 }
 
 export function tap_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   ma: Multi<W, S1, S2, R, E, A>,
   f: (a: A) => Multi<W1, S2, S3, R1, E1, B>
 ): Multi<W | W1, S1, S3, R1 & R, E1 | E, A> {
-  return flatMap_(ma, (a) => map_(f(a), () => a))
+  return chain_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<S2, A, W1, S3, R1, E1, B>(
@@ -607,7 +607,7 @@ export function tap<S2, A, W1, S3, R1, E1, B>(
 export function flatten<W, S1, S2, R, E, A, W1, S3, R1, E1>(
   mma: Multi<W, S1, S2, R, E, Multi<W1, S2, S3, R1, E1, A>>
 ): Multi<W | W1, S1, S3, R1 & R, E1 | E, A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -678,7 +678,7 @@ export function tell<W>(w: W): Multi<W, unknown, never, unknown, never, void> {
 }
 
 export function write_<W, S1, S2, R, E, A, W1>(ma: Multi<W, S1, S2, R, E, A>, w: W1): Multi<W | W1, S1, S2, R, E, A> {
-  return flatMap_(ma, (a) =>
+  return chain_(ma, (a) =>
     pipe(
       tell(w),
       map(() => a)
@@ -785,7 +785,7 @@ export function contramapState_<S0, W, S1, S2, R, E, A>(
   fa: Multi<W, S1, S2, R, E, A>,
   f: (s: S0) => S1
 ): Multi<W, S0, S2, R, E, A> {
-  return flatMap_(update(f), () => fa)
+  return chain_(update(f), () => fa)
 }
 
 /**
@@ -945,7 +945,7 @@ export function runEitherCause_<W, S1, S2, E, A>(
     const I = current[_SI]
 
     switch (I._multiTag) {
-      case MultiTag.FlatMap: {
+      case MultiTag.Chain: {
         const nested       = I.ma[_SI]
         const continuation = I.f
 

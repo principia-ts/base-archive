@@ -17,7 +17,7 @@ import * as I from '../../IO/core'
  * fiber has already exited, the returned effect will resume immediately.
  * Otherwise, the effect will resume when the fiber exits.
  */
-export const interrupt = <E, A>(fiber: Fiber<E, A>) => I.flatMap_(fiberId(), (id) => fiber.interruptAs(id))
+export const interrupt = <E, A>(fiber: Fiber<E, A>) => I.chain_(fiberId(), (id) => fiber.interruptAs(id))
 
 /**
  * ```haskell
@@ -27,7 +27,7 @@ export const interrupt = <E, A>(fiber: Fiber<E, A>) => I.flatMap_(fiberId(), (id
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.
  */
 export const interruptAllAs_ = (fs: Iterable<Fiber<any, any>>, id: FiberId) =>
-  Iter.foldLeft_(fs, I.unit() as UIO<void>, (io, f) => I.asUnit(I.flatMap_(io, () => f.interruptAs(id))))
+  Iter.foldLeft_(fs, I.unit() as UIO<void>, (io, f) => I.asUnit(I.chain_(io, () => f.interruptAs(id))))
 
 /**
  * ```haskell

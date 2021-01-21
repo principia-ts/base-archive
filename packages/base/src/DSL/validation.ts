@@ -58,11 +58,11 @@ export function getAltValidationF<F>(
 ): <E>(S: Semigroup<E>) => Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(S: Semigroup<E>) => {
     const alt_: AltFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, that) =>
-      F.flatMap_(
+      F.chain_(
         F.recover(fa),
         E.fold(
           (e) =>
-            F.flatMap_(
+            F.chain_(
               F.recover(that()),
               E.fold(
                 (e1) => F.fail(S.combine_(e, e1)),

@@ -312,7 +312,7 @@ export function optionalModify<A>(f: (a: A) => A) {
 /** @internal */
 export function optionalComposeOptional<A, B>(ab: Optional<A, B>) {
   return <S>(sa: Optional<S, A>): Optional<S, B> => ({
-    getOption: flow(sa.getOption, O.flatMap(ab.getOption)),
+    getOption: flow(sa.getOption, O.chain(ab.getOption)),
     set: (b) => optionalModify(ab.set(b))(sa)
   })
 }

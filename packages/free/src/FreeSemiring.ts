@@ -173,7 +173,7 @@ export function map2_<Z, A, Z1, B, C>(
   fb: FreeSemiring<Z1, B>,
   f: (a: A, b: B) => C
 ): FreeSemiring<Z | Z1, C> {
-  return flatMap_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function map2<A, Z1, B, C>(
@@ -229,7 +229,7 @@ export function apSecond<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemirin
  */
 
 export function map_<Z, A, B>(fa: FreeSemiring<Z, A>, f: (a: A) => B): FreeSemiring<Z, B> {
-  return flatMap_(fa, (a) => single(f(a)))
+  return chain_(fa, (a) => single(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): <Z>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z, B> {
@@ -250,21 +250,18 @@ export function as<B>(b: B): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z, B
  * -------------------------------------------
  */
 
-export function flatMap_<Z, A, Z1, B>(
-  ma: FreeSemiring<Z, A>,
-  f: (a: A) => FreeSemiring<Z1, B>
-): FreeSemiring<Z | Z1, B> {
+export function chain_<Z, A, Z1, B>(ma: FreeSemiring<Z, A>, f: (a: A) => FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, B> {
   return fold_(ma, empty(), f, then, both)
 }
 
-export function flatMap<A, Z1, B>(
+export function chain<A, Z1, B>(
   f: (a: A) => FreeSemiring<Z1, B>
 ): <Z>(ma: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
-  return (ma) => flatMap_(ma, f)
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<Z, Z1, A>(ma: FreeSemiring<Z, FreeSemiring<Z1, A>>): FreeSemiring<Z | Z1, A> {
-  return flatMap_(ma, identity)
+  return chain_(ma, identity)
 }
 
 /*

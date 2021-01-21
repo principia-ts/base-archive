@@ -38,15 +38,13 @@ export function getMonadStateT<F>(M: P.Monad<HKT.UHKT<F>>): P.MonadState<StateTU
   const map_: P.MapFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fa, f) => (s) => M.map_(fa(s), ([a, s]) => [f(a), s])
 
   const map2_: P.Map2Fn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fa, fb, f) => (s) =>
-    M.flatMap_(fa(s), ([a, s1]) => M.map_(fb(s1), ([b, s2]) => [f(a, b), s2]))
+    M.chain_(fa(s), ([a, s1]) => M.map_(fb(s1), ([b, s2]) => [f(a, b), s2]))
 
   const ap_: P.ApFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fab, fa) => map2_(fab, fa, (f, a) => f(a))
 
-  const flatMap_: P.FlatMapFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (ma, f) => (s) =>
-    M.flatMap_(ma(s), ([a, s]) => f(a)(s))
+  const chain_: P.ChainFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (ma, f) => (s) => M.chain_(ma(s), ([a, s]) => f(a)(s))
 
-  const flatten: P.FlattenFn<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (mma) => (s) =>
-    M.flatMap_(mma(s), ([f, s2]) => f(s2))
+  const flatten: P.FlattenFn<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (mma) => (s) => M.chain_(mma(s), ([f, s2]) => f(s2))
 
   return HKT.instance<StateT<HKT.UHKT<F>>>({
     imap_: (fa, f, _) => map_(fa, f),
@@ -61,8 +59,8 @@ export function getMonadStateT<F>(M: P.Monad<HKT.UHKT<F>>): P.MonadState<StateTU
     ap: (fa) => (fab) => ap_(fab, fa),
     unit: () => (s) => M.map_(M.unit(), () => [undefined, s]),
     pure: (a) => (s) => M.pure([a, s]),
-    flatMap_,
-    flatMap: (f) => (ma) => flatMap_(ma, f),
+    chain_,
+    chain: (f) => (ma) => chain_(ma, f),
     flatten,
     get: () => (s) => M.pure([s, s]),
     put: (s) => () => M.pure([undefined, s]),

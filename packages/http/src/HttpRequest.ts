@@ -70,7 +70,7 @@ export class HttpRequest {
     this.eventStream = pipe(
       ref.get,
       M.fromEffect,
-      M.flatMap((req) =>
+      M.chain((req) =>
         S.broadcastDynamic_(
           new S.Stream(
             M.gen(function* (_) {
@@ -101,10 +101,10 @@ export class HttpRequest {
                   })
                 })
               )
-              return I.flatMap_(done.get, (b) =>
+              return I.chain_(done.get, (b) =>
                 b
                   ? Pull.end
-                  : I.flatMap_(
+                  : I.chain_(
                       queue.take,
                       (event): I.UIO<Chunk<RequestEvent>> => {
                         if (event._tag === 'Close') {
@@ -123,7 +123,7 @@ export class HttpRequest {
   }
 
   access<R, E, A>(f: (req: http.IncomingMessage) => IO<R, E, A>): IO<R, E, A> {
-    return I.flatMap_(this.ref.get, f)
+    return I.chain_(this.ref.get, f)
   }
 
   get headers(): UIO<http.IncomingHttpHeaders> {
@@ -154,7 +154,7 @@ export class HttpRequest {
               const host     = yield* _(
                 pipe(
                   self.getHeader('host'),
-                  I.flatMap(
+                  I.chain(
                     O.fold(
                       () =>
                         I.fail(
@@ -172,7 +172,7 @@ export class HttpRequest {
                   I.effect(() => new Url.URL(`${protocol}://${host}${url}`)),
                   I.mapError(
                     (error) =>
-                      new HttpException(`Error while parsing URL`, {
+                      new HttpException('Error while parsing URL', {
                         status: Status.BadRequest,
                         originalError: error
                       })
@@ -245,7 +245,7 @@ export class HttpRequest {
   }
 
   get stream(): S.Stream<unknown, NS.ReadableError, Byte> {
-    return S.flatMap_(S.fromEffect(this.ref.get), (req) => NS.streamFromReadable(() => req))
+    return S.chain_(S.fromEffect(this.ref.get), (req) => NS.streamFromReadable(() => req))
   }
 
   get rawBody(): FIO<HttpException, string> {
@@ -256,7 +256,7 @@ export class HttpRequest {
         pipe(
           contentType,
           O.map(parseContentType),
-          O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
+          O.chain((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
           decodeCharset.decode(SyncDecoderM),
           Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
@@ -289,7 +289,7 @@ export class HttpRequest {
         pipe(
           contentType,
           O.map(parseContentType),
-          O.flatMap((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
+          O.chain((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
           decodeCharset.decode(SyncDecoderM),
           Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
@@ -318,7 +318,7 @@ export class HttpRequest {
               })
             )
           ),
-          I.flatMap((raw) =>
+          I.chain((raw) =>
             I.effectCatch_(
               () => JSON.parse(raw),
               (_) =>

@@ -302,7 +302,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  */
 
 export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E', E>> {
-  const flatMap_: P.FlatMapFn_<[URI], HKT.Fix<'E', E>> = (ma, f) => {
+  const chain_: P.ChainFn_<[URI], HKT.Fix<'E', E>> = (ma, f) => {
     if (isLeft(ma)) {
       return ma
     }
@@ -318,9 +318,9 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E',
   }
   return HKT.instance<P.MonadFail<[URI], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
-    flatMap_,
-    flatMap: (f) => (ma) => flatMap_(ma, f),
-    flatten: (mma) => flatMap_(mma, identity),
+    chain_,
+    chain: (f) => (ma) => chain_(ma, f),
+    flatten: (mma) => chain_(mma, identity),
     fail: left as any
   })
 }

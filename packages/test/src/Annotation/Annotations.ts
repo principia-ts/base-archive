@@ -78,7 +78,7 @@ export const live: Layer<unknown, never, Has<Annotations>> = L.fromEffect(Annota
           pipe(
             FR.get(fiberRef),
             I.map((m) => m.get(fibers)),
-            I.flatMap(
+            I.chain(
               E.fold(
                 (_) => I.succeed(RS.empty()),
                 flow(

@@ -170,16 +170,16 @@ export function map<A, B>(f: (a: A) => B): (fa: A) => B {
  * -------------------------------------------
  */
 
-export function flatMap_<A, B>(ma: A, f: (a: A) => B): B {
+export function chain_<A, B>(ma: A, f: (a: A) => B): B {
   return f(ma)
 }
 
-export function flatMap<A, B>(f: (a: A) => B): (ma: A) => B {
+export function chain<A, B>(f: (a: A) => B): (ma: A) => B {
   return (ma) => f(ma)
 }
 
 export function tap_<A, B>(ma: A, f: (a: A) => B): A {
-  return flatMap_(ma, (a) => map_(f(a), () => a))
+  return chain_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
@@ -187,7 +187,7 @@ export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
 }
 
 export function flatten<A>(mma: A): A {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*

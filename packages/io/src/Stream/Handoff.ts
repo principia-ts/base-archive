@@ -33,7 +33,7 @@ class Handoff<A> {
 export function make<A>(): I.UIO<Handoff<A>> {
   return pipe(
     P.make<never, void>(),
-    I.flatMap((p) => Ref.make<State<A>>(new Empty(p))),
+    I.chain((p) => Ref.make<State<A>>(new Empty(p))),
     I.map((ref) => new Handoff(ref))
   )
 }
@@ -42,7 +42,7 @@ export function offer<A>(a: A) {
   return (h: Handoff<A>): I.UIO<void> =>
     pipe(
       P.make<never, void>(),
-      I.flatMap((p) =>
+      I.chain((p) =>
         pipe(
           h.ref,
           Ref.modify<I.UIO<void>, State<A>>(
@@ -53,7 +53,7 @@ export function offer<A>(a: A) {
                 [
                   pipe(
                     s.notifyProducer.await,
-                    I.flatMap(() => offer(a)(h))
+                    I.chain(() => offer(a)(h))
                   ),
                   s
                 ] as const
@@ -68,7 +68,7 @@ export function offer<A>(a: A) {
 export function take<A>(h: Handoff<A>): I.UIO<A> {
   return pipe(
     P.make<never, void>(),
-    I.flatMap((p) =>
+    I.chain((p) =>
       pipe(
         h.ref,
         Ref.modify<I.UIO<A>, State<A>>(
@@ -77,7 +77,7 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
               [
                 pipe(
                   s.notifyConsumer.await,
-                  I.flatMap(() => take(h))
+                  I.chain(() => take(h))
                 ),
                 s
               ] as const,
@@ -100,7 +100,7 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
 export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
   return pipe(
     P.make<never, void>(),
-    I.flatMap((p) =>
+    I.chain((p) =>
       pipe(
         h.ref,
         Ref.modify<I.UIO<Option<A>>, State<A>>(

@@ -186,7 +186,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
     M.map_(M.fromEffect(Ref.make<O.Option<I>>(O.none())), (state) => (is: O.Option<Chunk<I>>) =>
       pipe(
         state.get,
-        I.flatMap((last) =>
+        I.chain((last) =>
           O.fold_(
             is,
             () => Push.emit(last, C.empty<never>()),
@@ -212,7 +212,7 @@ export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
     M.map_(M.fromEffect(Ref.make<Chunk<I>>(C.empty())), (state) => (is: O.Option<Chunk<I>>) =>
       pipe(
         state.get,
-        I.flatMap((take) =>
+        I.chain((take) =>
           O.fold_(
             is,
             () => (n >= 0 ? Push.emit(take, C.empty<I>()) : Push.emit(C.empty<I>(), take)),
@@ -246,14 +246,14 @@ export function foldLeftChunksWhileM<R, E, I, Z>(
             () =>
               pipe(
                 state.get,
-                I.flatMap((s) => Push.emit(s, C.empty<I>()))
+                I.chain((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.flatMap((s) => f(s, is)),
+                I.chain((s) => f(s, is)),
                 I.mapError((e) => tuple(E.left(e), C.empty<I>())),
-                I.flatMap((s) => {
+                I.chain((s) => {
                   if (cont(s)) {
                     return pipe(state.set(s), I.andThen(Push.more))
                   } else {
@@ -343,12 +343,12 @@ export function foldLeftWhileM<R, E, I, Z>(
             () =>
               pipe(
                 state.get,
-                I.flatMap((s) => Push.emit(s, C.empty<I>()))
+                I.chain((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.flatMap((s) =>
+                I.chain((s) =>
                   pipe(
                     foldChunk(s, is, 0, is.length),
                     I.foldM(
@@ -406,12 +406,12 @@ export function foldLeftWhile<I, Z>(
             () =>
               pipe(
                 state.get,
-                I.flatMap((s) => Push.emit(s, C.empty<I>()))
+                I.chain((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.flatMap((s) =>
+                I.chain((s) =>
                   pipe(foldChunk(s, is, 0, is.length), ([st, l]) =>
                     O.fold_(
                       l,
@@ -511,7 +511,7 @@ export function map2_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1, Z2
   fb: Sink<R1, E1, I1, L1, Z1>,
   f: (z: Z, z1: Z1) => Z2
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z2> {
-  return flatMap_(fa, (z) => map_(fb, (_) => f(z, _)))
+  return chain_(fa, (z) => map_(fb, (_) => f(z, _)))
 }
 
 /**
@@ -609,7 +609,7 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
       const p2       = yield* _(that.push)
 
       return (in_: O.Option<C.Chunk<I & I1>>) =>
-        I.flatMap_(stateRef.get, (state) => {
+        I.chain_(stateRef.get, (state) => {
           const newState = pipe(
             state,
             matchTag({
@@ -673,7 +673,7 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                     >
                 )
 
-                return I.flatMap_(
+                return I.chain_(
                   I.productPar_(l, r),
                   ([lr, rr]): I.IO<R & R1, readonly [E.Either<E1, Z2>, C.Chunk<L | L1>], State<Z, Z1>> => {
                     if (O.isSome(lr)) {
@@ -727,7 +727,7 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
             })
           )
 
-          return I.flatMap_(newState, (ns) => (ns === state ? I.unit() : stateRef.set(ns)))
+          return I.chain_(newState, (ns) => (ns === state ? I.unit() : stateRef.set(ns)))
         })
     })
   )
@@ -860,7 +860,7 @@ export function contramapChunksM_<R, R1, E, E1, I, I2, L, Z>(
             pipe(
               f(value),
               I.mapError((e: E | E1) => [E.left(e), C.empty<L>()] as const),
-              I.flatMap((is) => push(O.some(is)))
+              I.chain((is) => push(O.some(is)))
             )
         )
     })
@@ -975,7 +975,7 @@ export function foldM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
       )
 
       return (in_: O.Option<Chunk<I & I1 & I2>>) =>
-        I.flatMap_(switchedRef.get, (sw) => {
+        I.chain_(switchedRef.get, (sw) => {
           if (!sw) {
             return I.catchAll_(thisPush(in_), (v) => {
               const leftover = v[1]
@@ -983,7 +983,7 @@ export function foldM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
               return pipe(
                 openThatPush(nextSink.push),
                 I.tap(thatPush.set),
-                I.flatMap((p) =>
+                I.chain((p) =>
                   pipe(
                     switchedRef.set(true),
                     I.apSecond(
@@ -1007,7 +1007,7 @@ export function foldM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
               )
             })
           } else {
-            return I.flatMap_(thatPush.get, (p) => p(in_))
+            return I.chain_(thatPush.get, (p) => p(in_))
           }
         })
     })
@@ -1087,7 +1087,7 @@ export function mapM<R1, E1, Z, Z2>(f: (z: Z) => I.IO<R1, E1, Z2>) {
  *
  * This function essentially runs sinks in sequence.
  */
-export function flatMap_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function chain_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   self: Sink<R, E, I, L, Z>,
   f: (z: Z) => Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
@@ -1100,8 +1100,8 @@ export function flatMap_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>
  *
  * This function essentially runs sinks in sequence.
  */
-export function flatMap<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R1, E1, I1, L1, Z1>) {
-  return <E, L extends I1>(self: Sink<R, E, I, L, Z>) => flatMap_(self, f)
+export function chain<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R1, E1, I1, L1, Z1>) {
+  return <E, L extends I1>(self: Sink<R, E, I, L, Z>) => chain_(self, f)
 }
 
 /*
@@ -1146,7 +1146,7 @@ export function gives<R0, R>(f: (r0: R0) => R) {
  * Accesses the environment of the sink in the context of a sink.
  */
 export function asksM<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
-  return new Sink(M.flatMap_(M.ask<R>(), (env) => f(env).push))
+  return new Sink(M.chain_(M.ask<R>(), (env) => f(env).push))
 }
 
 /**
@@ -1161,7 +1161,7 @@ export function giveLayer<R2, R>(layer: L.Layer<R2, never, R>) {
  */
 export function giveLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: L.Layer<R2, never, R>) {
   return new Sink<R2, E, I, L, Z>(
-    M.flatMap_(L.build(layer), (r) =>
+    M.chain_(L.build(layer), (r) =>
       M.map_(M.giveAll_(self.push, r), (push) => (i: O.Option<C.Chunk<I>>) => I.giveAll_(push(i), r))
     )
   )
@@ -1221,7 +1221,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
   return new Sink(
     pipe(
       Ref.makeManaged(z),
-      M.flatMap((acc) => {
+      M.chain((acc) => {
         return pipe(
           Push.restartable(sz.push),
           M.map(([push, restart]) => {
@@ -1255,7 +1255,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
               )
 
             return (in_: O.Option<Chunk<I>>) =>
-              I.flatMap_(acc.get, (s) => I.flatMap_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)))
+              I.chain_(acc.get, (s) => I.chain_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)))
           })
         )
       })
@@ -1384,7 +1384,7 @@ export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & Has<Cl
               E.fold_(
                 e,
                 (e) => Push.fail(e, leftover),
-                (z) => I.flatMap_(currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
+                (z) => I.chain_(currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
               )
           )
       })
@@ -1442,7 +1442,7 @@ export function untilOutputM_<R, R1, E, E1, I, L extends I, Z>(
             e,
             (e) => Push.fail(e, leftover),
             (z) =>
-              I.flatMap_(
+              I.chain_(
                 I.mapError_(f(z), (err) => [E.left(err), leftover] as const),
                 (satisfied) => {
                   if (satisfied) {
@@ -1482,7 +1482,7 @@ export function managed_<R, E, A, I, L extends I, Z>(
   return pipe(
     resource,
     M.fold((err) => fail(err)<I>() as Sink<R, E, I, I, Z>, fn),
-    M.flatMap((sink) => sink.push),
+    M.chain((sink) => sink.push),
     fromManagedPush
   )
 }

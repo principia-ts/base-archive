@@ -26,7 +26,7 @@ export function use_<R, E, A, R2, E2, B>(
   return I.bracketExit_(
     RM.make,
     (rm) =>
-      I.flatMap_(
+      I.chain_(
         I.gives_(self.io, (r: R) => tuple(r, rm)),
         (a) => f(a[1])
       ),

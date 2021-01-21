@@ -4,7 +4,7 @@ import * as A from '@principia/base/Array'
 import * as I from '@principia/base/Iterable'
 
 import * as Fiber from '../../Fiber'
-import { flatMap_, foreach_, fork, map_, unit } from '../core'
+import { chain_, foreach_, fork, map_, unit } from '../core'
 
 /**
  * Returns an IO that forks all of the specified values, and returns a
@@ -25,5 +25,5 @@ export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fibe
  * in cases where the results of the forked fibers are not needed.
  */
 export function forkAllUnit<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, void> {
-  return I.foldLeft_(mas, unit() as URIO<R, void>, (b, a) => flatMap_(fork(a), () => b))
+  return I.foldLeft_(mas, unit() as URIO<R, void>, (b, a) => chain_(fork(a), () => b))
 }

@@ -673,7 +673,7 @@ export function flatten<A>(nested: List<List<A>>): List<A> {
  * Maps a function over a list and concatenates all the resulting
  * lists together.
  */
-export function flatMap_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
+export function chain_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
   return flatten(map_(l, f))
 }
 
@@ -681,8 +681,8 @@ export function flatMap_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
  * Maps a function over a list and concatenates all the resulting
  * lists together.
  */
-export function flatMap<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
-  return (l) => flatMap_(l, f)
+export function chain<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
+  return (l) => chain_(l, f)
 }
 
 /*

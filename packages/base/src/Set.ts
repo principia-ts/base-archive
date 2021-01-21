@@ -389,7 +389,7 @@ export function map<B>(E: Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>) =
  * -------------------------------------------
  */
 
-export function flatMap_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
+export function chain_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
   const elemE = elem(E)
   return (set, f) => {
     const r = new Set<B>()
@@ -404,13 +404,13 @@ export function flatMap_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => Rea
   }
 }
 
-export function flatMap<B>(E: Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
-  return (f) => (set) => flatMap_(E)(set, f)
+export function chain<B>(E: Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
+  return (f) => (set) => chain_(E)(set, f)
 }
 
 export function flatten<A>(E: Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> {
-  const flatMapE = flatMap(E)
-  return flatMapE(identity)
+  const chainE = chain(E)
+  return chainE(identity)
 }
 
 /*

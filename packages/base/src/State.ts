@@ -174,19 +174,19 @@ export function map<A, B>(f: (a: A) => B): <S>(fa: State<S, A>) => State<S, B> {
  * -------------------------------------------
  */
 
-export function flatMap_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): State<S, B> {
+export function chain_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): State<S, B> {
   return (s) => {
     const [a, s2] = ma(s)
     return f(a)(s2)
   }
 }
 
-export function flatMap<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function tap_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): State<S, A> {
-  return flatMap_(ma, (a) => map_(f(a), () => a))
+  return chain_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, A> {
@@ -194,7 +194,7 @@ export function tap<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => Sta
 }
 
 export function flatten<S, A>(mma: State<S, State<S, A>>): State<S, A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*

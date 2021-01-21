@@ -4,7 +4,7 @@ import type { IO } from '../core'
 import { pipe } from '@principia/base/Function'
 
 import * as Supervisor from '../../Supervisor'
-import { flatMap, supervised } from '../core'
+import { chain, supervised } from '../core'
 import { ensuring } from './ensuring'
 
 /**
@@ -20,7 +20,7 @@ export function ensuringChildren_<R, E, A, R1>(
 ): IO<R & R1, E, A> {
   return pipe(
     Supervisor.track,
-    flatMap((s) => pipe(ma, supervised(s), ensuring(pipe(s.value, flatMap(children)))))
+    chain((s) => pipe(ma, supervised(s), ensuring(pipe(s.value, chain(children)))))
   )
 }
 

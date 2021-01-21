@@ -96,7 +96,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
           (e) => I.fail(eb(e)),
           (a) => bd(a)
         ),
-      (a) => (s) => I.flatMap_(ca(a), (a) => I.mapError_(this.setEither(a)(s), ea))
+      (a) => (s) => I.chain_(ca(a), (a) => I.mapError_(this.setEither(a)(s), ea))
     )
 
   readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -115,18 +115,16 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
           (a) => bd(a)
         ),
       (c) => (s) =>
-        I.flatMap_(
+        I.chain_(
           I.foldM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
           (a) => I.mapError_(this.setEither(a)(s), ea)
         )
     )
 
-  get: I.IO<RB, EB, B> = I.flatMap_(this.value.get, (a) => this.getEither(a))
+  get: I.IO<RB, EB, B> = I.chain_(this.value.get, (a) => this.getEither(a))
 
   set: (a: A) => I.IO<RA, EA, void> = (a) =>
-    withPermit(this.value.semaphore)(
-      I.flatMap_(I.flatMap_(this.value.get, this.setEither(a)), (a) => this.value.set(a))
-    )
+    withPermit(this.value.semaphore)(I.chain_(I.chain_(this.value.get, this.setEither(a)), (a) => this.value.set(a)))
 }
 
 export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, A, B> {
@@ -152,7 +150,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
           (e) => I.fail(eb(e)),
           (a) => bd(a)
         ),
-      (a) => I.flatMap_(ca(a), (a) => I.mapError_(this.setEither(a), ea))
+      (a) => I.chain_(ca(a), (a) => I.mapError_(this.setEither(a), ea))
     )
 
   readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -171,16 +169,16 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
           (a) => bd(a)
         ),
       (c) => (s) =>
-        I.flatMap_(
+        I.chain_(
           I.foldM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
           (a) => I.mapError_(this.setEither(a), ea)
         )
     )
 
-  get: I.IO<RB, EB, B> = I.flatMap_(this.value.get, (a) => this.getEither(a))
+  get: I.IO<RB, EB, B> = I.chain_(this.value.get, (a) => this.getEither(a))
 
   set: (a: A) => I.IO<RA, EA, void> = (a) =>
-    withPermit(this.value.semaphore)(I.flatMap_(this.setEither(a), (a) => this.value.set(a)))
+    withPermit(this.value.semaphore)(I.chain_(this.setEither(a), (a) => this.value.set(a)))
 }
 
 export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
@@ -742,8 +740,8 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
       Atomic: (atomic) =>
         pipe(
           atomic.ref.get,
-          I.flatMap(f),
-          I.flatMap(([b, a]) =>
+          I.chain(f),
+          I.chain(([b, a]) =>
             pipe(
               atomic.ref.set(a),
               I.as(() => b)
@@ -754,14 +752,14 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
       Derived: (derived) =>
         pipe(
           derived.value.ref.get,
-          I.flatMap((a) =>
+          I.chain((a) =>
             pipe(
               derived.getEither(a),
-              I.flatMap(f),
-              I.flatMap(([b, a]) =>
+              I.chain(f),
+              I.chain(([b, a]) =>
                 pipe(
                   derived.setEither(a),
-                  I.flatMap((a) => derived.value.ref.set(a)),
+                  I.chain((a) => derived.value.ref.set(a)),
                   I.as(() => b)
                 )
               )
@@ -772,14 +770,14 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
       DerivedAll: (derivedAll) =>
         pipe(
           derivedAll.value.ref.get,
-          I.flatMap((s) =>
+          I.chain((s) =>
             pipe(
               derivedAll.getEither(s),
-              I.flatMap(f),
-              I.flatMap(([b, a]) =>
+              I.chain(f),
+              I.chain(([b, a]) =>
                 pipe(
                   derivedAll.setEither(a)(s),
-                  I.flatMap((a) => derivedAll.value.ref.set(a)),
+                  I.chain((a) => derivedAll.value.ref.set(a)),
                   I.as(() => b)
                 )
               )

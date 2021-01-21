@@ -10,11 +10,11 @@ import { foreachUnitPar_ } from './foreachUnitPar'
 export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> => {
   const arr = Array.from(as)
 
-  return I.flatMap_(
+  return I.chain_(
     I.effectTotal<B[]>(() => []),
     (mut_array) => {
       function fn([a, n]: [A, number]) {
-        return I.flatMap_(
+        return I.chain_(
           I.effectSuspendTotal(() => f(a)),
           (b) =>
             I.effectTotal(() => {
@@ -22,7 +22,7 @@ export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
             })
         )
       }
-      return I.flatMap_(
+      return I.chain_(
         foreachUnitPar_(
           arr.map((a, n) => [a, n] as [A, number]),
           fn

@@ -6,7 +6,7 @@ import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import * as F from '../../Fiber'
-import { flatMap } from '../core'
+import { chain } from '../core'
 import { forkDaemon } from './core-scope'
 import { onInterrupt, uninterruptibleMask } from './interrupt'
 
@@ -21,10 +21,10 @@ export function in_<R, E, A>(io: IO<R, E, A>, scope: Scope<any>): IO<R, E, A> {
       io,
       restore,
       forkDaemon,
-      flatMap((executor) =>
+      chain((executor) =>
         pipe(
           scope.extend(executor.scope),
-          flatMap(() =>
+          chain(() =>
             pipe(
               restore(F.join(executor)),
               onInterrupt((interruptors) =>

@@ -138,7 +138,7 @@ export function id<S>(): Prism<S, S> {
  */
 export function compose_<S, A, B>(sa: Prism<S, A>, ab: Prism<A, B>): Prism<S, B> {
   return {
-    getOption: flow(sa.getOption, O.flatMap(ab.getOption)),
+    getOption: flow(sa.getOption, O.chain(ab.getOption)),
     reverseGet: flow(ab.reverseGet, sa.reverseGet)
   }
 }

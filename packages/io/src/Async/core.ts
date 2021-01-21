@@ -82,7 +82,7 @@ export const AsyncTag = {
   Partial: 'Partial',
   Suspend: 'Suspend',
   Promise: 'Promise',
-  FlatMap: 'FlatMap',
+  Chain: 'Chain',
   Fold: 'Fold',
   Asks: 'Asks',
   Done: 'Done',
@@ -112,7 +112,7 @@ export type AsyncInstruction =
   | Succeed<any>
   | Suspend<any, any, any>
   | LiftPromise<any, any>
-  | FlatMap<any, any, any, any, any, any>
+  | Chain<any, any, any, any, any, any>
   | Fold<any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any>
   | Done<any, any>
@@ -212,8 +212,8 @@ export class LiftPromise<E, A> extends Async<unknown, E, A> {
   }
 }
 
-export class FlatMap<R, E, A, Q, D, B> extends Async<Q & R, D | E, B> {
-  readonly _asyncTag = AsyncTag.FlatMap
+export class Chain<R, E, A, Q, D, B> extends Async<Q & R, D | E, B> {
+  readonly _asyncTag = AsyncTag.Chain
 
   constructor(readonly async: Async<R, E, A>, readonly f: (a: A) => Async<Q, D, B>) {
     super()
@@ -465,7 +465,7 @@ export function map2_<R, E, A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Async<R & R1, E | E1, C> {
-  return flatMap_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function map2<A, R1, E1, B, C>(
@@ -546,7 +546,7 @@ export function recover<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Eithe
  */
 
 export function map_<R, E, A, B>(fa: Async<R, E, A>, f: (a: A) => B): Async<R, E, B> {
-  return flatMap_(fa, (a) => succeed(f(a)))
+  return chain_(fa, (a) => succeed(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R, E, B> {
@@ -559,20 +559,20 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R
  * -------------------------------------------
  */
 
-export function flatMap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, B> {
-  return new FlatMap(ma, f)
+export function chain_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, B> {
+  return new Chain(ma, f)
 }
 
-export function flatMap<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
-  return (ma) => new FlatMap(ma, f)
+export function chain<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
+  return (ma) => new Chain(ma, f)
 }
 
 export function flatten<R, E, R1, E1, A>(mma: Async<R, E, Async<R1, E1, A>>): Async<R & R1, E | E1, A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 export function tap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, A> {
-  return flatMap_(ma, (a) => flatMap_(f(a), (_) => succeed(a)))
+  return chain_(ma, (a) => chain_(f(a), (_) => succeed(a)))
 }
 
 export function tap<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, A> {
@@ -583,7 +583,7 @@ export function tapError_<R, E, A, R1, E1, B>(
   async: Async<R, E, A>,
   f: (e: E) => Async<R1, E1, B>
 ): Async<R & R1, E | E1, A> {
-  return catchAll_(async, (e) => flatMap_(f(e), (_) => fail(e)))
+  return catchAll_(async, (e) => chain_(f(e), (_) => fail(e)))
 }
 
 export function tapError<E, R1, E1, B>(
@@ -752,7 +752,7 @@ export function askService<T>(s: Tag<T>): Async<Has<T>, never, T> {
  */
 export function giveServiceM<T>(_: Tag<T>) {
   return <R, E>(f: Async<R, E, T>) => <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>): Async<R & R1, E | E1, A1> =>
-    asksM((r: R & R1) => flatMap_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+    asksM((r: R & R1) => chain_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
@@ -977,7 +977,7 @@ export function runPromiseExitEnv_<R, E, A>(
       instructionCount         += 1
       const I: AsyncInstruction = current[_AI]
       switch (I._asyncTag) {
-        case AsyncTag.FlatMap: {
+        case AsyncTag.Chain: {
           const nested: AsyncInstruction                       = I.async[_AI]
           const continuation: (a: any) => Async<any, any, any> = I.f
           switch (nested._asyncTag) {
@@ -1075,7 +1075,7 @@ export function runPromiseExitEnv_<R, E, A>(
             effectTotal(() => {
               pushEnv(I.env)
             }),
-            flatMap(() => I.async),
+            chain(() => I.async),
             tap(() =>
               effectTotal(() => {
                 popEnv()
@@ -1236,8 +1236,8 @@ export const ApplicativeAsync: P.Applicative<[URI], V> = HKT.instance({
 
 export const MonadAsync: P.Monad<[URI], V> = HKT.instance({
   ...ApplicativeAsync,
-  flatMap_,
-  flatMap,
+  chain_,
+  chain,
   flatten
 })
 

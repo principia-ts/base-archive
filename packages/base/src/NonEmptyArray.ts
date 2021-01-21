@@ -476,18 +476,18 @@ export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEm
  */
 export const flatten: <A>(mma: NonEmptyArray<NonEmptyArray<A>>) => NonEmptyArray<A> = A.flatten as any
 
-export const flatMapWithIndex_: <A, B>(
+export const chainWithIndex_: <A, B>(
   ma: NonEmptyArray<A>,
   f: (i: number, a: A) => NonEmptyArray<B>
-) => NonEmptyArray<B> = A.flatMapWithIndex_ as any
+) => NonEmptyArray<B> = A.chainWithIndex_ as any
 
-export const flatMapWithIndex: <A, B>(
+export const chainWithIndex: <A, B>(
   f: (i: number, a: A) => NonEmptyArray<B>
-) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.flatMapWithIndex as any
+) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.chainWithIndex as any
 
 /**
  * ```haskell
- * flatMap_ :: Monad m => (m a, (a -> m b)) -> m b
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -495,14 +495,11 @@ export const flatMapWithIndex: <A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export const flatMap_: <A, B>(
-  ma: NonEmptyArray<A>,
-  f: (a: A) => NonEmptyArray<B>
-) => NonEmptyArray<B> = A.flatMap_ as any
+export const chain_: <A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>) => NonEmptyArray<B> = A.chain_ as any
 
 /**
  * ```haskell
- * flatMap :: Monad m => (a -> m b) -> m a -> m b
+ * chain :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -510,9 +507,7 @@ export const flatMap_: <A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export const flatMap: <A, B>(
-  f: (a: A) => NonEmptyArray<B>
-) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.flatMap as any
+export const chain: <A, B>(f: (a: A) => NonEmptyArray<B>) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.chain as any
 
 /*
  * -------------------------------------------

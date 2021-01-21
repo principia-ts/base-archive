@@ -14,14 +14,14 @@ import * as C from '../../Cause/core'
 import { join } from '../../Fiber/combinators/join'
 import { interruptible, uninterruptible } from '../../Fiber/core'
 import {
+  chain,
+  chain_,
   checkInterruptible,
   die,
   effectAsync,
   effectAsyncOption,
   effectSuspendTotal,
   effectTotal,
-  flatMap,
-  flatMap_,
   flatten,
   foldCauseM_,
   halt,
@@ -43,7 +43,7 @@ export function interruptAs(fiberId: FiberId): FIO<never, never> {
  * Returns an effect that is interrupted as if by the fiber calling this
  * method.
  */
-export const interrupt: IO<unknown, never, never> = flatMap_(fiberId(), interruptAs)
+export const interrupt: IO<unknown, never, never> = chain_(fiberId(), interruptAs)
 
 /**
  * Switches the interrupt status for this effect. If `true` is used, then the
@@ -112,7 +112,7 @@ export function onInterrupt_<R, E, A, R1>(
   return uninterruptibleMask(({ restore }) =>
     foldCauseM_(
       restore(ma),
-      (cause) => (C.interrupted(cause) ? flatMap_(cleanup(C.interruptors(cause)), () => halt(cause)) : halt(cause)),
+      (cause) => (C.interrupted(cause) ? chain_(cleanup(C.interruptors(cause)), () => halt(cause)) : halt(cause)),
       pure
     )
   )
@@ -177,8 +177,8 @@ export function onInterruptExtended<R2, E2>(
  */
 export function disconnect<R, E, A>(effect: IO<R, E, A>): IO<R, E, A> {
   return uninterruptibleMask(({ restore }) =>
-    flatMap_(fiberId(), (id) =>
-      flatMap_(forkDaemon(restore(effect)), (fiber) =>
+    chain_(fiberId(), (id) =>
+      chain_(forkDaemon(restore(effect)), (fiber) =>
         onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
       )
     )
@@ -223,7 +223,7 @@ export function effectAsyncInterruptEither<R, E, A>(
 ): IO<R, E, A> {
   return pipe(
     effectTotal(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
-    flatMap(([started, cancel]) =>
+    chain(([started, cancel]) =>
       pipe(
         effectAsyncOption<R, E, IO<R, E, A>>((k) => {
           started.set(true)

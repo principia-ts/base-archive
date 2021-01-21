@@ -54,7 +54,7 @@ export function genF<F>(
   return <T extends GenHKT<HKT.HKT<F, any>, any>, A>(
     f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<T, A, any>
   ): HKT.HKT<F, A> => {
-    return F.flatMap_(F.unit(), () => {
+    return F.chain_(F.unit(), () => {
       const iterator = f((config?.adapter ? config.adapter : adapter) as any)
       const state    = iterator.next()
 
@@ -62,7 +62,7 @@ export function genF<F>(
         if (state.done) {
           return F.pure(state.value)
         }
-        return F.flatMap_(state.value.T, (val) => {
+        return F.chain_(state.value.T, (val) => {
           const next = iterator.next(val)
           return run(next)
         })

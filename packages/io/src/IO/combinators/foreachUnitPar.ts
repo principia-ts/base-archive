@@ -98,7 +98,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
         pipe(
           fibers,
           I.foreach((f) => I.fork(f.interruptAs(parentId))),
-          I.flatMap(joinAllFibers)
+          I.chain(joinAllFibers)
         )
       ),
       fromEffect,
@@ -109,7 +109,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
       useManaged_(interruptor, () =>
         pipe(
           result.fail(undefined),
-          I.apSecond(I.flatMap_(causes.get, I.halt)),
+          I.apSecond(I.chain_(causes.get, I.halt)),
           I.whenM(
             pipe(
               fibers,
@@ -126,7 +126,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
             pipe(
               result.fail(undefined),
               I.andThen(I.foreach_(fibers, (f) => f.await)),
-              I.andThen(I.flatMap_(causes.get, I.halt))
+              I.andThen(I.chain_(causes.get, I.halt))
             )
           )
         )
@@ -160,18 +160,18 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
 function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
   const arr = Array.from(as)
 
-  return I.flatMap_(
+  return I.chain_(
     I.effectTotal<B[]>(() => []),
     (mut_array) => {
       const fn = ([a, n]: [A, number]) =>
-        I.flatMap_(
+        I.chain_(
           I.effectSuspendTotal(() => f(a)),
           (b) =>
             I.effectTotal(() => {
               mut_array[n] = b
             })
         )
-      return I.flatMap_(
+      return I.chain_(
         foreachUnitPar_(
           arr.map((a, n) => [a, n] as [A, number]),
           fn
@@ -183,11 +183,11 @@ function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I
 }
 
 function joinAllFibers<E, A>(as: Iterable<Fiber<E, A>>) {
-  return I.tap_(I.flatMap_(awaitAllFibers(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
+  return I.tap_(I.chain_(awaitAllFibers(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
 }
 
 function awaitAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, ReadonlyArray<A>>> {
-  return I.result(foreachPar_(as, (f) => I.flatMap_(f.await, I.done)))
+  return I.result(foreachPar_(as, (f) => I.chain_(f.await, I.done)))
 }
 
 function useManaged_<R, E, A, R2, E2, B>(
@@ -197,7 +197,7 @@ function useManaged_<R, E, A, R2, E2, B>(
   return bracketExit_(
     RM.make,
     (rm) =>
-      I.flatMap_(
+      I.chain_(
         I.gives_(self.io, (r: R) => tuple(r, rm)),
         (a) => f(a[1])
       ),
@@ -240,7 +240,7 @@ function releaseAllSeq_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
         }
         case 'Running': {
           return [
-            I.flatMap_(
+            I.chain_(
               I.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => I.result(f(exit))),
               (e) => I.done(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
             ),

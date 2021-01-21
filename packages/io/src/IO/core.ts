@@ -27,6 +27,7 @@ import * as FL from '@principia/free/FreeList'
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
 import {
+  Chain,
   CheckDescriptor,
   EffectAsync,
   EffectPartial,
@@ -34,7 +35,6 @@ import {
   EffectSuspendPartial,
   EffectTotal,
   Fail,
-  FlatMap,
   Fold,
   Fork,
   GetInterrupt,
@@ -296,7 +296,7 @@ export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
  * Lifts an `Either` into an `IO`
  */
 export function fromEither<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
-  return flatMap_(effectTotal(f), E.fold(fail, succeed))
+  return chain_(effectTotal(f), E.fold(fail, succeed))
 }
 
 /**
@@ -304,7 +304,7 @@ export function fromEither<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
  * in some scenarios.
  */
 export function fromOption<A>(m: () => Option<A>): FIO<Option<never>, A> {
-  return flatMap_(effectTotal(m), (ma) => (ma._tag === 'None' ? fail(O.none()) : pure(ma.value)))
+  return chain_(effectTotal(m), (ma) => (ma._tag === 'None' ? fail(O.none()) : pure(ma.value)))
 }
 
 /**
@@ -511,7 +511,7 @@ export function map2_<R, E, A, Q, D, B, C>(
   fb: IO<Q, D, B>,
   f: (a: A, b: B) => C
 ): IO<Q & R, D | E, C> {
-  return flatMap_(fa, (ra) => map_(fb, (rb) => f(ra, rb)))
+  return chain_(fa, (ra) => map_(fb, (rb) => f(ra, rb)))
 }
 
 /**
@@ -609,7 +609,7 @@ export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: IO<R, E, A>) => IO<R
  * @since 1.0.0
  */
 export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
-  return flatMap_(ma, E.fold(fail, succeed))
+  return chain_(ma, E.fold(fail, succeed))
 }
 
 /**
@@ -715,7 +715,7 @@ export function fold<E, A, B, C>(
  * @since 1.0.0
  */
 export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
-  return flatMap_(fa, (a) => succeed(f(a)))
+  return chain_(fa, (a) => succeed(f(a)))
 }
 
 /**
@@ -743,7 +743,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
 
 /**
  * ```haskell
- * flatMap_ :: Monad m => (m a, (a -> m b)) -> m b
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -755,13 +755,13 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B>): IO<R & U, E | G, B> {
-  return new FlatMap(ma, f)
+export function chain_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B>): IO<R & U, E | G, B> {
+  return new Chain(ma, f)
 }
 
 /**
  * ```haskell
- * flatMap :: Monad m => (a -> m b) -> m a -> m b
+ * chain :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -772,10 +772,10 @@ export function flatMap_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G
  *
  * @category Monad
  * @since 1.0.0
- * @dataFirst flatMap_
+ * @dataFirst chain_
  */
-export function flatMap<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, E, A>) => IO<R & U, G | E, B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, E, A>) => IO<R & U, G | E, B> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -789,7 +789,7 @@ export function flatMap<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, 
  * @since 1.0.0
  */
 export function flatten<R, E, Q, D, A>(ffa: IO<R, E, IO<Q, D, A>>) {
-  return flatMap_(ffa, identity)
+  return chain_(ffa, identity)
 }
 
 /**
@@ -806,10 +806,10 @@ export function flatten<R, E, Q, D, A>(ffa: IO<R, E, IO<Q, D, A>>) {
  * @since 1.0.0
  */
 export function tap_<R, E, A, Q, D, B>(fa: IO<R, E, A>, f: (a: A) => IO<Q, D, B>): IO<Q & R, D | E, A> {
-  return flatMap_(fa, (a) =>
+  return chain_(fa, (a) =>
     pipe(
       f(a),
-      flatMap(() => succeed(a))
+      chain(() => succeed(a))
     )
   )
 }
@@ -846,7 +846,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
     (c) =>
       E.fold_(
         C.failureOrCause(c),
-        (e) => flatMap_(onFailure(e), () => halt(c)),
+        (e) => chain_(onFailure(e), () => halt(c)),
         (_) => halt(c)
       ),
     onSuccess
@@ -874,7 +874,7 @@ export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, 
     (c) =>
       E.fold_(
         C.failureOrCause(c),
-        (e) => flatMap_(f(e), () => halt(c)),
+        (e) => chain_(f(e), () => halt(c)),
         (_) => halt(c)
       ),
     pure
@@ -1063,7 +1063,7 @@ export function bindS<R, E, A, K, N extends string>(
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
 > {
-  return flatMap((a) =>
+  return chain((a) =>
     pipe(
       f(a),
       map((b) => _bind(a, name, b))
@@ -1176,7 +1176,7 @@ export const asSomeError: <R, E, A>(ma: IO<R, E, A>) => IO<R, O.Option<E>, A> = 
  * @since 1.0.0
  */
 export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
-  return flatMap_(ma, () => unit())
+  return chain_(ma, () => unit())
 }
 
 /**
@@ -1379,7 +1379,7 @@ export function collectM_<R, E, A, R1, E1, A1, E2>(
   f: () => E2,
   pf: (a: A) => Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1 | E2, A1> {
-  return flatMap_(
+  return chain_(
     ma,
     (a): IO<R1, E1 | E2, A1> =>
       pipe(
@@ -1397,7 +1397,7 @@ export function collectM<A, R1, E1, A1, E2>(
 }
 
 export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>): IO<R0, E1 | E, A> {
-  return flatMap_(that, (r) => giveAll_(me, r))
+  return chain_(that, (r) => giveAll_(me, r))
 }
 
 export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
@@ -1405,7 +1405,7 @@ export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>)
 }
 
 export function cond_<R, R1, E, A>(b: boolean, onTrue: () => URIO<R, A>, onFalse: () => URIO<R1, E>): IO<R & R1, E, A> {
-  return effectSuspendTotal((): IO<R & R1, E, A> => (b ? onTrue() : flatMap_(onFalse(), fail)))
+  return effectSuspendTotal((): IO<R & R1, E, A> => (b ? onTrue() : chain_(onFalse(), fail)))
 }
 
 export function cond<R, R1, E, A>(
@@ -1495,7 +1495,7 @@ export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return flatMap_(mb, (x) => (x ? (onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()))
+  return chain_(mb, (x) => (x ? (onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()))
 }
 
 /**
@@ -1559,7 +1559,7 @@ export function filterOrElse_<R, E, A, R1, E1, A1>(
   predicate: Predicate<A>,
   or: (a: A) => IO<R1, E1, A1>
 ): IO<R & R1, E | E1, A | A1> {
-  return flatMap_(fa, (a): IO<R1, E1, A | A1> => (predicate(a) ? succeed(a) : or(a)))
+  return chain_(fa, (a): IO<R1, E1, A | A1> => (predicate(a) ? succeed(a) : or(a)))
 }
 
 /**
@@ -1683,12 +1683,12 @@ export function firstSuccess<R, E, A>(mas: NonEmptyArray<IO<R, E, A>>): IO<R, E,
   return A.foldLeft_(NEA.tail(mas), NEA.head(mas), (b, a) => orElse_(b, () => a))
 }
 
-export function flatMapError_<R, R1, E, E1, A>(ma: IO<R, E, A>, f: (e: E) => IO<R1, never, E1>): IO<R & R1, E1, A> {
-  return swapWith_(ma, flatMap(f))
+export function chainError_<R, R1, E, E1, A>(ma: IO<R, E, A>, f: (e: E) => IO<R1, never, E1>): IO<R & R1, E1, A> {
+  return swapWith_(ma, chain(f))
 }
 
-export function flatMapError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E1, A> {
-  return (ma) => flatMapError_(ma, f)
+export function chainError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E1, A> {
+  return (ma) => chainError_(ma, f)
 }
 
 /**
@@ -1723,7 +1723,7 @@ export function foldCause<E, A, A1, A2>(
  * @since 1.0.0
  */
 export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => IO<R, E, any>): IO<R, E, void> {
-  return I.foldMap(makeMonoid<IO<R, E, void>>((x, y) => flatMap_(x, () => y), unit()))(f)(as)
+  return I.foldMap(makeMonoid<IO<R, E, void>>((x, y) => chain_(x, () => y), unit()))(f)(as)
 }
 
 /**
@@ -1784,7 +1784,7 @@ export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>)
  * @since 1.0.0
  */
 export function foldLeft_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<R, E, B>): IO<R, E, B> {
-  return A.foldLeft_(Array.from(as), succeed(b) as IO<R, E, B>, (acc, el) => flatMap_(acc, (a) => f(a, el)))
+  return A.foldLeft_(Array.from(as), succeed(b) as IO<R, E, B>, (acc, el) => chain_(acc, (a) => f(a, el)))
 }
 
 /**
@@ -1824,7 +1824,7 @@ export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => <R, E>(as: Read
  * @since 1.0.0
  */
 export function foldRight_<A, B, R, E>(i: Iterable<A>, b: B, f: (a: A, b: B) => IO<R, E, B>): IO<R, E, B> {
-  return A.foldRight_(Array.from(i), succeed(b) as IO<R, E, B>, (el, acc) => flatMap_(acc, (a) => f(el, a)))
+  return A.foldRight_(Array.from(i), succeed(b) as IO<R, E, B>, (el, acc) => chain_(acc, (a) => f(el, a)))
 }
 
 /**
@@ -1841,7 +1841,7 @@ export function foldRight<A, B, R, E>(b: B, f: (a: A, b: B) => IO<R, E, B>): (i:
  * Repeats this effect forever (until the first failure).
  */
 export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return flatMap_(ma, () => forever(ma))
+  return chain_(ma, () => forever(ma))
 }
 
 /**
@@ -2009,7 +2009,7 @@ export function isSuccess<R, E, A>(ma: IO<R, E, A>): IO<R, never, boolean> {
  * ```
  */
 export function iterate_<R, E, A>(initial: A, cont: (a: A) => boolean, body: (a: A) => IO<R, E, A>): IO<R, E, A> {
-  return cont(initial) ? flatMap_(body(initial), (a) => iterate(a)(cont)(body)) : pure(initial)
+  return cont(initial) ? chain_(body(initial), (a) => iterate(a)(cont)(body)) : pure(initial)
 }
 
 /**
@@ -2081,7 +2081,7 @@ export const joinEither = <R1, E1, A1>(that: IO<R1, E1, A1>) => <R, E, A>(
  *  Returns an IO with the value on the left part.
  */
 export function left<A>(a: () => A): UIO<E.Either<A, never>> {
-  return flatMap_(effectTotal(a), flow(E.left, pure))
+  return chain_(effectTotal(a), flow(E.left, pure))
 }
 
 /**
@@ -2105,7 +2105,7 @@ export function loop<B>(
 ): (cont: (a: B) => boolean, inc: (b: B) => B) => <R, E, A>(body: (b: B) => IO<R, E, A>) => IO<R, E, ReadonlyArray<A>> {
   return (cont, inc) => (body) => {
     if (cont(initial)) {
-      return flatMap_(body(initial), (a) =>
+      return chain_(body(initial), (a) =>
         pipe(
           loop(inc(initial))(cont, inc)(body),
           map((as) => [a, ...as])
@@ -2135,7 +2135,7 @@ export function loopUnit<A>(
 ): (cont: (a: A) => boolean, inc: (a: A) => A) => <R, E>(body: (a: A) => IO<R, E, any>) => IO<R, E, void> {
   return (cont, inc) => (body) => {
     if (cont(initial)) {
-      return flatMap_(body(initial), () => loop(inc(initial))(cont, inc)(body))
+      return chain_(body(initial), () => loop(inc(initial))(cont, inc)(body))
     } else {
       return unit()
     }
@@ -2147,7 +2147,7 @@ export function mapEffectCatch_<R, E, A, E1, B>(
   f: (a: A) => B,
   onThrow: (u: unknown) => E1
 ): IO<R, E | E1, B> {
-  return flatMap_(io, (a) => effectCatch_(() => f(a), onThrow))
+  return chain_(io, (a) => effectCatch_(() => f(a), onThrow))
 }
 
 export function mapEffectCatch<E1>(onThrow: (u: unknown) => E1) {
@@ -2236,7 +2236,7 @@ export function orDie<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, never, A> {
 }
 
 export function orDieKeep<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
-  return foldCauseM_(ma, (ce) => halt(C.flatMap_(ce, (e) => C.die(e))), pure)
+  return foldCauseM_(ma, (ce) => halt(C.chain_(ce, (e) => C.die(e))), pure)
 }
 
 export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => Error): IO<R, never, A> {
@@ -2445,7 +2445,7 @@ export function rejectM_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   pf: (a: A) => Option<IO<R1, E1, E1>>
 ): IO<R & R1, E | E1, A> {
-  return flatMap_(fa, (a) => O.fold_(pf(a), () => pure(a), flatMap(fail)))
+  return chain_(fa, (a) => O.fold_(pf(a), () => pure(a), chain(fail)))
 }
 
 /**
@@ -2477,7 +2477,7 @@ export function rejectM<R1, E1, A>(
  * @since 1.0.0
  */
 export function repeatN_<R, E, A>(ef: IO<R, E, A>, n: number): IO<R, E, A> {
-  return flatMap_(ef, (a) => (n <= 0 ? pure(a) : repeatN_(ef, n - 1)))
+  return chain_(ef, (a) => (n <= 0 ? pure(a) : repeatN_(ef, n - 1)))
 }
 
 /**
@@ -2515,7 +2515,7 @@ export function repeatUntilM_<R, E, A, R1, E1>(
   ef: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return flatMap_(ef, (a) => flatMap_(f(a), (b) => (b ? pure(a) : repeatUntilM_(ef, f))))
+  return chain_(ef, (a) => chain_(f(a), (b) => (b ? pure(a) : repeatUntilM_(ef, f))))
 }
 
 /**
@@ -2548,7 +2548,7 @@ export function repeatWhileM_<R, E, A, R1, E1>(
   ef: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return flatMap_(ef, (a) => flatMap_(f(a), (b) => (b ? repeatWhileM_(ef, f) : pure(a))))
+  return chain_(ef, (a) => chain_(f(a), (b) => (b ? repeatWhileM_(ef, f) : pure(a))))
 }
 
 /**
@@ -2565,9 +2565,9 @@ export function replicate(n: number): <R, E, A>(ma: IO<R, E, A>) => readonly IO<
 }
 
 export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO<R, E, A> {
-  return flatMap_(
+  return chain_(
     ma,
-    O.fold(() => flatMap_(effectTotal(error), fail), succeed)
+    O.fold(() => chain_(effectTotal(error), fail), succeed)
   )
 }
 
@@ -2605,7 +2605,7 @@ export function retryUntilM_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   f: (e: E) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return catchAll_(fa, (e) => flatMap_(f(e), (b) => (b ? fail(e) : retryUntilM_(fa, f))))
+  return catchAll_(fa, (e) => chain_(f(e), (b) => (b ? fail(e) : retryUntilM_(fa, f))))
 }
 
 /**
@@ -2638,7 +2638,7 @@ export function retryWhileM_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   f: (e: E) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return catchAll_(fa, (e) => flatMap_(f(e), (b) => (b ? retryWhileM_(fa, f) : fail(e))))
+  return catchAll_(fa, (e) => chain_(f(e), (b) => (b ? retryWhileM_(fa, f) : fail(e))))
 }
 
 /**
@@ -2661,7 +2661,7 @@ export function tapCause_<R2, A2, R, E, E2>(
   ma: IO<R2, E2, A2>,
   f: (e: Cause<E2>) => IO<R, E, any>
 ): IO<R2 & R, E | E2, A2> {
-  return foldCauseM_(ma, (c) => flatMap_(f(c), () => halt(c)), succeed)
+  return foldCauseM_(ma, (c) => chain_(f(c), () => halt(c)), succeed)
 }
 
 /**
@@ -2756,7 +2756,7 @@ export function someOrElseM_<R, E, A, R1, E1, B>(
   ef: IO<R, E, Option<A>>,
   orElse: IO<R1, E1, B>
 ): IO<R & R1, E | E1, A | B> {
-  return flatMap_(ef as IO<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))))
+  return chain_(ef as IO<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))))
 }
 
 /**
@@ -2784,9 +2784,9 @@ export function someOrFail<R, E, A>(ma: IO<R, E, Option<A>>): IO<R, E | NoSuchEl
  * Extracts the optional value, or fails with the given error 'e'.
  */
 export function someOrFailWith_<R, E, A, E1>(ma: IO<R, E, Option<A>>, orFail: () => E1): IO<R, E | E1, A> {
-  return flatMap_(
+  return chain_(
     ma,
-    O.fold(() => flatMap_(effectTotal(orFail), fail), pure)
+    O.fold(() => chain_(effectTotal(orFail), fail), pure)
   )
 }
 
@@ -2889,7 +2889,7 @@ export function tryOrElse<A, R1, E1, A1, R2, E2, A2>(
  * This operation is the opposite of `cause`.
  */
 export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
-  return flatMap_(ma, (a) => (C.isEmpty(a) ? unit() : halt(a)))
+  return chain_(ma, (a) => (C.isEmpty(a) ? unit() : halt(a)))
 }
 
 /**
@@ -2967,7 +2967,7 @@ export const unsandbox: <R, E, A>(ef: IO<R, Cause<E>, A>) => IO<R, E, A> = mapEr
  * @since 1.0.0
  */
 export function whenM_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>) {
-  return flatMap_(mb, (a) => (a ? asUnit(ma) : unit()))
+  return chain_(mb, (a) => (a ? asUnit(ma) : unit()))
 }
 
 /**
@@ -3114,7 +3114,7 @@ export function askService<T>(s: Tag<T>): IO<Has<T>, never, T> {
  */
 export function giveServiceM<T>(_: Tag<T>) {
   return <R, E>(f: IO<R, E, T>) => <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>): IO<R & R1, E | E1, A1> =>
-    asksM((r: R & R1) => flatMap_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+    asksM((r: R & R1) => chain_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
@@ -3351,7 +3351,7 @@ export function gen(...args: any[]): any {
         if (state.done) {
           return pure(state.value)
         }
-        return flatMap_(state.value.T, (val) => {
+        return chain_(state.value.T, (val) => {
           const next = iterator.next(val)
           return run(next)
         })

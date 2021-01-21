@@ -717,7 +717,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  */
 /**
  * ```haskell
- * flatMap_ :: Monad m => (m a, (a -> m b)) -> m b
+ * chain_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -725,13 +725,13 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  * @category Uncurried Monad
  * @since 1.0.0
  */
-export function flatMap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
+export function chain_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
   return isNone(ma) ? ma : f(ma.value)
 }
 
 /**
  * ```haskell
- * flatMap :: Monad m => (a -> m b) -> m a -> m b
+ * chain :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -739,8 +739,8 @@ export function flatMap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B>
  * @category Monad
  * @since 1.0.0
  */
-export function flatMap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -755,7 +755,7 @@ export function flatMap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option
  * @since 1.0.0
  */
 export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
-  return flatMap_(ma, (a) =>
+  return chain_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -789,7 +789,7 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
  * @since 1.0.0
  */
 export function flatten<A>(mma: Option<Option<A>>): Option<A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -940,25 +940,25 @@ export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa,
  */
 
 /**
- * flatMapNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
+ * chainNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function flatMapNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
+export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
   return isNone(fa) ? none() : fromNullable(f(fa.value))
 }
 
 /**
- * flatMapNullableK :: Option m => (a -> ?b) -> m a -> m b
+ * chainNullableK :: Option m => (a -> ?b) -> m a -> m b
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function flatMapNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
-  return (fa) => flatMapNullableK_(fa, f)
+export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
+  return (fa) => chainNullableK_(fa, f)
 }
 
 /**
@@ -1048,8 +1048,8 @@ export const Applicative: P.Applicative<[OptionURI], V> = HKT.instance({
 
 export const Monad: P.Monad<[OptionURI], V> = HKT.instance({
   ...Applicative,
-  flatMap_,
-  flatMap,
+  chain_,
+  chain,
   unit,
   flatten
 })

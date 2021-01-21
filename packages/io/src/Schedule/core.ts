@@ -49,7 +49,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
 
       const last = pipe(
         ref.get,
-        I.flatMap(([o, _]) =>
+        I.chain(([o, _]) =>
           O.fold_(
             o,
             () => I.fail(new NoSuchElementException('Driver.last')),
@@ -72,7 +72,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
                 pipe(
                   ref.set(tuple(O.some(dec.out), dec.next)),
                   I.as(() => dec.interval - now),
-                  I.flatMap((s) => (s > 0 ? sleep(s) : I.unit())),
+                  I.chain((s) => (s > 0 ? sleep(s) : I.unit())),
                   I.as(() => dec.out)
                 )
               )
@@ -181,7 +181,7 @@ const mapMLoop = <R, I, O, R1, O1>(
   self: StepFunction<R, I, O>,
   f: (o: O) => I.IO<R1, never, O1>
 ): StepFunction<R & R1, I, O1> => (now, i) =>
-  I.flatMap_(self(now, i), (d) => {
+  I.chain_(self(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.map_(f(d.out), (o): Decision<R & R1, I, O1> => makeDone(o))
@@ -339,7 +339,7 @@ const andThenEitherLoop = <R, I, O, R1, I1, O1>(
   onLeft: boolean
 ): StepFunction<R & R1, I & I1, Either<O, O1>> => (now, i) =>
   onLeft
-    ? I.flatMap_(sc(now, i), (d) => {
+    ? I.chain_(sc(now, i), (d) => {
         switch (d._tag) {
           case 'Continue': {
             return I.pure(makeContinue(E.left(d.out), d.interval, andThenEitherLoop(d.next, that, true)))
@@ -431,7 +431,7 @@ const checkMLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   test: (i: I, o: O) => I.IO<R1, never, boolean>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-  I.flatMap_(self(now, i), (d) => {
+  I.chain_(self(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.pure(makeDone(d.out))
@@ -633,7 +633,7 @@ const ensuringLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   finalizer: I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-  I.flatMap_(self(now, i), (d) => {
+  I.chain_(self(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.as_(finalizer, () => makeDone(d.out))
@@ -714,7 +714,7 @@ const foldMLoop = <R, I, O, R1, B>(
   b: B,
   f: (b: B, o: O) => I.IO<R1, never, B>
 ): StepFunction<R & R1, I, B> => (now, i) =>
-  I.flatMap_(sf(now, i), (d) => {
+  I.chain_(sf(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.pure<Decision<R & R1, I, B>>(makeDone(b))
@@ -830,7 +830,7 @@ const repeatLoop = <R, I, O>(
   init: StepFunction<R, I, O>,
   self: StepFunction<R, I, O> = init
 ): StepFunction<R, I, O> => (now, i) =>
-  I.flatMap_(self(now, i), (d) => {
+  I.chain_(self(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return repeatLoop(init, self)(now, i)
@@ -861,7 +861,7 @@ const modifyDelayMLoop = <R, I, O, R1>(
   sf: StepFunction<R, I, O>,
   f: (o: O, d: number) => I.IO<R1, never, number>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-  I.flatMap_(sf(now, i), (d) => {
+  I.chain_(sf(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.pure<Decision<R & R1, I, O>>(makeDone(d.out))
@@ -913,7 +913,7 @@ const onDecisionLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   f: (d: Decision<R, I, O>) => I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-  I.flatMap_(self(now, i), (d) => {
+  I.chain_(self(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.as_(f(d), () => makeDone(d.out))
@@ -964,7 +964,7 @@ const reconsiderMLoop = <R, I, O, R1, O1>(
   self: StepFunction<R, I, O>,
   f: (_: Decision<R, I, O>) => I.IO<R1, never, E.Either<O1, readonly [O1, number]>>
 ): StepFunction<R & R1, I, O1> => (now, i) =>
-  I.flatMap_(self(now, i), (d) => {
+  I.chain_(self(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.map_(
@@ -1083,7 +1083,7 @@ const resetWhenLoop = <R, I, O>(
   step: StepFunction<R, I, O>,
   f: (o: O) => boolean
 ): StepFunction<R, I, O> => (now, i) =>
-  I.flatMap_(step(now, i), (d) => {
+  I.chain_(step(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return f(d.out) ? sc.step(now, i) : I.pure(makeDone(d.out))
@@ -1115,7 +1115,7 @@ const runLoop = <R, I, O>(
   acc: readonly O[]
 ): I.IO<R, never, readonly O[]> =>
   xs.length > 0
-    ? I.flatMap_(self(now, xs[0]), (d) => {
+    ? I.chain_(self(now, xs[0]), (d) => {
         switch (d._tag) {
           case 'Done': {
             return I.pure([...acc, d.out])
@@ -1158,7 +1158,7 @@ const tapInputLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   f: (i: I) => I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-  I.flatMap_(f(i), () =>
+  I.chain_(f(i), () =>
     I.map_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
@@ -1188,7 +1188,7 @@ const tapOutputLoop = <R, I, O, R1>(
   self: StepFunction<R, I, O>,
   f: (o: O) => I.IO<R1, never, any>
 ): StepFunction<R & R1, I, O> => (now, i) =>
-  I.flatMap_(self(now, i), (d) => {
+  I.chain_(self(now, i), (d) => {
     switch (d._tag) {
       case 'Done': {
         return I.as_(f(d.out), () => makeDone(d.out))
@@ -1285,7 +1285,7 @@ export function unfold<A>(f: (a: A) => A): (a: () => A) => Schedule<unknown, unk
 }
 
 const unfoldMLoop = <R, A>(a: A, f: (a: A) => I.IO<R, never, A>): StepFunction<R, unknown, A> => (now, _) =>
-  I.pure(makeContinue(a, now, (n, i) => I.flatMap_(f(a), (x) => unfoldMLoop(x, f)(n, i))))
+  I.pure(makeContinue(a, now, (n, i) => I.chain_(f(a), (x) => unfoldMLoop(x, f)(n, i))))
 
 /**
  * Effectfully unfolds a schedule that repeats one time from the specified state and iterator.

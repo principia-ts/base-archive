@@ -12,10 +12,7 @@ import { GraphQlException } from '../src/schema/GraphQlException'
 import { makeApollo } from '../src/server/koa'
 
 const apollo = makeApollo({ ...GraphQlFieldInterpreter(), ...GraphQlInputInterpreter() })({}, ({ ctx }) =>
-  I.succeed({
-    conn: ctx.conn,
-    engine: { ...ctx.engine, custom: 'A custom context thing' }
-  })
+  I.succeed(ctx)
 )
 
 const Obj = apollo.object<{}>()('Obj', (F) => ({

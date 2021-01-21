@@ -38,7 +38,7 @@ export function contramapM_<R, A, R1, B>(
 ): DataSource<R & R1, B> {
   return new DataSource(
     `${dataSource.identifier}.contramapM(${f.description})`,
-    flow(I.foreach(I.foreachPar(f.value)), I.flatMap(dataSource.runAll))
+    flow(I.foreach(I.foreachPar(f.value)), I.chain(dataSource.runAll))
   )
 }
 

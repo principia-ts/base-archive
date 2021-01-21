@@ -21,7 +21,7 @@ export function getFilterableF<F>(
     const filterMap_: FilterMapFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>>       = (fa, f) =>
       pipe(
         F.recover(fa),
-        F.flatMap(
+        F.chain(
           E.fold(
             F.fail,
             flow(
@@ -37,7 +37,7 @@ export function getFilterableF<F>(
     ]
 
     const filter_: FilterFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = <A>(fa: HKT.HKT2<F, E, A>, predicate: Predicate<A>) =>
-      pipe(F.recover(fa), F.flatMap(E.fold(F.fail, (a) => (predicate(a) ? F.pure(a) : empty))))
+      pipe(F.recover(fa), F.chain(E.fold(F.fail, (a) => (predicate(a) ? F.pure(a) : empty))))
 
     const partition_: PartitionFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = <A>(
       fa: HKT.HKT2<F, E, A>,

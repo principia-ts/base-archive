@@ -173,7 +173,7 @@ export function foldTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4,
 ): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
   return pipe(
     product_(recover(left), recover(right)),
-    flatMap(
+    chain(
       ([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
         switch (ea._tag) {
           case 'Left': {
@@ -361,13 +361,13 @@ export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R,
  * -------------------------------------------
  */
 
-export const flatMap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> =
-  M.flatMap_
+export const chain_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> =
+  M.chain_
 
-export const flatMap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
-  M.flatMap
+export const chain: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
+  M.chain
 
-export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = flatMap(identity)
+export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = chain(identity)
 
 export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = M.tap_
 
@@ -579,7 +579,7 @@ export function giveServiceM<T>(
   _: Tag<T>
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-    M.asksM((r: R & R1) => M.flatMap_(f, (t) => M.giveAll_(ma, mergeEnvironments(_, r, t))))
+    M.asksM((r: R & R1) => M.chain_(f, (t) => M.giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
@@ -799,8 +799,8 @@ export const Applicative = HKT.instance<P.Applicative<[URI], V>>({
 
 export const Monad = HKT.instance<P.Monad<[URI], V>>({
   ...Applicative,
-  flatMap_,
-  flatMap,
+  chain_,
+  chain,
   flatten
 })
 
@@ -933,7 +933,7 @@ export function gen(...args: any[]): any {
         if (state.done) {
           return succeed(state.value)
         }
-        return flatMap_(state.value.S, (v) => {
+        return chain_(state.value.S, (v) => {
           const next = iterator.next(v)
           return run(next)
         })

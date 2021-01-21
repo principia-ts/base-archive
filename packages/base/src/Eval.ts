@@ -97,8 +97,8 @@ class Defer<A> extends Eval<A> {
   }
 }
 
-class FlatMap<A, B> extends Eval<B> {
-  readonly _evalTag = 'FlatMap'
+class Chain<A, B> extends Eval<B> {
+  readonly _evalTag = 'Chain'
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
     super()
   }
@@ -207,7 +207,7 @@ export function pure<A>(a: A): Eval<A> {
  */
 
 export function map2_<A, B, C>(ma: Eval<A>, mb: Eval<B>, f: (a: A, b: B) => C): Eval<C> {
-  return flatMap_(ma, (a) => map_(mb, (b) => f(a, b)))
+  return chain_(ma, (a) => map_(mb, (b) => f(a, b)))
 }
 
 export function map2<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval<A>) => Eval<C> {
@@ -237,7 +237,7 @@ export function ap<A>(ma: Eval<A>): <B>(mab: Eval<(a: A) => B>) => Eval<B> {
  */
 
 export function map_<A, B>(fa: Eval<A>, f: (a: A) => B): Eval<B> {
-  return flatMap_(fa, (a) => now(f(a)))
+  return chain_(fa, (a) => now(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
@@ -250,16 +250,16 @@ export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
  * -------------------------------------------
  */
 
-export function flatMap_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
-  return new FlatMap(ma, f)
+export function chain_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
+  return new Chain(ma, f)
 }
 
-export function flatMap<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
-  return (ma) => flatMap_(ma, f)
+export function chain<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
-  return flatMap_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -278,7 +278,7 @@ export function unit(): Eval<void> {
  * -------------------------------------------
  */
 
-type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | FlatMap<any, any> | Memoize<any>
+type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Chain<any, any> | Memoize<any>
 
 export function evaluate<A>(e: Eval<A>): A {
   const addToMemo = <A1>(m: Memoize<A1>) => (a: A1): Eval<A1> => {
@@ -304,7 +304,7 @@ export function evaluate<A>(e: Eval<A>): A {
   while (current != null) {
     const I = current as Concrete
     switch (I._evalTag) {
-      case 'FlatMap': {
+      case 'Chain': {
         const nested       = I.ma as Concrete
         const continuation = I.f
 
@@ -429,8 +429,8 @@ export const Applicative = HKT.instance<P.Applicative<[URI]>>({
 
 export const Monad = HKT.instance<P.Monad<[URI]>>({
   ...Applicative,
-  flatMap_,
-  flatMap,
+  chain_,
+  chain,
   flatten
 })
 
@@ -449,7 +449,7 @@ function _run<T extends GenEval<any>, A>(
   if (state.done) {
     return now(state.value)
   }
-  return flatMap_(state.value.ma, (val) => {
+  return chain_(state.value.ma, (val) => {
     const next = iterator.next(val)
     return _run(next, iterator)
   })
