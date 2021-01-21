@@ -47,11 +47,22 @@ export function foldCauseM_<R, E, A, R1, E1, B>(
   })
 }
 
+export function foldCauseM<E, A, R1, E1, B>(
+  onFailure: (cause: Ca.Cause<E>) => Query<R1, E1, B>,
+  onSuccess: (a: A) => Query<R1, E1, B>
+): <R>(ma: Continue<R, E, A>) => Continue<R & R1, E1, B> {
+  return (ma) => foldCauseM_(ma, onFailure, onSuccess)
+}
+
 export function mapError_<R, E, A, E1>(fa: Continue<R, E, A>, f: (e: E) => E1): Continue<R, E1, A> {
   return matchTag_(fa, {
     Effect: ({ query }) => effect(Q.mapError_(query, f)),
     Get: ({ io }) => pipe(io, I.mapError(f), get)
   })
+}
+
+export function mapError<E, E1>(f: (e: E) => E1): <R, A>(ma: Continue<R, E, A>) => Continue<R, E1, A> {
+  return (ma) => mapError_(ma, f)
 }
 
 export function map2_<R, E, A, R1, E1, B, C>(
@@ -68,11 +79,22 @@ export function map2_<R, E, A, R1, E1, B, C>(
     : get(I.map2_(fa.io, fb.io, f))
 }
 
+export function map2<A, R1, E1, B, C>(
+  fb: Continue<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: Continue<R, E, A>) => Continue<R & R1, E | E1, C> {
+  return (fa) => map2_(fa, fb, f)
+}
+
 export function map_<R, E, A, B>(fa: Continue<R, E, A>, f: (a: A) => B): Continue<R, E, B> {
   return matchTag_(fa, {
     Effect: ({ query }) => effect(Q.map_(query, f)),
     Get: ({ io }) => get(I.map_(io, f))
   })
+}
+
+export function map<A, B>(f: (a: A) => B): <R, E>(fa: Continue<R, E, A>) => Continue<R, E, B> {
+  return (fa) => map_(fa, f)
 }
 
 export function map2Par_<R, E, A, R1, E1, B, C>(
@@ -89,6 +111,13 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
     : get(I.map2_(fa.io, fb.io, f))
 }
 
+export function map2Par<A, R1, E1, B, C>(
+  fb: Continue<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: Continue<R, E, A>) => Continue<R & R1, E | E1, C> {
+  return (fa) => map2Par_(fa, fb, f)
+}
+
 export function map2Batched_<R, E, A, R1, E1, B, C>(
   fa: Continue<R, E, A>,
   fb: Continue<R1, E1, B>,
@@ -103,11 +132,24 @@ export function map2Batched_<R, E, A, R1, E1, B, C>(
     : get(I.map2_(fa.io, fb.io, f))
 }
 
+export function map2Batched<A, R1, E1, B, C>(
+  fb: Continue<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: Continue<R, E, A>) => Continue<R & R1, E | E1, C> {
+  return (fa) => map2Batched_(fa, fb, f)
+}
+
 export function mapDataSources_<R, E, A, R1>(fa: Continue<R, E, A>, f: DataSourceAspect<R1>): Continue<R & R1, E, A> {
   return matchTag_(fa, {
     Effect: ({ query }) => effect(Q.mapDataSources_(query, f)),
     Get: ({ io }) => get(io)
   })
+}
+
+export function mapDataSources<R1>(
+  f: DataSourceAspect<R1>
+): <R, E, A>(fa: Continue<R, E, A>) => Continue<R & R1, E, A> {
+  return (fa) => mapDataSources_(fa, f)
 }
 
 export function make<R, E, A extends Request<E, B>, B>(
@@ -138,11 +180,21 @@ export function mapM_<R, E, A, R1, E1, B>(
   })
 }
 
-export function gives_<R, E, A, R0>(fa: Continue<R, E, A>, f: Described<(r0: R0) => R>): Continue<R0, E, A> {
-  return matchTag_(fa, {
+export function mapM<A, R1, E1, B>(
+  f: (a: A) => Query<R1, E1, B>
+): <R, E>(fa: Continue<R, E, A>) => Continue<R & R1, E | E1, B> {
+  return (fa) => mapM_(fa, f)
+}
+
+export function gives_<R, E, A, R0>(ra: Continue<R, E, A>, f: Described<(r0: R0) => R>): Continue<R0, E, A> {
+  return matchTag_(ra, {
     Effect: ({ query }) => effect(Q.gives_(query, f)),
     Get: ({ io }) => get(io)
   })
+}
+
+export function gives<R0, R>(f: Described<(r0: R0) => R>): <E, A>(ra: Continue<R, E, A>) => Continue<R0, E, A> {
+  return (ra) => gives_(ra, f)
 }
 
 export function runCache_<R, E, A>(ma: Continue<R, E, A>, cache: Cache): I.IO<R, E, A> {
@@ -150,4 +202,8 @@ export function runCache_<R, E, A>(ma: Continue<R, E, A>, cache: Cache): I.IO<R,
     Effect: ({ query }) => Q.runCache_(query, cache),
     Get: ({ io }) => io
   })
+}
+
+export function runCache(cache: Cache): <R, E, A>(ma: Continue<R, E, A>) => I.IO<R, E, A> {
+  return (ma) => runCache_(ma, cache)
 }

@@ -44,6 +44,9 @@ import { QueryFailure } from './QueryFailure'
  */
 export class Query<R, E, A> {
   constructor(readonly step: IO<readonly [R, QueryContext], never, Result<R, E, A>>) {}
+  ['@@']<R1>(f: DataSourceAspect<R1>): Query<R & R1, E, A> {
+    return mapDataSources_(this, f)
+  }
 }
 
 /*
@@ -509,6 +512,14 @@ export function absolve<R, E, E1, A>(v: Query<R, E, E.Either<E1, A>>): Query<R, 
   return chain_(v, fromEither)
 }
 
+export function recover<R, E, A>(ma: Query<R, E, A>): Query<R, never, E.Either<E, A>> {
+  return fold_(
+    ma,
+    (e) => E.left(e),
+    (a) => E.right(a)
+  )
+}
+
 /*
  * -------------------------------------------
  * Functor
@@ -516,7 +527,7 @@ export function absolve<R, E, E1, A>(v: Query<R, E, E.Either<E1, A>>): Query<R, 
  */
 
 export function map_<R, E, A, B>(fa: Query<R, E, A>, f: (a: A) => B): Query<R, E, B> {
-  return new Query(I.map_(fa.step, (r) => Res.map_(r, f)))
+  return new Query(I.map_(fa.step, Res.map(f)))
 }
 
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Query<R, E, A>) => Query<R, E, B> {
@@ -532,7 +543,7 @@ export function as<B>(b: B): <R, E, A>(fa: Query<R, E, A>) => Query<R, E, B> {
 }
 
 export function mapDataSources_<R, E, A, R1>(fa: Query<R, E, A>, f: DataSourceAspect<R1>): Query<R & R1, E, A> {
-  return new Query(I.map_(fa.step, (r) => Res.mapDataSources_(r, f)))
+  return new Query(I.map_(fa.step, Res.mapDataSources(f)))
 }
 
 export function mapDataSources<R1>(f: DataSourceAspect<R1>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E, A> {
@@ -595,12 +606,7 @@ export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: 
           (ref) =>
             pipe(
               ref.get,
-              I.map(
-                O.fold(
-                  () => Res.blocked(BRS.empty, Cont.make(request, dataSource, ref)),
-                  (b) => Res.fromEither(b)
-                )
-              )
+              I.map(O.fold(() => Res.blocked(BRS.empty, Cont.make(request, dataSource, ref)), Res.fromEither))
             )
         )
       )
@@ -794,14 +800,6 @@ export function partitionParM<A, R, E, B>(
  * -------------------------------------------
  */
 
-export function recover<R, E, A>(ma: Query<R, E, A>): Query<R, never, E.Either<E, A>> {
-  return fold_(
-    ma,
-    (e) => E.left(e),
-    (a) => E.right(a)
-  )
-}
-
 export function left<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, O.Option<E>, A> {
   return foldM_(
     ma,
@@ -840,6 +838,39 @@ export function leftOrFailWith<B, E1>(
   f: (right: B) => E1
 ): <R, E, A>(ma: Query<R, E, E.Either<A, B>>) => Query<R, E | E1, A> {
   return (ma) => leftOrFailWith_(ma, f)
+}
+
+export function refineOrDie_<R, E extends Error, A, E1>(
+  ma: Query<R, E, A>,
+  pf: (e: E) => O.Option<E1>
+): Query<R, E1, A> {
+  return refineOrDieWith_(ma, pf, identity)
+}
+
+export function refineOrDie<E extends Error, E1>(
+  pf: (e: E) => O.Option<E1>
+): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
+  return (ma) => refineOrDie_(ma, pf)
+}
+
+export function refineOrDieWith_<R, E, A, E1>(
+  ma: Query<R, E, A>,
+  pf: (e: E) => O.Option<E1>,
+  f: (e: E) => Error
+): Query<R, E1, A> {
+  return catchAll_(ma, (e) =>
+    pipe(
+      pf(e),
+      O.fold(() => die(f(e)), fail)
+    )
+  )
+}
+
+export function refineOrDieWith<E, E1>(
+  pf: (e: E) => O.Option<E1>,
+  f: (e: E) => Error
+): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
+  return (ma) => refineOrDieWith_(ma, pf, f)
 }
 
 export function rightOrFail_<R, E, A, B, E1>(ma: Query<R, E, E.Either<A, B>>, e: E1): Query<R, E | E1, B> {
@@ -950,6 +981,29 @@ export function sandboxWith<R, E, A, R1, E1, B>(
   f: (query: Query<R, Ca.Cause<E>, A>) => Query<R1, Ca.Cause<E1>, B>
 ): (ma: Query<R, E, A>) => Query<R & R1, E | E1, B> {
   return (ma) => sandboxWith_(ma, f)
+}
+
+export function getError<R, E, A>(ma: Query<R, O.Option<E>, A>): Query<R, E, O.Option<A>> {
+  return foldM_(ma, O.fold(none, fail), some)
+}
+
+export function get<R, E, A>(ma: Query<R, E, O.Option<A>>): Query<R, O.Option<E>, A> {
+  return foldM_(
+    ma,
+    flow(O.some, fail),
+    O.fold(() => fail(O.none()), succeed)
+  )
+}
+
+export function getOrFail_<R, E, A, E1>(ma: Query<R, E, O.Option<A>>, e: E1): Query<R, E | E1, A> {
+  return chain_(
+    ma,
+    O.fold(() => fail(e), succeed)
+  )
+}
+
+export function getOrFail<E1>(e: E1): <R, E, A>(ma: Query<R, E, O.Option<A>>) => Query<R, E | E1, A> {
+  return (ma) => getOrFail_(ma, e)
 }
 
 export function summarized_<R, E, A, R1, E1, B, C>(

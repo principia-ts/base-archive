@@ -7,7 +7,6 @@ import type { Cause } from '@principia/io/Cause'
 import * as E from '@principia/base/Either'
 import { matchTag_ } from '@principia/base/util/matchers'
 import * as Ca from '@principia/io/Cause'
-import { Resolver } from 'dns'
 
 import * as BRS from './BlockedRequests'
 import * as Cont from './Continue'
@@ -49,6 +48,10 @@ export function map_<R, E, A, B>(fa: Result<R, E, A>, f: (a: A) => B): Result<R,
   })
 }
 
+export function map<A, B>(f: (a: A) => B): <R, E>(fa: Result<R, E, A>) => Result<R, E, B> {
+  return (fa) => map_(fa, f)
+}
+
 export function mapDataSources_<R, E, A, R1>(fa: Result<R, E, A>, f: DataSourceAspect<R1>): Result<R & R1, E, A> {
   return matchTag_(fa, {
     Blocked: ({ blockedRequests, cont }) =>
@@ -56,6 +59,10 @@ export function mapDataSources_<R, E, A, R1>(fa: Result<R, E, A>, f: DataSourceA
     Done: ({ value }) => done(value),
     Fail: ({ cause }) => fail(cause)
   })
+}
+
+export function mapDataSources<R1>(f: DataSourceAspect<R1>): <R, E, A>(fa: Result<R, E, A>) => Result<R & R1, E, A> {
+  return (fa) => mapDataSources_(fa, f)
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): Result<unknown, E, A> {
@@ -66,10 +73,14 @@ export function fromEither<E, A>(either: E.Either<E, A>): Result<unknown, E, A> 
   )
 }
 
-export function gives_<R, E, A, R0>(fa: Result<R, E, A>, f: Described<(r0: R0) => R>): Result<R0, E, A> {
-  return matchTag_(fa, {
+export function gives_<R, E, A, R0>(ra: Result<R, E, A>, f: Described<(r0: R0) => R>): Result<R0, E, A> {
+  return matchTag_(ra, {
     Blocked: ({ blockedRequests, cont }) => blocked(BRS.gives_(blockedRequests, f), Cont.gives_(cont, f)),
     Fail: ({ cause }) => fail(cause),
     Done: ({ value }) => done(value)
   })
+}
+
+export function gives<R0, R>(f: Described<(r0: R0) => R>): <E, A>(ra: Result<R, E, A>) => Result<R0, E, A> {
+  return (ra) => gives_(ra, f)
 }

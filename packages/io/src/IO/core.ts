@@ -692,8 +692,8 @@ export function fold_<R, E, A, B, C>(
 export function fold<E, A, B, C>(
   onFailure: (reason: E) => B,
   onSuccess: (a: A) => C
-): <R>(ef: IO<R, E, A>) => IO<R, never, B | C> {
-  return (ef) => fold_(ef, onFailure, onSuccess)
+): <R>(ma: IO<R, E, A>) => IO<R, never, B | C> {
+  return (ma) => fold_(ma, onFailure, onSuccess)
 }
 
 /*
@@ -1366,12 +1366,12 @@ export function collect<A, E1, A1>(
   return (ma) => collect_(ma, f, pf)
 }
 
-export function collectAll<R, E, A>(mas: Iterable<IO<R, E, A>>): IO<R, E, readonly A[]> {
-  return foreach_(mas, identity)
+export function collectAll<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, readonly A[]> {
+  return foreach_(as, identity)
 }
 
-export function collectAllUnit<R, E, A>(mas: Iterable<IO<R, E, A>>): IO<R, E, void> {
-  return foreachUnit_(mas, identity)
+export function collectAllUnit<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, void> {
+  return foreachUnit_(as, identity)
 }
 
 export function collectM_<R, E, A, R1, E1, A1, E2>(
@@ -1908,6 +1908,69 @@ export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
 }
 
 /**
+ * ```haskell
+ * someOrElse_ :: IO t => (t x r e (Option a), (() -> b)) -> t x r e (a | b)
+ * ```
+ *
+ * Extracts the optional value, or returns the given 'orElse'.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function getOrElse_<R, E, A, B>(ma: IO<R, E, Option<A>>, orElse: () => B): IO<R, E, A | B> {
+  return pipe(ma, map(O.getOrElse(orElse)))
+}
+
+/**
+ * ```haskell
+ * someOrElse :: IO t => (() -> b) -> t x r e (Option a) -> t x r e (a | b)
+ * ```
+ *
+ * Extracts the optional value, or returns the given 'orElse'.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function getOrElse<B>(orElse: () => B): <R, E, A>(ma: IO<R, E, Option<A>>) => IO<R, E, B | A> {
+  return (ma) => getOrElse_(ma, orElse)
+}
+
+/**
+ * ```haskell
+ * someOrElseM_ :: IO t => (t x r e (Option a), t x1 r1 e1 b) ->
+ *    t (x | x1) (r & r1) (e | e1) (a | b)
+ * ```
+ *
+ * Extracts the optional value, or executes the effect 'orElse'.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function getOrElseM_<R, E, A, R1, E1, B>(
+  ma: IO<R, E, Option<A>>,
+  orElse: IO<R1, E1, B>
+): IO<R & R1, E | E1, A | B> {
+  return chain_(ma as IO<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))))
+}
+
+/**
+ * ```haskell
+ * someOrElseM :: IO t => t x1 r1 e1 b -> t x r e (Option a) ->
+ *    t (x | x1) (r & r1) (e | e1) (a | b)
+ * ```
+ *
+ * Extracts the optional value, or executes the effect 'orElse'.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function getOrElseM<R1, E1, B>(
+  orElse: IO<R1, E1, B>
+): <R, E, A>(ma: IO<R, E, Option<A>>) => IO<R & R1, E1 | E, B | A> {
+  return (ma) => getOrElseM_(ma, orElse)
+}
+
+/**
  * Lifts an Option into an IO, if the option is `None` it fails with NoSuchElementException.
  */
 export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementException, A> {
@@ -2223,9 +2286,9 @@ export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
 /**
  * Converts an option on errors into an option on values.
  */
-export function optional<R, E, A>(ef: IO<R, Option<E>, A>): IO<R, E, Option<A>> {
+export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> {
   return foldM_(
-    ef,
+    ma,
     O.fold(() => pure(O.none()), fail),
     flow(O.some, pure)
   )
@@ -2476,8 +2539,8 @@ export function rejectM<R1, E1, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export function repeatN_<R, E, A>(ef: IO<R, E, A>, n: number): IO<R, E, A> {
-  return chain_(ef, (a) => (n <= 0 ? pure(a) : repeatN_(ef, n - 1)))
+export function repeatN_<R, E, A>(ma: IO<R, E, A>, n: number): IO<R, E, A> {
+  return chain_(ma, (a) => (n <= 0 ? pure(a) : repeatN_(ma, n - 1)))
 }
 
 /**
@@ -2490,32 +2553,32 @@ export function repeatN_<R, E, A>(ef: IO<R, E, A>, n: number): IO<R, E, A> {
  * @category Combinators
  * @since 1.0.0
  */
-export function repeatN(n: number): <R, E, A>(ef: IO<R, E, A>) => IO<R, E, A> {
-  return (ef) => repeatN_(ef, n)
+export function repeatN(n: number): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
+  return (ma) => repeatN_(ma, n)
 }
 
 /**
  * Repeats this effect until its result satisfies the specified predicate.
  */
-export function repeatUntil_<R, E, A>(ef: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
-  return repeatUntilM_(ef, (a) => pure(f(a)))
+export function repeatUntil_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
+  return repeatUntilM_(ma, (a) => pure(f(a)))
 }
 
 /**
  * Repeats this effect until its result satisfies the specified predicate.
  */
-export function repeatUntil<A>(f: (a: A) => boolean): <R, E>(ef: IO<R, E, A>) => IO<R, E, A> {
-  return (ef) => repeatUntil_(ef, f)
+export function repeatUntil<A>(f: (a: A) => boolean): <R, E>(ma: IO<R, E, A>) => IO<R, E, A> {
+  return (ma) => repeatUntil_(ma, f)
 }
 
 /**
  * Repeats this effect until its error satisfies the specified effectful predicate.
  */
 export function repeatUntilM_<R, E, A, R1, E1>(
-  ef: IO<R, E, A>,
+  ma: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return chain_(ef, (a) => chain_(f(a), (b) => (b ? pure(a) : repeatUntilM_(ef, f))))
+  return chain_(ma, (a) => chain_(f(a), (b) => (b ? pure(a) : repeatUntilM_(ma, f))))
 }
 
 /**
@@ -2523,32 +2586,32 @@ export function repeatUntilM_<R, E, A, R1, E1>(
  */
 export function repeatUntilM<A, R1, E1>(
   f: (a: A) => IO<R1, E1, boolean>
-): <R, E>(ef: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
-  return (ef) => repeatUntilM_(ef, f)
+): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
+  return (ma) => repeatUntilM_(ma, f)
 }
 
 /**
  * Repeats this effect while its error satisfies the specified predicate.
  */
-export function repeatWhile_<R, E, A>(ef: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
-  return repeatWhileM_(ef, (a) => pure(f(a)))
+export function repeatWhile_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
+  return repeatWhileM_(ma, (a) => pure(f(a)))
 }
 
 /**
  * Repeats this effect while its error satisfies the specified predicate.
  */
-export function repeatWhile<A>(f: (a: A) => boolean): <R, E>(ef: IO<R, E, A>) => IO<R, E, A> {
-  return (ef) => repeatWhile_(ef, f)
+export function repeatWhile<A>(f: (a: A) => boolean): <R, E>(ma: IO<R, E, A>) => IO<R, E, A> {
+  return (ma) => repeatWhile_(ma, f)
 }
 
 /**
  * Repeats this effect while its error satisfies the specified effectful predicate.
  */
 export function repeatWhileM_<R, E, A, R1, E1>(
-  ef: IO<R, E, A>,
+  ma: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return chain_(ef, (a) => chain_(f(a), (b) => (b ? repeatWhileM_(ef, f) : pure(a))))
+  return chain_(ma, (a) => chain_(f(a), (b) => (b ? repeatWhileM_(ma, f) : pure(a))))
 }
 
 /**
@@ -2556,8 +2619,8 @@ export function repeatWhileM_<R, E, A, R1, E1>(
  */
 export function repeatWhileM<A, R1, E1>(
   f: (a: A) => IO<R1, E1, boolean>
-): <R, E>(ef: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
-  return (ef) => repeatWhileM_(ef, f)
+): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
+  return (ma) => repeatWhileM_(ma, f)
 }
 
 export function replicate(n: number): <R, E, A>(ma: IO<R, E, A>) => readonly IO<R, E, A>[] {
@@ -2691,107 +2754,8 @@ export const sandbox: <R, E, A>(fa: IO<R, E, A>) => IO<R, Cause<E>, A> = foldCau
 
 export function sandboxWith<R, E, A, E1>(
   f: (_: IO<R, Cause<E>, A>) => IO<R, Cause<E1>, A>
-): (ef: IO<R, E, A>) => IO<R, E1, A> {
-  return (ef) => unsandbox(f(sandbox(ef)))
-}
-
-/**
- * ```haskell
- * some :: IO t => T x r e (Option a) -> T x r (Option e) a
- * ```
- *
- * Converts an optional value into an optional error
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function some<R, E, A>(ef: IO<R, E, Option<A>>): IO<R, Option<E>, A> {
-  return foldM_(
-    ef,
-    (e) => fail(O.some(e)),
-    O.fold(() => fail(O.none()), pure)
-  )
-}
-
-/**
- * ```haskell
- * someOrElse_ :: IO t => (t x r e (Option a), (() -> b)) -> t x r e (a | b)
- * ```
- *
- * Extracts the optional value, or returns the given 'orElse'.
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function someOrElse_<R, E, A, B>(ef: IO<R, E, Option<A>>, orElse: () => B): IO<R, E, A | B> {
-  return pipe(ef, map(O.getOrElse(orElse)))
-}
-
-/**
- * ```haskell
- * someOrElse :: IO t => (() -> b) -> t x r e (Option a) -> t x r e (a | b)
- * ```
- *
- * Extracts the optional value, or returns the given 'orElse'.
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function someOrElse<B>(orElse: () => B): <R, E, A>(ef: IO<R, E, Option<A>>) => IO<R, E, B | A> {
-  return (ef) => someOrElse_(ef, orElse)
-}
-
-/**
- * ```haskell
- * someOrElseM_ :: IO t => (t x r e (Option a), t x1 r1 e1 b) ->
- *    t (x | x1) (r & r1) (e | e1) (a | b)
- * ```
- *
- * Extracts the optional value, or executes the effect 'orElse'.
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function someOrElseM_<R, E, A, R1, E1, B>(
-  ef: IO<R, E, Option<A>>,
-  orElse: IO<R1, E1, B>
-): IO<R & R1, E | E1, A | B> {
-  return chain_(ef as IO<R, E, Option<A | B>>, flow(O.map(pure), O.getOrElse(constant(orElse))))
-}
-
-/**
- * ```haskell
- * someOrElseM :: IO t => t x1 r1 e1 b -> t x r e (Option a) ->
- *    t (x | x1) (r & r1) (e | e1) (a | b)
- * ```
- *
- * Extracts the optional value, or executes the effect 'orElse'.
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function someOrElseM<R1, E1, B>(
-  orElse: IO<R1, E1, B>
-): <R, E, A>(ef: IO<R, E, Option<A>>) => IO<R & R1, E1 | E, B | A> {
-  return (ef) => someOrElseM_(ef, orElse)
-}
-
-export function someOrFail<R, E, A>(ma: IO<R, E, Option<A>>): IO<R, E | NoSuchElementException, A> {
-  return someOrFailWith_(ma, () => new NoSuchElementException('IO.someOrFailException'))
-}
-
-/**
- * Extracts the optional value, or fails with the given error 'e'.
- */
-export function someOrFailWith_<R, E, A, E1>(ma: IO<R, E, Option<A>>, orFail: () => E1): IO<R, E | E1, A> {
-  return chain_(
-    ma,
-    O.fold(() => chain_(effectTotal(orFail), fail), pure)
-  )
-}
-
-export function someOrFailWith<E1>(orFail: () => E1): <R, E, A>(ma: IO<R, E, Option<A>>) => IO<R, E1 | E, A> {
-  return (ma) => someOrFailWith_(ma, orFail)
+): (ma: IO<R, E, A>) => IO<R, E1, A> {
+  return (ma) => unsandbox(f(sandbox(ma)))
 }
 
 export function summarized_<R, E, A, R1, E1, B, C>(
@@ -2834,7 +2798,7 @@ export function swap<R, E, A>(pab: IO<R, E, A>): IO<R, A, E> {
  * @category Combinators
  * @since 1.0.0
  */
-export function swapWith_<R, E, A, R1, E1, A1>(fa: IO<R, E, A>, f: (ef: IO<R, A, E>) => IO<R1, A1, E1>) {
+export function swapWith_<R, E, A, R1, E1, A1>(fa: IO<R, E, A>, f: (ma: IO<R, A, E>) => IO<R1, A1, E1>) {
   return swap(f(swap(fa)))
 }
 
@@ -2845,7 +2809,7 @@ export function swapWith_<R, E, A, R1, E1, A1>(fa: IO<R, E, A>, f: (ef: IO<R, A,
  * @since 1.0.0
  */
 export function swapWith<R, E, A, R1, E1, A1>(
-  f: (ef: IO<R, A, E>) => IO<R1, A1, E1>
+  f: (ma: IO<R, A, E>) => IO<R1, A1, E1>
 ): (fa: IO<R, E, A>) => IO<R1, E1, A1> {
   return (fa) => swapWith_(fa, f)
 }
@@ -2944,8 +2908,8 @@ export function unrefineWith_<R, E, A, E1, E2>(
  */
 export function unrefineWith<E1>(
   fa: (u: unknown) => Option<E1>
-): <E, E2>(f: (e: E) => E2) => <R, A>(ef: IO<R, E, A>) => IO<R, E1 | E2, A> {
-  return (f) => (ef) => unrefineWith_(ef, fa, f)
+): <E, E2>(f: (e: E) => E2) => <R, A>(ma: IO<R, E, A>) => IO<R, E1 | E2, A> {
+  return (f) => (ma) => unrefineWith_(ma, fa, f)
 }
 
 /**
@@ -2958,7 +2922,7 @@ export function unrefineWith<E1>(
  * @category Combinators
  * @since 1.0.0
  */
-export const unsandbox: <R, E, A>(ef: IO<R, Cause<E>, A>) => IO<R, E, A> = mapErrorCause(C.flatten)
+export const unsandbox: <R, E, A>(ma: IO<R, Cause<E>, A>) => IO<R, E, A> = mapErrorCause(C.flatten)
 
 /**
  * The moral equivalent of `if (p) exp` when `p` has side-effects
