@@ -30,7 +30,7 @@ export function parse(args: ReadonlyArray<string>): TestArgs {
       }
       return O.none()
     }),
-    A.foldLeft(
+    A.foldl(
       tuple(<ReadonlyArray<string>>[], <ReadonlyArray<string>>[], <ReadonlyArray<string>>[]),
       ([terms, tags, policy], [k, v]) => {
         switch (k) {

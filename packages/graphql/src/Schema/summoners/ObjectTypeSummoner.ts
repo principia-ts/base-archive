@@ -23,7 +23,7 @@ function buildObjectType<FieldAURI extends FieldAURIS, InputAURI extends InputAU
   interpreters: AURItoFieldAlgebra<any, any>[FieldAURI] & AURItoInputAlgebra[InputAURI]
 ): ObjectTypeDefinitionNode {
   return createObjectTypeDefinitionNode({
-    fields: R.foldLeftWithIndex_(
+    fields: R.ifoldl_(
       fields(interpreters) as any,
       [] as ReadonlyArray<FieldDefinitionNode>,
       (b, k, a: NonNullable<AnyOutput<any>>) => {
@@ -63,7 +63,7 @@ export function makeObjectTypeSummoner<FieldAURI extends FieldAURIS, InputAURI e
       buildObjectType(name, fields, interpreters),
       name,
       interpretedFields,
-      R.foldLeftWithIndex_(interpretedFields, {}, (acc, k, v: AnyOutput<T>) => {
+      R.ifoldl_(interpretedFields, {}, (acc, k, v: AnyOutput<T>) => {
         if (v._tag === 'GQLField') {
           return { ...acc, [k]: v.resolve }
         }

@@ -23,7 +23,7 @@ import * as FM from './FailureMessage'
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {
-    const rendered = A.chain_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
+    const rendered = A.bind_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
     const stats    = logStats(duration, executedSpec)
 
     return I.asksServiceM(TestLogger)((l) => l.logLine(A.append(stats)(rendered).join('\n')))
@@ -35,7 +35,7 @@ export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): st
     executedSpec,
     matchTag({
       Suite: ({ specs }) =>
-        A.foldLeft_(
+        A.foldl_(
           specs,
           [0, 0, 0] as readonly [number, number, number],
           ([x1, x2, x3], [y1, y2, y3]) => [x1 + y1, x2 + y2, x3 + y3] as const
@@ -67,7 +67,7 @@ export function render<E>(
     depth: number,
     ancestors: ReadonlyArray<TestAnnotationMap>
   ): USync<ReadonlyArray<RenderedResult<string>>> =>
-    Sy.chain_(executedSpec, (executedSpec) =>
+    Sy.bind_(executedSpec, (executedSpec) =>
       matchTag_(executedSpec, {
         Suite: ({ label, specs }) => {
           const hasFailures    = ES.exists_(
@@ -80,7 +80,7 @@ export function render<E>(
           const annotations    = ES.fold_<E, TestAnnotationMap>(
             executedSpec,
             matchTag({
-              Suite: ({ specs }) => A.foldLeft_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
+              Suite: ({ specs }) => A.foldl_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
               Test: ({ annotations }) => annotations
             })
           )
@@ -177,7 +177,7 @@ function withOffset(n: number): (s: string) => string {
 function renderToStringLines(message: Message): ReadonlyArray<string> {
   const renderFragment = (f: Fragment) => (f.colorCode !== '' ? f.colorCode + f.text + RESET : f.text)
   return A.map_(message.lines, (line) =>
-    withOffset(line.offset)(A.foldLeft_(line.fragments, '', (str, f) => str + renderFragment(f)))
+    withOffset(line.offset)(A.foldl_(line.fragments, '', (str, f) => str + renderFragment(f)))
   )
 }
 

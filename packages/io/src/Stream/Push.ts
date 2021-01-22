@@ -34,8 +34,8 @@ export function restartable<R, E, I, L, Z>(
     const initialSink = yield* _(switchSink(sink))
     const currSink    = yield* _(XR.make(initialSink))
 
-    const restart = I.chain_(switchSink(sink), currSink.set)
-    const push    = (input: O.Option<Chunk<I>>) => I.chain_(currSink.get, (f) => f(input))
+    const restart = I.bind_(switchSink(sink), currSink.set)
+    const push    = (input: O.Option<Chunk<I>>) => I.bind_(currSink.get, (f) => f(input))
 
     return [push, restart]
   })

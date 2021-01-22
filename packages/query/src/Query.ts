@@ -59,10 +59,9 @@ export function runCache_<R, E, A>(ma: Query<R, E, A>, cache: Cache): I.IO<R, E,
   return pipe(
     ma.step,
     I.gives((r: R) => [r, new QueryContext(cache)] as const),
-    I.chain(
+    I.bind(
       matchTag({
-        Blocked: ({ blockedRequests, cont }) =>
-          I.andThen_(BRS.run_(blockedRequests, cache), Cont.runCache_(cont, cache)),
+        Blocked: ({ blockedRequests, cont }) => I.apr_(BRS.run_(blockedRequests, cache), Cont.runCache_(cont, cache)),
         Done: ({ value }) => I.succeed(value),
         Fail: ({ cause }) => I.halt(cause)
       })
@@ -194,7 +193,7 @@ export function map2_<R, E, A, R1, E1, B, C>(
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
   return new Query(
-    I.chain_(
+    I.bind_(
       fa.step,
       matchTag({
         Blocked: ({ blockedRequests, cont }) => {
@@ -265,20 +264,20 @@ export function ap<R, E, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function apFirst_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
+export function apl_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
   return map2_(fa, fb, (a, _) => a)
 }
 
-export function apFirst<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
+export function apr_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
   return map2_(fa, fb, (_, b) => b)
 }
 
-export function apSecond<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
+  return (fa) => apr_(fa, fb)
 }
 
 /*
@@ -352,22 +351,20 @@ export function apPar<R, E, A>(
   return (fab) => apPar_(fab, fa)
 }
 
-export function apFirstPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
+export function aplPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
   return map2Par_(fa, fb, (a, _) => a)
 }
 
-export function apFirstPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => apFirstPar_(fa, fb)
+export function aplPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
+  return (fa) => aplPar_(fa, fb)
 }
 
-export function apSecondPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
+export function aprPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
   return map2Par_(fa, fb, (_, b) => b)
 }
 
-export function apSecondPar<R1, E1, B>(
-  fb: Query<R1, E1, B>
-): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => apSecondPar_(fa, fb)
+export function aprPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
+  return (fa) => aprPar_(fa, fb)
 }
 
 /*
@@ -441,30 +438,20 @@ export function apBatched<R, E, A>(
   return (fab) => apBatched_(fab, fa)
 }
 
-export function apFirstBatched_<R, E, A, R1, E1, B>(
-  fa: Query<R, E, A>,
-  fb: Query<R1, E1, B>
-): Query<R & R1, E | E1, A> {
+export function aplBatched_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
   return map2Batched_(fa, fb, (a, _) => a)
 }
 
-export function apFirstBatched<R1, E1, B>(
-  fb: Query<R1, E1, B>
-): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => apFirstBatched_(fa, fb)
+export function aplBatched<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
+  return (fa) => aplBatched_(fa, fb)
 }
 
-export function apSecondBatched_<R, E, A, R1, E1, B>(
-  fa: Query<R, E, A>,
-  fb: Query<R1, E1, B>
-): Query<R & R1, E | E1, B> {
+export function aprBatched_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
   return map2Batched_(fa, fb, (_, b) => b)
 }
 
-export function apSecondBatched<R1, E1, B>(
-  fb: Query<R1, E1, B>
-): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => apSecondBatched_(fa, fb)
+export function aprBatched<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
+  return (fa) => aprBatched_(fa, fb)
 }
 
 /*
@@ -509,7 +496,7 @@ export function mapErrorCause<E, E1>(
  */
 
 export function absolve<R, E, E1, A>(v: Query<R, E, E.Either<E1, A>>): Query<R, E | E1, A> {
-  return chain_(v, fromEither)
+  return bind_(v, fromEither)
 }
 
 export function recover<R, E, A>(ma: Query<R, E, A>): Query<R, never, E.Either<E, A>> {
@@ -583,18 +570,18 @@ export function fromEffect<R, E, A>(effect: IO<R, E, A>): Query<R, E, A> {
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): Query<unknown, E, A> {
-  return pipe(succeed(either), chain(E.fold(fail, succeed)))
+  return pipe(succeed(either), bind(E.fold(fail, succeed)))
 }
 
 export function fromOption<A>(option: O.Option<A>): Query<unknown, O.Option<never>, A> {
-  return pipe(succeed(option), chain(O.fold(() => fail(O.none()), succeed)))
+  return pipe(succeed(option), bind(O.fold(() => fail(O.none()), succeed)))
 }
 
 export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: DataSource<R, A>): Query<R, E, B> {
   return new Query(
     pipe(
       I.asksM(([_, qc]: readonly [R, QueryContext]) => qc.cache.lookup(request)),
-      I.chain(
+      I.bind(
         E.fold(
           (ref) =>
             I.succeed(
@@ -644,12 +631,9 @@ export function some<A>(a: A): Query<unknown, never, O.Option<A>> {
  * -------------------------------------------
  */
 
-export function chain_<R, E, A, R1, E1, B>(
-  ma: Query<R, E, A>,
-  f: (a: A) => Query<R1, E1, B>
-): Query<R & R1, E | E1, B> {
+export function bind_<R, E, A, R1, E1, B>(ma: Query<R, E, A>, f: (a: A) => Query<R1, E1, B>): Query<R & R1, E | E1, B> {
   return new Query(
-    I.chain_(
+    I.bind_(
       ma.step,
       matchTag({
         Blocked: ({ blockedRequests, cont }) => I.succeed(Res.blocked(blockedRequests, Cont.mapM_(cont, f))),
@@ -660,10 +644,10 @@ export function chain_<R, E, A, R1, E1, B>(
   )
 }
 
-export function chain<A, R1, E1, B>(
+export function bind<A, R1, E1, B>(
   f: (a: A) => Query<R1, E1, B>
 ): <R, E>(ma: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (ma) => chain_(ma, f)
+  return (ma) => bind_(ma, f)
 }
 
 /*
@@ -681,7 +665,7 @@ export function asks<R, A>(f: (_: R) => A): Query<R, never, A> {
 }
 
 export function asksM<R0, R, E, A>(f: (_: R0) => Query<R, E, A>): Query<R0 & R, E, A> {
-  return pipe(ask<R0>(), chain(f))
+  return pipe(ask<R0>(), bind(f))
 }
 
 export function gives_<R, E, A, R0>(ra: Query<R, E, A>, f: Described<(r0: R0) => R>): Query<R0, E, A> {
@@ -817,7 +801,7 @@ export function right<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, O.O
 }
 
 export function leftOrFail_<R, E, A, B, E1>(ma: Query<R, E, E.Either<A, B>>, e: E1): Query<R, E | E1, A> {
-  return chain_(
+  return bind_(
     ma,
     E.fold(succeed, () => fail(e))
   )
@@ -831,7 +815,7 @@ export function leftOrFailWith_<R, E, A, B, E1>(
   ma: Query<R, E, E.Either<A, B>>,
   f: (right: B) => E1
 ): Query<R, E | E1, A> {
-  return chain_(ma, E.fold(succeed, flow(f, fail)))
+  return bind_(ma, E.fold(succeed, flow(f, fail)))
 }
 
 export function leftOrFailWith<B, E1>(
@@ -874,7 +858,7 @@ export function refineOrDieWith<E, E1>(
 }
 
 export function rightOrFail_<R, E, A, B, E1>(ma: Query<R, E, E.Either<A, B>>, e: E1): Query<R, E | E1, B> {
-  return chain_(
+  return bind_(
     ma,
     E.fold(() => fail(e), succeed)
   )
@@ -888,7 +872,7 @@ export function rightOrFailWith_<R, E, A, B, E1>(
   ma: Query<R, E, E.Either<A, B>>,
   f: (left: A) => E1
 ): Query<R, E | E1, B> {
-  return chain_(ma, E.fold(flow(f, fail), succeed))
+  return bind_(ma, E.fold(flow(f, fail), succeed))
 }
 
 export function rightOrFailWith<A, E1>(
@@ -900,7 +884,7 @@ export function rightOrFailWith<A, E1>(
 export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Query<R, E, B>): Query<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldLeft(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2_(b, f(a), (bs, b) => A.append(b)(bs)))
+    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2_(b, f(a), (bs, b) => A.append(b)(bs)))
   )
 }
 
@@ -911,7 +895,7 @@ export function foreach<A, R, E, B>(f: (a: A) => Query<R, E, B>): (as: Iterable<
 export function foreachPar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Query<R, E, B>): Query<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldLeft(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2Par_(b, f(a), (bs, b) => A.append(b)(bs)))
+    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2Par_(b, f(a), (bs, b) => A.append(b)(bs)))
   )
 }
 
@@ -927,9 +911,7 @@ export function foreachBatched_<A, R, E, B>(
 ): Query<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldLeft(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) =>
-      map2Batched_(b, f(a), (bs, b) => A.append(b)(bs))
-    )
+    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2Batched_(b, f(a), (bs, b) => A.append(b)(bs)))
   )
 }
 
@@ -996,7 +978,7 @@ export function get<R, E, A>(ma: Query<R, E, O.Option<A>>): Query<R, O.Option<E>
 }
 
 export function getOrFail_<R, E, A, E1>(ma: Query<R, E, O.Option<A>>, e: E1): Query<R, E | E1, A> {
-  return chain_(
+  return bind_(
     ma,
     O.fold(() => fail(e), succeed)
   )

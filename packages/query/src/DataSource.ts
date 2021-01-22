@@ -28,7 +28,7 @@ export function batchN_<R, A>(dataSource: DataSource<R, A>, n: number): DataSour
   return new DataSource(`${dataSource.identifier}.batchN(${n})`, (requests) =>
     n < 1
       ? I.die(new IllegalArgumentException('batchN: n must be at least one'))
-      : dataSource.runAll(C.foldLeft_(requests, C.empty(), (b, a) => C.concat_(b, C.grouped_(a, n))))
+      : dataSource.runAll(C.foldl_(requests, C.empty(), (b, a) => C.concat_(b, C.grouped_(a, n))))
   )
 }
 
@@ -38,7 +38,7 @@ export function contramapM_<R, A, R1, B>(
 ): DataSource<R & R1, B> {
   return new DataSource(
     `${dataSource.identifier}.contramapM(${f.description})`,
-    flow(I.foreach(I.foreachPar(f.value)), I.chain(dataSource.runAll))
+    flow(I.foreach(I.foreachPar(f.value)), I.bind(dataSource.runAll))
   )
 }
 
@@ -57,7 +57,7 @@ export function eitherWith_<R, A, R1, B, C>(
           I.map2Par(ds2.runAll(C.single(right)), (a, b) => a.concat(b))
         )
       }),
-      I.map(A.foldLeft(CompletedRequestMap.empty(), (b, a) => b.concat(a)))
+      I.map(A.foldl(CompletedRequestMap.empty(), (b, a) => b.concat(a)))
     )
   )
 }
@@ -90,7 +90,7 @@ export class Batched<R, A> extends DataSource<R, A> {
   ) {
     super(
       identifier,
-      I.foldLeft(CompletedRequestMap.empty(), (m, r) => {
+      I.foldl(CompletedRequestMap.empty(), (m, r) => {
         const newRequests = C.filter_(r, not(m.contains))
         if (C.isEmpty(newRequests)) {
           return I.succeed(m)
@@ -116,7 +116,7 @@ export function fromFunction<A extends Request<never, B>, B>(name: string, f: (a
   return new Batched<unknown, A>(
     name,
     flow(
-      C.foldLeft(CompletedRequestMap.empty(), (m, k) => m.insert(k, E.right(f(k)))),
+      C.foldl(CompletedRequestMap.empty(), (m, k) => m.insert(k, E.right(f(k)))),
       I.succeed
     )
   )
@@ -133,7 +133,7 @@ export function fromFunctionBatchedM<R, E, A extends Request<E, B>, B>(
         (e): C.Chunk<readonly [A, E.Either<E, B>]> => C.map_(requests, (_) => tuple(_, E.left(e))),
         (bs): C.Chunk<readonly [A, E.Either<E, B>]> => C.zip_(requests, C.map_(bs, E.right))
       ),
-      I.map(C.foldLeft(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
+      I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
     )
   )
 }
@@ -156,7 +156,7 @@ export function fromFunctionBatchedOptionM<R, E, A extends Request<E, B>, B>(
         (e): C.Chunk<readonly [A, E.Either<E, O.Option<B>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
         (bs): C.Chunk<readonly [A, E.Either<E, O.Option<B>>]> => C.zip_(requests, C.map_(bs, E.right))
       ),
-      I.map(C.foldLeft(CompletedRequestMap.empty(), (map, [k, v]) => map.insertOption(k, v)))
+      I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insertOption(k, v)))
     )
   )
 }
@@ -180,7 +180,7 @@ export function fromFunctionBatchedWithM<R, E, A extends Request<E, B>, B>(
         (e): C.Chunk<readonly [Request<E, B>, E.Either<E, B>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
         (bs): C.Chunk<readonly [Request<E, B>, E.Either<E, B>]> => C.map_(bs, (b) => tuple(g(b), E.right(b)))
       ),
-      I.map(C.foldLeft(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
+      I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
     )
   )
 }
@@ -207,7 +207,7 @@ export function fromFunctionM<R, E, A extends Request<E, B>, B>(
           I.map((r) => tuple(a, r))
         )
       ),
-      I.map(C.foldLeft(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
+      I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
     )
   )
 }
@@ -226,7 +226,7 @@ export function fromFunctionOptionM<R, E, A extends Request<E, B>, B>(
           I.map((r) => tuple(a, r))
         )
       ),
-      I.map(C.foldLeft(CompletedRequestMap.empty(), (map, [k, v]) => map.insertOption(k, v)))
+      I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insertOption(k, v)))
     )
   )
 }

@@ -21,7 +21,7 @@ export function makeInputObjectTypeSummoner<InputAURI extends InputAURIS>(
   return (name, fields) =>
     new GQLInputObject(
       createInputObjectTypeDefinitionNode({
-        fields: R.foldLeftWithIndex_(fields(interpreters), [] as InputValueDefinitionNode[], (acc, k, v) => {
+        fields: R.ifoldl_(fields(interpreters), [] as InputValueDefinitionNode[], (acc, k, v) => {
           return [
             ...acc,
             createInputValueDefinitionNode({

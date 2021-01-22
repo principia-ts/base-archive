@@ -16,7 +16,7 @@ import { map2Par_ } from './apply-par'
  * more than once for some of `in` elements during effect execution.
  */
 export function mergeAllPar_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> {
-  return I.foldLeft_(fas, pure(b) as IO<R, E, B>, (b, a) => map2Par_(b, a, f))
+  return I.foldl_(fas, pure(b) as IO<R, E, B>, (b, a) => map2Par_(b, a, f))
 }
 
 /**

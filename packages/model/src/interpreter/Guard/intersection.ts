@@ -14,7 +14,7 @@ export const IntersectionGuard = implementInterpreter<G.URI, Alg.IntersectionURI
       A.map((f) => f(env)),
       (guards) =>
         applyGuardConfig(config?.config)(
-          A.foldLeft_(guards, G.id(), (b, a) => G.intersect(a)(b)) as any,
+          A.foldl_(guards, G.id(), (b, a) => G.intersect(a)(b)) as any,
           env,
           guards as any
         )

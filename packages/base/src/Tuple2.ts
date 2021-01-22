@@ -74,8 +74,8 @@ export function getApply<M>(M: P.Monoid<M>): P.Apply<[URI], V & HKT.Fix<'I', M>>
   const ap_: P.ApFn_<[URI], V & HKT.Fix<'I', M>> = (fab, fa) => [fst(fab)(fst(fa)), M.combine_(snd(fab), snd(fa))]
 
   return HKT.instance<P.Apply<[URI], V & HKT.Fix<'I', M>>>({
-    imap_: (fa, f, _) => map_(fa, f),
-    imap: (f, _) => (fa) => map_(fa, f),
+    invmap_: (fa, f, _) => map_(fa, f),
+    invmap: (f, _) => (fa) => map_(fa, f),
     map_,
     map,
     map2_,
@@ -137,12 +137,12 @@ export const duplicate: <A, I>(wa: Tuple2<A, I>) => Tuple2<Tuple2<A, I>, I> = ex
  * -------------------------------------------
  */
 
-export function foldLeft_<A, I, B>(fa: Tuple2<A, I>, b: B, f: (b: B, a: A) => B): B {
+export function foldl_<A, I, B>(fa: Tuple2<A, I>, b: B, f: (b: B, a: A) => B): B {
   return f(b, fst(fa))
 }
 
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): <I>(fa: Tuple2<A, I>) => B {
-  return (fa) => foldLeft_(fa, b, f)
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <I>(fa: Tuple2<A, I>) => B {
+  return (fa) => foldl_(fa, b, f)
 }
 
 export function foldMap_<M>(_M: P.Monoid<M>): <A, I>(fa: Tuple2<A, I>, f: (a: A) => M) => M {
@@ -153,12 +153,12 @@ export function foldMap<M>(_M: P.Monoid<M>): <A>(f: (a: A) => M) => <I>(fa: Tupl
   return (f) => (fa) => foldMap_(_M)(fa, f)
 }
 
-export function foldRight_<A, I, B>(fa: Tuple2<A, I>, b: B, f: (a: A, b: B) => B): B {
+export function foldr_<A, I, B>(fa: Tuple2<A, I>, b: B, f: (a: A, b: B) => B): B {
   return f(fst(fa), b)
 }
 
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): <I>(fa: Tuple2<A, I>) => B {
-  return (fa) => foldRight_(fa, b, f)
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <I>(fa: Tuple2<A, I>) => B {
+  return (fa) => foldr_(fa, b, f)
 }
 
 /*
@@ -182,7 +182,7 @@ export function map<A, B>(f: (a: A) => B): <I>(fa: Tuple2<A, I>) => Tuple2<B, I>
  */
 
 export function getMonad<M>(M: P.Monoid<M>): P.Monad<[URI], V & HKT.Fix<'I', M>> {
-  const chain_: P.ChainFn_<[URI], V & HKT.Fix<'I', M>> = (ma, f) => {
+  const bind_: P.BindFn_<[URI], V & HKT.Fix<'I', M>> = (ma, f) => {
     const mb = f(fst(ma))
     return [fst(mb), M.combine_(snd(ma), snd(mb))]
   }
@@ -191,8 +191,8 @@ export function getMonad<M>(M: P.Monoid<M>): P.Monad<[URI], V & HKT.Fix<'I', M>>
 
   return HKT.instance<P.Monad<[URI], V & HKT.Fix<'I', M>>>({
     ...getApplicative(M),
-    chain_,
-    chain: (f) => (ma) => chain_(ma, f),
+    bind_: bind_,
+    bind: (f) => (ma) => bind_(ma, f),
     flatten
   })
 }

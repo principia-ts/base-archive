@@ -173,27 +173,27 @@ export function productPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit
 }
 
 export function ap_<E, A, G, B>(fab: Exit<G, (a: A) => B>, fa: Exit<E, A>): Exit<E | G, B> {
-  return chain_(fab, (f) => map_(fa, (a) => f(a)))
+  return bind_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
 export function ap<E, A>(fa: Exit<E, A>): <G, B>(fab: Exit<G, (a: A) => B>) => Exit<E | G, B> {
   return (fab) => ap_(fab, fa)
 }
 
-export function apFirst_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
+export function apl_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
   return map2Cause_(fa, fb, (a, _) => a, C.then)
 }
 
-export function apFirst<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
+export function apr_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
   return map2Cause_(fa, fb, (_, b) => b, C.then)
 }
 
-export function apSecond<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
+  return (fa) => apr_(fa, fb)
 }
 
 export function map2Cause_<E, A, G, B, C>(
@@ -243,20 +243,20 @@ export function map2<A, G, B, C>(fb: Exit<G, B>, f: (a: A, b: B) => C): <E>(fa: 
   return (fa) => map2_(fa, fb, f)
 }
 
-export function apFirstPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
+export function aplPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
   return map2Cause_(fa, fb, (a, _) => a, C.both)
 }
 
-export function apFirstPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
-  return (fa) => apFirstPar_(fa, fb)
+export function aplPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
+  return (fa) => aplPar_(fa, fb)
 }
 
-export function apSecondPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
+export function aprPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
   return map2Cause_(fa, fb, (_, b) => b, C.both)
 }
 
-export function apSecondPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
-  return (fa) => apSecondPar_(fa, fb)
+export function aprPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
+  return (fa) => aprPar_(fa, fb)
 }
 
 /*
@@ -309,20 +309,20 @@ export function as<B>(b: B): <E, A>(fa: Exit<E, A>) => Exit<E, B> {
  * -------------------------------------------
  */
 
-export function chain_<E, A, G, B>(ma: Exit<E, A>, f: (a: A) => Exit<G, B>): Exit<E | G, B> {
+export function bind_<E, A, G, B>(ma: Exit<E, A>, f: (a: A) => Exit<G, B>): Exit<E | G, B> {
   return isFailure(ma) ? ma : f(ma.value)
 }
 
-export function chain<A, G, B>(f: (a: A) => Exit<G, B>): <E>(fa: Exit<E, A>) => Exit<G | E, B> {
-  return (fa) => chain_(fa, f)
+export function bind<A, G, B>(f: (a: A) => Exit<G, B>): <E>(fa: Exit<E, A>) => Exit<G | E, B> {
+  return (fa) => bind_(fa, f)
 }
 
 export function flatten<E, G, A>(mma: Exit<E, Exit<G, A>>): Exit<E | G, A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 export function tap_<E, A, G, B>(ma: Exit<E, A>, f: (a: A) => Exit<G, B>): Exit<E | G, A> {
-  return chain_(ma, (a) =>
+  return bind_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -356,7 +356,7 @@ export function collectAll<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<
     O.map((head) =>
       pipe(
         A.drop_(exits, 1),
-        A.foldLeft(
+        A.foldl(
           pipe(
             head,
             map((x): ReadonlyArray<A> => [x])
@@ -375,7 +375,7 @@ export function collectAllPar<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Opti
     O.map((head) =>
       pipe(
         A.drop_(exits, 1),
-        A.foldLeft(
+        A.foldl(
           pipe(
             head,
             map((x): ReadonlyArray<A> => [x])

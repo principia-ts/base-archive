@@ -34,7 +34,7 @@ export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, 
         sr.destroy()
       })
     ),
-    S.chain((sr) =>
+    S.bind((sr) =>
       S.effectAsync<unknown, ReadableError, Byte>((cb) => {
         sr.on('data', (chunk) => {
           cb(I.succeed(chunk))
@@ -116,7 +116,7 @@ export function transform(
           Sink.fromPush<unknown, TransformError, Byte, never, void>(
             O.fold(
               () =>
-                I.chain_(
+                I.bind_(
                   I.effectTotal(() => {
                     st.end()
                   }),
@@ -135,9 +135,9 @@ export function transform(
     )
     return pipe(
       S.managed(managedSink),
-      S.chain(([transform, sink]) =>
+      S.bind(([transform, sink]) =>
         S.asyncM<unknown, TransformError, Byte, R, E | TransformError>((cb) =>
-          I.andThen_(
+          I.apr_(
             I.effectTotal(() => {
               transform.on('data', (chunk) => {
                 cb(I.succeed(chunk))

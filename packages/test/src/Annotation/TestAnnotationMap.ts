@@ -13,7 +13,7 @@ export class TestAnnotationMap {
       pipe(
         A.from(this.map),
         A.concat(A.from(that.map)),
-        A.foldLeft(new Map<TestAnnotation<any>, any>(), (acc, [key, value]) =>
+        A.foldl(new Map<TestAnnotation<any>, any>(), (acc, [key, value]) =>
           acc.set(
             key,
             O.fold_(

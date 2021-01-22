@@ -310,7 +310,7 @@ export class LocalScope<A> implements CommonScope<A> {
       const a = this.exitValue.get
 
       return I.uncause(
-        A.foldLeft_(sorted, noCauseAIO, (acc, o) =>
+        A.foldl_(sorted, noCauseAIO, (acc, o) =>
           o != null ? I.map2_(acc, I.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
         )
       )

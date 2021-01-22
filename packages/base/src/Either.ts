@@ -532,7 +532,7 @@ export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) 
 
 /**
  * ```haskell
- * apFirst_ :: Apply f => (f a, f b) -> f a
+ * apl_ :: Apply f => (f a, f b) -> f a
  * ```
  *
  * Combine two effectful actions, keeping only the result of the first
@@ -540,7 +540,7 @@ export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) 
  * @category Apply
  * @since 1.0.0
  */
-export function apFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> {
+export function apl_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> {
   return ap_(
     map_(fa, (a) => () => a),
     fb
@@ -549,7 +549,7 @@ export function apFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either
 
 /**
  * ```haskell
- * apFirst :: Apply f => f b -> f a -> f a
+ * apl :: Apply f => f b -> f a -> f a
  * ```
  *
  * Combine two effectful actions, keeping only the result of the first
@@ -557,13 +557,13 @@ export function apFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either
  * @category Apply
  * @since 1.0.0
  */
-export function apFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
+  return (fa) => apl_(fa, fb)
 }
 
 /**
  * ```haskell
- * apSecond_ :: Apply f => (f a, f b) -> f b
+ * apr_ :: Apply f => (f a, f b) -> f b
  * ```
  *
  * Combine two effectful actions, keeping only the result of the second
@@ -571,7 +571,7 @@ export function apFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eit
  * @category Apply
  * @since 1.0.0
  */
-export function apSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> {
+export function apr_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> {
   return ap_(
     map_(fa, () => (b: B) => b),
     fb
@@ -580,7 +580,7 @@ export function apSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Eithe
 
 /**
  * ```haskell
- * apSecond :: Apply f => f b -> f a -> f b
+ * apr :: Apply f => f b -> f a -> f b
  * ```
  *
  * Combine two effectful actions, keeping only the result of the second
@@ -588,8 +588,8 @@ export function apSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Eithe
  * @category Apply
  * @since 1.0.0
  */
-export function apSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
+  return (fa) => apr_(fa, fb)
 }
 
 /**
@@ -932,20 +932,20 @@ export function getFilterable<E>(M: P.Monoid<E>): P.Filterable<[URI], V & HKT.Fi
 
 /**
  * ```haskell
- * foldLeft_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
+ * foldl_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export function foldLeft_<E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): B {
+export function foldl_<E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): B {
   return isLeft(fa) ? b : f(b, fa.right)
 }
 
 /**
  * ```haskell
- * foldLeft :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
+ * foldl :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) => B {
-  return (fa) => foldLeft_(fa, b, f)
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) => B {
+  return (fa) => foldl_(fa, b, f)
 }
 
 /**
@@ -968,20 +968,20 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Eithe
 
 /**
  * ```haskell
- * foldRight_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
+ * foldr_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export function foldRight_<E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) => B): B {
+export function foldr_<E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) => B): B {
   return isLeft(fa) ? b : f(fa.right, b)
 }
 
 /**
  * ```haskell
- * foldRight :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
+ * foldr :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) => B {
-  return (fa) => foldRight_(fa, b, f)
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) => B {
+  return (fa) => foldr_(fa, b, f)
 }
 
 /*
@@ -1026,7 +1026,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
 
 /**
  * ```haskell
- * chain_ :: Monad m => (m a, (a -> m b)) -> m b
+ * bind_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -1034,13 +1034,13 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
  * @category Monad
  * @since 1.0.0
  */
-export function chain_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
+export function bind_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
   return isLeft(fa) ? fa : f(fa.right)
 }
 
 /**
  * ```haskell
- * chain :: Monad m => (a -> m b) -> m a -> m b
+ * bind :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -1048,8 +1048,8 @@ export function chain_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>):
  * @category Monad
  * @since 1.0.0
  */
-export function chain<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, B> {
-  return (ma) => chain_(ma, f)
+export function bind<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, B> {
+  return (ma) => bind_(ma, f)
 }
 
 /**
@@ -1064,7 +1064,7 @@ export function chain<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>)
  * @since 1.0.0
  */
 export function tap_<E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, A> {
-  return chain_(ma, (a) =>
+  return bind_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -1098,7 +1098,7 @@ export function tap<A, G, B>(f: (a: A) => Either<G, B>): <E>(ma: Either<E, A>) =
  * @since 1.0.0
  */
 export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*
@@ -1270,21 +1270,21 @@ export function getWitherable<E>(M: P.Monoid<E>): P.Witherable<[URI], V & HKT.Fi
 
   const Compactable = getCompactable(M)
 
-  const wither_: P.WitherFn_<[URI], V_> = (G) => (wa, f) => {
+  const compactA_: P.WitherFn_<[URI], V_> = (G) => (wa, f) => {
     const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.compact))
   }
 
-  const wilt_: P.WiltFn_<[URI], V_> = (G) => (wa, f) => {
+  const separateA_: P.WiltFn_<[URI], V_> = (G) => (wa, f) => {
     const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.separate))
   }
 
   return HKT.instance<P.Witherable<[URI], V_>>({
-    wither_: wither_,
-    wilt_: wilt_,
-    wither: (G) => (f) => (wa) => wither_(G)(wa, f),
-    wilt: (G) => (f) => (wa) => wilt_(G)(wa, f)
+    compactA_: compactA_,
+    separateA_: separateA_,
+    compactA: (G) => (f) => (wa) => compactA_(G)(wa, f),
+    separateA: (G) => (f) => (wa) => separateA_(G)(wa, f)
   })
 }
 
@@ -1299,8 +1299,8 @@ export function getWitherable<E>(M: P.Monoid<E>): P.Witherable<[URI], V & HKT.Fi
  * @since 1.0.0
  */
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: <A, B>(f: (a: A) => B, _: (b: B) => A) => <E>(fa: Either<E, A>) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => <E>(fa: Either<E, A>) => map_(fa, f),
   map,
   map_
 })
@@ -1383,8 +1383,8 @@ export const Fail: P.Fail<[URI], V> = HKT.instance({
  */
 export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Applicative,
-  chain_,
-  chain,
+  bind_: bind_,
+  bind: bind,
   flatten
 })
 
@@ -1412,12 +1412,12 @@ export const Fallible = HKT.instance<P.Fallible<[URI], V>>({
  * @since 1.0.0
  */
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
-  foldLeft_,
+  foldl_: foldl_,
   foldMap_,
-  foldRight_,
-  foldLeft,
+  foldr_: foldr_,
+  foldl: foldl,
   foldMap,
-  foldRight
+  foldr: foldr
 })
 
 /**

@@ -6,11 +6,11 @@ import { getOptionT } from '@principia/base/OptionT'
 import { mapNF, sequenceSF, sequenceTF } from '@principia/base/typeclass'
 
 import { apPar, apPar_, map2Par, map2Par_, productPar, productPar_ } from './combinators'
-import { ap, ap_, chain, chain_, flatten, map, map_, map2, map2_, product, product_, pure, unit } from './core'
+import { ap, ap_, bind, bind_, flatten, map, map_, map2, map2_, product, product_, pure, unit } from './core'
 
 export const Functor = HKT.instance<P.Functor<[URI], V>>({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: (f, _) => (fa) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })
@@ -56,8 +56,8 @@ export const ApplicativePar = HKT.instance<P.Applicative<[URI], V>>({
 
 export const Monad = HKT.instance<P.Monad<[URI], V>>({
   ...Applicative,
-  chain_,
-  chain,
+  bind_,
+  bind,
   flatten
 })
 

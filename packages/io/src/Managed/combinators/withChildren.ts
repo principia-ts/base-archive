@@ -18,7 +18,7 @@ export function withChildren<R, E, A>(
         new Managed(
           I.supervised_(
             get(
-              I.chain_(supervisor.value, (children) =>
+              I.bind_(supervisor.value, (children) =>
                 I.map_(I.descriptor(), (d) => children.filter((_) => _.id !== d.id))
               )
             ).io,

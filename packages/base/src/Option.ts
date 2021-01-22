@@ -412,26 +412,26 @@ export function ap<A>(fa: Option<A>): <B>(fab: Option<(a: A) => B>) => Option<B>
   return (fab) => ap_(fab, fa)
 }
 
-export function apFirst_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
+export function apl_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
   return ap_(
     map_(fa, (a) => () => a),
     fb
   )
 }
 
-export function apFirst<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
+export function apr_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
   return ap_(
     map_(fa, () => (b: B) => b),
     fb
   )
 }
 
-export function apSecond<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
+  return (fa) => apr_(fa, fb)
 }
 
 /**
@@ -624,38 +624,38 @@ export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Opti
 
 /**
  * ```haskell
- * foldLeft_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
+ * foldl_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export function foldLeft_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
+export function foldl_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
   return isNone(fa) ? b : f(b, fa.value)
 }
 
 /**
  * ```haskell
- * foldLeft :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
+ * foldl :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
-  return (fa) => foldLeft_(fa, b, f)
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
+  return (fa) => foldl_(fa, b, f)
 }
 
 /**
  * ```haskell
- * foldRight_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
+ * foldr_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
  * ```
  */
-export function foldRight_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
+export function foldr_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
   return isNone(fa) ? b : f(fa.value, b)
 }
 
 /**
  * ```haskell
- * foldRight :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
+ * foldr :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
  * ```
  */
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
-  return (fa) => foldRight_(fa, b, f)
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
+  return (fa) => foldr_(fa, b, f)
 }
 
 /**
@@ -717,7 +717,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  */
 /**
  * ```haskell
- * chain_ :: Monad m => (m a, (a -> m b)) -> m b
+ * bind_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -725,13 +725,13 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  * @category Uncurried Monad
  * @since 1.0.0
  */
-export function chain_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
+export function bind_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
   return isNone(ma) ? ma : f(ma.value)
 }
 
 /**
  * ```haskell
- * chain :: Monad m => (a -> m b) -> m a -> m b
+ * bind :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -739,8 +739,8 @@ export function chain_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
  * @category Monad
  * @since 1.0.0
  */
-export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
-  return (ma) => chain_(ma, f)
+export function bind<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
+  return (ma) => bind_(ma, f)
 }
 
 /**
@@ -755,7 +755,7 @@ export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B
  * @since 1.0.0
  */
 export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
-  return chain_(ma, (a) =>
+  return bind_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -789,7 +789,7 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
  * @since 1.0.0
  */
 export function flatten<A>(mma: Option<Option<A>>): Option<A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*
@@ -915,12 +915,12 @@ export function unit(): Option<void> {
  * -------------------------------------------
  */
 
-export const wither_: P.WitherFn_<[OptionURI], V> = (A) => (wa, f) =>
+export const compactA_: P.WitherFn_<[OptionURI], V> = (A) => (wa, f) =>
   isNone(wa) ? A.map_(A.unit(), () => none()) : f(wa.value)
 
-export const wither: P.WitherFn<[OptionURI], V> = (A) => (f) => (wa) => wither_(A)(wa, f)
+export const compactA: P.WitherFn<[OptionURI], V> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
-export const wilt_: P.WiltFn_<[OptionURI], V> = (A) => (wa, f) => {
+export const separateA_: P.WiltFn_<[OptionURI], V> = (A) => (wa, f) => {
   const o = map_(
     wa,
     flow(
@@ -931,7 +931,7 @@ export const wilt_: P.WiltFn_<[OptionURI], V> = (A) => (wa, f) => {
   return isNone(o) ? A.pure(mkTuple(none(), none())) : o.value
 }
 
-export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa, f)
+export const separateA: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => separateA_(A)(wa, f)
 
 /*
  * -------------------------------------------
@@ -940,25 +940,25 @@ export const wilt: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => wilt_(A)(wa,
  */
 
 /**
- * chainNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
+ * bindNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
+export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
   return isNone(fa) ? none() : fromNullable(f(fa.value))
 }
 
 /**
- * chainNullableK :: Option m => (a -> ?b) -> m a -> m b
+ * bindNullableK :: Option m => (a -> ?b) -> m a -> m b
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
-  return (fa) => chainNullableK_(fa, f)
+export function bindNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
+  return (fa) => bindNullableK_(fa, f)
 }
 
 /**
@@ -1012,8 +1012,8 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  */
 
 export const Functor: P.Functor<[OptionURI], V> = HKT.instance({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: Option<A>) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: Option<A>) => map_(fa, f),
   map,
   map_
 })
@@ -1048,8 +1048,8 @@ export const Applicative: P.Applicative<[OptionURI], V> = HKT.instance({
 
 export const Monad: P.Monad<[OptionURI], V> = HKT.instance({
   ...Applicative,
-  chain_,
-  chain,
+  bind_: bind_,
+  bind: bind,
   unit,
   flatten
 })
@@ -1119,11 +1119,11 @@ export const Filterable: P.Filterable<[OptionURI], V> = HKT.instance({
 })
 
 export const Foldable: P.Foldable<[OptionURI], V> = HKT.instance({
-  foldLeft_,
-  foldRight_,
+  foldl_,
+  foldr_,
   foldMap_,
-  foldLeft,
-  foldRight,
+  foldl,
+  foldr,
   foldMap
 })
 
@@ -1135,8 +1135,8 @@ export const Traversable: P.Traversable<[OptionURI], V> = HKT.instance({
 })
 
 export const Witherable: P.Witherable<[OptionURI], V> = HKT.instance({
-  wilt_,
-  wither_,
-  wilt,
-  wither
+  separateA_,
+  compactA_,
+  separateA,
+  compactA
 })

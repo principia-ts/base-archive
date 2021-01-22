@@ -4,10 +4,10 @@ import type * as HKT from './HKT'
 import type { Option } from './Option'
 
 export interface Witherable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly wilt_: WiltFn_<F, C>
-  readonly wilt: WiltFn<F, C>
-  readonly wither_: WitherFn_<F, C>
-  readonly wither: WitherFn<F, C>
+  readonly separateA_: WiltFn_<F, C>
+  readonly separateA: WiltFn<F, C>
+  readonly compactA_: WitherFn_<F, C>
+  readonly compactA: WitherFn<F, C>
 }
 
 export interface WitherFn<F extends HKT.URIS, C = HKT.Auto> {

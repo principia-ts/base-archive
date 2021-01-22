@@ -4,14 +4,14 @@ import type * as HKT from './HKT'
 import type { Option } from './Option'
 
 export interface FilterableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly partitionMapWithIndex_: PartitionMapWithIndexFn_<F, C>
-  readonly partitionWithIndex_: PartitionWithIndexFn_<F, C>
-  readonly filterMapWithIndex_: FilterMapWithIndexFn_<F, C>
-  readonly filterWithIndex_: FilterWithIndexFn_<F, C>
-  readonly partitionMapWithIndex: PartitionMapWithIndexFn<F, C>
-  readonly partitionWithIndex: PartitionWithIndexFn<F, C>
-  readonly filterMapWithIndex: FilterMapWithIndexFn<F, C>
-  readonly filterWithIndex: FilterWithIndexFn<F, C>
+  readonly ipartitionMap_: PartitionMapWithIndexFn_<F, C>
+  readonly ipartition_: PartitionWithIndexFn_<F, C>
+  readonly ifilterMap_: FilterMapWithIndexFn_<F, C>
+  readonly ifilter_: FilterWithIndexFn_<F, C>
+  readonly ipartitionMap: PartitionMapWithIndexFn<F, C>
+  readonly ipartition: PartitionWithIndexFn<F, C>
+  readonly ifilterMap: FilterMapWithIndexFn<F, C>
+  readonly ifilter: FilterWithIndexFn<F, C>
 }
 
 export interface FilterWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {

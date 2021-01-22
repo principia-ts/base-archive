@@ -143,7 +143,7 @@ export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, vo
               I.foreachUnit_(leftovers, (r) =>
                 pipe(
                   Ref.make(completedRequests.lookup(r)),
-                  I.chain((ref) => cache.put(r, ref))
+                  I.bind((ref) => cache.put(r, ref))
                 )
               )
             )
@@ -157,7 +157,7 @@ export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, vo
 function flatten<R>(blockedRequests: BlockedRequests<R>): List<Sequential<R>> {
   const go = <R>(brs: List<BlockedRequests<R>>, flattened: List<Sequential<R>>): Ev.Eval<List<Sequential<R>>> =>
     Ev.gen(function* (_) {
-      const [parallel, sequential] = L.foldLeft_(
+      const [parallel, sequential] = L.foldl_(
         brs,
         [Par.empty<R>(), L.empty<BlockedRequests<R>>()] as const,
         ([parallel, sequential], blockedRequest) => {

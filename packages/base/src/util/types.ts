@@ -15,7 +15,7 @@ export interface Separated<A, B> {
   readonly right: B
 }
 
-export type Erase<R, K> = R & K extends K & infer R1 ? R1 : R
+export declare type Erase<R, K> = R & K extends K & infer R1 ? R1 : R
 
 /**
  * Excludes properties of type V from T

@@ -16,7 +16,7 @@ export class Sequential<R> {
 
   ['++']<R1>(that: Sequential<R1>): Sequential<R & R1> {
     return new Sequential(
-      It.foldLeft_(that.map.entries(), this.map, (map, [k, v]) =>
+      It.foldl_(that.map.entries(), this.map, (map, [k, v]) =>
         Map.insertAt_(eqDataSource)(
           map,
           k,

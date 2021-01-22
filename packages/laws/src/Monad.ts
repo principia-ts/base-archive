@@ -65,7 +65,7 @@ export const Monad = {
    *   S: Eq<HKT.HKT<M, B>>,
    *   afb: FunctionN<[A], HKT.HKT<M, B>>
    * ) => (fa: HKT.HKT<M, A>): boolean => {
-   *   return S.equals_(M.chain_(fa, afb), M.flatten(M.map_(fa, afb)));
+   *   return S.equals_(M.bind_(fa, afb), M.flatten(M.map_(fa, afb)));
    * }
    */
 }

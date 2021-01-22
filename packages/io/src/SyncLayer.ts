@@ -137,7 +137,7 @@ export class Using<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | 
     return Sy.succeed((_) =>
       pipe(
         getMemoOrElseCreate(this.left)(_),
-        Sy.chain((l) =>
+        Sy.bind((l) =>
           pipe(
             getMemoOrElseCreate(this.right)(_),
             Sy.map((r) => ({ ...l, ...r })),
@@ -160,7 +160,7 @@ export class From<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E
     return Sy.succeed((_) =>
       pipe(
         getMemoOrElseCreate(this.left)(_),
-        Sy.chain((l) => pipe(getMemoOrElseCreate(this.right)(_), Sy.give(l)))
+        Sy.bind((l) => pipe(getMemoOrElseCreate(this.right)(_), Sy.give(l)))
       )
     )
   }
@@ -197,10 +197,10 @@ export class All<Layers extends ReadonlyArray<SyncLayer<any, any, any>>> extends
     return Sy.succeed((_) =>
       pipe(
         this.layers,
-        A.foldLeft(<Sy.Sync<any, any, any>>Sy.succeed({}), (b, a) =>
+        A.foldl(<Sy.Sync<any, any, any>>Sy.succeed({}), (b, a) =>
           pipe(
             getMemoOrElseCreate(a)(_),
-            Sy.chain((x) => Sy.map_(b, (k) => ({ ...x, ...k })))
+            Sy.bind((x) => Sy.map_(b, (k) => ({ ...x, ...k })))
           )
         )
       )
@@ -268,7 +268,7 @@ export function giveLayer<R, E, A>(
   return (_) =>
     pipe(
       layer.build(),
-      Sy.chain((a) => pipe(_, Sy.give(a)))
+      Sy.bind((a) => pipe(_, Sy.give(a)))
     )
 }
 

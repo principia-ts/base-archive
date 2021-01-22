@@ -101,7 +101,7 @@ export class Promise<E, A> {
   get interrupt(): I.UIO<boolean> {
     return pipe(
       fiberId(),
-      I.chain((id) => this.completeWith(interruptAsIO(id)))
+      I.bind((id) => this.completeWith(interruptAsIO(id)))
     )
   }
 
@@ -213,7 +213,7 @@ export class Pending<E, A> {
  */
 export function to<E, A>(p: Promise<E, A>) {
   return <R>(effect: I.IO<R, E, A>): I.IO<R, never, boolean> =>
-    uninterruptibleMask(({ restore }) => I.chain_(I.result(restore(effect)), (x) => p.done(x)))
+    uninterruptibleMask(({ restore }) => I.bind_(I.result(restore(effect)), (x) => p.done(x)))
 }
 
 /**
@@ -333,7 +333,7 @@ export function isDone<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
  * Makes a new promise to be completed by the fiber creating the promise.
  */
 export function make<E, A>() {
-  return I.chain_(fiberId(), (id) => makeAs<E, A>(id))
+  return I.bind_(fiberId(), (id) => makeAs<E, A>(id))
 }
 
 /**

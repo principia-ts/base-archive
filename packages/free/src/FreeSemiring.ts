@@ -132,7 +132,7 @@ export function fold_<Z, A, B>(
             return yield* _(loop(fss, [E.right(onEmpty), ...output]))
         }
       } else {
-        return A.foldLeft_(output, A.empty(), (b, a) =>
+        return A.foldl_(output, A.empty(), (b, a) =>
           E.fold_(
             a,
             (e) => {
@@ -173,7 +173,7 @@ export function map2_<Z, A, Z1, B, C>(
   fb: FreeSemiring<Z1, B>,
   f: (a: A, b: B) => C
 ): FreeSemiring<Z | Z1, C> {
-  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function map2<A, Z1, B, C>(
@@ -206,20 +206,20 @@ export function ap<Z1, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function apFirst_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, A> {
+export function apl_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, A> {
   return map2_(fa, fb, (a, _) => a)
 }
 
-export function apFirst<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, B> {
+export function apr_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, B> {
   return map2_(fa, fb, (_, b) => b)
 }
 
-export function apSecond<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
+  return (fa) => apr_(fa, fb)
 }
 
 /*
@@ -229,7 +229,7 @@ export function apSecond<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemirin
  */
 
 export function map_<Z, A, B>(fa: FreeSemiring<Z, A>, f: (a: A) => B): FreeSemiring<Z, B> {
-  return chain_(fa, (a) => single(f(a)))
+  return bind_(fa, (a) => single(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): <Z>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z, B> {
@@ -250,18 +250,18 @@ export function as<B>(b: B): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z, B
  * -------------------------------------------
  */
 
-export function chain_<Z, A, Z1, B>(ma: FreeSemiring<Z, A>, f: (a: A) => FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, B> {
+export function bind_<Z, A, Z1, B>(ma: FreeSemiring<Z, A>, f: (a: A) => FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, B> {
   return fold_(ma, empty(), f, then, both)
 }
 
-export function chain<A, Z1, B>(
+export function bind<A, Z1, B>(
   f: (a: A) => FreeSemiring<Z1, B>
 ): <Z>(ma: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
-  return (ma) => chain_(ma, f)
+  return (ma) => bind_(ma, f)
 }
 
 export function flatten<Z, Z1, A>(ma: FreeSemiring<Z, FreeSemiring<Z1, A>>): FreeSemiring<Z | Z1, A> {
-  return chain_(ma, identity)
+  return bind_(ma, identity)
 }
 
 /*

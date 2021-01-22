@@ -22,6 +22,6 @@ export function raceFirst<R1, E1, A1>(that: IO<R1, E1, A1>) {
   return <R, E, A>(ef: IO<R, E, A>): IO<R & R1, E | E1, A | A1> =>
     pipe(
       race_(I.result(ef), I.result(that)),
-      I.chain((a) => I.done(a as Exit<E | E1, A | A1>))
+      I.bind((a) => I.done(a as Exit<E | E1, A | A1>))
     )
 }

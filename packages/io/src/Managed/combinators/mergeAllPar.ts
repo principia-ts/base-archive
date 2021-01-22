@@ -17,7 +17,7 @@ export function mergeAllPar_<R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): Managed<R, E, B> {
-  return Iter.foldLeft_(mas, succeed(b) as Managed<R, E, B>, (b, a) => map2Par_(b, a, f))
+  return Iter.foldl_(mas, succeed(b) as Managed<R, E, B>, (b, a) => map2Par_(b, a, f))
 }
 
 /**

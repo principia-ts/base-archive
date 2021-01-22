@@ -173,7 +173,7 @@ export function foldTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4,
 ): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
   return pipe(
     product_(recover(left), recover(right)),
-    chain(
+    bind(
       ([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
         switch (ea._tag) {
           case 'Left': {
@@ -295,17 +295,13 @@ export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D
 
 export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> = M.ap
 
-export const apFirst_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> =
-  M.apFirst_
+export const apl_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> = M.apl_
 
-export const apFirst: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> =
-  M.apFirst
+export const apl: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> = M.apl
 
-export const apSecond_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> =
-  M.apSecond_
+export const apr_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> = M.apr_
 
-export const apSecond: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> =
-  M.apSecond
+export const apr: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> = M.apr
 
 export function liftA2_<A, B, C>(f: (a: A, b: B) => C): (a: USync<A>, b: USync<B>) => USync<C> {
   return (a, b) => map2_(a, b, f)
@@ -361,13 +357,12 @@ export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R,
  * -------------------------------------------
  */
 
-export const chain_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> =
-  M.chain_
+export const bind_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> = M.bind_
 
-export const chain: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
-  M.chain
+export const bind: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
+  M.bind
 
-export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = chain(identity)
+export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = bind(identity)
 
 export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = M.tap_
 
@@ -579,7 +574,7 @@ export function giveServiceM<T>(
   _: Tag<T>
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-    M.asksM((r: R & R1) => M.chain_(f, (t) => M.giveAll_(ma, mergeEnvironments(_, r, t))))
+    M.asksM((r: R & R1) => M.bind_(f, (t) => M.giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
@@ -737,7 +732,7 @@ export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
 
 export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>): Sync<R, E, ReadonlyArray<B>> {
   return map_(
-    I.foldLeft_(as, succeed(FL.empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
+    I.foldl_(as, succeed(FL.empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
       map2_(
         b,
         effectSuspendTotal(() => f(a)),
@@ -763,8 +758,8 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
  */
 
 export const Functor = HKT.instance<P.Functor<[URI], V>>({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: (f) => (fa) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: (f) => (fa) => map_(fa, f),
   map_,
   map
 })
@@ -799,8 +794,8 @@ export const Applicative = HKT.instance<P.Applicative<[URI], V>>({
 
 export const Monad = HKT.instance<P.Monad<[URI], V>>({
   ...Applicative,
-  chain_,
-  chain,
+  bind_,
+  bind,
   flatten
 })
 
@@ -933,7 +928,7 @@ export function gen(...args: any[]): any {
         if (state.done) {
           return succeed(state.value)
         }
-        return chain_(state.value.S, (v) => {
+        return bind_(state.value.S, (v) => {
           const next = iterator.next(v)
           return run(next)
         })

@@ -53,6 +53,7 @@
     "ts-node": "^9.1.1",
     "ttypescript": "^1.5.12",
     "typescript": "next",
-    "ultra-runner": "^3.9.0"
+    "ultra-runner": "^3.9.0",
+    "yargs": "^16.2.0"
   }
 }

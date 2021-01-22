@@ -27,7 +27,7 @@ export function releaseAll(exit: Exit<any, any>, execStrategy: ExecutionStrategy
                   pipe(
                     Array.from(RM.finalizers(s)).reverse(),
                     I.foreach(([, f]) => I.result(f(exit))),
-                    I.chain((e) =>
+                    I.bind((e) =>
                       pipe(
                         Ex.collectAll(...e),
                         O.getOrElse(() => Ex.succeed([])),
@@ -43,7 +43,7 @@ export function releaseAll(exit: Exit<any, any>, execStrategy: ExecutionStrategy
                   pipe(
                     Array.from(RM.finalizers(s)).reverse(),
                     foreachParIO(([, f]) => I.result(f(exit))),
-                    I.chain((e) =>
+                    I.bind((e) =>
                       pipe(
                         Ex.collectAllPar(...e),
                         O.getOrElse(() => Ex.succeed([])),
@@ -59,7 +59,7 @@ export function releaseAll(exit: Exit<any, any>, execStrategy: ExecutionStrategy
                   pipe(
                     Array.from(RM.finalizers(s)).reverse(),
                     foreachParNIO(execStrategy.n)(([, f]) => I.result(f(exit))),
-                    I.chain((e) =>
+                    I.bind((e) =>
                       pipe(
                         Ex.collectAllPar(...e),
                         O.getOrElse(() => Ex.succeed([])),

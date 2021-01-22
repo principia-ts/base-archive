@@ -42,7 +42,7 @@ export class List<A> implements Iterable<A> {
   }
 
   toJSON(): readonly A[] {
-    return foldLeft_<A, A[]>(this, [], arrayPush)
+    return foldl_<A, A[]>(this, [], arrayPush)
   }
 }
 
@@ -325,7 +325,7 @@ export function last<A>(l: List<A>): O.Option<NonNullable<A>> {
  * @complexity `O(n)`
  */
 export function toArray<A>(l: List<A>): readonly A[] {
-  return foldLeft_<A, A[]>(l, [], arrayPush)
+  return foldl_<A, A[]>(l, [], arrayPush)
 }
 
 /*
@@ -439,7 +439,7 @@ export function separate<B, C>(fa: List<Either<B, C>>): readonly [List<B>, List<
 export function filter_<A, B extends A>(fa: List<A>, refinement: Refinement<A, B>): List<B>
 export function filter_<A>(fa: List<A>, predicate: Predicate<A>): List<A>
 export function filter_<A>(fa: List<A>, predicate: (a: A) => boolean): List<A> {
-  return foldLeft_(fa, emptyPushable(), (acc, a) => (predicate(a) ? push(a, acc) : acc))
+  return foldl_(fa, emptyPushable(), (acc, a) => (predicate(a) ? push(a, acc) : acc))
 }
 
 /**
@@ -461,7 +461,7 @@ export function filter<A>(predicate: (a: A) => boolean): (fa: List<A>) => List<A
  * @complexity O(n)
  */
 export function filterMap_<A, B>(fa: List<A>, f: (a: A) => O.Option<B>): List<B> {
-  return foldLeft_(fa, emptyPushable(), (acc, a) => {
+  return foldl_(fa, emptyPushable(), (acc, a) => {
     const fa = f(a)
     if (fa._tag === 'Some') {
       push(fa.value, acc)
@@ -493,7 +493,7 @@ export function partition_<A, B extends A>(
 ): readonly [List<B>, List<Exclude<A, B>>]
 export function partition_<A>(l: List<A>, predicate: Predicate<A>): readonly [List<A>, List<A>]
 export function partition_<A>(l: List<A>, predicate: (a: A) => boolean): readonly [List<A>, List<A>] {
-  return foldLeft_(
+  return foldl_(
     l,
     [emptyPushable<A>(), emptyPushable<A>()],
     (arr, a) => (predicate(a) ? push(a, arr[0]) : push(a, arr[1]), arr)
@@ -522,7 +522,7 @@ export function partition<A>(predicate: (a: A) => boolean): (l: List<A>) => read
  * @complexity O(n)
  */
 export function partitionMap_<A, B, C>(l: List<A>, f: (a: A) => Either<B, C>): readonly [List<B>, List<C>] {
-  return foldLeft_(l, [emptyPushable<B>(), emptyPushable<C>()], (arr, a) => {
+  return foldl_(l, [emptyPushable<B>(), emptyPushable<C>()], (arr, a) => {
     const fa = f(a)
     if (fa._tag === 'Left') {
       push(fa.left, arr[0])
@@ -552,7 +552,7 @@ export function partitionMap<A, B, C>(f: (_: A) => Either<B, C>): (l: List<A>) =
 /**
  * Folds a function over a list. Left-associative.
  */
-export function foldLeft_<A, B>(fa: List<A>, initial: B, f: (acc: B, a: A) => B): B {
+export function foldl_<A, B>(fa: List<A>, initial: B, f: (acc: B, a: A) => B): B {
   const suffixSize = getSuffixSize(fa)
   const prefixSize = getPrefixSize(fa)
   let acc          = initial
@@ -566,8 +566,8 @@ export function foldLeft_<A, B>(fa: List<A>, initial: B, f: (acc: B, a: A) => B)
 /**
  * Folds a function over a list. Left-associative.
  */
-export function foldLeft<A, B>(initial: B, f: (acc: B, value: A) => B): (fa: List<A>) => B {
-  return (l) => foldLeft_(l, initial, f)
+export function foldl<A, B>(initial: B, f: (acc: B, value: A) => B): (fa: List<A>) => B {
+  return (l) => foldl_(l, initial, f)
 }
 
 /**
@@ -575,7 +575,7 @@ export function foldLeft<A, B>(initial: B, f: (acc: B, value: A) => B): (fa: Lis
  *
  * @complexity O(n)
  */
-export function foldRight_<A, B>(fa: List<A>, initial: B, f: (value: A, acc: B) => B): B {
+export function foldr_<A, B>(fa: List<A>, initial: B, f: (value: A, acc: B) => B): B {
   const suffixSize = getSuffixSize(fa)
   const prefixSize = getPrefixSize(fa)
   let acc          = foldrSuffix(f, initial, fa.suffix, suffixSize)
@@ -590,11 +590,11 @@ export function foldRight_<A, B>(fa: List<A>, initial: B, f: (value: A, acc: B) 
  *
  * @complexity O(n)
  */
-export function foldRight<A, B>(initial: B, f: (value: A, acc: B) => B): (l: List<A>) => B {
-  return (l) => foldRight_(l, initial, f)
+export function foldr<A, B>(initial: B, f: (value: A, acc: B) => B): (l: List<A>) => B {
+  return (l) => foldr_(l, initial, f)
 }
 
-export function foldLeftWhile_<A, B>(
+export function foldlWhile_<A, B>(
   l: List<A>,
   initial: B,
   predicate: (acc: B, value: A) => boolean,
@@ -603,16 +603,16 @@ export function foldLeftWhile_<A, B>(
   return foldlCb<A, FoldlWhileState<A, B>>(foldlWhileCb, { predicate, f, result: initial }, l).result
 }
 
-export function foldLeftWhile<A, B>(
+export function foldlWhile<A, B>(
   initial: B,
   predicate: (acc: B, value: A) => boolean,
   f: (acc: B, value: A) => B
 ): (l: List<A>) => B {
-  return (l) => foldLeftWhile_(l, initial, predicate, f)
+  return (l) => foldlWhile_(l, initial, predicate, f)
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: List<A>, f: (a: A) => M) => M {
-  return (fa, f) => foldLeft_(fa, M.nat, (b, a) => M.combine_(b, f(a)))
+  return (fa, f) => foldl_(fa, M.nat, (b, a) => M.combine_(b, f(a)))
 }
 
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: List<A>) => M {
@@ -666,14 +666,14 @@ export function map<A, B>(f: (a: A) => B): (l: List<A>) => List<B> {
  * @complexity O(n * log(m)), where n is the length of the outer list and m the length of the inner lists.
  */
 export function flatten<A>(nested: List<List<A>>): List<A> {
-  return foldLeft_<List<A>, List<A>>(nested, empty(), concat_)
+  return foldl_<List<A>, List<A>>(nested, empty(), concat_)
 }
 
 /**
  * Maps a function over a list and concatenates all the resulting
  * lists together.
  */
-export function chain_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
+export function bind_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
   return flatten(map_(l, f))
 }
 
@@ -681,8 +681,8 @@ export function chain_<A, B>(l: List<A>, f: (a: A) => List<B>): List<B> {
  * Maps a function over a list and concatenates all the resulting
  * lists together.
  */
-export function chain<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
-  return (l) => chain_(l, f)
+export function bind<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
+  return (l) => bind_(l, f)
 }
 
 /*
@@ -692,7 +692,7 @@ export function chain<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
  */
 
 export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) =>
-  foldRight_(ta, G.pure(empty()), (a, fb) => G.map2_(f(a), fb, (b, l) => prepend_(l, b)))
+  foldr_(ta, G.pure(empty()), (a, fb) => G.map2_(f(a), fb, (b, l) => prepend_(l, b)))
 )
 
 export const traverse: P.TraverseFn<[URI], V> = (G) => {
@@ -708,24 +708,24 @@ export const sequence = P.implementSequence<[URI], V>()(() => (G) => traverse(G)
  * -------------------------------------------
  */
 
-export const wither_ = P.implementWither_<[URI], V>()((_) => (G) => {
+export const compactA_ = P.implementWither_<[URI], V>()((_) => (G) => {
   const traverseG_ = traverse_(G)
   return (wa, f) => G.map_(traverseG_(wa, f), compact)
 })
 
-export const wither: P.WitherFn<[URI], V> = (G) => {
-  const witherG_ = wither_(G)
-  return (f) => (wa) => witherG_(wa, f)
+export const compactA: P.WitherFn<[URI], V> = (G) => {
+  const compactAG_ = compactA_(G)
+  return (f) => (wa) => compactAG_(wa, f)
 }
 
-export const wilt_: P.WiltFn_<[URI], V> = (G) => {
+export const separateA_: P.WiltFn_<[URI], V> = (G) => {
   const traverseG_ = traverse_(G)
   return (wa, f) => G.map_(traverseG_(wa, f), separate)
 }
 
-export const wilt: P.WiltFn<[URI], V> = (G) => {
-  const wiltG_ = wilt_(G)
-  return (f) => (wa) => wiltG_(wa, f)
+export const separateA: P.WiltFn<[URI], V> = (G) => {
+  const separateAG_ = separateA_(G)
+  return (f) => (wa) => separateAG_(wa, f)
 }
 
 /*
@@ -836,7 +836,7 @@ export function pluck<A, K extends keyof A>(key: K): (l: List<A>) => List<A[K]> 
  * Concatenates the strings in the list separated by a specified separator.
  */
 export function join_(l: List<string>, separator: string): string {
-  return foldLeft_(l, '', (a, b) => (a.length === 0 ? b : a + separator + b))
+  return foldl_(l, '', (a, b) => (a.length === 0 ? b : a + separator + b))
 }
 
 /**
@@ -1475,7 +1475,7 @@ export function dropRepeats<A>(l: List<A>): List<A> {
  * @complexity `O(n)`
  */
 export function dropRepeatsWith_<A>(l: List<A>, predicate: (a: A, b: A) => boolean): List<A> {
-  return foldLeft_(l, emptyPushable(), (acc, a) =>
+  return foldl_(l, emptyPushable(), (acc, a) =>
     acc.length !== 0 && predicate(unsafeLast(acc)!, a) ? acc : push(a, acc)
   )
 }
@@ -1559,7 +1559,7 @@ export function splitWhen<A>(predicate: (a: A) => boolean): (l: List<A>) => [Lis
  * Splits the list into chunks of the given size.
  */
 export function splitEvery_<A>(l: List<A>, size: number): List<List<A>> {
-  const { buffer, l2 } = foldLeft_(
+  const { buffer, l2 } = foldl_(
     l,
     { l2: emptyPushable<List<A>>(), buffer: emptyPushable<A>() },
     ({ buffer, l2 }, elm) => {
@@ -1664,7 +1664,7 @@ export function tail<A>(l: List<A>): List<A> {
  * all the intermediate steps in a resulting list.
  */
 export function scan_<A, B>(l: List<A>, initial: B, f: (acc: B, value: A) => B): List<B> {
-  return foldLeft_(l, push(initial, emptyPushable<B>()), (l2, a) => push(f(unsafeLast(l2)!, a), l2))
+  return foldl_(l, push(initial, emptyPushable<B>()), (l2, a) => push(f(unsafeLast(l2)!, a), l2))
 }
 
 /**
@@ -1716,7 +1716,7 @@ export function insertAll<A>(index: number, elements: List<A>): (l: List<A>) => 
  * @complexity O(n)
  */
 export function reverse<A>(l: List<A>): List<A> {
-  return foldLeft_(l, empty(), (newL, element) => prepend_(newL, element))
+  return foldl_(l, empty(), (newL, element) => prepend_(newL, element))
 }
 
 /**
@@ -1731,7 +1731,7 @@ export function reverse<A>(l: List<A>): List<A> {
  * @complexity O(n)
  */
 export function forEach_<A>(l: List<A>, callback: (a: A) => void): void {
-  foldLeft_(l, undefined as void, (_, element) => callback(element))
+  foldl_(l, undefined as void, (_, element) => callback(element))
 }
 
 /**
@@ -1831,7 +1831,7 @@ export function groupWith<A>(f: (a: A, b: A) => boolean): (l: List<A>) => List<L
  * Inserts a separator between each element in a list.
  */
 export function intersperse_<A>(l: List<A>, separator: A): List<A> {
-  return pop(foldLeft_(l, emptyPushable(), (l2, a) => push(separator, push(a, l2))))
+  return pop(foldl_(l, emptyPushable(), (l2, a) => push(separator, push(a, l2))))
 }
 
 /**

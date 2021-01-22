@@ -26,7 +26,7 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
   uninterruptibleMask(({ restore }) =>
     pipe(
       currentTime,
-      I.chain((time) =>
+      I.bind((time) =>
         pipe(
           cache,
           RefM.updateSomeAndGet((o) =>
@@ -41,7 +41,7 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
               )
             )
           ),
-          I.chain((a) => (a._tag === 'None' ? I.die(new RuntimeException('bug')) : restore(a.value[1].await)))
+          I.bind((a) => (a._tag === 'None' ? I.die(new RuntimeException('bug')) : restore(a.value[1].await)))
         )
       )
     )

@@ -126,7 +126,7 @@ export const SyncDecoderM = DE.getDecodeErrorsValidation({
 export function parseContentType(s: string): ParsedContentType {
   return pipe(
     s.split(';'),
-    A.foldLeftWithIndex({ parameters: {} } as ParsedContentType, (b, i, a) => {
+    A.ifoldl({ parameters: {} } as ParsedContentType, (b, i, a) => {
       if (i === 0) {
         return { type: a, parameters: {} }
       }

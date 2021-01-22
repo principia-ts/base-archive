@@ -122,7 +122,7 @@ export function foreachChunk<R, E, I>(f: (chunk: Chunk<I>) => I.IO<R, E, any>): 
     O.fold(
       () => Push.emit(undefined, C.empty()),
       (is) =>
-        I.apSecond_(
+        I.apr_(
           I.mapError_(f(is), (e) => [E.left(e), C.empty()]),
           Push.more
         )
@@ -186,7 +186,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
     M.map_(M.fromEffect(Ref.make<O.Option<I>>(O.none())), (state) => (is: O.Option<Chunk<I>>) =>
       pipe(
         state.get,
-        I.chain((last) =>
+        I.bind((last) =>
           O.fold_(
             is,
             () => Push.emit(last, C.empty<never>()),
@@ -194,7 +194,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
               C.last,
               O.fold(
                 () => Push.more,
-                (l) => I.apSecond_(state.set(O.some(l)), Push.more)
+                (l) => I.apr_(state.set(O.some(l)), Push.more)
               )
             )
           )
@@ -212,7 +212,7 @@ export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
     M.map_(M.fromEffect(Ref.make<Chunk<I>>(C.empty())), (state) => (is: O.Option<Chunk<I>>) =>
       pipe(
         state.get,
-        I.chain((take) =>
+        I.bind((take) =>
           O.fold_(
             is,
             () => (n >= 0 ? Push.emit(take, C.empty<I>()) : Push.emit(C.empty<I>(), take)),
@@ -220,9 +220,9 @@ export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
               const remaining = n - take.length
               if (remaining <= ch.length) {
                 const [chunk, leftover] = C.splitAt_(ch, remaining)
-                return I.apSecond_(state.set(C.empty()), Push.emit(C.concat_(take, chunk), leftover))
+                return I.apr_(state.set(C.empty()), Push.emit(C.concat_(take, chunk), leftover))
               } else {
-                return I.apSecond_(state.set(C.concat_(take, ch)), Push.more)
+                return I.apr_(state.set(C.concat_(take, ch)), Push.more)
               }
             }
           )
@@ -232,7 +232,7 @@ export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
   )
 }
 
-export function foldLeftChunksWhileM<R, E, I, Z>(
+export function foldlChunksWhileM<R, E, I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>
@@ -246,16 +246,16 @@ export function foldLeftChunksWhileM<R, E, I, Z>(
             () =>
               pipe(
                 state.get,
-                I.chain((s) => Push.emit(s, C.empty<I>()))
+                I.bind((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.chain((s) => f(s, is)),
+                I.bind((s) => f(s, is)),
                 I.mapError((e) => tuple(E.left(e), C.empty<I>())),
-                I.chain((s) => {
+                I.bind((s) => {
                   if (cont(s)) {
-                    return pipe(state.set(s), I.andThen(Push.more))
+                    return pipe(state.set(s), I.apr(Push.more))
                   } else {
                     return Push.emit(s, C.empty<I>())
                   }
@@ -274,8 +274,8 @@ export function foldLeftChunksWhileM<R, E, I, Z>(
  * A sink that effectfully folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function foldLeftChunksM<R, E, I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>): Sink<R, E, I, never, Z> {
-  return dropLeftover(foldLeftChunksWhileM(z, (_) => true, f))
+export function foldlChunksM<R, E, I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>): Sink<R, E, I, never, Z> {
+  return dropLeftover(foldlChunksWhileM(z, (_) => true, f))
 }
 
 /**
@@ -283,20 +283,20 @@ export function foldLeftChunksM<R, E, I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => I.IO
  * `contFn` condition is checked only for the initial value and at the end of processing of each chunk.
  * `f` and `contFn` must preserve chunking-invariance.
  */
-export function foldLeftChunksWhile<I, Z>(
+export function foldlChunksWhile<I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: Chunk<I>) => Z
 ): Sink<unknown, never, I, I, Z> {
-  return foldLeftChunksWhileM(z, cont, (z, i) => I.succeed(f(z, i)))
+  return foldlChunksWhileM(z, cont, (z, i) => I.succeed(f(z, i)))
 }
 
 /**
  * A sink that folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function foldLeftChunks<I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => Z): Sink<unknown, never, I, never, Z> {
-  return dropLeftover(foldLeftChunksWhile(z, () => true, f))
+export function foldlChunks<I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => Z): Sink<unknown, never, I, never, Z> {
+  return dropLeftover(foldlChunksWhile(z, () => true, f))
 }
 
 /**
@@ -304,7 +304,7 @@ export function foldLeftChunks<I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => Z): Sink<un
  *
  * NOTE: This sink may terminate in the middle of a chunk and discard the rest of it.
  */
-export function foldLeftWhileM<R, E, I, Z>(
+export function foldlWhileM<R, E, I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: I) => I.IO<R, E, Z>
@@ -343,12 +343,12 @@ export function foldLeftWhileM<R, E, I, Z>(
             () =>
               pipe(
                 state.get,
-                I.chain((s) => Push.emit(s, C.empty<I>()))
+                I.bind((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.chain((s) =>
+                I.bind((s) =>
                   pipe(
                     foldChunk(s, is, 0, is.length),
                     I.foldM(
@@ -356,7 +356,7 @@ export function foldLeftWhileM<R, E, I, Z>(
                       ([st, l]) =>
                         O.fold_(
                           l,
-                          () => pipe(state.set(st), I.andThen(Push.more)),
+                          () => pipe(state.set(st), I.apr(Push.more)),
                           (leftover) => Push.emit(st, leftover)
                         )
                     )
@@ -375,11 +375,7 @@ export function foldLeftWhileM<R, E, I, Z>(
 /**
  * A sink that folds its inputs with the provided function, termination predicate and initial state.
  */
-export function foldLeftWhile<I, Z>(
-  z: Z,
-  cont: (z: Z) => boolean,
-  f: (z: Z, i: I) => Z
-): Sink<unknown, never, I, I, Z> {
+export function foldlWhile<I, Z>(z: Z, cont: (z: Z) => boolean, f: (z: Z, i: I) => Z): Sink<unknown, never, I, I, Z> {
   const foldChunk = (z: Z, chunk: Chunk<I>, i: number, len: number): readonly [Z, O.Option<Chunk<I>>] => {
     const go = (z: Z, chunk: Chunk<I>, i: number, len: number): Ev.Eval<readonly [Z, O.Option<Chunk<I>>]> =>
       Ev.gen(function* (_) {
@@ -406,16 +402,16 @@ export function foldLeftWhile<I, Z>(
             () =>
               pipe(
                 state.get,
-                I.chain((s) => Push.emit(s, C.empty<I>()))
+                I.bind((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.chain((s) =>
+                I.bind((s) =>
                   pipe(foldChunk(s, is, 0, is.length), ([st, l]) =>
                     O.fold_(
                       l,
-                      () => pipe(state.set(st), I.andThen(Push.more)),
+                      () => pipe(state.set(st), I.apr(Push.more)),
                       (leftover) => Push.emit(st, leftover)
                     )
                   )
@@ -433,15 +429,15 @@ export function foldLeftWhile<I, Z>(
 /**
  * A sink that folds its inputs with the provided function and initial state.
  */
-export function foldLeft<I, Z>(z: Z, f: (z: Z, i: I) => Z): Sink<unknown, never, I, never, Z> {
-  return dropLeftover(foldLeftWhile(z, (_) => true, f))
+export function foldl<I, Z>(z: Z, f: (z: Z, i: I) => Z): Sink<unknown, never, I, never, Z> {
+  return dropLeftover(foldlWhile(z, (_) => true, f))
 }
 
 /**
  * A sink that collects all of its inputs into an array.
  */
 export function collectAll<A>(): Sink<unknown, never, A, never, Chunk<A>> {
-  return foldLeftChunks(C.empty(), (s, i) => C.concat_(s, i))
+  return foldlChunks(C.empty(), (s, i) => C.concat_(s, i))
 }
 
 /**
@@ -454,8 +450,8 @@ export function collectAllToMap<A, K>(key: (a: A) => K) {
     new Sink(
       M.suspend(
         () =>
-          foldLeftChunks(new Map<K, A>(), (acc, as: Chunk<A>) =>
-            C.foldLeft_(as, acc, (acc, a) => {
+          foldlChunks(new Map<K, A>(), (acc, as: Chunk<A>) =>
+            C.foldl_(as, acc, (acc, a) => {
               const k = key(a)
               const v = acc.get(k)
 
@@ -476,7 +472,7 @@ export function collectAllToSet<A>(): Sink<unknown, never, A, never, Set<A>> {
 /**
  * A sink that counts the number of elements fed to it.
  */
-export const count: Sink<unknown, never, unknown, never, number> = foldLeft(0, (s, _) => s + 1)
+export const count: Sink<unknown, never, unknown, never, number> = foldl(0, (s, _) => s + 1)
 
 /**
  * Creates a sink halting with the specified message, wrapped in a
@@ -489,7 +485,7 @@ export function dieMessage(m: string): Sink<unknown, never, unknown, never, neve
 /**
  * A sink that sums incoming numeric values.
  */
-export const sum: Sink<unknown, never, number, never, number> = foldLeft(0, (a, b) => a + b)
+export const sum: Sink<unknown, never, number, never, number> = foldl(0, (a, b) => a + b)
 
 /**
  * A sink with timed execution.
@@ -511,7 +507,7 @@ export function map2_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1, Z2
   fb: Sink<R1, E1, I1, L1, Z1>,
   f: (z: Z, z1: Z1) => Z2
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z2> {
-  return chain_(fa, (z) => map_(fb, (_) => f(z, _)))
+  return bind_(fa, (z) => map_(fb, (_) => f(z, _)))
 }
 
 /**
@@ -543,30 +539,30 @@ export function product<I, R1, E1, I1 extends I, L1, Z1>(
   return (fa) => product_(fa, fb)
 }
 
-export function apFirst_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function apl_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z> {
   return map2_(fa, fb, (z, _) => z)
 }
 
-export function apFirst<I, R1, E1, I1 extends I, L1, Z1>(
+export function apl<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, Z> {
-  return (fa) => apFirst_(fa, fb)
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function apr_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
   return map2_(fa, fb, (_, z1) => z1)
 }
 
-export function apSecond<I, R1, E1, I1 extends I, L1, Z1>(
+export function apr<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
-  return (fa) => apSecond_(fa, fb)
+  return (fa) => apr_(fa, fb)
 }
 
 /*
@@ -609,7 +605,7 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
       const p2       = yield* _(that.push)
 
       return (in_: O.Option<C.Chunk<I & I1>>) =>
-        I.chain_(stateRef.get, (state) => {
+        I.bind_(stateRef.get, (state) => {
           const newState = pipe(
             state,
             matchTag({
@@ -673,7 +669,7 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                     >
                 )
 
-                return I.chain_(
+                return I.bind_(
                   I.productPar_(l, r),
                   ([lr, rr]): I.IO<R & R1, readonly [E.Either<E1, Z2>, C.Chunk<L | L1>], State<Z, Z1>> => {
                     if (O.isSome(lr)) {
@@ -727,7 +723,7 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
             })
           )
 
-          return I.chain_(newState, (ns) => (ns === state ? I.unit() : stateRef.set(ns)))
+          return I.bind_(newState, (ns) => (ns === state ? I.unit() : stateRef.set(ns)))
         })
     })
   )
@@ -760,30 +756,30 @@ export function productPar<I, R1, E1, I1 extends I, L1, Z1>(
   return (fa) => productPar_(fa, fb)
 }
 
-export function apFirstPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function aplPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z> {
   return map2Par_(fa, fb, (z, _) => z)
 }
 
-export function apFirstPar<I, R1, E1, I1 extends I, L1, Z1>(
+export function aplPar<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, Z> {
-  return (fa) => apFirstPar_(fa, fb)
+  return (fa) => aplPar_(fa, fb)
 }
 
-export function apSecondPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function aprPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
   return map2Par_(fa, fb, (_, z1) => z1)
 }
 
-export function apSecondPar<I, R1, E1, I1 extends I, L1, Z1>(
+export function aprPar<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
-  return (fa) => apSecondPar_(fa, fb)
+  return (fa) => aprPar_(fa, fb)
 }
 
 /*
@@ -860,7 +856,7 @@ export function contramapChunksM_<R, R1, E, E1, I, I2, L, Z>(
             pipe(
               f(value),
               I.mapError((e: E | E1) => [E.left(e), C.empty<L>()] as const),
-              I.chain((is) => push(O.some(is)))
+              I.bind((is) => push(O.some(is)))
             )
         )
     })
@@ -975,7 +971,7 @@ export function foldM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
       )
 
       return (in_: O.Option<Chunk<I & I1 & I2>>) =>
-        I.chain_(switchedRef.get, (sw) => {
+        I.bind_(switchedRef.get, (sw) => {
           if (!sw) {
             return I.catchAll_(thisPush(in_), (v) => {
               const leftover = v[1]
@@ -983,17 +979,17 @@ export function foldM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
               return pipe(
                 openThatPush(nextSink.push),
                 I.tap(thatPush.set),
-                I.chain((p) =>
+                I.bind((p) =>
                   pipe(
                     switchedRef.set(true),
-                    I.apSecond(
+                    I.apr(
                       O.fold_(
                         in_,
                         () =>
                           pipe(
                             p(O.some(leftover) as O.Option<Chunk<I & I1 & I2>>),
                             I.when(() => leftover.length > 0),
-                            I.apSecond(p(O.none()))
+                            I.apr(p(O.none()))
                           ),
                         () =>
                           pipe(
@@ -1007,7 +1003,7 @@ export function foldM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
               )
             })
           } else {
-            return I.chain_(thatPush.get, (p) => p(in_))
+            return I.bind_(thatPush.get, (p) => p(in_))
           }
         })
     })
@@ -1087,7 +1083,7 @@ export function mapM<R1, E1, Z, Z2>(f: (z: Z) => I.IO<R1, E1, Z2>) {
  *
  * This function essentially runs sinks in sequence.
  */
-export function chain_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function bind_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   self: Sink<R, E, I, L, Z>,
   f: (z: Z) => Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
@@ -1100,8 +1096,8 @@ export function chain_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
  *
  * This function essentially runs sinks in sequence.
  */
-export function chain<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R1, E1, I1, L1, Z1>) {
-  return <E, L extends I1>(self: Sink<R, E, I, L, Z>) => chain_(self, f)
+export function bind<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R1, E1, I1, L1, Z1>) {
+  return <E, L extends I1>(self: Sink<R, E, I, L, Z>) => bind_(self, f)
 }
 
 /*
@@ -1146,7 +1142,7 @@ export function gives<R0, R>(f: (r0: R0) => R) {
  * Accesses the environment of the sink in the context of a sink.
  */
 export function asksM<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
-  return new Sink(M.chain_(M.ask<R>(), (env) => f(env).push))
+  return new Sink(M.bind_(M.ask<R>(), (env) => f(env).push))
 }
 
 /**
@@ -1161,7 +1157,7 @@ export function giveLayer<R2, R>(layer: L.Layer<R2, never, R>) {
  */
 export function giveLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: L.Layer<R2, never, R>) {
   return new Sink<R2, E, I, L, Z>(
-    M.chain_(L.build(layer), (r) =>
+    M.bind_(L.build(layer), (r) =>
       M.map_(M.giveAll_(self.push, r), (push) => (i: O.Option<C.Chunk<I>>) => I.giveAll_(push(i), r))
     )
   )
@@ -1221,7 +1217,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
   return new Sink(
     pipe(
       Ref.makeManaged(z),
-      M.chain((acc) => {
+      M.bind((acc) => {
         return pipe(
           Push.restartable(sz.push),
           M.map(([push, restart]) => {
@@ -1244,7 +1240,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                             return I.as_(restart, () => s1)
                           }
                         } else {
-                          return I.apSecond_(restart, go(s1, O.some((leftover as unknown) as Chunk<I>), end))
+                          return I.apr_(restart, go(s1, O.some((leftover as unknown) as Chunk<I>), end))
                         }
                       } else {
                         return Push.emit(s, leftover)
@@ -1255,7 +1251,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
               )
 
             return (in_: O.Option<Chunk<I>>) =>
-              I.chain_(acc.get, (s) => I.chain_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)))
+              I.bind_(acc.get, (s) => I.bind_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)))
           })
         )
       })
@@ -1303,7 +1299,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                   (f) =>
                     pipe(
                       F.interrupt(fib2),
-                      I.andThen(
+                      I.apr(
                         pipe(
                           f,
                           Ca.map(([r, leftover]) => tuple(E.map_(r, E.left), leftover)),
@@ -1325,7 +1321,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                   (f) =>
                     pipe(
                       F.interrupt(fib1),
-                      I.andThen(
+                      I.apr(
                         pipe(
                           f,
                           Ca.map(([r, leftover]) => tuple(E.map_(r, E.right), leftover)),
@@ -1384,7 +1380,7 @@ export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & Has<Cl
               E.fold_(
                 e,
                 (e) => Push.fail(e, leftover),
-                (z) => I.chain_(currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
+                (z) => I.bind_(currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
               )
           )
       })
@@ -1408,7 +1404,7 @@ export function toTransducer<R, E, I, L extends I, Z>(self: Sink<R, E, I, L, Z>)
               e,
               (e) => I.fail(e),
               (z) =>
-                I.andThen_(
+                I.apr_(
                   restart,
                   C.isEmpty(leftover) || O.isNone(input)
                     ? I.succeed([z])
@@ -1442,13 +1438,13 @@ export function untilOutputM_<R, R1, E, E1, I, L extends I, Z>(
             e,
             (e) => Push.fail(e, leftover),
             (z) =>
-              I.chain_(
+              I.bind_(
                 I.mapError_(f(z), (err) => [E.left(err), leftover] as const),
                 (satisfied) => {
                   if (satisfied) {
                     return Push.emit(O.some(z), leftover)
                   } else if (C.isEmpty(leftover)) {
-                    return end ? Push.emit(O.none(), C.empty()) : I.andThen_(restart, Push.more)
+                    return end ? Push.emit(O.none(), C.empty()) : I.apr_(restart, Push.more)
                   } else {
                     return go(O.some(leftover) as O.Option<Chunk<I>>, end)
                   }
@@ -1482,7 +1478,7 @@ export function managed_<R, E, A, I, L extends I, Z>(
   return pipe(
     resource,
     M.fold((err) => fail(err)<I>() as Sink<R, E, I, I, Z>, fn),
-    M.chain((sink) => sink.push),
+    M.bind((sink) => sink.push),
     fromManagedPush
   )
 }

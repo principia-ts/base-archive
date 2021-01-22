@@ -58,7 +58,7 @@ export const unionADT = <
 >(
   as: AS
 ): ADT<Co.ConstructorType<AS[number]>, AS[number]['tag']> => {
-  const newKeys = A.foldRight(as[0].keys, (x: AS[number], y) => mergeKeys(x.keys, y))(as)
+  const newKeys = A.foldr(as[0].keys, (x: AS[number], y) => mergeKeys(x.keys, y))(as)
   return makeADT(as[0].tag)(newKeys)
 }
 

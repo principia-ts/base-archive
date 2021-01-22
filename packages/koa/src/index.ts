@@ -81,26 +81,26 @@ export function route<R, A>(
                           () =>
                             pipe(
                               res.status(Status.InternalServerError),
-                              I.andThen(res.write(JSON.stringify({ status: 'empty' }))),
-                              I.andThen(res.end())
+                              I.apr(res.write(JSON.stringify({ status: 'empty' }))),
+                              I.apr(res.end())
                             ),
                           (error) =>
                             pipe(
                               res.status(error.data?.status ?? Status.InternalServerError),
-                              I.andThen(res.write(error.message)),
-                              I.andThen(res.end())
+                              I.apr(res.write(error.message)),
+                              I.apr(res.end())
                             ),
                           (error) =>
                             pipe(
                               res.status(Status.InternalServerError),
-                              I.andThen(res.write(JSON.stringify({ status: 'aborted', with: error }))),
-                              I.andThen(res.end())
+                              I.apr(res.write(JSON.stringify({ status: 'aborted', with: error }))),
+                              I.apr(res.end())
                             ),
                           (_) =>
                             pipe(
                               res.status(Status.InternalServerError),
-                              I.andThen(res.write(JSON.stringify({ status: 'interrupted' }))),
-                              I.andThen(res.end())
+                              I.apr(res.write(JSON.stringify({ status: 'interrupted' }))),
+                              I.apr(res.end())
                             ),
                           (_, r) => r,
                           (_, r) => r
@@ -109,8 +109,8 @@ export function route<R, A>(
                           if (r) {
                             return pipe(
                               res.status(r.status),
-                              I.andThen(res.write(JSON.stringify(r.body))),
-                              I.andThen(res.end())
+                              I.apr(res.write(JSON.stringify(r.body))),
+                              I.apr(res.end())
                             )
                           } else {
                             return I.unit()
@@ -141,7 +141,7 @@ export function route<R, A>(
       )
       return yield* _(I.effectTotal(() => config))
     })
-  )
+  ) as L.Layer<Erase<R, H.Has<Context>> & H.Has<KoaConfig>, never, H.Has<KoaConfig>>
 }
 
 function _subRoute<R, E>(
@@ -213,7 +213,7 @@ export function useM<R, E, A>(
         }))
       )
     })
-  )
+  ) as L.Layer<Erase<R, H.Has<Context>> & H.Has<KoaConfig>, never, H.Has<KoaConfig>>
 }
 
 export class ServerError extends Error {

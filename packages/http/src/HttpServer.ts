@@ -81,7 +81,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
               }
             })
           }),
-          I.andThen(queue.shutdown)
+          I.apr(queue.shutdown)
         )
       ),
       M.map(HttpServerTag.of)

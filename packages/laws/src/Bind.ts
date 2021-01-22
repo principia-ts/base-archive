@@ -37,7 +37,7 @@ function AssociativeCompositionLaw<
   EC,
   C
 >(
-  F: P.Chain<F, TC>,
+  F: P.Bind<F, TC>,
   S: Eq.Eq<
     HKT.Kind<
       F,
@@ -58,15 +58,15 @@ function AssociativeCompositionLaw<
   bfc: (b: B) => HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, C>
 ): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean
 function AssociativeCompositionLaw<F, A, B, C>(
-  F: P.Chain<HKT.UHKT<F>>,
+  F: P.Bind<HKT.UHKT<F>>,
   S: Eq.Eq<HKT.HKT<F, C>>,
   afb: MorphismN<[A], HKT.HKT<F, B>>,
   bfc: MorphismN<[B], HKT.HKT<F, C>>
 ): (fa: HKT.HKT<F, A>) => boolean {
   return (fa) => {
     return S.equals_(
-      F.chain_(F.chain_(fa, afb), bfc),
-      F.chain_(fa, (a) => F.chain_(afb(a), bfc))
+      F.bind_(F.bind_(fa, afb), bfc),
+      F.bind_(fa, (a) => F.bind_(afb(a), bfc))
     )
   }
 }
@@ -81,7 +81,7 @@ export const Chain = {
    * ) => (fa: HKT.HKT<F, A>): boolean => {
    *   return S.equals_(
    *     F.ap_(fab, fa),
-   *     F.chain_(fab, (f) => F.map_(fa, f))
+   *     F.bind_(fab, (f) => F.map_(fa, f))
    *   );
    * }
    */

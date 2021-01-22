@@ -206,7 +206,7 @@ export function makeTagged<PURI extends ProgramURIS, RURI extends ResultURIS, En
 > {
   return (tag) => (o, config) => {
     const summoned = summ((F: any) =>
-      F.taggedUnion(tag, R.mapWithIndex((_k, v: AnyMorph<PURI, RURI, Env>) => (v as any)(F))(o), config)
+      F.taggedUnion(tag, R.imap((_k, v: AnyMorph<PURI, RURI, Env>) => (v as any)(F))(o), config)
     ) as any
 
     const adt = makeADT(tag)(o as any)

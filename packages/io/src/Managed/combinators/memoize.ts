@@ -26,7 +26,7 @@ export function memoize<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A
           )
         )
       )
-      return pipe(complete, I.apSecond(P.await(promise)), I.toManaged())
+      return pipe(complete, I.apr(P.await(promise)), I.toManaged())
     })
   )
 }

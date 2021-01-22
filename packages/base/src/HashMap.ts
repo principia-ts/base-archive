@@ -5,7 +5,6 @@ import type { Node, UpdateFn } from './internal/hamt'
 
 import { eqStrict } from './Eq'
 import { constant, identity, tuple } from './Function'
-import { getCachedRandomHash } from './Hash'
 import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, randomHash, SIZE, toBitmap } from './internal/hamt'
 import * as O from './Option'
@@ -369,7 +368,7 @@ export function update<K, V>(key: K, f: (v: V) => V) {
 /**
  * Reduce a state over the map entries
  */
-export function foldLeftWithIndex_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, k: K, v: V) => Z): Z {
+export function ifoldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, k: K, v: V) => Z): Z {
   const root = map.root
   if (root._tag === 'LeafNode') return O.isSome(root.value) ? f(z, root.key, root.value.value) : z
   if (root._tag === 'Empty') {
@@ -397,26 +396,26 @@ export function foldLeftWithIndex_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, 
 /**
  * Reduce a state over the map entries
  *
- * @dataFirst foldLeftWithIndex_
+ * @dataFirst ifoldl_
  */
-export function foldLeftWithIndex<K, V, Z>(z: Z, f: (z: Z, k: K, v: V) => Z) {
-  return (map: HashMap<K, V>) => foldLeftWithIndex_(map, z, f)
+export function ifoldl<K, V, Z>(z: Z, f: (z: Z, k: K, v: V) => Z) {
+  return (map: HashMap<K, V>) => ifoldl_(map, z, f)
 }
 
 /**
  * Reduce a state over the map entries
  */
-export function foldLeft_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, v: V) => Z): Z {
-  return foldLeftWithIndex_(map, z, (z, _, v) => f(z, v))
+export function foldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, v: V) => Z): Z {
+  return ifoldl_(map, z, (z, _, v) => f(z, v))
 }
 
 /**
  * Reduce a state over the map entries
  *
- * @dataFirst foldLeft_
+ * @dataFirst foldl_
  */
-export function foldLeft<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
-  return <K>(map: HashMap<K, V>) => foldLeft_(map, z, f)
+export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
+  return <K>(map: HashMap<K, V>) => foldl_(map, z, f)
 }
 
 /**
@@ -433,7 +432,7 @@ export function makeDefault<K, V>() {
  * Apply f to each element
  */
 export function forEachWithIndex_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: HashMap<K, V>) => void) {
-  foldLeftWithIndex_(map, undefined as void, (_, key, value) => f(key, value, map))
+  ifoldl_(map, undefined as void, (_, key, value) => f(key, value, map))
   return map
 }
 
@@ -466,24 +465,24 @@ export function forEach<K, V>(f: (v: V, m: HashMap<K, V>) => void) {
 /**
  * Maps over the map entries
  */
-export function mapWithIndex_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => A) {
-  return foldLeftWithIndex_(map, make<K, A>(map.config), (z, k, v) => set_(z, k, f(k, v)))
+export function imap_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => A) {
+  return ifoldl_(map, make<K, A>(map.config), (z, k, v) => set_(z, k, f(k, v)))
 }
 
 /**
  * Maps over the map entries
  *
- * @dataFirst mapWithIndex_
+ * @dataFirst imap_
  */
-export function mapWithIndex<K, V, A>(f: (k: K, v: V) => A) {
-  return (map: HashMap<K, V>) => mapWithIndex_(map, f)
+export function imap<K, V, A>(f: (k: K, v: V) => A) {
+  return (map: HashMap<K, V>) => imap_(map, f)
 }
 
 /**
  * Maps over the map entries
  */
 export function map_<K, V, A>(map: HashMap<K, V>, f: (v: V) => A) {
-  return foldLeftWithIndex_(map, make<K, A>(map.config), (z, k, v) => set_(z, k, f(v)))
+  return ifoldl_(map, make<K, A>(map.config), (z, k, v) => set_(z, k, f(v)))
 }
 
 /**
@@ -498,8 +497,8 @@ export function map<V, A>(f: (v: V) => A) {
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function chain_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) {
-  return foldLeftWithIndex_(map, make<K, A>(map.config), (z, _, v) =>
+export function bind_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) {
+  return ifoldl_(map, make<K, A>(map.config), (z, _, v) =>
     mutate_(z, (m) => {
       forEachWithIndex_(f(v), (_k, _a) => {
         set_(m, _k, _a)
@@ -511,17 +510,17 @@ export function chain_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  *
- * @dataFirst chain_
+ * @dataFirst bind_
  */
-export function chain<K, V, A>(f: (v: V) => HashMap<K, A>) {
-  return (map: HashMap<K, V>) => chain_(map, f)
+export function bind<K, V, A>(f: (v: V) => HashMap<K, A>) {
+  return (map: HashMap<K, V>) => bind_(map, f)
 }
 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function chainWithIndex_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>) {
-  return foldLeftWithIndex_(map, make<K, A>(map.config), (z, k, v) =>
+export function ibind_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>) {
+  return ifoldl_(map, make<K, A>(map.config), (z, k, v) =>
     mutate_(z, (m) => {
       forEachWithIndex_(f(k, v), (_k, _a) => {
         set_(m, _k, _a)
@@ -533,23 +532,23 @@ export function chainWithIndex_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  *
- * @dataFirst chainWithIndex_
+ * @dataFirst ibind_
  */
-export function chainWithIndex<K, V, A>(f: (k: K, v: V) => HashMap<K, A>) {
-  return (map: HashMap<K, V>) => chainWithIndex_(map, f)
+export function ibind<K, V, A>(f: (k: K, v: V) => HashMap<K, A>) {
+  return (map: HashMap<K, V>) => ibind_(map, f)
 }
 
 /**
  * Removes None values
  */
 export function compact<K, A>(fa: HashMap<K, O.Option<A>>): HashMap<K, A> {
-  return filterMapWithIndex_(fa, (_, a) => a)
+  return ifilterMap_(fa, (_, a) => a)
 }
 
 /**
  * Filter out None and map
  */
-export function filterMapWithIndex_<K, A, B>(fa: HashMap<K, A>, f: (k: K, a: A) => O.Option<B>): HashMap<K, B> {
+export function ifilterMap_<K, A, B>(fa: HashMap<K, A>, f: (k: K, a: A) => O.Option<B>): HashMap<K, B> {
   const m = make<K, B>(fa.config)
 
   return mutate_(m, (m) => {
@@ -565,17 +564,17 @@ export function filterMapWithIndex_<K, A, B>(fa: HashMap<K, A>, f: (k: K, a: A) 
 /**
  * Filter out None and map
  *
- * @dataFirst filterMapWithIndex_
+ * @dataFirst ifilterMap_
  */
-export function filterMapWithIndex<K, A, B>(f: (k: K, a: A) => O.Option<B>) {
-  return (fa: HashMap<K, A>) => filterMapWithIndex_(fa, f)
+export function ifilterMap<K, A, B>(f: (k: K, a: A) => O.Option<B>) {
+  return (fa: HashMap<K, A>) => ifilterMap_(fa, f)
 }
 
 /**
  * Filter out None and map
  */
 export function filterMap_<E, A, B>(fa: HashMap<E, A>, f: (a: A) => O.Option<B>): HashMap<E, B> {
-  return filterMapWithIndex_(fa, (_, a) => f(a))
+  return ifilterMap_(fa, (_, a) => f(a))
 }
 
 /**
@@ -590,7 +589,7 @@ export function filterMap<A, B>(f: (a: A) => O.Option<B>) {
 /**
  * Filter out by predicate
  */
-export function filterWithIndex_<K, A>(fa: HashMap<K, A>, p: (k: K, a: A) => boolean): HashMap<K, A> {
+export function ifilter_<K, A>(fa: HashMap<K, A>, p: (k: K, a: A) => boolean): HashMap<K, A> {
   const m = make<K, A>(fa.config)
 
   return mutate_(m, (m) => {
@@ -605,10 +604,10 @@ export function filterWithIndex_<K, A>(fa: HashMap<K, A>, p: (k: K, a: A) => boo
 /**
  * Filter out by predicate
  *
- * @dataFirst filterWithIndex_
+ * @dataFirst ifilter_
  */
-export function filterWithIndex<K, A>(p: (k: K, a: A) => boolean) {
-  return (fa: HashMap<K, A>) => filterWithIndex_(fa, p)
+export function ifilter<K, A>(p: (k: K, a: A) => boolean) {
+  return (fa: HashMap<K, A>) => ifilter_(fa, p)
 }
 
 /**
@@ -617,7 +616,7 @@ export function filterWithIndex<K, A>(p: (k: K, a: A) => boolean) {
 export function filter_<K, A, B extends A>(fa: HashMap<K, A>, p: Refinement<A, B>): HashMap<K, B>
 export function filter_<K, A>(fa: HashMap<K, A>, p: (a: A) => boolean): HashMap<K, A>
 export function filter_<K, A>(fa: HashMap<K, A>, p: (a: A) => boolean): HashMap<K, A> {
-  return filterWithIndex_(fa, (_, a) => p(a))
+  return ifilter_(fa, (_, a) => p(a))
 }
 
 /**

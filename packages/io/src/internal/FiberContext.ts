@@ -387,7 +387,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
           this.setInterrupting(true)
 
-          return I.chain_(this.openScope.close(v), () => I.done(v))[I._I]
+          return I.bind_(this.openScope.close(v), () => I.done(v))[I._I]
         }
       }
     }
@@ -625,7 +625,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           break
         }
         case 'Success': {
-          cb(I.chain(() => cont(winnerExit, loser))(winner.inheritRefs))
+          cb(I.bind(() => cont(winnerExit, loser))(winner.inheritRefs))
           break
         }
       }
@@ -709,7 +709,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 current = undefined
               } else {
                 switch (current._tag) {
-                  case IOTag.Chain: {
+                  case IOTag.Bind: {
                     const nested: I.Instruction                         = current.io[I._I]
                     const continuation: (a: any) => I.IO<any, any, any> = current.f
 

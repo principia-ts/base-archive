@@ -79,7 +79,7 @@ function coordinateMap2Par<E, E2>() {
         return I.map_(join(loser), (y) => f(winner.value, y))
       }
       case 'Failure': {
-        return I.chain_(loser.interruptAs(fiberId), (e) => {
+        return I.bind_(loser.interruptAs(fiberId), (e) => {
           switch (e._tag) {
             case 'Success': {
               return I.halt(winner.cause)
@@ -105,30 +105,30 @@ export function apPar<R, E, A>(fa: I.IO<R, E, A>): <Q, D, B>(fab: I.IO<Q, D, (a:
   return (fab) => apPar_(fab, fa)
 }
 
-export function apFirstPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, A> {
+export function aplPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, A> {
   return map2Par_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst apFirstPar_
+ * @dataFirst aplPar_
  */
-export function apFirstPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, A> {
-  return (fa) => apFirstPar_(fa, fb)
+export function aplPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, A> {
+  return (fa) => aplPar_(fa, fb)
 }
 
-export function apSecondPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B> {
+export function aprPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B> {
   return map2Par_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst apSecondPar_
+ * @dataFirst aprPar_
  */
-export function apSecondPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
-  return (fa) => apSecondPar_(fa, fb)
+export function aprPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
+  return (fa) => aprPar_(fa, fb)
 }
 
-export const andThenPar_ = apSecondPar_
+export const andThenPar_ = aprPar_
 /**
  * @dataFirst andThenPar_
  */
-export const andThenPar = apSecondPar
+export const andThenPar = aprPar

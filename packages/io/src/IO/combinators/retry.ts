@@ -6,7 +6,7 @@ import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
 
 import * as S from '../../Schedule'
-import { catchAll, chain, fail, foldM, map, map_, orDie } from '../core'
+import { bind, catchAll, fail, foldM, map, map_, orDie } from '../core'
 
 /**
  * Retries with the specified retry policy.
@@ -69,7 +69,7 @@ const _loop = <R, E, A, R1, O, R2, E2, A2>(
             pipe(
               driver.last,
               orDie,
-              chain((o) => pipe(orElse(e, o), map(E.left)))
+              bind((o) => pipe(orElse(e, o), map(E.left)))
             ),
           () => _loop(fa, orElse, driver)
         )
@@ -90,7 +90,7 @@ export function retryOrElseEither_<R, E, A, R1, O, R2, E2, A2>(
   return pipe(
     policy,
     S.driver,
-    chain((a) => _loop(fa, orElse, a))
+    bind((a) => _loop(fa, orElse, a))
   )
 }
 

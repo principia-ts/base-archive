@@ -3,7 +3,7 @@ import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
 import { sleep } from '../../Clock'
-import { chain_ } from '../core'
+import { bind_ } from '../core'
 
 /**
  * ```haskell
@@ -16,7 +16,7 @@ import { chain_ } from '../core'
  * @since 1.0.0
  */
 export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & Has<Clock>, E, A> {
-  return chain_(sleep(ms), () => ma)
+  return bind_(sleep(ms), () => ma)
 }
 
 /**

@@ -22,7 +22,7 @@ export interface Constructors<A, Tag extends keyof A & string> {
 export const Constructors = <A extends Tagged<Tag>, Tag extends string>(tag: Tag) => (
   keys: KeysDefinition<A, Tag>
 ): Constructors<A, Tag> => {
-  const constructors = R.mapWithIndex((key, _) => (props: object) => ({
+  const constructors = R.imap((key, _) => (props: object) => ({
     [tag]: key,
     ...props
   }))(keys)

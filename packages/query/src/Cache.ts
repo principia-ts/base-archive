@@ -32,7 +32,7 @@ export class DefaultCache implements Cache {
   ): I.UIO<E.Either<URef<O.Option<E.Either<E, B>>>, URef<O.Option<E.Either<E, B>>>>> {
     return pipe(
       Ref.make(O.none<E.Either<E, B>>()),
-      I.chain((ref) =>
+      I.bind((ref) =>
         Ref.modify_(this.state, (map) =>
           pipe(
             Map.lookupAt_(eqRequest)(map, request),

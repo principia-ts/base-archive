@@ -4,10 +4,10 @@ import type * as HKT from './HKT'
 import type { Option } from './Option'
 
 export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly witherWithIndex_: WitherWithIndexFn_<F, C>
-  readonly witherWithIndex: WitherWithIndexFn<F, C>
-  readonly wiltWithIndex_: WiltWithIndexFn_<F, C>
-  readonly wiltWithIndex: WiltWithIndexFn<F, C>
+  readonly icompactA_: WitherWithIndexFn_<F, C>
+  readonly icompactA: WitherWithIndexFn<F, C>
+  readonly iseparateA_: WiltWithIndexFn_<F, C>
+  readonly iseparateA: WiltWithIndexFn<F, C>
 }
 
 export interface WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {

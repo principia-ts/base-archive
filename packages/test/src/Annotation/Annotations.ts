@@ -78,13 +78,13 @@ export const live: Layer<unknown, never, Has<Annotations>> = L.fromEffect(Annota
           pipe(
             FR.get(fiberRef),
             I.map((m) => m.get(fibers)),
-            I.chain(
+            I.bind(
               E.fold(
                 (_) => I.succeed(RS.empty()),
                 flow(
                   I.foreach((_) => _.get),
                   I.map(
-                    A.foldLeft(
+                    A.foldl(
                       RS.empty<RuntimeFiber<any, any>>(),
                       RS.union_(Eq.contramap_(eqFiberId, (_: RuntimeFiber<any, any>) => _.id))
                     )

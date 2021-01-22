@@ -302,7 +302,7 @@ export function fromType<P extends Record<string, DecoderKF<any, any>>>(
 ): DecoderKF<{ [K in keyof P]: K.InputOf<P[K]> }, { [K in keyof P]: K.TypeOf<P[K]> }> {
   const name: string = pipe(
     properties,
-    R.foldLeftWithIndex([] as string[], (b, k, a) => [...b, `${k}: ${a._meta.name}`]),
+    R.ifoldl([] as string[], (b, k, a) => [...b, `${k}: ${a._meta.name}`]),
     (as) => `{ ${as.join(', ')} }`
   )
   return pipe(
@@ -329,7 +329,7 @@ export function fromPartial<P extends Record<string, DecoderKF<any, any>>>(
 ): DecoderKF<Partial<{ [K in keyof P]: K.InputOf<P[K]> }>, Partial<{ [K in keyof P]: K.TypeOf<P[K]> }>> {
   const name: string = pipe(
     properties,
-    R.foldLeftWithIndex([] as string[], (b, k, a) => [...b, `${k}?: ${a._meta.name}`]),
+    R.ifoldl([] as string[], (b, k, a) => [...b, `${k}?: ${a._meta.name}`]),
     (as) => `{ ${as.join(', ')} }`
   )
   return pipe(
@@ -472,7 +472,7 @@ export function intersectAll<
 > {
   const [left, right, ...rest] = decoders
 
-  const decoder = A.foldLeft_(rest, K.intersect_(left, right), (b, a) => K.intersect_(b, a))
+  const decoder = A.foldl_(rest, K.intersect_(left, right), (b, a) => K.intersect_(b, a))
   const name    = info?.name ?? A.map_(decoders, (d) => d._meta.name).join(' & ')
   return pipe({ decode: decoder.decode, _meta: { name } }, wrapInfo({ name, ...info }) as any)
 }
@@ -484,7 +484,7 @@ export function fromSum_<T extends string, P extends Record<string, DecoderKF<an
 ): DecoderKF<K.InputOf<P[keyof P]>, K.TypeOf<P[keyof P]>> {
   const name: string = pipe(
     members,
-    R.foldLeft([] as string[], (b, a) => [...b, a._meta.name]),
+    R.foldl([] as string[], (b, a) => [...b, a._meta.name]),
     (as) => as.join(' | ')
   )
 
@@ -566,8 +566,8 @@ export function runDecoder<I, O, M extends HKT.URIS, C = HKT.Auto>(
  */
 
 export const Functor = HKT.instance<P.Functor<[URI], V>>({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: (f, _) => (fa) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })

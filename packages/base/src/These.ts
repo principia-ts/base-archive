@@ -196,8 +196,8 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[URI], HKT.Fix<'E', E>>
       : both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
 
   return HKT.instance({
-    imap_: (fa, f, _) => map_(fa, f),
-    imap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: These<E, A>) => map_(fa, f),
+    invmap_: (fa, f, _) => map_(fa, f),
+    invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: These<E, A>) => map_(fa, f),
     map_,
     map,
     map2_,
@@ -257,12 +257,12 @@ export function getEq<E, A>(EE: Eq<E>, EA: Eq<A>): Eq<These<E, A>> {
  * -------------------------------------------
  */
 
-export function foldLeft_<E, A, B>(fa: These<E, A>, b: B, f: (b: B, a: A) => B): B {
+export function foldl_<E, A, B>(fa: These<E, A>, b: B, f: (b: B, a: A) => B): B {
   return isLeft(fa) ? b : f(b, fa.right)
 }
 
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: These<E, A>) => B {
-  return (fa) => foldLeft_(fa, b, f)
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: These<E, A>) => B {
+  return (fa) => foldl_(fa, b, f)
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: These<E, A>, f: (a: A) => M) => M {
@@ -273,12 +273,12 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: These
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-export function foldRight_<E, A, B>(fa: These<E, A>, b: B, f: (a: A, b: B) => B): B {
+export function foldr_<E, A, B>(fa: These<E, A>, b: B, f: (a: A, b: B) => B): B {
   return isLeft(fa) ? b : f(fa.right, b)
 }
 
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: These<E, A>) => B {
-  return (fa) => foldRight_(fa, b, f)
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: These<E, A>) => B {
+  return (fa) => foldr_(fa, b, f)
 }
 
 /*
@@ -302,7 +302,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  */
 
 export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E', E>> {
-  const chain_: P.ChainFn_<[URI], HKT.Fix<'E', E>> = (ma, f) => {
+  const bind_: P.BindFn_<[URI], HKT.Fix<'E', E>> = (ma, f) => {
     if (isLeft(ma)) {
       return ma
     }
@@ -318,9 +318,9 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E',
   }
   return HKT.instance<P.MonadFail<[URI], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
-    chain_,
-    chain: (f) => (ma) => chain_(ma, f),
-    flatten: (mma) => chain_(mma, identity),
+    bind_: bind_,
+    bind: (f) => (ma) => bind_(ma, f),
+    flatten: (mma) => bind_(mma, identity),
     fail: left as any
   })
 }

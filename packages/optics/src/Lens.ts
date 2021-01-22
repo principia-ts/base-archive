@@ -146,7 +146,7 @@ export const Category: P.Category<[URI], V> = HKT.instance({
  * @category Invariant
  * @since 1.0.0
  */
-export function imap_<I, A, B>(ea: Lens<I, A>, ab: (a: A) => B, ba: (b: B) => A): Lens<I, B> {
+export function invmap_<I, A, B>(ea: Lens<I, A>, ab: (a: A) => B, ba: (b: B) => A): Lens<I, B> {
   return {
     get: flow(ea.get, ab),
     set: flow(ba, ea.set)
@@ -157,8 +157,8 @@ export function imap_<I, A, B>(ea: Lens<I, A>, ab: (a: A) => B, ba: (b: B) => A)
  * @category Invariant
  * @since 1.0.0
  */
-export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, A>) => Lens<I, B> {
-  return (ea) => imap_(ea, ab, ba)
+export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, A>) => Lens<I, B> {
+  return (ea) => invmap_(ea, ab, ba)
 }
 
 /**
@@ -166,8 +166,8 @@ export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, A>
  * @since 1.0.0
  */
 export const Invariant: P.Invariant<[URI], V> = HKT.instance({
-  imap_,
-  imap
+  invmap_,
+  invmap
 })
 
 /*

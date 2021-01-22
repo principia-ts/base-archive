@@ -14,7 +14,7 @@ export const IntersectionEncoder = implementInterpreter<E.URI, Alg.IntersectionU
       A.map((f) => f(env)),
       (encoders) =>
         applyEncoderConfig(config?.config)(
-          A.foldLeft_(encoders, E.id(), (b, a) => E.intersect(a)(b)) as any,
+          A.foldl_(encoders, E.id(), (b, a) => E.intersect(a)(b)) as any,
           env,
           encoders as any
         )

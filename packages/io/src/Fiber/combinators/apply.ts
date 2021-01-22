@@ -20,12 +20,12 @@ export function map2_<E, E1, A, A1, B>(
   return {
     _tag: 'SyntheticFiber',
     getRef: (ref) => I.map2_(fa.getRef(ref), fb.getRef(ref), (a, b) => ref.join(a, b)),
-    inheritRefs: I.chain_(fa.inheritRefs, () => fb.inheritRefs),
+    inheritRefs: I.bind_(fa.inheritRefs, () => fb.inheritRefs),
     interruptAs: (id) => I.map2_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) => Ex.map2Cause_(ea, eb, f, C.both)),
     poll: I.map2_(fa.poll, fb.poll, (fa, fb) =>
-      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.map2Cause_(ea, eb, f, C.both)))
+      O.bind_(fa, (ea) => O.map_(fb, (eb) => Ex.map2Cause_(ea, eb, f, C.both)))
     ),
-    await: I.result(map2Par_(I.chain_(fa.await, I.done), I.chain_(fb.await, I.done), f))
+    await: I.result(map2Par_(I.bind_(fa.await, I.done), I.bind_(fb.await, I.done), f))
   }
 }
 
@@ -55,18 +55,18 @@ export function product<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => Synth
   return (fa) => product_(fa, fb)
 }
 
-export function apFirst_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+export function apl_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
   return map2_(fa, fb, (a, _) => a)
 }
 
-export function apFirst<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+export function apr_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
   return map2_(fa, fb, (_, b) => b)
 }
 
-export function apSecond<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
+  return (fa) => apr_(fa, fb)
 }

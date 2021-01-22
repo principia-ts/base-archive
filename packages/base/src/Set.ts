@@ -340,18 +340,18 @@ export function filterMap<B>(E: Eq<B>) {
  * -------------------------------------------
  */
 
-export function foldLeft_<A>(O: P.Ord<A>) {
+export function foldl_<A>(O: P.Ord<A>) {
   const toArrayO = toArray(O)
-  return <B>(set: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B => A.foldLeft_(toArrayO(set), b, f)
+  return <B>(set: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B => A.foldl_(toArrayO(set), b, f)
 }
 
-export function foldLeft<A>(O: P.Ord<A>): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
-  return (b, f) => (set) => foldLeft_(O)(set, b, f)
+export function foldl<A>(O: P.Ord<A>): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
+  return (b, f) => (set) => foldl_(O)(set, b, f)
 }
 
 export function foldMap_<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
   const toArrayO = toArray(O)
-  return (fa: ReadonlySet<A>, f: (a: A) => M) => A.foldLeft_(toArrayO(fa), M.nat, (b, a) => M.combine_(b, f(a)))
+  return (fa: ReadonlySet<A>, f: (a: A) => M) => A.foldl_(toArrayO(fa), M.nat, (b, a) => M.combine_(b, f(a)))
 }
 
 export function foldMap<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
@@ -389,7 +389,7 @@ export function map<B>(E: Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>) =
  * -------------------------------------------
  */
 
-export function chain_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
+export function bind_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
   const elemE = elem(E)
   return (set, f) => {
     const r = new Set<B>()
@@ -404,13 +404,13 @@ export function chain_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => Reado
   }
 }
 
-export function chain<B>(E: Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
-  return (f) => (set) => chain_(E)(set, f)
+export function bind<B>(E: Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
+  return (f) => (set) => bind_(E)(set, f)
 }
 
 export function flatten<A>(E: Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> {
-  const chainE = chain(E)
-  return chainE(identity)
+  const bindE = bind(E)
+  return bindE(identity)
 }
 
 /*

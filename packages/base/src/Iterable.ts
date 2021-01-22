@@ -86,7 +86,7 @@ export function zipWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: It
 }
 
 export function ap_<A, B>(fab: Iterable<(a: A) => B>, fa: Iterable<A>): Iterable<B> {
-  return chain_(fab, (f) => map_(fa, f))
+  return bind_(fab, (f) => map_(fa, f))
 }
 
 export function ap<A>(fa: Iterable<A>): <B>(fab: Iterable<(a: A) => B>) => Iterable<B> {
@@ -113,7 +113,7 @@ export function zip_<A, B>(fa: Iterable<A>, fb: Iterable<B>): Iterable<readonly 
  * -------------------------------------------
  */
 
-export function filterWithIndex_<A>(fa: Iterable<A>, predicate: PredicateWithIndex<number, A>): Iterable<A> {
+export function ifilter_<A>(fa: Iterable<A>, predicate: PredicateWithIndex<number, A>): Iterable<A> {
   return iterable(function* () {
     let i          = -1
     const iterator = fa[Symbol.iterator]()
@@ -130,13 +130,13 @@ export function filterWithIndex_<A>(fa: Iterable<A>, predicate: PredicateWithInd
   })
 }
 
-export function partitionMapWithIndex_<A, B, C>(
+export function ipartitionMap_<A, B, C>(
   fa: Iterable<A>,
   f: (i: number, a: A) => Either<B, C>
 ): readonly [Iterable<B>, Iterable<C>] {
   return tuple(
     iterable(function* () {
-      const mapped   = mapWithIndex_(fa, f)
+      const mapped   = imap_(fa, f)
       const iterator = mapped[Symbol.iterator]()
       for (;;) {
         const result = iterator.next()
@@ -149,7 +149,7 @@ export function partitionMapWithIndex_<A, B, C>(
       }
     }),
     iterable(function* () {
-      const mapped   = mapWithIndex_(fa, f)
+      const mapped   = imap_(fa, f)
       const iterator = mapped[Symbol.iterator]()
       for (;;) {
         const result = iterator.next()
@@ -167,7 +167,7 @@ export function partitionMapWithIndex_<A, B, C>(
 export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
 ): (as: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
-  return (as) => partitionMapWithIndex_(as, (_, a) => f(a))
+  return (as) => ipartitionMap_(as, (_, a) => f(a))
 }
 
 /*
@@ -176,7 +176,7 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------
  */
 
-export function foldMapWithIndex_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
+export function ifoldMap_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
   return (fa, f) => {
     let res        = M.nat
     let n          = -1
@@ -193,19 +193,19 @@ export function foldMapWithIndex_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (i: 
   }
 }
 
-export function foldMapWithIndex<M>(M: Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Iterable<A>) => M {
-  return (f) => (fa) => foldMapWithIndex_(M)(fa, f)
+export function ifoldMap<M>(M: Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Iterable<A>) => M {
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
 }
 
 export function foldMap_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (a: A) => M) => M {
-  return (fa, f) => foldMapWithIndex_(M)(fa, (_, a) => f(a))
+  return (fa, f) => ifoldMap_(M)(fa, (_, a) => f(a))
 }
 
 export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Iterable<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-export function foldLeftWithIndex_<A, B>(fa: Iterable<A>, b: B, f: (b: B, i: number, a: A) => B): B {
+export function ifoldl_<A, B>(fa: Iterable<A>, b: B, f: (b: B, i: number, a: A) => B): B {
   let res        = b
   let n          = -1
   const iterator = fa[Symbol.iterator]()
@@ -221,32 +221,32 @@ export function foldLeftWithIndex_<A, B>(fa: Iterable<A>, b: B, f: (b: B, i: num
   return res
 }
 
-export function foldLeftWithIndex<A, B>(b: B, f: (b: B, i: number, a: A) => B): (fa: Iterable<A>) => B {
-  return (fa) => foldLeftWithIndex_(fa, b, f)
+export function ifoldl<A, B>(b: B, f: (b: B, i: number, a: A) => B): (fa: Iterable<A>) => B {
+  return (fa) => ifoldl_(fa, b, f)
 }
 
-export function foldLeft_<A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A) => B): B {
-  return foldLeftWithIndex_(fa, b, (b, _, a) => f(b, a))
+export function foldl_<A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A) => B): B {
+  return ifoldl_(fa, b, (b, _, a) => f(b, a))
 }
 
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Iterable<A>) => B {
-  return (fa) => foldLeft_(fa, b, f)
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Iterable<A>) => B {
+  return (fa) => foldl_(fa, b, f)
 }
 
-export function foldRightWithIndex<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: Iterable<A>) => B {
-  return (fa) => A.foldRightWithIndex_(A.from(fa), b, f)
+export function ifoldr<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: Iterable<A>) => B {
+  return (fa) => A.ifoldr_(A.from(fa), b, f)
 }
 
-export function foldRightWithIndex_<A, B>(fa: Iterable<A>, b: B, f: (a: A, i: number, b: B) => B): B {
-  return A.foldRightWithIndex_(A.from(fa), b, f)
+export function ifoldr_<A, B>(fa: Iterable<A>, b: B, f: (a: A, i: number, b: B) => B): B {
+  return A.ifoldr_(A.from(fa), b, f)
 }
 
-export function foldRight_<A, B>(fa: Iterable<A>, b: B, f: (a: A, b: B) => B): B {
-  return A.foldRight_(A.from(fa), b, f)
+export function foldr_<A, B>(fa: Iterable<A>, b: B, f: (a: A, b: B) => B): B {
+  return A.foldr_(A.from(fa), b, f)
 }
 
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Iterable<A>) => B {
-  return (fa) => foldRight_(fa, b, f)
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Iterable<A>) => B {
+  return (fa) => foldr_(fa, b, f)
 }
 
 /*
@@ -267,16 +267,16 @@ function* genMap<A, B>(ia: Iterator<A>, f: (i: number, a: A) => B) {
   }
 }
 
-export function mapWithIndex_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => B): Iterable<B> {
+export function imap_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => B): Iterable<B> {
   return iterable(() => genMap(fa[Symbol.iterator](), f))
 }
 
-export function mapWithIndex<A, B>(f: (i: number, a: A) => B): (fa: Iterable<A>) => Iterable<B> {
+export function imap<A, B>(f: (i: number, a: A) => B): (fa: Iterable<A>) => Iterable<B> {
   return (fa) => iterable(() => genMap(fa[Symbol.iterator](), f))
 }
 
 export function map_<A, B>(fa: Iterable<A>, f: (a: A) => B): Iterable<B> {
-  return mapWithIndex_(fa, (_, a) => f(a))
+  return imap_(fa, (_, a) => f(a))
 }
 
 export function map<A, B>(f: (a: A) => B): (fa: Iterable<A>) => Iterable<B> {
@@ -289,21 +289,21 @@ export function map<A, B>(f: (a: A) => B): (fa: Iterable<A>) => Iterable<B> {
  * -------------------------------------------
  */
 
-export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
-  return (ma) => chain_(ma, f)
+export function bind<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
+  return (ma) => bind_(ma, f)
 }
 
-export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
+export function bind_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
   return iterable(function* () {
-    yield* genchain(ma[Symbol.iterator](), f)
+    yield* genbind(ma[Symbol.iterator](), f)
   })
 }
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
-function* genchain<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
+function* genbind<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
   for (;;) {
     const result = ia.next()
     if (result.done) {
@@ -396,10 +396,10 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
  */
 
 export const Foldable = HKT.instance<P.Foldable<[URI]>>({
-  foldLeft_,
-  foldLeft,
-  foldRight_,
-  foldRight,
+  foldl_: foldl_,
+  foldl: foldl,
+  foldr_: foldr_,
+  foldr: foldr,
   foldMap_,
   foldMap
 })

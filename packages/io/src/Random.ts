@@ -139,17 +139,17 @@ export class LiveRandom implements Random {
 
   next: I.UIO<number> = I.effectTotal(() => this.PRNG.next())
 
-  nextBoolean: I.UIO<boolean> = I.chain_(this.next, (n) => I.effectTotal(() => n > 0.5))
+  nextBoolean: I.UIO<boolean> = I.bind_(this.next, (n) => I.effectTotal(() => n > 0.5))
 
   nextInt: I.UIO<number> = I.effectTotal(() => this.PRNG.int32())
 
   nextDouble: I.UIO<number> = I.effectTotal(() => this.PRNG.double())
 
   nextRange: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.chain_(this.next, (n) => I.effectTotal(() => (high - low) * n + low))
+    I.bind_(this.next, (n) => I.effectTotal(() => (high - low) * n + low))
 
   nextIntBetween: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.chain_(this.next, (n) => I.effectTotal(() => Math.floor((high - low + 1) * n + low)))
+    I.bind_(this.next, (n) => I.effectTotal(() => Math.floor((high - low + 1) * n + low)))
 
   setSeed = (s: string) =>
     I.effectTotal(() => {

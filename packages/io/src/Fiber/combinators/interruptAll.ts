@@ -7,4 +7,4 @@ import { interruptAllAs_ } from './interrupt'
 /**
  * Interrupts all fibers and awaits their interruption
  */
-export const interruptAll = (fs: Iterable<Fiber<any, any>>) => I.chain_(fiberId(), (id) => interruptAllAs_(fs, id))
+export const interruptAll = (fs: Iterable<Fiber<any, any>>) => I.bind_(fiberId(), (id) => interruptAllAs_(fs, id))

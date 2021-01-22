@@ -160,7 +160,7 @@ export function make<R, E, A extends Request<E, B>, B>(
   return get(
     pipe(
       ref.get,
-      I.chain(
+      I.bind(
         O.fold(
           () => I.dieMessage('TODO: Query Failure'),
           (a) => I.fromEither(() => a)
@@ -175,8 +175,8 @@ export function mapM_<R, E, A, R1, E1, B>(
   f: (a: A) => Query<R1, E1, B>
 ): Continue<R & R1, E | E1, B> {
   return matchTag_(fa, {
-    Effect: ({ query }) => effect(Q.chain_(query, f)),
-    Get: ({ io }) => effect(pipe(Q.fromEffect(io), Q.chain(f)))
+    Effect: ({ query }) => effect(Q.bind_(query, f)),
+    Get: ({ io }) => effect(pipe(Q.fromEffect(io), Q.bind(f)))
   })
 }
 

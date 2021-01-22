@@ -116,7 +116,7 @@ function _log(message: ChalkFn, level: LogLevel) {
     yield* _(
       pipe(
         logToConsole,
-        I.andThen(logToFile),
+        I.apr(logToFile),
         I.catchAll((error) => console.putStrLn(`Error when writing to path ${path}\n${error}`)),
         I.when(() => severity[configLevel] >= severity[level]),
         I.giveService(LogEntry)(entry)

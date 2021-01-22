@@ -222,7 +222,7 @@ export function pure<A>(a: A): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>): ReadonlyArray<B> {
-  return chain_(fab, (f) => map_(fa, f))
+  return bind_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -242,7 +242,7 @@ export function ap<A>(fa: ReadonlyArray<A>): <B>(fab: ReadonlyArray<(a: A) => B>
 
 /**
  * ```haskell
- * apFirst_ :: Apply f => (f a, f b) -> f a
+ * apl_ :: Apply f => (f a, f b) -> f a
  * ```
  *
  * Combine two effectful actions, keeping only the result of the first
@@ -250,7 +250,7 @@ export function ap<A>(fa: ReadonlyArray<A>): <B>(fab: ReadonlyArray<(a: A) => B>
  * @category Apply
  * @since 1.0.0
  */
-export function apFirst_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<A> {
+export function apl_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<A> {
   return ap_(
     map_(fa, (a) => () => a),
     fb
@@ -259,16 +259,16 @@ export function apFirst_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Read
 
 /**
  * ```haskell
- * apFirst :: Apply f => f b -> f a -> f a
+ * apl :: Apply f => f b -> f a -> f a
  * ```
  *
  * Combine two effectful actions, keeping only the result of the first
  *
  * @category Apply
  * @since 1.0.0
- * @dataFirst apFirst_
+ * @dataFirst apl_
  */
-export function apFirst<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function apl<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<A> {
   return flow(
     map((a) => () => a),
     ap(fb)
@@ -277,7 +277,7 @@ export function apFirst<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => R
 
 /**
  * ```haskell
- * apSecond_ :: Apply f => (f a, f b) -> f b
+ * apr_ :: Apply f => (f a, f b) -> f b
  * ```
  *
  * Combine two effectful actions, keeping only the result of the second
@@ -285,7 +285,7 @@ export function apFirst<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => R
  * @category Apply
  * @since 1.0.0
  */
-export function apSecond_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<B> {
+export function apr_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<B> {
   return ap_(
     map_(fa, () => (b: B) => b),
     fb
@@ -294,16 +294,16 @@ export function apSecond_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Rea
 
 /**
  * ```haskell
- * apSecond :: Apply f => f b -> f a -> f b
+ * apr :: Apply f => f b -> f a -> f b
  * ```
  *
  * Combine two effectful actions, keeping only the result of the second
  *
  * @category Apply
  * @since 1.0.0
- * @dataFirst apSecond_
+ * @dataFirst apr_
  */
-export function apSecond<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+export function apr<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<B> {
   return flow(
     map(() => (b: B) => b),
     ap(fb)
@@ -394,7 +394,7 @@ export function bindS<A, K, N extends string>(
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
 > {
-  return chain((a) =>
+  return bind((a) =>
     pipe(
       f(a),
       map((b) => _bind(a, name, b))
@@ -443,7 +443,7 @@ export function getEq<A>(E: Eq<A>): Eq<ReadonlyArray<A>> {
  */
 
 export function extend_<A, B>(wa: ReadonlyArray<A>, f: (as: ReadonlyArray<A>) => B): ReadonlyArray<B> {
-  return mapWithIndex_(wa, (i, _) => f(wa.slice(i)))
+  return imap_(wa, (i, _) => f(wa.slice(i)))
 }
 
 /**
@@ -470,19 +470,16 @@ export function duplicate<A>(wa: ReadonlyArray<A>): ReadonlyArray<ReadonlyArray<
 
 /**
  * ```haskell
- * filterWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * ifilter_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Boolean)) -> f a
  * ```
  *
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function filterWithIndex_<A, B extends A>(
-  fa: ReadonlyArray<A>,
-  f: RefinementWithIndex<number, A, B>
-): ReadonlyArray<B>
-export function filterWithIndex_<A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A>
-export function filterWithIndex_<A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A> {
+export function ifilter_<A, B extends A>(fa: ReadonlyArray<A>, f: RefinementWithIndex<number, A, B>): ReadonlyArray<B>
+export function ifilter_<A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A>
+export function ifilter_<A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A> {
   const result: Array<A> = []
   for (let i = 0; i < fa.length; i++) {
     const a = fa[i]
@@ -495,19 +492,19 @@ export function filterWithIndex_<A>(fa: ReadonlyArray<A>, f: PredicateWithIndex<
 
 /**
  * ```haskell
- * filterWithIndex :: (FilterableWithIndex f, Index k) =>
+ * ifilter :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Boolean) -> f a -> f a
  * ```
  *
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function filterWithIndex<A, B extends A>(
+export function ifilter<A, B extends A>(
   f: RefinementWithIndex<number, A, B>
 ): (fa: ReadonlyArray<A>) => ReadonlyArray<B>
-export function filterWithIndex<A>(f: PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>
-export function filterWithIndex<A>(f: PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (fa) => filterWithIndex_(fa, f)
+export function ifilter<A>(f: PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>
+export function ifilter<A>(f: PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (fa) => ifilter_(fa, f)
 }
 
 /**
@@ -521,7 +518,7 @@ export function filterWithIndex<A>(f: PredicateWithIndex<number, A>): (fa: Reado
 export function filter_<A, B extends A>(fa: ReadonlyArray<A>, f: Refinement<A, B>): ReadonlyArray<B>
 export function filter_<A>(fa: ReadonlyArray<A>, f: Predicate<A>): ReadonlyArray<A>
 export function filter_<A>(fa: ReadonlyArray<A>, f: Predicate<A>): ReadonlyArray<A> {
-  return filterWithIndex_(fa, (_, a) => f(a))
+  return ifilter_(fa, (_, a) => f(a))
 }
 
 /**
@@ -535,19 +532,19 @@ export function filter_<A>(fa: ReadonlyArray<A>, f: Predicate<A>): ReadonlyArray
 export function filter<A, B extends A>(f: Refinement<A, B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B>
 export function filter<A>(f: Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>
 export function filter<A>(f: Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (fa) => filterWithIndex_(fa, (_, a) => f(a))
+  return (fa) => ifilter_(fa, (_, a) => f(a))
 }
 
 /**
  * ```haskell
- * filterMapWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * ifilterMap_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Option b)) -> f k b
  * ```
  *
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function filterMapWithIndex_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => Option<B>): ReadonlyArray<B> {
+export function ifilterMap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => Option<B>): ReadonlyArray<B> {
   const result = []
   for (let i = 0; i < fa.length; i++) {
     const optionB = f(i, fa[i])
@@ -560,17 +557,15 @@ export function filterMapWithIndex_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a
 
 /**
  * ```haskell
- * filterMapWithIndex :: (FilterableWithIndex f, Index k) =>
+ * ifilterMap :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Option b) -> f a -> f k b
  * ```
  *
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function filterMapWithIndex<A, B>(
-  f: (i: number, a: A) => Option<B>
-): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => filterMapWithIndex_(fa, f)
+export function ifilterMap<A, B>(f: (i: number, a: A) => Option<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => ifilterMap_(fa, f)
 }
 
 /**
@@ -582,7 +577,7 @@ export function filterMapWithIndex<A, B>(
  * @since 1.0.0
  */
 export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> {
-  return filterMapWithIndex_(fa, (_, a) => f(a))
+  return ifilterMap_(fa, (_, a) => f(a))
 }
 
 /**
@@ -594,24 +589,24 @@ export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): 
  * @since 1.0.0
  */
 export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => filterMapWithIndex_(fa, (_, a) => f(a))
+  return (fa) => ifilterMap_(fa, (_, a) => f(a))
 }
 
 /**
  * ```haskell
- * partitionWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * ipartition_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Boolean)) -> Separated (f a) (f a)
  * ```
  */
-export function partitionWithIndex_<A, B extends A>(
+export function ipartition_<A, B extends A>(
   ta: ReadonlyArray<A>,
   refinement: RefinementWithIndex<number, A, B>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-export function partitionWithIndex_<A>(
+export function ipartition_<A>(
   ta: ReadonlyArray<A>,
   predicate: PredicateWithIndex<number, A>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
-export function partitionWithIndex_<A>(
+export function ipartition_<A>(
   ta: ReadonlyArray<A>,
   predicate: PredicateWithIndex<number, A>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
@@ -630,20 +625,20 @@ export function partitionWithIndex_<A>(
 
 /**
  * ```haskell
- * partitionWithIndex :: (FilterableWithIndex f, Index k) =>
+ * ipartition :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Boolean) -> f a -> Separated (f a) (f a)
  * ```
  */
-export function partitionWithIndex<A, B extends A>(
+export function ipartition<A, B extends A>(
   refinement: RefinementWithIndex<number, A, B>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-export function partitionWithIndex<A>(
+export function ipartition<A>(
   predicate: PredicateWithIndex<number, A>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
-export function partitionWithIndex<A>(
+export function ipartition<A>(
   predicate: PredicateWithIndex<number, A>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  return (ta) => partitionWithIndex_(ta, predicate)
+  return (ta) => ipartition_(ta, predicate)
 }
 
 /**
@@ -663,7 +658,7 @@ export function partition_<A>(
   ta: ReadonlyArray<A>,
   predicate: Predicate<A>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  return partitionWithIndex_(ta, (_, a) => predicate(a))
+  return ipartition_(ta, (_, a) => predicate(a))
 }
 
 /**
@@ -680,16 +675,16 @@ export function partition<A>(
 export function partition<A>(
   predicate: Predicate<A>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  return (ta) => partitionWithIndex_(ta, (_, a) => predicate(a))
+  return (ta) => ipartition_(ta, (_, a) => predicate(a))
 }
 
 /**
  * ```haskell
- * partitionMapWithIndex_ :: (FilterableWithIndex f, Index k) =>
+ * ipartitionMap_ :: (FilterableWithIndex f, Index k) =>
  *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
  * ```
  */
-export function partitionMapWithIndex_<A, B, C>(
+export function ipartitionMap_<A, B, C>(
   ta: ReadonlyArray<A>,
   f: (i: number, a: A) => Either<B, C>
 ): readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
@@ -708,14 +703,14 @@ export function partitionMapWithIndex_<A, B, C>(
 
 /**
  * ```haskell
- * partitionMapWithIndex :: (FilterableWithIndex f, Index k) =>
+ * ipartitionMap :: (FilterableWithIndex f, Index k) =>
  *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
  * ```
  */
-export function partitionMapWithIndex<A, B, C>(
+export function ipartitionMap<A, B, C>(
   f: (i: number, a: A) => Either<B, C>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
-  return (ta) => partitionMapWithIndex_(ta, f)
+  return (ta) => ipartitionMap_(ta, f)
 }
 
 /**
@@ -727,7 +722,7 @@ export function partitionMap_<A, B, C>(
   ta: ReadonlyArray<A>,
   f: (a: A) => Either<B, C>
 ): readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
-  return partitionMapWithIndex_(ta, (_, a) => f(a))
+  return ipartitionMap_(ta, (_, a) => f(a))
 }
 
 /**
@@ -738,7 +733,7 @@ export function partitionMap_<A, B, C>(
 export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
-  return (ta) => partitionMapWithIndex_(ta, (_, a) => f(a))
+  return (ta) => ipartitionMap_(ta, (_, a) => f(a))
 }
 
 /*
@@ -749,14 +744,14 @@ export function partitionMap<A, B, C>(
 
 /**
  * ```haskell
- * foldLeftWithIndex_ :: (FoldableWithIndex t, Index k) =>
+ * ifoldl_ :: (FoldableWithIndex t, Index k) =>
  *    (t a, b, ((k, b, a) -> b)) -> b
  * ```
  *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldLeftWithIndex_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i: number, a: A) => B): B {
+export function ifoldl_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i: number, a: A) => B): B {
   const len = fa.length
   let r     = b
   for (let i = 0; i < len; i++) {
@@ -767,51 +762,51 @@ export function foldLeftWithIndex_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i
 
 /**
  * ```haskell
- * foldLeftWithIndex :: (FoldableWithIndex t, Index k) =>
+ * ifoldl :: (FoldableWithIndex t, Index k) =>
  *    (b, ((k, b, a) -> b)) -> t a -> b
  * ```
  *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldLeftWithIndex<A, B>(b: B, f: (b: B, i: number, a: A) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => foldLeftWithIndex_(fa, b, f)
+export function ifoldl<A, B>(b: B, f: (b: B, i: number, a: A) => B): (fa: ReadonlyArray<A>) => B {
+  return (fa) => ifoldl_(fa, b, f)
 }
 
 /**
  * ```haskell
- * foldLeft_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
+ * foldl_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
  * ```
  *
  * @category Foldable
  * @since 1.0.0
  */
-export function foldLeft_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): B {
-  return foldLeftWithIndex_(fa, b, (b, _, a) => f(b, a))
+export function foldl_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): B {
+  return ifoldl_(fa, b, (b, _, a) => f(b, a))
 }
 
 /**
  * ```haskell
- * foldLeft :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
+ * foldl :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
  * ```
  *
  * @category Foldable
  * @since 1.0.0
  */
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => foldLeftWithIndex_(fa, b, (b, _, a) => f(b, a))
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: ReadonlyArray<A>) => B {
+  return (fa) => ifoldl_(fa, b, (b, _, a) => f(b, a))
 }
 
 /**
  * ```haskell
- * foldRightWithIndex_ :: (FoldableWithIndex t, Index k) =>
+ * ifoldr_ :: (FoldableWithIndex t, Index k) =>
  *    (t a, b, ((k, a, b) -> b)) -> b
  * ```
  *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldRightWithIndex_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, i: number, b: B) => B): B {
+export function ifoldr_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, i: number, b: B) => B): B {
   let r = b
   for (let i = fa.length - 1; i >= 0; i--) {
     r = f(fa[i], i, r)
@@ -821,65 +816,65 @@ export function foldRightWithIndex_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, 
 
 /**
  * ```haskell
- * foldRightWithIndex :: (FoldableWithIndex t, Index k) =>
+ * ifoldr :: (FoldableWithIndex t, Index k) =>
  *    (b, ((k, a, b) -> b)) -> t a -> b
  * ```
  *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldRightWithIndex<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => foldRightWithIndex_(fa, b, f)
+export function ifoldr<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: ReadonlyArray<A>) => B {
+  return (fa) => ifoldr_(fa, b, f)
 }
 
 /**
  * ```haskell
- * foldRight_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
+ * foldr_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
  * ```
  *
  * @category Foldable
  * @since 1.0.0
  */
-export function foldRight_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): B {
-  return foldRightWithIndex_(fa, b, (a, _, b) => f(a, b))
+export function foldr_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): B {
+  return ifoldr_(fa, b, (a, _, b) => f(a, b))
 }
 
 /**
  * ```haskell
- * foldRight :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
+ * foldr :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
  * ```
  *
  * @category Foldable
  * @since 1.0.0
  */
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => foldRight_(fa, b, f)
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) => B {
+  return (fa) => foldr_(fa, b, f)
 }
 
 /**
  * ```haskell
- * foldMapWithIndex_ :: (Monoid m, FoldableWithIndex f, Index k) =>
+ * ifoldMap_ :: (Monoid m, FoldableWithIndex f, Index k) =>
  *    m b -> (f a, ((k, a) -> b) -> b
  * ```
  *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldMapWithIndex_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => foldLeftWithIndex_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M) => M {
+  return (fa, f) => ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
 }
 
 /**
  * ```haskell
- * foldMapWithIndex :: (Monoid m, FoldableWithIndex f, Index k) =>
+ * ifoldMap :: (Monoid m, FoldableWithIndex f, Index k) =>
  *    m b -> ((k, a) -> b) -> f a -> b
  * ```
  *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function foldMapWithIndex<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) => M {
-  return (f) => (fa) => foldMapWithIndex_(M)(fa, f)
+export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) => M {
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
 }
 
 /**
@@ -892,8 +887,8 @@ export function foldMapWithIndex<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) =>
  * @since 1.0.0
  */
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (a: A) => M) => M {
-  const foldMapWithIndexM_ = foldMapWithIndex_(M)
-  return (fa, f) => foldMapWithIndexM_(fa, (_, a) => f(a))
+  const ifoldMapM_ = ifoldMap_(M)
+  return (fa, f) => ifoldMapM_(fa, (_, a) => f(a))
 }
 
 /**
@@ -917,7 +912,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Readonly
  * @since 1.0.0
  */
 export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
-  return (fa) => foldLeftWithIndex_(fa, M.nat, (b, _, a) => M.combine_(b, a))
+  return (fa) => ifoldl_(fa, M.nat, (b, _, a) => M.combine_(b, a))
 }
 
 /*
@@ -928,7 +923,7 @@ export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
 
 /**
  * ```haskell
- * mapWithIndex_ :: (FunctorWithIndex f, Index k) => (f a, ((k, a) -> b)) -> f b
+ * imap_ :: (FunctorWithIndex f, Index k) => (f a, ((k, a) -> b)) -> f b
  * ```
  *
  * Map an `Array` passing the index to the iterating function
@@ -936,7 +931,7 @@ export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export function mapWithIndex_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): ReadonlyArray<B> {
+export function imap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): ReadonlyArray<B> {
   const len    = fa.length
   const mut_bs = new Array(len)
   for (let i = 0; i < len; i++) {
@@ -947,7 +942,7 @@ export function mapWithIndex_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) =
 
 /**
  * ```haskell
- * mapWithIndex :: (FunctorWithIndex f, Index k) => ((k, a) -> b) -> f a -> f b
+ * imap :: (FunctorWithIndex f, Index k) => ((k, a) -> b) -> f a -> f b
  * ```
  *
  * Map an `Array` passing the index to the iterating function
@@ -955,8 +950,8 @@ export function mapWithIndex_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) =
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export function mapWithIndex<A, B>(f: (i: number, a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => mapWithIndex_(fa, f)
+export function imap<A, B>(f: (i: number, a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => imap_(fa, f)
 }
 
 /**
@@ -970,7 +965,7 @@ export function mapWithIndex<A, B>(f: (i: number, a: A) => B): (fa: ReadonlyArra
  * @since 1.0.0
  */
 export function map_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => B): ReadonlyArray<B> {
-  return mapWithIndex_(fa, (_, a) => f(a))
+  return imap_(fa, (_, a) => f(a))
 }
 
 /**
@@ -993,10 +988,7 @@ export function map<A, B>(f: (a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArr
  * -------------------------------------------
  */
 
-export function chainWithIndex_<A, B>(
-  fa: ReadonlyArray<A>,
-  f: (i: number, a: A) => ReadonlyArray<B>
-): ReadonlyArray<B> {
+export function ibind_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
   let outLen     = 0
   const len      = fa.length
   const mut_temp = new Array(len)
@@ -1019,15 +1011,13 @@ export function chainWithIndex_<A, B>(
   return mut_out
 }
 
-export function chainWithIndex<A, B>(
-  f: (i: number, a: A) => ReadonlyArray<B>
-): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => chainWithIndex_(fa, f)
+export function ibind<A, B>(f: (i: number, a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => ibind_(fa, f)
 }
 
 /**
  * ```haskell
- * chain_ :: Monad m => (m a, (a -> m b)) -> m b
+ * bind_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -1035,13 +1025,13 @@ export function chainWithIndex<A, B>(
  * @category Monad
  * @since 1.0.0
  */
-export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
-  return chainWithIndex_(fa, (_, a) => f(a))
+export function bind_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
+  return ibind_(fa, (_, a) => f(a))
 }
 
 /**
  * ```haskell
- * chain :: Monad m => (a -> m b) -> m a -> m b
+ * bind :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -1049,8 +1039,8 @@ export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>
  * @category Monad
  * @since 1.0.0
  */
-export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => chain_(fa, f)
+export function bind<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => bind_(fa, f)
 }
 
 /**
@@ -1094,7 +1084,7 @@ export function flatten<A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
  * @since 1.0.0
  */
 export function tap_<A, B>(ma: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<A> {
-  return chain_(ma, (a) =>
+  return bind_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -1181,7 +1171,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyArray<A>> {
 
 /**
  * ```haskell
- * traverseWithIndex_ :: (Applicative g, TraversableWithIndex t, Index k) =>
+ * itraverse_ :: (Applicative g, TraversableWithIndex t, Index k) =>
  *    g
  *    -> (t a, ((k, a) -> g b))
  *    -> g (t b)
@@ -1190,21 +1180,19 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyArray<A>> {
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()(
-  (_) => (G) => {
-    return (ta, f) =>
-      foldLeftWithIndex_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) =>
-        G.ap_(
-          G.map_(fbs, (bs) => (b: typeof _.B) => snoc_(bs, b)),
-          f(i, a)
-        )
+export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()((_) => (G) => {
+  return (ta, f) =>
+    ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) =>
+      G.ap_(
+        G.map_(fbs, (bs) => (b: typeof _.B) => snoc_(bs, b)),
+        f(i, a)
       )
-  }
-)
+    )
+})
 
 /**
  * ```haskell
- * traverseWithIndex :: (Applicative g, TraversableWithIndex t, Index k) =>
+ * itraverse :: (Applicative g, TraversableWithIndex t, Index k) =>
  *    g
  *    -> ((k, a) -> g b)
  *    -> t a
@@ -1214,9 +1202,9 @@ export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementT
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverseWithIndex: P.TraverseWithIndexFn<[URI], V> = (G) => {
-  const traverseWithIndexG_ = traverseWithIndex_(G)
-  return (f) => (ta) => traverseWithIndexG_(ta, f)
+export const itraverse: P.TraverseWithIndexFn<[URI], V> = (G) => {
+  const itraverseG_ = itraverse_(G)
+  return (f) => (ta) => itraverseG_(ta, f)
 }
 
 /**
@@ -1233,8 +1221,8 @@ export const traverseWithIndex: P.TraverseWithIndexFn<[URI], V> = (G) => {
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<[URI], V> = (G) => {
-  const traverseWithIndexG_ = traverseWithIndex_(G)
-  return (ta, f) => traverseWithIndexG_(ta, (_, a) => f(a))
+  const itraverseG_ = itraverse_(G)
+  return (ta, f) => itraverseG_(ta, (_, a) => f(a))
 }
 
 /**
@@ -1252,8 +1240,8 @@ export const traverse_: P.TraverseFn_<[URI], V> = (G) => {
  * @since 1.0.0
  */
 export const traverse: P.TraverseFn<[URI], V> = (G) => {
-  const traverseWithIndexG_ = traverseWithIndex_(G)
-  return (f) => (ta) => traverseWithIndexG_(ta, (_, a) => f(a))
+  const itraverseG_ = itraverse_(G)
+  return (f) => (ta) => itraverseG_(ta, (_, a) => f(a))
 }
 
 /**
@@ -1302,20 +1290,20 @@ export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): Readon
 
 /**
  * ```haskell
- * witherWithIndex_ :: (Applicative g, WitherableWithIndex w, Index k) =>
+ * icompactA_ :: (Applicative g, WitherableWithIndex w, Index k) =>
  *    g
  *    -> (w a, ((k, a) -> g (w (Option b))))
  *    -> g (w b)
  * ```
  */
-export const witherWithIndex_: P.WitherWithIndexFn_<[URI], V> = (G) => {
-  const traverseG = traverseWithIndex_(G)
+export const icompactA_: P.WitherWithIndexFn_<[URI], V> = (G) => {
+  const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
 }
 
 /**
  * ```haskell
- * witherWithIndex :: (Applicative g, WitherableWithIndex w, Index k) =>
+ * icompactA :: (Applicative g, WitherableWithIndex w, Index k) =>
  *    g
  *    -> ((k, a)
  *    -> g (w (Option b)))
@@ -1323,73 +1311,73 @@ export const witherWithIndex_: P.WitherWithIndexFn_<[URI], V> = (G) => {
  *    -> g (w b)
  * ```
  */
-export const witherWithIndex: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => witherWithIndex_(G)(wa, f)
+export const icompactA: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
 
 /**
  * ```haskell
- * wither_ :: (Applicative g, Witherable w) =>
+ * compactA_ :: (Applicative g, Witherable w) =>
  *    g
  *    -> (w a, (a -> g (w (Option b))))
  *    -> g (w b)
  * ```
  */
-export const wither_: P.WitherFn_<[URI], V> = (G) => (wa, f) => witherWithIndex_(G)(wa, (_, a) => f(a))
+export const compactA_: P.WitherFn_<[URI], V> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
 
 /**
  * ```haskell
- * wither :: (Applicative g, Witherable w) =>
+ * compactA :: (Applicative g, Witherable w) =>
  *    g
  *    -> (a -> g (w (Option b)))
  *    -> w a
  *    -> g (w b)
  * ```
  */
-export const wither: P.WitherFn<[URI], V> = (G) => (f) => (wa) => wither_(G)(wa, f)
+export const compactA: P.WitherFn<[URI], V> = (G) => (f) => (wa) => compactA_(G)(wa, f)
 
 /**
  * ```haskell
- * wiltWithIndex_ :: (Applicative g, WitherableWithIndex w, Index k) =>
+ * iseparateA_ :: (Applicative g, WitherableWithIndex w, Index k) =>
  *    g
  *    -> (w a, ((k, a) -> g (w (Either b c))))
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const wiltWithIndex_: P.WiltWithIndexFn_<[URI], V> = (G) => {
-  const traverseG = traverseWithIndex_(G)
+export const iseparateA_: P.WiltWithIndexFn_<[URI], V> = (G) => {
+  const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
 }
 
 /**
  * ```haskell
- * wiltWithIndex :: (Applicative g, WitherableWithIndex w, Index k) =>
+ * iseparateA :: (Applicative g, WitherableWithIndex w, Index k) =>
  *    g
  *    -> ((k, a) -> g (w (Either b c)))
  *    -> w a
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const wiltWithIndex: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => wiltWithIndex_(G)(wa, f)
+export const iseparateA: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
 
 /**
  * ```haskell
- * wilt_ :: (Applicative g, Witherable w) =>
+ * separateA_ :: (Applicative g, Witherable w) =>
  *    g
  *    -> (w a, (a -> g (w (Either b c))))
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const wilt_: P.WiltFn_<[URI], V> = (G) => (wa, f) => wiltWithIndex_(G)(wa, (_, a) => f(a))
+export const separateA_: P.WiltFn_<[URI], V> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
 
 /**
  * ```haskell
- * wilt :: (Applicative g, Witherable w) =>
+ * separateA :: (Applicative g, Witherable w) =>
  *    g
  *    -> (a -> g (w (Either b c)))
  *    -> w a
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const wilt: P.WiltFn<[URI], V> = (G) => (f) => (wa) => wilt_(G)(wa, f)
+export const separateA: P.WiltFn<[URI], V> = (G) => (f) => (wa) => separateA_(G)(wa, f)
 
 /*
  * -------------------------------------------
@@ -1928,7 +1916,7 @@ export function uniq<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
 export function sortBy<B>(ords: ReadonlyArray<P.Ord<B>>): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (as) => {
     const M = Ord.getMonoid<B>()
-    return sort(foldLeft_(ords, M.nat, (b, a) => M.combine_(a, b)))(as)
+    return sort(foldl_(ords, M.nat, (b, a) => M.combine_(a, b)))(as)
   }
 }
 
@@ -1961,7 +1949,7 @@ export function comprehension<R>(
     if (input.length === 0) {
       return g(...scope) ? [f(...scope)] : empty()
     } else {
-      return chain_(input[0], (x) => go(snoc_(scope, x), input.slice(1)))
+      return bind_(input[0], (x) => go(snoc_(scope, x), input.slice(1)))
     }
   }
   return go(empty(), input)
@@ -2106,7 +2094,7 @@ export function prepend<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
 }
 
 export function sum(as: ReadonlyArray<number>): number {
-  return foldLeft_(as, 0, (b, a) => b + a)
+  return foldl_(as, 0, (b, a) => b + a)
 }
 
 export function grouped_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<ReadonlyArray<A>> {
@@ -2128,15 +2116,15 @@ export function grouped(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<R
  */
 
 export const Functor: P.Functor<[URI], V> = HKT.instance({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: ReadonlyArray<A>) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: ReadonlyArray<A>) => map_(fa, f),
   map,
   map_
 })
 
 export const FunctorWithIndex: P.FunctorWithIndex<[URI], V> = HKT.instance({
-  mapWithIndex,
-  mapWithIndex_
+  imap,
+  imap_
 })
 
 export const Apply: P.Apply<[URI], V> = HKT.instance({
@@ -2191,38 +2179,38 @@ export const Filterable: P.Filterable<[URI], V> = HKT.instance({
 })
 
 export const FilterableWithIndex: P.FilterableWithIndex<[URI], V> = HKT.instance({
-  filterWithIndex_,
-  filterMapWithIndex_,
-  partitionMapWithIndex_,
-  filterMapWithIndex,
-  filterWithIndex,
-  partitionMapWithIndex,
-  partitionWithIndex_,
-  partitionWithIndex
+  ifilter_,
+  ifilterMap_,
+  ipartitionMap_,
+  ifilterMap,
+  ifilter,
+  ipartitionMap,
+  ipartition_,
+  ipartition
 })
 
 export const FoldableWithIndex: P.FoldableWithIndex<[URI], V> = HKT.instance({
-  foldLeftWithIndex_,
-  foldLeftWithIndex,
-  foldRightWithIndex,
-  foldRightWithIndex_,
-  foldMapWithIndex,
-  foldMapWithIndex_
+  ifoldl_,
+  ifoldl,
+  ifoldr,
+  ifoldr_,
+  ifoldMap,
+  ifoldMap_
 })
 
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
-  foldLeft_,
-  foldLeft,
-  foldRight_,
-  foldRight,
+  foldl_,
+  foldl,
+  foldr_,
+  foldr,
   foldMap_,
   foldMap
 })
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Applicative,
-  chain_,
-  chain,
+  bind_: bind_,
+  bind: bind,
   flatten
 })
 
@@ -2235,8 +2223,8 @@ export const Traversable: P.Traversable<[URI], V> = HKT.instance({
 
 export const TraversableWithIndex: P.TraversableWithIndex<[URI], V> = HKT.instance({
   ...FunctorWithIndex,
-  traverseWithIndex_,
-  traverseWithIndex
+  itraverse_,
+  itraverse
 })
 
 export const Unfoldable: P.Unfoldable<[URI], V> = HKT.instance({

@@ -207,7 +207,7 @@ export function pure<A>(a: A): Eval<A> {
  */
 
 export function map2_<A, B, C>(ma: Eval<A>, mb: Eval<B>, f: (a: A, b: B) => C): Eval<C> {
-  return chain_(ma, (a) => map_(mb, (b) => f(a, b)))
+  return bind_(ma, (a) => map_(mb, (b) => f(a, b)))
 }
 
 export function map2<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval<A>) => Eval<C> {
@@ -237,7 +237,7 @@ export function ap<A>(ma: Eval<A>): <B>(mab: Eval<(a: A) => B>) => Eval<B> {
  */
 
 export function map_<A, B>(fa: Eval<A>, f: (a: A) => B): Eval<B> {
-  return chain_(fa, (a) => now(f(a)))
+  return bind_(fa, (a) => now(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
@@ -250,16 +250,16 @@ export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
  * -------------------------------------------
  */
 
-export function chain_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
+export function bind_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
   return new Chain(ma, f)
 }
 
-export function chain<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
-  return (ma) => chain_(ma, f)
+export function bind<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
+  return (ma) => bind_(ma, f)
 }
 
 export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*
@@ -405,8 +405,8 @@ export function evaluate<A>(e: Eval<A>): A {
  */
 
 export const Functor = HKT.instance<P.Functor<[URI]>>({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: (f, _) => (fa) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })
@@ -429,8 +429,8 @@ export const Applicative = HKT.instance<P.Applicative<[URI]>>({
 
 export const Monad = HKT.instance<P.Monad<[URI]>>({
   ...Applicative,
-  chain_,
-  chain,
+  bind_: bind_,
+  bind: bind,
   flatten
 })
 
@@ -449,7 +449,7 @@ function _run<T extends GenEval<any>, A>(
   if (state.done) {
     return now(state.value)
   }
-  return chain_(state.value.ma, (val) => {
+  return bind_(state.value.ma, (val) => {
     const next = iterator.next(val)
     return _run(next, iterator)
   })

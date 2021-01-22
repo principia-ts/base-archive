@@ -69,8 +69,8 @@ export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[URI], V & HKT.
 export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<'E', E>> {
   type CE = V & HKT.Fix<'E', E>
   return HKT.instance<P.Apply<[URI], CE>>({
-    imap_: (fa, f, _) => map_(fa, f),
-    imap: (f, _) => (fa) => map_(fa, f),
+    invmap_: (fa, f, _) => map_(fa, f),
+    invmap: (f, _) => (fa) => map_(fa, f),
     map_,
     map,
     ap_: (fab, fa) => make(S.combine_(fab, fa)),

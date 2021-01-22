@@ -17,7 +17,7 @@ export class Parallel<R> {
 
   ['++']<R1>(that: Parallel<R1>): Parallel<R & R1> {
     return new Parallel(
-      It.foldLeft_(that.map.entries(), this.map, (map, [k, v]) =>
+      It.foldl_(that.map.entries(), this.map, (map, [k, v]) =>
         Map.insertAt_(eqDataSource)(
           map,
           k,

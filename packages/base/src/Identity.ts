@@ -69,26 +69,26 @@ export function ap<A>(fa: A): <B>(fab: (a: A) => B) => B {
   return (fab) => fab(fa)
 }
 
-export function apFirst_<A, B>(fa: A, fb: B): A {
+export function apl_<A, B>(fa: A, fb: B): A {
   return ap_(
     map_(fa, (a) => () => a),
     fb
   )
 }
 
-export function apFirst<B>(fb: B): <A>(fa: A) => A {
-  return (fa) => apFirst_(fa, fb)
+export function apl<B>(fb: B): <A>(fa: A) => A {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<A, B>(fa: A, fb: B): B {
+export function apr_<A, B>(fa: A, fb: B): B {
   return ap_(
     map_(fa, (_) => (b: B) => b),
     fb
   )
 }
 
-export function apSecond<B>(fb: B): <A>(fa: A) => B {
-  return (fa) => apSecond_(fa, fb)
+export function apr<B>(fb: B): <A>(fa: A) => B {
+  return (fa) => apr_(fa, fb)
 }
 
 export function map2_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
@@ -126,11 +126,11 @@ export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(i
  * -------------------------------------------
  */
 
-export function foldLeft_<A, B>(fa: A, b: B, f: (b: B, a: A) => B): B {
+export function foldl_<A, B>(fa: A, b: B, f: (b: B, a: A) => B): B {
   return f(b, fa)
 }
 
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: A) => B {
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: A) => B {
   return (fa) => f(b, fa)
 }
 
@@ -142,11 +142,11 @@ export function foldMap<M>(_: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: A) => M 
   return (f) => (fa) => f(fa)
 }
 
-export function foldRight_<A, B>(fa: A, b: B, f: (a: A, b: B) => B): B {
+export function foldr_<A, B>(fa: A, b: B, f: (a: A, b: B) => B): B {
   return f(fa, b)
 }
 
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: A) => B {
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: A) => B {
   return (fa) => f(fa, b)
 }
 
@@ -170,16 +170,16 @@ export function map<A, B>(f: (a: A) => B): (fa: A) => B {
  * -------------------------------------------
  */
 
-export function chain_<A, B>(ma: A, f: (a: A) => B): B {
+export function bind_<A, B>(ma: A, f: (a: A) => B): B {
   return f(ma)
 }
 
-export function chain<A, B>(f: (a: A) => B): (ma: A) => B {
+export function bind<A, B>(f: (a: A) => B): (ma: A) => B {
   return (ma) => f(ma)
 }
 
 export function tap_<A, B>(ma: A, f: (a: A) => B): A {
-  return chain_(ma, (a) => map_(f(a), () => a))
+  return bind_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
@@ -187,7 +187,7 @@ export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
 }
 
 export function flatten<A>(mma: A): A {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*
@@ -224,8 +224,8 @@ export function unit(): void {
  */
 
 export const Functor = HKT.instance<P.Functor<[URI], V>>({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: (f, _) => (fa) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })

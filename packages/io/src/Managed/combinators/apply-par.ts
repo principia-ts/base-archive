@@ -30,7 +30,7 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
   return mapM_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
     const innerMap = I.gives_(makeManagedReleaseMap(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
 
-    return I.chain_(I.product_(innerMap, innerMap), ([[_, l], [__, r]]) =>
+    return I.bind_(I.product_(innerMap, innerMap), ([[_, l], [__, r]]) =>
       I.map2Par_(
         I.gives_(fa.io, (_: R & R1) => tuple(_, l)),
         I.gives_(fb.io, (_: R & R1) => tuple(_, r)),
@@ -77,30 +77,24 @@ export function apPar<R, E, A>(
   return (fab) => apPar_(fab, fa)
 }
 
-export function apFirstPar_<R, E, A, R1, E1, B>(
-  fa: Managed<R, E, A>,
-  fb: Managed<R1, E1, B>
-): Managed<R & R1, E | E1, A> {
+export function aplPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
   return map2Par_(fa, fb, (a, _) => a)
 }
 
-export function apFirstPar<R1, E1, B>(
+export function aplPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
-  return (fa) => apFirstPar_(fa, fb)
+  return (fa) => aplPar_(fa, fb)
 }
 
-export function apSecondPar_<R, E, A, R1, E1, B>(
-  fa: Managed<R, E, A>,
-  fb: Managed<R1, E1, B>
-): Managed<R & R1, E | E1, B> {
+export function aprPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
   return map2Par_(fa, fb, (_, b) => b)
 }
 
-export function apSecondPar<R1, E1, B>(
+export function aprPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
-  return (fa) => apSecondPar_(fa, fb)
+  return (fa) => aprPar_(fa, fb)
 }
 
 export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(

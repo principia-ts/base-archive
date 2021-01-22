@@ -1,9 +1,9 @@
 import type { Eq } from './Eq'
-import { Predicate, Refinement, tuple } from './Function'
+import type { Predicate, Refinement } from './Function'
 import type { Hash } from './Hash'
 
 import { makeEq } from './Eq'
-import { not } from './Function'
+import { not, tuple } from './Function'
 import * as HM from './HashMap'
 
 export class HashSet<V> implements Iterable<V> {
@@ -191,17 +191,17 @@ export function every_<A>(set: HashSet<A>, predicate: Predicate<A>): boolean {
 /**
  * Map + Flatten
  *
- * @dataFirst chain_
+ * @dataFirst bind_
  */
-export function chain<B>(E: HM.Config<B>): <A>(f: (x: A) => Iterable<B>) => (set: HashSet<A>) => HashSet<B> {
-  const c = chain_(E)
+export function bind<B>(E: HM.Config<B>): <A>(f: (x: A) => Iterable<B>) => (set: HashSet<A>) => HashSet<B> {
+  const c = bind_(E)
   return (f) => (set) => c(set, f)
 }
 
 /**
  * Map + Flatten
  */
-export function chain_<B>(E: HM.Config<B>): <A>(set: HashSet<A>, f: (x: A) => Iterable<B>) => HashSet<B> {
+export function bind_<B>(E: HM.Config<B>): <A>(set: HashSet<A>, f: (x: A) => Iterable<B>) => HashSet<B> {
   const r = make<B>(E)
   return (set, f) =>
     mutate_(r, (r) => {
@@ -343,17 +343,17 @@ export function difference<A>(y: Iterable<A>): (x: HashSet<A>) => HashSet<A> {
 /**
  * Reduce a state over the map entries
  */
-export function foldLeft_<V, Z>(set: HashSet<V>, z: Z, f: (z: Z, v: V) => Z): Z {
-  return HM.foldLeftWithIndex_(set.keyMap, z, (z, v) => f(z, v))
+export function foldl_<V, Z>(set: HashSet<V>, z: Z, f: (z: Z, v: V) => Z): Z {
+  return HM.ifoldl_(set.keyMap, z, (z, v) => f(z, v))
 }
 
 /**
  * Reduce a state over the map entries
  *
- * @dataFirst foldLeft_
+ * @dataFirst foldl_
  */
-export function foldLeft<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
-  return (set: HashSet<V>) => foldLeft_(set, z, f)
+export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
+  return (set: HashSet<V>) => foldl_(set, z, f)
 }
 
 /**

@@ -215,9 +215,9 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Chunk<A>)
  * -------------------------------------------
  */
 
-export function foldLeft_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
+export function foldl_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
   if (Array.isArray(fa)) {
-    return A.foldLeft_(fa, b, f)
+    return A.foldl_(fa, b, f)
   }
   let x = b
   for (const y of fa) {
@@ -226,11 +226,11 @@ export function foldLeft_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
   return x
 }
 
-export function foldLeft<A, B>(b: B, f: (b: B, a: A) => B): (fa: Chunk<A>) => B {
-  return (fa) => foldLeft_(fa, b, f)
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Chunk<A>) => B {
+  return (fa) => foldl_(fa, b, f)
 }
 
-export function foldRight_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
+export function foldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
   if (isEmpty(fa)) {
     return b
   }
@@ -241,12 +241,12 @@ export function foldRight_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
   return x
 }
 
-export function foldRight<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
-  return (fa) => foldRight_(fa, b, f)
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
+  return (fa) => foldr_(fa, b, f)
 }
 
 export function foldMap_<M>(M: Monoid<M>): <A>(fa: Chunk<A>, f: (a: A) => M) => M {
-  return (fa, f) => foldLeft_(fa, M.nat, (b, a) => M.combine_(b, f(a)))
+  return (fa, f) => foldl_(fa, M.nat, (b, a) => M.combine_(b, f(a)))
 }
 
 export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>) => M {
@@ -280,7 +280,7 @@ export function map<A, B>(f: (a: A) => B) {
  * -------------------------------------------
  */
 
-export function chain_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
+export function bind_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   let rlen       = 0
   const l        = ma.length
   const mut_temp = new Array(l)
@@ -303,12 +303,12 @@ export function chain_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   return mut_r
 }
 
-export function chain<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
-  return (ma) => chain_(ma, f)
+export function bind<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
+  return (ma) => bind_(ma, f)
 }
 
 export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*

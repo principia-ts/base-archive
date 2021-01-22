@@ -7,11 +7,11 @@ import type { Cause } from '@principia/io/Cause'
 import type { USync } from '@principia/io/Sync'
 
 import * as A from '@principia/base/Array'
+import * as Ev from '@principia/base/Eval'
 import * as O from '@principia/base/Option'
 import { BLUE, CYAN, RED, YELLOW } from '@principia/base/util/AnsiFormat'
 import * as C from '@principia/io/Cause'
 import * as Sy from '@principia/io/Sync'
-import * as Ev from '@principia/base/Eval'
 
 import * as BA from '../FreeBooleanAlgebra'
 import { TestTimeoutException } from '../TestTimeoutException'
@@ -154,7 +154,7 @@ function highlight(fragment: Fragment, substring: string, colorCode = YELLOW): L
   if (parts.length === 1) {
     return fragment.toLine()
   } else {
-    return A.foldLeft_(parts, Line.empty, (line, part) =>
+    return A.foldl_(parts, Line.empty, (line, part) =>
       line.fragments.length < parts.length * 2 - 2
         ? line['+'](new Fragment(part, fragment.colorCode))['+'](new Fragment(substring, colorCode))
         : line['+'](new Fragment(part, fragment.colorCode))

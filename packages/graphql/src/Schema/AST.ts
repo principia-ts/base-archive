@@ -34,7 +34,7 @@ import type {
   VariableDefinitionNode
 } from 'graphql'
 
-import { foldLeftWithIndex_ as reduceRecord } from '@principia/base/Record'
+import { ifoldl_ as reduceRecord } from '@principia/base/Record'
 import { Kind } from 'graphql'
 
 interface FieldDefinitionNodeArgs {

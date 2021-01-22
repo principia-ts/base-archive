@@ -102,8 +102,8 @@ export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
     pipe(
       test,
       I.result,
-      I.map2(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.apFirst_),
-      I.chain(I.done)
+      I.map2(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.apl_),
+      I.bind(I.done)
     )
   )
 }
@@ -129,7 +129,7 @@ export function aroundAll<R, E, A, R1>(
     const aroundAll = (
       specs: M.Managed<R0, TestFailure<E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>>
     ): M.Managed<R0 & R1 & R, TestFailure<E | E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>> =>
-      pipe(before, M.make(after), M.mapError(TF.fail), M.apSecond(specs))
+      pipe(before, M.make(after), M.mapError(TF.fail), M.apr(specs))
 
     const around = (
       test: I.IO<R0, TestFailure<E0>, TestSuccess>
@@ -154,7 +154,7 @@ export function aspect<R0, E0>(
 }
 
 export function before<R0>(effect: I.IO<R0, never, any>): TestAspect<R0, never> {
-  return new PerTest((test) => I.andThen_(effect, test))
+  return new PerTest((test) => I.apr_(effect, test))
 }
 
 export function beforeAll<R0, E0>(effect: I.IO<R0, E0, any>): TestAspect<R0, E0> {
@@ -189,7 +189,7 @@ export function repeat<R0>(
           test,
           I.giveAll(r),
           I.repeat(
-            Sc.apSecond_(
+            Sc.apr_(
               schedule,
               pipe(
                 Sc.identity<TestSuccess>(),
@@ -206,8 +206,8 @@ export function repeat<R0>(
 export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = new PerTest((test) =>
   pipe(
     TC.repeats,
-    I.chain((n) =>
-      I.andThen_(
+    I.bind((n) =>
+      I.apr_(
         test,
         pipe(
           test,

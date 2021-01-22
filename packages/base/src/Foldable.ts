@@ -3,22 +3,22 @@ import type { Monoid } from './Monoid'
 import * as HKT from './HKT'
 
 export interface Foldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly foldLeft_: FoldLeftFn_<F, C>
-  readonly foldLeft: FoldLeftFn<F, C>
+  readonly foldl_: FoldLeftFn_<F, C>
+  readonly foldl: FoldLeftFn<F, C>
   readonly foldMap_: FoldMapFn_<F, C>
   readonly foldMap: FoldMapFn<F, C>
-  readonly foldRight_: FoldRightFn_<F, C>
-  readonly foldRight: FoldRightFn<F, C>
+  readonly foldr_: FoldRightFn_<F, C>
+  readonly foldr: FoldRightFn<F, C>
 }
 
 export interface FoldableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
-  readonly foldLeft_: FoldLeftFnComposition_<F, G, CF, CG>
-  readonly foldLeft: FoldLeftFnComposition<F, G, CF, CG>
+  readonly foldl_: FoldLeftFnComposition_<F, G, CF, CG>
+  readonly foldl: FoldLeftFnComposition<F, G, CF, CG>
   readonly foldMap_: FoldMapFnComposition_<F, G, CF, CG>
   readonly foldMap: FoldMapFnComposition<F, G, CF, CG>
-  readonly foldRight_: FoldRightFnComposition_<F, G, CF, CG>
-  readonly foldRight: FoldRightFnComposition<F, G, CF, CG>
+  readonly foldr_: FoldRightFnComposition_<F, G, CF, CG>
+  readonly foldr: FoldRightFnComposition<F, G, CF, CG>
 }
 
 export function getFoldableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
@@ -29,20 +29,20 @@ export function getFoldableComposition<F, G>(
   F: Foldable<HKT.UHKT<F>>,
   G: Foldable<HKT.UHKT<G>>
 ): FoldableComposition<HKT.UHKT<F>, HKT.UHKT<G>> {
-  const foldMap_: FoldMapFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>>     = (M) => (fga, f) =>
+  const foldMap_: FoldMapFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (M) => (fga, f) =>
     F.foldMap_(M)(fga, (ga) => G.foldMap_(M)(ga, f))
-  const foldLeft_: FoldLeftFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>>   = (fga, b, f) =>
-    F.foldLeft_(fga, b, (b, ga) => G.foldLeft_(ga, b, f))
-  const foldRight_: FoldRightFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (fga, b, f) =>
-    F.foldRight_(fga, b, (ga, b) => G.foldRight_(ga, b, f))
+  const foldl_: FoldLeftFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>>  = (fga, b, f) =>
+    F.foldl_(fga, b, (b, ga) => G.foldl_(ga, b, f))
+  const foldr_: FoldRightFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (fga, b, f) =>
+    F.foldr_(fga, b, (ga, b) => G.foldr_(ga, b, f))
 
   return HKT.instance<FoldableComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
-    foldLeft_,
+    foldl_,
     foldMap_,
-    foldRight_,
-    foldLeft: (b, f) => (fga) => foldLeft_(fga, b, f),
+    foldr_,
+    foldl: (b, f) => (fga) => foldl_(fga, b, f),
     foldMap: (M) => (f) => (fga) => foldMap_(M)(fga, f),
-    foldRight: (b, f) => (fga) => foldRight_(fga, b, f)
+    foldr: (b, f) => (fga) => foldr_(fga, b, f)
   })
 }
 

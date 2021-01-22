@@ -1,3 +1,5 @@
+import type { TestAnnotation } from './Annotation'
+import type { TestArgs } from './TestArgs'
 import type { TestAspect } from './TestAspect'
 import type { TestFailure } from './TestFailure'
 import type { TestSuccess } from './TestSuccess'
@@ -7,15 +9,18 @@ import type { Cause } from '@principia/io/Cause'
 import type { ExecutionStrategy } from '@principia/io/ExecutionStrategy'
 
 import * as A from '@principia/base/Array'
+import * as Eq from '@principia/base/Eq'
 import { flow, identity, pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
+import * as Set from '@principia/base/Set'
+import * as Str from '@principia/base/String'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 
+import { tagged, TestAnnotationMap } from './Annotation'
 import * as Annotations from './Annotation'
-import { TestAnnotationMap } from './Annotation'
 import { Ignored } from './TestSuccess'
 
 export type XSpec<R, E> = Spec<R, TestFailure<E>, TestSuccess>
@@ -93,7 +98,7 @@ export function countTests_<R, E, T>(spec: Spec<R, E, T>, f: (t: T) => boolean):
   return fold_(
     spec,
     matchTag({
-      Suite: ({ specs }) => M.chain_(specs, flow(M.foreach(identity), M.map(A.sum))),
+      Suite: ({ specs }) => M.bind_(specs, flow(M.foreach(identity), M.map(A.sum))),
       Test: ({ test }) => I.toManaged_(I.map_(test, (t) => (f(t) ? 1 : 0)))
     })
   )
@@ -109,7 +114,7 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
               s.label,
               M.map_(
                 s.specs,
-                A.chain((spec) =>
+                A.bind((spec) =>
                   O.fold_(
                     filterLabels_(spec, f),
                     () => A.empty<Spec<R, E, T>>(),
@@ -124,6 +129,60 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
   })
 }
 
+export function filterAnnotations_<R, E, T, V>(
+  spec: Spec<R, E, T>,
+  key: TestAnnotation<V>,
+  f: (v: V) => boolean
+): Option<Spec<R, E, T>> {
+  return matchTag_(spec.caseValue, {
+    Suite: ({ label, specs, exec }) =>
+      O.some(
+        suite(
+          label,
+          M.map_(
+            specs,
+            A.filterMap((s) => filterAnnotations_(s, key, f))
+          ),
+          exec
+        )
+      ),
+    Test: (t) => (f(t.annotations.get(key)) ? O.some(test(t.label, t.test, t.annotations)) : O.none())
+  })
+}
+
+export function filterTags_<R, E, T>(spec: Spec<R, E, T>, f: (tag: string) => boolean): Option<Spec<R, E, T>> {
+  return filterAnnotations_(spec, tagged, Set.some(f))
+}
+
+export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R, E> {
+  const filtered = A.isEmpty(args.testSearchTerms)
+    ? A.isEmpty(args.tagSearchTerms)
+      ? O.none()
+      : filterTags_(spec, (tag) => A.elem_(Eq.string)(args.tagSearchTerms, tag))
+    : A.isEmpty(args.tagSearchTerms)
+    ? filterLabels_(spec, (label) =>
+        pipe(
+          args.testSearchTerms,
+          A.findFirst((term) => Str.contains_(label, term)),
+          O.isSome
+        )
+      )
+    : pipe(
+        filterTags_(spec, (tag) => A.elem_(Eq.string)(args.tagSearchTerms, tag)),
+        O.bind((spec) =>
+          filterLabels_(spec, (label) =>
+            pipe(
+              args.testSearchTerms,
+              A.findFirst((term) => Str.contains_(label, term)),
+              O.isSome
+            )
+          )
+        )
+      )
+
+  return O.getOrElse_(filtered, () => spec)
+}
+
 export function foldM_<R, E, T, R1, E1, Z>(
   spec: Spec<R, E, T>,
   f: (_: SpecCase<R, E, T, Z>) => M.Managed<R1, E1, Z>,
@@ -136,7 +195,7 @@ export function foldM_<R, E, T, R1, E1, Z>(
         (c) => f(new SuiteCase(label, M.halt(c), exec)),
         flow(
           M.foreachExec(O.getOrElse_(exec, () => defExec))((spec) => M.release(foldM_(spec, f, defExec))),
-          M.chain((z) => f(new SuiteCase(label, M.succeed(z), exec)))
+          M.bind((z) => f(new SuiteCase(label, M.succeed(z), exec)))
         )
       ),
     Test: f
@@ -270,7 +329,7 @@ export function giveSomeLayerShared<R1, E1, A1>(
           label,
           pipe(
             L.memoize(layer),
-            M.chain((layer) => M.map_(specs, A.map(giveSomeLayer(layer)))),
+            M.bind((layer) => M.map_(specs, A.map(giveSomeLayer(layer)))),
             M.giveSomeLayer(layer)
           ),
           exec

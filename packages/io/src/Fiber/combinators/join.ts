@@ -15,4 +15,4 @@ import * as I from '../../IO/core'
  * fiber, "inner interruption" can be caught and recovered.
  */
 export const join = <E, A>(fiber: Fiber<E, A>): FIO<E, A> =>
-  I.tap_(I.chain_(fiber.await, I.done), () => fiber.inheritRefs)
+  I.tap_(I.bind_(fiber.await, I.done), () => fiber.inheritRefs)

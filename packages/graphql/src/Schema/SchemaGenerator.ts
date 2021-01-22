@@ -1,3 +1,4 @@
+/* eslint-disable functional/immutable-data */
 import type { ResolverF } from './Resolver'
 import type { ScalarFunctions } from './Scalar'
 import type { AnyRootTypes, GQLExtendObject, GQLInputObject, GQLObject, GQLScalar } from './Types'
@@ -78,7 +79,7 @@ export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) =
       name: v.name
     }
   }
-  const extendFieldASTs      = R.foldLeftWithIndex_(
+  const extendFieldASTs      = R.ifoldl_(
     extendTypes,
     {} as Record<string, ReadonlyArray<FieldDefinitionNode>>,
     (b, k, v) => ({
@@ -86,14 +87,14 @@ export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) =
       [k]: v.fields
     })
   )
-  const extendObjectNames    = R.foldLeftWithIndex_(extendTypes, [] as string[], (acc, k, _v) => [...acc, k])
-  const objectASTs           = R.foldLeftWithIndex_(objectTypes, [] as ObjectTypeDefinitionNode[], (b, k, v) => {
+  const extendObjectNames    = R.ifoldl_(extendTypes, [] as string[], (acc, k, _v) => [...acc, k])
+  const objectASTs           = R.ifoldl_(objectTypes, [] as ObjectTypeDefinitionNode[], (b, k, v) => {
     return extendObjectNames.includes(k)
       ? [...b, { ...v.ast, fields: [...(v.ast.fields || []), ...extendFieldASTs[k]] }]
       : [...b, v.ast]
   })
-  const inputASTs            = R.foldLeft_(inputObjectTypes, [] as InputObjectTypeDefinitionNode[], (acc, v) => [...acc, v.ast])
-  const scalarASTs           = R.foldLeft_(scalarTypes, [] as ScalarTypeDefinitionNode[], (acc, v) => [...acc, v.ast])
+  const inputASTs            = R.foldl_(inputObjectTypes, [] as InputObjectTypeDefinitionNode[], (acc, v) => [...acc, v.ast])
+  const scalarASTs           = R.foldl_(scalarTypes, [] as ScalarTypeDefinitionNode[], (acc, v) => [...acc, v.ast])
   const schemaDefinitionNode = createSchemaDefinitionNode({
     mutation: Object.keys(resolvers).includes('Mutation'),
     query: Object.keys(resolvers).includes('Query')

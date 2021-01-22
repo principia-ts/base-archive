@@ -29,7 +29,7 @@ export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<u
       const preallocated = yield* _(
         Ex.foldM_(
           tp,
-          (c) => pipe(rm, releaseAll(Ex.halt(c), sequential), I.andThen(I.halt(c))),
+          (c) => pipe(rm, releaseAll(Ex.halt(c), sequential), I.apr(I.halt(c))),
           ([release, a]) =>
             I.succeed(
               new Managed(

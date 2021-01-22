@@ -135,20 +135,20 @@ export function ap<S, A>(fa: State<S, A>): <B>(fab: State<S, (a: A) => B>) => St
   return (fab) => ap_(fab, fa)
 }
 
-export function apFirst_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, A> {
+export function apl_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, A> {
   return map2_(fa, fb, (a, _) => a)
 }
 
-export function apFirst<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, B> {
+export function apr_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, B> {
   return map2_(fa, fb, (_, b) => b)
 }
 
-export function apSecond<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {
+  return (fa) => apr_(fa, fb)
 }
 
 /*
@@ -174,19 +174,19 @@ export function map<A, B>(f: (a: A) => B): <S>(fa: State<S, A>) => State<S, B> {
  * -------------------------------------------
  */
 
-export function chain_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): State<S, B> {
+export function bind_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): State<S, B> {
   return (s) => {
     const [a, s2] = ma(s)
     return f(a)(s2)
   }
 }
 
-export function chain<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, B> {
-  return (ma) => chain_(ma, f)
+export function bind<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, B> {
+  return (ma) => bind_(ma, f)
 }
 
 export function tap_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): State<S, A> {
-  return chain_(ma, (a) => map_(f(a), () => a))
+  return bind_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, A> {
@@ -194,7 +194,7 @@ export function tap<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => Sta
 }
 
 export function flatten<S, A>(mma: State<S, State<S, A>>): State<S, A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*

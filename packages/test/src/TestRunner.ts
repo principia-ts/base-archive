@@ -35,7 +35,7 @@ export class TestRunner<R, E> {
     return pipe(
       this.executor.run(spec, parallelN(10)),
       I.timed,
-      I.chain(([duration, results]) => I.as_(this.reporter(duration, results), () => results))
+      I.bind(([duration, results]) => I.as_(this.reporter(duration, results), () => results))
     )
   }
 }

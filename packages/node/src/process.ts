@@ -20,7 +20,7 @@ export class StdinError {
 
 export const stdin: S.FStream<StdinError, Byte> = pipe(
   S.fromEffect(I.effectTotal(() => tuple(process.stdin.resume(), new Array<() => void>()))),
-  S.chain(([rs, cleanup]) =>
+  S.bind(([rs, cleanup]) =>
     S.ensuring_(
       S.effectAsync<unknown, StdinError, Byte>((cb) => {
         const onData  = (data: Buffer) => {

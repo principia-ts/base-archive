@@ -96,7 +96,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
           (e) => I.fail(eb(e)),
           (a) => bd(a)
         ),
-      (a) => (s) => I.chain_(ca(a), (a) => I.mapError_(this.setEither(a)(s), ea))
+      (a) => (s) => I.bind_(ca(a), (a) => I.mapError_(this.setEither(a)(s), ea))
     )
 
   readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -115,16 +115,16 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
           (a) => bd(a)
         ),
       (c) => (s) =>
-        I.chain_(
+        I.bind_(
           I.foldM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
           (a) => I.mapError_(this.setEither(a)(s), ea)
         )
     )
 
-  get: I.IO<RB, EB, B> = I.chain_(this.value.get, (a) => this.getEither(a))
+  get: I.IO<RB, EB, B> = I.bind_(this.value.get, (a) => this.getEither(a))
 
   set: (a: A) => I.IO<RA, EA, void> = (a) =>
-    withPermit(this.value.semaphore)(I.chain_(I.chain_(this.value.get, this.setEither(a)), (a) => this.value.set(a)))
+    withPermit(this.value.semaphore)(I.bind_(I.bind_(this.value.get, this.setEither(a)), (a) => this.value.set(a)))
 }
 
 export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, A, B> {
@@ -150,7 +150,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
           (e) => I.fail(eb(e)),
           (a) => bd(a)
         ),
-      (a) => I.chain_(ca(a), (a) => I.mapError_(this.setEither(a), ea))
+      (a) => I.bind_(ca(a), (a) => I.mapError_(this.setEither(a), ea))
     )
 
   readonly foldAllM = <RC, RD, EC, ED, C, D>(
@@ -169,16 +169,16 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
           (a) => bd(a)
         ),
       (c) => (s) =>
-        I.chain_(
+        I.bind_(
           I.foldM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
           (a) => I.mapError_(this.setEither(a), ea)
         )
     )
 
-  get: I.IO<RB, EB, B> = I.chain_(this.value.get, (a) => this.getEither(a))
+  get: I.IO<RB, EB, B> = I.bind_(this.value.get, (a) => this.getEither(a))
 
   set: (a: A) => I.IO<RA, EA, void> = (a) =>
-    withPermit(this.value.semaphore)(I.chain_(this.setEither(a), (a) => this.value.set(a)))
+    withPermit(this.value.semaphore)(I.bind_(this.setEither(a), (a) => this.value.set(a)))
 }
 
 export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
@@ -740,8 +740,8 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
       Atomic: (atomic) =>
         pipe(
           atomic.ref.get,
-          I.chain(f),
-          I.chain(([b, a]) =>
+          I.bind(f),
+          I.bind(([b, a]) =>
             pipe(
               atomic.ref.set(a),
               I.as(() => b)
@@ -752,14 +752,14 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
       Derived: (derived) =>
         pipe(
           derived.value.ref.get,
-          I.chain((a) =>
+          I.bind((a) =>
             pipe(
               derived.getEither(a),
-              I.chain(f),
-              I.chain(([b, a]) =>
+              I.bind(f),
+              I.bind(([b, a]) =>
                 pipe(
                   derived.setEither(a),
-                  I.chain((a) => derived.value.ref.set(a)),
+                  I.bind((a) => derived.value.ref.set(a)),
                   I.as(() => b)
                 )
               )
@@ -770,14 +770,14 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
       DerivedAll: (derivedAll) =>
         pipe(
           derivedAll.value.ref.get,
-          I.chain((s) =>
+          I.bind((s) =>
             pipe(
               derivedAll.getEither(s),
-              I.chain(f),
-              I.chain(([b, a]) =>
+              I.bind(f),
+              I.bind(([b, a]) =>
                 pipe(
                   derivedAll.setEither(a)(s),
-                  I.chain((a) => derivedAll.value.ref.set(a)),
+                  I.bind((a) => derivedAll.value.ref.set(a)),
                   I.as(() => b)
                 )
               )

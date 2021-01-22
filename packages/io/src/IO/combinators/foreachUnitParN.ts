@@ -16,7 +16,7 @@ export function foreachUnitParN_(
   return (as, f) =>
     pipe(
       Semaphore.make(n),
-      I.chain((s) => foreachUnitPar_(as, (a) => Semaphore.withPermit_(f(a), s)))
+      I.bind((s) => foreachUnitPar_(as, (a) => Semaphore.withPermit_(f(a), s)))
     )
 }
 

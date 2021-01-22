@@ -31,7 +31,7 @@ function traverseResultLoop<A>(whole: AssertionValue<A>, failureDetails: Failure
   } else {
     const fragment = whole.result()
     const result   = BA.isTrue(fragment) ? fragment : BA.not(fragment)
-    return BA.chain_(result, (fragment) =>
+    return BA.bind_(result, (fragment) =>
       traverseResultLoop(fragment, FailureDetails([whole, ...failureDetails.assertion], failureDetails.gen))
     )
   }
@@ -43,7 +43,7 @@ export function traverseResult<A>(
   assertion: () => AssertionM<A>,
   showA?: Show<A>
 ): TestResult {
-  return BA.chain_(assertResult(), (fragment) =>
+  return BA.bind_(assertResult(), (fragment) =>
     traverseResultLoop(fragment, FailureDetails([new AssertionValue(value, assertion, assertResult, showA)]))
   )
 }

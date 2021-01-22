@@ -38,7 +38,7 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
       return I.foreachPar_(as, (a) =>
         pipe(
           makeInnerMap,
-          I.chain((innerMap) =>
+          I.bind((innerMap) =>
             pipe(
               f(a).io,
               I.map(([_fin, r]) => r),
@@ -64,7 +64,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R
       return I.foreachUnitPar_(as, (a) =>
         pipe(
           makeInnerMap,
-          I.chain((innerMap) =>
+          I.bind((innerMap) =>
             pipe(
               f(a).io,
               I.map(([_fin, r]) => r),

@@ -200,7 +200,7 @@ function toArray<R, E>(routes: Routes<R, E>): ReadonlyArray<RouteMatch<R, E>> {
           const middlewares = routes.middleware()
           const x           = (method: HttpMethod, url: URL) => (routes.match(method, url) ? routes.route : Route404())
           if (A.isNonEmpty(middlewares)) {
-            return [A.foldLeft_(middlewares, x, (b, m) => (method, url) => (r, n) => m.apply(b(method, url))(r, n))]
+            return [A.foldl_(middlewares, x, (b, m) => (method, url) => (r, n) => m.apply(b(method, url))(r, n))]
           }
           return [x]
         }
@@ -222,9 +222,9 @@ export function drain<R>(rs: Routes<R, never>) {
     const env = yield* $(I.ask<R>())
     const pfn = yield* $(
       I.effectTotal(() =>
-        A.foldLeft_(
+        A.foldl_(
           routes,
-          <ProcessFn>(({ res: response }) => I.andThen_(response.status(Status.NotFound), response.end())),
+          <ProcessFn>(({ res: response }) => I.apr_(response.status(Status.NotFound), response.end())),
           (b, a) => (ctx) =>
             I.gen(function* (_) {
               const method = yield* _(ctx.req.method)
@@ -242,8 +242,6 @@ export function drain<R>(rs: Routes<R, never>) {
     )
 
     const { queue } = yield* $(HttpServerTag)
-    return yield* $(
-      pipe(isRouterDraining, FR.set(true), I.andThen(pipe(queue.take, I.chain(flow(pfn, I.fork)), I.forever)))
-    )
+    return yield* $(pipe(isRouterDraining, FR.set(true), I.apr(pipe(queue.take, I.bind(flow(pfn, I.fork)), I.forever))))
   })
 }

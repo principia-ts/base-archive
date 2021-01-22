@@ -3,22 +3,22 @@ import type { Monoid } from './Monoid'
 import * as HKT from './HKT'
 
 export interface FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly foldLeftWithIndex_: FoldLeftWithIndexFn_<F, C>
-  readonly foldLeftWithIndex: FoldLeftWithIndexFn<F, C>
-  readonly foldMapWithIndex_: FoldMapWithIndexFn_<F, C>
-  readonly foldMapWithIndex: FoldMapWithIndexFn<F, C>
-  readonly foldRightWithIndex_: FoldRightWithIndexFn_<F, C>
-  readonly foldRightWithIndex: FoldRightWithIndexFn<F, C>
+  readonly ifoldl_: FoldLeftWithIndexFn_<F, C>
+  readonly ifoldl: FoldLeftWithIndexFn<F, C>
+  readonly ifoldMap_: FoldMapWithIndexFn_<F, C>
+  readonly ifoldMap: FoldMapWithIndexFn<F, C>
+  readonly ifoldr_: FoldRightWithIndexFn_<F, C>
+  readonly ifoldr: FoldRightWithIndexFn<F, C>
 }
 
 export interface FoldableWithIndexComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
-  readonly foldLeftWithIndex_: FoldLeftWithIndexFnComposition_<F, G, CF, CG>
-  readonly foldLeftWithIndex: FoldLeftWithIndexFnComposition<F, G, CF, CG>
-  readonly foldMapWithIndex_: FoldMapWithIndexFnComposition_<F, G, CF, CG>
-  readonly foldMapWithIndex: FoldMapWithIndexFnComposition<F, G, CF, CG>
-  readonly foldRightWithIndex_: FoldRightWithIndexFnComposition_<F, G, CF, CG>
-  readonly foldRightWithIndex: FoldRightWithIndexFnComposition<F, G, CF, CG>
+  readonly ifoldl_: FoldLeftWithIndexFnComposition_<F, G, CF, CG>
+  readonly ifoldl: FoldLeftWithIndexFnComposition<F, G, CF, CG>
+  readonly ifoldMap_: FoldMapWithIndexFnComposition_<F, G, CF, CG>
+  readonly ifoldMap: FoldMapWithIndexFnComposition<F, G, CF, CG>
+  readonly ifoldr_: FoldRightWithIndexFnComposition_<F, G, CF, CG>
+  readonly ifoldr: FoldRightWithIndexFnComposition<F, G, CF, CG>
 }
 
 export function getFoldableWithIndexComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
@@ -29,35 +29,30 @@ export function getFoldableWithIndexComposition<F, G>(
   F: FoldableWithIndex<HKT.UHKT<F>>,
   G: FoldableWithIndex<HKT.UHKT<G>>
 ) {
-  const foldLeftWithIndex_: FoldLeftWithIndexFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = <KF, KG, A, B>(
+  const ifoldl_: FoldLeftWithIndexFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = <KF, KG, A, B>(
     fga: HKT.HKT<F, HKT.HKT<G, A>>,
     b: B,
     f: (b: B, k: [KF, KG], a: A) => B
   ) =>
-    F.foldLeftWithIndex_(fga, b, (b: B, fi: KF, ga: HKT.HKT<G, A>) =>
-      G.foldLeftWithIndex_(ga, b, (b: B, gi: KG, a: A) => f(b, [fi, gi], a))
-    )
+    F.ifoldl_(fga, b, (b: B, fi: KF, ga: HKT.HKT<G, A>) => G.ifoldl_(ga, b, (b: B, gi: KG, a: A) => f(b, [fi, gi], a)))
 
-  const foldMapWithIndex_: FoldMapWithIndexFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = <M>(M: Monoid<M>) => <KF, KG, A>(
+  const ifoldMap_: FoldMapWithIndexFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = <M>(M: Monoid<M>) => <KF, KG, A>(
     fga: HKT.HKT<F, HKT.HKT<G, A>>,
     f: (k: [KF, KG], a: A) => M
-  ) => F.foldMapWithIndex_(M)(fga, (kf: KF, ga) => G.foldMapWithIndex_(M)(ga, (kg: KG, a) => f([kf, kg], a)))
+  ) => F.ifoldMap_(M)(fga, (kf: KF, ga) => G.ifoldMap_(M)(ga, (kg: KG, a) => f([kf, kg], a)))
 
-  const foldRightWithIndex_: FoldRightWithIndexFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = <KF, KG, A, B>(
+  const ifoldr_: FoldRightWithIndexFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = <KF, KG, A, B>(
     fga: HKT.HKT<F, HKT.HKT<G, A>>,
     b: B,
     f: (a: A, k: [KF, KG], b: B) => B
-  ) =>
-    F.foldRightWithIndex_(fga, b, (ga: HKT.HKT<G, A>, fi: KF, b) =>
-      G.foldRightWithIndex_(ga, b, (a: A, gi: KG, b) => f(a, [fi, gi], b))
-    )
+  ) => F.ifoldr_(fga, b, (ga: HKT.HKT<G, A>, fi: KF, b) => G.ifoldr_(ga, b, (a: A, gi: KG, b) => f(a, [fi, gi], b)))
   return HKT.instance<FoldableWithIndexComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
-    foldLeftWithIndex_,
-    foldMapWithIndex_,
-    foldRightWithIndex_,
-    foldLeftWithIndex: (b, f) => (fga) => foldLeftWithIndex_(fga, b, f),
-    foldMapWithIndex: (M) => (f) => (fga) => foldMapWithIndex_(M)(fga, f),
-    foldRightWithIndex: (b, f) => (fga) => foldRightWithIndex_(fga, b, f)
+    ifoldl_,
+    ifoldMap_,
+    ifoldr_,
+    ifoldl: (b, f) => (fga) => ifoldl_(fga, b, f),
+    ifoldMap: (M) => (f) => (fga) => ifoldMap_(M)(fga, f),
+    ifoldr: (b, f) => (fga) => ifoldr_(fga, b, f)
   })
 }
 

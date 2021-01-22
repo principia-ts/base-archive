@@ -3,8 +3,8 @@ import type { FunctorWithIndex } from './FunctorWithIndex'
 import type * as HKT from './HKT'
 
 export interface TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends FunctorWithIndex<F, C> {
-  readonly traverseWithIndex_: TraverseWithIndexFn_<F, C>
-  readonly traverseWithIndex: TraverseWithIndexFn<F, C>
+  readonly itraverse_: TraverseWithIndexFn_<F, C>
+  readonly itraverse: TraverseWithIndexFn<F, C>
 }
 
 export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {

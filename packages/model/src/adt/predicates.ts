@@ -1,6 +1,6 @@
 import type { ElemType, ExtractUnion, KeysDefinition } from './utils'
 
-import { mapWithIndex } from '@principia/base/Record'
+import { imap } from '@principia/base/Record'
 
 export type Is<A, Tag extends keyof A> = {
   [key in A[Tag] & string]: (a: A) => a is ExtractUnion<A, Tag, key>
@@ -23,7 +23,7 @@ export interface Predicates<A, Tag extends keyof A & string> {
 export const Predicates = <A, Tag extends keyof A & string>(tag: Tag) => (
   keys: KeysDefinition<A, Tag>
 ): Predicates<A, Tag> => ({
-  is: mapWithIndex((key, _) => (rest: A) => (rest[tag] as any) === key)(keys) as any,
+  is: imap((key, _) => (rest: A) => (rest[tag] as any) === key)(keys) as any,
   verified: (a: A): a is A => ((a[tag] as unknown) as string) in keys,
   isAnyOf: <Keys extends A[Tag][]>(keys: Keys) => (rest: A): rest is ExtractUnion<A, Tag, ElemType<Keys>> =>
     keys.indexOf(rest[tag]) !== -1

@@ -138,7 +138,7 @@ export function id<S>(): Prism<S, S> {
  */
 export function compose_<S, A, B>(sa: Prism<S, A>, ab: Prism<A, B>): Prism<S, B> {
   return {
-    getOption: flow(sa.getOption, O.chain(ab.getOption)),
+    getOption: flow(sa.getOption, O.bind(ab.getOption)),
     reverseGet: flow(ab.reverseGet, sa.reverseGet)
   }
 }
@@ -173,7 +173,7 @@ export const Category: P.Category<[URI], V> = HKT.instance({
  * @category Invariant
  * @since 1.0.0
  */
-export function imap_<S, A, B>(ea: Prism<S, A>, ab: (a: A) => B, ba: (b: B) => A): Prism<S, B> {
+export function invmap_<S, A, B>(ea: Prism<S, A>, ab: (a: A) => B, ba: (b: B) => A): Prism<S, B> {
   return {
     getOption: flow(ea.getOption, O.map(ab)),
     reverseGet: flow(ba, ea.reverseGet)
@@ -184,8 +184,8 @@ export function imap_<S, A, B>(ea: Prism<S, A>, ab: (a: A) => B, ba: (b: B) => A
  * @category Invariant
  * @since 1.0.0
  */
-export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <S>(ea: Prism<S, A>) => Prism<S, B> {
-  return (ea) => imap_(ea, ab, ba)
+export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <S>(ea: Prism<S, A>) => Prism<S, B> {
+  return (ea) => invmap_(ea, ab, ba)
 }
 
 /**
@@ -193,8 +193,8 @@ export function imap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <S>(ea: Prism<S, A
  * @since 1.0.0
  */
 export const Invariant: P.Invariant<[URI], V> = HKT.instance({
-  imap_,
-  imap
+  invmap_,
+  invmap
 })
 
 /*

@@ -26,7 +26,7 @@ export function dumpStr(fibers: Iterable<RuntimeFiber<any, any>>, withTrace: fal
   return T.map_(T.map2_(du, now, tuple), ([dumps, now]) => {
     const tree        = renderHierarchy(dumps)
     const dumpStrings = withTrace ? collectTraces(dumps, now) : []
-    return IT.foldLeft_(dumpStrings, tree, (acc, v) => acc + '\n' + v)
+    return IT.foldl_(dumpStrings, tree, (acc, v) => acc + '\n' + v)
   })
 }
 
@@ -96,7 +96,7 @@ export function renderStatus(status: FiberStatus): string {
  * @internal
  */
 export function renderHierarchy(trees: Iterable<FiberDump>): string {
-  return IT.foldLeft_(IT.map_(trees, renderOne), '', (acc, str) => acc + str)
+  return IT.foldl_(IT.map_(trees, renderOne), '', (acc, str) => acc + str)
 }
 
 export function collectTraces(dumps: Iterable<FiberDump>, now: number): Iterable<string> {

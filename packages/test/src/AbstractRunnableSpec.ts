@@ -19,7 +19,7 @@ export abstract class AbstractRunnableSpec<R, E> {
   }
 
   runSpec(spec: XSpec<R, E>): URIO<Has<TestLogger> & Has<Clock>, ExecutedSpec<E>> {
-    return this.runner.run(A.foldLeft_(this.aspects, spec, (b, a) => b['@@'](a)))
+    return this.runner.run(A.foldl_(this.aspects, spec, (b, a) => b['@@'](a)))
   }
 
   get platform() {

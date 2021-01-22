@@ -10,30 +10,95 @@
       "import": "./dist/dist/esm-fix/index.js",
       "require": "./dist/dist/cjs/index.js"
     },
-    "./": {
-      "import": "./dist/dist/esm-fix/",
-      "require": "./dist/dist/cjs/"
+    "./Async": {
+      "import": "./dist/dist/esm-fix/Async/index.js",
+      "require": "./dist/dist/cjs/Async/index.js"
+    },
+    "./Cause": {
+      "import": "./dist/dist/esm-fix/Cause/index.js",
+      "require": "./dist/dist/cjs/Cause/index.js"
+    },
+    "./Chunk": {
+      "import": "./dist/dist/esm-fix/Chunk/index.js",
+      "require": "./dist/dist/cjs/Chunk/index.js"
+    },
+    "./Exit": {
+      "import": "./dist/dist/esm-fix/Exit/index.js",
+      "require": "./dist/dist/cjs/Exit/index.js"
+    },
+    "./Fiber/combinators": {
+      "import": "./dist/dist/esm-fix/Fiber/combinators/index.js",
+      "require": "./dist/dist/cjs/Fiber/combinators/index.js"
+    },
+    "./Fiber": {
+      "import": "./dist/dist/esm-fix/Fiber/index.js",
+      "require": "./dist/dist/cjs/Fiber/index.js"
+    },
+    "./FiberRef": {
+      "import": "./dist/dist/esm-fix/FiberRef/index.js",
+      "require": "./dist/dist/cjs/FiberRef/index.js"
+    },
+    "./IO/combinators": {
+      "import": "./dist/dist/esm-fix/IO/combinators/index.js",
+      "require": "./dist/dist/cjs/IO/combinators/index.js"
+    },
+    "./IO": {
+      "import": "./dist/dist/esm-fix/IO/index.js",
+      "require": "./dist/dist/cjs/IO/index.js"
+    },
+    "./IORef": {
+      "import": "./dist/dist/esm-fix/IORef/index.js",
+      "require": "./dist/dist/cjs/IORef/index.js"
+    },
+    "./IORefM": {
+      "import": "./dist/dist/esm-fix/IORefM/index.js",
+      "require": "./dist/dist/cjs/IORefM/index.js"
+    },
+    "./Layer": {
+      "import": "./dist/dist/esm-fix/Layer/index.js",
+      "require": "./dist/dist/cjs/Layer/index.js"
+    },
+    "./Managed/combinators": {
+      "import": "./dist/dist/esm-fix/Managed/combinators/index.js",
+      "require": "./dist/dist/cjs/Managed/combinators/index.js"
+    },
+    "./Managed": {
+      "import": "./dist/dist/esm-fix/Managed/index.js",
+      "require": "./dist/dist/cjs/Managed/index.js"
+    },
+    "./Queue": {
+      "import": "./dist/dist/esm-fix/Queue/index.js",
+      "require": "./dist/dist/cjs/Queue/index.js"
+    },
+    "./Schedule": {
+      "import": "./dist/dist/esm-fix/Schedule/index.js",
+      "require": "./dist/dist/cjs/Schedule/index.js"
+    },
+    "./Stream": {
+      "import": "./dist/dist/esm-fix/Stream/index.js",
+      "require": "./dist/dist/cjs/Stream/index.js"
+    },
+    "./*": {
+      "import": "./dist/dist/esm-fix/*.js",
+      "require": "./dist/dist/cjs/*.js"
     }
   },
   "main": "dist/dist/cjs/index.js",
   "module": "./dist/dist/esm-shake/index.js",
   "types": "dist/index.d.ts",
-  "publishConfig": {
-    "directory": "dist",
-    "access": "public"
-  },
   "scripts": {
     "autofix": "yarn lint --fix",
     "build": "yarn build:types && yarn build:esm-fix && yarn build:intermediary && yarn build:esm-shake && yarn build:cjs && yarn build:postprocess",
-    "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
     "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary",
-    "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
     "build:esm-fix": "ttsc --build ./config/tsconfig.esm-fix.json",
+    "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
+    "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
     "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && yarn sort-package-json ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
+    "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint .",
     "prepublish": "yarn clean && yarn build",
     "publish:package": "yarn version --no-git-tag-version && yarn clean && yarn build && yarn publish --no-git-tag-version dist",
@@ -47,6 +112,10 @@
   },
   "devDependencies": {
     "typescript": "^4.1.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
   },
   "gitHead": "185e8063ab953917c77482a33f8885fdd554ddf3"
 }

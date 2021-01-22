@@ -1,29 +1,30 @@
-import chalk from "chalk";
-import type { AsyncOptions } from "cpx";
-import { copy as copy_ } from "cpx";
-import { log } from "fp-ts/lib/Console";
-import type { FunctionN } from "fp-ts/lib/function";
-import * as IO from "fp-ts/lib/IO";
-import { pipe } from "fp-ts/lib/pipeable";
-import * as T from "fp-ts/lib/Task";
-import * as TE from "fp-ts/lib/TaskEither";
-import fs from "fs";
-import glob_ from "glob";
+import type { AsyncOptions } from 'cpx'
+import type { FunctionN } from 'fp-ts/lib/function'
 
-export const readFile = TE.taskify<fs.PathLike, string, NodeJS.ErrnoException, string>(fs.readFile);
+import chalk from 'chalk'
+import { copy as copy_ } from 'cpx'
+import { log } from 'fp-ts/lib/Console'
+import * as IO from 'fp-ts/lib/IO'
+import { pipe } from 'fp-ts/lib/pipeable'
+import * as T from 'fp-ts/lib/Task'
+import * as TE from 'fp-ts/lib/TaskEither'
+import fs from 'fs'
+import glob_ from 'glob'
 
-export const writeFile = TE.taskify<fs.PathLike, string, NodeJS.ErrnoException, void>(fs.writeFile);
+export const readFile = TE.taskify<fs.PathLike, string, NodeJS.ErrnoException, string>(fs.readFile)
 
-const exit = (code: 0 | 1): IO.IO<void> => () => process.exit(code);
+export const writeFile = TE.taskify<fs.PathLike, string, NodeJS.ErrnoException, void>(fs.writeFile)
+
+const exit = (code: 0 | 1): IO.IO<void> => () => process.exit(code)
 
 export const glob = (glob: string, opts: glob_.IOptions = {}): TE.TaskEither<Error, string[]> =>
   TE.tryCatch(
     () =>
       new Promise<string[]>((resolve, reject) => {
-        glob_(glob, opts, (err, result) => (err == null ? resolve(result) : reject(err)));
+        glob_(glob, opts, (err, result) => (err == null ? resolve(result) : reject(err)))
       }),
-    (err) => (err instanceof Error ? err : new Error("could not run glob"))
-  );
+    (err) => (err instanceof Error ? err : new Error('could not run glob'))
+  )
 
 export function onLeft(e: NodeJS.ErrnoException): T.Task<void> {
   return T.fromIO(
@@ -31,11 +32,11 @@ export function onLeft(e: NodeJS.ErrnoException): T.Task<void> {
       log(e),
       IO.chain(() => exit(1))
     )
-  );
+  )
 }
 
 export function onRight(msg: string) {
-  return (): T.Task<void> => T.fromIO(log(chalk.bold.green(msg)));
+  return (): T.Task<void> => T.fromIO(log(chalk.bold.green(msg)))
 }
 
 function modifyFile(
@@ -43,12 +44,10 @@ function modifyFile(
 ): (path: string) => TE.TaskEither<NodeJS.ErrnoException, void> {
   return (path) =>
     pipe(
-      readFile(path, "utf8"),
+      readFile(path, 'utf8'),
       TE.map((original) => ({ original, updated: f(original, path) })),
-      TE.chain(({ original, updated }) =>
-        original === updated ? TE.of(undefined) : writeFile(path, updated)
-      )
-    );
+      TE.chain(({ original, updated }) => (original === updated ? TE.of(undefined) : writeFile(path, updated)))
+    )
 }
 
 function modifyFiles(
@@ -58,20 +57,23 @@ function modifyFiles(
     pipe(
       TE.traverseSeqArray(modifyFile(f))(paths),
       TE.map(() => undefined)
-    );
+    )
 }
 
 export function modifyGlob(
   f: (content: string, path: string) => string
 ): (pattern: string) => TE.TaskEither<NodeJS.ErrnoException, void> {
-  return (pattern) => pipe(glob(pattern), TE.chain(modifyFiles(f)));
+  return (pattern) => pipe(glob(pattern), TE.chain(modifyFiles(f)))
 }
 
 export async function runMain(t: T.Task<void>): Promise<void> {
-  return t().catch((e) => console.log(chalk.bold.red(`Unexpected error: ${e}`)));
+  return t().catch((e) => console.log(chalk.bold.red(`Unexpected error: ${e}`)))
 }
 
-export const copy: FunctionN<
-  [string, string, AsyncOptions?],
-  TE.TaskEither<Error, void>
-> = TE.taskify<string, string, AsyncOptions | undefined, Error, void>(copy_);
+export const copy: FunctionN<[string, string, AsyncOptions?], TE.TaskEither<Error, void>> = TE.taskify<
+  string,
+  string,
+  AsyncOptions | undefined,
+  Error,
+  void
+>(copy_)

@@ -408,27 +408,20 @@ export function apPar<R, E, A>(
   return (fab) => apPar_(fab, fa)
 }
 
-export function apFirstPar_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
+export function aplPar_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
   return map2Par_(fa, fb, (a, _) => a)
 }
 
-export function apFirstPar<R1, E1, A1>(
-  fb: Async<R1, E1, A1>
-): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
-  return (fa) => apFirstPar_(fa, fb)
+export function aplPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
+  return (fa) => aplPar_(fa, fb)
 }
 
-export function apSecondPar_<R, E, A, R1, E1, A1>(
-  fa: Async<R, E, A>,
-  fb: Async<R1, E1, A1>
-): Async<R & R1, E | E1, A1> {
+export function aprPar_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
   return map2Par_(fa, fb, (_, b) => b)
 }
 
-export function apSecondPar<R1, E1, A1>(
-  fb: Async<R1, E1, A1>
-): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
-  return (fa) => apSecondPar_(fa, fb)
+export function aprPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
+  return (fa) => aprPar_(fa, fb)
 }
 
 /*
@@ -440,7 +433,7 @@ export function apSecondPar<R1, E1, A1>(
 export function sequenceT<A extends ReadonlyArray<Async<any, any, any>>>(
   ...fas: A & { 0: Async<any, any, any> }
 ): Async<_R<A[number]>, _E<A[number]>, { [K in keyof A]: _A<A[K]> }> {
-  return A.foldLeft_(
+  return A.foldl_(
     fas,
     (succeed(A.empty<any>()) as unknown) as Async<_R<A[number]>, _E<A[number]>, { [K in keyof A]: _A<A[K]> }>,
     (b, a) => map2_(b, a, (acc, r) => A.append_(acc, r)) as any
@@ -465,7 +458,7 @@ export function map2_<R, E, A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Async<R & R1, E | E1, C> {
-  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function map2<A, R1, E1, B, C>(
@@ -485,22 +478,20 @@ export function ap<R, E, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function apFirst_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
+export function apl_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
   return map2_(fa, fb, (a, _) => a)
 }
 
-export function apFirst<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
+export function apr_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
   return map2_(fa, fb, (_, b) => b)
 }
 
-export function apSecond<R1, E1, A1>(
-  fb: Async<R1, E1, A1>
-): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
+  return (fa) => apr_(fa, fb)
 }
 
 /*
@@ -546,7 +537,7 @@ export function recover<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Eithe
  */
 
 export function map_<R, E, A, B>(fa: Async<R, E, A>, f: (a: A) => B): Async<R, E, B> {
-  return chain_(fa, (a) => succeed(f(a)))
+  return bind_(fa, (a) => succeed(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R, E, B> {
@@ -559,20 +550,20 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R
  * -------------------------------------------
  */
 
-export function chain_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, B> {
+export function bind_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, B> {
   return new Chain(ma, f)
 }
 
-export function chain<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
+export function bind<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
   return (ma) => new Chain(ma, f)
 }
 
 export function flatten<R, E, R1, E1, A>(mma: Async<R, E, Async<R1, E1, A>>): Async<R & R1, E | E1, A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 export function tap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, A> {
-  return chain_(ma, (a) => chain_(f(a), (_) => succeed(a)))
+  return bind_(ma, (a) => bind_(f(a), (_) => succeed(a)))
 }
 
 export function tap<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, A> {
@@ -583,7 +574,7 @@ export function tapError_<R, E, A, R1, E1, B>(
   async: Async<R, E, A>,
   f: (e: E) => Async<R1, E1, B>
 ): Async<R & R1, E | E1, A> {
-  return catchAll_(async, (e) => chain_(f(e), (_) => fail(e)))
+  return catchAll_(async, (e) => bind_(f(e), (_) => fail(e)))
 }
 
 export function tapError<E, R1, E1, B>(
@@ -752,7 +743,7 @@ export function askService<T>(s: Tag<T>): Async<Has<T>, never, T> {
  */
 export function giveServiceM<T>(_: Tag<T>) {
   return <R, E>(f: Async<R, E, T>) => <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>): Async<R & R1, E | E1, A1> =>
-    asksM((r: R & R1) => chain_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+    asksM((r: R & R1) => bind_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
@@ -1075,7 +1066,7 @@ export function runPromiseExitEnv_<R, E, A>(
             effectTotal(() => {
               pushEnv(I.env)
             }),
-            chain(() => I.async),
+            bind(() => I.async),
             tap(() =>
               effectTotal(() => {
                 popEnv()
@@ -1202,8 +1193,8 @@ export function runAsyncEnv<R, E, A>(
  */
 
 export const FunctorAsync: P.Functor<[URI], V> = HKT.instance({
-  imap_: (fa, f, _) => map_(fa, f),
-  imap: <A, B>(f: (a: A) => B, _: (b: B) => A) => <R, E>(fa: Async<R, E, A>) => map_(fa, f),
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => <R, E>(fa: Async<R, E, A>) => map_(fa, f),
   map_,
   map
 })
@@ -1236,8 +1227,8 @@ export const ApplicativeAsync: P.Applicative<[URI], V> = HKT.instance({
 
 export const MonadAsync: P.Monad<[URI], V> = HKT.instance({
   ...ApplicativeAsync,
-  chain_,
-  chain,
+  bind_,
+  bind,
   flatten
 })
 

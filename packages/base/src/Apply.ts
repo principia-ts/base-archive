@@ -307,7 +307,7 @@ export interface ApFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF = 
   >
 }
 
-export interface ApFirstFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ApLeftFn<F extends HKT.URIS, TC = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     N extends string,
     K,
@@ -350,7 +350,7 @@ export interface ApFirstFn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export interface ApFirstFn_<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ApLeftFn_<F extends HKT.URIS, TC = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
@@ -383,7 +383,7 @@ export interface ApFirstFn_<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export interface ApFirstFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface ApLeftFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,
@@ -477,7 +477,7 @@ export interface ApFirstFnComposition<F extends HKT.URIS, G extends HKT.URIS, TC
   >
 }
 
-export interface ApSecondFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface ApRightFn<F extends HKT.URIS, C = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     N extends string,
     K,
@@ -520,7 +520,7 @@ export interface ApSecondFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface ApSecondFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface ApRightFn_<F extends HKT.URIS, C = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
@@ -553,7 +553,7 @@ export interface ApSecondFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface ApSecondFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface ApRightFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,

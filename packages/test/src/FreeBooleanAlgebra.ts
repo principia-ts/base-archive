@@ -15,24 +15,47 @@ import * as I from '@principia/io/IO'
  * -------------------------------------------
  */
 
-export class Value<A> {
+abstract class FreeBooleanAlgebraSyntax {
+  ['&&']<A>(this: FreeBooleanAlgebra<A>, that: FreeBooleanAlgebra<A>): FreeBooleanAlgebra<A> {
+    return and_(this, that)
+  }
+  ['||']<A>(this: FreeBooleanAlgebra<A>, that: FreeBooleanAlgebra<A>): FreeBooleanAlgebra<A> {
+    return or_(this, that)
+  }
+  ['==>']<A>(this: FreeBooleanAlgebra<A>, that: FreeBooleanAlgebra<A>): FreeBooleanAlgebra<A> {
+    return implies_(this, that)
+  }
+  ['<==>']<A>(this: FreeBooleanAlgebra<A>, that: FreeBooleanAlgebra<A>): FreeBooleanAlgebra<A> {
+    return iff_(this, that)
+  }
+}
+
+export class Value<A> extends FreeBooleanAlgebraSyntax {
   readonly _tag = 'Value'
-  constructor(readonly value: A) {}
+  constructor(readonly value: A) {
+    super()
+  }
 }
 
-export class And<A> {
+export class And<A> extends FreeBooleanAlgebraSyntax {
   readonly _tag = 'And'
-  constructor(readonly left: FreeBooleanAlgebra<A>, readonly right: FreeBooleanAlgebra<A>) {}
+  constructor(readonly left: FreeBooleanAlgebra<A>, readonly right: FreeBooleanAlgebra<A>) {
+    super()
+  }
 }
 
-export class Or<A> {
+export class Or<A> extends FreeBooleanAlgebraSyntax {
   readonly _tag = 'Or'
-  constructor(readonly left: FreeBooleanAlgebra<A>, readonly right: FreeBooleanAlgebra<A>) {}
+  constructor(readonly left: FreeBooleanAlgebra<A>, readonly right: FreeBooleanAlgebra<A>) {
+    super()
+  }
 }
 
-export class Not<A> {
+export class Not<A> extends FreeBooleanAlgebraSyntax {
   readonly _tag = 'Not'
-  constructor(readonly result: FreeBooleanAlgebra<A>) {}
+  constructor(readonly result: FreeBooleanAlgebra<A>) {
+    super()
+  }
 }
 
 export type FreeBooleanAlgebra<A> = Value<A> | And<A> | Or<A> | Not<A>
@@ -302,16 +325,16 @@ export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlge
  * -------------------------------------------
  */
 
-export function chain_<A, B>(ma: FreeBooleanAlgebra<A>, f: (a: A) => FreeBooleanAlgebra<B>): FreeBooleanAlgebra<B> {
+export function bind_<A, B>(ma: FreeBooleanAlgebra<A>, f: (a: A) => FreeBooleanAlgebra<B>): FreeBooleanAlgebra<B> {
   return fold_(ma, f, and_, or_, not)
 }
 
-export function chain<A, B>(f: (a: A) => FreeBooleanAlgebra<B>): (ma: FreeBooleanAlgebra<A>) => FreeBooleanAlgebra<B> {
-  return (ma) => chain_(ma, f)
+export function bind<A, B>(f: (a: A) => FreeBooleanAlgebra<B>): (ma: FreeBooleanAlgebra<A>) => FreeBooleanAlgebra<B> {
+  return (ma) => bind_(ma, f)
 }
 
 export function flatten<A>(mma: FreeBooleanAlgebra<FreeBooleanAlgebra<A>>): FreeBooleanAlgebra<A> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*

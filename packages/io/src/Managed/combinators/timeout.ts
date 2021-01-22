@@ -37,7 +37,7 @@ export function timeout(d: number) {
                   I.as(() => O.none())
                 ),
                 (result, sleeper) =>
-                  pipe(sleeper.interruptAs(id), I.andThen(I.done(Ex.map_(result, ([, a]) => E.right(a))))),
+                  pipe(sleeper.interruptAs(id), I.apr(I.done(Ex.map_(result, ([, a]) => E.right(a))))),
                 (_, resultFiber) => I.succeed(E.left(resultFiber))
               ),
               I.giveAll(r),

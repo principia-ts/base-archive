@@ -1,5 +1,5 @@
 import * as Ex from '../../Exit'
-import { chain_, Managed } from '../core'
+import { bind_, Managed } from '../core'
 import * as I from '../internal/io'
 import { fiberId } from './fiberId'
 
@@ -19,5 +19,5 @@ export function withEarlyReleaseExit(
 }
 
 export function withEarlyRelease<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [I.UIO<unknown>, A]> {
-  return chain_(fiberId(), (id) => withEarlyReleaseExit_(ma, Ex.interrupt(id)))
+  return bind_(fiberId(), (id) => withEarlyReleaseExit_(ma, Ex.interrupt(id)))
 }

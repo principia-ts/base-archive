@@ -217,9 +217,9 @@ export function runtime<R0>() {
 }
 
 export function withRuntimeM<R0, R, E, A>(f: (r: Runtime<R0>) => I.IO<R, E, A>) {
-  return I.chain_(runtime<R0>(), f)
+  return I.bind_(runtime<R0>(), f)
 }
 
 export function withRuntime<R0, A>(f: (r: Runtime<R0>) => A) {
-  return I.chain_(runtime<R0>(), (r) => I.pure(f(r)))
+  return I.bind_(runtime<R0>(), (r) => I.pure(f(r)))
 }

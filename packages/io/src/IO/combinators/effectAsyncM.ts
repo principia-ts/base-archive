@@ -28,7 +28,7 @@ export function effectAsyncM<R, E, R1, E1, A>(
           I.catchAllCause((c) => p.halt(c)),
           restore,
           I.fork,
-          I.andThen(restore(p.await))
+          I.apr(restore(p.await))
         )
       )
     )

@@ -3,7 +3,7 @@ import type { Chunk } from './core'
 import { pipe } from '@principia/base/Function'
 
 import * as I from '../IO'
-import { append_, foldLeft_, isTyped } from './core'
+import { append_, foldl_, isTyped } from './core'
 
 export function dropWhileEffect_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.effectSuspendTotal(() => {
@@ -14,7 +14,7 @@ export function dropWhileEffect_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, 
       const a  = as[i]
       dropping = pipe(
         dropping,
-        I.chain((d) => (d ? p(a) : I.succeed(false))),
+        I.bind((d) => (d ? p(a) : I.succeed(false))),
         I.map((d) => {
           if (d) {
             return true
@@ -33,10 +33,10 @@ export function dropWhileEffect<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as:
   return (as) => dropWhileEffect_(as, p)
 }
 
-export function foldLeftEffect_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return foldLeft_(as, I.succeed(b) as I.IO<R, E, B>, (b, a) => I.chain_(b, (_) => f(_, a)))
+export function foldlEffect_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
+  return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (b, a) => I.bind_(b, (_) => f(_, a)))
 }
 
-export function foldLeftEffect<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
-  return (as) => foldLeftEffect_(as, b, f)
+export function foldlEffect<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
+  return (as) => foldlEffect_(as, b, f)
 }

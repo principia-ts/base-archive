@@ -292,7 +292,7 @@ export function fromArray_<I, E, A>(
 ): DecoderKHKT<ReadonlyArray<I>, E, ReadonlyArray<A>> {
   return {
     decode: (M) => {
-      const traverse = A.traverseWithIndex_(M)
+      const traverse = A.itraverse_(M)
       const itemM    = item.decode(M)
       return (is) => traverse(is, (index, i) => M.mapLeft_(itemM(i), (e: E) => onItemError(index, e)))
     }
@@ -331,7 +331,7 @@ export function fromTuple<E>(
 ) => DecoderK<{ [K in keyof P]: InputOf<P[K]> }, E, { [K in keyof P]: TypeOf<P[K]> }> {
   return (...components) => ({
     decode: (M) => {
-      const traverse = A.traverseWithIndex_(M)
+      const traverse = A.itraverse_(M)
       return (is) =>
         traverse(components, (index, decoder) =>
           M.mapLeft_(decoder.decode(M)(is[index]), (e: E) => onIndexError(index, e))
@@ -452,7 +452,7 @@ export function id<E, A>(): DecoderK<A, E, A> {
 export function compose_<I, E, A, B>(ia: DecoderK<I, E, A>, ab: DecoderK<A, E, B>): DecoderK<I, E, B>
 export function compose_<I, E, A, B>(ia: DecoderKHKT<I, E, A>, ab: DecoderKHKT<A, E, B>): DecoderKHKT<I, E, B> {
   return {
-    decode: (M) => (i0) => M.chain_(ia.decode(M)(i0), ab.decode(M))
+    decode: (M) => (i0) => M.bind_(ia.decode(M)(i0), ab.decode(M))
   }
 }
 

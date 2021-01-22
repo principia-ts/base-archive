@@ -23,7 +23,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
   makeSynthetic({
     _tag: 'SyntheticFiber',
     getRef: (ref) =>
-      I.foldLeft_(fibers, ref.initial, (a, fiber) =>
+      I.foldl_(fibers, ref.initial, (a, fiber) =>
         pipe(
           fiber.getRef(ref),
           I.map((a2) => ref.join(a, a2))
@@ -34,7 +34,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
       pipe(
         I.foreach_(fibers, (f) => f.interruptAs(fiberId)),
         I.map(
-          A.foldRight(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
+          A.foldr(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
             Ex.map2Cause_(a, b, (_a, _b) => [_a, ..._b], C.both)
           )
         )
@@ -42,7 +42,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
     poll: pipe(
       I.foreach_(fibers, (f) => f.poll),
       I.map(
-        A.foldRight(some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
+        A.foldr(some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
           O.fold_(
             a,
             () => none(),

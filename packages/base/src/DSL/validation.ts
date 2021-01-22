@@ -10,10 +10,10 @@ import * as E from '../Either'
 import { tuple } from '../Function'
 import * as HKT from '../HKT'
 
-export function getApplicativeValidationF<F extends HKT.URIS, C = HKT.Auto>(
+export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: Monad<F, C> & Fallible<F, C>
 ): <E>(S: Semigroup<E>) => Applicative<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
-export function getApplicativeValidationF<F>(
+export function getApplicativeValidation<F>(
   F: Monad<HKT.UHKT2<F>> & Fallible<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(S: Semigroup<E>) => {
@@ -34,8 +34,8 @@ export function getApplicativeValidationF<F>(
       )
 
     return HKT.instance<Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
-      imap_: F.imap_,
-      imap: F.imap,
+      invmap_: F.invmap_,
+      invmap: F.invmap,
       map_: F.map_,
       map: F.map,
       unit: F.unit,
@@ -50,19 +50,19 @@ export function getApplicativeValidationF<F>(
   }
 }
 
-export function getAltValidationF<F extends HKT.URIS, C = HKT.Auto>(
+export function getAltValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: Monad<F, C> & Fallible<F, C> & Alt<F, C>
 ): <E>(S: Semigroup<E>) => Alt<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
-export function getAltValidationF<F>(
+export function getAltValidation<F>(
   F: Monad<HKT.UHKT2<F>> & Fallible<HKT.UHKT2<F>> & Alt<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(S: Semigroup<E>) => {
     const alt_: AltFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, that) =>
-      F.chain_(
+      F.bind_(
         F.recover(fa),
         E.fold(
           (e) =>
-            F.chain_(
+            F.bind_(
               F.recover(that()),
               E.fold(
                 (e1) => F.fail(S.combine_(e, e1)),
@@ -73,8 +73,8 @@ export function getAltValidationF<F>(
         )
       )
     return HKT.instance<Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
-      imap_: F.imap_,
-      imap: F.imap,
+      invmap_: F.invmap_,
+      invmap: F.invmap,
       map: F.map,
       map_: F.map_,
       alt_,

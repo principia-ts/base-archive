@@ -94,7 +94,7 @@ export function createReadStream(
       })
     ),
     S.bracket(([fd, _]) => I.orDie(close(fd))),
-    S.chain(([fd, state]) =>
+    S.bind(([fd, state]) =>
       S.repeatEffectChunkOption(
         I.gen(function* (_) {
           const [pos, end]     = yield* _(state.get)
@@ -153,11 +153,11 @@ export function createWriteSink(
             (chunk) =>
               pipe(
                 (st[1] as Ref.URef<number | undefined>).get,
-                I.chain((pos) => write(st[0], C.asBuffer(chunk), pos)),
-                I.chain((_) =>
+                I.bind((pos) => write(st[0], C.asBuffer(chunk), pos)),
+                I.bind((_) =>
                   Ref.update_(st[1] as Ref.URef<number | undefined>, (n) => (n ? n + chunk.length : undefined))
                 ),
-                I.chain((_) => Push.more),
+                I.bind((_) => Push.more),
                 I.mapError((err) => [E.left(err), []])
               )
           )
@@ -493,7 +493,7 @@ export function watch(
       (err) => err as Error
     ),
     S.fromEffect,
-    S.chain((watcher) =>
+    S.bind((watcher) =>
       S.repeatEffectOption(
         I.effectAsync<unknown, O.Option<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
           watcher.once('change', (eventType, filename) => {
@@ -543,6 +543,6 @@ export function watchFile(
       return q
     }),
     S.bracket((q) => q.shutdown),
-    S.chain((q) => S.repeatEffectOption<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(q.take))
+    S.bind((q) => S.repeatEffectOption<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(q.take))
   )
 }

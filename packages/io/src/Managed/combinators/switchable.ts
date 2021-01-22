@@ -31,7 +31,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
       pipe(
         rm,
         RelMap.addIfOpen((_) => I.unit()),
-        I.chain(O.fold(() => I.interrupt, I.succeed)),
+        I.bind(O.fold(() => I.interrupt, I.succeed)),
         M.fromEffect
       )
     )
@@ -42,7 +42,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
             pipe(
               rm,
               RelMap.replace(key, (_) => I.unit()),
-              I.chain(
+              I.bind(
                 O.fold(
                   () => I.unit(),
                   (fin) => fin(Ex.unit())

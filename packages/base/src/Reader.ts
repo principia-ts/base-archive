@@ -109,20 +109,20 @@ export function ap<R, A>(fa: Reader<R, A>): <R1, B>(fab: Reader<R1, (a: A) => B>
   return (fab) => ap_(fab, fa)
 }
 
-export function apFirst_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
+export function apl_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
   return map2_(fa, fb, (a, _) => a)
 }
 
-export function apFirst<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
-  return (fa) => apFirst_(fa, fb)
+export function apl<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
+  return (fa) => apl_(fa, fb)
 }
 
-export function apSecond_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
+export function apr_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
   return map2_(fa, fb, (_, b) => b)
 }
 
-export function apSecond<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
-  return (fa) => apSecond_(fa, fb)
+export function apr<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
+  return (fa) => apr_(fa, fb)
 }
 
 /* -------------------------------------------
@@ -162,12 +162,12 @@ export function map<A, B>(f: (a: A) => B): <R>(fa: Reader<R, A>) => Reader<R, B>
  * -------------------------------------------
  */
 
-export function chain_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>): Reader<R & R1, B> {
+export function bind_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>): Reader<R & R1, B> {
   return (r) => f(ma(r))(r)
 }
 
-export function chain<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, B> {
-  return (ma) => chain_(ma, f)
+export function bind<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, B> {
+  return (ma) => bind_(ma, f)
 }
 
 export function flatten<R, R1, A>(mma: Reader<R, Reader<R1, A>>): Reader<R & R1, A> {
@@ -175,7 +175,7 @@ export function flatten<R, R1, A>(mma: Reader<R, Reader<R1, A>>): Reader<R & R1,
 }
 
 export function tap_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>): Reader<R & R1, A> {
-  return (r) => chain_(ma, (a) => map_(f(a), () => a))(r)
+  return (r) => bind_(ma, (a) => map_(f(a), () => a))(r)
 }
 
 export function tap<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, A> {

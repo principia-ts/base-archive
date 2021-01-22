@@ -23,7 +23,7 @@ export function makeExtendObjectTypeSummoner<FieldAURI extends FieldAURIS, Input
     const interpretedFields = fields(interpreters)
     return new GQLExtendObject(
       type(),
-      R.foldLeftWithIndex_(interpretedFields, A.empty(), (acc, k, v: NonNullable<AnyOutput<T>>) => {
+      R.ifoldl_(interpretedFields, A.empty(), (acc, k, v: NonNullable<AnyOutput<T>>) => {
         switch (v._tag) {
           /*
            * case "RecursiveType":
@@ -46,7 +46,7 @@ export function makeExtendObjectTypeSummoner<FieldAURI extends FieldAURIS, Input
             return [...acc, addNameToUnnamedFieldDefinitionNode(v.ast, k)]
         }
       }),
-      R.foldLeftWithIndex_(interpretedFields, {}, (acc, k, v: AnyOutput<T>) => {
+      R.ifoldl_(interpretedFields, {}, (acc, k, v: AnyOutput<T>) => {
         if (v._tag === 'GQLField') {
           return { ...acc, [k]: v.resolve }
         }

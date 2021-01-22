@@ -162,7 +162,7 @@ export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
 export function isEmpty<E>(cause: Cause<E>): boolean {
   return (
     equalsCause(cause, empty) ||
-    foldLeft_(cause, true as boolean, (acc, c) => {
+    foldl_(cause, true as boolean, (acc, c) => {
       switch (c._tag) {
         case 'Empty':
           return O.some(acc)
@@ -222,7 +222,7 @@ export function interrupted<E>(cause: Cause<E>): boolean {
 export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
   return (cause) =>
     equalsCause(that, cause) ||
-    foldLeft_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()))
+    foldl_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.some(true) : O.none()))
 }
 
 export function isCause(u: unknown): u is Cause<unknown> {
@@ -358,18 +358,18 @@ export function fold<E, A>(
 /**
  * @internal
  */
-function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Ev.Eval<B> {
+function foldlSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O.Option<B>): Ev.Eval<B> {
   return Ev.gen(function* (_) {
     const apply = O.getOrElse_(f(b, cause), () => b)
     switch (cause._tag) {
       case 'Then': {
-        const l = yield* _(foldLeftSafe_(cause.left, apply, f))
-        const r = yield* _(foldLeftSafe_(cause.right, l, f))
+        const l = yield* _(foldlSafe_(cause.left, apply, f))
+        const r = yield* _(foldlSafe_(cause.right, l, f))
         return r
       }
       case 'Both': {
-        const l = yield* _(foldLeftSafe_(cause.left, apply, f))
-        const r = yield* _(foldLeftSafe_(cause.right, l, f))
+        const l = yield* _(foldlSafe_(cause.left, apply, f))
+        const r = yield* _(foldlSafe_(cause.right, l, f))
         return r
       }
       default: {
@@ -381,7 +381,7 @@ function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) =
 
 /**
  * ```haskell
- * foldLeft_ :: (Cause c) => (c e, a, ((a, c e) -> Option a)) -> a
+ * foldl_ :: (Cause c) => (c e, a, ((a, c e) -> Option a)) -> a
  * ```
  *
  * Accumulates a state over a Cause
@@ -389,20 +389,20 @@ function foldLeftSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) =
  * @category Destructors
  * @since 1.0.0
  */
-export const foldLeft_ = F.trampoline(function loop<E, A>(
+export const foldl_ = F.trampoline(function loop<E, A>(
   cause: Cause<E>,
   a: A,
   f: (a: A, cause: Cause<E>) => O.Option<A>
 ): F.Trampoline<A> {
   const apply = O.getOrElse_(f(a, cause), () => a)
   return cause._tag === 'Both' || cause._tag === 'Then'
-    ? F.more(() => loop(cause.right, foldLeft_(cause.left, apply, f), f))
+    ? F.more(() => loop(cause.right, foldl_(cause.left, apply, f), f))
     : F.done(apply)
 })
 
 /**
  * ```haskell
- * foldLeft :: (Cause c) => (a, ((a, c e) -> Option a)) -> c e -> a
+ * foldl :: (Cause c) => (a, ((a, c e) -> Option a)) -> c e -> a
  * ```
  *
  * Accumulates a state over a Cause
@@ -410,8 +410,8 @@ export const foldLeft_ = F.trampoline(function loop<E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export function foldLeft<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => A {
-  return (cause) => foldLeft_(cause, a, f)
+export function foldl<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => A {
+  return (cause) => foldl_(cause, a, f)
 }
 
 /**
@@ -465,7 +465,7 @@ export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
  * @since 1.0.0
  */
 export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
-  return chain_(fa, () => that())
+  return bind_(fa, () => that())
 }
 
 /**
@@ -517,7 +517,7 @@ export function pure<E>(e: E): Cause<E> {
  * @since 1.0.0
  */
 export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
-  return chain_(fab, (f) => map_(fa, f))
+  return bind_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -589,7 +589,7 @@ export const eqCause: Eq<Cause<any>> = makeEq(equalsCause)
  * @since 1.0.0
  */
 export function map_<E, D>(fa: Cause<E>, f: (e: E) => D) {
-  return chain_(fa, (e) => fail(f(e)))
+  return bind_(fa, (e) => fail(f(e)))
 }
 
 /**
@@ -615,7 +615,7 @@ export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
 /**
  * @internal
  */
-function chainSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
+function bindSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
   return Ev.gen(function* (_) {
     switch (ma._tag) {
       case 'Empty':
@@ -627,16 +627,16 @@ function chainSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>
       case 'Interrupt':
         return ma
       case 'Then':
-        return then(yield* _(chainSafe_(ma.left, f)), yield* _(chainSafe_(ma.right, f)))
+        return then(yield* _(bindSafe_(ma.left, f)), yield* _(bindSafe_(ma.right, f)))
       case 'Both':
-        return both(yield* _(chainSafe_(ma.left, f)), yield* _(chainSafe_(ma.right, f)))
+        return both(yield* _(bindSafe_(ma.left, f)), yield* _(bindSafe_(ma.right, f)))
     }
   })
 }
 
 /**
  * ```haskell
- * chain_ :: Monad m => (m a, (a -> m b)) -> m b
+ * bind_ :: Monad m => (m a, (a -> m b)) -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -644,13 +644,13 @@ function chainSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>
  * @category Monad
  * @since 1.0.0
  */
-export function chain_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-  return chainSafe_(ma, f).value()
+export function bind_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
+  return bindSafe_(ma, f).value()
 }
 
 /**
  * ```haskell
- * chain :: Monad m => (a -> m b) -> m a -> m b
+ * bind :: Monad m => (a -> m b) -> m a -> m b
  * ```
  *
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -658,8 +658,8 @@ export function chain_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
  * @category Monad
  * @since 1.0.0
  */
-export function chain<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
-  return (ma) => chain_(ma, f)
+export function bind<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
+  return (ma) => bind_(ma, f)
 }
 
 /**
@@ -673,7 +673,7 @@ export function chain<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
  * @since 1.0.0
  */
 export function flatten<E>(mma: Cause<Cause<E>>): Cause<E> {
-  return chain_(mma, identity)
+  return bind_(mma, identity)
 }
 
 /*
@@ -710,16 +710,14 @@ export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
  * Extracts a list of non-recoverable errors from the `Cause`.
  */
 export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
-  return foldLeft_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
-    c._tag === 'Die' ? O.some([...a, c.value]) : O.none()
-  )
+  return foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) => (c._tag === 'Die' ? O.some([...a, c.value]) : O.none()))
 }
 
 /**
  * Produces a list of all recoverable errors `E` in the `Cause`.
  */
 export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
-  return foldLeft_(cause, [] as readonly E[], (a, c) => (c._tag === 'Fail' ? O.some([...a, c.value]) : O.none()))
+  return foldl_(cause, [] as readonly E[], (a, c) => (c._tag === 'Fail' ? O.some([...a, c.value]) : O.none()))
 }
 
 /**
@@ -727,7 +725,7 @@ export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
  * by this `Cause`.
  */
 export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
-  return foldLeft_(cause, new Set(), (s, c) => (c._tag === 'Interrupt' ? O.some(s.add(c.fiberId)) : O.none()))
+  return foldl_(cause, new Set(), (s, c) => (c._tag === 'Interrupt' ? O.some(s.add(c.fiberId)) : O.none()))
 }
 
 /**
@@ -1285,14 +1283,14 @@ const format = (segment: Segment): readonly string[] => {
     case 'Parallel': {
       return [
         times('══╦', segment.all.length - 1) + '══╗',
-        ...A.foldRight_(segment.all, [] as string[], (current, acc) => [
+        ...A.foldr_(segment.all, [] as string[], (current, acc) => [
           ...prefixBlock(acc, '  ║', '  ║'),
           ...prefixBlock(format(current), '  ', '  ')
         ])
       ]
     }
     case 'Sequential': {
-      return A.chain_(segment.all, (seg) => ['║', ...prefixBlock(format(seg), '╠', '║'), '▼'])
+      return A.bind_(segment.all, (seg) => ['║', ...prefixBlock(format(seg), '╠', '║'), '▼'])
     }
   }
 }

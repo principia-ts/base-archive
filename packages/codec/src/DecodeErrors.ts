@@ -142,16 +142,14 @@ export function getDecodeErrorsValidation<M>(
   const alt_: P.AltFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, that) =>
     pipe(
       M.recover(fa),
-      M.chain(
-        E.fold((e) => pipe(M.recover(that()), M.chain(E.fold((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure)
-      )
+      M.bind(E.fold((e) => pipe(M.recover(that()), M.bind(E.fold((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure))
     )
 
   return HKT.instance<
     P.MonadFail<HKT.UHKT2<M>, V<HKT.Auto>> & P.Alt<HKT.UHKT2<M>, V<HKT.Auto>> & P.Bifunctor<HKT.UHKT2<M>, HKT.Auto>
   >({
-    imap_: M.imap_,
-    imap: M.imap,
+    invmap_: M.invmap_,
+    invmap: M.invmap,
     map_: M.map_,
     map: M.map,
     map2_,
@@ -164,8 +162,8 @@ export function getDecodeErrorsValidation<M>(
     mapLeft: M.mapLeft,
     bimap_: M.bimap_,
     bimap: M.bimap,
-    chain_: M.chain_,
-    chain: M.chain,
+    bind_: M.bind_,
+    bind: M.bind,
     flatten: M.flatten,
     fail: M.fail,
     alt_,

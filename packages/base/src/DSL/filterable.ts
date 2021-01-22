@@ -9,10 +9,10 @@ import { flow, not, pipe, tuple } from '../Function'
 import * as HKT from '../HKT'
 import * as O from '../Option'
 
-export function getFilterableF<F extends HKT.URIS, C = HKT.Auto>(
+export function getFilterable<F extends HKT.URIS, C = HKT.Auto>(
   F: Monad<F, C> & Fallible<F, C>
 ): <E>(M: Monoid<E>) => Filterable<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
-export function getFilterableF<F>(
+export function getFilterable<F>(
   F: Monad<HKT.UHKT2<F>> & Fallible<HKT.UHKT2<F>> & Applicative<HKT.UHKT2<F>>
 ): <E>(M: Monoid<E>) => Filterable<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(M: Monoid<E>) => {
@@ -21,7 +21,7 @@ export function getFilterableF<F>(
     const filterMap_: FilterMapFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>>       = (fa, f) =>
       pipe(
         F.recover(fa),
-        F.chain(
+        F.bind(
           E.fold(
             F.fail,
             flow(
@@ -37,7 +37,7 @@ export function getFilterableF<F>(
     ]
 
     const filter_: FilterFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = <A>(fa: HKT.HKT2<F, E, A>, predicate: Predicate<A>) =>
-      pipe(F.recover(fa), F.chain(E.fold(F.fail, (a) => (predicate(a) ? F.pure(a) : empty))))
+      pipe(F.recover(fa), F.bind(E.fold(F.fail, (a) => (predicate(a) ? F.pure(a) : empty))))
 
     const partition_: PartitionFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = <A>(
       fa: HKT.HKT2<F, E, A>,

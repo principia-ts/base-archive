@@ -1,13 +1,13 @@
 import type * as HKT from './HKT'
 import type { Monad } from './Monad'
 
-export interface Chain<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
-  readonly chain_: ChainFn_<F, TC>
-  readonly chain: ChainFn<F, TC>
+export interface Bind<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
+  readonly bind_: BindFn_<F, TC>
+  readonly bind: BindFn<F, TC>
   readonly flatten: FlattenFn<F, TC>
 }
 
-export interface ChainFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface BindFn<F extends HKT.URIS, TC = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, A>(
     f: (a: A) => HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>
   ): <N extends string, K, Q, W, X, I, S, R, E>(
@@ -41,7 +41,7 @@ export interface ChainFn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export interface ChainFn_<F extends HKT.URIS, TC = HKT.Auto> {
+export interface BindFn_<F extends HKT.URIS, TC = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     ma: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
     f: (
@@ -76,7 +76,7 @@ export interface ChainFn_<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export interface ChainFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface BindFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,
@@ -172,7 +172,7 @@ export interface ChainFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF 
   >
 }
 
-export interface ChainFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface BindFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
     NF extends string,
     KF,
@@ -272,13 +272,13 @@ export interface ChainFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF
   >
 }
 
-export function chainF<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): ChainFn<F, TC>
-export function chainF<F>(F: Monad<HKT.UHKT<F>>): ChainFn<HKT.UHKT<F>> {
+export function bindF<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): BindFn<F, TC>
+export function bindF<F>(F: Monad<HKT.UHKT<F>>): BindFn<HKT.UHKT<F>> {
   return (f) => (ma) => F.flatten(F.map_(ma, f))
 }
 
-export function chainF_<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): ChainFn_<F, TC>
-export function chainF_<F>(F: Monad<HKT.UHKT<F>>): ChainFn_<HKT.UHKT<F>> {
+export function bindF_<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): BindFn_<F, TC>
+export function bindF_<F>(F: Monad<HKT.UHKT<F>>): BindFn_<HKT.UHKT<F>> {
   return (ma, f) => F.flatten(F.map_(ma, f))
 }
 
@@ -351,12 +351,12 @@ export interface TapFn_<F extends HKT.URIS, C = HKT.Auto> {
 
 export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): TapFn<F, TC>
 export function tapF<F>(F: Monad<HKT.UHKT<F>>): TapFn<HKT.UHKT<F>> {
-  return (f) => chainF(F)((a) => F.map_(f(a), () => a))
+  return (f) => bindF(F)((a) => F.map_(f(a), () => a))
 }
 
 export function tapF_<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): TapFn_<F, TC>
 export function tapF_<F>(F: Monad<HKT.UHKT<F>>): TapFn_<HKT.UHKT<F>> {
-  return (ma, f) => chainF_(F)(ma, (a) => F.map_(f(a), () => a))
+  return (ma, f) => bindF_(F)(ma, (a) => F.map_(f(a), () => a))
 }
 
 export interface FlattenFn<F extends HKT.URIS, TC = HKT.Auto> {
