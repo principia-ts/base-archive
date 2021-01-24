@@ -23,7 +23,9 @@ export interface TestExecutor<R> {
   readonly environment: Layer<unknown, never, R>
 }
 
-export function defaultTestExecutor<R>(env: Layer<unknown, never, R & Has<Annotations>>): TestExecutor<R & Has<Annotations>> {
+export function defaultTestExecutor<R>(
+  env: Layer<unknown, never, R & Has<Annotations>>
+): TestExecutor<R & Has<Annotations>> {
   return {
     run: <E>(spec: S.XSpec<R & Has<Annotations>, E>, defExec: ExecutionStrategy): UIO<ExecutedSpec<E>> =>
       pipe(
@@ -38,10 +40,7 @@ export function defaultTestExecutor<R>(env: Layer<unknown, never, R & Has<Annota
             )
           ),
           ([success, annotations]) =>
-            I.succeed<never, Annotated<E.Either<TF.TestFailure<E>, TestSuccess>>>([
-              E.right(success),
-              annotations
-            ] as const),
+            I.succeed<Annotated<E.Either<TF.TestFailure<E>, TestSuccess>>>([E.right(success), annotations] as const),
           defExec
         ),
         M.use((s) =>
