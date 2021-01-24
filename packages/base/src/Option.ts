@@ -1101,12 +1101,6 @@ export const letS = Do.letS
  */
 export const bindToS = Do.bindToS
 
-export const Extend: P.Extend<[OptionURI], V> = HKT.instance({
-  ...Functor,
-  extend_,
-  extend
-})
-
 export const Filterable: P.Filterable<[OptionURI], V> = HKT.instance({
   filterMap_,
   filter_,

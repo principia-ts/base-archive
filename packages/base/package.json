@@ -10,9 +10,9 @@
       "import": "./dist/dist/esm-fix/index.js",
       "require": "./dist/dist/cjs/index.js"
     },
-    "./DSL": {
-      "import": "./dist/dist/esm-fix/DSL/index.js",
-      "require": "./dist/dist/cjs/DSL/index.js"
+    "./Derivation": {
+      "import": "./dist/dist/esm-fix/Derivation/index.js",
+      "require": "./dist/dist/cjs/Derivation/index.js"
     },
     "./Eq": {
       "import": "./dist/dist/esm-fix/Eq/index.js",

@@ -17,6 +17,7 @@ import {
   equalTo,
   RunnableSpec,
   suite,
+  tag,
   test,
   testM,
   TestRunner

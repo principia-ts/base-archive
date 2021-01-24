@@ -1,6 +1,7 @@
-import type * as HKT from './HKT'
+import type * as P from './typeclass'
 
 import { flow, identity, tuple } from './Function'
+import * as HKT from './HKT'
 
 /*
  * -------------------------------------------
@@ -205,3 +206,23 @@ export function promap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: Reader<
 export function unit(): Reader<unknown, void> {
   return () => undefined
 }
+
+export const MonadEnv = HKT.instance<P.MonadEnv<[URI], V>>({
+  invmap_: (ra, f, _) => map_(ra, f),
+  invmap: (f, _) => (ra) => map_(ra, f),
+  map_,
+  map,
+  map2_,
+  map2,
+  ap_,
+  ap,
+  product_,
+  product,
+  asks,
+  giveAll,
+  pure,
+  unit,
+  bind,
+  bind_,
+  flatten
+})

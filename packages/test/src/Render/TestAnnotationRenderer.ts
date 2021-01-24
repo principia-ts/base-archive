@@ -54,7 +54,7 @@ export const retried: TestAnnotationRenderer = new LeafRenderer(TA.retried, ([ch
 )
 
 export const tagged: TestAnnotationRenderer = new LeafRenderer(TA.tagged, ([child, ..._]) =>
-  child.size === 0 ? O.none() : O.some(`tagged: ${pipe(A.from(child), A.map(Str.surround('"')), A.join(', '))}`)
+  child.keyMap.size === 0 ? O.none() : O.some(`tagged: ${pipe(A.from(child), A.map(Str.surround('"')), A.join(', '))}`)
 )
 
 export const timed: TestAnnotationRenderer = new LeafRenderer(TA.timing, ([child, ..._]) =>

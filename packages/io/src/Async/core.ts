@@ -5,7 +5,7 @@ import type { Stack } from '@principia/base/util/support/Stack'
 import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
-import * as DSL from '@principia/base/DSL'
+import * as D from '@principia/base/Derivation'
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
@@ -1241,27 +1241,27 @@ export const bindS = DoAsync.bindS
 export const bindToS = DoAsync.bindToS
 
 const adapter: {
-  <A>(_: Tag<A>): DSL.GenHKT<Async<Has<A>, never, A>, A>
-  <A>(_: Option<A>): DSL.GenHKT<Async<unknown, NoSuchElementException, A>, A>
-  <E, A>(_: Option<A>, onNone: () => E): DSL.GenHKT<Async<unknown, E, A>, A>
-  <E, A>(_: E.Either<E, A>): DSL.GenHKT<Async<unknown, E, A>, A>
-  <R, E, A>(_: Async<R, E, A>): DSL.GenHKT<Async<R, E, A>, A>
+  <A>(_: Tag<A>): D.GenHKT<Async<Has<A>, never, A>, A>
+  <A>(_: Option<A>): D.GenHKT<Async<unknown, NoSuchElementException, A>, A>
+  <E, A>(_: Option<A>, onNone: () => E): D.GenHKT<Async<unknown, E, A>, A>
+  <E, A>(_: E.Either<E, A>): D.GenHKT<Async<unknown, E, A>, A>
+  <R, E, A>(_: Async<R, E, A>): D.GenHKT<Async<R, E, A>, A>
 } = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new DSL.GenHKT(asksService(_)(identity))
+    return new D.GenHKT(asksService(_)(identity))
   }
   if (E.isEither(_)) {
-    return new DSL.GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
+    return new D.GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
   }
   if (isOption(_)) {
-    return new DSL.GenHKT(
+    return new D.GenHKT(
       _._tag === 'None' ? fail(__ ? __() : new NoSuchElementException('Async.gen')) : succeed(_.value)
     )
   }
-  return new DSL.GenHKT(_)
+  return new D.GenHKT(_)
 }
 
-export const gen = DSL.genF(MonadAsync, { adapter })
+export const gen = D.genF(MonadAsync, { adapter })
 
 /*
  * -------------------------------------------

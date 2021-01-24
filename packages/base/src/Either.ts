@@ -11,7 +11,7 @@ import type { MorphismN, Predicate, Refinement } from './Function'
 import type { Option } from './Option'
 import type { Show } from './Show'
 
-import { genF, GenHKT } from './DSL/genF'
+import { genF, GenHKT } from './Derivation/genF'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
 import * as HKT from './HKT'
 import { isOption } from './Option'
@@ -1357,16 +1357,6 @@ export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Apply,
   unit,
   pure
-})
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export const Extend: P.Extend<[URI], V> = HKT.instance({
-  ...Functor,
-  extend_,
-  extend
 })
 
 /**

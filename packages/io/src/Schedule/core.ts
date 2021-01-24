@@ -58,6 +58,33 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
         )
       )
 
+      const nextdo = (input: I) =>
+        pipe(
+          I.do,
+          I.bindS('step', () => I.map_(ref.get, ([_, o]) => o)),
+          I.bindS('now', () => currentTime),
+          I.bindS('dec', ({ now, step }) => step(now, input)),
+          I.bindS('v', ({ dec, now }) => {
+            switch (dec._tag) {
+              case 'Done': {
+                return pipe(
+                  ref.set([O.some(dec.out), done(dec.out)]),
+                  I.bind(() => I.fail(O.none()))
+                )
+              }
+              case 'Continue': {
+                return pipe(
+                  ref.set([O.some(dec.out), dec.next]),
+                  I.map(() => dec.interval - now),
+                  I.bind((s) => (s > 0 ? sleep(s) : I.unit())),
+                  I.map(() => dec.out)
+                )
+              }
+            }
+          }),
+          I.map(({ v }) => v)
+        )
+
       const next = (input: I) =>
         I.gen(function* (_) {
           const step = yield* _(I.map_(ref.get, ([, o]) => o))
@@ -80,7 +107,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           }
         })
 
-      return new Driver(next, last, reset)
+      return new Driver(nextdo, last, reset)
     })
   )
 }
@@ -869,7 +896,7 @@ const modifyDelayMLoop = <R, I, O, R1>(
       case 'Continue': {
         const delay = d.interval - now
 
-        return I.map_(f(d.out, delay), (n) => makeContinue(d.out, d.interval + n, modifyDelayMLoop(d.next, f)))
+        return I.map_(f(d.out, delay), (duration) => makeContinue(d.out, now + duration, modifyDelayMLoop(d.next, f)))
       }
     }
   })

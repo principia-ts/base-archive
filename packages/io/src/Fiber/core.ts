@@ -264,7 +264,7 @@ export function interrupting<E, A>(state: FiberState<E, A>): boolean {
       }
     })
 
-  return loop(state.status).value()
+  return loop(state.status).value
 }
 
 /*
@@ -325,7 +325,7 @@ export function withInterruptingSafe_(s: FiberStatus, b: boolean): Ev.Eval<Fiber
 }
 
 export function withInterrupting(b: boolean): (s: FiberStatus) => FiberStatus {
-  return (s) => withInterruptingSafe_(s, b).value()
+  return (s) => withInterruptingSafe_(s, b).value
 }
 
 export function toFinishingSafe(s: FiberStatus): Ev.Eval<FiberStatus> {
@@ -348,7 +348,7 @@ export function toFinishingSafe(s: FiberStatus): Ev.Eval<FiberStatus> {
 }
 
 export function toFinishing(s: FiberStatus): FiberStatus {
-  return toFinishingSafe(s).value()
+  return toFinishingSafe(s).value
 }
 
 /*

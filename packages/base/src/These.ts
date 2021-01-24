@@ -1,4 +1,3 @@
-import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Show } from './Show'
 
@@ -23,7 +22,17 @@ export interface Both<E, A> {
   readonly right: A
 }
 
-export type These<E, A> = Either<E, A> | Both<E, A>
+export interface Left<E> {
+  readonly _tag: 'Left',
+  readonly left: E
+}
+
+export interface Right<A> {
+  readonly _tag: 'Right',
+  readonly right: A
+}
+
+export type These<E, A> = Left<E> | Right<A> | Both<E, A>
 
 export const URI = 'These'
 export type URI = typeof URI

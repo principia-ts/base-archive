@@ -1,23 +1,27 @@
 import type { TestAnnotation } from './TestAnnotation'
+import type { HashMap } from '@principia/base/HashMap'
 
 import * as A from '@principia/base/Array'
 import { identity, pipe } from '@principia/base/Function'
-import * as RMap from '@principia/base/Map'
+import * as Map from '@principia/base/HashMap'
 import * as O from '@principia/base/Option'
 
+import { TestAnnotationHash } from './TestAnnotation'
+
 export class TestAnnotationMap {
-  constructor(private readonly map: ReadonlyMap<TestAnnotation<any>, any>) {}
+  constructor(private readonly map: HashMap<TestAnnotation<any>, any>) {}
 
   combine(that: TestAnnotationMap): TestAnnotationMap {
     return new TestAnnotationMap(
       pipe(
         A.from(this.map),
         A.concat(A.from(that.map)),
-        A.foldl(new Map<TestAnnotation<any>, any>(), (acc, [key, value]) =>
-          acc.set(
+        A.foldl(Map.makeDefault(), (acc, [key, value]) =>
+          Map.set_(
+            acc,
             key,
             O.fold_(
-              O.fromNullable(acc.get(key)),
+              Map.get_(acc, key),
               () => value,
               (_) => key.combine(_, value)
             )
@@ -28,11 +32,11 @@ export class TestAnnotationMap {
   }
 
   get<V>(key: TestAnnotation<V>): V {
-    return O.fold_(O.fromNullable(this.map.get(key)), () => key.initial, identity)
+    return O.fold_(Map.get_(this.map, key), () => key.initial, identity)
   }
 
   private overwrite<V>(key: TestAnnotation<V>, value: V): TestAnnotationMap {
-    return new TestAnnotationMap(RMap.insert_(this.map, key, value))
+    return new TestAnnotationMap(Map.set_(this.map, key, value))
   }
 
   private update<V>(key: TestAnnotation<V>, f: (v: V) => V): TestAnnotationMap {
@@ -43,5 +47,5 @@ export class TestAnnotationMap {
     return this.update(key, (_) => key.combine(_, value))
   }
 
-  static empty: TestAnnotationMap = new TestAnnotationMap(RMap.empty())
+  static empty: TestAnnotationMap = new TestAnnotationMap(Map.make(TestAnnotationHash))
 }

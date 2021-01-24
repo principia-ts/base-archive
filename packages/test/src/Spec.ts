@@ -11,8 +11,8 @@ import type { ExecutionStrategy } from '@principia/io/ExecutionStrategy'
 import * as A from '@principia/base/Array'
 import * as Eq from '@principia/base/Eq'
 import { flow, identity, pipe } from '@principia/base/Function'
+import * as Set from '@principia/base/HashSet'
 import * as O from '@principia/base/Option'
-import * as Set from '@principia/base/Set'
 import * as Str from '@principia/base/String'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
 import * as I from '@principia/io/IO'
@@ -378,4 +378,14 @@ export function when_<R, E>(
   b: boolean
 ): Spec<R & Has<Annotations.Annotations>, E, TestSuccess> {
   return whenM_(spec, I.succeed(b))
+}
+
+export function annotate_<R, E, T, V>(spec: Spec<R, E, T>, key: TestAnnotation<V>, value: V): Spec<R, E, T> {
+  return transform_(
+    spec,
+    matchTag({
+      Suite: (c) => c,
+      Test: (t) => new TestCase(t.label, t.test, t.annotations.annotate(key, value))
+    })
+  )
 }

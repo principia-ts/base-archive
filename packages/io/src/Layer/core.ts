@@ -1028,7 +1028,7 @@ export function to_<R, E, A, R2, E2, A2>(
 ): Layer<Erase<R, A2> & R2, E | E2, A> {
   return fold_(
     from,
-    fromRawFunctionM((_: readonly [R & R2, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionM((_: readonly [Erase<R, A2> & R2, Cause<E2>]) => I.halt(_[1])),
     to
   )
 }

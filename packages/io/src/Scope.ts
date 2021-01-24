@@ -180,7 +180,7 @@ export class OrderedFinalizer {
 
 const noCause = C.empty
 
-const noCauseAIO: UIO<Cause<never>> = I.pure(noCause)
+const noCauseIO: UIO<Cause<never>> = I.pure(noCause)
 
 export class LocalScope<A> implements CommonScope<A> {
   readonly _tag = 'Local'
@@ -310,7 +310,7 @@ export class LocalScope<A> implements CommonScope<A> {
       const a = this.exitValue.get
 
       return I.uncause(
-        A.foldl_(sorted, noCauseAIO, (acc, o) =>
+        A.foldl_(sorted, noCauseIO, (acc, o) =>
           o != null ? I.map2_(acc, I.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
         )
       )

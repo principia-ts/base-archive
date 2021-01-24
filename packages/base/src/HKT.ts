@@ -8,7 +8,7 @@ import type { Erase, UnionToIntersection } from './util/types'
  */
 
 export interface Auto {
-  readonly Auto: unique symbol
+  // readonly Auto: unique symbol
 }
 
 export interface Base<F, C = Auto> {

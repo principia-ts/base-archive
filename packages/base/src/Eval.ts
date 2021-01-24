@@ -7,10 +7,11 @@
 import type * as P from './typeclass'
 import type { Stack } from './util/support/Stack'
 
-import * as DSL from './DSL'
+import * as D from './Derivation'
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
+import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 
 /**
@@ -25,8 +26,8 @@ export abstract class Eval<A> {
   readonly _U = URI
   readonly _A!: () => A
 
-  abstract value(): A
-  abstract memoize(): Eval<A>
+  abstract get value(): A
+  abstract get memoize(): Eval<A>
 }
 
 export const URI = 'Eval'
@@ -43,30 +44,33 @@ class Now<A> extends Eval<A> {
   constructor(readonly a: A) {
     super()
   }
-  value() {
+  get value() {
     return this.a
   }
-  memoize() {
+  get memoize() {
     return this
   }
 }
 
 class Later<A> extends Eval<A> {
-  readonly _evalTag = 'Later'
-  private thunk: () => A
+  readonly _evalTag        = 'Later'
+  private thunk            = new AtomicReference<null | (() => A)>(null)
+  private result: A | null = null
   constructor(f: () => A) {
     super()
-    this.thunk = f
+    this.thunk.set(f)
   }
-  value() {
-    const result = this.thunk()
-    /* eslint-disable functional/immutable-data */
-    this.thunk = null as any
-    this.value = () => result
-    /* eslint-enable */
-    return result
+  get value() {
+    if (!this.thunk.get) {
+      return this.result!
+    } else {
+      const result = this.thunk.get()
+      this.thunk.set(null)
+      this.result = result
+      return result
+    }
   }
-  memoize() {
+  get memoize() {
     return this
   }
 }
@@ -76,10 +80,10 @@ class Always<A> extends Eval<A> {
   constructor(readonly thunk: () => A) {
     super()
   }
-  value() {
+  get value() {
     return this.thunk()
   }
-  memoize() {
+  get memoize() {
     return new Later(this.thunk)
   }
 }
@@ -89,10 +93,10 @@ class Defer<A> extends Eval<A> {
   constructor(readonly thunk: () => Eval<A>) {
     super()
   }
-  value() {
+  get value() {
     return evaluate(this.thunk())
   }
-  memoize(): Eval<A> {
+  get memoize(): Eval<A> {
     return new Memoize(this)
   }
 }
@@ -102,10 +106,10 @@ class Chain<A, B> extends Eval<B> {
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
     super()
   }
-  value(): B {
+  get value(): B {
     return evaluate(this)
   }
-  memoize(): Eval<B> {
+  get memoize(): Eval<B> {
     return new Memoize(this)
   }
 }
@@ -117,11 +121,11 @@ class Memoize<A> extends Eval<A> {
   }
   public result: O.Option<A> = O.none<A>()
 
-  memoize() {
+  get memoize() {
     return this
   }
 
-  value(): A {
+  get value(): A {
     return O.getOrElse_(this.result, () => {
       const a = evaluate(this)
       // eslint-disable-next-line functional/immutable-data

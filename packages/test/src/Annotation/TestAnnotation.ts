@@ -1,15 +1,25 @@
 import type { Either } from '@principia/base/Either'
 import type { Tag } from '@principia/base/Has'
+import type { Hash } from '@principia/base/Hash'
 import type { Chunk } from '@principia/io/Chunk'
 import type * as Fiber from '@principia/io/Fiber'
 import type { URef } from '@principia/io/IORef'
 
 import * as E from '@principia/base/Either'
 import * as Eq from '@principia/base/Eq'
+import { makeEq } from '@principia/base/Eq'
 import { absurd } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
-import * as Set from '@principia/base/Set'
+import { hashString } from '@principia/base/Hash'
+import * as Map from '@principia/base/HashMap'
+import * as Set from '@principia/base/HashSet'
+import { randomHash } from '@principia/base/internal/hamt'
 import * as C from '@principia/io/Chunk'
+
+export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
+  ...makeEq(equalsTestAnnotation),
+  ...randomHash
+}
 
 export class TestAnnotation<V> {
   constructor(
@@ -35,12 +45,12 @@ export const repeated: TestAnnotation<number> = new TestAnnotation(Repeated, 're
 export const Retried                         = tag<number>()
 export const retried: TestAnnotation<number> = new TestAnnotation(Retried, 'retried', 0, (x, y) => x + y)
 
-export const Tagged                                      = tag<ReadonlySet<string>>()
-export const tagged: TestAnnotation<ReadonlySet<string>> = new TestAnnotation(
+export const Tagged                                      = tag<Set.HashSet<string>>()
+export const tagged: TestAnnotation<Set.HashSet<string>> = new TestAnnotation(
   Tagged,
   'tagged',
-  Set.empty(),
-  Set.union_(Eq.string)
+  Set.make({ ...Eq.string, hash: hashString }),
+  Set.union_
 )
 
 export const Timing                         = tag<number>()

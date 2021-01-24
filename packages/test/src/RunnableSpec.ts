@@ -34,6 +34,7 @@ export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   main(args: TA.TestArgs): void {
     const filteredSpec = S.filterByArgs_(this.spec, args)
     I.run(I.giveLayer_(this.run(filteredSpec), this.runner.bootstrap), (ex) => {
+      console.log(ex)
       ex._tag === 'Success' ? process.exit(ex.value) : process.exit(1)
     })
   }

@@ -3348,7 +3348,7 @@ export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
         I.catchAllCause(
           flow(
             Ca.sequenceCauseOption,
-            O.fold(() => pipe(ma.proc, switchStream, I.bind(currStream.set), I.apr(I.yieldNow()), I.apr(go)), Pull.halt)
+            O.fold(() => pipe(ma.proc, switchStream, I.bind(currStream.set), I.apr(I.yieldNow), I.apr(go)), Pull.halt)
           )
         )
       )

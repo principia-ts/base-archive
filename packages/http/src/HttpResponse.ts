@@ -17,7 +17,6 @@ import * as Q from '@principia/io/Queue'
 import * as S from '@principia/io/Stream'
 import * as Pull from '@principia/io/Stream/Pull'
 import * as NS from '@principia/node/stream'
-import { HeapCodeStatistics } from 'v8'
 
 import { HttpException } from './HttpException'
 import * as Status from './StatusCode'

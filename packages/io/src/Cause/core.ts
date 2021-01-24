@@ -3,6 +3,7 @@ import type { Eq } from '@principia/base/Eq'
 import type { Predicate } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type { Stack } from '@principia/base/util/support/Stack'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -11,6 +12,8 @@ import * as Ev from '@principia/base/Eval'
 import { flow, identity, pipe } from '@principia/base/Function'
 import * as F from '@principia/base/Function'
 import * as O from '@principia/base/Option'
+import { makeStack } from '@principia/base/util/support/Stack'
+import { SSL_OP_TLS_BLOCK_PADDING_BUG } from 'constants'
 
 import { eqFiberId } from '../Fiber/FiberId'
 
@@ -160,24 +163,40 @@ export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
  * ```
  */
 export function isEmpty<E>(cause: Cause<E>): boolean {
-  return (
-    equalsCause(cause, empty) ||
-    foldl_(cause, true as boolean, (acc, c) => {
-      switch (c._tag) {
-        case 'Empty':
-          return O.some(acc)
-        case 'Die':
-          return O.some(false)
-        case 'Fail':
-          return O.some(false)
-        case 'Interrupt':
-          return O.some(false)
-        default: {
-          return O.none()
-        }
+  if (cause._tag === 'Empty') {
+    return true
+  }
+  let causes: Stack<Cause<E>> | undefined = undefined
+  let current: Cause<E> | undefined       = cause
+  while (current) {
+    switch (current._tag) {
+      case 'Die': {
+        return false
       }
-    })
-  )
+      case 'Fail': {
+        return false
+      }
+      case 'Then': {
+        causes  = makeStack(current.right, causes)
+        current = current.left
+        break
+      }
+      case 'Both': {
+        causes  = makeStack(current.right, causes)
+        current = current.left
+        break
+      }
+      default: {
+        current = undefined
+      }
+    }
+    if (!current && causes) {
+      current = causes.value
+      causes  = causes.previous
+    }
+  }
+
+  return true
 }
 
 /**
@@ -244,37 +263,43 @@ export function isCause(u: unknown): u is Cause<unknown> {
  * @internal
  */
 export function findSafe_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): Ev.Eval<O.Option<A>> {
-  return Ev.gen(function* (_) {
-    const apply = f(cause)
-    if (apply._tag === 'Some') {
-      return apply
+  const apply = f(cause)
+  if (apply._tag === 'Some') {
+    return Ev.now(apply)
+  }
+  switch (cause._tag) {
+    case 'Then': {
+      return pipe(
+        Ev.defer(() => findSafe_(cause.left, f)),
+        Ev.bind((isLeft) => {
+          if (isLeft._tag === 'Some') {
+            return Ev.now(isLeft)
+          } else {
+            return findSafe_(cause.right, f)
+          }
+        })
+      )
     }
-    switch (cause._tag) {
-      case 'Then': {
-        const isLeft = yield* _(findSafe_(cause.left, f))
-        if (isLeft._tag === 'Some') {
-          return isLeft
-        } else {
-          return yield* _(findSafe_(cause.right, f))
-        }
-      }
-      case 'Both': {
-        const isLeft = yield* _(findSafe_(cause.left, f))
-        if (isLeft._tag === 'Some') {
-          return isLeft
-        } else {
-          return yield* _(findSafe_(cause.right, f))
-        }
-      }
-      default: {
-        return apply
-      }
+    case 'Both': {
+      return pipe(
+        Ev.defer(() => findSafe_(cause.left, f)),
+        Ev.bind((isLeft) => {
+          if (isLeft._tag === 'Some') {
+            return Ev.now(isLeft)
+          } else {
+            return findSafe_(cause.right, f)
+          }
+        })
+      )
     }
-  })
+    default: {
+      return Ev.now(apply)
+    }
+  }
 }
 
 export function find_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): O.Option<A> {
-  return findSafe_(cause, f).value()
+  return findSafe_(cause, f).value
 }
 
 /**
@@ -303,28 +328,28 @@ function foldSafe_<E, A>(
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A
 ): Ev.Eval<A> {
-  return Ev.gen(function* (_) {
-    switch (cause._tag) {
-      case 'Empty':
-        return onEmpty()
-      case 'Fail':
-        return onFail(cause.value)
-      case 'Die':
-        return onDie(cause.value)
-      case 'Interrupt':
-        return onInterrupt(cause.fiberId)
-      case 'Both':
-        return onBoth(
-          yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
-          yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
-        )
-      case 'Then':
-        return onThen(
-          yield* _(foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
-          yield* _(foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth))
-        )
-    }
-  })
+  switch (cause._tag) {
+    case 'Empty':
+      return Ev.now(onEmpty())
+    case 'Fail':
+      return Ev.now(onFail(cause.value))
+    case 'Die':
+      return Ev.now(onDie(cause.value))
+    case 'Interrupt':
+      return Ev.now(onInterrupt(cause.fiberId))
+    case 'Both':
+      return Ev.map2_(
+        Ev.defer(() => foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+        Ev.defer(() => foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+        onBoth
+      )
+    case 'Then':
+      return Ev.map2_(
+        Ev.defer(() => foldSafe_(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+        Ev.defer(() => foldSafe_(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+        onThen
+      )
+  }
 }
 
 /**
@@ -352,7 +377,7 @@ export function fold<E, A>(
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A
 ): (cause: Cause<E>) => A {
-  return (cause) => foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth).value()
+  return (cause) => foldSafe_(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth).value
 }
 
 /**
@@ -389,16 +414,39 @@ function foldlSafe_<E, B>(cause: Cause<E>, b: B, f: (b: B, cause: Cause<E>) => O
  * @category Destructors
  * @since 1.0.0
  */
-export const foldl_ = F.trampoline(function loop<E, A>(
-  cause: Cause<E>,
-  a: A,
-  f: (a: A, cause: Cause<E>) => O.Option<A>
-): F.Trampoline<A> {
-  const apply = O.getOrElse_(f(a, cause), () => a)
-  return cause._tag === 'Both' || cause._tag === 'Then'
-    ? F.more(() => loop(cause.right, foldl_(cause.left, apply, f), f))
-    : F.done(apply)
-})
+export function foldl_<E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): A {
+  let causes: Stack<Cause<E>> | undefined = undefined
+  let current: Cause<E> | undefined       = cause
+  let acc                                 = a
+
+  while (current) {
+    const x = f(acc, current)
+    acc     = x._tag === 'Some' ? x.value : acc
+
+    switch (current._tag) {
+      case 'Then': {
+        causes  = makeStack(current.right, causes)
+        current = current.left
+        break
+      }
+      case 'Both': {
+        causes  = makeStack(current.right, causes)
+        current = current.left
+        break
+      }
+      default: {
+        current = undefined
+        break
+      }
+    }
+
+    if (!current && causes) {
+      current = causes.value
+      causes  = causes.previous
+    }
+  }
+  return acc
+}
 
 /**
  * ```haskell
@@ -616,22 +664,28 @@ export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
  * @internal
  */
 function bindSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
-  return Ev.gen(function* (_) {
-    switch (ma._tag) {
-      case 'Empty':
-        return empty
-      case 'Fail':
-        return f(ma.value)
-      case 'Die':
-        return ma
-      case 'Interrupt':
-        return ma
-      case 'Then':
-        return then(yield* _(bindSafe_(ma.left, f)), yield* _(bindSafe_(ma.right, f)))
-      case 'Both':
-        return both(yield* _(bindSafe_(ma.left, f)), yield* _(bindSafe_(ma.right, f)))
-    }
-  })
+  switch (ma._tag) {
+    case 'Empty':
+      return Ev.now(empty)
+    case 'Fail':
+      return Ev.now(f(ma.value))
+    case 'Die':
+      return Ev.now(ma)
+    case 'Interrupt':
+      return Ev.now(ma)
+    case 'Then':
+      return Ev.map2_(
+        Ev.defer(() => bindSafe_(ma.left, f)),
+        Ev.defer(() => bindSafe_(ma.right, f)),
+        then
+      )
+    case 'Both':
+      return Ev.map2_(
+        Ev.defer(() => bindSafe_(ma.left, f)),
+        Ev.defer(() => bindSafe_(ma.right, f)),
+        both
+      )
+  }
 }
 
 /**
@@ -645,7 +699,7 @@ function bindSafe_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>>
  * @since 1.0.0
  */
 export function bind_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-  return bindSafe_(ma, f).value()
+  return bindSafe_(ma, f).value
 }
 
 /**
@@ -744,171 +798,191 @@ export function interruptedOnly<E>(cause: Cause<E>): boolean {
  * @internal
  */
 function stripFailuresSafe<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
-  return Ev.gen(function* (_) {
-    switch (cause._tag) {
-      case 'Empty': {
-        return empty
-      }
-      case 'Fail': {
-        return empty
-      }
-      case 'Interrupt': {
-        return cause
-      }
-      case 'Die': {
-        return cause
-      }
-      case 'Both': {
-        return both(yield* _(stripFailuresSafe(cause.left)), yield* _(stripFailuresSafe(cause.right)))
-      }
-      case 'Then': {
-        return then(yield* _(stripFailuresSafe(cause.left)), yield* _(stripFailuresSafe(cause.right)))
-      }
+  switch (cause._tag) {
+    case 'Empty': {
+      return Ev.now(empty)
     }
-  })
+    case 'Fail': {
+      return Ev.now(empty)
+    }
+    case 'Interrupt': {
+      return Ev.now(cause)
+    }
+    case 'Die': {
+      return Ev.now(cause)
+    }
+    case 'Both': {
+      return Ev.map2_(
+        Ev.defer(() => stripFailuresSafe(cause.left)),
+        Ev.defer(() => stripFailuresSafe(cause.right)),
+        both
+      )
+    }
+    case 'Then': {
+      return Ev.map2_(
+        Ev.defer(() => stripFailuresSafe(cause.left)),
+        Ev.defer(() => stripFailuresSafe(cause.right)),
+        then
+      )
+    }
+  }
 }
 
 /**
  * Discards all typed failures kept on this `Cause`.
  */
 export function stripFailures<E>(cause: Cause<E>): Cause<never> {
-  return stripFailuresSafe(cause).value()
+  return stripFailuresSafe(cause).value
 }
 
 /**
  * @internal
  */
 export function stripInterruptsSafe<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
-  return Ev.gen(function* (_) {
-    switch (cause._tag) {
-      case 'Empty': {
-        return empty
-      }
-      case 'Fail': {
-        return cause
-      }
-      case 'Interrupt': {
-        return empty
-      }
-      case 'Die': {
-        return cause
-      }
-      case 'Both': {
-        return both(yield* _(stripInterruptsSafe(cause.left)), yield* _(stripInterruptsSafe(cause.right)))
-      }
-      case 'Then': {
-        return then(yield* _(stripInterruptsSafe(cause.left)), yield* _(stripInterruptsSafe(cause.right)))
-      }
+  switch (cause._tag) {
+    case 'Empty': {
+      return Ev.now(empty)
     }
-  })
+    case 'Fail': {
+      return Ev.now(cause)
+    }
+    case 'Interrupt': {
+      return Ev.now(empty)
+    }
+    case 'Die': {
+      return Ev.now(cause)
+    }
+    case 'Both': {
+      return Ev.map2_(
+        Ev.defer(() => stripInterruptsSafe(cause.left)),
+        Ev.defer(() => stripInterruptsSafe(cause.right)),
+        both
+      )
+    }
+    case 'Then': {
+      return Ev.map2_(
+        Ev.defer(() => stripInterruptsSafe(cause.left)),
+        Ev.defer(() => stripInterruptsSafe(cause.right)),
+        then
+      )
+    }
+  }
 }
 
 /**
  * Discards all interrupts kept on this `Cause`.
  */
 export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
-  return stripInterruptsSafe(cause).value()
+  return stripInterruptsSafe(cause).value
 }
 
 function stripSomeDefectsSafe<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<O.Option<Cause<E>>> {
-  return Ev.gen(function* (_) {
-    switch (cause._tag) {
-      case 'Empty': {
-        return O.none()
-      }
-      case 'Interrupt': {
-        return O.some(interrupt(cause.fiberId))
-      }
-      case 'Fail': {
-        return O.some(fail(cause.value))
-      }
-      case 'Die': {
-        return pf(cause.value) ? O.some(die(cause.value)) : O.none()
-      }
-      case 'Both': {
-        const left  = yield* _(stripSomeDefectsSafe(cause.left, pf))
-        const right = yield* _(stripSomeDefectsSafe(cause.right, pf))
-
-        return left._tag === 'Some'
-          ? right._tag === 'Some'
-            ? O.some(both(left.value, right.value))
-            : left
-          : right._tag === 'Some'
-          ? right
-          : O.none()
-      }
-      case 'Then': {
-        const left  = yield* _(stripSomeDefectsSafe(cause.left, pf))
-        const right = yield* _(stripSomeDefectsSafe(cause.right, pf))
-
-        return left._tag === 'Some'
-          ? right._tag === 'Some'
-            ? O.some(then(left.value, right.value))
-            : left
-          : right._tag === 'Some'
-          ? right
-          : O.none()
-      }
+  switch (cause._tag) {
+    case 'Empty': {
+      return Ev.now(O.none())
     }
-  })
+    case 'Interrupt': {
+      return Ev.now(O.some(interrupt(cause.fiberId)))
+    }
+    case 'Fail': {
+      return Ev.now(O.some(fail(cause.value)))
+    }
+    case 'Die': {
+      return Ev.now(pf(cause.value) ? O.some(die(cause.value)) : O.none())
+    }
+    case 'Both': {
+      return Ev.map2_(
+        Ev.defer(() => stripSomeDefectsSafe(cause.left, pf)),
+        Ev.defer(() => stripSomeDefectsSafe(cause.right, pf)),
+        (left, right) => {
+          return left._tag === 'Some'
+            ? right._tag === 'Some'
+              ? O.some(both(left.value, right.value))
+              : left
+            : right._tag === 'Some'
+            ? right
+            : O.none()
+        }
+      )
+    }
+    case 'Then': {
+      return Ev.map2_(
+        Ev.defer(() => stripSomeDefectsSafe(cause.left, pf)),
+        Ev.defer(() => stripSomeDefectsSafe(cause.right, pf)),
+        (left, right) => {
+          return left._tag === 'Some'
+            ? right._tag === 'Some'
+              ? O.some(then(left.value, right.value))
+              : left
+            : right._tag === 'Some'
+            ? right
+            : O.none()
+        }
+      )
+    }
+  }
 }
 
 export function stripSomeDefects_<E>(cause: Cause<E>, pf: Predicate<unknown>): O.Option<Cause<E>> {
-  return stripSomeDefectsSafe(cause, pf).value()
+  return stripSomeDefectsSafe(cause, pf).value
 }
 
 export function stripSomeDefects(pf: Predicate<unknown>): <E>(cause: Cause<E>) => O.Option<Cause<E>> {
-  return (cause) => stripSomeDefectsSafe(cause, pf).value()
+  return (cause) => stripSomeDefectsSafe(cause, pf).value
 }
 
 /**
  * @internal
  */
 function keepDefectsSafe<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
-  return Ev.gen(function* (_) {
-    switch (cause._tag) {
-      case 'Empty': {
-        return O.none()
-      }
-      case 'Fail': {
-        return O.none()
-      }
-      case 'Interrupt': {
-        return O.none()
-      }
-      case 'Die': {
-        return O.some(cause)
-      }
-      case 'Then': {
-        const lefts  = yield* _(keepDefectsSafe(cause.left))
-        const rights = yield* _(keepDefectsSafe(cause.right))
-
-        if (lefts._tag === 'Some' && rights._tag === 'Some') {
-          return O.some(then(lefts.value, rights.value))
-        } else if (lefts._tag === 'Some') {
-          return lefts
-        } else if (rights._tag === 'Some') {
-          return rights
-        } else {
-          return O.none()
-        }
-      }
-      case 'Both': {
-        const lefts  = yield* _(keepDefectsSafe(cause.left))
-        const rights = yield* _(keepDefectsSafe(cause.right))
-
-        if (lefts._tag === 'Some' && rights._tag === 'Some') {
-          return O.some(both(lefts.value, rights.value))
-        } else if (lefts._tag === 'Some') {
-          return lefts
-        } else if (rights._tag === 'Some') {
-          return rights
-        } else {
-          return O.none()
-        }
-      }
+  switch (cause._tag) {
+    case 'Empty': {
+      return Ev.now(O.none())
     }
-  })
+    case 'Fail': {
+      return Ev.now(O.none())
+    }
+    case 'Interrupt': {
+      return Ev.now(O.none())
+    }
+    case 'Die': {
+      return Ev.now(O.some(cause))
+    }
+    case 'Then': {
+      return Ev.map2_(
+        Ev.defer(() => keepDefectsSafe(cause.left)),
+        Ev.defer(() => keepDefectsSafe(cause.right)),
+        (lefts, rights) => {
+          if (lefts._tag === 'Some' && rights._tag === 'Some') {
+            return O.some(then(lefts.value, rights.value))
+          } else if (lefts._tag === 'Some') {
+            return lefts
+          } else if (rights._tag === 'Some') {
+            return rights
+          } else {
+            return O.none()
+          }
+        }
+      )
+    }
+    case 'Both': {
+      return Ev.map2_(
+        Ev.defer(() => keepDefectsSafe(cause.left)),
+        Ev.defer(() => keepDefectsSafe(cause.right)),
+        (lefts, rights) => {
+          if (lefts._tag === 'Some' && rights._tag === 'Some') {
+            return O.some(both(lefts.value, rights.value))
+          } else if (lefts._tag === 'Some') {
+            return lefts
+          } else if (rights._tag === 'Some') {
+            return rights
+          } else {
+            return O.none()
+          }
+        }
+      )
+    }
+  }
 }
 
 /**
@@ -916,101 +990,111 @@ function keepDefectsSafe<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
  * return only `Die` cause/finalizer defects.
  */
 export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
-  return keepDefectsSafe(cause).value()
+  return keepDefectsSafe(cause).value
 }
 
 function sequenceCauseEitherSafe<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Either<Cause<E>, A>> {
-  return Ev.gen(function* (_) {
-    switch (cause._tag) {
-      case 'Empty': {
-        return E.left(empty)
-      }
-      case 'Interrupt': {
-        return E.left(cause)
-      }
-      case 'Fail': {
-        return cause.value._tag === 'Left' ? E.left(fail(cause.value.left)) : E.right(cause.value.right)
-      }
-      case 'Die': {
-        return E.left(cause)
-      }
-      case 'Then': {
-        const lefts  = yield* _(sequenceCauseEitherSafe(cause.left))
-        const rights = yield* _(sequenceCauseEitherSafe(cause.right))
-
-        return lefts._tag === 'Left'
-          ? rights._tag === 'Right'
-            ? E.right(rights.right)
-            : E.left(then(lefts.left, rights.left))
-          : E.right(lefts.right)
-      }
-      case 'Both': {
-        const lefts  = yield* _(sequenceCauseEitherSafe(cause.left))
-        const rights = yield* _(sequenceCauseEitherSafe(cause.right))
-
-        return lefts._tag === 'Left'
-          ? rights._tag === 'Right'
-            ? E.right(rights.right)
-            : E.left(both(lefts.left, rights.left))
-          : E.right(lefts.right)
-      }
+  switch (cause._tag) {
+    case 'Empty': {
+      return Ev.now(E.left(empty))
     }
-  })
+    case 'Interrupt': {
+      return Ev.now(E.left(cause))
+    }
+    case 'Fail': {
+      return Ev.now(cause.value._tag === 'Left' ? E.left(fail(cause.value.left)) : E.right(cause.value.right))
+    }
+    case 'Die': {
+      return Ev.now(E.left(cause))
+    }
+    case 'Then': {
+      return Ev.map2_(
+        Ev.defer(() => sequenceCauseEitherSafe(cause.left)),
+        Ev.defer(() => sequenceCauseEitherSafe(cause.right)),
+        (lefts, rights) => {
+          return lefts._tag === 'Left'
+            ? rights._tag === 'Right'
+              ? E.right(rights.right)
+              : E.left(then(lefts.left, rights.left))
+            : E.right(lefts.right)
+        }
+      )
+    }
+    case 'Both': {
+      return Ev.map2_(
+        Ev.defer(() => sequenceCauseEitherSafe(cause.left)),
+        Ev.defer(() => sequenceCauseEitherSafe(cause.right)),
+        (lefts, rights) => {
+          return lefts._tag === 'Left'
+            ? rights._tag === 'Right'
+              ? E.right(rights.right)
+              : E.left(both(lefts.left, rights.left))
+            : E.right(lefts.right)
+        }
+      )
+    }
+  }
 }
 
 /**
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
 export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> {
-  return sequenceCauseEitherSafe(cause).value()
+  return sequenceCauseEitherSafe(cause).value
 }
 
 function sequenceCauseOptionSafe<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Cause<E>>> {
-  return Ev.gen(function* (_) {
-    switch (cause._tag) {
-      case 'Empty': {
-        return O.some(empty)
-      }
-      case 'Interrupt': {
-        return O.some(cause)
-      }
-      case 'Fail': {
-        return O.map_(cause.value, fail)
-      }
-      case 'Die': {
-        return O.some(cause)
-      }
-      case 'Then': {
-        const lefts  = yield* _(sequenceCauseOptionSafe(cause.left))
-        const rights = yield* _(sequenceCauseOptionSafe(cause.right))
-        return lefts._tag === 'Some'
-          ? rights._tag === 'Some'
-            ? O.some(then(lefts.value, rights.value))
-            : lefts
-          : rights._tag === 'Some'
-          ? rights
-          : O.none()
-      }
-      case 'Both': {
-        const lefts  = yield* _(sequenceCauseOptionSafe(cause.left))
-        const rights = yield* _(sequenceCauseOptionSafe(cause.right))
-        return lefts._tag === 'Some'
-          ? rights._tag === 'Some'
-            ? O.some(both(lefts.value, rights.value))
-            : lefts
-          : rights._tag === 'Some'
-          ? rights
-          : O.none()
-      }
+  switch (cause._tag) {
+    case 'Empty': {
+      return Ev.now(O.some(empty))
     }
-  })
+    case 'Interrupt': {
+      return Ev.now(O.some(cause))
+    }
+    case 'Fail': {
+      return Ev.now(O.map_(cause.value, fail))
+    }
+    case 'Die': {
+      return Ev.now(O.some(cause))
+    }
+    case 'Then': {
+      return Ev.map2_(
+        Ev.defer(() => sequenceCauseOptionSafe(cause.left)),
+        Ev.defer(() => sequenceCauseOptionSafe(cause.right)),
+        (lefts, rights) => {
+          return lefts._tag === 'Some'
+            ? rights._tag === 'Some'
+              ? O.some(then(lefts.value, rights.value))
+              : lefts
+            : rights._tag === 'Some'
+            ? rights
+            : O.none()
+        }
+      )
+    }
+    case 'Both': {
+      return Ev.map2_(
+        Ev.defer(() => sequenceCauseOptionSafe(cause.left)),
+        Ev.defer(() => sequenceCauseOptionSafe(cause.right)),
+        (lefts, rights) => {
+          return lefts._tag === 'Some'
+            ? rights._tag === 'Some'
+              ? O.some(both(lefts.value, rights.value))
+              : lefts
+            : rights._tag === 'Some'
+            ? rights
+            : O.none()
+        }
+      )
+    }
+  }
 }
 
 /**
  * Converts the specified `Cause<Option<E>>` to an `Option<Cause<E>>`.
  */
 export function sequenceCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> {
-  return sequenceCauseOptionSafe(cause).value()
+  return sequenceCauseOptionSafe(cause).value
 }
 
 /**
@@ -1314,5 +1398,5 @@ export function prettySafe<E>(cause: Cause<E>): Ev.Eval<string> {
 }
 
 export function pretty<E>(cause: Cause<E>): string {
-  return prettySafe(cause).value()
+  return prettySafe(cause).value
 }

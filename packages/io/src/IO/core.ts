@@ -5,6 +5,7 @@ import type { FiberId } from '../Fiber/FiberId'
 import type { FiberContext } from '../internal/FiberContext'
 import type { Supervisor } from '../Supervisor'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
+import type { Eval } from '@principia/base/Eval'
 import type { Predicate, Refinement } from '@principia/base/Function'
 import type { Has, Region, Tag } from '@principia/base/Has'
 import type { Monoid } from '@principia/base/Monoid'
@@ -54,8 +55,15 @@ export * from './primitives'
  */
 
 /**
+ * Returns an effect that evaluates the given `Eval`.
+ */
+export function evaluate<A>(a: Eval<A>): UIO<A> {
+  return effectTotal(() => a.value)
+}
+
+/**
  * ```haskell
- * succeed :: a -> IO _ _ a
+ * succeedNow :: a -> IO _ _ a
  * ```
  *
  * Creates a `IO` that has succeeded with a pure value
@@ -63,13 +71,16 @@ export * from './primitives'
  * @category Constructors
  * @since 1.0.0
  */
-export function succeed<E = never, A = never>(a: A): FIO<E, A> {
+export function succeed<A = never>(a: A): UIO<A> {
   return new Succeed(a)
 }
 
-export function yieldNow(): UIO<void> {
-  return new Yield()
-}
+/**
+ * Returns an effect that yields to the runtime system, starting on a fresh
+ * stack. Manual use of this method can improve fairness, at the cost of
+ * overhead.
+ */
+export const yieldNow: UIO<void> = new Yield()
 
 /**
  * ```haskell
@@ -220,7 +231,7 @@ export function effectSuspendTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> 
 
 /**
  * ```haskell
- * halt :: Cause e -> IO _ e _
+ * haltNow :: Cause e -> IO _ e _
  * ```
  *
  * Creates a `IO` that has failed with the specified `Cause`
@@ -234,10 +245,24 @@ export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
 
 /**
  * ```haskell
+ * lhalt :: Eval (Cause e) -> FIO e _
+ * ```
+ *
+ * Creates a `IO` that evaluates the given `Eval` and halts with its value
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function lhalt<E>(cause: Eval<C.Cause<E>>): FIO<E, never> {
+  return effectSuspendTotal(() => halt(cause.value))
+}
+
+/**
+ * ```haskell
  * fail :: e -> IO _ e _
  * ```
  *
- * Creates a `IO` that has failed with value `e`. The moral equivalent of `throw`, except not immoral :)
+ * Creates a `IO` that has failed with value `e`. The moral equivalent of `throw`
  *
  * @category Constructors
  * @since 1.0.0
@@ -248,7 +273,21 @@ export function fail<E>(e: E): FIO<E, never> {
 
 /**
  * ```haskell
- * die :: Any -> IO _ _ _
+ * lfail :: Eval e -> IO _ e _
+ * ```
+ *
+ * Creates a `IO` that evaluates the given `Eval` and fails with its value
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function lfail<E>(e: Eval<E>): FIO<E, never> {
+  return effectSuspendTotal(() => fail(e.value))
+}
+
+/**
+ * ```haskell
+ * die :: Error -> IO _ _ _
  * ```
  *
  * Creates a `IO` that has died with the specified defect
@@ -258,6 +297,20 @@ export function fail<E>(e: E): FIO<E, never> {
  */
 export function die(e: Error): UIO<never> {
   return halt(C.die(e))
+}
+
+/**
+ * ```haskell
+ * ldie :: Eval Error -> IO _ _ _
+ * ```
+ *
+ * Creates a `IO` that evaluates the given `Eval` and dies with its value
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function ldie(e: Eval<Error>): FIO<never, never> {
+  return effectSuspendTotal(() => halt(C.die(e.value)))
 }
 
 /**
@@ -271,7 +324,7 @@ export function dieMessage(message: string): FIO<never, never> {
 
 /**
  * ```haskell
- * done :: Exit a b -> IO _ a b
+ * done :: Exit a b -> FIO a b
  * ```
  *
  * Creates a `IO` from an exit value
@@ -287,6 +340,30 @@ export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
       }
       case 'Failure': {
         return halt(exit.cause)
+      }
+    }
+  })
+}
+
+/**
+ * ```haskell
+ * doneEval :: Eval (Exit a b) -> FIO a b
+ * ```
+ *
+ * Creates a `IO` by evaluating the given `Eval` and exiting with the contained exit value
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function ldone<E, A>(exit: Eval<Exit<E, A>>): FIO<E, A> {
+  return effectSuspendTotal(() => {
+    const value = exit.value
+    switch (value._tag) {
+      case 'Success': {
+        return succeed(value.value)
+      }
+      case 'Failure': {
+        return halt(value.cause)
       }
     }
   })

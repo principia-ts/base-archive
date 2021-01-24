@@ -390,7 +390,7 @@ export function foldlWhile<I, Z>(z: Z, cont: (z: Z) => boolean, f: (z: Z, i: I) 
           }
         }
       })
-    return go(z, chunk, i, len).value()
+    return go(z, chunk, i, len).value
   }
 
   if (cont(z)) {

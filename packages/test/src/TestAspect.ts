@@ -1,4 +1,4 @@
-import type { Annotations } from './Annotation'
+import type { Annotations, TestAnnotation } from './Annotation'
 import type { TestConfig } from './TestConfig'
 import type { TestFailure } from './TestFailure'
 import type { TestSuccess } from './TestSuccess'
@@ -9,7 +9,10 @@ import type { ExecutionStrategy } from '@principia/io/ExecutionStrategy'
 import type { IO } from '@principia/io/IO'
 import type { Schedule } from '@principia/io/Schedule'
 
+import * as Eq from '@principia/base/Eq'
 import { constTrue, pipe } from '@principia/base/Function'
+import { hashString } from '@principia/base/Hash'
+import * as Set from '@principia/base/HashSet'
 import * as O from '@principia/base/Option'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
 import * as Ex from '@principia/io/Exit'
@@ -17,7 +20,7 @@ import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
 import * as Sc from '@principia/io/Schedule'
 
-import { annotate, repeated } from './Annotation'
+import * as Annotation from './Annotation'
 import * as S from './Spec'
 import * as TC from './TestConfig'
 import * as TF from './TestFailure'
@@ -193,7 +196,7 @@ export function repeat<R0>(
               schedule,
               pipe(
                 Sc.identity<TestSuccess>(),
-                Sc.tapOutput((_) => annotate(repeated, 1)),
+                Sc.tapOutput((_) => Annotation.annotate(Annotation.repeated, 1)),
                 Sc.giveAll(r)
               )
             )
@@ -211,10 +214,18 @@ export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = 
         test,
         pipe(
           test,
-          I.tap((_) => annotate(repeated, 1)),
+          I.tap((_) => Annotation.annotate(Annotation.repeated, 1)),
           I.repeatN(n - 1)
         )
       )
     )
   )
 )
+
+export function annotate<V>(key: TestAnnotation<V>, value: V): TestAspectPoly {
+  return new TestAspect((predicate, spec) => S.annotate_(spec, key, value))
+}
+
+export function tag(tag: string): TestAspectPoly {
+  return annotate(Annotation.tagged, pipe(Set.make({ ...Eq.string, hash: hashString }), Set.add(tag)))
+}

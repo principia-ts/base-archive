@@ -5,7 +5,7 @@ import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Show } from './Show/core'
 
-import * as DSL from './DSL/genWithHistoryF'
+import * as D from './Derivation/genWithHistoryF'
 import { _bind, _bindTo, flow, identity, pipe } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
@@ -2161,12 +2161,6 @@ export const Compactable: P.Compactable<[URI], V> = HKT.instance({
   separate
 })
 
-export const Extend: P.Extend<[URI], V> = HKT.instance({
-  ...Functor,
-  extend_,
-  extend
-})
-
 export const Filterable: P.Filterable<[URI], V> = HKT.instance({
   filter_,
   filterMap_,
@@ -2238,15 +2232,15 @@ export const Unfoldable: P.Unfoldable<[URI], V> = HKT.instance({
  */
 
 const adapter: {
-  <A>(_: () => O.Option<A>): DSL.GenLazyHKT<ReadonlyArray<A>, A>
-  <A>(_: () => ReadonlyArray<A>): DSL.GenLazyHKT<ReadonlyArray<A>, A>
+  <A>(_: () => O.Option<A>): D.GenLazyHKT<ReadonlyArray<A>, A>
+  <A>(_: () => ReadonlyArray<A>): D.GenLazyHKT<ReadonlyArray<A>, A>
 } = (_: () => any) =>
-  new DSL.GenLazyHKT(() => {
+  new D.GenLazyHKT(() => {
     const x = _()
     if (O.isOption(x)) {
-      return new DSL.GenLazyHKT(() => (x._tag === 'None' ? [] : [x.value]))
+      return new D.GenLazyHKT(() => (x._tag === 'None' ? [] : [x.value]))
     }
     return x
   })
 
-export const gen = DSL.genWithHistoryF(Monad, { adapter })
+export const gen = D.genWithHistoryF(Monad, { adapter })
