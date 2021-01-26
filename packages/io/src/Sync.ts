@@ -60,18 +60,18 @@ export const effectCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => 
 export const effectCatch: <E>(onThrow: (error: unknown) => E) => <A>(effect: () => A) => Sync<unknown, E, A> =
   M.effectCatch
 
-export const effectSuspend: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = M.effectSuspend
+export const defer: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = M.defer
 
-export const effectSuspendTotal: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = M.effectSuspendTotal
+export const deferTotal: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = M.deferTotal
 
-export const effectSuspendCatch_: <R, E, A, E1>(
+export const deferCatch_: <R, E, A, E1>(
   effect: () => Sync<R, E, A>,
   onThrow: (u: unknown) => E1
-) => Sync<R, E | E1, A> = M.effectSuspendCatch_
+) => Sync<R, E | E1, A> = M.deferCatch_
 
-export const effectSuspendCatch: <E1>(
+export const deferCatch: <E1>(
   onThrow: (u: unknown) => E1
-) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = M.effectSuspendCatch
+) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = M.deferCatch
 
 export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.fold(fail, succeed)
 
@@ -142,10 +142,10 @@ export const fold: <E, A, B, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const catchAll_: <R, E, A, Q, D, B>(
+export const catchAll_: <R, E, A, R1, E1, B>(
   fa: Sync<R, E, A>,
-  onFailure: (e: E) => Sync<Q, D, B>
-) => Sync<Q & R, D, A | B> = M.catchAll_
+  onFailure: (e: E) => Sync<R1, E1, B>
+) => Sync<R1 & R, E1, A | B> = M.catchAll_
 
 /**
  * Recovers from all errors
@@ -153,9 +153,18 @@ export const catchAll_: <R, E, A, Q, D, B>(
  * @category Combinators
  * @since 1.0.0
  */
-export const catchAll: <E, Q, D, B>(
-  onFailure: (e: E) => Sync<Q, D, B>
-) => <R, A>(fa: Sync<R, E, A>) => Sync<Q & R, D, A | B> = M.catchAll
+export const catchAll: <E, R1, E1, B>(
+  onFailure: (e: E) => Sync<R1, E1, B>
+) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E1, A | B> = M.catchAll
+
+export const catchSome_: <R, E, A, R1, E1, B>(
+  fa: Sync<R, E, A>,
+  onFailure: (e: E) => O.Option<Sync<R1, E1, B>>
+) => Sync<R1 & R, E | E1, A | B> = M.catchSome_
+
+export const catchSome: <E, R1, E1, B>(
+  onFailure: (e: E) => O.Option<Sync<R1, E1, B>>
+) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E | E1, A | B> = M.catchSome
 
 /**
  * Effectfully folds two `Sync` computations together
@@ -172,7 +181,7 @@ export function foldTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4,
   onBothSuccess: (a: A, b: B) => Sync<R5, E5, G>
 ): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
   return pipe(
-    product_(recover(left), recover(right)),
+    product_(attempt(left), attempt(right)),
     bind(
       ([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
         switch (ea._tag) {
@@ -337,7 +346,7 @@ export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => S
  * -------------------------------------------
  */
 
-export const recover: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = M.recover
+export const attempt: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = M.attempt
 
 export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = M.absolve
 
@@ -735,7 +744,7 @@ export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>
     I.foldl_(as, succeed(FL.empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
       map2_(
         b,
-        effectSuspendTotal(() => f(a)),
+        deferTotal(() => f(a)),
         (acc, r) => FL.append_(acc, r)
       )
     ),
@@ -799,15 +808,15 @@ export const Monad = HKT.instance<P.Monad<[URI], V>>({
   flatten
 })
 
-export const MonadFail = HKT.instance<P.MonadFail<[URI], V>>({
+export const MonadExcept = HKT.instance<P.MonadExcept<[URI], V>>({
   ...Monad,
-  fail
-})
-
-export const Fallible = HKT.instance<P.Fallible<[URI], V>>({
-  fail,
+  catchAll_,
+  catchAll,
+  catchSome_,
+  catchSome,
   absolve,
-  recover
+  attempt,
+  fail
 })
 
 /*
@@ -920,7 +929,7 @@ export function gen<T extends GenSync<any, any, any>, A>(
 ): Sync<_R<T>, _E<T>, A>
 export function gen(...args: any[]): any {
   const _gen = <T extends GenSync<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): Sync<_R<T>, _E<T>, A> =>
-    effectSuspendTotal(() => {
+    deferTotal(() => {
       const iterator = f(adapter as any)
       const state    = iterator.next()
 

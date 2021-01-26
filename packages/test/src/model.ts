@@ -94,7 +94,7 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
   return Spec.test(
     label,
     I.foldCauseM_(
-      I.effectSuspendTotal(assertion),
+      I.deferTotal(assertion),
       flow(TF.halt, I.fail),
       flow(
         BA.failures,

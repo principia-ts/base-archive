@@ -74,7 +74,7 @@ export function transformSafe<E, E1>(
 ): USync<ExecutedSpec<E1>> {
   return matchTag_(es, {
     Suite: ({ label, specs }) => {
-      const inner = A.map_(specs, (s) => transformSafe(s, f))
+      const inner = A.map_(specs, (s) => Sy.deferTotal(() => transformSafe(s, f)))
       return pipe(
         Sy.collectAll(inner),
         Sy.map((specs) => new SuiteCase(label, specs)),

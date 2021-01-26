@@ -38,10 +38,9 @@ declare module '@principia/base/HKT' {
 export const SE = DE.getSemigroup<ErrorInfo>()
 
 const M = getDecodeErrorsValidation({
-  ...E.MonadFail,
+  ...E.MonadExcept,
   ...E.Bifunctor,
-  ...E.Alt,
-  ...E.Fallible
+  ...E.Alt
 })
 
 export function fromDecoderKF<I, O>(decoder: KF.DecoderKF<I, O>): EitherDecoder<I, O> {

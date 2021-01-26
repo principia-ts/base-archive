@@ -24,7 +24,12 @@ export class DefaultCache implements Cache {
   constructor(private state: URef<ReadonlyMap<any, any>>) {}
 
   get<E, A>(request: Request<E, A>): I.FIO<void, URef<O.Option<E.Either<E, A>>>> {
-    return pipe(this.state.get, I.map(Map.lookupAt(eqRequest)(request)), I.get, I.orElseFail(undefined))
+    return pipe(
+      this.state.get,
+      I.map(Map.lookupAt(eqRequest)(request)),
+      I.get,
+      I.orElseFail(() => undefined)
+    )
   }
 
   lookup<E, A extends Request<E, B>, B>(

@@ -102,7 +102,7 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(thunk: () =>
   return (thunk) => effectCatch_(thunk, onThrow)
 }
 
-export function suspend<R, E, A>(managed: () => Managed<R, E, A>): Managed<R, E, A> {
+export function defer<R, E, A>(managed: () => Managed<R, E, A>): Managed<R, E, A> {
   return flatten(effectTotal(managed))
 }
 
@@ -227,7 +227,7 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
         const reserved        = yield* _(I.giveAll_(reservation, r))
         const releaseKey      = yield* _(addIfOpen((x) => I.giveAll_(reserved.release(x), r))(releaseMap))
         const finalizerAndA   = yield* _(
-          I.effectSuspendTotal(() => {
+          I.deferTotal(() => {
             switch (releaseKey._tag) {
               case 'None': {
                 return I.interrupt
@@ -895,15 +895,15 @@ export function unit(): Managed<unknown, never, void> {
  * Maps this effect to the specified constant while preserving the
  * effects of this effect.
  */
-export function as_<R, E, A, B>(ma: Managed<R, E, A>, b: B): Managed<R, E, B> {
-  return map_(ma, () => b)
+export function as_<R, E, A, B>(ma: Managed<R, E, A>, b: () => B): Managed<R, E, B> {
+  return map_(ma, () => b())
 }
 
 /**
  * Maps this effect to the specified constant while preserving the
  * effects of this effect.
  */
-export function as<B>(b: B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, B> {
+export function as<B>(b: () => B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, B> {
   return (ma) => as_(ma, b)
 }
 
@@ -1518,15 +1518,15 @@ export function orElseEither<R1, E1, B>(
  * Executes this effect and returns its value, if it succeeds, but
  * otherwise fails with the specified error.
  */
-export function orElseFail_<R, E, A, E1>(ma: Managed<R, E, A>, e: E1): Managed<R, E | E1, A> {
-  return orElse_(ma, () => fail(e))
+export function orElseFail_<R, E, A, E1>(ma: Managed<R, E, A>, e: () => E1): Managed<R, E | E1, A> {
+  return orElse_(ma, () => fail(e()))
 }
 
 /**
  * Executes this effect and returns its value, if it succeeds, but
  * otherwise fails with the specified error.
  */
-export function orElseFail<E1>(e: E1): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E1 | E, A> {
+export function orElseFail<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E1 | E, A> {
   return (ma) => orElseFail_(ma, e)
 }
 
@@ -1788,7 +1788,7 @@ export function sandboxWith<R, E, A, R1, E1, B>(
  * The moral equivalent of `if (!p) exp`
  */
 export function unless_<R, E, A>(ma: Managed<R, E, A>, b: () => boolean): Managed<R, E, void> {
-  return suspend(() => (b() ? unit() : asUnit(ma)))
+  return defer(() => (b() ? unit() : asUnit(ma)))
 }
 
 /**
@@ -1832,14 +1832,14 @@ export function unwrap<R, E, R1, E1, A>(fa: I.IO<R, E, Managed<R1, E1, A>>): Man
 /**
  * The moral equivalent of `if (p) exp`
  */
-export function when_<R, E, A>(ma: Managed<R, E, A>, b: boolean): Managed<R, E, void> {
-  return suspend(() => (b ? asUnit(ma) : unit()))
+export function when_<R, E, A>(ma: Managed<R, E, A>, b: () => boolean): Managed<R, E, void> {
+  return defer(() => (b() ? asUnit(ma) : unit()))
 }
 
 /**
  * The moral equivalent of `if (p) exp`
  */
-export function when(b: boolean): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> {
+export function when(b: () => boolean): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> {
   return (ma) => when_(ma, b)
 }
 
@@ -2147,7 +2147,7 @@ export function gen(...args: any[]): any {
   function gen_<Eff extends GenManaged<any, any, any>, AEff>(
     f: (i: any) => Generator<Eff, AEff, any>
   ): Managed<_R<Eff>, _E<Eff>, AEff> {
-    return suspend(() => {
+    return defer(() => {
       const iterator = f(adapter as any)
       const state    = iterator.next()
 

@@ -41,9 +41,6 @@
     "@principia/compile": "^0.2.4",
     "core-js": "3"
   },
-  "devDependencies": {
-    "typescript": "^4.1.3"
-  },
   "publishConfig": {
     "access": "public",
     "directory": "dist"

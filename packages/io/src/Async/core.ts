@@ -80,7 +80,7 @@ export const AsyncTag = {
   Succeed: 'Succeed',
   Total: 'Total',
   Partial: 'Partial',
-  Suspend: 'Suspend',
+  Defer: 'Defer',
   Promise: 'Promise',
   Chain: 'Chain',
   Fold: 'Fold',
@@ -110,7 +110,7 @@ declare module '@principia/base/HKT' {
 
 export type AsyncInstruction =
   | Succeed<any>
-  | Suspend<any, any, any>
+  | Defer<any, any, any>
   | LiftPromise<any, any>
   | Chain<any, any, any, any, any, any>
   | Fold<any, any, any, any, any, any, any, any, any>
@@ -193,8 +193,8 @@ export class All<R, E, A> extends Async<R, E, readonly A[]> {
   }
 }
 
-export class Suspend<R, E, A> extends Async<R, E, A> {
-  readonly _asyncTag = AsyncTag.Suspend
+export class Defer<R, E, A> extends Async<R, E, A> {
+  readonly _asyncTag = AsyncTag.Defer
 
   constructor(readonly async: () => Async<R, E, A>) {
     super()
@@ -258,8 +258,8 @@ export function done<E, A>(exit: Ex.AsyncExit<E, A>): Async<unknown, E, A> {
   return new Done(exit)
 }
 
-export function effectSuspend<R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> {
-  return new Suspend(factory)
+export function defer<R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> {
+  return new Defer(factory)
 }
 
 export function promiseUnfailable<A>(
@@ -995,7 +995,7 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           break
         }
-        case AsyncTag.Suspend: {
+        case AsyncTag.Defer: {
           current = I.async()
           break
         }

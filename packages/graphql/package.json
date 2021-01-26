@@ -57,9 +57,6 @@
     "graphql-tools": "^7.0.2",
     "koa-graphql": "^0.8.0"
   },
-  "devDependencies": {
-    "typescript": "next"
-  },
   "publishConfig": {
     "access": "public",
     "directory": "dist"

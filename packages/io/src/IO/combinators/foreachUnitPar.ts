@@ -66,7 +66,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
 
     const effect = (a: A) =>
       pipe(
-        I.effectSuspendTotal(() => f(a)),
+        I.deferTotal(() => f(a)),
         makeInterruptible,
         I.tapCause((cause) =>
           pipe(
@@ -161,7 +161,7 @@ function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I
     (mut_array) => {
       const fn = ([a, n]: [A, number]) =>
         I.bind_(
-          I.effectSuspendTotal(() => f(a)),
+          I.deferTotal(() => f(a)),
           (b) =>
             I.effectTotal(() => {
               mut_array[n] = b

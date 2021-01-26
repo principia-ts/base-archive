@@ -197,11 +197,11 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return I.descriptorWith((d) =>
-      I.effectSuspendTotal(() => {
+      I.deferTotal(() => {
         const p = P.unsafeMake<never, boolean>(d.id)
 
         return I.onInterrupt_(
-          I.effectSuspendTotal(() => {
+          I.deferTotal(() => {
             this.unsafeOffer(as, p)
             this.unsafeOnQueueEmptySpace(queue)
             unsafeCompleteTakers(this, queue, takers)
@@ -354,7 +354,7 @@ export function unsafeCreate<A>(
     isShutdown: I.UIO<boolean> = I.effectTotal(() => shutdownFlag.get)
 
     offer: (a: A) => I.IO<unknown, never, boolean> = (a) =>
-      I.effectSuspendTotal(() => {
+      I.deferTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
@@ -377,7 +377,7 @@ export function unsafeCreate<A>(
 
     offerAll: (as: Iterable<A>) => I.IO<unknown, never, boolean> = (as) => {
       const arr = Array.from(as)
-      return I.effectSuspendTotal(() => {
+      return I.deferTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
@@ -406,7 +406,7 @@ export function unsafeCreate<A>(
     }
 
     shutdown: I.UIO<void> = I.descriptorWith((d) =>
-      I.effectSuspendTotal(() => {
+      I.deferTotal(() => {
         shutdownFlag.set(true)
 
         return I.makeUninterruptible(
@@ -417,7 +417,7 @@ export function unsafeCreate<A>(
       })
     )
 
-    size: I.UIO<number> = I.effectSuspendTotal(() => {
+    size: I.UIO<number> = I.deferTotal(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       } else {
@@ -426,7 +426,7 @@ export function unsafeCreate<A>(
     })
 
     take: I.IO<unknown, never, A> = I.descriptorWith((d) =>
-      I.effectSuspendTotal(() => {
+      I.deferTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         }
@@ -440,7 +440,7 @@ export function unsafeCreate<A>(
           const p = P.unsafeMake<never, A>(d.id)
 
           return I.onInterrupt_(
-            I.effectSuspendTotal(() => {
+            I.deferTotal(() => {
               takers.offer(p)
               unsafeCompleteTakers(strategy, queue, takers)
               if (shutdownFlag.get) {
@@ -455,7 +455,7 @@ export function unsafeCreate<A>(
       })
     )
 
-    takeAll: I.IO<unknown, never, readonly A[]> = I.effectSuspendTotal(() => {
+    takeAll: I.IO<unknown, never, readonly A[]> = I.deferTotal(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       } else {
@@ -468,7 +468,7 @@ export function unsafeCreate<A>(
     })
 
     takeUpTo: (n: number) => I.IO<unknown, never, readonly A[]> = (max) =>
-      I.effectSuspendTotal(() => {
+      I.deferTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {

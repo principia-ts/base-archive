@@ -83,7 +83,7 @@ export function createReadStream(
   return pipe(
     open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
     I.productPar(
-      I.effectSuspendTotal(() => {
+      I.deferTotal(() => {
         const start = options?.start ? Integer.unwrap(options?.start) : 0
         const end   = options?.end ? Integer.unwrap(options?.end) : Infinity
         if (end < start) {

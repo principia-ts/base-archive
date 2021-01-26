@@ -1,13 +1,13 @@
 import type { UIO } from '../core'
 
-import { effectSuspendTotal, effectTotal } from '../core'
+import { deferTotal, effectTotal } from '../core'
 import { effectAsyncInterrupt } from './interrupt'
 
 /**
  * Returns a `IO` that will never produce anything. The moral equivalent of
  * `while(true) {}`, only without the wasted CPU cycles.
  */
-export const never: UIO<never> = effectSuspendTotal(() =>
+export const never: UIO<never> = deferTotal(() =>
   effectAsyncInterrupt<unknown, never, never>(() => {
     const interval = setInterval(() => {
       //

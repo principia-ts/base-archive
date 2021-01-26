@@ -30,7 +30,8 @@ declare module '@principia/base/HKT' {
 
 export type V<C, E> = C & HKT.Fix<'E', E>
 
-export type MonadDecoder<M extends HKT.URIS, C, E> = P.MonadFail<M, V<C, E>> &
+export type MonadDecoder<M extends HKT.URIS, C, E> = P.Monad<M, V<C, E>> &
+  P.Fail<M, V<C, E>> &
   P.Bifunctor<M, V<C, E>> &
   P.Alt<M, V<C, E>>
 
@@ -92,13 +93,13 @@ export function fromRefinement<I, A extends I, E>(
   onError: (i: I) => E
 ): DecoderK<I, E, A> {
   return {
-    decode: (M) => (i) => (refinement(i) ? M.pure(i) : M.fail(onError(i)))
+    decode: (M) => (i) => (refinement(i) ? M.pure(i) : M.fail(onError(i) as any))
   }
 }
 
 export function literal<I, E>(onError: (i: I, values: NonEmptyArray<Literal>) => E) {
   return <A extends readonly [Literal, ...Literal[]]>(...values: A): DecoderK<I, E, A[number]> => ({
-    decode: (M) => (i) => (G.literal(...values).is(i) ? M.pure(i as A[number]) : M.fail(onError(i, values)))
+    decode: (M) => (i) => (G.literal(...values).is(i) ? M.pure(i as A[number]) : M.fail(onError(i, values) as any))
   })
 }
 
@@ -228,7 +229,7 @@ export function fromType_<E, P extends Record<string, DecoderKHKT<any, E, any>>>
 ): DecoderKHKT<{ [K in keyof P]: InputOfHKT<P[K]> }, E, { [K in keyof P]: TypeOfHKT<P[K]> }> {
   return {
     decode: (M) => (i) =>
-      R.traverseWithIndex_(M)(properties, (key, decoder) =>
+      R.itraverse_(M)(properties, (key, decoder) =>
         M.mapLeft_(decoder.decode(M)(i[key]), (e: E) => onPropertyError(key, e))
       ) as any
   }
@@ -252,7 +253,7 @@ export function fromPartial_<E, P extends Record<string, DecoderKHKT<any, E, any
 ): DecoderKHKT<Partial<{ [K in keyof P]: InputOfHKT<P[K]> }>, E, Partial<{ [K in keyof P]: TypeOfHKT<P[K]> }>> {
   return {
     decode: (M) => {
-      const traverse          = R.traverseWithIndex_(M)
+      const traverse          = R.itraverse_(M)
       const undefinedProperty = M.pure(E.right(undefined))
       const skipProperty      = M.pure(E.left(undefined))
       return (i) =>
@@ -311,7 +312,7 @@ export function fromRecord_<I, E, A>(
 ): DecoderK<Record<string, I>, E, Record<string, A>> {
   return {
     decode: (M) => {
-      const traverse  = R.traverseWithIndex_(M)
+      const traverse  = R.itraverse_(M)
       const codomainM = codomain.decode(M)
       return (ir) => traverse(ir, (key, i: I) => M.mapLeft_(codomainM(i), (e) => onKeyError(key, e)))
     }
@@ -399,7 +400,7 @@ export function sum<T extends string, E, P extends Record<string, DecoderK<any, 
       if (v in members) {
         return (members as any)[v].decode(M)(ir)
       }
-      return M.fail(onTagError(tag, v, keys))
+      return M.fail(onTagError(tag, v, keys) as any)
     }
   }
 }

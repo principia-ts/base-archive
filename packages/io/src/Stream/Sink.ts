@@ -448,7 +448,7 @@ export function collectAll<A>(): Sink<unknown, never, A, never, Chunk<A>> {
 export function collectAllToMap<A, K>(key: (a: A) => K) {
   return (f: (a: A, a1: A) => A): Sink<unknown, never, A, never, ReadonlyMap<K, A>> =>
     new Sink(
-      M.suspend(
+      M.defer(
         () =>
           foldlChunks(new Map<K, A>(), (acc, as: Chunk<A>) =>
             C.foldl_(as, acc, (acc, a) => {

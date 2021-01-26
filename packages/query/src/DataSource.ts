@@ -203,7 +203,7 @@ export function fromFunctionM<R, E, A extends Request<E, B>, B>(
       I.foreachPar((a) =>
         pipe(
           f(a),
-          I.recover,
+          I.attempt,
           I.map((r) => tuple(a, r))
         )
       ),
@@ -222,7 +222,7 @@ export function fromFunctionOptionM<R, E, A extends Request<E, B>, B>(
       I.foreachPar((a) =>
         pipe(
           f(a),
-          I.recover,
+          I.attempt,
           I.map((r) => tuple(a, r))
         )
       ),

@@ -2,7 +2,7 @@ import type { Clock } from '../../Clock'
 import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
-import { effectSuspendTotal, fail, flatten, pure } from '../core'
+import { deferTotal, fail, flatten, pure } from '../core'
 import { timeoutTo_ } from './timeoutTo'
 
 /**
@@ -14,7 +14,7 @@ export function timeoutFail_<R, E, A, E1>(ma: IO<R, E, A>, d: number, e: () => E
     timeoutTo_(
       ma,
       d,
-      effectSuspendTotal(() => fail(e())),
+      deferTotal(() => fail(e())),
       pure
     )
   )

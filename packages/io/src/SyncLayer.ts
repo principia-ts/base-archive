@@ -36,7 +36,7 @@ export type SyncMemoMap = Map<PropertyKey, any>
 export const SyncLayerTag = {
   FromSync: 'FromSync',
   Fresh: 'Fresh',
-  Suspend: 'Suspend',
+  Defer: 'Defer',
   Both: 'Both',
   Using: 'Using',
   From: 'From',
@@ -91,8 +91,8 @@ export class Fresh<R, E, A> extends SyncLayer<R, E, A> {
   }
 }
 
-export class Suspend<R, E, A> extends SyncLayer<R, E, A> {
-  readonly _tag = SyncLayerTag.Suspend
+export class Defer<R, E, A> extends SyncLayer<R, E, A> {
+  readonly _tag = SyncLayerTag.Defer
 
   constructor(readonly factory: () => SyncLayer<R, E, A>) {
     super()
@@ -134,17 +134,18 @@ export class Using<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | 
   }
 
   scope(): Sy.Sync<unknown, never, (_: SyncMemoMap) => Sy.Sync<R & Erase<R1, A>, E | E1, A & A1>> {
-    return Sy.succeed((_) =>
-      pipe(
-        getMemoOrElseCreate(this.left)(_),
-        Sy.bind((l) =>
-          pipe(
-            getMemoOrElseCreate(this.right)(_),
-            Sy.map((r) => ({ ...l, ...r })),
-            Sy.give(l)
+    return Sy.succeed(
+      (_) =>
+        pipe(
+          getMemoOrElseCreate(this.left)(_),
+          Sy.bind((l) =>
+            pipe(
+              getMemoOrElseCreate(this.right)(_),
+              Sy.map((r) => ({ ...l, ...r })),
+              Sy.give(l)
+            )
           )
-        )
-      )
+        ) as Sy.Sync<R & Erase<R1, A>, E | E1, A & A1>
     )
   }
 }
@@ -157,11 +158,12 @@ export class From<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E
   }
 
   scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R & Erase<R1, A>, E | E1, A1>> {
-    return Sy.succeed((_) =>
-      pipe(
-        getMemoOrElseCreate(this.left)(_),
-        Sy.bind((l) => pipe(getMemoOrElseCreate(this.right)(_), Sy.give(l)))
-      )
+    return Sy.succeed(
+      (_) =>
+        pipe(
+          getMemoOrElseCreate(this.left)(_),
+          Sy.bind((l) => pipe(getMemoOrElseCreate(this.right)(_), Sy.give(l)))
+        ) as Sy.Sync<R & Erase<R1, A>, E | E1, A1>
     )
   }
 }
@@ -216,8 +218,8 @@ export function fresh<R, E, A>(layer: SyncLayer<R, E, A>) {
   return new Fresh(layer)
 }
 
-export function suspend<R, E, A>(layer: () => SyncLayer<R, E, A>) {
-  return new Suspend(layer)
+export function defer<R, E, A>(layer: () => SyncLayer<R, E, A>) {
+  return new Defer(layer)
 }
 
 export function fromSync<T>(tag: Tag<T>): <R, E>(_: Sy.Sync<R, E, T>) => SyncLayer<R, E, Has<T>> {

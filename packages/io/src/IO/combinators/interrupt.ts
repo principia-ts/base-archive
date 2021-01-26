@@ -20,7 +20,7 @@ import {
   die,
   effectAsync,
   effectAsyncOption,
-  effectSuspendTotal,
+  deferTotal,
   effectTotal,
   flatten,
   foldCauseM_,
@@ -248,7 +248,7 @@ export function effectAsyncInterruptEither<R, E, A>(
           return ret.get
         }, blockingOn),
         flatten,
-        onInterrupt(() => effectSuspendTotal(() => (started.get ? cancel.get() : unit())))
+        onInterrupt(() => deferTotal(() => (started.get ? cancel.get() : unit())))
       )
     )
   )

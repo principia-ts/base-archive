@@ -3,7 +3,7 @@ import * as HKT from './HKT'
 import * as O from './Option'
 import * as P from './typeclass'
 
-export type OptionTURI<M extends HKT.URIS> = HKT.AppendURI<M, O.OptionURI>
+export type OptionTURI<M extends HKT.URIS> = HKT.AppendURI<M, O.URI>
 
 export function getOptionT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): OptionT<M, C>
 export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UHKT<M>, HKT.Auto> {

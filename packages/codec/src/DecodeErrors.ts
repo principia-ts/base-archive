@@ -109,7 +109,7 @@ export function paths(e: DecodeErrors): Record<string, any> {
         }
       }
     })
-  return go(e).value()
+  return go(e).value
 }
 
 /*
@@ -121,14 +121,14 @@ export function paths(e: DecodeErrors): Record<string, any> {
 export type V<C> = HKT.CleanParam<C, 'E'> & HKT.Fix<'E', DecodeErrors>
 
 export function getDecodeErrorsValidation<M extends HKT.URIS, C = HKT.Auto>(
-  M: P.MonadFail<M, C> & P.Bifunctor<M, C> & P.Fallible<M, C>
+  M: P.MonadExcept<M, C> & P.Bifunctor<M, C>
 ): MonadDecoder<M, C, DecodeErrors>
 export function getDecodeErrorsValidation<M>(
-  M: P.MonadFail<HKT.UHKT2<M>> & P.Bifunctor<HKT.UHKT2<M>> & P.Fallible<HKT.UHKT2<M>>
+  M: P.MonadExcept<HKT.UHKT2<M>> & P.Bifunctor<HKT.UHKT2<M>>
 ): MonadDecoder<HKT.UHKT2<M>, HKT.Auto, DecodeErrors> {
   const map2_: P.Map2Fn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, fb, f) =>
     M.flatten(
-      M.map2_(M.recover(fa), M.recover(fb), (ea, eb) =>
+      M.map2_(M.attempt(fa), M.attempt(fb), (ea, eb) =>
         E.isLeft(ea)
           ? E.isLeft(eb)
             ? M.fail(FS.combine(ea.left, eb.left))
@@ -141,12 +141,15 @@ export function getDecodeErrorsValidation<M>(
 
   const alt_: P.AltFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, that) =>
     pipe(
-      M.recover(fa),
-      M.bind(E.fold((e) => pipe(M.recover(that()), M.bind(E.fold((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure))
+      M.attempt(fa),
+      M.bind(E.fold((e) => pipe(M.attempt(that()), M.bind(E.fold((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure))
     )
 
   return HKT.instance<
-    P.MonadFail<HKT.UHKT2<M>, V<HKT.Auto>> & P.Alt<HKT.UHKT2<M>, V<HKT.Auto>> & P.Bifunctor<HKT.UHKT2<M>, HKT.Auto>
+    P.Monad<HKT.UHKT2<M>, V<HKT.Auto>> &
+      P.Alt<HKT.UHKT2<M>, V<HKT.Auto>> &
+      P.Bifunctor<HKT.UHKT2<M>, HKT.Auto> &
+      P.Fail<HKT.UHKT2<M>, HKT.Auto>
   >({
     invmap_: M.invmap_,
     invmap: M.invmap,

@@ -1,12 +1,33 @@
 import type { URI, V } from './core'
 import type * as P from '@principia/base/typeclass'
 
+import { flow } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
 import { getOptionT } from '@principia/base/OptionT'
 import { mapNF, sequenceSF, sequenceTF } from '@principia/base/typeclass'
 
 import { apPar, apPar_, map2Par, map2Par_, productPar, productPar_ } from './combinators'
-import { ap, ap_, bind, bind_, flatten, map, map_, map2, map2_, product, product_, pure, unit } from './core'
+import {
+  absolve,
+  ap,
+  ap_,
+  bind,
+  bind_,
+  catchAll,
+  catchAll_,
+  catchSome,
+  catchSome_,
+  fail,
+  flatten,
+  map,
+  map_,
+  map2,
+  map2_,
+  product,
+  product_,
+  pure,
+  attempt,
+  unit } from './core'
 
 export const Functor = HKT.instance<P.Functor<[URI], V>>({
   invmap_: (fa, f, _) => map_(fa, f),
@@ -59,6 +80,17 @@ export const Monad = HKT.instance<P.Monad<[URI], V>>({
   bind_,
   bind,
   flatten
+})
+
+export const MonadExcept = HKT.instance<P.MonadExcept<[URI], V>>({
+  ...Monad,
+  catchAll_,
+  catchAll,
+  catchSome_,
+  catchSome,
+  attempt: attempt,
+  absolve,
+  fail
 })
 
 export const IOOption = getOptionT(Monad)

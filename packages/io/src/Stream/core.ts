@@ -287,8 +287,8 @@ export function iterate<A>(a: A, f: (a: A) => A): UStream<A> {
   return new Stream(pipe(Ref.make(a), I.toManaged(), M.map(flow(Ref.getAndUpdate(f), I.map(C.single)))))
 }
 
-export function suspend<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
-  return new Stream(M.suspend(() => thunk().proc))
+export function defer<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
+  return new Stream(M.defer(() => thunk().proc))
 }
 
 /**
@@ -5449,7 +5449,7 @@ export function gen<T extends GenStream<any, any, any>, A0>(
 ): Stream<_R<T>, _E<T>, A0>
 export function gen(...args: any[]): any {
   function gen_<T extends GenStream<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): Stream<_R<T>, _E<T>, A> {
-    return suspend(() => {
+    return defer(() => {
       function run(replayStack: L.List<any>): Stream<any, any, A> {
         const iterator    = f(adapter as any)
         let state         = iterator.next()

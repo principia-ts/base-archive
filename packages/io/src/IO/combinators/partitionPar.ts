@@ -3,7 +3,7 @@ import type { IO } from '../core'
 import { identity } from '@principia/base/Function'
 import * as I from '@principia/base/Iterable'
 
-import { map_, recover } from '../core'
+import { map_, attempt } from '../core'
 import { foreachPar_ } from './foreachPar'
 
 /**
@@ -16,7 +16,7 @@ export function partitionPar_<R, E, A, B>(
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
   return map_(
-    foreachPar_(as, (a) => recover(f(a))),
+    foreachPar_(as, (a) => attempt(f(a))),
     I.partitionMap(identity)
   )
 }

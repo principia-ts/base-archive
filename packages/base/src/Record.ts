@@ -844,11 +844,11 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
 
 /**
  * ```haskell
- * traverseWithIndex_ :: (Applicative g, TraversableWithIndex t, Index k) =>
+ * itraverse_ :: (Applicative g, TraversableWithIndex t, Index k) =>
  *    g -> (t a, ((k, a) -> g b)) -> g (t b)
  * ```
  */
-export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()(
+export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()(
   (_) => (G) => {
     return (ta, f) => {
       type _ = typeof _
@@ -876,11 +876,11 @@ export const traverseWithIndex_: P.TraverseWithIndexFn_<[URI], V> = P.implementT
 
 /**
  * ```haskell
- * traverseWithIndex :: (Applicative g, TraversableWithIndex t, Index k) =>
+ * itraverse :: (Applicative g, TraversableWithIndex t, Index k) =>
  *    g -> ((k, a) -> g b) -> t a -> g (t b)
  * ```
  */
-export const traverseWithIndex: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => (ta) => traverseWithIndex_(G)(ta, f)
+export const itraverse: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
 
 /**
  * ```haskell
@@ -888,7 +888,7 @@ export const traverseWithIndex: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => 
  *    g -> (t a, (a -> g b)) -> g (t b)
  * ```
  */
-export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) => traverseWithIndex_(G)(ta, (_, a) => f(a))
+export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
 
 /**
  * ```haskell
@@ -903,7 +903,7 @@ export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(
  * sequence :: (Applicative g, Traversable t) => g -> t a -> g (t a)
  * ```
  */
-export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => traverseWithIndex_(G)(ta, (_, a) => a)
+export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => itraverse_(G)(ta, (_, a) => a)
 
 /*
  * -------------------------------------------
@@ -918,7 +918,7 @@ export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => traverseWithIndex
  * ```
  */
 export const icompactA_: P.WitherWithIndexFn_<[URI], V> = (G) => {
-  const traverseG = traverseWithIndex_(G)
+  const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
 }
 
@@ -953,7 +953,7 @@ export const compactA: P.WitherFn<[URI], V> = (G) => (f) => (wa) => compactA_(G)
  * ```
  */
 export const iseparateA_: P.WiltWithIndexFn_<[URI], V> = P.implementWiltWithIndex_<[URI], V>()(() => (G) => {
-  const traverseG = traverseWithIndex_(G)
+  const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
 })
 

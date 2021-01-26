@@ -137,7 +137,7 @@ export class HttpResponse {
 
   set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {
     return RefM.update_(this.ref, (res) =>
-      I.effectSuspendTotal(() => {
+      I.deferTotal(() => {
         const hs = Object.entries(headers)
         try {
           for (let i = 0; i < hs.length; i++) {

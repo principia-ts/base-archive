@@ -15,7 +15,7 @@ export const foreachPar_ = <R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
     (mut_array) => {
       function fn([a, n]: [A, number]) {
         return I.bind_(
-          I.effectSuspendTotal(() => f(a)),
+          I.deferTotal(() => f(a)),
           (b) =>
             I.effectTotal(() => {
               mut_array[n] = b

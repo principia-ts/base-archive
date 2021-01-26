@@ -33,13 +33,13 @@ export const IOTag = {
   Yield: 'Yield',
   Read: 'Read',
   Give: 'Give',
-  EffectSuspend: 'EffectSuspend',
+  DeferTotal: 'DeferTotal',
   Race: 'Race',
   SetInterrupt: 'SetInterrupt',
   GetInterrupt: 'GetInterrupt',
   CheckDescriptor: 'CheckDescriptor',
   Supervise: 'Supervise',
-  EffectSuspendPartial: 'EffectSuspendPartial',
+  DeferPartial: 'DeferPartial',
   NewFiberRef: 'NewFiberRef',
   ModifyFiberRef: 'ModifyFiberRef',
   GetForkScope: 'GetForkScope',
@@ -232,8 +232,8 @@ export class Give<R, E, A> extends IO<unknown, E, A> {
 /**
  * @internal
  */
-export class EffectSuspend<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.EffectSuspend
+export class DeferTotal<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.DeferTotal
 
   constructor(readonly io: () => IO<R, E, A>) {
     super()
@@ -304,8 +304,8 @@ export class Supervise<R, E, A> extends IO<R, E, A> {
 /**
  * @internal
  */
-export class EffectSuspendPartial<R, E, A, E2> extends IO<R, E | E2, A> {
-  readonly _tag = IOTag.EffectSuspendPartial
+export class DeferPartial<R, E, A, E2> extends IO<R, E | E2, A> {
+  readonly _tag = IOTag.DeferPartial
 
   constructor(readonly io: () => IO<R, E, A>, readonly onThrow: (u: unknown) => E2) {
     super()
@@ -376,8 +376,8 @@ export type Instruction =
   | Yield
   | Read<any, any, any, any>
   | Give<any, any, any>
-  | EffectSuspend<any, any, any>
-  | EffectSuspendPartial<any, any, any, any>
+  | DeferTotal<any, any, any>
+  | DeferPartial<any, any, any, any>
   | NewFiberRef<any>
   | ModifyFiberRef<any, any>
   | Race<any, any, any, any, any, any, any, any, any, any, any, any>

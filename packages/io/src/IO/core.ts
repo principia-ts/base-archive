@@ -32,8 +32,8 @@ import {
   CheckDescriptor,
   EffectAsync,
   EffectPartial,
-  EffectSuspend,
-  EffectSuspendPartial,
+  DeferTotal,
+  DeferPartial,
   EffectTotal,
   Fail,
   Fold,
@@ -53,13 +53,6 @@ export * from './primitives'
  * Constructors
  * -------------------------------------------
  */
-
-/**
- * Returns an effect that evaluates the given `Eval`.
- */
-export function evaluate<A>(a: Eval<A>): UIO<A> {
-  return effectTotal(() => a.value)
-}
 
 /**
  * ```haskell
@@ -132,7 +125,7 @@ export function effect<A>(effect: () => A): FIO<Error, A> {
 
 /**
  * ```haskell
- * total :: (() -> a) -> UIO a
+ * effectTotal :: (() -> a) -> UIO a
  * ```
  *
  * Imports a total synchronous effect into a pure `IO` value.
@@ -181,8 +174,8 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () =
  * Returns a lazily constructed effect, whose construction may itself require effects.
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
-export function effectSuspend<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
-  return new EffectSuspendPartial(io, (u) =>
+export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
+  return new DeferPartial(io, (u) =>
     u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)
   )
 }
@@ -193,11 +186,11 @@ export function effectSuspend<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, 
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
-export function effectSuspendCatch_<R, E, A, E1>(
+export function deferCatch_<R, E, A, E1>(
   io: () => IO<R, E, A>,
   onThrow: (error: unknown) => E1
 ): IO<R, E | E1, A> {
-  return new EffectSuspendPartial(io, onThrow)
+  return new DeferPartial(io, onThrow)
 }
 
 /**
@@ -206,27 +199,27 @@ export function effectSuspendCatch_<R, E, A, E1>(
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
-export function effectSuspendCatch<E1>(
+export function deferCatch<E1>(
   onThrow: (error: unknown) => E1
 ): <R, E, A>(io: () => IO<R, E, A>) => IO<R, E | E1, A> {
-  return (io) => effectSuspendCatch_(io, onThrow)
+  return (io) => deferCatch_(io, onThrow)
 }
 
 /**
  * ```haskell
- * effectSuspendTotal :: (() -> IO r e a) -> IO r e a
+ * deferTotal :: (() -> IO r e a) -> IO r e a
  * ```
  *
  * Returns a lazily constructed effect, whose construction may itself require
  * effects. The effect must not throw any exceptions. When no environment is required (i.e., when R == unknown)
  * it is conceptually equivalent to `flatten(effectTotal(io))`. If you wonder if the effect throws exceptions,
- * do not use this method, use `IO.effectSuspend`.
+ * do not use this method, use `IO.defer`.
  *
  * @category Constructors
  * @since 1.0.0
  */
-export function effectSuspendTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
-  return new EffectSuspend(io)
+export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
+  return new DeferTotal(io)
 }
 
 /**
@@ -245,20 +238,6 @@ export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
 
 /**
  * ```haskell
- * lhalt :: Eval (Cause e) -> FIO e _
- * ```
- *
- * Creates a `IO` that evaluates the given `Eval` and halts with its value
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function lhalt<E>(cause: Eval<C.Cause<E>>): FIO<E, never> {
-  return effectSuspendTotal(() => halt(cause.value))
-}
-
-/**
- * ```haskell
  * fail :: e -> IO _ e _
  * ```
  *
@@ -273,20 +252,6 @@ export function fail<E>(e: E): FIO<E, never> {
 
 /**
  * ```haskell
- * lfail :: Eval e -> IO _ e _
- * ```
- *
- * Creates a `IO` that evaluates the given `Eval` and fails with its value
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function lfail<E>(e: Eval<E>): FIO<E, never> {
-  return effectSuspendTotal(() => fail(e.value))
-}
-
-/**
- * ```haskell
  * die :: Error -> IO _ _ _
  * ```
  *
@@ -297,20 +262,6 @@ export function lfail<E>(e: Eval<E>): FIO<E, never> {
  */
 export function die(e: Error): UIO<never> {
   return halt(C.die(e))
-}
-
-/**
- * ```haskell
- * ldie :: Eval Error -> IO _ _ _
- * ```
- *
- * Creates a `IO` that evaluates the given `Eval` and dies with its value
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function ldie(e: Eval<Error>): FIO<never, never> {
-  return effectSuspendTotal(() => halt(C.die(e.value)))
 }
 
 /**
@@ -333,37 +284,13 @@ export function dieMessage(message: string): FIO<never, never> {
  * @since 1.0.0
  */
 export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
-  return effectSuspendTotal(() => {
+  return deferTotal(() => {
     switch (exit._tag) {
       case 'Success': {
         return succeed(exit.value)
       }
       case 'Failure': {
         return halt(exit.cause)
-      }
-    }
-  })
-}
-
-/**
- * ```haskell
- * doneEval :: Eval (Exit a b) -> FIO a b
- * ```
- *
- * Creates a `IO` by evaluating the given `Eval` and exiting with the contained exit value
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function ldone<E, A>(exit: Eval<Exit<E, A>>): FIO<E, A> {
-  return effectSuspendTotal(() => {
-    const value = exit.value
-    switch (value._tag) {
-      case 'Success': {
-        return succeed(value.value)
-      }
-      case 'Failure': {
-        return halt(value.cause)
       }
     }
   })
@@ -685,12 +612,12 @@ export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E
 
 /**
  * ```haskell
- * recover :: IO r e a -> IO r ~ (Either e a)
+ * attempt :: IO r e a -> IO r ~ (Either e a)
  * ```
  *
  * Folds an `IO` that may fail with `E` or succeed with `A` into one that never fails but succeeds with `Either<E, A>`
  */
-export function recover<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
+export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
   return fold_(ma, E.left, E.right)
 }
 
@@ -1476,7 +1403,7 @@ export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>)
 }
 
 export function cond_<R, R1, E, A>(b: boolean, onTrue: () => URIO<R, A>, onFalse: () => URIO<R1, E>): IO<R & R1, E, A> {
-  return effectSuspendTotal((): IO<R & R1, E, A> => (b ? onTrue() : bind_(onFalse(), fail)))
+  return deferTotal((): IO<R & R1, E, A> => (b ? onTrue() : bind_(onFalse(), fail)))
 }
 
 export function cond<R, R1, E, A>(
@@ -1547,26 +1474,10 @@ export function extend<R, E, A, B>(f: (wa: IO<R, E, A>) => B): (wa: IO<R, E, A>)
 }
 
 /**
- * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
- *
- * The moral equivalent of
- * ```typescript
- * if (b) {
- *    onTrue();
- * } else {
- *    onFalse();
- * }
- * ```
- *
- * @category Combinators
- * @since 1.0.0
+ * Returns an effect that evaluates the given `Eval`.
  */
-export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
-  mb: IO<R, E, boolean>,
-  onTrue: () => IO<R1, E1, A1>,
-  onFalse: () => IO<R2, E2, A2>
-): IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return bind_(mb, (x) => (x ? (onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()))
+export function evaluate<A>(a: Eval<A>): UIO<A> {
+  return effectTotal(() => a.value)
 }
 
 /**
@@ -1826,7 +1737,7 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>):
     I.foldl_(as, succeed(FL.empty<B>()) as IO<R, E, FL.FreeList<B>>, (b, a) =>
       map2_(
         b,
-        effectSuspendTotal(() => f(a)),
+        deferTotal(() => f(a)),
         (acc, r) => FL.append_(acc, r)
       )
     ),
@@ -2052,7 +1963,7 @@ export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementException, A>
  * Lifts an Option into an IO. If the option is `None`, fail with the `e` value.
  */
 export function getOrFailWith_<E, A>(v: () => Option<A>, e: () => E): FIO<E, A> {
-  return effectSuspendTotal(() => O.fold_(v(), () => fail(e()), succeed))
+  return deferTotal(() => O.fold_(v(), () => fail(e()), succeed))
 }
 
 /**
@@ -2067,6 +1978,29 @@ export function getOrFailWith<E>(e: () => E): <A>(v: () => Option<A>) => FIO<E, 
  */
 export function getOrFailUnit<A>(v: () => Option<A>): FIO<void, A> {
   return getOrFailWith_(v, () => undefined)
+}
+
+/**
+ * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
+ *
+ * The moral equivalent of
+ * ```typescript
+ * if (b) {
+ *    onTrue();
+ * } else {
+ *    onFalse();
+ * }
+ * ```
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
+  mb: IO<R, E, boolean>,
+  onTrue: () => IO<R1, E1, A1>,
+  onFalse: () => IO<R2, E2, A2>
+): IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
+  return bind_(mb, (x) => (x ? (onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse()))
 }
 
 /**
@@ -2143,7 +2077,7 @@ export function isSuccess<R, E, A>(ma: IO<R, E, A>): IO<R, never, boolean> {
  * ```
  */
 export function iterate_<R, E, A>(initial: A, cont: (a: A) => boolean, body: (a: A) => IO<R, E, A>): IO<R, E, A> {
-  return cont(initial) ? bind_(body(initial), (a) => iterate(a)(cont)(body)) : pure(initial)
+  return cont(initial) ? bind_(body(initial), (a) => iterate_(a, cont, body)) : succeed(initial)
 }
 
 /**
@@ -2159,10 +2093,8 @@ export function iterate_<R, E, A>(initial: A, cont: (a: A) => boolean, body: (a:
  * return s;
  * ```
  */
-export function iterate<A>(
-  initial: A
-): (cont: (b: A) => boolean) => <R, E>(body: (b: A) => IO<R, E, A>) => IO<R, E, A> {
-  return (cont) => (body) => iterate_(initial, cont, body)
+export function iterate<R, E, A>(cont: (b: A) => boolean, body: (b: A) => IO<R, E, A>): (initial: A) => IO<R, E, A> {
+  return (initial) => iterate_(initial, cont, body)
 }
 
 /**
@@ -2192,24 +2124,26 @@ export const join = <R1, E1, A1>(that: IO<R1, E1, A1>) => <R, E, A>(
  * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  */
 export const joinEither_ = <R, E, A, R1, E1, A1>(
-  io: IO<R, E, A>,
-  that: IO<R1, E1, A1>
+  ma: IO<R, E, A>,
+  mb: IO<R1, E1, A1>
 ): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
   asksM(
     (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
       E.fold_(
         _,
-        (r) => map_(giveAll_(io, r), E.left),
-        (r1) => map_(giveAll_(that, r1), E.right)
+        (r) => map_(giveAll_(ma, r), E.left),
+        (r1) => map_(giveAll_(mb, r1), E.right)
       )
   )
 
 /**
  * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  */
-export const joinEither = <R1, E1, A1>(that: IO<R1, E1, A1>) => <R, E, A>(
-  io: IO<R, E, A>
-): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> => joinEither_(io, that)
+export function joinEither<R1, E1, A1>(
+  mb: IO<R1, E1, A1>
+): <R, E, A>(ma: IO<R, E, A>) => IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
+  return (ma) => joinEither_(ma, mb)
+}
 
 /**
  *  Returns an IO with the value on the left part.
@@ -2391,26 +2325,26 @@ export function orElse<R1, E1, A1>(that: () => IO<R1, E1, A1>): <R, E, A>(ma: IO
 
 export function orElseEither_<R, E, A, R1, E1, A1>(
   self: IO<R, E, A>,
-  that: IO<R1, E1, A1>
+  that: () => IO<R1, E1, A1>
 ): IO<R & R1, E1, E.Either<A, A1>> {
   return tryOrElse_(
     self,
-    () => map_(that, E.right),
-    (a) => pure(E.left(a))
+    () => map_(that(), E.right),
+    (a) => succeed(E.left(a))
   )
 }
 
 export function orElseEither<R1, E1, A1>(
-  that: IO<R1, E1, A1>
+  that: () => IO<R1, E1, A1>
 ): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1, E.Either<A, A1>> {
   return (ma) => orElseEither_(ma, that)
 }
 
-export function orElseFail_<R, E, A, E1>(ma: IO<R, E, A>, e: E1): IO<R, E1, A> {
-  return orElse_(ma, () => fail(e))
+export function orElseFail_<R, E, A, E1>(ma: IO<R, E, A>, e: () => E1): IO<R, E1, A> {
+  return orElse_(ma, () => fail(e()))
 }
 
-export function orElseFail<E1>(e: E1): <R, E, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
+export function orElseFail<E1>(e: () => E1): <R, E, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   return (fa) => orElseFail_(fa, e)
 }
 
@@ -2430,11 +2364,11 @@ export function orElseOption<R1, E1, A1>(
   return (ma) => orElseOption_(ma, that)
 }
 
-export function orElseSucceed_<R, E, A, A1>(ma: IO<R, E, A>, a: A1): IO<R, E, A | A1> {
-  return orElse_(ma, () => pure(a))
+export function orElseSucceed_<R, E, A, A1>(ma: IO<R, E, A>, a: () => A1): IO<R, E, A | A1> {
+  return orElse_(ma, () => pure(a()))
 }
 
-export function orElseSucceed<A1>(a: A1): <R, E, A>(self: IO<R, E, A>) => IO<R, E, A1 | A> {
+export function orElseSucceed<A1>(a: () => A1): <R, E, A>(self: IO<R, E, A>) => IO<R, E, A1 | A> {
   return (self) => orElseSucceed_(self, a)
 }
 
@@ -2466,7 +2400,7 @@ export function partition_<R, E, A, B>(
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
   return map_(
-    foreach_(as, (a) => recover(f(a))),
+    foreach_(as, (a) => attempt(f(a))),
     I.partitionMap(identity)
   )
 }
@@ -3378,7 +3312,7 @@ export function gen<T extends GenIO<any, any, any>, A>(
 ): IO<InferR<T>, InferE<T>, A>
 export function gen(...args: any[]): any {
   const _gen = <T extends GenIO<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): IO<InferR<T>, InferE<T>, A> =>
-    effectSuspendTotal(() => {
+    deferTotal(() => {
       const iterator = f(adapter as any)
       const state    = iterator.next()
 

@@ -8,8 +8,9 @@ import type { Eq } from './Eq'
 import type { MorphismN, Predicate, Refinement } from './Function'
 import type { Show } from './Show'
 
+import { left, right } from './Either'
 import { makeEq } from './Eq/core'
-import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
+import { _bind, flow, identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
 import { makeShow } from './Show/core'
 import * as P from './typeclass'
@@ -33,15 +34,15 @@ export type Option<A> = None | Some<A>
 
 export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : never
 
-export const OptionURI = 'Option'
+export const URI = 'Option'
 
-export type OptionURI = typeof OptionURI
+export type URI = typeof URI
 
 export type V = HKT.Auto
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [OptionURI]: Option<A>
+    readonly [URI]: Option<A>
   }
 }
 
@@ -53,7 +54,7 @@ declare module './HKT' {
 
 /**
  * ```haskell
- * none :: <a> () -> None
+ * none :: () -> None
  * ```
  *
  * Constructs a new `Option` holding no value (a.k.a `None`)
@@ -130,7 +131,7 @@ export function tryCatch<A>(thunk: () => A): Option<A> {
  *
  * Transforms a non-curried function that may throw, takes a set of arguments `(a, b, ...)`,
  * and returns a value `c`, into a non-curried function that will not throw,
- * takes a set of arguments `(a, b, ...)`, and returns a `Option`
+ * takes a set of arguments `(a, b, ...)`, and returns an `Option`
  *
  * @category Constructors
  * @since 1.0.0
@@ -304,18 +305,19 @@ export function getOrElse<B>(onNone: () => B): <A>(fa: Option<A>) => B | A {
  * Alt
  * -------------------------------------------
  */
+
 /**
  * ```haskell
  * alt_ :: Alt f => (f a, (() -> f a)) -> f a
  * ```
  *
- * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
+ * Combines two `Option` values
  *
  * @category Alt
  * @since 1.0.0
  */
-export function alt_<A>(fa: Option<A>, that: () => Option<A>): Option<A> {
-  return isNone(fa) ? that() : fa
+export function alt_<A>(fa1: Option<A>, fa2: () => Option<A>): Option<A> {
+  return orElse_(fa1, fa2)
 }
 
 /**
@@ -323,13 +325,13 @@ export function alt_<A>(fa: Option<A>, that: () => Option<A>): Option<A> {
  * alt :: Alt f => (() -> f a) -> f a -> f a
  * ```
  *
- * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
+ * Combines two `Option` values
  *
  * @category Alt
  * @since 1.0.0
  */
-export function alt<A>(that: () => Option<A>): (fa: Option<A>) => Option<A> {
-  return (fa) => alt_(fa, that)
+export function alt<A>(fa2: () => Option<A>): (fa1: Option<A>) => Option<A> {
+  return (fa1) => alt_(fa1, fa2)
 }
 
 /*
@@ -348,7 +350,47 @@ export function alt<A>(that: () => Option<A>): (fa: Option<A>) => Option<A> {
  * @category Applicative
  * @since 1.0.0
  */
-export const pure: <A>(a: A) => Option<A> = some
+export function pure<A>(a: A): Option<A> {
+  return some(a)
+}
+
+/*
+ * -------------------------------------------
+ * Applicative Except
+ * -------------------------------------------
+ */
+
+export function fail<E = never, A = never>(_: E): Option<A> {
+  return none()
+}
+
+export function catchAll_<A, B>(fa: Option<A>, f: () => Option<B>): Option<A | B> {
+  return orElse_(fa, f)
+}
+
+export function catchAll<B>(f: () => Option<B>): <A>(fa: Option<A>) => Option<A | B> {
+  return (fa) => catchAll_(fa, f)
+}
+
+export function catchSome_<A, B>(fa: Option<A>, f: () => Option<Option<B>>): Option<A | B> {
+  return catchAll_(fa, flow(f, getOrElse((): Option<A | B> => fa)))
+}
+
+export function catchSome<B>(f: () => Option<Option<B>>): <A>(fa: Option<A>) => Option<A | B> {
+  return (fa) => catchSome_(fa, f)
+}
+
+export function catchMap_<A, B>(fa: Option<A>, f: () => B): Option<A | B> {
+  return catchAll_(fa, () => some(f()))
+}
+
+export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
+  return (fa) => catchMap_(fa, f)
+}
+
+export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
+  return catchAll_(map_(fa, right), () => some(left(undefined)))
+}
 
 /*
  * -------------------------------------------
@@ -367,7 +409,7 @@ export const pure: <A>(a: A) => Option<A> = some
  * @since 1.0.0
  */
 export function product_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
-  return map2_(fa, fb, mkTuple)
+  return map2_(fa, fb, tuple)
 }
 
 /**
@@ -395,7 +437,7 @@ export function product<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
-  return isNone(fab) ? none() : isNone(fa) ? none() : some(fab.value(fa.value))
+  return map2_(fab, fa, (f, a) => f(a))
 }
 
 /**
@@ -413,10 +455,7 @@ export function ap<A>(fa: Option<A>): <B>(fab: Option<(a: A) => B>) => Option<B>
 }
 
 export function apl_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
-  return ap_(
-    map_(fa, (a) => () => a),
-    fb
-  )
+  return map2_(fa, fb, (a, _) => a)
 }
 
 export function apl<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
@@ -424,10 +463,7 @@ export function apl<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
 }
 
 export function apr_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
-  return ap_(
-    map_(fa, () => (b: B) => b),
-    fb
-  )
+  return map2_(fa, fb, (_, b) => b)
 }
 
 export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
@@ -445,10 +481,7 @@ export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * @since 1.0.0
  */
 export function map2_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
-  return ap_(
-    map_(fa, (a) => (b: B) => f(a, b)),
-    fb
-  )
+  return fa._tag === 'Some' && fb._tag === 'Some' ? some(f(fa.value, fb.value)) : none()
 }
 
 /**
@@ -477,7 +510,7 @@ export function map2<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Option<
  * @since 1.0.0
  */
 export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (fb: Option<B>) => Option<C> {
-  return (fa) => (fb) => (isNone(fa) ? none() : isNone(fb) ? none() : some(f(fa.value)(fb.value)))
+  return (fa) => (fb) => map2_(fa, fb, (a, b) => f(a)(b))
 }
 
 /**
@@ -794,6 +827,16 @@ export function flatten<A>(mma: Option<Option<A>>): Option<A> {
 
 /*
  * -------------------------------------------
+ * Monad Except
+ * -------------------------------------------
+ */
+
+export function absolve<E, A>(fa: Option<Either<E, A>>): Option<A> {
+  return bind_(fa, (a) => (a._tag === 'Left' ? none() : some(a.right)))
+}
+
+/*
+ * -------------------------------------------
  * Monoid
  * -------------------------------------------
  */
@@ -871,7 +914,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<[OptionURI], V> = (G) => (ta, f) =>
+export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) =>
   isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some))
 
 /**
@@ -884,7 +927,7 @@ export const traverse_: P.TraverseFn_<[OptionURI], V> = (G) => (ta, f) =>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[OptionURI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  * ```haskell
@@ -896,7 +939,7 @@ export const traverse: P.TraverseFn<[OptionURI], V> = (G) => (f) => (ta) => trav
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[OptionURI], V> = (G) => (fa) =>
+export const sequence: P.SequenceFn<[URI], V> = (G) => (fa) =>
   isNone(fa) ? G.map_(G.unit(), () => none()) : pipe(fa.value, G.map(some))
 
 /*
@@ -915,23 +958,23 @@ export function unit(): Option<void> {
  * -------------------------------------------
  */
 
-export const compactA_: P.WitherFn_<[OptionURI], V> = (A) => (wa, f) =>
+export const compactA_: P.WitherFn_<[URI], V> = (A) => (wa, f) =>
   isNone(wa) ? A.map_(A.unit(), () => none()) : f(wa.value)
 
-export const compactA: P.WitherFn<[OptionURI], V> = (A) => (f) => (wa) => compactA_(A)(wa, f)
+export const compactA: P.WitherFn<[URI], V> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
-export const separateA_: P.WiltFn_<[OptionURI], V> = (A) => (wa, f) => {
+export const separateA_: P.WiltFn_<[URI], V> = (A) => (wa, f) => {
   const o = map_(
     wa,
     flow(
       f,
-      A.map((e) => mkTuple(getLeft(e), getRight(e)))
+      A.map((e) => tuple(getLeft(e), getRight(e)))
     )
   )
-  return isNone(o) ? A.pure(mkTuple(none(), none())) : o.value
+  return isNone(o) ? A.pure(tuple(none(), none())) : o.value
 }
 
-export const separateA: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => separateA_(A)(wa, f)
+export const separateA: P.WiltFn<[URI], V> = (A) => (f) => (wa) => separateA_(A)(wa, f)
 
 /*
  * -------------------------------------------
@@ -940,7 +983,10 @@ export const separateA: P.WiltFn<[OptionURI], V> = (A) => (f) => (wa) => separat
  */
 
 /**
+ * ```haskell
  * bindNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
+ * ```
+ *
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
@@ -951,7 +997,10 @@ export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | unde
 }
 
 /**
+ * ```haskell
  * bindNullableK :: Option m => (a -> ?b) -> m a -> m b
+ * ```
+ *
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
@@ -963,6 +1012,7 @@ export function bindNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Opt
 
 /**
  * orElse_ :: Option m => (m a, () -> m b) -> m (a | b)
+ *
  * Evaluate and return alternate optional value if empty
  *
  * @category Combinators
@@ -973,7 +1023,10 @@ export function orElse_<A, B>(fa: Option<A>, onNone: () => Option<B>): Option<A 
 }
 
 /**
+ * ```haskell
  * orElse :: Option m => (() -> m b) -> m a -> m (a | b)
+ * ```
+ *
  * Evaluate and return alternate optional value if empty
  *
  * @category Combinators
@@ -984,7 +1037,10 @@ export function orElse<B>(onNone: () => Option<B>): <A>(fa: Option<A>) => Option
 }
 
 /**
+ * ```haskell
  * getLeft :: (Either e, Option m) => e a b -> m a
+ * ```
+ *
  * Evaluates an `Either` and returns a `Option` carrying the left value, if it exists
  *
  * @category Combinators
@@ -995,7 +1051,10 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
 }
 
 /**
+ * ```haskell
  * getRight :: (Either e, Option m) => e a b -> m b
+ * ```
+ *
  * Evaluates an `Either` and returns a `Option` carrying the right value, if it exists
  *
  * @category Combinators
@@ -1011,20 +1070,20 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[OptionURI], V> = HKT.instance({
+export const Functor: P.Functor<[URI], V> = HKT.instance({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: Option<A>) => map_(fa, f),
   map,
   map_
 })
 
-export const Alt: P.Alt<[OptionURI], V> = HKT.instance({
+export const Alt: P.Alt<[URI], V> = HKT.instance({
   ...Functor,
   alt_,
   alt
 })
 
-export const Apply: P.Apply<[OptionURI], V> = HKT.instance({
+export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_,
   ap,
@@ -1034,24 +1093,40 @@ export const Apply: P.Apply<[OptionURI], V> = HKT.instance({
   product
 })
 
-export const struct = P.sequenceSF(Apply)
+export const sequenceS = P.sequenceSF(Apply)
 
-export const tupleN = P.sequenceTF(Apply)
+export const sequenceT = P.sequenceTF(Apply)
 
 export const mapN = P.mapNF(Apply)
 
-export const Applicative: P.Applicative<[OptionURI], V> = HKT.instance({
+export const Applicative: P.Applicative<[URI], V> = HKT.instance({
   ...Apply,
   unit,
   pure
 })
 
-export const Monad: P.Monad<[OptionURI], V> = HKT.instance({
+export const ApplicativeExcept: P.ApplicativeExcept<[URI], V & HKT.Fix<'E', void>> = HKT.instance({
+  ...Applicative,
+  fail: fail,
+  catchAll_,
+  catchAll,
+  catchSome_,
+  catchSome,
+  attempt
+})
+
+export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Applicative,
   bind_: bind_,
   bind: bind,
   unit,
   flatten
+})
+
+export const MonadExcept: P.MonadExcept<[URI], V & HKT.Fix<'E', void>> = HKT.instance({
+  ...ApplicativeExcept,
+  ...Monad,
+  absolve
 })
 
 export const Do = P.deriveDo(Monad)
@@ -1101,7 +1176,7 @@ export const letS = Do.letS
  */
 export const bindToS = Do.bindToS
 
-export const Filterable: P.Filterable<[OptionURI], V> = HKT.instance({
+export const Filterable: P.Filterable<[URI], V> = HKT.instance({
   filterMap_,
   filter_,
   partitionMap_,
@@ -1112,7 +1187,7 @@ export const Filterable: P.Filterable<[OptionURI], V> = HKT.instance({
   partitionMap
 })
 
-export const Foldable: P.Foldable<[OptionURI], V> = HKT.instance({
+export const Foldable: P.Foldable<[URI], V> = HKT.instance({
   foldl_,
   foldr_,
   foldMap_,
@@ -1121,14 +1196,14 @@ export const Foldable: P.Foldable<[OptionURI], V> = HKT.instance({
   foldMap
 })
 
-export const Traversable: P.Traversable<[OptionURI], V> = HKT.instance({
+export const Traversable: P.Traversable<[URI], V> = HKT.instance({
   ...Functor,
   traverse_,
   traverse,
   sequence
 })
 
-export const Witherable: P.Witherable<[OptionURI], V> = HKT.instance({
+export const Witherable: P.Witherable<[URI], V> = HKT.instance({
   separateA_,
   compactA_,
   separateA,

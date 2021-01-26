@@ -1,9 +1,7 @@
 import type { Applicative } from '../Applicative'
 import type { Map2Fn_ } from '../Apply'
-import type { Fallible } from '../Fallible'
-import type { Monad } from '../Monad'
 import type { Semigroup } from '../Semigroup'
-import type { Alt, AltFn_ } from '../typeclass'
+import type { Alt, AltFn_, MonadExcept } from '../typeclass'
 import type { Erase } from '../util/types'
 
 import * as E from '../Either'
@@ -11,15 +9,15 @@ import { tuple } from '../Function'
 import * as HKT from '../HKT'
 
 export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
-  F: Monad<F, C> & Fallible<F, C>
+  F: MonadExcept<F, C>
 ): <E>(S: Semigroup<E>) => Applicative<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
 export function getApplicativeValidation<F>(
-  F: Monad<HKT.UHKT2<F>> & Fallible<HKT.UHKT2<F>>
+  F: MonadExcept<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(S: Semigroup<E>) => {
     const map2_: Map2Fn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
       F.flatten(
-        F.map_(F.product_(F.recover(fa), F.recover(fb)), ([ea, eb]) =>
+        F.map_(F.product_(F.attempt(fa), F.attempt(fb)), ([ea, eb]) =>
           E.fold_(
             ea,
             (e) =>
@@ -51,19 +49,19 @@ export function getApplicativeValidation<F>(
 }
 
 export function getAltValidation<F extends HKT.URIS, C = HKT.Auto>(
-  F: Monad<F, C> & Fallible<F, C> & Alt<F, C>
+  F: MonadExcept<F, C> & Alt<F, C>
 ): <E>(S: Semigroup<E>) => Alt<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
 export function getAltValidation<F>(
-  F: Monad<HKT.UHKT2<F>> & Fallible<HKT.UHKT2<F>> & Alt<HKT.UHKT2<F>>
+  F: MonadExcept<HKT.UHKT2<F>> & Alt<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(S: Semigroup<E>) => {
     const alt_: AltFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, that) =>
       F.bind_(
-        F.recover(fa),
+        F.attempt(fa),
         E.fold(
           (e) =>
             F.bind_(
-              F.recover(that()),
+              F.attempt(that()),
               E.fold(
                 (e1) => F.fail(S.combine_(e, e1)),
                 (a) => F.pure(a)

@@ -68,7 +68,7 @@ interface ScalarTypeFromCodecConfig<E, A> extends ScalarConfig {
   parseLiteral?: ScalarParseLiteralF<unknown, E>
 }
 
-const SyM = DE.getDecodeErrorsValidation({ ...Sy.MonadFail, ...Sy.Bifunctor, ...Sy.Fallible })
+const SyM = DE.getDecodeErrorsValidation({ ...Sy.MonadExcept, ...Sy.Bifunctor })
 
 export const makeScalarTypeFromCodecSummoner: ScalarTypeFromModelSummoner = (name, model, config) => {
   const { decode }   = M.getDecoder(model)

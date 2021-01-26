@@ -346,7 +346,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       }
     }
 
-    return I.effectSuspendTotal(() => {
+    return I.deferTotal(() => {
       setInterruptedLoop()
 
       return this.await
@@ -542,7 +542,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   ): I.Instruction {
     if (parentScope !== Scope.globalScope) {
       const exitOrKey = parentScope.unsafeEnsure((exit) =>
-        I.effectSuspendTotal(
+        I.deferTotal(
           (): I.UIO<any> => {
             const _interruptors = exit._tag === 'Failure' ? C.interruptors(exit.cause) : new Set<FiberId>()
 
@@ -633,7 +633,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get inheritRefs() {
-    return I.effectSuspendTotal(() => {
+    return I.deferTotal(() => {
       const locals = this.fiberRefLocals
       if (locals.size === 0) {
         return I.unit()
@@ -869,12 +869,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOTag.EffectSuspend: {
+                  case IOTag.DeferTotal: {
                     current = current.io()[I._I]
                     break
                   }
 
-                  case IOTag.EffectSuspendPartial: {
+                  case IOTag.DeferPartial: {
                     const c = current
 
                     try {

@@ -3,7 +3,7 @@ import type { IO } from '../core'
 import { identity } from '@principia/base/Function'
 import * as I from '@principia/base/Iterable'
 
-import { map_, recover } from '../core'
+import { map_, attempt } from '../core'
 import { foreachParN_ } from './foreachParN'
 
 /**
@@ -18,7 +18,7 @@ export function partitionParN_(
 ): <R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) => IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
   return (as, f) =>
     map_(
-      foreachParN_(n)(as, (a) => recover(f(a))),
+      foreachParN_(n)(as, (a) => attempt(f(a))),
       I.partitionMap(identity)
     )
 }

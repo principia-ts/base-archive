@@ -133,11 +133,11 @@ declare module '@principia/base/HKT' {
 
 export const LayerTag = {
   Fold: 'Fold',
-  Map: 'Map',
-  Chain: 'Chain',
+  FMap: 'FMap',
+  Bind: 'Bind',
   Fresh: 'Fresh',
-  Managed: 'Managed',
-  Suspend: 'Suspend',
+  FromManaged: 'FromManaged',
+  Defer: 'Defer',
   Map2Par: 'Map2Par',
   AllPar: 'AllPar',
   AllSeq: 'AllSeq',
@@ -152,22 +152,18 @@ export function main<E, A>(layer: Layer<DefaultEnv, E, A>) {
 }
 
 export type LayerInstruction =
-  | LayerFoldInstruction<any, any, any, any, any, any, any, any, any>
-  | LayerMapInstruction<any, any, any, any>
-  | LayerChainInstruction<any, any, any, any, any, any>
-  | LayerFreshInstruction<any, any, any>
-  | LayerManagedInstruction<any, any, any>
-  | LayerSuspendInstruction<any, any, any>
-  | LayerMap2ParInstruction<any, any, any, any, any, any, any>
-  | LayerMap2SeqInstruction<any, any, any, any, any, any, any>
-  | LayerAllParInstruction<Layer<any, any, any>[]>
-  | LayerAllSeqInstruction<Layer<any, any, any>[]>
+  | Fold<any, any, any, any, any, any, any, any, any>
+  | FMap<any, any, any, any>
+  | Bind<any, any, any, any, any, any>
+  | Fresh<any, any, any>
+  | FromManaged<any, any, any>
+  | Defer<any, any, any>
+  | Map2Par<any, any, any, any, any, any, any>
+  | Map2Seq<any, any, any, any, any, any, any>
+  | AllPar<Layer<any, any, any>[]>
+  | AllSeq<Layer<any, any, any>[]>
 
-export class LayerFoldInstruction<R, E, A, R1, E1, A1, R2, E2, A2> extends Layer<
-  R & R1 & Erase<R2, A>,
-  E1 | E2,
-  A1 | A2
-> {
+export class Fold<R, E, A, R1, E1, A1, R2, E2, A2> extends Layer<R & R1 & Erase<R2, A>, E1 | E2, A1 | A2> {
   readonly _tag = LayerTag.Fold
 
   constructor(
@@ -179,23 +175,23 @@ export class LayerFoldInstruction<R, E, A, R1, E1, A1, R2, E2, A2> extends Layer
   }
 }
 
-export class LayerMapInstruction<R, E, A, B> extends Layer<R, E, B> {
-  readonly _tag = LayerTag.Map
+export class FMap<R, E, A, B> extends Layer<R, E, B> {
+  readonly _tag = LayerTag.FMap
 
   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => B) {
     super()
   }
 }
 
-export class LayerChainInstruction<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
-  readonly _tag = LayerTag.Chain
+export class Bind<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
+  readonly _tag = LayerTag.Bind
 
   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => Layer<R1, E1, B>) {
     super()
   }
 }
 
-export class LayerFreshInstruction<R, E, A> extends Layer<R, E, A> {
+export class Fresh<R, E, A> extends Layer<R, E, A> {
   readonly _tag = LayerTag.Fresh
 
   constructor(readonly layer: Layer<R, E, A>) {
@@ -203,16 +199,16 @@ export class LayerFreshInstruction<R, E, A> extends Layer<R, E, A> {
   }
 }
 
-export class LayerManagedInstruction<R, E, A> extends Layer<R, E, A> {
-  readonly _tag = LayerTag.Managed
+export class FromManaged<R, E, A> extends Layer<R, E, A> {
+  readonly _tag = LayerTag.FromManaged
 
   constructor(readonly managed: Managed<R, E, A>) {
     super()
   }
 }
 
-export class LayerSuspendInstruction<R, E, A> extends Layer<R, E, A> {
-  readonly _tag = LayerTag.Suspend
+export class Defer<R, E, A> extends Layer<R, E, A> {
+  readonly _tag = LayerTag.Defer
 
   constructor(readonly factory: () => Layer<R, E, A>) {
     super()
@@ -235,7 +231,7 @@ export type MergeA<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
   }[number]
 >
 
-export class LayerMap2ParInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+export class Map2Par<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
   readonly _tag = LayerTag.Map2Par
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
@@ -243,11 +239,7 @@ export class LayerMap2ParInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1
   }
 }
 
-export class LayerAllParInstruction<Ls extends Layer<any, any, any>[]> extends Layer<
-  MergeR<Ls>,
-  MergeE<Ls>,
-  MergeA<Ls>
-> {
+export class AllPar<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
   readonly _tag = LayerTag.AllPar
 
   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
@@ -255,7 +247,7 @@ export class LayerAllParInstruction<Ls extends Layer<any, any, any>[]> extends L
   }
 }
 
-export class LayerMap2SeqInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+export class Map2Seq<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
   readonly _tag = LayerTag.Map2Seq
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
@@ -263,11 +255,7 @@ export class LayerMap2SeqInstruction<R, E, A, R1, E1, B, C> extends Layer<R & R1
   }
 }
 
-export class LayerAllSeqInstruction<Ls extends Layer<any, any, any>[]> extends Layer<
-  MergeR<Ls>,
-  MergeE<Ls>,
-  MergeA<Ls>
-> {
+export class AllSeq<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
   readonly _tag = LayerTag.AllSeq
 
   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
@@ -284,16 +272,16 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     case LayerTag.Fresh: {
       return M.succeed(() => build(_I.layer))
     }
-    case LayerTag.Managed: {
+    case LayerTag.FromManaged: {
       return M.succeed(() => _I.managed)
     }
-    case LayerTag.Suspend: {
+    case LayerTag.Defer: {
       return M.succeed((memo) => memo.getOrElseMemoize(_I.factory()))
     }
-    case LayerTag.Map: {
+    case LayerTag.FMap: {
       return M.succeed((memo) => M.map_(memo.getOrElseMemoize(_I.layer), _I.f))
     }
-    case LayerTag.Chain: {
+    case LayerTag.Bind: {
       return M.succeed((memo) => M.bind_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
     }
     case LayerTag.Map2Par: {
@@ -403,22 +391,22 @@ export function create<T>(tag: H.Tag<T>) {
  * Constructs a layer from the specified effect.
  */
 export function fromEffect<T>(tag: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new LayerManagedInstruction(M.bind_(M.fromEffect(resource), (a) => environmentFor(tag, a)))
+  return (resource) => new FromManaged(M.bind_(M.fromEffect(resource), (a) => environmentFor(tag, a)))
 }
 
 /**
  * Constructs a layer from a managed resource.
  */
 export function fromManaged<T>(has: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new LayerManagedInstruction(M.bind_(resource, (a) => environmentFor(has, a)))
+  return (resource) => new FromManaged(M.bind_(resource, (a) => environmentFor(has, a)))
 }
 
 export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> {
-  return new LayerManagedInstruction(resource)
+  return new FromManaged(resource)
 }
 
 export function fromRawEffect<R, E, A>(resource: I.IO<R, E, A>): Layer<R, E, A> {
-  return new LayerManagedInstruction(M.fromEffect(resource))
+  return new FromManaged(M.fromEffect(resource))
 }
 
 export function fromRawFunction<A, B>(f: (a: A) => B): Layer<A, never, B> {
@@ -557,8 +545,8 @@ export function restrict<Tags extends H.Tag<any>[]>(
     ) as any
 }
 
-export function suspend<R, E, A>(la: () => Layer<R, E, A>): Layer<R, E, A> {
-  return new LayerSuspendInstruction(la)
+export function defer<R, E, A>(la: () => Layer<R, E, A>): Layer<R, E, A> {
+  return new Defer(la)
 }
 
 /*
@@ -572,7 +560,7 @@ export function map2_<R, E, A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Layer<R & R1, E | E1, C> {
-  return new LayerMap2SeqInstruction(fa, fb, f)
+  return new Map2Seq(fa, fb, f)
 }
 
 export function map2<A, R1, E1, B, C>(
@@ -586,7 +574,7 @@ export function product_<R, E, A, R1, E1, B>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, readonly [A, B]> {
-  return new LayerMap2SeqInstruction(fa, fb, tuple)
+  return new Map2Seq(fa, fb, tuple)
 }
 
 export function product<R1, E1, B>(
@@ -616,7 +604,7 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Layer<R & R1, E | E1, C> {
-  return new LayerMap2ParInstruction(fa, fb, f)
+  return new Map2Par(fa, fb, f)
 }
 
 export function map2Par<A, R1, E1, B, C>(
@@ -676,7 +664,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(la: Layer<R, E, A>) => 
  * Returns a new layer whose output is mapped by the specified function.
  */
 export function map_<R, E, A, B>(fa: Layer<R, E, A>, f: (a: A) => B): Layer<R, E, B> {
-  return new LayerMapInstruction(fa, f)
+  return new FMap(fa, f)
 }
 
 /**
@@ -693,7 +681,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Layer<R, E, A>) => Layer<R
  */
 
 export function bind_<R, E, A, R1, E1, B>(ma: Layer<R, E, A>, f: (a: A) => Layer<R1, E1, B>): Layer<R & R1, E | E1, B> {
-  return new LayerChainInstruction(ma, f)
+  return new Bind(ma, f)
 }
 
 export function bind<A, R1, E1, B>(
@@ -715,13 +703,13 @@ export function flatten<R, E, R1, E1, A>(mma: Layer<R, E, Layer<R1, E1, A>>): La
 export function all<Ls extends Layer<any, any, any>[]>(
   ...ls: Ls & { 0: Layer<any, any, any> }
 ): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
-  return new LayerAllParInstruction(ls)
+  return new AllPar(ls)
 }
 
 export function allPar<Ls extends Layer<any, any, any>[]>(
   ...ls: Ls & { 0: Layer<any, any, any> }
 ): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
-  return new LayerAllSeqInstruction(ls)
+  return new AllSeq(ls)
 }
 
 /**
@@ -732,7 +720,7 @@ export function and_<R, E, A, R2, E2, A2>(
   left: Layer<R, E, A>,
   right: Layer<R2, E2, A2>
 ): Layer<R & R2, E | E2, A & A2> {
-  return new LayerMap2ParInstruction(left, right, (l, r) => ({ ...l, ...r }))
+  return new Map2Par(left, right, (l, r) => ({ ...l, ...r }))
 }
 
 /**
@@ -780,7 +768,7 @@ export function andSeq_<R, E, A, R1, E1, A1>(
   layer: Layer<R, E, A>,
   that: Layer<R1, E1, A1>
 ): Layer<R & R1, E | E1, A & A1> {
-  return new LayerMap2SeqInstruction(layer, that, (l, r) => ({ ...l, ...r }))
+  return new Map2Seq(layer, that, (l, r) => ({ ...l, ...r }))
 }
 
 /**
@@ -849,7 +837,7 @@ export function first<A>(): Layer<readonly [A, any], never, A> {
  * note that this will override the memoMap for the layer and its children
  */
 export function fresh<R, E, A>(layer: Layer<R, E, A>): Layer<R, E, A> {
-  return new LayerFreshInstruction(layer)
+  return new Fresh(layer)
 }
 
 /**
@@ -898,7 +886,7 @@ export function fold_<R, E, A, R1, E1, B, R2, E2, C>(
   onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
   onSuccess: Layer<R2, E2, C>
 ): Layer<R & R1 & Erase<R2, A>, E1 | E2, B | C> {
-  return new LayerFoldInstruction<R, E, A, R1, E1, B, R2, E2, C>(layer, onFailure, onSuccess)
+  return new Fold<R, E, A, R1, E1, B, R2, E2, C>(layer, onFailure, onSuccess)
 }
 
 /**
@@ -967,7 +955,7 @@ export function retry_<R, E, A, R1>(
   )
 
   const loop = (): Layer<readonly [R & R1 & H.Has<Clock>, S], E, A> =>
-    pipe(first<R>()['>>'](la), catchAll(update['>>'](suspend(loop))))
+    pipe(first<R>()['>>'](la), catchAll(update['>>'](defer(loop))))
 
   return identity<R & R1 & H.Has<Clock>>()
     ['<&>'](fromRawEffect(I.succeed(schedule.step)))

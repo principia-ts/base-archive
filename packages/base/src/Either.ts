@@ -14,7 +14,7 @@ import type { Show } from './Show'
 import { genF, GenHKT } from './Derivation/genF'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
 import * as HKT from './HKT'
-import { isOption } from './Option'
+import * as O from './Option'
 import * as P from './typeclass'
 import { NoSuchElementException } from './util/GlobalExceptions'
 
@@ -495,6 +495,48 @@ export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Ei
  * @since 1.0.0
  */
 export const pure: <E = never, A = never>(a: A) => Either<E, A> = right
+
+/*
+ * -------------------------------------------
+ * ApplicativeExcept
+ * -------------------------------------------
+ */
+
+export function catchAll_<E, A, E1, B>(fa: Either<E, A>, f: (e: E) => Either<E1, B>): Either<E1, A | B> {
+  return fold_(fa, f, right)
+}
+
+export function catchAll<E, E1, B>(f: (e: E) => Either<E1, B>): <A>(fa: Either<E, A>) => Either<E1, A | B> {
+  return (fa) => catchAll_(fa, f)
+}
+
+export function catchSome_<E, A, E1, B>(fa: Either<E, A>, f: (e: E) => Option<Either<E1, B>>): Either<E | E1, A | B> {
+  return catchAll_(
+    fa,
+    flow(
+      f,
+      O.getOrElse((): Either<E | E1, A | B> => fa)
+    )
+  )
+}
+
+export function catchSome<E, E1, B>(
+  f: (e: E) => Option<Either<E1, B>>
+): <A>(fa: Either<E, A>) => Either<E | E1, A | B> {
+  return (fa) => catchSome_(fa, f)
+}
+
+export function catchMap_<E, A, B>(fa: Either<E, A>, f: (e: E) => B): Either<never, A | B> {
+  return catchAll_(fa, flow(f, right))
+}
+
+export function catchMap<E, B>(f: (e: E) => B): <A>(fa: Either<E, A>) => Either<never, A | B> {
+  return (fa) => catchMap_(fa, f)
+}
+
+export function attempt<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
+  return right(fa)
+}
 
 /*
  * -------------------------------------------
@@ -1103,6 +1145,16 @@ export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A>
 
 /*
  * -------------------------------------------
+ * MonadExcept
+ * -------------------------------------------
+ */
+
+export function absolve<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1, A> {
+  return flatten(mma)
+}
+
+/*
+ * -------------------------------------------
  * Monoid
  * -------------------------------------------
  */
@@ -1373,8 +1425,8 @@ export const Fail: P.Fail<[URI], V> = HKT.instance({
  */
 export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Applicative,
-  bind_: bind_,
-  bind: bind,
+  bind_,
+  bind,
   flatten
 })
 
@@ -1382,19 +1434,24 @@ export const Monad: P.Monad<[URI], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const MonadFail: P.MonadFail<[URI], V> = HKT.instance({
-  ...Monad,
-  ...Fail
+export const ApplicativeExcept = HKT.instance<P.ApplicativeExcept<[URI], V>>({
+  ...Applicative,
+  ...Fail,
+  catchAll_,
+  catchAll,
+  catchSome_,
+  catchSome,
+  attempt
 })
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const Fallible = HKT.instance<P.Fallible<[URI], V>>({
-  ...Fail,
-  absolve: flatten,
-  recover: right
+export const MonadExcept: P.MonadExcept<[URI], V> = HKT.instance({
+  ...Monad,
+  ...ApplicativeExcept,
+  absolve: flatten
 })
 
 /**
@@ -1402,12 +1459,12 @@ export const Fallible = HKT.instance<P.Fallible<[URI], V>>({
  * @since 1.0.0
  */
 export const Foldable: P.Foldable<[URI], V> = HKT.instance({
-  foldl_: foldl_,
+  foldl_,
   foldMap_,
-  foldr_: foldr_,
-  foldl: foldl,
+  foldr_,
+  foldl,
   foldMap,
-  foldr: foldr
+  foldr
 })
 
 /**
@@ -1560,7 +1617,7 @@ const adapter: {
   <A>(_: Option<A>): GenHKT<Either<NoSuchElementException, A>, A>
   <E, A>(_: Either<E, A>): GenHKT<Either<E, A>, A>
 } = (_: any, __?: any) => {
-  if (isOption(_)) {
+  if (O.isOption(_)) {
     return new GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementException('Either.gen'))))
   }
   return new GenHKT(_)

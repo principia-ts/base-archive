@@ -3,8 +3,10 @@ import type { Show } from './Show'
 
 import * as E from './Either'
 import { makeEq } from './Eq/core'
-import { identity, tuple } from './Function'
+import { flow, identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
+import { bind } from './List'
+import { pure } from './NonEmptyArray'
 import * as O from './Option'
 import { makeShow } from './Show/core'
 import * as P from './typeclass'
@@ -23,12 +25,12 @@ export interface Both<E, A> {
 }
 
 export interface Left<E> {
-  readonly _tag: 'Left',
+  readonly _tag: 'Left'
   readonly left: E
 }
 
 export interface Right<A> {
-  readonly _tag: 'Right',
+  readonly _tag: 'Right'
   readonly right: A
 }
 
@@ -180,6 +182,38 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[URI], HKT.
 
 /*
  * -------------------------------------------
+ * ApplicativeExcept
+ * -------------------------------------------
+ */
+
+export function getApplicativeExcept<E>(SE: P.Semigroup<E>): P.ApplicativeExcept<[URI], HKT.Fix<'E', E>> {
+  const catchAll_: P.CatchAllFn_<[URI], HKT.Fix<'E', E>>   = (fa, f) => (fa._tag === 'Left' ? f(fa.left) : fa)
+  const catchAll: P.CatchAllFn<[URI], HKT.Fix<'E', E>>     = (f) => (fa) => catchAll_(fa, f)
+  const catchSome_: P.CatchSomeFn_<[URI], HKT.Fix<'E', E>> = <A, A1>(
+    fa: These<E, A>,
+    f: (e: E) => O.Option<These<E, A1>>
+  ) =>
+    catchAll_(
+      fa,
+      flow(
+        f,
+        O.getOrElse((): These<E, A | A1> => fa)
+      )
+    )
+
+  return HKT.instance<P.ApplicativeExcept<[URI], HKT.Fix<'E', E>>>({
+    ...getApplicative(SE),
+    fail: left,
+    catchAll_,
+    catchAll,
+    catchSome_,
+    catchSome: (f) => (fa) => catchSome_(fa, f),
+    attempt: flow(map(E.right), catchAll(flow(E.left, right)))
+  })
+}
+
+/*
+ * -------------------------------------------
  * Apply
  * -------------------------------------------
  */
@@ -310,7 +344,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  * -------------------------------------------
  */
 
-export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E', E>> {
+export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[URI], HKT.Fix<'E', E>> {
   const bind_: P.BindFn_<[URI], HKT.Fix<'E', E>> = (ma, f) => {
     if (isLeft(ma)) {
       return ma
@@ -325,12 +359,26 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.MonadFail<[URI], HKT.Fix<'E',
       ? both(ma.left, fb.right)
       : both(SE.combine_(ma.left, fb.left), fb.right)
   }
-  return HKT.instance<P.MonadFail<[URI], HKT.Fix<'E', E>>>({
+  return HKT.instance<P.Monad<[URI], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
     bind_: bind_,
     bind: (f) => (ma) => bind_(ma, f),
-    flatten: (mma) => bind_(mma, identity),
-    fail: left as any
+    flatten: (mma) => bind_(mma, identity)
+  })
+}
+
+/*
+ * -------------------------------------------
+ * MonadExcept
+ * -------------------------------------------
+ */
+
+export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<[URI], HKT.Fix<'E', E>> {
+  const m = getMonad(SE)
+  return HKT.instance<P.MonadExcept<[URI], HKT.Fix<'E', E>>>({
+    ...getApplicativeExcept(SE),
+    ...m,
+    absolve: m.flatten
   })
 }
 

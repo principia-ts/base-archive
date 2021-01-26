@@ -37,27 +37,29 @@ export class Key {
 /**
  * Represent Common Ops between Global | Local<A>
  */
-export interface CommonScope<A> {
+export abstract class CommonScope<A> {
   /**
    * Determines if the scope is closed at the instant the effect executes.
    * Returns an IO that will succeed with `true` if the scope is closed,
    * and `false` otherwise.
    */
-  readonly closed: UIO<boolean>
+  abstract get closed(): UIO<boolean>
 
   /**
    * Prevents a previously added finalizer from being executed when the scope
    * is closed. The returned effect will succeed with `true` if the finalizer
    * will not be run by this scope, and `false` otherwise.
    */
-  readonly deny: (key: Key) => UIO<boolean>
+  deny(key: Key): UIO<boolean> {
+    return I.succeed(this.unsafeDeny(key))
+  }
 
   /**
    * Determines if the scope is empty (has no finalizers) at the instant the
    * effect executes. The returned effect will succeed with `true` if the scope
    * is empty, and `false` otherwise.
    */
-  readonly empty: UIO<boolean>
+  abstract get empty(): UIO<boolean>
 
   /**
    * Adds a finalizer to the scope. If successful, this ensures that when the
@@ -66,7 +68,7 @@ export interface CommonScope<A> {
    * The returned effect will succeed with a key ifthe finalizer was added
    * to the scope, and `None` if the scope is already closed.
    */
-  readonly ensure: (finalizer: (a: A) => UIO<any>) => UIO<Either<A, Key>>
+  abstract ensure(finalizer: (a: A) => UIO<any>): UIO<Either<A, Key>>
 
   /**
    * Extends the specified scope so that it will not be closed until this
@@ -76,25 +78,29 @@ export interface CommonScope<A> {
    * Scope extension does not result in changes to the scope contract: open
    * scopes must *always* be closed.
    */
-  readonly extend: (that: Scope<any>) => UIO<boolean>
+  extend(that: Scope<any>): UIO<boolean> {
+    return I.succeed(this.unsafeExtend(that))
+  }
 
   /**
    * Determines if the scope is open at the moment the effect is executed.
    * Returns an IO that will succeed with `true` if the scope is open,
    * and `false` otherwise.
    */
-  readonly open: UIO<boolean>
+  get open(): UIO<boolean> {
+    return I.map_(this.closed, (_) => !_)
+  }
 
   /**
    * Determines if the scope has been released at the moment the effect is
    * executed. A scope can be closed yet unreleased, if it has been
    * extended by another scope which is not yet released.
    */
-  readonly released: UIO<boolean>
+  abstract get released(): UIO<boolean>
 
-  readonly unsafeEnsure: (finalizer: (_: A) => UIO<any>) => Either<A, Key>
-  readonly unsafeExtend: (that: Scope<any>) => boolean
-  readonly unsafeDeny: (key: Key) => boolean
+  abstract unsafeEnsure(finalizer: (_: A) => UIO<any>): Either<A, Key>
+  abstract unsafeExtend(that: Scope<any>): boolean
+  abstract unsafeDeny(key: Key): boolean
 }
 
 /**
@@ -113,10 +119,11 @@ export type Scope<A> = GlobalScope | LocalScope<A>
  * The global scope, which is entirely stateless. Finalizers added to the
  * global scope will never be executed (nor kept in memory).
  */
-export class GlobalScope implements CommonScope<never> {
+export class GlobalScope extends CommonScope<never> {
   readonly _tag = 'Global'
 
   constructor() {
+    super()
     this.deny         = this.deny.bind(this)
     this.ensure       = this.ensure.bind(this)
     this.extend       = this.extend.bind(this)
@@ -132,24 +139,12 @@ export class GlobalScope implements CommonScope<never> {
     return I.pure(false)
   }
 
-  deny(_key: Key): UIO<boolean> {
-    return I.pure(true)
-  }
-
   get empty(): UIO<boolean> {
     return I.pure(false)
   }
 
   ensure(_finalizer: (a: never) => UIO<any>): UIO<E.Either<never, Key>> {
     return this.ensureResult
-  }
-
-  extend(that: Scope<any>): UIO<boolean> {
-    return I.effectTotal(() => this.unsafeExtend(that))
-  }
-
-  get open(): UIO<boolean> {
-    return I.map_(this.closed, (c) => !c)
   }
 
   get released(): UIO<boolean> {
@@ -182,7 +177,7 @@ const noCause = C.empty
 
 const noCauseIO: UIO<Cause<never>> = I.pure(noCause)
 
-export class LocalScope<A> implements CommonScope<A> {
+export class LocalScope<A> extends CommonScope<A> {
   readonly _tag = 'Local'
 
   constructor(
@@ -190,18 +185,12 @@ export class LocalScope<A> implements CommonScope<A> {
     readonly exitValue: AtomicReference<A | null>,
     readonly references: AtomicNumber,
     readonly finalizers: Map<Key, OrderedFinalizer>
-  ) {}
+  ) {
+    super()
+  }
 
   get closed(): UIO<boolean> {
     return I.effectTotal(() => this.unsafeClosed)
-  }
-
-  get open(): UIO<boolean> {
-    return I.map_(this.closed, (c) => !c)
-  }
-
-  deny(key: Key): UIO<boolean> {
-    return I.effectTotal(() => this.unsafeDeny(key))
   }
 
   get empty(): UIO<boolean> {
@@ -210,10 +199,6 @@ export class LocalScope<A> implements CommonScope<A> {
 
   ensure(finalizer: (a: A) => UIO<any>): UIO<E.Either<A, Key>> {
     return I.effectTotal(() => this.unsafeEnsure(finalizer))
-  }
-
-  extend(that: Scope<any>): UIO<boolean> {
-    return I.effectTotal(() => this.unsafeExtend(that))
   }
 
   get released(): UIO<boolean> {
@@ -240,7 +225,7 @@ export class LocalScope<A> implements CommonScope<A> {
   }
 
   get release(): UIO<boolean> {
-    return I.effectSuspendTotal(() => {
+    return I.deferTotal(() => {
       const result = this.unsafeRelease()
 
       if (result != null) {
@@ -344,7 +329,7 @@ export function unsafeMakeScope<A>(): Open<A> {
   const scope      = new LocalScope(new AtomicNumber(Number.MIN_SAFE_INTEGER), exitValue, new AtomicNumber(1), finalizers)
 
   return new Open<A>((a) => {
-    return I.effectSuspendTotal(() => {
+    return I.deferTotal(() => {
       const result = scope.unsafeClose(a)
 
       if (result != null) {

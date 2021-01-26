@@ -62,6 +62,12 @@ function AssociativeCompositionLaw<F, A, B, C>(
   S: Eq.Eq<HKT.HKT<F, C>>,
   afb: MorphismN<[A], HKT.HKT<F, B>>,
   bfc: MorphismN<[B], HKT.HKT<F, C>>
+): (fa: HKT.HKT<F, A>) => boolean
+function AssociativeCompositionLaw<F, A, B, C>(
+  F: P.Bind<HKT.UHKT<F>>,
+  S: Eq.Eq<HKT.HKT<F, C>>,
+  afb: MorphismN<[A], HKT.HKT<F, B>>,
+  bfc: MorphismN<[B], HKT.HKT<F, C>>
 ): (fa: HKT.HKT<F, A>) => boolean {
   return (fa) => {
     return S.equals_(
@@ -71,18 +77,6 @@ function AssociativeCompositionLaw<F, A, B, C>(
   }
 }
 
-export const Chain = {
+export const Bind = {
   associativity: AssociativeCompositionLaw
-  /*
-   * derivedAp: <F, A, B>(
-   *   F: Chain<HKT.UHKT<F>> & Apply<HKT.UHKT<F>>,
-   *   S: Eq<HKT.HKT<F, B>>,
-   *   fab: HKT.HKT<F, FunctionN<[A], B>>
-   * ) => (fa: HKT.HKT<F, A>): boolean => {
-   *   return S.equals_(
-   *     F.ap_(fab, fa),
-   *     F.bind_(fab, (f) => F.map_(fa, f))
-   *   );
-   * }
-   */
 }

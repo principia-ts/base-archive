@@ -6,7 +6,7 @@ import * as I from '../IO'
 import { append_, foldl_, isTyped } from './core'
 
 export function dropWhileEffect_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
-  return I.effectSuspendTotal(() => {
+  return I.deferTotal(() => {
     let dropping        = I.succeed(true) as I.IO<R, E, boolean>
     let ret: Chunk<any> = isTyped(as) ? Buffer.alloc(0) : ([] as A[])
 

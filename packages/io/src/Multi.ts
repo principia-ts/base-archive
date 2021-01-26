@@ -9,6 +9,7 @@ import type { FreeSemiring } from '@principia/free/FreeSemiring'
 
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
 import * as FS from '@principia/free/FreeSemiring'
 
@@ -88,8 +89,8 @@ export const MultiTag = {
   Succeed: 'Succeed',
   EffectTotal: 'EffectTotal',
   EffectPartial: 'EffectPartial',
-  EffectSuspendTotal: 'EffectSuspendTotal',
-  EffectSuspendPartial: 'EffectSuspendPartial',
+  DeferTotal: 'DeferTotal',
+  DeferPartial: 'DeferPartial',
   Fail: 'Fail',
   Modify: 'Modify',
   Bind: 'Bind',
@@ -121,15 +122,15 @@ class EffectPartial<E, A> extends Multi<never, unknown, never, unknown, E, A> {
   }
 }
 
-class EffectSuspendTotal<W, S1, S2, R, E, A> extends Multi<W, S1, S2, R, E, A> {
-  readonly _multiTag = MultiTag.EffectSuspendTotal
+class DeferTotal<W, S1, S2, R, E, A> extends Multi<W, S1, S2, R, E, A> {
+  readonly _multiTag = MultiTag.DeferTotal
   constructor(readonly ma: () => Multi<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
-class EffectSuspendPartial<W, S1, S2, R, E, A, E1> extends Multi<W, S1, S2, R, E | E1, A> {
-  readonly _multiTag = MultiTag.EffectSuspendPartial
+class DeferPartial<W, S1, S2, R, E, A, E1> extends Multi<W, S1, S2, R, E | E1, A> {
+  readonly _multiTag = MultiTag.DeferPartial
   constructor(readonly ma: () => Multi<W, S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
@@ -209,10 +210,10 @@ export type SIOInstruction =
   | Fold<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any, any, any, any>
   | Give<any, any, any, any, any, any>
-  | EffectSuspendTotal<any, any, any, any, any, any>
+  | DeferTotal<any, any, any, any, any, any>
   | EffectTotal<any>
   | EffectPartial<any, any>
-  | EffectSuspendPartial<any, any, any, any, any, any, any>
+  | DeferPartial<any, any, any, any, any, any, any>
   | Write<any>
   | Listen<any, any, any, any, any, any>
 
@@ -261,29 +262,25 @@ export function gets<S, A>(f: (s: S) => A): Multi<never, S, S, unknown, never, A
   return modify((s) => [s, f(s)])
 }
 
-export function effectSuspendTotal<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, E, A> {
-  return new EffectSuspendTotal(ma)
+export function deferTotal<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, E, A> {
+  return new DeferTotal(ma)
 }
 
-export function effectSuspend<W, S1, S2, R, E, A>(
-  ma: () => Multi<W, S1, S2, R, E, A>
-): Multi<W, S1, S2, R, E | Error, A> {
-  return new EffectSuspendPartial(ma, (u) =>
-    u instanceof Error ? u : new C.RuntimeException(`An error was caught: ${u}`)
-  )
+export function defer<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, E | Error, A> {
+  return new DeferPartial(ma, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error was caught: ${u}`)))
 }
 
-export function effectSuspendCatch_<W, S1, S2, R, E, A, E1>(
+export function deferCatch_<W, S1, S2, R, E, A, E1>(
   ma: () => Multi<W, S1, S2, R, E, A>,
   f: (e: unknown) => E1
 ): Multi<W, S1, S2, R, E | E1, A> {
-  return new EffectSuspendPartial(ma, f)
+  return new DeferPartial(ma, f)
 }
 
-export function effectSuspendCatch<E1>(
+export function deferCatch<E1>(
   onThrow: (e: unknown) => E1
 ): <W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, E | E1, A> {
-  return (ma) => effectSuspendCatch_(ma, onThrow)
+  return (ma) => deferCatch_(ma, onThrow)
 }
 
 export function effect<A>(effect: () => A): Multi<never, unknown, never, unknown, Error, A> {
@@ -542,7 +539,7 @@ export function mapError<E, G>(
  * -------------------------------------------
  */
 
-export function recover<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, never, E.Either<E, A>> {
+export function attempt<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, never, E.Either<E, A>> {
   return foldM_(
     fa,
     (e) => succeed(E.left(e)),
@@ -754,6 +751,25 @@ export function catchAll<W, S1, E, S3, R1, E1, B>(
   onFailure: (e: E) => Multi<W, S1, S3, R1, E1, B>
 ): <S2, R, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S3, R & R1, E1, B | A> {
   return (fa) => catchAll_(fa, onFailure)
+}
+
+export function catchSome_<W, S1, S2, R, E, A, S3, R1, E1, B>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  f: (e: E) => O.Option<Multi<W, S1, S3, R1, E1, B>>
+): Multi<W, S1, S2 | S3, R & R1, E | E1, A | B> {
+  return catchAll_(
+    fa,
+    flow(
+      f,
+      O.getOrElse((): Multi<W, S1, S2 | S3, R & R1, E | E1, A | B> => fa)
+    )
+  )
+}
+
+export function catchSome<W, S1, E, S3, R1, E1, B>(
+  f: (e: E) => O.Option<Multi<W, S1, S3, R1, E1, B>>
+): <S2, R, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2 | S3, R & R1, E | E1, B | A> {
+  return (fa) => catchSome_(fa, f)
 }
 
 /**
@@ -1001,11 +1017,11 @@ export function runEitherCause_<W, S1, S2, E, A>(
         }
         break
       }
-      case MultiTag.EffectSuspendTotal: {
+      case MultiTag.DeferTotal: {
         current = I.ma()
         break
       }
-      case MultiTag.EffectSuspendPartial: {
+      case MultiTag.DeferPartial: {
         try {
           current = I.ma()
         } catch (e) {
