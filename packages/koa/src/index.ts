@@ -38,14 +38,16 @@ export interface Koa {
 
 export const Koa = H.tag<Koa>()
 
-export interface KoaConfig {
-  readonly middleware: ReadonlyArray<koa.Middleware<koa.ParameterizedContext<any, any>>>
-  readonly onClose: ReadonlyArray<I.UIO<void>>
-  readonly parent?: KoaRouter
-  readonly router: KoaRouter
+export const KoaConfigTag = H.tag<KoaConfig>()
+export class KoaConfig {
+  constructor(
+    readonly middleware: ReadonlyArray<koa.Middleware<koa.ParameterizedContext<any, any>>>,
+    readonly onClose: ReadonlyArray<I.UIO<void>>,
+    readonly router: KoaRouter,
+    readonly parent?: KoaRouter
+  ) {}
+  static live: L.Layer<unknown, never, H.Has<KoaConfig>> = L.succeed(KoaConfigTag)(new KoaConfig([], [], new KoaRouter()))
 }
-
-export const KoaConfig = H.tag<KoaConfig>()
 
 export interface Context<C = koa.DefaultContext> {
   readonly engine: koa.ParameterizedContext<any, C>
@@ -61,9 +63,9 @@ export function route<R, A>(
   path: string,
   handler: I.IO<R, HttpException, RouteResponse<A> | void>
 ): L.Layer<Erase<R, H.Has<Context>> & H.Has<KoaConfig>, never, H.Has<KoaConfig>> {
-  return L.fromEffect(KoaConfig)(
+  return L.fromEffect(KoaConfigTag)(
     I.gen(function* (_) {
-      const config = yield* _(KoaConfig)
+      const config = yield* _(KoaConfigTag)
       const env    = yield* _(I.ask<R>())
       yield* _(
         I.effectTotal(() => {
@@ -149,15 +151,15 @@ function _subRoute<R, E>(
   routes: L.Layer<R & H.Has<KoaConfig>, E, void>
 ): I.IO<R & H.Has<KoaConfig>, E, void> {
   return pipe(
-    I.asksServiceM(KoaConfig)((config) =>
+    I.asksServiceM(KoaConfigTag)((config) =>
       I.effectTotal(() => {
         config.parent!.use(path, config.router.allowedMethods())
         config.parent!.use(path, config.router.routes())
       })
     ),
     I.giveLayer(routes),
-    I.giveServiceM(KoaConfig)(
-      I.asksService(KoaConfig)((config) => ({
+    I.giveServiceM(KoaConfigTag)(
+      I.asksService(KoaConfigTag)((config) => ({
         ...config,
         parent: config.router,
         router: new KoaRouter<any, {}>()
@@ -176,8 +178,8 @@ export function subRoute<R, E>(
 export function use<State = koa.DefaultState, Custom = koa.DefaultContext>(
   m: koa.Middleware<koa.ParameterizedContext<State, Custom>>
 ): L.Layer<H.Has<KoaConfig>, never, H.Has<KoaConfig>> {
-  return L.fromEffect(KoaConfig)(
-    I.asksServiceM(KoaConfig)((config) =>
+  return L.fromEffect(KoaConfigTag)(
+    I.asksServiceM(KoaConfigTag)((config) =>
       I.effectTotal(() => ({
         ...config,
         middleware: A.append_(config.middleware, m)
@@ -189,9 +191,9 @@ export function use<State = koa.DefaultState, Custom = koa.DefaultContext>(
 export function useM<R, E, A>(
   middleware: (cont: I.UIO<void>) => I.IO<R, E, A>
 ): L.Layer<Erase<R, H.Has<Context>> & H.Has<KoaConfig>, never, H.Has<KoaConfig>> {
-  return L.fromEffect(KoaConfig)(
+  return L.fromEffect(KoaConfigTag)(
     I.gen(function* (_) {
-      const config            = yield* _(KoaConfig)
+      const config            = yield* _(KoaConfigTag)
       const env               = yield* _(I.ask<R>())
       const m: koa.Middleware = async (ctx, next) =>
         await pipe(
@@ -227,7 +229,7 @@ export function live(port: number, hostname: string): L.Layer<H.Has<KoaConfig>, 
   return L.fromManaged(Koa)(
     pipe(
       I.gen(function* (_) {
-        const config = yield* _(KoaConfig)
+        const config = yield* _(KoaConfigTag)
         return yield* _(
           I.effectAsync<unknown, ServerError, { app: koa, server: http.Server }>((cb) => {
             const app = new koa()

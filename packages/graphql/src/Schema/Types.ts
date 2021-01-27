@@ -1,6 +1,6 @@
 import type { UnnamedFieldDefinitionNode, UnnamedInputValueDefinitionNode } from './AST'
 import type { InputTypeConfig, OutputTypeConfig } from './Config'
-import type { ResolverF } from './Resolver'
+import type { Resolver } from './Resolver'
 import type { ScalarFunctions } from './Scalar'
 import type { ReadonlyRecord } from '@principia/base/Record'
 import type { Compute } from '@principia/base/util/compute'
@@ -19,7 +19,7 @@ export class GQLField<Root, Args, T, R, E, A> {
   readonly _E!: () => E
   readonly _A!: () => A
 
-  constructor(readonly ast: UnnamedFieldDefinitionNode, readonly resolve: ResolverF<Root, Args, T, R, E, A>) {}
+  constructor(readonly ast: UnnamedFieldDefinitionNode, readonly resolve: Resolver<Root, Args, T, R, E, A>) {}
 }
 
 export class GQLScalarField<A> {
@@ -127,7 +127,7 @@ export type FieldResolverRecord<Fs extends FieldRecord<any, any, Fs>> = Compute<
   ExcludeMatchingProperties<
     {
       [K in keyof Fs]: Fs[K] extends GQLField<infer Root, infer Args, infer T, infer R, infer E, infer A>
-        ? ResolverF<Root, Args, T, R, E, A>
+        ? Resolver<Root, Args, T, R, E, A>
         : never
     },
     never

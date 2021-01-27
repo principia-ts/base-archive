@@ -52,7 +52,7 @@ export const URI = 'IO'
 export type URI = typeof URI
 
 export abstract class IO<R, E, A> {
-  readonly [_U]: URI;
+  readonly [_U] = URI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
   readonly [_R]: (_: R) => void
@@ -68,7 +68,7 @@ export abstract class IO<R, E, A> {
 
 export class FFIFail<E> {
   readonly _tag = IOTag.Fail;
-  readonly [_U]: 'IO';
+  readonly [_U] = 'IO';
   readonly [_E]: () => E;
   readonly [_A]: () => never;
   readonly [_R]: (_: unknown) => void
@@ -406,7 +406,7 @@ export abstract class FFI<R, E, A> extends IO<R, E, A> {
   readonly _S1!: (_: unknown) => void
   readonly _S2!: () => never;
 
-  readonly [_U]!: URI;
+  readonly [_U] = URI;
   readonly [_E]!: () => E;
   readonly [_A]!: () => A;
   readonly [_R]!: (_: R) => void

@@ -54,7 +54,7 @@ const backendGetSome = (ids: Chunk<string>): I.IO<Has<Console>, never, Record<st
   I.gen(function* (_) {
     const console = yield* _(Console)
     yield* _(console.putStrLn(`getSome ${A.getShow(Show.string).show(A.from(ids))} called`))
-    return C.foldLeft_(ids, {} as Record<string, string>, (r, a) =>
+    return C.foldl_(ids, {} as Record<string, string>, (r, a) =>
       pipe(
         testData,
         R.lookup(a),
@@ -77,7 +77,7 @@ const ds = DS.makeBatched(
       return pipe(
         backendGetAll,
         I.map((allItems) =>
-          R.foldLeftWithIndex_(allItems, CompletedRequestMap.empty(), (result, id, value) =>
+          R.ifoldl_(allItems, CompletedRequestMap.empty(), (result, id, value) =>
             result.insert(new Get(id), E.right(value))
           ).insert(new GetAll(), E.right(allItems))
         )
@@ -85,11 +85,11 @@ const ds = DS.makeBatched(
     } else {
       return I.gen(function* (_) {
         const items = yield* _(
-          backendGetSome(C.chain_(one, matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })))
+          backendGetSome(C.bind_(one, matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })))
         )
         return pipe(
           one,
-          C.foldLeft(CompletedRequestMap.empty(), (result, req) =>
+          C.foldl(CompletedRequestMap.empty(), (result, req) =>
             matchTag_(req, {
               GetAll: () => result,
               Get: (req) =>

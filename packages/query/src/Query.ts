@@ -3,11 +3,13 @@ import type { DataSource } from './DataSource'
 import type { DataSourceAspect } from './DataSourceAspect'
 import type { Result } from './internal/Result'
 import type { Request } from './Request'
+import type { Has, Tag } from '@principia/base/Has'
 import type { IO } from '@principia/io/IO'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import { mergeEnvironments } from '@principia/base/Has'
 import * as It from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
@@ -700,6 +702,10 @@ export function give_<E, A, R = unknown, R0 = unknown>(ra: Query<R & R0, E, A>, 
   )
 }
 
+export function give<R>(r: Described<R>): <E, A, R0 = unknown>(ra: Query<R & R0, E, A>) => Query<R0, E, A> {
+  return (ra) => give_(ra, r)
+}
+
 export function giveLayer_<R, E, A, R1, E1, A1>(
   ra: Query<R & A1, E, A>,
   layer: Described<L.Layer<R1, E1, A1>>
@@ -744,6 +750,19 @@ export function giveLayer<R1, E1, A1>(
         )
       )
     )
+}
+
+export function giveServiceM<T>(_: Tag<T>) {
+  return <R, E>(f: Described<IO<R, E, T>>) => <R1, E1, A1>(ma: Query<R1 & Has<T>, E1, A1>): Query<R & R1, E | E1, A1> =>
+    asksM((r: R & R1) =>
+      bind_(fromEffect(f.value), (t) => giveAll_(ma, Described(mergeEnvironments(_, r, t), f.description)))
+    )
+}
+
+export function giveService<T>(
+  _: Tag<T>
+): (f: Described<T>) => <R1, E1, A1>(ma: Query<R1 & Has<T>, E1, A1>) => Query<R1, E1, A1> {
+  return (f) => (ma) => giveServiceM(_)(Described(I.succeed(f.value), f.description))(ma)
 }
 
 /*

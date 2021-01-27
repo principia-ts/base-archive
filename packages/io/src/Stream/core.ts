@@ -2,6 +2,7 @@ import type { Chunk } from '../Chunk'
 import type { Clock } from '../Clock'
 import type { ExecutionStrategy } from '../ExecutionStrategy'
 import type { Fiber } from '../Fiber'
+import type { Managed } from '../Managed'
 import type { Schedule } from '../Schedule'
 import type { Transducer } from './Transducer'
 import type { Predicate, Refinement } from '@principia/base/Function'
@@ -11,7 +12,7 @@ import type { Option } from '@principia/base/Option'
 import type { _E, _R } from '@principia/base/util/types'
 
 import * as E from '@principia/base/Either'
-import { constTrue, flow, identity, not, pipe, tuple } from '@principia/base/Function'
+import { constTrue, flow, hole, identity, not, pipe, tuple } from '@principia/base/Function'
 import { isTag } from '@principia/base/Has'
 import * as L from '@principia/base/List'
 import * as Map from '@principia/base/Map'
@@ -4669,6 +4670,88 @@ export function take(n: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, 
  */
 export function tick(interval: number): Stream<Has<Clock>, never, void> {
   return repeatWith_(undefined, Sc.spaced(interval))
+}
+
+export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Managed<R, never, AsyncIterable<E.Either<E, A>>> {
+  return M.gen(function* (_) {
+    const runtime = yield* _(I.runtime<R>())
+    const pull    = yield* _(ma.proc)
+
+    return (async function* go(): AsyncGenerator<E.Either<E, A>, E.Either<E, never> | undefined, undefined> {
+      const exit = await runtime.runPromiseExit(pull)
+      switch (exit._tag) {
+        case 'Success': {
+          yield* C.map_(exit.value, E.right)
+          yield* go()
+          break
+        }
+        case 'Failure': {
+          const fOrC = Ca.failureOrCause(exit.cause)
+          if (fOrC._tag === 'Left') {
+            const f = fOrC.left
+            if (f._tag === 'None') {
+              return
+            } else {
+              yield E.left(f.value)
+              return
+            }
+          } else {
+            throw new Ca.FiberFailure(fOrC.right)
+          }
+        }
+      }
+    })()
+
+    /*
+     * return {
+     *   [Symbol.asyncIterator]() {
+     *     return {
+     *       async next() {
+     *         return runtime.runPromise(currentChunk.get).then(
+     *           flow(
+     *             O.fold(
+     *               () =>
+     *                 runtime.runPromiseExit(pull).then(
+     *                   Ex.fold(
+     *                     flow(
+     *                       Ca.failureOrCause,
+     *                       E.fold(
+     *                         O.fold(
+     *                           () => Promise.resolve({ value: null, done: true }),
+     *                           (e) => Promise.resolve({ value: E.left(e), done: true })
+     *                         ),
+     *                         (c) => Promise.reject(new Ca.FiberFailure(c))
+     *                       )
+     *                     ),
+     *                     async (chunk) => {
+     *                       const [a, ...rest] = C.map_(chunk, E.right)
+     *                       if (rest.length === 0) {
+     *                         await runtime.runPromise(currentChunk.set(O.none()))
+     *                       } else {
+     *                         await runtime.runPromise(currentChunk.set(O.some(rest)))
+     *                       }
+     *                       return Promise.resolve({ value: a, done: false })
+     *                     }
+     *                   )
+     *                 ),
+     *               async (chunk) => {
+     *                 const [a, ...rest] = chunk
+     *                 if (rest.length === 0) {
+     *                   await runtime.runPromise(currentChunk.set(O.none()))
+     *                 } else {
+     *                   await runtime.runPromise(currentChunk.set(O.some(rest)))
+     *                 }
+     *                 return Promise.resolve({ value: a, done: false })
+     *               }
+     *             )
+     *           )
+     *         )
+     *       }
+     *     }
+     *   }
+     * }
+     */
+  })
 }
 
 /**

@@ -1,5 +1,5 @@
 /* eslint-disable functional/immutable-data */
-import type { ResolverF } from './Resolver'
+import type { Resolver, UntypedResolver } from './Resolver'
 import type { ScalarFunctions } from './Scalar'
 import type { AnyRootTypes, GQLExtendObject, GQLInputObject, GQLObject, GQLScalar } from './Types'
 import type { UnionToIntersection } from '@principia/base/util/types'
@@ -19,7 +19,7 @@ export class SchemaParts<T, R> {
   readonly _R!: (_: R) => void
   constructor(
     readonly typeDefs: DocumentNode,
-    readonly resolvers: Record<string, Record<string, ResolverF<any, any, T, any, any, any>>>,
+    readonly resolvers: Record<string, Record<string, UntypedResolver>>,
     readonly scalars: Record<string, { name: string, functions: ScalarFunctions<any, any> }>
   ) {}
 }

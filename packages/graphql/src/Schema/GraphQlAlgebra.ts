@@ -1,11 +1,12 @@
 import type { EvaluateConfig, InputTypeConfig, OutputTypeConfig } from './Config'
-import type { ResolverF } from './Resolver'
+import type { Effect, Query, Resolver } from './Resolver'
 import type { AnyField, GQLInputObject, GQLObject, InputRecord } from './Types'
 import type { TypeofInputRecord } from './Utils'
 import type { _A, _E, _R } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as R from '@principia/base/Record'
+import { memoize } from '@principia/model/utils'
 
 import {
   createInputValueDefinitionNode,
@@ -15,39 +16,39 @@ import {
 } from './AST'
 import { GQLField, GQLInputValue, GQLObjectField, GQLScalarField } from './Types'
 
-export const GraphQlFieldAURI = 'graphql/algebra/field'
-export type GraphQlFieldAURI = typeof GraphQlFieldAURI
+export const GqlFieldURI = 'graphql/algebra/field'
+export type GqlFieldURI = typeof GqlFieldURI
 
-export const GraphQlInputAURI = 'graphql/algebra/input'
-export type GraphQlInputAURI = typeof GraphQlInputAURI
+export const GqlInputURI = 'graphql/algebra/input'
+export type GqlInputURI = typeof GqlInputURI
 
 declare module './HKT' {
   interface AURItoFieldAlgebra<Root, T> {
-    readonly [GraphQlFieldAURI]: GraphQlFieldAlgebra<Root, T>
+    readonly [GqlFieldURI]: GqlField<Root, T>
   }
   interface AURItoInputAlgebra {
-    readonly [GraphQlInputAURI]: GraphQlInputAlgebra
+    readonly [GqlInputURI]: GqlInput
   }
 }
 
-export interface GraphQlFieldAlgebra<Root, T> {
+export interface GqlField<Root, Ctx> {
   readonly boolean: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, boolean>>
-  readonly field: <X extends AnyField<T>, Args extends InputRecord<Args>, R, E>(def: {
+  readonly field: <X extends AnyField<Ctx>, Args extends InputRecord<Args>, R, E>(def: {
     type: X
-    resolve: ResolverF<Root, TypeofInputRecord<Args>, T, R, E, _A<X>>
+    resolve: Resolver<Root, TypeofInputRecord<Args>, Ctx, R, E, _A<X>>
     args?: Args
-  }) => GQLField<Root, TypeofInputRecord<Args>, T, R, E, _A<X>>
+  }) => GQLField<Root, TypeofInputRecord<Args>, Ctx, R, E, _A<X>>
   readonly float: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, number>>
   readonly id: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, number>>
   readonly int: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, number>>
   readonly string: <C extends OutputTypeConfig>(config?: C) => GQLScalarField<EvaluateConfig<C, string>>
-  readonly objectField: <C extends OutputTypeConfig, X extends GQLObject<any, any, T, any, any, any>>(
+  readonly objectField: <C extends OutputTypeConfig, X extends GQLObject<any, any, Ctx, any, any, any>>(
     type: () => X,
     config?: C
-  ) => GQLObjectField<X['_Root'], T, _R<X>, _E<X>, EvaluateConfig<C, _A<X>>>
+  ) => GQLObjectField<X['_Root'], Ctx, _R<X>, _E<X>, EvaluateConfig<C, _A<X>>>
 }
 
-export interface GraphQlInputAlgebra {
+export interface GqlInput {
   readonly booleanArg: <C extends InputTypeConfig<EvaluateConfig<C, boolean>>>(
     config?: C
   ) => GQLInputValue<EvaluateConfig<C, boolean>>
@@ -69,163 +70,169 @@ export interface GraphQlInputAlgebra {
   ) => GQLInputValue<EvaluateConfig<C, string>>
 }
 
-export const GraphQlFieldInterpreter = (): GraphQlFieldAlgebra<any, any> => ({
-  boolean: (config) =>
-    new GQLScalarField(
-      createUnnamedFieldDefinitionNode({
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'Boolean'
-      }),
-      config ?? {}
-    ),
+export const GqlFieldInterpreter = memoize<void, GqlField<any, any>>(
+  (): GqlField<any, any> => ({
+    boolean: (config) =>
+      new GQLScalarField(
+        createUnnamedFieldDefinitionNode({
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'Boolean'
+        }),
+        config ?? {}
+      ),
 
-  field: ({ args, resolve, type }) =>
-    new GQLField(
-      createUnnamedFieldDefinitionNode({
-        arguments: args
-          ? R.ifoldl_(args, A.empty(), (b, k, a) => [
-              ...b,
-              createInputValueDefinitionNode({
-                defaultValue: a.config.defaultValue,
-                description: a.config.description,
-                list: a.config.list,
-                name: k,
-                nullable: a.config.nullable,
-                typeName: getTypeName(a.ast)
-              })
-            ])
-          : [],
-        description: type.config.description,
-        list: type.config.list,
-        nullable: type.config.nullable,
-        typeName: getTypeName(type.ast)
-      }),
-      resolve
-    ),
+    field: ({ args, resolve, type }) =>
+      new GQLField(
+        createUnnamedFieldDefinitionNode({
+          arguments: args
+            ? R.ifoldl_(args, A.empty(), (b, k, a) => [
+                ...b,
+                createInputValueDefinitionNode({
+                  defaultValue: a.config.defaultValue,
+                  description: a.config.description,
+                  list: a.config.list,
+                  name: k,
+                  nullable: a.config.nullable,
+                  typeName: getTypeName(a.ast)
+                })
+              ])
+            : [],
+          description: type.config.description,
+          list: type.config.list,
+          nullable: type.config.nullable,
+          typeName: getTypeName(type.ast)
+        }),
+        resolve
+      ),
 
-  float: (config) =>
-    new GQLScalarField(
-      createUnnamedFieldDefinitionNode({
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'Float'
-      }),
-      config ?? {}
-    ),
+    float: (config) =>
+      new GQLScalarField(
+        createUnnamedFieldDefinitionNode({
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'Float'
+        }),
+        config ?? {}
+      ),
 
-  id: (config) =>
-    new GQLScalarField(
-      createUnnamedFieldDefinitionNode({
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'ID'
-      }),
-      config ?? {}
-    ),
+    id: (config) =>
+      new GQLScalarField(
+        createUnnamedFieldDefinitionNode({
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'ID'
+        }),
+        config ?? {}
+      ),
 
-  int: (config) =>
-    new GQLScalarField(
-      createUnnamedFieldDefinitionNode({
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'Int'
-      }),
-      config ?? {}
-    ),
+    int: (config) =>
+      new GQLScalarField(
+        createUnnamedFieldDefinitionNode({
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'Int'
+        }),
+        config ?? {}
+      ),
 
-  string: (config) =>
-    new GQLScalarField(
-      createUnnamedFieldDefinitionNode({
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'String'
-      }),
-      config ?? {}
-    ),
+    string: (config) =>
+      new GQLScalarField(
+        createUnnamedFieldDefinitionNode({
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'String'
+        }),
+        config ?? {}
+      ),
 
-  objectField: (type, config) =>
-    new GQLObjectField(
-      createUnnamedFieldDefinitionNode({
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: type().name
-      }),
-      config ?? {}
-    )
-})
+    objectField: (type, config) =>
+      new GQLObjectField(
+        createUnnamedFieldDefinitionNode({
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: type().name
+        }),
+        config ?? {}
+      )
+  })
+)
 
-export const GraphQlInputInterpreter = (): GraphQlInputAlgebra => ({
-  booleanArg: (config) =>
-    new GQLInputValue(
-      createUnnamedInputValueDefinitionNode({
-        defaultValue: config?.defaultValue,
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'Boolean'
-      }),
-      config ?? {}
-    ),
-  floatArg: (config) =>
-    new GQLInputValue(
-      createUnnamedInputValueDefinitionNode({
-        defaultValue: config?.defaultValue,
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'Float'
-      }),
-      config ?? ({} as any)
-    ),
-  idArg: (config) =>
-    new GQLInputValue(
-      createUnnamedInputValueDefinitionNode({
-        defaultValue: config?.defaultValue,
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'ID'
-      }),
-      config ?? {}
-    ),
-  intArg: (config) =>
-    new GQLInputValue(
-      createUnnamedInputValueDefinitionNode({
-        defaultValue: config?.defaultValue,
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'Int'
-      }),
-      config ?? {}
-    ),
-  objectArg: (type, config) =>
-    new GQLInputValue(
-      createUnnamedInputValueDefinitionNode({
-        defaultValue: config?.defaultValue,
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: type().name
-      }),
-      config ?? {}
-    ),
-  stringArg: (config) =>
-    new GQLInputValue(
-      createUnnamedInputValueDefinitionNode({
-        defaultValue: config?.defaultValue,
-        description: config?.description,
-        list: config?.list,
-        nullable: config?.nullable,
-        typeName: 'String'
-      }),
-      config ?? {}
-    )
-})
+export const GqlInputInterpreter = memoize<void, GqlInput>(
+  (): GqlInput => ({
+    booleanArg: (config) =>
+      new GQLInputValue(
+        createUnnamedInputValueDefinitionNode({
+          defaultValue: config?.defaultValue,
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'Boolean'
+        }),
+        config ?? {}
+      ),
+    floatArg: (config) =>
+      new GQLInputValue(
+        createUnnamedInputValueDefinitionNode({
+          defaultValue: config?.defaultValue,
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'Float'
+        }),
+        config ?? ({} as any)
+      ),
+    idArg: (config) =>
+      new GQLInputValue(
+        createUnnamedInputValueDefinitionNode({
+          defaultValue: config?.defaultValue,
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'ID'
+        }),
+        config ?? {}
+      ),
+    intArg: (config) =>
+      new GQLInputValue(
+        createUnnamedInputValueDefinitionNode({
+          defaultValue: config?.defaultValue,
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'Int'
+        }),
+        config ?? {}
+      ),
+    objectArg: (type, config) =>
+      new GQLInputValue(
+        createUnnamedInputValueDefinitionNode({
+          defaultValue: config?.defaultValue,
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: type().name
+        }),
+        config ?? {}
+      ),
+    stringArg: (config) =>
+      new GQLInputValue(
+        createUnnamedInputValueDefinitionNode({
+          defaultValue: config?.defaultValue,
+          description: config?.description,
+          list: config?.list,
+          nullable: config?.nullable,
+          typeName: 'String'
+        }),
+        config ?? {}
+      )
+  })
+)
+
+export const DefaultGraphQlInterpreters = { ...GqlFieldInterpreter(), ...GqlInputInterpreter() }

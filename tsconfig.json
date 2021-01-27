@@ -29,7 +29,9 @@
       "@principia/koa/*": ["packages/koa/dist/*"],
       "@principia/koa": ["packages/koa/dist/index"],
       "@principia/test": ["packages/test/dist/index"],
-      "@principia/test/*": ["packages/test/dist/*"]
+      "@principia/test/*": ["packages/test/dist/*"],
+      "@principia/query": ["packages/query/dist/index"],
+      "@principia/query/*": ["packages/query/dist/*"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]
