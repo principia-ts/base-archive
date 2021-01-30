@@ -2,16 +2,16 @@ import type { FieldRecord, GQLField, InputRecord } from './Types'
 import type { Compute } from '@principia/base/util/compute'
 import type { _A, ExcludeMatchingProperties, UnionToIntersection } from '@principia/base/util/types'
 
-export type NonRequiredInputKeys<T extends InputRecord<T>> = keyof ExcludeMatchingProperties<
+export type NonRequiredInputKeys<T extends InputRecord> = keyof ExcludeMatchingProperties<
   {
     [k in keyof T]: T[k]['config']['nullable'] extends true ? k : never
   },
   never
 >
 
-export type RequiredInputKeys<T extends InputRecord<T>> = Exclude<keyof T, NonRequiredInputKeys<T>>
+export type RequiredInputKeys<T extends InputRecord> = Exclude<keyof T, NonRequiredInputKeys<T>>
 
-export type TypeofInputRecord<T extends InputRecord<T>> = Compute<
+export type TypeofInputRecord<T extends InputRecord> = Compute<
   {
     [k in NonRequiredInputKeys<T>]?: _A<T[k]>
   } &

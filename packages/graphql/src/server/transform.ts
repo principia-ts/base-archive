@@ -1,5 +1,7 @@
 import type { Resolver, ScalarFunctions, Subscription } from '../schema'
+import type { ConnectionContext } from 'subscriptions-transport-ws'
 
+import { asyncIterable } from '@principia/base/AsyncIterable'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
@@ -17,6 +19,7 @@ import { Context } from '@principia/koa'
 import { Described } from '@principia/query/Described'
 import * as Q from '@principia/query/Query'
 import { GraphQLScalarType } from 'graphql'
+import { inspect } from 'util'
 
 const entries = <A>(_: A): ReadonlyArray<[keyof A, A[keyof A]]> => Object.entries(_) as any
 const isIO    = (u: unknown): u is I.IO<any, any, any> => typeof u === 'object' && u != null && _U in u && u[_U] === I.URI
@@ -24,7 +27,7 @@ const isIO    = (u: unknown): u is I.IO<any, any, any> => typeof u === 'object' 
 export function transformResolvers<Ctx>(
   res: Record<
     string,
-    Record<string, Resolver<any, any, Ctx, any, any, any> | Subscription<any, any, Ctx, any, any, any, any, any, any>>
+    Record<string, Resolver<any, any, Ctx, any, any, any> | Subscription<any, any, any, any, any, any, any, any>>
   >,
   env: any
 ) {
@@ -62,28 +65,19 @@ export function transformResolvers<Ctx>(
         }
       } else {
         (resolvers as any)[mut_fieldName] = {
-          subscribe: (root: any, args: any, ctx: any) => {
-            return I.runPromise(
+          subscribe: (root: {}, args: any, ctx: ConnectionContext) =>
+            I.runPromise(
               I.gen(function* (_) {
-                const reqRef  = yield* _(Ref.make(ctx.req))
-                const resRef  = yield* _(RefM.make(ctx.res))
-                const context = yield* _(
-                  I.effectTotal(() => ({
-                    engine: ctx,
-                    conn: new HttpConnection(reqRef, resRef)
-                  }))
-                )
-                const result  = yield* _(
+                const result = yield* _(
                   pipe(
-                    resolver.subscribe(O.fromNullable(root), args || {}, context as any),
+                    resolver.subscribe(root, args || {}, ctx),
                     S.toAsyncIterable,
                     M.use(I.succeed),
-                    I.give({ ...(env as any) }),
-                    I.giveService(Context)(context)
+                    I.give({ ...(env as any) })
                   )
                 )
 
-                return async function* () {
+                return asyncIterable(async function* () {
                   for await (const r of result) {
                     switch (r._tag) {
                       case 'Left': {
@@ -94,39 +88,23 @@ export function transformResolvers<Ctx>(
                       }
                     }
                   }
-                }
+                })
               })
             )
-          }
         }
-        if (resolver.resolve) {
-          (resolvers as any)[mut_fieldName].resolve = (x: any, _: any, ctx: any) => {
-            return I.runPromise(
-              I.gen(function* (_) {
-                const reqRef  = yield* _(Ref.make(ctx.req))
-                const resRef  = yield* _(RefM.make(ctx.res))
-                const context = yield* _(
-                  I.effectTotal(() => ({
-                    engine: ctx,
-                    conn: new HttpConnection(reqRef, resRef)
-                  }))
-                )
-                const result  = yield* _(
-                  pipe(
-                    (resolver as any).resolve(x, context),
-                    I.give({ ...(env as any) }),
-                    I.giveService(Context)(context)
-                  )
-                )
-                return result
-              })
-            )
-          }
-        }
+        ;(resolvers as any)[mut_fieldName].resolve = (x: any, ctx: ConnectionContext) => resolver.resolve(x, ctx)
+        // return I.runPromise(
+        //   I.gen(function* (_) {
+        //     const result = yield* _(pipe(resolver.resolve(x, ctx), I.give({ ...(env as any) })))
+        //     yield* _(I.effectTotal(() => console.log(result)))
+        //     return result
+        //   })
+        // )
       }
     }
     (toBind as any)[mut_typeName] = resolvers
   }
+  console.log(toBind)
   return toBind
 }
 

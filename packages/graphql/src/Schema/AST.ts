@@ -10,6 +10,7 @@ import type {
   FloatValueNode,
   InputObjectTypeDefinitionNode,
   InputValueDefinitionNode,
+  InterfaceTypeDefinitionNode,
   IntValueNode,
   ListTypeNode,
   ListValueNode,
@@ -30,10 +31,12 @@ import type {
   SelectionSetNode,
   StringValueNode,
   TypeNode,
+  UnionTypeDefinitionNode,
   ValueNode,
   VariableDefinitionNode
 } from 'graphql'
 
+import * as A from '@principia/base/Array'
 import { ifoldl_ as reduceRecord } from '@principia/base/Record'
 import { Kind } from 'graphql'
 
@@ -70,6 +73,21 @@ interface InputValueDefinitionNodeArgs {
   name: string
   nullable?: boolean
   typeName: string
+}
+
+interface UnionTypeDefinitionNodeArgs {
+  description?: string
+  name: string
+  types: ReadonlyArray<NamedTypeNode>
+  directives?: ReadonlyArray<DirectiveNode>
+}
+
+interface InterfaceTypeDefinitionNodeArgs {
+  description?: string
+  name: string
+  fields?: ReadonlyArray<FieldDefinitionNode>
+  interfaces?: ReadonlyArray<string>
+  directives?: ReadonlyArray<DirectiveNode>
 }
 
 interface TypeNodeArgs {
@@ -249,6 +267,27 @@ export function createUnnamedFieldDefinitionNode(
       nullable: args.nullable,
       typeName: args.typeName
     })
+  }
+}
+
+export function createUnionTypeDefinitionNode(args: UnionTypeDefinitionNodeArgs): UnionTypeDefinitionNode {
+  return {
+    description: args.description ? createStringValueNode(args.description, true) : undefined,
+    directives: args.directives,
+    kind: 'UnionTypeDefinition',
+    types: args.types,
+    name: createNameNode(args.name)
+  }
+}
+
+export function createInterfaceTypeDefinitionNode(args: InterfaceTypeDefinitionNodeArgs): InterfaceTypeDefinitionNode {
+  return {
+    description: args.description ? createStringValueNode(args.description, true) : undefined,
+    directives: args.directives,
+    kind: 'InterfaceTypeDefinition',
+    fields: args.fields,
+    name: createNameNode(args.name),
+    interfaces: args.interfaces ? A.map_(args.interfaces, createNamedTypeNode) : undefined
   }
 }
 
