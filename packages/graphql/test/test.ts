@@ -150,11 +150,7 @@ const Subscription = gql.subscription((t) => ({
   numbers: t.subscription({
     type: t.float(),
     resolve: {
-      subscribe: () =>
-        S.schedule_(
-          S.iterate(0, (n) => n + 1),
-          Sc.spaced(1000)
-        ),
+      subscribe: () => S.iterate(0, (n) => n + 1)['|>'](S.schedule(Sc.spaced(1000))),
       resolve: ({ result }) => I.succeed(result)
     }
   })

@@ -35,8 +35,9 @@ export type _AI = typeof _AI
  * `Async` is a lightweight `IO` datatype for interruptible asynchronous computation.
  * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fibers`.
  */
-export abstract class Async<R, E, A> extends I.FFI<R, E, A> {
+export abstract class Async<R, E, A> {
   readonly _tag = I.IOTag.FFI
+  readonly _idn = URI
 
   readonly _W!: () => never
   readonly _S1!: (_: unknown) => void
@@ -123,7 +124,6 @@ export type AsyncInstruction =
   | Total<any>
   | Partial<any, any>
   | Interrupt
-  | Multi<never, unknown, never, any, any, any>
 
 export class Succeed<A> extends Async<unknown, never, A> {
   readonly _asyncTag = AsyncTag.Succeed
@@ -1129,14 +1129,6 @@ export function runPromiseExitEnv_<R, E, A>(
             }
           }
           break
-        }
-        case 'Multi': {
-          const res = M.runEitherEnv_(I, env?.value || {})
-          if (res._tag === 'Left') {
-            current = fail(res.left)
-          } else {
-            current = succeed(res.right)
-          }
         }
       }
     }

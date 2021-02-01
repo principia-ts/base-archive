@@ -955,7 +955,8 @@ export function updateAndGet_<RA, RB, EA, EB, R1, E1, A>(
         f(v),
         I.map((r) => [r, r])
       )
-    )
+    ),
+    I.asUnit
   )
 }
 

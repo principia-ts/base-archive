@@ -28,7 +28,7 @@ const argv = yargs(process.argv.slice(2))
 const testArgs = new TestArgs(argv.tests || [], argv.tags || [], fromNullable(argv.policy))
 
 const program = pipe(
-  glob(argv.path || 'packages/**/test/*Spec.*'),
+  glob(argv.path || 'packages/**/test/*Spec.ts'),
   TE.map(
     A.map((s) => {
       const parsed = path.parse(s)

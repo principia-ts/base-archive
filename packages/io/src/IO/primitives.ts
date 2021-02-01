@@ -9,6 +9,8 @@ import type { Supervisor } from '../Supervisor'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 
+import { product_ } from './core'
+
 /*
  * -------------------------------------------
  * Model
@@ -384,7 +386,6 @@ export type Instruction =
   | Supervise<any, any, any>
   | GetForkScope<any, any, any>
   | OverrideForkScope<any, any, any>
-  | Multi<never, unknown, never, any, any, any>
   | FFI<any, any, any>
 
 export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>

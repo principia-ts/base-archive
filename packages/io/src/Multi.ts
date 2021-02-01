@@ -34,8 +34,8 @@ declare module '@principia/base/HKT' {
   }
 }
 
-export const _SI = '_SI'
-export type _SI = typeof _SI
+export const _MI = '_MI'
+export type _MI = typeof _MI
 
 export type Cause<E> = FreeSemiring<never, E>
 
@@ -53,7 +53,7 @@ export type Cause<E> = FreeSemiring<never, E>
  */
 export abstract class Multi<W, S1, S2, R, E, A> {
   readonly _tag      = I.IOTag.FFI
-  readonly _asyncTag = 'Multi'
+  readonly _idn      = URI
 
   readonly _W!: () => W
 
@@ -65,11 +65,7 @@ export abstract class Multi<W, S1, S2, R, E, A> {
   readonly _A!: () => A
   readonly _R!: (_: R) => void
 
-  get [_SI](): SIOInstruction {
-    return this as any
-  }
-
-  get ['_AI'](): AsyncInstruction {
+  get [_MI](): MultiInstruction {
     return this as any
   }
 
@@ -202,7 +198,7 @@ class Listen<W, S1, S2, R, E, A> extends Multi<W, S1, S2, R, E, readonly [A, Chu
   }
 }
 
-export type SIOInstruction =
+export type MultiInstruction =
   | Succeed<any>
   | Fail<any>
   | Modify<any, any, any>
@@ -958,11 +954,11 @@ export function runEitherCause_<W, S1, S2, E, A>(
   }
 
   while (current != null) {
-    const I = current[_SI]
+    const I = current[_MI]
 
     switch (I._multiTag) {
       case MultiTag.Bind: {
-        const nested       = I.ma[_SI]
+        const nested       = I.ma[_MI]
         const continuation = I.f
 
         switch (nested._multiTag) {

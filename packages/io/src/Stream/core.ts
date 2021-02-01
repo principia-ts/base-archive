@@ -18,11 +18,14 @@ import * as L from '@principia/base/List'
 import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
 import { NoSuchElementException, PrematureGeneratorExit } from '@principia/base/util/GlobalExceptions'
+import { matchTag } from '@principia/base/util/matchers'
 
 import * as Ca from '../Cause'
 import * as C from '../Chunk'
+import { currentTime } from '../Clock'
 import { parallel, sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
+import { currentFiber } from '../Fiber'
 import * as Fi from '../Fiber'
 import * as I from '../IO'
 import * as Ref from '../IORef'
@@ -32,6 +35,7 @@ import * as RM from '../Managed/ReleaseMap'
 import * as P from '../Promise'
 import * as Queue from '../Queue'
 import * as Sc from '../Schedule'
+import { globalScope } from '../Scope'
 import * as Semaphore from '../Semaphore'
 import * as BPull from './BufferedPull'
 import * as Ha from './Handoff'
@@ -4566,8 +4570,8 @@ export function schedule_<R, R1, E, A>(
 /**
  * Schedules the output of the stream using the provided `schedule`.
  */
-export function schedule<R1, A>(schedule: Schedule<R1, A, any>) {
-  return <R, E>(self: Stream<R, E, A>) => schedule_(self, schedule)
+export function schedule<R1, I>(schedule: Schedule<R1, I, any>) {
+  return <R, E, A extends I>(self: Stream<R, E, A>) => schedule_(self, schedule)
 }
 
 /**
@@ -4645,7 +4649,7 @@ export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> 
             } else {
               return I.gen(function* (_) {
                 const chunk = yield* _(chunks)
-                const taken = chunk.length <= n - count ? chunk : C.takeLeft_(chunk, n - count)
+                const taken = chunk.length <= n - count ? chunk : C.take_(chunk, n - count)
                 yield* _(counterRef.set(count + taken.length))
                 return taken
               })
@@ -4663,6 +4667,401 @@ export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> 
  */
 export function take(n: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, A> {
   return (ma) => take_(ma, n)
+}
+
+/**
+ * Takes all elements of the stream until the specified predicate evaluates
+ * to `true`.
+ */
+export function takeUntil_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): Stream<R, E, A> {
+  return new Stream(
+    M.gen(function* (_) {
+      const chunks        = yield* _(ma.proc)
+      const keepTakingRef = yield* _(Ref.make(true))
+      const pull          = pipe(
+        keepTakingRef.get,
+        I.bind((keepTaking) => {
+          if (!keepTaking) {
+            return Pull.end
+          } else {
+            return I.gen(function* (_) {
+              const chunk = yield* _(chunks)
+              const taken = C.takeWhile_(chunk, not(pred))
+              const last  = pipe(chunk, C.drop(taken.length), C.take(1))
+              yield* _(
+                pipe(
+                  keepTakingRef.set(false),
+                  I.when(() => C.isNonEmpty(last))
+                )
+              )
+              return C.concat_(taken, last)
+            })
+          }
+        })
+      )
+      return pull
+    })
+  )
+}
+
+/**
+ * Takes all elements of the stream until the specified predicate evaluates
+ * to `true`.
+ */
+export function takeUntil<A>(pred: Predicate<A>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, A> {
+  return (ma) => takeUntil_(ma, pred)
+}
+
+/**
+ * Takes all elements of the stream until the specified effectual predicate
+ * evaluates to `true`.
+ */
+export function takeUntilM_<R, E, A, R1, E1>(
+  ma: Stream<R, E, A>,
+  pred: (a: A) => I.IO<R1, E1, boolean>
+): Stream<R & R1, E | E1, A> {
+  return new Stream(
+    M.gen(function* (_) {
+      const chunks        = yield* _(ma.proc)
+      const keepTakingRef = yield* _(Ref.make(true))
+      const pull          = pipe(
+        keepTakingRef.get,
+        I.bind((keepTaking) => {
+          if (!keepTaking) {
+            return Pull.end
+          } else {
+            return I.gen(function* (_) {
+              const chunk = yield* _(chunks)
+              const taken = yield* _(
+                pipe(
+                  C.takeWhileEffect_(
+                    chunk,
+                    flow(
+                      pred,
+                      I.map((_) => !_)
+                    )
+                  ),
+                  I.asSomeError
+                ) as I.IO<R1, O.Option<E | E1>, Chunk<A>>
+              )
+              const last  = pipe(chunk, C.drop(taken.length), C.take(1))
+              yield* _(
+                pipe(
+                  keepTakingRef.set(false),
+                  I.when(() => C.isNonEmpty(last))
+                )
+              )
+              return C.concat_(taken, last)
+            })
+          }
+        })
+      )
+      return pull
+    })
+  )
+}
+
+/**
+ * Takes all elements of the stream until the specified effectual predicate
+ * evaluates to `true`.
+ */
+export function takeUntilM<A, R1, E1>(
+  pred: (a: A) => I.IO<R1, E1, boolean>
+): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (ma) => takeUntilM_(ma, pred)
+}
+
+/**
+ * Takes all elements of the stream for as long as the specified predicate
+ * evaluates to `true`.
+ */
+export function takeWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): Stream<R, E, A> {
+  return new Stream(
+    M.gen(function* (_) {
+      const chunks  = yield* _(ma.proc)
+      const doneRef = yield* _(Ref.make(false))
+      const pull    = pipe(
+        doneRef.get,
+        I.bind((done) => {
+          if (done) {
+            return Pull.end
+          } else {
+            return I.gen(function* (_) {
+              const chunk = yield* _(chunks)
+              const taken = C.takeWhile_(chunk, pred)
+              yield* _(
+                pipe(
+                  doneRef.set(true),
+                  I.when(() => taken.length < chunk.length)
+                )
+              )
+              return taken
+            })
+          }
+        })
+      )
+      return pull
+    })
+  )
+}
+
+/**
+ * Takes all elements of the stream for as long as the specified predicate
+ * evaluates to `true`.
+ */
+export function takeWhile<A>(pred: Predicate<A>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, A> {
+  return (ma) => takeWhile_(ma, pred)
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` function.
+ */
+export function throttleEnforce_<R, E, A>(
+  ma: Stream<R, E, A>,
+  costFn: (chunk: Chunk<A>) => number,
+  units: number,
+  duration: number,
+  burst = 0
+): Stream<R & Has<Clock>, E, A> {
+  return throttleEnforceM_(ma, flow(costFn, I.succeed), units, duration, burst)
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` function.
+ */
+export function throttleEnforce<A>(
+  costFn: (chunk: Chunk<A>) => number,
+  units: number,
+  duration: number,
+  burst = 0
+): <R, E>(ma: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
+  return (ma) => throttleEnforce_(ma, costFn, units, duration, burst)
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` effectful function.
+ */
+export function throttleEnforceM_<R, E, A, R1, E1>(
+  ma: Stream<R, E, A>,
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst = 0
+): Stream<R & R1 & Has<Clock>, E | E1, A> {
+  return new Stream(
+    M.gen(function* (_) {
+      const chunks                                                      = yield* _(ma.proc)
+      const time                                                        = yield* _(currentTime)
+      const bucket                                                      = yield* _(Ref.make(tuple(units, time)))
+      const pull: I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<A>> = pipe(
+        chunks,
+        I.bind((chunk) =>
+          pipe(
+            costFn(chunk),
+            I.mapError(O.some),
+            I.product(currentTime),
+            I.bind(([weight, current]) =>
+              Ref.modify_(bucket, ([tokens, timestamp]) => {
+                const elapsed   = current - timestamp
+                const cycles    = elapsed / duration
+                const available = (() => {
+                  const sum = tokens + cycles * units
+                  const max = units + burst < 0 ? Number.MAX_VALUE : units + burst
+                  return sum < 0 ? max : Math.min(sum, max)
+                })()
+                if (weight <= available) {
+                  return tuple(O.some(chunk), tuple(available - weight, current))
+                } else {
+                  return tuple(O.none(), tuple(available, current))
+                }
+              })
+            ),
+            I.bind(O.fold(() => pull, I.succeed))
+          )
+        )
+      )
+      return pull
+    })
+  )
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` effectful function.
+ */
+export function throttleEnforceM<A, R1, E1>(
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst = 0
+): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, A> {
+  return (ma) => throttleEnforceM_(ma, costFn, units, duration, burst)
+}
+
+export function throttleShapeM_<R, E, A, R1, E1>(
+  ma: Stream<R, E, A>,
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst = 0
+): Stream<R & R1 & Has<Clock>, E | E1, A> {
+  return new Stream(
+    M.gen(function* (_) {
+      const chunks = yield* _(ma.proc)
+      const time   = yield* _(currentTime)
+      const bucket = yield* _(Ref.make(tuple(units, time)))
+      const pull   = I.gen(function* (_) {
+        const chunk   = yield* _(chunks)
+        const weight  = yield* _(I.mapError_(costFn(chunk), O.some) as I.IO<R1, O.Option<E | E1>, number>)
+        const current = yield* _(currentTime)
+        const delay   = yield* _(
+          Ref.modify_(bucket, ([tokens, timestamp]) => {
+            const elapsed   = current - timestamp
+            const cycles    = elapsed / duration
+            const available = (() => {
+              const sum = tokens + cycles * units
+              const max = units + burst < 0 ? Number.MAX_VALUE : units + burst
+              return sum < 0 ? max : Math.min(sum, max)
+            })()
+            const remaining  = available - weight
+            const waitCycles = remaining >= 0 ? 0 : -remaining / units
+            const delay      = waitCycles * duration
+            return tuple(delay, tuple(remaining, current))
+          })
+        )
+        yield* _(
+          pipe(
+            I.sleep(delay),
+            I.when(() => delay > 0)
+          )
+        )
+        return chunk
+      })
+      return pull
+    })
+  )
+}
+
+export function throttleShapeM<A, R1, E1>(
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst = 0
+): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, A> {
+  return (ma) => throttleShapeM_(ma, costFn, units, duration, burst)
+}
+
+export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & Has<Clock>, E, A> {
+  interface NotStarted {
+    _tag: 'NotStarted'
+  }
+  interface Previous {
+    _tag: 'Previous'
+    fiber: Fiber<never, A>
+  }
+  interface Current {
+    _tag: 'Current'
+    fiber: Fiber<Option<E>, Chunk<A>>
+  }
+  interface Done {
+    _tag: 'Done'
+  }
+  type State = NotStarted | Previous | Current | Done
+
+  return new Stream(
+    M.gen(function* (_) {
+      const chunks = yield* _(ma.proc)
+      const ref    = yield* _(
+        pipe(
+          Ref.make<State>({ _tag: 'NotStarted' }),
+          I.toManaged((ref) =>
+            I.bind_(
+              ref.get,
+              matchTag(
+                {
+                  Previous: ({ fiber }) => Fi.interrupt(fiber),
+                  Current: ({ fiber }) => Fi.interrupt(fiber)
+                },
+                () => I.unit()
+              )
+            )
+          )
+        )
+      )
+      const store  = (chunk: Chunk<A>) =>
+        pipe(
+          chunk,
+          C.last,
+          O.map((last) =>
+            pipe(
+              I.sleep(d),
+              I.as(() => last),
+              I.forkDaemon,
+              I.bind((f) => ref.set({ _tag: 'Previous', fiber: f }))
+            )
+          ),
+          O.getOrElse(() => ref.set({ _tag: 'NotStarted' })),
+          I.as(() => C.empty<A>())
+        )
+
+      const pull = pipe(
+        ref.get,
+        I.bind(
+          matchTag({
+            Previous: ({ fiber }) =>
+              pipe(
+                fiber,
+                Fi.join,
+                I.raceWith(
+                  chunks,
+                  (ex, current) =>
+                    Ex.fold_(
+                      ex,
+                      (cause): I.IO<R & Has<Clock>, Option<E>, Chunk<A>> =>
+                        I.apr_(Fi.interrupt(current), Pull.halt(cause)),
+                      (value) => I.as_(ref.set({ _tag: 'Current', fiber: current }), () => C.single(value))
+                    ),
+                  (ex, previous) =>
+                    Ex.fold_(
+                      ex,
+                      flow(
+                        Ca.sequenceCauseOption,
+                        O.fold(
+                          (): I.IO<R & Has<Clock>, Option<E>, Chunk<A>> =>
+                            pipe(Fi.join(previous), I.map(C.single), I.apl(ref.set({ _tag: 'Done' }))),
+                          (e) => I.apr_(Fi.interrupt(previous), Pull.halt(e))
+                        )
+                      ),
+                      (chunk): I.IO<R & Has<Clock>, Option<E>, Chunk<A>> =>
+                        C.isEmpty(chunk) ? Pull.empty<A>() : I.apr_(Fi.interrupt(previous), store(chunk))
+                    ),
+                  O.some(globalScope)
+                )
+              ),
+            Current: ({ fiber }) => I.bind_(Fi.join(fiber), store),
+            NotStarted: () => I.bind_(chunks, store),
+            Done: () => Pull.end
+          })
+        )
+      )
+      return pull
+    })
+  )
+}
+
+export function debounce(d: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
+  return (ma) => debounce_(ma, d)
 }
 
 /**

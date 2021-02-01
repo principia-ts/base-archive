@@ -30,10 +30,10 @@ import * as Ex from '../Exit/core'
 import {
   Bind,
   CheckDescriptor,
+  DeferPartial,
+  DeferTotal,
   EffectAsync,
   EffectPartial,
-  DeferTotal,
-  DeferPartial,
   EffectTotal,
   Fail,
   Fold,
@@ -175,9 +175,7 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () =
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
 export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
-  return new DeferPartial(io, (u) =>
-    u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)
-  )
+  return new DeferPartial(io, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)))
 }
 
 /**
@@ -186,10 +184,7 @@ export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
-export function deferCatch_<R, E, A, E1>(
-  io: () => IO<R, E, A>,
-  onThrow: (error: unknown) => E1
-): IO<R, E | E1, A> {
+export function deferCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
   return new DeferPartial(io, onThrow)
 }
 
@@ -199,9 +194,7 @@ export function deferCatch_<R, E, A, E1>(
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  */
-export function deferCatch<E1>(
-  onThrow: (error: unknown) => E1
-): <R, E, A>(io: () => IO<R, E, A>) => IO<R, E | E1, A> {
+export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: () => IO<R, E, A>) => IO<R, E | E1, A> {
   return (io) => deferCatch_(io, onThrow)
 }
 
@@ -2203,7 +2196,11 @@ export function loopUnit<A>(
 ): (cont: (a: A) => boolean, inc: (a: A) => A) => <R, E>(body: (a: A) => IO<R, E, any>) => IO<R, E, void> {
   return (cont, inc) => (body) => {
     if (cont(initial)) {
-      return bind_(body(initial), () => loop(inc(initial))(cont, inc)(body))
+      return pipe(
+        body(initial),
+        bind(() => loop(inc(initial))(cont, inc)(body)),
+        asUnit
+      )
     } else {
       return unit()
     }

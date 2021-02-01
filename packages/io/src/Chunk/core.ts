@@ -441,9 +441,9 @@ export function collectWhileMap<A, B>(f: (a: A) => O.Option<B>): (as: Chunk<A>) 
   return (as) => collectWhileMap_(as, f)
 }
 
-export function collectWhile_<A, B extends A>(as: Chunk<A>, f: Refinement<A, B>): Chunk<B>
-export function collectWhile_<A>(as: Chunk<A>, f: Predicate<A>): Chunk<A>
-export function collectWhile_<A>(as: Chunk<A>, f: Predicate<A>): Chunk<A> {
+export function takeWhile_<A, B extends A>(as: Chunk<A>, f: Refinement<A, B>): Chunk<B>
+export function takeWhile_<A>(as: Chunk<A>, f: Predicate<A>): Chunk<A>
+export function takeWhile_<A>(as: Chunk<A>, f: Predicate<A>): Chunk<A> {
   let j = as.length
   for (let i = 0; i < as.length; i++) {
     if (!f(as[i])) {
@@ -461,13 +461,13 @@ export function collectWhile_<A>(as: Chunk<A>, f: Predicate<A>): Chunk<A> {
   return Array.from(as).slice(0, j)
 }
 
-export function collectWhile<A, B extends A>(f: Refinement<A, B>): (as: Chunk<A>) => Chunk<B>
-export function collectWhile<A>(f: Predicate<A>): (as: Chunk<A>) => Chunk<A>
-export function collectWhile<A>(f: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
-  return (as) => collectWhile_(as, f)
+export function takeWhile<A, B extends A>(f: Refinement<A, B>): (as: Chunk<A>) => Chunk<B>
+export function takeWhile<A>(f: Predicate<A>): (as: Chunk<A>) => Chunk<A>
+export function takeWhile<A>(f: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
+  return (as) => takeWhile_(as, f)
 }
 
-export function takeLeft_<A>(as: Chunk<A>, n: number): Chunk<A> {
+export function take_<A>(as: Chunk<A>, n: number): Chunk<A> {
   if (Buffer && Buffer.isBuffer(as)) {
     return fromBuffer(as.subarray(0, n))
   }
@@ -477,8 +477,8 @@ export function takeLeft_<A>(as: Chunk<A>, n: number): Chunk<A> {
   return Array.from(as).slice(0, n)
 }
 
-export function takeLeft(n: number): <A>(as: Chunk<A>) => Chunk<A> {
-  return (as) => takeLeft_(as, n)
+export function take(n: number): <A>(as: Chunk<A>) => Chunk<A> {
+  return (as) => take_(as, n)
 }
 
 export function append_<A>(as: Chunk<A>, a: A): Chunk<A> {
