@@ -1,14 +1,16 @@
 import '@principia/base/unsafe/Operators'
 
-import { flow } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
 import * as HM from '@principia/base/HashMap'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
+import * as Sc from '@principia/io/Schedule'
 import * as S from '@principia/io/Stream'
 import * as K from '@principia/koa'
+import * as M from '@principia/model'
 import { runMain } from '@principia/node/Runtime'
 
 import { DefaultGraphQlInterpreters } from '../src/schema'
@@ -24,184 +26,187 @@ const gql = makeGraphQl(DefaultGraphQlInterpreters)(
   ({ ctx }) => I.succeed(ctx)
 )
 
-// interface UserService {
-//   readonly getUser: (id: number) => I.UIO<Student | Employee | UserNotFoundError>
-//   readonly putUser: (user: Student | Employee) => I.FIO<Error, void>
-// }
-// const UserService = tag<UserService>()
+interface UserService {
+  readonly getUser: (id: number) => I.UIO<Student | Employee | UserNotFoundError>
+  readonly putUser: (user: Student | Employee) => I.FIO<Error, void>
+}
+const UserService = tag<UserService>()
 
-// interface User {
-//   _tag: string
-//   name: string
-//   id: number
-// }
+interface User {
+  _tag: string
+  name: string
+  id: number
+}
 
-// interface Employee {
-//   _tag: 'Employee'
-//   name: string
-//   id: number
-//   position: string
-// }
+interface Employee {
+  _tag: 'Employee'
+  name: string
+  id: number
+  position: string
+}
 
-// interface Student {
-//   _tag: 'Student'
-//   name: string
-//   id: number
-//   major: string
-// }
+interface Student {
+  _tag: 'Student'
+  name: string
+  id: number
+  major: string
+}
 
-// const IUser = gql.makeInterface(
-//   'User',
-//   (F) => ({
-//     _tag: F.string(),
-//     name: F.string(),
-//     id: F.int()
-//   }),
-//   (obj) => obj._tag
-// )
+const IUser = gql.interface(
+  'IUser',
+  (t) => ({
+    _tag: t.string(),
+    name: t.string(),
+    id: t.int()
+  }),
+  ({ obj }) => obj._tag
+)
 
-// const User = gql.makeObject<User>()('User', (F) => ({}), { implements: [IUser] })
+const User = gql.object<User>()('User', (t) => ({}), { implements: [IUser] })
 
-// const Employee = gql.makeObject<Employee>()(
-//   'Employee',
-//   (F) => ({
-//     position: F.string()
-//   }),
-//   { implements: [IUser] }
-// )
+const Employee = gql.object<Employee>()(
+  'Employee',
+  (t) => ({
+    position: t.string()
+  }),
+  { implements: [IUser] }
+)
 
-// const Student = gql.makeObject<Student>()(
-//   'Student',
-//   (F) => ({
-//     major: F.string()
-//   }),
-//   { implements: [IUser] }
-// )
+const Student = gql.object<Student>()(
+  'Student',
+  (t) => ({
+    major: t.string()
+  }),
+  { implements: [IUser] }
+)
 
-// interface UserNotFoundError {
-//   _tag: 'UserNotFoundError'
-//   message: string
-// }
+interface UserNotFoundError {
+  _tag: 'UserNotFoundError'
+  message: string
+}
 
-// const UserNotFoundError = gql.makeObject<UserNotFoundError>()('UserNotFoundError', (F) => ({
-//   _tag: F.string(),
-//   message: F.string()
-// }))
+const UserNotFoundError = gql.object<UserNotFoundError>()('UserNotFoundError', (t) => ({
+  _tag: t.string(),
+  message: t.string()
+}))
 
-// const UserInput = gql.makeInputObject('UserInput', (F) => ({
-//   id: F.intArg(),
-//   name: F.stringArg()
-// }))
+const UserInput = gql.input('UserInput', (t) => ({
+  id: t.intArg(),
+  name: t.stringArg()
+}))
 
-// const EmployeeInput = gql.makeInputObject('EmployeeInput', (F) => ({
-//   ...UserInput.fields,
-//   position: F.stringArg()
-// }))
+const EmployeeInput = gql.input('EmployeeInput', (t) => ({
+  ...UserInput.fields,
+  position: t.stringArg()
+}))
 
-// const StudentInput = gql.makeInputObject('StudentInput', (F) => ({
-//   ...UserInput.fields,
-//   major: F.stringArg()
-// }))
+const StudentInput = gql.input('StudentInput', (t) => ({
+  ...UserInput.fields,
+  major: t.stringArg()
+}))
 
-const InfiniteNumbers = gql.makeSubscription((F) => ({
-  numbers: F.subscription({
-    type: F.float(),
+const UserResponse = gql.union(Employee, Student, UserNotFoundError)('UserResponse', ({ obj }) => obj._tag)
+
+const Query = gql.query((t) => ({
+  getUser: t.field({
+    type: t.union(() => UserResponse, { nullable: false, list: false }),
+    args: {
+      id: t.intArg()
+    },
+    resolve: ({ args }) => I.asksServiceM(UserService)((_) => _.getUser(args.id))
+  })
+}))
+
+const Mutation = gql.mutation((t) => ({
+  putEmployee: t.field({
+    type: t.boolean(),
+    args: {
+      user: t.objectArg(() => EmployeeInput)
+    },
+    resolve: ({ args }) =>
+      I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Employee', ...args.user }))['|>'](
+        I.fold(
+          (_) => false,
+          () => true
+        )
+      )
+  }),
+  putStudent: t.field({
+    type: t.boolean(),
+    args: {
+      user: t.objectArg(() => StudentInput)
+    },
+    resolve: ({ args }) =>
+      I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Student', ...args.user }))['|>'](
+        I.fold(
+          (_) => false,
+          () => true
+        )
+      )
+  })
+}))
+
+const Subscription = gql.subscription((t) => ({
+  numbers: t.subscription({
+    type: t.float(),
     resolve: {
-      subscribe: () => S.iterate(0, (n) => n + 1),
-      resolve: (n: any) => n
-    } as any
+      subscribe: () =>
+        S.schedule_(
+          S.iterate(0, (n) => n + 1),
+          Sc.spaced(1000)
+        ),
+      resolve: ({ result }) => I.succeed(result)
+    }
   })
 }))
 
-const Mutation = gql.makeMutation((F) => ({
-  m: F.field({
-    type: F.string(),
-    resolve: () => I.succeed('Sample mutation')
+const schemaParts = gql.generateSchema(
+  Query,
+  Mutation,
+  Subscription,
+  User,
+  Student,
+  Employee,
+  StudentInput,
+  EmployeeInput,
+  IUser,
+  UserNotFoundError,
+  UserResponse
+)
+
+const liveGraphQl = gql.live({ schemaParts })
+
+const LiveUserService = L.fromEffect(UserService)(
+  I.gen(function* (_) {
+    const db      = yield* _(Ref.make<HM.HashMap<number, Student | Employee>>(HM.makeDefault()))
+    const putUser = (user: Student | Employee) =>
+      db.get['|>'](I.map(HM.get(user.id)))['|>'](
+        I.bind(
+          O.fold(
+            () => Ref.update_(db, HM.set(user.id, user)),
+            (_) => I.fail(new Error('User already exists'))
+          )
+        )
+      )
+
+    const getUser = (id: number): I.UIO<Student | Employee | UserNotFoundError> =>
+      db.get['|>'](
+        I.map(
+          flow(
+            HM.get(id),
+            O.getOrElse(() => ({ _tag: 'UserNotFoundError' as const, message: `User with id ${id} not found` }))
+          )
+        )
+      )
+
+    return {
+      getUser,
+      putUser
+    }
   })
-}))
-
-const Query = gql.makeQuery((F) => ({
-  q: F.field({
-    type: F.string(),
-    resolve: () => I.succeed('Sample query')
-  })
-}))
-
-// const UserResponse = gql.makeUnion(Employee, Student, UserNotFoundError)('UserResponse', (obj) => obj._tag)
-
-// const Query = gql.makeQuery((F) => ({
-//   getUser: F.field({
-//     type: F.union(() => UserResponse, { nullable: false, list: false }),
-//     args: {
-//       id: F.intArg()
-//     },
-//     resolve: (root, args, ctx) => I.asksServiceM(UserService)((_) => _.getUser(args.id))
-//   })
-// }))
-
-// const Mutation = gql.makeMutation((F) => ({
-//   putEmployee: F.field({
-//     type: F.boolean(),
-//     args: {
-//       user: F.objectArg(() => EmployeeInput)
-//     },
-//     resolve: (root, args, ctx) =>
-//       I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Employee', ...args.user }))['|>'](
-//         I.fold(
-//           (_) => false,
-//           () => true
-//         )
-//       )
-//   }),
-//   putStudent: F.field({
-//     type: F.boolean(),
-//     args: {
-//       user: F.objectArg(() => StudentInput)
-//     },
-//     resolve: (root, args, ctx) =>
-//       I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Student', ...args.user }))['|>'](
-//         I.fold(
-//           (_) => false,
-//           () => true
-//         )
-//       )
-//   })
-// }))
-
-const schemaParts = gql.makeSchema(InfiniteNumbers, Query, Mutation)
-
-const liveGraphQl = gql.getInstance({ schemaParts })
-
-// const LiveUserService = L.fromEffect(UserService)(
-//   I.gen(function* (_) {
-//     const db      = yield* _(Ref.make<HM.HashMap<number, Student | Employee>>(HM.makeDefault()))
-//     const putUser = (user: Student | Employee) =>
-//       db.get['|>'](I.map(HM.get(user.id)))['|>'](
-//         I.bind(
-//           O.fold(
-//             () => Ref.update_(db, HM.set(user.id, user)),
-//             (_) => I.fail(new Error('User already exists'))
-//           )
-//         )
-//       )
-
-//     const getUser = (id: number): I.UIO<Student | Employee | UserNotFoundError> =>
-//       db.get['|>'](
-//         I.map(
-//           flow(
-//             HM.get(id),
-//             O.getOrElse(() => ({ _tag: 'UserNotFoundError' as const, message: `User with id ${id} not found` }))
-//           )
-//         )
-//       )
-
-//     return {
-//       getUser,
-//       putUser
-//     }
-//   })
-// )
+)
 
 I.never['|>'](I.giveLayer(liveGraphQl))
   ['|>'](I.giveLayer(K.live(4000, 'localhost')['<<<'](K.KoaConfig.live)))
+  ['|>'](I.giveLayer(LiveUserService))
   ['|>']((x) => runMain(x))

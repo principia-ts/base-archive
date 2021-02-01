@@ -5,12 +5,14 @@ import type * as U from '@principia/base/util/types'
 import type * as I from '@principia/io/IO'
 import type { Stream } from '@principia/io/Stream'
 import type * as Q from '@principia/query/Query'
+import type { GraphQLResolveInfo } from 'graphql'
 import type { ConnectionContext } from 'subscriptions-transport-ws'
 
 export interface ResolverInput<Root, Args, Ctx> {
   readonly args: Args
   readonly ctx: Ctx
-  readonly root: O.Option<Root>
+  readonly root: Root
+  readonly info: GraphQLResolveInfo
 }
 
 export interface SubscriptionResolverInput<Root, Ctx> {
@@ -18,22 +20,19 @@ export interface SubscriptionResolverInput<Root, Ctx> {
   readonly result: Root
 }
 
-export type Effect<Root, Args, Ctx, R, E, A> = (root: Root, args: Args, ctx: Ctx) => I.IO<R & Has<Ctx>, E, A>
+export type Effect<Root, Args, Ctx, R, E, A> = (_: ResolverInput<Root, Args, Ctx>) => I.IO<R & Has<Ctx>, E, A>
 
-export type Query<Root, Args, Ctx, R, E, A> = (root: Root, args: Args, ctx: Ctx) => Q.Query<R & Has<Ctx>, E, A>
+export type Query<Root, Args, Ctx, R, E, A> = (_: ResolverInput<Root, Args, Ctx>) => Q.Query<R & Has<Ctx>, E, A>
 
-export class Subscription<Root, Args, SR, SE, SA, RR, RE, RA> {
-  readonly _tag = 'Subscription'
-  constructor(
-    readonly subscribe: (root: Root, args: Args, ctx: ConnectionContext) => Stream<SR, SE, SA>,
-    readonly resolve: (root: SA, ctx: ConnectionContext) => RA
-  ) {}
+export interface Subscription<Root, Args, SR, SE, SA, RR, RE, RA> {
+  readonly subscribe: (_: ResolverInput<Root, Args, ConnectionContext>) => Stream<SR, SE, SA>
+  readonly resolve: (_: SubscriptionResolverInput<SA, ConnectionContext>) => I.IO<RR, RE, RA>
 }
 
 export type Resolver<Root, Args, Ctx, R, E, A> = Effect<Root, Args, Ctx, R, E, A> | Query<Root, Args, Ctx, R, E, A>
 export type UntypedResolver = Effect<any, any, any, any, any, any> | Query<any, any, any, any, any, any>
 
-export type TypeResolver<Ctx, A> = (obj: A, ctx: Ctx) => string | null
+export type TypeResolver<Ctx, A> = (_: { obj: A, ctx: Ctx, info: GraphQLResolveInfo }) => string | null
 
 export type FieldResolvers<Ctx> = Record<
   string,
@@ -42,8 +41,8 @@ export type FieldResolvers<Ctx> = Record<
 
 export type SchemaResolvers<Ctx> = Record<string, FieldResolvers<Ctx>>
 
-export type SchemaResolversEnv<Res, T> = Res extends SchemaResolvers<T>
-  ? FieldResolversEnv<U.UnionToIntersection<Res[keyof Res]>, T>
+export type SchemaResolversEnv<Res, Ctx> = Res extends SchemaResolvers<Ctx>
+  ? FieldResolversEnv<U.UnionToIntersection<Res[keyof Res]>, Ctx>
   : never
 
 export type FieldResolversEnv<Res, T> = Res extends FieldResolvers<T>

@@ -1,4 +1,5 @@
 import type { Resolver, ScalarFunctions, Subscription } from '../schema'
+import type { GraphQLResolveInfo } from 'graphql'
 import type { ConnectionContext } from 'subscriptions-transport-ws'
 
 import { asyncIterable } from '@principia/base/AsyncIterable'
@@ -18,8 +19,10 @@ import * as Sy from '@principia/io/Sync'
 import { Context } from '@principia/koa'
 import { Described } from '@principia/query/Described'
 import * as Q from '@principia/query/Query'
-import { GraphQLScalarType } from 'graphql'
+import { GraphQLError, GraphQLScalarType } from 'graphql'
 import { inspect } from 'util'
+
+import { GraphQlException } from '../schema/GraphQlException'
 
 const entries = <A>(_: A): ReadonlyArray<[keyof A, A[keyof A]]> => Object.entries(_) as any
 const isIO    = (u: unknown): u is I.IO<any, any, any> => typeof u === 'object' && u != null && _U in u && u[_U] === I.URI
@@ -36,7 +39,7 @@ export function transformResolvers<Ctx>(
     const resolvers = {}
     for (const [mut_fieldName, resolver] of entries(fields)) {
       if (typeof resolver === 'function') {
-        (resolvers as any)[mut_fieldName] = (root: any, args: any, ctx: any) => {
+        (resolvers as any)[mut_fieldName] = (root: any, args: any, ctx: any, info: GraphQLResolveInfo) => {
           return I.runPromise(
             I.gen(function* (_) {
               const reqRef  = yield* _(Ref.make(ctx.req))
@@ -47,7 +50,12 @@ export function transformResolvers<Ctx>(
                   conn: new HttpConnection(reqRef, resRef)
                 }))
               )
-              const ret     = resolver(O.fromNullable(root), args || {}, context as any)
+              const ret     = resolver({
+                root,
+                args: args || {},
+                ctx: context as any,
+                info
+              })
               if (isIO(ret)) {
                 return yield* _(pipe(ret, I.give({ ...(env as any) }), I.giveService(Context)(context)))
               } else {
@@ -65,12 +73,12 @@ export function transformResolvers<Ctx>(
         }
       } else {
         (resolvers as any)[mut_fieldName] = {
-          subscribe: (root: {}, args: any, ctx: ConnectionContext) =>
+          subscribe: (root: {}, args: any, ctx: ConnectionContext, info: GraphQLResolveInfo) =>
             I.runPromise(
               I.gen(function* (_) {
                 const result = yield* _(
                   pipe(
-                    resolver.subscribe(root, args || {}, ctx),
+                    resolver.subscribe({ root, args: args || {}, ctx, info }),
                     S.toAsyncIterable,
                     M.use(I.succeed),
                     I.give({ ...(env as any) })
@@ -90,16 +98,16 @@ export function transformResolvers<Ctx>(
                   }
                 })
               })
+            ),
+          resolve: (r: any, ctx: ConnectionContext) =>
+            I.runPromise(
+              I.gen(function* (_) {
+                const result = yield* _(pipe(resolver.resolve({ result: r, ctx }), I.give({ ...(env as any) })))
+                yield* _(I.effectTotal(() => console.log(result)))
+                return result
+              })
             )
         }
-        ;(resolvers as any)[mut_fieldName].resolve = (x: any, ctx: ConnectionContext) => resolver.resolve(x, ctx)
-        // return I.runPromise(
-        //   I.gen(function* (_) {
-        //     const result = yield* _(pipe(resolver.resolve(x, ctx), I.give({ ...(env as any) })))
-        //     yield* _(I.effectTotal(() => console.log(result)))
-        //     return result
-        //   })
-        // )
       }
     }
     (toBind as any)[mut_typeName] = resolvers

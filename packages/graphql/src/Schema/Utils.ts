@@ -30,11 +30,13 @@ export type __R<Fs> = UnionToIntersection<
 export type __E<Fs> = Compute<
   {
     [K in keyof Fs]: [Fs[K]] extends [GQLField<any, any, any, any, infer E, any>] ? E : never
-  }[keyof Fs]
+  }[keyof Fs],
+  'flat'
 >
 
 export type __A<Fs> = Compute<
   {
     [K in keyof Fs]: _A<Fs[K]>
-  }
+  },
+  'flat'
 >

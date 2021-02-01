@@ -16,6 +16,7 @@ import type { UnionToIntersection } from '@principia/base/util/types'
 import type {
   DocumentNode,
   FieldDefinitionNode,
+  GraphQLResolveInfo,
   InputObjectTypeDefinitionNode,
   InterfaceTypeDefinitionNode,
   ObjectTypeDefinitionNode,
@@ -28,7 +29,7 @@ import * as R from '@principia/base/Record'
 import { inspect } from 'util'
 
 import { createDocumentNode, createObjectTypeDefinitionNode, createSchemaDefinitionNode } from './AST'
-import { BaseMutation, BaseQuery, BaseSubscription } from './TypeBuilder'
+import { BaseMutation, BaseQuery, BaseSubscription } from './SchemaBuilder'
 
 export class SchemaParts<Ctx, R> {
   readonly _R!: (_: R) => void
@@ -47,10 +48,10 @@ type ExtractEnv<Fragments extends ReadonlyArray<AnyRootType<any>>> = UnionToInte
 >
 
 export interface SchemaGenerator<Ctx> {
-  <Fragments extends ReadonlyArray<AnyRootType<Ctx>>>(...fragments: Fragments): SchemaParts<Ctx, ExtractEnv<Fragments>>
+  <Fragments extends ReadonlyArray<AnyRootType<any>>>(...fragments: Fragments): SchemaParts<Ctx, ExtractEnv<Fragments>>
 }
 
-export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) => {
+export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...fragments) => {
   const objectTypes: Record<string, GQLObject<any, any, any, any, any, any>>  = {
     Query: BaseQuery,
     Mutation: BaseMutation
@@ -62,7 +63,7 @@ export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) =
   const interfaceTypes: Record<string, GQLInterface<any, any, any, any, any>> = {}
   const subscriptions: Array<GQLSubscription<any, any>>                       = []
 
-  for (const type of types) {
+  for (const type of fragments) {
     switch (type._tag) {
       case 'GQLExtendObject': {
         extendTypes[type.object.name] = type as any
@@ -110,12 +111,14 @@ export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) =
   }
 
   const subscriptionResolvers = A.foldl_(subscriptions, {}, (b, a) => ({ ...b, ...a.resolvers }))
-  resolvers['Subscription']   = subscriptionResolvers
+  if (Object.keys(subscriptionResolvers).length !== 0) {
+    resolvers['Subscription'] = subscriptionResolvers
+  }
 
   const typeResolvers: any = {}
   for (const [k, v] of Object.entries(unionTypes)) {
     typeResolvers[k] = {
-      __resolveType: v.resolveType
+      __resolveType: (obj: any, ctx: any, info: GraphQLResolveInfo) => v.resolveType({ obj, ctx, info })
     }
   }
   for (const [k, v] of Object.entries(interfaceTypes)) {
@@ -166,7 +169,7 @@ export const makeSchemaGenerator = <Ctx>(): SchemaGenerator<Ctx> => (...types) =
     ...scalarAST,
     ...unionAST,
     ...interfaceAST,
-    subscriptionAST,
+    ...(subscriptionAST.fields?.length === 0 ? [] : [subscriptionAST]),
     schemaDefinitionNode
   ])
   return new SchemaParts(typeDefs, resolvers, scalars, typeResolvers)

@@ -1,21 +1,20 @@
 import type { ASTNode, GraphQLError, GraphQLFormattedError, Source, SourceLocation } from 'graphql'
 
 import { Exception } from '@principia/base/Exception'
+import { ApolloError } from 'apollo-server-koa'
 
-export class GraphQlException extends Exception<Record<string, any>> implements GraphQLError {
-  readonly code: number | undefined
+export class GraphQlException extends ApolloError {
+  readonly code: string | undefined
   readonly locations: ReadonlyArray<SourceLocation> | undefined
   readonly path: ReadonlyArray<string | number> | undefined
   readonly source: Source | undefined
   readonly positions: ReadonlyArray<number> | undefined
   readonly nodes: ReadonlyArray<ASTNode> | undefined
   readonly originalError: Error | undefined
-  readonly extensions: Record<string, any> | undefined
 
-  constructor(message: string, code?: number, extensions?: Record<string, any>) {
-    super(message, extensions)
+  constructor(message: string, code?: string, extensions?: Record<string, any>) {
+    super(message, code, extensions)
     this.code       = code
-    this.extensions = extensions
   }
 }
 
@@ -30,6 +29,6 @@ export function formatGraphQlException(
   }
 }
 
-export function fromGraphQLError(error: GraphQLError, code?: number) {
+export function fromGraphQLError(error: GraphQLError, code?: string) {
   const copy: GraphQlException = new GraphQlException(error.message, code)
 }

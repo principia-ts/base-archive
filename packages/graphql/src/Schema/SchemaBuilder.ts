@@ -2,32 +2,19 @@ import type { GqlSubscription } from './GraphQlAlgebra'
 import type { AURItoFieldAlgebra, AURItoInputAlgebra, FieldAURIS, InputAURIS } from './HKT'
 import type { TypeResolver } from './Resolver'
 import type { _I, _O, ScalarConfig, ScalarFunctions, ScalarParseLiteralF } from './Scalar'
-import type { AnyObjectType, AnyOutput, FieldRecord, GQLSubscriptionField, InputRecord } from './Types'
+import type { AnyObjectType, FieldRecord, InputRecord } from './Types'
 import type { __A, __E, __R } from './Utils'
 import type { Compute } from '@principia/base/util/compute'
 import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
-import type { FieldDefinitionNode, InputValueDefinitionNode, ValueNode } from 'graphql'
+import type { ValueNode } from 'graphql'
 
-import * as A from '@principia/base/Array'
 import { flow, pipe } from '@principia/base/Function'
-import * as R from '@principia/base/Record'
 import * as DE from '@principia/codec/DecodeErrors'
 import * as Sy from '@principia/io/Sync'
 import * as M from '@principia/model'
 import { valueFromASTUntyped } from 'graphql'
 
-import {
-  addNameToUnnamedFieldDefinitionNode,
-  createInputObjectTypeDefinitionNode,
-  createInputValueDefinitionNode,
-  createInterfaceTypeDefinitionNode,
-  createNamedTypeNode,
-  createObjectFieldNode,
-  createObjectTypeDefinitionNode,
-  createScalarTypeDefinitionNode,
-  createUnionTypeDefinitionNode,
-  getTypeName
-} from './AST'
+import { createScalarTypeDefinitionNode } from './AST'
 import { GraphQlException } from './GraphQlException'
 import { GQLExtendObject, GQLInputObject, GQLInterface, GQLObject, GQLScalar, GQLSubscription, GQLUnion } from './Types'
 
@@ -47,39 +34,33 @@ export const BaseSubscription: BaseSubscription = new GQLObject('Subscription', 
 export interface ObjectTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS, Root, Ctx> {
   <Name extends string, Fields extends FieldRecord<Root, Ctx, Fields>, C extends ObjectTypeConfig>(
     name: Name,
-    fields: (F: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields,
+    fields: (t: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields,
     config?: C
   ): GQLObject<Name, Root, Ctx, __R<Fields>, __E<Fields>, Compute<Root & __A<Fields>, 'flat'>>
 }
 
 export function makeObjectTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI]
-) {
-  return <Root, Ctx>(): ObjectTypeBuilder<FieldURI, InputURI, Root, Ctx> => (name, fields, config) => {
-    const interpretedFields = fields(interpreters)
-    return new GQLObject(name, interpretedFields as any, config?.implements)
-  }
+): <Root, Ctx>() => ObjectTypeBuilder<FieldURI, InputURI, Root, Ctx> {
+  return () => (name, fields, config) => new GQLObject(name, fields(interpreters) as any, config?.implements)
 }
 
 export interface ExtendObjectTypeBuilder<FieldAURI extends FieldAURIS, InputAURI extends InputAURIS, T> {
   <Type extends GQLObject<any, any, T, any, any, any>, Fields extends FieldRecord<Type['_Root'], T, Fields>>(
     type: () => Type,
-    fields: (F: AURItoFieldAlgebra<Type['_Root'], T>[FieldAURI] & AURItoInputAlgebra[InputAURI]) => Fields
+    fields: (t: AURItoFieldAlgebra<Type['_Root'], T>[FieldAURI] & AURItoInputAlgebra[InputAURI]) => Fields
   ): GQLExtendObject<Type, _R<Type> & __R<Fields>, _E<Type> & __E<Fields>, _A<Type> & __A<Fields>>
 }
 
 export function makeExtendObjectTypeBuilder<FieldAURI extends FieldAURIS, InputAURI extends InputAURIS, T>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldAURI] & AURItoInputAlgebra[InputAURI]
 ): ExtendObjectTypeBuilder<FieldAURI, InputAURI, T> {
-  return (type, fields) => {
-    const interpretedFields = fields(interpreters)
-    return new GQLExtendObject(type(), interpretedFields)
-  }
+  return (type, fields) => new GQLExtendObject(type(), fields(interpreters))
 }
 
 export interface QueryTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS, Ctx> {
   <Fields extends FieldRecord<{}, Ctx, Fields>>(
-    fields: (F: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields
+    fields: (t: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields
   ): GQLExtendObject<BaseQuery, __R<Fields>, __E<Fields>, __A<Fields>>
 }
 
@@ -92,15 +73,14 @@ export function makeQueryTypeBuilder<FieldURI extends FieldAURIS, InputURI exten
 
 export interface MutationTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS, Ctx> {
   <Fields extends FieldRecord<{}, Ctx, Fields>>(
-    fields: (F: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields
+    fields: (t: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields
   ): GQLExtendObject<BaseMutation, __R<Fields>, __E<Fields>, __A<Fields>>
 }
 
 export function makeMutationTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI]
-) {
-  return <Ctx>(): MutationTypeBuilder<FieldURI, InputURI, Ctx> => (fields) =>
-    makeExtendObjectTypeBuilder(interpreters)(() => BaseMutation, fields as any)
+): <Ctx>() => MutationTypeBuilder<FieldURI, InputURI, Ctx> {
+  return () => (fields) => makeExtendObjectTypeBuilder(interpreters)(() => BaseMutation, fields as any)
 }
 
 export interface UnionTypeBuilder<Ctx> {
@@ -119,39 +99,33 @@ export function makeUnionTypeBuilder<Ctx>(): UnionTypeBuilder<Ctx> {
 export interface InterfaceTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS, Ctx> {
   <N extends string, Fields extends FieldRecord<{}, Ctx, Fields>>(
     name: N,
-    fields: (F: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields,
+    fields: (t: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI]) => Fields,
     resolveType: TypeResolver<Ctx, __A<Fields>>
   ): GQLInterface<N, Ctx, __R<Fields>, __E<Fields>, __A<Fields>>
 }
 
 export function makeInterfaceTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI]
-) {
-  return <Ctx>(): InterfaceTypeBuilder<FieldURI, InputURI, Ctx> => (name, fields, resolveType) => {
-    const interpretedFields = fields(interpreters)
-    return new GQLInterface(name, interpretedFields, resolveType)
-  }
+): <Ctx>() => InterfaceTypeBuilder<FieldURI, InputURI, Ctx> {
+  return () => (name, fields, resolveType) => new GQLInterface(name, fields(interpreters), resolveType)
 }
 
 export interface SubscriptionTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS, Ctx> {
   <Fields extends FieldRecord<{}, Ctx, Fields>>(
-    fields: (F: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI] & GqlSubscription<Ctx>) => Fields
+    fields: (t: AURItoFieldAlgebra<{}, Ctx>[FieldURI] & AURItoInputAlgebra[InputURI] & GqlSubscription<Ctx>) => Fields
   ): GQLSubscription<__R<Fields>, __A<Fields>>
 }
 
 export function makeSubscriptionTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI] & GqlSubscription<any>
-) {
-  return <Ctx>(): SubscriptionTypeBuilder<FieldURI, InputURI, Ctx> => (fields) => {
-    const interpretedFields = fields(interpreters)
-    return new GQLSubscription(interpretedFields)
-  }
+): <Ctx>() => SubscriptionTypeBuilder<FieldURI, InputURI, Ctx> {
+  return () => (fields) => new GQLSubscription(fields(interpreters))
 }
 
 export interface InputObjectTypeBuilder<InputAURI extends InputAURIS> {
   <Name extends string, Fields extends InputRecord>(
     name: Name,
-    fields: (F: AURItoInputAlgebra[InputAURI]) => Fields
+    fields: (t: AURItoInputAlgebra[InputAURI]) => Fields
   ): GQLInputObject<Name, { [K in keyof Fields]: _A<Fields[K]> }>
 }
 
@@ -186,7 +160,7 @@ export interface ScalarTypeBuilder {
 }
 
 export interface ScalarTypeFromModelBuilder {
-  <Name extends string, Config extends ScalarTypeFromCodecConfig<I, O>, I, O>(
+  <Name extends string, Config extends ScalarTypeFromModelConfig<I, O>, I, O>(
     name: Name,
     model: M.M<{}, I, O>,
     config?: Config
@@ -204,14 +178,14 @@ export const makeScalarTypeBuilder: ScalarTypeBuilder = (name, definition, confi
     definition
   )
 
-interface ScalarTypeFromCodecConfig<E, A> extends ScalarConfig {
+interface ScalarTypeFromModelConfig<E, A> extends ScalarConfig {
   message?: string
   parseLiteral?: ScalarParseLiteralF<unknown, E>
 }
 
 const SyM = DE.getDecodeErrorsValidation({ ...Sy.MonadExcept, ...Sy.Bifunctor })
 
-export const makeScalarTypeFromCodecBuilder: ScalarTypeFromModelBuilder = (name, model, config) => {
+export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name, model, config) => {
   const { decode }   = M.getDecoder(model)
   const { encode }   = M.getEncoder(model)
   const serialize    = (u: unknown) =>
@@ -219,7 +193,7 @@ export const makeScalarTypeFromCodecBuilder: ScalarTypeFromModelBuilder = (name,
       decode(SyM)(u),
       Sy.mapError(
         (errors) =>
-          new GraphQlException(config?.message ?? `Invalid value ${u} provided to Scalar ${name}`, 400, {
+          new GraphQlException(config?.message ?? `Invalid value ${u} provided to Scalar ${name}`, 'INVALID_INPUT', {
             errors: DE.prettyPrint(errors)
           })
       )
@@ -234,7 +208,7 @@ export const makeScalarTypeFromCodecBuilder: ScalarTypeFromModelBuilder = (name,
         (errors) =>
           new GraphQlException(
             config?.message ?? `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`,
-            400,
+            'INVALID_INPUT',
             { errors: DE.prettyPrint(errors) }
           ),
         encode

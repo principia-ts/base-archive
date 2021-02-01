@@ -17,8 +17,6 @@ import type {
 
 import * as A from '@principia/base/Array'
 import * as R from '@principia/base/Record'
-import { run } from '@principia/io/IO'
-import { isListType } from 'graphql'
 
 import {
   addNameToUnnamedFieldDefinitionNode,
@@ -29,6 +27,7 @@ import {
   createObjectTypeDefinitionNode,
   createStringValueNode,
   createUnionTypeDefinitionNode,
+  createUnnamedFieldDefinitionNode,
   createUnnamedInputValueDefinitionNode,
   getTypeName
 } from './AST'
@@ -40,30 +39,82 @@ export class GQLField<Root, Args, Ctx, R, E, A> {
   readonly _E!: () => E
   readonly _A!: () => A
 
-  constructor(readonly ast: UnnamedFieldDefinitionNode, readonly resolve: Resolver<Root, Args, Ctx, R, E, A>) {}
+  readonly ast: UnnamedFieldDefinitionNode
+
+  constructor(
+    readonly type: AnyField<Ctx>,
+    readonly args: InputRecord | undefined,
+    readonly resolve: Resolver<Root, Args, Ctx, R, E, A>
+  ) {
+    this.ast = createUnnamedFieldDefinitionNode({
+      arguments: args
+        ? R.ifoldl_(args, A.empty(), (b, k, a: GQLInputField<any>) => [
+            ...b,
+            createInputValueDefinitionNode({
+              defaultValue: a.config.defaultValue,
+              description: a.config.description,
+              list: a.config.list,
+              name: k,
+              nullable: a.config.nullable,
+              typeName: getTypeName(a.ast)
+            })
+          ])
+        : [],
+      description: type.config.description,
+      list: type.config.list,
+      nullable: type.config.nullable,
+      typeName: getTypeName(type.ast)
+    })
+  }
+
+  static fromAST<Root, Args, Ctx, R, E, A>(
+    ast: UnnamedFieldDefinitionNode,
+    resolve: Resolver<Root, Args, Ctx, R, E, A>
+  ): GQLField<Root, Args, Ctx, R, E, A> {
+    return Object.setPrototypeOf(
+      {
+        _tag: 'GQLField',
+        ast,
+        resolve
+      },
+      GQLField.prototype
+    )
+  }
 
   [':'](description: string): GQLField<Root, Args, Ctx, R, E, A> {
-    return new GQLField({ ...this.ast, description: createStringValueNode(description, false) }, this.resolve)
+    return GQLField.fromAST({ ...this.ast, description: createStringValueNode(description, false) }, this.resolve)
   }
 }
 
 export class GQLScalarField<A> {
   readonly _tag = 'GQLScalarField'
   readonly _A!: () => A
-  constructor(readonly ast: UnnamedFieldDefinitionNode, readonly config: OutputTypeConfig) {}
+  readonly ast: UnnamedFieldDefinitionNode
+
+  constructor(typeName: string, readonly config: OutputTypeConfig = {}) {
+    this.ast = createUnnamedFieldDefinitionNode({
+      ...config,
+      typeName
+    })
+  }
 }
 
 export class GQLObjectField<Root, Ctx, R, E, A> {
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
-
   readonly _Root!: Root
   readonly _Ctx!: Ctx
 
   readonly _tag = 'GQLObjectField'
+  readonly ast: UnnamedFieldDefinitionNode
 
-  constructor(readonly ast: UnnamedFieldDefinitionNode, readonly config: OutputTypeConfig) {}
+  constructor(typeName: string, readonly config: OutputTypeConfig = {}) {
+    this.ast = createUnnamedFieldDefinitionNode({
+      ...config,
+      typeName
+    })
+  }
 }
 
 export class GQLObject<N extends string, Root, Ctx, R, E, A> {
@@ -108,6 +159,9 @@ export class GQLObject<N extends string, Root, Ctx, R, E, A> {
 
 export class GQLUnion<N extends string, Types extends ReadonlyArray<AnyObjectType<Ctx>>, Ctx, A> {
   readonly _A!: () => A
+  readonly _E!: () => never
+  readonly _R!: (_: unknown) => void
+
   readonly _Ctx!: Ctx
   readonly _tag = 'GQLUnion'
 
@@ -122,9 +176,20 @@ export class GQLUnion<N extends string, Types extends ReadonlyArray<AnyObjectTyp
 
 export class GQLUnionField<Ctx, A> {
   readonly _A!: () => A
+  readonly _E!: () => never
+  readonly _R!: (_: unknown) => void
+
   readonly _Ctx!: Ctx
   readonly _tag = 'GQLUnionField'
-  constructor(readonly ast: UnnamedFieldDefinitionNode, readonly config: OutputTypeConfig) {}
+
+  readonly ast: UnnamedFieldDefinitionNode
+
+  constructor(typeName: string, readonly config: OutputTypeConfig = {}) {
+    this.ast = createUnnamedFieldDefinitionNode({
+      ...config,
+      typeName
+    })
+  }
 }
 
 export class GQLInterface<N extends string, Ctx, R, E, A> {
@@ -179,10 +244,32 @@ export class GQLSubscriptionField<R, A> {
 
   readonly _tag = 'GQLSubscriptionField'
 
+  readonly ast: UnnamedFieldDefinitionNode
   constructor(
-    readonly ast: UnnamedFieldDefinitionNode,
+    type: AnyField<any>,
+    args: InputRecord | undefined,
     readonly resolve: Subscription<{}, any, any, any, any, any, any, any>
-  ) {}
+  ) {
+    this.ast = createUnnamedFieldDefinitionNode({
+      description: type.config.description,
+      list: type.config.list,
+      nullable: type.config.nullable,
+      typeName: getTypeName(type.ast),
+      arguments: args
+        ? R.ifoldl_(args, A.empty(), (b, k, a) => [
+            ...b,
+            createInputValueDefinitionNode({
+              defaultValue: a.config.defaultValue,
+              description: a.config.description,
+              list: a.config.list,
+              name: k,
+              nullable: a.config.nullable,
+              typeName: getTypeName(a.ast)
+            })
+          ])
+        : []
+    })
+  }
 }
 
 export class GQLExtendObject<O extends GQLObject<any, any, any, any, any, any>, R, E, A> {
@@ -236,12 +323,14 @@ export class GQLExtendObject<O extends GQLObject<any, any, any, any, any, any>, 
 
 export class GQLInputObject<N extends string, A> {
   readonly _A!: () => A
+  readonly _E!: () => never
+  readonly _R!: (_: unknown) => void
 
   readonly _tag = 'GQLInputObject'
 
   readonly ast: InputObjectTypeDefinitionNode
 
-  constructor(readonly name: N, readonly fields: { [K in keyof A]: GQLInputValue<A[K]> }) {
+  constructor(readonly name: N, readonly fields: { [K in keyof A]: GQLInputField<A[K]> }) {
     this.ast = createInputObjectTypeDefinitionNode({
       fields: R.ifoldl_(fields, [] as InputValueDefinitionNode[], (acc, k, v) => {
         return [
@@ -260,15 +349,23 @@ export class GQLInputObject<N extends string, A> {
   }
 }
 
-export class GQLInputValue<A> {
+export class GQLInputField<A> {
   readonly _A!: () => A
 
-  readonly _tag = 'GQLInputValue'
+  readonly _tag = 'GQLInputField'
 
-  constructor(readonly ast: UnnamedInputValueDefinitionNode, readonly config: InputTypeConfig<A>) {}
+  readonly ast: UnnamedInputValueDefinitionNode
+
+  constructor(typeName: string, readonly config: InputTypeConfig<A> = {}) {
+    this.ast = createUnnamedInputValueDefinitionNode({
+      ...config,
+      typeName
+    })
+  }
 }
 
 export class GQLScalar<N extends string, R, I, O> {
+  readonly _A!: () => O
   readonly _R!: (_: R) => void
 
   readonly _tag = 'GQLScalar'
@@ -280,7 +377,7 @@ export type AnyField<Ctx> = GQLScalarField<any> | GQLObjectField<any, Ctx, any, 
 
 export type AnyOutput<Ctx> = AnyField<Ctx> | GQLField<any, any, Ctx, any, any, any>
 
-export type InputRecord = Record<string, GQLInputValue<any>>
+export type InputRecord = Record<string, GQLInputField<any>>
 
 type Widen<T> = T extends string ? string : T extends number ? number : T extends boolean ? boolean : T
 
@@ -316,7 +413,8 @@ export type FieldResolverRecord<Fs extends FieldRecord<any, any, Fs>> = Compute<
         : never
     },
     never
-  >
+  >,
+  'flat'
 >
 
 export type AnyRootType<T> =

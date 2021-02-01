@@ -31,7 +31,6 @@ import * as Koa from '@principia/koa'
 import { ApolloServer } from 'apollo-server-koa'
 import { formatError, GraphQLSchema, parse, subscribe } from 'graphql'
 import { makeExecutableSchema } from 'graphql-tools'
-import { inspect } from 'util'
 
 import {
   Context,
@@ -42,7 +41,7 @@ import {
   makeObjectTypeBuilder,
   makeQueryTypeBuilder,
   makeScalarTypeBuilder,
-  makeScalarTypeFromCodecBuilder,
+  makeScalarTypeFromModelBuilder,
   makeSchemaGenerator,
   makeSubscriptionTypeBuilder,
   makeUnionTypeBuilder
@@ -88,18 +87,18 @@ export interface GraphQlDriver<
   RE
 > {
   readonly askContext: I.URIO<Has<Koa.Context<Ctx>>, Koa.Context<Ctx>>
-  readonly makeExtendObject: ExtendObjectTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly makeSchema: SchemaGenerator<Koa.Context<Ctx>>
-  readonly makeInputObject: InputObjectTypeBuilder<InputAURI>
-  readonly makeObject: <ROOT>() => ObjectTypeBuilder<FieldAURI, InputAURI, ROOT, Koa.Context<Ctx>>
-  readonly makeScalar: ScalarTypeBuilder
-  readonly makeScalarFromModel: ScalarTypeFromModelBuilder
-  readonly makeSubscription: SubscriptionTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly makeQuery: QueryTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly makeMutation: MutationTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly makeUnion: UnionTypeBuilder<Koa.Context<Ctx>>
-  readonly makeInterface: InterfaceTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly getInstance: <R>(
+  readonly extend: ExtendObjectTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
+  readonly generateSchema: SchemaGenerator<Koa.Context<Ctx>>
+  readonly input: InputObjectTypeBuilder<InputAURI>
+  readonly object: <Root>() => ObjectTypeBuilder<FieldAURI, InputAURI, Root, Koa.Context<Ctx>>
+  readonly scalar: ScalarTypeBuilder
+  readonly scalarFromModel: ScalarTypeFromModelBuilder
+  readonly subscription: SubscriptionTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
+  readonly query: QueryTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
+  readonly mutation: MutationTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
+  readonly union: UnionTypeBuilder<Koa.Context<Ctx>>
+  readonly interface: InterfaceTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
+  readonly live: <R>(
     config: GraphQlInstanceConfig<Koa.Context<Ctx>, R>
   ) => L.Layer<R & SubscriptionsEnv<C> & RE & Has<Koa.Koa>, never, Has<GraphQlInstance>>
 }
@@ -179,7 +178,6 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
                 schema,
                 ...apolloConfig,
                 formatError: (error) => {
-                  console.log(error)
                   if (apolloConfig.formatError) {
                     return apolloConfig.formatError(error)
                   }
@@ -205,19 +203,19 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
     }
 
     return {
+      generateSchema: makeSchemaGenerator<Koa.Context<Ctx>>(),
       askContext: askContext,
-      makeExtendObject: makeExtendObjectTypeBuilder<FieldPURI, InputPURI, Koa.Context<Ctx>>(interpreters),
-      makeSchema: makeSchemaGenerator<Koa.Context<Ctx>>(),
-      makeInputObject: makeInputObjectTypeBuilder(interpreters),
-      getInstance: gqlKoaInstance,
-      makeObject: <Root>() => makeObjectTypeBuilder(interpreters)<Root, Koa.Context<Ctx>>(),
-      makeSubscription: makeSubscriptionTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
-      makeScalar: makeScalarTypeBuilder,
-      makeMutation: makeMutationTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
-      makeScalarFromModel: makeScalarTypeFromCodecBuilder,
-      makeQuery: makeQueryTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
-      makeUnion: makeUnionTypeBuilder<Koa.Context<Ctx>>(),
-      makeInterface: makeInterfaceTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>()
+      extend: makeExtendObjectTypeBuilder<FieldPURI, InputPURI, Koa.Context<Ctx>>(interpreters),
+      input: makeInputObjectTypeBuilder(interpreters),
+      live: gqlKoaInstance,
+      object: <Root>() => makeObjectTypeBuilder(interpreters)<Root, Koa.Context<Ctx>>(),
+      subscription: makeSubscriptionTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
+      scalar: makeScalarTypeBuilder,
+      mutation: makeMutationTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
+      scalarFromModel: makeScalarTypeFromModelBuilder,
+      query: makeQueryTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
+      union: makeUnionTypeBuilder<Koa.Context<Ctx>>(),
+      interface: makeInterfaceTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>()
     }
   }
 }
