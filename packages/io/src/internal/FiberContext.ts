@@ -314,47 +314,55 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private kill(fiberId: FiberId): I.UIO<Exit<E, A>> {
+  interruptAs(fiberId: FiberId): I.UIO<Exit<E, A>> {
     const interruptedCause = C.interrupt(fiberId)
 
-    const setInterruptedLoop = (): C.Cause<never> => {
-      const oldState = this.state.get
-
-      switch (oldState._tag) {
-        case 'Executing': {
-          if (oldState.status._tag === 'Suspended' && oldState.status.interruptible && !interrupting(oldState)) {
-            const newCause = C.then(oldState.interrupted, interruptedCause)
-
-            this.state.set(
-              new FiberStateExecuting(Status.withInterrupting(true)(oldState.status), oldState.observers, newCause)
-            )
-
-            this.evaluateLater(I.interruptAs(this.fiberId)[I._I])
-
-            return newCause
-          } else {
-            const newCause = C.then(oldState.interrupted, interruptedCause)
-
-            this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, newCause))
-
-            return newCause
-          }
-        }
-        case 'Done': {
-          return interruptedCause
-        }
-      }
-    }
-
     return I.deferTotal(() => {
-      setInterruptedLoop()
-
+      const oldState = this.state.get
+      if (
+        oldState._tag === 'Executing' &&
+        oldState.status._tag === 'Suspended' &&
+        oldState.status.interruptible &&
+        !interrupting(oldState)
+      ) {
+        const newCause = C.then(oldState.interrupted, interruptedCause)
+        this.state.set(
+          new FiberStateExecuting(Status.withInterrupting(true)(oldState.status), oldState.observers, newCause)
+        )
+        this.evaluateLater(I.interruptAs(fiberId)[I._I])
+      } else if (oldState._tag === 'Executing') {
+        const newCause = C.then(oldState.interrupted, interruptedCause)
+        this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, newCause))
+      }
       return this.await
     })
-  }
 
-  interruptAs(fiberId: FiberId): I.UIO<Exit<E, A>> {
-    return this.kill(fiberId)
+    /*
+     *       switch (oldState._tag) {
+     *         case 'Executing': {
+     *           if (oldState.status._tag === 'Suspended' && oldState.status.interruptible && !interrupting(oldState)) {
+     *             const newCause = C.then(oldState.interrupted, interruptedCause)
+     *
+     *             this.state.set(
+     *               new FiberStateExecuting(Status.withInterrupting(true)(oldState.status), oldState.observers, newCause)
+     *             )
+     *
+     *             this.evaluateLater(I.interruptAs(this.fiberId)[I._I])
+     *
+     *             return newCause
+     *           } else {
+     *             const newCause = C.then(oldState.interrupted, interruptedCause)
+     *
+     *             this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, newCause))
+     *
+     *             return newCause
+     *           }
+     *         }
+     *         case 'Done': {
+     *           return interruptedCause
+     *         }
+     *       }
+     */
   }
 
   private done(v: Exit<E, A>): I.Instruction | undefined {

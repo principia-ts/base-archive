@@ -12,6 +12,7 @@
     "esModuleInterop": true,
     "preserveSymlinks": true,
     "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
       "@principia/base/*": ["packages/base/dist/*"],

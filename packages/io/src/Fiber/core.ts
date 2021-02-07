@@ -246,25 +246,25 @@ export function initial<E, A>(): FiberState<E, A> {
 }
 
 export function interrupting<E, A>(state: FiberState<E, A>): boolean {
-  const loop = (status: FiberStatus): Ev.Eval<boolean> =>
-    Ev.gen(function* (_) {
-      switch (status._tag) {
-        case 'Running': {
-          return status.interrupting
-        }
-        case 'Finishing': {
-          return status.interrupting
-        }
-        case 'Suspended': {
-          return yield* _(loop(status.previous))
-        }
-        case 'Done': {
-          return false
-        }
+  let current: FiberStatus | undefined = state.status
+  while (current) {
+    switch (current._tag) {
+      case 'Running': {
+        return current.interrupting
       }
-    })
-
-  return loop(state.status).value
+      case 'Finishing': {
+        return current.interrupting
+      }
+      case 'Done': {
+        return false
+      }
+      case 'Suspended': {
+        current = current.previous
+        break
+      }
+    }
+  }
+  throw new Error('BUG: Fake throw to make Typescript happy. If execution ended up here, something is wrong')
 }
 
 /*

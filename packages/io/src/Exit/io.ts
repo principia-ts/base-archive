@@ -14,7 +14,7 @@ export function foreachEffect_<E2, A2, R, E, A>(
 ): IO<R, never, Exit<E | E2, A>> {
   switch (exit._tag) {
     case 'Failure': {
-      return I.pure(halt(exit.cause))
+      return I.succeed(halt(exit.cause))
     }
     case 'Success': {
       return I.result(f(exit.value))
@@ -38,7 +38,7 @@ export const mapEffect_ = <R, E, E1, A, A1>(
 ): IO<R, never, Exit<E | E1, A1>> => {
   switch (exit._tag) {
     case 'Failure':
-      return I.pure(halt(exit.cause))
+      return I.succeed(halt(exit.cause))
     case 'Success':
       return I.result(f(exit.value))
   }
