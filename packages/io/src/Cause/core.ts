@@ -13,7 +13,6 @@ import { flow, identity, pipe } from '@principia/base/Function'
 import * as F from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
-import { SSL_OP_TLS_BLOCK_PADDING_BUG } from 'constants'
 
 import { eqFiberId } from '../Fiber/FiberId'
 

@@ -10,15 +10,14 @@ import * as Eq from '@principia/base/Eq'
 import { makeEq } from '@principia/base/Eq'
 import { absurd } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
-import { hashString } from '@principia/base/Hash'
+import { hash,hashString  } from '@principia/base/Hash'
 import * as Map from '@principia/base/HashMap'
 import * as Set from '@principia/base/HashSet'
-import { randomHash } from '@principia/base/internal/hamt'
 import * as C from '@principia/io/Chunk'
 
 export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
   ...makeEq(equalsTestAnnotation),
-  ...randomHash
+  hash
 }
 
 export class TestAnnotation<V> {

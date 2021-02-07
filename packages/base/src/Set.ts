@@ -5,12 +5,10 @@ import type * as HKT from './HKT'
 import type * as O from './Option'
 import type { Show } from './Show'
 import type * as P from './typeclass'
-import type { Separated } from './util/types'
 
 import * as A from './Array'
 import { makeEq } from './Eq'
 import { identity, not, tuple } from './Function'
-import { toNumber } from './Ordering'
 import { makeMonoid, makeSemigroup } from './typeclass'
 
 /*
@@ -76,7 +74,7 @@ export function toArray<A>(O: P.Ord<A>): (set: ReadonlySet<A>) => ReadonlyArray<
   return (set) => {
     const r: Array<A> = []
     set.forEach((e) => r.push(e))
-    return r.sort((a, b) => toNumber(O.compare(a)(b)))
+    return r.sort((a, b) => O.compare(a)(b))
   }
 }
 
@@ -173,7 +171,7 @@ export function compact<A>(E: Eq<A>): (fa: ReadonlySet<O.Option<A>>) => Readonly
 export function separate<E, A>(
   EE: Eq<E>,
   EA: Eq<A>
-): (fa: ReadonlySet<E.Either<E, A>>) => Separated<ReadonlySet<E>, ReadonlySet<A>> {
+): (fa: ReadonlySet<E.Either<E, A>>) => readonly [ReadonlySet<E>, ReadonlySet<A>] {
   return (fa) => {
     const elemEE        = elem(EE)
     const elemEA        = elem(EA)
@@ -193,7 +191,7 @@ export function separate<E, A>(
           break
       }
     })
-    return { left, right }
+    return [left, right]
   }
 }
 

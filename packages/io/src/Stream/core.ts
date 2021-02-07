@@ -234,14 +234,14 @@ export function fromChunk<A>(c: Chunk<A>): UStream<A> {
     I.toManaged_(
       I.gen(function* (_) {
         const doneRef = yield* _(Ref.make(false))
-        const pull    = yield* _(
-          pipe(
-            doneRef,
-            Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
-              done || c.length === 0 ? tuple(Pull.end, true) : tuple(I.succeed(c), true)
-            )
-          )
+        const pull    = pipe(
+          doneRef,
+          Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
+            done || c.length === 0 ? tuple(Pull.end, true) : tuple(I.succeed(c), true)
+          ),
+          I.flatten
         )
+
         return pull
       })
     )

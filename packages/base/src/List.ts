@@ -16,7 +16,6 @@ import type { Ordering } from './Ordering'
 
 import { identity } from './Function'
 import * as O from './Option'
-import { toNumber } from './Ordering'
 import * as P from './typeclass'
 
 /**
@@ -1763,7 +1762,7 @@ export function sortWith_<A>(l: List<A>, comparator: (a: A, b: A) => Ordering): 
   let i                                = 0
   forEach_(l, (elm) => arr.push({ idx: i++, elm }))
   arr.sort(({ elm: a, idx: i }, { elm: b, idx: j }) => {
-    const c = toNumber(comparator(a, b))
+    const c = comparator(a, b)
     return c !== 0 ? c : i < j ? -1 : 1
   })
   const newL = emptyPushable<A>()

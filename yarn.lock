@@ -6360,6 +6360,16 @@ growly@^1.3.0:
   resolved "https://registry.yarnpkg.com/growly/-/growly-1.3.0.tgz#f10748cbe76af964b7c96c93c6bcc28af120c081"
   integrity sha1-8QdIy+dq+WS3yWyTxrzCivEgwIE=
 
+hamt@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/hamt/-/hamt-2.2.2.tgz#ef0e9f0526bbaadcb13d264a7684bead1cc5d578"
+  integrity sha512-4V67NW9SuDo5xqyLiSEIxITsEjOMHZB3JqS/I2ZhzWdjDx8NRJtf6lGqt8RP+nCFZDf8t+XNa5l29z4p2hUFcQ==
+
+hamt_plus@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/hamt_plus/-/hamt_plus-1.0.2.tgz#e21c252968c7e33b20f6a1b094cd85787a265601"
+  integrity sha1-4hwlKWjH4zsg9qGwlM2FeHomVgE=
+
 handlebars@^4.7.6:
   version "4.7.6"
   resolved "https://registry.yarnpkg.com/handlebars/-/handlebars-4.7.6.tgz#d4c05c1baf90e9945f77aa68a7a219aa4a7df74e"

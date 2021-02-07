@@ -51,7 +51,7 @@ export function has_<V>(set: HashSet<V>, v: V) {
  */
 export function forEach_<V>(map: HashSet<V>, f: (v: V, m: HashSet<V>) => void) {
   return new HashSet(
-    HM.forEachWithIndex_(map.keyMap, (k, _, m) => {
+    HM.iforEach_(map.keyMap, (k, _, m) => {
       f(k, new HashSet(m))
     })
   )
@@ -316,6 +316,7 @@ export function beginMutation<K>(set: HashSet<K>) {
  * Mark `set` as immutable.
  */
 export function endMutation<K>(set: HashSet<K>) {
+  // eslint-disable-next-line functional/immutable-data
   set.keyMap.editable = false
   return set
 }

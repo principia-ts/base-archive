@@ -248,10 +248,17 @@ export function shrinkNumber(smallest: number, a: number): Sample<unknown, numbe
     tuple(
       max,
       S.unfold(smallest, (min) => {
+        console.log(`Min: ${min}`)
         const mid = min + (max - min) / 2
-        if (mid === max) return O.none()
-        else if (Math.abs(max - min) < 0.001) return O.some([min, max])
-        else return O.some([mid, mid])
+        console.log(mid)
+        if (mid === max) {
+          return O.none()
+        } else if (Math.abs(max - mid) < 0.001) {
+          console.log(Math.abs(max - mid))
+          return O.some([min, max])
+        } else {
+          return O.some([mid, mid])
+        }
       })
     )
   )
@@ -261,6 +268,9 @@ export function unfold<R, A, S>(s: S, f: (s: S) => readonly [A, Stream<R, never,
   const [value, shrink] = f(s)
   return new Sample(
     value,
-    S.map_(shrink, (s) => unfold(s, f))
+    pipe(
+      shrink,
+      S.map((s) => unfold(s, f))
+    )
   )
 }

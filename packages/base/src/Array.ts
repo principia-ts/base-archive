@@ -10,7 +10,7 @@ import { _bind, _bindTo, flow, identity, pipe } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
 import * as Ord from './Ord'
-import { EQ, toNumber } from './Ordering'
+import { EQ } from './Ordering'
 import * as P from './typeclass'
 import { fromCompare, makeMonoid, ordNumber } from './typeclass'
 
@@ -1831,7 +1831,7 @@ export function lefts<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> {
  * @since 1.0.0
  */
 export function sort<B>(O: Ord.Ord<B>): <A extends B>(as: readonly A[]) => readonly A[] {
-  return (as) => (isEmpty(as) ? empty() : as.slice().sort((a, b) => toNumber(O.compare(a)(b))))
+  return (as) => (isEmpty(as) ? empty() : as.slice().sort((a, b) => O.compare(a)(b)))
 }
 
 /**

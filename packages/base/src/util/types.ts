@@ -1,4 +1,6 @@
-export type Literal = string | number | boolean | null
+export type Primitive = string | number | boolean | null
+
+export type Constructor<A> = { new (...args: any[]): A }
 
 export type _A<T> = [T] extends [{ ['_A']: () => infer A }] ? A : never
 
@@ -9,11 +11,6 @@ export type _E<T> = [T] extends [{ ['_E']: () => infer E }] ? E : never
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R
-
-export interface Separated<A, B> {
-  readonly left: A
-  readonly right: B
-}
 
 export declare type Erase<R, K> = R & K extends K & infer R1 ? R1 : R
 

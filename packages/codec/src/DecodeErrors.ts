@@ -1,6 +1,6 @@
 import type { DecodeError } from './DecodeError'
 import type { MonadDecoder } from './DecoderK'
-import type { Tree } from '@principia/base/Tree'
+import type { RoseTree } from '@principia/base/RoseTree'
 import type * as P from '@principia/base/typeclass'
 
 import * as A from '@principia/base/Array'
@@ -8,7 +8,7 @@ import * as E from '@principia/base/Either'
 import * as Eval from '@principia/base/Eval'
 import { identity, pipe, tuple } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
-import * as T from '@principia/base/Tree'
+import * as T from '@principia/base/RoseTree'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import { fold, info, leaf } from './DecodeError'
@@ -32,7 +32,7 @@ export function error(actual: unknown, expected: string, errorInfo?: ErrorInfo):
     : FS.element(leaf(actual, expected))
 }
 
-const toTree: (e: DecodeError<ErrorInfo>) => Tree<string> = fold({
+const toTree: (e: DecodeError<ErrorInfo>) => RoseTree<string> = fold({
   Leaf: (input, expected) => T.make(`cannot decode ${JSON.stringify(input)}, should be ${expected}`, A.empty()),
   Key: (key, kind, errors) => T.make(`${kind} property ${JSON.stringify(key)}`, toForest(errors)),
   Index: (index, kind, errors) => T.make(`${kind} index ${index}`, toForest(errors)),
@@ -42,7 +42,7 @@ const toTree: (e: DecodeError<ErrorInfo>) => Tree<string> = fold({
   Info: (error) => T.make(showErrorInfo(error), A.empty())
 })
 
-export function toForest(e: DecodeErrors): ReadonlyArray<Tree<string>> {
+export function toForest(e: DecodeErrors): ReadonlyArray<RoseTree<string>> {
   const stack = []
   let focus   = e
   const res   = []

@@ -14,6 +14,7 @@ import type { Option } from '@principia/base/Option'
 import type { _E as InferE, _R as InferR, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
+import { bindF } from '@principia/base/Bind'
 import * as E from '@principia/base/Either'
 import { _bind, _bindTo, constant, flow, identity, pipe, tuple } from '@principia/base/Function'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
@@ -458,7 +459,7 @@ export function ap<R, E, A>(fa: IO<R, E, A>): <Q, D, B>(fab: IO<Q, D, (a: A) => 
 }
 
 export function apl_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, A> {
-  return map2_(fa, fb, (a, _) => a)
+  return bind_(fa, (a) => map_(fb, () => a))
 }
 
 /**
@@ -479,7 +480,7 @@ export function apl<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<
  * @since 1.0.0
  */
 export function apr_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, B> {
-  return map2_(fa, fb, (_, b) => b)
+  return bind_(fa, () => fb)
 }
 
 /**

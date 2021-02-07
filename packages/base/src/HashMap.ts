@@ -1,3 +1,4 @@
+/* eslint-disable functional/immutable-data */
 import type { Eq } from './Eq'
 import type { Refinement } from './Function'
 import type { Hash } from './Hash'
@@ -5,8 +6,9 @@ import type { Node, UpdateFn } from './internal/hamt'
 
 import { eqStrict } from './Eq'
 import { constant, identity, tuple } from './Function'
+import { hash } from './Hash'
 import { HashSet } from './HashSet'
-import { Empty, fromBitmap, hashFragment, isEmptyNode, randomHash, SIZE, toBitmap } from './internal/hamt'
+import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as O from './Option'
 
 export type Config<K> = Eq<K> & Hash<K>
@@ -51,7 +53,7 @@ export class HashMapIterator<K, V, T> implements IterableIterator<T> {
  * Creates a new map
  */
 export function make<K, V>(K: Hash<K> & Eq<K>) {
-  return new HashMap<K, V>(false, 0, K, new Empty(), 0)
+  return new HashMap<K, V>(false, 0, K, Empty, 0)
 }
 
 /**
@@ -72,20 +74,20 @@ export function setTree_<K, V>(map: HashMap<K, V>, newRoot: Node<K, V>, newSize:
 export function tryGetHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Option<V> {
   let node    = map.root
   let shift   = 0
-  const keyEq = map.config.equals
+  const keyEq = map.config.equals_
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
     switch (node._tag) {
       case 'LeafNode': {
-        return keyEq(node.key)(key) ? node.value : O.none()
+        return keyEq(node.key, key) ? node.value : O.none()
       }
       case 'CollisionNode': {
         if (hash === node.hash) {
           const children = node.children
           for (let i = 0, len = children.length; i < len; ++i) {
             const child = children[i]
-            if ('key' in child && keyEq(child.key)(key)) return child.value
+            if ('key' in child && keyEq(child.key, key)) return child.value
           }
         }
         return O.none()
@@ -178,7 +180,7 @@ export function isEmpty<K, V>(map: HashMap<K, V>): boolean {
  */
 export function modifyHash_<K, V>(map: HashMap<K, V>, key: K, hash: number, f: UpdateFn<V>): HashMap<K, V> {
   const size    = { value: map.size }
-  const newRoot = map.root.modify(map.editable ? map.edit : NaN, map.config.equals, 0, f, hash, key, size)
+  const newRoot = map.root.modify(map.editable ? map.edit : NaN, map.config.equals_, 0, f, hash, key, size)
   return setTree_(map, newRoot, size.value)
 }
 
@@ -291,6 +293,7 @@ export function visitLazyChildren<K, V, A>(
   cont: Cont<K, V, A>
 ): O.Option<VisitResult<K, V, A>> {
   while (i < len) {
+    // eslint-disable-next-line no-param-reassign
     const child = children[i++]
     if (child && !isEmptyNode(child)) {
       return visitLazy(child, f, [len, children, i, f, cont])
@@ -382,6 +385,7 @@ export function ifoldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, k: K, v: V)
       if (child && !isEmptyNode(child)) {
         if (child._tag === 'LeafNode') {
           if (O.isSome(child.value)) {
+            // eslint-disable-next-line no-param-reassign
             z = f(z, child.key, child.value.value)
           }
         } else {
@@ -424,14 +428,14 @@ export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
 export function makeDefault<K, V>() {
   return make<K, V>({
     ...eqStrict,
-    ...randomHash
+    hash
   })
 }
 
 /**
  * Apply f to each element
  */
-export function forEachWithIndex_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: HashMap<K, V>) => void) {
+export function iforEach_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: HashMap<K, V>) => void) {
   ifoldl_(map, undefined as void, (_, key, value) => f(key, value, map))
   return map
 }
@@ -441,15 +445,15 @@ export function forEachWithIndex_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: H
  *
  * @dataFirst forEachWithIndex_
  */
-export function forEachWithIndex<K, V>(f: (k: K, v: V, m: HashMap<K, V>) => void) {
-  return (map: HashMap<K, V>) => forEachWithIndex_(map, f)
+export function iforEach<K, V>(f: (k: K, v: V, m: HashMap<K, V>) => void) {
+  return (map: HashMap<K, V>) => iforEach_(map, f)
 }
 
 /**
  * Apply f to each element
  */
 export function forEach_<K, V>(map: HashMap<K, V>, f: (v: V, m: HashMap<K, V>) => void) {
-  forEachWithIndex_(map, (_, value, map) => f(value, map))
+  iforEach_(map, (_, value, map) => f(value, map))
   return map
 }
 
@@ -500,7 +504,7 @@ export function map<V, A>(f: (v: V) => A) {
 export function bind_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) {
   return ifoldl_(map, make<K, A>(map.config), (z, _, v) =>
     mutate_(z, (m) => {
-      forEachWithIndex_(f(v), (_k, _a) => {
+      iforEach_(f(v), (_k, _a) => {
         set_(m, _k, _a)
       })
     })
@@ -522,7 +526,7 @@ export function bind<K, V, A>(f: (v: V) => HashMap<K, A>) {
 export function ibind_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>) {
   return ifoldl_(map, make<K, A>(map.config), (z, k, v) =>
     mutate_(z, (m) => {
-      forEachWithIndex_(f(k, v), (_k, _a) => {
+      iforEach_(f(k, v), (_k, _a) => {
         set_(m, _k, _a)
       })
     })

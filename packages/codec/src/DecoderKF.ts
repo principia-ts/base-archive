@@ -5,7 +5,7 @@ import type { Integer } from '@principia/base/Integer'
 import type * as O from '@principia/base/Option'
 import type { ReadonlyRecord } from '@principia/base/Record'
 import type * as P from '@principia/base/typeclass'
-import type { Literal, UnionToIntersection } from '@principia/base/util/types'
+import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
@@ -108,7 +108,7 @@ export function fromGuard<I, A extends I>(guard: G.Guard<I, A>, expected: string
   return fromRefinement(guard.is, expected, info)
 }
 
-export function literal<A extends readonly [Literal, ...Literal[]]>(
+export function literal<A extends readonly [Primitive, ...Primitive[]]>(
   ...values: A
 ): (info?: ErrorInfo) => DecoderKF<unknown, A[number]> {
   const name = A.map_(values, (value) => JSON.stringify(value)).join(' | ')

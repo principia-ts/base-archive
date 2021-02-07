@@ -40,8 +40,8 @@ export const fromCompare = <A>(cmp: (x: A, y: A) => Ordering): Ord<A> => {
   return {
     compare_: cmp,
     compare: (y) => (x) => cmp(x, y),
-    equals_: (x, y) => Ordering.unwrap(cmp(x, y)) === 'EQ',
-    equals: (y) => (x) => Ordering.unwrap(cmp(x, y)) === 'EQ'
+    equals_: (x, y) => cmp(x, y) === 0,
+    equals: (y) => (x) => cmp(x, y) === 0
   }
 }
 

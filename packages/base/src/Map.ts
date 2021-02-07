@@ -7,7 +7,6 @@ import { makeEq } from './Eq'
 import { pipe } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
-import { toNumber } from './Ordering'
 import * as P from './typeclass'
 import { makeMonoid } from './typeclass'
 
@@ -621,7 +620,7 @@ export function getWitherable<K>(O: P.Ord<K>): P.WitherableWithIndex<[URI], V & 
  * @since 2.5.0
  */
 export function keys<K>(O: P.Ord<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyArray<K> {
-  return (m) => Array.from(m.keys()).sort((a, b) => toNumber(O.compare_(a, b)))
+  return (m) => Array.from(m.keys()).sort((a, b) => O.compare_(a, b))
 }
 
 export function lookupWithKey_<K>(E: Eq<K>) {

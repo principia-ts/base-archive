@@ -2,7 +2,7 @@ import type { Refinement } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type * as P from '@principia/base/typeclass'
-import type { Literal } from '@principia/base/util/types'
+import type { Primitive } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -97,8 +97,8 @@ export function fromRefinement<I, A extends I, E>(
   }
 }
 
-export function literal<I, E>(onError: (i: I, values: NonEmptyArray<Literal>) => E) {
-  return <A extends readonly [Literal, ...Literal[]]>(...values: A): DecoderK<I, E, A[number]> => ({
+export function literal<I, E>(onError: (i: I, values: NonEmptyArray<Primitive>) => E) {
+  return <A extends readonly [Primitive, ...Primitive[]]>(...values: A): DecoderK<I, E, A[number]> => ({
     decode: (M) => (i) => (G.literal(...values).is(i) ? M.pure(i as A[number]) : M.fail(onError(i, values) as any))
   })
 }

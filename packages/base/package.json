@@ -58,7 +58,9 @@
   },
   "dependencies": {
     "@principia/compile": "^0.2.4",
-    "core-js": "3"
+    "core-js": "3",
+    "hamt": "^2.2.2",
+    "hamt_plus": "^1.0.2"
   },
   "devDependencies": {
     "@types/benchmark": "^2.1.0",

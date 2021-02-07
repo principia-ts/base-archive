@@ -6,7 +6,7 @@
 
 import type { Integer } from './Integer'
 import type { ReadonlyRecord } from './Record'
-import type { Literal } from './util/types'
+import type { Primitive } from './util/types'
 
 import { memoize, pipe } from './Function'
 
@@ -38,7 +38,7 @@ declare module './HKT' {
  * @category Constructors
  * @since 1.0.0
  */
-export function literal<A extends readonly [Literal, ...Array<Literal>]>(...values: A): Guard<unknown, A[number]> {
+export function literal<A extends readonly [Primitive, ...Array<Primitive>]>(...values: A): Guard<unknown, A[number]> {
   return {
     is: (u): u is A[number] => values.findIndex((a) => a === u) !== -1
   }
