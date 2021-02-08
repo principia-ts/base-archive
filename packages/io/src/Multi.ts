@@ -39,6 +39,39 @@ export type _MI = typeof _MI
 
 export type Cause<E> = FreeSemiring<never, E>
 
+abstract class MultiSyntax<W, S1, S2, R, E, A> {
+  ['>>=']<W1, S3, Q, D, B>(
+    this: Multi<W, S1, S2, R, E, A>,
+    f: (a: A) => Multi<W1, S2, S3, Q, D, B>
+  ): Multi<W | W1, S1, S3, Q & R, D | E, B> {
+    return new Bind(this, f)
+  }
+  ['<$>']<B>(this: Multi<W, S1, S2, R, E, A>, f: (a: A) => B): Multi<W, S1, S2, R, E, B> {
+    return this['>>=']((a) => new Succeed(f(a)))
+  }
+  ['$>']<B>(this: Multi<W, S1, S2, R, E, A>, b: () => B): Multi<W, S1, S2, R, E, B> {
+    return this['<$>'](b)
+  }
+  ['*>']<W1, S3, Q, D, B>(
+    this: Multi<W, S1, S2, R, E, A>,
+    mb: Multi<W1, S2, S3, Q, D, B>
+  ): Multi<W | W1, S1, S3, Q & R, D | E, B> {
+    return apr_(this, mb)
+  }
+  ['<*']<W1, S3, Q, D, B>(
+    this: Multi<W, S1, S2, R, E, A>,
+    mb: Multi<W1, S2, S3, Q, D, B>
+  ): Multi<W | W1, S1, S3, Q & R, D | E, A> {
+    return apl_(this, mb)
+  }
+  ['<*>']<W1, S3, Q, D, B>(
+    this: Multi<W, S1, S2, R, E, A>,
+    mb: Multi<W1, S2, S3, Q, D, B>
+  ): Multi<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
+    return product_(this, mb)
+  }
+}
+
 /**
  * `Multi<S1, S2, R, E, A>` is a purely functional description of a synchronous computation
  * that requires an environment `R` and an initial state `S1` and may either
@@ -51,33 +84,22 @@ export type Cause<E> = FreeSemiring<never, E>
  *
  * @since 1.0.0
  */
-export abstract class Multi<W, S1, S2, R, E, A> {
-  readonly _tag      = I.IOTag.FFI
-  readonly _idn      = URI
+export abstract class Multi<W, S1, S2, R, E, A> extends MultiSyntax<W, S1, S2, R, E, A> {
+  readonly _U = URI
 
   readonly _W!: () => W
-
   readonly _S1!: (_: S1) => void
   readonly _S2!: () => S2
-
-  readonly _U = 'IO'
   readonly _E!: () => E
   readonly _A!: () => A
   readonly _R!: (_: R) => void
 
-  get [_MI](): MultiInstruction {
-    return this as any
+  constructor() {
+    super()
   }
 
-  get ['_I'](): I.Instruction {
-    return new I.Read((env: R) => {
-      const res: E.Either<any, any> = runEitherEnv_(this as any, env)
-      if (res._tag === 'Left') {
-        return new I.Fail(C.fail(res.left))
-      } else {
-        return new I.Succeed(res.right)
-      }
-    })
+  get [_MI](): MultiInstruction {
+    return this as any
   }
 }
 

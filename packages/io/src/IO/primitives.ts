@@ -9,6 +9,7 @@ import type { Supervisor } from '../Supervisor'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 
+import { aplPar_, aprPar_, productPar_ } from './combinators'
 import { product_ } from './core'
 
 /*
@@ -53,42 +54,48 @@ export const URI = 'IO'
 
 export type URI = typeof URI
 
-export abstract class IO<R, E, A> {
+abstract class IOSyntax<R, E, A> {
+  ['>>=']<R1, E1, B>(this: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
+    return new Bind(this, f)
+  }
+  ['<$>']<B>(this: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
+    return this['>>=']((a) => new Succeed(f(a)))
+  }
+  ['$>']<B>(this: IO<R, E, A>, b: () => B): IO<R, E, B> {
+    return this['<$>'](b)
+  }
+  ['*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, B> {
+    return this['>>='](() => mb)
+  }
+  ['<*']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, A> {
+    return this['>>=']((a) => mb['$>'](() => a))
+  }
+  ['&>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, B> {
+    return aprPar_(this, mb)
+  }
+  ['<&']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, A> {
+    return aplPar_(this, mb)
+  }
+  ['<*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
+    return product_(this, mb)
+  }
+  ['<&>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
+    return productPar_(this, mb)
+  }
+}
+
+export abstract class IO<R, E, A> extends IOSyntax<R, E, A> {
   readonly [_U] = URI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
   readonly [_R]: (_: R) => void
 
-  readonly _W!: () => never
-  readonly _S1!: (_: unknown) => void
-  readonly _S2!: () => never
+  constructor() {
+    super()
+  }
 
   get [_I](): Instruction {
     return this as any
-  }
-}
-
-export class FFIFail<E> {
-  readonly _tag = IOTag.Fail;
-  readonly [_U] = 'IO';
-  readonly [_E]: () => E;
-  readonly [_A]: () => never;
-  readonly [_R]: (_: unknown) => void
-
-  readonly _W!: () => never
-  readonly _S1!: (_: unknown) => void
-  readonly _S2!: () => never
-
-  get [_I](): Instruction {
-    return this as any
-  }
-
-  constructor(readonly cause: Cause<E>) {}
-}
-
-export class FFIError extends Error {
-  constructor(message?: string) {
-    super(message)
   }
 }
 

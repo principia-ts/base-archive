@@ -24,6 +24,10 @@ import * as M from './Multi'
 
 export interface Sync<R, E, A> extends Multi<never, unknown, never, R, E, A> {}
 
+export function isSync(u: unknown): u is Sync<any, any, any> {
+  return typeof u === 'object' && u != null && '_U' in u && u['_U'] === 'Multi'
+}
+
 export type USync<A> = Sync<unknown, never, A>
 export type FSync<E, A> = Sync<unknown, E, A>
 export type URSync<R, A> = Sync<R, never, A>

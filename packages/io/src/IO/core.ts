@@ -4,6 +4,7 @@ import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
 import type { FiberContext } from '../internal/FiberContext'
 import type { Supervisor } from '../Supervisor'
+import { isSync, Sync } from '../Sync'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 import type { Eval } from '@principia/base/Eval'
 import type { Predicate, Refinement } from '@principia/base/Function'
@@ -28,6 +29,7 @@ import * as FL from '@principia/free/FreeList'
 
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
+import { runEitherEnv_ } from '../Sync'
 import {
   Bind,
   CheckDescriptor,
@@ -46,6 +48,7 @@ import {
   Supervise,
   Yield
 } from './primitives'
+import {Async, runAsyncEnv} from '../Async'
 
 export * from './primitives'
 
@@ -341,6 +344,40 @@ export function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
   return effectAsync((resolve) => {
     promise().then(flow(pure, resolve)).catch(flow(die, resolve))
   })
+}
+
+/**
+ * Lifts a `Sync` computation into an `IO`
+ */
+export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
+  return asksM((_: R) => {
+    const res = runEitherEnv_(effect, _)
+    return E.fold_(res, fail, succeed)
+  })
+}
+
+/**
+ * Lifts an `Async` computation into an `IO`
+ */
+export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
+  return asksM((_: R) => effectAsync<unknown, E, A>((k) => {
+    runAsyncEnv(effect, _, (ex) => {
+      switch(ex._tag) {
+        case 'Success': {
+          k(succeed(ex.value))
+          break
+        }
+        case 'Failure': {
+          k(fail(ex.error))
+          break
+        }
+        case 'Interrupt': {
+          k(descriptorWith((d) => halt(C.interrupt(d.id))))
+          break
+        }
+      }
+    })
+  }))
 }
 
 /**
@@ -3269,6 +3306,9 @@ const adapter = (_: any, __?: any) => {
   if (isTag(_)) {
     return new GenIO(askService(_))
   }
+  if(isSync(_)) {
+    return new GenIO(fromSync(_))
+  }
   return new GenIO(_)
 }
 
@@ -3279,6 +3319,7 @@ export function gen<R0, E0, A0>(): <T extends GenIO<R0, E0, any>>(
     <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
+    <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
 ) => IO<InferR<T>, InferE<T>, A0>
 export function gen<E0, A0>(): <T extends GenIO<any, E0, any>>(
@@ -3288,6 +3329,7 @@ export function gen<E0, A0>(): <T extends GenIO<any, E0, any>>(
     <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
+    <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
 ) => IO<InferR<T>, InferE<T>, A0>
 export function gen<A0>(): <T extends GenIO<any, any, any>>(
@@ -3297,6 +3339,7 @@ export function gen<A0>(): <T extends GenIO<any, any, any>>(
     <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
+    <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
 ) => IO<InferR<T>, InferE<T>, A0>
 export function gen<T extends GenIO<any, any, any>, A>(
@@ -3306,6 +3349,7 @@ export function gen<T extends GenIO<any, any, any>, A>(
     <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
+    <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A, any>
 ): IO<InferR<T>, InferE<T>, A>
 export function gen(...args: any[]): any {

@@ -51,11 +51,13 @@ export function fromManagedPush<R, E, I, L, Z>(
  */
 export function fromEffect<R, E, I, Z>(io: I.IO<R, E, Z>): Sink<R, E, I, I, Z> {
   return fromPush<R, E, I, I, Z>((in_) => {
-    const leftover = O.fold_(in_, () => C.empty(), identity)
-    return I.fold_(
-      io,
-      (e) => Push.fail(e, leftover),
-      (z) => Push.emit(z, leftover)
+    const leftover = O.fold_(in_, () => C.empty<I>(), identity)
+    return I.asUnit(
+      I.fold_(
+        io,
+        (e) => Push.fail(e, leftover),
+        (z) => Push.emit(z, leftover)
+      )
     )
   })
 }

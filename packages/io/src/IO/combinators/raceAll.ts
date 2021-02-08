@@ -57,7 +57,7 @@ export function raceAll<R, E, A>(
           const fs = yield* _(I.foreach_(ios, flow(makeInterruptible, I.fork)))
           yield* _(
             A.foldl_(fs, I.unit(), (io, f) =>
-              I.bind_(io, () => pipe(f.await, I.bind(arbiter(fs, f, done, fails)), I.fork))
+              I.bind_(io, () => pipe(f.await, I.bind(arbiter(fs, f, done, fails)), I.fork, I.asUnit))
             )
           )
           const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) =>
@@ -77,7 +77,7 @@ export function raceAll<R, E, A>(
         })
       )
     )
-    yield* _(interruptStrategy === 'wait' ? I.foreach_(fs, (f) => f.await) : I.unit())
+    yield* _(interruptStrategy === 'wait' ? I.asUnit(I.foreach_(fs, (f) => f.await)) : I.unit())
     return c
   })
 }

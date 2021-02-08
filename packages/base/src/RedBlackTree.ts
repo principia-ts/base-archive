@@ -610,9 +610,11 @@ function find<K, V>(cmp: CompareFn_<K>, root: RBTree<K, V>, key: K): RedBlackTre
       }
       case -1: {
         n = n.left
+        break
       }
       case 1: {
         n = n!.right
+        break
       }
     }
   }
@@ -818,7 +820,7 @@ export function blackHeight<K, V>(root: RBTree<K, V>): number {
     return 0
   }
   let n: RBTree<K, V> = root
-  let x = 0
+  let x               = 0
   while (n) {
     n.color === B && x++
     n = n.right

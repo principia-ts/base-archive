@@ -1668,7 +1668,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
         return pipe(
           raceNextTime.get,
           I.bind(go),
-          I.onInterrupt((_) => pipe(waitingFiber.get, I.bind(flow(O.map(Fi.interrupt), O.getOrElse(I.unit)))))
+          I.onInterrupt((_) => pipe(waitingFiber.get, I.bind(flow(O.map(Fi.interrupt), O.getOrElse(I.unit), I.asUnit))))
         )
       })
     )
@@ -4988,12 +4988,15 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
           I.toManaged((ref) =>
             I.bind_(
               ref.get,
-              matchTag(
-                {
-                  Previous: ({ fiber }) => Fi.interrupt(fiber),
-                  Current: ({ fiber }) => Fi.interrupt(fiber)
-                },
-                () => I.unit()
+              flow(
+                matchTag(
+                  {
+                    Previous: ({ fiber }) => Fi.interrupt(fiber),
+                    Current: ({ fiber }) => Fi.interrupt(fiber)
+                  },
+                  () => I.unit()
+                ),
+                I.asUnit
               )
             )
           )

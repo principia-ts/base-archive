@@ -264,7 +264,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     return I.gen(function* (_) {
       const fiberId = yield* _(I.fiberId())
       const putters = yield* _(I.effectTotal(() => unsafePollAll(self.putters)))
-      yield* _(I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? p.interruptAs(fiberId) : I.unit())))
+      yield* _(I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(p.interruptAs(fiberId)) : I.unit())))
     })
   }
 

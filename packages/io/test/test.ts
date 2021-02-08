@@ -15,8 +15,14 @@ import * as Sc from '../src/Schedule'
 import * as S from '../src/Stream'
 import * as Sy from '../src/Sync'
 
-S.iterate(0, (n) => n + 1)
-  ['|>'](S.chunkN(10))
-  ['|>'](S.debounce(100))
-  ['|>'](S.foreach((n) => I.effectTotal(() => console.log(n))))
+I.effectAsync((k) => {
+  setTimeout(() => k(I.succeed(10)), 100)
+})
+  ['&>'](
+    I.effectAsync<unknown, never, number>((k) => {
+      setTimeout(() => k(I.succeed(10)), 100)
+    })
+  )
+  ['|>'](I.timed)
+  ['>>=']((n) => I.effectTotal(() => console.log(n)))
   ['|>'](I.run)

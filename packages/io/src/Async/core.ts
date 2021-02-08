@@ -36,12 +36,7 @@ export type _AI = typeof _AI
  * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fibers`.
  */
 export abstract class Async<R, E, A> {
-  readonly _tag = I.IOTag.FFI
   readonly _idn = URI
-
-  readonly _W!: () => never
-  readonly _S1!: (_: unknown) => void
-  readonly _S2!: () => never
 
   readonly _U = 'IO'
   readonly _R!: (_: R) => void
@@ -50,30 +45,6 @@ export abstract class Async<R, E, A> {
 
   get [_AI](): AsyncInstruction {
     return this as any
-  }
-  get ['_I'](): I.Instruction {
-    return new I.Read(
-      (env: R) =>
-        new I.EffectAsync((k) => {
-          runAsyncEnv(this, env, (ex) => {
-            switch (ex._tag) {
-              case 'Success': {
-                k(new I.Succeed(ex.value))
-                break
-              }
-              case 'Failure': {
-                k(new I.Fail(C.fail(ex.error)))
-                break
-              }
-              case 'Interrupt': {
-                k(new I.CheckDescriptor((d) => new I.Fail(C.interrupt(d.id))))
-                break
-              }
-            }
-          })
-          return O.none()
-        }, [])
-    )
   }
 }
 
@@ -1110,7 +1081,7 @@ export function runPromiseExitEnv_<R, E, A>(
           try {
             current = succeed(
               await new CancellablePromise(
-                (s) => I.promise(s).catch((e) => Promise.reject(Ex.failure(e))),
+                (s) => I.promise(s).catch((e) => Promise.reject(Ex.fail(e))),
                 interruptionState
               ).promise()
             )
@@ -1133,12 +1104,12 @@ export function runPromiseExitEnv_<R, E, A>(
       }
     }
     if (interruptionState.interrupted) {
-      return Ex.interrupted()
+      return Ex.interrupt()
     }
     if (failed) {
-      return Ex.failure(result)
+      return Ex.fail(result)
     }
-    return Ex.success(result)
+    return Ex.succeed(result)
   })()
 }
 
@@ -1339,7 +1310,7 @@ class CancellablePromise<E, A> {
   }
 
   interrupt() {
-    this.mut_reject?.(Ex.interrupted())
+    this.mut_reject?.(Ex.interrupt())
   }
 }
 
@@ -1370,7 +1341,7 @@ class PromiseTracingContext {
 
   async wait(): Promise<Ex.AsyncExit<any, any>[]> {
     const t = await Promise.all(
-      Array.from(this.running).map((p) => p.then((a) => Ex.success(a)).catch((e) => Promise.resolve(e)))
+      Array.from(this.running).map((p) => p.then((a) => Ex.succeed(a)).catch((e) => Promise.resolve(e)))
     )
     return await new Promise((r) => {
       setTimeout(() => {
