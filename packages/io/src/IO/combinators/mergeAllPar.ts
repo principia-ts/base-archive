@@ -3,7 +3,7 @@ import type { IO } from '../core'
 import * as I from '@principia/base/Iterable'
 
 import { pure } from '../core'
-import { map2Par_ } from './apply-par'
+import { crossWithPar_ } from './apply-par'
 
 /**
  * Merges an `Iterable<IO>` to a single IO, working in parallel.
@@ -16,7 +16,7 @@ import { map2Par_ } from './apply-par'
  * more than once for some of `in` elements during effect execution.
  */
 export function mergeAllPar_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> {
-  return I.foldl_(fas, pure(b) as IO<R, E, B>, (b, a) => map2Par_(b, a, f))
+  return I.foldl_(fas, pure(b) as IO<R, E, B>, (b, a) => crossWithPar_(b, a, f))
 }
 
 /**

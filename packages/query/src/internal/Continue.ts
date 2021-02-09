@@ -72,11 +72,11 @@ export function map2_<R, E, A, R1, E1, B, C>(
 ): Continue<R & R1, E | E1, C> {
   return fa._tag === 'Effect'
     ? fb._tag === 'Effect'
-      ? effect(Q.map2_(fa.query, fb.query, f))
-      : effect(Q.map2_(fa.query, Q.fromEffect(fb.io), f))
+      ? effect(Q.crossWith_(fa.query, fb.query, f))
+      : effect(Q.crossWith_(fa.query, Q.fromEffect(fb.io), f))
     : fb._tag === 'Effect'
-    ? effect(pipe(Q.fromEffect(fa.io), Q.map2(fb.query, f)))
-    : get(I.map2_(fa.io, fb.io, f))
+    ? effect(pipe(Q.fromEffect(fa.io), Q.crossWith(fb.query, f)))
+    : get(I.crossWith_(fa.io, fb.io, f))
 }
 
 export function map2<A, R1, E1, B, C>(
@@ -97,46 +97,46 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Continue<R, E, A>) => Cont
   return (fa) => map_(fa, f)
 }
 
-export function map2Par_<R, E, A, R1, E1, B, C>(
+export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fa: Continue<R, E, A>,
   fb: Continue<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Continue<R & R1, E | E1, C> {
   return fa._tag === 'Effect'
     ? fb._tag === 'Effect'
-      ? effect(Q.map2Par_(fa.query, fb.query, f))
-      : effect(Q.map2_(fa.query, Q.fromEffect(fb.io), f))
+      ? effect(Q.crossWithPar_(fa.query, fb.query, f))
+      : effect(Q.crossWith_(fa.query, Q.fromEffect(fb.io), f))
     : fb._tag === 'Effect'
-    ? effect(pipe(Q.fromEffect(fa.io), Q.map2(fb.query, f)))
-    : get(I.map2_(fa.io, fb.io, f))
+    ? effect(pipe(Q.fromEffect(fa.io), Q.crossWith(fb.query, f)))
+    : get(I.crossWith_(fa.io, fb.io, f))
 }
 
-export function map2Par<A, R1, E1, B, C>(
+export function crossWithPar<A, R1, E1, B, C>(
   fb: Continue<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Continue<R, E, A>) => Continue<R & R1, E | E1, C> {
-  return (fa) => map2Par_(fa, fb, f)
+  return (fa) => crossWithPar_(fa, fb, f)
 }
 
-export function map2Batched_<R, E, A, R1, E1, B, C>(
+export function crossWithBatched_<R, E, A, R1, E1, B, C>(
   fa: Continue<R, E, A>,
   fb: Continue<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Continue<R & R1, E | E1, C> {
   return fa._tag === 'Effect'
     ? fb._tag === 'Effect'
-      ? effect(Q.map2Batched_(fa.query, fb.query, f))
-      : effect(Q.map2_(fa.query, Q.fromEffect(fb.io), f))
+      ? effect(Q.crossWithBatched_(fa.query, fb.query, f))
+      : effect(Q.crossWith_(fa.query, Q.fromEffect(fb.io), f))
     : fb._tag === 'Effect'
-    ? effect(pipe(Q.fromEffect(fa.io), Q.map2(fb.query, f)))
-    : get(I.map2_(fa.io, fb.io, f))
+    ? effect(pipe(Q.fromEffect(fa.io), Q.crossWith(fb.query, f)))
+    : get(I.crossWith_(fa.io, fb.io, f))
 }
 
-export function map2Batched<A, R1, E1, B, C>(
+export function crossWithBatched<A, R1, E1, B, C>(
   fb: Continue<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Continue<R, E, A>) => Continue<R & R1, E | E1, C> {
-  return (fa) => map2Batched_(fa, fb, f)
+  return (fa) => crossWithBatched_(fa, fb, f)
 }
 
 export function mapDataSources_<R, E, A, R1>(fa: Continue<R, E, A>, f: DataSourceAspect<R1>): Continue<R & R1, E, A> {

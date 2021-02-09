@@ -6,20 +6,20 @@ import { tuple } from './Function'
 import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 
-export interface Apply<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC>, Semigroupal<F, TC> {
-  readonly ap: ApFn<F, TC>
-  readonly ap_: ApFn_<F, TC>
-  readonly map2: Map2Fn<F, TC>
-  readonly map2_: Map2Fn_<F, TC>
+export interface Apply<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Semigroupal<F, C> {
+  readonly ap: ApFn<F, C>
+  readonly ap_: ApFn_<F, C>
+  readonly crossWith: CrossWithFn<F, C>
+  readonly crossWith_: CrossWithFn_<F, C>
 }
 
-export interface ApplyComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto>
-  extends FunctorComposition<F, G, TCF, TCG>,
-    SemigroupalComposition<F, G, TCF, TCG> {
-  readonly ap: ApFnComposition<F, G, TCF, TCG>
-  readonly ap_: ApFnComposition_<F, G, TCF, TCG>
-  readonly map2: Map2FnComposition<F, G, TCF, TCG>
-  readonly map2_: Map2FnComposition_<F, G, TCF, TCG>
+export interface ApplyComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
+  extends FunctorComposition<F, G, CF, CG>,
+    SemigroupalComposition<F, G, CF, CG> {
+  readonly ap: ApFnComposition<F, G, CF, CG>
+  readonly ap_: ApFnComposition_<F, G, CF, CG>
+  readonly crossWith: Map2FnComposition<F, G, CF, CG>
+  readonly crossWith_: Map2FnComposition_<F, G, CF, CG>
 }
 
 export function getApplyComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto>(
@@ -29,14 +29,14 @@ export function getApplyComposition<F extends HKT.URIS, G extends HKT.URIS, TCF 
 export function getApplyComposition<F, G>(F: Apply<HKT.UHKT<F>>, G: Apply<HKT.UHKT<G>>) {
   return HKT.instance<ApplyComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
     ...getFunctorComposition(F, G),
-    product_: (fga, fgb) => F.map2_(fga, fgb, G.product_),
-    product: (fgb) => (fga) => F.map2_(fga, fgb, G.product_),
+    cross_: (fga, fgb) => F.crossWith_(fga, fgb, G.cross_),
+    cross: (fgb) => (fga) => F.crossWith_(fga, fgb, G.cross_),
     ap_: <A, B>(fgab: HKT.HKT<F, HKT.HKT<G, (a: A) => B>>, fga: HKT.HKT<F, HKT.HKT<G, A>>) =>
       F.ap(fga)(F.map_(fgab, (gab) => (ga: HKT.HKT<G, A>) => G.ap_(gab, ga))),
     ap: <A>(fga: HKT.HKT<F, HKT.HKT<G, A>>) => <B>(fgab: HKT.HKT<F, HKT.HKT<G, (a: A) => B>>) =>
       F.ap(fga)(F.map_(fgab, (gab) => (ga: HKT.HKT<G, A>) => G.ap_(gab, ga))),
-    map2_: (fga, fgb, f) => F.map2_(fga, fgb, (ga, gb) => G.map2_(ga, gb, f)),
-    map2: (fgb, f) => F.map2(fgb, (ga, gb) => G.map2_(ga, gb, f))
+    crossWith_: (fga, fgb, f) => F.crossWith_(fga, fgb, (ga, gb) => G.crossWith_(ga, gb, f)),
+    crossWith: (fgb, f) => F.crossWith(fgb, (ga, gb) => G.crossWith_(ga, gb, f))
   })
 }
 
@@ -1051,7 +1051,7 @@ export function sequenceTF<F>(F: Apply<HKT.UHKT<F>>): SequenceTFn<HKT.UHKT<F>> {
   }
 }
 
-export interface Map2Fn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface CrossWithFn<F extends HKT.URIS, TC = HKT.Auto> {
   <A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
     fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
     f: (a: A, b: B) => C
@@ -1086,7 +1086,7 @@ export interface Map2Fn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export interface Map2Fn_<F extends HKT.URIS, TC = HKT.Auto> {
+export interface CrossWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
     fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<

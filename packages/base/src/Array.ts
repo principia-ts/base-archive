@@ -2131,10 +2131,10 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap,
   ap_,
-  map2: zipWith,
-  map2_: zipWith_,
-  product_: zip_,
-  product: zip
+  crossWith: zipWith,
+  crossWith_: zipWith_,
+  cross_: zip_,
+  cross: zip
 })
 
 export const Applicative: P.Applicative<[URI], V> = HKT.instance({
@@ -2203,8 +2203,8 @@ export const Foldable: P.Foldable<[URI], V> = HKT.instance({
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
   ...Applicative,
-  bind_: bind_,
-  bind: bind,
+  bind_,
+  bind,
   flatten
 })
 

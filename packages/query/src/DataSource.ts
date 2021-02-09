@@ -54,7 +54,7 @@ export function eitherWith_<R, A, R1, B, C>(
         const [left, right] = C.partitionMap_(rs, f.value)
         return pipe(
           ds1.runAll(C.single(left)),
-          I.map2Par(ds2.runAll(C.single(right)), (a, b) => a.concat(b))
+          I.crossWithPar(ds2.runAll(C.single(right)), (a, b) => a.concat(b))
         )
       }),
       I.map(A.foldl(CompletedRequestMap.empty(), (b, a) => b.concat(a)))

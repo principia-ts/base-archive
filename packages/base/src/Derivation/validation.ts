@@ -1,5 +1,5 @@
 import type { Applicative } from '../Applicative'
-import type { Map2Fn_ } from '../Apply'
+import type { CrossWithFn_ } from '../Apply'
 import type { Semigroup } from '../Semigroup'
 import type { Alt, AltFn_, MonadExcept } from '../typeclass'
 import type { Erase } from '../util/types'
@@ -15,9 +15,9 @@ export function getApplicativeValidation<F>(
   F: MonadExcept<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(S: Semigroup<E>) => {
-    const map2_: Map2Fn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
+    const crossWith_: CrossWithFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
       F.flatten(
-        F.map_(F.product_(F.attempt(fa), F.attempt(fb)), ([ea, eb]) =>
+        F.map_(F.cross_(F.attempt(fa), F.attempt(fb)), ([ea, eb]) =>
           E.fold_(
             ea,
             (e) =>
@@ -38,12 +38,12 @@ export function getApplicativeValidation<F>(
       map: F.map,
       unit: F.unit,
       pure: F.pure,
-      map2_,
-      map2: (fb, f) => (fa) => map2_(fa, fb, f),
-      ap_: (fab, fa) => map2_(fab, fa, (f, a) => f(a)),
-      ap: (fa) => (fab) => map2_(fab, fa, (f, a) => f(a)),
-      product_: (fa, fb) => map2_(fa, fb, tuple),
-      product: (fb) => (fa) => map2_(fa, fb, tuple)
+      crossWith_,
+      crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+      ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+      ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
+      cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+      cross: (fb) => (fa) => crossWith_(fa, fb, tuple)
     })
   }
 }

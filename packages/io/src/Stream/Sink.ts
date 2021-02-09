@@ -504,7 +504,7 @@ export const timedDrain: Sink<Has<Clock>, never, unknown, never, number> = map_(
  * Feeds inputs to this sink until it yields a result, then switches over to the
  * provided sink until it yields a result, finally combining the two results with `f`.
  */
-export function map2_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1, Z2>(
+export function crossWith_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1, Z2>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>,
   f: (z: Z, z1: Z1) => Z2
@@ -516,36 +516,39 @@ export function map2_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1, Z2
  * Feeds inputs to this sink until it yields a result, then switches over to the
  * provided sink until it yields a result, finally combining the two results with `f`.
  */
-export function map2<R1, E1, I, I1 extends I, L1, Z, Z1, Z2>(fb: Sink<R1, E1, I1, L1, Z1>, f: (z: Z, z1: Z1) => Z2) {
-  return <R, E, L extends I1>(fa: Sink<R, E, I, L, Z>) => map2_(fa, fb, f)
+export function crossWith<R1, E1, I, I1 extends I, L1, Z, Z1, Z2>(
+  fb: Sink<R1, E1, I1, L1, Z1>,
+  f: (z: Z, z1: Z1) => Z2
+) {
+  return <R, E, L extends I1>(fa: Sink<R, E, I, L, Z>) => crossWith_(fa, fb, f)
 }
 
 /**
  * Feeds inputs to this sink until it yields a result, then switches over to the
  * provided sink until it yields a result, combining the two results in a tuple.
  */
-export function product_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function cross_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, readonly [Z, Z1]> {
-  return map2_(fa, fb, tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 /**
  * Feeds inputs to this sink until it yields a result, then switches over to the
  * provided sink until it yields a result, combining the two results in a tuple.
  */
-export function product<I, R1, E1, I1 extends I, L1, Z1>(
+export function cross<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, readonly [Z, Z1]> {
-  return (fa) => product_(fa, fb)
+  return (fa) => cross_(fa, fb)
 }
 
 export function apl_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z> {
-  return map2_(fa, fb, (z, _) => z)
+  return crossWith_(fa, fb, (z, _) => z)
 }
 
 export function apl<I, R1, E1, I1 extends I, L1, Z1>(
@@ -558,7 +561,7 @@ export function apr_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
-  return map2_(fa, fb, (_, z1) => z1)
+  return crossWith_(fa, fb, (_, z1) => z1)
 }
 
 export function apr<I, R1, E1, I1 extends I, L1, Z1>(
@@ -595,7 +598,7 @@ type State<Z, Z1> = BothRunning | LeftDone<Z> | RightDone<Z1>
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
+export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
   self: Sink<R, E, I, L, Z>,
   that: Sink<R1, E1, I1, L1, Z1>,
   f: (z: Z, z1: Z1) => Z2
@@ -672,7 +675,7 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                 )
 
                 return I.bind_(
-                  I.productPar_(l, r),
+                  I.crossPar_(l, r),
                   ([lr, rr]): I.IO<R & R1, readonly [E.Either<E1, Z2>, C.Chunk<L | L1>], State<Z, Z1>> => {
                     if (O.isSome(lr)) {
                       const [z, l] = lr.value
@@ -735,34 +738,34 @@ export function map2Par_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function map2Par<R1, E1, I1, L1, Z, Z1, Z2>(that: Sink<R1, E1, I1, L1, Z1>, f: (z: Z, z1: Z1) => Z2) {
-  return <R, E, I, L>(self: Sink<R, E, I, L, Z>) => map2Par_(self, that, f)
+export function crossWithPar<R1, E1, I1, L1, Z, Z1, Z2>(that: Sink<R1, E1, I1, L1, Z1>, f: (z: Z, z1: Z1) => Z2) {
+  return <R, E, I, L>(self: Sink<R, E, I, L, Z>) => crossWithPar_(self, that, f)
 }
 
 /**
  * Runs both sinks in parallel on the input and combines the results in a tuple.
  */
-export function productPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function crossPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, readonly [Z, Z1]> {
-  return map2Par_(fa, fb, tuple)
+  return crossWithPar_(fa, fb, tuple)
 }
 
 /**
  * Runs both sinks in parallel on the input and combines the results in a tuple.
  */
-export function productPar<I, R1, E1, I1 extends I, L1, Z1>(
+export function crossPar<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, readonly [Z, Z1]> {
-  return (fa) => productPar_(fa, fb)
+  return (fa) => crossPar_(fa, fb)
 }
 
 export function aplPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z> {
-  return map2Par_(fa, fb, (z, _) => z)
+  return crossWithPar_(fa, fb, (z, _) => z)
 }
 
 export function aplPar<I, R1, E1, I1 extends I, L1, Z1>(
@@ -775,7 +778,7 @@ export function aprPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
-  return map2Par_(fa, fb, (_, z1) => z1)
+  return crossWithPar_(fa, fb, (_, z1) => z1)
 }
 
 export function aprPar<I, R1, E1, I1 extends I, L1, Z1>(
@@ -1374,7 +1377,7 @@ export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & Has<Cl
   return new Sink(
     pipe(
       self.push,
-      M.map2(I.toManaged_(currentTime), (push, start) => {
+      M.crossWith(I.toManaged_(currentTime), (push, start) => {
         return (in_: O.Option<Chunk<I>>) =>
           I.catchAll_(
             push(in_),

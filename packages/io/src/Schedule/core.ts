@@ -122,7 +122,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export function product_<R, I, O, R1, I1, O1>(
+export function cross_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, readonly [O, O1]> {
@@ -133,10 +133,10 @@ export function product_<R, I, O, R1, I1, O1>(
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export function product<R1, I1, O1>(
+export function cross<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return (sc) => product_(sc, that)
+  return (sc) => cross_(sc, that)
 }
 
 /**
@@ -146,7 +146,7 @@ export function apl_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O> {
-  return map_(product_(sc, that), ([_]) => _)
+  return map_(cross_(sc, that), ([_]) => _)
 }
 
 /**
@@ -165,7 +165,7 @@ export function apr_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O1> {
-  return map_(product_(sc, that), ([_, __]) => __)
+  return map_(cross_(sc, that), ([_, __]) => __)
 }
 
 /**
@@ -178,24 +178,24 @@ export function apr<R1, I1, O1>(
 }
 
 /**
- * Equivalent to `product` followed by `map`.
+ * Equivalent to `cross` followed by `map`.
  */
-export function map2_<R, I, O, R1, I1, O1, O2>(
+export function crossWith_<R, I, O, R1, I1, O1, O2>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>,
   f: (o: O, o1: O1) => O2
 ): Schedule<R & R1, I & I1, O2> {
-  return map_(product_(sc, that), ([o, o1]) => f(o, o1))
+  return map_(cross_(sc, that), ([o, o1]) => f(o, o1))
 }
 
 /**
- * Equivalent to `product` followed by `map`.
+ * Equivalent to `cross` followed by `map`.
  */
-export function map2<R1, I1, O, O1, O2>(
+export function crossWith<R1, I1, O, O1, O2>(
   that: Schedule<R1, I1, O1>,
   f: (o: O, o1: O1) => O2
 ): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O2> {
-  return (sc) => map2_(sc, that, f)
+  return (sc) => crossWith_(sc, that, f)
 }
 
 /*
@@ -411,7 +411,7 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
   const left  = sc(now, i)
   const right = that(now, i)
 
-  return I.map_(I.product_(left, right), ([l, r]) => {
+  return I.map_(I.cross_(left, right), ([l, r]) => {
     switch (l._tag) {
       case 'Done': {
         switch (r._tag) {
@@ -1243,7 +1243,7 @@ const zipLoop = <R, I, O, R1, I1, O1>(
   sc: StepFunction<R, I, O>,
   that: StepFunction<R1, I1, O1>
 ): StepFunction<R & R1, readonly [I, I1], readonly [O, O1]> => (now, [in1, in2]) =>
-  I.map_(I.product_(sc(now, in1), that(now, in2)), ([d1, d2]) => {
+  I.map_(I.cross_(sc(now, in1), that(now, in2)), ([d1, d2]) => {
     switch (d1._tag) {
       case 'Done': {
         switch (d2._tag) {

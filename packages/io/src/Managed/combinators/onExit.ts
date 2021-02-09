@@ -34,7 +34,7 @@ export function onExit_<R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exi
             pipe(
               releaseAll(e, sequential)(innerReleaseMap),
               I.result,
-              I.map2(pipe(cleanup(exitEA), I.giveAll(r), I.result), Ex.apr_)
+              I.crossWith(pipe(cleanup(exitEA), I.giveAll(r), I.result), Ex.apr_)
             )
           )(outerReleaseMap)
         )

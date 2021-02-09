@@ -22,7 +22,7 @@ import { makeManagedReleaseMap } from './makeManagedReleaseMap'
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
  */
-export function map2Par_<R, E, A, R1, E1, B, C>(
+export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -30,8 +30,8 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
   return mapM_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
     const innerMap = I.gives_(makeManagedReleaseMap(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
 
-    return I.bind_(I.product_(innerMap, innerMap), ([[_, l], [__, r]]) =>
-      I.map2Par_(
+    return I.bind_(I.cross_(innerMap, innerMap), ([[_, l], [__, r]]) =>
+      I.crossWithPar_(
         I.gives_(fa.io, (_: R & R1) => tuple(_, l)),
         I.gives_(fb.io, (_: R & R1) => tuple(_, r)),
         ([_, a], [__, a2]) => f(a, a2)
@@ -44,31 +44,31 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
  */
-export function map2Par<A, R1, E1, B, C>(
+export function crossWithPar<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, C> {
-  return (fa) => map2Par_(fa, fb, f)
+  return (fa) => crossWithPar_(fa, fb, f)
 }
 
-export function productPar_<R, E, A, R1, E1, B>(
+export function crossPar_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, readonly [A, B]> {
-  return map2Par_(fa, fb, tuple)
+  return crossWithPar_(fa, fb, tuple)
 }
 
-export function productPar<R1, E1, B>(
+export function crossPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E | E1, readonly [A, B]> {
-  return (fa) => productPar_(fa, fb)
+  return (fa) => crossPar_(fa, fb)
 }
 
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Managed<R1, E1, (a: A) => B>,
   fa: Managed<R, E, A>
 ): Managed<R & R1, E | E1, B> {
-  return map2Par_(fab, fa, (f, a) => f(a))
+  return crossWithPar_(fab, fa, (f, a) => f(a))
 }
 
 export function apPar<R, E, A>(
@@ -78,7 +78,7 @@ export function apPar<R, E, A>(
 }
 
 export function aplPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
-  return map2Par_(fa, fb, (a, _) => a)
+  return crossWithPar_(fa, fb, (a, _) => a)
 }
 
 export function aplPar<R1, E1, B>(
@@ -88,7 +88,7 @@ export function aplPar<R1, E1, B>(
 }
 
 export function aprPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
-  return map2Par_(fa, fb, (_, b) => b)
+  return crossWithPar_(fa, fb, (_, b) => b)
 }
 
 export function aprPar<R1, E1, B>(

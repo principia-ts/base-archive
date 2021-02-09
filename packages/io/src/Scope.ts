@@ -296,7 +296,7 @@ export class LocalScope<A> extends CommonScope<A> {
 
       return I.uncause(
         A.foldl_(sorted, noCauseIO, (acc, o) =>
-          o != null ? I.map2_(acc, I.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
+          o != null ? I.crossWith_(acc, I.cause(o.finalizer(a)), (a, b) => C.then(a, b)) : acc
         )
       )
     } else {

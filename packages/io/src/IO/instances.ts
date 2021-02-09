@@ -6,28 +6,29 @@ import * as HKT from '@principia/base/HKT'
 import { getOptionT } from '@principia/base/OptionT'
 import { mapNF, sequenceSF, sequenceTF } from '@principia/base/typeclass'
 
-import { apPar, apPar_, map2Par, map2Par_, productPar, productPar_ } from './combinators'
+import { apPar, apPar_, crossPar, crossPar_, crossWithPar, crossWithPar_ } from './combinators'
 import {
   absolve,
   ap,
   ap_,
+  attempt,
   bind,
   bind_,
   catchAll,
   catchAll_,
   catchSome,
   catchSome_,
+  cross,
+  cross_,
+  crossWith,
+  crossWith_,
   fail,
   flatten,
   map,
   map_,
-  map2,
-  map2_,
-  product,
-  product_,
   pure,
-  attempt,
-  unit } from './core'
+  unit
+} from './core'
 
 export const Functor = HKT.instance<P.Functor<[URI], V>>({
   invmap_: (fa, f, _) => map_(fa, f),
@@ -40,20 +41,20 @@ export const Apply = HKT.instance<P.Apply<[URI], V>>({
   ...Functor,
   ap_,
   ap,
-  map2_,
-  map2,
-  product_,
-  product
+  crossWith_,
+  crossWith,
+  cross_,
+  cross
 })
 
 export const ApplyPar = HKT.instance<P.Apply<[URI], V>>({
   ...Functor,
   ap_: apPar_,
   ap: apPar,
-  map2_: map2Par_,
-  map2: map2Par,
-  product_: productPar_,
-  product: productPar
+  crossWith_: crossWithPar_,
+  crossWith: crossWithPar,
+  cross_: crossPar_,
+  cross: crossPar
 })
 
 export const mapN         = mapNF(Apply)

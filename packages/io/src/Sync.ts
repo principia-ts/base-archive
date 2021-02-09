@@ -185,7 +185,7 @@ export function foldTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4,
   onBothSuccess: (a: A, b: B) => Sync<R5, E5, G>
 ): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
   return pipe(
-    product_(attempt(left), attempt(right)),
+    cross_(attempt(left), attempt(right)),
     bind(
       ([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
         switch (ea._tag) {
@@ -286,23 +286,23 @@ export const pure: <A>(a: A) => Sync<unknown, never, A> = M.pure
  * -------------------------------------------
  */
 
-export const product_: <R, E, A, Q, D, B>(fa: Sync<R, E, A>, fb: Sync<Q, D, B>) => Sync<Q & R, D | E, readonly [A, B]> =
-  M.product_
+export const cross_: <R, E, A, Q, D, B>(fa: Sync<R, E, A>, fb: Sync<Q, D, B>) => Sync<Q & R, D | E, readonly [A, B]> =
+  M.cross_
 
-export const product: <Q, D, B>(
+export const cross: <Q, D, B>(
   fb: Sync<Q, D, B>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = M.product
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = M.cross
 
-export const map2_: <R, E, A, Q, D, B, C>(
+export const crossWith_: <R, E, A, Q, D, B, C>(
   fa: Sync<R, E, A>,
   fb: Sync<Q, D, B>,
   f: (a: A, b: B) => C
-) => Sync<Q & R, D | E, C> = M.map2_
+) => Sync<Q & R, D | E, C> = M.crossWith_
 
-export const map2: <A, Q, D, B, C>(
+export const crossWith: <A, Q, D, B, C>(
   fb: Sync<Q, D, B>,
   f: (a: A, b: B) => C
-) => <R, E>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, C> = M.map2
+) => <R, E>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, C> = M.crossWith
 
 export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D, A>) => Sync<Q & R, D | E, B> = M.ap_
 
@@ -317,11 +317,11 @@ export const apr_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) 
 export const apr: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> = M.apr
 
 export function liftA2_<A, B, C>(f: (a: A, b: B) => C): (a: USync<A>, b: USync<B>) => USync<C> {
-  return (a, b) => map2_(a, b, f)
+  return (a, b) => crossWith_(a, b, f)
 }
 
 export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (a: USync<A>) => (b: USync<B>) => USync<C> {
-  return (a) => (b) => map2_(a, b, (a, b) => f(a)(b))
+  return (a) => (b) => crossWith_(a, b, (a, b) => f(a)(b))
 }
 
 export function liftK<A extends [unknown, ...ReadonlyArray<unknown>], B>(
@@ -746,7 +746,7 @@ export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
 export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>): Sync<R, E, ReadonlyArray<B>> {
   return map_(
     I.foldl_(as, succeed(FL.empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
-      map2_(
+      crossWith_(
         b,
         deferTotal(() => f(a)),
         (acc, r) => FL.append_(acc, r)
@@ -789,10 +789,10 @@ export const Apply = HKT.instance<P.Apply<[URI], V>>({
   ...Functor,
   ap_,
   ap: (fa) => (fab) => ap_(fab, fa),
-  map2_,
-  map2: (fb, f) => (fa) => map2_(fa, fb, f),
-  product_,
-  product: (fb) => (fa) => product_(fa, fb)
+  crossWith_,
+  crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+  cross_,
+  cross: (fb) => (fa) => cross_(fa, fb)
 })
 
 export const sequenceT = P.sequenceTF(Apply)

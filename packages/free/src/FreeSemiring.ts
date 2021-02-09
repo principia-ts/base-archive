@@ -275,8 +275,8 @@ export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) 
     ta,
     G.pure(empty()),
     flow(f, G.map(single)),
-    (gb1, gb2) => G.map2_(gb1, gb2, then),
-    (gb1, gb2) => G.map2_(gb1, gb2, both)
+    (gb1, gb2) => G.crossWith_(gb1, gb2, then),
+    (gb1, gb2) => G.crossWith_(gb1, gb2, both)
   )
 )
 

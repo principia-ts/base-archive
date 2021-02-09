@@ -132,7 +132,7 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
       const acquire = I.gen(function* (_) {
         const env = yield* _(I.ask<R & SubscriptionsEnv<C> & RE>())
 
-        const [app, httpServer] = yield* _(I.asksServiceM(Koa.Koa)((koa) => I.product_(koa.app, koa.server)))
+        const [app, httpServer] = yield* _(I.asksServiceM(Koa.Koa)((koa) => I.cross_(koa.app, koa.server)))
 
         const scalars       = transformScalarResolvers(instanceConfig.schemaParts.scalars ?? {}, env)
         const resolvers     = transformResolvers<Koa.Context<Ctx>>(instanceConfig.schemaParts.resolvers, env)

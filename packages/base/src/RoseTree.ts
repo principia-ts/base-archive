@@ -112,26 +112,26 @@ export function pure<A>(a: A): RoseTree<A> {
  * -------------------------------------------
  */
 
-export function product_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<readonly [A, B]> {
+export function cross_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<readonly [A, B]> {
   return {
     value: [fa.value, fb.value],
-    forest: A.comprehension([fa.forest, fb.forest], (a, b) => product_(a, b))
+    forest: A.comprehension([fa.forest, fb.forest], (a, b) => cross_(a, b))
   }
 }
 
-export function product<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
-export function map2_<A, B, C>(fa: RoseTree<A>, fb: RoseTree<B>, f: (a: A, b: B) => C): RoseTree<C> {
+export function crossWith_<A, B, C>(fa: RoseTree<A>, fb: RoseTree<B>, f: (a: A, b: B) => C): RoseTree<C> {
   return {
     value: f(fa.value, fb.value),
-    forest: A.comprehension([fa.forest, fb.forest], (a, b) => map2_(a, b, f))
+    forest: A.comprehension([fa.forest, fb.forest], (a, b) => crossWith_(a, b, f))
   }
 }
 
-export function map2<A, B, C>(fb: RoseTree<B>, f: (a: A, b: B) => C): (fa: RoseTree<A>) => RoseTree<C> {
-  return (fa) => map2_(fa, fb, f)
+export function crossWith<A, B, C>(fb: RoseTree<B>, f: (a: A, b: B) => C): (fa: RoseTree<A>) => RoseTree<C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 export function ap_<A, B>(fab: RoseTree<(a: A) => B>, fa: RoseTree<A>): RoseTree<B> {
@@ -143,7 +143,7 @@ export function ap<A>(fa: RoseTree<A>): <B>(fab: RoseTree<(a: A) => B>) => RoseT
 }
 
 export function apl_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<A> {
@@ -151,7 +151,7 @@ export function apl<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<A> {
 }
 
 export function apr_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<B> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 /*

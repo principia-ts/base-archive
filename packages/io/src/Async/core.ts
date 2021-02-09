@@ -338,20 +338,20 @@ export function sequenceTPar<A extends ReadonlyArray<Async<any, any, any>>>(
   return new All(asyncs) as any
 }
 
-export function productPar_<R, E, A, R1, E1, A1>(
+export function crossPar_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return map2Par_(fa, fb, tuple)
+  return crossWithPar_(fa, fb, tuple)
 }
 
-export function productPar<R1, E1, A1>(
+export function crossPar<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, readonly [A, A1]> {
-  return (fa) => productPar_(fa, fb)
+  return (fa) => crossPar_(fa, fb)
 }
 
-export function map2Par_<R, E, A, R1, E1, B, C>(
+export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -359,18 +359,18 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
   return map_(sequenceTPar(fa, fb), ([a, b]) => f(a, b))
 }
 
-export function map2Par<A, R1, E1, B, C>(
+export function crossWithPar<A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, C> {
-  return (fa) => map2Par_(fa, fb, f)
+  return (fa) => crossWithPar_(fa, fb, f)
 }
 
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Async<R1, E1, (a: A) => B>,
   fa: Async<R, E, A>
 ): Async<R & R1, E | E1, B> {
-  return map2Par_(fab, fa, (f, a) => f(a))
+  return crossWithPar_(fab, fa, (f, a) => f(a))
 }
 
 export function apPar<R, E, A>(
@@ -380,7 +380,7 @@ export function apPar<R, E, A>(
 }
 
 export function aplPar_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
-  return map2Par_(fa, fb, (a, _) => a)
+  return crossWithPar_(fa, fb, (a, _) => a)
 }
 
 export function aplPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
@@ -388,7 +388,7 @@ export function aplPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R
 }
 
 export function aprPar_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
-  return map2Par_(fa, fb, (_, b) => b)
+  return crossWithPar_(fa, fb, (_, b) => b)
 }
 
 export function aprPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
@@ -407,24 +407,24 @@ export function sequenceT<A extends ReadonlyArray<Async<any, any, any>>>(
   return A.foldl_(
     fas,
     (succeed(A.empty<any>()) as unknown) as Async<_R<A[number]>, _E<A[number]>, { [K in keyof A]: _A<A[K]> }>,
-    (b, a) => map2_(b, a, (acc, r) => A.append_(acc, r)) as any
+    (b, a) => crossWith_(b, a, (acc, r) => A.append_(acc, r)) as any
   )
 }
 
-export function product_<R, E, A, R1, E1, A1>(
+export function cross_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return map2_(fa, fb, tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
-export function product<R1, E1, A1>(
+export function cross<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, readonly [A, A1]> {
-  return (fa) => product_(fa, fb)
+  return (fa) => cross_(fa, fb)
 }
 
-export function map2_<R, E, A, R1, E1, B, C>(
+export function crossWith_<R, E, A, R1, E1, B, C>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -432,15 +432,15 @@ export function map2_<R, E, A, R1, E1, B, C>(
   return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
-export function map2<A, R1, E1, B, C>(
+export function crossWith<A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, C> {
-  return (fa) => map2_(fa, fb, f)
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 export function ap_<R, E, A, R1, E1, B>(fab: Async<R1, E1, (a: A) => B>, fa: Async<R, E, A>): Async<R & R1, E | E1, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<R, E, A>(
@@ -450,7 +450,7 @@ export function ap<R, E, A>(
 }
 
 export function apl_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
@@ -458,7 +458,7 @@ export function apl<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E
 }
 
 export function apr_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 export function apr<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
@@ -1166,20 +1166,20 @@ export const SequentialApplyAsync: P.Apply<[URI], V> = HKT.instance({
   ...FunctorAsync,
   ap_,
   ap,
-  map2_,
-  map2,
-  product_,
-  product
+  crossWith_,
+  crossWith,
+  cross_,
+  cross
 })
 
 export const ParallelApplyAsync: P.Apply<[URI], V> = HKT.instance({
   ...FunctorAsync,
   ap_: apPar_,
   ap: apPar,
-  map2_: map2Par_,
-  map2: map2Par,
-  product_: productPar_,
-  product: productPar
+  crossWith_: crossWithPar_,
+  crossWith: crossWithPar,
+  cross_: crossPar_,
+  cross: crossPar
 })
 
 export const ApplicativeAsync: P.Applicative<[URI], V> = HKT.instance({

@@ -35,7 +35,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
         I.foreach_(fibers, (f) => f.interruptAs(fiberId)),
         I.map(
           A.foldr(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
-            Ex.map2Cause_(a, b, (_a, _b) => [_a, ..._b], C.both)
+            Ex.crossWithCause_(a, b, (_a, _b) => [_a, ..._b], C.both)
           )
         )
       ),
@@ -50,7 +50,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
               O.fold_(
                 b,
                 () => none(),
-                (rb) => some(Ex.map2Cause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
+                (rb) => some(Ex.crossWithCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
               )
           )
         )

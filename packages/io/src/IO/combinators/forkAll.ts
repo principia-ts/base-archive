@@ -13,7 +13,9 @@ import { bind_, foreach_, fork, map_, unit } from '../core'
 export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fiber<E, ReadonlyArray<A>>> {
   return map_(
     foreach_(mas, fork),
-    A.foldl(Fiber.succeed([]) as Fiber.Fiber<E, ReadonlyArray<A>>, (b, a) => Fiber.map2_(b, a, (_a, _b) => [..._a, _b]))
+    A.foldl(Fiber.succeed([]) as Fiber.Fiber<E, ReadonlyArray<A>>, (b, a) =>
+      Fiber.crossWith_(b, a, (_a, _b) => [..._a, _b])
+    )
   )
 }
 

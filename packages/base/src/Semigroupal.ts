@@ -1,17 +1,17 @@
 import type * as HKT from './HKT'
 
 export interface Semigroupal<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly product_: ProductFn_<F, C>
-  readonly product: ProductFn<F, C>
+  readonly cross_: CrossFn_<F, C>
+  readonly cross: CrossFn<F, C>
 }
 
 export interface SemigroupalComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
-  readonly product_: ProductFnComposition_<F, G, CF, CG>
-  readonly product: ProductFnComposition<F, G, CF, CG>
+  readonly cross_: CrossFnComposition_<F, G, CF, CG>
+  readonly cross: CrossFnComposition<F, G, CF, CG>
 }
 
-export interface ProductFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface CrossFn<F extends HKT.URIS, C = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     N extends string,
     K,
@@ -54,7 +54,7 @@ export interface ProductFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface ProductFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface CrossFn_<F extends HKT.URIS, C = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
@@ -87,7 +87,7 @@ export interface ProductFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface ProductFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface CrossFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,
@@ -180,7 +180,7 @@ export interface ProductFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF
   >
 }
 
-export interface ProductFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface CrossFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     NF extends string,
     KF,

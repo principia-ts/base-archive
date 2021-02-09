@@ -75,10 +75,10 @@ export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<'E', 
     map,
     ap_: (fab, fa) => make(S.combine_(fab, fa)),
     ap: (fa) => (fab) => make(S.combine_(fab, fa)),
-    product_: (fa, fb) => make(S.combine_(fa, fb)),
-    product: (fb) => (fa) => make(S.combine_(fa, fb)),
-    map2_: (fa, fb, _) => make(S.combine_(fa, fb)),
-    map2: (fb, _) => (fa) => make(S.combine_(fa, fb))
+    cross_: (fa, fb) => make(S.combine_(fa, fb)),
+    cross: (fb) => (fa) => make(S.combine_(fa, fb)),
+    crossWith_: (fa, fb, _) => make(S.combine_(fa, fb)),
+    crossWith: (fb, _) => (fa) => make(S.combine_(fa, fb))
   })
 }
 

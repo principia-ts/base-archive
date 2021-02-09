@@ -1,10 +1,11 @@
+import type { Async } from '../Async'
 import type { Cause } from '../Cause/core'
 import type { Exit } from '../Exit/core'
 import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
 import type { FiberContext } from '../internal/FiberContext'
 import type { Supervisor } from '../Supervisor'
-import { isSync, Sync } from '../Sync'
+import type { Sync } from '../Sync'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 import type { Eval } from '@principia/base/Eval'
 import type { Predicate, Refinement } from '@principia/base/Function'
@@ -27,9 +28,10 @@ import * as R from '@principia/base/Record'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import * as FL from '@principia/free/FreeList'
 
+import { runAsyncEnv } from '../Async'
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
-import { runEitherEnv_ } from '../Sync'
+import { isSync, runEitherEnv_ } from '../Sync'
 import {
   Bind,
   CheckDescriptor,
@@ -48,7 +50,6 @@ import {
   Supervise,
   Yield
 } from './primitives'
-import {Async, runAsyncEnv} from '../Async'
 
 export * from './primitives'
 
@@ -360,24 +361,26 @@ export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
  * Lifts an `Async` computation into an `IO`
  */
 export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
-  return asksM((_: R) => effectAsync<unknown, E, A>((k) => {
-    runAsyncEnv(effect, _, (ex) => {
-      switch(ex._tag) {
-        case 'Success': {
-          k(succeed(ex.value))
-          break
+  return asksM((_: R) =>
+    effectAsync<unknown, E, A>((k) => {
+      runAsyncEnv(effect, _, (ex) => {
+        switch (ex._tag) {
+          case 'Success': {
+            k(succeed(ex.value))
+            break
+          }
+          case 'Failure': {
+            k(fail(ex.error))
+            break
+          }
+          case 'Interrupt': {
+            k(descriptorWith((d) => halt(C.interrupt(d.id))))
+            break
+          }
         }
-        case 'Failure': {
-          k(fail(ex.error))
-          break
-        }
-        case 'Interrupt': {
-          k(descriptorWith((d) => halt(C.interrupt(d.id))))
-          break
-        }
-      }
+      })
     })
-  }))
+  )
 }
 
 /**
@@ -439,7 +442,7 @@ export function pure<A>(a: A): UIO<A> {
 
 /**
  * ```haskell
- * product_ :: Apply f => (f a, f b) -> f [a, b]
+ * cross_ :: Apply f => (f a, f b) -> f [a, b]
  * ```
  *
  * Tuples the success values of two `IOs`
@@ -447,23 +450,23 @@ export function pure<A>(a: A): UIO<A> {
  * @category Apply
  * @since 1.0.0
  */
-export function product_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, readonly [A, B]> {
-  return map2_(fa, fb, tuple)
+export function cross_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
 }
 
 /**
  * ```haskell
- * product :: Apply f => f b -> f a -> f [a, b]
+ * cross :: Apply f => f b -> f a -> f [a, b]
  * ```
  *
  * Tuples the success values of two `IOs`
  *
  * @category Apply
  * @since 1.0.0
- * @dataFirst product_
+ * @dataFirst cross_
  */
-export function product<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
 /**
@@ -477,7 +480,7 @@ export function product<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) =>
  * @since 1.0.0
  */
 export function ap_<Q, D, A, B, R, E>(fab: IO<Q, D, (a: A) => B>, fa: IO<R, E, A>): IO<Q & R, D | E, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 /**
@@ -535,7 +538,7 @@ export function apr<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<
   return (fa) => apr_(fa, fb)
 }
 
-export function map2_<R, E, A, Q, D, B, C>(
+export function crossWith_<R, E, A, Q, D, B, C>(
   fa: IO<R, E, A>,
   fb: IO<Q, D, B>,
   f: (a: A, b: B) => C
@@ -544,13 +547,13 @@ export function map2_<R, E, A, Q, D, B, C>(
 }
 
 /**
- * @dataFirst map2_
+ * @dataFirst crossWith_
  */
-export function map2<A, Q, D, B, C>(
+export function crossWith<A, Q, D, B, C>(
   fb: IO<Q, D, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: IO<R, E, A>) => IO<Q & R, D | E, C> {
-  return (fa) => map2_(fa, fb, f)
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 /*
@@ -1523,7 +1526,7 @@ export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>) {
  */
 export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, readonly A[]> {
   return I.foldl_(as, pure([]) as IO<R, E, A[]>, (ma, a) =>
-    map2_(ma, f(a), (as_, p) => {
+    crossWith_(ma, f(a), (as_, p) => {
       if (p) {
         as_.push(a)
       }
@@ -1766,7 +1769,7 @@ export function foreachUnit<R, E, A>(f: (a: A) => IO<R, E, any>): (as: Iterable<
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, ReadonlyArray<B>> {
   return map_(
     I.foldl_(as, succeed(FL.empty<B>()) as IO<R, E, FL.FreeList<B>>, (b, a) =>
-      map2_(
+      crossWith_(
         b,
         deferTotal(() => f(a)),
         (acc, r) => FL.append_(acc, r)
@@ -2297,7 +2300,7 @@ export function merge<R, E, A>(io: IO<R, E, A>): IO<R, never, A | E> {
  * Merges an `Iterable<IO>` to a single IO, working sequentially.
  */
 export function mergeAll_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> {
-  return I.foldl_(fas, pure(b) as IO<R, E, B>, (_b, a) => map2_(_b, a, f))
+  return I.foldl_(fas, pure(b) as IO<R, E, B>, (_b, a) => crossWith_(_b, a, f))
 }
 
 /**
@@ -2993,11 +2996,11 @@ export function when(b: () => boolean): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, v
 }
 
 export function zipEnvFirst<R, E, A>(io: IO<R, E, A>): IO<R, E, readonly [R, A]> {
-  return product_(ask<R>(), io)
+  return cross_(ask<R>(), io)
 }
 
 export function zipEnvSecond<R, E, A>(io: IO<R, E, A>): IO<R, E, readonly [A, R]> {
-  return product_(io, ask<R>())
+  return cross_(io, ask<R>())
 }
 
 /*
@@ -3306,7 +3309,7 @@ const adapter = (_: any, __?: any) => {
   if (isTag(_)) {
     return new GenIO(askService(_))
   }
-  if(isSync(_)) {
+  if (isSync(_)) {
     return new GenIO(fromSync(_))
   }
   return new GenIO(_)

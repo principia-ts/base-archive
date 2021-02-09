@@ -14,7 +14,7 @@ export function getMonadReaderT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, 
 export function getMonadReaderT<M>(M: P.Monad<HKT.UHKT<M>>): ReaderT<HKT.UHKT<M>> {
   const map_: P.MapFn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>> = (fa, f) => (r) => M.map_(fa(r), f)
 
-  const map2_: P.Map2Fn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>> = (fa, fb, f) => (r) =>
+  const crossWith_: P.CrossWithFn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>> = (fa, fb, f) => (r) =>
     M.bind_(fa(r), (a) => M.map_(fb(r), (b) => f(a, b)))
 
   const bind_: P.BindFn_<ReaderTURI<HKT.UHKT<M>>, V<HKT.Auto>> = (ma, f) => (r) => M.bind_(ma(r), (a) => f(a)(r))
@@ -24,12 +24,12 @@ export function getMonadReaderT<M>(M: P.Monad<HKT.UHKT<M>>): ReaderT<HKT.UHKT<M>
     invmap: (f, _) => (fa) => map_(fa, f),
     map_,
     map: (f) => (fa) => map_(fa, f),
-    map2_,
-    map2: (fb, f) => (fa) => map2_(fa, fb, f),
-    product_: (fa, fb) => map2_(fa, fb, tuple),
-    product: (fb) => (fa) => map2_(fa, fb, tuple),
-    ap_: (fab, fa) => map2_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => map2_(fab, fa, (f, a) => f(a)),
+    crossWith_: crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
     unit: () => (_) => M.unit(),
     pure: (a) => (_) => M.pure(a),
     bind_: bind_,

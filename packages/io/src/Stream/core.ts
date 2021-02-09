@@ -674,7 +674,7 @@ export function repeatEffectWith_<R, E, A>(
 ): Stream<R & Has<Clock>, E, A> {
   return pipe(
     effect,
-    I.product(Sc.driver(schedule)),
+    I.cross(Sc.driver(schedule)),
     fromEffect,
     bind(([a, driver]) =>
       pipe(
@@ -879,7 +879,7 @@ export function runManaged_<R, E, A, R1, E1, B>(
   sink: Sink.Sink<R1, E1, A, any, B>
 ): M.Managed<R & R1, E1 | E, B> {
   return pipe(
-    M.product_(stream.proc, sink.push),
+    M.cross_(stream.proc, sink.push),
     M.mapM(([pull, push]) => {
       const go: I.IO<R1 & R, E1 | E, B> = I.foldCauseM_(
         pull,
@@ -3838,7 +3838,7 @@ export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: P.Promise<
       )
       const pull    = pipe(
         doneRef.get,
-        I.product(p.isDone),
+        I.cross(p.isDone),
         I.bind(([b1, b2]) => {
           if (b1) {
             return Pull.end
@@ -4868,7 +4868,7 @@ export function throttleEnforceM_<R, E, A, R1, E1>(
           pipe(
             costFn(chunk),
             I.mapError(O.some),
-            I.product(currentTime),
+            I.cross(currentTime),
             I.bind(([weight, current]) =>
               Ref.modify_(bucket, ([tokens, timestamp]) => {
                 const elapsed   = current - timestamp
@@ -5445,7 +5445,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
               return pipe(
                 pullL,
                 I.optional,
-                I.map2(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
+                I.crossWith(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
                 I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
               )
             }
@@ -5453,7 +5453,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
               return pipe(
                 pullL,
                 I.optional,
-                I.map2Par(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
+                I.crossWithPar(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
                 I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
               )
             }
@@ -5663,8 +5663,8 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
             p1,
             I.optional,
             exec._tag === 'Sequential'
-              ? I.map2(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
-              : I.map2Par(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
+              ? I.crossWith(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
+              : I.crossWithPar(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
             I.catchAllCause((e) => I.pure(Ex.halt(pipe(e, Ca.map(O.some)))))
           )
         }
@@ -5758,20 +5758,20 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
               pipe(
                 leftDone,
                 I.done,
-                I.map2(Fi.join(rightFiber), (os, o1s) => [os, o1s, <boolean>true] as const)
+                I.crossWith(Fi.join(rightFiber), (os, o1s) => [os, o1s, <boolean>true] as const)
               ),
             (rightDone, leftFiber) =>
               pipe(
                 rightDone,
                 I.done,
-                I.map2(Fi.join(leftFiber), (o1s, os) => [os, o1s, <boolean>false] as const)
+                I.crossWith(Fi.join(leftFiber), (o1s, os) => [os, o1s, <boolean>false] as const)
               )
           ),
           fromEffectOption,
           bind(([l, r, leftFirst]) =>
             pipe(
               Ref.make(l[l.length - 1]),
-              I.product(Ref.make(r[r.length - 1])),
+              I.cross(Ref.make(r[r.length - 1])),
               fromEffect,
               bind(([latestLeft, latestRight]) =>
                 pipe(
@@ -5782,13 +5782,13 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
                     pipe(
                       left,
                       I.tap((chunk) => latestLeft.set(chunk[chunk.length - 1])),
-                      I.product(latestRight.get),
+                      I.cross(latestRight.get),
                       repeatEffectOption,
                       mergeWith(
                         pipe(
                           right,
                           I.tap((chunk) => latestRight.set(chunk[chunk.length - 1])),
-                          I.product(latestLeft.get),
+                          I.cross(latestLeft.get),
                           repeatEffectOption
                         ),
                         ([leftChunk, rightLatest]) => C.map_(leftChunk, (o) => f(o, rightLatest)),

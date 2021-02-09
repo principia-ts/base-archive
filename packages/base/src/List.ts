@@ -691,7 +691,7 @@ export function bind<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
  */
 
 export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) =>
-  foldr_(ta, G.pure(empty()), (a, fb) => G.map2_(f(a), fb, (b, l) => prepend_(l, b)))
+  foldr_(ta, G.pure(empty()), (a, fb) => G.crossWith_(f(a), fb, (b, l) => prepend_(l, b)))
 )
 
 export const traverse: P.TraverseFn<[URI], V> = (G) => {

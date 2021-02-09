@@ -96,7 +96,7 @@ export function fold<E, A, B>(
  * -------------------------------------------
  */
 
-export function map2_<E, A, E1, B, C>(
+export function crossWith_<E, A, E1, B, C>(
   fa: AsyncExit<E, A>,
   fb: AsyncExit<E1, B>,
   f: (a: A, b: B) => C
@@ -112,25 +112,23 @@ export function map2_<E, A, E1, B, C>(
     : interrupt()
 }
 
-export function map2<A, E1, B, C>(
+export function crossWith<A, E1, B, C>(
   fb: AsyncExit<E1, B>,
   f: (a: A, b: B) => C
 ): <E>(fa: AsyncExit<E, A>) => AsyncExit<E | E1, C> {
-  return (fa) => map2_(fa, fb, f)
+  return (fa) => crossWith_(fa, fb, f)
 }
 
-export function product_<E, A, E1, B>(fa: AsyncExit<E, A>, fb: AsyncExit<E1, B>): AsyncExit<E | E1, readonly [A, B]> {
-  return map2_(fa, fb, tuple)
+export function cross_<E, A, E1, B>(fa: AsyncExit<E, A>, fb: AsyncExit<E1, B>): AsyncExit<E | E1, readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
 }
 
-export function product<E1, B>(
-  fb: AsyncExit<E1, B>
-): <E, A>(fa: AsyncExit<E, A>) => AsyncExit<E | E1, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<E1, B>(fb: AsyncExit<E1, B>): <E, A>(fa: AsyncExit<E, A>) => AsyncExit<E | E1, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
 export function ap_<E, A, E1, B>(fab: AsyncExit<E1, (a: A) => B>, fa: AsyncExit<E, A>): AsyncExit<E | E1, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<E, A>(fa: AsyncExit<E, A>): <E1, B>(fab: AsyncExit<E1, (a: A) => B>) => AsyncExit<E | E1, B> {

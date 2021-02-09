@@ -86,20 +86,27 @@ export function pure<A>(a: A): Reader<unknown, A> {
  * -------------------------------------------
  */
 
-export function product_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {
-  return map2_(fa, fb, tuple)
+export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
 }
 
-export function product<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
-export function map2_<R, A, R1, B, C>(fa: Reader<R, A>, fb: Reader<R1, B>, f: (a: A, b: B) => C): Reader<R & R1, C> {
+export function crossWith_<R, A, R1, B, C>(
+  fa: Reader<R, A>,
+  fb: Reader<R1, B>,
+  f: (a: A, b: B) => C
+): Reader<R & R1, C> {
   return (r) => f(fa(r), fb(r))
 }
 
-export function map2<A, R1, B, C>(fb: Reader<R1, B>, f: (a: A, b: B) => C): <R>(fa: Reader<R, A>) => Reader<R & R1, C> {
-  return (fa) => map2_(fa, fb, f)
+export function crossWith<A, R1, B, C>(
+  fb: Reader<R1, B>,
+  f: (a: A, b: B) => C
+): <R>(fa: Reader<R, A>) => Reader<R & R1, C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 export function ap_<R, A, R1, B>(fab: Reader<R1, (a: A) => B>, fa: Reader<R, A>): Reader<R & R1, B> {
@@ -111,7 +118,7 @@ export function ap<R, A>(fa: Reader<R, A>): <R1, B>(fab: Reader<R1, (a: A) => B>
 }
 
 export function apl_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
@@ -119,7 +126,7 @@ export function apl<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reade
 }
 
 export function apr_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 export function apr<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
@@ -212,12 +219,12 @@ export const MonadEnv = HKT.instance<P.MonadEnv<[URI], V>>({
   invmap: (f, _) => (ra) => map_(ra, f),
   map_,
   map,
-  map2_,
-  map2,
+  crossWith_,
+  crossWith,
   ap_,
   ap,
-  product_,
-  product,
+  cross_,
+  cross,
   asks,
   giveAll,
   pure,

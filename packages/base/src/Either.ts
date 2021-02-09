@@ -636,7 +636,7 @@ export function apr<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<
 
 /**
  * ```haskell
- * product_ :: Apply f => (f a, f b) -> f (a, b)
+ * cross_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
  * Applies both `Either`s and if both are `Right`,
@@ -645,13 +645,13 @@ export function apr<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<
  * @category Apply
  * @since 1.0.0
  */
-export function product_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, readonly [A, B]> {
-  return map2_(fa, fb, mkTuple)
+export function cross_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, readonly [A, B]> {
+  return crossWith_(fa, fb, mkTuple)
 }
 
 /**
  * ```haskell
- * product :: Apply f => f b -> f a -> f (a, b)
+ * cross :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
  * Applies both `Either`s and if both are `Right`,
@@ -660,13 +660,13 @@ export function product_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either
  * @category Apply
  * @since 1.0.0
  */
-export function product<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
 /**
  * ```haskell
- * map2_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * crossWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
  * Applies both `Either`s and if both are `Right`,
@@ -675,7 +675,7 @@ export function product<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eit
  * @category Apply
  * @since 1.0.0
  */
-export function map2_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: A, b: B) => C): Either<E | G, C> {
+export function crossWith_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: A, b: B) => C): Either<E | G, C> {
   return ap_(
     map_(fa, (a) => (b: B) => f(a, b)),
     fb
@@ -684,7 +684,7 @@ export function map2_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: 
 
 /**
  * ```haskell
- * map2 :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * crossWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
  * Applies both `Either`s and if both are `Right`,
@@ -693,8 +693,11 @@ export function map2_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: 
  * @category Apply
  * @since 1.0.0
  */
-export function map2<A, G, B, C>(fb: Either<G, B>, f: (a: A, b: B) => C): <E>(fa: Either<E, A>) => Either<G | E, C> {
-  return (fa) => map2_(fa, fb, f)
+export function crossWith<A, G, B, C>(
+  fb: Either<G, B>,
+  f: (a: A, b: B) => C
+): <E>(fa: Either<E, A>) => Either<G | E, C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 /**
@@ -1387,10 +1390,10 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap,
   ap_,
-  map2: map2,
-  map2_: map2_,
-  product_: product_,
-  product: product
+  crossWith: crossWith,
+  crossWith_: crossWith_,
+  cross_: cross_,
+  cross: cross
 })
 
 export const sequenceT = P.sequenceTF(Apply)
@@ -1557,10 +1560,10 @@ export const bindToS = Do.bindToS
 export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<[URI], V & HKT.Fix<'E', E>> {
   type V_ = V & HKT.Fix<'E', E>
 
-  const map2V_: P.Map2Fn_<[URI], V_> = (fa, fb, f) =>
+  const crossWithV_: P.CrossWithFn_<[URI], V_> = (fa, fb, f) =>
     isLeft(fa) ? (isLeft(fb) ? left(S.combine_(fa.left, fb.left)) : fa) : isLeft(fb) ? fb : right(f(fa.right, fb.right))
 
-  const productV_: P.ProductFn_<[URI], V_> = (fa, fb) => map2V_(fa, fb, mkTuple)
+  const productV_: P.CrossFn_<[URI], V_> = (fa, fb) => crossWithV_(fa, fb, mkTuple)
 
   const apV_: P.ApFn_<[URI], V_> = (fab, fa) =>
     isLeft(fab)
@@ -1575,10 +1578,10 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<[U
     ...Functor,
     ap_: apV_,
     ap: (fa) => (fab) => apV_(fab, fa),
-    product_: productV_,
-    product: (fb) => (fa) => productV_(fa, fb),
-    map2_: map2V_,
-    map2: (fb, f) => (fa) => map2V_(fa, fb, f),
+    cross_: productV_,
+    cross: (fb) => (fa) => productV_(fa, fb),
+    crossWith_: crossWithV_,
+    crossWith: (fb, f) => (fa) => crossWithV_(fa, fb, f),
     pure,
     unit
   })

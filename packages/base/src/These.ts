@@ -217,7 +217,7 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>): P.ApplicativeExcept
  */
 
 export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[URI], HKT.Fix<'E', E>> {
-  const map2_: P.Map2Fn_<[URI], HKT.Fix<'E', E>> = (fa, fb, f) =>
+  const crossWith_: P.CrossWithFn_<[URI], HKT.Fix<'E', E>> = (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
         ? left(SE.combine_(fa.left, fb.left))
@@ -241,12 +241,12 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[URI], HKT.Fix<'E', E>>
     invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: These<E, A>) => map_(fa, f),
     map_,
     map,
-    map2_,
-    map2: <A, B, C>(fb: These<E, B>, f: (a: A, b: B) => C) => (fa: These<E, A>) => map2_(fa, fb, f),
-    product_: (fa, fb) => map2_(fa, fb, tuple),
-    product: <B>(fb: These<E, B>) => <A>(fa: These<E, A>) => map2_(fa, fb, tuple),
-    ap_: (fab, fa) => map2_(fab, fa, (f, a) => f(a)),
-    ap: <A>(fa: These<E, A>) => <B>(fab: These<E, (a: A) => B>) => map2_(fab, fa, (f, a) => f(a))
+    crossWith_,
+    crossWith: <A, B, C>(fb: These<E, B>, f: (a: A, b: B) => C) => (fa: These<E, A>) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: <B>(fb: These<E, B>) => <A>(fa: These<E, A>) => crossWith_(fa, fb, tuple),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: <A>(fa: These<E, A>) => <B>(fab: These<E, (a: A) => B>) => crossWith_(fab, fa, (f, a) => f(a))
   })
 }
 

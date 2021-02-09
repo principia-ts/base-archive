@@ -107,15 +107,15 @@ export function pure<S = never, A = never>(a: A): State<S, A> {
  * -------------------------------------------
  */
 
-export function product_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, readonly [A, B]> {
-  return map2_(fa, fb, tuple)
+export function cross_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
 }
 
-export function product<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
-export function map2_<S, A, B, C>(fa: State<S, A>, fb: State<S, B>, f: (a: A, b: B) => C): State<S, C> {
+export function crossWith_<S, A, B, C>(fa: State<S, A>, fb: State<S, B>, f: (a: A, b: B) => C): State<S, C> {
   return (s) => {
     const [a, s1] = fa(s)
     const [b, s2] = fb(s1)
@@ -123,12 +123,12 @@ export function map2_<S, A, B, C>(fa: State<S, A>, fb: State<S, B>, f: (a: A, b:
   }
 }
 
-export function map2<S, A, B, C>(fb: State<S, B>, f: (a: A, b: B) => C): (fa: State<S, A>) => State<S, C> {
-  return (fa) => map2_(fa, fb, f)
+export function crossWith<S, A, B, C>(fb: State<S, B>, f: (a: A, b: B) => C): (fa: State<S, A>) => State<S, C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 export function ap_<S, A, B>(fab: State<S, (a: A) => B>, fa: State<S, A>): State<S, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<S, A>(fa: State<S, A>): <B>(fab: State<S, (a: A) => B>) => State<S, B> {
@@ -136,7 +136,7 @@ export function ap<S, A>(fa: State<S, A>): <B>(fab: State<S, (a: A) => B>) => St
 }
 
 export function apl_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
@@ -144,7 +144,7 @@ export function apl<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> 
 }
 
 export function apr_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, B> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 export function apr<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {

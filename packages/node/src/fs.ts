@@ -82,7 +82,7 @@ export function createReadStream(
   const chunkSize = options?.chunkSize ?? 1024 * 64
   return pipe(
     open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
-    I.productPar(
+    I.crossPar(
       I.deferTotal(() => {
         const start = options?.start ? Integer.unwrap(options?.start) : 0
         const end   = options?.end ? Integer.unwrap(options?.end) : Infinity
@@ -132,7 +132,7 @@ export function createWriteSink(
       const st       = yield* _(
         M.catchAll_(
           M.makeExit_(
-            I.productPar_(
+            I.crossPar_(
               open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
               Ref.make(options?.start ? Integer.unwrap(options.start) : undefined)
             ),

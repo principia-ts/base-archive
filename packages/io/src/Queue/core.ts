@@ -734,19 +734,19 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
     isShutdown: I.UIO<boolean> = self.isShutdown
 
     offer: (a: A1) => I.IO<RA & RA1, EA1 | EA, boolean> = (a) =>
-      I.map2Par_(self.offer(a), that.offer(a), (x, y) => x && y)
+      I.crossWithPar_(self.offer(a), that.offer(a), (x, y) => x && y)
 
     offerAll: (as: Iterable<A1>) => I.IO<RA & RA1, EA1 | EA, boolean> = (as) =>
-      I.map2Par_(self.offerAll(as), that.offerAll(as), (x, y) => x && y)
+      I.crossWithPar_(self.offerAll(as), that.offerAll(as), (x, y) => x && y)
 
-    shutdown: I.UIO<void> = I.map2Par_(self.shutdown, that.shutdown, () => undefined)
+    shutdown: I.UIO<void> = I.crossWithPar_(self.shutdown, that.shutdown, () => undefined)
 
-    size: I.UIO<number> = I.map2Par_(self.size, that.size, (x, y) => Math.max(x, y))
+    size: I.UIO<number> = I.crossWithPar_(self.size, that.size, (x, y) => Math.max(x, y))
 
-    take: I.IO<RB & RB1 & R3, E3 | EB | EB1, D> = I.bind_(I.productPar_(self.take, that.take), ([b, c]) => f(b, c))
+    take: I.IO<RB & RB1 & R3, E3 | EB | EB1, D> = I.bind_(I.crossPar_(self.take, that.take), ([b, c]) => f(b, c))
 
     takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = I.bind_(
-      I.productPar_(self.takeAll, that.takeAll),
+      I.crossPar_(self.takeAll, that.takeAll),
       ([bs, cs]) => {
         const abs = Array.from(bs)
         const acs = Array.from(cs)
@@ -757,7 +757,7 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
     )
 
     takeUpTo: (n: number) => I.IO<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = (max) =>
-      I.bind_(I.productPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
+      I.bind_(I.crossPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
         const abs = Array.from(bs)
         const acs = Array.from(cs)
         const all = A.zip_(abs, acs)

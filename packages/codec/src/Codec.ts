@@ -31,7 +31,7 @@ export function fromDecoder<I, O>(decoder: D.DecoderKF<I, O>): Codec<I, O, O> {
 
 /*
  * -------------------------------------------
- * Priimitives
+ * Primitives
  * -------------------------------------------
  */
 

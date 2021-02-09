@@ -105,7 +105,7 @@ export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
     pipe(
       test,
       I.result,
-      I.map2(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.apl_),
+      I.crossWith(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.apl_),
       I.bind(I.done)
     )
   )

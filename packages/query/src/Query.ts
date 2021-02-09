@@ -189,7 +189,7 @@ export function catchAll<E, R1, E1, B>(
  * -------------------------------------------
  */
 
-export function map2_<R, E, A, R1, E1, B, C>(
+export function crossWith_<R, E, A, R1, E1, B, C>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -200,7 +200,7 @@ export function map2_<R, E, A, R1, E1, B, C>(
       matchTag({
         Blocked: ({ blockedRequests, cont }) => {
           if (cont._tag === 'Effect') {
-            return I.succeed(Res.blocked(blockedRequests, Cont.effect(map2_(cont.query, fb, f))))
+            return I.succeed(Res.blocked(blockedRequests, Cont.effect(crossWith_(cont.query, fb, f))))
           } else {
             return I.map_(
               fb.step,
@@ -236,28 +236,28 @@ export function map2_<R, E, A, R1, E1, B, C>(
   )
 }
 
-export function map2<A, R1, E1, B, C>(
+export function crossWith<A, R1, E1, B, C>(
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Query<R, E, A>) => Query<R & R1, E | E1, C> {
-  return (fa) => map2_(fa, fb, f)
+  return (fa) => crossWith_(fa, fb, f)
 }
 
-export function product_<R, E, A, R1, E1, B>(
+export function cross_<R, E, A, R1, E1, B>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>
 ): Query<R & R1, E | E1, readonly [A, B]> {
-  return map2_(fa, fb, tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
-export function product<R1, E1, B>(
+export function cross<R1, E1, B>(
   fb: Query<R1, E1, B>
 ): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+  return (fa) => cross_(fa, fb)
 }
 
 export function ap_<R, E, A, R1, E1, B>(fab: Query<R, E, (a: A) => B>, fa: Query<R1, E1, A>): Query<R & R1, E | E1, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<R, E, A>(
@@ -267,7 +267,7 @@ export function ap<R, E, A>(
 }
 
 export function apl_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
@@ -275,7 +275,7 @@ export function apl<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, 
 }
 
 export function apr_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 export function apr<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
@@ -288,16 +288,16 @@ export function apr<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, 
  * -------------------------------------------
  */
 
-export function map2Par_<R, E, A, R1, E1, B, C>(
+export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
   return new Query(
-    I.map2Par_(fa.step, fb.step, (ra, rb) => {
+    I.crossWithPar_(fa.step, fb.step, (ra, rb) => {
       return ra._tag === 'Blocked'
         ? rb._tag === 'Blocked'
-          ? Res.blocked(BRS.then(ra.blockedRequests, rb.blockedRequests), Cont.map2Par_(ra.cont, rb.cont, f))
+          ? Res.blocked(BRS.then(ra.blockedRequests, rb.blockedRequests), Cont.crossWithPar_(ra.cont, rb.cont, f))
           : rb._tag === 'Done'
           ? Res.blocked(
               ra.blockedRequests,
@@ -320,31 +320,31 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
   )
 }
 
-export function map2Par<A, R1, E1, B, C>(
+export function crossWithPar<A, R1, E1, B, C>(
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Query<R, E, A>) => Query<R & R1, E | E1, C> {
-  return (fa) => map2Par_(fa, fb, f)
+  return (fa) => crossWithPar_(fa, fb, f)
 }
 
-export function productPar_<R, E, A, R1, E1, B>(
+export function crossPar_<R, E, A, R1, E1, B>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>
 ): Query<R & R1, E | E1, readonly [A, B]> {
-  return map2Par_(fa, fb, tuple)
+  return crossWithPar_(fa, fb, tuple)
 }
 
-export function productPar<R1, E1, B>(
+export function crossPar<R1, E1, B>(
   fb: Query<R1, E1, B>
 ): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, readonly [A, B]> {
-  return (fa) => productPar_(fa, fb)
+  return (fa) => crossPar_(fa, fb)
 }
 
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Query<R, E, (a: A) => B>,
   fa: Query<R1, E1, A>
 ): Query<R & R1, E | E1, B> {
-  return map2Par_(fab, fa, (f, a) => f(a))
+  return crossWithPar_(fab, fa, (f, a) => f(a))
 }
 
 export function apPar<R, E, A>(
@@ -354,7 +354,7 @@ export function apPar<R, E, A>(
 }
 
 export function aplPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
-  return map2Par_(fa, fb, (a, _) => a)
+  return crossWithPar_(fa, fb, (a, _) => a)
 }
 
 export function aplPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
@@ -362,7 +362,7 @@ export function aplPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, 
 }
 
 export function aprPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
-  return map2Par_(fa, fb, (_, b) => b)
+  return crossWithPar_(fa, fb, (_, b) => b)
 }
 
 export function aprPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
@@ -375,16 +375,16 @@ export function aprPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, 
  * -------------------------------------------
  */
 
-export function map2Batched_<R, E, A, R1, E1, B, C>(
+export function crossWithBatched_<R, E, A, R1, E1, B, C>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
   return new Query(
-    I.map2_(fa.step, fb.step, (ra, rb) => {
+    I.crossWith_(fa.step, fb.step, (ra, rb) => {
       return ra._tag === 'Blocked'
         ? rb._tag === 'Blocked'
-          ? Res.blocked(BRS.then(ra.blockedRequests, rb.blockedRequests), Cont.map2Batched_(ra.cont, rb.cont, f))
+          ? Res.blocked(BRS.then(ra.blockedRequests, rb.blockedRequests), Cont.crossWithBatched_(ra.cont, rb.cont, f))
           : rb._tag === 'Done'
           ? Res.blocked(
               ra.blockedRequests,
@@ -407,31 +407,31 @@ export function map2Batched_<R, E, A, R1, E1, B, C>(
   )
 }
 
-export function map2Batched<A, R1, E1, B, C>(
+export function crossWithBatched<A, R1, E1, B, C>(
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Query<R, E, A>) => Query<R & R1, E | E1, C> {
-  return (fa) => map2Batched_(fa, fb, f)
+  return (fa) => crossWithBatched_(fa, fb, f)
 }
 
-export function productBatched_<R, E, A, R1, E1, B>(
+export function crossBatched_<R, E, A, R1, E1, B>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>
 ): Query<R & R1, E | E1, readonly [A, B]> {
-  return map2Batched_(fa, fb, tuple)
+  return crossWithBatched_(fa, fb, tuple)
 }
 
-export function productBatched<R1, E1, B>(
+export function crossBatched<R1, E1, B>(
   fb: Query<R1, E1, B>
 ): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, readonly [A, B]> {
-  return (fa) => productBatched_(fa, fb)
+  return (fa) => crossBatched_(fa, fb)
 }
 
 export function apBatched_<R, E, A, R1, E1, B>(
   fab: Query<R, E, (a: A) => B>,
   fa: Query<R1, E1, A>
 ): Query<R & R1, E | E1, B> {
-  return map2Batched_(fab, fa, (f, a) => f(a))
+  return crossWithBatched_(fab, fa, (f, a) => f(a))
 }
 
 export function apBatched<R, E, A>(
@@ -441,7 +441,7 @@ export function apBatched<R, E, A>(
 }
 
 export function aplBatched_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
-  return map2Batched_(fa, fb, (a, _) => a)
+  return crossWithBatched_(fa, fb, (a, _) => a)
 }
 
 export function aplBatched<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
@@ -449,7 +449,7 @@ export function aplBatched<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query
 }
 
 export function aprBatched_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
-  return map2Batched_(fa, fb, (_, b) => b)
+  return crossWithBatched_(fa, fb, (_, b) => b)
 }
 
 export function aprBatched<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
@@ -903,7 +903,7 @@ export function rightOrFailWith<A, E1>(
 export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Query<R, E, B>): Query<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2_(b, f(a), (bs, b) => A.append(b)(bs)))
+    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => crossWith_(b, f(a), (bs, b) => A.append(b)(bs)))
   )
 }
 
@@ -914,7 +914,7 @@ export function foreach<A, R, E, B>(f: (a: A) => Query<R, E, B>): (as: Iterable<
 export function foreachPar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Query<R, E, B>): Query<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2Par_(b, f(a), (bs, b) => A.append(b)(bs)))
+    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => crossWithPar_(b, f(a), (bs, b) => A.append(b)(bs)))
   )
 }
 
@@ -930,7 +930,9 @@ export function foreachBatched_<A, R, E, B>(
 ): Query<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => map2Batched_(b, f(a), (bs, b) => A.append(b)(bs)))
+    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) =>
+      crossWithBatched_(b, f(a), (bs, b) => A.append(b)(bs))
+    )
   )
 }
 
@@ -1014,8 +1016,8 @@ export function summarized_<R, E, A, R1, E1, B, C>(
 ): Query<R & R1, E | E1, readonly [C, A]> {
   return pipe(
     fromEffect(summary),
-    product(ma),
-    map2(fromEffect(summary), ([start, value], end) => [f(start, end), value])
+    cross(ma),
+    crossWith(fromEffect(summary), ([start, value], end) => [f(start, end), value])
   )
 }
 

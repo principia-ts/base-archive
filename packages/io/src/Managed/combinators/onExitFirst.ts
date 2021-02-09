@@ -38,7 +38,7 @@ export function onExitFirst_<R, E, A, R1>(
               cleanup(exitEA),
               I.giveAll(r),
               I.result,
-              I.map2(I.result(releaseAll(e, sequential)(innerReleaseMap)), flow(Ex.apr_, I.done)),
+              I.crossWith(I.result(releaseAll(e, sequential)(innerReleaseMap)), flow(Ex.apr_, I.done)),
               I.flatten
             )
           )(outerReleaseMap)

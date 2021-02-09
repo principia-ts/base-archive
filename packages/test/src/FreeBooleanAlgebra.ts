@@ -363,7 +363,7 @@ export function andM_<R, E, A extends A1, R1, E1, A1>(
   ma: FreeBooleanAlgebraM<R, E, A>,
   mb: FreeBooleanAlgebraM<R1, E1, A1>
 ): FreeBooleanAlgebraM<R & R1, E | E1, A | A1> {
-  return I.map2_(ma, mb, (ba, bb) => and_(ba, bb))
+  return I.crossWith_(ma, mb, (ba, bb) => and_(ba, bb))
 }
 
 export function andM<R1, E1, A1>(
@@ -376,7 +376,7 @@ export function orM_<R, E, A extends A1, R1, E1, A1>(
   ma: FreeBooleanAlgebraM<R, E, A>,
   mb: FreeBooleanAlgebraM<R1, E1, A1>
 ): FreeBooleanAlgebraM<R & R1, E | E1, A | A1> {
-  return I.map2_(ma, mb, (ba, bb) => or_(ba, bb))
+  return I.crossWith_(ma, mb, (ba, bb) => or_(ba, bb))
 }
 
 export function orM<R1, E1, A1>(
@@ -393,7 +393,7 @@ export function impliesM_<R, E, A extends A1, R1, E1, A1>(
   ma: FreeBooleanAlgebraM<R, E, A>,
   mb: FreeBooleanAlgebraM<R1, E1, A1>
 ): FreeBooleanAlgebraM<R & R1, E | E1, A | A1> {
-  return I.map2_(ma, mb, (ba, bb) => implies_(ba, bb))
+  return I.crossWith_(ma, mb, (ba, bb) => implies_(ba, bb))
 }
 
 export function impliesM<R1, E1, A1>(
@@ -406,7 +406,7 @@ export function iffM_<R, E, A extends A1, R1, E1, A1>(
   ma: FreeBooleanAlgebraM<R, E, A>,
   mb: FreeBooleanAlgebraM<R1, E1, A1>
 ): FreeBooleanAlgebraM<R & R1, E | E1, A | A1> {
-  return I.map2_(ma, mb, (ba, bb) => iff_(ba, bb))
+  return I.crossWith_(ma, mb, (ba, bb) => iff_(ba, bb))
 }
 
 export function iffM<R1, E1, A1>(

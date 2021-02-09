@@ -338,18 +338,18 @@ export const pure = succeed
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export function map2<A, R1, E1, B, C>(
+export function crossWith<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, C> {
-  return (fa) => map2_(fa, fb, f)
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export function map2_<R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) {
+export function crossWith_<R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) {
   return bind_(fa, (a) => map_(fb, (a2) => f(a, a2)))
 }
 
@@ -357,20 +357,20 @@ export function map2_<R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export function product_<R, E, A, R1, E1, A1>(self: Managed<R, E, A>, that: Managed<R1, E1, A1>) {
-  return map2_(self, that, (a, a2) => [a, a2] as [A, A1])
+export function cross_<R, E, A, R1, E1, A1>(self: Managed<R, E, A>, that: Managed<R1, E1, A1>) {
+  return crossWith_(self, that, (a, a2) => [a, a2] as [A, A1])
 }
 
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
  */
-export function product<R1, E1, A1>(that: Managed<R1, E1, A1>) {
-  return <R, E, A>(self: Managed<R, E, A>) => map2_(self, that, (a, a2) => [a, a2] as [A, A1])
+export function cross<R1, E1, A1>(that: Managed<R1, E1, A1>) {
+  return <R, E, A>(self: Managed<R, E, A>) => crossWith_(self, that, (a, a2) => [a, a2] as [A, A1])
 }
 
 export function ap_<R, E, A, Q, D, B>(fab: Managed<Q, D, (a: A) => B>, fa: Managed<R, E, A>): Managed<Q & R, D | E, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<R, E, A>(
@@ -380,7 +380,7 @@ export function ap<R, E, A>(
 }
 
 export function apl_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<R1, E1, B>(fb: Managed<R1, E1, B>): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
@@ -388,7 +388,7 @@ export function apl<R1, E1, B>(fb: Managed<R1, E1, B>): <R, E, A>(fa: Managed<R,
 }
 
 export function apr_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 export function apr<R1, E1, B>(fb: Managed<R1, E1, B>): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
@@ -1403,7 +1403,7 @@ export function merge<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, E | A> {
  * Merges an `Iterable<Managed>` to a single `Managed`, working sequentially.
  */
 export function mergeAll_<R, E, A, B>(mas: Iterable<Managed<R, E, A>>, b: B, f: (b: B, a: A) => B): Managed<R, E, B> {
-  return Iter.foldl_(mas, succeed(b) as Managed<R, E, B>, (b, a) => map2_(b, a, f))
+  return Iter.foldl_(mas, succeed(b) as Managed<R, E, B>, (b, a) => crossWith_(b, a, f))
 }
 
 /**
@@ -1866,7 +1866,7 @@ export function whenM<R1, E1>(
  * Zips this Managed with its environment
  */
 export function zipEnv<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [A, R]> {
-  return product_(ma, ask<R>())
+  return cross_(ma, ask<R>())
 }
 
 /*

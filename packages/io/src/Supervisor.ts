@@ -70,7 +70,7 @@ export class Supervisor<A> {
    */
   and<B>(that: Supervisor<B>): Supervisor<readonly [A, B]> {
     return new Supervisor(
-      I.product_(this.value, that.value),
+      I.cross_(this.value, that.value),
       (environment, effect, parent, fiber) =>
         propagationAnd(
           this.unsafeOnStart(environment, effect, parent, fiber),
@@ -91,7 +91,7 @@ export class Supervisor<A> {
    */
   or<B>(that: Supervisor<B>): Supervisor<readonly [A, B]> {
     return new Supervisor(
-      I.product_(this.value, that.value),
+      I.cross_(this.value, that.value),
       (environment, effect, parent, fiber) =>
         propagationOr(
           this.unsafeOnStart(environment, effect, parent, fiber),

@@ -37,10 +37,10 @@ export function getMonadStateT<F extends HKT.URIS, C>(M: P.Monad<F, C>): P.Monad
 export function getMonadStateT<F>(M: P.Monad<HKT.UHKT<F>>): P.MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> {
   const map_: P.MapFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fa, f) => (s) => M.map_(fa(s), ([a, s]) => [f(a), s])
 
-  const map2_: P.Map2Fn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fa, fb, f) => (s) =>
+  const crossWith_: P.CrossWithFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fa, fb, f) => (s) =>
     M.bind_(fa(s), ([a, s1]) => M.map_(fb(s1), ([b, s2]) => [f(a, b), s2]))
 
-  const ap_: P.ApFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fab, fa) => map2_(fab, fa, (f, a) => f(a))
+  const ap_: P.ApFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (fab, fa) => crossWith_(fab, fa, (f, a) => f(a))
 
   const bind_: P.BindFn_<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>> = (ma, f) => (s) => M.bind_(ma(s), ([a, s]) => f(a)(s))
 
@@ -51,15 +51,15 @@ export function getMonadStateT<F>(M: P.Monad<HKT.UHKT<F>>): P.MonadState<StateTU
     invmap: (f, _) => (fa) => map_(fa, f),
     map_,
     map: (f) => (fa) => map_(fa, f),
-    map2_,
-    map2: (fb, f) => (fa) => map2_(fa, fb, f),
-    product_: (fa, fb) => map2_(fa, fb, tuple),
-    product: (fb) => (fa) => map2_(fa, fb, tuple),
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
     ap_,
     ap: (fa) => (fab) => ap_(fab, fa),
     unit: () => (s) => M.map_(M.unit(), () => [undefined, s]),
     pure: (a) => (s) => M.pure([a, s]),
-    bind_: bind_,
+    bind_,
     bind: (f) => (ma) => bind_(ma, f),
     flatten,
     get: () => (s) => M.pure([s, s]),

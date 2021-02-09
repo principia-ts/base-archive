@@ -142,7 +142,7 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
     ([leftDone, rightDone, s1, s2], left, right) =>
       pipe(
         I.result(left),
-        I.map2(I.result(right), (ea, eb) => {
+        I.crossWith(I.result(right), (ea, eb) => {
           return ea._tag === 'Success'
             ? eb._tag === 'Success'
               ? Ex.succeed(
@@ -244,21 +244,22 @@ export function noShrink<A>(a: A): Sample<unknown, A> {
 }
 
 export function shrinkFractional(smallest: number): (a: number) => Sample<unknown, number> {
-  return (a) => unfold(a, (max) =>
-    tuple(
-      max,
-      S.unfold(smallest, (min) => {
-        const mid = min + (max - min) / 2
-        if (mid === max) {
-          return O.none()
-        } else if (Math.abs(max - mid) < 0.001) {
-          return O.some([min, max])
-        } else {
-          return O.some([mid, mid])
-        }
-      })
+  return (a) =>
+    unfold(a, (max) =>
+      tuple(
+        max,
+        S.unfold(smallest, (min) => {
+          const mid = min + (max - min) / 2
+          if (mid === max) {
+            return O.none()
+          } else if (Math.abs(max - mid) < 0.001) {
+            return O.some([min, max])
+          } else {
+            return O.some([mid, mid])
+          }
+        })
+      )
     )
-  )
 }
 
 function quot(x: number, y: number): number {
@@ -271,10 +272,10 @@ export function shrinkIntegral(smallest: number): (a: number) => Sample<unknown,
       tuple(
         max,
         S.unfold(smallest, (min) => {
-          const mid = min + (quot(max - min, 2))
-          if(mid === max) {
+          const mid = min + quot(max - min, 2)
+          if (mid === max) {
             return O.none()
-          } else if(Math.abs(max - mid) === 1) {
+          } else if (Math.abs(max - mid) === 1) {
             return O.some([mid, max])
           } else {
             return O.some([mid, mid])

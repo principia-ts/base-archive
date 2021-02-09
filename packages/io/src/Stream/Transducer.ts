@@ -570,11 +570,11 @@ export function foldWeightedDecomposeM<R, E, I, O>(
                   )
                 } else if (is.length <= 1 && dirty) {
                   const elem = C.isNonEmpty(is) ? is[0] : i
-                  return I.map2_(f(initialState.result, elem), costFn(initialState.result, elem), (result, cost) => [
-                    C.append_(os, state.result),
-                    { result, cost },
-                    true
-                  ])
+                  return I.crossWith_(
+                    f(initialState.result, elem),
+                    costFn(initialState.result, elem),
+                    (result, cost) => [C.append_(os, state.result), { result, cost }, true]
+                  )
                 } else {
                   return go(is, os, state, dirty)
                 }
@@ -967,7 +967,7 @@ export function then_<R, E, I, O, R1, E1, O1>(
   return new Transducer(
     pipe(
       self.push,
-      M.map2(that.push, (pushLeft, pushRight) =>
+      M.crossWith(that.push, (pushLeft, pushRight) =>
         O.fold(
           () =>
             pipe(
@@ -975,7 +975,7 @@ export function then_<R, E, I, O, R1, E1, O1>(
               I.bind((cl) =>
                 cl.length === 0
                   ? pushRight(O.none())
-                  : pipe(pushRight(O.some(cl)), I.map2(pushRight(O.none()), C.concat_))
+                  : pipe(pushRight(O.some(cl)), I.crossWith(pushRight(O.none()), C.concat_))
               )
             ),
           (inputs) =>
@@ -1008,7 +1008,7 @@ export function thenSink_<R, E, I, O, R1, E1, L, Z>(
 ): Sink<R & R1, E | E1, I, L, Z> {
   return new Sink(
     pipe(
-      M.map2_(me.push, that.push, (pushMe, pushThat) => (is: O.Option<Chunk<I>>) =>
+      M.crossWith_(me.push, that.push, (pushMe, pushThat) => (is: O.Option<Chunk<I>>) =>
         O.fold_(
           is,
           () =>

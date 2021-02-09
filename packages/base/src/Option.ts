@@ -373,7 +373,13 @@ export function catchAll<B>(f: () => Option<B>): <A>(fa: Option<A>) => Option<A 
 }
 
 export function catchSome_<A, B>(fa: Option<A>, f: () => Option<Option<B>>): Option<A | B> {
-  return catchAll_(fa, flow(f, getOrElse((): Option<A | B> => fa)))
+  return catchAll_(
+    fa,
+    flow(
+      f,
+      getOrElse((): Option<A | B> => fa)
+    )
+  )
 }
 
 export function catchSome<B>(f: () => Option<Option<B>>): <A>(fa: Option<A>) => Option<A | B> {
@@ -400,7 +406,7 @@ export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
 
 /**
  * ```haskell
- * product_ :: Apply f => (f a, f b) -> f (a, b)
+ * cross_ :: Apply f => (f a, f b) -> f (a, b)
  * ```
  *
  * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise, returns `None`
@@ -408,13 +414,13 @@ export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
  * @category Apply
  * @since 1.0.0
  */
-export function product_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
-  return map2_(fa, fb, tuple)
+export function cross_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
 }
 
 /**
  * ```haskell
- * product :: Apply f => f b -> f a -> f (a, b)
+ * cross :: Apply f => f b -> f a -> f (a, b)
  * ```
  *
  * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise returns `None`
@@ -422,8 +428,8 @@ export function product_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A
  * @category Apply
  * @since 1.0.0
  */
-export function product<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
 /**
@@ -437,7 +443,7 @@ export function product<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly
  * @since 1.0.0
  */
 export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 /**
@@ -455,7 +461,7 @@ export function ap<A>(fa: Option<A>): <B>(fab: Option<(a: A) => B>) => Option<B>
 }
 
 export function apl_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
@@ -463,7 +469,7 @@ export function apl<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
 }
 
 export function apr_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
@@ -472,7 +478,7 @@ export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
 
 /**
  * ```haskell
- * map2_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
+ * crossWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
  * ```
  *
  * Applies both `Option`s and if both are `Some`,  maps their results with function `f`, otherwise returns `None`
@@ -480,13 +486,13 @@ export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * @category Apply
  * @since 1.0.0
  */
-export function map2_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
+export function crossWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
   return fa._tag === 'Some' && fb._tag === 'Some' ? some(f(fa.value, fb.value)) : none()
 }
 
 /**
  * ```haskell
- * map2 :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
+ * crossWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
  * ```
  *
  * Applies both `Option`s and if both are `Some`, maps their results with function `f`, otherwise returns `None`
@@ -495,8 +501,8 @@ export function map2_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => 
  * @since 1.0.0
  */
 
-export function map2<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Option<A>) => Option<C> {
-  return (fa) => map2_(fa, fb, f)
+export function crossWith<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Option<A>) => Option<C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 /**
@@ -510,7 +516,7 @@ export function map2<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Option<
  * @since 1.0.0
  */
 export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (fb: Option<B>) => Option<C> {
-  return (fa) => (fb) => map2_(fa, fb, (a, b) => f(a)(b))
+  return (fa) => (fb) => crossWith_(fa, fb, (a, b) => f(a)(b))
 }
 
 /**
@@ -1087,10 +1093,10 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
   ap_,
   ap,
-  map2_,
-  map2,
-  product_,
-  product
+  crossWith_: crossWith_,
+  crossWith: crossWith,
+  cross_: cross_,
+  cross: cross
 })
 
 export const sequenceS = P.sequenceSF(Apply)

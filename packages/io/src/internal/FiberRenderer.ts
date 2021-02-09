@@ -6,14 +6,12 @@ import * as IT from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 
 import { FiberDump, fiberName } from '../Fiber/core'
-import { productPar_ } from '../IO/combinators/apply-par'
+import { crossPar_ } from '../IO/combinators/apply-par'
 import * as T from '../IO/core'
 import { parseMs } from '../util/parse-ms'
 
 export function dump<E, A>(fiber: RuntimeFiber<E, A>): T.UIO<FiberDump> {
-  return T.map_(productPar_(fiber.getRef(fiberName), fiber.status), ([name, status]) =>
-    FiberDump(fiber.id, name, status)
-  )
+  return T.map_(crossPar_(fiber.getRef(fiberName), fiber.status), ([name, status]) => FiberDump(fiber.id, name, status))
 }
 
 export function dumpFibers(fibers: Iterable<RuntimeFiber<any, any>>): UIO<ReadonlyArray<FiberDump>> {
@@ -23,7 +21,7 @@ export function dumpFibers(fibers: Iterable<RuntimeFiber<any, any>>): UIO<Readon
 export function dumpStr(fibers: Iterable<RuntimeFiber<any, any>>, withTrace: false): UIO<string> {
   const du  = T.foreach_(fibers, dump)
   const now = T.effectTotal(() => new Date().getTime())
-  return T.map_(T.map2_(du, now, tuple), ([dumps, now]) => {
+  return T.map_(T.crossWith_(du, now, tuple), ([dumps, now]) => {
     const tree        = renderHierarchy(dumps)
     const dumpStrings = withTrace ? collectTraces(dumps, now) : []
     return IT.foldl_(dumpStrings, tree, (acc, v) => acc + '\n' + v)

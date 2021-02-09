@@ -68,7 +68,7 @@ abstract class MultiSyntax<W, S1, S2, R, E, A> {
     this: Multi<W, S1, S2, R, E, A>,
     mb: Multi<W1, S2, S3, Q, D, B>
   ): Multi<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
-    return product_(this, mb)
+    return cross_(this, mb)
   }
 }
 
@@ -446,20 +446,20 @@ export function pure<A, S1 = unknown, S2 = never>(a: A): Multi<never, S1, S2, un
  * -------------------------------------------
  */
 
-export function product_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+export function cross_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   fa: Multi<W, S1, S2, R, E, A>,
   fb: Multi<W1, S2, S3, Q, D, B>
 ): Multi<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
-  return map2_(fa, fb, tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
-export function product<W1, S2, S3, Q, D, B>(
+export function cross<W1, S2, S3, Q, D, B>(
   fb: Multi<W1, S2, S3, Q, D, B>
 ): <W, S1, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+  return (fa) => cross_(fa, fb)
 }
 
-export function map2_<W, S1, S2, R, E, A, W1, S3, Q, D, B, C>(
+export function crossWith_<W, S1, S2, R, E, A, W1, S3, Q, D, B, C>(
   fa: Multi<W, S1, S2, R, E, A>,
   fb: Multi<W1, S2, S3, Q, D, B>,
   f: (a: A, b: B) => C
@@ -467,18 +467,18 @@ export function map2_<W, S1, S2, R, E, A, W1, S3, Q, D, B, C>(
   return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
-export function map2<W1, A, S2, S3, R1, E1, B, C>(
+export function crossWith<W1, A, S2, S3, R1, E1, B, C>(
   fb: Multi<W1, S2, S3, R1, E1, B>,
   f: (a: A, b: B) => C
 ): <W, S1, R, E>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, R1 & R, E1 | E, C> {
-  return (fa) => map2_(fa, fb, f)
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 export function ap_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   fab: Multi<W, S1, S2, R, E, (a: A) => B>,
   fa: Multi<W1, S2, S3, R1, E1, A>
 ): Multi<W | W1, S1, S3, R1 & R, E1 | E, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<W1, S2, S3, R1, E1, A>(
@@ -491,7 +491,7 @@ export function apl_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   fa: Multi<W, S1, S2, R, E, A>,
   fb: Multi<W1, S2, S3, Q, D, B>
 ): Multi<W | W1, S1, S3, Q & R, D | E, A> {
-  return map2_(fa, fb, (a, _) => a)
+  return crossWith_(fa, fb, (a, _) => a)
 }
 
 export function apl<W1, S2, S3, Q, D, B>(
@@ -504,7 +504,7 @@ export function apr_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   fa: Multi<W, S1, S2, R, E, A>,
   fb: Multi<W1, S2, S3, Q, D, B>
 ): Multi<W | W1, S1, S3, Q & R, D | E, B> {
-  return map2_(fa, fb, (_, b) => b)
+  return crossWith_(fa, fb, (_, b) => b)
 }
 
 export function apr<W1, S2, S3, Q, D, B>(

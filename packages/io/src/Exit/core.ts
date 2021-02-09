@@ -156,20 +156,20 @@ export function pure<A>(a: A): Exit<never, A> {
  * -------------------------------------------
  */
 
-export function product_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
-  return map2Cause_(fa, fb, tuple, C.then)
+export function cross_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
+  return crossWithCause_(fa, fb, tuple, C.then)
 }
 
-export function product<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
-  return (fa) => product_(fa, fb)
+export function cross<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
 }
 
-export function productPar_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
-  return map2Cause_(fa, fb, tuple, C.both)
+export function crossPar_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
+  return crossWithCause_(fa, fb, tuple, C.both)
 }
 
-export function productPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
-  return (fa) => productPar_(fa, fb)
+export function crossPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
+  return (fa) => crossPar_(fa, fb)
 }
 
 export function ap_<E, A, G, B>(fab: Exit<G, (a: A) => B>, fa: Exit<E, A>): Exit<E | G, B> {
@@ -181,7 +181,7 @@ export function ap<E, A>(fa: Exit<E, A>): <G, B>(fab: Exit<G, (a: A) => B>) => E
 }
 
 export function apl_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
-  return map2Cause_(fa, fb, (a, _) => a, C.then)
+  return crossWithCause_(fa, fb, (a, _) => a, C.then)
 }
 
 export function apl<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
@@ -189,14 +189,14 @@ export function apl<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E,
 }
 
 export function apr_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
-  return map2Cause_(fa, fb, (_, b) => b, C.then)
+  return crossWithCause_(fa, fb, (_, b) => b, C.then)
 }
 
 export function apr<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
   return (fa) => apr_(fa, fb)
 }
 
-export function map2Cause_<E, A, G, B, C>(
+export function crossWithCause_<E, A, G, B, C>(
   fa: Exit<E, A>,
   fb: Exit<G, B>,
   f: (a: A, b: B) => C,
@@ -227,24 +227,24 @@ export function map2Cause_<E, A, G, B, C>(
   }
 }
 
-export function map2Cause<E, A, G, B, C>(
+export function crossWithCause<E, A, G, B, C>(
   fb: Exit<G, B>,
   f: (a: A, b: B) => C,
   g: (ea: C.Cause<E>, eb: C.Cause<G>) => C.Cause<E | G>
 ): (fa: Exit<E, A>) => Exit<E | G, C> {
-  return (fa) => map2Cause_(fa, fb, f, g)
+  return (fa) => crossWithCause_(fa, fb, f, g)
 }
 
-export function map2_<EA, A, EB, B, C>(fa: Exit<EA, A>, fb: Exit<EB, B>, f: (a: A, b: B) => C): Exit<EA | EB, C> {
-  return map2Cause_(fa, fb, f, C.then)
+export function crossWith_<EA, A, EB, B, C>(fa: Exit<EA, A>, fb: Exit<EB, B>, f: (a: A, b: B) => C): Exit<EA | EB, C> {
+  return crossWithCause_(fa, fb, f, C.then)
 }
 
-export function map2<A, G, B, C>(fb: Exit<G, B>, f: (a: A, b: B) => C): <E>(fa: Exit<E, A>) => Exit<G | E, C> {
-  return (fa) => map2_(fa, fb, f)
+export function crossWith<A, G, B, C>(fb: Exit<G, B>, f: (a: A, b: B) => C): <E>(fa: Exit<E, A>) => Exit<G | E, C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 export function aplPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
-  return map2Cause_(fa, fb, (a, _) => a, C.both)
+  return crossWithCause_(fa, fb, (a, _) => a, C.both)
 }
 
 export function aplPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
@@ -252,7 +252,7 @@ export function aplPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G |
 }
 
 export function aprPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
-  return map2Cause_(fa, fb, (_, b) => b, C.both)
+  return crossWithCause_(fa, fb, (_, b) => b, C.both)
 }
 
 export function aprPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
@@ -361,7 +361,7 @@ export function collectAll<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Option<
             head,
             map((x): ReadonlyArray<A> => [x])
           ),
-          (acc, el) => map2Cause_(acc, el, (acc, el) => [el, ...acc], C.then)
+          (acc, el) => crossWithCause_(acc, el, (acc, el) => [el, ...acc], C.then)
         ),
         map(A.reverse)
       )
@@ -380,7 +380,7 @@ export function collectAllPar<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Opti
             head,
             map((x): ReadonlyArray<A> => [x])
           ),
-          (acc, el) => map2Cause_(acc, el, (acc, el) => [el, ...acc], C.both)
+          (acc, el) => crossWithCause_(acc, el, (acc, el) => [el, ...acc], C.both)
         ),
         map(A.reverse)
       )

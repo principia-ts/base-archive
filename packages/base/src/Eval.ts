@@ -210,24 +210,24 @@ export function pure<A>(a: A): Eval<A> {
  * -------------------------------------------
  */
 
-export function map2_<A, B, C>(ma: Eval<A>, mb: Eval<B>, f: (a: A, b: B) => C): Eval<C> {
+export function crossWith_<A, B, C>(ma: Eval<A>, mb: Eval<B>, f: (a: A, b: B) => C): Eval<C> {
   return bind_(ma, (a) => map_(mb, (b) => f(a, b)))
 }
 
-export function map2<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval<A>) => Eval<C> {
-  return (ma) => map2_(ma, mb, f)
+export function crossWith<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval<A>) => Eval<C> {
+  return (ma) => crossWith_(ma, mb, f)
 }
 
-export function product_<A, B>(ma: Eval<A>, mb: Eval<B>): Eval<readonly [A, B]> {
-  return map2_(ma, mb, tuple)
+export function cross_<A, B>(ma: Eval<A>, mb: Eval<B>): Eval<readonly [A, B]> {
+  return crossWith_(ma, mb, tuple)
 }
 
-export function product<B>(mb: Eval<B>): <A>(ma: Eval<A>) => Eval<readonly [A, B]> {
-  return (ma) => product_(ma, mb)
+export function cross<B>(mb: Eval<B>): <A>(ma: Eval<A>) => Eval<readonly [A, B]> {
+  return (ma) => cross_(ma, mb)
 }
 
 export function ap_<A, B>(mab: Eval<(a: A) => B>, ma: Eval<A>): Eval<B> {
-  return map2_(mab, ma, (f, a) => f(a))
+  return crossWith_(mab, ma, (f, a) => f(a))
 }
 
 export function ap<A>(ma: Eval<A>): <B>(mab: Eval<(a: A) => B>) => Eval<B> {
@@ -419,10 +419,10 @@ export const Apply = HKT.instance<P.Apply<[URI]>>({
   ...Functor,
   ap_,
   ap,
-  map2_,
-  map2,
-  product_,
-  product
+  crossWith_: crossWith_,
+  crossWith: crossWith,
+  cross_: cross_,
+  cross: cross
 })
 
 export const Applicative = HKT.instance<P.Applicative<[URI]>>({

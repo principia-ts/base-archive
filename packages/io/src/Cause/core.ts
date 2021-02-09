@@ -9,7 +9,7 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { makeEq } from '@principia/base/Eq'
 import * as Ev from '@principia/base/Eval'
-import { flow, identity, pipe,tuple  } from '@principia/base/Function'
+import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import * as F from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
@@ -340,13 +340,13 @@ function _fold<E, A>(
     case 'Interrupt':
       return Ev.now(onInterrupt(cause.fiberId))
     case 'Both':
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
         Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
         onBoth
       )
     case 'Then':
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
         Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
         onThen
@@ -682,13 +682,13 @@ function _bind<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
     case 'Interrupt':
       return Ev.now(ma)
     case 'Then':
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _bind(ma.left, f)),
         Ev.defer(() => _bind(ma.right, f)),
         then
       )
     case 'Both':
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _bind(ma.left, f)),
         Ev.defer(() => _bind(ma.right, f)),
         both
@@ -820,14 +820,14 @@ function _stripFailures<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
       return Ev.now(cause)
     }
     case 'Both': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _stripFailures(cause.left)),
         Ev.defer(() => _stripFailures(cause.right)),
         both
       )
     }
     case 'Then': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _stripFailures(cause.left)),
         Ev.defer(() => _stripFailures(cause.right)),
         then
@@ -861,14 +861,14 @@ export function _stripInterrupts<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
       return Ev.now(cause)
     }
     case 'Both': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _stripInterrupts(cause.left)),
         Ev.defer(() => _stripInterrupts(cause.right)),
         both
       )
     }
     case 'Then': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _stripInterrupts(cause.left)),
         Ev.defer(() => _stripInterrupts(cause.right)),
         then
@@ -899,7 +899,7 @@ function _stripSomeDefects<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<
       return Ev.now(pf(cause.value) ? O.some(die(cause.value)) : O.none())
     }
     case 'Both': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _stripSomeDefects(cause.left, pf)),
         Ev.defer(() => _stripSomeDefects(cause.right, pf)),
         (left, right) => {
@@ -914,7 +914,7 @@ function _stripSomeDefects<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<
       )
     }
     case 'Then': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _stripSomeDefects(cause.left, pf)),
         Ev.defer(() => _stripSomeDefects(cause.right, pf)),
         (left, right) => {
@@ -957,7 +957,7 @@ function _keepDefects<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
       return Ev.now(O.some(cause))
     }
     case 'Then': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _keepDefects(cause.left)),
         Ev.defer(() => _keepDefects(cause.right)),
         (lefts, rights) => {
@@ -974,7 +974,7 @@ function _keepDefects<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
       )
     }
     case 'Both': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _keepDefects(cause.left)),
         Ev.defer(() => _keepDefects(cause.right)),
         (lefts, rights) => {
@@ -1016,7 +1016,7 @@ function _sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Eit
       return Ev.now(E.left(cause))
     }
     case 'Then': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _sequenceCauseEither(cause.left)),
         Ev.defer(() => _sequenceCauseEither(cause.right)),
         (lefts, rights) => {
@@ -1029,7 +1029,7 @@ function _sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Eit
       )
     }
     case 'Both': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _sequenceCauseEither(cause.left)),
         Ev.defer(() => _sequenceCauseEither(cause.right)),
         (lefts, rights) => {
@@ -1066,7 +1066,7 @@ function _sequenceCauseOption<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Ca
       return Ev.now(O.some(cause))
     }
     case 'Then': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _sequenceCauseOption(cause.left)),
         Ev.defer(() => _sequenceCauseOption(cause.right)),
         (lefts, rights) => {
@@ -1081,7 +1081,7 @@ function _sequenceCauseOption<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Ca
       )
     }
     case 'Both': {
-      return Ev.map2_(
+      return Ev.crossWith_(
         Ev.defer(() => _sequenceCauseOption(cause.left)),
         Ev.defer(() => _sequenceCauseOption(cause.right)),
         (lefts, rights) => {

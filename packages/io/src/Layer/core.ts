@@ -108,10 +108,10 @@ export abstract class Layer<R, E, A> {
   }
 
   /**
-   * Symbolic alias for productPar
+   * Symbolic alias for crossPar
    */
   ['<&>']<R1, E1, A1>(lb: Layer<R1, E1, A1>): Layer<R & R1, E | E1, readonly [A, A1]> {
-    return productPar_(this, lb)
+    return crossPar_(this, lb)
   }
 
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
@@ -285,10 +285,10 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
       return M.succeed((memo) => M.bind_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
     }
     case LayerTag.Map2Par: {
-      return M.succeed((memo) => M.map2Par_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
+      return M.succeed((memo) => M.crossWithPar_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
     }
     case LayerTag.Map2Seq: {
-      return M.succeed((memo) => M.map2_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
+      return M.succeed((memo) => M.crossWith_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
     }
     case LayerTag.AllPar: {
       return M.succeed((memo) => {
@@ -555,7 +555,7 @@ export function defer<R, E, A>(la: () => Layer<R, E, A>): Layer<R, E, A> {
  * -------------------------------------------
  */
 
-export function map2_<R, E, A, R1, E1, B, C>(
+export function crossWith_<R, E, A, R1, E1, B, C>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -563,28 +563,28 @@ export function map2_<R, E, A, R1, E1, B, C>(
   return new Map2Seq(fa, fb, f)
 }
 
-export function map2<A, R1, E1, B, C>(
+export function crossWith<A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Layer<R, E, A>) => Layer<R & R1, E | E1, C> {
-  return (fa) => map2_(fa, fb, f)
+  return (fa) => crossWith_(fa, fb, f)
 }
 
-export function product_<R, E, A, R1, E1, B>(
+export function cross_<R, E, A, R1, E1, B>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, readonly [A, B]> {
   return new Map2Seq(fa, fb, tuple)
 }
 
-export function product<R1, E1, B>(
+export function cross<R1, E1, B>(
   right: Layer<R1, E1, B>
 ): <R, E, A>(left: Layer<R, E, A>) => Layer<R & R1, E | E1, readonly [A, B]> {
-  return (left) => product_(left, right)
+  return (left) => cross_(left, right)
 }
 
 export function ap_<R, E, A, R1, E1, B>(fab: Layer<R, E, (a: A) => B>, fa: Layer<R1, E1, A>): Layer<R & R1, E | E1, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<R1, E1, A>(
@@ -599,7 +599,7 @@ export function ap<R1, E1, A>(
  * -------------------------------------------
  */
 
-export function map2Par_<R, E, A, R1, E1, B, C>(
+export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -607,31 +607,31 @@ export function map2Par_<R, E, A, R1, E1, B, C>(
   return new Map2Par(fa, fb, f)
 }
 
-export function map2Par<A, R1, E1, B, C>(
+export function crossWithPar<A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Layer<R, E, A>) => Layer<R & R1, E | E1, C> {
-  return (fa) => map2Par_(fa, fb, f)
+  return (fa) => crossWithPar_(fa, fb, f)
 }
 
-export function productPar_<R, E, A, R1, E1, B>(
+export function crossPar_<R, E, A, R1, E1, B>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, readonly [A, B]> {
-  return map2Par_(fa, fb, tuple)
+  return crossWithPar_(fa, fb, tuple)
 }
 
-export function productPar<R1, E1, B>(
+export function crossPar<R1, E1, B>(
   right: Layer<R1, E1, B>
 ): <R, E, A>(left: Layer<R, E, A>) => Layer<R & R1, E | E1, readonly [A, B]> {
-  return (left) => product_(left, right)
+  return (left) => cross_(left, right)
 }
 
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Layer<R, E, (a: A) => B>,
   fa: Layer<R1, E1, A>
 ): Layer<R & R1, E | E1, B> {
-  return map2_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function apPar<R1, E1, A>(

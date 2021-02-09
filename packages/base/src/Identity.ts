@@ -57,9 +57,9 @@ export function pure<A>(a: A): A {
  * -------------------------------------------
  */
 
-export const product_: <A, B>(fa: A, fb: B) => readonly [A, B] = tuple
+export const cross_: <A, B>(fa: A, fb: B) => readonly [A, B] = tuple
 
-export const product = <B>(fb: B) => <A>(fa: A): readonly [A, B] => product_(fa, fb)
+export const cross = <B>(fb: B) => <A>(fa: A): readonly [A, B] => cross_(fa, fb)
 
 export function ap_<A, B>(fab: (a: A) => B, fa: A): B {
   return fab(fa)
@@ -91,11 +91,11 @@ export function apr<B>(fb: B): <A>(fa: A) => B {
   return (fa) => apr_(fa, fb)
 }
 
-export function map2_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
+export function crossWith_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
   return f(fa, fb)
 }
 
-export function map2<A, B, C>(fb: B, f: (a: A, b: B) => C): (fa: A) => C {
+export function crossWith<A, B, C>(fb: B, f: (a: A, b: B) => C): (fa: A) => C {
   return (fa) => f(fa, fb)
 }
 
@@ -234,10 +234,10 @@ export const Apply = HKT.instance<P.Apply<[URI], V>>({
   ...Functor,
   ap_,
   ap,
-  map2_,
-  map2,
-  product_,
-  product
+  crossWith_,
+  crossWith,
+  cross_,
+  cross
 })
 
 export const Applicative = HKT.instance<P.Applicative<[URI], V>>({

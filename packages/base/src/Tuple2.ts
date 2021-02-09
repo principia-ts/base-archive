@@ -70,7 +70,11 @@ export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<[URI], V & HKT.
  */
 
 export function getApply<M>(M: P.Monoid<M>): P.Apply<[URI], V & HKT.Fix<'I', M>> {
-  const map2_: P.Map2Fn_<[URI], HKT.Fix<'I', M>> = (fa, fb, f) => [f(fst(fa), fst(fb)), M.combine_(snd(fa), snd(fb))]
+  const crossWith_: P.CrossWithFn_<[URI], HKT.Fix<'I', M>> = (fa, fb, f) => [
+    f(fst(fa), fst(fb)),
+    M.combine_(snd(fa), snd(fb))
+  ]
+
   const ap_: P.ApFn_<[URI], V & HKT.Fix<'I', M>> = (fab, fa) => [fst(fab)(fst(fa)), M.combine_(snd(fab), snd(fa))]
 
   return HKT.instance<P.Apply<[URI], V & HKT.Fix<'I', M>>>({
@@ -78,10 +82,10 @@ export function getApply<M>(M: P.Monoid<M>): P.Apply<[URI], V & HKT.Fix<'I', M>>
     invmap: (f, _) => (fa) => map_(fa, f),
     map_,
     map,
-    map2_,
-    map2: (fb, f) => (fa) => map2_(fa, fb, f),
-    product_: (fa, fb) => map2_(fa, fb, tuple_),
-    product: (fb) => (fa) => map2_(fa, fb, tuple_),
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple_),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple_),
     ap_,
     ap: (fa) => (fab) => ap_(fab, fa)
   })

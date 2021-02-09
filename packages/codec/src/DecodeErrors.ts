@@ -126,9 +126,9 @@ export function getDecodeErrorsValidation<M extends HKT.URIS, C = HKT.Auto>(
 export function getDecodeErrorsValidation<M>(
   M: P.MonadExcept<HKT.UHKT2<M>> & P.Bifunctor<HKT.UHKT2<M>>
 ): MonadDecoder<HKT.UHKT2<M>, HKT.Auto, DecodeErrors> {
-  const map2_: P.Map2Fn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, fb, f) =>
+  const crossWith_: P.CrossWithFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, fb, f) =>
     M.flatten(
-      M.map2_(M.attempt(fa), M.attempt(fb), (ea, eb) =>
+      M.crossWith_(M.attempt(fa), M.attempt(fb), (ea, eb) =>
         E.isLeft(ea)
           ? E.isLeft(eb)
             ? M.fail(FS.combine(ea.left, eb.left))
@@ -155,12 +155,12 @@ export function getDecodeErrorsValidation<M>(
     invmap: M.invmap,
     map_: M.map_,
     map: M.map,
-    map2_,
-    map2: (fb, f) => (fa) => map2_(fa, fb, f),
-    product_: (fa, fb) => map2_(fa, fb, tuple),
-    product: (fb) => (fa) => map2_(fa, fb, tuple),
-    ap_: (fab, fa) => map2_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => map2_(fab, fa, (f, a) => f(a)),
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
     mapLeft_: M.mapLeft_,
     mapLeft: M.mapLeft,
     bimap_: M.bimap_,
