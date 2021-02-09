@@ -1,4 +1,4 @@
-import type { TestAnnotation } from './Annotation'
+import type { Annotated, TestAnnotation } from './Annotation'
 import type { TestArgs } from './TestArgs'
 import type { TestAspect } from './TestAspect'
 import type { TestFailure } from './TestFailure'
@@ -19,8 +19,8 @@ import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 
-import { tagged, TestAnnotationMap } from './Annotation'
-import * as Annotations from './Annotation'
+import { Annotations,tagged, TestAnnotationMap } from './Annotation'
+import * as Annotation from './Annotation'
 import { Ignored } from './TestSuccess'
 
 export type XSpec<R, E> = Spec<R, TestFailure<E>, TestSuccess>
@@ -60,9 +60,7 @@ export function test<R, E, T>(label: string, test: I.IO<R, E, T>, annotations: T
   return new Spec(new TestCase(label, test, annotations))
 }
 
-export function annotated<R, E, T>(
-  spec: Spec<R, E, T>
-): Spec<R & Has<Annotations.Annotations>, Annotations.Annotated<E>, Annotations.Annotated<T>> {
+export function annotated<R, E, T>(spec: Spec<R, E, T>): Spec<R & Has<Annotations>, Annotated<E>, Annotated<T>> {
   return transform_(
     spec,
     matchTag({
@@ -348,7 +346,7 @@ export function execute<R, E, T>(
 export function whenM_<R, E, R1, E1>(
   spec: Spec<R, E, TestSuccess>,
   b: I.IO<R1, E1, boolean>
-): Spec<R & R1 & Has<Annotations.Annotations>, E | E1, TestSuccess> {
+): Spec<R & R1 & Has<Annotations>, E | E1, TestSuccess> {
   return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
       suite(
@@ -366,17 +364,14 @@ export function whenM_<R, E, R1, E1>(
         I.ifM_(
           b,
           () => t.test,
-          () => I.as_(Annotations.annotate(Annotations.ignored, 1), () => new Ignored())
+          () => I.as_(Annotations.annotate(Annotation.ignored, 1), () => new Ignored())
         ),
         t.annotations
       )
   })
 }
 
-export function when_<R, E>(
-  spec: Spec<R, E, TestSuccess>,
-  b: boolean
-): Spec<R & Has<Annotations.Annotations>, E, TestSuccess> {
+export function when_<R, E>(spec: Spec<R, E, TestSuccess>, b: boolean): Spec<R & Has<Annotations>, E, TestSuccess> {
   return whenM_(spec, I.succeed(b))
 }
 

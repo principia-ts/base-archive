@@ -243,18 +243,15 @@ export function noShrink<A>(a: A): Sample<unknown, A> {
   return new Sample(a, S.empty)
 }
 
-export function shrinkNumber(smallest: number, a: number): Sample<unknown, number> {
-  return unfold(a, (max) =>
+export function shrinkFractional(smallest: number): (a: number) => Sample<unknown, number> {
+  return (a) => unfold(a, (max) =>
     tuple(
       max,
       S.unfold(smallest, (min) => {
-        console.log(`Min: ${min}`)
         const mid = min + (max - min) / 2
-        console.log(mid)
         if (mid === max) {
           return O.none()
         } else if (Math.abs(max - mid) < 0.001) {
-          console.log(Math.abs(max - mid))
           return O.some([min, max])
         } else {
           return O.some([mid, mid])
@@ -262,6 +259,29 @@ export function shrinkNumber(smallest: number, a: number): Sample<unknown, numbe
       })
     )
   )
+}
+
+function quot(x: number, y: number): number {
+  return (x / y) | 0
+}
+
+export function shrinkIntegral(smallest: number): (a: number) => Sample<unknown, number> {
+  return (a) =>
+    unfold(a, (max) =>
+      tuple(
+        max,
+        S.unfold(smallest, (min) => {
+          const mid = min + (quot(max - min, 2))
+          if(mid === max) {
+            return O.none()
+          } else if(Math.abs(max - mid) === 1) {
+            return O.some([mid, max])
+          } else {
+            return O.some([mid, mid])
+          }
+        })
+      )
+    )
 }
 
 export function unfold<R, A, S>(s: S, f: (s: S) => readonly [A, Stream<R, never, S>]): Sample<R, A> {

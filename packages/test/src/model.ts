@@ -1,25 +1,37 @@
 import type { Assertion, AssertionM, AssertResult } from './Assertion'
 import type { ExecutedSpec } from './ExecutedSpec'
+import type { Gen } from './Gen'
 import type { TestResult } from './Render'
+import type { Sample } from './Sample'
 import type { TestLogger } from './TestLogger'
 import type { WidenLiteral } from './util'
+import type { Either } from '@principia/base/Either'
 import type { Has } from '@principia/base/Has'
 import type { Show } from '@principia/base/Show'
+import type { BooleanAlgebra } from '@principia/base/typeclass'
 import type { UnionToIntersection } from '@principia/base/util/types'
 import type { IO, URIO } from '@principia/io/IO'
+import type { Stream } from '@principia/io/Stream'
 
-import { flow } from '@principia/base/Function'
+import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
+import { flow, pipe } from '@principia/base/Function'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import { none } from '@principia/base/Option'
+import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
+import * as S from '@principia/io/Stream'
 
 import { TestAnnotationMap } from './Annotation'
-import { AssertionValue } from './Assertion'
+import { anything, AssertionValue } from './Assertion'
 import * as BA from './FreeBooleanAlgebra'
+import { GenFailureDetails } from './GenFailureDetails'
 import { FailureDetails } from './Render'
+import * as Sa from './Sample'
 import * as Spec from './Spec'
+import { TestConfig } from './TestConfig'
 import * as TF from './TestFailure'
 import * as TS from './TestSuccess'
 
@@ -110,4 +122,83 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
 
 export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {
   return testM(label, () => I.effectTotal(assertion))
+}
+
+export function check<R, A>(rv: Gen<R, A>): (test: (a: A) => TestResult) => URIO<R & Has<TestConfig>, TestResult> {
+  return (test) => checkM(rv)(flow(test, I.succeed))
+}
+
+export function checkM<R, A>(
+  rv: Gen<R, A>
+): <R1, E>(test: (a: A) => IO<R1, E, TestResult>) => IO<R & R1 & Has<TestConfig>, E, TestResult> {
+  return (test) =>
+    pipe(
+      TestConfig.samples,
+      I.bind((n) => checkStream(pipe(rv.sample, S.forever, S.take(n)), test))
+    )
+}
+
+function checkStream<R, A, R1, E>(
+  stream: Stream<R, never, Sample<R, A>>,
+  test: (a: A) => IO<R1, E, TestResult>
+): IO<R & R1 & Has<TestConfig>, E, TestResult> {
+  return pipe(
+    TestConfig.shrinks,
+    I.bind(
+      shrinkStream(
+        pipe(
+          stream,
+          S.zipWithIndex,
+          S.mapM(([initial, index]) =>
+            pipe(
+              initial,
+              Sa.foreach((input) =>
+                pipe(
+                  test(input),
+                  I.map(
+                    BA.map((fd) => FailureDetails(fd.assertion, O.some(GenFailureDetails(initial.value, input, index))))
+                  ),
+                  I.attempt
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+}
+
+function shrinkStream<R, R1, E, A>(
+  stream: Stream<R1, never, Sample<R1, Either<E, BA.FreeBooleanAlgebra<FailureDetails>>>>
+): (maxShrinks: number) => IO<R & R1 & Has<TestConfig>, E, TestResult> {
+  return (maxShrinks) =>
+    pipe(
+      stream,
+      S.dropWhile((_) => !E.fold_(_.value, (_) => true, BA.isFalse)),
+      S.take(1),
+      S.bind(flow(Sa.shrinkSearch(E.fold(() => true, BA.isFalse)), S.take(maxShrinks + 1))),
+      S.runCollect,
+      I.bind(
+        flow(
+          C.filter(E.fold(() => true, BA.isFalse)),
+          C.last,
+          O.fold(
+            () =>
+              I.succeed(
+                BA.success(
+                  FailureDetails([
+                    new AssertionValue(
+                      undefined,
+                      () => anything,
+                      () => anything.run(undefined)
+                    )
+                  ])
+                )
+              ),
+            (_) => I.fromEither(() => _)
+          )
+        )
+      )
+    )
 }

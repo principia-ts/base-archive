@@ -4,8 +4,10 @@ import type { TestAspect } from './TestAspect'
 import type { TestLogger } from './TestLogger'
 import type { TestRunner } from './TestRunner'
 import type { Has } from '@principia/base/Has'
+import type { Erase } from '@principia/base/util/types'
 import type { Clock } from '@principia/io/Clock'
 import type { URIO } from '@principia/io/IO'
+import type { Random } from '@principia/io/Random'
 
 import * as A from '@principia/base/Array'
 

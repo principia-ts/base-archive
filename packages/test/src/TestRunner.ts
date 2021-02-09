@@ -1,4 +1,4 @@
-import type { Annotations } from './Annotation'
+import type { Annotations, AnnotationsTag } from './Annotation'
 import type { ExecutedSpec } from './ExecutedSpec'
 import type { TestReporter } from './model'
 import type { XSpec } from './Spec'

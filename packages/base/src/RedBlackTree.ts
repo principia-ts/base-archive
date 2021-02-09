@@ -5,7 +5,6 @@
  */
 
 import type { Option } from './Option'
-import type { Ordering } from './Ordering'
 import type { CombineFn_, CompareFn_, Ord, Semigroup } from './typeclass'
 
 import * as O from './Option'
@@ -110,6 +109,106 @@ export function at_<K, V>(tree: RedBlackTree<K, V>, index: number): RedBlackTree
     }
   }
   return new RedBlackTreeIterator(tree.ord.compare_, tree.root, [])
+}
+
+export function at(index: number): <K, V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
+  return (tree) => at_(tree, index)
+}
+
+export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
+  const cmp                      = tree.ord.compare_
+  let n: RBTree<K, V>            = tree.root
+  const stack: Array<Node<K, V>> = []
+  let last_ptr                   = 0
+  while (n) {
+    const d = cmp(key, n.key)
+    stack.push(n)
+    if (d <= 0) {
+      last_ptr = stack.length
+      n        = n.left
+    } else {
+      n = n.right
+    }
+  }
+  stack.length = last_ptr
+  return new RedBlackTreeIterator(cmp, tree.root, stack)
+}
+
+export function gte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
+  return (tree) => gte_(tree, key)
+}
+
+export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
+  const cmp                      = tree.ord.compare_
+  let n: RBTree<K, V>            = tree.root
+  const stack: Array<Node<K, V>> = []
+  let last_ptr                   = 0
+  while (n) {
+    const d = cmp(key, n.key)
+    stack.push(n)
+    if (d < 0) {
+      last_ptr = stack.length
+      n        = n.left
+    } else {
+      n = n.right
+    }
+  }
+  stack.length = last_ptr
+  return new RedBlackTreeIterator(cmp, tree.root, stack)
+}
+
+export function gt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
+  return (tree) => gte_(tree, key)
+}
+
+export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
+  const cmp                      = tree.ord.compare_
+  let n: RBTree<K, V>            = tree.root
+  const stack: Array<Node<K, V>> = []
+  let last_ptr                   = 0
+  while (n) {
+    const d = cmp(key, n.key)
+    stack.push(n)
+    if (d >= 0) {
+      last_ptr = stack.length
+    }
+    if (d < 0) {
+      n = n.left
+    } else {
+      n = n.right
+    }
+  }
+  stack.length = last_ptr
+  return new RedBlackTreeIterator(cmp, tree.root, stack)
+}
+
+export function lte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
+  return (tree) => lte_(tree, key)
+}
+
+export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
+  const cmp                      = tree.ord.compare_
+  let n: RBTree<K, V>            = tree.root
+  const stack: Array<Node<K, V>> = []
+  let last_ptr                   = 0
+  while (n) {
+    const d = cmp(key, n.key)
+    stack.push(n)
+    if (d > 0) {
+      last_ptr = stack.length
+    }
+    if (d <= 0) {
+      n = n.left
+    } else {
+      n = n.right
+    }
+  }
+  stack.length = last_ptr
+  return new RedBlackTreeIterator(cmp, tree.root, stack)
+}
+
+export function lt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
+  return (tree) => lt_(tree, key)
 }
 
 /*
@@ -826,37 +925,4 @@ export function blackHeight<K, V>(root: RBTree<K, V>): number {
     n = n.right
   }
   return x
-}
-
-export function rng<K, V>(cmp: CompareFn_<K>, root: RBTree<K, V>, low: Option<K>, high: Option<K>): void {
-  if (low._tag === 'None' && high._tag === 'None') {
-    return
-  }
-  const l = O.getOrElse_(low, () => null)
-  const h = O.getOrElse_(high, () => null)
-  if (root === Leaf) {
-    return
-  }
-  let n: RBTree<K, V>                         = root
-  const nodeStack: Array<Mutable<Node<K, V>>> = []
-  const cmpStack: Array<Ordering>             = []
-  while (n) {
-    let d: Ordering
-    if (l && (d = cmp(n.key, l)) === -1) {
-      cmpStack.push(d)
-      nodeStack.push(n)
-      n = n.right
-      continue
-    }
-    if (h && (d = cmp(n.key, h)) <= 0) {
-      cmpStack.push(d)
-      nodeStack.push(n)
-      n = n.left
-      continue
-    }
-  }
-  console.log({
-    nodeStack,
-    cmpStack
-  })
 }

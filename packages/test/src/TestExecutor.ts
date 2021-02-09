@@ -1,4 +1,4 @@
-import type { Annotated, Annotations } from './Annotation'
+import type { Annotated, Annotations, AnnotationsTag } from './Annotation'
 import type { ExecutedSpec } from './ExecutedSpec'
 import type { TestSuccess } from './TestSuccess'
 import type { Has } from '@principia/base/Has'

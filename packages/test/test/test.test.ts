@@ -1,22 +1,23 @@
-import type { Annotations } from '../src/Annotation'
 import type { Has } from '@principia/base/Has'
 
 import '@principia/base/unsafe/Operators'
 
 import * as Eq from '@principia/base/Eq'
 import { makeEq } from '@principia/base/Eq'
+import { none } from '@principia/base/Option'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
+import { defaultRandom, Random } from '@principia/io/Random'
 
-import { assert, assertM, endsWith, equalTo, suite, test, testM, TestRunner } from '../src'
-import { live as liveAnnotations } from '../src/Annotation'
+import { assert, assertM, check, endsWith, equalTo, not, suite, test, TestConfig, testM, TestRunner } from '../src'
+import { Annotations } from '../src/Annotation'
+import * as Gen from '../src/Gen'
 import { RunnableSpec } from '../src/RunnableSpec'
 import * as Spec from '../src/Spec'
 import { nonFlaky } from '../src/TestAspect'
-import * as TC from '../src/TestConfig'
 import { defaultTestExecutor } from '../src/TestExecutor'
 
-type Environment = Has<Annotations> & Has<TC.TestConfig> & { env: string }
+type Environment = Has<Annotations> & Has<Random> & Has<TestConfig> & { env: string }
 
 class TestSpec extends RunnableSpec<Environment, never> {
   spec    = suite('Suite')(
@@ -32,6 +33,7 @@ class TestSpec extends RunnableSpec<Environment, never> {
         equalTo('hello', Eq.string)
       )
     )['@@'](nonFlaky),
+    testM('check', () => check(Gen.int(0, 100))((n) => assert(n, equalTo(100, Eq.number)))),
     testM('env', () =>
       assertM(
         I.asksM((_: { env: string }) => I.succeed(_)),
@@ -46,12 +48,15 @@ class TestSpec extends RunnableSpec<Environment, never> {
   runner  = new TestRunner<Environment, never>(
     defaultTestExecutor(
       L.allPar(
-        liveAnnotations,
-        TC.live({ repeats: 10, retries: 0, samples: 0, shrinks: 0 }),
+        L.succeed(Random)(defaultRandom),
+        Annotations.live,
+        TestConfig.live({ repeats: 10, retries: 0, samples: 10, shrinks: 10 }),
         L.fromRawEffect(I.succeed({ env: 'this is env' }))
       )
     )
   )
 }
+
+new TestSpec().main({ tagSearchTerms: [], testSearchTerms: [], testTaskPolicy: none() })
 
 export default new TestSpec()

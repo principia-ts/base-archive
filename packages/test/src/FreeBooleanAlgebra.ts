@@ -5,7 +5,7 @@ import type { IO } from '@principia/io/IO'
 import * as B from '@principia/base/Boolean'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
-import { identity, pipe } from '@principia/base/Function'
+import { flow, identity, pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
 
@@ -317,6 +317,20 @@ export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlge
     O.some,
     () => O.none()
   )
+}
+
+/*
+ * -------------------------------------------
+ * Functor
+ * -------------------------------------------
+ */
+
+export function map_<A, B>(fa: FreeBooleanAlgebra<A>, f: (a: A) => B): FreeBooleanAlgebra<B> {
+  return bind_(fa, flow(f, success))
+}
+
+export function map<A, B>(f: (a: A) => B): (fa: FreeBooleanAlgebra<A>) => FreeBooleanAlgebra<B> {
+  return (fa) => map_(fa, f)
 }
 
 /*

@@ -12,7 +12,7 @@ import * as Sa from '../src/Sample'
 const x = Gen.weighted([Gen.constant(true), 9], [Gen.constant(false), 1])
 
 pipe(
-  x.sample,
+  Gen.arrayOfN_(Gen.int(0, 100), 10).sample,
   S.map((sample) => sample.value),
   S.forever,
   S.take(100),

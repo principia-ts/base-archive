@@ -113,6 +113,8 @@ export function assertionRec<A, B>(
   return resultAssertion()
 }
 
+export const anything: Assertion<any> = assertion('anything', [], () => true)
+
 export function approximatelyEquals<A extends number>(reference: A, tolerance: A): Assertion<A> {
   return assertion(
     'approximatelyEquals',

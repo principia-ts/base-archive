@@ -1,5 +1,4 @@
-import type { Annotations, TestAnnotation } from './Annotation'
-import type { TestConfig } from './TestConfig'
+import type { AnnotationsTag, TestAnnotation } from './Annotation'
 import type { TestFailure } from './TestFailure'
 import type { TestSuccess } from './TestSuccess'
 import type { Predicate } from '@principia/base/Function'
@@ -20,9 +19,10 @@ import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
 import * as Sc from '@principia/io/Schedule'
 
+import { Annotations } from './Annotation'
 import * as Annotation from './Annotation'
 import * as S from './Spec'
-import * as TC from './TestConfig'
+import { TestConfig } from './TestConfig'
 import * as TF from './TestFailure'
 import { RuntimeFailure } from './TestFailure'
 
@@ -196,7 +196,7 @@ export function repeat<R0>(
               schedule,
               pipe(
                 Sc.identity<TestSuccess>(),
-                Sc.tapOutput((_) => Annotation.annotate(Annotation.repeated, 1)),
+                Sc.tapOutput((_) => Annotations.annotate(Annotation.repeated, 1)),
                 Sc.giveAll(r)
               )
             )
@@ -208,13 +208,13 @@ export function repeat<R0>(
 
 export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = new PerTest((test) =>
   pipe(
-    TC.repeats,
+    TestConfig.repeats,
     I.bind((n) =>
       I.apr_(
         test,
         pipe(
           test,
-          I.tap((_) => Annotation.annotate(Annotation.repeated, 1)),
+          I.tap((_) => Annotations.annotate(Annotation.repeated, 1)),
           I.repeatN(n - 1)
         )
       )
