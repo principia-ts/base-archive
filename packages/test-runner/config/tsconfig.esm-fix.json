@@ -3,9 +3,9 @@
   "compilerOptions": {
     "incremental": true,
     "declaration": false,
-    "module": "es2015",
+    "module": "es2020",
     "target": "es2020",
-    "rootDir": "../src",
+    "rootDir": "../src-esm",
     "outDir": "../dist/dist/esm-fix",
     "sourceMap": true,
     "plugins": [
@@ -13,10 +13,13 @@
         "after": true,
         "transform": "@0x706b/ts-transform-fix-esm",
         "relativeProjectRoot": "../../"
+      },
+      {
+        "transform": "../../compile/src/index.ts"
       }
     ],
     "tsBuildInfoFile": "../tsbuildinfo/esm-fix.tsbuildinfo"
   },
   "exclude": ["../build", "../dist", "../node_modules", "../test"],
-  "include": ["../src"]
+  "include": ["../src-esm"]
 }

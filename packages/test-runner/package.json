@@ -1,7 +1,7 @@
 {
-  "name": "@principia/http",
-  "version": "0.2.5",
-  "description": "HTTP",
+  "name": "@principia/test-runner",
+  "version": "0.0.0",
+  "description": "A simple runner for @principia/test",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
   "author": "Peter Krol <peter@peterkrol.com>",
@@ -15,8 +15,8 @@
       "require": "./dist/dist/cjs/*.js"
     }
   },
-  "main": "dist/_dist_/cjs/index.js",
-  "module": "./dist/_dist_/esm-shake/index.js",
+  "main": "dist/dist/cjs/index.js",
+  "module": "./dist/dist/esm-shake/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
@@ -25,7 +25,7 @@
     "build:esm-fix": "ttsc --build ./config/tsconfig.esm-fix.json",
     "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
     "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
-    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && yarn sort-package-json ./dist/package.json",
+    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && yarn sort-package-json ./dist/package.json && cpx ./bin/**/* ./dist/bin",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
     "clean": "rimraf dist build tsbuildinfo",
@@ -39,21 +39,14 @@
   "dependencies": {
     "@principia/base": "^0.2.4",
     "@principia/compile": "^0.2.4",
-    "@principia/free": "^0.2.4",
     "@principia/io": "^0.2.4",
-    "@principia/model": "^0.2.5",
-    "@principia/node": "^0.2.4",
-    "@types/qs": "^6.9.5",
+    "@principia/test": "^0.2.4",
     "core-js": "3",
-    "path-to-regexp": "^6.2.0",
-    "qs": "^6.9.4"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.9"
+    "yargs": "^16.2.0",
+    "glob": "^7.1.6"
   },
   "publishConfig": {
     "access": "public",
     "directory": "dist"
-  },
-  "gitHead": "185e8063ab953917c77482a33f8885fdd554ddf3"
+  }
 }

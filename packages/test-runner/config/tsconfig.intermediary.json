@@ -3,24 +3,19 @@
   "compilerOptions": {
     "incremental": true,
     "declaration": false,
+    "sourceMap": true,
     "module": "es2015",
     "target": "es2020",
-    "rootDir": "../src",
-    "outDir": "../dist/dist/esm-fix",
-    "sourceMap": true,
+    "lib": ["es2020"],
+    "rootDir": "../src-cjs",
+    "outDir": "../dist/dist/.intermediary",
+    "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
     "plugins": [
-      {
-        "after": true,
-        "transform": "@0x706b/ts-transform-fix-esm",
-        "relativeProjectRoot": "../../"
-      },
-
       {
         "transform": "../../compile/src/index.ts"
       }
-    ],
-    "tsBuildInfoFile": "../tsbuildinfo/esm-fix.tsbuildinfo"
+    ]
   },
   "exclude": ["../build", "../dist", "../node_modules", "../test"],
-  "include": ["../src"]
+  "include": ["../src-cjs"]
 }

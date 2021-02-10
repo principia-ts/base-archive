@@ -22,10 +22,10 @@ import {
   testM,
   TestRunner
 } from '@principia/test'
-import * as Annotations from '@principia/test/Annotation'
+import { Annotations } from '@principia/test/Annotation'
 import * as BA from '@principia/test/FreeBooleanAlgebra'
 
-export default new (class extends RunnableSpec<Has<Annotations.Annotations>, string> {
+export default new (class extends RunnableSpec<Has<Annotations>, string> {
   spec = suite('IOSpec')(
     testM('map', () =>
       assertM(
@@ -78,5 +78,5 @@ export default new (class extends RunnableSpec<Has<Annotations.Annotations>, str
     )
   )
   aspects = []
-  runner  = new TestRunner<Has<Annotations.Annotations>, string>(defaultTestExecutor(Annotations.live))
+  runner  = new TestRunner<Has<Annotations>, string>(defaultTestExecutor(Annotations.live))
 })()

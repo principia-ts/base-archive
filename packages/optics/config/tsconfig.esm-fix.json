@@ -11,7 +11,8 @@
     "plugins": [
       {
         "after": true,
-        "transform": "@0x706b/ts-transform-fix-esm"
+        "transform": "@0x706b/ts-transform-fix-esm",
+        "relativeProjectRoot": "../../"
       },
       {
         "transform": "../../compile/src/index.ts"

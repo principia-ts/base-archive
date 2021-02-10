@@ -79,7 +79,7 @@
       "require": "./dist/dist/cjs/Stream/index.js"
     },
     "./*": {
-      "import": "./dist/dist/esm-fix/*.js",
+      "import": "./dist/dist/esm-fix/*",
       "require": "./dist/dist/cjs/*.js"
     }
   },

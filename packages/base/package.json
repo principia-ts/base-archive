@@ -31,7 +31,7 @@
       "require": "./dist/dist/cjs/util/GlobalExceptions/index.js"
     },
     "./*": {
-      "import": "./dist/dist/esm-fix/*.js",
+      "import": "./dist/dist/esm-fix/*",
       "require": "./dist/dist/cjs/*.js"
     }
   },

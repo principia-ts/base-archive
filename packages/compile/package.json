@@ -11,7 +11,7 @@
       "require": "./dist/dist/cjs/index.js"
     },
     "./*": {
-      "import": "./dist/dist/esm-fix/*.js",
+      "import": "./dist/dist/esm-fix/*",
       "require": "./dist/dist/cjs/*.js"
     }
   },

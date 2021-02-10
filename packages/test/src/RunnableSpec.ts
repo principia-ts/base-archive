@@ -14,6 +14,7 @@ import * as ExSp from './ExecutedSpec'
 import * as S from './Spec'
 
 export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
+  readonly _tag = 'RunnableSpec'
   private run(spec: XSpec<R, E>): URIO<Has<TestLogger> & Has<Clock>, number> {
     const self = this
     return I.gen(function* (_) {
@@ -33,9 +34,10 @@ export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   }
   main(args: TA.TestArgs): void {
     const filteredSpec = S.filterByArgs_(this.spec, args)
-    I.run(I.giveLayer_(this.run(filteredSpec), this.runner.bootstrap), (ex) => {
-      console.log(ex)
-      ex._tag === 'Success' ? process.exit(ex.value) : process.exit(1)
-    })
+    I.run(I.giveLayer_(this.run(filteredSpec), this.runner.bootstrap))
   }
+}
+
+export function isRunnableSpec(u: unknown): u is RunnableSpec<any, any> {
+  return typeof u === 'object' && u != null && '_tag' in u && u['_tag'] === 'RunnableSpec'
 }

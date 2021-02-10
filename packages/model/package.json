@@ -55,7 +55,7 @@
       "require": "./dist/dist/cjs/summoner/index.js"
     },
     "./*": {
-      "import": "./dist/dist/esm-fix/*.js",
+      "import": "./dist/dist/esm-fix/*",
       "require": "./dist/dist/cjs/*.js"
     }
   },
