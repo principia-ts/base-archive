@@ -1,6 +1,6 @@
 {
   "name": "@principia/io",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "IO and related data structures",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",

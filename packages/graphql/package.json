@@ -1,6 +1,6 @@
 {
   "name": "@principia/graphql",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "GraphQL",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -47,8 +47,8 @@
   },
   "dependencies": {
     "@principia/base": "^0.3.0",
-    "@principia/io": "^0.3.0",
-    "@principia/koa": "^0.1.0",
+    "@principia/io": "^0.3.1",
+    "@principia/koa": "^0.1.1",
     "@principia/model": "^0.3.0",
     "@types/koa-graphql": "^0.8.4",
     "apollo-server-koa": "2.19.2",
