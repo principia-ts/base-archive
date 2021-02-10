@@ -1,6 +1,6 @@
 {
   "name": "@principia/base",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Base typeclasses and datatypes",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -57,7 +57,7 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/compile": "^0.2.4",
+    "@principia/compile": "^0.3.0",
     "core-js": "3",
     "hamt": "^2.2.2",
     "hamt_plus": "^1.0.2"
