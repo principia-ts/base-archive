@@ -2,7 +2,7 @@ import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
-import { RunnableSpec } from '@principia/test/RunnableSpec'
+import { isRunnableSpec, RunnableSpec } from '@principia/test/RunnableSpec'
 import { TestArgs } from '@principia/test/TestArgs'
 import { createRequire } from 'module'
 import path from 'path'
@@ -32,7 +32,7 @@ const program = pipe(
     })
   ),
   I.bind(I.foreach((path) => I.effect(() => require(path).default))),
-  I.bind(I.foreach((test) => (test instanceof RunnableSpec ? I.effectTotal(() => test.main(testArgs)) : I.unit())))
+  I.bind(I.foreach((test) => (isRunnableSpec(test) ? I.effectTotal(() => test.main(testArgs)) : I.unit())))
 )
 
 I.run(program)
