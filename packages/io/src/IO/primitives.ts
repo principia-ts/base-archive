@@ -8,8 +8,6 @@ import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
-
-import { aplPar_, aprPar_, crossPar_ } from './combinators'
 import { cross_ } from './core'
 
 /*
@@ -70,17 +68,8 @@ abstract class IOSyntax<R, E, A> {
   ['<*']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, A> {
     return this['>>=']((a) => mb['$>'](() => a))
   }
-  ['&>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, B> {
-    return aprPar_(this, mb)
-  }
-  ['<&']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, A> {
-    return aplPar_(this, mb)
-  }
   ['<*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
     return cross_(this, mb)
-  }
-  ['<&>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
-    return crossPar_(this, mb)
   }
 }
 
