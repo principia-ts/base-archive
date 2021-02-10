@@ -1,6 +1,6 @@
 {
   "name": "@principia/ptest",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A simple runner for @principia/test",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
