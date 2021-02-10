@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@0x706b/ts-transform-fix-esm@^0.0.11":
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/@0x706b/ts-transform-fix-esm/-/ts-transform-fix-esm-0.0.11.tgz#c6901cd3dc196ca45fd79a4e5ccdffc8877f97df"
-  integrity sha512-x+oBGQwmhs8wqGpANqL8ZTQLIBuMj/o0Ai/z9H9JFHySe8pkhvyKwT5uJFdgP+A21VQJDfPyq2T4rVs1qY/20w==
+"@0x706b/ts-transform-fix-esm@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@0x706b/ts-transform-fix-esm/-/ts-transform-fix-esm-0.1.0.tgz#90662abb3dbfa0bf61c1802727f51d33c23f99d1"
+  integrity sha512-MAPdx3NOsZKI+aVU5i+oZ+CkK+qgA32Bh5RjG1zDSjHnG6fiJrA8ieuJzbCNkFvU/QZ+3L3+eVbB0JR6VeCrSA==
   dependencies:
     fp-ts "^2.8.2"
 
