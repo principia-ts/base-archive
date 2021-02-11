@@ -536,11 +536,12 @@ export function watchFile(
 ): S.Stream<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]> {
   return pipe(
     I.gen(function* (_) {
-      const q = yield* _(Queue.makeUnbounded<[fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>())
+      const queue   = yield* _(Queue.makeUnbounded<[fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>())
+      const runtime = yield* _(I.runtime<unknown>())
       fs.watchFile(filename, options ?? {}, (curr, prev) => {
-        I.run(q.offer([curr, prev]))
+        runtime.run_(queue.offer([curr, prev]))
       })
-      return q
+      return queue
     }),
     S.bracket((q) => q.shutdown),
     S.bind((q) => S.repeatEffectOption<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(q.take))

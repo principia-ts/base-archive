@@ -22,15 +22,15 @@ export type TupleA<T extends NonEmptyArray<IO<any, any, any>>> = {
   [K in keyof T]: [T[K]] extends [IO<any, any, infer A>] ? A : never
 }
 
-export function tupleN<A extends NonEmptyArray<IO<any, any, any>>>(...t: A): IO<TupleR<A>, TupleE<A>, TupleA<A>> {
+export function sequenceT<A extends NonEmptyArray<IO<any, any, any>>>(...t: A): IO<TupleR<A>, TupleE<A>, TupleA<A>> {
   return foreach_(t, identity) as any
 }
 
-export function tupleNPar<A extends NonEmptyArray<IO<any, any, any>>>(...t: A): IO<TupleR<A>, TupleE<A>, TupleA<A>> {
+export function sequenceTPar<A extends NonEmptyArray<IO<any, any, any>>>(...t: A): IO<TupleR<A>, TupleE<A>, TupleA<A>> {
   return foreachPar_(t, identity) as any
 }
 
-export function tupleNParN(n: number) {
+export function sequenceTParN(n: number) {
   return <A extends NonEmptyArray<IO<any, any, any>>>(...t: A): IO<TupleR<A>, TupleE<A>, TupleA<A>> =>
     foreachParN_(n)(t, identity) as any
 }

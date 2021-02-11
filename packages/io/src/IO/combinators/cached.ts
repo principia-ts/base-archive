@@ -1,4 +1,3 @@
-import type { Clock } from '../../Clock'
 import type { Promise } from '../../Promise'
 import type { FIO, IO, URIO } from '../core'
 import type { Has } from '@principia/base/Has'
@@ -8,7 +7,7 @@ import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import { RuntimeException } from '../../Cause'
-import { currentTime } from '../../Clock'
+import { Clock } from '../../Clock'
 import * as RefM from '../../IORefM'
 import * as P from '../../Promise'
 import * as I from '../core'
@@ -25,7 +24,7 @@ const _compute = <R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) =>
 const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>) =>
   uninterruptibleMask(({ restore }) =>
     pipe(
-      currentTime,
+      Clock.currentTime,
       I.bind((time) =>
         pipe(
           cache,

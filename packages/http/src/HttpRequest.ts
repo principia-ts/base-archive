@@ -76,28 +76,29 @@ export class HttpRequest {
             M.gen(function* (_) {
               const queue = yield* _(Q.makeUnbounded<RequestEvent>())
               const done  = yield* _(Ref.make(false))
+              const runtime = yield* _(I.runtime<unknown>())
               yield* _(
                 I.effectTotal(() => {
                   req.on('close', () => {
-                    I.run(queue.offer({ _tag: 'Close' }))
+                    runtime.run_(queue.offer({ _tag: 'Close' }))
                   })
                   req.on('data', (chunk) => {
-                    I.run(queue.offer({ _tag: 'Data', chunk }))
+                    runtime.run_(queue.offer({ _tag: 'Data', chunk }))
                   })
                   req.on('end', () => {
-                    I.run(queue.offer({ _tag: 'End' }))
+                    runtime.run_(queue.offer({ _tag: 'End' }))
                   })
                   req.on('pause', () => {
-                    I.run(queue.offer({ _tag: 'Pause' }))
+                    runtime.run_(queue.offer({ _tag: 'Pause' }))
                   })
                   req.on('error', (error) => {
-                    I.run(queue.offer({ _tag: 'Error', error }))
+                    runtime.run_(queue.offer({ _tag: 'Error', error }))
                   })
                   req.on('readable', () => {
-                    I.run(queue.offer({ _tag: 'Readble' }))
+                    runtime.run_(queue.offer({ _tag: 'Readble' }))
                   })
                   req.on('resume', () => {
-                    I.run(queue.offer({ _tag: 'Resume' }))
+                    runtime.run_(queue.offer({ _tag: 'Resume' }))
                   })
                 })
               )

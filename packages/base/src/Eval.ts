@@ -101,8 +101,8 @@ class Defer<A> extends Eval<A> {
   }
 }
 
-class Chain<A, B> extends Eval<B> {
-  readonly _evalTag = 'Chain'
+class Bind<A, B> extends Eval<B> {
+  readonly _evalTag = 'Bind'
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
     super()
   }
@@ -255,7 +255,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
  */
 
 export function bind_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
-  return new Chain(ma, f)
+  return new Bind(ma, f)
 }
 
 export function bind<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
@@ -282,7 +282,7 @@ export function unit(): Eval<void> {
  * -------------------------------------------
  */
 
-type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Chain<any, any> | Memoize<any>
+type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Bind<any, any> | Memoize<any>
 
 export function evaluate<A>(e: Eval<A>): A {
   const addToMemo = <A1>(m: Memoize<A1>) => (a: A1): Eval<A1> => {
@@ -295,20 +295,10 @@ export function evaluate<A>(e: Eval<A>): A {
   let current = e as Eval<any> | undefined
   let result  = null
 
-  function popContinuation() {
-    const current = frames?.value
-    frames        = frames?.previous
-    return current
-  }
-
-  function pushContinuation(cont: (_: any) => Eval<any>) {
-    frames = makeStack(cont, frames)
-  }
-
   while (current != null) {
     const I = current as Concrete
     switch (I._evalTag) {
-      case 'Chain': {
+      case 'Bind': {
         const nested       = I.ma as Concrete
         const continuation = I.f
 
@@ -330,22 +320,23 @@ export function evaluate<A>(e: Eval<A>): A {
               current = I.f(nested.result.value)
               break
             } else {
-              pushContinuation(continuation)
-              pushContinuation(addToMemo(nested))
+              frames  = makeStack(continuation, frames)
+              frames  = makeStack(addToMemo(nested))
               current = nested.ma
               break
             }
           }
           default: {
             current = nested
-            pushContinuation(continuation)
+            frames  = makeStack(continuation, frames)
             break
           }
         }
         break
       }
       case 'Now': {
-        const continuation = popContinuation()
+        const continuation = frames?.value
+        frames             = frames?.previous
         if (continuation) {
           current = continuation(I.a)
         } else {
@@ -356,7 +347,8 @@ export function evaluate<A>(e: Eval<A>): A {
       }
       case 'Later': {
         const a            = I.value()
-        const continuation = popContinuation()
+        const continuation = frames?.value
+        frames             = frames?.previous
         if (continuation) {
           current = continuation(a)
         } else {
@@ -367,7 +359,8 @@ export function evaluate<A>(e: Eval<A>): A {
       }
       case 'Always': {
         const a            = I.thunk()
-        const continuation = popContinuation()
+        const continuation = frames?.value
+        frames             = frames?.previous
         if (continuation) {
           current = continuation(a)
         } else {
@@ -382,7 +375,8 @@ export function evaluate<A>(e: Eval<A>): A {
       }
       case 'Memoize': {
         if (I.result._tag === 'Some') {
-          const f = popContinuation()
+          const f = frames?.value
+          frames  = frames?.previous
           if (f) {
             current = f(I.result.value)
             break
@@ -392,7 +386,7 @@ export function evaluate<A>(e: Eval<A>): A {
             break
           }
         } else {
-          pushContinuation(addToMemo(I))
+          frames  = makeStack(addToMemo(I))
           current = I.ma
           break
         }
@@ -419,10 +413,10 @@ export const Apply = HKT.instance<P.Apply<[URI]>>({
   ...Functor,
   ap_,
   ap,
-  crossWith_: crossWith_,
-  crossWith: crossWith,
-  cross_: cross_,
-  cross: cross
+  crossWith_,
+  crossWith,
+  cross_,
+  cross
 })
 
 export const Applicative = HKT.instance<P.Applicative<[URI]>>({
@@ -433,8 +427,8 @@ export const Applicative = HKT.instance<P.Applicative<[URI]>>({
 
 export const Monad = HKT.instance<P.Monad<[URI]>>({
   ...Applicative,
-  bind_: bind_,
-  bind: bind,
+  bind_,
+  bind,
   flatten
 })
 

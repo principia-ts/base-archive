@@ -12,8 +12,7 @@ import { AbstractRunnableSpec } from './AbstractRunnableSpec'
 import * as ExSp from './ExecutedSpec'
 import * as S from './Spec'
 import { buildSummary } from './SummaryBuilder'
-import { TestLogger , TestLoggerTag } from './TestLogger'
-
+import { TestLogger } from './TestLogger'
 
 export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   readonly _tag = 'RunnableSpec'
@@ -37,7 +36,7 @@ export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   }
   main(args: TA.TestArgs): void {
     const filteredSpec = S.filterByArgs_(this.spec, args)
-    I.run(I.giveLayer_(this.run(filteredSpec), this.runner.bootstrap))
+    I.run_(I.giveLayer_(this.run(filteredSpec), this.runner.bootstrap))
   }
 }
 

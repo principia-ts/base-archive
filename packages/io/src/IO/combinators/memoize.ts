@@ -52,7 +52,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
           const promise = yield* _(
             pipe(
               RM.modify_(ref, (m) => {
-                for (const [k, v] of Array.from(m)) {
+                for (const [k, v] of m.entries()) {
                   if (eq.equals_(k, a)) {
                     return I.succeed(tuple(v, m))
                   }

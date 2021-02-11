@@ -3,8 +3,10 @@ import type { Managed } from '../core'
 import { pipe, tuple } from '@principia/base/Function'
 
 import { parallel, sequential } from '../../ExecutionStrategy'
+import { foreachPar_ as ioForeachPar_ } from '../../IO/combinators/foreachPar'
+import { foreachUnitPar_ as ioForeachUnitPar_ } from '../../IO/combinators/foreachUnitPar'
 import { mapM } from '../core'
-import * as I from '../internal/_io'
+import * as I from '../internal/io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /**
@@ -35,7 +37,7 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
         I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
-      return I.foreachPar_(as, (a) =>
+      return ioForeachPar_(as, (a) =>
         pipe(
           makeInnerMap,
           I.bind((innerMap) =>
@@ -61,7 +63,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R
         I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
-      return I.foreachUnitPar_(as, (a) =>
+      return ioForeachUnitPar_(as, (a) =>
         pipe(
           makeInnerMap,
           I.bind((innerMap) =>

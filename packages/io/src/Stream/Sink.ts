@@ -1,6 +1,5 @@
 import type { Cause } from '../Cause'
 import type { Chunk } from '../Chunk'
-import type { Clock } from '../Clock'
 import type { Has } from '@principia/base/Has'
 
 import * as E from '@principia/base/Either'
@@ -11,7 +10,7 @@ import { matchTag } from '@principia/base/util/matchers'
 
 import * as Ca from '../Cause'
 import * as C from '../Chunk'
-import { currentTime } from '../Clock'
+import { Clock } from '../Clock'
 import * as Ex from '../Exit'
 import * as F from '../Fiber'
 import * as I from '../IO'
@@ -1377,7 +1376,7 @@ export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & Has<Cl
   return new Sink(
     pipe(
       self.push,
-      M.crossWith(I.toManaged_(currentTime), (push, start) => {
+      M.crossWith(I.toManaged_(Clock.currentTime), (push, start) => {
         return (in_: O.Option<Chunk<I>>) =>
           I.catchAll_(
             push(in_),
@@ -1385,7 +1384,7 @@ export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & Has<Cl
               E.fold_(
                 e,
                 (e) => Push.fail(e, leftover),
-                (z) => I.bind_(currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
+                (z) => I.bind_(Clock.currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
               )
           )
       })

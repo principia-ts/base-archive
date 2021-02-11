@@ -64,27 +64,28 @@ export class HttpResponse {
         S.broadcastDynamic_(
           new S.Stream(
             M.gen(function* ($) {
-              const queue = yield* $(Q.makeUnbounded<ResponseEvent>())
-              const done  = yield* $(Ref.make(false))
+              const queue   = yield* $(Q.makeUnbounded<ResponseEvent>())
+              const done    = yield* $(Ref.make(false))
+              const runtime = yield* $(I.runtime<unknown>())
               yield* $(
                 I.effectTotal(() => {
                   res.on('close', () => {
-                    I.run(queue.offer({ _tag: 'Close' }))
+                    runtime.run_(queue.offer({ _tag: 'Close' }))
                   })
                   res.on('drain', () => {
-                    I.run(queue.offer({ _tag: 'Drain' }))
+                    runtime.run_(queue.offer({ _tag: 'Drain' }))
                   })
                   res.on('finish', () => {
-                    I.run(queue.offer({ _tag: 'Finish' }))
+                    runtime.run_(queue.offer({ _tag: 'Finish' }))
                   })
                   res.on('error', (error) => {
-                    I.run(queue.offer({ _tag: 'Error', error }))
+                    runtime.run_(queue.offer({ _tag: 'Error', error }))
                   })
                   res.on('pipe', (src) => {
-                    I.run(queue.offer({ _tag: 'Pipe', src }))
+                    runtime.run_(queue.offer({ _tag: 'Pipe', src }))
                   })
                   res.on('unpipe', (src) => {
-                    I.run(queue.offer({ _tag: 'Unpipe', src }))
+                    runtime.run_(queue.offer({ _tag: 'Unpipe', src }))
                   })
                 })
               )

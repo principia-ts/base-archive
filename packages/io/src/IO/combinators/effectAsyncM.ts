@@ -23,7 +23,7 @@ export function effectAsyncM<R, E, R1, E1, A>(
       uninterruptibleMask(({ restore }) =>
         pipe(
           register((k) => {
-            r.run(to(p)(k))
+            r.run_(to(p)(k))
           }),
           I.catchAllCause((c) => p.halt(c)),
           restore,

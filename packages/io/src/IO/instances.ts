@@ -1,10 +1,9 @@
 import type { URI, V } from './core'
 import type * as P from '@principia/base/typeclass'
 
-import { flow } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
 import { getOptionT } from '@principia/base/OptionT'
-import { mapNF, sequenceSF, sequenceTF } from '@principia/base/typeclass'
+import { mapNF, sequenceSF } from '@principia/base/typeclass'
 
 import { apPar, apPar_, crossPar, crossPar_, crossWithPar, crossWithPar_ } from './combinators'
 import {
@@ -59,8 +58,6 @@ export const ApplyPar = HKT.instance<P.Apply<[URI], V>>({
 
 export const mapN         = mapNF(Apply)
 export const mapNPar      = mapNF(ApplyPar)
-export const sequenceT    = sequenceTF(Apply)
-export const sequenceTPar = sequenceTF(ApplyPar)
 export const sequenceS    = sequenceSF(Apply)
 export const sequenceSPar = sequenceSF(ApplyPar)
 

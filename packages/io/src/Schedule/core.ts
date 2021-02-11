@@ -1,6 +1,4 @@
-import type { Clock } from '../Clock'
 import type { FIO, IO, UIO } from '../IO/core'
-import type { Random } from '../Random'
 import type { Decision, StepFunction } from './Decision'
 import type { Either } from '@principia/base/Either'
 import type { Has } from '@principia/base/Has'
@@ -11,10 +9,10 @@ import { constant, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
-import { currentTime, sleep } from '../Clock'
+import { Clock } from '../Clock'
 import * as I from '../IO/core'
 import * as Ref from '../IORef/core'
-import { nextDouble } from '../Random'
+import { Random } from '../Random'
 import { done, makeContinue, makeDone } from './Decision'
 
 /*
@@ -62,7 +60,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
         pipe(
           I.do,
           I.bindS('step', () => I.map_(ref.get, ([_, o]) => o)),
-          I.bindS('now', () => currentTime),
+          I.bindS('now', () => Clock.currentTime),
           I.bindS('dec', ({ now, step }) => step(now, input)),
           I.bindS('v', ({ dec, now }) => {
             switch (dec._tag) {
@@ -76,7 +74,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
                 return pipe(
                   ref.set([O.some(dec.out), dec.next]),
                   I.map(() => dec.interval - now),
-                  I.bind((s) => (s > 0 ? sleep(s) : I.unit())),
+                  I.bind((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
                   I.map(() => dec.out)
                 )
               }
@@ -88,7 +86,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
       const next = (input: I) =>
         I.gen(function* (_) {
           const step = yield* _(I.map_(ref.get, ([, o]) => o))
-          const now  = yield* _(currentTime)
+          const now  = yield* _(Clock.currentTime)
           const dec  = yield* _(step(now, input))
           switch (dec._tag) {
             case 'Done': {
@@ -99,7 +97,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
                 pipe(
                   ref.set(tuple(O.some(dec.out), dec.next)),
                   I.as(() => dec.interval - now),
-                  I.bind((s) => (s > 0 ? sleep(s) : I.unit())),
+                  I.bind((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
                   I.as(() => dec.out)
                 )
               )
@@ -824,7 +822,7 @@ export function jittered_<R, I, O>(
   sc: Schedule<R, I, O>,
   { max = 0.1, min = 0 }: { min?: number, max?: number } = {}
 ): Schedule<R & Has<Random>, I, O> {
-  return delayedM_(sc, (d) => I.map_(nextDouble, (r) => d * min * (1 - r) + d * max * r))
+  return delayedM_(sc, (d) => I.map_(Random.nextDouble, (r) => d * min * (1 - r) + d * max * r))
 }
 
 /**

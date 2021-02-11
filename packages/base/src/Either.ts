@@ -10,11 +10,13 @@ import type { Eq } from './Eq/core'
 import type { MorphismN, Predicate, Refinement } from './Function'
 import type { Option } from './Option'
 import type { Show } from './Show'
+import type { These } from './These'
 
 import { genF, GenHKT } from './Derivation/genF'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
+import * as T from './These'
 import * as P from './typeclass'
 import { NoSuchElementException } from './util/GlobalExceptions'
 
@@ -440,6 +442,41 @@ export function getOrElse<E, A, B>(f: (e: E) => B): (pab: Either<E, A>) => A | B
  */
 export function merge<E, A>(pab: Either<E, A>): E | A {
   return fold_(pab, identity, identity as any)
+}
+
+/*
+ * -------------------------------------------
+ * Align
+ * -------------------------------------------
+ */
+
+export function alignWith_<E, A, E1, B, C>(
+  fa: Either<E, A>,
+  fb: Either<E1, B>,
+  f: (_: These<A, B>) => C
+): Either<E | E1, C> {
+  return fa._tag === 'Left'
+    ? fb._tag === 'Left'
+      ? fa
+      : right(f(T.right(fb.right)))
+    : fb._tag === 'Left'
+    ? right(f(T.left(fa.right)))
+    : right(f(T.both(fa.right, fb.right)))
+}
+
+export function alignWith<A, E1, B, C>(
+  fb: Either<E1, B>,
+  f: (_: These<A, B>) => C
+): <E>(fa: Either<E, A>) => Either<E | E1, C> {
+  return (fa) => alignWith_(fa, fb, f)
+}
+
+export function align_<E, A, E1, B>(fa: Either<E, A>, fb: Either<E1, B>): Either<E | E1, These<A, B>> {
+  return alignWith_(fa, fb, identity)
+}
+
+export function align<E1, B>(fb: Either<E1, B>): <E, A>(fa: Either<E, A>) => Either<E | E1, These<A, B>> {
+  return (fa) => align_(fa, fb)
 }
 
 /*

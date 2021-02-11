@@ -6,6 +6,7 @@ import { pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
 import { Clock } from '@principia/io/Clock'
 import * as C from '@principia/io/Console'
+import { Console, ConsoleTag } from '@principia/io/Console'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as fs from '@principia/node/fs'
@@ -27,7 +28,7 @@ export const Logger = tag<Logger>()
 export interface Chalk {
   chalk: typeof ChalkType
 }
-export const Chalk = tag<Chalk>()
+export const ChalkTag = tag<Chalk>()
 
 export type LogLevel = keyof Logger
 
@@ -47,15 +48,15 @@ export interface LoggerOptions {
 export type LoggerConfig = {
   [K in keyof LoggerOptions]-?: NonNullable<LoggerOptions[K]>
 }
-export const LoggerConfig = tag<LoggerConfig>()
+export const LoggerConfigTag = tag<LoggerConfig>()
 
 export function loggerConfig(config: LoggerOptions) {
-  return L.succeed(LoggerConfig)({
+  return L.succeed(LoggerConfigTag)({
     path: config.path,
     level: config.level ?? 'error',
     theme:
       config.theme ??
-      I.asksService(Chalk)(({ chalk }) => ({
+      I.asksService(ChalkTag)(({ chalk }) => ({
         debug: chalk.gray,
         info: chalk.blue,
         warning: chalk.yellow,
@@ -68,46 +69,44 @@ export interface LogEntry {
   level: LogLevel
   message: string
 }
-const LogEntry = tag<LogEntry>()
+const LogEntryTag = tag<LogEntry>()
 
 const timestamp = I.map_(
-  I.asksServiceM(Clock)((clock) => clock.currentTime),
+  Clock.currentTime,
   (ms) => `${formatISO9075(ms)}.${getMilliseconds(ms).toString().padStart(3, '0')}`
 )
 
 const showConsoleLogEntry = I.gen(function* (_) {
-  const config    = yield* _(LoggerConfig)
-  const { chalk } = yield* _(Chalk)
+  const config    = yield* _(LoggerConfigTag)
+  const { chalk } = yield* _(ChalkTag)
   const time      = yield* _(timestamp)
-  const entry     = yield* _(LogEntry)
+  const entry     = yield* _(LogEntryTag)
   const theme     = yield* _(config.theme)
   return `[${theme[entry.level](entry.level.toUpperCase())}] ${entry.message} ${chalk.gray.dim(time)}`
 })
 
 const showFileLogEntry = I.gen(function* (_) {
   const time  = yield* _(timestamp)
-  const entry = yield* _(LogEntry)
+  const entry = yield* _(LogEntryTag)
   return `${time} [${entry.level.toUpperCase()}] ${stripAnsi(entry.message)}\n`
 })
 
 const logToConsole = I.gen(function* (_) {
-  const console = yield* _(C.Console)
-  const entry   = yield* _(showConsoleLogEntry)
-  return yield* _(console.putStrLn(entry))
+  const entry = yield* _(showConsoleLogEntry)
+  return yield* _(Console.putStrLn(entry))
 })
 
 const logToFile = I.gen(function* (_) {
   const show   = yield* _(showFileLogEntry)
-  const config = yield* _(LoggerConfig)
+  const config = yield* _(LoggerConfigTag)
   return yield* _(fs.appendFile(config.path, show))
 })
 
 function _log(message: ChalkFn, level: LogLevel) {
   return I.gen(function* (_) {
-    const { level: configLevel, path } = yield* _(LoggerConfig)
+    const { level: configLevel, path } = yield* _(LoggerConfigTag)
 
-    const { chalk }       = yield* _(Chalk)
-    const console         = yield* _(C.Console)
+    const { chalk }       = yield* _(ChalkTag)
     const entry: LogEntry = {
       message: message(chalk),
       level
@@ -117,44 +116,44 @@ function _log(message: ChalkFn, level: LogLevel) {
       pipe(
         logToConsole,
         I.apr(logToFile),
-        I.catchAll((error) => console.putStrLn(`Error when writing to path ${path}\n${error}`)),
+        I.catchAll((error) => Console.putStrLn(`Error when writing to path ${path}\n${error}`)),
         I.when(() => severity[configLevel] >= severity[level]),
-        I.giveService(LogEntry)(entry)
+        I.giveService(LogEntryTag)(entry)
       )
     )
   })
 }
 
 export const LiveLogger = L.create(Logger).fromEffect(
-  I.asksServices({ config: LoggerConfig, console: C.Console, chalk: Chalk })(
+  I.asksServices({ config: LoggerConfigTag, console: ConsoleTag, chalk: ChalkTag })(
     ({ config, console, chalk }): Logger => ({
       debug: (m) =>
         pipe(
           _log(m, 'debug'),
-          I.giveService(C.Console)(console),
-          I.giveService(LoggerConfig)(config),
-          I.giveService(Chalk)(chalk)
+          I.giveService(ConsoleTag)(console),
+          I.giveService(LoggerConfigTag)(config),
+          I.giveService(ChalkTag)(chalk)
         ),
       info: (m) =>
         pipe(
           _log(m, 'info'),
-          I.giveService(C.Console)(console),
-          I.giveService(LoggerConfig)(config),
-          I.giveService(Chalk)(chalk)
+          I.giveService(ConsoleTag)(console),
+          I.giveService(LoggerConfigTag)(config),
+          I.giveService(ChalkTag)(chalk)
         ),
       warning: (m) =>
         pipe(
           _log(m, 'warning'),
-          I.giveService(C.Console)(console),
-          I.giveService(LoggerConfig)(config),
-          I.giveService(Chalk)(chalk)
+          I.giveService(ConsoleTag)(console),
+          I.giveService(LoggerConfigTag)(config),
+          I.giveService(ChalkTag)(chalk)
         ),
       error: (m) =>
         pipe(
           _log(m, 'error'),
-          I.giveService(C.Console)(console),
-          I.giveService(LoggerConfig)(config),
-          I.giveService(Chalk)(chalk)
+          I.giveService(ConsoleTag)(console),
+          I.giveService(LoggerConfigTag)(config),
+          I.giveService(ChalkTag)(chalk)
         )
     })
   )

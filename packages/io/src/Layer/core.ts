@@ -1,11 +1,8 @@
 import type { Cause } from '../Cause'
-import type { Clock } from '../Clock'
 import type { Exit } from '../Exit'
-import type { DefaultEnv, Runtime } from '../IO/combinators/runtime'
+import type { DefaultEnv } from '../IO/combinators/runtime'
 import type { Managed } from '../Managed/core'
 import type { Finalizer, ReleaseMap } from '../Managed/ReleaseMap'
-import type { Schedule } from '../Schedule'
-import type { StepFunction } from '../Schedule/Decision'
 import type * as H from '@principia/base/Has'
 import type { Erase, UnionToIntersection } from '@principia/base/util/types'
 
@@ -14,14 +11,11 @@ import * as E from '@principia/base/Either'
 import { pipe, tuple } from '@principia/base/Function'
 import { mergeEnvironments, tag } from '@principia/base/Has'
 import { insert } from '@principia/base/Map'
-import { matchTag } from '@principia/base/util/matchers'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
 import * as Ca from '../Cause'
-import { currentTime, sleep } from '../Clock'
 import { sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
-import { makeRuntime } from '../IO/combinators/runtime'
 import * as XR from '../IORef'
 import * as XRM from '../IORefM'
 import * as RelMap from '../Managed/ReleaseMap'
@@ -923,55 +917,6 @@ export function orElse<R1, E1, A1>(
 }
 
 /**
- * Retries constructing this layer according to the specified schedule.
- */
-export function retry_<R, E, A, R1>(
-  la: Layer<R, E, A>,
-  schedule: Schedule<R1, E, any>
-): Layer<R & R1 & H.Has<Clock>, E, A> {
-  type S = StepFunction<R1, E, any>
-
-  const update: Layer<
-    readonly [readonly [R & R1 & H.Has<Clock>, S], E],
-    E,
-    readonly [R & R1 & H.Has<Clock>, S]
-  > = fromRawFunctionM(([[r, s], e]: readonly [readonly [R & R1 & H.Has<Clock>, S], E]) =>
-    pipe(
-      currentTime,
-      I.orDie,
-      I.bind((now) =>
-        pipe(
-          s(now, e),
-          I.bind(
-            matchTag({
-              Done: (_) => I.fail(e),
-              Continue: (c) => I.as_(sleep(c.interval), () => tuple(r, c.next))
-            })
-          )
-        )
-      ),
-      I.giveAll(r)
-    )
-  )
-
-  const loop = (): Layer<readonly [R & R1 & H.Has<Clock>, S], E, A> =>
-    pipe(first<R>()['>>'](la), catchAll(update['>>'](defer(loop))))
-
-  return identity<R & R1 & H.Has<Clock>>()
-    ['<&>'](fromRawEffect(I.succeed(schedule.step)))
-    ['>>'](loop())
-}
-
-/**
- * Retries constructing this layer according to the specified schedule.
- */
-export function retry<R1, E>(
-  schedule: Schedule<R1, E, any>
-): <R, A>(la: Layer<R, E, A>) => Layer<R & R1 & H.Has<Clock>, E, A> {
-  return (la) => retry_(la, schedule)
-}
-
-/**
  * Embed the requird environment in a region
  */
 export function region<K, T>(
@@ -1019,13 +964,6 @@ export function to_<R, E, A, R2, E2, A2>(
     fromRawFunctionM((_: readonly [Erase<R, A2> & R2, Cause<E2>]) => I.halt(_[1])),
     to
   )
-}
-
-/**
- * Converts a layer to a managed runtime
- */
-export function toRuntime<R, E, A>(_: Layer<R, E, A>): M.Managed<R, E, Runtime<A>> {
-  return M.map_(build(_), makeRuntime)
 }
 
 /**

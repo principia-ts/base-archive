@@ -16,7 +16,6 @@ import type { Option } from '@principia/base/Option'
 import type { _E as InferE, _R as InferR, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
-import { bindF } from '@principia/base/Bind'
 import * as E from '@principia/base/Either'
 import { _bind, _bindTo, constant, flow, identity, pipe, tuple } from '@principia/base/Function'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'

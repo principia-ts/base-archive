@@ -8,7 +8,7 @@ import * as I from '@principia/io/IO'
 import { defaultRuntime } from '@principia/io/IO'
 
 export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (status: number) => void) {
-  I.run(interruptAllAs(id)(Fiber._tracing.running), () => {
+  I.run_(interruptAllAs(id)(Fiber._tracing.running), () => {
     setTimeout(() => {
       if (Fiber._tracing.running.size === 0) {
         onExit(status)
@@ -75,7 +75,7 @@ export class NodeRuntime<R> {
         process.removeListener('SIGINT', handler)
 
         if (interrupted.compareAndSet(false, true)) {
-          this.custom.run(context.interruptAs(context.id))
+          this.custom.run_(context.interruptAs(context.id))
         }
       })(signal)
     }

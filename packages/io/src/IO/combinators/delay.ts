@@ -1,8 +1,7 @@
-import type { Clock } from '../../Clock'
 import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
-import { sleep } from '../../Clock'
+import { Clock } from '../../Clock'
 import { bind_ } from '../core'
 
 /**
@@ -16,7 +15,7 @@ import { bind_ } from '../core'
  * @since 1.0.0
  */
 export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & Has<Clock>, E, A> {
-  return bind_(sleep(ms), () => ma)
+  return bind_(Clock.sleep(ms), () => ma)
 }
 
 /**

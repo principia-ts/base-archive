@@ -1,5 +1,4 @@
 import type { Chunk } from '../Chunk'
-import type { Clock } from '../Clock'
 import type { ExecutionStrategy } from '../ExecutionStrategy'
 import type { Fiber } from '../Fiber'
 import type { Managed } from '../Managed'
@@ -12,7 +11,7 @@ import type { Option } from '@principia/base/Option'
 import type { _E, _R } from '@principia/base/util/types'
 
 import * as E from '@principia/base/Either'
-import { constTrue, flow, hole, identity, not, pipe, tuple } from '@principia/base/Function'
+import { constTrue, flow, identity, not, pipe, tuple } from '@principia/base/Function'
 import { isTag } from '@principia/base/Has'
 import * as L from '@principia/base/List'
 import * as Map from '@principia/base/Map'
@@ -22,10 +21,9 @@ import { matchTag } from '@principia/base/util/matchers'
 
 import * as Ca from '../Cause'
 import * as C from '../Chunk'
-import { currentTime } from '../Clock'
+import { Clock } from '../Clock'
 import { parallel, sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
-import { currentFiber } from '../Fiber'
 import * as Fi from '../Fiber'
 import * as I from '../IO'
 import * as Ref from '../IORef'
@@ -313,8 +311,8 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
               return Pull.end
             } else {
               return pipe(
-                I.gen(function* ($) {
-                  const a = yield* $(
+                I.gen(function* (_) {
+                  const a = yield* _(
                     pipe(
                       ma.io,
                       I.map(([, a]) => a),
@@ -323,7 +321,7 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
                       I.onError(() => doneRef.set(true))
                     )
                   )
-                  yield* $(doneRef.set(true))
+                  yield* _(doneRef.set(true))
                   return C.single(a)
                 }),
                 I.mapError(O.some)
@@ -406,9 +404,7 @@ export function asyncOption<R, E, A>(
       const output      = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime     = yield* _(I.runtime<R>())
       const maybeStream = yield* _(
-        M.effectTotal(() =>
-          register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel(x, cb)))
-        )
+        M.effectTotal(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
       )
 
       const pull = yield* _(
@@ -480,7 +476,7 @@ export function effectAsyncInterruptEither<R, E, A>(
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
         M.effectTotal(() =>
-          register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel(x, cb)))
+          register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel_(x, cb)))
         )
       )
 
@@ -845,7 +841,7 @@ export function asyncM<R, E, A, R1 = R, E1 = E>(
     M.gen(function* (_) {
       const output  = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime = yield* _(I.runtime<R>())
-      yield* _(register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel(x, cb))))
+      yield* _(register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel_(x, cb))))
       const doneRef = yield* _(Ref.make(false))
       const pull    = I.bind_(doneRef.get, (done) => {
         if (done) {
@@ -4860,7 +4856,7 @@ export function throttleEnforceM_<R, E, A, R1, E1>(
   return new Stream(
     M.gen(function* (_) {
       const chunks                                                      = yield* _(ma.proc)
-      const time                                                        = yield* _(currentTime)
+      const time                                                        = yield* _(Clock.currentTime)
       const bucket                                                      = yield* _(Ref.make(tuple(units, time)))
       const pull: I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<A>> = pipe(
         chunks,
@@ -4868,7 +4864,7 @@ export function throttleEnforceM_<R, E, A, R1, E1>(
           pipe(
             costFn(chunk),
             I.mapError(O.some),
-            I.cross(currentTime),
+            I.cross(Clock.currentTime),
             I.bind(([weight, current]) =>
               Ref.modify_(bucket, ([tokens, timestamp]) => {
                 const elapsed   = current - timestamp
@@ -4919,12 +4915,12 @@ export function throttleShapeM_<R, E, A, R1, E1>(
   return new Stream(
     M.gen(function* (_) {
       const chunks = yield* _(ma.proc)
-      const time   = yield* _(currentTime)
+      const time   = yield* _(Clock.currentTime)
       const bucket = yield* _(Ref.make(tuple(units, time)))
       const pull   = I.gen(function* (_) {
         const chunk   = yield* _(chunks)
         const weight  = yield* _(I.mapError_(costFn(chunk), O.some) as I.IO<R1, O.Option<E | E1>, number>)
-        const current = yield* _(currentTime)
+        const current = yield* _(Clock.currentTime)
         const delay   = yield* _(
           Ref.modify_(bucket, ([tokens, timestamp]) => {
             const elapsed   = current - timestamp

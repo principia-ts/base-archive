@@ -1,77 +1,33 @@
-import type { Layer } from './Layer'
-import type { Has } from '@principia/base/Has'
-import type { InspectOptions } from 'util'
-
-import { pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
-import { inspect } from 'util'
 
-import * as I from './IO'
-import * as L from './Layer'
+import * as I from './IO/core'
+import * as L from './Layer/core'
 
-export interface Console {
-  readonly putStrLn: (line: string) => I.UIO<void>
-  readonly putStrLnErr: (line: string) => I.UIO<void>
-  readonly putStrLnDebug: (line: string) => I.UIO<void>
+export const ConsoleTag = tag<Console>()
+
+export abstract class Console {
+  abstract readonly put: (...data: any[]) => I.UIO<void>
+  abstract readonly putStrLn: (line: string) => I.UIO<void>
+  abstract readonly putStrLnErr: (line: string) => I.UIO<void>
+  abstract readonly putStrLnDebug: (line: string) => I.UIO<void>
+
+  static live = L.succeed(ConsoleTag)(
+    new (class extends Console {
+      put           = (...data: any[]) => I.effectTotal(() => console.log(...data))
+      putStrLn      = (line: string) => I.effectTotal(() => console.log(line))
+      putStrLnErr   = (line: string) => I.effectTotal(() => console.error(line))
+      putStrLnDebug = (line: string) => I.effectTotal(() => console.debug(line))
+    })()
+  )
+
+  static put           = I.deriveLifted(ConsoleTag)(['put'], [], []).put
+  static putStrLn      = I.deriveLifted(ConsoleTag)(['putStrLn'], [], []).putStrLn
+  static putStrLnErr   = I.deriveLifted(ConsoleTag)(['putStrLnErr'], [], []).putStrLnErr
+  static putStrLnDebug = I.deriveLifted(ConsoleTag)(['putStrLnDebug'], [], []).putStrLnDebug
 }
 
-export const Console = tag<Console>()
-
-export const { putStrLn, putStrLnDebug, putStrLnErr } = I.deriveLifted(Console)(
-  ['putStrLn', 'putStrLnErr', 'putStrLnDebug'],
+export const { putStrLn, putStrLnDebug, putStrLnErr, put } = I.deriveLifted(ConsoleTag)(
+  ['putStrLn', 'putStrLnErr', 'putStrLnDebug', 'put'],
   [],
   []
 )
-
-export class NodeConsole implements Console {
-  putStrLn(...data: any[]) {
-    return I.effectTotal(() => {
-      console.log(...data)
-    })
-  }
-  putStrLnErr(...data: any[]) {
-    return I.effectTotal(() => {
-      console.error(...data)
-    })
-  }
-  putStrLnDebug(...data: any[]) {
-    return I.effectTotal(() => {
-      console.debug(...data)
-    })
-  }
-
-  time(label?: string) {
-    return I.effectTotal(() => {
-      console.time(label)
-    })
-  }
-  timeEnd(label?: string) {
-    return I.effectTotal(() => {
-      console.timeEnd(label)
-    })
-  }
-  timeLog(label?: string) {
-    return I.effectTotal(() => {
-      console.timeLog(label)
-    })
-  }
-
-  count(label?: string) {
-    return I.effectTotal(() => {
-      console.count(label)
-    })
-  }
-  countReset(label?: string) {
-    return I.effectTotal(() => {
-      console.countReset(label)
-    })
-  }
-
-  inspect(object: any, options?: InspectOptions) {
-    return I.effectTotal(() => {
-      console.log(inspect(object, options ?? {}))
-    })
-  }
-
-  static live: Layer<unknown, never, Has<Console>> = L.succeed(Console)(new NodeConsole())
-}

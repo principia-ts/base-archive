@@ -6,6 +6,7 @@
 import { tag } from '@principia/base/Has'
 
 import * as I from './IO/core'
+import * as L from './Layer/core'
 
 /*
  * -------------------------------------------
@@ -121,17 +122,6 @@ export class PRNG {
  * Model
  * -------------------------------------------
  */
-
-export interface Random {
-  readonly next: I.UIO<number>
-  readonly nextBoolean: I.UIO<boolean>
-  readonly nextInt: I.UIO<number>
-  readonly nextDouble: I.UIO<number>
-  readonly nextRange: (low: number, high: number) => I.UIO<number>
-  readonly nextIntBetween: (low: number, high: number) => I.UIO<number>
-  readonly setSeed: (s: string) => I.UIO<void>
-}
-
 export class LiveRandom implements Random {
   private PRNG = new PRNG(this.seed)
 
@@ -159,28 +149,28 @@ export class LiveRandom implements Random {
 
 export const defaultRandom = new LiveRandom(String(Math.random()))
 
-export const Random = tag<Random>()
+export const RandomTag = tag<Random>()
 
-export const next = I.asksServiceM(Random)((_) => _.next)
+export abstract class Random {
+  abstract readonly next: I.UIO<number>
+  abstract readonly nextBoolean: I.UIO<boolean>
+  abstract readonly nextInt: I.UIO<number>
+  abstract readonly nextDouble: I.UIO<number>
+  abstract readonly nextRange: (low: number, high: number) => I.UIO<number>
+  abstract readonly nextIntBetween: (low: number, high: number) => I.UIO<number>
+  abstract readonly setSeed: (s: string) => I.UIO<void>
 
-export const nextBoolean = I.asksServiceM(Random)((_) => _.nextBoolean)
+  static live = L.succeed(RandomTag)(defaultRandom)
 
-export function nextIntBetween(low: number, high: number) {
-  return I.asksServiceM(Random)((_) => _.nextIntBetween(low, high))
-}
-
-export const nextInt = I.asksServiceM(Random)((_) => _.nextInt)
-
-export const nextDouble = I.asksServiceM(Random)((_) => _.nextDouble)
-
-export function nextRange(low: number, high: number) {
-  return I.asksServiceM(Random)((_) => _.nextRange(low, high))
-}
-
-export function setSeed(seed: string) {
-  return I.asksServiceM(Random)((_) => _.setSeed(seed))
+  static next           = I.deriveLifted(RandomTag)([], ['next'], []).next
+  static nextBoolean    = I.deriveLifted(RandomTag)([], ['nextBoolean'], []).nextBoolean
+  static nextIntBetween = I.deriveLifted(RandomTag)(['nextIntBetween'], [], []).nextIntBetween
+  static nextInt        = I.deriveLifted(RandomTag)([], ['nextInt'], []).nextInt
+  static nextDouble     = I.deriveLifted(RandomTag)([], ['nextDouble'], []).nextDouble
+  static nextRange      = I.deriveLifted(RandomTag)(['nextRange'], [], []).nextRange
+  static setSeed        = I.deriveLifted(RandomTag)(['setSeed'], [], []).setSeed
 }
 
 export function withSeed(seed: string) {
-  return I.updateService(Random, () => new LiveRandom(seed))
+  return I.updateService(RandomTag, () => new LiveRandom(seed))
 }

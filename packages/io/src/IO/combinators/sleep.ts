@@ -1,5 +1,5 @@
-import { sleep as _sleep } from '../../Clock'
+import { Clock } from '../../Clock'
 
 export function sleep(ms: number) {
-  return _sleep(ms)
+  return Clock.sleep(ms)
 }

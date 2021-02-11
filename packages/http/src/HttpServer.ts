@@ -40,7 +40,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
         const server  = yield* _(
           I.effectTotal(() => {
             return http.createServer((req, res) => {
-              runtime.run(
+              runtime.run_(
                 I.gen(function* (_) {
                   const reqRef = yield* _(Ref.make(req))
                   const resRef = yield* _(RefM.make(res))

@@ -1,10 +1,9 @@
-import type { Clock } from '../../Clock'
 import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
 import { pipe } from '@principia/base/Function'
 
-import { sleep } from '../../Clock'
+import { Clock } from '../../Clock'
 import { as, map } from '../core'
 import { makeInterruptible } from './interrupt'
 import { raceFirst } from './raceFirst'
@@ -29,7 +28,7 @@ export function timeoutTo_<R, E, A, B, B1>(
     map(f),
     raceFirst(
       pipe(
-        sleep(d),
+        Clock.sleep(d),
         makeInterruptible,
         as(() => b)
       )

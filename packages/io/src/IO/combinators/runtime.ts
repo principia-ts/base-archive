@@ -1,17 +1,19 @@
+import type { Clock } from '../../Clock'
 import type { Exit } from '../../Exit'
 import type { Callback } from '../../Fiber/core'
 import type { FailureReporter } from '../../Fiber/internal/io'
+import type { Random } from '../../Random'
 import type { Has } from '@principia/base/Has'
 
 import { constVoid, identity } from '@principia/base/Function'
 
 import * as C from '../../Cause/core'
 import { pretty } from '../../Cause/core'
-import { Clock, LiveClock } from '../../Clock'
+import { ClockTag, LiveClock } from '../../Clock'
 import { interruptible, newFiberId } from '../../Fiber'
 import { FiberContext } from '../../internal/FiberContext'
 import { Platform } from '../../internal/Platform'
-import { defaultRandom, Random } from '../../Random'
+import { defaultRandom, RandomTag } from '../../Random'
 import * as Scope from '../../Scope'
 import * as Super from '../../Supervisor'
 import * as I from '../core'
@@ -21,8 +23,8 @@ export type DefaultEnv = Has<Clock> & Has<Random>
 
 export function defaultEnv() {
   return {
-    [Clock.key]: new LiveClock(),
-    [Random.key]: defaultRandom
+    [ClockTag.key]: new LiveClock(),
+    [RandomTag.key]: defaultRandom
   }
 }
 
@@ -35,9 +37,9 @@ const defaultPlatform = new Platform(constVoid, 10_000)
 export class CustomRuntime<R> {
   constructor(readonly env: R, readonly platform: Platform) {
     this.fiberContext   = this.fiberContext.bind(this)
-    this.run            = this.run.bind(this)
-    this.runAsap        = this.runAsap.bind(this)
-    this.runCancel      = this.runCancel.bind(this)
+    this.run_           = this.run_.bind(this)
+    this.runAsap_       = this.runAsap_.bind(this)
+    this.runCancel_     = this.runCancel_.bind(this)
     this.runPromise     = this.runPromise.bind(this)
     this.runPromiseExit = this.runPromiseExit.bind(this)
     this.runFiber       = this.runFiber.bind(this)
@@ -73,7 +75,7 @@ export class CustomRuntime<R> {
   /**
    * Runs effect until completion, calling cb with the eventual exit state
    */
-  run<E, A>(_: I.IO<DefaultEnv, E, A>, cb?: Callback<E, A>) {
+  run_<E, A>(_: I.IO<DefaultEnv, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>()
 
     context.evaluateLater(_[_I])
@@ -83,7 +85,14 @@ export class CustomRuntime<R> {
   /**
    * Runs effect until completion, calling cb with the eventual exit state
    */
-  runAsap<E, A>(_: I.IO<DefaultEnv, E, A>, cb?: Callback<E, A>) {
+  run<E, A>(cb?: Callback<E, A>): (_: I.IO<DefaultEnv, E, A>) => void {
+    return (_) => this.run_(_, cb)
+  }
+
+  /**
+   * Runs effect until completion, calling cb with the eventual exit state
+   */
+  runAsap_<E, A>(_: I.IO<DefaultEnv, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>()
 
     context.evaluateNow(_[_I])
@@ -91,16 +100,31 @@ export class CustomRuntime<R> {
   }
 
   /**
+   * Runs effect until completion, calling cb with the eventual exit state
+   */
+  runAsap<E, A>(cb?: Callback<E, A>): (_: I.IO<DefaultEnv, E, A>) => void {
+    return (_) => this.runAsap_(_, cb)
+  }
+
+  /**
    * Runs effect until completion returing a cancel effecr that when executed
    * triggers cancellation of the process
    */
-  runCancel<E, A>(_: I.IO<DefaultEnv, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
+  runCancel_<E, A>(_: I.IO<DefaultEnv, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
     const context = this.fiberContext<E, A>()
 
     context.evaluateLater(_[_I])
     context.runAsync(cb || constVoid)
 
     return context.interruptAs(context.id)
+  }
+
+  /**
+   * Runs effect until completion returing a cancel effecr that when executed
+   * triggers cancellation of the process
+   */
+  runCancel<E, A>(cb?: Callback<E, A>): (_: I.IO<DefaultEnv, E, A>) => AsyncCancel<E, A> {
+    return (_) => this.runCancel_(_, cb)
   }
 
   /**
@@ -163,7 +187,18 @@ export const defaultRuntime = makeCustomRuntime()
 /**
  * Exports of default runtime
  */
-export const { fiberContext, run, runAsap, runCancel, runFiber, runPromise, runPromiseExit } = defaultRuntime
+export const {
+  fiberContext,
+  run_,
+  runAsap_,
+  runCancel_,
+  run,
+  runAsap,
+  runCancel,
+  runFiber,
+  runPromise,
+  runPromiseExit
+} = defaultRuntime
 
 /**
  * IO Canceler
@@ -175,25 +210,31 @@ export type AsyncCancel<E, A> = I.UIO<Exit<E, A>>
  */
 export interface Runtime<R0> {
   in: <R, E, A>(effect: I.IO<R & R0, E, A>) => I.IO<R, E, A>
-  run: <E, A>(_: I.IO<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => void
-  runCancel: <E, A>(_: I.IO<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => I.UIO<Exit<E, A>>
+  run_: <E, A>(_: I.IO<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => void
+  run: <E, A>(cb?: Callback<E, A>) => (_: I.IO<DefaultEnv & R0, E, A>) => void
+  runCancel_: <E, A>(_: I.IO<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined) => I.UIO<Exit<E, A>>
+  runCancel: <E, A>(cb?: Callback<E, A>) => (_: I.IO<DefaultEnv & R0, E, A>) => I.UIO<Exit<E, A>>
   runPromise: <E, A>(_: I.IO<DefaultEnv & R0, E, A>) => Promise<A>
   runPromiseExit: <E, A>(_: I.IO<DefaultEnv & R0, E, A>) => Promise<Exit<E, A>>
 }
 
 export function makeRuntime<R0>(r0: R0): Runtime<R0> {
+  const _run       = <E, A>(_: I.IO<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined): void =>
+    run_(
+      I.gives_(_, (r) => ({ ...r0, ...r })),
+      cb
+    )
+  const _runCancel = <E, A>(_: I.IO<DefaultEnv & R0, E, A>, cb?: Callback<E, A> | undefined): I.UIO<Exit<E, A>> =>
+    runCancel_(
+      I.gives_(_, (r) => ({ ...r0, ...r })),
+      cb
+    )
   return {
     in: <R, E, A>(effect: I.IO<R & R0, E, A>) => I.gives_(effect, (r: R) => ({ ...r0, ...r })),
-    run: (_, cb) =>
-      run(
-        I.gives_(_, (r) => ({ ...r0, ...r })),
-        cb
-      ),
-    runCancel: (_, cb) =>
-      runCancel(
-        I.gives_(_, (r) => ({ ...r0, ...r })),
-        cb
-      ),
+    run_: _run,
+    run: (cb) => (_) => _run(_, cb),
+    runCancel_: _runCancel,
+    runCancel: (cb) => (_) => _runCancel(_, cb),
     runPromise: (_) => runPromise(I.gives_(_, (r) => ({ ...r0, ...r }))),
     runPromiseExit: (_) => runPromiseExit(I.gives_(_, (r) => ({ ...r0, ...r })))
   }

@@ -7,12 +7,14 @@ import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { MorphismN, Predicate, Refinement } from './Function'
 import type { Show } from './Show'
+import type { These } from './These'
 
 import { left, right } from './Either'
 import { makeEq } from './Eq/core'
 import { _bind, flow, identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
 import { makeShow } from './Show/core'
+import * as T from './These'
 import * as P from './typeclass'
 
 /*
@@ -298,6 +300,34 @@ export function getOrElse_<A, B>(fa: Option<A>, onNone: () => B): A | B {
  */
 export function getOrElse<B>(onNone: () => B): <A>(fa: Option<A>) => B | A {
   return (fa) => getOrElse_(fa, onNone)
+}
+
+/*
+ * -------------------------------------------
+ * Align
+ * -------------------------------------------
+ */
+
+export function alignWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (_: These<A, B>) => C): Option<C> {
+  return fa._tag === 'None'
+    ? fb._tag === 'None'
+      ? none()
+      : some(f(T.right(fb.value)))
+    : fb._tag === 'None'
+    ? some(f(T.left(fa.value)))
+    : some(f(T.both(fa.value, fb.value)))
+}
+
+export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa: Option<A>) => Option<C> {
+  return (fa) => alignWith_(fa, fb, f)
+}
+
+export function align_<A, B>(fa: Option<A>, fb: Option<B>): Option<These<A, B>> {
+  return alignWith_(fa, fb, identity)
+}
+
+export function align<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<These<A, B>> {
+  return (fa) => align_(fa, fb)
 }
 
 /*

@@ -35,4 +35,4 @@ const program = pipe(
   I.bind(I.foreach((test) => (isRunnableSpec(test) ? I.effectTotal(() => test.main(testArgs)) : I.unit())))
 )
 
-I.run(program)
+I.run_(program)

@@ -1,4 +1,4 @@
-import type { AnnotationsTag, TestAnnotation } from './Annotation'
+import type { TestAnnotation } from './Annotation'
 import type { TestFailure } from './TestFailure'
 import type { TestSuccess } from './TestSuccess'
 import type { Predicate } from '@principia/base/Function'

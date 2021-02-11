@@ -1,20 +1,17 @@
 import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/io/IO'
-import type { Random } from '@principia/io/Random'
 import type { Stream } from '@principia/io/Stream'
 
 import * as A from '@principia/base/Array'
 import { identity, pipe, tuple } from '@principia/base/Function'
-import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
-import { fromCompare, ordNumber } from '@principia/base/Ord'
-import { EQ, GT, LT } from '@principia/base/Ordering'
+import { ordNumber } from '@principia/base/Ord'
 import { RedBlackTree } from '@principia/base/RedBlackTree'
 import * as RBT from '@principia/base/RedBlackTree'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import { IllegalArgumentException } from '@principia/io/Cause'
 import * as I from '@principia/io/IO'
-import { nextDouble, nextInt, nextIntBetween } from '@principia/io/Random'
+import { Random } from '@principia/io/Random'
 import * as S from '@principia/io/Stream'
 
 import { Sample, shrinkFractional } from './Sample'
@@ -55,11 +52,11 @@ export function constant<A>(a: A): Gen<unknown, A> {
  * -------------------------------------------
  */
 
-export const uniform: Gen<Has<Random>, number> = fromEffectSample(I.map_(nextDouble, Sa.shrinkFractional(0.0)))
+export const uniform: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextDouble, Sa.shrinkFractional(0.0)))
 
-export const anyDouble: Gen<Has<Random>, number> = fromEffectSample(I.map_(nextDouble, shrinkFractional(0)))
+export const anyDouble: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextDouble, shrinkFractional(0)))
 
-export const anyInt: Gen<Has<Random>, number> = fromEffectSample(I.map_(nextInt, Sa.shrinkIntegral(0)))
+export const anyInt: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextInt, Sa.shrinkIntegral(0)))
 
 export const alphaNumericChar: Gen<Has<Random>, string> = weighted(
   [char(48, 57), 10],
@@ -173,7 +170,7 @@ export function int(min: number, max: number): Gen<Has<Random>, number> {
          *     ? I.map_(nextIntBetween(min - 1, max), (n) => n + 1)
          *     : nextInt
          */
-        return I.map_(nextIntBetween(min, max), Sa.shrinkIntegral(min))
+        return I.map_(Random.nextIntBetween(min, max), Sa.shrinkIntegral(min))
       }
     })
   )
