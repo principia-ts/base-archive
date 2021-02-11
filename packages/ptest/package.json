@@ -1,6 +1,6 @@
 {
   "name": "@principia/ptest",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A simple runner for @principia/test",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "@principia/base": "^0.3.0",
     "@principia/compile": "^0.3.0",
     "@principia/io": "^0.3.1",
-    "@principia/test": "^0.3.1",
+    "@principia/test": "^0.3.2",
     "core-js": "3",
     "glob": "^7.1.6",
     "ts-node": "^9.1.1",
