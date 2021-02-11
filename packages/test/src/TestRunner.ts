@@ -3,7 +3,7 @@ import type { ExecutedSpec } from './ExecutedSpec'
 import type { TestReporter } from './model'
 import type { XSpec } from './Spec'
 import type { TestExecutor } from './TestExecutor'
-import type { TestLogger } from './TestLogger'
+import type { TestLoggerTag } from './TestLogger'
 import type { Has } from '@principia/base/Has'
 import type { Platform } from '@principia/io/Fiber'
 import type { URIO } from '@principia/io/IO'
@@ -17,16 +17,16 @@ import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 
 import { defaultTestAnnotationRenderer, report } from './Render'
-import { fromConsole } from './TestLogger'
+import { TestLogger } from './TestLogger'
 
 export class TestRunner<R, E> {
   constructor(
     readonly executor: TestExecutor<R>,
     readonly platform: Platform = I.defaultRuntime.platform,
     readonly reporter: TestReporter<E> = report(defaultTestAnnotationRenderer),
-    readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = NodeConsole.live['>>>'](fromConsole)[
-      '+++'
-    ](L.succeed(Clock)(new LiveClock()))
+    readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = NodeConsole.live['>>>'](
+      TestLogger.fromConsole
+    )['+++'](L.succeed(Clock)(new LiveClock()))
   ) {
     this.run = this.run.bind(this)
   }

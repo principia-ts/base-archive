@@ -7,16 +7,16 @@ import { Console } from '@principia/io/Console'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 
-export interface TestLogger {
-  readonly logLine: (line: string) => UIO<void>
+export abstract class TestLogger {
+  abstract logLine(line: string): UIO<void>
+  static get fromConsole(): Layer<Has<Console>, never, Has<TestLogger>> {
+    return L.fromEffect(TestLoggerTag)(
+      I.asksService(Console)((console) => ({ logLine: (line) => console.putStrLn(line) }))
+    )
+  }
+  static logLine(line: string): URIO<Has<TestLogger>, void> {
+    return I.asksServiceM(TestLoggerTag)((logger) => logger.logLine(line))
+  }
 }
 
-export const TestLogger = tag<TestLogger>()
-
-export const fromConsole: Layer<Has<Console>, never, Has<TestLogger>> = L.fromEffect(TestLogger)(
-  I.asksService(Console)((console) => ({ logLine: (line) => console.putStrLn(line) }))
-)
-
-export function logLine(line: string): URIO<Has<TestLogger>, void> {
-  return I.asksServiceM(TestLogger)((logger) => logger.logLine(line))
-}
+export const TestLoggerTag = tag<TestLogger>()

@@ -18,7 +18,7 @@ import * as Sy from '@principia/io/Sync'
 import { TestAnnotationMap } from '../Annotation'
 import * as ES from '../ExecutedSpec'
 import * as BA from '../FreeBooleanAlgebra'
-import { TestLogger } from '../TestLogger'
+import { TestLoggerTag } from '../TestLogger'
 import * as FM from './FailureMessage'
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
@@ -26,7 +26,7 @@ export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestR
     const rendered = A.bind_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
     const stats    = logStats(duration, executedSpec)
 
-    return I.asksServiceM(TestLogger)((l) => l.logLine(A.append(stats)(rendered).join('\n')))
+    return I.asksServiceM(TestLoggerTag)((l) => l.logLine(A.append(stats)(rendered).join('\n')))
   }
 }
 

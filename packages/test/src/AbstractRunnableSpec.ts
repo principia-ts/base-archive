@@ -1,7 +1,7 @@
 import type { ExecutedSpec } from './ExecutedSpec'
 import type { XSpec } from './Spec'
 import type { TestAspect } from './TestAspect'
-import type { TestLogger } from './TestLogger'
+import type { TestLogger, TestLoggerTag } from './TestLogger'
 import type { TestRunner } from './TestRunner'
 import type { Has } from '@principia/base/Has'
 import type { Erase } from '@principia/base/util/types'

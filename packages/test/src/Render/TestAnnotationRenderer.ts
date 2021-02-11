@@ -61,6 +61,12 @@ export const timed: TestAnnotationRenderer = new LeafRenderer(TA.timing, ([child
   child === 0 ? O.none() : O.some(`${child}ms`)
 )
 
+export const silent: TestAnnotationRenderer = {
+  _tag: 'CompositeRenderer',
+  renderers: [],
+  run: (ancestors, child) => A.empty()
+}
+
 export const defaultTestAnnotationRenderer: TestAnnotationRenderer = new CompositeRenderer([
   ignored,
   repeated,

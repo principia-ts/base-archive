@@ -1,6 +1,5 @@
 import type { XSpec } from './Spec'
 import type * as TA from './TestArgs'
-import type { TestLogger } from './TestLogger'
 import type { Has } from '@principia/base/Has'
 import type { Clock } from '@principia/io/Clock'
 import type { URIO } from '@principia/io/IO'
@@ -12,6 +11,9 @@ import * as I from '@principia/io/IO'
 import { AbstractRunnableSpec } from './AbstractRunnableSpec'
 import * as ExSp from './ExecutedSpec'
 import * as S from './Spec'
+import { buildSummary } from './SummaryBuilder'
+import { TestLogger , TestLoggerTag } from './TestLogger'
+
 
 export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   readonly _tag = 'RunnableSpec'
@@ -28,7 +30,8 @@ export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
           () => false
         )
       )
-      // TODO: Summary
+      const summary     = buildSummary(results)
+      yield* _(TestLogger.logLine(summary.summary))
       return hasFailures ? 1 : 0
     })
   }
