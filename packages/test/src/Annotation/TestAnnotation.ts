@@ -10,7 +10,7 @@ import * as Eq from '@principia/base/Eq'
 import { makeEq } from '@principia/base/Eq'
 import { absurd } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
-import { hash,hashString  } from '@principia/base/Hash'
+import { hash, hashString } from '@principia/base/Hash'
 import * as Map from '@principia/base/HashMap'
 import * as Set from '@principia/base/HashSet'
 import * as C from '@principia/io/Chunk'
@@ -55,9 +55,9 @@ export const tagged: TestAnnotation<Set.HashSet<string>> = new TestAnnotation(
 export const Timing                         = tag<number>()
 export const timing: TestAnnotation<number> = new TestAnnotation(Timing, 'timing', 0, (x, y) => x + y)
 
-export const Fibers = tag<Either<number, Chunk<URef<ReadonlySet<Fiber.RuntimeFiber<any, any>>>>>>()
+export const Fibers = tag<Either<number, Chunk<URef<Set.HashSet<Fiber.RuntimeFiber<any, any>>>>>>()
 export const fibers: TestAnnotation<
-  Either<number, Chunk<URef<ReadonlySet<Fiber.RuntimeFiber<any, any>>>>>
+  Either<number, Chunk<URef<Set.HashSet<Fiber.RuntimeFiber<any, any>>>>>
 > = new TestAnnotation(Fibers, 'fibers', E.left(0), compose_)
 
 function compose_<A>(left: Either<number, Chunk<A>>, right: Either<number, Chunk<A>>): Either<number, Chunk<A>> {

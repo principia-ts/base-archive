@@ -9,12 +9,13 @@ import * as E from '@principia/base/Either'
 import * as Eq from '@principia/base/Eq'
 import { flow, pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
-import * as RS from '@principia/base/Set'
-import { eqFiberId } from '@principia/io/Fiber'
+import * as HS from '@principia/base/HashSet'
+import { eqFiberId, FiberId } from '@principia/io/Fiber'
 import * as FR from '@principia/io/FiberRef'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 
+import { HashEqFiber, HashEqFiberId } from '../util'
 import { fibers } from './TestAnnotation'
 import { TestAnnotationMap } from './TestAnnotationMap'
 
@@ -24,7 +25,7 @@ export abstract class Annotations {
   abstract annotate<V>(key: TestAnnotation<V>, value: V): UIO<void>
   abstract get<V>(key: TestAnnotation<V>): UIO<V>
   abstract withAnnotation<R, E, A>(io: IO<R, E, A>): IO<R, Annotated<E>, Annotated<A>>
-  abstract readonly supervisedFibers: UIO<ReadonlySet<RuntimeFiber<any, any>>>
+  abstract readonly supervisedFibers: UIO<HS.HashSet<RuntimeFiber<any, any>>>
 
   static annotate<V>(key: TestAnnotation<V>, value: V): URIO<Has<Annotations>, void> {
     return I.asksServiceM(AnnotationsTag)((_) => _.annotate(key, value))
@@ -35,7 +36,7 @@ export abstract class Annotations {
   static withAnnotation<R, E, A>(io: IO<R, E, A>): IO<R & Has<Annotations>, Annotated<E>, Annotated<A>> {
     return I.asksServiceM(AnnotationsTag)((_) => _.withAnnotation(io))
   }
-  static get supervisedFibers(): URIO<Has<Annotations>, ReadonlySet<RuntimeFiber<any, any>>> {
+  static get supervisedFibers(): URIO<Has<Annotations>, HS.HashSet<RuntimeFiber<any, any>>> {
     return I.asksServiceM(AnnotationsTag)((_) => _.supervisedFibers)
   }
   static get live(): Layer<unknown, never, Has<Annotations>> {
@@ -75,16 +76,11 @@ export abstract class Annotations {
                 I.map((m) => m.get(fibers)),
                 I.bind(
                   E.fold(
-                    (_) => I.succeed(RS.empty()),
+                    (_) => I.succeed(HS.make<RuntimeFiber<any, any>>(HashEqFiber)),
                     flow(
                       I.foreach((_) => _.get),
-                      I.map(
-                        A.foldl(
-                          RS.empty<RuntimeFiber<any, any>>(),
-                          RS.union_(Eq.contramap_(eqFiberId, (_: RuntimeFiber<any, any>) => _.id))
-                        )
-                      ),
-                      I.map((s) => RS.filter_(s, (f) => !eqFiberId.equals_(f.id, descriptor.id)))
+                      I.map(A.foldl(HS.make<RuntimeFiber<any, any>>(HashEqFiber), HS.union_)),
+                      I.map((s) => HS.filter_(s, (f) => !eqFiberId.equals_(f.id, descriptor.id)))
                     )
                   )
                 )

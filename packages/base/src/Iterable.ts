@@ -1,11 +1,13 @@
 import type { Either } from './Either'
-import type { PredicateWithIndex } from './Function'
+import type { Predicate, PredicateWithIndex, Refinement } from './Function'
 import type { Monoid } from './Monoid'
+import type { Option } from './Option'
 import type * as P from './typeclass'
 
 import * as A from './Array'
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
+import * as O from './Option'
 
 export const URI = 'Iterable'
 export type URI = typeof URI
@@ -356,6 +358,25 @@ export function append_<A>(ia: Iterable<A>, element: A): Iterable<A> {
 
 export function append<A>(element: A): (ia: Iterable<A>) => Iterable<A> {
   return (ia) => append_(ia, element)
+}
+
+export function findl_<A, B extends A>(ia: Iterable<A>, refinement: Refinement<A, B>): Option<B>
+export function findl_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A>
+export function findl_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A> {
+  const as = ia[Symbol.iterator]()
+  let a: IteratorResult<A>
+  while (!(a = as.next()).done) {
+    if (predicate(a.value)) {
+      return O.some(a.value)
+    }
+  }
+  return O.none()
+}
+
+export function findl<A, B extends A>(refinement: Refinement<A, B>): (ia: Iterable<A>) => Option<B>
+export function findl<A>(predicate: Predicate<A>): (ia: Iterable<A>) => Option<A>
+export function findl<A>(predicate: Predicate<A>): (ia: Iterable<A>) => Option<A> {
+  return (ia) => findl_(ia, predicate)
 }
 
 export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {

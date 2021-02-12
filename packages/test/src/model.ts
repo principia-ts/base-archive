@@ -94,10 +94,11 @@ type MergeE<Specs extends ReadonlyArray<Spec.XSpec<any, any>>> = {
   [K in keyof Specs]: [Specs[K]] extends [Spec.XSpec<any, infer E>] ? E : never
 }[number]
 
-export function suite(
-  label: string
-): <Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(...specs: Specs) => Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
-  return (...specs) => Spec.suite(label, M.succeed(specs), none())
+export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
+  label: string,
+  ...specs: Specs
+): Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
+  return Spec.suite(label, M.succeed(specs), none())
 }
 
 export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
@@ -122,18 +123,18 @@ export function test(label: string, assertion: () => TestResult): Spec.XSpec<unk
   return testM(label, () => I.effectTotal(assertion))
 }
 
-export function check<R, A>(rv: Gen<R, A>): (test: (a: A) => TestResult) => URIO<R & Has<TestConfig>, TestResult> {
-  return (test) => checkM(rv)(flow(test, I.succeed))
+export function check<R, A>(rv: Gen<R, A>, test: (a: A) => TestResult): URIO<R & Has<TestConfig>, TestResult> {
+  return checkM(rv, flow(test, I.succeed))
 }
 
-export function checkM<R, A>(
-  rv: Gen<R, A>
-): <R1, E>(test: (a: A) => IO<R1, E, TestResult>) => IO<R & R1 & Has<TestConfig>, E, TestResult> {
-  return (test) =>
-    pipe(
-      TestConfig.samples,
-      I.bind((n) => checkStream(pipe(rv.sample, S.forever, S.take(n)), test))
-    )
+export function checkM<R, A, R1, E>(
+  rv: Gen<R, A>,
+  test: (a: A) => IO<R1, E, TestResult>
+): IO<R & R1 & Has<TestConfig>, E, TestResult> {
+  return pipe(
+    TestConfig.samples,
+    I.bind((n) => checkStream(pipe(rv.sample, S.forever, S.take(n)), test))
+  )
 }
 
 function checkStream<R, A, R1, E>(

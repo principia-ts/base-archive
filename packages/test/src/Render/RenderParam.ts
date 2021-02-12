@@ -1,16 +1,17 @@
-import type { AssertionM } from '../Assertion/AssertionM'
 import type { Show } from '@principia/base/Show'
 
 import { makeShow } from '@principia/base/Show'
 
+import { AssertionM } from '../Assertion/AssertionM'
+
 export interface RenderAssertionM {
-  readonly _tag: 'AssertionM'
+  readonly _tag: 'RenderAssertionM'
   readonly assertion: AssertionM<any>
   readonly toString: () => string
 }
 
 export interface RenderValue {
-  readonly _tag: 'Value'
+  readonly _tag: 'RenderValue'
   readonly value: any
   readonly show: Show<any>
   readonly toString: () => string
@@ -18,25 +19,38 @@ export interface RenderValue {
 
 export type RenderParam = RenderAssertionM | RenderValue
 
-export function assertionParam<A>(assertion: AssertionM<A>): RenderAssertionM {
-  return {
-    _tag: 'AssertionM',
-    assertion,
-    toString() {
-      return this.assertion.toString()
+export function param<A>(assertion: AssertionM<A>): RenderParam
+export function param<A>(value: A, show?: Show<A>): RenderParam
+export function param(value: any, show?: Show<any>): RenderParam {
+  if (
+    value instanceof AssertionM ||
+    (typeof value === 'object' && value != null && '_tag' in value && value['_tag'] === 'AssertionM')
+  ) {
+    return {
+      _tag: 'RenderAssertionM',
+      assertion: value,
+      toString() {
+        return this.assertion.toString()
+      }
+    }
+  } else {
+    return {
+      _tag: 'RenderValue',
+      value,
+      show: show ?? showAny,
+      toString() {
+        return this.show.show(this.value)
+      }
     }
   }
 }
 
 const showAny = makeShow((_: any) => JSON.stringify(_))
 
-export function valueParam<A>(value: A, show?: Show<A>): RenderValue {
-  return {
-    _tag: 'Value',
-    value,
-    show: show ?? showAny,
-    toString() {
-      return this.show.show(this.value)
-    }
-  }
+export function field(name: string): string {
+  return `_.${name}`
+}
+
+export function quoted(name: string): string {
+  return `"${name}"`
 }

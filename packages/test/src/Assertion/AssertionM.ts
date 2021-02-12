@@ -1,11 +1,10 @@
-import type { Render } from '../Render'
+import { param, quoted, Render } from '../Render'
 import type { AssertionValue } from './AssertionValue'
 
 import * as Str from '@principia/base/String'
 
 import * as BA from '../FreeBooleanAlgebra'
 import { infix } from '../Render'
-import { assertionParam, valueParam } from '../Render/RenderParam'
 
 export type AssertResultM<A> = BA.FreeBooleanAlgebraM<unknown, never, AssertionValue<A>>
 
@@ -14,15 +13,15 @@ export class AssertionM<A> {
   constructor(readonly render: Render, readonly runM: (actual: A) => AssertResultM<A>) {}
 
   ['&&'](this: AssertionM<A>, that: AssertionM<A>): AssertionM<A> {
-    return new AssertionM(infix(assertionParam(this), '&&', assertionParam(that)), (actual) =>
+    return new AssertionM(infix(param(this), '&&', param(that)), (actual) =>
       BA.andM_(this.runM(actual), that.runM(actual))
     )
   }
   [':'](string: string): AssertionM<A> {
-    return new AssertionM(infix(assertionParam(this), ':', valueParam(Str.surround_(string, '"'))), this.runM)
+    return new AssertionM(infix(param(this), ':', param(quoted(string))), this.runM)
   }
   ['||'](this: AssertionM<A>, that: AssertionM<A>): AssertionM<A> {
-    return new AssertionM(infix(assertionParam(this), '||', assertionParam(that)), (actual) =>
+    return new AssertionM(infix(param(this), '||', param(that)), (actual) =>
       BA.orM_(this.runM(actual), that.runM(actual))
     )
   }
