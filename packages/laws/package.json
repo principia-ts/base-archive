@@ -40,7 +40,7 @@
     "@principia/base": "^0.3.0",
     "@principia/compile": "^0.3.0",
     "core-js": "3",
-    "fast-check": "2.10.0"
+    "fast-check": "2.13.0"
   },
   "publishConfig": {
     "access": "public",
