@@ -2,12 +2,14 @@ import type { Cause } from '../Cause'
 import type { Exit } from '../Exit'
 import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus } from '../Fiber'
 import type { FiberId } from '../Fiber/FiberId'
+import type { Trace } from '../Fiber/trace'
 import type { FiberRef } from '../FiberRef'
 import type { Multi } from '../Multi'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
+
 import { cross_ } from './core'
 
 /*
@@ -45,7 +47,10 @@ export const IOTag = {
   ModifyFiberRef: 'ModifyFiberRef',
   GetForkScope: 'GetForkScope',
   OverrideForkScope: 'OverrideForkScope',
-  FFI: 'FFI'
+  FFI: 'FFI',
+  GetTrace: 'GetTrace',
+  SetTracingStatus: 'SetTracingStatus',
+  GetTracingStatus: 'GetTracingStatus'
 } as const
 
 export const URI = 'IO'
@@ -109,7 +114,30 @@ export class Bind<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
  */
 export class Succeed<A> extends IO<unknown, never, A> {
   readonly _tag = IOTag.Succeed
-  constructor(readonly value: A) {
+  constructor(readonly value: A, readonly trace?: string) {
+    super()
+  }
+}
+
+export class GetTrace extends IO<unknown, never, Trace> {
+  readonly _tag = IOTag.GetTrace
+  constructor() {
+    super()
+  }
+}
+
+export class GetTracingStatus<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.SetTracingStatus
+
+  constructor(readonly effect: IO<R, E, A>, readonly flag: boolean) {
+    super()
+  }
+}
+
+export class SetTracingStatus<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.GetTracingStatus
+
+  constructor(readonly f: (tracingStatus: boolean) => IO<R, E, A>) {
     super()
   }
 }
@@ -189,7 +217,7 @@ export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
 export class Fail<E> extends IO<unknown, E, never> {
   readonly _tag = IOTag.Fail
 
-  constructor(readonly cause: Cause<E>) {
+  constructor(readonly fill: (_: () => Trace) => Cause<E>) {
     super()
   }
 }
@@ -354,10 +382,10 @@ export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
   }
 }
 
-export const ffiNotImplemented = new Fail({
+export const ffiNotImplemented = new Fail(() => ({
   _tag: 'Die',
   value: new Error('Integration not implemented or unsupported')
-})
+}))
 
 export type Instruction =
   | Bind<any, any, any, any, any, any>
@@ -383,6 +411,9 @@ export type Instruction =
   | GetForkScope<any, any, any>
   | OverrideForkScope<any, any, any>
   | FFI<any, any, any>
+  | GetTrace
+  | GetTracingStatus<any, any, any>
+  | SetTracingStatus<any, any, any>
 
 export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
 

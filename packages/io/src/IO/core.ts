@@ -3,6 +3,7 @@ import type { Cause } from '../Cause/core'
 import type { Exit } from '../Exit/core'
 import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
+import type { Trace } from '../Fiber/trace'
 import type { FiberContext } from '../internal/FiberContext'
 import type { Supervisor } from '../Supervisor'
 import type { Sync } from '../Sync'
@@ -25,6 +26,7 @@ import * as NEA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
+import { accessCallTrace, traceFrom } from '@principia/compile/util'
 import * as FL from '@principia/free/FreeList'
 
 import { runAsyncEnv } from '../Async'
@@ -88,6 +90,8 @@ export const yieldNow: UIO<void> = new Yield()
  *
  * @category Constructors
  * @since 1.0.0
+ *
+ * @trace 0
  */
 export function effectAsync<R, E, A>(
   register: (k: (_: IO<R, E, A>) => void) => void,
@@ -122,6 +126,8 @@ export function effectAsyncOption<R, E, A>(
 /**
  * Imports a synchronous side-effect into an `IO`, translating any
  * thrown exceptions into typed failed effects with `IO.fail`.
+ *
+ * @trace 0
  */
 export function effect<A>(effect: () => A): FIO<Error, A> {
   return new EffectPartial(effect, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)))
@@ -138,6 +144,8 @@ export function effect<A>(effect: () => A): FIO<Error, A> {
  *
  * @category Constructors
  * @since 1.0.0
+ *
+ * @trace 0
  */
 export function effectTotal<A>(effect: () => A): UIO<A> {
   return new EffectTotal(effect)
@@ -153,6 +161,9 @@ export function effectTotal<A>(effect: () => A): UIO<A> {
  *
  * @category Constructors
  * @since 1.0.0
+ *
+ * @trace 0
+ * @trace 1
  */
 export function effectCatch_<E, A>(effect: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
   return new EffectPartial(effect, onThrow)
@@ -168,15 +179,24 @@ export function effectCatch_<E, A>(effect: () => A, onThrow: (error: unknown) =>
  *
  * @category Constructors
  * @since 1.0.0
+ *
  * @dataFirst effectCatch_
+ * @trace 0
  */
 export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () => A) => FIO<E, A> {
-  return (effect) => effectCatch_(effect, onThrow)
+  return (
+    /**
+     * @trace 0
+     */
+    (effect) => effectCatch_(effect, onThrow)
+  )
 }
 
 /**
  * Returns a lazily constructed effect, whose construction may itself require effects.
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
+ *
+ * @trace 0
  */
 export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
   return new DeferPartial(io, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)))
@@ -187,6 +207,9 @@ export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
  * translating any thrown exceptions into typed failed effects and mapping the error.
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
+ *
+ * @trace 0
+ * @trace 1
  */
 export function deferCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
   return new DeferPartial(io, onThrow)
@@ -197,9 +220,16 @@ export function deferCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error:
  * translating any thrown exceptions into typed failed effects and mapping the error.
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
+ *
+ * @trace 0
  */
 export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: () => IO<R, E, A>) => IO<R, E | E1, A> {
-  return (io) => deferCatch_(io, onThrow)
+  return (
+    /**
+     * @trace 0
+     */
+    (io) => deferCatch_(io, onThrow)
+  )
 }
 
 /**
@@ -214,6 +244,7 @@ export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: (
  *
  * @category Constructors
  * @since 1.0.0
+ * @trace 0
  */
 export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
   return new DeferTotal(io)
@@ -228,8 +259,22 @@ export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
  *
  * @category Constructors
  * @since 1.0.0
+ * @trace call
  */
 export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
+  const trace = accessCallTrace()
+  return new Fail(traceFrom(trace, () => cause))
+}
+
+/**
+ * Returns an effect that models failure with the specified `Cause`.
+ *
+ * This version takes in a lazily-evaluated trace that can be attached to the `Cause`
+ * via `Cause.Traced`.
+ *
+ * @trace 0
+ */
+export function haltWith<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, never> {
   return new Fail(cause)
 }
 
@@ -242,9 +287,12 @@ export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
  *
  * @category Constructors
  * @since 1.0.0
+ *
+ * @trace call
  */
 export function fail<E>(e: E): FIO<E, never> {
-  return halt(C.fail(e))
+  const trace = accessCallTrace()
+  return haltWith(traceFrom(trace, (trace) => C.traced(C.fail(e), trace())))
 }
 
 /**
@@ -785,6 +833,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  *
  * @category Monad
  * @since 1.0.0
+ * @trace 1
  */
 export function bind_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B>): IO<R & U, E | G, B> {
   return new Bind(ma, f)
@@ -804,6 +853,7 @@ export function bind_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B
  * @category Monad
  * @since 1.0.0
  * @dataFirst bind_
+ * @trace 0
  */
 export function bind<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, E, A>) => IO<R & U, G | E, B> {
   return (ma) => bind_(ma, f)
@@ -1215,6 +1265,7 @@ export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
  *
  * @category Combinators
  * @since 1.0.0
+ * @trace 1
  */
 export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<R1, E1, A1>): IO<R & R1, E1, A | A1> {
   return foldM_(ma, f, (x) => succeed(x))
@@ -1226,6 +1277,7 @@ export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<
  * @category Combinators
  * @since 1.0.0
  * @dataFirst catchAll_
+ * @trace 0
  */
 export function catchAll<R, E, E2, A>(
   f: (e: E2) => IO<R, E, A>
@@ -2458,12 +2510,14 @@ export function partition<R, E, A, B>(
  *
  * @category Combinators
  * @since 1.0.0
+ * @trace call
  */
 export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
+  const trace = accessCallTrace()
   return new Fold(
     ma,
-    (cause) => succeed(Ex.halt(cause)),
-    (succ) => succeed(Ex.succeed(succ))
+    traceFrom(trace, (cause) => succeed(Ex.halt(cause))),
+    traceFrom(trace, (succ) => succeed(Ex.succeed(succ)))
   )
 }
 

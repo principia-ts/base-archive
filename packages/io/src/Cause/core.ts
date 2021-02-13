@@ -1,4 +1,5 @@
 import type { FiberId } from '../Fiber/FiberId'
+import type { Trace } from '../Fiber/trace'
 import type { Eq } from '@principia/base/Eq'
 import type { Predicate } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
@@ -11,12 +12,14 @@ import { makeEq } from '@principia/base/Eq'
 import * as Ev from '@principia/base/Eval'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import * as F from '@principia/base/Function'
+import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
 
 import { eqFiberId } from '../Fiber/FiberId'
+import { prettyTrace } from '../Fiber/trace'
 
-export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E>
+export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E> | Traced<E>
 
 export interface Empty {
   readonly _tag: 'Empty'
@@ -49,6 +52,12 @@ export interface Both<E> {
   readonly right: Cause<E>
 }
 
+export interface Traced<E> {
+  readonly _tag: 'Traced'
+  readonly cause: Cause<E>
+  readonly trace: Trace
+}
+
 export const URI = 'Cause'
 
 export type URI = typeof URI
@@ -74,6 +83,17 @@ export function fail<E>(value: E): Cause<E> {
   return {
     _tag: 'Fail',
     value
+  }
+}
+
+export function traced<E>(cause: Cause<E>, trace: Trace): Cause<E> {
+  if (L.isEmpty(trace.executionTrace) && L.isEmpty(trace.stackTrace) && O.isNone(trace.parentTrace)) {
+    return cause
+  }
+  return {
+    _tag: 'Traced',
+    cause,
+    trace
   }
 }
 
@@ -162,7 +182,7 @@ export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
  * ```
  */
 export function isEmpty<E>(cause: Cause<E>): boolean {
-  if (cause._tag === 'Empty') {
+  if (cause._tag === 'Empty' || (cause._tag === 'Traced' && cause.cause._tag === 'Empty')) {
     return true
   }
   let causes: Stack<Cause<E>> | undefined = undefined
@@ -186,6 +206,10 @@ export function isEmpty<E>(cause: Cause<E>): boolean {
       case 'Both': {
         causes  = makeStack(current.right, causes)
         current = current.left
+        break
+      }
+      case 'Traced': {
+        current = current.cause
         break
       }
       default: {
@@ -294,6 +318,9 @@ export function _find<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>
         })
       )
     }
+    case 'Traced': {
+      return Ev.defer(() => _find(cause.cause, f))
+    }
     default: {
       return Ev.now(apply)
     }
@@ -328,7 +355,8 @@ function _fold<E, A>(
   onDie: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
-  onBoth: (l: A, r: A) => A
+  onBoth: (l: A, r: A) => A,
+  onTraced: (_: A, trace: Trace) => A
 ): Ev.Eval<A> {
   switch (cause._tag) {
     case 'Empty':
@@ -341,15 +369,20 @@ function _fold<E, A>(
       return Ev.now(onInterrupt(cause.fiberId))
     case 'Both':
       return Ev.crossWith_(
-        Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
-        Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+        Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         onBoth
       )
     case 'Then':
       return Ev.crossWith_(
-        Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
-        Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth)),
+        Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         onThen
+      )
+    case 'Traced':
+      return Ev.map_(
+        Ev.defer(() => _fold(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        (a) => onTraced(a, cause.trace)
       )
   }
 }
@@ -377,9 +410,10 @@ export function fold<E, A>(
   onDie: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
-  onBoth: (l: A, r: A) => A
+  onBoth: (l: A, r: A) => A,
+  onTraced: (_: A, trace: Trace) => A
 ): (cause: Cause<E>) => A {
-  return (cause) => _fold(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth).value
+  return (cause) => _fold(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
 }
 
 /**
@@ -572,6 +606,14 @@ export function equalsCause<E>(x: Cause<E>, y: Cause<E>): boolean {
   let causes: Stack<readonly [Cause<E>, Cause<E>]> | undefined
 
   while (current) {
+    if (current[0]._tag === 'Traced') {
+      current = [current[0].cause, current[1]]
+      continue
+    }
+    if (current[1]._tag === 'Traced') {
+      current = [current[0], current[1].cause]
+      continue
+    }
     switch (current[0]._tag) {
       case 'Fail': {
         if (!(current[1]._tag === 'Fail' && current[0].value === current[1].value)) {
@@ -693,6 +735,8 @@ function _bind<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
         Ev.defer(() => _bind(ma.right, f)),
         both
       )
+    case 'Traced':
+      return Ev.map_(_bind(ma.cause, f), (cause) => traced(cause, ma.trace))
   }
 }
 
@@ -833,6 +877,12 @@ function _stripFailures<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
         then
       )
     }
+    case 'Traced': {
+      return Ev.map_(
+        Ev.defer(() => _stripFailures(cause.cause)),
+        (c) => traced(c, cause.trace)
+      )
+    }
   }
 }
 
@@ -872,6 +922,12 @@ export function _stripInterrupts<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
         Ev.defer(() => _stripInterrupts(cause.left)),
         Ev.defer(() => _stripInterrupts(cause.right)),
         then
+      )
+    }
+    case 'Traced': {
+      return Ev.map_(
+        Ev.defer(() => _stripInterrupts(cause.cause)),
+        (c) => traced(c, cause.trace)
       )
     }
   }
@@ -926,6 +982,12 @@ function _stripSomeDefects<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<
             ? right
             : O.none()
         }
+      )
+    }
+    case 'Traced': {
+      return Ev.map_(
+        Ev.defer(() => _stripSomeDefects(cause.cause, pf)),
+        O.map((c) => traced(c, cause.trace))
       )
     }
   }
@@ -990,6 +1052,12 @@ function _keepDefects<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
         }
       )
     }
+    case 'Traced': {
+      return Ev.map_(
+        Ev.defer(() => _keepDefects(cause.cause)),
+        O.map((c) => traced(c, cause.trace))
+      )
+    }
   }
 }
 
@@ -1039,6 +1107,12 @@ function _sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Eit
               : E.left(both(lefts.left, rights.left))
             : E.right(lefts.right)
         }
+      )
+    }
+    case 'Traced': {
+      return Ev.map_(
+        Ev.defer(() => _sequenceCauseEither(cause.cause)),
+        E.mapLeft((c) => traced(c, cause.trace))
       )
     }
   }
@@ -1093,6 +1167,12 @@ function _sequenceCauseOption<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Ca
             ? rights
             : O.none()
         }
+      )
+    }
+    case 'Traced': {
+      return Ev.map_(
+        Ev.defer(() => _sequenceCauseOption(cause.cause)),
+        O.map((c) => traced(c, cause.trace))
       )
     }
   }
@@ -1275,6 +1355,15 @@ const Parallel = (all: Sequential[]): Parallel => ({
   all
 })
 
+type TraceRenderer = (_: Trace) => string
+
+export interface Renderer<E = unknown> {
+  renderFailure: (error: E) => string[]
+  renderError: (error: Error) => string[]
+  renderTrace: TraceRenderer
+  renderUnknown: (error: unknown) => string[]
+}
+
 const headTail = <A>(a: NonEmptyArray<A>): [A, A[]] => {
   const x    = [...a]
   const head = x.shift() as A
@@ -1288,24 +1377,35 @@ const prefixBlock = (values: readonly string[], p1: string, p2: string): string[
     ? pipe(headTail(values), ([head, tail]) => [`${p1}${head}`, ...tail.map((_) => `${p2}${_}`)])
     : []
 
-const renderInterrupt = (fiberId: FiberId): Sequential =>
-  Sequential([Failure([`An interrupt was produced by #${fiberId.seqNumber}.`])])
+const renderInterrupt = (fiberId: FiberId, trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+  Sequential([
+    Failure([`An interrupt was produced by #${fiberId.seqNumber}.`, '', ...renderTrace(trace, traceRenderer)])
+  ])
 
 const renderError = (error: Error): string[] => lines(error.stack ? error.stack : String(error))
 
-const renderDie = (error: Error): Sequential =>
-  Sequential([Failure(['An unchecked error was produced.', '', ...renderError(error)])])
+const renderDie = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+  Sequential([Failure(['An unchecked error was produced.', '', ...error, ...renderTrace(trace, traceRenderer)])])
 
-const renderDieUnknown = (error: string[]): Sequential =>
-  Sequential([Failure(['An unchecked error was produced.', '', ...error])])
+const renderDieUnknown = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+  Sequential([Failure(['An unchecked error was produced.', '', ...error, ...renderTrace(trace, traceRenderer)])])
 
-const renderFail = (error: string[]): Sequential =>
-  Sequential([Failure(['A checked error was not handled.', '', ...error])])
+const renderFailure = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+  Sequential([Failure(['A checked error was not handled.', '', ...error, ...renderTrace(trace, traceRenderer)])])
 
-const renderFailError = (error: Error): Sequential =>
-  Sequential([Failure(['A checked error was not handled.', '', ...renderError(error)])])
+const renderFailError = (error: Error, trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+  Sequential([
+    Failure(['A checked error was not handled.', '', ...renderError(error), ...renderTrace(trace, traceRenderer)])
+  ])
 
-const causeToSequential = <E>(cause: Cause<E>): Ev.Eval<Sequential> =>
+const renderToString = (u: unknown): string => {
+  if (typeof u === 'object' && u != null && 'toString' in u && typeof u['toString'] === 'function') {
+    return u['toString']()
+  }
+  return JSON.stringify(u, null, 2)
+}
+
+const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<Sequential> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Empty': {
@@ -1313,46 +1413,74 @@ const causeToSequential = <E>(cause: Cause<E>): Ev.Eval<Sequential> =>
       }
       case 'Fail': {
         return cause.value instanceof Error
-          ? renderFailError(cause.value)
-          : renderFail(lines(JSON.stringify(cause.value, null, 2)))
+          ? renderFailure(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
+          : renderFailure(renderer.renderFailure(cause.value), O.none(), renderer.renderTrace)
       }
       case 'Die': {
         return cause.value instanceof Error
-          ? renderDie(cause.value)
-          : renderDieUnknown(lines(JSON.stringify(cause.value, null, 2)))
+          ? renderDie(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
+          : renderDie(renderer.renderUnknown(cause.value), O.none(), renderer.renderTrace)
       }
       case 'Interrupt': {
-        return renderInterrupt(cause.fiberId)
+        return renderInterrupt(cause.fiberId, O.none(), renderer.renderTrace)
       }
       case 'Then': {
-        return Sequential(yield* _(linearSegments(cause)))
+        return Sequential(yield* _(linearSegments(cause, renderer)))
       }
       case 'Both': {
-        return Sequential([Parallel(yield* _(parallelSegments(cause)))])
+        return Sequential([Parallel(yield* _(parallelSegments(cause, renderer)))])
+      }
+      case 'Traced': {
+        switch (cause.cause._tag) {
+          case 'Fail': {
+            return renderFailure(renderer.renderFailure(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
+          }
+          case 'Die': {
+            return renderDie(renderer.renderUnknown(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
+          }
+          case 'Interrupt': {
+            return renderInterrupt(cause.cause.fiberId, O.some(cause.trace), renderer.renderTrace)
+          }
+          default: {
+            return Sequential([
+              Failure([
+                'An error was rethrown with a new trace.',
+                ...renderTrace(O.some(cause.trace), renderer.renderTrace)
+              ]),
+              ...(yield* _(causeToSequential(cause.cause, renderer))).all
+            ])
+          }
+        }
       }
     }
   })
 
-const linearSegments = <E>(cause: Cause<E>): Ev.Eval<Step[]> =>
+const linearSegments = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<Step[]> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Then': {
-        return [...(yield* _(linearSegments(cause.left))), ...(yield* _(linearSegments(cause.right)))]
+        return [
+          ...(yield* _(linearSegments(cause.left, renderer))),
+          ...(yield* _(linearSegments(cause.right, renderer)))
+        ]
       }
       default: {
-        return (yield* _(causeToSequential(cause))).all
+        return (yield* _(causeToSequential(cause, renderer))).all
       }
     }
   })
 
-const parallelSegments = <E>(cause: Cause<E>): Ev.Eval<Sequential[]> =>
+const parallelSegments = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<Sequential[]> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
       case 'Both': {
-        return [...(yield* _(parallelSegments(cause.left))), ...(yield* _(parallelSegments(cause.right)))]
+        return [
+          ...(yield* _(parallelSegments(cause.left, renderer))),
+          ...(yield* _(parallelSegments(cause.right, renderer)))
+        ]
       }
       default: {
-        return [yield* _(causeToSequential(cause))]
+        return [yield* _(causeToSequential(cause, renderer))]
       }
     }
   })
@@ -1387,9 +1515,9 @@ const format = (segment: Segment): readonly string[] => {
   }
 }
 
-const prettyLines = <E>(cause: Cause<E>): Ev.Eval<readonly string[]> =>
+const prettyLines = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<readonly string[]> =>
   Ev.gen(function* (_) {
-    const s = yield* _(causeToSequential(cause))
+    const s = yield* _(causeToSequential(cause, renderer))
 
     if (s.all.length === 1 && s.all[0]._tag === 'Failure') {
       return s.all[0].lines
@@ -1398,13 +1526,27 @@ const prettyLines = <E>(cause: Cause<E>): Ev.Eval<readonly string[]> =>
     return O.getOrElse_(A.updateAt(0, '╥')(format(s)), (): string[] => [])
   })
 
-export function prettySafe<E>(cause: Cause<E>): Ev.Eval<string> {
+function renderTrace(o: O.Option<Trace>, renderTrace: TraceRenderer) {
+  return o._tag === 'None' ? [] : lines(renderTrace(o.value))
+}
+
+export function prettySafe<E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<string> {
   return Ev.gen(function* (_) {
-    const lines = yield* _(prettyLines(cause))
+    const lines = yield* _(prettyLines(cause, renderer))
     return lines.join('\n')
   })
 }
 
-export function pretty<E>(cause: Cause<E>): string {
-  return prettySafe(cause).value
+const defaultErrorToLines = (error: unknown) =>
+  error instanceof Error ? renderError(error) : lines(renderToString(error))
+
+export const defaultRenderer: Renderer = {
+  renderError,
+  renderTrace: prettyTrace,
+  renderUnknown: defaultErrorToLines,
+  renderFailure: defaultErrorToLines
+}
+
+export function pretty<E>(cause: Cause<E>, renderer: Renderer<E> = defaultRenderer): string {
+  return prettySafe(cause, renderer).value
 }
