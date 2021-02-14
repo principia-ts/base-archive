@@ -1,23 +1,11 @@
-import type { Has } from '@principia/base/Has'
-
 import * as E from '@principia/base/Either'
 import { eqStrict } from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
-import {
-  assert,
-  deepStrictEqualTo,
-  defaultTestExecutor,
-  equalTo,
-  RunnableSpec,
-  suite,
-  test,
-  TestRunner
-} from '@principia/test'
-import { Annotations } from '@principia/test/Annotation'
+import { assert, deepStrictEqualTo, DefaultRunnableSpec, equalTo, suite, test } from '@principia/test'
 
 const eqEitherStrict = E.getEq(eqStrict, eqStrict)
 
-class EitherSpec extends RunnableSpec<Has<Annotations>, never> {
+class EitherSpec extends DefaultRunnableSpec {
   spec = suite(
     'Either',
     test('mapLeft', () => {
@@ -67,8 +55,6 @@ class EitherSpec extends RunnableSpec<Has<Annotations>, never> {
       )
     })
   )
-  aspects = []
-  runner  = new TestRunner<Has<Annotations>, never>(defaultTestExecutor(Annotations.live))
 }
 
 export default new EitherSpec()

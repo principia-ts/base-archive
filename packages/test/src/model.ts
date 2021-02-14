@@ -1,4 +1,5 @@
 import type { Assertion, AssertionM, AssertResult } from './Assertion'
+import type { TestEnvironment } from './environment/TestEnvironment'
 import type { ExecutedSpec } from './ExecutedSpec'
 import type { Gen } from './Gen'
 import type { TestResult } from './Render'
@@ -24,13 +25,16 @@ import * as S from '@principia/io/Stream'
 
 import { TestAnnotationMap } from './Annotation'
 import { anything, AssertionValue } from './Assertion'
+import { testEnvironment } from './environment/TestEnvironment'
 import * as BA from './FreeBooleanAlgebra'
 import { GenFailureDetails } from './GenFailureDetails'
 import { FailureDetails } from './Render'
 import * as Sa from './Sample'
 import * as Spec from './Spec'
 import { TestConfig } from './TestConfig'
+import { defaultTestExecutor } from './TestExecutor'
 import * as TF from './TestFailure'
+import { TestRunner } from './TestRunner'
 import * as TS from './TestSuccess'
 
 export type TestReporter<E> = (duration: number, spec: ExecutedSpec<E>) => URIO<Has<TestLogger>, void>
@@ -136,6 +140,8 @@ export function checkM<R, A, R1, E>(
     I.bind((n) => checkStream(pipe(rv.sample, S.forever, S.take(n)), test))
   )
 }
+
+export const defaultTestRunner: TestRunner<TestEnvironment, any> = new TestRunner(defaultTestExecutor(testEnvironment))
 
 function checkStream<R, A, R1, E>(
   stream: Stream<R, never, Sample<R, A>>,

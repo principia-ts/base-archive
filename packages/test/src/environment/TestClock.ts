@@ -1,8 +1,6 @@
 import type { Annotations } from '../Annotation'
 import type { Live } from './Live'
-import type { Eq } from '@principia/base/Eq'
 import type { Has } from '@principia/base/Has'
-import type { Hash } from '@principia/base/Hash'
 import type { HashMap } from '@principia/base/HashMap'
 import type { HashSet } from '@principia/base/HashSet'
 import type { List } from '@principia/base/List'
@@ -15,9 +13,7 @@ import type { Layer } from '@principia/io/Layer'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { makeEq } from '@principia/base/Eq'
-import * as EQ from '@principia/base/Eq'
-import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import { flow, pipe, tuple } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
 import * as HM from '@principia/base/HashMap'
 import * as HS from '@principia/base/HashSet'
@@ -37,16 +33,16 @@ import * as M from '@principia/io/Managed'
 import * as P from '@principia/io/Promise'
 import { intersect } from '@principia/io/util/intersect'
 
-import { AnnotationsTag, Fibers, fibers } from '../Annotation'
+import { AnnotationsTag, fibers } from '../Annotation'
+import { HashEqFiber, HashEqFiberId } from '../util'
 import { LiveTag } from './Live'
-import {HashEqFiber, HashEqFiberId} from '../util'
 
 export class Data {
   constructor(readonly duration: number, readonly sleeps: List<readonly [number, P.Promise<never, void>]>) {}
 }
 
 export class Sleep {
-  constructor(readonly duration: number, readonly promise: P.Promise<never, void>, fiberId: FiberId) {}
+  constructor(readonly duration: number, readonly promise: P.Promise<never, void>, readonly fiberId: FiberId) {}
 }
 
 interface Start {
@@ -272,4 +268,3 @@ export class TestClock implements Clock {
     new Data(0, Li.empty())
   )
 }
-

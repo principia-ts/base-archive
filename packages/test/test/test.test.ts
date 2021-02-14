@@ -1,41 +1,18 @@
-import type { Has } from '@principia/base/Has'
-import type { Random } from '@principia/io/Random'
-
 import '@principia/base/unsafe/Operators'
 
 import * as E from '@principia/base/Either'
 import * as Eq from '@principia/base/Eq'
-import { makeEq } from '@principia/base/Eq'
 import { none } from '@principia/base/Option'
 import * as I from '@principia/io/IO'
-import * as L from '@principia/io/Layer'
-import { defaultRandom, RandomTag } from '@principia/io/Random'
 
-import {
-  assert,
-  assertM,
-  check,
-  deepStrictEqualTo,
-  endsWith,
-  equalTo,
-  not,
-  suite,
-  test,
-  TestConfig,
-  testM,
-  TestRunner
-} from '../src'
-import { Annotations } from '../src/Annotation'
+import { assert, assertM, check, deepStrictEqualTo, endsWith, equalTo, suite, test, testM } from '../src'
+import { DefaultRunnableSpec } from '../src/DefaultRunnableSpec'
+import { Live } from '../src/environment/Live'
 import * as Gen from '../src/Gen'
-import { RunnableSpec } from '../src/RunnableSpec'
-import * as Spec from '../src/Spec'
 import { nonFlaky } from '../src/TestAspect'
-import { defaultTestExecutor } from '../src/TestExecutor'
 
-type Environment = Has<Annotations> & Has<Random> & Has<TestConfig> & { env: string }
-
-class TestSpec extends RunnableSpec<Environment, never> {
-  spec    = suite(
+class TestSpec extends DefaultRunnableSpec {
+  spec = suite(
     'Suite',
     test('test1', () => assert(100, equalTo(100 as number, Eq.number))),
     test('ignoreMe', () => assert(['a', 'b', 'c'], endsWith(['b', 'c'], Eq.string)))['@@'](nonFlaky),
@@ -50,27 +27,8 @@ class TestSpec extends RunnableSpec<Environment, never> {
       )
     )['@@'](nonFlaky),
     testM('check', () => check(Gen.int(0, 100), (n) => assert(n, equalTo(100, Eq.number)))),
-    testM('env', () =>
-      assertM(
-        I.asksM((_: { env: string }) => I.succeed(_)),
-        equalTo(
-          { env: 'this is env' },
-          makeEq((x, y) => x.env === y.env)
-        )
-      )
-    ),
-    test('deepStrict', () => assert(E.left('left'), deepStrictEqualTo(E.left('left'))))
-  )
-  aspects = []
-  runner  = new TestRunner<Environment, never>(
-    defaultTestExecutor(
-      L.allPar(
-        L.succeed(RandomTag)(defaultRandom),
-        Annotations.live,
-        TestConfig.live({ repeats: 10, retries: 0, samples: 10, shrinks: 10 }),
-        L.fromRawEffect(I.succeed({ env: 'this is env' }))
-      )
-    )
+    test('deepStrict', () => assert(E.left('left'), deepStrictEqualTo(E.left('left')))),
+    testM('long', () => assertM(Live.live(I.delay_(I.succeed('Long'), 100000)), equalTo('Long', Eq.string)))
   )
 }
 

@@ -8,19 +8,23 @@ import type { ExecutionStrategy } from '@principia/io/ExecutionStrategy'
 import type { IO } from '@principia/io/IO'
 import type { Schedule } from '@principia/io/Schedule'
 
+import * as A from '@principia/base/Array'
 import * as Eq from '@principia/base/Eq'
 import { constTrue, pipe } from '@principia/base/Function'
 import { hashString } from '@principia/base/Hash'
 import * as Set from '@principia/base/HashSet'
 import * as O from '@principia/base/Option'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
+import { Console } from '@principia/io/Console'
 import * as Ex from '@principia/io/Exit'
+import * as Fi from '@principia/io/Fiber'
 import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
 import * as Sc from '@principia/io/Schedule'
 
 import { Annotations } from './Annotation'
 import * as Annotation from './Annotation'
+import { Live, withLive_ } from './environment/Live'
 import * as S from './Spec'
 import { TestConfig } from './TestConfig'
 import * as TF from './TestFailure'
@@ -228,4 +232,59 @@ export function annotate<V>(key: TestAnnotation<V>, value: V): TestAspectPoly {
 
 export function tag(tag: string): TestAspectPoly {
   return annotate(Annotation.tagged, pipe(Set.make({ ...Eq.string, hash: hashString }), Set.add(tag)))
+}
+
+export function timeoutWarning(duration: number): TestAspect<Has<Live>, any> {
+  return new TestAspect(<R1, E1>(_: (label: string) => boolean, spec: S.XSpec<R1, E1>) => {
+    const loop = (labels: ReadonlyArray<string>, spec: S.XSpec<R1, E1>): S.XSpec<R1 & Has<Live>, E1> =>
+      matchTag_(spec.caseValue, {
+        Suite: ({ label, specs, exec }) =>
+          S.suite(
+            label,
+            M.map_(
+              specs,
+              A.map((spec) => loop(A.append_(labels, label), spec))
+            ),
+            exec
+          ),
+        Test: ({ label, test, annotations }) => S.test(label, warn(labels, label, test, duration), annotations)
+      })
+
+    return loop(A.empty(), spec)
+  })
+}
+
+function warn<R, E>(
+  suiteLabels: ReadonlyArray<string>,
+  testLabel: string,
+  test: I.IO<R, TestFailure<E>, TestSuccess>,
+  duration: number
+) {
+  return I.raceWith_(
+    test,
+    withLive_(showWarning(suiteLabels, testLabel, duration), I.delay(duration)),
+    (result, fiber) => Fi.interrupt(fiber)['*>'](I.done(result)),
+    (_, fiber) => Fi.join(fiber)
+  )
+}
+
+function showWarning(suiteLabels: ReadonlyArray<string>, testLabel: string, duration: number) {
+  return Live.live(Console.putStrLn(renderWarning(suiteLabels, testLabel, duration)))
+}
+
+function renderWarning(suiteLabels: ReadonlyArray<string>, testLabel: string, duration: number) {
+  return renderSuiteLabels(suiteLabels) + renderTest(testLabel, duration)
+}
+
+function renderSuiteLabels(suiteLabels: ReadonlyArray<string>) {
+  return pipe(
+    suiteLabels,
+    A.map((label) => `in Suite "${label}", `),
+    A.reverse,
+    A.join('')
+  )
+}
+
+function renderTest(testLabel: string, duration: number) {
+  return `test "${testLabel}" has taken more than ${duration} milliseconds to execute. If this is not expected, consider using TestAspect.timeout to timeout runaway tests for faster diagnostics`
 }
