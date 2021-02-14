@@ -46,10 +46,10 @@
     "@types/qs": "^6.9.5",
     "core-js": "3",
     "path-to-regexp": "^6.2.0",
-    "qs": "^6.9.4"
+    "qs": "^6.9.6"
   },
   "devDependencies": {
-    "@types/express": "^4.17.9"
+    "@types/express": "^4.17.11"
   },
   "publishConfig": {
     "access": "public",
