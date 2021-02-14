@@ -10,7 +10,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "ultra -r build",
+    "build": "ultra -r -b buildAll",
     "clean": "ultra -r clean",
     "lint": "ultra -r lint",
     "test": "jest --detectOpenHandles",

@@ -2,7 +2,7 @@ import type { Exit } from '../../Exit'
 import type { Fiber, RuntimeFiber } from '../../Fiber/core'
 import type { FiberContext } from '../../internal/FiberContext'
 import type { Scope } from '../../Scope'
-import type { IO, UIO, URIO } from '../core'
+import type { FailureReporter, IO, UIO, URIO } from '../core'
 import type { Option } from '@principia/base/Option'
 
 import * as O from '@principia/base/Option'
@@ -91,4 +91,20 @@ export function transplant<R, E, A>(f: (_: Grafter) => IO<R, E, A>): IO<R, E, A>
  */
 export function forkDaemon<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
   return new Fork(ma, O.some(globalScope), O.none())
+}
+
+/**
+ * Returns an effect that forks this effect into its own separate fiber,
+ * returning the fiber immediately, without waiting for it to begin
+ * executing the effect.
+ *
+ * The returned fiber can be used to interrupt the forked fiber, await its
+ * result, or join the fiber. See `Fiber` for more information.
+ *
+ * The fiber is forked with interrupt supervision mode, meaning that when the
+ * fiber that forks the child exits, the child will be interrupted.
+ */
+export function forkInReport(reportFailure: FailureReporter) {
+  return (scope: Scope<Exit<any, any>>) => <R, E, A>(value: IO<R, E, A>): URIO<R, RuntimeFiber<E, A>> =>
+    new Fork(value, O.some(scope), O.some(reportFailure))
 }
