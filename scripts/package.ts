@@ -32,6 +32,16 @@ pipe(
         cjs               = [...cjs.slice(0, 1), ...cjs.slice(2)]
         mut_ex['require'] = cjs.join('/')
 
+        if (ex['traced']) {
+          let esm                    = (ex['traced']['import'] as string).split('/')
+          esm                        = [...esm.slice(0, 1), ...esm.slice(2)]
+          mut_ex['traced']['import'] = esm.join('/')
+
+          let cjs                     = (ex['traced']['require'] as string).split('/')
+          cjs                         = [...cjs.slice(0, 1), ...cjs.slice(2)]
+          mut_ex['traced']['require'] = cjs.join('/')
+        }
+
         return mut_ex
       })
     )

@@ -18,9 +18,15 @@ pipe(
       const basePath        = ['.', ...base.slice(0, -1)].join('/')
       const esm             = ['.', 'dist', 'dist', 'esm-fix', ...base].join('/')
       const cjs             = ['.', 'dist', 'dist', 'cjs', ...base].join('/')
+      const esm_traced      = ['.', 'dist', 'dist-traced', 'esm-fix', ...base].join('/')
+      const cjs_traced      = ['.', 'dist', 'dist-traced', 'cjs', ...base].join('/')
       return {
         ...b,
         [basePath]: {
+          traced: {
+            import: esm_traced,
+            require: cjs_traced
+          },
           import: esm,
           require: cjs
         }
@@ -39,12 +45,20 @@ pipe(
         ...(packageJson as {}),
         exports: {
           '.': {
+            traced: {
+              import: './dist/dist-traced/esm-fix/index.js',
+              require: './dist/dist-traced/cjs/index.js'
+            },
             import: './dist/dist/esm-fix/index.js',
             require: './dist/dist/cjs/index.js'
           },
           ...subpaths,
           './*': {
-            import: './dist/dist/esm-fix/*.js',
+            traced: {
+              import: './dist/dist-traced/esm-fix/*',
+              require: './dist/dist-traced/cjs/*.js'
+            },
+            import: './dist/dist/esm-fix/*',
             require: './dist/dist/cjs/*.js'
           }
         }

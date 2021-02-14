@@ -105,7 +105,8 @@ export function route<R, A>(
                               I.apr(res.end())
                             ),
                           (_, r) => r,
-                          (_, r) => r
+                          (_, r) => r,
+                          (_) => _
                         ),
                         (r) => {
                           if (r) {

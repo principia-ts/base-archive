@@ -1,0 +1,28 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "module": "es2015",
+    "target": "es2020",
+    "rootDir": "../src",
+    "outDir": "../dist/dist-traced/esm-fix",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "after": true,
+        "transform": "@0x706b/ts-transform-fix-esm",
+        "relativeProjectRoot": "../../"
+      },
+      {
+        "transform": "../../compile/src/index.ts",
+        "moduleMap": {
+          "^src/(.*)": "(@principia/logger): _src/$1"
+        }
+      }
+    ],
+    "tsBuildInfoFile": "../tsbuildinfo/traced-esm-fix.tsbuildinfo"
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src"]
+}

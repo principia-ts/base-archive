@@ -11,7 +11,8 @@
     "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
     "plugins": [
       {
-        "transform": "../../compile/src/index.ts"
+        "transform": "../../compile/src/index.ts",
+        "tracing": false
       }
     ]
   },

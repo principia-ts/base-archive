@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "sourceMap": true,
+    "module": "es2015",
+    "target": "es2020",
+    "rootDir": "../src",
+    "outDir": "../dist/dist-traced/.intermediary",
+    "tsBuildInfoFile": "../tsbuildinfo/traced-intermediary.tsbuildinfo",
+    "plugins": [
+      {
+        "transform": "../../compile/src/index.ts",
+        "moduleMap": {
+          "^src/(.*)": "(@principia/graphql): _src/$1"
+        }
+      }
+    ]
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src"]
+}

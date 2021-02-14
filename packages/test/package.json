@@ -7,26 +7,50 @@
   "author": "Peter Krol <peter@peterkrol.com>",
   "exports": {
     ".": {
+      "traced": {
+        "import": "./dist/dist-traced/esm-fix/index.js",
+        "require": "./dist/dist-traced/cjs/index.js"
+      },
       "import": "./dist/dist/esm-fix/index.js",
       "require": "./dist/dist/cjs/index.js"
     },
     "./Annotation": {
+      "traced": {
+        "import": "./dist/dist-traced/esm-fix/Annotation/index.js",
+        "require": "./dist/dist-traced/cjs/Annotation/index.js"
+      },
       "import": "./dist/dist/esm-fix/Annotation/index.js",
       "require": "./dist/dist/cjs/Annotation/index.js"
     },
     "./Assertion": {
+      "traced": {
+        "import": "./dist/dist-traced/esm-fix/Assertion/index.js",
+        "require": "./dist/dist-traced/cjs/Assertion/index.js"
+      },
       "import": "./dist/dist/esm-fix/Assertion/index.js",
       "require": "./dist/dist/cjs/Assertion/index.js"
     },
     "./Mock": {
+      "traced": {
+        "import": "./dist/dist-traced/esm-fix/Mock/index.js",
+        "require": "./dist/dist-traced/cjs/Mock/index.js"
+      },
       "import": "./dist/dist/esm-fix/Mock/index.js",
       "require": "./dist/dist/cjs/Mock/index.js"
     },
     "./Render": {
+      "traced": {
+        "import": "./dist/dist-traced/esm-fix/Render/index.js",
+        "require": "./dist/dist-traced/cjs/Render/index.js"
+      },
       "import": "./dist/dist/esm-fix/Render/index.js",
       "require": "./dist/dist/cjs/Render/index.js"
     },
     "./*": {
+      "traced": {
+        "import": "./dist/dist-traced/esm-fix/*",
+        "require": "./dist/dist-traced/cjs/*.js"
+      },
       "import": "./dist/dist/esm-fix/*",
       "require": "./dist/dist/cjs/*.js"
     }
@@ -36,14 +60,20 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
-    "build": "yarn build:types && yarn build:esm-fix && yarn build:intermediary && yarn build:esm-shake && yarn build:cjs && yarn build:postprocess",
+    "build": "yarn build:types && yarn build:esm-fix && yarn build:intermediary && yarn build:esm-shake && yarn build:cjs",
     "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary",
     "build:esm-fix": "ttsc --build ./config/tsconfig.esm-fix.json",
     "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
     "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
-    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && yarn sort-package-json ./dist/package.json",
+    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && rimraf dist/dist-traced/.intermediary && yarn sort-package-json ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
+    "build:traced": "yarn build:traced:esm-fix && yarn build:traced:intermediary && yarn build:traced:esm-shake && yarn build:traced:cjs",
+    "build:traced:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/cjs dist/dist-traced/.intermediary",
+    "build:traced:esm-fix": "ttsc --build ./config/tsconfig.traced.esm-fix.json",
+    "build:traced:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/esm-shake dist/dist-traced/.intermediary",
+    "build:traced:intermediary": "ttsc --build ./config/tsconfig.traced.intermediary.json",
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
+    "buildAll": "yarn build && yarn build:traced && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",

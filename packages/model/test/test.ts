@@ -6,10 +6,15 @@ import { fromDecoderKF } from '@principia/codec/EitherDecoder'
 
 import * as M from '../src'
 
-const l = M.make((F) => F.both({
-  a: F.string(),
-  b: F.number()
-}, { c: F.either(F.string(), F.number()) }))
+const l = M.make((F) =>
+  F.both(
+    {
+      a: F.string(),
+      b: F.number()
+    },
+    { c: F.either(F.string(), F.number()) }
+  )
+)
 
 const input = {
   a: 'Hello, world',
