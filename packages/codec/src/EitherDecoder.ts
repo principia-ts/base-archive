@@ -24,7 +24,7 @@ export type V = HKT.CleanParam<E.V, 'E'> & HKT.Fix<'E', DecodeErrors>
 
 export const URI = 'EitherDecoder'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

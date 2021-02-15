@@ -11,7 +11,7 @@ import * as P from './typeclass'
 export interface Tuple2<A, B> extends Readonly<[A, B]> {}
 
 export const URI = 'T2'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'I', '+'>
 

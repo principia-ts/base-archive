@@ -15,7 +15,7 @@ export type Const<E, A> = E & { readonly _A: A }
 
 export const URI = 'Const'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 

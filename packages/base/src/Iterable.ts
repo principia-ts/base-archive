@@ -10,7 +10,7 @@ import * as HKT from './HKT'
 import * as O from './Option'
 
 export const URI = 'Iterable'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI>
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

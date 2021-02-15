@@ -16,7 +16,7 @@ export interface Reader<R, A> {
 export type V = HKT.V<'R', '-'>
 
 export const URI = 'Reader'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

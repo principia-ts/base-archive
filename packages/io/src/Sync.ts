@@ -34,7 +34,7 @@ export type URSync<R, A> = Sync<R, never, A>
 
 export const URI = 'Sync'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 

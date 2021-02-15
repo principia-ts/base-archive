@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
@@ -7,7 +8,7 @@ import * as E from '@principia/codec/Encoder'
 import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'
 
-export const IntersectionEncoder = implementInterpreter<E.URI, Alg.IntersectionURI>()((_) => ({
+export const IntersectionEncoder = implementInterpreter<URI, Alg.IntersectionURI>()((_) => ({
   intersection: (types, config) => (env) =>
     pipe(
       types,

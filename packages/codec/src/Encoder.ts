@@ -20,7 +20,7 @@ export type TypeOf<E> = E extends Encoder<any, infer A> ? A : never
 
 export const URI = 'Encoder'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'E', '+'>
 

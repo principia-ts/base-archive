@@ -55,7 +55,7 @@ export const IOTag = {
 
 export const URI = 'IO'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 abstract class IOSyntax<R, E, A> {
   ['>>=']<R1, E1, B>(this: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {

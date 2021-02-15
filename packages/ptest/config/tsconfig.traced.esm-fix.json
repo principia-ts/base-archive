@@ -3,7 +3,7 @@
   "compilerOptions": {
     "incremental": true,
     "declaration": false,
-    "module": "es2015",
+    "module": "es2020",
     "target": "es2020",
     "rootDir": "../src-esm",
     "outDir": "../dist/dist-traced/esm-fix",

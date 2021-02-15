@@ -44,7 +44,7 @@ export type InferRight<T extends Either<any, any>> = T extends Right<infer A> ? 
 
 export const URI = 'Either'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'E', '+'>
 

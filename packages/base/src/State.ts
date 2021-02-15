@@ -13,7 +13,7 @@ export interface State<S, A> {
 }
 
 export const URI = 'State'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'S', '_'>
 

@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from '@principia/base/Eq'
+import type { URI } from './HKT'
 
 import { eqAny } from '@principia/base/Eq'
 

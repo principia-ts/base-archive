@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 import type { Option } from '@principia/base/Option'
 
 import { pipe } from '@principia/base/Function'
@@ -7,7 +8,7 @@ import * as G from '@principia/base/Guard'
 import { implementInterpreter } from '../../HKT'
 import { applyGuardConfig } from './HKT'
 
-export const NullableGuard = implementInterpreter<G.URI, Alg.NullableURI>()((_) => ({
+export const NullableGuard = implementInterpreter<URI, Alg.NullableURI>()((_) => ({
   nullable_: (a, config) => (env) =>
     pipe(a(env), (guard) => applyGuardConfig(config?.config)(G.nullable(guard), env, guard)),
   optional_: (a, config) => (env) =>

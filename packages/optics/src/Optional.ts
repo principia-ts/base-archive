@@ -17,7 +17,7 @@ export interface Optional<S, A> {
 
 export const URI = 'optics/Optional'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'I', '_'>
 

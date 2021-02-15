@@ -1,5 +1,6 @@
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
 import type { Summoner } from '../../summoner'
+import type { URI } from './HKT'
 import type * as Eq from '@principia/base/Eq'
 
 import { pipe } from '@principia/base/Function'
@@ -15,7 +16,7 @@ import { RecursiveEq } from './recursive'
 import { RefinementEq } from './refinement'
 import { SetEq } from './set'
 import { SumEq } from './sum'
-import {UnknownEq} from './unknown'
+import { UnknownEq } from './unknown'
 
 export const _allEqInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -36,7 +37,7 @@ export const allEqInterpreters = memoize(_allEqInterpreters) as typeof _allEqInt
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
   env: {
-    [K in Eq.URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
+    [K in URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
   }
 ) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): Eq.Eq<A> =>
   pipe(env, F.derive(allEqInterpreters()))

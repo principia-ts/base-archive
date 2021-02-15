@@ -1,3 +1,5 @@
+/* eslint-disable functional/immutable-data */
+
 /**
  * A persistent red-black tree implementation with iterative, stack-safe operations
  *

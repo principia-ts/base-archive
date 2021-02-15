@@ -1,13 +1,15 @@
 import type { Eq } from './Eq'
+import type * as HKT from './HKT'
 import type { Monoid } from './Monoid'
+import type { Ordering } from './Ordering'
 import type { CombineFn_ } from './Semigroup'
 
 import { boolean, number, string } from './Eq/core'
-import { EQ, GT, LT, MonoidOrdering, Ordering } from './Ordering'
+import { EQ, GT, LT, MonoidOrdering } from './Ordering'
 
 export const OrdURI = 'Ord'
 
-export type OrdURI = typeof OrdURI
+export type OrdURI = HKT.URI<typeof OrdURI>
 
 export interface Ord<A> extends Eq<A> {
   readonly compare_: CompareFn_<A>

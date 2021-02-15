@@ -11,10 +11,10 @@ import * as HKT from './HKT'
  */
 
 export const StateInURI = 'StateIn'
-export type StateInURI = typeof StateInURI
+export type StateInURI = HKT.URI<typeof StateInURI>
 
 export const StateOutURI = 'StateOut'
-export type StateOutURI = typeof StateOutURI
+export type StateOutURI = HKT.URI<typeof StateOutURI>
 
 export type StateIn<S, A> = (s: S) => A
 

@@ -24,7 +24,7 @@ import * as I from './IO/primitives'
 
 export const URI = 'Multi'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'W', '+'> & HKT.V<'S', '_'> & HKT.V<'R', '-'> & HKT.V<'E', '+'>
 

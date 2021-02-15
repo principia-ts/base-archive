@@ -18,7 +18,7 @@ import { makeMonoid } from './typeclass'
 
 export const URI = 'Map'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 

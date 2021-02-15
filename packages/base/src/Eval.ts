@@ -7,7 +7,6 @@
 import type * as P from './typeclass'
 import type { Stack } from './util/support/Stack'
 
-import * as D from './Derivation'
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
@@ -31,7 +30,7 @@ export abstract class Eval<A> {
 }
 
 export const URI = 'Eval'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI>
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

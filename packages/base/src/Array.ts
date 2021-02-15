@@ -24,7 +24,7 @@ export type InferA<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<i
 
 export const URI = 'Array'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI>
 
 export type V = HKT.Auto
 

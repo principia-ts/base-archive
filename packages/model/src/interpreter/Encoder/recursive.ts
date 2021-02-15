@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as E from '@principia/codec/Encoder'
@@ -7,7 +8,7 @@ import { implementInterpreter } from '../../HKT'
 import { memoize } from '../../utils'
 import { applyEncoderConfig } from './HKT'
 
-export const RecursiveEncoder = implementInterpreter<E.URI, Alg.RecursiveURI>()((_) => ({
+export const RecursiveEncoder = implementInterpreter<URI, Alg.RecursiveURI>()((_) => ({
   recursive: (id, a, config) => {
     const get                       = memoize<void, ReturnType<typeof a>>(() => a(res))
     const res: ReturnType<typeof a> = (env) =>

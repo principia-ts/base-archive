@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as G from '@principia/base/Guard'
@@ -7,7 +8,7 @@ import * as S from '@principia/base/Set'
 import { implementInterpreter } from '../../HKT'
 import { applyGuardConfig } from './HKT'
 
-export const SetGuard = implementInterpreter<G.URI, Alg.SetURI>()((_) => ({
+export const SetGuard = implementInterpreter<URI, Alg.SetURI>()((_) => ({
   set: (a, ord, config) => (env) =>
     pipe(a(env), (guard) =>
       applyGuardConfig(config?.config)(

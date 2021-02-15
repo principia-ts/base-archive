@@ -60,9 +60,15 @@ export interface Traced<E> {
 
 export const URI = 'Cause'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
+
+declare module '@principia/base/HKT' {
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: Cause<A>
+  }
+}
 
 /*
  * -------------------------------------------

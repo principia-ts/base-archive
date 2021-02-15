@@ -1,6 +1,7 @@
 import type { Byte } from '@principia/base/Byte'
 import type { Either } from '@principia/base/Either'
 import type { Predicate, Refinement } from '@principia/base/Function'
+import type * as HKT from '@principia/base/HKT'
 import type { Monoid } from '@principia/base/Monoid'
 
 import * as A from '@principia/base/Array'
@@ -29,7 +30,7 @@ export type TypedArray =
   | Int32Array
 
 export const URI = 'Chunk'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI>
 
 declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

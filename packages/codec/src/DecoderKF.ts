@@ -25,7 +25,7 @@ import * as K from './DecoderK'
  */
 
 export const URI = 'DecoderKF'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'I', '_'>
 

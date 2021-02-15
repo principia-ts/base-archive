@@ -12,7 +12,7 @@ export type Identity<A> = A
 
 export const URI = 'Identity'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 

@@ -4,6 +4,7 @@ import type { DefaultEnv } from '../IO/combinators/runtime'
 import type { Managed } from '../Managed/core'
 import type { Finalizer, ReleaseMap } from '../Managed/ReleaseMap'
 import type * as H from '@principia/base/Has'
+import type * as HKT from '@principia/base/HKT'
 import type { Erase, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
@@ -31,7 +32,8 @@ import * as M from './internal/managed'
 
 export const URI = 'Layer'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI>
+export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
 export abstract class Layer<R, E, A> {
   readonly hash = new AtomicReference<PropertyKey>(Symbol())

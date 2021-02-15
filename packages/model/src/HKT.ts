@@ -1,5 +1,6 @@
 import type { TaggedBuilder } from './adt/summoner'
 import type { CacheType, InhabitedTypes, SelectKeyOfMatchingValues } from './utils'
+import type * as HKT from '@principia/base/HKT'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
 import { makeTagged } from './adt/summoner'
@@ -20,6 +21,8 @@ export interface InterpretedHKT<URI, Env, S, R, E, A> {
   readonly _E: E
   readonly _A: A
 }
+
+export type ExtractURI<U> = U extends HKT.URI<infer F, any> ? F : never
 
 export const UIHKT = 'model/HKT'
 

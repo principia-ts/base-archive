@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 import type { Either } from '@principia/base/Either'
 import type { Option } from '@principia/base/Option'
 
@@ -9,7 +10,7 @@ import * as R from '@principia/base/Record'
 import { implementInterpreter } from '../../HKT'
 import { applyGuardConfig } from './HKT'
 
-export const SumGuard = implementInterpreter<G.URI, Alg.SumURI>()((_) => ({
+export const SumGuard = implementInterpreter<URI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) =>
     pipe(
       types,

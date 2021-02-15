@@ -4,6 +4,7 @@
  * -------------------------------------------
  */
 
+import type * as HKT from './HKT'
 import type { Integer } from './Integer'
 import type { ReadonlyRecord } from './Record'
 import type { Primitive } from './util/types'
@@ -20,7 +21,7 @@ export type InputOf<G> = G extends Guard<infer I, any> ? I : never
 
 export const URI = 'Guard'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI>
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

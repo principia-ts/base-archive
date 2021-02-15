@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
 import * as E from '@principia/base/Either'
 import * as Eq from '@principia/base/Eq'
@@ -9,7 +10,7 @@ import * as R from '@principia/base/Record'
 import { implementInterpreter } from '../../HKT'
 import { applyEqConfig } from './HKT'
 
-export const SumEq = implementInterpreter<Eq.URI, Alg.SumURI>()((_) => ({
+export const SumEq = implementInterpreter<URI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) =>
     pipe(
       types,

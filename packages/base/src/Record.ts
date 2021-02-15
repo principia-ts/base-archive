@@ -28,7 +28,7 @@ export type InferRecordType<T extends ReadonlyRecord<any, any>> = T extends {
 
 export const URI = 'Record'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 
@@ -848,31 +848,29 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
  *    g -> (t a, ((k, a) -> g b)) -> g (t b)
  * ```
  */
-export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()(
-  (_) => (G) => {
-    return (ta, f) => {
-      type _ = typeof _
+export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()((_) => (G) => {
+  return (ta, f) => {
+    type _ = typeof _
 
-      const ks = keys(ta)
-      if (ks.length === 0) {
-        return G.pure(empty)
-      }
-      let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
-      for (let i = 0; i < ks.length; i++) {
-        const key = ks[i]
-        mut_gr    = pipe(
-          mut_gr,
-          G.map((mut_r) => (b: _['B']) => {
-            mut_r[key] = b
-            return mut_r
-          }),
-          G.ap(f(key, ta[key]))
-        )
-      }
-      return mut_gr
+    const ks = keys(ta)
+    if (ks.length === 0) {
+      return G.pure(empty)
     }
+    let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
+    for (let i = 0; i < ks.length; i++) {
+      const key = ks[i]
+      mut_gr    = pipe(
+        mut_gr,
+        G.map((mut_r) => (b: _['B']) => {
+          mut_r[key] = b
+          return mut_r
+        }),
+        G.ap(f(key, ta[key]))
+      )
+    }
+    return mut_gr
   }
-)
+})
 
 /**
  * ```haskell

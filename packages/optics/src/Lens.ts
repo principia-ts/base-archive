@@ -24,7 +24,7 @@ export interface Lens<S, A> {
 
 export const URI = 'optics/Lens'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'I', '_'>
 

@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
 import { absurd, pipe } from '@principia/base/Function'
 import * as S from '@principia/base/Show'
@@ -6,7 +7,7 @@ import * as S from '@principia/base/Show'
 import { implementInterpreter } from '../../HKT'
 import { applyShowConfig } from './HKT'
 
-export const PrimitivesShow = implementInterpreter<S.URI, Alg.PrimitivesURI>()((_) => ({
+export const PrimitivesShow = implementInterpreter<URI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
   number: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.number, config?.name), env, {}),
   boolean: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.boolean, config?.name), env, {}),

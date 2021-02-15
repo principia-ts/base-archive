@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type * as G from '@principia/base/Guard'
+import type { URI } from './HKT'
 import type { Iso } from '@principia/optics/Iso'
 import type { Prism } from '@principia/optics/Prism'
 
@@ -11,7 +11,7 @@ import { applyGuardConfig } from './HKT'
 type TypeOfIso<X> = X extends Iso<any, infer A> ? A : never
 type TypeOfPrism<X> = X extends Prism<any, infer A> ? A : never
 
-export const NewtypeGuard = implementInterpreter<G.URI, Alg.NewtypeURI>()((_) => ({
+export const NewtypeGuard = implementInterpreter<URI, Alg.NewtypeURI>()((_) => ({
   newtypeIso: (iso, a, config) => (env) =>
     pipe(a(env), (guard) =>
       applyGuardConfig(config?.config)({ is: (u): u is TypeOfIso<typeof iso> => guard.is(u) }, env, guard)

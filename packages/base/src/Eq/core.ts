@@ -1,7 +1,8 @@
+import type * as HKT from '../HKT'
 import type { ReadonlyRecord } from '../Record'
 
 export const URI = 'Eq'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI>
 
 /*
  * -------------------------------------------

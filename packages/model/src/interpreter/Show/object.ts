@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as R from '@principia/base/Record'
@@ -7,7 +8,7 @@ import * as S from '@principia/base/Show'
 import { implementInterpreter } from '../../HKT'
 import { applyShowConfig } from './HKT'
 
-export const ObjectShow = implementInterpreter<S.URI, Alg.ObjectURI>()((_) => ({
+export const ObjectShow = implementInterpreter<URI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
     pipe(
       properties,

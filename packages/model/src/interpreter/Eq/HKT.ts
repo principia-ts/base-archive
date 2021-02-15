@@ -1,8 +1,10 @@
-import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
+import type { ExtractURI, InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 
 import * as Eq from '@principia/base/Eq'
 
 import { getApplyConfig } from '../../HKT'
+
+export type URI = ExtractURI<Eq.URI>
 
 declare module '../../HKT' {
   interface URItoInterpreted<Env, S, R, E, A> {
@@ -24,15 +26,15 @@ declare module '../../algebra/primitives' {
 
 declare module '../../algebra/object' {
   interface TypeConfig<Props> {
-    readonly [Eq.URI]: InterfaceConfigKind<Eq.URI, Props>
+    readonly [Eq.URI]: InterfaceConfigKind<URI, Props>
   }
   interface PartialConfig<Props> {
-    readonly [Eq.URI]: InterfaceConfigKind<Eq.URI, Props>
+    readonly [Eq.URI]: InterfaceConfigKind<URI, Props>
   }
   interface BothConfig<Props, PropsPartial> {
     readonly [Eq.URI]: {
-      required: InterfaceConfigKind<Eq.URI, Props>
-      optional: InterfaceConfigKind<Eq.URI, PropsPartial>
+      required: InterfaceConfigKind<URI, Props>
+      optional: InterfaceConfigKind<URI, PropsPartial>
     }
   }
 }
@@ -60,7 +62,7 @@ declare module '../../algebra/set' {
 
 declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
-    readonly [Eq.URI]: TaggedUnionConfigKind<Eq.URI, Types>
+    readonly [Eq.URI]: TaggedUnionConfigKind<URI, Types>
   }
   interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
     readonly [Eq.URI]: {
@@ -84,7 +86,7 @@ declare module '../../algebra/nullable' {
 
 declare module '../../algebra/intersection' {
   interface IntersectionConfig<S, R, E, A> {
-    readonly [Eq.URI]: IntersectionConfigKind<Eq.URI, S, R, E, A>
+    readonly [Eq.URI]: IntersectionConfigKind<URI, S, R, E, A>
   }
 }
 

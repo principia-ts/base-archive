@@ -23,7 +23,7 @@ export type Forest<A> = ReadonlyArray<RoseTree<A>>
 
 export const URI = 'Tree'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 

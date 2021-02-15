@@ -58,7 +58,7 @@ export type FreeSemiring<Z, A> = Empty | Single<A> | Then<Z, A> | Both<Z, A>
 export type V = HKT.V<'X', '+'>
 
 export const URI = 'FreeSemiring'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {

@@ -127,54 +127,47 @@ export interface URItoIndex<N extends string, K> {
 
 export type ConcreteURIS = keyof URItoKind<any, any, any, any, any, any, any, any, any, any, any, any>
 
-export type URIS = [RealURIS, ...RealURIS[]]
+export type URIS = [URI<ConcreteURIS, any>, ...URI<ConcreteURIS, any>[]]
 
-export interface URI<F extends ConcreteURIS, C> {
+export interface URI<F extends ConcreteURIS, C = {}> {
   readonly _F: F
   readonly _C: C
 }
 
-export type RealURIS = ConcreteURIS | URI<ConcreteURIS, any>
+export type AppendURI<F extends URIS, G extends URI<ConcreteURIS, any>> = F extends URIS ? [...F, G] : F
 
-export type AppendURI<F extends RealURIS[], G extends RealURIS> = F extends RealURIS[] ? [...F, G] : F
+export type PrependURI<G extends URI<ConcreteURIS, any>, F extends URIS> = F extends URIS ? [G, ...F] : F
 
-export type PrependURI<G extends RealURIS, F extends RealURIS[]> = F extends RealURIS[] ? [G, ...F] : F
-
-export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = ((...x: F) => any) extends (
-  fst: infer XURI,
-  ...rest: infer Rest
-) => any
-  ? XURI extends ConcreteURIS
+export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = F extends [any, ...infer Next]
+  ? Next extends URIS
     ? URItoKind<
-        Auto,
+        F[0]['_C'],
         C,
-        OrFix<'N', C, N>,
-        OrFix<'K', C, K>,
-        OrFix<'Q', C, Q>,
-        OrFix<'W', C, W>,
-        OrFix<'X', C, X>,
-        OrFix<'I', C, I>,
-        OrFix<'S', C, S>,
-        OrFix<'R', C, R>,
-        OrFix<'E', C, E>,
-        Rest extends URIS ? Kind<Rest, C, N, K, Q, W, X, I, S, R, E, A> : A
-      >[XURI]
-    : XURI extends URI<infer U, infer FC>
-    ? URItoKind<
-        FC,
+        OrFix<'N', F[0]['_C'], OrFix<'N', C, N>>,
+        OrFix<'K', F[0]['_C'], OrFix<'K', C, K>>,
+        OrFix<'Q', F[0]['_C'], OrFix<'Q', C, Q>>,
+        OrFix<'W', F[0]['_C'], OrFix<'W', C, W>>,
+        OrFix<'X', F[0]['_C'], OrFix<'X', C, X>>,
+        OrFix<'I', F[0]['_C'], OrFix<'I', C, I>>,
+        OrFix<'S', F[0]['_C'], OrFix<'S', C, S>>,
+        OrFix<'R', F[0]['_C'], OrFix<'R', C, R>>,
+        OrFix<'E', F[0]['_C'], OrFix<'E', C, E>>,
+        Kind<Next, C, N, K, Q, W, X, I, S, R, E, A>
+      >[F[0]['_F']]
+    : URItoKind<
+        F[0]['_C'],
         C,
-        OrFix<'N', FC, OrFix<'N', C, N>>,
-        OrFix<'K', FC, OrFix<'K', C, K>>,
-        OrFix<'Q', FC, OrFix<'Q', C, Q>>,
-        OrFix<'W', FC, OrFix<'W', C, W>>,
-        OrFix<'X', FC, OrFix<'X', C, X>>,
-        OrFix<'I', FC, OrFix<'I', C, I>>,
-        OrFix<'S', FC, OrFix<'S', C, S>>,
-        OrFix<'R', FC, OrFix<'R', C, R>>,
-        OrFix<'E', FC, OrFix<'E', C, E>>,
-        Rest extends URIS ? Kind<Rest, C, N, K, Q, W, X, I, S, R, E, A> : A
-      >[U]
-    : never
+        OrFix<'N', F[0]['_C'], OrFix<'N', C, N>>,
+        OrFix<'K', F[0]['_C'], OrFix<'K', C, K>>,
+        OrFix<'Q', F[0]['_C'], OrFix<'Q', C, Q>>,
+        OrFix<'W', F[0]['_C'], OrFix<'W', C, W>>,
+        OrFix<'X', F[0]['_C'], OrFix<'X', C, X>>,
+        OrFix<'I', F[0]['_C'], OrFix<'I', C, I>>,
+        OrFix<'S', F[0]['_C'], OrFix<'S', C, S>>,
+        OrFix<'R', F[0]['_C'], OrFix<'R', C, R>>,
+        OrFix<'E', F[0]['_C'], OrFix<'E', C, E>>,
+        A
+      >[F[0]['_F']]
   : never
 
 /*

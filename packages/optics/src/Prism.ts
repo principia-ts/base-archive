@@ -22,7 +22,7 @@ export type _A<X> = X extends Prism<any, infer A> ? A : never
 
 export const URI = 'optics/Prism'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'I', '_'>
 

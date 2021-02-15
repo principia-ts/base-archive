@@ -35,7 +35,7 @@ export interface Right<A> {
 export type These<E, A> = Left<E> | Right<A> | Both<E, A>
 
 export const URI = 'These'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'E', '+'>
 

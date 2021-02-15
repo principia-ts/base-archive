@@ -18,18 +18,18 @@ export type NonEmptyArray<A> = ReadonlyArray<A> & {
   readonly 0: A
 }
 
-export const NonEmptyArrayURI = 'NonEmptyArray'
+export const URI = 'NonEmptyArray'
 
-export type NonEmptyArrayURI = typeof NonEmptyArrayURI
+export type NonEmptyArrayURI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [NonEmptyArrayURI]: NonEmptyArray<A>
+    readonly [URI]: NonEmptyArray<A>
   }
   interface URItoIndex<N, K> {
-    readonly [NonEmptyArrayURI]: number
+    readonly [URI]: number
   }
 }
 

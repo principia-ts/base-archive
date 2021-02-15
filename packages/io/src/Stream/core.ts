@@ -49,9 +49,15 @@ import * as Tr from './Transducer'
  */
 
 export const URI = 'Stream'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
+
+declare module '@principia/base/HKT' {
+  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    readonly [URI]: Stream<R, E, A>
+  }
+}
 
 /*
  * -------------------------------------------

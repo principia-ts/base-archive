@@ -55,7 +55,7 @@ export type MutableList<A> = { -readonly [K in keyof List<A>]: List<A>[K] } & {
 }
 
 export const URI = 'List'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 

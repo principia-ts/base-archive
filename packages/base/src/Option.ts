@@ -38,7 +38,7 @@ export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : nev
 
 export const URI = 'Option'
 
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 

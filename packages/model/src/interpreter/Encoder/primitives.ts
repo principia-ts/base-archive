@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as E from '@principia/codec/Encoder'
@@ -6,7 +7,7 @@ import * as E from '@principia/codec/Encoder'
 import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'
 
-export const PrimitivesEncoder = implementInterpreter<E.URI, Alg.PrimitivesURI>()((_) => ({
+export const PrimitivesEncoder = implementInterpreter<URI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {}),
   number: (config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {}),
   boolean: (config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {}),

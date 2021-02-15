@@ -1,4 +1,5 @@
 import type * as Alg from '../../algebra'
+import type { URI } from './HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import { pipe } from '@principia/base/Function'
@@ -9,7 +10,7 @@ import { implementInterpreter } from '../../HKT'
 import { regexUUID } from '../Decoder/primitives'
 import { applyGuardConfig } from './HKT'
 
-export const PrimitivesGuard = implementInterpreter<G.URI, Alg.PrimitivesURI>()((_) => ({
+export const PrimitivesGuard = implementInterpreter<URI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyGuardConfig(config?.config)(G.string, env, {}),
   number: (config) => (env) => applyGuardConfig(config?.config)(G.number, env, {}),
   boolean: (config) => (env) => applyGuardConfig(config?.config)(G.boolean, env, {}),

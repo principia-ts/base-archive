@@ -70,7 +70,7 @@ export type FAsync<E, A> = Async<unknown, E, A>
 export type URAsync<R, A> = Async<R, never, A>
 
 export const URI = 'Async'
-export type URI = typeof URI
+export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
