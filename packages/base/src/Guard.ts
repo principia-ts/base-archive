@@ -19,16 +19,6 @@ export type TypeOf<G> = G extends Guard<any, infer A> ? A : never
 
 export type InputOf<G> = G extends Guard<infer I, any> ? I : never
 
-export const URI = 'Guard'
-
-export type URI = HKT.URI<typeof URI>
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Guard<unknown, A>
-  }
-}
-
 /*
  * -------------------------------------------
  * Constructors
@@ -275,3 +265,5 @@ export function id<A>(): Guard<A, A> {
     is: (_): _ is A => true
   }
 }
+
+export { GuardURI } from './Modules'

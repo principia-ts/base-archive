@@ -25,7 +25,8 @@ import { inspect } from 'util'
 import { GraphQlException } from '../schema/GraphQlException'
 
 const entries = <A>(_: A): ReadonlyArray<[keyof A, A[keyof A]]> => Object.entries(_) as any
-const isIO    = (u: unknown): u is I.IO<any, any, any> => typeof u === 'object' && u != null && _U in u && u[_U] === I.URI
+const isIO    = (u: unknown): u is I.IO<any, any, any> =>
+  typeof u === 'object' && u != null && _U in u && u[_U] === I.IOURI
 
 export function transformResolvers<Ctx>(
   res: Record<

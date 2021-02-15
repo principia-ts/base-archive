@@ -1,3 +1,4 @@
+import type { ReaderURI } from './Modules'
 import type * as P from './typeclass'
 
 import { flow, identity, tuple } from './Function'
@@ -14,15 +15,6 @@ export interface Reader<R, A> {
 }
 
 export type V = HKT.V<'R', '-'>
-
-export const URI = 'Reader'
-export type URI = HKT.URI<typeof URI, V>
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Reader<R, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -214,7 +206,7 @@ export function unit(): Reader<unknown, void> {
   return () => undefined
 }
 
-export const MonadEnv = HKT.instance<P.MonadEnv<[URI], V>>({
+export const MonadEnv = HKT.instance<P.MonadEnv<[HKT.URI<ReaderURI>], V>>({
   invmap_: (ra, f, _) => map_(ra, f),
   invmap: (f, _) => (ra) => map_(ra, f),
   map_,
@@ -233,3 +225,5 @@ export const MonadEnv = HKT.instance<P.MonadEnv<[URI], V>>({
   bind_,
   flatten
 })
+
+export { ReaderURI } from './Modules'

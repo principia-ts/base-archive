@@ -1,3 +1,5 @@
+import type { IdentityURI } from './Modules'
+
 import { identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
 import * as P from './typeclass'
@@ -9,18 +11,6 @@ import * as P from './typeclass'
  */
 
 export type Identity<A> = A
-
-export const URI = 'Identity'
-
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Identity<A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -196,16 +186,16 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) =>
+export const traverse_ = P.implementTraverse_<[HKT.URI<IdentityURI>]>()((_) => (G) => (ta, f) =>
   pipe(f(ta), G.map(identity))
 )
 
-export const traverse: P.TraverseFn<[URI], V> = (G) => {
+export const traverse: P.TraverseFn<[HKT.URI<IdentityURI>]> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => pipe(ta, G.map(identity))
+export const sequence: P.SequenceFn<[HKT.URI<IdentityURI>]> = (G) => (ta) => pipe(ta, G.map(identity))
 
 /*
  * -------------------------------------------
@@ -223,14 +213,14 @@ export function unit(): void {
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[URI], V>>({
+export const Functor = HKT.instance<P.Functor<[HKT.URI<IdentityURI>]>>({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })
 
-export const Apply = HKT.instance<P.Apply<[URI], V>>({
+export const Apply = HKT.instance<P.Apply<[HKT.URI<IdentityURI>]>>({
   ...Functor,
   ap_,
   ap,
@@ -240,8 +230,10 @@ export const Apply = HKT.instance<P.Apply<[URI], V>>({
   cross
 })
 
-export const Applicative = HKT.instance<P.Applicative<[URI], V>>({
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IdentityURI>]>>({
   ...Apply,
   pure,
   unit
 })
+
+export { IdentityURI } from './Modules'

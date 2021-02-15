@@ -29,18 +29,6 @@ export type TypedArray =
   | Int16Array
   | Int32Array
 
-export const URI = 'Chunk'
-export type URI = HKT.URI<typeof URI>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Chunk<A>
-  }
-  interface URItoIndex<N, K> {
-    readonly [URI]: number
-  }
-}
-
 /*
  * -------------------------------------------
  * Constructors

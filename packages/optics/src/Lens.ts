@@ -1,3 +1,4 @@
+import type { LensURI } from './Modules'
 import type { Optional } from './Optional'
 import type { Prism } from './Prism'
 import type { Traversal } from './Traversal'
@@ -22,17 +23,7 @@ export interface Lens<S, A> {
   readonly set: (a: A) => (s: S) => S
 }
 
-export const URI = 'optics/Lens'
-
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'I', '_'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Lens<I, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -130,7 +121,7 @@ export const compose = _.lensComposeLens
  * @category Instances
  * @since 1.0.0
  */
-export const Category: P.Category<[URI], V> = HKT.instance({
+export const Category: P.Category<[HKT.URI<LensURI>], V> = HKT.instance({
   id,
   compose,
   compose_
@@ -165,7 +156,7 @@ export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, 
  * @category Instances
  * @since 1.0.0
  */
-export const Invariant: P.Invariant<[URI], V> = HKT.instance({
+export const Invariant: P.Invariant<[HKT.URI<LensURI>], V> = HKT.instance({
   invmap_,
   invmap
 })

@@ -1,32 +1,11 @@
 import '@principia/compile/enableTracing'
 
+import * as E from '@principia/base/Either'
+import { getEitherT } from '@principia/base/EitherT'
 import { pipe } from '@principia/base/Function'
+import * as HKT from '@principia/base/HKT'
 import { inspect } from 'util'
 
-import * as Ca from '../src/Cause'
-import * as Ex from '../src/Exit'
-import * as T from '../src/IO'
+import * as I from '../src/IO'
 
-pipe(
-  T.succeed(1),
-  T.bind((n) => {
-    return T.succeed(n + 1)
-  }),
-  T.bind((n) => {
-    return T.succeed(n + 1)
-  }),
-  T.bind((n) => {
-    return T.succeed(n + 1)
-  }),
-  T.tap((n) => {
-    return T.fail(`(${n})`)
-  }),
-  T.catchAll(function handle(n) {
-    return T.succeed(n)
-  }),
-  T.bind((n) => {
-    return T.fail(`error: ${n}`)
-  }),
-  T.bind(() => T.succeed(0)),
-  T.run((ex) => console.log(Ca.pretty((ex as any).cause)))
-)
+const M = getEitherT(I.Monad)

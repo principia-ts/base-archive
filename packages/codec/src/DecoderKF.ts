@@ -1,5 +1,6 @@
 import type { DecodeErrors, ErrorInfo } from './DecodeErrors'
 import type { DecoderK } from './DecoderK'
+import type { DecoderKFURI } from './Modules'
 import type { Refinement } from '@principia/base/Function'
 import type { Integer } from '@principia/base/Integer'
 import type * as O from '@principia/base/Option'
@@ -24,16 +25,7 @@ import * as K from './DecoderK'
  * -------------------------------------------
  */
 
-export const URI = 'DecoderKF'
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'I', '_'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: DecoderKF<I, A>
-  }
-}
 
 interface DecoderMetadata {
   readonly name: string
@@ -565,14 +557,14 @@ export function runDecoder<I, O, M extends HKT.URIS, C = HKT.Auto>(
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[URI], V>>({
+export const Functor = HKT.instance<P.Functor<[HKT.URI<DecoderKFURI>], V>>({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })
 
-export const Category = HKT.instance<P.Category<[URI], V>>({
+export const Category = HKT.instance<P.Category<[HKT.URI<DecoderKFURI>], V>>({
   compose_,
   compose,
   id

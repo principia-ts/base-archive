@@ -9,6 +9,7 @@ import type { Stack } from './util/support/Stack'
 
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
+import { EvalURI } from './Modules'
 import * as O from './Option'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
@@ -22,20 +23,11 @@ import { makeStack } from './util/support/Stack'
  * use `Sync`, `Async`, or `IO` from the `io` package
  */
 export abstract class Eval<A> {
-  readonly _U = URI
+  readonly _U = EvalURI
   readonly _A!: () => A
 
   abstract get value(): A
   abstract get memoize(): Eval<A>
-}
-
-export const URI = 'Eval'
-export type URI = HKT.URI<typeof URI>
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Eval<A>
-  }
 }
 
 class Now<A> extends Eval<A> {
@@ -65,6 +57,7 @@ class Later<A> extends Eval<A> {
     } else {
       const result = this.thunk.get()
       this.thunk.set(null)
+      // eslint-disable-next-line functional/immutable-data
       this.result = result
       return result
     }
@@ -307,7 +300,7 @@ export function evaluate<A>(e: Eval<A>): A {
             break
           }
           case 'Later': {
-            current = continuation(nested.value())
+            current = continuation(nested.value)
             break
           }
           case 'Always': {
@@ -345,7 +338,7 @@ export function evaluate<A>(e: Eval<A>): A {
         break
       }
       case 'Later': {
-        const a            = I.value()
+        const a            = I.value
         const continuation = frames?.value
         frames             = frames?.previous
         if (continuation) {
@@ -401,14 +394,14 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[URI]>>({
+export const Functor = HKT.instance<P.Functor<[HKT.URI<EvalURI>]>>({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: (f, _) => (fa) => map_(fa, f),
   map_,
   map
 })
 
-export const Apply = HKT.instance<P.Apply<[URI]>>({
+export const Apply = HKT.instance<P.Apply<[HKT.URI<EvalURI>]>>({
   ...Functor,
   ap_,
   ap,
@@ -418,13 +411,13 @@ export const Apply = HKT.instance<P.Apply<[URI]>>({
   cross
 })
 
-export const Applicative = HKT.instance<P.Applicative<[URI]>>({
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<EvalURI>]>>({
   ...Apply,
   pure,
   unit
 })
 
-export const Monad = HKT.instance<P.Monad<[URI]>>({
+export const Monad = HKT.instance<P.Monad<[HKT.URI<EvalURI>]>>({
   ...Applicative,
   bind_,
   bind,
@@ -459,3 +452,5 @@ export function gen<T extends GenEval<any>, A>(f: (i: <A>(_: Eval<A>) => GenEval
     return _run(state, iterator)
   })
 }
+
+export { EvalURI } from './Modules'

@@ -4,12 +4,12 @@ import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus } from '../F
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { FiberRef } from '../FiberRef'
-import type { Multi } from '../Multi'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 
+import { IOURI } from '../Modules'
 import { cross_ } from './core'
 
 /*
@@ -53,10 +53,6 @@ export const IOTag = {
   GetTracingStatus: 'GetTracingStatus'
 } as const
 
-export const URI = 'IO'
-
-export type URI = HKT.URI<typeof URI, V>
-
 abstract class IOSyntax<R, E, A> {
   ['>>=']<R1, E1, B>(this: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
     return new Bind(this, f)
@@ -79,7 +75,7 @@ abstract class IOSyntax<R, E, A> {
 }
 
 export abstract class IO<R, E, A> extends IOSyntax<R, E, A> {
-  readonly [_U] = URI;
+  readonly [_U] = IOURI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
   readonly [_R]: (_: R) => void
@@ -423,18 +419,12 @@ export type FIO<E, A> = IO<unknown, E, A>
 
 export type Canceler<R> = URIO<R, void>
 
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: IO<R, E, A>
-  }
-}
-
 export abstract class FFI<R, E, A> extends IO<R, E, A> {
   readonly _tag = IOTag.FFI
   readonly _S1!: (_: unknown) => void
   readonly _S2!: () => never;
 
-  readonly [_U] = URI;
+  readonly [_U] = IOURI;
   readonly [_E]!: () => E;
   readonly [_A]!: () => A;
   readonly [_R]!: (_: R) => void

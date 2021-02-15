@@ -1,4 +1,5 @@
 import type { Lens } from './Lens'
+import type { PrismURI } from './Modules'
 import type { Optional } from './Optional'
 import type { Traversal } from './Traversal'
 import type { Predicate, Refinement } from '@principia/base/Function'
@@ -20,17 +21,7 @@ export interface Prism<S, A> {
 export type _S<X> = X extends Prism<infer S, any> ? S : never
 export type _A<X> = X extends Prism<any, infer A> ? A : never
 
-export const URI = 'optics/Prism'
-
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'I', '_'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Prism<I, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -157,7 +148,7 @@ export function compose<A, B>(ab: Prism<A, B>): <S>(sa: Prism<S, A>) => Prism<S,
  * @category Instances
  * @since 1.0.0
  */
-export const Category: P.Category<[URI], V> = HKT.instance({
+export const Category: P.Category<[HKT.URI<PrismURI>], V> = HKT.instance({
   compose,
   compose_,
   id
@@ -192,7 +183,7 @@ export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <S>(ea: Prism<S,
  * @category Instances
  * @since 1.0.0
  */
-export const Invariant: P.Invariant<[URI], V> = HKT.instance({
+export const Invariant: P.Invariant<[HKT.URI<PrismURI>], V> = HKT.instance({
   invmap_,
   invmap
 })

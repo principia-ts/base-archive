@@ -1,7 +1,6 @@
 import type * as E from './Either'
 import type { Eq } from './Eq'
 import type { Predicate, Refinement } from './Function'
-import type * as HKT from './HKT'
 import type * as O from './Option'
 import type { Show } from './Show'
 import type * as P from './typeclass'
@@ -10,24 +9,6 @@ import * as A from './Array'
 import { makeEq } from './Eq'
 import { identity, not, tuple } from './Function'
 import { makeMonoid, makeSemigroup } from './typeclass'
-
-/*
- * -------------------------------------------
- * Model
- * -------------------------------------------
- */
-
-export const URI = 'Set'
-
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: ReadonlySet<A>
-  }
-}
 
 /*
  * -------------------------------------------

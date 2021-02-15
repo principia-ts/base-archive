@@ -19,15 +19,6 @@ import { _intersect } from './util'
  * -------------------------------------------
  */
 
-export const URI = 'DecoderK'
-export type URI = HKT.URI<typeof URI>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: DecoderK<I, E, A>
-  }
-}
-
 export type V<C, E> = C & HKT.Fix<'E', E>
 
 export type MonadDecoder<M extends HKT.URIS, C, E> = P.Monad<M, V<C, E>> &

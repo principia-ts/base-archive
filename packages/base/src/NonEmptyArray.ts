@@ -1,6 +1,7 @@
 import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
+import type { NonEmptyArrayURI } from './Modules'
 import type { ReadonlyRecord } from './Record'
 import type * as P from './typeclass'
 
@@ -16,21 +17,6 @@ import { getJoinSemigroup, getMeetSemigroup } from './typeclass'
 
 export type NonEmptyArray<A> = ReadonlyArray<A> & {
   readonly 0: A
-}
-
-export const URI = 'NonEmptyArray'
-
-export type NonEmptyArrayURI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: NonEmptyArray<A>
-  }
-  interface URItoIndex<N, K> {
-    readonly [URI]: number
-  }
 }
 
 /*
@@ -515,7 +501,7 @@ export const bind: <A, B>(f: (a: A) => NonEmptyArray<B>) => (ma: NonEmptyArray<A
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverseWithIndex_: P.TraverseWithIndexFn_<[NonEmptyArrayURI], V> = A.itraverse_ as any
+export const traverseWithIndex_: P.TraverseWithIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = A.itraverse_ as any
 
 /**
  * ```haskell
@@ -529,7 +515,7 @@ export const traverseWithIndex_: P.TraverseWithIndexFn_<[NonEmptyArrayURI], V> =
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverseWithIndex: P.TraverseWithIndexFn<[NonEmptyArrayURI], V> = A.itraverse as any
+export const traverseWithIndex: P.TraverseWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = A.itraverse as any
 
 /**
  * ```haskell
@@ -544,7 +530,7 @@ export const traverseWithIndex: P.TraverseWithIndexFn<[NonEmptyArrayURI], V> = A
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<[NonEmptyArrayURI], V> = A.traverse_ as any
+export const traverse_: P.TraverseFn_<[HKT.URI<NonEmptyArrayURI>]> = A.traverse_ as any
 
 /**
  * ```haskell
@@ -560,7 +546,7 @@ export const traverse_: P.TraverseFn_<[NonEmptyArrayURI], V> = A.traverse_ as an
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[NonEmptyArrayURI], V> = A.traverse as any
+export const traverse: P.TraverseFn<[HKT.URI<NonEmptyArrayURI>]> = A.traverse as any
 
 /**
  * ```haskell
@@ -572,7 +558,7 @@ export const traverse: P.TraverseFn<[NonEmptyArrayURI], V> = A.traverse as any
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[NonEmptyArrayURI], V> = A.sequence as any
+export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = A.sequence as any
 
 /*
  * -------------------------------------------
@@ -770,3 +756,5 @@ export function modifyAt<A>(i: number, f: (a: A) => A): (as: NonEmptyArray<A>) =
 export const unzip: <A, B>(
   as: NonEmptyArray<readonly [A, B]>
 ) => readonly [NonEmptyArray<A>, NonEmptyArray<B>] = A.unzip as any
+
+export { NonEmptyArrayURI } from './Modules'

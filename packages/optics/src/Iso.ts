@@ -1,4 +1,5 @@
 import type { Lens } from './Lens'
+import type { IsoURI } from './Modules'
 import type { Optional } from './Optional'
 import type { Prism } from './Prism'
 import type { Traversal } from './Traversal'
@@ -22,17 +23,7 @@ export interface Iso<S, A> {
   readonly reverseGet: (a: A) => S
 }
 
-export const URI = 'optics/Iso'
-
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'I', '_'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Iso<I, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -131,7 +122,7 @@ export function id<S>(): Iso<S, S> {
  * @category Instances
  * @since 1.0.0
  */
-export const Category: P.Category<[URI], V> = HKT.instance({
+export const Category: P.Category<[HKT.URI<IsoURI>], V> = HKT.instance({
   id,
   compose,
   compose_
@@ -166,7 +157,7 @@ export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Iso<I, A
  * @category Instances
  * @since 1.0.0
  */
-export const Invariant: P.Invariant<[URI], V> = HKT.instance({
+export const Invariant: P.Invariant<[HKT.URI<IsoURI>], V> = HKT.instance({
   invmap_,
   invmap
 })

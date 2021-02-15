@@ -129,6 +129,7 @@ export function lensProps<A, P extends keyof A>(...props: [P, P, ...Array<P>]) {
         [K in P]?: A[K]
       } = {}
       for (const k of props) {
+        // eslint-disable-next-line functional/immutable-data
         r[k] = a[k]
       }
       return r as any
@@ -155,7 +156,8 @@ export function lensComponent<A extends ReadonlyArray<unknown>, P extends keyof 
         return s
       }
       const copy: A = oa.slice() as any
-      copy[prop]    = ap
+      // eslint-disable-next-line functional/immutable-data
+      copy[prop] = ap
       return lens.set(copy)(s)
     }
   })

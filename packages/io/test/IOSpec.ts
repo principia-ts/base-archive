@@ -1,7 +1,3 @@
-import type { Has } from '@principia/base/Has'
-
-import * as A from '@principia/base/Array'
-import { eqStrict } from '@principia/base/Eq'
 import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
 import { RuntimeException } from '@principia/io/Cause'
@@ -9,24 +5,19 @@ import * as Ca from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
-import * as L from '@principia/io/Layer'
 import {
   assert,
   assertM,
-  defaultTestExecutor,
+  deepStrictEqualTo,
+  DefaultRunnableSpec,
   equalTo,
-  RunnableSpec,
   suite,
-  tag,
-  test,
   testM,
-  TestRunner
 } from '@principia/test'
-import { Annotations } from '@principia/test/Annotation'
-import * as BA from '@principia/test/FreeBooleanAlgebra'
 
-export default new (class extends RunnableSpec<Has<Annotations>, string> {
-  spec = suite('IOSpec')(
+class IOSpec extends DefaultRunnableSpec {
+  spec = suite(
+    'IOSpec',
     testM('map', () =>
       assertM(
         pipe(
@@ -36,7 +27,8 @@ export default new (class extends RunnableSpec<Has<Annotations>, string> {
         equalTo(5, Eq.number)
       )
     ),
-    suite('bracket')(
+    suite(
+      'bracket',
       testM('happy path', () =>
         I.gen(function* (_) {
           const release  = yield* _(Ref.make(false))
@@ -72,11 +64,11 @@ export default new (class extends RunnableSpec<Has<Annotations>, string> {
               Ex.foldM(I.succeed, () => I.fail('effect should have died'))
             )
           )
-          return assert(Ca.failures(cause), equalTo(['use failed'], A.getEq(Eq.string)))
+          return assert(Ca.failures(cause), deepStrictEqualTo(['use failed']))
         })
       })
     )
   )
-  aspects = []
-  runner  = new TestRunner<Has<Annotations>, string>(defaultTestExecutor(Annotations.live))
-})()
+}
+
+export default new IOSpec()

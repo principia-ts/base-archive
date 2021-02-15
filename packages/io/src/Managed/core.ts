@@ -29,20 +29,8 @@ import { add, addIfOpen, noopFinalizer, release } from './ReleaseMap'
  * -------------------------------------------
  */
 
-export const URI = 'Managed'
-
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Managed<R, E, A>
-  }
-}
-
 export class Managed<R, E, A> {
-  readonly [I._U]: URI;
+  readonly [I._U]: 'Managed';
   readonly [I._R]: (_: R) => void;
   readonly [I._E]: () => E;
   readonly [I._A]: () => A

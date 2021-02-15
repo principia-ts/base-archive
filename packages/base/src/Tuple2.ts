@@ -1,3 +1,5 @@
+import type { Tuple2URI } from './Modules'
+
 import { identity } from './Function'
 import * as HKT from './HKT'
 import * as P from './typeclass'
@@ -10,16 +12,7 @@ import * as P from './typeclass'
 
 export interface Tuple2<A, B> extends Readonly<[A, B]> {}
 
-export const URI = 'T2'
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'I', '+'>
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Tuple2<A, I>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -55,7 +48,7 @@ export function snd<A, I>(ai: Tuple2<A, I>): I {
  * -------------------------------------------
  */
 
-export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<[URI], V & HKT.Fix<'I', M>> {
+export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
   return HKT.instance({
     ...getApply(M),
     pure: (a) => tuple_(a, M.nat),
@@ -69,15 +62,18 @@ export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<[URI], V & HKT.
  * -------------------------------------------
  */
 
-export function getApply<M>(M: P.Monoid<M>): P.Apply<[URI], V & HKT.Fix<'I', M>> {
-  const crossWith_: P.CrossWithFn_<[URI], HKT.Fix<'I', M>> = (fa, fb, f) => [
+export function getApply<M>(M: P.Monoid<M>): P.Apply<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+  const crossWith_: P.CrossWithFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (fa, fb, f) => [
     f(fst(fa), fst(fb)),
     M.combine_(snd(fa), snd(fb))
   ]
 
-  const ap_: P.ApFn_<[URI], V & HKT.Fix<'I', M>> = (fab, fa) => [fst(fab)(fst(fa)), M.combine_(snd(fab), snd(fa))]
+  const ap_: P.ApFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (fab, fa) => [
+    fst(fab)(fst(fa)),
+    M.combine_(snd(fab), snd(fa))
+  ]
 
-  return HKT.instance<P.Apply<[URI], V & HKT.Fix<'I', M>>>({
+  return HKT.instance<P.Apply<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
     invmap_: (fa, f, _) => map_(fa, f),
     invmap: (f, _) => (fa) => map_(fa, f),
     map_,
@@ -185,15 +181,15 @@ export function map<A, B>(f: (a: A) => B): <I>(fa: Tuple2<A, I>) => Tuple2<B, I>
  * -------------------------------------------
  */
 
-export function getMonad<M>(M: P.Monoid<M>): P.Monad<[URI], V & HKT.Fix<'I', M>> {
-  const bind_: P.BindFn_<[URI], V & HKT.Fix<'I', M>> = (ma, f) => {
+export function getMonad<M>(M: P.Monoid<M>): P.Monad<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+  const bind_: P.BindFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (ma, f) => {
     const mb = f(fst(ma))
     return [fst(mb), M.combine_(snd(ma), snd(mb))]
   }
-  const flatten: P.FlattenFn<[URI], V & HKT.Fix<'I', M>> = (mma) =>
+  const flatten: P.FlattenFn<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (mma) =>
     [fst(fst(mma)), M.combine_(snd(fst(mma)), snd(mma))] as const
 
-  return HKT.instance<P.Monad<[URI], V & HKT.Fix<'I', M>>>({
+  return HKT.instance<P.Monad<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
     ...getApplicative(M),
     bind_: bind_,
     bind: (f) => (ma) => bind_(ma, f),
@@ -221,15 +217,17 @@ export function compose<C, B>(bc: Tuple2<C, B>): <A>(ab: Tuple2<B, A>) => Tuple2
  * -------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) =>
+export const traverse_ = P.implementTraverse_<[HKT.URI<Tuple2URI>], V>()((_) => (G) => (ta, f) =>
   G.map_(f(fst(ta)), (b) => [b, snd(ta)])
 )
 
-export const traverse: P.TraverseFn<[URI], V> = (G) => {
+export const traverse: P.TraverseFn<[HKT.URI<Tuple2URI>], V> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<[URI], V> = P.implementSequence<[URI]>()((_) => (G) => (ta) =>
+export const sequence = P.implementSequence<[HKT.URI<Tuple2URI>], V>()((_) => (G) => (ta) =>
   G.map_(fst(ta), (a) => [a, snd(ta)])
 )
+
+export { Tuple2URI } from './Modules'

@@ -1,3 +1,5 @@
+import type { EitherURI } from './Modules'
+
 import * as E from './Either'
 import { flow, identity, pipe } from './Function'
 import * as HKT from './HKT'
@@ -6,16 +8,14 @@ import * as P from './typeclass'
 
 export type V<C> = HKT.CleanParam<C, 'E'> & HKT.V<'E', '+'>
 
-export type EitherTURI<F extends HKT.URIS> = HKT.AppendURI<F, E.URI>
-
 export function getEitherT<F extends HKT.URIS, C = HKT.Auto>(M: P.Monad<F, C>): EitherT<F, C>
 export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
-  const bind_: P.BindFn_<EitherTURI<HKT.UHKT<F>>, E.V> = <E, A, E1, B>(
+  const bind_: EitherT<HKT.UHKT<F>>['bind_'] = <E, A, E1, B>(
     ma: HKT.HKT<F, E.Either<E, A>>,
     f: (a: A) => HKT.HKT<F, E.Either<E1, B>>
   ) => M.bind_(ma, E.fold(flow(E.left, E.widenE<E1>(), M.pure), flow(f, M.map(E.widenE<E>()))))
 
-  const catchAll_: P.CatchAllFn_<EitherTURI<HKT.UHKT<F>>, E.V> = <E, A, E1, A1>(
+  const catchAll_: EitherT<HKT.UHKT<F>>['catchAll_'] = <E, A, E1, A1>(
     fa: HKT.HKT<F, E.Either<E, A>>,
     f: (e: E) => HKT.HKT<F, E.Either<E1, A1>>
   ): HKT.HKT<F, E.Either<E1, A | A1>> =>
@@ -27,7 +27,7 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
       )
     )
 
-  const catchSome_: P.CatchSomeFn_<EitherTURI<HKT.UHKT<F>>, E.V> = <E, A, E1, A1>(
+  const catchSome_: EitherT<HKT.UHKT<F>>['catchSome_'] = <E, A, E1, A1>(
     fa: HKT.HKT<F, E.Either<E, A>>,
     f: (e: E) => O.Option<HKT.HKT<F, E.Either<E1, A1>>>
   ) =>
@@ -56,4 +56,5 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
   })
 }
 
-export interface EitherT<M extends HKT.URIS, C = HKT.Auto> extends P.MonadExcept<EitherTURI<M>, V<C>> {}
+export interface EitherT<M extends HKT.URIS, C = HKT.Auto>
+  extends P.MonadExcept<[M[0], ...HKT.Rest<M>, HKT.URI<EitherURI>], V<C>> {}

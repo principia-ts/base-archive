@@ -1,5 +1,3 @@
-import type * as HKT from '../HKT'
-
 /*
  * -------------------------------------------
  * Model
@@ -8,16 +6,6 @@ import type * as HKT from '../HKT'
 
 export interface Show<A> {
   readonly show: (a: A) => string
-}
-
-export const URI = 'Show'
-
-export type URI = HKT.URI<typeof URI>
-
-declare module '../HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Show<A>
-  }
 }
 
 /*

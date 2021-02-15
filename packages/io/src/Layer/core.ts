@@ -30,9 +30,6 @@ import * as M from './internal/managed'
  * -------------------------------------------
  */
 
-export const URI = 'Layer'
-
-export type URI = HKT.URI<typeof URI>
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
 export abstract class Layer<R, E, A> {
@@ -112,12 +109,6 @@ export abstract class Layer<R, E, A> {
 
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
     return M.use_(build(this['+++'](identity<R1>())), (a) => I.giveAll_(io, a))
-  }
-}
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Layer<R, E, A>
   }
 }
 
@@ -1104,7 +1095,7 @@ export class MemoMap {
                               I.bind(() => M.releaseAll(ex, sequential)(innerReleaseMap) as I.FIO<E, any>),
                               I.bind(() => I.halt(cause))
                             ),
-                          ([fin, a]) =>
+                          ([, a]) =>
                             I.gen(function* (_) {
                               yield* _(
                                 pipe(

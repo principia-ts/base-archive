@@ -1,4 +1,5 @@
 import type { ModifyF } from './internal'
+import type { TraversalURI } from './Modules'
 import type { Predicate, Refinement } from '@principia/base/Function'
 import type * as O from '@principia/base/Option'
 import type * as P from '@principia/base/typeclass'
@@ -22,17 +23,7 @@ export interface Traversal<S, A> {
   readonly modifyF: ModifyF<S, A>
 }
 
-export const URI = 'optics/Traversal'
-
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'I', '_'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Traversal<I, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -82,7 +73,7 @@ export function compose_<S, A, B>(sa: Traversal<S, A>, ab: Traversal<A, B>): Tra
  */
 export const compose = _.traversalComposeTraversal
 
-export const Category: P.Category<[URI], V> = HKT.instance({
+export const Category: P.Category<[HKT.URI<TraversalURI>], V> = HKT.instance({
   compose,
   compose_: (ab, bc) => compose(bc)(ab),
   id

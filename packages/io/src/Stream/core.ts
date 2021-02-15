@@ -48,23 +48,6 @@ import * as Tr from './Transducer'
  * -------------------------------------------
  */
 
-export const URI = 'Stream'
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Stream<R, E, A>
-  }
-}
-
-/*
- * -------------------------------------------
- * Model
- * -------------------------------------------
- */
-
 /**
  * A `Stream<R, E, A>` is a description of a program that, when evaluated,
  * may emit 0 or more values of type `A`, may fail with errors of type `E`
@@ -100,7 +83,7 @@ declare module '@principia/base/HKT' {
  * `forever` for an example. This limitation will be lifted in the future.
  */
 export class Stream<R, E, A> {
-  readonly [I._U]: URI;
+  readonly [I._U]: 'Stream';
   readonly [I._E]: () => E;
   readonly [I._A]: () => A;
   readonly [I._R]: (_: R) => void

@@ -6,6 +6,7 @@
 import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { MorphismN, Predicate, Refinement } from './Function'
+import type { OptionURI } from './Modules'
 import type { Show } from './Show'
 import type { These } from './These'
 
@@ -35,18 +36,6 @@ export interface Some<A> {
 export type Option<A> = None | Some<A>
 
 export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : never
-
-export const URI = 'Option'
-
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Option<A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -950,7 +939,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) =>
+export const traverse_: P.TraverseFn_<[HKT.URI<OptionURI>]> = (G) => (ta, f) =>
   isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some))
 
 /**
@@ -963,7 +952,7 @@ export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) =>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: P.TraverseFn<[HKT.URI<OptionURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  * ```haskell
@@ -975,7 +964,7 @@ export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[URI], V> = (G) => (fa) =>
+export const sequence: P.SequenceFn<[HKT.URI<OptionURI>]> = (G) => (fa) =>
   isNone(fa) ? G.map_(G.unit(), () => none()) : pipe(fa.value, G.map(some))
 
 /*
@@ -994,12 +983,12 @@ export function unit(): Option<void> {
  * -------------------------------------------
  */
 
-export const compactA_: P.WitherFn_<[URI], V> = (A) => (wa, f) =>
+export const compactA_: P.WitherFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) =>
   isNone(wa) ? A.map_(A.unit(), () => none()) : f(wa.value)
 
-export const compactA: P.WitherFn<[URI], V> = (A) => (f) => (wa) => compactA_(A)(wa, f)
+export const compactA: P.WitherFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
-export const separateA_: P.WiltFn_<[URI], V> = (A) => (wa, f) => {
+export const separateA_: P.WiltFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) => {
   const o = map_(
     wa,
     flow(
@@ -1010,7 +999,7 @@ export const separateA_: P.WiltFn_<[URI], V> = (A) => (wa, f) => {
   return isNone(o) ? A.pure(tuple(none(), none())) : o.value
 }
 
-export const separateA: P.WiltFn<[URI], V> = (A) => (f) => (wa) => separateA_(A)(wa, f)
+export const separateA: P.WiltFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => separateA_(A)(wa, f)
 
 /*
  * -------------------------------------------
@@ -1106,20 +1095,20 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[URI], V> = HKT.instance({
+export const Functor: P.Functor<[HKT.URI<OptionURI>]> = HKT.instance({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: Option<A>) => map_(fa, f),
   map,
   map_
 })
 
-export const Alt: P.Alt<[URI], V> = HKT.instance({
+export const Alt: P.Alt<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Functor,
   alt_,
   alt
 })
 
-export const Apply: P.Apply<[URI], V> = HKT.instance({
+export const Apply: P.Apply<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Functor,
   ap_,
   ap,
@@ -1135,13 +1124,13 @@ export const sequenceT = P.sequenceTF(Apply)
 
 export const mapN = P.mapNF(Apply)
 
-export const Applicative: P.Applicative<[URI], V> = HKT.instance({
+export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Apply,
   unit,
   pure
 })
 
-export const ApplicativeExcept: P.ApplicativeExcept<[URI], V & HKT.Fix<'E', void>> = HKT.instance({
+export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
   ...Applicative,
   fail: fail,
   catchAll_,
@@ -1151,7 +1140,7 @@ export const ApplicativeExcept: P.ApplicativeExcept<[URI], V & HKT.Fix<'E', void
   attempt
 })
 
-export const Monad: P.Monad<[URI], V> = HKT.instance({
+export const Monad: P.Monad<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Applicative,
   bind_: bind_,
   bind: bind,
@@ -1159,7 +1148,7 @@ export const Monad: P.Monad<[URI], V> = HKT.instance({
   flatten
 })
 
-export const MonadExcept: P.MonadExcept<[URI], V & HKT.Fix<'E', void>> = HKT.instance({
+export const MonadExcept: P.MonadExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
   ...ApplicativeExcept,
   ...Monad,
   absolve
@@ -1212,7 +1201,7 @@ export const letS = Do.letS
  */
 export const bindToS = Do.bindToS
 
-export const Filterable: P.Filterable<[URI], V> = HKT.instance({
+export const Filterable: P.Filterable<[HKT.URI<OptionURI>]> = HKT.instance({
   filterMap_,
   filter_,
   partitionMap_,
@@ -1223,7 +1212,7 @@ export const Filterable: P.Filterable<[URI], V> = HKT.instance({
   partitionMap
 })
 
-export const Foldable: P.Foldable<[URI], V> = HKT.instance({
+export const Foldable: P.Foldable<[HKT.URI<OptionURI>]> = HKT.instance({
   foldl_,
   foldr_,
   foldMap_,
@@ -1232,16 +1221,18 @@ export const Foldable: P.Foldable<[URI], V> = HKT.instance({
   foldMap
 })
 
-export const Traversable: P.Traversable<[URI], V> = HKT.instance({
+export const Traversable: P.Traversable<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Functor,
   traverse_,
   traverse,
   sequence
 })
 
-export const Witherable: P.Witherable<[URI], V> = HKT.instance({
+export const Witherable: P.Witherable<[HKT.URI<OptionURI>]> = HKT.instance({
   separateA_,
   compactA_,
   separateA,
   compactA
 })
+
+export { OptionURI } from './Modules'

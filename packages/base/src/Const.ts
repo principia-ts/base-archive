@@ -1,4 +1,5 @@
 import type { Eq } from './Eq'
+import type { ConstURI } from './Modules'
 import type { Show } from './Show'
 import type * as P from './typeclass'
 
@@ -12,18 +13,6 @@ import * as HKT from './HKT'
  */
 
 export type Const<E, A> = E & { readonly _A: A }
-
-export const URI = 'Const'
-
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Const<E, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -48,8 +37,8 @@ export function make<E, A = never>(e: E): Const<E, A> {
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[URI], V & HKT.Fix<'E', E>> {
-  return HKT.instance<P.Applicative<[URI], V & HKT.Fix<'E', E>>>({
+export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
+  return HKT.instance<P.Applicative<[HKT.URI<ConstURI>], HKT.Fix<'E', E>>>({
     ...getApply(M),
     pure: () => make(M.nat),
     unit: () => make(M.nat)
@@ -66,9 +55,9 @@ export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[URI], V & HKT.
  * @category Apply
  * @since 1.0.0
  */
-export function getApply<E>(S: P.Semigroup<E>): P.Apply<[URI], V & HKT.Fix<'E', E>> {
-  type CE = V & HKT.Fix<'E', E>
-  return HKT.instance<P.Apply<[URI], CE>>({
+export function getApply<E>(S: P.Semigroup<E>) {
+  type CE = HKT.Fix<'E', E>
+  return HKT.instance<P.Apply<[HKT.URI<ConstURI>], CE>>({
     invmap_: (fa, f, _) => map_(fa, f),
     invmap: (f, _) => (fa) => map_(fa, f),
     map_,
@@ -231,3 +220,5 @@ export function getShow<E, A>(S: Show<E>): Show<Const<E, A>> {
     show: (c) => `Const(${S.show(c)})`
   }
 }
+
+export { ConstURI } from './Modules'

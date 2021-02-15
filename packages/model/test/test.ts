@@ -1,7 +1,7 @@
-import * as E from '@principia/base/data/Either'
-import { flow, pipe } from '@principia/base/data/Function'
+import * as E from '@principia/base/Either'
+import { flow, pipe } from '@principia/base/Function'
 import * as DE from '@principia/codec/DecodeErrors'
-import { decode } from '@principia/codec/DecoderKF'
+import { runDecoder } from '@principia/codec/DecoderKF'
 import { fromDecoderKF } from '@principia/codec/EitherDecoder'
 
 import * as M from '../src'
@@ -19,7 +19,7 @@ const l = M.make((F) =>
 const input = {
   a: 'Hello, world',
   b: 42,
-  c: E.left('left')
+  c: E.right('left')
 }
 
 pipe(
@@ -27,7 +27,7 @@ pipe(
   fromDecoderKF,
   (d) => d.decode(input),
   E.fold(
-    (err) => console.log(DE.draw(err)),
+    (err) => console.log(DE.paths(err)),
     (x) => console.log(x)
   )
 )

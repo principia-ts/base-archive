@@ -1,6 +1,7 @@
 import type { Either } from './Either'
 import type { Eq } from './Eq/core'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
+import type { ArrayURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Show } from './Show/core'
@@ -22,20 +23,7 @@ import { fromCompare, makeMonoid, ordNumber } from './typeclass'
 
 export type InferA<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<infer A> ? A : never
 
-export const URI = 'Array'
-
-export type URI = HKT.URI<typeof URI>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: ReadonlyArray<A>
-  }
-  interface URItoIndex<N extends string, K> {
-    readonly [URI]: number
-  }
-}
+export type URI = ArrayURI
 
 /*
  * -------------------------------------------
@@ -1180,7 +1168,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyArray<A>> {
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()((_) => (G) => {
+export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<ArrayURI>]>()((_) => (G) => {
   return (ta, f) =>
     ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) =>
       G.ap_(
@@ -1202,7 +1190,7 @@ export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseW
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const itraverse: P.TraverseWithIndexFn<[URI], V> = (G) => {
+export const itraverse: P.TraverseWithIndexFn<[HKT.URI<ArrayURI>]> = (G) => {
   const itraverseG_ = itraverse_(G)
   return (f) => (ta) => itraverseG_(ta, f)
 }
@@ -1220,7 +1208,7 @@ export const itraverse: P.TraverseWithIndexFn<[URI], V> = (G) => {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<[URI], V> = (G) => {
+export const traverse_: P.TraverseFn_<[HKT.URI<ArrayURI>]> = (G) => {
   const itraverseG_ = itraverse_(G)
   return (ta, f) => itraverseG_(ta, (_, a) => f(a))
 }
@@ -1239,7 +1227,7 @@ export const traverse_: P.TraverseFn_<[URI], V> = (G) => {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[URI], V> = (G) => {
+export const traverse: P.TraverseFn<[HKT.URI<ArrayURI>]> = (G) => {
   const itraverseG_ = itraverse_(G)
   return (f) => (ta) => itraverseG_(ta, (_, a) => f(a))
 }
@@ -1254,7 +1242,7 @@ export const traverse: P.TraverseFn<[URI], V> = (G) => {
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[URI], V> = P.implementSequence<[URI], V>()((_) => (G) => {
+export const sequence = P.implementSequence<[HKT.URI<ArrayURI>]>()((_) => (G) => {
   const traverseG = traverse(G)
   return traverseG(identity)
 })
@@ -1296,7 +1284,7 @@ export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): Readon
  *    -> g (w b)
  * ```
  */
-export const icompactA_: P.WitherWithIndexFn_<[URI], V> = (G) => {
+export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<ArrayURI>]> = (G) => {
   const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
 }
@@ -1311,7 +1299,7 @@ export const icompactA_: P.WitherWithIndexFn_<[URI], V> = (G) => {
  *    -> g (w b)
  * ```
  */
-export const icompactA: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
+export const icompactA: P.WitherWithIndexFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
 
 /**
  * ```haskell
@@ -1321,7 +1309,7 @@ export const icompactA: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => ic
  *    -> g (w b)
  * ```
  */
-export const compactA_: P.WitherFn_<[URI], V> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
+export const compactA_: P.WitherFn_<[HKT.URI<ArrayURI>]> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
 
 /**
  * ```haskell
@@ -1332,7 +1320,7 @@ export const compactA_: P.WitherFn_<[URI], V> = (G) => (wa, f) => icompactA_(G)(
  *    -> g (w b)
  * ```
  */
-export const compactA: P.WitherFn<[URI], V> = (G) => (f) => (wa) => compactA_(G)(wa, f)
+export const compactA: P.WitherFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
 
 /**
  * ```haskell
@@ -1342,7 +1330,7 @@ export const compactA: P.WitherFn<[URI], V> = (G) => (f) => (wa) => compactA_(G)
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const iseparateA_: P.WiltWithIndexFn_<[URI], V> = (G) => {
+export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<ArrayURI>]> = (G) => {
   const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
 }
@@ -1356,7 +1344,7 @@ export const iseparateA_: P.WiltWithIndexFn_<[URI], V> = (G) => {
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const iseparateA: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
+export const iseparateA: P.WiltWithIndexFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
 
 /**
  * ```haskell
@@ -1366,7 +1354,7 @@ export const iseparateA: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => ise
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const separateA_: P.WiltFn_<[URI], V> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
+export const separateA_: P.WiltFn_<[HKT.URI<ArrayURI>]> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
 
 /**
  * ```haskell
@@ -1377,7 +1365,7 @@ export const separateA_: P.WiltFn_<[URI], V> = (G) => (wa, f) => iseparateA_(G)(
  *    -> g (Separated (w b) (w c))
  * ```
  */
-export const separateA: P.WiltFn<[URI], V> = (G) => (f) => (wa) => separateA_(G)(wa, f)
+export const separateA: P.WiltFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => separateA_(G)(wa, f)
 
 /*
  * -------------------------------------------
@@ -2115,19 +2103,19 @@ export function grouped(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<R
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[URI], V> = HKT.instance({
+export const Functor: P.Functor<[HKT.URI<ArrayURI>]> = HKT.instance({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: ReadonlyArray<A>) => map_(fa, f),
   map,
   map_
 })
 
-export const FunctorWithIndex: P.FunctorWithIndex<[URI], V> = HKT.instance({
+export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
   imap,
   imap_
 })
 
-export const Apply: P.Apply<[URI], V> = HKT.instance({
+export const Apply: P.Apply<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Functor,
   ap,
   ap_,
@@ -2137,31 +2125,31 @@ export const Apply: P.Apply<[URI], V> = HKT.instance({
   cross: zip
 })
 
-export const Applicative: P.Applicative<[URI], V> = HKT.instance({
+export const Applicative: P.Applicative<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Functor,
   ...Apply,
   unit,
   pure
 })
 
-export const Alt: P.Alt<[URI], V> = HKT.instance({
+export const Alt: P.Alt<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Functor,
   alt_,
   alt
 })
 
-export const Alternative: P.Alternative<[URI], V> = HKT.instance({
+export const Alternative: P.Alternative<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Applicative,
   ...Alt,
   empty
 })
 
-export const Compactable: P.Compactable<[URI], V> = HKT.instance({
+export const Compactable: P.Compactable<[HKT.URI<ArrayURI>]> = HKT.instance({
   compact,
   separate
 })
 
-export const Filterable: P.Filterable<[URI], V> = HKT.instance({
+export const Filterable: P.Filterable<[HKT.URI<ArrayURI>]> = HKT.instance({
   filter_,
   filterMap_,
   partition_,
@@ -2172,7 +2160,7 @@ export const Filterable: P.Filterable<[URI], V> = HKT.instance({
   partitionMap
 })
 
-export const FilterableWithIndex: P.FilterableWithIndex<[URI], V> = HKT.instance({
+export const FilterableWithIndex: P.FilterableWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
   ifilter_,
   ifilterMap_,
   ipartitionMap_,
@@ -2183,7 +2171,7 @@ export const FilterableWithIndex: P.FilterableWithIndex<[URI], V> = HKT.instance
   ipartition
 })
 
-export const FoldableWithIndex: P.FoldableWithIndex<[URI], V> = HKT.instance({
+export const FoldableWithIndex: P.FoldableWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
   ifoldl_,
   ifoldl,
   ifoldr,
@@ -2192,7 +2180,7 @@ export const FoldableWithIndex: P.FoldableWithIndex<[URI], V> = HKT.instance({
   ifoldMap_
 })
 
-export const Foldable: P.Foldable<[URI], V> = HKT.instance({
+export const Foldable: P.Foldable<[HKT.URI<ArrayURI>]> = HKT.instance({
   foldl_,
   foldl,
   foldr_,
@@ -2201,27 +2189,27 @@ export const Foldable: P.Foldable<[URI], V> = HKT.instance({
   foldMap
 })
 
-export const Monad: P.Monad<[URI], V> = HKT.instance({
+export const Monad: P.Monad<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Applicative,
   bind_,
   bind,
   flatten
 })
 
-export const Traversable: P.Traversable<[URI], V> = HKT.instance({
+export const Traversable: P.Traversable<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Functor,
   traverse_,
   traverse,
   sequence
 })
 
-export const TraversableWithIndex: P.TraversableWithIndex<[URI], V> = HKT.instance({
+export const TraversableWithIndex: P.TraversableWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...FunctorWithIndex,
   itraverse_,
   itraverse
 })
 
-export const Unfoldable: P.Unfoldable<[URI], V> = HKT.instance({
+export const Unfoldable: P.Unfoldable<[HKT.URI<ArrayURI>]> = HKT.instance({
   unfold
 })
 

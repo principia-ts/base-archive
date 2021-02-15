@@ -1,6 +1,7 @@
 /*
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/ParSeq.scala
  */
+import type { FreeSemiringURI } from './Modules'
 import type * as HKT from '@principia/base/HKT'
 
 import * as A from '@principia/base/Array'
@@ -56,15 +57,6 @@ export interface Both<Z, A> {
 export type FreeSemiring<Z, A> = Empty | Single<A> | Then<Z, A> | Both<Z, A>
 
 export type V = HKT.V<'X', '+'>
-
-export const URI = 'FreeSemiring'
-export type URI = HKT.URI<typeof URI, V>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: FreeSemiring<X, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -270,7 +262,7 @@ export function flatten<Z, Z1, A>(ma: FreeSemiring<Z, FreeSemiring<Z1, A>>): Fre
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) =>
+export const traverse_ = P.implementTraverse_<[HKT.URI<FreeSemiringURI>], V>()((_) => (G) => (ta, f) =>
   fold_(
     ta,
     G.pure(empty()),
@@ -280,12 +272,12 @@ export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) 
   )
 )
 
-export const traverse = P.implementTraverse<[URI], V>()((_) => (G) => {
+export const traverse = P.implementTraverse<[HKT.URI<FreeSemiringURI>], V>()((_) => (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 })
 
-export const sequence = P.implementSequence<[URI], V>()((_) => (G) => {
+export const sequence = P.implementSequence<[HKT.URI<FreeSemiringURI>], V>()((_) => (G) => {
   const traverseG_ = traverse_(G)
   return (ta) => traverseG_(ta, identity)
 })

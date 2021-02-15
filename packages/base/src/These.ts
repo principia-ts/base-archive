@@ -1,4 +1,5 @@
 import type { Eq } from './Eq'
+import type { TheseURI } from './Modules'
 import type { Show } from './Show'
 
 import * as E from './Either'
@@ -34,16 +35,7 @@ export interface Right<A> {
 
 export type These<E, A> = Left<E> | Right<A> | Both<E, A>
 
-export const URI = 'These'
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'E', '+'>
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: These<E, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -170,7 +162,7 @@ export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
  * -------------------------------------------
  */
 
-export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[URI], HKT.Fix<'E', E>> {
+export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
   return HKT.instance({
     ...getApply(SE),
     unit,
@@ -184,10 +176,11 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[URI], HKT.
  * -------------------------------------------
  */
 
-export function getApplicativeExcept<E>(SE: P.Semigroup<E>): P.ApplicativeExcept<[URI], HKT.Fix<'E', E>> {
-  const catchAll_: P.CatchAllFn_<[URI], HKT.Fix<'E', E>>   = (fa, f) => (fa._tag === 'Left' ? f(fa.left) : fa)
-  const catchAll: P.CatchAllFn<[URI], HKT.Fix<'E', E>>     = (f) => (fa) => catchAll_(fa, f)
-  const catchSome_: P.CatchSomeFn_<[URI], HKT.Fix<'E', E>> = <A, A1>(
+export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
+  const catchAll_: P.CatchAllFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>   = (fa, f) =>
+    fa._tag === 'Left' ? f(fa.left) : fa
+  const catchAll: P.CatchAllFn<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>     = (f) => (fa) => catchAll_(fa, f)
+  const catchSome_: P.CatchSomeFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = <A, A1>(
     fa: These<E, A>,
     f: (e: E) => O.Option<These<E, A1>>
   ) =>
@@ -199,7 +192,7 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>): P.ApplicativeExcept
       )
     )
 
-  return HKT.instance<P.ApplicativeExcept<[URI], HKT.Fix<'E', E>>>({
+  return HKT.instance<P.ApplicativeExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
     fail: left,
     catchAll_,
@@ -216,8 +209,8 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>): P.ApplicativeExcept
  * -------------------------------------------
  */
 
-export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[URI], HKT.Fix<'E', E>> {
-  const crossWith_: P.CrossWithFn_<[URI], HKT.Fix<'E', E>> = (fa, fb, f) =>
+export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
+  const crossWith_: P.CrossWithFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
         ? left(SE.combine_(fa.left, fb.left))
@@ -342,8 +335,8 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  * -------------------------------------------
  */
 
-export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[URI], HKT.Fix<'E', E>> {
-  const bind_: P.BindFn_<[URI], HKT.Fix<'E', E>> = (ma, f) => {
+export function getMonad<E>(SE: P.Semigroup<E>) {
+  const bind_: P.BindFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (ma, f) => {
     if (isLeft(ma)) {
       return ma
     }
@@ -357,7 +350,7 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[URI], HKT.Fix<'E', E>>
       ? both(ma.left, fb.right)
       : both(SE.combine_(ma.left, fb.left), fb.right)
   }
-  return HKT.instance<P.Monad<[URI], HKT.Fix<'E', E>>>({
+  return HKT.instance<P.Monad<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
     bind_: bind_,
     bind: (f) => (ma) => bind_(ma, f),
@@ -371,9 +364,9 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[URI], HKT.Fix<'E', E>>
  * -------------------------------------------
  */
 
-export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<[URI], HKT.Fix<'E', E>> {
+export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
   const m = getMonad(SE)
-  return HKT.instance<P.MonadExcept<[URI], HKT.Fix<'E', E>>>({
+  return HKT.instance<P.MonadExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     ...getApplicativeExcept(SE),
     ...m,
     absolve: m.flatten
@@ -430,7 +423,7 @@ export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => {
+export const traverse_ = P.implementTraverse_<[HKT.URI<TheseURI>], V>()((_) => (G) => {
   return (ta, f) => {
     return isLeft(ta)
       ? G.pure(ta)
@@ -440,12 +433,12 @@ export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => {
   }
 })
 
-export const traverse: P.TraverseFn<[URI], V> = (G) => {
+export const traverse: P.TraverseFn<[HKT.URI<TheseURI>], V> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence = P.implementSequence<[URI], V>()((_) => (G) => traverse(G)(identity))
+export const sequence = P.implementSequence<[HKT.URI<TheseURI>], V>()((_) => (G) => traverse(G)(identity))
 
 /*
  * -------------------------------------------
@@ -456,3 +449,5 @@ export const sequence = P.implementSequence<[URI], V>()((_) => (G) => traverse(G
 export function unit(): These<never, void> {
   return right(undefined)
 }
+
+export { TheseURI } from './Modules'

@@ -1,3 +1,4 @@
+import type { SyncURI } from './Modules'
 import type { Multi } from './Multi'
 import type { Has, Region, Tag } from '@principia/base/Has'
 import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
@@ -32,17 +33,7 @@ export type USync<A> = Sync<unknown, never, A>
 export type FSync<E, A> = Sync<unknown, E, A>
 export type URSync<R, A> = Sync<R, never, A>
 
-export const URI = 'Sync'
-
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Sync<R, E, A>
-  }
-}
 
 /*
  * -------------------------------------------
@@ -770,14 +761,14 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[URI], V>>({
+export const Functor = HKT.instance<P.Functor<[HKT.URI<SyncURI>], V>>({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: (f) => (fa) => map_(fa, f),
   map_,
   map
 })
 
-export const Bifunctor = HKT.instance<P.Bifunctor<[URI], V>>({
+export const Bifunctor = HKT.instance<P.Bifunctor<[HKT.URI<SyncURI>], V>>({
   ...Functor,
   bimap_,
   bimap,
@@ -785,7 +776,7 @@ export const Bifunctor = HKT.instance<P.Bifunctor<[URI], V>>({
   mapLeft: mapError
 })
 
-export const Apply = HKT.instance<P.Apply<[URI], V>>({
+export const Apply = HKT.instance<P.Apply<[HKT.URI<SyncURI>], V>>({
   ...Functor,
   ap_,
   ap: (fa) => (fab) => ap_(fab, fa),
@@ -799,20 +790,20 @@ export const sequenceT = P.sequenceTF(Apply)
 
 export const sequenceS = P.sequenceSF(Apply)
 
-export const Applicative = HKT.instance<P.Applicative<[URI], V>>({
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<SyncURI>], V>>({
   ...Apply,
   unit,
   pure
 })
 
-export const Monad = HKT.instance<P.Monad<[URI], V>>({
+export const Monad = HKT.instance<P.Monad<[HKT.URI<SyncURI>], V>>({
   ...Applicative,
   bind_,
   bind,
   flatten
 })
 
-export const MonadExcept = HKT.instance<P.MonadExcept<[URI], V>>({
+export const MonadExcept = HKT.instance<P.MonadExcept<[HKT.URI<SyncURI>], V>>({
   ...Monad,
   catchAll_,
   catchAll,
@@ -956,3 +947,5 @@ export function gen(...args: any[]): any {
 
   return _gen(args[0])
 }
+
+export { SyncURI } from './Modules'

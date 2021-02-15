@@ -1,5 +1,6 @@
 import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
+import type { MapURI } from './Modules'
 import type { Show } from './Show'
 
 import * as E from './Either'
@@ -15,21 +16,6 @@ import { makeMonoid } from './typeclass'
  * Model
  * -------------------------------------------
  */
-
-export const URI = 'Map'
-
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: ReadonlyMap<K, A>
-  }
-  interface URItoIndex<N extends string, K> {
-    readonly [URI]: K
-  }
-}
 
 /*
  * -------------------------------------------
@@ -390,10 +376,11 @@ export function partitionMap<A, B, C>(
  * @category Instances
  * @since 1.0.0
  */
-export function getFoldableWithIndex<K>(O: P.Ord<K>): P.FoldableWithIndex<[URI], V & HKT.Fix<'K', K>> {
-  type CK = V & HKT.Fix<'K', K>
-  const keysO                                      = keys(O)
-  const ifoldl_: P.FoldLeftWithIndexFn_<[URI], CK> = <A, B>(
+export function getFoldableWithIndex<K>(O: P.Ord<K>) {
+  type FixK = HKT.Fix<'K', K>
+  const keysO = keys(O)
+
+  const ifoldl_: P.FoldLeftWithIndexFn_<[HKT.URI<MapURI>], FixK> = <A, B>(
     fa: ReadonlyMap<K, A>,
     b: B,
     f: (b: B, k: K, a: A) => B
@@ -408,7 +395,7 @@ export function getFoldableWithIndex<K>(O: P.Ord<K>): P.FoldableWithIndex<[URI],
     }
     return out
   }
-  const ifoldMap_: P.FoldMapWithIndexFn_<[URI], CK> = <M>(M: P.Monoid<M>) => <A>(
+  const ifoldMap_: P.FoldMapWithIndexFn_<[HKT.URI<MapURI>], FixK> = <M>(M: P.Monoid<M>) => <A>(
     fa: ReadonlyMap<K, A>,
     f: (k: K, a: A) => M
   ): M => {
@@ -422,7 +409,7 @@ export function getFoldableWithIndex<K>(O: P.Ord<K>): P.FoldableWithIndex<[URI],
     }
     return out
   }
-  const ifoldr_: P.FoldRightWithIndexFn_<[URI], CK> = <A, B>(
+  const ifoldr_: P.FoldRightWithIndexFn_<[HKT.URI<MapURI>], FixK> = <A, B>(
     fa: ReadonlyMap<K, A>,
     b: B,
     f: (a: A, k: K, b: B) => B
@@ -438,7 +425,7 @@ export function getFoldableWithIndex<K>(O: P.Ord<K>): P.FoldableWithIndex<[URI],
     return out
   }
 
-  return HKT.instance<P.FoldableWithIndex<[URI], CK>>({
+  return HKT.instance<P.FoldableWithIndex<[HKT.URI<MapURI>], FixK>>({
     ifoldl_: ifoldl_,
     ifoldl: (b, f) => (fa) => ifoldl_(fa, b, f),
     ifoldMap_: ifoldMap_,
@@ -552,12 +539,12 @@ export function getShow<K, A>(SK: Show<K>, SA: Show<A>): Show<ReadonlyMap<K, A>>
  * @category Traversable
  * @since 1.0.0
  */
-export function getTraversableWithindex<K>(O: P.Ord<K>): P.TraversableWithIndex<[URI], V & HKT.Fix<'K', K>> {
-  type CK = V & HKT.Fix<'K', K>
+export function getTraversableWithindex<K>(O: P.Ord<K>) {
+  type FixK = HKT.Fix<'K', K>
 
   const keysO = keys(O)
 
-  const traverseWithIndex_ = P.implementTraverseWithIndex_<[URI], CK>()((_) => (G) => (ta, f) => {
+  const traverseWithIndex_ = P.implementTraverseWithIndex_<[HKT.URI<MapURI>], FixK>()((_) => (G) => (ta, f) => {
     type _ = typeof _
     let gm: HKT.HKT<_['G'], ReadonlyMap<_['K'], _['B']>> = P.pureF(G)(empty())
     const ks                                             = keysO(ta)
@@ -575,7 +562,7 @@ export function getTraversableWithindex<K>(O: P.Ord<K>): P.TraversableWithIndex<
     return gm
   })
 
-  return HKT.instance<P.TraversableWithIndex<[URI], CK>>({
+  return HKT.instance<P.TraversableWithIndex<[HKT.URI<MapURI>], FixK>>({
     imap_: imap_,
     imap: imap,
     itraverse_: traverseWithIndex_,
@@ -587,20 +574,20 @@ export function getTraversableWithindex<K>(O: P.Ord<K>): P.TraversableWithIndex<
  * @category Witherable
  * @since 1.0.0
  */
-export function getWitherable<K>(O: P.Ord<K>): P.WitherableWithIndex<[URI], V & HKT.Fix<'K', K>> {
-  type CK = V & HKT.Fix<'K', K>
+export function getWitherable<K>(O: P.Ord<K>) {
+  type CK = HKT.Fix<'K', K>
 
   const { itraverse_: traverseWithIndex_ } = getTraversableWithindex(O)
 
-  const icompactA_ = P.implementWitherWithIndex_<[URI], CK>()((_) => (G) => (wa, f) =>
+  const icompactA_ = P.implementWitherWithIndex_<[HKT.URI<MapURI>], CK>()((_) => (G) => (wa, f) =>
     pipe(traverseWithIndex_(G)(wa, f), G.map(compact))
   )
 
-  const iseparateA_ = P.implementWiltWithIndex_<[URI], CK>()((_) => (G) => (wa, f) =>
+  const iseparateA_ = P.implementWiltWithIndex_<[HKT.URI<MapURI>], CK>()((_) => (G) => (wa, f) =>
     pipe(traverseWithIndex_(G)(wa, f), G.map(separate))
   )
 
-  return HKT.instance<P.WitherableWithIndex<[URI], CK>>({
+  return HKT.instance<P.WitherableWithIndex<[HKT.URI<MapURI>], CK>>({
     iseparateA_: iseparateA_,
     icompactA_: icompactA_,
     iseparateA: (G) => (f) => (wa) => iseparateA_(G)(wa, f),

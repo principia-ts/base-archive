@@ -2,6 +2,7 @@ import type * as E from './Either'
 import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
+import type { RecordURI } from './Modules'
 import type { Show } from './Show'
 
 import { makeEq } from './Eq'
@@ -25,21 +26,6 @@ export type InferRecordType<T extends ReadonlyRecord<any, any>> = T extends {
 }
   ? A
   : never
-
-export const URI = 'Record'
-
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: ReadonlyRecord<N, A>
-  }
-  interface URItoIndex<N extends string, K> {
-    readonly [URI]: N
-  }
-}
 
 /*
  * -------------------------------------------
@@ -848,7 +834,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
  *    g -> (t a, ((k, a) -> g b)) -> g (t b)
  * ```
  */
-export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseWithIndex_<[URI], V>()((_) => (G) => {
+export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()((_) => (G) => {
   return (ta, f) => {
     type _ = typeof _
 
@@ -878,7 +864,7 @@ export const itraverse_: P.TraverseWithIndexFn_<[URI], V> = P.implementTraverseW
  *    g -> ((k, a) -> g b) -> t a -> g (t b)
  * ```
  */
-export const itraverse: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
+export const itraverse: P.TraverseWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
 
 /**
  * ```haskell
@@ -886,7 +872,7 @@ export const itraverse: P.TraverseWithIndexFn<[URI], V> = (G) => (f) => (ta) => 
  *    g -> (t a, (a -> g b)) -> g (t b)
  * ```
  */
-export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
+export const traverse_: P.TraverseFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
 
 /**
  * ```haskell
@@ -894,14 +880,14 @@ export const traverse_: P.TraverseFn_<[URI], V> = (G) => (ta, f) => itraverse_(G
  *    g -> (a -> g b) -> t a -> g (t b)
  * ```
  */
-export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: P.TraverseFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  * ```haskell
  * sequence :: (Applicative g, Traversable t) => g -> t a -> g (t a)
  * ```
  */
-export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => itraverse_(G)(ta, (_, a) => a)
+export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itraverse_(G)(ta, (_, a) => a)
 
 /*
  * -------------------------------------------
@@ -915,7 +901,7 @@ export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => itraverse_(G)(ta,
  *    g -> (w k a, ((k, a) -> g (w k (Option b)))) -> g (w k b)
  * ```
  */
-export const icompactA_: P.WitherWithIndexFn_<[URI], V> = (G) => {
+export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => {
   const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
 }
@@ -926,7 +912,7 @@ export const icompactA_: P.WitherWithIndexFn_<[URI], V> = (G) => {
  *    g -> ((k, a) -> g (w k (Option b))) -> w k a -> g (w k b)
  * ```
  */
-export const icompactA: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
+export const icompactA: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
 
 /**
  * ```haskell
@@ -934,7 +920,7 @@ export const icompactA: P.WitherWithIndexFn<[URI], V> = (G) => (f) => (wa) => ic
  *    g -> (w a, (a -> g (w (Option b)))) -> g (w b)
  * ```
  */
-export const compactA_: P.WitherFn_<[URI], V> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
+export const compactA_: P.WitherFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
 
 /**
  * ```haskell
@@ -942,7 +928,7 @@ export const compactA_: P.WitherFn_<[URI], V> = (G) => (wa, f) => icompactA_(G)(
  *    g -> (a -> g (w (Option b))) -> w a -> g (w b)
  * ```
  */
-export const compactA: P.WitherFn<[URI], V> = (G) => (f) => (wa) => compactA_(G)(wa, f)
+export const compactA: P.WitherFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
 
 /**
  * ```haskell
@@ -950,10 +936,12 @@ export const compactA: P.WitherFn<[URI], V> = (G) => (f) => (wa) => compactA_(G)
  *    g -> (w k a, ((k, a) -> g (w k (Either b c)))) -> g (Separated (w k b) (w k c))
  * ```
  */
-export const iseparateA_: P.WiltWithIndexFn_<[URI], V> = P.implementWiltWithIndex_<[URI], V>()(() => (G) => {
-  const traverseG = itraverse_(G)
-  return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
-})
+export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = P.implementWiltWithIndex_<[HKT.URI<RecordURI>]>()(
+  () => (G) => {
+    const traverseG = itraverse_(G)
+    return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
+  }
+)
 
 /**
  * ```haskell
@@ -961,7 +949,7 @@ export const iseparateA_: P.WiltWithIndexFn_<[URI], V> = P.implementWiltWithInde
  *    g -> ((k, a) -> g (w k (Either b c))) -> w k a -> g (Separated (w k b) (w k c))
  * ```
  */
-export const iseparateA: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
+export const iseparateA: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
 
 /**
  * ```haskell
@@ -969,7 +957,7 @@ export const iseparateA: P.WiltWithIndexFn<[URI], V> = (G) => (f) => (wa) => ise
  *    g -> (w a, (a -> g (w (Either b c)))) -> g (Separated (w b) (w c))
  * ```
  */
-export const separateA_: P.WiltFn_<[URI], V> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
+export const separateA_: P.WiltFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
 
 /**
  * ```haskell
@@ -977,7 +965,7 @@ export const separateA_: P.WiltFn_<[URI], V> = (G) => (wa, f) => iseparateA_(G)(
  *    g -> (a -> g (w (Either b c))) -> w a -> g (Separated (w b) (w c))
  * ```
  */
-export const separateA: P.WiltFn<[URI], V> = (G) => (f) => (wa) => separateA_(G)(wa, f)
+export const separateA: P.WiltFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => separateA_(G)(wa, f)
 
 /*
  * -------------------------------------------
@@ -1109,3 +1097,5 @@ export function pop<N extends string, K extends N>(
 ): <A>(r: ReadonlyRecord<N, A>) => O.Option<readonly [A, ReadonlyRecord<Exclude<N, K>, A>]> {
   return (r) => pop_(r, k)
 }
+
+export { RecordURI } from './Modules'

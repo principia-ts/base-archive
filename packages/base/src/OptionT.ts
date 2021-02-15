@@ -1,19 +1,19 @@
+import type { OptionURI } from './Modules'
+
 import { identity } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
 import * as P from './typeclass'
 
-export type OptionTURI<M extends HKT.URIS> = HKT.AppendURI<M, O.URI>
-
 export function getOptionT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): OptionT<M, C>
-export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UHKT<M>, HKT.Auto> {
-  const bind_: P.BindFn_<OptionTURI<HKT.UHKT<M>>, HKT.Auto> = (ma, f) =>
+export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UHKT<M>> {
+  const bind_: OptionT<HKT.UHKT<M>>['bind_'] = (ma, f) =>
     M.bind_(
       ma,
       O.fold(() => M.pure(O.none()), f)
     )
 
-  return HKT.instance<OptionT<HKT.UHKT<M>, HKT.Auto>>({
+  return HKT.instance<OptionT<HKT.UHKT<M>>>({
     ...P.getApplicativeComposition(M, O.Applicative),
     bind_: bind_,
     bind: (f) => (ma) => bind_(ma, f),
@@ -42,7 +42,8 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
   })
 }
 
-export interface OptionT<M extends HKT.URIS, C = HKT.Auto> extends P.Monad<OptionTURI<M>, C> {
+export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
+  extends P.Monad<[M[0], ...HKT.Rest<M>, HKT.URI<OptionURI>], C> {
   readonly some: <
     A,
     N extends string = HKT.Initial<C, 'N'>,

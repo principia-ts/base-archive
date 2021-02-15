@@ -12,6 +12,7 @@
 import type { Either } from './Either'
 import type { Predicate, Refinement } from './Function'
 import type * as HKT from './HKT'
+import type { ListURI } from './Modules'
 import type { Ordering } from './Ordering'
 
 import { identity } from './Function'
@@ -52,17 +53,6 @@ export type MutableList<A> = { -readonly [K in keyof List<A>]: List<A>[K] } & {
    * MutableList from being assignable to a List.
    */
   '@@mutable': true
-}
-
-export const URI = 'List'
-export type URI = HKT.URI<typeof URI, V>
-
-export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: List<A>
-  }
 }
 
 /*
@@ -690,16 +680,16 @@ export function bind<A, B>(f: (a: A) => List<B>): (l: List<A>) => List<B> {
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<[URI], V>()((_) => (G) => (ta, f) =>
+export const traverse_ = P.implementTraverse_<[HKT.URI<ListURI>]>()((_) => (G) => (ta, f) =>
   foldr_(ta, G.pure(empty()), (a, fb) => G.crossWith_(f(a), fb, (b, l) => prepend_(l, b)))
 )
 
-export const traverse: P.TraverseFn<[URI], V> = (G) => {
+export const traverse: P.TraverseFn<[HKT.URI<ListURI>]> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence = P.implementSequence<[URI], V>()(() => (G) => traverse(G)(identity))
+export const sequence = P.implementSequence<[HKT.URI<ListURI>]>()(() => (G) => traverse(G)(identity))
 
 /*
  * -------------------------------------------
@@ -707,22 +697,22 @@ export const sequence = P.implementSequence<[URI], V>()(() => (G) => traverse(G)
  * -------------------------------------------
  */
 
-export const compactA_ = P.implementWither_<[URI], V>()((_) => (G) => {
+export const compactA_ = P.implementWither_<[HKT.URI<ListURI>]>()((_) => (G) => {
   const traverseG_ = traverse_(G)
   return (wa, f) => G.map_(traverseG_(wa, f), compact)
 })
 
-export const compactA: P.WitherFn<[URI], V> = (G) => {
+export const compactA: P.WitherFn<[HKT.URI<ListURI>]> = (G) => {
   const compactAG_ = compactA_(G)
   return (f) => (wa) => compactAG_(wa, f)
 }
 
-export const separateA_: P.WiltFn_<[URI], V> = (G) => {
+export const separateA_: P.WiltFn_<[HKT.URI<ListURI>]> = (G) => {
   const traverseG_ = traverse_(G)
   return (wa, f) => G.map_(traverseG_(wa, f), separate)
 }
 
-export const separateA: P.WiltFn<[URI], V> = (G) => {
+export const separateA: P.WiltFn<[HKT.URI<ListURI>]> = (G) => {
   const separateAG_ = separateA_(G)
   return (f) => (wa) => separateAG_(wa, f)
 }
@@ -3289,3 +3279,5 @@ function arrayPush<A>(array: A[], a: A): A[] {
   array.push(a)
   return array
 }
+
+export { ListURI } from './Modules'

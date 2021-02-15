@@ -138,6 +138,8 @@ export type AppendURI<F extends URIS, G extends URI<ConcreteURIS, any>> = F exte
 
 export type PrependURI<G extends URI<ConcreteURIS, any>, F extends URIS> = F extends URIS ? [G, ...F] : F
 
+export type Rest<F extends [any, ...any[]]> = F extends [any, ...infer Rest] ? Rest : []
+
 export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = F extends [any, ...infer Next]
   ? Next extends URIS
     ? URItoKind<

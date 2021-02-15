@@ -15,6 +15,7 @@ import * as FS from '@principia/free/FreeSemiring'
 
 import * as C from './Cause'
 import * as I from './IO/primitives'
+import { MultiURI } from './Modules'
 
 /*
  * -------------------------------------------
@@ -22,17 +23,7 @@ import * as I from './IO/primitives'
  * -------------------------------------------
  */
 
-export const URI = 'Multi'
-
-export type URI = HKT.URI<typeof URI, V>
-
 export type V = HKT.V<'W', '+'> & HKT.V<'S', '_'> & HKT.V<'R', '-'> & HKT.V<'E', '+'>
-
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Multi<W, S, S, R, E, A>
-  }
-}
 
 export const _MI = '_MI'
 export type _MI = typeof _MI
@@ -85,7 +76,7 @@ abstract class MultiSyntax<W, S1, S2, R, E, A> {
  * @since 1.0.0
  */
 export abstract class Multi<W, S1, S2, R, E, A> extends MultiSyntax<W, S1, S2, R, E, A> {
-  readonly _U = URI
+  readonly _U = MultiURI
 
   readonly _W!: () => W
   readonly _S1!: (_: S1) => void
@@ -1211,3 +1202,5 @@ export function runEitherEnv_<R, E, A>(ma: Multi<never, unknown, never, R, E, A>
 export function runEitherEnv<R>(env: R): <E, A>(ma: Multi<never, unknown, never, R, E, A>) => E.Either<E, A> {
   return (ma) => runEitherEnv_(ma, env)
 }
+
+export { MultiURI } from './Modules'

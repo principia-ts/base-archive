@@ -1,8 +1,4 @@
-import type * as HKT from '../HKT'
 import type { ReadonlyRecord } from '../Record'
-
-export const URI = 'Eq'
-export type URI = HKT.URI<typeof URI>
 
 /*
  * -------------------------------------------
@@ -13,12 +9,6 @@ export type URI = HKT.URI<typeof URI>
 export interface Eq<A> {
   readonly equals_: (x: A, y: A) => boolean
   readonly equals: (y: A) => (x: A) => boolean
-}
-
-declare module '../HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Eq<A>
-  }
 }
 
 /*
