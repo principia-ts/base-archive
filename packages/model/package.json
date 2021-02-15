@@ -1,6 +1,6 @@
 {
   "name": "@principia/model",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Effect",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -140,10 +140,10 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.3.1",
-    "@principia/codec": "^0.3.1",
-    "@principia/compile": "^0.3.1",
-    "@principia/optics": "^0.3.1",
+    "@principia/base": "^0.3.2",
+    "@principia/codec": "^0.3.2",
+    "@principia/compile": "^0.3.2",
+    "@principia/optics": "^0.3.2",
     "core-js": "3"
   },
   "devDependencies": {

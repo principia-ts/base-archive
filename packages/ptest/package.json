@@ -1,6 +1,6 @@
 {
   "name": "@principia/ptest",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A simple runner for @principia/test",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -52,10 +52,10 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.3.1",
-    "@principia/compile": "^0.3.1",
-    "@principia/io": "^0.3.2",
-    "@principia/test": "^0.3.3",
+    "@principia/base": "^0.3.2",
+    "@principia/compile": "^0.3.2",
+    "@principia/io": "^0.3.3",
+    "@principia/test": "^0.3.4",
     "core-js": "3",
     "glob": "^7.1.6",
     "ts-node": "^9.1.1",

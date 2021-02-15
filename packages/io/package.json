@@ -1,6 +1,6 @@
 {
   "name": "@principia/io",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "IO and related data structures",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -195,9 +195,9 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.3.1",
-    "@principia/compile": "^0.3.1",
-    "@principia/free": "^0.3.1",
+    "@principia/base": "^0.3.2",
+    "@principia/compile": "^0.3.2",
+    "@principia/free": "^0.3.2",
     "core-js": "3"
   },
   "publishConfig": {
