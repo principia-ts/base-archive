@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
-import { isRunnableSpec, RunnableSpec } from '@principia/test/RunnableSpec'
+import { isRunnableSpec } from '@principia/test/RunnableSpec'
 import { TestArgs } from '@principia/test/TestArgs'
-import { createRequire } from 'module'
 import path from 'path'
 import yargs from 'yargs'
 
