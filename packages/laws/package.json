@@ -46,7 +46,7 @@
     "clean:test": "rimraf build",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint .",
-    "prepublish": "yarn clean && yarn build",
+    "prepublish": "yarn buildAll",
     "publish:package": "yarn version --no-git-tag-version && yarn clean && yarn build && yarn publish --no-git-tag-version dist",
     "test": "yarn build:test && jest build/test"
   },
@@ -60,5 +60,5 @@
     "access": "public",
     "directory": "dist"
   },
-  "gitHead": "185e8063ab953917c77482a33f8885fdd554ddf3"
+  "gitHead": "446dd6c98a928f63a4f29bde2d5f8a8e4f381eb1"
 }
