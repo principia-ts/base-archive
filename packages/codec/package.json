@@ -1,6 +1,6 @@
 {
   "name": "@principia/codec",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Decoders",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -51,9 +51,9 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.3.2",
-    "@principia/compile": "^0.3.2",
-    "@principia/free": "^0.3.2",
+    "@principia/base": "^0.3.3",
+    "@principia/compile": "^0.3.3",
+    "@principia/free": "^0.3.3",
     "core-js": "3"
   },
   "publishConfig": {
