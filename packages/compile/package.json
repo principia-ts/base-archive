@@ -31,7 +31,7 @@
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "lint": "eslint .",
-    "prepublish": "yarn clean && yarn buildAll",
+    "prepublish": "yarn buildAll",
     "publish:package": "yarn version --no-git-tag-version && yarn clean && yarn build && yarn publish --no-git-tag-version dist",
     "test": "yarn build:test && jest build/test"
   },
