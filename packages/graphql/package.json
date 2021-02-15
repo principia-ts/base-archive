@@ -41,7 +41,7 @@
     "build:esm-fix": "ttsc --build ./config/tsconfig.esm-fix.json",
     "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
     "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
-    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && rimraf dist/dist/.intermediary && rimraf dist/dist-traced/.intermediary && yarn sort-package-json ./dist/package.json",
+    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
     "build:traced": "yarn build:traced:esm-fix && yarn build:traced:intermediary && yarn build:traced:esm-shake && yarn build:traced:cjs",
     "build:traced:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/cjs dist/dist-traced/.intermediary",
@@ -55,7 +55,7 @@
     "copy:system": "ts-node ../../scripts/copy-system.ts",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint .",
-    "prepublish": "yarn buildAll",
+    "prepublish": "yarn buildAll && rimraf dist/dist/.intermediary && rimraf dist/dist-traced/.intermediary",
     "publish:package": "yarn version --no-git-tag-version && yarn clean && yarn build && yarn publish --no-git-tag-version dist",
     "test": "yarn build:test && jest build/test"
   },
