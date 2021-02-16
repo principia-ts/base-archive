@@ -9,7 +9,7 @@ import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'
 
 export const IntersectionEncoder = implementInterpreter<URI, Alg.IntersectionURI>()((_) => ({
-  intersection: (types, config) => (env) =>
+  intersection: (...types) => (config) => (env) =>
     pipe(
       types,
       A.map((f) => f(env)),

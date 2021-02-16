@@ -8,7 +8,7 @@ import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
 export const IntersectionArbitrary = implementInterpreter<ArbURI, Alg.IntersectionURI>()((_) => ({
-  intersection: (types, config) => (env) =>
+  intersection: (...types) => (config) => (env) =>
     pipe(
       types,
       A.map((f) => f(env)),

@@ -1,8 +1,10 @@
+import type { Predicate, Refinement } from '@principia/base/Function'
 import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/io/IO'
 import type { Stream } from '@principia/io/Stream'
 
 import * as A from '@principia/base/Array'
+import * as E from '@principia/base/Either'
 import { identity, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { ordNumber } from '@principia/base/Ord'
@@ -10,6 +12,7 @@ import { RedBlackTree } from '@principia/base/RedBlackTree'
 import * as RBT from '@principia/base/RedBlackTree'
 import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import { IllegalArgumentException } from '@principia/io/Cause'
+import { sequential } from '@principia/io/ExecutionStrategy'
 import * as I from '@principia/io/IO'
 import { Random } from '@principia/io/Random'
 import * as S from '@principia/io/Stream'
@@ -64,7 +67,17 @@ export const alphaNumericChar: Gen<Has<Random>, string> = weighted(
   [char(97, 122), 26]
 )
 
+export const alphaNumericString: Gen<Has<Random> & Has<Sized>, string> = string(alphaNumericChar)
+
+export function alphaNumericStringBounded(min: number, max: number): Gen<Has<Random>, string> {
+  return stringBounded(alphaNumericChar, min, max)
+}
+
+export const empty: Gen<unknown, never> = new Gen(S.empty)
+
 export const exponential: Gen<Has<Random>, number> = map_(uniform, (n) => -Math.log(1 - n))
+
+export const printableChar = char(33, 126)
 
 export const none: Gen<unknown, O.Option<never>> = constant(O.none())
 
@@ -84,6 +97,14 @@ export function crossWith<A, R1, B, C>(fb: Gen<R1, B>, f: (a: A, b: B) => C): <R
   return (fa) => crossWith_(fa, fb, f)
 }
 
+export function cross_<R, A, R1, B>(fa: Gen<R, A>, fb: Gen<R1, B>): Gen<R & R1, readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
+}
+
+export function cross<R1, B>(fb: Gen<R1, B>): <R, A>(fa: Gen<R, A>) => Gen<R & R1, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
+}
+
 /*
  * -------------------------------------------
  * Functor
@@ -96,6 +117,14 @@ export function map_<R, A, B>(fa: Gen<R, A>, f: (a: A) => B): Gen<R, B> {
 
 export function map<A, B>(f: (a: A) => B): <R>(fa: Gen<R, A>) => Gen<R, B> {
   return (fa) => map_(fa, f)
+}
+
+export function mapM_<R, A, R1, B>(fa: Gen<R, A>, f: (a: A) => IO<R1, never, B>): Gen<R & R1, B> {
+  return new Gen(S.mapM_(fa.sample, Sa.foreach(f)))
+}
+
+export function mapM<A, R1, B>(f: (a: A) => IO<R1, never, B>): <R>(fa: Gen<R, A>) => Gen<R & R1, B> {
+  return (fa) => mapM_(fa, f)
 }
 
 /*
@@ -133,6 +162,37 @@ export function flatten<R, R1, A>(mma: Gen<R, Gen<R1, A>>): Gen<R & R1, A> {
 
 /*
  * -------------------------------------------
+ * Filterable
+ * -------------------------------------------
+ */
+
+export function filter_<R, A, B extends A>(fa: Gen<R, A>, f: Refinement<A, B>): Gen<R, B>
+export function filter_<R, A>(fa: Gen<R, A>, f: Predicate<A>): Gen<R, A>
+export function filter_<R, A>(fa: Gen<R, A>, f: Predicate<A>): Gen<R, A> {
+  return new Gen(
+    pipe(
+      fa.sample,
+      S.bind((sample) => (f(sample.value) ? Sa.filter_(sample, f) : S.empty))
+    )
+  )
+}
+
+export function filter<A, B extends A>(f: Refinement<A, B>): <R>(fa: Gen<R, A>) => Gen<R, B>
+export function filter<A>(f: Predicate<A>): <R>(fa: Gen<R, A>) => Gen<R, A>
+export function filter<A>(f: Predicate<A>): <R>(fa: Gen<R, A>) => Gen<R, A> {
+  return (fa) => filter_(fa, f)
+}
+
+export function filterNot_<R, A>(fa: Gen<R, A>, f: Predicate<A>): Gen<R, A> {
+  return filter_(fa, (a) => !f(a))
+}
+
+export function filterNot<A>(f: Predicate<A>): <R>(fa: Gen<R, A>) => Gen<R, A> {
+  return (fa) => filterNot_(fa, f)
+}
+
+/*
+ * -------------------------------------------
  * Combinators
  * -------------------------------------------
  */
@@ -152,6 +212,10 @@ export function arrayOf<R, A>(g: Gen<R, A>): Gen<R & Has<Random> & Has<Sized>, R
   return small((n) => arrayOfN_(g, n))
 }
 
+export function bounded<R, A>(min: number, max: number, f: (n: number) => Gen<R, A>): Gen<R & Has<Random>, A> {
+  return bind_(int(min, max), f)
+}
+
 export function char(min: number, max: number): Gen<Has<Random>, string> {
   return map_(int(min, max), (n) => String.fromCharCode(n))
 }
@@ -162,17 +226,32 @@ export function int(min: number, max: number): Gen<Has<Random>, number> {
       if (min > max || min < Number.MIN_SAFE_INTEGER || max > Number.MAX_SAFE_INTEGER) {
         return I.die(new IllegalArgumentException('invalid bounds'))
       } else {
-        /*
-         * const effect =
-         *   max < Number.MAX_SAFE_INTEGER
-         *     ? nextIntBetween(min, max + 1)
-         *     : min > Number.MIN_SAFE_INTEGER
-         *     ? I.map_(nextIntBetween(min - 1, max), (n) => n + 1)
-         *     : nextInt
-         */
         return I.map_(Random.nextIntBetween(min, max), Sa.shrinkIntegral(min))
       }
     })
+  )
+}
+
+export function option<R, A>(gen: Gen<R, A>): Gen<R & Has<Random>, O.Option<A>> {
+  return oneOf(none, some(gen))
+}
+
+export function oneOf<R, A>(...gens: ReadonlyArray<Gen<R, A>>): Gen<R & Has<Random>, A> {
+  if (A.isEmpty(gens)) return empty
+  else return bind_(int(0, gens.length - 1), (i) => gens[i])
+}
+
+/**
+ * A sized generator that uses an exponential distribution of size values.
+ * The majority of sizes will be towards the lower end of the range but some
+ * larger sizes will be generated as well.
+ */
+export function medium<R, A>(f: (n: number) => Gen<R, A>, min = 0): Gen<R & Has<Random> & Has<Sized>, A> {
+  return pipe(
+    size,
+    bind((max) => map_(exponential, (n) => clamp(Math.round((n * max) / 10.0), min, max))),
+    reshrink(Sa.shrinkIntegral(min)),
+    bind(f)
   )
 }
 
@@ -201,6 +280,14 @@ export function small<R, A>(f: (n: number) => Gen<R, A>, min = 0): Gen<Has<Sized
 
 export function string<R>(char: Gen<R, string>): Gen<R & Has<Random> & Has<Sized>, string> {
   return map_(arrayOf(char), A.join(''))
+}
+
+export function stringBounded<R>(char: Gen<R, string>, min: number, max: number): Gen<R & Has<Random>, string> {
+  return bounded(min, max, (n) => stringN(char, n))
+}
+
+export function stringN<R>(char: Gen<R, string>, n: number): Gen<R, string> {
+  return map_(arrayOfN_(char, n), A.join(''))
 }
 
 export function some<R, A>(gen: Gen<R, A>): Gen<R, O.Option<A>> {
@@ -256,6 +343,48 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
       )
     })
   )
+}
+
+export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A, b: B) => C): Gen<R & R1, C> {
+  const left: Stream<R, never, E.Either<Sample<R, A>, Sample<R, A>>>     = pipe(
+    fa.sample,
+    S.map(E.right),
+    S.concat(pipe(fa.sample, S.map(E.left))),
+    S.forever
+  )
+  const right: Stream<R1, never, E.Either<Sample<R1, B>, Sample<R1, B>>> = pipe(
+    fb.sample,
+    S.map(E.right),
+    S.concat(pipe(fb.sample, S.map(E.left))),
+    S.forever
+  )
+  return new Gen(
+    pipe(
+      left,
+      S.zipAllWithExec(
+        right,
+        sequential,
+        (l) => tuple(O.some(l), O.none()),
+        (r) => tuple(O.none(), O.some(r)),
+        (l, r) => tuple(O.some(l), O.some(r))
+      ),
+      S.collectWhile(([x, y]) =>
+        O.isSome(x) && O.isSome(y)
+          ? E.isRight(x.value) && E.isRight(y.value)
+            ? O.some(Sa.zipWith_(x.value.right, y.value.right, f))
+            : E.isRight(x.value) && E.isLeft(y.value)
+            ? O.some(Sa.zipWith_(x.value.right, y.value.left, f))
+            : E.isLeft(x.value) && E.isRight(y.value)
+            ? O.some(Sa.zipWith_(x.value.left, y.value.right, f))
+            : O.none()
+          : O.none()
+      )
+    )
+  )
+}
+
+export function zipWith<A, R1, B, C>(fb: Gen<R1, B>, f: (a: A, b: B) => C): <R>(fa: Gen<R, A>) => Gen<R & R1, C> {
+  return (fa) => zipWith_(fa, fb, f)
 }
 
 function clamp(n: number, min: number, max: number): number {

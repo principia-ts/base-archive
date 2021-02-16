@@ -268,11 +268,12 @@ export function makeSummoner<Su extends Summoners<any, any, any> = never>(
   type P<S, R, E, A> = URItoProgram<Env, S, R, E, A>[PURI]
   type M<S, R, E, A> = Model<PURI, IURI, Env, S, R, E, A>
 
-  const summon                                             = (<S, R, E, A>(F: P<S, R, E, A>): M<S, R, E, A> =>
+  const summon = (<S, R, E, A>(F: P<S, R, E, A>): M<S, R, E, A> =>
     materialize(
       cacheProgramEval(F),
       programInterpreter as <S, R, E, A>(program: P<S, R, E, A>) => URItoResult<S, R, E, A>[IURI]
     )) as Su
+
   const tagged: TaggedBuilder<PURI, IURI, SummonerEnv<Su>> = makeTagged(summon)
   return {
     make: summon,

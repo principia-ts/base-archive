@@ -1118,8 +1118,6 @@ export const Apply: P.Apply<[HKT.URI<OptionURI>]> = HKT.instance({
   cross: cross
 })
 
-export const sequenceS = P.sequenceSF(Apply)
-
 export const sequenceT = P.sequenceTF(Apply)
 
 export const mapN = P.mapNF(Apply)
@@ -1129,6 +1127,8 @@ export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = HKT.instance({
   unit,
   pure
 })
+
+export const sequenceS = P.sequenceSF(Applicative)
 
 export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
   ...Applicative,

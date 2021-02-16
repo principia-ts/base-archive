@@ -788,13 +788,13 @@ export const Apply = HKT.instance<P.Apply<[HKT.URI<SyncURI>], V>>({
 
 export const sequenceT = P.sequenceTF(Apply)
 
-export const sequenceS = P.sequenceSF(Apply)
-
 export const Applicative = HKT.instance<P.Applicative<[HKT.URI<SyncURI>], V>>({
   ...Apply,
   unit,
   pure
 })
+
+export const sequenceS = P.sequenceSF(Applicative)
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<SyncURI>], V>>({
   ...Applicative,

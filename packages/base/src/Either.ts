@@ -137,7 +137,7 @@ export function fromNullableK<E>(
 
 /**
  * ```haskell
- * _partial :: (() -> a, (* -> e)) -> Either e a
+ * tryCatch :: () -> a -> Either e a
  * ```
  *
  * Constructs a new `Either` from a function that might throw
@@ -145,31 +145,11 @@ export function fromNullableK<E>(
  * @category Constructors
  * @since 1.0.0
  */
-export function tryCatch_<E, A>(thunk: () => A, onThrow: (reason: unknown) => E): Either<E, A> {
+export function tryCatch<E, A>(thunk: () => A): Either<E, A> {
   try {
     return right(thunk())
   } catch (e) {
-    return left(onThrow(e))
-  }
-}
-
-/**
- * ```haskell
- * partial :: (* -> e) -> (() -> a) -> Either e a
- * ```
- *
- * Constructs a new `Either` from a function that might throw
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function tryCatch<E>(onError: (reason: unknown) => E): <A>(thunk: () => A) => Either<E, A> {
-  return (a) => {
-    try {
-      return right(a())
-    } catch (e) {
-      return left(onError(e))
-    }
+    return left(e)
   }
 }
 
@@ -185,7 +165,11 @@ export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
   f: MorphismN<A, B>,
   onThrow: (reason: unknown) => E
 ): (...args: A) => Either<E, B> {
-  return (...a) => tryCatch_(() => f(...a), onThrow)
+  return (...a) =>
+    pipe(
+      tryCatch(() => f(...a)),
+      mapLeft(onThrow)
+    )
 }
 
 /**
@@ -210,7 +194,7 @@ export interface JsonArray extends ReadonlyArray<Json> {}
 
 /**
  * ```haskell
- * _parseJson :: (String, (* -> e)) -> Either e Json
+ * parseJson :: (String) -> Either unknown Json
  * ```
  *
  * Converts a JavaScript Object Notation (JSON) string into an object.
@@ -218,22 +202,8 @@ export interface JsonArray extends ReadonlyArray<Json> {}
  * @category Constructors
  * @since 1.0.0
  */
-export function parseJson_<E>(s: string, onThrow: (reason: unknown) => E): Either<E, Json> {
-  return tryCatch_(() => JSON.parse(s), onThrow)
-}
-
-/**
- * ```haskell
- * parseJson :: (* -> e) -> String -> Either e Json
- * ```
- *
- * Converts a JavaScript Object Notation (JSON) string into an object.
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function parseJson<E>(onThrow: (reason: unknown) => E): (s: string) => Either<E, Json> {
-  return (s) => parseJson_(s, onThrow)
+export function parseJson(s: string): Either<unknown, Json> {
+  return tryCatch(() => JSON.parse(s))
 }
 
 /**
@@ -246,22 +216,8 @@ export function parseJson<E>(onThrow: (reason: unknown) => E): (s: string) => Ei
  * @category Constructors
  * @since 1.0.0
  */
-export function stringifyJson_<E>(u: unknown, onThrow: (reason: unknown) => E): Either<E, string> {
-  return tryCatch_(() => JSON.stringify(u), onThrow)
-}
-
-/**
- * ```haskell
- * stringifyJson :: (* -> E) -> * -> Either e String
- * ```
- *
- * Converts a JavaScript value to a JavaScript Object Notation (JSON) string.
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function stringifyJson<E>(onThrow: (reason: unknown) => E): (u: unknown) => Either<E, string> {
-  return (u) => stringifyJson_(u, onThrow)
+export function stringifyJson(u: unknown): Either<unknown, string> {
+  return tryCatch(() => JSON.stringify(u))
 }
 
 /**
@@ -1432,8 +1388,6 @@ export const mapN = P.mapNF(Apply)
 
 export const mapN_ = P.mapNF_(Apply)
 
-export const sequenceS = P.sequenceSF(Apply)
-
 /**
  * @category Instances
  * @since 1.0.0
@@ -1443,6 +1397,8 @@ export const Applicative: P.Applicative<[HKT.URI<EitherURI>], V> = HKT.instance(
   unit,
   pure
 })
+
+export const sequenceS = P.sequenceSF(Applicative)
 
 /**
  * @category Instances

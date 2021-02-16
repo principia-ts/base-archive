@@ -22,7 +22,7 @@ export function constant<A>(a: A): Lazy<A> {
 
 export const constTrue: Lazy<true> = () => true
 
-export const constFale: Lazy<false> = () => false
+export const constFalse: Lazy<false> = () => false
 
 export const constNull: Lazy<null> = () => null
 

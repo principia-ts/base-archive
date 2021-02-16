@@ -45,7 +45,8 @@ export interface IntersectionAlgebra<F extends InterpreterURIS, Env extends AnyE
       ...(readonly InterpretedKind<F, Env, any, any, any, any>[])
     ]
   >(
-    types: KS,
+    ...types: KS
+  ) => (
     config?: Config<
       Env,
       UnionToIntersection<InferTuple<F, Env, KS, 'S'>[number]>,

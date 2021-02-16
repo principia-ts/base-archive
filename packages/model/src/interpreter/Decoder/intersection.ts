@@ -10,7 +10,7 @@ import { applyDecoderConfig } from './HKT'
 import { extractInfo } from './utils'
 
 export const IntersectionDecoder = implementInterpreter<URI, Alg.IntersectionURI>()((_) => ({
-  intersection: (types, config) => (env) =>
+  intersection: (...types) => (config) => (env) =>
     pipe(
       types,
       A.map((f) => f(env)),

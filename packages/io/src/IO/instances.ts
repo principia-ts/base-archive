@@ -57,10 +57,8 @@ export const ApplyPar = HKT.instance<P.Apply<[HKT.URI<IOURI>], V>>({
   cross: crossPar
 })
 
-export const mapN         = mapNF(Apply)
-export const mapNPar      = mapNF(ApplyPar)
-export const sequenceS    = sequenceSF(Apply)
-export const sequenceSPar = sequenceSF(ApplyPar)
+export const mapN    = mapNF(Apply)
+export const mapNPar = mapNF(ApplyPar)
 
 export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IOURI>], V>>({
   ...Apply,
@@ -73,6 +71,9 @@ export const ApplicativePar = HKT.instance<P.Applicative<[HKT.URI<IOURI>], V>>({
   pure,
   unit
 })
+
+export const sequenceS    = sequenceSF(Applicative)
+export const sequenceSPar = sequenceSF(ApplicativePar)
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<IOURI>], V>>({
   ...Applicative,
