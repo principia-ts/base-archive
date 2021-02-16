@@ -8,6 +8,7 @@ import type { Stack } from '@principia/base/util/support/Stack'
 import type { FreeSemiring } from '@principia/free/FreeSemiring'
 
 import * as E from '@principia/base/Either'
+import { RuntimeException } from '@principia/base/Exception'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
@@ -276,7 +277,7 @@ export function deferTotal<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, 
 }
 
 export function defer<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, E | Error, A> {
-  return new DeferPartial(ma, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error was caught: ${u}`)))
+  return new DeferPartial(ma, (u) => (u instanceof Error ? u : new RuntimeException(`An error was caught: ${u}`)))
 }
 
 export function deferCatch_<W, S1, S2, R, E, A, E1>(

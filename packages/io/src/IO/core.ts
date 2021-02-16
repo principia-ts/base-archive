@@ -18,6 +18,8 @@ import type { _E as InferE, _R as InferR, UnionToIntersection } from '@principia
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { NoSuchElementError } from '@principia/base/Error'
+import { RuntimeException } from '@principia/base/Exception'
 import { _bind, _bindTo, constant, flow, identity, pipe, tuple } from '@principia/base/Function'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
 import * as I from '@principia/base/Iterable'
@@ -25,7 +27,6 @@ import { makeMonoid } from '@principia/base/Monoid'
 import * as NEA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
-import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 import * as FL from '@principia/free/FreeList'
 
@@ -130,7 +131,7 @@ export function effectAsyncOption<R, E, A>(
  * @trace 0
  */
 export function effect<A>(effect: () => A): FIO<Error, A> {
-  return new EffectPartial(effect, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)))
+  return new EffectPartial(effect, (u) => (u instanceof Error ? u : new RuntimeException(`An error occurred: ${u}`)))
 }
 
 /**
@@ -199,7 +200,7 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () =
  * @trace 0
  */
 export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
-  return new DeferPartial(io, (u) => (u instanceof Error ? u : new C.RuntimeException(`An error occurred: ${u}`)))
+  return new DeferPartial(io, (u) => (u instanceof Error ? u : new RuntimeException(`An error occurred: ${u}`)))
 }
 
 /**
@@ -310,12 +311,12 @@ export function die(e: Error): UIO<never> {
 }
 
 /**
- * Returns an IO that dies with a `RuntimeError` having the
+ * Returns an IO that dies with a `RuntimeException` having the
  * specified message. This method can be used for terminating a fiber
  * because a defect has been detected in the code.
  */
 export function dieMessage(message: string): FIO<never, never> {
-  return die(new C.RuntimeException(message))
+  return die(new RuntimeException(message))
 }
 
 /**
@@ -2038,10 +2039,10 @@ export function getOrElseM<R1, E1, B>(
 }
 
 /**
- * Lifts an Option into an IO, if the option is `None` it fails with NoSuchElementException.
+ * Lifts an Option into an IO, if the option is `None` it fails with NoSuchElementError.
  */
-export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementException, A> {
-  return getOrFailWith_(v, () => new NoSuchElementException('IO.getOrFail'))
+export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementError, A> {
+  return getOrFailWith_(v, () => new NoSuchElementError('IO.getOrFail'))
 }
 
 /**
@@ -3372,7 +3373,7 @@ export function gen<R0, E0, A0>(): <T extends GenIO<R0, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenIO<Has<A>, never, A>
     <E, A>(_: Option<A>, onNone: () => E): GenIO<unknown, E, A>
-    <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
+    <A>(_: Option<A>): GenIO<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
@@ -3382,7 +3383,7 @@ export function gen<E0, A0>(): <T extends GenIO<any, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenIO<Has<A>, never, A>
     <E, A>(_: Option<A>, onNone: () => E): GenIO<unknown, E, A>
-    <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
+    <A>(_: Option<A>): GenIO<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
@@ -3392,7 +3393,7 @@ export function gen<A0>(): <T extends GenIO<any, any, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenIO<Has<A>, never, A>
     <E, A>(_: Option<A>, onNone: () => E): GenIO<unknown, E, A>
-    <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
+    <A>(_: Option<A>): GenIO<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
@@ -3402,7 +3403,7 @@ export function gen<T extends GenIO<any, any, any>, A>(
   f: (i: {
     <A>(_: Tag<A>): GenIO<Has<A>, never, A>
     <E, A>(_: Option<A>, onNone: () => E): GenIO<unknown, E, A>
-    <A>(_: Option<A>): GenIO<unknown, NoSuchElementException, A>
+    <A>(_: Option<A>): GenIO<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenIO<unknown, E, A>
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>

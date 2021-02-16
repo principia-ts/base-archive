@@ -5,13 +5,12 @@ import type { Stream } from '@principia/io/Stream'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
 import { identity, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { ordNumber } from '@principia/base/Ord'
 import { RedBlackTree } from '@principia/base/RedBlackTree'
 import * as RBT from '@principia/base/RedBlackTree'
-import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
-import { IllegalArgumentException } from '@principia/io/Cause'
 import { sequential } from '@principia/io/ExecutionStrategy'
 import * as I from '@principia/io/IO'
 import { Random } from '@principia/io/Random'
@@ -224,7 +223,7 @@ export function int(min: number, max: number): Gen<Has<Random>, number> {
   return fromEffectSample(
     I.deferTotal(() => {
       if (min > max || min < Number.MIN_SAFE_INTEGER || max > Number.MAX_SAFE_INTEGER) {
-        return I.die(new IllegalArgumentException('invalid bounds'))
+        return I.die(new IllegalArgumentError('invalid bounds', 'Gen.int'))
       } else {
         return I.map_(Random.nextIntBetween(min, max), Sa.shrinkIntegral(min))
       }
@@ -338,7 +337,7 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
         RBT.gte(n),
         (it) => it.value,
         O.getOrElse(() => {
-          throw new NoSuchElementException('Gen.weighted')
+          throw new NoSuchElementError('Gen.weighted')
         })
       )
     })

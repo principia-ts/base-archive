@@ -4,6 +4,7 @@ import type { Has } from '@principia/base/Has'
 
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
+import { RuntimeException } from '@principia/base/Exception'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
@@ -480,7 +481,7 @@ export const count: Sink<unknown, never, unknown, never, number> = foldl(0, (s, 
  * `RuntimeException`.
  */
 export function dieMessage(m: string): Sink<unknown, never, unknown, never, never> {
-  return halt(Ca.die(new Ca.RuntimeException(m)))
+  return halt(Ca.die(new RuntimeException(m)))
 }
 
 /**

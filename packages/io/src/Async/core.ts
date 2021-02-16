@@ -1,4 +1,3 @@
-import type { Multi } from '../Multi'
 import type { Has, Region, Tag } from '@principia/base/Has'
 import type { Option } from '@principia/base/Option'
 import type { Stack } from '@principia/base/util/support/Stack'
@@ -7,19 +6,15 @@ import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types
 import * as A from '@principia/base/Array'
 import * as D from '@principia/base/Derivation'
 import * as E from '@principia/base/Either'
+import { NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
 import * as HKT from '@principia/base/HKT'
-import * as O from '@principia/base/Option'
 import { isOption } from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as P from '@principia/base/typeclass'
-import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import { makeStack } from '@principia/base/util/support/Stack'
 
-import * as C from '../Cause/core'
-import * as I from '../IO/primitives'
-import * as M from '../Multi'
 import * as Ex from './AsyncExit'
 
 /*
@@ -1205,7 +1200,7 @@ export const bindToS = DoAsync.bindToS
 
 const adapter: {
   <A>(_: Tag<A>): D.GenHKT<Async<Has<A>, never, A>, A>
-  <A>(_: Option<A>): D.GenHKT<Async<unknown, NoSuchElementException, A>, A>
+  <A>(_: Option<A>): D.GenHKT<Async<unknown, NoSuchElementError, A>, A>
   <E, A>(_: Option<A>, onNone: () => E): D.GenHKT<Async<unknown, E, A>, A>
   <E, A>(_: E.Either<E, A>): D.GenHKT<Async<unknown, E, A>, A>
   <R, E, A>(_: Async<R, E, A>): D.GenHKT<Async<R, E, A>, A>
@@ -1217,9 +1212,7 @@ const adapter: {
     return new D.GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
   }
   if (isOption(_)) {
-    return new D.GenHKT(
-      _._tag === 'None' ? fail(__ ? __() : new NoSuchElementException('Async.gen')) : succeed(_.value)
-    )
+    return new D.GenHKT(_._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Async.gen')) : succeed(_.value))
   }
   return new D.GenHKT(_)
 }

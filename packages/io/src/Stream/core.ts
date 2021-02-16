@@ -11,12 +11,12 @@ import type { Option } from '@principia/base/Option'
 import type { _E, _R } from '@principia/base/util/types'
 
 import * as E from '@principia/base/Either'
+import { NoSuchElementError, PrematureGeneratorExitError } from '@principia/base/Error'
 import { constTrue, flow, identity, not, pipe, tuple } from '@principia/base/Function'
 import { isTag } from '@principia/base/Has'
 import * as L from '@principia/base/List'
 import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
-import { NoSuchElementException, PrematureGeneratorExit } from '@principia/base/util/GlobalExceptions'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as Ca from '../Cause'
@@ -5827,7 +5827,7 @@ const adapter = (_: any, __?: any) => {
   return new GenStream(() => {
     const x = _()
     if (O.isOption(x)) {
-      return x._tag === 'None' ? fail(__ ? __() : new NoSuchElementException('Stream.gen')) : succeed(x.value)
+      return x._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Stream.gen')) : succeed(x.value)
     } else if (E.isEither(x)) {
       return fromEffect(I.fromEither(() => x))
     } else if (x instanceof Stream) {
@@ -5843,7 +5843,7 @@ export function gen<R0, E0, A0>(): <T extends GenStream<R0, E0, any>>(
   f: (i: {
     <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
     <E, A>(_: () => Option<A>, onNone: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementException, A>
+    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementError, A>
     <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
     <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
     <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
@@ -5853,7 +5853,7 @@ export function gen<E0, A0>(): <T extends GenStream<any, E0, any>>(
   f: (i: {
     <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
     <E, A>(_: () => Option<A>, onNone: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementException, A>
+    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementError, A>
     <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
     <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
     <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
@@ -5863,7 +5863,7 @@ export function gen<A0>(): <T extends GenStream<any, any, any>>(
   f: (i: {
     <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
     <E, A>(_: () => Option<A>, onNone: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementException, A>
+    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementError, A>
     <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
     <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
     <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
@@ -5873,7 +5873,7 @@ export function gen<T extends GenStream<any, any, any>, A0>(
   f: (i: {
     <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
     <E, A>(_: () => Option<A>, onNone: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementException, A>
+    <A>(_: () => Option<A>): GenStream<unknown, NoSuchElementError, A>
     <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
     <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
     <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
@@ -5891,7 +5891,7 @@ export function gen(...args: any[]): any {
 
           state = iterator.next(a)
         })
-        if (prematureExit) return fromEffect(I.die(new PrematureGeneratorExit('Stream.gen')))
+        if (prematureExit) return fromEffect(I.die(new PrematureGeneratorExitError('Stream.gen')))
 
         if (state.done) return succeed(state.value)
 

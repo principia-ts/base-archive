@@ -3,11 +3,11 @@ import type { Promise } from './Promise'
 import type { Either } from '@principia/base/Either'
 
 import * as E from '@principia/base/Either'
+import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
-import { IllegalArgumentException } from './Cause'
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
 import * as XR from './IORef/core'
@@ -68,7 +68,7 @@ export class Semaphore {
 
   private releaseN(toRelease: number): I.UIO<void> {
     return I.flatten(
-      I.bind_(assertNonNegative(toRelease), () =>
+      I.bind_(assertNonNegative(toRelease, 'Semaphore.releaseN'), () =>
         pipe(
           this.state,
           XR.modify((s) => this.loop(toRelease, s, I.unit()))
@@ -195,14 +195,12 @@ export function unsafeMake(permits: number): Semaphore {
   return new Semaphore(state)
 }
 
-function assertNonNegative(n: number) {
-  return n < 0
-    ? I.die(new NegativeArgument(`Unexpected negative value ${n} passed to acquireN or releaseN.`))
-    : I.unit()
+function assertNonNegative(n: number, fn: string) {
+  return n < 0 ? I.die(new NegativeArgument(`Unexpected negative value ${n} passed to ${fn}.`, fn)) : I.unit()
 }
 
-class NegativeArgument extends IllegalArgumentException {
-  constructor(message: string) {
-    super(message)
+class NegativeArgument extends IllegalArgumentError {
+  constructor(message: string, fn: string) {
+    super(message, fn)
   }
 }

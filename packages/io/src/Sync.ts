@@ -5,6 +5,7 @@ import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe } from '@principia/base/Function'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
 import * as HKT from '@principia/base/HKT'
@@ -12,7 +13,6 @@ import * as I from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as P from '@principia/base/typeclass'
-import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 import * as FL from '@principia/free/FreeList'
 
 import * as M from './Multi'
@@ -878,7 +878,7 @@ const adapter = (_: any, __?: any) => {
     return new GenSync(fromEither(_))
   }
   if (O.isOption(_)) {
-    return new GenSync(fromOption(_, () => (__ ? __() : new NoSuchElementException('Sync.gen'))))
+    return new GenSync(fromOption(_, () => (__ ? __() : new NoSuchElementError('Sync.gen'))))
   }
   if (isTag(_)) {
     return new GenSync(asksService(_)(identity))
@@ -890,7 +890,7 @@ export function gen<R0, E0, A0>(): <T extends GenSync<R0, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
@@ -899,7 +899,7 @@ export function gen<E0, A0>(): <T extends GenSync<any, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
@@ -908,7 +908,7 @@ export function gen<A0>(): <T extends GenSync<any, any, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
@@ -917,7 +917,7 @@ export function gen<T extends GenSync<any, any, any>, A>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A, any>

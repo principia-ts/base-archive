@@ -10,12 +10,12 @@ import type { _E, _R, EnforceNonEmptyRecord, UnionToIntersection } from '@princi
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { NoSuchElementError } from '@principia/base/Error'
 import { _bind, _bindTo, flow, identity as identityFn, pipe, tuple } from '@principia/base/Function'
 import { isTag } from '@principia/base/Has'
 import * as Iter from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
-import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
@@ -1728,10 +1728,10 @@ export function someOrFailWith<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, O.O
 }
 
 /**
- * Extracts the optional value, or fails with a NoSuchElementException
+ * Extracts the optional value, or fails with a NoSuchElementError
  */
-export function someOrFail<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, E | NoSuchElementException, A> {
-  return someOrFailWith_(ma, () => new NoSuchElementException('Managed.someOrFail'))
+export function someOrFail<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, E | NoSuchElementError, A> {
+  return someOrFailWith_(ma, () => new NoSuchElementError('Managed.someOrFail'))
 }
 
 /**
@@ -2101,7 +2101,7 @@ export function gen<R0, E0, A0>(): <T extends GenManaged<R0, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
-    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
@@ -2111,7 +2111,7 @@ export function gen<E0, A0>(): <T extends GenManaged<any, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
-    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
@@ -2121,7 +2121,7 @@ export function gen<A0>(): <T extends GenManaged<any, any, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
-    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
@@ -2131,7 +2131,7 @@ export function gen<T extends GenManaged<any, any, any>, AEff>(
   f: (i: {
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
     <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
-    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementException, A>
+    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>

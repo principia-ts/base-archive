@@ -10,6 +10,7 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { makeEq } from '@principia/base/Eq'
 import * as Ev from '@principia/base/Eval'
+import { InterruptedException } from '@principia/base/Exception'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import * as F from '@principia/base/Function'
 import * as L from '@principia/base/List'
@@ -1206,8 +1207,8 @@ export function failureOrCause<E>(cause: Cause<E>): E.Either<E, Cause<never>> {
 }
 
 /**
- * Squashes a `Cause` down to a single `Throwable`, chosen to be the
- * "most important" `Throwable`.
+ * Squashes a `Cause` down to a single `Error`, chosen to be the
+ * "most important" `Error`.
  */
 export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
   return (cause) =>
@@ -1229,7 +1230,7 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
           : O.none()
       ),
       O.alt(() => A.head(defects(cause))),
-      O.getOrElse(() => new InterruptedException())
+      O.getOrElse(() => new InterruptedException('Interrupted'))
     )
 }
 
@@ -1267,58 +1268,6 @@ export class Untraced extends Error {
 
 export function isUntraced(u: unknown): u is Untraced {
   return u instanceof Error && u['_tag'] === 'Untraced'
-}
-
-export class RuntimeException extends Error {
-  readonly _tag = 'RuntimeError'
-
-  constructor(message?: string) {
-    super(message)
-
-    this.name = this._tag
-  }
-}
-
-export function isRuntime(u: unknown): u is RuntimeException {
-  return u instanceof Error && u['_tag'] === 'RuntimeError'
-}
-
-export class InterruptedException extends Error {
-  readonly _tag = 'InterruptedException'
-
-  constructor(message?: string) {
-    super(message)
-    this.name = this._tag
-  }
-}
-
-export function isInterruptedException(u: unknown): u is InterruptedException {
-  return u instanceof Error && u['_tag'] === 'InterruptedException'
-}
-
-export class IllegalStateException extends Error {
-  readonly _tag = 'IllegalStateException'
-
-  constructor(message?: string) {
-    super(message)
-    this.name = this._tag
-  }
-}
-
-export function isIllegalStateException(u: unknown): u is IllegalStateException {
-  return u instanceof Error && u['_tag'] === 'IllegalStateException'
-}
-
-export class IllegalArgumentException extends Error {
-  readonly _tag = 'IllegalArgumentException'
-  constructor(message?: string) {
-    super(message)
-    this.name = this._tag
-  }
-}
-
-export function isIllegalArgumentException(u: unknown): u is IllegalArgumentException {
-  return u instanceof Error && u['_tag'] === 'IllegalArgumentException'
 }
 
 /*

@@ -1,8 +1,8 @@
 import type * as HKT from '../HKT'
 import type { Monad } from '../Monad'
 
+import { PrematureGeneratorExitError } from '../Error'
 import * as L from '../List'
-import { PrematureGeneratorExit } from '../util/GlobalExceptions'
 
 export class GenLazyHKT<T, A> {
   constructor(readonly T: () => T) {}
@@ -63,7 +63,7 @@ export function genWithHistoryF<F>(
         let state      = iterator.next()
         L.forEach_(replayStack, (a) => {
           if (state.done) {
-            throw new PrematureGeneratorExit('GenHKT.genWithHistoryF')
+            throw new PrematureGeneratorExitError('GenHKT.genWithHistoryF')
           }
           state = iterator.next(a)
         })

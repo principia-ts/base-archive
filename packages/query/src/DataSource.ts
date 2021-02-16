@@ -6,8 +6,8 @@ import type * as O from '@principia/base/Option'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { makeEq } from '@principia/base/Eq'
+import { IllegalArgumentError } from '@principia/base/Error'
 import { flow, not, pipe, tuple } from '@principia/base/Function'
-import { IllegalArgumentException } from '@principia/io/Cause'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 
@@ -27,7 +27,7 @@ export class DataSource<R, A> {
 export function batchN_<R, A>(dataSource: DataSource<R, A>, n: number): DataSource<R, A> {
   return new DataSource(`${dataSource.identifier}.batchN(${n})`, (requests) =>
     n < 1
-      ? I.die(new IllegalArgumentException('batchN: n must be at least one'))
+      ? I.die(new IllegalArgumentError('batchN: n must be at least one', 'DataSource.batchN'))
       : dataSource.runAll(C.foldl_(requests, C.empty(), (b, a) => C.concat_(b, C.grouped_(a, n))))
   )
 }

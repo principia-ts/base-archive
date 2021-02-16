@@ -14,12 +14,12 @@ import type { Show } from './Show'
 import type { These } from './These'
 
 import { genF, GenHKT } from './Derivation/genF'
+import { NoSuchElementError } from './Error'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
 import * as T from './These'
 import * as P from './typeclass'
-import { NoSuchElementException } from './util/GlobalExceptions'
 
 /*
  * -------------------------------------------
@@ -1603,11 +1603,11 @@ export function getAltValidation<E>(S: P.Semigroup<E>) {
 
 const adapter: {
   <E, A>(_: Option<A>, onNone: () => E): GenHKT<Either<E, A>, A>
-  <A>(_: Option<A>): GenHKT<Either<NoSuchElementException, A>, A>
+  <A>(_: Option<A>): GenHKT<Either<NoSuchElementError, A>, A>
   <E, A>(_: Either<E, A>): GenHKT<Either<E, A>, A>
 } = (_: any, __?: any) => {
   if (O.isOption(_)) {
-    return new GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementException('Either.gen'))))
+    return new GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementError('Either.gen'))))
   }
   return new GenHKT(_)
 }

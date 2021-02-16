@@ -5,9 +5,9 @@ import type { Has } from '@principia/base/Has'
 import type { Option } from '@principia/base/Option'
 
 import * as E from '@principia/base/Either'
+import { NoSuchElementError } from '@principia/base/Error'
 import { constant, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
-import { NoSuchElementException } from '@principia/base/util/GlobalExceptions'
 
 import { Clock } from '../Clock'
 import * as I from '../IO/core'
@@ -50,7 +50,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
         I.bind(([o, _]) =>
           O.fold_(
             o,
-            () => I.fail(new NoSuchElementException('Driver.last')),
+            () => I.fail(new NoSuchElementError('Driver.last')),
             (b) => I.pure(b)
           )
         )

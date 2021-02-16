@@ -8,11 +8,11 @@ import type { URef } from '@principia/io/IORef'
 import type { Random } from '@principia/io/Random'
 
 import { Byte } from '@principia/base/Byte'
+import { IllegalArgumentError } from '@principia/base/Error'
 import { tag } from '@principia/base/Has'
 import * as Li from '@principia/base/List'
 import * as O from '@principia/base/Option'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
-import { IllegalArgumentException } from '@principia/io/Cause'
 import { ClockTag } from '@principia/io/Clock'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
@@ -124,7 +124,7 @@ export class TestRandom implements Random {
 
   private randomIntBounded = (n: number) => {
     if (n <= 0) {
-      return I.die(new IllegalArgumentException('n must be positive'))
+      return I.die(new IllegalArgumentError('n must be positive', 'TestRandom.randomIntBounded'))
     } else if ((n & -n) === n) {
       return this.randomBits(31)['<$>']((_) => _ >> Math.clz32(n))
     } else {
@@ -262,7 +262,7 @@ function nextIntBetweenWith(
   nextIntBounded: (_: number) => UIO<number>
 ): UIO<number> {
   if (min >= max) {
-    return I.die(new IllegalArgumentException('invalid bounds'))
+    return I.die(new IllegalArgumentError('invalid bounds', 'TestRandom.nextIntBetweenWith'))
   } else {
     const difference = max - min
     if (difference > 0) return nextIntBounded(difference)['<$>']((n) => n + min)

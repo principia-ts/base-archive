@@ -2,11 +2,11 @@ import type { Show } from './Show'
 
 import { makeShow } from './Show'
 
-export class Exception<T = any> extends Error {
-  readonly stackTrace: ReadonlyArray<string>
+export abstract class Exception extends Error {
+  abstract readonly _tag: string
   readonly stack!: string
 
-  constructor(readonly message: string, readonly data?: T) {
+  constructor(readonly message: string) {
     super(message)
 
     Object.defineProperty(this, 'name', {
@@ -17,15 +17,31 @@ export class Exception<T = any> extends Error {
       enumerable: true,
       value: message
     })
-    this.stackTrace = this.stack.split('\n')
   }
 }
 
-export function getVerboseShow<T>(ST: Show<T>): Show<Exception<T>> {
-  return makeShow(
-    (ex) =>
-      `An exception occurred at ${ex.stackTrace[0]}\n  [${ex.name}]: ${ex.message}${
-        ex.data ? '\n  ' + ST.show(ex.data) : ''
-      }`
-  )
+export const getShow: Show<Exception> = makeShow(
+  (ex) => `An exception occurred at ${ex.stack.split[0]}\n  [${ex.name}]: ${ex.message}`
+)
+
+export class InterruptedException extends Exception {
+  readonly _tag = 'InterruptedException'
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+export function isInterruptedException(u: unknown): u is InterruptedException {
+  return u instanceof Error && u['_tag'] === 'InterruptedException'
+}
+
+export class RuntimeException extends Exception {
+  readonly _tag = 'RuntimeException'
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+export function isRuntimeException(u: unknown): u is RuntimeException {
+  return u instanceof Error && u['_tag'] === 'RuntimeException'
 }

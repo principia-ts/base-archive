@@ -3,10 +3,10 @@ import type { FIO, IO, URIO } from '../core'
 import type { Has } from '@principia/base/Has'
 import type { Option } from '@principia/base/Option'
 
+import { RuntimeException } from '@principia/base/Exception'
 import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
-import { RuntimeException } from '../../Cause'
 import { Clock } from '../../Clock'
 import * as RefM from '../../IORefM'
 import * as P from '../../Promise'

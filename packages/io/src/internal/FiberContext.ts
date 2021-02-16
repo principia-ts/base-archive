@@ -10,6 +10,7 @@ import type { Stack } from '@principia/base/util/support/Stack'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { RuntimeException } from '@principia/base/Exception'
 import { constVoid } from '@principia/base/Function'
 import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
@@ -509,7 +510,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
     switch (oldState._tag) {
       case 'Done': {
-        throw new C.RuntimeException(`Unexpected fiber completion ${this.fiberId}`)
+        throw new RuntimeException(`Unexpected fiber completion ${this.fiberId}`)
       }
       case 'Executing': {
         const newState = new FiberStateExecuting(
