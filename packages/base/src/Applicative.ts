@@ -4,8 +4,7 @@ import type { Unit, UnitComposition } from './Unit'
 import type { EnforceNonEmptyRecord } from './util/types'
 
 import { getApplyComposition } from './Apply'
-import * as A from './Array'
-import { constant, pipe, tuple } from './Function'
+import { constant, tuple } from './Function'
 import * as HKT from './HKT'
 
 export interface Applicative<F extends HKT.URIS, TC = HKT.Auto> extends Apply<F, TC>, Unit<F, TC> {
@@ -255,9 +254,8 @@ export function mapNF_<F>(F: Apply<HKT.UHKT<F>>): MapNFn_<HKT.UHKT<F>> {
 export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
   <
     KS extends Readonly<
-      Record<
-        string,
-        HKT.Kind<
+      {
+        [K in keyof KS]: HKT.Kind<
           F,
           TC,
           HKT.Intro<TC, 'N', N, any>,
@@ -271,7 +269,7 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
           HKT.Intro<TC, 'E', E, any>,
           unknown
         >
-      >
+      }
     >,
     N extends string = HKT.Initial<TC, 'N'>,
     K = HKT.Initial<TC, 'K'>,
@@ -283,26 +281,7 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
     R = HKT.Initial<TC, 'R'>,
     E = HKT.Initial<TC, 'E'>
   >(
-    r: EnforceNonEmptyRecord<KS> &
-      Readonly<
-        Record<
-          string,
-          HKT.Kind<
-            F,
-            TC,
-            HKT.Intro<TC, 'N', N, any>,
-            HKT.Intro<TC, 'K', K, any>,
-            HKT.Intro<TC, 'Q', Q, any>,
-            HKT.Intro<TC, 'W', W, any>,
-            HKT.Intro<TC, 'X', X, any>,
-            HKT.Intro<TC, 'I', I, any>,
-            HKT.Intro<TC, 'S', S, any>,
-            HKT.Intro<TC, 'R', R, any>,
-            HKT.Intro<TC, 'E', E, any>,
-            unknown
-          >
-        >
-      >
+    r: EnforceNonEmptyRecord<KS>
   ): HKT.Kind<
     F,
     TC,
@@ -323,22 +302,31 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
 
 export function sequenceSF<F extends HKT.URIS, C = HKT.Auto>(F: Applicative<F, C>): SequenceSFn<F, C>
 export function sequenceSF<F>(F: Applicative<HKT.UHKT<F>>) {
-  return (r: Record<string, HKT.HKT<F, any>>): HKT.HKT<F, Record<string, any>> =>
-    pipe(
-      Object.keys(r),
-      A.map((k) => tuple(k, r[k])),
-      A.foldr(F.pure(A.empty<readonly [string, any]>()), (a, b) =>
-        F.crossWith_(b, a[1], ([x, y]) => [...x, tuple(a[0], y)])
-      ),
-      F.map((a) => {
-        const res = {}
-        for (let i = 0; i < a.length; i++) {
-          // eslint-disable-next-line functional/immutable-data
-          res[a[i][0]] = a[i][1]
-        }
-        return res
-      })
-    )
+  return (r: Record<string, HKT.HKT<F, any>>): HKT.HKT<F, Record<string, any>> => {
+    const keys: any[] = Object.keys(r)
+    let res           = F.pure({})
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i]
+      // eslint-disable-next-line functional/immutable-data
+      res = F.crossWith_(res, r[k], (b, a) => ({ ...b, [k]: a }))
+    }
+    return res
+  }
+  // pipe(
+  //   Object.keys(r),
+  //   A.map((k) => tuple(k, r[k])),
+  //   A.foldr(F.pure(A.empty<readonly [string, any]>()), (a, b) =>
+  //     F.crossWith_(b, a[1], ([x, y]) => [...x, tuple(a[0], y)])
+  //   ),
+  //   F.map((a) => {
+  //     const res = {}
+  //     for (let i = 0; i < a.length; i++) {
+  //       // eslint-disable-next-line functional/immutable-data
+  //       res[a[i][0]] = a[i][1]
+  //     }
+  //     return res
+  //   })
+  // )
 }
 
 export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
