@@ -25,6 +25,11 @@ export function make<K, V>(ord: Ord<K>) {
   return new RedBlackTree<K, V>(ord, null)
 }
 
+/**
+ * Inserts an element into the correct position in the `RedBlackTree`.
+ * This function ignores duplicate keys. For one that combines duplicate key's values,
+ * see `insertWith_`
+ */
 export function insert_<K, V>(tree: RedBlackTree<K, V>, key: K, value: V): RedBlackTree<K, V> {
   if (isEmptyNode(tree.root)) {
     return new RedBlackTree(tree.ord, Node(R, Leaf, key, value, Leaf, 1))
@@ -60,10 +65,19 @@ export function insert_<K, V>(tree: RedBlackTree<K, V>, key: K, value: V): RedBl
   return new RedBlackTree(tree.ord, nodeStack[0])
 }
 
+/**
+ * Inserts an element into the correct position in the `RedBlackTree`.
+ * This function ignores duplicate keys. For one that combines duplicate key's values,
+ * see `insertWith_`
+ */
 export function insert<K, V>(key: K, value: V): (tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
   return (tree) => insert_(tree, key, value)
 }
 
+/**
+ * Inserts an element into the correct position in the `RedBlackTree`, combining euqal key's values
+ * with a `Semigroup` instance
+ */
 export function insertWith_<V>(S: Semigroup<V>) {
   return <K>(tree: RedBlackTree<K, V>, key: K, value: V) => {
     if (isEmptyNode(tree.root)) {
@@ -109,6 +123,10 @@ export function insertWith_<V>(S: Semigroup<V>) {
   }
 }
 
+/**
+ * Inserts an element into the correct position in the `RedBlackTree`, combining euqal key's values
+ * with a `Semigroup` instance
+ */
 export function insertWith<V>(
   S: Semigroup<V>
 ): <K>(key: K, value: V) => (tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
@@ -116,23 +134,38 @@ export function insertWith<V>(
   return (key, value) => (tree) => insertWithS_(tree, key, value)
 }
 
-export function head<K, V>(tree: RedBlackTree<K, V>): Option<V> {
-  return O.map_(headNode(tree.root), (n) => n.value)
+/**
+ * Returns the first ("smallest") element in a `RedBlackTree`
+ */
+export function head<K, V>(tree: RedBlackTree<K, V>): Option<readonly [K, V]> {
+  return O.map_(headNode(tree.root), (n) => [n.key, n.value])
 }
 
-export function last<K, V>(tree: RedBlackTree<K, V>): Option<V> {
-  return O.map_(lastNode(tree.root), (n) => n.value)
+/**
+ * Returns the last ("largest") element in a `RedBlackTree`
+ */
+export function last<K, V>(tree: RedBlackTree<K, V>): Option<readonly [K, V]> {
+  return O.map_(lastNode(tree.root), (n) => [n.key, n.value])
 }
 
+/**
+ * Removes an element from a `RedBlackTree`
+ */
 export function remove_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTree<K, V> {
   const iter = find_(tree, key)[Symbol.iterator]()
   return iter.isEmpty ? tree : iter.remove()
 }
 
+/**
+ * Removes an element from a `RedBlackTree`
+ */
 export function remove<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
   return (tree) => remove_(tree, key)
 }
 
+/**
+ * Searches a `RedBlackTree` for a given key, returning it's value, if it exists
+ */
 export function get_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   const cmp = tree.ord.compare_
   let n     = tree.root
@@ -155,6 +188,9 @@ export function get_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   return O.none()
 }
 
+/**
+ * Searches a `RedBlackTree` for a given key, returning it's value, if it exists
+ */
 export function get<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
   return (tree) => get_(tree, key)
 }
@@ -182,6 +218,9 @@ export function visitFull<K, V, A>(node: Node<K, V>, visit: (key: K, value: V) =
   return O.none()
 }
 
+/**
+ * Iterates through the elements of a `RedBlackTree` inorder, performing the given function for each element
+ */
 export function foreach_<K, V>(tree: RedBlackTree<K, V>, visit: (key: K, value: V) => void) {
   if (tree.root) {
     visitFull(tree.root, (k, v) => {
@@ -191,10 +230,16 @@ export function foreach_<K, V>(tree: RedBlackTree<K, V>, visit: (key: K, value: 
   }
 }
 
+/**
+ * Iterates through the elements of a `RedBlackTree` inorder, performing the given function for each element
+ */
 export function foreach<K, V>(visit: (key: K, value: V) => void): (tree: RedBlackTree<K, V>) => void {
   return (tree) => foreach_(tree, visit)
 }
 
+/**
+ * Converts a `RedBlackTree` into a sorted `ReadonlyArray`
+ */
 export function toArray<K, V>(tree: RedBlackTree<K, V>): ReadonlyArray<readonly [K, V]> {
   const as: Array<readonly [K, V]> = []
   foreach_(tree, (k, v) => {
@@ -249,6 +294,9 @@ function Node<K, V>(
 
 type RBNode<K, V> = Node<K, V> | Leaf
 
+/**
+ * Stateful iterator
+ */
 class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
   private count = 0
   constructor(readonly tree: RedBlackTree<K, V>, readonly stack: Array<Node<K, V>>, readonly direction: 0 | 1) {}
@@ -313,9 +361,12 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
     if (this.isEmpty) {
       return O.none()
     }
-    return O.some([this.stack[this.stack.length - 1]!.key, this.stack[this.stack.length - 1]!.value])
+    return O.some([this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value])
   }
 
+  /**
+   * Checks if the iterator has a next element
+   */
   get hasNext(): boolean {
     const stack = this.stack
     if (stack.length === 0) {
@@ -356,6 +407,9 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
     }
   }
 
+  /**
+   * Checks if the iterator has a previous element
+   */
   get hasPrev(): boolean {
     const stack = this.stack
     if (stack.length === 0) {
@@ -372,6 +426,9 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
     return false
   }
 
+  /**
+   * Retreats the iterator to the previous element
+   */
   movePrev(): void {
     const stack = this.stack
     if (stack.length === 0) {
@@ -393,14 +450,24 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
     }
   }
 
+  /**
+   * Returns a `RedBlackTreeIterator` of the same tree, with a cloned stack
+   */
   clone(): RedBlackTreeIterator<K, V> {
     return new RedBlackTreeIterator(this.tree, this.stack.slice(), this.direction)
   }
 
+  /**
+   * Reverses the direction of the iterator, returning an iterator of the same tree,
+   * with a cloned stack
+   */
   reverse(): RedBlackTreeIterator<K, V> {
     return new RedBlackTreeIterator(this.tree, this.stack.slice(), this.direction ? 0 : 1)
   }
 
+  /**
+   * Deletes the current element, returing a new `RedBlackTree`
+   */
   remove(): RedBlackTree<K, V> {
     const pathStack = this.stack
     if (pathStack.length === 0) {
@@ -598,6 +665,9 @@ export function at(
   return (tree) => at_(tree, index, direction)
 }
 
+/**
+ * Returns a forward iterator of elements >= key
+ */
 export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
@@ -621,10 +691,16 @@ export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterab
   }
 }
 
+/**
+ * Returns a forward iterator of elements >= key
+ */
 export function gte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
   return (tree) => gte_(tree, key)
 }
 
+/**
+ * Returns a forward iterator of elements > key
+ */
 export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
@@ -648,10 +724,16 @@ export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterabl
   }
 }
 
+/**
+ * Returns a forward iterator of elements > key
+ */
 export function gt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
   return (tree) => gt_(tree, key)
 }
 
+/**
+ * Returns a backward iterator of elements <= key
+ */
 export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
@@ -678,10 +760,16 @@ export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterab
   }
 }
 
+/**
+ * Returns a backward iterator of elements <= key
+ */
 export function lte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
   return (tree) => lte_(tree, key)
 }
 
+/**
+ * Returns a backward iterator of elements < key
+ */
 export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
@@ -707,6 +795,9 @@ export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterabl
   }
 }
 
+/**
+ * Returns a backward iterator of elements < key
+ */
 export function lt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
   return (tree) => lt_(tree, key)
 }
