@@ -4,11 +4,6 @@ import { halt } from '../core'
 import * as I from '../internal/io'
 
 /**
- * ```haskell
- * _mapFiber :: (Fiber e a, (a -> Fiber e1 a1)) ->
- *    IO _ _ (Fiber (e | e1) a1)
- * ```
- *
  * Passes the success of this fiber to the specified callback, and continues
  * with the fiber that it returns.
  */
@@ -25,10 +20,6 @@ export const mapFiber_ = <A, E, E1, A1>(fiber: Fiber<E, A>, f: (a: A) => Fiber<E
   })
 
 /**
- * ```haskell
- * mapFiber :: (a -> Fiber e1 a1) -> Fiber e a -> IO _ _ (Fiber (e | e1) a1)
- * ```
- *
  * Passes the success of this fiber to the specified callback, and continues
  * with the fiber that it returns.
  */

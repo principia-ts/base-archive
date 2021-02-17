@@ -12,10 +12,6 @@ import * as I from '../internal/io'
 import { awaitAll } from './awaitAll'
 
 /**
- * ```haskell
- * collectAll :: Fiber f => Iterable (f e a) -> f e [a]
- * ```
- *
  * Collects all fibers into a single fiber producing an in-order list of the
  * results.
  */

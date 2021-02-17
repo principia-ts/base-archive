@@ -44,10 +44,6 @@ export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : nev
  */
 
 /**
- * ```haskell
- * none :: () -> None
- * ```
- *
  * Constructs a new `Option` holding no value (a.k.a `None`)
  *
  * @category Constructors
@@ -60,10 +56,6 @@ export function none<A = never>(): Option<A> {
 }
 
 /**
- * ```haskell
- * some :: a -> Some a
- * ```
- *
  * Constructs a new `Option` holding a `Some` value.
  *
  * @category Constructs
@@ -77,10 +69,6 @@ export function some<A>(a: A): Option<A> {
 }
 
 /**
- * ```haskell
- * fromNullable :: ?a -> Option a
- * ```
- *
  * Constructs a new `Option` from a nullable value. If the value is `null` or `undefined`, returns `None`, otherwise
  * returns the value wrapped in a `Some`
  *
@@ -98,10 +86,6 @@ export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
 }
 
 /**
- * ```haskell
- * tryCatch :: (() -> a) -> Option a
- * ```
- *
  * Constructs a new `Option` from a function that might throw
  *
  * @category Constructors
@@ -116,10 +100,6 @@ export function tryCatch<A>(thunk: () => A): Option<A> {
 }
 
 /**
- * ```haskell
- * tryCatchK :: ((a, b, ...) -> c) -> ((a, b, ...) -> Option c)
- * ```
- *
  * Transforms a non-curried function that may throw, takes a set of arguments `(a, b, ...)`,
  * and returns a value `c`, into a non-curried function that will not throw,
  * takes a set of arguments `(a, b, ...)`, and returns an `Option`
@@ -132,11 +112,6 @@ export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B
 }
 
 /**
- * ```haskell
- * fromPredicate_ :: (a, (a -> is b)) -> Option b
- * fromPredicate_ :: (a, (a -> Boolean)) -> Option a
- * ```
- *
  * Constructs a new `Option` from a value and the given predicate
  *
  * @category Constructors
@@ -149,11 +124,6 @@ export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
 }
 
 /**
- * ```haskell
- * fromPredicate :: (a -> is b) -> a -> Option b
- * fromPredicate :: (a -> Boolean) -> a -> Option a
- * ```
- *
  * Returns a smart constructor based on the given predicate
  *
  * @category Constructors
@@ -166,10 +136,6 @@ export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
 }
 
 /**
- * ```haskell
- * fromEither :: Either e a -> Option a
- * ```
- *
  * Constructs a new `Option` from an `Either`, transforming a `Left` into a `None` and a `Right` into a `Some`.
  *
  * @category Constructors
@@ -204,10 +170,6 @@ export function isOption(u: unknown): u is Option<unknown> {
  */
 
 /**
- * ```haskell
- * fold_ :: (Option a, (() -> b), (a -> c)) -> b | c
- * ```
- *
  * Takes a default value, a function, and an `Option` value,
  * if the `Option` value is `None` the default value is returned,
  * otherwise the function is applied to the value inside the `Some` and the result is returned.
@@ -220,10 +182,6 @@ export function fold_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) =>
 }
 
 /**
- * ```haskell
- * fold :: ((() -> b), (a -> c)) -> Option a -> b | c
- * ```
- *
  * Takes a default value, a function, and an `Option` value,
  * if the `Option` value is `None` the default value is returned,
  * otherwise the function is applied to the value inside the `Some` and the result is returned.
@@ -236,10 +194,6 @@ export function fold<A, B, C>(onNone: () => B, onSome: (a: A) => C): (fa: Option
 }
 
 /**
- * ```haskell
- * toNullable :: Option a -> a | Null
- * ```
- *
  * Extracts the value out of the structure, if it exists. Otherwise returns `null`.
  *
  * @category Destructors
@@ -250,10 +204,6 @@ export function toNullable<A>(fa: Option<A>): A | null {
 }
 
 /**
- * ```haskell
- * toUndefined :: Option a -> a | Undefined
- * ```
- *
  * Extracts the value out of the structure, if it exists. Otherwise returns `undefined`.
  *
  * @category Destructors
@@ -264,10 +214,6 @@ export function toUndefined<A>(fa: Option<A>): A | undefined {
 }
 
 /**
- * ```haskell
- * getOrElse_ :: (Option a, (() -> b)) -> a | b
- * ```
- *
  * Extracts the value out of the structure, if it exists. Otherwise returns the given default value
  *
  * @category Destructors
@@ -278,10 +224,6 @@ export function getOrElse_<A, B>(fa: Option<A>, onNone: () => B): A | B {
 }
 
 /**
- * ```haskell
- * getOrElse :: (() -> b) -> Option a -> a | b
- * ```
- *
  * Extracts the value out of the structure, if it exists. Otherwise returns the given default value
  *
  * @category Destructors
@@ -326,10 +268,6 @@ export function align<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<These<A, B
  */
 
 /**
- * ```haskell
- * alt_ :: Alt f => (f a, (() -> f a)) -> f a
- * ```
- *
  * Combines two `Option` values
  *
  * @category Alt
@@ -340,10 +278,6 @@ export function alt_<A>(fa1: Option<A>, fa2: () => Option<A>): Option<A> {
 }
 
 /**
- * ```haskell
- * alt :: Alt f => (() -> f a) -> f a -> f a
- * ```
- *
  * Combines two `Option` values
  *
  * @category Alt
@@ -360,10 +294,6 @@ export function alt<A>(fa2: () => Option<A>): (fa1: Option<A>) => Option<A> {
  */
 
 /**
- * ```haskell
- * pure :: Applicative f => a -> f a
- * ```
- *
  * Lifts a pure expression info an `Option`
  *
  * @category Applicative
@@ -424,10 +354,6 @@ export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
  */
 
 /**
- * ```haskell
- * cross_ :: Apply f => (f a, f b) -> f (a, b)
- * ```
- *
  * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise, returns `None`
  *
  * @category Apply
@@ -438,10 +364,6 @@ export function cross_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, 
 }
 
 /**
- * ```haskell
- * cross :: Apply f => f b -> f a -> f (a, b)
- * ```
- *
  * Applies both `Option`s and if both are `Some`, collects their values into a tuple, otherwise returns `None`
  *
  * @category Apply
@@ -452,10 +374,6 @@ export function cross<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [
 }
 
 /**
- * ```haskell
- * ap_ :: Apply f => (f (a -> b), f a) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -466,10 +384,6 @@ export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
 }
 
 /**
- * ```haskell
- * ap :: Apply f => f a -> f (a -> b) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -496,10 +410,6 @@ export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
 }
 
 /**
- * ```haskell
- * crossWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
- * ```
- *
  * Applies both `Option`s and if both are `Some`,  maps their results with function `f`, otherwise returns `None`
  *
  * @category Apply
@@ -510,10 +420,6 @@ export function crossWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B
 }
 
 /**
- * ```haskell
- * crossWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
- * ```
- *
  * Applies both `Option`s and if both are `Some`, maps their results with function `f`, otherwise returns `None`
  *
  * @category Apply
@@ -525,10 +431,6 @@ export function crossWith<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Op
 }
 
 /**
- * ```haskell
- * liftA2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c
- * ```
- *
  * Lifts a binary function to actions
  *
  * @category Apply
@@ -539,13 +441,6 @@ export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (f
 }
 
 /**
- * ```haskell
- * apS :: (Apply f, Nominal n) =>
- *    (n n3, f c)
- *    -> f ({ n1: a, n2: b, ... })
- *    -> f ({ n1: a, n2: b, n3: c })
- * ```
- *
  * A pipeable version of `sequenceS`
  *
  * @category Apply
@@ -595,28 +490,17 @@ export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
  * Extend
  * -------------------------------------------
  */
-/**
- * ```haskell
- * extend_ :: Extend w => (w a, (w a -> b)) -> w b
- * ```
- */
 export function extend_<A, B>(wa: Option<A>, f: (wa: Option<A>) => B): Option<B> {
   return isNone(wa) ? none() : some(f(wa))
 }
 
 /**
- * ```haskell
- * extend :: Extend w => (w a -> b) -> w a -> w b
- * ```
  */
 export function extend<A, B>(f: (wa: Option<A>) => B): (wa: Option<A>) => Option<B> {
   return (wa) => extend_(wa, f)
 }
 
 /**
- * ```haskell
- * duplicate :: Extend w => w a -> w (w a)
- * ```
  */
 export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
   return extend_(wa, identity)
@@ -663,72 +547,48 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>
 }
 
 /**
- * ```haskell
- * filterMap_ :: Filterable f => (f a, (a -> Option b)) -> f b
- * ```
  */
 export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
   return isNone(fa) ? none() : f(fa.value)
 }
 
 /**
- * ```haskell
- * filterMap :: Filterable f => (a -> Option b) -> f a -> f b
- * ```
  */
 export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Option<B> {
   return (fa) => filterMap_(fa, f)
 }
 
 /**
- * ```haskell
- * foldl_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
- * ```
  */
 export function foldl_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
   return isNone(fa) ? b : f(b, fa.value)
 }
 
 /**
- * ```haskell
- * foldl :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
- * ```
  */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
 /**
- * ```haskell
- * foldr_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
- * ```
  */
 export function foldr_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
   return isNone(fa) ? b : f(fa.value, b)
 }
 
 /**
- * ```haskell
- * foldr :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
- * ```
  */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
 /**
- * ```haskell
- * foldMap_ :: (Foldable f, Monoid m) => Instance m b -> (f a, (a -> b)) -> b
- * ```
  */
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) => M {
   return (fa, f) => (isNone(fa) ? M.nat : f(fa.value))
 }
 
 /**
- * ```haskell
- * foldMap :: (Foldable f, Monoid m) => Instance m b -> (a -> b) -> f a -> b
- * ```
  */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
@@ -741,10 +601,6 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A
  */
 
 /**
- * ```haskell
- * map_ :: Functor f => (f a, (a -> b)) -> f b
- * ```
- *
  * Lifts a function a -> b to a function f a -> f b
  *
  * @category Functor
@@ -755,10 +611,6 @@ export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
 }
 
 /**
- * ```haskell
- * map :: Functor f => (a -> b) -> f a -> f b
- * ```
- *
  * Lifts a function a -> b to a function f a -> f b
  *
  * @category Functor
@@ -773,11 +625,8 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  * Monad
  * -------------------------------------------
  */
+
 /**
- * ```haskell
- * bind_ :: Monad m => (m a, (a -> m b)) -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Uncurried Monad
@@ -788,10 +637,6 @@ export function bind_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
 }
 
 /**
- * ```haskell
- * bind :: Monad m => (a -> m b) -> m a -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Monad
@@ -802,10 +647,6 @@ export function bind<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B>
 }
 
 /**
- * ```haskell
- * tap_ :: Monad m => (ma, (a -> m b)) -> m a
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  * and keeping only the result of the first
  *
@@ -822,10 +663,6 @@ export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
 }
 
 /**
- * ```haskell
- * tap :: Monad m => m a -> (a -> m b) -> m a
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  * and keeping only the result of the first
  *
@@ -837,10 +674,6 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
 }
 
 /**
- * ```haskell
- * flatten :: Monad m => m m a -> m a
- * ```
- *
  * Removes one level of nesting from a nested `Option`
  *
  * @category Monad
@@ -930,10 +763,6 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  */
 
 /**
- * ```haskell
- * traverse_ :: (Applicative f, Traversable t) => Instance f -> (t a, (a -> f b)) -> f (t b)
- * ```
- *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
  * @category Traversable
@@ -943,10 +772,6 @@ export const traverse_: P.TraverseFn_<[HKT.URI<OptionURI>]> = (G) => (ta, f) =>
   isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some))
 
 /**
- * ```haskell
- * traverse :: (Applicative f, Traversable t) => Instance f -> (a -> f b) -> t a -> f (t b)
- * ```
- *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
  * @category Traversable
@@ -955,10 +780,6 @@ export const traverse_: P.TraverseFn_<[HKT.URI<OptionURI>]> = (G) => (ta, f) =>
 export const traverse: P.TraverseFn<[HKT.URI<OptionURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
- * ```haskell
- * sequence :: (Applicative f, Traversable t) => Instance f -> t (f a) -> f (t a)
- * ```
- *
  * Evaluate each action in the structure from left to right, and collect the results.
  *
  * @category Traversable
@@ -1008,10 +829,6 @@ export const separateA: P.WiltFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => s
  */
 
 /**
- * ```haskell
- * bindNullableK_ :: Option m => (m a, (a -> ?b)) -> m b
- * ```
- *
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
@@ -1022,10 +839,6 @@ export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | unde
 }
 
 /**
- * ```haskell
- * bindNullableK :: Option m => (a -> ?b) -> m a -> m b
- * ```
- *
  * Map over a Option with a function that returns a nullable value
  *
  * @category Combinators
@@ -1036,8 +849,6 @@ export function bindNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Opt
 }
 
 /**
- * orElse_ :: Option m => (m a, () -> m b) -> m (a | b)
- *
  * Evaluate and return alternate optional value if empty
  *
  * @category Combinators
@@ -1048,10 +859,6 @@ export function orElse_<A, B>(fa: Option<A>, onNone: () => Option<B>): Option<A 
 }
 
 /**
- * ```haskell
- * orElse :: Option m => (() -> m b) -> m a -> m (a | b)
- * ```
- *
  * Evaluate and return alternate optional value if empty
  *
  * @category Combinators
@@ -1062,10 +869,6 @@ export function orElse<B>(onNone: () => Option<B>): <A>(fa: Option<A>) => Option
 }
 
 /**
- * ```haskell
- * getLeft :: (Either e, Option m) => e a b -> m a
- * ```
- *
  * Evaluates an `Either` and returns a `Option` carrying the left value, if it exists
  *
  * @category Combinators
@@ -1076,10 +879,6 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
 }
 
 /**
- * ```haskell
- * getRight :: (Either e, Option m) => e a b -> m b
- * ```
- *
  * Evaluates an `Either` and returns a `Option` carrying the right value, if it exists
  *
  * @category Combinators
@@ -1160,13 +959,6 @@ const of: Option<{}> = some({})
 export { of as do }
 
 /**
- * ```haskell
- * bindS :: (Monad m, Nominal n) =>
- *   (n n3, (({ n n1: a, n n2: b, ... }) -> m c))
- *   -> m ({ n n1: a, n2: b, ... })
- *   -> m ({ n n1: a, n n2: b, ..., n n3: c })
- * ```
- *
  * Contributes a computation to a threaded scope
  *
  * @category Do
@@ -1175,13 +967,6 @@ export { of as do }
 export const bindS = Do.bindS
 
 /**
- * ```haskell
- * letS :: (Monad m, Nominal n) =>
- *   (n n3, (({ n1: a, n2: b, ... }) -> c))
- *   -> m ({ n1: a, n2: b, ... })
- *   -> m ({ n1: a, n2: b, ..., n3: c })
- * ```
- *
  * Contributes a pure value to a threaded scope
  *
  * @category Do
@@ -1190,10 +975,6 @@ export const bindS = Do.bindS
 export const letS = Do.letS
 
 /**
- * ```haskell
- * bindToS :: (Monad m, Nominal n) => n n1 -> m a -> m ({ n1: a })
- * ```
- *
  * Binds a computation to a property in a `Record`.
  *
  * @category Do

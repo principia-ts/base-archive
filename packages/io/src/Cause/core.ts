@@ -2,7 +2,6 @@ import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { Eq } from '@principia/base/Eq'
 import type { Predicate } from '@principia/base/Function'
-import type * as HKT from '@principia/base/HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Stack } from '@principia/base/util/support/Stack'
 
@@ -12,7 +11,6 @@ import { makeEq } from '@principia/base/Eq'
 import * as Ev from '@principia/base/Eval'
 import { InterruptedException } from '@principia/base/Exception'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
-import * as F from '@principia/base/Function'
 import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
@@ -59,18 +57,6 @@ export interface Traced<E> {
   readonly trace: Trace
 }
 
-// export const URI = 'Cause'
-
-// export type URI = HKT.URI<typeof URI, V>
-
-// export type V = HKT.Auto
-
-// declare module '@principia/base/HKT' {
-//   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-//     readonly [URI]: Cause<A>
-//   }
-// }
-
 /*
  * -------------------------------------------
  * Constructors
@@ -82,9 +68,6 @@ export const empty: Cause<never> = {
 }
 
 /**
- * ```haskell
- * fail :: e -> Cause e
- * ```
  */
 export function fail<E>(value: E): Cause<E> {
   return {
@@ -105,9 +88,6 @@ export function traced<E>(cause: Cause<E>, trace: Trace): Cause<E> {
 }
 
 /**
- * ```haskell
- * die :: _ -> Cause Never
- * ```
  */
 export function die(value: Error): Cause<never> {
   return {
@@ -117,9 +97,6 @@ export function die(value: Error): Cause<never> {
 }
 
 /**
- * ```haskell
- * interrupt :: FiberId -> Cause Never
- * ```
  */
 export function interrupt(fiberId: FiberId): Cause<never> {
   return {
@@ -129,18 +106,12 @@ export function interrupt(fiberId: FiberId): Cause<never> {
 }
 
 /**
- * ```haskell
- * then :: Cause c => (c e, c f) -> c (e | f)
- * ```
  */
 export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
   return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: 'Then', left, right }
 }
 
 /**
- * ```haskell
- * both :: Cause c => (c e, c f) -> c (e | f)
- * ```
  */
 export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
   return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: 'Both', left, right }
@@ -153,10 +124,6 @@ export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
  */
 
 /**
- * ```haskell
- * failed :: Cause e -> Boolean
- * ```
- *
  * Returns if the cause has a failure in it
  */
 export const failed: <E>(cause: Cause<E>) => boolean = flow(
@@ -166,27 +133,18 @@ export const failed: <E>(cause: Cause<E>) => boolean = flow(
 )
 
 /**
- * ```haskell
- * isThen :: Cause e -> Boolean
- * ```
  */
 export function isThen<E>(cause: Cause<E>): cause is Then<E> {
   return cause._tag === 'Then'
 }
 
 /**
- * ```haskell
- * isBoth :: Cause e -> Boolean
- * ```
  */
 export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
   return cause._tag === 'Both'
 }
 
 /**
- * ```haskell
- * isEmpty :: Cause e -> Boolean
- * ```
  */
 export function isEmpty<E>(cause: Cause<E>): boolean {
   if (cause._tag === 'Empty' || (cause._tag === 'Traced' && cause.cause._tag === 'Empty')) {
@@ -233,10 +191,6 @@ export function isEmpty<E>(cause: Cause<E>): boolean {
 }
 
 /**
- * ```haskell
- * died :: Cause e -> Boolean
- * ```
- *
  * Returns if a cause contains a defect
  */
 export function died<E>(cause: Cause<E>): cause is Die {
@@ -249,10 +203,6 @@ export function died<E>(cause: Cause<E>): cause is Die {
 }
 
 /**
- * ```haskell
- * interrupted :: Cause e -> Boolean
- * ```
- *
  * Returns if the cause contains an interruption in it
  */
 export function interrupted<E>(cause: Cause<E>): boolean {
@@ -265,10 +215,6 @@ export function interrupted<E>(cause: Cause<E>): boolean {
 }
 
 /**
- * ```haskell
- * contains :: Cause -> Cause -> Boolean
- * ```
- *
  * Determines if this cause contains or is equal to the specified cause.
  */
 export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
@@ -339,10 +285,6 @@ export function find_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>
 }
 
 /**
- * ```haskell
- * find :: (Cause c, Option m) => (c e -> m a) -> c e -> m a
- * ```
- *
  * Finds the first result matching f
  *
  * @category Combinators
@@ -395,17 +337,6 @@ function _fold<E, A>(
 }
 
 /**
- * ```haskell
- * fold :: (
- *    (() -> a),
- *    (e -> a),
- *    (_ -> a),
- *    (FiberId -> a),
- *    ((a, a) -> a),
- *    ((a, a) -> a)
- * ) -> Cause e -> a
- * ```
- *
  * Folds over a cause
  *
  * @category Destructors
@@ -424,10 +355,6 @@ export function fold<E, A>(
 }
 
 /**
- * ```haskell
- * foldl_ :: (Cause c) => (c e, a, ((a, c e) -> Option a)) -> a
- * ```
- *
  * Accumulates a state over a Cause
  *
  * @category Destructors
@@ -468,10 +395,6 @@ export function foldl_<E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) =
 }
 
 /**
- * ```haskell
- * foldl :: (Cause c) => (a, ((a, c e) -> Option a)) -> c e -> a
- * ```
- *
  * Accumulates a state over a Cause
  *
  * @category Destructors
@@ -482,10 +405,6 @@ export function foldl<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (c
 }
 
 /**
- * ```haskell
- * interruptOption :: Cause e -> Option FiberId
- * ```
- *
  * Returns the `FiberID` associated with the first `Interrupt` in this `Cause` if one
  * exists.
  */
@@ -494,10 +413,6 @@ export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
 }
 
 /**
- * ```haskell
- * failureOption :: Cause e -> Option e
- * ```
- *
  * Returns the `E` associated with the first `Fail` in this `Cause` if one
  * exists.
  */
@@ -506,10 +421,6 @@ export function failureOption<E>(cause: Cause<E>): O.Option<E> {
 }
 
 /**
- * ```haskell
- * dieOption :: Cause e -> Option _
- * ```
- *
  * Returns the `Error` associated with the first `Die` in this `Cause` if
  * one exists.
  */
@@ -524,10 +435,6 @@ export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
  */
 
 /**
- * ```haskell
- * alt_ :: Alt f => (f a, (() -> f a)) -> f a
- * ```
- *
  * @category Alt
  * @since 1.0.0
  */
@@ -536,10 +443,6 @@ export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
 }
 
 /**
- * ```haskell
- * alt :: Alt f => (() -> f a) -> fa -> f a
- * ```
- *
  * @category Alt
  * @since 1.0.0
  */
@@ -554,10 +457,6 @@ export function alt<E>(that: () => Cause<E>): (fa: Cause<E>) => Cause<E> {
  */
 
 /**
- * ```haskell
- * pure :: Applicative f => a -> f a
- * ```
- *
  * Lifts a pure expression info a `Cause`
  *
  * @category Applicative
@@ -574,10 +473,6 @@ export function pure<E>(e: E): Cause<E> {
  */
 
 /**
- * ```haskell
- * ap_ :: Apply f => (f (a -> b), f a) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -588,10 +483,6 @@ export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
 }
 
 /**
- * ```haskell
- * ap :: Apply f => f a -> f (a -> b) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -684,10 +575,6 @@ export const eqCause: Eq<Cause<any>> = makeEq(equalsCause)
  */
 
 /**
- * ```haskell
- * map_ :: Functor f => (f a, (a -> b)) -> f b
- * ```
- *
  * Lifts a function a -> b to a function f a -> f b
  *
  * @category Functor
@@ -698,10 +585,6 @@ export function map_<E, D>(fa: Cause<E>, f: (e: E) => D) {
 }
 
 /**
- * ```haskell
- * map :: Functor f => (a -> b) -> f a -> f b
- * ```
- *
  * lifts a function a -> b to a function f a -> f b
  *
  * @category Functor
@@ -748,10 +631,6 @@ function _bind<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
 }
 
 /**
- * ```haskell
- * bind_ :: Monad m => (m a, (a -> m b)) -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Monad
@@ -762,10 +641,6 @@ export function bind_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
 }
 
 /**
- * ```haskell
- * bind :: Monad m => (a -> m b) -> m a -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Monad
@@ -776,10 +651,6 @@ export function bind<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
 }
 
 /**
- * ```haskell
- * flatten :: Monad m => m m a -> m a
- * ```
- *
  * Removes one level of nesting from a nested `Cuase`
  *
  * @category Monad
@@ -806,10 +677,6 @@ export function unit(): Cause<void> {
  */
 
 /**
- * ```haskell
- * as :: Functor f => b -> f a -> f b
- * ```
- *
  * Substitutes a value under a type constructor
  *
  * @category Combinators

@@ -5,14 +5,6 @@ import { unit } from '../core'
 import { bracketExit_ } from './bracketExit'
 
 /**
- * ```haskell
- * _bracketOnError :: (
- *    IO r e a,
- *    (a -> IO r1 e1 b),
- *    ((a, (Exit e1 b)) -> IO r2 e2 c),
- * ) -> IO (r & r1 & r2) (e | e1 | e2) b
- * ```
- *
  * Same as `_bracketExit` but executes the release IO only if there was an error.
  *
  * @category Combinators
@@ -27,13 +19,6 @@ export function bracketOnError_<R, E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 /**
- * ```haskell
- * bracketOnError :: (
- *    (a -> IO r1 e1 b),
- *    ((a, (Exit e1 b)) -> IO r2 e2 c),
- * ) -> IO r e a -> IO (r & r1 & r2) (e | e1 | e2) b
- * ```
- *
  * Same as `bracketExit` but executes the release IO only if there was an error.
  *
  * @category Combinators

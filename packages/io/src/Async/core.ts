@@ -835,10 +835,6 @@ export function asksServiceInM<A>(
 }
 
 /**
- * ```haskell
- * asService :: Tag a -> IO r e a -> IO r e (Has a)
- * ```
- *
  * Maps the success value of this effect to a service.
  */
 export function asService<A>(has: Tag<A>): <R, E>(fa: Async<R, E, A>) => Async<R, E, Has<A>> {

@@ -1,15 +1,14 @@
 import * as E from '@principia/base/Either'
 import { eqStrict } from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
+import * as O from '@principia/base/Option'
 import { assert, deepStrictEqualTo, DefaultRunnableSpec, equalTo, suite, test } from '@principia/test'
-
-import { identity } from '../src/Function'
 
 const eqEitherStrict = E.getEq(eqStrict, eqStrict)
 
 class EitherSpec extends DefaultRunnableSpec {
   spec = suite(
-    'Either',
+    'EitherSpec',
     test('mapLeft', () => {
       const double = (n: number): number => n * 2
       return assert(pipe(E.right('bar'), E.mapLeft(double)), equalTo(E.right('bar'), eqEitherStrict))['&&'](
@@ -56,13 +55,72 @@ class EitherSpec extends DefaultRunnableSpec {
             deepStrictEqualTo(E.right(1))
           )
         )),
+    test('fromNullableK', () => {
+      const f = E.fromNullableK_(
+        (n: number) => (n > 0 ? n : null),
+        () => 'error'
+      )
+      return assert(f(1), deepStrictEqualTo(E.right(1)))['&&'](assert(f(-1), deepStrictEqualTo(E.left('error'))))
+    }),
     test('tryCatch', () =>
       assert(
-        E.tryCatch_(() => {
+        E.tryCatch(() => {
           throw 'string error'
-        }, identity),
+        }),
         deepStrictEqualTo(E.left('string error'))
-      ))
+      )),
+    test('do notation', () =>
+      assert(
+        pipe(
+          E.right(1),
+          E.bindToS('a'),
+          E.bindS('b', ({ a }) => E.right(a + 1))
+        ),
+        deepStrictEqualTo(
+          E.right({
+            a: 1,
+            b: 2
+          })
+        )
+      )),
+    test('catchAll', () =>
+      assert(
+        pipe(
+          E.left<string, number>('error'),
+          E.catchAll((_) => E.right(1))
+        ),
+        deepStrictEqualTo(E.right(1))
+      )),
+    test('catchSome', () =>
+      assert(
+        pipe(
+          E.right(1),
+          E.bind((n) => E.left(`error: ${n}`)),
+          E.catchSome((s) => (s === 'error: 1' ? O.some(E.right('not ' + s)) : O.none()))
+        ),
+        deepStrictEqualTo(E.right('not error: 1'))
+      )),
+    suite(
+      'gen',
+      test('succeeds', () =>
+        assert(
+          E.gen(function* (_) {
+            const a = yield* _(E.right(1))
+            const b = yield* _(E.right(2))
+            return a + b
+          }),
+          deepStrictEqualTo(E.right(3))
+        )),
+      test('fails', () =>
+        assert(
+          E.gen(function* (_) {
+            const a = yield* _(E.right(1))
+            const b = yield* _(E.left<string, number>('error'))
+            return a + b
+          }),
+          deepStrictEqualTo(E.left('error'))
+        ))
+    )
   )
 }
 

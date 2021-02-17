@@ -8,13 +8,6 @@ import { forkDaemon } from './core-scope'
 import { fiberId } from './fiberId'
 
 /**
- * ```haskell
- * _bracketFiber :: (
- *    IO r e a,
- *    ((FiberRuntime e a) -> IO r1 e1 b)
- * ) -> IO (r & r1) e1 (Exit e a)
- * ```
- *
  * Fork the IO into a separate fiber wrapping it in a bracket and returining
  * the `use` handle. Acquisition will fork and release will interrupt the fiber
  *
@@ -29,11 +22,6 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
 }
 
 /**
- * ```haskell
- * bracketFiber :: ((FiberRuntime e a) -> IO r1 e1 b) ->
- *    IO r e a -> IO (r & r1) e1 (Exit e a)
- * ```
- *
  * Fork the IO into a separate fiber wrapping it in a bracket and returining the
  * `use` handle. Acquisition will fork and release will interrupt the fiber
  *

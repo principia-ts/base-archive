@@ -52,10 +52,6 @@ export type V = HKT.V<'E', '+'>
  */
 
 /**
- * ```haskell
- * left :: e -> Left e
- * ```
- *
  * Constructs a new `Either` holding a `Left` value.
  * This usually represents a failure, due to the right-bias of this structure
  *
@@ -70,10 +66,6 @@ export function left<E = never, A = never>(e: E): Either<E, A> {
 }
 
 /**
- * ```haskell
- * right :: a -> Right a
- * ```
- *
  * Constructs a new `Either` holding a `Right` value.
  * This usually represents a successful value due to the right bias of this structure
  *
@@ -88,11 +80,6 @@ export function right<E = never, A = never>(a: A): Either<E, A> {
 }
 
 /**
- *
- * ```haskell
- * fromNullable_ :: (?a, (() -> e)) -> Either e a
- * ```
- *
  * Takes a default and a nullable value, if the value is not nully,
  * turn it into a `Right`, if the value is nully use the provided default as a `Left`
  *
@@ -104,11 +91,6 @@ export function fromNullable_<E, A>(a: A, e: () => E): Either<E, NonNullable<A>>
 }
 
 /**
- *
- * ```haskell
- * fromNullable :: (() -> e) -> ?a -> Either e a
- * ```
- *
  * Takes a default and a nullable value, if the value is not nully,
  * turn it into a `Right`, if the value is nully use the provided default as a `Left`
  *
@@ -136,10 +118,6 @@ export function fromNullableK<E>(
 }
 
 /**
- * ```haskell
- * tryCatch :: () -> a -> Either e a
- * ```
- *
  * Constructs a new `Either` from a function that might throw
  *
  * @category Constructors
@@ -154,10 +132,6 @@ export function tryCatch<E, A>(thunk: () => A): Either<E, A> {
 }
 
 /**
- * ```haskell
- * tryCatchK_ :: (((a, b, ...) -> c), (* -> e)) -> ((a, b, ...) -> Either e c)
- * ```
- *
  * @category Constructors
  * @since 1.0.0
  */
@@ -173,10 +147,6 @@ export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
 }
 
 /**
- * ```haskell
- * tryCatchK :: (* -> e) -> ((a, b, ...) -> c) -> ((a, b, ...) -> Either e c)
- * ```
- *
  * @category Constructors
  * @since 1.0.0
  */
@@ -193,10 +163,6 @@ export interface JsonRecord extends Readonly<Record<string, Json>> {}
 export interface JsonArray extends ReadonlyArray<Json> {}
 
 /**
- * ```haskell
- * parseJson :: (String) -> Either unknown Json
- * ```
- *
  * Converts a JavaScript Object Notation (JSON) string into an object.
  *
  * @category Constructors
@@ -207,10 +173,6 @@ export function parseJson(s: string): Either<unknown, Json> {
 }
 
 /**
- * ```haskell
- * stringifyJson_ :: (*, (* -> E)) -> Either e String
- * ```
- *
  * Converts a JavaScript value to a JavaScript Object Notation (JSON) string.
  *
  * @category Constructors
@@ -221,10 +183,6 @@ export function stringifyJson(u: unknown): Either<unknown, string> {
 }
 
 /**
- * ```haskell
- * fromOption_ :: (Option a, (() -> e)) -> Either e a
- * ```
- *
  * @category Constructors
  * @since 1.0.0
  */
@@ -233,10 +191,6 @@ export function fromOption_<E, A>(fa: Option<A>, onNothing: () => E): Either<E, 
 }
 
 /**
- * ```haskell
- * fromOption :: (() -> e) -> Option a -> Either e a
- * ```
- *
  * @category Constructors
  * @since 1.0.0
  */
@@ -245,11 +199,6 @@ export function fromOption<E>(onNothing: () => E): <A>(fa: Option<A>) => Either<
 }
 
 /**
- * ```haskell
- * fromPredicate_ :: (a, (a is b), (a -> e)) -> Either e b
- * fromPredicate_ :: (a, (a -> Boolean), (a -> e)) -> Either e a
- * ```
- *
  * @category Constructors
  * @since 1.0.0
  */
@@ -264,11 +213,6 @@ export function fromPredicate_<E, A>(a: A, predicate: Predicate<A>, onFalse: (a:
 }
 
 /**
- * ```haskell
- * fromPredicate :: ((a is b), (a -> e)) -> a -> Either e b
- * fromPredicate :: ((a -> Boolean), (a -> e)) -> a -> Either e a
- * ```
- *
  * @category Constructors
  * @since 1.0.0
  */
@@ -288,10 +232,6 @@ export function fromPredicate<E, A>(predicate: Predicate<A>, onFalse: (a: A) => 
  */
 
 /**
- * ```haskell
- * isLeft :: Either e a -> is Left e
- * ```
- *
  * Returns `true` if the either is an instance of `Left`, `false` otherwise
  *
  * @category Guards
@@ -302,10 +242,6 @@ export function isLeft<E, A>(fa: Either<E, A>): fa is Left<E> {
 }
 
 /**
- * ```haskell
- * isRight :: Either e a -> is Right a
- * ```
- *
  * Returns `true` if the either is an instance of `Right`, `false` otherwise
  *
  * @category Guards
@@ -326,10 +262,6 @@ export function isEither(u: unknown): u is Either<unknown, unknown> {
  */
 
 /**
- * ```haskell
- * fold_ :: (Either e a, (e -> b), (a -> c)) -> b | c
- * ```
- *
  * Takes two functions and an `Either` value, if the value is a `Left` the inner value is applied to the first function,
  * if the value is a `Right` the inner value is applied to the second function.
  *
@@ -341,10 +273,6 @@ export function fold_<E, A, B, C>(pab: Either<E, A>, onLeft: (e: E) => B, onRigh
 }
 
 /**
- * ```haskell
- * fold :: ((e -> b), (a -> c)) -> Either e a -> b | c
- * ```
- *
  * Takes two functions and an `Either` value, if the value is a `Left` the inner value is applied to the first function,
  * if the value is a `Right` the inner value is applied to the second function.
  *
@@ -356,10 +284,6 @@ export function fold<E, A, B, C>(onLeft: (e: E) => B, onRight: (a: A) => C): (pa
 }
 
 /**
- * ```haskell
- * getOrElse_ :: (Either e a, (e -> b)) -> a | b
- * ```
- *
  * @category Destructors
  * @since 1.0.0
  */
@@ -368,10 +292,6 @@ export function getOrElse_<E, A, B>(pab: Either<E, A>, onLeft: (e: E) => B): A |
 }
 
 /**
- * ```haskell
- * getOrElse :: (e -> b) -> Either e a -> a | b
- * ```
- *
  * @category Destructors
  * @since 1.0.0
  */
@@ -380,10 +300,6 @@ export function getOrElse<E, A, B>(f: (e: E) => B): (pab: Either<E, A>) => A | B
 }
 
 /**
- * ```haskell
- * merge :: Either e a -> e | a
- * ```
- *
  * @category Destructors
  * @since 1.0.0
  */
@@ -433,10 +349,6 @@ export function align<E1, B>(fb: Either<E1, B>): <E, A>(fa: Either<E, A>) => Eit
  */
 
 /**
- * ```haskell
- * alt_ :: Alt f => (f a, (() -> f a)) -> f a
- * ```
- *
  * Identifies an associative operation on a type constructor.
  * It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
  *
@@ -448,10 +360,6 @@ export function alt_<E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Eithe
 }
 
 /**
- * ```haskell
- * alt :: Alt f => (() -> f a) -> f a -> f a
- * ```
- *
  * Identifies an associative operation on a type constructor.
  * It is similar to `Semigroup`, except that it applies to types of kind `* -> *`.
  *
@@ -469,10 +377,6 @@ export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Ei
  */
 
 /**
- * ```haskell
- * pure :: Applicative f => a -> f a
- * ```
- *
  * Lifts a pure expression info an `Either`
  *
  * @category Applicative
@@ -529,10 +433,6 @@ export function attempt<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
  */
 
 /**
- * ```haskell
- * ap_ :: Apply f => (f (a -> b), f a) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -543,10 +443,6 @@ export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): 
 }
 
 /**
- * ```haskell
- * ap :: Apply f => f a -> f (a -> b) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -557,10 +453,6 @@ export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) 
 }
 
 /**
- * ```haskell
- * apl_ :: Apply f => (f a, f b) -> f a
- * ```
- *
  * Combine two effectful actions, keeping only the result of the first
  *
  * @category Apply
@@ -574,10 +466,6 @@ export function apl_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E |
 }
 
 /**
- * ```haskell
- * apl :: Apply f => f b -> f a -> f a
- * ```
- *
  * Combine two effectful actions, keeping only the result of the first
  *
  * @category Apply
@@ -588,10 +476,6 @@ export function apl<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<
 }
 
 /**
- * ```haskell
- * apr_ :: Apply f => (f a, f b) -> f b
- * ```
- *
  * Combine two effectful actions, keeping only the result of the second
  *
  * @category Apply
@@ -605,10 +489,6 @@ export function apr_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E |
 }
 
 /**
- * ```haskell
- * apr :: Apply f => f b -> f a -> f b
- * ```
- *
  * Combine two effectful actions, keeping only the result of the second
  *
  * @category Apply
@@ -619,10 +499,6 @@ export function apr<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<
 }
 
 /**
- * ```haskell
- * cross_ :: Apply f => (f a, f b) -> f (a, b)
- * ```
- *
  * Applies both `Either`s and if both are `Right`,
  * collects their values into a tuple, otherwise, returns the first `Left`
  *
@@ -634,10 +510,6 @@ export function cross_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E
 }
 
 /**
- * ```haskell
- * cross :: Apply f => f b -> f a -> f (a, b)
- * ```
- *
  * Applies both `Either`s and if both are `Right`,
  * collects their values into a tuple, otherwise, returns the first `Left`
  *
@@ -649,10 +521,6 @@ export function cross<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eithe
 }
 
 /**
- * ```haskell
- * crossWith_ :: Apply f => (f a, f b, ((a, b) -> c)) -> f c
- * ```
- *
  * Applies both `Either`s and if both are `Right`,
  * maps their results with function `f`, otherwise returns the first `Left`
  *
@@ -667,10 +535,6 @@ export function crossWith_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f:
 }
 
 /**
- * ```haskell
- * crossWith :: Apply f => (f b, ((a, b) -> c)) -> f a -> f c
- * ```
- *
  * Applies both `Either`s and if both are `Right`,
  * maps their results with function `f`, otherwise returns the first `Left`
  *
@@ -685,10 +549,6 @@ export function crossWith<A, G, B, C>(
 }
 
 /**
- * ```haskell
- * liftA2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c
- * ```
- *
  * Lifts a binary function to actions
  *
  * @category Apply
@@ -701,13 +561,6 @@ export function liftA2<A, B, C>(
 }
 
 /**
- * ```haskell
- * apS :: (Apply f, Nominal n) =>
- *    (n n3, f c)
- *    -> f ({ n1: a, n2: b, ... })
- *    -> f ({ n1: a, n2: b, n3: c })
- * ```
- *
  * A pipeable version of `struct`
  *
  * @category Apply
@@ -737,10 +590,6 @@ export function apS<N extends string, A, E1, B>(
  */
 
 /**
- * ```haskell
- * swap :: Bifunctor p => p a b -> p b a
- * ```
- *
  * Swaps the positions of a Bifunctor's arguments
  *
  * @category Bifunctor
@@ -751,10 +600,6 @@ export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
 }
 
 /**
- * ```haskell
- * bimap_ :: Bifunctor p => (p a b, (a -> c), (b -> d)) -> p c d
- * ```
- *
  * Map a pair of functions over the two type arguments of the bifunctor.
  *
  * @category Bifunctor
@@ -765,10 +610,6 @@ export function bimap_<E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) 
 }
 
 /**
- * ```haskell
- * bimap :: Bifunctor p => ((a -> c), (b -> d)) -> p a b -> p c d
- * ```
- *
  * Map a pair of functions over the two type arguments of the bifunctor.
  *
  * @category Bifunctor
@@ -779,10 +620,6 @@ export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Either<
 }
 
 /**
- * ```haskell
- * mapLeft_ :: Bifunctor p => (p a c, (a -> b)) -> p b c
- * ```
- *
  * Map a function over the first type argument of a bifunctor.
  *
  * @category Bifunctor
@@ -793,10 +630,6 @@ export function mapLeft_<E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, 
 }
 
 /**
- * ```haskell
- * mapLeft :: Bifunctor p => (a -> c) -> p a b -> p c b
- * ```
- *
  * Map a function over the first type argument of a bifunctor.
  *
  * @category Bifunctor
@@ -835,10 +668,6 @@ export function getCompactable<E>(M: P.Monoid<E>) {
  */
 
 /**
- * ```haskell
- * getEq :: (Eq e, Eq a) -> Eq (Either a e)
- * ```
- *
  * @category Instances
  * @since 1.0.0
  */
@@ -858,10 +687,6 @@ export function getEq<E, A>(eqE: Eq<E>, eqA: Eq<A>): Eq<Either<E, A>> {
  */
 
 /**
- * ```haskell
- * extend_ :: Extend w => (w a, (w a -> b)) -> w b
- * ```
- *
  * @category Extend
  * @since 1.0.0
  */
@@ -870,10 +695,6 @@ export function extend_<E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): 
 }
 
 /**
- * ```haskell
- * extend :: Extend w => (w a -> b) -> w a -> w b
- * ```
- *
  * @category Extend
  * @since 1.0.0
  */
@@ -882,10 +703,6 @@ export function extend<E, A, B>(f: (wa: Either<E, A>) => B): (wa: Either<E, A>) 
 }
 
 /**
- * ```haskell
- * duplicate :: Extend w => w a -> w (w a)
- * ```
- *
  * @category Extend
  * @since 1.0.0
  */
@@ -900,10 +717,6 @@ export function duplicate<E, A>(wa: Either<E, A>): Either<E, Either<E, A>> {
  */
 
 /**
- * ```haskell
- * getFilterable :: Monoid e -> Filterable (Either e _)
- * ```
- *
  * Builds a `Filterable` instance for `Either` given `Monoid` for the left side
  *
  * @category Instances
@@ -961,56 +774,26 @@ export function getFilterable<E>(M: P.Monoid<E>) {
  * -------------------------------------------
  */
 
-/**
- * ```haskell
- * foldl_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
- * ```
- */
 export function foldl_<E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): B {
   return isLeft(fa) ? b : f(b, fa.right)
 }
 
-/**
- * ```haskell
- * foldl :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
- * ```
- */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
-/**
- * ```haskell
- * foldMap_ :: (Foldable f, Monoid m) => Instance m b -> (f a, (a -> b)) -> b
- * ```
- */
 export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) => M) => M {
   return (fa, f) => (isLeft(fa) ? M.nat : f(fa.right))
 }
 
-/**
- * ```haskell
- * foldMap :: (Foldable f, Monoid m) => Instance m b -> (a -> b) -> f a -> b
- * ```
- */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Either<E, A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-/**
- * ```haskell
- * foldr_ :: Foldable f => (f a, b, ((b, a) -> b)) -> b
- * ```
- */
 export function foldr_<E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) => B): B {
   return isLeft(fa) ? b : f(fa.right, b)
 }
 
-/**
- * ```haskell
- * foldr :: Foldable f => (b, ((b, a) -> b)) -> f a -> b
- * ```
- */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
@@ -1022,10 +805,6 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) =
  */
 
 /**
- * ```haskell
- * map_ :: Functor f => (f a, (a -> b)) -> f b
- * ```
- *
  * Lifts a function a -> b to a function f a -> f b
  *
  * @category Functor
@@ -1036,10 +815,6 @@ export function map_<E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> {
 }
 
 /**
- * ```haskell
- * map :: functor f => (a -> b) -> f a -> f b
- * ```
- *
  * lifts a function a -> b to a function f a -> f b
  *
  * @category Functor
@@ -1056,10 +831,6 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
  */
 
 /**
- * ```haskell
- * bind_ :: Monad m => (m a, (a -> m b)) -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Monad
@@ -1070,10 +841,6 @@ export function bind_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): 
 }
 
 /**
- * ```haskell
- * bind :: Monad m => (a -> m b) -> m a -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Monad
@@ -1084,10 +851,6 @@ export function bind<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) 
 }
 
 /**
- * ```haskell
- * tap_ :: Monad m => (ma, (a -> m b)) -> m a
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  * and keeping only the result of the first
  *
@@ -1104,10 +867,6 @@ export function tap_<E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): E
 }
 
 /**
- * ```haskell
- * tap :: Monad m => (a -> mb) -> m a -> m a
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  * and keeping only the result of the first
  *
@@ -1119,10 +878,6 @@ export function tap<A, G, B>(f: (a: A) => Either<G, B>): <E>(ma: Either<E, A>) =
 }
 
 /**
- * ```haskell
- * flatten :: Monad m => m m a -> m a
- * ```
- *
  * Removes one level of nesting from a nested `Either`
  *
  * @category Monad
@@ -1166,10 +921,6 @@ export function getApplyMonoid<E, A>(M: P.Monoid<A>): P.Monoid<Either<E, A>> {
  */
 
 /**
- * ```haskell
- * getSemigroup :: <e, a>Semigroup a -> Semigroup (Either e a)
- * ```
- *
  * Semigroup returning the left-most non-`Left` value. If both operands are `Right`s then the inner values are
  * concatenated using the provided `Semigroup`
  *
@@ -1186,10 +937,6 @@ export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>>
 }
 
 /**
- * ```haskell
- * getApplySemigroup :: <e, a>Semigroup a -> Semigroup (Either e a)
- * ```
- *
  * Semigroup returning the left-most `Left` value. If both operands are `Right`s then the inner values
  * are concatenated using the provided `Semigroup`
  *
@@ -1212,10 +959,6 @@ export function getApplySemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E
  */
 
 /**
- * ```haskell
- * getShow :: (Show e, Show a) -> Show (Either e a)
- * ```
- *
  * @category Instances
  * @since 1.0.0
  */
@@ -1232,10 +975,6 @@ export function getShow<E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>
  */
 
 /**
- * ```haskell
- * traverse_ :: (Applicative f, Traversable t) => (t a, (a -> f b)) -> f (t b)
- * ```
- *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
  * @category Traversable
@@ -1252,10 +991,6 @@ export const traverse_ = P.implementTraverse_<[HKT.URI<EitherURI>], V>()((_) => 
 })
 
 /**
- * ```haskell
- * traverse :: (Applicative f, Traversable t) => (a -> f b) -> t a -> f (t b)
- * ```
- *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
  * @category Traversable
@@ -1264,10 +999,6 @@ export const traverse_ = P.implementTraverse_<[HKT.URI<EitherURI>], V>()((_) => 
 export const traverse: P.TraverseFn<[HKT.URI<EitherURI>], V> = (F) => (f) => (ta) => traverse_(F)(ta, f)
 
 /**
- * ```haskell
- * sequence :: (Applicative f, Traversable t) => t (f a) -> f (t a)
- * ```
- *
  * Evaluate each action in the structure from left to right, and collect the results.
  *
  * @category Traversable
@@ -1282,9 +1013,7 @@ export const sequence: P.SequenceFn<[HKT.URI<EitherURI>], V> = (F) => (ta) => tr
  */
 
 /**
- * ```haskell
- * unit :: () -> Either _ ()
- * ```
+ * The unit `Either`
  */
 export function unit<E = never>(): Either<E, void> {
   return right(undefined)
@@ -1297,10 +1026,6 @@ export function unit<E = never>(): Either<E, void> {
  */
 
 /**
- * ```haskell
- * getWitherable :: Monoid e -> Witherable (Either e _)
- * ```
- *
  * Builds a `Witherable` instance for `Either` given `Monoid` for the left side
  *
  * @category Instances
@@ -1481,10 +1206,6 @@ export const Traversable: P.Traversable<[HKT.URI<EitherURI>], V> = HKT.instance(
 export const Do = P.deriveDo(Monad)
 
 /**
- * ```haskell
- * do :: Either _ {}
- * ```
- *
  * @category Do
  * @since 1.0.0
  */
@@ -1492,13 +1213,6 @@ const of: Either<never, {}> = right({})
 export { of as do }
 
 /**
- * ```haskell
- * bindS :: (Monad m, Nominal n) =>
- *   (n n3, (({ n n1: a, n n2: b, ... }) -> m c))
- *   -> m ({ n n1: a, n2: b, ... })
- *   -> m ({ n n1: a, n n2: b, ..., n n3: c })
- * ```
- *
  * Contributes a computation to a threaded scope
  *
  * @category Do
@@ -1507,13 +1221,6 @@ export { of as do }
 export const bindS = Do.bindS
 
 /**
- * ```haskell
- * letS :: (Monad m, Nominal n) =>
- *   (n n3, (({ n1: a, n2: b, ... }) -> c))
- *   -> m ({ n1: a, n2: b, ... })
- *   -> m ({ n1: a, n2: b, ..., n3: c })
- * ```
- *
  * Contributes a pure value to a threaded scope
  *
  * @category Do
@@ -1522,10 +1229,6 @@ export const bindS = Do.bindS
 export const letS = Do.letS
 
 /**
- * ```haskell
- * bindToS :: (Monad m, Nominal n) => n n1 -> m a -> m ({ n1: a })
- * ```
- *
  * Binds a computation to a property in a `Record`.
  *
  * @category Do

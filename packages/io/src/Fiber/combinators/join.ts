@@ -4,10 +4,6 @@ import type { Fiber } from '../core'
 import * as I from '../../IO/core'
 
 /**
- * ```haskell
- * join :: Fiber e a -> IO _ e a
- * ```
- *
  * Joins the fiber, which suspends the joining fiber until the result of the
  * fiber has been determined. Attempting to join a fiber that has erred will
  * result in a catchable error. Joining an interrupted fiber will result in an

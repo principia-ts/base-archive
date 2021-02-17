@@ -62,10 +62,6 @@ export * from './primitives'
  */
 
 /**
- * ```haskell
- * succeedNow :: a -> IO _ _ a
- * ```
- *
  * Creates a `IO` that has succeeded with a pure value
  *
  * @category Constructors
@@ -83,10 +79,6 @@ export function succeed<A = never>(a: A): UIO<A> {
 export const yieldNow: UIO<void> = new Yield()
 
 /**
- * ```haskell
- * effectAsync :: (((IO r e a -> ()) -> ()), ?[FiberId]) -> IO r e a
- * ```
- *
  * Imports an asynchronous side-effect into a `IO`
  *
  * @category Constructors
@@ -105,10 +97,6 @@ export function effectAsync<R, E, A>(
 }
 
 /**
- * ```haskell
- * effectAsyncOption :: (((IO r e a -> ()) -> Option (IO r e a)), ?[FiberId]) -> IO r e a
- * ```
- *
  * Imports an asynchronous effect into a pure `IO`, possibly returning the value synchronously.
  *
  * If the register function returns a value synchronously, then the callback
@@ -135,10 +123,6 @@ export function effect<A>(effect: () => A): FIO<Error, A> {
 }
 
 /**
- * ```haskell
- * effectTotal :: (() -> a) -> UIO a
- * ```
- *
  * Imports a total synchronous effect into a pure `IO` value.
  * The effect must not throw any exceptions. If you wonder if the effect
  * throws exceptions, then do not use this method, use `IO.effect`
@@ -153,10 +137,6 @@ export function effectTotal<A>(effect: () => A): UIO<A> {
 }
 
 /**
- * ```haskell
- * effectCatch_ :: (() -> a, (Any -> e)) -> IO _ e a
- * ```
- *
  * Imports a synchronous side-effect into an `IO`, translating any
  * thrown exceptions into typed failed effects with `IO.fail`, and mapping the error
  *
@@ -171,10 +151,6 @@ export function effectCatch_<E, A>(effect: () => A, onThrow: (error: unknown) =>
 }
 
 /**
- * ```haskell
- * effectCatch :: (Any -> e) -> (() -> a) -> IO _ e a
- * ```
- *
  * Imports a synchronous side-effect into an `IO`, translating any
  * thrown exceptions into typed failed effects with `IO.fail`, and mapping the error
  *
@@ -234,9 +210,6 @@ export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: (
 }
 
 /**
- * ```haskell
- * deferTotal :: (() -> IO r e a) -> IO r e a
- * ```
  *
  * Returns a lazily constructed effect, whose construction may itself require
  * effects. The effect must not throw any exceptions. When no environment is required (i.e., when R == unknown)
@@ -252,10 +225,6 @@ export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
 }
 
 /**
- * ```haskell
- * haltNow :: Cause e -> IO _ e _
- * ```
- *
  * Creates a `IO` that has failed with the specified `Cause`
  *
  * @category Constructors
@@ -269,7 +238,6 @@ export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
 
 /**
  * Returns an effect that models failure with the specified `Cause`.
- *
  * This version takes in a lazily-evaluated trace that can be attached to the `Cause`
  * via `Cause.Traced`.
  *
@@ -280,10 +248,6 @@ export function haltWith<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, never> 
 }
 
 /**
- * ```haskell
- * fail :: e -> IO _ e _
- * ```
- *
  * Creates a `IO` that has failed with value `e`. The moral equivalent of `throw`
  *
  * @category Constructors
@@ -297,10 +261,6 @@ export function fail<E>(e: E): FIO<E, never> {
 }
 
 /**
- * ```haskell
- * die :: Error -> IO _ _ _
- * ```
- *
  * Creates a `IO` that has died with the specified defect
  *
  * @category Constructors
@@ -320,9 +280,6 @@ export function dieMessage(message: string): FIO<never, never> {
 }
 
 /**
- * ```haskell
- * done :: Exit a b -> FIO a b
- * ```
  *
  * Creates a `IO` from an exit value
  *
@@ -432,9 +389,6 @@ export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
 }
 
 /**
- * ```haskell
- * supervised_ :: (IO r e a, Supervisor _) -> IO r e a
- * ```
  *
  * Returns an IO with the behavior of this one, but where all child
  * fibers forked in the effect are reported to the specified supervisor.
@@ -447,10 +401,6 @@ export function supervised_<R, E, A>(fa: IO<R, E, A>, supervisor: Supervisor<any
 }
 
 /**
- * ```haskell
- * supervised :: Supervisor _ -> IO r e a -> IO r e a
- * ```
- *
  * Returns an IO with the behavior of this one, but where all child
  * fibers forked in the effect are reported to the specified supervisor.
  *
@@ -469,10 +419,6 @@ export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, 
  */
 
 /**
- * ```haskell
- * pure :: Applicative f => a -> f a
- * ```
- *
  * Lifts a pure expression info an `IO`
  *
  * @category Applicative
@@ -489,10 +435,6 @@ export function pure<A>(a: A): UIO<A> {
  */
 
 /**
- * ```haskell
- * cross_ :: Apply f => (f a, f b) -> f [a, b]
- * ```
- *
  * Tuples the success values of two `IOs`
  *
  * @category Apply
@@ -503,10 +445,6 @@ export function cross_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q
 }
 
 /**
- * ```haskell
- * cross :: Apply f => f b -> f a -> f [a, b]
- * ```
- *
  * Tuples the success values of two `IOs`
  *
  * @category Apply
@@ -518,10 +456,6 @@ export function cross<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => I
 }
 
 /**
- * ```haskell
- * ap_ :: Apply f => (f (a -> b), f a) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -532,10 +466,6 @@ export function ap_<Q, D, A, B, R, E>(fab: IO<Q, D, (a: A) => B>, fa: IO<R, E, A
 }
 
 /**
- * ```haskell
- * ap :: Apply f => f (a -> b) -> f a -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -558,10 +488,6 @@ export function apl<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<
 }
 
 /**
- * ```haskell
- * _apr :: Apply f => (f a, f b) -> f b
- * ```
- *
  * Combine two effectful actions, keeping only the result of the second
  *
  * @category Apply
@@ -572,10 +498,6 @@ export function apr_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q &
 }
 
 /**
- * ```haskell
- * apr :: Apply f => f b -> f a -> f b
- * ```
- *
  * Combine two effectful actions, keeping only the result of the second
  *
  * @category Apply
@@ -637,10 +559,6 @@ export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: IO<R
 }
 
 /**
- * ```haskell
- * mapError_ :: Bifunctor p => (p a c, (a -> b)) -> p b c
- * ```
- *
  * Map covariantly over the first argument.
  *
  * Returns an IO with its error channel mapped using the specified
@@ -655,10 +573,6 @@ export function mapError_<R, E, A, D>(fea: IO<R, E, A>, f: (e: E) => D): IO<R, D
 }
 
 /**
- * ```haskell
- * mapError :: Bifunctor p => (a -> b) -> p a c -> p b c
- * ```
- *
  * Map covariantly over the first argument.
  *
  * Returns an IO with its error channel mapped using the specified
@@ -679,10 +593,6 @@ export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: IO<R, E, A>) => IO<R
  */
 
 /**
- * ```haskell
- * absolve :: IO r e (Either e1 a) -> IO r (e | e1) a
- * ```
- *
  * Returns an `IO` that submerges an `Either` into the `IO`.
  *
  * @category Combinators
@@ -693,10 +603,6 @@ export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E
 }
 
 /**
- * ```haskell
- * attempt :: IO r e a -> IO r ~ (Either e a)
- * ```
- *
  * Folds an `IO` that may fail with `E` or succeed with `A` into one that never fails but succeeds with `Either<E, A>`
  */
 export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
@@ -783,10 +689,6 @@ export function fold<E, A, B, C>(
  */
 
 /**
- * ```haskell
- * map_ :: Functor f => (f a, (a -> b)) -> f b
- * ```
- *
  * Lifts a function a -> b to a function f a -> f b
  *
  * Returns an `IO` whose success is mapped by the specified function `f`.
@@ -799,10 +701,6 @@ export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
 }
 
 /**
- * ```haskell
- * map :: Functor f => (a -> b) -> f a -> f b
- * ```
- *
  * Lifts a function a -> b to a function f a -> f b
  *
  * Returns an `IO` whose success is mapped by the specified function `f`.
@@ -822,10 +720,6 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  */
 
 /**
- * ```haskell
- * bind_ :: Monad m => (m a, (a -> m b)) -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * Returns an IO that models the execution of this effect, followed by
@@ -841,10 +735,6 @@ export function bind_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B
 }
 
 /**
- * ```haskell
- * bind :: Monad m => (a -> m b) -> m a -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * Returns an IO that models the execution of this effect, followed by
@@ -861,10 +751,6 @@ export function bind<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, E, 
 }
 
 /**
- * ```haskell
- * flatten :: Monad m => m m a -> m a
- * ```
- *
  * Removes one level of nesting from a nested `IO`
  *
  * @category Monad
@@ -875,10 +761,6 @@ export function flatten<R, E, Q, D, A>(ffa: IO<R, E, IO<Q, D, A>>) {
 }
 
 /**
- * ```haskell
- * tap_ :: Monad m => (ma, (a -> m b)) -> m a
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  * and keeping only the result of the first
  *
@@ -897,10 +779,6 @@ export function tap_<R, E, A, Q, D, B>(fa: IO<R, E, A>, f: (a: A) => IO<Q, D, B>
 }
 
 /**
- * ```haskell
- * tap :: Monad m => (a -> m b) -> m a -> m a
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  * and keeping only the result of the first
  *
@@ -978,10 +856,6 @@ export function tapError<E, R1, E1>(f: (e: E) => IO<R1, E1, any>): <R, A>(fa: IO
  */
 
 /**
- * ```haskell
- * asks :: MonadEnv m => (r -> a) -> m r a
- * ```
- *
  * Accesses the environment provided to an `IO`
  *
  * @category MonadEnv
@@ -992,10 +866,6 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
 }
 
 /**
- * ```haskell
- * asksM :: MonadEnv m => (q -> m r a) -> m (r & q) a
- * ```
- *
  * Effectfully accesses the environment provided to an `IO`
  *
  * @category MonadEnv
@@ -1006,10 +876,6 @@ export function asksM<Q, R, E, A>(f: (r: Q) => IO<R, E, A>): IO<R & Q, E, A> {
 }
 
 /**
- * ```haskell
- * giveAll_ :: MonadEnv m => (m r a, r) -> m _ a
- * ```
- *
  * Provides all of the environment required to compute a MonadEnv
  *
  * Provides the `IO` with its required environment, which eliminates
@@ -1023,10 +889,6 @@ export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
 }
 
 /**
- * ```haskell
- * giveAll :: MonadEnv m => r -> m r a -> m _ a
- * ```
- *
  * Provides all of the environment required to compute a MonadEnv
  *
  * Provides the `IO` with its required environment, which eliminates
@@ -1041,10 +903,6 @@ export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
 }
 
 /**
- * ```haskell
- * gives_ :: MonadEnv m => (m r a, (r0 -> r)) -> m r0 a
- * ```
- *
  * Provides a portion of the environment required to compute a MonadEnv
  *
  * Provides some of the environment required to run this `IO`,
@@ -1058,10 +916,6 @@ export function gives_<R0, R, E, A>(ma: IO<R, E, A>, f: (r0: R0) => R) {
 }
 
 /**
- * ```haskell
- * gives :: MonadEnv m => (r0 -> r) -> m r a -> m r0 a
- * ```
- *
  * Provides a portion of the environment required to compute a MonadEnv
  *
  * Provides some of the environment required to run this `IO`,
@@ -1076,10 +930,6 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: IO<R, E, A>) => IO<R0
 }
 
 /**
- * ```haskell
- * give_ :: MonadEnv m => (m (r & r0) a, r) -> m r0 a
- * ```
- *
  * Provides a portion of the environment required to compute a MonadEnv
  *
  * Provides some of the environment required to run this effect,
@@ -1093,10 +943,6 @@ export function give_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: 
 }
 
 /**
- * ```haskell
- * give :: MonadEnv m => r -> m (r & r0) a -> m r0 a
- * ```
- *
  * Provides a portion of the environment required to compute a MonadEnv
  *
  * Provides some of the environment required to run this `IO`,
@@ -1170,10 +1016,6 @@ export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K
  */
 
 /**
- * ```haskell
- * absorbWith_ :: (IO r e a, (e -> _)) -> IO r _ a
- * ```
- *
  * Attempts to convert defects into a failure, throwing away all information
  * about the cause of the failure.
  *
@@ -1185,9 +1027,6 @@ export function absorbWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown) {
 }
 
 /**
- * ```haskell
- * absorbWith :: (e -> _) -> IO r e a -> IO r _ a
- * ```
  * Attempts to convert defects into a failure, throwing away all information
  * about the cause of the failure.
  *
@@ -1200,10 +1039,6 @@ export function absorbWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => 
 }
 
 /**
- * ```haskell
- * as_ :: (IO r e a, b) -> IO r e b
- * ```
- *
  * Maps the success value of this IO to the specified constant value.
  *
  * @category Combinators
@@ -1214,10 +1049,6 @@ export function as_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
 }
 
 /**
- * ```haskell
- * as :: b -> IO r e a -> IO r e b
- * ```
- *
  * Maps the success value of this IO to the specified constant value.
  *
  * @category Combinators
@@ -1229,10 +1060,6 @@ export function as<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
 }
 
 /**
- * ```haskell
- * asSome :: IO r e a -> IO r e (Option a)
- * ```
- *
  * Maps the success value of this effect to an optional value.
  */
 export function asSome<R, E, A>(ma: IO<R, E, A>): IO<R, E, Option<A>> {
@@ -1240,10 +1067,6 @@ export function asSome<R, E, A>(ma: IO<R, E, A>): IO<R, E, Option<A>> {
 }
 
 /**
- * ```haskell
- * asSomeError :: IO r e a -> IO r (Option e) a
- * ```
- *
  * Maps the error value of this IO to an optional value.
  *
  * @category Combinators
@@ -1287,9 +1110,6 @@ export function catchAll<R, E, E2, A>(
 }
 
 /**
- * ```haskell
- * catchAllCause_ :: (IO r e a, (Cause e -> IO r1 e1 b)) -> IO (r & r1) e1 (a | b)
- * ```
  *
  * Recovers from all errors with provided cause.
  *
@@ -1301,9 +1121,6 @@ export function catchAllCause_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (_: Caus
 }
 
 /**
- * ```haskell
- * catchAllCause :: (Cause e -> IO r1 e1 b) -> IO r e a -> IO (r & r1) e1 (a | b)
- * ```
  *
  * Recovers from all errors with provided cause.
  *
@@ -1521,9 +1338,6 @@ export function descriptor(): IO<unknown, never, FiberDescriptor> {
 }
 
 /**
- * ```haskell
- * duplicate :: Extend w => w a -> w w a
- * ```
  */
 export function duplicate<R, E, A>(wa: IO<R, E, A>): IO<R, E, IO<R, E, A>> {
   return extend_(wa, identity)
@@ -1538,9 +1352,6 @@ export function eventually<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
 }
 
 /**
- * ```haskell
- * extend_ :: Extend w => (w a, (w a -> b)) -> w b
- * ```
  */
 export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B): IO<R, E, B> {
   return foldM_(
@@ -1551,9 +1362,6 @@ export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B):
 }
 
 /**
- * ```haskell
- * extend :: Extend w => (w a -> b) -> w a -> w b
- * ```
  */
 export function extend<R, E, A, B>(f: (wa: IO<R, E, A>) => B): (wa: IO<R, E, A>) => IO<R, E, B> {
   return (wa) => extend_(wa, f)
@@ -1976,10 +1784,6 @@ export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
 }
 
 /**
- * ```haskell
- * someOrElse_ :: IO t => (t x r e (Option a), (() -> b)) -> t x r e (a | b)
- * ```
- *
  * Extracts the optional value, or returns the given 'orElse'.
  *
  * @category Combinators
@@ -1990,10 +1794,6 @@ export function getOrElse_<R, E, A, B>(ma: IO<R, E, Option<A>>, orElse: () => B)
 }
 
 /**
- * ```haskell
- * someOrElse :: IO t => (() -> b) -> t x r e (Option a) -> t x r e (a | b)
- * ```
- *
  * Extracts the optional value, or returns the given 'orElse'.
  *
  * @category Combinators
@@ -2004,11 +1804,6 @@ export function getOrElse<B>(orElse: () => B): <R, E, A>(ma: IO<R, E, Option<A>>
 }
 
 /**
- * ```haskell
- * someOrElseM_ :: IO t => (t x r e (Option a), t x1 r1 e1 b) ->
- *    t (x | x1) (r & r1) (e | e1) (a | b)
- * ```
- *
  * Extracts the optional value, or executes the effect 'orElse'.
  *
  * @category Combinators
@@ -2022,11 +1817,6 @@ export function getOrElseM_<R, E, A, R1, E1, B>(
 }
 
 /**
- * ```haskell
- * someOrElseM :: IO t => t x1 r1 e1 b -> t x r e (Option a) ->
- *    t (x | x1) (r & r1) (e | e1) (a | b)
- * ```
- *
  * Extracts the optional value, or executes the effect 'orElse'.
  *
  * @category Combinators
@@ -2313,10 +2103,6 @@ export function mapEffectCatch<E1>(onThrow: (u: unknown) => E1) {
 }
 
 /**
- * ```haskell
- * mapErrorCause_ :: IO t => (t x r e a, (Cause e -> Cause e1)) -> t x r e1 a
- * ```
- *
  * Returns an IO with its full cause of failure mapped using
  * the specified function. This can be used to transform errors
  * while preserving the original structure of Cause.
@@ -2329,10 +2115,6 @@ export function mapErrorCause_<R, E, A, E1>(ma: IO<R, E, A>, f: (cause: Cause<E>
 }
 
 /**
- * ```haskell
- * mapErrorCause :: IO t => (Cause e -> Cause e1) -> t x r e a -> t x r e1 a
- * ```
- *
  * Returns an IO with its full cause of failure mapped using
  * the specified function. This can be used to transform errors
  * while preserving the original structure of Cause.
@@ -2560,10 +2342,6 @@ export function refineOrDieWith<E, E1>(
 }
 
 /**
- * ```haskell
- * reject_ :: (IO r e a, (a -> Option e1)) -> IO r (e | e1) a
- * ```
- *
  * Fail with the returned value if the partial function `pf` matches, otherwise
  * continue with the held value.
  *
@@ -2575,10 +2353,6 @@ export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>):
 }
 
 /**
- * ```haskell
- * reject :: (a -> Option e1) -> IO r e a -> IO r (e | e1) a
- * ```
- *
  * Fail with the returned value if the partial function `pf` matches, otherwise
  * continue with the held value.
  *
@@ -2590,10 +2364,6 @@ export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: IO<R, E, A>)
 }
 
 /**
- * ```haskell
- * rejectM_ :: (IO r e a, (a -> Option (IO r1 e1 e1))) -> IO (r & r1) (e | e1) a
- * ```
- *
  * Continue with the returned computation if the partial function `pf` matches,
  * translating the successful match into a failure, otherwise continue with
  * the held value.
@@ -2609,10 +2379,6 @@ export function rejectM_<R, E, A, R1, E1>(
 }
 
 /**
- * ```haskell
- * rejectM :: (a -> Option (IO r1 e1 e1)) -> IO r e a -> IO (r & r1) (e | e1) a
- * ```
- *
  * Continue with the returned computation if the partial function `pf` matches,
  * translating the successful match into a failure, otherwise continue with
  * the held value.
@@ -2627,10 +2393,6 @@ export function rejectM<R1, E1, A>(
 }
 
 /**
- * ```haskell
- * repeatN_ :: (IO r e a, Number) -> IO r e a
- * ```
- *
  * Repeats this effect the specified number of times.
  *
  * @category Combinators
@@ -2641,10 +2403,6 @@ export function repeatN_<R, E, A>(ma: IO<R, E, A>, n: number): IO<R, E, A> {
 }
 
 /**
- * ```haskell
- * repeatN :: Number -> IO r e a -> IO r e a
- * ```
- *
  * Repeats this effect the specified number of times.
  *
  * @category Combinators
@@ -2838,10 +2596,6 @@ export function tapCause<R, E, E1>(
 }
 
 /**
- * ```haskell
- * sandbox :: IO r e a -> IO r (Cause e) a
- * ```
- *
  * Exposes the full cause of failure of this effect.
  *
  * @category Combinators
@@ -2876,10 +2630,6 @@ export function summarized<R1, E1, B, C>(
 }
 
 /**
- * ```haskell
- * swap :: Bifunctor p => p a b -> p b a
- * ```
- *
  * Swaps the positions of a Bifunctor's arguments
  *
  * @category AltBifunctor?
@@ -2890,7 +2640,7 @@ export function swap<R, E, A>(pab: IO<R, E, A>): IO<R, A, E> {
 }
 
 /**
- *  Swaps the error/value parameters, applies the function `f` and flips the parameters back
+ * Swaps the error/value parameters, applies the function `f` and flips the parameters back
  *
  * @category Combinators
  * @since 1.0.0
@@ -2900,7 +2650,7 @@ export function swapWith_<R, E, A, R1, E1, A1>(fa: IO<R, E, A>, f: (ma: IO<R, A,
 }
 
 /**
- *  Swaps the error/value parameters, applies the function `f` and flips the parameters back
+ * Swaps the error/value parameters, applies the function `f` and flips the parameters back
  *
  * @category Combinators
  * @since 1.0.0
@@ -3010,10 +2760,6 @@ export function unrefineWith<E1>(
 }
 
 /**
- * ```haskell
- * unsandbox :: IO r (Cause e) a -> IO r e a
- * ```
- *
  * The inverse operation `sandbox`
  *
  * @category Combinators
@@ -3325,10 +3071,6 @@ export function asksServiceInM<A>(
 }
 
 /**
- * ```haskell
- * asService :: Tag a -> IO r e a -> IO r e (Has a)
- * ```
- *
  * Maps the success value of this effect to a service.
  */
 export function asService<A>(has: Tag<A>): <R, E>(fa: IO<R, E, A>) => IO<R, E, Has<A>> {

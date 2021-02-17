@@ -5,7 +5,7 @@ import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
 import type { Show } from './Show'
 
-import { makeEq } from './Eq'
+import { makeEq } from './Eq/core'
 import { identity, pipe, tuple } from './Function'
 import * as O from './Option'
 import * as P from './typeclass'
@@ -218,9 +218,6 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
  */
 
 /**
- * ```haskell
- * separate :: Compactable c => c (Either a b) -> Separated (c a) (c b)
- * ```
  */
 export function separate<N extends string, A, B>(
   fa: ReadonlyRecord<N, E.Either<A, B>>
@@ -243,9 +240,6 @@ export function separate<N extends string, A, B>(
 }
 
 /**
- * ```haskell
- * compact :: Compactable c => c (Option a) -> c a
- * ```
  */
 export function compact<N extends string, A>(fa: ReadonlyRecord<N, O.Option<A>>): ReadonlyRecord<string, A> {
   const mut_r = {} as Record<string, any>
@@ -279,10 +273,6 @@ export function getEq<A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>> {
  */
 
 /**
- * ```haskell
- * ifilter_ :: (FilterableWithIndex f, Index k) =>
- *    (f a, ((k, a) -> Boolean)) -> f a
- * ```
  */
 export function ifilter_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
@@ -312,10 +302,6 @@ export function ifilter_<A>(
 }
 
 /**
- * ```haskell
- * ifilter :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Boolean) -> f a -> f a
- * ```
  */
 export function ifilter<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
@@ -330,9 +316,6 @@ export function ifilter<A>(
 }
 
 /**
- * ```haskell
- * filter_ :: Filterable f => (f a, (a -> Boolean)) -> f a
- * ```
  */
 export function filter_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
@@ -347,9 +330,6 @@ export function filter_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A
 }
 
 /**
- * ```haskell
- * filter :: Filterable f => (a -> Boolean) -> f a -> f a
- * ```
  */
 export function filter<A, B extends A>(
   refinement: Refinement<A, B>
@@ -362,10 +342,6 @@ export function filter<A>(predicate: Predicate<A>): (fa: ReadonlyRecord<string, 
 }
 
 /**
- * ```haskell
- * ifilterMap_ :: (FilterableWithIndex f, Index k) =>
- *    (f a, ((k, a) -> Option b)) -> f b
- * ```
  */
 export function ifilterMap_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
@@ -384,10 +360,6 @@ export function ifilterMap_<N extends string, A, B>(
 }
 
 /**
- * ```haskell
- * ifilterMap :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Option b) -> f a -> f b
- * ```
  */
 export function ifilterMap<N extends string, A, B>(
   f: (k: N, a: A) => O.Option<B>
@@ -396,9 +368,6 @@ export function ifilterMap<N extends string, A, B>(
 }
 
 /**
- * ```haskell
- * fliterMap_ :: Filterable f => (f a, (a -> Option b)) -> f b
- * ```
  */
 export function filterMap_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
@@ -408,9 +377,6 @@ export function filterMap_<N extends string, A, B>(
 }
 
 /**
- * ```haskell
- * filterMap :: Filterable f => (a -> Option b) -> f a -> f b
- * ```
  */
 export function filterMap<A, B>(
   f: (a: A) => O.Option<B>
@@ -419,10 +385,6 @@ export function filterMap<A, B>(
 }
 
 /**
- * ```haskell
- * ipartition_ :: (FilterableWithIndex f, Index k) =>
- *    (f a, ((k, a) -> Boolean)) -> Separated (f a) (f a)
- * ```
  */
 export function ipartition_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
@@ -449,10 +411,6 @@ export function ipartition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predica
 }
 
 /**
- * ```haskell
- * ipartition :: (FilterableWithIndex f, Index k) =>
- *    (k, a) -> Boolean) -> f a -> Separated (f a) (f a)
- * ```
  */
 export function ipartition<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
@@ -467,9 +425,6 @@ export function ipartition<A>(
 }
 
 /**
- * ```haskell
- * partition_ :: Filterable f => (f a, (a -> Boolean)) -> Separated (f a) (f a)
- * ```
  */
 export function partition_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
@@ -484,9 +439,6 @@ export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicat
 }
 
 /**
- * ```haskell
- * partition :: Filterable f => (a -> Boolean) -> f a -> Separated (f a) (f a)
- * ```
  */
 export function partition<A, B extends A>(
   refinement: Refinement<A, B>
@@ -501,10 +453,6 @@ export function partition<A>(
 }
 
 /**
- * ```haskell
- * ipartitionMap_ :: (FilterableWithIndex f, Index k) =>
- *    (f a, ((k, a) -> Either b c)) -> Separated (f b) (f c)
- * ```
  */
 export function ipartitionMap_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
@@ -529,10 +477,6 @@ export function ipartitionMap_<N extends string, A, B, C>(
 }
 
 /**
- * ```haskell
- * ipartitionMap :: (FilterableWithIndex f, Index k) =>
- *    ((k, a) -> Either b c) -> f a -> Separated (f b) (f c)
- * ```
  */
 export function ipartitionMap<N extends string, A, B, C>(
   f: (k: N, a: A) => E.Either<B, C>
@@ -541,9 +485,6 @@ export function ipartitionMap<N extends string, A, B, C>(
 }
 
 /**
- * ```haskell
- * partitionMap_ :: Filterable f => (f a, (a -> Either b c)) -> Separated (f b) (f c)
- * ```
  */
 export function partitionMap_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
@@ -553,9 +494,6 @@ export function partitionMap_<N extends string, A, B, C>(
 }
 
 /**
- * ```haskell
- * partitionMap :: Filterable f => (a -> Either b c) -> f a -> Separated (f b) (f c)
- * ```
  */
 export function partitionMap<A, B, C>(
   f: (a: A) => E.Either<B, C>
@@ -570,9 +508,6 @@ export function partitionMap<A, B, C>(
  */
 
 /**
- * ```haskell
- * ifoldl_ :: (FoldableWithIndex t, Index k) => (t a, b, ((k, b, a) -> b)) -> b
- * ```
  */
 export function ifoldl_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (b: B, k: N, a: A) => B): B {
   let out   = b
@@ -586,38 +521,24 @@ export function ifoldl_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, 
 }
 
 /**
- * ```haskell
- * ifoldl :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, b, a) -> b)) -> t a -> b
- * ```
  */
 export function ifoldl<N extends string, A, B>(b: B, f: (b: B, k: N, a: A) => B): (fa: ReadonlyRecord<N, A>) => B {
   return (fa) => ifoldl_(fa, b, f)
 }
 
 /**
- * ```haskell
- * foldl_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
- * ```
  */
 export function foldl_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (b: B, a: A) => B): B {
   return ifoldl_(fa, b, (b, _, a) => f(b, a))
 }
 
 /**
- * ```haskell
- * foldl :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
- * ```
  */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <N extends string>(fa: Readonly<Record<N, A>>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
 /**
- * ```haskell
- * ifoldr_ :: (FoldableWithIndex t, Index k) =>
- *    (t a, b, ((k, a, b) -> b)) -> b
- * ```
  */
 export function ifoldr_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (a: A, k: N, b: B) => B): B {
   let out   = b
@@ -631,28 +552,18 @@ export function ifoldr_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, 
 }
 
 /**
- * ```haskell
- * ifoldr :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, a, b) -> b)) -> t a -> b
- * ```
  */
 export function ifoldr<N extends string, A, B>(b: B, f: (a: A, k: N, b: B) => B): (fa: ReadonlyRecord<N, A>) => B {
   return (fa) => ifoldr_(fa, b, f)
 }
 
 /**
- * ```haskell
- * foldr_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
- * ```
  */
 export function foldr_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (a: A, b: B) => B): B {
   return ifoldr_(fa, b, (a, _, b) => f(a, b))
 }
 
 /**
- * ```haskell
- * foldr :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
- * ```
  */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <N extends string>(fa: Readonly<Record<N, A>>) => B {
   return (fa) => foldr_(fa, b, f)
@@ -716,10 +627,6 @@ export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup
  */
 
 /**
- * ```haskell
- * imap_ :: (FunctorWithIndex f, Index k) => (f a, ((k, a) -> b)) -> f b
- * ```
- *
  * Map a record passing the keys to the iterating function
  *
  * @category FunctorWithIndex
@@ -736,10 +643,6 @@ export function imap_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (k: N
 }
 
 /**
- * ```haskell
- * imap_ :: (FunctorWithIndex f, Index k) => ((k, a) -> b) -> f a -> f b
- * ```
- *
  * Map a record passing the keys to the iterating function
  *
  * @category FunctorWithIndex
@@ -750,10 +653,6 @@ export function imap<N extends string, A, B>(f: (k: N, a: A) => B): (fa: Readonl
 }
 
 /**
- * ```haskell
- * map_ :: Functor f => (f a, (a -> b)) -> f b
- * ```
- *
  * Map a record passing the values to the iterating function
  *
  * @category Functor
@@ -764,10 +663,6 @@ export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A)
 }
 
 /**
- * ```haskell
- * map :: Functor f => (a -> b) -> f a -> f b
- * ```
- *
  * Map a record passing the values to the iterating function
  *
  * @category Functor
@@ -829,10 +724,6 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
  */
 
 /**
- * ```haskell
- * itraverse_ :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g -> (t a, ((k, a) -> g b)) -> g (t b)
- * ```
  */
 export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()((_) => (G) => {
   return (ta, f) => {
@@ -859,33 +750,18 @@ export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()(
 })
 
 /**
- * ```haskell
- * itraverse :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g -> ((k, a) -> g b) -> t a -> g (t b)
- * ```
  */
 export const itraverse: P.TraverseWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
 
 /**
- * ```haskell
- * traverse_ :: (Applicative g, Traversable t) =>
- *    g -> (t a, (a -> g b)) -> g (t b)
- * ```
  */
 export const traverse_: P.TraverseFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
 
 /**
- * ```haskell
- * traverse :: (Applicative g, Traversable t) =>
- *    g -> (a -> g b) -> t a -> g (t b)
- * ```
  */
 export const traverse: P.TraverseFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
- * ```haskell
- * sequence :: (Applicative g, Traversable t) => g -> t a -> g (t a)
- * ```
  */
 export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itraverse_(G)(ta, (_, a) => a)
 
@@ -896,10 +772,6 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itrav
  */
 
 /**
- * ```haskell
- * icompactA_ :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> (w k a, ((k, a) -> g (w k (Option b)))) -> g (w k b)
- * ```
  */
 export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => {
   const traverseG = itraverse_(G)
@@ -907,34 +779,18 @@ export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => {
 }
 
 /**
- * ```haskell
- * icompactA :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> ((k, a) -> g (w k (Option b))) -> w k a -> g (w k b)
- * ```
  */
 export const icompactA: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
 
 /**
- * ```haskell
- * compactA_ :: (Applicative g, Witherable w) =>
- *    g -> (w a, (a -> g (w (Option b)))) -> g (w b)
- * ```
  */
 export const compactA_: P.WitherFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
 
 /**
- * ```haskell
- * compactA :: (Applicative g, Witherable w) =>
- *    g -> (a -> g (w (Option b))) -> w a -> g (w b)
- * ```
  */
 export const compactA: P.WitherFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
 
 /**
- * ```haskell
- * iseparateA_ :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> (w k a, ((k, a) -> g (w k (Either b c)))) -> g (Separated (w k b) (w k c))
- * ```
  */
 export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = P.implementWiltWithIndex_<[HKT.URI<RecordURI>]>()(
   () => (G) => {
@@ -944,26 +800,14 @@ export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = P.implement
 )
 
 /**
- * ```haskell
- * iseparateA :: (Applicative g, WitherableWithIndex w, Index k) =>
- *    g -> ((k, a) -> g (w k (Either b c))) -> w k a -> g (Separated (w k b) (w k c))
- * ```
  */
 export const iseparateA: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
 
 /**
- * ```haskell
- * separateA_ :: (Applicative g, Witherable w) =>
- *    g -> (w a, (a -> g (w (Either b c)))) -> g (Separated (w b) (w c))
- * ```
  */
 export const separateA_: P.WiltFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
 
 /**
- * ```haskell
- * separateA_ :: (Applicative g, Witherable w) =>
- *    g -> (a -> g (w (Either b c))) -> w a -> g (Separated (w b) (w c))
- * ```
  */
 export const separateA: P.WiltFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => separateA_(G)(wa, f)
 

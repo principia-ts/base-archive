@@ -11,10 +11,6 @@ import * as S from '../../Schedule'
 import { bind, foldM, map, map_, orDie } from '../core'
 
 /**
- * ```haskell
- * repeat_ :: (IO r e a, Schedule sr a b) -> IO (r & sr & Has<Clock>) e b
- * ```
- *
  * Returns a new effect that repeats this effect according to the specified
  * schedule or until the first failure. Scheduled recurrences are in addition
  * to the first execution, so that `io.repeat(Schedule.once)` yields an
@@ -29,10 +25,6 @@ export function repeat_<R, SR, E, A, B>(ef: IO<R, E, A>, sc: S.Schedule<SR, A, B
 }
 
 /**
- * ```haskell
- * repeat :: Schedule sr e a -> IO r e a -> IO (r & sr & Has<Clock>) e b
- * ```
- *
  * Returns a new effect that repeats this effect according to the specified
  * schedule or until the first failure. Scheduled recurrences are in addition
  * to the first execution, so that `io.repeat(Schedule.once)` yields an
@@ -47,11 +39,6 @@ export function repeat<SR, A, B>(sc: S.Schedule<SR, A, B>) {
 }
 
 /**
- * ```haskell
- * repeatOrElse_ :: (IO r e a, Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
- *               -> IO (r & s1 & r2 & Has<Clock>) e2 (c | b)
- * ```
- *
  * Returns a new effect that repeats this effect according to the specified
  * schedule or until the first failure, at which point, the failure value
  * and schedule output are passed to the specified handler.
@@ -72,12 +59,6 @@ export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
 }
 
 /**
- * ```haskell
- * repeatOrElse_ :: (Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
- *               -> IO r e a
- *               -> IO (r & s1 & r2 & Has<Clock>) e2 (c | b)
- * ```
- *
  * Returns a new effect that repeats this effect according to the specified
  * schedule or until the first failure, at which point, the failure value
  * and schedule output are passed to the specified handler.
@@ -97,11 +78,6 @@ export function repeatOrElse<E, A, R1, B, R2, E2, C>(
 }
 
 /**
- * ```haskell
- * repeatOrElseEither_ :: (IO r e a, Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
- *                     -> IO (r & r1 & r2 & Has<Clock>) e2 (Either c b)
- * ```
- *
  * Returns a new effect that repeats this effect according to the specified
  * schedule or until the first failure, at which point, the failure value
  * and schedule output are passed to the specified handler.
@@ -149,12 +125,6 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
 }
 
 /**
- * ```haskell
- * repeatOrElseEither :: (Schedule r1 a b, ((e, Option b) -> IO r2 e2 c))
- *                    -> IO r e a
- *                    -> IO (r & r1 & r2 & Has<Clock>) e2 (Either c b)
- * ```
- *
  * Returns a new effect that repeats this effect according to the specified
  * schedule or until the first failure, at which point, the failure value
  * and schedule output are passed to the specified handler.

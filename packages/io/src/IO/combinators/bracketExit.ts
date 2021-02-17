@@ -7,14 +7,6 @@ import { bind_, done, foldCauseM_, halt, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
- * ```haskell
- * bracketExit_ :: (
- *    IO r e a,
- *    (a -> IO r1 e1 b),
- *    ((a, (Exit e1 b)) -> IO r2 e2 _)
- * ) -> IO (r & r1 & r2) (e | e1 | e2) b
- * ```
- *
  * Acquires a resource, uses the resource, and then releases the resource.
  * Neither the acquisition nor the release will be interrupted, and the
  * resource is guaranteed to be released, so long as the `acquire` IO
@@ -50,13 +42,6 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
 }
 
 /**
- * ```haskell
- * bracketExit :: (
- *    (a -> IO r1 e1 b),
- *    ((a, (Exit e1 b)) -> IO r2 e2 _)
- * ) -> IO r e a -> IO (r & r1 & r2) (e | e1 | e2) b
- * ```
- *
  * Acquires a resource, uses the resource, and then releases the resource.
  * Neither the acquisition nor the release will be interrupted, and the
  * resource is guaranteed to be released, so long as the `acquire` IO

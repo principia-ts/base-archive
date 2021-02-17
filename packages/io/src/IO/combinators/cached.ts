@@ -47,10 +47,6 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
   )
 
 /**
- * ```haskell
- * cached_ :: (IO r e a, Number) -> URIO (r & Has<Clock>) (FIO e a)
- * ```
- *
  * Returns an IO that, if evaluated, will return the cached result of
  * this IO. Cached results will expire after `timeToLive` duration.
  *
@@ -66,10 +62,6 @@ export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & 
 }
 
 /**
- * ```haskell
- * cached :: Number -> IO r e a -> URIO (r & Has<Clock>) (FIO e a)
- * ```
- *
  * Returns an IO that, if evaluated, will return the cached result of
  * this IO. Cached results will expire after `timeToLive` duration.
  *

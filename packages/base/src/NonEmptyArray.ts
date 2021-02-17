@@ -67,6 +67,16 @@ export function fromArray<A>(as: ReadonlyArray<A>): O.Option<NonEmptyArray<A>> {
   return A.isNonEmpty(as) ? O.some(as) : O.none()
 }
 
+/**
+ * Builds a `NonEmptyArray` from one or more elements
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function make<A>(...as: readonly [A, ...ReadonlyArray<A>]): NonEmptyArray<A> {
+  return as
+}
+
 /*
  * -------------------------------------------
  * Destructors
@@ -74,9 +84,6 @@ export function fromArray<A>(as: ReadonlyArray<A>): O.Option<NonEmptyArray<A>> {
  */
 
 /**
- * ```haskell
- * fold :: Semigroup s => s a -> NonEmptyArray a -> a
- * ```
  */
 export function fold<A>(S: P.Semigroup<A>): (as: NonEmptyArray<A>) => A {
   return (as) => A.foldl_(as.slice(1), as[0], S.combine_)
@@ -89,10 +96,6 @@ export function fold<A>(S: P.Semigroup<A>): (as: NonEmptyArray<A>) => A {
  */
 
 /**
- * ```haskell
- * alt_ :: Alt f => (f a, (() -> f a)) -> f a
- * ```
- *
  * Combines two `NonEmptyArray`s
  *
  * @category Alt
@@ -101,9 +104,6 @@ export function fold<A>(S: P.Semigroup<A>): (as: NonEmptyArray<A>) => A {
 export const alt_: <A>(fa: NonEmptyArray<A>, that: () => NonEmptyArray<A>) => NonEmptyArray<A> = A.alt_ as any
 
 /**
- * ```haskell
- * alt :: Alt f => (() -> f a) -> f a -> f a
- * ```
  *
  * Combines two `NonEmptyArray`s
  *
@@ -119,10 +119,6 @@ export const alt: <A>(that: () => NonEmptyArray<A>) => (fa: NonEmptyArray<A>) =>
  */
 
 /**
- * ```haskell
- * pure :: a -> NonEmptyArray a
- * ```
- *
  * Lifts a value into a `NonEmptyArray`
  *
  * @category Applicative
@@ -156,10 +152,6 @@ export const zipWith: <A, B, C>(
 ) => (fa: NonEmptyArray<A>) => NonEmptyArray<C> = A.zipWith as any
 
 /**
- * ```haskell
- * ap_ :: Apply f => (f (a -> b), f a) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -168,10 +160,6 @@ export const zipWith: <A, B, C>(
 export const ap_: <A, B>(fab: NonEmptyArray<(a: A) => B>, fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.ap_ as any
 
 /**
- * ```haskell
- * ap :: Apply f => f a -> f (a -> b) -> f b
- * ```
- *
  * Apply a function to an argument under a type constructor
  *
  * @category Apply
@@ -186,10 +174,6 @@ export const ap: <A>(fa: NonEmptyArray<A>) => <B>(fab: NonEmptyArray<(a: A) => B
  */
 
 /**
- * ```haskell
- * extract :: (Comonad m) => m a -> a
- * ```
- *
  * @category Comonad
  * @since 1.0.0
  */
@@ -202,10 +186,6 @@ export const extract: <A>(ma: NonEmptyArray<A>) => A = head
  */
 
 /**
- * ```haskell
- * extend_ :: Extend w => (w a, (w a -> b)) -> w b
- * ```
- *
  * @category Extend
  * @since 1.0.0
  */
@@ -215,10 +195,6 @@ export const extend_: <A, B>(
 ) => NonEmptyArray<B> = A.extend_ as any
 
 /**
- * ```haskell
- * extend :: Extend w => (w a -> b) -> w a -> w b
- * ```
- *
  * @category Extend
  * @since 1.0.0
  */
@@ -227,10 +203,6 @@ export const extend: <A, B>(
 ) => (wa: NonEmptyArray<A>) => NonEmptyArray<B> = A.extend as any
 
 /**
- * ```haskell
- * duplicate :: Extend w => w a -> w (w a)
- * ```
- *
  * @category Extend
  * @since 1.0.0
  */
@@ -243,10 +215,6 @@ export const duplicate: <A>(wa: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray
  */
 
 /**
- * ```haskell
- * ifilter_ :: (NonEmptyArray f, Index k) =>
- *    (f a, ((k, a) -> Boolean)) -> Option (f a)
- * ```
  */
 export function ifilter_<A, B extends A>(
   fa: NonEmptyArray<A>,
@@ -258,10 +226,6 @@ export function ifilter_<A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, 
 }
 
 /**
- * ```haskell
- * ifilter :: (NonEmptyArray f, Index k) =>
- *    ((k, a) -> Boolean) -> f a -> Option (f a)
- * ```
  */
 export function ifilter<A, B extends A>(
   f: RefinementWithIndex<number, A, B>
@@ -272,9 +236,6 @@ export function ifilter<A>(f: PredicateWithIndex<number, A>): (fa: NonEmptyArray
 }
 
 /**
- * ```haskell
- * filter_ :: NonEmptyArray f => (f a, (a -> Boolean)) -> Option (f a)
- * ```
  */
 export function filter_<A, B extends A>(fa: NonEmptyArray<A>, f: Refinement<A, B>): O.Option<NonEmptyArray<B>>
 export function filter_<A>(fa: NonEmptyArray<A>, f: Predicate<A>): O.Option<NonEmptyArray<A>>
@@ -283,9 +244,6 @@ export function filter_<A>(fa: NonEmptyArray<A>, f: Predicate<A>): O.Option<NonE
 }
 
 /**
- * ```haskell
- * filter :: NonEmptyArray f => (a -> Boolean) -> f a -> Option (f a)
- * ```
  */
 export function filter<A, B extends A>(f: Refinement<A, B>): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<B>>
 export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>>
@@ -300,95 +258,54 @@ export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => O.Option<N
  */
 
 /**
- * ```haskell
- * ifoldl_ :: (FoldableWithIndex t, Index k) =>
- *    (t a, b, ((k, b, a) -> b)) -> b
- * ```
- *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
 export const ifoldl_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (b: B, i: number, a: A) => B) => B = A.ifoldl_
 
 /**
- * ```haskell
- * ifoldl :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, b, a) -> b)) -> t a -> b
- * ```
- *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
 export const ifoldl: <A, B>(b: B, f: (b: B, i: number, a: A) => B) => (fa: NonEmptyArray<A>) => B = A.ifoldl
 
 /**
- * ```haskell
- * foldl_ :: Foldable t => (t a, b, ((b, a) -> b)) -> b
- * ```
- *
  * @category Foldable
  * @since 1.0.0
  */
 export const foldl_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (b: B, a: A) => B) => B = A.foldl_
 
 /**
- * ```haskell
- * foldl :: Foldable t => (b, ((b, a) -> b)) -> t a -> b
- * ```
- *
  * @category Foldable
  * @since 1.0.0
  */
 export const foldl: <A, B>(b: B, f: (b: B, a: A) => B) => (fa: NonEmptyArray<A>) => B = A.foldl
 
 /**
- * ```haskell
- * ifoldr_ :: (FoldableWithIndex t, Index k) =>
- *    (t a, b, ((k, a, b) -> b)) -> b
- * ```
- *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
 export const ifoldr_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, i: number, b: B) => B) => B = A.ifoldr_
 
 /**
- * ```haskell
- * ifoldr :: (FoldableWithIndex t, Index k) =>
- *    (b, ((k, a, b) -> b)) -> t a -> b
- * ```
- *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
 export const ifoldr: <A, B>(b: B, f: (a: A, i: number, b: B) => B) => (fa: NonEmptyArray<A>) => B = A.ifoldr
 
 /**
- * ```haskell
- * foldr_ :: Foldable t => (t a, b, ((a, b) -> b)) -> b
- * ```
- *
  * @category Foldable
  * @since 1.0.0
  */
 export const foldr_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, b: B) => B) => B = A.foldr_
 
 /**
- * ```haskell
- * foldr :: Foldable t => (b, ((a, b) -> b)) -> t a -> b
- * ```
- *
  * @category Foldable
  * @since 1.0.0
  */
 export const foldr: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: NonEmptyArray<A>) => B = A.foldr
 
 /**
- * ```haskell
- * ifoldMap_ :: (Semigroup s, FoldableWithIndex f, Index k) =>
- *    s b -> (f a, ((k, a) -> b) -> b
- * ```
- *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
@@ -397,11 +314,6 @@ export function ifoldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (i
 }
 
 /**
- * ```haskell
- * ifoldMap :: (Semigroup s, FoldableWithIndex f, Index k) =>
- *    s b -> ((k, a) -> b) -> f a -> b
- * ```
- *
  * @category FoldableWithIndex
  * @since 1.0.0
  */
@@ -410,10 +322,6 @@ export function ifoldMap<S>(S: P.Semigroup<S>): <A>(f: (i: number, a: A) => S) =
 }
 
 /**
- * ```haskell
- * foldMap_ :: (Semigroup s, Foldable f) => s b -> (f a, (a -> b)) -> b
- * ```
- *
  * @category Foldable
  * @since 1.0.0
  */
@@ -422,10 +330,6 @@ export function foldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (a:
 }
 
 /**
- * ```haskell
- * foldMap :: (Semigroup s, Foldable f) => s b -> (a -> b) -> f a -> b
- * ```
- *
  * @category Foldable
  * @since 1.0.0
  */
@@ -440,10 +344,6 @@ export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEm
  */
 
 /**
- * ```haskell
- * flatten :: Monad m => m m a -> m a
- * ```
- *
  * Removes one level of nesting from a nested `NonEmptyArray`
  *
  * @category Monad
@@ -461,10 +361,6 @@ export const ibind: <A, B>(
 ) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.ibind as any
 
 /**
- * ```haskell
- * bind_ :: Monad m => (m a, (a -> m b)) -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Monad
@@ -473,10 +369,6 @@ export const ibind: <A, B>(
 export const bind_: <A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>) => NonEmptyArray<B> = A.bind_ as any
 
 /**
- * ```haskell
- * bind :: Monad m => (a -> m b) -> m a -> m b
- * ```
- *
  * Composes computations in sequence, using the return value of one computation as input for the next
  *
  * @category Monad
@@ -491,40 +383,18 @@ export const bind: <A, B>(f: (a: A) => NonEmptyArray<B>) => (ma: NonEmptyArray<A
  */
 
 /**
- * ```haskell
- * traverseWithIndex_ :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g
- *    -> (t k a, ((k, a) -> g b))
- *    -> g (t k b)
- * ```
- *
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverseWithIndex_: P.TraverseWithIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = A.itraverse_ as any
+export const itraverse_: P.TraverseWithIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = A.itraverse_ as any
 
 /**
- * ```haskell
- * traverseWithIndex :: (Applicative g, TraversableWithIndex t, Index k) =>
- *    g
- *    -> ((k, a) -> g b)
- *    -> t k a
- *    -> g (t k b)
- * ```
- *
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverseWithIndex: P.TraverseWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = A.itraverse as any
+export const itraverse: P.TraverseWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = A.itraverse as any
 
 /**
- * ```haskell
- * traverse_ :: (Applicative g, Traversable t) =>
- *    g
- *    -> (t a, (a -> g b))
- *    -> g (t b)
- * ```
- *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
  * @category Traversable
@@ -533,13 +403,6 @@ export const traverseWithIndex: P.TraverseWithIndexFn<[HKT.URI<NonEmptyArrayURI>
 export const traverse_: P.TraverseFn_<[HKT.URI<NonEmptyArrayURI>]> = A.traverse_ as any
 
 /**
- * ```haskell
- * traverse :: (Applicative g, Traversable t) =>
- *    g
- *    -> (a -> g b)
- *    -> g a
- *    -> g (t b)
- * ```
  *
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
@@ -549,9 +412,6 @@ export const traverse_: P.TraverseFn_<[HKT.URI<NonEmptyArrayURI>]> = A.traverse_
 export const traverse: P.TraverseFn<[HKT.URI<NonEmptyArrayURI>]> = A.traverse as any
 
 /**
- * ```haskell
- * sequence :: (Applicative f, Traversable t) => t (f a) -> f (t a)
- * ```
  *
  * Evaluate each action in the structure from left to right, and collect the results.
  *
@@ -567,10 +427,6 @@ export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = A.sequence as
  */
 
 /**
- * ```haskell
- * unit :: () -> NonEmptyArray ()
- * ```
- *
  * @category Unit
  * @since 1.0.0
  */

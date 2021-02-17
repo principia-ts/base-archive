@@ -3,14 +3,6 @@ import type { IO } from '../core'
 import { bracketExit_ } from './bracketExit'
 
 /**
- * ```haskell
- * bracket_ :: (
- *    IO r e a,
- *    (a -> IO r1 e1 a1),
- *    (a -> IO r2 e2 a2)
- * ) -> IO (r & r1 & r2) (e | e1 | e2) a1
- * ```
- *
  * When this IO represents acquisition of a resource (for example,
  * opening a file, launching a thread, etc.), `bracket` can be used to ensure
  * the acquisition is not interrupted and the resource is always released.
@@ -42,13 +34,6 @@ export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 /**
- * ```haskell
- * bracket :: (
- *    (a -> IO r1 e1 b),
- *    (a -> IO r2 e2 c)
- * ) -> IO r e a -> IO (r & r1 & r2) (e | e1 | e2) b
- * ```
- *
  * When this IO represents acquisition of a resource (for example,
  * opening a file, launching a thread, etc.), `bracket` can be used to ensure
  * the acquisition is not interrupted and the resource is always released.

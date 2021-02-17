@@ -113,10 +113,6 @@ export interface SyntheticFiber<E, A> extends CommonFiber<E, A> {
  */
 
 /**
- * ```haskell
- * makeSynthetic :: Synthetic e a -> Fiber e a
- * ```
- *
  * A type helper for building a Synthetic Fiber
  */
 export function makeSynthetic<E, A>(_: SyntheticFiber<E, A>): Fiber<E, A> {
@@ -157,14 +153,6 @@ export function interruptAs(id: FiberId) {
  */
 
 /**
- * ```haskell
- * _fold :: (
- *    Fiber e a,
- *    ((Runtime e a) -> b),
- *    ((Synthetic e a) -> b)
- * ) -> b
- * ```
- *
  * Folds over the runtime or synthetic fiber.
  */
 export function fold_<E, A, B>(
@@ -183,10 +171,6 @@ export function fold_<E, A, B>(
 }
 
 /**
- * ```haskell
- * fold :: (((Runtime e a) -> b), ((Synthetic e a) -> b)) -> Fiber e a -> b
- * ```
- *
  * Folds over the runtime or synthetic fiber.
  */
 export function fold<E, A, B>(

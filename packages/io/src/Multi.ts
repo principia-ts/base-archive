@@ -1,7 +1,6 @@
 /**
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/fx/ZPure.scala
  */
-import type { AsyncInstruction } from './Async'
 import type { Chunk } from './Chunk'
 import type * as HKT from '@principia/base/HKT'
 import type { Stack } from '@principia/base/util/support/Stack'
@@ -233,11 +232,6 @@ export type MultiInstruction =
  * -------------------------------------------
  */
 
-/**
- * ```haskell
- * succeed :: a -> Multi _ _ _ _ a
- * ```
- */
 export function succeed<A, W = never, S1 = unknown, S2 = never>(a: A): Multi<W, S1, S2, unknown, never, A> {
   return new Succeed(a)
 }
@@ -332,14 +326,6 @@ export function foldCauseM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
 }
 
 /**
- * ```haskell
- * foldM_ :: (
- *    Multi s1 s2 r e a,
- *    (e -> Multi s3 s4 r1 e1 b),
- *    (a -> Multi s2 s5 r2 e2 c)
- * ) -> Multi (s1 & s3) (s4 | s5) (r & r1 & r2) (b | c)
- * ```
- *
  * Recovers from errors by accepting one computation to execute for the case
  * of an error, and one computation to execute for the case of success.
  *
@@ -355,13 +341,6 @@ export function foldM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2
 }
 
 /**
- * ```haskell
- * foldM :: (
- *    (e -> Multi s3 s4 r1 e1 b),
- *    (a -> Multi s2 s5 r2 e2 c)
- * ) -> Multi s1 s2 r e a -> Multi (s1 & s3) (s4 | s5) (r & r1 & r2) (b | c)
- * ```
- *
  * Recovers from errors by accepting one computation to execute for the case
  * of an error, and one computation to execute for the case of success.
  *
@@ -376,14 +355,6 @@ export function foldM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
 }
 
 /**
- * ```haskell
- * fold_ :: (
- *    Multi s1 s2 r e a,
- *    (e -> b),
- *    (a -> c)
- * ) -> Multi s1 s2 r _ (b | c)
- * ```
- *
  * Folds over the failed or successful results of this computation to yield
  * a computation that does not fail, but succeeds with the value of the left
  * or right function passed to `fold`.
@@ -404,10 +375,6 @@ export function fold_<W, S1, S2, R, E, A, B, C>(
 }
 
 /**
- * ```haskell
- * fold :: ((e -> b), (a -> c)) -> Multi s1 s2 r e a -> Multi s1 s2 r _ (b | c)
- * ```
- *
  * Folds over the failed or successful results of this computation to yield
  * a computation that does not fail, but succeeds with the value of the left
  * or right function passed to `fold`.
@@ -729,11 +696,6 @@ export function listens<W, B>(
  */
 
 /**
- * ```haskell
- * catchAll_ :: (Multi s1 s2 r e a, (e -> Multi s1 s3 r1 e1 b)) ->
- *    Multi s1 s3 (r & r1) e1 (a | b)
- * ```
- *
  * Recovers from all errors.
  *
  * @category Combinators
@@ -747,11 +709,6 @@ export function catchAll_<W, S1, S2, R, E, A, S3, R1, E1, B>(
 }
 
 /**
- * ```haskell
- * catchAll_ :: (e -> Multi s1 s3 r1 e1 b) -> Multi s1 s2 r e a ->
- *    Multi s1 s3 (r & r1) e1 (a | b)
- * ```
- *
  * Recovers from all errors.
  *
  * @category Combinators
@@ -783,10 +740,6 @@ export function catchSome<W, S1, E, S3, R1, E1, B>(
 }
 
 /**
- * ```haskell
- * update :: (s1 -> s2) -> Multi s1 s2 _ _ ()
- * ```
- *
  * Constructs a computation from the specified update function.
  *
  * @category Combinators
@@ -797,10 +750,6 @@ export function update<S1, S2>(f: (s: S1) => S2): Multi<never, S1, S2, unknown, 
 }
 
 /**
- * ```haskell
- * contramapState_ :: (Multi s1 s2 r e a, (s0 -> s1)) -> Multi s0 s2 r e a
- * ```
- *
  * Transforms the initial state of this computation` with the specified
  * function.
  *
@@ -815,10 +764,6 @@ export function contramapState_<S0, W, S1, S2, R, E, A>(
 }
 
 /**
- * ```haskell
- * contramapState :: (s0 -> s1) -> Multi s1 s2 r e a -> Multi s0 s2 r e a
- * ```
- *
  * Transforms the initial state of this computation` with the specified
  * function.
  *
@@ -832,10 +777,6 @@ export function contramapState<S0, S1>(
 }
 
 /**
- * ```haskell
- * either :: Multi s1 s2 r e a -> Multi s1 (s1 | s2) r _ (Either e a)
- * ```
- *
  * Returns a computation whose failure and success have been lifted into an
  * `Either`. The resulting computation cannot fail, because the failure case
  * has been exposed as part of the `Either` success case.
@@ -863,11 +804,6 @@ export function orElse<W, E, A, S3, S4, R1, E1>(
 }
 
 /**
- * ```haskell
- * orElseEither_ :: (Multi s1 s2 r e a, Multi s3 s4 r1 e1 a1) ->
- *    Multi (s1 & s3) (s2 | s4) (r & r1) e1 (Either a a1)
- * ```
- *
  * Executes this computation and returns its value, if it succeeds, but
  * otherwise executes the specified computation.
  *
@@ -886,11 +822,6 @@ export function orElseEither_<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
 }
 
 /**
- * ```haskell
- * orElseEither :: Multi s3 s4 r1 e1 a1 -> Multi s1 s2 r e a ->
- *    Multi (s1 & s3) (s2 | s4) (r & r1) e1 (Either a a1)
- * ```
- *
  * Executes this computation and returns its value, if it succeeds, but
  * otherwise executes the specified computation.
  *

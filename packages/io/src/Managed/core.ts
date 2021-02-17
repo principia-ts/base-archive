@@ -2011,10 +2011,6 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 }
 
 /**
- * ```haskell
- * asService :: Tag a -> Managed r e a -> Managed r e (Has a)
- * ```
- *
  * Maps the success value of this Managed to a service.
  */
 export function asService<A>(tag: Tag<A>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E, Has<A>> {

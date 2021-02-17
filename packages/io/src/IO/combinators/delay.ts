@@ -5,10 +5,6 @@ import { Clock } from '../../Clock'
 import { bind_ } from '../core'
 
 /**
- * ```haskell
- * delay_ :: (IO r e a, Number) -> IO (r & Has<Clock>) e a
- * ```
- *
  * Delays an `IO` by an arbitrary number of milliseconds
  *
  * @category Combinators
@@ -19,10 +15,6 @@ export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & Has<Clock>,
 }
 
 /**
- * ```haskell
- * delay :: Number -> IO r e a -> IO (r & Has<Clock>) e a
- * ```
- *
  * Delays an `IO` by an arbitrary number of milliseconds
  *
  * @category Combinators

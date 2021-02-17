@@ -1,6 +1,6 @@
 import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
-import { RuntimeException } from '@principia/io/Cause'
+import { RuntimeException } from '@principia/base/Exception'
 import * as Ca from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
