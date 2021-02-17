@@ -13,27 +13,11 @@ import type { Stack } from './util/support/Stack'
 import * as O from './Option'
 import { makeStack } from './util/support/Stack'
 
-export class RedBlackTree<K, V> implements Iterable<readonly [K, V]> {
+export class RedBlackTree<K, V> implements RedBlackTreeIterable<K, V> {
   constructor(readonly ord: Ord<K>, readonly root: Node<K, V> | Leaf) {}
 
-  [Symbol.iterator](): IterableIterator<readonly [K, V]> {
-    const begin = iteratorBegin(this)
-    let count   = 0
-    return {
-      next(): IteratorResult<readonly [K, V]> {
-        count++
-        if (begin.isEmpty) {
-          return { done: true, value: count }
-        }
-        const value: readonly [K, V] = [
-          begin.stack[begin.stack.length - 1]!.key,
-          begin.stack[begin.stack.length - 1]!.value
-        ]
-        begin.next()
-        return { done: false, value }
-      },
-      [Symbol.iterator]: this[Symbol.iterator]
-    }
+  [Symbol.iterator](): RedBlackTreeIterator<K, V> {
+    return forward(this)[Symbol.iterator]()
   }
 }
 
@@ -141,7 +125,7 @@ export function last<K, V>(tree: RedBlackTree<K, V>): Option<V> {
 }
 
 export function remove_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTree<K, V> {
-  const iter = iteratorFind_(tree, key)
+  const iter = find_(tree, key)[Symbol.iterator]()
   return iter.isEmpty ? tree : iter.remove()
 }
 
@@ -265,8 +249,29 @@ function Node<K, V>(
 
 type RBNode<K, V> = Node<K, V> | Leaf
 
-class RedBlackTreeIterator<K, V> {
-  constructor(readonly tree: RedBlackTree<K, V>, readonly stack: Array<Node<K, V>>) {}
+class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
+  private count = 0
+  constructor(readonly tree: RedBlackTree<K, V>, readonly stack: Array<Node<K, V>>, readonly direction: 0 | 1) {}
+
+  next(): IteratorResult<readonly [K, V]> {
+    if (this.isEmpty) {
+      return { done: true, value: this.count }
+    }
+    this.count++
+    const value: readonly [K, V] = [this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value]
+    switch (this.direction) {
+      case 0: {
+        this.moveNext()
+        break
+      }
+      case 1: {
+        this.movePrev()
+        break
+      }
+    }
+    return { done: false, value }
+  }
+
   get isEmpty(): boolean {
     return this.stack.length === 0
   }
@@ -306,15 +311,31 @@ class RedBlackTreeIterator<K, V> {
    */
   get entry(): O.Option<readonly [K, V]> {
     if (this.isEmpty) {
-      return O.some([this.stack[this.stack.length - 1]!.key, this.stack[this.stack.length - 1]!.value])
+      return O.none()
     }
-    return O.none()
+    return O.some([this.stack[this.stack.length - 1]!.key, this.stack[this.stack.length - 1]!.value])
+  }
+
+  get hasNext(): boolean {
+    const stack = this.stack
+    if (stack.length === 0) {
+      return false
+    }
+    if (stack[stack.length - 1].right) {
+      return true
+    }
+    for (let s = stack.length - 1; s > 0; --s) {
+      if (stack[s - 1].left === stack[s]) {
+        return true
+      }
+    }
+    return false
   }
 
   /**
    * Advances the iterator
    */
-  next(): void {
+  moveNext(): void {
     if (this.isEmpty) {
       return
     }
@@ -328,15 +349,58 @@ class RedBlackTreeIterator<K, V> {
       }
     } else {
       stack.pop()
-      while (!this.isEmpty && stack[stack.length - 1] === n) {
+      while (!this.isEmpty && stack[stack.length - 1].right === n) {
         n = stack[stack.length - 1]
         stack.pop()
       }
     }
   }
-  clone(): RedBlackTreeIterator<K, V> {
-    return new RedBlackTreeIterator(this.tree, this.stack.slice())
+
+  get hasPrev(): boolean {
+    const stack = this.stack
+    if (stack.length === 0) {
+      return false
+    }
+    if (stack[stack.length - 1].left) {
+      return true
+    }
+    for (let s = stack.length - 1; s > 0; --s) {
+      if (stack[s - 1].right === stack[s]) {
+        return true
+      }
+    }
+    return false
   }
+
+  movePrev(): void {
+    const stack = this.stack
+    if (stack.length === 0) {
+      return
+    }
+    let n: RBNode<K, V> = stack[stack.length - 1]
+    if (n.left) {
+      n = n.left
+      while (n) {
+        stack.push(n)
+        n = n.right
+      }
+    } else {
+      stack.pop()
+      while (stack.length > 0 && stack[stack.length - 1].left === n) {
+        n = stack[stack.length - 1]
+        stack.pop()
+      }
+    }
+  }
+
+  clone(): RedBlackTreeIterator<K, V> {
+    return new RedBlackTreeIterator(this.tree, this.stack.slice(), this.direction)
+  }
+
+  reverse(): RedBlackTreeIterator<K, V> {
+    return new RedBlackTreeIterator(this.tree, this.stack.slice(), this.direction ? 0 : 1)
+  }
+
   remove(): RedBlackTree<K, V> {
     const pathStack = this.stack
     if (pathStack.length === 0) {
@@ -431,180 +495,220 @@ class RedBlackTreeIterator<K, V> {
   }
 }
 
-export function iteratorBegin<K, V>(tree: RedBlackTree<K, V>): RedBlackTreeIterator<K, V> {
-  const stack: Array<Node<K, V>> = []
-  let n                          = tree.root
-  while (n) {
-    stack.push(n)
-    n = n.left
-  }
-  return new RedBlackTreeIterator(tree, stack)
+export interface RedBlackTreeIterable<K, V> extends Iterable<readonly [K, V]> {
+  [Symbol.iterator](): RedBlackTreeIterator<K, V>
 }
 
-export function iteratorEnd<K, V>(tree: RedBlackTree<K, V>): RedBlackTreeIterator<K, V> {
-  const stack: Array<Node<K, V>> = []
-  let n                          = tree.root
-  while (n) {
-    stack.push(n)
-    n = n.right
-  }
-  return new RedBlackTreeIterator(tree, stack)
-}
-
-export function iteratorFind_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
-  const cmp                      = tree.ord.compare_
-  let n                          = tree.root
-  const stack: Array<Node<K, V>> = []
-  while (n) {
-    const d = cmp(key, n.key)
-    stack.push(n)
-    switch (d) {
-      case 0: {
-        return new RedBlackTreeIterator(tree, stack)
-      }
-      case -1: {
+export function forward<K, V>(tree: RedBlackTree<K, V>): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      const stack: Array<Node<K, V>> = []
+      let n                          = tree.root
+      while (n) {
+        stack.push(n)
         n = n.left
-        break
       }
-      case 1: {
-        n = n!.right
-        break
+      return new RedBlackTreeIterator(tree, stack, 0)
+    }
+  }
+}
+
+export function backward<K, V>(tree: RedBlackTree<K, V>): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      const stack: Array<Node<K, V>> = []
+      let n                          = tree.root
+      while (n) {
+        stack.push(n)
+        n = n.right
       }
+      return new RedBlackTreeIterator(tree, stack, 1)
     }
   }
-  return new RedBlackTreeIterator(tree, [])
 }
 
-export function iteratorAt_<K, V>(tree: RedBlackTree<K, V>, index: number): RedBlackTreeIterator<K, V> {
-  if (index < 0 || !tree.root) {
-    return new RedBlackTreeIterator(tree, [])
-  }
-  let idx                        = index
-  let n                          = tree.root
-  const stack: Array<Node<K, V>> = []
-  for (;;) {
-    stack.push(n)
-    if (n.left) {
-      if (index < n.left.count) {
-        n = n.left
-        continue
+export function find_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      const cmp                      = tree.ord.compare_
+      let n                          = tree.root
+      const stack: Array<Node<K, V>> = []
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        switch (d) {
+          case 0: {
+            return new RedBlackTreeIterator(tree, stack, direction)
+          }
+          case -1: {
+            n = n.left
+            break
+          }
+          case 1: {
+            n = n!.right
+            break
+          }
+        }
       }
-      idx -= n.left.count
+      return new RedBlackTreeIterator(tree, [], direction)
     }
-    if (!idx) {
-      return new RedBlackTreeIterator(tree, stack)
-    }
-    idx -= 1
-    if (n.right) {
-      if (idx >= n.right.count) {
-        break
+  }
+}
+
+export function at_<K, V>(tree: RedBlackTree<K, V>, index: number, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      if (index < 0 || !tree.root) {
+        return new RedBlackTreeIterator(tree, [], direction)
       }
-      n = n.right
-    } else {
-      break
+      let idx                        = index
+      let n                          = tree.root
+      const stack: Array<Node<K, V>> = []
+      for (;;) {
+        stack.push(n)
+        if (n.left) {
+          if (index < n.left.count) {
+            n = n.left
+            continue
+          }
+          idx -= n.left.count
+        }
+        if (!idx) {
+          return new RedBlackTreeIterator(tree, stack, direction)
+        }
+        idx -= 1
+        if (n.right) {
+          if (idx >= n.right.count) {
+            break
+          }
+          n = n.right
+        } else {
+          break
+        }
+      }
+      return new RedBlackTreeIterator(tree, [], direction)
     }
   }
-  return new RedBlackTreeIterator(tree, [])
 }
 
-export function iteratorAt(index: number): <K, V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
-  return (tree) => iteratorAt_(tree, index)
+export function at(
+  index: number,
+  direction: 0 | 1 = 0
+): <K, V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => at_(tree, index, direction)
 }
 
-export function iteratorGTE_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
-  const cmp                      = tree.ord.compare_
-  let n: RBNode<K, V>            = tree.root
-  const stack: Array<Node<K, V>> = []
-  let last_ptr                   = 0
-  while (n) {
-    const d = cmp(key, n.key)
-    stack.push(n)
-    if (d <= 0) {
-      last_ptr = stack.length
-      n        = n.left
-    } else {
-      n = n.right
+export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      const cmp                      = tree.ord.compare_
+      let n: RBNode<K, V>            = tree.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d <= 0) {
+          last_ptr = stack.length
+          n        = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      return new RedBlackTreeIterator(tree, stack, 0)
     }
   }
-  stack.length = last_ptr
-  return new RedBlackTreeIterator(tree, stack)
 }
 
-export function iteratorGTE<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
-  return (tree) => iteratorGTE_(tree, key)
+export function gte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => gte_(tree, key)
 }
 
-export function iteratorGT_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
-  const cmp                      = tree.ord.compare_
-  let n: RBNode<K, V>            = tree.root
-  const stack: Array<Node<K, V>> = []
-  let last_ptr                   = 0
-  while (n) {
-    const d = cmp(key, n.key)
-    stack.push(n)
-    if (d < 0) {
-      last_ptr = stack.length
-      n        = n.left
-    } else {
-      n = n.right
+export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      const cmp                      = tree.ord.compare_
+      let n: RBNode<K, V>            = tree.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d < 0) {
+          last_ptr = stack.length
+          n        = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      return new RedBlackTreeIterator(tree, stack, 0)
     }
   }
-  stack.length = last_ptr
-  return new RedBlackTreeIterator(tree, stack)
 }
 
-export function iteratorGT<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
-  return (tree) => iteratorGTE_(tree, key)
+export function gt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => gt_(tree, key)
 }
 
-export function iteratorLTE_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
-  const cmp                      = tree.ord.compare_
-  let n: RBNode<K, V>            = tree.root
-  const stack: Array<Node<K, V>> = []
-  let last_ptr                   = 0
-  while (n) {
-    const d = cmp(key, n.key)
-    stack.push(n)
-    if (d >= 0) {
-      last_ptr = stack.length
-    }
-    if (d < 0) {
-      n = n.left
-    } else {
-      n = n.right
-    }
-  }
-  stack.length = last_ptr
-  return new RedBlackTreeIterator(tree, stack)
-}
-
-export function iteratorLTE<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
-  return (tree) => iteratorLTE_(tree, key)
-}
-
-export function iteratorLT_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterator<K, V> {
-  const cmp                      = tree.ord.compare_
-  let n: RBNode<K, V>            = tree.root
-  const stack: Array<Node<K, V>> = []
-  let last_ptr                   = 0
-  while (n) {
-    const d = cmp(key, n.key)
-    stack.push(n)
-    if (d > 0) {
-      last_ptr = stack.length
-    }
-    if (d <= 0) {
-      n = n.left
-    } else {
-      n = n.right
+export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      const cmp                      = tree.ord.compare_
+      let n: RBNode<K, V>            = tree.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d >= 0) {
+          last_ptr = stack.length
+        }
+        if (d < 0) {
+          n = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      console.log(stack)
+      return new RedBlackTreeIterator(tree, stack, 1)
     }
   }
-  stack.length = last_ptr
-  return new RedBlackTreeIterator(tree, stack)
 }
 
-export function iteratorLT<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterator<K, V> {
-  return (tree) => iteratorLT_(tree, key)
+export function lte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => lte_(tree, key)
+}
+
+export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+  return {
+    [Symbol.iterator]() {
+      const cmp                      = tree.ord.compare_
+      let n: RBNode<K, V>            = tree.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d > 0) {
+          last_ptr = stack.length
+        }
+        if (d <= 0) {
+          n = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      return new RedBlackTreeIterator(tree, stack, 1)
+    }
+  }
+}
+
+export function lt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => lt_(tree, key)
 }
 
 function fixDoubleBlack<K, V>(stack: Array<Mutable<Node<K, V>>>): void {
