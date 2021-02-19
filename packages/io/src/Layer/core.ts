@@ -5,7 +5,7 @@ import type { Managed } from '../Managed/core'
 import type { Finalizer, ReleaseMap } from '../Managed/ReleaseMap'
 import type * as H from '@principia/base/Has'
 import type * as HKT from '@principia/base/HKT'
-import type { Erase, UnionToIntersection } from '@principia/base/util/types'
+import type { UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -57,12 +57,8 @@ export abstract class Layer<R, E, A> {
    * layer, resulting in a new layer with the inputs of the specified layer, and the
    * outputs of this layer.
    */
-  ['<<<']<R1, E1, A1>(from: Layer<R1, E1, A1>): Layer<Erase<R, A1> & R1, E | E1, A> {
-    return from_(this, from)
-  }
-
-  ['>>']<E1, A1>(to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
-    return to_(this, to, 'no-erase')
+  ['<<<']<R1, E1>(from: Layer<R1, E1, R>): Layer<R1, E | E1, A> {
+    return from_(from, this)
   }
 
   /**
@@ -70,17 +66,12 @@ export abstract class Layer<R, E, A> {
    * layer, resulting in a new layer with the inputs of this layer, and the
    * outputs of the specified layer.
    */
-  ['>>>']<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<Erase<R1, A> & R, E | E1, A1> {
-    return to_(this, to)
+  ['>>>']<E1, A1>(to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
+    return from_(this, to)
   }
 
-  /**
-   * Feeds the output services of the specified layer into the input of this
-   * layer, resulting in a new layer with the inputs of the specified layer, and the
-   * outputs of both this layer and the specified layer.
-   */
-  ['<+<']<R1, E1, A1>(from: Layer<R1, E1, A1>): Layer<Erase<R & R1, A1> & R1, E | E1, A & A1> {
-    return using_(this, from)
+  ['+>>']<R1, E1, A1>(to: Layer<A & R1, E1, A1>): Layer<R & R1, E | E1, A1> {
+    return from_(this['+++'](identity<R1>()), to)
   }
 
   /**
@@ -88,8 +79,8 @@ export abstract class Layer<R, E, A> {
    * layer, resulting in a new layer with the inputs of this layer, and the
    * outputs of both this layer and the specified layer.
    */
-  ['>+>']<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<Erase<R & R1, A> & R, E | E1, A & A1> {
-    return andTo_(this, to)
+  ['>+>']<E1, A1>(to: Layer<A, E1, A1>): Layer<R, E | E1, A & A1> {
+    return from_(this, to['+++'](identity<A>()))
   }
 
   /**
@@ -125,10 +116,10 @@ export const LayerTag = {
   Fresh: 'Fresh',
   FromManaged: 'FromManaged',
   Defer: 'Defer',
-  Map2Par: 'Map2Par',
+  CrossWithPar: 'Map2Par',
   AllPar: 'AllPar',
   AllSeq: 'AllSeq',
-  Map2Seq: 'Map2Seq'
+  CrossWithSeq: 'Map2Seq'
 } as const
 
 /**
@@ -139,7 +130,7 @@ export function main<E, A>(layer: Layer<DefaultEnv, E, A>) {
 }
 
 export type LayerInstruction =
-  | Fold<any, any, any, any, any, any, any, any, any>
+  | Fold<any, any, any, any, any, any, any, any>
   | FMap<any, any, any, any>
   | Bind<any, any, any, any, any, any>
   | Fresh<any, any, any>
@@ -150,13 +141,13 @@ export type LayerInstruction =
   | AllPar<Layer<any, any, any>[]>
   | AllSeq<Layer<any, any, any>[]>
 
-export class Fold<R, E, A, R1, E1, A1, R2, E2, A2> extends Layer<R & R1 & Erase<R2, A>, E1 | E2, A1 | A2> {
+export class Fold<R, E, A, R1, E1, A1, E2, A2> extends Layer<R & R1, E1 | E2, A1 | A2> {
   readonly _tag = LayerTag.Fold
 
   constructor(
     readonly layer: Layer<R, E, A>,
     readonly onFailure: Layer<readonly [R1, Cause<E>], E1, A1>,
-    readonly onSuccess: Layer<R2, E2, A2>
+    readonly onSuccess: Layer<A, E2, A2>
   ) {
     super()
   }
@@ -219,7 +210,7 @@ export type MergeA<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
 >
 
 export class Map2Par<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
-  readonly _tag = LayerTag.Map2Par
+  readonly _tag = LayerTag.CrossWithPar
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
     super()
@@ -235,7 +226,7 @@ export class AllPar<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>,
 }
 
 export class Map2Seq<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
-  readonly _tag = LayerTag.Map2Seq
+  readonly _tag = LayerTag.CrossWithSeq
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
     super()
@@ -271,10 +262,10 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     case LayerTag.Bind: {
       return M.succeed((memo) => M.bind_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
     }
-    case LayerTag.Map2Par: {
+    case LayerTag.CrossWithPar: {
       return M.succeed((memo) => M.crossWithPar_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
     }
-    case LayerTag.Map2Seq: {
+    case LayerTag.CrossWithSeq: {
       return M.succeed((memo) => M.crossWith_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
     }
     case LayerTag.AllPar: {
@@ -302,15 +293,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
               I.toManaged()(I.ask<any>()),
               M.bind((r) => M.gives_(memo.getOrElseMemoize(_I.onFailure), () => tuple(r, e)))
             ),
-          (r) =>
-            M.gives_(memo.getOrElseMemoize(_I.onSuccess), (x) =>
-              typeof x === 'object' && typeof r === 'object'
-                ? {
-                    ...x,
-                    ...r
-                  }
-                : r
-            )
+          (r) => M.giveAll_(memo.getOrElseMemoize(_I.onSuccess), r)
         )
       )
     }
@@ -522,11 +505,11 @@ export function restrict<Tags extends H.Tag<any>[]>(
   UnionToIntersection<{ [k in keyof Tags]: [Tags[k]] extends [H.Tag<infer A>] ? H.Has<A> : never }[number]>
 > {
   return (layer) =>
-    andTo_(
+    from_(
       layer,
       fromRawEffect(
-        I.asksServicesT(...ts)((...servises) =>
-          servises.map((s, i) => ({ [ts[i].key]: s } as any)).reduce((x, y) => ({ ...x, ...y }))
+        I.asksServicesT(...ts)((...services) =>
+          services.map((s, i) => ({ [ts[i].key]: s } as any)).reduce((x, y) => ({ ...x, ...y }))
         )
       )
     ) as any
@@ -634,7 +617,7 @@ export function apPar<R1, E1, A>(
  */
 
 export function mapError_<R, E, A, E1>(la: Layer<R, E, A>, f: (e: E) => E1): Layer<R, E1, A> {
-  return catchAll_(la, second<E>()['>>'](fromRawFunctionM((e: E) => I.fail(f(e)))))
+  return catchAll_(la, second<E>()['>>>'](fromRawFunctionM((e: E) => I.fail(f(e)))))
 }
 
 export function mapError<E, E1>(f: (e: E) => E1): <R, A>(la: Layer<R, E, A>) => Layer<R, E1, A> {
@@ -721,33 +704,6 @@ export function and<R1, E1, A1>(
 }
 
 /**
- * Feeds the output services of the `left` layer into the input of the `right` layer,
- * resulting in a new layer with the inputs of the `left` layer, and the
- * outputs of both layers.
- */
-export function andTo<R, E, A>(
-  right: Layer<R, E, A>
-): <R1, E1, A1>(left: Layer<R1, E1, A1>) => Layer<R1 & Erase<R & R1, A1>, E | E1, A & A1> {
-  return <R1, E1, A1>(left: Layer<R1, E1, A1>) => andTo_(left, right)
-}
-
-/**
- * Feeds the output services of the `left` layer into the input of the `right` layer,
- * resulting in a new layer with the inputs of the `left` layer, and the
- * outputs of both layers.
- */
-export function andTo_<R, E, A, R1, E1, A1>(
-  left: Layer<R1, E1, A1>,
-  right: Layer<R, E, A>
-): Layer<R1 & Erase<R & R1, A1>, E | E1, A & A1> {
-  return fold_(
-    left,
-    fromRawFunctionM((_: readonly [R1 & Erase<R & R1, A1>, Cause<E1>]) => I.halt(_[1])),
-    and_(left, right)
-  )
-}
-
-/**
  * Combines this layer with the specified layer, producing a new layer that
  * has the inputs of both layers, and the outputs of both layers.
  */
@@ -785,17 +741,17 @@ export function catchAll_<R, E, A, R1, E1, B>(
   handler: Layer<readonly [R1, E], E1, B>
 ): Layer<R & R1, E1, A | B> {
   const failureOrDie: Layer<readonly [R1, Cause<E>], never, readonly [R1, E]> = fromRawFunctionM(
-    (_: readonly [R1, Cause<E>]) =>
+    ([r, cause]: readonly [R1, Cause<E>]) =>
       pipe(
-        _[1],
+        cause,
         Ca.failureOrCause,
         E.fold(
-          (e) => I.succeed(tuple(_[0], e)),
+          (e) => I.succeed(tuple(r, e)),
           (c) => I.halt(c)
         )
       )
   )
-  return fold_(la, failureOrDie['>>>'](handler), identity(), 'no-erase')
+  return fold_(la, failureOrDie['>>>'](handler), identity())
 }
 
 /**
@@ -815,8 +771,8 @@ export function launch<E, A>(la: Layer<unknown, E, A>): I.FIO<E, never> {
   return pipe(la, build, M.useForever)
 }
 
-export function first<A>(): Layer<readonly [A, any], never, A> {
-  return fromRawFunction(([a, _]) => a)
+export function first<A>(): Layer<readonly [A, unknown], never, A> {
+  return fromRawFunction(([a, _]: readonly [A, unknown]) => a)
 }
 
 /**
@@ -832,22 +788,10 @@ export function fresh<R, E, A>(layer: Layer<R, E, A>): Layer<R, E, A> {
  * layer, resulting in a new layer with the inputs of the `from`, and the
  * outputs of the `to` layer.
  */
-export function from_<R, E, A, R2, E2, A2>(
-  to: Layer<R & A2, E, A>,
-  from: Layer<R2, E2, A2>,
-  noErase: 'no-erase'
-): Layer<R & R2, E | E2, A>
-export function from_<R, E, A, R2, E2, A2>(
-  to: Layer<R, E, A>,
-  from: Layer<R2, E2, A2>
-): Layer<Erase<R, A2> & R2, E | E2, A>
-export function from_<R, E, A, R2, E2, A2>(
-  to: Layer<R, E, A>,
-  from: Layer<R2, E2, A2>
-): Layer<Erase<R, A2> & R2, E | E2, A> {
+export function from_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
   return fold_(
     from,
-    fromRawFunctionM((_: readonly [Erase<R, A2> & R2, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionM((_: readonly [unknown, Cause<E2>]) => I.halt(_[1])),
     to
   )
 }
@@ -860,20 +804,9 @@ export function from_<R, E, A, R2, E2, A2>(
 export function fold_<R, E, A, R1, E1, B, E2, C>(
   layer: Layer<R, E, A>,
   onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
-  onSuccess: Layer<A, E2, C>,
-  noErase: 'no-erase'
-): Layer<R & R1, E1 | E2, B | C>
-export function fold_<R, E, A, R1, E1, B, R2, E2, C>(
-  layer: Layer<R, E, A>,
-  onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
-  onSuccess: Layer<R2, E2, C>
-): Layer<R & R1 & Erase<R2, A>, E1 | E2, B | C>
-export function fold_<R, E, A, R1, E1, B, R2, E2, C>(
-  layer: Layer<R, E, A>,
-  onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
-  onSuccess: Layer<R2, E2, C>
-): Layer<R & R1 & Erase<R2, A>, E1 | E2, B | C> {
-  return new Fold<R, E, A, R1, E1, B, R2, E2, C>(layer, onFailure, onSuccess)
+  onSuccess: Layer<A, E2, C>
+): Layer<R & R1, E1 | E2, B | C> {
+  return new Fold<R, E, A, R1, E1, B, E2, C>(layer, onFailure, onSuccess)
 }
 
 /**
@@ -889,7 +822,7 @@ export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never,
  * unchecked and not a part of the type of the layer.
  */
 export function orDie<R, E extends Error, A>(la: Layer<R, E, A>): Layer<R, never, A> {
-  return catchAll_(la, second<E>()['>>'](fromRawFunctionM((e: E) => I.die(e))))
+  return catchAll_(la, second<E>()['>>>'](fromRawFunctionM((e: E) => I.die(e))))
 }
 
 /**
@@ -900,7 +833,7 @@ export function orElse_<R, E, A, R1, E1, A1>(
   la: Layer<R, E, A>,
   that: Layer<R1, E1, A1>
 ): Layer<R & R1, E | E1, A | A1> {
-  return catchAll_(la, to_(first<R1>(), that, 'no-erase'))
+  return catchAll_(la, to_(first<R1>(), that))
 }
 
 export function orElse<R1, E1, A1>(
@@ -909,17 +842,7 @@ export function orElse<R1, E1, A1>(
   return (la) => orElse_(la, that)
 }
 
-/**
- * Embed the requird environment in a region
- */
-export function region<K, T>(
-  h: H.Tag<H.Region<T, K>>
-): <R, E>(_: Layer<R, E, T>) => Layer<R, E, H.Has<H.Region<T, K>>> {
-  return (_) =>
-    pipe(fromRawEffect(I.asks((r: T): H.Has<H.Region<T, K>> => ({ [h.key]: r } as any))), using(_, 'no-erase'))
-}
-
-export function second<A>(): Layer<readonly [any, A], never, A> {
+export function second<A>(): Layer<readonly [unknown, A], never, A> {
   return fromRawFunction(([_, a]) => a)
 }
 
@@ -928,10 +851,13 @@ export function second<A>(): Layer<readonly [any, A], never, A> {
  * layer, resulting in a new layer with the inputs of the `from`, and the
  * outputs of the `to` layer.
  */
-export function to<R, E, A>(
-  from: Layer<R, E, A>
-): <R2, E2, A2>(to: Layer<R2, E2, A2>) => Layer<Erase<R, A2> & R2, E | E2, A> {
-  return (to) => to_(to, from)
+export function to<R, E, A>(from: Layer<R, E, A>) {
+  return <E2, A2>(to: Layer<A, E2, A2>): Layer<R, E | E2, A2> =>
+    fold_(
+      from,
+      fromRawFunctionM((_: readonly [R, Cause<E>]) => I.halt(_[1])),
+      to
+    )
 }
 
 /**
@@ -939,22 +865,10 @@ export function to<R, E, A>(
  * layer, resulting in a new layer with the inputs of the `from`, and the
  * outputs of the `to` layer.
  */
-export function to_<R, E, A, R2, E2, A2>(
-  from: Layer<R2, E2, A2>,
-  to: Layer<A2, E, A>,
-  noErase: 'no-erase'
-): Layer<R2, E | E2, A>
-export function to_<R, E, A, R2, E2, A2>(
-  from: Layer<R2, E2, A2>,
-  to: Layer<R, E, A>
-): Layer<Erase<R, A2> & R2, E | E2, A>
-export function to_<R, E, A, R2, E2, A2>(
-  from: Layer<R2, E2, A2>,
-  to: Layer<R, E, A>
-): Layer<Erase<R, A2> & R2, E | E2, A> {
+export function to_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
   return fold_(
     from,
-    fromRawFunctionM((_: readonly [Erase<R, A2> & R2, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionM((_: readonly [R2, Cause<E2>]) => I.halt(_[1])),
     to
   )
 }
@@ -966,7 +880,7 @@ export function update_<T>(
   tag: H.Tag<T>
 ): <R, E, A extends H.Has<T>>(la: Layer<R, E, A>, f: (a: T) => T) => Layer<R, E, A> {
   return <R, E, A extends H.Has<T>>(la: Layer<R, E, A>, f: (_: T) => T) =>
-    la['>>'](fromRawEffect(pipe(I.ask<A>(), I.updateService(tag, f))))
+    la['>>>'](fromRawEffect(pipe(I.ask<A>(), I.updateService(tag, f))))
 }
 
 /**
@@ -976,49 +890,6 @@ export function update<T>(
   tag: H.Tag<T>
 ): (f: (_: T) => T) => <R, E, A extends H.Has<T>>(la: Layer<R, E, A>) => Layer<R, E, A> {
   return (f) => (la) => update_(tag)(la, f)
-}
-
-/**
- * Feeds the output services of the `right` layer into the input of the `left` layer,
- * resulting in a new layer with the inputs of the `right` layer, and the
- * outputs of both layers.
- */
-export function using<R2, E2, A2>(
-  right: Layer<R2, E2, A2>,
-  noErase: 'no-erase'
-): <R, E, A>(left: Layer<R & A2, E, A>) => Layer<R & R2, E | E2, A & A2>
-export function using<R2, E2, A2>(
-  right: Layer<R2, E2, A2>
-): <R, E, A>(left: Layer<R, E, A>) => Layer<Erase<R & R2, A2> & R2, E | E2, A & A2>
-export function using<R2, E2, A2>(
-  right: Layer<R2, E2, A2>
-): <R, E, A>(left: Layer<R, E, A>) => Layer<Erase<R & R2, A2> & R2, E | E2, A & A2> {
-  return (left) => using_(left, right)
-}
-
-/**
- * Feeds the output services of the `right` layer into the input of the `left` layer,
- * resulting in a new layer with the inputs of the `right` layer, and the
- * outputs of both layers.
- */
-export function using_<R, E, A, R2, E2, A2>(
-  left: Layer<R & A2, E, A>,
-  right: Layer<R2, E2, A2>,
-  noErase: 'no-erase'
-): Layer<R & R2, E | E2, A & A2>
-export function using_<R, E, A, R2, E2, A2>(
-  left: Layer<R, E, A>,
-  right: Layer<R2, E2, A2>
-): Layer<Erase<R & R2, A2> & R2, E | E2, A & A2>
-export function using_<R, E, A, R2, E2, A2>(
-  left: Layer<R, E, A>,
-  right: Layer<R2, E2, A2>
-): Layer<Erase<R & R2, A2> & R2, E | E2, A & A2> {
-  return fold_(
-    right,
-    fromRawFunctionM((_: readonly [Erase<R, A2> & R2, Cause<E2>]) => I.halt(_[1])),
-    and_(right, left)
-  )
 }
 
 /*

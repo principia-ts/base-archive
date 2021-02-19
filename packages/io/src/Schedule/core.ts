@@ -105,7 +105,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           }
         })
 
-      return new Driver(nextdo, last, reset)
+      return new Driver(next, last, reset)
     })
   )
 }
