@@ -195,8 +195,8 @@ export function get<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
   return (tree) => get_(tree, key)
 }
 
-export function visitFull<K, V, A>(node: Node<K, V>, visit: (key: K, value: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = node
+export function visitFull<K, V, A>(tree: RedBlackTree<K, V>, visit: (key: K, value: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = tree.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done                                 = false
 
@@ -223,7 +223,7 @@ export function visitFull<K, V, A>(node: Node<K, V>, visit: (key: K, value: V) =
  */
 export function foreach_<K, V>(tree: RedBlackTree<K, V>, visit: (key: K, value: V) => void) {
   if (tree.root) {
-    visitFull(tree.root, (k, v) => {
+    visitFull(tree, (k, v) => {
       visit(k, v)
       return O.none()
     })
@@ -247,52 +247,6 @@ export function toArray<K, V>(tree: RedBlackTree<K, V>): ReadonlyArray<readonly 
   })
   return as
 }
-
-/*
- * -------------------------------------------
- * Implementation
- * -------------------------------------------
- */
-
-type Color = 0 | 1
-
-const R: Color = 0
-const B: Color = 1
-
-type Leaf = null
-
-const Leaf = null
-
-type Mutable<T> = { -readonly [K in keyof T]: T[K] }
-
-interface Node<K, V> {
-  readonly color: Color
-  readonly key: K
-  readonly value: V
-  readonly left: RBNode<K, V>
-  readonly right: RBNode<K, V>
-  readonly count: number
-}
-
-function Node<K, V>(
-  color: Color,
-  left: Node<K, V> | Leaf,
-  key: K,
-  value: V,
-  right: Node<K, V> | Leaf,
-  count: number
-): Node<K, V> {
-  return {
-    color,
-    left,
-    key,
-    value,
-    right,
-    count
-  }
-}
-
-type RBNode<K, V> = Node<K, V> | Leaf
 
 /**
  * Stateful iterator
@@ -400,7 +354,7 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
       }
     } else {
       stack.pop()
-      while (!this.isEmpty && stack[stack.length - 1].right === n) {
+      while (stack.length > 0 && stack[stack.length - 1].right === n) {
         n = stack[stack.length - 1]
         stack.pop()
       }
@@ -458,8 +412,7 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
   }
 
   /**
-   * Reverses the direction of the iterator, returning an iterator of the same tree,
-   * with a cloned stack
+   * Reverses the direction of the iterator
    */
   reverse(): RedBlackTreeIterator<K, V> {
     return new RedBlackTreeIterator(this.tree, this.stack.slice(), this.direction ? 0 : 1)
@@ -666,9 +619,10 @@ export function at(
 }
 
 /**
- * Returns a forward iterator of elements >= key
+ * Finds the last element in the tree whose key is >= the given key
+ * @returns An iterator at the found element
  */
-export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
       const cmp                      = tree.ord.compare_
@@ -686,22 +640,24 @@ export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterab
         }
       }
       stack.length = last_ptr
-      return new RedBlackTreeIterator(tree, stack, 0)
+      return new RedBlackTreeIterator(tree, stack, direction)
     }
   }
 }
 
 /**
- * Returns a forward iterator of elements >= key
+ * Finds the last element in the tree whose key is >= the given key
+ * @returns An iterator at the found element
  */
-export function gte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => gte_(tree, key)
+export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => gte_(tree, key, direction)
 }
 
 /**
- * Returns a forward iterator of elements > key
+ * Finds the last element in the tree whose key is > the given key
+ * @returns An iterator at the found element
  */
-export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
       const cmp                      = tree.ord.compare_
@@ -719,22 +675,24 @@ export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterabl
         }
       }
       stack.length = last_ptr
-      return new RedBlackTreeIterator(tree, stack, 0)
+      return new RedBlackTreeIterator(tree, stack, direction)
     }
   }
 }
 
 /**
- * Returns a forward iterator of elements > key
+ * Finds the last element in the tree whose key is > the given key
+ * @returns An iterator at the found element
  */
-export function gt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => gt_(tree, key)
+export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => gt_(tree, key, direction)
 }
 
 /**
- * Returns a backward iterator of elements <= key
+ * Finds the last element in the tree whose key is <= the given key
+ * @returns An iterator at the found element
  */
-export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
       const cmp                      = tree.ord.compare_
@@ -754,23 +712,24 @@ export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterab
         }
       }
       stack.length = last_ptr
-      console.log(stack)
-      return new RedBlackTreeIterator(tree, stack, 1)
+      return new RedBlackTreeIterator(tree, stack, direction)
     }
   }
 }
 
 /**
- * Returns a backward iterator of elements <= key
+ * Finds the last element in the tree whose key is <= the given key
+ * @returns An iterator at the found element
  */
-export function lte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => lte_(tree, key)
+export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => lte_(tree, key, direction)
 }
 
 /**
- * Returns a backward iterator of elements < key
+ * Finds the last element in the tree whose key is < the given key
+ * @returns An iterator at the found element
  */
-export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterable<K, V> {
+export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
   return {
     [Symbol.iterator]() {
       const cmp                      = tree.ord.compare_
@@ -790,16 +749,547 @@ export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTreeIterabl
         }
       }
       stack.length = last_ptr
-      return new RedBlackTreeIterator(tree, stack, 1)
+      return new RedBlackTreeIterator(tree, stack, direction)
     }
   }
 }
 
 /**
- * Returns a backward iterator of elements < key
+ * Finds the last element in the tree whose key is < the given key
+ * @returns An iterator at the found element
  */
-export function lt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => lt_(tree, key)
+export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+  return (tree) => lt_(tree, key, direction)
+}
+
+export function blackHeight<K, V>(root: RBNode<K, V>): number {
+  if (root === Leaf) {
+    return 0
+  }
+  let n: RBNode<K, V> = root
+  let x               = 0
+  while (n) {
+    n.color === B && x++
+    n = n.right
+  }
+  return x
+}
+
+function headNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
+  if (root === Leaf) {
+    return O.none()
+  }
+  let n: Node<K, V> = root
+  while (n.left) {
+    n = n.left
+  }
+  return O.some(n)
+}
+
+function lastNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
+  if (root === Leaf) {
+    return O.none()
+  }
+  let n: Node<K, V> = root
+  while (n.right) {
+    n = n.right
+  }
+  return O.some(n)
+}
+
+export function visitLte<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = tree.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = tree.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack   = makeStack(current, stack)
+      current = current.left
+    } else if (stack) {
+      if (cmp(stack.value.key, max) > 0) {
+        break
+      }
+      const v = visit(stack.value.key, stack.value.value)
+      if (v._tag === 'Some') {
+        return v
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.none()
+}
+
+export function foreachLte_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (tree.root) {
+    visitLte(tree, max, (k, v) => {
+      visit(k, v)
+      return O.none()
+    })
+  }
+}
+
+export function foreachLte<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
+  return (tree) => foreachLte_(tree, max, visit)
+}
+
+export function visitLt<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = tree.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = tree.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack   = makeStack(current, stack)
+      current = current.left
+    } else if (stack) {
+      if (cmp(stack.value.key, max) >= 0) {
+        break
+      }
+      const v = visit(stack.value.key, stack.value.value)
+      if (v._tag === 'Some') {
+        return v
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.none()
+}
+
+export function foreachLt_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (tree.root) {
+    visitLt(tree, max, (k, v) => {
+      visit(k, v)
+      return O.none()
+    })
+  }
+}
+
+export function foreachLt<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
+  return (tree) => foreachLt_(tree, max, visit)
+}
+
+export function visitGte<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = tree.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = tree.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack = makeStack(current, stack)
+      if (cmp(current.key, min) >= 0) {
+        current = current.left
+      } else {
+        current = null
+      }
+    } else if (stack) {
+      if (cmp(stack.value.key, min) >= 0) {
+        const v = visit(stack.value.key, stack.value.value)
+        if (v._tag === 'Some') {
+          return v
+        }
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.none()
+}
+
+export function foreachGte_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (tree.root) {
+    visitGte(tree, max, (k, v) => {
+      visit(k, v)
+      return O.none()
+    })
+  }
+}
+
+export function foreachGte<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
+  return (tree) => foreachGte_(tree, max, visit)
+}
+
+export function visitGt<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = tree.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = tree.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack = makeStack(current, stack)
+      if (cmp(current.key, min) > 0) {
+        current = current.left
+      } else {
+        current = null
+      }
+    } else if (stack) {
+      if (cmp(stack.value.key, min) > 0) {
+        const v = visit(stack.value.key, stack.value.value)
+        if (v._tag === 'Some') {
+          return v
+        }
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.none()
+}
+
+export function foreachGt_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (tree.root) {
+    visitGt(tree, max, (k, v) => {
+      visit(k, v)
+      return O.none()
+    })
+  }
+}
+
+export function foreachGt<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
+  return (tree) => foreachGt_(tree, max, visit)
+}
+
+export function visitBetween<K, V, A>(
+  tree: RedBlackTree<K, V>,
+  min: K,
+  max: K,
+  visit: (k: K, v: V) => Option<A>
+): Option<A> {
+  let current: RBNode<K, V>                = tree.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = tree.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack = makeStack(current, stack)
+      if (cmp(current.key, min) > 0) {
+        current = current.left
+      } else {
+        current = null
+      }
+    } else if (stack) {
+      if (cmp(stack.value.key, max) >= 0) {
+        break
+      }
+      const v = visit(stack.value.key, stack.value.value)
+      if (v._tag === 'Some') {
+        return v
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.none()
+}
+
+export function foreachBetween_<K, V>(tree: RedBlackTree<K, V>, min: K, max: K, visit: (k: K, v: V) => void): void {
+  if (tree.root) {
+    visitBetween(tree, min, max, (k, v) => {
+      visit(k, v)
+      return O.none()
+    })
+  }
+}
+
+export function foreachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
+  return (tree) => foreachBetween_(tree, min, max, visit)
+}
+
+/**
+ * Returns an iterable of all the values in the tree in sorted order
+ */
+export function values_<K, V>(tree: RedBlackTree<K, V>, direction: 0 | 1 = 0): Iterable<V> {
+  return {
+    *[Symbol.iterator]() {
+      const iter: Iterator<readonly [K, V]> = direction
+        ? backward(tree)[Symbol.iterator]()
+        : forward(tree)[Symbol.iterator]()
+      let d: IteratorResult<readonly [K, V]>
+      while (!(d = iter.next()).done) {
+        yield d.value[1]
+      }
+    }
+  }
+}
+
+/**
+ * Returns an iterable of all the values in the tree in sorted order
+ */
+export function values(direction: 0 | 1 = 0): <K, V>(tree: RedBlackTree<K, V>) => Iterable<V> {
+  return (tree) => values_(tree, direction)
+}
+
+/**
+ * Returns an iterable of all the keys in the tree in sorted order
+ */
+export function keys_<K, V>(tree: RedBlackTree<K, V>, direction: 0 | 1 = 0): Iterable<K> {
+  return {
+    *[Symbol.iterator]() {
+      const iter: Iterator<readonly [K, V]> = direction
+        ? backward(tree)[Symbol.iterator]()
+        : forward(tree)[Symbol.iterator]()
+      let d: IteratorResult<readonly [K, V]>
+      while (!(d = iter.next()).done) {
+        yield d.value[0]
+      }
+    }
+  }
+}
+
+/**
+ * Returns an iterable of all the keys in the tree in sorted order
+ */
+export function keys(direction: 0 | 1 = 0): <K, V>(tree: RedBlackTree<K, V>) => Iterable<K> {
+  return (tree) => keys_(tree, direction)
+}
+
+/**
+ * Returns a range of the tree with keys >= min and < max
+ */
+export function range_<K, V>(tree: RedBlackTree<K, V>, min: K, max: K): RedBlackTree<K, V> {
+  let r = make<K, V>(tree.ord)
+  foreachBetween_(tree, min, max, (k, v) => {
+    r = insert_(r, k, v)
+  })
+  return r
+}
+
+/**
+ * Returns a range of the tree with keys >= min and < max
+ */
+export function range<K>(min: K, max: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
+  return (tree) => range_(tree, min, max)
+}
+
+/*
+ * -------------------------------------------
+ * Internal
+ * -------------------------------------------
+ */
+
+type Color = 0 | 1
+
+const R: Color = 0
+const B: Color = 1
+
+type Leaf = null
+
+const Leaf = null
+
+type Mutable<T> = { -readonly [K in keyof T]: T[K] }
+
+interface Node<K, V> {
+  readonly color: Color
+  readonly key: K
+  readonly value: V
+  readonly left: RBNode<K, V>
+  readonly right: RBNode<K, V>
+  readonly count: number
+}
+
+function Node<K, V>(
+  color: Color,
+  left: Node<K, V> | Leaf,
+  key: K,
+  value: V,
+  right: Node<K, V> | Leaf,
+  count: number
+): Node<K, V> {
+  return {
+    color,
+    left,
+    key,
+    value,
+    right,
+    count
+  }
+}
+
+type RBNode<K, V> = Node<K, V> | Leaf
+
+function swapNode<K, V>(node: Mutable<Node<K, V>>, v: Node<K, V>): void {
+  node.key   = v.key
+  node.value = v.value
+  node.left  = v.left
+  node.right = v.right
+  node.color = v.color
+  node.count = v.count
+}
+
+function isEmptyNode<K, V>(node: RBNode<K, V>): node is Leaf {
+  return node === null
+}
+
+function repaintNode<K, V>(n: RBNode<K, V>, c: Color): RBNode<K, V> {
+  return n === Leaf ? Leaf : Node(c, n.left, n.key, n.value, n.right, n.count)
+}
+
+function cloneNode<K, V>(n: RBNode<K, V>): RBNode<K, V> {
+  return n === Leaf ? Leaf : Node(n.color, n.left, n.key, n.value, n.right, n.count)
+}
+
+function recountNode<K, V>(n: Mutable<Node<K, V>>): void {
+  n.count = 1 + (n.left ? n.left.count : 0) + (n.right ? n.right.count : 0)
+}
+
+function rebuildModifiedPath<K, V>(nodeStack: Array<Mutable<Node<K, V>>>, orderStack: Array<1 | -1>, inc = 1): void {
+  for (let s = nodeStack.length - 2; s >= 0; --s) {
+    const n = nodeStack[s]
+    switch (orderStack[s]) {
+      case -1: {
+        nodeStack[s] = Node(n.color, nodeStack[s + 1], n.key, n.value, n.right, n.count + inc)
+        break
+      }
+      case 1: {
+        nodeStack[s] = Node(n.color, n.left, n.key, n.value, nodeStack[s + 1], n.count + inc)
+        break
+      }
+    }
+  }
+}
+
+function balanceModifiedPath<K, V>(nodeStack: Array<Mutable<Node<K, V>>>): void {
+  for (let s = nodeStack.length - 1; s > 1; --s) {
+    const parent = nodeStack[s - 1]
+    const node   = nodeStack[s]
+    if (parent.color === B || node.color === B) {
+      break
+    }
+    const gparent = nodeStack[s - 2]
+    if (gparent.left === parent) {
+      if (parent.left === node) {
+        const parsib = gparent.right
+        if (parsib && parsib.color === R) {
+          parent.color  = B
+          gparent.right = repaintNode(parsib, B)
+          gparent.color = R
+          s            -= 1
+        } else {
+          gparent.color    = R
+          gparent.left     = parent.right
+          parent.color     = B
+          parent.right     = gparent
+          nodeStack[s - 2] = parent
+          nodeStack[s - 1] = node
+          recountNode(gparent)
+          recountNode(parent)
+          if (s >= 3) {
+            const ggparent = nodeStack[s - 3]
+            if (ggparent.left === gparent) {
+              ggparent.left = parent
+            } else {
+              ggparent.right = parent
+            }
+          }
+          break
+        }
+      } else {
+        const uncle = gparent.right
+        if (uncle && uncle.color === R) {
+          parent.color  = B
+          gparent.right = repaintNode(uncle, B)
+          gparent.color = R
+          s            -= 1
+        } else {
+          parent.right     = node.left
+          gparent.color    = R
+          gparent.left     = node.right
+          node.color       = B
+          node.left        = parent
+          node.right       = gparent
+          nodeStack[s - 2] = node
+          nodeStack[s - 1] = parent
+          recountNode(gparent)
+          recountNode(parent)
+          recountNode(node)
+          if (s >= 3) {
+            const ggparent = nodeStack[s - 3]
+            if (ggparent.left === gparent) {
+              ggparent.left = node
+            } else {
+              ggparent.right = node
+            }
+          }
+          break
+        }
+      }
+    } else {
+      if (parent.right === node) {
+        const parsib = gparent.left
+        if (parsib && parsib.color === R) {
+          parent.color  = B
+          gparent.left  = repaintNode(parsib, B)
+          gparent.color = R
+          s            -= 1
+        } else {
+          gparent.color    = R
+          gparent.right    = parent.left
+          parent.color     = B
+          parent.left      = gparent
+          nodeStack[s - 2] = parent
+          nodeStack[s - 1] = node
+          recountNode(gparent)
+          recountNode(parent)
+          if (s >= 3) {
+            const ggparent = nodeStack[s - 3]
+            if (ggparent.right === gparent) {
+              ggparent.right = parent
+            } else {
+              ggparent.left = parent
+            }
+          }
+          break
+        }
+      } else {
+        const parsib = gparent.left
+        if (parsib && parsib.color === R) {
+          parent.color  = B
+          gparent.left  = repaintNode(parsib, B)
+          gparent.color = R
+          s            -= 1
+        } else {
+          parent.left      = node.right
+          gparent.color    = R
+          gparent.right    = node.left
+          node.color       = B
+          node.right       = parent
+          node.left        = gparent
+          nodeStack[s - 2] = node
+          nodeStack[s - 1] = parent
+          recountNode(gparent)
+          recountNode(parent)
+          recountNode(node)
+          if (s >= 3) {
+            const ggparent = nodeStack[s - 3]
+            if (ggparent.right === gparent) {
+              ggparent.right = node
+            } else {
+              ggparent.left = node
+            }
+          }
+          break
+        }
+      }
+    }
+  }
+  nodeStack[0].color = B
 }
 
 function fixDoubleBlack<K, V>(stack: Array<Mutable<Node<K, V>>>): void {
@@ -994,207 +1484,4 @@ function fixDoubleBlack<K, V>(stack: Array<Mutable<Node<K, V>>>): void {
       }
     }
   }
-}
-
-export function blackHeight<K, V>(root: RBNode<K, V>): number {
-  if (root === Leaf) {
-    return 0
-  }
-  let n: RBNode<K, V> = root
-  let x               = 0
-  while (n) {
-    n.color === B && x++
-    n = n.right
-  }
-  return x
-}
-
-function swapNode<K, V>(node: Mutable<Node<K, V>>, v: Node<K, V>): void {
-  node.key   = v.key
-  node.value = v.value
-  node.left  = v.left
-  node.right = v.right
-  node.color = v.color
-  node.count = v.count
-}
-
-function isEmptyNode<K, V>(node: RBNode<K, V>): node is Leaf {
-  return node === null
-}
-
-function repaintNode<K, V>(n: RBNode<K, V>, c: Color): RBNode<K, V> {
-  return n === Leaf ? Leaf : Node(c, n.left, n.key, n.value, n.right, n.count)
-}
-
-function cloneNode<K, V>(n: RBNode<K, V>): RBNode<K, V> {
-  return n === Leaf ? Leaf : Node(n.color, n.left, n.key, n.value, n.right, n.count)
-}
-
-function recountNode<K, V>(n: Mutable<Node<K, V>>): void {
-  n.count = 1 + (n.left ? n.left.count : 0) + (n.right ? n.right.count : 0)
-}
-
-function rebuildModifiedPath<K, V>(nodeStack: Array<Mutable<Node<K, V>>>, orderStack: Array<1 | -1>, inc = 1): void {
-  for (let s = nodeStack.length - 2; s >= 0; --s) {
-    const n = nodeStack[s]
-    switch (orderStack[s]) {
-      case -1: {
-        nodeStack[s] = Node(n.color, nodeStack[s + 1], n.key, n.value, n.right, n.count + inc)
-        break
-      }
-      case 1: {
-        nodeStack[s] = Node(n.color, n.left, n.key, n.value, nodeStack[s + 1], n.count + inc)
-        break
-      }
-    }
-  }
-}
-
-function balanceModifiedPath<K, V>(nodeStack: Array<Mutable<Node<K, V>>>): void {
-  for (let s = nodeStack.length - 1; s > 1; --s) {
-    const parent = nodeStack[s - 1]
-    const node   = nodeStack[s]
-    if (parent.color === B || node.color === B) {
-      break
-    }
-    const gparent = nodeStack[s - 2]
-    if (gparent.left === parent) {
-      if (parent.left === node) {
-        const parsib = gparent.right
-        if (parsib && parsib.color === R) {
-          parent.color  = B
-          gparent.right = repaintNode(parsib, B)
-          gparent.color = R
-          s            -= 1
-        } else {
-          gparent.color    = R
-          gparent.left     = parent.right
-          parent.color     = B
-          parent.right     = gparent
-          nodeStack[s - 2] = parent
-          nodeStack[s - 1] = node
-          recountNode(gparent)
-          recountNode(parent)
-          if (s >= 3) {
-            const ggparent = nodeStack[s - 3]
-            if (ggparent.left === gparent) {
-              ggparent.left = parent
-            } else {
-              ggparent.right = parent
-            }
-          }
-          break
-        }
-      } else {
-        const uncle = gparent.right
-        if (uncle && uncle.color === R) {
-          parent.color  = B
-          gparent.right = repaintNode(uncle, B)
-          gparent.color = R
-          s            -= 1
-        } else {
-          parent.right     = node.left
-          gparent.color    = R
-          gparent.left     = node.right
-          node.color       = B
-          node.left        = parent
-          node.right       = gparent
-          nodeStack[s - 2] = node
-          nodeStack[s - 1] = parent
-          recountNode(gparent)
-          recountNode(parent)
-          recountNode(node)
-          if (s >= 3) {
-            const ggparent = nodeStack[s - 3]
-            if (ggparent.left === gparent) {
-              ggparent.left = node
-            } else {
-              ggparent.right = node
-            }
-          }
-          break
-        }
-      }
-    } else {
-      if (parent.right === node) {
-        const parsib = gparent.left
-        if (parsib && parsib.color === R) {
-          parent.color  = B
-          gparent.left  = repaintNode(parsib, B)
-          gparent.color = R
-          s            -= 1
-        } else {
-          gparent.color    = R
-          gparent.right    = parent.left
-          parent.color     = B
-          parent.left      = gparent
-          nodeStack[s - 2] = parent
-          nodeStack[s - 1] = node
-          recountNode(gparent)
-          recountNode(parent)
-          if (s >= 3) {
-            const ggparent = nodeStack[s - 3]
-            if (ggparent.right === gparent) {
-              ggparent.right = parent
-            } else {
-              ggparent.left = parent
-            }
-          }
-          break
-        }
-      } else {
-        const parsib = gparent.left
-        if (parsib && parsib.color === R) {
-          parent.color  = B
-          gparent.left  = repaintNode(parsib, B)
-          gparent.color = R
-          s            -= 1
-        } else {
-          parent.left      = node.right
-          gparent.color    = R
-          gparent.right    = node.left
-          node.color       = B
-          node.right       = parent
-          node.left        = gparent
-          nodeStack[s - 2] = node
-          nodeStack[s - 1] = parent
-          recountNode(gparent)
-          recountNode(parent)
-          recountNode(node)
-          if (s >= 3) {
-            const ggparent = nodeStack[s - 3]
-            if (ggparent.right === gparent) {
-              ggparent.right = node
-            } else {
-              ggparent.left = node
-            }
-          }
-          break
-        }
-      }
-    }
-  }
-  nodeStack[0].color = B
-}
-
-function headNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
-  if (root === Leaf) {
-    return O.none()
-  }
-  let n: Node<K, V> = root
-  while (n.left) {
-    n = n.left
-  }
-  return O.some(n)
-}
-
-function lastNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
-  if (root === Leaf) {
-    return O.none()
-  }
-  let n: Node<K, V> = root
-  while (n.right) {
-    n = n.right
-  }
-  return O.some(n)
 }
