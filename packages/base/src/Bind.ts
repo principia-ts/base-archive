@@ -1,10 +1,19 @@
+import type { Functor } from './Functor'
 import type * as HKT from './HKT'
 import type { Monad } from './Monad'
 
-export interface Bind<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
+export interface Bind<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC> {
   readonly bind_: BindFn_<F, TC>
   readonly bind: BindFn<F, TC>
   readonly flatten: FlattenFn<F, TC>
+}
+
+export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: Bind<F, TC>): TapFn<F, TC> {
+  return (f) => F.bind((a) => F.map_(f(a), () => a))
+}
+
+export function tapF_<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): TapFn_<F, TC> {
+  return (ma, f) => F.bind_(ma, (a) => F.map_(f(a), () => a))
 }
 
 export interface BindFn<F extends HKT.URIS, TC = HKT.Auto> {
@@ -272,16 +281,6 @@ export interface BindFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF 
   >
 }
 
-export function bindF<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): BindFn<F, TC>
-export function bindF<F>(F: Monad<HKT.UHKT<F>>): BindFn<HKT.UHKT<F>> {
-  return (f) => (ma) => F.flatten(F.map_(ma, f))
-}
-
-export function bindF_<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): BindFn_<F, TC>
-export function bindF_<F>(F: Monad<HKT.UHKT<F>>): BindFn_<HKT.UHKT<F>> {
-  return (ma, f) => F.flatten(F.map_(ma, f))
-}
-
 export interface TapFn<F extends HKT.URIS, C = HKT.Auto> {
   <A, N2 extends string, K2, Q2, W2, X2, I2, S2, R2, E2, B>(
     f: (a: A) => HKT.Kind<F, C, N2, K2, Q2, W2, X2, I2, S2, R2, E2, B>
@@ -347,16 +346,6 @@ export interface TapFn_<F extends HKT.URIS, C = HKT.Auto> {
     HKT.Mix<C, 'E', [E2, E]>,
     A
   >
-}
-
-export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): TapFn<F, TC>
-export function tapF<F>(F: Monad<HKT.UHKT<F>>): TapFn<HKT.UHKT<F>> {
-  return (f) => bindF(F)((a) => F.map_(f(a), () => a))
-}
-
-export function tapF_<F extends HKT.URIS, TC = HKT.Auto>(F: Monad<F, TC>): TapFn_<F, TC>
-export function tapF_<F>(F: Monad<HKT.UHKT<F>>): TapFn_<HKT.UHKT<F>> {
-  return (ma, f) => bindF_(F)(ma, (a) => F.map_(f(a), () => a))
 }
 
 export interface FlattenFn<F extends HKT.URIS, TC = HKT.Auto> {

@@ -1101,10 +1101,10 @@ export const Apply: P.Apply<[HKT.URI<EitherURI>], V> = HKT.instance({
   ...Functor,
   ap,
   ap_,
-  crossWith: crossWith,
-  crossWith_: crossWith_,
-  cross_: cross_,
-  cross: cross
+  crossWith,
+  crossWith_,
+  cross_,
+  cross
 })
 
 export const sequenceT = P.sequenceTF(Apply)
@@ -1112,6 +1112,8 @@ export const sequenceT = P.sequenceTF(Apply)
 export const mapN = P.mapNF(Apply)
 
 export const mapN_ = P.mapNF_(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
 
 /**
  * @category Instances
@@ -1122,8 +1124,6 @@ export const Applicative: P.Applicative<[HKT.URI<EitherURI>], V> = HKT.instance(
   unit,
   pure
 })
-
-export const sequenceS = P.sequenceSF(Applicative)
 
 /**
  * @category Instances
@@ -1179,6 +1179,17 @@ export const Foldable: P.Foldable<[HKT.URI<EitherURI>], V> = HKT.instance({
   foldl,
   foldMap,
   foldr
+})
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export const Semialign: P.Semialign<[HKT.URI<EitherURI>], V> = HKT.instance({
+  alignWith_,
+  alignWith,
+  align_,
+  align
 })
 
 /**

@@ -2,7 +2,7 @@ import type { Functor, FunctorComposition } from './Functor'
 import type { Semigroupal, SemigroupalComposition } from './Semigroupal'
 import type { EnforceNonEmptyRecord } from './util/types'
 
-import { tuple } from './Function'
+import { flow, pipe, tuple } from './Function'
 import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 
@@ -383,6 +383,25 @@ export interface ApLeftFn_<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
+export function aplF_<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): ApLeftFn_<F, C>
+export function aplF_<F>(A: Apply<HKT.UHKT<F>>): ApLeftFn_<HKT.UHKT<F>> {
+  return (left, right) =>
+    pipe(
+      left,
+      A.map((a) => () => a),
+      A.ap(right)
+    )
+}
+
+export function aplF<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): ApLeftFn<F, C>
+export function aplF<F>(A: Apply<HKT.UHKT<F>>): ApLeftFn<HKT.UHKT<F>> {
+  return (right) =>
+    flow(
+      A.map((a) => () => a),
+      A.ap(right)
+    )
+}
+
 export interface ApLeftFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
     NF1 extends string,
@@ -551,6 +570,26 @@ export interface ApRightFn_<F extends HKT.URIS, C = HKT.Auto> {
     HKT.Mix<C, 'E', [E1, E]>,
     B
   >
+}
+
+export function aprF_<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): ApRightFn_<F, C>
+export function aprF_<F>(A: Apply<HKT.UHKT<F>>): ApRightFn_<HKT.UHKT<F>> {
+  return <A, B>(left: HKT.HKT<F, A>, right: HKT.HKT<F, B>) =>
+    pipe(
+      left,
+      A.map(() => (b: B) => b),
+      A.ap(right)
+    )
+}
+
+export function aprF<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): ApRightFn<F, C>
+export function aprF<F>(A: Apply<HKT.UHKT<F>>): ApRightFn<HKT.UHKT<F>> {
+  return <B>(right: HKT.HKT<F, B>) => <A>(left: HKT.HKT<F, A>) =>
+    pipe(
+      left,
+      A.map(() => (b: B) => b),
+      A.ap(right)
+    )
 }
 
 export interface ApRightFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
@@ -733,6 +772,322 @@ export interface LiftA2Fn<F extends HKT.URIS, TC = HKT.Auto> {
     HKT.Mix<TC, 'E', [E, E1]>,
     D
   >
+}
+
+export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
+  <
+    KT extends readonly [
+      HKT.Kind<
+        F,
+        TC,
+        HKT.Intro<TC, 'N', N, any>,
+        HKT.Intro<TC, 'K', K, any>,
+        HKT.Intro<TC, 'Q', Q, any>,
+        HKT.Intro<TC, 'W', W, any>,
+        HKT.Intro<TC, 'X', X, any>,
+        HKT.Intro<TC, 'I', I, any>,
+        HKT.Intro<TC, 'S', S, any>,
+        HKT.Intro<TC, 'R', R, any>,
+        HKT.Intro<TC, 'E', E, any>,
+        unknown
+      >,
+      ...ReadonlyArray<
+        HKT.Kind<
+          F,
+          TC,
+          HKT.Intro<TC, 'N', N, any>,
+          HKT.Intro<TC, 'K', K, any>,
+          HKT.Intro<TC, 'Q', Q, any>,
+          HKT.Intro<TC, 'W', W, any>,
+          HKT.Intro<TC, 'X', X, any>,
+          HKT.Intro<TC, 'I', I, any>,
+          HKT.Intro<TC, 'S', S, any>,
+          HKT.Intro<TC, 'R', R, any>,
+          HKT.Intro<TC, 'E', E, any>,
+          unknown
+        >
+      >
+    ],
+    B,
+    N extends string = HKT.Initial<TC, 'N'>,
+    K = HKT.Initial<TC, 'K'>,
+    Q = HKT.Initial<TC, 'Q'>,
+    W = HKT.Initial<TC, 'W'>,
+    X = HKT.Initial<TC, 'X'>,
+    I = HKT.Initial<TC, 'I'>,
+    S = HKT.Initial<TC, 'S'>,
+    R = HKT.Initial<TC, 'R'>,
+    E = HKT.Initial<TC, 'E'>
+  >(
+    f: (...as: { [K in keyof KT]: HKT.Infer<F, TC, 'A', KT[K]> }) => B
+  ): (
+    ...t: KT
+  ) => HKT.Kind<
+    F,
+    TC,
+    InferMixTuple<F, TC, 'N', N, KT>,
+    InferMixTuple<F, TC, 'K', K, KT>,
+    InferMixTuple<F, TC, 'Q', Q, KT>,
+    InferMixTuple<F, TC, 'W', W, KT>,
+    InferMixTuple<F, TC, 'X', X, KT>,
+    InferMixTuple<F, TC, 'I', I, KT>,
+    InferMixTuple<F, TC, 'S', S, KT>,
+    InferMixTuple<F, TC, 'R', R, KT>,
+    InferMixTuple<F, TC, 'E', E, KT>,
+    B
+  >
+}
+
+export interface MapNFn_<F extends HKT.URIS, TC = HKT.Auto> {
+  <
+    KT extends readonly [
+      HKT.Kind<
+        F,
+        TC,
+        HKT.Intro<TC, 'N', N, any>,
+        HKT.Intro<TC, 'K', K, any>,
+        HKT.Intro<TC, 'Q', Q, any>,
+        HKT.Intro<TC, 'W', W, any>,
+        HKT.Intro<TC, 'X', X, any>,
+        HKT.Intro<TC, 'I', I, any>,
+        HKT.Intro<TC, 'S', S, any>,
+        HKT.Intro<TC, 'R', R, any>,
+        HKT.Intro<TC, 'E', E, any>,
+        unknown
+      >,
+      ...ReadonlyArray<
+        HKT.Kind<
+          F,
+          TC,
+          HKT.Intro<TC, 'N', N, any>,
+          HKT.Intro<TC, 'K', K, any>,
+          HKT.Intro<TC, 'Q', Q, any>,
+          HKT.Intro<TC, 'W', W, any>,
+          HKT.Intro<TC, 'X', X, any>,
+          HKT.Intro<TC, 'I', I, any>,
+          HKT.Intro<TC, 'S', S, any>,
+          HKT.Intro<TC, 'R', R, any>,
+          HKT.Intro<TC, 'E', E, any>,
+          unknown
+        >
+      >
+    ],
+    N extends string = HKT.Initial<TC, 'N'>,
+    K = HKT.Initial<TC, 'K'>,
+    Q = HKT.Initial<TC, 'Q'>,
+    W = HKT.Initial<TC, 'W'>,
+    X = HKT.Initial<TC, 'X'>,
+    I = HKT.Initial<TC, 'I'>,
+    S = HKT.Initial<TC, 'S'>,
+    R = HKT.Initial<TC, 'R'>,
+    E = HKT.Initial<TC, 'E'>
+  >(
+    ...t: KT
+  ): <B>(
+    f: (...as: { [K in keyof KT]: HKT.Infer<F, TC, 'A', KT[K]> }) => B
+  ) => HKT.Kind<
+    F,
+    TC,
+    InferMixTuple<F, TC, 'N', N, KT>,
+    InferMixTuple<F, TC, 'K', K, KT>,
+    InferMixTuple<F, TC, 'Q', Q, KT>,
+    InferMixTuple<F, TC, 'W', W, KT>,
+    InferMixTuple<F, TC, 'X', X, KT>,
+    InferMixTuple<F, TC, 'I', I, KT>,
+    InferMixTuple<F, TC, 'S', S, KT>,
+    InferMixTuple<F, TC, 'R', R, KT>,
+    InferMixTuple<F, TC, 'E', E, KT>,
+    B
+  >
+}
+
+/**
+ * ```haskell
+ * mapNF :: Apply f => ([a, b, ...] -> c) -> [f a, f b, ...] -> f c
+ * ```
+ *
+ * Combines a tuple of the given `Apply` member and maps with function `f`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export function mapNF<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): MapNFn<F, C>
+export function mapNF<F>(F: Apply<HKT.UHKT<F>>): MapNFn<HKT.UHKT<F>> {
+  return (f) => (...t) => F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)))
+}
+
+/**
+ * ```haskell
+ * mapNF_ :: Apply f => (fa, fb, ...) -> ([a, b, ...] -> c) -> f c
+ * ```
+ *
+ * Combines a tuple of the given `Apply` member and maps with function `f`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export function mapNF_<F extends HKT.URIS, C = HKT.Auto>(A: Apply<F, C>): MapNFn_<F, C>
+export function mapNF_<F>(F: Apply<HKT.UHKT<F>>): MapNFn_<HKT.UHKT<F>> {
+  return (...t) => (f) => F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)))
+}
+
+export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
+  <
+    KS extends Readonly<
+      Record<
+        string,
+        HKT.Kind<
+          F,
+          TC,
+          HKT.Intro<TC, 'N', N, any>,
+          HKT.Intro<TC, 'K', K, any>,
+          HKT.Intro<TC, 'Q', Q, any>,
+          HKT.Intro<TC, 'W', W, any>,
+          HKT.Intro<TC, 'X', X, any>,
+          HKT.Intro<TC, 'I', I, any>,
+          HKT.Intro<TC, 'S', S, any>,
+          HKT.Intro<TC, 'R', R, any>,
+          HKT.Intro<TC, 'E', E, any>,
+          unknown
+        >
+      >
+    >,
+    N extends string = HKT.Initial<TC, 'N'>,
+    K = HKT.Initial<TC, 'K'>,
+    Q = HKT.Initial<TC, 'Q'>,
+    W = HKT.Initial<TC, 'W'>,
+    X = HKT.Initial<TC, 'X'>,
+    I = HKT.Initial<TC, 'I'>,
+    S = HKT.Initial<TC, 'S'>,
+    R = HKT.Initial<TC, 'R'>,
+    E = HKT.Initial<TC, 'E'>
+  >(
+    r: EnforceNonEmptyRecord<KS> &
+      Readonly<
+        Record<
+          string,
+          HKT.Kind<
+            F,
+            TC,
+            HKT.Intro<TC, 'N', N, any>,
+            HKT.Intro<TC, 'K', K, any>,
+            HKT.Intro<TC, 'Q', Q, any>,
+            HKT.Intro<TC, 'W', W, any>,
+            HKT.Intro<TC, 'X', X, any>,
+            HKT.Intro<TC, 'I', I, any>,
+            HKT.Intro<TC, 'S', S, any>,
+            HKT.Intro<TC, 'R', R, any>,
+            HKT.Intro<TC, 'E', E, any>,
+            unknown
+          >
+        >
+      >
+  ): HKT.Kind<
+    F,
+    TC,
+    InferMixStruct<F, TC, 'N', N, KS>,
+    InferMixStruct<F, TC, 'K', K, KS>,
+    InferMixStruct<F, TC, 'Q', Q, KS>,
+    InferMixStruct<F, TC, 'W', W, KS>,
+    InferMixStruct<F, TC, 'X', X, KS>,
+    InferMixStruct<F, TC, 'I', I, KS>,
+    InferMixStruct<F, TC, 'S', S, KS>,
+    InferMixStruct<F, TC, 'R', R, KS>,
+    InferMixStruct<F, TC, 'E', E, KS>,
+    {
+      [K in keyof KS]: HKT.Infer<F, TC, 'A', KS[K]>
+    }
+  >
+}
+
+export function sequenceSF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): SequenceSFn<F, C>
+export function sequenceSF<F>(F: Apply<HKT.UHKT<F>>): SequenceSFn<HKT.UHKT<F>> {
+  return (r) => {
+    const keys = Object.keys(r)
+    const len  = keys.length
+    const f    = getRecordConstructor(keys)
+    let fr     = F.map_(r[keys[0]], f)
+    for (let i = 1; i < len; i++) {
+      fr = F.ap_(fr, r[keys[i]]) as any
+    }
+    return fr
+  }
+}
+
+export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
+  <
+    KT extends readonly [
+      HKT.Kind<
+        F,
+        TC,
+        HKT.Intro<TC, 'N', N, any>,
+        HKT.Intro<TC, 'K', K, any>,
+        HKT.Intro<TC, 'Q', Q, any>,
+        HKT.Intro<TC, 'W', W, any>,
+        HKT.Intro<TC, 'X', X, any>,
+        HKT.Intro<TC, 'I', I, any>,
+        HKT.Intro<TC, 'S', S, any>,
+        HKT.Intro<TC, 'R', R, any>,
+        HKT.Intro<TC, 'E', E, any>,
+        unknown
+      >,
+      ...ReadonlyArray<
+        HKT.Kind<
+          F,
+          TC,
+          HKT.Intro<TC, 'N', N, any>,
+          HKT.Intro<TC, 'K', K, any>,
+          HKT.Intro<TC, 'Q', Q, any>,
+          HKT.Intro<TC, 'W', W, any>,
+          HKT.Intro<TC, 'X', X, any>,
+          HKT.Intro<TC, 'I', I, any>,
+          HKT.Intro<TC, 'S', S, any>,
+          HKT.Intro<TC, 'R', R, any>,
+          HKT.Intro<TC, 'E', E, any>,
+          unknown
+        >
+      >
+    ],
+    N extends string = HKT.Initial<TC, 'N'>,
+    K = HKT.Initial<TC, 'K'>,
+    Q = HKT.Initial<TC, 'Q'>,
+    W = HKT.Initial<TC, 'W'>,
+    X = HKT.Initial<TC, 'X'>,
+    I = HKT.Initial<TC, 'I'>,
+    S = HKT.Initial<TC, 'S'>,
+    R = HKT.Initial<TC, 'R'>,
+    E = HKT.Initial<TC, 'E'>
+  >(
+    ...t: KT
+  ): HKT.Kind<
+    F,
+    TC,
+    InferMixTuple<F, TC, 'N', N, KT>,
+    InferMixTuple<F, TC, 'K', K, KT>,
+    InferMixTuple<F, TC, 'Q', Q, KT>,
+    InferMixTuple<F, TC, 'W', W, KT>,
+    InferMixTuple<F, TC, 'X', X, KT>,
+    InferMixTuple<F, TC, 'I', I, KT>,
+    InferMixTuple<F, TC, 'S', S, KT>,
+    InferMixTuple<F, TC, 'R', R, KT>,
+    InferMixTuple<F, TC, 'E', E, KT>,
+    {
+      [K in keyof KT]: HKT.Infer<F, TC, 'A', KT[K]>
+    }
+  >
+}
+
+export function sequenceTF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): SequenceTFn<F, C>
+export function sequenceTF<F>(F: Apply<HKT.UHKT<F>>): SequenceTFn<HKT.UHKT<F>> {
+  return (...t) => {
+    const len = t.length
+    const f   = getTupleConstructor(len)
+    let fas   = F.map_(t[0], f)
+    for (let i = 1; i < len; i++) {
+      fas = F.ap_(fas, t[i]) as any
+    }
+    return fas as any
+  }
 }
 
 export interface CrossWithFn<F extends HKT.URIS, TC = HKT.Auto> {
@@ -999,3 +1354,107 @@ export interface Map2FnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF 
     >
   >
 }
+
+/*
+ * -------------------------------------------
+ * internal
+ * -------------------------------------------
+ */
+
+/**
+ * @internal
+ */
+function curried(f: Function, n: number, acc: ReadonlyArray<unknown>) {
+  return function (x: unknown) {
+    const mut_combined = Array(acc.length + 1)
+    for (let i = 0; i < acc.length; i++) {
+      mut_combined[i] = acc[i]
+    }
+    mut_combined[acc.length] = x
+    /* eslint-disable-next-line prefer-spread */
+    return n === 0 ? f.apply(null, mut_combined) : curried(f, n - 1, mut_combined)
+  }
+}
+/**
+ * @internal
+ */
+const mut_tupleConstructors: Record<number, (a: unknown) => any> = {
+  1: (a) => [a],
+  2: (a) => (b: any) => [a, b],
+  3: (a) => (b: any) => (c: any) => [a, b, c],
+  4: (a) => (b: any) => (c: any) => (d: any) => [a, b, c, d],
+  5: (a) => (b: any) => (c: any) => (d: any) => (e: any) => [a, b, c, d, e]
+}
+
+/**
+ * @internal
+ */
+function getTupleConstructor(len: number): (a: unknown) => any {
+  /* eslint-disable-next-line no-prototype-builtins */
+  if (!mut_tupleConstructors.hasOwnProperty(len)) {
+    mut_tupleConstructors[len] = curried(tuple, len - 1, [])
+  }
+  return mut_tupleConstructors[len]
+}
+
+/**
+ * @internal
+ */
+function getRecordConstructor(keys: ReadonlyArray<string>) {
+  const len = keys.length
+  switch (len) {
+    case 1:
+      return (a: any) => ({ [keys[0]]: a })
+    case 2:
+      return (a: any) => (b: any) => ({ [keys[0]]: a, [keys[1]]: b })
+    case 3:
+      return (a: any) => (b: any) => (c: any) => ({ [keys[0]]: a, [keys[1]]: b, [keys[2]]: c })
+    case 4:
+      return (a: any) => (b: any) => (c: any) => (d: any) => ({
+        [keys[0]]: a,
+        [keys[1]]: b,
+        [keys[2]]: c,
+        [keys[3]]: d
+      })
+    case 5:
+      return (a: any) => (b: any) => (c: any) => (d: any) => (e: any) => ({
+        [keys[0]]: a,
+        [keys[1]]: b,
+        [keys[2]]: c,
+        [keys[3]]: d,
+        [keys[4]]: e
+      })
+    default:
+      return curried(
+        (...args: ReadonlyArray<unknown>) => {
+          const mut_r: Record<string, unknown> = {}
+          for (let i = 0; i < len; i++) {
+            mut_r[keys[i]] = args[i]
+          }
+          return mut_r
+        },
+        len - 1,
+        []
+      )
+  }
+}
+
+/**
+ * @internal
+ */
+type InferMixStruct<F extends HKT.URIS, TC, P extends HKT.Param, T, KS> = HKT.MixStruct<
+  TC,
+  P,
+  T,
+  { [K in keyof KS]: HKT.Infer<F, TC, P, KS[K]> }
+>
+
+/**
+ * @internal
+ */
+type InferMixTuple<F extends HKT.URIS, TC, P extends HKT.Param, T, KT> = HKT.MixStruct<
+  TC,
+  P,
+  T,
+  { [K in keyof KT & number]: HKT.Infer<F, TC, P, KT[K]> }
+>

@@ -894,6 +894,14 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  */
 
+export const Align: P.Align<[HKT.URI<OptionURI>]> = HKT.instance({
+  alignWith_,
+  alignWith,
+  align_,
+  align,
+  nil: none
+})
+
 export const Functor: P.Functor<[HKT.URI<OptionURI>]> = HKT.instance({
   invmap_: (fa, f, _) => map_(fa, f),
   invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: Option<A>) => map_(fa, f),
@@ -911,15 +919,17 @@ export const Apply: P.Apply<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Functor,
   ap_,
   ap,
-  crossWith_: crossWith_,
-  crossWith: crossWith,
-  cross_: cross_,
-  cross: cross
+  crossWith_,
+  crossWith,
+  cross_,
+  cross
 })
 
 export const sequenceT = P.sequenceTF(Apply)
 
 export const mapN = P.mapNF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
 
 export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Apply,
@@ -927,11 +937,9 @@ export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = HKT.instance({
   pure
 })
 
-export const sequenceS = P.sequenceSF(Applicative)
-
 export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
   ...Applicative,
-  fail: fail,
+  fail,
   catchAll_,
   catchAll,
   catchSome_,
@@ -941,8 +949,8 @@ export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fi
 
 export const Monad: P.Monad<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Applicative,
-  bind_: bind_,
-  bind: bind,
+  bind_,
+  bind,
   unit,
   flatten
 })

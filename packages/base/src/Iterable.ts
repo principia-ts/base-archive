@@ -409,10 +409,10 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
  */
 
 export const Foldable = HKT.instance<P.Foldable<[HKT.URI<IterableURI>]>>({
-  foldl_: foldl_,
-  foldl: foldl,
-  foldr_: foldr_,
-  foldr: foldr,
+  foldl_,
+  foldl,
+  foldr_,
+  foldr,
   foldMap_,
   foldMap
 })
