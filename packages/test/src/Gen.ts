@@ -334,8 +334,7 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
     bind((n) => {
       return pipe(
         map,
-        RBT.gte(n),
-        (it) => it.value,
+        RBT.getGte(n),
         O.getOrElse(() => {
           throw new NoSuchElementError('Gen.weighted')
         })

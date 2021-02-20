@@ -195,6 +195,103 @@ export function get<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
   return (tree) => get_(tree, key)
 }
 
+/**
+ * Searches the tree and returns the first value in sorted order that is >= key, if it exists
+ */
+export function getGte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
+  const cmp     = tree.ord.compare_
+  let n         = tree.root
+  let lastValue = O.none<V>()
+  while (n) {
+    const d = cmp(key, n.key)
+    if (d <= 0) {
+      lastValue = O.some(n.value)
+      n         = n.left
+    } else {
+      if (lastValue._tag === 'Some') {
+        break
+      }
+      n = n.right
+    }
+  }
+  return lastValue
+}
+
+/**
+ * Searches the tree and returns the first value in sorted order that is >= key, if it exists
+ */
+export function getGte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
+  return (tree) => getGte_(tree, key)
+}
+
+export function getGt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
+  const cmp     = tree.ord.compare_
+  let n         = tree.root
+  let lastValue = O.none<V>()
+  while (n) {
+    const d = cmp(key, n.key)
+    if (d < 0) {
+      lastValue = O.some(n.value)
+      n         = n.left
+    } else {
+      if (lastValue._tag === 'Some') {
+        break
+      }
+      n = n.right
+    }
+  }
+  return lastValue
+}
+
+export function getGt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
+  return (tree) => getGt_(tree, key)
+}
+
+export function getLte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
+  const cmp     = tree.ord.compare_
+  let n         = tree.root
+  let lastValue = O.none<V>()
+  while (n) {
+    const d = cmp(key, n.key)
+    if (d > 0) {
+      if (lastValue._tag === 'Some') {
+        break
+      }
+      n = n.right
+    } else {
+      lastValue = O.some(n.value)
+      n         = n.left
+    }
+  }
+  return lastValue
+}
+
+export function getLte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
+  return (tree) => getLte_(tree, key)
+}
+
+export function getLt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
+  const cmp     = tree.ord.compare_
+  let n         = tree.root
+  let lastValue = O.none<V>()
+  while (n) {
+    const d = cmp(key, n.key)
+    if(d > 0) {
+      lastValue = O.some(n.value)
+    }
+    if(d <= 0) {
+      n = n.left
+    } else {
+      n = n.right
+    }
+  }
+  return lastValue
+}
+
+export function getLt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
+  return (tree) => getLt_(tree, key)
+}
+
 export function visitFull<K, V, A>(tree: RedBlackTree<K, V>, visit: (key: K, value: V) => Option<A>): Option<A> {
   let current: RBNode<K, V>                = tree.root
   let stack: Stack<Node<K, V>> | undefined = undefined
@@ -619,7 +716,7 @@ export function at(
 }
 
 /**
- * Finds the last element in the tree whose key is >= the given key
+ * Finds the first element in the tree whose key is >= the given key
  * @returns An iterator at the found element
  */
 export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
@@ -646,7 +743,7 @@ export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 
 }
 
 /**
- * Finds the last element in the tree whose key is >= the given key
+ * Finds the first element in the tree whose key is >= the given key
  * @returns An iterator at the found element
  */
 export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
@@ -654,7 +751,7 @@ export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, 
 }
 
 /**
- * Finds the last element in the tree whose key is > the given key
+ * Finds the first element in the tree whose key is > the given key
  * @returns An iterator at the found element
  */
 export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
@@ -681,7 +778,7 @@ export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0
 }
 
 /**
- * Finds the last element in the tree whose key is > the given key
+ * Finds the first element in the tree whose key is > the given key
  * @returns An iterator at the found element
  */
 export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
@@ -689,7 +786,7 @@ export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V
 }
 
 /**
- * Finds the last element in the tree whose key is <= the given key
+ * Finds the first element in the tree whose key is <= the given key
  * @returns An iterator at the found element
  */
 export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
@@ -718,7 +815,7 @@ export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 
 }
 
 /**
- * Finds the last element in the tree whose key is <= the given key
+ * Finds the first element in the tree whose key is <= the given key
  * @returns An iterator at the found element
  */
 export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
@@ -726,7 +823,7 @@ export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, 
 }
 
 /**
- * Finds the last element in the tree whose key is < the given key
+ * Finds the first element in the tree whose key is < the given key
  * @returns An iterator at the found element
  */
 export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
@@ -755,7 +852,7 @@ export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0
 }
 
 /**
- * Finds the last element in the tree whose key is < the given key
+ * Finds the first element in the tree whose key is < the given key
  * @returns An iterator at the found element
  */
 export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
@@ -907,17 +1004,17 @@ export function visitGte<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K
   return O.none()
 }
 
-export function foreachGte_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
+export function foreachGte_<K, V>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => void): void {
   if (tree.root) {
-    visitGte(tree, max, (k, v) => {
+    visitGte(tree, min, (k, v) => {
       visit(k, v)
       return O.none()
     })
   }
 }
 
-export function foreachGte<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreachGte_(tree, max, visit)
+export function foreachGte<K, V>(min: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
+  return (tree) => foreachGte_(tree, min, visit)
 }
 
 export function visitGt<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
@@ -950,17 +1047,17 @@ export function visitGt<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K,
   return O.none()
 }
 
-export function foreachGt_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
+export function foreachGt_<K, V>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => void): void {
   if (tree.root) {
-    visitGt(tree, max, (k, v) => {
+    visitGt(tree, min, (k, v) => {
       visit(k, v)
       return O.none()
     })
   }
 }
 
-export function foreachGt<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreachGt_(tree, max, visit)
+export function foreachGt<K, V>(min: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
+  return (tree) => foreachGt_(tree, min, visit)
 }
 
 export function visitBetween<K, V, A>(
@@ -1063,18 +1160,30 @@ export function keys(direction: 0 | 1 = 0): <K, V>(tree: RedBlackTree<K, V>) => 
 /**
  * Returns a range of the tree with keys >= min and < max
  */
-export function range_<K, V>(tree: RedBlackTree<K, V>, min: K, max: K): RedBlackTree<K, V> {
+export function range_<K, V>(tree: RedBlackTree<K, V>, min: Option<K>, max: Option<K>): RedBlackTree<K, V> {
   let r = make<K, V>(tree.ord)
-  foreachBetween_(tree, min, max, (k, v) => {
-    r = insert_(r, k, v)
-  })
+  if (min._tag === 'Some') {
+    if (max._tag === 'Some') {
+      foreachBetween_(tree, min.value, max.value, (k, v) => {
+        r = insert_(r, k, v)
+      })
+    } else {
+      foreachGte_(tree, min.value, (k, v) => {
+        r = insert_(r, k, v)
+      })
+    }
+  } else if (max._tag === 'Some') {
+    foreachLt_(tree, max.value, (k, v) => {
+      r = insert_(r, k, v)
+    })
+  }
   return r
 }
 
 /**
  * Returns a range of the tree with keys >= min and < max
  */
-export function range<K>(min: K, max: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
+export function range<K>(min: Option<K>, max: Option<K>): <V>(tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
   return (tree) => range_(tree, min, max)
 }
 
