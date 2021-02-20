@@ -7,7 +7,7 @@ import { pipe, tuple } from '@principia/base/Function'
 import { matchTag } from '@principia/base/util/matchers'
 
 import { Clock } from '../../Clock'
-import { catchAll, defer, first, fromRawEffect, fromRawFunctionM, identity } from '../core'
+import { catchAll, crossPar_, defer, first, fresh, fromRawEffect, fromRawFunctionM, identity } from '../core'
 import * as I from '../internal/io'
 
 /**
@@ -19,35 +19,29 @@ export function retry_<R, E, A, R1>(
 ): Layer<R & R1 & H.Has<Clock>, E, A> {
   type S = StepFunction<R1, E, any>
 
-  const update: Layer<
-    readonly [readonly [R & R1 & H.Has<Clock>, S], E],
-    E,
-    readonly [R & R1 & H.Has<Clock>, S]
-  > = fromRawFunctionM(([[r, s], e]: readonly [readonly [R & R1 & H.Has<Clock>, S], E]) =>
-    pipe(
-      Clock.currentTime,
-      I.orDie,
-      I.bind((now) =>
-        pipe(
-          s(now, e),
-          I.bind(
-            matchTag({
-              Done: (_) => I.fail(e),
-              Continue: (c) => I.as_(Clock.sleep(c.interval), () => tuple(r, c.next))
-            })
+  const loop = (): Layer<readonly [R & R1 & H.Has<Clock>, S], E, A> => {
+    const update = fromRawFunctionM(([[r, s], e]: readonly [readonly [R & R1 & H.Has<Clock>, S], E]) =>
+      pipe(
+        Clock.currentTime,
+        I.orDie,
+        I.bind((now) =>
+          pipe(
+            s(now, e),
+            I.bind(
+              matchTag({
+                Done: (_) => I.fail(e),
+                Continue: (c) => I.as_(Clock.sleep(Math.abs(now - c.interval)), () => tuple(r, c.next))
+              })
+            )
           )
-        )
-      ),
-      I.giveAll(r)
+        ),
+        I.giveAll(r)
+      )
     )
-  )
 
-  const loop = (): Layer<readonly [R & R1 & H.Has<Clock>, S], E, A> =>
-    pipe(first<R>()['>>'](la), catchAll(update['>>'](defer(loop))))
-
-  return identity<R & R1 & H.Has<Clock>>()
-    ['<&>'](fromRawEffect(I.succeed(schedule.step)))
-    ['>>'](loop())
+    return pipe(first<R>()['>>>'](la), catchAll(update['>>>'](defer(() => fresh(loop())))))
+  }
+  return crossPar_(identity<R & R1 & H.Has<Clock>>(), fromRawEffect(I.succeed(schedule.step)))['>>>'](loop())
 }
 
 /**
