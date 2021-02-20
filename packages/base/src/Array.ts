@@ -1266,7 +1266,7 @@ export function cons<A>(tail: ReadonlyArray<A>): (head: A) => NonEmptyArray<A> {
  * @since 1.0.0
  */
 export function deleteAt_<A>(as: ReadonlyArray<A>, i: number): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeDeleteAt_(as, i))
+  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeDeleteAt_(as, i))
 }
 
 /**
@@ -1371,10 +1371,10 @@ export function findFirst<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) =>
     const len = as.length
     for (let i = len - 1; i >= 0; i--) {
       if (predicate(as[i])) {
-        return O.some(as[i])
+        return O.Some(as[i])
       }
     }
-    return O.none()
+    return O.None()
   }
 }
 
@@ -1387,7 +1387,7 @@ export function findFirstMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A
         return v
       }
     }
-    return O.none()
+    return O.None()
   }
 }
 
@@ -1400,10 +1400,10 @@ export function findFirstIndex_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>
   const len = as.length
   for (let i = 0; i < len; i++) {
     if (predicate(as[i])) {
-      return O.some(i)
+      return O.Some(i)
     }
   }
-  return O.none()
+  return O.None()
 }
 
 /**
@@ -1423,10 +1423,10 @@ export function findLast<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => 
     const len = as.length
     for (let i = 0; i < len; i++) {
       if (predicate(as[i])) {
-        return O.some(as[i])
+        return O.Some(as[i])
       }
     }
-    return O.none()
+    return O.None()
   }
 }
 
@@ -1439,7 +1439,7 @@ export function findLastMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>
         return v
       }
     }
-    return O.none()
+    return O.None()
   }
 }
 
@@ -1452,10 +1452,10 @@ export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>)
   const len = as.length
   for (let i = len - 1; i >= 0; i--) {
     if (predicate(as[i])) {
-      return O.some(i)
+      return O.Some(i)
     }
   }
-  return O.none()
+  return O.None()
 }
 
 /**
@@ -1481,16 +1481,16 @@ export function grouped(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<R
 }
 
 export function head<A>(as: ReadonlyArray<A>): Option<A> {
-  return isEmpty(as) ? O.none() : O.some(as[0])
+  return isEmpty(as) ? O.None() : O.Some(as[0])
 }
 
 export function init<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
   const len = as.length
-  return len === 0 ? O.none() : O.some(as.slice(0, len - 1))
+  return len === 0 ? O.None() : O.Some(as.slice(0, len - 1))
 }
 
 export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeInsertAt_(as, i, a))
+  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeInsertAt_(as, i, a))
 }
 
 /**
@@ -1531,7 +1531,7 @@ export function join(s: string): (as: ReadonlyArray<string>) => string {
 }
 
 export function lookup_<A>(as: ReadonlyArray<A>, i: number): Option<A> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(as[i])
+  return isOutOfBound_(as, i) ? O.None() : O.Some(as[i])
 }
 
 /**
@@ -1569,7 +1569,7 @@ export function lefts<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> {
  * @since 1.0.0
  */
 export function modifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, f(as[i])))
+  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeUpdateAt_(as, i, f(as[i])))
 }
 
 /**
@@ -1759,7 +1759,7 @@ export function sum(as: ReadonlyArray<number>): number {
 }
 
 export function tail<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
-  return isEmpty(as) ? O.none() : O.some(as.slice(1))
+  return isEmpty(as) ? O.None() : O.Some(as.slice(1))
 }
 
 export function take_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
@@ -1803,7 +1803,7 @@ export function takeWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) =>
  * @since 1.0.0
  */
 export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, a))
+  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeUpdateAt_(as, i, a))
 }
 
 /**

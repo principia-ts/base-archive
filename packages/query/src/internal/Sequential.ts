@@ -20,7 +20,7 @@ export class Sequential<R> {
         Map.insertAt_(eqDataSource)(
           map,
           k,
-          O.fold_(Map.lookupAt_(eqDataSource)(map, k), () => C.empty(), C.concat(v))
+          O.match_(Map.lookupAt_(eqDataSource)(map, k), () => C.empty(), C.concat(v))
         )
       )
     )

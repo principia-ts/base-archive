@@ -17,9 +17,9 @@ export function mapM_<E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => I.FIO<E1, B>
     interruptAs: (id) => I.bind_(fiber.interruptAs(id), Ex.foreachEffect(f)),
     poll: I.bind_(
       fiber.poll,
-      O.fold(
-        () => I.pure(O.none()),
-        (a) => I.map_(Ex.foreachEffect_(a, f), O.some)
+      O.match(
+        () => I.pure(O.None()),
+        (a) => I.map_(Ex.foreachEffect_(a, f), O.Some)
       )
     )
   }

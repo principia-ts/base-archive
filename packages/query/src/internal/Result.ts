@@ -66,7 +66,7 @@ export function mapDataSources<R1>(f: DataSourceAspect<R1>): <R, E, A>(fa: Resul
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): Result<unknown, E, A> {
-  return E.fold_(
+  return E.match_(
     either,
     (e) => fail(Ca.fail(e)),
     (a) => done(a)

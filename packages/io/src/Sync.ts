@@ -68,10 +68,10 @@ export const deferCatch: <E1>(
   onThrow: (u: unknown) => E1
 ) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = M.deferCatch
 
-export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.fold(fail, succeed)
+export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.match(fail, succeed)
 
 export const fromOption = <E, A>(option: O.Option<A>, onNone: () => E): Sync<unknown, E, A> =>
-  O.fold_(option, () => fail(onNone()), succeed)
+  O.match_(option, () => fail(onNone()), succeed)
 
 /*
  * -------------------------------------------

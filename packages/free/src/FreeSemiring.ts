@@ -115,17 +115,17 @@ export function fold_<Z, A, B>(
         const [ps, ...fss] = input
         switch (ps._tag) {
           case 'Both':
-            return yield* _(loop([ps.left, ps.right, ...fss], [E.left(true), ...output]))
+            return yield* _(loop([ps.left, ps.right, ...fss], [E.Left(true), ...output]))
           case 'Then':
-            return yield* _(loop([ps.left, ps.right, ...fss], [E.left(false), ...output]))
+            return yield* _(loop([ps.left, ps.right, ...fss], [E.Left(false), ...output]))
           case 'Single':
-            return yield* _(loop(fss, [E.right(onSingle(ps.value)), ...output]))
+            return yield* _(loop(fss, [E.Right(onSingle(ps.value)), ...output]))
           case 'Empty':
-            return yield* _(loop(fss, [E.right(onEmpty), ...output]))
+            return yield* _(loop(fss, [E.Right(onEmpty), ...output]))
         }
       } else {
         return A.foldl_(output, A.empty(), (b, a) =>
-          E.fold_(
+          E.match_(
             a,
             (e) => {
               if (e) {

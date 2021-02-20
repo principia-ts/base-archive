@@ -33,7 +33,7 @@ export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E
       pipe(
         self.upstream,
         I.foldM(
-          O.fold(
+          O.match(
             () =>
               pipe(
                 self.done.set(true),

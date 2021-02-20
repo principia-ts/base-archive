@@ -21,7 +21,7 @@ export function onTermination_<R, E, A, R1>(
         exit,
         flow(
           C.failureOrCause,
-          E.fold(() => I.unit(), onTerminated)
+          E.match(() => I.unit(), onTerminated)
         ),
         () => I.unit()
       )

@@ -13,7 +13,7 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
   const bind_: EitherT<HKT.UHKT<F>>['bind_'] = <E, A, E1, B>(
     ma: HKT.HKT<F, E.Either<E, A>>,
     f: (a: A) => HKT.HKT<F, E.Either<E1, B>>
-  ) => M.bind_(ma, E.fold(flow(E.left, E.widenE<E1>(), M.pure), flow(f, M.map(E.widenE<E>()))))
+  ) => M.bind_(ma, E.match(flow(E.Left, E.widenE<E1>(), M.pure), flow(f, M.map(E.widenE<E>()))))
 
   const catchAll_: EitherT<HKT.UHKT<F>>['catchAll_'] = <E, A, E1, A1>(
     fa: HKT.HKT<F, E.Either<E, A>>,
@@ -21,9 +21,9 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
   ): HKT.HKT<F, E.Either<E1, A | A1>> =>
     M.bind_(
       fa,
-      E.fold(
+      E.match(
         (e): HKT.HKT<F, E.Either<E1, A | A1>> => f(e),
-        (a) => M.pure(E.right(a))
+        (a) => M.pure(E.Right(a))
       )
     )
 
@@ -44,15 +44,15 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
     bind_: bind_,
     bind: (f) => (ma) => bind_(ma, f),
     flatten: <E, A, D>(mma: HKT.HKT<F, E.Either<E, HKT.HKT<F, E.Either<D, A>>>>) =>
-      pipe(mma, M.map(E.fold((e) => M.pure(E.widenE<D>()(E.left(e))), M.map(E.widenE<E>()))), M.flatten),
+      pipe(mma, M.map(E.match((e) => M.pure(E.widenE<D>()(E.Left(e))), M.map(E.widenE<E>()))), M.flatten),
     unit: () => M.pure(E.unit()),
-    fail: flow(E.left, M.pure),
+    fail: flow(E.Left, M.pure),
     catchAll_: catchAll_,
     catchAll: (f) => (fa) => catchAll_(fa, f),
     catchSome_,
     catchSome: (f) => (fa) => catchSome_(fa, f),
-    absolve: <E, E1, A>(fa: HKT.HKT<F, E.Either<E, E.Either<E1, A>>>) => M.map_(fa, E.fold(E.left, identity)),
-    attempt: (fa) => M.map_(fa, E.fold(flow(E.left, E.right), flow(E.right, E.right)))
+    absolve: <E, E1, A>(fa: HKT.HKT<F, E.Either<E, E.Either<E1, A>>>) => M.map_(fa, E.match(E.Left, identity)),
+    attempt: (fa) => M.map_(fa, E.match(flow(E.Left, E.Right), flow(E.Right, E.Right)))
   })
 }
 

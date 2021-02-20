@@ -19,7 +19,7 @@ export type V = HKT.V<'I', '_'>
 
 export function id<S>(): Optional<S, S> {
   return {
-    getOption: O.some,
+    getOption: O.Some,
     set: constant
   }
 }

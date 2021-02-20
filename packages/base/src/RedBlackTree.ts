@@ -173,7 +173,7 @@ export function get_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
     const d = cmp(key, n.key)
     switch (d) {
       case 0: {
-        return O.some(n.value)
+        return O.Some(n.value)
       }
       case -1: {
         n = n.left
@@ -185,7 +185,7 @@ export function get_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
       }
     }
   }
-  return O.none()
+  return O.None()
 }
 
 /**
@@ -201,11 +201,11 @@ export function get<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
 export function getGte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   const cmp     = tree.ord.compare_
   let n         = tree.root
-  let lastValue = O.none<V>()
+  let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d <= 0) {
-      lastValue = O.some(n.value)
+      lastValue = O.Some(n.value)
       n         = n.left
     } else {
       if (lastValue._tag === 'Some') {
@@ -227,11 +227,11 @@ export function getGte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
 export function getGt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   const cmp     = tree.ord.compare_
   let n         = tree.root
-  let lastValue = O.none<V>()
+  let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d < 0) {
-      lastValue = O.some(n.value)
+      lastValue = O.Some(n.value)
       n         = n.left
     } else {
       if (lastValue._tag === 'Some') {
@@ -250,7 +250,7 @@ export function getGt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
 export function getLte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   const cmp     = tree.ord.compare_
   let n         = tree.root
-  let lastValue = O.none<V>()
+  let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d > 0) {
@@ -259,7 +259,7 @@ export function getLte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
       }
       n = n.right
     } else {
-      lastValue = O.some(n.value)
+      lastValue = O.Some(n.value)
       n         = n.left
     }
   }
@@ -273,13 +273,13 @@ export function getLte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
 export function getLt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   const cmp     = tree.ord.compare_
   let n         = tree.root
-  let lastValue = O.none<V>()
+  let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
-    if(d > 0) {
-      lastValue = O.some(n.value)
+    if (d > 0) {
+      lastValue = O.Some(n.value)
     }
-    if(d <= 0) {
+    if (d <= 0) {
       n = n.left
     } else {
       n = n.right
@@ -312,7 +312,7 @@ export function visitFull<K, V, A>(tree: RedBlackTree<K, V>, visit: (key: K, val
       done = true
     }
   }
-  return O.none()
+  return O.None()
 }
 
 /**
@@ -322,7 +322,7 @@ export function foreach_<K, V>(tree: RedBlackTree<K, V>, visit: (key: K, value: 
   if (tree.root) {
     visitFull(tree, (k, v) => {
       visit(k, v)
-      return O.none()
+      return O.None()
     })
   }
 }
@@ -390,9 +390,9 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
    */
   get key(): O.Option<K> {
     if (this.isEmpty) {
-      return O.none()
+      return O.None()
     }
-    return O.some(this.node!.key)
+    return O.Some(this.node!.key)
   }
 
   /**
@@ -400,9 +400,9 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
    */
   get value(): O.Option<V> {
     if (this.isEmpty) {
-      return O.none()
+      return O.None()
     }
-    return O.some(this.node!.value)
+    return O.Some(this.node!.value)
   }
 
   /**
@@ -410,9 +410,9 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
    */
   get entry(): O.Option<readonly [K, V]> {
     if (this.isEmpty) {
-      return O.none()
+      return O.None()
     }
-    return O.some([this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value])
+    return O.Some([this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value])
   }
 
   /**
@@ -874,24 +874,24 @@ export function blackHeight<K, V>(root: RBNode<K, V>): number {
 
 function headNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
   if (root === Leaf) {
-    return O.none()
+    return O.None()
   }
   let n: Node<K, V> = root
   while (n.left) {
     n = n.left
   }
-  return O.some(n)
+  return O.Some(n)
 }
 
 function lastNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
   if (root === Leaf) {
-    return O.none()
+    return O.None()
   }
   let n: Node<K, V> = root
   while (n.right) {
     n = n.right
   }
-  return O.some(n)
+  return O.Some(n)
 }
 
 export function visitLte<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
@@ -918,14 +918,14 @@ export function visitLte<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K
       done = true
     }
   }
-  return O.none()
+  return O.None()
 }
 
 export function foreachLte_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
   if (tree.root) {
     visitLte(tree, max, (k, v) => {
       visit(k, v)
-      return O.none()
+      return O.None()
     })
   }
 }
@@ -958,14 +958,14 @@ export function visitLt<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K,
       done = true
     }
   }
-  return O.none()
+  return O.None()
 }
 
 export function foreachLt_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
   if (tree.root) {
     visitLt(tree, max, (k, v) => {
       visit(k, v)
-      return O.none()
+      return O.None()
     })
   }
 }
@@ -1001,14 +1001,14 @@ export function visitGte<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K
       done = true
     }
   }
-  return O.none()
+  return O.None()
 }
 
 export function foreachGte_<K, V>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => void): void {
   if (tree.root) {
     visitGte(tree, min, (k, v) => {
       visit(k, v)
-      return O.none()
+      return O.None()
     })
   }
 }
@@ -1044,14 +1044,14 @@ export function visitGt<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K,
       done = true
     }
   }
-  return O.none()
+  return O.None()
 }
 
 export function foreachGt_<K, V>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => void): void {
   if (tree.root) {
     visitGt(tree, min, (k, v) => {
       visit(k, v)
-      return O.none()
+      return O.None()
     })
   }
 }
@@ -1093,14 +1093,14 @@ export function visitBetween<K, V, A>(
       done = true
     }
   }
-  return O.none()
+  return O.None()
 }
 
 export function foreachBetween_<K, V>(tree: RedBlackTree<K, V>, min: K, max: K, visit: (k: K, v: V) => void): void {
   if (tree.root) {
     visitBetween(tree, min, max, (k, v) => {
       visit(k, v)
-      return O.none()
+      return O.None()
     })
   }
 }

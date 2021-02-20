@@ -66,8 +66,8 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
   ): IORef<EC, ED, C, D> =>
     new DerivedAll(
       this.value,
-      (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
-      (c) => (s) => E.bind_(ca(c), (a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
+      (s) => E.match_(this.getEither(s), (e) => E.Left(eb(e)), bd),
+      (c) => (s) => E.bind_(ca(c), (a) => E.match_(this.setEither(a)(s), (e) => E.Left(ea(e)), E.Right))
     )
 
   readonly foldAll = <EC, ED, C, D>(
@@ -79,29 +79,29 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
   ): IORef<EC, ED, C, D> =>
     new DerivedAll(
       this.value,
-      (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
+      (s) => E.match_(this.getEither(s), (e) => E.Left(eb(e)), bd),
       (c) => (s) =>
         pipe(
           this.getEither(s),
-          E.fold((e) => E.left(ec(e)), ca(c)),
+          E.match((e) => E.Left(ec(e)), ca(c)),
           E.deunion,
-          E.bind((a) => E.fold_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right))
+          E.bind((a) => E.match_(this.setEither(a)(s), (e) => E.Left(ea(e)), E.Right))
         )
     )
 
   readonly get: FIO<EB, B> = pipe(
     this.value.get,
-    I.bind((a) => E.fold_(this.getEither(a), I.fail, I.pure))
+    I.bind((a) => E.match_(this.getEither(a), I.fail, I.pure))
   )
 
   readonly set: (a: A) => FIO<EA, void> = (a) =>
     pipe(
       this.value,
       modify((s) =>
-        E.fold_(
+        E.match_(
           this.setEither(a)(s),
-          (e) => [E.left(e), s] as [E.Either<EA, void>, S],
-          (s) => [E.right(undefined), s] as [E.Either<EA, void>, S]
+          (e) => [E.Left(e), s] as [E.Either<EA, void>, S],
+          (s) => [E.Right(undefined), s] as [E.Either<EA, void>, S]
         )
       ),
       I.absolve
@@ -125,8 +125,8 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
   ): IORef<EC, ED, C, D> =>
     new Derived<EC, ED, C, D, S>(
       this.value,
-      (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
-      (c) => E.bind_(ca(c), (a) => E.fold_(this.setEither(a), (e) => E.left(ea(e)), E.right))
+      (s) => E.match_(this.getEither(s), (e) => E.Left(eb(e)), bd),
+      (c) => E.bind_(ca(c), (a) => E.match_(this.setEither(a), (e) => E.Left(ea(e)), E.Right))
     )
 
   readonly foldAll = <EC, ED, C, D>(
@@ -138,16 +138,16 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
   ): IORef<EC, ED, C, D> =>
     new DerivedAll<EC, ED, C, D, S>(
       this.value,
-      (s) => E.fold_(this.getEither(s), (e) => E.left(eb(e)), bd),
+      (s) => E.match_(this.getEither(s), (e) => E.Left(eb(e)), bd),
       (c) => (s) =>
         pipe(
           this.getEither(s),
-          E.fold((e) => E.left(ec(e)), ca(c)),
+          E.match((e) => E.Left(ec(e)), ca(c)),
           E.deunion,
           E.bind((a) =>
             pipe(
               this.setEither(a),
-              E.fold((e) => E.left(ea(e)), E.right)
+              E.match((e) => E.Left(ea(e)), E.Right)
             )
           )
         )
@@ -155,10 +155,10 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
 
   readonly get: FIO<EB, B> = pipe(
     this.value.get,
-    I.bind((s) => E.fold_(this.getEither(s), I.fail, I.pure))
+    I.bind((s) => E.match_(this.getEither(s), I.fail, I.pure))
   )
 
-  readonly set: (a: A) => FIO<EA, void> = (a) => E.fold_(this.setEither(a), I.fail, this.value.set)
+  readonly set: (a: A) => FIO<EA, void> = (a) => E.match_(this.setEither(a), I.fail, this.value.set)
 }
 
 export class Atomic<A> implements IORef<never, never, A, A> {
@@ -254,7 +254,7 @@ export function contramapEither<A, EC, C>(
   return (_) =>
     pipe(
       _,
-      dimapEither(f, (x) => E.right(x))
+      dimapEither(f, (x) => E.Right(x))
     )
 }
 
@@ -273,7 +273,7 @@ export function contramapEither_<A, EC, C, EA, EB, B>(
  * Transforms the `set` value of the `XRef` with the specified function.
  */
 export const contramap: <A, C>(f: (_: C) => A) => <EA, EB, B>(ref: IORef<EA, EB, A, B>) => IORef<EA, EB, C, B> = (f) =>
-  contramapEither((c) => E.right(f(c)))
+  contramapEither((c) => E.Right(f(c)))
 
 /**
  * Transforms the `set` value of the `XRef` with the specified function.
@@ -296,7 +296,7 @@ export function filterInput_<EA, EB, B, A, A1 extends A>(
   ref: IORef<EA, EB, A, B>,
   f: (_: A1) => boolean
 ): IORef<O.Option<EA>, EB, A1, B> {
-  return ref.fold(O.some, identity, (a) => (f(a) ? E.right(a) : E.left(O.none())), E.right)
+  return ref.fold(O.Some, identity, (a) => (f(a) ? E.Right(a) : E.Left(O.None())), E.Right)
 }
 
 /**
@@ -319,7 +319,7 @@ export function filterOutput_<EA, EB, A, B>(
   ref: IORef<EA, EB, A, B>,
   f: (_: B) => boolean
 ): IORef<EA, O.Option<EB>, A, B> {
-  return ref.fold(identity, O.some, E.right, (b) => (f(b) ? E.right(b) : E.left(O.none())))
+  return ref.fold(identity, O.Some, E.Right, (b) => (f(b) ? E.Right(b) : E.Left(O.None())))
 }
 
 /**
@@ -415,7 +415,7 @@ export function foldAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
  */
 export const mapEither: <B, EC, C>(
   f: (_: B) => E.Either<EC, C>
-) => <EA, EB, A>(ref: IORef<EA, EB, A, B>) => IORef<EA, EC | EB, A, C> = (f) => dimapEither((a) => E.right(a), f)
+) => <EA, EB, A>(ref: IORef<EA, EB, A, B>) => IORef<EA, EC | EB, A, C> = (f) => dimapEither((a) => E.Right(a), f)
 
 /**
  * Transforms the `get` value of the `XRef` with the specified fallible
@@ -424,19 +424,19 @@ export const mapEither: <B, EC, C>(
 export const mapEither_: <EA, EB, A, B, EC, C>(
   ref: IORef<EA, EB, A, B>,
   f: (_: B) => E.Either<EC, C>
-) => IORef<EA, EC | EB, A, C> = (_, f) => dimapEither_(_, (a) => E.right(a), f)
+) => IORef<EA, EC | EB, A, C> = (_, f) => dimapEither_(_, (a) => E.Right(a), f)
 
 /**
  * Transforms the `get` value of the `XRef` with the specified function.
  */
 export const map: <B, C>(f: (_: B) => C) => <EA, EB, A>(ref: IORef<EA, EB, A, B>) => IORef<EA, EB, A, C> = (f) =>
-  mapEither((b) => E.right(f(b)))
+  mapEither((b) => E.Right(f(b)))
 
 /**
  * Transforms the `get` value of the `XRef` with the specified function.
  */
 export const map_: <EA, EB, A, B, C>(ref: IORef<EA, EB, A, B>, f: (_: B) => C) => IORef<EA, EB, A, C> = (_, f) =>
-  mapEither_(_, (b) => E.right(f(b)))
+  mapEither_(_, (b) => E.Right(f(b)))
 
 /*
  * -------------------------------------------
@@ -452,7 +452,7 @@ export const map_: <EA, EB, A, B, C>(ref: IORef<EA, EB, A, B>, f: (_: B) => C) =
 export function collect<B, C>(
   pf: (_: B) => O.Option<C>
 ): <EA, EB, A>(ref: IORef<EA, EB, A, B>) => IORef<EA, O.Option<EB>, A, C> {
-  return (_) => _.fold(identity, O.some, E.right, (b) => E.fromOption_(pf(b), () => O.none()))
+  return (_) => _.fold(identity, O.Some, E.Right, (b) => E.fromOption_(pf(b), () => O.None()))
 }
 
 /**
@@ -502,8 +502,8 @@ export function dimap<A, B, C, D>(f: (_: C) => A, g: (_: B) => D) {
     pipe(
       ref,
       dimapEither(
-        (c) => E.right(f(c)),
-        (b) => E.right(g(b))
+        (c) => E.Right(f(c)),
+        (b) => E.Right(g(b))
       )
     )
 }
@@ -528,7 +528,7 @@ export function dimapError<EA, EB, EC, ED>(
   f: (_: EA) => EC,
   g: (_: EB) => ED
 ): <A, B>(ref: IORef<EA, EB, A, B>) => IORef<EC, ED, A, B> {
-  return (_) => _.fold(f, g, E.right, E.right)
+  return (_) => _.fold(f, g, E.Right, E.Right)
 }
 
 /**
@@ -557,8 +557,8 @@ export function writeOnly<EA, EB, A, B>(ref: IORef<EA, EB, A, B>): IORef<EA, voi
   return ref.fold(
     identity,
     () => undefined,
-    E.right,
-    () => E.left(undefined)
+    E.Right,
+    () => E.Left(undefined)
   )
 }
 
@@ -581,16 +581,16 @@ export function modify<B, A>(f: (a: A) => readonly [B, A]) {
               pipe(
                 s,
                 self.getEither,
-                E.fold(
-                  (e) => tuple(E.left(e), s),
+                E.match(
+                  (e) => tuple(E.Left(e), s),
                   (a1) =>
                     pipe(f(a1), ([b, a2]) =>
                       pipe(
                         a2,
                         self.setEither,
-                        E.fold(
-                          (e) => tuple(E.left(e), s),
-                          (s) => tuple(E.widenE<EA | EB>()(E.right(b)), s)
+                        E.match(
+                          (e) => tuple(E.Left(e), s),
+                          (s) => tuple(E.widenE<EA | EB>()(E.Right(b)), s)
                         )
                       )
                     )
@@ -606,15 +606,15 @@ export function modify<B, A>(f: (a: A) => readonly [B, A]) {
               pipe(
                 s,
                 self.getEither,
-                E.fold(
-                  (e) => tuple(E.left(e), s),
+                E.match(
+                  (e) => tuple(E.Left(e), s),
                   (a1) =>
                     pipe(f(a1), ([b, a2]) =>
                       pipe(
                         self.setEither(a2)(s),
-                        E.fold(
-                          (e) => tuple(E.left(e), s),
-                          (s) => tuple(E.widenE<EA | EB>()(E.right(b)), s)
+                        E.match(
+                          (e) => tuple(E.Left(e), s),
+                          (s) => tuple(E.widenE<EA | EB>()(E.Right(b)), s)
                         )
                       )
                     )

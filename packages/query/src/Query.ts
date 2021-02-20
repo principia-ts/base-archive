@@ -128,7 +128,7 @@ export function foldM_<R, E, A, R1, E1, B>(
   onFailure: (error: E) => Query<R1, E1, B>,
   onSuccess: (a: A) => Query<R1, E1, B>
 ): Query<R & R1, E1, B> {
-  return foldCauseM_(ma, flow(Ca.failureOrCause, E.fold(onFailure, halt)), onSuccess)
+  return foldCauseM_(ma, flow(Ca.failureOrCause, E.match(onFailure, halt)), onSuccess)
 }
 
 export function foldM<E, A, R1, E1, B>(
@@ -504,8 +504,8 @@ export function absolve<R, E, E1, A>(v: Query<R, E, E.Either<E1, A>>): Query<R, 
 export function recover<R, E, A>(ma: Query<R, E, A>): Query<R, never, E.Either<E, A>> {
   return fold_(
     ma,
-    (e) => E.left(e),
-    (a) => E.right(a)
+    (e) => E.Left(e),
+    (a) => E.Right(a)
   )
 }
 
@@ -572,11 +572,11 @@ export function fromEffect<R, E, A>(effect: IO<R, E, A>): Query<R, E, A> {
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): Query<unknown, E, A> {
-  return pipe(succeed(either), bind(E.fold(fail, succeed)))
+  return pipe(succeed(either), bind(E.match(fail, succeed)))
 }
 
 export function fromOption<A>(option: O.Option<A>): Query<unknown, O.Option<never>, A> {
-  return pipe(succeed(option), bind(O.fold(() => fail(O.none()), succeed)))
+  return pipe(succeed(option), bind(O.match(() => fail(O.None()), succeed)))
 }
 
 export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: DataSource<R, A>): Query<R, E, B> {
@@ -584,7 +584,7 @@ export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: 
     pipe(
       I.asksM(([_, qc]: readonly [R, QueryContext]) => qc.cache.lookup(request)),
       I.bind(
-        E.fold(
+        E.match(
           (ref) =>
             I.succeed(
               Res.blocked(
@@ -595,7 +595,7 @@ export function fromRequest<R, E, A, B>(request: A & Request<E, B>, dataSource: 
           (ref) =>
             pipe(
               ref.get,
-              I.map(O.fold(() => Res.blocked(BRS.empty, Cont.make(request, dataSource, ref)), Res.fromEither))
+              I.map(O.match(() => Res.blocked(BRS.empty, Cont.make(request, dataSource, ref)), Res.fromEither))
             )
         )
       )
@@ -609,7 +609,7 @@ export function fromRequestUncached<R, E, A, B>(
 ): Query<R, E, B> {
   return new Query(
     pipe(
-      Ref.make(O.none<E.Either<E, B>>()),
+      Ref.make(O.None<E.Either<E, B>>()),
       I.map((ref) =>
         Res.blocked(BRS.single(dataSource, BlockedRequest.make(request, ref)), Cont.make(request, dataSource, ref))
       )
@@ -620,11 +620,11 @@ export function fromRequestUncached<R, E, A, B>(
 export const never: Query<unknown, never, never> = fromEffect(I.never)
 
 export function none<A = never>(): Query<unknown, never, O.Option<A>> {
-  return succeed(O.none())
+  return succeed(O.None())
 }
 
 export function some<A>(a: A): Query<unknown, never, O.Option<A>> {
-  return succeed(O.some(a))
+  return succeed(O.Some(a))
 }
 
 /*
@@ -806,23 +806,23 @@ export function partitionParM<A, R, E, B>(
 export function left<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, O.Option<E>, A> {
   return foldM_(
     ma,
-    flow(O.some, fail),
-    E.fold(succeed, () => fail(O.none()))
+    flow(O.Some, fail),
+    E.match(succeed, () => fail(O.None()))
   )
 }
 
 export function right<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, O.Option<E>, B> {
   return foldM_(
     ma,
-    flow(O.some, fail),
-    E.fold(() => fail(O.none()), succeed)
+    flow(O.Some, fail),
+    E.match(() => fail(O.None()), succeed)
   )
 }
 
 export function leftOrFail_<R, E, A, B, E1>(ma: Query<R, E, E.Either<A, B>>, e: E1): Query<R, E | E1, A> {
   return bind_(
     ma,
-    E.fold(succeed, () => fail(e))
+    E.match(succeed, () => fail(e))
   )
 }
 
@@ -834,7 +834,7 @@ export function leftOrFailWith_<R, E, A, B, E1>(
   ma: Query<R, E, E.Either<A, B>>,
   f: (right: B) => E1
 ): Query<R, E | E1, A> {
-  return bind_(ma, E.fold(succeed, flow(f, fail)))
+  return bind_(ma, E.match(succeed, flow(f, fail)))
 }
 
 export function leftOrFailWith<B, E1>(
@@ -864,7 +864,7 @@ export function refineOrDieWith_<R, E, A, E1>(
   return catchAll_(ma, (e) =>
     pipe(
       pf(e),
-      O.fold(() => die(f(e)), fail)
+      O.match(() => die(f(e)), fail)
     )
   )
 }
@@ -879,7 +879,7 @@ export function refineOrDieWith<E, E1>(
 export function rightOrFail_<R, E, A, B, E1>(ma: Query<R, E, E.Either<A, B>>, e: E1): Query<R, E | E1, B> {
   return bind_(
     ma,
-    E.fold(() => fail(e), succeed)
+    E.match(() => fail(e), succeed)
   )
 }
 
@@ -891,7 +891,7 @@ export function rightOrFailWith_<R, E, A, B, E1>(
   ma: Query<R, E, E.Either<A, B>>,
   f: (left: A) => E1
 ): Query<R, E | E1, B> {
-  return bind_(ma, E.fold(flow(f, fail), succeed))
+  return bind_(ma, E.match(flow(f, fail), succeed))
 }
 
 export function rightOrFailWith<A, E1>(
@@ -947,7 +947,7 @@ export function optional<R, E, A>(ma: Query<R, E, A>): Query<R, E, O.Option<A>> 
     ma,
     flow(
       Ca.stripSomeDefects((_) => !(_ instanceof QueryFailure)),
-      O.fold(() => none(), halt)
+      O.match(() => none(), halt)
     ),
     some
   )
@@ -987,21 +987,21 @@ export function sandboxWith<R, E, A, R1, E1, B>(
 }
 
 export function getError<R, E, A>(ma: Query<R, O.Option<E>, A>): Query<R, E, O.Option<A>> {
-  return foldM_(ma, O.fold(none, fail), some)
+  return foldM_(ma, O.match(none, fail), some)
 }
 
 export function get<R, E, A>(ma: Query<R, E, O.Option<A>>): Query<R, O.Option<E>, A> {
   return foldM_(
     ma,
-    flow(O.some, fail),
-    O.fold(() => fail(O.none()), succeed)
+    flow(O.Some, fail),
+    O.match(() => fail(O.None()), succeed)
   )
 }
 
 export function getOrFail_<R, E, A, E1>(ma: Query<R, E, O.Option<A>>, e: E1): Query<R, E | E1, A> {
   return bind_(
     ma,
-    O.fold(() => fail(e), succeed)
+    O.match(() => fail(e), succeed)
   )
 }
 
@@ -1037,7 +1037,7 @@ export function unrefineWith_<R, E, A, E1>(
     pipe(
       cause,
       Ca.find(pf),
-      O.fold(() => pipe(cause, Ca.map(f), halt), fail)
+      O.match(() => pipe(cause, Ca.map(f), halt), fail)
     )
   )
 }

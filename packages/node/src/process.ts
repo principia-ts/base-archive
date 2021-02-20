@@ -27,7 +27,7 @@ export const stdin: S.FStream<StdinError, Byte> = pipe(
           cb(I.succeed(C.fromBuffer(data)))
         }
         const onError = (err: Error) => {
-          cb(I.fail(O.some(new StdinError(err))))
+          cb(I.fail(O.Some(new StdinError(err))))
         }
         cleanup.push(
           () => {
@@ -58,7 +58,7 @@ export class StdoutError {
 }
 
 export const stdout: Sink.Sink<unknown, StdoutError, Buffer, never, void> = Sink.fromPush((is) =>
-  O.fold_(
+  O.match_(
     is,
     () => Push.emit(undefined, []),
     (bufs) =>

@@ -18,10 +18,10 @@ export function chunk<A>(as: Chunk<A>): Take<never, A> {
 }
 
 export function halt<E>(cause: Ca.Cause<E>): Take<E, never> {
-  return Ex.halt(pipe(cause, Ca.map(O.some)))
+  return Ex.halt(pipe(cause, Ca.map(O.Some)))
 }
 
-export const end: Take<never, never> = Ex.fail(O.none())
+export const end: Take<never, never> = Ex.fail(O.None())
 
 export function done<E, A>(take: Take<E, A>): I.FIO<Option<E>, Chunk<A>> {
   return I.done(take)
@@ -34,7 +34,7 @@ export function fromPull<R, E, O>(pull: Pull<R, E, O>): I.IO<R, never, Take<E, O
       (c) =>
         pipe(
           Ca.sequenceCauseOption(c),
-          O.fold(() => end, halt)
+          O.match(() => end, halt)
         ),
       chunk
     )
@@ -57,7 +57,7 @@ export function foldM_<E, A, R, E1, Z>(
   error: (cause: Ca.Cause<E>) => I.IO<R, E1, Z>,
   value: (chunk: Chunk<A>) => I.IO<R, E1, Z>
 ): I.IO<R, E1, Z> {
-  return Ex.foldM_(take, flow(Ca.sequenceCauseOption, O.fold(end, error)), value)
+  return Ex.foldM_(take, flow(Ca.sequenceCauseOption, O.match(end, error)), value)
 }
 
 export function foldM<E, A, R, E1, Z>(

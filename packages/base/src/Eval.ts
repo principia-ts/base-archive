@@ -111,7 +111,7 @@ class Memoize<A> extends Eval<A> {
   constructor(readonly ma: Eval<A>) {
     super()
   }
-  public result: O.Option<A> = O.none<A>()
+  public result: O.Option<A> = O.None<A>()
 
   get memoize() {
     return this
@@ -121,7 +121,7 @@ class Memoize<A> extends Eval<A> {
     return O.getOrElse_(this.result, () => {
       const a = evaluate(this)
       // eslint-disable-next-line functional/immutable-data
-      this.result = O.some(a)
+      this.result = O.Some(a)
       return a
     })
   }
@@ -279,7 +279,7 @@ type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Bind<any, any
 export function evaluate<A>(e: Eval<A>): A {
   const addToMemo = <A1>(m: Memoize<A1>) => (a: A1): Eval<A1> => {
     // eslint-disable-next-line functional/immutable-data
-    m.result = O.some(a)
+    m.result = O.Some(a)
     return new Now(a)
   }
 

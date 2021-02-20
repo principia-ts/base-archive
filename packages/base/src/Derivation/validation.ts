@@ -18,15 +18,15 @@ export function getApplicativeValidation<F>(
     const crossWith_: CrossWithFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
       F.flatten(
         F.map_(F.cross_(F.attempt(fa), F.attempt(fb)), ([ea, eb]) =>
-          E.fold_(
+          E.match_(
             ea,
             (e) =>
-              E.fold_(
+              E.match_(
                 eb,
                 (e1) => F.fail(S.combine_(e, e1)),
                 () => F.fail(e)
               ),
-            (a) => E.fold_(eb, F.fail, (b) => F.pure(f(a, b)))
+            (a) => E.match_(eb, F.fail, (b) => F.pure(f(a, b)))
           )
         )
       )
@@ -58,11 +58,11 @@ export function getAltValidation<F>(
     const alt_: AltFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, that) =>
       F.bind_(
         F.attempt(fa),
-        E.fold(
+        E.match(
           (e) =>
             F.bind_(
               F.attempt(that()),
-              E.fold(
+              E.match(
                 (e1) => F.fail(S.combine_(e, e1)),
                 (a) => F.pure(a)
               )

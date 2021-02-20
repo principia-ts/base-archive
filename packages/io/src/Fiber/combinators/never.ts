@@ -14,5 +14,5 @@ export const never: Fiber<never, never> = makeSynthetic({
   getRef: (fiberRef) => I.succeed(fiberRef.initial),
   interruptAs: () => I.never,
   inheritRefs: I.unit(),
-  poll: I.succeed(O.none())
+  poll: I.succeed(O.None())
 })

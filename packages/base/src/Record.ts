@@ -207,7 +207,7 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
   > => {
     const arr = toArray(r)
     const len = arr.length
-    return U.unfold(0, (b) => (b < len ? O.some([arr[b], b + 1]) : O.none()))
+    return U.unfold(0, (b) => (b < len ? O.Some([arr[b], b + 1]) : O.None()))
   }
 }
 
@@ -885,14 +885,14 @@ export function deleteAt<N extends string, K extends N>(
 
 export function updateAt_<N extends string, A>(r: ReadonlyRecord<N, A>, k: N, a: A): O.Option<ReadonlyRecord<N, A>> {
   if (!_hasOwnProperty.call(r, k)) {
-    return O.none()
+    return O.None()
   }
   if (r[k] === a) {
-    return O.some(r)
+    return O.Some(r)
   }
   const mut_out = Object.assign({}, r) as Record<N, A>
   mut_out[k]    = a
-  return O.some(mut_out)
+  return O.Some(mut_out)
 }
 
 export function updateAt<N extends string, A>(k: N, a: A): (r: ReadonlyRecord<N, A>) => O.Option<ReadonlyRecord<N, A>> {
@@ -905,11 +905,11 @@ export function modifyAt_<N extends string, A>(
   f: (a: A) => A
 ): O.Option<ReadonlyRecord<N, A>> {
   if (!_hasOwnProperty.call(r, k)) {
-    return O.none()
+    return O.None()
   }
   const mut_out = Object.assign({}, r) as Record<N, A>
   mut_out[k]    = f(r[k])
-  return O.some(mut_out)
+  return O.Some(mut_out)
 }
 
 export function modifyAt<N extends string, A>(
@@ -920,7 +920,7 @@ export function modifyAt<N extends string, A>(
 }
 
 export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<A> {
-  return _hasOwnProperty.call(r, k) ? O.some(r[k]) : O.none()
+  return _hasOwnProperty.call(r, k) ? O.Some(r[k]) : O.None()
 }
 
 export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<A> {
@@ -933,7 +933,7 @@ export function pop_<N extends string, K extends N, A>(
 ): O.Option<readonly [A, ReadonlyRecord<Exclude<N, K>, A>]> {
   const deleteAtk = deleteAt(k)
   const oa        = lookup(k)(r)
-  return O.isNone(oa) ? O.none() : O.some([oa.value, deleteAtk(r)])
+  return O.isNone(oa) ? O.None() : O.Some([oa.value, deleteAtk(r)])
 }
 
 export function pop<N extends string, K extends N>(

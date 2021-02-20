@@ -41,7 +41,7 @@ export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): st
           ([x1, x2, x3], [y1, y2, y3]) => [x1 + y1, x2 + y2, x3 + y3] as const
         ),
       Test: ({ test }) =>
-        E.fold_(
+        E.match_(
           test,
           (_) => [0, 0, 1],
           matchTag({ Succeeded: () => [1, 0, 0], Ignored: () => [0, 1, 0] })
@@ -106,7 +106,7 @@ export function render<E>(
         },
         Test: ({ label, test, annotations }) => {
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
-          const renderedResult      = E.fold_(
+          const renderedResult      = E.match_(
             test,
             matchTag({
               AssertionFailure: ({ result }) =>
@@ -257,8 +257,8 @@ class RenderedResult<T> {
       return this
     } else {
       const renderedAnnotations     = ` - ${annotations.join(', ')}`
-      const head                    = O.fold_(A.head(this.rendered), () => '', identity)
-      const tail                    = O.fold_(A.tail(this.rendered), () => [], identity)
+      const head                    = O.match_(A.head(this.rendered), () => '', identity)
+      const tail                    = O.match_(A.tail(this.rendered), () => [], identity)
       const renderedWithAnnotations = A.prepend_(tail, head + renderedAnnotations)
       return new RenderedResult(this.caseType, this.label, this.status, this.offset, renderedWithAnnotations)
     }

@@ -27,9 +27,9 @@ export const SumDecoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
               (M) => (u) => {
                 if ('_tag' in u && ((u['_tag'] === 'Left' && 'left' in u) || (u['_tag'] === 'Right' && 'right' in u))) {
                   if (u['_tag'] === 'Left') {
-                    return M.map_(l.decode(M)(u['left']), E.left) as any
+                    return M.map_(l.decode(M)(u['left']), E.Left) as any
                   } else {
-                    return M.map_(r.decode(M)(u['right']), E.right)
+                    return M.map_(r.decode(M)(u['right']), E.Right)
                   }
                 } else {
                   return M.fail(error(u, 'Either', extractInfo(config)))
@@ -51,9 +51,9 @@ export const SumDecoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
           D.parse((M) => (u) => {
             if ('_tag' in u && (u['_tag'] === 'None' || (u['_tag'] === 'Some' && 'value' in u))) {
               if (u['_tag'] === 'Some') {
-                return M.map_(decoder.decode(M)(u['value']), O.some)
+                return M.map_(decoder.decode(M)(u['value']), O.Some)
               } else {
-                return M.pure(O.none())
+                return M.pure(O.None())
               }
             } else {
               return M.fail(error(u, 'Option', extractInfo(config)))

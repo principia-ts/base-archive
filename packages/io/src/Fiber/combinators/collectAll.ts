@@ -2,7 +2,7 @@ import type { Fiber } from '../core'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
-import { none, some } from '@principia/base/Option'
+import { None, Some } from '@principia/base/Option'
 import * as O from '@principia/base/Option'
 
 import * as C from '../../Cause'
@@ -38,15 +38,15 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
     poll: pipe(
       I.foreach_(fibers, (f) => f.poll),
       I.map(
-        A.foldr(some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
-          O.fold_(
+        A.foldr(Some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
+          O.match_(
             a,
-            () => none(),
+            () => None(),
             (ra) =>
-              O.fold_(
+              O.match_(
                 b,
-                () => none(),
-                (rb) => some(Ex.crossWithCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
+                () => None(),
+                (rb) => Some(Ex.crossWithCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
               )
           )
         )

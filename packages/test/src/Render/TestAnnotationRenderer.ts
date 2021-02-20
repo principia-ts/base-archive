@@ -12,7 +12,7 @@ export class LeafRenderer<V> {
   constructor(readonly annotation: TA.TestAnnotation<V>, readonly render: (_: ReadonlyArray<V>) => Option<string>) {}
 
   run(ancestors: ReadonlyArray<TA.TestAnnotationMap>, child: TA.TestAnnotationMap) {
-    return O.fold_(
+    return O.match_(
       this.render(A.prepend(child.get(this.annotation))(A.map_(ancestors, (m) => m.get(this.annotation)))),
       () => [],
       (s) => [s]
@@ -42,23 +42,23 @@ export function combine_(self: TestAnnotationRenderer, that: TestAnnotationRende
 }
 
 export const ignored: TestAnnotationRenderer = new LeafRenderer(TA.ignored, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`ignored: ${child}`)
+  child === 0 ? O.None() : O.Some(`ignored: ${child}`)
 )
 
 export const repeated: TestAnnotationRenderer = new LeafRenderer(TA.repeated, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`repeated: ${child}`)
+  child === 0 ? O.None() : O.Some(`repeated: ${child}`)
 )
 
 export const retried: TestAnnotationRenderer = new LeafRenderer(TA.retried, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`retried: ${child}`)
+  child === 0 ? O.None() : O.Some(`retried: ${child}`)
 )
 
 export const tagged: TestAnnotationRenderer = new LeafRenderer(TA.tagged, ([child, ..._]) =>
-  child.keyMap.size === 0 ? O.none() : O.some(`tagged: ${pipe(A.from(child), A.map(Str.surround('"')), A.join(', '))}`)
+  child.keyMap.size === 0 ? O.None() : O.Some(`tagged: ${pipe(A.from(child), A.map(Str.surround('"')), A.join(', '))}`)
 )
 
 export const timed: TestAnnotationRenderer = new LeafRenderer(TA.timing, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`${child}ms`)
+  child === 0 ? O.None() : O.Some(`${child}ms`)
 )
 
 export const silent: TestAnnotationRenderer = {

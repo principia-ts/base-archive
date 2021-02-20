@@ -40,10 +40,10 @@ export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, 
           cb(I.succeed(chunk))
         })
         sr.on('error', (err) => {
-          cb(I.fail(O.some(new ReadableError(err))))
+          cb(I.fail(O.Some(new ReadableError(err))))
         })
         sr.on('end', () => {
-          cb(I.fail(O.none()))
+          cb(I.fail(O.None()))
         })
       })
     )
@@ -82,7 +82,7 @@ export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, W
         })
       ),
       M.map((sw) =>
-        O.fold(
+        O.match(
           () => Push.emit(undefined, []),
           (chunk) =>
             I.effectAsync((cb) => {
@@ -114,7 +114,7 @@ export function transform(
         tuple(
           st,
           Sink.fromPush<unknown, TransformError, Byte, never, void>(
-            O.fold(
+            O.match(
               () =>
                 I.bind_(
                   I.effectTotal(() => {
@@ -143,10 +143,10 @@ export function transform(
                 cb(I.succeed(chunk))
               })
               transform.on('error', (err) => {
-                cb(I.fail(O.some(new TransformError(err))))
+                cb(I.fail(O.Some(new TransformError(err))))
               })
               transform.on('end', () => {
-                cb(I.fail(O.none()))
+                cb(I.fail(O.None()))
               })
             }),
             S.run_(stream, sink)

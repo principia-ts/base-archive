@@ -76,11 +76,11 @@ export function asArray<A>(chunk: Chunk<A>): ReadonlyArray<A> {
 }
 
 export function head<A>(as: Chunk<A>): O.Option<A> {
-  return as.length > 0 ? O.some(as[0]) : O.none()
+  return as.length > 0 ? O.Some(as[0]) : O.None()
 }
 
 export function last<A>(as: Chunk<A>): O.Option<A> {
-  return as.length > 0 ? O.some(as[as.length - 1]) : O.none()
+  return as.length > 0 ? O.Some(as[as.length - 1]) : O.None()
 }
 
 /*

@@ -519,15 +519,15 @@ export function mapError<E, G>(
 export function attempt<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, never, E.Either<E, A>> {
   return foldM_(
     fa,
-    (e) => succeed(E.left(e)),
-    (a) => succeed(E.right(a))
+    (e) => succeed(E.Left(e)),
+    (a) => succeed(E.Right(a))
   )
 }
 
 export function absolve<W, S1, S2, R, E, E1, A>(
   fa: Multi<W, S1, S2, R, E, E.Either<E1, A>>
 ): Multi<W, S1, S2, R, E | E1, A> {
-  return bind_(fa, E.fold(fail, succeed))
+  return bind_(fa, E.match(fail, succeed))
 }
 
 /*
@@ -787,7 +787,7 @@ export function contramapState<S0, S1>(
 export function either<W, S1, S2, R, E, A>(
   fa: Multi<W, S1, S2, R, E, A>
 ): Multi<W, S1, S1 | S2, R, never, E.Either<E, A>> {
-  return fold_(fa, E.left, E.right)
+  return fold_(fa, E.Left, E.Right)
 }
 
 export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(
@@ -816,8 +816,8 @@ export function orElseEither_<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
 ): Multi<W, S1 & S3, S2 | S4, R & R1, E1, E.Either<A, A1>> {
   return foldM_(
     fa,
-    () => map_(that, E.right),
-    (a) => succeed(E.left(a))
+    () => map_(that, E.Right),
+    (a) => succeed(E.Left(a))
   )
 }
 
@@ -1044,10 +1044,10 @@ export function runEitherCause_<W, S1, S2, E, A>(
   }
 
   if (failed) {
-    return E.left(result)
+    return E.Left(result)
   }
 
-  return E.right([log, state, result])
+  return E.Right([log, state, result])
 }
 
 /**

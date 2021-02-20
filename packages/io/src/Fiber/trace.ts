@@ -57,8 +57,8 @@ export function parents(trace: Trace): L.List<Trace> {
 
 export function truncatedParentTrace(trace: Trace, maxAncestors: number): O.Option<Trace> {
   if (ancestryLength(trace) > maxAncestors) {
-    return L.foldr_(L.take_(parents(trace), maxAncestors), O.none() as O.Option<Trace>, (trace, parent) =>
-      O.some(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
+    return L.foldr_(L.take_(parents(trace), maxAncestors), O.None() as O.Option<Trace>, (trace, parent) =>
+      O.Some(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
     )
   } else {
     return trace.parentTrace

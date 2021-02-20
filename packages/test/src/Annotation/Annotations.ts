@@ -75,7 +75,7 @@ export abstract class Annotations {
                 FR.get(fiberRef),
                 I.map((m) => m.get(fibers)),
                 I.bind(
-                  E.fold(
+                  E.match(
                     (_) => I.succeed(HS.make<RuntimeFiber<any, any>>(HashEqFiber)),
                     flow(
                       I.foreach((_) => _.get),

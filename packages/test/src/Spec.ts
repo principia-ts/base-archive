@@ -19,7 +19,7 @@ import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 
-import { Annotations,tagged, TestAnnotationMap } from './Annotation'
+import { Annotations, tagged, TestAnnotationMap } from './Annotation'
 import * as Annotation from './Annotation'
 import { Ignored } from './TestSuccess'
 
@@ -106,14 +106,14 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
   return matchTag_(spec.caseValue, {
     Suite: (s) =>
       f(s.label)
-        ? O.some(suite(s.label, s.specs, s.exec))
-        : O.some(
+        ? O.Some(suite(s.label, s.specs, s.exec))
+        : O.Some(
             suite(
               s.label,
               M.map_(
                 s.specs,
                 A.bind((spec) =>
-                  O.fold_(
+                  O.match_(
                     filterLabels_(spec, f),
                     () => A.empty<Spec<R, E, T>>(),
                     (spec) => [spec]
@@ -123,7 +123,7 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
               s.exec
             )
           ),
-    Test: (t) => (f(t.label) ? O.some(test(t.label, t.test, t.annotations)) : O.none())
+    Test: (t) => (f(t.label) ? O.Some(test(t.label, t.test, t.annotations)) : O.None())
   })
 }
 
@@ -134,7 +134,7 @@ export function filterAnnotations_<R, E, T, V>(
 ): Option<Spec<R, E, T>> {
   return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
-      O.some(
+      O.Some(
         suite(
           label,
           M.map_(
@@ -144,7 +144,7 @@ export function filterAnnotations_<R, E, T, V>(
           exec
         )
       ),
-    Test: (t) => (f(t.annotations.get(key)) ? O.some(test(t.label, t.test, t.annotations)) : O.none())
+    Test: (t) => (f(t.annotations.get(key)) ? O.Some(test(t.label, t.test, t.annotations)) : O.None())
   })
 }
 
@@ -155,7 +155,7 @@ export function filterTags_<R, E, T>(spec: Spec<R, E, T>, f: (tag: string) => bo
 export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R, E> {
   const filtered = A.isEmpty(args.testSearchTerms)
     ? A.isEmpty(args.tagSearchTerms)
-      ? O.none()
+      ? O.None()
       : filterTags_(spec, (tag) => A.elem_(Eq.string)(args.tagSearchTerms, tag))
     : A.isEmpty(args.tagSearchTerms)
     ? filterLabels_(spec, (label) =>

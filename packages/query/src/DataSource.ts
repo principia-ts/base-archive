@@ -116,7 +116,7 @@ export function fromFunction<A extends Request<never, B>, B>(name: string, f: (a
   return new Batched<unknown, A>(
     name,
     flow(
-      C.foldl(CompletedRequestMap.empty(), (m, k) => m.insert(k, E.right(f(k)))),
+      C.foldl(CompletedRequestMap.empty(), (m, k) => m.insert(k, E.Right(f(k)))),
       I.succeed
     )
   )
@@ -130,8 +130,8 @@ export function fromFunctionBatchedM<R, E, A extends Request<E, B>, B>(
     pipe(
       f(requests),
       I.fold(
-        (e): C.Chunk<readonly [A, E.Either<E, B>]> => C.map_(requests, (_) => tuple(_, E.left(e))),
-        (bs): C.Chunk<readonly [A, E.Either<E, B>]> => C.zip_(requests, C.map_(bs, E.right))
+        (e): C.Chunk<readonly [A, E.Either<E, B>]> => C.map_(requests, (_) => tuple(_, E.Left(e))),
+        (bs): C.Chunk<readonly [A, E.Either<E, B>]> => C.zip_(requests, C.map_(bs, E.Right))
       ),
       I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
     )
@@ -153,8 +153,8 @@ export function fromFunctionBatchedOptionM<R, E, A extends Request<E, B>, B>(
     pipe(
       f(requests),
       I.fold(
-        (e): C.Chunk<readonly [A, E.Either<E, O.Option<B>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
-        (bs): C.Chunk<readonly [A, E.Either<E, O.Option<B>>]> => C.zip_(requests, C.map_(bs, E.right))
+        (e): C.Chunk<readonly [A, E.Either<E, O.Option<B>>]> => C.map_(requests, (a) => tuple(a, E.Left(e))),
+        (bs): C.Chunk<readonly [A, E.Either<E, O.Option<B>>]> => C.zip_(requests, C.map_(bs, E.Right))
       ),
       I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insertOption(k, v)))
     )
@@ -177,8 +177,8 @@ export function fromFunctionBatchedWithM<R, E, A extends Request<E, B>, B>(
     pipe(
       f(requests),
       I.fold(
-        (e): C.Chunk<readonly [Request<E, B>, E.Either<E, B>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
-        (bs): C.Chunk<readonly [Request<E, B>, E.Either<E, B>]> => C.map_(bs, (b) => tuple(g(b), E.right(b)))
+        (e): C.Chunk<readonly [Request<E, B>, E.Either<E, B>]> => C.map_(requests, (a) => tuple(a, E.Left(e))),
+        (bs): C.Chunk<readonly [Request<E, B>, E.Either<E, B>]> => C.map_(bs, (b) => tuple(g(b), E.Right(b)))
       ),
       I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
     )

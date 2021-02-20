@@ -6,7 +6,7 @@ import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 
-import { absolve, foreach_, map_, attempt } from '../core'
+import { absolve, attempt, foreach_, map_ } from '../core'
 import { foreachExec_ } from './foreachExec'
 import { foreachPar_ } from './foreachPar'
 import { foreachParN_ } from './foreachParN'
@@ -23,7 +23,7 @@ const mergeExits = <E, B>() => (exits: ReadonlyArray<Either<E, B>>): Either<NonE
     }
   })
 
-  return A.isNonEmpty(errors) ? E.left(errors) : E.right(results)
+  return A.isNonEmpty(errors) ? E.Left(errors) : E.Right(results)
 }
 
 /**

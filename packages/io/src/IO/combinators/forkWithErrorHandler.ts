@@ -9,7 +9,7 @@ import { fork, halt } from '../core'
 import { onError } from './onError'
 
 export function forkWithErrorHandler_<R, E, A, R1>(ma: IO<R, E, A>, handler: (e: E) => URIO<R1, void>) {
-  return pipe(ma, onError(flow(C.failureOrCause, E.fold(handler, halt))), fork)
+  return pipe(ma, onError(flow(C.failureOrCause, E.match(handler, halt))), fork)
 }
 
 export function forkWithErrorHandler<E, R1>(

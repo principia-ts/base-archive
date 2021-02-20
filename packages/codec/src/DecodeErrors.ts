@@ -142,7 +142,9 @@ export function getDecodeErrorsValidation<M>(
   const alt_: P.AltFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, that) =>
     pipe(
       M.attempt(fa),
-      M.bind(E.fold((e) => pipe(M.attempt(that()), M.bind(E.fold((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure))
+      M.bind(
+        E.match((e) => pipe(M.attempt(that()), M.bind(E.match((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure)
+      )
     )
 
   return HKT.instance<

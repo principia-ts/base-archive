@@ -4,7 +4,7 @@ import type { Show } from './Show'
 
 import * as E from './Either'
 import { makeEq } from './Eq/core'
-import { flow, identity, pipe, tuple } from './Function'
+import { flow, identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
 import { makeShow } from './Show/core'
@@ -43,20 +43,20 @@ export type V = HKT.V<'E', '+'>
  * -------------------------------------------
  */
 
-export function left<E = never, A = never>(left: E): These<E, A> {
+export function Left<E = never, A = never>(left: E): These<E, A> {
   return { _tag: 'Left', left }
 }
 
-export function right<E = never, A = never>(right: A): These<E, A> {
+export function Right<E = never, A = never>(right: A): These<E, A> {
   return { _tag: 'Right', right }
 }
 
-export function both<E, A>(left: E, right: A): These<E, A> {
+export function Both<E, A>(left: E, right: A): These<E, A> {
   return { _tag: 'Both', left, right }
 }
 
 export function rightOrThese_<E, A>(me: O.Option<E>, a: A): These<E, A> {
-  return O.isNone(me) ? right(a) : both(me.value, a)
+  return O.isNone(me) ? Right(a) : Both(me.value, a)
 }
 
 export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
@@ -64,7 +64,7 @@ export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
 }
 
 export function leftOrThese_<E, A>(me: O.Option<A>, e: E): These<E, A> {
-  return O.isNone(me) ? left(e) : both(e, me.value)
+  return O.isNone(me) ? Left(e) : Both(e, me.value)
 }
 
 export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
@@ -74,11 +74,11 @@ export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
 export function fromOptions<E, A>(fe: O.Option<E>, fa: O.Option<A>): O.Option<These<E, A>> {
   return O.isNone(fe)
     ? O.isNone(fa)
-      ? O.none()
-      : O.some(right(fa.value))
+      ? O.None()
+      : O.Some(Right(fa.value))
     : O.isNone(fa)
-    ? O.some(left(fe.value))
-    : O.some(both(fe.value, fa.value))
+    ? O.Some(Left(fe.value))
+    : O.Some(Both(fe.value, fa.value))
 }
 
 /*
@@ -141,19 +141,19 @@ export function toTuple<E, A>(e: E, a: A): (fa: These<E, A>) => readonly [E, A] 
 }
 
 export function getLeft<E, A>(fa: These<E, A>): O.Option<E> {
-  return isRight(fa) ? O.none() : O.some(fa.left)
+  return isRight(fa) ? O.None() : O.Some(fa.left)
 }
 
 export function getRight<E, A>(fa: These<E, A>): O.Option<A> {
-  return isLeft(fa) ? O.none() : O.some(fa.right)
+  return isLeft(fa) ? O.None() : O.Some(fa.right)
 }
 
 export function getLeftOnly<E, A>(fa: These<E, A>): O.Option<E> {
-  return isLeft(fa) ? O.some(fa.left) : O.none()
+  return isLeft(fa) ? O.Some(fa.left) : O.None()
 }
 
 export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
-  return isRight(fa) ? O.some(fa.right) : O.none()
+  return isRight(fa) ? O.Some(fa.right) : O.None()
 }
 
 /*
@@ -166,7 +166,7 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[HKT.URI<Th
   return HKT.instance({
     ...getApply(SE),
     unit,
-    pure: right
+    pure: Right
   })
 }
 
@@ -194,12 +194,12 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
 
   return HKT.instance<P.ApplicativeExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
-    fail: left,
+    fail: Left,
     catchAll_,
     catchAll,
     catchSome_,
     catchSome: (f) => (fa) => catchSome_(fa, f),
-    attempt: flow(map(E.right), catchAll(flow(E.left, right)))
+    attempt: flow(map(E.Right), catchAll(flow(E.Left, Right)))
   })
 }
 
@@ -213,21 +213,21 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HK
   const crossWith_: P.CrossWithFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
-        ? left(SE.combine_(fa.left, fb.left))
+        ? Left(SE.combine_(fa.left, fb.left))
         : isRight(fb)
         ? fa
-        : left(SE.combine_(fa.left, fb.left))
+        : Left(SE.combine_(fa.left, fb.left))
       : isRight(fa)
       ? isLeft(fb)
-        ? left(fb.left)
+        ? Left(fb.left)
         : isRight(fb)
-        ? right(f(fa.right, fb.right))
-        : both(fb.left, f(fa.right, fb.right))
+        ? Right(f(fa.right, fb.right))
+        : Both(fb.left, f(fa.right, fb.right))
       : isLeft(fb)
-      ? left(SE.combine_(fa.left, fb.left))
+      ? Left(SE.combine_(fa.left, fb.left))
       : isRight(fb)
-      ? both(fa.left, f(fa.right, fb.right))
-      : both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
+      ? Both(fa.left, f(fa.right, fb.right))
+      : Both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
 
   return HKT.instance({
     invmap_: (fa, f, _) => map_(fa, f),
@@ -250,7 +250,7 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HK
  */
 
 export function bimap_<E, A, G, B>(pab: These<E, A>, f: (e: E) => G, g: (a: A) => B): These<G, B> {
-  return isLeft(pab) ? left(f(pab.left)) : isRight(pab) ? right(g(pab.right)) : both(f(pab.left), g(pab.right))
+  return isLeft(pab) ? Left(f(pab.left)) : isRight(pab) ? Right(g(pab.right)) : Both(f(pab.left), g(pab.right))
 }
 
 export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: These<E, A>) => These<G, B> {
@@ -258,7 +258,7 @@ export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: These<E
 }
 
 export function mapLeft_<E, A, G>(pab: These<E, A>, f: (e: E) => G): These<G, A> {
-  return isLeft(pab) ? left(f(pab.left)) : isBoth(pab) ? both(f(pab.left), pab.right) : pab
+  return isLeft(pab) ? Left(f(pab.left)) : isBoth(pab) ? Both(f(pab.left), pab.right) : pab
 }
 
 export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: These<E, A>) => These<G, A> {
@@ -266,7 +266,7 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: These<E, A>) => These<G,
 }
 
 export function swap<E, A>(pab: These<E, A>): These<A, E> {
-  return isLeft(pab) ? right(pab.left) : isRight(pab) ? left(pab.right) : both(pab.right, pab.left)
+  return isLeft(pab) ? Right(pab.left) : isRight(pab) ? Left(pab.right) : Both(pab.right, pab.left)
 }
 
 /*
@@ -322,7 +322,7 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: These<E, A>) =>
  */
 
 export function map_<E, A, B>(fa: These<E, A>, f: (a: A) => B): These<E, B> {
-  return isLeft(fa) ? fa : isRight(fa) ? right(f(fa.right)) : both(fa.left, f(fa.right))
+  return isLeft(fa) ? fa : isRight(fa) ? Right(f(fa.right)) : Both(fa.left, f(fa.right))
 }
 
 export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
@@ -345,10 +345,10 @@ export function getMonad<E>(SE: P.Semigroup<E>) {
     }
     const fb = f(ma.right)
     return isLeft(fb)
-      ? left(SE.combine_(ma.left, fb.left))
+      ? Left(SE.combine_(ma.left, fb.left))
       : isRight(fb)
-      ? both(ma.left, fb.right)
-      : both(SE.combine_(ma.left, fb.left), fb.right)
+      ? Both(ma.left, fb.right)
+      : Both(SE.combine_(ma.left, fb.left), fb.right)
   }
   return HKT.instance<P.Monad<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
@@ -383,21 +383,21 @@ export function getSemigroup<E, A>(SE: P.Semigroup<E>, SA: P.Semigroup<A>): P.Se
   return makeSemigroup((x, y) =>
     isLeft(x)
       ? isLeft(y)
-        ? left(SE.combine_(x.left, y.left))
+        ? Left(SE.combine_(x.left, y.left))
         : isRight(y)
-        ? both(x.left, y.right)
-        : both(SE.combine_(x.left, y.left), y.right)
+        ? Both(x.left, y.right)
+        : Both(SE.combine_(x.left, y.left), y.right)
       : isRight(x)
       ? isLeft(y)
-        ? both(y.left, x.right)
+        ? Both(y.left, x.right)
         : isRight(y)
-        ? right(SA.combine_(x.right, y.right))
-        : both(y.left, SA.combine_(x.right, y.right))
+        ? Right(SA.combine_(x.right, y.right))
+        : Both(y.left, SA.combine_(x.right, y.right))
       : isLeft(y)
-      ? both(SE.combine_(x.left, y.left), x.right)
+      ? Both(SE.combine_(x.left, y.left), x.right)
       : isRight(y)
-      ? both(x.left, SA.combine_(x.right, y.right))
-      : both(SE.combine_(x.left, y.left), SA.combine_(x.right, y.right))
+      ? Both(x.left, SA.combine_(x.right, y.right))
+      : Both(SE.combine_(x.left, y.left), SA.combine_(x.right, y.right))
   )
 }
 
@@ -428,8 +428,8 @@ export const traverse_ = P.implementTraverse_<[HKT.URI<TheseURI>], V>()((_) => (
     return isLeft(ta)
       ? G.pure(ta)
       : isRight(ta)
-      ? G.map_(f(ta.right), right)
-      : G.map_(f(ta.right), (b) => both(ta.left, b))
+      ? G.map_(f(ta.right), Right)
+      : G.map_(f(ta.right), (b) => Both(ta.left, b))
   }
 })
 
@@ -447,7 +447,7 @@ export const sequence = P.implementSequence<[HKT.URI<TheseURI>], V>()((_) => (G)
  */
 
 export function unit(): These<never, void> {
-  return right(undefined)
+  return Right(undefined)
 }
 
 export { TheseURI } from './Modules'

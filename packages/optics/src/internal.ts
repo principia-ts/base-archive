@@ -53,7 +53,7 @@ export function isoAsLens<S, A>(sa: Iso<S, A>): Lens<S, A> {
 /** @internal */
 export function isoAsOptional<S, A>(sa: Iso<S, A>): Optional<S, A> {
   return {
-    getOption: flow(sa.get, O.some),
+    getOption: flow(sa.get, O.Some),
     set: flow(sa.reverseGet, constant)
   }
 }
@@ -66,7 +66,7 @@ export function isoAsOptional<S, A>(sa: Iso<S, A>): Optional<S, A> {
 /** @internal */
 export function lensAsOptional<S, A>(sa: Lens<S, A>): Optional<S, A> {
   return {
-    getOption: flow(sa.get, O.some),
+    getOption: flow(sa.get, O.Some),
     set: sa.set
   }
 }
@@ -183,7 +183,7 @@ export function prismAsTraversal<S, A>(sa: Prism<S, A>): Traversal<S, A> {
     modifyF: implementModifyF<S, A>()((_) => (F) => (f) => (s) =>
       pipe(
         sa.getOption(s),
-        O.fold(
+        O.match(
           () => F.pure(s),
           (a) => F.map_(f(a), (a) => prismSet(a)(sa)(s))
         )
@@ -246,7 +246,7 @@ export function prismFromPredicate<A>(predicate: Predicate<A>): Prism<A, A> {
 export function prismSome<A>(): Prism<Option<A>, A> {
   return {
     getOption: identity,
-    reverseGet: O.some
+    reverseGet: O.Some
   }
 }
 
@@ -254,15 +254,15 @@ export function prismSome<A>(): Prism<Option<A>, A> {
 export function prismRight<E, A>(): Prism<Either<E, A>, A> {
   return {
     getOption: O.fromEither,
-    reverseGet: E.right
+    reverseGet: E.Right
   }
 }
 
 /** @internal */
 export function prismLeft<E, A>(): Prism<E.Either<E, A>, E> {
   return {
-    getOption: (s) => (E.isLeft(s) ? O.some(s.left) : O.none()),
-    reverseGet: E.left
+    getOption: (s) => (E.isLeft(s) ? O.Some(s.left) : O.None()),
+    reverseGet: E.Left
   }
 }
 
@@ -278,7 +278,7 @@ export function optionalAsTraversal<S, A>(sa: Optional<S, A>): Traversal<S, A> {
     modifyF: implementModifyF<S, A>()((_) => (F) => (f) => (s) =>
       pipe(
         sa.getOption(s),
-        O.fold(
+        O.match(
           () => F.pure(s),
           (a) => F.map_(f(a), (a: A) => sa.set(a)(s))
         )
@@ -325,9 +325,9 @@ export function findFirst<A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>
     set: (a) => (s) =>
       pipe(
         A.findFirstIndex(predicate)(s),
-        O.fold(
+        O.match(
           () => s,
-          (i) => A.unsafeUpdateAt(i, a, s)
+          (i) => A.unsafeUpdateAt_(s, i, a)
         )
       )
   }
@@ -404,7 +404,7 @@ export function atRecord<A = never>(): At<Readonly<Record<string, A>>, string, O
   return {
     at: (key) => ({
       get: (r) => R.lookup_(r, key),
-      set: O.fold(
+      set: O.match(
         () => R.deleteAt(key),
         (a) => R.insertAt(key, a)
       )

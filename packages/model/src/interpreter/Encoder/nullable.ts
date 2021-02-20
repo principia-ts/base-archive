@@ -13,6 +13,6 @@ export const NullableEncoder = implementInterpreter<URI, Alg.NullableURI>()((_) 
     pipe(a(env), (encoder) => applyEncoderConfig(config?.config)(E.nullable(encoder), env, encoder)),
   optional_: (a, config) => (env) =>
     pipe(a(env), (encoder) =>
-      applyEncoderConfig(config?.config)({ encode: O.fold(() => undefined, encoder.encode) }, env, encoder)
+      applyEncoderConfig(config?.config)({ encode: O.match(() => undefined, encoder.encode) }, env, encoder)
     )
 }))

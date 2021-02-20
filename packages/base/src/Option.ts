@@ -10,7 +10,7 @@ import type { OptionURI } from './Modules'
 import type { Show } from './Show'
 import type { These } from './These'
 
-import { left, right } from './Either'
+import { Left, Right } from './Either'
 import { makeEq } from './Eq/core'
 import { _bind, flow, identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
@@ -49,7 +49,7 @@ export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : nev
  * @category Constructors
  * @since 1.0.0
  */
-export function none<A = never>(): Option<A> {
+export function None<A = never>(): Option<A> {
   return {
     _tag: 'None'
   }
@@ -61,7 +61,7 @@ export function none<A = never>(): Option<A> {
  * @category Constructs
  * @since 1.0.0
  */
-export function some<A>(a: A): Option<A> {
+export function Some<A>(a: A): Option<A> {
   return {
     _tag: 'Some',
     value: a
@@ -76,7 +76,7 @@ export function some<A>(a: A): Option<A> {
  * @since 1.0.0
  */
 export function fromNullable<A>(a: A | null | undefined): Option<NonNullable<A>> {
-  return a == null ? none() : some(a as NonNullable<A>)
+  return a == null ? None() : Some(a as NonNullable<A>)
 }
 
 export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
@@ -93,9 +93,9 @@ export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
  */
 export function tryCatch<A>(thunk: () => A): Option<A> {
   try {
-    return some(thunk())
+    return Some(thunk())
   } catch (_) {
-    return none()
+    return None()
   }
 }
 
@@ -120,7 +120,7 @@ export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B
 export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
-  return predicate(a) ? none() : some(a)
+  return predicate(a) ? None() : Some(a)
 }
 
 /**
@@ -142,7 +142,7 @@ export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
  * @since 1.0.0
  */
 export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
-  return ma._tag === 'Left' ? none() : some(ma.right)
+  return ma._tag === 'Left' ? None() : Some(ma.right)
 }
 
 /*
@@ -177,7 +177,7 @@ export function isOption(u: unknown): u is Option<unknown> {
  * @category Destructors
  * @since 1.0.0
  */
-export function fold_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) => C): B | C {
+export function match_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) => C): B | C {
   return isNone(fa) ? onNone() : onSome(fa.value)
 }
 
@@ -189,8 +189,8 @@ export function fold_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) =>
  * @category Destructors
  * @since 1.0.0
  */
-export function fold<A, B, C>(onNone: () => B, onSome: (a: A) => C): (fa: Option<A>) => B | C {
-  return (fa) => fold_(fa, onNone, onSome)
+export function match<A, B, C>(onNone: () => B, onSome: (a: A) => C): (fa: Option<A>) => B | C {
+  return (fa) => match_(fa, onNone, onSome)
 }
 
 /**
@@ -242,11 +242,11 @@ export function getOrElse<B>(onNone: () => B): <A>(fa: Option<A>) => B | A {
 export function alignWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (_: These<A, B>) => C): Option<C> {
   return fa._tag === 'None'
     ? fb._tag === 'None'
-      ? none()
-      : some(f(T.right(fb.value)))
+      ? None()
+      : Some(f(T.Right(fb.value)))
     : fb._tag === 'None'
-    ? some(f(T.left(fa.value)))
-    : some(f(T.both(fa.value, fb.value)))
+    ? Some(f(T.Left(fa.value)))
+    : Some(f(T.Both(fa.value, fb.value)))
 }
 
 export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa: Option<A>) => Option<C> {
@@ -300,7 +300,7 @@ export function alt<A>(fa2: () => Option<A>): (fa1: Option<A>) => Option<A> {
  * @since 1.0.0
  */
 export function pure<A>(a: A): Option<A> {
-  return some(a)
+  return Some(a)
 }
 
 /*
@@ -310,7 +310,7 @@ export function pure<A>(a: A): Option<A> {
  */
 
 export function fail<E = never, A = never>(_: E): Option<A> {
-  return none()
+  return None()
 }
 
 export function catchAll_<A, B>(fa: Option<A>, f: () => Option<B>): Option<A | B> {
@@ -336,7 +336,7 @@ export function catchSome<B>(f: () => Option<Option<B>>): <A>(fa: Option<A>) => 
 }
 
 export function catchMap_<A, B>(fa: Option<A>, f: () => B): Option<A | B> {
-  return catchAll_(fa, () => some(f()))
+  return catchAll_(fa, () => Some(f()))
 }
 
 export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
@@ -344,7 +344,7 @@ export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
 }
 
 export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
-  return catchAll_(map_(fa, right), () => some(left(undefined)))
+  return catchAll_(map_(fa, Right), () => Some(Left(undefined)))
 }
 
 /*
@@ -416,7 +416,7 @@ export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * @since 1.0.0
  */
 export function crossWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
-  return fa._tag === 'Some' && fb._tag === 'Some' ? some(f(fa.value, fb.value)) : none()
+  return fa._tag === 'Some' && fb._tag === 'Some' ? Some(f(fa.value, fb.value)) : None()
 }
 
 /**
@@ -470,7 +470,7 @@ export function apS<N extends string, A, B>(
 
 export function separate<A, B>(fa: Option<Either<A, B>>): readonly [Option<A>, Option<B>] {
   const o = map_(fa, (e) => [getLeft(e), getRight(e)] as const)
-  return isNone(o) ? [none(), none()] : o.value
+  return isNone(o) ? [None(), None()] : o.value
 }
 
 export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten
@@ -491,7 +491,7 @@ export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
  * -------------------------------------------
  */
 export function extend_<A, B>(wa: Option<A>, f: (wa: Option<A>) => B): Option<B> {
-  return isNone(wa) ? none() : some(f(wa))
+  return isNone(wa) ? None() : Some(f(wa))
 }
 
 /**
@@ -515,7 +515,7 @@ export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
 export function filter_<A, B extends A>(fa: Option<A>, refinement: Refinement<A, B>): Option<B>
 export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A>
 export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A> {
-  return isNone(fa) ? none() : predicate(fa.value) ? fa : none()
+  return isNone(fa) ? None() : predicate(fa.value) ? fa : None()
 }
 
 export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Option<A>) => Option<B>
@@ -549,7 +549,7 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>
 /**
  */
 export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
-  return isNone(fa) ? none() : f(fa.value)
+  return isNone(fa) ? None() : f(fa.value)
 }
 
 /**
@@ -607,7 +607,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A
  * @since 1.0.0
  */
 export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
-  return isNone(fa) ? fa : some(f(fa.value))
+  return isNone(fa) ? fa : Some(f(fa.value))
 }
 
 /**
@@ -690,7 +690,7 @@ export function flatten<A>(mma: Option<Option<A>>): Option<A> {
  */
 
 export function absolve<E, A>(fa: Option<Either<E, A>>): Option<A> {
-  return bind_(fa, (a) => (a._tag === 'Left' ? none() : some(a.right)))
+  return bind_(fa, (a) => (a._tag === 'Left' ? None() : Some(a.right)))
 }
 
 /*
@@ -702,7 +702,7 @@ export function absolve<E, A>(fa: Option<Either<E, A>>): Option<A> {
 export function getApplyMonoid<A>(M: P.Monoid<A>): P.Monoid<Option<A>> {
   return {
     ...getApplySemigroup(M),
-    nat: some(M.nat)
+    nat: Some(M.nat)
   }
 }
 
@@ -710,7 +710,7 @@ export function getFirstMonoid<A = never>(): P.Monoid<Option<A>> {
   return {
     combine_: (x, y) => (isNone(y) ? x : y),
     combine: (y) => (x) => (isNone(y) ? x : y),
-    nat: none()
+    nat: None()
   }
 }
 
@@ -718,16 +718,16 @@ export function getLastMonoid<A = never>(): P.Monoid<Option<A>> {
   return {
     combine_: (x, y) => (isNone(x) ? y : x),
     combine: (y) => (x) => (isNone(x) ? y : x),
-    nat: none()
+    nat: None()
   }
 }
 
 export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Option<A>> {
-  const combine_ = (x: Option<A>, y: Option<A>) => (isNone(x) ? y : isNone(y) ? x : some(S.combine_(x.value, y.value)))
+  const combine_ = (x: Option<A>, y: Option<A>) => (isNone(x) ? y : isNone(y) ? x : Some(S.combine_(x.value, y.value)))
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y),
-    nat: none()
+    nat: None()
   }
 }
 
@@ -739,7 +739,7 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Option<A>> {
 
 export function getApplySemigroup<A>(S: P.Semigroup<A>): P.Semigroup<Option<A>> {
   const combine_ = (x: Option<A>, y: Option<A>) =>
-    isSome(x) && isSome(y) ? some(S.combine_(x.value, y.value)) : none()
+    isSome(x) && isSome(y) ? Some(S.combine_(x.value, y.value)) : None()
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y)
@@ -769,7 +769,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<[HKT.URI<OptionURI>]> = (G) => (ta, f) =>
-  isNone(ta) ? G.map_(G.unit(), () => none()) : pipe(f(ta.value), G.map(some))
+  isNone(ta) ? G.map_(G.unit(), () => None()) : pipe(f(ta.value), G.map(Some))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -786,7 +786,7 @@ export const traverse: P.TraverseFn<[HKT.URI<OptionURI>]> = (G) => (f) => (ta) =
  * @since 1.0.0
  */
 export const sequence: P.SequenceFn<[HKT.URI<OptionURI>]> = (G) => (fa) =>
-  isNone(fa) ? G.map_(G.unit(), () => none()) : pipe(fa.value, G.map(some))
+  isNone(fa) ? G.map_(G.unit(), () => None()) : pipe(fa.value, G.map(Some))
 
 /*
  * -------------------------------------------
@@ -795,7 +795,7 @@ export const sequence: P.SequenceFn<[HKT.URI<OptionURI>]> = (G) => (fa) =>
  */
 
 export function unit(): Option<void> {
-  return some(undefined)
+  return Some(undefined)
 }
 
 /*
@@ -805,7 +805,7 @@ export function unit(): Option<void> {
  */
 
 export const compactA_: P.WitherFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) =>
-  isNone(wa) ? A.map_(A.unit(), () => none()) : f(wa.value)
+  isNone(wa) ? A.map_(A.unit(), () => None()) : f(wa.value)
 
 export const compactA: P.WitherFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
@@ -817,7 +817,7 @@ export const separateA_: P.WiltFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) => {
       A.map((e) => tuple(getLeft(e), getRight(e)))
     )
   )
-  return isNone(o) ? A.pure(tuple(none(), none())) : o.value
+  return isNone(o) ? A.pure(tuple(None(), None())) : o.value
 }
 
 export const separateA: P.WiltFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => separateA_(A)(wa, f)
@@ -835,7 +835,7 @@ export const separateA: P.WiltFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => s
  * @since 1.0.0
  */
 export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
-  return isNone(fa) ? none() : fromNullable(f(fa.value))
+  return isNone(fa) ? None() : fromNullable(f(fa.value))
 }
 
 /**
@@ -875,7 +875,7 @@ export function orElse<B>(onNone: () => Option<B>): <A>(fa: Option<A>) => Option
  * @since 1.0.0
  */
 export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
-  return fea._tag === 'Right' ? none() : some(fea.left)
+  return fea._tag === 'Right' ? None() : Some(fea.left)
 }
 
 /**
@@ -885,7 +885,7 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
  * @since 1.0.0
  */
 export function getRight<E, A>(fea: Either<E, A>): Option<A> {
-  return fea._tag === 'Left' ? none() : some(fea.right)
+  return fea._tag === 'Left' ? None() : Some(fea.right)
 }
 
 /*
@@ -899,7 +899,7 @@ export const Align: P.Align<[HKT.URI<OptionURI>]> = HKT.instance({
   alignWith,
   align_,
   align,
-  nil: none
+  nil: None
 })
 
 export const Functor: P.Functor<[HKT.URI<OptionURI>]> = HKT.instance({
@@ -963,7 +963,7 @@ export const MonadExcept: P.MonadExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>
 
 export const Do = P.deriveDo(Monad)
 
-const of: Option<{}> = some({})
+const of: Option<{}> = Some({})
 export { of as do }
 
 /**

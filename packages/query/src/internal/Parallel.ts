@@ -21,7 +21,7 @@ export class Parallel<R> {
         Map.insertAt_(eqDataSource)(
           map,
           k,
-          O.fold_(Map.lookupAt_(eqDataSource)(map, k), () => v, C.concat(v))
+          O.match_(Map.lookupAt_(eqDataSource)(map, k), () => v, C.concat(v))
         )
       )
     )

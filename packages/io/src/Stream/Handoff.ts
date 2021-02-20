@@ -1,7 +1,7 @@
 import type { Option } from '@principia/base/Option'
 
 import { pipe } from '@principia/base/Function'
-import { none, some } from '@principia/base/Option'
+import { None, Some } from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as I from '../IO'
@@ -105,12 +105,12 @@ export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
         h.ref,
         Ref.modify<I.UIO<Option<A>>, State<A>>(
           matchTag({
-            Empty: (s) => [I.succeed(none()), s] as const,
+            Empty: (s) => [I.succeed(None()), s] as const,
             Full: ({ a, notifyProducer }) =>
               [
                 pipe(
                   notifyProducer.succeed(undefined),
-                  I.as(() => some(a))
+                  I.as(() => Some(a))
                 ),
                 new Empty(p)
               ] as const

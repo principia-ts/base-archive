@@ -161,7 +161,7 @@ export function make<R, E, A extends Request<E, B>, B>(
     pipe(
       ref.get,
       I.bind(
-        O.fold(
+        O.match(
           () => I.dieMessage('TODO: Query Failure'),
           (a) => I.fromEither(() => a)
         )

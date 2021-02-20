@@ -18,7 +18,7 @@ const _compute = <R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) =>
   I.gen(function* (_) {
     const p = yield* _(P.make<E, A>())
     yield* _(to(p)(fa))
-    return O.some(tuple(start + ttl, p))
+    return O.Some(tuple(start + ttl, p))
   })
 
 const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>) =>
@@ -31,12 +31,12 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
           RefM.updateSomeAndGet((o) =>
             pipe(
               o,
-              O.fold(
-                () => O.some(_compute(fa, ttl, time)),
+              O.match(
+                () => O.Some(_compute(fa, ttl, time)),
                 ([end]) =>
                   end - time <= 0
-                    ? O.some(_compute(fa, ttl, time))
-                    : O.none<IO<R, never, Option<readonly [number, P.Promise<E, A>]>>>()
+                    ? O.Some(_compute(fa, ttl, time))
+                    : O.None<IO<R, never, Option<readonly [number, P.Promise<E, A>]>>>()
               )
             )
           ),
@@ -56,7 +56,7 @@ const _get = <R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
 export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & Has<Clock>, FIO<E, A>> {
   return I.gen(function* (_) {
     const r     = yield* _(I.ask<R & Has<Clock>>())
-    const cache = yield* _(RefM.make<Option<readonly [number, Promise<E, A>]>>(O.none()))
+    const cache = yield* _(RefM.make<Option<readonly [number, Promise<E, A>]>>(O.None()))
     return I.giveAll(r)(_get(ma, timeToLive, cache))
   })
 }

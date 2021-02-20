@@ -20,7 +20,7 @@ export const SumEncoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
   either: (left, right, config) => (env) =>
     pipe(left(env), (l) =>
       pipe(right(env), (r) =>
-        applyEncoderConfig(config?.config)({ encode: E.fold(flow(l.encode, E.left), flow(r.encode, E.right)) }, env, {
+        applyEncoderConfig(config?.config)({ encode: E.match(flow(l.encode, E.Left), flow(r.encode, E.Right)) }, env, {
           left: l,
           right: r
         })

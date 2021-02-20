@@ -19,7 +19,7 @@ export function filterParN_(
   return (as, f) =>
     pipe(
       as,
-      foreachParN(n)((a) => map_(f(a), (b) => (b ? O.some(a) : O.none()))),
+      foreachParN(n)((a) => map_(f(a), (b) => (b ? O.Some(a) : O.None()))),
       map(A.compact)
     )
 }

@@ -489,11 +489,11 @@ export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Asyn
  */
 
 export function absolve<R, E, E1, A>(async: Async<R, E, E.Either<E1, A>>): Async<R, E | E1, A> {
-  return foldM_(async, fail, E.fold(fail, succeed))
+  return foldM_(async, fail, E.match(fail, succeed))
 }
 
 export function recover<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Either<E, A>> {
-  return fold_(async, E.left, E.right)
+  return fold_(async, E.Left, E.Right)
 }
 
 /*

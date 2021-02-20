@@ -101,12 +101,12 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
         return pipe(
           driver.next(a),
           foldM(
-            () => pipe(orDie(driver.last), map(E.right)),
+            () => pipe(orDie(driver.last), map(E.Right)),
             (b) =>
               pipe(
                 fa,
                 foldM(
-                  (e) => pipe(f(e, O.some(b)), map(E.left)),
+                  (e) => pipe(f(e, O.Some(b)), map(E.Left)),
                   (a) => loop(a)
                 )
               )
@@ -116,7 +116,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
       return pipe(
         fa,
         foldM(
-          (e) => pipe(f(e, O.none()), map(E.left)),
+          (e) => pipe(f(e, O.None()), map(E.Left)),
           (a) => loop(a)
         )
       )

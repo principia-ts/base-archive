@@ -53,7 +53,7 @@ export const asLens: <S, A>(sa: Iso<S, A>) => Lens<S, A> = _.isoAsLens
  */
 export function asPrism<S, A>(sa: Iso<S, A>): Prism<S, A> {
   return {
-    getOption: flow(sa.get, O.some),
+    getOption: flow(sa.get, O.Some),
     reverseGet: sa.reverseGet
   }
 }

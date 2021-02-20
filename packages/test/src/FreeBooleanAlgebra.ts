@@ -292,30 +292,30 @@ export function isFalse<A>(ba: FreeBooleanAlgebra<A>): boolean {
 }
 
 export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlgebra<A>> {
-  return E.fold_(
+  return E.match_(
     fold_<A, E.Either<FreeBooleanAlgebra<A>, FreeBooleanAlgebra<A>>>(
       ba,
-      (a) => E.right(success(a)),
+      (a) => E.Right(success(a)),
       (l, r) =>
         E.isRight(l)
           ? E.isRight(r)
-            ? E.right(and_(l.right, r.right))
+            ? E.Right(and_(l.right, r.right))
             : r
           : E.isRight(r)
           ? l
-          : E.left(and_(l.left, r.left)),
+          : E.Left(and_(l.left, r.left)),
       (l, r) =>
         E.isRight(l)
           ? E.isRight(r)
-            ? E.right(or_(l.right, r.right))
+            ? E.Right(or_(l.right, r.right))
             : l
           : E.isRight(r)
           ? r
-          : E.left(or_(l.left, r.left)),
+          : E.Left(or_(l.left, r.left)),
       E.swap
     ),
-    O.some,
-    () => O.none()
+    O.Some,
+    () => O.None()
   )
 }
 

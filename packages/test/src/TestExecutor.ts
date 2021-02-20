@@ -34,13 +34,13 @@ export function defaultTestExecutor<R>(
         S.foreachExec(
           flow(
             C.failureOrCause,
-            E.fold(
-              ([failure, annotations]) => I.succeed([E.left(failure), annotations] as const),
-              (cause) => I.succeed([E.left(new TF.RuntimeFailure(cause)), TestAnnotationMap.empty] as const)
+            E.match(
+              ([failure, annotations]) => I.succeed([E.Left(failure), annotations] as const),
+              (cause) => I.succeed([E.Left(new TF.RuntimeFailure(cause)), TestAnnotationMap.empty] as const)
             )
           ),
           ([success, annotations]) =>
-            I.succeed<Annotated<E.Either<TF.TestFailure<E>, TestSuccess>>>([E.right(success), annotations] as const),
+            I.succeed<Annotated<E.Either<TF.TestFailure<E>, TestSuccess>>>([E.Right(success), annotations] as const),
           defExec
         ),
         M.use((s) =>

@@ -60,7 +60,7 @@ const _loop = <R, E, A, R1, O, R2, E2, A2>(
 ): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<A2, A>> =>
   pipe(
     fa,
-    map(E.right),
+    map(E.Right),
     catchAll((e) =>
       pipe(
         driver.next(e),
@@ -69,7 +69,7 @@ const _loop = <R, E, A, R1, O, R2, E2, A2>(
             pipe(
               driver.last,
               orDie,
-              bind((o) => pipe(orElse(e, o), map(E.left)))
+              bind((o) => pipe(orElse(e, o), map(E.Left)))
             ),
           () => _loop(fa, orElse, driver)
         )

@@ -200,7 +200,7 @@ export function optional_<I, E, A>(
   onError: (i: I, e: E) => E
 ): DecoderKHKT<I | null | undefined, E, O.Option<A>> {
   return {
-    decode: (M) => (i) => (i == null ? M.pure(O.none()) : M.bimap_(or.decode(M)(i), (e: E) => onError(i, e), O.some))
+    decode: (M) => (i) => (i == null ? M.pure(O.None()) : M.bimap_(or.decode(M)(i), (e: E) => onError(i, e), O.Some))
   }
 }
 
@@ -245,8 +245,8 @@ export function fromPartial_<E, P extends Record<string, DecoderKHKT<any, E, any
   return {
     decode: (M) => {
       const traverse          = R.itraverse_(M)
-      const undefinedProperty = M.pure(E.right(undefined))
-      const skipProperty      = M.pure(E.left(undefined))
+      const undefinedProperty = M.pure(E.Right(undefined))
+      const skipProperty      = M.pure(E.Left(undefined))
       return (i) =>
         M.map_(
           traverse(properties, (key, decoder) => {
@@ -257,7 +257,7 @@ export function fromPartial_<E, P extends Record<string, DecoderKHKT<any, E, any
             return M.bimap_(
               decoder.decode(M)(ikey),
               (e: E) => onPropertyError(key, e),
-              (a) => E.right<void, unknown>(a)
+              (a) => E.Right<void, unknown>(a)
             )
           }),
           compactRecord

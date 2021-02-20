@@ -62,7 +62,7 @@ interface ResumeEvent {
 export type RequestEvent = CloseEvent | DataEvent | EndEvent | ErrorEvent | PauseEvent | ReadableEvent | ResumeEvent
 
 export class HttpRequest {
-  private memoizedUrl: E.Either<HttpException, O.Option<Url.URL>> = E.right(O.none())
+  private memoizedUrl: E.Either<HttpException, O.Option<Url.URL>> = E.Right(O.None())
 
   eventStream: M.Managed<unknown, never, I.UIO<S.Stream<unknown, never, RequestEvent>>>
 
@@ -74,8 +74,8 @@ export class HttpRequest {
         S.broadcastDynamic_(
           new S.Stream(
             M.gen(function* (_) {
-              const queue = yield* _(Q.makeUnbounded<RequestEvent>())
-              const done  = yield* _(Ref.make(false))
+              const queue   = yield* _(Q.makeUnbounded<RequestEvent>())
+              const done    = yield* _(Ref.make(false))
               const runtime = yield* _(I.runtime<unknown>())
               yield* _(
                 I.effectTotal(() => {
@@ -145,9 +145,9 @@ export class HttpRequest {
     const self = this
     return pipe(
       this.memoizedUrl,
-      E.fold(
+      E.match(
         I.fail,
-        O.fold(
+        O.match(
           () =>
             I.gen(function* (_) {
               const protocol = yield* _(self.protocol)
@@ -156,7 +156,7 @@ export class HttpRequest {
                 pipe(
                   self.getHeader('host'),
                   I.bind(
-                    O.fold(
+                    O.match(
                       () =>
                         I.fail(
                           new HttpException('Defect: request sent without a host', {
@@ -181,13 +181,13 @@ export class HttpRequest {
                   I.tap((url) =>
                     I.effectTotal(() => {
                       // eslint-disable-next-line functional/immutable-data
-                      self.memoizedUrl = E.right(O.some(url))
+                      self.memoizedUrl = E.Right(O.Some(url))
                     })
                   ),
                   I.tapError((ex) =>
                     I.effectTotal(() => {
                       // eslint-disable-next-line functional/immutable-data
-                      self.memoizedUrl = E.left(ex)
+                      self.memoizedUrl = E.Left(ex)
                     })
                   )
                 )

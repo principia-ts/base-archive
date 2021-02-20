@@ -26,12 +26,12 @@ export class CompletedRequestMap {
   }
 
   insertOption = <E, A>(request: Request<E, A>, result: E.Either<E, O.Option<A>>): CompletedRequestMap => {
-    return E.fold_(
+    return E.match_(
       result,
-      (e) => this.insert(request, E.left(e)),
-      O.fold(
+      (e) => this.insert(request, E.Left(e)),
+      O.match(
         () => this,
-        (a) => this.insert(request, E.right(a))
+        (a) => this.insert(request, E.Right(a))
       )
     )
   }

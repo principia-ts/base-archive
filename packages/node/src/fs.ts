@@ -99,9 +99,9 @@ export function createReadStream(
         I.gen(function* (_) {
           const [pos, end]     = yield* _(state.get)
           const n              = Math.min(end - pos + 1, chunkSize)
-          const [bytes, chunk] = yield* _(I.mapError_(read(fd, n, pos), O.some))
+          const [bytes, chunk] = yield* _(I.mapError_(read(fd, n, pos), O.Some))
 
-          yield* _(I.when_(I.fail(O.none()), () => bytes === 0))
+          yield* _(I.when_(I.fail(O.None()), () => bytes === 0))
           yield* _(state.set([pos + n, end]))
           if (bytes !== chunk.length) {
             const dst = Buffer.allocUnsafeSlow(bytes)
@@ -128,7 +128,7 @@ export function createWriteSink(
 ): Sink.Sink<unknown, ErrnoException, Byte, never, void> {
   return new Sink.Sink(
     M.gen(function* (_) {
-      const errorRef = yield* _(Ref.make<O.Option<ErrnoException>>(O.none()))
+      const errorRef = yield* _(Ref.make<O.Option<ErrnoException>>(O.None()))
       const st       = yield* _(
         M.catchAll_(
           M.makeExit_(
@@ -138,7 +138,7 @@ export function createWriteSink(
             ),
             ([fd, _]) => I.orDie(close(fd))
           ),
-          (err) => I.toManaged_(errorRef.set(O.some(err)))
+          (err) => I.toManaged_(errorRef.set(O.Some(err)))
         )
       )
 
@@ -147,7 +147,7 @@ export function createWriteSink(
         return (_: O.Option<Chunk<Byte>>) => Push.fail(maybeError.value, [])
       } else {
         return (is: O.Option<Chunk<Byte>>) =>
-          O.fold_(
+          O.match_(
             is,
             () => Push.emit(undefined, []),
             (chunk) =>
@@ -158,7 +158,7 @@ export function createWriteSink(
                   Ref.update_(st[1] as Ref.URef<number | undefined>, (n) => (n ? n + chunk.length : undefined))
                 ),
                 I.bind((_) => Push.more),
-                I.mapError((err) => [E.left(err), []])
+                I.mapError((err) => [E.Left(err), []])
               )
           )
       }
@@ -502,11 +502,11 @@ export function watch(
           })
           watcher.once('error', (error) => {
             watcher.removeAllListeners()
-            cb(I.fail(O.some(error)))
+            cb(I.fail(O.Some(error)))
           })
           watcher.once('close', () => {
             watcher.removeAllListeners()
-            cb(I.fail(O.none()))
+            cb(I.fail(O.None()))
           })
         })
       )

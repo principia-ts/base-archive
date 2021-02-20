@@ -31,7 +31,7 @@ export function in_<R, E, A>(io: IO<R, E, A>, scope: Scope<any>): IO<R, E, A> {
                 pipe(
                   Array.from(interruptors),
                   A.head,
-                  O.fold(
+                  O.match(
                     () => F.interrupt(executor),
                     (id) => executor.interruptAs(id)
                   )

@@ -3,21 +3,21 @@ import type { Chunk } from '../Chunk'
 import type { Option } from '@principia/base/Option'
 
 import { pipe } from '@principia/base/Function'
-import { none, some } from '@principia/base/Option'
+import { None, Some } from '@principia/base/Option'
 
 import * as C from '../Chunk'
 import * as I from '../IO'
 
 export type Pull<R, E, O> = I.IO<R, Option<E>, Chunk<O>>
 
-export const end = I.fail(none())
+export const end = I.fail(None())
 
 export function fail<E>(e: E): I.FIO<Option<E>, never> {
-  return I.fail(some(e))
+  return I.fail(Some(e))
 }
 
 export function halt<E>(e: Cause<E>): I.IO<unknown, Option<E>, never> {
-  return pipe(I.halt(e), I.mapError(some))
+  return pipe(I.halt(e), I.mapError(Some))
 }
 
 export function empty<A>(): I.UIO<Chunk<A>> {

@@ -6,7 +6,7 @@ import * as Eq from '@principia/base/Eq'
 import { absurd, increment, pipe } from '@principia/base/Function'
 import * as M from '@principia/base/Map'
 import * as O from '@principia/base/Option'
-import { none, some } from '@principia/base/Option'
+import { None, Some } from '@principia/base/Option'
 
 import * as I from '../IO/core'
 import * as XR from '../IORef/core'
@@ -46,11 +46,11 @@ export function addIfOpen(finalizer: Finalizer) {
       XR.modify<I.IO<unknown, never, Option<number>>, State>((s) => {
         switch (s._tag) {
           case 'Exited': {
-            return [I.map_(finalizer(s.exit), () => none()), new Exited(increment(s.nextKey), s.exit)]
+            return [I.map_(finalizer(s.exit), () => None()), new Exited(increment(s.nextKey), s.exit)]
           }
           case 'Running': {
             return [
-              I.pure(some(s.nextKey)),
+              I.pure(Some(s.nextKey)),
               new Running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)))
             ]
           }
@@ -71,7 +71,7 @@ export function release(key: number, exit: Exit<any, any>) {
           }
           case 'Running': {
             return [
-              O.fold_(
+              O.match_(
                 M.lookup_(s.finalizers(), key),
                 () => I.unit(),
                 (f) => f(exit)
@@ -88,7 +88,7 @@ export function add(finalizer: Finalizer) {
   return (_: ReleaseMap) =>
     I.map_(
       addIfOpen(finalizer)(_),
-      O.fold(
+      O.match(
         (): Finalizer => () => I.unit(),
         (k): Finalizer => (e) => release(k, e)(_)
       )
@@ -102,7 +102,7 @@ export function replace(key: number, finalizer: Finalizer): (_: ReleaseMap) => I
       XR.modify<I.IO<unknown, never, Option<Finalizer>>, State>((s) => {
         switch (s._tag) {
           case 'Exited':
-            return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit)]
+            return [I.map_(finalizer(s.exit), () => None()), new Exited(s.nextKey, s.exit)]
           case 'Running':
             return [
               I.succeed(M.lookup_(finalizers(s), key)),

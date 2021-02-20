@@ -17,7 +17,6 @@ import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/Function'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
-import { none } from '@principia/base/Option'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
@@ -102,7 +101,7 @@ export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
   label: string,
   ...specs: Specs
 ): Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
-  return Spec.suite(label, M.succeed(specs), none())
+  return Spec.suite(label, M.succeed(specs), O.None())
 }
 
 export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
@@ -113,7 +112,7 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
       flow(TF.halt, I.fail),
       flow(
         BA.failures,
-        O.fold(
+        O.match(
           () => I.succeed(new TS.Succeeded(BA.success(undefined))),
           (failures) => I.fail(TF.assertion(failures))
         )
@@ -161,7 +160,7 @@ function checkStream<R, A, R1, E>(
                 pipe(
                   test(input),
                   I.map(
-                    BA.map((fd) => FailureDetails(fd.assertion, O.some(GenFailureDetails(initial.value, input, index))))
+                    BA.map((fd) => FailureDetails(fd.assertion, O.Some(GenFailureDetails(initial.value, input, index))))
                   ),
                   I.attempt
                 )
@@ -180,15 +179,15 @@ function shrinkStream<R, R1, E, A>(
   return (maxShrinks) =>
     pipe(
       stream,
-      S.dropWhile((_) => !E.fold_(_.value, (_) => true, BA.isFalse)),
+      S.dropWhile((_) => !E.match_(_.value, (_) => true, BA.isFalse)),
       S.take(1),
-      S.bind(flow(Sa.shrinkSearch(E.fold(() => true, BA.isFalse)), S.take(maxShrinks + 1))),
+      S.bind(flow(Sa.shrinkSearch(E.match(() => true, BA.isFalse)), S.take(maxShrinks + 1))),
       S.runCollect,
       I.bind(
         flow(
-          C.filter(E.fold(() => true, BA.isFalse)),
+          C.filter(E.match(() => true, BA.isFalse)),
           C.last,
-          O.fold(
+          O.match(
             () =>
               I.succeed(
                 BA.success(

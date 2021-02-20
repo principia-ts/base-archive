@@ -31,7 +31,7 @@ export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) =>
         pipe(
           decoder,
           D.parse((M) => (a) =>
-            O.fold_(
+            O.match_(
               prism.getOption(a),
               () =>
                 M.fail(

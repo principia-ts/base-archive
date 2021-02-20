@@ -138,7 +138,7 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
   const shrink = S.combine_(
     ma.shrink,
     mb.shrink,
-    <State>[false, false, O.none(), O.none()],
+    <State>[false, false, O.None(), O.None()],
     ([leftDone, rightDone, s1, s2], left, right) =>
       pipe(
         I.result(left),
@@ -146,24 +146,24 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
           return ea._tag === 'Success'
             ? eb._tag === 'Success'
               ? Ex.succeed(
-                  tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.some(ea.value), O.some(eb.value)))
+                  tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.Some(ea.value), O.Some(eb.value)))
                 )
               : pipe(
                   eb.cause,
                   Ca.sequenceCauseOption,
-                  O.fold(
+                  O.match(
                     () =>
-                      O.fold_(
+                      O.match_(
                         s2,
                         () =>
                           Ex.succeed(
                             tuple(
                               map_(ea.value, (a) => f(a, mb.value)),
-                              tuple(leftDone, true, O.some(ea.value), s2)
+                              tuple(leftDone, true, O.Some(ea.value), s2)
                             )
                           ),
                         (r) =>
-                          Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.some(ea.value), s2)))
+                          Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.Some(ea.value), s2)))
                       ),
                     (cause) => Ex.halt(cause)
                   )
@@ -172,19 +172,19 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
             ? pipe(
                 ea.cause,
                 Ca.sequenceCauseOption,
-                O.fold(
+                O.match(
                   () =>
-                    O.fold_(
+                    O.match_(
                       s1,
                       () =>
                         Ex.succeed(
                           tuple(
                             map_(eb.value, (b) => f(ma.value, b)),
-                            tuple(true, rightDone, s1, O.some(eb.value))
+                            tuple(true, rightDone, s1, O.Some(eb.value))
                           )
                         ),
                       (l) =>
-                        Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.some(eb.value))))
+                        Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.Some(eb.value))))
                     ),
                   (cause) => Ex.halt(cause)
                 )
@@ -210,11 +210,11 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
                         return Ex.succeed(
                           tuple(
                             map_(s1.value, (a) => f(a, mb.value)),
-                            tuple(leftDone, true, O.none(), s2)
+                            tuple(leftDone, true, O.None(), s2)
                           )
                         )
                       } else {
-                        return Ex.fail(O.none())
+                        return Ex.fail(O.None())
                       }
                     })()
               })()
@@ -251,11 +251,11 @@ export function shrinkFractional(smallest: number): (a: number) => Sample<unknow
         S.unfold(smallest, (min) => {
           const mid = min + (max - min) / 2
           if (mid === max) {
-            return O.none()
+            return O.None()
           } else if (Math.abs(max - mid) < 0.001) {
-            return O.some([min, max])
+            return O.Some([min, max])
           } else {
-            return O.some([mid, mid])
+            return O.Some([mid, mid])
           }
         })
       )
@@ -274,11 +274,11 @@ export function shrinkIntegral(smallest: number): (a: number) => Sample<unknown,
         S.unfold(smallest, (min) => {
           const mid = min + quot(max - min, 2)
           if (mid === max) {
-            return O.none()
+            return O.None()
           } else if (Math.abs(max - mid) === 1) {
-            return O.some([mid, max])
+            return O.Some([mid, max])
           } else {
-            return O.some([mid, mid])
+            return O.Some([mid, mid])
           }
         })
       )

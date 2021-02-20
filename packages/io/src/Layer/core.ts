@@ -745,7 +745,7 @@ export function catchAll_<R, E, A, R1, E1, B>(
       pipe(
         cause,
         Ca.failureOrCause,
-        E.fold(
+        E.match(
           (e) => I.succeed(tuple(r, e)),
           (c) => I.halt(c)
         )

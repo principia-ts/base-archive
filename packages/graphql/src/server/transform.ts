@@ -130,7 +130,7 @@ export function transformScalarResolvers(
           resolver.functions.parseLiteral(u),
           Sy.giveAll(env),
           Sy.runEither,
-          E.fold((e) => {
+          E.match((e) => {
             throw e
           }, identity)
         ),
@@ -139,7 +139,7 @@ export function transformScalarResolvers(
           resolver.functions.parseValue(u),
           Sy.giveAll(env),
           Sy.runEither,
-          E.fold((e) => {
+          E.match((e) => {
             throw e
           }, identity)
         ),
@@ -148,7 +148,7 @@ export function transformScalarResolvers(
           resolver.functions.serialize(u),
           Sy.giveAll(env),
           Sy.runEither,
-          E.fold((e) => {
+          E.match((e) => {
             throw e
           }, identity)
         )

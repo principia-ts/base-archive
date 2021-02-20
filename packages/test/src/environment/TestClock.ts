@@ -127,7 +127,7 @@ export class TestClock implements Clock {
       this.annotations
         .get(fibers)
         ['>>='](
-          E.fold(
+          E.match(
             (_) => I.succeed(HS.make(HashEqFiber)),
             flow(
               I.foreach(Ref.get),
@@ -182,13 +182,13 @@ export class TestClock implements Clock {
           sorted,
           Li.first,
           O.bind(([duration, promise]) =>
-            duration <= end ? O.some(tuple(O.some(tuple(end, promise)), new Data(duration, Li.tail(sorted)))) : O.none()
+            duration <= end ? O.Some(tuple(O.Some(tuple(end, promise)), new Data(duration, Li.tail(sorted)))) : O.None()
           ),
-          O.getOrElse(() => tuple(O.none(), new Data(end, data.sleeps)))
+          O.getOrElse(() => tuple(O.None(), new Data(end, data.sleeps)))
         )
       })
     )['>>='](
-      O.fold(
+      O.match(
         () => I.unit(),
         ([end, promise]) =>
           promise
@@ -224,9 +224,9 @@ export class TestClock implements Clock {
   private warningDone: UIO<void> = RefM.updateSome_(
     this.warningState,
     matchTag({
-      Start: () => O.some(I.succeed(Done)),
-      Pending: ({ fiber }) => O.some(Fi.interrupt(fiber)['$>'](() => Done)),
-      Done: () => O.none()
+      Start: () => O.Some(I.succeed(Done)),
+      Pending: ({ fiber }) => O.Some(Fi.interrupt(fiber)['$>'](() => Done)),
+      Done: () => O.None()
     })
   )
 
@@ -240,10 +240,10 @@ export class TestClock implements Clock {
             I.makeInterruptible,
             I.fork,
             I.map(Pending),
-            O.some
+            O.Some
           )
       },
-      () => O.none<IO<unknown, never, WarningData>>()
+      () => O.None<IO<unknown, never, WarningData>>()
     )
   )
 

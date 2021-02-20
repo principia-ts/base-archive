@@ -64,7 +64,7 @@ export const snoc: <A>(end: A) => (init: ReadonlyArray<A>) => NonEmptyArray<A> =
  * @since 1.0.0
  */
 export function fromArray<A>(as: ReadonlyArray<A>): O.Option<NonEmptyArray<A>> {
-  return A.isNonEmpty(as) ? O.some(as) : O.none()
+  return A.isNonEmpty(as) ? O.Some(as) : O.None()
 }
 
 /**

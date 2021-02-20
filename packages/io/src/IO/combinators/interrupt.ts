@@ -4,9 +4,9 @@ import type { Canceler, FIO, IO, UIO } from '../core'
 import type { Either } from '@principia/base/Either'
 import type { Option } from '@principia/base/Option'
 
-import { left } from '@principia/base/Either'
+import { Left } from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/Function'
-import { none, some } from '@principia/base/Option'
+import { None, Some } from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { OneShot } from '@principia/base/util/support/OneShot'
 
@@ -227,12 +227,12 @@ export function effectAsyncInterruptEither<R, E, A>(
       pipe(
         effectAsyncOption<R, E, IO<R, E, A>>((k) => {
           started.set(true)
-          const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(none())
+          const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(None())
           try {
             const res = register((io) => k(pure(io)))
             switch (res._tag) {
               case 'Right': {
-                ret.set(some(pure(res.right)))
+                ret.set(Some(pure(res.right)))
                 break
               }
               case 'Left': {
@@ -258,7 +258,7 @@ export function effectAsyncInterrupt<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Canceler<R>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return effectAsyncInterruptEither<R, E, A>((cb) => left(register(cb)), blockingOn)
+  return effectAsyncInterruptEither<R, E, A>((cb) => Left(register(cb)), blockingOn)
 }
 
 export function effectAsyncInterruptPromise<R, E, A>(
@@ -266,7 +266,7 @@ export function effectAsyncInterruptPromise<R, E, A>(
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return effectAsyncInterruptEither<R, E, A>(
-    (cb) => left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten)),
+    (cb) => Left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten)),
     blockingOn
   )
 }

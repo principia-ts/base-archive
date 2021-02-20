@@ -15,7 +15,7 @@ export function forkAs_<R, E, A>(ma: IO<R, E, A>, name: string): URIO<R, Fiber.F
   return uninterruptibleMask(({ restore }) =>
     pipe(
       Fiber.fiberName,
-      FiberRef.set(O.some(name)),
+      FiberRef.set(O.Some(name)),
       bind(() => fork(restore(ma)))
     )
   )

@@ -340,13 +340,13 @@ export function filterInputM_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
   return pipe(
     self,
     foldM(
-      (ea) => O.some<EA | EC>(ea),
+      (ea) => O.Some<EA | EC>(ea),
       identity,
       (a: A1) =>
         I.ifM_(
           I.asSomeError(f(a)),
           () => I.pure(a),
-          () => I.fail<O.Option<EA | EC>>(O.none())
+          () => I.fail<O.Option<EA | EC>>(O.None())
         ),
       I.pure
     )
@@ -399,13 +399,13 @@ export function filterOutputM_<RA, RB, EA, EB, A, B, RC, EC>(
   return foldM_(
     self,
     (ea) => ea,
-    (eb) => O.some<EB | EC>(eb),
+    (eb) => O.Some<EB | EC>(eb),
     (a) => I.pure(a),
     (b) =>
       I.ifM_(
         I.asSomeError(f(b)),
         () => I.pure(b),
-        () => I.fail(O.none())
+        () => I.fail(O.None())
       )
   )
 }
@@ -707,8 +707,8 @@ export function dimapError_<RA, RB, A, B, EA, EB, EC, ED>(
     fold(
       (ea) => f(ea),
       (eb) => g(eb),
-      (a) => E.right(a),
-      (b) => E.right(b)
+      (a) => E.Right(a),
+      (b) => E.Right(b)
     )
   )
 }
@@ -1037,13 +1037,13 @@ export function collectM_<RA, RB, EA, EB, A, B, RC, EC, C>(
 ): IORefM<RA, RB & RC, EA, O.Option<EB | EC>, A, C> {
   return self.foldM(
     identity,
-    (_) => O.some<EB | EC>(_),
+    (_) => O.Some<EB | EC>(_),
     (_) => I.pure(_),
     (b) =>
       pipe(
         f(b),
         O.map((a) => I.asSomeError(a)),
-        O.getOrElse(() => I.fail(O.none()))
+        O.getOrElse(() => I.fail(O.None()))
       )
   )
 }
@@ -1104,8 +1104,8 @@ export function writeOnly<RA, RB, EA, EB, A, B>(
     fold(
       identity,
       (): void => undefined,
-      E.right,
-      () => E.left<void>(undefined)
+      E.Right,
+      () => E.Left<void>(undefined)
     )
   )
 }

@@ -2,11 +2,11 @@ import * as E from '@principia/base/Either'
 import * as fc from 'fast-check'
 
 export function getRight<E, A>(arb: fc.Arbitrary<A>): fc.Arbitrary<E.Either<E, A>> {
-  return arb.map(E.right)
+  return arb.map(E.Right)
 }
 
 export function getLeft<E, A>(arb: fc.Arbitrary<E>): fc.Arbitrary<E.Either<E, A>> {
-  return arb.map(E.left)
+  return arb.map(E.Left)
 }
 
 export function getEither<E, A>(leftArb: fc.Arbitrary<E>, rightArb: fc.Arbitrary<A>) {

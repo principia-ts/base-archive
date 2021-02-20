@@ -12,7 +12,7 @@ export class TestArgs {
   ) {}
 }
 
-export const empty: TestArgs = new TestArgs(A.empty(), A.empty(), O.none())
+export const empty: TestArgs = new TestArgs(A.empty(), A.empty(), O.None())
 
 export function parse(args: ReadonlyArray<string>): TestArgs {
   const [terms, tags, policies] = pipe(
@@ -20,15 +20,15 @@ export function parse(args: ReadonlyArray<string>): TestArgs {
     A.grouped(2),
     A.filterMap((as) => {
       if (as[0] === '-t') {
-        return O.some(tuple('testSearchTerm', as[1]))
+        return O.Some(tuple('testSearchTerm', as[1]))
       }
       if (as[0] === '-tags') {
-        return O.some(tuple('tagSearchTerm', as[1]))
+        return O.Some(tuple('tagSearchTerm', as[1]))
       }
       if (as[0] === '-policy') {
-        return O.some(tuple('policy', as[1]))
+        return O.Some(tuple('policy', as[1]))
       }
-      return O.none()
+      return O.None()
     }),
     A.foldl(
       tuple(<ReadonlyArray<string>>[], <ReadonlyArray<string>>[], <ReadonlyArray<string>>[]),

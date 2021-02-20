@@ -3,7 +3,7 @@ import { inspect } from 'util'
 
 import * as A from '../src/Array'
 import { pipe } from '../src/Function'
-import { none } from '../src/Option'
+import { None } from '../src/Option'
 import * as RBT from '../src/RedBlackTree'
 
 const t = pipe(

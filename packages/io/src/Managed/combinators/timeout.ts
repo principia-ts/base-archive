@@ -34,27 +34,27 @@ export function timeout(d: number) {
               I.raceWith(
                 pipe(
                   I.sleep(d),
-                  I.as(() => O.none())
+                  I.as(() => O.None())
                 ),
                 (result, sleeper) =>
-                  pipe(sleeper.interruptAs(id), I.apr(I.done(Ex.map_(result, ([, a]) => E.right(a))))),
-                (_, resultFiber) => I.succeed(E.left(resultFiber))
+                  pipe(sleeper.interruptAs(id), I.apr(I.done(Ex.map_(result, ([, a]) => E.Right(a))))),
+                (_, resultFiber) => I.succeed(E.Left(resultFiber))
               ),
               I.giveAll(r),
               restore
             )
           )
           const a          = yield* _(
-            E.fold_(
+            E.match_(
               raceResult,
               (fiber) =>
                 pipe(
                   fiber.interruptAs(id),
                   I.ensuring(pipe(innerReleaseMap, releaseAll(Ex.interrupt(id), sequential))),
                   I.forkDaemon,
-                  I.as(() => O.none())
+                  I.as(() => O.None())
                 ),
-              flow(O.some, I.succeed)
+              flow(O.Some, I.succeed)
             )
           )
           return tuple(earlyRelease, a)

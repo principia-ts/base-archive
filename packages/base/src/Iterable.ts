@@ -359,10 +359,10 @@ export function findl_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A> {
   let a: IteratorResult<A>
   while (!(a = as.next()).done) {
     if (predicate(a.value)) {
-      return O.some(a.value)
+      return O.Some(a.value)
     }
   }
-  return O.none()
+  return O.None()
 }
 
 export function findl<A, B extends A>(refinement: Refinement<A, B>): (ia: Iterable<A>) => Option<B>

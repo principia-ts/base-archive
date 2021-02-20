@@ -76,7 +76,7 @@ export class CustomRuntime<R> {
       this.platform.maxOp,
       this.platform.reportFailure,
       this.platform,
-      O.none()
+      O.None()
     )
 
     return context

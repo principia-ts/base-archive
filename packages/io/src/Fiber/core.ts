@@ -126,7 +126,7 @@ export function done<E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> {
     getRef: (ref) => I.pure(ref.initial),
     inheritRefs: I.unit(),
     interruptAs: () => I.pure(exit),
-    poll: I.pure(O.some(exit))
+    poll: I.pure(O.Some(exit))
   }
 }
 
@@ -361,4 +361,4 @@ export const FiberDump = (fiberId: FiberId, fiberName: Option<string>, status: F
  * -------------------------------------------
  */
 
-export const fiberName = new FiberRef<O.Option<string>>(O.none(), identity, identity)
+export const fiberName = new FiberRef<O.Option<string>>(O.None(), identity, identity)

@@ -92,7 +92,7 @@ export function effectAsync<R, E, A>(
 ): IO<R, E, A> {
   return new EffectAsync((cb) => {
     register(cb)
-    return O.none()
+    return O.None()
   }, blockingOn)
 }
 
@@ -303,7 +303,7 @@ export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
  * Lifts an `Either` into an `IO`
  */
 export function fromEither<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
-  return bind_(effectTotal(f), E.fold(fail, succeed))
+  return bind_(effectTotal(f), E.match(fail, succeed))
 }
 
 /**
@@ -311,7 +311,7 @@ export function fromEither<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
  * in some scenarios.
  */
 export function fromOption<A>(m: () => Option<A>): FIO<Option<never>, A> {
-  return bind_(effectTotal(m), (ma) => (ma._tag === 'None' ? fail(O.none()) : pure(ma.value)))
+  return bind_(effectTotal(m), (ma) => (ma._tag === 'None' ? fail(O.None()) : pure(ma.value)))
 }
 
 /**
@@ -358,7 +358,7 @@ export function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
 export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
   return asksM((_: R) => {
     const res = runEitherEnv_(effect, _)
-    return E.fold_(res, fail, succeed)
+    return E.match_(res, fail, succeed)
   })
 }
 
@@ -599,14 +599,14 @@ export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: IO<R, E, A>) => IO<R
  * @since 1.0.0
  */
 export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
-  return bind_(ma, E.fold(fail, succeed))
+  return bind_(ma, E.match(fail, succeed))
 }
 
 /**
  * Folds an `IO` that may fail with `E` or succeed with `A` into one that never fails but succeeds with `Either<E, A>`
  */
 export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
-  return fold_(ma, E.left, E.right)
+  return fold_(ma, E.Left, E.Right)
 }
 
 /*
@@ -642,7 +642,7 @@ export function foldM_<R, R1, R2, E, E1, E2, A, A1, A2>(
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return foldCauseM_(ma, (cause) => E.fold_(C.failureOrCause(cause), onFailure, halt), onSuccess)
+  return foldCauseM_(ma, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt), onSuccess)
 }
 
 /**
@@ -804,7 +804,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
   return foldCauseM_(
     fa,
     (c) =>
-      E.fold_(
+      E.match_(
         C.failureOrCause(c),
         (e) => bind_(onFailure(e), () => halt(c)),
         (_) => halt(c)
@@ -832,7 +832,7 @@ export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, 
   return foldCauseM_(
     fa,
     (c) =>
-      E.fold_(
+      E.match_(
         C.failureOrCause(c),
         (e) => bind_(f(e), () => halt(c)),
         (_) => halt(c)
@@ -1063,7 +1063,7 @@ export function as<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
  * Maps the success value of this effect to an optional value.
  */
 export function asSome<R, E, A>(ma: IO<R, E, A>): IO<R, E, Option<A>> {
-  return map_(ma, O.some)
+  return map_(ma, O.Some)
 }
 
 /**
@@ -1072,7 +1072,7 @@ export function asSome<R, E, A>(ma: IO<R, E, A>): IO<R, E, Option<A>> {
  * @category Combinators
  * @since 1.0.0
  */
-export const asSomeError: <R, E, A>(ma: IO<R, E, A>) => IO<R, O.Option<E>, A> = mapError(O.some)
+export const asSomeError: <R, E, A>(ma: IO<R, E, A>) => IO<R, O.Option<E>, A> = mapError(O.Some)
 
 /**
  * Ignores the result of the IO, replacing it with unit
@@ -1147,7 +1147,7 @@ export function catchSome_<R, E, A, R1, E1, A1>(
       pipe(
         cause,
         C.failureOrCause,
-        E.fold(
+        E.match(
           flow(
             f,
             O.getOrElse(() => halt(cause))
@@ -1179,7 +1179,7 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
   return foldCauseM_(
     ma,
     (c): IO<R1, E1 | E, A1> =>
-      O.fold_(
+      O.match_(
         f(c),
         () => halt(c),
         (a) => a
@@ -1743,7 +1743,7 @@ export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  * methods.
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
-  return new Fork(ma, O.none(), O.none())
+  return new Fork(ma, O.None(), O.None())
 }
 
 /**
@@ -1769,7 +1769,7 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  * methods.
  */
 export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
-  return (ma) => new Fork(ma, O.none(), O.some(reportFailure))
+  return (ma) => new Fork(ma, O.None(), O.Some(reportFailure))
 }
 
 /**
@@ -1778,8 +1778,8 @@ export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, 
 export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
   return foldCauseM_(
     ma,
-    flow(C.map(O.some), halt),
-    O.fold(() => fail(O.none()), pure)
+    flow(C.map(O.Some), halt),
+    O.match(() => fail(O.None()), pure)
   )
 }
 
@@ -1839,7 +1839,7 @@ export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementError, A> {
  * Lifts an Option into an IO. If the option is `None`, fail with the `e` value.
  */
 export function getOrFailWith_<E, A>(v: () => Option<A>, e: () => E): FIO<E, A> {
-  return deferTotal(() => O.fold_(v(), () => fail(e()), succeed))
+  return deferTotal(() => O.match_(v(), () => fail(e()), succeed))
 }
 
 /**
@@ -1982,7 +1982,7 @@ export const join_ = <R, E, A, R1, E1, A1>(
 ): IO<E.Either<R, R1>, E | E1, A | A1> =>
   asksM(
     (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, A | A1> =>
-      E.fold_(
+      E.match_(
         _,
         (r) => giveAll_(io, r),
         (r1) => giveAll_(that, r1)
@@ -2005,10 +2005,10 @@ export const joinEither_ = <R, E, A, R1, E1, A1>(
 ): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
   asksM(
     (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
-      E.fold_(
+      E.match_(
         _,
-        (r) => map_(giveAll_(ma, r), E.left),
-        (r1) => map_(giveAll_(mb, r1), E.right)
+        (r) => map_(giveAll_(ma, r), E.Left),
+        (r1) => map_(giveAll_(mb, r1), E.Right)
       )
   )
 
@@ -2025,7 +2025,7 @@ export function joinEither<R1, E1, A1>(
  *  Returns an IO with the value on the left part.
  */
 export function left<A>(a: () => A): UIO<E.Either<A, never>> {
-  return bind_(effectTotal(a), flow(E.left, pure))
+  return bind_(effectTotal(a), flow(E.Left, pure))
 }
 
 /**
@@ -2155,8 +2155,8 @@ export function onRight<C>(): <R, E, A>(io: IO<R, E, A>) => IO<E.Either<C, R>, E
 export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
   return fold_(
     io,
-    () => O.none(),
-    (a) => O.some(a)
+    () => O.None(),
+    (a) => O.Some(a)
   )
 }
 
@@ -2166,8 +2166,8 @@ export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
 export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> {
   return foldM_(
     ma,
-    O.fold(() => pure(O.none()), fail),
-    flow(O.some, pure)
+    O.match(() => pure(O.None()), fail),
+    flow(O.Some, pure)
   )
 }
 
@@ -2201,8 +2201,8 @@ export function orElseEither_<R, E, A, R1, E1, A1>(
 ): IO<R & R1, E1, E.Either<A, A1>> {
   return tryOrElse_(
     self,
-    () => map_(that(), E.right),
-    (a) => succeed(E.left(a))
+    () => map_(that(), E.Right),
+    (a) => succeed(E.Left(a))
   )
 }
 
@@ -2226,7 +2226,7 @@ export function orElseOption_<R, E, A, R1, E1, A1>(
 ): IO<R & R1, Option<E | E1>, A | A1> {
   return catchAll_(
     ma,
-    O.fold(that, (e) => fail(O.some<E | E1>(e)))
+    O.match(that, (e) => fail(O.Some<E | E1>(e)))
   )
 }
 
@@ -2327,7 +2327,7 @@ export function refineOrDieWith_<R, E, A, E1>(
   pf: (e: E) => Option<E1>,
   f: (e: E) => Error
 ): IO<R, E1, A> {
-  return catchAll_(fa, (e) => O.fold_(pf(e), () => die(f(e)), fail))
+  return catchAll_(fa, (e) => O.match_(pf(e), () => die(f(e)), fail))
 }
 
 /**
@@ -2375,7 +2375,7 @@ export function rejectM_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   pf: (a: A) => Option<IO<R1, E1, E1>>
 ): IO<R & R1, E | E1, A> {
-  return bind_(fa, (a) => O.fold_(pf(a), () => pure(a), bind(fail)))
+  return bind_(fa, (a) => O.match_(pf(a), () => pure(a), bind(fail)))
 }
 
 /**
@@ -2485,7 +2485,7 @@ export function replicate(n: number): <R, E, A>(ma: IO<R, E, A>) => readonly IO<
 export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO<R, E, A> {
   return bind_(
     ma,
-    O.fold(() => bind_(effectTotal(error), fail), succeed)
+    O.match(() => bind_(effectTotal(error), fail), succeed)
   )
 }
 
@@ -2499,7 +2499,7 @@ export { _require as require }
  * Recover from the unchecked failure of the `IO`. (opposite of `orDie`)
  */
 export function resurrect<R, E, A>(io: IO<R, E, A>): IO<R, unknown, A> {
-  return unrefineWith_(io, O.some, identity)
+  return unrefineWith_(io, O.Some, identity)
 }
 
 /**
@@ -2682,7 +2682,7 @@ export function tryOrElse_<R, E, A, R1, E1, A1, R2, E2, A2>(
   that: () => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new Fold(ma, (cause) => O.fold_(C.keepDefects(cause), that, halt), onSuccess)
+  return new Fold(ma, (cause) => O.match_(C.keepDefects(cause), that, halt), onSuccess)
 }
 
 export function tryOrElse<A, R1, E1, A1, R2, E2, A2>(
@@ -2740,8 +2740,8 @@ export function unrefineWith_<R, E, A, E1, E2>(
     (cause): IO<R, E1 | E2, A> =>
       pipe(
         cause,
-        C.find((c) => (C.died(c) ? pf(c.value) : O.none())),
-        O.fold(() => pipe(cause, C.map(f), halt), fail)
+        C.find((c) => (C.died(c) ? pf(c.value) : O.None())),
+        O.match(() => pipe(cause, C.map(f), halt), fail)
       )
   )
 }

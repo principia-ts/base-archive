@@ -1,16 +1,182 @@
 import type { OptionURI } from './Modules'
 
-import { identity } from './Function'
+import { getApplicativeComposition } from './Applicative'
+import { getApplyComposition } from './Apply'
+import { flow, identity } from './Function'
+import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 import * as O from './Option'
 import * as P from './typeclass'
+
+export interface SomeFn<F extends HKT.URIS, C = HKT.Auto> {
+  <
+    A,
+    N extends string = HKT.Initial<C, 'N'>,
+    K = HKT.Initial<C, 'K'>,
+    Q = HKT.Initial<C, 'Q'>,
+    W = HKT.Initial<C, 'W'>,
+    X = HKT.Initial<C, 'X'>,
+    I = HKT.Initial<C, 'I'>,
+    S = HKT.Initial<C, 'S'>,
+    R = HKT.Initial<C, 'R'>,
+    E = HKT.Initial<C, 'E'>
+  >(
+    a: A
+  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>
+}
+
+export function some<F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): SomeFn<F, C> {
+  return flow(O.Some, F.pure)
+}
+
+export interface NoneFn<F extends HKT.URIS, C = HKT.Auto> {
+  <
+    A = never,
+    N extends string = HKT.Initial<C, 'N'>,
+    K = HKT.Initial<C, 'K'>,
+    Q = HKT.Initial<C, 'Q'>,
+    W = HKT.Initial<C, 'W'>,
+    X = HKT.Initial<C, 'X'>,
+    I = HKT.Initial<C, 'I'>,
+    S = HKT.Initial<C, 'S'>,
+    R = HKT.Initial<C, 'R'>,
+    E = HKT.Initial<C, 'E'>
+  >(): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>
+}
+
+export function none<F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): NoneFn<F, C> {
+  return () => F.pure(O.None())
+}
+
+export interface FromFFn<F extends HKT.URIS, C = HKT.Auto> {
+  <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
+    F,
+    C,
+    N,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    O.Option<A>
+  >
+}
+
+export function fromF<F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): FromFFn<F, C> {
+  return F.map(O.Some)
+}
+
+export interface GetOrElseFn_<F extends HKT.URIS, C = HKT.Auto> {
+  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
+    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>,
+    onNone: () => HKT.Kind<
+      F,
+      C,
+      HKT.Intro<C, 'N', N, N1>,
+      HKT.Intro<C, 'K', K, K1>,
+      HKT.Intro<C, 'Q', Q, Q1>,
+      HKT.Intro<C, 'W', W, W1>,
+      HKT.Intro<C, 'X', X, X1>,
+      HKT.Intro<C, 'I', I, I1>,
+      HKT.Intro<C, 'S', S, S1>,
+      HKT.Intro<C, 'R', R, R1>,
+      HKT.Intro<C, 'E', E, E1>,
+      A1
+    >
+  ): HKT.Kind<
+    F,
+    C,
+    HKT.Mix<C, 'N', [N, N1]>,
+    HKT.Mix<C, 'K', [K, K1]>,
+    HKT.Mix<C, 'Q', [Q, Q1]>,
+    HKT.Mix<C, 'Q', [W, W1]>,
+    HKT.Mix<C, 'Q', [X, X1]>,
+    HKT.Mix<C, 'Q', [I, I1]>,
+    HKT.Mix<C, 'Q', [S, S1]>,
+    HKT.Mix<C, 'Q', [R, R1]>,
+    HKT.Mix<C, 'Q', [E, E1]>,
+    A | A1
+  >
+}
+
+export function getOrElse_<F extends HKT.URIS, C = HKT.Auto>(M: P.Monad<F, C>): GetOrElseFn_<F, C> {
+  return (fa, onNone) => M.bind_(fa, O.match(onNone, M.pure))
+}
+
+export interface GetOrElseFn<F extends HKT.URIS, C = HKT.Auto> {
+  <N extends string, K, Q, W, X, I, S, R, E, A>(onNone: () => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): <
+    N1 extends string,
+    K1,
+    Q1,
+    W1,
+    X1,
+    I1,
+    S1,
+    R1,
+    E1,
+    A1
+  >(
+    fa: HKT.Kind<
+      F,
+      C,
+      HKT.Intro<C, 'N', N, N1>,
+      HKT.Intro<C, 'K', K, K1>,
+      HKT.Intro<C, 'Q', Q, Q1>,
+      HKT.Intro<C, 'W', W, W1>,
+      HKT.Intro<C, 'X', X, X1>,
+      HKT.Intro<C, 'I', I, I1>,
+      HKT.Intro<C, 'S', S, S1>,
+      HKT.Intro<C, 'R', R, R1>,
+      HKT.Intro<C, 'E', E, E1>,
+      O.Option<A>
+    >
+  ) => HKT.Kind<
+    F,
+    C,
+    HKT.Mix<C, 'N', [N, N1]>,
+    HKT.Mix<C, 'K', [K, K1]>,
+    HKT.Mix<C, 'Q', [Q, Q1]>,
+    HKT.Mix<C, 'Q', [W, W1]>,
+    HKT.Mix<C, 'Q', [X, X1]>,
+    HKT.Mix<C, 'Q', [I, I1]>,
+    HKT.Mix<C, 'Q', [S, S1]>,
+    HKT.Mix<C, 'Q', [R, R1]>,
+    HKT.Mix<C, 'Q', [E, E1]>,
+    A | A1
+  >
+}
+
+export function getOrElse<F extends HKT.URIS, C = HKT.Auto>(M: P.Monad<F, C>): GetOrElseFn<F, C> {
+  return (onNone) => M.bind(O.match(onNone, M.pure))
+}
+
+export function Functor<F extends HKT.URIS, C = HKT.Auto>(
+  F: P.Functor<F, C>
+): P.Functor<[F[0], ...HKT.Rest<F>, HKT.URI<OptionURI>], C> {
+  return HKT.instance({ ...getFunctorComposition(F, O.Functor) })
+}
+
+export function Apply<F extends HKT.URIS, C = HKT.Auto>(
+  A: P.Apply<F, C>
+): P.Apply<[F[0], ...HKT.Rest<F>, HKT.URI<OptionURI>], C> {
+  return HKT.instance({ ...getApplyComposition(A, O.Apply) })
+}
+
+export function Applicative<F extends HKT.URIS, C = HKT.Auto>(
+  A: P.Applicative<F, C>
+): P.Applicative<[F[0], ...HKT.Rest<F>, HKT.URI<OptionURI>], C> {
+  return HKT.instance({ ...getApplicativeComposition(A, O.Applicative) })
+}
 
 export function getOptionT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): OptionT<M, C>
 export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UHKT<M>> {
   const bind_: OptionT<HKT.UHKT<M>>['bind_'] = (ma, f) =>
     M.bind_(
       ma,
-      O.fold(() => M.pure(O.none()), f)
+      O.match(() => M.pure(O.None()), f)
     )
 
   return HKT.instance<OptionT<HKT.UHKT<M>>>({
@@ -18,11 +184,11 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
     bind_: bind_,
     bind: (f) => (ma) => bind_(ma, f),
     flatten: (mma) => bind_(mma, identity),
-    none: () => M.pure(O.none()),
-    some: (a) => M.pure(O.some(a)),
-    someM: (ma) => M.map_(ma, O.some),
-    foldOption_: (ma, onNone, onSome) => M.map_(ma, O.fold(onNone, onSome)),
-    foldOption: (onNone, onSome) => M.map(O.fold(onNone, onSome)),
+    none: () => M.pure(O.None()),
+    some: (a) => M.pure(O.Some(a)),
+    someM: (ma) => M.map_(ma, O.Some),
+    foldOption_: (ma, onNone, onSome) => M.map_(ma, O.match(onNone, onSome)),
+    foldOption: (onNone, onSome) => M.map(O.match(onNone, onSome)),
     foldOptionM_: <A1, A2, A3>(
       ma: HKT.HKT<M, O.Option<A1>>,
       onNone: () => HKT.HKT<M, A2>,
@@ -30,14 +196,14 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
     ) =>
       M.bind_(
         ma,
-        O.fold((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
+        O.match((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
       ),
     foldOptionM: <A1, A2, A3>(onNone: () => HKT.HKT<M, A2>, onSome: (a: A1) => HKT.HKT<M, A3>) => (
       ma: HKT.HKT<M, O.Option<A1>>
     ) =>
       M.bind_(
         ma,
-        O.fold((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
+        O.match((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
       )
   })
 }

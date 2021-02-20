@@ -9,7 +9,7 @@
 
 import type { Option } from './Option'
 
-import { fromNullable, none } from './Option'
+import { fromNullable, None } from './Option'
 
 /**
  * URI used in Has
@@ -84,7 +84,7 @@ function makeTag<T>(def = false, key: PropertyKey = Symbol()): Tag<T> {
     fixed: () => makeTag(false, key),
     refine: () => makeTag(def, key),
     read: (r: Has<T>) => r[key],
-    readOption: (r) => (typeof r === 'object' && r !== null ? fromNullable(r[key]) : none()),
+    readOption: (r) => (typeof r === 'object' && r !== null ? fromNullable(r[key]) : None()),
     setKey: (s: PropertyKey) => makeTag(def, s)
   }
 }

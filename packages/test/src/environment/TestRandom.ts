@@ -81,7 +81,7 @@ export class TestRandom implements Random {
   }
 
   private getOrElse = <A>(buffer: (_: Buffer) => readonly [Option<A>, Buffer], random: UIO<A>): UIO<A> => {
-    return Ref.modify_(this.bufferState, buffer)['>>='](O.fold(() => random, I.succeed))
+    return Ref.modify_(this.bufferState, buffer)['>>='](O.match(() => random, I.succeed))
   }
 
   private leastSignificantBits = (x: number): number => {

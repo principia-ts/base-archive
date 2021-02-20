@@ -38,7 +38,7 @@ export function prettyPrintM(dump: FiberDump): UIO<string> {
 export function prettyPrint(dump: FiberDump, now: number): string {
   const { days, hours, milliseconds, minutes, seconds } = parseMs(now - dump.fiberId.startTime)
 
-  const name    = O.fold_(dump.fiberName, constant(''), (n) => `"${n}" `)
+  const name    = O.match_(dump.fiberName, constant(''), (n) => `"${n}" `)
   const lifeMsg =
     (days === 0 ? '' : `${days}d`) +
     (days === 0 && hours === 0 ? '' : `${hours}h`) +
@@ -66,7 +66,7 @@ export function prettyPrint(dump: FiberDump, now: number): string {
 export function renderOne(tree: FiberDump): string {
   const prefix = ''
 
-  const name      = O.fold_(tree.fiberName, constant(''), (n) => '"' + n + '" ')
+  const name      = O.match_(tree.fiberName, constant(''), (n) => '"' + n + '" ')
   const statusMsg = renderStatus(tree.status)
   return `${prefix}+---${name}#${tree.fiberId.seqNumber} Status: ${statusMsg}\n`
 }

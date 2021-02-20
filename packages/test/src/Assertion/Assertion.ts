@@ -92,7 +92,7 @@ export function assertionRec<A, B>(
 ): Assertion<A> {
   const resultAssertion = (): Assertion<A> =>
     assertionDirect(name, params, (a) =>
-      O.fold_(
+      O.match_(
         get(a),
         () => orElse(AssertionData(resultAssertion(), a)),
         (b) => {
@@ -149,7 +149,7 @@ export function deepStrictEqualTo(expected: any, show?: S.Show<any>): Assertion<
   return assertion('deepStrictEquals', [param(expected, show)], (actual) =>
     pipe(
       O.tryCatch(() => assert.deepStrictEqual(actual, expected)),
-      O.fold(
+      O.match(
         () => false,
         () => true
       )
@@ -162,7 +162,7 @@ export function dies(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> {
     'dies',
     [param(assertion0)],
     assertion0,
-    Ex.fold(C.dieOption, () => O.none())
+    Ex.fold(C.dieOption, () => O.None())
   )
 }
 
@@ -175,7 +175,7 @@ export function fails<E>(assertion: Assertion<E>): Assertion<Exit<E, any>> {
     'fails',
     [param(assertion)],
     assertion,
-    Ex.fold(flow(C.failures, A.head), () => O.none())
+    Ex.fold(flow(C.failures, A.head), () => O.None())
   )
 }
 
@@ -192,12 +192,12 @@ export function forall<A>(assertion: Assertion<A>): Assertion<Iterable<A>> {
 
 export function hasField<A, B>(name: string, proj: (a: A) => B, assertion: Assertion<B>): Assertion<A> {
   return assertionRec('hasField', [param(quoted(name)), param(field(name)), param(assertion)], assertion, (actual) =>
-    O.some(proj(actual))
+    O.Some(proj(actual))
   )
 }
 
 export function hasMessage(message: Assertion<string>): Assertion<Error> {
-  return assertionRec('hasMessage', [param(message)], message, (error) => O.some(error.message))
+  return assertionRec('hasMessage', [param(message)], message, (error) => O.Some(error.message))
 }
 
 export function endsWith<A>(suffix: ReadonlyArray<A>, eq: Eq<A>, show?: S.Show<A>): Assertion<ReadonlyArray<A>> {
@@ -233,7 +233,7 @@ export function isLeft<A>(assertion: Assertion<A>): Assertion<E.Either<A, any>> 
     'isLeft',
     [param(assertion)],
     assertion,
-    E.fold(O.some, () => O.none())
+    E.match(O.Some, () => O.None())
   )
 }
 
@@ -244,7 +244,7 @@ export function isRight<A>(assertion: Assertion<A>): Assertion<E.Either<any, A>>
     'isRight',
     [param(assertion)],
     assertion,
-    E.fold(() => O.none(), O.some)
+    E.match(() => O.None(), O.Some)
   )
 }
 
@@ -261,6 +261,6 @@ export function succeeds<A>(assertion: Assertion<A>): Assertion<Exit<any, A>> {
     'succeeds',
     [param(assertion)],
     assertion,
-    Ex.fold(() => O.none(), O.some)
+    Ex.fold(() => O.None(), O.Some)
   )
 }

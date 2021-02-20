@@ -20,7 +20,7 @@ export class TestAnnotationMap {
           Map.set_(
             acc,
             key,
-            O.fold_(
+            O.match_(
               Map.get_(acc, key),
               () => value,
               (_) => key.combine(_, value)
@@ -32,7 +32,7 @@ export class TestAnnotationMap {
   }
 
   get<V>(key: TestAnnotation<V>): V {
-    return O.fold_(Map.get_(this.map, key), () => key.initial, identity)
+    return O.match_(Map.get_(this.map, key), () => key.initial, identity)
   }
 
   private overwrite<V>(key: TestAnnotation<V>, value: V): TestAnnotationMap {

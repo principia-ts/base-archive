@@ -122,7 +122,7 @@ function renderWhole(fragment: AssertionValue<any>, whole: AssertionValue<any>, 
 }
 
 function renderGenFailureDetails(failureDetails: Option<GenFailureDetails>, offset: number): Message {
-  return O.fold_(
+  return O.match_(
     failureDetails,
     () => Message.empty,
     (details) => {
@@ -169,7 +169,7 @@ function renderSatisfied(fragment: AssertionValue<any>): Fragment {
 export function renderCause(cause: Cause<any>, offset: number): Message {
   const printCause = () =>
     new Message(A.map_(C.pretty(cause).split('\n'), (s) => withOffset(offset + tabSize)(Line.fromString(s))))
-  return O.fold_(C.dieOption(cause), printCause, (_) => {
+  return O.match_(C.dieOption(cause), printCause, (_) => {
     if (_ instanceof TestTimeoutException) {
       return new Fragment(_.message).toLine().toMessage()
     } else {

@@ -116,7 +116,7 @@ export const asTraversal = _.prismAsTraversal
  */
 export function id<S>(): Prism<S, S> {
   return {
-    getOption: O.some,
+    getOption: O.Some,
     reverseGet: identity
   }
 }

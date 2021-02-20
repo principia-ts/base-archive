@@ -288,7 +288,7 @@ export function reserve<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, 
  * Lifts an `Either` into a `ZManaged` value.
  */
 export function fromEither<E, A>(ea: () => E.Either<E, A>): Managed<unknown, E, A> {
-  return bind_(effectTotal(ea), E.fold(fail, succeed))
+  return bind_(effectTotal(ea), E.match(fail, succeed))
 }
 
 /**
@@ -484,7 +484,7 @@ export const absolve: <R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>) => Manag
   fromEither(() => ea)
 )
 
-export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Either<E, A>> = fold(E.left, E.right)
+export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Either<E, A>> = fold(E.Left, E.Right)
 
 /*
  * -------------------------------------------
@@ -530,7 +530,7 @@ export function foldM_<R, E, A, R1, E1, B, R2, E2, C>(
   f: (e: E) => Managed<R1, E1, B>,
   g: (a: A) => Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E1 | E2, B | C> {
-  return foldCauseM_(ma, flow(C.failureOrCause, E.fold(f, halt)), g)
+  return foldCauseM_(ma, flow(C.failureOrCause, E.match(f, halt)), g)
 }
 
 /**
@@ -905,14 +905,14 @@ export function as<B>(b: () => B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R,
  * Maps the success value of this effect to an optional value.
  */
 export function asSome<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, O.Option<A>> {
-  return map_(ma, O.some)
+  return map_(ma, O.Some)
 }
 
 /**
  * Maps the error value of this effect to an optional value.
  */
 export function asSomeError<R, E, A>(ma: Managed<R, E, A>): Managed<R, O.Option<E>, A> {
-  return mapError_(ma, O.some)
+  return mapError_(ma, O.Some)
 }
 
 export const asUnit: <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> = map(() => undefined)
@@ -1202,7 +1202,7 @@ export function get<R, A>(ma: Managed<R, never, O.Option<A>>): Managed<R, O.Opti
   return absolve(
     map_(
       ma,
-      E.fromOption(() => O.none())
+      E.fromOption(() => O.None())
     )
   )
 }
@@ -1305,7 +1305,7 @@ export function join_<R, E, A, R1, E1, A1>(
 ): Managed<E.Either<R, R1>, E | E1, A | A1> {
   return bind_(
     ask<E.Either<R, R1>>(),
-    E.fold(
+    E.match(
       (r): FManaged<E | E1, A | A1> => giveAll_(ma, r),
       (r1) => giveAll_(that, r1)
     )
@@ -1330,9 +1330,9 @@ export function joinEither_<R, E, A, R1, E1, A1>(
 ): Managed<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
   return bind_(
     ask<E.Either<R, R1>>(),
-    E.fold(
-      (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.left), r),
-      (r1) => giveAll_(map_(that, E.right), r1)
+    E.match(
+      (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.Left), r),
+      (r1) => giveAll_(map_(that, E.Right), r1)
     )
   )
 }
@@ -1416,10 +1416,10 @@ export function mergeAll<A, B>(
 export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Option<E>, void> {
   return foldM_(
     ma,
-    flow(O.some, fail),
-    O.fold(
+    flow(O.Some, fail),
+    O.match(
       () => unit(),
-      () => fail(O.none())
+      () => fail(O.None())
     )
   )
 }
@@ -1428,7 +1428,7 @@ export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Opti
  * Executes this effect, skipping the error but returning optionally the success.
  */
 export function option<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, O.Option<A>> {
-  return fold_(ma, () => O.none(), O.some)
+  return fold_(ma, () => O.None(), O.Some)
 }
 
 /**
@@ -1437,8 +1437,8 @@ export function option<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, O.Optio
 export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E, O.Option<A>> {
   return foldM_(
     ma,
-    O.fold(() => succeed(O.none()), fail),
-    flow(O.some, succeed)
+    O.match(() => succeed(O.None()), fail),
+    flow(O.Some, succeed)
   )
 }
 
@@ -1495,7 +1495,7 @@ export function orElseEither_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   that: () => Managed<R1, E1, B>
 ): Managed<R & R1, E1, E.Either<B, A>> {
-  return foldM_(ma, () => map_(that(), E.left), flow(E.right, succeed))
+  return foldM_(ma, () => map_(that(), E.Left), flow(E.Right, succeed))
 }
 
 /**
@@ -1535,9 +1535,9 @@ export function orElseOptional_<R, E, A, R1, E1, B>(
 ): Managed<R & R1, O.Option<E | E1>, A | B> {
   return catchAll_(
     ma,
-    O.fold(
+    O.match(
       () => that(),
-      (e) => fail(O.some<E | E1>(e))
+      (e) => fail(O.Some<E | E1>(e))
     )
   )
 }
@@ -1578,7 +1578,7 @@ export function refineOrDieWith_<R, E, A, E1>(
   pf: (e: E) => O.Option<E1>,
   f: (e: E) => Error
 ): Managed<R, E1, A> {
-  return catchAll_(ma, (e) => O.fold_(pf(e), () => die(f(e)), fail))
+  return catchAll_(ma, (e) => O.match_(pf(e), () => die(f(e)), fail))
 }
 
 /**
@@ -1620,7 +1620,7 @@ export function rejectM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   pf: (a: A) => O.Option<Managed<R1, E1, E1>>
 ): Managed<R & R1, E | E1, A> {
-  return bind_(ma, (a) => O.fold_(pf(a), () => succeed(a), bind(fail)))
+  return bind_(ma, (a) => O.match_(pf(a), () => succeed(a), bind(fail)))
 }
 
 /**
@@ -1653,7 +1653,7 @@ export function reject<A, E1>(pf: (a: A) => O.Option<E1>): <R, E>(ma: Managed<R,
 export function require_<R, E, A>(ma: Managed<R, E, O.Option<A>>, error: () => E): Managed<R, E, A> {
   return bind_(
     ma,
-    O.fold(() => bind_(effectTotal(error), fail), succeed)
+    O.match(() => bind_(effectTotal(error), fail), succeed)
   )
 }
 
@@ -1697,7 +1697,7 @@ export function someOrElseM_<R, E, A, R1, E1, B>(
 ): Managed<R & R1, E | E1, A | B> {
   return bind_(
     ma,
-    O.fold((): Managed<R1, E1, A | B> => onNone, succeed)
+    O.match((): Managed<R1, E1, A | B> => onNone, succeed)
   )
 }
 
@@ -1716,7 +1716,7 @@ export function someOrElseM<R1, E1, B>(
 export function someOrFailWith_<R, E, A, E1>(ma: Managed<R, E, O.Option<A>>, e: () => E1): Managed<R, E | E1, A> {
   return bind_(
     ma,
-    O.fold(() => fail(e()), succeed)
+    O.match(() => fail(e()), succeed)
   )
 }
 

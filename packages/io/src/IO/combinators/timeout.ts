@@ -21,7 +21,7 @@ import { timeoutTo_ } from './timeoutTo'
  * effect has been successfully interrupted.
  */
 export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number) {
-  return timeoutTo_(ma, d, O.none(), O.some)
+  return timeoutTo_(ma, d, O.None(), O.Some)
 }
 
 /**

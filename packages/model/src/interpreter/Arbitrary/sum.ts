@@ -20,7 +20,7 @@ export const SumArbitrary = implementInterpreter<ArbURI, Alg.SumURI>()((_) => ({
   either: (left, right, config) => (env) =>
     pipe(left(env), (l) =>
       pipe(right(env), (r) =>
-        applyArbitraryConfig(config?.config)(accessFastCheck(env).oneof(l.map(E.left), r.map(E.right)), env, {
+        applyArbitraryConfig(config?.config)(accessFastCheck(env).oneof(l.map(E.Left), r.map(E.Right)), env, {
           left: l,
           right: r
         })
@@ -29,7 +29,7 @@ export const SumArbitrary = implementInterpreter<ArbURI, Alg.SumURI>()((_) => ({
   option: (a, config) => (env) =>
     pipe(a(env), (arb) =>
       applyArbitraryConfig(config?.config)(
-        accessFastCheck(env).oneof(arb.map(O.some), accessFastCheck(env).constant(O.none)) as any,
+        accessFastCheck(env).oneof(arb.map(O.Some), accessFastCheck(env).constant(O.None)) as any,
         env,
         arb
       )
