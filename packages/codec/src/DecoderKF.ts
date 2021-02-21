@@ -502,18 +502,18 @@ export function fromSum<T extends string>(
   return (members) => fromSum_(tag, members, info)
 }
 
-export function sum_<T extends string, P extends Record<string, DecoderKF<any, any>>>(
+export function sum_<T extends string, A>(
   tag: T,
-  members: P,
+  members: { [K in keyof A]: DecoderKF<unknown, A[K] & Record<T, K>> },
   info?: ErrorInfo
-): DecoderKF<unknown, K.TypeOf<P[keyof P]>> {
+): DecoderKF<unknown, A[keyof A]> {
   return compose_(UnknownRecord(info) as any, fromSum_(tag, members, info) as any)
 }
 
 export function sum<T extends string>(
   tag: T,
   info?: ErrorInfo
-): <P extends Record<string, DecoderKF<any, any>>>(members: P) => DecoderKF<unknown, K.TypeOf<P[keyof P]>> {
+): <A>(members: { [K in keyof A]: DecoderKF<unknown, A[K] & Record<T, K>> }) => DecoderKF<unknown, A[keyof A]> {
   return (members) => sum_(tag, members, info)
 }
 

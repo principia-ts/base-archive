@@ -212,7 +212,7 @@ export function union<A extends readonly [unknown, ...Array<unknown>]>(
 export function sum<T extends string>(tag: T) {
   return <A>(
     members: {
-      [K in keyof A]: Guard<unknown, A[K]>
+      [K in keyof A]: Guard<unknown, A[K] & Record<T, K>>
     }
   ): Guard<unknown, A[keyof A]> =>
     pipe(
