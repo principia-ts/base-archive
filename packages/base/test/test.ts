@@ -1,20 +1,21 @@
-import { ordNumber } from '@principia/base/Ord'
+import { ordNumber, ordString } from '@principia/base/Ord'
 import { inspect } from 'util'
 
 import * as A from '../src/Array'
 import { pipe } from '../src/Function'
+import * as HM from '../src/HashMap'
 import { None } from '../src/Option'
-import * as RBT from '../src/RedBlackTree'
+import * as OS from '../src/OrderedSet'
 
-const t = pipe(
-  RBT.make<number, string>(ordNumber),
-  RBT.insert(0, 'zero'),
-  RBT.insert(-5, 'negative five'),
-  RBT.insert(4, 'four'),
-  RBT.insert(3, 'three'),
-  RBT.insert(2, 'two'),
-  RBT.insert(9, 'nine'),
-  RBT.getGt(3)
+const s = pipe(
+  OS.make(ordNumber),
+  OS.add(-3),
+  OS.add(2),
+  OS.add(0),
+  OS.add(-7),
+  OS.add(6),
+  OS.add(10),
+  OS.bind(ordNumber)((n) => [n * 2, n * 3])
 )
 
-console.log(t)
+console.log(OS.foldl_(s, 0, (z, a) => z + a))

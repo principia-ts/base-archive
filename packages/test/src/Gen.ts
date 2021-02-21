@@ -9,8 +9,8 @@ import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
 import { identity, pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { ordNumber } from '@principia/base/Ord'
-import { RedBlackTree } from '@principia/base/RedBlackTree'
-import * as RBT from '@principia/base/RedBlackTree'
+import { OrderedMap } from '@principia/base/OrderedMap'
+import * as OM from '@principia/base/OrderedMap'
 import { sequential } from '@principia/io/ExecutionStrategy'
 import * as I from '@principia/io/IO'
 import { Random } from '@principia/io/Random'
@@ -323,9 +323,9 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
   )
   const [map, _] = A.foldl_(
     gs,
-    tuple(new RedBlackTree<number, Gen<R, A>>(ordNumber, null), 0),
+    tuple(new OrderedMap<number, Gen<R, A>>(ordNumber, null), 0),
     ([map, acc], [gen, d]) => {
-      if ((acc + d) / sum > acc / sum) return tuple(RBT.insert_(map, (acc + d) / sum, gen), acc + d)
+      if ((acc + d) / sum > acc / sum) return tuple(OM.insert_(map, (acc + d) / sum, gen), acc + d)
       else return tuple(map, acc)
     }
   )
@@ -334,7 +334,7 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
     bind((n) => {
       return pipe(
         map,
-        RBT.getGte(n),
+        OM.getGte(n),
         O.getOrElse(() => {
           throw new NoSuchElementError('Gen.weighted')
         })

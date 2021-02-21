@@ -1,11 +1,12 @@
 /* eslint-disable functional/immutable-data */
 
 /**
- * A persistent red-black tree implementation with iterative, stack-safe operations
+ * A persistent ordered map implementation backed by a Red-Black Tree with iterative operations
  *
  * Forked from https://github.com/mikolalysenko/functional-red-black-tree
  */
 
+import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { Option } from './Option'
 import type { Ord, Semigroup } from './typeclass'
 import type { Stack } from './util/support/Stack'
@@ -13,31 +14,31 @@ import type { Stack } from './util/support/Stack'
 import * as O from './Option'
 import { makeStack } from './util/support/Stack'
 
-export class RedBlackTree<K, V> implements RedBlackTreeIterable<K, V> {
+export class OrderedMap<K, V> implements OrderedMapIterable<K, V> {
   constructor(readonly ord: Ord<K>, readonly root: Node<K, V> | Leaf) {}
 
-  [Symbol.iterator](): RedBlackTreeIterator<K, V> {
+  [Symbol.iterator](): OrderedMapIterator<K, V> {
     return forward(this)[Symbol.iterator]()
   }
 }
 
 export function make<K, V>(ord: Ord<K>) {
-  return new RedBlackTree<K, V>(ord, null)
+  return new OrderedMap<K, V>(ord, null)
 }
 
 /**
- * Inserts an element into the correct position in the `RedBlackTree`.
+ * Inserts an element into the correct position in the map.
  * This function ignores duplicate keys. For one that combines duplicate key's values,
  * see `insertWith_`
  */
-export function insert_<K, V>(tree: RedBlackTree<K, V>, key: K, value: V): RedBlackTree<K, V> {
-  if (isEmptyNode(tree.root)) {
-    return new RedBlackTree(tree.ord, Node(R, Leaf, key, value, Leaf, 1))
+export function insert_<K, V>(m: OrderedMap<K, V>, key: K, value: V): OrderedMap<K, V> {
+  if (isEmptyNode(m.root)) {
+    return new OrderedMap(m.ord, Node(R, Leaf, key, value, Leaf, 1))
   }
-  const cmp                                   = tree.ord.compare_
+  const cmp                                   = m.ord.compare_
   const nodeStack: Array<Mutable<Node<K, V>>> = []
   const orderStack: Array<1 | -1>             = []
-  let n: RBNode<K, V>                         = tree.root
+  let n: RBNode<K, V>                         = m.root
   while (n) {
     const d = cmp(key, n.key)
     nodeStack.push(n)
@@ -53,7 +54,7 @@ export function insert_<K, V>(tree: RedBlackTree<K, V>, key: K, value: V): RedBl
         break
       }
       case 0: {
-        return tree
+        return m
       }
     }
   }
@@ -62,32 +63,32 @@ export function insert_<K, V>(tree: RedBlackTree<K, V>, key: K, value: V): RedBl
   rebuildModifiedPath(nodeStack, orderStack)
   balanceModifiedPath(nodeStack)
 
-  return new RedBlackTree(tree.ord, nodeStack[0])
+  return new OrderedMap(m.ord, nodeStack[0])
 }
 
 /**
- * Inserts an element into the correct position in the `RedBlackTree`.
+ * Inserts an element into the correct position in the map.
  * This function ignores duplicate keys. For one that combines duplicate key's values,
  * see `insertWith_`
  */
-export function insert<K, V>(key: K, value: V): (tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
-  return (tree) => insert_(tree, key, value)
+export function insert<K, V>(key: K, value: V): (m: OrderedMap<K, V>) => OrderedMap<K, V> {
+  return (m) => insert_(m, key, value)
 }
 
 /**
- * Inserts an element into the correct position in the `RedBlackTree`, combining euqal key's values
+ * Inserts an element into the correct position in the map, combining euqal key's values
  * with a `Semigroup` instance
  */
 export function insertWith_<V>(S: Semigroup<V>) {
-  return <K>(tree: RedBlackTree<K, V>, key: K, value: V) => {
-    if (isEmptyNode(tree.root)) {
-      return new RedBlackTree(tree.ord, Node(R, Leaf, key, value, Leaf, 1))
+  return <K>(m: OrderedMap<K, V>, key: K, value: V) => {
+    if (isEmptyNode(m.root)) {
+      return new OrderedMap(m.ord, Node(R, Leaf, key, value, Leaf, 1))
     }
     const com                                   = S.combine_
-    const cmp                                   = tree.ord.compare_
+    const cmp                                   = m.ord.compare_
     const nodeStack: Array<Mutable<Node<K, V>>> = []
     const orderStack: Array<1 | -1>             = []
-    let n: RBNode<K, V>                         = tree.root
+    let n: RBNode<K, V>                         = m.root
     let cv: V | null                            = null
     while (n && !cv) {
       const d = cmp(key, n.key)
@@ -119,56 +120,54 @@ export function insertWith_<V>(S: Semigroup<V>) {
       rebuildModifiedPath(nodeStack, orderStack)
       balanceModifiedPath(nodeStack)
     }
-    return new RedBlackTree(tree.ord, nodeStack[0])
+    return new OrderedMap(m.ord, nodeStack[0])
   }
 }
 
 /**
- * Inserts an element into the correct position in the `RedBlackTree`, combining euqal key's values
+ * Inserts an element into the correct position in the map, combining euqal key's values
  * with a `Semigroup` instance
  */
-export function insertWith<V>(
-  S: Semigroup<V>
-): <K>(key: K, value: V) => (tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
+export function insertWith<V>(S: Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
   const insertWithS_ = insertWith_(S)
-  return (key, value) => (tree) => insertWithS_(tree, key, value)
+  return (key, value) => (m) => insertWithS_(m, key, value)
 }
 
 /**
- * Returns the first ("smallest") element in a `RedBlackTree`
+ * Returns the first ("smallest") element in the map
  */
-export function head<K, V>(tree: RedBlackTree<K, V>): Option<readonly [K, V]> {
-  return O.map_(headNode(tree.root), (n) => [n.key, n.value])
+export function head<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
+  return O.map_(headNode(m.root), (n) => [n.key, n.value])
 }
 
 /**
- * Returns the last ("largest") element in a `RedBlackTree`
+ * Returns the last ("largest") element in the map
  */
-export function last<K, V>(tree: RedBlackTree<K, V>): Option<readonly [K, V]> {
-  return O.map_(lastNode(tree.root), (n) => [n.key, n.value])
+export function last<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
+  return O.map_(lastNode(m.root), (n) => [n.key, n.value])
 }
 
 /**
- * Removes an element from a `RedBlackTree`
+ * Removes an element from the map
  */
-export function remove_<K, V>(tree: RedBlackTree<K, V>, key: K): RedBlackTree<K, V> {
-  const iter = find_(tree, key)[Symbol.iterator]()
-  return iter.isEmpty ? tree : iter.remove()
+export function remove_<K, V>(m: OrderedMap<K, V>, key: K): OrderedMap<K, V> {
+  const iter = find_(m, key)[Symbol.iterator]()
+  return iter.isEmpty ? m : iter.remove()
 }
 
 /**
- * Removes an element from a `RedBlackTree`
+ * Removes an element from the map
  */
-export function remove<K>(key: K): <V>(tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
-  return (tree) => remove_(tree, key)
+export function remove<K>(key: K): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
+  return (m) => remove_(m, key)
 }
 
 /**
- * Searches a `RedBlackTree` for a given key, returning it's value, if it exists
+ * Searches the map for a given key, returning it's value, if it exists
  */
-export function get_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
-  const cmp = tree.ord.compare_
-  let n     = tree.root
+export function get_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+  const cmp = m.ord.compare_
+  let n     = m.root
   while (n) {
     const d = cmp(key, n.key)
     switch (d) {
@@ -189,18 +188,18 @@ export function get_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
 }
 
 /**
- * Searches a `RedBlackTree` for a given key, returning it's value, if it exists
+ * Searches the map for a given key, returning it's value, if it exists
  */
-export function get<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
+export function get<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
   return (tree) => get_(tree, key)
 }
 
 /**
- * Searches the tree and returns the first value in sorted order that is >= key, if it exists
+ * Searches the map and returns the first value in sorted order that is >= key, if it exists
  */
-export function getGte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
-  const cmp     = tree.ord.compare_
-  let n         = tree.root
+export function getGte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+  const cmp     = m.ord.compare_
+  let n         = m.root
   let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
@@ -218,15 +217,15 @@ export function getGte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
 }
 
 /**
- * Searches the tree and returns the first value in sorted order that is >= key, if it exists
+ * Searches the map and returns the first value in sorted order that is >= key, if it exists
  */
-export function getGte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
+export function getGte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
   return (tree) => getGte_(tree, key)
 }
 
-export function getGt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
-  const cmp     = tree.ord.compare_
-  let n         = tree.root
+export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+  const cmp     = m.ord.compare_
+  let n         = m.root
   let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
@@ -243,13 +242,13 @@ export function getGt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   return lastValue
 }
 
-export function getGt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
-  return (tree) => getGt_(tree, key)
+export function getGt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+  return (m) => getGt_(m, key)
 }
 
-export function getLte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
-  const cmp     = tree.ord.compare_
-  let n         = tree.root
+export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+  const cmp     = m.ord.compare_
+  let n         = m.root
   let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
@@ -266,13 +265,13 @@ export function getLte_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   return lastValue
 }
 
-export function getLte<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
-  return (tree) => getLte_(tree, key)
+export function getLte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+  return (m) => getLte_(m, key)
 }
 
-export function getLt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
-  const cmp     = tree.ord.compare_
-  let n         = tree.root
+export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+  const cmp     = m.ord.compare_
+  let n         = m.root
   let lastValue = O.None<V>()
   while (n) {
     const d = cmp(key, n.key)
@@ -288,12 +287,12 @@ export function getLt_<K, V>(tree: RedBlackTree<K, V>, key: K): Option<V> {
   return lastValue
 }
 
-export function getLt<K>(key: K): <V>(tree: RedBlackTree<K, V>) => Option<V> {
-  return (tree) => getLt_(tree, key)
+export function getLt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+  return (m) => getLt_(m, key)
 }
 
-export function visitFull<K, V, A>(tree: RedBlackTree<K, V>, visit: (key: K, value: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = tree.root
+export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (key: K, value: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done                                 = false
 
@@ -316,11 +315,11 @@ export function visitFull<K, V, A>(tree: RedBlackTree<K, V>, visit: (key: K, val
 }
 
 /**
- * Iterates through the elements of a `RedBlackTree` inorder, performing the given function for each element
+ * Iterates through the elements of the map inorder, performing the given function for each element
  */
-export function foreach_<K, V>(tree: RedBlackTree<K, V>, visit: (key: K, value: V) => void) {
-  if (tree.root) {
-    visitFull(tree, (k, v) => {
+export function iforEach_<K, V>(m: OrderedMap<K, V>, visit: (key: K, value: V) => void) {
+  if (m.root) {
+    visitFull(m, (k, v) => {
       visit(k, v)
       return O.None()
     })
@@ -328,29 +327,127 @@ export function foreach_<K, V>(tree: RedBlackTree<K, V>, visit: (key: K, value: 
 }
 
 /**
- * Iterates through the elements of a `RedBlackTree` inorder, performing the given function for each element
+ * Iterates through the elements of the map inorder, performing the given function for each element
  */
-export function foreach<K, V>(visit: (key: K, value: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreach_(tree, visit)
+export function iforEach<K, V>(visit: (key: K, value: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => iforEach_(m, visit)
 }
 
 /**
- * Converts a `RedBlackTree` into a sorted `ReadonlyArray`
+ * Iterates through the elements of the map inorder, performing the given function for each element
  */
-export function toArray<K, V>(tree: RedBlackTree<K, V>): ReadonlyArray<readonly [K, V]> {
+export function forEach_<K, V>(m: OrderedMap<K, V>, visit: (v: V) => void) {
+  return iforEach_(m, (_, v) => visit(v))
+}
+
+/**
+ * Iterates through the elements of the map inorder, performing the given function for each element
+ */
+export function forEach<V>(visit: (v: V) => void): <K>(m: OrderedMap<K, V>) => void {
+  return (m) => forEach_(m, visit)
+}
+
+/**
+ * Creates a new `OrderedMap` from an `Ord` and an iterable of key-value pairs
+ */
+export function from<K, V>(iterable: OrderedMapIterable<K, V>): OrderedMap<K, V>
+export function from<K, V>(iterable: Iterable<readonly [K, V]>, ord: Ord<K>): OrderedMap<K, V>
+export function from<K, V>(
+  ...args: [OrderedMapIterable<K, V>] | [Iterable<readonly [K, V]>, Ord<K>]
+): OrderedMap<K, V> {
+  let tree = args.length === 2 ? make<K, V>(args[1]) : make<K, V>(args[0].ord)
+
+  for (const [k, v] of args[0]) {
+    tree = insert_(tree, k, v)
+  }
+  return tree
+}
+
+/**
+ * Converts a `OrderedMap` into a sorted `ReadonlyArray`
+ */
+export function toArray<K, V>(m: OrderedMap<K, V>): ReadonlyArray<readonly [K, V]> {
   const as: Array<readonly [K, V]> = []
-  foreach_(tree, (k, v) => {
+  iforEach_(m, (k, v) => {
     as.push([k, v])
   })
   return as
 }
 
+export function map_<K, A, B>(fa: OrderedMap<K, A>, f: (a: A) => B): OrderedMap<K, B> {
+  let tree = make<K, B>(fa.ord)
+  for (const [k, v] of fa) {
+    tree = insert_(tree, k, f(v))
+  }
+  return tree
+}
+
+export function map<A, B>(f: (a: A) => B): <K>(fa: OrderedMap<K, A>) => OrderedMap<K, B> {
+  return (fa) => map_(fa, f)
+}
+
+export function ifoldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, k: K, v: V) => Z): Z {
+  let r = z
+  iforEach_(fa, (k, v) => {
+    r = f(r, k, v)
+  })
+  return r
+}
+
+export function ifoldl<K, V, Z>(z: Z, f: (z: Z, k: K, v: V) => Z): (fa: OrderedMap<K, V>) => Z {
+  return (fa) => ifoldl_(fa, z, f)
+}
+
+export function foldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, v: V) => Z): Z {
+  return ifoldl_(fa, z, (z, _, v) => f(z, v))
+}
+
+export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z): <K>(fa: OrderedMap<K, V>) => Z {
+  return (fa) => foldl_(fa, z, f)
+}
+
+export function ifilter_<K, A, B extends A>(
+  m: OrderedMap<K, A>,
+  refinement: RefinementWithIndex<K, A, B>
+): OrderedMap<K, B>
+export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: PredicateWithIndex<K, A>): OrderedMap<K, A>
+export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: PredicateWithIndex<K, A>): OrderedMap<K, A> {
+  let r         = make<K, A>(m.ord)
+  const entries = forward(m)
+  for (const [k, v] of entries) {
+    if (predicate(k, v)) {
+      r = insert_(m, k, v)
+    }
+  }
+  return r
+}
+
+export function ifilter<K, A, B extends A>(
+  refinement: RefinementWithIndex<K, A, B>
+): (m: OrderedMap<K, A>) => OrderedMap<K, B>
+export function ifilter<K, A>(predicate: PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A>
+export function ifilter<K, A>(predicate: PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A> {
+  return (m) => ifilter_(m, predicate)
+}
+
+export function filter_<K, A, B extends A>(m: OrderedMap<K, A>, refinement: Refinement<A, B>): OrderedMap<K, B>
+export function filter_<K, A>(m: OrderedMap<K, A>, predicate: Predicate<A>): OrderedMap<K, A>
+export function filter_<K, A>(m: OrderedMap<K, A>, predicate: Predicate<A>): OrderedMap<K, A> {
+  return ifilter_(m, (_, a) => predicate(a))
+}
+
+export function filter<A, B extends A>(refinement: Refinement<A, B>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, B>
+export function filter<A>(predicate: Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A>
+export function filter<A>(predicate: Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A> {
+  return (m) => filter_(m, predicate)
+}
+
 /**
  * Stateful iterator
  */
-class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
+class OrderedMapIterator<K, V> implements Iterator<readonly [K, V]> {
   private count = 0
-  constructor(readonly tree: RedBlackTree<K, V>, readonly stack: Array<Node<K, V>>, readonly direction: 0 | 1) {}
+  constructor(readonly m: OrderedMap<K, V>, readonly stack: Array<Node<K, V>>, readonly direction: 0 | 1) {}
 
   next(): IteratorResult<readonly [K, V]> {
     if (this.isEmpty) {
@@ -502,26 +599,26 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
   }
 
   /**
-   * Returns a `RedBlackTreeIterator` of the same tree, with a cloned stack
+   * Returns a `OrderedMapIterator` of the same tree, with a cloned stack
    */
-  clone(): RedBlackTreeIterator<K, V> {
-    return new RedBlackTreeIterator(this.tree, this.stack.slice(), this.direction)
+  clone(): OrderedMapIterator<K, V> {
+    return new OrderedMapIterator(this.m, this.stack.slice(), this.direction)
   }
 
   /**
    * Reverses the direction of the iterator
    */
-  reverse(): RedBlackTreeIterator<K, V> {
-    return new RedBlackTreeIterator(this.tree, this.stack.slice(), this.direction ? 0 : 1)
+  reverse(): OrderedMapIterator<K, V> {
+    return new OrderedMapIterator(this.m, this.stack.slice(), this.direction ? 0 : 1)
   }
 
   /**
-   * Deletes the current element, returing a new `RedBlackTree`
+   * Deletes the current element, returing a new `OrderedMap`
    */
-  remove(): RedBlackTree<K, V> {
+  remove(): OrderedMap<K, V> {
     const pathStack = this.stack
     if (pathStack.length === 0) {
-      return this.tree
+      return this.m
     }
     // clone path to node
     const stack: Array<Mutable<Node<K, V>>> = new Array(pathStack.length)
@@ -574,7 +671,7 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
       for (let i = 0; i < stack.length; ++i) {
         stack[i].count--
       }
-      return new RedBlackTree(this.tree.ord, stack[0])
+      return new OrderedMap(this.m.ord, stack[0])
     } else {
       if (n.left || n.right) {
         // single child black parent
@@ -589,10 +686,10 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
         for (let i = 0; i < stack.length - 1; ++i) {
           stack[i].count--
         }
-        return new RedBlackTree(this.tree.ord, stack[0])
+        return new OrderedMap(this.m.ord, stack[0])
       } else if (stack.length === 1) {
         // root
-        return new RedBlackTree(this.tree.ord, null)
+        return new OrderedMap(this.m.ord, null)
       } else {
         // black leaf no children
         for (let i = 0; i < stack.length; ++i) {
@@ -608,54 +705,58 @@ class RedBlackTreeIterator<K, V> implements Iterator<readonly [K, V]> {
         }
       }
     }
-    return new RedBlackTree(this.tree.ord, stack[0])
+    return new OrderedMap(this.m.ord, stack[0])
   }
 }
 
-export interface RedBlackTreeIterable<K, V> extends Iterable<readonly [K, V]> {
-  [Symbol.iterator](): RedBlackTreeIterator<K, V>
+export interface OrderedMapIterable<K, V> extends Iterable<readonly [K, V]> {
+  readonly ord: Ord<K>
+  [Symbol.iterator](): OrderedMapIterator<K, V>
 }
 
-export function forward<K, V>(tree: RedBlackTree<K, V>): RedBlackTreeIterable<K, V> {
+export function forward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
       const stack: Array<Node<K, V>> = []
-      let n                          = tree.root
+      let n                          = m.root
       while (n) {
         stack.push(n)
         n = n.left
       }
-      return new RedBlackTreeIterator(tree, stack, 0)
+      return new OrderedMapIterator(m, stack, 0)
     }
   }
 }
 
-export function backward<K, V>(tree: RedBlackTree<K, V>): RedBlackTreeIterable<K, V> {
+export function backward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
       const stack: Array<Node<K, V>> = []
-      let n                          = tree.root
+      let n                          = m.root
       while (n) {
         stack.push(n)
         n = n.right
       }
-      return new RedBlackTreeIterator(tree, stack, 1)
+      return new OrderedMapIterator(m, stack, 1)
     }
   }
 }
 
-export function find_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+export function find_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
-      const cmp                      = tree.ord.compare_
-      let n                          = tree.root
+      const cmp                      = m.ord.compare_
+      let n                          = m.root
       const stack: Array<Node<K, V>> = []
       while (n) {
         const d = cmp(key, n.key)
         stack.push(n)
         switch (d) {
           case 0: {
-            return new RedBlackTreeIterator(tree, stack, direction)
+            return new OrderedMapIterator(m, stack, direction)
           }
           case -1: {
             n = n.left
@@ -667,19 +768,20 @@ export function find_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 =
           }
         }
       }
-      return new RedBlackTreeIterator(tree, [], direction)
+      return new OrderedMapIterator(m, [], direction)
     }
   }
 }
 
-export function at_<K, V>(tree: RedBlackTree<K, V>, index: number, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+export function at_<K, V>(m: OrderedMap<K, V>, index: number, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
-      if (index < 0 || !tree.root) {
-        return new RedBlackTreeIterator(tree, [], direction)
+      if (index < 0 || !m.root) {
+        return new OrderedMapIterator(m, [], direction)
       }
       let idx                        = index
-      let n                          = tree.root
+      let n                          = m.root
       const stack: Array<Node<K, V>> = []
       for (;;) {
         stack.push(n)
@@ -691,7 +793,7 @@ export function at_<K, V>(tree: RedBlackTree<K, V>, index: number, direction: 0 
           idx -= n.left.count
         }
         if (!idx) {
-          return new RedBlackTreeIterator(tree, stack, direction)
+          return new OrderedMapIterator(m, stack, direction)
         }
         idx -= 1
         if (n.right) {
@@ -703,27 +805,25 @@ export function at_<K, V>(tree: RedBlackTree<K, V>, index: number, direction: 0 
           break
         }
       }
-      return new RedBlackTreeIterator(tree, [], direction)
+      return new OrderedMapIterator(m, [], direction)
     }
   }
 }
 
-export function at(
-  index: number,
-  direction: 0 | 1 = 0
-): <K, V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
+export function at(index: number, direction: 0 | 1 = 0): <K, V>(tree: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
   return (tree) => at_(tree, index, direction)
 }
 
 /**
- * Finds the first element in the tree whose key is >= the given key
+ * Finds the first element in the map whose key is >= the given key
  * @returns An iterator at the found element
  */
-export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+export function gte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
-      const cmp                      = tree.ord.compare_
-      let n: RBNode<K, V>            = tree.root
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
       const stack: Array<Node<K, V>> = []
       let last_ptr                   = 0
       while (n) {
@@ -737,28 +837,29 @@ export function gte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 
         }
       }
       stack.length = last_ptr
-      return new RedBlackTreeIterator(tree, stack, direction)
+      return new OrderedMapIterator(m, stack, direction)
     }
   }
 }
 
 /**
- * Finds the first element in the tree whose key is >= the given key
+ * Finds the first element in the map whose key is >= the given key
  * @returns An iterator at the found element
  */
-export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => gte_(tree, key, direction)
+export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => gte_(m, key, direction)
 }
 
 /**
- * Finds the first element in the tree whose key is > the given key
+ * Finds the first element in the map whose key is > the given key
  * @returns An iterator at the found element
  */
-export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+export function gt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
-      const cmp                      = tree.ord.compare_
-      let n: RBNode<K, V>            = tree.root
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
       const stack: Array<Node<K, V>> = []
       let last_ptr                   = 0
       while (n) {
@@ -772,28 +873,29 @@ export function gt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0
         }
       }
       stack.length = last_ptr
-      return new RedBlackTreeIterator(tree, stack, direction)
+      return new OrderedMapIterator(m, stack, direction)
     }
   }
 }
 
 /**
- * Finds the first element in the tree whose key is > the given key
+ * Finds the first element in the map whose key is > the given key
  * @returns An iterator at the found element
  */
-export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => gt_(tree, key, direction)
+export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => gt_(m, key, direction)
 }
 
 /**
- * Finds the first element in the tree whose key is <= the given key
+ * Finds the first element in the map whose key is <= the given key
  * @returns An iterator at the found element
  */
-export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+export function lte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
-      const cmp                      = tree.ord.compare_
-      let n: RBNode<K, V>            = tree.root
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
       const stack: Array<Node<K, V>> = []
       let last_ptr                   = 0
       while (n) {
@@ -809,28 +911,29 @@ export function lte_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 
         }
       }
       stack.length = last_ptr
-      return new RedBlackTreeIterator(tree, stack, direction)
+      return new OrderedMapIterator(m, stack, direction)
     }
   }
 }
 
 /**
- * Finds the first element in the tree whose key is <= the given key
+ * Finds the first element in the map whose key is <= the given key
  * @returns An iterator at the found element
  */
-export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => lte_(tree, key, direction)
+export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => lte_(m, key, direction)
 }
 
 /**
- * Finds the first element in the tree whose key is < the given key
+ * Finds the first element in the map whose key is < the given key
  * @returns An iterator at the found element
  */
-export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0): RedBlackTreeIterable<K, V> {
+export function lt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
   return {
+    ord: m.ord,
     [Symbol.iterator]() {
-      const cmp                      = tree.ord.compare_
-      let n: RBNode<K, V>            = tree.root
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
       const stack: Array<Node<K, V>> = []
       let last_ptr                   = 0
       while (n) {
@@ -846,17 +949,17 @@ export function lt_<K, V>(tree: RedBlackTree<K, V>, key: K, direction: 0 | 1 = 0
         }
       }
       stack.length = last_ptr
-      return new RedBlackTreeIterator(tree, stack, direction)
+      return new OrderedMapIterator(m, stack, direction)
     }
   }
 }
 
 /**
- * Finds the first element in the tree whose key is < the given key
+ * Finds the first element in the map whose key is < the given key
  * @returns An iterator at the found element
  */
-export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(tree: RedBlackTree<K, V>) => RedBlackTreeIterable<K, V> {
-  return (tree) => lt_(tree, key, direction)
+export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => lt_(m, key, direction)
 }
 
 export function blackHeight<K, V>(root: RBNode<K, V>): number {
@@ -894,11 +997,11 @@ function lastNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
   return O.Some(n)
 }
 
-export function visitLte<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = tree.root
+export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done                                 = false
-  const cmp                                = tree.ord.compare_
+  const cmp                                = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -921,24 +1024,24 @@ export function visitLte<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K
   return O.None()
 }
 
-export function foreachLte_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
-  if (tree.root) {
-    visitLte(tree, max, (k, v) => {
+export function forEachLte_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitLte(m, max, (k, v) => {
       visit(k, v)
       return O.None()
     })
   }
 }
 
-export function foreachLte<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreachLte_(tree, max, visit)
+export function forEachLte<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachLte_(m, max, visit)
 }
 
-export function visitLt<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = tree.root
+export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done                                 = false
-  const cmp                                = tree.ord.compare_
+  const cmp                                = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -961,24 +1064,24 @@ export function visitLt<K, V, A>(tree: RedBlackTree<K, V>, max: K, visit: (k: K,
   return O.None()
 }
 
-export function foreachLt_<K, V>(tree: RedBlackTree<K, V>, max: K, visit: (k: K, v: V) => void): void {
-  if (tree.root) {
-    visitLt(tree, max, (k, v) => {
+export function forEachLt_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitLt(m, max, (k, v) => {
       visit(k, v)
       return O.None()
     })
   }
 }
 
-export function foreachLt<K, V>(max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreachLt_(tree, max, visit)
+export function forEachLt<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachLt_(m, max, visit)
 }
 
-export function visitGte<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = tree.root
+export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done                                 = false
-  const cmp                                = tree.ord.compare_
+  const cmp                                = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -1004,24 +1107,24 @@ export function visitGte<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K
   return O.None()
 }
 
-export function foreachGte_<K, V>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => void): void {
-  if (tree.root) {
-    visitGte(tree, min, (k, v) => {
+export function forEachGte_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitGte(m, min, (k, v) => {
       visit(k, v)
       return O.None()
     })
   }
 }
 
-export function foreachGte<K, V>(min: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreachGte_(tree, min, visit)
+export function forEachGte<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachGte_(m, min, visit)
 }
 
-export function visitGt<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = tree.root
+export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done                                 = false
-  const cmp                                = tree.ord.compare_
+  const cmp                                = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -1047,29 +1150,29 @@ export function visitGt<K, V, A>(tree: RedBlackTree<K, V>, min: K, visit: (k: K,
   return O.None()
 }
 
-export function foreachGt_<K, V>(tree: RedBlackTree<K, V>, min: K, visit: (k: K, v: V) => void): void {
-  if (tree.root) {
-    visitGt(tree, min, (k, v) => {
+export function forEachGt_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitGt(m, min, (k, v) => {
       visit(k, v)
       return O.None()
     })
   }
 }
 
-export function foreachGt<K, V>(min: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreachGt_(tree, min, visit)
+export function forEachGt<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachGt_(m, min, visit)
 }
 
 export function visitBetween<K, V, A>(
-  tree: RedBlackTree<K, V>,
+  m: OrderedMap<K, V>,
   min: K,
   max: K,
   visit: (k: K, v: V) => Option<A>
 ): Option<A> {
-  let current: RBNode<K, V>                = tree.root
+  let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done                                 = false
-  const cmp                                = tree.ord.compare_
+  const cmp                                = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -1096,28 +1199,26 @@ export function visitBetween<K, V, A>(
   return O.None()
 }
 
-export function foreachBetween_<K, V>(tree: RedBlackTree<K, V>, min: K, max: K, visit: (k: K, v: V) => void): void {
-  if (tree.root) {
-    visitBetween(tree, min, max, (k, v) => {
+export function forEachBetween_<K, V>(m: OrderedMap<K, V>, min: K, max: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitBetween(m, min, max, (k, v) => {
       visit(k, v)
       return O.None()
     })
   }
 }
 
-export function foreachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void): (tree: RedBlackTree<K, V>) => void {
-  return (tree) => foreachBetween_(tree, min, max, visit)
+export function forEachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachBetween_(m, min, max, visit)
 }
 
 /**
- * Returns an iterable of all the values in the tree in sorted order
+ * Returns an iterable of all the values in the mpa in sorted order
  */
-export function values_<K, V>(tree: RedBlackTree<K, V>, direction: 0 | 1 = 0): Iterable<V> {
+export function values_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable<V> {
   return {
     *[Symbol.iterator]() {
-      const iter: Iterator<readonly [K, V]> = direction
-        ? backward(tree)[Symbol.iterator]()
-        : forward(tree)[Symbol.iterator]()
+      const iter: Iterator<readonly [K, V]> = direction ? backward(m)[Symbol.iterator]() : forward(m)[Symbol.iterator]()
       let d: IteratorResult<readonly [K, V]>
       while (!(d = iter.next()).done) {
         yield d.value[1]
@@ -1127,21 +1228,19 @@ export function values_<K, V>(tree: RedBlackTree<K, V>, direction: 0 | 1 = 0): I
 }
 
 /**
- * Returns an iterable of all the values in the tree in sorted order
+ * Returns an iterable of all the values in the map in sorted order
  */
-export function values(direction: 0 | 1 = 0): <K, V>(tree: RedBlackTree<K, V>) => Iterable<V> {
-  return (tree) => values_(tree, direction)
+export function values(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<V> {
+  return (m) => values_(m, direction)
 }
 
 /**
- * Returns an iterable of all the keys in the tree in sorted order
+ * Returns an iterable of all the keys in the map in sorted order
  */
-export function keys_<K, V>(tree: RedBlackTree<K, V>, direction: 0 | 1 = 0): Iterable<K> {
+export function keys_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable<K> {
   return {
     *[Symbol.iterator]() {
-      const iter: Iterator<readonly [K, V]> = direction
-        ? backward(tree)[Symbol.iterator]()
-        : forward(tree)[Symbol.iterator]()
+      const iter: Iterator<readonly [K, V]> = direction ? backward(m)[Symbol.iterator]() : forward(m)[Symbol.iterator]()
       let d: IteratorResult<readonly [K, V]>
       while (!(d = iter.next()).done) {
         yield d.value[0]
@@ -1151,29 +1250,29 @@ export function keys_<K, V>(tree: RedBlackTree<K, V>, direction: 0 | 1 = 0): Ite
 }
 
 /**
- * Returns an iterable of all the keys in the tree in sorted order
+ * Returns an iterable of all the keys in the map in sorted order
  */
-export function keys(direction: 0 | 1 = 0): <K, V>(tree: RedBlackTree<K, V>) => Iterable<K> {
-  return (tree) => keys_(tree, direction)
+export function keys(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<K> {
+  return (m) => keys_(m, direction)
 }
 
 /**
- * Returns a range of the tree with keys >= min and < max
+ * Returns a range of the map with keys >= min and < max
  */
-export function range_<K, V>(tree: RedBlackTree<K, V>, min: Option<K>, max: Option<K>): RedBlackTree<K, V> {
-  let r = make<K, V>(tree.ord)
+export function range_<K, V>(m: OrderedMap<K, V>, min: Option<K>, max: Option<K>): OrderedMap<K, V> {
+  let r = make<K, V>(m.ord)
   if (min._tag === 'Some') {
     if (max._tag === 'Some') {
-      foreachBetween_(tree, min.value, max.value, (k, v) => {
+      forEachBetween_(m, min.value, max.value, (k, v) => {
         r = insert_(r, k, v)
       })
     } else {
-      foreachGte_(tree, min.value, (k, v) => {
+      forEachGte_(m, min.value, (k, v) => {
         r = insert_(r, k, v)
       })
     }
   } else if (max._tag === 'Some') {
-    foreachLt_(tree, max.value, (k, v) => {
+    forEachLt_(m, max.value, (k, v) => {
       r = insert_(r, k, v)
     })
   }
@@ -1181,10 +1280,10 @@ export function range_<K, V>(tree: RedBlackTree<K, V>, min: Option<K>, max: Opti
 }
 
 /**
- * Returns a range of the tree with keys >= min and < max
+ * Returns a range of the map with keys >= min and < max
  */
-export function range<K>(min: Option<K>, max: Option<K>): <V>(tree: RedBlackTree<K, V>) => RedBlackTree<K, V> {
-  return (tree) => range_(tree, min, max)
+export function range<K>(min: Option<K>, max: Option<K>): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
+  return (m) => range_(m, min, max)
 }
 
 /*
