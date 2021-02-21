@@ -4,6 +4,7 @@
  * -------------------------------------------
  */
 
+import type { Refinement } from './Function'
 import type * as HKT from './HKT'
 import type { Integer } from './Integer'
 import type { ReadonlyRecord } from './Record'
@@ -89,7 +90,7 @@ export const UnknownArray: Guard<unknown, ReadonlyArray<unknown>> = {
  * @since 1.0.0
  */
 export const UnknownRecord: Guard<unknown, ReadonlyRecord<string, unknown>> = {
-  is: (i): i is Record<string, unknown> => Object.prototype.toString.call(i) === '[object Object]'
+  is: (i): i is Record<string, unknown> => i != null && typeof i === 'object' && !Array.isArray(i)
 }
 
 /*
@@ -98,7 +99,7 @@ export const UnknownRecord: Guard<unknown, ReadonlyRecord<string, unknown>> = {
  * -------------------------------------------
  */
 
-export function refine<I, A extends I, B extends A>(refinement: (a: A) => a is B): (from: Guard<I, A>) => Guard<I, B> {
+export function refine<I, A extends I, B extends A>(refinement: Refinement<A, B>): (from: Guard<I, A>) => Guard<I, B> {
   return (from) => ({
     is: (u): u is B => from.is(u) && refinement(u)
   })
