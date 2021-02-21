@@ -2,6 +2,7 @@ import type * as Alg from '../../algebra'
 import type { URI } from './HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
+import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
 import * as G from '@principia/base/Guard'
 import * as R from '@principia/base/Record'
@@ -32,6 +33,12 @@ export const PrimitivesGuard = implementInterpreter<URI, Alg.PrimitivesURI>()((_
         env,
         guard
       )
+    ),
+  tuple: (...types) => (config) => (env) =>
+    pipe(
+      types,
+      A.map((f) => f(env)),
+      (guards) => applyGuardConfig(config?.config)(G.tuple(...guards) as any, env, guards as any)
     ),
   keyof: (keys, config) => (env) =>
     applyGuardConfig(config?.config)(

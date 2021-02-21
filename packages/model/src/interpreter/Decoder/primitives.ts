@@ -67,6 +67,12 @@ export const PrimitivesDecoder = implementInterpreter<URI, Alg.PrimitivesURI>()(
     pipe(item(env), (decoder) =>
       applyDecoderConfig(config?.config)(pipe(D.array(decoder), D.refine(A.isNonEmpty, 'NonEmptyArray')), env, decoder)
     ),
+  tuple: (...types) => (config) => (env) =>
+    pipe(
+      types,
+      A.map((f) => f(env)),
+      (decoders) => applyDecoderConfig(config?.config)(D.tuple(...decoders)() as any, env, decoders as any)
+    ),
   keyof: (keys, config) => (env) =>
     applyDecoderConfig(config?.config)(
       pipe(

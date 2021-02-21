@@ -29,6 +29,13 @@ declare module '../../HKT' {
   interface URItoConfig<S, R, E, A> {
     readonly [ArbURI]: fc.Arbitrary<A>
   }
+  interface TupleConfig<Types> {
+    readonly [ArbURI]: {
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, any, infer A>]
+        ? fc.Arbitrary<A>
+        : never
+    }
+  }
 }
 
 declare module '../../algebra/primitives' {

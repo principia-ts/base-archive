@@ -1,4 +1,4 @@
-import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
+import type { InterfaceConfigKind, InterpretedHKT, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 import type * as G from '@principia/base/Guard'
 
 import { GuardURI } from '@principia/base/Guard'
@@ -22,6 +22,13 @@ declare module '../../algebra/primitives' {
   }
   interface ArrayConfig<E, A> {
     readonly [GuardURI]: G.Guard<unknown, A>
+  }
+  interface TupleConfig<Types> {
+    readonly [GuardURI]: {
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, any, infer A>]
+        ? G.Guard<unknown, A>
+        : never
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 import type * as Alg from '../../algebra'
 import type { URI } from './HKT'
 
+import * as A from '@principia/base/Array'
 import { absurd, pipe } from '@principia/base/Function'
 import * as S from '@principia/base/Show'
 
@@ -52,6 +53,12 @@ export const PrimitivesShow = implementInterpreter<URI, Alg.PrimitivesURI>()((_)
     pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)),
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)),
+  tuple: (...types) => (config) => (env) =>
+    pipe(
+      types,
+      A.map((f) => f(env)),
+      (shows) => applyShowConfig(config?.config)(S.tuple(...shows) as any, env, shows as any)
+    ),
   keyof: (keys, config) => (env) => applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {}),
   UUID: (config) => (env) => applyShowConfig(config?.config)(S.named_(S.string, config?.name), env, {})
 }))

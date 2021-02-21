@@ -10,24 +10,26 @@ const l = M.make((F) =>
   F.both(
     {
       a: F.string(),
-      b: F.number()
+      b: F.number(),
+      d: F.tuple(F.string(), F.number(), F.boolean())()
     },
     { c: F.either(F.string(), F.number()) }
   )
 )
 
-const input = {
-  a: 'Hello, world',
-  b: 42,
-  c: E.right('left')
+const veryWrongInput = {
+  a: 0,
+  b: 'bad',
+  c: E.Left(42),
+  d: ['hello', 'wrong', true]
 }
 
 pipe(
   M.getDecoder(l),
   fromDecoderKF,
-  (d) => d.decode(input),
-  E.fold(
-    (err) => console.log(DE.paths(err)),
+  (d) => d.decode(veryWrongInput),
+  E.match(
+    (err) => console.log(DE.prettyPrint(err)),
     (x) => console.log(x)
   )
 )

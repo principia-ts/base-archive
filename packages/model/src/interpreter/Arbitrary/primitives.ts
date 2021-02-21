@@ -1,5 +1,7 @@
 import type * as Alg from '../../algebra'
 import type { ArbURI } from './HKT'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type { Arbitrary } from 'fast-check'
 
 import { isNonEmpty } from '@principia/base/Array'
 import * as A from '@principia/base/Array'
@@ -26,6 +28,17 @@ export const PrimitivesArbitrary = implementInterpreter<ArbURI, Alg.PrimitivesUR
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (arb) =>
       applyArbitraryConfig(config?.config)(accessFastCheck(env).array(arb).filter(isNonEmpty) as any, env, arb)
+    ),
+  tuple: (...types) => (config) => (env) =>
+    pipe(
+      types,
+      A.map((f) => f(env)),
+      (arbitraries) =>
+        applyArbitraryConfig(config?.config)(
+          accessFastCheck(env).tuple(...(arbitraries as [Arbitrary<unknown>])) as any,
+          env,
+          arbitraries
+        )
     ),
   keyof: (keys, config) => (env) =>
     applyArbitraryConfig(config?.config)(

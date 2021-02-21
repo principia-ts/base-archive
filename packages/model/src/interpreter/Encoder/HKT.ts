@@ -1,4 +1,4 @@
-import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
+import type { InterfaceConfigKind, InterpretedHKT, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 import type * as E from '@principia/codec/Encoder'
 
 import { EncoderURI } from '@principia/codec/Modules'
@@ -22,6 +22,13 @@ declare module '../../algebra/primitives' {
   }
   interface ArrayConfig<E, A> {
     readonly [EncoderURI]: E.Encoder<E, A>
+  }
+  interface TupleConfig<Types> {
+    readonly [EncoderURI]: {
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, infer E, infer A>]
+        ? E.Encoder<E, A>
+        : never
+    }
   }
 }
 

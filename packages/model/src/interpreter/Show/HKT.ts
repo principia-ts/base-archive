@@ -1,4 +1,10 @@
-import type { ExtractURI, InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
+import type {
+  ExtractURI,
+  InterfaceConfigKind,
+  InterpretedHKT,
+  IntersectionConfigKind,
+  TaggedUnionConfigKind
+} from '../../HKT'
 import type * as S from '@principia/base/Show'
 
 import { ShowURI } from '@principia/base/Modules'
@@ -22,6 +28,11 @@ declare module '../../algebra/primitives' {
   }
   interface ArrayConfig<E, A> {
     readonly [ShowURI]: S.Show<A>
+  }
+  interface TupleConfig<Types> {
+    readonly [ShowURI]: {
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, any, infer A>] ? S.Show<A> : never
+    }
   }
 }
 

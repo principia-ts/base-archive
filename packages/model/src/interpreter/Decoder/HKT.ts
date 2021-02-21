@@ -1,4 +1,4 @@
-import type { InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
+import type { InterfaceConfigKind, InterpretedHKT, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 import type * as D from '@principia/codec/DecoderKF'
 
 import { getApplyConfig } from '../../HKT'
@@ -21,6 +21,13 @@ declare module '../../algebra/primitives' {
   }
   interface ArrayConfig<E, A> {
     readonly [URI]: D.DecoderKF<unknown, A>
+  }
+  interface TupleConfig<Types> {
+    readonly [URI]: {
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, any, infer A>]
+        ? D.DecoderKF<unknown, A>
+        : never
+    }
   }
 }
 

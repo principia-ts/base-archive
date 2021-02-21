@@ -1,6 +1,7 @@
 import type * as Alg from '../../algebra'
 import type { URI } from './HKT'
 
+import * as A from '@principia/base/Array'
 import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
 
@@ -27,6 +28,12 @@ export const PrimitivesEq = implementInterpreter<URI, Alg.PrimitivesURI>()((_) =
   array: (item, config) => (env) => pipe(item(env), (eq) => applyEqConfig(config?.config)(Eq.array(eq), env, eq)),
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (eq) => applyEqConfig(config?.config)(Eq.array(eq), env, eq)),
+  tuple: (...types) => (config) => (env) =>
+    pipe(
+      types,
+      A.map((f) => f(env)),
+      (eqs) => applyEqConfig(config?.config)(Eq.tuple(...eqs) as any, env, eqs as any)
+    ),
   keyof: (_, config) => (env) => applyEqConfig(config?.config)(Eq.eqStrict, env, {}),
   UUID: (config) => (env) => applyEqConfig(config?.config)(Eq.string, env, {})
 }))

@@ -1,4 +1,10 @@
-import type { ExtractURI, InterfaceConfigKind, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
+import type {
+  ExtractURI,
+  InterfaceConfigKind,
+  InterpretedHKT,
+  IntersectionConfigKind,
+  TaggedUnionConfigKind
+} from '../../HKT'
 import type * as Eq from '@principia/base/Eq'
 
 import { EqURI } from '@principia/base/Modules'
@@ -22,6 +28,11 @@ declare module '../../algebra/primitives' {
   }
   interface ArrayConfig<E, A> {
     readonly [EqURI]: Eq.Eq<A>
+  }
+  interface TupleConfig<Types> {
+    readonly [EqURI]: {
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, any, infer A>] ? Eq.Eq<A> : never
+    }
   }
 }
 

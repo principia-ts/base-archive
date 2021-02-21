@@ -27,6 +27,7 @@ export interface NumberLiteralConfig<T> {}
 export interface LiteralConfig<T> {}
 export interface DateConfig {}
 export interface UUIDConfig {}
+export interface TupleConfig<Types extends ReadonlyArray<InterpretedKind<any, any, any, any, any, any>>> {}
 
 export interface UUIDBrand {
   readonly UUID: unique symbol
@@ -81,6 +82,17 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
     config?: Config<Env, unknown, unknown, ReadonlyArray<E>, NonEmptyArray<A>, NonEmptyArrayConfig<E, A>>
   ) => InterpretedKind<F, Env, unknown, unknown, ReadonlyArray<E>, NonEmptyArray<A>>
 
+  readonly tuple: <
+    Types extends readonly [
+      InterpretedKind<F, Env, unknown, unknown, unknown, unknown>,
+      ...ReadonlyArray<InterpretedKind<F, Env, unknown, unknown, unknown, unknown>>
+    ]
+  >(
+    ...types: Types
+  ) => (
+    config?: Config<Env, _S<F, Env, Types>, _R<F, Env, Types>, _E<F, Env, Types>, _A<F, Env, Types>, TupleConfig<Types>>
+  ) => InterpretedKind<F, Env, _S<F, Env, Types>, _R<F, Env, Types>, _E<F, Env, Types>, _A<F, Env, Types>>
+
   readonly keyof: <K extends Keys>(
     keys: K,
     config?: Config<Env, unknown, unknown, string, keyof K & string, KeyofConfig<K>>
@@ -89,4 +101,20 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
   readonly UUID: (
     config?: Config<Env, unknown, unknown, string, UUID, UUIDConfig>
   ) => InterpretedKind<F, Env, unknown, unknown, string, UUID>
+}
+
+type _S<F extends InterpreterURIS, Env extends AnyEnv, Ts extends ReadonlyArray<any>> = {
+  readonly [K in keyof Ts]: [Ts[K]] extends [InterpretedKind<F, Env, infer S, unknown, unknown, unknown>] ? S : never
+}
+
+type _R<F extends InterpreterURIS, Env extends AnyEnv, Ts extends ReadonlyArray<any>> = {
+  readonly [K in keyof Ts]: [Ts[K]] extends [InterpretedKind<F, Env, unknown, infer R, unknown, unknown>] ? R : never
+}
+
+type _E<F extends InterpreterURIS, Env extends AnyEnv, Ts extends ReadonlyArray<any>> = {
+  readonly [K in keyof Ts]: [Ts[K]] extends [InterpretedKind<F, Env, unknown, unknown, infer E, unknown>] ? E : never
+}
+
+type _A<F extends InterpreterURIS, Env extends AnyEnv, Ts extends ReadonlyArray<any>> = {
+  readonly [K in keyof Ts]: [Ts[K]] extends [InterpretedKind<F, Env, unknown, unknown, unknown, infer A>] ? A : never
 }
