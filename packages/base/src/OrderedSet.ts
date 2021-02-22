@@ -2,7 +2,6 @@ import type { Predicate, Refinement } from './Function'
 import type { Ord } from './Ord'
 
 import { not } from './Function'
-import { OrderedMap } from './OrderedMap'
 import * as OM from './OrderedMap'
 
 export class OrderedSet<A> implements Iterable<A> {
@@ -120,7 +119,6 @@ export function map<B>(O: Ord<B>): <A>(f: (a: A) => B) => (fa: OrderedSet<A>) =>
   return (f) => (fa) => map_(O)(fa, f)
 }
 
-
 /*
  * -------------------------------------------
  * Filterable
@@ -183,7 +181,21 @@ export function bind<B>(O: Ord<B>): <A>(f: (A: A) => Iterable<B>) => (ma: Ordere
  * -------------------------------------------
  */
 
-export function difference_<A>(x: OrderedSet<A>, y: OrderedSet<A>): OrderedSet<A> {
+export function intersection_<A>(x: OrderedSet<A>, y: Iterable<A>): OrderedSet<A> {
+  let r = make(x.keyMap.ord)
+  for (const a of y) {
+    if (has_(x, a)) {
+      r = add_(r, a)
+    }
+  }
+  return r
+}
+
+export function intersection<A>(y: Iterable<A>): (x: OrderedSet<A>) => OrderedSet<A> {
+  return (x) => intersection_(x, y)
+}
+
+export function difference_<A>(x: OrderedSet<A>, y: Iterable<A>): OrderedSet<A> {
   let r = x
   for (const a of y) {
     r = remove_(r, a)
@@ -191,7 +203,7 @@ export function difference_<A>(x: OrderedSet<A>, y: OrderedSet<A>): OrderedSet<A
   return r
 }
 
-export function difference<A>(y: OrderedSet<A>): (x: OrderedSet<A>) => OrderedSet<A> {
+export function difference<A>(y: Iterable<A>): (x: OrderedSet<A>) => OrderedSet<A> {
   return (x) => difference_(x, y)
 }
 
