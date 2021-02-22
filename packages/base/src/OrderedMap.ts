@@ -22,9 +22,51 @@ export class OrderedMap<K, V> implements OrderedMapIterable<K, V> {
   }
 }
 
+/*
+ * -------------------------------------------
+ * Constructors
+ * -------------------------------------------
+ */
+
 export function make<K, V>(ord: Ord<K>) {
   return new OrderedMap<K, V>(ord, null)
 }
+
+/**
+ * Creates a new `OrderedMap` from an `Ord` and an iterable of key-value pairs
+ */
+export function from<K, V>(iterable: OrderedMapIterable<K, V>): OrderedMap<K, V>
+export function from<K, V>(iterable: Iterable<readonly [K, V]>, ord: Ord<K>): OrderedMap<K, V>
+export function from<K, V>(
+  ...args: [OrderedMapIterable<K, V>] | [Iterable<readonly [K, V]>, Ord<K>]
+): OrderedMap<K, V> {
+  let tree = args.length === 2 ? make<K, V>(args[1]) : make<K, V>(args[0].ord)
+
+  for (const [k, v] of args[0]) {
+    tree = insert_(tree, k, v)
+  }
+  return tree
+}
+
+/*
+ * -------------------------------------------
+ * Guards
+ * -------------------------------------------
+ */
+
+export function isEmpty<K, V>(m: OrderedMap<K, V>): boolean {
+  return m.root === Leaf
+}
+
+export function isNonEmpty<K, V>(m: OrderedMap<K, V>): boolean {
+  return m.root !== Leaf
+}
+
+/*
+ * -------------------------------------------
+ * Operations
+ * -------------------------------------------
+ */
 
 /**
  * Inserts an element into the correct position in the map.
@@ -125,29 +167,6 @@ export function insertWith_<V>(S: Semigroup<V>) {
 }
 
 /**
- * Inserts an element into the correct position in the map, combining euqal key's values
- * with a `Semigroup` instance
- */
-export function insertWith<V>(S: Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
-  const insertWithS_ = insertWith_(S)
-  return (key, value) => (m) => insertWithS_(m, key, value)
-}
-
-/**
- * Returns the first ("smallest") element in the map
- */
-export function head<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
-  return O.map_(headNode(m.root), (n) => [n.key, n.value])
-}
-
-/**
- * Returns the last ("largest") element in the map
- */
-export function last<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
-  return O.map_(lastNode(m.root), (n) => [n.key, n.value])
-}
-
-/**
  * Removes an element from the map
  */
 export function remove_<K, V>(m: OrderedMap<K, V>, key: K): OrderedMap<K, V> {
@@ -160,6 +179,16 @@ export function remove_<K, V>(m: OrderedMap<K, V>, key: K): OrderedMap<K, V> {
  */
 export function remove<K>(key: K): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
   return (m) => remove_(m, key)
+}
+
+
+/**
+ * Inserts an element into the correct position in the map, combining euqal key's values
+ * with a `Semigroup` instance
+ */
+export function insertWith<V>(S: Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
+  const insertWithS_ = insertWith_(S)
+  return (key, value) => (m) => insertWithS_(m, key, value)
 }
 
 /**
@@ -223,6 +252,9 @@ export function getGte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
   return (tree) => getGte_(tree, key)
 }
 
+/**
+ * Searches the map and returns the first value in sorted order that is > key, if it exists
+ */
 export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
@@ -242,10 +274,16 @@ export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   return lastValue
 }
 
+/**
+ * Searches the map and returns the first value in sorted order that is > key, if it exists
+ */
 export function getGt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
   return (m) => getGt_(m, key)
 }
 
+/**
+ * Searches the map and returns the first value in sorted order that is <= key, if it exists
+ */
 export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
@@ -265,10 +303,16 @@ export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   return lastValue
 }
 
+/**
+ * Searches the map and returns the first value in sorted order that is <= key, if it exists
+ */
 export function getLte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
   return (m) => getLte_(m, key)
 }
 
+/**
+ * Searches the map and returns the first value in sorted order that is < key, if it exists
+ */
 export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
@@ -287,6 +331,9 @@ export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   return lastValue
 }
 
+/**
+ * Searches the map and returns the first value in sorted order that is < key, if it exists
+ */
 export function getLt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
   return (m) => getLt_(m, key)
 }
@@ -347,32 +394,226 @@ export function forEach<V>(visit: (v: V) => void): <K>(m: OrderedMap<K, V>) => v
   return (m) => forEach_(m, visit)
 }
 
-/**
- * Creates a new `OrderedMap` from an `Ord` and an iterable of key-value pairs
- */
-export function from<K, V>(iterable: OrderedMapIterable<K, V>): OrderedMap<K, V>
-export function from<K, V>(iterable: Iterable<readonly [K, V]>, ord: Ord<K>): OrderedMap<K, V>
-export function from<K, V>(
-  ...args: [OrderedMapIterable<K, V>] | [Iterable<readonly [K, V]>, Ord<K>]
-): OrderedMap<K, V> {
-  let tree = args.length === 2 ? make<K, V>(args[1]) : make<K, V>(args[0].ord)
-
-  for (const [k, v] of args[0]) {
-    tree = insert_(tree, k, v)
+export function forEachLte_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitLte(m, max, (k, v) => {
+      visit(k, v)
+      return O.None()
+    })
   }
-  return tree
 }
 
-/**
- * Converts a `OrderedMap` into a sorted `ReadonlyArray`
- */
-export function toArray<K, V>(m: OrderedMap<K, V>): ReadonlyArray<readonly [K, V]> {
-  const as: Array<readonly [K, V]> = []
-  iforEach_(m, (k, v) => {
-    as.push([k, v])
-  })
-  return as
+export function forEachLte<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachLte_(m, max, visit)
 }
+
+export function forEachLt_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitLt(m, max, (k, v) => {
+      visit(k, v)
+      return O.None()
+    })
+  }
+}
+
+export function forEachLt<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachLt_(m, max, visit)
+}
+
+export function forEachGte_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitGte(m, min, (k, v) => {
+      visit(k, v)
+      return O.None()
+    })
+  }
+}
+
+export function forEachGte<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachGte_(m, min, visit)
+}
+
+export function forEachGt_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitGt(m, min, (k, v) => {
+      visit(k, v)
+      return O.None()
+    })
+  }
+}
+
+export function forEachGt<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachGt_(m, min, visit)
+}
+
+export function forEachBetween_<K, V>(m: OrderedMap<K, V>, min: K, max: K, visit: (k: K, v: V) => void): void {
+  if (m.root) {
+    visitBetween(m, min, max, (k, v) => {
+      visit(k, v)
+      return O.None()
+    })
+  }
+}
+
+export function forEachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
+  return (m) => forEachBetween_(m, min, max, visit)
+}
+
+export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = m.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack   = makeStack(current, stack)
+      current = current.left
+    } else if (stack) {
+      if (cmp(stack.value.key, max) > 0) {
+        break
+      }
+      const v = visit(stack.value.key, stack.value.value)
+      if (v._tag === 'Some') {
+        return v
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.None()
+}
+
+export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = m.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack   = makeStack(current, stack)
+      current = current.left
+    } else if (stack) {
+      if (cmp(stack.value.key, max) >= 0) {
+        break
+      }
+      const v = visit(stack.value.key, stack.value.value)
+      if (v._tag === 'Some') {
+        return v
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.None()
+}
+
+export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = m.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack = makeStack(current, stack)
+      if (cmp(current.key, min) >= 0) {
+        current = current.left
+      } else {
+        current = null
+      }
+    } else if (stack) {
+      if (cmp(stack.value.key, min) >= 0) {
+        const v = visit(stack.value.key, stack.value.value)
+        if (v._tag === 'Some') {
+          return v
+        }
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.None()
+}
+
+export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+  let current: RBNode<K, V>                = m.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = m.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack = makeStack(current, stack)
+      if (cmp(current.key, min) > 0) {
+        current = current.left
+      } else {
+        current = null
+      }
+    } else if (stack) {
+      if (cmp(stack.value.key, min) > 0) {
+        const v = visit(stack.value.key, stack.value.value)
+        if (v._tag === 'Some') {
+          return v
+        }
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.None()
+}
+
+export function visitBetween<K, V, A>(
+  m: OrderedMap<K, V>,
+  min: K,
+  max: K,
+  visit: (k: K, v: V) => Option<A>
+): Option<A> {
+  let current: RBNode<K, V>                = m.root
+  let stack: Stack<Node<K, V>> | undefined = undefined
+  let done                                 = false
+  const cmp                                = m.ord.compare_
+
+  while (!done) {
+    if (current) {
+      stack = makeStack(current, stack)
+      if (cmp(current.key, min) > 0) {
+        current = current.left
+      } else {
+        current = null
+      }
+    } else if (stack) {
+      if (cmp(stack.value.key, max) >= 0) {
+        break
+      }
+      const v = visit(stack.value.key, stack.value.value)
+      if (v._tag === 'Some') {
+        return v
+      }
+      current = stack.value.right
+      stack   = stack.previous
+    } else {
+      done = true
+    }
+  }
+  return O.None()
+}
+
+/*
+ * -------------------------------------------
+ * Functor
+ * -------------------------------------------
+ */
 
 export function map_<K, A, B>(fa: OrderedMap<K, A>, f: (a: A) => B): OrderedMap<K, B> {
   let tree = make<K, B>(fa.ord)
@@ -386,25 +627,11 @@ export function map<A, B>(f: (a: A) => B): <K>(fa: OrderedMap<K, A>) => OrderedM
   return (fa) => map_(fa, f)
 }
 
-export function ifoldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, k: K, v: V) => Z): Z {
-  let r = z
-  iforEach_(fa, (k, v) => {
-    r = f(r, k, v)
-  })
-  return r
-}
-
-export function ifoldl<K, V, Z>(z: Z, f: (z: Z, k: K, v: V) => Z): (fa: OrderedMap<K, V>) => Z {
-  return (fa) => ifoldl_(fa, z, f)
-}
-
-export function foldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, v: V) => Z): Z {
-  return ifoldl_(fa, z, (z, _, v) => f(z, v))
-}
-
-export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z): <K>(fa: OrderedMap<K, V>) => Z {
-  return (fa) => foldl_(fa, z, f)
-}
+/*
+ * -------------------------------------------
+ * Filterable
+ * -------------------------------------------
+ */
 
 export function ifilter_<K, A, B extends A>(
   m: OrderedMap<K, A>,
@@ -442,9 +669,396 @@ export function filter<A>(predicate: Predicate<A>): <K>(m: OrderedMap<K, A>) => 
   return (m) => filter_(m, predicate)
 }
 
-/**
- * Stateful iterator
+/*
+ * -------------------------------------------
+ * Foldable
+ * -------------------------------------------
  */
+
+export function ifoldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, k: K, v: V) => Z): Z {
+  let r = z
+  iforEach_(fa, (k, v) => {
+    r = f(r, k, v)
+  })
+  return r
+}
+
+export function ifoldl<K, V, Z>(z: Z, f: (z: Z, k: K, v: V) => Z): (fa: OrderedMap<K, V>) => Z {
+  return (fa) => ifoldl_(fa, z, f)
+}
+
+export function foldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, v: V) => Z): Z {
+  return ifoldl_(fa, z, (z, _, v) => f(z, v))
+}
+
+export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z): <K>(fa: OrderedMap<K, V>) => Z {
+  return (fa) => foldl_(fa, z, f)
+}
+
+
+/*
+ * -------------------------------------------
+ * Utilities
+ * -------------------------------------------
+ */
+
+/**
+ * Returns the first ("smallest") element in the map
+ */
+export function head<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
+  return O.map_(headNode(m.root), (n) => [n.key, n.value])
+}
+
+/**
+ * Returns the last ("largest") element in the map
+ */
+export function last<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
+  return O.map_(lastNode(m.root), (n) => [n.key, n.value])
+}
+
+export function size<K, V>(m: OrderedMap<K, V>): number {
+  return m.root?.count ?? 0
+}
+
+/**
+ * Converts a `OrderedMap` into a sorted `ReadonlyArray`
+ */
+export function toArray<K, V>(m: OrderedMap<K, V>): ReadonlyArray<readonly [K, V]> {
+  const as: Array<readonly [K, V]> = []
+  iforEach_(m, (k, v) => {
+    as.push([k, v])
+  })
+  return as
+}
+
+export function forward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      const stack: Array<Node<K, V>> = []
+      let n                          = m.root
+      while (n) {
+        stack.push(n)
+        n = n.left
+      }
+      return new OrderedMapIterator(m, stack, 0)
+    }
+  }
+}
+
+export function backward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      const stack: Array<Node<K, V>> = []
+      let n                          = m.root
+      while (n) {
+        stack.push(n)
+        n = n.right
+      }
+      return new OrderedMapIterator(m, stack, 1)
+    }
+  }
+}
+
+export function find_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      const cmp                      = m.ord.compare_
+      let n                          = m.root
+      const stack: Array<Node<K, V>> = []
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        switch (d) {
+          case 0: {
+            return new OrderedMapIterator(m, stack, direction)
+          }
+          case -1: {
+            n = n.left
+            break
+          }
+          case 1: {
+            n = n!.right
+            break
+          }
+        }
+      }
+      return new OrderedMapIterator(m, [], direction)
+    }
+  }
+}
+
+export function at_<K, V>(m: OrderedMap<K, V>, index: number, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      if (index < 0 || !m.root) {
+        return new OrderedMapIterator(m, [], direction)
+      }
+      let idx                        = index
+      let n                          = m.root
+      const stack: Array<Node<K, V>> = []
+      for (;;) {
+        stack.push(n)
+        if (n.left) {
+          if (index < n.left.count) {
+            n = n.left
+            continue
+          }
+          idx -= n.left.count
+        }
+        if (!idx) {
+          return new OrderedMapIterator(m, stack, direction)
+        }
+        idx -= 1
+        if (n.right) {
+          if (idx >= n.right.count) {
+            break
+          }
+          n = n.right
+        } else {
+          break
+        }
+      }
+      return new OrderedMapIterator(m, [], direction)
+    }
+  }
+}
+
+export function at(index: number, direction: 0 | 1 = 0): <K, V>(tree: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (tree) => at_(tree, index, direction)
+}
+
+/**
+ * Finds the first element in the map whose key is >= the given key
+ * @returns An iterator at the found element
+ */
+export function gte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d <= 0) {
+          last_ptr = stack.length
+          n        = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      return new OrderedMapIterator(m, stack, direction)
+    }
+  }
+}
+
+/**
+ * Finds the first element in the map whose key is >= the given key
+ * @returns An iterator at the found element
+ */
+export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => gte_(m, key, direction)
+}
+
+/**
+ * Finds the first element in the map whose key is > the given key
+ * @returns An iterator at the found element
+ */
+export function gt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d < 0) {
+          last_ptr = stack.length
+          n        = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      return new OrderedMapIterator(m, stack, direction)
+    }
+  }
+}
+
+/**
+ * Finds the first element in the map whose key is > the given key
+ * @returns An iterator at the found element
+ */
+export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => gt_(m, key, direction)
+}
+
+/**
+ * Finds the first element in the map whose key is <= the given key
+ * @returns An iterator at the found element
+ */
+export function lte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d >= 0) {
+          last_ptr = stack.length
+        }
+        if (d < 0) {
+          n = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      return new OrderedMapIterator(m, stack, direction)
+    }
+  }
+}
+
+/**
+ * Finds the first element in the map whose key is <= the given key
+ * @returns An iterator at the found element
+ */
+export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => lte_(m, key, direction)
+}
+
+/**
+ * Finds the first element in the map whose key is < the given key
+ * @returns An iterator at the found element
+ */
+export function lt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
+  return {
+    ord: m.ord,
+    [Symbol.iterator]() {
+      const cmp                      = m.ord.compare_
+      let n: RBNode<K, V>            = m.root
+      const stack: Array<Node<K, V>> = []
+      let last_ptr                   = 0
+      while (n) {
+        const d = cmp(key, n.key)
+        stack.push(n)
+        if (d > 0) {
+          last_ptr = stack.length
+        }
+        if (d <= 0) {
+          n = n.left
+        } else {
+          n = n.right
+        }
+      }
+      stack.length = last_ptr
+      return new OrderedMapIterator(m, stack, direction)
+    }
+  }
+}
+
+/**
+ * Finds the first element in the map whose key is < the given key
+ * @returns An iterator at the found element
+ */
+export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => lt_(m, key, direction)
+}
+
+/**
+ * Returns an iterable of all the values in the mpa in sorted order
+ */
+export function values_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable<V> {
+  return {
+    *[Symbol.iterator]() {
+      const iter: Iterator<readonly [K, V]> = direction ? backward(m)[Symbol.iterator]() : forward(m)[Symbol.iterator]()
+      let d: IteratorResult<readonly [K, V]>
+      while (!(d = iter.next()).done) {
+        yield d.value[1]
+      }
+    }
+  }
+}
+
+/**
+ * Returns an iterable of all the values in the map in sorted order
+ */
+export function values(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<V> {
+  return (m) => values_(m, direction)
+}
+
+/**
+ * Returns an iterable of all the keys in the map in sorted order
+ */
+export function keys_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable<K> {
+  return {
+    *[Symbol.iterator]() {
+      const iter: Iterator<readonly [K, V]> = direction ? backward(m)[Symbol.iterator]() : forward(m)[Symbol.iterator]()
+      let d: IteratorResult<readonly [K, V]>
+      while (!(d = iter.next()).done) {
+        yield d.value[0]
+      }
+    }
+  }
+}
+
+/**
+ * Returns an iterable of all the keys in the map in sorted order
+ */
+export function keys(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<K> {
+  return (m) => keys_(m, direction)
+}
+
+/**
+ * Returns a range of the map with keys >= min and < max
+ */
+export function range_<K, V>(m: OrderedMap<K, V>, min: Option<K>, max: Option<K>): OrderedMap<K, V> {
+  let r = make<K, V>(m.ord)
+  if (min._tag === 'Some') {
+    if (max._tag === 'Some') {
+      forEachBetween_(m, min.value, max.value, (k, v) => {
+        r = insert_(r, k, v)
+      })
+    } else {
+      forEachGte_(m, min.value, (k, v) => {
+        r = insert_(r, k, v)
+      })
+    }
+  } else if (max._tag === 'Some') {
+    forEachLt_(m, max.value, (k, v) => {
+      r = insert_(r, k, v)
+    })
+  }
+  return r
+}
+
+/**
+ * Returns a range of the map with keys >= min and < max
+ */
+export function range<K>(min: Option<K>, max: Option<K>): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
+  return (m) => range_(m, min, max)
+}
+
+/*
+ * -------------------------------------------
+ * Internal
+ * -------------------------------------------
+ */
+
 class OrderedMapIterator<K, V> implements Iterator<readonly [K, V]> {
   private count = 0
   constructor(readonly m: OrderedMap<K, V>, readonly stack: Array<Node<K, V>>, readonly direction: 0 | 1) {}
@@ -714,253 +1328,6 @@ export interface OrderedMapIterable<K, V> extends Iterable<readonly [K, V]> {
   [Symbol.iterator](): OrderedMapIterator<K, V>
 }
 
-export function forward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      const stack: Array<Node<K, V>> = []
-      let n                          = m.root
-      while (n) {
-        stack.push(n)
-        n = n.left
-      }
-      return new OrderedMapIterator(m, stack, 0)
-    }
-  }
-}
-
-export function backward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      const stack: Array<Node<K, V>> = []
-      let n                          = m.root
-      while (n) {
-        stack.push(n)
-        n = n.right
-      }
-      return new OrderedMapIterator(m, stack, 1)
-    }
-  }
-}
-
-export function find_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      const cmp                      = m.ord.compare_
-      let n                          = m.root
-      const stack: Array<Node<K, V>> = []
-      while (n) {
-        const d = cmp(key, n.key)
-        stack.push(n)
-        switch (d) {
-          case 0: {
-            return new OrderedMapIterator(m, stack, direction)
-          }
-          case -1: {
-            n = n.left
-            break
-          }
-          case 1: {
-            n = n!.right
-            break
-          }
-        }
-      }
-      return new OrderedMapIterator(m, [], direction)
-    }
-  }
-}
-
-export function at_<K, V>(m: OrderedMap<K, V>, index: number, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      if (index < 0 || !m.root) {
-        return new OrderedMapIterator(m, [], direction)
-      }
-      let idx                        = index
-      let n                          = m.root
-      const stack: Array<Node<K, V>> = []
-      for (;;) {
-        stack.push(n)
-        if (n.left) {
-          if (index < n.left.count) {
-            n = n.left
-            continue
-          }
-          idx -= n.left.count
-        }
-        if (!idx) {
-          return new OrderedMapIterator(m, stack, direction)
-        }
-        idx -= 1
-        if (n.right) {
-          if (idx >= n.right.count) {
-            break
-          }
-          n = n.right
-        } else {
-          break
-        }
-      }
-      return new OrderedMapIterator(m, [], direction)
-    }
-  }
-}
-
-export function at(index: number, direction: 0 | 1 = 0): <K, V>(tree: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
-  return (tree) => at_(tree, index, direction)
-}
-
-/**
- * Finds the first element in the map whose key is >= the given key
- * @returns An iterator at the found element
- */
-export function gte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      const cmp                      = m.ord.compare_
-      let n: RBNode<K, V>            = m.root
-      const stack: Array<Node<K, V>> = []
-      let last_ptr                   = 0
-      while (n) {
-        const d = cmp(key, n.key)
-        stack.push(n)
-        if (d <= 0) {
-          last_ptr = stack.length
-          n        = n.left
-        } else {
-          n = n.right
-        }
-      }
-      stack.length = last_ptr
-      return new OrderedMapIterator(m, stack, direction)
-    }
-  }
-}
-
-/**
- * Finds the first element in the map whose key is >= the given key
- * @returns An iterator at the found element
- */
-export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
-  return (m) => gte_(m, key, direction)
-}
-
-/**
- * Finds the first element in the map whose key is > the given key
- * @returns An iterator at the found element
- */
-export function gt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      const cmp                      = m.ord.compare_
-      let n: RBNode<K, V>            = m.root
-      const stack: Array<Node<K, V>> = []
-      let last_ptr                   = 0
-      while (n) {
-        const d = cmp(key, n.key)
-        stack.push(n)
-        if (d < 0) {
-          last_ptr = stack.length
-          n        = n.left
-        } else {
-          n = n.right
-        }
-      }
-      stack.length = last_ptr
-      return new OrderedMapIterator(m, stack, direction)
-    }
-  }
-}
-
-/**
- * Finds the first element in the map whose key is > the given key
- * @returns An iterator at the found element
- */
-export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
-  return (m) => gt_(m, key, direction)
-}
-
-/**
- * Finds the first element in the map whose key is <= the given key
- * @returns An iterator at the found element
- */
-export function lte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      const cmp                      = m.ord.compare_
-      let n: RBNode<K, V>            = m.root
-      const stack: Array<Node<K, V>> = []
-      let last_ptr                   = 0
-      while (n) {
-        const d = cmp(key, n.key)
-        stack.push(n)
-        if (d >= 0) {
-          last_ptr = stack.length
-        }
-        if (d < 0) {
-          n = n.left
-        } else {
-          n = n.right
-        }
-      }
-      stack.length = last_ptr
-      return new OrderedMapIterator(m, stack, direction)
-    }
-  }
-}
-
-/**
- * Finds the first element in the map whose key is <= the given key
- * @returns An iterator at the found element
- */
-export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
-  return (m) => lte_(m, key, direction)
-}
-
-/**
- * Finds the first element in the map whose key is < the given key
- * @returns An iterator at the found element
- */
-export function lt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
-  return {
-    ord: m.ord,
-    [Symbol.iterator]() {
-      const cmp                      = m.ord.compare_
-      let n: RBNode<K, V>            = m.root
-      const stack: Array<Node<K, V>> = []
-      let last_ptr                   = 0
-      while (n) {
-        const d = cmp(key, n.key)
-        stack.push(n)
-        if (d > 0) {
-          last_ptr = stack.length
-        }
-        if (d <= 0) {
-          n = n.left
-        } else {
-          n = n.right
-        }
-      }
-      stack.length = last_ptr
-      return new OrderedMapIterator(m, stack, direction)
-    }
-  }
-}
-
-/**
- * Finds the first element in the map whose key is < the given key
- * @returns An iterator at the found element
- */
-export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
-  return (m) => lt_(m, key, direction)
-}
 
 export function blackHeight<K, V>(root: RBNode<K, V>): number {
   if (root === Leaf) {
@@ -996,301 +1363,6 @@ function lastNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
   }
   return O.Some(n)
 }
-
-export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = m.root
-  let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
-
-  while (!done) {
-    if (current) {
-      stack   = makeStack(current, stack)
-      current = current.left
-    } else if (stack) {
-      if (cmp(stack.value.key, max) > 0) {
-        break
-      }
-      const v = visit(stack.value.key, stack.value.value)
-      if (v._tag === 'Some') {
-        return v
-      }
-      current = stack.value.right
-      stack   = stack.previous
-    } else {
-      done = true
-    }
-  }
-  return O.None()
-}
-
-export function forEachLte_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => void): void {
-  if (m.root) {
-    visitLte(m, max, (k, v) => {
-      visit(k, v)
-      return O.None()
-    })
-  }
-}
-
-export function forEachLte<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
-  return (m) => forEachLte_(m, max, visit)
-}
-
-export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = m.root
-  let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
-
-  while (!done) {
-    if (current) {
-      stack   = makeStack(current, stack)
-      current = current.left
-    } else if (stack) {
-      if (cmp(stack.value.key, max) >= 0) {
-        break
-      }
-      const v = visit(stack.value.key, stack.value.value)
-      if (v._tag === 'Some') {
-        return v
-      }
-      current = stack.value.right
-      stack   = stack.previous
-    } else {
-      done = true
-    }
-  }
-  return O.None()
-}
-
-export function forEachLt_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => void): void {
-  if (m.root) {
-    visitLt(m, max, (k, v) => {
-      visit(k, v)
-      return O.None()
-    })
-  }
-}
-
-export function forEachLt<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
-  return (m) => forEachLt_(m, max, visit)
-}
-
-export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = m.root
-  let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
-
-  while (!done) {
-    if (current) {
-      stack = makeStack(current, stack)
-      if (cmp(current.key, min) >= 0) {
-        current = current.left
-      } else {
-        current = null
-      }
-    } else if (stack) {
-      if (cmp(stack.value.key, min) >= 0) {
-        const v = visit(stack.value.key, stack.value.value)
-        if (v._tag === 'Some') {
-          return v
-        }
-      }
-      current = stack.value.right
-      stack   = stack.previous
-    } else {
-      done = true
-    }
-  }
-  return O.None()
-}
-
-export function forEachGte_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => void): void {
-  if (m.root) {
-    visitGte(m, min, (k, v) => {
-      visit(k, v)
-      return O.None()
-    })
-  }
-}
-
-export function forEachGte<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
-  return (m) => forEachGte_(m, min, visit)
-}
-
-export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
-  let current: RBNode<K, V>                = m.root
-  let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
-
-  while (!done) {
-    if (current) {
-      stack = makeStack(current, stack)
-      if (cmp(current.key, min) > 0) {
-        current = current.left
-      } else {
-        current = null
-      }
-    } else if (stack) {
-      if (cmp(stack.value.key, min) > 0) {
-        const v = visit(stack.value.key, stack.value.value)
-        if (v._tag === 'Some') {
-          return v
-        }
-      }
-      current = stack.value.right
-      stack   = stack.previous
-    } else {
-      done = true
-    }
-  }
-  return O.None()
-}
-
-export function forEachGt_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => void): void {
-  if (m.root) {
-    visitGt(m, min, (k, v) => {
-      visit(k, v)
-      return O.None()
-    })
-  }
-}
-
-export function forEachGt<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
-  return (m) => forEachGt_(m, min, visit)
-}
-
-export function visitBetween<K, V, A>(
-  m: OrderedMap<K, V>,
-  min: K,
-  max: K,
-  visit: (k: K, v: V) => Option<A>
-): Option<A> {
-  let current: RBNode<K, V>                = m.root
-  let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
-
-  while (!done) {
-    if (current) {
-      stack = makeStack(current, stack)
-      if (cmp(current.key, min) > 0) {
-        current = current.left
-      } else {
-        current = null
-      }
-    } else if (stack) {
-      if (cmp(stack.value.key, max) >= 0) {
-        break
-      }
-      const v = visit(stack.value.key, stack.value.value)
-      if (v._tag === 'Some') {
-        return v
-      }
-      current = stack.value.right
-      stack   = stack.previous
-    } else {
-      done = true
-    }
-  }
-  return O.None()
-}
-
-export function forEachBetween_<K, V>(m: OrderedMap<K, V>, min: K, max: K, visit: (k: K, v: V) => void): void {
-  if (m.root) {
-    visitBetween(m, min, max, (k, v) => {
-      visit(k, v)
-      return O.None()
-    })
-  }
-}
-
-export function forEachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
-  return (m) => forEachBetween_(m, min, max, visit)
-}
-
-/**
- * Returns an iterable of all the values in the mpa in sorted order
- */
-export function values_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable<V> {
-  return {
-    *[Symbol.iterator]() {
-      const iter: Iterator<readonly [K, V]> = direction ? backward(m)[Symbol.iterator]() : forward(m)[Symbol.iterator]()
-      let d: IteratorResult<readonly [K, V]>
-      while (!(d = iter.next()).done) {
-        yield d.value[1]
-      }
-    }
-  }
-}
-
-/**
- * Returns an iterable of all the values in the map in sorted order
- */
-export function values(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<V> {
-  return (m) => values_(m, direction)
-}
-
-/**
- * Returns an iterable of all the keys in the map in sorted order
- */
-export function keys_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable<K> {
-  return {
-    *[Symbol.iterator]() {
-      const iter: Iterator<readonly [K, V]> = direction ? backward(m)[Symbol.iterator]() : forward(m)[Symbol.iterator]()
-      let d: IteratorResult<readonly [K, V]>
-      while (!(d = iter.next()).done) {
-        yield d.value[0]
-      }
-    }
-  }
-}
-
-/**
- * Returns an iterable of all the keys in the map in sorted order
- */
-export function keys(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<K> {
-  return (m) => keys_(m, direction)
-}
-
-/**
- * Returns a range of the map with keys >= min and < max
- */
-export function range_<K, V>(m: OrderedMap<K, V>, min: Option<K>, max: Option<K>): OrderedMap<K, V> {
-  let r = make<K, V>(m.ord)
-  if (min._tag === 'Some') {
-    if (max._tag === 'Some') {
-      forEachBetween_(m, min.value, max.value, (k, v) => {
-        r = insert_(r, k, v)
-      })
-    } else {
-      forEachGte_(m, min.value, (k, v) => {
-        r = insert_(r, k, v)
-      })
-    }
-  } else if (max._tag === 'Some') {
-    forEachLt_(m, max.value, (k, v) => {
-      r = insert_(r, k, v)
-    })
-  }
-  return r
-}
-
-/**
- * Returns a range of the map with keys >= min and < max
- */
-export function range<K>(min: Option<K>, max: Option<K>): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
-  return (m) => range_(m, min, max)
-}
-
-/*
- * -------------------------------------------
- * Internal
- * -------------------------------------------
- */
 
 type Color = 0 | 1
 

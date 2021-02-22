@@ -1640,28 +1640,36 @@ export function rotate_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
   }
 }
 
-export function scanl<A, B>(b: B, f: (b: B, a: A) => B): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (as) => {
-    const l               = as.length
-    const mut_r: Array<B> = new Array(l + 1)
-    mut_r[0]              = b
-    for (let i = 0; i < l; i++) {
-      mut_r[i + 1] = f(mut_r[i], as[i])
-    }
-    return mut_r
+export function size<A>(as: ReadonlyArray<A>): number {
+  return as.length
+}
+
+export function scanl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): ReadonlyArray<B> {
+  const l               = as.length
+  const mut_r: Array<B> = new Array(l + 1)
+  mut_r[0]              = b
+  for (let i = 0; i < l; i++) {
+    mut_r[i + 1] = f(mut_r[i], as[i])
   }
+  return mut_r
+}
+
+export function scanl<A, B>(b: B, f: (b: B, a: A) => B): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (as) => scanl_(as, b, f)
+}
+
+export function scanr_<A, B>(as: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): ReadonlyArray<B> {
+  const l               = as.length
+  const mut_r: Array<B> = new Array(l + 1)
+  mut_r[l]              = b
+  for (let i = l - 1; i >= 0; i--) {
+    mut_r[i] = f(as[i], mut_r[i + 1])
+  }
+  return mut_r
 }
 
 export function scanr<A, B>(b: B, f: (a: A, b: B) => B): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (as) => {
-    const l               = as.length
-    const mut_r: Array<B> = new Array(l + 1)
-    mut_r[l]              = b
-    for (let i = l - 1; i >= 0; i--) {
-      mut_r[i] = f(as[i], mut_r[i + 1])
-    }
-    return mut_r
-  }
+  return (as) => scanr_(as, b, f)
 }
 
 export function snoc_<A>(init: ReadonlyArray<A>, end: A): NonEmptyArray<A> {

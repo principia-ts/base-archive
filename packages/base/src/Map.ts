@@ -13,12 +13,6 @@ import { makeMonoid } from './typeclass'
 
 /*
  * -------------------------------------------
- * Model
- * -------------------------------------------
- */
-
-/*
- * -------------------------------------------
  * Constructors
  * -------------------------------------------
  */
@@ -78,6 +72,10 @@ export function isEmpty<K, A>(d: ReadonlyMap<K, A>): boolean {
   return d.size === 0
 }
 
+export function isNonEmpty<K, A>(d: ReadonlyMap<K, A>): boolean {
+  return d.size !== 0
+}
+
 /**
  * Test whether or not one `Map` contains all of the keys and values contained in another `Map`
  *
@@ -115,6 +113,178 @@ export function isSubmap<K, A>(EK: Eq<K>, EA: Eq<A>): (that: ReadonlyMap<K, A>) 
  */
 export function toMutable<K, A>(m: ReadonlyMap<K, A>): Map<K, A> {
   return new Map(m)
+}
+
+/*
+ * -------------------------------------------
+ * Operations
+ * -------------------------------------------
+ */
+
+export function lookupAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<A> {
+  const lookupWithKeyE_ = lookupWithKey_(E)
+  return (m, k) =>
+    pipe(
+      lookupWithKeyE_(m, k),
+      O.map(([_, a]) => a)
+    )
+}
+
+export function lookupAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
+  const lookupE_ = lookupAt_(E)
+  return (k) => (m) => lookupE_(m, k)
+}
+
+export function insertAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => ReadonlyMap<K, A> {
+  const lookupWithKeyE_ = lookupWithKey_(E)
+  return (m, k, a) => {
+    const found = lookupWithKeyE_(m, k)
+    if (O.isNone(found)) {
+      const r = new Map(m)
+      r.set(k, a)
+      return r
+    } else if (found.value[1] !== a) {
+      const r = new Map(m)
+      r.set(found.value[0], a)
+      return r
+    }
+    return m
+  }
+}
+
+export function insertAt<K>(E: Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  const insertAtE_ = insertAt_(E)
+  return (k, a) => (m) => insertAtE_(m, k, a)
+}
+
+export function deleteAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => ReadonlyMap<K, A> {
+  const lookupWithKeyE_ = lookupWithKey_(E)
+  return (m, k) => {
+    const found = lookupWithKeyE_(m, k)
+    if (O.isSome(found)) {
+      const r = new Map(m)
+      r.delete(found.value[0])
+      return r
+    }
+    return m
+  }
+}
+
+export function deleteAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  const deleteAtE_ = deleteAt_(E)
+  return (k) => (m) => deleteAtE_(m, k)
+}
+
+export function updateAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => O.Option<ReadonlyMap<K, A>> {
+  const lookupWithKeyE_ = lookupWithKey_(E)
+  return (m, k, a) => {
+    const found = lookupWithKeyE_(m, k)
+    if (O.isNone(found)) {
+      return O.None()
+    }
+    const r = new Map(m)
+    r.set(found.value[0], a)
+    return O.Some(r)
+  }
+}
+
+export function updateAt<K>(E: Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => O.Option<ReadonlyMap<K, A>> {
+  const updateAtE_ = updateAt_(E)
+  return (k, a) => (m) => updateAtE_(m, k, a)
+}
+
+export function modifyAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, f: (a: A) => A) => O.Option<ReadonlyMap<K, A>> {
+  const lookupWithKeyE_ = lookupWithKey_(E)
+  return (m, k, f) => {
+    const found = lookupWithKeyE_(m, k)
+    if (O.isNone(found)) {
+      return O.None()
+    }
+    const r = new Map(m)
+    r.set(found.value[0], f(found.value[1]))
+    return O.Some(r)
+  }
+}
+
+export function modifyAt<K>(
+  E: Eq<K>
+): <A>(k: K, f: (a: A) => A) => (m: ReadonlyMap<K, A>) => O.Option<ReadonlyMap<K, A>> {
+  const modifyAtE_ = modifyAt_(E)
+  return (k, f) => (m) => modifyAtE_(m, k, f)
+}
+
+export function pop_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
+  const lookupE_   = lookupAt_(E)
+  const deleteAtE_ = deleteAt_(E)
+  return (m, k) =>
+    pipe(
+      lookupE_(m, k),
+      O.map((a) => [a, deleteAtE_(m, k)])
+    )
+}
+
+export function pop<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
+  const popE_ = pop_(E)
+  return (k) => (m) => popE_(m, k)
+}
+
+export function insert_<K, A>(me: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
+  const m = new Map(me)
+  m.set(k, a)
+  return m
+}
+
+export function insert<K, A>(k: K, a: A): (me: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (me) => insert_(me, k, a)
+}
+
+export function remove_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
+  const r = new Map(m)
+  r.delete(k)
+  return m
+}
+
+export function remove<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (m) => remove_(m, k)
+}
+
+export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: Iterable<K>): ReadonlyMap<K, A> {
+  const r = new Map(m)
+  for (const k of ks) {
+    r.delete(k)
+  }
+  return r
+}
+
+export function removeMany<K>(ks: Iterable<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
+  return (m) => removeMany_(m, ks)
+}
+
+export function lookup_<K, A>(m: ReadonlyMap<K, A>, k: K): O.Option<A> {
+  return O.fromNullable(m.get(k))
+}
+
+export function lookup<K>(k: K): <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
+  return (m) => lookup_(m, k)
+}
+
+export function lookupWithKey_<K>(E: Eq<K>) {
+  return <A>(m: ReadonlyMap<K, A>, k: K): O.Option<readonly [K, A]> => {
+    const entries = m.entries()
+    let e: IteratorResult<readonly [K, A]>
+    while (!(e = entries.next()).done) {
+      const [ka, a] = e.value
+      if (E.equals_(ka, k)) {
+        return O.Some([ka, a])
+      }
+    }
+    return O.None()
+  }
+}
+
+export function lookupWithKey<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<readonly [K, A]> {
+  const lookupWithKeyE_ = lookupWithKey_(E)
+  return (k) => (m) => lookupWithKeyE_(m, k)
 }
 
 /*
@@ -610,25 +780,6 @@ export function keys<K>(O: P.Ord<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyArray
   return (m) => Array.from(m.keys()).sort((a, b) => O.compare_(a, b))
 }
 
-export function lookupWithKey_<K>(E: Eq<K>) {
-  return <A>(m: ReadonlyMap<K, A>, k: K): O.Option<readonly [K, A]> => {
-    const entries = m.entries()
-    let e: IteratorResult<readonly [K, A]>
-    while (!(e = entries.next()).done) {
-      const [ka, a] = e.value
-      if (E.equals_(ka, k)) {
-        return O.Some([ka, a])
-      }
-    }
-    return O.None()
-  }
-}
-
-export function lookupWithKey<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<readonly [K, A]> {
-  const lookupWithKeyE_ = lookupWithKey_(E)
-  return (k) => (m) => lookupWithKeyE_(m, k)
-}
-
 /**
  * Calculate the number of key/value pairs in a map
  */
@@ -636,155 +787,8 @@ export function size<K, A>(d: Map<K, A>): number {
   return d.size
 }
 
-export function lookupAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<A> {
-  const lookupWithKeyE_ = lookupWithKey_(E)
-  return (m, k) =>
-    pipe(
-      lookupWithKeyE_(m, k),
-      O.map(([_, a]) => a)
-    )
-}
-
-export function lookupAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
-  const lookupE_ = lookupAt_(E)
-  return (k) => (m) => lookupE_(m, k)
-}
-
-export function insertAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => ReadonlyMap<K, A> {
-  const lookupWithKeyE_ = lookupWithKey_(E)
-  return (m, k, a) => {
-    const found = lookupWithKeyE_(m, k)
-    if (O.isNone(found)) {
-      const r = new Map(m)
-      r.set(k, a)
-      return r
-    } else if (found.value[1] !== a) {
-      const r = new Map(m)
-      r.set(found.value[0], a)
-      return r
-    }
-    return m
-  }
-}
-
-export function insertAt<K>(E: Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  const insertAtE_ = insertAt_(E)
-  return (k, a) => (m) => insertAtE_(m, k, a)
-}
-
 export function copy<K, A>(me: ReadonlyMap<K, A>): ReadonlyMap<K, A> {
   return new Map(me)
-}
-
-export function deleteAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => ReadonlyMap<K, A> {
-  const lookupWithKeyE_ = lookupWithKey_(E)
-  return (m, k) => {
-    const found = lookupWithKeyE_(m, k)
-    if (O.isSome(found)) {
-      const r = new Map(m)
-      r.delete(found.value[0])
-      return r
-    }
-    return m
-  }
-}
-
-export function deleteAt<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  const deleteAtE_ = deleteAt_(E)
-  return (k) => (m) => deleteAtE_(m, k)
-}
-
-export function updateAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => O.Option<ReadonlyMap<K, A>> {
-  const lookupWithKeyE_ = lookupWithKey_(E)
-  return (m, k, a) => {
-    const found = lookupWithKeyE_(m, k)
-    if (O.isNone(found)) {
-      return O.None()
-    }
-    const r = new Map(m)
-    r.set(found.value[0], a)
-    return O.Some(r)
-  }
-}
-
-export function updateAt<K>(E: Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => O.Option<ReadonlyMap<K, A>> {
-  const updateAtE_ = updateAt_(E)
-  return (k, a) => (m) => updateAtE_(m, k, a)
-}
-
-export function modifyAt_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, f: (a: A) => A) => O.Option<ReadonlyMap<K, A>> {
-  const lookupWithKeyE_ = lookupWithKey_(E)
-  return (m, k, f) => {
-    const found = lookupWithKeyE_(m, k)
-    if (O.isNone(found)) {
-      return O.None()
-    }
-    const r = new Map(m)
-    r.set(found.value[0], f(found.value[1]))
-    return O.Some(r)
-  }
-}
-
-export function modifyAt<K>(
-  E: Eq<K>
-): <A>(k: K, f: (a: A) => A) => (m: ReadonlyMap<K, A>) => O.Option<ReadonlyMap<K, A>> {
-  const modifyAtE_ = modifyAt_(E)
-  return (k, f) => (m) => modifyAtE_(m, k, f)
-}
-
-export function pop_<K>(E: Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
-  const lookupE_   = lookupAt_(E)
-  const deleteAtE_ = deleteAt_(E)
-  return (m, k) =>
-    pipe(
-      lookupE_(m, k),
-      O.map((a) => [a, deleteAtE_(m, k)])
-    )
-}
-
-export function pop<K>(E: Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
-  const popE_ = pop_(E)
-  return (k) => (m) => popE_(m, k)
-}
-
-export function insert_<K, A>(me: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K, A> {
-  const m = new Map(me)
-  m.set(k, a)
-  return m
-}
-
-export function insert<K, A>(k: K, a: A): (me: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (me) => insert_(me, k, a)
-}
-
-export function remove_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
-  const r = new Map(m)
-  r.delete(k)
-  return m
-}
-
-export function remove<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (m) => remove_(m, k)
-}
-
-export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: Iterable<K>): ReadonlyMap<K, A> {
-  const r = new Map(m)
-  for (const k of ks) {
-    r.delete(k)
-  }
-  return r
-}
-
-export function removeMany<K>(ks: Iterable<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
-  return (m) => removeMany_(m, ks)
-}
-
-export function lookup_<K, A>(m: ReadonlyMap<K, A>, k: K): O.Option<A> {
-  return O.fromNullable(m.get(k))
-}
-
-export function lookup<K>(k: K): <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
-  return (m) => lookup_(m, k)
 }
 
 export function concat_<K>(E: Eq<K>): <A>(xs: ReadonlyMap<K, A>, ys: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {

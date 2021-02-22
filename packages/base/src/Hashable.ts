@@ -1,4 +1,4 @@
-export const $hash = Symbol.for('@@hash')
+export const $hash = Symbol.for('$hash')
 
 export interface Hashable {
   [$hash](): number

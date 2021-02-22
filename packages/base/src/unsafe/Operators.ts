@@ -11,7 +11,7 @@ declare global {
 
   interface Function {
     ['>>']<Args extends ReadonlyArray<unknown>, A, B>(this: (...args: Args) => A, f: (a: A) => B): (...args: Args) => B
-  }
+}
 }
 
 let patched = false

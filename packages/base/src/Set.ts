@@ -65,6 +65,38 @@ export function toSet<A>(s: ReadonlySet<A>): Set<A> {
 
 /*
  * -------------------------------------------
+ * Operations
+ * -------------------------------------------
+ */
+
+export function insert_<A>(E: Eq<A>) {
+  const elemE_ = elem_(E)
+  return (set: ReadonlySet<A>, a: A) => {
+    if (!elemE_(set, a)) {
+      const r = new Set(set)
+      r.add(a)
+      return r
+    } else {
+      return set
+    }
+  }
+}
+
+export function insert<A>(E: Eq<A>) {
+  const insertE_ = insert_(E)
+  return (a: A) => (set: ReadonlySet<A>) => insertE_(set, a)
+}
+
+export function remove_<A>(E: Eq<A>): (set: ReadonlySet<A>, a: A) => ReadonlySet<A> {
+  return (set, a) => filter_(set, (ax) => !E.equals(a)(ax))
+}
+
+export function remove<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => ReadonlySet<A> {
+  return (a) => (set) => remove_(E)(set, a)
+}
+
+/*
+ * -------------------------------------------
  * Guards
  * -------------------------------------------
  */
@@ -137,6 +169,14 @@ export function elem<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => boolean {
 export function isSubset<A>(E: Eq<A>): (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => boolean {
   const elemE = elem(E)
   return (that) => every((a: A) => elemE(a)(that))
+}
+
+export function isEmpty<A>(set: ReadonlySet<A>): boolean {
+  return set.size === 0
+}
+
+export function isNonEmpty<A>(set: ReadonlySet<A>): boolean {
+  return set.size !== 0
 }
 
 /*
@@ -416,7 +456,7 @@ export function getIntersectionSemigroup<A>(E: Eq<A>): P.Semigroup<ReadonlySet<A
 
 /*
  * -------------------------------------------
- * Show Set
+ * Show
  * -------------------------------------------
  */
 
@@ -520,28 +560,12 @@ export function difference<A>(E: Eq<A>) {
   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => differenceE_(me, that)
 }
 
-export function insert_<A>(E: Eq<A>) {
-  const elemE_ = elem_(E)
-  return (set: ReadonlySet<A>, a: A) => {
-    if (!elemE_(set, a)) {
-      const r = new Set(set)
-      r.add(a)
-      return r
-    } else {
-      return set
-    }
-  }
-}
+/*
+ * -------------------------------------------
+ * Utilities
+ * -------------------------------------------
+ */
 
-export function insert<A>(E: Eq<A>) {
-  const insertE_ = insert_(E)
-  return (a: A) => (set: ReadonlySet<A>) => insertE_(set, a)
-}
-
-export function remove_<A>(E: Eq<A>): (set: ReadonlySet<A>, a: A) => ReadonlySet<A> {
-  return (set, a) => filter_(set, (ax) => !E.equals(a)(ax))
-}
-
-export function remove<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => ReadonlySet<A> {
-  return (a) => (set) => remove_(E)(set, a)
+export function size<A>(set: ReadonlySet<A>): number {
+  return set.size
 }
