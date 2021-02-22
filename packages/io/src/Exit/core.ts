@@ -1,6 +1,5 @@
 import type { FiberId } from '../Fiber/FiberId'
 import type { IO } from '../IO/core'
-import type * as HKT from '@principia/base/HKT'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -26,17 +25,6 @@ export interface Failure<E> {
   readonly _tag: 'Failure'
   readonly cause: C.Cause<E>
 }
-
-// export const URI = 'Exit'
-// export type URI = HKT.URI<typeof URI, V>
-
-// export type V = HKT.V<'E', '+'>
-
-// declare module '@principia/base/HKT' {
-//   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-//     readonly [URI]: Exit<E, A>
-//   }
-// }
 
 /*
  * -------------------------------------------

@@ -11,15 +11,15 @@ import * as I from '../internal/io'
 export function mapM_<E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => I.FIO<E1, B>): SyntheticFiber<E | E1, B> {
   return {
     _tag: 'SyntheticFiber',
-    await: I.bind_(fiber.await, Ex.foreachEffect(f)),
+    await: I.bind_(fiber.await, Ex.foreachM(f)),
     getRef: (ref) => fiber.getRef(ref),
     inheritRefs: fiber.inheritRefs,
-    interruptAs: (id) => I.bind_(fiber.interruptAs(id), Ex.foreachEffect(f)),
+    interruptAs: (id) => I.bind_(fiber.interruptAs(id), Ex.foreachM(f)),
     poll: I.bind_(
       fiber.poll,
       O.match(
         () => I.pure(O.None()),
-        (a) => I.map_(Ex.foreachEffect_(a, f), O.Some)
+        (a) => I.map_(Ex.foreachM_(a, f), O.Some)
       )
     )
   }

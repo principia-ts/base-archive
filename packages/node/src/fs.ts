@@ -1,5 +1,4 @@
 import type { Byte } from '@principia/base/Byte'
-import type { Chunk } from '@principia/io/Chunk'
 import type { IO } from '@principia/io/IO'
 
 import * as A from '@principia/base/Array'
@@ -8,7 +7,6 @@ import { pipe } from '@principia/base/Function'
 import { Integer } from '@principia/base/Integer'
 import * as N from '@principia/base/Newtype'
 import * as O from '@principia/base/Option'
-import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
@@ -106,9 +104,9 @@ export function createReadStream(
           if (bytes !== chunk.length) {
             const dst = Buffer.allocUnsafeSlow(bytes)
             chunk.copy(dst, 0, 0, bytes)
-            return (dst as unknown) as Chunk<Byte>
+            return A.fromBuffer(dst)
           } else {
-            return (chunk as unknown) as Chunk<Byte>
+            return A.fromBuffer(chunk)
           }
         })
       )
@@ -144,16 +142,16 @@ export function createWriteSink(
 
       const maybeError = yield* _(errorRef.get)
       if (!st && O.isSome(maybeError)) {
-        return (_: O.Option<Chunk<Byte>>) => Push.fail(maybeError.value, [])
+        return (_: O.Option<ReadonlyArray<Byte>>) => Push.fail(maybeError.value, [])
       } else {
-        return (is: O.Option<Chunk<Byte>>) =>
+        return (is: O.Option<ReadonlyArray<Byte>>) =>
           O.match_(
             is,
             () => Push.emit(undefined, []),
             (chunk) =>
               pipe(
                 (st[1] as Ref.URef<number | undefined>).get,
-                I.bind((pos) => write(st[0], C.asBuffer(chunk), pos)),
+                I.bind((pos) => write(st[0], A.toBuffer(chunk), pos)),
                 I.bind((_) =>
                   Ref.update_(st[1] as Ref.URef<number | undefined>, (n) => (n ? n + chunk.length : undefined))
                 ),
@@ -441,7 +439,7 @@ export function utimes(
   })
 }
 
-export function write(fd: FileDescriptor, buffer: Buffer, position?: number): I.FIO<ErrnoException, number> {
+export function write(fd: FileDescriptor, buffer: Uint8Array, position?: number): I.FIO<ErrnoException, number> {
   return I.effectAsync<unknown, ErrnoException, number>((cb) => {
     fs.write(FileDescriptor.unwrap(fd), buffer, position ?? null, buffer.byteLength, (err, bytesWritten) =>
       err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
@@ -451,7 +449,7 @@ export function write(fd: FileDescriptor, buffer: Buffer, position?: number): I.
 
 export function writev(
   fd: FileDescriptor,
-  buffers: ReadonlyArray<Buffer>,
+  buffers: ReadonlyArray<Uint8Array>,
   position?: number
 ): I.FIO<ErrnoException, number> {
   return I.effectAsync<unknown, ErrnoException, number>((cb) => {

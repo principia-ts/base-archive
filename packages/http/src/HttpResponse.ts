@@ -1,8 +1,6 @@
 import type { Byte } from '@principia/base/Byte'
 import type { ReadonlyRecord } from '@principia/base/Record'
-import type { Chunk } from '@principia/io/Chunk'
 import type { FIO, IO, UIO } from '@principia/io/IO'
-import type { URefM } from '@principia/io/IORefM'
 import type * as http from 'http'
 import type { Readable } from 'stream'
 
@@ -94,7 +92,7 @@ export class HttpResponse {
                   ? Pull.end
                   : I.bind_(
                       queue.take,
-                      (event): I.UIO<Chunk<ResponseEvent>> => {
+                      (event): I.UIO<ReadonlyArray<ResponseEvent>> => {
                         if (event._tag === 'Close') {
                           return I.apr_(done.set(true), Pull.emit(event))
                         }

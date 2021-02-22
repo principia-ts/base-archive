@@ -1,7 +1,6 @@
 /**
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/fx/ZPure.scala
  */
-import type { Chunk } from './Chunk'
 import type * as HKT from '@principia/base/HKT'
 import type { Stack } from '@principia/base/util/support/Stack'
 import type { FreeSemiring } from '@principia/free/FreeSemiring'
@@ -204,7 +203,7 @@ class Write<W> extends Multi<W, unknown, never, unknown, never, void> {
   }
 }
 
-class Listen<W, S1, S2, R, E, A> extends Multi<W, S1, S2, R, E, readonly [A, Chunk<W>]> {
+class Listen<W, S1, S2, R, E, A> extends Multi<W, S1, S2, R, E, readonly [A, ReadonlyArray<W>]> {
   readonly _multiTag = MultiTag.Listen
   constructor(readonly ma: Multi<W, S1, S2, R, E, A>) {
     super()
@@ -668,13 +667,13 @@ export function write<W1>(
 
 export function listen<W, S1, S2, R, E, A>(
   wa: Multi<W, S1, S2, R, E, A>
-): Multi<W, S1, S2, R, E, readonly [A, Chunk<W>]> {
+): Multi<W, S1, S2, R, E, readonly [A, ReadonlyArray<W>]> {
   return new Listen(wa)
 }
 
 export function listens_<W, S1, S2, R, E, A, B>(
   wa: Multi<W, S1, S2, R, E, A>,
-  f: (l: Chunk<W>) => B
+  f: (l: ReadonlyArray<W>) => B
 ): Multi<W, S1, S2, R, E, readonly [A, B]> {
   return pipe(
     wa,
@@ -684,7 +683,7 @@ export function listens_<W, S1, S2, R, E, A, B>(
 }
 
 export function listens<W, B>(
-  f: (l: Chunk<W>) => B
+  f: (l: ReadonlyArray<W>) => B
 ): <S1, S2, R, E, A>(wa: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, E, readonly [A, B]> {
   return (wa) => listens_(wa, f)
 }

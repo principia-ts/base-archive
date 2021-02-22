@@ -1,3 +1,4 @@
+import type { Byte } from './Byte'
 import type { Either } from './Either'
 import type { Eq } from './Eq/core'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
@@ -8,7 +9,7 @@ import type { Show } from './Show/core'
 import type { These } from './These'
 
 import * as D from './Derivation/genWithHistoryF'
-import { _bind, _bindTo, flow, identity, pipe, tuple } from './Function'
+import { _bind, _bindTo, flow, identity, pipe, tuple, unsafeCoerce } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
 import * as Ord from './Ord'
@@ -50,6 +51,10 @@ export function empty<A>(): ReadonlyArray<A> {
  */
 export function from<A>(as: Iterable<A>): ReadonlyArray<A> {
   return Array.from(as)
+}
+
+export function fromBuffer(as: Uint8Array): ReadonlyArray<Byte> {
+  return unsafeCoerce(Array.from(as))
 }
 
 /**
@@ -1758,6 +1763,10 @@ export function spanIndexRight_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>
   return i
 }
 
+export function splitAt_<A>(as: ReadonlyArray<A>, n: number): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
+  return [as.slice(0, n), as.slice(n)]
+}
+
 export function splitAt(n: number): <A>(as: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
   return (as) => [as.slice(0, n), as.slice(n)]
 }
@@ -1792,17 +1801,21 @@ export function takeLast(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<
   return (as) => takeLast_(as, n)
 }
 
+export function takeWhile_<A, B extends A>(as: ReadonlyArray<A>, refinement: Refinement<A, B>): ReadonlyArray<B>
+export function takeWhile_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A>
+export function takeWhile_<A>(as: ReadonlyArray<A>, predicate: Predicate<A>): ReadonlyArray<A> {
+  const i        = spanIndexLeft_(as, predicate)
+  const mut_init = Array(i)
+  for (let j = 0; j < i; j++) {
+    mut_init[j] = as[j]
+  }
+  return mut_init
+}
+
 export function takeWhile<A, B extends A>(refinement: Refinement<A, B>): (as: ReadonlyArray<A>) => ReadonlyArray<B>
 export function takeWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A>
 export function takeWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (as) => {
-    const i        = spanIndexLeft_(as, predicate)
-    const mut_init = Array(i)
-    for (let j = 0; j < i; j++) {
-      mut_init[j] = as[j]
-    }
-    return mut_init
-  }
+  return (as) => takeWhile_(as, predicate)
 }
 
 /**
@@ -2061,6 +2074,10 @@ export function unsafeDeleteAt_<A>(as: ReadonlyArray<A>, i: number): ReadonlyArr
  * Utilities
  * -------------------------------------------
  */
+
+export function toBuffer(as: ReadonlyArray<Byte>): Uint8Array {
+  return Uint8Array.from(unsafeCoerce(as))
+}
 
 /**
  * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
