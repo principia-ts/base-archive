@@ -2035,23 +2035,45 @@ export const gen = D.genWithHistoryF(Monad, { adapter })
  */
 
 export function unsafeInsertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): ReadonlyArray<A> {
-  const xs = Array.from(as)
-  xs.splice(i, 0, a)
-  return xs
+  return mutate_(as, (xs) => {
+    xs.splice(i, 0, a)
+  })
 }
 
 export function unsafeUpdateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): ReadonlyArray<A> {
   if (as[i] === a) {
     return as
   } else {
-    const mut_xs = Array.from(as)
-    mut_xs[i]    = a
-    return mut_xs
+    return mutate_(as, (mut_xs) => {
+      mut_xs[i] = a
+    })
   }
 }
 
 export function unsafeDeleteAt_<A>(as: ReadonlyArray<A>, i: number): ReadonlyArray<A> {
-  const xs = Array.from(as)
-  xs.splice(i, 1)
-  return xs
+  return mutate_(as, (xs) => {
+    xs.splice(i, 1)
+  })
+}
+
+/*
+ * -------------------------------------------
+ * Utilities
+ * -------------------------------------------
+ */
+
+/**
+ * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
+ */
+export function mutate_<A>(as: ReadonlyArray<A>, f: (as: Array<A>) => void): ReadonlyArray<A> {
+  const mut_as = Array.from(as)
+  f(mut_as)
+  return mut_as
+}
+
+/**
+ * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
+ */
+export function mutate<A>(f: (as: Array<A>) => void): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (as) => mutate_(as, f)
 }

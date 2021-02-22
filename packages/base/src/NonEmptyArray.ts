@@ -1,3 +1,4 @@
+import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
@@ -83,10 +84,26 @@ export function make<A>(...as: readonly [A, ...ReadonlyArray<A>]): NonEmptyArray
  * -------------------------------------------
  */
 
-/**
- */
 export function fold<A>(S: P.Semigroup<A>): (as: NonEmptyArray<A>) => A {
   return (as) => A.foldl_(as.slice(1), as[0], S.combine_)
+}
+
+export function head<A>(as: NonEmptyArray<A>): A {
+  return as[0]
+}
+
+export function tail<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
+  return as.slice(1)
+}
+
+export function min<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
+  const S = getMeetSemigroup(O)
+  return (as) => as.reduce(S.combine_)
+}
+
+export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
+  const S = getJoinSemigroup(O)
+  return (as) => as.reduce(S.combine_)
 }
 
 /*
@@ -151,6 +168,26 @@ export const zipWith: <A, B, C>(
   f: (a: A, b: B) => C
 ) => (fa: NonEmptyArray<A>) => NonEmptyArray<C> = A.zipWith as any
 
+export const cross_: <A, B>(
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>
+) => NonEmptyArray<readonly [A, B]> = A.cross_ as any
+
+export const cross: <B>(
+  fb: NonEmptyArray<B>
+) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<readonly [A, B]> = A.cross as any
+
+export const crossWith_: <A, B, C>(
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>,
+  f: (a: A, b: B) => C
+) => NonEmptyArray<C> = A.crossWith_ as any
+
+export const crossWith: <A, B, C>(
+  fb: NonEmptyArray<B>,
+  f: (a: A, b: B) => C
+) => (fa: NonEmptyArray<A>) => NonEmptyArray<C> = A.crossWith as any
+
 /**
  * Apply a function to an argument under a type constructor
  *
@@ -214,42 +251,80 @@ export const duplicate: <A>(wa: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray
  * -------------------------------------------
  */
 
-/**
- */
-export function ifilter_<A, B extends A>(
+export const ifilter_: {
+  <A, B extends A>(fa: NonEmptyArray<A>, f: RefinementWithIndex<number, A, B>): ReadonlyArray<B>
+  <A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A>
+} = A.ifilter_
+
+export const ifilter: {
+  <A, B extends A>(f: RefinementWithIndex<number, A, B>): (fa: NonEmptyArray<A>) => ReadonlyArray<B>
+  <A>(f: PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => ReadonlyArray<A>
+} = A.ifilter
+
+export const filter_: {
+  <A, B extends A>(fa: NonEmptyArray<A>, f: Refinement<A, B>): ReadonlyArray<B>
+  <A>(fa: NonEmptyArray<A>, f: Predicate<A>): ReadonlyArray<A>
+} = A.filter_
+
+export const filter: {
+  <A, B extends A>(f: Refinement<A, B>): (fa: NonEmptyArray<A>) => ReadonlyArray<B>
+  <A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => ReadonlyArray<A>
+} = A.filter
+
+export const ifilterMap_: <A, B>(fa: NonEmptyArray<A>, f: (i: number, a: A) => O.Option<B>) => ReadonlyArray<B> =
+  A.ifilterMap_
+
+export const ifilterMap: <A, B>(f: (i: number, a: A) => O.Option<B>) => (fa: NonEmptyArray<A>) => ReadonlyArray<B> =
+  A.ifilterMap
+
+export const filterMap_: <A, B>(fa: NonEmptyArray<A>, f: (a: A) => O.Option<B>) => ReadonlyArray<B> = A.filterMap_
+
+export const filterMap: <A, B>(f: (a: A) => O.Option<B>) => (fa: NonEmptyArray<A>) => ReadonlyArray<B> = A.filterMap
+
+export const ipartition_: {
+  <A, B extends A>(fa: NonEmptyArray<A>, refinement: RefinementWithIndex<number, A, B>): readonly [
+    ReadonlyArray<A>,
+    ReadonlyArray<B>
+  ]
+  <A>(fa: NonEmptyArray<A>, predicate: PredicateWithIndex<number, A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+} = A.ipartition_
+
+export const ipartition: {
+  <A, B extends A>(refinement: RefinementWithIndex<number, A, B>): (
+    fa: NonEmptyArray<A>
+  ) => readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+  <A>(predicate: PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+} = A.ipartition
+
+export const partition_: {
+  <A, B extends A>(fa: NonEmptyArray<A>, refinement: Refinement<A, B>): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+  <A>(fa: NonEmptyArray<A>, predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+} = A.partition_
+
+export const partition: {
+  <A, B extends A>(refinement: Refinement<A, B>): (
+    fa: NonEmptyArray<A>
+  ) => readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+  <A>(predicate: Predicate<A>): (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+} = A.partition
+
+export const ipartitionMap_: <A, B, C>(
   fa: NonEmptyArray<A>,
-  f: RefinementWithIndex<number, A, B>
-): O.Option<NonEmptyArray<B>>
-export function ifilter_<A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): O.Option<NonEmptyArray<A>>
-export function ifilter_<A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): O.Option<NonEmptyArray<A>> {
-  return fromArray(A.ifilter_(fa, f))
-}
+  f: (i: number, a: A) => Either<B, C>
+) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] = A.ipartitionMap_
 
-/**
- */
-export function ifilter<A, B extends A>(
-  f: RefinementWithIndex<number, A, B>
-): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<B>>
-export function ifilter<A>(f: PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>>
-export function ifilter<A>(f: PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>> {
-  return (fa) => ifilter_(fa, f)
-}
+export const ipartitionMap: <A, B, C>(
+  f: (i: number, a: A) => Either<B, C>
+) => (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] = A.ipartitionMap
 
-/**
- */
-export function filter_<A, B extends A>(fa: NonEmptyArray<A>, f: Refinement<A, B>): O.Option<NonEmptyArray<B>>
-export function filter_<A>(fa: NonEmptyArray<A>, f: Predicate<A>): O.Option<NonEmptyArray<A>>
-export function filter_<A>(fa: NonEmptyArray<A>, f: Predicate<A>): O.Option<NonEmptyArray<A>> {
-  return ifilter_(fa, (_, a) => f(a))
-}
+export const partitionMap_: <A, B, C>(
+  fa: NonEmptyArray<A>,
+  f: (a: A) => Either<B, C>
+) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] = A.partitionMap_
 
-/**
- */
-export function filter<A, B extends A>(f: Refinement<A, B>): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<B>>
-export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>>
-export function filter<A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>> {
-  return (fa) => ifilter_(fa, (_, a) => f(a))
-}
+export const partitionMap: <A, B, C>(
+  f: (a: A) => Either<B, C>
+) => (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] = A.partitionMap
 
 /*
  * -------------------------------------------
@@ -440,35 +515,17 @@ export function unit(): NonEmptyArray<void> {
  * -------------------------------------------
  */
 
-export function head<A>(as: NonEmptyArray<A>): A {
-  return as[0]
-}
-
-export function tail<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
-  return as.slice(1)
-}
-
 export const reverse: <A>(as: NonEmptyArray<A>) => NonEmptyArray<A> = A.reverse as any
 
-export function min<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
-  const S = getMeetSemigroup(O)
-  return (as) => as.reduce(S.combine_)
-}
-
-export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
-  const S = getJoinSemigroup(O)
-  return (as) => as.reduce(S.combine_)
-}
-
-export function append_<A>(xs: ReadonlyArray<A>, ys: NonEmptyArray<A>): NonEmptyArray<A>
-export function append_<A>(xs: NonEmptyArray<A>, ys: ReadonlyArray<A>): NonEmptyArray<A>
-export function append_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
+export function concat_<A>(xs: ReadonlyArray<A>, ys: NonEmptyArray<A>): NonEmptyArray<A>
+export function concat_<A>(xs: NonEmptyArray<A>, ys: ReadonlyArray<A>): NonEmptyArray<A>
+export function concat_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
   return A.concat_(xs, ys)
 }
 
-export function append<A>(ys: NonEmptyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>
-export function append<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>
-export function append<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function concat<A>(ys: NonEmptyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>
+export function concat<A>(ys: ReadonlyArray<A>): (xs: NonEmptyArray<A>) => NonEmptyArray<A>
+export function concat<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => any {
   return (xs) => A.concat_(xs, ys)
 }
 
@@ -612,5 +669,21 @@ export function modifyAt<A>(i: number, f: (a: A) => A): (as: NonEmptyArray<A>) =
 export const unzip: <A, B>(
   as: NonEmptyArray<readonly [A, B]>
 ) => readonly [NonEmptyArray<A>, NonEmptyArray<B>] = A.unzip as any
+
+/*
+ * -------------------------------------------
+ * Utilities
+ * -------------------------------------------
+ */
+
+export function mutate_<A>(as: NonEmptyArray<A>, f: (as: Array<A>) => void): ReadonlyArray<A> {
+  const mut_as = Array.from(as)
+  f(mut_as)
+  return mut_as
+}
+
+export function mutate<A>(f: (as: Array<A>) => void): (as: NonEmptyArray<A>) => ReadonlyArray<A> {
+  return (as) => mutate_(as, f)
+}
 
 export { NonEmptyArrayURI } from './Modules'

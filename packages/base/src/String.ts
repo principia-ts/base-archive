@@ -39,6 +39,13 @@ export function isEmpty(s: string): boolean {
 }
 
 /**
+ * Check is a string is non-empty
+ */
+export function isNonEmpty(s: string): boolean {
+  return s !== ''
+}
+
+/**
  * Check if a string contains the given substring
  */
 export function contains_(s: string, substr: string): boolean {
@@ -82,7 +89,7 @@ export function endsWith(substr: string): (s: string) => boolean {
 
 /*
  * -------------------------------------------
- * String Combinators
+ * Combinators
  * -------------------------------------------
  */
 
