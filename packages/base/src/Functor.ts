@@ -72,3 +72,24 @@ export interface MapFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = 
     f: (a: A) => B
   ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
+
+export interface FlapFn_<F extends HKT.URIS, TC = HKT.Auto> {
+  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
+    fab: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, (a: A) => B>,
+    a: A
+  ): HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, B>
+}
+
+export interface FlapFn<F extends HKT.URIS, TC = HKT.Auto> {
+  <A>(a: A): <N extends string, K, Q, W, X, I, S, R, E, B>(
+    fab: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, (a: A) => B>
+  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, B>
+}
+
+export function flapF_<F extends HKT.URIS, TC = HKT.Auto>(F: Functor<F, TC>): FlapFn_<F, TC> {
+  return (fab, a) => F.map_(fab, (f) => f(a))
+}
+
+export function flapF<F extends HKT.URIS, TC = HKT.Auto>(F: Functor<F, TC>): FlapFn<F, TC> {
+  return (a) => F.map((f) => f(a))
+}
