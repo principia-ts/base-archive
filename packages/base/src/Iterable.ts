@@ -1,5 +1,5 @@
 import type { Either } from './Either'
-import type { Predicate, PredicateWithIndex, Refinement } from './Function'
+import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { IterableURI } from './Modules'
 import type { Monoid } from './Monoid'
 import type { Option } from './Option'
@@ -21,12 +21,30 @@ export const never: Iterable<never> = {
   *[Symbol.iterator]() {}
 }
 
-export function iterable<A>(iterator: () => IterableIterator<A>): Iterable<A> {
+export function iterable<A>(iterator: () => Iterator<A>): Iterable<A> {
   return {
     [Symbol.iterator]() {
       return iterator()
     }
   }
+}
+
+export function singleton<A>(a: A): Iterable<A> {
+  return iterable(function* () {
+    yield a
+  })
+}
+
+export function makeBy<A>(n: number, f: (i: number) => A): Iterable<A> {
+  return iterable(function* () {
+    for (let i = 0; i < n; i++) {
+      yield f(i)
+    }
+  })
+}
+
+export function range(start: number, end: number): Iterable<number> {
+  return makeBy(end - start + 1, (i) => start + i)
 }
 
 /*
@@ -35,44 +53,58 @@ export function iterable<A>(iterator: () => IterableIterator<A>): Iterable<A> {
  * -------------------------------------------
  */
 
+export function crossWith_<A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, b: B) => C): Iterable<C> {
+  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+}
+
+export function crossWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: Iterable<A>) => Iterable<C> {
+  return (fa) => crossWith_(fa, fb, f)
+}
+
+export function cross_<A, B>(fa: Iterable<A>, fb: Iterable<B>): Iterable<readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
+}
+
+export function cross<B>(fb: Iterable<B>): <A>(fa: Iterable<A>) => Iterable<readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
+}
+
 export function zipWith_<A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, b: B) => C): Iterable<C> {
-  return {
-    [Symbol.iterator]() {
-      let done = false
-      const ia = fa[Symbol.iterator]()
-      const ib = fb[Symbol.iterator]()
-      return {
-        next() {
-          if (done) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            return this.return!()
-          }
-
-          const va = ia.next()
-          const vb = ib.next()
-
-          return va.done || vb.done
-            ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              this.return!()
-            : { done: false, value: f(va.value, vb.value) }
-        },
-        return(value?: unknown) {
-          if (!done) {
-            done = true
-
-            if (typeof ia.return === 'function') {
-              ia.return()
-            }
-            if (typeof ib.return === 'function') {
-              ib.return()
-            }
-          }
-
-          return { done: true, value }
+  return iterable<C>(() => {
+    let done = false
+    const ia = fa[Symbol.iterator]()
+    const ib = fb[Symbol.iterator]()
+    return {
+      next() {
+        if (done) {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          return this.return!()
         }
+
+        const va = ia.next()
+        const vb = ib.next()
+
+        return va.done || vb.done
+          ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            this.return!()
+          : { done: false, value: f(va.value, vb.value) }
+      },
+      return(value?: unknown) {
+        if (!done) {
+          done = true
+
+          if (typeof ia.return === 'function') {
+            ia.return()
+          }
+          if (typeof ib.return === 'function') {
+            ib.return()
+          }
+        }
+
+        return { done: true, value }
       }
     }
-  }
+  })
 }
 
 export function zipWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: Iterable<A>) => Iterable<C> {
@@ -87,12 +119,6 @@ export function ap<A>(fa: Iterable<A>): <B>(fab: Iterable<(a: A) => B>) => Itera
   return (fab) => ap_(fab, fa)
 }
 
-export function pure<A>(a: A): Iterable<A> {
-  return iterable(function* () {
-    yield a
-  })
-}
-
 export function zip<B>(fb: Iterable<B>): <A>(fa: Iterable<A>) => Iterable<readonly [A, B]> {
   return (fa) => zipWith_(fa, fb, (a, b) => [a, b] as const)
 }
@@ -103,10 +129,24 @@ export function zip_<A, B>(fa: Iterable<A>, fb: Iterable<B>): Iterable<readonly 
 
 /*
  * -------------------------------------------
+ * Applicative
+ * -------------------------------------------
+ */
+
+export function pure<A>(a: A): Iterable<A> {
+  return iterable(function* () {
+    yield a
+  })
+}
+
+/*
+ * -------------------------------------------
  * Filterable
  * -------------------------------------------
  */
 
+export function ifilter_<A, B extends A>(fa: Iterable<A>, refinement: RefinementWithIndex<number, A, B>): Iterable<B>
+export function ifilter_<A>(fa: Iterable<A>, predicate: PredicateWithIndex<number, A>): Iterable<A>
 export function ifilter_<A>(fa: Iterable<A>, predicate: PredicateWithIndex<number, A>): Iterable<A> {
   return iterable(function* () {
     let i          = -1
@@ -124,6 +164,118 @@ export function ifilter_<A>(fa: Iterable<A>, predicate: PredicateWithIndex<numbe
   })
 }
 
+export function ifilter<A, B extends A>(refinement: RefinementWithIndex<number, A, B>): (fa: Iterable<A>) => Iterable<B>
+export function ifilter<A>(predicate: PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A>
+export function ifilter<A>(predicate: PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A> {
+  return (fa) => ifilter_(fa, predicate)
+}
+
+export function filter_<A, B extends A>(fa: Iterable<A>, refinement: Refinement<A, B>): Iterable<B>
+export function filter_<A>(fa: Iterable<A>, predicate: Predicate<A>): Iterable<A>
+export function filter_<A>(fa: Iterable<A>, predicate: Predicate<A>): Iterable<A> {
+  return ifilter_(fa, (_, a) => predicate(a))
+}
+
+export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Iterable<A>) => Iterable<B>
+export function filter<A>(predicate: Predicate<A>): (fa: Iterable<A>) => Iterable<A>
+export function filter<A>(predicate: Predicate<A>): (fa: Iterable<A>) => Iterable<A> {
+  return (fa) => filter_(fa, predicate)
+}
+
+export function ifilterMap_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => Option<B>): Iterable<B> {
+  return iterable(function* () {
+    let i          = -1
+    const iterator = fa[Symbol.iterator]()
+    let result
+    while (!(result = iterator.next()).done) {
+      i       += 1
+      const ob = f(i, result.value)
+      if (ob._tag === 'Some') {
+        yield ob.value
+      }
+    }
+  })
+}
+
+export function ifilterMap<A, B>(f: (i: number, a: A) => Option<B>): (fa: Iterable<A>) => Iterable<B> {
+  return (fa) => ifilterMap_(fa, f)
+}
+
+export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A) => Option<B>): Iterable<B> {
+  return ifilterMap_(fa, (_, a) => f(a))
+}
+
+export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Iterable<A>) => Iterable<B> {
+  return (fa) => filterMap_(fa, f)
+}
+
+export function ipartition_<A, B extends A>(
+  fa: Iterable<A>,
+  refinement: RefinementWithIndex<number, A, B>
+): readonly [Iterable<A>, Iterable<B>]
+export function ipartition_<A>(
+  fa: Iterable<A>,
+  predicate: PredicateWithIndex<number, A>
+): readonly [Iterable<A>, Iterable<A>]
+export function ipartition_<A>(
+  fa: Iterable<A>,
+  predicate: PredicateWithIndex<number, A>
+): readonly [Iterable<A>, Iterable<A>] {
+  return tuple(
+    iterable(function* () {
+      let n          = -1
+      const iterator = fa[Symbol.iterator]()
+      let result
+      while (!(result = iterator.next()).done) {
+        n += 1
+        if (!predicate(n, result.value)) {
+          yield result.value
+        }
+      }
+    }),
+    iterable(function* () {
+      let n          = -1
+      const iterator = fa[Symbol.iterator]()
+      let result
+      while (!(result = iterator.next()).done) {
+        n += 1
+        if (predicate(n, result.value)) {
+          yield result.value
+        }
+      }
+    })
+  )
+}
+
+export function ipartition<A, B extends A>(
+  refinement: RefinementWithIndex<number, A, B>
+): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<B>]
+export function ipartition<A>(
+  predicate: PredicateWithIndex<number, A>
+): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>]
+export function ipartition<A>(
+  predicate: PredicateWithIndex<number, A>
+): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>] {
+  return (fa) => ipartition_(fa, predicate)
+}
+
+export function partition_<A, B extends A>(
+  fa: Iterable<A>,
+  refinement: Refinement<A, B>
+): readonly [Iterable<A>, Iterable<B>]
+export function partition_<A>(fa: Iterable<A>, predicate: Predicate<A>): readonly [Iterable<A>, Iterable<A>]
+export function partition_<A>(fa: Iterable<A>, predicate: Predicate<A>): readonly [Iterable<A>, Iterable<A>] {
+  return ipartition_(fa, (_, a) => predicate(a))
+}
+
+export function partition<A, B extends A>(
+  refinement: Refinement<A, B>
+): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<B>]
+export function partition<A>(predicate: Predicate<A>): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>]
+export function partition<A>(predicate: Predicate<A>): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>] {
+  return (fa) => partition_(fa, predicate)
+}
+
 export function ipartitionMap_<A, B, C>(
   fa: Iterable<A>,
   f: (i: number, a: A) => Either<B, C>
@@ -132,11 +284,8 @@ export function ipartitionMap_<A, B, C>(
     iterable(function* () {
       const mapped   = imap_(fa, f)
       const iterator = mapped[Symbol.iterator]()
-      for (;;) {
-        const result = iterator.next()
-        if (result.done) {
-          break
-        }
+      let result
+      while (!(result = iterator.next()).done) {
         if (result.value._tag === 'Left') {
           yield result.value.left
         }
@@ -145,11 +294,8 @@ export function ipartitionMap_<A, B, C>(
     iterable(function* () {
       const mapped   = imap_(fa, f)
       const iterator = mapped[Symbol.iterator]()
-      for (;;) {
-        const result = iterator.next()
-        if (result.done) {
-          break
-        }
+      let result
+      while (!(result = iterator.next()).done) {
         if (result.value._tag === 'Right') {
           yield result.value.right
         }
@@ -158,10 +304,23 @@ export function ipartitionMap_<A, B, C>(
   )
 }
 
+export function ipartitionMap<A, B, C>(
+  f: (i: number, a: A) => Either<B, C>
+): (fa: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
+  return (fa) => ipartitionMap_(fa, f)
+}
+
+export function partitionMap_<A, B, C>(
+  fa: Iterable<A>,
+  f: (a: A) => Either<B, C>
+): readonly [Iterable<B>, Iterable<C>] {
+  return ipartitionMap_(fa, (_, a) => f(a))
+}
+
 export function partitionMap<A, B, C>(
   f: (a: A) => Either<B, C>
-): (as: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
-  return (as) => ipartitionMap_(as, (_, a) => f(a))
+): (fa: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
+  return (fa) => partitionMap_(fa, f)
 }
 
 /*
@@ -175,11 +334,8 @@ export function ifoldMap_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, 
     let res        = M.nat
     let n          = -1
     const iterator = fa[Symbol.iterator]()
-    for (;;) {
-      const result = iterator.next()
-      if (result.done) {
-        break
-      }
+    let result
+    while (!(result = iterator.next()).done) {
       n  += 1
       res = M.combine_(res, f(n, result.value))
     }
@@ -203,12 +359,8 @@ export function ifoldl_<A, B>(fa: Iterable<A>, b: B, f: (b: B, i: number, a: A) 
   let res        = b
   let n          = -1
   const iterator = fa[Symbol.iterator]()
-  // eslint-disable-next-line no-constant-condition
-  for (;;) {
-    const result = iterator.next()
-    if (result.done) {
-      break
-    }
+  let result
+  while (!(result = iterator.next()).done) {
     n  += 1
     res = f(res, n, result.value)
   }
@@ -249,24 +401,20 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Iterable<A>) => B 
  * -------------------------------------------
  */
 
-function* genMap<A, B>(ia: Iterator<A>, f: (i: number, a: A) => B) {
-  let n = -1
-  for (;;) {
-    const result = ia.next()
-    if (result.done) {
-      break
-    }
-    n += 1
-    yield f(n, result.value)
-  }
-}
-
 export function imap_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => B): Iterable<B> {
-  return iterable(() => genMap(fa[Symbol.iterator](), f))
+  return iterable(function* () {
+    const iterator = fa[Symbol.iterator]()
+    let n          = -1
+    let result
+    while (!(result = iterator.next()).done) {
+      n += 1
+      yield f(n, result.value)
+    }
+  })
 }
 
 export function imap<A, B>(f: (i: number, a: A) => B): (fa: Iterable<A>) => Iterable<B> {
-  return (fa) => iterable(() => genMap(fa[Symbol.iterator](), f))
+  return (fa) => imap_(fa, f)
 }
 
 export function map_<A, B>(fa: Iterable<A>, f: (a: A) => B): Iterable<B> {
@@ -289,29 +437,20 @@ export function bind<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Itera
 
 export function bind_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
   return iterable(function* () {
-    yield* genbind(ma[Symbol.iterator](), f)
+    const ia = ma[Symbol.iterator]()
+    let result
+    while (!(result = ia.next()).done) {
+      const ib = f(result.value)[Symbol.iterator]()
+      let innerResult
+      while (!(innerResult = ib.next()).done) {
+        yield innerResult.value
+      }
+    }
   })
 }
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
   return bind_(mma, identity)
-}
-
-function* genbind<A, B>(ia: Iterator<A>, f: (a: A) => Iterable<B>) {
-  for (;;) {
-    const result = ia.next()
-    if (result.done) {
-      break
-    }
-    const ib = f(result.value)[Symbol.iterator]()
-    for (;;) {
-      const result = ib.next()
-      if (result.done) {
-        break
-      }
-      yield result.value
-    }
-  }
 }
 
 /*
@@ -352,9 +491,16 @@ export function append<A>(element: A): (ia: Iterable<A>) => Iterable<A> {
   return (ia) => append_(ia, element)
 }
 
-export function findl_<A, B extends A>(ia: Iterable<A>, refinement: Refinement<A, B>): Option<B>
-export function findl_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A>
-export function findl_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A> {
+export function prepend_<A>(ia: Iterable<A>, element: A): Iterable<A> {
+  return iterable(function* () {
+    yield element
+    yield* ia
+  })
+}
+
+export function findFirst_<A, B extends A>(ia: Iterable<A>, refinement: Refinement<A, B>): Option<B>
+export function findFirst_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A>
+export function findFirst_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A> {
   const as = ia[Symbol.iterator]()
   let a: IteratorResult<A>
   while (!(a = as.next()).done) {
@@ -365,10 +511,10 @@ export function findl_<A>(ia: Iterable<A>, predicate: Predicate<A>): Option<A> {
   return O.None()
 }
 
-export function findl<A, B extends A>(refinement: Refinement<A, B>): (ia: Iterable<A>) => Option<B>
-export function findl<A>(predicate: Predicate<A>): (ia: Iterable<A>) => Option<A>
-export function findl<A>(predicate: Predicate<A>): (ia: Iterable<A>) => Option<A> {
-  return (ia) => findl_(ia, predicate)
+export function findFirst<A, B extends A>(refinement: Refinement<A, B>): (ia: Iterable<A>) => Option<B>
+export function findFirst<A>(predicate: Predicate<A>): (ia: Iterable<A>) => Option<A>
+export function findFirst<A>(predicate: Predicate<A>): (ia: Iterable<A>) => Option<A> {
+  return (ia) => findFirst_(ia, predicate)
 }
 
 export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {
@@ -408,6 +554,63 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
  * -------------------------------------------
  */
 
+export const Functor = HKT.instance<P.Functor<[HKT.URI<IterableURI>]>>({
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: (f) => (fa) => map_(fa, f),
+  map_,
+  map
+})
+
+export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<IterableURI>]>>({
+  imap_,
+  imap
+})
+
+export const Apply = HKT.instance<P.Apply<[HKT.URI<IterableURI>]>>({
+  ...Functor,
+  ap_,
+  ap,
+  crossWith_,
+  crossWith,
+  cross_,
+  cross
+})
+
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IterableURI>]>>({
+  ...Apply,
+  unit,
+  pure
+})
+
+export const Monad = HKT.instance<P.Monad<[HKT.URI<IterableURI>]>>({
+  ...Applicative,
+  bind_,
+  bind,
+  flatten
+})
+
+export const Filterable = HKT.instance<P.Filterable<[HKT.URI<IterableURI>]>>({
+  filter_,
+  filter,
+  filterMap_,
+  filterMap,
+  partition_,
+  partition,
+  partitionMap_,
+  partitionMap
+})
+
+export const FilterableWithIndex = HKT.instance<P.FilterableWithIndex<[HKT.URI<IterableURI>]>>({
+  ifilter_,
+  ifilter,
+  ifilterMap_,
+  ifilterMap,
+  ipartition_,
+  ipartition,
+  ipartitionMap_,
+  ipartitionMap
+})
+
 export const Foldable = HKT.instance<P.Foldable<[HKT.URI<IterableURI>]>>({
   foldl_,
   foldl,
@@ -415,6 +618,15 @@ export const Foldable = HKT.instance<P.Foldable<[HKT.URI<IterableURI>]>>({
   foldr,
   foldMap_,
   foldMap
+})
+
+export const FoldableWithIndex = HKT.instance<P.FoldableWithIndex<[HKT.URI<IterableURI>]>>({
+  ifoldl_,
+  ifoldl,
+  ifoldr_,
+  ifoldr,
+  ifoldMap_,
+  ifoldMap
 })
 
 export { IterableURI } from './Modules'

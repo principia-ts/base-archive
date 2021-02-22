@@ -35,6 +35,9 @@ export type IdentityURI = typeof IdentityURI
 export const IterableURI = 'Iterable'
 export type IterableURI = typeof IterableURI
 
+export const AsyncIterableURI = 'AsyncIterable'
+export type AsyncIterableURI = typeof AsyncIterableURI
+
 export const ListURI = 'List'
 export type ListURI = typeof ListURI
 
@@ -80,6 +83,7 @@ declare module './HKT' {
     [GuardURI]: Guard<unknown, A>
     [IdentityURI]: Identity<A>
     [IterableURI]: Iterable<A>
+    [AsyncIterableURI]: AsyncIterable<A>
     [ListURI]: List<A>
     [MapURI]: ReadonlyMap<K, A>
     [NonEmptyArrayURI]: NonEmptyArray<A>
@@ -98,5 +102,7 @@ declare module './HKT' {
     [MapURI]: K
     [NonEmptyArrayURI]: number
     [RecordURI]: N
+    [IterableURI]: number
+    [AsyncIterableURI]: number
   }
 }

@@ -1,9 +1,12 @@
 import type { Either } from './Either'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
+import type { AsyncIterableURI } from './Modules'
 import type { Monoid } from './Monoid'
 import type { Option } from './Option'
+import type * as P from './typeclass'
 
-import { tuple } from './Function'
+import { identity , tuple } from './Function'
+import * as HKT from './HKT'
 
 /*
  * -------------------------------------------
@@ -19,6 +22,12 @@ export function asyncIterable<A>(iterator: () => AsyncIterator<A>): AsyncIterabl
   }
 }
 
+export function unit(): AsyncIterable<void> {
+  return asyncIterable(async function* () {
+    yield undefined
+  })
+}
+
 /*
  * -------------------------------------------
  * Apply
@@ -26,35 +35,33 @@ export function asyncIterable<A>(iterator: () => AsyncIterator<A>): AsyncIterabl
  */
 
 export function zipWith_<A, B, C>(fa: AsyncIterable<A>, fb: AsyncIterable<B>, f: (a: A, b: B) => C): AsyncIterable<C> {
-  return {
-    [Symbol.asyncIterator]() {
-      let done = false
-      const ia = fa[Symbol.asyncIterator]()
-      const ib = fb[Symbol.asyncIterator]()
-      return {
-        async next() {
-          if (done) {
-            return this.return!()
-          }
-
-          const [va, vb] = await Promise.all([ia.next(), ib.next()])
-          return va.done || vb.done ? this.return!() : { done: false, value: f(va.value, vb.value) }
-        },
-        return(value?: unknown) {
-          if (!done) {
-            done = true
-            if (typeof ia.return === 'function') {
-              ia.return()
-            }
-            if (typeof ib.return === 'function') {
-              ib.return()
-            }
-          }
-          return Promise.resolve({ done: true, value })
+  return asyncIterable<C>(() => {
+    let done = false
+    const ia = fa[Symbol.asyncIterator]()
+    const ib = fb[Symbol.asyncIterator]()
+    return {
+      async next() {
+        if (done) {
+          return this.return!()
         }
+
+        const [va, vb] = await Promise.all([ia.next(), ib.next()])
+        return va.done || vb.done ? this.return!() : { done: false, value: f(va.value, vb.value) }
+      },
+      return(value?: unknown) {
+        if (!done) {
+          done = true
+          if (typeof ia.return === 'function') {
+            ia.return()
+          }
+          if (typeof ib.return === 'function') {
+            ib.return()
+          }
+        }
+        return Promise.resolve({ done: true, value })
       }
     }
-  }
+  })
 }
 
 export function zipWith<A, B, C>(
@@ -72,12 +79,108 @@ export function zip<B>(fb: AsyncIterable<B>): <A>(fa: AsyncIterable<A>) => Async
   return (fa) => zip_(fa, fb)
 }
 
+export function zipWithPromise_<A, B, C>(
+  fa: AsyncIterable<A>,
+  fb: AsyncIterable<B>,
+  f: (a: A, b: B) => Promise<C>
+): AsyncIterable<C> {
+  return asyncIterable<C>(() => {
+    let done = false
+    const ia = fa[Symbol.asyncIterator]()
+    const ib = fb[Symbol.asyncIterator]()
+    return {
+      async next() {
+        if (done) {
+          return this.return!()
+        }
+
+        const [va, vb] = await Promise.all([ia.next(), ib.next()])
+        if (va.done || vb.done) {
+          return this.return!()
+        }
+        const value = await f(va.value, vb.value)
+        return { done: false, value }
+      },
+      return(value?: unknown) {
+        if (!done) {
+          done = true
+          if (typeof ia.return === 'function') {
+            ia.return()
+          }
+          if (typeof ib.return === 'function') {
+            ib.return()
+          }
+        }
+        return Promise.resolve({ done: true, value })
+      }
+    }
+  })
+}
+
+export function zipWithPromise<A, B, C>(
+  fb: AsyncIterable<B>,
+  f: (a: A, b: B) => Promise<C>
+): (fa: AsyncIterable<A>) => AsyncIterable<C> {
+  return (fa) => zipWithPromise_(fa, fb, f)
+}
+
+export function crossWith_<A, B, C>(
+  fa: AsyncIterable<A>,
+  fb: AsyncIterable<B>,
+  f: (a: A, b: B) => C
+): AsyncIterable<C> {
+  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+}
+
+export function crossWith<A, B, C>(
+  fb: AsyncIterable<B>,
+  f: (a: A, b: B) => C
+): (fa: AsyncIterable<A>) => AsyncIterable<C> {
+  return (fa) => crossWith_(fa, fb, f)
+}
+
+export function crossWithPromise_<A, B, C>(
+  fa: AsyncIterable<A>,
+  fb: AsyncIterable<B>,
+  f: (a: A, b: B) => Promise<C>
+): AsyncIterable<C> {
+  return bind_(fa, (a) => mapPromise_(fb, (b) => f(a, b)))
+}
+
+export function cross_<A, B>(fa: AsyncIterable<A>, fb: AsyncIterable<B>): AsyncIterable<readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
+}
+
+export function cross<B>(fb: AsyncIterable<B>): <A>(fa: AsyncIterable<A>) => AsyncIterable<readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
+}
+
 export function ap_<A, B>(fab: AsyncIterable<(a: A) => B>, fa: AsyncIterable<A>): AsyncIterable<B> {
-  return zipWith_(fab, fa, (f, a) => f(a))
+  return bind_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
 export function ap<A>(fa: AsyncIterable<A>): <B>(fab: AsyncIterable<(a: A) => B>) => AsyncIterable<B> {
   return (fab) => ap_(fab, fa)
+}
+
+export function apPromise_<A, B>(fab: AsyncIterable<(a: A) => Promise<B>>, fa: AsyncIterable<A>): AsyncIterable<B> {
+  return bind_(fab, (f) => mapPromise_(fa, (a) => f(a)))
+}
+
+export function apPromise<A>(fa: AsyncIterable<A>): <B>(fab: AsyncIterable<(a: A) => Promise<B>>) => AsyncIterable<B> {
+  return (fab) => apPromise_(fab, fa)
+}
+
+/*
+ * -------------------------------------------
+ * Applicative
+ * -------------------------------------------
+ */
+
+export function pure<A>(a: A): AsyncIterable<A> {
+  return asyncIterable(async function* () {
+    yield a
+  })
 }
 
 /*
@@ -151,6 +254,79 @@ export function filterMap_<A, B>(fa: AsyncIterable<A>, f: (a: A) => Option<B>): 
 
 export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => filterMap_(fa, f)
+}
+
+export function ipartition_<A, B extends A>(
+  fa: AsyncIterable<A>,
+  refinement: RefinementWithIndex<number, A, B>
+): readonly [AsyncIterable<A>, AsyncIterable<B>]
+export function ipartition_<A>(
+  fa: AsyncIterable<A>,
+  predicate: PredicateWithIndex<number, A>
+): readonly [AsyncIterable<A>, AsyncIterable<A>]
+export function ipartition_<A>(
+  fa: AsyncIterable<A>,
+  predicate: PredicateWithIndex<number, A>
+): readonly [AsyncIterable<A>, AsyncIterable<A>] {
+  return tuple(
+    asyncIterable(async function* () {
+      let n = -1
+      for await (const a of fa) {
+        n += 1
+        if (!predicate(n, a)) {
+          yield a
+        }
+      }
+    }),
+    asyncIterable(async function* () {
+      let n = -1
+      for await (const a of fa) {
+        n += 1
+        if (predicate(n, a)) {
+          yield a
+        }
+      }
+    })
+  )
+}
+
+export function ipartition<A, B extends A>(
+  refinement: RefinementWithIndex<number, A, B>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<B>]
+export function ipartition<A>(
+  predicate: PredicateWithIndex<number, A>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>]
+export function ipartition<A>(
+  predicate: PredicateWithIndex<number, A>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>] {
+  return (fa) => ipartition_(fa, predicate)
+}
+
+export function partition_<A, B extends A>(
+  fa: AsyncIterable<A>,
+  refinement: Refinement<A, B>
+): readonly [AsyncIterable<A>, AsyncIterable<B>]
+export function partition_<A>(
+  fa: AsyncIterable<A>,
+  predicate: Predicate<A>
+): readonly [AsyncIterable<A>, AsyncIterable<A>]
+export function partition_<A>(
+  fa: AsyncIterable<A>,
+  predicate: Predicate<A>
+): readonly [AsyncIterable<A>, AsyncIterable<A>] {
+  return ipartition_(fa, (_, a) => predicate(a))
+}
+
+export function partition<A, B extends A>(
+  refinement: Refinement<A, B>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<B>]
+export function partition<A>(
+  predicate: Predicate<A>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>]
+export function partition<A>(
+  predicate: Predicate<A>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>] {
+  return (fa) => partition_(fa, predicate)
 }
 
 export function ipartitionMap_<A, B, C>(
@@ -254,24 +430,14 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: AsyncIterable<A>) 
  * -------------------------------------------
  */
 
-async function* asyncIterMap<A, B>(ia: AsyncIterable<A>, f: (i: number, a: A) => Promise<B>) {
-  let n = -1
-  for await (const a of ia) {
-    n += 1
-    yield await f(n, a)
-  }
-}
-
-async function* syncIterMap<A, B>(ia: AsyncIterable<A>, f: (i: number, a: A) => B) {
-  let n = -1
-  for await (const a of ia) {
-    n += 1
-    yield f(n, a)
-  }
-}
-
 export function imap_<A, B>(fa: AsyncIterable<A>, f: (i: number, a: A) => B): AsyncIterable<B> {
-  return asyncIterable(() => syncIterMap(fa, f))
+  return asyncIterable(async function* () {
+    let n = -1
+    for await (const a of fa) {
+      n += 1
+      yield f(n, a)
+    }
+  })
 }
 
 export function imap<A, B>(f: (i: number, a: A) => B): (fa: AsyncIterable<A>) => AsyncIterable<B> {
@@ -279,7 +445,7 @@ export function imap<A, B>(f: (i: number, a: A) => B): (fa: AsyncIterable<A>) =>
 }
 
 export function map_<A, B>(fa: AsyncIterable<A>, f: (a: A) => B): AsyncIterable<B> {
-  return asyncIterable(() => syncIterMap(fa, (_, a) => f(a)))
+  return imap_(fa, (_, a) => f(a))
 }
 
 export function map<A, B>(f: (a: A) => B): (fa: AsyncIterable<A>) => AsyncIterable<B> {
@@ -287,7 +453,13 @@ export function map<A, B>(f: (a: A) => B): (fa: AsyncIterable<A>) => AsyncIterab
 }
 
 export function imapPromise_<A, B>(fa: AsyncIterable<A>, f: (i: number, a: A) => Promise<B>): AsyncIterable<B> {
-  return asyncIterable(() => asyncIterMap(fa, f))
+  return asyncIterable(async function* () {
+    let n = -1
+    for await (const a of fa) {
+      n += 1
+      yield await f(n, a)
+    }
+  })
 }
 
 export function imapPromise<A, B>(f: (i: number, a: A) => Promise<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
@@ -295,7 +467,7 @@ export function imapPromise<A, B>(f: (i: number, a: A) => Promise<B>): (fa: Asyn
 }
 
 export function mapPromise_<A, B>(fa: AsyncIterable<A>, f: (a: A) => Promise<B>): AsyncIterable<B> {
-  return asyncIterable(() => asyncIterMap(fa, (_, a) => f(a)))
+  return imapPromise_(fa, (_, a) => f(a))
 }
 
 export function mapPromise<A, B>(f: (a: A) => Promise<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
@@ -308,18 +480,20 @@ export function mapPromise<A, B>(f: (a: A) => Promise<B>): (fa: AsyncIterable<A>
  * -------------------------------------------
  */
 
-async function* syncIterBind<A, B>(ia: AsyncIterable<A>, f: (a: A) => AsyncIterable<B>) {
-  for await (const a of ia) {
-    yield* f(a)
-  }
-}
-
 export function bind_<A, B>(ma: AsyncIterable<A>, f: (a: A) => AsyncIterable<B>): AsyncIterable<B> {
-  return asyncIterable(() => syncIterBind(ma, f))
+  return asyncIterable(async function* () {
+    for await (const a of ma) {
+      yield* f(a)
+    }
+  })
 }
 
 export function bind<A, B>(f: (a: A) => AsyncIterable<B>): (ma: AsyncIterable<A>) => AsyncIterable<B> {
   return (ma) => bind_(ma, f)
+}
+
+export function flatten<A>(mma: AsyncIterable<AsyncIterable<A>>): AsyncIterable<A> {
+  return bind_(mma, identity)
 }
 
 /*
@@ -350,6 +524,17 @@ export function append<A>(element: A): (fa: AsyncIterable<A>) => AsyncIterable<A
   return (fa) => append_(fa, element)
 }
 
+export function prepend_<A>(fa: AsyncIterable<A>, element: A): AsyncIterable<A> {
+  return asyncIterable(async function* () {
+    yield element
+    yield* fa
+  })
+}
+
+export function prepend<A>(element: A): (fa: AsyncIterable<A>) => AsyncIterable<A> {
+  return (fa) => prepend_(fa, element)
+}
+
 export function take_<A>(fa: AsyncIterable<A>, n: number): AsyncIterable<A> {
   return asyncIterable(async function* () {
     const ia = fa[Symbol.asyncIterator]()
@@ -374,3 +559,68 @@ export async function toArray<A>(fa: AsyncIterable<A>): Promise<ReadonlyArray<A>
   }
   return as
 }
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const Functor = HKT.instance<P.Functor<[HKT.URI<AsyncIterableURI>]>>({
+  invmap_: (fa, f, _) => map_(fa, f),
+  invmap: (f) => (fa) => map_(fa, f),
+  map_,
+  map
+})
+
+export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<AsyncIterableURI>]>>({
+  imap_,
+  imap
+})
+
+export const Apply = HKT.instance<P.Apply<[HKT.URI<AsyncIterableURI>]>>({
+  ...Functor,
+  ap_,
+  ap,
+  crossWith_,
+  crossWith,
+  cross_,
+  cross
+})
+
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<AsyncIterableURI>]>>({
+  ...Apply,
+  unit,
+  pure
+})
+
+export const Monad = HKT.instance<P.Monad<[HKT.URI<AsyncIterableURI>]>>({
+  ...Applicative,
+  bind_,
+  bind,
+  flatten
+})
+
+export const Filterable = HKT.instance<P.Filterable<[HKT.URI<AsyncIterableURI>]>>({
+  filter_,
+  filter,
+  filterMap_,
+  filterMap,
+  partition_,
+  partition,
+  partitionMap_,
+  partitionMap
+})
+
+export const FilterableWithIndex = HKT.instance<P.FilterableWithIndex<[HKT.URI<AsyncIterableURI>]>>({
+  ifilter_,
+  ifilter,
+  ifilterMap_,
+  ifilterMap,
+  ipartition_,
+  ipartition,
+  ipartitionMap_,
+  ipartitionMap
+})
+
+export { AsyncIterableURI } from './Modules'
