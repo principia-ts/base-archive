@@ -52,9 +52,9 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.4.0",
+    "@principia/base": "^0.5.0",
     "@principia/compile": "^0.4.0",
-    "@principia/io": "^0.4.0",
+    "@principia/io": "^0.5.0",
     "core-js": "3"
   },
   "publishConfig": {
