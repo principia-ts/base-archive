@@ -1,6 +1,6 @@
 {
   "name": "@principia/koa",
-  "version": "0.2.0",
+  "version": "0.5.0",
   "description": "Koa Adapter",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -51,13 +51,13 @@
     "test": "yarn build:test && jest build/test"
   },
   "dependencies": {
-    "@principia/base": "^0.4.0",
+    "@principia/base": "^0.5.0",
     "@principia/compile": "^0.4.0",
-    "@principia/free": "^0.4.0",
-    "@principia/http": "^0.4.0",
-    "@principia/io": "^0.4.0",
-    "@principia/model": "^0.4.0",
-    "@principia/node": "^0.4.0",
+    "@principia/free": "^0.5.0",
+    "@principia/http": "^0.5.0",
+    "@principia/io": "^0.5.0",
+    "@principia/model": "^0.5.0",
+    "@principia/node": "^0.5.0",
     "core-js": "3",
     "koa": "^2.13.1",
     "koa-bodyparser": "4.3.0",
