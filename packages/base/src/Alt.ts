@@ -1,14 +1,23 @@
-import type { Functor } from './Functor'
-import type * as HKT from './HKT'
+import type { Functor, FunctorMin } from './Functor'
+
+import { getFunctor } from './Functor'
+import * as HKT from './HKT'
 
 export interface Alt<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly alt_: AltFn_<F, C>
   readonly alt: AltFn<F, C>
 }
 
-export interface AltW<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Alt<F, C> {
-  readonly altW_: AltWFn_<F, C>
-  readonly altW: AltWFn<F, C>
+export type AltMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly alt_: AltFn_<F, C>
+} & FunctorMin<F, C>
+
+export function getAlt<F extends HKT.URIS, C = HKT.Auto>(F: AltMin<F, C>): Alt<F, C> {
+  return HKT.instance<Alt<F, C>>({
+    ...getFunctor(F),
+    alt_: F.alt_,
+    alt: (that) => (fa) => F.alt_(fa, that)
+  })
 }
 
 export interface AltFn<F extends HKT.URIS, C = HKT.Auto> {
@@ -77,6 +86,7 @@ export interface AltFn_<F extends HKT.URIS, C = HKT.Auto> {
     A
   >
 }
+
 export interface AltWFn<F extends HKT.URIS, C = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     that: () => HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>

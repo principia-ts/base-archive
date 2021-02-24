@@ -3,10 +3,10 @@ import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } f
 import type { AsyncIterableURI } from './Modules'
 import type { Monoid } from './Monoid'
 import type { Option } from './Option'
-import type * as P from './typeclass'
 
-import { identity , tuple } from './Function'
+import { identity, tuple } from './Function'
 import * as HKT from './HKT'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -566,12 +566,11 @@ export async function toArray<A>(fa: AsyncIterable<A>): Promise<ReadonlyArray<A>
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<AsyncIterableURI>]>>({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: (f) => (fa) => map_(fa, f),
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<AsyncIterableURI>]> = P.getFunctor({
+  map_
 })
+
+export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<AsyncIterableURI>]>>({
   imap_,

@@ -4,6 +4,10 @@ export interface Fail<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC>
   readonly fail: FailFn<F, TC>
 }
 
+export type FailMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly fail: FailFn<F, C>
+}
+
 export interface FailFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     E,

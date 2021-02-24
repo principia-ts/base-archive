@@ -1,7 +1,6 @@
 import type { Has } from '@principia/base/Has'
 import type { List } from '@principia/base/List'
 import type { Option } from '@principia/base/Option'
-import type { Chunk } from '@principia/io/Chunk'
 import type { Clock } from '@principia/io/Clock'
 import type { UIO } from '@principia/io/IO'
 import type { URef } from '@principia/io/IORef'
@@ -36,7 +35,7 @@ export class TestRandom implements Random {
       buff.copy({ booleans: Li.concat_(Li.from(booleans), buff.booleans) })
     )
   }
-  feedBytes(...bytes: ReadonlyArray<Chunk<Byte>>): UIO<void> {
+  feedBytes(...bytes: ReadonlyArray<ReadonlyArray<Byte>>): UIO<void> {
     return Ref.update_(this.bufferState, (data) => data.copy({ bytes: Li.concat_(Li.from(bytes), data.bytes) }))
   }
   feedChars(...chars: ReadonlyArray<string>): UIO<void> {
@@ -64,7 +63,7 @@ export class TestRandom implements Random {
   private bufferedBoolean = (buffer: Buffer): readonly [Option<boolean>, Buffer] => {
     return [Li.first(buffer.booleans), buffer.copy({ booleans: Li.drop_(buffer.booleans, 1) })]
   }
-  private bufferedByte    = (buffer: Buffer): readonly [Option<Chunk<Byte>>, Buffer] => {
+  private bufferedByte    = (buffer: Buffer): readonly [Option<ReadonlyArray<Byte>>, Buffer] => {
     return [Li.first(buffer.bytes), buffer.copy({ bytes: Li.drop_(buffer.bytes, 1) })]
   }
   private bufferedChar    = (buffer: Buffer): readonly [Option<string>, Buffer] => {
@@ -108,7 +107,7 @@ export class TestRandom implements Random {
 
   private randomBoolean = this.randomBits(1)['<$>']((n) => n !== 0)
 
-  private randomBytes = (length: number): UIO<Chunk<Byte>> => {
+  private randomBytes = (length: number): UIO<ReadonlyArray<Byte>> => {
     const loop = (i: number, rnd: UIO<number>, n: number, acc: UIO<List<Byte>>): UIO<List<Byte>> => {
       if (i === length) {
         return acc['<$>'](Li.reverse)
@@ -227,7 +226,7 @@ export class TestRandom implements Random {
   static feedInts(...ints: ReadonlyArray<number>) {
     return I.asksServiceM(TestRandomTag)((tr) => tr.feedInts(...ints))
   }
-  static feedBytes(...bytes: ReadonlyArray<Chunk<Byte>>) {
+  static feedBytes(...bytes: ReadonlyArray<ReadonlyArray<Byte>>) {
     return I.asksServiceM(TestRandomTag)((tr) => tr.feedBytes(...bytes))
   }
   static feedChars(...chars: ReadonlyArray<string>) {
@@ -283,7 +282,7 @@ const defaultData = new Data(1071905196, 1911589680)
 class Buffer {
   constructor(
     readonly booleans: List<boolean> = Li.empty(),
-    readonly bytes: List<Chunk<Byte>> = Li.empty(),
+    readonly bytes: List<ReadonlyArray<Byte>> = Li.empty(),
     readonly chars: List<string> = Li.empty(),
     readonly doubles: List<number> = Li.empty(),
     readonly integers: List<number> = Li.empty(),

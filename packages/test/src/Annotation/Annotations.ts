@@ -6,16 +6,15 @@ import type { Layer } from '@principia/io/Layer'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import * as Eq from '@principia/base/Eq'
 import { flow, pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
 import * as HS from '@principia/base/HashSet'
-import { eqFiberId, FiberId } from '@principia/io/Fiber'
+import { eqFiberId } from '@principia/io/Fiber'
 import * as FR from '@principia/io/FiberRef'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 
-import { HashEqFiber, HashEqFiberId } from '../util'
+import { HashEqFiber } from '../util'
 import { fibers } from './TestAnnotation'
 import { TestAnnotationMap } from './TestAnnotationMap'
 

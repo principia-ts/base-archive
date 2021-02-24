@@ -4,13 +4,13 @@
  * -------------------------------------------
  */
 
-import type * as P from './typeclass'
 import type { Stack } from './util/support/Stack'
 
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import { EvalURI } from './Modules'
 import * as O from './Option'
+import * as P from './typeclass'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 
@@ -394,12 +394,11 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<EvalURI>]>>({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: (f, _) => (fa) => map_(fa, f),
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<EvalURI>]> = P.getFunctor({
+  map_
 })
+
+export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const Apply = HKT.instance<P.Apply<[HKT.URI<EvalURI>]>>({
   ...Functor,

@@ -1,8 +1,19 @@
-import type * as HKT from './HKT'
+import * as HKT from './HKT'
 
 export interface Semigroupal<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly cross_: CrossFn_<F, C>
   readonly cross: CrossFn<F, C>
+}
+
+export type SemigroupalMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly cross_: CrossFn_<F, C>
+}
+
+export function getSemigroupal<F extends HKT.URIS, C = HKT.Auto>(F: SemigroupalMin<F, C>): Semigroupal<F, C> {
+  return HKT.instance<Semigroupal<F, C>>({
+    cross: (fb) => (fa) => F.cross_(fa, fb),
+    ...F
+  })
 }
 
 export interface SemigroupalComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>

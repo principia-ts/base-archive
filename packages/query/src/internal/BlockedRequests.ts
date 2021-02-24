@@ -6,11 +6,11 @@ import type { BlockedRequest } from './BlockedRequest'
 import type { Sequential } from './Sequential'
 import type { List } from '@principia/base/List'
 
+import * as A from '@principia/base/Array'
 import * as Ev from '@principia/base/Eval'
 import { pipe } from '@principia/base/Function'
 import * as L from '@principia/base/List'
 import * as Set from '@principia/base/Set'
-import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 
@@ -123,17 +123,17 @@ export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, vo
           I.gen(function* (_) {
             const completedRequests = yield* _(
               dataSource.runAll(
-                C.map_(
+                A.map_(
                   sequential,
-                  C.map((r) => r.request)
+                  A.map((r) => r.request)
                 )
               )
             )
 
-            const blockedRequests = pipe(sequential, C.flatten)
+            const blockedRequests = pipe(sequential, A.flatten)
 
             let leftovers = completedRequests.requests
-            for (const r of C.map_(blockedRequests, (br) => br.request)) {
+            for (const r of A.map_(blockedRequests, (br) => br.request)) {
               leftovers = Set.remove_(eqRequest)(leftovers, r)
             }
 

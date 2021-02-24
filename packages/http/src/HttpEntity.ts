@@ -1,14 +1,9 @@
-import type { HttpConnection } from './HttpConnection'
 import type { HttpContentType } from './utils'
 import type { Byte } from '@principia/base/Byte'
-import type { Has } from '@principia/base/Has'
-import type { Chunk } from '@principia/io/Chunk'
 import type { IO } from '@principia/io/IO'
 
 import * as I from '@principia/io/IO'
 import * as S from '@principia/io/Stream'
-
-import { HttpConnectionTag } from './HttpConnection'
 
 export abstract class HttpEntity<R, E, A> {
   readonly _R!: (_: R) => void
@@ -18,9 +13,9 @@ export abstract class HttpEntity<R, E, A> {
   abstract run(): IO<R, E, A>
 }
 
-export class Strict extends HttpEntity<unknown, never, Chunk<Byte>> {
+export class Strict extends HttpEntity<unknown, never, ReadonlyArray<Byte>> {
   readonly _tag = 'Strict'
-  constructor(readonly contentType: HttpContentType, readonly data: Chunk<Byte>) {
+  constructor(readonly contentType: HttpContentType, readonly data: ReadonlyArray<Byte>) {
     super()
   }
   run() {
@@ -28,7 +23,7 @@ export class Strict extends HttpEntity<unknown, never, Chunk<Byte>> {
   }
 }
 
-export class Stream<R, E, A> extends HttpEntity<R, E, Chunk<A>> {
+export class Stream<R, E, A> extends HttpEntity<R, E, ReadonlyArray<A>> {
   readonly _tag = 'Stream'
   constructor(readonly contentType: HttpContentType, readonly stream: S.Stream<R, E, A>) {
     super()

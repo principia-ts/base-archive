@@ -10,7 +10,6 @@ import type { Option } from './Option'
 import type { Reader } from './Reader'
 import type { ReadonlyRecord } from './Record'
 import type { Show } from './Show'
-import type { StateIn, StateOut } from './StateT'
 import type { Store } from './Store'
 import type { These } from './These'
 import type { Tuple2 } from './Tuple2'
@@ -58,12 +57,6 @@ export type ReaderURI = typeof ReaderURI
 export const RecordURI = 'Record'
 export type RecordURI = typeof RecordURI
 
-export const StateInURI = 'StateIn'
-export type StateInURI = typeof StateInURI
-
-export const StateOutURI = 'StateOut'
-export type StateOutURI = typeof StateOutURI
-
 export const TheseURI = 'These'
 export type TheseURI = typeof TheseURI
 
@@ -98,8 +91,6 @@ declare module './HKT' {
     [OptionURI]: Option<A>
     [ReaderURI]: Reader<R, A>
     [RecordURI]: ReadonlyRecord<N, A>
-    [StateInURI]: StateIn<S, A>
-    [StateOutURI]: StateOut<S, A>
     [TheseURI]: These<E, A>
     [Tuple2URI]: Tuple2<A, I>
     [ShowURI]: Show<A>

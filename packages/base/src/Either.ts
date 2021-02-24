@@ -1064,12 +1064,11 @@ export function getWitherable<E>(M: P.Monoid<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export const Functor: P.Functor<[HKT.URI<EitherURI>], V> = HKT.instance({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => <E>(fa: Either<E, A>) => map_(fa, f),
-  map,
+export const Functor: P.Functor<[HKT.URI<EitherURI>], V> = P.getFunctor({
   map_
 })
+
+export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 /**
  * @category Instances
@@ -1185,12 +1184,12 @@ export const Foldable: P.Foldable<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const Semialign: P.Semialign<[HKT.URI<EitherURI>], V> = HKT.instance({
-  alignWith_,
-  alignWith,
-  align_,
-  align
+export const Semialign: P.Semialign<[HKT.URI<EitherURI>], V> = P.getSemialign({
+  map_,
+  alignWith_
 })
+
+export const { alignCombine_, alignCombine, padZip_, padZip, padZipWith_, padZipWith, zipAll_, zipAll } = Semialign
 
 /**
  * @category Instances

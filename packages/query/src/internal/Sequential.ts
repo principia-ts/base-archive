@@ -1,18 +1,17 @@
 import type { DataSource } from '../DataSource'
 import type { BlockedRequest } from './BlockedRequest'
-import type { Chunk } from '@principia/io/Chunk'
 
+import * as A from '@principia/base/Array'
 import * as It from '@principia/base/Iterable'
 import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
-import * as C from '@principia/io/Chunk'
 
 import { eqDataSource } from '../DataSource'
 
 export class Sequential<R> {
   readonly _tag = 'Sequential'
 
-  constructor(private map: ReadonlyMap<DataSource<any, any>, Chunk<Chunk<BlockedRequest<any>>>>) {}
+  constructor(private map: ReadonlyMap<DataSource<any, any>, ReadonlyArray<ReadonlyArray<BlockedRequest<any>>>>) {}
 
   ['++']<R1>(that: Sequential<R1>): Sequential<R & R1> {
     return new Sequential(
@@ -20,7 +19,7 @@ export class Sequential<R> {
         Map.insertAt_(eqDataSource)(
           map,
           k,
-          O.match_(Map.lookupAt_(eqDataSource)(map, k), () => C.empty(), C.concat(v))
+          O.match_(Map.lookupAt_(eqDataSource)(map, k), () => A.empty(), A.concat(v))
         )
       )
     )
@@ -34,7 +33,7 @@ export class Sequential<R> {
     return this.map.keys()
   }
 
-  get toIterable(): Iterable<readonly [DataSource<R, any>, Chunk<Chunk<BlockedRequest<any>>>]> {
+  get toIterable(): Iterable<readonly [DataSource<R, any>, ReadonlyArray<ReadonlyArray<BlockedRequest<any>>>]> {
     return this.map.entries()
   }
 }

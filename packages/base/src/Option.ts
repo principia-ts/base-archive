@@ -894,20 +894,19 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  */
 
-export const Align: P.Align<[HKT.URI<OptionURI>]> = HKT.instance({
+export const Align: P.Align<[HKT.URI<OptionURI>]> = P.getAlign({
+  map_,
   alignWith_,
-  alignWith,
-  align_,
-  align,
   nil: None
 })
 
-export const Functor: P.Functor<[HKT.URI<OptionURI>]> = HKT.instance({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: Option<A>) => map_(fa, f),
-  map,
+export const { alignCombine_, alignCombine, padZip_, padZip, padZipWith_, padZipWith, zipAll_, zipAll } = Align
+
+export const Functor: P.Functor<[HKT.URI<OptionURI>]> = P.getFunctor({
   map_
 })
+
+export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const Alt: P.Alt<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Functor,

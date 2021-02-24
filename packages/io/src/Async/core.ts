@@ -1146,15 +1146,14 @@ export function runAsyncEnv<R, E, A>(
  * -------------------------------------------
  */
 
-export const FunctorAsync: P.Functor<[URI], V> = HKT.instance({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => <R, E>(fa: Async<R, E, A>) => map_(fa, f),
-  map_,
-  map
+export const Functor: P.Functor<[URI], V> = P.getFunctor({
+  map_
 })
 
-export const SequentialApplyAsync: P.Apply<[URI], V> = HKT.instance({
-  ...FunctorAsync,
+export const { flap_, flap, fcross_, fcross } = Functor
+
+export const ApplySeq: P.Apply<[URI], V> = HKT.instance({
+  ...Functor,
   ap_,
   ap,
   crossWith_,
@@ -1163,8 +1162,8 @@ export const SequentialApplyAsync: P.Apply<[URI], V> = HKT.instance({
   cross
 })
 
-export const ParallelApplyAsync: P.Apply<[URI], V> = HKT.instance({
-  ...FunctorAsync,
+export const ApplyPar: P.Apply<[URI], V> = HKT.instance({
+  ...Functor,
   ap_: apPar_,
   ap: apPar,
   crossWith_: crossWithPar_,
@@ -1173,20 +1172,20 @@ export const ParallelApplyAsync: P.Apply<[URI], V> = HKT.instance({
   cross: crossPar
 })
 
-export const ApplicativeAsync: P.Applicative<[URI], V> = HKT.instance({
-  ...SequentialApplyAsync,
+export const ApplicativeSeq: P.Applicative<[URI], V> = HKT.instance({
+  ...ApplySeq,
   pure,
   unit
 })
 
-export const MonadAsync: P.Monad<[URI], V> = HKT.instance({
-  ...ApplicativeAsync,
+export const Monad: P.Monad<[URI], V> = HKT.instance({
+  ...ApplicativeSeq,
   bind_,
   bind,
   flatten
 })
 
-export const DoAsync: P.Do<[URI], V> = P.deriveDo(MonadAsync)
+export const DoAsync: P.Do<[URI], V> = P.deriveDo(Monad)
 
 export const letS = DoAsync.letS
 
@@ -1213,7 +1212,7 @@ const adapter: {
   return new D.GenHKT(_)
 }
 
-export const gen = D.genF(MonadAsync, { adapter })
+export const gen = D.genF(Monad, { adapter })
 
 /*
  * -------------------------------------------

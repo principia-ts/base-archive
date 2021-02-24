@@ -3,12 +3,12 @@ import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } f
 import type { IterableURI } from './Modules'
 import type { Monoid } from './Monoid'
 import type { Option } from './Option'
-import type * as P from './typeclass'
 
 import * as A from './Array'
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -554,12 +554,11 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<IterableURI>]>>({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: (f) => (fa) => map_(fa, f),
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<IterableURI>]> = P.getFunctor({
+  map_
 })
+
+export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<IterableURI>]>>({
   imap_,

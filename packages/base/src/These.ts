@@ -4,7 +4,7 @@ import type { Show } from './Show'
 
 import * as E from './Either'
 import { makeEq } from './Eq/core'
-import { flow, identity, tuple } from './Function'
+import { identity } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
 import { makeShow } from './Show/core'
@@ -177,29 +177,13 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[HKT.URI<Th
  */
 
 export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
-  const catchAll_: P.CatchAllFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>   = (fa, f) =>
+  const catchAll_: P.CatchAllFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, f) =>
     fa._tag === 'Left' ? f(fa.left) : fa
-  const catchAll: P.CatchAllFn<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>     = (f) => (fa) => catchAll_(fa, f)
-  const catchSome_: P.CatchSomeFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = <A, A1>(
-    fa: These<E, A>,
-    f: (e: E) => O.Option<These<E, A1>>
-  ) =>
-    catchAll_(
-      fa,
-      flow(
-        f,
-        O.getOrElse((): These<E, A | A1> => fa)
-      )
-    )
 
-  return HKT.instance<P.ApplicativeExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
+  return P.getApplicativeExcept({
     ...getApplicative(SE),
-    fail: Left,
     catchAll_,
-    catchAll,
-    catchSome_,
-    catchSome: (f) => (fa) => catchSome_(fa, f),
-    attempt: flow(map(E.Right), catchAll(flow(E.Left, Right)))
+    fail: Left
   })
 }
 
@@ -229,17 +213,9 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HK
       ? Both(fa.left, f(fa.right, fb.right))
       : Both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
 
-  return HKT.instance({
-    invmap_: (fa, f, _) => map_(fa, f),
-    invmap: <A, B>(f: (a: A) => B, _: (b: B) => A) => (fa: These<E, A>) => map_(fa, f),
+  return P.getApply({
     map_,
-    map,
-    crossWith_,
-    crossWith: <A, B, C>(fb: These<E, B>, f: (a: A, b: B) => C) => (fa: These<E, A>) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-    cross: <B>(fb: These<E, B>) => <A>(fa: These<E, A>) => crossWith_(fa, fb, tuple),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: <A>(fa: These<E, A>) => <B>(fab: These<E, (a: A) => B>) => crossWith_(fab, fa, (f, a) => f(a))
+    crossWith_
   })
 }
 

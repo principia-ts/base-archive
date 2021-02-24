@@ -68,22 +68,9 @@ export function getApply<M>(M: P.Monoid<M>): P.Apply<[HKT.URI<Tuple2URI>], HKT.F
     M.combine_(snd(fa), snd(fb))
   ]
 
-  const ap_: P.ApFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (fab, fa) => [
-    fst(fab)(fst(fa)),
-    M.combine_(snd(fab), snd(fa))
-  ]
-
-  return HKT.instance<P.Apply<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
-    invmap_: (fa, f, _) => map_(fa, f),
-    invmap: (f, _) => (fa) => map_(fa, f),
+  return P.getApply({
     map_,
-    map,
-    crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple_),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple_),
-    ap_,
-    ap: (fa) => (fab) => ap_(fab, fa)
+    crossWith_
   })
 }
 

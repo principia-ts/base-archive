@@ -1,7 +1,6 @@
 import type { DecodeError } from './DecodeError'
 import type { MonadDecoder } from './DecoderK'
 import type { RoseTree } from '@principia/base/RoseTree'
-import type * as P from '@principia/base/typeclass'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -9,6 +8,7 @@ import * as Eval from '@principia/base/Eval'
 import { identity, pipe, tuple } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
 import * as T from '@principia/base/RoseTree'
+import * as P from '@principia/base/typeclass'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import { fold, info, leaf } from './DecodeError'
@@ -153,16 +153,12 @@ export function getDecodeErrorsValidation<M>(
       P.Bifunctor<HKT.UHKT2<M>, HKT.Auto> &
       P.Fail<HKT.UHKT2<M>, HKT.Auto>
   >({
-    invmap_: M.invmap_,
-    invmap: M.invmap,
-    map_: M.map_,
-    map: M.map,
-    crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
+    ...P.getMonad({
+      map_: M.map_,
+      crossWith_,
+      pure: M.pure,
+      bind_: M.bind_
+    }),
     mapLeft_: M.mapLeft_,
     mapLeft: M.mapLeft,
     bimap_: M.bimap_,

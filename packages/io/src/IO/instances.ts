@@ -1,9 +1,8 @@
 import type { IOURI } from '../Modules'
 import type { V } from './core'
-import type * as P from '@principia/base/typeclass'
 
 import * as HKT from '@principia/base/HKT'
-import { getOptionT } from '@principia/base/OptionT'
+import * as P from '@principia/base/typeclass'
 import { mapNF, sequenceSF } from '@principia/base/typeclass'
 
 import { apPar, apPar_, crossPar, crossPar_, crossWithPar, crossWithPar_ } from './combinators'
@@ -24,18 +23,16 @@ import {
   crossWith_,
   fail,
   flatten,
-  map,
   map_,
   pure,
   unit
 } from './core'
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<IOURI>], V>>({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: (f, _) => (fa) => map_(fa, f),
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<IOURI>], V> = P.getFunctor({
+  map_
 })
+
+export const { flap_, flap, fcross_, fcross } = Functor
 
 export const Apply = HKT.instance<P.Apply<[HKT.URI<IOURI>], V>>({
   ...Functor,
@@ -60,6 +57,9 @@ export const ApplyPar = HKT.instance<P.Apply<[HKT.URI<IOURI>], V>>({
 export const mapN    = mapNF(Apply)
 export const mapNPar = mapNF(ApplyPar)
 
+export const sequenceS    = sequenceSF(Apply)
+export const sequenceSPar = sequenceSF(ApplyPar)
+
 export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IOURI>], V>>({
   ...Apply,
   pure,
@@ -71,9 +71,6 @@ export const ApplicativePar = HKT.instance<P.Applicative<[HKT.URI<IOURI>], V>>({
   pure,
   unit
 })
-
-export const sequenceS    = sequenceSF(Applicative)
-export const sequenceSPar = sequenceSF(ApplicativePar)
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<IOURI>], V>>({
   ...Applicative,
@@ -92,5 +89,3 @@ export const MonadExcept = HKT.instance<P.MonadExcept<[HKT.URI<IOURI>], V>>({
   absolve,
   fail
 })
-
-export const IOOption = getOptionT(Monad)

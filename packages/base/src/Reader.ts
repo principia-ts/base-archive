@@ -1,8 +1,8 @@
+import type * as HKT from './HKT'
 import type { ReaderURI } from './Modules'
-import type * as P from './typeclass'
 
 import { flow, identity, tuple } from './Function'
-import * as HKT from './HKT'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -206,24 +206,17 @@ export function unit(): Reader<unknown, void> {
   return () => undefined
 }
 
-export const MonadEnv = HKT.instance<P.MonadEnv<[HKT.URI<ReaderURI>], V>>({
-  invmap_: (ra, f, _) => map_(ra, f),
-  invmap: (f, _) => (ra) => map_(ra, f),
+export const MonadEnv: P.MonadEnv<[HKT.URI<ReaderURI>], V> = P.getMonadEnv({
   map_,
-  map,
   crossWith_,
-  crossWith,
   ap_,
-  ap,
   cross_,
-  cross,
   asks,
-  giveAll,
+  giveAll_,
   pure,
-  unit,
-  bind,
-  bind_,
-  flatten
+  bind_
 })
+
+export const { as_, as, fcross_, fcross, flap_, flap } = MonadEnv
 
 export { ReaderURI } from './Modules'

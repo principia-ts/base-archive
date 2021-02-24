@@ -757,12 +757,11 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<SyncURI>], V>>({
-  invmap_: (fa, f, _) => map_(fa, f),
-  invmap: (f) => (fa) => map_(fa, f),
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<SyncURI>], V> = P.getFunctor({
+  map_
 })
+
+export const { flap_, flap, fcross_, fcross } = Functor
 
 export const Bifunctor = HKT.instance<P.Bifunctor<[HKT.URI<SyncURI>], V>>({
   ...Functor,
