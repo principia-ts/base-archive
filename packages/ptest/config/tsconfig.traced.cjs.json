@@ -1,0 +1,29 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "sourceMap": true,
+    "module": "commonjs",
+    "target": "es2020",
+    "rootDir": "../src-cjs",
+    "outDir": "../dist/dist-traced/cjs",
+    "tsBuildInfoFile": "../tsbuildinfo/traced-cjs.tsbuildinfo",
+    "plugins": [
+      {
+        "after": true,
+        "transform": "@0x706b/ts-transform-fix-esm",
+        "relativeProjectRoot": "../../",
+        "createRequire": false
+      },
+      {
+        "transform": "../../compile/src/index.ts",
+        "moduleMap": {
+          "^src/(.*)": "(@principia/ptest): _src/$1"
+        }
+      }
+    ]
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src-cjs"]
+}

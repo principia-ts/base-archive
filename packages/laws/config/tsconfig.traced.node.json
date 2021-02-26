@@ -1,0 +1,28 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "module": "es6",
+    "target": "es2020",
+    "rootDir": "../src",
+    "outDir": "../dist/dist-traced/node",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "after": true,
+        "transform": "@0x706b/ts-transform-fix-esm",
+        "relativeProjectRoot": "../../"
+      },
+      {
+        "transform": "../../compile/src/index.ts",
+        "moduleMap": {
+          "^src/(.*)": "(@principia/laws): _src/$1"
+        }
+      }
+    ],
+    "tsBuildInfoFile": "../tsbuildinfo/traced-node.tsbuildinfo"
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src"]
+}

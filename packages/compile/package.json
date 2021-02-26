@@ -7,36 +7,38 @@
   "author": "Peter Krol <peter@peterkrol.com>",
   "exports": {
     ".": {
-      "import": "./dist/dist/esm-fix/index.js",
-      "require": "./dist/dist/cjs/index.js"
+      "browser": "./dist/dist/esm/index.js",
+      "node": {
+        "import": "./dist/dist/node/index.js",
+        "require": "./dist/dist/cjs/index.js"
+      }
     },
     "./*": {
-      "import": "./dist/dist/esm-fix/*",
-      "require": "./dist/dist/cjs/*.js"
+      "browser": "./dist/dist/esm/*",
+      "node": {
+        "import": "./dist/dist/node/*",
+        "require": "./dist/dist/cjs/*"
+      }
     }
   },
   "main": "dist/dist/cjs/index.js",
-  "module": "./dist/dist/esm-shake/index.js",
+  "module": "./dist/dist/esm/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
-    "buildAll": "yarn build:types && yarn build:esm-fix && yarn build:intermediary && yarn build:esm-shake && yarn build:cjs && yarn build:postprocess",
-    "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary",
-    "build:esm-fix": "ttsc --build ./config/tsconfig.esm-fix.json",
-    "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
+    "build": "yarn build:types && yarn build:node && yarn build:intermediary && yarn build:esm && yarn build:cjs",
+    "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary-build",
+    "build:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm dist/dist/.intermediary-build",
     "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
+    "build:node": "ttsc --build ./config/tsconfig.node.json",
     "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
+    "buildAll": "yarn build && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "lint": "eslint .",
-    "prepublish": "yarn buildAll && rimraf dist/dist/.intermediary",
-    "publish:package": "yarn version --no-git-tag-version && yarn clean && yarn build && yarn publish --no-git-tag-version dist",
-    "test": "yarn build:test && jest build/test"
-  },
-  "dependencies": {
-    "core-js": "3"
+    "prepublish": "yarn buildAll"
   },
   "publishConfig": {
     "access": "public",

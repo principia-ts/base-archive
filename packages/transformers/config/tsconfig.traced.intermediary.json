@@ -4,16 +4,22 @@
     "incremental": true,
     "declaration": false,
     "sourceMap": true,
-    "module": "es2015",
-    "target": "es2020",
+    "module": "esnext",
+    "target": "esnext",
     "rootDir": "../src",
-    "outDir": "../dist/dist-traced/.intermediary",
+    "outDir": "../dist/dist/.traced-intermediary-build",
     "tsBuildInfoFile": "../tsbuildinfo/traced-intermediary.tsbuildinfo",
     "plugins": [
       {
+        "after": true,
+        "transform": "@0x706b/ts-transform-fix-esm",
+        "relativeProjectRoot": "../../",
+        "createRequire": false
+      },
+      {
         "transform": "../../compile/src/index.ts",
         "moduleMap": {
-          "^src/(.*)": "(@principia/base): _src/$1"
+          "^src/(.*)": "(@principia/transformers): _src/$1"
         }
       }
     ]

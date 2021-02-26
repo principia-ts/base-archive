@@ -75,13 +75,14 @@ abstract class IOSyntax<R, E, A> {
 }
 
 export abstract class IO<R, E, A> extends IOSyntax<R, E, A> {
-  readonly [_U] = IOURI;
+  readonly [_U]: IOURI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
   readonly [_R]: (_: R) => void
 
   constructor() {
     super()
+    this[_U] = IOURI
   }
 
   get [_I](): Instruction {
@@ -424,7 +425,7 @@ export abstract class FFI<R, E, A> extends IO<R, E, A> {
   readonly _S1!: (_: unknown) => void
   readonly _S2!: () => never;
 
-  readonly [_U] = IOURI;
+  readonly [_U]!: IOURI;
   readonly [_E]!: () => E;
   readonly [_A]!: () => A;
   readonly [_R]!: (_: R) => void

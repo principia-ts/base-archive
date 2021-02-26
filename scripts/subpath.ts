@@ -16,19 +16,27 @@ pipe(
       const base            = path.split('/').slice(1)
       base[base.length - 1] = 'index.js'
       const basePath        = ['.', ...base.slice(0, -1)].join('/')
-      const esm             = ['.', 'dist', 'dist', 'esm-fix', ...base].join('/')
+      const esm             = ['.', 'dist', 'dist', 'esm', ...base].join('/')
       const cjs             = ['.', 'dist', 'dist', 'cjs', ...base].join('/')
-      const esm_traced      = ['.', 'dist', 'dist-traced', 'esm-fix', ...base].join('/')
+      const node            = ['.', 'dist', 'dist', 'node', ...base].join('/')
+      const esm_traced      = ['.', 'dist', 'dist-traced', 'esm', ...base].join('/')
       const cjs_traced      = ['.', 'dist', 'dist-traced', 'cjs', ...base].join('/')
+      const node_traced     = ['.', 'dist', 'dist-traced', 'node', ...base].join('/')
       return {
         ...b,
         [basePath]: {
           traced: {
-            import: esm_traced,
-            require: cjs_traced
+            browser: esm_traced,
+            node: {
+              import: node_traced,
+              require: cjs_traced
+            }
           },
-          import: esm,
-          require: cjs
+          node: {
+            import: node,
+            require: cjs
+          },
+          browser: esm
         }
       }
     })
@@ -46,20 +54,32 @@ pipe(
         exports: {
           '.': {
             traced: {
-              import: './dist/dist-traced/esm-fix/index.js',
-              require: './dist/dist-traced/cjs/index.js'
+              browser: './dist/dist-traced/esm/index.js',
+              node: {
+                import: './dist/dist-traced/node/index.js',
+                require: './dist/dist-traced/cjs/index.js'
+              }
             },
-            import: './dist/dist/esm-fix/index.js',
-            require: './dist/dist/cjs/index.js'
+            browser: './dist/dist/esm/index.js',
+            node: {
+              import: './dist/dist/node/index.js',
+              require: './dist/dist/cjs/index.js'
+            }
           },
           ...subpaths,
           './*': {
             traced: {
-              import: './dist/dist-traced/esm-fix/*',
-              require: './dist/dist-traced/cjs/*.js'
+              browser: './dist/dist-traced/esm/*',
+              node: {
+                import: './dist/dist-traced/node/*',
+                require: './dist/dist-traced/cjs/*'
+              }
             },
-            import: './dist/dist/esm-fix/*',
-            require: './dist/dist/cjs/*.js'
+            browser: './dist/dist/esm/*',
+            node: {
+              import: './dist/dist/node/*',
+              require: './dist/dist/cjs/*'
+            }
           }
         }
       })

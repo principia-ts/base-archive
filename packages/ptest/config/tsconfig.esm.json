@@ -1,0 +1,27 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "sourceMap": true,
+    "module": "es2020",
+    "target": "es2017",
+    "rootDir": "../src-esm",
+    "outDir": "../dist/dist/esm",
+    "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
+    "plugins": [
+      {
+        "after": true,
+        "transform": "@0x706b/ts-transform-fix-esm",
+        "relativeProjectRoot": "../../",
+        "createRequire": false
+      },
+      {
+        "transform": "../../compile/src/index.ts",
+        "tracing": false
+      }
+    ]
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src-esm"]
+}

@@ -8,54 +8,62 @@
   "exports": {
     ".": {
       "traced": {
-        "import": "./dist/dist-traced/esm-fix/index.js",
-        "require": "./dist/dist-traced/cjs/index.js"
+        "browser": "./dist/dist-traced/esm/index.js",
+        "node": {
+          "import": "./dist/dist-traced/node/index.js",
+          "require": "./dist/dist-traced/cjs/index.js"
+        }
       },
-      "import": "./dist/dist/esm-fix/index.js",
-      "require": "./dist/dist/cjs/index.js"
+      "node": {
+        "import": "./dist/dist/node/index.js",
+        "require": "./dist/dist/cjs/index.js"
+      },
+      "browser": "./dist/dist/esm/index.js"
     },
     "./*": {
       "traced": {
-        "import": "./dist/dist-traced/esm-fix/*",
-        "require": "./dist/dist-traced/cjs/*.js"
+        "browser": "./dist/dist-traced/esm/*",
+        "node": {
+          "import": "./dist/dist-traced/node/*",
+          "require": "./dist/dist-traced/cjs/*"
+        }
       },
-      "import": "./dist/dist/esm-fix/*",
-      "require": "./dist/dist/cjs/*.js"
+      "browser": "./dist/dist/esm/*",
+      "node": {
+        "import": "./dist/dist/node/*",
+        "require": "./dist/dist/cjs/*"
+      }
     }
   },
   "main": "dist/dist/cjs/index.js",
-  "module": "./dist/dist/esm-shake/index.js",
+  "module": "./dist/dist/esm/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
-    "build": "yarn build:types && yarn build:esm-fix && yarn build:intermediary && yarn build:esm-shake && yarn build:cjs",
-    "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary",
-    "build:esm-fix": "ttsc --build ./config/tsconfig.esm-fix.json",
-    "build:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm-shake dist/dist/.intermediary",
+    "build": "yarn build:types && yarn build:node && yarn build:intermediary && yarn build:esm && yarn build:cjs",
+    "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary-build",
+    "build:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm dist/dist/.intermediary-build",
     "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
-    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json",
+    "build:node": "ttsc --build ./config/tsconfig.node.json",
+    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
-    "build:traced": "yarn build:traced:esm-fix && yarn build:traced:intermediary && yarn build:traced:esm-shake && yarn build:traced:cjs",
-    "build:traced:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/cjs dist/dist-traced/.intermediary",
-    "build:traced:esm-fix": "ttsc --build ./config/tsconfig.traced.esm-fix.json",
-    "build:traced:esm-shake": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/esm-shake dist/dist-traced/.intermediary",
+    "build:traced": "yarn build:traced:node && yarn build:traced:intermediary && yarn build:traced:esm && yarn build:traced:cjs",
+    "build:traced:cjs": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/cjs dist/dist/.traced-intermediary-build",
+    "build:traced:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/esm dist/dist/.traced-intermediary-build",
+    "build:traced:node": "ttsc --build ./config/tsconfig.traced.node.json",
     "build:traced:intermediary": "ttsc --build ./config/tsconfig.traced.intermediary.json",
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
     "buildAll": "yarn build && yarn build:traced && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
-    "copy:system": "ts-node ../../scripts/copy-system.ts",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint .",
-    "prepublish": "yarn buildAll && rimraf dist/dist/.intermediary && rimraf dist/dist-traced/.intermediary",
-    "publish:package": "yarn version --no-git-tag-version && yarn clean && yarn build && yarn publish --no-git-tag-version dist",
-    "test": "yarn build:test && jest build/test"
+    "prepublish": "yarn buildAll"
   },
   "dependencies": {
     "@principia/base": "^0.5.0",
     "@principia/compile": "^0.4.0",
-    "@principia/io": "^0.5.0",
-    "core-js": "3"
+    "@principia/io": "^0.5.0"
   },
   "publishConfig": {
     "access": "public",

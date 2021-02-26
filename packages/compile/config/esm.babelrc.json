@@ -1,14 +1,14 @@
 {
-   "presets": [
-      [
-         "@babel/preset-env",
-         {
-            "modules": false,
-            "useBuiltIns": "usage",
-            "corejs": 3
-         }
-      ]
-   ],
-   "sourceMap": true,
-   "inputSourceMap": true
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "modules": false,
+        "targets": { "node": "current" }
+      }
+    ]
+  ],
+  "plugins": ["annotate-pure-calls"],
+  "sourceMap": true,
+  "inputSourceMap": true
 }
