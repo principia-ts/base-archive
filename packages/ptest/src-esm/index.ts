@@ -2,7 +2,7 @@ import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
-import { isRunnableSpec, RunnableSpec } from '@principia/test/RunnableSpec'
+import { isRunnableSpec } from '@principia/test/RunnableSpec'
 import { TestArgs } from '@principia/test/TestArgs'
 import { createRequire } from 'module'
 import path from 'path'
@@ -12,7 +12,18 @@ import { glob } from './util'
 
 const _require = createRequire(import.meta.url)
 
-_require('ts-node').register()
+_require('ts-node').register({
+  compilerOptions: {
+    plugins: [
+      {
+        after: true,
+        transform: '@0x706b/ts-transform-fix-esm',
+        createRequire: false
+      }
+    ]
+  },
+  compiler: 'ttypescript'
+})
 
 const argv = yargs(process.argv.slice(2))
   .options({
