@@ -1,6 +1,6 @@
 {
   "name": "@principia/io",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "IO and related data structures",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -299,9 +299,9 @@
     "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
   },
   "dependencies": {
-    "@principia/base": "^0.5.2",
-    "@principia/compile": "^0.4.2",
-    "@principia/free": "^0.5.2"
+    "@principia/base": "^0.5.3",
+    "@principia/compile": "^0.4.3",
+    "@principia/free": "^0.5.3"
   },
   "publishConfig": {
     "access": "public",
