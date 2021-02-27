@@ -13,12 +13,11 @@
     "build": "ultra -r -b buildAll",
     "clean": "ultra -r clean",
     "lint": "ultra -r lint",
-    "test": "jest --detectOpenHandles",
     "build:test": "ultra -r build:test",
     "format": "node ./scripts/format.js"
   },
   "devDependencies": {
-    "@0x706b/ts-transform-fix-esm": "^0.2.1",
+    "@0x706b/ts-transform-fix-esm": "^0.2.2",
     "@babel/cli": "^7.13.0",
     "@babel/core": "^7.13.1",
     "@babel/preset-env": "^7.13.5",
@@ -37,13 +36,11 @@
     "eslint-plugin-codegen": "^0.15.0",
     "eslint-plugin-functional": "^3.2.1",
     "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "eslint-plugin-sort-keys-fix": "^1.1.1",
     "eslint-plugin-typescript-sort-keys": "^1.5.0",
     "fp-ts": "^2.9.5",
     "glob": "^7.1.6",
-    "jest": "^26.6.3",
     "lerna": "^3.22.1",
     "prettier-eslint": "^12.0.0",
     "prettier-eslint-cli": "^5.0.0",
@@ -54,7 +51,7 @@
     "ts-node": "^9.1.1",
     "ttypescript": "^1.5.12",
     "typescript": "next",
-    "ultra-runner": "^3.9.0",
+    "ultra-runner": "^3.10.0",
     "yargs": "^16.2.0"
   }
 }

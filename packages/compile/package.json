@@ -38,7 +38,7 @@
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "lint": "eslint .",
-    "prepublish": "yarn buildAll"
+    "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
   },
   "publishConfig": {
     "access": "public",

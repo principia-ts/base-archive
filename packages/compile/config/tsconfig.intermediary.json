@@ -15,10 +15,6 @@
         "transform": "@0x706b/ts-transform-fix-esm",
         "relativeProjectRoot": "../../",
         "createRequire": false
-      },
-      {
-        "transform": "../../compile/src/index.ts",
-        "tracing": false
       }
     ]
   },

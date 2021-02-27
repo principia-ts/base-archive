@@ -1,6 +1,7 @@
 import type ts from 'typescript'
 
 import dataFirst from './dataFirst'
+import fixESM from './fixESM'
 import identity from './identity'
 import tracer from './tracing'
 import unflow from './unflow'
@@ -16,6 +17,11 @@ export default function bundle(
     dataFirst?: boolean
     moduleMap?: Record<string, string>
     functionModule?: string
+    relativeProjectRoot?: string
+    prefix?: string
+    specifierExtension?: boolean
+    ignoreExtensions?: Array<string>
+    fixESM?: boolean
   }
 ) {
   const B0 = {
@@ -23,7 +29,8 @@ export default function bundle(
     identity: identity(_program, _opts),
     tracer: tracer(_program, _opts),
     unflow: unflow(_program, _opts),
-    unpipe: unpipe(_program, _opts)
+    unpipe: unpipe(_program, _opts),
+    fixESM: fixESM(_program, _opts)
   }
 
   return {
@@ -44,6 +51,20 @@ export default function bundle(
         const df       = B1.dataFirst(unid)
 
         return df
+      }
+    },
+    after(ctx: ts.TransformationContext) {
+      const B1 = {
+        fixESM: B0.fixESM(ctx)
+      }
+
+      return (sourceFile: ts.SourceFile) => {
+        if (_opts?.fixESM === false) {
+          return sourceFile
+        } else {
+          const final = B1.fixESM(sourceFile)
+          return final
+        }
       }
     }
   }

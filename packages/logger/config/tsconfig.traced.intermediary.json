@@ -11,16 +11,12 @@
     "tsBuildInfoFile": "../tsbuildinfo/traced-intermediary.tsbuildinfo",
     "plugins": [
       {
-        "after": true,
-        "transform": "@0x706b/ts-transform-fix-esm",
-        "relativeProjectRoot": "../../",
-        "createRequire": false
-      },
-      {
         "transform": "../../compile/src/index.ts",
         "moduleMap": {
           "^src/(.*)": "(@principia/logger): _src/$1"
-        }
+        },
+        "createRequire": false,
+        "relativeProjectRoot": "../../"
       }
     ]
   },
