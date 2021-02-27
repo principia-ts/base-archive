@@ -570,7 +570,6 @@ export const createValidESMPath = (
     return node.moduleSpecifier
   }
   if (isSpecifierExtensionEmpty(node) || config?.ignoreExtensions?.includes(path.extname(node.moduleSpecifier.text))) {
-    console.log(path.extname(node.moduleSpecifier.text))
     const absolutePath = getAbsolutePathForSpecifier(node, sourceFile, config, packageJSON)
     return ts.factory.createStringLiteral(
       isDirectory(absolutePath) ? `${node.moduleSpecifier.text}/index.js` : `${node.moduleSpecifier.text}.js`
