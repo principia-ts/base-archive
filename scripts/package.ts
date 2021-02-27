@@ -64,8 +64,6 @@ pipe(
         description: content['description'],
         sideEffects: false,
         exports: content['exports'],
-        main: content['main'],
-        module: content['module'],
         license: content['license'],
         name: content['name'],
         peerDependencies: content['peerDependencies'],
