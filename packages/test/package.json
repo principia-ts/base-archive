@@ -1,6 +1,6 @@
 {
   "name": "@principia/test",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Abstractions for IO tests",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -117,9 +117,9 @@
     "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
   },
   "dependencies": {
-    "@principia/base": "^0.5.0",
-    "@principia/compile": "^0.4.0",
-    "@principia/io": "^0.5.0"
+    "@principia/base": "^0.5.1",
+    "@principia/compile": "^0.4.1",
+    "@principia/io": "^0.5.1"
   },
   "publishConfig": {
     "access": "public",
