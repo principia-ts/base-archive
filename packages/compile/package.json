@@ -12,7 +12,7 @@
     },
     "./*": {
       "import": "./dist/dist/esm/*",
-      "require": "./dist/dist/cjs/*"
+      "require": "./dist/dist/cjs/*.js"
     }
   },
   "main": "dist/dist/cjs/index.js",
