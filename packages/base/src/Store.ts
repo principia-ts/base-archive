@@ -1,10 +1,9 @@
 import type { Endomorphism } from './Function'
 import type { StoreURI } from './Modules'
+import type * as P from './typeclass'
 
 import { identity } from './Function'
-import { flapF, flapF_ } from './Functor'
 import * as HKT from './HKT'
-import * as P from './typeclass'
 
 export interface Store<S, A> {
   readonly peek: (s: S) => A
@@ -95,11 +94,10 @@ export function duplicate<S, A>(wa: Store<S, A>): Store<S, Store<S, A>> {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<StoreURI>]> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<StoreURI>]> = HKT.instance({
+  map_,
+  map
 })
-
-export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const Comonad = HKT.instance<P.Comonad<[HKT.URI<StoreURI>]>>({
   ...Functor,

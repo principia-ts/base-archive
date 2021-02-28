@@ -1896,19 +1896,16 @@ export function union<A>(E: Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray
  * -------------------------------------------
  */
 
-export const Align: P.Align<[HKT.URI<ArrayURI>]> = P.getAlign({
-  map_,
+export const Align: P.Align<[HKT.URI<ArrayURI>]> = HKT.instance({
   alignWith_,
+  alignWith,
   nil: empty
 })
 
-export const { padZip_, padZip, alignCombine_, alignCombine, padZipWith_, padZipWith, zipAll_, zipAll } = Align
-
-export const Functor: P.Functor<[HKT.URI<ArrayURI>]> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<ArrayURI>]> = HKT.instance({
+  map_,
+  map
 })
-
-export const { as_, as, flap_, flap, fcross_, fcross } = Functor
 
 export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
   imap,

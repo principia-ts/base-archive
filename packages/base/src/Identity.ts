@@ -213,11 +213,10 @@ export function unit(): void {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<IdentityURI>]> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<IdentityURI>]> = HKT.instance({
+  map_,
+  map
 })
-
-export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const Apply = HKT.instance<P.Apply<[HKT.URI<IdentityURI>]>>({
   ...Functor,

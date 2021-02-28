@@ -1,12 +1,13 @@
 import type { Applicative } from '../Applicative'
 import type { CrossWithFn_ } from '../Apply'
-import type * as HKT from '../HKT'
 import type { Semigroup } from '../Semigroup'
 import type { Alt, AltFn_, MonadExcept } from '../typeclass'
 import type { Erase } from '../util/types'
 
+import { attemptF } from '../ApplicativeExcept'
 import * as E from '../Either'
-import * as P from '../typeclass'
+import { tuple } from '../Function'
+import * as HKT from '../HKT'
 
 export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: MonadExcept<F, C>
@@ -14,10 +15,11 @@ export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
 export function getApplicativeValidation<F>(
   F: MonadExcept<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
+  const attempt = attemptF(F)
   return <E>(S: Semigroup<E>) => {
     const crossWith_: CrossWithFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
       F.flatten(
-        F.map_(F.cross_(F.attempt(fa), F.attempt(fb)), ([ea, eb]) =>
+        F.map_(F.cross_(attempt(fa), attempt(fb)), ([ea, eb]) =>
           E.match_(
             ea,
             (e) =>
@@ -31,10 +33,17 @@ export function getApplicativeValidation<F>(
         )
       )
 
-    return P.getApplicative<HKT.UHKT2<F>, HKT.Fix<'E', E>>({
+    return HKT.instance<Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
       map_: F.map_,
+      map: F.map,
+      crossWith_,
+      crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+      cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+      cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
+      ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+      ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
       pure: F.pure,
-      crossWith_
+      unit: F.unit
     })
   }
 }
@@ -45,14 +54,15 @@ export function getAltValidation<F extends HKT.URIS, C = HKT.Auto>(
 export function getAltValidation<F>(
   F: MonadExcept<HKT.UHKT2<F>> & Alt<HKT.UHKT2<F>>
 ): <E>(S: Semigroup<E>) => Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
+  const attempt = attemptF(F)
   return <E>(S: Semigroup<E>) => {
     const alt_: AltFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, that) =>
       F.bind_(
-        F.attempt(fa),
+        attempt(fa),
         E.match(
           (e) =>
             F.bind_(
-              F.attempt(that()),
+              attempt(that()),
               E.match(
                 (e1) => F.fail(S.combine_(e, e1)),
                 (a) => F.pure(a)
@@ -61,9 +71,11 @@ export function getAltValidation<F>(
           (a) => F.pure(a)
         )
       )
-    return P.getAlt<HKT.UHKT2<F>, HKT.Fix<'E', E>>({
+    return HKT.instance<Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
       map_: F.map_,
-      alt_
+      map: F.map,
+      alt_,
+      alt: (that) => (fa) => alt_(fa, that)
     })
   }
 }

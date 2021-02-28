@@ -8,7 +8,7 @@ import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import * as S from '../../Schedule'
-import { bind, foldM, map, map_, orDie } from '../core'
+import { bind, fail, foldM, map, map_, orDie } from '../core'
 
 /**
  * Returns a new effect that repeats this effect according to the specified

@@ -8,31 +8,19 @@
   "exports": {
     ".": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/index.js",
-          "require": "./dist/dist-traced/cjs/index.js"
-        }
+        "import": "./dist/dist-traced/esm/index.js",
+        "require": "./dist/dist-traced/cjs/index.js"
       },
-      "browser": "./dist/dist/esm/index.js",
-      "node": {
-        "import": "./dist/dist/node/index.js",
-        "require": "./dist/dist/cjs/index.js"
-      }
+      "import": "./dist/dist/esm/index.js",
+      "require": "./dist/dist/cjs/index.js"
     },
     "./*": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/*",
-        "node": {
-          "import": "./dist/dist-traced/node/*",
-          "require": "./dist/dist-traced/cjs/*"
-        }
+        "import": "./dist/dist-traced/esm/*",
+        "require": "./dist/dist-traced/cjs/*.js"
       },
-      "browser": "./dist/dist/esm/*",
-      "node": {
-        "import": "./dist/dist/node/*",
-        "require": "./dist/dist/cjs/*"
-      }
+      "import": "./dist/dist/esm/*",
+      "require": "./dist/dist/cjs/*.js"
     }
   },
   "main": "dist/dist/cjs/index.js",
@@ -41,16 +29,14 @@
   "bin": "./bin/ptest.js",
   "scripts": {
     "autofix": "yarn lint --fix",
-    "build": "yarn build:types && yarn build:node && yarn build:esm && yarn build:cjs",
-    "build:cjs": "ttsc --build ./config/tsconfig.cjs.json && babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/cjs",
-    "build:esm": "ttsc --build ./config/tsconfig.esm.json && babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm dist/dist/esm",
-    "build:node": "ttsc --build ./config/tsconfig.node.json",
+    "build": "yarn build:types && yarn build:esm && yarn build:cjs",
+    "build:cjs": "ttsc --build ./config/tsconfig.cjs.json",
+    "build:esm": "ttsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
     "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json && cpx ./bin/**/* ./dist/bin",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
-    "build:traced": "yarn build:traced:node && yarn build:traced:esm && yarn build:traced:cjs",
-    "build:traced:cjs": "ttsc --build ./config/tsconfig.traced.cjs.json && babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/cjs dist/dist-traced/cjs",
-    "build:traced:esm": "ttsc --build ./config/tsconfig.traced.esm.json && babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/esm dist/dist-traced/esm",
-    "build:traced:node": "ttsc --build ./config/tsconfig.traced.node.json",
+    "build:traced": "yarn build:traced:esm && yarn build:traced:cjs",
+    "build:traced:cjs": "ttsc --build ./config/tsconfig.traced.cjs.json",
+    "build:traced:esm": "ttsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",
     "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
     "buildAll": "yarn build && yarn build:traced && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
@@ -60,13 +46,13 @@
     "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
   },
   "dependencies": {
-    "@principia/base": "^0.5.4",
-    "@principia/compile": "^0.4.4",
-    "@principia/io": "^0.5.4",
     "@principia/test": "^0.5.4",
     "glob": "^7.1.6",
     "ts-node": "^9.1.1",
     "yargs": "^16.2.0"
+  },
+  "devDependencies": {
+    "@types/yargs": "^16.0.0"
   },
   "publishConfig": {
     "access": "public",

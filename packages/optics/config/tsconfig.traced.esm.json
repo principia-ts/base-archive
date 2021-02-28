@@ -1,0 +1,24 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "sourceMap": true,
+    "module": "esnext",
+    "target": "es2020",
+    "rootDir": "../src",
+    "outDir": "../dist/dist-traced/esm",
+    "tsBuildInfoFile": "../tsbuildinfo/traced-esm.tsbuildinfo",
+    "plugins": [
+      {
+        "transform": "../../compile/src/index.ts",
+        "moduleMap": {
+          "^src/(.*)": "(@principia/optics): _src/$1"
+        },
+        "relativeProjectRoot": "../../"
+      }
+    ]
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src"]
+}

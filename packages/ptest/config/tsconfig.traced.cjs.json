@@ -15,8 +15,7 @@
         "moduleMap": {
           "^src/(.*)": "(@principia/ptest): _src/$1"
         },
-        "createRequire": false,
-        "relativeProjectRoot": "../../"
+        "addExtensions": false
       }
     ]
   },

@@ -1,71 +1,76 @@
 import chalk from 'chalk'
-import * as A from 'fp-ts/Array'
 import { parseJSON } from 'fp-ts/lib/Either'
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/ReadonlyRecord'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as Path from 'path'
 
 import { onLeft, onRight, readFile, writeFile } from './common'
 
-const esmJSON = JSON.stringify({ type: 'module', sideEffects: false })
-const cjsJSON = JSON.stringify({ type: 'commonjs', sideEffects: false })
+const esmJSON = (sideEffects: string[]) =>
+  JSON.stringify({ type: 'module', sideEffects: sideEffects.length === 0 ? false : sideEffects })
+const cjsJSON = JSON.stringify({ type: 'commonjs' })
+
+const getSideEffects = flow(
+  (content: any) => content?.config?.sideEffects,
+  (x): string[] => (Array.isArray(x) && x.every((y) => typeof y === 'string') ? x : [])
+)
+
+const loadPackageJson: TE.TaskEither<Error, any> = pipe(
+  readFile(Path.resolve(process.cwd(), 'package.json'), 'utf8'),
+  TE.chainEitherK((content) => parseJSON(content, (err) => err as Error))
+)
 
 pipe(
-  readFile(Path.resolve(process.cwd(), 'package.json'), 'utf8'),
-  TE.chain((content) =>
-    TE.fromEither(parseJSON(content, (err) => new Error(`json parse error: ${(err as Error).message}`)))
-  ),
-  TE.map((content: any) => {
-    const mut_content = { ...content }
-    const exports     = pipe(
-      mut_content['exports'],
-      R.map((ex: any) => {
-        const mut_ex = { ...ex }
+  loadPackageJson,
+  TE.bindTo('content'),
+  TE.bind('exports', ({ content }) => {
+    if (content['exports']) {
+      return TE.of(
+        pipe(
+          content['exports'],
+          R.map((ex: any) => {
+            const mut_ex = { ...ex }
 
-        let esm           = (ex['browser'] as string).split('/')
-        esm               = [...esm.slice(0, 1), ...esm.slice(2)]
-        mut_ex['browser'] = esm.join('/')
+            let esm          = (ex['import'] as string).split('/')
+            esm              = [...esm.slice(0, 1), ...esm.slice(2)]
+            mut_ex['import'] = esm.join('/')
 
-        let node_import          = (ex['node']['import'] as string).split('/')
-        node_import              = [...node_import.slice(0, 1), ...node_import.slice(2)]
-        mut_ex['node']['import'] = node_import.join('/')
+            let cjs           = (ex['require'] as string).split('/')
+            cjs               = [...cjs.slice(0, 1), ...cjs.slice(2)]
+            mut_ex['require'] = cjs.join('/')
 
-        let cjs                   = (ex['node']['require'] as string).split('/')
-        cjs                       = [...cjs.slice(0, 1), ...cjs.slice(2)]
-        mut_ex['node']['require'] = cjs.join('/')
+            if (ex['traced']) {
+              let esm                    = (ex['traced']['import'] as string).split('/')
+              esm                        = [...esm.slice(0, 1), ...esm.slice(2)]
+              mut_ex['traced']['import'] = esm.join('/')
 
-        if (ex['traced']) {
-          let esm                     = (ex['traced']['browser'] as string).split('/')
-          esm                         = [...esm.slice(0, 1), ...esm.slice(2)]
-          mut_ex['traced']['browser'] = esm.join('/')
+              let cjs                     = (ex['traced']['require'] as string).split('/')
+              cjs                         = [...cjs.slice(0, 1), ...cjs.slice(2)]
+              mut_ex['traced']['require'] = cjs.join('/')
+            }
 
-          let node_import                    = (ex['traced']['node']['import'] as string).split('/')
-          node_import                        = [...node_import.slice(0, 1), ...node_import.slice(2)]
-          mut_ex['traced']['node']['import'] = node_import.join('/')
-
-          let cjs                             = (ex['traced']['node']['require'] as string).split('/')
-          cjs                                 = [...cjs.slice(0, 1), ...cjs.slice(2)]
-          mut_ex['traced']['node']['require'] = cjs.join('/')
-        }
-
-        return mut_ex
-      })
-    )
-    mut_content['exports'] = exports
-    return mut_content
+            return mut_ex
+          })
+        )
+      )
+    } else {
+      return TE.of({})
+    }
   }),
-  TE.chain((content: any) =>
+  TE.bind('sideEffects', ({ content }) => TE.of(getSideEffects(content))),
+  TE.chainFirst(({ content, exports }) =>
     writeFile(
       Path.resolve(process.cwd(), 'dist/package.json'),
       JSON.stringify({
         author: content['author'],
         dependencies: content['dependencies'],
         description: content['description'],
-        sideEffects: false,
-        exports: content['exports'],
+        exports,
         license: content['license'],
         name: content['name'],
+        main: 'dist/cjs/index.js',
+        module: 'dist/esm/index.js',
         peerDependencies: content['peerDependencies'],
         private: false,
         publishConfig: {
@@ -77,8 +82,19 @@ pipe(
       })
     )
   ),
-  TE.chain(() => writeFile(Path.resolve(process.cwd(), 'dist/dist/cjs/package.json'), cjsJSON)),
-  TE.chain(() => writeFile(Path.resolve(process.cwd(), 'dist/dist/esm/package.json'), esmJSON)),
-  TE.chain(() => writeFile(Path.resolve(process.cwd(), 'dist/dist/node/package.json'), esmJSON)),
+  TE.chainFirst(() => writeFile(Path.resolve(process.cwd(), 'dist/dist/cjs/package.json'), cjsJSON)),
+  TE.chainFirst(({ sideEffects }) =>
+    writeFile(Path.resolve(process.cwd(), 'dist/dist/esm/package.json'), esmJSON(sideEffects))
+  ),
+  TE.chainFirst(({ content }) =>
+    content?.exports?.traced
+      ? writeFile(Path.resolve(process.cwd(), 'dist/dist-traced/cjs/package.json'), cjsJSON)
+      : TE.of(undefined)
+  ),
+  TE.chainFirst(({ content, sideEffects }) =>
+    content?.exports?.traced
+      ? writeFile(Path.resolve(process.cwd(), 'dist/dist-traced/esm/package.json'), esmJSON(sideEffects))
+      : TE.of(undefined)
+  ),
   TE.fold(onLeft, onRight('Package copy succeeded!'))
 )().catch((e) => console.log(chalk.red.bold(`unexpected error ${e}`)))

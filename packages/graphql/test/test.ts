@@ -1,4 +1,4 @@
-import '@principia/base/unsafe/Operators'
+import '@principia/base/Operators'
 
 import { flow, pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
@@ -178,7 +178,7 @@ const LiveUserService = L.fromEffect(UserService)(
     const putUser = (user: Student | Employee) =>
       db.get['|>'](I.map(HM.get(user.id)))['|>'](
         I.bind(
-          O.fold(
+          O.match(
             () => Ref.update_(db, HM.set(user.id, user)),
             (_) => I.fail(new Error('User already exists'))
           )

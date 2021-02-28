@@ -1,27 +1,11 @@
-import type { Functor, FunctorMin } from './Functor'
+import type { Functor } from './Functor'
+import type * as HKT from './HKT'
 import type { Monad } from './Monad'
-
-import { identity } from './Function'
-import { getFunctor } from './Functor'
-import * as HKT from './HKT'
 
 export interface Bind<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC> {
   readonly bind_: BindFn_<F, TC>
   readonly bind: BindFn<F, TC>
   readonly flatten: FlattenFn<F, TC>
-}
-
-export type BindMin<F extends HKT.URIS, TC = HKT.Auto> = FunctorMin<F, TC> & {
-  readonly bind_: BindFn_<F, TC>
-}
-
-export function getBind<F extends HKT.URIS, TC = HKT.Auto>(F: BindMin<F, TC>): Bind<F, TC> {
-  return HKT.instance<Bind<F, TC>>({
-    bind_: F.bind_,
-    bind: (f) => (ma) => F.bind_(ma, f),
-    flatten: (mma) => F.bind_(mma, identity),
-    ...getFunctor(F)
-  })
 }
 
 export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: Bind<F, TC>): TapFn<F, TC> {

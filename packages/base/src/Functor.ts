@@ -3,64 +3,23 @@ import * as HKT from './HKT'
 export interface Functor<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly map: MapFn<F, C>
   readonly map_: MapFn_<F, C>
-  readonly as_: AsFn_<F, C>
-  readonly as: AsFn<F, C>
-  readonly flap_: FlapFn_<F, C>
-  readonly flap: FlapFn<F, C>
-  readonly fcross_: FCrossFn_<F, C>
-  readonly fcross: FCrossFn<F, C>
-}
-
-export type FunctorMin<F extends HKT.URIS, C = HKT.Auto> = {
-  readonly map_: MapFn_<F, C>
-}
-
-export function getFunctor<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): Functor<F, C> {
-  const flap_   = flapF_(F)
-  const as_     = asF_(F)
-  const fcross_ = fcrossF_(F)
-  return HKT.instance<Functor<F, C>>({
-    map_: F.map_,
-    map: (f) => (fa) => F.map_(fa, f),
-    flap_,
-    flap: (a) => (fab) => flap_(fab, a),
-    as_,
-    as: (b) => (fa) => as_(fa, b),
-    fcross_,
-    fcross: (f) => (fa) => fcross_(fa, f)
-  })
 }
 
 export interface FunctorComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
   readonly map: MapFnComposition<F, G, CF, CG>
   readonly map_: MapFnComposition_<F, G, CF, CG>
-  readonly as_: AsFnComposition_<F, G, CF, CG>
-  readonly as: AsFnComposition<F, G, CF, CG>
-  readonly flap_: FlapFnComposition_<F, G, CF, CG>
-  readonly flap: FlapFnComposition<F, G, CF, CG>
-  readonly fcross_: FCrossFnComposition_<F, G, CF, CG>
-  readonly fcross: FCrossFnComposition<F, G, CF, CG>
 }
 
 export function getFunctorComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
-  F: FunctorMin<F, CF>,
-  G: FunctorMin<G, CG>
+  F: Functor<F, CF>,
+  G: Functor<G, CG>
 ): FunctorComposition<F, G, CF, CG> {
-  const map_: MapFnComposition_<F, G, CF, CG>       = (fga, f) => F.map_(fga, (ga) => G.map_(ga, f))
-  const as_: AsFnComposition_<F, G, CF, CG>         = (fga, b) => map_(fga, b)
-  const flap_: FlapFnComposition_<F, G, CF, CG>     = (fgab, a) => map_(fgab, (f) => f(a))
-  const fcross_: FCrossFnComposition_<F, G, CF, CG> = (fga, f) => map_(fga, (a) => [a, f(a)])
+  const map_: MapFnComposition_<F, G, CF, CG> = (fga, f) => F.map_(fga, (ga) => G.map_(ga, f))
 
   return HKT.instance<FunctorComposition<F, G, CF, CG>>({
     map_,
-    map: (f) => (fga) => map_(fga, f),
-    as_,
-    as: (b) => (fga) => as_(fga, b),
-    flap_,
-    flap: (a) => (fgab) => flap_(fgab, a),
-    fcross_,
-    fcross: (f) => (fa) => fcross_(fa, f)
+    map: (f) => (fga) => map_(fga, f)
   })
 }
 
@@ -161,7 +120,7 @@ export interface FlapFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF =
   ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
-export function flapF_<F extends HKT.URIS, TC = HKT.Auto>(F: FunctorMin<F, TC>): FlapFn_<F, TC> {
+export function flapF_<F extends HKT.URIS, TC = HKT.Auto>(F: Functor<F, TC>): FlapFn_<F, TC> {
   return (fab, a) => F.map_(fab, (f) => f(a))
 }
 
@@ -216,11 +175,11 @@ export interface AsFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = H
   ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
-export function asF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): AsFn_<F, C> {
+export function asF_<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): AsFn_<F, C> {
   return (fa, b) => F.map_(fa, b)
 }
 
-export function asF<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): AsFn<F, C> {
+export function asF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): AsFn<F, C> {
   return (b) => (fa) => F.map_(fa, b)
 }
 
@@ -295,10 +254,10 @@ export interface FCrossFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF
   >
 }
 
-export function fcrossF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): FCrossFn_<F, C> {
+export function fcrossF_<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): FCrossFn_<F, C> {
   return (fa, f) => F.map_(fa, (a) => [a, f(a)])
 }
 
-export function fcrossF<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): FCrossFn<F, C> {
+export function fcrossF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): FCrossFn<F, C> {
   return (f) => (fa) => F.map_(fa, (a) => [a, f(a)])
 }

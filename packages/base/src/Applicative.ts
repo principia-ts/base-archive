@@ -1,25 +1,13 @@
-import type { Apply, ApplyComposition, ApplyMin } from './Apply'
+import type { Apply, ApplyComposition } from './Apply'
 import type { Functor } from './Functor'
 import type { Unit, UnitComposition } from './Unit'
 
-import { getApply, getApplyComposition } from './Apply'
+import { getApplyComposition } from './Apply'
 import { constant } from './Function'
 import * as HKT from './HKT'
 
 export interface Applicative<F extends HKT.URIS, TC = HKT.Auto> extends Apply<F, TC>, Unit<F, TC> {
   readonly pure: PureFn<F, TC>
-}
-
-export type ApplicativeMin<F extends HKT.URIS, TC = HKT.Auto> = ApplyMin<F, TC> & {
-  readonly pure: PureFn<F, TC>
-}
-
-export function getApplicative<F extends HKT.URIS, TC = HKT.Auto>(F: ApplicativeMin<F, TC>) {
-  return HKT.instance<Applicative<F, TC>>({
-    pure: F.pure,
-    unit: () => F.pure(undefined),
-    ...getApply(F)
-  })
 }
 
 export interface ApplicativeComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto>
@@ -29,10 +17,10 @@ export interface ApplicativeComposition<F extends HKT.URIS, G extends HKT.URIS, 
 }
 
 export function getApplicativeComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto>(
-  F: ApplicativeMin<F, TCF>,
-  G: ApplicativeMin<G, TCG>
+  F: Applicative<F, TCF>,
+  G: Applicative<G, TCG>
 ): ApplicativeComposition<F, G, TCF, TCG>
-export function getApplicativeComposition<F, G>(F: ApplicativeMin<HKT.UHKT<F>>, G: ApplicativeMin<HKT.UHKT<G>>) {
+export function getApplicativeComposition<F, G>(F: Applicative<HKT.UHKT<F>>, G: Applicative<HKT.UHKT<G>>) {
   return HKT.instance<ApplicativeComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
     ...getApplyComposition(F, G),
     unit: () => F.map_(F.pure(undefined), () => G.pure(undefined)),

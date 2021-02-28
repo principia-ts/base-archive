@@ -10,6 +10,7 @@ import type { OptionURI } from './Modules'
 import type { Show } from './Show'
 import type { These } from './These'
 
+import { bindSF, bindToSF, letSF } from './Do'
 import { Left, Right } from './Either'
 import { makeEq } from './Eq/core'
 import { _bind, flow, identity, pipe, tuple } from './Function'
@@ -894,19 +895,16 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  */
 
-export const Align: P.Align<[HKT.URI<OptionURI>]> = P.getAlign({
-  map_,
+export const Align: P.Align<[HKT.URI<OptionURI>]> = HKT.instance({
   alignWith_,
+  alignWith,
   nil: None
 })
 
-export const { alignCombine_, alignCombine, padZip_, padZip, padZipWith_, padZipWith, zipAll_, zipAll } = Align
-
-export const Functor: P.Functor<[HKT.URI<OptionURI>]> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<OptionURI>]> = HKT.instance({
+  map_,
+  map
 })
-
-export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const Alt: P.Alt<[HKT.URI<OptionURI>]> = HKT.instance({
   ...Functor,
@@ -940,10 +938,7 @@ export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fi
   ...Applicative,
   fail,
   catchAll_,
-  catchAll,
-  catchSome_,
-  catchSome,
-  attempt
+  catchAll
 })
 
 export const Monad: P.Monad<[HKT.URI<OptionURI>]> = HKT.instance({
@@ -956,8 +951,7 @@ export const Monad: P.Monad<[HKT.URI<OptionURI>]> = HKT.instance({
 
 export const MonadExcept: P.MonadExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
   ...ApplicativeExcept,
-  ...Monad,
-  absolve
+  ...Monad
 })
 
 export const Do = P.deriveDo(Monad)
@@ -971,7 +965,7 @@ export { of as do }
  * @category Do
  * @since 1.0.0
  */
-export const bindS = Do.bindS
+export const bindS = bindSF(Monad)
 
 /**
  * Contributes a pure value to a threaded scope
@@ -979,7 +973,7 @@ export const bindS = Do.bindS
  * @category Do
  * @since 1.0.0
  */
-export const letS = Do.letS
+export const letS = letSF(Monad)
 
 /**
  * Binds a computation to a property in a `Record`.
@@ -987,7 +981,7 @@ export const letS = Do.letS
  * @category Do
  * @since 1.0.0
  */
-export const bindToS = Do.bindToS
+export const bindToS = bindToSF(Monad)
 
 export const Filterable: P.Filterable<[HKT.URI<OptionURI>]> = HKT.instance({
   filterMap_,

@@ -4,8 +4,8 @@
     "incremental": true,
     "declaration": false,
     "sourceMap": true,
-    "module": "es2020",
-    "target": "es2017",
+    "module": "esnext",
+    "target": "es2020",
     "rootDir": "../src-esm",
     "outDir": "../dist/dist/esm",
     "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
@@ -13,7 +13,6 @@
       {
         "transform": "../../compile/src/index.ts",
         "tracing": false,
-        "createRequire": false,
         "relativeProjectRoot": "../../"
       }
     ]

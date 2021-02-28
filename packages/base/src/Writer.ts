@@ -1,9 +1,9 @@
 import type { Endomorphism } from './Function'
 import type { WriterURI } from './Modules'
+import type * as P from './typeclass'
 
-import { identity } from './Function'
+import { identity, tuple } from './Function'
 import * as HKT from './HKT'
-import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -90,11 +90,10 @@ export function map<A, B>(f: (a: A) => B): <W>(fa: Writer<W, A>) => Writer<W, B>
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<WriterURI>]> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<WriterURI>]> = HKT.instance({
+  map_,
+  map
 })
-
-export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export function getApply<W>(S: P.Semigroup<W>): P.Apply<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
   type V_ = HKT.Fix<'W', W>
@@ -105,9 +104,15 @@ export function getApply<W>(S: P.Semigroup<W>): P.Apply<[HKT.URI<WriterURI>], HK
     return [f(a, b), S.combine_(w1, w2)]
   }
 
-  return P.getApply({
+  return HKT.instance<P.Apply<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
     map_,
-    crossWith_
+    map,
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a))
   })
 }
 

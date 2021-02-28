@@ -21,11 +21,10 @@ export interface TraversableComposition<F extends HKT.URIS, G extends HKT.URIS, 
 export function getTraversableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
   F: Traversable<F, CF>,
   G: Traversable<G, CG>
-): Traversable<[HKT.URI<F[0]['_F'], CF>, HKT.URI<G[0]['_F'], CG>]>
-export function getTraversableComposition<F, G>(F: Traversable<HKT.UHKT<F>>, G: Traversable<HKT.UHKT<G>>) {
-  const traverse_: TraverseFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (H) => (tfga, f) =>
+): TraversableComposition<F, G, CF, CG> {
+  const traverse_: TraversableComposition<F, G, CF, CG>['traverse_'] = (H) => (tfga, f) =>
     F.traverse_(H)(tfga, (tga) => G.traverse_(H)(tga, f))
-  return HKT.instance<Traversable<[...HKT.UHKT<F>, ...HKT.UHKT<G>]>>({
+  return HKT.instance<TraversableComposition<F, G, CF, CG>>({
     ...getFunctorComposition(F, G),
     traverse_,
     traverse: (H) => flow(G.traverse(H), F.traverse(H)),

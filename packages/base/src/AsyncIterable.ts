@@ -566,11 +566,10 @@ export async function toArray<A>(fa: AsyncIterable<A>): Promise<ReadonlyArray<A>
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<AsyncIterableURI>]> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<AsyncIterableURI>]> = HKT.instance({
+  map_,
+  map
 })
-
-export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<AsyncIterableURI>]>>({
   imap_,

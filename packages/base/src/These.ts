@@ -4,7 +4,7 @@ import type { Show } from './Show'
 
 import * as E from './Either'
 import { makeEq } from './Eq/core'
-import { identity } from './Function'
+import { identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
 import { makeShow } from './Show/core'
@@ -180,9 +180,10 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
   const catchAll_: P.CatchAllFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, f) =>
     fa._tag === 'Left' ? f(fa.left) : fa
 
-  return P.getApplicativeExcept({
+  return HKT.instance<P.ApplicativeExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     ...getApplicative(SE),
     catchAll_,
+    catchAll: (f) => (fa) => catchAll_(fa, f),
     fail: Left
   })
 }
@@ -213,9 +214,15 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HK
       ? Both(fa.left, f(fa.right, fb.right))
       : Both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
 
-  return P.getApply({
+  return HKT.instance<P.Apply<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     map_,
-    crossWith_
+    map,
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a))
   })
 }
 
@@ -344,8 +351,7 @@ export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<[HKT.URI<Th
   const m = getMonad(SE)
   return HKT.instance<P.MonadExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     ...getApplicativeExcept(SE),
-    ...m,
-    absolve: m.flatten
+    ...m
   })
 }
 

@@ -4,8 +4,8 @@
     "incremental": true,
     "declaration": false,
     "sourceMap": true,
-    "module": "es2020",
-    "target": "es2017",
+    "module": "esnext",
+    "target": "es2020",
     "rootDir": "../src-esm",
     "outDir": "../dist/dist-traced/esm",
     "tsBuildInfoFile": "../tsbuildinfo/traced-esm.tsbuildinfo",
@@ -15,7 +15,6 @@
         "moduleMap": {
           "^src/(.*)": "(@principia/ptest): _src/$1"
         },
-        "createRequire": false,
         "relativeProjectRoot": "../../"
       }
     ]

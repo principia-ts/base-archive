@@ -1,6 +1,8 @@
-import type * as HKT from './HKT'
+import type { StateURI } from './Modules'
+import type * as P from './typeclass'
 
 import { identity, tuple } from './Function'
+import * as HKT from './HKT'
 
 /*
  * -------------------------------------------
@@ -197,3 +199,30 @@ export function flatten<S, A>(mma: State<S, State<S, A>>): State<S, A> {
 export function unit<S>(): State<S, void> {
   return (s) => [undefined, s]
 }
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const Functor = HKT.instance<P.Functor<[HKT.URI<StateURI>], V>>({
+  map_,
+  map
+})
+
+export const Apply = HKT.instance<P.Apply<[HKT.URI<StateURI>], V>>({
+  ...Functor,
+  crossWith_,
+  crossWith,
+  cross_,
+  cross,
+  ap_,
+  ap
+})
+
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<StateURI>], V>>({
+  ...Apply,
+  pure,
+  unit
+})

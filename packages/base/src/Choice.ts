@@ -3,7 +3,7 @@ import type { Either } from './Either'
 import type * as HKT from './HKT'
 import type { Profunctor } from './Profunctor'
 
-import { identity, pipe, tuple } from './Function'
+import { identity, pipe } from './Function'
 
 export interface Choice<F extends HKT.URIS, C = HKT.Auto> extends Profunctor<F, C> {
   readonly left: LeftFn<F, C>

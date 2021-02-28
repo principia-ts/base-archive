@@ -126,9 +126,11 @@ export function getDecodeErrorsValidation<M extends HKT.URIS, C = HKT.Auto>(
 export function getDecodeErrorsValidation<M>(
   M: P.MonadExcept<HKT.UHKT2<M>> & P.Bifunctor<HKT.UHKT2<M>>
 ): MonadDecoder<HKT.UHKT2<M>, HKT.Auto, DecodeErrors> {
+  const attempt = P.attemptF(M)
+
   const crossWith_: P.CrossWithFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, fb, f) =>
     M.flatten(
-      M.crossWith_(M.attempt(fa), M.attempt(fb), (ea, eb) =>
+      M.crossWith_(attempt(fa), attempt(fb), (ea, eb) =>
         E.isLeft(ea)
           ? E.isLeft(eb)
             ? M.fail(FS.combine(ea.left, eb.left))
@@ -141,10 +143,8 @@ export function getDecodeErrorsValidation<M>(
 
   const alt_: P.AltFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, that) =>
     pipe(
-      M.attempt(fa),
-      M.bind(
-        E.match((e) => pipe(M.attempt(that()), M.bind(E.match((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure)
-      )
+      attempt(fa),
+      M.bind(E.match((e) => pipe(attempt(that()), M.bind(E.match((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure))
     )
 
   return HKT.instance<
@@ -153,12 +153,14 @@ export function getDecodeErrorsValidation<M>(
       P.Bifunctor<HKT.UHKT2<M>, HKT.Auto> &
       P.Fail<HKT.UHKT2<M>, HKT.Auto>
   >({
-    ...P.getMonad({
-      map_: M.map_,
-      crossWith_,
-      pure: M.pure,
-      bind_: M.bind_
-    }),
+    map_: M.map_,
+    map: M.map,
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
     mapLeft_: M.mapLeft_,
     mapLeft: M.mapLeft,
     bimap_: M.bimap_,

@@ -1146,11 +1146,10 @@ export function runAsyncEnv<R, E, A>(
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[URI], V> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[URI], V> = HKT.instance({
+  map_,
+  map
 })
-
-export const { flap_, flap, fcross_, fcross } = Functor
 
 export const ApplySeq: P.Apply<[URI], V> = HKT.instance({
   ...Functor,
@@ -1185,13 +1184,13 @@ export const Monad: P.Monad<[URI], V> = HKT.instance({
   flatten
 })
 
-export const DoAsync: P.Do<[URI], V> = P.deriveDo(Monad)
+export const Do: P.Do<[URI], V> = P.deriveDo(Monad)
 
-export const letS = DoAsync.letS
+export const letS = P.letSF(Monad)
 
-export const bindS = DoAsync.bindS
+export const bindS = P.bindSF(Monad)
 
-export const bindToS = DoAsync.bindToS
+export const bindToS = P.bindToSF(Monad)
 
 const adapter: {
   <A>(_: Tag<A>): D.GenHKT<Async<Has<A>, never, A>, A>

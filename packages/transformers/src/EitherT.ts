@@ -1,15 +1,15 @@
 import type { EitherURI } from '@principia/base/Either'
+import type * as P from '@principia/base/typeclass'
 
 import * as E from '@principia/base/Either'
-import { flow } from '@principia/base/Function'
+import { flow, identity } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
-import * as P from '@principia/base/typeclass'
 import { getApplicativeComposition } from '@principia/base/typeclass'
 
 export type V<C> = HKT.CleanParam<C, 'E'> & HKT.V<'E', '+'>
 
-export function getEitherT<F extends HKT.URIS, C = HKT.Auto>(M: P.MonadMin<F, C>): EitherT<F, C>
-export function getEitherT<F>(M: P.MonadMin<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
+export function getEitherT<F extends HKT.URIS, C = HKT.Auto>(M: P.Monad<F, C>): EitherT<F, C>
+export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
   const bind_: EitherT<HKT.UHKT<F>>['bind_'] = <E, A, E1, B>(
     ma: HKT.HKT<F, E.Either<E, A>>,
     f: (a: A) => HKT.HKT<F, E.Either<E1, B>>
@@ -35,12 +35,13 @@ export function getEitherT<F>(M: P.MonadMin<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> 
     )
 
   return HKT.instance<EitherT<HKT.UHKT<F>>>({
-    ...P.getMonadExcept({
-      ...getApplicativeComposition(M, E.Applicative),
-      fail: flow(E.Left, M.pure),
-      bind_,
-      catchAll_
-    })
+    ...getApplicativeComposition(M, E.Applicative),
+    fail: flow(E.Left, M.pure),
+    bind_,
+    bind: (f) => (ma) => bind_(ma, f),
+    flatten: (mma) => bind_(mma, identity),
+    catchAll_,
+    catchAll: (f) => (fa) => catchAll_(fa, f)
   })
 }
 

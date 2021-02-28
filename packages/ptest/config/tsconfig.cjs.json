@@ -13,8 +13,7 @@
       {
         "transform": "../../compile/src/index.ts",
         "tracing": false,
-        "createRequire": false,
-        "relativeProjectRoot": "../../"
+        "addExtensions": false
       }
     ]
   },

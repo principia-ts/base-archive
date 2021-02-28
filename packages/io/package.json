@@ -8,299 +8,181 @@
   "exports": {
     ".": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/index.js",
-          "require": "./dist/dist-traced/cjs/index.js"
-        }
+        "import": "./dist/dist-traced/esm/index.js",
+        "require": "./dist/dist-traced/cjs/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/index.js",
-        "require": "./dist/dist/cjs/index.js"
-      },
-      "browser": "./dist/dist/esm/index.js"
+      "import": "./dist/dist/esm/index.js",
+      "require": "./dist/dist/cjs/index.js"
     },
     "./Async": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Async/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Async/index.js",
-          "require": "./dist/dist-traced/cjs/Async/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Async/index.js",
+        "require": "./dist/dist-traced/cjs/Async/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Async/index.js",
-        "require": "./dist/dist/cjs/Async/index.js"
-      },
-      "browser": "./dist/dist/esm/Async/index.js"
+      "import": "./dist/dist/esm/Async/index.js",
+      "require": "./dist/dist/cjs/Async/index.js"
     },
     "./Cause": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Cause/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Cause/index.js",
-          "require": "./dist/dist-traced/cjs/Cause/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Cause/index.js",
+        "require": "./dist/dist-traced/cjs/Cause/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Cause/index.js",
-        "require": "./dist/dist/cjs/Cause/index.js"
-      },
-      "browser": "./dist/dist/esm/Cause/index.js"
+      "import": "./dist/dist/esm/Cause/index.js",
+      "require": "./dist/dist/cjs/Cause/index.js"
     },
     "./Exit": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Exit/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Exit/index.js",
-          "require": "./dist/dist-traced/cjs/Exit/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Exit/index.js",
+        "require": "./dist/dist-traced/cjs/Exit/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Exit/index.js",
-        "require": "./dist/dist/cjs/Exit/index.js"
-      },
-      "browser": "./dist/dist/esm/Exit/index.js"
+      "import": "./dist/dist/esm/Exit/index.js",
+      "require": "./dist/dist/cjs/Exit/index.js"
     },
     "./Fiber/combinators": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Fiber/combinators/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Fiber/combinators/index.js",
-          "require": "./dist/dist-traced/cjs/Fiber/combinators/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Fiber/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/Fiber/combinators/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Fiber/combinators/index.js",
-        "require": "./dist/dist/cjs/Fiber/combinators/index.js"
-      },
-      "browser": "./dist/dist/esm/Fiber/combinators/index.js"
+      "import": "./dist/dist/esm/Fiber/combinators/index.js",
+      "require": "./dist/dist/cjs/Fiber/combinators/index.js"
     },
     "./Fiber": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Fiber/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Fiber/index.js",
-          "require": "./dist/dist-traced/cjs/Fiber/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Fiber/index.js",
+        "require": "./dist/dist-traced/cjs/Fiber/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Fiber/index.js",
-        "require": "./dist/dist/cjs/Fiber/index.js"
-      },
-      "browser": "./dist/dist/esm/Fiber/index.js"
+      "import": "./dist/dist/esm/Fiber/index.js",
+      "require": "./dist/dist/cjs/Fiber/index.js"
     },
     "./FiberRef": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/FiberRef/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/FiberRef/index.js",
-          "require": "./dist/dist-traced/cjs/FiberRef/index.js"
-        }
+        "import": "./dist/dist-traced/esm/FiberRef/index.js",
+        "require": "./dist/dist-traced/cjs/FiberRef/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/FiberRef/index.js",
-        "require": "./dist/dist/cjs/FiberRef/index.js"
-      },
-      "browser": "./dist/dist/esm/FiberRef/index.js"
+      "import": "./dist/dist/esm/FiberRef/index.js",
+      "require": "./dist/dist/cjs/FiberRef/index.js"
     },
     "./IO/combinators": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/IO/combinators/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/IO/combinators/index.js",
-          "require": "./dist/dist-traced/cjs/IO/combinators/index.js"
-        }
+        "import": "./dist/dist-traced/esm/IO/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/IO/combinators/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/IO/combinators/index.js",
-        "require": "./dist/dist/cjs/IO/combinators/index.js"
-      },
-      "browser": "./dist/dist/esm/IO/combinators/index.js"
+      "import": "./dist/dist/esm/IO/combinators/index.js",
+      "require": "./dist/dist/cjs/IO/combinators/index.js"
     },
     "./IO": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/IO/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/IO/index.js",
-          "require": "./dist/dist-traced/cjs/IO/index.js"
-        }
+        "import": "./dist/dist-traced/esm/IO/index.js",
+        "require": "./dist/dist-traced/cjs/IO/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/IO/index.js",
-        "require": "./dist/dist/cjs/IO/index.js"
-      },
-      "browser": "./dist/dist/esm/IO/index.js"
+      "import": "./dist/dist/esm/IO/index.js",
+      "require": "./dist/dist/cjs/IO/index.js"
     },
     "./IORef": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/IORef/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/IORef/index.js",
-          "require": "./dist/dist-traced/cjs/IORef/index.js"
-        }
+        "import": "./dist/dist-traced/esm/IORef/index.js",
+        "require": "./dist/dist-traced/cjs/IORef/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/IORef/index.js",
-        "require": "./dist/dist/cjs/IORef/index.js"
-      },
-      "browser": "./dist/dist/esm/IORef/index.js"
+      "import": "./dist/dist/esm/IORef/index.js",
+      "require": "./dist/dist/cjs/IORef/index.js"
     },
     "./IORefM": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/IORefM/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/IORefM/index.js",
-          "require": "./dist/dist-traced/cjs/IORefM/index.js"
-        }
+        "import": "./dist/dist-traced/esm/IORefM/index.js",
+        "require": "./dist/dist-traced/cjs/IORefM/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/IORefM/index.js",
-        "require": "./dist/dist/cjs/IORefM/index.js"
-      },
-      "browser": "./dist/dist/esm/IORefM/index.js"
+      "import": "./dist/dist/esm/IORefM/index.js",
+      "require": "./dist/dist/cjs/IORefM/index.js"
     },
     "./Layer/combinators": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Layer/combinators/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Layer/combinators/index.js",
-          "require": "./dist/dist-traced/cjs/Layer/combinators/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Layer/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/Layer/combinators/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Layer/combinators/index.js",
-        "require": "./dist/dist/cjs/Layer/combinators/index.js"
-      },
-      "browser": "./dist/dist/esm/Layer/combinators/index.js"
+      "import": "./dist/dist/esm/Layer/combinators/index.js",
+      "require": "./dist/dist/cjs/Layer/combinators/index.js"
     },
     "./Layer": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Layer/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Layer/index.js",
-          "require": "./dist/dist-traced/cjs/Layer/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Layer/index.js",
+        "require": "./dist/dist-traced/cjs/Layer/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Layer/index.js",
-        "require": "./dist/dist/cjs/Layer/index.js"
-      },
-      "browser": "./dist/dist/esm/Layer/index.js"
+      "import": "./dist/dist/esm/Layer/index.js",
+      "require": "./dist/dist/cjs/Layer/index.js"
     },
     "./Managed/combinators": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Managed/combinators/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Managed/combinators/index.js",
-          "require": "./dist/dist-traced/cjs/Managed/combinators/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Managed/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/Managed/combinators/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Managed/combinators/index.js",
-        "require": "./dist/dist/cjs/Managed/combinators/index.js"
-      },
-      "browser": "./dist/dist/esm/Managed/combinators/index.js"
+      "import": "./dist/dist/esm/Managed/combinators/index.js",
+      "require": "./dist/dist/cjs/Managed/combinators/index.js"
     },
     "./Managed": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Managed/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Managed/index.js",
-          "require": "./dist/dist-traced/cjs/Managed/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Managed/index.js",
+        "require": "./dist/dist-traced/cjs/Managed/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Managed/index.js",
-        "require": "./dist/dist/cjs/Managed/index.js"
-      },
-      "browser": "./dist/dist/esm/Managed/index.js"
+      "import": "./dist/dist/esm/Managed/index.js",
+      "require": "./dist/dist/cjs/Managed/index.js"
     },
     "./Queue": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Queue/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Queue/index.js",
-          "require": "./dist/dist-traced/cjs/Queue/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Queue/index.js",
+        "require": "./dist/dist-traced/cjs/Queue/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Queue/index.js",
-        "require": "./dist/dist/cjs/Queue/index.js"
-      },
-      "browser": "./dist/dist/esm/Queue/index.js"
+      "import": "./dist/dist/esm/Queue/index.js",
+      "require": "./dist/dist/cjs/Queue/index.js"
     },
     "./Schedule": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Schedule/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Schedule/index.js",
-          "require": "./dist/dist-traced/cjs/Schedule/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Schedule/index.js",
+        "require": "./dist/dist-traced/cjs/Schedule/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Schedule/index.js",
-        "require": "./dist/dist/cjs/Schedule/index.js"
-      },
-      "browser": "./dist/dist/esm/Schedule/index.js"
+      "import": "./dist/dist/esm/Schedule/index.js",
+      "require": "./dist/dist/cjs/Schedule/index.js"
     },
     "./Stream": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Stream/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Stream/index.js",
-          "require": "./dist/dist-traced/cjs/Stream/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Stream/index.js",
+        "require": "./dist/dist-traced/cjs/Stream/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Stream/index.js",
-        "require": "./dist/dist/cjs/Stream/index.js"
-      },
-      "browser": "./dist/dist/esm/Stream/index.js"
+      "import": "./dist/dist/esm/Stream/index.js",
+      "require": "./dist/dist/cjs/Stream/index.js"
     },
     "./*": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/*",
-        "node": {
-          "import": "./dist/dist-traced/node/*",
-          "require": "./dist/dist-traced/cjs/*"
-        }
+        "import": "./dist/dist-traced/esm/*",
+        "require": "./dist/dist-traced/cjs/*.js"
       },
-      "browser": "./dist/dist/esm/*",
-      "node": {
-        "import": "./dist/dist/node/*",
-        "require": "./dist/dist/cjs/*"
-      }
+      "import": "./dist/dist/esm/*",
+      "require": "./dist/dist/cjs/*.js"
     }
   },
   "main": "dist/dist/cjs/index.js",
-  "module": "./dist/dist/esm/index.js",
+  "module": "dist/dist/esm/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
-    "build": "yarn build:types && yarn build:node && yarn build:intermediary && yarn build:esm && yarn build:cjs",
-    "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary-build",
-    "build:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm dist/dist/.intermediary-build",
-    "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
-    "build:node": "ttsc --build ./config/tsconfig.node.json",
+    "build": "yarn build:types && yarn build:esm && yarn build:cjs",
+    "build:cjs": "ttsc --build ./config/tsconfig.cjs.json",
+    "build:esm": "ttsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
     "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
-    "build:traced": "yarn build:traced:node && yarn build:traced:intermediary && yarn build:traced:esm && yarn build:traced:cjs",
-    "build:traced:cjs": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/cjs dist/dist/.traced-intermediary-build",
-    "build:traced:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/esm dist/dist/.traced-intermediary-build",
-    "build:traced:node": "ttsc --build ./config/tsconfig.traced.node.json",
-    "build:traced:intermediary": "ttsc --build ./config/tsconfig.traced.intermediary.json",
-    "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
+    "build:traced": "yarn build:traced:esm && yarn build:traced:cjs",
+    "build:traced:cjs": "ttsc --build ./config/tsconfig.traced.cjs.json",
+    "build:traced:esm": "ttsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",
+    "build:types": "ttsc --build ./config/tsconfig.types.json",
     "buildAll": "yarn build && yarn build:traced && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint .",
-    "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
+    "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "@principia/base": "^0.5.4",
     "@principia/compile": "^0.4.4",
+    "@principia/base": "^0.5.4",
     "@principia/free": "^0.5.4"
   },
   "publishConfig": {

@@ -1,63 +1,16 @@
-import type { Functor, FunctorComposition, FunctorMin } from './Functor'
-import type { Semigroupal, SemigroupalComposition, SemigroupalMin } from './Semigroupal'
+import type { Functor, FunctorComposition } from './Functor'
+import type { Semigroupal, SemigroupalComposition } from './Semigroupal'
 import type { EnforceNonEmptyRecord } from './util/types'
 
-import { flow, pipe, tuple, tupled } from './Function'
-import { getFunctor, getFunctorComposition } from './Functor'
+import { flow, pipe, tuple } from './Function'
+import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
-import { getSemigroupal } from './Semigroupal'
 
 export interface Apply<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Semigroupal<F, C> {
   readonly ap: ApFn<F, C>
   readonly ap_: ApFn_<F, C>
   readonly crossWith: CrossWithFn<F, C>
   readonly crossWith_: CrossWithFn_<F, C>
-}
-
-export type ApplyMin<F extends HKT.URIS, C = HKT.Auto> = (
-  | { readonly ap_: ApFn_<F, C> }
-  | { readonly crossWith_: CrossWithFn_<F, C> }
-  | SemigroupalMin<F, C>
-) &
-  FunctorMin<F, C>
-
-export function getApply<F extends HKT.URIS, C = HKT.Auto>(F: ApplyMin<F, C>): Apply<F, C> {
-  if ('ap_' in F) {
-    const cross_: Apply<F, C>['cross_'] = (fa, fb) =>
-      F.ap_(
-        F.map_(fa, (a) => (b: HKT.Infer<F, C, 'A', typeof fb>) => tuple(a, b)),
-        fb
-      )
-    return HKT.instance<Apply<F, C>>({
-      cross_,
-      cross: (fb) => (fa) => cross_(fa, fb),
-      crossWith_: (fa, fb, f) => F.map_(cross_(fa, fb), ([a, b]) => f(a, b)),
-      crossWith: (fb, f) => (fa) => F.map_(cross_(fa, fb), ([a, b]) => f(a, b)),
-      ap_: F.ap_,
-      ap: (fa) => (fab) => F.ap_(fab, fa),
-      ...getFunctor(F)
-    })
-  } else if ('crossWith_' in F) {
-    return HKT.instance<Apply<F, C>>({
-      ap_: (fab, fa) => F.crossWith_(fab, fa, (f, a) => f(a)),
-      ap: (fa) => (fab) => F.crossWith_(fab, fa, (f, a) => f(a)),
-      cross_: (fa, fb) => F.crossWith_(fa, fb, tuple),
-      cross: (fb) => (fa) => F.crossWith_(fa, fb, tuple),
-      crossWith_: F.crossWith_,
-      crossWith: (fb, f) => (fa) => F.crossWith_(fa, fb, f),
-      ...getFunctor(F)
-    })
-  } else {
-    const crossWith_: Apply<F, C>['crossWith_'] = (fa, fb, f) => F.map_(F.cross_(fa, fb), tupled(f))
-    return HKT.instance<Apply<F, C>>({
-      ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-      ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
-      crossWith_,
-      crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-      ...getFunctor(F),
-      ...getSemigroupal(F)
-    })
-  }
 }
 
 export interface ApplyComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
@@ -70,22 +23,20 @@ export interface ApplyComposition<F extends HKT.URIS, G extends HKT.URIS, CF = H
 }
 
 export function getApplyComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto>(
-  F: ApplyMin<F, TCF>,
-  G: ApplyMin<G, TCG>
+  F: Apply<F, TCF>,
+  G: Apply<G, TCG>
 ): ApplyComposition<F, G, TCF, TCG>
-export function getApplyComposition<F, G>(F: ApplyMin<HKT.UHKT<F>>, G: ApplyMin<HKT.UHKT<G>>) {
-  const AF = getApply(F)
-  const AG = getApply(G)
+export function getApplyComposition<F, G>(F: Apply<HKT.UHKT<F>>, G: Apply<HKT.UHKT<G>>) {
   return HKT.instance<ApplyComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
     ...getFunctorComposition(F, G),
-    cross_: (fga, fgb) => AF.crossWith_(fga, fgb, AG.cross_),
-    cross: (fgb) => (fga) => AF.crossWith_(fga, fgb, AG.cross_),
+    cross_: (fga, fgb) => F.crossWith_(fga, fgb, G.cross_),
+    cross: (fgb) => (fga) => F.crossWith_(fga, fgb, G.cross_),
     ap_: <A, B>(fgab: HKT.HKT<F, HKT.HKT<G, (a: A) => B>>, fga: HKT.HKT<F, HKT.HKT<G, A>>) =>
-      AF.ap(fga)(F.map_(fgab, (gab) => (ga: HKT.HKT<G, A>) => AG.ap_(gab, ga))),
+      F.ap(fga)(F.map_(fgab, (gab) => (ga: HKT.HKT<G, A>) => G.ap_(gab, ga))),
     ap: <A>(fga: HKT.HKT<F, HKT.HKT<G, A>>) => <B>(fgab: HKT.HKT<F, HKT.HKT<G, (a: A) => B>>) =>
-      AF.ap(fga)(F.map_(fgab, (gab) => (ga: HKT.HKT<G, A>) => AG.ap_(gab, ga))),
-    crossWith_: (fga, fgb, f) => AF.crossWith_(fga, fgb, (ga, gb) => AG.crossWith_(ga, gb, f)),
-    crossWith: (fgb, f) => AF.crossWith(fgb, (ga, gb) => AG.crossWith_(ga, gb, f))
+      F.ap(fga)(F.map_(fgab, (gab) => (ga: HKT.HKT<G, A>) => G.ap_(gab, ga))),
+    crossWith_: (fga, fgb, f) => F.crossWith_(fga, fgb, (ga, gb) => G.crossWith_(ga, gb, f)),
+    crossWith: (fgb, f) => F.crossWith(fgb, (ga, gb) => G.crossWith_(ga, gb, f))
   })
 }
 

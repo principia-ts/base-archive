@@ -7,18 +7,12 @@
   "author": "Peter Krol <peter@peterkrol.com>",
   "exports": {
     ".": {
-      "browser": "./dist/dist/esm/index.js",
-      "node": {
-        "import": "./dist/dist/node/index.js",
-        "require": "./dist/dist/cjs/index.js"
-      }
+      "import": "./dist/dist/esm/index.js",
+      "require": "./dist/dist/cjs/index.js"
     },
     "./*": {
-      "browser": "./dist/dist/esm/*",
-      "node": {
-        "import": "./dist/dist/node/*",
-        "require": "./dist/dist/cjs/*"
-      }
+      "import": "./dist/dist/esm/*",
+      "require": "./dist/dist/cjs/*"
     }
   },
   "main": "dist/dist/cjs/index.js",
@@ -26,14 +20,13 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
-    "build": "yarn build:types && yarn build:node && yarn build:intermediary && yarn build:esm && yarn build:cjs",
-    "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary-build",
-    "build:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm dist/dist/.intermediary-build",
+    "build": "yarn build:types && yarn build:esm && yarn build:cjs",
+    "build:cjs": "ttsc --build ./config/tsconfig.cjs.json",
+    "build:esm": "ttsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
     "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
-    "build:node": "ttsc --build ./config/tsconfig.node.json",
     "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
-    "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
+    "build:types": "ttsc --build ./config/tsconfig.types.json",
     "buildAll": "yarn build && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",

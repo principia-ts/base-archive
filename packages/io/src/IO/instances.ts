@@ -1,38 +1,34 @@
 import type { IOURI } from '../Modules'
 import type { V } from './core'
+import type * as P from '@principia/base/typeclass'
 
 import * as HKT from '@principia/base/HKT'
-import * as P from '@principia/base/typeclass'
 import { mapNF, sequenceSF } from '@principia/base/typeclass'
 
 import { apPar, apPar_, crossPar, crossPar_, crossWithPar, crossWithPar_ } from './combinators'
 import {
-  absolve,
   ap,
   ap_,
-  attempt,
   bind,
   bind_,
   catchAll,
   catchAll_,
-  catchSome,
-  catchSome_,
   cross,
   cross_,
   crossWith,
   crossWith_,
   fail,
   flatten,
+  map,
   map_,
   pure,
   unit
 } from './core'
 
-export const Functor: P.Functor<[HKT.URI<IOURI>], V> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<IOURI>], V> = HKT.instance({
+  map_,
+  map
 })
-
-export const { flap_, flap, fcross_, fcross } = Functor
 
 export const Apply = HKT.instance<P.Apply<[HKT.URI<IOURI>], V>>({
   ...Functor,
@@ -83,9 +79,5 @@ export const MonadExcept = HKT.instance<P.MonadExcept<[HKT.URI<IOURI>], V>>({
   ...Monad,
   catchAll_,
   catchAll,
-  catchSome_,
-  catchSome,
-  attempt: attempt,
-  absolve,
   fail
 })

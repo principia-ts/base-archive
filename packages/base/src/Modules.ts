@@ -10,6 +10,7 @@ import type { Option } from './Option'
 import type { Reader } from './Reader'
 import type { ReadonlyRecord } from './Record'
 import type { Show } from './Show'
+import type { State } from './State'
 import type { Store } from './Store'
 import type { These } from './These'
 import type { Tuple2 } from './Tuple2'
@@ -75,6 +76,9 @@ export type StoreURI = typeof StoreURI
 export const WriterURI = 'Writer'
 export type WriterURI = typeof WriterURI
 
+export const StateURI = 'State'
+export type StateURI = typeof StateURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     [ArrayURI]: ReadonlyArray<A>
@@ -97,6 +101,7 @@ declare module './HKT' {
     [EqURI]: Eq<A>
     [StoreURI]: Store<E, A>
     [WriterURI]: Writer<W, A>
+    [StateURI]: State<S, A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

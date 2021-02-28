@@ -1,21 +1,8 @@
-import type { Semialign, SemialignMin } from './Semialign'
-
-import * as HKT from './HKT'
-import { getSemialign } from './Semialign'
+import type * as HKT from './HKT'
+import type { Semialign } from './Semialign'
 
 export interface Align<F extends HKT.URIS, C = HKT.Auto> extends Semialign<F, C> {
   readonly nil: NilFn<F, C>
-}
-
-export type AlignMin<F extends HKT.URIS, C = HKT.Auto> = SemialignMin<F, C> & {
-  readonly nil: NilFn<F, C>
-}
-
-export function getAlign<F extends HKT.URIS, C = HKT.Auto>(F: AlignMin<F, C>): Align<F, C> {
-  return HKT.instance<Align<F, C>>({
-    ...getSemialign(F),
-    nil: F.nil
-  })
 }
 
 export interface NilFn<F extends HKT.URIS, C = HKT.Auto> {

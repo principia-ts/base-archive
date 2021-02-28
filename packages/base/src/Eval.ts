@@ -394,11 +394,10 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<EvalURI>]> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<EvalURI>]> = HKT.instance({
+  map_,
+  map
 })
-
-export const { as_, as, fcross_, fcross, flap_, flap } = Functor
 
 export const Apply = HKT.instance<P.Apply<[HKT.URI<EvalURI>]>>({
   ...Functor,

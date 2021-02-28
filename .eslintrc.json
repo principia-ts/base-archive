@@ -14,19 +14,8 @@
     "ecmaVersion": 2020,
     "sourceType": "module"
   },
-  "plugins": [
-    "codegen",
-    "align-assignments",
-    "import",
-    "simple-import-sort",
-    "sort-keys-fix",
-    "typescript-sort-keys",
-    "functional",
-    "@typescript-eslint"
-  ],
+  "plugins": ["align-assignments", "import", "simple-import-sort", "functional", "@typescript-eslint"],
   "rules": {
-    "codegen/codegen": "warn",
-
     "sort-imports": "off",
     "import/order": "off",
     "import/first": "error",

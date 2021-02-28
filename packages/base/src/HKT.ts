@@ -22,12 +22,13 @@ export interface BaseHKT<F, C = Auto> {
   readonly _C: C
 }
 
-export interface CompositionBase2<F, G, CF = Auto, CG = Auto> {
-  readonly _F: F
-  readonly _G: G
-  readonly _CF: CF
-  readonly _CG: CG
-}
+type MapURIS<F, C = Auto> = F extends [URI<infer U, infer CU>, ...infer Rest]
+  ? [URI<U, CU & C>, ...MapURIS<Rest, C>]
+  : []
+
+export type CompositionBase2<F extends URIS, G extends URIS, CF = Auto, CG = Auto> = Base<
+  [...MapURIS<F, CF>, ...MapURIS<G, CG>]
+>
 
 /*
  * -------------------------------------------

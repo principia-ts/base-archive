@@ -1,5 +1,0 @@
-{
-  "plugins": ["annotate-pure-calls"],
-  "sourceMap": true,
-  "inputSourceMap": true
-}

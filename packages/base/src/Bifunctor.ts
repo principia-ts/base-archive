@@ -1,35 +1,11 @@
 import type { Functor } from './Functor'
-
-import { flow, identity, pipe } from './Function'
-import * as HKT from './HKT'
+import type * as HKT from './HKT'
 
 export interface Bifunctor<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly bimap_: BimapFn_<F, C>
   readonly bimap: BimapFn<F, C>
   readonly mapLeft_: MapLeftFn_<F, C>
   readonly mapLeft: MapLeftFn<F, C>
-}
-
-export type BifunctorMin<F extends HKT.URIS, C = HKT.Auto> = (
-  | { readonly mapLeft_: MapLeftFn_<F, C>, readonly mapLeft: MapLeftFn<F, C> }
-  | { readonly bimap_: BimapFn_<F, C>, readonly bimap: BimapFn<F, C> }
-) &
-  Functor<F, C>
-
-export function getBifunctor<F extends HKT.URIS, C = HKT.Auto>(F: BifunctorMin<F, C>): Bifunctor<F, C> {
-  if ('mapLeft_' in F) {
-    return HKT.instance<Bifunctor<F, C>>({
-      ...F,
-      bimap_: (fea, f, g) => pipe(fea, F.mapLeft(f), F.map(g)),
-      bimap: (f, g) => flow(F.mapLeft(f), F.map(g))
-    })
-  } else {
-    return HKT.instance<Bifunctor<F, C>>({
-      ...F,
-      mapLeft_: (fea, f) => F.bimap_(fea, f, identity),
-      mapLeft: (f) => F.bimap(f, identity)
-    })
-  }
 }
 
 export interface BimapFn<F extends HKT.URIS, C = HKT.Auto> {

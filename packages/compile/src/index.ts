@@ -1,7 +1,7 @@
 import type ts from 'typescript'
 
 import dataFirst from './dataFirst'
-import fixESM from './fixESM'
+import addSpecifierExtension from './fixESM'
 import identity from './identity'
 import tracer from './tracing'
 import unflow from './unflow'
@@ -18,10 +18,9 @@ export default function bundle(
     moduleMap?: Record<string, string>
     functionModule?: string
     relativeProjectRoot?: string
-    prefix?: string
     specifierExtension?: boolean
     ignoreExtensions?: Array<string>
-    fixESM?: boolean
+    addExtensions?: boolean
   }
 ) {
   const B0 = {
@@ -30,7 +29,7 @@ export default function bundle(
     tracer: tracer(_program, _opts),
     unflow: unflow(_program, _opts),
     unpipe: unpipe(_program, _opts),
-    fixESM: fixESM(_program, _opts)
+    addSpecifierExtension: addSpecifierExtension(_program, _opts)
   }
 
   return {
@@ -55,14 +54,14 @@ export default function bundle(
     },
     after(ctx: ts.TransformationContext) {
       const B1 = {
-        fixESM: B0.fixESM(ctx)
+        addSpecifierExtension: B0.addSpecifierExtension(ctx)
       }
 
       return (sourceFile: ts.SourceFile) => {
-        if (_opts?.fixESM === false) {
+        if (_opts?.addExtensions === false) {
           return sourceFile
         } else {
-          const final = B1.fixESM(sourceFile)
+          const final = B1.addSpecifierExtension(sourceFile)
           return final
         }
       }

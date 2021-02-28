@@ -757,11 +757,10 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<SyncURI>], V> = P.getFunctor({
-  map_
+export const Functor = HKT.instance<P.Functor<[HKT.URI<SyncURI>], V>>({
+  map_,
+  map
 })
-
-export const { flap_, flap, fcross_, fcross } = Functor
 
 export const Bifunctor = HKT.instance<P.Bifunctor<[HKT.URI<SyncURI>], V>>({
   ...Functor,
@@ -802,10 +801,6 @@ export const MonadExcept = HKT.instance<P.MonadExcept<[HKT.URI<SyncURI>], V>>({
   ...Monad,
   catchAll_,
   catchAll,
-  catchSome_,
-  catchSome,
-  absolve,
-  attempt,
   fail
 })
 
@@ -831,7 +826,7 @@ export const letS: <K, N extends string, A>(
   {
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
-> = DoSync.letS
+> = P.letSF(Monad)
 
 export const bindS: <R, E, A, K, N extends string>(
   name: Exclude<N, keyof K>,
@@ -844,11 +839,11 @@ export const bindS: <R, E, A, K, N extends string>(
   {
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
-> = DoSync.bindS
+> = P.bindSF(Monad)
 
 export const bindToS: <K, N extends string>(
   name: Exclude<N, keyof K>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = DoSync.bindToS
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = P.bindToSF(Monad)
 
 /*
  * -------------------------------------------

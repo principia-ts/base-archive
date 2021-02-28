@@ -14,10 +14,22 @@ import type { Show } from './Show'
 import type { These } from './These'
 
 import { genF, GenHKT } from './Derivation/genF'
+import { bindSF, bindToSF, letSF } from './Do'
 import { NoSuchElementError } from './Error'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
+import { asF, asF_, fcrossF, fcrossF_, flapF, flapF_ } from './Functor'
 import * as HKT from './HKT'
 import * as O from './Option'
+import {
+  alignCombineF,
+  alignCombineF_,
+  padZipF,
+  padZipF_,
+  padZipWithF,
+  padZipWithF_,
+  zipAllF,
+  zipAllF_
+} from './Semialign'
 import * as T from './These'
 import * as P from './typeclass'
 
@@ -1064,11 +1076,17 @@ export function getWitherable<E>(M: P.Monoid<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export const Functor: P.Functor<[HKT.URI<EitherURI>], V> = P.getFunctor({
-  map_
+export const Functor: P.Functor<[HKT.URI<EitherURI>], V> = HKT.instance({
+  map_,
+  map
 })
 
-export const { as_, as, fcross_, fcross, flap_, flap } = Functor
+export const flap_   = flapF_<[HKT.URI<EitherURI>], V>(Functor)
+export const flap    = flapF<[HKT.URI<EitherURI>], V>(Functor)
+export const as_     = asF_<[HKT.URI<EitherURI>], V>(Functor)
+export const as      = asF<[HKT.URI<EitherURI>], V>(Functor)
+export const fcross_ = fcrossF_<[HKT.URI<EitherURI>], V>(Functor)
+export const fcross  = fcrossF<[HKT.URI<EitherURI>], V>(Functor)
 
 /**
  * @category Instances
@@ -1098,20 +1116,17 @@ export const Alt: P.Alt<[HKT.URI<EitherURI>], V> = HKT.instance({
  */
 export const Apply: P.Apply<[HKT.URI<EitherURI>], V> = HKT.instance({
   ...Functor,
-  ap,
   ap_,
-  crossWith,
+  ap,
   crossWith_,
+  crossWith,
   cross_,
   cross
 })
 
 export const sequenceT = P.sequenceTF(Apply)
-
-export const mapN = P.mapNF(Apply)
-
-export const mapN_ = P.mapNF_(Apply)
-
+export const mapN      = P.mapNF(Apply)
+export const mapN_     = P.mapNF_(Apply)
 export const sequenceS = P.sequenceSF(Apply)
 
 /**
@@ -1119,9 +1134,10 @@ export const sequenceS = P.sequenceSF(Apply)
  * @since 1.0.0
  */
 export const Applicative: P.Applicative<[HKT.URI<EitherURI>], V> = HKT.instance({
+  ...Functor,
   ...Apply,
-  unit,
-  pure
+  pure,
+  unit
 })
 
 /**
@@ -1147,14 +1163,11 @@ export const Monad: P.Monad<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const ApplicativeExcept = HKT.instance<P.ApplicativeExcept<[HKT.URI<EitherURI>], V>>({
+export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
   ...Applicative,
   ...Fail,
   catchAll_,
-  catchAll,
-  catchSome_,
-  catchSome,
-  attempt
+  catchAll
 })
 
 /**
@@ -1162,9 +1175,8 @@ export const ApplicativeExcept = HKT.instance<P.ApplicativeExcept<[HKT.URI<Eithe
  * @since 1.0.0
  */
 export const MonadExcept: P.MonadExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...Monad,
   ...ApplicativeExcept,
-  absolve: flatten
+  ...Monad
 })
 
 /**
@@ -1184,12 +1196,20 @@ export const Foldable: P.Foldable<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const Semialign: P.Semialign<[HKT.URI<EitherURI>], V> = P.getSemialign({
-  map_,
-  alignWith_
+
+export const Semialign: P.Semialign<[HKT.URI<EitherURI>], V> = HKT.instance({
+  alignWith_,
+  alignWith
 })
 
-export const { alignCombine_, alignCombine, padZip_, padZip, padZipWith_, padZipWith, zipAll_, zipAll } = Semialign
+export const alignCombine_ = alignCombineF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const alignCombine  = alignCombineF<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZip_       = padZipF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZip        = padZipF<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZipWith_   = padZipWithF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZipWith    = padZipWithF<[HKT.URI<EitherURI>], V>(Semialign)
+export const zipAll_       = zipAllF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const zipAll        = zipAllF<[HKT.URI<EitherURI>], V>(Semialign)
 
 /**
  * @category Instances
@@ -1197,10 +1217,9 @@ export const { alignCombine_, alignCombine, padZip_, padZip, padZipWith_, padZip
  */
 export const Traversable: P.Traversable<[HKT.URI<EitherURI>], V> = HKT.instance({
   ...Functor,
-  ...Foldable,
   traverse_,
-  sequence,
-  traverse
+  traverse,
+  sequence
 })
 
 /*
@@ -1228,7 +1247,7 @@ export { of as do }
  * @category Do
  * @since 1.0.0
  */
-export const bindS = Do.bindS
+export const bindS = bindSF(Monad)
 
 /**
  * Contributes a pure value to a threaded scope
@@ -1236,7 +1255,7 @@ export const bindS = Do.bindS
  * @category Do
  * @since 1.0.0
  */
-export const letS = Do.letS
+export const letS = letSF(Monad)
 
 /**
  * Binds a computation to a property in a `Record`.
@@ -1244,7 +1263,7 @@ export const letS = Do.letS
  * @category Do
  * @since 1.0.0
  */
-export const bindToS = Do.bindToS
+export const bindToS = bindToSF(Monad)
 
 /*
  * -------------------------------------------

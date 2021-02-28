@@ -1,10 +1,10 @@
 import type { Eq } from './Eq'
 import type { ConstURI } from './Modules'
 import type { Show } from './Show'
+import type * as P from './typeclass'
 
-import { identity, unsafeCoerce } from './Function'
+import { identity, tuple, unsafeCoerce } from './Function'
 import * as HKT from './HKT'
-import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -58,9 +58,15 @@ export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[HKT.URI<ConstU
 export function getApply<E>(S: P.Semigroup<E>) {
   type CE = HKT.Fix<'E', E>
   const crossWith_: P.Apply<[HKT.URI<ConstURI>], CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
-  return P.getApply({
+  return HKT.instance<P.Apply<[HKT.URI<ConstURI>], CE>>({
     map_,
-    crossWith_
+    map,
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
+    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a))
   })
 }
 

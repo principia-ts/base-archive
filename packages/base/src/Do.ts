@@ -68,14 +68,39 @@ export interface BindSFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
+export function bindSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): BindSFn<F, C> {
+  return (name, f) =>
+    F.bind((a) =>
+      pipe(
+        f(a),
+        F.map((b) => _bind(a, name, b))
+      )
+    )
+}
+
 export interface LetSFn<F extends HKT.URIS, C = HKT.Auto> {
   <BN extends string, A1, A>(name: Exclude<BN, keyof A>, f: (a: A) => A1): <N extends string, K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in keyof A | BN]: K extends keyof A ? A[K] : A1 }>
 }
 
+export function letSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): LetSFn<F, C> {
+  return (name, f) =>
+    F.bind((a) =>
+      pipe(
+        f(a),
+        F.pure,
+        F.map((b) => _bind(a, name, b))
+      )
+    )
+}
+
 export interface BindToSFn<F extends HKT.URIS, C = HKT.Auto> {
   <BN extends string>(name: BN): <N extends string, K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
+}
+
+export function bindToSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): BindToSFn<F, C> {
+  return (name) => F.map(_bindTo(name))
 }

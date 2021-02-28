@@ -8,113 +8,78 @@
   "exports": {
     ".": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/index.js",
-          "require": "./dist/dist-traced/cjs/index.js"
-        }
+        "import": "./dist/dist-traced/esm/index.js",
+        "require": "./dist/dist-traced/cjs/index.js"
       },
-      "browser": "./dist/dist/esm/index.js",
-      "node": {
-        "import": "./dist/dist/node/index.js",
-        "require": "./dist/dist/cjs/index.js"
-      }
+      "import": "./dist/dist/esm/index.js",
+      "require": "./dist/dist/cjs/index.js"
     },
     "./Derivation": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Derivation/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Derivation/index.js",
-          "require": "./dist/dist-traced/cjs/Derivation/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Derivation/index.js",
+        "require": "./dist/dist-traced/cjs/Derivation/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Derivation/index.js",
-        "require": "./dist/dist/cjs/Derivation/index.js"
-      },
-      "browser": "./dist/dist/esm/Derivation/index.js"
+      "import": "./dist/dist/esm/Derivation/index.js",
+      "require": "./dist/dist/cjs/Derivation/index.js"
     },
     "./Eq": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Eq/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Eq/index.js",
-          "require": "./dist/dist-traced/cjs/Eq/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Eq/index.js",
+        "require": "./dist/dist-traced/cjs/Eq/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Eq/index.js",
-        "require": "./dist/dist/cjs/Eq/index.js"
-      },
-      "browser": "./dist/dist/esm/Eq/index.js"
+      "import": "./dist/dist/esm/Eq/index.js",
+      "require": "./dist/dist/cjs/Eq/index.js"
     },
     "./Function": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Function/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Function/index.js",
-          "require": "./dist/dist-traced/cjs/Function/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Function/index.js",
+        "require": "./dist/dist-traced/cjs/Function/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Function/index.js",
-        "require": "./dist/dist/cjs/Function/index.js"
-      },
-      "browser": "./dist/dist/esm/Function/index.js"
+      "import": "./dist/dist/esm/Function/index.js",
+      "require": "./dist/dist/cjs/Function/index.js"
     },
     "./Show": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/Show/index.js",
-        "node": {
-          "import": "./dist/dist-traced/node/Show/index.js",
-          "require": "./dist/dist-traced/cjs/Show/index.js"
-        }
+        "import": "./dist/dist-traced/esm/Show/index.js",
+        "require": "./dist/dist-traced/cjs/Show/index.js"
       },
-      "node": {
-        "import": "./dist/dist/node/Show/index.js",
-        "require": "./dist/dist/cjs/Show/index.js"
-      },
-      "browser": "./dist/dist/esm/Show/index.js"
+      "import": "./dist/dist/esm/Show/index.js",
+      "require": "./dist/dist/cjs/Show/index.js"
     },
     "./*": {
       "traced": {
-        "browser": "./dist/dist-traced/esm/*",
-        "node": {
-          "import": "./dist/dist-traced/node/*",
-          "require": "./dist/dist-traced/cjs/*"
-        }
+        "import": "./dist/dist-traced/esm/*",
+        "require": "./dist/dist-traced/cjs/*.js"
       },
-      "browser": "./dist/dist/esm/*",
-      "node": {
-        "import": "./dist/dist/node/*",
-        "require": "./dist/dist/cjs/*"
-      }
+      "import": "./dist/dist/esm/*",
+      "require": "./dist/dist/cjs/*.js"
     }
   },
-  "main": "dist/dist/cjs/index.js",
+  "main": "./dist/dist/cjs/index.js",
   "module": "./dist/dist/esm/index.js",
-  "types": "dist/index.d.ts",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
-    "build": "yarn build:types && yarn build:node && yarn build:intermediary && yarn build:esm && yarn build:cjs",
-    "build:cjs": "babel --config-file ./config/cjs.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/cjs dist/dist/.intermediary-build",
-    "build:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist/esm dist/dist/.intermediary-build",
-    "build:intermediary": "ttsc --build ./config/tsconfig.intermediary.json",
-    "build:node": "ttsc --build ./config/tsconfig.node.json",
+    "build": "yarn build:types && yarn build:esm && yarn build:cjs",
+    "build:cjs": "ttsc --build ./config/tsconfig.cjs.json",
+    "build:esm": "ttsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
     "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
-    "build:traced": "yarn build:traced:node && yarn build:traced:intermediary && yarn build:traced:esm && yarn build:traced:cjs",
-    "build:traced:cjs": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/cjs dist/dist/.traced-intermediary-build",
-    "build:traced:esm": "babel --config-file ./config/esm.babelrc.json --extensions '.js' --source-maps true --out-dir dist/dist-traced/esm dist/dist/.traced-intermediary-build",
-    "build:traced:node": "ttsc --build ./config/tsconfig.traced.node.json",
-    "build:traced:intermediary": "ttsc --build ./config/tsconfig.traced.intermediary.json",
-    "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
+    "build:traced": "yarn build:traced:esm && yarn build:traced:cjs",
+    "build:traced:cjs": "ttsc --build ./config/tsconfig.traced.cjs.json",
+    "build:traced:esm": "ttsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",
+    "build:types": "ttsc --build ./config/tsconfig.types.json",
     "buildAll": "yarn build && yarn build:traced && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint .",
-    "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
+    "prepublish": "yarn buildAll"
+  },
+  "config": {
+    "sideEffects": [
+      "./Operators.js"
+    ]
   },
   "dependencies": {
     "@principia/compile": "^0.4.4"
