@@ -1,9 +1,9 @@
 import type { Eq } from './Eq'
 import type { ConstURI } from './Modules'
-import type { Show } from './Show'
+import type { Ord } from './Ord'
 import type * as P from './typeclass'
 
-import { identity, tuple, unsafeCoerce } from './Function'
+import { identity, unsafeCoerce } from './Function'
 import * as HKT from './HKT'
 
 /*
@@ -29,25 +29,7 @@ export function make<E, A = never>(e: E): Const<E, A> {
 
 /*
  * -------------------------------------------
- * Applicative
- * -------------------------------------------
- */
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
-  return HKT.instance<P.Applicative<[HKT.URI<ConstURI>], HKT.Fix<'E', E>>>({
-    ...getApply(M),
-    pure: () => make(M.nat),
-    unit: () => make(M.nat)
-  })
-}
-
-/*
- * -------------------------------------------
- * Apply
+ * Semimonoidal
  * -------------------------------------------
  */
 
@@ -57,16 +39,29 @@ export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[HKT.URI<ConstU
  */
 export function getApply<E>(S: P.Semigroup<E>) {
   type CE = HKT.Fix<'E', E>
-  const crossWith_: P.Apply<[HKT.URI<ConstURI>], CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
-  return HKT.instance<P.Apply<[HKT.URI<ConstURI>], CE>>({
+  const crossWith_: P.Semimonoidal<[HKT.URI<ConstURI>], CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
+  return HKT.instance<P.Semimonoidal<[HKT.URI<ConstURI>], CE>>({
     map_,
     map,
     crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a))
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
+  })
+}
+
+/*
+ * -------------------------------------------
+ * Monoidal
+ * -------------------------------------------
+ */
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export function getApplicative<E>(M: P.Monoid<E>): P.Monoidal<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
+  return HKT.instance<P.Monoidal<[HKT.URI<ConstURI>], HKT.Fix<'E', E>>>({
+    ...getApply(M),
+    pure: () => make(M.nat)
   })
 }
 
@@ -172,7 +167,7 @@ export function getMonoid<E, A>(M: P.Monoid<E>): P.Monoid<Const<E, A>> {
  * @category Instances
  * @since 1.0.0
  */
-export function getOrd<E, A>(O: P.Ord<E>): P.Ord<Const<E, A>> {
+export function getOrd<E, A>(O: Ord<E>): Ord<Const<E, A>> {
   return identity(O) as any
 }
 
@@ -214,7 +209,7 @@ export function getSemigroup<E, A>(S: P.Semigroup<E>): P.Semigroup<Const<E, A>> 
  * @category Show
  * @since 1.0.0
  */
-export function getShow<E, A>(S: Show<E>): Show<Const<E, A>> {
+export function getShow<E, A>(S: P.Show<E>): P.Show<Const<E, A>> {
   return {
     show: (c) => `Const(${S.show(c)})`
   }

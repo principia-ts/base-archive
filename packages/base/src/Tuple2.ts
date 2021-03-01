@@ -44,15 +44,14 @@ export function snd<A, I>(ai: Tuple2<A, I>): I {
 
 /*
  * -------------------------------------------
- * Applicative
+ * Monoidal
  * -------------------------------------------
  */
 
-export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+export function getMonoidal<M>(M: P.Monoid<M>): P.Monoidal<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
   return HKT.instance({
-    ...getApply(M),
-    pure: (a) => tuple_(a, M.nat),
-    unit: () => tuple_(undefined, M.nat)
+    ...getSemimonoidal(M),
+    pure: (a) => tuple_(a, M.nat)
   })
 }
 
@@ -62,21 +61,17 @@ export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<[HKT.URI<Tuple2
  * -------------------------------------------
  */
 
-export function getApply<M>(M: P.Monoid<M>): P.Apply<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+export function getSemimonoidal<M>(M: P.Monoid<M>): P.Semimonoidal<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
   const crossWith_: P.CrossWithFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (fa, fb, f) => [
     f(fst(fa), fst(fb)),
     M.combine_(snd(fa), snd(fb))
   ]
 
-  return HKT.instance<P.Apply<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
+  return HKT.instance<P.Semimonoidal<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
     map_,
     map,
     crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple_),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple_),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a))
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
   })
 }
 
@@ -179,14 +174,11 @@ export function getMonad<M>(M: P.Monoid<M>): P.Monad<[HKT.URI<Tuple2URI>], HKT.F
     const mb = f(fst(ma))
     return [fst(mb), M.combine_(snd(ma), snd(mb))]
   }
-  const flatten: P.FlattenFn<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (mma) =>
-    [fst(fst(mma)), M.combine_(snd(fst(mma)), snd(mma))] as const
 
   return HKT.instance<P.Monad<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
-    ...getApplicative(M),
+    ...getMonoidal(M),
     bind_: bind_,
-    bind: (f) => (ma) => bind_(ma, f),
-    flatten
+    bind: (f) => (ma) => bind_(ma, f)
   })
 }
 

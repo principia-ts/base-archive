@@ -5,7 +5,6 @@
  */
 
 import type { Refinement } from './Function'
-import type * as HKT from './HKT'
 import type { Integer } from './Integer'
 import type { ReadonlyRecord } from './Record'
 import type { Primitive } from './util/types'

@@ -1,9 +1,6 @@
-import type { Monoid } from './Monoid'
-import type { TypeOf } from './Newtype'
+import type { Monoid, Ordering } from './typeclass'
 
-import { newtype, typeDef } from './Newtype'
-
-export type Ordering = -1 | 0 | 1
+export { Ordering }
 
 export const LT = -1
 export const GT = 1

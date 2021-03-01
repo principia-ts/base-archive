@@ -14,37 +14,13 @@
       "import": "./dist/dist/esm/index.js",
       "require": "./dist/dist/cjs/index.js"
     },
-    "./Derivation": {
+    "./typeclass": {
       "traced": {
-        "import": "./dist/dist-traced/esm/Derivation/index.js",
-        "require": "./dist/dist-traced/cjs/Derivation/index.js"
+        "import": "./dist/dist-traced/esm/typeclass/index.js",
+        "require": "./dist/dist-traced/cjs/typeclass/index.js"
       },
-      "import": "./dist/dist/esm/Derivation/index.js",
-      "require": "./dist/dist/cjs/Derivation/index.js"
-    },
-    "./Eq": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Eq/index.js",
-        "require": "./dist/dist-traced/cjs/Eq/index.js"
-      },
-      "import": "./dist/dist/esm/Eq/index.js",
-      "require": "./dist/dist/cjs/Eq/index.js"
-    },
-    "./Function": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Function/index.js",
-        "require": "./dist/dist-traced/cjs/Function/index.js"
-      },
-      "import": "./dist/dist/esm/Function/index.js",
-      "require": "./dist/dist/cjs/Function/index.js"
-    },
-    "./Show": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Show/index.js",
-        "require": "./dist/dist-traced/cjs/Show/index.js"
-      },
-      "import": "./dist/dist/esm/Show/index.js",
-      "require": "./dist/dist/cjs/Show/index.js"
+      "import": "./dist/dist/esm/typeclass/index.js",
+      "require": "./dist/dist/cjs/typeclass/index.js"
     },
     "./*": {
       "traced": {

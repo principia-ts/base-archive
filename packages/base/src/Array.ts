@@ -1,21 +1,19 @@
 import type { Byte } from './Byte'
 import type { Either } from './Either'
-import type { Eq } from './Eq/core'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { ArrayURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
-import type { Show } from './Show/core'
 import type { These } from './These'
 
-import * as D from './Derivation/genWithHistoryF'
 import { _bind, _bindTo, flow, identity, pipe, tuple, unsafeCoerce } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
-import * as Ord from './Ord'
+import { getMonoidOrd, makeOrd, OrdNumber } from './Ord'
 import { EQ } from './Ordering'
 import * as P from './typeclass'
-import { fromCompare, makeMonoid, ordNumber } from './typeclass'
+import { GenLazyHKT, genWithHistoryF } from './typeclass/Gen'
+import { makeMonoid } from './typeclass/Monoid'
 
 /*
  * -------------------------------------------
@@ -383,7 +381,7 @@ export function letS<K, N extends string, A>(
  * -------------------------------------------
  */
 
-export function getEq<A>(E: Eq<A>): Eq<ReadonlyArray<A>> {
+export function getEq<A>(E: P.Eq<A>): P.Eq<ReadonlyArray<A>> {
   const equals_ = (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): boolean =>
     xs === ys || (xs.length === ys.length && xs.every((x, i) => E.equals_(x, ys[i])))
   return {
@@ -927,7 +925,7 @@ export function getMonoid<A = never>(): P.Monoid<ReadonlyArray<A>> {
  * @since 1.0.0
  */
 export function getOrd<A>(O: P.Ord<A>): P.Ord<ReadonlyArray<A>> {
-  return fromCompare((a, b) => {
+  return makeOrd((a, b) => {
     const aLen = a.length
     const bLen = b.length
     const len  = Math.min(aLen, bLen)
@@ -937,7 +935,7 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<ReadonlyArray<A>> {
         return ordering
       }
     }
-    return ordNumber.compare_(aLen, bLen)
+    return OrdNumber.compare_(aLen, bLen)
   })
 }
 
@@ -997,7 +995,7 @@ export function align<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => Rea
  * @category Show
  * @since 1.0.0
  */
-export function getShow<A>(S: Show<A>): Show<ReadonlyArray<A>> {
+export function getShow<A>(S: P.Show<A>): P.Show<ReadonlyArray<A>> {
   return {
     show: (as) => `[${as.map(S.show).join(', ')}]`
   }
@@ -1014,13 +1012,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyArray<A>> {
  * @since 1.0.0
  */
 export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<ArrayURI>]>()((_) => (G) => {
-  return (ta, f) =>
-    ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) =>
-      G.ap_(
-        G.map_(fbs, (bs) => (b: typeof _.B) => snoc_(bs, b)),
-        f(i, a)
-      )
-    )
+  return (ta, f) => ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), snoc_))
 })
 
 /**
@@ -1283,12 +1275,12 @@ export function deleteAt(i: number): <A>(as: ReadonlyArray<A>) => Option<Readonl
   return (as) => deleteAt_(as, i)
 }
 
-export function difference_<A>(E: Eq<A>): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function difference_<A>(E: P.Eq<A>): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
   const elemE_ = elem_(E)
   return (xs, ys) => filter_(xs, (a) => !elemE_(ys, a))
 }
 
-export function difference<A>(E: Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function difference<A>(E: P.Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
   const differenceE_ = difference_(E)
   return (ys) => (xs) => differenceE_(xs, ys)
 }
@@ -1337,13 +1329,13 @@ export function dropLastWhile<A>(predicate: Predicate<A>): (as: ReadonlyArray<A>
 }
 
 /**
- * Test if a value is a member of an array. Takes a `Eq<A>` as a single
+ * Test if a value is a member of an array. Takes a `P.Eq<A>` as a single
  * argument which returns the function to use to search for a value of type `A` in
  * an array of type `ReadonlyArray<A>`.
  *
  * @since 1.0.0
  */
-export function elem_<A>(E: Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
+export function elem_<A>(E: P.Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
   return (as, a) => {
     const predicate = (element: A) => E.equals(element)(a)
     let i           = 0
@@ -1358,13 +1350,13 @@ export function elem_<A>(E: Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
 }
 
 /**
- * Test if a value is a member of an array. Takes a `Eq<A>` as a single
+ * Test if a value is a member of an array. Takes a `P.Eq<A>` as a single
  * argument which returns the function to use to search for a value of type `A` in
  * an array of type `ReadonlyArray<A>`.
  *
  * @since 1.0.0
  */
-export function elem<A>(E: Eq<A>): (a: A) => (as: ReadonlyArray<A>) => boolean {
+export function elem<A>(E: P.Eq<A>): (a: A) => (as: ReadonlyArray<A>) => boolean {
   const elemE_ = elem_(E)
   return (a) => (as) => elemE_(as, a)
 }
@@ -1508,12 +1500,12 @@ export function insertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<R
   return (as) => insertAt_(as, i, a)
 }
 
-export function intersection_<A>(E: Eq<A>): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function intersection_<A>(E: P.Eq<A>): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
   const elemE_ = elem_(E)
   return (xs, ys) => filter_(xs, (a) => elemE_(ys, a))
 }
 
-export function intersection<A>(E: Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function intersection<A>(E: P.Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
   const intersectionE_ = intersection_(E)
   return (ys) => (xs) => intersectionE_(xs, ys)
 }
@@ -1700,7 +1692,7 @@ export function snoc<A>(end: A): (init: ReadonlyArray<A>) => NonEmptyArray<A> {
  * @category Combinators
  * @since 1.0.0
  */
-export function sort<B>(O: Ord.Ord<B>): <A extends B>(as: readonly A[]) => readonly A[] {
+export function sort<B>(O: P.Ord<B>): <A extends B>(as: readonly A[]) => readonly A[] {
   return (as) => (isEmpty(as) ? empty() : as.slice().sort((a, b) => O.compare(a)(b)))
 }
 
@@ -1713,7 +1705,7 @@ export function sort<B>(O: Ord.Ord<B>): <A extends B>(as: readonly A[]) => reado
  */
 export function sortBy<B>(ords: ReadonlyArray<P.Ord<B>>): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (as) => {
-    const M = Ord.getMonoid<B>()
+    const M = getMonoidOrd<B>()
     return sort(foldl_(ords, M.nat, (b, a) => M.combine_(a, b)))(as)
   }
 }
@@ -1860,7 +1852,7 @@ export function unzip<A, B>(as: ReadonlyArray<readonly [A, B]>): readonly [Reado
  * @category Combinators
  * @since 1.0.0
  */
-export function uniq<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function uniq<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => {
     const elemS         = elem(E)
     const out: Array<A> = []
@@ -1876,7 +1868,7 @@ export function uniq<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   }
 }
 
-export function union_<A>(E: Eq<A>): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function union_<A>(E: P.Eq<A>): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> {
   const elemE_ = elem_(E)
   return (xs, ys) =>
     concat_(
@@ -1885,7 +1877,7 @@ export function union_<A>(E: Eq<A>): (xs: ReadonlyArray<A>, ys: ReadonlyArray<A>
     )
 }
 
-export function union<A>(E: Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
+export function union<A>(E: P.Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
   const unionE_ = union_(E)
   return (ys) => (xs) => unionE_(xs, ys)
 }
@@ -1912,14 +1904,11 @@ export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = HKT.ins
   imap_
 })
 
-export const Apply: P.Apply<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const Monoidal: P.Monoidal<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Functor,
-  ap,
-  ap_,
   crossWith,
   crossWith_,
-  cross_,
-  cross
+  pure
 })
 
 export const Zip: P.Zip<[HKT.URI<ArrayURI>]> = HKT.instance({
@@ -1929,13 +1918,6 @@ export const Zip: P.Zip<[HKT.URI<ArrayURI>]> = HKT.instance({
   zipWith
 })
 
-export const Applicative: P.Applicative<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Functor,
-  ...Apply,
-  unit,
-  pure
-})
-
 export const Alt: P.Alt<[HKT.URI<ArrayURI>]> = HKT.instance({
   ...Functor,
   alt_,
@@ -1943,7 +1925,7 @@ export const Alt: P.Alt<[HKT.URI<ArrayURI>]> = HKT.instance({
 })
 
 export const Alternative: P.Alternative<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Applicative,
+  ...Monoidal,
   ...Alt,
   empty
 })
@@ -1994,10 +1976,9 @@ export const Foldable: P.Foldable<[HKT.URI<ArrayURI>]> = HKT.instance({
 })
 
 export const Monad: P.Monad<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Applicative,
+  ...Monoidal,
   bind_,
-  bind,
-  flatten
+  bind
 })
 
 export const Traversable: P.Traversable<[HKT.URI<ArrayURI>]> = HKT.instance({
@@ -2024,18 +2005,18 @@ export const Unfoldable: P.Unfoldable<[HKT.URI<ArrayURI>]> = HKT.instance({
  */
 
 const adapter: {
-  <A>(_: () => O.Option<A>): D.GenLazyHKT<ReadonlyArray<A>, A>
-  <A>(_: () => ReadonlyArray<A>): D.GenLazyHKT<ReadonlyArray<A>, A>
+  <A>(_: () => O.Option<A>): GenLazyHKT<ReadonlyArray<A>, A>
+  <A>(_: () => ReadonlyArray<A>): GenLazyHKT<ReadonlyArray<A>, A>
 } = (_: () => any) =>
-  new D.GenLazyHKT(() => {
+  new GenLazyHKT(() => {
     const x = _()
     if (O.isOption(x)) {
-      return new D.GenLazyHKT(() => (x._tag === 'None' ? [] : [x.value]))
+      return new GenLazyHKT(() => (x._tag === 'None' ? [] : [x.value]))
     }
     return x
   })
 
-export const gen = D.genWithHistoryF(Monad, { adapter })
+export const gen = genWithHistoryF(Monad, { adapter })
 
 /*
  * -------------------------------------------

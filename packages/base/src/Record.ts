@@ -5,7 +5,7 @@ import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
 import type { Show } from './Show'
 
-import { makeEq } from './Eq/core'
+import { makeEq } from './Eq'
 import { identity, pipe, tuple } from './Function'
 import * as O from './Option'
 import * as P from './typeclass'
@@ -736,14 +736,10 @@ export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()(
     let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
     for (let i = 0; i < ks.length; i++) {
       const key = ks[i]
-      mut_gr    = pipe(
-        mut_gr,
-        G.map((mut_r) => (b: _['B']) => {
-          mut_r[key] = b
-          return mut_r
-        }),
-        G.ap(f(key, ta[key]))
-      )
+      mut_gr    = G.crossWith_(mut_gr, f(key, ta[key]), (mut_r, b) => {
+        mut_r[key] = b
+        return mut_r
+      })
     }
     return mut_gr
   }

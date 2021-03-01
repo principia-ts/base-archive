@@ -211,18 +211,13 @@ export const Functor = HKT.instance<P.Functor<[HKT.URI<StateURI>], V>>({
   map
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<StateURI>], V>>({
+export const Semimonoidal = HKT.instance<P.Semimonoidal<[HKT.URI<StateURI>], V>>({
   ...Functor,
   crossWith_,
-  crossWith,
-  cross_,
-  cross,
-  ap_,
-  ap
+  crossWith
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<StateURI>], V>>({
-  ...Apply,
-  pure,
-  unit
+export const Monoidal = HKT.instance<P.Monoidal<[HKT.URI<StateURI>], V>>({
+  ...Semimonoidal,
+  pure
 })

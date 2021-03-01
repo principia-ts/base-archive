@@ -8,7 +8,8 @@
 
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { Option } from './Option'
-import type { Ord, Semigroup } from './typeclass'
+import type { Ord } from './Ord'
+import type { Semigroup } from './typeclass'
 import type { Stack } from './util/support/Stack'
 
 import * as O from './Option'
@@ -180,7 +181,6 @@ export function remove_<K, V>(m: OrderedMap<K, V>, key: K): OrderedMap<K, V> {
 export function remove<K>(key: K): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
   return (m) => remove_(m, key)
 }
-
 
 /**
  * Inserts an element into the correct position in the map, combining euqal key's values
@@ -694,7 +694,6 @@ export function foldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, v: V) => Z
 export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z): <K>(fa: OrderedMap<K, V>) => Z {
   return (fa) => foldl_(fa, z, f)
 }
-
 
 /*
  * -------------------------------------------
@@ -1327,7 +1326,6 @@ export interface OrderedMapIterable<K, V> extends Iterable<readonly [K, V]> {
   readonly ord: Ord<K>
   [Symbol.iterator](): OrderedMapIterator<K, V>
 }
-
 
 export function blackHeight<K, V>(root: RBNode<K, V>): number {
   if (root === Leaf) {

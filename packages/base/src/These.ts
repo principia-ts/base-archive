@@ -3,11 +3,11 @@ import type { TheseURI } from './Modules'
 import type { Show } from './Show'
 
 import * as E from './Either'
-import { makeEq } from './Eq/core'
-import { identity, pipe, tuple } from './Function'
+import { makeEq } from './Eq'
+import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
-import { makeShow } from './Show/core'
+import { makeShow } from './Show'
 import * as P from './typeclass'
 import { makeSemigroup } from './typeclass'
 
@@ -158,14 +158,13 @@ export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
 
 /*
  * -------------------------------------------
- * Applicative
+ * Monoiadl
  * -------------------------------------------
  */
 
-export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
+export function getMonoidal<E>(SE: P.Semigroup<E>): P.Monoidal<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
   return HKT.instance({
-    ...getApply(SE),
-    unit,
+    ...getSemimonoidal(SE),
     pure: Right
   })
 }
@@ -176,12 +175,12 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[HKT.URI<Th
  * -------------------------------------------
  */
 
-export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
+export function getMonoidalExcept<E>(SE: P.Semigroup<E>) {
   const catchAll_: P.CatchAllFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, f) =>
     fa._tag === 'Left' ? f(fa.left) : fa
 
-  return HKT.instance<P.ApplicativeExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
-    ...getApplicative(SE),
+  return HKT.instance<P.MonoidalExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
+    ...getMonoidal(SE),
     catchAll_,
     catchAll: (f) => (fa) => catchAll_(fa, f),
     fail: Left
@@ -190,11 +189,11 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
 
 /*
  * -------------------------------------------
- * Apply
+ * Semimonoidal
  * -------------------------------------------
  */
 
-export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
+export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.Semimonoidal<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
   const crossWith_: P.CrossWithFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
@@ -214,15 +213,11 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HK
       ? Both(fa.left, f(fa.right, fb.right))
       : Both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
 
-  return HKT.instance<P.Apply<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
+  return HKT.instance<P.Semimonoidal<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
     map_,
     map,
     crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a))
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
   })
 }
 
@@ -334,10 +329,9 @@ export function getMonad<E>(SE: P.Semigroup<E>) {
       : Both(SE.combine_(ma.left, fb.left), fb.right)
   }
   return HKT.instance<P.Monad<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
-    ...getApplicative(SE),
+    ...getMonoidal(SE),
     bind_: bind_,
-    bind: (f) => (ma) => bind_(ma, f),
-    flatten: (mma) => bind_(mma, identity)
+    bind: (f) => (ma) => bind_(ma, f)
   })
 }
 
@@ -350,7 +344,7 @@ export function getMonad<E>(SE: P.Semigroup<E>) {
 export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
   const m = getMonad(SE)
   return HKT.instance<P.MonadExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>>>({
-    ...getApplicativeExcept(SE),
+    ...getMonoidalExcept(SE),
     ...m
   })
 }

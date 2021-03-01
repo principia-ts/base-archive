@@ -209,20 +209,14 @@ export function unit(): Reader<unknown, void> {
 export const MonadEnv: P.MonadEnv<[HKT.URI<ReaderURI>], V> = HKT.instance({
   map_,
   map,
-  ap_,
-  ap,
   crossWith_,
   crossWith,
-  cross_,
-  cross,
   asks,
   giveAll,
   giveAll_,
   pure,
   bind_,
-  bind,
-  unit,
-  flatten
+  bind
 })
 
 export { ReaderURI } from './Modules'

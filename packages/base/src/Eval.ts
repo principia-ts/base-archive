@@ -4,13 +4,13 @@
  * -------------------------------------------
  */
 
+import type * as P from './typeclass'
 import type { Stack } from './util/support/Stack'
 
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import { EvalURI } from './Modules'
 import * as O from './Option'
-import * as P from './typeclass'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 
@@ -399,27 +399,21 @@ export const Functor: P.Functor<[HKT.URI<EvalURI>]> = HKT.instance({
   map
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<EvalURI>]>>({
+export const Semimonoidal = HKT.instance<P.Semimonoidal<[HKT.URI<EvalURI>]>>({
   ...Functor,
-  ap_,
-  ap,
   crossWith_,
-  crossWith,
-  cross_,
-  cross
+  crossWith
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<EvalURI>]>>({
-  ...Apply,
-  pure,
-  unit
+export const Monoidal = HKT.instance<P.Monoidal<[HKT.URI<EvalURI>]>>({
+  ...Semimonoidal,
+  pure
 })
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<EvalURI>]>>({
-  ...Applicative,
+  ...Monoidal,
   bind_,
-  bind,
-  flatten
+  bind
 })
 
 export class GenEval<A> {

@@ -1,50 +1,17 @@
-import type { Eq } from './Eq'
-import type * as HKT from './HKT'
-import type { Monoid } from './Monoid'
-import type { Ordering } from './Ordering'
-import type { CombineFn_ } from './Semigroup'
+import type { CombineFn_, Monoid, Ord, Ordering } from './typeclass'
 
-import { boolean, number, string } from './Eq/core'
+import { EqBoolean, EqNumber, EqString } from './Eq'
 import { EQ, GT, LT, MonoidOrdering } from './Ordering'
+import { makeOrd } from './typeclass'
 
-export const OrdURI = 'Ord'
-
-export type OrdURI = HKT.URI<typeof OrdURI>
-
-export interface Ord<A> extends Eq<A> {
-  readonly compare_: CompareFn_<A>
-  readonly compare: CompareFn<A>
-}
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [OrdURI]: Ord<A>
-  }
-}
-
-export interface CompareFn<A> {
-  (y: A): (x: A) => Ordering
-}
-
-export interface CompareFn_<A> {
-  (x: A, y: A): Ordering
-}
+export { makeOrd, Ord }
 
 export function contramap_<A, B>(fa: Ord<A>, f: (b: B) => A): Ord<B> {
-  return fromCompare((x, y) => fa.compare_(f(x), f(y)))
+  return makeOrd((x, y) => fa.compare_(f(x), f(y)))
 }
 
 export function contramap<A, B>(f: (b: B) => A): (fa: Ord<A>) => Ord<B> {
   return (fa) => contramap_(fa, f)
-}
-
-export const fromCompare = <A>(cmp: (x: A, y: A) => Ordering): Ord<A> => {
-  return {
-    compare_: cmp,
-    compare: (y) => (x) => cmp(x, y),
-    equals_: (x, y) => cmp(x, y) === 0,
-    equals: (y) => (x) => cmp(x, y) === 0
-  }
 }
 
 const defaultCompare = (y: any): ((x: any) => Ordering) => {
@@ -53,20 +20,20 @@ const defaultCompare = (y: any): ((x: any) => Ordering) => {
 
 const defaultCompare_ = (x: any, y: any) => (x < y ? LT : x > y ? GT : EQ)
 
-export const ordString: Ord<string> = {
-  ...string,
+export const OrdString: Ord<string> = {
+  ...EqString,
   compare: defaultCompare,
   compare_: defaultCompare_
 }
 
-export const ordNumber: Ord<number> = {
-  ...number,
+export const OrdNumber: Ord<number> = {
+  ...EqNumber,
   compare: defaultCompare,
   compare_: defaultCompare_
 }
 
-export const ordBoolean: Ord<boolean> = {
-  ...boolean,
+export const OrdBoolean: Ord<boolean> = {
+  ...EqBoolean,
   compare: defaultCompare,
   compare_: defaultCompare_
 }
@@ -95,12 +62,12 @@ export const min_ = <A>(O: Ord<A>) => (x: A, y: A): A => (O.compare_(x, y) === G
 
 export const max_ = <A>(O: Ord<A>) => (x: A, y: A): A => (O.compare_(x, y) === LT ? y : x)
 
-export const getMonoid = <A = never>(): Monoid<Ord<A>> => {
+export const getMonoidOrd = <A = never>(): Monoid<Ord<A>> => {
   const combine_: CombineFn_<Ord<A>> = (x, y) =>
-    fromCompare((a, b) => MonoidOrdering.combine_(x.compare(a)(b), y.compare(a)(b)))
+    makeOrd((a, b) => MonoidOrdering.combine_(x.compare(a)(b), y.compare(a)(b)))
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y),
-    nat: fromCompare(() => EQ)
+    nat: makeOrd(() => EQ)
   }
 }

@@ -1,6 +1,6 @@
 import type { Stack } from './util/support/Stack'
 
-import { $hash, isHashable } from './Hashable'
+import { $hash, isHashable } from './typeclass/Hashable'
 import { PCGRandom } from './util/PCGRandom'
 import { isArray, isIterable, isPlain } from './util/predicates'
 import { makeStack } from './util/support/Stack'

@@ -3,6 +3,7 @@ import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
 import type { NonEmptyArrayURI } from './Modules'
+import type { Ord } from './Ord'
 import type { ReadonlyRecord } from './Record'
 import type * as P from './typeclass'
 
@@ -96,12 +97,12 @@ export function tail<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
   return as.slice(1)
 }
 
-export function min<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
+export function min<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
   const S = getMeetSemigroup(O)
   return (as) => as.reduce(S.combine_)
 }
 
-export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
+export function max<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
   const S = getJoinSemigroup(O)
   return (as) => as.reduce(S.combine_)
 }
@@ -571,7 +572,7 @@ export function group<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonE
  * @category Combinators
  * @since 1.0.0
  */
-export function groupSort<A>(O: P.Ord<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
+export function groupSort<A>(O: Ord<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
   const sortO  = A.sort(O)
   const groupO = group(O)
   return (as) => groupO(sortO(as))
@@ -623,7 +624,7 @@ export function init<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
  * @category Combinators
  * @since 1.0.0
  */
-export function sort<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<A> {
+export function sort<A>(O: Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<A> {
   return (as) => A.sort(O)(as) as any
 }
 

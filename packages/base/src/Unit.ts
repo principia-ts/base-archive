@@ -8,8 +8,8 @@ export interface Unit<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC>
   readonly unit: UnitFn<F, TC>
 }
 
-export interface UnitComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
-  readonly unit: UnitFnComposition<F, G, TCF, TCG>
+export interface Unit2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+  readonly unit: UnitFn2<F, G, TCF, TCG>
 }
 
 export interface UnitFn<F extends HKT.URIS, TC = HKT.Auto> {
@@ -26,7 +26,7 @@ export interface UnitFn<F extends HKT.URIS, TC = HKT.Auto> {
   >(/* void */): HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, void>
 }
 
-export interface UnitFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface UnitFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
     NF extends string = HKT.Initial<TCF, 'N'>,
     KF = HKT.Initial<TCF, 'K'>,

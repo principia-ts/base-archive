@@ -4,7 +4,7 @@ import * as A from './Array'
 import { flow, pipe } from './Function'
 import * as NA from './NonEmptyArray'
 import * as O from './Option'
-import { max_, ordNumber } from './Ord'
+import { max_, OrdNumber } from './Ord'
 
 /**
  * The empty string
@@ -227,7 +227,7 @@ export function slice(start: number, end: number): (s: string) => string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeLeft_(s: string, n: number): string {
-  return s.slice(0, max_(ordNumber)(0, n))
+  return s.slice(0, max_(OrdNumber)(0, n))
 }
 
 /**
@@ -255,7 +255,7 @@ export function takeLeft(n: number): (s: string) => string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeRight_(s: string, n: number): string {
-  return s.slice(max_(ordNumber)(0, s.length - Math.floor(n)), Infinity)
+  return s.slice(max_(OrdNumber)(0, s.length - Math.floor(n)), Infinity)
 }
 
 /**
