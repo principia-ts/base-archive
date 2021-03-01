@@ -1,9 +1,19 @@
 import type { ReadonlyRecord } from './Record'
 
 import { memoize } from './Function'
-import { Eq, makeEq } from './typeclass'
 
-export { Eq, makeEq }
+export interface Eq<A> {
+  readonly equals_: (x: A, y: A) => boolean
+  readonly equals: (y: A) => (x: A) => boolean
+}
+
+export function makeEq<A>(equals: (x: A, y: A) => boolean): Eq<A> {
+  const equals_ = (x: A, y: A) => x === y || equals(x, y)
+  return {
+    equals_,
+    equals: (y) => (x) => equals_(x, y)
+  }
+}
 
 /*
  * -------------------------------------------
@@ -11,30 +21,30 @@ export { Eq, makeEq }
  * -------------------------------------------
  */
 
-export const EqAny: Eq<any> = {
+export const any: Eq<any> = {
   equals_: () => true,
   equals: () => () => true
 }
 
-export const EqStrict: Eq<unknown> = {
+export const strict: Eq<unknown> = {
   equals_: (x, y) => x === y,
   equals: (y) => (x) => x === y
 }
 
-export const EqString: Eq<string> = EqStrict
+export const string: Eq<string> = strict
 
-export const EqNumber: Eq<number> = EqStrict
+export const number: Eq<number> = strict
 
-export const EqBoolean: Eq<boolean> = EqStrict
+export const boolean: Eq<boolean> = strict
 
-export const EqDate: Eq<Date> = {
+export const date: Eq<Date> = {
   equals_: (x, y) => x.valueOf() === y.valueOf(),
   equals: (y) => (x) => x.valueOf() === y.valueOf()
 }
 
-export const EqUnknownArray: Eq<ReadonlyArray<unknown>> = makeEq((x, y) => x.length === y.length)
+export const UnknownArray: Eq<ReadonlyArray<unknown>> = makeEq((x, y) => x.length === y.length)
 
-export const EqUnknownRecord: Eq<ReadonlyRecord<string, unknown>> = makeEq((x, y) => {
+export const UnknownRecord: Eq<ReadonlyRecord<string, unknown>> = makeEq((x, y) => {
   for (const k in x) {
     if (!(k in y)) {
       return false

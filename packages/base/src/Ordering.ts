@@ -1,6 +1,6 @@
-import type { Monoid, Ordering } from './typeclass'
+import type { Monoid } from './typeclass'
 
-export { Ordering }
+export type Ordering = -1 | 0 | 1
 
 export const LT = -1
 export const GT = 1

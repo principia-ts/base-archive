@@ -90,7 +90,7 @@ export const Category: P.Category<[HKT.URI<TraversalURI>], V> = HKT.instance({
  * @since 1.0.0
  */
 export function modify<A>(f: (a: A) => A): <S>(sa: Traversal<S, A>) => (s: S) => S {
-  return (sa) => sa.modifyF(I.Applicative)(f)
+  return (sa) => sa.modifyF(I.Monoidal)(f)
 }
 
 /**

@@ -1,10 +1,8 @@
 import type { Predicate, Refinement } from '@principia/base/Function'
-import type { Monoid } from '@principia/base/Monoid'
-import type { Semigroup } from '@principia/base/Semigroup'
+import type { Monoid, Semigroup } from '@principia/base/typeclass'
 import type { Stack } from '@principia/base/util/support/Stack'
 
-import { makeMonoid } from '@principia/base/Monoid'
-import { makeSemigroup } from '@principia/base/Semigroup'
+import { makeMonoid, makeSemigroup } from '@principia/base/typeclass'
 import { makeStack } from '@principia/base/util/support/Stack'
 
 /*

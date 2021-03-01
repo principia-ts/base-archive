@@ -50,9 +50,9 @@ export const PrimitivesShow = implementInterpreter<URI, Alg.PrimitivesURI>()((_)
       {}
     ),
   array: (item, config) => (env) =>
-    pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)),
+    pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(A.getShow(show), config?.name), env, show)),
   nonEmptyArray: (item, config) => (env) =>
-    pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(S.array(show), config?.name), env, show)),
+    pipe(item(env), (show) => applyShowConfig(config?.config)(S.named_(A.getShow(show), config?.name), env, show)),
   tuple: (...types) => (config) => (env) =>
     pipe(
       types,

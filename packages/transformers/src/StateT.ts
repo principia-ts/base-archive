@@ -2,7 +2,6 @@ import type { StateInURI, StateOutURI } from './Modules'
 import type * as P from '@principia/base/typeclass'
 import type { Erase } from '@principia/base/util/types'
 
-import { identity, tuple } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
 
 /*
@@ -34,15 +33,9 @@ export function getStateT<F>(M: P.Monad<HKT.UHKT<F>>): StateT<HKT.UHKT<F>> {
     map: (f) => (fa) => map_(fa, f),
     crossWith_,
     crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
     pure: (a) => (s) => M.pure([a, s]),
-    unit: () => (s) => M.pure([undefined, s]),
     bind_,
     bind: (f) => (ma) => bind_(ma, f),
-    flatten: (mma) => bind_(mma, identity),
     get: () => (s) => M.pure([s, s]),
     put: (s) => () => M.pure([undefined, s]),
     modify: (f) => (s) => M.pure([undefined, f(s)]),

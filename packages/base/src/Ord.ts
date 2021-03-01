@@ -1,10 +1,32 @@
-import type { CombineFn_, Monoid, Ord, Ordering } from './typeclass'
+import type { Ordering } from './Ordering'
+import type { CombineFn_, Monoid } from './typeclass'
 
-import { EqBoolean, EqNumber, EqString } from './Eq'
+import * as Eq from './Eq'
 import { EQ, GT, LT, MonoidOrdering } from './Ordering'
-import { makeOrd } from './typeclass'
 
-export { makeOrd, Ord }
+type Eq<A> = Eq.Eq<A>
+
+export interface Ord<A> extends Eq<A> {
+  readonly compare_: CompareFn_<A>
+  readonly compare: CompareFn<A>
+}
+
+export interface CompareFn<A> {
+  (y: A): (x: A) => Ordering
+}
+
+export interface CompareFn_<A> {
+  (x: A, y: A): Ordering
+}
+
+export const makeOrd = <A>(cmp: (x: A, y: A) => Ordering): Ord<A> => {
+  return {
+    compare_: cmp,
+    compare: (y) => (x) => cmp(x, y),
+    equals_: (x, y) => cmp(x, y) === 0,
+    equals: (y) => (x) => cmp(x, y) === 0
+  }
+}
 
 export function contramap_<A, B>(fa: Ord<A>, f: (b: B) => A): Ord<B> {
   return makeOrd((x, y) => fa.compare_(f(x), f(y)))
@@ -20,20 +42,20 @@ const defaultCompare = (y: any): ((x: any) => Ordering) => {
 
 const defaultCompare_ = (x: any, y: any) => (x < y ? LT : x > y ? GT : EQ)
 
-export const OrdString: Ord<string> = {
-  ...EqString,
+export const string: Ord<string> = {
+  ...Eq.string,
   compare: defaultCompare,
   compare_: defaultCompare_
 }
 
-export const OrdNumber: Ord<number> = {
-  ...EqNumber,
+export const number: Ord<number> = {
+  ...Eq.number,
   compare: defaultCompare,
   compare_: defaultCompare_
 }
 
-export const OrdBoolean: Ord<boolean> = {
-  ...EqBoolean,
+export const boolean: Ord<boolean> = {
+  ...Eq.boolean,
   compare: defaultCompare,
   compare_: defaultCompare_
 }

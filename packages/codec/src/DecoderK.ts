@@ -363,12 +363,7 @@ export function intersect_<IA, E, A, IB, B>(
     decode: (M) => {
       const leftM  = left.decode(M)
       const rightM = right.decode(M)
-      return (i) =>
-        pipe(
-          leftM(i),
-          M.map((a: A) => (b: B) => _intersect(a, b)),
-          M.ap(rightM(i))
-        )
+      return (i) => M.crossWith_(leftM(i), rightM(i), _intersect)
     }
   }
 }

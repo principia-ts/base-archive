@@ -1,4 +1,4 @@
-import type { Semigroup } from '@principia/base/Semigroup'
+import type { Semigroup } from '@principia/base/typeclass'
 import type { FreeSemigroup } from '@principia/free/FreeSemigroup'
 
 import * as FS from '@principia/free/FreeSemigroup'

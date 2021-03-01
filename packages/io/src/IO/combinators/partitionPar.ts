@@ -3,7 +3,7 @@ import type { IO } from '../core'
 import { identity } from '@principia/base/Function'
 import * as I from '@principia/base/Iterable'
 
-import { map_, attempt } from '../core'
+import { attempt, map_ } from '../core'
 import { foreachPar_ } from './foreachPar'
 
 /**

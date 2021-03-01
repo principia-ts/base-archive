@@ -9,11 +9,10 @@ import type { These } from './These'
 import { _bind, _bindTo, flow, identity, pipe, tuple, unsafeCoerce } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
-import { getMonoidOrd, makeOrd, OrdNumber } from './Ord'
+import { getMonoidOrd, makeOrd, number } from './Ord'
 import { EQ } from './Ordering'
 import * as P from './typeclass'
-import { GenLazyHKT, genWithHistoryF } from './typeclass/Gen'
-import { makeMonoid } from './typeclass/Monoid'
+import { GenLazyHKT, genWithHistoryF, makeMonoid } from './typeclass'
 
 /*
  * -------------------------------------------
@@ -935,7 +934,7 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<ReadonlyArray<A>> {
         return ordering
       }
     }
-    return OrdNumber.compare_(aLen, bLen)
+    return number.compare_(aLen, bLen)
   })
 }
 

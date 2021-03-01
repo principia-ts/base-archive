@@ -15,7 +15,7 @@ export const IntersectionEq = implementInterpreter<URI, Alg.IntersectionURI>()((
       A.map((f) => f(env)),
       (eqs) =>
         applyEqConfig(config?.config)(
-          A.foldl_(eqs, Eq.eqAny, (b, a) => Eq.intersect_(b, a)),
+          A.foldl_(eqs, Eq.any, (b, a) => Eq.intersect_(b, a)),
           env,
           eqs as any
         )

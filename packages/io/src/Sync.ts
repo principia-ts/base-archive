@@ -770,31 +770,25 @@ export const Bifunctor = HKT.instance<P.Bifunctor<[HKT.URI<SyncURI>], V>>({
   mapLeft: mapError
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<SyncURI>], V>>({
+export const Semimonoidal = HKT.instance<P.Semimonoidal<[HKT.URI<SyncURI>], V>>({
   ...Functor,
-  ap_,
-  ap: (fa) => (fab) => ap_(fab, fa),
   crossWith_,
-  crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-  cross_,
-  cross: (fb) => (fa) => cross_(fa, fb)
+  crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
 })
 
-export const sequenceT = P.sequenceTF(Apply)
+export const sequenceT = P.sequenceTF(Semimonoidal)
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<SyncURI>], V>>({
-  ...Apply,
-  unit,
+export const Monoidal = HKT.instance<P.Monoidal<[HKT.URI<SyncURI>], V>>({
+  ...Semimonoidal,
   pure
 })
 
-export const sequenceS = P.sequenceSF(Applicative)
+export const sequenceS = P.sequenceSF(Monoidal)
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<SyncURI>], V>>({
-  ...Applicative,
+  ...Monoidal,
   bind_,
-  bind,
-  flatten
+  bind
 })
 
 export const MonadExcept = HKT.instance<P.MonadExcept<[HKT.URI<SyncURI>], V>>({

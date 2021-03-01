@@ -1,10 +1,8 @@
 import type { ReaderURI } from '@principia/base/Reader'
-import type * as P from '@principia/base/typeclass'
 
-import { identity } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
 import * as R from '@principia/base/Reader'
-import { getApplicativeComposition } from '@principia/base/typeclass'
+import * as P from '@principia/base/typeclass'
 
 export type V<C> = HKT.CleanParam<C, 'R'> & HKT.V<'R', '-'>
 
@@ -15,10 +13,9 @@ export function getReaderT<M>(M: P.Monad<HKT.UHKT<M>>): ReaderT<HKT.UHKT<M>> {
   const bind_: ReaderT<HKT.UHKT<M>>['bind_'] = (ma, f) => (r) => M.bind_(ma(r), (a) => f(a)(r))
 
   return HKT.instance<ReaderT<HKT.UHKT<M>>>({
-    ...getApplicativeComposition(R.MonadEnv, M),
+    ...P.getMonoidalComposition(R.MonadEnv, M),
     bind_,
     bind: (f) => (ma) => bind_(ma, f),
-    flatten: (mma) => bind_(mma, identity),
     giveAll_: R.giveAll_,
     giveAll: R.giveAll,
     asks: <R, A>(f: (_: R) => A) => (r: R) => M.pure(f(r)),

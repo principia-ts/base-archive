@@ -1,10 +1,15 @@
-import type { Show } from './typeclass'
-
 import { memoize, pipe } from './Function'
 import * as R from './Record'
-import { makeShow } from './typeclass'
 
-export { makeShow, Show }
+export interface Show<A> {
+  readonly show: (a: A) => string
+}
+
+export function makeShow<A>(show: (a: A) => string): Show<A> {
+  return {
+    show
+  }
+}
 
 /*
  * -------------------------------------------
@@ -12,15 +17,15 @@ export { makeShow, Show }
  * -------------------------------------------
  */
 
-export const ShowAny: Show<any> = {
+export const any: Show<any> = {
   show: (a) => JSON.stringify(a)
 }
 
-export const ShowString: Show<string> = ShowAny
+export const string: Show<string> = any
 
-export const ShowNumber: Show<number> = ShowAny
+export const number: Show<number> = any
 
-export const ShowBoolean: Show<boolean> = ShowAny
+export const boolean: Show<boolean> = any
 
 /*
  * -------------------------------------------

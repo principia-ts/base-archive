@@ -1,6 +1,5 @@
 import type { OptionURI } from '@principia/base/Option'
 
-import { identity } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
 import * as O from '@principia/base/Option'
 import * as P from '@principia/base/typeclass'
@@ -14,10 +13,9 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
     )
 
   return HKT.instance<OptionT<HKT.UHKT<M>>>({
-    ...P.getApplicativeComposition(M, O.Applicative),
+    ...P.getMonoidalComposition(M, O.Monoidal),
     bind_,
     bind: (f) => (ma) => bind_(ma, f),
-    flatten: (mma) => bind_(mma, identity),
     none: () => M.pure(O.None()),
     some: (a) => M.pure(O.Some(a)),
     someM: (ma) => M.map_(ma, O.Some),
