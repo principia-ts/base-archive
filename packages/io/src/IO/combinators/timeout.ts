@@ -1,4 +1,6 @@
+import type { Clock } from '../../Clock'
 import type { IO } from '../core'
+import type { Has } from '@principia/base/Has'
 
 import * as O from '@principia/base/Option'
 
@@ -20,7 +22,7 @@ import { timeoutTo_ } from './timeoutTo'
  * the timeout, resulting in earliest possible return, before an underlying
  * effect has been successfully interrupted.
  */
-export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number) {
+export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number): IO<R & Has<Clock>, E, O.Option<A>> {
   return timeoutTo_(ma, d, O.None(), O.Some)
 }
 
@@ -41,5 +43,5 @@ export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number) {
  * effect has been successfully interrupted.
  */
 export function timeout(d: number) {
-  return <R, E, A>(ma: IO<R, E, A>) => timeout_(ma, d)
+  return <R, E, A>(ma: IO<R, E, A>): IO<R & Has<Clock>, E, O.Option<A>> => timeout_(ma, d)
 }
