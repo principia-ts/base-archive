@@ -10,7 +10,6 @@ import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 
 import { IOURI } from '../Modules'
-import { cross_ } from './core'
 
 /*
  * -------------------------------------------
@@ -70,7 +69,7 @@ abstract class IOSyntax<R, E, A> {
     return this['>>=']((a) => mb['$>'](() => a))
   }
   ['<*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
-    return cross_(this, mb)
+    return this['>>=']((a) => mb['<$>']((b) => [a, b]))
   }
 }
 

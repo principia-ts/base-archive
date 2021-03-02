@@ -1082,6 +1082,20 @@ export function runResult<W, A>(ma: Multi<W, unknown, never, unknown, never, A>)
 }
 
 /**
+ * Runs this computation with the given environment, returning the result.
+ */
+export function runEnv_<W, R, A>(ma: Multi<W, unknown, never, R, never, A>, r: R): A {
+  return runResult(giveAll_(ma, r))
+}
+
+/**
+ * Runs this computation with the given environment, returning the result.
+ */
+export function runEnv<R>(r: R): <W, A>(ma: Multi<W, unknown, never, R, never, A>) => A {
+  return (ma) => runEnv_(ma, r)
+}
+
+/**
  * Runs this computation with the specified initial state, returning the
  * updated state and discarding the result.
  */

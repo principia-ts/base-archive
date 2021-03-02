@@ -17,7 +17,7 @@ export function getMReaderT<F>(M: P.Monad<HKT.UHKT<F>>): MReaderT<HKT.UHKT<F>> {
     Mu.bind_(rfa, (fa) => Mu.map_(rfb, (fb) => M.crossWith_(fa, fb, f)))
 
   const bind_: MReaderT<HKT.UHKT<F>>['bind_'] = (rma, f) =>
-    Mu.asks((r) => pipe(rma, Mu.giveAll(r), Mu.runResult, M.bind(flow(f, Mu.giveAll(r), Mu.runResult))))
+    Mu.asks((r) => pipe(rma, Mu.giveAll(r), Mu.runResult, M.bind(flow(f, Mu.runEnv(r)))))
   return HKT.instance<MReaderT<HKT.UHKT<F>>>({
     map_,
     map: (f) => (fa) => map_(fa, f),

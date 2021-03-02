@@ -13,7 +13,7 @@ import { Clock } from '../Clock'
 import * as I from '../IO/core'
 import * as Ref from '../IORef/core'
 import { Random } from '../Random'
-import { done, makeContinue, makeDone } from './Decision'
+import { done, makeContinue, makeDone, toDone } from './Decision'
 
 /*
  * -------------------------------------------
@@ -23,6 +23,45 @@ import { done, makeContinue, makeDone } from './Decision'
 
 export class Schedule<R, I, O> {
   constructor(readonly step: StepFunction<R, I, O>) {}
+  ['&&']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, readonly [O, O1]> {
+    return intersect_(this, that)
+  }
+  ['***']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, readonly [I, I1], readonly [O, O1]> {
+    return intersectInOut_(this, that)
+  }
+  ['*>']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, O1> {
+    return intersectr_(this, that)
+  }
+  ['<*']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, O> {
+    return intersectl_(this, that)
+  }
+  ['+++']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, Either<I, I1>, O | O1> {
+    return chooseMerge_(this, that)
+  }
+  ['++']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, O | O1> {
+    return andThen_(this, that)
+  }
+  ['<*>']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, readonly [O, O1]> {
+    return intersect_(this, that)
+  }
+  ['>>>']<R1, O1>(that: Schedule<R1, O, O1>): Schedule<R & R1, I, O1> {
+    return compose_(this, that)
+  }
+  ['<<<']<R1, I1>(that: Schedule<R1, I1, I>): Schedule<R & R1, I1, O> {
+    return compose_(that, this)
+  }
+  ['||']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, readonly [O, O1]> {
+    return union_(this, that)
+  }
+  ['|||']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, E.Either<I, I1>, O | O1> {
+    return chooseMerge_(this, that)
+  }
+  ['<||>']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, Either<O, O1>> {
+    return andThenEither_(this, that)
+  }
+  ['<$>']<O1>(f: (o: O) => O1): Schedule<R, I, O1> {
+    return map_(this, f)
+  }
 }
 
 export class Driver<R, I, O> {
@@ -55,33 +94,6 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           )
         )
       )
-
-      const nextdo = (input: I) =>
-        pipe(
-          I.do,
-          I.bindS('step', () => I.map_(ref.get, ([_, o]) => o)),
-          I.bindS('now', () => Clock.currentTime),
-          I.bindS('dec', ({ now, step }) => step(now, input)),
-          I.bindS('v', ({ dec, now }) => {
-            switch (dec._tag) {
-              case 'Done': {
-                return pipe(
-                  ref.set([O.Some(dec.out), done(dec.out)]),
-                  I.bind(() => I.fail(O.None()))
-                )
-              }
-              case 'Continue': {
-                return pipe(
-                  ref.set([O.Some(dec.out), dec.next]),
-                  I.map(() => dec.interval - now),
-                  I.bind((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
-                  I.map(() => dec.out)
-                )
-              }
-            }
-          }),
-          I.map(({ v }) => v)
-        )
 
       const next = (input: I) =>
         I.gen(function* (_) {
@@ -120,80 +132,80 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export function cross_<R, I, O, R1, I1, O1>(
+export function intersect_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return combineWith_(sc, that, (d, d2) => Math.max(d, d2))
+  return intersectWith_(sc, that, (d, d2) => Math.max(d, d2))
 }
 
 /**
  * Returns a new schedule that performs a geometric intersection on the intervals defined
  * by both schedules.
  */
-export function cross<R1, I1, O1>(
+export function intersect<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return (sc) => cross_(sc, that)
+  return (sc) => intersect_(sc, that)
 }
 
 /**
- * Same as zip but ignores the right output.
+ * Same as intersect but ignores the right output.
  */
-export function apl_<R, I, O, R1, I1, O1>(
+export function intersectl_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O> {
-  return map_(cross_(sc, that), ([_]) => _)
+  return map_(intersect_(sc, that), ([_]) => _)
 }
 
 /**
- * Same as zip but ignores the right output.
+ * Same as intersect but ignores the right output.
  */
-export function apl<R1, I1, O1>(
+export function intersectl<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O> {
-  return (sc) => apl_(sc, that)
+  return (sc) => intersectl_(sc, that)
 }
 
 /**
- * Same as zip but ignores the left output.
+ * Same as intersect but ignores the left output.
  */
-export function apr_<R, I, O, R1, I1, O1>(
+export function intersectr_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, I & I1, O1> {
-  return map_(cross_(sc, that), ([_, __]) => __)
+  return map_(intersect_(sc, that), ([_, __]) => __)
 }
 
 /**
- * Same as zip but ignores the left output.
+ * Same as intersect but ignores the left output.
  */
-export function apr<R1, I1, O1>(
+export function intersectr<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O1> {
-  return (sc) => apr_(sc, that)
+  return (sc) => intersectr_(sc, that)
 }
 
 /**
- * Equivalent to `cross` followed by `map`.
+ * Equivalent to `intersect` followed by `map`.
  */
-export function crossWith_<R, I, O, R1, I1, O1, O2>(
+export function intersectMap_<R, I, O, R1, I1, O1, O2>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>,
   f: (o: O, o1: O1) => O2
 ): Schedule<R & R1, I & I1, O2> {
-  return map_(cross_(sc, that), ([o, o1]) => f(o, o1))
+  return map_(intersect_(sc, that), ([o, o1]) => f(o, o1))
 }
 
 /**
- * Equivalent to `cross` followed by `map`.
+ * Equivalent to `intersect` followed by `map`.
  */
-export function crossWith<R1, I1, O, O1, O2>(
+export function intersectMap<R1, I1, O, O1, O2>(
   that: Schedule<R1, I1, O1>,
   f: (o: O, o1: O1) => O2
 ): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O2> {
-  return (sc) => crossWith_(sc, that, f)
+  return (sc) => intersectMap_(sc, that, f)
 }
 
 /*
@@ -401,7 +413,26 @@ export function andThenEither<R1, I1, O1>(that: Schedule<R1, I1, O1>) {
   return <R, I, O>(sc: Schedule<R, I, O>) => andThenEither_(sc, that)
 }
 
-const combineWithLoop = <R, I, O, R1, I1, O1>(
+export function andThen_<R, I, O, R1, I1, O1>(
+  sc: Schedule<R, I, O>,
+  that: Schedule<R1, I1, O1>
+): Schedule<R & R1, I & I1, O | O1> {
+  return map_(
+    andThenEither_(sc, that),
+    E.match(
+      (o) => o,
+      (o1) => o1
+    )
+  )
+}
+
+export function andThen<R1, I1, O1>(
+  that: Schedule<R1, I1, O1>
+): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O | O1> {
+  return (sc) => andThen_(sc, that)
+}
+
+const intersectWithLoop = <R, I, O, R1, I1, O1>(
   sc: StepFunction<R, I, O>,
   that: StepFunction<R1, I1, O1>,
   f: (d1: number, d2: number) => number
@@ -409,7 +440,7 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
   const left  = sc(now, i)
   const right = that(now, i)
 
-  return I.map_(I.cross_(left, right), ([l, r]) => {
+  return I.crossWith_(left, right, (l, r) => {
     switch (l._tag) {
       case 'Done': {
         switch (r._tag) {
@@ -428,7 +459,7 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
             return makeDone<[O, O1]>([l.out, r.out])
           }
           case 'Continue': {
-            return makeContinue([l.out, r.out], f(l.interval, r.interval), combineWithLoop(l.next, r.next, f))
+            return makeContinue([l.out, r.out], f(l.interval, r.interval), intersectWithLoop(l.next, r.next, f))
           }
         }
       }
@@ -436,20 +467,20 @@ const combineWithLoop = <R, I, O, R1, I1, O1>(
   })
 }
 
-export function combineWith_<R, I, O, R1, I1, O1>(
+export function intersectWith_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>,
   f: (d1: number, d2: number) => number
 ): Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return new Schedule(combineWithLoop(sc.step, that.step, f))
+  return new Schedule(intersectWithLoop(sc.step, that.step, f))
 }
 
-export function combineWith<R1, I1, O1>(
+export function intersectWith<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): (
   f: (d1: number, d2: number) => number
 ) => <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return (f) => (sc) => combineWith_(sc, that, f)
+  return (f) => (sc) => intersectWith_(sc, that, f)
 }
 
 const checkMLoop = <R, I, O, R1>(
@@ -586,6 +617,45 @@ export function collectAll<R, I, O>(sc: Schedule<R, I, O>): Schedule<R, I, reado
   return fold_(sc, [] as ReadonlyArray<O>, (xs, x) => [...xs, x])
 }
 
+function composeLoop<R, I, O, R1, O1>(
+  s1: StepFunction<R, I, O>,
+  s2: StepFunction<R1, O, O1>
+): StepFunction<R & R1, I, O1> {
+  return (now, i) =>
+    pipe(
+      s1(now, i),
+      I.bind((d) => {
+        switch (d._tag) {
+          case 'Done': {
+            return I.map_(s2(now, d.out), toDone)
+          }
+          case 'Continue': {
+            return I.map_(s2(now, d.out), (d2) => {
+              switch (d2._tag) {
+                case 'Done': {
+                  return makeDone(d2.out)
+                }
+                case 'Continue': {
+                  return makeContinue(d2.out, Math.max(d.interval, d2.interval), composeLoop(d.next, d2.next))
+                }
+              }
+            })
+          }
+        }
+      })
+    )
+}
+
+export function compose_<R, I, O, R1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, O, O1>): Schedule<R & R1, I, O1> {
+  return new Schedule(composeLoop(sc.step, that.step))
+}
+
+export function compose<O, R1, O1>(
+  that: Schedule<R1, O, O1>
+): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, O1> {
+  return (sc) => compose_(sc, that)
+}
+
 /**
  * Returns a new `Schedule` with the specified effectfully computed delay added before the start
  * of each interval produced by the this `Schedule`.
@@ -630,28 +700,28 @@ export function delayedFrom<R, I>(sc: Schedule<R, I, number>) {
   return addDelay_(sc, (x) => x)
 }
 
-export function either_<R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) {
-  return combineWith_(sc, that, (d1, d2) => Math.min(d1, d2))
+export function union_<R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) {
+  return intersectWith_(sc, that, (d1, d2) => Math.min(d1, d2))
 }
 
-export function either<R1, I1, O1>(
+export function union<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, readonly [O, O1]> {
-  return (sc) => either_(sc, that)
+  return (sc) => union_(sc, that)
 }
 
-export function eitherWith_<R, I, O, R1, I1, O1, O2>(
+export function unionWith_<R, I, O, R1, I1, O1, O2>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>,
   f: (o: O, o1: O1) => O2
 ): Schedule<R & R1, I & I1, O2> {
-  return map_(either_(sc, that), ([o, o1]) => f(o, o1))
+  return map_(union_(sc, that), ([o, o1]) => f(o, o1))
 }
 
-export function eitherWith<R1, I1, O1>(
+export function unionWith<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <O, O2>(f: (o: O, o1: O1) => O2) => <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I & I1, O2> {
-  return (f) => (sc) => eitherWith_(sc, that, f)
+  return (f) => (sc) => unionWith_(sc, that, f)
 }
 
 const ensuringLoop = <R, I, O, R1>(
@@ -790,7 +860,7 @@ export function fold<O, B>(b: B, f: (b: B, o: O) => B): <R, I>(sc: Schedule<R, I
  * element of a tuple. This allows carrying information through this schedule.
  */
 export function fst<A>(): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R, readonly [I, A], readonly [O, A]> {
-  return (sc) => zipInOut_(sc, identity<A>())
+  return (sc) => intersectInOut_(sc, identity<A>())
 }
 
 /**
@@ -1170,7 +1240,7 @@ export const stop = asUnit(recur(0))
  * element of a tuple. This allows carrying information through this schedule.
  */
 export function snd<A>(): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R, readonly [A, I], readonly [A, O]> {
-  return (sc) => zipInOut_(identity<A>(), sc)
+  return (sc) => intersectInOut_(identity<A>(), sc)
 }
 
 /**
@@ -1271,7 +1341,7 @@ const zipLoop = <R, I, O, R1, I1, O1>(
  * Returns a new schedule that has both the inputs and outputs of this and the specified
  * schedule.
  */
-export function zipInOut_<R, I, O, R1, I1, O1>(
+export function intersectInOut_<R, I, O, R1, I1, O1>(
   sc: Schedule<R, I, O>,
   that: Schedule<R1, I1, O1>
 ): Schedule<R & R1, readonly [I, I1], readonly [O, O1]> {
@@ -1282,10 +1352,10 @@ export function zipInOut_<R, I, O, R1, I1, O1>(
  * Returns a new schedule that has both the inputs and outputs of this and the specified
  * schedule.
  */
-export function zipInOut<R1, I1, O1>(
+export function intersectInOut<R1, I1, O1>(
   that: Schedule<R1, I1, O1>
 ): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, readonly [I, I1], readonly [O, O1]> {
-  return (sc) => zipInOut_(sc, that)
+  return (sc) => intersectInOut_(sc, that)
 }
 const unfoldLoop = <A>(a: A, f: (a: A) => A): StepFunction<unknown, unknown, A> => (now, _) =>
   I.pure(makeContinue(a, now, unfoldLoop(f(a), f)))

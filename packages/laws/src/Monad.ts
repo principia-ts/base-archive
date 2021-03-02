@@ -1,16 +1,20 @@
+import type { MaybeAsyncEq } from './utils'
 import type { MorphismN } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
 import * as Eq from '@principia/base/Eq'
+import { pipe } from '@principia/base/Function'
 import { flattenF } from '@principia/base/typeclass'
+import * as I from '@principia/io/IO'
 import * as fc from 'fast-check'
 
 import { Bind } from './Bind'
+import { isPromise } from './utils'
 
 function LeftIdentityLaw<M extends HKT.URIS, TC, A, N extends string, K, Q, W, X, I, S, R, E, B>(
   M: P.Monad<M, TC>,
-  S: Eq.Eq<
+  S: MaybeAsyncEq<
     HKT.Kind<
       M,
       TC,
@@ -27,19 +31,19 @@ function LeftIdentityLaw<M extends HKT.URIS, TC, A, N extends string, K, Q, W, X
     >
   >,
   afb: (a: A) => HKT.Kind<M, TC, N, K, Q, W, X, I, S, R, E, B>
-): (a: A) => boolean
+): (a: A) => Promise<boolean>
 function LeftIdentityLaw<M, A, B>(
   M: P.Monad<HKT.UHKT<M>>,
-  S: Eq.Eq<HKT.HKT<M, B>>,
+  S: MaybeAsyncEq<HKT.HKT<M, B>>,
   afb: MorphismN<[A], HKT.HKT<M, B>>
-): (a: A) => boolean
+): (a: A) => Promise<boolean>
 function LeftIdentityLaw<M, A, B>(
   M: P.Monad<HKT.UHKT<M>>,
-  S: Eq.Eq<HKT.HKT<M, B>>,
+  S: MaybeAsyncEq<HKT.HKT<M, B>>,
   afb: MorphismN<[A], HKT.HKT<M, B>>
-): (a: A) => boolean {
+): (a: A) => Promise<boolean> {
   return (a) => {
-    return S.equals_(
+    const b = S.equals_(
       flattenF(M)(
         M.map_(
           M.map_(M.pure(undefined), () => a),
@@ -48,17 +52,25 @@ function LeftIdentityLaw<M, A, B>(
       ),
       afb(a)
     )
+    return isPromise(b) ? b : Promise.resolve(b)
   }
 }
 
 function RightIdentityLaw<M extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A>(
   M: P.Monad<M, TC>,
-  S: Eq.Eq<HKT.Kind<M, TC, N, K, Q, W, X, I, S, R, E, A>>
-): (a: HKT.Kind<M, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean
-function RightIdentityLaw<M, A>(M: P.Monad<HKT.UHKT<M>>, S: Eq.Eq<HKT.HKT<M, A>>): (fa: HKT.HKT<M, A>) => boolean
-function RightIdentityLaw<M, A>(M: P.Monad<HKT.UHKT<M>>, S: Eq.Eq<HKT.HKT<M, A>>): (fa: HKT.HKT<M, A>) => boolean {
+  S: MaybeAsyncEq<HKT.Kind<M, TC, N, K, Q, W, X, I, S, R, E, A>>
+): (a: HKT.Kind<M, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
+function RightIdentityLaw<M, A>(
+  M: P.Monad<HKT.UHKT<M>>,
+  S: MaybeAsyncEq<HKT.HKT<M, A>>
+): (fa: HKT.HKT<M, A>) => Promise<boolean>
+function RightIdentityLaw<M, A>(
+  M: P.Monad<HKT.UHKT<M>>,
+  S: MaybeAsyncEq<HKT.HKT<M, A>>
+): (fa: HKT.HKT<M, A>) => Promise<boolean> {
   return (fa) => {
-    return S.equals_(flattenF(M)(M.map_(fa, (a) => M.map_(M.pure(undefined), () => a))), fa)
+    const b = S.equals_(flattenF(M)(M.map_(fa, (a) => M.map_(M.pure(undefined), () => a))), fa)
+    return isPromise(b) ? b : Promise.resolve(b)
   }
 }
 
@@ -81,7 +93,7 @@ export function testMonad<M extends HKT.URIS, C>(
   R = HKT.Initial<C, 'R'>,
   E = HKT.Initial<C, 'E'>
 >(
-  liftEq: <A>(S: Eq.Eq<A>) => Eq.Eq<HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, A>>
+  liftEq: <A>(S: Eq.Eq<A>) => MaybeAsyncEq<HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, A>>
 ) => void
 export function testMonad<M>(M: P.Monad<HKT.UHKT<M>>): (liftEq: <A>(S: Eq.Eq<A>) => Eq.Eq<HKT.HKT<M, A>>) => void {
   return (liftEq) => {
@@ -93,9 +105,9 @@ export function testMonad<M>(M: P.Monad<HKT.UHKT<M>>): (liftEq: <A>(S: Eq.Eq<A>)
     const afb   = (s: string) => M.pure(s.length)
     const afc   = (n: number) => M.pure(n > 2)
 
-    const associativity = fc.property(arbFa, Monad.associativity(M, Sc, afb, afc))
-    const leftId        = fc.property(fc.string(), Monad.leftIdentity(M, Sb, afb))
-    const rightId       = fc.property(arbFa, Monad.rightIdentity(M, Sa))
+    const associativity = fc.asyncProperty(arbFa, Monad.associativity(M, Sc, afb, afc))
+    const leftId        = fc.asyncProperty(fc.string(), Monad.leftIdentity(M, Sb, afb))
+    const rightId       = fc.asyncProperty(arbFa, Monad.rightIdentity(M, Sa))
 
     fc.assert(associativity, { verbose: true })
     fc.assert(leftId, { verbose: true })

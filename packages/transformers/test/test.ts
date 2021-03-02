@@ -8,9 +8,7 @@ const M = MRT.getMReaderT(E.Monad)
 
 const x = pipe(
   M.asks((_: { s: string }) => _.s),
-  M.bind((a) => (a.length > 5 ? M.pure(a) : Mu.pure(E.Left('fail')))),
-  M.giveAll({ s: 'hello' }),
-  Mu.runResult
+  M.bind((a) => (a.length > 5 ? M.pure(a) : Mu.pure(E.Left('fail'))))
 )
 
-console.log(x)
+console.log(Mu.runEnv_(x, { s: 'helloo' }))
