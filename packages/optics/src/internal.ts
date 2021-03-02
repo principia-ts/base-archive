@@ -388,7 +388,7 @@ export function indexRecord<A = never>(): Ix<Readonly<Record<string, A>>, string
         if (r[k] === a || O.isNone(R.lookup_(r, k))) {
           return r
         }
-        return R.insertAt(k, a)(r)
+        return R.upsertAt_(r, k, a)
       }
     })
   }
@@ -406,7 +406,7 @@ export function atRecord<A = never>(): At<Readonly<Record<string, A>>, string, O
       get: (r) => R.lookup_(r, key),
       set: O.match(
         () => R.deleteAt(key),
-        (a) => R.insertAt(key, a)
+        (a) => R.upsertAt(key, a)
       )
     })
   }
