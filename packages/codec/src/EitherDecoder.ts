@@ -1,7 +1,7 @@
+import type { DecodeError } from './DecodeError'
 import type { DecodeErrors, ErrorInfo } from './DecodeErrors'
 import type * as KF from './DecoderKF'
 import type { Semigroup } from '@principia/base/Semigroup'
-import type { DecodeError } from '@principia/codec/DecodeError'
 import type { FreeSemigroup } from '@principia/free/FreeSemigroup'
 
 import * as E from '@principia/base/Either'
