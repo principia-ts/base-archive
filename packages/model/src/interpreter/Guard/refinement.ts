@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { GuardURI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as G from '@principia/base/Guard'
@@ -7,7 +7,7 @@ import * as G from '@principia/base/Guard'
 import { implementInterpreter } from '../../HKT'
 import { applyGuardConfig } from './HKT'
 
-export const RefinementGuard = implementInterpreter<URI, Alg.RefinementURI>()((_) => ({
+export const RefinementGuard = implementInterpreter<GuardURI, Alg.RefinementURI>()((_) => ({
   refine_: (a, refinement, _, config) => (env) =>
     pipe(a(env), (guard) => applyGuardConfig(config?.config)(pipe(guard, G.refine(refinement)), env, {})),
   constrain: (a, predicate, _, config) => (env) =>

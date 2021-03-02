@@ -1,11 +1,10 @@
 import type { InterfaceConfigKind, InterpretedHKT, IntersectionConfigKind, TaggedUnionConfigKind } from '../../HKT'
 import type * as E from '@principia/codec/Encoder'
 
-import { EncoderURI } from '@principia/codec/Modules'
-
 import { getApplyConfig } from '../../HKT'
 
-export type URI = EncoderURI
+export const EncoderURI = 'model/Encoder'
+export type EncoderURI = typeof EncoderURI
 
 declare module '../../HKT' {
   interface URItoInterpreted<Env, S, R, E, A> {
@@ -34,15 +33,15 @@ declare module '../../algebra/primitives' {
 
 declare module '../../algebra/object' {
   interface TypeConfig<Props> {
-    readonly [EncoderURI]: InterfaceConfigKind<URI, Props>
+    readonly [EncoderURI]: InterfaceConfigKind<EncoderURI, Props>
   }
   interface PartialConfig<Props> {
-    readonly [EncoderURI]: InterfaceConfigKind<URI, Props>
+    readonly [EncoderURI]: InterfaceConfigKind<EncoderURI, Props>
   }
   interface BothConfig<Props, PropsPartial> {
     readonly [EncoderURI]: {
-      required: InterfaceConfigKind<URI, Props>
-      optional: InterfaceConfigKind<URI, PropsPartial>
+      required: InterfaceConfigKind<EncoderURI, Props>
+      optional: InterfaceConfigKind<EncoderURI, PropsPartial>
     }
   }
 }
@@ -70,7 +69,7 @@ declare module '../../algebra/set' {
 
 declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
-    readonly [EncoderURI]: TaggedUnionConfigKind<URI, Types>
+    readonly [EncoderURI]: TaggedUnionConfigKind<EncoderURI, Types>
   }
   interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
     readonly [EncoderURI]: {
@@ -94,7 +93,7 @@ declare module '../../algebra/nullable' {
 
 declare module '../../algebra/intersection' {
   interface IntersectionConfig<S, R, E, A> {
-    readonly [EncoderURI]: IntersectionConfigKind<URI, S, R, E, A>
+    readonly [EncoderURI]: IntersectionConfigKind<EncoderURI, S, R, E, A>
   }
 }
 

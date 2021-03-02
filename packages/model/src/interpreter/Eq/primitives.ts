@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { EqURI } from './HKT'
 
 import * as A from '@principia/base/Array'
 import * as Eq from '@principia/base/Eq'
@@ -8,7 +8,7 @@ import { pipe } from '@principia/base/Function'
 import { implementInterpreter } from '../../HKT'
 import { applyEqConfig } from './HKT'
 
-export const PrimitivesEq = implementInterpreter<URI, Alg.PrimitivesURI>()((_) => ({
+export const PrimitivesEq = implementInterpreter<EqURI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyEqConfig(config?.config)(Eq.string, env, {}),
   number: (config) => (env) => applyEqConfig(config?.config)(Eq.number, env, {}),
   boolean: (config) => (env) => applyEqConfig(config?.config)(Eq.boolean, env, {}),

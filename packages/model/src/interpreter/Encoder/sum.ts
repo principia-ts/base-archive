@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { EncoderURI } from './HKT'
 
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/Function'
@@ -10,7 +10,7 @@ import * as Enc from '@principia/codec/Encoder'
 import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'
 
-export const SumEncoder = implementInterpreter<URI, Alg.SumURI>()((_) => ({
+export const SumEncoder = implementInterpreter<EncoderURI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) =>
     pipe(
       types,

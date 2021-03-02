@@ -1,6 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { ArbURI } from './HKT'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type { ArbitraryURI } from './HKT'
 import type { Arbitrary } from 'fast-check'
 
 import { isNonEmpty } from '@principia/base/Array'
@@ -11,7 +10,7 @@ import * as R from '@principia/base/Record'
 import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
-export const PrimitivesArbitrary = implementInterpreter<ArbURI, Alg.PrimitivesURI>()((_) => ({
+export const PrimitivesArbitrary = implementInterpreter<ArbitraryURI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyArbitraryConfig(config?.config)(accessFastCheck(env).string(), env, {}),
   number: (config) => (env) => applyArbitraryConfig(config?.config)(accessFastCheck(env).float(), env, {}),
   boolean: (config) => (env) => applyArbitraryConfig(config?.config)(accessFastCheck(env).boolean(), env, {}),

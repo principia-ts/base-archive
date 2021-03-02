@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { ArbURI } from './HKT'
+import type { ArbitraryURI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as R from '@principia/base/Record'
@@ -7,7 +7,7 @@ import * as R from '@principia/base/Record'
 import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
-export const ObjectArbitrary = implementInterpreter<ArbURI, Alg.ObjectURI>()((_) => ({
+export const ObjectArbitrary = implementInterpreter<ArbitraryURI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
     pipe(
       properties,

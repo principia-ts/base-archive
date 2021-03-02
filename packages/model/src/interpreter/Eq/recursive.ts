@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { EqURI } from './HKT'
 
 import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
@@ -8,7 +8,7 @@ import { implementInterpreter } from '../../HKT'
 import { memoize } from '../../utils'
 import { applyEqConfig } from './HKT'
 
-export const RecursiveEq = implementInterpreter<URI, Alg.RecursiveURI>()((_) => ({
+export const RecursiveEq = implementInterpreter<EqURI, Alg.RecursiveURI>()((_) => ({
   recursive: (_, f, config) => {
     const get                       = memoize<void, ReturnType<typeof f>>(() => f(res))
     const res: ReturnType<typeof f> = (env) =>

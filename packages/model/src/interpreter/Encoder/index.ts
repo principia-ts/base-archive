@@ -1,11 +1,11 @@
 import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
 import type { Summoner } from '../../summoner'
-import type { URI } from './HKT'
 import type * as E from '@principia/codec/Encoder'
 
 import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
+import { EncoderURI } from './HKT'
 import { IntersectionEncoder } from './intersection'
 import { NewtypeEncoder } from './newtype'
 import { NullableEncoder } from './nullable'
@@ -17,6 +17,8 @@ import { RefinementEncoder } from './refinement'
 import { SetEncoder } from './set'
 import { SumEncoder } from './sum'
 import { UnknownEncoder } from './unknown'
+
+export { EncoderURI }
 
 export const _allEncoderInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -37,7 +39,7 @@ export const allEncoderInterpreters = memoize(_allEncoderInterpreters) as typeof
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
   env: {
-    [K in URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
+    [K in EncoderURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
   }
 ) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): E.Encoder<E, A> =>
   pipe(env, F.derive(allEncoderInterpreters()))

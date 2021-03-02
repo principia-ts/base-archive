@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { DecoderURI } from './HKT'
 import type { Branded } from '@principia/base/Brand'
 
 import * as A from '@principia/base/Array'
@@ -15,7 +15,7 @@ import { extractInfo } from './utils'
 
 export const regexUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export const PrimitivesDecoder = implementInterpreter<URI, Alg.PrimitivesURI>()((_) => ({
+export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyDecoderConfig(config?.config)(D.string(extractInfo(config)), env, {}),
   number: (config) => (env) => applyDecoderConfig(config?.config)(D.number(extractInfo(config)), env, {}),
   boolean: (config) => (env) => applyDecoderConfig(config?.config)(D.boolean(extractInfo(config)), env, {}),

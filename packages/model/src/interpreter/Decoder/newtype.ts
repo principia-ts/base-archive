@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { DecoderURI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
@@ -12,7 +12,7 @@ import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'
 import { extractInfo } from './utils'
 
-export const NewtypeDecoder = implementInterpreter<URI, Alg.NewtypeURI>()((_) => ({
+export const NewtypeDecoder = implementInterpreter<DecoderURI, Alg.NewtypeURI>()((_) => ({
   newtypeIso: (iso, a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(

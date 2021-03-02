@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { ArbURI } from './HKT'
+import type { ArbitraryURI } from './HKT'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
@@ -7,7 +7,7 @@ import { pipe } from '@principia/base/Function'
 import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
-export const IntersectionArbitrary = implementInterpreter<ArbURI, Alg.IntersectionURI>()((_) => ({
+export const IntersectionArbitrary = implementInterpreter<ArbitraryURI, Alg.IntersectionURI>()((_) => ({
   intersection: (...types) => (config) => (env) =>
     pipe(
       types,

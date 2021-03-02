@@ -1,12 +1,7 @@
-import type { M } from './summoner'
-import type * as HKT from '@principia/base/HKT'
-import type * as P from '@principia/base/typeclass'
-import type * as D from '@principia/codec/DecoderKF'
-
 import * as fc from 'fast-check'
 
 import * as Arb from './interpreter/Arbitrary'
-import { ArbURI } from './interpreter/Arbitrary/HKT'
+import { ArbitraryURI } from './interpreter/Arbitrary/HKT'
 import * as Dec from './interpreter/Decoder'
 import * as Enc from './interpreter/Encoder'
 import * as Eq from './interpreter/Eq'
@@ -22,17 +17,23 @@ export const getEncoder   = Enc.deriveFor(make)({})
 export const getEq        = Eq.deriveFor(make)({})
 export const getGuard     = G.deriveFor(make)({})
 export const getArbitrary = Arb.deriveFor(make)({
-  [ArbURI]: {
+  [ArbitraryURI]: {
     module: fc
   }
 })
 
 export {} from './HKT'
+export { ArbitraryURI } from './interpreter/Arbitrary'
 export {} from './interpreter/Arbitrary/HKT'
+export { DecoderURI } from './interpreter/Decoder'
 export {} from './interpreter/Decoder/HKT'
+export { EncoderURI } from './interpreter/Encoder'
 export {} from './interpreter/Encoder/HKT'
+export { EqURI } from './interpreter/Eq'
 export {} from './interpreter/Eq/HKT'
+export { GuardURI } from './interpreter/Guard'
 export {} from './interpreter/Guard/HKT'
+export { ShowURI } from './interpreter/Show'
 export {} from './interpreter/Show/HKT'
 export type { M, M_, MM, MM_ } from './summoner'
 export { opaque, opaque_ } from './summoner'

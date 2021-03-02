@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { ShowURI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as S from '@principia/base/Show'
@@ -8,7 +8,7 @@ import { implementInterpreter } from '../../HKT'
 import { memoize } from '../../utils'
 import { applyShowConfig } from './HKT'
 
-export const RecursiveShow = implementInterpreter<URI, Alg.RecursiveURI>()((_) => ({
+export const RecursiveShow = implementInterpreter<ShowURI, Alg.RecursiveURI>()((_) => ({
   recursive: (id, a, config) => {
     const get                       = memoize<void, ReturnType<typeof a>>(() => a(res))
     const res: ReturnType<typeof a> = (env) =>

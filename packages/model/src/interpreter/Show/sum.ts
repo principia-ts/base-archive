@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { ShowURI } from './HKT'
 
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
@@ -10,7 +10,7 @@ import * as S from '@principia/base/Show'
 import { implementInterpreter } from '../../HKT'
 import { applyShowConfig } from './HKT'
 
-export const SumShow = implementInterpreter<URI, Alg.SumURI>()((_) => ({
+export const SumShow = implementInterpreter<ShowURI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) =>
     pipe(
       types,

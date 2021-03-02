@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { EncoderURI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
 import * as R from '@principia/base/Record'
@@ -8,7 +8,7 @@ import * as E from '@principia/codec/Encoder'
 import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'
 
-export const ObjectEncoder = implementInterpreter<URI, Alg.ObjectURI>()((_) => ({
+export const ObjectEncoder = implementInterpreter<EncoderURI, Alg.ObjectURI>()((_) => ({
   type: (properties, config) => (env) =>
     pipe(
       properties,

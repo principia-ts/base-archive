@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { ArbURI } from './HKT'
+import type { ArbitraryURI } from './HKT'
 import type { Arbitrary } from 'fast-check'
 
 import * as E from '@principia/base/Either'
@@ -10,7 +10,7 @@ import * as R from '@principia/base/Record'
 import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
-export const SumArbitrary = implementInterpreter<ArbURI, Alg.SumURI>()((_) => ({
+export const SumArbitrary = implementInterpreter<ArbitraryURI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) =>
     pipe(
       types as Record<string, (_: typeof env) => Arbitrary<any>>,

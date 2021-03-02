@@ -1,11 +1,11 @@
-import type { AnyEnv, ExtractURI, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
+import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
 import type { Summoner } from '../../summoner'
-import type { URI } from './HKT'
 import type * as G from '@principia/base/Guard'
 
 import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
+import { GuardURI } from './HKT'
 import { IntersectionGuard } from './intersection'
 import { NewtypeGuard } from './newtype'
 import { NullableGuard } from './nullable'
@@ -17,6 +17,8 @@ import { RefinementGuard } from './refinement'
 import { SetGuard } from './set'
 import { SumGuard } from './sum'
 import { UnknownGuard } from './unknown'
+
+export { GuardURI }
 
 export const _allGuardInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -37,7 +39,7 @@ export const allGuardInterpreters = memoize(_allGuardInterpreters) as typeof _al
 
 export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
   env: {
-    [K in URI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
+    [K in GuardURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
   }
 ) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): G.Guard<unknown, A> =>
   pipe(env, F.derive(allGuardInterpreters()))

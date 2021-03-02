@@ -1,5 +1,5 @@
 import type * as Alg from '../../algebra'
-import type { URI } from './HKT'
+import type { GuardURI } from './HKT'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
@@ -8,7 +8,7 @@ import * as G from '@principia/base/Guard'
 import { implementInterpreter } from '../../HKT'
 import { applyGuardConfig } from './HKT'
 
-export const IntersectionGuard = implementInterpreter<URI, Alg.IntersectionURI>()((_) => ({
+export const IntersectionGuard = implementInterpreter<GuardURI, Alg.IntersectionURI>()((_) => ({
   intersection: (...types) => (config) => (env) =>
     pipe(
       types,
