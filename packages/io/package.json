@@ -1,6 +1,6 @@
 {
   "name": "@principia/io",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "IO and related data structures",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -183,7 +183,7 @@
   "dependencies": {
     "@principia/base": "^0.6.1",
     "@principia/compile": "^0.6.1",
-    "@principia/free": "^0.6.2"
+    "@principia/free": "^0.6.3"
   },
   "publishConfig": {
     "access": "public",
