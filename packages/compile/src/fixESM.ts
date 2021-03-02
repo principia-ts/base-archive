@@ -1,12 +1,4 @@
 /* eslint-disable functional/immutable-data */
-import type * as R from 'fp-ts/lib/ReadonlyRecord'
-
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import * as F from 'fp-ts/lib/function'
-import * as M from 'fp-ts/lib/Monoid'
-import * as O from 'fp-ts/lib/Option'
-import * as NEA from 'fp-ts/lib/ReadonlyNonEmptyArray'
 import fs from 'fs'
 import module from 'module'
 import path from 'path'
@@ -41,25 +33,21 @@ export default function addSpecifierExtension(
   }
 }
 
-const MonoidVisitorInfo = M.getStructMonoid<VisitorInfo>({
-  exports: A.getMonoid(),
-  imports: A.getMonoid()
-})
-
 export const importExportVisitor = (
   ctx: ts.TransformationContext,
   sourceFile: ts.SourceFile,
   config?: PluginConfig
 ): { info: VisitorInfo, visitedSourceFile: ts.SourceFile } => {
-  const visitorInfo = { ...MonoidVisitorInfo.empty }
-  const visitor     = (info: VisitorInfo) => (node: ts.Node): ts.Node | undefined => {
-    let newInfo = { ...MonoidVisitorInfo.empty }
+  const visitorInfo: VisitorInfo = { exports: [], imports: [] }
+
+  const visitor = (info: VisitorInfo) => (node: ts.Node): ts.Node | undefined => {
+    let newInfo: VisitorInfo = { exports: [], imports: [] }
     if (isImportOrExport(node)) {
       const specifierText = node.moduleSpecifier.text
       if (isSpecifierRelative(node)) {
         if (isImport(node)) {
           newInfo = {
-            ...MonoidVisitorInfo.empty,
+            exports: [],
             imports: [
               ts.factory.createImportDeclaration(
                 node.decorators,
@@ -71,7 +59,7 @@ export const importExportVisitor = (
           }
         } else if (isExport(node)) {
           newInfo = {
-            ...MonoidVisitorInfo.empty,
+            imports: [],
             exports: [
               ts.factory.createExportDeclaration(
                 node.decorators,
@@ -86,12 +74,12 @@ export const importExportVisitor = (
       } else if (module.builtinModules.includes(specifierText)) {
         if (isImport(node)) {
           newInfo = {
-            ...MonoidVisitorInfo.empty,
+            exports: [],
             imports: [node]
           }
         } else if (isExport(node)) {
           newInfo = {
-            ...MonoidVisitorInfo.empty,
+            imports: [],
             exports: [node]
           }
         }
@@ -100,7 +88,7 @@ export const importExportVisitor = (
         if (packageJSON) {
           if (isImport(node)) {
             newInfo = {
-              ...MonoidVisitorInfo.empty,
+              exports: [],
               imports: [
                 ts.factory.createImportDeclaration(
                   node.decorators,
@@ -112,7 +100,7 @@ export const importExportVisitor = (
             }
           } else if (isExport(node)) {
             newInfo = {
-              ...MonoidVisitorInfo.empty,
+              imports: [],
               exports: [
                 ts.factory.createExportDeclaration(
                   node.decorators,
@@ -147,19 +135,17 @@ export const importExportVisitor = (
  * -------------------------------------------
  */
 
-type PackageJson = R.ReadonlyRecord<string, any>
+type PackageJson = Record<string, any>
 
 function isDirectory(path: string): boolean {
-  return F.pipe(
-    E.tryCatch(
-      () => fs.lstatSync(path).isDirectory(),
-      () => null
-    ),
-    E.fold(() => false, F.identity)
-  )
+  try {
+    return fs.lstatSync(path).isDirectory()
+  } catch {
+    return false
+  }
 }
 
-function deepHasProperty(obj: R.ReadonlyRecord<string, any>, key: string): boolean {
+function deepHasProperty(obj: Record<string, any>, key: string): boolean {
   let hasKey = false
   for (const k in obj) {
     if (k === key) {
@@ -196,15 +182,15 @@ function isExport(node: ts.Node): node is Export {
 }
 
 function findPackageJSON(prospectivePath: string): Buffer | null {
-  const folderPath = (prospectivePath.split('/') as unknown) as NEA.ReadonlyNonEmptyArray<string>
-  if (NEA.last(folderPath) === 'node_modules') {
+  const folderPath = prospectivePath.split('/')
+  if (folderPath.slice(-1)[0] === 'node_modules') {
     return null
   } else {
     const newPath = [...folderPath, 'package.json'].join('/')
     try {
       return fs.readFileSync(newPath)
     } catch {
-      return findPackageJSON(NEA.init(folderPath).join('/'))
+      return findPackageJSON(folderPath.slice(0, -1).join('/'))
     }
   }
 }
@@ -238,17 +224,28 @@ function getAbsolutePathForSpecifier(
     return path.resolve(path.parse(sourceFile.fileName).dir, specifierText === '..' ? '../' : specifierText)
   } else {
     if (packageJSON && packageJSON.name && specifierText.includes(packageJSON.name)) {
-      const p     = packageJSON
-      const parts = F.pipe(
-        O.fromNullable<string>(p.exports?.import?.['./*'] ?? p.exports?.['./*']?.import ?? p.main ?? null),
-        O.map((s) => s.replace('./', '').split('/').slice(0, -1).join('/')),
-        O.map((mainPath): string[] => [
-          p.name,
-          mainPath,
-          ...specifierText.replace(p.name, '').replace(`/${mainPath}/`, '').split('/')
-        ]),
-        O.fold(() => [specifierText], F.identity)
-      )
+      const p = packageJSON
+
+      const mainPath: string | null = p.exports?.import?.['./*'] ?? p.exports?.['./*']?.import ?? p.main ?? null
+      let parts: string[]
+      if (mainPath) {
+        const s = mainPath.replace('./', '').split('/').slice(0, -1).join('/')
+        parts   = [p.name, s, ...specifierText.replace(p.name, '').replace(`/${s}`, '').split('/')]
+      } else {
+        parts = [specifierText]
+      }
+      /*
+       * const parts = F.pipe(
+       *   O.fromNullable<string>(p.exports?.import?.['./*'] ?? p.exports?.['./*']?.import ?? p.main ?? null),
+       *   O.map((s) => s.replace('./', '').split('/').slice(0, -1).join('/')),
+       *   O.map((mainPath): string[] => [
+       *     p.name,
+       *     mainPath,
+       *     ...specifierText.replace(p.name, '').replace(`/${mainPath}/`, '').split('/')
+       *   ]),
+       *   O.fold(() => [specifierText], F.identity)
+       * )
+       */
       return path.resolve(config?.relativeProjectRoot ?? process.cwd(), 'node_modules', ...parts)
     } else {
       return path.resolve(config?.relativeProjectRoot ?? process.cwd(), 'node_modules', specifierText)
