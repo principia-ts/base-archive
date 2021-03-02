@@ -6,30 +6,17 @@
  * and the _Right_ constructor is used to hold a correct value
  */
 
-import type { Eq } from './Eq/core'
+import type { Eq } from './Eq'
 import type { MorphismN, Predicate, Refinement } from './Function'
 import type { EitherURI } from './Modules'
 import type { Option } from './Option'
 import type { Show } from './Show'
 import type { These } from './These'
 
-import { genF, GenHKT } from './Derivation/genF'
-import { bindSF, bindToSF, letSF } from './Do'
 import { NoSuchElementError } from './Error'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
-import { asF, asF_, fcrossF, fcrossF_, flapF, flapF_ } from './Functor'
 import * as HKT from './HKT'
 import * as O from './Option'
-import {
-  alignCombineF,
-  alignCombineF_,
-  padZipF,
-  padZipF_,
-  padZipWithF,
-  padZipWithF_,
-  zipAllF,
-  zipAllF_
-} from './Semialign'
 import * as T from './These'
 import * as P from './typeclass'
 
@@ -1081,12 +1068,12 @@ export const Functor: P.Functor<[HKT.URI<EitherURI>], V> = HKT.instance({
   map
 })
 
-export const flap_   = flapF_<[HKT.URI<EitherURI>], V>(Functor)
-export const flap    = flapF<[HKT.URI<EitherURI>], V>(Functor)
-export const as_     = asF_<[HKT.URI<EitherURI>], V>(Functor)
-export const as      = asF<[HKT.URI<EitherURI>], V>(Functor)
-export const fcross_ = fcrossF_<[HKT.URI<EitherURI>], V>(Functor)
-export const fcross  = fcrossF<[HKT.URI<EitherURI>], V>(Functor)
+export const flap_   = P.flapF_<[HKT.URI<EitherURI>], V>(Functor)
+export const flap    = P.flapF<[HKT.URI<EitherURI>], V>(Functor)
+export const as_     = P.asF_<[HKT.URI<EitherURI>], V>(Functor)
+export const as      = P.asF<[HKT.URI<EitherURI>], V>(Functor)
+export const fcross_ = P.fcrossF_<[HKT.URI<EitherURI>], V>(Functor)
+export const fcross  = P.fcrossF<[HKT.URI<EitherURI>], V>(Functor)
 
 /**
  * @category Instances
@@ -1114,31 +1101,17 @@ export const Alt: P.Alt<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const Apply: P.Apply<[HKT.URI<EitherURI>], V> = HKT.instance({
+export const Monoidal: P.Monoidal<[HKT.URI<EitherURI>], V> = HKT.instance({
   ...Functor,
-  ap_,
-  ap,
   crossWith_,
   crossWith,
-  cross_,
-  cross
+  pure
 })
 
-export const sequenceT = P.sequenceTF(Apply)
-export const mapN      = P.mapNF(Apply)
-export const mapN_     = P.mapNF_(Apply)
-export const sequenceS = P.sequenceSF(Apply)
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export const Applicative: P.Applicative<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...Functor,
-  ...Apply,
-  pure,
-  unit
-})
+export const sequenceT = P.sequenceTF(Monoidal)
+export const mapN      = P.mapNF(Monoidal)
+export const mapN_     = P.mapNF_(Monoidal)
+export const sequenceS = P.sequenceSF(Monoidal)
 
 /**
  * @category Instances
@@ -1153,18 +1126,17 @@ export const Fail: P.Fail<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @since 1.0.0
  */
 export const Monad: P.Monad<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...Applicative,
+  ...Monoidal,
   bind_,
-  bind,
-  flatten
+  bind
 })
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...Applicative,
+export const MonoidalExcept: P.MonoidalExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
+  ...Monoidal,
   ...Fail,
   catchAll_,
   catchAll
@@ -1175,7 +1147,7 @@ export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<EitherURI>], V> = H
  * @since 1.0.0
  */
 export const MonadExcept: P.MonadExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...ApplicativeExcept,
+  ...MonoidalExcept,
   ...Monad
 })
 
@@ -1202,14 +1174,14 @@ export const Semialign: P.Semialign<[HKT.URI<EitherURI>], V> = HKT.instance({
   alignWith
 })
 
-export const alignCombine_ = alignCombineF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const alignCombine  = alignCombineF<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZip_       = padZipF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZip        = padZipF<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZipWith_   = padZipWithF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZipWith    = padZipWithF<[HKT.URI<EitherURI>], V>(Semialign)
-export const zipAll_       = zipAllF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const zipAll        = zipAllF<[HKT.URI<EitherURI>], V>(Semialign)
+export const alignCombine_ = P.alignCombineF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const alignCombine  = P.alignCombineF<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZip_       = P.padZipF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZip        = P.padZipF<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZipWith_   = P.padZipWithF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const padZipWith    = P.padZipWithF<[HKT.URI<EitherURI>], V>(Semialign)
+export const zipAll_       = P.zipAllF_<[HKT.URI<EitherURI>], V>(Semialign)
+export const zipAll        = P.zipAllF<[HKT.URI<EitherURI>], V>(Semialign)
 
 /**
  * @category Instances
@@ -1247,7 +1219,7 @@ export { of as do }
  * @category Do
  * @since 1.0.0
  */
-export const bindS = bindSF(Monad)
+export const bindS = P.bindSF(Monad)
 
 /**
  * Contributes a pure value to a threaded scope
@@ -1255,7 +1227,7 @@ export const bindS = bindSF(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const letS = letSF(Monad)
+export const letS = P.letSF(Monad)
 
 /**
  * Binds a computation to a property in a `Record`.
@@ -1263,7 +1235,7 @@ export const letS = letSF(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const bindToS = bindToSF(Monad)
+export const bindToS = P.bindToSF(Monad)
 
 /*
  * -------------------------------------------
@@ -1275,33 +1247,17 @@ export const bindToS = bindToSF(Monad)
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicativeValidation<E>(S: P.Semigroup<E>) {
+export function getMonoidalValidation<E>(S: P.Semigroup<E>) {
   type FixE = V & HKT.Fix<'E', E>
 
   const crossWithV_: P.CrossWithFn_<[HKT.URI<EitherURI>], FixE> = (fa, fb, f) =>
     isLeft(fa) ? (isLeft(fb) ? Left(S.combine_(fa.left, fb.left)) : fa) : isLeft(fb) ? fb : Right(f(fa.right, fb.right))
 
-  const productV_: P.CrossFn_<[HKT.URI<EitherURI>], FixE> = (fa, fb) => crossWithV_(fa, fb, mkTuple)
-
-  const apV_: P.ApFn_<[HKT.URI<EitherURI>], FixE> = (fab, fa) =>
-    isLeft(fab)
-      ? isLeft(fa)
-        ? Left(S.combine_(fab.left, fa.left))
-        : fab
-      : isLeft(fa)
-      ? fa
-      : Right(fab.right(fa.right))
-
-  return HKT.instance<P.Applicative<[HKT.URI<EitherURI>], FixE>>({
+  return HKT.instance<P.Monoidal<[HKT.URI<EitherURI>], FixE>>({
     ...Functor,
-    ap_: apV_,
-    ap: (fa) => (fab) => apV_(fab, fa),
-    cross_: productV_,
-    cross: (fb) => (fa) => productV_(fa, fb),
     crossWith_: crossWithV_,
     crossWith: (fb, f) => (fa) => crossWithV_(fa, fb, f),
-    pure,
-    unit
+    pure
   })
 }
 
@@ -1334,17 +1290,17 @@ export function getAltValidation<E>(S: P.Semigroup<E>) {
  */
 
 const adapter: {
-  <E, A>(_: Option<A>, onNone: () => E): GenHKT<Either<E, A>, A>
-  <A>(_: Option<A>): GenHKT<Either<NoSuchElementError, A>, A>
-  <E, A>(_: Either<E, A>): GenHKT<Either<E, A>, A>
+  <E, A>(_: Option<A>, onNone: () => E): P.GenHKT<Either<E, A>, A>
+  <A>(_: Option<A>): P.GenHKT<Either<NoSuchElementError, A>, A>
+  <E, A>(_: Either<E, A>): P.GenHKT<Either<E, A>, A>
 } = (_: any, __?: any) => {
   if (O.isOption(_)) {
-    return new GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementError('Either.gen'))))
+    return new P.GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementError('Either.gen'))))
   }
-  return new GenHKT(_)
+  return new P.GenHKT(_)
 }
 
-export const gen = genF(Monad, { adapter })
+export const gen = P.genF(Monad, { adapter })
 
 /*
  * -------------------------------------------

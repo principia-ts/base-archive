@@ -1,6 +1,6 @@
-import type { Applicative } from './Applicative'
 import type { Either } from './Either'
 import type * as HKT from './HKT'
+import type { Monoidal } from './Monoidal'
 import type { Option } from './Option'
 
 export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
@@ -11,7 +11,7 @@ export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends H
 }
 
 export interface WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Monoidal<G, GC>): <
     NG extends string,
     KG,
     QG,
@@ -36,7 +36,7 @@ export interface WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface WitherWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Monoidal<G, GC>): <
     NF extends string,
     KF,
     QF,
@@ -81,7 +81,7 @@ export function implementWitherWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', F, NF>, HKT.OrFix<'K', F, KF>>, a: A) => HKT.HKT<G, Option<B>>
   ) => (
@@ -107,7 +107,7 @@ export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Option<B>>
@@ -118,7 +118,7 @@ export function implementWitherWithIndex_() {
 }
 
 export interface WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Monoidal<G, GC>): <
     NG extends string,
     KG,
     QG,
@@ -160,7 +160,7 @@ export interface WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface WiltWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Monoidal<G, GC>): <
     NF extends string,
     KF,
     QF,
@@ -223,7 +223,7 @@ export function implementWiltWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
   ) => (
@@ -256,7 +256,7 @@ export function implementWiltWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>

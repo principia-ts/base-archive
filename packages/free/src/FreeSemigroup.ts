@@ -1,6 +1,6 @@
-import type { Semigroup } from '@principia/base/Semigroup'
+import type { Semigroup } from '@principia/base/typeclass'
 
-import { makeSemigroup } from '@principia/base/Semigroup'
+import { makeSemigroup } from '@principia/base/typeclass'
 
 /*
  * -------------------------------------------

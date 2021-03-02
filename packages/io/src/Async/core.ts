@@ -4,7 +4,6 @@ import type { Stack } from '@principia/base/util/support/Stack'
 import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
-import * as D from '@principia/base/Derivation'
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
@@ -1151,37 +1150,27 @@ export const Functor: P.Functor<[URI], V> = HKT.instance({
   map
 })
 
-export const ApplySeq: P.Apply<[URI], V> = HKT.instance({
+export const Semimonoidal: P.Semimonoidal<[URI], V> = HKT.instance({
   ...Functor,
-  ap_,
-  ap,
   crossWith_,
-  crossWith,
-  cross_,
-  cross
+  crossWith
 })
 
-export const ApplyPar: P.Apply<[URI], V> = HKT.instance({
+export const SemimonoidalPar: P.Semimonoidal<[URI], V> = HKT.instance({
   ...Functor,
-  ap_: apPar_,
-  ap: apPar,
   crossWith_: crossWithPar_,
-  crossWith: crossWithPar,
-  cross_: crossPar_,
-  cross: crossPar
+  crossWith: crossWithPar
 })
 
-export const ApplicativeSeq: P.Applicative<[URI], V> = HKT.instance({
-  ...ApplySeq,
-  pure,
-  unit
+export const Monoidal: P.Monoidal<[URI], V> = HKT.instance({
+  ...Semimonoidal,
+  pure
 })
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-  ...ApplicativeSeq,
+  ...Monoidal,
   bind_,
-  bind,
-  flatten
+  bind
 })
 
 export const Do: P.Do<[URI], V> = P.deriveDo(Monad)
@@ -1193,25 +1182,25 @@ export const bindS = P.bindSF(Monad)
 export const bindToS = P.bindToSF(Monad)
 
 const adapter: {
-  <A>(_: Tag<A>): D.GenHKT<Async<Has<A>, never, A>, A>
-  <A>(_: Option<A>): D.GenHKT<Async<unknown, NoSuchElementError, A>, A>
-  <E, A>(_: Option<A>, onNone: () => E): D.GenHKT<Async<unknown, E, A>, A>
-  <E, A>(_: E.Either<E, A>): D.GenHKT<Async<unknown, E, A>, A>
-  <R, E, A>(_: Async<R, E, A>): D.GenHKT<Async<R, E, A>, A>
+  <A>(_: Tag<A>): P.GenHKT<Async<Has<A>, never, A>, A>
+  <A>(_: Option<A>): P.GenHKT<Async<unknown, NoSuchElementError, A>, A>
+  <E, A>(_: Option<A>, onNone: () => E): P.GenHKT<Async<unknown, E, A>, A>
+  <E, A>(_: E.Either<E, A>): P.GenHKT<Async<unknown, E, A>, A>
+  <R, E, A>(_: Async<R, E, A>): P.GenHKT<Async<R, E, A>, A>
 } = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new D.GenHKT(asksService(_)(identity))
+    return new P.GenHKT(asksService(_)(identity))
   }
   if (E.isEither(_)) {
-    return new D.GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
+    return new P.GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
   }
   if (isOption(_)) {
-    return new D.GenHKT(_._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Async.gen')) : succeed(_.value))
+    return new P.GenHKT(_._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Async.gen')) : succeed(_.value))
   }
-  return new D.GenHKT(_)
+  return new P.GenHKT(_)
 }
 
-export const gen = D.genF(Monad, { adapter })
+export const gen = P.genF(Monad, { adapter })
 
 /*
  * -------------------------------------------

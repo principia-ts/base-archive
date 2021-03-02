@@ -1,12 +1,13 @@
 import type * as HKT from '@principia/base/HKT'
-import type { Applicative } from '@principia/base/typeclass'
+import type { Monoidal } from '@principia/base/typeclass'
 
 import * as Eq from '@principia/base/Eq'
 import { compose_, tuple, tupleFlip, tupleUnit } from '@principia/base/Equivalence'
+import { crossF_ } from '@principia/base/typeclass'
 import * as fc from 'fast-check'
 
 function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
-  F: Applicative<F, TC>,
+  F: Monoidal<F, TC>,
   S: Eq.Eq<
     HKT.Kind<
       F,
@@ -62,20 +63,21 @@ function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
   ]
 ) => boolean
 function AssociativityLaw<F, A, B, C>(
-  F: Applicative<HKT.UHKT<F>>,
+  F: Monoidal<HKT.UHKT<F>>,
   S: Eq.Eq<HKT.HKT<F, readonly [readonly [A, B], C]>>
 ): (fs: [HKT.HKT<F, A>, HKT.HKT<F, B>, HKT.HKT<F, C>]) => boolean {
-  const equiv = tuple<A, B, C>()
+  const equiv  = tuple<A, B, C>()
+  const cross_ = crossF_(F)
   return ([fa, fb, fc]) => {
-    const left  = F.cross_(fa, F.cross_(fb, fc))
-    const right = F.cross_(F.cross_(fa, fb), fc)
+    const left  = cross_(fa, cross_(fb, fc))
+    const right = cross_(cross_(fa, fb), fc)
     const left2 = F.map_(left, equiv.to)
     return S.equals_(left2, right)
   }
 }
 
 function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
-  F: Applicative<F, TC>,
+  F: Monoidal<F, TC>,
   S: Eq.Eq<
     HKT.Kind<
       F,
@@ -93,10 +95,11 @@ function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
     >
   >
 ): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean
-function LeftIdentityLaw<F, A>(F: Applicative<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, A>>): (fa: HKT.HKT<F, A>) => boolean {
-  const equiv = compose_(tupleFlip<void, A>(), tupleUnit())
+function LeftIdentityLaw<F, A>(F: Monoidal<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, A>>): (fa: HKT.HKT<F, A>) => boolean {
+  const equiv  = compose_(tupleFlip<void, A>(), tupleUnit())
+  const cross_ = crossF_(F)
   return (fa) => {
-    const left  = F.cross_(F.unit(), fa)
+    const left  = cross_(F.pure(undefined), fa)
     const right = fa
     const left2 = F.map_(left, equiv.to)
     return S.equals_(left2, right)
@@ -104,7 +107,7 @@ function LeftIdentityLaw<F, A>(F: Applicative<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, 
 }
 
 function RightIdentityLaw<F extends HKT.URIS, TC, A>(
-  F: Applicative<F, TC>,
+  F: Monoidal<F, TC>,
   S: Eq.Eq<
     HKT.Kind<
       F,
@@ -122,10 +125,11 @@ function RightIdentityLaw<F extends HKT.URIS, TC, A>(
     >
   >
 ): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => boolean
-function RightIdentityLaw<F, A>(F: Applicative<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, A>>): (fa: HKT.HKT<F, A>) => boolean {
-  const equiv = tupleUnit<A>()
+function RightIdentityLaw<F, A>(F: Monoidal<HKT.UHKT<F>>, S: Eq.Eq<HKT.HKT<F, A>>): (fa: HKT.HKT<F, A>) => boolean {
+  const equiv  = tupleUnit<A>()
+  const cross_ = crossF_(F)
   return (fa) => {
-    const left  = F.cross_(fa, F.unit())
+    const left  = cross_(fa, F.pure(undefined))
     const right = fa
     const left2 = F.map_(left, equiv.to)
     return S.equals_(left2, right)
@@ -139,7 +143,7 @@ export const ApplicativeLaws = {
 }
 
 export function testApplicativeAssociativity<F extends HKT.URIS, TC>(
-  F: Applicative<F, TC>
+  F: Monoidal<F, TC>
 ): (
   lift: <A>(
     a: fc.Arbitrary<A>

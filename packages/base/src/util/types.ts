@@ -18,3 +18,5 @@ export declare type Erase<R, K> = R & K extends K & infer R1 ? R1 : R
  * Excludes properties of type V from T
  */
 export type ExcludeMatchingProperties<T, V> = Pick<T, { [K in keyof T]-?: T[K] extends V ? never : K }[keyof T]>
+
+export type EnsureLiteral<K> = string extends K ? never : [K] extends [UnionToIntersection<K>] ? K : never

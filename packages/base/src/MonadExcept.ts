@@ -1,11 +1,11 @@
-import type { ApplicativeExcept } from './ApplicativeExcept'
 import type { Either } from './Either'
 import type * as HKT from './HKT'
 import type { Monad } from './Monad'
+import type { MonoidalExcept } from './MonoidalExcept'
 
 import * as E from './Either'
 
-export interface MonadExcept<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C>, ApplicativeExcept<F, C> {}
+export interface MonadExcept<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C>, MonoidalExcept<F, C> {}
 
 export interface AbsolveFn<F extends HKT.URIS, C = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, E1, A>(

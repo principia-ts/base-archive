@@ -1,13 +1,14 @@
 import type { Either } from './Either'
 import type { Predicate, Refinement } from './Function'
+import type { MonadExcept } from './MonadExcept'
+import type { Monoid } from './Monoid'
 import type { Option } from './Option'
-import type { MonadExcept, Monoid } from './typeclass'
 import type { Erase } from './util/types'
 
-import { attemptF } from './ApplicativeExcept'
 import * as E from './Either'
 import { flow, not, pipe, tuple } from './Function'
 import * as HKT from './HKT'
+import { attemptF } from './MonoidalExcept'
 import * as O from './Option'
 
 export interface Filterable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {

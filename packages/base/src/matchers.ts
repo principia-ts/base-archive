@@ -1,4 +1,4 @@
-import type { Base, Infer, Kind, Param, URIS } from '../HKT'
+import type { Base, Infer, Kind, Param, URIS } from './HKT'
 
 type InferMatcherParam<
   URI extends URIS,

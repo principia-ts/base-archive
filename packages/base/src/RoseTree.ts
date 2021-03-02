@@ -308,12 +308,10 @@ export function getShow<A>(S: Show<A>): Show<RoseTree<A>> {
 export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (G) => {
   const traverseG = A.traverse_(G)
   const out       = <A, B>(ta: RoseTree<A>, f: (a: A) => HKT.HKT<typeof _.G, B>): HKT.HKT<typeof _.G, RoseTree<B>> =>
-    G.ap_(
-      G.map_(f(ta.value), (value) => (forest: Forest<B>) => ({
-        value,
-        forest
-      })),
-      traverseG(ta.forest, (a) => out(a, f))
+    G.crossWith_(
+      traverseG(ta.forest, (a) => out(a, f)),
+      f(ta.value),
+      (forest, value) => ({ value, forest })
     )
   return out
 })

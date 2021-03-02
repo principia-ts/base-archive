@@ -1,4 +1,4 @@
-import type { Lazy, MorphismN } from './model'
+import type { Lazy, MorphismN } from './Function'
 
 export interface Done<A> {
   readonly _tag: 'Done'
@@ -44,7 +44,7 @@ export function bind_<A, B>(fa: Trampoline<A>, f: (a: A) => Trampoline<B>): Tram
   }
 }
 
-export function product_<A, B>(ta: Trampoline<A>, tb: Trampoline<B>): Trampoline<readonly [A, B]> {
+export function cross_<A, B>(ta: Trampoline<A>, tb: Trampoline<B>): Trampoline<readonly [A, B]> {
   return bind_(ta, (a) => map_(tb, (b) => [a, b]))
 }
 

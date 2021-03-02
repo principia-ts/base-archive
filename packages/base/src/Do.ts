@@ -13,22 +13,17 @@ export function deriveDo<F extends HKT.URIS, C = HKT.Auto>(M: Monad<F, C>): Do<F
 export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
   const bindS: BindSFn<HKT.UHKT<F>> = (name, f) =>
     flow(
-      M.map((a) =>
+      M.bind((a) =>
         pipe(
           f(a),
           M.map((b) => _bind(a, name, b))
         )
-      ),
-      M.flatten
+      )
     )
   return HKT.instance<Do<HKT.UHKT<F>>>({
     ...M,
     bindS,
-    letS: (name, f) =>
-      bindS(
-        name,
-        flow(f, (b) => M.map_(M.unit(), () => b))
-      ),
+    letS: (name, f) => bindS(name, flow(f, M.pure)),
     bindToS: (name) => (ma) => M.map_(ma, _bindTo(name))
   })
 }

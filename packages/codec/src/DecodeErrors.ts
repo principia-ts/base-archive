@@ -129,7 +129,7 @@ export function getDecodeErrorsValidation<M>(
   const attempt = P.attemptF(M)
 
   const crossWith_: P.CrossWithFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, fb, f) =>
-    M.flatten(
+    P.flattenF(M)(
       M.crossWith_(attempt(fa), attempt(fb), (ea, eb) =>
         E.isLeft(ea)
           ? E.isLeft(eb)
@@ -157,21 +157,15 @@ export function getDecodeErrorsValidation<M>(
     map: M.map,
     crossWith_,
     crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
     mapLeft_: M.mapLeft_,
     mapLeft: M.mapLeft,
     bimap_: M.bimap_,
     bimap: M.bimap,
     bind_: M.bind_,
     bind: M.bind,
-    flatten: M.flatten,
     fail: M.fail,
     alt_,
     alt: (that) => (me) => alt_(me, that),
-    pure: M.pure,
-    unit: M.unit
+    pure: M.pure
   })
 }

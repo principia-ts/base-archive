@@ -3,6 +3,7 @@ import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
 import * as Eq from '@principia/base/Eq'
+import { flattenF } from '@principia/base/typeclass'
 import * as fc from 'fast-check'
 
 import { Bind } from './Bind'
@@ -39,9 +40,9 @@ function LeftIdentityLaw<M, A, B>(
 ): (a: A) => boolean {
   return (a) => {
     return S.equals_(
-      M.flatten(
+      flattenF(M)(
         M.map_(
-          M.map_(M.unit(), () => a),
+          M.map_(M.pure(undefined), () => a),
           afb
         )
       ),
@@ -57,7 +58,7 @@ function RightIdentityLaw<M extends HKT.URIS, TC, N extends string, K, Q, W, X, 
 function RightIdentityLaw<M, A>(M: P.Monad<HKT.UHKT<M>>, S: Eq.Eq<HKT.HKT<M, A>>): (fa: HKT.HKT<M, A>) => boolean
 function RightIdentityLaw<M, A>(M: P.Monad<HKT.UHKT<M>>, S: Eq.Eq<HKT.HKT<M, A>>): (fa: HKT.HKT<M, A>) => boolean {
   return (fa) => {
-    return S.equals_(M.flatten(M.map_(fa, (a) => M.map_(M.unit(), () => a))), fa)
+    return S.equals_(flattenF(M)(M.map_(fa, (a) => M.map_(M.pure(undefined), () => a))), fa)
   }
 }
 

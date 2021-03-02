@@ -5,7 +5,7 @@ import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
 import type { Show } from './Show'
 
-import { makeEq } from './Eq/core'
+import { makeEq } from './Eq'
 import { identity, pipe, tuple } from './Function'
 import * as O from './Option'
 import * as P from './typeclass'
@@ -39,7 +39,7 @@ export type InferRecordType<T extends ReadonlyRecord<any, any>> = T extends {
  * @category Guards
  * @since 1.0.0
  */
-export function has_<N extends string>(r: ReadonlyRecord<N, unknown>, k: string): k is N {
+export function has_<N extends string>(r: ReadonlyRecord<N, unknown>, k: string): boolean {
   return _hasOwnProperty.call(r, k)
 }
 
@@ -49,9 +49,8 @@ export function has_<N extends string>(r: ReadonlyRecord<N, unknown>, k: string)
  * @category Guards
  * @since 1.0.0
  */
-export function has<N extends string>(k: string, r: ReadonlyRecord<N, unknown>): k is N
-export function has<N extends string>(this: any, k: string, r?: ReadonlyRecord<N, unknown>): k is N {
-  return _hasOwnProperty.call(r === undefined ? this : r, k)
+export function has<N extends string>(k: string): (r: ReadonlyRecord<N, unknown>) => boolean {
+  return (r) => has_(r, k)
 }
 
 /**
@@ -164,7 +163,7 @@ export function toRecord<N extends string, A>(r: ReadonlyRecord<N, A>): Record<N
   return Object.assign({}, r)
 }
 
-export function singleton<N extends string, A>(k: N, a: A): ReadonlyRecord<N, A> {
+export function singleton<A>(k: string, a: A): ReadonlyRecord<string, A> {
   return { [k]: a } as any
 }
 
@@ -736,14 +735,10 @@ export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()(
     let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
     for (let i = 0; i < ks.length; i++) {
       const key = ks[i]
-      mut_gr    = pipe(
-        mut_gr,
-        G.map((mut_r) => (b: _['B']) => {
-          mut_r[key] = b
-          return mut_r
-        }),
-        G.ap(f(key, ta[key]))
-      )
+      mut_gr    = G.crossWith_(mut_gr, f(key, ta[key]), (mut_r, b) => {
+        mut_r[key] = b
+        return mut_r
+      })
     }
     return mut_gr
   }
@@ -845,77 +840,70 @@ export function collect<N extends string, A, B>(f: (k: N, a: A) => B): (r: Reado
   return (r) => collect_(r, f)
 }
 
-export function insertAt_<N extends string, K extends string, A>(
-  r: ReadonlyRecord<N, A>,
-  k: K,
-  a: A
-): ReadonlyRecord<N | K, A> {
-  if (r[k as any] === a) {
-    return r as any
+export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
+  if (!has_(r, k)) {
+    const mut_out = Object.assign({}, r) as Record<string, A>
+    mut_out[k]    = a
+    return O.Some(mut_out)
   }
-  const mut_out = Object.assign({}, r) as Record<N | K, A>
+  return O.None()
+}
+
+export function insertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
+  return (r) => insertAt_(r, k, a)
+}
+
+export function upsertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): ReadonlyRecord<string, A> {
+  if (has_(r, k) && r[k] === a) {
+    return r
+  }
+  const mut_out = Object.assign({}, r) as Record<string, A>
   mut_out[k]    = a
   return mut_out
 }
 
-export function insertAt<K extends string, A>(
-  k: K,
-  a: A
-): <N extends string>(r: ReadonlyRecord<N, A>) => ReadonlyRecord<K | N, A> {
-  return (r) => insertAt_(r, k, a)
+export function upsertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
+  return (r) => upsertAt_(r, k, a)
 }
 
-export function deleteAt_<N extends string, A, K extends N>(
-  r: ReadonlyRecord<N, A>,
-  k: K
-): ReadonlyRecord<Exclude<N, K>, A> {
-  if (!_hasOwnProperty.call(r, k)) {
+export function deleteAt_<A>(r: ReadonlyRecord<string, A>, k: string): ReadonlyRecord<string, A> {
+  if (!has_(r, k)) {
     return r
   }
-  const mut_out = Object.assign({}, r) as Record<N, A>
+  const mut_out = Object.assign({}, r) as Record<string, A>
   delete mut_out[k as any]
   return mut_out as any
 }
 
-export function deleteAt<N extends string, K extends N>(
-  k: K
-): <A>(r: Readonly<Record<N, A>>) => Readonly<Record<Exclude<N, K>, A>> {
+export function deleteAt(k: string): <A>(r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
   return (r) => deleteAt_(r, k)
 }
 
-export function updateAt_<N extends string, A>(r: ReadonlyRecord<N, A>, k: N, a: A): O.Option<ReadonlyRecord<N, A>> {
-  if (!_hasOwnProperty.call(r, k)) {
-    return O.None()
-  }
-  if (r[k] === a) {
-    return O.Some(r)
-  }
-  const mut_out = Object.assign({}, r) as Record<N, A>
-  mut_out[k]    = a
-  return O.Some(mut_out)
+export function updateAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
+  return modifyAt_(r, k, () => a)
 }
 
-export function updateAt<N extends string, A>(k: N, a: A): (r: ReadonlyRecord<N, A>) => O.Option<ReadonlyRecord<N, A>> {
+export function updateAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
   return (r) => updateAt_(r, k, a)
 }
 
-export function modifyAt_<N extends string, A>(
-  r: ReadonlyRecord<N, A>,
-  k: N,
+export function modifyAt_<A>(
+  r: ReadonlyRecord<string, A>,
+  k: string,
   f: (a: A) => A
-): O.Option<ReadonlyRecord<N, A>> {
-  if (!_hasOwnProperty.call(r, k)) {
+): O.Option<ReadonlyRecord<string, A>> {
+  if (!has_(r, k)) {
     return O.None()
   }
-  const mut_out = Object.assign({}, r) as Record<N, A>
+  const mut_out = Object.assign({}, r) as Record<string, A>
   mut_out[k]    = f(r[k])
   return O.Some(mut_out)
 }
 
-export function modifyAt<N extends string, A>(
-  k: N,
+export function modifyAt<A>(
+  k: string,
   f: (a: A) => A
-): (r: ReadonlyRecord<N, A>) => O.Option<ReadonlyRecord<N, A>> {
+): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
   return (r) => modifyAt_(r, k, f)
 }
 
@@ -927,18 +915,13 @@ export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option
   return (r) => lookup_(r, k)
 }
 
-export function pop_<N extends string, K extends N, A>(
-  r: ReadonlyRecord<N, A>,
-  k: K
-): O.Option<readonly [A, ReadonlyRecord<Exclude<N, K>, A>]> {
+export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<readonly [A, ReadonlyRecord<string, A>]> {
   const deleteAtk = deleteAt(k)
   const oa        = lookup(k)(r)
   return O.isNone(oa) ? O.None() : O.Some([oa.value, deleteAtk(r)])
 }
 
-export function pop<N extends string, K extends N>(
-  k: K
-): <A>(r: ReadonlyRecord<N, A>) => O.Option<readonly [A, ReadonlyRecord<Exclude<N, K>, A>]> {
+export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<readonly [A, ReadonlyRecord<string, A>]> {
   return (r) => pop_(r, k)
 }
 

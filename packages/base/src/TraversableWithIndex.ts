@@ -1,6 +1,6 @@
-import type { Applicative } from './Applicative'
 import type { FunctorWithIndex } from './FunctorWithIndex'
 import type * as HKT from './HKT'
+import type { Monoidal } from './Monoidal'
 
 export interface TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends FunctorWithIndex<F, C> {
   readonly itraverse_: TraverseWithIndexFn_<F, C>
@@ -8,7 +8,7 @@ export interface TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends 
 }
 
 export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
+  <G extends HKT.URIS, CG = HKT.Auto>(A: Monoidal<G, CG>): <
     NG extends string,
     KG,
     QG,
@@ -33,7 +33,7 @@ export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
 }
 
 export interface TraverseWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
+  <G extends HKT.URIS, CG = HKT.Auto>(A: Monoidal<G, CG>): <
     NG extends string,
     KG,
     QG,
@@ -64,7 +64,7 @@ export interface TraverseWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
 }
 
 export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
+  <H extends HKT.URIS, CH = HKT.Auto>(A: Monoidal<H, CH>): <
     FN extends string,
     FK,
     GN extends string,
@@ -107,7 +107,7 @@ export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HK
 }
 
 export interface TraverseWithIndexFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
+  <H extends HKT.URIS, CH = HKT.Auto>(A: Monoidal<H, CH>): <
     FN extends string,
     FK,
     FQ,
@@ -177,7 +177,7 @@ export function implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): 
     R: R
     E: E
   }) => (
-    A: Applicative<HKT.UHKT<G>>
+    A: Monoidal<HKT.UHKT<G>>
   ) => (
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, N>, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
   ) => (ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
@@ -201,7 +201,7 @@ export function implementTraverseWithIndex_<F extends HKT.URIS, C = HKT.Auto>():
     R: R
     E: HKT.OrFix<'E', C, E>
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, N>, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>

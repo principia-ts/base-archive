@@ -1,7 +1,7 @@
 import type * as HKT from './HKT'
 import type { Option } from './Option'
+import type { Semigroup } from './Semigroup'
 import type { These } from './These'
-import type { Semigroup } from './typeclass'
 
 import { identity, tuple } from './Function'
 

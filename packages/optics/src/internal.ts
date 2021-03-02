@@ -20,7 +20,7 @@ import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 
 export interface ModifyF<S, A> {
-  <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <N extends string, K, Q, W, X, I, _S, R, E>(
+  <F extends HKT.URIS, C = HKT.Auto>(F: P.Monoidal<F, C>): <N extends string, K, Q, W, X, I, _S, R, E>(
     f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, A>
   ) => (s: S) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, S>
 }
@@ -30,7 +30,7 @@ export function implementModifyF<S, A>(): (
     F: F
     A: A
     S: S
-  }) => (F: P.Applicative<HKT.UHKT<F>>) => (f: (a: A) => HKT.HKT<F, A>) => (s: S) => HKT.HKT<F, S>
+  }) => (F: P.Monoidal<HKT.UHKT<F>>) => (f: (a: A) => HKT.HKT<F, A>) => (s: S) => HKT.HKT<F, S>
 ) => ModifyF<S, A>
 export function implementModifyF() {
   return (i: any) => i()
@@ -388,7 +388,7 @@ export function indexRecord<A = never>(): Ix<Readonly<Record<string, A>>, string
         if (r[k] === a || O.isNone(R.lookup_(r, k))) {
           return r
         }
-        return R.insertAt(k, a)(r)
+        return R.upsertAt_(r, k, a)
       }
     })
   }
@@ -406,7 +406,7 @@ export function atRecord<A = never>(): At<Readonly<Record<string, A>>, string, O
       get: (r) => R.lookup_(r, key),
       set: O.match(
         () => R.deleteAt(key),
-        (a) => R.insertAt(key, a)
+        (a) => R.upsertAt(key, a)
       )
     })
   }

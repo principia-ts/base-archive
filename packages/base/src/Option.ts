@@ -10,12 +10,11 @@ import type { OptionURI } from './Modules'
 import type { Show } from './Show'
 import type { These } from './These'
 
-import { bindSF, bindToSF, letSF } from './Do'
 import { Left, Right } from './Either'
-import { makeEq } from './Eq/core'
+import { makeEq } from './Eq'
 import { _bind, flow, identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
-import { makeShow } from './Show/core'
+import { makeShow } from './Show'
 import * as T from './These'
 import * as P from './typeclass'
 
@@ -770,7 +769,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<[HKT.URI<OptionURI>]> = (G) => (ta, f) =>
-  isNone(ta) ? G.map_(G.unit(), () => None()) : pipe(f(ta.value), G.map(Some))
+  isNone(ta) ? G.pure(None()) : pipe(f(ta.value), G.map(Some))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -787,7 +786,7 @@ export const traverse: P.TraverseFn<[HKT.URI<OptionURI>]> = (G) => (f) => (ta) =
  * @since 1.0.0
  */
 export const sequence: P.SequenceFn<[HKT.URI<OptionURI>]> = (G) => (fa) =>
-  isNone(fa) ? G.map_(G.unit(), () => None()) : pipe(fa.value, G.map(Some))
+  isNone(fa) ? G.pure(None()) : pipe(fa.value, G.map(Some))
 
 /*
  * -------------------------------------------
@@ -806,7 +805,7 @@ export function unit(): Option<void> {
  */
 
 export const compactA_: P.WitherFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) =>
-  isNone(wa) ? A.map_(A.unit(), () => None()) : f(wa.value)
+  isNone(wa) ? A.pure(None()) : f(wa.value)
 
 export const compactA: P.WitherFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
@@ -912,45 +911,36 @@ export const Alt: P.Alt<[HKT.URI<OptionURI>]> = HKT.instance({
   alt
 })
 
-export const Apply: P.Apply<[HKT.URI<OptionURI>]> = HKT.instance({
+export const Semimonoidal = HKT.instance<P.Semimonoidal<[HKT.URI<OptionURI>]>>({
   ...Functor,
-  ap_,
-  ap,
   crossWith_,
-  crossWith,
-  cross_,
-  cross
+  crossWith
 })
 
-export const sequenceT = P.sequenceTF(Apply)
+export const sequenceT = P.sequenceTF(Semimonoidal)
+export const mapN      = P.mapNF(Semimonoidal)
+export const sequenceS = P.sequenceSF(Semimonoidal)
 
-export const mapN = P.mapNF(Apply)
-
-export const sequenceS = P.sequenceSF(Apply)
-
-export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = HKT.instance({
-  ...Apply,
-  unit,
+export const Monoidal: P.Monoidal<[HKT.URI<OptionURI>]> = HKT.instance({
+  ...Semimonoidal,
   pure
 })
 
-export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
-  ...Applicative,
-  fail,
+export const MonoidalExcept: P.MonoidalExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
+  ...Monoidal,
   catchAll_,
-  catchAll
+  catchAll,
+  fail
 })
 
 export const Monad: P.Monad<[HKT.URI<OptionURI>]> = HKT.instance({
-  ...Applicative,
+  ...Monoidal,
   bind_,
-  bind,
-  unit,
-  flatten
+  bind
 })
 
 export const MonadExcept: P.MonadExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
-  ...ApplicativeExcept,
+  ...MonoidalExcept,
   ...Monad
 })
 
@@ -965,7 +955,7 @@ export { of as do }
  * @category Do
  * @since 1.0.0
  */
-export const bindS = bindSF(Monad)
+export const bindS = P.bindSF(Monad)
 
 /**
  * Contributes a pure value to a threaded scope
@@ -973,7 +963,7 @@ export const bindS = bindSF(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const letS = letSF(Monad)
+export const letS = P.letSF(Monad)
 
 /**
  * Binds a computation to a property in a `Record`.
@@ -981,7 +971,7 @@ export const letS = letSF(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const bindToS = bindToSF(Monad)
+export const bindToS = P.bindToSF(Monad)
 
 export const Filterable: P.Filterable<[HKT.URI<OptionURI>]> = HKT.instance({
   filterMap_,

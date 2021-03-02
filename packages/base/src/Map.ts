@@ -1,6 +1,7 @@
 import type { Eq } from './Eq'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { MapURI } from './Modules'
+import type { Ord } from './Ord'
 import type { Show } from './Show'
 
 import * as E from './Either'
@@ -546,7 +547,7 @@ export function partitionMap<A, B, C>(
  * @category Instances
  * @since 1.0.0
  */
-export function getFoldableWithIndex<K>(O: P.Ord<K>) {
+export function getFoldableWithIndex<K>(O: Ord<K>) {
   type FixK = HKT.Fix<'K', K>
   const keysO = keys(O)
 
@@ -709,25 +710,21 @@ export function getShow<K, A>(SK: Show<K>, SA: Show<A>): Show<ReadonlyMap<K, A>>
  * @category Traversable
  * @since 1.0.0
  */
-export function getTraversableWithindex<K>(O: P.Ord<K>) {
+export function getTraversableWithindex<K>(O: Ord<K>) {
   type FixK = HKT.Fix<'K', K>
 
   const keysO = keys(O)
 
   const traverseWithIndex_ = P.implementTraverseWithIndex_<[HKT.URI<MapURI>], FixK>()((_) => (G) => (ta, f) => {
     type _ = typeof _
-    let gm: HKT.HKT<_['G'], ReadonlyMap<_['K'], _['B']>> = P.pureF(G)(empty())
+    let gm: HKT.HKT<_['G'], ReadonlyMap<_['K'], _['B']>> = G.pure(empty())
     const ks                                             = keysO(ta)
     const len                                            = ks.length
     for (let i = 0; i < len; i++) {
       const key = ks[i]
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const a = ta.get(key)!
-      gm      = pipe(
-        gm,
-        G.map((m) => (b: typeof _.B) => new Map(m).set(key, b)),
-        G.ap(f(key, a))
-      )
+      gm      = G.crossWith_(gm, f(key, a), (m, b) => new Map(m).set(key, b))
     }
     return gm
   })
@@ -744,7 +741,7 @@ export function getTraversableWithindex<K>(O: P.Ord<K>) {
  * @category Witherable
  * @since 1.0.0
  */
-export function getWitherable<K>(O: P.Ord<K>) {
+export function getWitherable<K>(O: Ord<K>) {
   type CK = HKT.Fix<'K', K>
 
   const { itraverse_: traverseWithIndex_ } = getTraversableWithindex(O)
@@ -776,7 +773,7 @@ export function getWitherable<K>(O: P.Ord<K>) {
  *
  * @since 2.5.0
  */
-export function keys<K>(O: P.Ord<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyArray<K> {
+export function keys<K>(O: Ord<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyArray<K> {
   return (m) => Array.from(m.keys()).sort((a, b) => O.compare_(a, b))
 }
 

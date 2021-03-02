@@ -1,3 +1,252 @@
+export interface Lazy<A> {
+  (): A
+}
+
+export interface Predicate<A> {
+  (a: A): boolean
+}
+
+export interface Refinement<A, B extends A> {
+  (a: A): a is B
+}
+
+export interface PredicateWithIndex<I, A> {
+  (i: I, a: A): boolean
+}
+
+export interface RefinementWithIndex<I, A, B extends A> {
+  (i: I, a: A): a is B
+}
+
+export interface Endomorphism<A> {
+  (a: A): A
+}
+
+export interface Morphism<A, B> {
+  (a: A): B
+}
+
+export interface MorphismN<A extends ReadonlyArray<unknown>, B> {
+  (...args: A): B
+}
+
+/**
+ * flip :: (a -> b -> c) -> b -> a -> c
+ *
+ * Flips the arguments of a curried binary function
+ */
+export function flip<A, B, C>(f: (a: A) => (b: B) => C): (b: B) => (a: A) => C {
+  return (b) => (a): C => f(a)(b)
+}
+
+export function matchPredicate<A, B extends A, C>(
+  refinement: Refinement<A, B>,
+  onTrue: (a: B) => C,
+  onFalse: (a: A) => C
+): (a: A) => C
+export function matchPredicate<A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B): (a: A) => B
+export function matchPredicate<A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B): (a: A) => B {
+  return (a) => (predicate(a) ? onTrue(a) : onFalse(a))
+}
+
+export function memoize<A, B>(f: (a: A) => B): (a: A) => B {
+  const cache = new Map()
+  return (a) => {
+    if (!cache.has(a)) {
+      const b = f(a)
+      cache.set(a, b)
+      return b
+    }
+    return cache.get(a)
+  }
+}
+
+/**
+ * @optimize identity
+ */
+export function identity<A>(a: A) {
+  return a
+}
+
+/**
+ * @optimize identity
+ */
+export const unsafeCoerce: <A, B>(a: A) => B = identity as any
+
+export function not<A>(predicate: Predicate<A>): Predicate<A> {
+  return (a) => !predicate(a)
+}
+
+export function constant<A>(a: A): Lazy<A> {
+  return () => a
+}
+
+export const constTrue: Lazy<true> = () => true
+
+export const constFalse: Lazy<false> = () => false
+
+export const constNull: Lazy<null> = () => null
+
+export const constUndefined: Lazy<undefined> = () => undefined
+
+export const constVoid: Lazy<void> = () => {
+  return
+}
+
+export function tuple<T extends ReadonlyArray<any>>(...t: T): readonly [...T] {
+  return t
+}
+
+export function increment(n: number): number {
+  return n + 1
+}
+
+export function decrement(n: number): number {
+  return n - 1
+}
+
+export function absurd<A>(_: never): A {
+  throw new Error('Called `absurd` function, which should be uncallable.')
+}
+
+export function tupled<A extends ReadonlyArray<unknown>, B>(f: (...a: A) => B): (a: A) => B {
+  return (a) => f(...a)
+}
+
+export function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: A) => B): (...a: A) => B {
+  return (...a) => f(a)
+}
+
+export const hole: <T>() => T = absurd as any
+
+/**
+ * @internal
+ */
+export const _bind = <A, N extends string, B>(
+  a: A,
+  name: Exclude<N, keyof A>,
+  b: B
+): { [K in keyof A | N]: K extends keyof A ? A[K] : B } => Object.assign({}, a, { [name]: b }) as any
+
+/**
+ * @internal
+ */
+export const _bindTo = <N extends string>(name: N) => <B>(b: B): { [K in N]: B } => ({ [name]: b } as any)
+
+/**
+ * @optimize flow
+ */
+export function flow<A extends ReadonlyArray<unknown>, B>(ab: (...a: A) => B): (...a: A) => B
+export function flow<A extends ReadonlyArray<unknown>, B, C>(ab: (...a: A) => B, bc: (b: B) => C): (...a: A) => C
+export function flow<A extends ReadonlyArray<unknown>, B, C, D>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D
+): (...a: A) => D
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E
+): (...a: A) => E
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F
+): (...a: A) => F
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G
+): (...a: A) => G
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G, H>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H
+): (...a: A) => H
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G, H, I>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I
+): (...a: A) => I
+export function flow<A extends ReadonlyArray<unknown>, B, C, D, E, F, G, H, I, J>(
+  ab: (...a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+  ef: (e: E) => F,
+  fg: (f: F) => G,
+  gh: (g: G) => H,
+  hi: (h: H) => I,
+  ij: (i: I) => J
+): (...a: A) => J
+/* eslint-disable prefer-rest-params */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+export function flow(
+  ab: Function,
+  bc?: Function,
+  cd?: Function,
+  de?: Function,
+  ef?: Function,
+  fg?: Function,
+  gh?: Function,
+  hi?: Function,
+  ij?: Function
+): unknown {
+  switch (arguments.length) {
+    case 1:
+      return ab
+    case 2:
+      return function (this: unknown) {
+        return bc!(ab.apply(this, arguments))
+      }
+    case 3:
+      return function (this: unknown) {
+        return cd!(bc!(ab.apply(this, arguments)))
+      }
+    case 4:
+      return function (this: unknown) {
+        return de!(cd!(bc!(ab.apply(this, arguments))))
+      }
+    case 5:
+      return function (this: unknown) {
+        return ef!(de!(cd!(bc!(ab.apply(this, arguments)))))
+      }
+    case 6:
+      return function (this: unknown) {
+        return fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))))
+      }
+    case 7:
+      return function (this: unknown) {
+        return gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))))
+      }
+    case 8:
+      return function (this: unknown) {
+        return hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))))))
+      }
+    case 9:
+      return function (this: unknown) {
+        return ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))))))
+      }
+  }
+  return
+}
+/* eslint-enable */
+
 /**
  * @optimize pipe
  */

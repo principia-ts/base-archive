@@ -2,7 +2,6 @@ import type { Endomorphism } from './Function'
 import type { WriterURI } from './Modules'
 import type * as P from './typeclass'
 
-import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 
 /*
@@ -95,7 +94,7 @@ export const Functor: P.Functor<[HKT.URI<WriterURI>]> = HKT.instance({
   map
 })
 
-export function getApply<W>(S: P.Semigroup<W>): P.Apply<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
+export function getSemimonoidal<W>(S: P.Semigroup<W>): P.Semimonoidal<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
   type V_ = HKT.Fix<'W', W>
   type URI = [HKT.URI<WriterURI>]
   const crossWith_: P.CrossWithFn_<URI, V_> = (fa, fb, f) => () => {
@@ -104,23 +103,18 @@ export function getApply<W>(S: P.Semigroup<W>): P.Apply<[HKT.URI<WriterURI>], HK
     return [f(a, b), S.combine_(w1, w2)]
   }
 
-  return HKT.instance<P.Apply<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+  return HKT.instance<P.Semimonoidal<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
     map_,
     map,
     crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-    cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a))
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
   })
 }
 
 export function getApplicative<W>(M: P.Monoid<W>) {
-  return HKT.instance<P.Applicative<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
-    ...getApply(M),
-    pure: (a) => () => [a, M.nat],
-    unit: () => () => [undefined, M.nat]
+  return HKT.instance<P.Monoidal<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+    ...getSemimonoidal(M),
+    pure: (a) => () => [a, M.nat]
   })
 }
 
@@ -133,8 +127,7 @@ export function getMonad<W>(M: P.Monoid<W>) {
   return HKT.instance<P.Monad<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
     ...getApplicative(M),
     bind_,
-    bind: (f) => (ma) => bind_(ma, f),
-    flatten: (mma) => bind_(mma, identity)
+    bind: (f) => (ma) => bind_(ma, f)
   })
 }
 

@@ -2,10 +2,11 @@ import type { Functor } from './Functor'
 import type * as HKT from './HKT'
 import type { Monad } from './Monad'
 
+import { identity } from './Function'
+
 export interface Bind<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC> {
   readonly bind_: BindFn_<F, TC>
   readonly bind: BindFn<F, TC>
-  readonly flatten: FlattenFn<F, TC>
 }
 
 export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: Bind<F, TC>): TapFn<F, TC> {
@@ -513,4 +514,8 @@ export interface FlattenFnComposition<F extends HKT.URIS, G extends HKT.URIS, TC
       A
     >
   >
+}
+
+export function flattenF<F extends HKT.URIS, C = HKT.Auto>(M: Bind<F, C>): FlattenFn<F, C> {
+  return M.bind(identity)
 }

@@ -2,6 +2,7 @@ import type * as E from './Either'
 import type { Eq } from './Eq'
 import type { Predicate, Refinement } from './Function'
 import type * as O from './Option'
+import type { Ord } from './Ord'
 import type { Show } from './Show'
 import type * as P from './typeclass'
 
@@ -51,7 +52,7 @@ export function fromArray<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlySet<A>
  * -------------------------------------------
  */
 
-export function toArray<A>(O: P.Ord<A>): (set: ReadonlySet<A>) => ReadonlyArray<A> {
+export function toArray<A>(O: Ord<A>): (set: ReadonlySet<A>) => ReadonlyArray<A> {
   return (set) => {
     const r: Array<A> = []
     set.forEach((e) => r.push(e))
@@ -359,21 +360,21 @@ export function filterMap<B>(E: Eq<B>) {
  * -------------------------------------------
  */
 
-export function foldl_<A>(O: P.Ord<A>) {
+export function foldl_<A>(O: Ord<A>) {
   const toArrayO = toArray(O)
   return <B>(set: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B => A.foldl_(toArrayO(set), b, f)
 }
 
-export function foldl<A>(O: P.Ord<A>): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
+export function foldl<A>(O: Ord<A>): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
   return (b, f) => (set) => foldl_(O)(set, b, f)
 }
 
-export function foldMap_<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
+export function foldMap_<A, M>(O: Ord<A>, M: P.Monoid<M>) {
   const toArrayO = toArray(O)
   return (fa: ReadonlySet<A>, f: (a: A) => M) => A.foldl_(toArrayO(fa), M.nat, (b, a) => M.combine_(b, f(a)))
 }
 
-export function foldMap<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
+export function foldMap<A, M>(O: Ord<A>, M: P.Monoid<M>) {
   const foldMapOM_ = foldMap_(O, M)
   return (f: (a: A) => M) => (fa: ReadonlySet<A>) => foldMapOM_(fa, f)
 }

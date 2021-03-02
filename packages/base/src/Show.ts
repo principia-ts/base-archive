@@ -1,9 +1,45 @@
-import type { Show } from './core'
+import { memoize, pipe } from './Function'
+import * as R from './Record'
 
-import * as A from '../Array'
-import { memoize, pipe } from '../Function'
-import * as R from '../Record'
-import { makeShow } from './core'
+export interface Show<A> {
+  readonly show: (a: A) => string
+}
+
+export function makeShow<A>(show: (a: A) => string): Show<A> {
+  return {
+    show
+  }
+}
+
+/*
+ * -------------------------------------------
+ * Primitives
+ * -------------------------------------------
+ */
+
+export const any: Show<any> = {
+  show: (a) => JSON.stringify(a)
+}
+
+export const string: Show<string> = any
+
+export const number: Show<number> = any
+
+export const boolean: Show<boolean> = any
+
+/*
+ * -------------------------------------------
+ * Contravariant
+ * -------------------------------------------
+ */
+
+export function contramap_<A, B>(fa: Show<A>, f: (b: B) => A): Show<B> {
+  return makeShow((b) => fa.show(f(b)))
+}
+
+export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
+  return (fa) => contramap_(fa, f)
+}
 
 /*
  * -------------------------------------------
@@ -73,10 +109,6 @@ export function partial<A extends Readonly<Record<string, any>>>(
     type
   )
 }
-
-export const record: <A>(codomain: Show<A>) => Show<R.ReadonlyRecord<string, A>> = R.getShow
-
-export const array: <A>(item: Show<A>) => Show<ReadonlyArray<A>> = A.getShow
 
 export function intersect_<A, B>(left: Show<A>, right: Show<B>): Show<A & B> {
   return makeShow((a) => `${left.show(a)} & ${right.show(a)}`)

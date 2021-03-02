@@ -2,7 +2,6 @@ import type { Exit } from '../Exit'
 import type { URef } from '../IORef/core'
 import type { Option } from '@principia/base/Option'
 
-import * as Eq from '@principia/base/Eq'
 import { absurd, increment, pipe } from '@principia/base/Function'
 import * as M from '@principia/base/Map'
 import * as O from '@principia/base/Option'

@@ -4,7 +4,7 @@ import type * as P from '@principia/base/typeclass'
 import * as E from '@principia/base/Either'
 import { flow, identity } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
-import { getApplicativeComposition } from '@principia/base/typeclass'
+import { getMonoidalComposition } from '@principia/base/typeclass'
 
 export type V<C> = HKT.CleanParam<C, 'E'> & HKT.V<'E', '+'>
 
@@ -35,11 +35,10 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
     )
 
   return HKT.instance<EitherT<HKT.UHKT<F>>>({
-    ...getApplicativeComposition(M, E.Applicative),
+    ...getMonoidalComposition(M, E.Monoidal),
     fail: flow(E.Left, M.pure),
     bind_,
     bind: (f) => (ma) => bind_(ma, f),
-    flatten: (mma) => bind_(mma, identity),
     catchAll_,
     catchAll: (f) => (fa) => catchAll_(fa, f)
   })

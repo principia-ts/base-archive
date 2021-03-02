@@ -1,5 +1,5 @@
-import type { Applicative } from './Applicative'
-import type { Functor, FunctorComposition } from './Functor'
+import type { Functor, Functor2 } from './Functor'
+import type { Monoidal } from './Monoidal'
 
 import { flow } from './Function'
 import { getFunctorComposition } from './Functor'
@@ -12,7 +12,7 @@ export interface Traversable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F
 }
 
 export interface TraversableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
-  extends FunctorComposition<F, G, CF, CG> {
+  extends Functor2<F, G, CF, CG> {
   readonly traverse_: TraverseFnComposition_<F, G, CF, CG>
   readonly traverse: TraverseFnComposition<F, G, CF, CG>
   readonly sequence: SequenceFnComposition<F, G, CF, CG>
@@ -33,7 +33,7 @@ export function getTraversableComposition<F extends HKT.URIS, G extends HKT.URIS
 }
 
 export interface TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE, A, B>(
+  <G extends HKT.URIS, CG = HKT.Auto>(A: Monoidal<G, CG>): <GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE, A, B>(
     f: (a: A) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
   ) => <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE>(
     ta: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, A>
@@ -41,7 +41,7 @@ export interface TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
 }
 
 export interface TraverseFn_<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
+  <G extends HKT.URIS, CG = HKT.Auto>(A: Monoidal<G, CG>): <
     FN extends string,
     FK,
     FQ,
@@ -69,7 +69,7 @@ export interface TraverseFn_<F extends HKT.URIS, CF = HKT.Auto> {
 }
 
 export interface TraverseFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <HN extends string, HK, HQ, HW, HX, HI, HS, HR, HE, A, B>(
+  <H extends HKT.URIS, CH = HKT.Auto>(A: Monoidal<H, CH>): <HN extends string, HK, HQ, HW, HX, HI, HS, HR, HE, A, B>(
     f: (a: A) => HKT.Kind<H, CH, HN, HK, HQ, HW, HX, HI, HS, HR, HE, B>
   ) => <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE, GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE>(
     fga: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>>
@@ -90,7 +90,7 @@ export interface TraverseFnComposition<F extends HKT.URIS, G extends HKT.URIS, C
 }
 
 export interface TraverseFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
+  <H extends HKT.URIS, CH = HKT.Auto>(A: Monoidal<H, CH>): <
     FN extends string,
     FK,
     FQ,
@@ -154,7 +154,7 @@ export function implementTraverse_<F extends HKT.URIS, C = HKT.Auto>(): (
     R: R
     E: E
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     f: (a: A) => HKT.HKT<G, B>
@@ -179,7 +179,7 @@ export function implementTraverse<F extends HKT.URIS, C = HKT.Auto>(): (
     R: R
     E: E
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     f: (a: A) => HKT.HKT<G, B>
   ) => (ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
@@ -189,7 +189,7 @@ export function implementTraverse() {
 }
 
 export interface SequenceFn<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
+  <G extends HKT.URIS, CG = HKT.Auto>(A: Monoidal<G, CG>): <
     NF extends string,
     KF,
     QF,
@@ -215,7 +215,7 @@ export interface SequenceFn<F extends HKT.URIS, CF = HKT.Auto> {
 }
 
 export interface SequenceFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
+  <H extends HKT.URIS, CH = HKT.Auto>(A: Monoidal<H, CH>): <
     NF extends string,
     KF,
     QF,
@@ -290,7 +290,7 @@ export function implementSequence<F extends HKT.URIS, C = HKT.Auto>(): (
     R: R
     E: E
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Monoidal<HKT.UHKT<G>>
   ) => (
     ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, HKT.HKT<G, A>>
   ) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>>

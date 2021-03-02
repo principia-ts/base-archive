@@ -1,14 +1,14 @@
 import type * as HKT from './HKT'
 
-export interface Semigroupal<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+export interface Cross<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly cross_: CrossFn_<F, C>
   readonly cross: CrossFn<F, C>
 }
 
-export interface SemigroupalComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
+export interface Cross2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
-  readonly cross_: CrossFnComposition_<F, G, CF, CG>
-  readonly cross: CrossFnComposition<F, G, CF, CG>
+  readonly cross_: CrossFn2_<F, G, CF, CG>
+  readonly cross: CrossFn2<F, G, CF, CG>
 }
 
 export interface CrossFn<F extends HKT.URIS, C = HKT.Auto> {
@@ -87,7 +87,7 @@ export interface CrossFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface CrossFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface CrossFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,
@@ -180,7 +180,7 @@ export interface CrossFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF =
   >
 }
 
-export interface CrossFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface CrossFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     NF extends string,
     KF,

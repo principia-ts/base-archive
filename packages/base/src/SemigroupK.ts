@@ -362,4 +362,3 @@ export interface CombineEvalKFn<F extends HKT.URIS, C = HKT.Auto> {
     >
   >
 }
-

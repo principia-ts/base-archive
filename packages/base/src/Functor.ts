@@ -1,23 +1,32 @@
 import * as HKT from './HKT'
 
 export interface Functor<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly map: MapFn<F, C>
   readonly map_: MapFn_<F, C>
+  readonly map: MapFn<F, C>
 }
 
-export interface FunctorComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
+export interface FunctorUtil<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
+  readonly flap_: FlapFn_<F, C>
+  readonly flap: FlapFn<F, C>
+  readonly as_: AsFn_<F, C>
+  readonly as: AsFn<F, C>
+  readonly fcross_: FCrossFn_<F, C>
+  readonly fcross: FCrossFn<F, C>
+}
+
+export interface Functor2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
-  readonly map: MapFnComposition<F, G, CF, CG>
-  readonly map_: MapFnComposition_<F, G, CF, CG>
+  readonly map_: MapFn2_<F, G, CF, CG>
+  readonly map: MapFn2<F, G, CF, CG>
 }
 
 export function getFunctorComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
   F: Functor<F, CF>,
   G: Functor<G, CG>
-): FunctorComposition<F, G, CF, CG> {
-  const map_: MapFnComposition_<F, G, CF, CG> = (fga, f) => F.map_(fga, (ga) => G.map_(ga, f))
+): Functor2<F, G, CF, CG> {
+  const map_: MapFn2_<F, G, CF, CG> = (fga, f) => F.map_(fga, (ga) => G.map_(ga, f))
 
-  return HKT.instance<FunctorComposition<F, G, CF, CG>>({
+  return HKT.instance<Functor2<F, G, CF, CG>>({
     map_,
     map: (f) => (fga) => map_(fga, f)
   })
@@ -36,7 +45,7 @@ export interface MapFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
 }
 
-export interface MapFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface MapFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <A, B>(f: (a: A) => B): <
     NF extends string,
     KF,
@@ -61,7 +70,7 @@ export interface MapFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = H
   ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
-export interface MapFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface MapFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
     fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     f: (a: A) => B
@@ -81,7 +90,7 @@ export interface FlapFn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, B>
 }
 
-export interface FlapFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface FlapFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <A>(a: A): <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, B>(
     fa: HKT.Kind<
       F,
@@ -100,7 +109,7 @@ export interface FlapFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = 
   ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
-export interface FlapFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface FlapFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
     fa: HKT.Kind<
       F,
@@ -142,7 +151,7 @@ export interface AsFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
 }
 
-export interface AsFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface AsFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <B>(b: () => B): <
     NF extends string,
     KF,
@@ -168,7 +177,7 @@ export interface AsFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HK
   ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
-export interface AsFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface AsFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
     fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     b: () => B
@@ -196,7 +205,7 @@ export interface FCrossFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [A, B]>
 }
 
-export interface FCrossFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface FCrossFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <A, B>(f: (a: A) => B): <
     NF extends string,
     KF,
@@ -234,7 +243,7 @@ export interface FCrossFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF 
   >
 }
 
-export interface FCrossFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface FCrossFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
     fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     f: (a: A) => B

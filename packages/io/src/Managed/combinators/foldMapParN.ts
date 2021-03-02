@@ -1,5 +1,5 @@
 import type { Managed } from '../core'
-import type { Monoid } from '@principia/base/Monoid'
+import type { Monoid } from '@principia/base/typeclass'
 
 import { mergeAllParN_ } from './mergeAllParN'
 

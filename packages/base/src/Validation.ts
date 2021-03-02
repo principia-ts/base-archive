@@ -1,25 +1,26 @@
-import type { Applicative } from '../Applicative'
-import type { CrossWithFn_ } from '../Apply'
-import type { Semigroup } from '../Semigroup'
-import type { Alt, AltFn_, MonadExcept } from '../typeclass'
-import type { Erase } from '../util/types'
+import type { Alt, AltFn_ } from './Alt'
+import type { MonadExcept } from './MonadExcept'
+import type { Monoidal } from './Monoidal'
+import type { Semigroup } from './Semigroup'
+import type { CrossWithFn_ } from './Semimonoidal'
+import type { Erase } from './util/types'
 
-import { attemptF } from '../ApplicativeExcept'
-import * as E from '../Either'
-import { tuple } from '../Function'
-import * as HKT from '../HKT'
+import { flattenF } from './Bind'
+import * as E from './Either'
+import * as HKT from './HKT'
+import { attemptF } from './MonoidalExcept'
 
 export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: MonadExcept<F, C>
-): <E>(S: Semigroup<E>) => Applicative<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
+): <E>(S: Semigroup<E>) => Monoidal<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
 export function getApplicativeValidation<F>(
   F: MonadExcept<HKT.UHKT2<F>>
-): <E>(S: Semigroup<E>) => Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
+): <E>(S: Semigroup<E>) => Monoidal<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   const attempt = attemptF(F)
   return <E>(S: Semigroup<E>) => {
     const crossWith_: CrossWithFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
-      F.flatten(
-        F.map_(F.cross_(attempt(fa), attempt(fb)), ([ea, eb]) =>
+      flattenF(F)(
+        F.crossWith_(attempt(fa), attempt(fb), (ea, eb) =>
           E.match_(
             ea,
             (e) =>
@@ -33,17 +34,12 @@ export function getApplicativeValidation<F>(
         )
       )
 
-    return HKT.instance<Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
+    return HKT.instance<Monoidal<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
       map_: F.map_,
       map: F.map,
       crossWith_,
       crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-      cross_: (fa, fb) => crossWith_(fa, fb, tuple),
-      cross: (fb) => (fa) => crossWith_(fa, fb, tuple),
-      ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-      ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
-      pure: F.pure,
-      unit: F.unit
+      pure: F.pure
     })
   }
 }

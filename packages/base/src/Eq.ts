@@ -1,10 +1,76 @@
-import type { ReadonlyRecord } from '../Record'
-import type { Eq } from './core'
+import type { ReadonlyRecord } from './Record'
 
-import * as A from '../Array'
-import { memoize } from '../Function'
-import * as R from '../Record'
-import { makeEq } from './core'
+import { memoize } from './Function'
+
+export interface Eq<A> {
+  readonly equals_: (x: A, y: A) => boolean
+  readonly equals: (y: A) => (x: A) => boolean
+}
+
+export function makeEq<A>(equals: (x: A, y: A) => boolean): Eq<A> {
+  const equals_ = (x: A, y: A) => x === y || equals(x, y)
+  return {
+    equals_,
+    equals: (y) => (x) => equals_(x, y)
+  }
+}
+
+/*
+ * -------------------------------------------
+ * Primitives
+ * -------------------------------------------
+ */
+
+export const any: Eq<any> = {
+  equals_: () => true,
+  equals: () => () => true
+}
+
+export const strict: Eq<unknown> = {
+  equals_: (x, y) => x === y,
+  equals: (y) => (x) => x === y
+}
+
+export const string: Eq<string> = strict
+
+export const number: Eq<number> = strict
+
+export const boolean: Eq<boolean> = strict
+
+export const date: Eq<Date> = {
+  equals_: (x, y) => x.valueOf() === y.valueOf(),
+  equals: (y) => (x) => x.valueOf() === y.valueOf()
+}
+
+export const UnknownArray: Eq<ReadonlyArray<unknown>> = makeEq((x, y) => x.length === y.length)
+
+export const UnknownRecord: Eq<ReadonlyRecord<string, unknown>> = makeEq((x, y) => {
+  for (const k in x) {
+    if (!(k in y)) {
+      return false
+    }
+  }
+  for (const k in y) {
+    if (!(k in x)) {
+      return false
+    }
+  }
+  return true
+})
+
+/*
+ * -------------------------------------------
+ * Contravariant
+ * -------------------------------------------
+ */
+
+export function contramap_<A, B>(fa: Eq<A>, f: (b: B) => A): Eq<B> {
+  return makeEq((x, y) => fa.equals_(f(x), f(y)))
+}
+
+export function contramap<A, B>(f: (b: B) => A): (fa: Eq<A>) => Eq<B> {
+  return (fa) => contramap_(fa, f)
+}
 
 /*
  * -------------------------------------------
@@ -57,10 +123,6 @@ export function partial<A>(
     return true
   })
 }
-
-export const record: <A>(codomain: Eq<A>) => Eq<ReadonlyRecord<string, A>> = R.getEq
-
-export const array: <A>(item: Eq<A>) => Eq<ReadonlyArray<A>> = A.getEq
 
 export function intersect_<A, B>(left: Eq<A>, right: Eq<B>): Eq<A & B> {
   return makeEq((x, y) => left.equals_(x, y) && right.equals_(x, y))

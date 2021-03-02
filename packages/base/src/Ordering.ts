@@ -1,7 +1,4 @@
-import type { Monoid } from './Monoid'
-import type { TypeOf } from './Newtype'
-
-import { newtype, typeDef } from './Newtype'
+import type { Monoid } from './typeclass'
 
 export type Ordering = -1 | 0 | 1
 

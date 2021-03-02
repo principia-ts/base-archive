@@ -1,14 +1,13 @@
 import type { Either } from './Either'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { IterableURI } from './Modules'
-import type { Monoid } from './Monoid'
 import type { Option } from './Option'
+import type * as P from './typeclass'
 
 import * as A from './Array'
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
-import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -329,7 +328,7 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------
  */
 
-export function ifoldMap_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
   return (fa, f) => {
     let res        = M.nat
     let n          = -1
@@ -343,15 +342,15 @@ export function ifoldMap_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, 
   }
 }
 
-export function ifoldMap<M>(M: Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Iterable<A>) => M {
+export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Iterable<A>) => M {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
 }
 
-export function foldMap_<M>(M: Monoid<M>): <A>(fa: Iterable<A>, f: (a: A) => M) => M {
+export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (a: A) => M) => M {
   return (fa, f) => ifoldMap_(M)(fa, (_, a) => f(a))
 }
 
-export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Iterable<A>) => M {
+export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Iterable<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
@@ -564,27 +563,21 @@ export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<Iterabl
   imap
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<IterableURI>]>>({
+export const Semimonoidal = HKT.instance<P.Semimonoidal<[HKT.URI<IterableURI>]>>({
   ...Functor,
-  ap_,
-  ap,
   crossWith_,
-  crossWith,
-  cross_,
-  cross
+  crossWith
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IterableURI>]>>({
-  ...Apply,
-  unit,
+export const Monoidal = HKT.instance<P.Monoidal<[HKT.URI<IterableURI>]>>({
+  ...Semimonoidal,
   pure
 })
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<IterableURI>]>>({
-  ...Applicative,
+  ...Monoidal,
   bind_,
-  bind,
-  flatten
+  bind
 })
 
 export const Filterable = HKT.instance<P.Filterable<[HKT.URI<IterableURI>]>>({
