@@ -11,6 +11,26 @@ import * as R from './Record'
 
 type Flat<T> = { [K in keyof T]: T[K] } & {}
 
+type EnsureNonexistentProperty<T, K extends string> = Extract<keyof T, K> extends never ? T : never
+
+export function insertAt_<S extends ReadonlyRecord<string, any>, K extends string, A>(
+  s: EnsureNonexistentProperty<S, K>,
+  k: EnsureLiteral<K>,
+  a: A
+): Flat<S & { readonly [key in K]: A }> {
+  return {
+    ...s,
+    [k]: a
+  }
+}
+
+export function insertAt<K extends string, A>(
+  k: EnsureLiteral<K>,
+  a: A
+): <S extends ReadonlyRecord<string, any>>(s: EnsureNonexistentProperty<S, K>) => Flat<S & { readonly [key in K]: A }> {
+  return (s) => insertAt_(s, k, a)
+}
+
 export function upsertAt_<S extends ReadonlyRecord<string, any>, K extends string, A>(
   s: S,
   k: EnsureLiteral<K>,

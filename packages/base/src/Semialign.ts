@@ -4,6 +4,8 @@ import type { Semigroup } from './Semigroup'
 import type { These } from './These'
 
 import { identity, tuple } from './Function'
+import * as O from './internal/option'
+import * as T from './internal/these'
 
 export interface Semialign<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly alignWith_: AlignWithFn_<F, C>
@@ -223,7 +225,7 @@ export interface AlignCombineFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export function alignCombineF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): AlignCombineFn_<F, C> {
-  return (S) => (fa1, fa2) => F.alignWith_(fa1, fa2, matchThese(identity, identity, S.combine_))
+  return (S) => (fa1, fa2) => F.alignWith_(fa1, fa2, T.match(identity, identity, S.combine_))
 }
 
 export function alignCombineF<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): AlignCombineFn<F, C> {
@@ -389,14 +391,10 @@ export function padZipWithF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C
     F.alignWith_(
       fa,
       fb,
-      matchThese(
-        (a) => f([{ _tag: 'Some', value: a }, { _tag: 'None' }]),
-        (b) => f([{ _tag: 'None' }, { _tag: 'Some', value: b }]),
-        (a, b) =>
-          f([
-            { _tag: 'Some', value: a },
-            { _tag: 'Some', value: b }
-          ])
+      T.match(
+        (a) => f([O.Some(a), O.None()]),
+        (b) => f([O.None(), O.Some(b)]),
+        (a, b) => f([O.Some(a), O.Some(b)])
       )
     )
 }
@@ -481,7 +479,7 @@ export function zipAllF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): 
     F.alignWith_(
       fa,
       fb,
-      matchThese(
+      T.match(
         (x) => [x, b],
         (x) => [a, x],
         tuple
@@ -491,21 +489,4 @@ export function zipAllF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): 
 
 export function zipAllF<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): ZipAllFn<F, C> {
   return (fb, a, b) => (fa) => zipAllF_(F)(fa, fb, a, b)
-}
-
-function matchThese<A, B, C, D, E>(
-  onLeft: (a: A) => C,
-  onRight: (b: B) => D,
-  onBoth: (a: A, b: B) => E
-): (th: These<A, B>) => C | D | E {
-  return (th) => {
-    switch (th._tag) {
-      case 'Left':
-        return onLeft(th.left)
-      case 'Right':
-        return onRight(th.right)
-      case 'Both':
-        return onBoth(th.left, th.right)
-    }
-  }
 }

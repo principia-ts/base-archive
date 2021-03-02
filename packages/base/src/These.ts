@@ -8,6 +8,7 @@ import { makeEq } from './Eq'
 import { identity } from './Function'
 import * as HKT from './HKT'
 import { None, Some } from './internal/option'
+import * as T from './internal/these'
 import * as P from './typeclass'
 import { makeSemigroup } from './typeclass'
 
@@ -43,17 +44,11 @@ export type V = HKT.V<'E', '+'>
  * -------------------------------------------
  */
 
-export function Left<E = never, A = never>(left: E): These<E, A> {
-  return { _tag: 'Left', left }
-}
+export const Left = T.Left
 
-export function Right<E = never, A = never>(right: A): These<E, A> {
-  return { _tag: 'Right', right }
-}
+export const Right = T.Right
 
-export function Both<E, A>(left: E, right: A): These<E, A> {
-  return { _tag: 'Both', left, right }
-}
+export const Both = T.Both
 
 export function rightOrThese_<E, A>(me: O.Option<E>, a: A): These<E, A> {
   return me._tag === 'None' ? Right(a) : Both(me.value, a)
@@ -105,32 +100,9 @@ export function isBoth<E, A>(fa: These<E, A>): fa is Both<E, A> {
  * -------------------------------------------
  */
 
-export function fold_<E, A, B, C, D>(
-  fa: These<E, A>,
-  onLeft: (e: E) => B,
-  onRight: (a: A) => C,
-  onBoth: (e: E, a: A) => D
-): B | C | D {
-  switch (fa._tag) {
-    case 'Left': {
-      return onLeft(fa.left)
-    }
-    case 'Right': {
-      return onRight(fa.right)
-    }
-    case 'Both': {
-      return onBoth(fa.left, fa.right)
-    }
-  }
-}
+export const match_ = T.match_
 
-export function fold<E, A, B, C, D>(
-  onLeft: (e: E) => B,
-  onRight: (a: A) => C,
-  onBoth: (e: E, a: A) => D
-): (fa: These<E, A>) => B | C | D {
-  return (fa) => fold_(fa, onLeft, onRight, onBoth)
-}
+export const match = T.match
 
 export function toTuple_<E, A>(fa: These<E, A>, e: E, a: A): readonly [E, A] {
   return isLeft(fa) ? [fa.left, a] : isRight(fa) ? [e, fa.right] : [fa.left, fa.right]
@@ -385,7 +357,7 @@ export function getSemigroup<E, A>(SE: P.Semigroup<E>, SA: P.Semigroup<A>): P.Se
 
 export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
   return {
-    show: fold(
+    show: match(
       (l) => `Left(${SE.show(l)})`,
       (r) => `Right(${SA.show(r)})`,
       (l, r) => `Both(${SE.show(l)}, ${SA.show(r)})`
