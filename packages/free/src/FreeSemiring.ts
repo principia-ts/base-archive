@@ -1,7 +1,6 @@
 /*
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/ParSeq.scala
  */
-import type { FreeSemiringURI } from './Modules'
 import type * as HKT from '@principia/base/HKT'
 
 import * as A from '@principia/base/Array'
@@ -10,11 +9,15 @@ import * as Ev from '@principia/base/Eval'
 import { flow, hole, identity, tuple } from '@principia/base/Function'
 import * as P from '@principia/base/typeclass'
 
+import { FreeSemiringURI } from './Modules'
+
 /*
  * -------------------------------------------
  * Model
  * -------------------------------------------
  */
+
+export { FreeSemiringURI }
 
 export interface Single<A> {
   readonly _tag: 'Single'
