@@ -22,6 +22,7 @@
     "import/newline-after-import": "warn",
     "import/no-duplicates": "warn",
     "import/no-unresolved": "warn",
+    "import/no-cycle": "error",
 
     "simple-import-sort/imports": [
       "error",

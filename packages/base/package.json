@@ -14,14 +14,6 @@
       "import": "./dist/dist/esm/index.js",
       "require": "./dist/dist/cjs/index.js"
     },
-    "./typeclass": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/typeclass/index.js",
-        "require": "./dist/dist-traced/cjs/typeclass/index.js"
-      },
-      "import": "./dist/dist/esm/typeclass/index.js",
-      "require": "./dist/dist/cjs/typeclass/index.js"
-    },
     "./*": {
       "traced": {
         "import": "./dist/dist-traced/esm/*",

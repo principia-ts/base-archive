@@ -15,7 +15,9 @@ import type { These } from './These'
 
 import { NoSuchElementError } from './Error'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
+import { genF, GenHKT } from './Gen'
 import * as HKT from './HKT'
+import * as E from './internal/either'
 import * as O from './Option'
 import * as T from './These'
 import * as P from './typeclass'
@@ -57,12 +59,7 @@ export type V = HKT.V<'E', '+'>
  * @category Constructors
  * @since 1.0.0
  */
-export function Left<E = never, A = never>(e: E): Either<E, A> {
-  return {
-    _tag: 'Left',
-    left: e
-  }
-}
+export const Left = E.Left
 
 /**
  * Constructs a new `Either` holding a `Right` value.
@@ -71,12 +68,7 @@ export function Left<E = never, A = never>(e: E): Either<E, A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function Right<E = never, A = never>(a: A): Either<E, A> {
-  return {
-    _tag: 'Right',
-    right: a
-  }
-}
+export const Right = E.Right
 
 /**
  * Takes a default and a nullable value, if the value is not nully,
@@ -267,9 +259,7 @@ export function isEither(u: unknown): u is Either<unknown, unknown> {
  * @category Destructors
  * @since 1.0.0
  */
-export function match_<E, A, B, C>(pab: Either<E, A>, onLeft: (e: E) => B, onRight: (a: A) => C): B | C {
-  return isLeft(pab) ? onLeft(pab.left) : onRight(pab.right)
-}
+export const match_ = E.match_
 
 /**
  * Takes two functions and an `Either` value, if the value is a `Left` the inner value is applied to the first function,
@@ -278,9 +268,7 @@ export function match_<E, A, B, C>(pab: Either<E, A>, onLeft: (e: E) => B, onRig
  * @category Destructors
  * @since 1.0.0
  */
-export function match<E, A, B, C>(onLeft: (e: E) => B, onRight: (a: A) => C): (pab: Either<E, A>) => B | C {
-  return (pab) => match_(pab, onLeft, onRight)
-}
+export const match = E.match
 
 /**
  * @category Destructors
@@ -1290,17 +1278,17 @@ export function getAltValidation<E>(S: P.Semigroup<E>) {
  */
 
 const adapter: {
-  <E, A>(_: Option<A>, onNone: () => E): P.GenHKT<Either<E, A>, A>
-  <A>(_: Option<A>): P.GenHKT<Either<NoSuchElementError, A>, A>
-  <E, A>(_: Either<E, A>): P.GenHKT<Either<E, A>, A>
+  <E, A>(_: Option<A>, onNone: () => E): GenHKT<Either<E, A>, A>
+  <A>(_: Option<A>): GenHKT<Either<NoSuchElementError, A>, A>
+  <E, A>(_: Either<E, A>): GenHKT<Either<E, A>, A>
 } = (_: any, __?: any) => {
   if (O.isOption(_)) {
-    return new P.GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementError('Either.gen'))))
+    return new GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementError('Either.gen'))))
   }
-  return new P.GenHKT(_)
+  return new GenHKT(_)
 }
 
-export const gen = P.genF(Monad, { adapter })
+export const gen = genF(Monad, { adapter })
 
 /*
  * -------------------------------------------

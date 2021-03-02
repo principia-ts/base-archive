@@ -1,13 +1,13 @@
+import type * as E from './Either'
 import type { Eq } from './Eq'
 import type { TheseURI } from './Modules'
+import type * as O from './Option'
 import type { Show } from './Show'
 
-import * as E from './Either'
 import { makeEq } from './Eq'
-import { identity, tuple } from './Function'
+import { identity } from './Function'
 import * as HKT from './HKT'
-import * as O from './Option'
-import { makeShow } from './Show'
+import { None, Some } from './internal/option'
 import * as P from './typeclass'
 import { makeSemigroup } from './typeclass'
 
@@ -56,7 +56,7 @@ export function Both<E, A>(left: E, right: A): These<E, A> {
 }
 
 export function rightOrThese_<E, A>(me: O.Option<E>, a: A): These<E, A> {
-  return O.isNone(me) ? Right(a) : Both(me.value, a)
+  return me._tag === 'None' ? Right(a) : Both(me.value, a)
 }
 
 export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
@@ -64,7 +64,7 @@ export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
 }
 
 export function leftOrThese_<E, A>(me: O.Option<A>, e: E): These<E, A> {
-  return O.isNone(me) ? Left(e) : Both(e, me.value)
+  return me._tag === 'None' ? Left(e) : Both(e, me.value)
 }
 
 export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
@@ -72,13 +72,13 @@ export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
 }
 
 export function fromOptions<E, A>(fe: O.Option<E>, fa: O.Option<A>): O.Option<These<E, A>> {
-  return O.isNone(fe)
-    ? O.isNone(fa)
-      ? O.None()
-      : O.Some(Right(fa.value))
-    : O.isNone(fa)
-    ? O.Some(Left(fe.value))
-    : O.Some(Both(fe.value, fa.value))
+  return fe._tag === 'None'
+    ? fa._tag === 'None'
+      ? None()
+      : Some(Right(fa.value))
+    : fa._tag === 'None'
+    ? Some(Left(fe.value))
+    : Some(Both(fe.value, fa.value))
 }
 
 /*
@@ -141,19 +141,19 @@ export function toTuple<E, A>(e: E, a: A): (fa: These<E, A>) => readonly [E, A] 
 }
 
 export function getLeft<E, A>(fa: These<E, A>): O.Option<E> {
-  return isRight(fa) ? O.None() : O.Some(fa.left)
+  return isRight(fa) ? None() : Some(fa.left)
 }
 
 export function getRight<E, A>(fa: These<E, A>): O.Option<A> {
-  return isLeft(fa) ? O.None() : O.Some(fa.right)
+  return isLeft(fa) ? None() : Some(fa.right)
 }
 
 export function getLeftOnly<E, A>(fa: These<E, A>): O.Option<E> {
-  return isLeft(fa) ? O.Some(fa.left) : O.None()
+  return isLeft(fa) ? Some(fa.left) : None()
 }
 
 export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
-  return isRight(fa) ? O.Some(fa.right) : O.None()
+  return isRight(fa) ? Some(fa.right) : None()
 }
 
 /*
@@ -384,13 +384,13 @@ export function getSemigroup<E, A>(SE: P.Semigroup<E>, SA: P.Semigroup<A>): P.Se
  */
 
 export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
-  return makeShow(
-    fold(
+  return {
+    show: fold(
       (l) => `Left(${SE.show(l)})`,
       (r) => `Right(${SA.show(r)})`,
       (l, r) => `Both(${SE.show(l)}, ${SA.show(r)})`
     )
-  )
+  }
 }
 
 /*

@@ -3,7 +3,7 @@ import type * as HKT from './HKT'
 import type { Monad } from './Monad'
 import type { MonoidalExcept } from './MonoidalExcept'
 
-import * as E from './Either'
+import * as E from './internal/either'
 
 export interface MonadExcept<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C>, MonoidalExcept<F, C> {}
 

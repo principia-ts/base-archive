@@ -12,8 +12,6 @@ import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
 import * as FS from '@principia/free/FreeSemiring'
 
-import * as C from './Cause'
-import * as I from './IO/primitives'
 import { MultiURI } from './Modules'
 
 /*

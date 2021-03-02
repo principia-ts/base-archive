@@ -4,9 +4,9 @@ import type * as HKT from './HKT'
 import type { Monoidal } from './Monoidal'
 import type { Option } from './Option'
 
-import * as E from './Either'
 import { flow, pipe } from './Function'
-import * as O from './Option'
+import * as E from './internal/either'
+import * as O from './internal/option'
 
 export interface MonoidalExcept<F extends HKT.URIS, C = HKT.Auto> extends Monoidal<F, C>, Fail<F, C> {
   readonly catchAll_: CatchAllFn_<F, C>

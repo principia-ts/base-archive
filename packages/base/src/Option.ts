@@ -10,12 +10,10 @@ import type { OptionURI } from './Modules'
 import type { Show } from './Show'
 import type { These } from './These'
 
-import { Left, Right } from './Either'
 import { makeEq } from './Eq'
 import { _bind, flow, identity, pipe, tuple } from './Function'
 import * as HKT from './HKT'
-import { makeShow } from './Show'
-import * as T from './These'
+import * as O from './internal/option'
 import * as P from './typeclass'
 
 /*
@@ -49,11 +47,7 @@ export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : nev
  * @category Constructors
  * @since 1.0.0
  */
-export function None<A = never>(): Option<A> {
-  return {
-    _tag: 'None'
-  }
-}
+export const None = O.None
 
 /**
  * Constructs a new `Option` holding a `Some` value.
@@ -61,12 +55,7 @@ export function None<A = never>(): Option<A> {
  * @category Constructs
  * @since 1.0.0
  */
-export function Some<A>(a: A): Option<A> {
-  return {
-    _tag: 'Some',
-    value: a
-  }
-}
+export const Some = O.Some
 
 /**
  * Constructs a new `Option` from a nullable value. If the value is `null` or `undefined`, returns `None`, otherwise
@@ -219,9 +208,7 @@ export function toUndefined<A>(fa: Option<A>): A | undefined {
  * @category Destructors
  * @since 1.0.0
  */
-export function getOrElse_<A, B>(fa: Option<A>, onNone: () => B): A | B {
-  return isNone(fa) ? onNone() : fa.value
-}
+export const getOrElse_ = O.getOrElse_
 
 /**
  * Extracts the value out of the structure, if it exists. Otherwise returns the given default value
@@ -229,9 +216,7 @@ export function getOrElse_<A, B>(fa: Option<A>, onNone: () => B): A | B {
  * @category Destructors
  * @since 1.0.0
  */
-export function getOrElse<B>(onNone: () => B): <A>(fa: Option<A>) => B | A {
-  return (fa) => getOrElse_(fa, onNone)
-}
+export const getOrElse = O.getOrElse
 
 /*
  * -------------------------------------------
@@ -243,10 +228,10 @@ export function alignWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (_: These<A
   return fa._tag === 'None'
     ? fb._tag === 'None'
       ? None()
-      : Some(f(T.Right(fb.value)))
+      : Some(f({ _tag: 'Right', right: fb.value }))
     : fb._tag === 'None'
-    ? Some(f(T.Left(fa.value)))
-    : Some(f(T.Both(fa.value, fb.value)))
+    ? Some(f({ _tag: 'Left', left: fa.value }))
+    : Some(f({ _tag: 'Both', left: fa.value, right: fb.value }))
 }
 
 export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa: Option<A>) => Option<C> {
@@ -344,7 +329,10 @@ export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
 }
 
 export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
-  return catchAll_(map_(fa, Right), () => Some(Left(undefined)))
+  return catchAll_(
+    map_(fa, (a) => ({ _tag: 'Right', right: a })),
+    () => Some({ _tag: 'Left', left: undefined })
+  )
 }
 
 /*
@@ -753,7 +741,9 @@ export function getApplySemigroup<A>(S: P.Semigroup<A>): P.Semigroup<Option<A>> 
  */
 
 export function getShow<A>(S: Show<A>): Show<Option<A>> {
-  return makeShow((a) => (isNone(a) ? 'None' : `Some(${S.show(a.value)})`))
+  return {
+    show: (a) => (isNone(a) ? 'None' : `Some(${S.show(a.value)})`)
+  }
 }
 
 /*

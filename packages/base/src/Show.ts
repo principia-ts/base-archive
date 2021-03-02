@@ -1,3 +1,5 @@
+import type { ReadonlyRecord } from './Record'
+
 import { memoize, pipe } from './Function'
 import * as R from './Record'
 
@@ -124,7 +126,7 @@ export function sum_<T extends string, A>(
     [K in keyof A]: Show<A[K] & Record<T, K>>
   }
 ): Show<A[keyof A]> {
-  return makeShow((a: R.ReadonlyRecord<string, any>) => members[a[tag]].show(a))
+  return makeShow((a: ReadonlyRecord<string, any>) => members[a[tag]].show(a))
 }
 
 export function sum<T extends string>(

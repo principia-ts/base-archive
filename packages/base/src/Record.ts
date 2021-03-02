@@ -1,15 +1,24 @@
 import type * as E from './Either'
 import type { Eq } from './Eq'
+import type { Foldable } from './Foldable'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
+import type { Monoid } from './Monoid'
+import type { Semigroup } from './Semigroup'
 import type { Show } from './Show'
+import type { SequenceFn, TraverseFn, TraverseFn_ } from './Traversable'
+import type { TraverseWithIndexFn } from './TraversableWithIndex'
+import type { Unfoldable } from './Unfoldable'
+import type { WiltFn, WiltFn_, WitherFn, WitherFn_ } from './Witherable'
+import type { WiltWithIndexFn, WiltWithIndexFn_, WitherWithIndexFn, WitherWithIndexFn_ } from './WitherableWithIndex'
 
 import { makeEq } from './Eq'
 import { identity, pipe, tuple } from './Function'
+import { makeMonoid } from './Monoid'
 import * as O from './Option'
-import * as P from './typeclass'
-import { makeMonoid } from './typeclass'
+import { implementTraverseWithIndex_ } from './TraversableWithIndex'
+import { implementWiltWithIndex_ } from './WitherableWithIndex'
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty
 
@@ -187,7 +196,7 @@ export function toArray<N extends string, A>(r: ReadonlyRecord<N, A>): ReadonlyA
  * @category Destructors
  * @since 1.0.0
  */
-export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F, C>) {
+export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: Unfoldable<F, C>) {
   return <N extends string, A>(
     r: ReadonlyRecord<N, A>
   ): HKT.Kind<
@@ -569,7 +578,7 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <N extends string>(fa: 
 }
 
 export function ifoldMap_<M>(
-  M: P.Monoid<M>
+  M: Monoid<M>
 ): <N extends string, A>(fa: Readonly<Record<N, A>>, f: (k: N, a: A) => M) => M {
   return (fa, f) => {
     let out   = M.nat
@@ -584,20 +593,20 @@ export function ifoldMap_<M>(
 }
 
 export function ifoldMap<M>(
-  M: P.Monoid<M>
+  M: Monoid<M>
 ): <N extends string, A>(f: (k: N, a: A) => M) => (fa: Readonly<Record<N, A>>) => M {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
 }
 
-export function foldMap_<M>(M: P.Monoid<M>): <N extends string, A>(fa: Readonly<Record<N, A>>, f: (a: A) => M) => M {
+export function foldMap_<M>(M: Monoid<M>): <N extends string, A>(fa: Readonly<Record<N, A>>, f: (a: A) => M) => M {
   return (fa, f) => ifoldMap_(M)(fa, (_, a) => f(a))
 }
 
-export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <N extends string>(fa: Readonly<Record<N, A>>) => M {
+export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => <N extends string>(fa: Readonly<Record<N, A>>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
+export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: Semigroup<B>, F: Foldable<F, C>) {
   return <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, N extends string>(
     fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (a: A) => readonly [N, B]
@@ -612,7 +621,7 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigr
     )
 }
 
-export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
+export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: Semigroup<A>, F: Foldable<F, C>) {
   const fromFoldableMapS = fromFoldableMap(S, F)
   return <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, N extends string>(
     fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, readonly [N, A]>
@@ -677,9 +686,9 @@ export function map<A, B>(f: (a: A) => B): <N extends string>(fa: Readonly<Recor
  * -------------------------------------------
  */
 
-export function getMonoid<N extends string, A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<N, A>>
-export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string, A>>
-export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string, A>> {
+export function getMonoid<N extends string, A>(S: Semigroup<A>): Monoid<ReadonlyRecord<N, A>>
+export function getMonoid<A>(S: Semigroup<A>): Monoid<ReadonlyRecord<string, A>>
+export function getMonoid<A>(S: Semigroup<A>): Monoid<ReadonlyRecord<string, A>> {
   return makeMonoid<ReadonlyRecord<string, A>>((x, y) => {
     if (x === empty) {
       return y
@@ -724,7 +733,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
 
 /**
  */
-export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()((_) => (G) => {
+export const itraverse_ = implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()((_) => (G) => {
   return (ta, f) => {
     type _ = typeof _
 
@@ -746,19 +755,19 @@ export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()(
 
 /**
  */
-export const itraverse: P.TraverseWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
+export const itraverse: TraverseWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
 
 /**
  */
-export const traverse_: P.TraverseFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
+export const traverse_: TraverseFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
 
 /**
  */
-export const traverse: P.TraverseFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: TraverseFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  */
-export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itraverse_(G)(ta, (_, a) => a)
+export const sequence: SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itraverse_(G)(ta, (_, a) => a)
 
 /*
  * -------------------------------------------
@@ -768,26 +777,26 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itrav
 
 /**
  */
-export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => {
+export const icompactA_: WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => {
   const traverseG = itraverse_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
 }
 
 /**
  */
-export const icompactA: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
+export const icompactA: WitherWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
 
 /**
  */
-export const compactA_: P.WitherFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
+export const compactA_: WitherFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
 
 /**
  */
-export const compactA: P.WitherFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
+export const compactA: WitherFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
 
 /**
  */
-export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = P.implementWiltWithIndex_<[HKT.URI<RecordURI>]>()(
+export const iseparateA_: WiltWithIndexFn_<[HKT.URI<RecordURI>]> = implementWiltWithIndex_<[HKT.URI<RecordURI>]>()(
   () => (G) => {
     const traverseG = itraverse_(G)
     return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
@@ -796,15 +805,15 @@ export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = P.implement
 
 /**
  */
-export const iseparateA: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
+export const iseparateA: WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
 
 /**
  */
-export const separateA_: P.WiltFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
+export const separateA_: WiltFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
 
 /**
  */
-export const separateA: P.WiltFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => separateA_(G)(wa, f)
+export const separateA: WiltFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => separateA_(G)(wa, f)
 
 /*
  * -------------------------------------------

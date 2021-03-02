@@ -1,19 +1,11 @@
-import * as Eq from '@principia/base/Eq/index.js'
-import { RuntimeException } from '@principia/base/Exception.js'
-import { pipe } from '@principia/base/Function/index.js'
-import * as Ca from '@principia/io/Cause/index.js'
-import * as Ex from '@principia/io/Exit/index.js'
-import * as I from '@principia/io/IO/index.js'
-import * as Ref from '@principia/io/IORef/index.js'
-import {
-  assert,
-  assertM,
-  deepStrictEqualTo,
-  DefaultRunnableSpec,
-  equalTo,
-  suite,
-  testM
-} from '@principia/test/index.js'
+import * as Eq from '@principia/base/Eq'
+import { RuntimeException } from '@principia/base/Exception'
+import { pipe } from '@principia/base/Function'
+import * as Ca from '@principia/io/Cause'
+import * as Ex from '@principia/io/Exit'
+import * as I from '@principia/io/IO'
+import * as Ref from '@principia/io/IORef'
+import { assert, assertM, deepStrictEqualTo, DefaultRunnableSpec, equalTo, suite, testM } from '@principia/test'
 
 class IOSpec extends DefaultRunnableSpec {
   spec = suite(

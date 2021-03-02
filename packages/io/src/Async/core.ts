@@ -7,6 +7,7 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import { genF, GenHKT } from '@principia/base/Gen'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
 import * as HKT from '@principia/base/HKT'
 import { isOption } from '@principia/base/Option'
@@ -1182,25 +1183,25 @@ export const bindS = P.bindSF(Monad)
 export const bindToS = P.bindToSF(Monad)
 
 const adapter: {
-  <A>(_: Tag<A>): P.GenHKT<Async<Has<A>, never, A>, A>
-  <A>(_: Option<A>): P.GenHKT<Async<unknown, NoSuchElementError, A>, A>
-  <E, A>(_: Option<A>, onNone: () => E): P.GenHKT<Async<unknown, E, A>, A>
-  <E, A>(_: E.Either<E, A>): P.GenHKT<Async<unknown, E, A>, A>
-  <R, E, A>(_: Async<R, E, A>): P.GenHKT<Async<R, E, A>, A>
+  <A>(_: Tag<A>): GenHKT<Async<Has<A>, never, A>, A>
+  <A>(_: Option<A>): GenHKT<Async<unknown, NoSuchElementError, A>, A>
+  <E, A>(_: Option<A>, onNone: () => E): GenHKT<Async<unknown, E, A>, A>
+  <E, A>(_: E.Either<E, A>): GenHKT<Async<unknown, E, A>, A>
+  <R, E, A>(_: Async<R, E, A>): GenHKT<Async<R, E, A>, A>
 } = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new P.GenHKT(asksService(_)(identity))
+    return new GenHKT(asksService(_)(identity))
   }
   if (E.isEither(_)) {
-    return new P.GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
+    return new GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
   }
   if (isOption(_)) {
-    return new P.GenHKT(_._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Async.gen')) : succeed(_.value))
+    return new GenHKT(_._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Async.gen')) : succeed(_.value))
   }
-  return new P.GenHKT(_)
+  return new GenHKT(_)
 }
 
-export const gen = P.genF(Monad, { adapter })
+export const gen = genF(Monad, { adapter })
 
 /*
  * -------------------------------------------

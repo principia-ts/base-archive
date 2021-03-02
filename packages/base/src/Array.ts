@@ -7,12 +7,13 @@ import type { Option } from './Option'
 import type { These } from './These'
 
 import { _bind, _bindTo, flow, identity, pipe, tuple, unsafeCoerce } from './Function'
+import { GenLazyHKT, genWithHistoryF } from './Gen'
 import * as HKT from './HKT'
 import * as O from './Option'
 import { getMonoidOrd, makeOrd, number } from './Ord'
 import { EQ } from './Ordering'
 import * as P from './typeclass'
-import { GenLazyHKT, genWithHistoryF, makeMonoid } from './typeclass'
+import { makeMonoid } from './typeclass'
 
 /*
  * -------------------------------------------
