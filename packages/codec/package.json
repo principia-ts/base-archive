@@ -1,6 +1,6 @@
 {
   "name": "@principia/codec",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Runtime type-checking",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
