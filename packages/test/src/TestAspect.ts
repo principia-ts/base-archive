@@ -196,8 +196,7 @@ export function repeat<R0>(
           test,
           I.giveAll(r),
           I.repeat(
-            Sc.apr_(
-              schedule,
+            schedule['*>'](
               pipe(
                 Sc.identity<TestSuccess>(),
                 Sc.tapOutput((_) => Annotations.annotate(Annotation.repeated, 1)),

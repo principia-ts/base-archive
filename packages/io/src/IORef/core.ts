@@ -14,10 +14,10 @@ export interface IORef<EA, EB, A, B> {
    * Folds over the error and value types of the `IORef`. This is a highly
    * polymorphic method that is capable of arbitrarily transforming the error
    * and value types of the `IORef`. For most use cases one of the more specific
-   * combinators implemented in terms of `fold` will be more ergonomic but this
+   * combinators implemented in terms of `match` will be more ergonomic but this
    * method is extremely useful for implementing new combinators.
    */
-  readonly fold: <EC, ED, C, D>(
+  readonly match: <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => E.Either<EC, A>,
@@ -27,9 +27,9 @@ export interface IORef<EA, EB, A, B> {
   /**
    * Folds over the error and value types ofthe `IORef`, allowing access to
    * the state in transforming the `set` value. This is a more powerful version
-   * of `fold` but requires unifying the error types.
+   * of `match` but requires unifying the error types.
    */
-  readonly foldAll: <EC, ED, C, D>(
+  readonly matchAll: <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -58,7 +58,7 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
     readonly setEither: (a: A) => (s: S) => E.Either<EA, S>
   ) {}
 
-  readonly fold = <EC, ED, C, D>(
+  readonly match = <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => E.Either<EC, A>,
@@ -70,7 +70,7 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
       (c) => (s) => E.bind_(ca(c), (a) => E.match_(this.setEither(a)(s), (e) => E.Left(ea(e)), E.Right))
     )
 
-  readonly foldAll = <EC, ED, C, D>(
+  readonly matchAll = <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -117,7 +117,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
     readonly setEither: (a: A) => E.Either<EA, S>
   ) {}
 
-  readonly fold = <EC, ED, C, D>(
+  readonly match = <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => E.Either<EC, A>,
@@ -129,7 +129,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
       (c) => E.bind_(ca(c), (a) => E.match_(this.setEither(a), (e) => E.Left(ea(e)), E.Right))
     )
 
-  readonly foldAll = <EC, ED, C, D>(
+  readonly matchAll = <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -164,7 +164,7 @@ export class Derived<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
 export class Atomic<A> implements IORef<never, never, A, A> {
   readonly _tag = 'Atomic'
 
-  readonly fold = <EC, ED, C, D>(
+  readonly match = <EC, ED, C, D>(
     _ea: (_: never) => EC,
     _eb: (_: never) => ED,
     ca: (_: C) => E.Either<EC, A>,
@@ -176,7 +176,7 @@ export class Atomic<A> implements IORef<never, never, A, A> {
       (c) => ca(c)
     )
 
-  readonly foldAll = <EC, ED, C, D>(
+  readonly matchAll = <EC, ED, C, D>(
     _ea: (_: never) => EC,
     _eb: (_: never) => ED,
     _ec: (_: never) => EC,
@@ -296,7 +296,7 @@ export function filterInput_<EA, EB, B, A, A1 extends A>(
   ref: IORef<EA, EB, A, B>,
   f: (_: A1) => boolean
 ): IORef<O.Option<EA>, EB, A1, B> {
-  return ref.fold(O.Some, identity, (a) => (f(a) ? E.Right(a) : E.Left(O.None())), E.Right)
+  return ref.match(O.Some, identity, (a) => (f(a) ? E.Right(a) : E.Left(O.None())), E.Right)
 }
 
 /**
@@ -319,7 +319,7 @@ export function filterOutput_<EA, EB, A, B>(
   ref: IORef<EA, EB, A, B>,
   f: (_: B) => boolean
 ): IORef<EA, O.Option<EB>, A, B> {
-  return ref.fold(identity, O.Some, E.Right, (b) => (f(b) ? E.Right(b) : E.Left(O.None())))
+  return ref.match(identity, O.Some, E.Right, (b) => (f(b) ? E.Right(b) : E.Left(O.None())))
 }
 
 /**
@@ -343,56 +343,56 @@ export function filterOutput<B>(
  * Folds over the error and value types of the `XRef`. This is a highly
  * polymorphic method that is capable of arbitrarily transforming the error
  * and value types of the `XRef`. For most use cases one of the more specific
- * combinators implemented in terms of `fold` will be more ergonomic but this
+ * combinators implemented in terms of `match` will be more ergonomic but this
  * method is extremely useful for implementing new combinators.
  */
-export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
+export function match<EA, EB, A, B, EC, ED, C = A, D = B>(
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): (ref: IORef<EA, EB, A, B>) => IORef<EC, ED, C, D> {
-  return (ref) => ref.fold(ea, eb, ca, bd)
+  return (ref) => ref.match(ea, eb, ca, bd)
 }
 
 /**
  * Folds over the error and value types of the `XRef`. This is a highly
  * polymorphic method that is capable of arbitrarily transforming the error
  * and value types of the `XRef`. For most use cases one of the more specific
- * combinators implemented in terms of `fold` will be more ergonomic but this
+ * combinators implemented in terms of `match` will be more ergonomic but this
  * method is extremely useful for implementing new combinators.
  */
-export function fold_<EA, EB, A, B, EC, ED, C = A, D = B>(
+export function match_<EA, EB, A, B, EC, ED, C = A, D = B>(
   ref: IORef<EA, EB, A, B>,
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): IORef<EC, ED, C, D> {
-  return ref.fold(ea, eb, ca, bd)
+  return ref.match(ea, eb, ca, bd)
 }
 
 /**
  * Folds over the error and value types of the `XRef`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
- * of `fold` but requires unifying the error types.
+ * of `match` but requires unifying the error types.
  */
-export function foldAll<EA, EB, A, B, EC, ED, C = A, D = B>(
+export function matchAll<EA, EB, A, B, EC, ED, C = A, D = B>(
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ec: (_: EB) => EC,
   ca: (_: C) => (_: B) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): (ref: IORef<EA, EB, A, B>) => IORef<EC, ED, C, D> {
-  return (ref) => ref.foldAll(ea, eb, ec, ca, bd)
+  return (ref) => ref.matchAll(ea, eb, ec, ca, bd)
 }
 
 /**
  * Folds over the error and value types of the `XRef`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
- * of `fold` but requires unifying the error types.
+ * of `match` but requires unifying the error types.
  */
-export function foldAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
+export function matchAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
   ref: IORef<EA, EB, A, B>,
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
@@ -400,7 +400,7 @@ export function foldAll_<EA, EB, A, B, EC, ED, C = A, D = B>(
   ca: (_: C) => (_: B) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): IORef<EC, ED, C, D> {
-  return ref.foldAll(ea, eb, ec, ca, bd)
+  return ref.matchAll(ea, eb, ec, ca, bd)
 }
 
 /*
@@ -452,7 +452,7 @@ export const map_: <EA, EB, A, B, C>(ref: IORef<EA, EB, A, B>, f: (_: B) => C) =
 export function collect<B, C>(
   pf: (_: B) => O.Option<C>
 ): <EA, EB, A>(ref: IORef<EA, EB, A, B>) => IORef<EA, O.Option<EB>, A, C> {
-  return (_) => _.fold(identity, O.Some, E.Right, (b) => E.fromOption_(pf(b), () => O.None()))
+  return (_) => _.match(identity, O.Some, E.Right, (b) => E.fromOption_(pf(b), () => O.None()))
 }
 
 /**
@@ -473,7 +473,7 @@ export function collect_<EA, EB, A, B, C>(
  */
 export function dimapEither<A, B, C, EC, D, ED>(f: (_: C) => E.Either<EC, A>, g: (_: B) => E.Either<ED, D>) {
   return <EA, EB>(ref: IORef<EA, EB, A, B>): IORef<EC | EA, EB | ED, C, D> =>
-    ref.fold(
+    ref.match(
       (ea: EA | EC) => ea,
       (eb: EB | ED) => eb,
       f,
@@ -528,7 +528,7 @@ export function dimapError<EA, EB, EC, ED>(
   f: (_: EA) => EC,
   g: (_: EB) => ED
 ): <A, B>(ref: IORef<EA, EB, A, B>) => IORef<EC, ED, A, B> {
-  return (_) => _.fold(f, g, E.Right, E.Right)
+  return (_) => _.match(f, g, E.Right, E.Right)
 }
 
 /**
@@ -554,7 +554,7 @@ export function readOnly<EA, EB, A, B>(ref: IORef<EA, EB, A, B>): IORef<EA, EB, 
  * Returns a write only view of the `IORef`.
  */
 export function writeOnly<EA, EB, A, B>(ref: IORef<EA, EB, A, B>): IORef<EA, void, A, never> {
-  return ref.fold(
+  return ref.match(
     identity,
     () => undefined,
     E.Right,

@@ -51,7 +51,7 @@ export abstract class Annotations {
                 fiberRef,
                 FR.locally(
                   TestAnnotationMap.empty,
-                  I.foldM_(
+                  I.matchM_(
                     io,
                     (e) =>
                       pipe(

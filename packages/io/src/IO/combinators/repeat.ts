@@ -8,7 +8,7 @@ import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
 import * as S from '../../Schedule'
-import { bind, fail, foldM, map, map_, orDie } from '../core'
+import { bind, fail, map, map_, matchM, orDie } from '../core'
 
 /**
  * Returns a new effect that repeats this effect according to the specified
@@ -100,12 +100,12 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
       function loop(a: A): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
         return pipe(
           driver.next(a),
-          foldM(
+          matchM(
             () => pipe(orDie(driver.last), map(E.Right)),
             (b) =>
               pipe(
                 fa,
-                foldM(
+                matchM(
                   (e) => pipe(f(e, O.Some(b)), map(E.Left)),
                   (a) => loop(a)
                 )
@@ -115,7 +115,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
       }
       return pipe(
         fa,
-        foldM(
+        matchM(
           (e) => pipe(f(e, O.None()), map(E.Left)),
           (a) => loop(a)
         )

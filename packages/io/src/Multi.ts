@@ -307,7 +307,7 @@ export function effectCatch<E>(
  * -------------------------------------------
  */
 
-export function foldCauseM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchCauseM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Multi<W, S1, S2, R, E, A>,
   onFailure: (e: Cause<E>) => Multi<W1, S5, S3, R1, E1, B>,
   onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
@@ -315,11 +315,11 @@ export function foldCauseM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R
   return new Fold(fa, onFailure, onSuccess)
 }
 
-export function foldCauseM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchCauseM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (e: Cause<E>) => Multi<W1, S1, S3, R1, E1, B>,
   onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
 ): <W, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return (fa) => foldCauseM_(fa, onFailure, onSuccess)
+  return (fa) => matchCauseM_(fa, onFailure, onSuccess)
 }
 
 /**
@@ -329,12 +329,12 @@ export function foldCauseM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export function foldM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Multi<W, S1, S2, R, E, A>,
   onFailure: (e: E) => Multi<W1, S5, S3, R1, E1, B>,
   onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
 ): Multi<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return foldCauseM_(fa, flow(FS.first, onFailure), onSuccess)
+  return matchCauseM_(fa, flow(FS.first, onFailure), onSuccess)
 }
 
 /**
@@ -344,27 +344,27 @@ export function foldM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2
  * @category Combinators
  * @since 1.0.0
  */
-export function foldM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (e: E) => Multi<W1, S1, S3, R1, E1, B>,
   onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
 ): <W, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return (fa) => foldM_(fa, onFailure, onSuccess)
+  return (fa) => matchM_(fa, onFailure, onSuccess)
 }
 
 /**
  * Folds over the failed or successful results of this computation to yield
  * a computation that does not fail, but succeeds with the value of the left
- * or right function passed to `fold`.
+ * or right function passed to `match`.
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function fold_<W, S1, S2, R, E, A, B, C>(
+export function match_<W, S1, S2, R, E, A, B, C>(
   fa: Multi<W, S1, S2, R, E, A>,
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): Multi<W, S1, S2, R, never, B | C> {
-  return foldM_(
+  return matchM_(
     fa,
     (e) => succeed(onFailure(e)),
     (a) => succeed(onSuccess(a))
@@ -374,16 +374,16 @@ export function fold_<W, S1, S2, R, E, A, B, C>(
 /**
  * Folds over the failed or successful results of this computation to yield
  * a computation that does not fail, but succeeds with the value of the left
- * or right function passed to `fold`.
+ * or right function passed to `match`.
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function fold<E, A, B, C>(
+export function match<E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): <W, S1, S2, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, never, B | C> {
-  return (fa) => fold_(fa, onFailure, onSuccess)
+  return (fa) => match_(fa, onFailure, onSuccess)
 }
 
 /*
@@ -480,7 +480,7 @@ export function bimap_<W, S1, S2, R, E, A, G, B>(
   f: (e: E) => G,
   g: (a: A) => B
 ): Multi<W, S1, S2, R, G, B> {
-  return foldM_(
+  return matchM_(
     pab,
     (e) => fail(f(e)),
     (a) => succeed(g(a))
@@ -498,7 +498,7 @@ export function mapError_<W, S1, S2, R, E, A, G>(
   pab: Multi<W, S1, S2, R, E, A>,
   f: (e: E) => G
 ): Multi<W, S1, S2, R, G, A> {
-  return foldM_(pab, (e) => fail(f(e)), succeed)
+  return matchM_(pab, (e) => fail(f(e)), succeed)
 }
 
 export function mapError<E, G>(
@@ -514,7 +514,7 @@ export function mapError<E, G>(
  */
 
 export function attempt<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, never, E.Either<E, A>> {
-  return foldM_(
+  return matchM_(
     fa,
     (e) => succeed(E.Left(e)),
     (a) => succeed(E.Right(a))
@@ -702,7 +702,7 @@ export function catchAll_<W, S1, S2, R, E, A, S3, R1, E1, B>(
   fa: Multi<W, S1, S2, R, E, A>,
   onFailure: (e: E) => Multi<W, S1, S3, R1, E1, B>
 ): Multi<W, S1, S3, R & R1, E1, A | B> {
-  return foldM_(fa, onFailure, (a) => succeed(a))
+  return matchM_(fa, onFailure, (a) => succeed(a))
 }
 
 /**
@@ -784,14 +784,14 @@ export function contramapState<S0, S1>(
 export function either<W, S1, S2, R, E, A>(
   fa: Multi<W, S1, S2, R, E, A>
 ): Multi<W, S1, S1 | S2, R, never, E.Either<E, A>> {
-  return fold_(fa, E.Left, E.Right)
+  return match_(fa, E.Left, E.Right)
 }
 
 export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(
   fa: Multi<W, S1, S2, R, E, A>,
   onFailure: (e: E) => Multi<W, S3, S4, R1, E1, A>
 ): Multi<W, S1 & S3, S2 | S4, R & R1, E1, A> {
-  return foldM_(fa, onFailure, succeed)
+  return matchM_(fa, onFailure, succeed)
 }
 
 export function orElse<W, E, A, S3, S4, R1, E1>(
@@ -811,7 +811,7 @@ export function orElseEither_<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
   fa: Multi<W, S1, S2, R, E, A>,
   that: Multi<W, S3, S4, R1, E1, A1>
 ): Multi<W, S1 & S3, S2 | S4, R & R1, E1, E.Either<A, A1>> {
-  return foldM_(
+  return matchM_(
     fa,
     () => map_(that, E.Right),
     (a) => succeed(E.Left(a))

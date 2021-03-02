@@ -37,11 +37,11 @@ export interface IORefM<RA, RB, EA, EB, A, B> {
    * Folds over the error and value types of the `IORefM`. This is a highly
    * polymorphic method that is capable of arbitrarily transforming the error
    * and value types of the `IORefM`. For most use cases one of the more
-   * specific combinators implemented in terms of `foldM` will be more
+   * specific combinators implemented in terms of `matchM` will be more
    * ergonomic but this method is extremely useful for implementing new
    * combinators.
    */
-  readonly foldM: <RC, RD, EC, ED, C, D>(
+  readonly matchM: <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -51,9 +51,9 @@ export interface IORefM<RA, RB, EA, EB, A, B> {
   /**
    * Folds over the error and value types of the `IORefM`, allowing access to
    * the state in transforming the `set` value. This is a more powerful version
-   * of `foldM` but requires unifying the environment and error types.
+   * of `matchM` but requires unifying the environment and error types.
    */
-  readonly foldAllM: <RC, RD, EC, ED, C, D>(
+  readonly matchAllM: <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -82,7 +82,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
     readonly setEither: (a: A) => (s: S) => I.IO<RA, EA, S>
   ) {}
 
-  readonly foldM = <RC, RD, EC, ED, C, D>(
+  readonly matchM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -91,7 +91,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
     new DerivedAll<RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
-        I.foldM_(
+        I.matchM_(
           this.getEither(s),
           (e) => I.fail(eb(e)),
           (a) => bd(a)
@@ -99,7 +99,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
       (a) => (s) => I.bind_(ca(a), (a) => I.mapError_(this.setEither(a)(s), ea))
     )
 
-  readonly foldAllM = <RC, RD, EC, ED, C, D>(
+  readonly matchAllM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -109,14 +109,14 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
     new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
-        I.foldM_(
+        I.matchM_(
           this.getEither(s),
           (e) => I.fail(eb(e)),
           (a) => bd(a)
         ),
       (c) => (s) =>
         I.bind_(
-          I.foldM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
+          I.matchM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
           (a) => I.mapError_(this.setEither(a)(s), ea)
         )
     )
@@ -136,7 +136,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
     readonly setEither: (a: A) => I.IO<RA, EA, S>
   ) {}
 
-  readonly foldM = <RC, RD, EC, ED, C, D>(
+  readonly matchM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -145,7 +145,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
     new Derived<RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
-        I.foldM_(
+        I.matchM_(
           this.getEither(s),
           (e) => I.fail(eb(e)),
           (a) => bd(a)
@@ -153,7 +153,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
       (a) => I.bind_(ca(a), (a) => I.mapError_(this.setEither(a), ea))
     )
 
-  readonly foldAllM = <RC, RD, EC, ED, C, D>(
+  readonly matchAllM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -163,14 +163,14 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
     new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
-        I.foldM_(
+        I.matchM_(
           this.getEither(s),
           (e) => I.fail(eb(e)),
           (a) => bd(a)
         ),
       (c) => (s) =>
         I.bind_(
-          I.foldM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
+          I.matchM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
           (a) => I.mapError_(this.setEither(a), ea)
         )
     )
@@ -186,7 +186,7 @@ export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
 
   constructor(readonly ref: URef<A>, readonly semaphore: Semaphore) {}
 
-  readonly foldM = <RC, RD, EC, ED, C, D>(
+  readonly matchM = <RC, RD, EC, ED, C, D>(
     _ea: (_: never) => EC,
     _eb: (_: never) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -198,7 +198,7 @@ export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
       (a) => ca(a)
     )
 
-  readonly foldAllM = <RC, RD, EC, ED, C, D>(
+  readonly matchAllM = <RC, RD, EC, ED, C, D>(
     _ea: (_: never) => EC,
     _eb: (_: never) => ED,
     _ec: (_: never) => EC,
@@ -339,7 +339,7 @@ export function filterInputM_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
 ): IORefM<RA & RC, RB, O.Option<EC | EA>, EB, A1, B> {
   return pipe(
     self,
-    foldM(
+    matchM(
       (ea) => O.Some<EA | EC>(ea),
       identity,
       (a: A1) =>
@@ -396,7 +396,7 @@ export function filterOutputM_<RA, RB, EA, EB, A, B, RC, EC>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, boolean>
 ): IORefM<RA, RB & RC, EA, O.Option<EC | EB>, A, B> {
-  return foldM_(
+  return matchM_(
     self,
     (ea) => ea,
     (eb) => O.Some<EB | EC>(eb),
@@ -453,14 +453,14 @@ export function filterOutput<B>(
 /**
  * Folds over the error and value types of the `XRefM`.
  */
-export function fold_<RA, RB, EA, EB, A, B, EC, ED, C = A, D = B>(
+export function match_<RA, RB, EA, EB, A, B, EC, ED, C = A, D = B>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): IORefM<RA, RB, EC, ED, C, D> {
-  return self.foldM(
+  return self.matchM(
     ea,
     eb,
     (c) => I.fromEither(() => ca(c)),
@@ -471,14 +471,14 @@ export function fold_<RA, RB, EA, EB, A, B, EC, ED, C = A, D = B>(
 /**
  * Folds over the error and value types of the `XRefM`.
  */
-export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
+export function match<EA, EB, A, B, EC, ED, C = A, D = B>(
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => E.Either<EC, A>,
   bd: (_: B) => E.Either<ED, D>
 ): <RA, RB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EC, ED, C, D> {
   return (self) =>
-    self.foldM(
+    self.matchM(
       ea,
       eb,
       (c) => I.fromEither(() => ca(c)),
@@ -490,43 +490,43 @@ export function fold<EA, EB, A, B, EC, ED, C = A, D = B>(
  * Folds over the error and value types of the `XRefM`. This is a highly
  * polymorphic method that is capable of arbitrarily transforming the error
  * and value types of the `XRefM`. For most use cases one of the more
- * specific combinators implemented in terms of `foldM` will be more
+ * specific combinators implemented in terms of `matchM` will be more
  * ergonomic but this method is extremely useful for implementing new
  * combinators.
  */
-export function foldM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function matchM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): IORefM<RA & RC, RB & RD, EC, ED, C, D> {
-  return self.foldM(ea, eb, ca, bd)
+  return self.matchM(ea, eb, ca, bd)
 }
 
 /**
  * Folds over the error and value types of the `XRefM`. This is a highly
  * polymorphic method that is capable of arbitrarily transforming the error
  * and value types of the `XRefM`. For most use cases one of the more
- * specific combinators implemented in terms of `foldM` will be more
+ * specific combinators implemented in terms of `matchM` will be more
  * ergonomic but this method is extremely useful for implementing new
  * combinators.
  */
-export function foldM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function matchM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): <RA, RB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB & RD, EC, ED, C, D> {
-  return (self) => self.foldM(ea, eb, ca, bd)
+  return (self) => self.matchM(ea, eb, ca, bd)
 }
 
 /**
  * Folds over the error and value types of the `XRefM`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
- * of `foldM` but requires unifying the environment and error types.
+ * of `matchM` but requires unifying the environment and error types.
  */
-export function foldAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function matchAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
@@ -534,22 +534,22 @@ export function foldAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   ca: (_: C) => (_: B) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> {
-  return self.foldAllM(ea, eb, ec, ca, bd)
+  return self.matchAllM(ea, eb, ec, ca, bd)
 }
 
 /**
  * Folds over the error and value types of the `XRefM`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
- * of `foldM` but requires unifying the environment and error types.
+ * of `matchM` but requires unifying the environment and error types.
  */
-export function foldAllM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function matchAllM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ec: (_: EB) => EC,
   ca: (_: C) => (_: B) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): <RA, RB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> {
-  return (self) => self.foldAllM(ea, eb, ec, ca, bd)
+  return (self) => self.matchAllM(ea, eb, ec, ca, bd)
 }
 
 /*
@@ -674,7 +674,7 @@ export function dimapM_<RA, RB, EA, EB, B, RC, EC, A, RD, ED, C = A, D = B>(
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
 ): IORefM<RA & RC, RB & RD, EA | EC, EB | ED, C, D> {
-  return self.foldM(
+  return self.matchM(
     (ea: EA | EC) => ea,
     (eb: EB | ED) => eb,
     f,
@@ -704,7 +704,7 @@ export function dimapError_<RA, RB, A, B, EA, EB, EC, ED>(
 ): IORefM<RA, RB, EC, ED, A, B> {
   return pipe(
     self,
-    fold(
+    match(
       (ea) => f(ea),
       (eb) => g(eb),
       (a) => E.Right(a),
@@ -1035,7 +1035,7 @@ export function collectM_<RA, RB, EA, EB, A, B, RC, EC, C>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => O.Option<I.IO<RC, EC, C>>
 ): IORefM<RA, RB & RC, EA, O.Option<EB | EC>, A, C> {
-  return self.foldM(
+  return self.matchM(
     identity,
     (_) => O.Some<EB | EC>(_),
     (_) => I.pure(_),
@@ -1101,7 +1101,7 @@ export function writeOnly<RA, RB, EA, EB, A, B>(
 ): IORefM<RA, RB, EA, void, A, never> {
   return pipe(
     self,
-    fold(
+    match(
       identity,
       (): void => undefined,
       E.Right,

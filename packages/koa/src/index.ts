@@ -46,7 +46,9 @@ export class KoaConfig {
     readonly router: KoaRouter,
     readonly parent?: KoaRouter
   ) {}
-  static live: L.Layer<unknown, never, H.Has<KoaConfig>> = L.succeed(KoaConfigTag)(new KoaConfig([], [], new KoaRouter()))
+  static live: L.Layer<unknown, never, H.Has<KoaConfig>> = L.succeed(KoaConfigTag)(
+    new KoaConfig([], [], new KoaRouter())
+  )
 }
 
 export interface Context<C = koa.DefaultContext> {
@@ -78,8 +80,8 @@ export function route<R, A>(
                   pipe(
                     handler,
                     I.onExit(
-                      Ex.fold(
-                        C.fold(
+                      Ex.match(
+                        C.match(
                           () =>
                             pipe(
                               res.status(Status.InternalServerError),

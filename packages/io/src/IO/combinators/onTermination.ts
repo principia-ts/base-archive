@@ -17,7 +17,7 @@ export function onTermination_<R, E, A, R1>(
     I.unit(),
     () => io,
     (_, exit) =>
-      Ex.fold_(
+      Ex.match_(
         exit,
         flow(
           C.failureOrCause,

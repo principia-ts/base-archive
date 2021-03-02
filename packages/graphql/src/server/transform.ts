@@ -5,10 +5,7 @@ import type { ConnectionContext } from 'subscriptions-transport-ws'
 import { asyncIterable } from '@principia/base/AsyncIterable'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/Function'
-import * as O from '@principia/base/Option'
 import { HttpConnection } from '@principia/http/HttpConnection'
-import { HttpRequest } from '@principia/http/HttpRequest'
-import { HttpResponse } from '@principia/http/HttpResponse'
 import * as I from '@principia/io/IO'
 import { _U } from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
@@ -19,10 +16,7 @@ import * as Sy from '@principia/io/Sync'
 import { Context } from '@principia/koa'
 import { Described } from '@principia/query/Described'
 import * as Q from '@principia/query/Query'
-import { GraphQLError, GraphQLScalarType } from 'graphql'
-import { inspect } from 'util'
-
-import { GraphQlException } from '../schema/GraphQlException'
+import { GraphQLScalarType } from 'graphql'
 
 const entries = <A>(_: A): ReadonlyArray<[keyof A, A[keyof A]]> => Object.entries(_) as any
 const isIO    = (u: unknown): u is I.IO<any, any, any> =>

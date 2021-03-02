@@ -1,7 +1,7 @@
 import type { IO } from '../core'
 
 import * as C from '../../Cause/core'
-import { foldCauseM_, halt, pure } from '../core'
+import { halt, matchCauseM_, pure } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -17,16 +17,16 @@ import { uninterruptibleMask } from './interrupt'
  */
 export function ensuring_<R, E, A, R1>(ma: IO<R, E, A>, finalizer: IO<R1, never, any>): IO<R & R1, E, A> {
   return uninterruptibleMask(({ restore }) =>
-    foldCauseM_(
+    matchCauseM_(
       restore(ma),
       (cause1) =>
-        foldCauseM_(
+        matchCauseM_(
           finalizer,
           (cause2) => halt(C.then(cause1, cause2)),
           (_) => halt(cause1)
         ),
       (value) =>
-        foldCauseM_(
+        matchCauseM_(
           finalizer,
           (cause1) => halt(cause1),
           (_) => pure(value)

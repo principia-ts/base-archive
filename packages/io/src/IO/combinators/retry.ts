@@ -6,7 +6,7 @@ import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
 
 import * as S from '../../Schedule'
-import { bind, catchAll, fail, foldM, map, map_, orDie } from '../core'
+import { bind, catchAll, fail, map, map_, matchM, orDie } from '../core'
 
 /**
  * Retries with the specified retry policy.
@@ -64,7 +64,7 @@ const _loop = <R, E, A, R1, O, R2, E2, A2>(
     catchAll((e) =>
       pipe(
         driver.next(e),
-        foldM(
+        matchM(
           () =>
             pipe(
               driver.last,

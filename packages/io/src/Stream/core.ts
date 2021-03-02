@@ -572,7 +572,7 @@ export function paginateChunkM<S, R, E, A>(
             () => Pull.end,
             flow(
               f,
-              I.foldM(Pull.fail, ([as, s]) =>
+              I.matchM(Pull.fail, ([as, s]) =>
                 pipe(
                   ref.set(s),
                   I.as(() => as)
@@ -670,7 +670,7 @@ export function repeatEffectWith_<R, E, A>(
             a,
             flow(
               driver.next,
-              I.foldM(I.succeed, () =>
+              I.matchM(I.succeed, () =>
                 pipe(
                   effect,
                   I.map((nextA) => O.Some(tuple(nextA, nextA)))
@@ -869,14 +869,14 @@ export function runManaged_<R, E, A, R1, E1, B>(
   return pipe(
     M.cross_(stream.proc, sink.push),
     M.mapM(([pull, push]) => {
-      const go: I.IO<R1 & R, E1 | E, B> = I.foldCauseM_(
+      const go: I.IO<R1 & R, E1 | E, B> = I.matchCauseM_(
         pull,
         (c): I.IO<R1, E1 | E, B> =>
           pipe(
             Ca.sequenceCauseOption(c),
             O.match(
               () =>
-                I.foldCauseM_(
+                I.matchCauseM_(
                   push(O.None()),
                   (c) =>
                     pipe(
@@ -891,7 +891,7 @@ export function runManaged_<R, E, A, R1, E1, B>(
             )
           ),
         (os) =>
-          I.foldCauseM_(
+          I.matchCauseM_(
             push(O.Some(os)),
             (c): I.IO<unknown, E1, B> =>
               pipe(
@@ -1485,14 +1485,14 @@ export function flattenExitOption<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<O.Option
           } else {
             return pipe(
               BPull.pullElement(upstream),
-              I.foldM(
+              I.matchM(
                 O.match(
                   () => pipe(doneRef.set(true), I.apr(Pull.end)),
                   (e) => Pull.fail(e as E | E1)
                 ),
                 flow(
                   I.done,
-                  I.foldM(
+                  I.matchM(
                     O.match(() => pipe(doneRef.set(true), I.apr(Pull.end)), Pull.fail),
                     Pull.emit
                   )
@@ -1575,7 +1575,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
         const updateSchedule: I.URIO<R1 & Has<Clock>, O.Option<Q>> = pipe(
           lastChunk.get,
           I.bind(sdriver.next),
-          I.fold((_) => O.None(), O.Some)
+          I.match((_) => O.None(), O.Some)
         )
 
         const waitForProducer: I.URIO<R1, Take.Take<E | E1, A>> = pipe(
@@ -1594,7 +1594,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
         const handleTake = (take: Take.Take<E | E1, A>): Pull.Pull<R1, E | E1, Take.Take<E1, E.Either<never, P>>> =>
           pipe(
             take,
-            Take.foldM(
+            Take.matchM(
               () =>
                 pipe(
                   push(O.None()),
@@ -1751,7 +1751,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
           } else {
             return pipe(
               pull,
-              I.foldM(
+              I.matchM(
                 O.match(
                   (): I.IO<R1, O.Option<E | E1>, ReadonlyArray<P>> =>
                     pipe(doneRef.set(true), I.apr(I.asSomeError(push(O.None())))),
@@ -1825,7 +1825,7 @@ export function distributedWithDynamic_<R, E, A>(
             if (shouldProcess(id)) {
               return pipe(
                 queue.offer(Ex.succeed(o)),
-                I.foldCauseM(
+                I.matchCauseM(
                   (c) => (Ca.interrupted(c) ? I.succeed(A.append(id)(b)) : I.halt(c)),
                   () => I.succeed(b)
                 )
@@ -1897,7 +1897,7 @@ export function distributedWithDynamic_<R, E, A>(
           pipe(
             ma,
             foreachManaged(offer(queuesRef)),
-            M.foldCauseM(flow(Ca.map(O.Some), Ex.halt, finalize, I.toManaged()), () =>
+            M.matchCauseM(flow(Ca.map(O.Some), Ex.halt, finalize, I.toManaged()), () =>
               pipe(O.None(), Ex.fail, finalize, I.toManaged())
             ),
             M.fork
@@ -2161,7 +2161,7 @@ export function bufferUnbounded<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
           } else {
             return pipe(
               queue.take,
-              I.bind(Take.foldM(() => pipe(doneRef.set(true), I.apr(Pull.end)), Pull.halt, Pull.emitChunk))
+              I.bind(Take.matchM(() => pipe(doneRef.set(true), I.apr(Pull.end)), Pull.halt, Pull.emitChunk))
             )
           }
         })
@@ -2181,7 +2181,7 @@ function bufferSignal_<R, E, A>(
     const ref     = yield* _(Ref.make(start))
     const doneRef = yield* _(Ref.make(false))
     const offer   = (take: Take.Take<E, A>): I.UIO<void> =>
-      Ex.fold_(
+      Ex.match_(
         take,
         (_) =>
           I.gen(function* ($) {
@@ -2499,7 +2499,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
                   tap(() => latch.succeed(undefined)),
                   bind(() => f(o)),
                   foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
-                  I.foldCauseM(
+                  I.matchCauseM(
                     (cause) => pipe(cause, Pull.halt, outQueue.offer, I.apr(innerFailure.fail(cause)), I.asUnit),
                     () => I.unit()
                   )
@@ -2508,7 +2508,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
                 yield* _(latch.await)
               })
             ),
-            M.foldCauseM(
+            M.matchCauseM(
               (cause) =>
                 pipe(
                   getChildren,
@@ -2595,7 +2595,7 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
                     tap(() => latch.succeed(undefined)),
                     bind(() => f(o)),
                     foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
-                    I.foldCauseM(
+                    I.matchCauseM(
                       (cause) => pipe(cause, Pull.halt, outQueue.offer, I.apr(innerFailure.fail(cause)), I.asUnit),
                       () => I.unit()
                     )
@@ -2604,7 +2604,7 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
                   yield* _(latch.await)
                 })
               ),
-              M.foldCauseM(
+              M.matchCauseM(
                 (cause) =>
                   pipe(getChildren, I.bind(Fi.interruptAll), I.apr(outQueue.offer(Pull.halt(cause))), I.toManaged()),
                 () =>
@@ -2670,7 +2670,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
           )
         }
       } else {
-        return I.foldM_(
+        return I.matchM_(
           pull,
           O.match(() => emitOrAccumulate(buffer, true, ref, pull), Pull.fail),
           (ch) => emitOrAccumulate(A.concat_(buffer, ch), false, ref, pull)
@@ -3512,7 +3512,7 @@ export function haltWhen_<R, E, A, R1, E1>(ma: Stream<R, E, A>, io: I.IO<R1, E1,
         I.bind(
           O.match(
             (): I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<A>> => as,
-            Ex.fold(Pull.halt, () => Pull.end)
+            Ex.match(Pull.halt, () => Pull.end)
           )
         )
       )
@@ -3623,7 +3623,7 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
   > => {
     return pipe(
       s,
-      I.foldCauseM(
+      I.matchCauseM(
         flow(
           Ca.sequenceCauseOption,
           O.match(
@@ -3635,7 +3635,7 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
           if (b && !leftDone) {
             return pipe(
               left,
-              I.foldCauseM(
+              I.matchCauseM(
                 flow(
                   Ca.sequenceCauseOption,
                   O.match(
@@ -3655,7 +3655,7 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
           } else if (!b && !rightDone) {
             return pipe(
               right,
-              I.foldCauseM(
+              I.matchCauseM(
                 flow(
                   Ca.sequenceCauseOption,
                   O.match(
@@ -3894,7 +3894,7 @@ export function intoManaged_<R, E, A, R1, E1>(
 
     const pull: I.IO<R & R1, never, void> = pipe(
       os,
-      I.foldCauseM(
+      I.matchCauseM(
         flow(
           Ca.sequenceCauseOption,
           O.match(
@@ -4088,7 +4088,7 @@ export function mapMPar_(n: number) {
                 yield* _(latch.await)
               })
             ),
-            M.foldCauseM(flow(Pull.halt, out.offer, I.toManaged()), () =>
+            M.matchCauseM(flow(Pull.halt, out.offer, I.toManaged()), () =>
               pipe(
                 Semaphore.withPermits_(I.unit(), n, permits),
                 I.bind(() => out.offer(Pull.end)),
@@ -4153,7 +4153,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                     RefM.modify((o) => {
                       const causeOrChunk = pipe(
                         exit,
-                        Ex.fold(
+                        Ex.match(
                           (c): E.Either<O.Option<Ca.Cause<E | E1>>, ReadonlyArray<C | C1>> =>
                             E.Left(Ca.sequenceCauseOption(c)),
                           E.Right
@@ -4523,7 +4523,7 @@ export function foldWhileManagedM_<R, E, A, R1, E1, S>(
         } else {
           return pipe(
             is,
-            I.foldM(
+            I.matchM(
               O.match(() => I.succeed(s1), I.fail),
               flow(A.foldlM(s1, f), I.bind(loop))
             )
@@ -5026,14 +5026,14 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
                 I.raceWith(
                   chunks,
                   (ex, current) =>
-                    Ex.fold_(
+                    Ex.match_(
                       ex,
                       (cause): I.IO<R & Has<Clock>, Option<E>, ReadonlyArray<A>> =>
                         I.apr_(Fi.interrupt(current), Pull.halt(cause)),
                       (value) => I.as_(ref.set({ _tag: 'Current', fiber: current }), () => A.pure(value))
                     ),
                   (ex, previous) =>
-                    Ex.fold_(
+                    Ex.match_(
                       ex,
                       flow(
                         Ca.sequenceCauseOption,
@@ -5230,7 +5230,7 @@ export function unfoldChunkM<S, R, E, A>(
             return pipe(
               ref.get,
               I.bind(f),
-              I.foldM(
+              I.matchM(
                 Pull.fail,
                 O.match(
                   () => pipe(doneRef.set(true), I.apr(Pull.end)),

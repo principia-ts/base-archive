@@ -19,7 +19,7 @@ export function foreachParN_(n: number) {
         I.bind(([p, a]) =>
           pipe(
             f(a),
-            I.foldCauseM(
+            I.matchCauseM(
               (c) => I.foreach_(pairs, (_) => _[0].halt(c)),
               (b) => p.succeed(b)
             )

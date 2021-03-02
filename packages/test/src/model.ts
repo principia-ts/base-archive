@@ -107,7 +107,7 @@ export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
 export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
   return Spec.test(
     label,
-    I.foldCauseM_(
+    I.matchCauseM_(
       I.deferTotal(assertion),
       flow(TF.halt, I.fail),
       flow(

@@ -29,7 +29,7 @@ import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as Koa from '@principia/koa'
 import { ApolloServer } from 'apollo-server-koa'
-import { formatError, GraphQLSchema, parse, subscribe } from 'graphql'
+import { formatError } from 'graphql'
 import { makeExecutableSchema } from 'graphql-tools'
 
 import {
@@ -47,7 +47,6 @@ import {
   makeUnionTypeBuilder
 } from '../schema'
 import { formatGraphQlException, GraphQlException } from '../schema/GraphQlException'
-import { GQLSubscription } from '../schema/Types'
 import { transformResolvers, transformScalarResolvers } from './transform'
 
 export type GraphQlConfig = Omit<Config, 'context' | 'schema' | 'subscriptions'> & {
@@ -142,6 +141,7 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
           const onConnect    = config.subscriptions.onConnect
           const onDisconnect = config.subscriptions.onDisconnect
 
+          // eslint-disable-next-line functional/immutable-data
           apolloConfig.subscriptions = {
             keepAlive: config.subscriptions.keepAlive,
             onConnect: (connectionParams, websocket, context) =>

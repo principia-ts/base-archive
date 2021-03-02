@@ -540,7 +540,7 @@ export function crossWith<A, Q, D, B, C>(
  * @since 1.0.0
  */
 export function bimap_<R, E, A, G, B>(pab: IO<R, E, A>, f: (e: E) => G, g: (a: A) => B): IO<R, G, B> {
-  return foldM_(
+  return matchM_(
     pab,
     (e) => fail(f(e)),
     (a) => succeed(g(a))
@@ -569,7 +569,7 @@ export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: IO<R
  * @since 1.0.0
  */
 export function mapError_<R, E, A, D>(fea: IO<R, E, A>, f: (e: E) => D): IO<R, D, A> {
-  return foldCauseM_(fea, flow(C.map(f), halt), succeed)
+  return matchCauseM_(fea, flow(C.map(f), halt), succeed)
 }
 
 /**
@@ -606,7 +606,7 @@ export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E
  * Folds an `IO` that may fail with `E` or succeed with `A` into one that never fails but succeeds with `Either<E, A>`
  */
 export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
-  return fold_(ma, E.Left, E.Right)
+  return match_(ma, E.Left, E.Right)
 }
 
 /*
@@ -616,9 +616,9 @@ export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> 
  */
 
 /**
- * A more powerful version of `foldM_` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `matchM_` that allows recovering from any kind of failure except interruptions.
  */
-export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
+export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   ma: IO<R, E, A>,
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
@@ -627,59 +627,59 @@ export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 /**
- * A more powerful version of `foldM` that allows recovering from any kind of failure except interruptions.
- * @dataFirst foldCauseM_
+ * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
+ * @dataFirst matchCauseM_
  */
-export function foldCauseM<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
   return (ma) => new Fold(ma, onFailure, onSuccess)
 }
 
-export function foldM_<R, R1, R2, E, E1, E2, A, A1, A2>(
+export function matchM_<R, R1, R2, E, E1, E2, A, A1, A2>(
   ma: IO<R, E, A>,
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return foldCauseM_(ma, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt), onSuccess)
+  return matchCauseM_(ma, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt), onSuccess)
 }
 
 /**
- * @dataFirst foldM_
+ * @dataFirst matchM_
  */
-export function foldM<R1, R2, E, E1, E2, A, A1, A2>(
+export function matchM<R1, R2, E, E1, E2, A, A1, A2>(
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => foldM_(ma, onFailure, onSuccess)
+  return (ma) => matchM_(ma, onFailure, onSuccess)
 }
 
 /**
  * Folds over the failure value or the success value to yield an IO that
  * does not fail, but succeeds with the value returned by the left or right
- * function passed to `fold`.
+ * function passed to `match_`.
  */
-export function fold_<R, E, A, B, C>(
+export function match_<R, E, A, B, C>(
   fa: IO<R, E, A>,
-  onFailure: (reason: E) => B,
+  onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): IO<R, never, B | C> {
-  return foldM_(fa, flow(onFailure, succeed), flow(onSuccess, succeed))
+  return matchM_(fa, flow(onFailure, succeed), flow(onSuccess, succeed))
 }
 
 /**
  * Folds over the failure value or the success value to yield an IO that
  * does not fail, but succeeds with the value returned by the left or right
- * function passed to `fold`.
+ * function passed to `match`.
  *
- * @dataFirst fold_
+ * @dataFirst match_
  */
-export function fold<E, A, B, C>(
-  onFailure: (reason: E) => B,
+export function match<E, A, B, C>(
+  onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): <R>(ma: IO<R, E, A>) => IO<R, never, B | C> {
-  return (ma) => fold_(ma, onFailure, onSuccess)
+  return (ma) => match_(ma, onFailure, onSuccess)
 }
 
 /*
@@ -801,7 +801,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
   onFailure: (e: E) => IO<R1, E1, any>,
   onSuccess: (a: A) => IO<R2, E2, any>
 ) {
-  return foldCauseM_(
+  return matchCauseM_(
     fa,
     (c) =>
       E.match_(
@@ -829,7 +829,7 @@ export function tapBoth<E, A, R1, E1, R2, E2>(
  * Returns an IO that effectfully "peeks" at the failure of this effect.
  */
 export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, E1, any>) {
-  return foldCauseM_(
+  return matchCauseM_(
     fa,
     (c) =>
       E.match_(
@@ -1023,7 +1023,7 @@ export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K
  * @since 1.0.0
  */
 export function absorbWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown) {
-  return pipe(ma, sandbox, foldM(flow(C.squash(f), fail), pure))
+  return pipe(ma, sandbox, matchM(flow(C.squash(f), fail), pure))
 }
 
 /**
@@ -1092,7 +1092,7 @@ export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
  * @trace 1
  */
 export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<R1, E1, A1>): IO<R & R1, E1, A | A1> {
-  return foldM_(ma, f, (x) => succeed(x))
+  return matchM_(ma, f, (x) => succeed(x))
 }
 
 /**
@@ -1117,7 +1117,7 @@ export function catchAll<R, E, E2, A>(
  * @since 1.0.0
  */
 export function catchAllCause_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (_: Cause<E>) => IO<R1, E1, A1>) {
-  return foldCauseM_(ma, f, pure)
+  return matchCauseM_(ma, f, pure)
 }
 
 /**
@@ -1141,7 +1141,7 @@ export function catchSome_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   f: (e: E) => O.Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
-  return foldCauseM_(
+  return matchCauseM_(
     ma,
     (cause): IO<R1, E | E1, A1> =>
       pipe(
@@ -1176,7 +1176,7 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   f: (_: Cause<E>) => O.Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
-  return foldCauseM_(
+  return matchCauseM_(
     ma,
     (c): IO<R1, E1 | E, A1> =>
       O.match_(
@@ -1235,11 +1235,11 @@ export function catchSomeDefect<R1, E1, A1>(
 }
 
 export function cause<R, E, A>(ma: IO<R, E, A>): IO<R, never, Cause<E>> {
-  return foldCauseM_(ma, succeed, () => succeed(C.empty))
+  return matchCauseM_(ma, succeed, () => succeed(C.empty))
 }
 
 export function causeAsError<R, E, A>(ma: IO<R, E, A>): IO<R, Cause<E>, A> {
-  return foldCauseM_(ma, fail, pure)
+  return matchCauseM_(ma, fail, pure)
 }
 
 /**
@@ -1344,7 +1344,7 @@ export function duplicate<R, E, A>(wa: IO<R, E, A>): IO<R, E, IO<R, E, A>> {
 }
 
 export function errorAsCause<R, E, A>(ma: IO<R, Cause<E>, A>): IO<R, E, A> {
-  return foldM_(ma, halt, pure)
+  return matchM_(ma, halt, pure)
 }
 
 export function eventually<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
@@ -1354,7 +1354,7 @@ export function eventually<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
 /**
  */
 export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B): IO<R, E, B> {
-  return foldM_(
+  return matchM_(
     wa,
     (e) => fail(e),
     (_) => pure(f(wa))
@@ -1568,24 +1568,24 @@ export function bindError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma:
 }
 
 /**
- * A more powerful version of `fold_` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `match_` that allows recovering from any kind of failure except interruptions.
  */
-export function foldCause_<R, E, A, A1, A2>(
+export function matchCause_<R, E, A, A1, A2>(
   ma: IO<R, E, A>,
   onFailure: (cause: Cause<E>) => A1,
   onSuccess: (a: A) => A2
 ): IO<R, never, A1 | A2> {
-  return foldCauseM_(ma, flow(onFailure, pure), flow(onSuccess, pure))
+  return matchCauseM_(ma, flow(onFailure, pure), flow(onSuccess, pure))
 }
 
 /**
- * A more powerful version of `fold` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
  */
-export function foldCause<E, A, A1, A2>(
+export function matchCause<E, A, A1, A2>(
   onFailure: (cause: Cause<E>) => A1,
   onSuccess: (a: A) => A2
 ): <R>(ma: IO<R, E, A>) => IO<R, never, A1 | A2> {
-  return (ma) => foldCause_(ma, onFailure, onSuccess)
+  return (ma) => matchCause_(ma, onFailure, onSuccess)
 }
 
 /**
@@ -1776,7 +1776,7 @@ export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, 
  * Unwraps the optional success of an `IO`, but can fail with a `None` value.
  */
 export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
-  return foldCauseM_(
+  return matchCauseM_(
     ma,
     flow(C.map(O.Some), halt),
     O.match(() => fail(O.None()), pure)
@@ -1921,7 +1921,7 @@ export { _if as if }
  * Folds a `IO` to a boolean describing whether or not it is a failure
  */
 export function isFailure<R, E, A>(ma: IO<R, E, A>): IO<R, never, boolean> {
-  return fold_(
+  return match_(
     ma,
     () => true,
     () => false
@@ -1932,7 +1932,7 @@ export function isFailure<R, E, A>(ma: IO<R, E, A>): IO<R, never, boolean> {
  * Folds a `IO` to a boolean describing whether or not it is a success
  */
 export function isSuccess<R, E, A>(ma: IO<R, E, A>): IO<R, never, boolean> {
-  return fold_(
+  return match_(
     ma,
     () => false,
     () => true
@@ -2111,7 +2111,7 @@ export function mapEffectCatch<E1>(onThrow: (u: unknown) => E1) {
  * @since 1.0.0
  */
 export function mapErrorCause_<R, E, A, E1>(ma: IO<R, E, A>, f: (cause: Cause<E>) => Cause<E1>): IO<R, E1, A> {
-  return foldCauseM_(ma, (c) => halt(f(c)), pure)
+  return matchCauseM_(ma, (c) => halt(f(c)), pure)
 }
 
 /**
@@ -2127,7 +2127,7 @@ export function mapErrorCause<E, E1>(f: (cause: Cause<E>) => Cause<E1>) {
 }
 
 export function merge<R, E, A>(io: IO<R, E, A>): IO<R, never, A | E> {
-  return foldM_(io, succeed, succeed)
+  return matchM_(io, succeed, succeed)
 }
 
 /**
@@ -2153,7 +2153,7 @@ export function onRight<C>(): <R, E, A>(io: IO<R, E, A>) => IO<E.Either<C, R>, E
 }
 
 export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
-  return fold_(
+  return match_(
     io,
     () => O.None(),
     (a) => O.Some(a)
@@ -2164,7 +2164,7 @@ export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
  * Converts an option on errors into an option on values.
  */
 export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> {
-  return foldM_(
+  return matchM_(
     ma,
     O.match(() => pure(O.None()), fail),
     flow(O.Some, pure)
@@ -2176,11 +2176,11 @@ export function orDie<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, never, A> {
 }
 
 export function orDieKeep<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
-  return foldCauseM_(ma, (ce) => halt(C.bind_(ce, (e) => C.die(e))), pure)
+  return matchCauseM_(ma, (ce) => halt(C.bind_(ce, (e) => C.die(e))), pure)
 }
 
 export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => Error): IO<R, never, A> {
-  return foldM_(ma, (e) => die(f(e)), pure)
+  return matchM_(ma, (e) => die(f(e)), pure)
 }
 
 export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
@@ -2248,7 +2248,7 @@ export function orElseSucceed<A1>(a: () => A1): <R, E, A>(self: IO<R, E, A>) => 
  * Exposes all parallel errors in a single call
  */
 export function parallelErrors<R, E, A>(io: IO<R, E, A>): IO<R, ReadonlyArray<E>, A> {
-  return foldCauseM_(
+  return matchCauseM_(
     io,
     (cause) => {
       const f = C.failures(cause)
@@ -2579,7 +2579,7 @@ export function tapCause_<R2, A2, R, E, E2>(
   ma: IO<R2, E2, A2>,
   f: (e: Cause<E2>) => IO<R, E, any>
 ): IO<R2 & R, E | E2, A2> {
-  return foldCauseM_(ma, (c) => bind_(f(c), () => halt(c)), succeed)
+  return matchCauseM_(ma, (c) => bind_(f(c), () => halt(c)), succeed)
 }
 
 /**
@@ -2601,7 +2601,7 @@ export function tapCause<R, E, E1>(
  * @category Combinators
  * @since 1.0.0
  */
-export const sandbox: <R, E, A>(fa: IO<R, E, A>) => IO<R, Cause<E>, A> = foldCauseM(fail, pure)
+export const sandbox: <R, E, A>(fa: IO<R, E, A>) => IO<R, Cause<E>, A> = matchCauseM(fail, pure)
 
 export function sandboxWith<R, E, A, E1>(
   f: (_: IO<R, Cause<E>, A>) => IO<R, Cause<E1>, A>
@@ -2636,7 +2636,7 @@ export function summarized<R1, E1, B, C>(
  * @since 1.0.0
  */
 export function swap<R, E, A>(pab: IO<R, E, A>): IO<R, A, E> {
-  return foldM_(pab, pure, fail)
+  return matchM_(pab, pure, fail)
 }
 
 /**

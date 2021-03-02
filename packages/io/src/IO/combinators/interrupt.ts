@@ -17,14 +17,14 @@ import {
   bind,
   bind_,
   checkInterruptible,
+  deferTotal,
   die,
   effectAsync,
   effectAsyncOption,
-  deferTotal,
   effectTotal,
   flatten,
-  foldCauseM_,
   halt,
+  matchCauseM_,
   pure,
   SetInterrupt,
   unit
@@ -110,7 +110,7 @@ export function onInterrupt_<R, E, A, R1>(
   cleanup: (interruptors: ReadonlySet<FiberId>) => IO<R1, never, any>
 ): IO<R & R1, E, A> {
   return uninterruptibleMask(({ restore }) =>
-    foldCauseM_(
+    matchCauseM_(
       restore(ma),
       (cause) => (C.interrupted(cause) ? bind_(cleanup(C.interruptors(cause)), () => halt(cause)) : halt(cause)),
       pure
@@ -137,11 +137,11 @@ export function onInterruptExtended_<R, E, A, R2, E2>(
   cleanup: () => IO<R2, E2, any>
 ): IO<R & R2, E | E2, A> {
   return uninterruptibleMask(({ restore }) =>
-    foldCauseM_(
+    matchCauseM_(
       restore(self),
       (cause) =>
         C.interrupted(cause)
-          ? foldCauseM_(
+          ? matchCauseM_(
               cleanup(),
               (_) => halt(_),
               () => halt(cause)

@@ -18,7 +18,7 @@ const arbiter = <E, A>(
   promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
   fails: XR.URef<number>
 ) => (res: Exit<E, A>): UIO<void> =>
-  Ex.foldM_(
+  Ex.matchM_(
     res,
     (e) =>
       pipe(

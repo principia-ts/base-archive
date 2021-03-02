@@ -86,11 +86,11 @@ export const fromOption = <E, A>(option: O.Option<A>, onNone: () => E): Sync<unk
  * @category Combinators
  * @since 1.0.0
  */
-export const foldM_: <R, E, A, R1, E1, B, R2, E2, C>(
+export const matchM_: <R, E, A, R1, E1, B, R2, E2, C>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => Sync<R & R1 & R2, E1 | E2, B | C> = M.foldM_
+) => Sync<R & R1 & R2, E1 | E2, B | C> = M.matchM_
 
 /**
  * Recovers from errors by accepting one computation to execute for the case
@@ -99,37 +99,37 @@ export const foldM_: <R, E, A, R1, E1, B, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const foldM: <E, A, R1, E1, B, R2, E2, C>(
+export const matchM: <E, A, R1, E1, B, R2, E2, C>(
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = M.foldM
+) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = M.matchM
 
 /**
  * Folds over the failed or successful results of this computation to yield
  * a computation that does not fail, but succeeds with the value of the left
- * or right function passed to `fold`.
+ * or right function passed to `match`.
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const fold_: <R, E, A, B, C>(
+export const match_: <R, E, A, B, C>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
-) => Sync<R, never, B | C> = M.fold_
+) => Sync<R, never, B | C> = M.match_
 
 /**
  * Folds over the failed or successful results of this computation to yield
  * a computation that does not fail, but succeeds with the value of the left
- * or right function passed to `fold`.
+ * or right function passed to `match`.
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const fold: <E, A, B, C>(
+export const match: <E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
-) => <R>(fa: Sync<R, E, A>) => Sync<R, never, B | C> = M.fold
+) => <R>(fa: Sync<R, E, A>) => Sync<R, never, B | C> = M.match
 
 /**
  * Recovers from all errors
@@ -162,12 +162,12 @@ export const catchSome: <E, R1, E1, B>(
 ) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E | E1, A | B> = M.catchSome
 
 /**
- * Effectfully folds two `Sync` computations together
+ * Effectfully matches two `Sync` computations together
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function foldTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
+export function matchTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
   left: Sync<R, E, A>,
   right: Sync<R1, E1, B>,
   onBothFailure: (e: E, e1: E1) => Sync<R2, E2, C>,
@@ -208,19 +208,19 @@ export function foldTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4,
 }
 
 /**
- * Effectfully folds two `Sync` computations together
+ * Effectfully matches two `Sync` computations together
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function foldTogetherM<E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
+export function matchTogetherM<E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
   right: Sync<R1, E1, B>,
   onBothFailure: (e: E, e1: E1) => Sync<R2, E2, C>,
   onRightFailure: (a: A, e1: E1) => Sync<R3, E3, D>,
   onLeftFailure: (b: B, e: E) => Sync<R4, E4, F>,
   onBothSuccess: (a: A, b: B) => Sync<R5, E5, G>
 ): <R>(left: Sync<R, E, A>) => Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
-  return (left) => foldTogetherM_(left, right, onBothFailure, onRightFailure, onLeftFailure, onBothSuccess)
+  return (left) => matchTogetherM_(left, right, onBothFailure, onRightFailure, onLeftFailure, onBothSuccess)
 }
 
 /**
@@ -229,7 +229,7 @@ export function foldTogetherM<E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, 
  * @category Combinators
  * @since 1.0.0
  */
-export function foldTogether_<R, E, A, R1, E1, B, C, D, F, G>(
+export function matchTogether_<R, E, A, R1, E1, B, C, D, F, G>(
   left: Sync<R, E, A>,
   right: Sync<R1, E1, B>,
   onBothFailure: (e: E, e1: E1) => C,
@@ -237,7 +237,7 @@ export function foldTogether_<R, E, A, R1, E1, B, C, D, F, G>(
   onLeftFailure: (b: B, e: E) => F,
   onBothSuccess: (a: A, b: B) => G
 ): Sync<R & R1, never, C | D | F | G> {
-  return foldTogetherM_(
+  return matchTogetherM_(
     left,
     right,
     flow(onBothFailure, succeed),
@@ -253,14 +253,14 @@ export function foldTogether_<R, E, A, R1, E1, B, C, D, F, G>(
  * @category Combinators
  * @since 1.0.0
  */
-export function foldTogether<E, A, R1, E1, B, C, D, F, G>(
+export function matchTogether<E, A, R1, E1, B, C, D, F, G>(
   right: Sync<R1, E1, B>,
   onBothFailure: (e: E, e1: E1) => C,
   onRightFailure: (a: A, e1: E1) => D,
   onLeftFailure: (b: B, e: E) => F,
   onBothSuccess: (a: A, b: B) => G
 ): <R>(left: Sync<R, E, A>) => Sync<R & R1, never, C | D | F | G> {
-  return (left) => foldTogether_(left, right, onBothFailure, onRightFailure, onLeftFailure, onBothSuccess)
+  return (left) => matchTogether_(left, right, onBothFailure, onRightFailure, onLeftFailure, onBothSuccess)
 }
 
 /*
@@ -428,7 +428,7 @@ export function getUnfailableSemigroup<S>(S: P.Semigroup<S>): P.Semigroup<USync<
 
 export function getFailableSemigroup<E, A>(SA: P.Semigroup<A>, SE: P.Semigroup<E>): P.Semigroup<FSync<E, A>> {
   return P.makeSemigroup((x, y) =>
-    foldTogetherM_(
+    matchTogetherM_(
       x,
       y,
       (e, e1) => fail(SE.combine_(e, e1)),

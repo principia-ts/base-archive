@@ -31,13 +31,13 @@ export function race_<R, E, A, R1, E1, A1>(ef: IO<R, E, A>, that: IO<R1, E1, A1>
       ef,
       that,
       (exit, right) =>
-        Ex.foldM_(
+        Ex.matchM_(
           exit,
           (cause) => I.mapErrorCause_(join(right), (_) => C.both(cause, _)),
           (a) => I.bind_(right.interruptAs(d.id), mergeInterruption(a))
         ),
       (exit, left) =>
-        Ex.foldM_(
+        Ex.matchM_(
           exit,
           (cause) => I.mapErrorCause_(join(left), (_) => C.both(cause, _)),
           (a) => I.bind_(left.interruptAs(d.id), mergeInterruption(a))

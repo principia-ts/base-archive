@@ -188,7 +188,7 @@ export function foldM_<R, E, T, R1, E1, Z>(
 ): M.Managed<R & R1, E1, Z> {
   return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
-      M.foldCauseM_(
+      M.matchCauseM_(
         specs,
         (c) => f(new SuiteCase(label, M.halt(c), exec)),
         flow(
@@ -210,14 +210,14 @@ export function foreachExec_<R, E, T, R1, E1, A>(
     spec,
     matchTag({
       Suite: ({ label, specs, exec }) =>
-        M.foldCause_(
+        M.matchCause_(
           specs,
           (e) => test(label, onFailure(e), TestAnnotationMap.empty),
           (t) => suite(label, M.succeed(t), exec)
         ),
       Test: (t) =>
         I.toManaged_(
-          I.foldCause_(
+          I.matchCause_(
             t.test,
             (e) => test(t.label, onFailure(e), t.annotations),
             (a) => test(t.label, onSuccess(a), t.annotations)

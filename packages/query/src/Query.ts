@@ -103,7 +103,7 @@ export function foldCauseM_<R, E, A, R1, E1, B>(
   onSuccess: (a: A) => Query<R1, E1, B>
 ): Query<R & R1, E1, B> {
   return new Query(
-    I.foldCauseM_(
+    I.matchCauseM_(
       ma.step,
       (_) => onFailure(_).step,
       matchTag({
@@ -565,7 +565,7 @@ export function fromEffect<R, E, A>(effect: IO<R, E, A>): Query<R, E, A> {
   return new Query(
     pipe(
       effect,
-      I.foldCause(Res.fail, Res.done),
+      I.matchCause(Res.fail, Res.done),
       I.gives(([r, _]) => r)
     )
   )
@@ -716,7 +716,7 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
       M.gives(([r1, _]: readonly [R1, QueryContext]) => r1),
       M.result,
       M.use(
-        Ex.foldM(
+        Ex.matchM(
           (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.fail(c)),
           (r) =>
             gives_(
@@ -739,7 +739,7 @@ export function giveLayer<R1, E1, A1>(
         M.gives(([r1, _]: readonly [R1, QueryContext]) => r1),
         M.result,
         M.use(
-          Ex.foldM(
+          Ex.matchM(
             (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.fail(c)),
             (r) =>
               gives_(

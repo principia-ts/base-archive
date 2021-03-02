@@ -54,7 +54,7 @@ const l2 = L.fromEffect(Svc2)(
   })
 )
 
-const l4 = L.fold_(
+const l4 = L.match_(
   l2,
   pipe(
     L.second<Cause<string>>(),

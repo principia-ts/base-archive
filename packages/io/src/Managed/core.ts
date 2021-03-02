@@ -483,7 +483,7 @@ export const absolve: <R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>) => Manag
   fromEither(() => ea)
 )
 
-export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Either<E, A>> = fold(E.Left, E.Right)
+export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Either<E, A>> = match(E.Left, E.Right)
 
 /*
  * -------------------------------------------
@@ -492,9 +492,9 @@ export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Eit
  */
 
 /**
- * A more powerful version of `foldM` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
  */
-export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
+export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   ma: Managed<R, E, A>,
   onFailure: (cause: Cause<E>) => Managed<R1, E1, A1>,
   onSuccess: (a: A) => Managed<R2, E2, A2>
@@ -502,7 +502,7 @@ export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   return new Managed<R & R1 & R2, E1 | E2, A1 | A2>(
     pipe(
       ma.io,
-      I.foldCauseM(
+      I.matchCauseM(
         (c) => onFailure(c).io,
         ([_, a]) => onSuccess(a).io
       )
@@ -511,82 +511,82 @@ export function foldCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 /**
- * A more powerful version of `foldM` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
  */
-export function foldCauseM<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => Managed<R1, E1, A1>,
   onSuccess: (a: A) => Managed<R2, E2, A2>
 ): <R>(ma: Managed<R, E, A>) => Managed<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => foldCauseM_(ma, onFailure, onSuccess)
+  return (ma) => matchCauseM_(ma, onFailure, onSuccess)
 }
 
 /**
  * Recovers from errors by accepting one Managed to execute for the case of an
  * error, and one Managed to execute for the case of success.
  */
-export function foldM_<R, E, A, R1, E1, B, R2, E2, C>(
+export function matchM_<R, E, A, R1, E1, B, R2, E2, C>(
   ma: Managed<R, E, A>,
   f: (e: E) => Managed<R1, E1, B>,
   g: (a: A) => Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E1 | E2, B | C> {
-  return foldCauseM_(ma, flow(C.failureOrCause, E.match(f, halt)), g)
+  return matchCauseM_(ma, flow(C.failureOrCause, E.match(f, halt)), g)
 }
 
 /**
  * Recovers from errors by accepting one Managed to execute for the case of an
  * error, and one Managed to execute for the case of success.
  */
-export function foldM<E, A, R1, E1, B, R2, E2, C>(
+export function matchM<E, A, R1, E1, B, R2, E2, C>(
   f: (e: E) => Managed<R1, E1, B>,
   g: (a: A) => Managed<R2, E2, C>
 ): <R>(ma: Managed<R, E, A>) => Managed<R & R1 & R2, E1 | E2, B | C> {
-  return (ma) => foldM_(ma, f, g)
+  return (ma) => matchM_(ma, f, g)
 }
 
 /**
  * Folds over the failure value or the success value to yield an effect that
  * does not fail, but succeeds with the value returned by the left or right
- * function passed to `fold`.
+ * function passed to `match`.
  */
-export function fold_<R, E, A, B, C>(
+export function match_<R, E, A, B, C>(
   ma: Managed<R, E, A>,
   onError: (e: E) => B,
   onSuccess: (a: A) => C
 ): Managed<R, never, B | C> {
-  return foldM_(ma, flow(onError, succeed), flow(onSuccess, succeed))
+  return matchM_(ma, flow(onError, succeed), flow(onSuccess, succeed))
 }
 
 /**
  * Folds over the failure value or the success value to yield an effect that
  * does not fail, but succeeds with the value returned by the left or right
- * function passed to `fold`.
+ * function passed to `match`.
  */
-export function fold<E, A, B, C>(
+export function match<E, A, B, C>(
   onError: (e: E) => B,
   onSuccess: (a: A) => C
 ): <R>(ma: Managed<R, E, A>) => Managed<R, never, B | C> {
-  return (ma) => fold_(ma, onError, onSuccess)
+  return (ma) => match_(ma, onError, onSuccess)
 }
 
 /**
- * A more powerful version of `fold` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
  */
-export function foldCause_<R, E, A, B, C>(
+export function matchCause_<R, E, A, B, C>(
   ma: Managed<R, E, A>,
   onFailure: (cause: Cause<E>) => B,
   onSuccess: (a: A) => C
 ): Managed<R, never, B | C> {
-  return fold_(sandbox(ma), onFailure, onSuccess)
+  return match_(sandbox(ma), onFailure, onSuccess)
 }
 
 /**
- * A more powerful version of `fold` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
  */
-export function foldCause<E, A, B, C>(
+export function matchCause<E, A, B, C>(
   onFailure: (cause: Cause<E>) => B,
   onSuccess: (a: A) => C
 ): <R>(ma: Managed<R, E, A>) => Managed<R, never, B | C> {
-  return (ma) => foldCause_(ma, onFailure, onSuccess)
+  return (ma) => matchCause_(ma, onFailure, onSuccess)
 }
 
 /*
@@ -718,7 +718,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
   f: (e: E) => Managed<R1, E1, any>,
   g: (a: A) => Managed<R2, E2, any>
 ): Managed<R & R1 & R2, E | E1 | E2, A> {
-  return foldM_(
+  return matchM_(
     ma,
     (e) => bind_(f(e), () => fail(e)),
     (a) => map_(g(a), () => a)
@@ -923,7 +923,7 @@ export function catchAll_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   f: (e: E) => Managed<R1, E1, B>
 ): Managed<R & R1, E1, A | B> {
-  return foldM_(ma, f, succeed)
+  return matchM_(ma, f, succeed)
 }
 
 /**
@@ -942,7 +942,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   f: (e: Cause<E>) => Managed<R1, E1, B>
 ): Managed<R & R1, E1, A | B> {
-  return foldCauseM_(ma, f, succeed)
+  return matchCauseM_(ma, f, succeed)
 }
 
 /**
@@ -1246,7 +1246,7 @@ export { _if as if }
  * Ignores the success or failure of a Managed
  */
 export function ignore<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, void> {
-  return fold_(
+  return match_(
     ma,
     () => {
       /* */
@@ -1277,7 +1277,7 @@ export function interruptAs(fiberId: FiberId): Managed<unknown, never, never> {
  * Returns whether this managed effect is a failure.
  */
 export function isFailure<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, boolean> {
-  return fold_(
+  return match_(
     ma,
     () => true,
     () => false
@@ -1288,7 +1288,7 @@ export function isFailure<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, bool
  * Returns whether this managed effect is a success.
  */
 export function isSuccess<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, boolean> {
-  return fold_(
+  return match_(
     ma,
     () => false,
     () => true
@@ -1354,7 +1354,7 @@ export function mapEffectWith_<R, E, A, E1, B>(
   f: (a: A) => B,
   onThrow: (error: unknown) => E1
 ): Managed<R, E | E1, B> {
-  return foldM_(ma, fail, (a) => effectCatch_(() => f(a), onThrow))
+  return matchM_(ma, fail, (a) => effectCatch_(() => f(a), onThrow))
 }
 
 /**
@@ -1389,7 +1389,7 @@ export function mapEffect<A, B>(f: (a: A) => B): <R, E>(ma: Managed<R, E, A>) =>
  * success channel to their common combined type.
  */
 export function merge<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, E | A> {
-  return foldM_(ma, succeed, succeed)
+  return matchM_(ma, succeed, succeed)
 }
 
 /**
@@ -1413,7 +1413,7 @@ export function mergeAll<A, B>(
  * Requires the option produced by this value to be `None`.
  */
 export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Option<E>, void> {
-  return foldM_(
+  return matchM_(
     ma,
     flow(O.Some, fail),
     O.match(
@@ -1427,14 +1427,14 @@ export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Opti
  * Executes this effect, skipping the error but returning optionally the success.
  */
 export function option<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, O.Option<A>> {
-  return fold_(ma, () => O.None(), O.Some)
+  return match_(ma, () => O.None(), O.Some)
 }
 
 /**
  * Converts an option on errors into an option on values.
  */
 export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E, O.Option<A>> {
-  return foldM_(
+  return matchM_(
     ma,
     O.match(() => succeed(O.None()), fail),
     flow(O.Some, succeed)
@@ -1473,7 +1473,7 @@ export function orElse_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   that: () => Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A | B> {
-  return foldM_(ma, () => that(), succeed)
+  return matchM_(ma, () => that(), succeed)
 }
 
 /**
@@ -1494,7 +1494,7 @@ export function orElseEither_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   that: () => Managed<R1, E1, B>
 ): Managed<R & R1, E1, E.Either<B, A>> {
-  return foldM_(ma, () => map_(that(), E.Left), flow(E.Right, succeed))
+  return matchM_(ma, () => map_(that(), E.Left), flow(E.Right, succeed))
 }
 
 /**
@@ -1666,7 +1666,7 @@ export { _require as require }
  * producing an `Exit` for the completion value of the fiber.
  */
 export function result<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, Ex.Exit<E, A>> {
-  return foldCauseM_(
+  return matchCauseM_(
     ma,
     (cause) => succeed(Ex.halt(cause)),
     (a) => succeed(Ex.succeed(a))
@@ -1737,7 +1737,7 @@ export function someOrFail<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, 
  * Swaps the error and result
  */
 export function swap<R, E, A>(ma: Managed<R, E, A>): Managed<R, A, E> {
-  return foldM_(ma, succeed, fail)
+  return matchM_(ma, succeed, fail)
 }
 
 /**

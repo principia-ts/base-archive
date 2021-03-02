@@ -3,7 +3,7 @@ import type { IO } from '../core'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
-import { bind_, done, foldCauseM_, halt, result } from '../core'
+import { bind_, done, halt, matchCauseM_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -24,11 +24,11 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
   return uninterruptibleMask(({ restore }) =>
     bind_(acquire, (a) =>
       bind_(result(restore(use(a))), (e) =>
-        foldCauseM_(
+        matchCauseM_(
           release(a, e),
           (cause2) =>
             halt(
-              Ex.fold_(
+              Ex.match_(
                 e,
                 (_) => C.then(_, cause2),
                 (_) => cause2

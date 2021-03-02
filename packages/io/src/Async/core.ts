@@ -269,7 +269,7 @@ export function interrupt(): Async<unknown, never, never> {
  * -------------------------------------------
  */
 
-export function foldM_<R, E, A, R1, E1, A1, R2, E2, A2>(
+export function matchM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   async: Async<R, E, A>,
   f: (e: E) => Async<R1, E1, A1>,
   g: (a: A) => Async<R2, E2, A2>
@@ -277,26 +277,26 @@ export function foldM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   return new Fold(async, f, g)
 }
 
-export function foldM<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchM<E, A, R1, E1, A1, R2, E2, A2>(
   f: (e: E) => Async<R1, E1, A1>,
   g: (a: A) => Async<R2, E2, A2>
 ): <R>(async: Async<R, E, A>) => Async<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (async) => foldM_(async, f, g)
+  return (async) => matchM_(async, f, g)
 }
 
-export function fold_<R, E, A, B, C>(async: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, never, B | C> {
-  return foldM_(async, flow(f, succeed), flow(g, succeed))
+export function match_<R, E, A, B, C>(async: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, never, B | C> {
+  return matchM_(async, flow(f, succeed), flow(g, succeed))
 }
 
-export function fold<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(async: Async<R, E, A>) => Async<R, never, B | C> {
-  return (async) => fold_(async, f, g)
+export function match<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(async: Async<R, E, A>) => Async<R, never, B | C> {
+  return (async) => match_(async, f, g)
 }
 
 export function catchAll_<R, E, A, R1, E1, A1>(
   async: Async<R, E, A>,
   f: (e: E) => Async<R1, E1, A1>
 ): Async<R & R1, E1, A | A1> {
-  return foldM_(async, f, succeed)
+  return matchM_(async, f, succeed)
 }
 
 export function catchAll<E, R1, E1, A1>(
@@ -467,7 +467,7 @@ export function apr<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E
  */
 
 export function mapError_<R, E, A, B>(pab: Async<R, E, A>, f: (e: E) => B): Async<R, B, A> {
-  return foldM_(pab, flow(f, fail), succeed)
+  return matchM_(pab, flow(f, fail), succeed)
 }
 
 export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => Async<R, B, A> {
@@ -475,7 +475,7 @@ export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => A
 }
 
 export function bimap_<R, E, A, B, C>(pab: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, B, C> {
-  return foldM_(pab, flow(f, fail), flow(g, succeed))
+  return matchM_(pab, flow(f, fail), flow(g, succeed))
 }
 
 export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Async<R, E, A>) => Async<R, B, C> {
@@ -489,11 +489,11 @@ export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Asyn
  */
 
 export function absolve<R, E, E1, A>(async: Async<R, E, E.Either<E1, A>>): Async<R, E | E1, A> {
-  return foldM_(async, fail, E.match(fail, succeed))
+  return matchM_(async, fail, E.match(fail, succeed))
 }
 
 export function recover<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Either<E, A>> {
-  return fold_(async, E.Left, E.Right)
+  return match_(async, E.Left, E.Right)
 }
 
 /*

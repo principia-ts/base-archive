@@ -297,7 +297,7 @@ export function find<A, E>(f: (cause: Cause<E>) => O.Option<A>): (cause: Cause<E
 /**
  * @internal
  */
-function _fold<E, A>(
+function _match<E, A>(
   cause: Cause<E>,
   onEmpty: () => A,
   onFail: (reason: E) => A,
@@ -318,19 +318,19 @@ function _fold<E, A>(
       return Ev.now(onInterrupt(cause.fiberId))
     case 'Both':
       return Ev.crossWith_(
-        Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
-        Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => _match(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => _match(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         onBoth
       )
     case 'Then':
       return Ev.crossWith_(
-        Ev.defer(() => _fold(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
-        Ev.defer(() => _fold(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => _match(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => _match(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         onThen
       )
     case 'Traced':
       return Ev.map_(
-        Ev.defer(() => _fold(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => _match(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         (a) => onTraced(a, cause.trace)
       )
   }
@@ -342,7 +342,26 @@ function _fold<E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export function fold<E, A>(
+export function match_<E, A>(
+  cause: Cause<E>,
+  onEmpty: () => A,
+  onFail: (e: E) => A,
+  onDie: (u: unknown) => A,
+  onInterrupt: (id: FiberId) => A,
+  onThen: (l: A, r: A) => A,
+  onBoth: (l: A, r: A) => A,
+  onTraced: (_: A, trace: Trace) => A
+): A {
+  return _match(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
+}
+
+/**
+ * Folds over a cause
+ *
+ * @category Destructors
+ * @since 1.0.0
+ */
+export function match<E, A>(
   onEmpty: () => A,
   onFail: (reason: E) => A,
   onDie: (reason: unknown) => A,
@@ -351,7 +370,7 @@ export function fold<E, A>(
   onBoth: (l: A, r: A) => A,
   onTraced: (_: A, trace: Trace) => A
 ): (cause: Cause<E>) => A {
-  return (cause) => _fold(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
+  return (cause) => _match(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
 }
 
 /**

@@ -128,7 +128,7 @@ export function fromFunctionBatchedM<R, E, A extends Request<E, B>, B>(
   return new Batched<R, A>(name, (requests: ReadonlyArray<A>) =>
     pipe(
       f(requests),
-      I.fold(
+      I.match(
         (e): ReadonlyArray<readonly [A, E.Either<E, B>]> => A.map_(requests, (_) => tuple(_, E.Left(e))),
         (bs): ReadonlyArray<readonly [A, E.Either<E, B>]> => A.zip_(requests, A.map_(bs, E.Right))
       ),
@@ -151,7 +151,7 @@ export function fromFunctionBatchedOptionM<R, E, A extends Request<E, B>, B>(
   return new Batched<R, A>(name, (requests: ReadonlyArray<A>) =>
     pipe(
       f(requests),
-      I.fold(
+      I.match(
         (e): ReadonlyArray<readonly [A, E.Either<E, O.Option<B>>]> => A.map_(requests, (a) => tuple(a, E.Left(e))),
         (bs): ReadonlyArray<readonly [A, E.Either<E, O.Option<B>>]> => A.zip_(requests, A.map_(bs, E.Right))
       ),
@@ -175,7 +175,7 @@ export function fromFunctionBatchedWithM<R, E, A extends Request<E, B>, B>(
   return new Batched<R, A>(name, (requests: ReadonlyArray<A>) =>
     pipe(
       f(requests),
-      I.fold(
+      I.match(
         (e): ReadonlyArray<readonly [Request<E, B>, E.Either<E, B>]> => A.map_(requests, (a) => tuple(a, E.Left(e))),
         (bs): ReadonlyArray<readonly [Request<E, B>, E.Either<E, B>]> => A.map_(bs, (b) => tuple(g(b), E.Right(b)))
       ),

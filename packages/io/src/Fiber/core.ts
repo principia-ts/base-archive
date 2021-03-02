@@ -155,7 +155,7 @@ export function interruptAs(id: FiberId) {
 /**
  * Folds over the runtime or synthetic fiber.
  */
-export function fold_<E, A, B>(
+export function match_<E, A, B>(
   fiber: Fiber<E, A>,
   onRuntime: (_: RuntimeFiber<E, A>) => B,
   onSynthetic: (_: SyntheticFiber<E, A>) => B
@@ -173,11 +173,11 @@ export function fold_<E, A, B>(
 /**
  * Folds over the runtime or synthetic fiber.
  */
-export function fold<E, A, B>(
+export function match<E, A, B>(
   onRuntime: (_: RuntimeFiber<E, A>) => B,
   onSynthetic: (_: SyntheticFiber<E, A>) => B
 ): (fiber: Fiber<E, A>) => B {
-  return (fiber) => fold_(fiber, onRuntime, onSynthetic)
+  return (fiber) => match_(fiber, onRuntime, onSynthetic)
 }
 
 /*

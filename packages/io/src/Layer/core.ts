@@ -286,7 +286,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     }
     case LayerTag.Fold: {
       return M.succeed((memo) =>
-        M.foldCauseM_(
+        M.matchCauseM_(
           memo.getOrElseMemoize(_I.layer),
           (e) =>
             pipe(
@@ -751,7 +751,7 @@ export function catchAll_<R, E, A, R1, E1, B>(
         )
       )
   )
-  return fold_(la, failureOrDie['>>>'](handler), identity())
+  return match_(la, failureOrDie['>>>'](handler), identity())
 }
 
 /**
@@ -789,7 +789,7 @@ export function fresh<R, E, A>(layer: Layer<R, E, A>): Layer<R, E, A> {
  * outputs of the `to` layer.
  */
 export function from_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
-  return fold_(
+  return match_(
     from,
     fromRawFunctionM((_: readonly [unknown, Cause<E2>]) => I.halt(_[1])),
     to
@@ -801,7 +801,7 @@ export function from_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E
  * the specified `failure` or `success` layers, resulting in a new layer with
  * the inputs of this layer, and the error or outputs of the specified layer.
  */
-export function fold_<R, E, A, R1, E1, B, E2, C>(
+export function match_<R, E, A, R1, E1, B, E2, C>(
   layer: Layer<R, E, A>,
   onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
   onSuccess: Layer<A, E2, C>
@@ -853,7 +853,7 @@ export function second<A>(): Layer<readonly [unknown, A], never, A> {
  */
 export function to<R, E, A>(from: Layer<R, E, A>) {
   return <E2, A2>(to: Layer<A, E2, A2>): Layer<R, E | E2, A2> =>
-    fold_(
+    match_(
       from,
       fromRawFunctionM((_: readonly [R, Cause<E>]) => I.halt(_[1])),
       to
@@ -866,7 +866,7 @@ export function to<R, E, A>(from: Layer<R, E, A>) {
  * outputs of the `to` layer.
  */
 export function to_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
-  return fold_(
+  return match_(
     from,
     fromRawFunctionM((_: readonly [R2, Cause<E2>]) => I.halt(_[1])),
     to
@@ -958,7 +958,7 @@ export class MemoMap {
                       I.giveAll(tuple(a, innerReleaseMap)),
                       I.result,
                       I.bind((ex) =>
-                        Ex.fold_(
+                        Ex.match_(
                           ex,
                           (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
                             pipe(
@@ -994,7 +994,7 @@ export class MemoMap {
                 pipe(
                   promise.await,
                   I.onExit(
-                    Ex.fold(
+                    Ex.match(
                       (_) => I.unit(),
                       (_) => XR.update_(observers, (n) => n + 1)
                     )

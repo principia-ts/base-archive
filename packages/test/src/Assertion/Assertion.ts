@@ -162,7 +162,7 @@ export function dies(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> {
     'dies',
     [param(assertion0)],
     assertion0,
-    Ex.fold(C.dieOption, () => O.None())
+    Ex.match(C.dieOption, () => O.None())
   )
 }
 
@@ -175,7 +175,7 @@ export function fails<E>(assertion: Assertion<E>): Assertion<Exit<E, any>> {
     'fails',
     [param(assertion)],
     assertion,
-    Ex.fold(flow(C.failures, A.head), () => O.None())
+    Ex.match(flow(C.failures, A.head), () => O.None())
   )
 }
 
@@ -261,6 +261,6 @@ export function succeeds<A>(assertion: Assertion<A>): Assertion<Exit<any, A>> {
     'succeeds',
     [param(assertion)],
     assertion,
-    Ex.fold(() => O.None(), O.Some)
+    Ex.match(() => O.None(), O.Some)
   )
 }
