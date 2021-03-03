@@ -1,3 +1,12 @@
+import type { Model } from './abstract/Model'
+import type { FastCheckEnv } from './interpreter/Arbitrary/HKT'
+import type * as E from '@principia/base/Eq'
+import type { Guard } from '@principia/base/Guard'
+import type { Show } from '@principia/base/Show'
+import type { DecoderKF } from '@principia/codec/DecoderKF'
+import type { Encoder } from '@principia/codec/Encoder'
+import type { Arbitrary } from 'fast-check'
+
 import * as fc from 'fast-check'
 
 import * as Arb from './interpreter/Arbitrary'
@@ -11,12 +20,29 @@ import { summonFor } from './summoner'
 
 export const { make, makeADT } = summonFor({})
 
-export const getShow      = S.deriveFor(make)({})
-export const getDecoder   = Dec.deriveFor(make)({})
-export const getEncoder   = Enc.deriveFor(make)({})
-export const getEq        = Eq.deriveFor(make)({})
-export const getGuard     = G.deriveFor(make)({})
-export const getArbitrary = Arb.deriveFor(make)({
+export const getShow: <S, R, E, A>(
+  F: Model<'model/NoUnion', 'model/Result', FastCheckEnv, S, R, E, A>
+) => Show<A> = S.deriveFor(make)({})
+
+export const getDecoder: <S, R, E, A>(
+  F: Model<'model/NoUnion', 'model/Result', FastCheckEnv, S, R, E, A>
+) => DecoderKF<unknown, A> = Dec.deriveFor(make)({})
+
+export const getEncoder: <S, R, E, A>(
+  F: Model<'model/NoUnion', 'model/Result', FastCheckEnv, S, R, E, A>
+) => Encoder<E, A> = Enc.deriveFor(make)({})
+
+export const getEq: <S, R, E, A>(
+  F: Model<'model/NoUnion', 'model/Result', FastCheckEnv, S, R, E, A>
+) => E.Eq<A> = Eq.deriveFor(make)({})
+
+export const getGuard: <S, R, E, A>(
+  F: Model<'model/NoUnion', 'model/Result', FastCheckEnv, S, R, E, A>
+) => Guard<unknown, A> = G.deriveFor(make)({})
+
+export const getArbitrary: <S, R, E, A>(
+  F: Model<'model/NoUnion', 'model/Result', FastCheckEnv, S, R, E, A>
+) => Arbitrary<A> = Arb.deriveFor(make)({
   [ArbitraryURI]: {
     module: fc
   }
