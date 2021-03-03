@@ -129,7 +129,7 @@ export function info<E>(info: E): DecodeError<E> {
  * -------------------------------------------
  */
 
-export function fold<E, R>(patterns: {
+export function match<E, R>(patterns: {
   Leaf: (input: unknown, expected: string) => R
   Key: (key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>) => R
   Index: (index: number, kind: Kind, errors: FreeSemigroup<DecodeError<E>>) => R

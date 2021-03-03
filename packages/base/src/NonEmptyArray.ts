@@ -9,7 +9,7 @@ import type * as P from './typeclass'
 
 import * as A from './Array'
 import * as O from './Option'
-import { getJoinSemigroup, getMeetSemigroup } from './typeclass'
+import * as S from './Semigroup'
 
 /*
  * -------------------------------------------
@@ -98,13 +98,13 @@ export function tail<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
 }
 
 export function min<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
-  const S = getMeetSemigroup(O)
-  return (as) => as.reduce(S.combine_)
+  const Sa = S.min(O)
+  return (as) => as.reduce(Sa.combine_)
 }
 
 export function max<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
-  const S = getJoinSemigroup(O)
-  return (as) => as.reduce(S.combine_)
+  const Sa = S.max(O)
+  return (as) => as.reduce(Sa.combine_)
 }
 
 /*

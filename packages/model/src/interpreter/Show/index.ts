@@ -1,4 +1,6 @@
-import type { AnyEnv, Model, SummonerEnv, SummonerPURI, SummonerRURI } from '../../HKT'
+import type { Model } from '../../abstract/Model'
+import type { SummonerEnv, SummonerPURI, SummonerRURI } from '../../abstract/Summoner'
+import type { AnyEnv } from '../../HKT'
 import type { Summoner } from '../../summoner'
 import type * as S from '@principia/base/Show'
 
@@ -9,12 +11,12 @@ import { ShowURI } from './HKT'
 import { IntersectionShow } from './intersection'
 import { NewtypeShow } from './newtype'
 import { NullableShow } from './nullable'
-import { ObjectShow } from './object'
 import { PrimitivesShow } from './primitives'
 import { RecordShow } from './record'
 import { RecursiveShow } from './recursive'
 import { RefinementShow } from './refinement'
 import { SetShow } from './set'
+import { StructShow } from './struct'
 import { SumShow } from './sum'
 import { UnknownShow } from './unknown'
 
@@ -25,7 +27,7 @@ export const _allShowInterpreters = <Env extends AnyEnv>() =>
     PrimitivesShow<Env>(),
     RefinementShow<Env>(),
     RecordShow<Env>(),
-    ObjectShow<Env>(),
+    StructShow<Env>(),
     NewtypeShow<Env>(),
     RecursiveShow<Env>(),
     SetShow<Env>(),

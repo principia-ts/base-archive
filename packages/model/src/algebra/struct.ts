@@ -1,12 +1,12 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from '../HKT'
 
-export const ObjectURI = 'model/algebra/object'
+export const StructURI = 'model/algebra/struct'
 
-export type ObjectURI = typeof ObjectURI
+export type StructURI = typeof StructURI
 
 declare module '../HKT' {
   interface URItoAlgebra<IURI, Env> {
-    readonly [ObjectURI]: ObjectAlgebra<IURI, Env>
+    readonly [StructURI]: StructAlgebra<IURI, Env>
   }
 }
 
@@ -33,12 +33,12 @@ type InferStruct<
   }
 >
 
-export interface TypeConfig<Props> {}
+export interface StructConfig<Props> {}
 export interface PartialConfig<Props> {}
 export interface BothConfig<Props, PropsPartial> {}
 
-export interface ObjectAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly type: <Props extends AnyMProps<F, Env>>(
+export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
+  readonly struct: <Props extends AnyMProps<F, Env>>(
     properties: Props,
     config?: Config<
       Env,
@@ -46,7 +46,7 @@ export interface ObjectAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
       unknown,
       InferStruct<F, Env, Props, 'E'>,
       InferStruct<F, Env, Props, 'A'>,
-      TypeConfig<Props>
+      StructConfig<Props>
     >
   ) => InterpretedKind<F, Env, unknown, unknown, InferStruct<F, Env, Props, 'E'>, InferStruct<F, Env, Props, 'A'>>
 

@@ -1,7 +1,9 @@
 import type { DecodeErrors, ErrorInfo } from './DecodeErrors'
 import type { DecoderK } from './DecoderK'
 import type { DecoderKFURI } from './Modules'
-import type { Refinement } from '@principia/base/Function'
+import type * as MD from './MonadDecoder'
+import type { Predicate, Refinement } from '@principia/base/Function'
+import type * as G from '@principia/base/Guard'
 import type { Integer } from '@principia/base/Integer'
 import type * as O from '@principia/base/Option'
 import type { ReadonlyRecord } from '@principia/base/Record'
@@ -9,10 +11,13 @@ import type * as P from '@principia/base/typeclass'
 import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
+import * as B from '@principia/base/Boolean'
 import { pipe } from '@principia/base/Function'
-import * as G from '@principia/base/Guard'
 import * as HKT from '@principia/base/HKT'
+import * as I from '@principia/base/Integer'
+import * as N from '@principia/base/Number'
 import * as R from '@principia/base/Record'
+import * as S from '@principia/base/String'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import * as DE from './DecodeError'
@@ -32,26 +37,26 @@ interface DecoderMetadata {
 }
 
 export interface DecodeFn<I, O> {
-  <M extends HKT.URIS, C = HKT.Auto>(M: K.MonadDecoder<M, C, DecodeErrors>): (
+  <M extends HKT.URIS, C = HKT.Auto>(M: MD.MonadDecoder<M, C, DecodeErrors>): (
     i: I
   ) => HKT.Kind<
     M,
-    K.V<C, DecodeErrors>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'N'>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'K'>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'Q'>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'W'>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'X'>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'I'>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'S'>,
-    HKT.Initial<K.V<C, DecodeErrors>, 'R'>,
+    MD.V<C, DecodeErrors>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'N'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'K'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'Q'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'W'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'X'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'I'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'S'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'R'>,
     DecodeErrors,
     O
   >
 }
 
 export interface DecodeFnHKT<I, O> {
-  (M: K.MonadDecoder<HKT.UHKT2<any>, HKT.Auto, DecodeErrors>): (i: I) => HKT.HKT2<any, DecodeErrors, O>
+  (M: MD.MonadDecoder<HKT.UHKT2<any>, HKT.Auto, DecodeErrors>): (i: I) => HKT.HKT2<any, DecodeErrors, O>
 }
 
 export interface DecoderKF<I, O> extends DecoderK<I, DecodeErrors, O> {
@@ -117,27 +122,27 @@ export function literal<A extends readonly [Primitive, ...Primitive[]]>(
  */
 
 export function string(info?: ErrorInfo): DecoderKF<unknown, string> {
-  return fromGuard(G.string, 'string', info)
+  return fromGuard(S.Guard, 'string', info)
 }
 
 export function number(info?: ErrorInfo): DecoderKF<unknown, number> {
-  return fromGuard(G.number, 'number', info)
+  return fromGuard(N.Guard, 'number', info)
 }
 
 export function integer(info?: ErrorInfo): DecoderKF<unknown, Integer> {
-  return fromGuard(G.safeInteger, 'integer', info)
+  return fromGuard(I.GuardSafe, 'integer', info)
 }
 
 export function boolean(info?: ErrorInfo): DecoderKF<unknown, boolean> {
-  return fromGuard(G.boolean, 'boolean', info)
+  return fromGuard(B.Guard, 'boolean', info)
 }
 
 export function UnknownArray(info?: ErrorInfo): DecoderKF<unknown, ReadonlyArray<unknown>> {
-  return fromGuard(G.UnknownArray, 'Array<unknown>', info)
+  return fromGuard(A.GuardUnknownArray, 'Array<unknown>', info)
 }
 
 export function UnknownRecord(info?: ErrorInfo): DecoderKF<unknown, ReadonlyRecord<string, unknown>> {
-  return fromGuard(G.UnknownRecord, 'Record<string, unknown>', info)
+  return fromGuard(R.GuardUnknownRecord, 'Record<string, unknown>', info)
 }
 
 /*
@@ -239,9 +244,21 @@ export function refine_<I, A, B extends A>(
   refinement: Refinement<A, B>,
   name: string,
   info?: ErrorInfo
-): DecoderKF<I, B> {
+): DecoderKF<I, B>
+export function refine_<I, A>(
+  from: DecoderKF<I, A>,
+  predicate: Predicate<A>,
+  name: string,
+  info?: ErrorInfo
+): DecoderKF<I, A>
+export function refine_<I, A>(
+  from: DecoderKF<I, A>,
+  predicate: Predicate<A>,
+  name: string,
+  info?: ErrorInfo
+): DecoderKF<I, A> {
   return {
-    decode: K.refine_(from, refinement, (a) => error(a, name, info)).decode,
+    decode: K.refine_(from, predicate, (a) => error(a, name, info)).decode,
     _meta: {
       name
     }
@@ -252,8 +269,18 @@ export function refine<A, B extends A>(
   refinement: Refinement<A, B>,
   name: string,
   info?: ErrorInfo
-): <I>(from: DecoderKF<I, A>) => DecoderKF<I, B> {
-  return (from) => refine_(from, refinement, name, info)
+): <I>(from: DecoderKF<I, A>) => DecoderKF<I, B>
+export function refine<A>(
+  predicate: Predicate<A>,
+  name: string,
+  info?: ErrorInfo
+): <I>(from: DecoderKF<I, A>) => DecoderKF<I, A>
+export function refine<A>(
+  predicate: Predicate<A>,
+  name: string,
+  info?: ErrorInfo
+): <I>(from: DecoderKF<I, A>) => DecoderKF<I, A> {
+  return (from) => refine_(from, predicate, name, info)
 }
 
 export function parse_<I, A, B>(from: DecoderKF<I, A>, decode: DecodeFnHKT<A, B>, name?: string): DecoderKF<I, B> {
@@ -288,7 +315,7 @@ export function optional(
   })
 }
 
-export function fromType<P extends Record<string, DecoderKF<any, any>>>(
+export function fromStruct<P extends Record<string, DecoderKF<any, any>>>(
   properties: P,
   info?: ErrorInfo
 ): DecoderKF<{ [K in keyof P]: K.InputOf<P[K]> }, { [K in keyof P]: K.TypeOf<P[K]> }> {
@@ -299,7 +326,7 @@ export function fromType<P extends Record<string, DecoderKF<any, any>>>(
   )
   return pipe(
     {
-      decode: K.fromType_(properties, (k, e: DecodeErrors) => FS.element(DE.key(k, DE.required, e))).decode,
+      decode: K.fromStruct_(properties, (k, e: DecodeErrors) => FS.element(DE.key(k, DE.required, e))).decode,
       _meta: {
         name
       }
@@ -308,11 +335,11 @@ export function fromType<P extends Record<string, DecoderKF<any, any>>>(
   ) as any
 }
 
-export function type<P extends Record<string, DecoderKF<any, any>>>(
+export function struct<P extends Record<string, DecoderKF<any, any>>>(
   properties: P,
   info?: ErrorInfo
 ): DecoderKF<unknown, { [K in keyof P]: K.TypeOf<P[K]> }> {
-  return compose_(UnknownRecord(info) as any, fromType(properties, info))
+  return compose_(UnknownRecord(info) as any, fromStruct(properties, info))
 }
 
 export function fromPartial<P extends Record<string, DecoderKF<any, any>>>(
@@ -530,7 +557,7 @@ export function lazy<I, A>(id: string, f: () => DecoderKF<I, A>, info?: ErrorInf
 }
 
 export function runDecoder<I, O, M extends HKT.URIS, C = HKT.Auto>(
-  M: K.MonadDecoder<M, C, DecodeErrors>,
+  M: MD.MonadDecoder<M, C, DecodeErrors>,
   decoder: DecoderKF<I, O>
 ): (
   i: I

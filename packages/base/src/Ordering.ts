@@ -1,4 +1,4 @@
-import type { Monoid } from './typeclass'
+import type * as P from './typeclass'
 
 export type Ordering = -1 | 0 | 1
 
@@ -19,7 +19,7 @@ export const invert = (O: Ordering): Ordering => {
   }
 }
 
-export const MonoidOrdering: Monoid<Ordering> = {
+export const Monoid: P.Monoid<Ordering> = {
   combine_: (x, y) => (x !== 0 ? x : y),
   combine: (x) => (y) => (x !== 0 ? x : y),
   nat: 0

@@ -1,10 +1,13 @@
 import type { NonEmptyArray } from './NonEmptyArray'
 
 import * as A from './Array'
-import { flow, pipe } from './Function'
+import { flow, identity, pipe } from './Function'
+import * as G from './Guard'
 import * as NA from './NonEmptyArray'
+import * as N from './Number'
 import * as O from './Option'
-import { max_, number } from './Ord'
+import { max_ } from './Ord'
+import * as P from './typeclass'
 
 /**
  * The empty string
@@ -227,7 +230,7 @@ export function slice(start: number, end: number): (s: string) => string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeLeft_(s: string, n: number): string {
-  return s.slice(0, max_(number)(0, n))
+  return s.slice(0, max_(N.Ord)(0, n))
 }
 
 /**
@@ -255,7 +258,7 @@ export function takeLeft(n: number): (s: string) => string {
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
 export function takeRight_(s: string, n: number): string {
-  return s.slice(max_(number)(0, s.length - Math.floor(n)), Infinity)
+  return s.slice(max_(N.Ord)(0, s.length - Math.floor(n)), Infinity)
 }
 
 /**
@@ -399,3 +402,24 @@ export function capitalize(s: string): string {
 export function capitalizeAll(s: string): string {
   return pipe(s, split(' '), A.map(capitalize), A.join(' '))
 }
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const Eq: P.Eq<string> = P.makeEq((x, y) => x === y)
+
+export const Semigroup: P.Semigroup<string> = P.makeSemigroup((x, y) => x + y)
+
+export const Monoid: P.Monoid<string> = {
+  ...Semigroup,
+  nat: empty
+}
+
+export const Ord: P.Ord<string> = P.makeOrd((x, y) => (x < y ? -1 : x > y ? 1 : 0))
+
+export const Show: P.Show<string> = P.makeShow(identity)
+
+export const Guard: G.Guard<unknown, string> = G.makeGuard((u: unknown): u is string => typeof u === 'string')

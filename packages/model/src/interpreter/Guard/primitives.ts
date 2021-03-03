@@ -3,18 +3,21 @@ import type { GuardURI } from './HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as A from '@principia/base/Array'
+import * as B from '@principia/base/Boolean'
 import { pipe } from '@principia/base/Function'
 import * as G from '@principia/base/Guard'
+import * as N from '@principia/base/Number'
 import * as R from '@principia/base/Record'
+import * as S from '@principia/base/String'
 
 import { implementInterpreter } from '../../HKT'
 import { regexUUID } from '../Decoder/primitives'
 import { applyGuardConfig } from './HKT'
 
 export const PrimitivesGuard = implementInterpreter<GuardURI, Alg.PrimitivesURI>()((_) => ({
-  string: (config) => (env) => applyGuardConfig(config?.config)(G.string, env, {}),
-  number: (config) => (env) => applyGuardConfig(config?.config)(G.number, env, {}),
-  boolean: (config) => (env) => applyGuardConfig(config?.config)(G.boolean, env, {}),
+  string: (config) => (env) => applyGuardConfig(config?.config)(S.Guard, env, {}),
+  number: (config) => (env) => applyGuardConfig(config?.config)(N.Guard, env, {}),
+  boolean: (config) => (env) => applyGuardConfig(config?.config)(B.Guard, env, {}),
   literal: (...values) => (config) => (env) => applyGuardConfig(config?.config)(G.literal(...values), env, {}),
   stringLiteral: (value, config) => (env) => applyGuardConfig(config?.config)(G.literal(value), env, {}),
   numberLiteral: (value, config) => (env) => applyGuardConfig(config?.config)(G.literal(value), env, {}),
@@ -22,12 +25,12 @@ export const PrimitivesGuard = implementInterpreter<GuardURI, Alg.PrimitivesURI>
     applyGuardConfig(config?.config)({ is: (u): u is bigint => typeof u === 'bigint' }, env, {}),
   date: (config) => (env) => applyGuardConfig(config?.config)({ is: (u): u is Date => u instanceof Date }, env, {}),
   array: (item, config) => (env) =>
-    pipe(item(env), (guard) => applyGuardConfig(config?.config)(G.array(guard), env, guard)),
+    pipe(item(env), (guard) => applyGuardConfig(config?.config)(A.getGuard(guard), env, guard)),
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (guard) =>
       applyGuardConfig(config?.config)(
         pipe(
-          G.array(guard),
+          A.getGuard(guard),
           G.refine((as): as is NonEmptyArray<any> => as.length > 0)
         ),
         env,
@@ -43,7 +46,7 @@ export const PrimitivesGuard = implementInterpreter<GuardURI, Alg.PrimitivesURI>
   keyof: (keys, config) => (env) =>
     applyGuardConfig(config?.config)(
       pipe(
-        G.string,
+        S.Guard,
         G.refine((k): k is keyof typeof keys & string => R.has_(keys, k))
       ),
       env,
@@ -52,7 +55,7 @@ export const PrimitivesGuard = implementInterpreter<GuardURI, Alg.PrimitivesURI>
   UUID: (config) => (env) =>
     applyGuardConfig(config?.config)(
       pipe(
-        G.string,
+        S.Guard,
         G.refine((s): s is Alg.UUID => regexUUID.test(s))
       ),
       env,

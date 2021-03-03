@@ -8,6 +8,7 @@ import * as E from '@principia/base/Either'
 import { flow, identity, pipe } from '@principia/base/Function'
 import * as It from '@principia/base/Iterable'
 import * as L from '@principia/base/List'
+import * as N from '@principia/base/Number'
 import * as O from '@principia/base/Option'
 import * as S from '@principia/base/Show'
 import * as Str from '@principia/base/String'
@@ -120,7 +121,7 @@ export function assertionRec<A, B>(
 
 export const anything: Assertion<any> = assertion('anything', [], () => true)
 
-export function approximatelyEquals<A extends number>(reference: A, tolerance: A): Assertion<A> {
+export function approximatelyEquals(reference: number, tolerance: number): Assertion<number> {
   return assertion(
     'approximatelyEquals',
     [param(reference), param(tolerance)],
@@ -129,7 +130,7 @@ export function approximatelyEquals<A extends number>(reference: A, tolerance: A
       const min = reference - tolerance
       return actual >= min && actual <= max
     },
-    S.number as S.Show<A>
+    N.Show
   )
 }
 
@@ -142,7 +143,7 @@ export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
 }
 
 export function containsString(element: string): Assertion<string> {
-  return assertion('containsString', [param(Str.surround_(element, '"'))], Str.contains(element), S.string)
+  return assertion('containsString', [param(Str.surround_(element, '"'))], Str.contains(element), Str.Show)
 }
 
 export function deepStrictEqualTo(expected: any, show?: S.Show<any>): Assertion<any> {

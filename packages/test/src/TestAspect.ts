@@ -14,6 +14,7 @@ import { constTrue, pipe } from '@principia/base/Function'
 import { hashString } from '@principia/base/Hash'
 import * as Set from '@principia/base/HashSet'
 import * as O from '@principia/base/Option'
+import * as Str from '@principia/base/String'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
 import { Console } from '@principia/io/Console'
 import * as Ex from '@principia/io/Exit'
@@ -230,7 +231,7 @@ export function annotate<V>(key: TestAnnotation<V>, value: V): TestAspectPoly {
 }
 
 export function tag(tag: string): TestAspectPoly {
-  return annotate(Annotation.tagged, pipe(Set.make({ ...Eq.string, hash: hashString }), Set.add(tag)))
+  return annotate(Annotation.tagged, pipe(Set.make({ ...Str.Eq, hash: hashString }), Set.add(tag)))
 }
 
 export function timeoutWarning(duration: number): TestAspect<Has<Live>, any> {

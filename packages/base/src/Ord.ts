@@ -1,8 +1,10 @@
+import type * as Eq from './Eq'
+import type { Endomorphism, Predicate } from './Function'
 import type { Ordering } from './Ordering'
-import type { CombineFn_, Monoid } from './typeclass'
 
-import * as Eq from './Eq'
-import { EQ, GT, LT, MonoidOrdering } from './Ordering'
+import { flow } from './Function'
+import { EQ, GT, LT } from './Ordering'
+import * as P from './typeclass'
 
 type Eq<A> = Eq.Eq<A>
 
@@ -19,12 +21,13 @@ export interface CompareFn_<A> {
   (x: A, y: A): Ordering
 }
 
-export const makeOrd = <A>(cmp: (x: A, y: A) => Ordering): Ord<A> => {
+export const makeOrd = <A>(cmp: (x: A, y: A) => Ordering, equals?: (x: A, y: A) => boolean): Ord<A> => {
+  const equals_ = equals ?? ((x, y) => cmp(x, y) === 0)
   return {
     compare_: cmp,
     compare: (y) => (x) => cmp(x, y),
-    equals_: (x, y) => cmp(x, y) === 0,
-    equals: (y) => (x) => cmp(x, y) === 0
+    equals_,
+    equals: (y) => (x) => equals_(x, y)
   }
 }
 
@@ -34,30 +37,6 @@ export function contramap_<A, B>(fa: Ord<A>, f: (b: B) => A): Ord<B> {
 
 export function contramap<A, B>(f: (b: B) => A): (fa: Ord<A>) => Ord<B> {
   return (fa) => contramap_(fa, f)
-}
-
-const defaultCompare = (y: any): ((x: any) => Ordering) => {
-  return (x) => (x < y ? LT : x > y ? GT : EQ)
-}
-
-const defaultCompare_ = (x: any, y: any) => (x < y ? LT : x > y ? GT : EQ)
-
-export const string: Ord<string> = {
-  ...Eq.string,
-  compare: defaultCompare,
-  compare_: defaultCompare_
-}
-
-export const number: Ord<number> = {
-  ...Eq.number,
-  compare: defaultCompare,
-  compare_: defaultCompare_
-}
-
-export const boolean: Ord<boolean> = {
-  ...Eq.boolean,
-  compare: defaultCompare,
-  compare_: defaultCompare_
 }
 
 export const lt = <A>(O: Ord<A>) => (y: A) => (x: A): boolean => O.compare_(x, y) === LT
@@ -84,12 +63,28 @@ export const min_ = <A>(O: Ord<A>) => (x: A, y: A): A => (O.compare_(x, y) === G
 
 export const max_ = <A>(O: Ord<A>) => (x: A, y: A): A => (O.compare_(x, y) === LT ? y : x)
 
-export const getMonoidOrd = <A = never>(): Monoid<Ord<A>> => {
-  const combine_: CombineFn_<Ord<A>> = (x, y) =>
-    makeOrd((a, b) => MonoidOrdering.combine_(x.compare(a)(b), y.compare(a)(b)))
-  return {
-    combine_,
-    combine: (y) => (x) => combine_(x, y),
-    nat: makeOrd(() => EQ)
-  }
+export function clamp<A>(O: Ord<A>): (low: A, hi: A) => Endomorphism<A> {
+  const minO = min(O)
+  const maxO = max(O)
+  return (low, hi) => flow(minO(hi), maxO(low))
 }
+
+export function between<A>(O: Ord<A>): (low: A, hi: A) => Predicate<A> {
+  const ltO = lt_(O)
+  const gtO = gt_(O)
+  return (low, hi) => (a) => (ltO(a, low) || gtO(a, hi) ? false : true)
+}
+
+export const getSemigroup = <A = never>(): P.Semigroup<Ord<A>> => {
+  return P.makeSemigroup((x, y) =>
+    makeOrd((a1, a2) => {
+      const ox = x.compare_(a1, a2)
+      return ox !== 0 ? ox : y.compare_(a1, a2)
+    })
+  )
+}
+
+export const getMonoid = <A = never>(): P.Monoid<Ord<A>> => ({
+  ...getSemigroup<A>(),
+  nat: makeOrd(() => EQ)
+})

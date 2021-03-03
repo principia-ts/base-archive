@@ -1,11 +1,9 @@
-import type { TaggedBuilder } from './adt/summoner'
-import type { CacheType, InhabitedTypes, SelectKeyOfMatchingValues } from './utils'
+import type { Model } from './abstract/Model'
+import type { SelectKeyOfMatchingValues } from './utils'
 import type * as HKT from '@principia/base/HKT'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
-import { makeTagged } from './adt/summoner'
-import { OpticsFor } from './optics'
-import { assignCallable, assignFunction, inhabitTypes, memoize, wrapFun } from './utils'
+import { memoize } from './utils'
 
 /*
  * -------------------------------------------
@@ -61,20 +59,9 @@ export function implementInterpreter() {
  * -------------------------------------------
  */
 
-/*
- * export interface URItoAlgebraHKT<IURI, Env> {
- *    readonly _IURI: IURI;
- *    readonly _Env: Env;
- * }
- */
-
 export interface URItoAlgebra<IURI extends InterpreterURIS, Env extends AnyEnv> {}
 
 export type AlgebraURIS = keyof URItoAlgebra<any, any>
-
-/*
- * export type AlgebraHKT<AURI extends AlgebraURIS, IURI, Env> = UnionToIntersection<URItoAlgebraHKT<IURI, Env>[AURI]>;
- */
 
 export type Algebra<AURI extends AlgebraURIS, IURI extends InterpreterURIS, Env extends AnyEnv> = UnionToIntersection<
   URItoAlgebra<IURI, Env>[AURI]
@@ -137,32 +124,9 @@ export interface URItoProgramAlgebra<Env extends AnyEnv> {}
 
 export interface URItoAURIS {}
 
-export const _overloads: unique symbol = Symbol()
-
-export type Overloads<I extends { [_overloads]?: any }> = NonNullable<I[typeof _overloads]>
-
-export const interpretable = <T extends { [_overloads]?: any }>(program: T): Overloads<T> => program as Overloads<T>
-
-export type InferredAlgebra<PURI extends ProgramURIS, Env extends AnyEnv> = Algebra<URItoAURIS[PURI], UIHKT, Env>
-
-export interface InferredProgram<PURI extends ProgramURIS, Env extends AnyEnv, S, R, E, A> {
-  <LEnv extends Env>(a: URItoProgramAlgebra<Env>[PURI]): InterpretedHKT<UIHKT, LEnv, S, R, E, A>
-  [_overloads]?: {
-    <F extends Exclude<InterpreterURIS, UIHKT>>(a: Algebra<URItoAURIS[PURI], F, Env>): InterpretedKind<
-      F,
-      { [K in F & keyof Env]: Env[K] },
-      S,
-      R,
-      E,
-      A
-    >
-  }
-}
-
 /*
  * -------------------------------------------
- * Materializer
- * (program interpreter)
+ * Result
  * -------------------------------------------
  */
 
@@ -174,116 +138,6 @@ export type SelectResultURIS<S, R, E, A, ShapeConstraint> = SelectKeyOfMatchingV
   URItoResult<S, R, E, A>,
   ShapeConstraint
 >
-
-export interface ProgramInterpreter<PURI extends ProgramURIS, RURI extends ResultURIS> {
-  <Env extends AnyEnv, S, R, E, A>(program: URItoProgram<Env, S, R, E, A>[PURI]): URItoResult<S, R, E, A>[RURI]
-}
-
-/*
- * -------------------------------------------
- * Morph
- * -------------------------------------------
- */
-
-export interface Interpretable<PURI extends ProgramURIS, Env extends AnyEnv, S, R, E, A> {
-  derive: Overloads<URItoProgram<Env, S, R, E, A>[PURI]>
-}
-
-export interface InhabitedInterpreterAndAlgebra<PURI extends ProgramURIS, RURI extends ResultURIS> {
-  readonly _P: PURI
-  readonly _M: RURI
-}
-
-const inhabitInterpreterAndAlgebra = <PURI extends ProgramURIS, RURI extends ResultURIS, T>(
-  t: T
-): T & InhabitedInterpreterAndAlgebra<PURI, RURI> => t as T & InhabitedInterpreterAndAlgebra<PURI, RURI>
-
-export type Model<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, S, R, E, A> = URItoResult<
-  S,
-  R,
-  E,
-  A
->[RURI] &
-  URItoProgram<Env, S, R, E, A>[PURI] &
-  URItoResult<S, R, E, A>[RURI] &
-  InhabitedTypes<Env, S, R, E, A> &
-  Interpretable<PURI, Env, S, R, E, A> &
-  InhabitedInterpreterAndAlgebra<PURI, RURI> &
-  OpticsFor<A>
-
-function interpret<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, S, R, E, A>(
-  program: URItoProgram<Env, S, R, E, A>[PURI],
-  programInterpreter: ProgramInterpreter<PURI, RURI>
-): Model<PURI, RURI, Env, S, R, E, A> & InhabitedTypes<Env, S, R, E, A> {
-  return inhabitInterpreterAndAlgebra(
-    inhabitTypes(assignFunction(wrapFun(program as any), programInterpreter(program)))
-  )
-}
-
-export function materialize<PURI extends ProgramURIS, IURI extends InterpreterURIS, Env extends AnyEnv, S, R, E, A>(
-  program: URItoProgram<Env, S, R, E, A>[PURI],
-  programInterpreter: ProgramInterpreter<PURI, IURI>
-): Model<PURI, IURI, Env, S, R, E, A> {
-  const morph = interpret(program, programInterpreter)
-  return assignCallable(morph, {
-    ...OpticsFor<A>(),
-    derive: interpretable(morph)
-  })
-}
-
-/*
- * -------------------------------------------
- * Summoner
- * -------------------------------------------
- */
-
-export interface Summoners<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv> {
-  <S, R, E, A>(F: InferredProgram<PURI, Env, S, R, E, A>): Model<PURI, RURI, Env, S, R, E, A>
-  readonly _P: PURI
-  readonly _M: RURI
-  readonly _Env: (_: Env) => void
-}
-
-export type SummonerPURI<X extends Summoners<any, any, any>> = NonNullable<X['_P']>
-
-export type SummonerRURI<X extends Summoners<any, any, any>> = NonNullable<X['_M']>
-
-export type SummonerEnv<X extends Summoners<any, any, any>> = NonNullable<Parameters<X['_Env']>[0]>
-
-export interface SummonerOps<S extends Summoners<any, any, any> = never> {
-  readonly make: S
-  readonly makeADT: TaggedBuilder<SummonerPURI<S>, SummonerRURI<S>, SummonerEnv<S>>
-}
-
-export function makeSummoner<Su extends Summoners<any, any, any> = never>(
-  cacheProgramEval: CacheType,
-  programInterpreter: <S, R, E, A>(
-    program: Overloads<URItoProgram<SummonerEnv<Su>, S, R, E, A>[SummonerPURI<Su>]>
-  ) => URItoResult<S, R, E, A>[SummonerRURI<Su>]
-): SummonerOps<Su> {
-  type PURI = SummonerPURI<Su>
-  type IURI = SummonerRURI<Su>
-  type Env = SummonerEnv<Su>
-
-  type P<S, R, E, A> = URItoProgram<Env, S, R, E, A>[PURI]
-  type M<S, R, E, A> = Model<PURI, IURI, Env, S, R, E, A>
-
-  const summon = (<S, R, E, A>(F: P<S, R, E, A>): M<S, R, E, A> =>
-    materialize(
-      cacheProgramEval(F),
-      programInterpreter as <S, R, E, A>(program: P<S, R, E, A>) => URItoResult<S, R, E, A>[IURI]
-    )) as Su
-
-  const tagged: TaggedBuilder<PURI, IURI, SummonerEnv<Su>> = makeTagged(summon)
-  return {
-    make: summon,
-    makeADT: tagged
-  }
-}
-
-export type ExtractEnv<Env extends AnyEnv, SummonerEnv extends InterpreterURIS> = {
-  [k in SummonerEnv & keyof Env]: NonNullable<Env>[k & keyof Env]
-}
 
 /*
  * -------------------------------------------

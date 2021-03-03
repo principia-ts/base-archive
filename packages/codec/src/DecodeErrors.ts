@@ -1,17 +1,25 @@
 import type { DecodeError } from './DecodeError'
-import type { MonadDecoder } from './DecoderK'
+import type { MonadDecoder } from './MonadDecoder'
 import type { RoseTree } from '@principia/base/RoseTree'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import * as Eval from '@principia/base/Eval'
-import { identity, pipe, tuple } from '@principia/base/Function'
+import { identity, pipe } from '@principia/base/Function'
 import * as HKT from '@principia/base/HKT'
 import * as T from '@principia/base/RoseTree'
 import * as P from '@principia/base/typeclass'
 import * as FS from '@principia/free/FreeSemigroup'
 
-import { fold, info, leaf } from './DecodeError'
+import { info, leaf,match } from './DecodeError'
+
+type Eval<A> = Eval.Eval<A>
+
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+ */
 
 export type DecodeErrors = FS.FreeSemigroup<DecodeError<ErrorInfo>>
 
@@ -20,6 +28,12 @@ export interface ErrorInfo {
   id?: string
   message?: string
 }
+
+/*
+ * -------------------------------------------
+ * Utilities
+ * -------------------------------------------
+ */
 
 const showErrorInfo = (info: ErrorInfo): string =>
   info.name && info.message ? `${info.name}: ${info.message}` : info.name ?? info.message ?? ''
@@ -32,7 +46,7 @@ export function error(actual: unknown, expected: string, errorInfo?: ErrorInfo):
     : FS.element(leaf(actual, expected))
 }
 
-const toTree: (e: DecodeError<ErrorInfo>) => RoseTree<string> = fold({
+const toTree: (e: DecodeError<ErrorInfo>) => RoseTree<string> = match({
   Leaf: (input, expected) => T.make(`cannot decode ${JSON.stringify(input)}, should be ${expected}`, A.empty()),
   Key: (key, kind, errors) => T.make(`${kind} property ${JSON.stringify(key)}`, toForest(errors)),
   Index: (index, kind, errors) => T.make(`${kind} index ${index}`, toForest(errors)),
@@ -73,7 +87,7 @@ export function prettyPrint(e: DecodeErrors): string {
 }
 
 export function paths(e: DecodeErrors): Record<string, any> {
-  const go = (e: DecodeErrors): Eval.Eval<Record<string, any>> =>
+  const go = (e: DecodeErrors): Eval<Record<string, any>> =>
     Eval.gen(function* (_) {
       switch (e._tag) {
         case 'Combine': {
@@ -120,10 +134,10 @@ export function paths(e: DecodeErrors): Record<string, any> {
 
 export type V<C> = HKT.CleanParam<C, 'E'> & HKT.Fix<'E', DecodeErrors>
 
-export function getDecodeErrorsValidation<M extends HKT.URIS, C = HKT.Auto>(
+export function getValidation<M extends HKT.URIS, C = HKT.Auto>(
   M: P.MonadExcept<M, C> & P.Bifunctor<M, C>
 ): MonadDecoder<M, C, DecodeErrors>
-export function getDecodeErrorsValidation<M>(
+export function getValidation<M>(
   M: P.MonadExcept<HKT.UHKT2<M>> & P.Bifunctor<HKT.UHKT2<M>>
 ): MonadDecoder<HKT.UHKT2<M>, HKT.Auto, DecodeErrors> {
   const attempt = P.attemptF(M)

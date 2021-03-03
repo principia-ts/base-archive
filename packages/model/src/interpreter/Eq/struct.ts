@@ -1,25 +1,25 @@
 import type * as Alg from '../../algebra'
-import type { EncoderURI } from './HKT'
+import type { EqURI } from './HKT'
 
+import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
 import * as R from '@principia/base/Record'
-import * as E from '@principia/codec/Encoder'
 
 import { implementInterpreter } from '../../HKT'
-import { applyEncoderConfig } from './HKT'
+import { applyEqConfig } from './HKT'
 
-export const ObjectEncoder = implementInterpreter<EncoderURI, Alg.ObjectURI>()((_) => ({
-  type: (properties, config) => (env) =>
+export const ObjectEq = implementInterpreter<EqURI, Alg.StructURI>()((_) => ({
+  struct: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (encoders) => applyEncoderConfig(config?.config)(E.type(encoders) as any, env, encoders as any)
+      (eqs) => applyEqConfig(config?.config)(Eq.struct(eqs), env, eqs as any)
     ),
   partial: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (encoders) => applyEncoderConfig(config?.config)(E.partial(encoders) as any, env, encoders as any)
+      (eqs) => applyEqConfig(config?.config)(Eq.partial(eqs), env, eqs as any)
     ),
   both: (required, optional, config) => (env) =>
     pipe(
@@ -30,7 +30,7 @@ export const ObjectEncoder = implementInterpreter<EncoderURI, Alg.ObjectURI>()((
           optional,
           R.map((f) => f(env)),
           (o) =>
-            applyEncoderConfig(config?.config)(E.intersect(E.partial(o))(E.type(r)) as any, env, {
+            applyEqConfig(config?.config)(pipe(Eq.struct(r), Eq.intersect(Eq.partial(o))), env, {
               required: r as any,
               optional: o as any
             })

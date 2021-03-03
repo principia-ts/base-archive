@@ -1,10 +1,12 @@
-import type { AnyEnv, ExtractEnv, Model, SummonerOps, Summoners, URItoProgram } from '../HKT'
+import type { Model } from '../abstract/Model'
+import type { ExtractEnv, SummonerOps, Summoners } from '../abstract/Summoner'
+import type { AnyEnv, URItoProgram } from '../HKT'
 import type { FastCheckEnv } from '../interpreter/Arbitrary/HKT'
 import type { RURI } from '../materializer'
 import type { PURI } from '../program'
 import type { Erase } from '@principia/base/util/types'
 
-import { makeSummoner } from '../HKT'
+import { makeSummoner } from '../abstract/Summoner'
 import { cacheUnaryFunction } from '../utils'
 
 export interface MM<Env, E, A> extends Model<PURI, RURI, Env, unknown, unknown, E, A> {}

@@ -7,8 +7,8 @@ import * as R from '@principia/base/Record'
 import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
-export const ObjectArbitrary = implementInterpreter<ArbitraryURI, Alg.ObjectURI>()((_) => ({
-  type: (properties, config) => (env) =>
+export const ObjectArbitrary = implementInterpreter<ArbitraryURI, Alg.StructURI>()((_) => ({
+  struct: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),

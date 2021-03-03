@@ -5,7 +5,6 @@
  */
 
 import type { Refinement } from './Function'
-import type { Integer } from './Integer'
 import type { ReadonlyRecord } from './Record'
 import type { Primitive } from './util/types'
 
@@ -25,6 +24,10 @@ export type InputOf<G> = G extends Guard<infer I, any> ? I : never
  * -------------------------------------------
  */
 
+export function makeGuard<I, A extends I>(is: (u: I) => u is A): Guard<I, A> {
+  return { is }
+}
+
 /**
  * @category Constructors
  * @since 1.0.0
@@ -33,63 +36,6 @@ export function literal<A extends readonly [Primitive, ...Array<Primitive>]>(...
   return {
     is: (u): u is A[number] => values.findIndex((a) => a === u) !== -1
   }
-}
-
-/*
- * -------------------------------------------
- * Primitives
- * -------------------------------------------
- */
-
-/**
- * @category Primitives
- * @since 1.0.0
- */
-export const string: Guard<unknown, string> = {
-  is: (i): i is string => typeof i === 'string'
-}
-
-/**
- * Note: `NaN` is excluded
- *
- * @category Primitives
- * @since 1.0.0
- */
-export const number: Guard<unknown, number> = {
-  is: (i): i is number => typeof i === 'number' && !isNaN(i)
-}
-
-/**
- *
- * @category Primitives
- * @since 1.0.0
- */
-export const safeInteger: Guard<unknown, Integer> = {
-  is: (i): i is Integer => typeof i === 'number' && Number.isSafeInteger(i)
-}
-
-/**
- * @category Primitives
- * @since 1.0.0
- */
-export const boolean: Guard<unknown, boolean> = {
-  is: (i): i is boolean => typeof i === 'boolean'
-}
-
-/**
- * @category Primitives
- * @since 1.0.0
- */
-export const UnknownArray: Guard<unknown, ReadonlyArray<unknown>> = {
-  is: Array.isArray
-}
-
-/**
- * @category Primitives
- * @since 1.0.0
- */
-export const UnknownRecord: Guard<unknown, ReadonlyRecord<string, unknown>> = {
-  is: (i): i is Record<string, unknown> => i != null && typeof i === 'object' && !Array.isArray(i)
 }
 
 /*
@@ -110,7 +56,7 @@ export function nullable<I, A extends I>(or: Guard<I, A>): Guard<null | I, null 
   }
 }
 
-export function type<A>(
+export function struct<A>(
   properties: {
     [K in keyof A]: Guard<unknown, A[K]>
   }
@@ -153,27 +99,6 @@ export function partial<A>(
       for (const k in properties) {
         const v = r[k]
         if (v !== undefined && !properties[k].is(r[k])) {
-          return false
-        }
-      }
-      return true
-    })
-  )
-}
-
-export function array<A>(item: Guard<unknown, A>): Guard<unknown, ReadonlyArray<A>> {
-  return pipe(
-    UnknownArray,
-    refine((u): u is ReadonlyArray<A> => u.every(item.is))
-  )
-}
-
-export function record<A>(codomain: Guard<unknown, A>): Guard<unknown, ReadonlyRecord<string, A>> {
-  return pipe(
-    UnknownRecord,
-    refine((r): r is ReadonlyRecord<string, A> => {
-      for (const k in r) {
-        if (!codomain.is(r[k])) {
           return false
         }
       }
@@ -267,3 +192,18 @@ export function id<A>(): Guard<A, A> {
 }
 
 export { GuardURI } from './Modules'
+
+/*
+ * -------------------------------------------
+ * Internal
+ * -------------------------------------------
+ */
+
+/**
+ * @category Primitives
+ * @since 1.0.0
+ * @internal
+ */
+const UnknownRecord: Guard<unknown, ReadonlyRecord<string, unknown>> = {
+  is: (i): i is Record<string, unknown> => i != null && typeof i === 'object' && !Array.isArray(i)
+}

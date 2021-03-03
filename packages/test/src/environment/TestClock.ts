@@ -18,6 +18,7 @@ import { tag } from '@principia/base/Has'
 import * as HM from '@principia/base/HashMap'
 import * as HS from '@principia/base/HashSet'
 import * as Li from '@principia/base/List'
+import * as N from '@principia/base/Number'
 import * as O from '@principia/base/Option'
 import * as Ord from '@principia/base/Ord'
 import { matchTag } from '@principia/base/util/matchers'
@@ -177,7 +178,7 @@ export class TestClock implements Clock {
     return this.awaitSuspended['*>'](
       Ref.modify_(this.clockState, (data) => {
         const end    = f(data.duration)
-        const sorted = Li.sortWith_(data.sleeps, ([x], [y]) => Ord.number.compare_(x, y))
+        const sorted = Li.sortWith_(data.sleeps, ([x], [y]) => N.Ord.compare_(x, y))
         return pipe(
           sorted,
           Li.first,

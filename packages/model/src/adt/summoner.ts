@@ -1,23 +1,15 @@
+import type { Model } from '../abstract/Model'
 import type { SumURI, TaggedUnionConfig } from '../algebra'
-import type {
-  Algebra,
-  Config,
-  InterpretedHKT,
-  InterpreterURIS,
-  Model,
-  ProgramURIS,
-  ResultURIS,
-  URItoProgram
-} from '../HKT'
+import type { Algebra, Config, InterpretedHKT, InterpreterURIS, ProgramURIS, ResultURIS, URItoProgram } from '../HKT'
 import type { _A, _E, _R, _S, InhabitedTypes } from '../utils'
 import type { ADT } from './model'
 import type { ElemType } from './utils'
 
 import * as A from '@principia/base/Array'
-import * as Eq from '@principia/base/Eq'
 import { tuple } from '@principia/base/Function'
 import * as R from '@principia/base/Record'
-import { getFirstSemigroup } from '@principia/base/Semigroup'
+import * as Se from '@principia/base/Semigroup'
+import * as S from '@principia/base/String'
 
 import { assignCallable, wrapFun } from '../utils'
 import { makeADT } from './model'
@@ -27,12 +19,12 @@ export type TaggedUnionProgram<PURI extends ProgramURIS, Env, S, R, E, A> = URIt
 
 type AnyTypes = Record<string, InhabitedTypes<any, any, any, any, any>>
 
-const recordFromArray = R.fromFoldable(getFirstSemigroup<any>(), A.Foldable)
+const recordFromArray = R.fromFoldable(Se.first<any>(), A.Foldable)
 const keepKeys        = (a: Record<string, any>, toKeep: Array<string>): object =>
-  recordFromArray(A.intersection(Eq.string)(toKeep)(Object.keys(a)).map((k: string) => tuple(k, a[k])))
+  recordFromArray(A.intersection(S.Eq)(toKeep)(Object.keys(a)).map((k: string) => tuple(k, a[k])))
 
 const excludeKeys = (a: Record<string, any>, toExclude: Array<string>): object =>
-  recordFromArray(A.difference(Eq.string)(toExclude)(Object.keys(a)).map((k: string) => tuple(k, a[k])))
+  recordFromArray(A.difference(S.Eq)(toExclude)(Object.keys(a)).map((k: string) => tuple(k, a[k])))
 
 type AnyADTTypes = {
   [k in keyof AnyTypes]: [any, any, any, any]

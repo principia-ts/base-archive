@@ -8,9 +8,11 @@ import type { These } from './These'
 
 import { _bind, _bindTo, flow, identity, pipe, tuple, unsafeCoerce } from './Function'
 import { GenLazyHKT, genWithHistoryF } from './Gen'
+import * as G from './Guard'
 import * as HKT from './HKT'
+import * as N from './Number'
 import * as O from './Option'
-import { getMonoidOrd, makeOrd, number } from './Ord'
+import * as Ord from './Ord'
 import { EQ } from './Ordering'
 import * as P from './typeclass'
 import { makeMonoid } from './typeclass'
@@ -925,7 +927,7 @@ export function getMonoid<A = never>(): P.Monoid<ReadonlyArray<A>> {
  * @since 1.0.0
  */
 export function getOrd<A>(O: P.Ord<A>): P.Ord<ReadonlyArray<A>> {
-  return makeOrd((a, b) => {
+  return P.makeOrd((a, b) => {
     const aLen = a.length
     const bLen = b.length
     const len  = Math.min(aLen, bLen)
@@ -935,7 +937,7 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<ReadonlyArray<A>> {
         return ordering
       }
     }
-    return number.compare_(aLen, bLen)
+    return N.Ord.compare_(aLen, bLen)
   })
 }
 
@@ -1705,7 +1707,7 @@ export function sort<B>(O: P.Ord<B>): <A extends B>(as: readonly A[]) => readonl
  */
 export function sortBy<B>(ords: ReadonlyArray<P.Ord<B>>): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (as) => {
-    const M = getMonoidOrd<B>()
+    const M = Ord.getMonoid<B>()
     return sort(foldl_(ords, M.nat, (b, a) => M.combine_(a, b)))(as)
   }
 }
@@ -1887,6 +1889,20 @@ export function union<A>(E: P.Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArr
  * Instances
  * -------------------------------------------
  */
+
+export const EqUnknownArray: P.Eq<ReadonlyArray<unknown>> = P.makeEq((x, y) => x.length === y.length)
+
+export const GuardUnknownArray: G.Guard<
+  unknown,
+  ReadonlyArray<unknown>
+> = G.makeGuard((u): u is ReadonlyArray<unknown> => Array.isArray(u))
+
+export function getGuard<A>(item: G.Guard<unknown, A>): G.Guard<unknown, ReadonlyArray<A>> {
+  return pipe(
+    GuardUnknownArray,
+    G.refine((u): u is ReadonlyArray<A> => u.every((v) => item.is(v)))
+  )
+}
 
 export const Align: P.Align<[HKT.URI<ArrayURI>]> = HKT.instance({
   alignWith_,

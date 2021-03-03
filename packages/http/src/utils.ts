@@ -117,7 +117,7 @@ export interface CookieOptions {
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS' | 'HEAD' | 'TRACE'
 
-export const SyncDecoderM = DE.getDecodeErrorsValidation({
+export const SyncDecoderM = DE.getValidation({
   ...Sy.MonadExcept,
   ...Sy.Bifunctor
 })

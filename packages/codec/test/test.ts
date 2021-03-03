@@ -8,7 +8,7 @@ import { decode } from '../src/EitherDecoder'
 
 const sum = D.sum('_tag')
 
-const A = D.type({ _tag: D.literal('A')(), a: D.string() })
-const B = D.type({ _tag: D.literal('B')(), b: D.number() })
+const A = D.struct({ _tag: D.literal('A')(), a: D.string() })
+const B = D.struct({ _tag: D.literal('B')(), b: D.number() })
 
 const decoder = sum({ A, B })

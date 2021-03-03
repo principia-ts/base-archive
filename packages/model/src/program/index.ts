@@ -1,17 +1,18 @@
+import type { InferredAlgebra, InferredProgram } from '../abstract/Program'
 import type {
   IntersectionURI,
   NewtypeURI,
   NullableURI,
-  ObjectURI,
   PrimitivesURI,
   RecordURI,
   RecursiveURI,
   RefinementURI,
   SetURI,
+  StructURI,
   SumURI,
   UnknownURI
 } from '../algebra'
-import type { AnyEnv, InferredAlgebra, InferredProgram } from '../HKT'
+import type { AnyEnv } from '../HKT'
 
 export const PURI = 'model/NoUnion'
 
@@ -25,7 +26,7 @@ declare module '../HKT' {
   interface URItoAURIS {
     readonly [PURI]:
       | PrimitivesURI
-      | ObjectURI
+      | StructURI
       | RecursiveURI
       | NewtypeURI
       | RecordURI

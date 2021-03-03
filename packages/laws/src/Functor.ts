@@ -1,9 +1,11 @@
 import type { MaybeAsyncEq } from './utils'
+import type * as Eq from '@principia/base/Eq'
 import type { MorphismN } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
-import * as Eq from '@principia/base/Eq'
+import * as N from '@principia/base/Number'
+import * as S from '@principia/base/String'
 import * as fc from 'fast-check'
 
 import { isPromise } from './utils'
@@ -93,8 +95,8 @@ export function testFunctorComposition<F extends HKT.URIS, C>(
 ) => void {
   return (lift, liftEq) => {
     const arb = lift(fc.string())
-    const Sa  = liftEq(Eq.string)
-    const Sc  = liftEq(Eq.number)
+    const Sa  = liftEq(S.Eq)
+    const Sc  = liftEq(N.Eq)
     const ab  = (s: string): number | null | undefined => (s.length === 1 ? undefined : s.length === 2 ? null : s.length)
     const bc  = (n: number | null | undefined): number => (n === undefined ? 1 : n === null ? 2 : n * 2)
 

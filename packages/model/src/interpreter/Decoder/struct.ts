@@ -9,13 +9,13 @@ import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'
 import { extractInfo } from './utils'
 
-export const ObjectDecoder = implementInterpreter<DecoderURI, Alg.ObjectURI>()((_) => ({
-  type: (properties, config) => (env) =>
+export const ObjectDecoder = implementInterpreter<DecoderURI, Alg.StructURI>()((_) => ({
+  struct: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
       (decoders) =>
-        applyDecoderConfig(config?.config)(D.type(decoders, extractInfo(config)) as any, env, decoders as any)
+        applyDecoderConfig(config?.config)(D.struct(decoders, extractInfo(config)) as any, env, decoders as any)
     ),
   partial: (properties, config) => (env) =>
     pipe(
@@ -33,7 +33,7 @@ export const ObjectDecoder = implementInterpreter<DecoderURI, Alg.ObjectURI>()((
           optional,
           R.map((f) => f(env)),
           (o) =>
-            applyDecoderConfig(config?.config)(pipe(D.type(r), D.intersect(D.partial(o))) as any, env, {
+            applyDecoderConfig(config?.config)(pipe(D.struct(r), D.intersect(D.partial(o))) as any, env, {
               required: r as any,
               optional: o as any
             })

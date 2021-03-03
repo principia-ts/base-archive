@@ -1,4 +1,5 @@
 import type { Either } from '@principia/base/Either'
+import type * as Eq from '@principia/base/Eq'
 import type { Tag } from '@principia/base/Has'
 import type { Hash } from '@principia/base/Hash'
 import type * as Fiber from '@principia/io/Fiber'
@@ -6,12 +7,12 @@ import type { URef } from '@principia/io/IORef'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import * as Eq from '@principia/base/Eq'
 import { makeEq } from '@principia/base/Eq'
 import { absurd } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
 import { hash, hashString } from '@principia/base/Hash'
 import * as Set from '@principia/base/HashSet'
+import * as S from '@principia/base/String'
 
 export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
   ...makeEq(equalsTestAnnotation),
@@ -46,7 +47,7 @@ export const Tagged                                      = tag<Set.HashSet<strin
 export const tagged: TestAnnotation<Set.HashSet<string>> = new TestAnnotation(
   Tagged,
   'tagged',
-  Set.make({ ...Eq.string, hash: hashString }),
+  Set.make({ ...S.Eq, hash: hashString }),
   Set.union_
 )
 

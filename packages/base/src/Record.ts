@@ -13,8 +13,11 @@ import type { Unfoldable } from './Unfoldable'
 import type { WiltFn, WiltFn_, WitherFn, WitherFn_ } from './Witherable'
 import type { WiltWithIndexFn, WiltWithIndexFn_, WitherWithIndexFn, WitherWithIndexFn_ } from './WitherableWithIndex'
 
+import { string } from 'yargs'
+
 import { makeEq } from './Eq'
 import { identity, pipe, tuple } from './Function'
+import * as G from './Guard'
 import { makeMonoid } from './Monoid'
 import * as O from './Option'
 import { implementTraverseWithIndex_ } from './TraversableWithIndex'
@@ -263,7 +266,7 @@ export function compact<N extends string, A>(fa: ReadonlyRecord<N, O.Option<A>>)
 
 /*
  * -------------------------------------------
- * Eq Record
+ * Eq
  * -------------------------------------------
  */
 
@@ -932,6 +935,44 @@ export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<reado
 
 export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<readonly [A, ReadonlyRecord<string, A>]> {
   return (r) => pop_(r, k)
+}
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const EqUnknownRecord: Eq<ReadonlyRecord<string, unknown>> = makeEq((x, y) => {
+  for (const k in x) {
+    if (!(k in y)) {
+      return false
+    }
+  }
+  for (const k in y) {
+    if (!(k in x)) {
+      return false
+    }
+  }
+  return true
+})
+
+export const GuardUnknownRecord: G.Guard<unknown, ReadonlyRecord<string, unknown>> = G.makeGuard(
+  (u): u is ReadonlyRecord<string, unknown> => u != null && typeof u === 'object' && !Array.isArray(u)
+)
+
+export function getGuard<A>(codomain: G.Guard<unknown, A>): G.Guard<unknown, ReadonlyRecord<string, A>> {
+  return pipe(
+    GuardUnknownRecord,
+    G.refine((r): r is ReadonlyRecord<string, A> => {
+      for(const k in r) {
+        if(!codomain.is(r[k])) {
+          return false
+        }
+      }
+      return true
+    })
+  )
 }
 
 export { RecordURI } from './Modules'

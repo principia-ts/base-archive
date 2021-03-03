@@ -1,12 +1,12 @@
-import type { Refinement } from '@principia/base/Function'
+import type { MonadDecoder, V } from './MonadDecoder'
+import type { Predicate, Refinement } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type * as P from '@principia/base/typeclass'
 import type { Primitive } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { identity, memoize, pipe } from '@principia/base/Function'
+import { identity, memoize } from '@principia/base/Function'
 import * as G from '@principia/base/Guard'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
@@ -18,13 +18,6 @@ import { _intersect } from './util'
  * Model
  * -------------------------------------------
  */
-
-export type V<C, E> = C & HKT.Fix<'E', E>
-
-export type MonadDecoder<M extends HKT.URIS, C, E> = P.Monad<M, V<C, E>> &
-  P.Fail<M, V<C, E>> &
-  P.Bifunctor<M, V<C, E>> &
-  P.Alt<M, V<C, E>>
 
 export interface DecoderK<I, E, O> {
   readonly _I?: () => I
@@ -79,12 +72,11 @@ export function makeDecoderK<I, E, O>(decode: DecodeFnHKT<I, E, O>): DecoderK<I,
   }
 }
 
-export function fromRefinement<I, A extends I, E>(
-  refinement: Refinement<I, A>,
-  onError: (i: I) => E
-): DecoderK<I, E, A> {
+export function fromRefinement<I, A extends I, E>(refinement: Refinement<I, A>, onError: (i: I) => E): DecoderK<I, E, A>
+export function fromRefinement<I, E>(predicate: Predicate<I>, onError: (i: I) => E): DecoderK<I, E, I>
+export function fromRefinement<I, E>(predicate: Predicate<I>, onError: (i: I) => E): DecoderK<I, E, I> {
   return {
-    decode: (M) => (i) => (refinement(i) ? M.pure(i) : M.fail(onError(i) as any))
+    decode: (M) => (i) => (predicate(i) ? M.pure(i) : M.fail(onError(i) as any))
   }
 }
 
@@ -114,8 +106,18 @@ export function refine_<I, E, A, B extends A>(
   from: DecoderK<I, E, A>,
   refinement: Refinement<A, B>,
   onError: (a: A) => E
-): DecoderK<I, E, B> {
-  return compose_(from, fromRefinement(refinement, onError))
+): DecoderK<I, E, B>
+export function refine_<I, E, A>(
+  from: DecoderK<I, E, A>,
+  predicate: Predicate<A>,
+  onError: (a: A) => E
+): DecoderK<I, E, A>
+export function refine_<I, E, A>(
+  from: DecoderK<I, E, A>,
+  predicate: Predicate<A>,
+  onError: (a: A) => E
+): DecoderK<I, E, A> {
+  return compose_(from, fromRefinement(predicate, onError))
 }
 
 export function refine<A, B extends A, E>(
@@ -210,11 +212,11 @@ export function optional<I, E>(
   return (or) => optional_(or, onError)
 }
 
-export function fromType_<E, P extends Record<string, DecoderK<any, E, any>>>(
+export function fromStruct_<E, P extends Record<string, DecoderK<any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
 ): DecoderK<{ [K in keyof P]: InputOf<P[K]> }, E, { [K in keyof P]: TypeOf<P[K]> }>
-export function fromType_<E, P extends Record<string, DecoderKHKT<any, E, any>>>(
+export function fromStruct_<E, P extends Record<string, DecoderKHKT<any, E, any>>>(
   properties: P,
   onPropertyError: (key: string, e: E) => E
 ): DecoderKHKT<{ [K in keyof P]: InputOfHKT<P[K]> }, E, { [K in keyof P]: TypeOfHKT<P[K]> }> {
@@ -226,12 +228,12 @@ export function fromType_<E, P extends Record<string, DecoderKHKT<any, E, any>>>
   }
 }
 
-export function fromType<E>(
+export function fromStruct<E>(
   onPropertyError: (key: string, e: E) => E
 ): <P extends Record<string, DecoderK<any, E, any>>>(
   properties: P
 ) => DecoderK<{ [K in keyof P]: InputOf<P[K]> }, E, { [K in keyof P]: TypeOf<P[K]> }> {
-  return (properties) => fromType_(properties, onPropertyError)
+  return (properties) => fromStruct_(properties, onPropertyError)
 }
 
 export function fromPartial_<E, P extends Record<string, DecoderK<any, E, any>>>(

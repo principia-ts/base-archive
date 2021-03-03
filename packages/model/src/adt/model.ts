@@ -4,7 +4,8 @@ import * as A from '@principia/base/Array'
 import * as Eq from '@principia/base/Eq'
 import { tuple } from '@principia/base/Function'
 import * as R from '@principia/base/Record'
-import { getFirstSemigroup } from '@principia/base/Semigroup'
+import * as Se from '@principia/base/Semigroup'
+import * as S from '@principia/base/String'
 
 import * as Co from './constructors'
 import * as Ma from './matcher'
@@ -31,14 +32,14 @@ const mergeKeys = <A extends Tagged<Tag>, B extends Tagged<Tag>, Tag extends str
   b: KeysDefinition<B, Tag>
 ): KeysDefinition<A | B, Tag> => ({ ...a, ...b } as any)
 
-const recordFromArray = R.fromFoldable(getFirstSemigroup<any>(), A.Foldable)
+const recordFromArray = R.fromFoldable(Se.first<any>(), A.Foldable)
 const toTupleNull     = (k: string) => tuple(k, null)
 
 const intersectKeys = <A extends Tagged<Tag>, B extends Tagged<Tag>, Tag extends string>(
   a: KeysDefinition<A, Tag>,
   b: KeysDefinition<B, Tag>
 ): KeysDefinition<Extract<A, B>, Tag> =>
-  recordFromArray(A.intersection(Eq.string)(Object.keys(b))(Object.keys(a)).map(toTupleNull)) as KeysDefinition<
+  recordFromArray(A.intersection(S.Eq)(Object.keys(b))(Object.keys(a)).map(toTupleNull)) as KeysDefinition<
     Extract<A, B>,
     Tag
   >
@@ -46,12 +47,12 @@ const intersectKeys = <A extends Tagged<Tag>, B extends Tagged<Tag>, Tag extends
 const excludeKeys = <A extends Tagged<Tag>, Tag extends string>(
   a: KeysDefinition<A, Tag>,
   toRemove: Array<string>
-): object => recordFromArray(A.difference(Eq.string)(toRemove)(Object.keys(a)).map(toTupleNull))
+): object => recordFromArray(A.difference(S.Eq)(toRemove)(Object.keys(a)).map(toTupleNull))
 
 const keepKeys = <A extends Tagged<Tag>, Tag extends string>(
   a: KeysDefinition<A, Tag>,
   toKeep: Array<string>
-): object => recordFromArray(A.intersection(Eq.string)(toKeep)(Object.keys(a)).map(toTupleNull))
+): object => recordFromArray(A.intersection(S.Eq)(toKeep)(Object.keys(a)).map(toTupleNull))
 
 export const unionADT = <
   AS extends [ConstructorsWithKeys<any, any>, ConstructorsWithKeys<any, any>, ...Array<ConstructorsWithKeys<any, any>>]

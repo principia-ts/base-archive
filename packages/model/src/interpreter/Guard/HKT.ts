@@ -31,8 +31,8 @@ declare module '../../algebra/primitives' {
   }
 }
 
-declare module '../../algebra/object' {
-  interface TypeConfig<Props> {
+declare module '../../algebra/struct' {
+  interface StructConfig<Props> {
     readonly [GuardURI]: InterfaceConfigKind<GuardURI, Props>
   }
   interface PartialConfig<Props> {

@@ -4,7 +4,7 @@ import type { Refinement } from './Function'
 import type { Hash } from './Hash'
 import type { Node, UpdateFn } from './internal/hamt'
 
-import { strict } from './Eq'
+import { EqStrict } from './Eq'
 import { constant, identity, tuple } from './Function'
 import { hash } from './Hash'
 import { HashSet } from './HashSet'
@@ -427,7 +427,7 @@ export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
  */
 export function makeDefault<K, V>() {
   return make<K, V>({
-    ...strict,
+    ...EqStrict,
     hash
   })
 }

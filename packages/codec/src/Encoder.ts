@@ -68,7 +68,7 @@ export function nullable<O, A>(or: Encoder<O, A>): Encoder<null | O, null | A> {
   }
 }
 
-export function type<P extends Record<string, Encoder<any, any>>>(
+export function struct<P extends Record<string, Encoder<any, any>>>(
   properties: P
 ): Encoder<
   {

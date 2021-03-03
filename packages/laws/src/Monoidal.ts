@@ -1,9 +1,11 @@
 import type { MaybeAsyncEq } from './utils'
+import type * as Eq from '@principia/base/Eq'
 import type * as HKT from '@principia/base/HKT'
 import type { Monoidal } from '@principia/base/typeclass'
 
-import * as Eq from '@principia/base/Eq'
 import { compose_, tuple, tupleFlip, tupleUnit } from '@principia/base/Equivalence'
+import * as N from '@principia/base/Number'
+import * as S from '@principia/base/String'
 import { crossF_ } from '@principia/base/typeclass'
 import * as fc from 'fast-check'
 
@@ -199,7 +201,7 @@ export function testMonoidalAssociativity<F extends HKT.URIS, TC>(
   return (lift, liftEqs) => {
     const arbString = lift(fc.string())
     const arbNumber = lift(fc.double())
-    const Sabc      = liftEqs(Eq.string, Eq.number, Eq.number)
+    const Sabc      = liftEqs(S.Eq, N.Eq, N.Eq)
 
     const associativity = fc.asyncProperty(
       fc.tuple(arbString, arbNumber, arbNumber),

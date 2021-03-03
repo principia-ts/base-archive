@@ -7,7 +7,7 @@ import type { FreeSemigroup } from '@principia/free/FreeSemigroup'
 import * as E from '@principia/base/Either'
 
 import * as DE from './DecodeError'
-import { getDecodeErrorsValidation } from './DecodeErrors'
+import * as DEs from './DecodeErrors'
 
 /*
  * -------------------------------------------
@@ -27,7 +27,7 @@ export interface EitherDecoder<I, A> {
  */
 export const SE: Semigroup<FreeSemigroup<DecodeError<ErrorInfo>>> = DE.getSemigroup<ErrorInfo>()
 
-const M = getDecodeErrorsValidation({
+const M = DEs.getValidation({
   ...E.MonadExcept,
   ...E.Bifunctor,
   ...E.Alt

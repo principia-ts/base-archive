@@ -156,7 +156,7 @@ export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R,
   const filtered = A.isEmpty(args.testSearchTerms)
     ? A.isEmpty(args.tagSearchTerms)
       ? O.None()
-      : filterTags_(spec, (tag) => A.elem_(Eq.string)(args.tagSearchTerms, tag))
+      : filterTags_(spec, (tag) => A.elem_(Str.Eq)(args.tagSearchTerms, tag))
     : A.isEmpty(args.tagSearchTerms)
     ? filterLabels_(spec, (label) =>
         pipe(
@@ -166,7 +166,7 @@ export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R,
         )
       )
     : pipe(
-        filterTags_(spec, (tag) => A.elem_(Eq.string)(args.tagSearchTerms, tag)),
+        filterTags_(spec, (tag) => A.elem_(Str.Eq)(args.tagSearchTerms, tag)),
         O.bind((spec) =>
           filterLabels_(spec, (label) =>
             pipe(

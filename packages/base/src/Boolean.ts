@@ -1,5 +1,8 @@
 import type { Predicate } from './Function'
 
+import * as G from './Guard'
+import * as P from './typeclass'
+
 export function invert(b: boolean): boolean {
   return !b
 }
@@ -59,3 +62,19 @@ export function orPass_<A>(f: Predicate<A>, g: Predicate<A>): Predicate<A> {
 export function orPass<A>(g: Predicate<A>): (f: Predicate<A>) => Predicate<A> {
   return (f) => orPass_(f, g)
 }
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const SemigroupAll: P.Semigroup<boolean> = P.makeSemigroup((x, y) => x && y)
+
+export const SemigroupAny: P.Semigroup<boolean> = P.makeSemigroup((x, y) => x || y)
+
+export const Eq: P.Eq<boolean> = P.makeEq((x, y) => x === y)
+
+export const Show: P.Show<boolean> = P.makeShow((a) => JSON.stringify(a))
+
+export const Guard: G.Guard<unknown, boolean> = G.makeGuard((u): u is boolean => typeof u === 'boolean')

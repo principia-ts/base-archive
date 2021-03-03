@@ -1,25 +1,25 @@
 import type * as Alg from '../../algebra'
-import type { ShowURI } from './HKT'
+import type { GuardURI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
+import * as G from '@principia/base/Guard'
 import * as R from '@principia/base/Record'
-import * as S from '@principia/base/Show'
 
 import { implementInterpreter } from '../../HKT'
-import { applyShowConfig } from './HKT'
+import { applyGuardConfig } from './HKT'
 
-export const ObjectShow = implementInterpreter<ShowURI, Alg.ObjectURI>()((_) => ({
-  type: (properties, config) => (env) =>
+export const ObjectGuard = implementInterpreter<GuardURI, Alg.StructURI>()((_) => ({
+  struct: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (shows) => applyShowConfig(config?.config)(S.named_(S.type(shows), config?.name) as any, env, shows as any)
+      (guards) => applyGuardConfig(config?.config)(G.struct(guards) as any, env, guards as any)
     ),
   partial: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (shows) => applyShowConfig(config?.config)(S.named_(S.partial(shows), config?.name) as any, env, shows as any)
+      (guards) => applyGuardConfig(config?.config)(G.partial(guards) as any, env, guards as any)
     ),
   both: (required, optional, config) => (env) =>
     pipe(
@@ -30,7 +30,7 @@ export const ObjectShow = implementInterpreter<ShowURI, Alg.ObjectURI>()((_) => 
           optional,
           R.map((f) => f(env)),
           (o) =>
-            applyShowConfig(config?.config)(S.named_(S.intersect_(S.type(r), S.partial(o)), config?.name), env, {
+            applyGuardConfig(config?.config)(G.intersect(G.struct(r))(G.partial(o)) as any, env, {
               required: r as any,
               optional: o as any
             })

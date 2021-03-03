@@ -1,12 +1,13 @@
 import type { MaybeAsyncEq } from './utils'
+import type * as Eq from '@principia/base/Eq'
 import type { MorphismN } from '@principia/base/Function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
-import * as Eq from '@principia/base/Eq'
-import { pipe } from '@principia/base/Function'
+import * as B from '@principia/base/Boolean'
+import * as N from '@principia/base/Number'
+import * as S from '@principia/base/String'
 import { flattenF } from '@principia/base/typeclass'
-import * as I from '@principia/io/IO'
 import * as fc from 'fast-check'
 
 import { Bind } from './Bind'
@@ -97,9 +98,9 @@ export function testMonad<M extends HKT.URIS, C>(
 ) => void
 export function testMonad<M>(M: P.Monad<HKT.UHKT<M>>): (liftEq: <A>(S: Eq.Eq<A>) => Eq.Eq<HKT.HKT<M, A>>) => void {
   return (liftEq) => {
-    const Sa = liftEq(Eq.string)
-    const Sb = liftEq(Eq.number)
-    const Sc = liftEq(Eq.boolean)
+    const Sa = liftEq(S.Eq)
+    const Sb = liftEq(N.Eq)
+    const Sc = liftEq(B.Eq)
 
     const arbFa = fc.string().map(M.pure)
     const afb   = (s: string) => M.pure(s.length)

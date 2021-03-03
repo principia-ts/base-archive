@@ -183,7 +183,7 @@ interface ScalarTypeFromModelConfig<E, A> extends ScalarConfig {
   parseLiteral?: ScalarParseLiteralF<unknown, E>
 }
 
-const SyM = DE.getDecodeErrorsValidation({ ...Sy.MonadExcept, ...Sy.Bifunctor })
+const SyM = DE.getValidation({ ...Sy.MonadExcept, ...Sy.Bifunctor })
 
 export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name, model, config) => {
   const { decode }   = M.getDecoder(model)

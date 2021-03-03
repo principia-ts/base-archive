@@ -21,42 +21,11 @@ export function makeEq<A>(equals: (x: A, y: A) => boolean): Eq<A> {
  * -------------------------------------------
  */
 
-export const any: Eq<any> = {
-  equals_: () => true,
-  equals: () => () => true
-}
+export const EqAlways: Eq<any> = makeEq(() => true)
 
-export const strict: Eq<unknown> = {
-  equals_: (x, y) => x === y,
-  equals: (y) => (x) => x === y
-}
+export const EqNever: Eq<never> = makeEq(() => false)
 
-export const string: Eq<string> = strict
-
-export const number: Eq<number> = strict
-
-export const boolean: Eq<boolean> = strict
-
-export const date: Eq<Date> = {
-  equals_: (x, y) => x.valueOf() === y.valueOf(),
-  equals: (y) => (x) => x.valueOf() === y.valueOf()
-}
-
-export const UnknownArray: Eq<ReadonlyArray<unknown>> = makeEq((x, y) => x.length === y.length)
-
-export const UnknownRecord: Eq<ReadonlyRecord<string, unknown>> = makeEq((x, y) => {
-  for (const k in x) {
-    if (!(k in y)) {
-      return false
-    }
-  }
-  for (const k in y) {
-    if (!(k in x)) {
-      return false
-    }
-  }
-  return true
-})
+export const EqStrict: Eq<unknown> = makeEq((x, y) => x === y)
 
 /*
  * -------------------------------------------
@@ -78,7 +47,7 @@ export function contramap<A, B>(f: (b: B) => A): (fa: Eq<A>) => Eq<B> {
  * -------------------------------------------
  */
 
-export function struct<O extends Readonly<Record<string, any>>>(eqs: { [K in keyof O]: Eq<O[K]> }): Eq<O> {
+export function struct<A>(eqs: { [K in keyof A]: Eq<A[K]> }): Eq<{ [K in keyof A]: A[K] }> {
   return makeEq((x, y) => {
     for (const k in eqs) {
       if (!eqs[k].equals_(x[k], y[k])) {
@@ -98,8 +67,6 @@ export function tuple<T extends ReadonlyArray<Eq<any>>>(
 export function nullable<A>(or: Eq<A>): Eq<null | A> {
   return makeEq((x, y) => (x === null || y === null ? x === y : or.equals_(x, y)))
 }
-
-export const type: <A>(eqs: { [K in keyof A]: Eq<A[K]> }) => Eq<{ [K in keyof A]: A[K] }> = struct
 
 export function partial<A>(
   properties: {

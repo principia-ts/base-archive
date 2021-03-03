@@ -1,25 +1,25 @@
 import type * as Alg from '../../algebra'
-import type { EqURI } from './HKT'
+import type { ShowURI } from './HKT'
 
-import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/Function'
 import * as R from '@principia/base/Record'
+import * as S from '@principia/base/Show'
 
 import { implementInterpreter } from '../../HKT'
-import { applyEqConfig } from './HKT'
+import { applyShowConfig } from './HKT'
 
-export const ObjectEq = implementInterpreter<EqURI, Alg.ObjectURI>()((_) => ({
-  type: (properties, config) => (env) =>
+export const StructShow = implementInterpreter<ShowURI, Alg.StructURI>()((_) => ({
+  struct: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (eqs) => applyEqConfig(config?.config)(Eq.type(eqs), env, eqs as any)
+      (shows) => applyShowConfig(config?.config)(S.named_(S.struct(shows), config?.name) as any, env, shows as any)
     ),
   partial: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (eqs) => applyEqConfig(config?.config)(Eq.partial(eqs), env, eqs as any)
+      (shows) => applyShowConfig(config?.config)(S.named_(S.partial(shows), config?.name) as any, env, shows as any)
     ),
   both: (required, optional, config) => (env) =>
     pipe(
@@ -30,7 +30,7 @@ export const ObjectEq = implementInterpreter<EqURI, Alg.ObjectURI>()((_) => ({
           optional,
           R.map((f) => f(env)),
           (o) =>
-            applyEqConfig(config?.config)(pipe(Eq.type(r), Eq.intersect(Eq.partial(o))), env, {
+            applyShowConfig(config?.config)(S.named_(S.intersect_(S.struct(r), S.partial(o)), config?.name), env, {
               required: r as any,
               optional: o as any
             })

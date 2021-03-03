@@ -23,12 +23,6 @@ export const any: Show<any> = {
   show: (a) => JSON.stringify(a)
 }
 
-export const string: Show<string> = any
-
-export const number: Show<number> = any
-
-export const boolean: Show<boolean> = any
-
 /*
  * -------------------------------------------
  * Contravariant
@@ -49,11 +43,11 @@ export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
  * -------------------------------------------
  */
 
-export function struct<O extends Readonly<Record<string, any>>>(
+export function struct<A>(
   shows: {
-    [K in keyof O]: Show<O[K]>
+    [K in keyof A]: Show<A[K]>
   }
-): Show<O> {
+): Show<{ readonly [K in keyof A]: A[K] }> {
   return {
     show: (a) =>
       `{ ${Object.keys(shows)
@@ -62,13 +56,7 @@ export function struct<O extends Readonly<Record<string, any>>>(
   }
 }
 
-export function tuple<T extends ReadonlyArray<Show<any>>>(
-  ...shows: T
-): Show<
-  {
-    [K in keyof T]: T[K] extends Show<infer A> ? A : never
-  }
-> {
+export function tuple<A extends ReadonlyArray<unknown>>(...shows: { [K in keyof A]: Show<A[K]> }): Show<Readonly<A>> {
   return {
     show: (t) => `[${t.map((a, i) => shows[i].show(a)).join(', ')}]`
   }
@@ -90,10 +78,6 @@ export function undefinable<A>(or: Show<A>): Show<A | undefined> {
   return makeShow((a) => (typeof a === 'undefined' ? 'undefined' : or.show(a)))
 }
 
-export const type: <A extends Readonly<Record<string, any>>>(
-  shows: { [K in keyof A]: Show<A[K]> }
-) => Show<{ [K in keyof A]: A[K] }> = struct
-
 export function partial<A extends Readonly<Record<string, any>>>(
   properties: {
     [K in keyof A]: Show<A[K]>
@@ -108,7 +92,7 @@ export function partial<A extends Readonly<Record<string, any>>>(
   return pipe(
     properties,
     R.map((s: Show<any>) => undefinable(s)),
-    type
+    struct
   )
 }
 

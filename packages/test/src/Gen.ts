@@ -7,8 +7,8 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
 import { identity, pipe, tuple } from '@principia/base/Function'
+import * as N from '@principia/base/Number'
 import * as O from '@principia/base/Option'
-import * as Ord from '@principia/base/Ord'
 import { OrderedMap } from '@principia/base/OrderedMap'
 import * as OM from '@principia/base/OrderedMap'
 import { sequential } from '@principia/io/ExecutionStrategy'
@@ -321,14 +321,10 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
     A.map(([, w]) => w),
     A.sum
   )
-  const [map, _] = A.foldl_(
-    gs,
-    tuple(new OrderedMap<number, Gen<R, A>>(Ord.number, null), 0),
-    ([map, acc], [gen, d]) => {
-      if ((acc + d) / sum > acc / sum) return tuple(OM.insert_(map, (acc + d) / sum, gen), acc + d)
-      else return tuple(map, acc)
-    }
-  )
+  const [map, _] = A.foldl_(gs, tuple(new OrderedMap<number, Gen<R, A>>(N.Ord, null), 0), ([map, acc], [gen, d]) => {
+    if ((acc + d) / sum > acc / sum) return tuple(OM.insert_(map, (acc + d) / sum, gen), acc + d)
+    else return tuple(map, acc)
+  })
   return pipe(
     uniform,
     bind((n) => {
