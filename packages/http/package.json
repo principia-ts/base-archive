@@ -1,6 +1,6 @@
 {
   "name": "@principia/http",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "description": "HTTP",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -49,7 +49,7 @@
     "@principia/compile": "^0.6.1",
     "@principia/free": "^0.6.4",
     "@principia/io": "^0.6.5",
-    "@principia/model": "^0.6.6",
+    "@principia/model": "^0.6.7",
     "@principia/node": "^0.6.5",
     "@types/qs": "^6.9.5",
     "path-to-regexp": "^6.2.0",
