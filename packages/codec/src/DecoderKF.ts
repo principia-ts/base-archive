@@ -1,6 +1,5 @@
 import type { DecodeErrors, ErrorInfo } from './DecodeErrors'
 import type { DecoderK } from './DecoderK'
-import type { DecoderKFURI } from './Modules'
 import type * as MD from './MonadDecoder'
 import type { Predicate, Refinement } from '@principia/base/Function'
 import type * as G from '@principia/base/Guard'
@@ -23,6 +22,7 @@ import * as FS from '@principia/free/FreeSemigroup'
 import * as DE from './DecodeError'
 import { error } from './DecodeErrors'
 import * as K from './DecoderK'
+import { DecoderKFURI } from './Modules'
 
 /*
  * -------------------------------------------
@@ -594,3 +594,5 @@ export const Category = HKT.instance<P.Category<[HKT.URI<DecoderKFURI>], V>>({
   compose,
   id
 })
+
+export { DecoderKFURI }

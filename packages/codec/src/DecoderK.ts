@@ -11,6 +11,7 @@ import * as G from '@principia/base/Guard'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 
+import { DecoderKURI } from './Modules'
 import { _intersect } from './util'
 
 /*
@@ -501,3 +502,5 @@ const compactRecord = <A>(r: Record<string, E.Either<void, A>>): Record<string, 
   }
   return mut_out
 }
+
+export { DecoderKURI }

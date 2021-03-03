@@ -2,6 +2,7 @@ import type * as HKT from '@principia/base/HKT'
 
 import { identity, memoize } from '@principia/base/Function'
 
+import { EncoderURI } from './Modules'
 import { _intersect } from './util'
 
 /*
@@ -183,3 +184,5 @@ export function lazy<O, A>(f: () => Encoder<O, A>): Encoder<O, A> {
     encode: (a) => get().encode(a)
   }
 }
+
+export { EncoderURI }

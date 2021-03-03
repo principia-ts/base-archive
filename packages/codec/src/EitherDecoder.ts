@@ -8,6 +8,7 @@ import * as E from '@principia/base/Either'
 
 import * as DE from './DecodeError'
 import * as DEs from './DecodeErrors'
+import { EitherDecoderURI } from './Modules'
 
 /*
  * -------------------------------------------
@@ -43,3 +44,5 @@ export function fromDecoderKF<I, O>(decoder: KF.DecoderKF<I, O>): EitherDecoder<
 export function decode<I, O>(decoder: KF.DecoderKF<I, O>): (i: I) => E.Either<DecodeErrors, O> {
   return (i) => decoder.decode(M)(i)
 }
+
+export { EitherDecoderURI }
