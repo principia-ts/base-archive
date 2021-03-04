@@ -23,11 +23,14 @@ export function getMReaderT<F>(M: P.Monad<HKT.UHKT<F>>): MReaderT<HKT.UHKT<F>> {
     map: (f) => (fa) => map_(fa, f),
     crossWith_,
     crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
     bind_,
     bind: (f) => (ma) => bind_(ma, f),
     giveAll_: Mu.giveAll_,
     giveAll: Mu.giveAll,
     asks: (f) => Mu.asks(flow(f, M.pure)),
+    unit: flow(M.unit, Mu.pure),
     pure: flow(M.pure, Mu.pure)
   })
 }

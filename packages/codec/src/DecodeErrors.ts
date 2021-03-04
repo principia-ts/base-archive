@@ -11,7 +11,7 @@ import * as T from '@principia/base/RoseTree'
 import * as P from '@principia/base/typeclass'
 import * as FS from '@principia/free/FreeSemigroup'
 
-import { info, leaf,match } from './DecodeError'
+import { info, leaf, match } from './DecodeError'
 
 type Eval<A> = Eval.Eval<A>
 
@@ -171,6 +171,8 @@ export function getValidation<M>(
     map: M.map,
     crossWith_,
     crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
+    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
     mapLeft_: M.mapLeft_,
     mapLeft: M.mapLeft,
     bimap_: M.bimap_,
@@ -180,6 +182,7 @@ export function getValidation<M>(
     fail: M.fail,
     alt_,
     alt: (that) => (me) => alt_(me, that),
+    unit: M.unit,
     pure: M.pure
   })
 }

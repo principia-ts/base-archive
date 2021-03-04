@@ -1,6 +1,6 @@
+import type { Applicative } from './Applicative'
 import type { Either } from './Either'
 import type * as HKT from './HKT'
-import type { Monoidal } from './Monoidal'
 import type { Option } from './Option'
 
 export interface Witherable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
@@ -11,7 +11,7 @@ export interface Witherable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F
 }
 
 export interface WitherFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Monoidal<G, GC>): <NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
     f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
   ) => <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF>(
     wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
@@ -19,7 +19,7 @@ export interface WitherFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface WitherFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Monoidal<G, GC>): <
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
     NF extends string,
     KF,
     QF,
@@ -61,7 +61,7 @@ export function implementWither<F extends HKT.URIS, C = HKT.Auto>(): (
     FR: FR
     FE: FE
   }) => (
-    G: Monoidal<HKT.UHKT<G>>
+    G: Applicative<HKT.UHKT<G>>
   ) => (
     f: (a: A) => HKT.HKT<G, Option<B>>
   ) => (
@@ -87,7 +87,7 @@ export function implementWither_<F extends HKT.URIS, C = HKT.Auto>(): (
     FR: FR
     FE: FE
   }) => (
-    G: Monoidal<HKT.UHKT<G>>
+    G: Applicative<HKT.UHKT<G>>
   ) => (
     wa: HKT.Kind<F, C, NF, FK, FQ, FW, FX, FI, FS, FR, FE, A>,
     f: (a: A) => HKT.HKT<G, Option<B>>
@@ -98,7 +98,7 @@ export function implementWither_() {
 }
 
 export interface WiltFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(F: Monoidal<G, CG>): <
+  <G extends HKT.URIS, CG = HKT.Auto>(F: Applicative<G, CG>): <
     NG extends string,
     KG,
     QG,
@@ -135,7 +135,7 @@ export interface WiltFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface WiltFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(F: Monoidal<G, CG>): <
+  <G extends HKT.URIS, CG = HKT.Auto>(F: Applicative<G, CG>): <
     NF extends string,
     KF,
     QF,
@@ -195,7 +195,7 @@ export function implementWilt<F extends HKT.URIS, C = HKT.Auto>(): (
     RF: RF
     EF: EF
   }) => (
-    G: Monoidal<HKT.UHKT<G>>
+    G: Applicative<HKT.UHKT<G>>
   ) => (
     f: (a: A) => HKT.HKT<G, Either<B, B1>>
   ) => (

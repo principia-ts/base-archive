@@ -1,7 +1,7 @@
 import type { MaybeAsyncEq } from './utils'
 import type * as Eq from '@principia/base/Eq'
 import type * as HKT from '@principia/base/HKT'
-import type { Monoidal } from '@principia/base/typeclass'
+import type { MonoidalFunctor } from '@principia/base/typeclass'
 
 import { compose_, tuple, tupleFlip, tupleUnit } from '@principia/base/Equivalence'
 import * as N from '@principia/base/Number'
@@ -12,7 +12,7 @@ import * as fc from 'fast-check'
 import { isPromise } from './utils'
 
 function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
-  F: Monoidal<F, TC>,
+  F: MonoidalFunctor<F, TC>,
   S: MaybeAsyncEq<
     HKT.Kind<
       F,
@@ -31,13 +31,13 @@ function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
   >
 ): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function LeftIdentityLaw<F, A>(
-  F: Monoidal<HKT.UHKT<F>>,
+  F: MonoidalFunctor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, A>>
 ): (fa: HKT.HKT<F, A>) => Promise<boolean> {
   const equiv  = compose_(tupleFlip<void, A>(), tupleUnit())
   const cross_ = crossF_(F)
   return (fa) => {
-    const left  = cross_(F.pure(undefined), fa)
+    const left  = cross_(F.unit(), fa)
     const right = fa
     const left2 = F.map_(left, equiv.to)
     const b     = S.equals_(left2, right)
@@ -46,7 +46,7 @@ function LeftIdentityLaw<F, A>(
 }
 
 function RightIdentityLaw<F extends HKT.URIS, TC, A>(
-  F: Monoidal<F, TC>,
+  F: MonoidalFunctor<F, TC>,
   S: MaybeAsyncEq<
     HKT.Kind<
       F,
@@ -65,13 +65,13 @@ function RightIdentityLaw<F extends HKT.URIS, TC, A>(
   >
 ): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function RightIdentityLaw<F, A>(
-  F: Monoidal<HKT.UHKT<F>>,
+  F: MonoidalFunctor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, A>>
 ): (fa: HKT.HKT<F, A>) => Promise<boolean> {
   const equiv  = tupleUnit<A>()
   const cross_ = crossF_(F)
   return (fa) => {
-    const left  = cross_(fa, F.pure(undefined))
+    const left  = cross_(fa, F.unit())
     const right = fa
     const left2 = F.map_(left, equiv.to)
     const b     = S.equals_(left2, right)
@@ -80,7 +80,7 @@ function RightIdentityLaw<F, A>(
 }
 
 function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
-  F: Monoidal<F, TC>,
+  F: MonoidalFunctor<F, TC>,
   S: MaybeAsyncEq<
     HKT.Kind<
       F,
@@ -136,7 +136,7 @@ function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
   ]
 ) => Promise<boolean>
 function AssociativityLaw<F, A, B, C>(
-  F: Monoidal<HKT.UHKT<F>>,
+  F: MonoidalFunctor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, readonly [readonly [A, B], C]>>
 ): (fs: [HKT.HKT<F, A>, HKT.HKT<F, B>, HKT.HKT<F, C>]) => Promise<boolean> {
   const equiv  = tuple<A, B, C>()
@@ -157,7 +157,7 @@ export const ApplicativeLaws = {
 }
 
 export function testMonoidalAssociativity<F extends HKT.URIS, TC>(
-  F: Monoidal<F, TC>
+  F: MonoidalFunctor<F, TC>
 ): (
   lift: <A>(
     a: fc.Arbitrary<A>

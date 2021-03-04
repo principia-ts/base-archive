@@ -44,34 +44,69 @@ export function snd<A, I>(ai: Tuple2<A, I>): I {
 
 /*
  * -------------------------------------------
- * Monoidal
+ * SemimonoidalFunctor
  * -------------------------------------------
  */
 
-export function getMonoidal<M>(M: P.Monoid<M>): P.Monoidal<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
-  return HKT.instance({
-    ...getSemimonoidal(M),
-    pure: (a) => tuple_(a, M.nat)
+export function getSemimonoidalFunctor<M>(
+  S: P.Semigroup<M>
+): P.SemimonoidalFunctor<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+  const crossWith_: P.CrossWithFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (fa, fb, f) => [
+    f(fst(fa), fst(fb)),
+    S.combine_(snd(fa), snd(fb))
+  ]
+
+  return HKT.instance<P.SemimonoidalFunctor<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
+    map_,
+    map,
+    crossWith_,
+    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
   })
 }
 
 /*
  * -------------------------------------------
- * Apply
+ * SemimonoidalFunctor
  * -------------------------------------------
  */
 
-export function getSemimonoidal<M>(M: P.Monoid<M>): P.Semimonoidal<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
-  const crossWith_: P.CrossWithFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (fa, fb, f) => [
-    f(fst(fa), fst(fb)),
-    M.combine_(snd(fa), snd(fb))
+export function getApply<M>(S: P.Semigroup<M>): P.Apply<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+  const ap_: P.ApFn_<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> = (fab, fa) => [
+    fst(fab)(fst(fa)),
+    S.combine_(snd(fab), snd(fa))
   ]
 
-  return HKT.instance<P.Semimonoidal<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
-    map_,
-    map,
-    crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
+  return HKT.instance<P.Apply<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
+    ...getSemimonoidalFunctor(S),
+    ap_,
+    ap: (fa) => (fab) => ap_(fab, fa)
+  })
+}
+
+/*
+ * -------------------------------------------
+ * MonoidalFunctor
+ * -------------------------------------------
+ */
+
+export function getMonoidalFunctor<M>(M: P.Monoid<M>): P.MonoidalFunctor<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+  return HKT.instance({
+    ...getSemimonoidalFunctor(M),
+    unit: () => tuple_(undefined, M.nat)
+  })
+}
+
+/*
+ * -------------------------------------------
+ * MonoidalFunctor
+ * -------------------------------------------
+ */
+
+export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>> {
+  return HKT.instance({
+    ...getApply(M),
+    unit: () => tuple_(undefined, M.nat),
+    pure: (a) => tuple_(a, M.nat)
   })
 }
 
@@ -176,7 +211,7 @@ export function getMonad<M>(M: P.Monoid<M>): P.Monad<[HKT.URI<Tuple2URI>], HKT.F
   }
 
   return HKT.instance<P.Monad<[HKT.URI<Tuple2URI>], HKT.Fix<'I', M>>>({
-    ...getMonoidal(M),
+    ...getApplicative(M),
     bind_: bind_,
     bind: (f) => (ma) => bind_(ma, f)
   })

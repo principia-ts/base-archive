@@ -1,21 +1,21 @@
 import type { Alt, AltFn_ } from './Alt'
+import type { Applicative } from './Applicative'
 import type { MonadExcept } from './MonadExcept'
-import type { Monoidal } from './Monoidal'
 import type { Semigroup } from './Semigroup'
-import type { CrossWithFn_ } from './Semimonoidal'
+import type { CrossWithFn_ } from './SemimonoidalFunctor'
 import type { Erase } from './util/types'
 
+import { attemptF } from './ApplicativeExcept'
 import { flattenF } from './Bind'
 import * as E from './Either'
 import * as HKT from './HKT'
-import { attemptF } from './MonoidalExcept'
 
 export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: MonadExcept<F, C>
-): <E>(S: Semigroup<E>) => Monoidal<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
+): <E>(S: Semigroup<E>) => Applicative<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
 export function getApplicativeValidation<F>(
   F: MonadExcept<HKT.UHKT2<F>>
-): <E>(S: Semigroup<E>) => Monoidal<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
+): <E>(S: Semigroup<E>) => Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   const attempt = attemptF(F)
   return <E>(S: Semigroup<E>) => {
     const crossWith_: CrossWithFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
@@ -34,12 +34,15 @@ export function getApplicativeValidation<F>(
         )
       )
 
-    return HKT.instance<Monoidal<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
+    return HKT.instance<Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
       map_: F.map_,
       map: F.map,
       crossWith_,
       crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-      pure: F.pure
+      ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+      ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
+      pure: F.pure,
+      unit: F.unit
     })
   }
 }

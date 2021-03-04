@@ -288,7 +288,10 @@ export function match_<R, E, A, B, C>(async: Async<R, E, A>, f: (e: E) => B, g: 
   return matchM_(async, flow(f, succeed), flow(g, succeed))
 }
 
-export function match<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(async: Async<R, E, A>) => Async<R, never, B | C> {
+export function match<E, A, B, C>(
+  f: (e: E) => B,
+  g: (a: A) => C
+): <R>(async: Async<R, E, A>) => Async<R, never, B | C> {
   return (async) => match_(async, f, g)
 }
 
@@ -1151,25 +1154,54 @@ export const Functor: P.Functor<[URI], V> = HKT.instance({
   map
 })
 
-export const Semimonoidal: P.Semimonoidal<[URI], V> = HKT.instance({
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[URI], V> = HKT.instance({
   ...Functor,
   crossWith_,
   crossWith
 })
 
-export const SemimonoidalPar: P.Semimonoidal<[URI], V> = HKT.instance({
+export const SemimonoidalFunctorPar: P.SemimonoidalFunctor<[URI], V> = HKT.instance({
   ...Functor,
   crossWith_: crossWithPar_,
   crossWith: crossWithPar
 })
 
-export const Monoidal: P.Monoidal<[URI], V> = HKT.instance({
-  ...Semimonoidal,
+export const Apply = HKT.instance<P.Apply<[URI], V>>({
+  ...SemimonoidalFunctor,
+  ap_,
+  ap
+})
+
+export const ApplyPar = HKT.instance<P.Apply<[URI], V>>({
+  ...SemimonoidalFunctor,
+  ap_: apPar_,
+  ap: apPar
+})
+
+export const MonoidalFunctor: P.MonoidalFunctor<[URI], V> = HKT.instance({
+  ...SemimonoidalFunctor,
+  unit
+})
+
+export const MonoidalFunctorPar: P.MonoidalFunctor<[URI], V> = HKT.instance({
+  ...SemimonoidalFunctorPar,
+  unit
+})
+
+export const Applicative = HKT.instance<P.Applicative<[URI], V>>({
+  ...Apply,
+  unit,
+  pure
+})
+
+export const ApplicativePar = HKT.instance<P.Applicative<[URI], V>>({
+  ...ApplyPar,
+  unit,
   pure
 })
 
 export const Monad: P.Monad<[URI], V> = HKT.instance({
-  ...Monoidal,
+  ...Applicative,
   bind_,
   bind
 })

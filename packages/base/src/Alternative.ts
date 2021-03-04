@@ -1,6 +1,6 @@
 import type { Alt } from './Alt'
+import type { Applicative } from './Applicative'
 import type { Empty } from './Empty'
 import type * as HKT from './HKT'
-import type { Monoidal } from './Monoidal'
 
-export interface Alternative<F extends HKT.URIS, TC = HKT.Auto> extends Monoidal<F, TC>, Empty<F, TC>, Alt<F, TC> {}
+export interface Alternative<F extends HKT.URIS, TC = HKT.Auto> extends Applicative<F, TC>, Empty<F, TC>, Alt<F, TC> {}

@@ -94,7 +94,9 @@ export const Functor: P.Functor<[HKT.URI<WriterURI>]> = HKT.instance({
   map
 })
 
-export function getSemimonoidal<W>(S: P.Semigroup<W>): P.Semimonoidal<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
+export function getSemimonoidalFunctor<W>(
+  S: P.Semigroup<W>
+): P.SemimonoidalFunctor<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
   type V_ = HKT.Fix<'W', W>
   type URI = [HKT.URI<WriterURI>]
   const crossWith_: P.CrossWithFn_<URI, V_> = (fa, fb, f) => () => {
@@ -103,7 +105,7 @@ export function getSemimonoidal<W>(S: P.Semigroup<W>): P.Semimonoidal<[HKT.URI<W
     return [f(a, b), S.combine_(w1, w2)]
   }
 
-  return HKT.instance<P.Semimonoidal<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+  return HKT.instance<P.SemimonoidalFunctor<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
     map_,
     map,
     crossWith_,
@@ -111,10 +113,33 @@ export function getSemimonoidal<W>(S: P.Semigroup<W>): P.Semimonoidal<[HKT.URI<W
   })
 }
 
+export function getApply<W>(S: P.Semigroup<W>): P.Apply<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
+  type V_ = HKT.Fix<'W', W>
+  type URI = [HKT.URI<WriterURI>]
+  const ap_: P.ApFn_<URI, V_> = (fab, fa) => () => {
+    const [f, w1] = fab()
+    const [a, w2] = fa()
+    return [f(a), S.combine_(w1, w2)]
+  }
+  return HKT.instance<P.Apply<URI, V_>>({
+    ...getSemimonoidalFunctor(S),
+    ap_,
+    ap: (fa) => (fab) => ap_(fab, fa)
+  })
+}
+
+export function getMonoidalFunctor<W>(M: P.Monoid<W>) {
+  return HKT.instance<P.MonoidalFunctor<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+    ...getSemimonoidalFunctor(M),
+    unit: () => () => [undefined, M.nat]
+  })
+}
+
 export function getApplicative<W>(M: P.Monoid<W>) {
-  return HKT.instance<P.Monoidal<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
-    ...getSemimonoidal(M),
-    pure: (a) => () => [a, M.nat]
+  return HKT.instance<P.Applicative<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+    ...getApply(M),
+    pure: (a) => () => [a, M.nat],
+    unit: () => () => [undefined, M.nat]
   })
 }
 

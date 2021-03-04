@@ -211,10 +211,13 @@ export const MonadEnv: P.MonadEnv<[HKT.URI<ReaderURI>], V> = HKT.instance({
   map,
   crossWith_,
   crossWith,
+  ap_,
+  ap,
   asks,
   giveAll,
   giveAll_,
   pure,
+  unit,
   bind_,
   bind
 })

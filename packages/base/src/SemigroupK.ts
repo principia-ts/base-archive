@@ -327,7 +327,7 @@ export interface CombineKEvalFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface CombineEvalKFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface CombineKEvalFn<F extends HKT.URIS, C = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A>(
     y: Eval<HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A>>
   ): <N extends string, K, Q, W, X, I, S, R, E>(

@@ -13,7 +13,7 @@ export function getReaderT<M>(M: P.Monad<HKT.UHKT<M>>): ReaderT<HKT.UHKT<M>> {
   const bind_: ReaderT<HKT.UHKT<M>>['bind_'] = (ma, f) => (r) => M.bind_(ma(r), (a) => f(a)(r))
 
   return HKT.instance<ReaderT<HKT.UHKT<M>>>({
-    ...P.getMonoidalComposition(R.MonadEnv, M),
+    ...P.getApplicativeComposition(R.MonadEnv, M),
     bind_,
     bind: (f) => (ma) => bind_(ma, f),
     giveAll_: R.giveAll_,

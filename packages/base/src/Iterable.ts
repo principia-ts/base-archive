@@ -563,19 +563,31 @@ export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<Iterabl
   imap
 })
 
-export const Semimonoidal = HKT.instance<P.Semimonoidal<[HKT.URI<IterableURI>]>>({
+export const SemimonoidalFunctor = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<IterableURI>]>>({
   ...Functor,
   crossWith_,
   crossWith
 })
 
-export const Monoidal = HKT.instance<P.Monoidal<[HKT.URI<IterableURI>]>>({
-  ...Semimonoidal,
+export const Apply = HKT.instance<P.Apply<[HKT.URI<IterableURI>]>>({
+  ...SemimonoidalFunctor,
+  ap_,
+  ap
+})
+
+export const MonoidalFunctor = HKT.instance<P.MonoidalFunctor<[HKT.URI<IterableURI>]>>({
+  ...SemimonoidalFunctor,
+  unit
+})
+
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IterableURI>]>>({
+  ...Apply,
+  unit,
   pure
 })
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<IterableURI>]>>({
-  ...Monoidal,
+  ...Applicative,
   bind_,
   bind
 })

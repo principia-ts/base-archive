@@ -34,17 +34,38 @@ export function make<E, A = never>(e: E): Const<E, A> {
  */
 
 /**
- * @category Apply
+ * @category Instances
  * @since 1.0.0
  */
-export function getApply<E>(S: P.Semigroup<E>) {
+export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>) {
   type CE = HKT.Fix<'E', E>
-  const crossWith_: P.Semimonoidal<[HKT.URI<ConstURI>], CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
-  return HKT.instance<P.Semimonoidal<[HKT.URI<ConstURI>], CE>>({
+  const crossWith_: P.SemimonoidalFunctor<[HKT.URI<ConstURI>], CE>['crossWith_'] = (fa, fb, _) =>
+    make(S.combine_(fa, fb))
+  return HKT.instance<P.SemimonoidalFunctor<[HKT.URI<ConstURI>], CE>>({
     map_,
     map,
     crossWith_,
     crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
+  })
+}
+
+/*
+ * -------------------------------------------
+ * Apply
+ * -------------------------------------------
+ */
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export function getApply<E>(S: P.Semigroup<E>) {
+  type CE = HKT.Fix<'E', E>
+  const ap_: P.Apply<[HKT.URI<ConstURI>], CE>['ap_'] = (fab, fa) => make(S.combine_(fab, fa))
+  return HKT.instance<P.Apply<[HKT.URI<ConstURI>], CE>>({
+    ...getSemimonoidalFunctor(S),
+    ap_,
+    ap: (fa) => (fab) => ap_(fab, fa)
   })
 }
 
@@ -58,9 +79,27 @@ export function getApply<E>(S: P.Semigroup<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicative<E>(M: P.Monoid<E>): P.Monoidal<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
-  return HKT.instance<P.Monoidal<[HKT.URI<ConstURI>], HKT.Fix<'E', E>>>({
+export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
+  return HKT.instance<P.MonoidalFunctor<[HKT.URI<ConstURI>], HKT.Fix<'E', E>>>({
+    ...getSemimonoidalFunctor(M),
+    unit: () => make(undefined)
+  })
+}
+
+/*
+ * -------------------------------------------
+ * Applicative
+ * -------------------------------------------
+ */
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
+  return HKT.instance<P.Applicative<[HKT.URI<ConstURI>], HKT.Fix<'E', E>>>({
     ...getApply(M),
+    unit: () => make(undefined),
     pure: () => make(M.nat)
   })
 }

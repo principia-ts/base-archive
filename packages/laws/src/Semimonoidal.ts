@@ -8,7 +8,7 @@ import { apF_ } from '@principia/base/typeclass'
 import { isPromise } from './utils'
 
 function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
-  F: P.Semimonoidal<F, TC>,
+  F: P.SemimonoidalFunctor<F, TC>,
   S: MaybeAsyncEq<
     HKT.Kind<
       F,
@@ -61,7 +61,7 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
   fbc: HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, (b: B) => C>
 ) => Promise<boolean>
 function AssociativeCompositionLaw<F, A, B, C>(
-  F: P.Semimonoidal<HKT.UHKT<F>>,
+  F: P.SemimonoidalFunctor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, C>>
 ): (fa: HKT.HKT<F, A>, fab: HKT.HKT<F, MorphismN<[A], B>>, fbc: HKT.HKT<F, MorphismN<[B], C>>) => Promise<boolean> {
   const ap_ = apF_(F)

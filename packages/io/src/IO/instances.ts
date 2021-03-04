@@ -5,44 +5,68 @@ import type * as P from '@principia/base/typeclass'
 import * as HKT from '@principia/base/HKT'
 import { mapNF, sequenceSF } from '@principia/base/typeclass'
 
-import { crossWithPar, crossWithPar_ } from './combinators'
-import { bind, bind_, catchAll, catchAll_, crossWith, crossWith_, fail, map, map_, pure } from './core'
+import { apPar, apPar_, crossWithPar, crossWithPar_ } from './combinators'
+import { ap, ap_, bind, bind_, catchAll, catchAll_, crossWith, crossWith_, fail, map, map_, pure, unit } from './core'
 
 export const Functor: P.Functor<[HKT.URI<IOURI>], V> = HKT.instance({
   map_,
   map
 })
 
-export const Semimonoidal = HKT.instance<P.Semimonoidal<[HKT.URI<IOURI>], V>>({
+export const SemimonoidalFunctor = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<IOURI>], V>>({
   ...Functor,
   crossWith_,
   crossWith
 })
 
-export const SemimonoidalPar = HKT.instance<P.Semimonoidal<[HKT.URI<IOURI>], V>>({
+export const SemimonoidalFunctorPar = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<IOURI>], V>>({
   ...Functor,
   crossWith_: crossWithPar_,
   crossWith: crossWithPar
 })
 
-export const mapN    = mapNF(Semimonoidal)
-export const mapNPar = mapNF(SemimonoidalPar)
+export const mapN    = mapNF(SemimonoidalFunctor)
+export const mapNPar = mapNF(SemimonoidalFunctorPar)
 
-export const sequenceS    = sequenceSF(Semimonoidal)
-export const sequenceSPar = sequenceSF(SemimonoidalPar)
+export const sequenceS    = sequenceSF(SemimonoidalFunctor)
+export const sequenceSPar = sequenceSF(SemimonoidalFunctorPar)
 
-export const Monoidal = HKT.instance<P.Monoidal<[HKT.URI<IOURI>], V>>({
-  ...Semimonoidal,
+export const Apply = HKT.instance<P.Apply<[HKT.URI<IOURI>], V>>({
+  ...SemimonoidalFunctor,
+  ap_,
+  ap
+})
+
+export const ApplyPar = HKT.instance<P.Apply<[HKT.URI<IOURI>], V>>({
+  ...SemimonoidalFunctorPar,
+  ap_: apPar_,
+  ap: apPar
+})
+
+export const MonoidalFunctor = HKT.instance<P.MonoidalFunctor<[HKT.URI<IOURI>], V>>({
+  ...SemimonoidalFunctor,
+  unit
+})
+
+export const MonoidalFunctorPar = HKT.instance<P.MonoidalFunctor<[HKT.URI<IOURI>], V>>({
+  ...SemimonoidalFunctorPar,
+  unit
+})
+
+export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IOURI>], V>>({
+  ...Apply,
+  unit,
   pure
 })
 
-export const MonoidalPar = HKT.instance<P.Monoidal<[HKT.URI<IOURI>], V>>({
-  ...SemimonoidalPar,
+export const ApplicativePar = HKT.instance<P.Applicative<[HKT.URI<IOURI>], V>>({
+  ...ApplyPar,
+  unit,
   pure
 })
 
 export const Monad = HKT.instance<P.Monad<[HKT.URI<IOURI>], V>>({
-  ...Monoidal,
+  ...Applicative,
   bind_,
   bind
 })

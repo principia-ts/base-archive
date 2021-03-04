@@ -515,10 +515,7 @@ export function cross<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eithe
  * @since 1.0.0
  */
 export function crossWith_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: A, b: B) => C): Either<E | G, C> {
-  return ap_(
-    map_(fa, (a) => (b: B) => f(a, b)),
-    fb
-  )
+  return isLeft(fa) ? fa : isLeft(fb) ? fb : Right(f(fa.right, fb.right))
 }
 
 /**
@@ -1085,21 +1082,39 @@ export const Alt: P.Alt<[HKT.URI<EitherURI>], V> = HKT.instance({
   alt
 })
 
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<EitherURI>], V> = HKT.instance({
+  ...Functor,
+  crossWith_,
+  crossWith
+})
+
+export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
+export const mapN      = P.mapNF(SemimonoidalFunctor)
+export const mapN_     = P.mapNF_(SemimonoidalFunctor)
+export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
+
+export const Apply: P.Apply<[HKT.URI<EitherURI>], V> = HKT.instance({
+  ...SemimonoidalFunctor,
+  ap_,
+  ap
+})
+
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const Monoidal: P.Monoidal<[HKT.URI<EitherURI>], V> = HKT.instance({
+export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<EitherURI>], V> = HKT.instance({
   ...Functor,
   crossWith_,
   crossWith,
-  pure
+  unit
 })
 
-export const sequenceT = P.sequenceTF(Monoidal)
-export const mapN      = P.mapNF(Monoidal)
-export const mapN_     = P.mapNF_(Monoidal)
-export const sequenceS = P.sequenceSF(Monoidal)
+export const Applicative: P.Applicative<[HKT.URI<EitherURI>], V> = HKT.instance({
+  ...Apply,
+  unit,
+  pure
+})
 
 /**
  * @category Instances
@@ -1114,7 +1129,7 @@ export const Fail: P.Fail<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @since 1.0.0
  */
 export const Monad: P.Monad<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...Monoidal,
+  ...Applicative,
   bind_,
   bind
 })
@@ -1123,8 +1138,8 @@ export const Monad: P.Monad<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const MonoidalExcept: P.MonoidalExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...Monoidal,
+export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
+  ...Applicative,
   ...Fail,
   catchAll_,
   catchAll
@@ -1135,7 +1150,7 @@ export const MonoidalExcept: P.MonoidalExcept<[HKT.URI<EitherURI>], V> = HKT.ins
  * @since 1.0.0
  */
 export const MonadExcept: P.MonadExcept<[HKT.URI<EitherURI>], V> = HKT.instance({
-  ...MonoidalExcept,
+  ...ApplicativeExcept,
   ...Monad
 })
 
@@ -1241,10 +1256,34 @@ export function getMonoidalValidation<E>(S: P.Semigroup<E>) {
   const crossWithV_: P.CrossWithFn_<[HKT.URI<EitherURI>], FixE> = (fa, fb, f) =>
     isLeft(fa) ? (isLeft(fb) ? Left(S.combine_(fa.left, fb.left)) : fa) : isLeft(fb) ? fb : Right(f(fa.right, fb.right))
 
-  return HKT.instance<P.Monoidal<[HKT.URI<EitherURI>], FixE>>({
+  return HKT.instance<P.MonoidalFunctor<[HKT.URI<EitherURI>], FixE>>({
     ...Functor,
     crossWith_: crossWithV_,
     crossWith: (fb, f) => (fa) => crossWithV_(fa, fb, f),
+    unit
+  })
+}
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export function getApplicativeValidation<E>(S: P.Semigroup<E>) {
+  type FixE = V & HKT.Fix<'E', E>
+
+  const apV_: P.ApFn_<[HKT.URI<EitherURI>], FixE> = (fab, fa) =>
+    isLeft(fab)
+      ? isLeft(fa)
+        ? Left(S.combine_(fab.left, fa.left))
+        : fab
+      : isLeft(fa)
+      ? fa
+      : Right(fab.right(fa.right))
+
+  return HKT.instance<P.Applicative<[HKT.URI<EitherURI>], FixE>>({
+    ...getMonoidalValidation(S),
+    ap_: apV_,
+    ap: (fa) => (fab) => apV_(fab, fa),
     pure
   })
 }

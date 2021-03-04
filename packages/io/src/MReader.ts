@@ -44,11 +44,19 @@ export function runReader<R>(r?: R): <A>(ra: MReader<R, A>) => A {
 
 /*
  * -------------------------------------------
- * Monoidal
+ * Applicative
  * -------------------------------------------
  */
 
 export const pure: <A>(a: A) => MReader<unknown, A> = Mu.pure
+
+/*
+ * -------------------------------------------
+ * Monoidal
+ * -------------------------------------------
+ */
+
+export const unit: () => MReader<unknown, void> = Mu.unit
 
 /*
  * -------------------------------------------
@@ -72,6 +80,12 @@ export const crossWith: <A, R1, B, C>(
   fb: MReader<R1, B>,
   f: (a: A, b: B) => C
 ) => <R>(fa: MReader<R, A>) => MReader<R & R1, C> = Mu.crossWith
+
+/*
+ * -------------------------------------------
+ * Apply
+ * -------------------------------------------
+ */
 
 export const ap_: <R, A, R1, B>(fab: MReader<R1, (a: A) => B>, fa: MReader<R, A>) => MReader<R & R1, B> = Mu.ap_
 
@@ -152,9 +166,12 @@ export const MonadEnv = HKT.instance<P.MonadEnv<[HKT.URI<MReaderURI>], V>>({
   map,
   crossWith_,
   crossWith,
+  ap_,
+  ap,
   asks,
   giveAll_,
   giveAll,
+  unit,
   pure,
   bind_,
   bind

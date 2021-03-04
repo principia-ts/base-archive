@@ -1,14 +1,14 @@
+import type { Applicative } from './Applicative'
 import type { Either } from './Either'
 import type { Fail } from './Fail'
 import type * as HKT from './HKT'
-import type { Monoidal } from './Monoidal'
 import type { Option } from './Option'
 
 import { flow, pipe } from './Function'
 import * as E from './internal/either'
 import * as O from './internal/option'
 
-export interface MonoidalExcept<F extends HKT.URIS, C = HKT.Auto> extends Monoidal<F, C>, Fail<F, C> {
+export interface ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto> extends Applicative<F, C>, Fail<F, C> {
   readonly catchAll_: CatchAllFn_<F, C>
   readonly catchAll: CatchAllFn<F, C>
 }
@@ -119,7 +119,7 @@ export interface CatchSomeFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function catchSomeF_<F extends HKT.URIS, C = HKT.Auto>(F: MonoidalExcept<F, C>): CatchSomeFn_<F, C> {
+export function catchSomeF_<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExcept<F, C>): CatchSomeFn_<F, C> {
   return (fa, f) =>
     pipe(
       fa,
@@ -166,7 +166,7 @@ export interface CatchSomeFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function catchSomeF<F extends HKT.URIS, C = HKT.Auto>(F: MonoidalExcept<F, C>): CatchSomeFn<F, C> {
+export function catchSomeF<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExcept<F, C>): CatchSomeFn<F, C> {
   return (f) => (fa) =>
     pipe(
       fa,
@@ -196,6 +196,6 @@ export interface AttemptFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function attemptF<F extends HKT.URIS, C = HKT.Auto>(F: MonoidalExcept<F, C>): AttemptFn<F, C> {
+export function attemptF<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExcept<F, C>): AttemptFn<F, C> {
   return (fa) => pipe(fa, F.map(E.Right), F.catchAll(flow(E.Left, F.pure)))
 }
