@@ -1,4 +1,3 @@
-import type { Functor, Functor2 } from './Functor'
 import type { SemimonoidalFunctor, SemimonoidalFunctor2 } from './SemimonoidalFunctor'
 
 import { pipe } from './Function'
@@ -6,7 +5,7 @@ import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 
 /**
- * A lax semimonoidal endofunctor with tensorial strength
+ * A lax semimonoidal endofunctor
  *
  * `Apply` is isomorphic to `SemimonoidalFunctor`
  */

@@ -462,7 +462,7 @@ export function cross<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => I
  * @since 1.0.0
  */
 export function ap_<Q, D, A, B, R, E>(fab: IO<Q, D, (a: A) => B>, fa: IO<R, E, A>): IO<Q & R, D | E, B> {
-  return crossWith_(fab, fa, (f, a) => f(a))
+  return bind_(fab, (f) => map_(fa, f))
 }
 
 /**
