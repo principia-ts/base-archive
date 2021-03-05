@@ -2,12 +2,12 @@ import type { Either } from './Either'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { IterableURI } from './Modules'
 import type { Option } from './Option'
-import type * as P from './typeclass'
 
 import * as A from './Array'
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as O from './Option'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -553,9 +553,8 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<IterableURI>]> = HKT.instance({
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<IterableURI>]> = P.Functor({
+  map_
 })
 
 export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<IterableURI>]>>({
@@ -563,33 +562,44 @@ export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<Iterabl
   imap
 })
 
-export const SemimonoidalFunctor = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<IterableURI>]>>({
-  ...Functor,
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<IterableURI>]> = P.SemimonoidalFunctor({
+  map_,
   crossWith_,
-  crossWith
+  cross_
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<IterableURI>]>>({
-  ...SemimonoidalFunctor,
-  ap_,
-  ap
+export const Apply: P.Apply<[HKT.URI<IterableURI>]> = P.Apply({
+  map_,
+  crossWith_,
+  cross_,
+  ap_
 })
 
-export const MonoidalFunctor = HKT.instance<P.MonoidalFunctor<[HKT.URI<IterableURI>]>>({
-  ...SemimonoidalFunctor,
+export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<IterableURI>]> = P.MonoidalFunctor({
+  map_,
+  crossWith_,
+  cross_,
   unit
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<IterableURI>]>>({
-  ...Apply,
+export const Applicative: P.Applicative<[HKT.URI<IterableURI>]> = P.Applicative({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
   unit,
   pure
 })
 
-export const Monad = HKT.instance<P.Monad<[HKT.URI<IterableURI>]>>({
-  ...Applicative,
+export const Monad: P.Monad<[HKT.URI<IterableURI>]> = P.Monad({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
   bind_,
-  bind
+  flatten
 })
 
 export const Filterable = HKT.instance<P.Filterable<[HKT.URI<IterableURI>]>>({

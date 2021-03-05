@@ -2,10 +2,10 @@ import type { Either } from './Either'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { AsyncIterableURI } from './Modules'
 import type { Option } from './Option'
-import type * as P from './typeclass'
 
 import { identity, tuple } from './Function'
 import * as HKT from './HKT'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -565,9 +565,8 @@ export async function toArray<A>(fa: AsyncIterable<A>): Promise<ReadonlyArray<A>
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<AsyncIterableURI>]> = HKT.instance({
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<AsyncIterableURI>]> = P.Functor({
+  map_
 })
 
 export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<AsyncIterableURI>]>>({
@@ -575,33 +574,44 @@ export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<AsyncIt
   imap
 })
 
-export const SemimonoidalFunctor = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<AsyncIterableURI>]>>({
-  ...Functor,
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<AsyncIterableURI>]> = P.SemimonoidalFunctor({
+  map_,
   crossWith_,
-  crossWith
+  cross_
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<AsyncIterableURI>]>>({
-  ...SemimonoidalFunctor,
-  ap_,
-  ap
+export const Apply: P.Apply<[HKT.URI<AsyncIterableURI>]> = P.Apply({
+  map_,
+  crossWith_,
+  cross_,
+  ap_
 })
 
-export const MonoidalFunctor = HKT.instance<P.MonoidalFunctor<[HKT.URI<AsyncIterableURI>]>>({
-  ...SemimonoidalFunctor,
+export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<AsyncIterableURI>]> = P.MonoidalFunctor({
+  map_,
+  crossWith_,
+  cross_,
   unit
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<AsyncIterableURI>]>>({
-  ...Apply,
+export const Applicative: P.Applicative<[HKT.URI<AsyncIterableURI>]> = P.Applicative({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
   unit,
   pure
 })
 
-export const Monad = HKT.instance<P.Monad<[HKT.URI<AsyncIterableURI>]>>({
-  ...Applicative,
+export const Monad: P.Monad<[HKT.URI<AsyncIterableURI>]> = P.Monad({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
   bind_,
-  bind
+  flatten
 })
 
 export const Filterable = HKT.instance<P.Filterable<[HKT.URI<AsyncIterableURI>]>>({

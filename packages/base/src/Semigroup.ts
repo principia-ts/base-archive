@@ -1,7 +1,7 @@
 import type { Magma } from './Magma'
 import type { Ord } from './Ord'
 
-import { max_, min_ } from './Ord'
+import { max_, min_ } from './internal/ord'
 
 /**
  * `Semigroup` defines an associative binary operator `combine` on given type `A`.

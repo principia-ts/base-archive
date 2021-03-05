@@ -1,8 +1,8 @@
 import type { StateInURI, StateOutURI } from './Modules'
-import type * as P from '@principia/base/typeclass'
 import type { Erase } from '@principia/base/util/types'
 
 import * as HKT from '@principia/base/HKT'
+import * as P from '@principia/base/typeclass'
 
 /*
  * -------------------------------------------
@@ -29,16 +29,14 @@ export function getStateT<F>(M: P.Monad<HKT.UHKT<F>>): StateT<HKT.UHKT<F>> {
   const bind_: StateT<HKT.UHKT<F>>['bind_'] = (ma, f) => (s) => M.bind_(ma(s), ([a, s]) => f(a)(s))
 
   return HKT.instance<StateT<HKT.UHKT<F>>>({
-    map_,
-    map: (f) => (fa) => map_(fa, f),
-    crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
-    unit: () => (s) => M.pure([undefined, s]),
-    pure: (a) => (s) => M.pure([a, s]),
-    bind_,
-    bind: (f) => (ma) => bind_(ma, f),
+    ...P.Monad({
+      map_,
+      crossWith_,
+      ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
+      unit: () => <S>(s: S) => M.pure([undefined, s] as [void, S]),
+      pure: <A>(a: A) => <S>(s: S) => M.pure([a, s] as [A, S]),
+      bind_
+    }),
     get: () => (s) => M.pure([s, s]),
     put: (s) => () => M.pure([undefined, s]),
     modify: (f) => (s) => M.pure([undefined, f(s)]),

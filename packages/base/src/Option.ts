@@ -884,66 +884,87 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  */
 
-export const Align: P.Align<[HKT.URI<OptionURI>]> = HKT.instance({
+export const Align: P.Align<[HKT.URI<OptionURI>]> = P.Align({
+  map_,
   alignWith_,
-  alignWith,
   nil: None
 })
 
-export const Functor: P.Functor<[HKT.URI<OptionURI>]> = HKT.instance({
+export const Functor: P.Functor<[HKT.URI<OptionURI>]> = P.Functor({
+  map_
+})
+
+export const Alt: P.Alt<[HKT.URI<OptionURI>]> = P.Alt({
   map_,
-  map
+  alt_
 })
 
-export const Alt: P.Alt<[HKT.URI<OptionURI>]> = HKT.instance({
-  ...Functor,
-  alt_,
-  alt
-})
-
-export const SemimonoidalFunctor = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<OptionURI>]>>({
-  ...Functor,
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<OptionURI>]> = P.SemimonoidalFunctor({
+  map_,
   crossWith_,
-  crossWith
+  cross_
 })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<OptionURI>]>>({
-  ...SemimonoidalFunctor,
-  ap_,
-  ap
+export const Apply: P.Apply<[HKT.URI<OptionURI>]> = P.Apply({
+  map_,
+  crossWith_,
+  cross_,
+  ap_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<OptionURI>]> = HKT.instance({
-  ...SemimonoidalFunctor,
+export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<OptionURI>]> = P.MonoidalFunctor({
+  map_,
+  crossWith_,
+  cross_,
   unit
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<OptionURI>]>>({
-  ...Apply,
+export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = P.Applicative({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
   unit,
   pure
 })
 
-export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
-  ...Applicative,
+export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = P.ApplicativeExcept({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
   catchAll_,
-  catchAll,
   fail
 })
 
-export const Monad: P.Monad<[HKT.URI<OptionURI>]> = HKT.instance({
-  ...Applicative,
+export const Monad: P.Monad<[HKT.URI<OptionURI>]> = P.Monad({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
   bind_,
-  bind
+  flatten
 })
 
-export const MonadExcept: P.MonadExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = HKT.instance({
-  ...ApplicativeExcept,
-  ...Monad
+export const MonadExcept: P.MonadExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = P.MonadExcept({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
+  bind_,
+  flatten,
+  catchAll_,
+  fail
 })
 
 export const Do = P.deriveDo(Monad)
@@ -995,11 +1016,9 @@ export const Foldable: P.Foldable<[HKT.URI<OptionURI>]> = HKT.instance({
   foldMap
 })
 
-export const Traversable: P.Traversable<[HKT.URI<OptionURI>]> = HKT.instance({
-  ...Functor,
-  traverse_,
-  traverse,
-  sequence
+export const Traversable: P.Traversable<[HKT.URI<OptionURI>]> = P.Traversable({
+  map_,
+  traverse_
 })
 
 export const Witherable: P.Witherable<[HKT.URI<OptionURI>]> = HKT.instance({

@@ -167,22 +167,23 @@ export function getValidation<M>(
       P.Bifunctor<HKT.UHKT2<M>, HKT.Auto> &
       P.Fail<HKT.UHKT2<M>, HKT.Auto>
   >({
-    map_: M.map_,
-    map: M.map,
-    crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-    ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-    ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
-    mapLeft_: M.mapLeft_,
-    mapLeft: M.mapLeft,
-    bimap_: M.bimap_,
-    bimap: M.bimap,
-    bind_: M.bind_,
-    bind: M.bind,
-    fail: M.fail,
-    alt_,
-    alt: (that) => (me) => alt_(me, that),
-    unit: M.unit,
-    pure: M.pure
+    ...P.Monad({
+      map_: M.map_,
+      crossWith_,
+      bind_: M.bind_,
+      flatten: M.flatten,
+      unit: M.unit,
+      pure: M.pure
+    }),
+    ...P.Alt({
+      map_: M.map_,
+      alt_
+    }),
+    ...P.Bifunctor({
+      map_: M.map_,
+      mapLeft_: M.mapLeft_,
+      bimap_: M.bimap_
+    }),
+    fail: M.fail
   })
 }

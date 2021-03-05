@@ -13,8 +13,6 @@ import type { Unfoldable } from './Unfoldable'
 import type { WiltFn, WiltFn_, WitherFn, WitherFn_ } from './Witherable'
 import type { WiltWithIndexFn, WiltWithIndexFn_, WitherWithIndexFn, WitherWithIndexFn_ } from './WitherableWithIndex'
 
-import { string } from 'yargs'
-
 import { makeEq } from './Eq'
 import { identity, pipe, tuple } from './Function'
 import * as G from './Guard'
@@ -965,8 +963,8 @@ export function getGuard<A>(codomain: G.Guard<unknown, A>): G.Guard<unknown, Rea
   return pipe(
     GuardUnknownRecord,
     G.refine((r): r is ReadonlyRecord<string, A> => {
-      for(const k in r) {
-        if(!codomain.is(r[k])) {
+      for (const k in r) {
+        if (!codomain.is(r[k])) {
           return false
         }
       }

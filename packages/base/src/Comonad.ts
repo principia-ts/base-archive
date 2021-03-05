@@ -1,8 +1,21 @@
-import type { Extend } from './Extend'
-import type * as HKT from './HKT'
+import type { ExtendMin } from './Extend'
+
+import { Extend } from './Extend'
+import * as HKT from './HKT'
 
 export interface Comonad<F extends HKT.URIS, C = HKT.Auto> extends Extend<F, C> {
   readonly extract: ExtractFn<F, C>
+}
+
+export type ComonadMin<F extends HKT.URIS, C = HKT.Auto> = ExtendMin<F, C> & {
+  readonly extract: ExtractFn<F, C>
+}
+
+export function Comonad<F extends HKT.URIS, C = HKT.Auto>(F: ComonadMin<F, C>): Comonad<F, C> {
+  return HKT.instance({
+    ...Extend(F),
+    extract: F.extract
+  })
 }
 
 export interface ExtractFn<F extends HKT.URIS, C = HKT.Auto> {

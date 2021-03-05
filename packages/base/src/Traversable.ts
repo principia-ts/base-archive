@@ -1,14 +1,34 @@
 import type { Applicative } from './Applicative'
-import type { Functor, Functor2 } from './Functor'
+import type { Functor2, FunctorMin } from './Functor'
 
-import { flow } from './Function'
-import { getFunctorComposition } from './Functor'
+import { flow, identity } from './Function'
+import { Functor, getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 
 export interface Traversable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly traverse_: TraverseFn_<F, C>
   readonly traverse: TraverseFn<F, C>
   readonly sequence: SequenceFn<F, C>
+}
+
+export type TraversableMin<F extends HKT.URIS, C = HKT.Auto> = FunctorMin<F, C> & {
+  readonly traverse_: TraverseFn_<F, C>
+}
+
+export function Traversable<F extends HKT.URIS, C = HKT.Auto>(F: TraversableMin<F, C>): Traversable<F, C> {
+  const sequence: SequenceFn<F, C> = (A) => {
+    const traverseA_ = F.traverse_(A)
+    return (ta) => traverseA_(ta, identity)
+  }
+  return HKT.instance<Traversable<F, C>>({
+    ...Functor(F),
+    traverse_: F.traverse_,
+    traverse: (A) => {
+      const traverseA_ = F.traverse_(A)
+      return (f) => (ta) => traverseA_(ta, f)
+    },
+    sequence
+  })
 }
 
 export interface TraversableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>

@@ -13,9 +13,7 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
     )
 
   return HKT.instance<OptionT<HKT.UHKT<M>>>({
-    ...P.getApplicativeComposition(M, O.Applicative),
-    bind_,
-    bind: (f) => (ma) => bind_(ma, f),
+    ...P.Monad({ ...P.getApplicativeComposition(M, O.Applicative), bind_ }),
     none: () => M.pure(O.None()),
     some: (a) => M.pure(O.Some(a)),
     someM: (ma) => M.map_(ma, O.Some),

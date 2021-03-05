@@ -4,13 +4,13 @@
  * -------------------------------------------
  */
 
-import type * as P from './typeclass'
+import type * as HKT from './HKT'
 import type { Stack } from './util/support/Stack'
 
 import { identity, tuple } from './Function'
-import * as HKT from './HKT'
 import { EvalURI } from './Modules'
 import * as O from './Option'
+import * as P from './typeclass'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 
@@ -394,38 +394,45 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<EvalURI>]> = HKT.instance({
+export const Functor: P.Functor<[HKT.URI<EvalURI>]> = P.Functor({
+  map_
+})
+
+export const Semimonoidal: P.SemimonoidalFunctor<[HKT.URI<EvalURI>]> = P.SemimonoidalFunctor({
   map_,
-  map
-})
-
-export const Semimonoidal = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<EvalURI>]>>({
-  ...Functor,
   crossWith_,
-  crossWith
+  cross_
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<EvalURI>]>>({
-  ...Semimonoidal,
-  ap_,
-  ap
+export const Apply: P.Apply<[HKT.URI<EvalURI>]> = P.Apply({
+  map_,
+  crossWith_,
+  cross_,
+  ap_
 })
 
-export const Monoidal = HKT.instance<P.MonoidalFunctor<[HKT.URI<EvalURI>]>>({
-  ...Semimonoidal,
+export const Monoidal: P.MonoidalFunctor<[HKT.URI<EvalURI>]> = P.MonoidalFunctor({
+  map_,
+  crossWith_,
+  cross_,
   unit
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<EvalURI>]>>({
-  ...Apply,
+export const Applicative: P.Applicative<[HKT.URI<EvalURI>]> = P.Applicative({
+  map_,
+  crossWith_,
+  cross_,
   unit,
   pure
 })
 
-export const Monad = HKT.instance<P.Monad<[HKT.URI<EvalURI>]>>({
-  ...Applicative,
-  bind_,
-  bind
+export const Monad: P.Monad<[HKT.URI<EvalURI>]> = P.Monad({
+  map_,
+  crossWith_,
+  cross_,
+  unit,
+  pure,
+  bind_
 })
 
 export class GenEval<A> {

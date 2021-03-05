@@ -4,6 +4,10 @@ export interface Pure<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly pure: PureFn<F, C>
 }
 
+export type PureMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly pure: PureFn<F, C>
+}
+
 export interface Pure2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
   readonly pure: PureFn2<F, G, CF, CG>

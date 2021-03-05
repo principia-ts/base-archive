@@ -1,4 +1,5 @@
 import type { Has, Region, Tag } from '@principia/base/Has'
+import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 import type { Stack } from '@principia/base/util/support/Stack'
 import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
@@ -9,7 +10,6 @@ import { NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe, tuple } from '@principia/base/Function'
 import { genF, GenHKT } from '@principia/base/Gen'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
-import * as HKT from '@principia/base/HKT'
 import { isOption } from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as P from '@principia/base/typeclass'
@@ -1149,61 +1149,77 @@ export function runAsyncEnv<R, E, A>(
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[URI], V> = HKT.instance({
+export const Functor: P.Functor<[URI], V> = P.Functor({
+  map_
+})
+
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[URI], V> = P.SemimonoidalFunctor({
   map_,
-  map
-})
-
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[URI], V> = HKT.instance({
-  ...Functor,
   crossWith_,
-  crossWith
+  cross_
 })
 
-export const SemimonoidalFunctorPar: P.SemimonoidalFunctor<[URI], V> = HKT.instance({
-  ...Functor,
+export const SemimonoidalFunctorPar: P.SemimonoidalFunctor<[URI], V> = P.SemimonoidalFunctor({
+  map_,
   crossWith_: crossWithPar_,
-  crossWith: crossWithPar
+  cross_: crossPar_
 })
 
-export const Apply = HKT.instance<P.Apply<[URI], V>>({
-  ...SemimonoidalFunctor,
+export const Apply: P.Apply<[URI], V> = P.Apply({
+  map_,
+  crossWith_,
+  cross_,
+  ap_
+})
+
+export const ApplyPar: P.Apply<[URI], V> = P.Apply({
+  map_,
+  crossWith_: crossWithPar_,
+  cross_: crossPar_,
+  ap_: apPar_
+})
+
+export const MonoidalFunctor: P.MonoidalFunctor<[URI], V> = P.MonoidalFunctor({
+  map_,
+  crossWith_,
+  cross_,
+  unit
+})
+
+export const MonoidalFunctorPar: P.MonoidalFunctor<[URI], V> = P.MonoidalFunctor({
+  map_,
+  crossWith_: crossWithPar_,
+  cross_: crossPar_,
+  unit
+})
+
+export const Applicative: P.Applicative<[URI], V> = P.Applicative({
+  map_,
+  crossWith_,
+  cross_,
   ap_,
-  ap
+  unit,
+  pure
 })
 
-export const ApplyPar = HKT.instance<P.Apply<[URI], V>>({
-  ...SemimonoidalFunctor,
+export const ApplicativePar: P.Applicative<[URI], V> = P.Applicative({
+  map_,
+  crossWith_: crossWithPar_,
+  cross_: crossPar_,
   ap_: apPar_,
-  ap: apPar
-})
-
-export const MonoidalFunctor: P.MonoidalFunctor<[URI], V> = HKT.instance({
-  ...SemimonoidalFunctor,
-  unit
-})
-
-export const MonoidalFunctorPar: P.MonoidalFunctor<[URI], V> = HKT.instance({
-  ...SemimonoidalFunctorPar,
-  unit
-})
-
-export const Applicative = HKT.instance<P.Applicative<[URI], V>>({
-  ...Apply,
   unit,
   pure
 })
 
-export const ApplicativePar = HKT.instance<P.Applicative<[URI], V>>({
-  ...ApplyPar,
+export const Monad: P.Monad<[URI], V> = P.Monad({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
   unit,
-  pure
-})
-
-export const Monad: P.Monad<[URI], V> = HKT.instance({
-  ...Applicative,
+  pure,
   bind_,
-  bind
+  flatten
 })
 
 export const Do: P.Do<[URI], V> = P.deriveDo(Monad)

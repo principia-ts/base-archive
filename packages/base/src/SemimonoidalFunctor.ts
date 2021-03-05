@@ -1,15 +1,52 @@
 import type { ApFn, ApFn_ } from './Apply'
-import type { Functor, Functor2 } from './Functor'
-import type { CrossFn, CrossFn_ } from './Semimonoidal'
+import type { Functor2, FunctorMin } from './Functor'
+import type { Semimonoidal, SemimonoidalMin } from './Semimonoidal'
 import type { EnforceNonEmptyRecord } from './util/types'
 
 import { tuple } from './Function'
-import { getFunctorComposition } from './Functor'
+import { Functor, getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 
-export interface SemimonoidalFunctor<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
+export interface SemimonoidalFunctor<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Semimonoidal<F, C> {
   readonly crossWith_: CrossWithFn_<F, C>
   readonly crossWith: CrossWithFn<F, C>
+}
+
+export type SemimonoidalFunctorMin<F extends HKT.URIS, C = HKT.Auto> =
+  | (SemimonoidalMin<F, C> & FunctorMin<F, C>)
+  | ({ readonly crossWith_: CrossWithFn_<F, C> } & FunctorMin<F, C>)
+  | ({ readonly crossWith_: CrossWithFn_<F, C> } & SemimonoidalMin<F, C> & FunctorMin<F, C>)
+
+export function SemimonoidalFunctor<F extends HKT.URIS, C = HKT.Auto>(
+  F: SemimonoidalFunctorMin<F, C>
+): SemimonoidalFunctor<F, C> {
+  if ('crossWith_' in F) {
+    if ('cross_' in F) {
+      return HKT.instance<SemimonoidalFunctor<F, C>>({
+        ...Functor(F),
+        cross_: F.cross_,
+        cross: (fb) => (fa) => F.cross_(fa, fb),
+        crossWith_: F.crossWith_,
+        crossWith: (fb, f) => (fa) => F.crossWith_(fa, fb, f)
+      })
+    } else {
+      return HKT.instance<SemimonoidalFunctor<F, C>>({
+        ...Functor(F),
+        cross_: (fa, fb) => F.crossWith_(fa, fb, (a, b) => [a, b]),
+        cross: (fb) => (fa) => F.crossWith_(fa, fb, (a, b) => [a, b]),
+        crossWith_: F.crossWith_,
+        crossWith: (fb, f) => (fa) => F.crossWith_(fa, fb, f)
+      })
+    }
+  } else {
+    return HKT.instance<SemimonoidalFunctor<F, C>>({
+      ...Functor(F),
+      cross_: F.cross_,
+      cross: (fb) => (fa) => F.cross_(fa, fb),
+      crossWith_: (fa, fb, f) => F.map_(F.cross_(fa, fb), (ab) => f(ab[0], ab[1])),
+      crossWith: (fb, f) => (fa) => F.map_(F.cross_(fa, fb), (ab) => f(ab[0], ab[1]))
+    })
+  }
 }
 
 export interface SemimonoidalFunctor2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
@@ -29,14 +66,6 @@ export function getSemimonoidalFunctorComposition<F extends HKT.URIS, G extends 
     crossWith_,
     crossWith: (fgb, f) => (fga) => crossWith_(fga, fgb, f)
   })
-}
-
-export function crossF_<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunctor<F, C>): CrossFn_<F, C> {
-  return (fa, fb) => F.crossWith_(fa, fb, tuple)
-}
-
-export function crossF<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunctor<F, C>): CrossFn<F, C> {
-  return (fb) => F.crossWith(fb, tuple)
 }
 
 export interface CrossWithFn_<F extends HKT.URIS, TC = HKT.Auto> {

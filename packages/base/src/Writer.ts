@@ -1,8 +1,8 @@
 import type { Endomorphism } from './Function'
 import type { WriterURI } from './Modules'
-import type * as P from './typeclass'
 
 import * as HKT from './HKT'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -89,9 +89,8 @@ export function map<A, B>(f: (a: A) => B): <W>(fa: Writer<W, A>) => Writer<W, B>
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<WriterURI>]> = HKT.instance({
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<WriterURI>]> = P.Functor({
+  map_
 })
 
 export function getSemimonoidalFunctor<W>(
@@ -105,11 +104,9 @@ export function getSemimonoidalFunctor<W>(
     return [f(a, b), S.combine_(w1, w2)]
   }
 
-  return HKT.instance<P.SemimonoidalFunctor<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+  return P.SemimonoidalFunctor<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>({
     map_,
-    map,
-    crossWith_,
-    crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
+    crossWith_
   })
 }
 
@@ -121,10 +118,9 @@ export function getApply<W>(S: P.Semigroup<W>): P.Apply<[HKT.URI<WriterURI>], HK
     const [a, w2] = fa()
     return [f(a), S.combine_(w1, w2)]
   }
-  return HKT.instance<P.Apply<URI, V_>>({
+  return P.Apply<URI, V_>({
     ...getSemimonoidalFunctor(S),
-    ap_,
-    ap: (fa) => (fab) => ap_(fab, fa)
+    ap_
   })
 }
 
@@ -135,24 +131,22 @@ export function getMonoidalFunctor<W>(M: P.Monoid<W>) {
   })
 }
 
-export function getApplicative<W>(M: P.Monoid<W>) {
-  return HKT.instance<P.Applicative<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+export function getApplicative<W>(M: P.Monoid<W>): P.Applicative<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
+  return P.Applicative({
     ...getApply(M),
-    pure: (a) => () => [a, M.nat],
-    unit: () => () => [undefined, M.nat]
+    pure: <A>(a: A) => () => [a, M.nat]
   })
 }
 
-export function getMonad<W>(M: P.Monoid<W>) {
+export function getMonad<W>(M: P.Monoid<W>): P.Monad<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> {
   const bind_: P.BindFn_<[HKT.URI<WriterURI>], HKT.Fix<'W', W>> = (ma, f) => () => {
     const [a, w1] = ma()
     const [b, w2] = f(a)()
     return [b, M.combine_(w1, w2)]
   }
-  return HKT.instance<P.Monad<[HKT.URI<WriterURI>], HKT.Fix<'W', W>>>({
+  return P.Monad({
     ...getApplicative(M),
-    bind_,
-    bind: (f) => (ma) => bind_(ma, f)
+    bind_
   })
 }
 

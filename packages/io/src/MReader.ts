@@ -1,8 +1,8 @@
 import type { MReaderURI } from './Modules'
-import type * as P from '@principia/base/typeclass'
+import type * as HKT from '@principia/base/HKT'
 
 import { identity, pipe } from '@principia/base/Function'
-import * as HKT from '@principia/base/HKT'
+import * as P from '@principia/base/typeclass'
 
 import * as Mu from './Multi'
 
@@ -161,20 +161,17 @@ export function dimap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: MReader<
  * -------------------------------------------
  */
 
-export const MonadEnv = HKT.instance<P.MonadEnv<[HKT.URI<MReaderURI>], V>>({
+export const MonadEnv: P.MonadEnv<[HKT.URI<MReaderURI>], V> = P.MonadEnv({
   map_,
-  map,
   crossWith_,
-  crossWith,
+  cross_,
   ap_,
-  ap,
-  asks,
-  giveAll_,
-  giveAll,
   unit,
   pure,
   bind_,
-  bind
+  flatten,
+  asks,
+  giveAll_
 })
 
 export { MReaderURI } from './Modules'

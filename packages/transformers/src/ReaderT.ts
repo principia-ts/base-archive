@@ -1,6 +1,6 @@
+import type * as HKT from '@principia/base/HKT'
 import type { ReaderURI } from '@principia/base/Reader'
 
-import * as HKT from '@principia/base/HKT'
 import * as R from '@principia/base/Reader'
 import * as P from '@principia/base/typeclass'
 
@@ -12,12 +12,10 @@ export function getReaderT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): 
 export function getReaderT<M>(M: P.Monad<HKT.UHKT<M>>): ReaderT<HKT.UHKT<M>> {
   const bind_: ReaderT<HKT.UHKT<M>>['bind_'] = (ma, f) => (r) => M.bind_(ma(r), (a) => f(a)(r))
 
-  return HKT.instance<ReaderT<HKT.UHKT<M>>>({
+  return P.MonadEnv({
     ...P.getApplicativeComposition(R.MonadEnv, M),
     bind_,
-    bind: (f) => (ma) => bind_(ma, f),
     giveAll_: R.giveAll_,
-    giveAll: R.giveAll,
     asks: <R, A>(f: (_: R) => A) => (r: R) => M.pure(f(r)),
     pure: <A>(a: A) => () => M.pure(a)
   })

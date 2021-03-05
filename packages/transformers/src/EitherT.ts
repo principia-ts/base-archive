@@ -1,9 +1,9 @@
 import type { EitherURI } from '@principia/base/Either'
-import type * as P from '@principia/base/typeclass'
+import type * as HKT from '@principia/base/HKT'
 
 import * as E from '@principia/base/Either'
 import { flow } from '@principia/base/Function'
-import * as HKT from '@principia/base/HKT'
+import * as P from '@principia/base/typeclass'
 import { getApplicativeComposition } from '@principia/base/typeclass'
 
 export type V<C> = HKT.CleanParam<C, 'E'> & HKT.V<'E', '+'>
@@ -34,13 +34,11 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
       )
     )
 
-  return HKT.instance<EitherT<HKT.UHKT<F>>>({
+  return P.MonadExcept({
     ...getApplicativeComposition(M, E.Applicative),
     fail: flow(E.Left, M.pure),
     bind_,
-    bind: (f) => (ma) => bind_(ma, f),
-    catchAll_,
-    catchAll: (f) => (fa) => catchAll_(fa, f)
+    catchAll_
   })
 }
 

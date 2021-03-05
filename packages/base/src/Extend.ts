@@ -1,9 +1,23 @@
-import type { Functor } from './Functor'
-import type * as HKT from './HKT'
+import type { FunctorMin } from './Functor'
+
+import { Functor } from './Functor'
+import * as HKT from './HKT'
 
 export interface Extend<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly extend_: ExtendFn_<F, C>
   readonly extend: ExtendFn<F, C>
+}
+
+export type ExtendMin<F extends HKT.URIS, C = HKT.Auto> = FunctorMin<F, C> & {
+  readonly extend_: ExtendFn_<F, C>
+}
+
+export function Extend<F extends HKT.URIS, C = HKT.Auto>(F: ExtendMin<F, C>): Extend<F, C> {
+  return HKT.instance({
+    ...Functor(F),
+    extend_: F.extend_,
+    extend: (f) => (wa) => F.extend_(wa, f)
+  })
 }
 
 export interface ExtendFn<F extends HKT.URIS, C = HKT.Auto> {

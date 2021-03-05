@@ -1,14 +1,15 @@
-import type { Alt, AltFn_ } from './Alt'
-import type { Applicative } from './Applicative'
+import type { AltFn_ } from './Alt'
+import type * as HKT from './HKT'
 import type { MonadExcept } from './MonadExcept'
 import type { Semigroup } from './Semigroup'
 import type { CrossWithFn_ } from './SemimonoidalFunctor'
 import type { Erase } from './util/types'
 
+import { Alt } from './Alt'
+import { Applicative } from './Applicative'
 import { attemptF } from './ApplicativeExcept'
 import { flattenF } from './Bind'
 import * as E from './Either'
-import * as HKT from './HKT'
 
 export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: MonadExcept<F, C>
@@ -34,15 +35,10 @@ export function getApplicativeValidation<F>(
         )
       )
 
-    return HKT.instance<Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
+    return Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>>({
       map_: F.map_,
-      map: F.map,
       crossWith_,
-      crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f),
-      ap_: (fab, fa) => crossWith_(fab, fa, (f, a) => f(a)),
-      ap: (fa) => (fab) => crossWith_(fab, fa, (f, a) => f(a)),
-      pure: F.pure,
-      unit: F.unit
+      pure: F.pure
     })
   }
 }
@@ -70,11 +66,9 @@ export function getAltValidation<F>(
           (a) => F.pure(a)
         )
       )
-    return HKT.instance<Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>>>({
+    return Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>>({
       map_: F.map_,
-      map: F.map,
-      alt_,
-      alt: (that) => (fa) => alt_(fa, that)
+      alt_
     })
   }
 }

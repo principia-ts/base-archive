@@ -6,7 +6,6 @@ import type * as G from '@principia/base/Guard'
 import type { Integer } from '@principia/base/Integer'
 import type * as O from '@principia/base/Option'
 import type { ReadonlyRecord } from '@principia/base/Record'
-import type * as P from '@principia/base/typeclass'
 import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
@@ -17,6 +16,7 @@ import * as I from '@principia/base/Integer'
 import * as N from '@principia/base/Number'
 import * as R from '@principia/base/Record'
 import * as S from '@principia/base/String'
+import * as P from '@principia/base/typeclass'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import * as DE from './DecodeError'
@@ -584,9 +584,8 @@ export function runDecoder<I, O, M extends HKT.URIS, C = HKT.Auto>(
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<DecoderKFURI>], V>>({
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<DecoderKFURI>], V> = P.Functor({
+  map_
 })
 
 export const Category = HKT.instance<P.Category<[HKT.URI<DecoderKFURI>], V>>({

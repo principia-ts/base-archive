@@ -1,6 +1,7 @@
 import type { SyncURI } from './Modules'
 import type { Multi } from './Multi'
 import type { Has, Region, Tag } from '@principia/base/Has'
+import type * as HKT from '@principia/base/HKT'
 import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
@@ -8,7 +9,6 @@ import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe } from '@principia/base/Function'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
-import * as HKT from '@principia/base/HKT'
 import * as I from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
@@ -757,55 +757,69 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<SyncURI>], V>>({
+export const Functor: P.Functor<[HKT.URI<SyncURI>], V> = P.Functor({
+  map_
+})
+
+export const Bifunctor: P.Bifunctor<[HKT.URI<SyncURI>], V> = P.Bifunctor({
   map_,
-  map
-})
-
-export const Bifunctor = HKT.instance<P.Bifunctor<[HKT.URI<SyncURI>], V>>({
-  ...Functor,
-  bimap_,
-  bimap,
   mapLeft_: mapError_,
-  mapLeft: mapError
+  bimap_
 })
 
-export const SemimonoidalFunctor = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<SyncURI>], V>>({
-  ...Functor,
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<SyncURI>], V> = P.SemimonoidalFunctor({
+  map_,
   crossWith_,
-  crossWith
+  cross_
 })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<SyncURI>], V>>({
-  ...SemimonoidalFunctor,
-  ap_,
-  ap
+export const Apply: P.Apply<[HKT.URI<SyncURI>], V> = P.Apply({
+  map_,
+  crossWith_,
+  cross_,
+  ap_
 })
 
-export const MonoidalFunctor = HKT.instance<P.MonoidalFunctor<[HKT.URI<SyncURI>], V>>({
-  ...SemimonoidalFunctor,
+export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<SyncURI>], V> = P.MonoidalFunctor({
+  map_,
+  crossWith_,
+  cross_,
   unit
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<SyncURI>], V>>({
-  ...Apply,
+export const Applicative: P.Applicative<[HKT.URI<SyncURI>], V> = P.Applicative({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
   unit,
   pure
 })
 
-export const Monad = HKT.instance<P.Monad<[HKT.URI<SyncURI>], V>>({
-  ...Applicative,
+export const Monad: P.Monad<[HKT.URI<SyncURI>], V> = P.Monad({
+  map_,
+  cross_,
+  crossWith_,
+  ap_,
+  unit,
+  pure,
   bind_,
-  bind
+  flatten
 })
 
-export const MonadExcept = HKT.instance<P.MonadExcept<[HKT.URI<SyncURI>], V>>({
-  ...Monad,
+export const MonadExcept: P.MonadExcept<[HKT.URI<SyncURI>], V> = P.MonadExcept({
+  map_,
+  cross_,
+  crossWith_,
+  ap_,
+  unit,
+  pure,
+  bind_,
+  flatten,
   catchAll_,
-  catchAll,
   fail
 })
 

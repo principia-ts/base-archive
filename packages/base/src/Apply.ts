@@ -1,8 +1,11 @@
-import type { SemimonoidalFunctor, SemimonoidalFunctor2 } from './SemimonoidalFunctor'
+import type { FunctorMin } from './Functor'
+import type { CrossFn_ } from './Semimonoidal'
+import type { CrossWithFn_, SemimonoidalFunctor2, SemimonoidalFunctorMin } from './SemimonoidalFunctor'
 
 import { pipe } from './Function'
-import { getFunctorComposition } from './Functor'
+import { Functor, getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
+import { SemimonoidalFunctor } from './SemimonoidalFunctor'
 
 /**
  * A lax semimonoidal endofunctor
@@ -12,6 +15,42 @@ import * as HKT from './HKT'
 export interface Apply<F extends HKT.URIS, C = HKT.Auto> extends SemimonoidalFunctor<F, C> {
   readonly ap_: ApFn_<F, C>
   readonly ap: ApFn<F, C>
+}
+
+export type ApplyMin<F extends HKT.URIS, C = HKT.Auto> =
+  | SemimonoidalFunctorMin<F, C>
+  | ({ readonly ap_: ApFn_<F, C> } & FunctorMin<F, C>)
+  | ({ readonly ap_: ApFn_<F, C> } & SemimonoidalFunctorMin<F, C>)
+
+export function Apply<F extends HKT.URIS, C = HKT.Auto>(F: ApplyMin<F, C>): Apply<F, C> {
+  if ('ap_' in F) {
+    if ('cross_' in F || 'crossWith_' in F) {
+      return HKT.instance<Apply<F, C>>({
+        ...SemimonoidalFunctor(F),
+        ap_: F.ap_,
+        ap: (fa) => (fab) => F.ap_(fab, fa)
+      })
+    } else {
+      const crossWith_ = crossWithF_(F)
+      const cross_     = crossF_(F)
+      return HKT.instance<Apply<F, C>>({
+        ...Functor(F),
+        ap_: F.ap_,
+        ap: (fa) => (fab) => F.ap_(fab, fa),
+        cross_,
+        cross: (fb) => (fa) => cross_(fa, fb),
+        crossWith_,
+        crossWith: (fb, f) => (fa) => crossWith_(fa, fb, f)
+      })
+    }
+  } else {
+    const SemimonoidalF = SemimonoidalFunctor(F)
+    return HKT.instance<Apply<F, C>>({
+      ...SemimonoidalF,
+      ap_: (fab, fa) => SemimonoidalF.crossWith_(fab, fa, (f, a) => f(a)),
+      ap: (fa) => (fab) => SemimonoidalF.crossWith_(fab, fa, (f, a) => f(a))
+    })
+  }
 }
 
 export interface Apply2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
@@ -314,4 +353,34 @@ export interface ApFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, 
       B
     >
   >
+}
+
+export function crossWithF_<F extends HKT.URIS, C = HKT.Auto>(F: ApplyMin<F, C>): CrossWithFn_<F, C>
+export function crossWithF_<F>(F: ApplyMin<HKT.UHKT<F>>): CrossWithFn_<HKT.UHKT<F>> {
+  if ('crossWith_' in F) {
+    return F.crossWith_
+  } else if ('cross_' in F) {
+    return (fa, fb, f) => F.map_(F.cross_(fa, fb), (ab) => f(ab[0], ab[1]))
+  } else {
+    return <A, B, C>(fa: HKT.HKT<F, A>, fb: HKT.HKT<F, B>, f: (a: A, b: B) => C) =>
+      F.ap_(
+        F.map_(fa, (a) => (b: B) => f(a, b)),
+        fb
+      )
+  }
+}
+
+export function crossF_<F extends HKT.URIS, C = HKT.Auto>(F: ApplyMin<F, C>): CrossFn_<F, C>
+export function crossF_<F>(F: ApplyMin<HKT.UHKT<F>>): CrossFn_<HKT.UHKT<F>> {
+  if ('cross_' in F) {
+    return F.cross_
+  } else if ('crossWith_' in F) {
+    return (fa, fb) => F.crossWith_(fa, fb, (a, b) => [a, b])
+  } else {
+    return <A, B>(fa: HKT.HKT<F, A>, fb: HKT.HKT<F, B>) =>
+      F.ap_(
+        F.map_(fa, (a) => (b: B) => [a, b]),
+        fb
+      )
+  }
 }

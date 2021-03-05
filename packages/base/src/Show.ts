@@ -1,7 +1,6 @@
 import type { ReadonlyRecord } from './Record'
 
-import { memoize, pipe } from './Function'
-import * as R from './Record'
+import { memoize } from './Function'
 
 export interface Show<A> {
   readonly show: (a: A) => string
@@ -89,11 +88,11 @@ export function partial<A extends Readonly<Record<string, any>>>(
     }
   >
 > {
-  return pipe(
-    properties,
-    R.map((s: Show<any>) => undefinable(s)),
-    struct
-  )
+  const mut_r = {} as any
+  for (const k in properties) {
+    mut_r[k] = undefinable(properties[k])
+  }
+  return struct(mut_r) as any
 }
 
 export function intersect_<A, B>(left: Show<A>, right: Show<B>): Show<A & B> {

@@ -4,6 +4,10 @@ export interface Empty<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC
   readonly empty: EmptyFn<F, TC>
 }
 
+export type EmptyMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly empty: EmptyFn<F, C>
+}
+
 export interface EmptyFn<F extends HKT.URIS, TC = HKT.Auto> {
   <
     N extends string = HKT.Initial<TC, 'N'>,

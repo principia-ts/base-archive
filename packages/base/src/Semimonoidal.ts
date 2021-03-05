@@ -5,6 +5,10 @@ export interface Semimonoidal<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base
   readonly cross: CrossFn<F, C>
 }
 
+export type SemimonoidalMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly cross_: CrossFn_<F, C>
+}
+
 export interface Semimonoidal2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
   readonly cross_: CrossFn2_<F, G, CF, CG>

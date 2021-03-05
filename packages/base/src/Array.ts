@@ -1904,15 +1904,14 @@ export function getGuard<A>(item: G.Guard<unknown, A>): G.Guard<unknown, Readonl
   )
 }
 
-export const Align: P.Align<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const Align: P.Align<[HKT.URI<ArrayURI>]> = P.Align({
+  map_,
   alignWith_,
-  alignWith,
   nil: empty
 })
 
-export const Functor: P.Functor<[HKT.URI<ArrayURI>]> = HKT.instance({
-  map_,
-  map
+export const Functor: P.Functor<[HKT.URI<ArrayURI>]> = P.Functor({
+  map_
 })
 
 export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
@@ -1920,27 +1919,33 @@ export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = HKT.ins
   imap_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Functor,
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<ArrayURI>]> = P.SemimonoidalFunctor({
+  map_,
+  cross_,
+  crossWith_
+})
+
+export const Apply: P.Apply<[HKT.URI<ArrayURI>]> = P.Apply({
+  map_,
+  cross_,
   crossWith_,
-  crossWith
+  ap_
 })
 
-export const Apply: P.Apply<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...SemimonoidalFunctor,
-  ap_,
-  ap
-})
-
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...SemimonoidalFunctor,
+export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<ArrayURI>]> = P.MonoidalFunctor({
+  map_,
+  cross_,
+  crossWith_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Apply,
-  unit,
-  pure
+export const Applicative: P.Applicative<[HKT.URI<ArrayURI>]> = P.Applicative({
+  map_,
+  cross_,
+  crossWith_,
+  ap_,
+  pure,
+  unit
 })
 
 export const Zip: P.Zip<[HKT.URI<ArrayURI>]> = HKT.instance({
@@ -1950,15 +1955,19 @@ export const Zip: P.Zip<[HKT.URI<ArrayURI>]> = HKT.instance({
   zipWith
 })
 
-export const Alt: P.Alt<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Functor,
-  alt_,
-  alt
+export const Alt: P.Alt<[HKT.URI<ArrayURI>]> = P.Alt({
+  map_,
+  alt_
 })
 
-export const Alternative: P.Alternative<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Applicative,
-  ...Alt,
+export const Alternative: P.Alternative<[HKT.URI<ArrayURI>]> = P.Alternative({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  pure,
+  unit,
+  alt_,
   empty
 })
 
@@ -2007,17 +2016,20 @@ export const Foldable: P.Foldable<[HKT.URI<ArrayURI>]> = HKT.instance({
   foldMap
 })
 
-export const Monad: P.Monad<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Applicative,
+export const Monad: P.Monad<[HKT.URI<ArrayURI>]> = P.Monad({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  pure,
+  unit,
   bind_,
-  bind
+  flatten
 })
 
-export const Traversable: P.Traversable<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...Functor,
-  traverse_,
-  traverse,
-  sequence
+export const Traversable: P.Traversable<[HKT.URI<ArrayURI>]> = P.Traversable({
+  map_,
+  traverse_
 })
 
 export const TraversableWithIndex: P.TraversableWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({

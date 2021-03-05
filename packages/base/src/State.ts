@@ -1,8 +1,8 @@
+import type * as HKT from './HKT'
 import type { StateURI } from './Modules'
-import type * as P from './typeclass'
 
 import { identity, tuple } from './Function'
-import * as HKT from './HKT'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------
@@ -206,36 +206,46 @@ export function unit<S>(): State<S, void> {
  * -------------------------------------------
  */
 
-export const Functor = HKT.instance<P.Functor<[HKT.URI<StateURI>], V>>({
+export const Functor: P.Functor<[HKT.URI<StateURI>], V> = P.Functor({
+  map_
+})
+
+export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<StateURI>]> = P.SemimonoidalFunctor({
   map_,
-  map
-})
-
-export const SemimonoidalFunctor = HKT.instance<P.SemimonoidalFunctor<[HKT.URI<StateURI>], V>>({
-  ...Functor,
   crossWith_,
-  crossWith
+  cross_
 })
 
-export const Apply = HKT.instance<P.Apply<[HKT.URI<StateURI>], V>>({
-  ...SemimonoidalFunctor,
-  ap_,
-  ap
+export const Apply: P.Apply<[HKT.URI<StateURI>], V> = P.Apply({
+  map_,
+  crossWith_,
+  cross_,
+  ap_
 })
 
-export const MonoidalFunctor = HKT.instance<P.MonoidalFunctor<[HKT.URI<StateURI>], V>>({
-  ...SemimonoidalFunctor,
+export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<StateURI>], V> = P.MonoidalFunctor({
+  map_,
+  crossWith_,
+  cross_,
   unit
 })
 
-export const Applicative = HKT.instance<P.Applicative<[HKT.URI<StateURI>], V>>({
-  ...Apply,
+export const Applicative: P.Applicative<[HKT.URI<StateURI>], V> = P.Applicative({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
   unit,
   pure
 })
 
-export const Monad = HKT.instance<P.Monad<[HKT.URI<StateURI>], V>>({
-  ...Applicative,
+export const Monad: P.Monad<[HKT.URI<StateURI>], V> = P.Monad({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
   bind_,
-  bind
+  flatten
 })

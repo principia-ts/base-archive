@@ -3,15 +3,32 @@ import * as HKT from './HKT'
 export interface Functor<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly map_: MapFn_<F, C>
   readonly map: MapFn<F, C>
-}
-
-export interface FunctorUtil<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly flap_: FlapFn_<F, C>
   readonly flap: FlapFn<F, C>
   readonly as_: AsFn_<F, C>
   readonly as: AsFn<F, C>
   readonly fcross_: FCrossFn_<F, C>
   readonly fcross: FCrossFn<F, C>
+}
+
+export type FunctorMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly map_: MapFn_<F, C>
+}
+
+export function Functor<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): Functor<F, C> {
+  const flap_   = flapF_(F)
+  const as_     = asF_(F)
+  const fcross_ = fcrossF_(F)
+  return HKT.instance<Functor<F, C>>({
+    map_: F.map_,
+    map: (f) => (fa) => F.map_(fa, f),
+    flap_,
+    flap: (a) => (fab) => flap_(fab, a),
+    as_,
+    as: (b) => (fa) => as_(fa, b),
+    fcross_,
+    fcross: (f) => (fa) => fcross_(fa, f)
+  })
 }
 
 export interface Functor2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
@@ -129,7 +146,7 @@ export interface FlapFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto,
   ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
-export function flapF_<F extends HKT.URIS, TC = HKT.Auto>(F: Functor<F, TC>): FlapFn_<F, TC> {
+export function flapF_<F extends HKT.URIS, TC = HKT.Auto>(F: FunctorMin<F, TC>): FlapFn_<F, TC> {
   return (fab, a) => F.map_(fab, (f) => f(a))
 }
 
@@ -184,7 +201,7 @@ export interface AsFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, C
   ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
-export function asF_<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): AsFn_<F, C> {
+export function asF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): AsFn_<F, C> {
   return (fa, b) => F.map_(fa, b)
 }
 
@@ -263,7 +280,7 @@ export interface FCrossFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Aut
   >
 }
 
-export function fcrossF_<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): FCrossFn_<F, C> {
+export function fcrossF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): FCrossFn_<F, C> {
   return (fa, f) => F.map_(fa, (a) => [a, f(a)])
 }
 

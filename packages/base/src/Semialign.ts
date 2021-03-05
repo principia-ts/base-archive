@@ -1,15 +1,75 @@
-import type * as HKT from './HKT'
+import type { FunctorMin } from './Functor'
 import type { Option } from './Option'
 import type { Semigroup } from './Semigroup'
 import type { These } from './These'
 
 import { identity, tuple } from './Function'
+import { Functor } from './Functor'
+import * as HKT from './HKT'
 import * as O from './internal/option'
 import * as T from './internal/these'
 
-export interface Semialign<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+export interface Semialign<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly alignWith_: AlignWithFn_<F, C>
   readonly alignWith: AlignWithFn<F, C>
+  readonly align_: AlignFn_<F, C>
+  readonly align: AlignFn<F, C>
+  readonly alignCombine_: AlignCombineFn_<F, C>
+  readonly alignCombine: AlignCombineFn<F, C>
+  readonly padZip_: PadZipFn_<F, C>
+  readonly padZip: PadZipFn<F, C>
+  readonly padZipWith_: PadZipWithFn_<F, C>
+  readonly padZipWith: PadZipWithFn<F, C>
+  readonly zipAll_: ZipAllFn_<F, C>
+  readonly zipAll: ZipAllFn<F, C>
+}
+
+export type SemialignMin<F extends HKT.URIS, C = HKT.Auto> = (
+  | { readonly alignWith_: AlignWithFn_<F, C> }
+  | { readonly align_: AlignFn_<F, C> }
+) &
+  FunctorMin<F, C>
+
+export function Semialign<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): Semialign<F, C> {
+  const alignCombine_ = alignCombineF_(F)
+  const padZip_       = padZipF_(F)
+  const padZipWith_   = padZipWithF_(F)
+  const zipAll_       = zipAllF_(F)
+  if ('alignWith_' in F) {
+    const align_: Semialign<F, C>['align_'] = (fa, fb) => F.alignWith_(fa, fb, identity)
+    return HKT.instance<Semialign<F, C>>({
+      ...Functor(F),
+      alignWith_: F.alignWith_,
+      alignWith: (fb, f) => (fa) => F.alignWith_(fa, fb, f),
+      align_,
+      align: (fb) => (fa) => align_(fa, fb),
+      alignCombine_,
+      alignCombine: (S) => (fb) => (fa) => alignCombine_(S)(fa, fb),
+      padZip_,
+      padZip: (fb) => (fa) => padZip_(fa, fb),
+      padZipWith_,
+      padZipWith: (fb, f) => (fa) => padZipWith_(fa, fb, f),
+      zipAll_,
+      zipAll: (fb, a, b) => (fa) => zipAll_(fa, fb, a, b)
+    })
+  } else {
+    const alignWith_: Semialign<F, C>['alignWith_'] = (fa, fb, f) => F.map_(F.align_(fa, fb), f)
+    return HKT.instance<Semialign<F, C>>({
+      ...Functor(F),
+      alignWith_,
+      alignWith: (fb, f) => (fa) => alignWith_(fa, fb, f),
+      align_: F.align_,
+      align: (fb) => (fa) => F.align_(fa, fb),
+      alignCombine_,
+      alignCombine: (S) => (fb) => (fa) => alignCombine_(S)(fa, fb),
+      padZip_,
+      padZip: (fb) => (fa) => padZip_(fa, fb),
+      padZipWith_,
+      padZipWith: (fb, f) => (fa) => padZipWith_(fa, fb, f),
+      zipAll_,
+      zipAll: (fb, a, b) => (fa) => zipAll_(fa, fb, a, b)
+    })
+  }
 }
 
 export interface AlignFn_<F extends HKT.URIS, C = HKT.Auto> {
@@ -157,6 +217,14 @@ export interface AlignWithFn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
+export function alignWithF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): AlignWithFn_<F, C> {
+  if ('alignWith_' in F) {
+    return F.alignWith_
+  } else {
+    return (fa, fb, f) => F.map_(F.align_(fa, fb), f)
+  }
+}
+
 export interface AlignCombineFn_<F extends HKT.URIS, C = HKT.Auto> {
   <A>(S: Semigroup<A>): <N extends string, K, Q, W, X, I, S, R, E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(
     fa1: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
@@ -224,11 +292,12 @@ export interface AlignCombineFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function alignCombineF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): AlignCombineFn_<F, C> {
-  return (S) => (fa1, fa2) => F.alignWith_(fa1, fa2, T.match(identity, identity, S.combine_))
+export function alignCombineF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): AlignCombineFn_<F, C> {
+  const alignWith_ = alignWithF_(F)
+  return (S) => (fa1, fa2) => alignWith_(fa1, fa2, T.match(identity, identity, S.combine_))
 }
 
-export function alignCombineF<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): AlignCombineFn<F, C> {
+export function alignCombineF<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): AlignCombineFn<F, C> {
   return (S) => (fb) => (fa) => alignCombineF_(F)(S)(fa, fb)
 }
 
@@ -308,12 +377,12 @@ export interface PadZipFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function padZipF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): PadZipFn_<F, C> {
+export function padZipF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): PadZipFn_<F, C> {
   const padZipWith_ = padZipWithF_(F)
   return (fa, fb) => padZipWith_(fa, fb, identity)
 }
 
-export function padZipF<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): PadZipFn<F, C> {
+export function padZipF<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): PadZipFn<F, C> {
   return (fb) => (fa) => padZipF_(F)(fa, fb)
 }
 
@@ -386,9 +455,10 @@ export interface PadZipWithFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function padZipWithF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): PadZipWithFn_<F, C> {
+export function padZipWithF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): PadZipWithFn_<F, C> {
+  const alignWith_ = alignWithF_(F)
   return (fa, fb, f) =>
-    F.alignWith_(
+    alignWith_(
       fa,
       fb,
       T.match(
@@ -399,7 +469,7 @@ export function padZipWithF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C
     )
 }
 
-export function padZipWithF<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): PadZipWithFn<F, C> {
+export function padZipWithF<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): PadZipWithFn<F, C> {
   return (fb, f) => (fa) => padZipWithF_(F)(fa, fb, f)
 }
 
@@ -474,9 +544,10 @@ export interface ZipAllFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function zipAllF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): ZipAllFn_<F, C> {
+export function zipAllF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): ZipAllFn_<F, C> {
+  const alignWith_ = alignWithF_(F)
   return (fa, fb, a, b) =>
-    F.alignWith_(
+    alignWith_(
       fa,
       fb,
       T.match(
@@ -487,6 +558,6 @@ export function zipAllF_<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): 
     )
 }
 
-export function zipAllF<F extends HKT.URIS, C = HKT.Auto>(F: Semialign<F, C>): ZipAllFn<F, C> {
+export function zipAllF<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>): ZipAllFn<F, C> {
   return (fb, a, b) => (fa) => zipAllF_(F)(fa, fb, a, b)
 }

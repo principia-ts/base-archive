@@ -1,10 +1,13 @@
 import type * as Eq from './Eq'
 import type { Endomorphism, Predicate } from './Function'
+import type { Monoid } from './Monoid'
 import type { Ordering } from './Ordering'
+import type { Semigroup } from './Semigroup'
 
 import { flow } from './Function'
+import * as O from './internal/ord'
 import { EQ, GT, LT } from './Ordering'
-import * as P from './typeclass'
+import { makeSemigroup } from './Semigroup'
 
 type Eq<A> = Eq.Eq<A>
 
@@ -59,9 +62,9 @@ export const leq_ = <A>(O: Ord<A>) => (x: A, y: A): boolean => O.compare_(x, y) 
 
 export const geq_ = <A>(O: Ord<A>) => (x: A, y: A): boolean => O.compare_(x, y) !== LT
 
-export const min_ = <A>(O: Ord<A>) => (x: A, y: A): A => (O.compare_(x, y) === GT ? y : x)
+export const min_ = O.min_
 
-export const max_ = <A>(O: Ord<A>) => (x: A, y: A): A => (O.compare_(x, y) === LT ? y : x)
+export const max_ = O.max_
 
 export function clamp<A>(O: Ord<A>): (low: A, hi: A) => Endomorphism<A> {
   const minO = min(O)
@@ -75,8 +78,8 @@ export function between<A>(O: Ord<A>): (low: A, hi: A) => Predicate<A> {
   return (low, hi) => (a) => (ltO(a, low) || gtO(a, hi) ? false : true)
 }
 
-export const getSemigroup = <A = never>(): P.Semigroup<Ord<A>> => {
-  return P.makeSemigroup((x, y) =>
+export const getSemigroup = <A = never>(): Semigroup<Ord<A>> => {
+  return makeSemigroup((x, y) =>
     makeOrd((a1, a2) => {
       const ox = x.compare_(a1, a2)
       return ox !== 0 ? ox : y.compare_(a1, a2)
@@ -84,7 +87,7 @@ export const getSemigroup = <A = never>(): P.Semigroup<Ord<A>> => {
   )
 }
 
-export const getMonoid = <A = never>(): P.Monoid<Ord<A>> => ({
+export const getMonoid = <A = never>(): Monoid<Ord<A>> => ({
   ...getSemigroup<A>(),
   nat: makeOrd(() => EQ)
 })

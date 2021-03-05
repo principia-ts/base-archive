@@ -8,6 +8,8 @@ export interface Unit<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC>
   readonly unit: UnitFn<F, TC>
 }
 
+export type UnitMin<F extends HKT.URIS, C = HKT.Auto> = { readonly unit: UnitFn<F, C> }
+
 export interface Unit2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   readonly unit: UnitFn2<F, G, TCF, TCG>
 }
