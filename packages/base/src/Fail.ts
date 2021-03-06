@@ -1,4 +1,4 @@
-import type * as HKT from './HKT'
+import * as HKT from './HKT'
 
 export interface Fail<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
   readonly fail: FailFn<F, TC>
@@ -6,6 +6,12 @@ export interface Fail<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC>
 
 export type FailMin<F extends HKT.URIS, C = HKT.Auto> = {
   readonly fail: FailFn<F, C>
+}
+
+export function Fail<F extends HKT.URIS, C = HKT.Auto>(F: FailMin<F, C>): Fail<F, C> {
+  return HKT.instance({
+    fail: F.fail
+  })
 }
 
 export interface FailFn<F extends HKT.URIS, C = HKT.Auto> {

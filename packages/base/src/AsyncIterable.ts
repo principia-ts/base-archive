@@ -7,6 +7,8 @@ import { identity, tuple } from './Function'
 import * as HKT from './HKT'
 import * as P from './typeclass'
 
+type URI = [HKT.URI<AsyncIterableURI>]
+
 /*
  * -------------------------------------------
  * Constructors
@@ -565,36 +567,35 @@ export async function toArray<A>(fa: AsyncIterable<A>): Promise<ReadonlyArray<A>
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<AsyncIterableURI>]> = P.Functor({
+export const Functor = P.Functor<URI>({
   map_
 })
 
-export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<AsyncIterableURI>]>>({
-  imap_,
-  imap
+export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+  imap_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<AsyncIterableURI>]> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply: P.Apply<[HKT.URI<AsyncIterableURI>]> = P.Apply({
+export const Apply = P.Apply<URI>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<AsyncIterableURI>]> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<AsyncIterableURI>]> = P.Applicative({
+export const Applicative = P.Applicative<URI>({
   map_,
   crossWith_,
   cross_,
@@ -603,7 +604,7 @@ export const Applicative: P.Applicative<[HKT.URI<AsyncIterableURI>]> = P.Applica
   pure
 })
 
-export const Monad: P.Monad<[HKT.URI<AsyncIterableURI>]> = P.Monad({
+export const Monad = P.Monad<URI>({
   map_,
   crossWith_,
   cross_,
@@ -614,7 +615,7 @@ export const Monad: P.Monad<[HKT.URI<AsyncIterableURI>]> = P.Monad({
   flatten
 })
 
-export const Filterable: P.Filterable<[HKT.URI<AsyncIterableURI>]> = P.Filterable({
+export const Filterable = P.Filterable<URI>({
   map_,
   filter_,
   filterMap_,
@@ -622,7 +623,7 @@ export const Filterable: P.Filterable<[HKT.URI<AsyncIterableURI>]> = P.Filterabl
   partitionMap_
 })
 
-export const FilterableWithIndex: P.FilterableWithIndex<[HKT.URI<AsyncIterableURI>]> = P.FilterableWithIndex({
+export const FilterableWithIndex = P.FilterableWithIndex<URI>({
   imap_,
   ifilter_,
   ifilterMap_,

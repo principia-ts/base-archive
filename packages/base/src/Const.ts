@@ -14,6 +14,8 @@ import * as P from './typeclass'
 
 export type Const<E, A> = E & { readonly _A: A }
 
+type URI = [HKT.URI<ConstURI>]
+
 /*
  * -------------------------------------------
  * Constructors
@@ -37,10 +39,9 @@ export function make<E, A = never>(e: E): Const<E, A> {
  * @category Instances
  * @since 1.0.0
  */
-export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>) {
+export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>): P.SemimonoidalFunctor<URI, HKT.Fix<'E', E>> {
   type CE = HKT.Fix<'E', E>
-  const crossWith_: P.SemimonoidalFunctor<[HKT.URI<ConstURI>], CE>['crossWith_'] = (fa, fb, _) =>
-    make(S.combine_(fa, fb))
+  const crossWith_: P.SemimonoidalFunctor<URI, CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
   return P.SemimonoidalFunctor({
     map_,
     crossWith_
@@ -57,9 +58,9 @@ export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export function getApply<E>(S: P.Semigroup<E>) {
+export function getApply<E>(S: P.Semigroup<E>): P.Apply<URI, HKT.Fix<'E', E>> {
   type CE = HKT.Fix<'E', E>
-  const ap_: P.Apply<[HKT.URI<ConstURI>], CE>['ap_'] = (fab, fa) => make(S.combine_(fab, fa))
+  const ap_: P.Apply<URI, CE>['ap_'] = (fab, fa) => make(S.combine_(fab, fa))
   return P.Apply({
     map_,
     ap_
@@ -76,7 +77,7 @@ export function getApply<E>(S: P.Semigroup<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
+export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<URI, HKT.Fix<'E', E>> {
   return P.MonoidalFunctor({
     ...getSemimonoidalFunctor(M),
     unit: () => make(M.nat)
@@ -93,7 +94,7 @@ export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<[HKT.UR
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<[HKT.URI<ConstURI>], HKT.Fix<'E', E>> {
+export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
   return P.Applicative({
     ...getApply(M),
     unit: () => make(undefined),

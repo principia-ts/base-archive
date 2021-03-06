@@ -1,6 +1,5 @@
 import type * as E from './Either'
 import type { Eq } from './Eq'
-import type { Foldable } from './Foldable'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
@@ -19,6 +18,7 @@ import * as G from './Guard'
 import { makeMonoid } from './Monoid'
 import * as O from './Option'
 import { implementTraverseWithIndex_ } from './TraversableWithIndex'
+import * as P from './typeclass'
 import { implementWiltWithIndex_ } from './WitherableWithIndex'
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty
@@ -36,6 +36,8 @@ export type InferRecordType<T extends ReadonlyRecord<any, any>> = T extends {
 }
   ? A
   : never
+
+type URI = [HKT.URI<RecordURI>]
 
 /*
  * -------------------------------------------
@@ -607,7 +609,7 @@ export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => <N extends stri
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: Semigroup<B>, F: Foldable<F, C>) {
+export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
   return <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, N extends string>(
     fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (a: A) => readonly [N, B]
@@ -622,7 +624,7 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: Semigrou
     )
 }
 
-export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: Semigroup<A>, F: Foldable<F, C>) {
+export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
   const fromFoldableMapS = fromFoldableMap(S, F)
   return <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, N extends string>(
     fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, readonly [N, A]>
@@ -972,5 +974,73 @@ export function getGuard<A>(codomain: G.Guard<unknown, A>): G.Guard<unknown, Rea
     })
   )
 }
+
+export const Functor = P.Functor<URI>({
+  map_
+})
+
+export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+  imap_
+})
+
+export const Foldable = P.Foldable<URI>({
+  foldl_,
+  foldr_,
+  foldMap_
+})
+
+export const FoldableWithIndex = P.FoldableWithIndex<URI>({
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_
+})
+
+export const Filterable = P.Filterable<URI>({
+  map_,
+  filter_,
+  filterMap_,
+  partition_,
+  partitionMap_
+})
+
+export const FilterableWithIndex = P.FilterableWithIndex<URI>({
+  imap_,
+  ifilter_,
+  ifilterMap_,
+  ipartition_,
+  ipartitionMap_
+})
+
+export const Traversable = P.Traversable<URI>({
+  map_,
+  traverse_
+})
+
+export const TraversableWithIndex = P.TraversableWithIndex<URI>({
+  imap_,
+  itraverse_
+})
+
+export const Witherable = P.Witherable<URI>({
+  map_,
+  filter_,
+  filterMap_,
+  partition_,
+  partitionMap_,
+  traverse_,
+  compactA_,
+  separateA_
+})
+
+export const WitherableWithIndex = P.WitherableWithIndex<URI>({
+  imap_,
+  ifilter_,
+  ifilterMap_,
+  ipartition_,
+  ipartitionMap_,
+  itraverse_,
+  icompactA_,
+  iseparateA_
+})
 
 export { RecordURI } from './Modules'

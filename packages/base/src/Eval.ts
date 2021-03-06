@@ -14,6 +14,8 @@ import * as P from './typeclass'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 
+type URI = [HKT.URI<EvalURI>]
+
 /**
  * `Eval<A>` is a monad that controls evaluation, providing a way to perform
  * stack-safe recursion through an internal trampoline.
@@ -394,31 +396,31 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<EvalURI>]> = P.Functor({
+export const Functor = P.Functor<URI>({
   map_
 })
 
-export const Semimonoidal: P.SemimonoidalFunctor<[HKT.URI<EvalURI>]> = P.SemimonoidalFunctor({
+export const Semimonoidal = P.SemimonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply: P.Apply<[HKT.URI<EvalURI>]> = P.Apply({
+export const Apply = P.Apply<URI>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const Monoidal: P.MonoidalFunctor<[HKT.URI<EvalURI>]> = P.MonoidalFunctor({
+export const Monoidal = P.MonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<EvalURI>]> = P.Applicative({
+export const Applicative = P.Applicative<URI>({
   map_,
   crossWith_,
   cross_,
@@ -426,7 +428,7 @@ export const Applicative: P.Applicative<[HKT.URI<EvalURI>]> = P.Applicative({
   pure
 })
 
-export const Monad: P.Monad<[HKT.URI<EvalURI>]> = P.Monad({
+export const Monad = P.Monad<URI>({
   map_,
   crossWith_,
   cross_,

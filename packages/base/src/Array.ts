@@ -1,7 +1,6 @@
 import type { Byte } from './Byte'
 import type { Either } from './Either'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
-import type { ArrayURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { These } from './These'
@@ -10,6 +9,7 @@ import { _bind, _bindTo, flow, identity, pipe, tuple, unsafeCoerce } from './Fun
 import { GenLazyHKT, genWithHistoryF } from './Gen'
 import * as G from './Guard'
 import * as HKT from './HKT'
+import { ArrayURI } from './Modules'
 import * as N from './Number'
 import * as O from './Option'
 import * as Ord from './Ord'
@@ -23,9 +23,11 @@ import { makeMonoid } from './typeclass'
  * -------------------------------------------
  */
 
+type URI = [HKT.URI<ArrayURI>]
+
 export type InferA<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<infer A> ? A : never
 
-export type URI = ArrayURI
+export { ArrayURI }
 
 /*
  * -------------------------------------------
@@ -1904,41 +1906,41 @@ export function getGuard<A>(item: G.Guard<unknown, A>): G.Guard<unknown, Readonl
   )
 }
 
-export const Align: P.Align<[HKT.URI<ArrayURI>]> = P.Align({
+export const Align = P.Align<URI>({
   map_,
   alignWith_,
   nil: empty
 })
 
-export const Functor: P.Functor<[HKT.URI<ArrayURI>]> = P.Functor({
+export const Functor = P.Functor<URI>({
   map_
 })
 
-export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = P.FunctorWithIndex({
+export const FunctorWithIndex = P.FunctorWithIndex<URI>({
   imap_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<ArrayURI>]> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
   map_,
   cross_,
   crossWith_
 })
 
-export const Apply: P.Apply<[HKT.URI<ArrayURI>]> = P.Apply({
+export const Apply = P.Apply<URI>({
   map_,
   cross_,
   crossWith_,
   ap_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<ArrayURI>]> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({
   map_,
   cross_,
   crossWith_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<ArrayURI>]> = P.Applicative({
+export const Applicative = P.Applicative<URI>({
   map_,
   cross_,
   crossWith_,
@@ -1947,19 +1949,17 @@ export const Applicative: P.Applicative<[HKT.URI<ArrayURI>]> = P.Applicative({
   unit
 })
 
-export const Zip: P.Zip<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const Zip = P.Zip<URI>({
   zip_,
-  zip,
   zipWith_,
-  zipWith
 })
 
-export const Alt: P.Alt<[HKT.URI<ArrayURI>]> = P.Alt({
+export const Alt = P.Alt<URI>({
   map_,
   alt_
 })
 
-export const Alternative: P.Alternative<[HKT.URI<ArrayURI>]> = P.Alternative({
+export const Alternative = P.Alternative<URI>({
   map_,
   crossWith_,
   cross_,
@@ -1970,12 +1970,12 @@ export const Alternative: P.Alternative<[HKT.URI<ArrayURI>]> = P.Alternative({
   empty
 })
 
-export const Compactable: P.Compactable<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const Compactable = HKT.instance<P.Compactable<URI>>({
   compact,
   separate
 })
 
-export const Filterable = P.Filterable<[HKT.URI<ArrayURI>]>({
+export const Filterable = P.Filterable<URI>({
   map_,
   filter_,
   filterMap_,
@@ -1983,7 +1983,7 @@ export const Filterable = P.Filterable<[HKT.URI<ArrayURI>]>({
   partitionMap_
 })
 
-export const FilterableWithIndex = P.FilterableWithIndex<[HKT.URI<ArrayURI>]>({
+export const FilterableWithIndex = P.FilterableWithIndex<URI>({
   imap_,
   ifilter_,
   ifilterMap_,
@@ -1991,19 +1991,19 @@ export const FilterableWithIndex = P.FilterableWithIndex<[HKT.URI<ArrayURI>]>({
   ipartitionMap_
 })
 
-export const FoldableWithIndex = P.FoldableWithIndex<[HKT.URI<ArrayURI>]>({
+export const FoldableWithIndex = P.FoldableWithIndex<URI>({
   ifoldl_,
   ifoldr_,
   ifoldMap_
 })
 
-export const Foldable: P.Foldable<[HKT.URI<ArrayURI>]> = P.Foldable({
+export const Foldable = P.Foldable<URI>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const Monad: P.Monad<[HKT.URI<ArrayURI>]> = P.Monad({
+export const Monad = P.Monad<URI>({
   map_,
   crossWith_,
   cross_,
@@ -2014,17 +2014,17 @@ export const Monad: P.Monad<[HKT.URI<ArrayURI>]> = P.Monad({
   flatten
 })
 
-export const Traversable: P.Traversable<[HKT.URI<ArrayURI>]> = P.Traversable({
+export const Traversable = P.Traversable<URI>({
   map_,
   traverse_
 })
 
-export const TraversableWithIndex: P.TraversableWithIndex<[HKT.URI<ArrayURI>]> = P.TraversableWithIndex({
+export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   imap_,
   itraverse_
 })
 
-export const Unfoldable: P.Unfoldable<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
   unfold
 })
 

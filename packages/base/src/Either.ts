@@ -46,6 +46,8 @@ export type InferRight<T extends Either<any, any>> = T extends Right<infer A> ? 
 
 export type V = HKT.V<'E', '+'>
 
+type URI = [HKT.URI<EitherURI>]
+
 /*
  * -------------------------------------------
  * Constructors
@@ -960,7 +962,7 @@ export function getShow<E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_ = P.implementTraverse_<[HKT.URI<EitherURI>], V>()((_) => (F) => {
+export const traverse_ = P.implementTraverse_<URI, V>()((_) => (F) => {
   return (ta, f) =>
     isLeft(ta)
       ? F.pure(Left(ta.left))
@@ -976,7 +978,7 @@ export const traverse_ = P.implementTraverse_<[HKT.URI<EitherURI>], V>()((_) => 
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[HKT.URI<EitherURI>], V> = (F) => (f) => (ta) => traverse_(F)(ta, f)
+export const traverse: P.TraverseFn<URI, V> = (F) => (f) => (ta) => traverse_(F)(ta, f)
 
 /**
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -984,7 +986,7 @@ export const traverse: P.TraverseFn<[HKT.URI<EitherURI>], V> = (F) => (f) => (ta
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[HKT.URI<EitherURI>], V> = (F) => (ta) => traverse_(F)(ta, identity)
+export const sequence: P.SequenceFn<URI, V> = (F) => (ta) => traverse_(F)(ta, identity)
 
 /*
  * -------------------------------------------
@@ -1016,17 +1018,17 @@ export function getWitherable<E>(M: P.Monoid<E>) {
 
   const Compactable = getCompactable(M)
 
-  const compactA_: P.WitherFn_<[HKT.URI<EitherURI>], V_> = (G) => (wa, f) => {
+  const compactA_: P.WitherFn_<URI, V_> = (G) => (wa, f) => {
     const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.compact))
   }
 
-  const separateA_: P.WiltFn_<[HKT.URI<EitherURI>], V_> = (G) => (wa, f) => {
+  const separateA_: P.WiltFn_<URI, V_> = (G) => (wa, f) => {
     const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.separate))
   }
 
-  return P.Witherable<[HKT.URI<EitherURI>], V_>({
+  return P.Witherable<URI, V_>({
     ...getFilterable(M),
     traverse_,
     compactA_: compactA_,
@@ -1044,22 +1046,22 @@ export function getWitherable<E>(M: P.Monoid<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export const Functor = P.Functor<[HKT.URI<EitherURI>], V>({
+export const Functor = P.Functor<URI, V>({
   map_
 })
 
-export const flap_   = P.flapF_<[HKT.URI<EitherURI>], V>(Functor)
-export const flap    = P.flapF<[HKT.URI<EitherURI>], V>(Functor)
-export const as_     = P.asF_<[HKT.URI<EitherURI>], V>(Functor)
-export const as      = P.asF<[HKT.URI<EitherURI>], V>(Functor)
-export const fcross_ = P.fcrossF_<[HKT.URI<EitherURI>], V>(Functor)
-export const fcross  = P.fcrossF<[HKT.URI<EitherURI>], V>(Functor)
+export const flap_   = P.flapF_<URI, V>(Functor)
+export const flap    = P.flapF<URI, V>(Functor)
+export const as_     = P.asF_<URI, V>(Functor)
+export const as      = P.asF<URI, V>(Functor)
+export const fcross_ = P.fcrossF_<URI, V>(Functor)
+export const fcross  = P.fcrossF<URI, V>(Functor)
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const Bifunctor: P.Bifunctor<[HKT.URI<EitherURI>], V> = P.Bifunctor({
+export const Bifunctor = P.Bifunctor<URI, V>({
   map_,
   mapLeft_,
   bimap_
@@ -1069,12 +1071,12 @@ export const Bifunctor: P.Bifunctor<[HKT.URI<EitherURI>], V> = P.Bifunctor({
  * @category Instances
  * @since 1.0.0
  */
-export const Alt: P.Alt<[HKT.URI<EitherURI>], V> = P.Alt({
+export const Alt = P.Alt<URI, V>({
   map_,
   alt_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<EitherURI>], V> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_
@@ -1085,7 +1087,7 @@ export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const mapN_     = P.mapNF_(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 
-export const Apply: P.Apply<[HKT.URI<EitherURI>], V> = P.Apply({
+export const Apply = P.Apply<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -1096,14 +1098,14 @@ export const Apply: P.Apply<[HKT.URI<EitherURI>], V> = P.Apply({
  * @category Instances
  * @since 1.0.0
  */
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<EitherURI>], V> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<EitherURI>], V> = P.Applicative({
+export const Applicative = P.Applicative<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -1116,7 +1118,7 @@ export const Applicative: P.Applicative<[HKT.URI<EitherURI>], V> = P.Applicative
  * @category Instances
  * @since 1.0.0
  */
-export const Fail: P.Fail<[HKT.URI<EitherURI>], V> = HKT.instance({
+export const Fail = P.Fail<URI, V>({
   fail: Left
 })
 
@@ -1124,7 +1126,7 @@ export const Fail: P.Fail<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @category Instances
  * @since 1.0.0
  */
-export const Monad: P.Monad<[HKT.URI<EitherURI>], V> = P.Monad({
+export const Monad = P.Monad<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -1139,7 +1141,7 @@ export const Monad: P.Monad<[HKT.URI<EitherURI>], V> = P.Monad({
  * @category Instances
  * @since 1.0.0
  */
-export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<EitherURI>], V> = P.ApplicativeExcept({
+export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -1154,7 +1156,7 @@ export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<EitherURI>], V> = P
  * @category Instances
  * @since 1.0.0
  */
-export const MonadExcept: P.MonadExcept<[HKT.URI<EitherURI>], V> = P.MonadExcept({
+export const MonadExcept = P.MonadExcept<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -1171,13 +1173,10 @@ export const MonadExcept: P.MonadExcept<[HKT.URI<EitherURI>], V> = P.MonadExcept
  * @category Instances
  * @since 1.0.0
  */
-export const Foldable: P.Foldable<[HKT.URI<EitherURI>], V> = HKT.instance({
+export const Foldable = P.Foldable<URI, V>({
   foldl_,
   foldMap_,
-  foldr_,
-  foldl,
-  foldMap,
-  foldr
+  foldr_
 })
 
 /**
@@ -1185,25 +1184,25 @@ export const Foldable: P.Foldable<[HKT.URI<EitherURI>], V> = HKT.instance({
  * @since 1.0.0
  */
 
-export const Semialign: P.Semialign<[HKT.URI<EitherURI>], V> = P.Semialign({
+export const Semialign = P.Semialign<URI, V>({
   map_,
   alignWith_
 })
 
-export const alignCombine_ = P.alignCombineF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const alignCombine  = P.alignCombineF<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZip_       = P.padZipF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZip        = P.padZipF<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZipWith_   = P.padZipWithF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const padZipWith    = P.padZipWithF<[HKT.URI<EitherURI>], V>(Semialign)
-export const zipAll_       = P.zipAllF_<[HKT.URI<EitherURI>], V>(Semialign)
-export const zipAll        = P.zipAllF<[HKT.URI<EitherURI>], V>(Semialign)
+export const alignCombine_ = P.alignCombineF_<URI, V>(Semialign)
+export const alignCombine  = P.alignCombineF<URI, V>(Semialign)
+export const padZip_       = P.padZipF_<URI, V>(Semialign)
+export const padZip        = P.padZipF<URI, V>(Semialign)
+export const padZipWith_   = P.padZipWithF_<URI, V>(Semialign)
+export const padZipWith    = P.padZipWithF<URI, V>(Semialign)
+export const zipAll_       = P.zipAllF_<URI, V>(Semialign)
+export const zipAll        = P.zipAllF<URI, V>(Semialign)
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const Traversable: P.Traversable<[HKT.URI<EitherURI>], V> = P.Traversable({
+export const Traversable = P.Traversable<URI, V>({
   map_,
   traverse_
 })
@@ -1261,13 +1260,13 @@ export const bindToS = P.bindToSF(Monad)
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<[HKT.URI<EitherURI>], HKT.Fix<'E', E>> {
+export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
   type FixE = V & HKT.Fix<'E', E>
 
-  const crossWithV_: P.CrossWithFn_<[HKT.URI<EitherURI>], FixE> = (fa, fb, f) =>
+  const crossWithV_: P.CrossWithFn_<URI, FixE> = (fa, fb, f) =>
     isLeft(fa) ? (isLeft(fb) ? Left(S.combine_(fa.left, fb.left)) : fa) : isLeft(fb) ? fb : Right(f(fa.right, fb.right))
 
-  const apV_: P.ApFn_<[HKT.URI<EitherURI>], FixE> = (fab, fa) =>
+  const apV_: P.ApFn_<URI, FixE> = (fab, fa) =>
     isLeft(fab)
       ? isLeft(fa)
         ? Left(S.combine_(fab.left, fa.left))
@@ -1289,10 +1288,10 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<[H
  * @category Instances
  * @since 1.0.0
  */
-export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<[HKT.URI<EitherURI>], HKT.Fix<'E', E>> {
+export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<URI, HKT.Fix<'E', E>> {
   type FixE = V & HKT.Fix<'E', E>
 
-  const altV_: P.AltFn_<[HKT.URI<EitherURI>], FixE> = (fa, that) => {
+  const altV_: P.AltFn_<URI, FixE> = (fa, that) => {
     if (isRight(fa)) {
       return fa
     }

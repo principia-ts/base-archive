@@ -12,6 +12,8 @@ import * as P from './typeclass'
 
 export type Identity<A> = A
 
+type URI = [HKT.URI<IdentityURI>]
+
 /*
  * -------------------------------------------
  * Alt
@@ -186,16 +188,14 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<[HKT.URI<IdentityURI>]>()((_) => (G) => (ta, f) =>
-  pipe(f(ta), G.map(identity))
-)
+export const traverse_ = P.implementTraverse_<URI>()((_) => (G) => (ta, f) => pipe(f(ta), G.map(identity)))
 
-export const traverse: P.TraverseFn<[HKT.URI<IdentityURI>]> = (G) => {
+export const traverse: P.TraverseFn<URI> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<[HKT.URI<IdentityURI>]> = (G) => (ta) => pipe(ta, G.map(identity))
+export const sequence: P.SequenceFn<URI> = (G) => (ta) => pipe(ta, G.map(identity))
 
 /*
  * -------------------------------------------
@@ -213,31 +213,31 @@ export function unit(): void {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<IdentityURI>]> = P.Functor({
+export const Functor = P.Functor<URI>({
   map_
 })
 
-export const Semimonoidal: P.SemimonoidalFunctor<[HKT.URI<IdentityURI>]> = P.SemimonoidalFunctor({
+export const Semimonoidal = P.SemimonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply: P.Apply<[HKT.URI<IdentityURI>]> = P.Apply({
+export const Apply = P.Apply<URI>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const Monoidal: P.MonoidalFunctor<[HKT.URI<IdentityURI>]> = P.MonoidalFunctor({
+export const Monoidal = P.MonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<IdentityURI>]> = P.Applicative({
+export const Applicative = P.Applicative<URI>({
   map_,
   crossWith_,
   cross_,

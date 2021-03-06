@@ -35,6 +35,8 @@ export type Option<A> = None | Some<A>
 
 export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : never
 
+type URI = [HKT.URI<OptionURI>]
+
 /*
  * -------------------------------------------
  * Constructors
@@ -750,7 +752,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<[HKT.URI<OptionURI>]> = (G) => (ta, f) =>
+export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) =>
   isNone(ta) ? G.pure(None()) : pipe(f(ta.value), G.map(Some))
 
 /**
@@ -759,7 +761,7 @@ export const traverse_: P.TraverseFn_<[HKT.URI<OptionURI>]> = (G) => (ta, f) =>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[HKT.URI<OptionURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: P.TraverseFn<URI> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -767,8 +769,7 @@ export const traverse: P.TraverseFn<[HKT.URI<OptionURI>]> = (G) => (f) => (ta) =
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[HKT.URI<OptionURI>]> = (G) => (fa) =>
-  isNone(fa) ? G.pure(None()) : pipe(fa.value, G.map(Some))
+export const sequence: P.SequenceFn<URI> = (G) => (fa) => (isNone(fa) ? G.pure(None()) : pipe(fa.value, G.map(Some)))
 
 /*
  * -------------------------------------------
@@ -786,12 +787,11 @@ export function unit(): Option<void> {
  * -------------------------------------------
  */
 
-export const compactA_: P.WitherFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) =>
-  isNone(wa) ? A.pure(None()) : f(wa.value)
+export const compactA_: P.WitherFn_<URI> = (A) => (wa, f) => (isNone(wa) ? A.pure(None()) : f(wa.value))
 
-export const compactA: P.WitherFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => compactA_(A)(wa, f)
+export const compactA: P.WitherFn<URI> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
-export const separateA_: P.WiltFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) => {
+export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) => {
   const o = map_(
     wa,
     flow(
@@ -802,7 +802,7 @@ export const separateA_: P.WiltFn_<[HKT.URI<OptionURI>]> = (A) => (wa, f) => {
   return isNone(o) ? A.pure(tuple(None(), None())) : o.value
 }
 
-export const separateA: P.WiltFn<[HKT.URI<OptionURI>]> = (A) => (f) => (wa) => separateA_(A)(wa, f)
+export const separateA: P.WiltFn<URI> = (A) => (f) => (wa) => separateA_(A)(wa, f)
 
 /*
  * -------------------------------------------
@@ -876,22 +876,22 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  */
 
-export const Align: P.Align<[HKT.URI<OptionURI>]> = P.Align({
+export const Align = P.Align<URI>({
   map_,
   alignWith_,
   nil: None
 })
 
-export const Functor: P.Functor<[HKT.URI<OptionURI>]> = P.Functor({
+export const Functor = P.Functor<URI>({
   map_
 })
 
-export const Alt: P.Alt<[HKT.URI<OptionURI>]> = P.Alt({
+export const Alt = P.Alt<URI>({
   map_,
   alt_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<OptionURI>]> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_
@@ -901,21 +901,21 @@ export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 
-export const Apply: P.Apply<[HKT.URI<OptionURI>]> = P.Apply({
+export const Apply = P.Apply<URI>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<OptionURI>]> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = P.Applicative({
+export const Applicative = P.Applicative<URI>({
   map_,
   crossWith_,
   cross_,
@@ -924,7 +924,7 @@ export const Applicative: P.Applicative<[HKT.URI<OptionURI>]> = P.Applicative({
   pure
 })
 
-export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = P.ApplicativeExcept({
+export const ApplicativeExcept = P.ApplicativeExcept<URI, HKT.Fix<'E', void>>({
   map_,
   crossWith_,
   cross_,
@@ -935,7 +935,7 @@ export const ApplicativeExcept: P.ApplicativeExcept<[HKT.URI<OptionURI>], HKT.Fi
   fail
 })
 
-export const Monad: P.Monad<[HKT.URI<OptionURI>]> = P.Monad({
+export const Monad = P.Monad<URI>({
   map_,
   crossWith_,
   cross_,
@@ -946,7 +946,7 @@ export const Monad: P.Monad<[HKT.URI<OptionURI>]> = P.Monad({
   flatten
 })
 
-export const MonadExcept: P.MonadExcept<[HKT.URI<OptionURI>], HKT.Fix<'E', void>> = P.MonadExcept({
+export const MonadExcept = P.MonadExcept<URI, HKT.Fix<'E', void>>({
   map_,
   crossWith_,
   cross_,
@@ -988,7 +988,7 @@ export const letS = P.letSF(Monad)
  */
 export const bindToS = P.bindToSF(Monad)
 
-export const Filterable: P.Filterable<[HKT.URI<OptionURI>]> = P.Filterable({
+export const Filterable = P.Filterable<URI>({
   map_,
   filter_,
   filterMap_,
@@ -996,18 +996,18 @@ export const Filterable: P.Filterable<[HKT.URI<OptionURI>]> = P.Filterable({
   partitionMap_
 })
 
-export const Foldable: P.Foldable<[HKT.URI<OptionURI>]> = P.Foldable({
+export const Foldable = P.Foldable<URI>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const Traversable: P.Traversable<[HKT.URI<OptionURI>]> = P.Traversable({
+export const Traversable = P.Traversable<URI>({
   map_,
   traverse_
 })
 
-export const Witherable: P.Witherable<[HKT.URI<OptionURI>]> = P.Witherable({
+export const Witherable = P.Witherable<URI>({
   map_,
   filter_,
   filterMap_,

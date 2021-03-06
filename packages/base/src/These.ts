@@ -38,6 +38,8 @@ export type These<E, A> = Left<E> | Right<A> | Both<E, A>
 
 export type V = HKT.V<'E', '+'>
 
+type URI = [HKT.URI<TheseURI>]
+
 /*
  * -------------------------------------------
  * Constructors
@@ -134,7 +136,7 @@ export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
  * -------------------------------------------
  */
 
-export function getMonoidal<E>(SE: P.Semigroup<E>): P.MonoidalFunctor<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
+export function getMonoidal<E>(SE: P.Semigroup<E>): P.MonoidalFunctor<URI, HKT.Fix<'E', E>> {
   return HKT.instance({
     ...getSemimonoidal(SE),
     unit
@@ -147,7 +149,7 @@ export function getMonoidal<E>(SE: P.Semigroup<E>): P.MonoidalFunctor<[HKT.URI<T
  * -------------------------------------------
  */
 
-export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
+export function getApply<E>(SE: P.Semigroup<E>): P.Apply<URI, HKT.Fix<'E', E>> {
   return P.Apply(getSemimonoidal(SE))
 }
 
@@ -157,7 +159,7 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<[HKT.URI<TheseURI>], HK
  * -------------------------------------------
  */
 
-export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
+export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
   return P.Applicative({
     ...getApply(SE),
     unit,
@@ -172,8 +174,7 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<[HKT.URI<Th
  */
 
 export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
-  const catchAll_: P.CatchAllFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, f) =>
-    fa._tag === 'Left' ? f(fa.left) : fa
+  const catchAll_: P.CatchAllFn_<URI, HKT.Fix<'E', E>> = (fa, f) => (fa._tag === 'Left' ? f(fa.left) : fa)
 
   return P.ApplicativeExcept({
     ...getApplicative(SE),
@@ -188,8 +189,8 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
  * -------------------------------------------
  */
 
-export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
-  const crossWith_: P.CrossWithFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (fa, fb, f) =>
+export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<URI, HKT.Fix<'E', E>> {
+  const crossWith_: P.CrossWithFn_<URI, HKT.Fix<'E', E>> = (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
         ? Left(SE.combine_(fa.left, fb.left))
@@ -307,7 +308,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  */
 
 export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[HKT.URI<TheseURI, {}>], HKT.Fix<'E', E>> {
-  const bind_: P.BindFn_<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> = (ma, f) => {
+  const bind_: P.BindFn_<URI, HKT.Fix<'E', E>> = (ma, f) => {
     if (isLeft(ma)) {
       return ma
     }
@@ -333,7 +334,7 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[HKT.URI<TheseURI, {}>]
  * -------------------------------------------
  */
 
-export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<[HKT.URI<TheseURI>], HKT.Fix<'E', E>> {
+export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<URI, HKT.Fix<'E', E>> {
   return P.MonadExcept({ ...getApplicativeExcept(SE), ...getMonad(SE) })
 }
 
@@ -387,7 +388,7 @@ export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<[HKT.URI<TheseURI>], V>()((_) => (G) => {
+export const traverse_ = P.implementTraverse_<URI, V>()((_) => (G) => {
   return (ta, f) => {
     return isLeft(ta)
       ? G.pure(ta)
@@ -397,12 +398,12 @@ export const traverse_ = P.implementTraverse_<[HKT.URI<TheseURI>], V>()((_) => (
   }
 })
 
-export const traverse: P.TraverseFn<[HKT.URI<TheseURI>], V> = (G) => {
+export const traverse: P.TraverseFn<URI, V> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence = P.implementSequence<[HKT.URI<TheseURI>], V>()((_) => (G) => traverse(G)(identity))
+export const sequence = P.implementSequence<URI, V>()((_) => (G) => traverse(G)(identity))
 
 /*
  * -------------------------------------------

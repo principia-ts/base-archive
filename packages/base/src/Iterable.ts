@@ -1,13 +1,15 @@
 import type { Either } from './Either'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
+import type * as HKT from './HKT'
 import type { IterableURI } from './Modules'
 import type { Option } from './Option'
 
 import * as A from './Array'
 import { identity, tuple } from './Function'
-import * as HKT from './HKT'
 import * as O from './Option'
 import * as P from './typeclass'
+
+type URI = [HKT.URI<IterableURI>]
 
 /*
  * -------------------------------------------
@@ -553,36 +555,35 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<IterableURI>]> = P.Functor({
+export const Functor = P.Functor<URI>({
   map_
 })
 
-export const FunctorWithIndex = HKT.instance<P.FunctorWithIndex<[HKT.URI<IterableURI>]>>({
-  imap_,
-  imap
+export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+  imap_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<IterableURI>]> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply: P.Apply<[HKT.URI<IterableURI>]> = P.Apply({
+export const Apply = P.Apply<URI>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<IterableURI>]> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<IterableURI>]> = P.Applicative({
+export const Applicative = P.Applicative<URI>({
   map_,
   crossWith_,
   cross_,
@@ -591,7 +592,7 @@ export const Applicative: P.Applicative<[HKT.URI<IterableURI>]> = P.Applicative(
   pure
 })
 
-export const Monad: P.Monad<[HKT.URI<IterableURI>]> = P.Monad({
+export const Monad = P.Monad<URI>({
   map_,
   crossWith_,
   cross_,
@@ -602,7 +603,7 @@ export const Monad: P.Monad<[HKT.URI<IterableURI>]> = P.Monad({
   flatten
 })
 
-export const Filterable: P.Filterable<[HKT.URI<IterableURI>]> = P.Filterable({
+export const Filterable = P.Filterable<URI>({
   map_,
   filter_,
   filterMap_,
@@ -610,7 +611,7 @@ export const Filterable: P.Filterable<[HKT.URI<IterableURI>]> = P.Filterable({
   partitionMap_
 })
 
-export const FilterableWithIndex: P.FilterableWithIndex<[HKT.URI<IterableURI>]> = P.FilterableWithIndex({
+export const FilterableWithIndex = P.FilterableWithIndex<URI>({
   imap_,
   ifilter_,
   ifilterMap_,
@@ -618,13 +619,13 @@ export const FilterableWithIndex: P.FilterableWithIndex<[HKT.URI<IterableURI>]> 
   ipartitionMap_
 })
 
-export const Foldable: P.Foldable<[HKT.URI<IterableURI>]> = P.Foldable({
+export const Foldable = P.Foldable<URI>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const FoldableWithIndex: P.FoldableWithIndex<[HKT.URI<IterableURI>]> = P.FoldableWithIndex({
+export const FoldableWithIndex = P.FoldableWithIndex<URI>({
   ifoldl_,
   ifoldr_,
   ifoldMap_
