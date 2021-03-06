@@ -1,6 +1,6 @@
 {
   "name": "@principia/query",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "A port of ZIO Query. Adds efficient pipelining, batching, and caching to any data source",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -45,9 +45,9 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "@principia/base": "^0.6.2",
+    "@principia/base": "^0.6.3",
     "@principia/compile": "^0.6.1",
-    "@principia/io": "^0.6.5"
+    "@principia/io": "^0.6.6"
   },
   "publishConfig": {
     "access": "public",
