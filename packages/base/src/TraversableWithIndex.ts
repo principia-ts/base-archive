@@ -1,10 +1,29 @@
 import type { Applicative } from './Applicative'
-import type { FunctorWithIndex } from './FunctorWithIndex'
-import type * as HKT from './HKT'
+import type { FunctorWithIndexMin } from './FunctorWithIndex'
+
+import { FunctorWithIndex } from './FunctorWithIndex'
+import * as HKT from './HKT'
 
 export interface TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends FunctorWithIndex<F, C> {
   readonly itraverse_: TraverseWithIndexFn_<F, C>
   readonly itraverse: TraverseWithIndexFn<F, C>
+}
+
+export type TraversableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = FunctorWithIndexMin<F, C> & {
+  readonly itraverse_: TraverseWithIndexFn_<F, C>
+}
+
+export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+  F: TraversableWithIndexMin<F, C>
+): TraversableWithIndex<F, C> {
+  return HKT.instance({
+    ...FunctorWithIndex(F),
+    itraverse_: F.itraverse_,
+    itraverse: (A) => {
+      const itraverseA_ = F.itraverse_(A)
+      return (f) => (ta) => itraverseA_(ta, f)
+    }
+  })
 }
 
 export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {

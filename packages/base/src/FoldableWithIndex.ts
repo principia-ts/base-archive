@@ -11,6 +11,25 @@ export interface FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT
   readonly ifoldr: FoldRightWithIndexFn<F, C>
 }
 
+export type FoldableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly ifoldl_: FoldLeftWithIndexFn_<F, C>
+  readonly ifoldr_: FoldRightWithIndexFn_<F, C>
+  readonly ifoldMap_: FoldMapWithIndexFn_<F, C>
+}
+
+export function FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+  F: FoldableWithIndexMin<F, C>
+): FoldableWithIndex<F, C> {
+  return HKT.instance<FoldableWithIndex<F, C>>({
+    ifoldl_: F.ifoldl_,
+    ifoldl: (b, f) => (fa) => F.ifoldl_(fa, b, f),
+    ifoldr_: F.ifoldr_,
+    ifoldr: (b, f) => (fa) => F.ifoldr_(fa, b, f),
+    ifoldMap_: F.ifoldMap_,
+    ifoldMap: (M) => (f) => (fa) => F.ifoldMap_(M)(fa, f)
+  })
+}
+
 export interface FoldableWithIndexComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
   readonly ifoldl_: FoldLeftWithIndexFnComposition_<F, G, CF, CG>

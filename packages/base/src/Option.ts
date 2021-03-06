@@ -6,13 +6,13 @@
 import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { MorphismN, Predicate, Refinement } from './Function'
+import type * as HKT from './HKT'
 import type { OptionURI } from './Modules'
 import type { Show } from './Show'
 import type { These } from './These'
 
 import { makeEq } from './Eq'
 import { _bind, flow, identity, pipe, tuple } from './Function'
-import * as HKT from './HKT'
 import * as O from './internal/option'
 import * as P from './typeclass'
 
@@ -106,11 +106,7 @@ export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B
  * @category Constructors
  * @since 1.0.0
  */
-export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>
-export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>
-export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
-  return predicate(a) ? None() : Some(a)
-}
+export const fromPredicate_ = O.fromPredicate_
 
 /**
  * Returns a smart constructor based on the given predicate
@@ -118,11 +114,7 @@ export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function fromPredicate<A, B extends A>(refinement: Refinement<A, B>): (a: A) => Option<A>
-export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A>
-export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
-  return (a) => fromPredicate_(a, predicate)
-}
+export const fromPredicate = O.fromPredicate
 
 /**
  * Constructs a new `Option` from an `Either`, transforming a `Left` into a `None` and a `Right` into a `Some`.
@@ -996,24 +988,18 @@ export const letS = P.letSF(Monad)
  */
 export const bindToS = P.bindToSF(Monad)
 
-export const Filterable: P.Filterable<[HKT.URI<OptionURI>]> = HKT.instance({
-  filterMap_,
+export const Filterable: P.Filterable<[HKT.URI<OptionURI>]> = P.Filterable({
+  map_,
   filter_,
-  partitionMap_,
+  filterMap_,
   partition_,
-  filter,
-  filterMap,
-  partition,
-  partitionMap
+  partitionMap_
 })
 
-export const Foldable: P.Foldable<[HKT.URI<OptionURI>]> = HKT.instance({
+export const Foldable: P.Foldable<[HKT.URI<OptionURI>]> = P.Foldable({
   foldl_,
   foldr_,
-  foldMap_,
-  foldl,
-  foldr,
-  foldMap
+  foldMap_
 })
 
 export const Traversable: P.Traversable<[HKT.URI<OptionURI>]> = P.Traversable({
@@ -1021,11 +1007,15 @@ export const Traversable: P.Traversable<[HKT.URI<OptionURI>]> = P.Traversable({
   traverse_
 })
 
-export const Witherable: P.Witherable<[HKT.URI<OptionURI>]> = HKT.instance({
-  separateA_,
+export const Witherable: P.Witherable<[HKT.URI<OptionURI>]> = P.Witherable({
+  map_,
+  filter_,
+  filterMap_,
+  partition_,
+  partitionMap_,
+  traverse_,
   compactA_,
-  separateA,
-  compactA
+  separateA_
 })
 
 export { OptionURI } from './Modules'

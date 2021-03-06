@@ -614,26 +614,20 @@ export const Monad: P.Monad<[HKT.URI<AsyncIterableURI>]> = P.Monad({
   flatten
 })
 
-export const Filterable = HKT.instance<P.Filterable<[HKT.URI<AsyncIterableURI>]>>({
+export const Filterable: P.Filterable<[HKT.URI<AsyncIterableURI>]> = P.Filterable({
+  map_,
   filter_,
-  filter,
   filterMap_,
-  filterMap,
   partition_,
-  partition,
-  partitionMap_,
-  partitionMap
+  partitionMap_
 })
 
-export const FilterableWithIndex = HKT.instance<P.FilterableWithIndex<[HKT.URI<AsyncIterableURI>]>>({
+export const FilterableWithIndex: P.FilterableWithIndex<[HKT.URI<AsyncIterableURI>]> = P.FilterableWithIndex({
+  imap_,
   ifilter_,
-  ifilter,
   ifilterMap_,
-  ifilterMap,
   ipartition_,
-  ipartition,
-  ipartitionMap_,
-  ipartitionMap
+  ipartitionMap_
 })
 
 export { AsyncIterableURI } from './Modules'

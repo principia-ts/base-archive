@@ -1,13 +1,41 @@
 import type { Applicative } from './Applicative'
 import type { Either } from './Either'
-import type * as HKT from './HKT'
+import type { FilterableMin } from './Filterable'
 import type { Option } from './Option'
+import type { TraversableMin } from './Traversable'
 
-export interface Witherable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+import { Filterable } from './Filterable'
+import * as HKT from './HKT'
+import { Traversable } from './Traversable'
+
+export interface Witherable<F extends HKT.URIS, C = HKT.Auto> extends Filterable<F, C>, Traversable<F, C> {
   readonly separateA_: WiltFn_<F, C>
   readonly separateA: WiltFn<F, C>
   readonly compactA_: WitherFn_<F, C>
   readonly compactA: WitherFn<F, C>
+}
+
+export type WitherableMin<F extends HKT.URIS, C = HKT.Auto> = FilterableMin<F, C> &
+  TraversableMin<F, C> & {
+    readonly separateA_: WiltFn_<F, C>
+    readonly compactA_: WitherFn_<F, C>
+  }
+
+export function Witherable<F extends HKT.URIS, C = HKT.Auto>(F: WitherableMin<F, C>): Witherable<F, C> {
+  return HKT.instance({
+    ...Filterable(F),
+    ...Traversable(F),
+    separateA_: F.separateA_,
+    separateA: (A) => {
+      const separateA_ = F.separateA_(A)
+      return (f) => (wa) => separateA_(wa, f)
+    },
+    compactA_: F.compactA_,
+    compactA: (A) => {
+      const compactA_ = F.compactA_(A)
+      return (f) => (wa) => compactA_(wa, f)
+    }
+  })
 }
 
 export interface WitherFn<F extends HKT.URIS, C = HKT.Auto> {

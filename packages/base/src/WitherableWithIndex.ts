@@ -1,13 +1,45 @@
 import type { Applicative } from './Applicative'
 import type { Either } from './Either'
-import type * as HKT from './HKT'
+import type { FilterableWithIndexMin } from './FilterableWithIndex'
 import type { Option } from './Option'
+import type { TraversableWithIndexMin } from './TraversableWithIndex'
 
-export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+import { FilterableWithIndex } from './FilterableWithIndex'
+import * as HKT from './HKT'
+import { TraversableWithIndex } from './TraversableWithIndex'
+
+export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>
+  extends FilterableWithIndex<F, C>,
+    TraversableWithIndex<F, C> {
   readonly icompactA_: WitherWithIndexFn_<F, C>
   readonly icompactA: WitherWithIndexFn<F, C>
   readonly iseparateA_: WiltWithIndexFn_<F, C>
   readonly iseparateA: WiltWithIndexFn<F, C>
+}
+
+export type WitherableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = FilterableWithIndexMin<F, C> &
+  TraversableWithIndexMin<F, C> & {
+    readonly icompactA_: WitherWithIndexFn_<F, C>
+    readonly iseparateA_: WiltWithIndexFn_<F, C>
+  }
+
+export function WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+  F: WitherableWithIndexMin<F, C>
+): WitherableWithIndex<F, C> {
+  return HKT.instance({
+    ...FilterableWithIndex(F),
+    ...TraversableWithIndex(F),
+    iseparateA_: F.iseparateA_,
+    iseparateA: (A) => {
+      const iseparateA_ = F.iseparateA_(A)
+      return (f) => (wa) => iseparateA_(wa, f)
+    },
+    icompactA_: F.icompactA_,
+    icompactA: (A) => {
+      const icompactA_ = F.icompactA_(A)
+      return (f) => (wa) => icompactA_(wa, f)
+    }
+  })
 }
 
 export interface WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {

@@ -602,44 +602,32 @@ export const Monad: P.Monad<[HKT.URI<IterableURI>]> = P.Monad({
   flatten
 })
 
-export const Filterable = HKT.instance<P.Filterable<[HKT.URI<IterableURI>]>>({
+export const Filterable: P.Filterable<[HKT.URI<IterableURI>]> = P.Filterable({
+  map_,
   filter_,
-  filter,
   filterMap_,
-  filterMap,
   partition_,
-  partition,
-  partitionMap_,
-  partitionMap
+  partitionMap_
 })
 
-export const FilterableWithIndex = HKT.instance<P.FilterableWithIndex<[HKT.URI<IterableURI>]>>({
+export const FilterableWithIndex: P.FilterableWithIndex<[HKT.URI<IterableURI>]> = P.FilterableWithIndex({
+  imap_,
   ifilter_,
-  ifilter,
   ifilterMap_,
-  ifilterMap,
   ipartition_,
-  ipartition,
-  ipartitionMap_,
-  ipartitionMap
+  ipartitionMap_
 })
 
-export const Foldable = HKT.instance<P.Foldable<[HKT.URI<IterableURI>]>>({
+export const Foldable: P.Foldable<[HKT.URI<IterableURI>]> = P.Foldable({
   foldl_,
-  foldl,
   foldr_,
-  foldr,
-  foldMap_,
-  foldMap
+  foldMap_
 })
 
-export const FoldableWithIndex = HKT.instance<P.FoldableWithIndex<[HKT.URI<IterableURI>]>>({
+export const FoldableWithIndex: P.FoldableWithIndex<[HKT.URI<IterableURI>]> = P.FoldableWithIndex({
   ifoldl_,
-  ifoldl,
   ifoldr_,
-  ifoldr,
-  ifoldMap_,
-  ifoldMap
+  ifoldMap_
 })
 
 export { IterableURI } from './Modules'

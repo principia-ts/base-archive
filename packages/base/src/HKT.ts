@@ -22,7 +22,7 @@ export interface BaseHKT<F, C = Auto> {
   readonly _C: C
 }
 
-type MapURIS<F, C = Auto> = F extends [URI<infer U, infer CU>, ...infer Rest]
+export type MapURIS<F, C = Auto> = F extends [URI<infer U, infer CU>, ...infer Rest]
   ? [URI<U, CU & C>, ...MapURIS<Rest, C>]
   : []
 
@@ -233,6 +233,22 @@ export type IndexFor<F extends URIS, N extends string, K> = IndexForBase<
   {
     [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never
   }[number],
+  N,
+  K
+>
+
+export type CompositionIndexForBase<F extends ConcreteURIS[], N extends string, K> = 1 extends F['length']
+  ? F[0] extends keyof URItoIndex<any, any>
+    ? URItoIndex<N, K>[F[0]]
+    : K
+  : {
+      [P in keyof F]: F[P] extends keyof URItoIndex<any, any> ? URItoIndex<N, K>[F[P]] : K
+    }
+
+export type CompositionIndexFor<F extends URIS, N extends string, K> = CompositionIndexForBase<
+  {
+    [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never
+  },
   N,
   K
 >

@@ -1914,8 +1914,7 @@ export const Functor: P.Functor<[HKT.URI<ArrayURI>]> = P.Functor({
   map_
 })
 
-export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
-  imap,
+export const FunctorWithIndex: P.FunctorWithIndex<[HKT.URI<ArrayURI>]> = P.FunctorWithIndex({
   imap_
 })
 
@@ -1976,44 +1975,32 @@ export const Compactable: P.Compactable<[HKT.URI<ArrayURI>]> = HKT.instance({
   separate
 })
 
-export const Filterable: P.Filterable<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const Filterable = P.Filterable<[HKT.URI<ArrayURI>]>({
+  map_,
   filter_,
   filterMap_,
   partition_,
-  partitionMap_,
-  filter,
-  filterMap,
-  partition,
-  partitionMap
+  partitionMap_
 })
 
-export const FilterableWithIndex: P.FilterableWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const FilterableWithIndex = P.FilterableWithIndex<[HKT.URI<ArrayURI>]>({
+  imap_,
   ifilter_,
   ifilterMap_,
-  ipartitionMap_,
-  ifilterMap,
-  ifilter,
-  ipartitionMap,
   ipartition_,
-  ipartition
+  ipartitionMap_
 })
 
-export const FoldableWithIndex: P.FoldableWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const FoldableWithIndex = P.FoldableWithIndex<[HKT.URI<ArrayURI>]>({
   ifoldl_,
-  ifoldl,
-  ifoldr,
   ifoldr_,
-  ifoldMap,
   ifoldMap_
 })
 
-export const Foldable: P.Foldable<[HKT.URI<ArrayURI>]> = HKT.instance({
+export const Foldable: P.Foldable<[HKT.URI<ArrayURI>]> = P.Foldable({
   foldl_,
-  foldl,
   foldr_,
-  foldr,
-  foldMap_,
-  foldMap
+  foldMap_
 })
 
 export const Monad: P.Monad<[HKT.URI<ArrayURI>]> = P.Monad({
@@ -2032,10 +2019,9 @@ export const Traversable: P.Traversable<[HKT.URI<ArrayURI>]> = P.Traversable({
   traverse_
 })
 
-export const TraversableWithIndex: P.TraversableWithIndex<[HKT.URI<ArrayURI>]> = HKT.instance({
-  ...FunctorWithIndex,
-  itraverse_,
-  itraverse
+export const TraversableWithIndex: P.TraversableWithIndex<[HKT.URI<ArrayURI>]> = P.TraversableWithIndex({
+  imap_,
+  itraverse_
 })
 
 export const Unfoldable: P.Unfoldable<[HKT.URI<ArrayURI>]> = HKT.instance({

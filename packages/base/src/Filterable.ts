@@ -1,9 +1,14 @@
 import type { Either } from './Either'
 import type { Predicate, Refinement } from './Function'
-import type * as HKT from './HKT'
+import type { FunctorMin } from './Functor'
 import type { Option } from './Option'
 
-export interface Filterable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+import { Functor } from './Functor'
+import * as HKT from './HKT'
+import * as E from './internal/either'
+import * as O from './internal/option'
+
+export interface Filterable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly partitionMap_: PartitionMapFn_<F, C>
   readonly partitionMap: PartitionMapFn<F, C>
   readonly partition_: PartitionFn_<F, C>
@@ -12,6 +17,54 @@ export interface Filterable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F
   readonly filterMap: FilterMapFn<F, C>
   readonly filter_: FilterFn_<F, C>
   readonly filter: FilterFn<F, C>
+}
+
+export type FilterableMin<F extends HKT.URIS, C = HKT.Auto> = FunctorMin<F, C> &
+  (
+    | {
+        readonly filterMap_: FilterMapFn_<F, C>
+        readonly partitionMap_: PartitionMapFn_<F, C>
+      }
+    | {
+        readonly filterMap_: FilterMapFn_<F, C>
+        readonly partitionMap_: PartitionMapFn_<F, C>
+        readonly filter_: FilterFn_<F, C>
+        readonly partition_: PartitionFn_<F, C>
+      }
+  )
+
+export function Filterable<F extends HKT.URIS, C = HKT.Auto>(F: FilterableMin<F, C>): Filterable<F, C>
+export function Filterable<F>(F: FilterableMin<HKT.UHKT<F>>): Filterable<HKT.UHKT<F>> {
+  const filterMap_: FilterMapFn_<HKT.UHKT<F>>       = F.filterMap_
+  const partitionMap_: PartitionMapFn_<HKT.UHKT<F>> = F.partitionMap_
+  let partition_: PartitionFn_<HKT.UHKT<F>>
+  let filter_: FilterFn_<HKT.UHKT<F>>
+
+  if ('filter_' in F) {
+    filter_ = F.filter_
+  } else {
+    filter_ = <A>(fa: HKT.HKT<F, A>, predicate: Predicate<A>): HKT.HKT<F, A> =>
+      F.filterMap_(fa, (a) => O.fromPredicate_(a, predicate))
+  }
+
+  if ('partition_' in F) {
+    partition_ = F.partition_
+  } else {
+    partition_ = <A>(fa: HKT.HKT<F, A>, predicate: Predicate<A>): readonly [HKT.HKT<F, A>, HKT.HKT<F, A>] =>
+      partitionMap_(fa, (a) => (predicate(a) ? E.Right(a) : E.Left(a)))
+  }
+
+  return HKT.instance<Filterable<HKT.UHKT<F>>>({
+    ...Functor(F),
+    filterMap_,
+    filterMap: (f) => (fa) => filterMap_(fa, f),
+    partitionMap_,
+    partitionMap: (f) => (fa) => partitionMap_(fa, f),
+    filter_,
+    filter: <A>(f: Predicate<A>) => (fa: HKT.HKT<F, A>) => filter_(fa, f),
+    partition_,
+    partition: <A>(f: Predicate<A>) => (fa: HKT.HKT<F, A>) => partition_(fa, f)
+  })
 }
 
 export interface FilterFn<F extends HKT.URIS, C = HKT.Auto> {

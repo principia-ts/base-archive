@@ -1,10 +1,24 @@
-import type * as HKT from './HKT'
+import * as HKT from './HKT'
 
 export interface Zip<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly zip_: ZipFn_<F, C>
   readonly zip: ZipFn<F, C>
   readonly zipWith_: ZipWithFn_<F, C>
   readonly zipWith: ZipWithFn<F, C>
+}
+
+export type ZipMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly zip_: ZipFn_<F, C>
+  readonly zipWith_: ZipWithFn_<F, C>
+}
+
+export function Zip<F extends HKT.URIS, C = HKT.Auto>(F: ZipMin<F, C>): Zip<F, C> {
+  return HKT.instance({
+    zip_: F.zip_,
+    zip: (fb) => (fa) => F.zip_(fa, fb),
+    zipWith_: F.zipWith_,
+    zipWith: (fb, f) => (fa) => F.zipWith_(fa, fb, f)
+  })
 }
 
 export interface ZipFn<F extends HKT.URIS, C = HKT.Auto> {

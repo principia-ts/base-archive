@@ -739,16 +739,12 @@ export function getFilterable<E>(M: P.Monoid<E>) {
     predicate: Predicate<A>
   ): Either<E, A> => (isLeft(fa) ? fa : predicate(fa.right) ? fa : empty)
 
-  return HKT.instance<P.Filterable<[HKT.URI<EitherURI, V>], FixE>>({
-    ...Functor,
-    filter_: filter_,
+  return P.Filterable<[HKT.URI<EitherURI, V>], FixE>({
+    map_,
+    filter_,
     filterMap_,
-    partition_: partition_,
-    partitionMap_,
-    filter: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => filter_(fa, predicate),
-    filterMap: (f) => (fa) => filterMap_(fa, f),
-    partition: <A>(predicate: Predicate<A>) => (fa: Either<E, A>) => partition_(fa, predicate),
-    partitionMap: (f) => (fa) => partitionMap_(fa, f)
+    partition_,
+    partitionMap_
   })
 }
 
@@ -1030,11 +1026,11 @@ export function getWitherable<E>(M: P.Monoid<E>) {
     return pipe(traverseF(wa, f), G.map(Compactable.separate))
   }
 
-  return HKT.instance<P.Witherable<[HKT.URI<EitherURI>], V_>>({
+  return P.Witherable<[HKT.URI<EitherURI>], V_>({
+    ...getFilterable(M),
+    traverse_,
     compactA_: compactA_,
-    separateA_: separateA_,
-    compactA: (G) => (f) => (wa) => compactA_(G)(wa, f),
-    separateA: (G) => (f) => (wa) => separateA_(G)(wa, f)
+    separateA_: separateA_
   })
 }
 

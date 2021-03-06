@@ -11,6 +11,23 @@ export interface Foldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, 
   readonly foldr: FoldRightFn<F, C>
 }
 
+export type FoldableMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly foldl_: FoldLeftFn_<F, C>
+  readonly foldr_: FoldRightFn_<F, C>
+  readonly foldMap_: FoldMapFn_<F, C>
+}
+
+export function Foldable<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): Foldable<F, C> {
+  return HKT.instance<Foldable<F, C>>({
+    foldl_: F.foldl_,
+    foldl: (b, f) => (fa) => F.foldl_(fa, b, f),
+    foldr_: F.foldr_,
+    foldr: (b, f) => (fa) => F.foldr_(fa, b, f),
+    foldMap_: F.foldMap_,
+    foldMap: (M) => (f) => (fa) => F.foldMap_(M)(fa, f)
+  })
+}
+
 export interface FoldableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends HKT.CompositionBase2<F, G, CF, CG> {
   readonly foldl_: FoldLeftFnComposition_<F, G, CF, CG>
@@ -29,20 +46,10 @@ export function getFoldableComposition<F, G>(
   F: Foldable<HKT.UHKT<F>>,
   G: Foldable<HKT.UHKT<G>>
 ): FoldableComposition<HKT.UHKT<F>, HKT.UHKT<G>> {
-  const foldMap_: FoldMapFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (M) => (fga, f) =>
-    F.foldMap_(M)(fga, (ga) => G.foldMap_(M)(ga, f))
-  const foldl_: FoldLeftFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>>  = (fga, b, f) =>
-    F.foldl_(fga, b, (b, ga) => G.foldl_(ga, b, f))
-  const foldr_: FoldRightFnComposition_<HKT.UHKT<F>, HKT.UHKT<G>> = (fga, b, f) =>
-    F.foldr_(fga, b, (ga, b) => G.foldr_(ga, b, f))
-
-  return HKT.instance<FoldableComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
-    foldl_,
-    foldMap_,
-    foldr_,
-    foldl: (b, f) => (fga) => foldl_(fga, b, f),
-    foldMap: (M) => (f) => (fga) => foldMap_(M)(fga, f),
-    foldr: (b, f) => (fga) => foldr_(fga, b, f)
+  return Foldable<[...HKT.MapURIS<HKT.UHKT<F>>, ...HKT.MapURIS<HKT.UHKT<G>>]>({
+    foldl_: (fga, b, f) => F.foldl_(fga, b, (b, ga) => G.foldl_(ga, b, f)),
+    foldr_: (fga, b, f) => F.foldr_(fga, b, (ga, b) => G.foldr_(ga, b, f)),
+    foldMap_: (M) => (fga, f) => F.foldMap_(M)(fga, (ga) => G.foldMap_(M)(ga, f))
   })
 }
 

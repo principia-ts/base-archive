@@ -1,8 +1,21 @@
-import type * as HKT from './HKT'
+import * as HKT from './HKT'
 
 export interface FunctorWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly imap: MapWithIndexFn<F, C>
   readonly imap_: MapWithIndexFn_<F, C>
+}
+
+export type FunctorWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly imap_: MapWithIndexFn_<F, C>
+}
+
+export function FunctorWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+  F: FunctorWithIndexMin<F, C>
+): FunctorWithIndex<F, C> {
+  return HKT.instance({
+    imap_: F.imap_,
+    imap: (f) => (fa) => F.imap_(fa, f)
+  })
 }
 
 export interface MapWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
