@@ -34,7 +34,7 @@ export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.Primitives
             return M.pure(BigInt(a))
           } catch (e) {
             return M.fail(
-              FS.combine(FS.element(DE.leaf(a, 'integer string')), pipe(config, extractInfo, DE.info, FS.element))
+              FS.Combine(FS.Element(DE.Leaf(a, 'integer string')), pipe(config, extractInfo, DE.Info, FS.Element))
             )
           }
         })
@@ -47,12 +47,12 @@ export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.Primitives
       pipe(
         D.string(),
         D.mapLeftWithInput((i, _) =>
-          FS.combine(FS.element(DE.leaf(i, 'date string')), pipe(config, extractInfo, DE.info, FS.element))
+          FS.Combine(FS.Element(DE.Leaf(i, 'date string')), pipe(config, extractInfo, DE.Info, FS.Element))
         ),
         D.parse((M) => (a) => {
           const d = new Date(a)
           return isNaN(d.getTime())
-            ? M.fail(FS.combine(FS.element(DE.leaf(a, 'date string')), pipe(config, extractInfo, DE.info, FS.element)))
+            ? M.fail(FS.Combine(FS.Element(DE.Leaf(a, 'date string')), pipe(config, extractInfo, DE.Info, FS.Element)))
             : M.pure(d)
         })
       ),

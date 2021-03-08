@@ -71,3 +71,18 @@ export function modifyAt<S extends ReadonlyRecord<string, any>, K extends keyof 
 ): (s: S) => Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
   return (s) => modifyAt_(s, k, f)
 }
+
+export function updateAt_<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
+  s: S,
+  k: K,
+  b: B
+): Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
+  return modifyAt_(s, k, () => b)
+}
+
+export function updateAt<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
+  k: K,
+  b: B
+): (s: S) => Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
+  return (s) => modifyAt_(s, k, () => b)
+}

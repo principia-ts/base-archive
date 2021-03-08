@@ -18,8 +18,9 @@ import * as fs from 'fs'
 
 type ErrnoException = NodeJS.ErrnoException
 
-const FileDescriptor = N.typeDef<number>()('FileDescriptor')
-interface FileDescriptor extends N.TypeOf<typeof FileDescriptor> {}
+const _FileDescriptor = N.typeDef<number>()('FileDescriptor')
+export interface FileDescriptor extends N.TypeOf<typeof _FileDescriptor> {}
+export const FileDescriptor = N.newtype<FileDescriptor>()(_FileDescriptor)
 
 function unitErrorCallback(cb: (_: IO<unknown, ErrnoException, void>) => void): (err: ErrnoException | null) => void {
   return (err) => (err ? cb(I.fail(err)) : cb(I.unit()))

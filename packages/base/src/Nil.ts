@@ -1,14 +1,14 @@
 import type * as HKT from './HKT'
 
-export interface Empty<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
-  readonly empty: EmptyFn<F, TC>
+export interface Nil<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
+  readonly nil: NilFn<F, TC>
 }
 
-export type EmptyMin<F extends HKT.URIS, C = HKT.Auto> = {
-  readonly empty: EmptyFn<F, C>
+export type NilMin<F extends HKT.URIS, C = HKT.Auto> = {
+  readonly nil: NilFn<F, C>
 }
 
-export interface EmptyFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface NilFn<F extends HKT.URIS, TC = HKT.Auto> {
   <
     N extends string = HKT.Initial<TC, 'N'>,
     K = HKT.Initial<TC, 'K'>,

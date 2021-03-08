@@ -232,11 +232,11 @@ export function mapLeftWithInput<I>(
 export function withMessage<I>(
   message: (input: I, e: DecodeErrors) => string
 ): <A>(decoder: DecoderKF<I, A>) => DecoderKF<I, A> {
-  return mapLeftWithInput((input, e) => FS.element(DE.wrap({ message: message(input, e) }, e)))
+  return mapLeftWithInput((input, e) => FS.Element(DE.Wrap({ message: message(input, e) }, e)))
 }
 
 export function wrapInfo<I, A>(info: ErrorInfo | undefined): (decoder: DecoderKF<I, A>) => DecoderKF<I, A> {
-  return (decoder) => (info ? mapLeftWithInput_(decoder, (_, e) => FS.element(DE.wrap(info, e))) : decoder)
+  return (decoder) => (info ? mapLeftWithInput_(decoder, (_, e) => FS.Element(DE.Wrap(info, e))) : decoder)
 }
 
 export function refine_<I, A, B extends A>(
@@ -294,7 +294,7 @@ export function parse<A, B>(decode: DecodeFnHKT<A, B>, name?: string): <I>(from:
 export function nullable(info?: ErrorInfo): <I, A>(or: DecoderKF<I, A>) => DecoderKF<I | null | undefined, A | null> {
   return (or) => ({
     decode: K.nullable_(or, (u, e) =>
-      FS.combine(FS.element(DE.member(0, error(u, 'null | undefined', info))), FS.element(DE.member(1, e)))
+      FS.Combine(FS.Element(DE.Member(0, error(u, 'null | undefined', info))), FS.Element(DE.Member(1, e)))
     ).decode,
     _meta: {
       name: `${or._meta.name} | null | undefined`
@@ -307,7 +307,7 @@ export function optional(
 ): <I, A>(or: DecoderKF<I, A>) => DecoderKF<I | null | undefined, O.Option<A>> {
   return (or) => ({
     decode: K.optional_(or, (u, e) =>
-      FS.combine(FS.element(DE.member(0, error(u, 'null | undefined', info))), FS.element(DE.member(1, e)))
+      FS.Combine(FS.Element(DE.Member(0, error(u, 'null | undefined', info))), FS.Element(DE.Member(1, e)))
     ).decode,
     _meta: {
       name: `${or._meta.name} | null | undefined`
@@ -326,7 +326,7 @@ export function fromStruct<P extends Record<string, DecoderKF<any, any>>>(
   )
   return pipe(
     {
-      decode: K.fromStruct_(properties, (k, e: DecodeErrors) => FS.element(DE.key(k, DE.required, e))).decode,
+      decode: K.fromStruct_(properties, (k, e: DecodeErrors) => FS.Element(DE.Key(k, DE.required, e))).decode,
       _meta: {
         name
       }
@@ -353,7 +353,7 @@ export function fromPartial<P extends Record<string, DecoderKF<any, any>>>(
   )
   return pipe(
     {
-      decode: K.fromPartial_(properties, (k, e: DecodeErrors) => FS.element(DE.key(k, DE.optional, e))).decode,
+      decode: K.fromPartial_(properties, (k, e: DecodeErrors) => FS.Element(DE.Key(k, DE.optional, e))).decode,
       _meta: {
         name
       }
@@ -383,7 +383,7 @@ export function fromArray<I, A>(
   const name = `Array<${item._meta.name}>`
   return pipe(
     {
-      decode: K.fromArray_(item, (i, e) => FS.element(DE.index(i, DE.optional, e))).decode,
+      decode: K.fromArray_(item, (i, e) => FS.Element(DE.Index(i, DE.optional, e))).decode,
       _meta: { name }
     },
     wrapInfo({ name, ...info })
@@ -401,7 +401,7 @@ export function fromRecord<I, A>(
   const name = `Record<string, ${codomain._meta.name}>`
   return pipe(
     {
-      decode: K.fromRecord_(codomain, (k, e) => FS.element(DE.key(k, DE.optional, e))).decode,
+      decode: K.fromRecord_(codomain, (k, e) => FS.Element(DE.Key(k, DE.optional, e))).decode,
       _meta: { name }
     },
     wrapInfo({ name, ...info })
@@ -426,7 +426,7 @@ export function fromTuple<A extends ReadonlyArray<DecoderKF<any, any>>>(
     )
     return pipe(
       {
-        decode: K.fromTuple((i, e: DecodeErrors) => FS.element(DE.index(i, DE.required, e)))(...components).decode,
+        decode: K.fromTuple((i, e: DecodeErrors) => FS.Element(DE.Index(i, DE.required, e)))(...components).decode,
         _meta: { name }
       },
       wrapInfo({ name, ...info })
@@ -449,7 +449,7 @@ export function union(
     const name = members.join(' | ')
     return pipe(
       {
-        decode: K.union((i, e: DecodeErrors) => FS.element(DE.member(i, e)))(...members).decode,
+        decode: K.union((i, e: DecodeErrors) => FS.Element(DE.Member(i, e)))(...members).decode,
         _meta: { name }
       },
       wrapInfo({ name, ...info })
@@ -508,8 +508,8 @@ export function fromSum_<T extends string, P extends Record<string, DecoderKF<an
   )
 
   const decode = K.sum(tag, members, (tag, value, keys) =>
-    FS.element(
-      DE.key(
+    FS.Element(
+      DE.Key(
         tag,
         DE.required,
         error(value, keys.length === 0 ? 'never' : keys.map((k) => JSON.stringify(k)).join(' | '))
@@ -547,7 +547,7 @@ export function sum<T extends string>(
 export function lazy<I, A>(id: string, f: () => DecoderKF<I, A>, info?: ErrorInfo): DecoderKF<I, A> {
   return pipe(
     {
-      decode: K.lazy(id, f, (id, e) => FS.element(DE.lazy(id, e))).decode,
+      decode: K.lazy(id, f, (id, e) => FS.Element(DE.Lazy(id, e))).decode,
       _meta: {
         name: info?.name ?? id
       }

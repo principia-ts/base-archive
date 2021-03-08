@@ -5,36 +5,28 @@ import type * as HKT from '@principia/base/HKT'
 import * as P from '@principia/base/typeclass'
 import { mapNF, sequenceSF } from '@principia/base/typeclass'
 
-import { apPar, apPar_, crossPar_, crossWithPar, crossWithPar_ } from './combinators'
-import {
-  ap,
-  ap_,
-  bind,
-  bind_,
-  catchAll,
-  catchAll_,
-  cross_,
-  crossWith,
-  crossWith_,
-  fail,
-  flatten,
-  map,
-  map_,
-  pure,
-  unit
-} from './core'
+import { apPar_, crossPar_, crossWithPar_ } from './combinators'
+import { ap_, bimap_, bind_, catchAll_, cross_, crossWith_, fail, flatten, map_, mapError_, pure, unit } from './core'
 
-export const Functor: P.Functor<[HKT.URI<IOURI>], V> = P.Functor({
+type URI = [HKT.URI<IOURI>]
+
+export const Functor = P.Functor<URI, V>({
   map_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<IOURI>], V> = P.SemimonoidalFunctor({
+export const Bifunctor = P.Bifunctor<URI, V>({
+  mapLeft_: mapError_,
+  mapRight_: map_,
+  bimap_
+})
+
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_
 })
 
-export const SemimonoidalFunctorPar: P.SemimonoidalFunctor<[HKT.URI<IOURI>], V> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_
@@ -46,35 +38,35 @@ export const mapNPar = mapNF(SemimonoidalFunctorPar)
 export const sequenceS    = sequenceSF(SemimonoidalFunctor)
 export const sequenceSPar = sequenceSF(SemimonoidalFunctorPar)
 
-export const Apply: P.Apply<[HKT.URI<IOURI>], V> = P.Apply({
+export const Apply = P.Apply<URI, V>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const ApplyPar: P.Apply<[HKT.URI<IOURI>], V> = P.Apply({
+export const ApplyPar = P.Apply<URI, V>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   ap_: apPar_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<IOURI>], V> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const MonoidalFunctorPar: P.MonoidalFunctor<[HKT.URI<IOURI>], V> = P.MonoidalFunctor({
+export const MonoidalFunctorPar = P.MonoidalFunctor<URI, V>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<IOURI>], V> = P.Applicative({
+export const Applicative = P.Applicative<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -83,7 +75,7 @@ export const Applicative: P.Applicative<[HKT.URI<IOURI>], V> = P.Applicative({
   pure
 })
 
-export const ApplicativePar: P.Applicative<[HKT.URI<IOURI>], V> = P.Applicative({
+export const ApplicativePar = P.Applicative<URI, V>({
   map_,
   cross_: crossPar_,
   crossWith_: crossWithPar_,
@@ -92,7 +84,7 @@ export const ApplicativePar: P.Applicative<[HKT.URI<IOURI>], V> = P.Applicative(
   pure
 })
 
-export const Monad: P.Monad<[HKT.URI<IOURI>], V> = P.Monad({
+export const Monad = P.Monad<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -103,7 +95,7 @@ export const Monad: P.Monad<[HKT.URI<IOURI>], V> = P.Monad({
   flatten
 })
 
-export const MonadExcept: P.MonadExcept<[HKT.URI<IOURI>], V> = P.MonadExcept({
+export const MonadExcept = P.MonadExcept<URI, V>({
   map_,
   cross_,
   crossWith_,

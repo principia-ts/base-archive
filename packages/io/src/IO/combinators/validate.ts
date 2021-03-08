@@ -6,7 +6,7 @@ import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 
-import { absolve, attempt, foreach_, map_ } from '../core'
+import { attempt, foreach_, map_,refail } from '../core'
 import { foreachExec_ } from './foreachExec'
 import { foreachPar_ } from './foreachPar'
 import { foreachParN_ } from './foreachParN'
@@ -34,7 +34,7 @@ const mergeExits = <E, B>() => (exits: ReadonlyArray<Either<E, B>>): Either<NonE
  * will be lost.
  */
 export function validate_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) {
-  return absolve(
+  return refail(
     map_(
       foreach_(as, (a) => attempt(f(a))),
       mergeExits<E, B>()
@@ -54,7 +54,7 @@ export function validate<A, R, E, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>
  * will be lost.
  */
 export function validatePar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) {
-  return absolve(
+  return refail(
     map_(
       foreachPar_(as, (a) => attempt(f(a))),
       mergeExits<E, B>()
@@ -75,7 +75,7 @@ export function validatePar<A, R, E, B>(f: (a: A) => IO<R, E, B>): (as: Iterable
  */
 export function validateParN_(n: number) {
   return <A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) =>
-    absolve(
+    refail(
       map_(
         foreachParN_(n)(as, (a) => attempt(f(a))),
         mergeExits<E, B>()
@@ -101,7 +101,7 @@ export function validateExec_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
 ): IO<R, NonEmptyArray<E>, ReadonlyArray<B>> {
-  return absolve(
+  return refail(
     map_(
       foreachExec_(es, as, (a) => attempt(f(a))),
       mergeExits<E, B>()

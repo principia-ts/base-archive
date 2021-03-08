@@ -50,7 +50,7 @@ export type FreeList<A> = Element<A> | Combine<A> | Filter<A> | Map<A> | Empty
  * @category Constructors
  * @since 1.0.0
  */
-export function combine<A>(left: FreeList<A>, right: FreeList<A>): FreeList<A> {
+export function Combine<A>(left: FreeList<A>, right: FreeList<A>): FreeList<A> {
   return {
     _tag: 'Combine',
     left,
@@ -62,7 +62,7 @@ export function combine<A>(left: FreeList<A>, right: FreeList<A>): FreeList<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function element<A>(a: A): FreeList<A> {
+export function Element<A>(a: A): FreeList<A> {
   return {
     _tag: 'Element',
     value: a
@@ -73,7 +73,7 @@ export function element<A>(a: A): FreeList<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function empty<A>(): FreeList<A> {
+export function Empty<A>(): FreeList<A> {
   return {
     _tag: 'Empty'
   }
@@ -117,7 +117,7 @@ export function filter<A>(f: Predicate<A>): (fa: FreeList<A>) => FreeList<A> {
  * @category Destructors
  * @since 1.0.0
  */
-export function fold_<A, R>(
+export function match_<A, R>(
   f: FreeList<A>,
   patterns: {
     Empty: () => R
@@ -145,14 +145,14 @@ export function fold_<A, R>(
  * @category Destructors
  * @since 1.0.0
  */
-export function fold<A, R>(patterns: {
+export function match<A, R>(patterns: {
   Empty: () => R
   Element: (value: A) => R
   Filter: (fa: FreeList<A>, f: Predicate<A>) => R
   Map: (fa: FreeList<A>, f: (a: A) => A) => R
   Combine: (l: FreeList<A>, r: FreeList<A>) => R
 }): (f: FreeList<A>) => R {
-  return (f) => fold_(f, patterns)
+  return (f) => match_(f, patterns)
 }
 
 type Ops<A> = Filter<A> | Map<A>
@@ -262,7 +262,7 @@ export function map<A>(f: (a: A) => A): (fa: FreeList<A>) => FreeList<A> {
  */
 
 export function append_<A>(fs: FreeList<A>, a: A): FreeList<A> {
-  return combine(fs, element(a))
+  return Combine(fs, Element(a))
 }
 
 export function append<A>(a: A): (fs: FreeList<A>) => FreeList<A> {
@@ -270,7 +270,7 @@ export function append<A>(a: A): (fs: FreeList<A>) => FreeList<A> {
 }
 
 export function prepend_<A>(fs: FreeList<A>, a: A): FreeList<A> {
-  return combine(element(a), fs)
+  return Combine(Element(a), fs)
 }
 
 export function prepend<A>(a: A): (fs: FreeList<A>) => FreeList<A> {
@@ -288,7 +288,7 @@ export function prepend<A>(a: A): (fs: FreeList<A>) => FreeList<A> {
  * @since 1.0.0
  */
 export function getSemigroup<A = never>(): Semigroup<FreeList<A>> {
-  return makeSemigroup(combine)
+  return makeSemigroup(Combine)
 }
 
 /**
@@ -296,5 +296,5 @@ export function getSemigroup<A = never>(): Semigroup<FreeList<A>> {
  * @since 1.0.0
  */
 export function getMonoid<A = never>(): Monoid<FreeList<A>> {
-  return makeMonoid(getSemigroup<A>().combine_, empty())
+  return makeMonoid(getSemigroup<A>().combine_, Empty())
 }

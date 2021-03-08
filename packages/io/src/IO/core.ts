@@ -14,7 +14,7 @@ import type { Has, Region, Tag } from '@principia/base/Has'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Option } from '@principia/base/Option'
 import type { Monoid } from '@principia/base/typeclass'
-import type { _E as InferE, _R as InferR, UnionToIntersection } from '@principia/base/util/types'
+import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -440,7 +440,7 @@ export function pure<A>(a: A): UIO<A> {
  * @category Apply
  * @since 1.0.0
  */
-export function cross_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, readonly [A, B]> {
+export function cross_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, readonly [A, B]> {
   return crossWith_(fa, fb, tuple)
 }
 
@@ -451,7 +451,7 @@ export function cross_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q
  * @since 1.0.0
  * @dataFirst cross_
  */
-export function cross<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, readonly [A, B]> {
+export function cross<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
 
@@ -461,7 +461,7 @@ export function cross<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => I
  * @category Apply
  * @since 1.0.0
  */
-export function ap_<Q, D, A, B, R, E>(fab: IO<Q, D, (a: A) => B>, fa: IO<R, E, A>): IO<Q & R, D | E, B> {
+export function ap_<R, E, A, R1, E1, B>(fab: IO<R1, E1, (a: A) => B>, fa: IO<R, E, A>): IO<R1 & R, E1 | E, B> {
   return bind_(fab, (f) => map_(fa, f))
 }
 
@@ -472,18 +472,18 @@ export function ap_<Q, D, A, B, R, E>(fab: IO<Q, D, (a: A) => B>, fa: IO<R, E, A
  * @since 1.0.0
  * @dataFirst ap_
  */
-export function ap<R, E, A>(fa: IO<R, E, A>): <Q, D, B>(fab: IO<Q, D, (a: A) => B>) => IO<Q & R, E | D, B> {
+export function ap<R, E, A>(fa: IO<R, E, A>): <R1, E1, B>(fab: IO<R1, E1, (a: A) => B>) => IO<R1 & R, E | E1, B> {
   return (fab) => ap_(fab, fa)
 }
 
-export function apl_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, A> {
+export function apl_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
   return bind_(fa, (a) => map_(fb, () => a))
 }
 
 /**
  * @dataFirst apl_
  */
-export function apl<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, A> {
+export function apl<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
   return (fa) => apl_(fa, fb)
 }
 
@@ -493,7 +493,7 @@ export function apl<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<
  * @category Apply
  * @since 1.0.0
  */
-export function apr_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q & R, D | E, B> {
+export function apr_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, B> {
   return bind_(fa, () => fb)
 }
 
@@ -504,25 +504,25 @@ export function apr_<R, E, A, Q, D, B>(fa: IO<R, E, A>, fb: IO<Q, D, B>): IO<Q &
  * @since 1.0.0
  * @dataFirst apr_
  */
-export function apr<Q, D, B>(fb: IO<Q, D, B>): <R, E, A>(fa: IO<R, E, A>) => IO<Q & R, D | E, B> {
+export function apr<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, B> {
   return (fa) => apr_(fa, fb)
 }
 
-export function crossWith_<R, E, A, Q, D, B, C>(
+export function crossWith_<R, E, A, R1, E1, B, C>(
   fa: IO<R, E, A>,
-  fb: IO<Q, D, B>,
+  fb: IO<R1, E1, B>,
   f: (a: A, b: B) => C
-): IO<Q & R, D | E, C> {
+): IO<R1 & R, E1 | E, C> {
   return bind_(fa, (ra) => map_(fb, (rb) => f(ra, rb)))
 }
 
 /**
  * @dataFirst crossWith_
  */
-export function crossWith<A, Q, D, B, C>(
-  fb: IO<Q, D, B>,
+export function crossWith<A, R1, E1, B, C>(
+  fb: IO<R1, E1, B>,
   f: (a: A, b: B) => C
-): <R, E>(fa: IO<R, E, A>) => IO<Q & R, D | E, C> {
+): <R, E>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, C> {
   return (fa) => crossWith_(fa, fb, f)
 }
 
@@ -539,7 +539,7 @@ export function crossWith<A, Q, D, B, C>(
  * @category Bifunctor
  * @since 1.0.0
  */
-export function bimap_<R, E, A, G, B>(pab: IO<R, E, A>, f: (e: E) => G, g: (a: A) => B): IO<R, G, B> {
+export function bimap_<R, E, A, E1, B>(pab: IO<R, E, A>, f: (e: E) => E1, g: (a: A) => B): IO<R, E1, B> {
   return matchM_(
     pab,
     (e) => fail(f(e)),
@@ -554,7 +554,7 @@ export function bimap_<R, E, A, G, B>(pab: IO<R, E, A>, f: (e: E) => G, g: (a: A
  * @category Bifunctor
  * @since 1.0.0
  */
-export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: IO<R, E, A>) => IO<R, G, B> {
+export function bimap<E, E1, A, B>(f: (e: E) => E1, g: (a: A) => B): <R>(pab: IO<R, E, A>) => IO<R, E1, B> {
   return (pab) => bimap_(pab, f, g)
 }
 
@@ -568,7 +568,7 @@ export function bimap<E, G, A, B>(f: (e: E) => G, g: (a: A) => B): <R>(pab: IO<R
  * @category Bifunctor
  * @since 1.0.0
  */
-export function mapError_<R, E, A, D>(fea: IO<R, E, A>, f: (e: E) => D): IO<R, D, A> {
+export function mapError_<R, E, A, E1>(fea: IO<R, E, A>, f: (e: E) => E1): IO<R, E1, A> {
   return matchCauseM_(fea, flow(C.map(f), halt), succeed)
 }
 
@@ -582,7 +582,7 @@ export function mapError_<R, E, A, D>(fea: IO<R, E, A>, f: (e: E) => D): IO<R, D
  * @category Bifunctor
  * @since 1.0.0
  */
-export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: IO<R, E, A>) => IO<R, D, A> {
+export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO<R, E1, A> {
   return (fea) => mapError_(fea, f)
 }
 
@@ -598,7 +598,7 @@ export function mapError<E, D>(f: (e: E) => D): <R, A>(fea: IO<R, E, A>) => IO<R
  * @category Combinators
  * @since 1.0.0
  */
-export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
+export function refail<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
   return bind_(ma, E.match(fail, succeed))
 }
 
@@ -730,7 +730,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  * @since 1.0.0
  * @trace 1
  */
-export function bind_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B>): IO<R & U, E | G, B> {
+export function bind_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
   return new Bind(ma, f)
 }
 
@@ -746,7 +746,7 @@ export function bind_<R, E, A, U, G, B>(ma: IO<R, E, A>, f: (a: A) => IO<U, G, B
  * @dataFirst bind_
  * @trace 0
  */
-export function bind<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, E, A>) => IO<R & U, G | E, B> {
+export function bind<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, B> {
   return (ma) => bind_(ma, f)
 }
 
@@ -756,7 +756,7 @@ export function bind<A, U, G, B>(f: (a: A) => IO<U, G, B>): <R, E>(ma: IO<R, E, 
  * @category Monad
  * @since 1.0.0
  */
-export function flatten<R, E, Q, D, A>(ffa: IO<R, E, IO<Q, D, A>>) {
+export function flatten<R, E, R1, E1, A>(ffa: IO<R, E, IO<R1, E1, A>>) {
   return bind_(ffa, identity)
 }
 
@@ -769,7 +769,7 @@ export function flatten<R, E, Q, D, A>(ffa: IO<R, E, IO<Q, D, A>>) {
  * @category Monad
  * @since 1.0.0
  */
-export function tap_<R, E, A, Q, D, B>(fa: IO<R, E, A>, f: (a: A) => IO<Q, D, B>): IO<Q & R, D | E, A> {
+export function tap_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
   return bind_(fa, (a) =>
     pipe(
       f(a),
@@ -788,7 +788,7 @@ export function tap_<R, E, A, Q, D, B>(fa: IO<R, E, A>, f: (a: A) => IO<Q, D, B>
  * @since 1.0.0
  * @dataFirst tap_
  */
-export function tap<A, Q, D, B>(f: (a: A) => IO<Q, D, B>): <R, E>(fa: IO<R, E, A>) => IO<Q & R, D | E, A> {
+export function tap<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
   return (fa) => tap_(fa, f)
 }
 
@@ -871,7 +871,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  * @category MonadEnv
  * @since 1.0.0
  */
-export function asksM<Q, R, E, A>(f: (r: Q) => IO<R, E, A>): IO<R & Q, E, A> {
+export function asksM<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> {
   return new Read(f)
 }
 
@@ -1103,9 +1103,9 @@ export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<
  * @dataFirst catchAll_
  * @trace 0
  */
-export function catchAll<R, E, E2, A>(
-  f: (e: E2) => IO<R, E, A>
-): <R2, A2>(ma: IO<R2, E2, A2>) => IO<R2 & R, E, A | A2> {
+export function catchAll<E, R1, E1, A1>(
+  f: (e: E) => IO<R1, E1, A1>
+): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E1, A1 | A> {
   return (ma) => catchAll_(ma, f)
 }
 
@@ -1309,7 +1309,7 @@ export function cond_<R, R1, E, A>(b: boolean, onTrue: () => URIO<R, A>, onFalse
   return deferTotal((): IO<R & R1, E, A> => (b ? onTrue() : bind_(onFalse(), fail)))
 }
 
-export function cond<R, R1, E, A>(
+export function cond<R, A, R1, E>(
   onTrue: () => URIO<R, A>,
   onFalse: () => URIO<R1, E>
 ): (b: boolean) => IO<R & R1, E, A> {
@@ -1628,7 +1628,7 @@ export function foreachUnit<R, E, A>(f: (a: A) => IO<R, E, any>): (as: Iterable<
  */
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, ReadonlyArray<B>> {
   return map_(
-    I.foldl_(as, succeed(FL.empty<B>()) as IO<R, E, FL.FreeList<B>>, (b, a) =>
+    I.foldl_(as, succeed(FL.Empty<B>()) as IO<R, E, FL.FreeList<B>>, (b, a) =>
       crossWith_(
         b,
         deferTotal(() => f(a)),
@@ -3120,7 +3120,7 @@ export function gen<R0, E0, A0>(): <T extends GenIO<R0, E0, any>>(
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
-) => IO<InferR<T>, InferE<T>, A0>
+) => IO<_R<T>, _E<T>, A0>
 export function gen<E0, A0>(): <T extends GenIO<any, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenIO<Has<A>, never, A>
@@ -3130,7 +3130,7 @@ export function gen<E0, A0>(): <T extends GenIO<any, E0, any>>(
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
-) => IO<InferR<T>, InferE<T>, A0>
+) => IO<_R<T>, _E<T>, A0>
 export function gen<A0>(): <T extends GenIO<any, any, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenIO<Has<A>, never, A>
@@ -3140,7 +3140,7 @@ export function gen<A0>(): <T extends GenIO<any, any, any>>(
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
-) => IO<InferR<T>, InferE<T>, A0>
+) => IO<_R<T>, _E<T>, A0>
 export function gen<T extends GenIO<any, any, any>, A>(
   f: (i: {
     <A>(_: Tag<A>): GenIO<Has<A>, never, A>
@@ -3150,9 +3150,9 @@ export function gen<T extends GenIO<any, any, any>, A>(
     <R, E, A>(_: IO<R, E, A>): GenIO<R, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A, any>
-): IO<InferR<T>, InferE<T>, A>
+): IO<_R<T>, _E<T>, A>
 export function gen(...args: any[]): any {
-  const _gen = <T extends GenIO<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): IO<InferR<T>, InferE<T>, A> =>
+  const _gen = <T extends GenIO<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): IO<_R<T>, _E<T>, A> =>
     deferTotal(() => {
       const iterator = f(adapter as any)
       const state    = iterator.next()

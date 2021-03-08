@@ -1,17 +1,17 @@
-import type { ChalkFn } from './utils'
 import type { Has } from '@principia/base/Has'
 import type ChalkType from 'chalk'
 
 import { pipe } from '@principia/base/Function'
 import { tag } from '@principia/base/Has'
 import { Clock } from '@principia/io/Clock'
-import * as C from '@principia/io/Console'
 import { Console, ConsoleTag } from '@principia/io/Console'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as fs from '@principia/node/fs'
 import { formatISO9075, getMilliseconds } from 'date-fns'
 import stripAnsi from 'strip-ansi'
+
+export type ChalkFn = (c: typeof ChalkType) => string
 
 export type LogFn = (m: ChalkFn) => I.URIO<Has<Clock>, void>
 

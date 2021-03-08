@@ -1,5 +1,6 @@
 import type { Semigroup } from '@principia/base/typeclass'
 
+import * as Ev from '@principia/base/Eval'
 import { makeSemigroup } from '@principia/base/typeclass'
 
 /*
@@ -31,7 +32,7 @@ export type FreeSemigroup<A> = Element<A> | Combine<A>
  * @category Constructors
  * @since 1.0.0
  */
-export function combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): FreeSemigroup<A> {
+export function Combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): FreeSemigroup<A> {
   return {
     _tag: 'Combine',
     left,
@@ -43,7 +44,7 @@ export function combine<A>(left: FreeSemigroup<A>, right: FreeSemigroup<A>): Fre
  * @category Constructors
  * @since 1.0.0
  */
-export function element<A>(a: A): FreeSemigroup<A> {
+export function Element<A>(a: A): FreeSemigroup<A> {
   return {
     _tag: 'Element',
     value: a
@@ -56,22 +57,36 @@ export function element<A>(a: A): FreeSemigroup<A> {
  * -------------------------------------------
  */
 
-/**
- * @category Destructors
- * @since 1.0.0
- */
-export function fold<A, R>(
-  onOf: (value: A) => R,
-  onConcat: (left: FreeSemigroup<A>, right: FreeSemigroup<A>) => R
-): (f: FreeSemigroup<A>) => R {
-  return (f) => {
-    switch (f._tag) {
-      case 'Element':
-        return onOf(f.value)
-      case 'Combine':
-        return onConcat(f.left, f.right)
+function foldSafe_<A, B>(
+  fs: FreeSemigroup<A>,
+  onElement: (value: A) => B,
+  onCombine: (left: B, right: B) => B
+): Ev.Eval<B> {
+  return Ev.defer(() => {
+    switch (fs._tag) {
+      case 'Element': {
+        return Ev.now(onElement(fs.value))
+      }
+      case 'Combine': {
+        return Ev.crossWith_(
+          foldSafe_(fs.left, onElement, onCombine),
+          foldSafe_(fs.right, onElement, onCombine),
+          onCombine
+        )
+      }
     }
-  }
+  })
+}
+
+export function fold_<A, B>(fs: FreeSemigroup<A>, onElement: (value: A) => B, onCombine: (left: B, right: B) => B): B {
+  return foldSafe_(fs, onElement, onCombine).value
+}
+
+export function fold<A, B>(
+  onElement: (value: A) => B,
+  onCombine: (left: B, right: B) => B
+): (fs: FreeSemigroup<A>) => B {
+  return (fs) => fold_(fs, onElement, onCombine)
 }
 
 /*
@@ -85,5 +100,5 @@ export function fold<A, R>(
  * @since 1.0.0
  */
 export function getSemigroup<A = never>(): Semigroup<FreeSemigroup<A>> {
-  return makeSemigroup(combine)
+  return makeSemigroup(Combine)
 }

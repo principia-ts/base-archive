@@ -1050,20 +1050,29 @@ export const Functor = P.Functor<URI, V>({
   map_
 })
 
-export const flap_   = P.flapF_<URI, V>(Functor)
-export const flap    = P.flapF<URI, V>(Functor)
-export const as_     = P.asF_<URI, V>(Functor)
-export const as      = P.asF<URI, V>(Functor)
-export const fcross_ = P.fcrossF_<URI, V>(Functor)
-export const fcross  = P.fcrossF<URI, V>(Functor)
+export const flap_: <E, A, B>(fa: Either<E, (a: A) => B>, a: A) => Either<E, B> = P.flapF_<URI, V>(Functor)
+
+export const flap: <A>(a: A) => <E, B>(fab: Either<E, (a: A) => B>) => Either<E, B> = P.flapF<URI, V>(Functor)
+
+export const as_: <E, A, B>(fa: Either<E, A>, b: () => B) => Either<E, B> = P.asF_<URI, V>(Functor)
+
+export const as: <B>(b: () => B) => <E, A>(fa: Either<E, A>) => Either<E, B> = P.asF<URI, V>(Functor)
+
+export const fcross_: <E, A, B>(fa: Either<E, A>, f: (a: A) => B) => Either<E, readonly [A, B]> = P.fcrossF_<URI, V>(
+  Functor
+)
+
+export const fcross: <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>) => Either<E, readonly [A, B]> = P.fcrossF<URI, V>(
+  Functor
+)
 
 /**
  * @category Instances
  * @since 1.0.0
  */
 export const Bifunctor = P.Bifunctor<URI, V>({
-  map_,
   mapLeft_,
+  mapRight_: map_,
   bimap_
 })
 

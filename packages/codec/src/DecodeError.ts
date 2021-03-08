@@ -66,7 +66,7 @@ export type DecodeError<E> = Leaf | Key<E> | Index<E> | Member<E> | Lazy<E> | Wr
  * -------------------------------------------
  */
 
-export function leaf<E>(actual: unknown, expected: string): DecodeError<E> {
+export function Leaf<E>(actual: unknown, expected: string): DecodeError<E> {
   return {
     _tag: 'Leaf',
     actual,
@@ -74,7 +74,7 @@ export function leaf<E>(actual: unknown, expected: string): DecodeError<E> {
   }
 }
 
-export function key<E>(key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+export function Key<E>(key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
   return {
     _tag: 'Key',
     key,
@@ -83,7 +83,7 @@ export function key<E>(key: string, kind: Kind, errors: FreeSemigroup<DecodeErro
   }
 }
 
-export function index<E>(index: number, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+export function Index<E>(index: number, kind: Kind, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
   return {
     _tag: 'Index',
     index,
@@ -92,7 +92,7 @@ export function index<E>(index: number, kind: Kind, errors: FreeSemigroup<Decode
   }
 }
 
-export function member<E>(index: number, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+export function Member<E>(index: number, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
   return {
     _tag: 'Member',
     index,
@@ -100,7 +100,7 @@ export function member<E>(index: number, errors: FreeSemigroup<DecodeError<E>>):
   }
 }
 
-export function lazy<E>(id: string, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+export function Lazy<E>(id: string, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
   return {
     _tag: 'Lazy',
     id,
@@ -108,7 +108,7 @@ export function lazy<E>(id: string, errors: FreeSemigroup<DecodeError<E>>): Deco
   }
 }
 
-export function wrap<E>(error: E, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
+export function Wrap<E>(error: E, errors: FreeSemigroup<DecodeError<E>>): DecodeError<E> {
   return {
     _tag: 'Wrap',
     error,
@@ -116,7 +116,7 @@ export function wrap<E>(error: E, errors: FreeSemigroup<DecodeError<E>>): Decode
   }
 }
 
-export function info<E>(info: E): DecodeError<E> {
+export function Info<E>(info: E): DecodeError<E> {
   return {
     _tag: 'Info',
     info
@@ -129,6 +129,36 @@ export function info<E>(info: E): DecodeError<E> {
  * -------------------------------------------
  */
 
+export function match_<E, R>(
+  e: DecodeError<E>,
+  patterns: {
+    Leaf: (input: unknown, expected: string) => R
+    Key: (key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>) => R
+    Index: (index: number, kind: Kind, errors: FreeSemigroup<DecodeError<E>>) => R
+    Member: (index: number, errors: FreeSemigroup<DecodeError<E>>) => R
+    Lazy: (id: string, errors: FreeSemigroup<DecodeError<E>>) => R
+    Wrap: (error: E, errors: FreeSemigroup<DecodeError<E>>) => R
+    Info: (info: E) => R
+  }
+): R {
+  switch (e._tag) {
+    case 'Leaf':
+      return patterns.Leaf(e.actual, e.expected)
+    case 'Key':
+      return patterns.Key(e.key, e.kind, e.errors)
+    case 'Index':
+      return patterns.Index(e.index, e.kind, e.errors)
+    case 'Member':
+      return patterns.Member(e.index, e.errors)
+    case 'Lazy':
+      return patterns.Lazy(e.id, e.errors)
+    case 'Wrap':
+      return patterns.Wrap(e.error, e.errors)
+    case 'Info':
+      return patterns.Info(e.info)
+  }
+}
+
 export function match<E, R>(patterns: {
   Leaf: (input: unknown, expected: string) => R
   Key: (key: string, kind: Kind, errors: FreeSemigroup<DecodeError<E>>) => R
@@ -138,25 +168,7 @@ export function match<E, R>(patterns: {
   Wrap: (error: E, errors: FreeSemigroup<DecodeError<E>>) => R
   Info: (info: E) => R
 }): (e: DecodeError<E>) => R {
-  const f = (e: DecodeError<E>): R => {
-    switch (e._tag) {
-      case 'Leaf':
-        return patterns.Leaf(e.actual, e.expected)
-      case 'Key':
-        return patterns.Key(e.key, e.kind, e.errors)
-      case 'Index':
-        return patterns.Index(e.index, e.kind, e.errors)
-      case 'Member':
-        return patterns.Member(e.index, e.errors)
-      case 'Lazy':
-        return patterns.Lazy(e.id, e.errors)
-      case 'Wrap':
-        return patterns.Wrap(e.error, e.errors)
-      case 'Info':
-        return patterns.Info(e.info)
-    }
-  }
-  return f
+  return (e) => match_(e, patterns)
 }
 
 /*

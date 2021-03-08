@@ -46,7 +46,7 @@ export class Route<R, E> {
     readonly method: HttpMethod,
     readonly path: string,
     readonly route: RouteFn<R, any>,
-    readonly middlewares = FL.empty<Middleware<any, any>>()
+    readonly middlewares = FL.Empty<Middleware<any, any>>()
   ) {
     this.match = (method, url) => this.method === method && p2r.pathToRegexp(path).test(url.pathname || '')
   }

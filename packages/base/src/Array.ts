@@ -1523,14 +1523,6 @@ export function intersperse<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A>
   return (as) => intersperse_(as, a)
 }
 
-export function join_(as: ReadonlyArray<string>, s: string): string {
-  return as.join(s)
-}
-
-export function join(s: string): (as: ReadonlyArray<string>) => string {
-  return (as) => as.join(s)
-}
-
 export function lookup_<A>(as: ReadonlyArray<A>, i: number): Option<A> {
   return isOutOfBound_(as, i) ? O.None() : O.Some(as[i])
 }
@@ -1951,7 +1943,7 @@ export const Applicative = P.Applicative<URI>({
 
 export const Zip = P.Zip<URI>({
   zip_,
-  zipWith_,
+  zipWith_
 })
 
 export const Alt = P.Alt<URI>({
@@ -1967,7 +1959,7 @@ export const Alternative = P.Alternative<URI>({
   pure,
   unit,
   alt_,
-  empty
+  nil: empty
 })
 
 export const Compactable = HKT.instance<P.Compactable<URI>>({
@@ -2100,4 +2092,12 @@ export function mutate_<A>(as: ReadonlyArray<A>, f: (as: Array<A>) => void): Rea
  */
 export function mutate<A>(f: (as: Array<A>) => void): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => mutate_(as, f)
+}
+
+export function join_(as: ReadonlyArray<string>, s: string): string {
+  return as.join(s)
+}
+
+export function join(s: string): (as: ReadonlyArray<string>) => string {
+  return (as) => as.join(s)
 }

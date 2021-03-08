@@ -34,6 +34,7 @@ export type FSync<E, A> = Sync<unknown, E, A>
 export type URSync<R, A> = Sync<R, never, A>
 
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
+type URI = [HKT.URI<typeof SyncURI>]
 
 /*
  * -------------------------------------------
@@ -732,7 +733,7 @@ export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
 
 export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>): Sync<R, E, ReadonlyArray<B>> {
   return map_(
-    I.foldl_(as, succeed(FL.empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
+    I.foldl_(as, succeed(FL.Empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
       crossWith_(
         b,
         deferTotal(() => f(a)),
@@ -757,17 +758,17 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<SyncURI>], V> = P.Functor({
+export const Functor: P.Functor<URI, V> = P.Functor({
   map_
 })
 
-export const Bifunctor: P.Bifunctor<[HKT.URI<SyncURI>], V> = P.Bifunctor({
-  map_,
+export const Bifunctor = P.Bifunctor<URI, V>({
   mapLeft_: mapError_,
+  mapRight_: map_,
   bimap_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<SyncURI>], V> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_
@@ -776,21 +777,21 @@ export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<SyncURI>], V> =
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 
-export const Apply: P.Apply<[HKT.URI<SyncURI>], V> = P.Apply({
+export const Apply = P.Apply<URI, V>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[HKT.URI<SyncURI>], V> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative: P.Applicative<[HKT.URI<SyncURI>], V> = P.Applicative({
+export const Applicative = P.Applicative<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -799,7 +800,7 @@ export const Applicative: P.Applicative<[HKT.URI<SyncURI>], V> = P.Applicative({
   pure
 })
 
-export const Monad: P.Monad<[HKT.URI<SyncURI>], V> = P.Monad({
+export const Monad = P.Monad<URI, V>({
   map_,
   cross_,
   crossWith_,
@@ -810,7 +811,7 @@ export const Monad: P.Monad<[HKT.URI<SyncURI>], V> = P.Monad({
   flatten
 })
 
-export const MonadExcept: P.MonadExcept<[HKT.URI<SyncURI>], V> = P.MonadExcept({
+export const MonadExcept = P.MonadExcept<URI, V>({
   map_,
   cross_,
   crossWith_,

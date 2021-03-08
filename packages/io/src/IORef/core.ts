@@ -104,7 +104,7 @@ export class DerivedAll<EA, EB, A, B, S> implements IORef<EA, EB, A, B> {
           (s) => [E.Right(undefined), s] as [E.Either<EA, void>, S]
         )
       ),
-      I.absolve
+      I.refail
     )
 }
 
@@ -597,7 +597,7 @@ export function modify<B, A>(f: (a: A) => readonly [B, A]) {
                 )
               )
             ),
-            I.absolve
+            I.refail
           ),
         DerivedAll: (self) =>
           pipe(
@@ -621,7 +621,7 @@ export function modify<B, A>(f: (a: A) => readonly [B, A]) {
                 )
               )
             ),
-            I.absolve
+            I.refail
           )
       })
     )

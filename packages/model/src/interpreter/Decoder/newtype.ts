@@ -19,7 +19,7 @@ export const NewtypeDecoder = implementInterpreter<DecoderURI, Alg.NewtypeURI>()
         pipe(
           decoder,
           D.map(iso.get),
-          D.mapLeftWithInput((i, e) => FS.combine(e, FS.element(DE.info(extractInfo(config)))))
+          D.mapLeftWithInput((i, e) => FS.Combine(e, FS.Element(DE.Info(extractInfo(config)))))
         ),
         env,
         decoder

@@ -11,7 +11,7 @@ import * as T from '@principia/base/RoseTree'
 import * as P from '@principia/base/typeclass'
 import * as FS from '@principia/free/FreeSemigroup'
 
-import { info, leaf, match } from './DecodeError'
+import { Info, Leaf, match } from './DecodeError'
 
 type Eval<A> = Eval.Eval<A>
 
@@ -42,8 +42,8 @@ const isInfoPopulated = (info?: ErrorInfo): info is ErrorInfo => !!info?.id || !
 
 export function error(actual: unknown, expected: string, errorInfo?: ErrorInfo): DecodeErrors {
   return isInfoPopulated(errorInfo)
-    ? FS.combine(FS.element(leaf(actual, expected)), FS.element(info(errorInfo)))
-    : FS.element(leaf(actual, expected))
+    ? FS.Combine(FS.Element(Leaf(actual, expected)), FS.Element(Info(errorInfo)))
+    : FS.Element(Leaf(actual, expected))
 }
 
 const toTree: (e: DecodeError<ErrorInfo>) => RoseTree<string> = match({
@@ -147,7 +147,7 @@ export function getValidation<M>(
       M.crossWith_(attempt(fa), attempt(fb), (ea, eb) =>
         E.isLeft(ea)
           ? E.isLeft(eb)
-            ? M.fail(FS.combine(ea.left, eb.left))
+            ? M.fail(FS.Combine(ea.left, eb.left))
             : M.fail(ea.left)
           : E.isLeft(eb)
           ? M.fail(eb.left)
@@ -158,7 +158,7 @@ export function getValidation<M>(
   const alt_: P.AltFn_<HKT.UHKT2<M>, V<HKT.Auto>> = (fa, that) =>
     pipe(
       attempt(fa),
-      M.bind(E.match((e) => pipe(attempt(that()), M.bind(E.match((e1) => M.fail(FS.combine(e, e1)), M.pure))), M.pure))
+      M.bind(E.match((e) => pipe(attempt(that()), M.bind(E.match((e1) => M.fail(FS.Combine(e, e1)), M.pure))), M.pure))
     )
 
   return HKT.instance<

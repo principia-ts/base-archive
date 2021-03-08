@@ -65,7 +65,7 @@ export type FAsync<E, A> = Async<unknown, E, A>
 export type URAsync<R, A> = Async<R, never, A>
 
 export const URI = 'Async'
-export type URI = HKT.URI<typeof URI, V>
+export type URI = [HKT.URI<typeof URI, V>]
 
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
@@ -1149,51 +1149,51 @@ export function runAsyncEnv<R, E, A>(
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<[URI], V> = P.Functor({
+export const Functor = P.Functor<URI, V>({
   map_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[URI], V> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_
 })
 
-export const SemimonoidalFunctorPar: P.SemimonoidalFunctor<[URI], V> = P.SemimonoidalFunctor({
+export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_
 })
 
-export const Apply: P.Apply<[URI], V> = P.Apply({
+export const Apply = P.Apply<URI, V>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const ApplyPar: P.Apply<[URI], V> = P.Apply({
+export const ApplyPar = P.Apply<URI, V>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   ap_: apPar_
 })
 
-export const MonoidalFunctor: P.MonoidalFunctor<[URI], V> = P.MonoidalFunctor({
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const MonoidalFunctorPar: P.MonoidalFunctor<[URI], V> = P.MonoidalFunctor({
+export const MonoidalFunctorPar = P.MonoidalFunctor<URI, V>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   unit
 })
 
-export const Applicative: P.Applicative<[URI], V> = P.Applicative({
+export const Applicative = P.Applicative<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -1202,7 +1202,7 @@ export const Applicative: P.Applicative<[URI], V> = P.Applicative({
   pure
 })
 
-export const ApplicativePar: P.Applicative<[URI], V> = P.Applicative({
+export const ApplicativePar = P.Applicative<URI, V>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
@@ -1211,7 +1211,7 @@ export const ApplicativePar: P.Applicative<[URI], V> = P.Applicative({
   pure
 })
 
-export const Monad: P.Monad<[URI], V> = P.Monad({
+export const Monad = P.Monad<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -1222,7 +1222,7 @@ export const Monad: P.Monad<[URI], V> = P.Monad({
   flatten
 })
 
-export const Do: P.Do<[URI], V> = P.deriveDo(Monad)
+export const Do: P.Do<URI, V> = P.deriveDo(Monad)
 
 export const letS = P.letSF(Monad)
 
