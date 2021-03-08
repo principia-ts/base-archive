@@ -1,6 +1,6 @@
 {
   "name": "@principia/free",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Free structures",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -45,7 +45,7 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "@principia/base": "^0.6.4",
+    "@principia/base": "^0.6.5",
     "@principia/compile": "^0.6.1"
   },
   "publishConfig": {
