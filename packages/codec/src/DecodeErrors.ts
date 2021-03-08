@@ -180,8 +180,8 @@ export function getValidation<M>(
       alt_
     }),
     ...P.Bifunctor({
-      map_: M.map_,
       mapLeft_: M.mapLeft_,
+      mapRight_: M.mapRight_,
       bimap_: M.bimap_
     }),
     fail: M.fail
