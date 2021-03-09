@@ -700,6 +700,10 @@ export function delayedFrom<R, I>(sc: Schedule<R, I, number>) {
   return addDelay_(sc, (x) => x)
 }
 
+export function exponential(base: number, factor = 2): Schedule<unknown, unknown, number> {
+  return delayedFrom(map_(forever, (i) => base * Math.pow(factor, i)), )
+}
+
 export function union_<R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) {
   return intersectWith_(sc, that, (d1, d2) => Math.min(d1, d2))
 }
