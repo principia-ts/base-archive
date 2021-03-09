@@ -337,7 +337,7 @@ export function fromPromiseCatch<E>(onReject: (reason: unknown) => E): <A>(promi
  * Create an IO that when executed will construct `promise` and wait for its result,
  * errors will produce failure as `unknown`
  */
-export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
+export function fromPromise<A>(promise: () => Promise<A>): FIO<Error, A> {
   return effectAsync((resolve) => {
     promise().then(flow(pure, resolve)).catch(flow(fail, resolve))
   })
@@ -346,7 +346,7 @@ export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
 /**
  * Like fromPromise but produces a defect in case of errors
  */
-export function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
+export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
   return effectAsync((resolve) => {
     promise().then(flow(pure, resolve)).catch(flow(die, resolve))
   })
