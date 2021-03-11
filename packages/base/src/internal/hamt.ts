@@ -126,27 +126,6 @@ export const Empty: Empty<any, any> = {
   }
 }
 
-/*
- * export class Empty<K, V> {
- *   readonly _tag = 'Empty'
- *
- *   modify(
- *     edit: number,
- *     _keyEq: KeyEq<K>,
- *     _shift: number,
- *     f: UpdateFn<V>,
- *     hash: number,
- *     key: K,
- *     size: SizeRef
- *   ): Node<K, V> {
- *     const v = f(O.none())
- *     if (O.isNone(v)) return new Empty()
- *     ++size.value
- *     return new LeafNode(edit, hash, key, v)
- *   }
- * }
- */
-
 export function isEmptyNode(a: unknown): a is Empty<unknown, unknown> {
   return a === Empty
 }
@@ -287,59 +266,6 @@ function updateCollisionList<K, V>(
   return arrayUpdate(mutate, len, LeafNode(edit, hash, key, newValue), list)
 }
 
-/*
- * export class CollisionNode<K, V> {
- *   readonly _tag = 'CollisionNode'
- *
- *   constructor(readonly edit: number, readonly hash: number, readonly children: Array<Node<K, V>>) {}
- *
- *   modify(edit: number, keyEq: KeyEq<K>, shift: number, f: UpdateFn<V>, hash: number, key: K, size: SizeRef) {
- *     if (hash === this.hash) {
- *       const canEdit = canEditNode(edit, this)
- *       const list    = this.updateCollisionList(canEdit, edit, keyEq, this.hash, this.children, f, key, size)
- *       if (list === this.children) return this
- *
- *       return list.length > 1 ? new CollisionNode(edit, this.hash, list) : list[0] // collapse single element collision list
- *     }
- *     const v = f(O.none())
- *     if (O.isNone(v)) return this
- *     ++size.value
- *     return mergeLeaves(edit, shift, this.hash, this, hash, new LeafNode(edit, hash, key, v))
- *   }
- *
- *   updateCollisionList(
- *     mutate: boolean,
- *     edit: number,
- *     keyEq: KeyEq<K>,
- *     hash: number,
- *     list: Node<K, V>[],
- *     f: UpdateFn<V>,
- *     key: K,
- *     size: SizeRef
- *   ) {
- *     const len = list.length
- *     for (let i = 0; i < len; ++i) {
- *       const child = list[i]
- *       if ('key' in child && keyEq(child.key, key)) {
- *         const value    = child.value
- *         const newValue = f(value)
- *         if (newValue === value) return list
- *         if (O.isNone(newValue)) {
- *           --size.value
- *           return arraySpliceOut(mutate, i, list)
- *         }
- *         return arrayUpdate(mutate, i, new LeafNode(edit, hash, key, newValue), list)
- *       }
- *     }
- *
- *     const newValue = f(O.none())
- *     if (O.isNone(newValue)) return list
- *     ++size.value
- *     return arrayUpdate(mutate, len, new LeafNode(edit, hash, key, newValue), list)
- *   }
- * }
- */
-
 interface IndexedNode<K, V> extends ModifyFn<K, V> {
   readonly _tag: 'IndexedNode'
   edit: number
@@ -407,63 +333,6 @@ function IndexedNode__modify<K, V>(
   return IndexedNode(edit, bitmap, newChildren)
 }
 
-/*
- * export class IndexedNode<K, V> {
- *   readonly _tag = 'IndexedNode'
- *
- *   constructor(readonly edit: number, public mask: number, public children: Node<K, V>[]) {}
- *
- *   modify(
- *     edit: number,
- *     keyEq: KeyEq<K>,
- *     shift: number,
- *     f: UpdateFn<V>,
- *     hash: number,
- *     key: K,
- *     size: SizeRef
- *   ): Node<K, V> {
- *     const mask     = this.mask
- *     const children = this.children
- *     const frag     = hashFragment(shift, hash)
- *     const bit      = toBitmap(frag)
- *     const indx     = fromBitmap(mask, bit)
- *     const exists   = mask & bit
- *     const current  = exists ? children[indx] : new Empty<K, V>()
- *     const child    = current.modify(edit, keyEq, shift + SIZE, f, hash, key, size)
- *
- *     if (current === child) return this
- *
- *     const canEdit = canEditNode(edit, this)
- *     let bitmap    = mask
- *     let newChildren
- *     if (exists && isEmptyNode(child)) {
- *       // remove
- *       bitmap &= ~bit
- *       if (!bitmap) return new Empty()
- *       if (children.length <= 2 && isLeaf(children[indx ^ 1])) return children[indx ^ 1] // collapse
- *
- *       newChildren = arraySpliceOut(canEdit, indx, children)
- *     } else if (!exists && !isEmptyNode(child)) {
- *       // add
- *       if (children.length >= MAX_INDEX_NODE) return expand(edit, frag, child, mask, children)
- *
- *       bitmap     |= bit
- *       newChildren = arraySpliceIn(canEdit, indx, child, children)
- *     } else {
- *       // modify
- *       newChildren = arrayUpdate(canEdit, indx, child, children)
- *     }
- *
- *     if (canEdit) {
- *       this.mask     = bitmap
- *       this.children = newChildren
- *       return this
- *     }
- *     return new IndexedNode(edit, bitmap, newChildren)
- *   }
- * }
- */
-
 export interface ArrayNode<K, V> extends ModifyFn<K, V> {
   readonly _tag: 'ArrayNode'
   edit: number
@@ -526,59 +395,6 @@ function ArrayNode__modify<K, V>(
   }
   return ArrayNode(edit, count, newChildren)
 }
-
-/*
- * export class ArrayNode<K, V> {
- *   readonly _tag = 'ArrayNode'
- *
- *   public size = 0
- *
- *   constructor(readonly edit: number, public mask: number, public children: Node<K, V>[]) {}
- *
- *   modify(
- *     edit: number,
- *     keyEq: KeyEq<K>,
- *     shift: number,
- *     f: UpdateFn<V>,
- *     hash: number,
- *     key: K,
- *     size: SizeRef
- *   ): Node<K, V> {
- *     let count      = this.size
- *     const children = this.children
- *     const frag     = hashFragment(shift, hash)
- *     const child    = children[frag]
- *     const newChild = (child || new Empty<K, V>()).modify(edit, keyEq, shift + SIZE, f, hash, key, size)
- *
- *     if (child === newChild) return this
- *
- *     const canEdit = canEditNode(edit, this)
- *     let newChildren
- *     if (isEmptyNode(child) && !isEmptyNode(newChild)) {
- *       // add
- *       ++count
- *       newChildren = arrayUpdate(canEdit, frag, newChild, children)
- *     } else if (!isEmptyNode(child) && isEmptyNode(newChild)) {
- *       // remove
- *       --count
- *       if (count <= MIN_ARRAY_NODE) {
- *         return pack(edit, count, frag, children)
- *       }
- *       newChildren = arrayUpdate(canEdit, frag, new Empty<K, V>(), children)
- *     } else {
- *       // modify
- *       newChildren = arrayUpdate(canEdit, frag, newChild, children)
- *     }
- *
- *     if (canEdit) {
- *       this.size     = count
- *       this.children = newChildren
- *       return this
- *     }
- *     return new ArrayNode(edit, count, newChildren)
- *   }
- * }
- */
 
 function pack<K, V>(edit: number, count: number, removed: number, elements: Node<K, V>[]) {
   const children = new Array<Node<K, V>>(count - 1)

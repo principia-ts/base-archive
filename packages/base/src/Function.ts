@@ -109,11 +109,11 @@ export function absurd<A>(_: never): A {
   throw new Error('Called `absurd` function, which should be uncallable.')
 }
 
-export function tupled<A extends ReadonlyArray<unknown>, B>(f: (...a: A) => B): (a: A) => B {
+export function tupled<A extends ReadonlyArray<unknown>, B>(f: (...a: A) => B): (a: Readonly<A>) => B {
   return (a) => f(...a)
 }
 
-export function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: A) => B): (...a: A) => B {
+export function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: Readonly<A>) => B): (...a: A) => B {
   return (...a) => f(a)
 }
 
@@ -584,6 +584,5 @@ export function pipe(
         ...(rest as any)
       )
   }
-  return
 }
 /* eslint-enable */

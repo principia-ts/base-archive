@@ -78,6 +78,23 @@ export function between<A>(O: Ord<A>): (low: A, hi: A) => Predicate<A> {
   return (low, hi) => (a) => (ltO(a, low) || gtO(a, hi) ? false : true)
 }
 
+export function tuple<A extends ReadonlyArray<unknown>>(...ords: { [K in keyof A]: Ord<A[K]> }): Ord<Readonly<A>> {
+  return makeOrd((x, y) => {
+    let i = 0
+    for (; i < ords.length - 1; i++) {
+      const r = ords[i].compare_(x[i], y[i])
+      if (r !== 0) {
+        return r
+      }
+    }
+    return ords[i].compare_(x[i], y[i])
+  })
+}
+
+export function reverse<A>(O: Ord<A>): Ord<A> {
+  return makeOrd((x, y) => O.compare_(y, x))
+}
+
 export const getSemigroup = <A = never>(): Semigroup<Ord<A>> => {
   return makeSemigroup((x, y) =>
     makeOrd((a1, a2) => {
