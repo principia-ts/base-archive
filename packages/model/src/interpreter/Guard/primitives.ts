@@ -11,7 +11,7 @@ import * as R from '@principia/base/Record'
 import * as S from '@principia/base/String'
 
 import { implementInterpreter } from '../../HKT'
-import { regexUUID } from '../Decoder/primitives'
+import { regexUUID } from '../DecoderK/primitives'
 import { applyGuardConfig } from './HKT'
 
 export const PrimitivesGuard = implementInterpreter<GuardURI, Alg.PrimitivesURI>()((_) => ({

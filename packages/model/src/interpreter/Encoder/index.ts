@@ -43,5 +43,5 @@ export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
   env: {
     [K in EncoderURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
   }
-) => <S, R, E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>): E.Encoder<E, A> =>
+) => <E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, E, A>): E.Encoder<E, A> =>
   pipe(env, F.derive(allEncoderInterpreters()))

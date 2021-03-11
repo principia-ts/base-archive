@@ -11,17 +11,17 @@ declare module '../HKT' {
   }
 }
 
-export interface NullableConfig<S, R, E, A> {}
-export interface OptionalConfig<S, R, E, A> {}
+export interface NullableConfig<E, A> {}
+export interface OptionalConfig<E, A> {}
 
 export interface NullableAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly nullable_: <S, R, E, A>(
-    a: InterpretedKind<F, Env, S, R, E, A>,
-    config?: Config<Env, S | null, R | null, E | null, A | null, NullableConfig<S, R, E, A>>
-  ) => InterpretedKind<F, Env, S | null, R | null, E | null, A | null>
+  readonly nullable_: <E, A>(
+    a: InterpretedKind<F, Env, E, A>,
+    config?: Config<Env, E | null, A | null, NullableConfig<E, A>>
+  ) => InterpretedKind<F, Env, E | null, A | null>
 
-  readonly optional_: <S, R, E, A>(
-    a: InterpretedKind<F, Env, S, R, E, A>,
-    config?: Config<Env, S | undefined, R | undefined, E | undefined, Option<A>, OptionalConfig<S, R, E, A>>
-  ) => InterpretedKind<F, Env, S | undefined, R | undefined, E | undefined, Option<A>>
+  readonly optional_: <E, A>(
+    a: InterpretedKind<F, Env, E, A>,
+    config?: Config<Env, E | undefined, Option<A>, OptionalConfig<E, A>>
+  ) => InterpretedKind<F, Env, E | undefined, Option<A>>
 }

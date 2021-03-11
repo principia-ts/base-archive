@@ -14,9 +14,9 @@ declare module '../HKT' {
 export interface SetConfig<E, A> {}
 
 export interface SetAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly set: <S, R, E, A>(
-    a: InterpretedKind<F, Env, S, R, E, A>,
+  readonly set: <E, A>(
+    a: InterpretedKind<F, Env, E, A>,
     ord: Ord<A>,
-    config?: Config<Env, unknown, unknown, ReadonlyArray<E>, ReadonlySet<A>, SetConfig<E, A>>
-  ) => InterpretedKind<F, Env, unknown, unknown, ReadonlyArray<E>, ReadonlySet<A>>
+    config?: Config<Env, ReadonlyArray<E>, ReadonlySet<A>, SetConfig<E, A>>
+  ) => InterpretedKind<F, Env, ReadonlyArray<E>, ReadonlySet<A>>
 }

@@ -3,7 +3,7 @@ import { pipe } from '@principia/base/Function'
 import { inspect } from 'util'
 
 import { paths } from '../src/DecodeErrors'
-import * as D from '../src/DecoderKF'
+import * as D from '../src/DecoderK'
 import { decode } from '../src/EitherDecoder'
 
 const sum = D.sum('_tag')

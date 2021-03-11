@@ -1,7 +1,5 @@
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/Function'
-import * as DE from '@principia/codec/DecodeErrors'
-import * as Sy from '@principia/io/Sync'
 import * as M from '@principia/model'
 
 export interface ParsedContentType {
@@ -102,7 +100,7 @@ export const CharsetModel = M.make((F) =>
   })
 )
 
-export const decodeCharset = M.getDecoder(CharsetModel)
+export const decodeCharset = M.getDecoderK(CharsetModel)
 
 export interface CookieOptions {
   readonly expires?: Date
@@ -116,11 +114,6 @@ export interface CookieOptions {
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS' | 'HEAD' | 'TRACE'
-
-export const SyncDecoderM = DE.getValidation({
-  ...Sy.MonadExcept,
-  ...Sy.Bifunctor
-})
 
 export function parseContentType(s: string): ParsedContentType {
   return pipe(

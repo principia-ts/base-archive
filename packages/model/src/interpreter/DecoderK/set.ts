@@ -1,18 +1,18 @@
 import type * as Alg from '../../algebra'
-import type { DecoderURI } from './HKT'
+import type { DecoderKURI } from './HKT'
 
 import * as A from '@principia/base/Array'
 import { flow, pipe } from '@principia/base/Function'
 import * as S from '@principia/base/Set'
 import { error } from '@principia/codec/DecodeErrors'
-import * as D from '@principia/codec/DecoderKF'
+import * as D from '@principia/codec/DecoderK'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'
 import { extractInfo } from './utils'
 
-export const SetDecoder = implementInterpreter<DecoderURI, Alg.SetURI>()((_) => ({
+export const SetDecoder = implementInterpreter<DecoderKURI, Alg.SetURI>()((_) => ({
   set: (a, O, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(

@@ -388,6 +388,25 @@ export function match<E, A, B, C>(
 
 /*
  * -------------------------------------------
+ * Alt
+ * -------------------------------------------
+ */
+
+export function alt_<W, S1, S2, R, E, A, W1, S3, R1, E1, A1>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  fb: () => Multi<W1, S1, S3, R1, E1, A1>
+): Multi<W | W1, S1, S2 | S3, R & R1, E | E1, A | A1> {
+  return matchM_(fa, () => fb(), succeed)
+}
+
+export function alt<W1, S1, S3, R1, E1, A1>(
+  fb: () => Multi<W1, S1, S3, R1, E1, A1>
+): <W, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S2 | S3, R & R1, E | E1, A | A1> {
+  return (fa) => alt_(fa, fb)
+}
+
+/*
+ * -------------------------------------------
  * Applicative
  * -------------------------------------------
  */
@@ -521,7 +540,7 @@ export function attempt<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>): Mult
   )
 }
 
-export function absolve<W, S1, S2, R, E, E1, A>(
+export function refail<W, S1, S2, R, E, E1, A>(
   fa: Multi<W, S1, S2, R, E, E.Either<E1, A>>
 ): Multi<W, S1, S2, R, E | E1, A> {
   return bind_(fa, E.match(fail, succeed))

@@ -10,12 +10,12 @@ declare module '../HKT' {
   }
 }
 
-export interface RecursiveConfig<S, R, E, A> {}
+export interface RecursiveConfig<E, A> {}
 
 export interface RecursiveAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly recursive: <S, R, E, A>(
+  readonly recursive: <E, A>(
     id: string,
-    a: (x: InterpretedKind<F, Env, S, R, E, A>) => InterpretedKind<F, Env, S, R, E, A>,
-    config?: Config<Env, S, R, E, A, RecursiveConfig<S, R, E, A>>
-  ) => InterpretedKind<F, Env, S, R, E, A>
+    a: (x: InterpretedKind<F, Env, E, A>) => InterpretedKind<F, Env, E, A>,
+    config?: Config<Env, E, A, RecursiveConfig<E, A>>
+  ) => InterpretedKind<F, Env, E, A>
 }

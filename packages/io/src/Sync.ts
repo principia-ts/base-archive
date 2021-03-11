@@ -266,6 +266,21 @@ export function matchTogether<E, A, R1, E1, B, C, D, F, G>(
 
 /*
  * -------------------------------------------
+ * Alt
+ * -------------------------------------------
+ */
+
+export const alt_: <R, E, A, R1, E1, A1>(
+  fa: Sync<R, E, A>,
+  fb: () => Sync<R1, E1, A1>
+) => Sync<R & R1, E | E1, A | A1> = M.alt_
+
+export const alt: <R1, E1, A1>(
+  fb: () => Sync<R1, E1, A1>
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A | A1> = M.alt
+
+/*
+ * -------------------------------------------
  * Applicative
  * -------------------------------------------
  */
@@ -344,7 +359,7 @@ export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => S
 
 export const attempt: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = M.attempt
 
-export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = M.absolve
+export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = M.refail
 
 /*
  * -------------------------------------------
@@ -758,7 +773,12 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
  * -------------------------------------------
  */
 
-export const Functor: P.Functor<URI, V> = P.Functor({
+export const Alt = P.Alt<URI, V>({
+  map_,
+  alt_
+})
+
+export const Functor = P.Functor<URI, V>({
   map_
 })
 

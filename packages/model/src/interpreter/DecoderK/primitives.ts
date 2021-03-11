@@ -1,12 +1,12 @@
 import type * as Alg from '../../algebra'
-import type { DecoderURI } from './HKT'
+import type { DecoderKURI } from './HKT'
 import type { Branded } from '@principia/base/Brand'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
-import * as DE from '@principia/codec/DecodeError'
-import * as D from '@principia/codec/DecoderKF'
+import * as D from '@principia/codec/DecoderK'
+import * as FDE from '@principia/codec/FreeDecodeError'
 import * as FS from '@principia/free/FreeSemigroup'
 
 import { implementInterpreter } from '../../HKT'
@@ -15,7 +15,7 @@ import { extractInfo } from './utils'
 
 export const regexUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.PrimitivesURI>()((_) => ({
+export const PrimitivesDecoder = implementInterpreter<DecoderKURI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyDecoderConfig(config?.config)(D.string(extractInfo(config)), env, {}),
   number: (config) => (env) => applyDecoderConfig(config?.config)(D.number(extractInfo(config)), env, {}),
   boolean: (config) => (env) => applyDecoderConfig(config?.config)(D.boolean(extractInfo(config)), env, {}),
@@ -34,7 +34,7 @@ export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.Primitives
             return M.pure(BigInt(a))
           } catch (e) {
             return M.fail(
-              FS.Combine(FS.Element(DE.Leaf(a, 'integer string')), pipe(config, extractInfo, DE.Info, FS.Element))
+              FS.Combine(FS.Element(FDE.Leaf(a, 'integer string')), pipe(config, extractInfo, FDE.Info, FS.Element))
             )
           }
         })
@@ -47,12 +47,14 @@ export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.Primitives
       pipe(
         D.string(),
         D.mapLeftWithInput((i, _) =>
-          FS.Combine(FS.Element(DE.Leaf(i, 'date string')), pipe(config, extractInfo, DE.Info, FS.Element))
+          FS.Combine(FS.Element(FDE.Leaf(i, 'date string')), pipe(config, extractInfo, FDE.Info, FS.Element))
         ),
         D.parse((M) => (a) => {
           const d = new Date(a)
           return isNaN(d.getTime())
-            ? M.fail(FS.Combine(FS.Element(DE.Leaf(a, 'date string')), pipe(config, extractInfo, DE.Info, FS.Element)))
+            ? M.fail(
+                FS.Combine(FS.Element(FDE.Leaf(a, 'date string')), pipe(config, extractInfo, FDE.Info, FS.Element))
+              )
             : M.pure(d)
         })
       ),

@@ -10,6 +10,7 @@ import type { ValueNode } from 'graphql'
 
 import { flow, pipe } from '@principia/base/Function'
 import * as DE from '@principia/codec/DecodeErrors'
+import * as SD from '@principia/codec/SyncDecoder'
 import * as Sy from '@principia/io/Sync'
 import * as M from '@principia/model'
 import { valueFromASTUntyped } from 'graphql'
@@ -183,14 +184,12 @@ interface ScalarTypeFromModelConfig<E, A> extends ScalarConfig {
   parseLiteral?: ScalarParseLiteralF<unknown, E>
 }
 
-const SyM = DE.getValidation({ ...Sy.MonadExcept, ...Sy.Bifunctor })
-
 export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name, model, config) => {
-  const { decode }   = M.getDecoder(model)
+  const decoder      = M.getDecoderK(model)
   const { encode }   = M.getEncoder(model)
   const serialize    = (u: unknown) =>
     pipe(
-      decode(SyM)(u),
+      SD.decode(decoder)(u),
       Sy.mapError(
         (errors) =>
           new GraphQlException(config?.message ?? `Invalid value ${u} provided to Scalar ${name}`, 'INVALID_INPUT', {
@@ -203,7 +202,7 @@ export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name,
     pipe(
       valueNode,
       valueFromASTUntyped,
-      decode(SyM),
+      SD.decode(decoder),
       Sy.bimap(
         (errors) =>
           new GraphQlException(

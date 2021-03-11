@@ -1,4 +1,4 @@
-import type { DecodeError } from './DecodeError'
+import type { DecodeError } from './FreeDecodeError'
 import type { MonadDecoder } from './MonadDecoder'
 import type { RoseTree } from '@principia/base/RoseTree'
 
@@ -11,7 +11,7 @@ import * as T from '@principia/base/RoseTree'
 import * as P from '@principia/base/typeclass'
 import * as FS from '@principia/free/FreeSemigroup'
 
-import { Info, Leaf, match } from './DecodeError'
+import { getSemigroup,Info, Leaf, match } from './FreeDecodeError'
 
 type Eval<A> = Eval.Eval<A>
 
@@ -187,3 +187,11 @@ export function getValidation<M>(
     fail: M.fail
   })
 }
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const Semigroup = getSemigroup<ErrorInfo>()

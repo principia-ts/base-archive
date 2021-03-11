@@ -7,10 +7,10 @@ export const ShowURI = 'model/Show'
 export type ShowURI = typeof ShowURI
 
 declare module '../../HKT' {
-  interface URItoInterpreted<Env, S, R, E, A> {
+  interface URItoInterpreted<Env, E, A> {
     readonly [ShowURI]: (_: Env) => S.Show<A>
   }
-  interface URItoConfig<S, R, E, A> {
+  interface URItoConfig<E, A> {
     readonly [ShowURI]: S.Show<A>
   }
 }
@@ -24,7 +24,7 @@ declare module '../../algebra/primitives' {
   }
   interface TupleConfig<Types> {
     readonly [ShowURI]: {
-      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, any, infer A>] ? S.Show<A> : never
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, infer A>] ? S.Show<A> : never
     }
   }
 }
@@ -69,29 +69,29 @@ declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
     readonly [ShowURI]: TaggedUnionConfigKind<ShowURI, Types>
   }
-  interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
+  interface EitherConfig<EE, EA, AE, AA> {
     readonly [ShowURI]: {
       readonly left: S.Show<EA>
       readonly right: S.Show<AA>
     }
   }
-  interface OptionConfig<S, R, E, A> {
+  interface OptionConfig<E, A> {
     readonly [ShowURI]: S.Show<A>
   }
 }
 
 declare module '../../algebra/nullable' {
-  interface NullableConfig<S, R, E, A> {
+  interface NullableConfig<E, A> {
     readonly [ShowURI]: S.Show<A>
   }
-  interface OptionalConfig<S, R, E, A> {
+  interface OptionalConfig<E, A> {
     readonly [ShowURI]: S.Show<A>
   }
 }
 
 declare module '../../algebra/intersection' {
-  interface IntersectionConfig<S, R, E, A> {
-    readonly [ShowURI]: IntersectionConfigKind<ShowURI, S, R, E, A>
+  interface IntersectionConfig<E, A> {
+    readonly [ShowURI]: IntersectionConfigKind<ShowURI, E, A>
   }
 }
 

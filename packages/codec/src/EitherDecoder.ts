@@ -1,13 +1,9 @@
-import type { DecodeError } from './DecodeError'
-import type { DecodeErrors, ErrorInfo } from './DecodeErrors'
-import type * as KF from './DecoderKF'
-import type { Semigroup } from '@principia/base/Semigroup'
-import type { FreeSemigroup } from '@principia/free/FreeSemigroup'
+import type { DecodeErrors } from './DecodeErrors'
+import type * as D from './DecoderK'
 
 import * as E from '@principia/base/Either'
 
-import * as DE from './DecodeError'
-import * as DEs from './DecodeErrors'
+import * as DE from './DecodeErrors'
 import { EitherDecoderURI } from './Modules'
 
 /*
@@ -23,26 +19,21 @@ export interface EitherDecoder<I, A> {
   }
 }
 
-/**
- * @internal
- */
-export const SE: Semigroup<FreeSemigroup<DecodeError<ErrorInfo>>> = DE.getSemigroup<ErrorInfo>()
-
-const M = DEs.getValidation({
+export const Validation = DE.getValidation({
   ...E.MonadExcept,
   ...E.Bifunctor,
   ...E.Alt
 })
 
-export function fromDecoderKF<I, O>(decoder: KF.DecoderKF<I, O>): EitherDecoder<I, O> {
+export function fromDecoder<I, O>(decoder: D.DecoderK<I, O>): EitherDecoder<I, O> {
   return {
-    decode: decoder.decode(M),
+    decode: decoder.decode(Validation),
     _meta: decoder._meta
   }
 }
 
-export function decode<I, O>(decoder: KF.DecoderKF<I, O>): (i: I) => E.Either<DecodeErrors, O> {
-  return (i) => decoder.decode(M)(i)
+export function decode<I, O>(decoder: D.DecoderK<I, O>): (i: I) => E.Either<DecodeErrors, O> {
+  return (i) => decoder.decode(Validation)(i)
 }
 
 export { EitherDecoderURI }

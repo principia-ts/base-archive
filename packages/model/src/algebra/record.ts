@@ -14,8 +14,8 @@ declare module '../HKT' {
 export interface RecordConfig<E, A> {}
 
 export interface RecordAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly record: <S, R, E, A>(
-    codomain: InterpretedKind<F, Env, S, R, E, A>,
-    config?: Config<Env, unknown, unknown, ReadonlyRecord<string, E>, ReadonlyRecord<string, A>, RecordConfig<E, A>>
-  ) => InterpretedKind<F, Env, unknown, unknown, ReadonlyRecord<string, E>, ReadonlyRecord<string, A>>
+  readonly record: <E, A>(
+    codomain: InterpretedKind<F, Env, E, A>,
+    config?: Config<Env, ReadonlyRecord<string, E>, ReadonlyRecord<string, A>, RecordConfig<E, A>>
+  ) => InterpretedKind<F, Env, ReadonlyRecord<string, E>, ReadonlyRecord<string, A>>
 }

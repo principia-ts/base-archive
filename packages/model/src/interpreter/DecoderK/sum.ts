@@ -1,18 +1,18 @@
 import type * as Alg from '../../algebra'
-import type { DecoderURI } from './HKT'
+import type { DecoderKURI } from './HKT'
 
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import { error } from '@principia/codec/DecodeErrors'
-import * as D from '@principia/codec/DecoderKF'
+import * as D from '@principia/codec/DecoderK'
 
 import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'
 import { extractInfo } from './utils'
 
-export const SumDecoder = implementInterpreter<DecoderURI, Alg.SumURI>()((_) => ({
+export const SumDecoder = implementInterpreter<DecoderKURI, Alg.SumURI>()((_) => ({
   taggedUnion: (tag, types, config) => (env) => {
     const decoders = R.map_(types, (_) => _(env))
     return applyDecoderConfig(config?.config)(D.sum_(tag, decoders, extractInfo(config)), env, decoders as any)

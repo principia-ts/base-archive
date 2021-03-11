@@ -11,6 +11,7 @@ import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as Str from '@principia/base/String'
 import { makeSemigroup } from '@principia/base/typeclass'
+import * as SD from '@principia/codec/SyncDecoder'
 import * as A from '@principia/io/Array'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
@@ -25,7 +26,7 @@ import * as Url from 'url'
 
 import { HttpException } from './HttpException'
 import * as Status from './StatusCode'
-import { decodeCharset, parseContentType, SyncDecoderM } from './utils'
+import { decodeCharset, parseContentType } from './utils'
 
 interface CloseEvent {
   readonly _tag: 'Close'
@@ -257,7 +258,7 @@ export class HttpRequest {
           O.map(parseContentType),
           O.bind((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
-          decodeCharset.decode(SyncDecoderM),
+          SD.decode(decodeCharset),
           Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
         )
       )
@@ -290,7 +291,7 @@ export class HttpRequest {
           O.map(parseContentType),
           O.bind((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
-          decodeCharset.decode(SyncDecoderM),
+          SD.decode(decodeCharset),
           Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
         )
       )

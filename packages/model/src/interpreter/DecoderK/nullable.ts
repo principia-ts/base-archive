@@ -1,14 +1,14 @@
 import type * as Alg from '../../algebra'
-import type { DecoderURI } from './HKT'
+import type { DecoderKURI } from './HKT'
 
 import { pipe } from '@principia/base/Function'
-import * as D from '@principia/codec/DecoderKF'
+import * as D from '@principia/codec/DecoderK'
 
 import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'
 import { extractInfo } from './utils'
 
-export const NullableDecoder = implementInterpreter<DecoderURI, Alg.NullableURI>()((_) => ({
+export const NullableDecoder = implementInterpreter<DecoderKURI, Alg.NullableURI>()((_) => ({
   nullable_: (a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(D.nullable(extractInfo(config))(decoder), env, decoder)

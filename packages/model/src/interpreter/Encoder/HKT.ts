@@ -7,10 +7,10 @@ export const EncoderURI = 'model/Encoder'
 export type EncoderURI = typeof EncoderURI
 
 declare module '../../HKT' {
-  interface URItoInterpreted<Env, S, R, E, A> {
+  interface URItoInterpreted<Env, E, A> {
     readonly [EncoderURI]: (_: Env) => E.Encoder<E, A>
   }
-  interface URItoConfig<S, R, E, A> {
+  interface URItoConfig<E, A> {
     readonly [EncoderURI]: E.Encoder<E, A>
   }
 }
@@ -24,9 +24,7 @@ declare module '../../algebra/primitives' {
   }
   interface TupleConfig<Types> {
     readonly [EncoderURI]: {
-      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, infer E, infer A>]
-        ? E.Encoder<E, A>
-        : never
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, infer E, infer A>] ? E.Encoder<E, A> : never
     }
   }
 }
@@ -71,29 +69,29 @@ declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
     readonly [EncoderURI]: TaggedUnionConfigKind<EncoderURI, Types>
   }
-  interface EitherConfig<ES, ER, EE, EA, AS, AR, AE, AA> {
+  interface EitherConfig<EE, EA, AE, AA> {
     readonly [EncoderURI]: {
       readonly left: E.Encoder<EE, EA>
       readonly right: E.Encoder<AE, AA>
     }
   }
-  interface OptionConfig<S, R, E, A> {
+  interface OptionConfig<E, A> {
     readonly [EncoderURI]: E.Encoder<E, A>
   }
 }
 
 declare module '../../algebra/nullable' {
-  interface NullableConfig<S, R, E, A> {
+  interface NullableConfig<E, A> {
     readonly [EncoderURI]: E.Encoder<E, A>
   }
-  interface OptionalConfig<S, R, E, A> {
+  interface OptionalConfig<E, A> {
     readonly [EncoderURI]: E.Encoder<E, A>
   }
 }
 
 declare module '../../algebra/intersection' {
-  interface IntersectionConfig<S, R, E, A> {
-    readonly [EncoderURI]: IntersectionConfigKind<EncoderURI, S, R, E, A>
+  interface IntersectionConfig<E, A> {
+    readonly [EncoderURI]: IntersectionConfigKind<EncoderURI, E, A>
   }
 }
 

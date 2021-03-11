@@ -1,13 +1,13 @@
 import type { DecoderK } from './DecoderK'
-import type { DecoderKF } from './DecoderKF'
 import type { EitherDecoder } from './EitherDecoder'
 import type { Encoder } from './Encoder'
+import type { FreeDecoderK } from './FreeDecoderK'
+
+export const FreeDecoderKURI = 'FreeDecoderK'
+export type FreeDecoderKURI = typeof FreeDecoderKURI
 
 export const DecoderKURI = 'DecoderK'
 export type DecoderKURI = typeof DecoderKURI
-
-export const DecoderKFURI = 'DecoderKF'
-export type DecoderKFURI = typeof DecoderKFURI
 
 export const EncoderURI = 'Encoder'
 export type EncoderURI = typeof EncoderURI
@@ -17,8 +17,8 @@ export type EitherDecoderURI = typeof EitherDecoderURI
 
 declare module '@principia/base/HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    [DecoderKURI]: DecoderK<I, E, A>
-    [DecoderKFURI]: DecoderKF<I, A>
+    [FreeDecoderKURI]: FreeDecoderK<I, E, A>
+    [DecoderKURI]: DecoderK<I, A>
     [EncoderURI]: Encoder<E, A>
     [EitherDecoderURI]: EitherDecoder<I, A>
   }

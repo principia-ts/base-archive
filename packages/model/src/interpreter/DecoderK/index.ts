@@ -2,12 +2,12 @@ import type { Model } from '../../abstract/Model'
 import type { SummonerEnv, SummonerPURI, SummonerRURI } from '../../abstract/Summoner'
 import type { AnyEnv } from '../../HKT'
 import type { Summoner } from '../../summoner'
-import type * as D from '@principia/codec/DecoderKF'
+import type * as D from '@principia/codec/DecoderK'
 
 import { pipe } from '@principia/base/Function'
 
 import { memoize, merge } from '../../utils'
-import { DecoderURI } from './HKT'
+import { DecoderKURI } from './HKT'
 import { IntersectionDecoder } from './intersection'
 import { NewtypeDecoder } from './newtype'
 import { NullableDecoder } from './nullable'
@@ -20,7 +20,7 @@ import { ObjectDecoder } from './struct'
 import { SumDecoder } from './sum'
 import { UnknownDecoder } from './unknown'
 
-export { DecoderURI }
+export { DecoderKURI as DecoderURI }
 
 export const _allDecoderInterpreters = <Env extends AnyEnv>() =>
   merge(
@@ -43,10 +43,8 @@ export function deriveFor<Su extends Summoner<any>>(
   S: Su
 ): (
   env: {
-    [K in DecoderURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
+    [K in DecoderKURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
   }
-) => <S, R, E, A>(
-  F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, S, R, E, A>
-) => D.DecoderKF<unknown, A> {
+) => <E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, E, A>) => D.DecoderK<unknown, A> {
   return (env) => (F) => pipe(env, F.derive(allDecoderInterpreters()))
 }

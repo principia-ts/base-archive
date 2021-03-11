@@ -11,11 +11,9 @@ import { memoize } from './utils'
  * -------------------------------------------
  */
 
-export interface InterpretedHKT<URI, Env, S, R, E, A> {
+export interface InterpretedHKT<URI, Env, E, A> {
   readonly _URI: URI
   readonly _Env: (_: Env) => void
-  readonly _S: S
-  readonly _R: R
   readonly _E: E
   readonly _A: A
 }
@@ -26,24 +24,19 @@ export const UIHKT = 'model/HKT'
 
 export type UIHKT = typeof UIHKT
 
-export interface URItoInterpreted<Env, S, R, E, A> {
+export interface URItoInterpreted<Env, E, A> {
   readonly _Env: Env
-  readonly _S: S
-  readonly _R: R
   readonly _E: E
   readonly _A: A
-  readonly [UIHKT]: InterpretedHKT<UIHKT, Env, S, R, E, A>
+  readonly [UIHKT]: InterpretedHKT<UIHKT, Env, E, A>
 }
 
-export type InterpreterURIS = Exclude<
-  keyof URItoInterpreted<any, any, any, any, any>,
-  '_Env' | '_S' | '_R' | '_E' | '_A'
->
+export type InterpreterURIS = Exclude<keyof URItoInterpreted<any, any, any>, '_Env' | '_E' | '_A'>
 
-export type Param = 'S' | 'R' | 'E' | 'A'
+export type Param = 'E' | 'A'
 
-export type InterpretedKind<URI extends InterpreterURIS, Env extends AnyEnv, S, R, E, A> = URI extends InterpreterURIS
-  ? URItoInterpreted<Env, S, R, E, A>[URI]
+export type InterpretedKind<URI extends InterpreterURIS, Env extends AnyEnv, E, A> = URI extends InterpreterURIS
+  ? URItoInterpreted<Env, E, A>[URI]
   : never
 
 export function implementInterpreter<IURI extends InterpreterURIS, AURI extends AlgebraURIS>(): (
@@ -83,21 +76,19 @@ export type MapToConfig<Env extends AnyEnv, T extends InterpreterURISIndexedAny,
   [IURI in InterpreterURIS]?: (a: T[IURI], env: Env[IURI], k: ThreadURI<Custom, IURI>) => T[IURI]
 }
 
-export interface URItoConfig<S, R, E, A> {
+export interface URItoConfig<E, A> {
   readonly [UIHKT]: never
 }
 
-export type ConfigURIS = keyof URItoConfig<any, any, any, any>
+export type ConfigURIS = keyof URItoConfig<any, any>
 
-export type ConfigKind<CURI extends ConfigURIS, S, R, E, A> = CURI extends ConfigURIS
-  ? URItoConfig<S, R, E, A>[CURI]
-  : never
+export type ConfigKind<CURI extends ConfigURIS, E, A> = CURI extends ConfigURIS ? URItoConfig<E, A>[CURI] : never
 
-export type Config<Env extends AnyEnv, S, R, E, A, Custom = {}> = {
+export type Config<Env extends AnyEnv, E, A, Custom = {}> = {
   name?: string
   id?: string
   message?: string
-  config?: MapToConfig<Env, URItoConfig<S, R, E, A>, Custom>
+  config?: MapToConfig<Env, URItoConfig<E, A>, Custom>
 }
 
 export type ThreadURI<C, IURI extends InterpreterURIS> = IURI extends keyof C ? C[IURI] : unknown
@@ -116,9 +107,9 @@ export function getApplyConfig<IURI extends InterpreterURIS>(
  * -------------------------------------------
  */
 
-export interface URItoProgram<Env extends AnyEnv, S, R, E, A> {}
+export interface URItoProgram<Env extends AnyEnv, E, A> {}
 
-export type ProgramURIS = keyof URItoProgram<any, any, any, any, any>
+export type ProgramURIS = keyof URItoProgram<any, any, any>
 
 export interface URItoProgramAlgebra<Env extends AnyEnv> {}
 
@@ -130,14 +121,11 @@ export interface URItoAURIS {}
  * -------------------------------------------
  */
 
-export interface URItoResult<S, R, E, A> extends Record<string, { build: (x: A) => A }> {}
+export interface URItoResult<E, A> extends Record<string, { build: (x: A) => A }> {}
 
-export type ResultURIS = keyof URItoResult<any, any, any, any>
+export type ResultURIS = keyof URItoResult<any, any>
 
-export type SelectResultURIS<S, R, E, A, ShapeConstraint> = SelectKeyOfMatchingValues<
-  URItoResult<S, R, E, A>,
-  ShapeConstraint
->
+export type SelectResultURIS<E, A, ShapeConstraint> = SelectKeyOfMatchingValues<URItoResult<E, A>, ShapeConstraint>
 
 /*
  * -------------------------------------------
@@ -147,32 +135,24 @@ export type SelectResultURIS<S, R, E, A, ShapeConstraint> = SelectKeyOfMatchingV
 
 export type IntersectionConfigKind<
   CURI extends ConfigURIS,
-  S extends readonly unknown[],
-  R extends readonly unknown[],
   E extends readonly unknown[],
   A extends readonly unknown[]
 > = {
-  [k in keyof A]: k extends keyof S
-    ? k extends keyof R
-      ? k extends keyof E
-        ? ConfigKind<CURI, S[k], R[k], E[k], A[k]>
-        : never
-      : never
-    : never
+  [k in keyof A]: k extends keyof E ? ConfigKind<CURI, E[k], A[k]> : never
 }
 
 export type TaggedUnionConfigKind<CURI extends ConfigURIS, Types> = {
-  [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-    ? ConfigKind<CURI, S, R, E, A>
-    : Types[k] extends Model<infer PU, infer RU, infer Env, infer S, infer R, infer E, infer A>
-    ? ConfigKind<CURI, S, R, E, A>
-    : Types[k] extends [infer S, infer R, infer E, infer A]
-    ? ConfigKind<CURI, S, R, E, A>
+  [k in keyof Types]: Types[k] extends InterpretedHKT<infer U, infer Env, infer E, infer A>
+    ? ConfigKind<CURI, E, A>
+    : Types[k] extends Model<infer PU, infer RU, infer Env, infer E, infer A>
+    ? ConfigKind<CURI, E, A>
+    : Types[k] extends [infer E, infer A]
+    ? ConfigKind<CURI, E, A>
     : never
 }
 
 export type InterfaceConfigKind<CURI extends ConfigURIS, Props> = {
-  [k in keyof Props]: Props[k] extends InterpretedHKT<infer U, infer Env, infer S, infer R, infer E, infer A>
-    ? ConfigKind<CURI, S, R, E, A>
+  [k in keyof Props]: Props[k] extends InterpretedHKT<infer U, infer Env, infer E, infer A>
+    ? ConfigKind<CURI, E, A>
     : never
 }

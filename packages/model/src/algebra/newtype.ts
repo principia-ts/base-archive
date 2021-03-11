@@ -19,13 +19,13 @@ export interface PrismConfig<E, A, N> {}
 export interface NewtypeAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
   readonly newtypeIso: <E, A, N extends Newtype<any, A>>(
     iso: Iso<A, N>,
-    a: InterpretedKind<F, Env, unknown, unknown, E, A>,
-    config?: Config<Env, unknown, unknown, E, N, IsoConfig<E, A, N>>
-  ) => InterpretedKind<F, Env, unknown, unknown, E, N>
+    a: InterpretedKind<F, Env, E, A>,
+    config?: Config<Env, E, N, IsoConfig<E, A, N>>
+  ) => InterpretedKind<F, Env, E, N>
 
   readonly newtypePrism: <E, A, N extends Newtype<any, A>>(
     prism: Prism<A, N>,
-    a: InterpretedKind<F, Env, unknown, unknown, E, A>,
-    config?: Config<Env, unknown, unknown, E, N, PrismConfig<E, A, N>>
-  ) => InterpretedKind<F, Env, unknown, unknown, E, N>
+    a: InterpretedKind<F, Env, E, A>,
+    config?: Config<Env, E, N, PrismConfig<E, A, N>>
+  ) => InterpretedKind<F, Env, E, N>
 }

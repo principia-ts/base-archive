@@ -3,9 +3,9 @@ import type * as E from './Encoder'
 
 import { identity } from '@principia/base/Function'
 
-import * as D from './DecoderKF'
+import * as D from './DecoderK'
 
-export interface Codec<I, O, A> extends D.DecoderKF<I, O>, E.Encoder<O, A> {}
+export interface Codec<I, O, A> extends D.DecoderK<I, O>, E.Encoder<O, A> {}
 
 /*
  * -------------------------------------------
@@ -13,7 +13,7 @@ export interface Codec<I, O, A> extends D.DecoderKF<I, O>, E.Encoder<O, A> {}
  * -------------------------------------------
  */
 
-export function makeCodec<I, O, A>(decoder: D.DecoderKF<I, O>, encoder: E.Encoder<O, A>): Codec<I, O, A> {
+export function makeCodec<I, O, A>(decoder: D.DecoderK<I, O>, encoder: E.Encoder<O, A>): Codec<I, O, A> {
   return {
     decode: decoder.decode,
     encode: encoder.encode,
@@ -21,7 +21,7 @@ export function makeCodec<I, O, A>(decoder: D.DecoderKF<I, O>, encoder: E.Encode
   }
 }
 
-export function fromDecoder<I, O>(decoder: D.DecoderKF<I, O>): Codec<I, O, O> {
+export function fromDecoder<I, O>(decoder: D.DecoderK<I, O>): Codec<I, O, O> {
   return {
     decode: decoder.decode,
     encode: identity,

@@ -12,7 +12,5 @@ declare module '../HKT' {
 export interface UnknownConfig {}
 
 export interface UnknownAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly unknown: (
-    config?: Config<Env, unknown, unknown, unknown, unknown, UnknownConfig>
-  ) => InterpretedKind<F, Env, unknown, unknown, unknown, unknown>
+  readonly unknown: (config?: Config<Env, unknown, unknown, UnknownConfig>) => InterpretedKind<F, Env, unknown, unknown>
 }

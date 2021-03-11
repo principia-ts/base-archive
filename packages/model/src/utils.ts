@@ -46,26 +46,20 @@ export function wrapFun<A, B, X>(g: ((a: A) => B) & X): typeof g {
   return ((x: any) => g(x)) as any
 }
 
-export interface InhabitedTypes<Env, S, R, E, A> {
+export interface InhabitedTypes<Env, E, A> {
   _Env: (_: Env) => void
-  _S: S
-  _R: R
   _E: E
   _A: A
 }
 
-export type _A<X extends InhabitedTypes<any, any, any, any, any>> = X['_A']
+export type _A<X extends InhabitedTypes<any, any, any>> = X['_A']
 
-export type _E<X extends InhabitedTypes<any, any, any, any, any>> = X['_E']
+export type _E<X extends InhabitedTypes<any, any, any>> = X['_E']
 
-export type _R<X extends InhabitedTypes<any, any, any, any, any>> = X['_R']
+export type _Env<X extends InhabitedTypes<any, any, any>> = Parameters<X['_Env']>[0]
 
-export type _S<X extends InhabitedTypes<any, any, any, any, any>> = X['_S']
-
-export type _Env<X extends InhabitedTypes<any, any, any, any, any>> = Parameters<X['_Env']>[0]
-
-export function inhabitTypes<Env, S, R, E, A, T>(t: T): T & InhabitedTypes<Env, S, R, E, A> {
-  return t as T & InhabitedTypes<Env, S, R, E, A>
+export function inhabitTypes<Env, E, A, T>(t: T): T & InhabitedTypes<Env, E, A> {
+  return t as T & InhabitedTypes<Env, E, A>
 }
 
 type Function1 = (a: any) => any

@@ -1,18 +1,28 @@
-import type { MonadDecoder, V } from './MonadDecoder'
+import type { DecodeErrors, ErrorInfo } from './DecodeErrors'
+import type { FreeDecoderK } from './FreeDecoderK'
+import type * as MD from './MonadDecoder'
 import type { Predicate, Refinement } from '@principia/base/Function'
-import type * as HKT from '@principia/base/HKT'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Primitive } from '@principia/base/util/types'
+import type * as G from '@principia/base/Guard'
+import type { Integer } from '@principia/base/Integer'
+import type * as O from '@principia/base/Option'
+import type { ReadonlyRecord } from '@principia/base/Record'
+import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
-import { identity, memoize } from '@principia/base/Function'
-import * as G from '@principia/base/Guard'
-import * as O from '@principia/base/Option'
+import * as B from '@principia/base/Boolean'
+import { pipe } from '@principia/base/Function'
+import * as HKT from '@principia/base/HKT'
+import * as I from '@principia/base/Integer'
+import * as N from '@principia/base/Number'
 import * as R from '@principia/base/Record'
+import * as S from '@principia/base/String'
+import * as P from '@principia/base/typeclass'
+import * as FS from '@principia/free/FreeSemigroup'
 
+import * as DE from './DecodeErrors'
+import * as FDE from './FreeDecodeError'
+import * as K from './FreeDecoderK'
 import { DecoderKURI } from './Modules'
-import { _intersect } from './util'
 
 /*
  * -------------------------------------------
@@ -20,46 +30,45 @@ import { _intersect } from './util'
  * -------------------------------------------
  */
 
-export interface DecoderK<I, E, O> {
-  readonly _I?: () => I
-  readonly _E?: () => E
-  readonly _O?: () => O
-  readonly decode: <M extends HKT.URIS, C = HKT.Auto>(
-    M: MonadDecoder<M, C, E>
-  ) => (
+export type V = HKT.V<'I', '_'>
+
+export interface DecoderMetadata {
+  readonly name: string
+}
+
+export interface DecodeKFn<I, O> {
+  <M extends HKT.URIS, C = HKT.Auto>(M: MD.MonadDecoder<M, C, DecodeErrors>): (
     i: I
   ) => HKT.Kind<
     M,
-    V<C, E>,
-    HKT.Initial<C, 'N'>,
-    HKT.Initial<C, 'K'>,
-    HKT.Initial<C, 'Q'>,
-    HKT.Initial<C, 'W'>,
-    HKT.Initial<C, 'X'>,
-    HKT.Initial<C, 'I'>,
-    HKT.Initial<C, 'S'>,
-    HKT.Initial<C, 'R'>,
-    E,
+    MD.V<C, DecodeErrors>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'N'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'K'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'Q'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'W'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'X'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'I'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'S'>,
+    HKT.Initial<MD.V<C, DecodeErrors>, 'R'>,
+    DecodeErrors,
     O
   >
 }
 
-export type InputOf<KD> = [KD] extends [DecoderK<infer I, any, any>] ? I : never
-export type TypeOf<KD> = [KD] extends [DecoderK<any, any, infer O>] ? O : never
-
-export type InputOfHKT<KD> = [KD] extends [DecoderKHKT<infer I, any, any>] ? I : never
-export type TypeOfHKT<KD> = [KD] extends [DecoderKHKT<any, any, infer O>] ? O : never
-
-export interface DecoderKHKT<I, E, O> {
-  readonly _I?: () => I
-  readonly _E?: () => E
-  readonly _O?: () => O
-  readonly decode: <M>(M: MonadDecoder<HKT.UHKT2<M>, HKT.Auto, E>) => (i: I) => HKT.HKT2<M, E, O>
+export interface DecodeKFnHKT<I, O> {
+  (M: MD.MonadDecoder<HKT.UHKT2<any>, HKT.Auto, DecodeErrors>): (i: I) => HKT.HKT2<any, DecodeErrors, O>
 }
 
-interface DecodeFnHKT<I, E, O> {
-  (M: MonadDecoder<HKT.UHKT2<any>, HKT.Auto, E>): (i: I) => HKT.HKT2<any, E, O>
+export interface DecoderK<I, O> extends FreeDecoderK<I, DecodeErrors, O> {
+  readonly _meta: DecoderMetadata
 }
+
+export interface DecoderKHKT<I, O> extends K.DecoderKHKT<I, DecodeErrors, O> {
+  readonly _meta: DecoderMetadata
+}
+
+export type InputOf<X> = K.InputOf<X>
+export type TypeOf<X> = K.TypeOf<X>
 
 /*
  * -------------------------------------------
@@ -67,24 +76,126 @@ interface DecodeFnHKT<I, E, O> {
  * -------------------------------------------
  */
 
-export function makeDecoderK<I, E, O>(decode: DecodeFnHKT<I, E, O>): DecoderK<I, E, O> {
+export function makeDecoderK<I, O>(decode: DecodeKFnHKT<I, O>, _meta: DecoderMetadata): DecoderK<I, O> {
   return {
-    decode: decode as any
+    decode: decode as any,
+    _meta
   }
 }
 
-export function fromRefinement<I, A extends I, E>(refinement: Refinement<I, A>, onError: (i: I) => E): DecoderK<I, E, A>
-export function fromRefinement<I, E>(predicate: Predicate<I>, onError: (i: I) => E): DecoderK<I, E, I>
-export function fromRefinement<I, E>(predicate: Predicate<I>, onError: (i: I) => E): DecoderK<I, E, I> {
+export function fromRefinement<I, A extends I>(
+  refinement: Refinement<I, A>,
+  expected: string,
+  info?: ErrorInfo
+): DecoderK<I, A> {
   return {
-    decode: (M) => (i) => (predicate(i) ? M.pure(i) : M.fail(onError(i) as any))
+    decode: K.fromRefinement(refinement, (i) => DE.error(i, expected, info)).decode,
+    _meta: { name: expected }
   }
 }
 
-export function literal<I, E>(onError: (i: I, values: NonEmptyArray<Primitive>) => E) {
-  return <A extends readonly [Primitive, ...Primitive[]]>(...values: A): DecoderK<I, E, A[number]> => ({
-    decode: (M) => (i) => (G.literal(...values).is(i) ? M.pure(i as A[number]) : M.fail(onError(i, values) as any))
+export function fromGuard<I, A extends I>(guard: G.Guard<I, A>, expected: string, info?: ErrorInfo): DecoderK<I, A> {
+  return fromRefinement(guard.is, expected, info)
+}
+
+export function literal<A extends readonly [Primitive, ...Primitive[]]>(
+  ...values: A
+): (info?: ErrorInfo) => DecoderK<unknown, A[number]> {
+  const name = A.map_(values, (value) => JSON.stringify(value)).join(' | ')
+  return (info) => ({
+    decode: K.literal((u, _) => DE.error(u, name, info))(...values).decode,
+    _meta: { name }
   })
+}
+
+/*
+ * -------------------------------------------
+ * Primitives
+ * -------------------------------------------
+ */
+
+export function string(info?: ErrorInfo): DecoderK<unknown, string> {
+  return fromGuard(S.Guard, 'string', info)
+}
+
+export function number(info?: ErrorInfo): DecoderK<unknown, number> {
+  return fromGuard(N.Guard, 'number', info)
+}
+
+export function integer(info?: ErrorInfo): DecoderK<unknown, Integer> {
+  return fromGuard(I.GuardSafe, 'integer', info)
+}
+
+export function boolean(info?: ErrorInfo): DecoderK<unknown, boolean> {
+  return fromGuard(B.Guard, 'boolean', info)
+}
+
+export function UnknownArray(info?: ErrorInfo): DecoderK<unknown, ReadonlyArray<unknown>> {
+  return fromGuard(A.GuardUnknownArray, 'Array<unknown>', info)
+}
+
+export function UnknownRecord(info?: ErrorInfo): DecoderK<unknown, ReadonlyRecord<string, unknown>> {
+  return fromGuard(R.GuardUnknownRecord, 'Record<string, unknown>', info)
+}
+
+/*
+ * -------------------------------------------
+ * Alt
+ * -------------------------------------------
+ */
+
+export function alt_<I, O>(me: DecoderK<I, O>, that: () => DecoderK<I, O>): DecoderK<I, O> {
+  return {
+    decode: K.alt_(me, that).decode,
+    _meta: { name: `${me._meta.name} <!> ${that()._meta.name}` }
+  }
+}
+
+export function alt<I, O>(that: () => DecoderK<I, O>): (me: DecoderK<I, O>) => DecoderK<I, O> {
+  return (me) => alt_(me, that)
+}
+
+/*
+ * -------------------------------------------
+ * Category
+ * -------------------------------------------
+ */
+
+export function compose_<I, A, B>(from: DecoderK<I, A>, to: DecoderK<A, B>): DecoderK<I, B> {
+  return {
+    decode: K.compose_(from, to).decode,
+    _meta: { name: `(${from._meta.name} >>> ${to._meta.name})` }
+  }
+}
+
+export function compose<A, B>(to: DecoderK<A, B>): <I>(from: DecoderK<I, A>) => DecoderK<I, B> {
+  return (from) => compose_(from, to)
+}
+
+export function id<A>(): DecoderK<A, A> {
+  return {
+    decode: K.id().decode,
+    _meta: { name: 'id' }
+  }
+}
+
+/*
+ * -------------------------------------------
+ * Functor
+ * -------------------------------------------
+ */
+
+export function map_<I, A, B>(ia: DecoderK<I, A>, f: (a: A) => B): DecoderK<I, B> {
+  return {
+    decode: (M) => (i) => M.map_(ia.decode(M)(i), f),
+    _meta: {
+      name: ia._meta.name
+    }
+  }
+}
+
+export function map<A, B>(f: (a: A) => B): <I>(ia: DecoderK<I, A>) => DecoderK<I, B> {
+  return (ia) => map_(ia, f)
 }
 
 /*
@@ -93,321 +204,347 @@ export function literal<I, E>(onError: (i: I, values: NonEmptyArray<Primitive>) 
  * -------------------------------------------
  */
 
-export function mapLeftWithInput_<I, E, A>(decoder: DecoderK<I, E, A>, f: (i: I, e: E) => E): DecoderK<I, E, A> {
+export function mapLeftWithInput_<I, A>(
+  decoder: DecoderK<I, A>,
+  f: (input: I, e: DecodeErrors) => DecodeErrors
+): DecoderK<I, A> {
   return {
-    decode: (M) => (i) => M.mapLeft_(decoder.decode(M)(i), (e) => f(i, e))
+    decode: K.mapLeftWithInput_(decoder, f).decode,
+    _meta: {
+      name: decoder._meta.name
+    }
   }
 }
 
-export function mapLeftWithInput<I, E>(f: (i: I, e: E) => E): <A>(decoder: DecoderK<I, E, A>) => DecoderK<I, E, A> {
+export function mapLeftWithInput<I>(
+  f: (input: I, e: DecodeErrors) => DecodeErrors
+): <A>(decoder: DecoderK<I, A>) => DecoderK<I, A> {
   return (decoder) => mapLeftWithInput_(decoder, f)
 }
 
-export function refine_<I, E, A, B extends A>(
-  from: DecoderK<I, E, A>,
+export function withMessage<I>(
+  message: (input: I, e: DecodeErrors) => string
+): <A>(decoder: DecoderK<I, A>) => DecoderK<I, A> {
+  return mapLeftWithInput((input, e) => FS.Element(FDE.Wrap({ message: message(input, e) }, e)))
+}
+
+export function wrapInfo<I, A>(info: ErrorInfo | undefined): (decoder: DecoderK<I, A>) => DecoderK<I, A> {
+  return (decoder) => (info ? mapLeftWithInput_(decoder, (_, e) => FS.Element(FDE.Wrap(info, e))) : decoder)
+}
+
+export function refine_<I, A, B extends A>(
+  from: DecoderK<I, A>,
   refinement: Refinement<A, B>,
-  onError: (a: A) => E
-): DecoderK<I, E, B>
-export function refine_<I, E, A>(
-  from: DecoderK<I, E, A>,
+  name: string,
+  info?: ErrorInfo
+): DecoderK<I, B>
+export function refine_<I, A>(
+  from: DecoderK<I, A>,
   predicate: Predicate<A>,
-  onError: (a: A) => E
-): DecoderK<I, E, A>
-export function refine_<I, E, A>(
-  from: DecoderK<I, E, A>,
+  name: string,
+  info?: ErrorInfo
+): DecoderK<I, A>
+export function refine_<I, A>(
+  from: DecoderK<I, A>,
   predicate: Predicate<A>,
-  onError: (a: A) => E
-): DecoderK<I, E, A> {
-  return compose_(from, fromRefinement(predicate, onError))
+  name: string,
+  info?: ErrorInfo
+): DecoderK<I, A> {
+  return {
+    decode: K.refine_(from, predicate, (a) => DE.error(a, name, info)).decode,
+    _meta: {
+      name
+    }
+  }
 }
 
-export function refine<A, B extends A, E>(
+export function refine<A, B extends A>(
   refinement: Refinement<A, B>,
-  onError: (a: A) => E
-): <I>(from: DecoderK<I, E, A>) => DecoderK<I, E, B> {
-  return (from) => refine_(from, refinement, onError)
+  name: string,
+  info?: ErrorInfo
+): <I>(from: DecoderK<I, A>) => DecoderK<I, B>
+export function refine<A>(
+  predicate: Predicate<A>,
+  name: string,
+  info?: ErrorInfo
+): <I>(from: DecoderK<I, A>) => DecoderK<I, A>
+export function refine<A>(
+  predicate: Predicate<A>,
+  name: string,
+  info?: ErrorInfo
+): <I>(from: DecoderK<I, A>) => DecoderK<I, A> {
+  return (from) => refine_(from, predicate, name, info)
 }
 
-export function parse_<I, E, A, B>(
-  from: DecoderK<I, E, A>,
-  decode: <M extends HKT.URIS, C = HKT.Auto>(
-    M: MonadDecoder<M, C, E>
-  ) => (
-    a: A
-  ) => HKT.Kind<
-    M,
-    C,
-    HKT.Initial<C, 'N'>,
-    HKT.Initial<C, 'K'>,
-    HKT.Initial<C, 'Q'>,
-    HKT.Initial<C, 'W'>,
-    HKT.Initial<C, 'X'>,
-    HKT.Initial<C, 'I'>,
-    HKT.Initial<C, 'S'>,
-    HKT.Initial<C, 'R'>,
-    E,
-    B
-  >
-): DecoderK<I, E, B> {
-  return compose_(from, { decode })
+export function parse_<I, A, B>(from: DecoderK<I, A>, decode: DecodeKFnHKT<A, B>, name?: string): DecoderK<I, B> {
+  return compose_(from, { decode: decode as any, _meta: { name: name ?? from._meta.name } })
 }
 
-export function parse<A, E, B>(
-  decode: <M extends HKT.URIS, C = HKT.Auto>(
-    M: MonadDecoder<M, C, E>
-  ) => (
-    a: A
-  ) => HKT.Kind<
-    M,
-    C,
-    HKT.Initial<C, 'N'>,
-    HKT.Initial<C, 'K'>,
-    HKT.Initial<C, 'Q'>,
-    HKT.Initial<C, 'W'>,
-    HKT.Initial<C, 'X'>,
-    HKT.Initial<C, 'I'>,
-    HKT.Initial<C, 'S'>,
-    HKT.Initial<C, 'R'>,
-    E,
-    B
-  >
-): <I>(from: DecoderK<I, E, A>) => DecoderK<I, E, B> {
-  return (from) => parse_(from, decode)
+export function parse<A, B>(decode: DecodeKFnHKT<A, B>, name?: string): <I>(from: DecoderK<I, A>) => DecoderK<I, B> {
+  return (from) => parse_(from, decode, name)
 }
 
-export function nullable_<I, E, A>(
-  or: DecoderK<I, E, A>,
-  onError: (i: I, e: E) => E
-): DecoderK<I | null | undefined, E, A | null>
-export function nullable_<I, E, A>(
-  or: DecoderKHKT<I, E, A>,
-  onError: (i: I, e: E) => E
-): DecoderKHKT<I | null | undefined, E, A | null> {
-  return {
-    decode: (M) => (i) => (i == null ? M.pure(null) : M.bimap_(or.decode(M)(i), (e: E) => onError(i, e), identity))
-  }
-}
-
-export function nullable<I, E>(
-  onError: (i: I, e: E) => E
-): <A>(or: DecoderK<I, E, A>) => DecoderK<I | null | undefined, E, A | null> {
-  return (or) => nullable_(or, onError)
-}
-
-export function optional_<I, E, A>(
-  or: DecoderK<I, E, A>,
-  onError: (i: I, e: E) => E
-): DecoderK<I | null | undefined, E, O.Option<A>>
-export function optional_<I, E, A>(
-  or: DecoderKHKT<I, E, A>,
-  onError: (i: I, e: E) => E
-): DecoderKHKT<I | null | undefined, E, O.Option<A>> {
-  return {
-    decode: (M) => (i) => (i == null ? M.pure(O.None()) : M.bimap_(or.decode(M)(i), (e: E) => onError(i, e), O.Some))
-  }
-}
-
-export function optional<I, E>(
-  onError: (i: I, e: E) => E
-): <A>(or: DecoderK<I, E, A>) => DecoderK<I | null | undefined, E, O.Option<A>> {
-  return (or) => optional_(or, onError)
-}
-
-export function fromStruct_<E, P extends Record<string, DecoderK<any, E, any>>>(
-  properties: P,
-  onPropertyError: (key: string, e: E) => E
-): DecoderK<{ [K in keyof P]: InputOf<P[K]> }, E, { [K in keyof P]: TypeOf<P[K]> }>
-export function fromStruct_<E, P extends Record<string, DecoderKHKT<any, E, any>>>(
-  properties: P,
-  onPropertyError: (key: string, e: E) => E
-): DecoderKHKT<{ [K in keyof P]: InputOfHKT<P[K]> }, E, { [K in keyof P]: TypeOfHKT<P[K]> }> {
-  return {
-    decode: (M) => (i) =>
-      R.itraverse_(M)(properties, (key, decoder) =>
-        M.mapLeft_(decoder.decode(M)(i[key]), (e: E) => onPropertyError(key, e))
-      ) as any
-  }
-}
-
-export function fromStruct<E>(
-  onPropertyError: (key: string, e: E) => E
-): <P extends Record<string, DecoderK<any, E, any>>>(
-  properties: P
-) => DecoderK<{ [K in keyof P]: InputOf<P[K]> }, E, { [K in keyof P]: TypeOf<P[K]> }> {
-  return (properties) => fromStruct_(properties, onPropertyError)
-}
-
-export function fromPartial_<E, P extends Record<string, DecoderK<any, E, any>>>(
-  properties: P,
-  onPropertyError: (key: string, e: E) => E
-): DecoderK<Partial<{ [K in keyof P]: InputOf<P[K]> }>, E, Partial<{ [K in keyof P]: TypeOf<P[K]> }>>
-export function fromPartial_<E, P extends Record<string, DecoderKHKT<any, E, any>>>(
-  properties: P,
-  onPropertyError: (key: string, e: E) => E
-): DecoderKHKT<Partial<{ [K in keyof P]: InputOfHKT<P[K]> }>, E, Partial<{ [K in keyof P]: TypeOfHKT<P[K]> }>> {
-  return {
-    decode: (M) => {
-      const traverse          = R.itraverse_(M)
-      const undefinedProperty = M.pure(E.Right(undefined))
-      const skipProperty      = M.pure(E.Left(undefined))
-      return (i) =>
-        M.map_(
-          traverse(properties, (key, decoder) => {
-            const ikey = i[key]
-            if (ikey === undefined) {
-              return key in i ? undefinedProperty : skipProperty
-            }
-            return M.bimap_(
-              decoder.decode(M)(ikey),
-              (e: E) => onPropertyError(key, e),
-              (a) => E.Right<void, unknown>(a)
-            )
-          }),
-          compactRecord
-        ) as any
-    }
-  }
-}
-
-export function fromPartial<E>(
-  onPropertyError: (key: string, e: E) => E
-): <P extends Record<string, DecoderK<any, E, any>>>(
-  properties: P
-) => DecoderK<Partial<{ [K in keyof P]: InputOf<P[K]> }>, E, Partial<{ [K in keyof P]: TypeOf<P[K]> }>> {
-  return (properties) => fromPartial_(properties, onPropertyError)
-}
-
-export function fromArray_<I, E, A>(
-  item: DecoderK<I, E, A>,
-  onItemError: (index: number, e: E) => E
-): DecoderK<ReadonlyArray<I>, E, ReadonlyArray<A>>
-export function fromArray_<I, E, A>(
-  item: DecoderKHKT<I, E, A>,
-  onItemError: (index: number, e: E) => E
-): DecoderKHKT<ReadonlyArray<I>, E, ReadonlyArray<A>> {
-  return {
-    decode: (M) => {
-      const traverse = A.itraverse_(M)
-      const itemM    = item.decode(M)
-      return (is) => traverse(is, (index, i) => M.mapLeft_(itemM(i), (e: E) => onItemError(index, e)))
-    }
-  }
-}
-
-export function fromArray<E>(
-  onItemError: (index: number, e: E) => E
-): <I, A>(item: DecoderK<I, E, A>) => DecoderK<ReadonlyArray<I>, E, ReadonlyArray<A>> {
-  return (item) => fromArray_(item, onItemError)
-}
-
-export function fromRecord_<I, E, A>(
-  codomain: DecoderK<I, E, A>,
-  onKeyError: (key: string, e: E) => E
-): DecoderK<Record<string, I>, E, Record<string, A>> {
-  return {
-    decode: (M) => {
-      const traverse  = R.itraverse_(M)
-      const codomainM = codomain.decode(M)
-      return (ir) => traverse(ir, (key, i: I) => M.mapLeft_(codomainM(i), (e) => onKeyError(key, e)))
-    }
-  }
-}
-
-export function fromRecord<E>(
-  onKeyError: (key: string, e: E) => E
-): <I, A>(codomain: DecoderK<I, E, A>) => DecoderK<Record<string, I>, E, Record<string, A>> {
-  return (codomain) => fromRecord_(codomain, onKeyError)
-}
-
-export function fromTuple<E>(
-  onIndexError: (index: number, e: E) => E
-): <P extends ReadonlyArray<DecoderK<any, E, any>>>(
-  ...components: P
-) => DecoderK<{ [K in keyof P]: InputOf<P[K]> }, E, { [K in keyof P]: TypeOf<P[K]> }> {
-  return (...components) => ({
-    decode: (M) => {
-      const traverse = A.itraverse_(M)
-      return (is) =>
-        traverse(components, (index, decoder) =>
-          M.mapLeft_(decoder.decode(M)(is[index]), (e: E) => onIndexError(index, e))
-        ) as any
+export function nullable(info?: ErrorInfo): <I, A>(or: DecoderK<I, A>) => DecoderK<I | null | undefined, A | null> {
+  return (or) => ({
+    decode: K.nullable_(or, (u, e) =>
+      FS.Combine(FS.Element(FDE.Member(0, DE.error(u, 'null | undefined', info))), FS.Element(FDE.Member(1, e)))
+    ).decode,
+    _meta: {
+      name: `${or._meta.name} | null | undefined`
     }
   })
 }
 
-export function union<E>(
-  onMemberError: (index: number, e: E) => E
-): <P extends readonly [DecoderK<any, E, any>, ...DecoderK<any, E, any>[]]>(
-  ...members: P
-) => DecoderK<InputOf<P[keyof P]>, E, TypeOf<P[keyof P]>>
-export function union<E>(
-  onMemberError: (index: number, e: E) => E
-): <P extends readonly [DecoderK<any, E, any>, ...DecoderK<any, E, any>[]]>(...members: P) => DecoderKHKT<any, E, any> {
-  return (...members) => ({
-    decode: (M) => (i) => {
-      let out = M.mapLeft_(members[0].decode(M)(i), (e: E) => onMemberError(0, e))
-      for (let index = 1; index < members.length; index++) {
-        out = M.alt_(out, () => M.mapLeft_(members[index].decode(M)(i), (e: E) => onMemberError(index, e)))
+export function optional(info?: ErrorInfo): <I, A>(or: DecoderK<I, A>) => DecoderK<I | null | undefined, O.Option<A>> {
+  return (or) => ({
+    decode: K.optional_(or, (u, e) =>
+      FS.Combine(FS.Element(FDE.Member(0, DE.error(u, 'null | undefined', info))), FS.Element(FDE.Member(1, e)))
+    ).decode,
+    _meta: {
+      name: `${or._meta.name} | null | undefined`
+    }
+  })
+}
+
+export function fromStruct<P extends Record<string, DecoderK<any, any>>>(
+  properties: P,
+  info?: ErrorInfo
+): DecoderK<{ [K in keyof P]: K.InputOf<P[K]> }, { [K in keyof P]: K.TypeOf<P[K]> }> {
+  const name: string = pipe(
+    properties,
+    R.ifoldl([] as string[], (b, k, a) => [...b, `${k}: ${a._meta.name}`]),
+    (as) => `{ ${as.join(', ')} }`
+  )
+  return pipe(
+    {
+      decode: K.fromStruct_(properties, (k, e: DecodeErrors) => FS.Element(FDE.Key(k, FDE.required, e))).decode,
+      _meta: {
+        name
       }
-      return out
-    }
-  })
+    },
+    wrapInfo({ name, ...info })
+  ) as any
 }
 
-export function intersect_<IA, E, A, IB, B>(
-  left: DecoderK<IA, E, A>,
-  right: DecoderK<IB, E, B>
-): DecoderK<IA & IB, E, A & B>
-export function intersect_<IA, E, A, IB, B>(
-  left: DecoderK<IA, E, A>,
-  right: DecoderK<IB, E, B>
-): DecoderKHKT<IA & IB, E, A & B> {
-  return {
-    decode: (M) => {
-      const leftM  = left.decode(M)
-      const rightM = right.decode(M)
-      return (i) => M.crossWith_(leftM(i), rightM(i), _intersect)
+export function struct<P extends Record<string, DecoderK<any, any>>>(
+  properties: P,
+  info?: ErrorInfo
+): DecoderK<unknown, { [K in keyof P]: K.TypeOf<P[K]> }> {
+  return compose_(UnknownRecord(info) as any, fromStruct(properties, info))
+}
+
+export function fromPartial<P extends Record<string, DecoderK<any, any>>>(
+  properties: P,
+  info?: ErrorInfo
+): DecoderK<Partial<{ [K in keyof P]: K.InputOf<P[K]> }>, Partial<{ [K in keyof P]: K.TypeOf<P[K]> }>> {
+  const name: string = pipe(
+    properties,
+    R.ifoldl([] as string[], (b, k, a) => [...b, `${k}?: ${a._meta.name}`]),
+    (as) => `{ ${as.join(', ')} }`
+  )
+  return pipe(
+    {
+      decode: K.fromPartial_(properties, (k, e: DecodeErrors) => FS.Element(FDE.Key(k, FDE.optional, e))).decode,
+      _meta: {
+        name
+      }
+    },
+    wrapInfo({ name, ...info })
+  ) as any
+}
+
+export function partial<P extends Record<string, DecoderK<any, any>>>(
+  properties: P,
+  info?: ErrorInfo
+): DecoderK<
+  unknown,
+  Partial<
+    {
+      [K in keyof P]: K.TypeOf<P[K]>
     }
+  >
+> {
+  return compose_(UnknownRecord(info) as any, fromPartial(properties, info))
+}
+
+export function fromArray<I, A>(item: DecoderK<I, A>, info?: ErrorInfo): DecoderK<ReadonlyArray<I>, ReadonlyArray<A>> {
+  const name = `Array<${item._meta.name}>`
+  return pipe(
+    {
+      decode: K.fromArray_(item, (i, e) => FS.Element(FDE.Index(i, FDE.optional, e))).decode,
+      _meta: { name }
+    },
+    wrapInfo({ name, ...info })
+  )
+}
+
+export function array<A>(item: DecoderK<unknown, A>, info?: ErrorInfo): DecoderK<unknown, ReadonlyArray<A>> {
+  return compose_(UnknownArray(info), fromArray(item, info))
+}
+
+export function fromRecord<I, A>(
+  codomain: DecoderK<I, A>,
+  info?: ErrorInfo
+): DecoderK<R.ReadonlyRecord<string, I>, R.ReadonlyRecord<string, A>> {
+  const name = `Record<string, ${codomain._meta.name}>`
+  return pipe(
+    {
+      decode: K.fromRecord_(codomain, (k, e) => FS.Element(FDE.Key(k, FDE.optional, e))).decode,
+      _meta: { name }
+    },
+    wrapInfo({ name, ...info })
+  )
+}
+
+export function record<A>(
+  codomain: DecoderK<unknown, A>,
+  info?: ErrorInfo
+): DecoderK<unknown, R.ReadonlyRecord<string, A>> {
+  return compose_(UnknownRecord(info), fromRecord(codomain, info))
+}
+
+export function fromTuple<A extends ReadonlyArray<DecoderK<any, any>>>(
+  ...components: A
+): (info?: ErrorInfo) => DecoderK<[...{ [K in keyof A]: K.InputOf<A[K]> }], [...{ [K in keyof A]: K.TypeOf<A[K]> }]> {
+  return (info) => {
+    const name: string = pipe(
+      components,
+      A.map((d) => d._meta.name),
+      (as) => `[${as.join(', ')}]`
+    )
+    return pipe(
+      {
+        decode: K.fromTuple((i, e: DecodeErrors) => FS.Element(FDE.Index(i, FDE.required, e)))(...components).decode,
+        _meta: { name }
+      },
+      wrapInfo({ name, ...info })
+    ) as any
   }
 }
 
-export function intersect<IB, E, B>(
-  right: DecoderK<IB, E, B>
-): <IA, A>(left: DecoderK<IA, E, A>) => DecoderK<IA & IB, E, A & B> {
-  return (left) => intersect_(left, right)
+export function tuple<A extends ReadonlyArray<DecoderK<any, any>>>(
+  ...components: A
+): (info?: ErrorInfo) => DecoderK<unknown, [...{ [K in keyof A]: K.TypeOf<A[K]> }]> {
+  return (info) => compose_(UnknownArray(info) as any, fromTuple(...components)(info))
 }
 
-export function sum<T extends string, E, P extends Record<string, DecoderK<any, E, any>>>(
+export function union(
+  info?: ErrorInfo
+): <P extends readonly [DecoderK<any, any>, ...ReadonlyArray<DecoderK<any, any>>]>(
+  ...members: P
+) => DecoderK<K.InputOf<P[keyof P]>, K.TypeOf<P[keyof P]>> {
+  return (...members) => {
+    const name = members.join(' | ')
+    return pipe(
+      {
+        decode: K.union((i, e: DecodeErrors) => FS.Element(FDE.Member(i, e)))(...members).decode,
+        _meta: { name }
+      },
+      wrapInfo({ name, ...info })
+    ) as any
+  }
+}
+
+export function intersect_<IA, A, IB, B>(
+  left: DecoderK<IA, A>,
+  right: DecoderK<IB, B>,
+  info?: ErrorInfo
+): DecoderK<IA & IB, A & B> {
+  return pipe(
+    {
+      decode: K.intersect_(left, right).decode,
+      _meta: {
+        name: info?.name ?? `${left._meta.name} & ${right._meta.name}`
+      }
+    },
+    wrapInfo({ name: info?.name ?? `${left._meta.name} & ${right._meta.name}` })
+  )
+}
+
+export function intersect<IB, B>(
+  right: DecoderK<IB, B>,
+  info?: ErrorInfo
+): <IA, A>(left: DecoderK<IA, A>) => DecoderK<IA & IB, A & B> {
+  return (left) => intersect_(left, right, info)
+}
+
+export function intersectAll<
+  A extends readonly [DecoderK<any, any>, DecoderK<any, any>, ...(readonly DecoderK<any, any>[])]
+>(
+  decoders: A,
+  info?: ErrorInfo
+): DecoderK<
+  UnionToIntersection<{ [K in keyof A]: K.InputOf<A[K]> }[keyof A]>,
+  UnionToIntersection<{ [K in keyof A]: K.TypeOf<A[K]> }[keyof A]>
+> {
+  const [left, right, ...rest] = decoders
+
+  const decoder = A.foldl_(rest, K.intersect_(left, right), (b, a) => K.intersect_(b, a))
+  const name    = info?.name ?? A.map_(decoders, (d) => d._meta.name).join(' & ')
+  return pipe({ decode: decoder.decode, _meta: { name } }, wrapInfo({ name, ...info }) as any)
+}
+
+export function fromSum_<T extends string, P extends Record<string, DecoderK<any, any>>>(
   tag: T,
   members: P,
-  onTagError: (tag: string, value: unknown, tags: ReadonlyArray<string>) => E
-): DecoderK<InputOf<P[keyof P]>, E, TypeOf<P[keyof P]>> {
-  const keys = Object.keys(members)
-  return {
-    decode: (M) => (ir) => {
-      const v = (ir as any)[tag]
-      if (v in members) {
-        return (members as any)[v].decode(M)(ir)
+  info?: ErrorInfo
+): DecoderK<K.InputOf<P[keyof P]>, K.TypeOf<P[keyof P]>> {
+  const name: string = pipe(
+    members,
+    R.foldl([] as string[], (b, a) => [...b, a._meta.name]),
+    (as) => as.join(' | ')
+  )
+
+  const decode = K.sum(tag, members, (tag, value, keys) =>
+    FS.Element(
+      FDE.Key(
+        tag,
+        FDE.required,
+        DE.error(value, keys.length === 0 ? 'never' : keys.map((k) => JSON.stringify(k)).join(' | '))
+      )
+    )
+  ).decode
+
+  return pipe({ decode, _meta: { name } }, wrapInfo({ name, ...info }))
+}
+
+export function fromSum<T extends string>(
+  tag: T,
+  info?: ErrorInfo
+): <P extends Record<string, DecoderK<any, any>>>(members: P) => DecoderK<K.InputOf<P[keyof P]>, K.TypeOf<P[keyof P]>> {
+  return (members) => fromSum_(tag, members, info)
+}
+
+export function sum_<T extends string, A>(
+  tag: T,
+  members: { [K in keyof A]: DecoderK<unknown, A[K] & Record<T, K>> },
+  info?: ErrorInfo
+): DecoderK<unknown, A[keyof A]> {
+  return compose_(UnknownRecord(info) as any, fromSum_(tag, members, info) as any)
+}
+
+export function sum<T extends string>(
+  tag: T,
+  info?: ErrorInfo
+): <A>(members: { [K in keyof A]: DecoderK<unknown, A[K] & Record<T, K>> }) => DecoderK<unknown, A[keyof A]> {
+  return (members) => sum_(tag, members, info)
+}
+
+export function lazy<I, A>(id: string, f: () => DecoderK<I, A>, info?: ErrorInfo): DecoderK<I, A> {
+  return pipe(
+    {
+      decode: K.lazy(id, f, (id, e) => FS.Element(FDE.Lazy(id, e))).decode,
+      _meta: {
+        name: info?.name ?? id
       }
-      return M.fail(onTagError(tag, v, keys) as any)
-    }
-  }
+    },
+    wrapInfo({ name: id, ...info })
+  )
 }
 
-export function lazy<I, E, A>(
-  id: string,
-  f: () => DecoderK<I, E, A>,
-  onError: (id: string, e: E) => E
-): DecoderK<I, E, A> {
-  const get = memoize<void, DecoderK<I, E, A>>(f)
-  return {
-    decode: (M) => (i) => M.mapLeft_(get().decode(M)(i), (e) => onError(id, e))
-  }
-}
-
-export function runDecoder<I, O, M extends HKT.URIS, C, E>(
-  M: MonadDecoder<M, C, E>,
-  decoder: DecoderK<I, E, O>
+export function runDecoder<I, O, M extends HKT.URIS, C = HKT.Auto>(
+  M: MD.MonadDecoder<M, C, DecodeErrors>,
+  decoder: DecoderK<I, O>
 ): (
   i: I
 ) => HKT.Kind<
@@ -421,7 +558,7 @@ export function runDecoder<I, O, M extends HKT.URIS, C, E>(
   HKT.Initial<C, 'I'>,
   HKT.Initial<C, 'S'>,
   HKT.Initial<C, 'R'>,
-  E,
+  DecodeErrors,
   O
 > {
   return (i) => decoder.decode(M)(i)
@@ -429,78 +566,18 @@ export function runDecoder<I, O, M extends HKT.URIS, C, E>(
 
 /*
  * -------------------------------------------
- * Category
+ * Instances
  * -------------------------------------------
  */
 
-export function id<E, A>(): DecoderK<A, E, A> {
-  return {
-    decode: (M) => M.pure
-  }
-}
+export const Functor: P.Functor<[HKT.URI<DecoderKURI>], V> = P.Functor({
+  map_
+})
 
-export function compose_<I, E, A, B>(ia: DecoderK<I, E, A>, ab: DecoderK<A, E, B>): DecoderK<I, E, B>
-export function compose_<I, E, A, B>(ia: DecoderKHKT<I, E, A>, ab: DecoderKHKT<A, E, B>): DecoderKHKT<I, E, B> {
-  return {
-    decode: (M) => (i0) => M.bind_(ia.decode(M)(i0), ab.decode(M))
-  }
-}
-
-export function compose<A, E, B>(ab: DecoderK<A, E, B>): <I>(ia: DecoderK<I, E, A>) => DecoderK<I, E, B> {
-  return (ia) => compose_(ia, ab)
-}
-
-/*
- * -------------------------------------------
- * Functor
- * -------------------------------------------
- */
-
-export function map_<I, E, A, B>(ia: DecoderK<I, E, A>, f: (a: A) => B): DecoderK<I, E, B> {
-  return {
-    decode: (M) => {
-      const iaM = ia.decode(M)
-      return (i) => M.map_(iaM(i), f)
-    }
-  }
-}
-
-export function map<A, B>(f: (a: A) => B): <I, E>(ia: DecoderK<I, E, A>) => DecoderK<I, E, B> {
-  return (ia) => map_(ia, f)
-}
-
-/*
- * -------------------------------------------
- * Alt
- * -------------------------------------------
- */
-
-export function alt_<I, E, A>(me: DecoderK<I, E, A>, that: () => DecoderK<I, E, A>): DecoderK<I, E, A>
-export function alt_<I, E, A>(me: DecoderK<I, E, A>, that: () => DecoderK<I, E, A>): DecoderKHKT<I, E, A> {
-  return {
-    decode: (M) => {
-      const meM = me.decode(M)
-      return (i) => M.alt_(meM(i), () => that().decode(M)(i))
-    }
-  }
-}
-
-export function alt<I, E, A>(that: () => DecoderK<I, E, A>): (me: DecoderK<I, E, A>) => DecoderK<I, E, A> {
-  return (me) => alt_(me, that)
-}
-
-/**
- * @internal
- */
-const compactRecord = <A>(r: Record<string, E.Either<void, A>>): Record<string, A> => {
-  const mut_out: Record<string, A> = {}
-  for (const k in r) {
-    const rk = r[k]
-    if (E.isRight(rk)) {
-      mut_out[k] = rk.right
-    }
-  }
-  return mut_out
-}
+export const Category = HKT.instance<P.Category<[HKT.URI<DecoderKURI>], V>>({
+  compose_,
+  compose,
+  id
+})
 
 export { DecoderKURI }
