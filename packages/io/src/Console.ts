@@ -26,6 +26,21 @@ export abstract class Console {
   static putStrLnDebug = I.deriveLifted(ConsoleTag)(['putStrLnDebug'], [], []).putStrLnDebug
 }
 
+export class LiveConsole implements Console {
+  put(...data: any[]): I.UIO<void> {
+    return I.effectTotal(() => console.log(...data))
+  }
+  putStrLn(line: string): I.UIO<void> {
+    return I.effectTotal(() => console.log(line))
+  }
+  putStrLnErr(line: string): I.UIO<void> {
+    return I.effectTotal(() => console.error(line))
+  }
+  putStrLnDebug(line: string): I.UIO<void> {
+    return I.effectTotal(() => console.debug(line))
+  }
+}
+
 export const { putStrLn, putStrLnDebug, putStrLnErr, put } = I.deriveLifted(ConsoleTag)(
   ['putStrLn', 'putStrLnErr', 'putStrLnDebug', 'put'],
   [],

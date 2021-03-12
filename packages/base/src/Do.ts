@@ -1,3 +1,4 @@
+import type { BindToSFn } from './Functor'
 import type { Monad } from './Monad'
 
 import { _bind, _bindTo, flow, pipe } from './Function'
@@ -88,14 +89,4 @@ export function letSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): LetSFn<
         F.map((b) => _bind(a, name, b))
       )
     )
-}
-
-export interface BindToSFn<F extends HKT.URIS, C = HKT.Auto> {
-  <BN extends string>(name: BN): <N extends string, K, Q, W, X, I, S, R, E, A>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
-}
-
-export function bindToSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): BindToSFn<F, C> {
-  return (name) => F.map(_bindTo(name))
 }

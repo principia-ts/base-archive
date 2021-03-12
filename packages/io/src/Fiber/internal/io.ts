@@ -1,6 +1,5 @@
 export { bracket_ } from '../../IO/combinators/bracket'
 export { forkDaemon } from '../../IO/combinators/core-scope'
-export { fiberId } from '../../IO/combinators/fiberId'
 export * from '../../IO/combinators/foreachPar'
 export {
   effectAsyncInterrupt,

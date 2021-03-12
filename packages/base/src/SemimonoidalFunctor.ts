@@ -1,6 +1,6 @@
 import type { ApFn, ApFn_ } from './Apply'
 import type { Functor2, FunctorMin } from './Functor'
-import type { CrossFn, CrossFn_, Semimonoidal, SemimonoidalMin } from './Semimonoidal'
+import type { CrossFn_, Semimonoidal, SemimonoidalMin } from './Semimonoidal'
 import type { EnforceNonEmptyRecord } from './util/types'
 
 import { tuple } from './Function'
@@ -341,7 +341,7 @@ export function apF<F extends HKT.URIS, C = HKT.Auto>(A: SemimonoidalFunctor<F, 
   return (fa) => (fab) => A.crossWith_(fab, fa, (f, a) => f(a))
 }
 
-export interface ApSFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface CrossSFn<F extends HKT.URIS, C = HKT.Auto> {
   <BN extends string, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1, A>(
     name: Exclude<BN, keyof A>,
     fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>
@@ -374,6 +374,57 @@ export interface ApSFn<F extends HKT.URIS, C = HKT.Auto> {
     HKT.Mix<C, 'E', [E, E1]>,
     { [K in keyof A | BN]: K extends keyof A ? A[K] : A1 }
   >
+}
+
+export function crossSF<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunctor<F, C>): CrossSFn<F, C> {
+  return (name, fb) => (fa) => F.crossWith_(fa, fb, (a, b) => Object.assign({}, a, { [name]: b }))
+}
+
+export interface CrossTFn<F extends HKT.URIS, C = HKT.Auto> {
+  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>): <
+    N extends string,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    A extends ReadonlyArray<unknown>
+  >(
+    fas: HKT.Kind<
+      F,
+      C,
+      HKT.Intro<C, 'N', N1, N>,
+      HKT.Intro<C, 'K', K1, K>,
+      HKT.Intro<C, 'Q', Q1, Q>,
+      HKT.Intro<C, 'W', W1, W>,
+      HKT.Intro<C, 'X', X1, X>,
+      HKT.Intro<C, 'I', I1, I>,
+      HKT.Intro<C, 'S', S1, S>,
+      HKT.Intro<C, 'R', R1, R>,
+      HKT.Intro<C, 'E', E1, E>,
+      A
+    >
+  ) => HKT.Kind<
+    F,
+    C,
+    HKT.Mix<C, 'N', [N, N1]>,
+    HKT.Mix<C, 'K', [K, K1]>,
+    HKT.Mix<C, 'Q', [Q, Q1]>,
+    HKT.Mix<C, 'W', [W, W1]>,
+    HKT.Mix<C, 'X', [X, X1]>,
+    HKT.Mix<C, 'I', [I, I1]>,
+    HKT.Mix<C, 'S', [S, S1]>,
+    HKT.Mix<C, 'R', [R, R1]>,
+    HKT.Mix<C, 'E', [E, E1]>,
+    readonly [...A, A1]
+  >
+}
+
+export function crossTF<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunctor<F, C>): CrossTFn<F, C> {
+  return (fb) => (fas) => F.crossWith_(fas, fb, (a, b) => [...a, b])
 }
 
 export interface LiftA2Fn<F extends HKT.URIS, TC = HKT.Auto> {
@@ -427,6 +478,10 @@ export interface LiftA2Fn<F extends HKT.URIS, TC = HKT.Auto> {
     HKT.Mix<TC, 'E', [E, E1]>,
     D
   >
+}
+
+export function liftA2F<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunctor<F, C>): LiftA2Fn<F, C> {
+  return (f) => (fa) => (fb) => F.crossWith_(fa, fb, f)
 }
 
 export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {

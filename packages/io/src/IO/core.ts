@@ -1,6 +1,7 @@
 import type { Async } from '../Async'
 import type { Cause } from '../Cause/core'
 import type { Exit } from '../Exit/core'
+import type { Platform } from '../Fiber'
 import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
@@ -10,7 +11,7 @@ import type { Sync } from '../Sync'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 import type { Eval } from '@principia/base/Eval'
 import type { Predicate, Refinement } from '@principia/base/Function'
-import type { Has, Region, Tag } from '@principia/base/Has'
+import type { Has, Tag } from '@principia/base/Has'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Option } from '@principia/base/Option'
 import type { Monoid } from '@principia/base/typeclass'
@@ -21,7 +22,7 @@ import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
 import { _bind, _bindTo, constant, flow, identity, pipe, tuple } from '@principia/base/Function'
-import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
+import { isTag, mergeEnvironments } from '@principia/base/Has'
 import * as I from '@principia/base/Iterable'
 import * as NEA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
@@ -46,6 +47,7 @@ import {
   Fold,
   Fork,
   GetInterrupt,
+  GetPlatform,
   Give,
   Read,
   Succeed,
@@ -210,7 +212,6 @@ export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: (
 }
 
 /**
- *
  * Returns a lazily constructed effect, whose construction may itself require
  * effects. The effect must not throw any exceptions. When no environment is required (i.e., when R == unknown)
  * it is conceptually equivalent to `flatten(effectTotal(io))`. If you wonder if the effect throws exceptions,
@@ -222,6 +223,23 @@ export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: (
  */
 export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
   return new DeferTotal(io)
+}
+
+/**
+ * Returns the `FiberId` of the `Fiber` on which this `IO` is running
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function fiberId(): IO<unknown, never, FiberId> {
+  return descriptorWith((d) => succeed(d.id))
+}
+
+/**
+ * Checks the current `Platform`
+ */
+export function platform<R, E, A>(f: (p: Platform<unknown>) => IO<R, E, A>): IO<R, E, A> {
+  return new GetPlatform(f)
 }
 
 /**
@@ -424,9 +442,7 @@ export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, 
  * @category Applicative
  * @since 1.0.0
  */
-export function pure<A>(a: A): UIO<A> {
-  return new Succeed(a)
-}
+export const pure: <A>(a: A) => UIO<A> = succeed
 
 /*
  * -------------------------------------------
@@ -2134,7 +2150,7 @@ export function merge<R, E, A>(io: IO<R, E, A>): IO<R, never, A | E> {
  * Merges an `Iterable<IO>` to a single IO, working sequentially.
  */
 export function mergeAll_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> {
-  return I.foldl_(fas, pure(b) as IO<R, E, B>, (_b, a) => crossWith_(_b, a, f))
+  return I.foldl_(fas, pure(b) as IO<R, E, B>, (b, a) => crossWith_(b, a, f))
 }
 
 /**
@@ -2892,19 +2908,6 @@ export function asksServiceM<T>(s: Tag<T>): <R, E, B>(f: (a: T) => IO<R, E, B>) 
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceF<T>(
-  s: Tag<T>
-): <K extends keyof T & { [k in keyof T]: T[k] extends (...args: any[]) => IO<any, any, any> ? k : never }[keyof T]>(
-  k: K
-) => (
-  ...args: T[K] extends (...args: infer ARGS) => IO<any, any, any> ? ARGS : unknown[]
-) => T[K] extends (...args: any[]) => IO<infer R, infer E, infer A> ? IO<R & Has<T>, E, A> : unknown[] {
-  return (k) => (...args) => asksServiceM(s)((t) => (t[k] as any)(...args)) as any
-}
-
-/**
- * Access a service with the required Service Entry
- */
 export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => IO<Has<T>, never, B> {
   return (f) => asksServiceM(s)((a) => pure(f(a)))
 }
@@ -2937,7 +2940,7 @@ export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: IO<R1 & Ha
 export function updateServiceM<R, E, T>(
   _: Tag<T>,
   f: (_: T) => IO<R, E, T>
-): <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R & R1 & Has<T>, E1 | E, A1> {
+): <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R & R1 & Has<T>, E1 | E, A1> {
   return (ma) => asksServiceM(_)((t) => giveServiceM(_)(f(t))(ma))
 }
 
@@ -2945,7 +2948,7 @@ export function updateServiceM<R, E, T>(
  * Replaces the service with the required Service Entry
  */
 export function updateServiceM_<R, E, T, R1, E1, A1>(
-  ma: IO<R1 & Has<T>, E1, A1>,
+  ma: IO<R1, E1, A1>,
   _: Tag<T>,
   f: (_: T) => IO<R, E, T>
 ): IO<R & R1 & Has<T>, E | E1, A1> {
@@ -2958,116 +2961,15 @@ export function updateServiceM_<R, E, T, R1, E1, A1>(
 export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
-): <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R1 & Has<T>, E1, A1> {
+): <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R1 & Has<T>, E1, A1> {
   return (ma) => asksServiceM(_)((t) => giveServiceM(_)(pure(f(t)))(ma))
 }
 
 /**
  * Replaces the service with the required Service Entry
  */
-export function updateService_<R1, E1, A1, T>(
-  ma: IO<R1 & Has<T>, E1, A1>,
-  _: Tag<T>,
-  f: (_: T) => T
-): IO<R1 & Has<T>, E1, A1> {
+export function updateService_<R1, E1, A1, T>(ma: IO<R1, E1, A1>, _: Tag<T>, f: (_: T) => T): IO<R1 & Has<T>, E1, A1> {
   return asksServiceM(_)((t) => giveServiceM(_)(pure(f(t)))(ma))
-}
-
-/**
- * Defines a new region tag
- */
-export function region<K, T>(): Tag<Region<T, K>> {
-  return tag<Region<T, K>>()
-}
-
-/**
- * Uses the region to provide
- */
-export function useRegion<K, T>(
-  h: Tag<Region<T, K>>
-): <R, E, A>(e: IO<R & T, E, A>) => IO<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(e, give((a as any) as T)))
-}
-
-/**
- * Access the region monadically
- */
-export function asksRegionM<K, T>(
-  h: Tag<Region<T, K>>
-): <R, E, A>(e: (_: T) => IO<R & T, E, A>) => IO<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(asksM(e), give((a as any) as T)))
-}
-
-/**
- * Access the region
- */
-export function asksRegion<K, T>(h: Tag<Region<T, K>>): <A>(e: (_: T) => A) => IO<Has<Region<T, K>>, never, A> {
-  return (e) => asksServiceM(h)((a) => pipe(asks(e), give((a as any) as T)))
-}
-
-/**
- * Read the region value
- */
-export function askRegion<K, T>(h: Tag<Region<T, K>>): IO<Has<Region<T, K>>, never, T> {
-  return asksServiceM(h)((a) =>
-    pipe(
-      asks((r: T) => r),
-      give((a as any) as T)
-    )
-  )
-}
-
-/**
- * Reads service inside region
- */
-export function askServiceIn<A>(
-  _: Tag<A>
-): <K, T>(h: Tag<Region<Has<A> & T, K>>) => IO<Has<Region<Has<A> & T, K>>, never, A> {
-  return (h) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          asks((r: A) => r),
-          give((a as any) as A)
-        )
-      )
-    )
-}
-
-/**
- * Access service inside region
- */
-export function asksServiceIn<A>(
-  _: Tag<A>
-): <K, T>(h: Tag<Region<Has<A> & T, K>>) => <B>(f: (_: A) => B) => IO<Has<Region<Has<A> & T, K>>, never, B> {
-  return (h) => (f) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          asks((r: A) => f(r)),
-          give((a as any) as A)
-        )
-      )
-    )
-}
-
-/**
- * Reads service inside region monadically
- */
-export function asksServiceInM<A>(
-  _: Tag<A>
-): <K, T>(
-  h: Tag<Region<Has<A> & T, K>>
-) => <R, E, B>(f: (_: A) => IO<R, E, B>) => IO<R & Has<Region<Has<A> & T, K>>, E, B> {
-  return (h) => (f) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          asksM((r: A) => f(r)),
-          give((a as any) as A)
-        )
-      )
-    )
 }
 
 /**

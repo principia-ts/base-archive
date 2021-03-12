@@ -1,6 +1,7 @@
-import * as Eq from '@principia/base/Eq'
+import * as B from '@principia/base/Boolean'
 import { RuntimeException } from '@principia/base/Exception'
 import { pipe } from '@principia/base/Function'
+import * as N from '@principia/base/Number'
 import * as Ca from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
@@ -16,7 +17,7 @@ class IOSpec extends DefaultRunnableSpec {
           I.succeed('Hello'),
           I.map((s) => s.length)
         ),
-        equalTo(5, Eq.number)
+        equalTo(5, N.Eq)
       )
     ),
     suite(
@@ -34,7 +35,7 @@ class IOSpec extends DefaultRunnableSpec {
             )
           )
           const released = yield* _(release.get)
-          return assert(result, equalTo(43, Eq.number))['&&'](assert(released, equalTo(true, Eq.boolean)))
+          return assert(result, equalTo(43, N.Eq))['&&'](assert(released, equalTo(true, B.Eq)))
         })
       ),
       testM('bracketExit error handling', () => {
@@ -53,7 +54,7 @@ class IOSpec extends DefaultRunnableSpec {
           const cause = yield* _(
             pipe(
               exit,
-              Ex.foldM(I.succeed, () => I.fail('effect should have died'))
+              Ex.matchM(I.succeed, () => I.fail('effect should have died'))
             )
           )
           return assert(Ca.failures(cause), deepStrictEqualTo(['use failed']))

@@ -9,7 +9,6 @@ import { pipe } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
-import { fiberId } from './IO/combinators/fiberId'
 import {
   effectAsyncInterruptEither,
   interruptAs as interruptAsIO,
@@ -100,7 +99,7 @@ export class Promise<E, A> {
    */
   get interrupt(): I.UIO<boolean> {
     return pipe(
-      fiberId(),
+      I.fiberId(),
       I.bind((id) => this.completeWith(interruptAsIO(id)))
     )
   }
@@ -333,7 +332,7 @@ export function isDone<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
  * Makes a new promise to be completed by the fiber creating the promise.
  */
 export function make<E, A>() {
-  return I.bind_(fiberId(), (id) => makeAs<E, A>(id))
+  return I.bind_(I.fiberId(), (id) => makeAs<E, A>(id))
 }
 
 /**

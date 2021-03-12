@@ -20,9 +20,9 @@ import { TestLogger } from './TestLogger'
 export class TestRunner<R, E> {
   constructor(
     readonly executor: TestExecutor<R>,
-    readonly platform: Platform = I.defaultRuntime.platform,
+    readonly platform: Platform<unknown> = I.defaultRuntime.platform,
     readonly reporter: TestReporter<E> = report(defaultTestAnnotationRenderer),
-    readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = Console.live['>>>'](
+    readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = Console.live['>=>'](
       TestLogger.fromConsole
     )['+++'](Clock.live)
   ) {

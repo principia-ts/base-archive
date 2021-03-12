@@ -287,3 +287,34 @@ export function fcrossF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>):
 export function fcrossF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): FCrossFn<F, C> {
   return (f) => (fa) => F.map_(fa, (a) => [a, f(a)])
 }
+
+export interface BindToSFn<F extends HKT.URIS, C = HKT.Auto> {
+  <BN extends string>(name: BN): <N extends string, K, Q, W, X, I, S, R, E, A>(
+    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
+}
+
+export function bindToSF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): BindToSFn<F, C> {
+  return (name) => F.map((a) => ({ [name]: a }))
+}
+
+export interface TupledFn<F extends HKT.URIS, C = HKT.Auto> {
+  <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
+    F,
+    C,
+    N,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    readonly [A]
+  >
+}
+
+export function tupledF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): TupledFn<F, C> {
+  return F.map((a) => [a])
+}

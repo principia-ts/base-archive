@@ -17,7 +17,6 @@ import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
 import { forkDaemon, transplant } from './core-scope'
 import { ensuring } from './ensuring'
-import { fiberId } from './fiberId'
 import { makeInterruptible, makeUninterruptible, onInterruptExtended, uninterruptibleMask } from './interrupt'
 
 /**
@@ -41,7 +40,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
   }
 
   return I.gen(function* (_) {
-    const parentId    = yield* _(fiberId())
+    const parentId    = yield* _(I.fiberId())
     const causes      = yield* _(Ref.make<C.Cause<E>>(C.empty))
     const result      = yield* _(P.make<void, void>())
     const status      = yield* _(

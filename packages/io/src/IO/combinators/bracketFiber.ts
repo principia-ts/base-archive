@@ -2,10 +2,9 @@ import type { Exit } from '../../Exit'
 import type { RuntimeFiber } from '../../Fiber'
 import type { IO } from '../core'
 
-import { bind_ } from '../core'
+import { bind_, fiberId } from '../core'
 import { bracket_ } from './bracket'
 import { forkDaemon } from './core-scope'
-import { fiberId } from './fiberId'
 
 /**
  * Fork the IO into a separate fiber wrapping it in a bracket and returining

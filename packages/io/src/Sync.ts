@@ -563,19 +563,6 @@ export function asksServiceM<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Sync<R, E, B>
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceF<T>(
-  s: Tag<T>
-): <K extends keyof T & { [k in keyof T]: T[k] extends (...args: any[]) => Sync<any, any, any> ? k : never }[keyof T]>(
-  k: K
-) => (
-  ...args: T[K] extends (...args: infer ARGS) => Sync<any, any, any> ? ARGS : unknown[]
-) => T[K] extends (...args: any[]) => Sync<infer R, infer E, infer A> ? Sync<R & Has<T>, E, A> : unknown[] {
-  return (k) => (...args) => asksServiceM(s)((t) => (t[k] as any)(...args)) as any
-}
-
-/**
- * Access a service with the required Service Entry
- */
 export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Sync<Has<T>, never, B> {
   return (f) => asksServiceM(s)((a) => M.pure(f(a)))
 }
@@ -644,79 +631,6 @@ export function updateService_<R1, E1, A1, T>(
   f: (_: T) => T
 ): Sync<R1 & Has<T>, E1, A1> {
   return asksServiceM(_)((t) => giveServiceM(_)(M.pure(f(t)))(ma))
-}
-
-export function region<K, T>(): Tag<Region<T, K>> {
-  return tag<Region<T, K>>()
-}
-
-export function useRegion<K, T>(
-  h: Tag<Region<T, K>>
-): <R, E, A>(e: Sync<R & T, E, A>) => Sync<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(e, M.give((a as any) as T)))
-}
-
-export function asksRegionM<K, T>(
-  h: Tag<Region<T, K>>
-): <R, E, A>(e: (_: T) => Sync<R & T, E, A>) => Sync<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(M.asksM(e), M.give((a as any) as T)))
-}
-
-export function asksRegion<K, T>(h: Tag<Region<T, K>>): <A>(e: (_: T) => A) => Sync<Has<Region<T, K>>, never, A> {
-  return (e) => asksServiceM(h)((a) => pipe(M.asks(e), M.give((a as any) as T)))
-}
-
-export function askRegion<K, T>(h: Tag<Region<T, K>>): Sync<Has<Region<T, K>>, never, T> {
-  return asksServiceM(h)((a) =>
-    pipe(
-      M.asks((r: T) => r),
-      M.give((a as any) as T)
-    )
-  )
-}
-
-export function askServiceIn<A>(
-  _: Tag<A>
-): <K, T>(h: Tag<Region<Has<A> & T, K>>) => Sync<Has<Region<Has<A> & T, K>>, never, A> {
-  return (h) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          M.asks((r: A) => r),
-          M.give((a as any) as A)
-        )
-      )
-    )
-}
-
-export function asksServiceIn<A>(
-  _: Tag<A>
-): <K, T>(h: Tag<Region<Has<A> & T, K>>) => <B>(f: (_: A) => B) => Sync<Has<Region<Has<A> & T, K>>, never, B> {
-  return (h) => (f) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          M.asks((r: A) => f(r)),
-          M.give((a as any) as A)
-        )
-      )
-    )
-}
-
-export function asksServiceInM<A>(
-  _: Tag<A>
-): <K, T>(
-  h: Tag<Region<Has<A> & T, K>>
-) => <R, E, B>(f: (_: A) => Sync<R, E, B>) => Sync<R & Has<Region<Has<A> & T, K>>, E, B> {
-  return (h) => (f) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          M.asksM((r: A) => f(r)),
-          M.give((a as any) as A)
-        )
-      )
-    )
 }
 
 /**

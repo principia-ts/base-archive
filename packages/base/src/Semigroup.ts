@@ -1,6 +1,7 @@
 import type { Magma } from './Magma'
 import type { Ord } from './Ord'
 
+import * as HKT from './HKT'
 import { max_, min_ } from './internal/ord'
 
 /**

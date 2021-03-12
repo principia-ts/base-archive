@@ -546,29 +546,6 @@ export function liftA2<A, B, C>(
   return (fa) => (fb) => (isLeft(fa) ? Left(fa.left) : isLeft(fb) ? Left(fb.left) : Right(f(fa.right)(fb.right)))
 }
 
-/**
- * A pipeable version of `struct`
- *
- * @category Apply
- * @since 1.0.0
- */
-export function apS<N extends string, A, E1, B>(
-  name: Exclude<N, keyof A>,
-  fb: Either<E1, B>
-): <E>(
-  fa: Either<E, A>
-) => Either<
-  E | E1,
-  {
-    [K in keyof A | N]: K extends keyof A ? A[K] : B
-  }
-> {
-  return flow(
-    map((a) => (b: B) => _bind(a, name, b)),
-    ap(fb)
-  )
-}
-
 /*
  * -------------------------------------------
  * Bifunctor
@@ -875,25 +852,8 @@ export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A>
  * -------------------------------------------
  */
 
-export function absolve<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1, A> {
+export function refail<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1, A> {
   return flatten(mma)
-}
-
-/*
- * -------------------------------------------
- * Monoid
- * -------------------------------------------
- */
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export function getApplyMonoid<E, A>(M: P.Monoid<A>): P.Monoid<Either<E, A>> {
-  return {
-    ...getApplySemigroup<E, A>(M),
-    nat: Right(M.nat)
-  }
 }
 
 /*
@@ -912,22 +872,6 @@ export function getApplyMonoid<E, A>(M: P.Monoid<A>): P.Monoid<Either<E, A>> {
 export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> {
   const combine_: P.CombineFn_<Either<E, A>> = (x, y) =>
     isLeft(y) ? x : isLeft(x) ? y : Right(S.combine_(x.right, y.right))
-  return {
-    combine_,
-    combine: (y) => (x) => combine_(x, y)
-  }
-}
-
-/**
- * Semigroup returning the left-most `Left` value. If both operands are `Right`s then the inner values
- * are concatenated using the provided `Semigroup`
- *
- * @category Instances
- * @since 1.0.0
- */
-export function getApplySemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> {
-  const combine_ = (x: Either<E, A>, y: Either<E, A>) =>
-    isLeft(y) ? y : isLeft(x) ? x : Right(S.combine_(x.right, y.right))
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y)
@@ -1066,6 +1010,8 @@ export const fcross: <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>) => Either<E
   Functor
 )
 
+export const tupled: <E, A>(fa: Either<E, A>) => Either<E, readonly [A]> = P.tupledF(Functor)
+
 /**
  * @category Instances
  * @since 1.0.0
@@ -1095,6 +1041,8 @@ export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const mapN_     = P.mapNF_(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
+export const crossS    = P.crossSF(SemimonoidalFunctor)
+export const crossT    = P.crossTF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI, V>({
   map_,
@@ -1102,6 +1050,9 @@ export const Apply = P.Apply<URI, V>({
   cross_,
   ap_
 })
+
+export const apS = P.apSF(Apply)
+export const apT = P.apTF(Apply)
 
 /**
  * @category Instances

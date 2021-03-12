@@ -16,7 +16,6 @@ import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { RingBuffer } from '@principia/base/util/support/RingBuffer'
-import { defaultScheduler } from '@principia/base/util/support/Scheduler'
 import { makeStack } from '@principia/base/util/support/Stack'
 
 import * as C from '../Cause/core'
@@ -67,39 +66,6 @@ export type Frame =
   | ApplyFrame
   | TracingExit
 
-export class TracingContext {
-  readonly running  = new Set<FiberContext<any, any>>()
-  readonly interval = new AtomicReference<NodeJS.Timeout | undefined>(undefined)
-
-  readonly trace = (fiber: FiberContext<any, any>) => {
-    if (!this.running.has(fiber)) {
-      if (typeof this.interval.get === 'undefined') {
-        this.interval.set(
-          setInterval(() => {
-            // this keeps the process alive if there is something running
-          }, 60000)
-        )
-      }
-
-      this.running.add(fiber)
-
-      fiber.onDone(() => {
-        this.running.delete(fiber)
-
-        if (this.running.size === 0) {
-          const ci = this.interval.get
-
-          if (ci) {
-            clearInterval(ci)
-          }
-        }
-      })
-    }
-  }
-}
-
-export const _tracing = new TracingContext()
-
 export const currentFiber = new AtomicReference<FiberContext<any, any> | null>(null)
 
 export function unsafeCurrentFiber(): O.Option<FiberContext<any, any>> {
@@ -112,8 +78,7 @@ export function unsafeCurrentFiber(): O.Option<FiberContext<any, any>> {
 export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   readonly _tag = 'RuntimeFiber'
 
-  private readonly state     = new AtomicReference(initial<E, A>())
-  private readonly scheduler = defaultScheduler
+  private readonly state = new AtomicReference(initial<E, A>())
 
   private mut_asyncEpoch        = 0 | 0
   private mut_scopeKey          = undefined as Scope.Key | undefined
@@ -136,10 +101,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     private readonly openScope: Scope.Open<Exit<E, A>>,
     private readonly maxOperations: number,
     private readonly reportFailure: (e: C.Cause<E>) => void,
-    private readonly platform: Platform,
+    private readonly platform: Platform<unknown>,
     readonly parentTrace: O.Option<Trace>
   ) {
-    _tracing.trace(this)
+    this.evaluateNow = this.evaluateNow.bind(this)
   }
 
   get poll() {
@@ -559,9 +524,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   evaluateLater(i0: I.Instruction) {
-    this.scheduler.dispatchLater(() => {
-      this.evaluateNow(i0)
-    })
+    Promise.resolve(i0).then(this.evaluateNow)
   }
 
   get scope(): Scope.Scope<Exit<E, A>> {
@@ -618,9 +581,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
     const toExecute = this.parentScopeOp(parentScope, childContext, i0)
 
-    this.scheduler.dispatchLater(() => {
-      childContext.evaluateNow(toExecute)
-    })
+    Promise.resolve(toExecute).then(childContext.evaluateNow)
 
     return childContext
   }
@@ -1109,6 +1070,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const [result, newValue] = current.f(O.getOrElse_(oldValue, () => c.fiberRef.initial))
                     this.fiberRefLocals.set(c.fiberRef, newValue)
                     current = this.next(result)
+                    break
+                  }
+
+                  case IOTag.GetPlatform: {
+                    current = current.f(this.platform)[I._I]
                     break
                   }
 

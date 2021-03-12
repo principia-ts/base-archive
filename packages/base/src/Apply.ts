@@ -2,7 +2,7 @@ import type { FunctorMin } from './Functor'
 import type { CrossFn_ } from './Semimonoidal'
 import type { CrossWithFn_, SemimonoidalFunctor2, SemimonoidalFunctorMin } from './SemimonoidalFunctor'
 
-import { pipe } from './Function'
+import { flow, pipe } from './Function'
 import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 import { apF_, SemimonoidalFunctor } from './SemimonoidalFunctor'
@@ -780,4 +780,96 @@ export interface ApRightFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF
       B
     >
   >
+}
+
+export interface ApSFn<F extends HKT.URIS, C = HKT.Auto> {
+  <BN extends string, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1, A>(
+    name: Exclude<BN, keyof A>,
+    fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>
+  ): <N extends string, K, Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<
+      F,
+      C,
+      HKT.Intro<C, 'N', N1, N>,
+      HKT.Intro<C, 'K', K1, K>,
+      HKT.Intro<C, 'Q', Q1, Q>,
+      HKT.Intro<C, 'W', W1, W>,
+      HKT.Intro<C, 'X', X1, X>,
+      HKT.Intro<C, 'I', I1, I>,
+      HKT.Intro<C, 'S', S1, S>,
+      HKT.Intro<C, 'R', R1, R>,
+      HKT.Intro<C, 'E', E1, E>,
+      A
+    >
+  ) => HKT.Kind<
+    F,
+    C,
+    HKT.Mix<C, 'N', [N, N1]>,
+    HKT.Mix<C, 'K', [K, K1]>,
+    HKT.Mix<C, 'Q', [Q, Q1]>,
+    HKT.Mix<C, 'W', [W, W1]>,
+    HKT.Mix<C, 'X', [X, X1]>,
+    HKT.Mix<C, 'I', [I, I1]>,
+    HKT.Mix<C, 'S', [S, S1]>,
+    HKT.Mix<C, 'R', [R, R1]>,
+    HKT.Mix<C, 'E', [E, E1]>,
+    { [K in keyof A | BN]: K extends keyof A ? A[K] : A1 }
+  >
+}
+
+export function apSF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): ApSFn<F, C> {
+  return (name, fb) => flow(
+    F.map((a) => (b: HKT.Infer<F, C, 'A', typeof fb>) => Object.assign({}, a, { [name]: b })),
+    F.ap(fb)
+  )
+}
+
+export interface ApTFn<F extends HKT.URIS, C = HKT.Auto> {
+  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>): <
+    N extends string,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    A extends ReadonlyArray<unknown>
+  >(
+    fas: HKT.Kind<
+      F,
+      C,
+      HKT.Intro<C, 'N', N1, N>,
+      HKT.Intro<C, 'K', K1, K>,
+      HKT.Intro<C, 'Q', Q1, Q>,
+      HKT.Intro<C, 'W', W1, W>,
+      HKT.Intro<C, 'X', X1, X>,
+      HKT.Intro<C, 'I', I1, I>,
+      HKT.Intro<C, 'S', S1, S>,
+      HKT.Intro<C, 'R', R1, R>,
+      HKT.Intro<C, 'E', E1, E>,
+      A
+    >
+  ) => HKT.Kind<
+    F,
+    C,
+    HKT.Mix<C, 'N', [N, N1]>,
+    HKT.Mix<C, 'K', [K, K1]>,
+    HKT.Mix<C, 'Q', [Q, Q1]>,
+    HKT.Mix<C, 'W', [W, W1]>,
+    HKT.Mix<C, 'X', [X, X1]>,
+    HKT.Mix<C, 'I', [I, I1]>,
+    HKT.Mix<C, 'S', [S, S1]>,
+    HKT.Mix<C, 'R', [R, R1]>,
+    HKT.Mix<C, 'E', [E, E1]>,
+    readonly [...A, A1]
+  >
+}
+
+export function apTF<F extends HKT.URIS, C = HKT.Auto>(F: Apply<F, C>): ApTFn<F, C> {
+  return (fb) => flow(
+    F.map((a) => (b: HKT.Infer<F, C, 'A', typeof fb>) => [...a, b]),
+    F.ap(fb)
+  )
 }

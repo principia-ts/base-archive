@@ -1,7 +1,6 @@
 export * from '../../IO/combinators/bracket'
 export * from '../../IO/combinators/core-scope'
 export * from '../../IO/combinators/ensuring'
-export * from '../../IO/combinators/fiberId'
 export * from '../../IO/combinators/foreachPar'
 export * from '../../IO/combinators/foreachUnitPar'
 export * from '../../IO/combinators/mergeAllParN'

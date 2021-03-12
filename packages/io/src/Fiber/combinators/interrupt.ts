@@ -5,7 +5,6 @@ import type { FiberId } from '../FiberId'
 import * as Iter from '@principia/base/Iterable'
 
 import { forkDaemon } from '../../IO/combinators/core-scope'
-import { fiberId } from '../../IO/combinators/fiberId'
 import * as I from '../../IO/core'
 
 /**
@@ -13,7 +12,7 @@ import * as I from '../../IO/core'
  * fiber has already exited, the returned effect will resume immediately.
  * Otherwise, the effect will resume when the fiber exits.
  */
-export const interrupt = <E, A>(fiber: Fiber<E, A>) => I.bind_(fiberId(), (id) => fiber.interruptAs(id))
+export const interrupt = <E, A>(fiber: Fiber<E, A>) => I.bind_(I.fiberId(), (id) => fiber.interruptAs(id))
 
 /**
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.

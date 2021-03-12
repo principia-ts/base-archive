@@ -9,6 +9,7 @@ import type { Atomic } from './IORef'
 import type * as O from '@principia/base/Option'
 
 import { pipe } from '@principia/base/Function'
+import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
 import * as I from './IO/core'
 import * as R from './IORef/atomic'
@@ -102,19 +103,18 @@ export class Supervisor<A> {
   }
 }
 
+export const mainFibers = new Set<RuntimeFiber<any, any>>()
+
 /*
  * -------------------------------------------
  * Constructors
  * -------------------------------------------
  */
 
-/**
- * Creates a new supervisor that tracks children in a set.
- */
-export const track = I.effectTotal(() => {
-  const set = new Set<RuntimeFiber<any, any>>()
-
-  return new Supervisor<RuntimeFiber<any, any>[]>(
+export function unsafeTrack(
+  set: Set<RuntimeFiber<any, any>> = new Set()
+): Supervisor<ReadonlyArray<RuntimeFiber<any, any>>> {
+  return new Supervisor(
     I.effectTotal(() => Array.from(set)),
     (_, __, ___, fiber) => {
       set.add(fiber)
@@ -125,7 +125,12 @@ export const track = I.effectTotal(() => {
       return _continue
     }
   )
-})
+}
+
+/**
+ * Creates a new supervisor that tracks children in a set.
+ */
+export const track = I.effectTotal(() => unsafeTrack())
 
 /**
  * Creates a new supervisor that tracks children in a set.
@@ -163,3 +168,35 @@ export const none = new Supervisor<void>(
   () => _continue,
   () => _continue
 )
+
+function unsafeTrackMainFibers(): Supervisor<Set<RuntimeFiber<any, any>>> {
+  const interval = new AtomicReference<NodeJS.Timeout | undefined>(undefined)
+
+  return new Supervisor(
+    I.effectTotal(() => mainFibers),
+    (_, __, ___, fiber) => {
+      if (mainFibers.has(fiber)) {
+        if (typeof interval.get === 'undefined') {
+          interval.set(
+            setInterval(() => {
+              // keep process alive
+            }, 60000)
+          )
+        }
+      }
+      return _continue
+    },
+    (_, fiber) => {
+      mainFibers.delete(fiber)
+      if (mainFibers.size === 0) {
+        const ci = interval.get
+        if (ci) {
+          clearInterval(ci)
+        }
+      }
+      return _continue
+    }
+  )
+}
+
+export const trackMainFibers = unsafeTrackMainFibers()

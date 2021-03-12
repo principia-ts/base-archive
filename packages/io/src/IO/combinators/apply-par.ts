@@ -126,9 +126,3 @@ export function aprPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, 
 export function aprPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
   return (fa) => aprPar_(fa, fb)
 }
-
-export const andThenPar_ = aprPar_
-/**
- * @dataFirst andThenPar_
- */
-export const andThenPar = aprPar

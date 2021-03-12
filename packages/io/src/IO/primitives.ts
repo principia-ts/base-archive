@@ -1,6 +1,6 @@
 import type { Cause } from '../Cause'
 import type { Exit } from '../Exit'
-import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus } from '../Fiber'
+import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { FiberRef } from '../FiberRef'
@@ -49,7 +49,8 @@ export const IOTag = {
   FFI: 'FFI',
   GetTrace: 'GetTrace',
   SetTracingStatus: 'SetTracingStatus',
-  GetTracingStatus: 'GetTracingStatus'
+  GetTracingStatus: 'GetTracingStatus',
+  GetPlatform: 'GetPlatform'
 } as const
 
 abstract class IOSyntax<R, E, A> {
@@ -378,6 +379,14 @@ export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
   }
 }
 
+export class GetPlatform<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.GetPlatform
+
+  constructor(readonly f: (_: Platform<unknown>) => IO<R, E, A>) {
+    super()
+  }
+}
+
 export const ffiNotImplemented = new Fail(() => ({
   _tag: 'Die',
   value: new Error('Integration not implemented or unsupported')
@@ -410,6 +419,7 @@ export type Instruction =
   | GetTrace
   | GetTracingStatus<any, any, any>
   | SetTracingStatus<any, any, any>
+  | GetPlatform<any, any, any>
 
 export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
 

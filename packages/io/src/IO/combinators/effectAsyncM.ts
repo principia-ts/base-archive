@@ -1,12 +1,11 @@
-import type { Cause } from '../../Cause/core'
 import type { IO } from '../core'
 
 import { pipe } from '@principia/base/Function'
 
 import * as P from '../../Promise'
 import * as I from '../core'
+import { runtime } from '../runtime'
 import { uninterruptibleMask } from './interrupt'
-import { runtime } from './runtime'
 import { to } from './to'
 
 /**

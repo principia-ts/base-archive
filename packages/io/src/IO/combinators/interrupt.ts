@@ -22,6 +22,7 @@ import {
   effectAsync,
   effectAsyncOption,
   effectTotal,
+  fiberId,
   flatten,
   halt,
   matchCauseM_,
@@ -30,7 +31,6 @@ import {
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
-import { fiberId } from './fiberId'
 
 /**
  * Returns an effect that is interrupted as if by the specified fiber.

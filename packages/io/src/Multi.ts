@@ -67,9 +67,6 @@ abstract class MultiSyntax<W, S1, S2, R, E, A> {
  * of its polymorphism `Multi` can be used to model a variety of effects
  * including context, state, failure, and logging.
  *
- * Stateless `Multi` (without `W`, `S1`, and `S2` parameters) is made to be type-compatible with `IO`,
- * and can automatically be lifted into `IO` computations.
- *
  * @since 1.0.0
  */
 export abstract class Multi<W, S1, S2, R, E, A> extends MultiSyntax<W, S1, S2, R, E, A> {

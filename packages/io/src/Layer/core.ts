@@ -1,11 +1,11 @@
 import type { Cause } from '../Cause'
 import type { Exit } from '../Exit'
-import type { DefaultEnv } from '../IO/combinators/runtime'
+import type { IOEnv } from '../IOEnv'
 import type { Managed } from '../Managed/core'
 import type { Finalizer, ReleaseMap } from '../Managed/ReleaseMap'
 import type * as H from '@principia/base/Has'
 import type * as HKT from '@principia/base/HKT'
-import type { UnionToIntersection } from '@principia/base/util/types'
+import type { Erase, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -52,13 +52,21 @@ export abstract class Layer<R, E, A> {
     return this as any
   }
 
+  ['>=>']<E1, A1>(that: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
+    return compose_(this, that)
+  }
+
+  ['<=<']<R1, E1>(that: Layer<R1, E1, R>): Layer<R1, E | E1, A> {
+    return that['>=>'](this)
+  }
+
   /**
    * Feeds the output services of the specified layer into the input of this layer
    * layer, resulting in a new layer with the inputs of the specified layer, and the
    * outputs of this layer.
    */
-  ['<<<']<R1, E1>(from: Layer<R1, E1, R>): Layer<R1, E | E1, A> {
-    return from_(from, this)
+  ['<<<']<R1, E1, A1>(from: Layer<R1, E1, A1>): Layer<Erase<R, A1> & R1, E | E1, A> {
+    return from['>>>'](this)
   }
 
   /**
@@ -66,8 +74,9 @@ export abstract class Layer<R, E, A> {
    * layer, resulting in a new layer with the inputs of this layer, and the
    * outputs of the specified layer.
    */
-  ['>>>']<E1, A1>(to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
-    return from_(this, to)
+  ['>>>']<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<Erase<R1, A> & R, E | E1, A1>
+  ['>>>']<R1, E1, A1>(to: Layer<R1 & A, E1, A1>): Layer<R1 & R, E | E1, A1> {
+    return this['+++'](identity<R1>())['>=>'](to)
   }
 
   ['+>>']<R1, E1, A1>(to: Layer<A & R1, E1, A1>): Layer<R & R1, E | E1, A1> {
@@ -79,8 +88,12 @@ export abstract class Layer<R, E, A> {
    * layer, resulting in a new layer with the inputs of this layer, and the
    * outputs of both this layer and the specified layer.
    */
-  ['>+>']<E1, A1>(to: Layer<A, E1, A1>): Layer<R, E | E1, A & A1> {
-    return from_(this, to['+++'](identity<A>()))
+  ['>+>']<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<R & Erase<A & R1, A>, E | E1, A & A1> {
+    return this['>>>'](to['+++'](identity<A>()))
+  }
+
+  ['<+<']<R1, E1, A1>(that: Layer<R1, E1, A1>): Layer<Erase<R & A1, A1> & R1, E | E1, A & A1> {
+    return that['>+>'](this)
   }
 
   /**
@@ -88,7 +101,7 @@ export abstract class Layer<R, E, A> {
    * has the inputs of both layers, and the outputs of both layers.
    */
   ['+++']<R1, E1, A1>(that: Layer<R1, E1, A1>): Layer<R & R1, E | E1, A & A1> {
-    return and_(this, that)
+    return and_(that, this)
   }
 
   /**
@@ -125,7 +138,7 @@ export const LayerTag = {
 /**
  * Type level bound to make sure a layer is complete
  */
-export function main<E, A>(layer: Layer<DefaultEnv, E, A>) {
+export function main<E, A>(layer: Layer<IOEnv, E, A>) {
   return layer
 }
 
@@ -617,7 +630,10 @@ export function apPar<R1, E1, A>(
  */
 
 export function mapError_<R, E, A, E1>(la: Layer<R, E, A>, f: (e: E) => E1): Layer<R, E1, A> {
-  return catchAll_(la, second<E>()['>>>'](fromRawFunctionM((e: E) => I.fail(f(e)))))
+  return catchAll_(
+    la,
+    fromRawFunctionM(([_, e]: readonly [unknown, E]) => I.fail(f(e)))
+  )
 }
 
 export function mapError<E, E1>(f: (e: E) => E1): <R, A>(la: Layer<R, E, A>) => Layer<R, E1, A> {
@@ -809,6 +825,25 @@ export function match_<R, E, A, R1, E1, B, E2, C>(
   return new Fold<R, E, A, R1, E1, B, E2, C>(layer, onFailure, onSuccess)
 }
 
+export function match<E, A, R1, E1, B, E2, C>(
+  onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
+  onSuccess: Layer<A, E2, C>
+): <R>(layer: Layer<R, E, A>) => Layer<R & R1, E1 | E2, B | C> {
+  return (layer) => match_(layer, onFailure, onSuccess)
+}
+
+export function compose_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
+  return match_(
+    from,
+    fromRawFunctionM((_: readonly [unknown, Cause<E>]) => I.halt(_[1])),
+    to
+  )
+}
+
+export function compose<A, E1, A1>(to: Layer<A, E1, A1>): <R, E>(from: Layer<R, E, A>) => Layer<R, E | E1, A1> {
+  return (from) => compose_(from, to)
+}
+
 /**
  * Returns a managed effect that, if evaluated, will return the lazily
  * computed result of this layer.
@@ -822,7 +857,7 @@ export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never,
  * unchecked and not a part of the type of the layer.
  */
 export function orDie<R, E extends Error, A>(la: Layer<R, E, A>): Layer<R, never, A> {
-  return catchAll_(la, second<E>()['>>>'](fromRawFunctionM((e: E) => I.die(e))))
+  return catchAll_(la, second<E>()['>=>'](fromRawFunctionM((e: E) => I.die(e))))
 }
 
 /**
@@ -833,7 +868,7 @@ export function orElse_<R, E, A, R1, E1, A1>(
   la: Layer<R, E, A>,
   that: Layer<R1, E1, A1>
 ): Layer<R & R1, E | E1, A | A1> {
-  return catchAll_(la, to_(first<R1>(), that))
+  return catchAll_(la, first<R1>()['>=>'](that))
 }
 
 export function orElse<R1, E1, A1>(
@@ -880,7 +915,7 @@ export function update_<T>(
   tag: H.Tag<T>
 ): <R, E, A extends H.Has<T>>(la: Layer<R, E, A>, f: (a: T) => T) => Layer<R, E, A> {
   return <R, E, A extends H.Has<T>>(la: Layer<R, E, A>, f: (_: T) => T) =>
-    la['>>>'](fromRawEffect(pipe(I.ask<A>(), I.updateService(tag, f))))
+    la['>=>'](fromRawEffect(pipe(I.ask<A>(), I.updateService(tag, f))))
 }
 
 /**

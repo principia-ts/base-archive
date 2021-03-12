@@ -1,16 +1,21 @@
+import type { Trace, TraceElement } from '@principia/io/Fiber/trace'
 import type { CustomRuntime } from '@principia/io/IO'
 
+import * as L from '@principia/base/List'
 import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import * as Cause from '@principia/io/Cause'
 import * as Fiber from '@principia/io/Fiber'
 import { interruptAllAs } from '@principia/io/Fiber'
 import * as I from '@principia/io/IO'
 import { defaultRuntime } from '@principia/io/IO'
+import * as Super from '@principia/io/Supervisor'
+import * as S from '@principia/io/Sync'
+import path from 'path'
 
 export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (status: number) => void) {
-  I.run_(interruptAllAs(id)(Fiber._tracing.running), () => {
+  I.run_(interruptAllAs(id)(Super.mainFibers), () => {
     setTimeout(() => {
-      if (Fiber._tracing.running.size === 0) {
+      if (Super.mainFibers.size === 0) {
         onExit(status)
       } else {
         defaultTeardown(status, id, onExit)
@@ -22,8 +27,77 @@ export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (stat
 export const defaultHook = (cont: NodeJS.SignalsListener): ((signal: NodeJS.Signals) => void) => (signal) =>
   cont(signal)
 
-export class NodeRuntime<R> {
-  constructor(readonly custom: CustomRuntime<R>) {
+export function prettyLocationNode(traceElement: TraceElement, adapt: (path: string, mod?: string) => string) {
+  try {
+    if (traceElement._tag === 'SourceLocation') {
+      const isModule = traceElement.location.match(/\((.*)\): (.*):(\d+):(\d+)/)
+
+      if (isModule) {
+        const [, mod, file, line_, col] = isModule
+        const line                      = parseInt(line_)
+        const modulePath                = require.resolve(`${mod}/package.json`)
+        const realPath                  = adapt(path.join(modulePath, '..', file), mod)
+
+        return `${realPath}:${line}:${col}`
+      } else {
+        const isPath = traceElement.location.match(/(.*):(\d+):(\d+)/)
+        if (isPath) {
+          const [, file, line_, col] = isPath
+          const line                 = parseInt(line_)
+          return `${path.join(process.cwd(), file)}:${line}:${col}`
+        }
+      }
+    }
+  } catch {
+    //
+  }
+  return traceElement._tag === 'NoLocation' ? 'No Location Present' : `${traceElement.location}`
+}
+
+export function prettyTraceNodeSafe(trace: Trace, adapt: (path: string, mod?: string) => string): S.USync<string> {
+  return S.gen(function* ($) {
+    const execTrace  = !L.isEmpty(trace.executionTrace)
+    const stackTrace = !L.isEmpty(trace.stackTrace)
+
+    const execPrint = execTrace
+      ? [
+          `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} Execution trace:`,
+          '',
+          ...L.toArray(L.map_(trace.executionTrace, (a) => `  ${prettyLocationNode(a, adapt)}`))
+        ]
+      : [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} Execution trace: <empty trace>`]
+
+    const stackPrint = stackTrace
+      ? [
+          `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was supposed to continue to:`,
+          '',
+          ...L.toArray(L.map_(trace.stackTrace, (e) => `  a future continuation at ${prettyLocationNode(e, adapt)}`))
+        ]
+      : [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`]
+
+    const parent = trace.parentTrace
+
+    const ancestry =
+      parent._tag === 'None'
+        ? [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
+        : [
+            `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by:\n`,
+            yield* $(prettyTraceNodeSafe(parent.value, adapt))
+          ]
+
+    return ['', ...stackPrint, '', ...execPrint, '', ...ancestry].join('\n')
+  })
+}
+
+export function prettyTraceNode(trace: Trace, adapt: (path: string, mod?: string) => string) {
+  return S.run(prettyTraceNodeSafe(trace, adapt))
+}
+
+export const nodeTracer = (trace: Trace) =>
+  prettyTraceNode(trace, (path) => path.replace('/dist-traced/esm/', '/').replace('/dist-traced/cjs/', '/'))
+
+export class NodeRuntime<R, A> {
+  constructor(readonly custom: CustomRuntime<R, A>) {
     this.runMain = this.runMain.bind(this)
   }
 
@@ -37,15 +111,15 @@ export class NodeRuntime<R> {
    * Note: this should be used only in node.js as it depends on global process
    */
   runMain<E>(
-    effect: I.IO<I.DefaultEnv, E, void>,
+    effect: I.IO<R, E, void>,
     customHook: (cont: NodeJS.SignalsListener) => NodeJS.SignalsListener = defaultHook,
     customTeardown: typeof defaultTeardown = defaultTeardown
   ): void {
-    const context = this.custom.fiberContext<E, void>()
-
     const onExit = (s: number) => {
       process.exit(s)
     }
+
+    const context = this.custom.runFiber(effect)
 
     context.evaluateLater(effect[I._I])
     context.runAsync((exit) => {
@@ -55,7 +129,7 @@ export class NodeRuntime<R> {
             customTeardown(0, context.id, onExit)
             break
           } else {
-            console.error(Cause.pretty(exit.cause))
+            console.error(Cause.pretty(exit.cause, this.custom.platform.renderer))
             customTeardown(1, context.id, onExit)
             break
           }
@@ -85,7 +159,14 @@ export class NodeRuntime<R> {
   }
 }
 
-export const nodeRuntime = new NodeRuntime(defaultRuntime)
+export const nodeRuntime = new NodeRuntime(
+  defaultRuntime.traceRenderer({
+    renderTrace: nodeTracer,
+    renderError: Cause.defaultRenderer.renderError,
+    renderUnknown: Cause.defaultRenderer.renderUnknown,
+    renderFailure: Cause.defaultRenderer.renderFailure
+  })
+)
 
 export const {
   custom: { run, runAsap, runCancel, runFiber, runPromise, runPromiseExit },

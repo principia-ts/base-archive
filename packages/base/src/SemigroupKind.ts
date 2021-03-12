@@ -1,18 +1,20 @@
-import type { Eval } from './Eval'
-import type * as HKT from './HKT'
+import type { Semigroup } from './Semigroup'
+import type { SemimonoidalFunctor } from './SemimonoidalFunctor'
 
-export interface SemigroupK<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
-  readonly combineK_: CombineKFn_<F, C>
-  readonly combineK: CombineKFn<F, C>
+import * as HKT from './HKT'
+
+export interface SemigroupKind<A, F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+  readonly combine_: CombineKindFn_<A, F, C>
+  readonly combine: CombineKindFn<A, F, C>
 }
 
-export interface SemigroupKComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  readonly combineK_: CombineKFnComposition_<F, G, CF, CG>
-  readonly combineK: CombineKFnComposition<F, G, CF, CG>
+export interface SemigroupKindComposition<A, F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+  readonly combine_: CombineKindFnComposition_<A, F, G, CF, CG>
+  readonly combine: CombineKindFnComposition<A, F, G, CF, CG>
 }
 
-export interface CombineKFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(
+export interface CombineKindFn_<A, F extends HKT.URIS, C = HKT.Auto> {
+  <N extends string, K, Q, W, X, I, S, R, E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(
     x: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     y: HKT.Kind<
       F,
@@ -44,8 +46,8 @@ export interface CombineKFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface CombineKFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A>(y: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A>): <
+export interface CombineKindFn<A, F extends HKT.URIS, C = HKT.Auto> {
+  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(y: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A>): <
     N extends string,
     K,
     Q,
@@ -86,7 +88,7 @@ export interface CombineKFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface CombineKFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
     NF extends string,
     KF,
@@ -123,9 +125,7 @@ export interface CombineKFnComposition_<F extends HKT.URIS, G extends HKT.URIS, 
     IG1,
     SG1,
     RG1,
-    EG1,
-    A,
-    B
+    EG1
   >(
     x: HKT.Kind<
       F,
@@ -197,7 +197,7 @@ export interface CombineKFnComposition_<F extends HKT.URIS, G extends HKT.URIS, 
   >
 }
 
-export interface CombineKFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface CombineKindFnComposition<A, F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,
@@ -216,8 +216,7 @@ export interface CombineKFnComposition<F extends HKT.URIS, G extends HKT.URIS, C
     IG1,
     SG1,
     RG1,
-    EG1,
-    A
+    EG1
   >(
     y: HKT.Kind<
       F,
@@ -290,75 +289,20 @@ export interface CombineKFnComposition<F extends HKT.URIS, G extends HKT.URIS, C
   >
 }
 
-export interface CombineKEvalFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(
-    x: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    y: Eval<
-      HKT.Kind<
-        F,
-        C,
-        HKT.Intro<C, 'N', N, N1>,
-        HKT.Intro<C, 'K', K, K1>,
-        HKT.Intro<C, 'Q', Q, Q1>,
-        HKT.Intro<C, 'W', W, W1>,
-        HKT.Intro<C, 'X', X, X1>,
-        HKT.Intro<C, 'I', I, I1>,
-        HKT.Intro<C, 'S', S, S1>,
-        HKT.Intro<C, 'R', R, R1>,
-        HKT.Intro<C, 'E', E, E1>,
-        A
-      >
-    >
-  ): Eval<
-    HKT.Kind<
-      F,
-      C,
-      HKT.Mix<C, 'N', [N, N1]>,
-      HKT.Mix<C, 'K', [K, K1]>,
-      HKT.Mix<C, 'Q', [Q, Q1]>,
-      HKT.Mix<C, 'W', [W, W1]>,
-      HKT.Mix<C, 'X', [X, X1]>,
-      HKT.Mix<C, 'I', [I, I1]>,
-      HKT.Mix<C, 'S', [S, S1]>,
-      HKT.Mix<C, 'R', [R, R1]>,
-      HKT.Mix<C, 'E', [E, E1]>,
-      A
-    >
-  >
-}
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
 
-export interface CombineKEvalFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A>(
-    y: Eval<HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A>>
-  ): <N extends string, K, Q, W, X, I, S, R, E>(
-    x: HKT.Kind<
-      F,
-      C,
-      HKT.Intro<C, 'N', N1, N>,
-      HKT.Intro<C, 'K', K1, K>,
-      HKT.Intro<C, 'Q', Q1, Q>,
-      HKT.Intro<C, 'W', W1, W>,
-      HKT.Intro<C, 'X', X1, X>,
-      HKT.Intro<C, 'I', I1, I>,
-      HKT.Intro<C, 'S', S1, S>,
-      HKT.Intro<C, 'R', R1, R>,
-      HKT.Intro<C, 'E', E1, E>,
-      A
-    >
-  ) => Eval<
-    HKT.Kind<
-      F,
-      C,
-      HKT.Mix<C, 'N', [N1, N]>,
-      HKT.Mix<C, 'K', [K1, K]>,
-      HKT.Mix<C, 'Q', [Q1, Q]>,
-      HKT.Mix<C, 'W', [W1, W]>,
-      HKT.Mix<C, 'X', [X1, X]>,
-      HKT.Mix<C, 'I', [I1, I]>,
-      HKT.Mix<C, 'S', [S1, S]>,
-      HKT.Mix<C, 'R', [R1, R]>,
-      HKT.Mix<C, 'E', [E1, E]>,
-      A
-    >
-  >
+export function liftSemigroup<F extends HKT.URIS, C = HKT.Auto>(
+  F: SemimonoidalFunctor<F, C>
+): <A>(S: Semigroup<A>) => SemigroupKind<A, F, C> {
+  return <A>(S: Semigroup<A>) => {
+    const combine_: SemigroupKind<A, F, C>['combine_'] = (fx, fy) => F.crossWith_(fx, fy, S.combine_)
+    return HKT.instance<SemigroupKind<A, F, C>>({
+      combine_,
+      combine: (fy) => (fx) => combine_(fx, fy)
+    })
+  }
 }

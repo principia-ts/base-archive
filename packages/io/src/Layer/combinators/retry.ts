@@ -39,9 +39,9 @@ export function retry_<R, E, A, R1>(
       )
     )
 
-    return pipe(first<R>()['>>>'](la), catchAll(update['>>>'](defer(() => fresh(loop())))))
+    return pipe(first<R>()['>=>'](la), catchAll(update['>=>'](defer(() => fresh(loop())))))
   }
-  return crossPar_(identity<R & R1 & H.Has<Clock>>(), fromRawEffect(I.succeed(schedule.step)))['>>>'](loop())
+  return crossPar_(identity<R & R1 & H.Has<Clock>>(), fromRawEffect(I.succeed(schedule.step)))['>=>'](loop())
 }
 
 /**
