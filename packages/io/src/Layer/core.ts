@@ -43,7 +43,7 @@ export abstract class Layer<R, E, A> {
     this.use = this.use.bind(this)
   }
 
-  setKey(hash: symbol) {
+  setKey(hash: PropertyKey) {
     this.hash.set(hash)
     return this
   }
@@ -381,7 +381,7 @@ export function fromEffect<T>(tag: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) =>
  * Constructs a layer from a managed resource.
  */
 export function fromManaged<T>(has: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new FromManaged(M.bind_(resource, (a) => environmentFor(has, a)))
+  return (resource) => new FromManaged(M.bind_(resource, (a) => environmentFor(has, a))).setKey(has.key)
 }
 
 export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> {
@@ -1004,9 +1004,11 @@ export class MemoMap {
                           ([, a]) =>
                             I.gen(function* (_) {
                               yield* _(
-                                pipe(
-                                  finalizerRef.set((e) => M.releaseAll(e, sequential)(innerReleaseMap)),
-                                  I.whenM(XR.modify_(observers, (n) => [n === 1, n - 1]))
+                                finalizerRef.set((e) =>
+                                  pipe(
+                                    M.releaseAll(e, sequential)(innerReleaseMap),
+                                    I.whenM(XR.modify_(observers, (n) => [n === 1, n - 1]))
+                                  )
                                 )
                               )
                               yield* _(XR.update_(observers, (n) => n + 1))
