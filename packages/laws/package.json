@@ -1,6 +1,6 @@
 {
   "name": "@principia/laws",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "Laws",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -45,7 +45,7 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "@principia/base": "^0.6.5",
+    "@principia/base": "^0.6.6",
     "@principia/compile": "^0.6.1",
     "fast-check": "2.13.0"
   },

@@ -1,6 +1,6 @@
 {
   "name": "@principia/node",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "description": "Node",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -45,9 +45,9 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "@principia/base": "^0.6.5",
+    "@principia/base": "^0.6.6",
     "@principia/compile": "^0.6.1",
-    "@principia/io": "^0.6.11"
+    "@principia/io": "^0.6.12"
   },
   "publishConfig": {
     "access": "public",

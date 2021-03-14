@@ -1,6 +1,6 @@
 {
   "name": "@principia/codec",
-  "version": "0.6.10",
+  "version": "0.6.11",
   "description": "Runtime type-checking",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -45,10 +45,10 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "@principia/base": "^0.6.5",
+    "@principia/base": "^0.6.6",
     "@principia/compile": "^0.6.1",
-    "@principia/free": "^0.6.7",
-    "@principia/io": "^0.6.11"
+    "@principia/free": "^0.6.8",
+    "@principia/io": "^0.6.12"
   },
   "publishConfig": {
     "access": "public",
