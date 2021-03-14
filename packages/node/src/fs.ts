@@ -1,12 +1,13 @@
 import type { Byte } from '@principia/base/Byte'
+import type { Chunk } from '@principia/io/Chunk'
 import type { IO } from '@principia/io/IO'
 
-import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
 import { Integer } from '@principia/base/Integer'
 import * as N from '@principia/base/Newtype'
 import * as O from '@principia/base/Option'
+import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
@@ -105,9 +106,9 @@ export function createReadStream(
           if (bytes !== chunk.length) {
             const dst = Buffer.allocUnsafeSlow(bytes)
             chunk.copy(dst, 0, 0, bytes)
-            return A.fromBuffer(dst)
+            return C.fromBuffer(dst)
           } else {
-            return A.fromBuffer(chunk)
+            return C.fromBuffer(chunk)
           }
         })
       )
@@ -143,16 +144,16 @@ export function createWriteSink(
 
       const maybeError = yield* _(errorRef.get)
       if (!st && O.isSome(maybeError)) {
-        return (_: O.Option<ReadonlyArray<Byte>>) => Push.fail(maybeError.value, [])
+        return (_: O.Option<Chunk<Byte>>) => Push.fail(maybeError.value, [])
       } else {
-        return (is: O.Option<ReadonlyArray<Byte>>) =>
+        return (is: O.Option<Chunk<Byte>>) =>
           O.match_(
             is,
             () => Push.emit(undefined, []),
             (chunk) =>
               pipe(
                 (st[1] as Ref.URef<number | undefined>).get,
-                I.bind((pos) => write(st[0], A.toBuffer(chunk), pos)),
+                I.bind((pos) => write(st[0], chunk, pos)),
                 I.bind((_) =>
                   Ref.update_(st[1] as Ref.URef<number | undefined>, (n) => (n ? n + chunk.length : undefined))
                 ),
@@ -340,7 +341,7 @@ export function readdir(
 ): I.FIO<ErrnoException, ReadonlyArray<any>> {
   return I.effectAsync((cb) => {
     fs.readdir(path, options ?? ({} as any), (err, files: any) =>
-      err ? cb(I.fail(err)) : files[0] && files[0] instanceof fs.Dir ? A.map_(files, (a: fs.Dir) => new Dir(a)) : files
+      err ? cb(I.fail(err)) : files[0] && files[0] instanceof fs.Dir ? C.map_(files, (a: fs.Dir) => new Dir(a)) : files
     )
   })
 }
@@ -440,9 +441,10 @@ export function utimes(
   })
 }
 
-export function write(fd: FileDescriptor, buffer: Uint8Array, position?: number): I.FIO<ErrnoException, number> {
+export function write(fd: FileDescriptor, buffer: Chunk<Byte>, position?: number): I.FIO<ErrnoException, number> {
   return I.effectAsync<unknown, ErrnoException, number>((cb) => {
-    fs.write(FileDescriptor.unwrap(fd), buffer, position ?? null, buffer.byteLength, (err, bytesWritten) =>
+    const b = C.asBuffer(buffer)
+    fs.write(FileDescriptor.unwrap(fd), b, position ?? null, b.byteLength, (err, bytesWritten) =>
       err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
     )
   })

@@ -1,10 +1,11 @@
 import type { Byte } from '@principia/base/Byte'
 import type * as E from '@principia/base/Either'
+import type { Chunk } from '@principia/io/Chunk'
 import type { FSync, USync } from '@principia/io/Sync'
 
-import * as A from '@principia/base/Array'
 import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
+import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as S from '@principia/io/Stream'
 import * as Push from '@principia/io/Stream/Push'
@@ -23,7 +24,7 @@ export const stdin: S.FStream<StdinError, Byte> = pipe(
     S.ensuring_(
       S.effectAsync<unknown, StdinError, Byte>((cb) => {
         const onData  = (data: Buffer) => {
-          cb(I.succeed(A.fromBuffer(data)))
+          cb(I.succeed(C.fromBuffer(data)))
         }
         const onError = (err: Error) => {
           cb(I.fail(O.Some(new StdinError(err))))
@@ -61,9 +62,9 @@ export const stdout: Sink.Sink<unknown, StdoutError, Buffer, never, void> = Sink
     is,
     () => Push.emit(undefined, []),
     (bufs) =>
-      I.effectAsync<unknown, readonly [E.Either<StdoutError, void>, ReadonlyArray<never>], void>(async (cb) => {
+      I.effectAsync<unknown, readonly [E.Either<StdoutError, void>, Chunk<never>], void>(async (cb) => {
         for (let i = 0; i < bufs.length; i++) {
-          if (!process.stdout.write(bufs[i], (err) => err && cb(Push.fail(new StdoutError(err), [])))) {
+          if (!process.stdout.write(bufs[i], (err) => err && cb(Push.fail(new StdoutError(err), C.empty())))) {
             await once(process.stdout, 'drain')
           }
         }

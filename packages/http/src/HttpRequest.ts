@@ -1,5 +1,6 @@
 import type { HttpMethod } from './utils'
 import type { Byte } from '@principia/base/Byte'
+import type { Chunk } from '@principia/io/Chunk'
 import type { FIO, IO, UIO } from '@principia/io/IO'
 import type * as http from 'http'
 import type { Socket } from 'net'
@@ -12,7 +13,7 @@ import * as R from '@principia/base/Record'
 import * as Str from '@principia/base/String'
 import { makeSemigroup } from '@principia/base/typeclass'
 import * as SD from '@principia/codec/SyncDecoder'
-import * as A from '@principia/io/Array'
+import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
@@ -106,7 +107,7 @@ export class HttpRequest {
                   ? Pull.end
                   : I.bind_(
                       queue.take,
-                      (event): I.UIO<ReadonlyArray<RequestEvent>> => {
+                      (event): I.UIO<Chunk<RequestEvent>> => {
                         if (event._tag === 'Close') {
                           return I.apr_(done.set(true), Pull.emit(event))
                         }
@@ -267,7 +268,7 @@ export class HttpRequest {
         pipe(
           self.stream,
           S.runCollect,
-          I.map(flow(A.toBuffer, (xs) => Buffer.from(xs.buffer).toString(charset))),
+          I.map(flow(C.asBuffer, (b) => b.toString(charset))),
           I.catchAll((_) =>
             I.fail(
               new HttpException('Failed to read body stream', {
@@ -310,7 +311,7 @@ export class HttpRequest {
         pipe(
           self.stream,
           S.runCollect,
-          I.map(flow(A.toBuffer, (b) => Buffer.from(b.buffer).toString(charset))),
+          I.map(flow(C.asBuffer, (b) => b.toString(charset))),
           I.catchAll((_) =>
             I.fail(
               new HttpException('Failed to read body stream', {

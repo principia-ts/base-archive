@@ -1,3 +1,4 @@
+import type { Chunk } from '../Chunk'
 import type { ExecutionStrategy } from '../ExecutionStrategy'
 import type { Fiber } from '../Fiber'
 import type { Managed } from '../Managed'
@@ -17,8 +18,8 @@ import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
-import * as A from '../Array'
 import * as Ca from '../Cause'
+import * as C from '../Chunk'
 import { Clock } from '../Clock'
 import { parallel, sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
@@ -54,7 +55,7 @@ import * as Tr from './Transducer'
  * One way to think of `Stream` is as a `IO` program that could emit multiple values.
  *
  * This data type can emit multiple `A` values through multiple calls to `next`.
- * Similarly, embedded inside every `Stream` is an IO program: `IO<R, Option<E>, ReadonlyArray<A>>`.
+ * Similarly, embedded inside every `Stream` is an IO program: `IO<R, Option<E>, Chunk<A>>`.
  * This program will be repeatedly evaluated as part of the stream execution. For
  * every evaluation, it will emit a chunk of values or end with an optional failure.
  * A failure of type `None` signals the end of the stream.
@@ -86,7 +87,7 @@ export class Stream<R, E, A> {
   readonly [I._A]: () => A;
   readonly [I._R]: (_: R) => void
 
-  constructor(readonly proc: M.Managed<R, never, I.IO<R, Option<E>, ReadonlyArray<A>>>) {}
+  constructor(readonly proc: M.Managed<R, never, I.IO<R, Option<E>, Chunk<A>>>) {}
 }
 
 /**
@@ -107,9 +108,9 @@ export const DefaultChunkSize = 4096
 export class Chain<R_, E_, O, O2> {
   constructor(
     readonly f0: (a: O) => Stream<R_, E_, O2>,
-    readonly outerStream: I.IO<R_, Option<E_>, ReadonlyArray<O>>,
-    readonly currOuterChunk: Ref.URef<[ReadonlyArray<O>, number]>,
-    readonly currInnerStream: Ref.URef<I.IO<R_, Option<E_>, ReadonlyArray<O2>>>,
+    readonly outerStream: I.IO<R_, Option<E_>, Chunk<O>>,
+    readonly currOuterChunk: Ref.URef<[Chunk<O>, number]>,
+    readonly currInnerStream: Ref.URef<I.IO<R_, Option<E_>, Chunk<O2>>>,
     readonly innerFinalizer: Ref.URef<RM.Finalizer>
   ) {
     this.apply        = this.apply.bind(this)
@@ -126,7 +127,7 @@ export class Chain<R_, E_, O, O2> {
     )
   }
 
-  pullNonEmpty<R, E, O>(pull: I.IO<R, Option<E>, ReadonlyArray<O>>): I.IO<R, Option<E>, ReadonlyArray<O>> {
+  pullNonEmpty<R, E, O>(pull: I.IO<R, Option<E>, Chunk<O>>): I.IO<R, Option<E>, Chunk<O>> {
     return pipe(
       pull,
       I.bind((os) => (os.length > 0 ? I.pure(os) : this.pullNonEmpty(pull)))
@@ -137,7 +138,7 @@ export class Chain<R_, E_, O, O2> {
     const self = this
     return pipe(
       self.currOuterChunk,
-      Ref.modify(([chunk, nextIdx]): [I.IO<R_, Option<E_>, O>, [ReadonlyArray<O>, number]] => {
+      Ref.modify(([chunk, nextIdx]): [I.IO<R_, Option<E_>, O>, [Chunk<O>, number]] => {
         if (nextIdx < chunk.length) {
           return [I.pure(chunk[nextIdx]), [chunk, nextIdx + 1]]
         } else {
@@ -172,7 +173,7 @@ export class Chain<R_, E_, O, O2> {
     )
   }
 
-  apply(): I.IO<R_, Option<E_>, ReadonlyArray<O2>> {
+  apply(): I.IO<R_, Option<E_>, Chunk<O2>> {
     return pipe(
       this.currInnerStream.get,
       I.flatten,
@@ -214,14 +215,14 @@ export class Chain<R_, E_, O, O2> {
 /**
  * Creates a stream from an array of values
  */
-export function fromChunk<A>(c: ReadonlyArray<A>): UStream<A> {
+export function fromChunk<A>(c: Chunk<A>): UStream<A> {
   return new Stream(
     I.toManaged_(
       I.gen(function* (_) {
         const doneRef = yield* _(Ref.make(false))
         const pull    = pipe(
           doneRef,
-          Ref.modify<I.FIO<Option<never>, ReadonlyArray<A>>, boolean>((done) =>
+          Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
             done || c.length === 0 ? tuple(Pull.end, true) : tuple(I.succeed(c), true)
           ),
           I.flatten
@@ -274,7 +275,7 @@ export const empty: UStream<never> = new Stream(M.succeed(Pull.end))
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
  */
 export function iterate<A>(a: A, f: (a: A) => A): UStream<A> {
-  return new Stream(pipe(Ref.make(a), I.toManaged(), M.map(flow(Ref.getAndUpdate(f), I.map(A.pure)))))
+  return new Stream(pipe(Ref.make(a), I.toManaged(), M.map(flow(Ref.getAndUpdate(f), I.map(C.pure)))))
 }
 
 export function defer<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
@@ -309,7 +310,7 @@ export function managed<R, E, A>(ma: M.Managed<R, E, A>): Stream<R, E, A> {
                     )
                   )
                   yield* _(doneRef.set(true))
-                  return A.pure(a)
+                  return C.pure(a)
                 }),
                 I.mapError(O.Some)
               )
@@ -341,7 +342,7 @@ export function fromEffectOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R, 
         doneRef,
         Ref.modify((done) => {
           if (done) return tuple(Pull.end, true)
-          else return tuple(I.map_(fa, A.pure), true)
+          else return tuple(I.map_(fa, C.pure), true)
         }),
         I.flatten
       )
@@ -380,7 +381,7 @@ export function fromSchedule<R, A>(schedule: Sc.Schedule<R, unknown, A>): Stream
 export function asyncOption<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => Option<Stream<R, E, A>>,
@@ -430,7 +431,7 @@ export function asyncOption<R, E, A>(
 export function effectAsync<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => void,
@@ -451,7 +452,7 @@ export function effectAsync<R, E, A>(
 export function effectAsyncInterruptEither<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => E.Either<I.Canceler<R>, Stream<R, E, A>>,
@@ -508,7 +509,7 @@ export function effectAsyncInterruptEither<R, E, A>(
 export function effectAsyncInterrupt<R, E, A>(
   register: (
     cb: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => I.Canceler<R>,
@@ -536,7 +537,7 @@ export function paginateM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, readonly [A,
     s,
     flow(
       f,
-      I.map(([a, s]) => tuple(A.pure(a), s))
+      I.map(([a, s]) => tuple(C.pure(a), s))
     )
   )
 }
@@ -546,9 +547,9 @@ export function paginateM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, readonly [A,
  * the unfolding of the state. This is useful for embedding paginated APIs,
  * hence the name.
  */
-export function paginateReadonlyArray<S, A>(
+export function paginateChunk<S, A>(
   s: S,
-  f: (s: S) => readonly [ReadonlyArray<A>, Option<S>]
+  f: (s: S) => readonly [Chunk<A>, Option<S>]
 ): Stream<unknown, never, A> {
   return paginateChunkM(s, flow(f, I.succeed))
 }
@@ -560,7 +561,7 @@ export function paginateReadonlyArray<S, A>(
  */
 export function paginateChunkM<S, R, E, A>(
   s: S,
-  f: (s: S) => I.IO<R, E, readonly [ReadonlyArray<A>, Option<S>]>
+  f: (s: S) => I.IO<R, E, readonly [Chunk<A>, Option<S>]>
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
@@ -591,7 +592,7 @@ export function range(min: number, max: number, chunkSize = 16): Stream<unknown,
     I.gen(function* (_) {
       const start = yield* _(Ref.getAndUpdate_(ref, (n) => n + chunkSize))
       yield* _(I.when(() => start >= max)(I.fail(O.None())))
-      return A.range(start, Math.min(start + chunkSize, max))
+      return C.range(start, Math.min(start + chunkSize, max))
     })
 
   return new Stream(pipe(Ref.makeManaged(min), M.map(pull)))
@@ -607,7 +608,7 @@ export function repeat<A>(a: A): Stream<unknown, never, A> {
 /**
  * Creates a stream from an IO producing chunks of `A` values until it fails with None.
  */
-export function repeatEffectChunkOption<R, E, A>(ef: I.IO<R, Option<E>, ReadonlyArray<A>>): Stream<R, E, A> {
+export function repeatEffectChunkOption<R, E, A>(ef: I.IO<R, Option<E>, Chunk<A>>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
       const doneRef = yield* _(Ref.make(false))
@@ -632,7 +633,7 @@ export function repeatEffectChunkOption<R, E, A>(ef: I.IO<R, Option<E>, Readonly
 /**
  * Creates a stream from an effect producing chunks of `A` values which repeats forever.
  */
-export function repeatEffectReadonlyArray<R, E, A>(fa: I.IO<R, E, ReadonlyArray<A>>): Stream<R, E, A> {
+export function repeatEffectChunk<R, E, A>(fa: I.IO<R, E, Chunk<A>>): Stream<R, E, A> {
   return repeatEffectChunkOption(I.mapError_(fa, O.Some))
 }
 
@@ -640,7 +641,7 @@ export function repeatEffectReadonlyArray<R, E, A>(fa: I.IO<R, E, ReadonlyArray<
  * Creates a stream from an IO producing values of type `A` until it fails with None.
  */
 export function repeatEffectOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R, E, A> {
-  return pipe(fa, I.map(A.pure), repeatEffectChunkOption)
+  return pipe(fa, I.map(C.pure), repeatEffectChunkOption)
 }
 
 /**
@@ -706,7 +707,7 @@ export function repeatWith<R, A>(schedule: Schedule<R, A, any>): (a: A) => Strea
  * Creates a stream from a `Queue` of values
  */
 export function fromChunkQueue<R, E, O>(
-  queue: Queue.XQueue<never, R, unknown, E, never, ReadonlyArray<O>>
+  queue: Queue.XQueue<never, R, unknown, E, never, Chunk<O>>
 ): Stream<R, E, O> {
   return repeatEffectChunkOption(
     I.catchAllCause_(queue.take, (c) =>
@@ -823,7 +824,7 @@ export function bracketExit<A, R1>(
 export function asyncM<R, E, A, R1 = R, E1 = E>(
   register: (
     cb: (
-      next: I.IO<R, Option<E>, ReadonlyArray<A>>,
+      next: I.IO<R, Option<E>, Chunk<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => I.IO<R1, E1, unknown>,
@@ -933,7 +934,7 @@ export function run<A, R1, E1, B>(
   return (ma) => run_(ma, sink)
 }
 
-export function runCollect<R, E, A>(ma: Stream<R, E, A>): I.IO<R, E, ReadonlyArray<A>> {
+export function runCollect<R, E, A>(ma: Stream<R, E, A>): I.IO<R, E, Chunk<A>> {
   return run_(ma, Sink.collectAll<A>())
 }
 
@@ -989,26 +990,26 @@ export function foreachManaged<A, R1, E1, B>(
 
 export function foreachChunk_<R, E, A, R1, E1, A1>(
   ma: Stream<R, E, A>,
-  f: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, A1>
+  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
 ): I.IO<R & R1, E | E1, void> {
   return run_(ma, Sink.foreachChunk(f))
 }
 
 export function foreachChunk<A, R1, E1, A1>(
-  f: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, A1>
+  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
 ): <R, E>(ma: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
   return (ma) => foreachChunk_(ma, f)
 }
 
 export function foreachChunkManaged_<R, E, A, R1, E1, A1>(
   stream: Stream<R, E, A>,
-  f: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, A1>
+  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
 ): M.Managed<R & R1, E | E1, void> {
   return runManaged_(stream, Sink.foreachChunk(f))
 }
 
 export function foreachChunkManaged<A, R1, E1, A1>(
-  f: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, A1>
+  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
 ): <R, E>(stream: Stream<R, E, A>) => M.Managed<R & R1, E | E1, void> {
   return (stream) => foreachChunkManaged_(stream, f)
 }
@@ -1129,7 +1130,7 @@ export function filter<A>(f: Predicate<A>): <R, E>(fa: Stream<R, E, A>) => Strea
 export function filter_<R, E, A, A1 extends A>(fa: Stream<R, E, A>, f: Refinement<A, A1>): Stream<R, E, A1>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, f: Predicate<A>): Stream<R, E, A>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, f: Predicate<A>): Stream<R, E, A> {
-  return mapChunks_(fa, A.filter(f))
+  return mapChunks_(fa, C.filter(f))
 }
 
 /**
@@ -1152,7 +1153,7 @@ export function filterM_<R, R1, E, E1, A>(
               f(o),
               I.mapError(O.Some),
               I.bind((_) => {
-                if (_) return I.succeed(A.pure(o))
+                if (_) return I.succeed(C.pure(o))
                 else return pull
               })
             )
@@ -1191,7 +1192,7 @@ export function filterNot<A>(pred: Predicate<A>) {
  * Performs a filter and a map in a single step
  */
 export function filterMap_<R, E, A, A1>(fa: Stream<R, E, A>, f: (a: A) => Option<A1>): Stream<R, E, A1> {
-  return mapChunks_(fa, A.filterMap(f))
+  return mapChunks_(fa, C.filterMap(f))
 }
 
 /**
@@ -1212,7 +1213,7 @@ export function filterMapM_<R, E, A, R1, E1, A1>(
     M.gen(function* (_) {
       const os = yield* _(M.mapM_(fa.proc, BPull.make))
 
-      const go: I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<A1>> = I.bind_(
+      const go: I.IO<R & R1, O.Option<E | E1>, Chunk<A1>> = I.bind_(
         BPull.pullElement(os),
         flow(
           f,
@@ -1247,7 +1248,7 @@ export function filterMapM<A, R1, E1, A1>(
  */
 export function mapChunksM_<R, E, A, R1, E1, B>(
   fa: Stream<R, E, A>,
-  f: (chunks: ReadonlyArray<A>) => I.IO<R1, E1, ReadonlyArray<B>>
+  f: (chunks: Chunk<A>) => I.IO<R1, E1, Chunk<B>>
 ): Stream<R & R1, E | E1, B> {
   return new Stream(
     pipe(
@@ -1261,7 +1262,7 @@ export function mapChunksM_<R, E, A, R1, E1, B>(
  * Effectfully transforms the chunks emitted by this stream.
  */
 export function mapChunksM<A, R1, E1, B>(
-  f: (chunks: ReadonlyArray<A>) => I.IO<R1, E1, ReadonlyArray<B>>
+  f: (chunks: Chunk<A>) => I.IO<R1, E1, Chunk<B>>
 ): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
   return (fa) => mapChunksM_(fa, f)
 }
@@ -1271,7 +1272,7 @@ export function mapChunksM<A, R1, E1, B>(
  */
 export function mapChunks_<R, E, A, B>(
   fa: Stream<R, E, A>,
-  f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>
+  f: (chunks: Chunk<A>) => Chunk<B>
 ): Stream<R, E, B> {
   return mapChunksM_(fa, flow(f, I.pure))
 }
@@ -1280,7 +1281,7 @@ export function mapChunks_<R, E, A, B>(
  * Transforms the chunks emitted by this stream.
  */
 export function mapChunks<A, B>(
-  f: (chunks: ReadonlyArray<A>) => ReadonlyArray<B>
+  f: (chunks: Chunk<A>) => Chunk<B>
 ): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
   return (fa) => mapChunks_(fa, f)
 }
@@ -1289,7 +1290,7 @@ export function mapChunks<A, B>(
  * Transforms the chunks emitted by this stream.
  */
 export function map_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => B): Stream<R, E, B> {
-  return mapChunks_(fa, A.map(f))
+  return mapChunks_(fa, C.map(f))
 }
 
 /**
@@ -1314,7 +1315,7 @@ export function mapM_<R, E, A, R1, E1, B>(
         pipe(
           pull,
           BPull.pullElement,
-          I.bind((o) => pipe(f(o), I.bimap(O.Some, A.pure)))
+          I.bind((o) => pipe(f(o), I.bimap(O.Some, C.pure)))
         )
       )
     )
@@ -1365,9 +1366,9 @@ export function bind_<R, E, A, R1, E1, B>(
     M.gen(function* (_) {
       const outerStream     = yield* _(ma.proc)
       const currOuterChunk  = yield* _(
-        Ref.make<[ReadonlyArray<A>, number]>([A.empty(), 0])
+        Ref.make<[Chunk<A>, number]>([C.empty(), 0])
       )
-      const currInnerStream = yield* _(Ref.make<I.IO<R_, Option<E_>, ReadonlyArray<B>>>(Pull.end))
+      const currInnerStream = yield* _(Ref.make<I.IO<R_, Option<E_>, Chunk<B>>>(Pull.end))
       const innerFinalizer  = yield* _(M.finalizerRef(RM.noopFinalizer))
       return new Chain(f, outerStream, currOuterChunk, currInnerStream, innerFinalizer).apply()
     })
@@ -1465,7 +1466,7 @@ export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => FStream<E, A> {
  * Submerges the chunks carried by this stream into the stream's structure, while
  * still preserving them.
  */
-export function flattenChunks<R, E, A>(ma: Stream<R, E, ReadonlyArray<A>>): Stream<R, E, A> {
+export function flattenChunks<R, E, A>(ma: Stream<R, E, Chunk<A>>): Stream<R, E, A> {
   return new Stream(pipe(ma.proc, M.mapM(BPull.make), M.map(BPull.pullElement)))
 }
 
@@ -1528,7 +1529,7 @@ export function flattenTake<R, E, E1, A>(ma: Stream<R, E, Take.Take<E1, A>>): St
  */
 export function aggregateAsyncWithinEither<A, R1, E1, P, Q>(
   transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, Q>
+  schedule: Schedule<R1, Chunk<P>, Q>
 ): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, E.Either<Q, P>> {
   return (ma) => aggregateAsyncWithinEither_(ma, transducer, schedule)
 }
@@ -1548,7 +1549,7 @@ export function aggregateAsyncWithinEither<A, R1, E1, P, Q>(
 export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
   ma: Stream<R, E, A>,
   transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, Q>
+  schedule: Schedule<R1, Chunk<P>, Q>
 ): Stream<R & R1 & Has<Clock>, E | E1, E.Either<Q, P>> {
   return flattenTake(
     new Stream(
@@ -1559,7 +1560,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
         const raceNextTime = yield* _(Ref.make(false))
         const waitingFiber = yield* _(Ref.make<O.Option<Fiber<never, Take.Take<E | E1, A>>>>(O.None()))
         const sdriver      = yield* _(Sc.driver(schedule))
-        const lastChunk    = yield* _(Ref.make<ReadonlyArray<P>>(A.empty()))
+        const lastChunk    = yield* _(Ref.make<Chunk<P>>(C.empty()))
 
         const producer = pipe(
           pull,
@@ -1598,7 +1599,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
               () =>
                 pipe(
                   push(O.None()),
-                  I.map((ps) => [Take.chunk(A.map_(ps, E.Right)), Take.end])
+                  I.map((ps) => [Take.chunk(C.map_(ps, E.Right)), Take.end])
                 ),
               I.halt,
               (os) =>
@@ -1611,7 +1612,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
 
         const go = (
           race: boolean
-        ): I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, ReadonlyArray<Take.Take<E1, E.Either<Q, P>>>> => {
+        ): I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
           if (!race) {
             return pipe(waitForProducer, I.bind(handleTake), I.apl(raceNextTime.set(true)))
           } else {
@@ -1626,10 +1627,10 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
                       () =>
                         I.gen(function* (_) {
                           const lastQ = yield* _(
-                            pipe(lastChunk.set(A.empty()), I.apr(I.orDie(sdriver.last)), I.apl(sdriver.reset))
+                            pipe(lastChunk.set(C.empty()), I.apr(I.orDie(sdriver.last)), I.apl(sdriver.reset))
                           )
 
-                          const scheduleResult: Take.Take<E1, E.Either<Q, P>> = Ex.succeed(A.pure(E.Left(lastQ)))
+                          const scheduleResult: Take.Take<E1, E.Either<Q, P>> = Ex.succeed(C.pure(E.Left(lastQ)))
 
                           const take = yield* _(
                             pipe(push(O.None()), I.asSomeError, Take.fromPull, I.tap(updateLastChunk))
@@ -1673,7 +1674,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
  */
 export function aggregateAsyncWithin<A, R1, E1, P>(
   transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, any>
+  schedule: Schedule<R1, Chunk<P>, any>
 ): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, P> {
   return (ma) => aggregateAsyncWithin_(ma, transducer, schedule)
 }
@@ -1684,7 +1685,7 @@ export function aggregateAsyncWithin<A, R1, E1, P>(
 export function aggregateAsyncWithin_<R, E, A, R1, E1, P>(
   ma: Stream<R, E, A>,
   transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, ReadonlyArray<P>, any>
+  schedule: Schedule<R1, Chunk<P>, any>
 ): Stream<R & R1 & Has<Clock>, E | E1, P> {
   return filterMap_(
     aggregateAsyncWithinEither_(ma, transducer, schedule),
@@ -1743,7 +1744,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
       const push    = yield* _(transducer.push)
       const doneRef = yield* _(Ref.make(false))
 
-      const go: I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<P>> = pipe(
+      const go: I.IO<R & R1, O.Option<E | E1>, Chunk<P>> = pipe(
         doneRef.get,
         I.bind((done) => {
           if (done) {
@@ -1753,13 +1754,13 @@ export function aggregate_<R, E, A, R1, E1, P>(
               pull,
               I.matchM(
                 O.match(
-                  (): I.IO<R1, O.Option<E | E1>, ReadonlyArray<P>> =>
+                  (): I.IO<R1, O.Option<E | E1>, Chunk<P>> =>
                     pipe(doneRef.set(true), I.apr(I.asSomeError(push(O.None())))),
                   (e) => Pull.fail(e)
                 ),
                 (as) => I.asSomeError(push(O.Some(as)))
               ),
-              I.bind((ps) => (A.isEmpty(ps) ? go : I.succeed(ps)))
+              I.bind((ps) => (C.isEmpty(ps) ? go : I.succeed(ps)))
             )
           }
         })
@@ -1821,12 +1822,12 @@ export function distributedWithDynamic_<R, E, A>(
       return yield* _(
         pipe(
           queues,
-          I.foldl(A.empty<symbol>(), (b, [id, queue]) => {
+          I.foldl(C.empty<symbol>(), (b, [id, queue]) => {
             if (shouldProcess(id)) {
               return pipe(
                 queue.offer(Ex.succeed(o)),
                 I.matchCauseM(
-                  (c) => (Ca.interrupted(c) ? I.succeed(A.append(id)(b)) : I.halt(c)),
+                  (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.halt(c)),
                   () => I.succeed(b)
                 )
               )
@@ -1834,7 +1835,7 @@ export function distributedWithDynamic_<R, E, A>(
               return I.succeed(b)
             }
           }),
-          I.bind((ids) => (A.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()))
+          I.bind((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()))
         )
       )
     })
@@ -1919,7 +1920,7 @@ export function distributedWith<A>(
   n: number,
   maximumLag: number,
   decide: (_: A) => I.UIO<(_: number) => boolean>
-): <R, E>(stream: Stream<R, E, A>) => M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
+): <R, E>(stream: Stream<R, E, A>) => M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   return (stream) => distributedWith_(stream, n, maximumLag, decide)
 }
 
@@ -1933,7 +1934,7 @@ export function distributedWith_<R, E, A>(
   n: number,
   maximumLag: number,
   decide: (_: A) => I.UIO<(_: number) => boolean>
-): M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
+): M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   return pipe(
     P.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     M.fromEffect,
@@ -1949,17 +1950,17 @@ export function distributedWith_<R, E, A>(
           pipe(
             I.collectAll(
               pipe(
-                A.range(0, n),
-                A.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
+                C.range(0, n),
+                C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
               )
             ),
             I.bind((entries) => {
-              const [mappings, queues] = A.foldr_(
+              const [mappings, queues] = C.foldr_(
                 entries,
-                [Map.empty<symbol, number>(), A.empty<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>()] as const,
+                [Map.empty<symbol, number>(), C.empty<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>()] as const,
                 ([mapping, queue], [mappings, queues]) => [
                   Map.insert_(mappings, mapping[0], mapping[1]),
-                  A.append_(queues, queue)
+                  C.append_(queues, queue)
                 ]
               )
               return pipe(
@@ -1987,7 +1988,7 @@ export function distributedWith_<R, E, A>(
 export function broadcastedQueues(
   n: number,
   maximumLag: number
-): <R, E, A>(ma: Stream<R, E, A>) => M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
+): <R, E, A>(ma: Stream<R, E, A>) => M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   return (ma) => broadcastedQueues_(ma, n, maximumLag)
 }
 
@@ -2004,7 +2005,7 @@ export function broadcastedQueues_<R, E, A>(
   ma: Stream<R, E, A>,
   n: number,
   maximumLag: number
-): M.Managed<R, never, ReadonlyArray<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
+): M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   const decider = I.succeed((_: number) => true)
   return distributedWith_(ma, n, maximumLag, (_) => decider)
 }
@@ -2017,7 +2018,7 @@ export function broadcastedQueues_<R, E, A>(
 export function broadcast(
   n: number,
   maximumLag: number
-): <R, E, A>(ma: Stream<R, E, A>) => M.Managed<R, never, ReadonlyArray<Stream<unknown, E, A>>> {
+): <R, E, A>(ma: Stream<R, E, A>) => M.Managed<R, never, Chunk<Stream<unknown, E, A>>> {
   return (ma) => broadcast_(ma, n, maximumLag)
 }
 
@@ -2030,8 +2031,8 @@ export function broadcast_<R, E, A>(
   ma: Stream<R, E, A>,
   n: number,
   maximumLag: number
-): M.Managed<R, never, ReadonlyArray<Stream<unknown, E, A>>> {
-  return pipe(broadcastedQueues_(ma, n, maximumLag), M.map(A.map((q) => flattenExitOption(fromQueueWithShutdown(q)))))
+): M.Managed<R, never, Chunk<Stream<unknown, E, A>>> {
+  return pipe(broadcastedQueues_(ma, n, maximumLag), M.map(C.map((q) => flattenExitOption(fromQueueWithShutdown(q)))))
 }
 
 /**
@@ -2173,7 +2174,7 @@ export function bufferUnbounded<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
 function bufferSignal_<R, E, A>(
   ma: Stream<R, E, A>,
   queue: Queue.Queue<[Take.Take<E, A>, P.Promise<never, void>]>
-): M.Managed<R, never, I.IO<R, O.Option<E>, ReadonlyArray<A>>> {
+): M.Managed<R, never, I.IO<R, O.Option<E>, Chunk<A>>> {
   return M.gen(function* (_) {
     const as    = yield* _(ma.proc)
     const start = yield* _(P.make<never, void>())
@@ -2468,7 +2469,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
       M.gen(function* (_) {
         const outQueue     = yield* _(
           I.toManaged_(
-            Queue.makeBounded<I.IO<R1, O.Option<E | E1>, ReadonlyArray<A1>>>(outputBuffer),
+            Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer),
             (q) => q.shutdown
           )
         )
@@ -2564,7 +2565,7 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
       M.withChildren((getChildren) =>
         M.gen(function* (_) {
           const outQueue     = yield* _(
-            I.toManaged_(Queue.makeBounded<I.IO<R1, O.Option<E | E1>, ReadonlyArray<B>>>(bufferSize), (q) => q.shutdown)
+            I.toManaged_(Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), (q) => q.shutdown)
           )
           const permits      = yield* _(Semaphore.make(n))
           const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
@@ -2646,24 +2647,24 @@ export function bindParSwitch(n: number, bufferSize = 16) {
  */
 export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> {
   interface State<X> {
-    readonly buffer: ReadonlyArray<X>
+    readonly buffer: Chunk<X>
     readonly done: boolean
   }
 
   function emitOrAccumulate(
-    buffer: ReadonlyArray<A>,
+    buffer: Chunk<A>,
     done: boolean,
     ref: Ref.URef<State<A>>,
-    pull: I.IO<R, Option<E>, ReadonlyArray<A>>
-  ): I.IO<R, Option<E>, ReadonlyArray<A>> {
+    pull: I.IO<R, Option<E>, Chunk<A>>
+  ): I.IO<R, Option<E>, Chunk<A>> {
     if (buffer.length < n) {
       if (done) {
-        if (A.isEmpty(buffer)) {
+        if (C.isEmpty(buffer)) {
           return Pull.end
         } else {
           return I.apr_(
             ref.set({
-              buffer: A.empty(),
+              buffer: C.empty(),
               done: true
             }),
             Pull.emitChunk(buffer)
@@ -2673,11 +2674,11 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
         return I.matchM_(
           pull,
           O.match(() => emitOrAccumulate(buffer, true, ref, pull), Pull.fail),
-          (ch) => emitOrAccumulate(A.concat_(buffer, ch), false, ref, pull)
+          (ch) => emitOrAccumulate(C.concat_(buffer, ch), false, ref, pull)
         )
       }
     } else {
-      const [chunk, leftover] = A.splitAt_(buffer, n)
+      const [chunk, leftover] = C.splitAt_(buffer, n)
       return I.apr_(ref.set({ buffer: leftover, done }), Pull.emitChunk(chunk))
     }
   }
@@ -2688,7 +2689,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
     return new Stream(
       M.gen(function* (_) {
         const ref = yield* _(
-          Ref.make<State<A>>({ buffer: A.empty(), done: false })
+          Ref.make<State<A>>({ buffer: C.empty(), done: false })
         )
         const p   = yield* _(ma.proc)
         return I.bind_(ref.get, (s) => emitOrAccumulate(s.buffer, s.done, ref, p))
@@ -2749,7 +2750,7 @@ export function collectWhile_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => O.Op
           } else {
             return I.gen(function* (_) {
               const chunk     = yield* _(chunks)
-              const remaining = A.filterMap_(chunk, f)
+              const remaining = C.filterMap_(chunk, f)
               yield* _(
                 pipe(
                   doneRef.set(true),
@@ -2822,10 +2823,10 @@ export function collectWhileM_<R, E, A, R1, E1, B>(
               I.bind(
                 flow(
                   f,
-                  O.match(() => pipe(doneRef.set(true), I.apr(Pull.end)), I.bimap(O.Some, A.pure))
+                  O.match(() => pipe(doneRef.set(true), I.apr(Pull.end)), I.bimap(O.Some, C.pure))
                 )
               )
-            ) as I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<B>>
+            ) as I.IO<R & R1, O.Option<E | E1>, Chunk<B>>
           }
         })
       )
@@ -2905,9 +2906,9 @@ export function combineChunks_<R, E, A, R1, E1, B, Z, C>(
   z: Z,
   f: (
     z: Z,
-    s: I.IO<R, Option<E>, ReadonlyArray<A>>,
-    t: I.IO<R1, Option<E1>, ReadonlyArray<B>>
-  ) => I.IO<R & R1, never, Ex.Exit<Option<E | E1>, readonly [ReadonlyArray<C>, Z]>>
+    s: I.IO<R, Option<E>, Chunk<A>>,
+    t: I.IO<R1, Option<E1>, Chunk<B>>
+  ) => I.IO<R & R1, never, Ex.Exit<Option<E | E1>, readonly [Chunk<C>, Z]>>
 ): Stream<R & R1, E | E1, C> {
   return new Stream(
     M.gen(function* (_) {
@@ -2937,9 +2938,9 @@ export function combineChunks<R, E, A, R1, E1, B, Z, C>(
   z: Z,
   f: (
     z: Z,
-    s: I.IO<R, Option<E>, ReadonlyArray<A>>,
-    t: I.IO<R1, Option<E1>, ReadonlyArray<B>>
-  ) => I.IO<R & R1, never, Ex.Exit<Option<E | E1>, readonly [ReadonlyArray<C>, Z]>>
+    s: I.IO<R, Option<E>, Chunk<A>>,
+    t: I.IO<R1, Option<E1>, Chunk<B>>
+  ) => I.IO<R & R1, never, Ex.Exit<Option<E | E1>, readonly [Chunk<C>, Z]>>
 ): (ma: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
   return (ma) => combineChunks_(ma, mb, z, f)
 }
@@ -2951,8 +2952,8 @@ export function combineChunks<R, E, A, R1, E1, B, Z, C>(
 export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, E1, B>): Stream<R & R1, E | E1, A | B> {
   return new Stream(
     M.gen(function* (_) {
-      const currStream   = yield* _(Ref.make<I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<A | B>>>(Pull.end))
-      const switchStream = yield* _(M.switchable<R & R1, never, I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<A | B>>>())
+      const currStream   = yield* _(Ref.make<I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>(Pull.end))
+      const switchStream = yield* _(M.switchable<R & R1, never, I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>())
       const switched     = yield* _(Ref.make(false))
       yield* _(
         pipe(
@@ -2962,7 +2963,7 @@ export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, 
         )
       )
 
-      const go: I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<A | B>> = pipe(
+      const go: I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>> = pipe(
         currStream.get,
         (x) => I.flatten(x),
         I.catchAllCause(
@@ -2999,15 +3000,15 @@ export function concat<R1, E1, B>(
 /**
  * Concatenates all of the streams in the chunk to one stream.
  */
-export function concatAll<R, E, A>(streams: ReadonlyArray<Stream<R, E, A>>): Stream<R, E, A> {
+export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E, A> {
   const chunkSize = streams.length
   return new Stream(
     M.gen(function* (_) {
       const currIndex    = yield* _(Ref.make(0))
-      const currStream   = yield* _(Ref.make<I.IO<R, Option<E>, ReadonlyArray<A>>>(Pull.end))
-      const switchStream = yield* _(M.switchable<R, never, I.IO<R, Option<E>, ReadonlyArray<A>>>())
+      const currStream   = yield* _(Ref.make<I.IO<R, Option<E>, Chunk<A>>>(Pull.end))
+      const switchStream = yield* _(M.switchable<R, never, I.IO<R, Option<E>, Chunk<A>>>())
 
-      const go: I.IO<R, Option<E>, ReadonlyArray<A>> = pipe(
+      const go: I.IO<R, Option<E>, Chunk<A>> = pipe(
         currStream.get,
         I.flatten,
         I.catchAllCause(
@@ -3149,7 +3150,7 @@ export function crossRight<R1, E1, A1>(
  * elements. Useful for sequencing effects using streams:
  */
 export function drain<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, void> {
-  return mapChunks_(ma, () => A.empty())
+  return mapChunks_(ma, () => C.empty())
 }
 
 /**
@@ -3197,7 +3198,7 @@ export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A
       const chunks     = yield* _(self.proc)
       const counterRef = yield* _(Ref.make(0))
 
-      const pull: I.IO<R, O.Option<E>, ReadonlyArray<A>> = I.gen(function* (_) {
+      const pull: I.IO<R, O.Option<E>, Chunk<A>> = I.gen(function* (_) {
         const chunk = yield* _(chunks)
         const count = yield* _(counterRef.get)
         if (count >= n) {
@@ -3208,7 +3209,7 @@ export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A
           return yield* _(
             pipe(
               counterRef.set(count + (n - count)),
-              I.as(() => A.drop_(chunk, n - count))
+              I.as(() => C.drop_(chunk, n - count))
             )
           )
         }
@@ -3251,13 +3252,13 @@ export function dropWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
       const chunks          = yield* _(ma.proc)
       const keepDroppingRef = yield* _(Ref.make(true))
 
-      const pull: I.IO<R, O.Option<E>, ReadonlyArray<A>> = I.gen(function* (_) {
+      const pull: I.IO<R, O.Option<E>, Chunk<A>> = I.gen(function* (_) {
         const chunk        = yield* _(chunks)
         const keepDropping = yield* _(keepDroppingRef.get)
         if (!keepDropping) {
           return yield* _(I.succeed(chunk))
         } else {
-          const remaining = A.dropWhile_(chunk, pred)
+          const remaining = C.dropWhile_(chunk, pred)
           const isEmpty   = remaining.length <= 0
           if (isEmpty) {
             return yield* _(pull)
@@ -3340,10 +3341,10 @@ export function fixed(duration: number) {
 export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const currStream   = yield* _(Ref.make<I.IO<R, O.Option<E>, ReadonlyArray<A>>>(Pull.end))
-      const switchStream = yield* _(M.switchable<R, never, I.IO<R, O.Option<E>, ReadonlyArray<A>>>())
+      const currStream   = yield* _(Ref.make<I.IO<R, O.Option<E>, Chunk<A>>>(Pull.end))
+      const switchStream = yield* _(M.switchable<R, never, I.IO<R, O.Option<E>, Chunk<A>>>())
       yield* _(pipe(ma.proc, switchStream, I.bind(currStream.set)))
-      const go: I.IO<R, O.Option<E>, ReadonlyArray<A>> = pipe(
+      const go: I.IO<R, O.Option<E>, Chunk<A>> = pipe(
         currStream.get,
         I.flatten,
         I.catchAllCause(
@@ -3482,14 +3483,14 @@ export function groupByKey<A, K>(f: (a: A) => K, buffer = 16): <R, E>(ma: Stream
 /**
  * Partitions the stream with specified chunkSize
  */
-export function grouped_<R, E, A>(ma: Stream<R, E, A>, chunkSize: number): Stream<R, E, ReadonlyArray<A>> {
+export function grouped_<R, E, A>(ma: Stream<R, E, A>, chunkSize: number): Stream<R, E, Chunk<A>> {
   return aggregate_(ma, Tr.collectAllN(chunkSize))
 }
 
 /**
  * Partitions the stream with specified chunkSize
  */
-export function grouped(chunkSize: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, ReadonlyArray<A>> {
+export function grouped(chunkSize: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, Chunk<A>> {
   return (ma) => grouped_(ma, chunkSize)
 }
 
@@ -3511,7 +3512,7 @@ export function haltWhen_<R, E, A, R1, E1>(ma: Stream<R, E, A>, io: I.IO<R1, E1,
         runIO.poll,
         I.bind(
           O.match(
-            (): I.IO<R & R1, O.Option<E | E1>, ReadonlyArray<A>> => as,
+            (): I.IO<R & R1, O.Option<E | E1>, Chunk<A>> => as,
             Ex.match(Pull.halt, () => Pull.end)
           )
         )
@@ -3575,7 +3576,7 @@ export function haltOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: P.Promise<E1, any>)
               p.poll,
               I.bind(
                 O.match(
-                  (): I.IO<R, O.Option<E | E1>, ReadonlyArray<A>> => as,
+                  (): I.IO<R, O.Option<E | E1>, Chunk<A>> => as,
                   (v) => pipe(doneRef.set(true), I.apr(I.mapError_(v, O.Some)), I.apr(Pull.end))
                 )
               )
@@ -3941,7 +3942,7 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
               const s = yield* _(state.get)
               const t = yield* _(f(s, o))
               yield* _(state.set(t[0]))
-              return A.pure(t[1])
+              return C.pure(t[1])
             }),
             I.mapError(O.Some)
           )
@@ -3984,7 +3985,7 @@ export function mapAccum<Z>(
  * output of this stream.
  */
 export function mapConcat_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => Iterable<B>) {
-  return mapChunks_(ma, (chunks) => A.bind_(chunks, (a) => Array.from(f(a))))
+  return mapChunks_(ma, (chunks) => C.bind_(chunks, (a) => Array.from(f(a))))
 }
 
 /**
@@ -3999,15 +4000,15 @@ export function mapConcat<A, B>(f: (a: A) => Iterable<B>): <R, E>(ma: Stream<R, 
  * Maps each element to a chunk, and flattens the chunks into the output of
  * this stream.
  */
-export function mapConcatChunk_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => ReadonlyArray<B>): Stream<R, E, B> {
-  return mapChunks_(ma, (chunks) => A.bind_(chunks, f))
+export function mapConcatChunk_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => Chunk<B>): Stream<R, E, B> {
+  return mapChunks_(ma, (chunks) => C.bind_(chunks, f))
 }
 
 /**
  * Maps each element to a chunk, and flattens the chunks into the output of
  * this stream.
  */
-export function mapConcatChunk<A, B>(f: (a: A) => ReadonlyArray<B>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, B> {
+export function mapConcatChunk<A, B>(f: (a: A) => Chunk<B>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, B> {
   return (ma) => mapConcatChunk_(ma, f)
 }
 
@@ -4017,7 +4018,7 @@ export function mapConcatChunk<A, B>(f: (a: A) => ReadonlyArray<B>): <R, E>(ma: 
  */
 export function mapConcatChunkM_<R, E, A, R1, E1, B>(
   ma: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, ReadonlyArray<B>>
+  f: (a: A) => I.IO<R1, E1, Chunk<B>>
 ): Stream<R & R1, E | E1, B> {
   return pipe(ma, mapM(f), mapConcatChunk(identity))
 }
@@ -4027,7 +4028,7 @@ export function mapConcatChunkM_<R, E, A, R1, E1, B>(
  * the output of this stream.
  */
 export function mapConcatChunkM<A, R1, E1, B>(
-  f: (a: A) => I.IO<R1, E1, ReadonlyArray<B>>
+  f: (a: A) => I.IO<R1, E1, Chunk<B>>
 ): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
   return (ma) => mapConcatChunkM_(ma, f)
 }
@@ -4098,7 +4099,7 @@ export function mapMPar_(n: number) {
             M.fork
           )
         )
-        return pipe(out.take, I.flatten, I.map(A.pure))
+        return pipe(out.take, I.flatten, I.map(C.pure))
       })
     )
 }
@@ -4154,7 +4155,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                       const causeOrChunk = pipe(
                         exit,
                         Ex.match(
-                          (c): E.Either<O.Option<Ca.Cause<E | E1>>, ReadonlyArray<C | C1>> =>
+                          (c): E.Either<O.Option<Ca.Cause<E | E1>>, Chunk<C | C1>> =>
                             E.Left(Ca.sequenceCauseOption(c)),
                           E.Right
                         )
@@ -4199,8 +4200,8 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
           I.toManaged(Fi.interrupt)
         )
 
-      yield* _(handler(pipe(chunksL, I.map(A.map(l))), strategy === 'Left' || strategy === 'Either'))
-      yield* _(handler(pipe(chunksR, I.map(A.map(r))), strategy === 'Right' || strategy === 'Either'))
+      yield* _(handler(pipe(chunksL, I.map(C.map(l))), strategy === 'Left' || strategy === 'Either'))
+      yield* _(handler(pipe(chunksR, I.map(C.map(r))), strategy === 'Right' || strategy === 'Either'))
       return I.gen(function* (_) {
         const done   = yield* _(doneRef.get)
         const take   = yield* _(done._tag === 'Some' && done.value ? I.get(Ha.poll(handoff)) : Ha.take(handoff))
@@ -4525,7 +4526,7 @@ export function foldWhileManagedM_<R, E, A, R1, E1, S>(
             is,
             I.matchM(
               O.match(() => I.succeed(s1), I.fail),
-              flow(A.foldlM(s1, f), I.bind(loop))
+              flow(C.foldlM(s1, f), I.bind(loop))
             )
           )
         }
@@ -4610,7 +4611,7 @@ export function scheduleWith<R1, A, B>(schedule: Sc.Schedule<R1, A, B>) {
           I.bind((o) =>
             pipe(
               driver.next(o),
-              I.as(() => A.pure(f(o))),
+              I.as(() => C.pure(f(o))),
               I.orElse(() =>
                 pipe(
                   driver.last,
@@ -4646,7 +4647,7 @@ export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> 
             } else {
               return I.gen(function* (_) {
                 const chunk = yield* _(chunks)
-                const taken = chunk.length <= n - count ? chunk : A.take_(chunk, n - count)
+                const taken = chunk.length <= n - count ? chunk : C.take_(chunk, n - count)
                 yield* _(counterRef.set(count + taken.length))
                 return taken
               })
@@ -4683,15 +4684,15 @@ export function takeUntil_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
           } else {
             return I.gen(function* (_) {
               const chunk = yield* _(chunks)
-              const taken = A.takeWhile_(chunk, not(pred))
-              const last  = pipe(chunk, A.drop(taken.length), A.take(1))
+              const taken = C.takeWhile_(chunk, not(pred))
+              const last  = pipe(chunk, C.drop(taken.length), C.take(1))
               yield* _(
                 pipe(
                   keepTakingRef.set(false),
-                  I.when(() => A.isNonEmpty(last))
+                  I.when(() => C.isNonEmpty(last))
                 )
               )
-              return A.concat_(taken, last)
+              return C.concat_(taken, last)
             })
           }
         })
@@ -4731,7 +4732,7 @@ export function takeUntilM_<R, E, A, R1, E1>(
               const chunk = yield* _(chunks)
               const taken = yield* _(
                 pipe(
-                  A.takeWhileM_(
+                  C.takeWhileM_(
                     chunk,
                     flow(
                       pred,
@@ -4739,16 +4740,16 @@ export function takeUntilM_<R, E, A, R1, E1>(
                     )
                   ),
                   I.asSomeError
-                ) as I.IO<R1, O.Option<E | E1>, ReadonlyArray<A>>
+                ) as I.IO<R1, O.Option<E | E1>, Chunk<A>>
               )
-              const last  = pipe(chunk, A.drop(taken.length), A.take(1))
+              const last  = pipe(chunk, C.drop(taken.length), C.take(1))
               yield* _(
                 pipe(
                   keepTakingRef.set(false),
-                  I.when(() => A.isNonEmpty(last))
+                  I.when(() => C.isNonEmpty(last))
                 )
               )
-              return A.concat_(taken, last)
+              return C.concat_(taken, last)
             })
           }
         })
@@ -4785,7 +4786,7 @@ export function takeWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
           } else {
             return I.gen(function* (_) {
               const chunk = yield* _(chunks)
-              const taken = A.takeWhile_(chunk, pred)
+              const taken = C.takeWhile_(chunk, pred)
               yield* _(
                 pipe(
                   doneRef.set(true),
@@ -4818,7 +4819,7 @@ export function takeWhile<A>(pred: Predicate<A>): <R, E>(ma: Stream<R, E, A>) =>
  */
 export function throttleEnforce_<R, E, A>(
   ma: Stream<R, E, A>,
-  costFn: (chunk: ReadonlyArray<A>) => number,
+  costFn: (chunk: Chunk<A>) => number,
   units: number,
   duration: number,
   burst = 0
@@ -4833,7 +4834,7 @@ export function throttleEnforce_<R, E, A>(
  * The weight of each chunk is determined by the `costFn` function.
  */
 export function throttleEnforce<A>(
-  costFn: (chunk: ReadonlyArray<A>) => number,
+  costFn: (chunk: Chunk<A>) => number,
   units: number,
   duration: number,
   burst = 0
@@ -4849,17 +4850,17 @@ export function throttleEnforce<A>(
  */
 export function throttleEnforceM_<R, E, A, R1, E1>(
   ma: Stream<R, E, A>,
-  costFn: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
 ): Stream<R & R1 & Has<Clock>, E | E1, A> {
   return new Stream(
     M.gen(function* (_) {
-      const chunks                                                              = yield* _(ma.proc)
-      const time                                                                = yield* _(Clock.currentTime)
-      const bucket                                                              = yield* _(Ref.make(tuple(units, time)))
-      const pull: I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, ReadonlyArray<A>> = pipe(
+      const chunks                                                      = yield* _(ma.proc)
+      const time                                                        = yield* _(Clock.currentTime)
+      const bucket                                                      = yield* _(Ref.make(tuple(units, time)))
+      const pull: I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<A>> = pipe(
         chunks,
         I.bind((chunk) =>
           pipe(
@@ -4898,7 +4899,7 @@ export function throttleEnforceM_<R, E, A, R1, E1>(
  * The weight of each chunk is determined by the `costFn` effectful function.
  */
 export function throttleEnforceM<A, R1, E1>(
-  costFn: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
@@ -4908,7 +4909,7 @@ export function throttleEnforceM<A, R1, E1>(
 
 export function throttleShapeM_<R, E, A, R1, E1>(
   ma: Stream<R, E, A>,
-  costFn: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
@@ -4951,7 +4952,7 @@ export function throttleShapeM_<R, E, A, R1, E1>(
 }
 
 export function throttleShapeM<A, R1, E1>(
-  costFn: (chunk: ReadonlyArray<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
@@ -4969,7 +4970,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
   }
   interface Current {
     _tag: 'Current'
-    fiber: Fiber<Option<E>, ReadonlyArray<A>>
+    fiber: Fiber<Option<E>, Chunk<A>>
   }
   interface Done {
     _tag: 'Done'
@@ -4999,10 +5000,10 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
           )
         )
       )
-      const store  = (chunk: ReadonlyArray<A>) =>
+      const store  = (chunk: Chunk<A>) =>
         pipe(
           chunk,
-          A.last,
+          C.last,
           O.map((last) =>
             pipe(
               I.sleep(d),
@@ -5012,7 +5013,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
             )
           ),
           O.getOrElse(() => ref.set({ _tag: 'NotStarted' })),
-          I.as(() => A.empty<A>())
+          I.as(() => C.empty<A>())
         )
 
       const pull = pipe(
@@ -5028,9 +5029,9 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
                   (ex, current) =>
                     Ex.match_(
                       ex,
-                      (cause): I.IO<R & Has<Clock>, Option<E>, ReadonlyArray<A>> =>
+                      (cause): I.IO<R & Has<Clock>, Option<E>, Chunk<A>> =>
                         I.apr_(Fi.interrupt(current), Pull.halt(cause)),
-                      (value) => I.as_(ref.set({ _tag: 'Current', fiber: current }), () => A.pure(value))
+                      (value) => I.as_(ref.set({ _tag: 'Current', fiber: current }), () => C.pure(value))
                     ),
                   (ex, previous) =>
                     Ex.match_(
@@ -5038,13 +5039,13 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
                       flow(
                         Ca.sequenceCauseOption,
                         O.match(
-                          (): I.IO<R & Has<Clock>, Option<E>, ReadonlyArray<A>> =>
-                            pipe(Fi.join(previous), I.map(A.pure), I.apl(ref.set({ _tag: 'Done' }))),
+                          (): I.IO<R & Has<Clock>, Option<E>, Chunk<A>> =>
+                            pipe(Fi.join(previous), I.map(C.pure), I.apl(ref.set({ _tag: 'Done' }))),
                           (e) => I.apr_(Fi.interrupt(previous), Pull.halt(e))
                         )
                       ),
-                      (chunk): I.IO<R & Has<Clock>, Option<E>, ReadonlyArray<A>> =>
-                        A.isEmpty(chunk) ? Pull.empty<A>() : I.apr_(Fi.interrupt(previous), store(chunk))
+                      (chunk): I.IO<R & Has<Clock>, Option<E>, Chunk<A>> =>
+                        C.isEmpty(chunk) ? Pull.empty<A>() : I.apr_(Fi.interrupt(previous), store(chunk))
                     ),
                   O.Some(globalScope)
                 )
@@ -5202,9 +5203,9 @@ export function unfoldM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, Option<readonl
 /**
  * Creates a stream by peeling off the "layers" of a value of type `S`.
  */
-export function unfoldReadonlyArray<S, A>(
+export function unfoldChunk<S, A>(
   s: S,
-  f: (s: S) => Option<readonly [ReadonlyArray<A>, S]>
+  f: (s: S) => Option<readonly [Chunk<A>, S]>
 ): Stream<unknown, never, A> {
   return unfoldChunkM(s, (s) => I.succeed(f(s)))
 }
@@ -5214,7 +5215,7 @@ export function unfoldReadonlyArray<S, A>(
  */
 export function unfoldChunkM<S, R, E, A>(
   s: S,
-  f: (s: S) => I.IO<R, E, Option<readonly [ReadonlyArray<A>, S]>>
+  f: (s: S) => I.IO<R, E, Option<readonly [Chunk<A>, S]>>
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
@@ -5399,27 +5400,27 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
     readonly _tag: 'End'
   }
   type Status = Running | LeftDone | RightDone | End
-  type State = readonly [Status, E.Either<ReadonlyArray<A>, ReadonlyArray<B>>]
+  type State = readonly [Status, E.Either<Chunk<A>, Chunk<B>>]
 
   const handleSuccess = (
-    maybeO: O.Option<ReadonlyArray<A>>,
-    maybeO1: O.Option<ReadonlyArray<B>>,
-    excess: E.Either<ReadonlyArray<A>, ReadonlyArray<B>>
-  ): Ex.Exit<never, readonly [ReadonlyArray<C>, State]> => {
+    maybeO: O.Option<Chunk<A>>,
+    maybeO1: O.Option<Chunk<B>>,
+    excess: E.Either<Chunk<A>, Chunk<B>>
+  ): Ex.Exit<never, readonly [Chunk<C>, State]> => {
     const [excessL, excessR] = E.match_(
       excess,
-      (l) => tuple(l, A.empty<B>()),
-      (r) => tuple(A.empty<A>(), r)
+      (l) => tuple(l, C.empty<B>()),
+      (r) => tuple(C.empty<A>(), r)
     )
     const chunkL             = O.match_(
       maybeO,
       () => excessL,
-      (upd) => A.concat_(excessL, upd)
+      (upd) => C.concat_(excessL, upd)
     )
     const chunkR             = O.match_(
       maybeO1,
       () => excessR,
-      (upd) => A.concat_(excessR, upd)
+      (upd) => C.concat_(excessR, upd)
     )
     const [emit, newExcess]  = _zipChunks(chunkL, chunkR, both)
     const [fullEmit, status] = O.isSome(maybeO)
@@ -5428,7 +5429,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
         : tuple(emit, <Status>{ _tag: 'RightDone' })
       : O.isSome(maybeO1)
       ? tuple(emit, <Status>{ _tag: 'LeftDone' })
-      : tuple(A.concat_(emit, E.match_(newExcess, A.map(left), A.map(right))), <Status>{ _tag: 'End' })
+      : tuple(C.concat_(emit, E.match_(newExcess, C.map(left), C.map(right))), <Status>{ _tag: 'End' })
 
     return Ex.succeed([fullEmit, [status, newExcess]])
   }
@@ -5436,7 +5437,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
   return combineChunks_(
     ma,
     mb,
-    tuple(<Status>{ _tag: 'Running' }, E.Left<ReadonlyArray<A>, ReadonlyArray<B>>(A.empty())),
+    tuple(<Status>{ _tag: 'Running' }, E.Left<Chunk<A>, Chunk<B>>(C.empty())),
     ([state, excess], pullL, pullR) => {
       switch (state._tag) {
         case 'Running': {
@@ -5529,10 +5530,10 @@ export function zipWith<A, R1, E1, B, C>(
 }
 
 function _zipChunks<A, B, C>(
-  fa: ReadonlyArray<A>,
-  fb: ReadonlyArray<B>,
+  fa: Chunk<A>,
+  fb: Chunk<B>,
   f: (a: A, b: B) => C
-): [ReadonlyArray<C>, E.Either<ReadonlyArray<A>, ReadonlyArray<B>>] {
+): [Chunk<C>, E.Either<Chunk<A>, Chunk<B>>] {
   const mut_fc: Array<C> = []
 
   const len = Math.min(fa.length, fb.length)
@@ -5541,10 +5542,10 @@ function _zipChunks<A, B, C>(
   }
 
   if (fa.length > fb.length) {
-    return [mut_fc, E.Left(A.drop_(fa, fb.length))]
+    return [mut_fc, E.Left(C.drop_(fa, fb.length))]
   }
 
-  return [mut_fc, E.Right(A.drop_(fb, fa.length))]
+  return [mut_fc, E.Right(C.drop_(fb, fa.length))]
 }
 
 /**
@@ -5569,24 +5570,24 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
   exec: ExecutionStrategy
 ): Stream<R & R1, E1 | E, C> {
   type End = { _tag: 'End' }
-  type RightDone<W2> = { _tag: 'RightDone', excessR: ReadonlyArray<W2> }
-  type LeftDone<W1> = { _tag: 'LeftDone', excessL: ReadonlyArray<W1> }
+  type RightDone<W2> = { _tag: 'RightDone', excessR: Chunk<W2> }
+  type LeftDone<W1> = { _tag: 'LeftDone', excessL: Chunk<W1> }
   type Running<W1, W2> = {
     _tag: 'Running'
-    excess: E.Either<ReadonlyArray<W1>, ReadonlyArray<W2>>
+    excess: E.Either<Chunk<W1>, Chunk<W2>>
   }
   type State<W1, W2> = End | Running<W1, W2> | LeftDone<W1> | RightDone<W2>
 
   const handleSuccess = (
-    leftUpd: Option<ReadonlyArray<A>>,
-    rightUpd: Option<ReadonlyArray<B>>,
-    excess: E.Either<ReadonlyArray<A>, ReadonlyArray<B>>
-  ): Ex.Exit<Option<never>, readonly [ReadonlyArray<C>, State<A, B>]> => {
+    leftUpd: Option<Chunk<A>>,
+    rightUpd: Option<Chunk<B>>,
+    excess: E.Either<Chunk<A>, Chunk<B>>
+  ): Ex.Exit<Option<never>, readonly [Chunk<C>, State<A, B>]> => {
     const [leftExcess, rightExcess] = pipe(
       excess,
       E.match(
-        (l) => tuple<[ReadonlyArray<A>, ReadonlyArray<B>]>(l, A.empty()),
-        (r) => tuple<[ReadonlyArray<A>, ReadonlyArray<B>]>(A.empty(), r)
+        (l) => tuple<[Chunk<A>, Chunk<B>]>(l, C.empty()),
+        (r) => tuple<[Chunk<A>, Chunk<B>]>(C.empty(), r)
       )
     )
 
@@ -5595,14 +5596,14 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
         leftUpd,
         O.match(
           () => leftExcess,
-          (upd) => A.concat_(leftExcess, upd)
+          (upd) => C.concat_(leftExcess, upd)
         )
       ),
       pipe(
         rightUpd,
         O.match(
           () => rightExcess,
-          (upd) => A.concat_(rightExcess, upd)
+          (upd) => C.concat_(rightExcess, upd)
         )
       )
     ]
@@ -5611,7 +5612,7 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
 
     if (O.isSome(leftUpd) && O.isSome(rightUpd)) {
       return Ex.succeed(
-        tuple<[ReadonlyArray<C>, State<A, B>]>(emit, {
+        tuple<[Chunk<C>, State<A, B>]>(emit, {
           _tag: 'Running',
           excess: newExcess
         })
@@ -5626,14 +5627,14 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
             newExcess,
             E.match(
               (l): State<A, B> =>
-                !A.isEmpty(l)
+                !C.isEmpty(l)
                   ? {
                       _tag: 'LeftDone',
                       excessL: l
                     }
                   : { _tag: 'End' },
               (r): State<A, B> =>
-                !A.isEmpty(r)
+                !C.isEmpty(r)
                   ? {
                       _tag: 'RightDone',
                       excessR: r
@@ -5651,7 +5652,7 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
     mb,
     <State<A, B>>{
       _tag: 'Running',
-      excess: E.Left(A.empty())
+      excess: E.Left(C.empty())
     },
     (st, p1, p2) => {
       switch (st._tag) {
@@ -5732,11 +5733,11 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
   mb: Stream<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Stream<R & R1, E | E1, C> {
-  const pullNonEmpty = <R, E, O>(pull: I.IO<R, Option<E>, ReadonlyArray<O>>): I.IO<R, Option<E>, ReadonlyArray<O>> =>
+  const pullNonEmpty = <R, E, O>(pull: I.IO<R, Option<E>, Chunk<O>>): I.IO<R, Option<E>, Chunk<O>> =>
     pipe(
       pull,
       I.bind((chunk) => {
-        if (A.isEmpty(chunk)) {
+        if (C.isEmpty(chunk)) {
           return pullNonEmpty(pull)
         } else {
           return I.succeed(chunk)
@@ -5757,7 +5758,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
             (
               leftDone,
               rightFiber
-            ): I.IO<unknown, O.Option<E | E1>, readonly [ReadonlyArray<A>, ReadonlyArray<B>, boolean]> =>
+            ): I.IO<unknown, O.Option<E | E1>, readonly [Chunk<A>, Chunk<B>, boolean]> =>
               pipe(
                 leftDone,
                 I.done,
@@ -5779,7 +5780,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
               bind(([latestLeft, latestRight]) =>
                 pipe(
                   fromChunk(
-                    leftFirst ? A.map_(r, (o1) => f(l[l.length - 1], o1)) : A.map_(l, (o) => f(o, r[r.length - 1]))
+                    leftFirst ? C.map_(r, (o1) => f(l[l.length - 1], o1)) : C.map_(l, (o) => f(o, r[r.length - 1]))
                   ),
                   concat(
                     pipe(
@@ -5794,8 +5795,8 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
                           I.cross(latestLeft.get),
                           repeatEffectOption
                         ),
-                        ([leftChunk, rightLatest]) => A.map_(leftChunk, (o) => f(o, rightLatest)),
-                        ([rightChunk, leftLatest]) => A.map_(rightChunk, (o1) => f(leftLatest, o1))
+                        ([leftChunk, rightLatest]) => C.map_(leftChunk, (o) => f(o, rightLatest)),
+                        ([rightChunk, leftLatest]) => C.map_(rightChunk, (o1) => f(leftLatest, o1))
                       ),
                       bind(fromChunk)
                     )

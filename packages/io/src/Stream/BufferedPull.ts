@@ -1,16 +1,18 @@
+import type { Chunk } from '../Chunk'
+
 import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
 
-import * as A from '../Array'
+import * as C from '../Chunk'
 import * as I from '../IO'
 import * as R from '../IORef'
 import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {
   constructor(
-    readonly upstream: I.IO<R, O.Option<E>, ReadonlyArray<A>>,
+    readonly upstream: I.IO<R, O.Option<E>, Chunk<A>>,
     readonly done: R.URef<boolean>,
-    readonly cursor: R.URef<readonly [ReadonlyArray<A>, number]>
+    readonly cursor: R.URef<readonly [Chunk<A>, number]>
   ) {}
 }
 
@@ -52,14 +54,14 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Opt
     ifNotDone(
       pipe(
         self.cursor,
-        R.modify(([c, i]): [I.IO<R, O.Option<E>, A>, [ReadonlyArray<A>, number]] => {
+        R.modify(([c, i]): [I.IO<R, O.Option<E>, A>, [Chunk<A>, number]] => {
           if (i >= c.length) {
             return [
               pipe(
                 update(self),
                 I.bind(() => pullElement(self))
               ),
-              [A.empty(), 0]
+              [C.empty(), 0]
             ]
           } else {
             return [I.pure(c[i]), [c, i + 1]]
@@ -71,17 +73,17 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Opt
   )
 }
 
-export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, ReadonlyArray<A>> {
+export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, Chunk<A>> {
   return pipe(
     self,
     ifNotDone(
       pipe(
         self.cursor,
-        R.modify(([chunk, idx]): [I.IO<R, O.Option<E>, ReadonlyArray<A>>, [ReadonlyArray<A>, number]] => {
+        R.modify(([chunk, idx]): [I.IO<R, O.Option<E>, Chunk<A>>, [Chunk<A>, number]] => {
           if (idx >= chunk.length) {
-            return [I.bind_(update(self), () => pullArray(self)), [A.empty(), 0]]
+            return [I.bind_(update(self), () => pullArray(self)), [C.empty(), 0]]
           } else {
-            return [I.pure(A.drop_(chunk, idx)), [A.empty(), 0]]
+            return [I.pure(C.drop_(chunk, idx)), [C.empty(), 0]]
           }
         }),
         I.flatten
@@ -91,11 +93,11 @@ export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Optio
 }
 
 export function make<R, E, A>(
-  pull: I.IO<R, O.Option<E>, ReadonlyArray<A>>
+  pull: I.IO<R, O.Option<E>, Chunk<A>>
 ): I.IO<unknown, never, BufferedPull<R, E, A>> {
   return I.gen(function* (_) {
     const done   = yield* _(R.make(false))
-    const cursor = yield* _(R.make<readonly [ReadonlyArray<A>, number]>(tuple(A.empty(), 0)))
+    const cursor = yield* _(R.make<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))
     return new BufferedPull(pull, done, cursor)
   })
 }

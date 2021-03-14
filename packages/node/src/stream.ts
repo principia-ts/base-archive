@@ -1,9 +1,9 @@
 import type { Byte } from '@principia/base/Byte'
 import type * as stream from 'stream'
 
-import * as A from '@principia/base/Array'
 import { pipe, tuple } from '@principia/base/Function'
 import * as O from '@principia/base/Option'
+import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
 import * as S from '@principia/io/Stream'
@@ -124,7 +124,7 @@ export function transform(
                 ),
               (chunk) =>
                 I.effectAsync((cb) => {
-                  st.write(A.toBuffer(chunk), (err) =>
+                  st.write(C.asBuffer(chunk), (err) =>
                     err ? cb(Push.fail(new TransformError(err), [])) : cb(Push.more)
                   )
                 })

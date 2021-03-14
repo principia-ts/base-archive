@@ -13,11 +13,11 @@ import type { UnionToIntersection } from '@principia/base/util/types'
 import type { IO, URIO } from '@principia/io/IO'
 import type { Stream } from '@principia/io/Stream'
 
-import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/Function'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
+import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
 import * as S from '@principia/io/Stream'
@@ -185,8 +185,8 @@ function shrinkStream<R, R1, E, A>(
       S.runCollect,
       I.bind(
         flow(
-          A.filter(E.match(() => true, BA.isFalse)),
-          A.last,
+          C.filter(E.match(() => true, BA.isFalse)),
+          C.last,
           O.match(
             () =>
               I.succeed(
