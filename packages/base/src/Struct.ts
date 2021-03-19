@@ -1,3 +1,6 @@
+/**
+ * Operations on heterogeneous records
+ */
 import type { ReadonlyRecord } from './Record'
 import type { EnsureLiteral } from './util/types'
 
@@ -13,6 +16,12 @@ type Flat<T> = { [K in keyof T]: T[K] } & {}
 
 type EnsureNonexistentProperty<T, K extends string> = Extract<keyof T, K> extends never ? T : never
 
+/**
+ * Inserts a key value pair into a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function insertAt_<S extends ReadonlyRecord<string, any>, K extends string, A>(
   s: EnsureNonexistentProperty<S, K>,
   k: EnsureLiteral<K>,
@@ -24,6 +33,12 @@ export function insertAt_<S extends ReadonlyRecord<string, any>, K extends strin
   }
 }
 
+/**
+ * Inserts a key value pair into a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function insertAt<K extends string, A>(
   k: EnsureLiteral<K>,
   a: A
@@ -31,6 +46,12 @@ export function insertAt<K extends string, A>(
   return (s) => insertAt_(s, k, a)
 }
 
+/**
+ * Replaces a value in a struct if it exists, or inserts if it does not
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function upsertAt_<S extends ReadonlyRecord<string, any>, K extends string, A>(
   s: S,
   k: EnsureLiteral<K>,
@@ -45,6 +66,12 @@ export function upsertAt_<S extends ReadonlyRecord<string, any>, K extends strin
   }
 }
 
+/**
+ * Replaces a value in a struct if it exists, or inserts if it does not
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function upsertAt<K extends string, A>(
   k: EnsureLiteral<K>,
   a: A
@@ -54,6 +81,12 @@ export function upsertAt<K extends string, A>(
   return (s) => upsertAt_(s, k, a)
 }
 
+/**
+ * Maps over one value of a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function modifyAt_<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
   s: S,
   k: K,
@@ -65,6 +98,12 @@ export function modifyAt_<S extends ReadonlyRecord<string, any>, K extends keyof
   }
 }
 
+/**
+ * Maps over one value of a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function modifyAt<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
   k: K,
   f: (a: S[K]) => B
@@ -72,6 +111,12 @@ export function modifyAt<S extends ReadonlyRecord<string, any>, K extends keyof 
   return (s) => modifyAt_(s, k, f)
 }
 
+/**
+ * Replaces a value in a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function updateAt_<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
   s: S,
   k: K,
@@ -80,9 +125,46 @@ export function updateAt_<S extends ReadonlyRecord<string, any>, K extends keyof
   return modifyAt_(s, k, () => b)
 }
 
+/**
+ * Replaces a value in a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function updateAt<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
   k: K,
   b: B
 ): (s: S) => Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
   return (s) => modifyAt_(s, k, () => b)
+}
+
+/**
+ * Maps over every value in a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function hmap_<S extends ReadonlyRecord<string, any>, F extends { [K in keyof S]: (a: S[K]) => any }>(
+  s: S,
+  fs: F
+): { readonly [K in keyof F]: ReturnType<F[K]> } {
+  const keys    = R.keys(s)
+  const mut_out = {} as any
+  for (let i = 0; i < keys.length; i++) {
+    const key    = keys[i]
+    mut_out[key] = fs[key](s[key])
+  }
+  return mut_out
+}
+
+/**
+ * Maps over every value in a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function hmap<S extends ReadonlyRecord<string, any>, F extends { [K in keyof S]: (a: S[K]) => any }>(
+  fs: F
+): (s: S) => { readonly [K in keyof F]: ReturnType<F[K]> } {
+  return (s) => hmap_(s, fs)
 }

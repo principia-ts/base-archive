@@ -17,7 +17,7 @@ export const empty: TestArgs = new TestArgs(A.empty(), A.empty(), O.None())
 export function parse(args: ReadonlyArray<string>): TestArgs {
   const [terms, tags, policies] = pipe(
     args,
-    A.grouped(2),
+    A.chunksOf(2),
     A.filterMap((as) => {
       if (as[0] === '-t') {
         return O.Some(tuple('testSearchTerm', as[1]))

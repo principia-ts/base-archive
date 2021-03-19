@@ -499,10 +499,10 @@ export function append<A>(a: A): (as: Chunk<A>) => Chunk<A> {
   return (as) => append_(as, a)
 }
 
-export function grouped_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
-  return A.grouped_(A.from(as), n)
+export function chunksOf_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
+  return A.chunksOf_(A.from(as), n)
 }
 
-export function grouped(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
-  return (as) => grouped_(as, n)
+export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
+  return (as) => chunksOf_(as, n)
 }

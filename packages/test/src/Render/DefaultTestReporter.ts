@@ -95,7 +95,7 @@ export function render<E>(
 
           const rest = pipe(
             specs,
-            Sy.foreach((es) => loop(Sy.succeed(es), depth + tabSize, A.prepend(annotations)(ancestors))),
+            Sy.foreach((es) => loop(Sy.succeed(es), depth + tabSize, A.prepend_(ancestors, annotations))),
             Sy.map((rr) => A.flatten(rr))
           )
 
@@ -151,7 +151,7 @@ function rendered(
 }
 
 function renderFailure(label: string, offset: number, details: FailureDetails): ReadonlyArray<string> {
-  return A.prepend(renderFailureLabel(label, offset))(renderFailureDetails(details, offset))
+  return A.prepend_(renderFailureDetails(details, offset), renderFailureLabel(label, offset))
 }
 
 function renderSuccessLabel(label: string, offset: number): string {

@@ -9,14 +9,17 @@
 import type { Eq } from './Eq'
 import type { MorphismN, Predicate, Refinement } from './Function'
 import type { EitherURI } from './Modules'
+import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Show } from './Show'
 import type { These } from './These'
+import type { Mutable } from './util/types'
 
 import { NoSuchElementError } from './Error'
 import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
 import { genF, GenHKT } from './Gen'
 import * as HKT from './HKT'
+import * as A from './internal/array'
 import * as E from './internal/either'
 import * as O from './Option'
 import * as T from './These'
@@ -1289,6 +1292,82 @@ export const gen = genF(Monad, { adapter })
  * Util
  * -------------------------------------------
  */
+
+export function itraverseArray_<A, E, B>(
+  as: NonEmptyArray<A>,
+  f: (i: number, a: A) => Either<E, B>
+): Either<E, NonEmptyArray<B>>
+export function itraverseArray_<A, E, B>(
+  as: ReadonlyArray<A>,
+  f: (i: number, a: A) => Either<E, B>
+): Either<E, ReadonlyArray<B>>
+export function itraverseArray_<A, E, B>(
+  as: ReadonlyArray<A>,
+  f: (i: number, a: A) => Either<E, B>
+): Either<E, ReadonlyArray<B>> {
+  if (as.length === 0) {
+    return Right([])
+  }
+
+  const e = f(0, as[0])
+  if (e._tag === 'Left') {
+    return e
+  }
+  const out: Mutable<NonEmptyArray<B>> = [e.right]
+  for (let i = 1; i < as.length; i++) {
+    const e = f(i, as[i])
+    if (e._tag === 'Left') {
+      return e
+    }
+    out.push(e.right)
+  }
+  return Right(out)
+}
+
+export function itraverseArray<A, E, B>(
+  f: (i: number, a: A) => Either<E, B>
+): (as: NonEmptyArray<A>) => Either<E, NonEmptyArray<B>>
+export function itraverseArray<A, E, B>(
+  f: (i: number, a: A) => Either<E, B>
+): (as: ReadonlyArray<A>) => Either<E, ReadonlyArray<B>>
+export function itraverseArray<A, E, B>(
+  f: (i: number, a: A) => Either<E, B>
+): (as: NonEmptyArray<A>) => Either<E, ReadonlyArray<B>> {
+  return (as) => itraverseArray_(as, f)
+}
+
+export function traverseArray_<A, E, B>(
+  as: NonEmptyArray<A>,
+  f: (a: A) => Either<E, B>
+): Either<E, NonEmptyArray<B>>
+export function traverseArray_<A, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A) => Either<E, B>
+): Either<E, ReadonlyArray<B>>
+export function traverseArray_<A, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A) => Either<E, B>
+): Either<E, ReadonlyArray<B>> {
+  return itraverseArray_(as, (_, a) => f(a))
+}
+
+export function traverseArray<A, E, B>(
+  f: (a: A) => Either<E, B>
+): (as: NonEmptyArray<A>) => Either<E, NonEmptyArray<B>>
+export function traverseArray<A, E, B>(
+  f: (a: A) => Either<E, B>
+): (as: ReadonlyArray<A>) => Either<E, ReadonlyArray<B>>
+export function traverseArray<A, E, B>(
+  f: (a: A) => Either<E, B>
+): (as: NonEmptyArray<A>) => Either<E, ReadonlyArray<B>> {
+  return (as) => traverseArray_(as, f)
+}
+
+export function sequenceArray<E, A>(as: NonEmptyArray<Either<E, A>>): Either<E, NonEmptyArray<A>>
+export function sequenceArray<E, A>(as: ReadonlyArray<Either<E, A>>): Either<E, ReadonlyArray<A>>
+export function sequenceArray<E, A>(as: ReadonlyArray<Either<E, A>>): Either<E, ReadonlyArray<A>> {
+  return traverseArray_(as, identity)
+}
 
 /**
  * Compact type Either<E, A> | Either<E1, B> to Either<E | E1, A | B>

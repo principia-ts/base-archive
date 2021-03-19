@@ -21,7 +21,7 @@ export class Message {
   constructor(readonly lines: ReadonlyArray<Line> = []) {}
 
   ['+:'](line: Line): Message {
-    return new Message(A.prepend(line)(this.lines))
+    return new Message(A.prepend_(this.lines, line))
   }
   [':+'](line: Line): Message {
     return new Message(A.append(line)(this.lines))
@@ -48,7 +48,7 @@ export class Line {
     return new Line(A.append(fragment)(this.fragments))
   }
   prepend(this: Line, message: Message): Message {
-    return new Message(A.prepend(this)(message.lines))
+    return new Message(A.prepend_(message.lines, this))
   }
   ['+'](fragment: Fragment): Line {
     return new Line(A.append(fragment)(this.fragments))

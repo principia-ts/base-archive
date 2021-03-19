@@ -27,7 +27,7 @@ export function batchN_<R, A>(dataSource: DataSource<R, A>, n: number): DataSour
   return new DataSource(`${dataSource.identifier}.batchN(${n})`, (requests) =>
     n < 1
       ? I.die(new IllegalArgumentError('batchN: n must be at least one', 'DataSource.batchN'))
-      : dataSource.runAll(A.foldl_(requests, A.empty(), (b, a) => A.concat_(b, A.grouped_(a, n))))
+      : dataSource.runAll(A.foldl_(requests, A.empty(), (b, a) => A.concat_(b, A.chunksOf_(a, n))))
   )
 }
 
