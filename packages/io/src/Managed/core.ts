@@ -10,7 +10,7 @@ import type { _E, _R, EnforceNonEmptyRecord, UnionToIntersection } from '@princi
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
-import { _bind, _bindTo, flow, identity as identityFn, pipe, tuple } from '@principia/base/Function'
+import { _bind, _bindTo, flow, identity as identityFn, pipe, tuple } from '@principia/base/function'
 import { isTag } from '@principia/base/Has'
 import * as Iter from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'

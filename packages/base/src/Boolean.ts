@@ -1,4 +1,4 @@
-import type { Predicate } from './Function'
+import type { Predicate } from './Predicate'
 
 import * as G from './Guard'
 import * as P from './typeclass'

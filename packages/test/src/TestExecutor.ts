@@ -7,7 +7,7 @@ import type { UIO } from '@principia/io/IO'
 import type { Layer } from '@principia/io/Layer'
 
 import * as E from '@principia/base/Either'
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import { matchTag } from '@principia/base/util/matchers'
 import * as C from '@principia/io/Cause'
 import * as I from '@principia/io/IO'

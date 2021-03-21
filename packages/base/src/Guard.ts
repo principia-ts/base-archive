@@ -4,11 +4,11 @@
  * -------------------------------------------
  */
 
-import type { Refinement } from './Function'
 import type { ReadonlyRecord } from './Record'
+import type { Refinement } from './Refinement'
 import type { Primitive } from './util/types'
 
-import { memoize, pipe } from './Function'
+import { memoize, pipe } from './function'
 
 export interface Guard<I, A extends I> {
   is: (i: I) => i is A

@@ -1,7 +1,7 @@
 import type { Option } from '@principia/base/Option'
 
 import * as A from '@principia/base/Array'
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 export class TestArgs {

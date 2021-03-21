@@ -1,4 +1,4 @@
-import type { Endomorphism } from './Function'
+import type { Endomorphism } from './Endomorphism'
 import type { WriterURI } from './Modules'
 
 import * as HKT from './HKT'

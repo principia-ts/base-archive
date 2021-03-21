@@ -1,10 +1,10 @@
 import type { NonEmptyArray } from './NonEmptyArray'
 
 import * as A from './Array'
-import { flow, identity, pipe } from './Function'
+import { flow, identity, pipe } from './function'
 import * as G from './Guard'
 import * as NA from './NonEmptyArray'
-import * as N from './Number'
+import * as N from './number'
 import * as O from './Option'
 import { max_ } from './Ord'
 import * as P from './typeclass'

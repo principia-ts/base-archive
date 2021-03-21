@@ -2,7 +2,7 @@ import type * as Alg from '../../algebra'
 import type { EncoderURI } from './HKT'
 
 import * as E from '@principia/base/Either'
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as Enc from '@principia/codec/Encoder'

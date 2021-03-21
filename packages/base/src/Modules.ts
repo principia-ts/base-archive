@@ -8,6 +8,7 @@ import type { List } from './List'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Ord } from './Ord'
+import type { Predicate } from './Predicate'
 import type { Reader } from './Reader'
 import type { ReadonlyRecord } from './Record'
 import type { Show } from './Show'
@@ -83,6 +84,9 @@ export type StateURI = typeof StateURI
 export const OrdURI = 'Ord'
 export type OrdURI = typeof OrdURI
 
+export const PredicateURI = 'Predicate'
+export type PredicateURI = typeof PredicateURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     [ArrayURI]: ReadonlyArray<A>
@@ -107,6 +111,7 @@ declare module './HKT' {
     [WriterURI]: Writer<W, A>
     [StateURI]: State<S, A>
     [OrdURI]: Ord<A>
+    [PredicateURI]: Predicate<A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

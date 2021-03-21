@@ -2,7 +2,7 @@ import type { Clock } from '../../Clock'
 import type * as RM from '../ReleaseMap'
 import type { Has } from '@principia/base/Has'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import { ClockTag } from '../../Clock'
 import { asksServiceManaged, Managed } from '../core'

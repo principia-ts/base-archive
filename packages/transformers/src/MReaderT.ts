@@ -1,7 +1,7 @@
 import type { MReaderURI } from './Modules'
 import type * as HKT from '@principia/base/HKT'
 
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import * as P from '@principia/base/typeclass'
 import * as Mu from '@principia/io/Multi'
 

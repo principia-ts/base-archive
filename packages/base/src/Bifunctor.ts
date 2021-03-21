@@ -1,4 +1,4 @@
-import { identity } from './Function'
+import { identity } from './function'
 import * as HKT from './HKT'
 
 export interface Bifunctor<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {

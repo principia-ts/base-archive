@@ -1,6 +1,6 @@
 import type { ReadonlyRecord } from './Record'
 
-import { memoize } from './Function'
+import { memoize } from './function'
 
 export interface Show<A> {
   readonly show: (a: A) => string

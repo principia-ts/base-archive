@@ -1,10 +1,11 @@
 import type { Byte } from '@principia/base/Byte'
 import type { Either } from '@principia/base/Either'
-import type { Predicate, Refinement } from '@principia/base/Function'
 import type { Monoid } from '@principia/base/Monoid'
+import type { Predicate } from '@principia/base/Predicate'
+import type { Refinement } from '@principia/base/Refinement'
 
 import * as A from '@principia/base/Array'
-import { identity, tuple,unsafeCoerce  } from '@principia/base/Function'
+import { identity, tuple,unsafeCoerce  } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { TextEncoder } from 'util'
 

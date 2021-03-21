@@ -1,7 +1,7 @@
 import type { Byte } from '@principia/base/Byte'
 import type * as stream from 'stream'
 
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'

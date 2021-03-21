@@ -5,7 +5,7 @@ import type * as O from './Option'
 import type { Show } from './Show'
 
 import { makeEq } from './Eq'
-import { identity } from './Function'
+import { identity } from './function'
 import * as HKT from './HKT'
 import { None, Some } from './internal/option'
 import * as T from './internal/these'

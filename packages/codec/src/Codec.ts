@@ -1,7 +1,7 @@
 import type { ErrorInfo } from './DecodeErrors'
 import type * as E from './Encoder'
 
-import { identity } from '@principia/base/Function'
+import { identity } from '@principia/base/function'
 
 import * as D from './DecoderK'
 

@@ -6,7 +6,7 @@ import type * as HKT from '@principia/base/HKT'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
-import { flow, hole, identity, tuple } from '@principia/base/Function'
+import { flow, hole, identity, tuple } from '@principia/base/function'
 import * as P from '@principia/base/typeclass'
 
 import { FreeSemiringURI } from './Modules'

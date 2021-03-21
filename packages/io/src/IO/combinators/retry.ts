@@ -3,7 +3,7 @@ import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import * as S from '../../Schedule'
 import { bind, catchAll, fail, map, map_, matchM, orDie } from '../core'

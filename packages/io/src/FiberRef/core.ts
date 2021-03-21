@@ -1,6 +1,6 @@
 import type { UIO } from '../IO/core'
 
-import { identity, pipe } from '@principia/base/Function'
+import { identity, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 import { ModifyFiberRef, NewFiberRef } from '../IO/core'

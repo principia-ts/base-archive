@@ -2,7 +2,7 @@ import type * as HKT from './HKT'
 import type { Show } from './Show'
 
 import * as A from './Array'
-import { identity } from './Function'
+import { identity } from './function'
 import * as P from './typeclass'
 
 /*

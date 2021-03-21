@@ -7,7 +7,7 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { makeEq } from '@principia/base/Eq'
 import { IllegalArgumentError } from '@principia/base/Error'
-import { flow, not, pipe, tuple } from '@principia/base/Function'
+import { flow, not, pipe, tuple } from '@principia/base/function'
 import * as I from '@principia/io/IO'
 
 import { CompletedRequestMap } from './CompletedRequestMap'

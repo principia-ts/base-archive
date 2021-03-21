@@ -7,16 +7,18 @@
  */
 
 import type { Eq } from './Eq'
-import type { MorphismN, Predicate, Refinement } from './Function'
+import type { MorphismN } from './function'
 import type { EitherURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 import type { Show } from './Show'
 import type { These } from './These'
 import type { Mutable } from './util/types'
 
 import { NoSuchElementError } from './Error'
-import { _bind, flow, identity, pipe, tuple as mkTuple } from './Function'
+import { _bind, flow, identity, pipe, tuple as mkTuple } from './function'
 import { genF, GenHKT } from './Gen'
 import * as HKT from './HKT'
 import * as A from './internal/array'
@@ -1336,27 +1338,14 @@ export function itraverseArray<A, E, B>(
   return (as) => itraverseArray_(as, f)
 }
 
-export function traverseArray_<A, E, B>(
-  as: NonEmptyArray<A>,
-  f: (a: A) => Either<E, B>
-): Either<E, NonEmptyArray<B>>
-export function traverseArray_<A, E, B>(
-  as: ReadonlyArray<A>,
-  f: (a: A) => Either<E, B>
-): Either<E, ReadonlyArray<B>>
-export function traverseArray_<A, E, B>(
-  as: ReadonlyArray<A>,
-  f: (a: A) => Either<E, B>
-): Either<E, ReadonlyArray<B>> {
+export function traverseArray_<A, E, B>(as: NonEmptyArray<A>, f: (a: A) => Either<E, B>): Either<E, NonEmptyArray<B>>
+export function traverseArray_<A, E, B>(as: ReadonlyArray<A>, f: (a: A) => Either<E, B>): Either<E, ReadonlyArray<B>>
+export function traverseArray_<A, E, B>(as: ReadonlyArray<A>, f: (a: A) => Either<E, B>): Either<E, ReadonlyArray<B>> {
   return itraverseArray_(as, (_, a) => f(a))
 }
 
-export function traverseArray<A, E, B>(
-  f: (a: A) => Either<E, B>
-): (as: NonEmptyArray<A>) => Either<E, NonEmptyArray<B>>
-export function traverseArray<A, E, B>(
-  f: (a: A) => Either<E, B>
-): (as: ReadonlyArray<A>) => Either<E, ReadonlyArray<B>>
+export function traverseArray<A, E, B>(f: (a: A) => Either<E, B>): (as: NonEmptyArray<A>) => Either<E, NonEmptyArray<B>>
+export function traverseArray<A, E, B>(f: (a: A) => Either<E, B>): (as: ReadonlyArray<A>) => Either<E, ReadonlyArray<B>>
 export function traverseArray<A, E, B>(
   f: (a: A) => Either<E, B>
 ): (as: NonEmptyArray<A>) => Either<E, ReadonlyArray<B>> {

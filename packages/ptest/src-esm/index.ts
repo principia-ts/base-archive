@@ -1,5 +1,5 @@
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
 import { isRunnableSpec } from '@principia/test/RunnableSpec'

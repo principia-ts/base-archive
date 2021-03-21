@@ -1,14 +1,15 @@
 import type * as E from './Either'
 import type { Eq } from './Eq'
-import type { Predicate, Refinement } from './Function'
 import type * as O from './Option'
 import type { Ord } from './Ord'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 import type { Show } from './Show'
 import type * as P from './typeclass'
 
 import * as A from './Array'
 import { makeEq } from './Eq'
-import { identity, not, tuple } from './Function'
+import { identity, not, tuple } from './function'
 import { makeMonoid, makeSemigroup } from './typeclass'
 
 /*

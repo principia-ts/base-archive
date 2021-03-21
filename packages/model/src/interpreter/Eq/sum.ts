@@ -3,7 +3,7 @@ import type { EqURI } from './HKT'
 
 import * as E from '@principia/base/Either'
 import * as Eq from '@principia/base/Eq'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 

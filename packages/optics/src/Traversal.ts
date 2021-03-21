@@ -1,13 +1,14 @@
 import type { ModifyF } from './internal'
 import type { TraversalURI } from './Modules'
-import type { Predicate, Refinement } from '@principia/base/Function'
 import type * as O from '@principia/base/Option'
+import type { Predicate } from '@principia/base/Predicate'
+import type { Refinement } from '@principia/base/Refinement'
 import type * as P from '@principia/base/typeclass'
 
 import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Const'
 import * as E from '@principia/base/Either'
-import { identity, pipe } from '@principia/base/Function'
+import { identity, pipe } from '@principia/base/function'
 import * as HKT from '@principia/base/HKT'
 import * as I from '@principia/base/Identity'
 

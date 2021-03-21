@@ -2,7 +2,7 @@ import type { FunctorMin } from './Functor'
 import type { CrossFn_ } from './Semimonoidal'
 import type { CrossWithFn_, SemimonoidalFunctor2, SemimonoidalFunctorMin } from './SemimonoidalFunctor'
 
-import { flow, pipe } from './Function'
+import { flow, pipe } from './function'
 import { getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 import { apF_, SemimonoidalFunctor } from './SemimonoidalFunctor'

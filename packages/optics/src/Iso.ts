@@ -6,7 +6,7 @@ import type { Traversal } from './Traversal'
 import type { Newtype } from '@principia/base/Newtype'
 import type * as P from '@principia/base/typeclass'
 
-import { flow, identity } from '@principia/base/Function'
+import { flow, identity } from '@principia/base/function'
 import * as HKT from '@principia/base/HKT'
 import * as O from '@principia/base/Option'
 

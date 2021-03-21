@@ -4,7 +4,7 @@ import type { UManaged } from '../Managed/core'
 import type { Semaphore } from '../Semaphore'
 
 import * as E from '@principia/base/Either'
-import { identity, pipe, tuple } from '@principia/base/Function'
+import { identity, pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 

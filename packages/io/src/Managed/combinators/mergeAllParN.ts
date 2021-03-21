@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as Iter from '@principia/base/Iterable'
 
 import { parallelN } from '../../ExecutionStrategy'

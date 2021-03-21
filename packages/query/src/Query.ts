@@ -8,7 +8,7 @@ import type { IO } from '@principia/io/IO'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import { flow, identity, pipe, tuple } from '@principia/base/function'
 import { mergeEnvironments } from '@principia/base/Has'
 import * as It from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'

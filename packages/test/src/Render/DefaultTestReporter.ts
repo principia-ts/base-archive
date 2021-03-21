@@ -8,7 +8,7 @@ import type { USync } from '@principia/io/Sync'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { absurd, identity, pipe } from '@principia/base/Function'
+import { absurd, identity, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { cyan, green, red, RESET } from '@principia/base/util/AnsiFormat'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'

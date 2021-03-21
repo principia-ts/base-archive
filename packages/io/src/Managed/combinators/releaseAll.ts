@@ -1,7 +1,7 @@
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Exit } from '../../Exit'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 import * as Ex from '../../Exit'

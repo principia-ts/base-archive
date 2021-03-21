@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import { tuple } from '@principia/base/Function'
+import { tuple } from '@principia/base/function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as I from '../internal/io'

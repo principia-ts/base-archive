@@ -1,10 +1,11 @@
 import type { Either } from './Either'
-import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
+import type * as HKT from './HKT'
 import type { AsyncIterableURI } from './Modules'
 import type { Option } from './Option'
+import type { Predicate, PredicateWithIndex } from './Predicate'
+import type { Refinement, RefinementWithIndex } from './Refinement'
 
-import { identity, tuple } from './Function'
-import * as HKT from './HKT'
+import { identity, tuple } from './function'
 import * as P from './typeclass'
 
 type URI = [HKT.URI<AsyncIterableURI>]

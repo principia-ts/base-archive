@@ -4,7 +4,7 @@ import type { ConnectionContext } from 'subscriptions-transport-ws'
 
 import { asyncIterable } from '@principia/base/AsyncIterable'
 import * as E from '@principia/base/Either'
-import { identity, pipe } from '@principia/base/Function'
+import { identity, pipe } from '@principia/base/function'
 import { HttpConnection } from '@principia/http/HttpConnection'
 import * as I from '@principia/io/IO'
 import { _U } from '@principia/io/IO'

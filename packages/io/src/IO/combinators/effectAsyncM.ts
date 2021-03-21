@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import * as P from '../../Promise'
 import * as I from '../core'

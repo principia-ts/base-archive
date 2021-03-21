@@ -2,7 +2,7 @@ import type { Has } from '@principia/base/Has'
 import type { IO, UIO, URIO } from '@principia/io/IO'
 import type { Layer } from '@principia/io/Layer'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as FR from '@principia/io/FiberRef'
 import * as I from '@principia/io/IO'

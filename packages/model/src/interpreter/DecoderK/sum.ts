@@ -2,7 +2,7 @@ import type * as Alg from '../../algebra'
 import type { DecoderKURI } from './HKT'
 
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import { error } from '@principia/codec/DecodeErrors'

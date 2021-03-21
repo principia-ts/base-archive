@@ -4,7 +4,7 @@ import type { AnyEnv } from '../../HKT'
 import type { Summoner } from '../../summoner'
 import type { Arbitrary } from 'fast-check'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import { memoize, merge } from '../../utils'
 import { ArbitraryURI } from './HKT'

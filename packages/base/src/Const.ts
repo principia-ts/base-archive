@@ -3,7 +3,7 @@ import type * as HKT from './HKT'
 import type { ConstURI } from './Modules'
 import type { Ord } from './Ord'
 
-import { identity, unsafeCoerce } from './Function'
+import { identity, unsafeCoerce } from './function'
 import * as P from './typeclass'
 
 /*

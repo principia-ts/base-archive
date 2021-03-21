@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import { flow } from '@principia/base/Function'
+import { flow } from '@principia/base/function'
 
 import { map } from '../core'
 import { filterParN_ } from './filterParN'

@@ -1,7 +1,7 @@
 import type { Has } from '@principia/base/Has'
 import type ChalkType from 'chalk'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { Clock } from '@principia/io/Clock'
 import { Console, ConsoleTag } from '@principia/io/Console'

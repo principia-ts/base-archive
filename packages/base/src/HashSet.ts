@@ -1,9 +1,10 @@
 import type { Eq } from './Eq'
-import type { Predicate, Refinement } from './Function'
 import type { Hash } from './Hash'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 
 import { makeEq } from './Eq'
-import { not, tuple } from './Function'
+import { not, tuple } from './function'
 import * as HM from './HashMap'
 
 export class HashSet<V> implements Iterable<V> {

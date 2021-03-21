@@ -1,5 +1,5 @@
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as M from '@principia/model'
 
 export interface ParsedContentType {

@@ -1,4 +1,4 @@
-import { flow } from '@principia/base/Function'
+import { flow } from '@principia/base/function'
 
 import { toManaged } from '../IO/combinators/toManaged'
 import { make } from './core'

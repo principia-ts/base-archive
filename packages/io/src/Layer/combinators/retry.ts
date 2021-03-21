@@ -3,7 +3,7 @@ import type { StepFunction } from '../../Schedule/Decision'
 import type { Layer } from '../core'
 import type * as H from '@principia/base/Has'
 
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import { matchTag } from '@principia/base/util/matchers'
 
 import { Clock } from '../../Clock'

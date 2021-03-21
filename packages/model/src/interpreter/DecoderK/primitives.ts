@@ -4,7 +4,7 @@ import type { Branded } from '@principia/base/Brand'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as D from '@principia/codec/DecoderK'
 import * as FDE from '@principia/codec/FreeDecodeError'
 import * as FS from '@principia/free/FreeSemigroup'

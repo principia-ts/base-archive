@@ -9,7 +9,7 @@ import type { Erase, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import { mergeEnvironments, tag } from '@principia/base/Has'
 import { insert } from '@principia/base/Map'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'

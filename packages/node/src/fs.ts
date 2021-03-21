@@ -3,7 +3,7 @@ import type { Chunk } from '@principia/io/Chunk'
 import type { IO } from '@principia/io/IO'
 
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { Integer } from '@principia/base/Integer'
 import * as N from '@principia/base/Newtype'
 import * as O from '@principia/base/Option'

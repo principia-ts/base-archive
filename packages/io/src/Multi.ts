@@ -7,7 +7,7 @@ import type { FreeSemiring } from '@principia/free/FreeSemiring'
 
 import * as E from '@principia/base/Either'
 import { RuntimeException } from '@principia/base/Exception'
-import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import { flow, identity, pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { makeStack } from '@principia/base/util/support/Stack'
 import * as FS from '@principia/free/FreeSemiring'

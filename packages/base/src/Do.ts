@@ -1,7 +1,7 @@
 import type { BindToSFn } from './Functor'
 import type { Monad } from './Monad'
 
-import { _bind, _bindTo, flow, pipe } from './Function'
+import { _bind, _bindTo, flow, pipe } from './function'
 import * as HKT from './HKT'
 
 export interface Do<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C> {

@@ -1,11 +1,11 @@
 import type { MaybeAsyncEq } from './utils'
 import type * as Eq from '@principia/base/Eq'
-import type { MorphismN } from '@principia/base/Function'
+import type { MorphismN } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
-import * as N from '@principia/base/Number'
-import * as S from '@principia/base/String'
+import * as N from '@principia/base/number'
+import * as S from '@principia/base/string'
 import * as fc from 'fast-check'
 
 import { isPromise } from './utils'

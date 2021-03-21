@@ -5,7 +5,7 @@ import type { Either } from '@principia/base/Either'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { matchPredicate, pipe } from '@principia/base/Function'
+import { matchPredicate, pipe } from '@principia/base/function'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as ExSpec from './ExecutedSpec'

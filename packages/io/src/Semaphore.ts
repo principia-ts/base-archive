@@ -4,7 +4,7 @@ import type { Either } from '@principia/base/Either'
 
 import * as E from '@principia/base/Either'
 import { IllegalArgumentError } from '@principia/base/Error'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 

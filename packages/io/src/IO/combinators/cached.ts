@@ -4,7 +4,7 @@ import type { Has } from '@principia/base/Has'
 import type { Option } from '@principia/base/Option'
 
 import { RuntimeException } from '@principia/base/Exception'
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 import { Clock } from '../../Clock'

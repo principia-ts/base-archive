@@ -1,5 +1,5 @@
 import type { MaybeAsyncEq } from './utils'
-import type { MorphismN } from '@principia/base/Function'
+import type { MorphismN } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 

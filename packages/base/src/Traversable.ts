@@ -1,7 +1,7 @@
 import type { Applicative } from './Applicative'
 import type { Functor2, FunctorMin } from './Functor'
 
-import { flow, identity } from './Function'
+import { flow, identity } from './function'
 import { Functor, getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 

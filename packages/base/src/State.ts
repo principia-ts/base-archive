@@ -1,7 +1,7 @@
 import type * as HKT from './HKT'
 import type { StateURI } from './Modules'
 
-import { identity, tuple } from './Function'
+import { identity, tuple } from './function'
 import * as P from './typeclass'
 
 /*

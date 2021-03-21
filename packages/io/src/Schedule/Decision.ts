@@ -1,6 +1,6 @@
 import type { IO } from '../IO/core'
 
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import { matchTag_ } from '@principia/base/util/matchers'
 
 import * as I from '../IO/core'

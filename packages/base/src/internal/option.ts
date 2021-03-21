@@ -1,5 +1,6 @@
-import type { Predicate, Refinement } from '../Function'
 import type { Option } from '../Option'
+import type { Predicate } from '../Predicate'
+import type { Refinement } from '../Refinement'
 
 export type { Option }
 

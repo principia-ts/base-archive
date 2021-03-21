@@ -7,7 +7,7 @@
 import type * as HKT from './HKT'
 import type { Stack } from './util/support/Stack'
 
-import { identity, tuple } from './Function'
+import { identity, tuple } from './function'
 import { EvalURI } from './Modules'
 import * as O from './Option'
 import * as P from './typeclass'

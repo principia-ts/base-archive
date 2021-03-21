@@ -23,7 +23,7 @@ import type { IResolvers } from 'graphql-tools'
 import type { ConnectionContext } from 'subscriptions-transport-ws'
 import type WebSocket from 'ws'
 
-import { identity, pipe } from '@principia/base/Function'
+import { identity, pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'

@@ -10,12 +10,13 @@
  */
 
 import type { Either } from './Either'
-import type { Predicate, Refinement } from './Function'
 import type * as HKT from './HKT'
 import type { ListURI } from './Modules'
 import type { Ordering } from './Ordering'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 
-import { identity } from './Function'
+import { identity } from './function'
 import * as O from './Option'
 import * as P from './typeclass'
 

@@ -8,7 +8,7 @@ import type { Compute } from '@principia/base/util/compute'
 import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
 import type { ValueNode } from 'graphql'
 
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import * as DE from '@principia/codec/DecodeErrors'
 import * as SD from '@principia/codec/SyncDecoder'
 import * as Sy from '@principia/io/Sync'

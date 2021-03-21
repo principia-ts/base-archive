@@ -6,9 +6,10 @@
  * Forked from https://github.com/mikolalysenko/functional-red-black-tree
  */
 
-import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type { Option } from './Option'
 import type { Ord } from './Ord'
+import type { Predicate, PredicateWithIndex } from './Predicate'
+import type { Refinement, RefinementWithIndex } from './Refinement'
 import type { Semigroup } from './typeclass'
 import type { Stack } from './util/support/Stack'
 

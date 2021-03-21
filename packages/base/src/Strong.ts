@@ -2,7 +2,7 @@ import type { Category } from './Category'
 import type * as HKT from './HKT'
 import type { Profunctor } from './Profunctor'
 
-import { identity, pipe, tuple } from './Function'
+import { identity, pipe, tuple } from './function'
 
 export interface Strong<F extends HKT.URIS, C = HKT.Auto> extends Profunctor<F, C> {
   readonly first: FirstFn<F, C>

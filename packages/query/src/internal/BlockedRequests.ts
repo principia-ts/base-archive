@@ -8,7 +8,7 @@ import type { List } from '@principia/base/List'
 
 import * as A from '@principia/base/Array'
 import * as Ev from '@principia/base/Eval'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as L from '@principia/base/List'
 import * as Set from '@principia/base/Set'
 import * as I from '@principia/io/IO'

@@ -1,12 +1,12 @@
 import type { MaybeAsyncEq } from './utils'
 import type * as Eq from '@principia/base/Eq'
-import type { MorphismN } from '@principia/base/Function'
+import type { MorphismN } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
-import * as B from '@principia/base/Boolean'
-import * as N from '@principia/base/Number'
-import * as S from '@principia/base/String'
+import * as B from '@principia/base/boolean'
+import * as N from '@principia/base/number'
+import * as S from '@principia/base/string'
 import { flattenF } from '@principia/base/typeclass'
 import * as fc from 'fast-check'
 

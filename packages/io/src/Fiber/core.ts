@@ -5,7 +5,7 @@ import type { FiberId } from './FiberId'
 import type { Option } from '@principia/base/Option'
 
 import * as Ev from '@principia/base/Eval'
-import { identity } from '@principia/base/Function'
+import { identity } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 import * as C from '../Cause/core'

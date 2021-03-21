@@ -1,6 +1,6 @@
 import type { Managed, UManaged } from '../core'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import { once } from '../../IO/combinators/once'
 import { to } from '../../IO/combinators/to'

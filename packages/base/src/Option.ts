@@ -5,14 +5,16 @@
 
 import type { Either } from './Either'
 import type { Eq } from './Eq'
-import type { MorphismN, Predicate, Refinement } from './Function'
+import type { MorphismN } from './function'
 import type * as HKT from './HKT'
 import type { OptionURI } from './Modules'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 import type { Show } from './Show'
 import type { These } from './These'
 
 import { makeEq } from './Eq'
-import { _bind, flow, identity, pipe, tuple } from './Function'
+import { _bind, flow, identity, pipe, tuple } from './function'
 import * as O from './internal/option'
 import * as P from './typeclass'
 

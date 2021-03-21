@@ -1,6 +1,6 @@
 import type { Option } from '@principia/base/Option'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { None, Some } from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 

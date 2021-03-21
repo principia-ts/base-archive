@@ -4,7 +4,7 @@ import type { IO } from '@principia/io/IO'
 import type { IOEnv } from '@principia/io/IOEnv'
 import type { Layer } from '@principia/io/Layer'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'

@@ -1,6 +1,6 @@
 import type { FunctorMin } from './Functor'
 
-import { identity } from './Function'
+import { identity } from './function'
 import { Functor } from './Functor'
 import * as HKT from './HKT'
 

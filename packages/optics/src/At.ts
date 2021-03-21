@@ -1,7 +1,7 @@
 import type { Iso } from './Iso'
 import type { Lens } from './Lens'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import * as _ from './internal'
 

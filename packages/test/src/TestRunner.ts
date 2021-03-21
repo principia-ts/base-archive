@@ -8,7 +8,7 @@ import type { Platform } from '@principia/io/Fiber'
 import type { URIO } from '@principia/io/IO'
 import type { Layer } from '@principia/io/Layer'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { Clock } from '@principia/io/Clock'
 import { Console } from '@principia/io/Console'
 import { parallelN } from '@principia/io/ExecutionStrategy'

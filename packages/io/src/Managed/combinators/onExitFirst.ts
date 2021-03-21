@@ -1,7 +1,7 @@
 import type { Exit } from '../../Exit'
 import type { ReleaseMap } from '../ReleaseMap'
 
-import { flow, pipe, tuple } from '@principia/base/Function'
+import { flow, pipe, tuple } from '@principia/base/function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'

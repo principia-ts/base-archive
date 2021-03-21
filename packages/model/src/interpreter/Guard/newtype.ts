@@ -3,7 +3,7 @@ import type { GuardURI } from './HKT'
 import type { Iso } from '@principia/optics/Iso'
 import type { Prism } from '@principia/optics/Prism'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import { implementInterpreter } from '../../HKT'
 import { applyGuardConfig } from './HKT'

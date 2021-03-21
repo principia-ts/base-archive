@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import { identity } from '@principia/base/Function'
+import { identity } from '@principia/base/function'
 import * as I from '@principia/base/Iterable'
 
 import { attempt, map_ } from '../core'

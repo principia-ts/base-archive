@@ -3,7 +3,7 @@ import type { Callback } from '../Fiber/core'
 import type { FailureReporter } from '../Fiber/internal/io'
 import type { IOEnv } from '../IOEnv'
 
-import { constVoid, identity } from '@principia/base/Function'
+import { constVoid, identity } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { isTracingEnabled } from '@principia/compile/util'
 

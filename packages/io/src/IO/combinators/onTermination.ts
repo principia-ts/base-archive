@@ -2,7 +2,7 @@ import type { Cause } from '../../Cause/core'
 import type { IO } from '../core'
 
 import * as E from '@principia/base/Either'
-import { flow } from '@principia/base/Function'
+import { flow } from '@principia/base/function'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'

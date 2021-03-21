@@ -1,13 +1,14 @@
 /**
  * Forked from https://github.com/gvergnaud/ts-pattern
  */
-import type { Predicate, Refinement } from '../Function'
 import type { Option } from '../Option'
+import type { Predicate } from '../Predicate'
+import type { Refinement } from '../Refinement'
 import type { Compute } from '../util/compute'
 import type { Primitive, UnionToIntersection, UnionToTuple } from '../util/types'
 
 import * as A from '../Array'
-import { pipe } from '../Function'
+import { pipe } from '../function'
 import * as O from '../Option'
 import * as R from '../Record'
 

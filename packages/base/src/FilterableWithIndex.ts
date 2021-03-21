@@ -1,7 +1,8 @@
 import type { Either } from './Either'
-import type { PredicateWithIndex, RefinementWithIndex } from './Function'
 import type { FunctorWithIndexMin } from './FunctorWithIndex'
 import type { Option } from './Option'
+import type { PredicateWithIndex } from './Predicate'
+import type { RefinementWithIndex } from './Refinement'
 
 import { FunctorWithIndex } from './FunctorWithIndex'
 import * as HKT from './HKT'

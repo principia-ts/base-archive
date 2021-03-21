@@ -1,6 +1,6 @@
 import type { GraphQlException } from './GraphQlException'
 import type { Exception } from '@principia/base/Exception'
-import type { MorphismN } from '@principia/base/Function'
+import type { MorphismN } from '@principia/base/function'
 import type * as U from '@principia/base/util/types'
 import type * as Sy from '@principia/io/Sync'
 import type { DirectiveNode, ValueNode } from 'graphql'

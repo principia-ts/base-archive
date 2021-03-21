@@ -1,7 +1,7 @@
 import type { FiberStatus, RuntimeFiber } from '../Fiber/core'
 import type { UIO } from '../IO/core'
 
-import { constant, tuple } from '@principia/base/Function'
+import { constant, tuple } from '@principia/base/function'
 import * as IT from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 

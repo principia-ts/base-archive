@@ -1,7 +1,7 @@
 import type * as Alg from '../../algebra'
 import type { EqURI } from './HKT'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as S from '@principia/base/Set'
 
 import { implementInterpreter } from '../../HKT'

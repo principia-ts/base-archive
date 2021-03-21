@@ -1,4 +1,4 @@
-import { identity } from './Function'
+import { identity } from './function'
 
 export interface Newtype<URI, A> {
   readonly _URI: URI

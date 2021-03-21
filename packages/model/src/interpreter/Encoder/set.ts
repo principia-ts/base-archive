@@ -2,7 +2,7 @@ import type * as Alg from '../../algebra'
 import type { EncoderURI } from './HKT'
 
 import * as A from '@principia/base/Array'
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import * as S from '@principia/base/Set'
 
 import { implementInterpreter } from '../../HKT'

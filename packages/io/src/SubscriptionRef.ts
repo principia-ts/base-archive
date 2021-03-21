@@ -1,6 +1,6 @@
 import type { URefM } from './IORefM'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import * as I from './IO'
 import * as RefM from './IORefM'

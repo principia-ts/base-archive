@@ -1,4 +1,4 @@
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import * as Semaphore from '../../Semaphore'
 import * as I from '../core'

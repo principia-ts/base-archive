@@ -9,7 +9,7 @@ import type { FIO } from '@principia/io/IO'
 import type { URef } from '@principia/io/IORef'
 
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { matchTag_ } from '@principia/base/util/matchers'
 import * as I from '@principia/io/IO'

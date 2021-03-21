@@ -6,7 +6,7 @@ import type { Layer } from '@principia/io/Layer'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as HS from '@principia/base/HashSet'
 import { eqFiberId } from '@principia/io/Fiber'

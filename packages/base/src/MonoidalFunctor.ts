@@ -1,7 +1,7 @@
 import type { SemimonoidalFunctor2, SemimonoidalFunctorMin } from './SemimonoidalFunctor'
 import type { Unit, Unit2, UnitMin } from './Unit'
 
-import { flow } from './Function'
+import { flow } from './function'
 import * as HKT from './HKT'
 import { getSemimonoidalFunctorComposition, SemimonoidalFunctor } from './SemimonoidalFunctor'
 

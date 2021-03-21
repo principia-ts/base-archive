@@ -1,7 +1,7 @@
 import type { Has } from '@principia/base/Has'
 import type { Queue } from '@principia/io/Queue'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'

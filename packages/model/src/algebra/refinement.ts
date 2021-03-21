@@ -1,5 +1,6 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
-import type { Predicate, Refinement } from '@principia/base/Function'
+import type { Predicate } from '@principia/base/Predicate'
+import type { Refinement } from '@principia/base/Refinement'
 
 export const RefinementURI = 'model/algebra/refinement'
 

@@ -4,7 +4,7 @@ import type { Fail, FailMin } from './Fail'
 import type { Option } from './Option'
 
 import { Applicative, pureF } from './Applicative'
-import { flow } from './Function'
+import { flow } from './function'
 import * as HKT from './HKT'
 import * as E from './internal/either'
 import * as O from './internal/option'

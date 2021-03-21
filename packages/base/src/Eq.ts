@@ -1,6 +1,6 @@
 import type { ReadonlyRecord } from './Record'
 
-import { memoize } from './Function'
+import { memoize } from './function'
 
 export interface Eq<A> {
   readonly equals_: (x: A, y: A) => boolean

@@ -1,4 +1,4 @@
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as F from '../../Fiber'

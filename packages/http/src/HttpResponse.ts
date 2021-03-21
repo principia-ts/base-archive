@@ -5,7 +5,7 @@ import type { FIO, IO, UIO } from '@principia/io/IO'
 import type * as http from 'http'
 import type { Readable } from 'stream'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as NT from '@principia/base/Newtype'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'

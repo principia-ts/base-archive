@@ -2,7 +2,7 @@ import type * as Alg from '../../algebra'
 import type { ArbitraryURI } from './HKT'
 
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'

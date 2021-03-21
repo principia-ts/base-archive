@@ -4,7 +4,7 @@ import type { Pure, Pure2, PureFn, PureMin } from './Pure'
 import type { Unit, Unit2, UnitMin } from './Unit'
 
 import { Apply, getApplyComposition } from './Apply'
-import { flow } from './Function'
+import { flow } from './function'
 import * as HKT from './HKT'
 import { getMonoidalFunctorComposition } from './MonoidalFunctor'
 

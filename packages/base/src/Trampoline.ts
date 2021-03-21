@@ -1,4 +1,4 @@
-import type { Lazy, MorphismN } from './Function'
+import type { Lazy, MorphismN } from './function'
 
 export interface Done<A> {
   readonly _tag: 'Done'

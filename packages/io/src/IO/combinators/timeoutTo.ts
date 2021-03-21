@@ -1,7 +1,7 @@
 import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import { Clock } from '../../Clock'
 import { as, map } from '../core'

@@ -1,9 +1,9 @@
-import type { Predicate } from '@principia/base/Function'
 import type { Option } from '@principia/base/Option'
+import type { Predicate } from '@principia/base/Predicate'
 import type { IO } from '@principia/io/IO'
 import type { Stream } from '@principia/io/Stream'
 
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as Ca from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'

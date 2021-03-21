@@ -2,10 +2,10 @@ import type { Eq } from '@principia/base/Eq'
 import type { Eval } from '@principia/base/Eval'
 import type { IO } from '@principia/io/IO'
 
-import * as B from '@principia/base/Boolean'
+import * as B from '@principia/base/boolean'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
-import { flow, identity, pipe } from '@principia/base/Function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
 

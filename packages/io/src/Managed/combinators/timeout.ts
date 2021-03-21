@@ -2,7 +2,7 @@ import type { Clock } from '../../Clock'
 import type { Has } from '@principia/base/Has'
 
 import * as E from '@principia/base/Either'
-import { flow, pipe, tuple } from '@principia/base/Function'
+import { flow, pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 import { sequential } from '../../ExecutionStrategy'

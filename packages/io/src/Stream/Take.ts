@@ -3,7 +3,7 @@ import type { Exit } from '../Exit'
 import type { Pull } from './Pull'
 import type { Option } from '@principia/base/Option'
 
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 import * as Ca from '../Cause'

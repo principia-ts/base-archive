@@ -5,7 +5,7 @@ import type { FIO } from './IO/core'
 import type { Option } from '@principia/base/Option'
 
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 

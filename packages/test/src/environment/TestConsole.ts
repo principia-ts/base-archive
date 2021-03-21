@@ -5,7 +5,7 @@ import type { IO, UIO } from '@principia/io/IO'
 import type { URef } from '@principia/io/IORef'
 
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as Li from '@principia/base/List'
 import { Console, ConsoleTag } from '@principia/io/Console'

@@ -3,7 +3,7 @@ import type { Option } from './Option'
 import type { Semigroup } from './Semigroup'
 import type { These } from './These'
 
-import { identity, tuple } from './Function'
+import { identity, tuple } from './function'
 import { Functor } from './Functor'
 import * as HKT from './HKT'
 import * as O from './internal/option'

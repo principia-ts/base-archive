@@ -1,6 +1,6 @@
 import type { ReleaseMap } from '../ReleaseMap'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import { Managed } from '../core'
 import * as I from '../internal/io'

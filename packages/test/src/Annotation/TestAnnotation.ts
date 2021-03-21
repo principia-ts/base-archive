@@ -8,11 +8,11 @@ import type { URef } from '@principia/io/IORef'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { makeEq } from '@principia/base/Eq'
-import { absurd } from '@principia/base/Function'
+import { absurd } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { hash, hashString } from '@principia/base/Hash'
 import * as Set from '@principia/base/HashSet'
-import * as S from '@principia/base/String'
+import * as S from '@principia/base/string'
 
 export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
   ...makeEq(equalsTestAnnotation),

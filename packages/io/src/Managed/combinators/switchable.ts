@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 
 import { sequential } from '../../ExecutionStrategy'

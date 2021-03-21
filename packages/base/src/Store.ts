@@ -1,8 +1,8 @@
-import type { Endomorphism } from './Function'
+import type { Endomorphism } from './Endomorphism'
 import type * as HKT from './HKT'
 import type { StoreURI } from './Modules'
 
-import { identity } from './Function'
+import { identity } from './function'
 import * as P from './typeclass'
 
 export interface Store<S, A> {

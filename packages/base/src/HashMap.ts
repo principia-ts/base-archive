@@ -1,11 +1,11 @@
 /* eslint-disable functional/immutable-data */
 import type { Eq } from './Eq'
-import type { Refinement } from './Function'
 import type { Hash } from './Hash'
 import type { Node, UpdateFn } from './internal/hamt'
+import type { Refinement } from './Refinement'
 
 import { EqStrict } from './Eq'
-import { constant, identity, tuple } from './Function'
+import { constant, identity, tuple } from './function'
 import { hash } from './Hash'
 import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'

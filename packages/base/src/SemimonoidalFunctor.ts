@@ -3,7 +3,7 @@ import type { Functor2, FunctorMin } from './Functor'
 import type { CrossFn_, Semimonoidal, SemimonoidalMin } from './Semimonoidal'
 import type { EnforceNonEmptyRecord } from './util/types'
 
-import { tuple } from './Function'
+import { tuple } from './function'
 import { Functor, getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
 

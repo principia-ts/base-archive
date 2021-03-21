@@ -1,10 +1,11 @@
+import type { Endomorphism } from './Endomorphism'
 import type * as Eq from './Eq'
-import type { Endomorphism, Predicate } from './Function'
 import type { Monoid } from './Monoid'
 import type { Ordering } from './Ordering'
+import type { Predicate } from './Predicate'
 import type { Semigroup } from './Semigroup'
 
-import { flow } from './Function'
+import { flow } from './function'
 import * as O from './internal/ord'
 import { EQ, GT, LT } from './Ordering'
 import { makeSemigroup } from './Semigroup'

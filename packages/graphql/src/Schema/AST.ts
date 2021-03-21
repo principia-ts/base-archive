@@ -1,4 +1,4 @@
-import type { Lazy } from '@principia/base/Function'
+import type { Lazy } from '@principia/base/function'
 import type {
   ArgumentNode,
   BooleanValueNode,

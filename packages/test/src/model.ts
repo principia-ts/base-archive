@@ -14,7 +14,7 @@ import type { IO, URIO } from '@principia/io/IO'
 import type { Stream } from '@principia/io/Stream'
 
 import * as E from '@principia/base/Either'
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import * as C from '@principia/io/Chunk'

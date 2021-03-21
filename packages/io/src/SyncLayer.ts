@@ -2,7 +2,7 @@ import type { Has, Tag } from '@principia/base/Has'
 import type { Erase, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
 import * as Sy from './Sync'

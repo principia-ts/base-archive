@@ -1,7 +1,8 @@
-import type { Predicate, Refinement } from './Function'
 import type { Ord } from './Ord'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 
-import { not } from './Function'
+import { not } from './function'
 import * as OM from './OrderedMap'
 
 export class OrderedSet<A> implements Iterable<A> {

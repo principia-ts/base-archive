@@ -1,4 +1,4 @@
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import * as L from '@principia/base/List'
 
 import * as Ref from '../../IORef'

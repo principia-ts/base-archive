@@ -5,7 +5,7 @@ import type { Has } from '@principia/base/Has'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
 import { RuntimeException } from '@principia/base/Exception'
-import { flow, identity, pipe, tuple } from '@principia/base/Function'
+import { flow, identity, pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 

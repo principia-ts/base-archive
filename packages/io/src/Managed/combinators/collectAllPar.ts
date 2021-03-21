@@ -1,6 +1,6 @@
 import type { Managed } from '../core'
 
-import { identity } from '@principia/base/Function'
+import { identity } from '@principia/base/function'
 
 import { foreachPar_, foreachUnitPar_ } from './foreachPar'
 

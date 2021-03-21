@@ -1,7 +1,7 @@
 import type { Fiber } from '../core'
 
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import { None, Some } from '@principia/base/Option'
 import * as O from '@principia/base/Option'
 

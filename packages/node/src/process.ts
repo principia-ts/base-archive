@@ -3,7 +3,7 @@ import type * as E from '@principia/base/Either'
 import type { Chunk } from '@principia/io/Chunk'
 import type { FSync, USync } from '@principia/io/Sync'
 
-import { pipe, tuple } from '@principia/base/Function'
+import { pipe, tuple } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'

@@ -5,7 +5,7 @@ import type { Either } from '@principia/base/Either'
 import type { USync } from '@principia/io/Sync'
 
 import * as A from '@principia/base/Array'
-import { identity, pipe } from '@principia/base/Function'
+import { identity, pipe } from '@principia/base/function'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
 import * as Sy from '@principia/io/Sync'
 

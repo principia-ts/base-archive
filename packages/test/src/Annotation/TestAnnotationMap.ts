@@ -2,7 +2,7 @@ import type { TestAnnotation } from './TestAnnotation'
 import type { HashMap } from '@principia/base/HashMap'
 
 import * as A from '@principia/base/Array'
-import { identity, pipe } from '@principia/base/Function'
+import { identity, pipe } from '@principia/base/function'
 import * as Map from '@principia/base/HashMap'
 import * as O from '@principia/base/Option'
 

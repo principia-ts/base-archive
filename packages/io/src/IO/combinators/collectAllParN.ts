@@ -1,6 +1,6 @@
 import type { IO } from '../core'
 
-import { identity } from '@principia/base/Function'
+import { identity } from '@principia/base/function'
 
 import { foreachParN_ } from './foreachParN'
 import { foreachUnitParN_ } from './foreachUnitParN'

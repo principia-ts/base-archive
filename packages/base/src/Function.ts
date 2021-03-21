@@ -1,25 +1,14 @@
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
+
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+*/
+
 export interface Lazy<A> {
   (): A
-}
-
-export interface Predicate<A> {
-  (a: A): boolean
-}
-
-export interface Refinement<A, B extends A> {
-  (a: A): a is B
-}
-
-export interface PredicateWithIndex<I, A> {
-  (i: I, a: A): boolean
-}
-
-export interface RefinementWithIndex<I, A, B extends A> {
-  (i: I, a: A): a is B
-}
-
-export interface Endomorphism<A> {
-  (a: A): A
 }
 
 export interface Morphism<A, B> {
@@ -30,9 +19,13 @@ export interface MorphismN<A extends ReadonlyArray<unknown>, B> {
   (...args: A): B
 }
 
+/*
+ * -------------------------------------------
+ * Utils
+ * -------------------------------------------
+*/
+
 /**
- * flip :: (a -> b -> c) -> b -> a -> c
- *
  * Flips the arguments of a curried binary function
  */
 export function flip<A, B, C>(f: (a: A) => (b: B) => C): (b: B) => (a: A) => C {

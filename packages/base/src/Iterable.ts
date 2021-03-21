@@ -1,11 +1,12 @@
 import type { Either } from './Either'
-import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './Function'
 import type * as HKT from './HKT'
 import type { IterableURI } from './Modules'
 import type { Option } from './Option'
+import type { Predicate, PredicateWithIndex } from './Predicate'
+import type { Refinement, RefinementWithIndex } from './Refinement'
 
 import * as A from './Array'
-import { identity, tuple } from './Function'
+import { identity, tuple } from './function'
 import * as O from './Option'
 import * as P from './typeclass'
 

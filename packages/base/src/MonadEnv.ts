@@ -3,7 +3,7 @@ import type { MonadMin } from './Monad'
 
 import { pureF } from './Applicative'
 import { bindF_ } from './Bind'
-import { flow, identity, pipe } from './Function'
+import { flow, identity, pipe } from './function'
 import * as HKT from './HKT'
 import { Monad } from './Monad'
 

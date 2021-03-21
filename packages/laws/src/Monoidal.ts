@@ -4,8 +4,8 @@ import type * as HKT from '@principia/base/HKT'
 import type { MonoidalFunctor } from '@principia/base/typeclass'
 
 import { compose_, tuple, tupleFlip, tupleUnit } from '@principia/base/Equivalence'
-import * as N from '@principia/base/Number'
-import * as S from '@principia/base/String'
+import * as N from '@principia/base/number'
+import * as S from '@principia/base/string'
 import { crossF_ } from '@principia/base/typeclass'
 import * as fc from 'fast-check'
 

@@ -4,7 +4,7 @@ import type { Arbitrary } from 'fast-check'
 
 import { isNonEmpty } from '@principia/base/Array'
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as R from '@principia/base/Record'
 
 import { implementInterpreter } from '../../HKT'

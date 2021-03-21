@@ -3,7 +3,7 @@ import type { ArbitraryURI } from './HKT'
 import type { Arbitrary } from 'fast-check'
 
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 

@@ -2,7 +2,7 @@ import type { IO } from '../core'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
-import { identity } from '@principia/base/Function'
+import { identity } from '@principia/base/function'
 
 import { foreach_ } from '../core'
 import { foreachPar_ } from './foreachPar'

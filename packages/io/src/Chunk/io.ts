@@ -1,6 +1,6 @@
 import type { Chunk } from './core'
 
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 
 import * as I from '../IO'
 import { append_, foldl_, isTyped } from './core'

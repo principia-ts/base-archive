@@ -5,7 +5,7 @@ import type { Either } from '@principia/base/Either'
 import type { Option } from '@principia/base/Option'
 
 import { Left } from '@principia/base/Either'
-import { flow, pipe } from '@principia/base/Function'
+import { flow, pipe } from '@principia/base/function'
 import { None, Some } from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { OneShot } from '@principia/base/util/support/OneShot'

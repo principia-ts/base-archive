@@ -2,7 +2,7 @@ import type { EitherURI } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
 
 import * as E from '@principia/base/Either'
-import { flow } from '@principia/base/Function'
+import { flow } from '@principia/base/function'
 import * as P from '@principia/base/typeclass'
 import { getApplicativeComposition } from '@principia/base/typeclass'
 

@@ -2,7 +2,7 @@ import type * as Alg from '../../algebra'
 import type { EqURI } from './HKT'
 
 import * as Eq from '@principia/base/Eq'
-import { pipe } from '@principia/base/Function'
+import { pipe } from '@principia/base/function'
 import * as R from '@principia/base/Record'
 
 import { implementInterpreter } from '../../HKT'
