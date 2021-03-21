@@ -23,7 +23,7 @@ type NonEmptyTuple<A> = readonly [A, ...A[]]
 
 /**
  * Pattern matches on one or more values with the tuple pattern
- * 
+ *
  * @category pattern matching
  * @since 1.0.0
  */
@@ -31,19 +31,19 @@ export function match_<I extends NonEmptyTuple<any>>(
   ...values: I
 ): <
   P extends NonEmptyTuple<Pattern<I>>,
-  H extends {
-    [i in keyof P]: (
-      selected: FindSelected<MatchedValue<I, InvertPattern<P[i]>>, P[i]>,
-      value: MatchedValue<I, InvertPattern<P[i]>>
-    ) => any
-  },
   PH extends {
     [i in keyof P]: [P[i], (...args: never) => any]
   }
 >(
   ...matchers: PH extends [...any[], any]
     ? {
-        [i in keyof P]: [P[i], H[i]]
+        [i in keyof P]: [
+          P[i],
+          (
+            selected: FindSelected<MatchedValue<I, InvertPattern<P[i]>>, P[i]>,
+            value: MatchedValue<I, InvertPattern<P[i]>>
+          ) => any
+        ]
       }
     : PH
 ) => DeepExcludeAll<
@@ -90,30 +90,32 @@ export function match_<I extends NonEmptyTuple<any>>(
 
 /**
  * A pipeable version of `match_`. Pattern matches on one or more values with the tuple pattern.
- * 
+ *
+ * **not currently working**
+ *
  * @category pattern matching
  * @since 1.0.0
  */
 export function match<
   I extends NonEmptyTuple<any>,
   P extends NonEmptyTuple<Pattern<I>>,
-  H extends {
-    [i in keyof P]: (
-      selected: FindSelected<MatchedValue<I, InvertPattern<P[i]>>, P[i]>,
-      value: MatchedValue<I, InvertPattern<P[i]>>
-    ) => any
-  },
   PH extends {
     [i in keyof P]: [P[i], (...args: never) => any]
   }
 >(
   ...matchers: PH extends [...any[], any]
     ? {
-        [i in keyof P]: [P[i], H[i]]
+        [i in keyof P]: [
+          P[i],
+          (
+            selected: FindSelected<MatchedValue<I, InvertPattern<P[i]>>, P[i]>,
+            value: MatchedValue<I, InvertPattern<P[i]>>
+          ) => any
+        ]
       }
     : PH
 ): (
-  values: I
+  ...values: I
 ) => DeepExcludeAll<
   I,
   { [K in keyof P]: [P[K], MatchedValue<I, InvertPattern<P[K]>>] }[number]
@@ -122,7 +124,7 @@ export function match<
     ? ReturnType<PH[number][1]>
     : NonExhaustiveError<RemainingCases>
   : never {
-  return (values) => match_(...values)(...(matchers as any))
+  return (...values) => match_(...values)(...(matchers as any))
 }
 
 /**
@@ -193,7 +195,7 @@ export interface Matcher<I extends NonEmptyTuple<any>, O, PatternValueTuples ext
 
 /**
  * Use a Predicate or Refinement as a pattern
- * 
+ *
  * @category pattern matching
  * @since 1.0.0
  */
@@ -208,7 +210,7 @@ export function when<A>(predicate: Predicate<A>): GuardPattern<A, A> {
 
 /**
  * Invert a pattern
- * 
+ *
  * @category pattern matching
  * @since 1.0.0
  */
@@ -221,7 +223,7 @@ export function not<A>(pattern: Pattern<A>): NotPattern<A> {
 
 /**
  * Select a value to be provided to the pattern handler
- * 
+ *
  * @category pattern matching
  * @since 1.0.0
  */
