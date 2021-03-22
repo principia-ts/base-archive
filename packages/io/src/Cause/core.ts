@@ -10,9 +10,10 @@ import * as E from '@principia/base/Either'
 import { makeEq } from '@principia/base/Eq'
 import * as Ev from '@principia/base/Eval'
 import { InterruptedException } from '@principia/base/Exception'
-import { flow, identity, pipe, tuple } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
+import { tuple } from '@principia/base/tuple'
 import { makeStack } from '@principia/base/util/support/Stack'
 
 import { eqFiberId } from '../Fiber/FiberId'
@@ -31,7 +32,7 @@ export interface Fail<E> {
 
 export interface Die {
   readonly _tag: 'Die'
-  readonly value: Error
+  readonly value: unknown
 }
 
 export interface Interrupt {
@@ -89,7 +90,7 @@ export function traced<E>(cause: Cause<E>, trace: Trace): Cause<E> {
 
 /**
  */
-export function die(value: Error): Cause<never> {
+export function die(value: unknown): Cause<never> {
   return {
     _tag: 'Die',
     value

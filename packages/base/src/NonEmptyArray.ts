@@ -10,10 +10,11 @@ import type * as P from './typeclass'
 import type { Mutable } from './util/types'
 
 import * as A from './Array'
-import { identity, tuple } from './function'
+import { identity } from './function'
 import * as _ from './internal/array'
 import * as O from './Option'
 import * as S from './Semigroup'
+import { tuple } from './tuple'
 
 /*
  * -------------------------------------------

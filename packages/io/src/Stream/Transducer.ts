@@ -9,10 +9,12 @@ import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 
 import * as E from '@principia/base/Either'
-import { flow, not, pipe, tuple } from '@principia/base/function'
+import { flow, pipe } from '@principia/base/function'
 import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
+import { not } from '@principia/base/Predicate'
 import * as Set from '@principia/base/Set'
+import { tuple } from '@principia/base/tuple'
 
 import * as C from '../Chunk'
 import * as Ex from '../Exit'

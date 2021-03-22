@@ -1,7 +1,8 @@
 import type { IO, UIO } from '../core'
 import type { Eq } from '@principia/base/Eq'
 
-import { pipe, tuple } from '@principia/base/function'
+import { pipe } from '@principia/base/function'
+import { tuple } from '@principia/base/tuple'
 
 import * as RM from '../../IORefM'
 import * as P from '../../Promise'

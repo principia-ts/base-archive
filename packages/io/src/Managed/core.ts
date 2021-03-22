@@ -10,11 +10,12 @@ import type { _E, _R, EnforceNonEmptyRecord, UnionToIntersection } from '@princi
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
-import { _bind, _bindTo, flow, identity as identityFn, pipe, tuple } from '@principia/base/function'
+import { flow, identity as identityFn, pipe } from '@principia/base/function'
 import { isTag } from '@principia/base/Has'
 import * as Iter from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
+import { tuple } from '@principia/base/tuple'
 
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
@@ -116,7 +117,7 @@ export function halt<E>(cause: Cause<E>): Managed<unknown, E, never> {
 /**
  * Returns a Managed that dies with the specified error
  */
-export function die(e: Error): Managed<unknown, never, never> {
+export function die(e: unknown): Managed<unknown, never, never> {
   return halt(C.die(e))
 }
 
@@ -1445,7 +1446,7 @@ export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E,
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown`.
  */
-export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => Error): Managed<R, never, A> {
+export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown): Managed<R, never, A> {
   return new Managed(I.orDieWith_(ma.io, f))
 }
 
@@ -1453,7 +1454,7 @@ export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => Error): M
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown.
  */
-export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
+export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
   return (ma) => orDieWith_(ma, f)
 }
 
@@ -1461,7 +1462,7 @@ export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: Managed<R, E, A>) =
  * Translates effect failure into death of the fiber, making all failures unchecked and
  * not a part of the type of the effect.
  */
-export function orDie<R, E extends Error, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
+export function orDie<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
   return orDieWith_(ma, identityFn)
 }
 
@@ -1575,7 +1576,7 @@ export function orElseSucceed<A1>(that: () => A1): <R, E, A>(ma: Managed<R, E, A
 export function refineOrDieWith_<R, E, A, E1>(
   ma: Managed<R, E, A>,
   pf: (e: E) => O.Option<E1>,
-  f: (e: E) => Error
+  f: (e: E) => unknown
 ): Managed<R, E1, A> {
   return catchAll_(ma, (e) => O.match_(pf(e), () => die(f(e)), fail))
 }
@@ -1586,7 +1587,7 @@ export function refineOrDieWith_<R, E, A, E1>(
  */
 export function refineOrDieWith<E, E1>(
   pf: (e: E) => O.Option<E1>,
-  f: (e: E) => Error
+  f: (e: E) => unknown
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
   return (ma) => refineOrDieWith_(ma, pf, f)
 }
@@ -1594,7 +1595,7 @@ export function refineOrDieWith<E, E1>(
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie_<R, E extends Error, A, E1>(
+export function refineOrDie_<R, E, A, E1>(
   ma: Managed<R, E, A>,
   pf: (e: E) => O.Option<E1>
 ): Managed<R, E1, A> {
@@ -1604,7 +1605,7 @@ export function refineOrDie_<R, E extends Error, A, E1>(
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie<E extends Error, E1>(
+export function refineOrDie<E, E1>(
   pf: (e: E) => O.Option<E1>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
   return (ma) => refineOrDie_(ma, pf)
@@ -2040,15 +2041,15 @@ export function bindS<R, E, A, K, N extends string>(
   return bind((a) =>
     pipe(
       f(a),
-      map((b) => _bind(a, name, b))
+      map((b) => Object.assign(a, { [name]: b } as any))
     )
   )
 }
 
-export function bindTo<K, N extends string>(
-  name: Exclude<N, keyof K>
-): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in Exclude<N, keyof K>]: A }> {
-  return (fa) => map_(fa, _bindTo(name))
+export function bindTo<N extends string>(
+  name: N
+): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in N]: A }> {
+  return (fa) => map_(fa, (a) => ({ [name]: a } as any))
 }
 
 export function letS<K, N extends string, A>(

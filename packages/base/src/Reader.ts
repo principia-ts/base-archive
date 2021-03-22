@@ -1,7 +1,8 @@
 import type * as HKT from './HKT'
 import type { ReaderURI } from './Modules'
 
-import { flow, identity, tuple } from './function'
+import { flow, identity } from './function'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 
 /*

@@ -3,11 +3,12 @@ import type { Option } from './Option'
 import type { Semigroup } from './Semigroup'
 import type { These } from './These'
 
-import { identity, tuple } from './function'
+import { identity } from './function'
 import { Functor } from './Functor'
 import * as HKT from './HKT'
 import * as O from './internal/option'
 import * as T from './internal/these'
+import { tuple } from './tuple'
 
 export interface Semialign<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly alignWith_: AlignWithFn_<F, C>

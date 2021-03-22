@@ -12,11 +12,14 @@ import type { _E, _R } from '@principia/base/util/types'
 
 import * as E from '@principia/base/Either'
 import { NoSuchElementError, PrematureGeneratorExitError } from '@principia/base/Error'
-import { constTrue, flow, identity, not, pipe, tuple } from '@principia/base/function'
+import { RuntimeException } from '@principia/base/Exception'
+import { constTrue, flow, identity, pipe } from '@principia/base/function'
 import { isTag } from '@principia/base/Has'
 import * as L from '@principia/base/List'
 import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
+import { not } from '@principia/base/Predicate'
+import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as Ca from '../Cause'
@@ -252,7 +255,7 @@ export function fail<E>(e: E): FStream<E, never> {
 /**
  * The `Stream` that dies with the error.
  */
-export function die(e: Error): UStream<never> {
+export function die(e: unknown): UStream<never> {
   return fromEffect(I.die(e))
 }
 
@@ -548,10 +551,7 @@ export function paginateM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, readonly [A,
  * the unfolding of the state. This is useful for embedding paginated APIs,
  * hence the name.
  */
-export function paginateChunk<S, A>(
-  s: S,
-  f: (s: S) => readonly [Chunk<A>, Option<S>]
-): Stream<unknown, never, A> {
+export function paginateChunk<S, A>(s: S, f: (s: S) => readonly [Chunk<A>, Option<S>]): Stream<unknown, never, A> {
   return paginateChunkM(s, flow(f, I.succeed))
 }
 
@@ -707,9 +707,7 @@ export function repeatWith<R, A>(schedule: Schedule<R, A, any>): (a: A) => Strea
 /**
  * Creates a stream from a `Queue` of values
  */
-export function fromChunkQueue<R, E, O>(
-  queue: Queue.XQueue<never, R, unknown, E, never, Chunk<O>>
-): Stream<R, E, O> {
+export function fromChunkQueue<R, E, O>(queue: Queue.XQueue<never, R, unknown, E, never, Chunk<O>>): Stream<R, E, O> {
   return repeatEffectChunkOption(
     I.catchAllCause_(queue.take, (c) =>
       I.bind_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
@@ -745,12 +743,11 @@ export function fromQueueWithShutdown<R, E, A>(queue: Queue.XQueue<never, R, unk
   return ensuringFirst_(fromQueue(queue), queue.shutdown)
 }
 
+class StreamEnd extends Error {}
 /**
  * Creates a stream from an iterable collection of values
  */
-export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, Error, A> {
-  class StreamEnd extends Error {}
-
+export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, unknown, A> {
   return pipe(
     fromEffect(I.effectTotal(() => iterable()[Symbol.iterator]())),
     bind((it) =>
@@ -1271,19 +1268,14 @@ export function mapChunksM<A, R1, E1, B>(
 /**
  * Transforms the chunks emitted by this stream.
  */
-export function mapChunks_<R, E, A, B>(
-  fa: Stream<R, E, A>,
-  f: (chunks: Chunk<A>) => Chunk<B>
-): Stream<R, E, B> {
+export function mapChunks_<R, E, A, B>(fa: Stream<R, E, A>, f: (chunks: Chunk<A>) => Chunk<B>): Stream<R, E, B> {
   return mapChunksM_(fa, flow(f, I.pure))
 }
 
 /**
  * Transforms the chunks emitted by this stream.
  */
-export function mapChunks<A, B>(
-  f: (chunks: Chunk<A>) => Chunk<B>
-): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
+export function mapChunks<A, B>(f: (chunks: Chunk<A>) => Chunk<B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
   return (fa) => mapChunks_(fa, f)
 }
 
@@ -1814,12 +1806,7 @@ export function distributedWithDynamic_<R, E, A>(
   const offer = (queuesRef: Ref.URef<ReadonlyMap<symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>>>) => (o: A) =>
     I.gen(function* (_) {
       const shouldProcess = yield* _(decide(o))
-      const queues        = yield* _(
-        pipe(
-          queuesRef.get,
-          I.map((m) => m.entries())
-        )
-      )
+      const queues        = yield* _(queuesRef.get)
       return yield* _(
         pipe(
           queues,
@@ -1855,7 +1842,7 @@ export function distributedWithDynamic_<R, E, A>(
           Ref.make<I.UIO<readonly [symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
               const queue = yield* _(Queue.makeBounded<Ex.Exit<O.Option<E>, A>>(maximumLag))
-              const id    = Symbol() as symbol
+              const id    = yield* _(I.effectTotal(() => Symbol()))
               yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
               return tuple(id, queue)
             })
@@ -1877,7 +1864,7 @@ export function distributedWithDynamic_<R, E, A>(
                   const queues = yield* _(
                     pipe(
                       queuesRef.get,
-                      I.map((m) => [...m.values()])
+                      I.map((m) => m.values())
                     )
                   )
                   yield* _(
@@ -1951,7 +1938,7 @@ export function distributedWith_<R, E, A>(
           pipe(
             I.collectAll(
               pipe(
-                C.range(0, n),
+                C.range(0, n - 1),
                 C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
               )
             ),
@@ -1965,7 +1952,7 @@ export function distributedWith_<R, E, A>(
                 ]
               )
               return pipe(
-                prom.succeed((o: A) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key) as number))),
+                prom.succeed((o: A) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key)!))),
                 I.as(() => queues)
               )
             }),
@@ -2469,10 +2456,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
         const outQueue     = yield* _(
-          I.toManaged_(
-            Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer),
-            (q) => q.shutdown
-          )
+          I.toManaged_(Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), (q) => q.shutdown)
         )
         const permits      = yield* _(Semaphore.make(n))
         const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
@@ -2685,7 +2669,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
   }
 
   if (n < 1) {
-    return halt(Ca.die(new Error('chunkN: n must be at least 1')))
+    return halt(Ca.die(new RuntimeException('chunkN: n must be at least 1')))
   } else {
     return new Stream(
       M.gen(function* (_) {
@@ -4156,8 +4140,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                       const causeOrChunk = pipe(
                         exit,
                         Ex.match(
-                          (c): E.Either<O.Option<Ca.Cause<E | E1>>, Chunk<C | C1>> =>
-                            E.Left(Ca.sequenceCauseOption(c)),
+                          (c): E.Either<O.Option<Ca.Cause<E | E1>>, Chunk<C | C1>> => E.Left(Ca.sequenceCauseOption(c)),
                           E.Right
                         )
                       )
@@ -5204,10 +5187,7 @@ export function unfoldM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, Option<readonl
 /**
  * Creates a stream by peeling off the "layers" of a value of type `S`.
  */
-export function unfoldChunk<S, A>(
-  s: S,
-  f: (s: S) => Option<readonly [Chunk<A>, S]>
-): Stream<unknown, never, A> {
+export function unfoldChunk<S, A>(s: S, f: (s: S) => Option<readonly [Chunk<A>, S]>): Stream<unknown, never, A> {
   return unfoldChunkM(s, (s) => I.succeed(f(s)))
 }
 
@@ -5756,10 +5736,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
           left,
           I.raceWith(
             right,
-            (
-              leftDone,
-              rightFiber
-            ): I.IO<unknown, O.Option<E | E1>, readonly [Chunk<A>, Chunk<B>, boolean]> =>
+            (leftDone, rightFiber): I.IO<unknown, O.Option<E | E1>, readonly [Chunk<A>, Chunk<B>, boolean]> =>
               pipe(
                 leftDone,
                 I.done,

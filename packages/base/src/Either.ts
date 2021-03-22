@@ -18,13 +18,14 @@ import type { These } from './These'
 import type { Mutable } from './util/types'
 
 import { NoSuchElementError } from './Error'
-import { _bind, flow, identity, pipe, tuple as mkTuple } from './function'
+import { flow, identity, pipe } from './function'
 import { genF, GenHKT } from './Gen'
 import * as HKT from './HKT'
 import * as A from './internal/array'
 import * as E from './internal/either'
 import * as O from './Option'
 import * as T from './These'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 
 /*
@@ -500,7 +501,7 @@ export function apr<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<
  * @since 1.0.0
  */
 export function cross_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, readonly [A, B]> {
-  return crossWith_(fa, fb, mkTuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 /**

@@ -6,10 +6,10 @@ import type { ADT } from './model'
 import type { ElemType } from './utils'
 
 import * as A from '@principia/base/Array'
-import { tuple } from '@principia/base/function'
 import * as R from '@principia/base/Record'
 import * as Se from '@principia/base/Semigroup'
 import * as S from '@principia/base/string'
+import { tuple } from '@principia/base/tuple'
 
 import { assignCallable, wrapFun } from '../utils'
 import { makeADT } from './model'

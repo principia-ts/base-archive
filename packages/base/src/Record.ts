@@ -14,11 +14,12 @@ import type { WiltFn, WiltFn_, WitherFn, WitherFn_ } from './Witherable'
 import type { WiltWithIndexFn, WiltWithIndexFn_, WitherWithIndexFn, WitherWithIndexFn_ } from './WitherableWithIndex'
 
 import { makeEq } from './Eq'
-import { identity, pipe, tuple } from './function'
+import { identity, pipe } from './function'
 import * as G from './Guard'
 import { makeMonoid } from './Monoid'
 import * as O from './Option'
 import { implementTraverseWithIndex_ } from './TraversableWithIndex'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 import { implementWiltWithIndex_ } from './WitherableWithIndex'
 

@@ -1,4 +1,4 @@
-import type { Assertion, AssertionM, AssertResult } from './Assertion'
+import { Assertion, AssertionM, AssertResult, isTrue } from './Assertion'
 import type { TestEnvironment } from './environment/TestEnvironment'
 import type { ExecutedSpec } from './ExecutedSpec'
 import type { Gen } from './Gen'
@@ -73,6 +73,8 @@ export function assert<A>(
     showA
   )
 }
+
+export const assertCompletes = assert(true, isTrue)
 
 export function assertM<R, E, A>(io: IO<R, E, A>, assertion: AssertionM<A>, showA?: Show<A>): IO<R, E, TestResult> {
   return I.gen(function* (_) {

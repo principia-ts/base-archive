@@ -22,12 +22,13 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
-import { _bind, _bindTo, constant, flow, identity, pipe, tuple } from '@principia/base/function'
+import { constant, flow, identity, pipe } from '@principia/base/function'
 import { isTag, mergeEnvironments } from '@principia/base/Has'
 import * as I from '@principia/base/Iterable'
 import * as NEA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
+import { tuple } from '@principia/base/tuple'
 import { makeMonoid } from '@principia/base/typeclass'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 import * as FL from '@principia/free/FreeList'
@@ -121,8 +122,8 @@ export function effectAsyncOption<R, E, A>(
  *
  * @trace 0
  */
-export function effect<A>(effect: () => A): FIO<Error, A> {
-  return new EffectPartial(effect, (u) => (u instanceof Error ? u : new RuntimeException(`An error occurred: ${u}`)))
+export function effect<A>(effect: () => A): FIO<unknown, A> {
+  return new EffectPartial(effect, identity)
 }
 
 /**
@@ -178,8 +179,8 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () =
  *
  * @trace 0
  */
-export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E | Error, A> {
-  return new DeferPartial(io, (u) => (u instanceof Error ? u : new RuntimeException(`An error occurred: ${u}`)))
+export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
+  return new DeferPartial(io, identity)
 }
 
 /**
@@ -285,7 +286,7 @@ export function fail<E>(e: E): FIO<E, never> {
  * @category Constructors
  * @since 1.0.0
  */
-export function die(e: Error): UIO<never> {
+export function die(e: unknown): UIO<never> {
   return halt(C.die(e))
 }
 
@@ -356,7 +357,7 @@ export function fromPromiseCatch<E>(onReject: (reason: unknown) => E): <A>(promi
  * Create an IO that when executed will construct `promise` and wait for its result,
  * errors will produce failure as `unknown`
  */
-export function fromPromise<A>(promise: () => Promise<A>): FIO<Error, A> {
+export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
   return effectAsync((resolve) => {
     promise().then(flow(pure, resolve)).catch(flow(fail, resolve))
   })
@@ -1011,15 +1012,13 @@ export function bindS<R, E, A, K, N extends string>(
   return bind((a) =>
     pipe(
       f(a),
-      map((b) => _bind(a, name, b))
+      map((b) => Object.assign(a, { [name]: b }) as any)
     )
   )
 }
 
-export function bindTo<K, N extends string>(
-  name: Exclude<N, keyof K>
-): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, { [k in Exclude<N, keyof K>]: A }> {
-  return (fa) => map_(fa, _bindTo(name))
+export function bindTo<N extends string>(name: N): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, { [k in N]: A }> {
+  return (fa) => map_(fa, (a) => ({ [name]: a } as any))
 }
 
 export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K) => A) {
@@ -1476,10 +1475,14 @@ export function filterOrElse<A>(
 export function filterOrDie_<R, E, A, B extends A>(
   fa: IO<R, E, A>,
   refinement: Refinement<A, B>,
-  dieWith: (a: A) => Error
+  dieWith: (a: A) => unknown
 ): IO<R, E, A>
-export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => Error): IO<R, E, A>
-export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => Error): IO<R, E, A> {
+export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => unknown): IO<R, E, A>
+export function filterOrDie_<R, E, A>(
+  fa: IO<R, E, A>,
+  predicate: Predicate<A>,
+  dieWith: (a: A) => unknown
+): IO<R, E, A> {
   return filterOrElse_(fa, predicate, flow(dieWith, die))
 }
 
@@ -1488,13 +1491,13 @@ export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, 
  */
 export function filterOrDie<A, B extends A>(
   refinement: Refinement<A, B>
-): (dieWith: (a: A) => Error) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
+): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDie<A>(
   predicate: Predicate<A>
-): (dieWith: (a: A) => Error) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
+): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
 export function filterOrDie<A>(
   predicate: Predicate<A>
-): (dieWith: (a: A) => Error) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
+): (dieWith: (a: A) => unknown) => <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
   return (dieWith) => (fa) => filterOrDie_(fa, predicate, dieWith)
 }
 
@@ -2188,19 +2191,19 @@ export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> 
   )
 }
 
-export function orDie<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, never, A> {
+export function orDie<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
   return orDieWith_(ma, identity)
 }
 
-export function orDieKeep<R, E extends Error, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
+export function orDieKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
   return matchCauseM_(ma, (ce) => halt(C.bind_(ce, (e) => C.die(e))), pure)
 }
 
-export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => Error): IO<R, never, A> {
+export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R, never, A> {
   return matchM_(ma, (e) => die(f(e)), pure)
 }
 
-export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
+export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
   return (ma) => orDieWith_(ma, f)
 }
 
@@ -2324,14 +2327,14 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie_<R, E extends Error, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<E1>): IO<R, E1, A> {
+export function refineOrDie_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<E1>): IO<R, E1, A> {
   return refineOrDieWith_(fa, pf, identity)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie<E extends Error, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
+export function refineOrDie<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   return (fa) => refineOrDie_(fa, pf)
 }
 
@@ -2342,7 +2345,7 @@ export function refineOrDie<E extends Error, E1>(pf: (e: E) => Option<E1>): <R, 
 export function refineOrDieWith_<R, E, A, E1>(
   fa: IO<R, E, A>,
   pf: (e: E) => Option<E1>,
-  f: (e: E) => Error
+  f: (e: E) => unknown
 ): IO<R, E1, A> {
   return catchAll_(fa, (e) => O.match_(pf(e), () => die(f(e)), fail))
 }
@@ -2353,7 +2356,7 @@ export function refineOrDieWith_<R, E, A, E1>(
  */
 export function refineOrDieWith<E, E1>(
   pf: (e: E) => Option<E1>,
-  f: (e: E) => Error
+  f: (e: E) => unknown
 ): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   return (fa) => refineOrDieWith_(fa, pf, f)
 }
@@ -2726,7 +2729,7 @@ export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
  * @category Combinators
  * @since 1.0.0
  */
-export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: Error) => Option<E1>) {
+export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: unknown) => Option<E1>) {
   return unrefineWith_(fa, pf, identity)
 }
 
@@ -2749,7 +2752,7 @@ export function unrefine<E1>(pf: (u: unknown) => Option<E1>): <R, E, A>(fa: IO<R
  */
 export function unrefineWith_<R, E, A, E1, E2>(
   fa: IO<R, E, A>,
-  pf: (u: Error) => Option<E1>,
+  pf: (u: unknown) => Option<E1>,
   f: (e: E) => E2
 ): IO<R, E1 | E2, A> {
   return catchAllCause_(

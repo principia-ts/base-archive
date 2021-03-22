@@ -3,7 +3,8 @@ import type { IO, UIO } from '../core'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as A from '@principia/base/Array'
-import { flow, pipe, tuple } from '@principia/base/function'
+import { flow, pipe } from '@principia/base/function'
+import { tuple } from '@principia/base/tuple'
 
 import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'

@@ -3,7 +3,8 @@ import type { Schedule } from '../../Schedule'
 import type { ReleaseMap } from '../ReleaseMap'
 import type { Has } from '@principia/base/Has'
 
-import { pipe, tuple } from '@principia/base/function'
+import { pipe } from '@principia/base/function'
+import { tuple } from '@principia/base/tuple'
 
 import { Managed } from '../core'
 import * as I from '../internal/_io'

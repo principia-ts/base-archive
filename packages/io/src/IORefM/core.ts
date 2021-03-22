@@ -4,8 +4,9 @@ import type { UManaged } from '../Managed/core'
 import type { Semaphore } from '../Semaphore'
 
 import * as E from '@principia/base/Either'
-import { identity, pipe, tuple } from '@principia/base/function'
+import { identity, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
+import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as R from '../IORef'

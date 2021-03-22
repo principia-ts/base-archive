@@ -66,10 +66,6 @@ export function identity<A>(a: A) {
  */
 export const unsafeCoerce: <A, B>(a: A) => B = identity as any
 
-export function not<A>(predicate: Predicate<A>): Predicate<A> {
-  return (a) => !predicate(a)
-}
-
 export function constant<A>(a: A): Lazy<A> {
   return () => a
 }
@@ -84,10 +80,6 @@ export const constUndefined: Lazy<undefined> = () => undefined
 
 export const constVoid: Lazy<void> = () => {
   return
-}
-
-export function tuple<T extends ReadonlyArray<any>>(...t: T): readonly [...T] {
-  return t
 }
 
 export function increment(n: number): number {

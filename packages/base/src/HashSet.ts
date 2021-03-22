@@ -4,8 +4,9 @@ import type { Predicate } from './Predicate'
 import type { Refinement } from './Refinement'
 
 import { makeEq } from './Eq'
-import { not, tuple } from './function'
 import * as HM from './HashMap'
+import { not } from './Predicate'
+import { tuple } from './tuple'
 
 export class HashSet<V> implements Iterable<V> {
   constructor(readonly keyMap: HM.HashMap<V, any>) {}

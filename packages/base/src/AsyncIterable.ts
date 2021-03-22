@@ -5,7 +5,8 @@ import type { Option } from './Option'
 import type { Predicate, PredicateWithIndex } from './Predicate'
 import type { Refinement, RefinementWithIndex } from './Refinement'
 
-import { identity, tuple } from './function'
+import { identity } from './function'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 
 type URI = [HKT.URI<AsyncIterableURI>]

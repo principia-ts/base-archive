@@ -6,8 +6,9 @@ import type { Predicate, PredicateWithIndex } from './Predicate'
 import type { Refinement, RefinementWithIndex } from './Refinement'
 
 import * as A from './Array'
-import { identity, tuple } from './function'
+import { identity } from './function'
 import * as O from './Option'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 
 type URI = [HKT.URI<IterableURI>]

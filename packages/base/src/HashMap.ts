@@ -5,11 +5,12 @@ import type { Node, UpdateFn } from './internal/hamt'
 import type { Refinement } from './Refinement'
 
 import { EqStrict } from './Eq'
-import { constant, identity, tuple } from './function'
+import { constant, identity } from './function'
 import { hash } from './Hash'
 import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as O from './Option'
+import { tuple } from './tuple'
 
 export type Config<K> = Eq<K> & Hash<K>
 

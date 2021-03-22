@@ -3,8 +3,9 @@ import type { Fiber } from '../../Fiber/core'
 import type { FiberContext } from '../../internal/FiberContext'
 
 import * as A from '@principia/base/Array'
-import { flow, pipe, tuple } from '@principia/base/function'
+import { flow, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
+import { tuple } from '@principia/base/tuple'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'

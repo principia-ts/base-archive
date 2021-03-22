@@ -2,8 +2,9 @@ import type { Managed } from '../core'
 import type { ReadonlyRecord } from '@principia/base/Record'
 import type { _E, _R, EnforceNonEmptyRecord } from '@principia/base/util/types'
 
-import { identity, tuple } from '@principia/base/function'
+import { identity } from '@principia/base/function'
 import * as R from '@principia/base/Record'
+import { tuple } from '@principia/base/tuple'
 
 import { parallel, sequential } from '../../ExecutionStrategy'
 import { map_, mapM_ } from '../core'

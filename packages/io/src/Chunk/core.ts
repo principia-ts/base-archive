@@ -5,8 +5,9 @@ import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 
 import * as A from '@principia/base/Array'
-import { identity, tuple,unsafeCoerce  } from '@principia/base/function'
+import { identity, unsafeCoerce  } from '@principia/base/function'
 import * as O from '@principia/base/Option'
+import { tuple } from '@principia/base/tuple'
 import { TextEncoder } from 'util'
 
 /*
@@ -237,7 +238,7 @@ export function foldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
     return b
   }
   let x = b
-  for (let i = fa.length; i > 0; i--) {
+  for (let i = fa.length - 1; i >= 0; i--) {
     x = f(fa[i], x)
   }
   return x

@@ -1,4 +1,5 @@
-import { identity, pipe, tuple } from '@principia/base/function'
+import { identity, pipe } from '@principia/base/function'
+import { tuple } from '@principia/base/tuple'
 import { matchTag_ } from '@principia/base/util/matchers'
 
 export interface Interrupt {

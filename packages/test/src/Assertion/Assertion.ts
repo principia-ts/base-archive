@@ -229,6 +229,8 @@ export function equalTo<A>(
   return assertion('equalTo', [param(expected, show)], (actual) => eq.equals_(actual, expected))
 }
 
+export const isTrue: Assertion<boolean> = assertion('isTrue', [], identity)
+
 export function isLeft<A>(assertion: Assertion<A>): Assertion<E.Either<A, any>> {
   return assertionRec(
     'isLeft',

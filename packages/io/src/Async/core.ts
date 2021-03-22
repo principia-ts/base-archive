@@ -7,11 +7,12 @@ import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
-import { flow, identity, pipe, tuple } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import { genF, GenHKT } from '@principia/base/Gen'
 import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
 import { isOption } from '@principia/base/Option'
 import * as R from '@principia/base/Record'
+import { tuple } from '@principia/base/tuple'
 import * as P from '@principia/base/typeclass'
 import { makeStack } from '@principia/base/util/support/Stack'
 

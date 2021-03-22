@@ -3,8 +3,9 @@ import type { IO } from '../IO/core'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { identity, pipe, tuple } from '@principia/base/function'
+import { identity, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
+import { tuple } from '@principia/base/tuple'
 
 import * as C from '../Cause'
 

@@ -1,9 +1,10 @@
 import type { FiberStatus, RuntimeFiber } from '../Fiber/core'
 import type { UIO } from '../IO/core'
 
-import { constant, tuple } from '@principia/base/function'
+import { constant } from '@principia/base/function'
 import * as IT from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
+import { tuple } from '@principia/base/tuple'
 
 import { FiberDump, fiberName } from '../Fiber/core'
 import { crossPar_ } from '../IO/combinators/apply-par'

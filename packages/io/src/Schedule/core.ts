@@ -6,8 +6,9 @@ import type { Option } from '@principia/base/Option'
 
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
-import { constant, pipe, tuple } from '@principia/base/function'
+import { constant, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
+import { tuple } from '@principia/base/tuple'
 
 import { Clock } from '../Clock'
 import * as I from '../IO/core'

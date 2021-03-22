@@ -7,9 +7,10 @@
 import type * as HKT from './HKT'
 import type { Stack } from './util/support/Stack'
 
-import { identity, tuple } from './function'
+import { identity } from './function'
 import { EvalURI } from './Modules'
 import * as O from './Option'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'

@@ -2,10 +2,10 @@ import type { ElemType, ExcludeUnion, ExtractUnion, KeysDefinition, Tagged } fro
 
 import * as A from '@principia/base/Array'
 import * as Eq from '@principia/base/Eq'
-import { tuple } from '@principia/base/function'
 import * as R from '@principia/base/Record'
 import * as Se from '@principia/base/Semigroup'
 import * as S from '@principia/base/string'
+import { tuple } from '@principia/base/tuple'
 
 import * as Co from './constructors'
 import * as Ma from './matcher'

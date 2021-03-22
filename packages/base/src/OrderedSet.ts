@@ -2,8 +2,8 @@ import type { Ord } from './Ord'
 import type { Predicate } from './Predicate'
 import type { Refinement } from './Refinement'
 
-import { not } from './function'
 import * as OM from './OrderedMap'
+import { not } from './Predicate'
 
 export class OrderedSet<A> implements Iterable<A> {
   constructor(readonly keyMap: OM.OrderedMap<A, null>) {}

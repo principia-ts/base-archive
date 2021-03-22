@@ -9,7 +9,9 @@ import type * as P from './typeclass'
 
 import * as A from './Array'
 import { makeEq } from './Eq'
-import { identity, not, tuple } from './function'
+import { identity } from './function'
+import { not } from './Predicate'
+import { tuple } from './tuple'
 import { makeMonoid, makeSemigroup } from './typeclass'
 
 /*

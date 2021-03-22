@@ -14,8 +14,9 @@ import type { Show } from './Show'
 import type { These } from './These'
 
 import { makeEq } from './Eq'
-import { _bind, flow, identity, pipe, tuple } from './function'
+import { flow, identity, pipe } from './function'
 import * as O from './internal/option'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 
 /*
@@ -422,28 +423,6 @@ export function crossWith<A, B, C>(fb: Option<B>, f: (a: A, b: B) => C): (fa: Op
  */
 export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (fb: Option<B>) => Option<C> {
   return (fa) => (fb) => crossWith_(fa, fb, (a, b) => f(a)(b))
-}
-
-/**
- * A pipeable version of `sequenceS`
- *
- * @category Apply
- * @since 1.0.0
- */
-export function apS<N extends string, A, B>(
-  name: Exclude<N, keyof A>,
-  fb: Option<B>
-): (
-  fa: Option<A>
-) => Option<
-  {
-    [K in keyof A | N]: K extends keyof A ? A[K] : B
-  }
-> {
-  return flow(
-    map((a) => (b: B) => _bind(a, name, b)),
-    ap(fb)
-  )
 }
 
 /*
@@ -909,6 +888,23 @@ export const Apply = P.Apply<URI>({
   cross_,
   ap_
 })
+
+/**
+ * A pipeable version of `sequenceS`
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export const apS: <N extends string, A, B>(
+  name: Exclude<N, keyof A>,
+  fb: Option<B>
+) => (
+  fa: Option<A>
+) => Option<
+  {
+    [K in keyof A | N]: K extends keyof A ? A[K] : B
+  }
+> = P.apSF(Apply)
 
 export const MonoidalFunctor = P.MonoidalFunctor<URI>({
   map_,

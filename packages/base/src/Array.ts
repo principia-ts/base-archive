@@ -8,7 +8,7 @@ import type { Refinement, RefinementWithIndex } from './Refinement'
 import type { These } from './These'
 import type { Mutable } from './util/types'
 
-import { _bind, _bindTo, flow, identity, pipe, tuple, unsafeCoerce } from './function'
+import { identity, pipe, unsafeCoerce } from './function'
 import { GenLazyHKT, genWithHistoryF } from './Gen'
 import * as G from './Guard'
 import * as HKT from './HKT'
@@ -18,6 +18,7 @@ import * as N from './number'
 import * as O from './Option'
 import * as Ord from './Ord'
 import { EQ } from './Ordering'
+import { tuple } from './tuple'
 import * as P from './typeclass'
 import { makeMonoid } from './typeclass'
 
@@ -331,51 +332,6 @@ export function separate<E, A>(fa: ReadonlyArray<Either<E, A>>): readonly [Reado
   return [left, right]
 }
 
-/*
- * -------------------------------------------
- * Do
- * -------------------------------------------
- */
-
-const of: ReadonlyArray<{}> = pure({})
-export { of as do }
-
-export function bindS<A, K, N extends string>(
-  name: Exclude<N, keyof K>,
-  f: (_: K) => ReadonlyArray<A>
-): (
-  mk: ReadonlyArray<K>
-) => ReadonlyArray<
-  {
-    [k in N | keyof K]: k extends keyof K ? K[k] : A
-  }
-> {
-  return bind((a) =>
-    pipe(
-      f(a),
-      map((b) => _bind(a, name, b))
-    )
-  )
-}
-
-export function bindTo<K, N extends string>(
-  name: Exclude<N, keyof K>
-): <A>(
-  fa: ReadonlyArray<A>
-) => ReadonlyArray<
-  {
-    [k in Exclude<N, keyof K>]: A
-  }
-> {
-  return map(_bindTo(name))
-}
-
-export function letS<K, N extends string, A>(
-  name: Exclude<N, keyof K>,
-  f: (_: K) => A
-): (mk: ReadonlyArray<K>) => ReadonlyArray<{ [k in N | keyof K]: k extends keyof K ? K[k] : A }> {
-  return bindS(name, flow(f, pure))
-}
 
 /*
  * -------------------------------------------
@@ -2367,6 +2323,41 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
 export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
   unfold
 })
+
+/*
+ * -------------------------------------------
+ * Do
+ * -------------------------------------------
+ */
+
+const of: ReadonlyArray<{}> = pure({})
+export { of as do }
+
+export const bindS: <A, K, N extends string>(
+  name: Exclude<N, keyof K>,
+  f: (_: K) => ReadonlyArray<A>
+) => (
+  mk: ReadonlyArray<K>
+) => ReadonlyArray<
+  {
+    [k in N | keyof K]: k extends keyof K ? K[k] : A
+  }
+> = P.bindSF(Monad)
+
+export const bindTo:<K, N extends string>(
+  name: Exclude<N, keyof K>
+) => <A>(
+  fa: ReadonlyArray<A>
+) => ReadonlyArray<
+  {
+    [k in Exclude<N, keyof K>]: A
+  }
+> = P.bindToSF(Functor)
+
+export const letS: <K, N extends string, A>(
+  name: Exclude<N, keyof K>,
+  f: (_: K) => A
+) => (mk: ReadonlyArray<K>) => ReadonlyArray<{ [k in N | keyof K]: k extends keyof K ? K[k] : A }> = P.letSF(Monad)
 
 /*
  * -------------------------------------------
