@@ -4136,7 +4136,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                 I.bind((exit) =>
                   pipe(
                     doneRef,
-                    RefM.modify((o) => {
+                    RefM.modifyM((o) => {
                       const causeOrChunk = pipe(
                         exit,
                         Ex.match(

@@ -951,7 +951,7 @@ export class MemoMap {
     return new M.Managed<R, E, A>(
       pipe(
         this.ref,
-        XRM.modify((m) => {
+        XRM.modifyM((m) => {
           const inMap = m.get(layer.hash.get)
 
           if (inMap) {

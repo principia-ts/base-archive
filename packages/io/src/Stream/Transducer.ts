@@ -190,7 +190,7 @@ export function branchAfter<R, E, I, O>(
               })
             ),
           (data) =>
-            RefM.modify_(state, (s) => {
+            RefM.modifyM_(state, (s) => {
               switch (s._tag) {
                 case 'Emitting': {
                   return I.map_(s.push(O.Some(data)), (_) => [_, s] as const)

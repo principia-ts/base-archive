@@ -1,5 +1,6 @@
 import type { UIO } from '../IO/core'
 import type { URef } from '../IORef'
+import type { IORef } from '../IORef/core'
 import type { UManaged } from '../Managed/core'
 import type { Semaphore } from '../Semaphore'
 
@@ -33,7 +34,7 @@ import * as I from './internal/io'
  * at some cost to performance. Writes will semantically block other writers,
  * while multiple readers can read simultaneously.
  */
-export interface IORefM<RA, RB, EA, EB, A, B> {
+export abstract class IORefM<RA, RB, EA, EB, A, B> implements IORef<RA, RB, EA, EB, A, B> {
   /**
    * Folds over the error and value types of the `IORefM`. This is a highly
    * polymorphic method that is capable of arbitrarily transforming the error
@@ -42,7 +43,7 @@ export interface IORefM<RA, RB, EA, EB, A, B> {
    * ergonomic but this method is extremely useful for implementing new
    * combinators.
    */
-  readonly matchM: <RC, RD, EC, ED, C, D>(
+  abstract readonly matchM: <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -54,7 +55,7 @@ export interface IORefM<RA, RB, EA, EB, A, B> {
    * the state in transforming the `set` value. This is a more powerful version
    * of `matchM` but requires unifying the environment and error types.
    */
-  readonly matchAllM: <RC, RD, EC, ED, C, D>(
+  abstract readonly matchAllM: <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -65,23 +66,53 @@ export interface IORefM<RA, RB, EA, EB, A, B> {
   /**
    * Reads the value from the `IORefM`.
    */
-  readonly get: I.IO<RB, EB, B>
+  abstract readonly get: I.IO<RB, EB, B>
 
   /**
    * Writes a new value to the `IORefM`, with a guarantee of immediate
    * consistency (at some cost to performance).
    */
-  readonly set: (a: A) => I.IO<RA, EA, void>
+  abstract readonly set: (a: A) => I.IO<RA, EA, void>
+
+  readonly match = <EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ca: (_: C) => E.Either<EC, A>,
+    bd: (_: B) => E.Either<ED, D>
+  ): IORefM<RA, RB, EC, ED, C, D> =>
+    this.matchM(
+      ea,
+      eb,
+      (c) => I.fromEither(() => ca(c)),
+      (b) => I.fromEither(() => bd(b))
+    )
+
+  readonly matchAll = <EC, ED, C, D>(
+    ea: (_: EA) => EC,
+    eb: (_: EB) => ED,
+    ec: (_: EB) => EC,
+    ca: (_: C) => (_: B) => E.Either<EC, A>,
+    bd: (_: B) => E.Either<ED, D>
+  ): IORef<RA & RB, RB, EC, ED, C, D> =>
+    this.matchAllM(
+      ea,
+      eb,
+      ec,
+      (c) => (b) => I.fromEither(() => ca(c)(b)),
+      (b) => I.fromEither(() => bd(b))
+    )
 }
 
-export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, A, B> {
-  readonly _tag = 'DerivedAll'
+export class DerivedAllM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB, A, B> {
+  readonly _tag = 'DerivedAllM'
 
   constructor(
-    readonly value: Atomic<S>,
+    readonly value: AtomicM<S>,
     readonly getEither: (s: S) => I.IO<RB, EB, B>,
     readonly setEither: (a: A) => (s: S) => I.IO<RA, EA, S>
-  ) {}
+  ) {
+    super()
+  }
 
   readonly matchM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
@@ -89,7 +120,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
     ca: (_: C) => I.IO<RC, EC, A>,
     bd: (_: B) => I.IO<RD, ED, D>
   ): IORefM<RA & RC, RB & RD, EC, ED, C, D> =>
-    new DerivedAll<RA & RC, RB & RD, EC, ED, C, D, S>(
+    new DerivedAllM<RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
         I.matchM_(
@@ -107,7 +138,7 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
     ca: (_: C) => (_: B) => I.IO<RC, EC, A>,
     bd: (_: B) => I.IO<RD, ED, D>
   ): IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
-    new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
+    new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
         I.matchM_(
@@ -128,14 +159,16 @@ export class DerivedAll<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, E
     withPermit(this.value.semaphore)(I.bind_(I.bind_(this.value.get, this.setEither(a)), (a) => this.value.set(a)))
 }
 
-export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, A, B> {
-  readonly _tag = 'Derived'
+export class DerivedM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB, A, B> {
+  readonly _tag = 'DerivedM'
 
   constructor(
-    readonly value: Atomic<S>,
+    readonly value: AtomicM<S>,
     readonly getEither: (s: S) => I.IO<RB, EB, B>,
     readonly setEither: (a: A) => I.IO<RA, EA, S>
-  ) {}
+  ) {
+    super()
+  }
 
   readonly matchM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
@@ -143,7 +176,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
     ca: (_: C) => I.IO<RC, EC, A>,
     bd: (_: B) => I.IO<RD, ED, D>
   ): IORefM<RA & RC, RB & RD, EC, ED, C, D> =>
-    new Derived<RA & RC, RB & RD, EC, ED, C, D, S>(
+    new DerivedM<RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
         I.matchM_(
@@ -161,7 +194,7 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
     ca: (_: C) => (_: B) => I.IO<RC, EC, A>,
     bd: (_: B) => I.IO<RD, ED, D>
   ): IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
-    new DerivedAll<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
+    new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
       (s) =>
         I.matchM_(
@@ -182,10 +215,12 @@ export class Derived<RA, RB, EA, EB, A, B, S> implements IORefM<RA, RB, EA, EB, 
     withPermit(this.value.semaphore)(I.bind_(this.setEither(a), (a) => this.value.set(a)))
 }
 
-export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
-  readonly _tag = 'Atomic'
+export class AtomicM<A> extends IORefM<unknown, unknown, never, never, A, A> {
+  readonly _tag = 'AtomicM'
 
-  constructor(readonly ref: URef<A>, readonly semaphore: Semaphore) {}
+  constructor(readonly ref: URef<A>, readonly semaphore: Semaphore) {
+    super()
+  }
 
   readonly matchM = <RC, RD, EC, ED, C, D>(
     _ea: (_: never) => EC,
@@ -193,7 +228,7 @@ export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
     ca: (_: C) => I.IO<RC, EC, A>,
     bd: (_: A) => I.IO<RD, ED, D>
   ): IORefM<RC, RD, EC, ED, C, D> =>
-    new Derived<RC, RD, EC, ED, C, D, A>(
+    new DerivedM<RC, RD, EC, ED, C, D, A>(
       this,
       (s) => bd(s),
       (a) => ca(a)
@@ -206,7 +241,7 @@ export class Atomic<A> implements IORefM<unknown, unknown, never, never, A, A> {
     ca: (_: C) => (_: A) => I.IO<RC, EC, A>,
     bd: (_: A) => I.IO<RD, ED, D>
   ): IORefM<RC, RD, EC, ED, C, D> =>
-    new DerivedAll<RC, RD, EC, ED, C, D, A>(
+    new DerivedAllM<RC, RD, EC, ED, C, D, A>(
       this,
       (s) => bd(s),
       (a) => (s) => ca(a)(s)
@@ -222,8 +257,8 @@ export interface FRefM<E, A> extends IORefM<unknown, unknown, E, E, A, A> {}
 export interface URRefM<R, A> extends IORefM<R, R, never, never, A, A> {}
 export interface URefM<A> extends IORefM<unknown, unknown, never, never, A, A> {}
 
-export const concrete = <RA, RB, EA, EB, A>(_: IORefM<RA, RB, EA, EB, A, A>) =>
-  _ as Atomic<A> | Derived<RA, RB, EA, EB, A, A, A> | DerivedAll<RA, RB, EA, EB, A, A, A>
+export const concreteM = <RA, RB, EA, EB, A>(_: IORefM<RA, RB, EA, EB, A, A>) =>
+  _ as AtomicM<A> | DerivedM<RA, RB, EA, EB, A, A, A> | DerivedAllM<RA, RB, EA, EB, A, A, A>
 
 /*
  * -------------------------------------------
@@ -238,7 +273,7 @@ export function make<A>(a: A): UIO<URefM<A>> {
   return I.gen(function* (_) {
     const ref       = yield* _(R.make(a))
     const semaphore = yield* _(S.make(1))
-    return new Atomic(ref, semaphore)
+    return new AtomicM(ref, semaphore)
   })
 }
 
@@ -248,7 +283,7 @@ export function make<A>(a: A): UIO<URefM<A>> {
 export function unsafeMake<A>(a: A): URefM<A> {
   const ref       = R.unsafeMake(a)
   const semaphore = S.unsafeMake(1)
-  return new Atomic(ref, semaphore)
+  return new AtomicM(ref, semaphore)
 }
 
 /**
@@ -263,7 +298,7 @@ export function makeManaged<A>(a: A): UManaged<URefM<A>> {
  * Creates a new `RefM` and a `Dequeue` that will emit every change to the
  * `RefM`.
  */
-export function dequeueRef<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
+export function dequeueRefM<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
   return I.gen(function* (_) {
     const ref   = yield* _(make(a))
     const queue = yield* _(Q.makeUnbounded<A>())
@@ -730,15 +765,15 @@ export function dimapError<EA, EB, EC, ED>(
  * a return value for the modification. This is a more powerful version of
  * `update`.
  */
-export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
+export function modifyM_<RA, RB, EA, EB, R1, E1, B, A>(
   self: IORefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, readonly [B, A]>
 ): I.IO<RA & RB & R1, EA | EB | E1, B> {
   return pipe(
     self,
-    concrete,
+    concreteM,
     matchTag({
-      Atomic: (atomic) =>
+      AtomicM: (atomic) =>
         pipe(
           atomic.ref.get,
           I.bind(f),
@@ -750,7 +785,7 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
           ),
           S.withPermit(atomic.semaphore)
         ),
-      Derived: (derived) =>
+      DerivedM: (derived) =>
         pipe(
           derived.value.ref.get,
           I.bind((a) =>
@@ -768,7 +803,7 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
           ),
           S.withPermit(derived.value.semaphore)
         ),
-      DerivedAll: (derivedAll) =>
+      DerivedAllM: (derivedAll) =>
         pipe(
           derivedAll.value.ref.get,
           I.bind((s) =>
@@ -795,10 +830,10 @@ export function modify_<RA, RB, EA, EB, R1, E1, B, A>(
  * a return value for the modification. This is a more powerful version of
  * `update`.
  */
-export function modify<R1, E1, B, A>(
+export function modifyM<R1, E1, B, A>(
   f: (a: A) => I.IO<R1, E1, readonly [B, A]>
 ): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, B> {
-  return (self) => modify_(self, f)
+  return (self) => modifyM_(self, f)
 }
 
 /**
@@ -808,7 +843,7 @@ export function modify<R1, E1, B, A>(
 export function getAndSet_<RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, A>, a: A): I.IO<RA & RB, EA | EB, A> {
   return pipe(
     self,
-    modify((v) => I.pure([v, a]))
+    modifyM((v) => I.pure([v, a]))
   )
 }
 
@@ -830,7 +865,7 @@ export function getAndUpdate_<RA, RB, EA, EB, R1, E1, A>(
 ): I.IO<RA & RB & R1, EA | EB | E1, A> {
   return pipe(
     self,
-    modify((v) =>
+    modifyM((v) =>
       pipe(
         f(v),
         I.map((r) => [v, r])
@@ -859,7 +894,7 @@ export function getAndUpdateSome_<RA, RB, EA, EB, R1, E1, A>(
 ): I.IO<RA & RB & R1, EA | EB | E1, A> {
   return pipe(
     self,
-    modify((v) =>
+    modifyM((v) =>
       pipe(
         f(v),
         O.getOrElse(() => I.pure(v)),
@@ -892,7 +927,7 @@ export function modifySome_<RA, RB, EA, EB, R1, E1, A, B>(
 ): I.IO<RA & RB & R1, EA | EB | E1, B> {
   return pipe(
     self,
-    modify((v) =>
+    modifyM((v) =>
       pipe(
         f(v),
         O.getOrElse(() => I.pure(tuple(def, v)))
@@ -924,7 +959,7 @@ export function update_<RA, RB, EA, EB, R1, E1, A>(
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
   return pipe(
     self,
-    modify((v) =>
+    modifyM((v) =>
       pipe(
         f(v),
         I.map((r) => [undefined, r])
@@ -951,7 +986,7 @@ export function updateAndGet_<RA, RB, EA, EB, R1, E1, A>(
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
   return pipe(
     self,
-    modify((v) =>
+    modifyM((v) =>
       pipe(
         f(v),
         I.map((r) => [r, r])
@@ -979,7 +1014,7 @@ export function updateSome_<RA, RB, EA, EB, R1, E1, A>(
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
   return pipe(
     self,
-    modify((v) =>
+    modifyM((v) =>
       pipe(
         f(v),
         O.getOrElse(() => I.pure(v)),
@@ -1007,7 +1042,7 @@ export function updateSomeAndGet_<RA, RB, EA, EB, R1, E1, A>(
 ): I.IO<RA & RB & R1, E1 | EA | EB, A> {
   return pipe(
     self,
-    modify((v) =>
+    modifyM((v) =>
       pipe(
         f(v),
         O.getOrElse(() => I.pure(v)),

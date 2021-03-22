@@ -12,7 +12,7 @@ export class SubscriptionRef<A> {
 
 export function make<A>(a: A): I.UIO<SubscriptionRef<A>> {
   return pipe(
-    RefM.dequeueRef(a),
+    RefM.dequeueRefM(a),
     I.map(([ref, queue]) => new SubscriptionRef(ref, S.fromQueue(queue)))
   )
 }
