@@ -197,6 +197,9 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private pushContinuation(k: Frame) {
+    if (this.platform.traceStack && this.inTracingRegion) {
+      this.stackTraces.push(traceLocation(k.apply))
+    }
     this.mut_stack = makeStack(k, this.mut_stack)
   }
 

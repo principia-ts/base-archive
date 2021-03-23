@@ -3,9 +3,21 @@
     "outDir": "../build",
     "rootDir": "../",
     "target": "es2017",
-    "module": "commonjs",
-    "sourceMap": true
+    "module": "esnext",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "../../compile/src/index.ts",
+        "tracing": true,
+        "relativeProjectRoot": "../../",
+        "moduleMap": {
+          "^src/(.*)": "(@principia/io): _src/$1",
+          "^test/(.*)": "(@principia/io): _test/$1"
+        }
+      }
+    ]
   },
   "include": ["../src", "../test"],
+  "exclude": ["../test/*Spec.ts"],
   "extends": "../../../tsconfig.json"
 }

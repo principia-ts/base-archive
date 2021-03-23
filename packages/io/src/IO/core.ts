@@ -30,8 +30,7 @@ import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import { tuple } from '@principia/base/tuple'
 import { makeMonoid } from '@principia/base/typeclass'
-import { accessCallTrace, traceFrom } from '@principia/compile/util'
-import * as FL from '@principia/free/FreeList'
+import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
 
 import { runAsyncEnv } from '../Async'
 import * as C from '../Cause/core'
@@ -70,9 +69,10 @@ export * from './primitives'
  *
  * @category Constructors
  * @since 1.0.0
+ * @trace call
  */
 export function succeed<A = never>(a: A): UIO<A> {
-  return new Succeed(a)
+  return new Succeed(a, accessCallTrace())
 }
 
 /**
@@ -108,6 +108,7 @@ export function effectAsync<R, E, A>(
  *
  * @category Constructors
  * @since 1.0.0
+ * @trace 0
  */
 export function effectAsyncOption<R, E, A>(
   register: (k: (_: IO<R, E, A>) => void) => O.Option<IO<R, E, A>>,
@@ -615,9 +616,11 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO
  *
  * @category Combinators
  * @since 1.0.0
+ * @trace call
  */
 export function refail<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
-  return bind_(ma, E.match(fail, succeed))
+  const trace = accessCallTrace()
+  return bind_(ma, traceFrom(trace, E.match(fail, succeed)))
 }
 
 /**
@@ -635,6 +638,9 @@ export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> 
 
 /**
  * A more powerful version of `matchM_` that allows recovering from any kind of failure except interruptions.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   ma: IO<R, E, A>,
@@ -646,7 +652,10 @@ export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 
 /**
  * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
+ *
  * @dataFirst matchCauseM_
+ * @trace 0
+ * @trace 1
  */
 export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
@@ -655,16 +664,26 @@ export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   return (ma) => new Fold(ma, onFailure, onSuccess)
 }
 
+/**
+ * @trace 1
+ * @trace 2
+ */
 export function matchM_<R, R1, R2, E, E1, E2, A, A1, A2>(
   ma: IO<R, E, A>,
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return matchCauseM_(ma, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt), onSuccess)
+  return matchCauseM_(
+    ma,
+    traceAs(onFailure, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt)),
+    onSuccess
+  )
 }
 
 /**
  * @dataFirst matchM_
+ * @trace 0
+ * @trace 1
  */
 export function matchM<R1, R2, E, E1, E2, A, A1, A2>(
   onFailure: (e: E) => IO<R1, E1, A1>,
@@ -677,13 +696,16 @@ export function matchM<R1, R2, E, E1, E2, A, A1, A2>(
  * Folds over the failure value or the success value to yield an IO that
  * does not fail, but succeeds with the value returned by the left or right
  * function passed to `match_`.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function match_<R, E, A, B, C>(
   fa: IO<R, E, A>,
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): IO<R, never, B | C> {
-  return matchM_(fa, flow(onFailure, succeed), flow(onSuccess, succeed))
+  return matchM_(fa, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, succeed)))
 }
 
 /**
@@ -692,6 +714,8 @@ export function match_<R, E, A, B, C>(
  * function passed to `match`.
  *
  * @dataFirst match_
+ * @trace 0
+ * @trace 1
  */
 export function match<E, A, B, C>(
   onFailure: (e: E) => B,
@@ -713,6 +737,7 @@ export function match<E, A, B, C>(
  *
  * @category Functor
  * @since 1.0.0
+ * @trace 1
  */
 export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
   return bind_(fa, (a) => succeed(f(a)))
@@ -726,6 +751,7 @@ export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
  * @category Functor
  * @since 1.0.0
  * @dataFirst map_
+ * @trace 0
  */
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B> {
   return (fa) => map_(fa, f)
@@ -786,12 +812,16 @@ export function flatten<R, E, R1, E1, A>(ffa: IO<R, E, IO<R1, E1, A>>) {
  *
  * @category Monad
  * @since 1.0.0
+ * @trace 1
  */
 export function tap_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
-  return bind_(fa, (a) =>
-    pipe(
-      f(a),
-      bind(() => succeed(a))
+  return bind_(
+    fa,
+    traceAs(f, (a) =>
+      pipe(
+        f(a),
+        map(() => a)
+      )
     )
   )
 }
@@ -805,6 +835,7 @@ export function tap_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, f: (a: A) => IO<R1, E1
  * @category Monad
  * @since 1.0.0
  * @dataFirst tap_
+ * @trace 0
  */
 export function tap<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
   return (fa) => tap_(fa, f)
@@ -813,6 +844,9 @@ export function tap<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(fa: IO<R, 
 /**
  * Returns an IO that effectfully "peeks" at the failure or success of
  * this effect.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function tapBoth_<R, E, A, R1, E1, R2, E2>(
   fa: IO<R, E, A>,
@@ -835,6 +869,8 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
  * Returns an IO that effectfully "peeks" at the failure or success of
  * this effect.
  * @dataFirst tapBoth_
+ * @trace 0
+ * @trace 1
  */
 export function tapBoth<E, A, R1, E1, R2, E2>(
   onFailure: (e: E) => IO<R1, E1, any>,
@@ -845,6 +881,7 @@ export function tapBoth<E, A, R1, E1, R2, E2>(
 
 /**
  * Returns an IO that effectfully "peeks" at the failure of this effect.
+ * @trace 1
  */
 export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, E1, any>) {
   return matchCauseM_(
@@ -862,6 +899,7 @@ export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, 
 /**
  * Returns an IO that effectfully "peeks" at the failure of this effect.
  * @dataFirst tapError_
+ * @trace 0
  */
 export function tapError<E, R1, E1>(f: (e: E) => IO<R1, E1, any>): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A> {
   return (fa) => tapError_(fa, f)
@@ -878,9 +916,10 @@ export function tapError<E, R1, E1>(f: (e: E) => IO<R1, E1, any>): <R, A>(fa: IO
  *
  * @category MonadEnv
  * @since 1.0.0
+ * @trace 0
  */
 export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
-  return new Read((_: R) => new Succeed(f(_)))
+  return new Read(traceAs(f, (_: R) => new Succeed(f(_))))
 }
 
 /**
@@ -888,6 +927,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  *
  * @category MonadEnv
  * @since 1.0.0
+ * @trace 0
  */
 export function asksM<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> {
   return new Read(f)
@@ -1645,17 +1685,14 @@ export function foreachUnit<R, E, A>(f: (a: A) => IO<R, E, any>): (as: Iterable<
  *
  * @category Combinators
  * @since 1.0.0
+ * @trace 1
  */
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, ReadonlyArray<B>> {
-  return map_(
-    I.foldl_(as, succeed(FL.Empty<B>()) as IO<R, E, FL.FreeList<B>>, (b, a) =>
-      crossWith_(
-        b,
-        deferTotal(() => f(a)),
-        (acc, r) => FL.append_(acc, r)
-      )
-    ),
-    FL.toArray
+  return I.foldl_(as, succeed([]) as IO<R, E, Array<B>>, (b, a) =>
+    crossWith_(b, deferTotal(traceAs(f, () => f(a))), (acc, r) => {
+      acc.push(r)
+      return acc
+    })
   )
 }
 
@@ -1668,6 +1705,7 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>):
  *
  * @category Combinators
  * @since 1.0.0
+ * @trace 0
  */
 export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, ReadonlyArray<B>> {
   return (as) => foreach_(as, f)
