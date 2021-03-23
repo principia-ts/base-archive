@@ -2,9 +2,9 @@ import { pipe } from '@principia/base/function'
 import * as L from '@principia/base/List'
 import { tuple } from '@principia/base/tuple'
 
-import * as Ref from '../../IORef'
 import * as P from '../../Promise'
 import * as Q from '../../Queue'
+import * as Ref from '../../Ref'
 import * as I from '../core'
 import { bracket } from './bracket'
 
@@ -43,7 +43,7 @@ export function foreachParN_(n: number) {
                 )
               )
             )
-            const ref   = yield* _(Ref.make(pairs.length))
+            const ref   = yield* _(Ref.makeRef(pairs.length))
             yield* _(I.fork(I.foreach_(pairs, (pair) => q.offer(pair))))
             yield* _(
               I.collectAllUnit(

@@ -18,9 +18,9 @@ import { matchTag } from '@principia/base/util/matchers'
 import * as Ca from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
+import * as Ref from '@principia/io/Ref'
 
 import { empty } from './Cache'
 import { Described } from './Described'
@@ -640,7 +640,7 @@ export function fromRequestUncached<R, E, A, B>(
 ): Query<R, E, B> {
   return new Query(
     pipe(
-      Ref.make(O.None<E.Either<E, B>>()),
+      Ref.makeRef(O.None<E.Either<E, B>>()),
       I.map((ref) =>
         Res.blocked(BRS.single(dataSource, BlockedRequest.make(request, ref)), Cont.make(request, dataSource, ref))
       )

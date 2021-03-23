@@ -18,9 +18,9 @@ import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import * as Ca from '../Cause'
 import { sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
-import * as Ref from '../IORef'
 import * as RelMap from '../Managed/ReleaseMap'
 import * as P from '../Promise'
+import * as Ref from '../Ref'
 import * as I from './internal/io'
 import * as M from './internal/managed'
 
@@ -976,9 +976,9 @@ export class MemoMap {
             return I.pure(tuple(cached, m))
           } else {
             return I.gen(function* (_) {
-              const observers    = yield* _(Ref.make(0))
+              const observers    = yield* _(Ref.makeRef(0))
               const promise      = yield* _(P.make<E, A>())
-              const finalizerRef = yield* _(Ref.make<Finalizer>(RelMap.noopFinalizer))
+              const finalizerRef = yield* _(Ref.makeRef<Finalizer>(RelMap.noopFinalizer))
 
               const resource = I.uninterruptibleMask(({ restore }) =>
                 I.gen(function* (_) {

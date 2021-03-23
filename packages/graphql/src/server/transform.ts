@@ -8,8 +8,8 @@ import { identity, pipe } from '@principia/base/function'
 import { HttpConnection } from '@principia/http/HttpConnection'
 import * as I from '@principia/io/IO'
 import { _U } from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
+import * as Ref from '@principia/io/Ref'
 import * as S from '@principia/io/Stream'
 import * as Sy from '@principia/io/Sync'
 import { Context } from '@principia/koa'
@@ -36,7 +36,7 @@ export function transformResolvers<Ctx>(
         (resolvers as any)[mut_fieldName] = (root: any, args: any, ctx: any, info: GraphQLResolveInfo) => {
           return I.runPromise(
             I.gen(function* (_) {
-              const reqRef  = yield* _(Ref.make(ctx.req))
+              const reqRef  = yield* _(Ref.makeRef(ctx.req))
               const resRef  = yield* _(Ref.makeRefM(ctx.res))
               const context = yield* _(
                 I.effectTotal(() => ({

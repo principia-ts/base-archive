@@ -7,7 +7,7 @@ import * as O from '@principia/base/Option'
 import * as Ex from '../../Exit'
 import { foreachPar as foreachParIO } from '../../IO/combinators/foreachPar'
 import { foreachParN as foreachParNIO } from '../../IO/combinators/foreachParN'
-import * as XR from '../../IORef'
+import * as XR from '../../Ref'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
 

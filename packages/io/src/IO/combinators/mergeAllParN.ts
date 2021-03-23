@@ -2,7 +2,7 @@ import type { IO } from '../core'
 
 import { pipe } from '@principia/base/function'
 
-import * as XR from '../../IORef'
+import * as XR from '../../Ref'
 import { bind, bind_ } from '../core'
 import { foreachUnitParN_ } from './foreachUnitParN'
 
@@ -18,7 +18,7 @@ import { foreachUnitParN_ } from './foreachUnitParN'
  */
 export function mergeAllParN_(n: number) {
   return <R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> =>
-    bind_(XR.make(b), (acc) =>
+    bind_(XR.makeRef(b), (acc) =>
       bind_(
         foreachUnitParN_(n)(
           fas,

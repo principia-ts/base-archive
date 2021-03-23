@@ -4,7 +4,7 @@ import type { Eq } from '@principia/base/Eq'
 import { pipe } from '@principia/base/function'
 import { tuple } from '@principia/base/tuple'
 
-import * as Ref from '../../IORef'
+import * as Ref from '../../Ref'
 import * as P from '../../Promise'
 import * as I from '../core'
 import { to } from './to'

@@ -1,5 +1,5 @@
 import type { Exit } from '../Exit'
-import type { URef } from '../IORef/core'
+import type { URef } from '../Ref/core'
 import type { Option } from '@principia/base/Option'
 
 import { absurd, increment, pipe } from '@principia/base/function'
@@ -8,7 +8,7 @@ import * as O from '@principia/base/Option'
 import { None, Some } from '@principia/base/Option'
 
 import * as I from '../IO/core'
-import * as XR from '../IORef/core'
+import * as XR from '../Ref/core'
 
 export type Finalizer = (exit: Exit<any, any>) => I.IO<unknown, never, any>
 
@@ -115,4 +115,4 @@ export function replace(key: number, finalizer: Finalizer): (_: ReleaseMap) => I
     )
 }
 
-export const make = I.map_(XR.make<State>(new Running(0, new Map())), (s) => new ReleaseMap(s))
+export const make = I.map_(XR.makeRef<State>(new Running(0, new Map())), (s) => new ReleaseMap(s))

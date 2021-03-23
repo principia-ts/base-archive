@@ -3,8 +3,8 @@ import type { List } from '@principia/base/List'
 import type { Option } from '@principia/base/Option'
 import type { Clock } from '@principia/io/Clock'
 import type { UIO } from '@principia/io/IO'
-import type { URef } from '@principia/io/IORef'
 import type { Random } from '@principia/io/Random'
+import type { URef } from '@principia/io/Ref'
 
 import { Byte } from '@principia/base/Byte'
 import { IllegalArgumentError } from '@principia/base/Error'
@@ -14,9 +14,9 @@ import * as O from '@principia/base/Option'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 import { ClockTag } from '@principia/io/Clock'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
 import { Mash, RandomTag } from '@principia/io/Random'
+import * as Ref from '@principia/io/Ref'
 import { intersect } from '@principia/io/util/intersect'
 
 const TestRandomTag = tag<TestRandom>()
@@ -171,8 +171,8 @@ export class TestRandom implements Random {
   static make(initialData: Data): L.Layer<unknown, never, Has<Random> & Has<TestRandom>> {
     return L.fromRawEffect(
       I.gen(function* (_) {
-        const data   = yield* _(Ref.make(initialData))
-        const buffer = yield* _(Ref.make(new Buffer()))
+        const data   = yield* _(Ref.makeRef(initialData))
+        const buffer = yield* _(Ref.makeRef(new Buffer()))
         const test   = new TestRandom(data, buffer)
         return intersect(TestRandomTag.of(test), RandomTag.of(test))
       })

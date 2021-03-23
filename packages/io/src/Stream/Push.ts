@@ -7,7 +7,7 @@ import * as E from '@principia/base/Either'
 
 import * as C from '../Chunk'
 import * as I from '../IO'
-import * as XR from '../IORef'
+import * as XR from '../Ref'
 import * as M from '../Managed'
 
 export type Push<R, E, I, L, Z> = (
@@ -34,7 +34,7 @@ export function restartable<R, E, I, L, Z>(
   return M.gen(function* (_) {
     const switchSink  = yield* _(M.switchable<R, never, Push<R, E, I, L, Z>>())
     const initialSink = yield* _(switchSink(sink))
-    const currSink    = yield* _(XR.make(initialSink))
+    const currSink    = yield* _(XR.makeRef(initialSink))
 
     const restart = I.bind_(switchSink(sink), currSink.set)
     const push    = (input: O.Option<Chunk<I>>) => I.bind_(currSink.get, (f) => f(input))

@@ -9,7 +9,7 @@ import * as O from '@principia/base/Option'
 import { tuple } from '@principia/base/tuple'
 
 import { Clock } from '../../Clock'
-import * as Ref from '../../IORef'
+import * as Ref from '../../Ref'
 import * as P from '../../Promise'
 import * as I from '../core'
 import { uninterruptibleMask } from './interrupt'

@@ -12,7 +12,7 @@ import { pipe } from '@principia/base/function'
 import * as L from '@principia/base/List'
 import * as Set from '@principia/base/Set'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
+import * as Ref from '@principia/io/Ref'
 
 import * as DS from '../DataSource'
 import { eqRequest } from '../Request'
@@ -142,7 +142,7 @@ export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, vo
             yield* _(
               I.foreachUnit_(leftovers, (r) =>
                 pipe(
-                  Ref.make(completedRequests.lookup(r)),
+                  Ref.makeRef(completedRequests.lookup(r)),
                   I.bind((ref) => cache.put(r, ref))
                 )
               )

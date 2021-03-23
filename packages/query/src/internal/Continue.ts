@@ -6,7 +6,7 @@ import type { Query } from '../Query'
 import type { Request } from '../Request'
 import type * as Ca from '@principia/io/Cause'
 import type { FIO } from '@principia/io/IO'
-import type { URef } from '@principia/io/IORef'
+import type { URef } from '@principia/io/Ref'
 
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'

@@ -29,7 +29,7 @@ import { parallel, sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
 import * as Fi from '../Fiber'
 import * as I from '../IO'
-import * as Ref from '../IORef'
+import * as Ref from '../Ref'
 import * as M from '../Managed'
 import * as RM from '../Managed/ReleaseMap'
 import * as P from '../Promise'
@@ -222,7 +222,7 @@ export function fromChunk<A>(c: Chunk<A>): UStream<A> {
   return new Stream(
     I.toManaged_(
       I.gen(function* (_) {
-        const doneRef = yield* _(Ref.make(false))
+        const doneRef = yield* _(Ref.makeRef(false))
         const pull    = pipe(
           doneRef,
           Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
@@ -278,7 +278,7 @@ export const empty: UStream<never> = new Stream(M.succeed(Pull.end))
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
  */
 export function iterate<A>(a: A, f: (a: A) => A): UStream<A> {
-  return new Stream(pipe(Ref.make(a), I.toManaged(), M.map(flow(Ref.getAndUpdate(f), I.map(C.pure)))))
+  return new Stream(pipe(Ref.makeRef(a), I.toManaged(), M.map(flow(Ref.getAndUpdate(f), I.map(C.pure)))))
 }
 
 export function defer<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
@@ -339,7 +339,7 @@ export function finalizer<R>(finalizer: I.URIO<R, unknown>): URStream<R, unknown
 export function fromEffectOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
 
       const pull = pipe(
         doneRef,
@@ -565,7 +565,7 @@ export function paginateChunkM<S, R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const ref = yield* _(Ref.make(O.Some(s)))
+      const ref = yield* _(Ref.makeRef(O.Some(s)))
       return pipe(
         ref.get,
         I.bind(
@@ -611,7 +611,7 @@ export function repeat<A>(a: A): Stream<unknown, never, A> {
 export function repeatEffectChunkOption<R, E, A>(ef: I.IO<R, Option<E>, Chunk<A>>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
       const pull    = I.bind_(doneRef.get, (done) => {
         if (done) {
           return Pull.end
@@ -832,7 +832,7 @@ export function asyncM<R, E, A, R1 = R, E1 = E>(
       const output  = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime = yield* _(I.runtime<R>())
       yield* _(register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel_(x, cb))))
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
       const pull    = I.bind_(doneRef.get, (done) => {
         if (done) {
           return Pull.end
@@ -1358,9 +1358,9 @@ export function bind_<R, E, A, R1, E1, B>(
     M.gen(function* (_) {
       const outerStream     = yield* _(ma.proc)
       const currOuterChunk  = yield* _(
-        Ref.make<[Chunk<A>, number]>([C.empty(), 0])
+        Ref.makeRef<[Chunk<A>, number]>([C.empty(), 0])
       )
-      const currInnerStream = yield* _(Ref.make<I.IO<R_, Option<E_>, Chunk<B>>>(Pull.end))
+      const currInnerStream = yield* _(Ref.makeRef<I.IO<R_, Option<E_>, Chunk<B>>>(Pull.end))
       const innerFinalizer  = yield* _(M.finalizerRef(RM.noopFinalizer))
       return new Chain(f, outerStream, currOuterChunk, currInnerStream, innerFinalizer).apply()
     })
@@ -1469,7 +1469,7 @@ export function flattenExitOption<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<O.Option
   return new Stream(
     M.gen(function* (_) {
       const upstream = yield* _(M.mapM_(ma.proc, BPull.make))
-      const doneRef  = yield* _(Ref.make(false))
+      const doneRef  = yield* _(Ref.makeRef(false))
       const pull     = pipe(
         doneRef.get,
         I.bind((done) => {
@@ -1549,10 +1549,10 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
         const pull         = yield* _(ma.proc)
         const push         = yield* _(transducer.push)
         const handoff      = yield* _(Ha.make<Take.Take<E, A>>())
-        const raceNextTime = yield* _(Ref.make(false))
-        const waitingFiber = yield* _(Ref.make<O.Option<Fiber<never, Take.Take<E | E1, A>>>>(O.None()))
+        const raceNextTime = yield* _(Ref.makeRef(false))
+        const waitingFiber = yield* _(Ref.makeRef<O.Option<Fiber<never, Take.Take<E | E1, A>>>>(O.None()))
         const sdriver      = yield* _(Sc.driver(schedule))
-        const lastChunk    = yield* _(Ref.make<Chunk<P>>(C.empty()))
+        const lastChunk    = yield* _(Ref.makeRef<Chunk<P>>(C.empty()))
 
         const producer = pipe(
           pull,
@@ -1734,7 +1734,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
     M.gen(function* (_) {
       const pull    = yield* _(ma.proc)
       const push    = yield* _(transducer.push)
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
 
       const go: I.IO<R & R1, O.Option<E | E1>, Chunk<P>> = pipe(
         doneRef.get,
@@ -1830,7 +1830,7 @@ export function distributedWithDynamic_<R, E, A>(
   return M.gen(function* (_) {
     const queuesRef = yield* _(
       pipe(
-        Ref.make(Map.empty<symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>>()),
+        Ref.makeRef(Map.empty<symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>>()),
         M.make((_) => I.bind_(_.get, (qs) => I.foreach_(qs.values(), (q) => q.shutdown)))
       )
     )
@@ -1838,7 +1838,7 @@ export function distributedWithDynamic_<R, E, A>(
       M.gen(function* (_) {
         const queuesLock = yield* _(Semaphore.make(1))
         const newQueue   = yield* _(
-          Ref.make<I.UIO<readonly [symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>]>>(
+          Ref.makeRef<I.UIO<readonly [symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
               const queue = yield* _(Queue.makeBounded<Ex.Exit<O.Option<E>, A>>(maximumLag))
               const id    = yield* _(I.effectTotal(() => Symbol()))
@@ -2102,7 +2102,7 @@ export function broadcastDynamic(
 export function buffer_<R, E, A>(ma: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
       const queue   = yield* _(toQueue_(ma, capacity))
       return pipe(
         doneRef.get,
@@ -2166,8 +2166,8 @@ function bufferSignal_<R, E, A>(
     const as    = yield* _(ma.proc)
     const start = yield* _(P.make<never, void>())
     yield* _(start.succeed(undefined))
-    const ref     = yield* _(Ref.make(start))
-    const doneRef = yield* _(Ref.make(false))
+    const ref     = yield* _(Ref.makeRef(start))
+    const doneRef = yield* _(Ref.makeRef(false))
     const offer   = (take: Take.Take<E, A>): I.UIO<void> =>
       Ex.match_(
         take,
@@ -2287,7 +2287,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
     M.gen(function* (_) {
       const finalizerRef = yield* _(M.finalizerRef(RM.noopFinalizer))
       const stateRef     = yield* _(
-        Ref.make<State<E>>({ _tag: 'NotStarted' })
+        Ref.makeRef<State<E>>({ _tag: 'NotStarted' })
       )
 
       const closeCurrent = (cause: Ca.Cause<any>) =>
@@ -2673,7 +2673,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
     return new Stream(
       M.gen(function* (_) {
         const ref = yield* _(
-          Ref.make<State<A>>({ buffer: C.empty(), done: false })
+          Ref.makeRef<State<A>>({ buffer: C.empty(), done: false })
         )
         const p   = yield* _(ma.proc)
         return I.bind_(ref.get, (s) => emitOrAccumulate(s.buffer, s.done, ref, p))
@@ -2936,9 +2936,9 @@ export function combineChunks<R, E, A, R1, E1, B, Z, C>(
 export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, E1, B>): Stream<R & R1, E | E1, A | B> {
   return new Stream(
     M.gen(function* (_) {
-      const currStream   = yield* _(Ref.make<I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>(Pull.end))
+      const currStream   = yield* _(Ref.makeRef<I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>(Pull.end))
       const switchStream = yield* _(M.switchable<R & R1, never, I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>())
-      const switched     = yield* _(Ref.make(false))
+      const switched     = yield* _(Ref.makeRef(false))
       yield* _(
         pipe(
           ma.proc,
@@ -2988,8 +2988,8 @@ export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E
   const chunkSize = streams.length
   return new Stream(
     M.gen(function* (_) {
-      const currIndex    = yield* _(Ref.make(0))
-      const currStream   = yield* _(Ref.make<I.IO<R, Option<E>, Chunk<A>>>(Pull.end))
+      const currIndex    = yield* _(Ref.makeRef(0))
+      const currStream   = yield* _(Ref.makeRef<I.IO<R, Option<E>, Chunk<A>>>(Pull.end))
       const switchStream = yield* _(M.switchable<R, never, I.IO<R, Option<E>, Chunk<A>>>())
 
       const go: I.IO<R, Option<E>, Chunk<A>> = pipe(
@@ -3180,7 +3180,7 @@ export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A
   return new Stream(
     M.gen(function* (_) {
       const chunks     = yield* _(self.proc)
-      const counterRef = yield* _(Ref.make(0))
+      const counterRef = yield* _(Ref.makeRef(0))
 
       const pull: I.IO<R, O.Option<E>, Chunk<A>> = I.gen(function* (_) {
         const chunk = yield* _(chunks)
@@ -3234,7 +3234,7 @@ export function dropWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
   return new Stream(
     M.gen(function* (_) {
       const chunks          = yield* _(ma.proc)
-      const keepDroppingRef = yield* _(Ref.make(true))
+      const keepDroppingRef = yield* _(Ref.makeRef(true))
 
       const pull: I.IO<R, O.Option<E>, Chunk<A>> = I.gen(function* (_) {
         const chunk        = yield* _(chunks)
@@ -3325,7 +3325,7 @@ export function fixed(duration: number) {
 export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const currStream   = yield* _(Ref.make<I.IO<R, O.Option<E>, Chunk<A>>>(Pull.end))
+      const currStream   = yield* _(Ref.makeRef<I.IO<R, O.Option<E>, Chunk<A>>>(Pull.end))
       const switchStream = yield* _(M.switchable<R, never, I.IO<R, O.Option<E>, Chunk<A>>>())
       yield* _(pipe(ma.proc, switchStream, I.bind(currStream.set)))
       const go: I.IO<R, O.Option<E>, Chunk<A>> = pipe(
@@ -3363,7 +3363,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
           I.toManaged((q) => q.shutdown)
         )
       )
-      const ref = yield* _(Ref.make<ReadonlyMap<K, symbol>>(Map.empty()))
+      const ref = yield* _(Ref.makeRef<ReadonlyMap<K, symbol>>(Map.empty()))
       const add = yield* _(
         pipe(
           stream,
@@ -3549,7 +3549,7 @@ export function haltOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: P.Promise<E1, any>)
   return new Stream(
     M.gen(function* (_) {
       const as      = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
       const pull    = pipe(
         doneRef.get,
         I.bind((done) => {
@@ -3733,7 +3733,7 @@ export function interleave<R1, E1, A1>(
 export function intersperse_<R, E, A, A1>(ma: Stream<R, E, A>, middle: A1): Stream<R, E, A | A1> {
   return new Stream(
     M.gen(function* (_) {
-      const state  = yield* _(Ref.make(true))
+      const state  = yield* _(Ref.makeRef(true))
       const chunks = yield* _(ma.proc)
       const pull   = pipe(
         chunks,
@@ -3810,7 +3810,7 @@ export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: P.Promise<
   return new Stream(
     M.gen(function* (_) {
       const as      = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
       const asPull  = pipe(
         p.await,
         I.asSomeError,
@@ -3915,7 +3915,7 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
 ): Stream<R & R1, E | E1, B> {
   return new Stream<R & R1, E | E1, B>(
     M.gen(function* (_) {
-      const state = yield* _(Ref.make(z))
+      const state = yield* _(Ref.makeRef(z))
       const pull  = yield* _(pipe(stream.proc, M.mapM(BPull.make)))
       return pipe(
         pull,
@@ -4620,7 +4620,7 @@ export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> 
     return new Stream(
       M.gen(function* (_) {
         const chunks     = yield* _(ma.proc)
-        const counterRef = yield* _(Ref.make(0))
+        const counterRef = yield* _(Ref.makeRef(0))
 
         const pull = pipe(
           counterRef.get,
@@ -4658,7 +4658,7 @@ export function takeUntil_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
   return new Stream(
     M.gen(function* (_) {
       const chunks        = yield* _(ma.proc)
-      const keepTakingRef = yield* _(Ref.make(true))
+      const keepTakingRef = yield* _(Ref.makeRef(true))
       const pull          = pipe(
         keepTakingRef.get,
         I.bind((keepTaking) => {
@@ -4704,7 +4704,7 @@ export function takeUntilM_<R, E, A, R1, E1>(
   return new Stream(
     M.gen(function* (_) {
       const chunks        = yield* _(ma.proc)
-      const keepTakingRef = yield* _(Ref.make(true))
+      const keepTakingRef = yield* _(Ref.makeRef(true))
       const pull          = pipe(
         keepTakingRef.get,
         I.bind((keepTaking) => {
@@ -4760,7 +4760,7 @@ export function takeWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
   return new Stream(
     M.gen(function* (_) {
       const chunks  = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.make(false))
+      const doneRef = yield* _(Ref.makeRef(false))
       const pull    = pipe(
         doneRef.get,
         I.bind((done) => {
@@ -4842,7 +4842,7 @@ export function throttleEnforceM_<R, E, A, R1, E1>(
     M.gen(function* (_) {
       const chunks                                                      = yield* _(ma.proc)
       const time                                                        = yield* _(Clock.currentTime)
-      const bucket                                                      = yield* _(Ref.make(tuple(units, time)))
+      const bucket                                                      = yield* _(Ref.makeRef(tuple(units, time)))
       const pull: I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<A>> = pipe(
         chunks,
         I.bind((chunk) =>
@@ -4901,7 +4901,7 @@ export function throttleShapeM_<R, E, A, R1, E1>(
     M.gen(function* (_) {
       const chunks = yield* _(ma.proc)
       const time   = yield* _(Clock.currentTime)
-      const bucket = yield* _(Ref.make(tuple(units, time)))
+      const bucket = yield* _(Ref.makeRef(tuple(units, time)))
       const pull   = I.gen(function* (_) {
         const chunk   = yield* _(chunks)
         const weight  = yield* _(I.mapError_(costFn(chunk), O.Some) as I.IO<R1, O.Option<E | E1>, number>)
@@ -4965,7 +4965,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
       const chunks = yield* _(ma.proc)
       const ref    = yield* _(
         pipe(
-          Ref.make<State>({ _tag: 'NotStarted' }),
+          Ref.makeRef<State>({ _tag: 'NotStarted' }),
           I.toManaged((ref) =>
             I.bind_(
               ref.get,
@@ -5199,8 +5199,8 @@ export function unfoldChunkM<S, R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
-      const ref     = yield* _(Ref.make(s))
+      const doneRef = yield* _(Ref.makeRef(false))
+      const ref     = yield* _(Ref.makeRef(s))
 
       const pull = pipe(
         doneRef.get,
@@ -5751,8 +5751,8 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
           fromEffectOption,
           bind(([l, r, leftFirst]) =>
             pipe(
-              Ref.make(l[l.length - 1]),
-              I.cross(Ref.make(r[r.length - 1])),
+              Ref.makeRef(l[l.length - 1]),
+              I.cross(Ref.makeRef(r[r.length - 1])),
               fromEffect,
               bind(([latestLeft, latestRight]) =>
                 pipe(

@@ -1,9 +1,9 @@
-import type { URefM } from './IORef'
+import type { URefM } from './Ref'
 
 import { pipe } from '@principia/base/function'
 
 import * as I from './IO'
-import * as Ref from './IORef'
+import * as Ref from './Ref'
 import * as S from './Stream'
 
 export class SubscriptionRef<A> {

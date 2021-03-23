@@ -7,8 +7,8 @@ import type { List } from '@principia/base/List'
 import type { Clock } from '@principia/io/Clock'
 import type { Fiber, FiberId, FiberStatus, RuntimeFiber } from '@principia/io/Fiber'
 import type { IO, UIO } from '@principia/io/IO'
-import type { URef, URefM } from '@principia/io/IORef'
 import type { Layer } from '@principia/io/Layer'
+import type { URef, URefM } from '@principia/io/Ref'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -26,10 +26,10 @@ import { Console } from '@principia/io/Console'
 import { eqFiberId } from '@principia/io/Fiber'
 import * as Fi from '@principia/io/Fiber'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 import * as P from '@principia/io/Promise'
+import * as Ref from '@principia/io/Ref'
 import { intersect } from '@principia/io/util/intersect'
 
 import { AnnotationsTag, fibers } from '../Annotation'
@@ -251,7 +251,7 @@ export class TestClock implements Clock {
       pipe(
         M.asksServicesManaged({ live: LiveTag, annotations: AnnotationsTag })(({ live, annotations }) =>
           M.gen(function* (_) {
-            const ref  = yield* _(Ref.make(data))
+            const ref  = yield* _(Ref.makeRef(data))
             const refM = yield* _(Ref.makeRefM(Start))
             const test = yield* _(
               M.make_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)

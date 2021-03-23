@@ -12,8 +12,8 @@ import { tuple } from '@principia/base/tuple'
 
 import { Clock } from '../Clock'
 import * as I from '../IO/core'
-import * as Ref from '../IORef/core'
 import { Random } from '../Random'
+import * as Ref from '../Ref/core'
 import { done, makeContinue, makeDone, toDone } from './Decision'
 
 /*
@@ -81,7 +81,7 @@ export class Driver<R, I, O> {
 
 export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<Clock> & R, I, O>> {
   return pipe(
-    Ref.make([O.None<O>(), schedule.step] as const),
+    Ref.makeRef([O.None<O>(), schedule.step] as const),
     I.map((ref) => {
       const reset = ref.set([O.None(), schedule.step])
 

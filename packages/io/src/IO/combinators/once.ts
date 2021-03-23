@@ -1,6 +1,6 @@
 import type { IO, UIO } from '../core'
 
-import { getAndSet_, make } from '../../IORef'
+import { getAndSet_, makeRef } from '../../Ref'
 import * as I from '../core'
 
 /**
@@ -8,5 +8,5 @@ import * as I from '../core'
  * evaluated multiple times.
  */
 export function once<R, E, A>(io: IO<R, E, A>): UIO<IO<R, E, void>> {
-  return I.map_(make(true), (ref) => I.whenM_(io, getAndSet_(ref, false)))
+  return I.map_(makeRef(true), (ref) => I.whenM_(io, getAndSet_(ref, false)))
 }

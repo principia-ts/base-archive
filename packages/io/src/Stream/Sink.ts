@@ -16,7 +16,7 @@ import { Clock } from '../Clock'
 import * as Ex from '../Exit'
 import * as F from '../Fiber'
 import * as I from '../IO'
-import * as Ref from '../IORef'
+import * as Ref from '../Ref'
 import * as L from '../Layer'
 import * as M from '../Managed'
 import { Sink } from './internal/Sink'
@@ -194,7 +194,7 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
 
 export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
   return new Sink(
-    M.map_(M.fromEffect(Ref.make<O.Option<I>>(O.None())), (state) => (is: O.Option<Chunk<I>>) =>
+    M.map_(M.fromEffect(Ref.makeRef<O.Option<I>>(O.None())), (state) => (is: O.Option<Chunk<I>>) =>
       pipe(
         state.get,
         I.bind((last) =>
@@ -220,7 +220,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
  */
 export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
   return new Sink(
-    M.map_(M.fromEffect(Ref.make<Chunk<I>>(C.empty())), (state) => (is: O.Option<Chunk<I>>) =>
+    M.map_(M.fromEffect(Ref.makeRef<Chunk<I>>(C.empty())), (state) => (is: O.Option<Chunk<I>>) =>
       pipe(
         state.get,
         I.bind((take) =>
@@ -627,7 +627,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z2> {
   return fromManagedPush(
     M.gen(function* (_) {
-      const stateRef = yield* _(Ref.make<State<Z, Z1>>(bothRunning))
+      const stateRef = yield* _(Ref.makeRef<State<Z, Z1>>(bothRunning))
       const p1       = yield* _(self.push)
       const p2       = yield* _(that.push)
 
@@ -996,10 +996,10 @@ export function matchM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
 ): Sink<R & R1 & R2, E1 | E2, I & I1 & I2, L1 | L2, Z1 | Z2> {
   return new Sink(
     M.gen(function* (_) {
-      const switchedRef  = yield* _(Ref.make(false))
+      const switchedRef  = yield* _(Ref.makeRef(false))
       const thisPush     = yield* _(sz.push)
       const thatPush     = yield* _(
-        Ref.make<Push.Push<R1 & R2, E1 | E2, I & I1 & I2, L1 | L2, Z1 | Z2>>((_) => I.unit())
+        Ref.makeRef<Push.Push<R1 & R2, E1 | E2, I & I1 & I2, L1 | L2, Z1 | Z2>>((_) => I.unit())
       )
       const openThatPush = yield* _(
         M.switchable<R1 & R2, never, Push.Push<R1 & R2, E1 | E2, I & I1 & I2, L1 | L2, Z1 | Z2>>()

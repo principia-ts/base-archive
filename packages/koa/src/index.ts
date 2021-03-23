@@ -10,9 +10,9 @@ import * as Status from '@principia/http/StatusCode'
 import * as C from '@principia/io/Cause'
 import * as Ex from '@principia/io/Exit'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
+import * as Ref from '@principia/io/Ref'
 import koa from 'koa'
 import koaBodyParser from 'koa-bodyparser'
 import koaCompose from 'koa-compose'
@@ -125,7 +125,7 @@ export function route<R, A>(
                 I.give(env),
                 I.giveServiceM(Context)(
                   I.gen(function* (_) {
-                    const reqRef = yield* _(Ref.make(mut_ctx.req))
+                    const reqRef = yield* _(Ref.makeRef(mut_ctx.req))
                     const resRef = yield* _(Ref.makeRefM(mut_ctx.res))
                     return { engine: mut_ctx, conn: new HttpConnection(reqRef, resRef) }
                   })
@@ -201,7 +201,7 @@ export function useM<R, E, A>(
           I.give(env),
           I.giveServiceM(Context)(
             I.gen(function* (_) {
-              const reqRef = yield* _(Ref.make(ctx.req))
+              const reqRef = yield* _(Ref.makeRef(ctx.req))
               const resRef = yield* _(Ref.makeRefM(ctx.res))
               return { engine: ctx, conn: new HttpConnection(reqRef, resRef) }
             })

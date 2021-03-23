@@ -9,9 +9,9 @@ import { pipe } from '@principia/base/function'
 import * as NT from '@principia/base/Newtype'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
 import * as Q from '@principia/io/Queue'
+import * as Ref from '@principia/io/Ref'
 import * as S from '@principia/io/Stream'
 import * as Pull from '@principia/io/Stream/Pull'
 import * as NS from '@principia/node/stream'
@@ -63,7 +63,7 @@ export class HttpResponse {
           new S.Stream(
             M.gen(function* ($) {
               const queue   = yield* $(Q.makeUnbounded<ResponseEvent>())
-              const done    = yield* $(Ref.make(false))
+              const done    = yield* $(Ref.makeRef(false))
               const runtime = yield* $(I.runtime<unknown>())
               yield* $(
                 I.effectTotal(() => {

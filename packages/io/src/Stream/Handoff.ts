@@ -5,7 +5,7 @@ import { None, Some } from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as I from '../IO'
-import * as Ref from '../IORef'
+import * as Ref from '../Ref'
 import * as P from '../Promise'
 
 type State<A> = Empty | Full<A>
@@ -33,7 +33,7 @@ class Handoff<A> {
 export function make<A>(): I.UIO<Handoff<A>> {
   return pipe(
     P.make<never, void>(),
-    I.bind((p) => Ref.make<State<A>>(new Empty(p))),
+    I.bind((p) => Ref.makeRef<State<A>>(new Empty(p))),
     I.map((ref) => new Handoff(ref))
   )
 }

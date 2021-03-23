@@ -2,7 +2,7 @@ import type { Request } from '../Request'
 import type { Either } from '@principia/base/Either'
 import type { Option } from '@principia/base/Option'
 import type { _A, _E } from '@principia/base/util/types'
-import type { URef } from '@principia/io/IORef'
+import type { URef } from '@principia/io/Ref'
 
 export interface BlockedRequest<A> {
   readonly _tag: 'BlockedRequest'

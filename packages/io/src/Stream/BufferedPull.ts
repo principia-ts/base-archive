@@ -6,7 +6,7 @@ import { tuple } from '@principia/base/tuple'
 
 import * as C from '../Chunk'
 import * as I from '../IO'
-import * as R from '../IORef'
+import * as R from '../Ref'
 import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {
@@ -97,8 +97,8 @@ export function make<R, E, A>(
   pull: I.IO<R, O.Option<E>, Chunk<A>>
 ): I.IO<unknown, never, BufferedPull<R, E, A>> {
   return I.gen(function* (_) {
-    const done   = yield* _(R.make(false))
-    const cursor = yield* _(R.make<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))
+    const done   = yield* _(R.makeRef(false))
+    const cursor = yield* _(R.makeRef<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))
     return new BufferedPull(pull, done, cursor)
   })
 }
