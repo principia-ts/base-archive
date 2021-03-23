@@ -3,7 +3,7 @@ import type * as Eq from '@principia/base/Eq'
 import type { Tag } from '@principia/base/Has'
 import type { Hash } from '@principia/base/Hash'
 import type * as Fiber from '@principia/io/Fiber'
-import type { URef } from '@principia/io/IORef'
+import type { URef } from '@principia/io/Ref'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'

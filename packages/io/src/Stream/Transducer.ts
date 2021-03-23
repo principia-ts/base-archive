@@ -19,8 +19,7 @@ import { tuple } from '@principia/base/tuple'
 import * as C from '../Chunk'
 import * as Ex from '../Exit'
 import * as I from '../IO'
-import * as Ref from '../IORef'
-import * as RefM from '../IORefM'
+import * as Ref from '../Ref'
 import * as M from '../Managed'
 import { Sink } from './internal/Sink'
 import { Transducer } from './internal/Transducer'
@@ -172,12 +171,12 @@ export function branchAfter<R, E, I, O>(
 
   return new Transducer(
     M.bind_(M.scope(), (scope) =>
-      M.map_(RefM.makeManaged<State>(initialState), (state) => (is: O.Option<Chunk<I>>) =>
+      M.map_(Ref.makeManagedRefM<State>(initialState), (state) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
           () =>
             pipe(
-              RefM.getAndSet_(state, initialState),
+              Ref.getAndSet_(state, initialState),
               I.bind((s) => {
                 switch (s._tag) {
                   case 'Collecting': {
@@ -190,7 +189,7 @@ export function branchAfter<R, E, I, O>(
               })
             ),
           (data) =>
-            RefM.modify_(state, (s) => {
+            Ref.modifyM_(state, (s) => {
               switch (s._tag) {
                 case 'Emitting': {
                   return I.map_(s.push(O.Some(data)), (_) => [_, s] as const)

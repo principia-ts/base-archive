@@ -4,7 +4,7 @@ import type { Eq } from '@principia/base/Eq'
 import { pipe } from '@principia/base/function'
 import { tuple } from '@principia/base/tuple'
 
-import * as RM from '../../IORefM'
+import * as Ref from '../../Ref'
 import * as P from '../../Promise'
 import * as I from '../core'
 import { to } from './to'
@@ -14,12 +14,12 @@ import { to } from './to'
  */
 export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> {
   return pipe(
-    RM.make(new Map<A, P.Promise<E, B>>()),
+    Ref.makeRefM(new Map<A, P.Promise<E, B>>()),
     I.map((ref) => (a: A) =>
       I.gen(function* (_) {
         const promise = yield* _(
           pipe(
-            RM.modify_(ref, (m) => {
+            Ref.modifyM_(ref, (m) => {
               const memo = m.get(a)
               if (memo) {
                 return I.succeed(tuple(memo, m))
@@ -47,12 +47,12 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
 export function memoizeEq<A>(eq: Eq<A>) {
   return <R, E, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> =>
     pipe(
-      RM.make(new Map<A, P.Promise<E, B>>()),
+      Ref.makeRefM(new Map<A, P.Promise<E, B>>()),
       I.map((ref) => (a: A) =>
         I.gen(function* (_) {
           const promise = yield* _(
             pipe(
-              RM.modify_(ref, (m) => {
+              Ref.modifyM_(ref, (m) => {
                 for (const [k, v] of m.entries()) {
                   if (eq.equals_(k, a)) {
                     return I.succeed(tuple(v, m))

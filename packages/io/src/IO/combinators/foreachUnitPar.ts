@@ -10,10 +10,10 @@ import { tuple } from '@principia/base/tuple'
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
-import * as Ref from '../../IORef/core'
 import { fromEffect, Managed } from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap'
 import * as P from '../../Promise'
+import * as Ref from '../../Ref/core'
 import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
 import { forkDaemon, transplant } from './core-scope'
@@ -42,10 +42,10 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
 
   return I.gen(function* (_) {
     const parentId    = yield* _(I.fiberId())
-    const causes      = yield* _(Ref.make<C.Cause<E>>(C.empty))
+    const causes      = yield* _(Ref.makeRef<C.Cause<E>>(C.empty))
     const result      = yield* _(P.make<void, void>())
     const status      = yield* _(
-      Ref.make<[number, number, boolean]>([0, 0, false])
+      Ref.makeRef<[number, number, boolean]>([0, 0, false])
     )
     const startEffect = pipe(
       status,

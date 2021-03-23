@@ -9,9 +9,9 @@ import * as N from '@principia/base/Newtype'
 import * as O from '@principia/base/Option'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
 import * as Queue from '@principia/io/Queue'
+import * as Ref from '@principia/io/Ref'
 import * as S from '@principia/io/Stream'
 import * as Push from '@principia/io/Stream/Push'
 import * as Sink from '@principia/io/Stream/Sink'
@@ -89,7 +89,7 @@ export function createReadStream(
         if (end < start) {
           return I.fail(new RangeError(`start (${start}) must be <= end (${end})`))
         } else {
-          return Ref.make([start, end] as const)
+          return Ref.makeRef([start, end] as const)
         }
       })
     ),
@@ -128,13 +128,13 @@ export function createWriteSink(
 ): Sink.Sink<unknown, ErrnoException, Byte, never, void> {
   return new Sink.Sink(
     M.gen(function* (_) {
-      const errorRef = yield* _(Ref.make<O.Option<ErrnoException>>(O.None()))
+      const errorRef = yield* _(Ref.makeRef<O.Option<ErrnoException>>(O.None()))
       const st       = yield* _(
         M.catchAll_(
           M.makeExit_(
             I.crossPar_(
               open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
-              Ref.make(options?.start ? Integer.unwrap(options.start) : undefined)
+              Ref.makeRef(options?.start ? Integer.unwrap(options.start) : undefined)
             ),
             ([fd, _]) => I.orDie(close(fd))
           ),

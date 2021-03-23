@@ -19,7 +19,7 @@ import { tuple } from '@principia/base/tuple'
 
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
-import * as Ref from '../IORef/core'
+import * as Ref from '../Ref/core'
 import * as I from './internal/io'
 import { add, addIfOpen, noopFinalizer, release } from './ReleaseMap'
 
@@ -143,7 +143,7 @@ export function finalizerExit<R>(f: (exit: Ex.Exit<unknown, unknown>) => I.URIO<
  * control flows that require mutating finalizers.
  */
 export function finalizerRef(initial: Finalizer) {
-  return makeExit_(Ref.make(initial), (ref, exit) => I.bind_(ref.get, (f) => f(exit)))
+  return makeExit_(Ref.makeRef(initial), (ref, exit) => I.bind_(ref.get, (f) => f(exit)))
 }
 
 /**

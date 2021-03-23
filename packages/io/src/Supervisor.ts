@@ -5,14 +5,14 @@
  */
 import type { Exit } from './Exit'
 import type { RuntimeFiber } from './Fiber'
-import type { Atomic } from './IORef'
+import type { Atomic } from './Ref'
 import type * as O from '@principia/base/Option'
 
 import { pipe } from '@principia/base/function'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 
 import * as I from './IO/core'
-import * as R from './IORef/atomic'
+import * as Ref from './Ref/atomic'
 
 /**
  * A hint indicating whether or not to propagate supervision events across
@@ -143,14 +143,14 @@ export const fibersIn = (ref: Atomic<Set<RuntimeFiber<any, any>>>) =>
         (_, __, ___, fiber) => {
           pipe(
             ref,
-            R.unsafeUpdate((s) => s.add(fiber))
+            Ref.unsafeUpdate((s) => s.add(fiber))
           )
           return _continue
         },
         (_, fiber) => {
           pipe(
             ref,
-            R.unsafeUpdate((s) => {
+            Ref.unsafeUpdate((s) => {
               s.delete(fiber)
               return s
             })

@@ -2,7 +2,7 @@ import type { Live } from './Live'
 import type { Has } from '@principia/base/Has'
 import type { FiberRef } from '@principia/io/FiberRef'
 import type { IO, UIO } from '@principia/io/IO'
-import type { URef } from '@principia/io/IORef'
+import type { URef } from '@principia/io/Ref'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
@@ -11,8 +11,8 @@ import * as Li from '@principia/base/List'
 import { Console, ConsoleTag } from '@principia/io/Console'
 import * as FR from '@principia/io/FiberRef'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
+import * as Ref from '@principia/io/Ref'
 import { intersect } from '@principia/io/util/intersect'
 import { inspect } from 'util'
 
@@ -90,7 +90,7 @@ export class TestConsole implements Console {
     return L.fromRawEffect(
       I.asksServiceM(LiveTag)((live) =>
         I.gen(function* (_) {
-          const ref      = yield* _(Ref.make(data))
+          const ref      = yield* _(Ref.makeRef(data))
           const debugRef = yield* _(FR.make(debug))
           const test     = new TestConsole(ref, live, debugRef)
           return intersect(TestConsoleTag.of(test), ConsoleTag.of(test))

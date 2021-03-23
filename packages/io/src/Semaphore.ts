@@ -1,5 +1,5 @@
-import type { URef } from './IORef/core'
 import type { Promise } from './Promise'
+import type { URef } from './Ref/core'
 import type { Either } from '@principia/base/Either'
 
 import * as E from '@principia/base/Either'
@@ -10,9 +10,9 @@ import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
-import * as XR from './IORef/core'
 import * as M from './Managed/core'
 import * as P from './Promise'
+import * as Ref from './Ref/core'
 
 export type Entry = [Promise<never, void>, number]
 export type State = Either<ImmutableQueue<Entry>, number>
@@ -71,7 +71,7 @@ export class Semaphore {
       I.bind_(assertNonNegative(toRelease, 'Semaphore.releaseN'), () =>
         pipe(
           this.state,
-          XR.modify((s) => this.loop(toRelease, s, I.unit()))
+          Ref.modify((s) => this.loop(toRelease, s, I.unit()))
         )
       )
     )
@@ -81,7 +81,7 @@ export class Semaphore {
     return I.flatten(
       pipe(
         this.state,
-        XR.modify(
+        Ref.modify(
           E.match(
             (q) =>
               O.match_(
@@ -106,7 +106,7 @@ export class Semaphore {
       return I.bind_(P.make<never, void>(), (p) =>
         pipe(
           this.state,
-          XR.modify(
+          Ref.modify(
             E.match(
               (q): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => [
                 new Acquisition(p.await, this.restore(p, n)),
@@ -183,14 +183,14 @@ export function available(s: Semaphore): I.IO<unknown, never, number> {
  * Creates a new `Sempahore` with the specified number of permits.
  */
 export function make(permits: number): I.IO<unknown, never, Semaphore> {
-  return I.map_(XR.make<State>(E.Right(permits)), (state) => new Semaphore(state))
+  return I.map_(Ref.makeRef<State>(E.Right(permits)), (state) => new Semaphore(state))
 }
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
 export function unsafeMake(permits: number): Semaphore {
-  const state = XR.unsafeMake<State>(E.Right(permits))
+  const state = Ref.unsafeMakeRef<State>(E.Right(permits))
 
   return new Semaphore(state)
 }

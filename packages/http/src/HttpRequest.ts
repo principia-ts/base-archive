@@ -15,9 +15,9 @@ import { makeSemigroup } from '@principia/base/typeclass'
 import * as SD from '@principia/codec/SyncDecoder'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as M from '@principia/io/Managed'
 import * as Q from '@principia/io/Queue'
+import * as Ref from '@principia/io/Ref'
 import * as S from '@principia/io/Stream'
 import * as Pull from '@principia/io/Stream/Pull'
 import * as Sy from '@principia/io/Sync'
@@ -75,7 +75,7 @@ export class HttpRequest {
           new S.Stream(
             M.gen(function* (_) {
               const queue   = yield* _(Q.makeUnbounded<RequestEvent>())
-              const done    = yield* _(Ref.make(false))
+              const done    = yield* _(Ref.makeRef(false))
               const runtime = yield* _(I.runtime<unknown>())
               yield* _(
                 I.effectTotal(() => {

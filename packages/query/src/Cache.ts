@@ -1,5 +1,5 @@
 import type { Request } from './Request'
-import type { URef } from '@principia/io/IORef'
+import type { URef } from '@principia/io/Ref'
 
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
@@ -7,7 +7,7 @@ import * as Map from '@principia/base/Map'
 import * as O from '@principia/base/Option'
 import { tuple } from '@principia/base/tuple'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
+import * as Ref from '@principia/io/Ref'
 
 import { eqRequest } from './Request'
 
@@ -37,7 +37,7 @@ export class DefaultCache implements Cache {
     request: A
   ): I.UIO<E.Either<URef<O.Option<E.Either<E, B>>>, URef<O.Option<E.Either<E, B>>>>> {
     return pipe(
-      Ref.make(O.None<E.Either<E, B>>()),
+      Ref.makeRef(O.None<E.Either<E, B>>()),
       I.bind((ref) =>
         Ref.modify_(this.state, (map) =>
           pipe(
@@ -58,6 +58,6 @@ export class DefaultCache implements Cache {
 }
 
 export const empty: I.UIO<Cache> = pipe(
-  Ref.make(Map.empty<any, any>()),
+  Ref.makeRef(Map.empty<any, any>()),
   I.map((ref) => new DefaultCache(ref))
 )

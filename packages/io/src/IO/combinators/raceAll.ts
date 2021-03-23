@@ -8,7 +8,7 @@ import { tuple } from '@principia/base/tuple'
 
 import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'
-import * as XR from '../../IORef'
+import * as XR from '../../Ref'
 import * as P from '../../Promise'
 import * as I from '../core'
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from './interrupt'
@@ -51,7 +51,7 @@ export function raceAll<R, E, A>(
 ): IO<R, E, A> {
   return I.gen(function* (_) {
     const done    = yield* _(P.make<E, readonly [A, Fiber.Fiber<E, A>]>())
-    const fails   = yield* _(XR.make(ios.length))
+    const fails   = yield* _(XR.makeRef(ios.length))
     const [c, fs] = yield* _(
       uninterruptibleMask(({ restore }) =>
         I.gen(function* (_) {
