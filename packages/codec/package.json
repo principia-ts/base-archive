@@ -44,9 +44,9 @@
     "lint": "eslint .",
     "prepublish": "yarn buildAll"
   },
-  "dependencies": {
-    "@principia/base": "^0.6.6",
+  "peerDependencies": {
     "@principia/compile": "^0.6.1",
+    "@principia/base": "^0.6.6",
     "@principia/free": "^0.6.8",
     "@principia/io": "^0.6.13"
   },

@@ -45,15 +45,17 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
+    "@types/qs": "^6.9.5",
+    "path-to-regexp": "^6.2.0",
+    "qs": "^6.9.6"
+  },
+  "peerDependencies": {
     "@principia/base": "^0.6.6",
     "@principia/compile": "^0.6.1",
     "@principia/free": "^0.6.8",
     "@principia/io": "^0.6.13",
     "@principia/model": "^0.6.13",
-    "@principia/node": "^0.6.13",
-    "@types/qs": "^6.9.5",
-    "path-to-regexp": "^6.2.0",
-    "qs": "^6.9.6"
+    "@principia/node": "^0.6.13"
   },
   "publishConfig": {
     "access": "public",

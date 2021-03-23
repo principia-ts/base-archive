@@ -45,17 +45,19 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
+    "koa": "^2.13.1",
+    "koa-bodyparser": "4.3.0",
+    "koa-compose": "4.1.0",
+    "koa-router": "^10.0.0"
+  },
+  "peerDependencies": {
     "@principia/base": "^0.6.6",
     "@principia/compile": "^0.6.1",
     "@principia/free": "^0.6.8",
     "@principia/http": "^0.6.17",
     "@principia/io": "^0.6.13",
     "@principia/model": "^0.6.13",
-    "@principia/node": "^0.6.13",
-    "koa": "^2.13.1",
-    "koa-bodyparser": "4.3.0",
-    "koa-compose": "4.1.0",
-    "koa-router": "^10.0.0"
+    "@principia/node": "^0.6.13"
   },
   "devDependencies": {
     "@types/koa": "^2.13.0",
