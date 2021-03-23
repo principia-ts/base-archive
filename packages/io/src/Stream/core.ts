@@ -30,7 +30,6 @@ import * as Ex from '../Exit'
 import * as Fi from '../Fiber'
 import * as I from '../IO'
 import * as Ref from '../IORef'
-import * as RefM from '../IORefM'
 import * as M from '../Managed'
 import * as RM from '../Managed/ReleaseMap'
 import * as P from '../Promise'
@@ -4119,7 +4118,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
   return new Stream(
     M.gen(function* (_) {
       const handoff = yield* _(Ha.make<Take.Take<E | E1, C | C1>>())
-      const doneRef = yield* _(RefM.make<O.Option<boolean>>(O.None()))
+      const doneRef = yield* _(Ref.makeRefM<O.Option<boolean>>(O.None()))
       const chunksL = yield* _(sa.proc)
       const chunksR = yield* _(sb.proc)
 
@@ -4136,7 +4135,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                 I.bind((exit) =>
                   pipe(
                     doneRef,
-                    RefM.modifyM((o) => {
+                    Ref.modifyM((o) => {
                       const causeOrChunk = pipe(
                         exit,
                         Ex.match(

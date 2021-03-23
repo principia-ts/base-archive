@@ -1,21 +1,26 @@
 import type { UIO } from '../IO/core'
-import type { URef } from '../IORef'
-import type { IORef } from '../IORef/core'
 import type { UManaged } from '../Managed/core'
 import type { Semaphore } from '../Semaphore'
+import type { IORef, URef } from './core'
+import type * as E from '@principia/base/Either'
 
-import * as E from '@principia/base/Either'
-import { identity, pipe } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/matchers'
 
-import * as R from '../IORef'
+import * as I from '../IO/core'
 import * as M from '../Managed/core'
 import * as Q from '../Queue'
 import { withPermit } from '../Semaphore'
 import * as S from '../Semaphore'
-import * as I from './internal/io'
+import * as R from './core'
+
+/*
+ * -------------------------------------------
+ * IORefM
+ * -------------------------------------------
+ */
 
 /**
  * An `IORefM<RA, RB, EA, EB, A, B>` is a polymorphic, purely functional
@@ -43,7 +48,7 @@ export abstract class IORefM<RA, RB, EA, EB, A, B> implements IORef<RA, RB, EA, 
    * ergonomic but this method is extremely useful for implementing new
    * combinators.
    */
-  abstract readonly matchM: <RC, RD, EC, ED, C, D>(
+  abstract readonly foldM: <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -55,7 +60,7 @@ export abstract class IORefM<RA, RB, EA, EB, A, B> implements IORef<RA, RB, EA, 
    * the state in transforming the `set` value. This is a more powerful version
    * of `matchM` but requires unifying the environment and error types.
    */
-  abstract readonly matchAllM: <RC, RD, EC, ED, C, D>(
+  abstract readonly foldAllM: <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -74,27 +79,27 @@ export abstract class IORefM<RA, RB, EA, EB, A, B> implements IORef<RA, RB, EA, 
    */
   abstract readonly set: (a: A) => I.IO<RA, EA, void>
 
-  readonly match = <EC, ED, C, D>(
+  readonly fold = <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => E.Either<EC, A>,
     bd: (_: B) => E.Either<ED, D>
   ): IORefM<RA, RB, EC, ED, C, D> =>
-    this.matchM(
+    this.foldM(
       ea,
       eb,
       (c) => I.fromEither(() => ca(c)),
       (b) => I.fromEither(() => bd(b))
     )
 
-  readonly matchAll = <EC, ED, C, D>(
+  readonly foldAll = <EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
     ca: (_: C) => (_: B) => E.Either<EC, A>,
     bd: (_: B) => E.Either<ED, D>
   ): IORef<RA & RB, RB, EC, ED, C, D> =>
-    this.matchAllM(
+    this.foldAllM(
       ea,
       eb,
       ec,
@@ -114,7 +119,7 @@ export class DerivedAllM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB,
     super()
   }
 
-  readonly matchM = <RC, RD, EC, ED, C, D>(
+  readonly foldM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -122,16 +127,15 @@ export class DerivedAllM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB,
   ): IORefM<RA & RC, RB & RD, EC, ED, C, D> =>
     new DerivedAllM<RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
-      (s) =>
-        I.matchM_(
-          this.getEither(s),
-          (e) => I.fail(eb(e)),
-          (a) => bd(a)
-        ),
-      (a) => (s) => I.bind_(ca(a), (a) => I.mapError_(this.setEither(a)(s), ea))
+      flow(this.getEither, I.matchM(flow(eb, I.fail), bd)),
+      (a) => (s) =>
+        pipe(
+          ca(a),
+          I.bind((a) => pipe(this.setEither(a)(s), I.mapError(ea)))
+        )
     )
 
-  readonly matchAllM = <RC, RD, EC, ED, C, D>(
+  readonly foldAllM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -140,23 +144,19 @@ export class DerivedAllM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB,
   ): IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
     new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
-      (s) =>
-        I.matchM_(
-          this.getEither(s),
-          (e) => I.fail(eb(e)),
-          (a) => bd(a)
-        ),
+      flow(this.getEither, I.matchM(flow(eb, I.fail), bd)),
       (c) => (s) =>
-        I.bind_(
-          I.matchM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
-          (a) => I.mapError_(this.setEither(a)(s), ea)
+        pipe(
+          this.getEither(s),
+          I.matchM(flow(ec, I.fail), ca(c)),
+          I.bind((a) => pipe(this.setEither(a)(s), I.mapError(ea)))
         )
     )
 
-  get: I.IO<RB, EB, B> = I.bind_(this.value.get, (a) => this.getEither(a))
+  get: I.IO<RB, EB, B> = I.bind_(this.value.get, this.getEither)
 
   set: (a: A) => I.IO<RA, EA, void> = (a) =>
-    withPermit(this.value.semaphore)(I.bind_(I.bind_(this.value.get, this.setEither(a)), (a) => this.value.set(a)))
+    withPermit(this.value.semaphore)(pipe(this.value.get, I.bind(this.setEither(a)), I.bind(this.value.set)))
 }
 
 export class DerivedM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB, A, B> {
@@ -170,7 +170,7 @@ export class DerivedM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB, A,
     super()
   }
 
-  readonly matchM = <RC, RD, EC, ED, C, D>(
+  readonly foldM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
@@ -178,16 +178,11 @@ export class DerivedM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB, A,
   ): IORefM<RA & RC, RB & RD, EC, ED, C, D> =>
     new DerivedM<RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
-      (s) =>
-        I.matchM_(
-          this.getEither(s),
-          (e) => I.fail(eb(e)),
-          (a) => bd(a)
-        ),
-      (a) => I.bind_(ca(a), (a) => I.mapError_(this.setEither(a), ea))
+      flow(this.getEither, I.matchM(flow(eb, I.fail), bd)),
+      flow(ca, I.bind(flow(this.setEither, I.mapError(ea))))
     )
 
-  readonly matchAllM = <RC, RD, EC, ED, C, D>(
+  readonly foldAllM = <RC, RD, EC, ED, C, D>(
     ea: (_: EA) => EC,
     eb: (_: EB) => ED,
     ec: (_: EB) => EC,
@@ -196,23 +191,14 @@ export class DerivedM<RA, RB, EA, EB, A, B, S> extends IORefM<RA, RB, EA, EB, A,
   ): IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> =>
     new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D, S>(
       this.value,
-      (s) =>
-        I.matchM_(
-          this.getEither(s),
-          (e) => I.fail(eb(e)),
-          (a) => bd(a)
-        ),
+      flow(this.getEither, I.matchM(flow(eb, I.fail), bd)),
       (c) => (s) =>
-        I.bind_(
-          I.matchM_(this.getEither(s), (e) => I.fail(ec(e)), ca(c)),
-          (a) => I.mapError_(this.setEither(a), ea)
-        )
+        pipe(this.getEither(s), I.matchM(flow(ec, I.fail), ca(c)), I.bind(flow(this.setEither, I.mapError(ea))))
     )
 
-  get: I.IO<RB, EB, B> = I.bind_(this.value.get, (a) => this.getEither(a))
+  get: I.IO<RB, EB, B> = this.value.get['>>='](this.getEither)
 
-  set: (a: A) => I.IO<RA, EA, void> = (a) =>
-    withPermit(this.value.semaphore)(I.bind_(this.setEither(a), (a) => this.value.set(a)))
+  set: (a: A) => I.IO<RA, EA, void> = (a) => withPermit(this.value.semaphore)(this.setEither(a)['>>='](this.value.set))
 }
 
 export class AtomicM<A> extends IORefM<unknown, unknown, never, never, A, A> {
@@ -222,30 +208,20 @@ export class AtomicM<A> extends IORefM<unknown, unknown, never, never, A, A> {
     super()
   }
 
-  readonly matchM = <RC, RD, EC, ED, C, D>(
+  readonly foldM = <RC, RD, EC, ED, C, D>(
     _ea: (_: never) => EC,
     _eb: (_: never) => ED,
     ca: (_: C) => I.IO<RC, EC, A>,
     bd: (_: A) => I.IO<RD, ED, D>
-  ): IORefM<RC, RD, EC, ED, C, D> =>
-    new DerivedM<RC, RD, EC, ED, C, D, A>(
-      this,
-      (s) => bd(s),
-      (a) => ca(a)
-    )
+  ): IORefM<RC, RD, EC, ED, C, D> => new DerivedM<RC, RD, EC, ED, C, D, A>(this, bd, ca)
 
-  readonly matchAllM = <RC, RD, EC, ED, C, D>(
+  readonly foldAllM = <RC, RD, EC, ED, C, D>(
     _ea: (_: never) => EC,
     _eb: (_: never) => ED,
     _ec: (_: never) => EC,
     ca: (_: C) => (_: A) => I.IO<RC, EC, A>,
     bd: (_: A) => I.IO<RD, ED, D>
-  ): IORefM<RC, RD, EC, ED, C, D> =>
-    new DerivedAllM<RC, RD, EC, ED, C, D, A>(
-      this,
-      (s) => bd(s),
-      (a) => (s) => ca(a)(s)
-    )
+  ): IORefM<RC, RD, EC, ED, C, D> => new DerivedAllM<RC, RD, EC, ED, C, D, A>(this, bd, ca)
 
   readonly get: I.IO<unknown, never, A> = this.ref.get
 
@@ -257,7 +233,7 @@ export interface FRefM<E, A> extends IORefM<unknown, unknown, E, E, A, A> {}
 export interface URRefM<R, A> extends IORefM<R, R, never, never, A, A> {}
 export interface URefM<A> extends IORefM<unknown, unknown, never, never, A, A> {}
 
-export const concreteM = <RA, RB, EA, EB, A>(_: IORefM<RA, RB, EA, EB, A, A>) =>
+const concreteM = <RA, RB, EA, EB, A>(_: IORefM<RA, RB, EA, EB, A, A>) =>
   _ as AtomicM<A> | DerivedM<RA, RB, EA, EB, A, A, A> | DerivedAllM<RA, RB, EA, EB, A, A, A>
 
 /*
@@ -269,7 +245,7 @@ export const concreteM = <RA, RB, EA, EB, A>(_: IORefM<RA, RB, EA, EB, A, A>) =>
 /**
  * Creates a new `XRefM` with the specified value.
  */
-export function make<A>(a: A): UIO<URefM<A>> {
+export function makeRefM<A>(a: A): UIO<URefM<A>> {
   return I.gen(function* (_) {
     const ref       = yield* _(R.make(a))
     const semaphore = yield* _(S.make(1))
@@ -280,7 +256,7 @@ export function make<A>(a: A): UIO<URefM<A>> {
 /**
  * Creates a new `XRefM` with the specified value.
  */
-export function unsafeMake<A>(a: A): URefM<A> {
+export function unsafeMakeRefM<A>(a: A): URefM<A> {
   const ref       = R.unsafeMake(a)
   const semaphore = S.unsafeMake(1)
   return new AtomicM(ref, semaphore)
@@ -290,8 +266,8 @@ export function unsafeMake<A>(a: A): URefM<A> {
  * Creates a new `RefM` with the specified value in the context of a
  * `Managed.`
  */
-export function makeManaged<A>(a: A): UManaged<URefM<A>> {
-  return pipe(make(a), M.fromEffect)
+export function makeManagedRefM<A>(a: A): UManaged<URefM<A>> {
+  return pipe(makeRefM(a), M.fromEffect)
 }
 
 /**
@@ -300,7 +276,7 @@ export function makeManaged<A>(a: A): UManaged<URefM<A>> {
  */
 export function dequeueRefM<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
   return I.gen(function* (_) {
-    const ref   = yield* _(make(a))
+    const ref   = yield* _(makeRefM(a))
     const queue = yield* _(Q.makeUnbounded<A>())
     return tuple(
       pipe(
@@ -339,25 +315,6 @@ export function contramapM<A, RC, EC, C>(
   return (self) => contramapM_(self, f)
 }
 
-/**
- * Transforms the `set` value of the `XRefM` with the specified function.
- */
-export function contramap_<RA, RB, EA, EB, B, C, A>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  f: (c: C) => A
-): IORefM<RA, RB, EA, EB, C, B> {
-  return contramapM_(self, (c) => I.pure(f(c)))
-}
-
-/**
- * Transforms the `set` value of the `XRefM` with the specified function.
- */
-export function contramap<C, A>(
-  f: (c: C) => A
-): <RA, RB, EA, EB, B>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EA, EB, C, B> {
-  return (self) => contramap_(self, f)
-}
-
 /*
  * -------------------------------------------
  * Fold
@@ -370,22 +327,22 @@ export function contramap<C, A>(
  * predicate is satisfied or else fails with `None`.
  */
 export function filterInputM_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
+  ref: IORefM<RA, RB, EA, EB, A, B>,
   f: (a: A1) => I.IO<RC, EC, boolean>
 ): IORefM<RA & RC, RB, O.Option<EC | EA>, EB, A1, B> {
-  return pipe(
-    self,
-    matchM(
-      (ea) => O.Some<EA | EC>(ea),
-      identity,
-      (a: A1) =>
-        I.ifM_(
-          I.asSomeError(f(a)),
-          () => I.pure(a),
-          () => I.fail<O.Option<EA | EC>>(O.None())
-        ),
-      I.pure
-    )
+  return ref.foldM(
+    O.Some,
+    identity,
+    (a) =>
+      pipe(
+        f(a),
+        I.asSomeError,
+        I.ifM(
+          () => I.succeed(a),
+          () => I.fail(O.None<EA | EC>())
+        )
+      ),
+    I.succeed
   )
 }
 
@@ -401,48 +358,23 @@ export function filterInputM<A, RC, EC, A1 extends A = A>(
 }
 
 /**
- * Filters the `set` value of the `XRefM` with the specified effectual
- * predicate, returning a `XRefM` with a `set` value that succeeds if the
- * predicate is satisfied or else fails with `None`.
- */
-export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A = A>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  f: (a: A1) => boolean
-): IORefM<RA, RB, O.Option<EA>, EB, A1, B> {
-  return filterInputM_(self, (a) => I.pure(f(a)))
-}
-
-/**
- * Filters the `set` value of the `XRefM` with the specified effectual
- * predicate, returning a `XRefM` with a `set` value that succeeds if the
- * predicate is satisfied or else fails with `None`.
- */
-export function filterInput<A, A1 extends A = A>(
-  f: (a: A1) => boolean
-): <RA, RB, EA, EB, B>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, O.Option<EA>, EB, A1, B> {
-  return (self) => filterInput_(self, f)
-}
-
-/**
  * Filters the `get` value of the `XRefM` with the specified effectual predicate,
  * returning a `XRefM` with a `get` value that succeeds if the predicate is
  * satisfied or else fails with `None`.
  */
 export function filterOutputM_<RA, RB, EA, EB, A, B, RC, EC>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
+  ref: IORefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, boolean>
 ): IORefM<RA, RB & RC, EA, O.Option<EC | EB>, A, B> {
-  return matchM_(
-    self,
-    (ea) => ea,
-    (eb) => O.Some<EB | EC>(eb),
-    (a) => I.pure(a),
-    (b) =>
-      I.ifM_(
-        I.asSomeError(f(b)),
-        () => I.pure(b),
-        () => I.fail(O.None())
+  return ref.foldM(identity, O.Some, I.succeed, (b) =>
+    pipe(
+      f(b),
+      I.asSomeError,
+      I.ifM(
+        () => I.succeed(b),
+        () => I.fail(O.None<EB | EC>())
       )
+    )
   )
 }
 
@@ -457,29 +389,6 @@ export function filterOutputM<B, RC, EC>(
   return (self) => filterOutputM_(self, f)
 }
 
-/**
- * Filters the `get` value of the `XRefM` with the specified predicate,
- * returning a `XRefM` with a `get` value that succeeds if the predicate is
- * satisfied or else fails with `None`.
- */
-export function filterOutput_<RA, RB, EA, EB, A, B>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  f: (b: B) => boolean
-): IORefM<RA, RB, EA, O.Option<EB>, A, B> {
-  return filterOutputM_(self, (b) => I.pure(f(b)))
-}
-
-/**
- * Filters the `get` value of the `XRefM` with the specified predicate,
- * returning a `XRefM` with a `get` value that succeeds if the predicate is
- * satisfied or else fails with `None`.
- */
-export function filterOutput<B>(
-  f: (b: B) => boolean
-): <RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EA, O.Option<EB>, A, B> {
-  return (self) => filterOutput_(self, f)
-}
-
 /*
  * -------------------------------------------
  * Fold
@@ -487,42 +396,6 @@ export function filterOutput<B>(
  */
 
 /**
- * Folds over the error and value types of the `XRefM`.
- */
-export function match_<RA, RB, EA, EB, A, B, EC, ED, C = A, D = B>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  ea: (_: EA) => EC,
-  eb: (_: EB) => ED,
-  ca: (_: C) => E.Either<EC, A>,
-  bd: (_: B) => E.Either<ED, D>
-): IORefM<RA, RB, EC, ED, C, D> {
-  return self.matchM(
-    ea,
-    eb,
-    (c) => I.fromEither(() => ca(c)),
-    (b) => I.fromEither(() => bd(b))
-  )
-}
-
-/**
- * Folds over the error and value types of the `XRefM`.
- */
-export function match<EA, EB, A, B, EC, ED, C = A, D = B>(
-  ea: (_: EA) => EC,
-  eb: (_: EB) => ED,
-  ca: (_: C) => E.Either<EC, A>,
-  bd: (_: B) => E.Either<ED, D>
-): <RA, RB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EC, ED, C, D> {
-  return (self) =>
-    self.matchM(
-      ea,
-      eb,
-      (c) => I.fromEither(() => ca(c)),
-      (b) => I.fromEither(() => bd(b))
-    )
-}
-
-/**
  * Folds over the error and value types of the `XRefM`. This is a highly
  * polymorphic method that is capable of arbitrarily transforming the error
  * and value types of the `XRefM`. For most use cases one of the more
@@ -530,14 +403,14 @@ export function match<EA, EB, A, B, EC, ED, C = A, D = B>(
  * ergonomic but this method is extremely useful for implementing new
  * combinators.
  */
-export function matchM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function foldM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): IORefM<RA & RC, RB & RD, EC, ED, C, D> {
-  return self.matchM(ea, eb, ca, bd)
+  return self.foldM(ea, eb, ca, bd)
 }
 
 /**
@@ -548,13 +421,13 @@ export function matchM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
  * ergonomic but this method is extremely useful for implementing new
  * combinators.
  */
-export function matchM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function foldM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ca: (_: C) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): <RA, RB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB & RD, EC, ED, C, D> {
-  return (self) => self.matchM(ea, eb, ca, bd)
+  return (self) => self.foldM(ea, eb, ca, bd)
 }
 
 /**
@@ -562,7 +435,7 @@ export function matchM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
  * the state in transforming the `set` value. This is a more powerful version
  * of `matchM` but requires unifying the environment and error types.
  */
-export function matchAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function foldAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
@@ -570,7 +443,7 @@ export function matchAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   ca: (_: C) => (_: B) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> {
-  return self.matchAllM(ea, eb, ec, ca, bd)
+  return self.foldAllM(ea, eb, ec, ca, bd)
 }
 
 /**
@@ -578,14 +451,14 @@ export function matchAllM_<RA, RB, EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
  * the state in transforming the `set` value. This is a more powerful version
  * of `matchM` but requires unifying the environment and error types.
  */
-export function matchAllM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
+export function foldAllM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
   ea: (_: EA) => EC,
   eb: (_: EB) => ED,
   ec: (_: EB) => EC,
   ca: (_: C) => (_: B) => I.IO<RC, EC, A>,
   bd: (_: B) => I.IO<RD, ED, D>
 ): <RA, RB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RB & RA & RC, RB & RD, EC, ED, C, D> {
-  return (self) => self.matchAllM(ea, eb, ec, ca, bd)
+  return (self) => self.foldAllM(ea, eb, ec, ca, bd)
 }
 
 /*
@@ -602,7 +475,7 @@ export function mapM_<RA, RB, EA, EB, A, B, RC, EC, C>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): IORefM<RA, RB & RC, EA, EB | EC, A, C> {
-  return pipe(self, dimapM(I.pure, f))
+  return pipe(self, dimapM(I.succeed, f))
 }
 
 /**
@@ -613,22 +486,6 @@ export function mapM<B, RC, EC, C>(
   f: (b: B) => I.IO<RC, EC, C>
 ): <RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB & RC, EA, EC | EB, A, C> {
   return (self) => mapM_(self, f)
-}
-
-/**
- * Transforms the `get` value of the `XRefM` with the specified function.
- */
-export function map_<RA, RB, EA, EB, A, B, C>(self: IORefM<RA, RB, EA, EB, A, B>, f: (b: B) => C) {
-  return mapM_(self, (b) => I.pure(f(b)))
-}
-
-/**
- * Transforms the `get` value of the `XRefM` with the specified function.
- */
-export function map<B, C>(
-  f: (b: B) => C
-): <RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EA, EB, A, C> {
-  return (self) => map_(self, f)
 }
 
 /*
@@ -647,12 +504,7 @@ export function tapInput_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
 ): IORefM<RA & RC, RB, EA | EC, EB, A1, B> {
   return pipe(
     self,
-    contramapM((c: A1) =>
-      pipe(
-        f(c),
-        I.as(() => c)
-      )
-    )
+    contramapM((c: A1) => f(c)['$>'](() => c))
   )
 }
 
@@ -662,8 +514,8 @@ export function tapInput_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
  */
 export function tapInput<A, RC, EC, A1 extends A = A>(
   f: (a: A1) => I.IO<RC, EC, any>
-): <RA, RB, EA, EB, B>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB, EC | EA, EB, A1, B> {
-  return (self) => tapInput_(self, f)
+): <RA, RB, EA, EB, B>(ref: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB, EC | EA, EB, A1, B> {
+  return (ref) => tapInput_(ref, f)
 }
 
 /**
@@ -671,17 +523,12 @@ export function tapInput<A, RC, EC, A1 extends A = A>(
  * `XRefM`.
  */
 export function tapOutput_<RA, RB, EA, EB, A, B, RC, EC>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
+  ref: IORefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, any>
 ): IORefM<RA, RB & RC, EA, EB | EC, A, B> {
   return pipe(
-    self,
-    mapM((b) =>
-      pipe(
-        f(b),
-        I.as(() => b)
-      )
-    )
+    ref,
+    mapM((b) => f(b)['$>'](() => b))
   )
 }
 
@@ -691,8 +538,8 @@ export function tapOutput_<RA, RB, EA, EB, A, B, RC, EC>(
  */
 export function tapOutput<B, RC, EC>(
   f: (b: B) => I.IO<RC, EC, any>
-): <RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB & RC, EA, EC | EB, A, B> {
-  return (self) => tapOutput_(self, f)
+): <RA, RB, EA, EB, A>(ref: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB & RC, EA, EC | EB, A, B> {
+  return (ref) => tapOutput_(ref, f)
 }
 
 /*
@@ -706,11 +553,11 @@ export function tapOutput<B, RC, EC>(
  * specified effectual functions.
  */
 export function dimapM_<RA, RB, EA, EB, B, RC, EC, A, RD, ED, C = A, D = B>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
+  ref: IORefM<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
 ): IORefM<RA & RC, RB & RD, EA | EC, EB | ED, C, D> {
-  return self.matchM(
+  return ref.foldM(
     (ea: EA | EC) => ea,
     (eb: EB | ED) => eb,
     f,
@@ -725,39 +572,8 @@ export function dimapM_<RA, RB, EA, EB, B, RC, EC, A, RD, ED, C = A, D = B>(
 export function dimapM<B, RC, EC, A, RD, ED, C = A, D = B>(
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
-): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB & RD, EC | EA, ED | EB, C, D> {
-  return (self) => dimapM_(self, f, g)
-}
-
-/**
- * Transforms both the `set` and `get` errors of the `XRefM` with the
- * specified functions.
- */
-export function dimapError_<RA, RB, A, B, EA, EB, EC, ED>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  f: (ea: EA) => EC,
-  g: (eb: EB) => ED
-): IORefM<RA, RB, EC, ED, A, B> {
-  return pipe(
-    self,
-    match(
-      (ea) => f(ea),
-      (eb) => g(eb),
-      (a) => E.Right(a),
-      (b) => E.Right(b)
-    )
-  )
-}
-
-/**
- * Transforms both the `set` and `get` errors of the `XRefM` with the
- * specified functions.
- */
-export function dimapError<EA, EB, EC, ED>(
-  f: (ea: EA) => EC,
-  g: (eb: EB) => ED
-): <RA, RB, A, B>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EC, ED, A, B> {
-  return (self) => dimapError_(self, f, g)
+): <RA, RB, EA, EB>(ref: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA & RC, RB & RD, EC | EA, ED | EB, C, D> {
+  return (ref) => dimapM_(ref, f, g)
 }
 
 /**
@@ -766,11 +582,11 @@ export function dimapError<EA, EB, EC, ED>(
  * `update`.
  */
 export function modifyM_<RA, RB, EA, EB, R1, E1, B, A>(
-  self: IORefM<RA, RB, EA, EB, A, A>,
+  ref: IORefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, readonly [B, A]>
 ): I.IO<RA & RB & R1, EA | EB | E1, B> {
   return pipe(
-    self,
+    ref,
     concreteM,
     matchTag({
       AtomicM: (atomic) =>
@@ -832,42 +648,48 @@ export function modifyM_<RA, RB, EA, EB, R1, E1, B, A>(
  */
 export function modifyM<R1, E1, B, A>(
   f: (a: A) => I.IO<R1, E1, readonly [B, A]>
-): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, B> {
-  return (self) => modifyM_(self, f)
-}
-
-/**
- * Writes a new value to the `RefM`, returning the value immediately before
- * modification.
- */
-export function getAndSet_<RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, A>, a: A): I.IO<RA & RB, EA | EB, A> {
-  return pipe(
-    self,
-    modifyM((v) => I.pure([v, a]))
-  )
-}
-
-/**
- * Writes a new value to the `RefM`, returning the value immediately before
- * modification.
- */
-export function getAndSet<A>(a: A): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB, EA | EB, A> {
-  return (self) => getAndSet_(self, a)
+): <RA, RB, EA, EB>(ref: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, B> {
+  return (ref) => modifyM_(ref, f)
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export function getAndUpdate_<RA, RB, EA, EB, R1, E1, A>(
-  self: IORefM<RA, RB, EA, EB, A, A>,
+export function getAndUpdateM_<RA, RB, EA, EB, R1, E1, A>(
+  ref: IORefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, A>
 ): I.IO<RA & RB & R1, EA | EB | E1, A> {
   return pipe(
-    self,
+    ref,
+    modifyM((v) => f(v)['<$>']((r) => [v, r]))
+  )
+}
+
+/**
+ * Atomically modifies the `RefM` with the specified function, returning the
+ * value immediately before modification.
+ */
+export function getAndUpdateM<R1, E1, A>(
+  f: (a: A) => I.IO<R1, E1, A>
+): <RA, RB, EA, EB>(ref: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, A> {
+  return (ref) => getAndUpdateM_(ref, f)
+}
+
+/**
+ * Atomically modifies the `RefM` with the specified function, returning the
+ * value immediately before modification.
+ */
+export function getAndUpdateSomeM_<RA, RB, EA, EB, R1, E1, A>(
+  ref: IORefM<RA, RB, EA, EB, A, A>,
+  f: (a: A) => O.Option<I.IO<R1, E1, A>>
+): I.IO<RA & RB & R1, EA | EB | E1, A> {
+  return pipe(
+    ref,
     modifyM((v) =>
       pipe(
         f(v),
+        O.getOrElse(() => I.succeed(v)),
         I.map((r) => [v, r])
       )
     )
@@ -878,40 +700,10 @@ export function getAndUpdate_<RA, RB, EA, EB, R1, E1, A>(
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export function getAndUpdate<R1, E1, A>(
-  f: (a: A) => I.IO<R1, E1, A>
-): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, A> {
-  return (self) => getAndUpdate_(self, f)
-}
-
-/**
- * Atomically modifies the `RefM` with the specified function, returning the
- * value immediately before modification.
- */
-export function getAndUpdateSome_<RA, RB, EA, EB, R1, E1, A>(
-  self: IORefM<RA, RB, EA, EB, A, A>,
+export function getAndUpdateSomeM<R1, E1, A>(
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
-): I.IO<RA & RB & R1, EA | EB | E1, A> {
-  return pipe(
-    self,
-    modifyM((v) =>
-      pipe(
-        f(v),
-        O.getOrElse(() => I.pure(v)),
-        I.map((r) => [v, r])
-      )
-    )
-  )
-}
-
-/**
- * Atomically modifies the `RefM` with the specified function, returning the
- * value immediately before modification.
- */
-export function getAndUpdateSome<R1, E1, A>(
-  f: (a: A) => O.Option<I.IO<R1, E1, A>>
-): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, A> {
-  return (self) => getAndUpdateSome_(self, f)
+): <RA, RB, EA, EB>(ref: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, A> {
+  return (self) => getAndUpdateSomeM_(self, f)
 }
 
 /**
@@ -920,17 +712,17 @@ export function getAndUpdateSome<R1, E1, A>(
  * otherwise it returns a default value.
  * This is a more powerful version of `updateSome`.
  */
-export function modifySome_<RA, RB, EA, EB, R1, E1, A, B>(
-  self: IORefM<RA, RB, EA, EB, A, A>,
+export function modifySomeM_<RA, RB, EA, EB, R1, E1, A, B>(
+  ref: IORefM<RA, RB, EA, EB, A, A>,
   def: B,
   f: (a: A) => O.Option<I.IO<R1, E1, readonly [B, A]>>
 ): I.IO<RA & RB & R1, EA | EB | E1, B> {
   return pipe(
-    self,
+    ref,
     modifyM((v) =>
       pipe(
         f(v),
-        O.getOrElse(() => I.pure(tuple(def, v)))
+        O.getOrElse(() => I.succeed(tuple(def, v)))
       )
     )
   )
@@ -942,56 +734,46 @@ export function modifySome_<RA, RB, EA, EB, R1, E1, A, B>(
  * otherwise it returns a default value.
  * This is a more powerful version of `updateSome`.
  */
-export function modifySome<B>(
+export function modifySomeM<B>(
   def: B
 ): <R1, E1, A>(
   f: (a: A) => O.Option<I.IO<R1, E1, [B, A]>>
-) => <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, B> {
-  return (f) => (self) => modifySome_(self, def, f)
+) => <RA, RB, EA, EB>(ref: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, B> {
+  return (f) => (ref) => modifySomeM_(ref, def, f)
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function update_<RA, RB, EA, EB, R1, E1, A>(
-  self: IORefM<RA, RB, EA, EB, A, A>,
+export function updateM_<RA, RB, EA, EB, R1, E1, A>(
+  ref: IORefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, A>
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
   return pipe(
-    self,
-    modifyM((v) =>
-      pipe(
-        f(v),
-        I.map((r) => [undefined, r])
-      )
-    )
+    ref,
+    modifyM((v) => f(v)['<$>']((r) => [undefined, r]))
   )
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function update<R1, E1, A>(
+export function updateM<R1, E1, A>(
   f: (a: A) => I.IO<R1, E1, A>
-): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, void> {
-  return (self) => update_(self, f)
+): <RA, RB, EA, EB>(ref: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, void> {
+  return (ref) => updateM_(ref, f)
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateAndGet_<RA, RB, EA, EB, R1, E1, A>(
-  self: IORefM<RA, RB, EA, EB, A, A>,
+export function updateAndGetM_<RA, RB, EA, EB, R1, E1, A>(
+  ref: IORefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, A>
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
   return pipe(
-    self,
-    modifyM((v) =>
-      pipe(
-        f(v),
-        I.map((r) => [r, r])
-      )
-    ),
+    ref,
+    modifyM((v) => f(v)['<$>']((r) => [r, r])),
     I.asUnit
   )
 }
@@ -999,25 +781,25 @@ export function updateAndGet_<RA, RB, EA, EB, R1, E1, A>(
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateAndGet<R1, E1, A>(
+export function updateAndGetM<R1, E1, A>(
   f: (a: A) => I.IO<R1, E1, A>
-): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, void> {
-  return (self) => updateAndGet_(self, f)
+): <RA, RB, EA, EB>(ref: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, void> {
+  return (ref) => updateAndGetM_(ref, f)
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSome_<RA, RB, EA, EB, R1, E1, A>(
-  self: IORefM<RA, RB, EA, EB, A, A>,
+export function updateSomeM_<RA, RB, EA, EB, R1, E1, A>(
+  ref: IORefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
   return pipe(
-    self,
+    ref,
     modifyM((v) =>
       pipe(
         f(v),
-        O.getOrElse(() => I.pure(v)),
+        O.getOrElse(() => I.succeed(v)),
         I.map((r) => [undefined, r])
       )
     )
@@ -1027,16 +809,16 @@ export function updateSome_<RA, RB, EA, EB, R1, E1, A>(
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSome<R1, E1, A>(
+export function updateSomeM<R1, E1, A>(
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
 ): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, void> {
-  return (self) => updateSome_(self, f)
+  return (self) => updateSomeM_(self, f)
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSomeAndGet_<RA, RB, EA, EB, R1, E1, A>(
+export function updateSomeAndGetM_<RA, RB, EA, EB, R1, E1, A>(
   self: IORefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, E1 | EA | EB, A> {
@@ -1055,10 +837,10 @@ export function updateSomeAndGet_<RA, RB, EA, EB, R1, E1, A>(
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSomeAndGet<R1, E1, A>(
+export function updateSomeAndGetM<R1, E1, A>(
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
 ): <RA, RB, EA, EB>(self: IORefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, A> {
-  return (self) => updateSomeAndGet_(self, f)
+  return (self) => updateSomeAndGetM_(self, f)
 }
 
 /**
@@ -1071,7 +853,7 @@ export function collectM_<RA, RB, EA, EB, A, B, RC, EC, C>(
   self: IORefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => O.Option<I.IO<RC, EC, C>>
 ): IORefM<RA, RB & RC, EA, O.Option<EB | EC>, A, C> {
-  return self.matchM(
+  return self.foldM(
     identity,
     (_) => O.Some<EB | EC>(_),
     (_) => I.pure(_),
@@ -1094,54 +876,4 @@ export function collectM<B, RC, EC, C>(
   f: (b: B) => O.Option<I.IO<RC, EC, C>>
 ): <RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB & RC, EA, O.Option<EC | EB>, A, C> {
   return (self) => collectM_(self, f)
-}
-
-/**
- * Maps and filters the `get` value of the `XRefM` with the specified partial
- * function, returning a `XRefM` with a `get` value that succeeds with the
- * result of the partial function if it is defined or else fails with `None`.
- */
-export function collect_<RA, RB, EA, EB, A, B, C>(
-  self: IORefM<RA, RB, EA, EB, A, B>,
-  f: (b: B) => O.Option<C>
-): IORefM<RA, RB, EA, O.Option<EB>, A, C> {
-  return pipe(
-    self,
-    collectM((b) => pipe(f(b), O.map(I.pure)))
-  )
-}
-
-/**
- * Maps and filters the `get` value of the `XRefM` with the specified partial
- * function, returning a `XRefM` with a `get` value that succeeds with the
- * result of the partial function if it is defined or else fails with `None`.
- */
-export function collect<B, C>(
-  f: (b: B) => O.Option<C>
-): <RA, RB, EA, EB, A>(self: IORefM<RA, RB, EA, EB, A, B>) => IORefM<RA, RB, EA, O.Option<EB>, A, C> {
-  return (self) => collect_(self, f)
-}
-
-/**
- * Returns a read only view of the `XRefM`.
- */
-export function readOnly<RA, RB, EA, EB, A, B>(self: IORefM<RA, RB, EA, EB, A, B>): IORefM<RA, RB, EA, EB, never, B> {
-  return self
-}
-
-/**
- * Returns a read only view of the `XRefM`.
- */
-export function writeOnly<RA, RB, EA, EB, A, B>(
-  self: IORefM<RA, RB, EA, EB, A, B>
-): IORefM<RA, RB, EA, void, A, never> {
-  return pipe(
-    self,
-    match(
-      identity,
-      (): void => undefined,
-      E.Right,
-      () => E.Left<void>(undefined)
-    )
-  )
 }

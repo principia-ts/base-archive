@@ -18,8 +18,7 @@ import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import * as Ca from '../Cause'
 import { sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
-import * as XR from '../IORef'
-import * as XRM from '../IORefM'
+import * as Ref from '../IORef'
 import * as RelMap from '../Managed/ReleaseMap'
 import * as P from '../Promise'
 import * as I from './internal/io'
@@ -939,7 +938,7 @@ export function update<T>(
  */
 
 export class MemoMap {
-  constructor(readonly ref: XRM.URefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
+  constructor(readonly ref: Ref.URefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
 
   /**
    * Checks the memo map to see if a dependency exists. If it is, immediately
@@ -951,7 +950,7 @@ export class MemoMap {
     return new M.Managed<R, E, A>(
       pipe(
         this.ref,
-        XRM.modifyM((m) => {
+        Ref.modifyM((m) => {
           const inMap = m.get(layer.hash.get)
 
           if (inMap) {
@@ -977,9 +976,9 @@ export class MemoMap {
             return I.pure(tuple(cached, m))
           } else {
             return I.gen(function* (_) {
-              const observers    = yield* _(XR.make(0))
+              const observers    = yield* _(Ref.make(0))
               const promise      = yield* _(P.make<E, A>())
-              const finalizerRef = yield* _(XR.make<Finalizer>(RelMap.noopFinalizer))
+              const finalizerRef = yield* _(Ref.make<Finalizer>(RelMap.noopFinalizer))
 
               const resource = I.uninterruptibleMask(({ restore }) =>
                 I.gen(function* (_) {
@@ -1008,11 +1007,11 @@ export class MemoMap {
                                 finalizerRef.set((e) =>
                                   pipe(
                                     M.releaseAll(e, sequential)(innerReleaseMap),
-                                    I.whenM(XR.modify_(observers, (n) => [n === 1, n - 1]))
+                                    I.whenM(Ref.modify_(observers, (n) => [n === 1, n - 1]))
                                   )
                                 )
                               )
-                              yield* _(XR.update_(observers, (n) => n + 1))
+                              yield* _(Ref.update_(observers, (n) => n + 1))
                               const outerFinalizer = yield* _(
                                 RelMap.add((e) => I.bind_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
                               )
@@ -1034,7 +1033,7 @@ export class MemoMap {
                   I.onExit(
                     Ex.match(
                       (_) => I.unit(),
-                      (_) => XR.update_(observers, (n) => n + 1)
+                      (_) => Ref.update_(observers, (n) => n + 1)
                     )
                   )
                 ),
@@ -1059,7 +1058,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 
 export function makeMemoMap() {
   return pipe(
-    XRM.make<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
+    Ref.makeRefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
     I.bind((r) => I.effectTotal(() => new MemoMap(r)))
   )
 }

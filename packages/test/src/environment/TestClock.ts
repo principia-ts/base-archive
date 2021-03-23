@@ -7,8 +7,7 @@ import type { List } from '@principia/base/List'
 import type { Clock } from '@principia/io/Clock'
 import type { Fiber, FiberId, FiberStatus, RuntimeFiber } from '@principia/io/Fiber'
 import type { IO, UIO } from '@principia/io/IO'
-import type { URef } from '@principia/io/IORef'
-import type { URefM } from '@principia/io/IORefM'
+import type { URef, URefM } from '@principia/io/IORef'
 import type { Layer } from '@principia/io/Layer'
 
 import * as A from '@principia/base/Array'
@@ -28,7 +27,6 @@ import { eqFiberId } from '@principia/io/Fiber'
 import * as Fi from '@principia/io/Fiber'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
-import * as RefM from '@principia/io/IORefM'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 import * as P from '@principia/io/Promise'
@@ -222,7 +220,7 @@ export class TestClock implements Clock {
     })
   }
 
-  private warningDone: UIO<void> = RefM.updateSome_(
+  private warningDone: UIO<void> = Ref.updateSomeM_(
     this.warningState,
     matchTag({
       Start: () => O.Some(I.succeed(Done)),
@@ -231,7 +229,7 @@ export class TestClock implements Clock {
     })
   )
 
-  private warningStart: UIO<void> = RefM.updateSome_(
+  private warningStart: UIO<void> = Ref.updateSomeM_(
     this.warningState,
     matchTag(
       {
@@ -254,7 +252,7 @@ export class TestClock implements Clock {
         M.asksServicesManaged({ live: LiveTag, annotations: AnnotationsTag })(({ live, annotations }) =>
           M.gen(function* (_) {
             const ref  = yield* _(Ref.make(data))
-            const refM = yield* _(RefM.make(Start))
+            const refM = yield* _(Ref.makeRefM(Start))
             const test = yield* _(
               M.make_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
             )

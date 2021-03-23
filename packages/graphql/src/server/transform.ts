@@ -9,7 +9,6 @@ import { HttpConnection } from '@principia/http/HttpConnection'
 import * as I from '@principia/io/IO'
 import { _U } from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
-import * as RefM from '@principia/io/IORefM'
 import * as M from '@principia/io/Managed'
 import * as S from '@principia/io/Stream'
 import * as Sy from '@principia/io/Sync'
@@ -38,7 +37,7 @@ export function transformResolvers<Ctx>(
           return I.runPromise(
             I.gen(function* (_) {
               const reqRef  = yield* _(Ref.make(ctx.req))
-              const resRef  = yield* _(RefM.make(ctx.res))
+              const resRef  = yield* _(Ref.makeRefM(ctx.res))
               const context = yield* _(
                 I.effectTotal(() => ({
                   engine: ctx,

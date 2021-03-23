@@ -5,7 +5,6 @@ import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/io/IO'
 import * as Ref from '@principia/io/IORef'
-import * as RefM from '@principia/io/IORefM'
 import * as L from '@principia/io/Layer'
 import * as M from '@principia/io/Managed'
 import * as Q from '@principia/io/Queue'
@@ -43,7 +42,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
               runtime.run_(
                 I.gen(function* (_) {
                   const reqRef = yield* _(Ref.make(req))
-                  const resRef = yield* _(RefM.make(res))
+                  const resRef = yield* _(Ref.makeRefM(res))
                   yield* _(queue.offer(new HttpConnection(reqRef, resRef)))
                 })
               )
