@@ -12,7 +12,7 @@ import { flow, identity, pipe } from '@principia/base/function'
 import { mergeEnvironments } from '@principia/base/Has'
 import * as It from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
-import { match_, not } from '@principia/base/pattern'
+import { match, not } from '@principia/base/pattern'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/matchers'
 import * as Ca from '@principia/io/Cause'
@@ -296,33 +296,47 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
   return new Query(
-    I.crossWithPar_(fa.step, fb.step, (ra, rb) => {
-      return match_(ra, rb)(
-        [
-          [{ _tag: 'Blocked' }, { _tag: 'Blocked' }],
-          ([ra, rb]) =>
+    I.crossWithPar_(
+      fa.step,
+      fb.step,
+      match(
+        {
+          case: [{ _tag: 'Blocked' }, { _tag: 'Blocked' }] as const,
+          handle: ([ra, rb]) =>
             Res.blocked(BRS.then(ra.blockedRequests, rb.blockedRequests), Cont.crossWithPar_(ra.cont, rb.cont, f))
-        ],
-        [
-          [{ _tag: 'Blocked' }, { _tag: 'Done' }],
-          ([ra, rb]) =>
+        },
+        {
+          case: [{ _tag: 'Blocked' }, { _tag: 'Done' }] as const,
+          handle: ([ra, rb]) =>
             Res.blocked(
               ra.blockedRequests,
               Cont.map_(ra.cont, (a) => f(a, rb.value))
             )
-        ],
-        [
-          [{ _tag: 'Done' }, { _tag: 'Blocked' }],
-          ([ra, rb]) =>
+        },
+        {
+          case: [{ _tag: 'Done' }, { _tag: 'Blocked' }] as const,
+          handle: ([ra, rb]) =>
             Res.blocked(
               rb.blockedRequests,
               Cont.map_(rb.cont, (b) => f(ra.value, b))
             )
-        ],
-        [[{ _tag: 'Done' }, { _tag: 'Done' }], ([ra, rb]) => Res.done(f(ra.value, rb.value))],
-        [[{ _tag: 'Fail' }, { _tag: 'Fail' }], ([ra, rb]) => Res.fail(Ca.both(ra.cause, rb.cause))],
-        [[{ _tag: 'Fail' }, { _tag: not('Fail') }], ([ra, _]) => Res.fail(ra.cause)],
-        [[{ _tag: not('Fail') }, { _tag: 'Fail' }], ([_, rb]) => Res.fail(rb.cause)]
+        },
+        {
+          case: [{ _tag: 'Done' }, { _tag: 'Done' }] as const,
+          handle: ([ra, rb]) => Res.done(f(ra.value, rb.value))
+        },
+        {
+          case: [{ _tag: 'Fail' }, { _tag: 'Fail' }] as const,
+          handle: ([ra, rb]) => Res.fail(Ca.both(ra.cause, rb.cause))
+        },
+        {
+          case: [{ _tag: 'Fail' }, { _tag: not('Fail') }] as const,
+          handle: ([ra, _]) => Res.fail(ra.cause)
+        },
+        {
+          case: [{ _tag: not('Fail') }, { _tag: 'Fail' }] as const,
+          handle: ([_, rb]) => Res.fail(rb.cause)
+        }
       )
       /*
        * return ra._tag === 'Blocked'
@@ -347,7 +361,7 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
        *   ? Res.fail(Ca.both(ra.cause, rb.cause))
        *   : Res.fail(ra.cause)
        */
-    })
+    )
   )
 }
 

@@ -50,7 +50,8 @@
     ]
   },
   "dependencies": {
-    "@principia/compile": "^0.6.1"
+    "@principia/compile": "^0.6.1",
+    "ts-pattern": "^3.0.6"
   },
   "publishConfig": {
     "access": "public",

@@ -22,28 +22,31 @@ import * as O from './Option'
 type NonEmptyTuple<A> = readonly [A, ...A[]]
 
 /**
- * Pattern matches on one or more values with the tuple pattern
+ * Pattern matches on one or more values
  *
  * @category pattern matching
  * @since 1.0.0
  */
-export function match_<I extends NonEmptyTuple<any>>(
+export function match_<I extends readonly [any, ...(readonly any[])]>(
   ...values: I
 ): <
-  P extends NonEmptyTuple<Pattern<I>>,
+  P extends readonly [Pattern<I>, ...(readonly Pattern<I>[])],
   PH extends {
-    [i in keyof P]: [P[i], (...args: never) => any]
+    [i in keyof P]: {
+      case: P[i]
+      handle: (...args: never) => any
+    }
   }
 >(
   ...matchers: PH extends [...any[], any]
     ? {
-        [i in keyof P]: [
-          P[i],
-          (
+        [i in keyof P]: {
+          case: P[i]
+          handle: (
             selected: FindSelected<MatchedValue<I, InvertPattern<P[i]>>, P[i]>,
             value: MatchedValue<I, InvertPattern<P[i]>>
           ) => any
-        ]
+        }
       }
     : PH
 ) => DeepExcludeAll<
@@ -51,7 +54,7 @@ export function match_<I extends NonEmptyTuple<any>>(
   { [K in keyof P]: [P[K], MatchedValue<I, InvertPattern<P[K]>>] }[number]
 > extends infer RemainingCases
   ? [RemainingCases] extends [never]
-    ? ReturnType<PH[number][1]>
+    ? ReturnType<PH[number]['handle']>
     : NonExhaustiveError<RemainingCases>
   : never {
   return (...matchers) => {
@@ -62,12 +65,12 @@ export function match_<I extends NonEmptyTuple<any>>(
     }>
 
     return pipe(
-      matchers as ReadonlyArray<[Pattern<any>, (...args: any) => any]>,
-      A.foldl([] as Cases, (b, [pattern, handler]) => {
+      matchers as ReadonlyArray<{ case: Pattern<any>, handle: (...args: any) => any }>,
+      A.foldl([] as Cases, (b, c) => {
         b.push({
-          test: (value) => matchPattern(pattern, value),
-          handler,
-          select: (value) => selectWithPattern(pattern, value)
+          test: (value) => matchPattern(c.case, value),
+          handler: c.handle,
+          select: (value) => selectWithPattern(c.case, value)
         })
         return b
       }),
@@ -89,39 +92,42 @@ export function match_<I extends NonEmptyTuple<any>>(
 }
 
 /**
- * A pipeable version of `match_`. Pattern matches on one or more values with the tuple pattern.
- *
- * **not currently working**
+ * Pipeable version of `match_`. Pattern matches on one or more values.
+ * 
+ * @note When specifying patterns (in the `case` property), use `as const`. For some Typescript-y reason it is required for the pipeable version
  *
  * @category pattern matching
  * @since 1.0.0
  */
 export function match<
-  I extends NonEmptyTuple<any>,
-  P extends NonEmptyTuple<Pattern<I>>,
+  I extends readonly [any, ...(readonly any[])],
+  P extends readonly [Pattern<I>, ...(readonly Pattern<I>[])],
   PH extends {
-    [i in keyof P]: [P[i], (...args: never) => any]
+    [K in keyof P]: {
+      case: P[K]
+      handle: (...args: never) => any
+    }
   }
 >(
   ...matchers: PH extends [...any[], any]
     ? {
-        [i in keyof P]: [
-          P[i],
-          (
-            selected: FindSelected<MatchedValue<I, InvertPattern<P[i]>>, P[i]>,
-            value: MatchedValue<I, InvertPattern<P[i]>>
+        [K in keyof P]: {
+          case: P[K]
+          handle: (
+            selected: FindSelected<MatchedValue<I, InvertPattern<P[K]>>, P[K]>,
+            value: MatchedValue<I, InvertPattern<P[K]>>
           ) => any
-        ]
+        }
       }
     : PH
 ): (
-  ...values: I
+  ...i: I
 ) => DeepExcludeAll<
   I,
   { [K in keyof P]: [P[K], MatchedValue<I, InvertPattern<P[K]>>] }[number]
 > extends infer RemainingCases
   ? [RemainingCases] extends [never]
-    ? ReturnType<PH[number][1]>
+    ? ReturnType<PH[number]['handle']>
     : NonExhaustiveError<RemainingCases>
   : never {
   return (...values) => match_(...values)(...(matchers as any))
