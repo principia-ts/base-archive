@@ -1,6 +1,6 @@
 {
   "name": "@principia/http",
-  "version": "0.6.17",
+  "version": "0.7.0",
   "description": "HTTP",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
