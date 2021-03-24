@@ -563,9 +563,9 @@ export function pipe(
     case 21:
       return tu!(st!(rs!(qr!(pq!(op!(no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))))))))))))))
     default:
-      // @ts-expect-error
       return pipe(
         tu!(st!(rs!(qr!(pq!(op!(no!(mn!(lm!(kl!(jk!(ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))))))))))))))),
+        // @ts-expect-error
         ...(rest as any)
       )
   }

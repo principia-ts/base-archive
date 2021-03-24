@@ -6,11 +6,13 @@ import identity from './identity'
 import tracer from './tracing'
 import unflow from './unflow'
 import unpipe from './unpipe'
+import untrace from './untrace'
 
 export default function bundle(
   _program: ts.Program,
   _opts?: {
     tracing?: boolean
+    untrace?: boolean
     pipe?: boolean
     flow?: boolean
     identity?: boolean
@@ -29,6 +31,7 @@ export default function bundle(
     tracer: tracer(_program, _opts),
     unflow: unflow(_program, _opts),
     unpipe: unpipe(_program, _opts),
+    untrace: untrace(_program, _opts),
     addSpecifierExtension: addSpecifierExtension(_program, _opts)
   }
 
@@ -39,12 +42,14 @@ export default function bundle(
         identity: B0.identity.before(ctx),
         tracer: B0.tracer.before(ctx),
         unflow: B0.unflow.before(ctx),
-        unpipe: B0.unpipe.before(ctx)
+        unpipe: B0.unpipe.before(ctx),
+        untrace: B0.untrace.before(ctx)
       }
 
       return (sourceFile: ts.SourceFile) => {
         const traced   = B1.tracer(sourceFile)
-        const unpiped  = B1.unpipe(traced)
+        const untraced = B1.untrace(traced)
+        const unpiped  = B1.unpipe(untraced)
         const unflowed = B1.unflow(unpiped)
         const unid     = B1.identity(unflowed)
         const df       = B1.dataFirst(unid)

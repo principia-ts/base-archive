@@ -1,3 +1,4 @@
+/* eslint-disable functional/immutable-data */
 import * as path from 'path'
 import ts from 'typescript'
 

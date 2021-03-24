@@ -47,7 +47,7 @@
     "ts-loader": "^8.0.18",
     "ts-node": "^9.1.1",
     "ttypescript": "^1.5.12",
-    "typescript": "next",
+    "typescript": "^4.2.3",
     "ultra-runner": "^3.10.5",
     "webpack": "^5.27.2",
     "yargs": "^16.2.0"
