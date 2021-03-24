@@ -48,19 +48,17 @@
     "koa": "^2.13.1",
     "koa-bodyparser": "4.3.0",
     "koa-compose": "4.1.0",
-    "koa-router": "^10.0.0"
-  },
-  "peerDependencies": {
-    "@principia/base": "^0.6.6",
+    "koa-router": "^10.0.0",
+    "@principia/base": "^0.7.0",
     "@principia/compile": "^0.6.1",
-    "@principia/free": "^0.6.8",
-    "@principia/http": "^0.6.17",
-    "@principia/io": "^0.6.13",
-    "@principia/model": "^0.6.13",
-    "@principia/node": "^0.6.13"
+    "@principia/free": "^0.7.0",
+    "@principia/http": "^0.7.0",
+    "@principia/io": "^0.7.1",
+    "@principia/model": "^0.7.0",
+    "@principia/node": "^0.7.0"
   },
   "devDependencies": {
-    "@types/koa": "^2.13.0",
+    "@types/koa": "^2.13.1",
     "@types/koa-bodyparser": "^4.3.0",
     "@types/koa-compose": "^3.2.5",
     "@types/koa-router": "^7.4.1"

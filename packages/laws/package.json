@@ -45,10 +45,8 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "fast-check": "2.13.0"
-  },
-  "peerDependencies": {
-    "@principia/base": "^0.6.6",
+    "fast-check": "2.14.0",
+    "@principia/base": "^0.7.0",
     "@principia/compile": "^0.6.1"
   },
   "publishConfig": {

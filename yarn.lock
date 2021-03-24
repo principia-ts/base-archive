@@ -10076,7 +10076,7 @@ typescript@^3.2.1, typescript@^3.9.3:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.9.tgz#e69905c54bc0681d0518bd4d587cc6f2d0b1a674"
   integrity sha512-kdMjTiekY+z/ubJCATUPlRDl39vXYiMV9iyeMuEuXZh2we6zz80uovNN2WlAxmmdE/Z/YQe+EbOEXB5RHEED3w==
 
-typescript@next:
+typescript@^4.3.0-dev.20210228:
   version "4.3.0-dev.20210228"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.0-dev.20210228.tgz#5b387a9158de69af35dd523314ec5d36ff6494ac"
   integrity sha512-Iadgi+PbwFmz3rogXB3Ju6afQIE96MonoXhxrGigy1c98/2h6/zFNmn1QoCcheAOTH593IXVJxGU8ctvNMjRuQ==

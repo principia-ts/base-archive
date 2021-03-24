@@ -76,10 +76,10 @@
     "lint": "eslint .",
     "prepublish": "yarn buildAll"
   },
-  "peerDependencies": {
-    "@principia/base": "^0.6.6",
+  "dependencies": {
+    "@principia/base": "^0.7.0",
     "@principia/compile": "^0.6.1",
-    "@principia/io": "^0.6.13"
+    "@principia/io": "^0.7.1"
   },
   "publishConfig": {
     "access": "public",

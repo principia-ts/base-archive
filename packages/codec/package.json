@@ -44,11 +44,11 @@
     "lint": "eslint .",
     "prepublish": "yarn buildAll"
   },
-  "peerDependencies": {
-    "@principia/base": "^0.6.6",
-    "@principia/compile": "^0.6.1",
-    "@principia/free": "^0.6.8",
-    "@principia/io": "^0.6.13"
+  "dependencies": {
+    "@principia/base": "^0.7.0",
+    "@principia/compile": "^0.7.0",
+    "@principia/free": "^0.7.0",
+    "@principia/io": "^0.7.1"
   },
   "publishConfig": {
     "access": "public",

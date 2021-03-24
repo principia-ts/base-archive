@@ -46,14 +46,12 @@
   },
   "dependencies": {
     "chalk": "^4.1.0",
-    "date-fns": "^2.17.0",
-    "strip-ansi": "^6.0.0"
-  },
-  "peerDependencies": {
-    "@principia/base": "^0.6.6",
+    "date-fns": "^2.19.0",
+    "strip-ansi": "^6.0.0",
+    "@principia/base": "^0.7.0",
     "@principia/compile": "^0.6.1",
-    "@principia/io": "^0.6.13",
-    "@principia/node": "^0.6.13"
+    "@principia/io": "^0.7.1",
+    "@principia/node": "^0.7.0"
   },
   "publishConfig": {
     "access": "public",
