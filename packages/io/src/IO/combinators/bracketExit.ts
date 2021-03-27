@@ -1,5 +1,9 @@
+// tracing: off
+
 import type { Exit } from '../../Exit/core'
 import type { IO } from '../core'
+
+import { traceAs } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
@@ -15,6 +19,9 @@ import { uninterruptibleMask } from './interrupt'
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 1
+ * @trace 2
  */
 export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
   acquire: IO<R, E, A>,
@@ -22,19 +29,25 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
   release: (a: A, e: Exit<E1, A1>) => IO<R2, E2, any>
 ): IO<R & R1 & R2, E | E1 | E2, A1> {
   return uninterruptibleMask(({ restore }) =>
-    bind_(acquire, (a) =>
-      bind_(result(restore(use(a))), (e) =>
-        matchCauseM_(
-          release(a, e),
-          (cause2) =>
-            halt(
-              Ex.match_(
-                e,
-                (_) => C.then(_, cause2),
-                (_) => cause2
-              )
-            ),
-          (_) => done(e)
+    bind_(
+      acquire,
+      traceAs(use, (a) =>
+        bind_(
+          result(restore(use(a))),
+          traceAs(release, (e) =>
+            matchCauseM_(
+              release(a, e),
+              (cause2) =>
+                halt(
+                  Ex.match_(
+                    e,
+                    (_) => C.then(_, cause2),
+                    (_) => cause2
+                  )
+                ),
+              (_) => done(e)
+            )
+          )
         )
       )
     )
@@ -50,6 +63,9 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 0
+ * @trace 1
  */
 export function bracketExit<A, R1, E1, B, R2, E2, C>(
   use: (a: A) => IO<R1, E1, B>,

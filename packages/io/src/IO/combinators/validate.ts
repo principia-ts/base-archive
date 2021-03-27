@@ -6,7 +6,7 @@ import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 
-import { attempt, foreach_, map_,refail } from '../core'
+import { attempt, foreach_, map_, refail } from '../core'
 import { foreachExec_ } from './foreachExec'
 import { foreachPar_ } from './foreachPar'
 import { foreachParN_ } from './foreachParN'
@@ -73,20 +73,24 @@ export function validatePar<A, R, E, B>(f: (a: A) => IO<R, E, B>): (as: Iterable
  * This combinator is lossy meaning that if there are errors all successes
  * will be lost.
  */
-export function validateParN_(n: number) {
-  return <A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) =>
-    refail(
-      map_(
-        foreachParN_(n)(as, (a) => attempt(f(a))),
-        mergeExits<E, B>()
-      )
+export function validateParN_<A, R, E, B>(
+  as: Iterable<A>,
+  n: number,
+  f: (a: A) => IO<R, E, B>
+): IO<R, NonEmptyArray<E>, ReadonlyArray<B>> {
+  return refail(
+    map_(
+      foreachParN_(as, n, (a) => attempt(f(a))),
+      mergeExits<E, B>()
     )
+  )
 }
 
-export function validateParN(
-  n: number
-): <A, R, E, B>(f: (a: A) => IO<R, E, B>) => (as: Iterable<A>) => IO<R, NonEmptyArray<E>, readonly B[]> {
-  return (f) => (as) => validateParN_(n)(as, f)
+export function validateParN<A, R, E, B>(
+  n: number,
+  f: (a: A) => IO<R, E, B>
+): (as: Iterable<A>) => IO<R, NonEmptyArray<E>, readonly B[]> {
+  return (as) => validateParN_(as, n, f)
 }
 
 /**
@@ -97,13 +101,13 @@ export function validateParN(
  * will be lost.
  */
 export function validateExec_<R, E, A, B>(
-  es: ExecutionStrategy,
   as: Iterable<A>,
+  es: ExecutionStrategy,
   f: (a: A) => IO<R, E, B>
 ): IO<R, NonEmptyArray<E>, ReadonlyArray<B>> {
   return refail(
     map_(
-      foreachExec_(es, as, (a) => attempt(f(a))),
+      foreachExec_(as, es, (a) => attempt(f(a))),
       mergeExits<E, B>()
     )
   )
@@ -116,8 +120,9 @@ export function validateExec_<R, E, A, B>(
  * This combinator is lossy meaning that if there are errors all successes
  * will be lost.
  */
-export function validateExec(
-  es: ExecutionStrategy
-): <R, E, A, B>(f: (a: A) => IO<R, E, B>) => (as: Iterable<A>) => IO<R, NonEmptyArray<E>, ReadonlyArray<B>> {
-  return (f) => (as) => validateExec_(es, as, f) as any
+export function validateExec<R, E, A, B>(
+  es: ExecutionStrategy,
+  f: (a: A) => IO<R, E, B>
+): (as: Iterable<A>) => IO<R, NonEmptyArray<E>, ReadonlyArray<B>> {
+  return (as) => validateExec_(as, es, f)
 }

@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { RuntimeFiber } from '../../Fiber'
 import type { IO } from '../core'
 
@@ -13,6 +15,8 @@ import { ensuring } from './ensuring'
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 1
  */
 export function ensuringChildren_<R, E, A, R1>(
   ma: IO<R, E, A>,
@@ -30,6 +34,8 @@ export function ensuringChildren_<R, E, A, R1>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 0
  */
 export function ensuringChildren<R1>(
   children: (_: ReadonlyArray<RuntimeFiber<any, any>>) => IO<R1, never, any>

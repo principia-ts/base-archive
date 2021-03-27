@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { IO } from '../core'
 
 import { bracketExit_ } from './bracketExit'
@@ -24,6 +26,9 @@ import { bracketExit_ } from './bracketExit'
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 1
+ * @trace 2
  */
 export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
   acquire: IO<R, E, A>,
@@ -55,6 +60,9 @@ export function bracket_<R, E, A, R1, E1, A1, R2, E2, A2>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 0
+ * @trace 1
  */
 export function bracket<A, R1, E1, B, R2, E2, C>(
   use: (a: A) => IO<R1, E1, B>,

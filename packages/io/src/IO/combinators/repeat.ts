@@ -6,6 +6,7 @@ import type { Option } from '@principia/base/Option'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
+import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as S from '../../Schedule'
 import { bind, fail, map, map_, matchM, orDie } from '../core'
@@ -19,9 +20,16 @@ import { bind, fail, map, map_, matchM, orDie } from '../core'
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace call
  */
 export function repeat_<R, SR, E, A, B>(ef: IO<R, E, A>, sc: S.Schedule<SR, A, B>): IO<R & SR & Has<Clock>, E, B> {
-  return repeatOrElse_(ef, sc, (e) => fail(e))
+  const trace = accessCallTrace()
+  return repeatOrElse_(
+    ef,
+    sc,
+    traceFrom(trace, (e) => fail(e))
+  )
 }
 
 /**
@@ -33,9 +41,12 @@ export function repeat_<R, SR, E, A, B>(ef: IO<R, E, A>, sc: S.Schedule<SR, A, B
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace call
  */
 export function repeat<SR, A, B>(sc: S.Schedule<SR, A, B>) {
-  return <R, E>(ef: IO<R, E, A>) => repeat_(ef, sc)
+  const trace = accessCallTrace()
+  return <R, E>(ef: IO<R, E, A>) => traceCall(repeat_, trace)(ef, sc)
 }
 
 /**
@@ -49,6 +60,8 @@ export function repeat<SR, A, B>(sc: S.Schedule<SR, A, B>) {
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 2
  */
 export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
   ma: IO<R, E, A>,
@@ -69,6 +82,8 @@ export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 1
  */
 export function repeatOrElse<E, A, R1, B, R2, E2, C>(
   sc: S.Schedule<R1, A, B>,
@@ -88,6 +103,8 @@ export function repeatOrElse<E, A, R1, B, R2, E2, C>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 2
  */
 export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
   fa: IO<R, E, A>,
@@ -116,7 +133,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
       return pipe(
         fa,
         matchM(
-          (e) => pipe(f(e, O.None()), map(E.Left)),
+          traceAs(f, (e) => pipe(f(e, O.None()), map(E.Left))),
           (a) => loop(a)
         )
       )
@@ -135,6 +152,8 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 1
  */
 export function repeatOrElseEither<E, A, R1, B, R2, E2, C>(
   sc: S.Schedule<R1, A, B>,

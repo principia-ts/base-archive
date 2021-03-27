@@ -1,6 +1,7 @@
 import type { IO } from '../core'
 
 import { pipe } from '@principia/base/function'
+import { traceAs } from '@principia/compile/util'
 
 import * as P from '../../Promise'
 import * as I from '../core'
@@ -11,6 +12,8 @@ import { to } from './to'
 /**
  * Imports an asynchronous effect into an `IO`. This formulation is
  * necessary when the effect is itself expressed in terms of `IO`.
+ *
+ * @trace 0
  */
 export function effectAsyncM<R, E, R1, E1, A>(
   register: (k: (_: IO<R1, E1, A>) => void) => IO<R, E, any>
@@ -19,15 +22,17 @@ export function effectAsyncM<R, E, R1, E1, A>(
     const p = yield* _(P.make<E | E1, A>())
     const r = yield* _(runtime<R & R1>())
     const a = yield* _(
-      uninterruptibleMask(({ restore }) =>
-        pipe(
-          register((k) => {
-            r.run_(to(p)(k))
-          }),
-          I.catchAllCause((c) => p.halt(c)),
-          restore,
-          I.fork,
-          I.apr(restore(p.await))
+      uninterruptibleMask(
+        traceAs(register, ({ restore }) =>
+          pipe(
+            register((k) => {
+              r.run_(to(p)(k))
+            }),
+            I.catchAllCause((c) => p.halt(c)),
+            restore,
+            I.fork,
+            I.apr(restore(p.await))
+          )
         )
       )
     )

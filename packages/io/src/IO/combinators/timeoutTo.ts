@@ -2,6 +2,7 @@ import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
 import { pipe } from '@principia/base/function'
+import { accessCallTrace, traceCall } from '@principia/compile/util'
 
 import { Clock } from '../../Clock'
 import { as, map } from '../core'
@@ -16,6 +17,8 @@ import { raceFirst } from './raceFirst'
  *
  * If the timeout elapses without producing a value, the running effect
  * will be safely interrupted
+ *
+ * @trace call
  */
 export function timeoutTo_<R, E, A, B, B1>(
   ma: IO<R, E, A>,
@@ -23,10 +26,14 @@ export function timeoutTo_<R, E, A, B, B1>(
   b: B,
   f: (a: A) => B1
 ): IO<R & Has<Clock>, E, B | B1> {
+  const trace = accessCallTrace()
   return pipe(
     ma,
     map(f),
-    raceFirst(
+    traceCall(
+      raceFirst,
+      trace
+    )(
       pipe(
         Clock.sleep(d),
         makeInterruptible,
@@ -44,7 +51,14 @@ export function timeoutTo_<R, E, A, B, B1>(
  *
  * If the timeout elapses without producing a value, the running effect
  * will be safely interrupted
+ *
+ * @trace call
  */
-export function timeoutTo<A, B, B1>(d: number, b: B, f: (a: A) => B1) {
-  return <R, E>(ma: IO<R, E, A>) => timeoutTo_(ma, d, b, f)
+export function timeoutTo<A, B, B1>(
+  d: number,
+  b: B,
+  f: (a: A) => B1
+): <R, E>(ma: IO<R, E, A>) => IO<R & Has<Clock>, E, B | B1> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(timeoutTo_, trace)(ma, d, b, f)
 }

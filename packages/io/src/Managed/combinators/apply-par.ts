@@ -134,8 +134,9 @@ export function sequenceSParN(n: number) {
     }
   > =>
     map_(
-      foreachParN_(n)(
+      foreachParN_(
         R.collect_(mr, (k, v) => [k, v] as const),
+        n,
         ([k, v]) => map_(v, (a) => [k, a] as const)
       ),
       (kvs) => {
@@ -174,5 +175,5 @@ export function sequenceTParN(n: number) {
     {
       [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never
     }
-  > => foreachParN_(n)(t, identity) as any
+  > => foreachParN_(t, n, identity) as any
 }

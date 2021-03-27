@@ -2,6 +2,7 @@ import type { IO } from '../core'
 import type { Either } from '@principia/base/Either'
 
 import * as E from '@principia/base/Either'
+import { accessCallTrace, traceCall } from '@principia/compile/util'
 
 import * as I from '../core'
 import { race_ } from './race'
@@ -13,12 +14,15 @@ import { race_ } from './race'
  *
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
+ *
+ * @trace call
  */
 export function raceEither_<R, E, A, R1, E1, A1>(
   fa: IO<R, E, A>,
   that: IO<R1, E1, A1>
 ): IO<R & R1, E | E1, Either<A, A1>> {
-  return race_(I.map_(fa, E.Left), I.map_(that, E.Right))
+  const trace = accessCallTrace()
+  return traceCall(race_, trace)(I.map_(fa, E.Left), I.map_(that, E.Right))
 }
 
 /**
@@ -28,9 +32,12 @@ export function raceEither_<R, E, A, R1, E1, A1>(
  *
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
+ *
+ * @trace call
  */
 export function raceEither<R1, E1, A1>(
   that: IO<R1, E1, A1>
 ): <R, E, A>(fa: IO<R, E, A>) => IO<R & R1, E1 | E, Either<A, A1>> {
-  return (fa) => raceEither_(fa, that)
+  const trace = accessCallTrace()
+  return (fa) => traceCall(raceEither_, trace)(fa, that)
 }

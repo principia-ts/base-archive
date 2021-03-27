@@ -1,6 +1,9 @@
+// tracing: off
+
 import type { IO } from '../core'
 
 import { pipe } from '@principia/base/function'
+import { traceAs } from '@principia/compile/util'
 
 import * as XR from '../../Ref'
 import { bind, bind_ } from '../core'
@@ -15,23 +18,32 @@ import { foreachUnitParN_ } from './foreachUnitParN'
  *
  * It's unsafe to execute side effects inside `f`, as `f` may be executed
  * more than once for some of `in` elements during effect execution.
+ *
+ * @trace 3
  */
-export function mergeAllParN_(n: number) {
-  return <R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> =>
-    bind_(XR.makeRef(b), (acc) =>
-      bind_(
-        foreachUnitParN_(n)(
-          fas,
-          bind((a) =>
+export function mergeAllParN_<R, E, A, B>(
+  fas: Iterable<IO<R, E, A>>,
+  n: number,
+  b: B,
+  f: (b: B, a: A) => B
+): IO<R, E, B> {
+  return bind_(XR.makeRef(b), (acc) =>
+    bind_(
+      foreachUnitParN_(
+        fas,
+        n,
+        bind(
+          traceAs(f, (a) =>
             pipe(
               acc,
               XR.update((b) => f(b, a))
             )
           )
-        ),
-        () => acc.get
-      )
+        )
+      ),
+      () => acc.get
     )
+  )
 }
 
 /**
@@ -44,7 +56,10 @@ export function mergeAllParN_(n: number) {
  * It's unsafe to execute side effects inside `f`, as `f` may be executed
  * more than once for some of `in` elements during effect execution.
  */
-export function mergeAllParN(n: number) {
-  return <A, B>(b: B, f: (b: B, a: A) => B) => <R, E>(fas: Iterable<IO<R, E, A>>): IO<R, E, B> =>
-    mergeAllParN_(n)(fas, b, f)
+export function mergeAllParN<A, B>(
+  n: number,
+  b: B,
+  f: (b: B, a: A) => B
+): <R, E>(fas: Iterable<IO<R, E, A>>) => IO<R, E, B> {
+  return (fas) => mergeAllParN_(fas, n, b, f)
 }

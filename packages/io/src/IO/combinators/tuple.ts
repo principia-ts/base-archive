@@ -32,5 +32,5 @@ export function sequenceTPar<A extends NonEmptyArray<IO<any, any, any>>>(...t: A
 
 export function sequenceTParN(n: number) {
   return <A extends NonEmptyArray<IO<any, any, any>>>(...t: A): IO<TupleR<A>, TupleE<A>, TupleA<A>> =>
-    foreachParN_(n)(t, identity) as any
+    foreachParN_(t, n, identity) as any
 }

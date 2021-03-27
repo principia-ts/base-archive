@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Exit } from '../../Exit/core'
 import type { Fiber } from '../../Fiber/core'
 import type { FiberContext } from '../../internal/FiberContext'
@@ -6,6 +8,7 @@ import * as A from '@principia/base/Array'
 import { flow, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import { tuple } from '@principia/base/tuple'
+import { traceAs } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
@@ -18,7 +21,7 @@ import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
 import { forkDaemon, transplant } from './core-scope'
 import { ensuring } from './ensuring'
-import { makeInterruptible, makeUninterruptible, onInterruptExtended, uninterruptibleMask } from './interrupt'
+import { makeInterruptible, makeUninterruptible, uninterruptibleMask } from './interrupt'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -31,6 +34,8 @@ import { makeInterruptible, makeUninterruptible, onInterruptExtended, uninterrup
  * Behaves almost like this code:
  *
  * Additionally, interrupts all effects on any failure.
+ *
+ * @trace 1
  */
 export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
   const arr  = Array.from(as)
@@ -66,7 +71,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
 
     const effect = (a: A) =>
       pipe(
-        I.deferTotal(() => f(a)),
+        I.deferTotal(traceAs(f, () => f(a))),
         makeInterruptible,
         I.tapCause((cause) =>
           pipe(
@@ -122,9 +127,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
               )
             )
           ),
-          onInterruptExtended(() =>
-            pipe(result.fail(undefined), I.apr(I.foreach_(fibers, (f) => f.await)), I.apr(I.bind_(causes.get, I.halt)))
-          )
+          I.refailWithTrace
         )
       )
     )
@@ -142,6 +145,9 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
  * Behaves almost like this code:
  *
  * Additionally, interrupts all effects on any failure.
+ *
+ * @dataFirst foreachUnitPar_
+ * @trace 0
  */
 export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iterable<A>) => I.IO<R, E, void> {
   return (as) => foreachUnitPar_(as, f)
@@ -152,6 +158,8 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
  * and returns the results in a new `readonly B[]`.
  *
  * For a sequential version of this method, see `foreach`.
+ *
+ * @trace 1
  */
 function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
   const arr = Array.from(as)
@@ -160,12 +168,10 @@ function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I
     I.effectTotal<B[]>(() => []),
     (mut_array) => {
       const fn = ([a, n]: [A, number]) =>
-        I.bind_(
-          I.deferTotal(() => f(a)),
-          (b) =>
-            I.effectTotal(() => {
-              mut_array[n] = b
-            })
+        I.bind_(I.deferTotal(traceAs(f, () => f(a))), (b) =>
+          I.effectTotal(() => {
+            mut_array[n] = b
+          })
         )
       return I.bind_(
         foreachUnitPar_(

@@ -3,6 +3,7 @@ import type { IO } from '../core'
 import type { Has } from '@principia/base/Has'
 
 import * as O from '@principia/base/Option'
+import { accessCallTrace, traceCall } from '@principia/compile/util'
 
 import { timeoutTo_ } from './timeoutTo'
 
@@ -21,9 +22,12 @@ import { timeoutTo_ } from './timeoutTo'
  * which first disconnects the effect's interruption signal before performing
  * the timeout, resulting in earliest possible return, before an underlying
  * effect has been successfully interrupted.
+ *
+ * @trace call
  */
 export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number): IO<R & Has<Clock>, E, O.Option<A>> {
-  return timeoutTo_(ma, d, O.None(), O.Some)
+  const trace = accessCallTrace()
+  return traceCall(timeoutTo_, trace)(ma, d, O.None(), O.Some)
 }
 
 /**
@@ -41,7 +45,10 @@ export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number): IO<R & Has<Clock>
  * which first disconnects the effect's interruption signal before performing
  * the timeout, resulting in earliest possible return, before an underlying
  * effect has been successfully interrupted.
+ *
+ * @trace call
  */
-export function timeout(d: number) {
-  return <R, E, A>(ma: IO<R, E, A>): IO<R & Has<Clock>, E, O.Option<A>> => timeout_(ma, d)
+export function timeout(d: number): <R, E, A>(ma: IO<R, E, A>) => IO<R & Has<Clock>, E, O.Option<A>> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(timeout_, trace)(ma, d)
 }

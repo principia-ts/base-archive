@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Exit } from '../../Exit'
 import type { RuntimeFiber } from '../../Fiber'
 import type { IO } from '../core'
@@ -12,6 +14,8 @@ import { forkDaemon } from './core-scope'
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 1
  */
 export function bracketFiber_<R, E, A, R1, E1, B>(
   ma: IO<R, E, A>,
@@ -26,6 +30,8 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 0
  */
 export function bracketFiber<E, A, R1, E1, A1>(
   use: (f: RuntimeFiber<E, A>) => IO<R1, E1, A1>

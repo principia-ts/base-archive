@@ -1,6 +1,8 @@
 import type { Promise } from '../../Promise'
 import type { IO } from '../core'
 
+import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
+
 import { bind_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
@@ -8,9 +10,12 @@ import { uninterruptibleMask } from './interrupt'
  * Returns an IO that keeps or breaks a promise based on the result of
  * this effect. Synchronizes interruption, so if this effect is interrupted,
  * the specified promise will be interrupted, too.
+ *
+ * @trace call
  */
 export function to_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never, boolean> {
-  return uninterruptibleMask(({ restore }) => bind_(result(restore(effect)), p.done))
+  const trace = accessCallTrace()
+  return uninterruptibleMask(traceFrom(trace, ({ restore }) => bind_(result(restore(effect)), p.done)))
 }
 
 /**
@@ -19,5 +24,6 @@ export function to_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never
  * the specified promise will be interrupted, too.
  */
 export function to<E, A>(p: Promise<E, A>): <R>(effect: IO<R, E, A>) => IO<R, never, boolean> {
-  return (effect) => to_(effect, p)
+  const trace = accessCallTrace()
+  return (effect) => traceCall(to_, trace)(effect, p)
 }

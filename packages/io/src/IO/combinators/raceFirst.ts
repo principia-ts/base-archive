@@ -2,9 +2,18 @@ import type { Exit } from '../../Exit'
 import type { IO } from '../core'
 
 import { pipe } from '@principia/base/function'
+import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as I from '../core'
 import { race_ } from './race'
+
+/**
+ * @trace call
+ */
+export function raceFirst_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, that: IO<R1, E1, A1>): IO<R & R1, E | E1, A | A1> {
+  const trace = accessCallTrace()
+  return pipe(race_(I.result(ma), I.result(that)), I.bind(traceFrom(trace, (a) => I.done(a as Exit<E | E1, A | A1>))))
+}
 
 /**
  * Returns an IO that races this effect with the specified effect,
@@ -17,11 +26,10 @@ import { race_ } from './race'
  * `l.disconnect raceFirst r.disconnect`, which disconnects left and right
  * interrupt signal, allowing a fast return, with interruption performed
  * in the background.
+ *
+ * @trace call
  */
-export function raceFirst<R1, E1, A1>(that: IO<R1, E1, A1>) {
-  return <R, E, A>(ef: IO<R, E, A>): IO<R & R1, E | E1, A | A1> =>
-    pipe(
-      race_(I.result(ef), I.result(that)),
-      I.bind((a) => I.done(a as Exit<E | E1, A | A1>))
-    )
+export function raceFirst<R1, E1, A1>(that: IO<R1, E1, A1>): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, A1 | A> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(raceFirst_, trace)(ma, that)
 }

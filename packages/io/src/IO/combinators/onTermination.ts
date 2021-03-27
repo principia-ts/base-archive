@@ -3,20 +3,26 @@ import type { IO } from '../core'
 
 import * as E from '@principia/base/Either'
 import { flow } from '@principia/base/function'
+import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
 import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
 
+/**
+ * @trace call
+ * @trace 1
+ */
 export function onTermination_<R, E, A, R1>(
   io: IO<R, E, A>,
   onTerminated: (cause: Cause<never>) => I.URIO<R1, any>
 ): IO<R & R1, E, A> {
+  const trace = accessCallTrace()
   return bracketExit_(
     I.unit(),
-    () => io,
-    (_, exit) =>
+    traceFrom(trace, () => io),
+    traceAs(onTerminated, (_, exit) =>
       Ex.match_(
         exit,
         flow(
@@ -25,11 +31,17 @@ export function onTermination_<R, E, A, R1>(
         ),
         () => I.unit()
       )
+    )
   )
 }
 
+/**
+ * @trace call
+ * @trace 0
+ */
 export function onTermination<R1>(
   onTerminated: (cause: Cause<never>) => I.URIO<R1, any>
 ): <R, E, A>(io: I.IO<R, E, A>) => I.IO<R & R1, E, A> {
-  return (io) => onTermination_(io, onTerminated)
+  const trace = accessCallTrace()
+  return (io) => traceCall(onTermination_, trace)(io, onTerminated)
 }

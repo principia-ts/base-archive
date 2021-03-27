@@ -11,8 +11,8 @@ import { mergeAllParN_ } from './mergeAllParN'
  */
 export function foldMapParN_<M>(
   M: Monoid<M>
-): (n: number) => <R, E, A>(mas: Iterable<Managed<R, E, A>>, f: (a: A) => M) => Managed<R, E, M> {
-  return (n) => (mas, f) => mergeAllParN_(n)(mas, M.nat, (m, a) => M.combine_(m, f(a)))
+): <R, E, A>(mas: Iterable<Managed<R, E, A>>, n: number, f: (a: A) => M) => Managed<R, E, M> {
+  return (mas, n, f) => mergeAllParN_(mas, n, M.nat, (m, a) => M.combine_(m, f(a)))
 }
 
 /**
@@ -23,6 +23,6 @@ export function foldMapParN_<M>(
  */
 export function foldMapParN<M>(
   M: Monoid<M>
-): (n: number) => <A>(f: (a: A) => M) => <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, M> {
-  return (n) => (f) => (mas) => foldMapParN_(M)(n)(mas, f)
+): <A>(n: number, f: (a: A) => M) => <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, M> {
+  return (n, f) => (mas) => foldMapParN_(M)(mas, n, f)
 }

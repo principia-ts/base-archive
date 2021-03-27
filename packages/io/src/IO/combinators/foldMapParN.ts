@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { IO } from '../core'
 import type { Monoid } from '@principia/base/typeclass'
 
@@ -11,8 +13,13 @@ import { mergeAllParN_ } from './mergeAllParN'
  */
 export function foldMapParN_<M>(
   M: Monoid<M>
-): (n: number) => <R, E, A>(as: ReadonlyArray<IO<R, E, A>>, f: (a: A) => M) => IO<R, E, M> {
-  return (n) => (as, f) => mergeAllParN_(n)(as, M.nat, (m, a) => M.combine_(m, f(a)))
+): <R, E, A>(as: ReadonlyArray<IO<R, E, A>>, n: number, f: (a: A) => M) => IO<R, E, M> {
+  return (
+    /**
+     * @trace 2
+     */
+    (as, n, f) => mergeAllParN_(as, n, M.nat, (m, a) => M.combine_(m, f(a)))
+  )
 }
 
 /**
@@ -23,6 +30,11 @@ export function foldMapParN_<M>(
  */
 export function foldMapParN<M>(
   M: Monoid<M>
-): (n: number) => <A>(f: (a: A) => M) => <R, E>(as: ReadonlyArray<IO<R, E, A>>) => IO<R, E, M> {
-  return (n) => (f) => (as) => foldMapParN_(M)(n)(as, f)
+): <A>(n: number, f: (a: A) => M) => <R, E>(as: ReadonlyArray<IO<R, E, A>>) => IO<R, E, M> {
+  return (
+    /**
+     * @trace 1
+     */
+    (n, f) => (as) => foldMapParN_(M)(as, n, f)
+  )
 }

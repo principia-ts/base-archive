@@ -9,6 +9,7 @@ import { flow, pipe } from '@principia/base/function'
 import { None, Some } from '@principia/base/Option'
 import { AtomicReference } from '@principia/base/util/support/AtomicReference'
 import { OneShot } from '@principia/base/util/support/OneShot'
+import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
 import { join } from '../../Fiber/combinators/join'
@@ -28,15 +29,19 @@ import {
   matchCauseM_,
   pure,
   SetInterrupt,
+  succeed,
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
 
 /**
  * Returns an effect that is interrupted as if by the specified fiber.
+ *
+ * @trace call
  */
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
-  return halt(C.interrupt(fiberId))
+  const trace = accessCallTrace()
+  return traceCall(halt, trace)(C.interrupt(fiberId))
 }
 
 /**
@@ -104,6 +109,8 @@ export function uninterruptibleMask<R, E, A>(f: (restore: InterruptStatusRestore
 /**
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted.
+ *
+ * @trace 1
  */
 export function onInterrupt_<R, E, A, R1>(
   ma: IO<R, E, A>,
@@ -112,8 +119,14 @@ export function onInterrupt_<R, E, A, R1>(
   return uninterruptibleMask(({ restore }) =>
     matchCauseM_(
       restore(ma),
-      (cause) => (C.interrupted(cause) ? bind_(cleanup(C.interruptors(cause)), () => halt(cause)) : halt(cause)),
-      pure
+      (cause) =>
+        C.interrupted(cause)
+          ? bind_(
+              cleanup(C.interruptors(cause)),
+              traceAs(cleanup, () => halt(cause))
+            )
+          : halt(cause),
+      succeed
     )
   )
 }
@@ -121,6 +134,8 @@ export function onInterrupt_<R, E, A, R1>(
 /**
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted.
+ *
+ * @trace 0
  */
 export function onInterrupt<R1>(
   cleanup: (interruptors: ReadonlySet<FiberId>) => IO<R1, never, any>
@@ -131,6 +146,8 @@ export function onInterrupt<R1>(
 /**
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted (allows for expanding error).
+ *
+ * @trace 1
  */
 export function onInterruptExtended_<R, E, A, R2, E2>(
   self: IO<R, E, A>,
@@ -143,11 +160,11 @@ export function onInterruptExtended_<R, E, A, R2, E2>(
         C.interrupted(cause)
           ? matchCauseM_(
               cleanup(),
-              (_) => halt(_),
-              () => halt(cause)
+              traceAs(cleanup, (_) => halt(_)),
+              traceAs(cleanup, () => halt(cause))
             )
           : halt(cause),
-      pure
+      succeed
     )
   )
 }
@@ -155,6 +172,8 @@ export function onInterruptExtended_<R, E, A, R2, E2>(
 /**
  * Calls the specified function, and runs the effect it returns, if this
  * effect is interrupted (allows for expanding error).
+ *
+ * @trace 0
  */
 export function onInterruptExtended<R2, E2>(
   cleanup: () => IO<R2, E2, any>
@@ -174,12 +193,17 @@ export function onInterruptExtended<R2, E2>(
  * background.
  *
  * See timeout and race for other applications.
+ *
+ * @trace call
  */
 export function disconnect<R, E, A>(effect: IO<R, E, A>): IO<R, E, A> {
-  return uninterruptibleMask(({ restore }) =>
-    bind_(fiberId(), (id) =>
-      bind_(forkDaemon(restore(effect)), (fiber) =>
-        onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
+  const trace = accessCallTrace()
+  return uninterruptibleMask(
+    traceFrom(trace, ({ restore }) =>
+      bind_(fiberId(), (id) =>
+        bind_(forkDaemon(restore(effect)), (fiber) =>
+          onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
+        )
       )
     )
   )
@@ -216,6 +240,8 @@ export class InterruptStatusRestore {
  *
  * The list of fibers, that may complete the async callback, is used to
  * provide better diagnostics.
+ *
+ * @trace 0
  */
 export function effectAsyncInterruptEither<R, E, A>(
   register: (cb: (resolve: IO<R, E, A>) => void) => Either<Canceler<R>, IO<R, E, A>>,
@@ -225,28 +251,31 @@ export function effectAsyncInterruptEither<R, E, A>(
     effectTotal(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
     bind(([started, cancel]) =>
       pipe(
-        effectAsyncOption<R, E, IO<R, E, A>>((k) => {
-          started.set(true)
-          const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(None())
-          try {
-            const res = register((io) => k(pure(io)))
-            switch (res._tag) {
-              case 'Right': {
-                ret.set(Some(pure(res.right)))
-                break
+        effectAsyncOption<R, E, IO<R, E, A>>(
+          traceAs(register, (k) => {
+            started.set(true)
+            const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(None())
+            try {
+              const res = register((io) => k(pure(io)))
+              switch (res._tag) {
+                case 'Right': {
+                  ret.set(Some(pure(res.right)))
+                  break
+                }
+                case 'Left': {
+                  cancel.set(res.left)
+                  break
+                }
               }
-              case 'Left': {
-                cancel.set(res.left)
-                break
+            } finally {
+              if (!cancel.isSet()) {
+                cancel.set(unit())
               }
             }
-          } finally {
-            if (!cancel.isSet()) {
-              cancel.set(unit())
-            }
-          }
-          return ret.get
-        }, blockingOn),
+            return ret.get
+          }),
+          blockingOn
+        ),
         flatten,
         onInterrupt(() => deferTotal(() => (started.get ? cancel.get() : unit())))
       )
@@ -254,19 +283,28 @@ export function effectAsyncInterruptEither<R, E, A>(
   )
 }
 
+/**
+ * @trace 0
+ */
 export function effectAsyncInterrupt<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Canceler<R>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return effectAsyncInterruptEither<R, E, A>((cb) => Left(register(cb)), blockingOn)
+  return effectAsyncInterruptEither<R, E, A>(
+    traceAs(register, (cb) => Left(register(cb))),
+    blockingOn
+  )
 }
 
+/**
+ * @trace 0
+ */
 export function effectAsyncInterruptPromise<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Promise<Canceler<R>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return effectAsyncInterruptEither<R, E, A>(
-    (cb) => Left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten)),
+    traceAs(register, (cb) => Left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten))),
     blockingOn
   )
 }

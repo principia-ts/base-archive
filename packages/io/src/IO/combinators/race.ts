@@ -1,6 +1,8 @@
 import type { Exit } from '../../Exit'
 import type { IO } from '../core'
 
+import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
+
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
 import { join } from '../../Fiber/combinators/join'
@@ -24,24 +26,29 @@ const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): IO<unknown, E1
  *
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
+ *
+ * @trace call
  */
 export function race_<R, E, A, R1, E1, A1>(ef: IO<R, E, A>, that: IO<R1, E1, A1>): IO<R & R1, E | E1, A | A1> {
+  const trace = accessCallTrace()
   return I.descriptorWith((d) =>
     raceWith_(
       ef,
       that,
-      (exit, right) =>
+      traceFrom(trace, (exit, right) =>
         Ex.matchM_(
           exit,
           (cause) => I.mapErrorCause_(join(right), (_) => C.both(cause, _)),
           (a) => I.bind_(right.interruptAs(d.id), mergeInterruption(a))
-        ),
-      (exit, left) =>
+        )
+      ),
+      traceFrom(trace, (exit, left) =>
         Ex.matchM_(
           exit,
           (cause) => I.mapErrorCause_(join(left), (_) => C.both(cause, _)),
           (a) => I.bind_(left.interruptAs(d.id), mergeInterruption(a))
         )
+      )
     )
   )
 }
@@ -54,7 +61,10 @@ export function race_<R, E, A, R1, E1, A1>(ef: IO<R, E, A>, that: IO<R1, E1, A1>
  *
  * WARNING: The raced effect will safely interrupt the "loser", but will not
  * resume until the loser has been cleanly terminated.
+ *
+ * @trace call
  */
 export function race<R1, E1, A1>(that: IO<R1, E1, A1>): <R, E, A>(ef: IO<R, E, A>) => IO<R & R1, E1 | E, A1 | A> {
-  return (ef) => race_(ef, that)
+  const trace = accessCallTrace()
+  return (ef) => traceCall(race_, trace)(ef, that)
 }

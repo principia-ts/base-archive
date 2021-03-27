@@ -5,11 +5,12 @@ import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import * as A from '@principia/base/Array'
 import { flow, pipe } from '@principia/base/function'
 import { tuple } from '@principia/base/tuple'
+import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'
-import * as XR from '../../Ref'
 import * as P from '../../Promise'
+import * as Ref from '../../Ref'
 import * as I from '../core'
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 
@@ -17,14 +18,14 @@ const arbiter = <E, A>(
   fibers: ReadonlyArray<Fiber.Fiber<E, A>>,
   winner: Fiber.Fiber<E, A>,
   promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
-  fails: XR.URef<number>
+  fails: Ref.URef<number>
 ) => (res: Exit<E, A>): UIO<void> =>
   Ex.matchM_(
     res,
     (e) =>
       pipe(
         fails,
-        XR.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
+        Ref.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
         I.flatten
       ),
     (a) =>
@@ -44,38 +45,43 @@ const arbiter = <E, A>(
  * Losers of the race will be interrupted immediately.
  *
  * Note: in case of success eventual interruption errors are ignored
+ *
+ * @trace call
  */
 export function raceAll<R, E, A>(
   ios: NonEmptyArray<IO<R, E, A>>,
   interruptStrategy: 'background' | 'wait' = 'background'
 ): IO<R, E, A> {
+  const trace = accessCallTrace()
   return I.gen(function* (_) {
     const done    = yield* _(P.make<E, readonly [A, Fiber.Fiber<E, A>]>())
-    const fails   = yield* _(XR.makeRef(ios.length))
+    const fails   = yield* _(Ref.makeRef(ios.length))
     const [c, fs] = yield* _(
-      uninterruptibleMask(({ restore }) =>
-        I.gen(function* (_) {
-          const fs = yield* _(I.foreach_(ios, flow(makeInterruptible, I.fork)))
-          yield* _(
-            A.foldl_(fs, I.unit(), (io, f) =>
-              I.bind_(io, () => pipe(f.await, I.bind(arbiter(fs, f, done, fails)), I.fork, I.asUnit))
+      uninterruptibleMask(
+        traceFrom(trace, ({ restore }) =>
+          I.gen(function* (_) {
+            const fs = yield* _(I.foreach_(ios, flow(makeInterruptible, I.fork)))
+            yield* _(
+              A.foldl_(fs, I.unit(), (io, f) =>
+                I.bind_(io, () => pipe(f.await, I.bind(arbiter(fs, f, done, fails)), I.fork, I.asUnit))
+              )
             )
-          )
-          const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) =>
-            pipe(
-              res[1].inheritRefs,
-              I.as(() => res[0])
+            const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) =>
+              pipe(
+                res[1].inheritRefs,
+                I.as(() => res[0])
+              )
+            const c           = yield* _(
+              pipe(
+                done.await,
+                I.bind(inheritRefs),
+                restore,
+                onInterrupt(() => A.foldl_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))
+              )
             )
-          const c           = yield* _(
-            pipe(
-              done.await,
-              I.bind(inheritRefs),
-              restore,
-              onInterrupt(() => A.foldl_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))
-            )
-          )
-          return tuple(c, fs)
-        })
+            return tuple(c, fs)
+          })
+        )
       )
     )
     yield* _(interruptStrategy === 'wait' ? I.asUnit(I.foreach_(fs, (f) => f.await)) : I.unit())

@@ -1,21 +1,32 @@
+// tracing: off
+
 import type { Exit } from '../../Exit'
 import type { IO } from '../core'
+
+import { traceAs } from '@principia/compile/util'
 
 import { unit } from '../core'
 import { bracketExit_ } from './bracketExit'
 
 /**
- * Same as `_bracketExit` but executes the release IO only if there was an error.
+ * Same as `bracketExit_` but executes the release IO only if there was an error.
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 1
+ * @trace 2
  */
 export function bracketOnError_<R, E, A, R1, E1, A1, R2, E2, A2>(
   acquire: IO<R, E, A>,
   use: (a: A) => IO<R1, E1, A1>,
   release: (a: A, e: Exit<E1, A1>) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E | E1 | E2, A1> {
-  return bracketExit_(acquire, use, (a, e) => (e._tag === 'Success' ? unit() : release(a, e)))
+  return bracketExit_(
+    acquire,
+    use,
+    traceAs(release, (a, e) => (e._tag === 'Success' ? unit() : release(a, e)))
+  )
 }
 
 /**
@@ -23,6 +34,9 @@ export function bracketOnError_<R, E, A, R1, E1, A1, R2, E2, A2>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @trace 0
+ * @trace 1
  */
 export function bracketOnError<A, R1, E1, A1, R2, E2, A2>(
   use: (a: A) => IO<R1, E1, A1>,

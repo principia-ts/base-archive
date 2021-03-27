@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Cause } from '../Cause'
 import type { Exit } from '../Exit'
 import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
@@ -181,13 +183,9 @@ export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2
   constructor(
     readonly io: IO<R, E, A>,
     readonly onFailure: (cause: Cause<E>) => IO<R1, E1, B>,
-    readonly onSuccess: (a: A) => IO<R2, E2, C>
+    readonly apply: (a: A) => IO<R2, E2, C>
   ) {
     super()
-  }
-
-  apply(v: A): IO<R & R1 & R2, E1 | E2, B | C> {
-    return this.onSuccess(v)
   }
 }
 

@@ -2,6 +2,7 @@ import type { IO, URIO } from '../core'
 
 import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
+import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as Fiber from '../../Fiber'
 import * as FiberRef from '../../FiberRef'
@@ -10,20 +11,28 @@ import { uninterruptibleMask } from './interrupt'
 
 /**
  * Forks the effect into a new independent fiber, with the specified name.
+ *
+ * @trace call
  */
 export function forkAs_<R, E, A>(ma: IO<R, E, A>, name: string): URIO<R, Fiber.FiberContext<E, A>> {
-  return uninterruptibleMask(({ restore }) =>
-    pipe(
-      Fiber.fiberName,
-      FiberRef.set(O.Some(name)),
-      bind(() => fork(restore(ma)))
+  const trace = accessCallTrace()
+  return uninterruptibleMask(
+    traceFrom(trace, ({ restore }) =>
+      pipe(
+        Fiber.fiberName,
+        FiberRef.set(O.Some(name)),
+        bind(() => fork(restore(ma)))
+      )
     )
   )
 }
 
 /**
  * Forks the effect into a new independent fiber, with the specified name.
+ *
+ * @trace call
  */
 export function forkAs(name: string): <R, E, A>(ma: IO<R, E, A>) => URIO<R, Fiber.FiberContext<E, A>> {
-  return (ma) => forkAs_(ma, name)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(forkAs_, trace)(ma, name)
 }

@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { IOURI } from '../Modules'
 import type { V } from './core'
 import type * as HKT from '@principia/base/HKT'

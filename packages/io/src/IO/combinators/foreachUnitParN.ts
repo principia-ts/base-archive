@@ -1,4 +1,7 @@
+// tracing: off
+
 import { pipe } from '@principia/base/function'
+import { traceAs } from '@principia/compile/util'
 
 import * as Semaphore from '../../Semaphore'
 import * as I from '../core'
@@ -9,15 +12,19 @@ import { foreachUnitPar_ } from './foreachUnitPar'
  * produced effects in parallel, discarding the results.
  *
  * Unlike `foreachPar_`, this method will use at most up to `n` fibers.
+ *
+ * @trace 2
  */
-export function foreachUnitParN_(
-  n: number
-): <A, R, E>(as: Iterable<A>, f: (a: A) => I.IO<R, E, any>) => I.IO<R, E, void> {
-  return (as, f) =>
-    pipe(
-      Semaphore.make(n),
-      I.bind((s) => foreachUnitPar_(as, (a) => Semaphore.withPermit_(f(a), s)))
+export function foreachUnitParN_<A, R, E>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
+  return pipe(
+    Semaphore.make(n),
+    I.bind((s) =>
+      foreachUnitPar_(
+        as,
+        traceAs(f, (a) => Semaphore.withPermit_(f(a), s))
+      )
     )
+  )
 }
 
 /**
@@ -25,9 +32,12 @@ export function foreachUnitParN_(
  * produced effects in parallel, discarding the results.
  *
  * Unlike `foreachPar_`, this method will use at most up to `n` fibers.
+ *
+ * @trace 1
  */
-export function foreachUnitParN(
-  n: number
-): <A, R, E>(f: (a: A) => I.IO<R, E, any>) => (as: Iterable<A>) => I.IO<R, E, void> {
-  return (f) => (as) => foreachUnitParN_(n)(as, f)
+export function foreachUnitParN<A, R, E>(
+  n: number,
+  f: (a: A) => I.IO<R, E, any>
+): (as: Iterable<A>) => I.IO<R, E, void> {
+  return (as) => foreachUnitParN_(as, n, f)
 }
