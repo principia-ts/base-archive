@@ -1029,9 +1029,12 @@ export function asksM<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> 
  *
  * @category MonadEnv
  * @since 1.0.0
+ *
+ * @trace call
  */
 export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
-  return new Give(ma, r)
+  const trace = accessCallTrace()
+  return new Give(ma, r, trace)
 }
 
 /**

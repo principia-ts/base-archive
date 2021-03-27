@@ -192,7 +192,7 @@ export function foldM_<R, E, T, R1, E1, Z>(
         specs,
         (c) => f(new SuiteCase(label, M.halt(c), exec)),
         flow(
-          M.foreachExec(O.getOrElse_(exec, () => defExec))((spec) => M.release(foldM_(spec, f, defExec))),
+          M.foreachExec(O.getOrElse_(exec, () => defExec), (spec) => M.release(foldM_(spec, f, defExec))),
           M.bind((z) => f(new SuiteCase(label, M.succeed(z), exec)))
         )
       ),

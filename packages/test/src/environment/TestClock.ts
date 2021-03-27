@@ -166,7 +166,7 @@ export class TestClock implements Clock {
     return pipe(
       this.suspended,
       I.crossWith(this.live.provide(I.sleep(10))['*>'](this.suspended), (x, y) => x === y),
-      I.filterOrFail((_: boolean) => _)((): void => undefined),
+      I.filterOrFail((_: boolean) => _, (): void => undefined),
       I.eventually,
       I.asUnit
     )

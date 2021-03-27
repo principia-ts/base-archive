@@ -16,6 +16,7 @@ import * as Iter from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import { tuple } from '@principia/base/tuple'
+import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as C from '../Cause/core'
 import * as Ex from '../Exit/core'
@@ -49,41 +50,59 @@ export type FManaged<E, A> = Managed<unknown, E, A>
 
 /**
  * Lift a pure value into an IO
+ *
+ * @trace call
  */
-export function succeed<A>(a: A) {
-  return fromEffect(I.pure(a))
+export function succeed<A>(a: A): Managed<unknown, never, A> {
+  const trace = accessCallTrace()
+  return traceCall(fromEffect, trace)(I.succeed(a))
 }
 
 /**
  * Lifts a `IO<R, E, A>` into `Managed<R, E, A>` with no release action. The
  * effect will be performed interruptibly.
+ *
+ * @trace call
  */
 export function fromEffect<R, E, A>(effect: I.IO<R, E, A>) {
+  const trace = accessCallTrace()
   return new Managed<R, E, A>(
-    I.map_(
-      I.asksM((_: readonly [R, ReleaseMap]) => I.giveAll_(effect, _[0])),
-      (a) => [noopFinalizer, a]
-    )
+    I.map_(I.asksM(traceFrom(trace, (_: readonly [R, ReleaseMap]) => I.giveAll_(effect, _[0]))), (a) => [
+      noopFinalizer,
+      a
+    ])
   )
 }
 
+/**
+ * @trace call
+ */
 export function fromEffectUninterruptible<R, E, A>(ma: I.IO<R, E, A>): Managed<R, E, A> {
-  return fromEffect(I.makeUninterruptible(ma))
+  const trace = accessCallTrace()
+  return traceCall(fromEffect, trace)(I.makeUninterruptible(ma))
 }
 
 /**
  * Imports a synchronous side-effect into a Managed
+ *
+ * @trace 0
  */
 export function effectTotal<A>(effect: () => A): Managed<unknown, never, A> {
   return fromEffect(I.effectTotal(effect))
 }
 
+/**
+ * @trace 0
+ */
 export function effect<A>(effect: () => A): Managed<unknown, unknown, A> {
   return fromEffect(I.effect(effect))
 }
 
 /**
  * Imports a synchronous side-effect that may throw into a Managed
+ *
+ * @trace 0
+ * @trace 1
  */
 export function effectCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Managed<unknown, E, A> {
   return fromEffect(I.effectCatch_(thunk, onThrow))
@@ -91,63 +110,98 @@ export function effectCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => 
 
 /**
  * Imports a synchronous side-effect that may throw into a Managed
+ *
+ * @trace 0
  */
-export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => Managed<unknown, E, A> {
-  return (thunk) => effectCatch_(thunk, onThrow)
+export function effectCatch<E>(onThrow: (error: unknown) => E) {
+  return (
+    /**
+     * @trace 0
+     */
+    <A>(thunk: () => A): Managed<unknown, E, A> => effectCatch_(thunk, onThrow)
+  )
 }
 
+/**
+ * @trace 0
+ */
 export function defer<R, E, A>(managed: () => Managed<R, E, A>): Managed<R, E, A> {
   return flatten(effectTotal(managed))
 }
 
 /**
  * Returns a Managed that models failure with the specified error. The moral equivalent of throw for pure code.
+ *
+ * @trace call
  */
 export function fail<E>(e: E): Managed<unknown, E, never> {
-  return fromEffect(I.fail(e))
+  const trace = accessCallTrace()
+  return fromEffect(traceCall(I.fail, trace)(e))
 }
 
 /**
  * Returns a Managed that models failure with the specified `Cause`.
+ *
+ * @trace call
  */
 export function halt<E>(cause: Cause<E>): Managed<unknown, E, never> {
-  return fromEffect(I.halt(cause))
+  const trace = accessCallTrace()
+  return fromEffect(traceCall(I.halt, trace)(cause))
 }
 
 /**
  * Returns a Managed that dies with the specified error
+ *
+ * @trace call
  */
 export function die(e: unknown): Managed<unknown, never, never> {
-  return halt(C.die(e))
+  const trace = accessCallTrace()
+  return traceCall(halt, trace)(C.die(e))
 }
 
 /**
  * Creates an effect that only executes the provided finalizer as its
  * release action.
+ *
+ * @trace call
  */
 export function finalizer<R>(f: I.URIO<R, unknown>): Managed<R, never, void> {
-  return finalizerExit((_) => f)
+  const trace = accessCallTrace()
+  return finalizerExit(traceFrom(trace, (_) => f))
 }
 
 /**
  * Creates an effect that only executes the provided function as its
  * release action.
+ *
+ * @trace 0
  */
 export function finalizerExit<R>(f: (exit: Ex.Exit<unknown, unknown>) => I.URIO<R, unknown>): Managed<R, never, void> {
-  return makeExit_(I.unit(), (_, exit) => f(exit))
+  return makeExit_(
+    I.unit(),
+    traceAs(f, (_, exit) => f(exit))
+  )
 }
 
 /**
  * Creates an IO that executes a finalizer stored in a `Ref`.
  * The `Ref` is yielded as the result of the effect, allowing for
  * control flows that require mutating finalizers.
+ *
+ * @trace call
  */
 export function finalizerRef(initial: Finalizer) {
-  return makeExit_(Ref.makeRef(initial), (ref, exit) => I.bind_(ref.get, (f) => f(exit)))
+  const trace = accessCallTrace()
+  return traceCall(makeExit_, trace)(
+    Ref.makeRef(initial),
+    traceFrom(trace, (ref, exit) => I.bind_(ref.get, (f) => f(exit)))
+  )
 }
 
 /**
  * Returns the identity effectful function, which performs no effects
+ *
+ * @trace call
  */
 export function identity<R>(): Managed<R, never, R> {
   return asks(identityFn)
@@ -156,48 +210,60 @@ export function identity<R>(): Managed<R, never, R> {
 /**
  * Lifts a `IO<S, R, E, A>` into `Managed<S, R, E, A>` with a release action.
  * The acquire and release actions will be performed uninterruptibly.
+ *
+ * @trace 0
  */
 export function make<R1, A>(
   release: (a: A) => I.IO<R1, never, unknown>
 ): <R, E>(acquire: I.IO<R, E, A>) => Managed<R & R1, E, A> {
-  return makeExit((a) => release(a))
+  return makeExit(release)
 }
 
 /**
  * Lifts a `IO<S, R, E, A>` into `Managed<S, R, E, A>` with a release action.
  * The acquire and release actions will be performed uninterruptibly.
+ *
+ * @trace 1
  */
 export function make_<R, E, A, R1>(
   acquire: I.IO<R, E, A>,
   release: (a: A) => I.IO<R1, never, unknown>
 ): Managed<R & R1, E, A> {
-  return makeExit_(acquire, (a) => release(a))
+  return makeExit_(acquire, release)
 }
 
 /**
  * Lifts a `IO<S, R, E, A>` into `Managed<S, R, E, A>` with a release action
  * that handles `Exit`. The acquire and release actions will be performed uninterruptibly.
+ *
+ * @trace call
+ * @trace 0
  */
 export function makeExit<R1, A>(
   release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
 ): <R, E>(acquire: I.IO<R, E, A>) => Managed<R & R1, E, A> {
-  return (acquire) => makeExit_(acquire, release)
+  const trace = accessCallTrace()
+  return (acquire) => traceCall(makeExit_, trace)(acquire, release)
 }
 
 /**
  * Lifts a `IO<S, R, E, A>` into `Managed<S, R, E, A>` with a release action
  * that handles `Exit`. The acquire and release actions will be performed uninterruptibly.
+ *
+ * @trace call
+ * @trace 1
  */
 export function makeExit_<R, E, A, R1>(
   acquire: I.IO<R, E, A>,
   release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
 ): Managed<R & R1, E, A> {
+  const trace = accessCallTrace()
   return new Managed<R & R1, E, A>(
     I.makeUninterruptible(
       I.gen(function* (_) {
         const r  = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
-        const a  = yield* _(I.giveAll_(acquire, r[0]))
-        const rm = yield* _(add((ex) => I.giveAll_(release(a, ex), r[0]))(r[1]))
+        const a  = yield* traceCall(_, trace)(I.giveAll_(acquire, r[0]))
+        const rm = yield* traceCall(_, release['$trace'])(add((ex) => I.giveAll_(release(a, ex), r[0]))(r[1]))
         return tuple(rm, a)
       })
     )
@@ -212,33 +278,38 @@ export function makeExit_<R, E, A, R1>(
  *
  * This two-phase acquisition allows for resource acquisition flows that can be
  * safely interrupted and released.
+ *
+ * @trace call
  */
 export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation<R2, E2, A>>) {
+  const trace = accessCallTrace()
   return new Managed<R & R2, E | E2, A>(
-    I.uninterruptibleMask(({ restore }) =>
-      I.gen(function* (_) {
-        const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
-        const reserved        = yield* _(I.giveAll_(reservation, r))
-        const releaseKey      = yield* _(addIfOpen((x) => I.giveAll_(reserved.release(x), r))(releaseMap))
-        const finalizerAndA   = yield* _(
-          I.deferTotal(() => {
-            switch (releaseKey._tag) {
-              case 'None': {
-                return I.interrupt
+    I.uninterruptibleMask(
+      traceFrom(trace, ({ restore }) =>
+        I.gen(function* (_) {
+          const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
+          const reserved        = yield* _(I.giveAll_(reservation, r))
+          const releaseKey      = yield* _(addIfOpen((x) => I.giveAll_(reserved.release(x), r))(releaseMap))
+          const finalizerAndA   = yield* _(
+            I.deferTotal(() => {
+              switch (releaseKey._tag) {
+                case 'None': {
+                  return I.interrupt
+                }
+                case 'Some': {
+                  return pipe(
+                    reserved.acquire,
+                    I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
+                    restore,
+                    I.map((a): readonly [Finalizer, A] => tuple((e) => release(releaseKey.value, e)(releaseMap), a))
+                  )
+                }
               }
-              case 'Some': {
-                return pipe(
-                  reserved.acquire,
-                  I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
-                  restore,
-                  I.map((a): readonly [Finalizer, A] => tuple((e) => release(releaseKey.value, e)(releaseMap), a))
-                )
-              }
-            }
-          })
-        )
-        return finalizerAndA
-      })
+            })
+          )
+          return finalizerAndA
+        })
+      )
     )
   )
 }
@@ -248,6 +319,9 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
  * without specifying when or how that resource might be used.
  */
 export class Reservation<R, E, A> {
+  /**
+   * @trace 1
+   */
   static of = <R, E, A, R2>(acquire: I.IO<R, E, A>, release: (exit: Exit<any, any>) => I.IO<R2, never, any>) =>
     new Reservation<R & R2, E, A>(acquire, release)
 
@@ -259,6 +333,8 @@ export class Reservation<R, E, A> {
 
 /**
  * Make a new reservation
+ *
+ * @trace 1
  */
 export function makeReservation_<R, E, A, R2>(
   acquire: I.IO<R, E, A>,
@@ -269,6 +345,8 @@ export function makeReservation_<R, E, A, R2>(
 
 /**
  * Make a new reservation
+ *
+ * @trace 0
  */
 export function makeReservation<R2>(
   release: (exit: Exit<any, any>) => I.IO<R2, never, any>
@@ -279,13 +357,18 @@ export function makeReservation<R2>(
 /**
  * Lifts a pure `Reservation<S, R, E, A>` into `Managed<S, R, E, A>`. The acquisition step
  * is performed interruptibly.
+ *
+ * @trace call
  */
 export function reserve<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, E, A> {
-  return makeReserve(I.pure(reservation))
+  const trace = accessCallTrace()
+  return traceCall(makeReserve, trace)(I.pure(reservation))
 }
 
 /**
  * Lifts an `Either` into a `ZManaged` value.
+ *
+ * @trace 0
  */
 export function fromEither<E, A>(ea: () => E.Either<E, A>): Managed<unknown, E, A> {
   return bind_(effectTotal(ea), E.match(fail, succeed))
@@ -293,6 +376,8 @@ export function fromEither<E, A>(ea: () => E.Either<E, A>): Managed<unknown, E, 
 
 /**
  * Lifts a function `R => A` into a `Managed<R, never, A>`.
+ *
+ * @trace 0
  */
 export function fromFunction<R, A>(f: (r: R) => A): Managed<R, never, A> {
   return asks(f)
@@ -301,6 +386,8 @@ export function fromFunction<R, A>(f: (r: R) => A): Managed<R, never, A> {
 /**
  * Lifts an effectful function whose effect requires no environment into
  * an effect that requires the input to the function.
+ *
+ * @trace 0
  */
 export function fromFunctionM<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R, E, A> {
   return asksM(f)
@@ -309,6 +396,8 @@ export function fromFunctionM<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed
 /**
  * Lifts an effectful function whose effect requires no environment into
  * an effect that requires the input to the function.
+ *
+ * @trace 0
  */
 export function fromFunctionManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
   return asksManaged(f)
@@ -320,6 +409,9 @@ export function fromFunctionManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>)
  * -------------------------------------------
  */
 
+/**
+ * @trace call
+ */
 export const pure = succeed
 
 /*
@@ -479,12 +571,21 @@ export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(ma: Ma
 /**
  * Submerges the error case of an `Either` into the `Managed`. The inverse
  * operation of `Managed.either`.
+ * 
+ * @trace call
  */
-export const absolve: <R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>) => Managed<R, E | E1, A> = bind((ea) =>
-  fromEither(() => ea)
-)
+export function absolve<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): Managed<R, E | E1, A> {
+  const trace = accessCallTrace()
+  return bind_(fa, traceFrom(trace, (ea) => fromEither(() => ea)))
+}
 
-export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Either<E, A>> = match(E.Left, E.Right)
+/**
+ * @trace call
+ */
+export function recover<R, E, A>(fa: Managed<R, E, A>): Managed<R, never, E.Either<E, A>> {
+  const trace = accessCallTrace()
+  return match_(fa, traceFrom(trace, flow(E.Left)), traceFrom(trace, flow(E.Right)))
+}
 
 /*
  * -------------------------------------------
@@ -494,6 +595,9 @@ export const recover: <R, E, A>(fa: Managed<R, E, A>) => Managed<R, never, E.Eit
 
 /**
  * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   ma: Managed<R, E, A>,
@@ -504,8 +608,8 @@ export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
     pipe(
       ma.io,
       I.matchCauseM(
-        (c) => onFailure(c).io,
-        ([_, a]) => onSuccess(a).io
+        traceAs(onFailure, (c) => onFailure(c).io),
+        traceAs(onSuccess, ([_, a]) => onSuccess(a).io)
       )
     )
   )
@@ -513,6 +617,9 @@ export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 
 /**
  * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
+ *
+ * @trace 0
+ * @trace 1
  */
 export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => Managed<R1, E1, A1>,
@@ -524,18 +631,24 @@ export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
 /**
  * Recovers from errors by accepting one Managed to execute for the case of an
  * error, and one Managed to execute for the case of success.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function matchM_<R, E, A, R1, E1, B, R2, E2, C>(
   ma: Managed<R, E, A>,
   f: (e: E) => Managed<R1, E1, B>,
   g: (a: A) => Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E1 | E2, B | C> {
-  return matchCauseM_(ma, flow(C.failureOrCause, E.match(f, halt)), g)
+  return matchCauseM_(ma, traceAs(f, flow(C.failureOrCause, E.match(f, halt))), g)
 }
 
 /**
  * Recovers from errors by accepting one Managed to execute for the case of an
  * error, and one Managed to execute for the case of success.
+ *
+ * @trace 0
+ * @trace 1
  */
 export function matchM<E, A, R1, E1, B, R2, E2, C>(
   f: (e: E) => Managed<R1, E1, B>,
@@ -548,19 +661,25 @@ export function matchM<E, A, R1, E1, B, R2, E2, C>(
  * Folds over the failure value or the success value to yield an effect that
  * does not fail, but succeeds with the value returned by the left or right
  * function passed to `match`.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function match_<R, E, A, B, C>(
   ma: Managed<R, E, A>,
   onError: (e: E) => B,
   onSuccess: (a: A) => C
 ): Managed<R, never, B | C> {
-  return matchM_(ma, flow(onError, succeed), flow(onSuccess, succeed))
+  return matchM_(ma, traceAs(onError, flow(onError, succeed)), traceAs(onSuccess, flow(onSuccess, succeed)))
 }
 
 /**
  * Folds over the failure value or the success value to yield an effect that
  * does not fail, but succeeds with the value returned by the left or right
  * function passed to `match`.
+ *
+ * @trace 0
+ * @trace 1
  */
 export function match<E, A, B, C>(
   onError: (e: E) => B,
@@ -571,6 +690,9 @@ export function match<E, A, B, C>(
 
 /**
  * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function matchCause_<R, E, A, B, C>(
   ma: Managed<R, E, A>,
@@ -582,6 +704,9 @@ export function matchCause_<R, E, A, B, C>(
 
 /**
  * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
+ *
+ * @trace 0
+ * @trace 1
  */
 export function matchCause<E, A, B, C>(
   onFailure: (cause: Cause<E>) => B,
@@ -598,13 +723,22 @@ export function matchCause<E, A, B, C>(
 
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
+ *
+ * @trace 1
  */
 export function map_<R, E, A, B>(fa: Managed<R, E, A>, f: (a: A) => B): Managed<R, E, B> {
-  return new Managed<R, E, B>(I.map_(fa.io, ([fin, a]) => [fin, f(a)]))
+  return new Managed<R, E, B>(
+    I.map_(
+      fa.io,
+      traceAs(f, ([fin, a]) => [fin, f(a)])
+    )
+  )
 }
 
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
+ *
+ * @trace 0
  */
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Managed<R, E, A>) => Managed<R, E, B> {
   return (fa) => map_(fa, f)
@@ -612,16 +746,21 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Managed<R, E, A>) => Manag
 
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
+ *
+ * @trace 1
  */
 export function mapM_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   f: (a: A) => I.IO<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
   return new Managed<R & R1, E | E1, B>(
-    I.bind_(fa.io, ([fin, a]) =>
-      I.gives_(
-        I.map_(f(a), (b) => [fin, b]),
-        ([r]: readonly [R & R1, ReleaseMap]) => r
+    I.bind_(
+      fa.io,
+      traceAs(f, ([fin, a]) =>
+        I.gives_(
+          I.map_(f(a), (b) => [fin, b]),
+          ([r]: readonly [R & R1, ReleaseMap]) => r
+        )
       )
     )
   )
@@ -629,6 +768,8 @@ export function mapM_<R, E, A, R1, E1, B>(
 
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
+ *
+ * @trace 0
  */
 export function mapM<R1, E1, A, B>(
   f: (a: A) => I.IO<R1, E1, B>
@@ -646,6 +787,8 @@ export function mapM<R1, E1, A, B>(
  * Returns a managed that models the execution of this managed, followed by
  * the passing of its value to the specified continuation function `f`,
  * followed by the managed that it returns.
+ *
+ * @trace 0
  */
 export function bind<R1, E1, A, A1>(
   f: (a: A) => Managed<R1, E1, A1>
@@ -657,33 +800,45 @@ export function bind<R1, E1, A, A1>(
  * Returns a managed that models the execution of this managed, followed by
  * the passing of its value to the specified continuation function `f`,
  * followed by the managed that it returns.
+ *
+ * @trace 1
  */
 export function bind_<R, E, A, R1, E1, A1>(
   self: Managed<R, E, A>,
   f: (a: A) => Managed<R1, E1, A1>
 ): Managed<R & R1, E | E1, A1> {
   return new Managed<R & R1, E | E1, A1>(
-    I.bind_(self.io, ([releaseSelf, a]) =>
-      I.map_(f(a).io, ([releaseThat, b]) => [
-        (e) =>
-          I.bind_(I.result(releaseThat(e)), (e1) =>
-            I.bind_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.apr_(e1, e2)))
-          ),
-        b
-      ])
+    I.bind_(
+      self.io,
+      traceAs(f, ([releaseSelf, a]) =>
+        I.map_(f(a).io, ([releaseThat, b]) => [
+          (e) =>
+            I.bind_(I.result(releaseThat(e)), (e1) =>
+              I.bind_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.apr_(e1, e2)))
+            ),
+          b
+        ])
+      )
     )
   )
 }
 
 /**
  * Returns a managed that effectfully peeks at the acquired resource.
+ *
+ * @trace 1
  */
 export function tap_<R, E, A, Q, D>(ma: Managed<R, E, A>, f: (a: A) => Managed<Q, D, any>): Managed<R & Q, E | D, A> {
-  return bind_(ma, (a) => map_(f(a), () => a))
+  return bind_(
+    ma,
+    traceAs(f, (a) => map_(f(a), () => a))
+  )
 }
 
 /**
  * Returns a managed that effectfully peeks at the acquired resource.
+ *
+ * @trace 0
  */
 export function tap<R1, E1, A>(
   f: (a: A) => Managed<R1, E1, any>
@@ -696,23 +851,32 @@ export function tap<R1, E1, A>(
  * inner effect, yielding the value of the inner effect.
  *
  * This method can be used to "flatten" nested effects.
+ *
+ * @trace call
  */
-export const flatten: <R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>) => Managed<R & R1, E | E1, A> = bind(
-  identityFn
-)
+export function flatten<R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>): Managed<R & R1, E | E1, A> {
+  const trace = accessCallTrace()
+  return bind_(mma, traceFrom(trace, flow(identityFn)))
+}
 
 /**
  * Returns an effect that performs the outer effect first, followed by the
  * inner effect, yielding the value of the inner effect.
  *
  * This method can be used to "flatten" nested effects.
+ *
+ * @trace call
  */
-export const flattenM: <R, E, R1, E1, A>(mma: Managed<R, E, I.IO<R1, E1, A>>) => Managed<R & R1, E | E1, A> = mapM(
-  identityFn
-)
+export function flattenM<R, E, R1, E1, A>(mma: Managed<R, E, I.IO<R1, E1, A>>): Managed<R & R1, E | E1, A> {
+  const trace = accessCallTrace()
+  return mapM_(mma, traceFrom(trace, flow(identityFn)))
+}
 
 /**
  * Returns an effect that effectfully peeks at the failure or success of the acquired resource.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function tapBoth_<R, E, A, R1, E1, R2, E2>(
   ma: Managed<R, E, A>,
@@ -721,13 +885,16 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
 ): Managed<R & R1 & R2, E | E1 | E2, A> {
   return matchM_(
     ma,
-    (e) => bind_(f(e), () => fail(e)),
-    (a) => map_(g(a), () => a)
+    traceAs(f, (e) => bind_(f(e), () => fail(e))),
+    traceAs(g, (a) => map_(g(a), () => a))
   )
 }
 
 /**
  * Returns an effect that effectfully peeks at the failure or success of the acquired resource.
+ *
+ * @trace 0
+ * @trace 1
  */
 export function tapBoth<E, A, R1, E1, R2, E2>(
   f: (e: E) => Managed<R1, E1, any>,
@@ -739,17 +906,24 @@ export function tapBoth<E, A, R1, E1, R2, E2>(
 /**
  * Returns an effect that effectually peeks at the cause of the failure of
  * the acquired resource.
+ *
+ * @trace 1
  */
 export function tapCause_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (c: Cause<E>) => Managed<R1, E1, any>
 ): Managed<R & R1, E | E1, A> {
-  return catchAllCause_(ma, (c) => bind_(f(c), () => halt(c)))
+  return catchAllCause_(
+    ma,
+    traceAs(f, (c) => bind_(f(c), () => halt(c)))
+  )
 }
 
 /**
  * Returns an effect that effectually peeks at the cause of the failure of
  * the acquired resource.
+ *
+ * @trace 0
  */
 export function tapCause<E, R1, E1>(
   f: (c: Cause<E>) => Managed<R1, E1, any>
@@ -812,6 +986,8 @@ export function ask<R>(): Managed<R, never, R> {
 
 /**
  * Create a managed that accesses the environment.
+ *
+ * @trace 0
  */
 export function asks<R, A>(f: (r: R) => A): Managed<R, never, A> {
   return map_(ask<R>(), f)
@@ -819,6 +995,8 @@ export function asks<R, A>(f: (r: R) => A): Managed<R, never, A> {
 
 /**
  * Create a managed that accesses the environment.
+ *
+ * @trace 0
  */
 export function asksM<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R, E, A> {
   return mapM_(ask<R0>(), f)
@@ -826,6 +1004,8 @@ export function asksM<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R,
 
 /**
  * Create a managed that accesses the environment.
+ *
+ * @trace 0
  */
 export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
   return bind_(ask<R0>(), f)
@@ -833,6 +1013,8 @@ export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Manage
 
 /**
  * Modify the environment required to run a Managed
+ *
+ * @trace 1
  */
 export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> {
   return new Managed(I.asksM(([r0, rm]: readonly [R0, ReleaseMap]) => I.giveAll_(ma.io, [f(r0), rm])))
@@ -840,6 +1022,8 @@ export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Man
 
 /**
  * Modify the environment required to run a Managed
+ *
+ * @trace 0
  */
 export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => Managed<R0, E, A> {
   return (ma) => gives_(ma, f)
@@ -848,9 +1032,15 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => 
 /**
  * Provides the `Managed` effect with its required environment, which eliminates
  * its dependency on `R`.
+ *
+ * @trace call
  */
 export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> {
-  return gives_(ma, () => env)
+  const trace = accessCallTrace()
+  return gives_(
+    ma,
+    traceFrom(trace, () => env)
+  )
 }
 
 /**
@@ -1595,19 +1785,14 @@ export function refineOrDieWith<E, E1>(
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie_<R, E, A, E1>(
-  ma: Managed<R, E, A>,
-  pf: (e: E) => O.Option<E1>
-): Managed<R, E1, A> {
+export function refineOrDie_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (e: E) => O.Option<E1>): Managed<R, E1, A> {
   return refineOrDieWith_(ma, pf, identityFn)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  */
-export function refineOrDie<E, E1>(
-  pf: (e: E) => O.Option<E1>
-): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
+export function refineOrDie<E, E1>(pf: (e: E) => O.Option<E1>): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
   return (ma) => refineOrDie_(ma, pf)
 }
 
@@ -2046,9 +2231,7 @@ export function bindS<R, E, A, K, N extends string>(
   )
 }
 
-export function bindTo<N extends string>(
-  name: N
-): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in N]: A }> {
+export function bindTo<N extends string>(name: N): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in N]: A }> {
   return (fa) => map_(fa, (a) => ({ [name]: a } as any))
 }
 

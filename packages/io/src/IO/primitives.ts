@@ -245,7 +245,7 @@ export class Read<R0, R, E, A> extends IO<R & R0, E, A> {
 export class Give<R, E, A> extends IO<unknown, E, A> {
   readonly _tag = IOTag.Give
 
-  constructor(readonly io: IO<R, E, A>, readonly env: R) {
+  constructor(readonly io: IO<R, E, A>, readonly env: R, readonly trace?: string) {
     super()
   }
 }
