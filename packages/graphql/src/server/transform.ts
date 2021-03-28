@@ -10,6 +10,7 @@ import * as I from '@principia/io/IO'
 import { _U } from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
 import * as Ref from '@principia/io/Ref'
+import * as RefM from '@principia/io/RefM'
 import * as S from '@principia/io/Stream'
 import * as Sy from '@principia/io/Sync'
 import { Context } from '@principia/koa'
@@ -37,7 +38,7 @@ export function transformResolvers<Ctx>(
           return I.runPromise(
             I.gen(function* (_) {
               const reqRef  = yield* _(Ref.makeRef(ctx.req))
-              const resRef  = yield* _(Ref.makeRefM(ctx.res))
+              const resRef  = yield* _(RefM.makeRefM(ctx.res))
               const context = yield* _(
                 I.effectTotal(() => ({
                   engine: ctx,

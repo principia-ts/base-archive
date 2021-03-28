@@ -21,6 +21,7 @@ import * as Ex from '../Exit'
 import * as RelMap from '../Managed/ReleaseMap'
 import * as P from '../Promise'
 import * as Ref from '../Ref'
+import * as RefM from '../RefM'
 import * as I from './internal/io'
 import * as M from './internal/managed'
 
@@ -938,7 +939,7 @@ export function update<T>(
  */
 
 export class MemoMap {
-  constructor(readonly ref: Ref.URefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
+  constructor(readonly ref: RefM.URefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
 
   /**
    * Checks the memo map to see if a dependency exists. If it is, immediately
@@ -950,7 +951,7 @@ export class MemoMap {
     return new M.Managed<R, E, A>(
       pipe(
         this.ref,
-        Ref.modifyM((m) => {
+        RefM.modifyM((m) => {
           const inMap = m.get(layer.hash.get)
 
           if (inMap) {
@@ -1058,7 +1059,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 
 export function makeMemoMap() {
   return pipe(
-    Ref.makeRefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
+    RefM.makeRefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
     I.bind((r) => I.effectTotal(() => new MemoMap(r)))
   )
 }

@@ -29,11 +29,12 @@ import { parallel, sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
 import * as Fi from '../Fiber'
 import * as I from '../IO'
-import * as Ref from '../Ref'
 import * as M from '../Managed'
 import * as RM from '../Managed/ReleaseMap'
 import * as P from '../Promise'
 import * as Queue from '../Queue'
+import * as Ref from '../Ref'
+import * as RefM from '../RefM'
 import * as Sc from '../Schedule'
 import { globalScope } from '../Scope'
 import * as Semaphore from '../Semaphore'
@@ -4118,7 +4119,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
   return new Stream(
     M.gen(function* (_) {
       const handoff = yield* _(Ha.make<Take.Take<E | E1, C | C1>>())
-      const doneRef = yield* _(Ref.makeRefM<O.Option<boolean>>(O.None()))
+      const doneRef = yield* _(RefM.makeRefM<O.Option<boolean>>(O.None()))
       const chunksL = yield* _(sa.proc)
       const chunksR = yield* _(sb.proc)
 
@@ -4135,7 +4136,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                 I.bind((exit) =>
                   pipe(
                     doneRef,
-                    Ref.modifyM((o) => {
+                    RefM.modifyM((o) => {
                       const causeOrChunk = pipe(
                         exit,
                         Ex.match(

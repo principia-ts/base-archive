@@ -13,7 +13,7 @@ import { accessCallTrace, traceCall } from '@principia/compile/util'
 
 import { Clock } from '../../Clock'
 import * as P from '../../Promise'
-import * as Ref from '../../Ref'
+import * as RefM from '../../RefM'
 import * as I from '../core'
 import { uninterruptibleMask } from './interrupt'
 import { to } from './to'
@@ -32,7 +32,7 @@ export function cachedInvalidate_<R, E, A>(
 ): URIO<R & Has<Clock>, readonly [FIO<E, A>, UIO<void>]> {
   return I.gen(function* (_) {
     const r     = yield* _(I.ask<R & Has<Clock>>())
-    const cache = yield* _(Ref.makeRefM<Option<readonly [number, Promise<E, A>]>>(O.None()))
+    const cache = yield* _(RefM.makeRefM<Option<readonly [number, Promise<E, A>]>>(O.None()))
     return tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache))
   })
 }
@@ -88,14 +88,14 @@ function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
   })
 }
 
-function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: Ref.URefM<Option<readonly [number, Promise<E, A>]>>) {
+function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>) {
   return uninterruptibleMask(({ restore }) =>
     pipe(
       Clock.currentTime,
       I.bind((time) =>
         pipe(
           cache,
-          Ref.updateSomeAndGetM((o) =>
+          RefM.updateSomeAndGetM((o) =>
             pipe(
               o,
               O.match(
@@ -114,7 +114,7 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: Ref.URefM<Option<rea
   )
 }
 
-function _invalidate<E, A>(cache: Ref.URefM<Option<readonly [number, Promise<E, A>]>>): UIO<void> {
+function _invalidate<E, A>(cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>): UIO<void> {
   return cache.set(O.None())
 }
 

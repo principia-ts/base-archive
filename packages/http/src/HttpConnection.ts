@@ -1,4 +1,5 @@
-import type { URef, URefM } from '@principia/io/Ref'
+import type { URef } from '@principia/io/Ref'
+import type { URefM } from '@principia/io/RefM'
 import type * as http from 'http'
 
 import { tag } from '@principia/base/Has'

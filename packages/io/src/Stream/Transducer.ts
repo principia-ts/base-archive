@@ -19,8 +19,9 @@ import { tuple } from '@principia/base/tuple'
 import * as C from '../Chunk'
 import * as Ex from '../Exit'
 import * as I from '../IO'
-import * as Ref from '../Ref'
 import * as M from '../Managed'
+import * as Ref from '../Ref'
+import * as RefM from '../RefM'
 import { Sink } from './internal/Sink'
 import { Transducer } from './internal/Transducer'
 
@@ -148,10 +149,7 @@ export function prepend<O>(values: Chunk<O>): Transducer<unknown, never, O, O> {
  * Reads the first n values from the stream and uses them to choose the transducer that will be used for the remainder of the stream.
  * If the stream ends before it has collected n values the partial chunk will be provided to f.
  */
-export function branchAfter<R, E, I, O>(
-  n: number,
-  f: (c: Chunk<I>) => Transducer<R, E, I, O>
-): Transducer<R, E, I, O> {
+export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transducer<R, E, I, O>): Transducer<R, E, I, O> {
   interface Collecting {
     _tag: 'Collecting'
     data: Chunk<I>
@@ -171,12 +169,12 @@ export function branchAfter<R, E, I, O>(
 
   return new Transducer(
     M.bind_(M.scope(), (scope) =>
-      M.map_(Ref.makeManagedRefM<State>(initialState), (state) => (is: O.Option<Chunk<I>>) =>
+      M.map_(RefM.makeManagedRefM<State>(initialState), (state) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
           () =>
             pipe(
-              Ref.getAndSet_(state, initialState),
+              RefM.getAndSet_(state, initialState),
               I.bind((s) => {
                 switch (s._tag) {
                   case 'Collecting': {
@@ -189,7 +187,7 @@ export function branchAfter<R, E, I, O>(
               })
             ),
           (data) =>
-            Ref.modifyM_(state, (s) => {
+            RefM.modifyM_(state, (s) => {
               switch (s._tag) {
                 case 'Emitting': {
                   return I.map_(s.push(O.Some(data)), (_) => [_, s] as const)
@@ -338,24 +336,17 @@ export function foldM<R, E, I, O>(
   f: (output: O, input: I) => I.IO<R, E, O>
 ): Transducer<R, E, I, O> {
   const init = O.Some(initial)
-  const go   = (
-    in_: Chunk<I>,
-    state: O,
-    progress: boolean
-  ): I.IO<R, E, readonly [Chunk<O>, O, boolean]> =>
-    C.foldl_(
-      in_,
-      I.succeed([C.empty(), state, progress]) as I.IO<R, E, readonly [Chunk<O>, O, boolean]>,
-      (b, i) =>
-        I.bind_(b, ([os0, state, _]) =>
-          I.map_(f(state, i), (o) => {
-            if (cont(o)) {
-              return [os0, o, true] as const
-            } else {
-              return [C.append_(os0, o), initial, false] as const
-            }
-          })
-        )
+  const go   = (in_: Chunk<I>, state: O, progress: boolean): I.IO<R, E, readonly [Chunk<O>, O, boolean]> =>
+    C.foldl_(in_, I.succeed([C.empty(), state, progress]) as I.IO<R, E, readonly [Chunk<O>, O, boolean]>, (b, i) =>
+      I.bind_(b, ([os0, state, _]) =>
+        I.map_(f(state, i), (o) => {
+          if (cont(o)) {
+            return [os0, o, true] as const
+          } else {
+            return [C.append_(os0, o), initial, false] as const
+          }
+        })
+      )
     )
   return new Transducer(
     M.map_(Ref.makeManaged(init), (state) => (is: O.Option<Chunk<I>>) =>
@@ -656,11 +647,7 @@ export function foldWeighted<I, O>(
  * Creates a transducer accumulating incoming values into chunks of maximum size `n`.
  */
 export function collectAllN<I>(n: number): Transducer<unknown, never, I, Chunk<I>> {
-  const go = (
-    in_: Chunk<I>,
-    leftover: Chunk<I>,
-    acc: Chunk<Chunk<I>>
-  ): [Chunk<Chunk<I>>, Chunk<I>] => {
+  const go = (in_: Chunk<I>, leftover: Chunk<I>, acc: Chunk<Chunk<I>>): [Chunk<Chunk<I>>, Chunk<I>] => {
     const [left, nextIn] = C.splitAt_(in_, n - leftover.length)
     if (leftover.length + left.length < n) {
       return [acc, C.concat_(leftover, left)]

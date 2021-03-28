@@ -12,6 +12,7 @@ import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
 import * as Q from '@principia/io/Queue'
 import * as Ref from '@principia/io/Ref'
+import * as RefM from '@principia/io/RefM'
 import * as S from '@principia/io/Stream'
 import * as Pull from '@principia/io/Stream/Pull'
 import * as NS from '@principia/node/stream'
@@ -54,7 +55,7 @@ export interface HttpResponseCompleted extends NT.TypeOf<typeof HttpResponseComp
 export class HttpResponse {
   eventStream: M.Managed<unknown, never, I.UIO<S.Stream<unknown, never, ResponseEvent>>>
 
-  constructor(readonly ref: Ref.URefM<http.ServerResponse>) {
+  constructor(readonly ref: RefM.URefM<http.ServerResponse>) {
     this.eventStream = pipe(
       ref.get,
       M.fromEffect,
@@ -113,11 +114,11 @@ export class HttpResponse {
   }
 
   modify<R, E>(f: (res: http.ServerResponse) => IO<R, E, http.ServerResponse>): IO<R, E, void> {
-    return Ref.updateM_(this.ref, f)
+    return RefM.updateM_(this.ref, f)
   }
 
   status(s: Status.StatusCode): UIO<void> {
-    return Ref.updateM_(this.ref, (res) =>
+    return RefM.updateM_(this.ref, (res) =>
       I.effectTotal(() => {
         // eslint-disable-next-line functional/immutable-data
         res.statusCode = s.code
@@ -135,7 +136,7 @@ export class HttpResponse {
   }
 
   set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {
-    return Ref.updateM_(this.ref, (res) =>
+    return RefM.updateM_(this.ref, (res) =>
       I.deferTotal(() => {
         const hs = Object.entries(headers)
         try {
