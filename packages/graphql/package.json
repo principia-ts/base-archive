@@ -59,7 +59,7 @@
     "@principia/model": "^0.7.2",
     "@principia/query": "^0.7.2",
     "@types/koa-graphql": "^0.8.4",
-    "apollo-server-koa": "2.21.2",
+    "apollo-server-koa": "2.22.2",
     "graphql": "^15.5.0",
     "graphql-tools": "^7.0.4",
     "koa-graphql": "^0.8.0"

@@ -5,8 +5,8 @@ import { tag } from '@principia/base/Has'
 import * as HM from '@principia/base/HashMap'
 import * as O from '@principia/base/Option'
 import * as I from '@principia/io/IO'
-import * as Ref from '@principia/io/IORef'
 import * as L from '@principia/io/Layer'
+import * as Ref from '@principia/io/Ref'
 import * as Sc from '@principia/io/Schedule'
 import * as S from '@principia/io/Stream'
 import * as K from '@principia/koa'
@@ -125,7 +125,7 @@ const Mutation = gql.mutation((t) => ({
     },
     resolve: ({ args }) =>
       I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Employee', ...args.user }))['|>'](
-        I.fold(
+        I.match(
           (_) => false,
           () => true
         )
@@ -138,7 +138,7 @@ const Mutation = gql.mutation((t) => ({
     },
     resolve: ({ args }) =>
       I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Student', ...args.user }))['|>'](
-        I.fold(
+        I.match(
           (_) => false,
           () => true
         )
@@ -174,7 +174,7 @@ const liveGraphQl = gql.live({ schemaParts })
 
 const LiveUserService = L.fromEffect(UserService)(
   I.gen(function* (_) {
-    const db      = yield* _(Ref.make<HM.HashMap<number, Student | Employee>>(HM.makeDefault()))
+    const db      = yield* _(Ref.makeRef<HM.HashMap<number, Student | Employee>>(HM.makeDefault()))
     const putUser = (user: Student | Employee) =>
       db.get['|>'](I.map(HM.get(user.id)))['|>'](
         I.bind(
@@ -203,6 +203,6 @@ const LiveUserService = L.fromEffect(UserService)(
 )
 
 I.never['|>'](I.giveLayer(liveGraphQl))
-  ['|>'](I.giveLayer(K.live(4000, 'localhost')['<<<'](K.KoaConfig.live)))
+  ['|>'](I.giveLayer(K.Koa('localhost', 4000)['<<<'](K.KoaRouterConfig.empty)))
   ['|>'](I.giveLayer(LiveUserService))
   ['|>']((x) => runMain(x))

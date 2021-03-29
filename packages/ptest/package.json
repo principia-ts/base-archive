@@ -52,7 +52,7 @@
     "yargs": "^16.2.0"
   },
   "devDependencies": {
-    "@types/yargs": "^16.0.0"
+    "@types/yargs": "^16.0.1"
   },
   "publishConfig": {
     "access": "public",

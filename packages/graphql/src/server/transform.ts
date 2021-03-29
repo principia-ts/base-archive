@@ -5,15 +5,12 @@ import type { ConnectionContext } from 'subscriptions-transport-ws'
 import { asyncIterable } from '@principia/base/AsyncIterable'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/function'
-import { HttpConnection } from '@principia/http/HttpConnection'
+import { HttpConnectionTag } from '@principia/http/HttpConnection'
 import * as I from '@principia/io/IO'
 import { _U } from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
-import * as Ref from '@principia/io/Ref'
-import * as RefM from '@principia/io/RefM'
 import * as S from '@principia/io/Stream'
 import * as Sy from '@principia/io/Sync'
-import { Context } from '@principia/koa'
 import { Described } from '@principia/query/Described'
 import * as Q from '@principia/query/Query'
 import { GraphQLScalarType } from 'graphql'
@@ -37,28 +34,22 @@ export function transformResolvers<Ctx>(
         (resolvers as any)[mut_fieldName] = (root: any, args: any, ctx: any, info: GraphQLResolveInfo) => {
           return I.runPromise(
             I.gen(function* (_) {
-              const reqRef  = yield* _(Ref.makeRef(ctx.req))
-              const resRef  = yield* _(RefM.makeRefM(ctx.res))
-              const context = yield* _(
-                I.effectTotal(() => ({
-                  engine: ctx,
-                  conn: new HttpConnection(reqRef, resRef)
-                }))
-              )
-              const ret     = resolver({
+              const ret = resolver({
                 root,
                 args: args || {},
-                ctx: context as any,
+                ctx,
                 info
               })
               if (isIO(ret)) {
-                return yield* _(pipe(ret, I.give({ ...(env as any) }), I.giveService(Context)(context)))
+                return yield* _(
+                  pipe(ret, I.give({ ...(env as any) }), I.giveService(HttpConnectionTag)(ctx.connection))
+                )
               } else {
                 return yield* _(
                   pipe(
                     ret,
                     Q.give(Described({ ...(env as any) }, 'Environment given to GraphQl Service')),
-                    Q.giveService(Context)(Described(context, 'Context from the Http Server')),
+                    Q.giveService(HttpConnectionTag)(Described(ctx.connection, 'Context from the Http Server')),
                     Q.run
                   )
                 )

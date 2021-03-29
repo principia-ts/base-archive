@@ -55,8 +55,8 @@ export function interrupt(id: FiberId) {
   return halt(C.interrupt(id))
 }
 
-export function die(error: Error): Exit<unknown, never> {
-  return halt(C.die(error))
+export function die(defect: unknown): Exit<never, never> {
+  return halt(C.die(defect))
 }
 
 export function fromEither<E, A>(e: E.Either<E, A>): Exit<E, A> {

@@ -18,13 +18,16 @@ import type {
   UnionTypeBuilder
 } from '../schema'
 import type { Has } from '@principia/base/Has'
+import type { HttpConnection } from '@principia/http/HttpConnection'
 import type { Config } from 'apollo-server-core'
 import type { IResolvers } from 'graphql-tools'
+import type { DefaultState } from 'koa'
 import type { ConnectionContext } from 'subscriptions-transport-ws'
 import type WebSocket from 'ws'
 
 import { identity, pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
+import { HttpConnectionTag } from '@principia/http/HttpConnection'
 import * as I from '@principia/io/IO'
 import * as L from '@principia/io/Layer'
 import * as Koa from '@principia/koa'
@@ -85,21 +88,21 @@ export interface GraphQlDriver<
   C extends GraphQlConfig,
   RE
 > {
-  readonly askContext: I.URIO<Has<Koa.Context<Ctx>>, Koa.Context<Ctx>>
-  readonly extend: ExtendObjectTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly generateSchema: SchemaGenerator<Koa.Context<Ctx>>
+  readonly askContext: I.URIO<Has<HttpConnection>, HttpConnection>
+  readonly extend: ExtendObjectTypeBuilder<FieldAURI, InputAURI, Koa.Context<DefaultState, Ctx>>
+  readonly generateSchema: SchemaGenerator<Koa.Context<DefaultState, Ctx>>
   readonly input: InputObjectTypeBuilder<InputAURI>
-  readonly object: <Root>() => ObjectTypeBuilder<FieldAURI, InputAURI, Root, Koa.Context<Ctx>>
+  readonly object: <Root>() => ObjectTypeBuilder<FieldAURI, InputAURI, Root, Koa.Context<DefaultState, Ctx>>
   readonly scalar: ScalarTypeBuilder
   readonly scalarFromModel: ScalarTypeFromModelBuilder
-  readonly subscription: SubscriptionTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly query: QueryTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly mutation: MutationTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
-  readonly union: UnionTypeBuilder<Koa.Context<Ctx>>
-  readonly interface: InterfaceTypeBuilder<FieldAURI, InputAURI, Koa.Context<Ctx>>
+  readonly subscription: SubscriptionTypeBuilder<FieldAURI, InputAURI, Koa.Context<DefaultState, Ctx>>
+  readonly query: QueryTypeBuilder<FieldAURI, InputAURI, Koa.Context<DefaultState, Ctx>>
+  readonly mutation: MutationTypeBuilder<FieldAURI, InputAURI, Koa.Context<DefaultState, Ctx>>
+  readonly union: UnionTypeBuilder<Koa.Context<DefaultState, Ctx>>
+  readonly interface: InterfaceTypeBuilder<FieldAURI, InputAURI, Koa.Context<DefaultState, Ctx>>
   readonly live: <R>(
-    config: GraphQlInstanceConfig<Koa.Context<Ctx>, R>
-  ) => L.Layer<R & SubscriptionsEnv<C> & RE & Has<Koa.Koa>, never, Has<GraphQlInstance>>
+    config: GraphQlInstanceConfig<Koa.Context<DefaultState, Ctx>, R>
+  ) => L.Layer<R & SubscriptionsEnv<C> & RE & Has<Koa.KoaApp>, never, Has<GraphQlInstance>>
 }
 
 export interface GraphQlInstance {
@@ -116,7 +119,7 @@ type KoaContextFn<Conf extends GraphQlConfig, RE, Ctx> = (_: {
       }
     : Koa.Context['engine']['connection']
   ctx: Koa.Context
-}) => I.IO<RE, never, Koa.Context<Ctx>>
+}) => I.IO<RE, never, Koa.Context<DefaultState, Ctx>>
 
 export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldPURI] & AURItoInputAlgebra[InputPURI] & GqlSubscription<any>
@@ -125,16 +128,16 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
     config: C,
     context: KoaContextFn<C, RE, Ctx>
   ): GraphQlDriver<FieldPURI, InputPURI, Ctx, C, RE> => {
-    const askContext: I.URIO<Has<Koa.Context<Ctx>>, Koa.Context<Ctx>> = I.asksService(Koa.Context)(identity) as any
+    const askContext: I.URIO<Has<HttpConnection>, HttpConnection> = I.asksService(HttpConnectionTag)(identity) as any
 
-    const gqlKoaInstance = <R>(instanceConfig: GraphQlInstanceConfig<Koa.Context<Ctx>, R>) => {
+    const gqlKoaInstance = <R>(instanceConfig: GraphQlInstanceConfig<Koa.Context<DefaultState, Ctx>, R>) => {
       const acquire = I.gen(function* (_) {
         const env = yield* _(I.ask<R & SubscriptionsEnv<C> & RE>())
 
-        const [app, httpServer] = yield* _(I.asksServiceM(Koa.Koa)((koa) => I.cross_(koa.app, koa.server)))
+        const [app, httpServer] = yield* _(I.asksService(Koa.KoaAppTag)((koa) => [koa.app, koa.server] as const))
 
         const scalars       = transformScalarResolvers(instanceConfig.schemaParts.scalars ?? {}, env)
-        const resolvers     = transformResolvers<Koa.Context<Ctx>>(instanceConfig.schemaParts.resolvers, env)
+        const resolvers     = transformResolvers<Koa.Context<DefaultState, Ctx>>(instanceConfig.schemaParts.resolvers, env)
         const typeResolvers = instanceConfig.schemaParts.typeResolvers
         const apolloConfig  = { ...config } as Omit<Config, 'context' | 'schema'>
         if (config.subscriptions && config.subscriptions.onConnect) {
@@ -186,7 +189,7 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
                     : formatError(error)
                 }
               })
-              server.applyMiddleware({ app })
+              server.applyMiddleware({ app: app as any })
               if (apolloConfig.subscriptions) {
                 server.installSubscriptionHandlers(httpServer)
               }
@@ -203,19 +206,19 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
     }
 
     return {
-      generateSchema: makeSchemaGenerator<Koa.Context<Ctx>>(),
+      generateSchema: makeSchemaGenerator<Koa.Context<DefaultState, Ctx>>(),
       askContext: askContext,
-      extend: makeExtendObjectTypeBuilder<FieldPURI, InputPURI, Koa.Context<Ctx>>(interpreters),
+      extend: makeExtendObjectTypeBuilder<FieldPURI, InputPURI, Koa.Context<DefaultState, Ctx>>(interpreters),
       input: makeInputObjectTypeBuilder(interpreters),
       live: gqlKoaInstance,
-      object: <Root>() => makeObjectTypeBuilder(interpreters)<Root, Koa.Context<Ctx>>(),
-      subscription: makeSubscriptionTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
+      object: <Root>() => makeObjectTypeBuilder(interpreters)<Root, Koa.Context<DefaultState, Ctx>>(),
+      subscription: makeSubscriptionTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<DefaultState, Ctx>>(),
       scalar: makeScalarTypeBuilder,
-      mutation: makeMutationTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
+      mutation: makeMutationTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<DefaultState, Ctx>>(),
       scalarFromModel: makeScalarTypeFromModelBuilder,
-      query: makeQueryTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>(),
-      union: makeUnionTypeBuilder<Koa.Context<Ctx>>(),
-      interface: makeInterfaceTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<Ctx>>()
+      query: makeQueryTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<DefaultState, Ctx>>(),
+      union: makeUnionTypeBuilder<Koa.Context<DefaultState, Ctx>>(),
+      interface: makeInterfaceTypeBuilder<FieldPURI, InputPURI>(interpreters)<Koa.Context<DefaultState, Ctx>>()
     }
   }
 }

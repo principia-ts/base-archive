@@ -1,26 +1,24 @@
-import type { HttpRouteException } from '@principia/http'
+import '@principia/base/Operators'
 
-import '@principia/base/unsafe/Operators'
-
-import { pipe } from '@principia/base/data/Function'
-import * as C from '@principia/io/Chunk'
+import * as Status from '@principia/http/StatusCode'
 import * as I from '@principia/io/IO'
-import * as L from '@principia/io/Layer'
-import * as S from '@principia/io/Stream'
 import * as NFS from '@principia/node/fs'
 import * as ZL from '@principia/node/zlib'
-import KoaRouter from 'koa-router'
-import { runMain } from 'module'
 import * as path from 'path'
+import { inspect } from 'util'
 
 import * as Koa from '../src'
 
-const home = Koa.route(
-  'get',
-  '/file',
+const home = Koa.route('get')('/', ({ connection: { res } }) =>
   I.gen(function* (_) {
-    const { res, engine } = yield* _(Koa.Context)
-    const p = path.resolve(process.cwd(), engine.request.query['name'])
+    yield* _(res.write('Hello')['|>'](I.orDie))
+    yield* _(res.end()['|>'](I.orDie))
+  })
+)
+
+const file = Koa.route('get')('/file/:name', ({ connection: { res }, params }) =>
+  I.gen(function* (_) {
+    const p      = path.resolve(process.cwd(), 'test', params['name'])
     const exists = yield* _(
       NFS.stat(p)
         ['|>'](I.map((stats) => stats.isFile()))
@@ -31,11 +29,12 @@ const home = Koa.route(
         () => exists,
         () =>
           res
-            .status(200)
-            ['|>'](I.andThen(res.set({ 'content-type': 'text/plain', 'content-encoding': 'gzip' })))
-            ['|>'](I.andThen(res.pipeFrom(NFS.createReadStream(p)['|>'](ZL.gzip())))),
+            .status(Status.Ok)
+            ['*>'](res.set({ 'content-type': 'text/plain', 'content-encoding': 'gzip' }))
+            ['*>'](res.pipeFrom(NFS.createReadStream(p)['|>'](ZL.gzip())))
+            ['|>'](I.orDie),
         () =>
-          I.fail<HttpRouteException>({
+          I.die({
             _tag: 'HttpRouteException',
             message: `File at ${p} is not a file or does not exist`,
             status: 500
@@ -45,17 +44,12 @@ const home = Koa.route(
     yield* _(res.end())
   })
 )
-const middleware = Koa.useM((cont) =>
-  I.gen(function* (_) {
-    const { engine } = yield* _(Koa.Context)
-    yield* _(I.total(() => console.log(engine.req.rawHeaders)))
-    yield* _(cont)
-  })
-)
 
-const liveKoa = Koa.live(4000, 'localhost')
-  ['<<<'](middleware)
-  ['<<<'](home)
-  ['<<<'](L.pure(Koa.KoaConfig)({ middleware: [], onClose: [], router: new KoaRouter() }))
+const env = Koa.KoaAppConfig.live('localhost', 4000, Koa.defaultExitHandler)
+  ['>+>'](Koa.KoaRuntime.live)
+  ['>+>'](Koa.KoaRouterConfig.empty)
+  ['>+>'](file)
+  ['>+>'](home)
+  ['>+>'](Koa.KoaApp.live)
 
-pipe(I.never, I.giveLayer(liveKoa), (x) => I.run(x, (ex) => console.log(ex)))
+I.run_(I.never['|>'](I.giveLayer(env)), (ex) => console.log(inspect(ex, { depth: 10 })))
