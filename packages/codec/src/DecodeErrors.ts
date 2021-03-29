@@ -1,17 +1,18 @@
 import type { DecodeError } from './FreeDecodeError'
 import type { MonadDecoder } from './MonadDecoder'
+import type * as Eval from '@principia/base/Eval'
 import type { RoseTree } from '@principia/base/RoseTree'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import * as Eval from '@principia/base/Eval'
 import { identity, pipe } from '@principia/base/function'
 import * as HKT from '@principia/base/HKT'
 import * as T from '@principia/base/RoseTree'
 import * as P from '@principia/base/typeclass'
+import { isArray, isPlain } from '@principia/base/util/predicates'
 import * as FS from '@principia/free/FreeSemigroup'
 
-import { getSemigroup,Info, Leaf, match } from './FreeDecodeError'
+import { getSemigroup, Info, Leaf, match } from './FreeDecodeError'
 
 type Eval<A> = Eval.Eval<A>
 
@@ -86,44 +87,68 @@ export function prettyPrint(e: DecodeErrors): string {
     .join('\n')
 }
 
-export function paths(e: DecodeErrors): Record<string, any> {
-  const go = (e: DecodeErrors): Eval<Record<string, any>> =>
-    Eval.gen(function* (_) {
-      switch (e._tag) {
-        case 'Combine': {
-          const l = yield* _(go(e.left))
-          const r = yield* _(go(e.right))
-          return { ...l, ...r }
-        }
-        case 'Element': {
-          const el = e.value
-          switch (el._tag) {
-            case 'Info': {
-              return {}
-            }
-            case 'Wrap': {
-              return yield* _(go(el.errors))
-            }
-            case 'Lazy': {
-              return yield* _(go(el.errors))
-            }
-            case 'Member': {
-              return yield* _(go(el.errors))
-            }
-            case 'Key': {
-              return { [el.key]: yield* _(go(el.errors)) }
-            }
-            case 'Leaf': {
-              return { expected: el.expected, actual: el.actual }
-            }
-            case 'Index': {
-              return { [el.index]: yield* _(go(el.errors)) }
-            }
-          }
-        }
+const toObject: (e: DecodeError<ErrorInfo>) => Record<string, any> = match({
+  Leaf: (actual, expected) => ({ actual, expected: [expected] }),
+  Key: (key, _, errors) => ({ [key]: paths(errors) }),
+  Index: (index, _, errors) => ({ [index]: paths(errors) }),
+  Member: (_, errors) => paths(errors),
+  Lazy: (_, errors) => paths(errors),
+  Wrap: (_, errors) => paths(errors),
+  Info: (info) => ({ info })
+})
+
+function merge(x: Record<string, any>, y: Record<string, any>): Record<string, any> {
+  const res: Record<string, any> = {}
+  /* eslint-disable functional/immutable-data */
+  for (const key in x) {
+    res[key] = x[key]
+  }
+  for (const key in y) {
+    const current = y[key]
+    if (isPlain(current)) {
+      if (res[key] && isPlain(res[key])) {
+        res[key] = merge(res[key], current)
+      } else {
+        res[key] = current
       }
-    })
-  return go(e).value
+    } else if (isArray(current)) {
+      if (res[key]) {
+        if (isArray(res[key])) {
+          res[key] = current.concat(res[key])
+        }
+      } else {
+        res[key] = current
+      }
+    } else {
+      res[key] = current
+    }
+  }
+  return res
+  /* eslint-enable */
+}
+
+export function paths(e: DecodeErrors): Record<string, any> {
+  const stack = []
+  let focus   = e
+  let res     = {}
+  for (;;) {
+    switch (focus._tag) {
+      case 'Element': {
+        res = merge(res, toObject(focus.value))
+        if (stack.length === 0) {
+          return res
+        } else {
+          focus = stack.pop()!
+        }
+        break
+      }
+      case 'Combine': {
+        stack.push(focus.right)
+        focus = focus.left
+        break
+      }
+    }
+  }
 }
 
 /*
