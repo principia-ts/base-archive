@@ -32,14 +32,14 @@ export class StringE {
   constructor(readonly actual: unknown) {}
 }
 
-export interface NumberE {
-  readonly _tag: 'NumberE'
-  readonly actual: unknown
+export class NumberE {
+  readonly _tag = 'NumberE'
+  constructor(readonly actual: unknown) {}
 }
 
-export interface BooleanE {
-  readonly _tag: 'BooleanE'
-  readonly actual: unknown
+export class BooleanE {
+  readonly _tag = 'BooleanE'
+  constructor(readonly actual: unknown) {}
 }
 
 export interface UnknownArrayE {
@@ -64,16 +64,14 @@ export interface NullableE<E> {
   readonly error: E
 }
 
-export interface KeyE<E> {
-  readonly actual: unknown
-  readonly key: string
-  readonly error: E
+export class KeyE<E> {
+  readonly _tag = 'KeyE'
+  constructor(readonly actual: unknown, readonly key: string, readonly error: E) {}
 }
 
-export interface StructE<E> {
-  readonly _tag: 'StructE'
-  readonly actual: unknown
-  readonly error: NonEmptyArray<KeyE<E>>
+export class StructE<E> {
+  readonly _tag = 'StructE'
+  constructor(readonly actual: unknown, readonly error: NonEmptyArray<KeyE<E>>) {}
 }
 
 export interface PartialE<E> {
@@ -157,4 +155,3 @@ export interface RecordRE<E> extends RecordE<DecodeError<E>> {}
 export interface UnionRE<E> extends UnionE<DecodeError<E>> {}
 export interface IntersectionRE<E> extends IntersectionE<DecodeError<E>> {}
 export interface LazyRE<E> extends LazyE<DecodeError<E>> {}
-
