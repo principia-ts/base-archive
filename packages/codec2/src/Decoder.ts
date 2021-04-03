@@ -1,43 +1,25 @@
 import type { DecodeError } from './DecodeError'
-import type { MonadDecoder } from './MonadDecoder'
 import type { Guard } from '@principia/base/Guard'
-import type * as HKT from '@principia/base/HKT'
 import type { Refinement } from '@principia/base/Refinement'
 
+import * as A from '@principia/base/Array'
 import * as B from '@principia/base/boolean'
 import * as E from '@principia/base/Either'
-import { constVoid, flow, identity, pipe } from '@principia/base/function'
+import { flow, pipe } from '@principia/base/function'
 import * as N from '@principia/base/number'
 import * as R from '@principia/base/Record'
 import * as Str from '@principia/base/string'
-import * as Sy from '@principia/io/Sync'
 import { inspect } from 'util'
 
-import { BooleanE, KeyE, NumberE, ParseE, RefineE, StringE, StructE } from './DecodeError'
+import { BooleanE, KeyE, NumberE, ParseE, StringE, StructE } from './DecodeError'
 
 export interface Decoder<I, E, A> {
   readonly _I?: (_: I) => void
   readonly _E?: () => E
   readonly _A?: () => A
 
-  readonly decode: <M extends HKT.URIS, C extends HKT.V<'E', '+'>>(
-    M: MonadDecoder<M, C>
-  ) => (
-    i: I
-  ) => HKT.Kind<
-    M,
-    C,
-    HKT.Initial<C, 'N'>,
-    HKT.Initial<C, 'K'>,
-    HKT.Initial<C, 'Q'>,
-    HKT.Initial<C, 'W'>,
-    HKT.Initial<C, 'X'>,
-    HKT.Initial<C, 'I'>,
-    HKT.Initial<C, 'S'>,
-    HKT.Initial<C, 'R'>,
-    DecodeError<E>,
-    A
-  >
+  readonly label: string
+  readonly decode: (i: I) => E.Either<DecodeError<E>, A>
 }
 
 export type UDecoder<E, A> = Decoder<unknown, E, A>
@@ -54,22 +36,19 @@ export type TypeOf<D> = D extends Decoder<any, any, infer A> ? A : never
 
 export interface FromParseD<I, E, A> extends Decoder<I, E, A> {
   readonly _tag: 'FromParseD'
-  readonly name: string
   readonly parser: Decoder<I, E, A>['decode']
 }
 
-export function fromParse<I, E, A>(
-  name: string,
-  parser: (M: MonadDecoder<HKT.UHKT2<unknown>, HKT.V<'E', '+'>>) => (i: I) => HKT.HKT2<unknown, E, A>
-): FromParseD<I, E, A> {
+export function fromParse<I, E, A>(label: string, parser: (i: I) => E.Either<E, A>): FromParseD<I, E, A> {
   return {
     _tag: 'FromParseD',
-    name,
-    parser: parser as any,
-    decode: (M) => {
-      const d = parser(M as any)
-      return (i) => pipe(d(i), M.mapLeft((e) => new ParseE(i, e)) as any)
-    }
+    label,
+    parser,
+    decode: (i) =>
+      pipe(
+        parser(i),
+        E.mapLeft((e) => new ParseE(i, e))
+      )
   }
 }
 
@@ -80,24 +59,25 @@ export interface FromRefinementD<I, E, A extends I> extends Decoder<I, E, A> {
 }
 
 export function fromRefinement<I, E, A extends I>(
-  name: string,
+  label: string,
   refinement: Refinement<I, A>,
   onError: (i: I) => E
 ): FromRefinementD<I, E, A> {
   return {
     _tag: 'FromRefinementD',
+    label,
     refinement,
     onError,
-    decode: (M) => (i) => (refinement(i) ? M.pure(i) : M.fail(onError(i) as any))
+    decode: (i) => (refinement(i) ? E.Right(i) : E.Left(onError(i)))
   }
 }
 
 export function fromGuard<I, E, A extends I>(
-  name: string,
+  label: string,
   guard: Guard<I, A>,
   onError: (i: I) => E
 ): FromRefinementD<I, E, A> {
-  return fromRefinement(name, guard.is, onError)
+  return fromRefinement(label, guard.is, onError)
 }
 
 /*
@@ -112,6 +92,7 @@ export interface stringUD extends Decoder<unknown, StringE, string> {
 
 export const string: stringUD = {
   _tag: 'stringUD',
+  label: 'string',
   decode: fromGuard('string', Str.Guard, (i) => new StringE(i)).decode
 }
 
@@ -121,6 +102,7 @@ export interface numberUD extends Decoder<unknown, NumberE, number> {
 
 export const number: numberUD = {
   _tag: 'numberUD',
+  label: 'number',
   decode: fromGuard('number', N.Guard, (i) => new NumberE(i)).decode
 }
 
@@ -130,6 +112,7 @@ export interface booleanUD extends Decoder<unknown, BooleanE, boolean> {
 
 export const boolean: booleanUD = {
   _tag: 'booleanUD',
+  label: 'boolean',
   decode: fromGuard('boolean', B.Guard, (i) => new BooleanE(i)).decode
 }
 
@@ -142,32 +125,36 @@ export const boolean: booleanUD = {
 export interface ParseD<From extends Decoder<any, any, any>, E, B>
   extends Decoder<InputOf<From>, ErrorOf<From> | E, B> {
   readonly _tag: 'ParseD'
-  readonly name: string
   readonly from: From
   readonly parser: Decoder<TypeOf<From>, E, B>['decode']
 }
 
 export function parse_<From extends Decoder<any, any, any>, E, B>(
   from: From,
-  name: string,
-  parser: (M: MonadDecoder<HKT.UHKT2<unknown>, HKT.V<'E', '+'>>) => (i: TypeOf<From>) => HKT.HKT2<unknown, E, B>
+  label: string,
+  parser: (i: TypeOf<From>) => E.Either<E, B>
 ): ParseD<From, E, B> {
   return {
     _tag: 'ParseD',
     from,
-    name,
+    label,
     parser: parser as any,
-    decode: (M) => {
-      const decodeFrom = from.decode(M)
-      const parse      = parser(M as any)
-      return (i: InputOf<From>) => pipe(decodeFrom(i), M.bind(flow(parse, M.mapLeft((e) => new ParseE(i, e)) as any)))
-    }
+    decode: (i) =>
+      pipe(
+        from.decode(i),
+        E.bind(
+          flow(
+            parser,
+            E.mapLeft((e) => new ParseE(i, e))
+          )
+        )
+      )
   }
 }
 
 export function parse<From extends Decoder<any, any, any>, E, B>(
   name: string,
-  parser: (M: MonadDecoder<HKT.UHKT2<unknown>, HKT.V<'E', '+'>>) => (i: TypeOf<From>) => HKT.HKT2<unknown, E, B>
+  parser: (i: TypeOf<From>) => E.Either<E, B>
 ): (from: From) => ParseD<From, E, B> {
   return (from) => parse_(from, name, parser)
 }
@@ -185,13 +172,10 @@ export function compose_<From extends Decoder<any, any, any>, To extends Decoder
 ): ComposeD<From, To> {
   return {
     _tag: 'ComposeD',
+    label: `${from.label} >>> ${to.label}`,
     from,
     to,
-    decode: (M) => {
-      const decodeIA = from.decode(M)
-      const decodeAB = to.decode(M)
-      return flow(decodeIA, M.bind(decodeAB))
-    }
+    decode: flow(from.decode, E.bind(to.decode))
   }
 }
 
@@ -208,38 +192,45 @@ export interface FromStructD<P extends Record<string, Decoder<any, any, any>>>
 }
 
 export function fromStruct<P extends Record<string, Decoder<any, any, any>>>(properties: P): FromStructD<P> {
+  const label = `{ ${pipe(
+    properties,
+    R.ifoldl([] as string[], (b, k, a) => {
+      b.push(`${k}: ${a.label}`)
+      return b
+    }),
+    A.join(', ')
+  )} }`
+
   return {
     _tag: 'FromStructD',
     properties,
-    decode: (M) => {
-      const itraverse = R.itraverse(M)
-      const decoders  = R.map_(properties, (d) => d.decode(M))
-      return (i) => {
-        const errors: Array<any> = []
-        const mut_r              = {}
-        return pipe(
-          decoders,
-          itraverse((key, decoder) =>
-            pipe(
-              decoder(i[key]),
-              M.attempt,
-              M.tap((result) => {
-                E.match_(
-                  result,
-                  (e) => {
-                    errors.push(new KeyE(i[key], key, e))
-                  },
-                  (a) => {
-                    mut_r[key] = a
-                  }
-                )
-                return M.pure(result)
-              })
-            )
-          ),
-          M.bind((_) => (errors.length !== 0 ? M.fail(new StructE(i, errors as any) as any) : M.pure(mut_r)))
+    label,
+    decode: (i) => {
+      const errors: Array<KeyE<any>>   = []
+      const mut_r: Record<string, any> = {}
+      for (const key in properties) {
+        const r = properties[key].decode(i[key])
+        E.match_(
+          r,
+          (e) => {
+            errors.push(new KeyE(i[key], key, e))
+          },
+          (a) => {
+            mut_r[key] = a
+          }
         )
       }
+      return A.isNonEmpty(errors) ? E.Left(new StructE(i, errors)) : E.Right(mut_r as { [K in keyof P]: TypeOf<P[K]> })
     }
   }
 }
+
+const d = fromStruct({
+  a: string,
+  b: number,
+  c: boolean
+})
+
+console.log(d.label)
+
+console.log(inspect(d.decode({ a: 42, b: 'not number', c: 0 }), { depth: 10 }))
