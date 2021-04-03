@@ -17,7 +17,7 @@ export function makeCodec<I, O, A>(decoder: D.DecoderK<I, O>, encoder: E.Encoder
   return {
     decode: decoder.decode,
     encode: encoder.encode,
-    _meta: decoder._meta
+    label: decoder.label
   }
 }
 
@@ -25,7 +25,7 @@ export function fromDecoder<I, O>(decoder: D.DecoderK<I, O>): Codec<I, O, O> {
   return {
     decode: decoder.decode,
     encode: identity,
-    _meta: decoder._meta
+    label: decoder.label
   }
 }
 

@@ -29,15 +29,18 @@ export const PrimitivesDecoder = implementInterpreter<DecoderKURI, Alg.Primitive
     applyDecoderConfig(config?.config)(
       pipe(
         D.string(),
-        D.parse((M) => (a) => {
-          try {
-            return M.pure(BigInt(a))
-          } catch (e) {
-            return M.fail(
-              FS.Combine(FS.Element(FDE.Leaf(a, 'integer string')), pipe(config, extractInfo, FDE.Info, FS.Element))
-            )
-          }
-        })
+        D.parse(
+          (M) => (a) => {
+            try {
+              return M.pure(BigInt(a))
+            } catch (e) {
+              return M.fail(
+                FS.Combine(FS.Element(FDE.Leaf(a, 'integer string')), pipe(config, extractInfo, FDE.Info, FS.Element))
+              )
+            }
+          },
+          'bigint'
+        )
       ),
       env,
       {}
@@ -49,14 +52,17 @@ export const PrimitivesDecoder = implementInterpreter<DecoderKURI, Alg.Primitive
         D.mapLeftWithInput((i, _) =>
           FS.Combine(FS.Element(FDE.Leaf(i, 'date string')), pipe(config, extractInfo, FDE.Info, FS.Element))
         ),
-        D.parse((M) => (a) => {
-          const d = new Date(a)
-          return isNaN(d.getTime())
-            ? M.fail(
-                FS.Combine(FS.Element(FDE.Leaf(a, 'date string')), pipe(config, extractInfo, FDE.Info, FS.Element))
-              )
-            : M.pure(d)
-        })
+        D.parse(
+          (M) => (a) => {
+            const d = new Date(a)
+            return isNaN(d.getTime())
+              ? M.fail(
+                  FS.Combine(FS.Element(FDE.Leaf(a, 'date string')), pipe(config, extractInfo, FDE.Info, FS.Element))
+                )
+              : M.pure(d)
+          },
+          'Date'
+        )
       ),
       env,
       {}
@@ -67,13 +73,18 @@ export const PrimitivesDecoder = implementInterpreter<DecoderKURI, Alg.Primitive
     ),
   nonEmptyArray: (item, config) => (env) =>
     pipe(item(env), (decoder) =>
-      applyDecoderConfig(config?.config)(pipe(D.array(decoder), D.refine(A.isNonEmpty, 'NonEmptyArray')), env, decoder)
+      applyDecoderConfig(config?.config)(
+        pipe(D.array(decoder), D.refine(A.isNonEmpty, 'NonEmptyArray', extractInfo(config))),
+        env,
+        decoder
+      )
     ),
   tuple: (...types) => (config) => (env) =>
     pipe(
       types,
       A.map((f) => f(env)),
-      (decoders) => applyDecoderConfig(config?.config)(D.tuple(...decoders)() as any, env, decoders as any)
+      (decoders) =>
+        applyDecoderConfig(config?.config)(D.tuple(...decoders)(extractInfo(config)) as any, env, decoders as any)
     ),
   keyof: (keys, config) => (env) =>
     applyDecoderConfig(config?.config)(
@@ -81,7 +92,8 @@ export const PrimitivesDecoder = implementInterpreter<DecoderKURI, Alg.Primitive
         D.string(),
         D.refine(
           (a): a is keyof typeof keys & string => Object.keys(keys).indexOf(a) !== -1,
-          Object.keys(keys).join(' | ')
+          Object.keys(keys).join(' | '),
+          extractInfo(config)
         )
       ),
       env,

@@ -35,7 +35,7 @@ export const SumDecoder = implementInterpreter<DecoderKURI, Alg.SumURI>()((_) =>
                   return M.fail(error(u, 'Either', extractInfo(config)))
                 }
               },
-              `Either<${l._meta.name}, ${r._meta.name}>`
+              `Either<${l.label}, ${r.label}>`
             )
           ),
           env,
@@ -58,7 +58,7 @@ export const SumDecoder = implementInterpreter<DecoderKURI, Alg.SumURI>()((_) =>
             } else {
               return M.fail(error(u, 'Option', extractInfo(config)))
             }
-          })
+          }, `Option<${decoder.label}>`)
         ),
         env,
         decoder

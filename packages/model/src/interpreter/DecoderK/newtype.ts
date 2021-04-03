@@ -35,7 +35,7 @@ export const NewtypeDecoder = implementInterpreter<DecoderKURI, Alg.NewtypeURI>(
               prism.getOption(a),
               () =>
                 M.fail(
-                  error(a, '', {
+                  error(a, config?.name || '', {
                     message: 'newtype does not satisfy prism conditions',
                     ...extractInfo(config)
                   })

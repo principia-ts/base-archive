@@ -1,5 +1,5 @@
 import type { DecodeErrors } from './DecodeErrors'
-import type { DecoderK, DecoderMetadata } from './DecoderK'
+import type { DecoderK } from './DecoderK'
 
 import * as Sy from '@principia/io/Sync'
 
@@ -13,7 +13,7 @@ import * as DE from './DecodeErrors'
 
 export interface SyncDecoder<I, A> {
   readonly decode: (i: I) => Sy.Sync<unknown, DecodeErrors, A>
-  readonly _meta: DecoderMetadata
+  readonly label: string
 }
 
 export const Validation = DE.getValidation({
@@ -25,7 +25,7 @@ export const Validation = DE.getValidation({
 export function fromDecoder<I, O>(decoder: DecoderK<I, O>): SyncDecoder<I, O> {
   return {
     decode: decoder.decode(Validation),
-    _meta: decoder._meta
+    label: decoder.label
   }
 }
 

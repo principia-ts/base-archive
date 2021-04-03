@@ -25,7 +25,7 @@ type Eval<A> = Eval.Eval<A>
 export type DecodeErrors = FS.FreeSemigroup<DecodeError<ErrorInfo>>
 
 export interface ErrorInfo {
-  name?: string
+  label?: string
   id?: string
   message?: string
 }
@@ -37,9 +37,9 @@ export interface ErrorInfo {
  */
 
 const showErrorInfo = (info: ErrorInfo): string =>
-  info.name && info.message ? `${info.name}: ${info.message}` : info.name ?? info.message ?? ''
+  info.label && info.message ? `${info.label}: ${info.message}` : info.label ?? info.message ?? ''
 
-const isInfoPopulated = (info?: ErrorInfo): info is ErrorInfo => !!info?.id || !!info?.name || !!info?.message
+const isInfoPopulated = (info?: ErrorInfo): info is ErrorInfo => !!info?.id || !!info?.label || !!info?.message
 
 export function error(actual: unknown, expected: string, errorInfo?: ErrorInfo): DecodeErrors {
   return isInfoPopulated(errorInfo)

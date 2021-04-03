@@ -14,9 +14,7 @@ import { EitherDecoderURI } from './Modules'
 
 export interface EitherDecoder<I, A> {
   readonly decode: (i: I) => E.Either<DecodeErrors, A>
-  readonly _meta: {
-    readonly name: string
-  }
+  readonly label: string
 }
 
 export const Validation = DE.getValidation({
@@ -28,7 +26,7 @@ export const Validation = DE.getValidation({
 export function fromDecoder<I, O>(decoder: D.DecoderK<I, O>): EitherDecoder<I, O> {
   return {
     decode: decoder.decode(Validation),
-    _meta: decoder._meta
+    label: decoder.label
   }
 }
 
