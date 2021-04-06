@@ -30,7 +30,7 @@ export const ObjectEncoder = implementInterpreter<EncoderURI, Alg.StructURI>()((
           optional,
           R.map((f) => f(env)),
           (o) =>
-            applyEncoderConfig(config?.config)(E.intersect(E.partial(o))(E.struct(r)) as any, env, {
+            applyEncoderConfig(config?.config)(E.intersect(E.partial(o), E.struct(r)) as any, env, {
               required: r as any,
               optional: o as any
             })

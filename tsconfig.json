@@ -33,7 +33,8 @@
       "@principia/test/*": ["packages/test/dist/*"],
       "@principia/query": ["packages/query/dist/index"],
       "@principia/query/*": ["packages/query/dist/*"],
-      "@principia/transformers/*": ["packages/transformers/dist/*"]
+      "@principia/transformers/*": ["packages/transformers/dist/*"],
+      "@principia/codec2/*": ["packages/codec2/dist/*"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]

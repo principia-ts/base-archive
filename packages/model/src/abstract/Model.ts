@@ -7,8 +7,8 @@ import { OpticsFor } from '../optics'
 import { assignCallable, assignFunction, inhabitTypes, wrapFun } from '../utils'
 import { interpretable } from './Program'
 
-export interface Interpretable<PURI extends ProgramURIS, Env extends AnyEnv, E, A> {
-  derive: Overloads<URItoProgram<Env, E, A>[PURI]>
+export interface Interpretable<PURI extends ProgramURIS, Env extends AnyEnv, I, E, A, O> {
+  derive: Overloads<URItoProgram<Env, I, E, A, O>[PURI]>
 }
 
 export interface InhabitedInterpreterAndAlgebra<PURI extends ProgramURIS, RURI extends ResultURIS> {
@@ -20,30 +20,32 @@ const inhabitInterpreterAndAlgebra = <PURI extends ProgramURIS, RURI extends Res
   t: T
 ): T & InhabitedInterpreterAndAlgebra<PURI, RURI> => t as T & InhabitedInterpreterAndAlgebra<PURI, RURI>
 
-export type Model<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, E, A> = URItoResult<
+export type Model<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, I, E, A, O> = URItoResult<
+  I,
   E,
-  A
+  A,
+  O
 >[RURI] &
-  URItoProgram<Env, E, A>[PURI] &
-  URItoResult<E, A>[RURI] &
-  InhabitedTypes<Env, E, A> &
-  Interpretable<PURI, Env, E, A> &
+  URItoProgram<Env, I, E, A, O>[PURI] &
+  URItoResult<I, E, A, O>[RURI] &
+  InhabitedTypes<Env, I, E, A, O> &
+  Interpretable<PURI, Env, I, E, A, O> &
   InhabitedInterpreterAndAlgebra<PURI, RURI> &
   OpticsFor<A>
 
-function interpret<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, E, A>(
-  program: URItoProgram<Env, E, A>[PURI],
+function interpret<PURI extends ProgramURIS, RURI extends ResultURIS, Env extends AnyEnv, I, E, A, O>(
+  program: URItoProgram<Env, I, E, A, O>[PURI],
   programInterpreter: ProgramInterpreter<PURI, RURI>
-): Model<PURI, RURI, Env, E, A> & InhabitedTypes<Env, E, A> {
+): Model<PURI, RURI, Env, I, E, A, O> & InhabitedTypes<Env, I, E, A, O> {
   return inhabitInterpreterAndAlgebra(
     inhabitTypes(assignFunction(wrapFun(program as any), programInterpreter(program)))
   )
 }
 
-export function materialize<PURI extends ProgramURIS, IURI extends InterpreterURIS, Env extends AnyEnv, E, A>(
-  program: URItoProgram<Env, E, A>[PURI],
+export function materialize<PURI extends ProgramURIS, IURI extends InterpreterURIS, Env extends AnyEnv, I, E, A, O>(
+  program: URItoProgram<Env, I, E, A, O>[PURI],
   programInterpreter: ProgramInterpreter<PURI, IURI>
-): Model<PURI, IURI, Env, E, A> {
+): Model<PURI, IURI, Env, I, E, A, O> {
   const morph = interpret(program, programInterpreter)
   return assignCallable(morph, {
     ...OpticsFor<A>(),

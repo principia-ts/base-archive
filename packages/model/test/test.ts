@@ -1,8 +1,6 @@
 import * as E from '@principia/base/Either'
-import { flow, pipe } from '@principia/base/Function'
-import * as DE from '@principia/codec/DecodeErrors'
-import { runDecoder } from '@principia/codec/DecoderKF'
-import { fromDecoderKF } from '@principia/codec/EitherDecoder'
+import { pipe } from '@principia/base/function'
+import * as S from '@principia/io/Sync'
 
 import * as M from '../src'
 
@@ -18,18 +16,17 @@ const l = M.make((F) =>
 )
 
 const veryWrongInput = {
-  a: 0,
-  b: 'bad',
-  c: E.Left(42),
-  d: ['hello', 'wrong', true]
+  a: 'string',
+  b: 0,
+  c: E.Left('boop'),
+  d: ['hello', 12, true]
 }
 
 pipe(
-  M.getDecoder(l),
-  fromDecoderKF,
-  (d) => d.decode(veryWrongInput),
+  M.getDecoder(l).decode(veryWrongInput),
+  S.runEither,
   E.match(
-    (err) => console.log(DE.prettyPrint(err)),
+    (err) => console.log(err),
     (x) => console.log(x)
   )
 )

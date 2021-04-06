@@ -10,5 +10,5 @@ import { applyShowConfig } from './HKT'
 
 export const RecordShow = implementInterpreter<ShowURI, Alg.RecordURI>()((_) => ({
   record: (codomain, config) => (env) =>
-    pipe(codomain(env), (show) => applyShowConfig(config?.config)(S.named_(R.getShow(show), config?.name), env, show))
+    pipe(codomain(env), (show) => applyShowConfig(config?.config)(S.named_(R.getShow(show), config?.label), env, show))
 }))

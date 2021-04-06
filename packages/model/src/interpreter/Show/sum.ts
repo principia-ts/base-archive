@@ -15,17 +15,17 @@ export const SumShow = implementInterpreter<ShowURI, Alg.SumURI>()((_) => ({
     pipe(
       types,
       R.map((f) => f(env)),
-      (shows) => applyShowConfig(config?.config)(S.named_(S.sum_(tag, shows), config?.name), env, shows as any)
+      (shows) => applyShowConfig(config?.config)(S.named_(S.sum_(tag, shows), config?.label), env, shows as any)
     ),
   either: (left, right, config) => (env) =>
     pipe(left(env), (l) =>
       pipe(right(env), (r) =>
-        applyShowConfig(config?.config)(S.named_(E.getShow(l, r), config?.name), env, {
+        applyShowConfig(config?.config)(S.named_(E.getShow(l, r), config?.label), env, {
           left: l,
           right: r
         })
       )
     ),
   option: (a, config) => (env) =>
-    pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(O.getShow(show), config?.name), env, show))
+    pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(O.getShow(show), config?.label), env, show))
 }))

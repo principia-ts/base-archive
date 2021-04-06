@@ -241,7 +241,9 @@ export function halt<E>(cause: Cause<E>): Multi<never, unknown, never, unknown, 
   return new Fail(cause)
 }
 
-export function fail<E>(e: E): Multi<never, unknown, never, unknown, E, never> {
+export function fail<W = never, S1 = unknown, S2 = never, R = unknown, E = never, A = never>(
+  e: E
+): Multi<W, S1, S2, R, E, A> {
   return halt(FS.single(e))
 }
 
@@ -802,6 +804,16 @@ export function either<W, S1, S2, R, E, A>(
   fa: Multi<W, S1, S2, R, E, A>
 ): Multi<W, S1, S1 | S2, R, never, E.Either<E, A>> {
   return match_(fa, E.Left, E.Right)
+}
+
+/**
+ * Exposes the output state into the value channel
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function getState<W, S1, S2, R, E, A>(ma: Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, E, readonly [S2, A]> {
+  return bind_(ma, (a) => map_(get(), (s) => tuple(s, a)))
 }
 
 export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(

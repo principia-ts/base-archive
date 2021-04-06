@@ -12,21 +12,21 @@ declare module '../HKT' {
   }
 }
 
-export interface RefineConfig<E, A, B> {}
-export interface ConstrainConfig<E, A> {}
+export interface RefineConfig<I, E, A, O, B> {}
+export interface ConstrainConfig<I, E, A, O> {}
 
 export interface RefinementAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly refine_: <E, A, B extends A>(
-    a: InterpretedKind<F, Env, E, A>,
+  readonly refine_: <I, E, A, O, E1, B extends A>(
+    type: InterpretedKind<F, Env, I, E, A, O>,
     refinement: Refinement<A, B>,
-    name: string,
-    config?: Omit<Config<Env, E, B, RefineConfig<E, A, B>>, 'name'>
-  ) => InterpretedKind<F, Env, E, B>
+    onError: (a: A) => E1,
+    config?: Config<Env, I, E | E1, B, O, RefineConfig<I, E, A, O, B>>
+  ) => InterpretedKind<F, Env, I, E | E1, B, O>
 
-  readonly constrain: <E, A>(
-    a: InterpretedKind<F, Env, E, A>,
+  readonly constrain: <I, E, A, O, E1>(
+    a: InterpretedKind<F, Env, I, E, A, O>,
     predicate: Predicate<A>,
-    name: string,
-    config?: Omit<Config<Env, E, A, ConstrainConfig<E, A>>, 'name'>
-  ) => InterpretedKind<F, Env, E, A>
+    onError: (a: A) => E1,
+    config?: Config<Env, I, E | E1, A, O, ConstrainConfig<I, E, A, O>>
+  ) => InterpretedKind<F, Env, I, E | E1, A, O>
 }

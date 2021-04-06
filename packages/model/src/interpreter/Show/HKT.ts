@@ -7,24 +7,24 @@ export const ShowURI = 'model/Show'
 export type ShowURI = typeof ShowURI
 
 declare module '../../HKT' {
-  interface URItoInterpreted<Env, E, A> {
+  interface URItoInterpreted<Env, I, E, A, O> {
     readonly [ShowURI]: (_: Env) => S.Show<A>
   }
-  interface URItoConfig<E, A> {
+  interface URItoConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
 }
 
 declare module '../../algebra/primitives' {
-  interface NonEmptyArrayConfig<E, A> {
+  interface NonEmptyArrayConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
-  interface ArrayConfig<E, A> {
+  interface ArrayConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
   interface TupleConfig<Types> {
     readonly [ShowURI]: {
-      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, infer A>] ? S.Show<A> : never
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, infer A, any>] ? S.Show<A> : never
     }
   }
 }
@@ -45,22 +45,22 @@ declare module '../../algebra/struct' {
 }
 
 declare module '../../algebra/newtype' {
-  interface IsoConfig<E, A, N> {
+  interface IsoConfig<I, E, A, O, N> {
     readonly [ShowURI]: S.Show<A>
   }
-  interface PrismConfig<E, A, N> {
+  interface PrismConfig<I, E, A, O, N> {
     readonly [ShowURI]: S.Show<A>
   }
 }
 
 declare module '../../algebra/record' {
-  interface RecordConfig<E, A> {
+  interface RecordConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
 }
 
 declare module '../../algebra/set' {
-  interface SetConfig<E, A> {
+  interface SetConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
 }
@@ -69,29 +69,29 @@ declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
     readonly [ShowURI]: TaggedUnionConfigKind<ShowURI, Types>
   }
-  interface EitherConfig<EE, EA, AE, AA> {
+  interface EitherConfig<EI, EE, EA, EO, AI, AE, AA, AO> {
     readonly [ShowURI]: {
       readonly left: S.Show<EA>
       readonly right: S.Show<AA>
     }
   }
-  interface OptionConfig<E, A> {
+  interface OptionConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
 }
 
 declare module '../../algebra/nullable' {
-  interface NullableConfig<E, A> {
+  interface NullableConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
-  interface OptionalConfig<E, A> {
+  interface OptionalConfig<I, E, A, O> {
     readonly [ShowURI]: S.Show<A>
   }
 }
 
 declare module '../../algebra/intersection' {
-  interface IntersectionConfig<E, A> {
-    readonly [ShowURI]: IntersectionConfigKind<ShowURI, E, A>
+  interface IntersectionConfig<I, E, A, O> {
+    readonly [ShowURI]: IntersectionConfigKind<ShowURI, I, E, A, O>
   }
 }
 

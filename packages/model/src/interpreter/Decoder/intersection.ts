@@ -1,22 +1,22 @@
 import type * as Alg from '../../algebra'
-import type { DecoderKURI } from './HKT'
+import type { DecoderURI } from './HKT'
 
-import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
-import * as D from '@principia/codec/DecoderK'
+import * as NA from '@principia/base/NonEmptyArray'
+import * as D from '@principia/codec/Decoder'
 
 import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'
-import { extractInfo } from './utils'
+import { withConfig } from './utils'
 
-export const IntersectionDecoder = implementInterpreter<DecoderKURI, Alg.IntersectionURI>()((_) => ({
+export const IntersectionDecoder = implementInterpreter<DecoderURI, Alg.IntersectionURI>()((_) => ({
   intersection: (...types) => (config) => (env) =>
     pipe(
       types,
-      A.map((f) => f(env)),
+      NA.map((f) => f(env)),
       (decoders) =>
         applyDecoderConfig(config?.config)(
-          D.intersectAll(decoders as any, extractInfo(config)) as any,
+          withConfig(config)(D.intersect(...(decoders as any)) as any),
           env,
           decoders as any
         )

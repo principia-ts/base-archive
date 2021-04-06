@@ -13,13 +13,13 @@ export const StructShow = implementInterpreter<ShowURI, Alg.StructURI>()((_) => 
     pipe(
       properties,
       R.map((f) => f(env)),
-      (shows) => applyShowConfig(config?.config)(S.named_(S.struct(shows), config?.name) as any, env, shows as any)
+      (shows) => applyShowConfig(config?.config)(S.named_(S.struct(shows), config?.label) as any, env, shows as any)
     ),
   partial: (properties, config) => (env) =>
     pipe(
       properties,
       R.map((f) => f(env)),
-      (shows) => applyShowConfig(config?.config)(S.named_(S.partial(shows), config?.name) as any, env, shows as any)
+      (shows) => applyShowConfig(config?.config)(S.named_(S.partial(shows), config?.label) as any, env, shows as any)
     ),
   both: (required, optional, config) => (env) =>
     pipe(
@@ -30,7 +30,7 @@ export const StructShow = implementInterpreter<ShowURI, Alg.StructURI>()((_) => 
           optional,
           R.map((f) => f(env)),
           (o) =>
-            applyShowConfig(config?.config)(S.named_(S.intersect_(S.struct(r), S.partial(o)), config?.name), env, {
+            applyShowConfig(config?.config)(S.named_(S.intersect_(S.struct(r), S.partial(o)), config?.label), env, {
               required: r as any,
               optional: o as any
             })

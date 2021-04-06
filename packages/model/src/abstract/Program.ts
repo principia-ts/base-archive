@@ -18,14 +18,16 @@ export const interpretable = <T extends { [_overloads]?: any }>(program: T): Ove
 
 export type InferredAlgebra<PURI extends ProgramURIS, Env extends AnyEnv> = Algebra<URItoAURIS[PURI], UIHKT, Env>
 
-export interface InferredProgram<PURI extends ProgramURIS, Env extends AnyEnv, E, A> {
-  <LEnv extends Env>(a: URItoProgramAlgebra<Env>[PURI]): InterpretedHKT<UIHKT, LEnv, E, A>
+export interface InferredProgram<PURI extends ProgramURIS, Env extends AnyEnv, I, E, A, O> {
+  <LEnv extends Env>(a: URItoProgramAlgebra<Env>[PURI]): InterpretedHKT<UIHKT, LEnv, I, E, A, O>
   [_overloads]?: {
     <F extends Exclude<InterpreterURIS, UIHKT>>(a: Algebra<URItoAURIS[PURI], F, Env>): InterpretedKind<
       F,
       { [K in F & keyof Env]: Env[K] },
+      I,
       E,
-      A
+      A,
+      O
     >
   }
 }

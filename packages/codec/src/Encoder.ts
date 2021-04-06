@@ -1,25 +1,22 @@
-import type * as HKT from '@principia/base/HKT'
+import type { Lazy } from '@principia/base/function'
+import type { UnionToIntersection } from '@principia/base/util/types'
+import type { USync } from '@principia/io/Sync'
 
-import { identity, memoize } from '@principia/base/function'
+import * as A from '@principia/base/Array'
+import { flow, memoize, pipe } from '@principia/base/function'
+import * as S from '@principia/io/Sync'
 
 import { EncoderURI } from './Modules'
 import { _intersect } from './util'
 
-/*
- * -------------------------------------------
- * Model
- * -------------------------------------------
- */
-
-export interface Encoder<O, A> {
-  readonly encode: (a: A) => O
+export interface Encoder<A, O> {
+  readonly encode: (a: A) => USync<O>
 }
 
-export type OutputOf<E> = E extends Encoder<infer O, any> ? O : never
+export type InputOf<E> = E extends Encoder<infer A, any> ? A : never
+export type OutputOf<E> = E extends Encoder<any, infer O> ? O : never
 
-export type TypeOf<E> = E extends Encoder<any, infer A> ? A : never
-
-export type V = HKT.V<'E', '+'>
+export type AnyE = Encoder<any, any>
 
 /*
  * -------------------------------------------
@@ -27,18 +24,40 @@ export type V = HKT.V<'E', '+'>
  * -------------------------------------------
  */
 
-export function compose_<E, A, B>(ab: Encoder<A, B>, ea: Encoder<E, A>): Encoder<E, B> {
-  return contramap_(ea, ab.encode)
+export interface IdEncoder<A> extends Encoder<A, A> {
+  readonly _tag: 'IdE'
 }
 
-export function compose<E, A>(ea: Encoder<E, A>): <B>(ab: Encoder<A, B>) => Encoder<E, B> {
-  return (ab) => compose_(ab, ea)
-}
-
-export function id<A>(): Encoder<A, A> {
+export function id<A>(): IdEncoder<A> {
   return {
-    encode: identity
+    _tag: 'IdE',
+    encode: S.pure
   }
+}
+
+export interface ComposeEncoder<From extends AnyE, To extends Encoder<OutputOf<From>, P>, P>
+  extends Encoder<InputOf<From>, P> {
+  readonly _tag: 'ComposeE'
+  readonly from: From
+  readonly to: To
+}
+
+export function compose_<From extends AnyE, To extends Encoder<OutputOf<From>, P>, P>(
+  from: From,
+  to: To
+): ComposeEncoder<From, To, P> {
+  return {
+    _tag: 'ComposeE',
+    from,
+    to,
+    encode: flow(from.encode, S.bind(to.encode))
+  }
+}
+
+export function compose<From extends AnyE, To extends Encoder<OutputOf<From>, P>, P>(
+  to: To
+): (from: From) => ComposeEncoder<From, To, P> {
+  return (from) => compose_(from, to)
 }
 
 /*
@@ -47,13 +66,22 @@ export function id<A>(): Encoder<A, A> {
  * -------------------------------------------
  */
 
-export function contramap_<E, A, B>(fa: Encoder<E, A>, f: (b: B) => A): Encoder<E, B> {
+export interface ContramapEncoder<From extends AnyE, B> extends Encoder<B, OutputOf<From>> {
+  readonly _tag: 'ContramapE'
+  readonly from: From
+  readonly f: (b: B) => InputOf<From>
+}
+
+export function contramap_<From extends AnyE, B>(fa: From, f: (b: B) => InputOf<From>): ContramapEncoder<From, B> {
   return {
-    encode: (b) => fa.encode(f(b))
+    _tag: 'ContramapE',
+    from: fa,
+    f,
+    encode: flow(f, fa.encode)
   }
 }
 
-export function contramap<A, B>(f: (b: B) => A): <E>(fa: Encoder<E, A>) => Encoder<E, B> {
+export function contramap<From extends AnyE, B>(f: (b: B) => InputOf<From>): (fa: From) => ContramapEncoder<From, B> {
   return (fa) => contramap_(fa, f)
 }
 
@@ -63,124 +91,209 @@ export function contramap<A, B>(f: (b: B) => A): <E>(fa: Encoder<E, A>) => Encod
  * -------------------------------------------
  */
 
-export function nullable<O, A>(or: Encoder<O, A>): Encoder<null | O, null | A> {
+export interface NullableEncoder<Or extends AnyE> extends Encoder<null | undefined | InputOf<Or>, null | OutputOf<Or>> {
+  readonly _tag: 'NullableEncoder'
+  readonly or: Or
+}
+
+export function nullable<Or extends AnyE>(or: Or): NullableEncoder<Or> {
   return {
-    encode: (a) => (a === null ? null : or.encode(a))
+    _tag: 'NullableEncoder',
+    or,
+    encode: (a) => (a == null ? S.succeed(null) : or.encode(a))
   }
 }
 
-export function struct<P extends Record<string, Encoder<any, any>>>(
-  properties: P
-): Encoder<
-  {
-    [K in keyof P]: OutputOf<P[K]>
-  },
-  {
-    [K in keyof P]: TypeOf<P[K]>
-  }
-> {
-  return {
-    encode: (a) => {
-      const mut_o: Record<keyof P, any> = {} as any
-      for (const k in properties) {
-        mut_o[k] = properties[k].encode(a[k])
-      }
-      return mut_o
-    }
-  }
+export interface StructEncoder<P extends Record<string, AnyE>>
+  extends Encoder<{ [K in keyof P]: InputOf<P[K]> }, { [K in keyof P]: OutputOf<P[K]> }> {
+  readonly _tag: 'StructEncoder'
+  readonly properties: P
 }
 
-export function partial<P extends Record<string, Encoder<any, any>>>(
-  properties: P
-): Encoder<
-  Partial<
-    {
-      [K in keyof P]: OutputOf<P[K]>
-    }
-  >,
-  Partial<
-    {
-      [K in keyof P]: TypeOf<P[K]>
-    }
-  >
-> {
+export function struct<P extends Record<string, AnyE>>(properties: P): StructEncoder<P> {
   return {
-    encode: (a) => {
-      const mut_o: Record<keyof P, any> = {} as any
-      for (const k in properties) {
-        const v = a[k]
-        // don't add missing properties
-        if (k in a) {
-          // don't strip undefined properties
-          mut_o[k] = v === undefined ? undefined : properties[k].encode(v)
+    _tag: 'StructEncoder',
+    properties,
+    encode: (a) =>
+      S.deferTotal(() => {
+        let computation = S.succeed({} as Record<keyof P, any>)
+        for (const k in properties) {
+          computation = pipe(
+            computation,
+            S.crossWith(properties[k].encode(a[k]), (mut_o, a) => {
+              mut_o[k] = a
+              return mut_o
+            })
+          )
         }
+        return computation
+      })
+  }
+}
+
+export interface PartialEncoder<P extends Record<string, AnyE>>
+  extends Encoder<
+    Partial<
+      {
+        [K in keyof P]: InputOf<P[K]>
       }
-      return mut_o
+    >,
+    Partial<
+      {
+        [K in keyof P]: OutputOf<P[K]>
+      }
+    >
+  > {
+  readonly _tag: 'PartialEncoder'
+  readonly properties: P
+}
+
+export function partial<P extends Record<string, AnyE>>(properties: P): PartialEncoder<P> {
+  return {
+    _tag: 'PartialEncoder',
+    properties,
+    encode: (a) =>
+      S.deferTotal(() => {
+        let computation = S.succeed({} as Partial<Record<keyof P, any>>)
+        for (const k in properties) {
+          const v = a[k]
+          if (v === undefined) {
+            computation = pipe(
+              computation,
+              S.map((mut_o) => {
+                mut_o[k] = undefined
+                return mut_o
+              })
+            )
+          } else {
+            computation = pipe(
+              computation,
+              S.crossWith(properties[k].encode(v), (mut_o, a) => {
+                mut_o[k] = a
+                return mut_o
+              })
+            )
+          }
+        }
+        return computation
+      })
+  }
+}
+
+export interface RecordEncoder<E extends AnyE>
+  extends Encoder<Record<string, InputOf<E>>, Record<string, OutputOf<E>>> {
+  readonly _tag: 'RecordEncoder'
+  readonly codomain: E
+}
+
+export function record<C extends AnyE>(codomain: C): RecordEncoder<C> {
+  return {
+    _tag: 'RecordEncoder',
+    codomain,
+    encode: (a) => {
+      let computation = S.succeed({} as Record<string, OutputOf<C>>)
+      for (const k in a) {
+        computation = pipe(
+          computation,
+          S.crossWith(codomain.encode(a[k]), (mut_o, a) => {
+            mut_o[k] = a
+            return mut_o
+          })
+        )
+      }
+      return computation
     }
   }
 }
 
-export function record<O, A>(codomain: Encoder<O, A>): Encoder<Record<string, O>, Record<string, A>> {
+export interface ArrayEncoder<Item extends AnyE>
+  extends Encoder<ReadonlyArray<InputOf<Item>>, ReadonlyArray<OutputOf<Item>>> {
+  readonly _tag: 'ArrayEncoder'
+  readonly item: Item
+}
+
+export function array<Item extends AnyE>(item: Item): ArrayEncoder<Item> {
   return {
-    encode: (r) => {
-      const mut_o: Record<string, O> = {}
-      for (const k in r) {
-        mut_o[k] = codomain.encode(r[k])
-      }
-      return mut_o
-    }
+    _tag: 'ArrayEncoder',
+    item,
+    encode: S.foreach(item.encode)
   }
 }
 
-export function array<O, A>(item: Encoder<O, A>): Encoder<ReadonlyArray<O>, ReadonlyArray<A>> {
+export interface TupleEncoder<C extends readonly [AnyE, ...ReadonlyArray<AnyE>]>
+  extends Encoder<{ [K in keyof C]: InputOf<C[K]> }, { [K in keyof C]: OutputOf<C[K]> }> {
+  readonly _tag: 'TupleEncoder'
+  readonly components: C
+}
+
+export function tuple<C extends readonly [AnyE, ...ReadonlyArray<AnyE>]>(...components: C): TupleEncoder<C> {
   return {
-    encode: (as) => as.map(item.encode)
+    _tag: 'TupleEncoder',
+    components,
+    encode: (as) => S.iforeach_(components, (i, c) => c.encode(as[i])) as any
   }
 }
 
-export function tuple<C extends ReadonlyArray<Encoder<any, any>>>(
-  ...components: C
-): Encoder<
+export interface IntersectEncoder<Members extends readonly [AnyE, ...ReadonlyArray<AnyE>]>
+  extends Encoder<
+    UnionToIntersection<{ [K in keyof Members]: InputOf<Members[K]> }[number]>,
+    UnionToIntersection<{ [K in keyof Members]: OutputOf<Members[K]> }[number]>
+  > {
+  readonly _tag: 'IntersectEncoder'
+  readonly members: Members
+}
+
+export function intersect<Members extends readonly [AnyE, ...ReadonlyArray<AnyE>]>(
+  ...members: Members
+): IntersectEncoder<Members> {
+  return {
+    _tag: 'IntersectEncoder',
+    members,
+    encode: (a) =>
+      S.deferTotal(() => {
+        return pipe(
+          members.slice(1),
+          A.foldl(members[0].encode(a), (computation, encoder) =>
+            pipe(computation, S.crossWith(encoder.encode(a), _intersect))
+          )
+        )
+      })
+  }
+}
+
+type EnsureTag<T extends string, Members extends Record<string, AnyE>> = Members &
   {
-    [K in keyof C]: OutputOf<C[K]>
-  },
-  {
-    [K in keyof C]: TypeOf<C[K]>
+    [K in keyof Members]: Encoder<{ [tag in T]: K }, any>
   }
-> {
-  return {
-    encode: (as) => components.map((c, i) => c.encode(as[i])) as any
-  }
-}
 
-export function intersect<P, B>(right: Encoder<P, B>): <O, A>(left: Encoder<O, A>) => Encoder<O & P, A & B> {
-  return (left) => ({
-    encode: (ab) => _intersect(left.encode(ab), right.encode(ab))
-  })
-}
-
-export function sum_<T extends string, MS extends Record<string, Encoder<any, any>>>(
-  tag: T,
-  members: MS
-): Encoder<OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
-  return {
-    encode: (a) => members[a[tag]].encode(a)
-  }
+export interface SumEncoder<T extends string, Members extends Record<string, AnyE>>
+  extends Encoder<InputOf<Members[keyof Members]>, OutputOf<Members[keyof Members]>> {
+  readonly _tag: 'SumEncoder'
+  readonly tag: T
+  readonly members: Members
 }
 
 export function sum<T extends string>(
   tag: T
-): <MS extends Record<string, Encoder<any, any>>>(
-  members: MS
-) => Encoder<OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
+): <Members extends Record<string, AnyE>>(members: EnsureTag<T, Members>) => SumEncoder<T, Members> {
   return (members) => ({
+    _tag: 'SumEncoder',
+    tag,
+    members,
     encode: (a) => members[a[tag]].encode(a)
   })
 }
 
-export function lazy<O, A>(f: () => Encoder<O, A>): Encoder<O, A> {
-  const get = memoize<void, Encoder<O, A>>(f)
+export interface LazyEncoder<E extends AnyE> extends Encoder<InputOf<E>, OutputOf<E>> {
+  readonly _tag: 'LazyEncoder'
+  readonly encoder: Lazy<E>
+}
+
+export function lazy<E extends AnyE>(encoder: () => E): LazyEncoder<E> {
+  const get = memoize<void, E>(encoder)
   return {
+    _tag: 'LazyEncoder',
+    encoder,
     encode: (a) => get().encode(a)
   }
 }

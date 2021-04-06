@@ -36,4 +36,3 @@ export type Mutable<T> = T extends NonEmptyArray<infer A>
   : T extends ReadonlyMap<infer K, infer A>
   ? Map<K, A>
   : { -readonly [K in keyof T]: T[K] }
-

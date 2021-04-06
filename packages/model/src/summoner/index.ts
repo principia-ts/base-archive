@@ -9,20 +9,23 @@ import type { Erase } from '@principia/base/util/types'
 import { makeSummoner } from '../abstract/Summoner'
 import { cacheUnaryFunction } from '../utils'
 
-export interface MM<Env, E, A> extends Model<PURI, RURI, Env, E, A> {}
-export interface MM_<Env, A> extends MM<Env, {}, A> {}
+export interface MM<Env, I, E, A, O> extends Model<PURI, RURI, Env, I, E, A, O> {}
+export interface MM_<Env, E, A, O> extends MM<Env, unknown, E, A, O> {}
 
-export interface M<Env, E, A> extends MM<Env & FastCheckEnv, E, A> {}
-export interface M_<Env, A> extends M<Env, {}, A> {}
+export interface M<Env, I, E, A, O> extends MM<Env & FastCheckEnv, I, E, A, O> {}
+export interface M_<Env, E, A, O> extends M<Env, unknown, E, A, O> {}
 
-export const opaque  = <E, A>() => <Env extends {}>(M: M<Env, E, A>): M<Env, E, A> => M
-export const opaque_ = <A>() => <Env extends {}>(M: M<Env, {}, A>): M_<Env, A> => M
+export const opaque  = <I, A, O, E = never>() => <Env extends {}>(M: M<Env, I, E, A, O>): M<Env, I, E, A, O> => M
+export const opaque_ = <A, O, E = never>() => <Env extends {}>(M: M<Env, unknown, E, A, O>): M<Env, unknown, E, A, O> =>
+  M
 
 export interface Summoner<Env extends AnyEnv> extends Summoners<PURI, RURI, Env> {
-  <E, A>(F: URItoProgram<Env, E, A>[PURI]): M<
+  <I, E, A, O>(F: URItoProgram<Env, I, E, A, O>[PURI]): M<
     unknown extends Erase<Env, FastCheckEnv> ? {} : Erase<Env, FastCheckEnv>,
+    I,
     E,
-    A
+    A,
+    O
   >
 }
 

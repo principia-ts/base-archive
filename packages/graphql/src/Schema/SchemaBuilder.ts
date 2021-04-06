@@ -9,8 +9,6 @@ import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types
 import type { ValueNode } from 'graphql'
 
 import { flow, pipe } from '@principia/base/function'
-import * as DE from '@principia/codec/DecodeErrors'
-import * as SD from '@principia/codec/SyncDecoder'
 import * as Sy from '@principia/io/Sync'
 import * as M from '@principia/model'
 import { valueFromASTUntyped } from 'graphql'
@@ -161,11 +159,11 @@ export interface ScalarTypeBuilder {
 }
 
 export interface ScalarTypeFromModelBuilder {
-  <Name extends string, Config extends ScalarTypeFromModelConfig<I, O>, I, O>(
+  <Name extends string, Config extends ScalarTypeFromModelConfig<O, A>, O, A>(
     name: Name,
-    model: M.M<{}, I, O>,
+    model: M.M<{}, unknown, any, A, O>,
     config?: Config
-  ): GQLScalar<Name, unknown, I, O>
+  ): GQLScalar<Name, unknown, O, A>
 }
 
 export const makeScalarTypeBuilder: ScalarTypeBuilder = (name, definition, config) =>
@@ -185,30 +183,30 @@ interface ScalarTypeFromModelConfig<E, A> extends ScalarConfig {
 }
 
 export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name, model, config) => {
-  const decoder      = M.getDecoderK(model)
+  const { decode }   = M.getDecoder(model)
   const { encode }   = M.getEncoder(model)
   const serialize    = (u: unknown) =>
     pipe(
-      SD.decode(decoder)(u),
+      decode(u),
       Sy.mapError(
         (errors) =>
           new GraphQlException(config?.message ?? `Invalid value ${u} provided to Scalar ${name}`, 'INVALID_INPUT', {
-            errors: DE.prettyPrint(errors)
+            errors
           })
       )
     )
-  const parseValue   = flow(serialize, Sy.map(encode))
+  const parseValue   = flow(serialize, Sy.bind(encode))
   const parseLiteral = (valueNode: ValueNode) =>
     pipe(
       valueNode,
       valueFromASTUntyped,
-      SD.decode(decoder),
+      decode,
       Sy.bimap(
         (errors) =>
           new GraphQlException(
             config?.message ?? `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`,
             'INVALID_INPUT',
-            { errors: DE.prettyPrint(errors) }
+            { errors }
           ),
         encode
       )

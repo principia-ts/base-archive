@@ -8,8 +8,8 @@ import { implementInterpreter } from '../../HKT'
 import { applyShowConfig } from './HKT'
 
 export const RefinementShow = implementInterpreter<ShowURI, Alg.RefinementURI>()((_) => ({
-  refine_: (a, refinement, name, config) => (env) =>
-    pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(show, name), env, {})),
-  constrain: (a, predicate, name, config) => (env) =>
-    pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(show, name), env, {}))
+  refine_: (a, refinement, onError, config) => (env) =>
+    pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(show, config?.label), env, {})),
+  constrain: (a, predicate, onError, config) => (env) =>
+    pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(show, config?.label), env, {}))
 }))
