@@ -5,7 +5,6 @@ import type { ReadonlyRecord } from './Record'
 import type { EnsureLiteral } from './util/types'
 
 import * as A from './Array'
-import { pipe } from './function'
 import * as R from './Record'
 import * as Str from './string'
 
@@ -14,8 +13,6 @@ import * as Str from './string'
  * *** experimental ***
  * -------------------------------------------
  */
-
-type Flat<T> = { [K in keyof T]: T[K] } & {}
 
 type EnsureNonexistentProperty<T, K extends string> = Extract<keyof T, K> extends never ? T : never
 
@@ -29,7 +26,7 @@ export function insertAt_<S extends ReadonlyRecord<string, any>, K extends strin
   s: EnsureNonexistentProperty<S, K>,
   k: EnsureLiteral<K>,
   a: A
-): Flat<S & { readonly [key in K]: A }> {
+): { [P in keyof S | K]: P extends keyof S ? S[P] : A } {
   return {
     ...s,
     [k]: a
@@ -45,7 +42,9 @@ export function insertAt_<S extends ReadonlyRecord<string, any>, K extends strin
 export function insertAt<K extends string, A>(
   k: EnsureLiteral<K>,
   a: A
-): <S extends ReadonlyRecord<string, any>>(s: EnsureNonexistentProperty<S, K>) => Flat<S & { readonly [key in K]: A }> {
+): <S extends ReadonlyRecord<string, any>>(
+  s: EnsureNonexistentProperty<S, K>
+) => { [P in keyof S | K]: P extends keyof S ? S[P] : A } {
   return (s) => insertAt_(s, k, a)
 }
 
@@ -59,7 +58,7 @@ export function upsertAt_<S extends ReadonlyRecord<string, any>, K extends strin
   s: S,
   k: EnsureLiteral<K>,
   a: A
-): Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: A }> {
+): { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : A } {
   if (R.has_(s, k) && s[k] === a) {
     return s
   }
@@ -80,7 +79,7 @@ export function upsertAt<K extends string, A>(
   a: A
 ): <S extends ReadonlyRecord<string, any>>(
   s: S
-) => Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: A }> {
+) => { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : A } {
   return (s) => upsertAt_(s, k, a)
 }
 
@@ -94,7 +93,7 @@ export function modifyAt_<S extends ReadonlyRecord<string, any>, K extends keyof
   s: S,
   k: K,
   f: (a: S[K]) => B
-): Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
+): { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B } {
   return {
     ...s,
     [k]: f(s[k])
@@ -110,7 +109,7 @@ export function modifyAt_<S extends ReadonlyRecord<string, any>, K extends keyof
 export function modifyAt<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
   k: K,
   f: (a: S[K]) => B
-): (s: S) => Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
+): (s: S) => { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B } {
   return (s) => modifyAt_(s, k, f)
 }
 
@@ -124,7 +123,7 @@ export function updateAt_<S extends ReadonlyRecord<string, any>, K extends keyof
   s: S,
   k: K,
   b: B
-): Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
+): { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B } {
   return modifyAt_(s, k, () => b)
 }
 
@@ -137,7 +136,7 @@ export function updateAt_<S extends ReadonlyRecord<string, any>, K extends keyof
 export function updateAt<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
   k: K,
   b: B
-): (s: S) => Flat<{ readonly [P in Exclude<keyof S, K>]: S[P] } & { readonly [key in K]: B }> {
+): (s: S) => { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B } {
   return (s) => modifyAt_(s, k, () => b)
 }
 
@@ -172,10 +171,8 @@ export function hmap<S extends ReadonlyRecord<string, any>, F extends { [K in ke
   return (s) => hmap_(s, fs)
 }
 
-export function pick<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
-  ...keys: K
-): (s: S) => Flat<Pick<S, K[number]>> {
-  return (s) => {
+export function pick_<S extends ReadonlyRecord<string, any>>(s: S) {
+  return <K extends ReadonlyArray<keyof S>>(...keys: K): { [P in K[number]]: S[P] } => {
     const mut_out = {} as Pick<S, K[number]>
     for (let i = 0; i < keys.length; i++) {
       const key    = keys[i]
@@ -185,10 +182,14 @@ export function pick<S extends ReadonlyRecord<string, any>, K extends ReadonlyAr
   }
 }
 
-export function omit<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
+export function pick<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
   ...keys: K
-): (s: S) => Flat<Omit<S, K[number]>> {
-  return (s) => {
+): (s: S) => { [P in K[number]]: S[P] } {
+  return (s) => pick_(s)(...keys)
+}
+
+export function omit_<S extends ReadonlyRecord<string, any>>(s: S) {
+  return <K extends ReadonlyArray<keyof S>>(...keys: K): { [P in Exclude<keyof S, K[number]>]: S[P] } => {
     const newKeys = A.difference_(Str.Eq)(R.keys(s), keys as ReadonlyArray<string>)
     const mut_out = {} as Omit<S, K[number]>
     for (let i = 0; i < newKeys.length; i++) {
@@ -197,4 +198,10 @@ export function omit<S extends ReadonlyRecord<string, any>, K extends ReadonlyAr
     }
     return mut_out
   }
+}
+
+export function omit<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
+  ...keys: K
+): (s: S) => { [P in Exclude<keyof S, K[number]>]: S[P] } {
+  return (s) => omit_(s)(...keys)
 }

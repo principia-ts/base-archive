@@ -1,4 +1,4 @@
-import type { Option } from '@principia/base/Option'
+import type { Option } from './Option'
 
 /*
  * -------------------------------------------

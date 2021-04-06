@@ -1,7 +1,7 @@
 import type { BindToSFn } from './Functor'
 import type { Monad } from './Monad'
 
-import { _bind, _bindTo, flow, pipe } from './function'
+import { flow, pipe } from './function'
 import * as HKT from './HKT'
 
 export interface Do<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C> {
@@ -17,7 +17,7 @@ export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
       M.bind((a) =>
         pipe(
           f(a),
-          M.map((b) => _bind(a, name, b))
+          M.map((b) => Object.assign({}, a, { [name]: b } as any))
         )
       )
     )
@@ -25,7 +25,7 @@ export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
     ...M,
     bindS,
     letS: (name, f) => bindS(name, flow(f, M.pure)),
-    bindToS: (name) => (ma) => M.map_(ma, _bindTo(name))
+    bindToS: (name) => (ma) => M.map_(ma, (a) => ({ [name]: a } as any))
   })
 }
 
@@ -69,7 +69,7 @@ export function bindSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): BindSF
     F.bind((a) =>
       pipe(
         f(a),
-        F.map((b) => _bind(a, name, b))
+        F.map((b) => Object.assign({}, a, { [name]: b }))
       )
     )
 }
@@ -86,7 +86,7 @@ export function letSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): LetSFn<
       pipe(
         f(a),
         F.pure,
-        F.map((b) => _bind(a, name, b))
+        F.map((b) => Object.assign({}, a, { [name]: b }))
       )
     )
 }
