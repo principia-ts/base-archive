@@ -4,7 +4,10 @@
 import type { ReadonlyRecord } from './Record'
 import type { EnsureLiteral } from './util/types'
 
+import * as A from './Array'
+import { pipe } from './function'
 import * as R from './Record'
+import * as Str from './string'
 
 /*
  * -------------------------------------------
@@ -167,4 +170,31 @@ export function hmap<S extends ReadonlyRecord<string, any>, F extends { [K in ke
   fs: F
 ): (s: S) => { readonly [K in keyof F]: ReturnType<F[K]> } {
   return (s) => hmap_(s, fs)
+}
+
+export function pick<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
+  ...keys: K
+): (s: S) => Flat<Pick<S, K[number]>> {
+  return (s) => {
+    const mut_out = {} as Pick<S, K[number]>
+    for (let i = 0; i < keys.length; i++) {
+      const key    = keys[i]
+      mut_out[key] = s[key]
+    }
+    return mut_out
+  }
+}
+
+export function omit<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
+  ...keys: K
+): (s: S) => Flat<Omit<S, K[number]>> {
+  return (s) => {
+    const newKeys = A.difference_(Str.Eq)(R.keys(s), keys as ReadonlyArray<string>)
+    const mut_out = {} as Omit<S, K[number]>
+    for (let i = 0; i < newKeys.length; i++) {
+      const key    = newKeys[i]
+      mut_out[key] = s[key]
+    }
+    return mut_out
+  }
 }

@@ -23,24 +23,26 @@ declare module '@principia/base/HKT' {
 }
 
 declare module '../../HKT' {
-  interface URItoInterpreted<Env, E, A> {
+  interface URItoInterpreted<Env, I, E, A, O> {
     readonly [ArbitraryURI]: (_: Env) => fc.Arbitrary<A>
   }
-  interface URItoConfig<E, A> {
+  interface URItoConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
   interface TupleConfig<Types> {
     readonly [ArbitraryURI]: {
-      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, infer A>] ? fc.Arbitrary<A> : never
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, infer A, any>]
+        ? fc.Arbitrary<A>
+        : never
     }
   }
 }
 
 declare module '../../algebra/primitives' {
-  interface NonEmptyArrayConfig<E, A> {
+  interface NonEmptyArrayConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
-  interface ArrayConfig<E, A> {
+  interface ArrayConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
 }
@@ -61,22 +63,22 @@ declare module '../../algebra/struct' {
 }
 
 declare module '../../algebra/newtype' {
-  interface IsoConfig<E, A, N> {
+  interface IsoConfig<I, E, A, O, N> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
-  interface PrismConfig<E, A, N> {
+  interface PrismConfig<I, E, A, O, N> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
 }
 
 declare module '../../algebra/record' {
-  interface RecordConfig<E, A> {
+  interface RecordConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
 }
 
 declare module '../../algebra/set' {
-  interface SetConfig<E, A> {
+  interface SetConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
 }
@@ -85,29 +87,29 @@ declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
     readonly [ArbitraryURI]: TaggedUnionConfigKind<ArbitraryURI, Types>
   }
-  interface EitherConfig<EE, EA, AE, AA> {
+  interface EitherConfig<EI, EE, EA, EO, AI, AE, AA, AO> {
     readonly [ArbitraryURI]: {
       readonly left: fc.Arbitrary<EA>
       readonly right: fc.Arbitrary<AA>
     }
   }
-  interface OptionConfig<E, A> {
+  interface OptionConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
 }
 
 declare module '../../algebra/nullable' {
-  interface NullableConfig<E, A> {
+  interface NullableConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
-  interface OptionalConfig<E, A> {
+  interface OptionalConfig<I, E, A, O> {
     readonly [ArbitraryURI]: fc.Arbitrary<A>
   }
 }
 
 declare module '../../algebra/intersection' {
-  interface IntersectionConfig<E, A> {
-    readonly [ArbitraryURI]: IntersectionConfigKind<ArbitraryURI, E, A>
+  interface IntersectionConfig<I, E, A, O> {
+    readonly [ArbitraryURI]: IntersectionConfigKind<ArbitraryURI, I, E, A, O>
   }
 }
 

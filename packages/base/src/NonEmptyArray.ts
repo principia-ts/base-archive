@@ -1,5 +1,6 @@
 import type { Either } from './Either'
 import type { Eq } from './Eq'
+import type { Guard } from './Guard'
 import type * as HKT from './HKT'
 import type { NonEmptyArrayURI } from './Modules'
 import type { Ord } from './Ord'
@@ -10,7 +11,8 @@ import type * as P from './typeclass'
 import type { Mutable } from './util/types'
 
 import * as A from './Array'
-import { identity } from './function'
+import { identity, pipe } from './function'
+import * as G from './Guard'
 import * as _ from './internal/array'
 import * as O from './Option'
 import * as S from './Semigroup'
@@ -870,5 +872,16 @@ export function max<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
     return isNonEmpty(tail) ? foldl_(tail, head, Sa.combine_) : head
   }
 }
+
+/*
+ * -------------------------------------------
+ * Instances
+ * -------------------------------------------
+ */
+
+export const GuardUnknownNonEmptyArray: Guard<unknown, NonEmptyArray<unknown>> = pipe(
+  A.GuardUnknownArray,
+  G.refine((i): i is NonEmptyArray<unknown> => i.length > 0)
+)
 
 export { NonEmptyArrayURI } from './Modules'

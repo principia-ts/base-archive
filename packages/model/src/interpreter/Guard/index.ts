@@ -43,5 +43,5 @@ export const deriveFor = <Su extends Summoner<any>>(S: Su) => (
   env: {
     [K in GuardURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
   }
-) => <E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, E, A>): G.Guard<unknown, A> =>
+) => <I, E, A, O>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, I, E, A, O>): G.Guard<unknown, A> =>
   pipe(env, F.derive(allGuardInterpreters()))

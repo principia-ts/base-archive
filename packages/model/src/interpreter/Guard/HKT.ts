@@ -7,24 +7,26 @@ export const GuardURI = 'model/Guard'
 export type GuardURI = typeof GuardURI
 
 declare module '../../HKT' {
-  interface URItoInterpreted<Env, E, A> {
+  interface URItoInterpreted<Env, I, E, A, O> {
     readonly [GuardURI]: (_: Env) => G.Guard<unknown, A>
   }
-  interface URItoConfig<E, A> {
+  interface URItoConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
 }
 
 declare module '../../algebra/primitives' {
-  interface NonEmptyArrayConfig<E, A> {
+  interface NonEmptyArrayConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
-  interface ArrayConfig<E, A> {
+  interface ArrayConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
   interface TupleConfig<Types> {
     readonly [GuardURI]: {
-      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, infer A>] ? G.Guard<unknown, A> : never
+      [K in keyof Types]: [Types[K]] extends [InterpretedHKT<any, any, any, any, infer A, any>]
+        ? G.Guard<unknown, A>
+        : never
     }
   }
 }
@@ -45,22 +47,22 @@ declare module '../../algebra/struct' {
 }
 
 declare module '../../algebra/newtype' {
-  interface IsoConfig<E, A, N> {
+  interface IsoConfig<I, E, A, O, N> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
-  interface PrismConfig<E, A, N> {
+  interface PrismConfig<I, E, A, O, N> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
 }
 
 declare module '../../algebra/record' {
-  interface RecordConfig<E, A> {
+  interface RecordConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
 }
 
 declare module '../../algebra/set' {
-  interface SetConfig<E, A> {
+  interface SetConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
 }
@@ -69,29 +71,29 @@ declare module '../../algebra/sum' {
   interface TaggedUnionConfig<Types> {
     readonly [GuardURI]: TaggedUnionConfigKind<GuardURI, Types>
   }
-  interface EitherConfig<EE, EA, AE, AA> {
+  interface EitherConfig<EI, EE, EA, EO, AI, AE, AA, AO> {
     readonly [GuardURI]: {
       readonly left: G.Guard<unknown, EA>
       readonly right: G.Guard<unknown, AA>
     }
   }
-  interface OptionConfig<E, A> {
+  interface OptionConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
 }
 
 declare module '../../algebra/nullable' {
-  interface NullableConfig<E, A> {
+  interface NullableConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
-  interface OptionalConfig<E, A> {
+  interface OptionalConfig<I, E, A, O> {
     readonly [GuardURI]: G.Guard<unknown, A>
   }
 }
 
 declare module '../../algebra/intersection' {
-  interface IntersectionConfig<E, A> {
-    readonly [GuardURI]: IntersectionConfigKind<GuardURI, E, A>
+  interface IntersectionConfig<I, E, A, O> {
+    readonly [GuardURI]: IntersectionConfigKind<GuardURI, I, E, A, O>
   }
 }
 

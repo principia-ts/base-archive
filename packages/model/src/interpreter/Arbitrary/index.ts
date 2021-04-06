@@ -44,6 +44,6 @@ export function deriveFor<Su extends Summoner<any>>(_S: Su) {
     env: {
       [K in ArbitraryURI & keyof SummonerEnv<Su>]: SummonerEnv<Su>[K]
     }
-  ) => <E, A>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, E, A>): Arbitrary<A> =>
+  ) => <I, E, A, O>(F: Model<SummonerPURI<Su>, SummonerRURI<Su>, SummonerEnv<Su>, I, E, A, O>): Arbitrary<A> =>
     pipe(env, F.derive(allArbitraryInterpreters()))
 }

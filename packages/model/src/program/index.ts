@@ -20,7 +20,7 @@ export type PURI = typeof PURI
 
 export interface NoUnion<Env extends AnyEnv> extends InferredAlgebra<PURI, Env> {}
 
-export interface P<Env extends AnyEnv, E, A> extends InferredProgram<PURI, Env, E, A> {}
+export interface P<Env extends AnyEnv, I, E, A, O> extends InferredProgram<PURI, Env, I, E, A, O> {}
 
 declare module '../HKT' {
   interface URItoAURIS {
@@ -40,7 +40,7 @@ declare module '../HKT' {
   interface URItoProgramAlgebra<Env> {
     readonly [PURI]: NoUnion<Env>
   }
-  interface URItoProgram<Env, E, A> {
-    readonly [PURI]: P<Env, E, A>
+  interface URItoProgram<Env, I, E, A, O> {
+    readonly [PURI]: P<Env, I, E, A, O>
   }
 }

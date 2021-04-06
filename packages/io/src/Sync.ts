@@ -13,6 +13,7 @@ import * as I from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as P from '@principia/base/typeclass'
+import { makeMonoid } from '@principia/base/typeclass'
 import * as FL from '@principia/free/FreeList'
 
 import * as M from './Multi'
@@ -660,17 +661,55 @@ export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
  * -------------------------------------------
  */
 
-export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>): Sync<R, E, ReadonlyArray<B>> {
-  return map_(
-    I.foldl_(as, succeed(FL.Empty<B>()) as Sync<R, E, FL.FreeList<B>>, (b, a) =>
-      crossWith_(
-        b,
-        deferTotal(() => f(a)),
-        (acc, r) => FL.append_(acc, r)
-      )
-    ),
-    FL.toArray
+function MonoidBindUnit<R, E>(): P.Monoid<Sync<R, E, void>> {
+  return makeMonoid<Sync<R, E, void>>((x, y) => bind_(x, () => y), unit())
+}
+
+export function iforeachUnit_<A, R, E>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, void>): Sync<R, E, void> {
+  return I.ifoldMap_(MonoidBindUnit<R, E>())(as, f)
+}
+
+export function iforeachUnit<A, R, E>(f: (i: number, a: A) => Sync<R, E, void>): (as: Iterable<A>) => Sync<R, E, void> {
+  return (as) => iforeachUnit_(as, f)
+}
+
+export function iforeachArrayUnit_<A, R, E>(
+  as: ReadonlyArray<A>,
+  f: (i: number, a: A) => Sync<R, E, void>
+): Sync<R, E, void> {
+  return A.ifoldMap_(MonoidBindUnit<R, E>())(as, f)
+}
+
+export function iforeachArrayUnit<A, R, E>(
+  f: (i: number, a: A) => Sync<R, E, void>
+): (as: ReadonlyArray<A>) => Sync<R, E, void> {
+  return (as) => iforeachArrayUnit_(as, f)
+}
+
+export function iforeach_<A, R, E, B>(
+  as: Iterable<A>,
+  f: (i: number, a: A) => Sync<R, E, B>
+): Sync<R, E, ReadonlyArray<B>> {
+  return I.ifoldl_(as, succeed([]) as Sync<R, E, Array<B>>, (b, i, a) =>
+    crossWith_(
+      b,
+      deferTotal(() => f(i, a)),
+      (acc, r) => {
+        acc.push(r)
+        return acc
+      }
+    )
   )
+}
+
+export function iforeach<A, R, E, B>(
+  f: (i: number, a: A) => Sync<R, E, B>
+): (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> {
+  return (as) => iforeach_(as, f)
+}
+
+export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>): Sync<R, E, ReadonlyArray<B>> {
+  return iforeach_(as, (_, a) => f(a))
 }
 
 export function foreach<A, R, E, B>(f: (a: A) => Sync<R, E, B>): (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> {

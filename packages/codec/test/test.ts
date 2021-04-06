@@ -1,14 +1,55 @@
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
+import * as DK from '@principia/codec/DecoderK'
+import { Validation } from '@principia/codec/SyncDecoder'
+import * as S from '@principia/io/Sync'
+import { Suite } from 'benchmark'
 import { inspect } from 'util'
 
-import { paths } from '../src/DecodeErrors'
-import * as D from '../src/DecoderK'
-import { decode } from '../src/EitherDecoder'
+import * as D from '../src/Decoder'
 
-const sum = D.sum('_tag')
-
-const A = D.struct({ _tag: D.literal('A')(), a: D.string() })
-const B = D.struct({ _tag: D.literal('B')(), b: D.number() })
-
-const decoder = sum({ A, B })
+new Suite('decoder')
+  .add('DecoderK: struct', () => {
+    const d = DK.struct({
+      a: DK.string(),
+      b: DK.number(),
+      c: DK.struct({
+        d: DK.boolean(),
+        e: DK.literal('hello')()
+      })
+    })
+    S.runEither(
+      d.decode(Validation)({
+        a: 'string',
+        b: 99,
+        c: {
+          d: true,
+          e: 'hello'
+        }
+      })
+    )
+  })
+  .add('Decoder: struct', () => {
+    const d = D.struct({
+      a: D.string,
+      b: D.number,
+      c: D.struct({
+        d: D.boolean,
+        e: D.literal('hello')
+      })
+    })
+    S.runEither(
+      d.decode({
+        a: 'string',
+        b: 99,
+        c: {
+          d: true,
+          e: 'hello'
+        }
+      })
+    )
+  })
+  .on('cycle', (event: any) => {
+    console.log(String(event.target))
+  })
+  .run()

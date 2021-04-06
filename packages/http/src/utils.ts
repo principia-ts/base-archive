@@ -100,7 +100,7 @@ export const CharsetModel = M.make((F) =>
   })
 )
 
-export const decodeCharset = M.getDecoderK(CharsetModel)
+export const decodeCharset = M.getDecoder(CharsetModel)
 
 export interface CookieOptions {
   readonly expires?: Date

@@ -13,19 +13,24 @@ declare module '../HKT' {
   }
 }
 
-export interface IsoConfig<E, A, N> {}
-export interface PrismConfig<E, A, N> {}
+export interface IsoConfig<I, E, A, O, N> {}
+export interface PrismConfig<I, E, A, O, N> {}
+
+export class NewtypePrismE {
+  readonly _tag = 'NewtypePrismE'
+  constructor(readonly actual: unknown) {}
+}
 
 export interface NewtypeAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly newtypeIso: <E, A, N extends Newtype<any, A>>(
+  readonly newtypeIso: <I, E, A, O, N extends Newtype<any, A>>(
     iso: Iso<A, N>,
-    a: InterpretedKind<F, Env, E, A>,
-    config?: Config<Env, E, N, IsoConfig<E, A, N>>
-  ) => InterpretedKind<F, Env, E, N>
+    a: InterpretedKind<F, Env, I, E, A, O>,
+    config?: Config<Env, I, E, N, O, IsoConfig<I, E, A, O, N>>
+  ) => InterpretedKind<F, Env, I, E, N, O>
 
-  readonly newtypePrism: <E, A, N extends Newtype<any, A>>(
+  readonly newtypePrism: <I, E, A, O, N extends Newtype<any, A>>(
     prism: Prism<A, N>,
-    a: InterpretedKind<F, Env, E, A>,
-    config?: Config<Env, E, N, PrismConfig<E, A, N>>
-  ) => InterpretedKind<F, Env, E, N>
+    a: InterpretedKind<F, Env, I, E, A, O>,
+    config?: Config<Env, I, E | NewtypePrismE, N, O, PrismConfig<I, E, A, O, N>>
+  ) => InterpretedKind<F, Env, I, E | NewtypePrismE, N, O>
 }

@@ -13,9 +13,9 @@ import { implementInterpreter } from '../../HKT'
 import { applyShowConfig } from './HKT'
 
 export const PrimitivesShow = implementInterpreter<ShowURI, Alg.PrimitivesURI>()((_) => ({
-  string: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.name), env, {}),
-  number: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(N.Show, config?.name), env, {}),
-  boolean: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(B.Show, config?.name), env, {}),
+  string: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.label), env, {}),
+  number: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(N.Show, config?.label), env, {}),
+  boolean: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(B.Show, config?.label), env, {}),
   literal: (..._) => (config) => (env) =>
     applyShowConfig(config?.config)(
       Sh.named_(
@@ -28,13 +28,13 @@ export const PrimitivesShow = implementInterpreter<ShowURI, Alg.PrimitivesURI>()
             ? B.Show.show(a)
             : absurd(a as never)
         ),
-        config?.name
+        config?.label
       ),
       env,
       {}
     ),
-  stringLiteral: (value, config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.name), env, {}),
-  numberLiteral: (value, config) => (env) => applyShowConfig(config?.config)(Sh.named_(N.Show, config?.name), env, {}),
+  stringLiteral: (value, config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.label), env, {}),
+  numberLiteral: (value, config) => (env) => applyShowConfig(config?.config)(Sh.named_(N.Show, config?.label), env, {}),
   bigint: (config) => (env) =>
     applyShowConfig(config?.config)(
       Sh.named_(
@@ -42,22 +42,22 @@ export const PrimitivesShow = implementInterpreter<ShowURI, Alg.PrimitivesURI>()
           S.Show,
           Sh.contramap((b) => b.toString())
         ),
-        config?.name
+        config?.label
       ),
       env,
       {}
     ),
-  date: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(D.Show, config?.name), env, {}),
+  date: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(D.Show, config?.label), env, {}),
   array: (item, config) => (env) =>
-    pipe(item(env), (show) => applyShowConfig(config?.config)(Sh.named_(A.getShow(show), config?.name), env, show)),
+    pipe(item(env), (show) => applyShowConfig(config?.config)(Sh.named_(A.getShow(show), config?.label), env, show)),
   nonEmptyArray: (item, config) => (env) =>
-    pipe(item(env), (show) => applyShowConfig(config?.config)(Sh.named_(A.getShow(show), config?.name), env, show)),
+    pipe(item(env), (show) => applyShowConfig(config?.config)(Sh.named_(A.getShow(show), config?.label), env, show)),
   tuple: (...types) => (config) => (env) =>
     pipe(
       types,
       A.map((f) => f(env)),
       (shows) => applyShowConfig(config?.config)(Sh.tuple(...shows) as any, env, shows as any)
     ),
-  keyof: (keys, config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.name), env, {}),
-  UUID: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.name), env, {})
+  keyof: (keys, config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.label), env, {}),
+  UUID: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.label), env, {})
 }))

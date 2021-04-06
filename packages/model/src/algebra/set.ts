@@ -1,5 +1,6 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
 import type { Ord } from '@principia/base/Ord'
+import type { UnknownArrayE } from '@principia/codec/DecodeError'
 
 export const SetURI = 'model/algebra/set'
 
@@ -11,12 +12,12 @@ declare module '../HKT' {
   }
 }
 
-export interface SetConfig<E, A> {}
+export interface SetConfig<I, E, A, O> {}
 
 export interface SetAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly set: <E, A>(
-    a: InterpretedKind<F, Env, E, A>,
+  readonly set: <E, A, O>(
+    type: InterpretedKind<F, Env, unknown, E, A, O>,
     ord: Ord<A>,
-    config?: Config<Env, ReadonlyArray<E>, ReadonlySet<A>, SetConfig<E, A>>
-  ) => InterpretedKind<F, Env, ReadonlyArray<E>, ReadonlySet<A>>
+    config?: Config<Env, unknown, E | UnknownArrayE, ReadonlySet<A>, ReadonlyArray<O>, SetConfig<unknown, E, A, O>>
+  ) => InterpretedKind<F, Env, unknown, E | UnknownArrayE, ReadonlySet<A>, ReadonlyArray<O>>
 }

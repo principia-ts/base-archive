@@ -2,7 +2,6 @@
 export * from './intersection'
 export * from './newtype'
 export * from './nullable'
-export * from './pipeable'
 export * from './primitives'
 export * from './record'
 export * from './recursive'

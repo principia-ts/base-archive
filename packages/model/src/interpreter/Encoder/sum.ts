@@ -6,6 +6,7 @@ import { flow, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as Enc from '@principia/codec/Encoder'
+import * as S from '@principia/io/Sync'
 
 import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'
@@ -20,12 +21,22 @@ export const SumEncoder = implementInterpreter<EncoderURI, Alg.SumURI>()((_) => 
   either: (left, right, config) => (env) =>
     pipe(left(env), (l) =>
       pipe(right(env), (r) =>
-        applyEncoderConfig(config?.config)({ encode: E.match(flow(l.encode, E.Left), flow(r.encode, E.Right)) }, env, {
-          left: l,
-          right: r
-        })
+        applyEncoderConfig(config?.config)(
+          { encode: E.match(flow(l.encode, S.map(E.Left)), flow(r.encode, S.map(E.Right))) },
+          env,
+          {
+            left: l,
+            right: r
+          }
+        )
       )
     ),
   option: (a, config) => (env) =>
-    pipe(a(env), (encoder) => applyEncoderConfig(config?.config)({ encode: O.map(encoder.encode) }, env, encoder))
+    pipe(a(env), (encoder) =>
+      applyEncoderConfig(config?.config)(
+        { encode: O.match(() => S.succeed(O.None()), flow(encoder.encode, S.map(O.Some))) },
+        env,
+        encoder
+      )
+    )
 }))
