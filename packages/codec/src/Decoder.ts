@@ -66,7 +66,7 @@ export interface Decoder<I, E, A> {
   readonly decode: (i: I) => FSync<DecodeError<E>, A>
 }
 
-export type V = HKT.V<'I', '_'>
+export type V = HKT.V<'I', '-'> & HKT.V<'E', '+'>
 
 export interface UDecoder<E, A> extends Decoder<unknown, E, A> {}
 

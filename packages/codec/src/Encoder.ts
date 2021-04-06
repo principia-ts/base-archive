@@ -1,4 +1,5 @@
 import type { Lazy } from '@principia/base/function'
+import type * as HKT from '@principia/base/HKT'
 import type { UnionToIntersection } from '@principia/base/util/types'
 import type { USync } from '@principia/io/Sync'
 
@@ -17,6 +18,8 @@ export type InputOf<E> = E extends Encoder<infer A, any> ? A : never
 export type OutputOf<E> = E extends Encoder<any, infer O> ? O : never
 
 export type AnyE = Encoder<any, any>
+
+export type V = HKT.V<'I', '-'>
 
 /*
  * -------------------------------------------
