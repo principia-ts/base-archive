@@ -12,7 +12,14 @@ import * as P from './typeclass'
 /**
  * The empty string
  */
-export const empty = ''
+// eslint-disable-next-line @typescript-eslint/no-inferrable-types
+export const empty: string = ''
+
+/*
+ * -------------------------------------------
+ * constructors
+ * -------------------------------------------
+*/
 
 /**
  * Converts a number into a string
@@ -23,7 +30,7 @@ export function fromNumber(x: number): string {
 
 /*
  * -------------------------------------------
- * Guards
+ * refinements
  * -------------------------------------------
  */
 
@@ -33,6 +40,12 @@ export function fromNumber(x: number): string {
 export function isString(u: unknown): u is string {
   return typeof u === 'string'
 }
+
+/*
+ * -------------------------------------------
+ * predicates
+ * -------------------------------------------
+*/
 
 /**
  * Check is a string is empty
@@ -92,7 +105,7 @@ export function endsWith(substr: string): (s: string) => boolean {
 
 /*
  * -------------------------------------------
- * Combinators
+ * combinators
  * -------------------------------------------
  */
 
@@ -405,7 +418,7 @@ export function capitalizeAll(s: string): string {
 
 /*
  * -------------------------------------------
- * Instances
+ * instances
  * -------------------------------------------
  */
 

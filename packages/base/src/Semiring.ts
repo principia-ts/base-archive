@@ -7,6 +7,21 @@ export interface Semiring<A> {
   readonly one: A
 }
 
+export type SemiringMin<A> = {
+  readonly add_: (x: A, y: A) => A
+  readonly mul_: (x: A, y: A) => A
+  readonly zero: A
+  readonly one: A
+}
+
+export function Semiring<A>(S: SemiringMin<A>): Semiring<A> {
+  return {
+    ...S,
+    add: (y) => (x) => S.add_(x, y),
+    mul: (y) => (x) => S.mul_(x, y),
+  }
+}
+
 export const getFunctionSemiring = <A, B>(S: Semiring<B>): Semiring<(a: A) => B> => ({
   zero: () => S.zero,
   one: () => S.one,
