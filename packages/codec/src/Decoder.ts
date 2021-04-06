@@ -7,7 +7,7 @@ import type { Option } from '@principia/base/Option'
 import type { ReadonlyRecord } from '@principia/base/Record'
 import type { Refinement } from '@principia/base/Refinement'
 import type * as P from '@principia/base/typeclass'
-import type { Primitive, UnionToIntersection, UnionToTuple } from '@principia/base/util/types'
+import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
 import type { FSync } from '@principia/io/Sync'
 
 import * as A from '@principia/base/Array'
