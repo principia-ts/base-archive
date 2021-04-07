@@ -1,6 +1,6 @@
 import type { MaybeAsyncEq } from './utils'
 import type * as Eq from '@principia/base/Eq'
-import type { MorphismN } from '@principia/base/function'
+import type { FunctionN } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
@@ -36,12 +36,12 @@ function LeftIdentityLaw<M extends HKT.URIS, TC, A, N extends string, K, Q, W, X
 function LeftIdentityLaw<M, A, B>(
   M: P.Monad<HKT.UHKT<M>>,
   S: MaybeAsyncEq<HKT.HKT<M, B>>,
-  afb: MorphismN<[A], HKT.HKT<M, B>>
+  afb: FunctionN<[A], HKT.HKT<M, B>>
 ): (a: A) => Promise<boolean>
 function LeftIdentityLaw<M, A, B>(
   M: P.Monad<HKT.UHKT<M>>,
   S: MaybeAsyncEq<HKT.HKT<M, B>>,
-  afb: MorphismN<[A], HKT.HKT<M, B>>
+  afb: FunctionN<[A], HKT.HKT<M, B>>
 ): (a: A) => Promise<boolean> {
   return (a) => {
     const b = S.equals_(

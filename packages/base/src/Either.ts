@@ -7,7 +7,7 @@
  */
 
 import type { Eq } from './Eq'
-import type { MorphismN } from './function'
+import type { FunctionN } from './function'
 import type { EitherURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
@@ -135,7 +135,7 @@ export function tryCatch<E, A>(thunk: () => A): Either<E, A> {
  * @since 1.0.0
  */
 export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
-  f: MorphismN<A, B>,
+  f: FunctionN<A, B>,
   onThrow: (reason: unknown) => E
 ): (...args: A) => Either<E, B> {
   return (...a) =>
@@ -151,7 +151,7 @@ export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
  */
 export function tryCatchK<E>(
   onThrow: (reason: unknown) => E
-): <A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B>) => (...args: A) => Either<E, B> {
+): <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>) => (...args: A) => Either<E, B> {
   return (f) => tryCatchK_(f, onThrow)
 }
 

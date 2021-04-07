@@ -1,6 +1,5 @@
 import type { GraphQlException } from './GraphQlException'
-import type { Exception } from '@principia/base/Exception'
-import type { MorphismN } from '@principia/base/function'
+import type { FunctionN } from '@principia/base/function'
 import type * as U from '@principia/base/util/types'
 import type * as Sy from '@principia/io/Sync'
 import type { DirectiveNode, ValueNode } from 'graphql'
@@ -30,7 +29,7 @@ export type _O<Fs> = Fs extends ScalarFunctions<any, infer O> ? O : never
 
 export type ScalarEnv<S extends Scalar<any, any, any>> = U.UnionToIntersection<
   {
-    [k in keyof S['functions']]: S['functions'][k] extends MorphismN<any, infer Ret>
+    [k in keyof S['functions']]: S['functions'][k] extends FunctionN<any, infer Ret>
       ? Ret extends Sy.Sync<infer R, any, any>
         ? R
         : never

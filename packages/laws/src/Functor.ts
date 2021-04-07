@@ -1,6 +1,6 @@
 import type { MaybeAsyncEq } from './utils'
 import type * as Eq from '@principia/base/Eq'
-import type { MorphismN } from '@principia/base/function'
+import type { FunctionN } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
@@ -13,14 +13,14 @@ import { isPromise } from './utils'
 function CompositionLaw<F extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A, B, C>(
   F: P.Functor<F, TC>,
   S: MaybeAsyncEq<HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, C>>,
-  ab: MorphismN<[A], B>,
-  bc: MorphismN<[B], C>
+  ab: FunctionN<[A], B>,
+  bc: FunctionN<[B], C>
 ): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function CompositionLaw<F, A, B, C>(
   F: P.Functor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, C>>,
-  ab: MorphismN<[A], B>,
-  bc: MorphismN<[B], C>
+  ab: FunctionN<[A], B>,
+  bc: FunctionN<[B], C>
 ): (fa: HKT.HKT<F, A>) => Promise<boolean> {
   return (fa) => {
     const b = S.equals_(

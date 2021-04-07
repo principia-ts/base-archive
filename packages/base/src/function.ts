@@ -5,43 +5,173 @@ import type { Refinement } from './Refinement'
  * -------------------------------------------
  * Model
  * -------------------------------------------
-*/
+ */
 
 export interface Lazy<A> {
   (): A
 }
 
-export interface Morphism<A, B> {
+export interface F<A, B> {
   (a: A): B
 }
 
-export interface MorphismN<A extends ReadonlyArray<unknown>, B> {
+export interface FunctionN<A extends ReadonlyArray<unknown>, B> {
   (...args: A): B
 }
 
+
 /*
  * -------------------------------------------
- * Utils
+ * utils
  * -------------------------------------------
-*/
+ */
+
+/**
+ * @since 1.0.0
+ */
+export function absurd<A>(_: never): A {
+  throw new Error('Called `absurd` function, which should be uncallable.')
+}
+
+/**
+ * Applies an argument to a function
+ * 
+ * @section utils
+ * @since 1.0.0
+ */
+export function apply<A>(a: A): <B>(f: (a: A) => B) => B {
+  return (f) => f(a)
+}
+
+/**
+ * @since 1.0.0
+ */
+export function constant<A>(a: A): Lazy<A> {
+  return () => a
+}
+
+/**
+ * A thunk that always returns `true`.
+ * 
+ * @since 1.0.0
+ */
+export const constTrue: Lazy<true> = () => true
+
+/**
+ * A thunk that always returns `false`.
+ * 
+ * @since 1.0.0
+ */
+export const constFalse: Lazy<false> = () => false
+
+/**
+ * A thunk that always returns `null`.
+ * 
+ * @since 1.0.0
+ */
+export const constNull: Lazy<null> = () => null
+
+/**
+ * A thunk that always returns `undefined`.
+ * 
+ * @since 1.0.0
+ */
+export const constUndefined: Lazy<undefined> = () => undefined
+
+/**
+ * A thunk that always returns `undefined`.
+ * 
+ * @since 1.0.0
+ */
+export const constVoid: Lazy<void> = constUndefined
+
+/**
+ * @since 1.0.0
+ */
+export function decrement(n: number): number {
+  return n - 1
+}
+
+/**
+ * Flips the arguments of an uncurried binary function
+ * 
+ * @section utils
+ * @since 1.0.0
+ */
+export function flip_<A, B, C>(f: (a: A, b: B) => C): (b: B, a: A) => C {
+  return (b, a) => f(a, b)
+}
 
 /**
  * Flips the arguments of a curried binary function
+ * 
+ * @section utils
+ * @since 1.0.0
  */
 export function flip<A, B, C>(f: (a: A) => (b: B) => C): (b: B) => (a: A) => C {
-  return (b) => (a): C => f(a)(b)
+  return (b) => (a) => f(a)(b)
 }
 
-export function matchPredicate<A, B extends A, C>(
+/**
+ * Type hole simulation
+ * 
+ * @since 1.0.0
+ */
+export const hole: <T>() => T = absurd as any
+
+/**
+ * @since 1.0.0
+ * @optimize identity
+ */
+export function identity<A>(a: A) {
+  return a
+}
+
+/**
+ * Performs an `if-else` computation based on the given refinement or predicate
+ * 
+ * @section utils
+ * @since 1.0.0
+ */
+export function if_<A, B extends A, C, D>(
+  a: A,
   refinement: Refinement<A, B>,
   onTrue: (a: B) => C,
-  onFalse: (a: A) => C
-): (a: A) => C
-export function matchPredicate<A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B): (a: A) => B
-export function matchPredicate<A, B>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => B): (a: A) => B {
-  return (a) => (predicate(a) ? onTrue(a) : onFalse(a))
+  onFalse: (a: A) => D
+): C | D
+export function if_<A, B, C>(a: A, predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): B | C
+export function if_<A, B, C>(a: A, predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): B | C {
+  return predicate(a) ? onTrue(a) : onFalse(a)
 }
 
+/**
+ * Performs an `if-else` computation based on the given refinement or predicate
+ * 
+ * @section utils
+ * @since 1.0.0
+ */
+function _if<A, B extends A, C, D>(
+  refinement: Refinement<A, B>,
+  onTrue: (a: B) => C,
+  onFalse: (a: A) => D
+): (a: A) => C | D
+function _if<A, B, C>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): (a: A) => B | C
+function _if<A, B, C>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): (a: A) => B | C {
+  return (a) => if_(a, predicate, onTrue, onFalse)
+}
+
+export { _if as if }
+
+/**
+ * @since 1.0.0
+ */
+export function increment(n: number): number {
+  return n + 1
+}
+
+/**
+ * @since 1.0.0
+ */
 export function memoize<A, B>(f: (a: A) => B): (a: A) => B {
   const cache = new Map()
   return (a) => {
@@ -55,56 +185,34 @@ export function memoize<A, B>(f: (a: A) => B): (a: A) => B {
 }
 
 /**
- * @optimize identity
+ * Creates a tupled version of this function: instead of `n` arguments, it accepts a single tuple argument.
+ *
+ * @since 1.0.0
  */
-export function identity<A>(a: A) {
-  return a
-}
-
-/**
- * @optimize identity
- */
-export const unsafeCoerce: <A, B>(a: A) => B = identity as any
-
-export function constant<A>(a: A): Lazy<A> {
-  return () => a
-}
-
-export const constTrue: Lazy<true> = () => true
-
-export const constFalse: Lazy<false> = () => false
-
-export const constNull: Lazy<null> = () => null
-
-export const constUndefined: Lazy<undefined> = () => undefined
-
-export const constVoid: Lazy<void> = () => {
-  return
-}
-
-export function increment(n: number): number {
-  return n + 1
-}
-
-export function decrement(n: number): number {
-  return n - 1
-}
-
-export function absurd<A>(_: never): A {
-  throw new Error('Called `absurd` function, which should be uncallable.')
-}
-
 export function tupled<A extends ReadonlyArray<unknown>, B>(f: (...a: A) => B): (a: Readonly<A>) => B {
   return (a) => f(...a)
 }
 
+/**
+ * @since 1.0.0
+ * @optimize identity
+ */
+export const unsafeCoerce: <A, B>(a: A) => B = identity as any
+
+
+/**
+ * Inverse function of `tupled`
+ *
+ * @since 1.0.0
+ */
 export function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: Readonly<A>) => B): (...a: A) => B {
   return (...a) => f(a)
 }
 
-export const hole: <T>() => T = absurd as any
-
 /**
+ * Performs left-to-right function composition. The first argument may have any arity, the remaining arguments must be unary.
+ *
+ * @since 1.0.0
  * @optimize flow
  */
 export function flow<A extends ReadonlyArray<unknown>, B>(ab: (...a: A) => B): (...a: A) => B
@@ -219,6 +327,9 @@ export function flow(
 /* eslint-enable */
 
 /**
+ * Pipes the value of an expression into a pipeline of functions.
+ *
+ * @since 1.0.0
  * @optimize pipe
  */
 export function pipe<A>(a: A): A
@@ -390,7 +501,6 @@ export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q>(
   op: (o: O) => P,
   pq: (p: P) => Q
 ): Q
-
 export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R>(
   a: A,
   ab: (a: A) => B,
@@ -411,7 +521,6 @@ export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R>(
   pq: (p: P) => Q,
   qr: (q: Q) => R
 ): R
-
 export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(
   a: A,
   ab: (a: A) => B,
@@ -433,7 +542,6 @@ export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(
   qr: (q: Q) => R,
   rs: (r: R) => S
 ): S
-
 export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>(
   a: A,
   ab: (a: A) => B,
@@ -456,7 +564,6 @@ export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>
   rs: (r: R) => S,
   st: (s: S) => T
 ): T
-
 export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U>(
   a: A,
   ab: (a: A) => B,

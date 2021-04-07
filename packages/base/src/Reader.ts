@@ -17,6 +17,8 @@ export interface Reader<R, A> {
 
 export type V = HKT.V<'R', '-'>
 
+type URI = [HKT.URI<ReaderURI>]
+
 /*
  * -------------------------------------------
  * Reader
@@ -24,7 +26,7 @@ export type V = HKT.V<'R', '-'>
  */
 
 export function ask<R>(): Reader<R, R> {
-  return (r) => r
+  return identity
 }
 
 export function asks<R, A>(f: (r: R) => A): Reader<R, A> {
@@ -150,7 +152,7 @@ export function id<R>(): Reader<R, R> {
  */
 
 export function map_<R, A, B>(fa: Reader<R, A>, f: (a: A) => B): Reader<R, B> {
-  return (r) => f(fa(r))
+  return flow(fa, f)
 }
 
 export function map<A, B>(f: (a: A) => B): <R>(fa: Reader<R, A>) => Reader<R, B> {
@@ -176,7 +178,11 @@ export function flatten<R, R1, A>(mma: Reader<R, Reader<R1, A>>): Reader<R & R1,
 }
 
 export function tap_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>): Reader<R & R1, A> {
-  return (r) => bind_(ma, (a) => map_(f(a), () => a))(r)
+  return (r) => {
+    const a = ma(r)
+    f(a)(r)
+    return a
+  }
 }
 
 export function tap<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, A> {
@@ -189,17 +195,17 @@ export function tap<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>)
  * -------------------------------------------
  */
 
-export function promap_<R, A, Q, B>(pa: Reader<R, A>, f: (q: Q) => R, g: (a: A) => B): Reader<Q, B> {
-  return (q) => g(pa(f(q)))
+export function dimap_<R, A, Q, B>(pa: Reader<R, A>, f: (q: Q) => R, g: (a: A) => B): Reader<Q, B> {
+  return flow(f, pa, g)
 }
 
-export function promap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: Reader<R, A>) => Reader<Q, B> {
-  return (pa) => promap_(pa, f, g)
+export function dimap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: Reader<R, A>) => Reader<Q, B> {
+  return (pa) => dimap_(pa, f, g)
 }
 
 /*
  * -------------------------------------------
- * Unit Reader
+ * Unit
  * -------------------------------------------
  */
 
@@ -207,15 +213,71 @@ export function unit(): Reader<unknown, void> {
   return () => undefined
 }
 
-export const MonadEnv: P.MonadEnv<[HKT.URI<ReaderURI>], V> = P.MonadEnv({
+/*
+ * -------------------------------------------
+ * instances
+ * -------------------------------------------
+*/
+
+export const Functor = P.Functor<URI, V>({
+  map_
+})
+
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
   map_,
+  cross_,
+  crossWith_
+})
+
+export const Apply = P.Apply<URI, V>({
+  map_,
+  cross_,
+  crossWith_,
+  ap_
+})
+
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+  map_,
+  cross_,
+  crossWith_,
+  unit
+})
+
+export const Applicative = P.Applicative<URI, V>({
+  map_,
+  cross_,
+  crossWith_,
+  unit,
+  pure
+})
+
+export const Monad = P.Monad<URI, V>({
+  map_,
+  cross_,
+  crossWith_,
+  unit,
+  pure,
+  bind_,
+  flatten
+})
+
+export const MonadEnv = P.MonadEnv<URI, V>({
+  map_,
+  cross_,
   crossWith_,
   ap_,
-  asks,
-  giveAll_,
   pure,
   unit,
-  bind_
+  bind_,
+  flatten,
+  asks,
+  giveAll_,
+})
+
+export const Profunctor = P.Profunctor<URI, V>({
+  map_,
+  dimap_,
+  lmap_: gives_
 })
 
 export { ReaderURI } from './Modules'

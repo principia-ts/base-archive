@@ -1,4 +1,4 @@
-import type { Lazy, MorphismN } from './function'
+import type { FunctionN,Lazy } from './function'
 
 export interface Done<A> {
   readonly _tag: 'Done'
@@ -48,7 +48,7 @@ export function cross_<A, B>(ta: Trampoline<A>, tb: Trampoline<B>): Trampoline<r
   return bind_(ta, (a) => map_(tb, (b) => [a, b]))
 }
 
-export function trampoline<A extends ReadonlyArray<unknown>, B>(fn: MorphismN<A, Trampoline<B>>): (...args: A) => B {
+export function trampoline<A extends ReadonlyArray<unknown>, B>(fn: FunctionN<A, Trampoline<B>>): (...args: A) => B {
   return (...args) => {
     let result = fn(...args)
     /* eslint-disable-next-line */

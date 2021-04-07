@@ -5,7 +5,8 @@ import type { Either } from '@principia/base/Either'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { matchPredicate, pipe } from '@principia/base/function'
+import { pipe } from '@principia/base/function'
+import * as F from '@principia/base/function'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as ExSpec from './ExecutedSpec'
@@ -64,7 +65,7 @@ function extractFailures<E>(executedSpec: ExecutedSpec<E>): ReadonlyArray<Execut
         pipe(
           specs,
           A.flatten,
-          matchPredicate(
+          F.if(
             A.isNonEmpty,
             (newSpecs) => [ExSpec.suite(label, newSpecs)],
             () => A.empty<ExecutedSpec<E>>()

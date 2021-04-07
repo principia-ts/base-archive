@@ -5,7 +5,7 @@
 
 import type { Either } from './Either'
 import type { Eq } from './Eq'
-import type { MorphismN } from './function'
+import type { FunctionN } from './function'
 import type * as HKT from './HKT'
 import type { OptionURI } from './Modules'
 import type { Predicate } from './Predicate'
@@ -101,7 +101,7 @@ export function tryCatch<A>(thunk: () => A): Option<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: MorphismN<A, B>): (...args: A) => Option<B> {
+export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): (...args: A) => Option<B> {
   return (...a) => tryCatch(() => f(...a))
 }
 

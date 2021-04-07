@@ -1,5 +1,5 @@
 import type { MaybeAsyncEq } from './utils'
-import type { MorphismN } from '@principia/base/function'
+import type { FunctionN } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/typeclass'
 
@@ -63,13 +63,13 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
 function AssociativeCompositionLaw<F, A, B, C>(
   F: P.SemimonoidalFunctor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, C>>
-): (fa: HKT.HKT<F, A>, fab: HKT.HKT<F, MorphismN<[A], B>>, fbc: HKT.HKT<F, MorphismN<[B], C>>) => Promise<boolean> {
+): (fa: HKT.HKT<F, A>, fab: HKT.HKT<F, FunctionN<[A], B>>, fbc: HKT.HKT<F, FunctionN<[B], C>>) => Promise<boolean> {
   const ap_ = apF_(F)
   return (fa, fab, fbc) => {
     const b = S.equals_(
       ap_(
         ap_(
-          F.map_(fbc, (bc) => (ab: MorphismN<[A], B>) => (a: A) => bc(ab(a))),
+          F.map_(fbc, (bc) => (ab: FunctionN<[A], B>) => (a: A) => bc(ab(a))),
           fab
         ),
         fa
