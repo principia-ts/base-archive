@@ -59,7 +59,7 @@ export function toArray<A>(O: Ord<A>): (set: ReadonlySet<A>) => ReadonlyArray<A>
   return (set) => {
     const r: Array<A> = []
     set.forEach((e) => r.push(e))
-    return r.sort((a, b) => O.compare(a)(b))
+    return r.sort(O.compare_)
   }
 }
 

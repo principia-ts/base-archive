@@ -2,6 +2,7 @@ import type { DecodeError } from './DecodeError'
 import type { DecoderURI } from './Modules'
 import type { Lazy } from '@principia/base/function'
 import type { Guard } from '@principia/base/Guard'
+import type { Hash } from '@principia/base/Hash'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Option } from '@principia/base/Option'
 import type { ReadonlyRecord } from '@principia/base/Record'
@@ -14,10 +15,12 @@ import * as A from '@principia/base/Array'
 import * as B from '@principia/base/boolean'
 import { flow, memoize, pipe } from '@principia/base/function'
 import * as G from '@principia/base/Guard'
+import * as HS from '@principia/base/HashSet'
 import * as HKT from '@principia/base/HKT'
 import * as N from '@principia/base/number'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
+import * as Set from '@principia/base/Set'
 import * as Str from '@principia/base/string'
 import * as Struct from '@principia/base/Struct'
 import * as S from '@principia/io/Sync'
@@ -79,7 +82,7 @@ export type AnyUD = UDecoder<any, any>
 
 /*
  * -------------------------------------------
- * Constructors
+ * constructors
  * -------------------------------------------
  */
 
@@ -162,7 +165,7 @@ export function literal<A extends readonly [Primitive, ...ReadonlyArray<Primitiv
 
 /*
  * -------------------------------------------
- * Primitives
+ * primitives
  * -------------------------------------------
  */
 
@@ -251,7 +254,7 @@ export const dateFromString = pipe(
 
 /*
  * -------------------------------------------
- * Datatypes
+ * datatypes
  * -------------------------------------------
  */
 
@@ -311,9 +314,31 @@ export function Either<L extends AnyUD, R extends AnyUD>(
   })
 }
 
+export function SetFromArray<D extends AnyD>(item: D, E: P.Eq<TypeOf<D>>) {
+  return pipe(
+    fromArray(item),
+    parse(flow(Set.fromArray(E), S.succeed))
+  )
+}
+
+export function HashSetFromArray<D extends AnyD>(item: D, H: Hash<TypeOf<D>>, E: P.Eq<TypeOf<D>>) {
+  return pipe(
+    fromArray(item),
+    parse((is) => pipe(
+      HS.make({ ...H, ...E }),
+      HS.mutate((set) => {
+        for(let i = 0; i < is.length; i++) {
+          HS.add_(set, is[i])
+        }
+      }),
+      S.succeed
+    ))
+  )
+}
+
 /*
  * -------------------------------------------
- * Combinators
+ * combinators
  * -------------------------------------------
  */
 
@@ -885,7 +910,7 @@ export function fromSum<T extends string>(
 
 /*
  * -------------------------------------------
- * UDecoder Combinators
+ * UDecoder combinators
  * -------------------------------------------
  */
 
@@ -1029,7 +1054,7 @@ export function sum<T extends string>(
 
 /*
  * -------------------------------------------
- * Composition
+ * composition
  * -------------------------------------------
  */
 
@@ -1084,7 +1109,7 @@ export function id<A>(): IdD<A> {
 
 /*
  * -------------------------------------------
- * Utilities
+ * utils
  * -------------------------------------------
  */
 
@@ -1222,7 +1247,7 @@ export function prop<D extends AnyD, Prop extends keyof TypeOf<D>>(
 
 /*
  * -------------------------------------------
- * Instances
+ * instances
  * -------------------------------------------
  */
 

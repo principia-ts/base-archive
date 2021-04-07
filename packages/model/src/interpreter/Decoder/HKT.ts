@@ -2,7 +2,6 @@ import type {
   ErrorOf,
   InputOf,
   InterfaceConfigKind,
-  InterpretedHKT,
   IntersectionConfigKind,
   TaggedUnionConfigKind,
   TypeOf

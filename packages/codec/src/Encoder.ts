@@ -1,16 +1,21 @@
 import type { Lazy } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
+import type * as P from '@principia/base/typeclass'
 import type { UnionToIntersection } from '@principia/base/util/types'
 import type { USync } from '@principia/io/Sync'
 
 import * as A from '@principia/base/Array'
 import { flow, memoize, pipe } from '@principia/base/function'
+import * as HS from '@principia/base/HashSet'
+import * as Set from '@principia/base/Set'
 import * as S from '@principia/io/Sync'
 
 import { EncoderURI } from './Modules'
 import { _intersect } from './util'
 
 export interface Encoder<A, O> {
+  readonly _IA?: (_: A) => void
+  readonly _O?: () => O
   readonly encode: (a: A) => USync<O>
 }
 
@@ -20,6 +25,16 @@ export type OutputOf<E> = E extends Encoder<any, infer O> ? O : never
 export type AnyE = Encoder<any, any>
 
 export type V = HKT.V<'I', '-'>
+
+/*
+ * -------------------------------------------
+ * constructors
+ * -------------------------------------------
+ */
+
+export function fromEncode<A, O>(encode: (a: A) => USync<O>): Encoder<A, O> {
+  return { encode }
+}
 
 /*
  * -------------------------------------------
@@ -90,7 +105,7 @@ export function contramap<From extends AnyE, B>(f: (b: B) => InputOf<From>): (fa
 
 /*
  * -------------------------------------------
- * Combinators
+ * combinators
  * -------------------------------------------
  */
 
@@ -266,7 +281,7 @@ export function intersect<Members extends readonly [AnyE, ...ReadonlyArray<AnyE>
 
 type EnsureTag<T extends string, Members extends Record<string, AnyE>> = Members &
   {
-    [K in keyof Members]: Encoder<{ [tag in T]: K }, any>
+    [K in keyof Members]: Encoder<any, { [tag in T]: K }>
   }
 
 export interface SumEncoder<T extends string, Members extends Record<string, AnyE>>
@@ -299,6 +314,64 @@ export function lazy<E extends AnyE>(encoder: () => E): LazyEncoder<E> {
     encoder,
     encode: (a) => get().encode(a)
   }
+}
+
+/*
+ * -------------------------------------------
+ * datatypes
+ * -------------------------------------------
+ */
+
+export const None = struct({
+  _tag: id<'None'>()
+})
+
+export function Some<E extends AnyE>(value: E) {
+  return struct({
+    _tag: id<'Some'>(),
+    value
+  })
+}
+
+export function Option<E extends AnyE>(value: E) {
+  return sum('_tag')({
+    None,
+    Some: Some(value)
+  })
+}
+
+export function Left<E extends AnyE>(left: E) {
+  return struct({
+    _tag: id<'Left'>(),
+    left
+  })
+}
+
+export function Right<E extends AnyE>(right: E) {
+  return struct({
+    _tag: id<'Right'>(),
+    right
+  })
+}
+
+export function Either<E extends AnyE, A extends AnyE>(left: E, right: A) {
+  return sum('_tag')({
+    Left: Left(left),
+    Right: Right(right)
+  })
+}
+
+export function SetToArray<E extends AnyE>(
+  item: E,
+  O: P.Ord<InputOf<E>>
+): Encoder<ReadonlySet<InputOf<E>>, ReadonlyArray<OutputOf<E>>> {
+  const toArrayO = Set.toArray(O)
+  return fromEncode((a: ReadonlySet<InputOf<E>>) => pipe(toArrayO(a), S.foreach(item.encode)))
+}
+
+export function HashSetToArray<E extends AnyE>(item: E, O: P.Ord<InputOf<E>>) {
+  const toArrayO = HS.toArray(O)
+  return fromEncode((a: HS.HashSet<InputOf<E>>) => pipe(toArrayO(a), S.foreach(item.encode)))
 }
 
 export { EncoderURI }

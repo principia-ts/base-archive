@@ -1,5 +1,6 @@
 import type { Eq } from './Eq'
 import type { Hash } from './Hash'
+import type { Ord } from './Ord'
 import type { Predicate } from './Predicate'
 import type { Refinement } from './Refinement'
 
@@ -66,6 +67,10 @@ export function mutate_<V>(set: HashSet<V>, transient: (set: HashSet<V>) => void
   const s = beginMutation(set)
   transient(s)
   return endMutation(s)
+}
+
+export function mutate<V>(transient: (set: HashSet<V>) => void): (set: HashSet<V>) => HashSet<V> {
+  return (set) => mutate_(set, transient)
 }
 
 /**
@@ -402,4 +407,18 @@ export function union_<A>(l: HashSet<A>, r: Iterable<A>): HashSet<A> {
  */
 export function union<A>(y: Iterable<A>): (x: HashSet<A>) => HashSet<A> {
   return (x) => union_(x, y)
+}
+
+/*
+ * -------------------------------------------
+ * destructors
+ * -------------------------------------------
+*/
+
+export function toArray<A>(O: Ord<A>): (set: HashSet<A>) => ReadonlyArray<A> {
+  return (set) => {
+    const r: Array<A> = []
+    forEach_(set, (a) => r.push(a))
+    return r.sort(O.compare_)
+  }
 }
