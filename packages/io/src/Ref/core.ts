@@ -251,8 +251,8 @@ export interface URef<A> extends FRef<never, A> {}
 /**
  * Cast to a sealed union
  */
-export function concrete<EA, EB, A>(self: Ref<EA, EB, A, A>) {
-  return self as Atomic<A> | DerivedAll<EA, EB, A, A> | Derived<EA, EB, A, A>
+export function concrete<EA, EB, A>(ref: Ref<EA, EB, A, A>) {
+  return ref as Atomic<A> | DerivedAll<EA, EB, A, A> | Derived<EA, EB, A, A>
 }
 
 /*
@@ -624,8 +624,8 @@ export function modify_<EA, EB, B, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => reado
     concrete,
     matchTag({
       Atomic: At.modify(f),
-      Derived: (self) =>
-        self.use((value, getEither, setEither) =>
+      Derived: (derived) =>
+        derived.use((value, getEither, setEither) =>
           pipe(
             value,
             At.modify((s) =>
@@ -651,8 +651,8 @@ export function modify_<EA, EB, B, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => reado
             I.refail
           )
         ),
-      DerivedAll: (self) =>
-        self.use((value, getEither, setEither) =>
+      DerivedAll: (derivedAll) =>
+        derivedAll.use((value, getEither, setEither) =>
           pipe(
             value,
             At.modify((s) =>
@@ -824,11 +824,11 @@ export function updateAndGet_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => A)
   return pipe(
     ref,
     concrete,
-    matchTag({ Atomic: At.updateAndGet(f) }, (self) =>
+    matchTag({ Atomic: At.updateAndGet(f) }, (atomic) =>
       pipe(
-        self,
+        atomic,
         modify((v) => pipe(f(v), (result) => tuple(result, result))),
-        I.bind(() => self.get)
+        I.bind(() => atomic.get)
       )
     )
   )
@@ -911,15 +911,15 @@ export function unsafeUpdate_<A>(ref: URef<A>, f: (a: A) => A) {
     concrete,
     matchTag({
       Atomic: At.unsafeUpdate(f),
-      Derived: (self) =>
-        self.use((value, getEither, setEither) =>
+      Derived: (derived) =>
+        derived.use((value, getEither, setEither) =>
           pipe(
             value,
             At.unsafeUpdate((s) => pipe(s, getEither, E.merge, f, setEither, E.merge))
           )
         ),
-      DerivedAll: (self) =>
-        self.use((value, getEither, setEither) =>
+      DerivedAll: (derivedAll) =>
+        derivedAll.use((value, getEither, setEither) =>
           pipe(
             value,
             At.unsafeUpdate((s) => pipe(s, getEither, E.merge, f, (a) => setEither(a)(s), E.merge))
@@ -956,5 +956,5 @@ export function set_<EA, EB, B, A>(ref: Ref<EA, EB, A, B>, a: A) {
  * consistency (at some cost to performance).
  */
 export function set<A>(a: A): <EA, EB, B>(ref: Ref<EA, EB, A, B>) => I.FIO<EA, void> {
-  return (self) => self.set(a)
+  return (ref) => ref.set(a)
 }

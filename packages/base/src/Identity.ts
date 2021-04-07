@@ -246,4 +246,20 @@ export const Applicative = P.Applicative<URI>({
   unit
 })
 
+export const Monad = P.Monad<URI>({
+  map_,
+  crossWith_,
+  cross_,
+  pure,
+  unit,
+  bind_,
+  flatten
+})
+
+export const Do = P.Do(Monad)
+
+export const bindS   = P.bindSF(Monad)
+export const letS    = P.letSF(Monad)
+export const bindToS = P.bindToSF(Monad)
+
 export { IdentityURI } from './Modules'

@@ -10,8 +10,8 @@ export interface Do<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C> {
   readonly bindToS: BindToSFn<F, C>
 }
 
-export function deriveDo<F extends HKT.URIS, C = HKT.Auto>(M: Monad<F, C>): Do<F, C>
-export function deriveDo<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
+export function Do<F extends HKT.URIS, C = HKT.Auto>(M: Monad<F, C>): Do<F, C>
+export function Do<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
   const bindS: BindSFn<HKT.UHKT<F>> = (name, f) =>
     flow(
       M.bind((a) =>

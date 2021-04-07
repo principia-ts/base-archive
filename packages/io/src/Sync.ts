@@ -1,6 +1,6 @@
 import type { SyncURI } from './Modules'
 import type { Multi } from './Multi'
-import type { Has, Region, Tag } from '@principia/base/Has'
+import type { Has, Tag } from '@principia/base/Has'
 import type * as HKT from '@principia/base/HKT'
 import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
@@ -8,13 +8,12 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe } from '@principia/base/function'
-import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
+import { isTag, mergeEnvironments } from '@principia/base/Has'
 import * as I from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as P from '@principia/base/typeclass'
 import { makeMonoid } from '@principia/base/typeclass'
-import * as FL from '@principia/free/FreeList'
 
 import * as M from './Multi'
 
@@ -35,7 +34,7 @@ export type FSync<E, A> = Sync<unknown, E, A>
 export type URSync<R, A> = Sync<R, never, A>
 
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
-type URI = [HKT.URI<typeof SyncURI>]
+type URI = [HKT.URI<SyncURI>]
 
 /*
  * -------------------------------------------
@@ -354,13 +353,13 @@ export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => S
 
 /*
  * -------------------------------------------
- * Fallible
+ * MonadExcept
  * -------------------------------------------
  */
 
 export const attempt: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = M.attempt
 
-export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = M.refail
+export const refail: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = M.refail
 
 /*
  * -------------------------------------------

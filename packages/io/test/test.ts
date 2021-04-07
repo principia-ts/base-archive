@@ -1,8 +1,18 @@
-import { pipe } from '@principia/base/function'
+import '@principia/base/Operators'
 
-import * as I from '../src/IO'
-import * as Ref from '../src/Ref'
+import * as S from '../src/Sync'
+import * as SRef from '../src/SyncRef'
 
-const x = pipe(Ref.makeRefM(0), I.map(Ref.map((n) => n.toString())))
+const arr = [1, 2, 3, 4, 5, 6, 7, 8]
 
-const y = pipe(Ref.makeRef(0), I.map(Ref.map((n) => n.toString())))
+SRef.makeSyncRef([] as string[])
+  ['>>=']((ref) =>
+    S.foreach_(arr, (n) =>
+      SRef.modify_(ref, (x) => {
+        x.push(n.toString())
+        return [undefined, x]
+      })
+    )['*>'](ref.get)
+  )
+  ['>>=']((s) => S.effectTotal(() => console.log(s)))
+  ['|>'](S.run)

@@ -24,6 +24,7 @@ import * as Set from '@principia/base/Set'
 import * as Str from '@principia/base/string'
 import * as Struct from '@principia/base/Struct'
 import * as S from '@principia/io/Sync'
+import * as SRef from '@principia/io/SyncRef'
 
 import {
   ArrayE,
@@ -315,24 +316,23 @@ export function Either<L extends AnyUD, R extends AnyUD>(
 }
 
 export function SetFromArray<D extends AnyD>(item: D, E: P.Eq<TypeOf<D>>) {
-  return pipe(
-    fromArray(item),
-    parse(flow(Set.fromArray(E), S.succeed))
-  )
+  return pipe(fromArray(item), parse(flow(Set.fromArray(E), S.succeed)))
 }
 
 export function HashSetFromArray<D extends AnyD>(item: D, H: Hash<TypeOf<D>>, E: P.Eq<TypeOf<D>>) {
   return pipe(
     fromArray(item),
-    parse((is) => pipe(
-      HS.make({ ...H, ...E }),
-      HS.mutate((set) => {
-        for(let i = 0; i < is.length; i++) {
-          HS.add_(set, is[i])
-        }
-      }),
-      S.succeed
-    ))
+    parse((is) =>
+      pipe(
+        HS.make({ ...H, ...E }),
+        HS.mutate((set) => {
+          for (let i = 0; i < is.length; i++) {
+            HS.add_(set, is[i])
+          }
+        }),
+        S.succeed
+      )
+    )
   )
 }
 

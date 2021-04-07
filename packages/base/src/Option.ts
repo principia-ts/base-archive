@@ -957,7 +957,7 @@ export const MonadExcept = P.MonadExcept<URI, HKT.Fix<'E', void>>({
   fail
 })
 
-export const Do = P.deriveDo(Monad)
+export const Do = P.Do(Monad)
 
 const of: Option<{}> = Some({})
 export { of as do }

@@ -150,6 +150,14 @@
       "import": "./dist/dist/esm/Stream/index.js",
       "require": "./dist/dist/cjs/Stream/index.js"
     },
+    "./SyncRef": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/SyncRef/index.js",
+        "require": "./dist/dist-traced/cjs/SyncRef/index.js"
+      },
+      "import": "./dist/dist/esm/SyncRef/index.js",
+      "require": "./dist/dist/cjs/SyncRef/index.js"
+    },
     "./*": {
       "traced": {
         "import": "./dist/dist-traced/esm/*",

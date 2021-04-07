@@ -1183,7 +1183,7 @@ export const Traversable = P.Traversable<URI, V>({
  * @category Do
  * @since 1.0.0
  */
-export const Do = P.deriveDo(Monad)
+export const Do = P.Do(Monad)
 
 /**
  * @category Do
