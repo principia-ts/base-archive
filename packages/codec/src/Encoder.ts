@@ -1,14 +1,14 @@
 import type { Lazy } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
+import type { USync } from '@principia/base/Sync'
 import type * as P from '@principia/base/typeclass'
 import type { UnionToIntersection } from '@principia/base/util/types'
-import type { USync } from '@principia/io/Sync'
 
 import * as A from '@principia/base/Array'
 import { flow, memoize, pipe } from '@principia/base/function'
 import * as HS from '@principia/base/HashSet'
 import * as Set from '@principia/base/Set'
-import * as S from '@principia/io/Sync'
+import * as S from '@principia/base/Sync'
 
 import { EncoderURI } from './Modules'
 import { _intersect } from './util'

@@ -3,7 +3,7 @@ import type * as HKT from '@principia/base/HKT'
 
 import { flow, pipe } from '@principia/base/function'
 import * as P from '@principia/base/typeclass'
-import * as Mu from '@principia/io/Multi'
+import * as Mu from '@principia/base/Multi'
 
 export type V<C> = HKT.CleanParam<C, 'R'> & HKT.V<'R', '-'>
 

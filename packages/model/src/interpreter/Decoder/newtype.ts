@@ -4,7 +4,7 @@ import type { DecoderURI } from './HKT'
 import { flow, pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as D from '@principia/codec/Decoder'
-import * as S from '@principia/io/Sync'
+import * as S from '@principia/base/Sync'
 
 import { NewtypePrismE } from '../../algebra'
 import { implementInterpreter } from '../../HKT'

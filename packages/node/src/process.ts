@@ -1,7 +1,7 @@
 import type { Byte } from '@principia/base/Byte'
 import type * as E from '@principia/base/Either'
 import type { Chunk } from '@principia/io/Chunk'
-import type { FSync, USync } from '@principia/io/Sync'
+import type { FSync, USync } from '@principia/base/Sync'
 
 import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
@@ -11,7 +11,7 @@ import * as I from '@principia/io/IO'
 import * as S from '@principia/io/Stream'
 import * as Push from '@principia/io/Stream/Push'
 import * as Sink from '@principia/io/Stream/Sink'
-import * as Sy from '@principia/io/Sync'
+import * as Sy from '@principia/base/Sync'
 import { once } from 'events'
 
 export class StdinError {

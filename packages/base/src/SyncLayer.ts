@@ -1,11 +1,10 @@
-import type { Has, Tag } from '@principia/base/Has'
-import type { Erase, UnionToIntersection } from '@principia/base/util/types'
+import type { Has, Tag } from './Has'
+import type { Erase, UnionToIntersection } from './util/types'
 
-import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/function'
-import { AtomicReference } from '@principia/base/util/support/AtomicReference'
-
+import * as A from './Array'
+import { pipe } from './function'
 import * as Sy from './Sync'
+import { AtomicReference } from './util/support/AtomicReference'
 
 export abstract class SyncLayer<R, E, A> {
   readonly hash = new AtomicReference<PropertyKey>(Symbol())

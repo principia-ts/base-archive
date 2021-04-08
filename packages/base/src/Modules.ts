@@ -1,10 +1,14 @@
+import type { Async } from './Async'
 import type { Const } from './Const'
 import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Eval } from './Eval'
+import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
 import type { Identity } from './Identity'
 import type { List } from './List'
+import type { MReader } from './MReader'
+import type { Multi } from './Multi'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Ord } from './Ord'
@@ -14,6 +18,7 @@ import type { ReadonlyRecord } from './Record'
 import type { Show } from './Show'
 import type { State } from './State'
 import type { Store } from './Store'
+import type { Sync } from './Sync'
 import type { These } from './These'
 import type { Tuple2 } from './Tuple2'
 import type { Writer } from './Writer'
@@ -87,6 +92,21 @@ export type OrdURI = typeof OrdURI
 export const PredicateURI = 'Predicate'
 export type PredicateURI = typeof PredicateURI
 
+export const MultiURI = 'Multi'
+export type MultiURI = typeof MultiURI
+
+export const SyncURI = 'Sync'
+export type SyncURI = typeof SyncURI
+
+export const MReaderURI = 'MReader'
+export type MReaderURI = typeof MReaderURI
+
+export const FreeSemiringURI = 'FreeSemiring'
+export type FreeSemiringURI = typeof FreeSemiringURI
+
+export const AsyncURI = 'Async'
+export type AsyncURI = typeof AsyncURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     [ArrayURI]: ReadonlyArray<A>
@@ -112,6 +132,11 @@ declare module './HKT' {
     [StateURI]: State<S, A>
     [OrdURI]: Ord<A>
     [PredicateURI]: Predicate<A>
+    [SyncURI]: Sync<R, E, A>
+    [MultiURI]: Multi<W, S, S, R, E, A>
+    [FreeSemiringURI]: FreeSemiring<X, A>
+    [MReaderURI]: MReader<R, A>
+    [AsyncURI]: Async<R, E, A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

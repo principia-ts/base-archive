@@ -7,9 +7,9 @@ import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Option } from '@principia/base/Option'
 import type { ReadonlyRecord } from '@principia/base/Record'
 import type { Refinement } from '@principia/base/Refinement'
+import type { FSync } from '@principia/base/Sync'
 import type * as P from '@principia/base/typeclass'
 import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
-import type { FSync } from '@principia/io/Sync'
 
 import * as A from '@principia/base/Array'
 import * as B from '@principia/base/boolean'
@@ -23,8 +23,7 @@ import * as R from '@principia/base/Record'
 import * as Set from '@principia/base/Set'
 import * as Str from '@principia/base/string'
 import * as Struct from '@principia/base/Struct'
-import * as S from '@principia/io/Sync'
-import * as SRef from '@principia/io/SyncRef'
+import * as S from '@principia/base/Sync'
 
 import {
   ArrayE,

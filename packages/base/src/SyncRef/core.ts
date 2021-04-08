@@ -1,11 +1,10 @@
-import * as E from '@principia/base/Either'
-import { flow, identity, pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
-import { tuple } from '@principia/base/tuple'
-import { matchTag } from '@principia/base/util/matchers'
-import { AtomicReference } from '@principia/base/util/support/AtomicReference'
-
+import * as E from '../Either'
+import { flow, identity, pipe } from '../function'
+import * as O from '../Option'
 import * as S from '../Sync'
+import { tuple } from '../tuple'
+import { matchTag } from '../util/matchers'
+import { AtomicReference } from '../util/support/AtomicReference'
 import * as At from './atomic'
 
 export interface SyncRef<EA, EB, A, B> {

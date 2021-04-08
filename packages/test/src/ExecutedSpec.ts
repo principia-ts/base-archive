@@ -2,12 +2,12 @@ import type { TestAnnotationMap } from './Annotation/TestAnnotationMap'
 import type { TestFailure } from './TestFailure'
 import type { TestSuccess } from './TestSuccess'
 import type { Either } from '@principia/base/Either'
-import type { USync } from '@principia/io/Sync'
+import type { USync } from '@principia/base/Sync'
 
 import * as A from '@principia/base/Array'
 import { identity, pipe } from '@principia/base/function'
 import { matchTag, matchTag_ } from '@principia/base/util/matchers'
-import * as Sy from '@principia/io/Sync'
+import * as Sy from '@principia/base/Sync'
 
 class TestCase<E> {
   readonly _tag = 'Test'

@@ -1,7 +1,7 @@
 
+import type { Option } from '../Option'
 import type { USync } from '../Sync'
 import type { Atomic } from './core'
-import type { Option } from '@principia/base/Option'
 
 import * as S from '../Sync'
 

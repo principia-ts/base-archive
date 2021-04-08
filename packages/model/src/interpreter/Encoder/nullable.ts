@@ -4,7 +4,7 @@ import type { EncoderURI } from './HKT'
 import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
 import * as E from '@principia/codec/Encoder'
-import * as S from '@principia/io/Sync'
+import * as S from '@principia/base/Sync'
 
 import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'

@@ -1,23 +1,22 @@
 /**
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/fx/ZPure.scala
  */
-import type * as HKT from '@principia/base/HKT'
-import type { Stack } from '@principia/base/util/support/Stack'
-import type { FreeSemiring } from '@principia/free/FreeSemiring'
+import type { FreeSemiring } from './FreeSemiring'
+import type * as HKT from './HKT'
+import type { Stack } from './util/support/Stack'
 
-import * as E from '@principia/base/Either'
-import { RuntimeException } from '@principia/base/Exception'
-import { flow, identity, pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
-import { tuple } from '@principia/base/tuple'
-import { makeStack } from '@principia/base/util/support/Stack'
-import * as FS from '@principia/free/FreeSemiring'
-
+import * as E from './Either'
+import { RuntimeException } from './Exception'
+import * as FS from './FreeSemiring'
+import { flow, identity, pipe } from './function'
 import { MultiURI } from './Modules'
+import * as O from './Option'
+import { tuple } from './tuple'
+import { makeStack } from './util/support/Stack'
 
 /*
  * -------------------------------------------
- * Multi Model
+ * model
  * -------------------------------------------
  */
 
@@ -62,7 +61,7 @@ abstract class MultiSyntax<W, S1, S2, R, E, A> {
 }
 
 /**
- * `Multi<S1, S2, R, E, A>` is a purely functional description of a synchronous computation
+ * `Multi<W, S1, S2, R, E, A>` is a purely functional description of a synchronous computation
  * that requires an environment `R` and an initial state `S1` and may either
  * fail with an `E` or succeed with an updated state `S2` and an `A`. Because
  * of its polymorphism `Multi` can be used to model a variety of effects
@@ -76,9 +75,9 @@ export abstract class Multi<W, S1, S2, R, E, A> extends MultiSyntax<W, S1, S2, R
   readonly _W!: () => W
   readonly _S1!: (_: S1) => void
   readonly _S2!: () => S2
+  readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
-  readonly _R!: (_: R) => void
 
   constructor() {
     super()

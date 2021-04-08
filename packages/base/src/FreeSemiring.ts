@@ -1,16 +1,15 @@
 /*
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/ParSeq.scala
  */
-import type * as HKT from '@principia/base/HKT'
+import type * as HKT from './HKT'
 
-import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
-import * as Ev from '@principia/base/Eval'
-import { flow, hole, identity } from '@principia/base/function'
-import { tuple } from '@principia/base/tuple'
-import * as P from '@principia/base/typeclass'
-
+import * as A from './Array'
+import * as E from './Either'
+import * as Ev from './Eval'
+import { flow, hole, identity } from './function'
 import { FreeSemiringURI } from './Modules'
+import { tuple } from './tuple'
+import * as P from './typeclass'
 
 /*
  * -------------------------------------------

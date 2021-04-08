@@ -1,21 +1,20 @@
+import type { Has, Tag } from './Has'
+import type * as HKT from './HKT'
 import type { SyncURI } from './Modules'
 import type { Multi } from './Multi'
-import type { Has, Tag } from '@principia/base/Has'
-import type * as HKT from '@principia/base/HKT'
-import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
+import type { _E, _R, UnionToIntersection } from './util/types'
 
-import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
-import { NoSuchElementError } from '@principia/base/Error'
-import { flow, identity, pipe } from '@principia/base/function'
-import { isTag, mergeEnvironments } from '@principia/base/Has'
-import * as I from '@principia/base/Iterable'
-import * as O from '@principia/base/Option'
-import * as R from '@principia/base/Record'
-import * as P from '@principia/base/typeclass'
-import { makeMonoid } from '@principia/base/typeclass'
-
+import * as A from './Array'
+import * as E from './Either'
+import { NoSuchElementError } from './Error'
+import { flow, identity, pipe } from './function'
+import { isTag, mergeEnvironments } from './Has'
+import * as I from './Iterable'
 import * as M from './Multi'
+import * as O from './Option'
+import * as R from './Record'
+import * as P from './typeclass'
+import { makeMonoid } from './typeclass'
 
 /*
  * -------------------------------------------
@@ -802,7 +801,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
  * -------------------------------------------
  */
 
-export const DoSync = P.deriveDo(Monad)
+export const DoSync = P.Do(Monad)
 
 const of: Sync<unknown, never, {}> = succeed({})
 export { of as do }

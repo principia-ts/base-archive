@@ -9,7 +9,7 @@ import { interruptAllAs } from '@principia/io/Fiber'
 import * as I from '@principia/io/IO'
 import { defaultRuntime } from '@principia/io/IO'
 import * as Super from '@principia/io/Supervisor'
-import * as S from '@principia/io/Sync'
+import * as S from '@principia/base/Sync'
 import path from 'path'
 
 export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (status: number) => void) {

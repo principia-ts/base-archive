@@ -1,21 +1,21 @@
-import type { Has, Region, Tag } from '@principia/base/Has'
-import type * as HKT from '@principia/base/HKT'
-import type { Option } from '@principia/base/Option'
-import type { Stack } from '@principia/base/util/support/Stack'
-import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
+import type { Has, Tag } from '../Has'
+import type * as HKT from '../HKT'
+import type { Option } from '../Option'
+import type { Stack } from '../util/support/Stack'
+import type { _A, _E, _R, UnionToIntersection } from '../util/types'
 
-import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
-import { NoSuchElementError } from '@principia/base/Error'
-import { flow, identity, pipe } from '@principia/base/function'
-import { genF, GenHKT } from '@principia/base/Gen'
-import { isTag, mergeEnvironments, tag } from '@principia/base/Has'
-import { isOption } from '@principia/base/Option'
-import * as R from '@principia/base/Record'
-import { tuple } from '@principia/base/tuple'
-import * as P from '@principia/base/typeclass'
-import { makeStack } from '@principia/base/util/support/Stack'
-
+import * as A from '../Array'
+import * as E from '../Either'
+import { NoSuchElementError } from '../Error'
+import { flow, identity, pipe } from '../function'
+import { genF, GenHKT } from '../Gen'
+import { isTag, mergeEnvironments } from '../Has'
+import { AsyncURI } from '../Modules'
+import { isOption } from '../Option'
+import * as R from '../Record'
+import { tuple } from '../tuple'
+import * as P from '../typeclass'
+import { makeStack } from '../util/support/Stack'
 import * as Ex from './AsyncExit'
 
 /*
@@ -32,9 +32,7 @@ export type _AI = typeof _AI
  * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fibers`.
  */
 export abstract class Async<R, E, A> {
-  readonly _idn = URI
-
-  readonly _U = 'IO'
+  readonly _U = AsyncURI
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
@@ -65,16 +63,9 @@ export type UAsync<A> = Async<unknown, never, A>
 export type FAsync<E, A> = Async<unknown, E, A>
 export type URAsync<R, A> = Async<R, never, A>
 
-export const URI = 'Async'
-export type URI = [HKT.URI<typeof URI, V>]
-
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: Async<R, E, A>
-  }
-}
+type URI = [HKT.URI<AsyncURI>]
 
 export type AsyncInstruction =
   | Succeed<any>
@@ -765,79 +756,6 @@ export function replaceService_<R1, E1, A1, T>(
   return asksServiceM(_)((t) => giveServiceM(_)(pure(f(t)))(ma))
 }
 
-export function region<K, T>(): Tag<Region<T, K>> {
-  return tag<Region<T, K>>()
-}
-
-export function useRegion<K, T>(
-  h: Tag<Region<T, K>>
-): <R, E, A>(e: Async<R & T, E, A>) => Async<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(e, give((a as any) as T)))
-}
-
-export function asksRegionM<K, T>(
-  h: Tag<Region<T, K>>
-): <R, E, A>(e: (_: T) => Async<R & T, E, A>) => Async<R & Has<Region<T, K>>, E, A> {
-  return (e) => asksServiceM(h)((a) => pipe(asksM(e), give((a as any) as T)))
-}
-
-export function asksRegion<K, T>(h: Tag<Region<T, K>>): <A>(e: (_: T) => A) => Async<Has<Region<T, K>>, never, A> {
-  return (e) => asksServiceM(h)((a) => pipe(asks(e), give((a as any) as T)))
-}
-
-export function askRegion<K, T>(h: Tag<Region<T, K>>): Async<Has<Region<T, K>>, never, T> {
-  return asksServiceM(h)((a) =>
-    pipe(
-      asks((r: T) => r),
-      give((a as any) as T)
-    )
-  )
-}
-
-export function askServiceIn<A>(
-  _: Tag<A>
-): <K, T>(h: Tag<Region<Has<A> & T, K>>) => Async<Has<Region<Has<A> & T, K>>, never, A> {
-  return (h) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          asks((r: A) => r),
-          give((a as any) as A)
-        )
-      )
-    )
-}
-
-export function asksServiceIn<A>(
-  _: Tag<A>
-): <K, T>(h: Tag<Region<Has<A> & T, K>>) => <B>(f: (_: A) => B) => Async<Has<Region<Has<A> & T, K>>, never, B> {
-  return (h) => (f) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          asks((r: A) => f(r)),
-          give((a as any) as A)
-        )
-      )
-    )
-}
-
-export function asksServiceInM<A>(
-  _: Tag<A>
-): <K, T>(
-  h: Tag<Region<Has<A> & T, K>>
-) => <R, E, B>(f: (_: A) => Async<R, E, B>) => Async<R & Has<Region<Has<A> & T, K>>, E, B> {
-  return (h) => (f) =>
-    useRegion(h)(
-      asksServiceM(_)((a) =>
-        pipe(
-          asksM((r: A) => f(r)),
-          give((a as any) as A)
-        )
-      )
-    )
-}
-
 /**
  * Maps the success value of this effect to a service.
  */
@@ -1223,7 +1141,7 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const Do: P.Do<URI, V> = P.deriveDo(Monad)
+export const Do: P.Do<URI, V> = P.Do(Monad)
 
 export const letS = P.letSF(Monad)
 

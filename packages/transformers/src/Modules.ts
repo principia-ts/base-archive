@@ -1,5 +1,5 @@
 import type { StateIn, StateOut } from './StateT'
-import type { Multi } from '@principia/io/Multi'
+import type { Multi } from '@principia/base/Multi'
 
 export const StateInURI = 'StateIn'
 export type StateInURI = typeof StateInURI

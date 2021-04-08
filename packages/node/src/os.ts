@@ -1,6 +1,6 @@
-import type { FSync, USync } from '@principia/io/Sync'
+import type { FSync, USync } from '@principia/base/Sync'
 
-import * as Sy from '@principia/io/Sync'
+import * as Sy from '@principia/base/Sync'
 import os from 'os'
 
 export const arch = Sy.effectTotal(os.arch)

@@ -9,7 +9,7 @@ import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types
 import type { ValueNode } from 'graphql'
 
 import { flow, pipe } from '@principia/base/function'
-import * as Sy from '@principia/io/Sync'
+import * as Sy from '@principia/base/Sync'
 import * as M from '@principia/model'
 import { valueFromASTUntyped } from 'graphql'
 

@@ -1,10 +1,9 @@
+import type * as HKT from './HKT'
 import type { MReaderURI } from './Modules'
-import type * as HKT from '@principia/base/HKT'
 
-import { identity, pipe } from '@principia/base/function'
-import * as P from '@principia/base/typeclass'
-
+import { identity, pipe } from './function'
 import * as Mu from './Multi'
+import * as P from './typeclass'
 
 export interface MReader<R, A> extends Mu.Multi<never, unknown, never, R, never, A> {}
 
