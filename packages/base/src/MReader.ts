@@ -5,7 +5,7 @@ import { identity, pipe } from './function'
 import * as Mu from './Multi'
 import * as P from './typeclass'
 
-export interface MReader<R, A> extends Mu.Multi<never, unknown, never, R, never, A> {}
+export interface MReader<R, A> extends Mu.Multi<never, unknown, any, R, never, A> {}
 
 export type V = HKT.V<'R', '-'>
 
@@ -32,7 +32,7 @@ export const gives: <R0, R>(f: (r0: R0) => R) => <A>(ra: MReader<R, A>) => MRead
 export function runReader_<A>(ra: MReader<unknown, A>): A
 export function runReader_<R, A>(ra: MReader<R, A>, r: R): A
 export function runReader_<R, A>(ra: MReader<R, A>, r?: R): A {
-  return r ? Mu.runEnv_(ra, r) : Mu.runResult(ra as any)
+  return r ? pipe(ra, giveAll(r), Mu.runResult) : Mu.runResult(ra as any)
 }
 
 export function runReader(): <A>(ra: MReader<unknown, A>) => A

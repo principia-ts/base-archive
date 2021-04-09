@@ -88,7 +88,7 @@ export function then<Z, A>(left: FreeSemiring<Z, A>, right: FreeSemiring<Z, A>):
   }
 }
 
-export function both<Z, A>(left: FreeSemiring<Z, A>, right: FreeSemiring<Z, A>): FreeSemiring<Z, A> {
+export function both<Z, A, B>(left: FreeSemiring<Z, A>, right: FreeSemiring<Z, B>): FreeSemiring<Z, A | B> {
   return {
     _tag: 'Both',
     left,

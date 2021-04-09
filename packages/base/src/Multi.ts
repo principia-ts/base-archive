@@ -1,12 +1,13 @@
 /**
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/fx/ZPure.scala
  */
+import type { Eq } from './Eq'
 import type { FreeSemiring } from './FreeSemiring'
 import type * as HKT from './HKT'
+import type { Predicate } from './Predicate'
 import type { Stack } from './util/support/Stack'
 
 import * as E from './Either'
-import { RuntimeException } from './Exception'
 import * as FS from './FreeSemiring'
 import { flow, identity, pipe } from './function'
 import { MultiURI } from './Modules'
@@ -44,19 +45,19 @@ abstract class MultiSyntax<W, S1, S2, R, E, A> {
     this: Multi<W, S1, S2, R, E, A>,
     mb: Multi<W1, S2, S3, Q, D, B>
   ): Multi<W | W1, S1, S3, Q & R, D | E, B> {
-    return apr_(this, mb)
+    return zipr_(this, mb)
   }
   ['<*']<W1, S3, Q, D, B>(
     this: Multi<W, S1, S2, R, E, A>,
     mb: Multi<W1, S2, S3, Q, D, B>
   ): Multi<W | W1, S1, S3, Q & R, D | E, A> {
-    return apl_(this, mb)
+    return zipl_(this, mb)
   }
   ['<*>']<W1, S3, Q, D, B>(
     this: Multi<W, S1, S2, R, E, A>,
     mb: Multi<W1, S2, S3, Q, D, B>
   ): Multi<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
-    return cross_(this, mb)
+    return zip_(this, mb)
   }
 }
 
@@ -118,9 +119,9 @@ class EffectTotal<A> extends Multi<never, unknown, never, unknown, never, A> {
   }
 }
 
-class EffectPartial<E, A> extends Multi<never, unknown, never, unknown, E, A> {
+class EffectPartial<S, E, A> extends Multi<never, S, S, unknown, E, A> {
   readonly _multiTag = MultiTag.EffectPartial
-  constructor(readonly effect: () => A, readonly onThrow: (u: Error) => E) {
+  constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
 }
@@ -159,7 +160,7 @@ class Bind<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Multi<W | W1, S1, S3, Q 
     super()
   }
 }
-class Fold<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extends Multi<
+class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extends Multi<
   W | W1 | W2,
   S1 & S5,
   S3 | S4,
@@ -174,6 +175,9 @@ class Fold<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extends
     readonly onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
   ) {
     super()
+  }
+  apply(a: A): Multi<W2, S2, S4, R2, E2, C> {
+    return this.onSuccess(a)
   }
 }
 
@@ -210,12 +214,12 @@ export type MultiInstruction =
   | Fail<any>
   | Modify<any, any, any>
   | Bind<any, any, any, any, any, any, any, any, any, any, any>
-  | Fold<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>
+  | Match<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any, any, any, any>
   | Give<any, any, any, any, any, any>
   | DeferTotal<any, any, any, any, any, any>
   | EffectTotal<any>
-  | EffectPartial<any, any>
+  | EffectPartial<any, any, any>
   | DeferPartial<any, any, any, any, any, any, any>
   | Write<any>
   | Listen<any, any, any, any, any, any>
@@ -226,13 +230,11 @@ export type MultiInstruction =
  * -------------------------------------------
  */
 
-export function succeed<A, W = never, S1 = unknown, S2 = never>(a: A): Multi<W, S1, S2, unknown, never, A> {
+export function succeed<A>(a: A): Multi<never, unknown, never, unknown, never, A> {
   return new Succeed(a)
 }
 
-export function effectTotal<A, W = never, S1 = unknown, S2 = never>(
-  effect: () => A
-): Multi<W, S1, S2, unknown, never, A> {
+export function effectTotal<A>(effect: () => A): Multi<never, unknown, never, unknown, never, A> {
   return new EffectTotal(effect)
 }
 
@@ -240,34 +242,16 @@ export function halt<E>(cause: Cause<E>): Multi<never, unknown, never, unknown, 
   return new Fail(cause)
 }
 
-export function fail<W = never, S1 = unknown, S2 = never, R = unknown, E = never, A = never>(
-  e: E
-): Multi<W, S1, S2, R, E, A> {
+export function fail<E>(e: E): Multi<never, unknown, never, unknown, E, never> {
   return halt(FS.single(e))
-}
-
-export function modify<S1, S2, A>(f: (s: S1) => readonly [S2, A]): Multi<never, S1, S2, unknown, never, A> {
-  return new Modify(f)
-}
-
-export function get<S>(): Multi<never, S, S, unknown, never, S> {
-  return modify((s) => [s, s])
-}
-
-export function put<S>(s: S): Multi<never, unknown, S, unknown, never, void> {
-  return modify(() => [s, undefined])
-}
-
-export function gets<S, A>(f: (s: S) => A): Multi<never, S, S, unknown, never, A> {
-  return modify((s) => [s, f(s)])
 }
 
 export function deferTotal<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, E, A> {
   return new DeferTotal(ma)
 }
 
-export function defer<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, E | Error, A> {
-  return new DeferPartial(ma, (u) => (u instanceof Error ? u : new RuntimeException(`An error was caught: ${u}`)))
+export function defer<W, S1, S2, R, E, A>(ma: () => Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, unknown, A> {
+  return new DeferPartial(ma, identity)
 }
 
 export function deferCatch_<W, S1, S2, R, E, A, E1>(
@@ -283,41 +267,129 @@ export function deferCatch<E1>(
   return (ma) => deferCatch_(ma, onThrow)
 }
 
-export function effect<A>(effect: () => A): Multi<never, unknown, never, unknown, Error, A> {
+export function effect<S, A>(effect: () => A): Multi<never, S, S, unknown, unknown, A> {
   return new EffectPartial(effect, identity)
 }
 
-export function effectCatch_<A, E>(
+export function effectCatch_<S, E, A>(
   effect: () => A,
   onThrow: (reason: unknown) => E
-): Multi<never, unknown, never, unknown, E, A> {
+): Multi<never, S, S, unknown, E, A> {
   return new EffectPartial(effect, onThrow)
 }
 
-export function effectCatch<E>(
+export function effectCatch<S, E>(
   onThrow: (reason: unknown) => E
-): <A>(effect: () => A) => Multi<never, unknown, never, unknown, E, A> {
+): <A>(effect: () => A) => Multi<never, S, S, unknown, E, A> {
   return (effect) => effectCatch_(effect, onThrow)
 }
 
 /*
  * -------------------------------------------
- * Fold
+ * State
  * -------------------------------------------
  */
 
-export function matchCauseM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
-  fa: Multi<W, S1, S2, R, E, A>,
-  onFailure: (e: Cause<E>) => Multi<W1, S5, S3, R1, E1, B>,
-  onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
-): Multi<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return new Fold(fa, onFailure, onSuccess)
+/**
+ * Constructs a computation from the specified modify function.
+ */
+export function modify<S1, S2, A>(f: (s: S1) => readonly [S2, A]): Multi<never, S1, S2, unknown, never, A> {
+  return new Modify(f)
 }
 
-export function matchCauseM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
-  onFailure: (e: Cause<E>) => Multi<W1, S1, S3, R1, E1, B>,
+/**
+ * Constructs a computation that may fail from the specified modify function.
+ */
+export function modifyEither<S1, S2, E, A>(
+  f: (s: S1) => E.Either<E, readonly [S2, A]>
+): Multi<never, S1, S2, unknown, E, A> {
+  return pipe(get<S1>(), map(f), bind(E.match(fail, ([s2, a]) => pipe(succeed(a), asState(s2)))))
+}
+
+/**
+ * Constructs a computation that returns the initial state unchanged.
+ */
+export function get<S>(): Multi<never, S, S, unknown, never, S> {
+  return modify((s) => [s, s])
+}
+
+/**
+ * Constructs a computation that sets the state to the specified value.
+ */
+export function put<S>(s: S): Multi<never, unknown, S, unknown, never, void> {
+  return modify(() => [s, undefined])
+}
+
+export function gets<S, A>(f: (s: S) => A): Multi<never, S, S, unknown, never, A> {
+  return modify((s) => [s, f(s)])
+}
+
+export function mapState_<W, S1, S2, R, E, A, S3>(
+  ma: Multi<W, S1, S2, R, E, A>,
+  f: (s: S2) => S3
+): Multi<W, S1, S3, R, E, A> {
+  return ma['<*'](update(f))
+}
+
+export function mapState<S2, S3>(
+  f: (s: S2) => S3
+): <W, S1, R, E, A>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S3, R, E, A> {
+  return (ma) => mapState_(ma, f)
+}
+
+export function asState_<W, S1, S2, R, E, A, S3>(ma: Multi<W, S1, S2, R, E, A>, s: S3): Multi<W, S1, S3, R, E, A> {
+  return mapState_(ma, () => s)
+}
+
+export function asState<S3>(s: S3): <W, S1, S2, R, E, A>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S3, R, E, A> {
+  return (ma) => asState_(ma, s)
+}
+
+/**
+ * Transforms the initial state of this computation` with the specified
+ * function.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function contramapState_<S0, W, S1, S2, R, E, A>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  f: (s: S0) => S1
+): Multi<W, S0, S2, R, E, A> {
+  return bind_(update(f), () => fa)
+}
+
+/**
+ * Transforms the initial state of this computation` with the specified
+ * function.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function contramapState<S0, S1>(
+  f: (s: S0) => S1
+): <W, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W, S0, S2, R, E, A> {
+  return (fa) => contramapState_(fa, f)
+}
+
+/*
+ * -------------------------------------------
+ * match
+ * -------------------------------------------
+ */
+
+export function matchCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  onFailure: (e: Cause<E>) => Multi<W1, S0, S3, R1, E1, B>,
   onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
-): <W, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
+): Multi<W | W1 | W2, S1 & S0, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
+  return new Match(fa, onFailure, onSuccess)
+}
+
+export function matchCauseM<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+  onFailure: (e: Cause<E>) => Multi<W1, S0, S3, R1, E1, B>,
+  onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
+): <W, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1 | W2, S1 & S0, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return (fa) => matchCauseM_(fa, onFailure, onSuccess)
 }
 
@@ -343,10 +415,10 @@ export function matchM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E
  * @category Combinators
  * @since 1.0.0
  */
-export function matchM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
-  onFailure: (e: E) => Multi<W1, S1, S3, R1, E1, B>,
+export function matchM<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+  onFailure: (e: E) => Multi<W1, S0, S3, R1, E1, B>,
   onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
-): <W, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
+): <W, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return (fa) => matchM_(fa, onFailure, onSuccess)
 }
 
@@ -410,7 +482,7 @@ export function alt<W1, S1, S3, R1, E1, A1>(
  * -------------------------------------------
  */
 
-export function pure<A, S1 = unknown, S2 = never>(a: A): Multi<never, S1, S2, unknown, never, A> {
+export function pure<S = unknown, A = never>(a: A): Multi<never, S, S, unknown, never, A> {
   return succeed(a)
 }
 
@@ -420,71 +492,172 @@ export function pure<A, S1 = unknown, S2 = never>(a: A): Multi<never, S1, S2, un
  * -------------------------------------------
  */
 
-export function cross_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
-  fa: Multi<W, S1, S2, R, E, A>,
-  fb: Multi<W1, S2, S3, Q, D, B>
-): Multi<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
+export function cross_<W, S, R, E, A, Q, D, B>(
+  fa: Multi<W, S, S, R, E, A>,
+  fb: Multi<W, S, S, Q, D, B>
+): Multi<W, S, S, Q & R, D | E, readonly [A, B]> {
   return crossWith_(fa, fb, tuple)
 }
 
-export function cross<W1, S2, S3, Q, D, B>(
-  fb: Multi<W1, S2, S3, Q, D, B>
-): <W, S1, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
+export function cross<W, S, Q, D, B>(
+  fb: Multi<W, S, S, Q, D, B>
+): <R, E, A>(fa: Multi<W, S, S, R, E, A>) => Multi<W, S, S, Q & R, D | E, readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
 
-export function crossWith_<W, S1, S2, R, E, A, W1, S3, Q, D, B, C>(
-  fa: Multi<W, S1, S2, R, E, A>,
-  fb: Multi<W1, S2, S3, Q, D, B>,
-  f: (a: A, b: B) => C
-): Multi<W | W1, S1, S3, Q & R, D | E, C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+export function crossPar_<W, S, R, E, A, R1, E1, B>(
+  fa: Multi<W, S, S, R, E, A>,
+  fb: Multi<W, S, S, R1, E1, B>
+): Multi<W, S, S, R & R1, E | E1, readonly [A, B]> {
+  return crossWithPar_(fa, fb, tuple)
 }
 
-export function crossWith<W1, A, S2, S3, R1, E1, B, C>(
-  fb: Multi<W1, S2, S3, R1, E1, B>,
+export function crossPar<W, S, R1, E1, B>(
+  fb: Multi<W, S, S, R1, E1, B>
+): <R, E, A>(fa: Multi<W, S, S, R, E, A>) => Multi<W, S, S, R & R1, E | E1, readonly [A, B]> {
+  return (fa) => crossPar_(fa, fb)
+}
+
+export function crossWith_<W, S, R, E, A, Q, D, B, C>(
+  fa: Multi<W, S, S, R, E, A>,
+  fb: Multi<W, S, S, Q, D, B>,
   f: (a: A, b: B) => C
-): <W, S1, R, E>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, R1 & R, E1 | E, C> {
+): Multi<W, S, S, Q & R, D | E, C> {
+  return zipWith_(fa, fb, f)
+}
+
+export function crossWith<W, S, A, R1, E1, B, C>(
+  fb: Multi<W, S, S, R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: Multi<W, S, S, R, E, A>) => Multi<W, S, S, R1 & R, E1 | E, C> {
   return (fa) => crossWith_(fa, fb, f)
 }
 
-export function ap_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
-  fab: Multi<W, S1, S2, R, E, (a: A) => B>,
-  fa: Multi<W1, S2, S3, R1, E1, A>
-): Multi<W | W1, S1, S3, R1 & R, E1 | E, B> {
+export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
+  ma: Multi<W, S, S, R, E, A>,
+  mb: Multi<W, S, S, R1, E1, B>,
+  f: (a: A, b: B) => C
+): Multi<W, S, S, R & R1, E | E1, C> {
+  return pipe(
+    ma,
+    matchCauseM(
+      (c1) =>
+        pipe(
+          mb,
+          matchCauseM(
+            (c2) => halt(FS.both(c1, c2)),
+            (_) => halt(c1)
+          )
+        ),
+      (a) => map_(mb, (b) => f(a, b))
+    )
+  )
+}
+
+export function crossWithPar<W, S, A, R1, E1, B, C>(
+  mb: Multi<W, S, S, R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(ma: Multi<W, S, S, R, E, A>) => Multi<W, S, S, R & R1, E | E1, C> {
+  return (ma) => crossWithPar_(ma, mb, f)
+}
+
+export function ap_<W, S, R, E, A, R1, E1, B>(
+  fab: Multi<W, S, S, R, E, (a: A) => B>,
+  fa: Multi<W, S, S, R1, E1, A>
+): Multi<W, S, S, R1 & R, E1 | E, B> {
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
-export function ap<W1, S2, S3, R1, E1, A>(
-  fa: Multi<W1, S2, S3, R1, E1, A>
-): <W, S1, R, E, B>(fab: Multi<W, S1, S2, R, E, (a: A) => B>) => Multi<W | W1, S1, S3, R1 & R, E1 | E, B> {
+export function ap<W, S, R1, E1, A>(
+  fa: Multi<W, S, S, R1, E1, A>
+): <R, E, B>(fab: Multi<W, S, S, R, E, (a: A) => B>) => Multi<W, S, S, R1 & R, E1 | E, B> {
   return (fab) => ap_(fab, fa)
 }
 
-export function apl_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
-  fa: Multi<W, S1, S2, R, E, A>,
-  fb: Multi<W1, S2, S3, Q, D, B>
-): Multi<W | W1, S1, S3, Q & R, D | E, A> {
+export function apl_<W, S, R, E, A, R1, E1, B>(
+  fa: Multi<W, S, S, R, E, A>,
+  fb: Multi<W, S, S, R1, E1, B>
+): Multi<W, S, S, R & R1, E | E1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function apl<W1, S2, S3, Q, D, B>(
-  fb: Multi<W1, S2, S3, Q, D, B>
-): <W, S1, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, Q & R, D | E, A> {
+export function apl<W, S, R1, E1, B>(
+  fb: Multi<W, S, S, R1, E1, B>
+): <R, E, A>(fa: Multi<W, S, S, R, E, A>) => Multi<W, S, S, R & R1, E | E1, A> {
   return (fa) => apl_(fa, fb)
 }
 
-export function apr_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
-  fa: Multi<W, S1, S2, R, E, A>,
-  fb: Multi<W1, S2, S3, Q, D, B>
-): Multi<W | W1, S1, S3, Q & R, D | E, B> {
+export function apr_<W, S, R, E, A, R1, E1, B>(
+  fa: Multi<W, S, S, R, E, A>,
+  fb: Multi<W, S, S, R1, E1, B>
+): Multi<W, S, S, R & R1, E | E1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function apr<W1, S2, S3, Q, D, B>(
+export function apr<W, S, R1, E1, B>(
+  fb: Multi<W, S, S, R1, E1, B>
+): <R, E, A>(fa: Multi<W, S, S, R, E, A>) => Multi<W, S, S, R & R1, E | E1, B> {
+  return (fa) => apr_(fa, fb)
+}
+
+/*
+ * -------------------------------------------
+ * Zip
+ * -------------------------------------------
+ */
+
+export function zip_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  fb: Multi<W1, S2, S3, R1, E1, B>
+): Multi<W | W1, S1, S3, R & R1, E | E1, readonly [A, B]> {
+  return zipWith_(fa, fb, tuple)
+}
+
+export function zip<W1, S2, S3, R1, E1, B>(
+  fb: Multi<W1, S2, S3, R1, E1, B>
+): <W, S1, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, R & R1, E | E1, readonly [A, B]> {
+  return (fa) => zip_(fa, fb)
+}
+
+export function zipWith_<W, S1, S2, R, E, A, W1, S3, R1, E1, B, C>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  fb: Multi<W1, S2, S3, R1, E1, B>,
+  f: (a: A, b: B) => C
+): Multi<W | W1, S1, S3, R & R1, E | E1, C> {
+  return bind_(fa, (a) => bind_(fb, (b) => succeed(f(a, b))))
+}
+
+export function zipWith<A, W1, S2, S3, R1, E1, B, C>(
+  fb: Multi<W1, S2, S3, R1, E1, B>,
+  f: (a: A, b: B) => C
+): <W, S1, R, E>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, R & R1, E | E1, C> {
+  return (fa) => zipWith_(fa, fb, f)
+}
+
+export function zipl_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  fb: Multi<W1, S2, S3, Q, D, B>
+): Multi<W | W1, S1, S3, Q & R, D | E, A> {
+  return zipWith_(fa, fb, (a, _) => a)
+}
+
+export function zipl<W1, S2, S3, Q, D, B>(
+  fb: Multi<W1, S2, S3, Q, D, B>
+): <W, S1, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, Q & R, D | E, A> {
+  return (fa) => zipl_(fa, fb)
+}
+
+export function zipr_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+  fa: Multi<W, S1, S2, R, E, A>,
+  fb: Multi<W1, S2, S3, Q, D, B>
+): Multi<W | W1, S1, S3, Q & R, D | E, B> {
+  return zipWith_(fa, fb, (_, b) => b)
+}
+
+export function zipr<W1, S2, S3, Q, D, B>(
   fb: Multi<W1, S2, S3, Q, D, B>
 ): <W, S1, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S3, Q & R, D | E, B> {
-  return (fa) => apr_(fa, fb)
+  return (fa) => zipr_(fa, fb)
 }
 
 /*
@@ -512,6 +685,33 @@ export function bimap<E, A, G, B>(
   return (pab) => bimap_(pab, f, g)
 }
 
+/**
+ * Returns a computation with its full cause of failure mapped using the
+ * specified function. This can be users to transform errors while
+ * preserving the original structure of the `Cause`.
+ */
+export function mapErrorCause_<W, S1, S2, R, E, A, E1>(
+  ma: Multi<W, S1, S2, R, E, A>,
+  f: (_: Cause<E>) => Cause<E1>
+): Multi<W, S1, S2, R, E1, A> {
+  return matchCauseM_(ma, flow(f, halt), succeed)
+}
+
+/**
+ * Returns a computation with its full cause of failure mapped using the
+ * specified function. This can be users to transform errors while
+ * preserving the original structure of the `Cause`.
+ */
+export function mapErrorCause<E, E1>(
+  f: (_: Cause<E>) => Cause<E1>
+): <W, S1, S2, R, A>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, E1, A> {
+  return (ma) => mapErrorCause_(ma, f)
+}
+
+/**
+ * Transforms the error type of this computation with the specified
+ * function.
+ */
 export function mapError_<W, S1, S2, R, E, A, G>(
   pab: Multi<W, S1, S2, R, E, A>,
   f: (e: E) => G
@@ -519,6 +719,10 @@ export function mapError_<W, S1, S2, R, E, A, G>(
   return matchM_(pab, (e) => fail(f(e)), succeed)
 }
 
+/**
+ * Transforms the error type of this computation with the specified
+ * function.
+ */
 export function mapError<E, G>(
   f: (e: E) => G
 ): <W, S1, S2, R, A>(pab: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, G, A> {
@@ -532,11 +736,7 @@ export function mapError<E, G>(
  */
 
 export function attempt<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>): Multi<W, S1, S2, R, never, E.Either<E, A>> {
-  return matchM_(
-    fa,
-    (e) => succeed(E.Left(e)),
-    (a) => succeed(E.Right(a))
-  )
+  return matchM_(fa, flow(E.Left, succeed), flow(E.Right, succeed))
 }
 
 export function refail<W, S1, S2, R, E, E1, A>(
@@ -552,7 +752,7 @@ export function refail<W, S1, S2, R, E, E1, A>(
  */
 
 export function map_<W, S1, S2, R, E, A, B>(fa: Multi<W, S1, S2, R, E, A>, f: (a: A) => B): Multi<W, S1, S2, R, E, B> {
-  return bind_(fa, (a) => succeed(f(a)))
+  return bind_(fa, flow(f, succeed))
 }
 
 export function map<A, B>(
@@ -613,8 +813,8 @@ export function asksM<R0, W, S1, S2, R, E, A>(f: (r: R0) => Multi<W, S1, S2, R, 
   return new Asks(f)
 }
 
-export function asks<R0, A>(f: (r: R0) => A): Multi<never, unknown, never, R0, never, A> {
-  return asksM((r: R0) => succeed(f(r)))
+export function asks<S, R, A>(f: (r: R) => A): Multi<never, S, S, R, never, A> {
+  return asksM((r: R) => succeed(f(r)))
 }
 
 export function giveAll_<W, S1, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>, r: R): Multi<W, S1, S2, unknown, E, A> {
@@ -765,30 +965,84 @@ export function update<S1, S2>(f: (s: S1) => S2): Multi<never, S1, S2, unknown, 
 }
 
 /**
- * Transforms the initial state of this computation` with the specified
- * function.
+ * Repeats this computation the specified number of times (or until the first failure)
+ * passing the updated state to each successive repetition.
  *
- * @category Combinators
+ * @category combinators
  * @since 1.0.0
  */
-export function contramapState_<S0, W, S1, S2, R, E, A>(
-  fa: Multi<W, S1, S2, R, E, A>,
-  f: (s: S0) => S1
-): Multi<W, S0, S2, R, E, A> {
-  return bind_(update(f), () => fa)
+export function repeatN_<W, S1, S2 extends S1, R, E, A>(
+  ma: Multi<W, S1, S2, R, E, A>,
+  n: number
+): Multi<W, S1, S2, R, E, A> {
+  return bind_(ma, (a) => (n <= 0 ? succeed(a) : repeatN_(ma, n - 1)))
 }
 
 /**
- * Transforms the initial state of this computation` with the specified
- * function.
+ * Repeats this computation the specified number of times (or until the first failure)
+ * passing the updated state to each successive repetition.
  *
- * @category Combinators
+ * @category combinators
  * @since 1.0.0
  */
-export function contramapState<S0, S1>(
-  f: (s: S0) => S1
-): <W, S2, R, E, A>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W, S0, S2, R, E, A> {
-  return (fa) => contramapState_(fa, f)
+export function repeatN(
+  n: number
+): <W, S1, S2 extends S1, R, E, A>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, E, A> {
+  return (ma) => repeatN_(ma, n)
+}
+
+/**
+ * Repeats this computation until its value satisfies the specified predicate
+ * (or until the first failure) passing the updated state to each successive repetition.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function repeatUntil_<W, S1, S2 extends S1, R, E, A>(
+  ma: Multi<W, S1, S2, R, E, A>,
+  predicate: Predicate<A>
+): Multi<W, S1, S2, R, E, A> {
+  return bind_(ma, (a) => (predicate(a) ? succeed(a) : repeatUntil_(ma, predicate)))
+}
+
+/**
+ * Repeats this computation until its value satisfies the specified predicate
+ * (or until the first failure) passing the updated state to each successive repetition.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function repeatUntil<A>(
+  predicate: Predicate<A>
+): <W, S1, S2 extends S1, R, E>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, E, A> {
+  return (ma) => repeatUntil_(ma, predicate)
+}
+
+/**
+ * Repeats this computation until its value is equal to the specified value
+ * (or until the first failure) passing the updated state to each successive repetition.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function repeatUntilEquals_<A>(
+  E: Eq<A>
+): <W, S1, S2 extends S1, R, E>(ma: Multi<W, S1, S2, R, E, A>, value: () => A) => Multi<W, S1, S2, R, E, A> {
+  return (ma, value) => repeatUntil_(ma, (a) => E.equals_(a, value()))
+}
+
+/**
+ * Repeats this computation until its value is equal to the specified value
+ * (or until the first failure) passing the updated state to each successive repetition.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function repeatUntilEquals<A>(
+  E: Eq<A>
+): (value: () => A) => <W, S1, S2 extends S1, R, E>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W, S1, S2, R, E, A> {
+  const repeatUntilEqualsE_ = repeatUntilEquals_(E)
+  return (value) => (ma) => repeatUntilEqualsE_(ma, value)
 }
 
 /**
@@ -815,6 +1069,13 @@ export function getState<W, S1, S2, R, E, A>(ma: Multi<W, S1, S2, R, E, A>): Mul
   return bind_(ma, (a) => map_(get(), (s) => tuple(s, a)))
 }
 
+/**
+ * Executes this computation and returns its value, if it succeeds, but
+ * otherwise executes the specified computation.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(
   fa: Multi<W, S1, S2, R, E, A>,
   onFailure: (e: E) => Multi<W, S3, S4, R1, E1, A>
@@ -822,6 +1083,13 @@ export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(
   return matchM_(fa, onFailure, succeed)
 }
 
+/**
+ * Executes this computation and returns its value, if it succeeds, but
+ * otherwise executes the specified computation.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function orElse<W, E, A, S3, S4, R1, E1>(
   onFailure: (e: E) => Multi<W, S3, S4, R1, E1, A>
 ): <S1, S2, R>(fa: Multi<W, S1, S2, R, E, A>) => Multi<W, S1 & S3, S4 | S2, R & R1, E1, A> {
@@ -865,34 +1133,36 @@ export function orElseEither<W, S3, S4, R1, E1, A1>(
  * -------------------------------------------
  */
 
-class FoldFrame {
-  readonly _multiTag = 'FoldFrame'
-  constructor(
-    readonly failure: (e: any) => Multi<any, any, any, any, any, any>,
-    readonly apply: (e: any) => Multi<any, any, any, any, any, any>
-  ) {}
-}
+/*
+ * class FoldFrame {
+ *   readonly _multiTag = 'FoldFrame'
+ *   constructor(
+ *     readonly failure: (e: any) => Multi<any, any, any, any, any, any>,
+ *     readonly apply: (e: any) => Multi<any, any, any, any, any, any>
+ *   ) {}
+ * }
+ */
 
 class ApplyFrame {
   readonly _multiTag = 'ApplyFrame'
   constructor(readonly apply: (e: any) => Multi<any, any, any, any, any, any>) {}
 }
 
-type Frame = FoldFrame | ApplyFrame
+type Frame = Match<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any> | ApplyFrame
 
 /**
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export function runEitherCause_<W, S1, S2, E, A>(
+export function runAll_<W, S1, S2, E, A>(
   ma: Multi<W, S1, S2, unknown, E, A>,
   s: S1
-): E.Either<Cause<E>, readonly [ReadonlyArray<W>, S2, A]> {
-  let frames = undefined as Stack<Frame> | undefined
+): readonly [ReadonlyArray<W>, E.Either<Cause<E>, readonly [S2, A]>] {
+  let frames: Stack<Frame> | undefined    = undefined
+  let environment: Stack<any> | undefined = makeStack({})
 
-  let state       = s as any
+  let s0          = s as any
   let result: any = null
-  let environment = null
   let failed      = false
   let current     = ma as Multi<any, any, any, any, any, any> | undefined
   const log       = Array<W>()
@@ -915,12 +1185,22 @@ export function runEitherCause_<W, S1, S2, E, A>(
       if (next == null) {
         unwinding = false
       } else {
-        if (next._multiTag === 'FoldFrame') {
+        if (next._multiTag === MultiTag.Fold) {
           unwinding = false
-          pushContinuation(new ApplyFrame(next.failure))
+          pushContinuation(new ApplyFrame(next.onFailure))
         }
       }
     }
+  }
+
+  function pushEnv(k: any) {
+    environment = makeStack(k, environment)
+  }
+
+  function popEnv() {
+    const current = environment?.value || {}
+    environment   = environment?.previous
+    return current
   }
 
   while (current != null) {
@@ -949,9 +1229,9 @@ export function runEitherCause_<W, S1, S2, E, A>(
             break
           }
           case MultiTag.Modify: {
-            const updated = nested.run(state)
+            const updated = nested.run(s0)
 
-            state  = updated[0]
+            s0     = updated[0]
             result = updated[1]
 
             current = continuation(result)
@@ -1018,22 +1298,34 @@ export function runEitherCause_<W, S1, S2, E, A>(
         break
       }
       case MultiTag.Fold: {
+        const state = s0
+        const match = new Match(I.ma, (cause) => put(state)['*>'](I.onFailure(cause)), I.onSuccess)
+        pushContinuation(match)
         current = I.ma
-        pushContinuation(new FoldFrame(I.onFailure, I.onSuccess))
         break
       }
       case MultiTag.Asks: {
-        current = I.f(environment)
+        current = I.f(environment.value || {})
         break
       }
       case MultiTag.Give: {
-        environment = I.r
-        current     = I.ma
+        pushEnv(I.r)
+        current = matchM_(
+          I.ma,
+          (e) =>
+            effectTotal(() => {
+              popEnv()
+            })['*>'](fail(e)),
+          (a) =>
+            effectTotal(() => {
+              popEnv()
+            })['*>'](succeed(a))
+        )
         break
       }
       case MultiTag.Modify: {
-        const updated  = I.run(state)
-        state          = updated[0]
+        const updated  = I.run(s0)
+        s0             = updated[0]
         result         = updated[1]
         const nextInst = popContinuation()
         if (nextInst) {
@@ -1069,58 +1361,47 @@ export function runEitherCause_<W, S1, S2, E, A>(
   }
 
   if (failed) {
-    return E.Left(result)
+    return [log, E.Left(result)]
   }
 
-  return E.Right([log, state, result])
+  return [log, E.Right([s0, result])]
 }
 
 /**
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
  */
-export function runEitherCause<S1>(
+export function runAll<S1>(
   s: S1
-): <W, S2, E, A>(fa: Multi<W, S1, S2, unknown, E, A>) => E.Either<Cause<E>, readonly [ReadonlyArray<W>, S2, A]> {
-  return (fa) => runEitherCause_(fa, s)
+): <W, S2, E, A>(
+  fa: Multi<W, S1, S2, unknown, E, A>
+) => readonly [ReadonlyArray<W>, E.Either<Cause<E>, readonly [S2, A]>] {
+  return (fa) => runAll_(fa, s)
 }
 
 /**
  * Runs this computation with the specified initial state, returning both
  * the updated state and the result.
  */
-export function run_<W, S1, S2, A>(ma: Multi<W, S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
-  const [, s2, a] = (runEitherCause_(ma, s) as E.Right<readonly [ReadonlyArray<W>, S2, A]>).right
-  return [s2, a]
+export function run_<W, S2, A>(ma: Multi<W, unknown, S2, unknown, never, A>): readonly [S2, A]
+export function run_<W, S1, S2, A>(ma: Multi<W, S1, S2, unknown, never, A>, s: S1): readonly [S2, A]
+export function run_<W, S1, S2, A>(ma: Multi<W, S1, S2, unknown, never, A>, s?: S1): readonly [S2, A] {
+  const result = (runAll_(ma, s || ({} as any))[1] as E.Right<readonly [S2, A]>).right
+  return [result[0], result[1]]
 }
 
 /**
  * Runs this computation with the specified initial state, returning both
  * updated state and the result
  */
+export function run(_: void): <W, S2, A>(ma: Multi<W, unknown, S2, unknown, never, A>) => readonly [S2, A]
+export function run<S1>(s: S1): <W, S2, A>(ma: Multi<W, S1, S2, unknown, never, A>) => readonly [S2, A]
 export function run<S1>(s: S1): <W, S2, A>(ma: Multi<W, S1, S2, unknown, never, A>) => readonly [S2, A] {
   return (ma) => run_(ma, s)
 }
 
-/**
- * Runs this computation, returning the result.
- */
-export function runResult<W, A>(ma: Multi<W, unknown, never, unknown, never, A>): A {
+export function runResult<W, S2, A>(ma: Multi<W, unknown, S2, unknown, never, A>): A {
   return run_(ma, {})[1]
-}
-
-/**
- * Runs this computation with the given environment, returning the result.
- */
-export function runEnv_<W, R, A>(ma: Multi<W, unknown, never, R, never, A>, r: R): A {
-  return runResult(giveAll_(ma, r))
-}
-
-/**
- * Runs this computation with the given environment, returning the result.
- */
-export function runEnv<R>(r: R): <W, A>(ma: Multi<W, unknown, never, R, never, A>) => A {
-  return (ma) => runEnv_(ma, r)
 }
 
 /**
@@ -1144,7 +1425,7 @@ export function runState<S1>(s: S1): <W, S2, A>(ma: Multi<W, S1, S2, unknown, ne
  * result and discarding the updated state.
  */
 export function runStateResult_<W, S1, S2, A>(ma: Multi<W, S1, S2, unknown, never, A>, s: S1): A {
-  return (runEitherCause_(ma, s) as E.Right<readonly [ReadonlyArray<W>, S2, A]>).right[2]
+  return (runAll_(ma, s)[1] as E.Right<readonly [S2, A]>).right[1]
 }
 
 /**
@@ -1158,20 +1439,12 @@ export function runStateResult<S1>(s: S1): <W, S2, A>(ma: Multi<W, S1, S2, unkno
 /**
  * Runs this computation returning either the result or error
  */
-export function runEither<E, A>(ma: Multi<never, unknown, never, unknown, E, A>): E.Either<E, A> {
+export function runEither<S2, E, A>(ma: Multi<never, unknown, S2, unknown, E, A>): E.Either<E, A> {
   return pipe(
-    runEitherCause_(ma, {} as never),
-    E.map(([, , x]) => x),
+    runAll_(ma, {} as never)[1],
+    E.map(([, x]) => x),
     E.mapLeft(FS.first)
   )
-}
-
-export function runEitherEnv_<R, E, A>(ma: Multi<never, unknown, never, R, E, A>, env: R): E.Either<E, A> {
-  return runEither(giveAll_(ma, env))
-}
-
-export function runEitherEnv<R>(env: R): <E, A>(ma: Multi<never, unknown, never, R, E, A>) => E.Either<E, A> {
-  return (ma) => runEitherEnv_(ma, env)
 }
 
 export { MultiURI } from './Modules'

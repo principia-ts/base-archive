@@ -22,7 +22,7 @@ import { makeMonoid } from './typeclass'
  * -------------------------------------------
  */
 
-export interface Sync<R, E, A> extends Multi<never, unknown, never, R, E, A> {}
+export interface Sync<R, E, A> extends Multi<never, unknown, any, R, E, A> {}
 
 export function isSync(u: unknown): u is Sync<any, any, any> {
   return typeof u === 'object' && u != null && '_U' in u && u['_U'] === 'Multi'
@@ -646,10 +646,6 @@ export function asService<A>(has: Tag<A>): <R, E>(fa: Sync<R, E, A>) => Sync<R, 
  */
 
 export const runEither: <E, A>(sync: Sync<unknown, E, A>) => E.Either<E, A> = M.runEither
-
-export const runEitherEnv_: <R, E, A>(sync: Sync<R, E, A>, env: R) => E.Either<E, A> = M.runEitherEnv_
-
-export const runEitherEnv: <R>(env: R) => <E, A>(sync: Sync<R, E, A>) => E.Either<E, A> = M.runEitherEnv
 
 export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
 

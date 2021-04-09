@@ -31,7 +31,7 @@ import * as I from '@principia/base/Iterable'
 import * as NEA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
-import { isSync, runEitherEnv_ } from '@principia/base/Sync'
+import * as S from '@principia/base/Sync'
 import { tuple } from '@principia/base/tuple'
 import { makeMonoid } from '@principia/base/typeclass'
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
@@ -410,12 +410,7 @@ export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
  */
 export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return asksM(
-    traceAs(trace, (_: R) => {
-      const res = runEitherEnv_(effect, _)
-      return E.match_(res, fail, succeed)
-    })
-  )
+  return asksM(traceAs(trace, (_: R) => pipe(effect, S.giveAll(_), S.runEither, E.match(fail, succeed))))
 }
 
 /**
@@ -3817,7 +3812,7 @@ const adapter = (_: any, __?: any) => {
   if (isTag(_)) {
     return new GenIO(askService(_), adapter['$trace'])
   }
-  if (isSync(_)) {
+  if (S.isSync(_)) {
     return new GenIO(fromSync(_), adapter['$trace'])
   }
   return new GenIO(_, adapter['$trace'])

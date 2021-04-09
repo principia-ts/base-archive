@@ -1,9 +1,9 @@
-import type { MReaderURI } from './Modules'
 import type * as HKT from '@principia/base/HKT'
+import type { MReaderURI } from '@principia/base/MReader'
 
 import { flow, pipe } from '@principia/base/function'
-import * as P from '@principia/base/typeclass'
 import * as Mu from '@principia/base/Multi'
+import * as P from '@principia/base/typeclass'
 
 export type V<C> = HKT.CleanParam<C, 'R'> & HKT.V<'R', '-'>
 
@@ -17,7 +17,7 @@ export function getMReaderT<F>(M: P.Monad<HKT.UHKT<F>>): MReaderT<HKT.UHKT<F>> {
     Mu.bind_(rfa, (fa) => Mu.map_(rfb, (fb) => M.crossWith_(fa, fb, f)))
 
   const bind_: MReaderT<HKT.UHKT<F>>['bind_'] = (rma, f) =>
-    Mu.asks((r) => pipe(rma, Mu.giveAll(r), Mu.runResult, M.bind(flow(f, Mu.runEnv(r)))))
+    Mu.asks((r) => pipe(rma, Mu.giveAll(r), Mu.runResult, M.bind(flow(f, Mu.giveAll(r), Mu.runResult))))
   return P.MonadEnv({
     map_,
     crossWith_,
