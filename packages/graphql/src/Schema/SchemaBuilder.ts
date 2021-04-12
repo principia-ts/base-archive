@@ -188,27 +188,33 @@ export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name,
   const serialize    = (u: unknown) =>
     pipe(
       decode(u),
-      Sy.mapError(
-        (errors) =>
+      Sy.bimap(
+        ([errors]) =>
           new GraphQlException(config?.message ?? `Invalid value ${u} provided to Scalar ${name}`, 'INVALID_INPUT', {
             errors
-          })
+          }),
+        ([a]) => a
       )
     )
-  const parseValue   = flow(serialize, Sy.bind(encode))
+  const parseValue   = flow(
+    serialize,
+    Sy.bind(encode)
+  )
   const parseLiteral = (valueNode: ValueNode) =>
     pipe(
       valueNode,
       valueFromASTUntyped,
       decode,
-      Sy.bimap(
-        (errors) =>
-          new GraphQlException(
-            config?.message ?? `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`,
-            'INVALID_INPUT',
-            { errors }
+      Sy.matchM(
+        ([errors]) =>
+          Sy.fail(
+            new GraphQlException(
+              config?.message ?? `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`,
+              'INVALID_INPUT',
+              { errors }
+            )
           ),
-        encode
+        ([a]) => encode(a)
       )
     )
   return new GQLScalar(

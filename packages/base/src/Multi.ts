@@ -7,6 +7,7 @@ import type * as HKT from './HKT'
 import type { Predicate } from './Predicate'
 import type { Stack } from './util/support/Stack'
 
+import * as A from './Array'
 import * as E from './Either'
 import * as FS from './FreeSemiring'
 import { flow, identity, pipe } from './function'
@@ -101,7 +102,8 @@ export const MultiTag = {
   Fold: 'Fold',
   Asks: 'Asks',
   Give: 'Give',
-  Write: 'Write',
+  Tell: 'Tell',
+  Censor: 'Censor',
   Listen: 'Listen'
 } as const
 
@@ -175,12 +177,12 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
     readonly onSuccess: (a: A) => Multi<W2, S2, S4, R2, E2, C>
   ) {
     super()
+    this.apply.bind(this)
   }
   apply(a: A): Multi<W2, S2, S4, R2, E2, C> {
     return this.onSuccess(a)
   }
 }
-
 class Asks<W, R0, S1, S2, R, E, A> extends Multi<W, S1, S2, R0 & R, E, A> {
   readonly _multiTag = MultiTag.Asks
   constructor(readonly f: (r: R0) => Multi<W, S1, S2, R, E, A>) {
@@ -195,9 +197,16 @@ class Give<W, S1, S2, R, E, A> extends Multi<W, S1, S2, unknown, E, A> {
   }
 }
 
-class Write<W> extends Multi<W, unknown, never, unknown, never, void> {
-  readonly _multiTag = MultiTag.Write
-  constructor(readonly w: W) {
+class Tell<W> extends Multi<W, unknown, never, unknown, never, void> {
+  readonly _multiTag = MultiTag.Tell
+  constructor(readonly w: Array<W>) {
+    super()
+  }
+}
+
+class Censor<W, S1, S2, R, E, A, W1> extends Multi<W1, S1, S2, R, E, A> {
+  readonly _multiTag = MultiTag.Censor
+  constructor(readonly ma: Multi<W, S1, S2, R, E, A>, readonly f: (w: ReadonlyArray<W>) => ReadonlyArray<W1>) {
     super()
   }
 }
@@ -221,7 +230,8 @@ export type MultiInstruction =
   | EffectTotal<any>
   | EffectPartial<any, any, any>
   | DeferPartial<any, any, any, any, any, any, any>
-  | Write<any>
+  | Tell<any>
+  | Censor<any, any, any, any, any, any, any>
   | Listen<any, any, any, any, any, any>
 
 /*
@@ -863,22 +873,47 @@ export function unit(): Multi<never, unknown, never, unknown, never, void> {
  */
 
 export function tell<W>(w: W): Multi<W, unknown, never, unknown, never, void> {
-  return new Write(w)
+  return new Tell([w])
+}
+
+export function tellAll<W>(w: ReadonlyArray<W>): Multi<W, unknown, never, unknown, never, void> {
+  return new Tell(w as Array<W>)
+}
+
+export function censor_<W, S1, S2, R, E, A, W1>(
+  wa: Multi<W, S1, S2, R, E, A>,
+  f: (w: ReadonlyArray<W>) => ReadonlyArray<W1>
+): Multi<W1, S1, S2, R, E, A> {
+  return new Censor(wa, f)
+}
+
+export function censor<W, W1>(
+  f: (w: ReadonlyArray<W>) => ReadonlyArray<W1>
+): <S1, S2, R, E, A>(wa: Multi<W, S1, S2, R, E, A>) => Multi<W1, S1, S2, R, E, A> {
+  return (wa) => censor_(wa, f)
 }
 
 export function write_<W, S1, S2, R, E, A, W1>(ma: Multi<W, S1, S2, R, E, A>, w: W1): Multi<W | W1, S1, S2, R, E, A> {
-  return bind_(ma, (a) =>
-    pipe(
-      tell(w),
-      map(() => a)
-    )
-  )
+  return censor_(ma, (ws) => [...ws, w])
 }
 
 export function write<W1>(
   w: W1
 ): <W, S1, S2, R, E, A>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S2, R, E, A> {
   return (ma) => write_(ma, w)
+}
+
+export function writeAll_<W, S1, S2, R, E, A, W1>(
+  ma: Multi<W, S1, S2, R, E, A>,
+  ws: ReadonlyArray<W1>
+): Multi<W | W1, S1, S2, R, E, A> {
+  return censor_(ma, (ws0) => [...ws0, ...ws])
+}
+
+export function writeAll<W1>(
+  ws: ReadonlyArray<W1>
+): <W, S1, S2, R, E, A>(ma: Multi<W, S1, S2, R, E, A>) => Multi<W | W1, S1, S2, R, E, A> {
+  return (ma) => writeAll_(ma, ws)
 }
 
 export function listen<W, S1, S2, R, E, A>(
@@ -1165,7 +1200,7 @@ export function runAll_<W, S1, S2, E, A>(
   let result: any = null
   let failed      = false
   let current     = ma as Multi<any, any, any, any, any, any> | undefined
-  const log       = Array<W>()
+  let log         = Array<W>()
 
   function popContinuation() {
     const current = frames?.value
@@ -1335,14 +1370,26 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case MultiTag.Write: {
-        log.push(I.w)
+      case MultiTag.Tell: {
+        log            = I.w
         const nextInst = popContinuation()
         if (nextInst) {
           current = nextInst.apply(result)
         } else {
           current = undefined
         }
+        break
+      }
+      case MultiTag.Censor: {
+        current = I.ma
+        pushContinuation(
+          new ApplyFrame((_) =>
+            effectTotal(() => {
+              log = I.f(log) as Array<W>
+              return result
+            })
+          )
+        )
         break
       }
       case MultiTag.Listen: {

@@ -30,6 +30,5 @@ export const PrimitivesEq = implementInterpreter<EqURI, Alg.PrimitivesURI>()((_)
       A.map((f) => f(env)),
       (eqs) => applyEqConfig(config?.config)(Eq.tuple(...eqs) as any, env, eqs as any)
     ),
-  keyof: (_, config) => (env) => applyEqConfig(config?.config)(Eq.EqStrict, env, {}),
   UUID: (config) => (env) => applyEqConfig(config?.config)(S.Eq, env, {})
 }))

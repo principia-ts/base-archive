@@ -1,5 +1,5 @@
-import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from '../HKT'
-import type { UnknownRecordE } from '@principia/codec/DecodeError'
+import type { AnyEnv, Config, ErrorOf, InterpretedKind, InterpreterURIS, Param } from '../HKT'
+import type * as DE from '@principia/codec/DecodeError'
 
 export const StructURI = 'model/algebra/struct'
 
@@ -52,7 +52,8 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      InferStruct<F, Env, Props, 'E'>[keyof Props] | UnknownRecordE,
+      | DE.LeafE<DE.UnknownRecordE>
+      | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
       InferStruct<F, Env, Props, 'A'>,
       InferStruct<F, Env, Props, 'O'>,
       StructConfig<Props>
@@ -61,7 +62,8 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    InferStruct<F, Env, Props, 'E'>[keyof Props] | UnknownRecordE,
+    | DE.LeafE<DE.UnknownRecordE>
+    | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
     InferStruct<F, Env, Props, 'A'>,
     InferStruct<F, Env, Props, 'O'>
   >
@@ -71,7 +73,8 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      InferStruct<F, Env, Props, 'E'>[keyof Props] | UnknownRecordE,
+      | DE.LeafE<DE.UnknownRecordE>
+      | DE.PartialE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
       Partial<InferStruct<F, Env, Props, 'A'>>,
       Partial<InferStruct<F, Env, Props, 'O'>>,
       PartialConfig<Props>
@@ -80,7 +83,8 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    InferStruct<F, Env, Props, 'E'>[keyof Props] | UnknownRecordE,
+    | DE.LeafE<DE.UnknownRecordE>
+    | DE.PartialE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
     Partial<InferStruct<F, Env, Props, 'A'>>,
     Partial<InferStruct<F, Env, Props, 'O'>>
   >
@@ -91,9 +95,18 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      | InferStruct<F, Env, Props, 'E'>[keyof Props]
-      | InferStruct<F, Env, PropsPartial, 'E'>[keyof PropsPartial]
-      | UnknownRecordE,
+      DE.IntersectionE<
+        | DE.MemberE<
+            0,
+            | DE.LeafE<DE.UnknownRecordE>
+            | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+          >
+        | DE.MemberE<
+            1,
+            | DE.LeafE<DE.UnknownRecordE>
+            | DE.PartialE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+          >
+      >,
       InferStruct<F, Env, Props, 'A'> & Partial<InferStruct<F, Env, PropsPartial, 'A'>>,
       InferStruct<F, Env, Props, 'O'> & Partial<InferStruct<F, Env, PropsPartial, 'O'>>,
       BothConfig<Props, PropsPartial>
@@ -102,9 +115,20 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    | InferStruct<F, Env, Props, 'E'>[keyof Props]
-    | InferStruct<F, Env, PropsPartial, 'E'>[keyof PropsPartial]
-    | UnknownRecordE,
+    DE.IntersectionE<
+      | DE.MemberE<
+          0,
+          | DE.LeafE<DE.UnknownRecordE>
+          | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+        >
+      | DE.MemberE<
+          1,
+          | DE.LeafE<DE.UnknownRecordE>
+          | DE.PartialE<
+              { readonly [K in keyof PropsPartial]: DE.KeyE<K, ErrorOf<F, Env, PropsPartial[K]>> }[keyof PropsPartial]
+            >
+        >
+    >,
     InferStruct<F, Env, Props, 'A'> & Partial<InferStruct<F, Env, PropsPartial, 'A'>>,
     InferStruct<F, Env, Props, 'O'> & Partial<InferStruct<F, Env, PropsPartial, 'O'>>
   >

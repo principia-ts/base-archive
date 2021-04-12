@@ -13,7 +13,7 @@ export const RecursiveDecoder = implementInterpreter<DecoderURI, Alg.RecursiveUR
   recursive: (id, f, config) => {
     const get = memoize<void, ReturnType<typeof f>>(() => f(res))
 
-    const res: ReturnType<typeof f> = (env) =>
+    const res = (env: typeof _.Env) =>
       pipe(
         () => get()(env),
         (getDecoder) => applyDecoderConfig(config?.config)(withConfig(config)(D.lazy(id, getDecoder)), env, {})

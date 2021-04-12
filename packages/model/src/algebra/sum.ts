@@ -1,7 +1,7 @@
-import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from '../HKT'
+import type { AnyEnv, Config, ErrorOf, InterpretedKind, InterpreterURIS, Param } from '../HKT'
 import type { Either } from '@principia/base/Either'
 import type { Option } from '@principia/base/Option'
-import type { LiteralE, StringE, TagE, UnknownRecordE } from '@principia/codec/DecodeError'
+import type * as DE from '@principia/codec/DecodeError'
 
 export const SumURI = 'model/algebra/sum'
 
@@ -70,24 +70,28 @@ export interface EitherConfig<EI, EE, EA, EO, AI, AE, AA, AO> {}
 export interface OptionConfig<I, E, A, O> {}
 
 export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
-  readonly taggedUnion: <Tag extends string, Types extends TaggedTypes<F, Env, Tag, any, any, any, any>>(
+  readonly taggedUnion: <Tag extends string, Members extends TaggedTypes<F, Env, Tag, any, any, any, any>>(
     tag: Tag,
-    types: Types & { [K in keyof Types]: DecorateTag<Types[K], Tag, K> },
+    members: Members & { [K in keyof Members]: DecorateTag<Members[K], Tag, K> },
     config?: Config<
       Env,
-      Infer<F, Env, 'I', Types[keyof Types]>,
-      Infer<F, Env, 'E', Types[keyof Types]>,
-      Infer<F, Env, 'A', Types[keyof Types]>,
-      Infer<F, Env, 'O', Types[keyof Types]>,
-      TaggedUnionConfig<Types>
+      Infer<F, Env, 'I', Members[keyof Members]>,
+      | DE.UnknownRecordLE
+      | DE.TagNotFoundE<Tag, DE.LiteralE<keyof Members>>
+      | DE.SumE<{ readonly [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>,
+      Infer<F, Env, 'A', Members[keyof Members]>,
+      Infer<F, Env, 'O', Members[keyof Members]>,
+      TaggedUnionConfig<Members>
     >
   ) => InterpretedKind<
     F,
     Env,
-    Infer<F, Env, 'I', Types[keyof Types]>,
-    Infer<F, Env, 'E', Types[keyof Types]>,
-    Infer<F, Env, 'A', Types[keyof Types]>,
-    Infer<F, Env, 'O', Types[keyof Types]>
+    Infer<F, Env, 'I', Members[keyof Members]>,
+    | DE.UnknownRecordLE
+    | DE.TagNotFoundE<Tag, DE.LiteralE<keyof Members>>
+    | DE.SumE<{ readonly [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>,
+    Infer<F, Env, 'A', Members[keyof Members]>,
+    Infer<F, Env, 'O', Members[keyof Members]>
   >
   readonly either: <EE, EA, EO, AE, AA, AO>(
     left: InterpretedKind<F, Env, unknown, EE, EA, EO>,
@@ -95,7 +99,20 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      EE | AE | StringE | UnknownRecordE | TagE<'Left' | 'Right'> | LiteralE<['Left']> | LiteralE<['Right']>,
+      | DE.UnknownRecordLE
+      | DE.TagNotFoundE<'_tag', DE.LiteralE<'Left' | 'Right'>>
+      | DE.SumE<
+          | DE.MemberE<
+              'Left',
+              | DE.LeafE<DE.UnknownRecordE>
+              | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Left'>>> | DE.KeyE<'left', EE>>
+            >
+          | DE.MemberE<
+              'Right',
+              | DE.LeafE<DE.UnknownRecordE>
+              | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Right'>>> | DE.KeyE<'right', AE>>
+            >
+        >,
       Either<EA, AA>,
       Either<EO, AO>,
       EitherConfig<unknown, EE, EA, EO, unknown, AE, AA, AO>
@@ -104,7 +121,20 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    EE | AE | StringE | UnknownRecordE | TagE<'Left' | 'Right'> | LiteralE<['Left']> | LiteralE<['Right']>,
+    | DE.UnknownRecordLE
+    | DE.TagNotFoundE<'_tag', DE.LiteralE<'Left' | 'Right'>>
+    | DE.SumE<
+        | DE.MemberE<
+            'Left',
+            | DE.LeafE<DE.UnknownRecordE>
+            | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Left'>>> | DE.KeyE<'left', EE>>
+          >
+        | DE.MemberE<
+            'Right',
+            | DE.LeafE<DE.UnknownRecordE>
+            | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Right'>>> | DE.KeyE<'right', AE>>
+          >
+      >,
     Either<EA, AA>,
     Either<EO, AO>
   >
@@ -113,7 +143,16 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      E | StringE | UnknownRecordE | TagE<'None' | 'Some'> | LiteralE<['Some']> | LiteralE<['None']>,
+      | DE.UnknownRecordLE
+      | DE.TagNotFoundE<'_tag', DE.LiteralE<'None' | 'Some'>>
+      | DE.SumE<
+          | DE.MemberE<'None', DE.LeafE<DE.UnknownRecordE> | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'None'>>>>>
+          | DE.MemberE<
+              'Some',
+              | DE.LeafE<DE.UnknownRecordE>
+              | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Some'>>> | DE.KeyE<'value', E>>
+            >
+        >,
       Option<A>,
       Option<O>,
       OptionConfig<unknown, E, A, O>
@@ -122,7 +161,16 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    E | StringE | UnknownRecordE | TagE<'None' | 'Some'> | LiteralE<['Some']> | LiteralE<['None']>,
+    | DE.UnknownRecordLE
+    | DE.TagNotFoundE<'_tag', DE.LiteralE<'None' | 'Some'>>
+    | DE.SumE<
+        | DE.MemberE<'None', DE.LeafE<DE.UnknownRecordE> | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'None'>>>>>
+        | DE.MemberE<
+            'Some',
+            | DE.LeafE<DE.UnknownRecordE>
+            | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Some'>>> | DE.KeyE<'value', E>>
+          >
+      >,
     Option<A>,
     Option<O>
   >

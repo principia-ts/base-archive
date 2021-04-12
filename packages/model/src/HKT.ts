@@ -12,22 +12,6 @@ import { memoize } from './utils'
  * -------------------------------------------
  */
 
-export interface URItoKinds {
-  String: any
-  Number: any
-  Boolean: any
-  Literal: any
-  Array: any
-  NonEmptyArray: any
-  Tuple: any
-  Struct: any
-  Partial: any
-  KeyOf: any
-  Generic: any
-}
-
-export type Kinds = keyof URItoKinds
-
 export interface InterpretedHKT<URI, Env, I, E, A, O> {
   readonly _URI: URI
   readonly _Env: (_: Env) => void

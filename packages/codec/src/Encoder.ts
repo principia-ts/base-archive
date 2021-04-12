@@ -14,8 +14,6 @@ import { EncoderURI } from './Modules'
 import { _intersect } from './util'
 
 export interface Encoder<A, O> {
-  readonly _IA?: (_: A) => void
-  readonly _O?: () => O
   readonly encode: (a: A) => USync<O>
 }
 

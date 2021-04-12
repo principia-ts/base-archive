@@ -11,6 +11,7 @@ import * as Iter from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as Str from '@principia/base/string'
+import * as Sy from '@principia/base/Sync'
 import { makeSemigroup } from '@principia/base/typeclass'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
@@ -19,7 +20,6 @@ import * as Q from '@principia/io/Queue'
 import * as Ref from '@principia/io/Ref'
 import * as S from '@principia/io/Stream'
 import * as Pull from '@principia/io/Stream/Pull'
-import * as Sy from '@principia/base/Sync'
 import * as NS from '@principia/node/stream'
 import { TLSSocket } from 'tls'
 import * as Url from 'url'
@@ -252,7 +252,7 @@ export class HttpRequest {
     const self = this
     return I.gen(function* (_) {
       const contentType = yield* _(self.getHeader('content-type'))
-      const charset     = yield* _(
+      const [charset]   = yield* _(
         pipe(
           contentType,
           O.map(parseContentType),
@@ -285,7 +285,7 @@ export class HttpRequest {
     const self = this
     return I.gen(function* (_) {
       const contentType = yield* _(self.getHeader('Content-Type'))
-      const charset     = yield* _(
+      const [charset]   = yield* _(
         pipe(
           contentType,
           O.map(parseContentType),

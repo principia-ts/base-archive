@@ -1,9 +1,11 @@
 import type * as Alg from '../../algebra'
+import type { UUIDE } from '../../algebra'
 import type { DecoderURI } from './HKT'
 import type { Branded } from '@principia/base/Brand'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
+import * as DE from '@principia/codec/DecodeError'
 import * as D from '@principia/codec/Decoder'
 
 import { implementInterpreter } from '../../HKT'
@@ -11,11 +13,6 @@ import { applyDecoderConfig } from './HKT'
 import { withConfig } from './utils'
 
 export const regexUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-export class UUIDE {
-  readonly _tag = 'UUIDE'
-  constructor(readonly actual: string) {}
-}
 
 export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.PrimitivesURI>()((_) => ({
   string: (config) => (env) => applyDecoderConfig(config?.config)(withConfig(config)(D.string), env, {}),
@@ -33,7 +30,7 @@ export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.Primitives
   numberLiteral: (value, config) => (env) =>
     applyDecoderConfig(config?.config)(withConfig(config)(D.literal(value)), env, {}),
 
-  bigint: (config) => (env) => applyDecoderConfig(config?.config)(withConfig(config)(D.bigint), env, {}),
+  bigint: (config) => (env) => applyDecoderConfig(config?.config)(withConfig(config)(D.bigintFromString), env, {}),
 
   date: (config) => (env) => applyDecoderConfig(config?.config)(withConfig(config)(D.dateFromString), env, {}),
 
@@ -55,16 +52,13 @@ export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.Primitives
         applyDecoderConfig(config?.config)(withConfig(config)(D.fromTuple(...decoders)) as any, env, decoders as any)
     ),
 
-  keyof: (keys, config) => (env) =>
-    applyDecoderConfig(config?.config)(withConfig(config)(D.keyof(keys)) as any, env, {}),
-
   UUID: (config) => (env) =>
     applyDecoderConfig(config?.config)(
       pipe(
         D.string,
         D.refine(
           (a): a is Branded<string, Alg.UUIDBrand> => regexUUID.test(a),
-          (s) => new UUIDE(s)
+          (s) => DE.leafE<UUIDE>({ _tag: 'UUIDE', actual: s })
         ),
         withConfig(config)
       ),

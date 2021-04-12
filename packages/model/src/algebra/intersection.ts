@@ -1,5 +1,6 @@
-import type { AnyEnv, Config, InterpretedKind, InterpreterURIS, Param } from '../HKT'
+import type { AnyEnv, Config, ErrorOf, InterpretedKind, InterpreterURIS, Param } from '../HKT'
 import type { UnionToIntersection } from '@principia/base/util/types'
+import type * as DE from '@principia/codec/DecodeError'
 
 export const IntersectionURI = 'model/algebra/intersection'
 
@@ -39,32 +40,32 @@ export interface IntersectionConfig<
 
 export interface IntersectionAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
   readonly intersection: <
-    KS extends readonly [
+    Members extends readonly [
       InterpretedKind<F, Env, any, any, any, any>,
       ...(readonly InterpretedKind<F, Env, any, any, any, any>[])
     ]
   >(
-    ...types: KS
+    ...members: Members
   ) => (
     config?: Config<
       Env,
-      UnionToIntersection<InferTuple<F, Env, KS, 'I'>[number]>,
-      InferTuple<F, Env, KS, 'E'>[number],
-      UnionToIntersection<InferTuple<F, Env, KS, 'A'>[number]>,
-      UnionToIntersection<InferTuple<F, Env, KS, 'O'>[number]>,
+      UnionToIntersection<InferTuple<F, Env, Members, 'I'>[number]>,
+      DE.IntersectionE<{ [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>,
+      UnionToIntersection<InferTuple<F, Env, Members, 'A'>[number]>,
+      UnionToIntersection<InferTuple<F, Env, Members, 'O'>[number]>,
       IntersectionConfig<
-        InferTuple<F, Env, KS, 'I'>,
-        InferTuple<F, Env, KS, 'E'>,
-        InferTuple<F, Env, KS, 'A'>,
-        InferTuple<F, Env, KS, 'O'>
+        InferTuple<F, Env, Members, 'I'>,
+        InferTuple<F, Env, Members, 'E'>,
+        InferTuple<F, Env, Members, 'A'>,
+        InferTuple<F, Env, Members, 'O'>
       >
     >
   ) => InterpretedKind<
     F,
     Env,
-    UnionToIntersection<InferTuple<F, Env, KS, 'I'>[number]>,
-    InferTuple<F, Env, KS, 'E'>[number],
-    UnionToIntersection<InferTuple<F, Env, KS, 'A'>[number]>,
-    UnionToIntersection<InferTuple<F, Env, KS, 'O'>[number]>
+    UnionToIntersection<InferTuple<F, Env, Members, 'I'>[number]>,
+    DE.IntersectionE<{ [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>,
+    UnionToIntersection<InferTuple<F, Env, Members, 'A'>[number]>,
+    UnionToIntersection<InferTuple<F, Env, Members, 'O'>[number]>
   >
 }

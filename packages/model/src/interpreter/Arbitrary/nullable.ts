@@ -8,9 +8,9 @@ import { implementInterpreter } from '../../HKT'
 import { accessFastCheck, applyArbitraryConfig } from './HKT'
 
 export const NullableArbitrary = implementInterpreter<ArbitraryURI, Alg.NullableURI>()((_) => ({
-  nullable_: (a, config) => (env) =>
+  nullable: (a, config) => (env) =>
     pipe(a(env), (arb) => applyArbitraryConfig(config?.config)(accessFastCheck(env).option(arb), env, arb)),
-  optional_: (a, config) => (env) =>
+  optional: (a, config) => (env) =>
     pipe(a(env), (arb) =>
       applyArbitraryConfig(config?.config)(accessFastCheck(env).option(arb).map(O.fromNullable), env, arb)
     )

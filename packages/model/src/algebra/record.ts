@@ -1,6 +1,6 @@
 import type { AnyEnv, Config, InterpretedKind, InterpreterURIS } from '../HKT'
 import type { ReadonlyRecord } from '@principia/base/Record'
-import type { UnknownRecordE } from '@principia/codec/DecodeError'
+import type * as DE from '@principia/codec/DecodeError'
 
 export const RecordURI = 'model/algebra/record'
 
@@ -20,10 +20,17 @@ export interface RecordAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      E | UnknownRecordE,
+      DE.LeafE<DE.UnknownRecordE> | DE.RecordE<DE.KeyE<string, E>>,
       ReadonlyRecord<string, A>,
       Record<string, O>,
       RecordConfig<unknown, E, A, O>
     >
-  ) => InterpretedKind<F, Env, unknown, E | UnknownRecordE, ReadonlyRecord<string, A>, Record<string, O>>
+  ) => InterpretedKind<
+    F,
+    Env,
+    unknown,
+    DE.LeafE<DE.UnknownRecordE> | DE.RecordE<DE.KeyE<string, E>>,
+    ReadonlyRecord<string, A>,
+    Record<string, O>
+  >
 }

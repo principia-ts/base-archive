@@ -9,7 +9,7 @@ import { applyDecoderConfig } from './HKT'
 import { withConfig } from './utils'
 
 export const RefinementDecoder = implementInterpreter<DecoderURI, Alg.RefinementURI>()((_) => ({
-  refine_: (decoder, refinement, onError, config) => (env) =>
+  refine: (decoder, refinement, onError, config) => (env) =>
     applyDecoderConfig(config?.config)(pipe(decoder(env), D.refine(refinement, onError), withConfig(config)), env, {}),
   constrain: (decoder, predicate, onError, config) => (env) =>
     applyDecoderConfig(config?.config)(

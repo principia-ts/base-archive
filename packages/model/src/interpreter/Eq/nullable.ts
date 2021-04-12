@@ -9,6 +9,6 @@ import { implementInterpreter } from '../../HKT'
 import { applyEqConfig } from './HKT'
 
 export const NullableEq = implementInterpreter<EqURI, Alg.NullableURI>()((_) => ({
-  nullable_: (a, config) => (env) => pipe(a(env), (eq) => applyEqConfig(config?.config)(Eq.nullable(eq), env, eq)),
-  optional_: (a, config) => (env) => pipe(a(env), (eq) => applyEqConfig(config?.config)(O.getEq(eq), env, eq))
+  nullable: (a, config) => (env) => pipe(a(env), (eq) => applyEqConfig(config?.config)(Eq.nullable(eq), env, eq)),
+  optional: (a, config) => (env) => pipe(a(env), (eq) => applyEqConfig(config?.config)(O.getEq(eq), env, eq))
 }))

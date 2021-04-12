@@ -42,5 +42,5 @@ export const ObjectDecoder = implementInterpreter<DecoderURI, Alg.StructURI>()((
               }
             )
         )
-    )
+    ) as any
 }))

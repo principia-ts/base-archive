@@ -43,15 +43,6 @@ export const PrimitivesGuard = implementInterpreter<GuardURI, Alg.PrimitivesURI>
       A.map((f) => f(env)),
       (guards) => applyGuardConfig(config?.config)(G.tuple(...guards) as any, env, guards as any)
     ),
-  keyof: (keys, config) => (env) =>
-    applyGuardConfig(config?.config)(
-      pipe(
-        S.Guard,
-        G.refine((k): k is keyof typeof keys & string => R.has_(keys, k))
-      ),
-      env,
-      {}
-    ),
   UUID: (config) => (env) =>
     applyGuardConfig(config?.config)(
       pipe(

@@ -39,11 +39,5 @@ export const PrimitivesArbitrary = implementInterpreter<ArbitraryURI, Alg.Primit
           arbitraries
         )
     ),
-  keyof: (keys, config) => (env) =>
-    applyArbitraryConfig(config?.config)(
-      accessFastCheck(env).oneof(...pipe(keys, R.keys, A.map(accessFastCheck(env).constant))),
-      env,
-      {}
-    ),
   UUID: (config) => (env) => applyArbitraryConfig(config?.config)(accessFastCheck(env).uuid() as any, env, {})
 }))

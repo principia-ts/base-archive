@@ -1,7 +1,7 @@
 import type { GraphQlException } from './GraphQlException'
 import type { FunctionN } from '@principia/base/function'
-import type * as U from '@principia/base/util/types'
 import type * as Sy from '@principia/base/Sync'
+import type * as U from '@principia/base/util/types'
 import type { DirectiveNode, ValueNode } from 'graphql'
 
 export interface ScalarConfig {

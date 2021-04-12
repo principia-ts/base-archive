@@ -3,8 +3,8 @@ import type { EncoderURI } from './HKT'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
-import * as E from '@principia/codec/Encoder'
 import * as S from '@principia/base/Sync'
+import * as E from '@principia/codec/Encoder'
 
 import { implementInterpreter } from '../../HKT'
 import { applyEncoderConfig } from './HKT'
@@ -28,6 +28,5 @@ export const PrimitivesEncoder = implementInterpreter<EncoderURI, Alg.Primitives
       A.map((f) => f(env)),
       (encoders) => applyEncoderConfig(config?.config)(E.tuple(...(encoders as any)) as any, env, encoders as any)
     ),
-  keyof: (keys, config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {}),
   UUID: (config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {})
 }))

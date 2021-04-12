@@ -16,7 +16,7 @@ export const IntersectionDecoder = implementInterpreter<DecoderURI, Alg.Intersec
       NA.map((f) => f(env)),
       (decoders) =>
         applyDecoderConfig(config?.config)(
-          withConfig(config)(D.intersect(...(decoders as any)) as any),
+          withConfig(config)(D.intersect(decoders[0], ...decoders.slice(1)) as any),
           env,
           decoders as any
         )

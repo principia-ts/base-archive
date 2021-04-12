@@ -1,6 +1,6 @@
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
-import * as S from '@principia/io/Sync'
+import * as S from '@principia/base/Sync'
 
 import * as M from '../src'
 

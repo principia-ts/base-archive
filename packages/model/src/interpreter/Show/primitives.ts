@@ -58,6 +58,5 @@ export const PrimitivesShow = implementInterpreter<ShowURI, Alg.PrimitivesURI>()
       A.map((f) => f(env)),
       (shows) => applyShowConfig(config?.config)(Sh.tuple(...shows) as any, env, shows as any)
     ),
-  keyof: (keys, config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.label), env, {}),
   UUID: (config) => (env) => applyShowConfig(config?.config)(Sh.named_(S.Show, config?.label), env, {})
 }))

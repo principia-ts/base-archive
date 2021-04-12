@@ -9,11 +9,11 @@ import { applyDecoderConfig } from './HKT'
 import { withConfig } from './utils'
 
 export const NullableDecoder = implementInterpreter<DecoderURI, Alg.NullableURI>()((_) => ({
-  nullable_: (a, config) => (env) =>
+  nullable: (a, config) => (env) =>
     pipe(a(env), (decoder) =>
       applyDecoderConfig(config?.config)(withConfig(config)(D.nullable(decoder)), env, decoder)
     ),
 
-  optional_: (a, config) => (env) =>
+  optional: (a, config) => (env) =>
     pipe(a(env), (decoder) => applyDecoderConfig(config?.config)(withConfig(config)(D.optional(decoder)), env, decoder))
 }))

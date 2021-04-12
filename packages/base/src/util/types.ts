@@ -1,6 +1,6 @@
 import type { NonEmptyArray } from '../NonEmptyArray'
 
-export type Primitive = string | number | boolean | null
+export type Primitive = string | number | boolean | null | symbol
 
 export type Constructor<A> = { new (...args: any[]): A }
 

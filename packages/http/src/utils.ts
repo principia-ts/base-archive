@@ -47,57 +47,46 @@ export const HttpContentType = {
 export type HttpContentType = typeof HttpContentType[keyof typeof HttpContentType]
 
 export const ContentTypeModel = M.make((F) =>
-  F.keyof({
-    'application/*': null,
-    'application/rtf': null,
-    'application/zip': null,
-    'application/x-rar-compressed': null,
-    'application/x-tar': null,
-    'application/x-7z-compressed': null,
-    'application/x-www-form-urlencoded': null,
-    'application/pdf': null,
-    'application/json': null,
-    'application/javascript': null,
-    'application/ecmascript': null,
-    'application/xml': null,
-    'application/octet-stream': null,
-    'application/vnd.api+json': null,
-    'application/graphql': null,
-    'text/plain': null,
-    'text/html': null,
-    'text/css': null,
-    'text/csv': null,
-    'image/webp': null,
-    'image/jpeg': null,
-    'image/png': null,
-    'image/gif': null,
-    'image/tiff': null,
-    'image/svg+xml': null,
-    'audio/mpeg': null,
-    'audio/ogg': null,
-    'audio/*': null,
-    'video/webm': null,
-    'video/mp4': null,
-    'font/ttf': null,
-    'font/woff': null,
-    'font/woff2': null,
-    'multipart/form-data': null
-  })
+  F.literal(
+    'application/*',
+    'application/rtf',
+    'application/zip',
+    'application/x-rar-compressed',
+    'application/x-tar',
+    'application/x-7z-compressed',
+    'application/x-www-form-urlencoded',
+    'application/pdf',
+    'application/json',
+    'application/javascript',
+    'application/ecmascript',
+    'application/xml',
+    'application/octet-stream',
+    'application/vnd.api+json',
+    'application/graphql',
+    'text/plain',
+    'text/html',
+    'text/css',
+    'text/csv',
+    'image/webp',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/tiff',
+    'image/svg+xml',
+    'audio/mpeg',
+    'audio/ogg',
+    'audio/*',
+    'video/webm',
+    'video/mp4',
+    'font/ttf',
+    'font/woff',
+    'font/woff2',
+    'multipart/form-data'
+  )()
 )
 
 export const CharsetModel = M.make((F) =>
-  F.keyof({
-    'utf-8': null,
-    utf8: null,
-    ascii: null,
-    utf16le: null,
-    ucs2: null,
-    'ucs-2': null,
-    binary: null,
-    hex: null,
-    base64: null,
-    latin1: null
-  })
+  F.literal('utf-8', 'utf8', 'ascii', 'utf16le', 'ucs2', 'ucs-2', 'binary', 'hex', 'base64', 'latin1')()
 )
 
 export const decodeCharset = M.getDecoder(CharsetModel)

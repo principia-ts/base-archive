@@ -8,6 +8,6 @@ import { implementInterpreter } from '../../HKT'
 import { applyEqConfig } from './HKT'
 
 export const RefinementEq = implementInterpreter<EqURI, Alg.RefinementURI>()((_) => ({
-  refine_: (a, _, __, config) => (env) => pipe(a(env), (eq) => applyEqConfig(config?.config)(eq, env, {})),
+  refine: (a, _, __, config) => (env) => pipe(a(env), (eq) => applyEqConfig(config?.config)(eq, env, {})),
   constrain: (a, _, __, config) => (env) => pipe(a(env), (eq) => applyEqConfig(config?.config)(eq, env, {}))
 }))

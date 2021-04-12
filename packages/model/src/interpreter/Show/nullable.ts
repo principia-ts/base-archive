@@ -9,8 +9,8 @@ import { implementInterpreter } from '../../HKT'
 import { applyShowConfig } from './HKT'
 
 export const NullableShow = implementInterpreter<ShowURI, Alg.NullableURI>()((_) => ({
-  nullable_: (a, config) => (env) =>
+  nullable: (a, config) => (env) =>
     pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(S.nullable(show), config?.label), env, show)),
-  optional_: (a, config) => (env) =>
+  optional: (a, config) => (env) =>
     pipe(a(env), (show) => applyShowConfig(config?.config)(S.named_(O.getShow(show), config?.label), env, show))
 }))
