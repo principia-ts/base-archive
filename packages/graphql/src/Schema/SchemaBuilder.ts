@@ -8,8 +8,9 @@ import type { Compute } from '@principia/base/util/compute'
 import type { _A, _E, _R, UnionToIntersection } from '@principia/base/util/types'
 import type { ValueNode } from 'graphql'
 
-import { flow, pipe } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as Sy from '@principia/base/Sync'
+import * as Z from '@principia/base/Z'
 import * as M from '@principia/model'
 import { valueFromASTUntyped } from 'graphql'
 
@@ -188,25 +189,26 @@ export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name,
   const serialize    = (u: unknown) =>
     pipe(
       decode(u),
-      Sy.bimap(
-        ([errors]) =>
+      Z.bimap(
+        (errors) =>
           new GraphQlException(config?.message ?? `Invalid value ${u} provided to Scalar ${name}`, 'INVALID_INPUT', {
             errors
           }),
-        ([a]) => a
-      )
+        identity
+      ),
+      Z.erase
     )
   const parseValue   = flow(
     serialize,
-    Sy.bind(encode)
+    Z.bind(encode)
   )
   const parseLiteral = (valueNode: ValueNode) =>
     pipe(
       valueNode,
       valueFromASTUntyped,
       decode,
-      Sy.matchM(
-        ([errors]) =>
+      Z.matchM(
+        (errors) =>
           Sy.fail(
             new GraphQlException(
               config?.message ?? `Invalid value ${valueFromASTUntyped(valueNode)} provided to Scalar ${name}`,
@@ -214,7 +216,7 @@ export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name,
               { errors }
             )
           ),
-        ([a]) => encode(a)
+        encode
       )
     )
   return new GQLScalar(
