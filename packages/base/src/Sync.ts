@@ -1,7 +1,6 @@
 import type { Has, Tag } from './Has'
 import type * as HKT from './HKT'
 import type { SyncURI } from './Modules'
-import type { Multi } from './Multi'
 import type { _E, _R, UnionToIntersection } from './util/types'
 
 import * as A from './Array'
@@ -9,12 +8,11 @@ import * as E from './Either'
 import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'
 import { isTag, mergeEnvironments } from './Has'
-import * as I from './Iterable'
-import * as M from './Multi'
+import { ZURI } from './Modules'
 import * as O from './Option'
 import * as R from './Record'
 import * as P from './typeclass'
-import { makeMonoid } from './typeclass'
+import * as Z from './Z'
 
 /*
  * -------------------------------------------
@@ -22,18 +20,15 @@ import { makeMonoid } from './typeclass'
  * -------------------------------------------
  */
 
-export interface Sync<R, E, A> extends Multi<never, unknown, any, R, E, A> {}
+export interface Sync<R, E, A> extends Z.Z<never, unknown, unknown, R, E, A> {}
 
 export function isSync(u: unknown): u is Sync<any, any, any> {
-  return typeof u === 'object' && u != null && '_U' in u && u['_U'] === 'Multi'
+  return typeof u === 'object' && u != null && '_U' in u && u['_U'] === ZURI
 }
 
 export type USync<A> = Sync<unknown, never, A>
 export type FSync<E, A> = Sync<unknown, E, A>
 export type URSync<R, A> = Sync<R, never, A>
-
-export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
-type URI = [HKT.URI<SyncURI>]
 
 /*
  * -------------------------------------------
@@ -41,32 +36,32 @@ type URI = [HKT.URI<SyncURI>]
  * -------------------------------------------
  */
 
-export const succeed: <A>(a: A) => Sync<unknown, never, A> = M.succeed
+export const succeed: <A>(a: A) => Sync<unknown, never, A> = Z.succeed
 
-export const fail: <E>(e: E) => Sync<unknown, E, never> = M.fail
+export const fail: <E>(e: E) => Sync<unknown, E, never> = Z.fail
 
-export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = M.effect
+export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = Z.effect
 
-export const effectTotal: <A>(effect: () => A) => Sync<unknown, never, A> = M.effectTotal
+export const effectTotal: <A>(effect: () => A) => Sync<unknown, never, A> = Z.effectTotal
 
 export const effectCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> =
-  M.effectCatch_
+  Z.effectCatch_
 
 export const effectCatch: <E>(onThrow: (error: unknown) => E) => <A>(effect: () => A) => Sync<unknown, E, A> =
-  M.effectCatch
+  Z.effectCatch
 
-export const defer: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = M.defer
+export const defer: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = Z.defer
 
-export const deferTotal: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = M.deferTotal
+export const deferTotal: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = Z.deferTotal
 
 export const deferCatch_: <R, E, A, E1>(
   effect: () => Sync<R, E, A>,
   onThrow: (u: unknown) => E1
-) => Sync<R, E | E1, A> = M.deferCatch_
+) => Sync<R, E | E1, A> = Z.deferCatch_
 
 export const deferCatch: <E1>(
   onThrow: (u: unknown) => E1
-) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = M.deferCatch
+) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = Z.deferCatch
 
 export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.match(fail, succeed)
 
@@ -75,7 +70,7 @@ export const fromOption = <E, A>(option: O.Option<A>, onNone: () => E): Sync<unk
 
 /*
  * -------------------------------------------
- * Folds
+ * Match
  * -------------------------------------------
  */
 
@@ -90,7 +85,7 @@ export const matchM_: <R, E, A, R1, E1, B, R2, E2, C>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => Sync<R & R1 & R2, E1 | E2, B | C> = M.matchM_
+) => Sync<R & R1 & R2, E1 | E2, B | C> = Z.matchM_
 
 /**
  * Recovers from errors by accepting one computation to execute for the case
@@ -102,7 +97,7 @@ export const matchM_: <R, E, A, R1, E1, B, R2, E2, C>(
 export const matchM: <E, A, R1, E1, B, R2, E2, C>(
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = M.matchM
+) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = Z.matchM
 
 /**
  * Folds over the failed or successful results of this computation to yield
@@ -116,7 +111,7 @@ export const match_: <R, E, A, B, C>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
-) => Sync<R, never, B | C> = M.match_
+) => Sync<R, never, B | C> = Z.match_
 
 /**
  * Folds over the failed or successful results of this computation to yield
@@ -129,7 +124,7 @@ export const match_: <R, E, A, B, C>(
 export const match: <E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
-) => <R>(fa: Sync<R, E, A>) => Sync<R, never, B | C> = M.match
+) => <R>(fa: Sync<R, E, A>) => Sync<R, never, B | C> = Z.match
 
 /**
  * Recovers from all errors
@@ -140,7 +135,7 @@ export const match: <E, A, B, C>(
 export const catchAll_: <R, E, A, R1, E1, B>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => Sync<R1, E1, B>
-) => Sync<R1 & R, E1, A | B> = M.catchAll_
+) => Sync<R1 & R, E1, A | B> = Z.catchAll_
 
 /**
  * Recovers from all errors
@@ -150,16 +145,16 @@ export const catchAll_: <R, E, A, R1, E1, B>(
  */
 export const catchAll: <E, R1, E1, B>(
   onFailure: (e: E) => Sync<R1, E1, B>
-) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E1, A | B> = M.catchAll
+) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E1, A | B> = Z.catchAll
 
 export const catchSome_: <R, E, A, R1, E1, B>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => O.Option<Sync<R1, E1, B>>
-) => Sync<R1 & R, E | E1, A | B> = M.catchSome_
+) => Sync<R1 & R, E | E1, A | B> = Z.catchSome_
 
 export const catchSome: <E, R1, E1, B>(
   onFailure: (e: E) => O.Option<Sync<R1, E1, B>>
-) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E | E1, A | B> = M.catchSome
+) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E | E1, A | B> = Z.catchSome
 
 /**
  * Effectfully matches two `Sync` computations together
@@ -272,11 +267,11 @@ export function matchTogether<E, A, R1, E1, B, C, D, F, G>(
 export const alt_: <R, E, A, R1, E1, A1>(
   fa: Sync<R, E, A>,
   fb: () => Sync<R1, E1, A1>
-) => Sync<R & R1, E | E1, A | A1> = M.alt_
+) => Sync<R & R1, E | E1, A | A1> = Z.alt_
 
 export const alt: <R1, E1, A1>(
   fb: () => Sync<R1, E1, A1>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A | A1> = M.alt
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A | A1> = Z.alt
 
 /*
  * -------------------------------------------
@@ -284,7 +279,7 @@ export const alt: <R1, E1, A1>(
  * -------------------------------------------
  */
 
-export const pure: <A>(a: A) => Sync<unknown, never, A> = M.pure
+export const pure: <A>(a: A) => Sync<unknown, never, A> = Z.pure
 
 /*
  * -------------------------------------------
@@ -293,34 +288,35 @@ export const pure: <A>(a: A) => Sync<unknown, never, A> = M.pure
  */
 
 export const cross_: <R, E, A, Q, D, B>(fa: Sync<R, E, A>, fb: Sync<Q, D, B>) => Sync<Q & R, D | E, readonly [A, B]> =
-  M.cross_
+  Z.zip_
 
 export const cross: <Q, D, B>(
   fb: Sync<Q, D, B>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = M.cross
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = Z.zip
 
 export const crossWith_: <R, E, A, Q, D, B, C>(
   fa: Sync<R, E, A>,
   fb: Sync<Q, D, B>,
   f: (a: A, b: B) => C
-) => Sync<Q & R, D | E, C> = M.crossWith_
+) => Sync<Q & R, D | E, C> = Z.zipWith_
 
 export const crossWith: <A, Q, D, B, C>(
   fb: Sync<Q, D, B>,
   f: (a: A, b: B) => C
-) => <R, E>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, C> = M.crossWith
+) => <R, E>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, C> = Z.zipWith
 
-export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D, A>) => Sync<Q & R, D | E, B> = M.ap_
+export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D, A>) => Sync<Q & R, D | E, B> = Z.zap_
 
-export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> = M.ap
+export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> =
+  Z.zap
 
-export const apl_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> = M.apl_
+export const apl_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> = Z.zipl_
 
-export const apl: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> = M.apl
+export const apl: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> = Z.zipl
 
-export const apr_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> = M.apr_
+export const apr_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> = Z.zipr_
 
-export const apr: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> = M.apr
+export const apr: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> = Z.zipr
 
 export function liftA2_<A, B, C>(f: (a: A, b: B) => C): (a: USync<A>, b: USync<B>) => USync<C> {
   return (a, b) => crossWith_(a, b, f)
@@ -342,13 +338,13 @@ export function liftK<A extends [unknown, ...ReadonlyArray<unknown>], B>(
  * -------------------------------------------
  */
 
-export const bimap_: <R, E, A, B, C>(pab: Sync<R, E, A>, f: (e: E) => B, g: (a: A) => C) => Sync<R, B, C> = M.bimap_
+export const bimap_: <R, E, A, B, C>(pab: Sync<R, E, A>, f: (e: E) => B, g: (a: A) => C) => Sync<R, B, C> = Z.bimap_
 
-export const bimap: <E, A, B, C>(f: (e: E) => B, g: (a: A) => C) => <R>(pab: Sync<R, E, A>) => Sync<R, B, C> = M.bimap
+export const bimap: <E, A, B, C>(f: (e: E) => B, g: (a: A) => C) => <R>(pab: Sync<R, E, A>) => Sync<R, B, C> = Z.bimap
 
-export const mapError_: <R, E, A, B>(pab: Sync<R, E, A>, f: (e: E) => B) => Sync<R, B, A> = M.mapError_
+export const mapError_: <R, E, A, B>(pab: Sync<R, E, A>, f: (e: E) => B) => Sync<R, B, A> = Z.mapError_
 
-export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => Sync<R, B, A> = M.mapError
+export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => Sync<R, B, A> = Z.mapError
 
 /*
  * -------------------------------------------
@@ -356,9 +352,9 @@ export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => S
  * -------------------------------------------
  */
 
-export const attempt: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = M.attempt
+export const attempt: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = Z.attempt
 
-export const refail: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = M.refail
+export const refail: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = Z.refail
 
 /*
  * -------------------------------------------
@@ -366,9 +362,9 @@ export const refail: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E
  * -------------------------------------------
  */
 
-export const map_: <R, E, A, B>(fa: Sync<R, E, A>, f: (a: A) => B) => Sync<R, E, B> = M.map_
+export const map_: <R, E, A, B>(fa: Sync<R, E, A>, f: (a: A) => B) => Sync<R, E, B> = Z.map_
 
-export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R, E, B> = M.map
+export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R, E, B> = Z.map
 
 /*
  * -------------------------------------------
@@ -376,16 +372,16 @@ export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R,
  * -------------------------------------------
  */
 
-export const bind_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> = M.bind_
+export const bind_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> = Z.bind_
 
 export const bind: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
-  M.bind
+  Z.bind
 
 export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = bind(identity)
 
-export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = M.tap_
+export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = Z.tap_
 
-export const tap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> = M.tap
+export const tap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> = Z.tap
 
 /*
  * -------------------------------------------
@@ -413,23 +409,23 @@ export function getFailableMonoid<E, A>(MA: P.Monoid<A>, ME: P.Monoid<E>): P.Mon
  * -------------------------------------------
  */
 
-export const ask: <R>() => Sync<R, never, R> = M.ask
+export const ask: <R>() => Sync<R, never, R> = Z.ask
 
-export const asksM: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = M.asksM
+export const asksM: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = Z.asksM
 
-export const asks: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = M.asks
+export const asks: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = Z.asks
 
-export const gives_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<R0, E, A> = M.gives_
+export const gives_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<R0, E, A> = Z.gives_
 
-export const gives: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = M.gives
+export const gives: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = Z.gives
 
-export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = M.giveAll_
+export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = Z.giveAll_
 
-export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = M.giveAll
+export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = Z.giveAll
 
-export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = M.give_
+export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = Z.give_
 
-export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = M.give
+export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = Z.give
 
 /*
  * -------------------------------------------
@@ -460,7 +456,7 @@ export function getFailableSemigroup<E, A>(SA: P.Semigroup<A>, SE: P.Semigroup<E
  * -------------------------------------------
  */
 
-export const unit: () => Sync<unknown, never, void> = M.unit
+export const unit: () => Sync<unknown, never, void> = Z.unit
 
 /*
  * -------------------------------------------
@@ -481,7 +477,7 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    M.asksM(
+    Z.asksM(
       (
         r: UnionToIntersection<
           {
@@ -502,7 +498,7 @@ export function asksServicesTM<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    M.asksM(
+    Z.asksM(
       (
         r: UnionToIntersection<
           {
@@ -523,7 +519,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    M.asks(
+    Z.asks(
       (
         r: UnionToIntersection<
           {
@@ -547,7 +543,7 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    M.asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+    Z.asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
       f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
@@ -556,21 +552,21 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
  * Access a service with the required Service Entry
  */
 export function asksServiceM<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Sync<R, E, B>) => Sync<R & Has<T>, E, B> {
-  return (f) => M.asksM((r: Has<T>) => f(r[s.key as any]))
+  return (f) => Z.asksM((r: Has<T>) => f(r[s.key as any]))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Sync<Has<T>, never, B> {
-  return (f) => asksServiceM(s)((a) => M.pure(f(a)))
+  return (f) => asksServiceM(s)((a) => Z.pure(f(a)))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function askService<T>(s: Tag<T>): Sync<Has<T>, never, T> {
-  return asksServiceM(s)((a) => M.pure(a))
+  return asksServiceM(s)((a) => Z.pure(a))
 }
 
 /**
@@ -580,14 +576,14 @@ export function giveServiceM<T>(
   _: Tag<T>
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-    M.asksM((r: R & R1) => M.bind_(f, (t) => M.giveAll_(ma, mergeEnvironments(_, r, t))))
+    Z.asksM((r: R & R1) => Z.bind_(f, (t) => Z.giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
  * Provides the service with the required Service Entry
  */
 export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1, E1, A1> {
-  return (f) => (ma) => giveServiceM(_)(M.pure(f))(ma)
+  return (f) => (ma) => giveServiceM(_)(Z.pure(f))(ma)
 }
 
 /**
@@ -618,7 +614,7 @@ export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(M.pure(f(t)))(ma))
+  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(Z.pure(f(t)))(ma))
 }
 
 /**
@@ -629,14 +625,14 @@ export function updateService_<R1, E1, A1, T>(
   _: Tag<T>,
   f: (_: T) => T
 ): Sync<R1 & Has<T>, E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(M.pure(f(t)))(ma))
+  return asksServiceM(_)((t) => giveServiceM(_)(Z.pure(f(t)))(ma))
 }
 
 /**
  * Maps the success value of this effect to a service.
  */
 export function asService<A>(has: Tag<A>): <R, E>(fa: Sync<R, E, A>) => Sync<R, E, Has<A>> {
-  return (fa) => M.map_(fa, has.of)
+  return (fa) => Z.map_(fa, has.of)
 }
 
 /*
@@ -645,9 +641,13 @@ export function asService<A>(has: Tag<A>): <R, E>(fa: Sync<R, E, A>) => Sync<R, 
  * -------------------------------------------
  */
 
-export const runEither: <E, A>(sync: Sync<unknown, E, A>) => E.Either<E, A> = M.runEither
+export const runEither: <E, A>(sync: Sync<unknown, E, A>) => E.Either<E, A> = Z.runEither
 
-export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
+export const runEitherEnv_: <R, E, A>(sync: Sync<R, E, A>, env: R) => E.Either<E, A> = Z.runReaderEither_
+
+export const runEitherEnv: <R>(env: R) => <E, A>(sync: Sync<R, E, A>) => E.Either<E, A> = Z.runReaderEither
+
+export const run: <A>(sync: Sync<unknown, never, A>) => A = Z.runResult
 
 /*
  * -------------------------------------------
@@ -655,60 +655,36 @@ export const run: <A>(sync: Sync<unknown, never, A>) => A = M.runResult
  * -------------------------------------------
  */
 
-function MonoidBindUnit<R, E>(): P.Monoid<Sync<R, E, void>> {
-  return makeMonoid<Sync<R, E, void>>((x, y) => bind_(x, () => y), unit())
-}
+export const iforeachUnit_: <A, R, E>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, void>) => Sync<R, E, void> =
+  Z.iforeachUnit_
 
-export function iforeachUnit_<A, R, E>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, void>): Sync<R, E, void> {
-  return I.ifoldMap_(MonoidBindUnit<R, E>())(as, f)
-}
+export const iforeachUnit: <A, R, E>(
+  f: (i: number, a: A) => Sync<R, E, void>
+) => (as: Iterable<A>) => Sync<R, E, void> = Z.iforeachUnit
 
-export function iforeachUnit<A, R, E>(f: (i: number, a: A) => Sync<R, E, void>): (as: Iterable<A>) => Sync<R, E, void> {
-  return (as) => iforeachUnit_(as, f)
-}
-
-export function iforeachArrayUnit_<A, R, E>(
+export const iforeachArrayUnit_: <A, R, E>(
   as: ReadonlyArray<A>,
   f: (i: number, a: A) => Sync<R, E, void>
-): Sync<R, E, void> {
-  return A.ifoldMap_(MonoidBindUnit<R, E>())(as, f)
-}
+) => Sync<R, E, void> = Z.iforeachArrayUnit_
 
-export function iforeachArrayUnit<A, R, E>(
+export const iforeachArrayUnit: <A, R, E>(
   f: (i: number, a: A) => Sync<R, E, void>
-): (as: ReadonlyArray<A>) => Sync<R, E, void> {
-  return (as) => iforeachArrayUnit_(as, f)
-}
+) => (as: ReadonlyArray<A>) => Sync<R, E, void> = Z.iforeachArrayUnit
 
-export function iforeach_<A, R, E, B>(
+export const iforeach_: <A, R, E, B>(
   as: Iterable<A>,
   f: (i: number, a: A) => Sync<R, E, B>
-): Sync<R, E, ReadonlyArray<B>> {
-  return I.ifoldl_(as, succeed([]) as Sync<R, E, Array<B>>, (b, i, a) =>
-    crossWith_(
-      b,
-      deferTotal(() => f(i, a)),
-      (acc, r) => {
-        acc.push(r)
-        return acc
-      }
-    )
-  )
-}
+) => Sync<R, E, ReadonlyArray<B>> = Z.iforeach_
 
-export function iforeach<A, R, E, B>(
+export const iforeach: <A, R, E, B>(
   f: (i: number, a: A) => Sync<R, E, B>
-): (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> {
-  return (as) => iforeach_(as, f)
-}
+) => (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> = Z.iforeach
 
-export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>): Sync<R, E, ReadonlyArray<B>> {
-  return iforeach_(as, (_, a) => f(a))
-}
+export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, ReadonlyArray<B>> =
+  Z.foreach_
 
-export function foreach<A, R, E, B>(f: (a: A) => Sync<R, E, B>): (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> {
-  return (as) => foreach_(as, f)
-}
+export const foreach: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> =
+  Z.foreach
 
 export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E, ReadonlyArray<A>> {
   return foreach_(as, identity)
@@ -716,9 +692,13 @@ export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E
 
 /*
  * -------------------------------------------
- * Instances
+ * instances
  * -------------------------------------------
  */
+
+export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
+
+type URI = [HKT.URI<typeof SyncURI>]
 
 export const Alt = P.Alt<URI, V>({
   map_,
@@ -743,6 +723,8 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
+export const mapN_     = P.mapNF_(SemimonoidalFunctor)
+export const mapN      = P.mapNF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI, V>({
   map_,
@@ -750,6 +732,9 @@ export const Apply = P.Apply<URI, V>({
   cross_,
   ap_
 })
+
+export const apS = P.apSF(Apply)
+export const apT = P.apTF(Apply)
 
 export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
   map_,
@@ -797,7 +782,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
  * -------------------------------------------
  */
 
-export const DoSync = P.Do(Monad)
+export const Do = P.Do(Monad)
 
 const of: Sync<unknown, never, {}> = succeed({})
 export { of as do }

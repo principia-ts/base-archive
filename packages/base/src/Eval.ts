@@ -407,12 +407,20 @@ export const Semimonoidal = P.SemimonoidalFunctor<URI>({
   cross_
 })
 
+export const sequenceT = P.sequenceTF(Semimonoidal)
+export const sequenceS = P.sequenceSF(Semimonoidal)
+export const mapN_     = P.mapNF_(Semimonoidal)
+export const mapN      = P.mapNF(Semimonoidal)
+
 export const Apply = P.Apply<URI>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
+
+export const apS = P.apSF(Apply)
+export const apT = P.apTF(Apply)
 
 export const Monoidal = P.MonoidalFunctor<URI>({
   map_,

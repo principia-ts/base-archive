@@ -1,4 +1,5 @@
 import type { StateIn, StateOut } from './StateT'
+import type { Z } from '@principia/base/Z'
 
 export const StateInURI = 'StateIn'
 export type StateInURI = typeof StateInURI

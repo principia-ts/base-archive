@@ -7,8 +7,6 @@ import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
 import type { Identity } from './Identity'
 import type { List } from './List'
-import type { MReader } from './MReader'
-import type { Multi } from './Multi'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Ord } from './Ord'
@@ -22,6 +20,8 @@ import type { Sync } from './Sync'
 import type { These } from './These'
 import type { Tuple2 } from './Tuple2'
 import type { Writer } from './Writer'
+import type { Z } from './Z'
+import type { ZReader } from './ZReader'
 
 export const ArrayURI = 'Array'
 export type ArrayURI = typeof ArrayURI
@@ -92,14 +92,14 @@ export type OrdURI = typeof OrdURI
 export const PredicateURI = 'Predicate'
 export type PredicateURI = typeof PredicateURI
 
-export const MultiURI = 'Multi'
-export type MultiURI = typeof MultiURI
+export const ZURI = 'Z'
+export type ZURI = typeof ZURI
 
 export const SyncURI = 'Sync'
 export type SyncURI = typeof SyncURI
 
-export const MReaderURI = 'MReader'
-export type MReaderURI = typeof MReaderURI
+export const ZReaderURI = 'ZReader'
+export type ZReaderURI = typeof ZReaderURI
 
 export const FreeSemiringURI = 'FreeSemiring'
 export type FreeSemiringURI = typeof FreeSemiringURI
@@ -133,9 +133,9 @@ declare module './HKT' {
     [OrdURI]: Ord<A>
     [PredicateURI]: Predicate<A>
     [SyncURI]: Sync<R, E, A>
-    [MultiURI]: Multi<W, S, S, R, E, A>
+    [ZURI]: Z<W, S, S, R, E, A>
     [FreeSemiringURI]: FreeSemiring<X, A>
-    [MReaderURI]: MReader<R, A>
+    [ZReaderURI]: ZReader<R, A>
     [AsyncURI]: Async<R, E, A>
   }
   interface URItoIndex<N, K> {

@@ -39,7 +39,7 @@ export function getStateT<F>(M: P.Monad<HKT.UHKT<F>>): StateT<HKT.UHKT<F>> {
     }),
     get: () => (s) => M.pure([s, s]),
     put: (s) => () => M.pure([undefined, s]),
-    modify: (f) => (s) => M.pure([undefined, f(s)]),
+    modify: (f) => (s) => M.pure(f(s)),
     gets: (f) => (s) => M.pure([f(s), s])
   })
 }

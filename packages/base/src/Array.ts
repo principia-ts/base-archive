@@ -1271,7 +1271,7 @@ export function comprehension<R>(
  * @category combinators
  * @since 1.0.0
  */
-export function concat_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
+export function concatW_<A, B>(xs: ReadonlyArray<A>, ys: ReadonlyArray<B>): ReadonlyArray<A | B> {
   const lenx = xs.length
   if (lenx === 0) {
     return ys
@@ -1295,6 +1295,14 @@ export function concat_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): Readonly
  * @since 1.0.0
  * @dataFirst concat_
  */
+export function concatW<A>(ys: ReadonlyArray<A>): <B>(xs: ReadonlyArray<B>) => ReadonlyArray<A | B> {
+  return (xs) => concatW_(xs, ys)
+}
+
+export function concat_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
+  return concatW_(xs, ys)
+}
+
 export function concat<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (xs) => concat_(xs, ys)
 }
