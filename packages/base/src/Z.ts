@@ -404,12 +404,34 @@ export function mapState<S2, S3>(
   return (ma) => mapState_(ma, f)
 }
 
+/**
+ * Provides this computation with its initial state.
+ */
+export function giveState_<W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, s: S1): Z<W, unknown, S2, R, E, A> {
+  return put(s)['*>'](ma)
+}
+
+/**
+ * Provides this computation with its initial state.
+ */
+export function giveState<S1>(s: S1): <W, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W, unknown, S2, R, E, A> {
+  return (ma) => giveState_(ma, s)
+}
+
 /*
  * -------------------------------------------
  * Match
  * -------------------------------------------
  */
 
+/**
+ * Recovers from errors by accepting one computation to execute for the case
+ * of an error, and one computation to execute for the case of success. More powerful
+ * than `matchCauseM` by providing the current state of the log as an argument in
+ * each case
+ *
+ * @note the log is cleared after being provided
+ */
 export function matchLogCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
   onFailure: (ws: ReadonlyArray<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
@@ -418,6 +440,14 @@ export function matchLogCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S
   return new Match(fa, onFailure, onSuccess)
 }
 
+/**
+ * Recovers from errors by accepting one computation to execute for the case
+ * of an error, and one computation to execute for the case of success. More powerful
+ * than `matchCauseM` by providing the current state of the log as an argument in
+ * each case
+ *
+ * @note the log is cleared after being provided
+ */
 export function matchLogCauseM<W, S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (ws: ReadonlyArray<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
   onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
