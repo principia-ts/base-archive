@@ -1,5 +1,5 @@
 import type { DecoderURI } from './Modules'
-import type { Result } from './Result2'
+import type { Result } from './Result3'
 import type { CastToNumber } from './util'
 import type { Either } from '@principia/base/Either'
 import type { Lazy } from '@principia/base/function'
@@ -28,9 +28,11 @@ import * as Set from '@principia/base/Set'
 import * as Str from '@principia/base/string'
 import * as Struct from '@principia/base/Struct'
 import * as S from '@principia/base/Sync'
+import * as Z from '@principia/base/Z'
+import { inspect } from 'util'
 
 import * as DE from './DecodeError'
-import * as Res from './Result2'
+import * as Res from './Result3'
 import { _intersect } from './util'
 
 /*
@@ -97,7 +99,7 @@ export function fromRefinement<I, E, A extends I>(
     label,
     refinement,
     onError,
-    decode: (i) => (refinement(i) ? S.succeed([i, []]) : S.fail([onError(i), []]))
+    decode: (i) => (refinement(i) ? Res.succeed(i) : S.fail(onError(i)))
   }
 }
 
@@ -131,7 +133,7 @@ export function literal<A extends readonly [Primitive, ...ReadonlyArray<Primitiv
       A.join(' | ')
     ),
     literals,
-    decode: (i) => (literalsGuard.is(i) ? S.succeed([i, []]) : S.fail([DE.leafE(DE.literalE(i, literals)), []]))
+    decode: (i) => (literalsGuard.is(i) ? Res.succeed(i) : Res.fail(DE.leafE(DE.literalE(i, literals))))
   }
 }
 
@@ -178,9 +180,9 @@ export const bigintFromString: bigintFromStringUD = {
   decode: (u) =>
     typeof u !== 'string'
       ? Res.fail(DE.leafE(DE.stringE(u)))
-      : S.effectCatch_(
-          () => [BigInt(u), []],
-          (_) => [DE.leafE(DE.bigIntE(u)), []]
+      : Z.effectCatch_(
+          () => BigInt(u),
+          (_) => DE.leafE(DE.bigIntE(u))
         )
 }
 
@@ -341,7 +343,7 @@ export function parse_<From extends Decoder<any, any, any>, E, B>(
     from,
     label: label ?? from.label,
     parser,
-    decode: (i) => pipe(from.decode(i), Res.bind(flow(parser, Res.mapError(DE.parseE))))
+    decode: (i) => pipe(from.decode(i), Z.bind(flow(parser, Z.mapError(DE.parseE))))
   }
 }
 
@@ -374,7 +376,7 @@ export function refine_<From extends AnyD, E, B extends TypeOf<From>>(
     label: label ?? from.label,
     decode: flow(
       from.decode,
-      Res.bind((a) => (refinement(a) ? Res.succeed(a) : Res.fail(DE.refineE(onError(a)))))
+      Z.bind((a) => (refinement(a) ? Res.succeed(a) : Res.fail(DE.refineE(onError(a)))))
     )
   }
 }
@@ -398,7 +400,7 @@ export function nullable<Or extends AnyD>(or: Or): NullableD<Or> {
     _tag: 'NullableD',
     label: `${or.label} | null | undefined`,
     or,
-    decode: (i) => (i == null ? Res.succeed(null) : pipe(or.decode(i), Res.mapError(DE.nullableE)))
+    decode: (i) => (i == null ? Res.succeed(null) : pipe(or.decode(i), Z.mapError(DE.nullableE)))
   }
 }
 
@@ -413,7 +415,7 @@ export function optional<Or extends AnyD>(or: Or): OptionalD<Or> {
     _tag: 'OptionalD',
     label: `${or.label} | null | undefined`,
     or,
-    decode: (i) => (i == null ? Res.succeed(O.None()) : pipe(or.decode(i), Res.bimap(DE.optionalE, O.Some)))
+    decode: (i) => (i == null ? Res.succeed(O.None()) : pipe(or.decode(i), Z.bimap(DE.optionalE, O.Some)))
   }
 }
 
@@ -442,31 +444,31 @@ export function fromStruct<P extends Record<string, AnyD>>(properties: P): FromS
     properties,
     label,
     decode: (ur) =>
-      S.deferTotal(() => {
+      Z.deferTotal(() => {
         const errors: Array<DE.KeyE<string, any>> = []
         const mut_r: Record<string, any>          = {}
         const ws: Array<RoseTree<DE.Warning>>     = []
-        let computation                           = S.unit()
-        for(const key in ur) {
-          if(!R.has_(properties, key)) {
+        let computation: Result<never, void>      = Z.unit()
+        for (const key in ur) {
+          if (!R.has_(properties, key)) {
             ws.push(RT.make(DE.unexpectedKeyW(key), []))
           }
         }
         for (const key in properties) {
           computation = pipe(
             computation,
-            S.bind(() =>
+            Z.bind(() =>
               pipe(
                 properties[key].decode(ur[key]),
-                S.matchM(
-                  ([e, w]) =>
+                Z.matchLogM(
+                  (w, e) =>
                     S.effectTotal(() => {
                       if (A.isNonEmpty(w)) {
                         ws.push(RT.make(DE.keyW(key), w))
                       }
                       errors.push(DE.keyE(key, false, e))
                     }),
-                  ([a, w]) =>
+                  (w, a) =>
                     S.effectTotal(() => {
                       if (A.isNonEmpty(w)) {
                         ws.push(RT.make(DE.keyW(key), w))
@@ -480,7 +482,7 @@ export function fromStruct<P extends Record<string, AnyD>>(properties: P): FromS
         }
         return pipe(
           computation,
-          S.bind(() =>
+          Z.bind(() =>
             A.isNonEmpty(errors)
               ? Res.fail(DE.structE(errors), ws)
               : Res.succeed(mut_r as { [K in keyof P]: TypeOf<P[K]> }, ws)
@@ -514,16 +516,16 @@ export function fromPartial<P extends Record<string, AnyD>>(properties: P): From
     properties,
     label,
     decode: (i) =>
-      S.deferTotal(() => {
+      Z.deferTotal(() => {
         const errors: Array<DE.KeyE<string, any>> = []
         const mut_r: Record<string, any>          = {}
         const ws: Array<RoseTree<DE.Warning>>     = []
-        let computation                           = S.unit()
+        let computation: Result<never, void>      = Z.unit()
         for (const key in properties) {
           const ikey  = i[key]
           computation = pipe(
             computation,
-            S.bind(() => {
+            Z.bind(() => {
               if (ikey === undefined) {
                 return key in i
                   ? S.effectTotal(() => {
@@ -533,15 +535,15 @@ export function fromPartial<P extends Record<string, AnyD>>(properties: P): From
               } else {
                 return pipe(
                   properties[key].decode(i[key]),
-                  S.matchM(
-                    ([error, w]) =>
+                  Z.matchLogM(
+                    (w, error) =>
                       S.effectTotal(() => {
                         if (A.isNonEmpty(w)) {
                           ws.push(RT.make(DE.keyW(key), w))
                         }
                         errors.push(DE.keyE(key, true, error))
                       }),
-                    ([a, w]) =>
+                    (w, a) =>
                       S.effectTotal(() => {
                         if (A.isNonEmpty(w)) {
                           ws.push(RT.make(DE.keyW(key), w))
@@ -556,7 +558,7 @@ export function fromPartial<P extends Record<string, AnyD>>(properties: P): From
         }
         return pipe(
           computation,
-          S.bind(() =>
+          Z.bind(() =>
             A.isNonEmpty(errors)
               ? Res.fail(DE.partialE(errors), ws)
               : Res.succeed(mut_r as { [K in keyof P]: TypeOf<P[K]> }, ws)
@@ -578,24 +580,24 @@ export function fromArray<Item extends AnyD>(item: Item): FromArrayD<Item> {
     label: `Array<${item.label}>`,
     item,
     decode: (i) =>
-      S.deferTotal(() => {
+      Z.deferTotal(() => {
         const errors: Array<DE.IndexE<number, any>> = []
         const result: Array<TypeOf<Item>>           = []
         const ws: Array<RoseTree<DE.Warning>>       = []
         return pipe(
           i,
-          S.iforeachArrayUnit((index, a) =>
+          Z.iforeachArrayUnit((index, a) =>
             pipe(
               item.decode(a),
-              S.matchM(
-                ([error, w]) =>
+              Z.matchLogM(
+                (w, error) =>
                   S.effectTotal(() => {
                     if (A.isNonEmpty(w)) {
                       ws.push(RT.make(DE.indexW(index), w))
                     }
                     errors.push(DE.indexE(index, error))
                   }),
-                ([a, w]) =>
+                (w, a) =>
                   S.effectTotal(() => {
                     if (A.isNonEmpty(w)) {
                       ws.push(RT.make(DE.indexW(index), w))
@@ -605,7 +607,7 @@ export function fromArray<Item extends AnyD>(item: Item): FromArrayD<Item> {
               )
             )
           ),
-          S.bind(() => (A.isNonEmpty(errors) ? Res.fail(DE.arrayE(i, errors), ws) : Res.succeed(result, ws)))
+          Z.bind(() => (A.isNonEmpty(errors) ? Res.fail(DE.arrayE(i, errors), ws) : Res.succeed(result, ws)))
         )
       })
   }
@@ -628,9 +630,9 @@ export function fromNonEmptyArray<Item extends AnyD>(item: Item): FromNonEmptyAr
     item,
     decode: (i) =>
       i.length > 0
-        ? ((fromArray(item).decode(i) as unknown) as FSync<
-            readonly [DE.ArrayE<DE.IndexE<number, ErrorOf<Item>>>, DE.Warnings],
-            readonly [NonEmptyArray<TypeOf<Item>>, DE.Warnings]
+        ? ((fromArray(item).decode(i) as unknown) as Result<
+            DE.ArrayE<DE.IndexE<number, ErrorOf<Item>>>,
+            NonEmptyArray<TypeOf<Item>>
           >)
         : Res.fail(DE.leafE(DE.emptyE(i)))
   }
@@ -657,25 +659,25 @@ export function fromTuple<C extends ReadonlyArray<AnyD>>(...components: C): From
     label,
     components,
     decode: (is) =>
-      S.deferTotal(() => {
+      Z.deferTotal(() => {
         const errors: Array<DE.ComponentE<number, any>> = []
         const result: Array<any>                        = []
         const ws: Array<RoseTree<DE.Warning>>           = []
         return pipe(
           components,
-          S.iforeachArrayUnit((index, decoder) => {
+          Z.iforeachArrayUnit((index, decoder) => {
             const i = is[index]
             return pipe(
               decoder.decode(i),
-              S.matchM(
-                ([error, w]) =>
+              Z.matchLogM(
+                (w, error) =>
                   S.effectTotal(() => {
                     if (A.isNonEmpty(w)) {
                       ws.push(RT.make(DE.componentW(index), w))
                     }
                     errors.push(DE.componentE(index, error))
                   }),
-                ([a, w]) =>
+                (w, a) =>
                   S.effectTotal(() => {
                     if (A.isNonEmpty(w)) {
                       ws.push(RT.make(DE.componentW(index), w))
@@ -685,7 +687,7 @@ export function fromTuple<C extends ReadonlyArray<AnyD>>(...components: C): From
               )
             )
           }),
-          S.bind(() =>
+          Z.bind(() =>
             A.isNonEmpty(errors)
               ? Res.fail(DE.tupleE(errors), ws)
               : Res.succeed((result as unknown) as { [K in keyof C]: TypeOf<C[K]> }, ws)
@@ -711,27 +713,27 @@ export function fromRecord<Codomain extends AnyD>(codomain: Codomain): FromRecor
     label: `Record<string, ${codomain.label}>`,
     codomain,
     decode: (i) =>
-      S.deferTotal(() => {
+      Z.deferTotal(() => {
         const errors: Array<DE.KeyE<string, any>> = []
         const mut_r: Record<string, any>          = {}
         const ws: Array<RoseTree<DE.Warning>>     = []
-        let computation                           = S.unit()
+        let computation: Result<never, void>      = Z.unit()
         for (const key in i) {
           const value = i[key]
           computation = pipe(
             computation,
-            S.bind(() =>
+            Z.bind(() =>
               pipe(
                 codomain.decode(value),
-                S.matchM(
-                  ([error, w]) =>
+                Z.matchLogM(
+                  (w, error) =>
                     S.effectTotal(() => {
                       if (A.isNonEmpty(w)) {
                         ws.push(RT.make(DE.keyW(key), w))
                       }
                       errors.push(DE.keyE(key, true, error))
                     }),
-                  ([a, w]) =>
+                  (w, a) =>
                     S.effectTotal(() => {
                       if (A.isNonEmpty(w)) {
                         ws.push(RT.make(DE.keyW(key), w))
@@ -745,7 +747,7 @@ export function fromRecord<Codomain extends AnyD>(codomain: Codomain): FromRecor
         }
         return pipe(
           computation,
-          S.bind(() => (A.isNonEmpty(errors) ? Res.fail(DE.recordE(i, errors), ws) : Res.succeed(mut_r, ws)))
+          Z.bind(() => (A.isNonEmpty(errors) ? Res.fail(DE.recordE(i, errors), ws) : Res.succeed(mut_r, ws)))
         )
       })
   }
@@ -779,15 +781,15 @@ export function union<Members extends readonly [AnyD, ...ReadonlyArray<AnyD>]>(.
         A.ifoldl(
           pipe(
             members[0].decode(i),
-            S.matchM(
-              ([error, w]) =>
+            Z.matchLogM(
+              (w, error) =>
                 S.effectTotal(() => {
                   if (A.isNonEmpty(w)) {
                     ws.push(RT.make(DE.indexW(0), w))
                   }
                   errors.push(DE.memberE(0, error))
                 })['*>'](S.fail(undefined)),
-              ([a, w]) =>
+              (w, a) =>
                 S.effectTotal(() => {
                   if (A.isNonEmpty(w)) {
                     ws.push(RT.make(DE.indexW(0), w))
@@ -797,18 +799,18 @@ export function union<Members extends readonly [AnyD, ...ReadonlyArray<AnyD>]>(.
             )
           ),
           (computation, index, decoder) =>
-            S.alt_(computation, () =>
+            Z.alt_(computation, () =>
               pipe(
                 decoder.decode(i),
-                S.matchM(
-                  ([error, w]) =>
+                Z.matchLogM(
+                  (w, error) =>
                     S.effectTotal(() => {
                       if (A.isNonEmpty(w)) {
                         ws.push(RT.make(DE.indexW(index + 1), w))
                       }
                       errors.push(DE.memberE(index + 1, error))
                     })['*>'](S.fail(undefined)),
-                  ([a, w]) =>
+                  (w, a) =>
                     S.effectTotal(() => {
                       if (A.isNonEmpty(w)) {
                         ws.push(RT.make(DE.indexW(index + 1), w))
@@ -819,7 +821,7 @@ export function union<Members extends readonly [AnyD, ...ReadonlyArray<AnyD>]>(.
               )
             )
         ),
-        S.matchM(
+        Z.matchM(
           () => Res.fail(DE.unionE(errors), ws),
           (a) => Res.succeed(a, ws)
         )
@@ -858,15 +860,15 @@ export function intersect<Members extends readonly [AnyD, ...ReadonlyArray<AnyD>
         A.ifoldl(
           pipe(
             members[0].decode(i),
-            S.matchM(
-              ([error, w]) =>
+            Z.matchLogM(
+              (w, error) =>
                 S.effectTotal(() => {
                   if (A.isNonEmpty(w)) {
                     ws.push(RT.make(DE.indexW(0), w))
                   }
                   errors.push(DE.memberE(0, error))
                 }),
-              ([a, w]) =>
+              (w, a) =>
                 S.effectTotal(() => {
                   if (A.isNonEmpty(w)) {
                     ws.push(RT.make(DE.indexW(0), w))
@@ -876,28 +878,29 @@ export function intersect<Members extends readonly [AnyD, ...ReadonlyArray<AnyD>
             )
           ),
           (computation, index, decoder) =>
-            S.bind_(computation, (a) =>
+            Z.bind_(computation, (a) =>
               pipe(
                 decoder.decode(i),
-                S.matchM(
-                  ([error, w]) =>
+                Z.matchLogM(
+                  (w, error) =>
                     S.effectTotal(() => {
                       if (A.isNonEmpty(w)) {
                         ws.push(RT.make(DE.indexW(index + 1), w))
                       }
                       errors.push(DE.memberE(index + 1, error))
                     }),
-                  ([b, w]) => S.effectTotal(() => {
-                    if(A.isNonEmpty(w)) {
-                      ws.push(RT.make(DE.indexW(index + 1), w))
-                    }
-                    return _intersect(a, b)
-                  })
+                  (w, b) =>
+                    S.effectTotal(() => {
+                      if (A.isNonEmpty(w)) {
+                        ws.push(RT.make(DE.indexW(index + 1), w))
+                      }
+                      return _intersect(a, b)
+                    })
                 )
               )
             )
         ),
-        S.bind((result) => (A.isNonEmpty(errors) ? Res.fail(DE.intersectionE(errors), ws) : Res.succeed(result, ws)))
+        Z.bind((result) => (A.isNonEmpty(errors) ? Res.fail(DE.intersectionE(errors), ws) : Res.succeed(result, ws)))
       )
     }
   }
@@ -919,7 +922,7 @@ export function lazy<D extends AnyD>(id: string, decoder: () => D): LazyD<D> {
     decode: (i) =>
       pipe(
         get().decode(i),
-        Res.mapError((error) => DE.lazyE(id, error))
+        Z.mapError((error) => DE.lazyE(id, error))
       )
   }
 }
@@ -968,7 +971,7 @@ export function fromSum<T extends string>(
         if (v in members) {
           return pipe(
             members[v].decode(ir),
-            Res.mapError((error) => DE.sumE([DE.memberE(v, error)]))
+            Z.mapError((error) => DE.sumE([DE.memberE(v, error)]))
           )
         }
         return Res.fail(DE.tagNotFoundE(tag, DE.literalE(v, tags)))
@@ -1133,7 +1136,7 @@ export function map_<D extends AnyD, B>(decoder: D, f: (a: TypeOf<D>) => B): Map
     decoder,
     f,
     label: decoder.label,
-    decode: flow(decoder.decode, Res.map(f))
+    decode: flow(decoder.decode, Z.map(f))
   }
 }
 
@@ -1159,7 +1162,7 @@ export function mapError_<D extends AnyD, G>(decoder: D, f: (e: ErrorOf<D>) => G
     decoder,
     f,
     label: decoder.label,
-    decode: flow(decoder.decode, Res.mapError(f))
+    decode: flow(decoder.decode, Z.mapError(f))
   }
 }
 
@@ -1194,7 +1197,7 @@ export function compose_<From extends Decoder<any, any, any>, To extends Decoder
     label: `${from.label} >>> ${to.label}`,
     from,
     to,
-    decode: flow(from.decode, Res.bind(to.decode))
+    decode: flow(from.decode, Z.bind(to.decode))
   }
 }
 
@@ -1271,7 +1274,7 @@ export function withLabel<D extends AnyD>(decoder: D): LabeledD<D> {
     label: decoder.label,
     decode: flow(
       decoder.decode,
-      Res.mapError((error) => DE.labeledE(decoder.label, error))
+      Z.mapError((error) => DE.labeledE(decoder.label, error))
     )
   }
 }
@@ -1290,7 +1293,7 @@ export function withMessage_<D extends AnyD>(decoder: D, message: string): Messa
     label: decoder.label,
     decode: flow(
       decoder.decode,
-      Res.mapError((error) => DE.messageE(message, error))
+      Z.mapError((error) => DE.messageE(message, error))
     )
   }
 }
@@ -1394,16 +1397,16 @@ export { DecoderURI }
  * -------------------------------------------
  * run
  * -------------------------------------------
-*/
+ */
 
 export function run_<I, E, A>(d: Decoder<I, E, A>, i: I): readonly [Either<E, A>, DE.Warnings] {
   return pipe(
     d.decode(i),
-    S.match(
-      ([e, w]) => [E.Left(e), w] as const,
-      ([a, w]) => [E.Right(a), w] as const
+    Z.matchLogM(
+      (w, e) => Z.succeed([E.Left(e), w] as const),
+      (w, a) => Z.succeed([E.Right(a), w] as const)
     ),
-    S.run
+    Z.runResult
   )
 }
 
@@ -1411,16 +1414,25 @@ export function run<I>(i: I): <E, A>(d: Decoder<I, E, A>) => readonly [Either<E,
   return (d) => run_(d, i)
 }
 
+export function feedSync<I, E, A>(d: Decoder<I, E, A>): (i: I) => S.FSync<E, A> {
+  return flow(d.decode, Z.matchLogCauseM((_, e) => Z.halt(e), (_, a) => Z.succeed(a)))
+}
+
 /*
  * -------------------------------------------
  * testing
  * -------------------------------------------
-*/
+ */
 
-const d = struct({
-  a: string,
-  b: number,
-  c: struct({
-    d: boolean
-  })
-})
+const d = intersect(
+  struct({
+    a: string,
+    b: number,
+    c: struct({
+      d: boolean
+    })
+  }),
+  partial({ l: string, g: number })
+)
+
+console.log(inspect(run_(d, { a: 'hello', b: 0, k: {}, c: { d: true, e: 'kekw', f: { g: {} } }, l: 'hello2', f: {} }), { depth: 10 }))
