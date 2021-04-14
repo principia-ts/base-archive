@@ -7,7 +7,7 @@ import * as O from '@principia/base/Option'
 import * as S from '@principia/base/Sync'
 import * as DE from '@principia/codec/DecodeError'
 import * as D from '@principia/codec/Decoder'
-import * as Res from '@principia/codec/Result2'
+import * as Res from '@principia/codec/Result3'
 
 import { implementInterpreter } from '../../HKT'
 import { applyDecoderConfig } from './HKT'

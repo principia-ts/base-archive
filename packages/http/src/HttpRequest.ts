@@ -13,6 +13,7 @@ import * as R from '@principia/base/Record'
 import * as Str from '@principia/base/string'
 import * as Sy from '@principia/base/Sync'
 import { makeSemigroup } from '@principia/base/typeclass'
+import * as D from '@principia/codec/Decoder'
 import * as C from '@principia/io/Chunk'
 import * as I from '@principia/io/IO'
 import * as M from '@principia/io/Managed'
@@ -252,13 +253,13 @@ export class HttpRequest {
     const self = this
     return I.gen(function* (_) {
       const contentType = yield* _(self.getHeader('content-type'))
-      const [charset]   = yield* _(
+      const charset     = yield* _(
         pipe(
           contentType,
           O.map(parseContentType),
           O.bind((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
-          decodeCharset.decode,
+          D.feedSync(decodeCharset),
           Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
         )
       )
@@ -285,13 +286,13 @@ export class HttpRequest {
     const self = this
     return I.gen(function* (_) {
       const contentType = yield* _(self.getHeader('Content-Type'))
-      const [charset]   = yield* _(
+      const charset     = yield* _(
         pipe(
           contentType,
           O.map(parseContentType),
           O.bind((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
-          decodeCharset.decode,
+          D.feedSync(decodeCharset),
           Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
         )
       )

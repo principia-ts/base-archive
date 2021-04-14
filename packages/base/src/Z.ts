@@ -452,6 +452,21 @@ export function matchCauseM<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2,
   return (fa) => matchCauseM_(fa, onFailure, onSuccess)
 }
 
+export function matchLogM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+  fa: Z<W, S1, S2, R, E, A>,
+  onFailure: (ws: ReadonlyArray<W>, e: E) => Z<W1, S5, S3, R1, E1, B>,
+  onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
+  return matchLogCauseM_(fa, (ws, e) => onFailure(ws, FS.first(e)), onSuccess)
+}
+
+export function matchLogM<W, S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+  onFailure: (ws: ReadonlyArray<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
+  onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+): <R>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
+  return (fa) => matchLogM_(fa, onFailure, onSuccess)
+}
+
 /**
  * Recovers from errors by accepting one computation to execute for the case
  * of an error, and one computation to execute for the case of success.
