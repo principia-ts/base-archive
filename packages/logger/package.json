@@ -50,7 +50,7 @@
     "@principia/io": "^0.7.3",
     "@principia/node": "^0.7.2",
     "chalk": "^4.1.0",
-    "date-fns": "^2.19.0",
+    "date-fns": "^2.21.0",
     "strip-ansi": "^6.0.0"
   },
   "publishConfig": {
