@@ -21,7 +21,7 @@ export interface SetAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      DE.LeafE<DE.UnknownArrayE> | DE.ArrayE<DE.IndexE<number, E>> | DE.ParseE<never>,
+      DE.CompositionE<DE.UnknownArrayLE | DE.ArrayE<DE.OptionalIndexE<number, E>>>,
       ReadonlySet<A>,
       ReadonlyArray<O>,
       SetConfig<unknown, E, A, O>
@@ -30,7 +30,7 @@ export interface SetAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    DE.LeafE<DE.UnknownArrayE> | DE.ArrayE<DE.IndexE<number, E>> | DE.ParseE<never>,
+    DE.CompositionE<DE.UnknownArrayLE | DE.ArrayE<DE.OptionalIndexE<number, E>>>,
     ReadonlySet<A>,
     ReadonlyArray<O>
   >

@@ -20,7 +20,7 @@ export interface RecordAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      DE.LeafE<DE.UnknownRecordE> | DE.RecordE<DE.KeyE<string, E>>,
+      DE.CompositionE<DE.UnknownRecordLE | DE.RecordE<DE.OptionalKeyE<string, E>>>,
       ReadonlyRecord<string, A>,
       Record<string, O>,
       RecordConfig<unknown, E, A, O>
@@ -29,7 +29,7 @@ export interface RecordAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    DE.LeafE<DE.UnknownRecordE> | DE.RecordE<DE.KeyE<string, E>>,
+    DE.CompositionE<DE.UnknownRecordLE | DE.RecordE<DE.OptionalKeyE<string, E>>>,
     ReadonlyRecord<string, A>,
     Record<string, O>
   >

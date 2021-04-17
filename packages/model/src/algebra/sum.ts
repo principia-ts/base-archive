@@ -76,9 +76,11 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       Infer<F, Env, 'I', Members[keyof Members]>,
-      | DE.UnknownRecordLE
-      | DE.TagNotFoundE<Tag, DE.LiteralE<keyof Members>>
-      | DE.SumE<{ readonly [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>,
+      DE.CompositionE<
+        | DE.UnknownRecordLE
+        | DE.TagNotFoundE<Tag, DE.LiteralE<keyof Members>>
+        | DE.SumE<{ readonly [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>
+      >,
       Infer<F, Env, 'A', Members[keyof Members]>,
       Infer<F, Env, 'O', Members[keyof Members]>,
       TaggedUnionConfig<Members>
@@ -87,9 +89,11 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     Infer<F, Env, 'I', Members[keyof Members]>,
-    | DE.UnknownRecordLE
-    | DE.TagNotFoundE<Tag, DE.LiteralE<keyof Members>>
-    | DE.SumE<{ readonly [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>,
+    DE.CompositionE<
+      | DE.UnknownRecordLE
+      | DE.TagNotFoundE<Tag, DE.LiteralE<keyof Members>>
+      | DE.SumE<{ readonly [K in keyof Members]: DE.MemberE<K, ErrorOf<F, Env, Members[K]>> }[keyof Members]>
+    >,
     Infer<F, Env, 'A', Members[keyof Members]>,
     Infer<F, Env, 'O', Members[keyof Members]>
   >
@@ -99,20 +103,26 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      | DE.UnknownRecordLE
-      | DE.TagNotFoundE<'_tag', DE.LiteralE<'Left' | 'Right'>>
-      | DE.SumE<
-          | DE.MemberE<
-              'Left',
-              | DE.LeafE<DE.UnknownRecordE>
-              | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Left'>>> | DE.KeyE<'left', EE>>
-            >
-          | DE.MemberE<
-              'Right',
-              | DE.LeafE<DE.UnknownRecordE>
-              | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Right'>>> | DE.KeyE<'right', AE>>
-            >
-        >,
+      DE.CompositionE<
+        | DE.UnknownRecordLE
+        | DE.TagNotFoundE<'_tag', DE.LiteralE<'Left' | 'Right'>>
+        | DE.SumE<
+            | DE.MemberE<
+                'Left',
+                DE.CompositionE<
+                  | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                  | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'Left'>>> | DE.RequiredKeyE<'left', EE>>
+                >
+              >
+            | DE.MemberE<
+                'Right',
+                DE.CompositionE<
+                  | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                  | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'Right'>>> | DE.RequiredKeyE<'right', AE>>
+                >
+              >
+          >
+      >,
       Either<EA, AA>,
       Either<EO, AO>,
       EitherConfig<unknown, EE, EA, EO, unknown, AE, AA, AO>
@@ -121,20 +131,26 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    | DE.UnknownRecordLE
-    | DE.TagNotFoundE<'_tag', DE.LiteralE<'Left' | 'Right'>>
-    | DE.SumE<
-        | DE.MemberE<
-            'Left',
-            | DE.LeafE<DE.UnknownRecordE>
-            | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Left'>>> | DE.KeyE<'left', EE>>
-          >
-        | DE.MemberE<
-            'Right',
-            | DE.LeafE<DE.UnknownRecordE>
-            | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Right'>>> | DE.KeyE<'right', AE>>
-          >
-      >,
+    DE.CompositionE<
+      | DE.UnknownRecordLE
+      | DE.TagNotFoundE<'_tag', DE.LiteralE<'Left' | 'Right'>>
+      | DE.SumE<
+          | DE.MemberE<
+              'Left',
+              DE.CompositionE<
+                | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'Left'>>> | DE.RequiredKeyE<'left', EE>>
+              >
+            >
+          | DE.MemberE<
+              'Right',
+              DE.CompositionE<
+                | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'Right'>>> | DE.RequiredKeyE<'right', AE>>
+              >
+            >
+        >
+    >,
     Either<EA, AA>,
     Either<EO, AO>
   >
@@ -143,16 +159,26 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      | DE.UnknownRecordLE
-      | DE.TagNotFoundE<'_tag', DE.LiteralE<'None' | 'Some'>>
-      | DE.SumE<
-          | DE.MemberE<'None', DE.LeafE<DE.UnknownRecordE> | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'None'>>>>>
-          | DE.MemberE<
-              'Some',
-              | DE.LeafE<DE.UnknownRecordE>
-              | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Some'>>> | DE.KeyE<'value', E>>
-            >
-        >,
+      DE.CompositionE<
+        | DE.UnknownRecordLE
+        | DE.TagNotFoundE<'_tag', DE.LiteralE<'None' | 'Some'>>
+        | DE.SumE<
+            | DE.MemberE<
+                'None',
+                DE.CompositionE<
+                  | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                  | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'None'>>>>
+                >
+              >
+            | DE.MemberE<
+                'Some',
+                DE.CompositionE<
+                  | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                  | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'Some'>>> | DE.RequiredKeyE<'value', E>>
+                >
+              >
+          >
+      >,
       Option<A>,
       Option<O>,
       OptionConfig<unknown, E, A, O>
@@ -161,16 +187,26 @@ export interface SumAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    | DE.UnknownRecordLE
-    | DE.TagNotFoundE<'_tag', DE.LiteralE<'None' | 'Some'>>
-    | DE.SumE<
-        | DE.MemberE<'None', DE.LeafE<DE.UnknownRecordE> | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'None'>>>>>
-        | DE.MemberE<
-            'Some',
-            | DE.LeafE<DE.UnknownRecordE>
-            | DE.StructE<DE.KeyE<'_tag', DE.LeafE<DE.LiteralE<'Some'>>> | DE.KeyE<'value', E>>
-          >
-      >,
+    DE.CompositionE<
+      | DE.UnknownRecordLE
+      | DE.TagNotFoundE<'_tag', DE.LiteralE<'None' | 'Some'>>
+      | DE.SumE<
+          | DE.MemberE<
+              'None',
+              DE.CompositionE<
+                | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'None'>>>>
+              >
+            >
+          | DE.MemberE<
+              'Some',
+              DE.CompositionE<
+                | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+                | DE.StructE<DE.RequiredKeyE<'_tag', DE.LeafE<DE.LiteralE<'Some'>>> | DE.RequiredKeyE<'value', E>>
+              >
+            >
+        >
+    >,
     Option<A>,
     Option<O>
   >

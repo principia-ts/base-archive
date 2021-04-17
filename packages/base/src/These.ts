@@ -46,10 +46,19 @@ type URI = [HKT.URI<TheseURI>]
  * -------------------------------------------
  */
 
+/**
+ * @category constructors
+ */
 export const Left = T.Left
 
+/**
+ * @category constructors
+ */
 export const Right = T.Right
 
+/**
+ * @category constructors
+ */
 export const Both = T.Both
 
 export function rightOrThese_<E, A>(me: O.Option<E>, a: A): These<E, A> {

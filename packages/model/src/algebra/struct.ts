@@ -52,8 +52,10 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      | DE.LeafE<DE.UnknownRecordE>
-      | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
+      DE.CompositionE<
+        | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+        | DE.StructE<{ readonly [K in keyof Props]: DE.RequiredKeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+      >,
       InferStruct<F, Env, Props, 'A'>,
       InferStruct<F, Env, Props, 'O'>,
       StructConfig<Props>
@@ -62,8 +64,10 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    | DE.LeafE<DE.UnknownRecordE>
-    | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
+    DE.CompositionE<
+      | DE.CompositionE<DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE> | DE.MissingKeysE>
+      | DE.StructE<{ readonly [K in keyof Props]: DE.RequiredKeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+    >,
     InferStruct<F, Env, Props, 'A'>,
     InferStruct<F, Env, Props, 'O'>
   >
@@ -73,8 +77,10 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     config?: Config<
       Env,
       unknown,
-      | DE.LeafE<DE.UnknownRecordE>
-      | DE.PartialE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
+      DE.CompositionE<
+        | DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE>
+        | DE.PartialE<{ readonly [K in keyof Props]: DE.OptionalKeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+      >,
       Partial<InferStruct<F, Env, Props, 'A'>>,
       Partial<InferStruct<F, Env, Props, 'O'>>,
       PartialConfig<Props>
@@ -83,8 +89,10 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     F,
     Env,
     unknown,
-    | DE.LeafE<DE.UnknownRecordE>
-    | DE.PartialE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>,
+    DE.CompositionE<
+      | DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE>
+      | DE.PartialE<{ readonly [K in keyof Props]: DE.OptionalKeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+    >,
     Partial<InferStruct<F, Env, Props, 'A'>>,
     Partial<InferStruct<F, Env, Props, 'O'>>
   >
@@ -98,13 +106,21 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
       DE.IntersectionE<
         | DE.MemberE<
             0,
-            | DE.LeafE<DE.UnknownRecordE>
-            | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+            DE.CompositionE<
+              | DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE>
+              | DE.StructE<{ readonly [K in keyof Props]: DE.RequiredKeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+            >
           >
         | DE.MemberE<
             1,
-            | DE.LeafE<DE.UnknownRecordE>
-            | DE.PartialE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+            DE.CompositionE<
+              | DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE>
+              | DE.PartialE<
+                  {
+                    readonly [K in keyof PropsPartial]: DE.OptionalKeyE<K, ErrorOf<F, Env, PropsPartial[K]>>
+                  }[keyof PropsPartial]
+                >
+            >
           >
       >,
       InferStruct<F, Env, Props, 'A'> & Partial<InferStruct<F, Env, PropsPartial, 'A'>>,
@@ -118,15 +134,21 @@ export interface StructAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
     DE.IntersectionE<
       | DE.MemberE<
           0,
-          | DE.LeafE<DE.UnknownRecordE>
-          | DE.StructE<{ readonly [K in keyof Props]: DE.KeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+          DE.CompositionE<
+            | DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE>
+            | DE.StructE<{ readonly [K in keyof Props]: DE.RequiredKeyE<K, ErrorOf<F, Env, Props[K]>> }[keyof Props]>
+          >
         >
       | DE.MemberE<
           1,
-          | DE.LeafE<DE.UnknownRecordE>
-          | DE.PartialE<
-              { readonly [K in keyof PropsPartial]: DE.KeyE<K, ErrorOf<F, Env, PropsPartial[K]>> }[keyof PropsPartial]
-            >
+          DE.CompositionE<
+            | DE.CompositionE<DE.UnknownRecordLE | DE.UnexpectedKeysE>
+            | DE.PartialE<
+                {
+                  readonly [K in keyof PropsPartial]: DE.OptionalKeyE<K, ErrorOf<F, Env, PropsPartial[K]>>
+                }[keyof PropsPartial]
+              >
+          >
         >
     >,
     InferStruct<F, Env, Props, 'A'> & Partial<InferStruct<F, Env, PropsPartial, 'A'>>,

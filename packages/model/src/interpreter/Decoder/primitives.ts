@@ -5,6 +5,7 @@ import type { Branded } from '@principia/base/Brand'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
+import * as O from '@principia/base/Option'
 import * as DE from '@principia/codec/DecodeError'
 import * as D from '@principia/codec/Decoder'
 
@@ -58,7 +59,9 @@ export const PrimitivesDecoder = implementInterpreter<DecoderURI, Alg.Primitives
         D.string,
         D.refine(
           (a): a is Branded<string, Alg.UUIDBrand> => regexUUID.test(a),
-          (s) => DE.leafE<UUIDE>({ _tag: 'UUIDE', actual: s })
+          (s) => DE.leafE<UUIDE>({ _tag: 'UUIDE', actual: s }),
+          () => O.None(),
+          'UUID'
         ),
         withConfig(config)
       ),

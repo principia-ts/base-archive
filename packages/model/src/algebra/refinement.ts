@@ -21,13 +21,13 @@ export interface RefinementAlgebra<F extends InterpreterURIS, Env extends AnyEnv
     type: InterpretedKind<F, Env, I, E, A, O>,
     refinement: Refinement<A, B>,
     onError: (a: A) => E1,
-    config?: Config<Env, I, E | DE.RefineE<E1>, B, O, RefineConfig<I, E, A, O, B>>
-  ) => InterpretedKind<F, Env, I, E | DE.RefineE<E1>, B, O>
+    config?: Config<Env, I, DE.CompositionE<E | DE.RefinementE<E1>>, B, O, RefineConfig<I, E, A, O, B>>
+  ) => InterpretedKind<F, Env, I, DE.CompositionE<E | DE.RefinementE<E1>>, B, O>
 
   readonly constrain: <I, E, A, O, E1>(
     a: InterpretedKind<F, Env, I, E, A, O>,
     predicate: Predicate<A>,
     onError: (a: A) => E1,
-    config?: Config<Env, I, E | DE.RefineE<E1>, A, O, ConstrainConfig<I, E, A, O>>
-  ) => InterpretedKind<F, Env, I, E | DE.RefineE<E1>, A, O>
+    config?: Config<Env, I, DE.CompositionE<E | DE.RefinementE<E1>>, A, O, ConstrainConfig<I, E, A, O>>
+  ) => InterpretedKind<F, Env, I, DE.CompositionE<E | DE.RefinementE<E1>>, A, O>
 }

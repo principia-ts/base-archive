@@ -12,6 +12,7 @@ import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as Str from '@principia/base/string'
 import * as Sy from '@principia/base/Sync'
+import * as Th from '@principia/base/These'
 import { makeSemigroup } from '@principia/base/typeclass'
 import * as D from '@principia/codec/Decoder'
 import * as C from '@principia/io/Chunk'
@@ -259,8 +260,12 @@ export class HttpRequest {
           O.map(parseContentType),
           O.bind((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
-          D.feedSync(decodeCharset),
-          Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
+          decodeCharset.decode,
+          Th.match(
+            (_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })),
+            Sy.succeed,
+            (_, a) => Sy.succeed(a)
+          )
         )
       )
 
@@ -292,8 +297,12 @@ export class HttpRequest {
           O.map(parseContentType),
           O.bind((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
           O.getOrElse(() => 'utf-8'),
-          D.feedSync(decodeCharset),
-          Sy.catchAll((_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })))
+          decodeCharset.decode,
+          Th.match(
+            (_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })),
+            Sy.succeed,
+            (_, a) => Sy.succeed(a)
+          )
         )
       )
 

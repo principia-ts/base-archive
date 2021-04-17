@@ -1,20 +1,19 @@
 import type { Lazy } from '@principia/base/function'
 import type * as HKT from '@principia/base/HKT'
-import type { USync } from '@principia/base/Sync'
 import type * as P from '@principia/base/typeclass'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
-import { flow, memoize, pipe } from '@principia/base/function'
+import { flow, identity, memoize, pipe } from '@principia/base/function'
 import * as HS from '@principia/base/HashSet'
+import * as R from '@principia/base/Record'
 import * as Set from '@principia/base/Set'
-import * as S from '@principia/base/Sync'
 
 import { EncoderURI } from './Modules'
 import { _intersect } from './util'
 
 export interface Encoder<A, O> {
-  readonly encode: (a: A) => USync<O>
+  readonly encode: (a: A) => O
 }
 
 export type InputOf<E> = E extends Encoder<infer A, any> ? A : never
@@ -30,7 +29,7 @@ export type V = HKT.V<'I', '-'>
  * -------------------------------------------
  */
 
-export function fromEncode<A, O>(encode: (a: A) => USync<O>): Encoder<A, O> {
+export function fromEncode<A, O>(encode: (a: A) => O): Encoder<A, O> {
   return { encode }
 }
 
@@ -47,7 +46,7 @@ export interface IdEncoder<A> extends Encoder<A, A> {
 export function id<A>(): IdEncoder<A> {
   return {
     _tag: 'IdE',
-    encode: S.pure
+    encode: identity
   }
 }
 
@@ -66,7 +65,7 @@ export function compose_<From extends AnyE, To extends Encoder<OutputOf<From>, P
     _tag: 'ComposeE',
     from,
     to,
-    encode: flow(from.encode, S.bind(to.encode))
+    encode: flow(from.encode, to.encode)
   }
 }
 
@@ -116,7 +115,7 @@ export function nullable<Or extends AnyE>(or: Or): NullableEncoder<Or> {
   return {
     _tag: 'NullableEncoder',
     or,
-    encode: (a) => (a == null ? S.succeed(null) : or.encode(a))
+    encode: (a) => (a == null ? null : or.encode(a))
   }
 }
 
@@ -130,20 +129,13 @@ export function struct<P extends Record<string, AnyE>>(properties: P): StructEnc
   return {
     _tag: 'StructEncoder',
     properties,
-    encode: (a) =>
-      S.deferTotal(() => {
-        let computation = S.succeed({} as Record<keyof P, any>)
-        for (const k in properties) {
-          computation = pipe(
-            computation,
-            S.crossWith(properties[k].encode(a[k]), (mut_o, a) => {
-              mut_o[k] = a
-              return mut_o
-            })
-          )
-        }
-        return computation
-      })
+    encode: (a) => {
+      const mut_r = {} as any
+      for (const k in properties) {
+        mut_r[k] = properties[k].encode(a[k])
+      }
+      return mut_r
+    }
   }
 }
 
@@ -168,31 +160,18 @@ export function partial<P extends Record<string, AnyE>>(properties: P): PartialE
   return {
     _tag: 'PartialEncoder',
     properties,
-    encode: (a) =>
-      S.deferTotal(() => {
-        let computation = S.succeed({} as Partial<Record<keyof P, any>>)
-        for (const k in properties) {
-          const v = a[k]
-          if (v === undefined) {
-            computation = pipe(
-              computation,
-              S.map((mut_o) => {
-                mut_o[k] = undefined
-                return mut_o
-              })
-            )
-          } else {
-            computation = pipe(
-              computation,
-              S.crossWith(properties[k].encode(v), (mut_o, a) => {
-                mut_o[k] = a
-                return mut_o
-              })
-            )
-          }
+    encode: (a) => {
+      const mut_r = {} as any
+      for (const k in properties) {
+        const v = a[k]
+        if (v === undefined) {
+          mut_r[k] = undefined
+        } else {
+          mut_r[k] = properties[k].encode(v)
         }
-        return computation
-      })
+      }
+      return mut_r
+    }
   }
 }
 
@@ -206,19 +185,7 @@ export function record<C extends AnyE>(codomain: C): RecordEncoder<C> {
   return {
     _tag: 'RecordEncoder',
     codomain,
-    encode: (a) => {
-      let computation = S.succeed({} as Record<string, OutputOf<C>>)
-      for (const k in a) {
-        computation = pipe(
-          computation,
-          S.crossWith(codomain.encode(a[k]), (mut_o, a) => {
-            mut_o[k] = a
-            return mut_o
-          })
-        )
-      }
-      return computation
-    }
+    encode: R.map(codomain.encode)
   }
 }
 
@@ -232,7 +199,7 @@ export function array<Item extends AnyE>(item: Item): ArrayEncoder<Item> {
   return {
     _tag: 'ArrayEncoder',
     item,
-    encode: S.foreach(item.encode)
+    encode: A.map(item.encode)
   }
 }
 
@@ -246,7 +213,13 @@ export function tuple<C extends readonly [AnyE, ...ReadonlyArray<AnyE>]>(...comp
   return {
     _tag: 'TupleEncoder',
     components,
-    encode: (as) => S.iforeach_(components, (i, c) => c.encode(as[i])) as any
+    encode: (as) => {
+      const r: Array<any> = []
+      for (let i = 0; i < components.length; i++) {
+        r.push(components[i].encode(as[i]))
+      }
+      return (r as unknown) as { [K in keyof C]: OutputOf<C[K]> }
+    }
   }
 }
 
@@ -266,14 +239,10 @@ export function intersect<Members extends readonly [AnyE, ...ReadonlyArray<AnyE>
     _tag: 'IntersectEncoder',
     members,
     encode: (a) =>
-      S.deferTotal(() => {
-        return pipe(
-          members.slice(1),
-          A.foldl(members[0].encode(a), (computation, encoder) =>
-            pipe(computation, S.crossWith(encoder.encode(a), _intersect))
-          )
-        )
-      })
+      pipe(
+        members.slice(1),
+        A.foldl(members[0].encode(a), (b, encoder) => _intersect(b, encoder.encode(a)))
+      )
   }
 }
 
@@ -364,12 +333,12 @@ export function SetToArray<E extends AnyE>(
   O: P.Ord<InputOf<E>>
 ): Encoder<ReadonlySet<InputOf<E>>, ReadonlyArray<OutputOf<E>>> {
   const toArrayO = Set.toArray(O)
-  return fromEncode((a: ReadonlySet<InputOf<E>>) => pipe(toArrayO(a), S.foreach(item.encode)))
+  return fromEncode((a: ReadonlySet<InputOf<E>>) => pipe(toArrayO(a), A.map(item.encode)))
 }
 
 export function HashSetToArray<E extends AnyE>(item: E, O: P.Ord<InputOf<E>>) {
   const toArrayO = HS.toArray(O)
-  return fromEncode((a: HS.HashSet<InputOf<E>>) => pipe(toArrayO(a), S.foreach(item.encode)))
+  return fromEncode((a: HS.HashSet<InputOf<E>>) => pipe(toArrayO(a), A.map(item.encode)))
 }
 
 export { EncoderURI }

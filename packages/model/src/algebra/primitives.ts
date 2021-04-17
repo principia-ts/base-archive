@@ -41,8 +41,8 @@ export type UUID = Branded<string, UUIDBrand>
 
 export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv> {
   readonly string: (
-    config?: Config<Env, unknown, DE.LeafE<DE.StringE>, string, string, StringConfig>
-  ) => InterpretedKind<F, Env, unknown, DE.LeafE<DE.StringE>, string, string>
+    config?: Config<Env, unknown, DE.StringLE, string, string, StringConfig>
+  ) => InterpretedKind<F, Env, unknown, DE.StringLE, string, string>
 
   readonly literal: <T extends readonly [Primitive, ...Primitive[]]>(
     ...values: T
@@ -61,34 +61,34 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
   ) => InterpretedKind<F, Env, unknown, DE.LeafE<DE.LiteralE<T>>, T, number>
 
   readonly number: (
-    config?: Config<Env, unknown, DE.LeafE<DE.NumberE>, number, number, NumberConfig>
-  ) => InterpretedKind<F, Env, unknown, DE.LeafE<DE.NumberE>, number, number>
+    config?: Config<Env, unknown, DE.NumberLE | DE.InfinityLE | DE.NaNLE, number, number, NumberConfig>
+  ) => InterpretedKind<F, Env, unknown, DE.NumberLE | DE.InfinityLE | DE.NaNLE, number, number>
 
   readonly boolean: (
-    config?: Config<Env, unknown, DE.LeafE<DE.BooleanE>, boolean, boolean, BooleanConfig>
-  ) => InterpretedKind<F, Env, unknown, DE.LeafE<DE.BooleanE>, boolean, boolean>
+    config?: Config<Env, unknown, DE.BooleanLE, boolean, boolean, BooleanConfig>
+  ) => InterpretedKind<F, Env, unknown, DE.BooleanLE, boolean, boolean>
 
   readonly bigint: (
-    config?: Config<Env, unknown, DE.LeafE<DE.StringE> | DE.LeafE<DE.BigIntE>, bigint, string, BigIntConfig>
-  ) => InterpretedKind<F, Env, unknown, DE.LeafE<DE.StringE> | DE.LeafE<DE.BigIntE>, bigint, string>
+    config?: Config<Env, unknown, DE.StringLE | DE.BigIntLE, bigint, string, BigIntConfig>
+  ) => InterpretedKind<F, Env, unknown, DE.StringLE | DE.BigIntLE, bigint, string>
 
   readonly date: (
     config?: Config<
       Env,
       unknown,
-      DE.LeafE<DE.StringE> | DE.ParseE<DE.LeafE<DE.DateFromStringE>>,
+      DE.CompositionE<DE.StringLE | DE.ParserE<DE.DateFromStringLE>>,
       Date,
       string,
       DateConfig
     >
-  ) => InterpretedKind<F, Env, unknown, DE.LeafE<DE.StringE> | DE.ParseE<DE.LeafE<DE.DateFromStringE>>, Date, string>
+  ) => InterpretedKind<F, Env, unknown, DE.CompositionE<DE.StringLE | DE.ParserE<DE.DateFromStringLE>>, Date, string>
 
   readonly array: <Item extends InterpretedKind<F, Env, any, any, any, any>>(
     item: Item,
     config?: Config<
       Env,
       Array<InputOf<F, Env, Item>>,
-      DE.ArrayE<DE.IndexE<number, ErrorOf<F, Env, Item>>>,
+      DE.ArrayE<DE.OptionalIndexE<number, ErrorOf<F, Env, Item>>>,
       ReadonlyArray<TypeOf<F, Env, Item>>,
       ReadonlyArray<OutputOf<F, Env, Item>>,
       ArrayConfig<InputOf<F, Env, Item>, ErrorOf<F, Env, Item>, TypeOf<F, Env, Item>, OutputOf<F, Env, Item>>
@@ -97,7 +97,7 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
     F,
     Env,
     Array<InputOf<F, Env, Item>>,
-    DE.ArrayE<DE.IndexE<number, ErrorOf<F, Env, Item>>>,
+    DE.ArrayE<DE.OptionalIndexE<number, ErrorOf<F, Env, Item>>>,
     ReadonlyArray<TypeOf<F, Env, Item>>,
     ReadonlyArray<OutputOf<F, Env, Item>>
   >
@@ -107,7 +107,7 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
     config?: Config<
       Env,
       Array<InputOf<F, Env, Item>>,
-      DE.ArrayE<DE.IndexE<number, ErrorOf<F, Env, Item>>> | DE.LeafE<DE.EmptyE>,
+      DE.ArrayE<DE.OptionalIndexE<number, ErrorOf<F, Env, Item>>> | DE.EmptyLE,
       NonEmptyArray<TypeOf<F, Env, Item>>,
       ReadonlyArray<OutputOf<F, Env, Item>>,
       NonEmptyArrayConfig<InputOf<F, Env, Item>, ErrorOf<F, Env, Item>, TypeOf<F, Env, Item>, OutputOf<F, Env, Item>>
@@ -116,7 +116,7 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
     F,
     Env,
     Array<InputOf<F, Env, Item>>,
-    DE.ArrayE<DE.IndexE<number, ErrorOf<F, Env, Item>>> | DE.LeafE<DE.EmptyE>,
+    DE.ArrayE<DE.OptionalIndexE<number, ErrorOf<F, Env, Item>>> | DE.EmptyLE,
     NonEmptyArray<TypeOf<F, Env, Item>>,
     ReadonlyArray<OutputOf<F, Env, Item>>
   >
@@ -133,7 +133,7 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
       Env,
       unknown,
       | DE.LeafE<DE.UnknownArrayE>
-      | DE.TupleE<{ readonly [K in keyof C]: DE.ComponentE<CastToNumber<K>, ErrorOf<F, Env, C[K]>> }[number]>,
+      | DE.TupleE<{ readonly [K in keyof C]: DE.RequiredIndexE<CastToNumber<K>, ErrorOf<F, Env, C[K]>> }[number]>,
       _A<F, Env, C>,
       _O<F, Env, C>,
       TupleConfig<C>
@@ -143,14 +143,21 @@ export interface PrimitivesAlgebra<F extends InterpreterURIS, Env extends AnyEnv
     Env,
     unknown,
     | DE.LeafE<DE.UnknownArrayE>
-    | DE.TupleE<{ readonly [K in keyof C]: DE.ComponentE<CastToNumber<K>, ErrorOf<F, Env, C[K]>> }[number]>,
+    | DE.TupleE<{ readonly [K in keyof C]: DE.RequiredIndexE<CastToNumber<K>, ErrorOf<F, Env, C[K]>> }[number]>,
     _A<F, Env, C>,
     _O<F, Env, C>
   >
 
   readonly UUID: (
-    config?: Config<Env, unknown, DE.LeafE<DE.StringE> | DE.RefineE<DE.LeafE<UUIDE>>, UUID, string, UUIDConfig>
-  ) => InterpretedKind<F, Env, unknown, DE.LeafE<DE.StringE> | DE.RefineE<DE.LeafE<UUIDE>>, UUID, string>
+    config?: Config<
+      Env,
+      unknown,
+      DE.CompositionE<DE.StringLE | DE.RefinementE<DE.LeafE<UUIDE>>>,
+      UUID,
+      string,
+      UUIDConfig
+    >
+  ) => InterpretedKind<F, Env, unknown, DE.CompositionE<DE.StringLE | DE.RefinementE<DE.LeafE<UUIDE>>>, UUID, string>
 }
 
 type _A<F extends InterpreterURIS, Env extends AnyEnv, Ts extends ReadonlyArray<any>> = {

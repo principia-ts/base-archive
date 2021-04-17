@@ -3,7 +3,6 @@ import type { EncoderURI } from './HKT'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
-import * as S from '@principia/base/Sync'
 import * as E from '@principia/codec/Encoder'
 
 import { implementInterpreter } from '../../HKT'
@@ -16,8 +15,8 @@ export const PrimitivesEncoder = implementInterpreter<EncoderURI, Alg.Primitives
   literal: (..._) => (config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {}),
   stringLiteral: (value, config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {}),
   numberLiteral: (value, config) => (env) => applyEncoderConfig(config?.config)(E.id(), env, {}),
-  bigint: (config) => (env) => applyEncoderConfig(config?.config)({ encode: (i) => S.succeed(i.toString()) }, env, {}),
-  date: (config) => (env) => applyEncoderConfig(config?.config)({ encode: (d) => S.succeed(d.toISOString()) }, env, {}),
+  bigint: (config) => (env) => applyEncoderConfig(config?.config)({ encode: (i) => i.toString() }, env, {}),
+  date: (config) => (env) => applyEncoderConfig(config?.config)({ encode: (d) => d.toISOString() }, env, {}),
   array: (item, config) => (env) =>
     pipe(item(env), (encoder) => applyEncoderConfig(config?.config)(E.array(encoder), env, encoder)),
   nonEmptyArray: (item, config) => (env) =>
