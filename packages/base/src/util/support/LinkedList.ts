@@ -1,52 +1,45 @@
 /* eslint-disable functional/immutable-data */
-export class LinkedListNode<T> {
-  constructor(public value: T | null, public next: LinkedListNode<T> | null = null) {}
+export class LinkedListNode<A> {
+  constructor(public value: A, public next: LinkedListNode<A> | null = null) {}
 }
 
-export class LinkedList<T> {
-  constructor(public head: LinkedListNode<T> | null = null, public tail: LinkedListNode<T> | null = null) {
-    this.head = null
-    this.tail = null
-  }
+export class LinkedList<A> {
+  constructor(public head: LinkedListNode<A> | null = null) {}
 
-  empty() {
+  get empty() {
     return this.head === null
   }
 
-  prepend(value: T) {
-    const newNode = new LinkedListNode<T>(value, this.head)
-    this.head     = newNode
-    if (!this.tail) {
-      this.tail = newNode
+  prepend(value: A): void {
+    const node = new LinkedListNode(value)
+    if(!this.head) {
+      this.head = node
+    } else {
+      node.next = this.head
+      this.head = node
     }
-    return this
   }
 
-  append(value: T) {
-    const newNode = new LinkedListNode(value)
-    if (!this.head) {
-      this.head = newNode
-      this.tail = newNode
-
-      return this
-    }
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    this.tail!.next = newNode
-    this.tail       = newNode
-    return this
-  }
-
-  deleteHead() {
-    if (!this.head) {
+  unprepend(): A | null {
+    if(!this.head) {
       return null
     }
-    const deletedHead = this.head
-    if (this.head.next) {
+    const h = this.head
+    if(this.head.next) {
       this.head = this.head.next
     } else {
       this.head = null
-      this.tail = null
     }
-    return deletedHead
+    return h.value
+  }
+
+  foldl<B>(b: B, f: (b: B, a: A) => B): B {
+    let h   = this.head
+    let acc = b
+    while(h) {
+      acc = f(acc, h.value)
+      h   = h.next
+    }
+    return acc
   }
 }

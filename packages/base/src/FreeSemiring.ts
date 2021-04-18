@@ -10,9 +10,12 @@ import * as E from './Either'
 import { makeEq } from './Eq'
 import * as Ev from './Eval'
 import { flow, hole, identity, pipe } from './function'
+import * as L from './List'
 import { FreeSemiringURI } from './Modules'
 import { tuple } from './tuple'
 import * as P from './typeclass'
+import { LinkedList, LinkedListNode } from './util/support/LinkedList'
+import { Z } from './Z'
 
 /*
  * -------------------------------------------
@@ -104,60 +107,99 @@ export function both<Z, A, B>(left: FreeSemiring<Z, A>, right: FreeSemiring<Z, B
  * Fold
  * -------------------------------------------
  */
-
-export function fold_<Z, A, B>(
-  ma: FreeSemiring<Z, A>,
+function foldLoop<A, B>(
   onEmpty: B,
   onSingle: (a: A) => B,
-  onThen: (b1: B, b2: B) => B,
-  onBoth: (b1: B, b2: B) => B
-): B {
-  const loop = (
-    input: ReadonlyArray<FreeSemiring<Z, A>>,
-    output: ReadonlyArray<E.Either<boolean, B>>
-  ): Ev.Eval<ReadonlyArray<B>> =>
-    Ev.gen(function* (_) {
-      if (A.isNonEmpty(input)) {
-        const [ps, ...fss] = input
-        switch (ps._tag) {
-          case 'Both':
-            return yield* _(loop([ps.left, ps.right, ...fss], [E.Left(true), ...output]))
-          case 'Then':
-            return yield* _(loop([ps.left, ps.right, ...fss], [E.Left(false), ...output]))
-          case 'Single':
-            return yield* _(loop(fss, [E.Right(onSingle(ps.value)), ...output]))
-          case 'Empty':
-            return yield* _(loop(fss, [E.Right(onEmpty), ...output]))
+  onThen: (l: B, r: B) => B,
+  onBoth: (l: B, r: B) => B,
+  input: LinkedList<FreeSemiring<any, A>>,
+  output: LinkedList<E.Either<boolean, B>>
+): LinkedList<B> {
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
+  for (;;) {
+    if (input.empty) {
+      return output.foldl(new LinkedList(), (acc, val) => {
+        if (val._tag === 'Right') {
+          acc.prepend(val.right)
+          return acc
+        } else {
+          if (val.left) {
+            const left  = acc.unprepend()!
+            const right = acc.unprepend()!
+            acc.prepend(onBoth(left!, right!))
+            return acc
+          } else {
+            const left  = acc.unprepend()!
+            const right = acc.unprepend()!
+            acc.prepend(onThen(left!, right!))
+            return acc
+          }
         }
-      } else {
-        return A.foldl_(output, A.empty(), (b, a) =>
-          E.match_(
-            a,
-            (e) => {
-              if (e) {
-                const [left, right, ...fss] = b
-                return [onBoth(left, right), ...fss]
-              } else {
-                const [left, right, ...pss] = b
-                return [onThen(left, right), ...pss]
-              }
-            },
-            (parSeq) => [parSeq, ...b]
-          )
-        )
+      })
+    } else {
+      const head    = input.head!.value!
+      const parSeqs = input.head!.next!
+      /* eslint-disable no-param-reassign */
+      switch (head._tag) {
+        case 'Empty': {
+          input = new LinkedList(parSeqs)
+          output.prepend(E.Right(onEmpty))
+          break
+        }
+        case 'Single': {
+          input = new LinkedList(parSeqs)
+          output.prepend(E.Right(onSingle(head.value)))
+          break
+        }
+        case 'Then': {
+          input = new LinkedList(parSeqs)
+          input.prepend(head.right)
+          input.prepend(head.left)
+          output.prepend(E.Left(false))
+          break
+        }
+        case 'Both': {
+          input = new LinkedList(parSeqs)
+          input.prepend(head.right)
+          input.prepend(head.left)
+          output.prepend(E.Left(true))
+          break
+        }
       }
-    })
+      /* eslint-enable */
+    }
+  }
+}
 
-  return Ev.evaluate(loop([ma], A.empty()))[0]
+/**
+ * Folds over the events in this collection of events using the specified
+ * functions.
+ */
+export function fold_<Z, A, B>(
+  fs: FreeSemiring<Z, A>,
+  emptyCase: B,
+  singleCase: (a: A) => B,
+  thenCase: (l: B, r: B) => B,
+  bothCase: (l: B, r: B) => B
+): B {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return foldLoop(
+    emptyCase,
+    singleCase,
+    thenCase,
+    bothCase,
+    new LinkedList<FreeSemiring<any, A>>(new LinkedListNode(fs)),
+    new LinkedList()
+  ).head!.value!
 }
 
 export function fold<A, B>(
   onEmpty: B,
   onSingle: (a: A) => B,
-  onThen: (b1: B, b2: B) => B,
-  onBoth: (b1: B, b2: B) => B
-): <Z>(ma: FreeSemiring<Z, A>) => B {
-  return (ma) => fold_(ma, onEmpty, onSingle, onThen, onBoth)
+  onThen: (l: B, r: B) => B,
+  onBoth: (l: B, r: B) => B
+): <Z>(fs: FreeSemiring<Z, A>) => B {
+  return (fs) => fold_(fs, onEmpty, onSingle, onThen, onBoth)
 }
 
 /*
@@ -295,20 +337,25 @@ export const sequence = P.implementSequence<[HKT.URI<FreeSemiringURI>], V>()((_)
  */
 
 export function first<A>(ma: FreeSemiring<never, A>): A {
-  const loop = (ma: FreeSemiring<never, A>): Ev.Eval<A> =>
-    Ev.gen(function* (_) {
-      switch (ma._tag) {
-        case 'Both':
-          return yield* _(loop(ma.left))
-        case 'Then':
-          return yield* _(loop(ma.left))
-        case 'Single':
-          return ma.value
-        case 'Empty':
-          return hole<A>()
+  let current = ma
+  for (;;) {
+    switch (current._tag) {
+      case 'Empty': {
+        return hole<A>()
       }
-    })
-  return Ev.evaluate(loop(ma))
+      case 'Single': {
+        return current.value
+      }
+      case 'Both': {
+        current = current.left
+        break
+      }
+      case 'Then': {
+        current = current.left
+        break
+      }
+    }
+  }
 }
 
 /*
