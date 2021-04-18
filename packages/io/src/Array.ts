@@ -7,6 +7,101 @@ import { pipe } from '@principia/base/function'
 
 import * as I from './IO'
 
+/**
+ * Effectfully maps the elements of this Array.
+ */
+export function mapM_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
+  return A.foldl_(as, I.succeed([]) as I.IO<R, E, Array<B>>, (b, a) =>
+    I.crossWith_(
+      b,
+      I.deferTotal(() => f(a)),
+      (acc, b) => {
+        acc.push(b)
+        return acc
+      }
+    )
+  )
+}
+
+/**
+ * Effectfully maps the elements of this Array.
+ */
+export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
+  return (as) => mapM_(as, f)
+}
+
+/**
+ * Effectfully maps the elements of this Array in parallel.
+ */
+export function mapMPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
+  return I.bind_(
+    I.effectTotal<B[]>(() => []),
+    (mut_bs) => {
+      function fn([a, n]: [A, number]) {
+        return I.bind_(
+          I.deferTotal(() => f(a)),
+          (b) =>
+            I.effectTotal(() => {
+              mut_bs[n] = b
+            })
+        )
+      }
+      return I.bind_(
+        I.foreachUnitPar_(
+          A.imap_(as, (n, a) => [a, n] as [A, number]),
+          fn
+        ),
+        () => I.effectTotal(() => mut_bs)
+      )
+    }
+  )
+}
+
+/**
+ * Effectfully maps the elements of this Array in parallel.
+ */
+export function mapMPar<A, R, E, B>(
+  f: (a: A) => I.IO<R, E, B>
+): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
+  return (as) => mapMPar_(as, f)
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this Array to produce
+ * new elements.
+ */
+export function mapAccumM_<S, A, R, E, B>(
+  as: ReadonlyArray<A>,
+  s: S,
+  f: (s: S, a: A) => I.IO<R, E, readonly [S, B]>
+): I.IO<R, E, readonly [S, ReadonlyArray<B>]> {
+  return I.deferTotal(() => {
+    let dest: I.IO<R, E, S> = I.succeed(s)
+    const res: Array<B>     = []
+    for (let i = 0; i < as.length; i++) {
+      const v = as[i]
+      dest    = I.bind_(dest, (state) =>
+        I.map_(f(state, v), ([s2, b]) => {
+          res.push(b)
+          return s2
+        })
+      )
+    }
+    return I.map_(dest, (s) => [s, res])
+  })
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this Array to produce
+ * new elements.
+ */
+export function mapAccumM<S, A, R, E, B>(
+  s: S,
+  f: (s: S, a: A) => I.IO<R, E, readonly [S, B]>
+): (as: ReadonlyArray<A>) => I.IO<R, E, readonly [S, ReadonlyArray<B>]> {
+  return (as) => mapAccumM_(as, s, f)
+}
+
 export function dropWhileM_<A, R, E>(
   as: ReadonlyArray<A>,
   p: (a: A) => I.IO<R, E, boolean>
