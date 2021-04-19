@@ -3,7 +3,7 @@ import type { Has, Tag } from '@principia/prelude/Has'
 
 import { pipe } from '@principia/prelude/function'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as Sy from './Sync'
 import { AtomicReference } from './util/support/AtomicReference'
 

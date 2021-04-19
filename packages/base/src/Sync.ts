@@ -7,7 +7,7 @@ import * as P from '@principia/prelude'
 import { flow, identity, pipe } from '@principia/prelude/function'
 import { isTag, mergeEnvironments } from '@principia/prelude/Has'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as E from './Either'
 import { NoSuchElementError } from './Error'
 import { ZURI } from './Modules'

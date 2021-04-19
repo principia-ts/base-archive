@@ -2,7 +2,7 @@ import type * as P from '@principia/prelude'
 import type * as HKT from '@principia/prelude/HKT'
 
 import { PrematureGeneratorExitError } from './Error'
-import * as L from './List'
+import * as L from './List/core'
 
 /*
  * -------------------------------------------

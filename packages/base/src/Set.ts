@@ -13,7 +13,7 @@ import { identity } from '@principia/prelude/function'
 import { not } from '@principia/prelude/Predicate'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from './Array'
+import * as A from './Array/core'
 
 /*
  * -------------------------------------------

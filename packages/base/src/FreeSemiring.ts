@@ -9,7 +9,7 @@ import { makeEq } from '@principia/prelude/Eq'
 import { flow, hole, identity, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as B from './boolean'
 import * as E from './Either'
 import * as Ev from './Eval'

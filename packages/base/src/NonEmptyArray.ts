@@ -14,7 +14,7 @@ import { identity, pipe } from '@principia/prelude/function'
 import * as S from '@principia/prelude/Semigroup'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as G from './Guard'
 import * as _ from './internal/array'
 import * as O from './Option'

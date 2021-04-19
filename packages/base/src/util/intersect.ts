@@ -1,6 +1,6 @@
 import type { UnionToIntersection } from './types'
 
-import * as A from '../Array'
+import * as A from '../Array/core'
 
 export function intersect<AS extends unknown[] & { 0: unknown }>(
   ...as: AS

@@ -16,7 +16,7 @@ import type { Refinement } from '@principia/prelude/Refinement'
 
 import { identity, pipe } from '@principia/prelude/function'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import { $anonymousSelect, $guard, $namedSelect, $not, matchPattern, selectWithPattern } from './internal/pattern'
 import * as O from './Option'
 

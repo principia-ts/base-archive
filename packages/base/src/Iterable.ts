@@ -9,7 +9,7 @@ import * as P from '@principia/prelude'
 import { identity } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as O from './Option'
 
 type URI = [HKT.URI<IterableURI>]

@@ -9,7 +9,7 @@ import { flow, identity, pipe } from '@principia/prelude/function'
 import { isTag, mergeEnvironments } from '@principia/prelude/Has'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from '../Array'
+import * as A from '../Array/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import { genF, GenHKT } from '../Gen'

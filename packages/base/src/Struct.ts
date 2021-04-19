@@ -4,7 +4,7 @@
 import type { ReadonlyRecord } from './Record'
 import type { EnsureLiteral } from './util/types'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as R from './Record'
 import * as Str from './string'
 

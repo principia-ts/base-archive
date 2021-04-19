@@ -4,7 +4,7 @@ import type { Show } from '@principia/prelude/Show'
 import * as P from '@principia/prelude'
 import { identity } from '@principia/prelude/function'
 
-import * as A from './Array'
+import * as A from './Array/core'
 
 /*
  * -------------------------------------------

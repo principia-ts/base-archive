@@ -9,7 +9,7 @@ import type { Compute } from '@principia/prelude/util/compute'
 
 import { pipe } from '@principia/prelude/function'
 
-import * as A from '../Array'
+import * as A from '../Array/core'
 import * as O from '../Option'
 import * as R from '../Record'
 

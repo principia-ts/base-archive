@@ -9,8 +9,8 @@
  * It is forked from [List](https://github.com/funkia/list)
  */
 
-import type { Either } from './Either'
-import type { ListURI } from './Modules'
+import type { Either } from '../Either'
+import type { ListURI } from '../Modules'
 import type * as HKT from '@principia/prelude/HKT'
 import type { Ordering } from '@principia/prelude/Ordering'
 import type { Predicate } from '@principia/prelude/Predicate'
@@ -19,7 +19,7 @@ import type { Refinement } from '@principia/prelude/Refinement'
 import * as P from '@principia/prelude'
 import { identity } from '@principia/prelude/function'
 
-import * as O from './Option'
+import * as O from '../Option'
 
 /**
  * Represents a list of elements.
@@ -3282,4 +3282,4 @@ function arrayPush<A>(array: A[], a: A): A[] {
   return array
 }
 
-export { ListURI } from './Modules'
+export { ListURI } from '../Modules'

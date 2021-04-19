@@ -1,11 +1,13 @@
 import type { Async } from './Async'
+import type { Chunk } from './Chunk'
 import type { Const } from './Const'
 import type { Either } from './Either'
 import type { Eval } from './Eval'
 import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
 import type { Identity } from './Identity'
-import type { List } from './List'
+import type { IO } from './IO'
+import type { List } from './List/core'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Reader } from './Reader'
@@ -91,6 +93,13 @@ export type FreeSemiringURI = typeof FreeSemiringURI
 export const AsyncURI = 'Async'
 export type AsyncURI = typeof AsyncURI
 
+export const IOURI = 'IO'
+export type IOURI = typeof IOURI
+
+export const ChunkURI = 'Chunk'
+export type ChunkURI = typeof ChunkURI
+
+
 declare module '@principia/prelude/HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     [ArrayURI]: ReadonlyArray<A>
@@ -117,6 +126,8 @@ declare module '@principia/prelude/HKT' {
     [FreeSemiringURI]: FreeSemiring<X, A>
     [ZReaderURI]: ZReader<R, A>
     [AsyncURI]: Async<R, E, A>
+    [IOURI]: IO<R, E, A>
+    [ChunkURI]: Chunk<A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

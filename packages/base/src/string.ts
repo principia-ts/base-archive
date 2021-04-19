@@ -4,7 +4,7 @@ import * as P from '@principia/prelude'
 import { flow, identity, pipe } from '@principia/prelude/function'
 import { max_ } from '@principia/prelude/Ord'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as G from './Guard'
 import * as NA from './NonEmptyArray'
 import * as N from './number'

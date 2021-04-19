@@ -11,7 +11,7 @@ import * as P from '@principia/prelude'
 import { flow, identity, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from './Array'
+import * as A from './Array/core'
 import * as E from './Either'
 import * as FS from './FreeSemiring'
 import * as I from './Iterable'
