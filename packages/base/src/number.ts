@@ -1,8 +1,8 @@
 import type * as G from './Guard'
 
-import * as E from './Eq'
-import * as F from './Field'
-import * as P from './typeclass'
+import * as P from '@principia/prelude'
+import * as E from '@principia/prelude/Eq'
+import * as F from '@principia/prelude/Field'
 
 /*
  * -------------------------------------------

@@ -1,9 +1,9 @@
-import type { Endomorphism } from './Endomorphism'
-import type * as HKT from './HKT'
 import type { StoreURI } from './Modules'
+import type { Endomorphism } from '@principia/prelude/Endomorphism'
+import type * as HKT from '@principia/prelude/HKT'
 
-import { identity } from './function'
-import * as P from './typeclass'
+import * as P from '@principia/prelude'
+import { identity } from '@principia/prelude/function'
 
 export interface Store<S, A> {
   readonly peek: (s: S) => A

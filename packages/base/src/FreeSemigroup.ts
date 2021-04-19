@@ -1,7 +1,8 @@
-import type { Semigroup } from './typeclass'
+import type { Semigroup } from '@principia/prelude'
+
+import { makeSemigroup } from '@principia/prelude'
 
 import * as Ev from './Eval'
-import { makeSemigroup } from './typeclass'
 
 /*
  * -------------------------------------------

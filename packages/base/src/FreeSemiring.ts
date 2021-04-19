@@ -1,21 +1,20 @@
 /*
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/ParSeq.scala
  */
-import type { Eq } from './Eq'
-import type * as HKT from './HKT'
+import type { Eq } from '@principia/prelude/Eq'
+import type * as HKT from '@principia/prelude/HKT'
+
+import * as P from '@principia/prelude'
+import { makeEq } from '@principia/prelude/Eq'
+import { flow, hole, identity, pipe } from '@principia/prelude/function'
+import { tuple } from '@principia/prelude/tuple'
 
 import * as A from './Array'
 import * as B from './boolean'
 import * as E from './Either'
-import { makeEq } from './Eq'
 import * as Ev from './Eval'
-import { flow, hole, identity, pipe } from './function'
-import * as L from './List'
 import { FreeSemiringURI } from './Modules'
-import { tuple } from './tuple'
-import * as P from './typeclass'
 import { LinkedList, LinkedListNode } from './util/support/LinkedList'
-import { Z } from './Z'
 
 /*
  * -------------------------------------------

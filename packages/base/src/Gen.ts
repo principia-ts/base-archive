@@ -1,5 +1,5 @@
-import type * as HKT from './HKT'
-import type { Monad } from './Monad'
+import type * as P from '@principia/prelude'
+import type * as HKT from '@principia/prelude/HKT'
 
 import { PrematureGeneratorExitError } from './Error'
 import * as L from './List'
@@ -32,7 +32,7 @@ export function genF<
     >
   }
 >(
-  M: Monad<F, TC>,
+  M: P.Monad<F, TC>,
   config?: { adapter?: Adapter }
 ): <T extends GenHKT<HKT.Kind<F, TC, any, any, any, any, any, any, any, any, any, any>, any>, A0>(
   f: (i: Adapter) => Generator<T, A0, any>
@@ -51,7 +51,7 @@ export function genF<
   A0
 >
 export function genF<F>(
-  F: Monad<HKT.UHKT<F>>,
+  F: P.Monad<HKT.UHKT<F>>,
   config?: {
     adapter?: {
       <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A>
@@ -110,7 +110,7 @@ export function genWithHistoryF<
     >
   }
 >(
-  M: Monad<F>,
+  M: P.Monad<F>,
   config?: { adapter?: Adapter }
 ): <T extends GenLazyHKT<HKT.Kind<F, TC, any, any, any, any, any, any, any, any, any, any>, any>, A0>(
   f: (i: Adapter) => Generator<T, A0, any>
@@ -129,7 +129,7 @@ export function genWithHistoryF<
   A0
 >
 export function genWithHistoryF<F>(
-  F: Monad<HKT.UHKT<F>>,
+  F: P.Monad<HKT.UHKT<F>>,
   config?: {
     adapter?: {
       <A>(_: () => HKT.HKT<F, A>): GenLazyHKT<HKT.HKT<F, A>, A>

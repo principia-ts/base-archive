@@ -11,7 +11,7 @@
     "tsBuildInfoFile": "../tsbuildinfo/traced-cjs.tsbuildinfo",
     "plugins": [
       {
-        "transform": "../../compile/src/index.ts",
+        "transform": "@principia/compile",
         "moduleMap": {
           "^src/(.*)": "(@principia/base): _src/$1"
         },

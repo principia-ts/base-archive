@@ -1,7 +1,0 @@
-export * from '../../Managed/combinators/apply-par'
-export * from '../../Managed/combinators/foreachPar'
-export * from '../../Managed/combinators/foreachParN'
-export * from '../../Managed/combinators/memoize'
-export * from '../../Managed/combinators/releaseAll'
-export * from '../../Managed/combinators/use'
-export * from '../../Managed/core'

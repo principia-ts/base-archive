@@ -1,21 +1,22 @@
 /**
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/fx/ZPure.scala
  */
-import type { Eq } from './Eq'
 import type { FreeSemiring } from './FreeSemiring'
-import type * as HKT from './HKT'
-import type { Predicate } from './Predicate'
 import type { Stack } from './util/support/Stack'
+import type { Eq } from '@principia/prelude/Eq'
+import type * as HKT from '@principia/prelude/HKT'
+import type { Predicate } from '@principia/prelude/Predicate'
+
+import * as P from '@principia/prelude'
+import { flow, identity, pipe } from '@principia/prelude/function'
+import { tuple } from '@principia/prelude/tuple'
 
 import * as A from './Array'
 import * as E from './Either'
 import * as FS from './FreeSemiring'
-import { flow, identity, pipe } from './function'
 import * as I from './Iterable'
 import { ZURI } from './Modules'
 import * as O from './Option'
-import { tuple } from './tuple'
-import * as P from './typeclass'
 import { makeStack } from './util/support/Stack'
 
 /*

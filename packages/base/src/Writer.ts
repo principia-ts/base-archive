@@ -1,8 +1,8 @@
-import type { Endomorphism } from './Endomorphism'
 import type { WriterURI } from './Modules'
+import type { Endomorphism } from '@principia/prelude/Endomorphism'
 
-import * as HKT from './HKT'
-import * as P from './typeclass'
+import * as P from '@principia/prelude'
+import * as HKT from '@principia/prelude/HKT'
 
 /*
  * -------------------------------------------

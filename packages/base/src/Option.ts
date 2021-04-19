@@ -4,20 +4,20 @@
  */
 
 import type { Either } from './Either'
-import type { Eq } from './Eq'
-import type { FunctionN } from './function'
-import type * as HKT from './HKT'
 import type { OptionURI } from './Modules'
-import type { Predicate } from './Predicate'
-import type { Refinement } from './Refinement'
-import type { Show } from './Show'
 import type { These } from './These'
+import type { Eq } from '@principia/prelude/Eq'
+import type { FunctionN } from '@principia/prelude/function'
+import type * as HKT from '@principia/prelude/HKT'
+import type { Predicate } from '@principia/prelude/Predicate'
+import type { Refinement } from '@principia/prelude/Refinement'
+import type { Show } from '@principia/prelude/Show'
 
-import { makeEq } from './Eq'
-import { flow, identity, pipe } from './function'
-import * as O from './internal/option'
-import { tuple } from './tuple'
-import * as P from './typeclass'
+import * as P from '@principia/prelude'
+import { makeEq } from '@principia/prelude/Eq'
+import { flow, identity, pipe } from '@principia/prelude/function'
+import * as O from '@principia/prelude/internal/option'
+import { tuple } from '@principia/prelude/tuple'
 
 /*
  * -------------------------------------------

@@ -1,18 +1,19 @@
 import type * as E from './Either'
-import type { Eq } from './Eq'
 import type * as O from './Option'
-import type { Ord } from './Ord'
-import type { Predicate } from './Predicate'
-import type { Refinement } from './Refinement'
-import type { Show } from './Show'
-import type * as P from './typeclass'
+import type * as P from '@principia/prelude'
+import type { Eq } from '@principia/prelude/Eq'
+import type { Ord } from '@principia/prelude/Ord'
+import type { Predicate } from '@principia/prelude/Predicate'
+import type { Refinement } from '@principia/prelude/Refinement'
+import type { Show } from '@principia/prelude/Show'
+
+import { makeMonoid, makeSemigroup } from '@principia/prelude'
+import { makeEq } from '@principia/prelude/Eq'
+import { identity } from '@principia/prelude/function'
+import { not } from '@principia/prelude/Predicate'
+import { tuple } from '@principia/prelude/tuple'
 
 import * as A from './Array'
-import { makeEq } from './Eq'
-import { identity } from './function'
-import { not } from './Predicate'
-import { tuple } from './tuple'
-import { makeMonoid, makeSemigroup } from './typeclass'
 
 /*
  * -------------------------------------------

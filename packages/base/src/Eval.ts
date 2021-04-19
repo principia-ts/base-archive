@@ -4,14 +4,15 @@
  * -------------------------------------------
  */
 
-import type * as HKT from './HKT'
 import type { Stack } from './util/support/Stack'
+import type * as HKT from '@principia/prelude/HKT'
 
-import { identity } from './function'
+import * as P from '@principia/prelude'
+import { identity } from '@principia/prelude/function'
+import { tuple } from '@principia/prelude/tuple'
+
 import { EvalURI } from './Modules'
 import * as O from './Option'
-import { tuple } from './tuple'
-import * as P from './typeclass'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 

@@ -11,7 +11,7 @@
     "tsBuildInfoFile": "../tsbuildinfo/cjs.tsbuildinfo",
     "plugins": [
       {
-        "transform": "../../compile/src/index.ts",
+        "transform": "@principia/compile",
         "tracing": false,
         "addExtensions": false
       }

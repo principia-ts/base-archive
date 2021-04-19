@@ -6,27 +6,27 @@
  * and the _Right_ constructor is used to hold a correct value
  */
 
-import type { Eq } from './Eq'
-import type { FunctionN } from './function'
 import type { EitherURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
-import type { Predicate } from './Predicate'
-import type { Refinement } from './Refinement'
-import type { Show } from './Show'
 import type { These } from './These'
 import type { Mutable } from './util/types'
+import type { Eq } from '@principia/prelude/Eq'
+import type { FunctionN } from '@principia/prelude/function'
+import type { Predicate } from '@principia/prelude/Predicate'
+import type { Refinement } from '@principia/prelude/Refinement'
+import type { Show } from '@principia/prelude/Show'
+
+import * as P from '@principia/prelude'
+import { flow, identity, pipe } from '@principia/prelude/function'
+import * as HKT from '@principia/prelude/HKT'
+import * as E from '@principia/prelude/internal/either'
+import { tuple } from '@principia/prelude/tuple'
 
 import { NoSuchElementError } from './Error'
-import { flow, identity, pipe } from './function'
 import { genF, GenHKT } from './Gen'
-import * as HKT from './HKT'
-import * as A from './internal/array'
-import * as E from './internal/either'
 import * as O from './Option'
 import * as T from './These'
-import { tuple } from './tuple'
-import * as P from './typeclass'
 
 /*
  * -------------------------------------------

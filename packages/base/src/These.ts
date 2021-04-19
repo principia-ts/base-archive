@@ -1,16 +1,16 @@
 import type * as E from './Either'
-import type { Eq } from './Eq'
 import type { TheseURI } from './Modules'
 import type * as O from './Option'
-import type { Show } from './Show'
+import type { Eq } from '@principia/prelude/Eq'
+import type { Show } from '@principia/prelude/Show'
 
-import { makeEq } from './Eq'
-import { identity } from './function'
-import * as HKT from './HKT'
-import { None, Some } from './internal/option'
-import * as T from './internal/these'
-import * as P from './typeclass'
-import { makeSemigroup } from './typeclass'
+import * as P from '@principia/prelude'
+import { makeSemigroup } from '@principia/prelude'
+import { makeEq } from '@principia/prelude/Eq'
+import { identity } from '@principia/prelude/function'
+import * as HKT from '@principia/prelude/HKT'
+import { None, Some } from '@principia/prelude/internal/option'
+import * as T from '@principia/prelude/internal/these'
 
 /*
  * -------------------------------------------

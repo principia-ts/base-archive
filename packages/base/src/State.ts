@@ -1,9 +1,9 @@
-import type * as HKT from './HKT'
 import type { StateURI } from './Modules'
+import type * as HKT from '@principia/prelude/HKT'
 
-import { identity } from './function'
-import{ tuple } from './tuple'
-import * as P from './typeclass'
+import * as P from '@principia/prelude'
+import { identity } from '@principia/prelude/function'
+import { tuple } from '@principia/prelude/tuple'
 
 /*
  * -------------------------------------------

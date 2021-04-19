@@ -1,4 +1,4 @@
-import { identity } from './function'
+import { identity } from '@principia/prelude/function'
 
 export interface Newtype<URI, A> {
   readonly _URI: URI

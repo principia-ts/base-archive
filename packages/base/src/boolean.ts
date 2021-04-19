@@ -1,7 +1,8 @@
-import type { Predicate } from './Predicate'
+import type { Predicate } from '@principia/prelude/Predicate'
+
+import * as P from '@principia/prelude'
 
 import * as G from './Guard'
-import * as P from './typeclass'
 
 export function invert(b: boolean): boolean {
   return !b

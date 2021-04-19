@@ -1,9 +1,10 @@
-import type { Ord } from './Ord'
-import type { Predicate } from './Predicate'
-import type { Refinement } from './Refinement'
+import type { Ord } from '@principia/prelude/Ord'
+import type { Predicate } from '@principia/prelude/Predicate'
+import type { Refinement } from '@principia/prelude/Refinement'
+
+import { not } from '@principia/prelude/Predicate'
 
 import * as OM from './OrderedMap'
-import { not } from './Predicate'
 
 export class OrderedSet<A> implements Iterable<A> {
   constructor(readonly keyMap: OM.OrderedMap<A, null>) {}

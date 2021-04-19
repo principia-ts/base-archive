@@ -5,10 +5,10 @@
  */
 
 import type { ReadonlyRecord } from './Record'
-import type { Refinement } from './Refinement'
-import type { Primitive } from './util/types'
+import type { Refinement } from '@principia/prelude/Refinement'
+import type { Primitive } from '@principia/prelude/util/types'
 
-import { memoize, pipe } from './function'
+import { memoize, pipe } from '@principia/prelude/function'
 
 export interface Guard<I, A extends I> {
   is: (i: I) => i is A

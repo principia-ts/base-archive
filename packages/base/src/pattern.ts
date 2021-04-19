@@ -11,11 +11,12 @@ import type {
   NotPattern,
   Pattern
 } from './internal/pattern'
-import type { Predicate } from './Predicate'
-import type { Refinement } from './Refinement'
+import type { Predicate } from '@principia/prelude/Predicate'
+import type { Refinement } from '@principia/prelude/Refinement'
+
+import { identity, pipe } from '@principia/prelude/function'
 
 import * as A from './Array'
-import { identity, pipe } from './function'
 import { $anonymousSelect, $guard, $namedSelect, $not, matchPattern, selectWithPattern } from './internal/pattern'
 import * as O from './Option'
 

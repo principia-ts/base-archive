@@ -1,13 +1,13 @@
 import type { Either } from './Either'
-import type * as HKT from './HKT'
 import type { AsyncIterableURI } from './Modules'
 import type { Option } from './Option'
-import type { Predicate, PredicateWithIndex } from './Predicate'
-import type { Refinement, RefinementWithIndex } from './Refinement'
+import type * as HKT from '@principia/prelude/HKT'
+import type { Predicate, PredicateWithIndex } from '@principia/prelude/Predicate'
+import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinement'
 
-import { identity } from './function'
-import { tuple } from './tuple'
-import * as P from './typeclass'
+import * as P from '@principia/prelude'
+import { identity } from '@principia/prelude/function'
+import { tuple } from '@principia/prelude/tuple'
 
 type URI = [HKT.URI<AsyncIterableURI>]
 

@@ -1,22 +1,23 @@
 import type { Either } from './Either'
-import type { Eq } from './Eq'
 import type { Guard } from './Guard'
-import type * as HKT from './HKT'
 import type { NonEmptyArrayURI } from './Modules'
-import type { Ord } from './Ord'
-import type { Predicate, PredicateWithIndex } from './Predicate'
 import type { ReadonlyRecord } from './Record'
-import type { Refinement, RefinementWithIndex } from './Refinement'
-import type * as P from './typeclass'
 import type { Mutable } from './util/types'
+import type * as P from '@principia/prelude'
+import type { Eq } from '@principia/prelude/Eq'
+import type * as HKT from '@principia/prelude/HKT'
+import type { Ord } from '@principia/prelude/Ord'
+import type { Predicate, PredicateWithIndex } from '@principia/prelude/Predicate'
+import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinement'
+
+import { identity, pipe } from '@principia/prelude/function'
+import * as S from '@principia/prelude/Semigroup'
+import { tuple } from '@principia/prelude/tuple'
 
 import * as A from './Array'
-import { identity, pipe } from './function'
 import * as G from './Guard'
 import * as _ from './internal/array'
 import * as O from './Option'
-import * as S from './Semigroup'
-import { tuple } from './tuple'
 
 /*
  * -------------------------------------------

@@ -1,6 +1,6 @@
-import type { Show } from './Show'
+import type { Show } from '@principia/prelude/Show'
 
-import { makeShow } from './Show'
+import { makeShow } from '@principia/prelude/Show'
 
 export abstract class Exception extends Error {
   abstract readonly _tag: string

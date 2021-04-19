@@ -7,11 +7,11 @@
  */
 
 import type { Option } from './Option'
-import type { Ord } from './Ord'
-import type { Predicate, PredicateWithIndex } from './Predicate'
-import type { Refinement, RefinementWithIndex } from './Refinement'
-import type { Semigroup } from './typeclass'
 import type { Stack } from './util/support/Stack'
+import type { Semigroup } from '@principia/prelude'
+import type { Ord } from '@principia/prelude/Ord'
+import type { Predicate, PredicateWithIndex } from '@principia/prelude/Predicate'
+import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinement'
 
 import * as O from './Option'
 import { makeStack } from './util/support/Stack'

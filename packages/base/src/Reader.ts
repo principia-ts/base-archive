@@ -1,9 +1,9 @@
-import type * as HKT from './HKT'
 import type { ReaderURI } from './Modules'
+import type * as HKT from '@principia/prelude/HKT'
 
-import { flow, identity } from './function'
-import { tuple } from './tuple'
-import * as P from './typeclass'
+import * as P from '@principia/prelude'
+import { flow, identity } from '@principia/prelude/function'
+import { tuple } from '@principia/prelude/tuple'
 
 /*
  * -------------------------------------------

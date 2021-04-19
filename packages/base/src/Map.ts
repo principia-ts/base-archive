@@ -1,17 +1,18 @@
-import type { Eq } from './Eq'
-import type * as HKT from './HKT'
 import type { MapURI } from './Modules'
-import type { Ord } from './Ord'
-import type { Predicate, PredicateWithIndex } from './Predicate'
-import type { Refinement, RefinementWithIndex } from './Refinement'
-import type { Show } from './Show'
+import type { Eq } from '@principia/prelude/Eq'
+import type * as HKT from '@principia/prelude/HKT'
+import type { Ord } from '@principia/prelude/Ord'
+import type { Predicate, PredicateWithIndex } from '@principia/prelude/Predicate'
+import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinement'
+import type { Show } from '@principia/prelude/Show'
+
+import * as P from '@principia/prelude'
+import { makeMonoid } from '@principia/prelude'
+import { makeEq } from '@principia/prelude/Eq'
+import { pipe } from '@principia/prelude/function'
 
 import * as E from './Either'
-import { makeEq } from './Eq'
-import { pipe } from './function'
 import * as O from './Option'
-import * as P from './typeclass'
-import { makeMonoid } from './typeclass'
 
 type URI = [HKT.URI<MapURI>]
 

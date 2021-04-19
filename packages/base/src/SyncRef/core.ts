@@ -1,9 +1,10 @@
+import { flow, identity, pipe } from '@principia/prelude/function'
+import { tuple } from '@principia/prelude/tuple'
+import { matchTag } from '@principia/prelude/util/matchers'
+
 import * as E from '../Either'
-import { flow, identity, pipe } from '../function'
 import * as O from '../Option'
 import * as S from '../Sync'
-import { tuple } from '../tuple'
-import { matchTag } from '../util/matchers'
 import { AtomicReference } from '../util/support/AtomicReference'
 import * as At from './atomic'
 

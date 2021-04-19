@@ -1,6 +1,7 @@
+import * as P from '@principia/prelude'
+import * as O from '@principia/prelude/Ord'
+
 import * as N from './number'
-import * as O from './Ord'
-import * as P from './typeclass'
 
 /*
  * -------------------------------------------

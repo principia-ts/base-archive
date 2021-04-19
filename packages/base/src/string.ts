@@ -1,13 +1,14 @@
 import type { NonEmptyArray } from './NonEmptyArray'
 
+import * as P from '@principia/prelude'
+import { flow, identity, pipe } from '@principia/prelude/function'
+import { max_ } from '@principia/prelude/Ord'
+
 import * as A from './Array'
-import { flow, identity, pipe } from './function'
 import * as G from './Guard'
 import * as NA from './NonEmptyArray'
 import * as N from './number'
 import * as O from './Option'
-import { max_ } from './Ord'
-import * as P from './typeclass'
 
 /**
  * The empty string
@@ -19,7 +20,7 @@ export const empty: string = ''
  * -------------------------------------------
  * constructors
  * -------------------------------------------
-*/
+ */
 
 /**
  * Converts a number into a string
@@ -45,7 +46,7 @@ export function isString(u: unknown): u is string {
  * -------------------------------------------
  * predicates
  * -------------------------------------------
-*/
+ */
 
 /**
  * Check is a string is empty
