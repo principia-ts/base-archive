@@ -35,6 +35,7 @@ export function isArray(value: any): boolean {
 }
 
 export function isObject<A extends Function>(value: A): false
+export function isObject(value: unknown): value is object
 export function isObject<A>(value: A | Primitive): value is A
 export function isObject<A>(value: A | Primitive): boolean {
   return typeof value === 'object' && value !== null

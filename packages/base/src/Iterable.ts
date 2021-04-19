@@ -553,6 +553,31 @@ export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
 
 /*
  * -------------------------------------------
+ * utils
+ * -------------------------------------------
+*/
+
+export function corresponds<A, B>(left: Iterable<A>, right: Iterable<B>, f: (a: A, b: B) => boolean): boolean {
+  const leftIterator  = left[Symbol.iterator]()
+  const rightIterator = right[Symbol.iterator]()
+  // eslint-disable-next-line no-constant-condition
+  while(true) {
+    const lnext = leftIterator.next()
+    const rnext = rightIterator.next()
+    if(lnext.done !== rnext.done) {
+      return false
+    }
+    if(lnext.done) {
+      return true
+    }
+    if(!f(lnext.value, rnext.value)) {
+      return false
+    }
+  }
+}
+
+/*
+ * -------------------------------------------
  * Instances
  * -------------------------------------------
  */

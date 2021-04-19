@@ -1,3 +1,6 @@
+/* eslint-disable functional/immutable-data */
+/* eslint-disable no-param-reassign */
+
 /*
  * Copyright 2014 Thom Chiovoloni, released under the MIT license.
  *
@@ -6,7 +9,7 @@
  *
  * Adapted for TypeScript from Thom's original code at https://github.com/thomcc/pcg-random
  *
- * from frptools/corelib
+ * forked from https://github.com/frptools
  */
 
 export function isNothing<T>(value: T | null | undefined) {

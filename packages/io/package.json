@@ -14,14 +14,6 @@
       "import": "./dist/dist/esm/index.js",
       "require": "./dist/dist/cjs/index.js"
     },
-    "./Async": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Async/index.js",
-        "require": "./dist/dist-traced/cjs/Async/index.js"
-      },
-      "import": "./dist/dist/esm/Async/index.js",
-      "require": "./dist/dist/cjs/Async/index.js"
-    },
     "./Cause": {
       "traced": {
         "import": "./dist/dist-traced/esm/Cause/index.js",
@@ -149,14 +141,6 @@
       },
       "import": "./dist/dist/esm/Stream/index.js",
       "require": "./dist/dist/cjs/Stream/index.js"
-    },
-    "./SyncRef": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/SyncRef/index.js",
-        "require": "./dist/dist-traced/cjs/SyncRef/index.js"
-      },
-      "import": "./dist/dist/esm/SyncRef/index.js",
-      "require": "./dist/dist/cjs/SyncRef/index.js"
     },
     "./*": {
       "traced": {

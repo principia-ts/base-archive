@@ -1,20 +1,24 @@
 /* eslint-disable functional/immutable-data */
 import type { Eq } from './Eq'
+import type { Equatable } from './Equatable'
 import type { Hash } from './Hash'
+import type { Hashable } from './Hashable'
 import type { Node, UpdateFn } from './internal/hamt'
 import type { Refinement } from './Refinement'
 
 import { EqStrict } from './Eq'
+import { $equals, equals } from './Equatable'
 import { constant, identity } from './function'
-import { hash } from './Hash'
+import { $hash, hash, hashIterator } from './Hashable'
 import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
+import * as It from './Iterable'
 import * as O from './Option'
 import { tuple } from './tuple'
 
 export type Config<K> = Eq<K> & Hash<K>
 
-export class HashMap<K, V> implements Iterable<readonly [K, V]> {
+export class HashMap<K, V> implements Iterable<readonly [K, V]>, Hashable, Equatable {
   readonly _K!: () => K
   readonly _V!: () => V
 
@@ -28,6 +32,14 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
 
   [Symbol.iterator](): Iterator<readonly [K, V]> {
     return new HashMapIterator(this, identity)
+  }
+
+  [$hash](): number {
+    return hashIterator(this[Symbol.iterator]())
+  }
+
+  [$equals](other: unknown): boolean {
+    return other instanceof HashMap && other.size === this.size && It.corresponds(this, other, equals)
   }
 }
 
@@ -436,9 +448,8 @@ export function makeDefault<K, V>() {
 /**
  * Apply f to each element
  */
-export function iforEach_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: HashMap<K, V>) => void) {
+export function iforEach_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: HashMap<K, V>) => void): void {
   ifoldl_(map, undefined as void, (_, key, value) => f(key, value, map))
-  return map
 }
 
 /**
@@ -446,16 +457,15 @@ export function iforEach_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: HashMap<K
  *
  * @dataFirst forEachWithIndex_
  */
-export function iforEach<K, V>(f: (k: K, v: V, m: HashMap<K, V>) => void) {
-  return (map: HashMap<K, V>) => iforEach_(map, f)
+export function iforEach<K, V>(f: (k: K, v: V, m: HashMap<K, V>) => void): (map: HashMap<K, V>) => void {
+  return (map) => iforEach_(map, f)
 }
 
 /**
  * Apply f to each element
  */
-export function forEach_<K, V>(map: HashMap<K, V>, f: (v: V, m: HashMap<K, V>) => void) {
+export function forEach_<K, V>(map: HashMap<K, V>, f: (v: V, m: HashMap<K, V>) => void): void {
   iforEach_(map, (_, value, map) => f(value, map))
-  return map
 }
 
 /**
@@ -463,15 +473,15 @@ export function forEach_<K, V>(map: HashMap<K, V>, f: (v: V, m: HashMap<K, V>) =
  *
  * @dataFirst forEach_
  */
-export function forEach<K, V>(f: (v: V, m: HashMap<K, V>) => void) {
-  return (map: HashMap<K, V>) => forEach_(map, f)
+export function forEach<K, V>(f: (v: V, m: HashMap<K, V>) => void): (map: HashMap<K, V>) => void {
+  return (map) => forEach_(map, f)
 }
 
 /**
  * Maps over the map entries
  */
-export function imap_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => A) {
-  return ifoldl_(map, make<K, A>(map.config), (z, k, v) => set_(z, k, f(k, v)))
+export function imap_<K, V, A>(fa: HashMap<K, V>, f: (k: K, v: V) => A): HashMap<K, A> {
+  return ifoldl_(fa, make<K, A>(fa.config), (z, k, v) => set_(z, k, f(k, v)))
 }
 
 /**
@@ -479,15 +489,15 @@ export function imap_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => A) {
  *
  * @dataFirst imap_
  */
-export function imap<K, V, A>(f: (k: K, v: V) => A) {
-  return (map: HashMap<K, V>) => imap_(map, f)
+export function imap<K, V, A>(f: (k: K, v: V) => A): (fa: HashMap<K, V>) => HashMap<K, A> {
+  return (fa) => imap_(fa, f)
 }
 
 /**
  * Maps over the map entries
  */
-export function map_<K, V, A>(map: HashMap<K, V>, f: (v: V) => A) {
-  return ifoldl_(map, make<K, A>(map.config), (z, k, v) => set_(z, k, f(v)))
+export function map_<K, V, A>(fa: HashMap<K, V>, f: (v: V) => A): HashMap<K, A> {
+  return ifoldl_(fa, make<K, A>(fa.config), (z, k, v) => set_(z, k, f(v)))
 }
 
 /**
@@ -495,15 +505,15 @@ export function map_<K, V, A>(map: HashMap<K, V>, f: (v: V) => A) {
  *
  * @dataFirst map_
  */
-export function map<V, A>(f: (v: V) => A) {
-  return <K>(map: HashMap<K, V>) => map_(map, f)
+export function map<V, A>(f: (v: V) => A): <K>(fa: HashMap<K, V>) => HashMap<K, A> {
+  return (map) => map_(map, f)
 }
 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function bind_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) {
-  return ifoldl_(map, make<K, A>(map.config), (z, _, v) =>
+export function bind_<K, V, A>(ma: HashMap<K, V>, f: (v: V) => HashMap<K, A>): HashMap<K, A> {
+  return ifoldl_(ma, make<K, A>(ma.config), (z, _, v) =>
     mutate_(z, (m) => {
       iforEach_(f(v), (_k, _a) => {
         set_(m, _k, _a)
@@ -517,15 +527,15 @@ export function bind_<K, V, A>(map: HashMap<K, V>, f: (v: V) => HashMap<K, A>) {
  *
  * @dataFirst bind_
  */
-export function bind<K, V, A>(f: (v: V) => HashMap<K, A>) {
-  return (map: HashMap<K, V>) => bind_(map, f)
+export function bind<K, V, A>(f: (v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
+  return (ma) => bind_(ma, f)
 }
 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function ibind_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>) {
-  return ifoldl_(map, make<K, A>(map.config), (z, k, v) =>
+export function ibind_<K, V, A>(ma: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>): HashMap<K, A> {
+  return ifoldl_(ma, make<K, A>(ma.config), (z, k, v) =>
     mutate_(z, (m) => {
       iforEach_(f(k, v), (_k, _a) => {
         set_(m, _k, _a)
@@ -539,8 +549,8 @@ export function ibind_<K, V, A>(map: HashMap<K, V>, f: (k: K, v: V) => HashMap<K
  *
  * @dataFirst ibind_
  */
-export function ibind<K, V, A>(f: (k: K, v: V) => HashMap<K, A>) {
-  return (map: HashMap<K, V>) => ibind_(map, f)
+export function ibind<K, V, A>(f: (k: K, v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
+  return (ma) => ibind_(ma, f)
 }
 
 /**
@@ -571,8 +581,8 @@ export function ifilterMap_<K, A, B>(fa: HashMap<K, A>, f: (k: K, a: A) => O.Opt
  *
  * @dataFirst ifilterMap_
  */
-export function ifilterMap<K, A, B>(f: (k: K, a: A) => O.Option<B>) {
-  return (fa: HashMap<K, A>) => ifilterMap_(fa, f)
+export function ifilterMap<K, A, B>(f: (k: K, a: A) => O.Option<B>): (fa: HashMap<K, A>) => HashMap<K, B> {
+  return (fa) => ifilterMap_(fa, f)
 }
 
 /**
@@ -587,8 +597,8 @@ export function filterMap_<E, A, B>(fa: HashMap<E, A>, f: (a: A) => O.Option<B>)
  *
  * @dataFirst filterMap_
  */
-export function filterMap<A, B>(f: (a: A) => O.Option<B>) {
-  return <E>(fa: HashMap<E, A>) => filterMap_(fa, f)
+export function filterMap<A, B>(f: (a: A) => O.Option<B>): <K>(fa: HashMap<K, A>) => HashMap<K, B> {
+  return (fa) => filterMap_(fa, f)
 }
 
 /**
@@ -611,8 +621,8 @@ export function ifilter_<K, A>(fa: HashMap<K, A>, p: (k: K, a: A) => boolean): H
  *
  * @dataFirst ifilter_
  */
-export function ifilter<K, A>(p: (k: K, a: A) => boolean) {
-  return (fa: HashMap<K, A>) => ifilter_(fa, p)
+export function ifilter<K, A>(p: (k: K, a: A) => boolean): (fa: HashMap<K, A>) => HashMap<K, A> {
+  return (fa) => ifilter_(fa, p)
 }
 
 /**
@@ -637,15 +647,15 @@ export function filter<A>(p: (a: A) => boolean): <K>(fa: HashMap<K, A>) => HashM
 /**
  * Calculate the number of key/value pairs in a map
  */
-export function size<K, V>(map: HashMap<K, V>) {
+export function size<K, V>(map: HashMap<K, V>): number {
   return map.size
 }
 
 /**
  * Remove many keys
  */
-export function removeMany_<K, V>(self: HashMap<K, V>, ks: Iterable<K>): HashMap<K, V> {
-  return mutate_(self, (m) => {
+export function removeMany_<K, V>(map: HashMap<K, V>, ks: Iterable<K>): HashMap<K, V> {
+  return mutate_(map, (m) => {
     for (const k of ks) {
       remove_(m, k)
     }
@@ -657,13 +667,13 @@ export function removeMany_<K, V>(self: HashMap<K, V>, ks: Iterable<K>): HashMap
  *
  * @dataFirst removeMany_
  */
-export function removeMany<K>(ks: Iterable<K>) {
-  return <V>(self: HashMap<K, V>) => removeMany_(self, ks)
+export function removeMany<K>(ks: Iterable<K>): <V>(map: HashMap<K, V>) => HashMap<K, V> {
+  return (map) => removeMany_(map, ks)
 }
 
 /**
  * Get the set of keys
  */
-export function keySet<K, V>(self: HashMap<K, V>) {
+export function keySet<K, V>(self: HashMap<K, V>): HashSet<K> {
   return new HashSet(self)
 }

@@ -1,19 +1,30 @@
 import type { Eq } from './Eq'
+import type { Equatable } from './Equatable'
 import type { Hash } from './Hash'
+import type { Hashable } from './Hashable'
 import type { Ord } from './Ord'
 import type { Predicate } from './Predicate'
 import type { Refinement } from './Refinement'
 
 import { makeEq } from './Eq'
+import { $equals, equals } from './Equatable'
+import { $hash, hashIterator } from './Hashable'
 import * as HM from './HashMap'
+import * as It from './Iterable'
 import { not } from './Predicate'
 import { tuple } from './tuple'
 
-export class HashSet<V> implements Iterable<V> {
+export class HashSet<V> implements Iterable<V>, Hashable, Equatable {
   constructor(readonly keyMap: HM.HashMap<V, any>) {}
 
   [Symbol.iterator](): Iterator<V> {
     return HM.keys(this.keyMap)
+  }
+  [$hash](): number {
+    return hashIterator(this[Symbol.iterator]())
+  }
+  [$equals](other: unknown): boolean {
+    return other instanceof HashSet && this.keyMap.size === other.keyMap.size && It.corresponds(this, other, equals)
   }
 }
 
@@ -52,12 +63,17 @@ export function has_<V>(set: HashSet<V>, v: V) {
 /**
  * Appy f to each element
  */
-export function forEach_<V>(map: HashSet<V>, f: (v: V, m: HashSet<V>) => void) {
-  return new HashSet(
-    HM.iforEach_(map.keyMap, (k, _, m) => {
-      f(k, new HashSet(m))
-    })
-  )
+export function forEach_<V>(map: HashSet<V>, f: (v: V, m: HashSet<V>) => void): void {
+  HM.iforEach_(map.keyMap, (k, _, m) => {
+    f(k, new HashSet(m))
+  })
+}
+
+/**
+ * Appy f to each element
+ */
+export function forEach<V>(f: (v: V, m: HashSet<V>) => void): (map: HashSet<V>) => void {
+  return (map) => forEach_(map, f)
 }
 
 /**
@@ -413,7 +429,7 @@ export function union<A>(y: Iterable<A>): (x: HashSet<A>) => HashSet<A> {
  * -------------------------------------------
  * destructors
  * -------------------------------------------
-*/
+ */
 
 export function toArray<A>(O: Ord<A>): (set: HashSet<A>) => ReadonlyArray<A> {
   return (set) => {

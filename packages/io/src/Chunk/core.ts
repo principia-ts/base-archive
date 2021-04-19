@@ -1,5 +1,7 @@
 /* eslint-disable functional/immutable-data */
+import type { ChunkURI } from '../Modules'
 import type { Either } from '@principia/base/Either'
+import type * as HKT from '@principia/base/HKT'
 import type { Monoid } from '@principia/base/Monoid'
 import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/Predicate'
@@ -10,9 +12,12 @@ import { identity, pipe } from '@principia/base/function'
 import * as It from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import { tuple } from '@principia/base/tuple'
+import * as P from '@principia/base/typeclass'
 import { AtomicNumber } from '@principia/base/util/support/AtomicNumber'
 
 import * as I from '../IO/core'
+
+type URI = [HKT.URI<ChunkURI>]
 
 const BUFFER_SIZE = 64
 
@@ -765,6 +770,12 @@ function fromArray<A>(array: ArrayLike<A>): ChunkImplementation<A> {
   }
 }
 
+/*
+ * -------------------------------------------
+ * Constructors
+ * -------------------------------------------
+ */
+
 export function make<A>(...as: ReadonlyArray<A>): Chunk<A> {
   return new Arr(as)
 }
@@ -789,6 +800,27 @@ export function range(start: number, end: number): Chunk<number> {
   return fromArray(A.range(start, end))
 }
 
+export class ChunkBuilder<A> {
+  constructor(private chunk: Chunk<A>) {}
+  append(a: A): ChunkBuilder<A> {
+    this.chunk = append_(this.chunk, a)
+    return this
+  }
+  result(): Chunk<A> {
+    return this.chunk
+  }
+}
+
+export function builder<A>(): ChunkBuilder<A> {
+  return new ChunkBuilder(empty())
+}
+
+/*
+ * -------------------------------------------
+ * predicates
+ * -------------------------------------------
+ */
+
 export function isEmpty<A>(chunk: Chunk<A>): boolean {
   concrete(chunk)
   return chunk.length === 0
@@ -797,6 +829,12 @@ export function isEmpty<A>(chunk: Chunk<A>): boolean {
 export function isNonEmpty<A>(chunk: Chunk<A>): boolean {
   return !isEmpty(chunk)
 }
+
+/*
+ * -------------------------------------------
+ * destructors
+ * -------------------------------------------
+ */
 
 export function head<A>(chunk: Chunk<A>): Option<A> {
   concrete(chunk)
@@ -814,6 +852,12 @@ export function last<A>(chunk: Chunk<A>): Option<A> {
   return O.Some(chunk.get(chunk.length - 1))
 }
 
+/*
+ * -------------------------------------------
+ * ops
+ * -------------------------------------------
+ */
+
 export function append_<A, A1>(chunk: Chunk<A>, a1: A1): Chunk<A | A1> {
   concrete(chunk)
   return chunk.append(a1)
@@ -821,6 +865,25 @@ export function append_<A, A1>(chunk: Chunk<A>, a1: A1): Chunk<A | A1> {
 
 export function append<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
   return (chunk) => append_(chunk, a)
+}
+
+export function concat_<A>(xs: Chunk<A>, ys: Chunk<A>): Chunk<A> {
+  concrete(xs)
+  concrete(ys)
+  return xs.concat(ys)
+}
+
+export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
+  return (xs) => concat_(xs, ys)
+}
+
+export function foreach_<A, B>(chunk: Chunk<A>, f: (a: A) => B): void {
+  concrete(chunk)
+  chunk.foreach(f)
+}
+
+export function foreach<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => void {
+  return (chunk) => foreach_(chunk, f)
 }
 
 export function prepend_<A>(chunk: Chunk<A>, a: A): Chunk<A> {
@@ -831,6 +894,12 @@ export function prepend_<A>(chunk: Chunk<A>, a: A): Chunk<A> {
 export function prepend<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
   return (chunk) => prepend_(chunk, a)
 }
+
+/*
+ * -------------------------------------------
+ * Functor
+ * -------------------------------------------
+ */
 
 export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
   concrete<A>(chunk)
@@ -851,25 +920,6 @@ export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
 
 export function map<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
   return (chunk) => map_(chunk, f)
-}
-
-export function foreach_<A, B>(chunk: Chunk<A>, f: (a: A) => B): void {
-  concrete(chunk)
-  chunk.foreach(f)
-}
-
-export function foreach<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => void {
-  return (chunk) => foreach_(chunk, f)
-}
-
-export function concat_<A>(xs: Chunk<A>, ys: Chunk<A>): Chunk<A> {
-  concrete(xs)
-  concrete(ys)
-  return xs.concat(ys)
-}
-
-export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
-  return (xs) => concat_(xs, ys)
 }
 
 /*
@@ -943,7 +993,7 @@ export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =>
   } else {
     const leftIterator                      = as.arrayIterator()
     const rightIterator                     = bs.arrayIterator()
-    let r: Chunk<C>                         = empty()
+    const out                               = builder<C>()
     let left: IteratorResult<ArrayLike<A>>  = null as any
     let right: IteratorResult<ArrayLike<B>> = null as any
     let leftLength                          = 0
@@ -956,7 +1006,7 @@ export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =>
         const a = left.value[j]
         const b = right.value[k]
         const c = f(a, b)
-        r       = append_(r, c)
+        out.append(c)
         i++
         j++
         k++
@@ -968,7 +1018,7 @@ export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =>
         k           = 0
       }
     }
-    return r
+    return out.result()
   }
 }
 
@@ -1144,6 +1194,88 @@ export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>) 
 
 /*
  * -------------------------------------------
+ * Compactable
+ * -------------------------------------------
+ */
+
+export function compact<A>(as: Chunk<Option<A>>): Chunk<A> {
+  return filterMap_(as, identity)
+}
+
+export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chunk<A>] {
+  concrete(as)
+  const left     = builder<E>()
+  const right    = builder<A>()
+  const iterator = as.arrayIterator()
+  let result: IteratorResult<ArrayLike<Either<E, A>>>
+  while (!(result = iterator.next()).done) {
+    const array = result.value
+    const len   = array.length
+    for (let i = 0; i < len; i++) {
+      const ea = array[i]
+      switch (ea._tag) {
+        case 'Left': {
+          left.append(ea.left)
+          break
+        }
+        case 'Right': {
+          right.append(ea.right)
+        }
+      }
+    }
+  }
+  return [left.result(), right.result()]
+}
+
+/*
+ * -------------------------------------------
+ * Traversable
+ * -------------------------------------------
+ */
+
+export const traverse_ = P.implementTraverse_<URI>()((_) => (G) => (ta, f) =>
+  foldl_(ta, G.pure(empty()), (fbs, a) => G.crossWith_(fbs, f(a), append_))
+)
+
+export const traverse: P.TraverseFn<URI> = (G) => {
+  const traverseG_ = traverse_(G)
+  return (f) => (ta) => traverseG_(ta, f)
+}
+
+export const sequence: P.SequenceFn<URI> = (G) => {
+  const traverseG_ = traverse_(G)
+  return (ta) => traverseG_(ta, identity)
+}
+
+/*
+ * -------------------------------------------
+ * Unfoldable
+ * -------------------------------------------
+ */
+
+export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): Chunk<A> {
+  const out = builder<A>()
+  let bb    = b
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const mt = f(bb)
+    switch (mt._tag) {
+      case 'Some': {
+        const [a, b] = mt.value
+        out.append(a)
+        bb = b
+        break
+      }
+      case 'None': {
+        break
+      }
+    }
+  }
+  return out.result()
+}
+
+/*
+ * -------------------------------------------
  * combinators
  * -------------------------------------------
  */
@@ -1269,17 +1401,23 @@ export function unsafeGet_<A>(as: Chunk<A>, n: number): A {
   return as.get(n)
 }
 
+/*
+ * -------------------------------------------
+ * io combinators
+ * -------------------------------------------
+ */
+
 export function mapM_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   return I.deferTotal(() => {
-    let out = empty<B>()
+    const out = builder<B>()
     return pipe(
       as,
       I.foreachUnit((a) =>
         I.map_(f(a), (b) => {
-          out = append_(out, b)
+          out.append(b)
         })
       ),
-      I.as(() => out)
+      I.as(() => out.result())
     )
   })
 }
@@ -1304,7 +1442,7 @@ export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
   return I.deferTotal(() => {
     concrete(as)
     let taking: I.IO<R, E, boolean> = I.succeed(true)
-    let out                         = empty<A>()
+    const out                       = builder<A>()
     const iterator                  = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
@@ -1316,7 +1454,7 @@ export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
           const a = array[j]
           return I.map_(b ? p(a) : I.succeed(false), (b1) => {
             if (b1) {
-              out = append_(out, a)
+              out.append(a)
               return true
             } else {
               return false
@@ -1326,7 +1464,7 @@ export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
         i++
       }
     }
-    return I.as_(taking, () => out)
+    return I.as_(taking, () => out.result())
   })
 }
 
@@ -1338,7 +1476,7 @@ export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
   return I.deferTotal(() => {
     concrete(as)
     let dropping: I.IO<R, E, boolean> = I.succeed(true)
-    let out                           = empty<A>()
+    const out                         = builder<A>()
     const iterator                    = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
@@ -1352,7 +1490,7 @@ export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
             if (b) {
               return true
             } else {
-              out = append_(out, a)
+              out.append(a)
               return false
             }
           })
@@ -1360,7 +1498,7 @@ export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
         i++
       }
     }
-    return I.as_(dropping, () => out)
+    return I.as_(dropping, () => out.result())
   })
 }
 
@@ -1371,8 +1509,9 @@ export function dropWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chun
 export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.deferTotal(() => {
     concrete(as)
-    let out: I.IO<R, E, Chunk<A>> = I.succeed(empty())
-    const iterator                = as.arrayIterator()
+    const c                              = builder<A>()
+    let out: I.IO<R, E, ChunkBuilder<A>> = I.succeed(c)
+    const iterator                       = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value
@@ -1380,8 +1519,8 @@ export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>
       while (i < array.length) {
         const a = array[i]
         out     = I.crossWith_(out, p(a), (chunk, res) => {
-          if(res) {
-            return append_(chunk, a)
+          if (res) {
+            return chunk.append(a)
           } else {
             return chunk
           }
@@ -1389,10 +1528,11 @@ export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>
         i++
       }
     }
-    return out
+    return I.map_(out, (b) => b.result())
   })
 }
 
 export function filterM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
   return (as) => filterM_(as, p)
 }
+
