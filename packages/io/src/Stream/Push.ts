@@ -7,12 +7,10 @@ import * as E from '@principia/base/Either'
 
 import * as C from '../Chunk'
 import * as I from '../IO'
-import * as XR from '../Ref'
 import * as M from '../Managed'
+import * as XR from '../Ref'
 
-export type Push<R, E, I, L, Z> = (
-  _: O.Option<Chunk<I>>
-) => I.IO<R, readonly [E.Either<E, Z>, Chunk<L>], void>
+export type Push<R, E, I, L, Z> = (_: O.Option<Chunk<I>>) => I.IO<R, readonly [E.Either<E, Z>, Chunk<L>], void>
 
 export function emit<I, Z>(z: Z, leftover: Chunk<I>): I.FIO<[E.Either<never, Z>, Chunk<I>], never> {
   return I.fail([E.Right(z), leftover])

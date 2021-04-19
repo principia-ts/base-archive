@@ -25,7 +25,7 @@ export function empty<A>(): I.UIO<Chunk<A>> {
 }
 
 export function emit<A>(a: A): I.UIO<Chunk<A>> {
-  return I.pure(C.pure(a))
+  return I.pure(C.single(a))
 }
 
 export function emitChunk<A>(as: Chunk<A>): I.UIO<Chunk<A>> {

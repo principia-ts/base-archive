@@ -16,9 +16,9 @@ import { Clock } from '../Clock'
 import * as Ex from '../Exit'
 import * as F from '../Fiber'
 import * as I from '../IO'
-import * as Ref from '../Ref'
 import * as L from '../Layer'
 import * as M from '../Managed'
+import * as Ref from '../Ref'
 import { Sink } from './internal/Sink'
 import { Transducer } from './internal/Transducer'
 import * as Push from './Push'
@@ -95,11 +95,7 @@ export function halt<E>(cause: Cause<E>): Sink<unknown, E, unknown, never, never
  * A sink that executes the provided effectful function for every element fed to it.
  */
 export function foreach<I, R1, E1>(f: (i: I) => I.IO<R1, E1, any>): Sink<R1, E1, I, I, void> {
-  const go = (
-    chunk: Chunk<I>,
-    idx: number,
-    len: number
-  ): I.IO<R1, [E.Either<E1, never>, Chunk<I>], void> => {
+  const go = (chunk: Chunk<I>, idx: number, len: number): I.IO<R1, [E.Either<E1, never>, Chunk<I>], void> => {
     if (idx === len) {
       return Push.more
     } else {
@@ -142,11 +138,7 @@ export function foreachChunk<R, E, I>(f: (chunk: Chunk<I>) => I.IO<R, E, any>): 
  * until `f` evaluates to `false`.
  */
 export function foreachWhile<R, E, I>(f: (i: I) => I.IO<R, E, boolean>): Sink<R, E, I, I, void> {
-  const go = (
-    chunk: Chunk<I>,
-    idx: number,
-    len: number
-  ): I.IO<R, readonly [E.Either<E, void>, Chunk<I>], void> => {
+  const go = (chunk: Chunk<I>, idx: number, len: number): I.IO<R, readonly [E.Either<E, void>, Chunk<I>], void> => {
     if (idx === len) {
       return Push.more
     } else {
@@ -285,10 +277,7 @@ export function foldChunksWhileM<R, E, I, Z>(
  * A sink that effectfully folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function foldChunksM<R, E, I, Z>(
-  z: Z,
-  f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>
-): Sink<R, E, I, never, Z> {
+export function foldChunksM<R, E, I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>): Sink<R, E, I, never, Z> {
   return dropLeftover(foldChunksWhileM(z, (_) => true, f))
 }
 
@@ -390,18 +379,8 @@ export function foldWhileM<R, E, I, Z>(
  * A sink that folds its inputs with the provided function, termination predicate and initial state.
  */
 export function foldWhile<I, Z>(z: Z, cont: (z: Z) => boolean, f: (z: Z, i: I) => Z): Sink<unknown, never, I, I, Z> {
-  const foldChunk = (
-    z: Z,
-    chunk: Chunk<I>,
-    i: number,
-    len: number
-  ): readonly [Z, O.Option<Chunk<I>>] => {
-    const go = (
-      z: Z,
-      chunk: Chunk<I>,
-      i: number,
-      len: number
-    ): Ev.Eval<readonly [Z, O.Option<Chunk<I>>]> =>
+  const foldChunk = (z: Z, chunk: Chunk<I>, i: number, len: number): readonly [Z, O.Option<Chunk<I>>] => {
+    const go = (z: Z, chunk: Chunk<I>, i: number, len: number): Ev.Eval<readonly [Z, O.Option<Chunk<I>>]> =>
       Ev.gen(function* (_) {
         if (i === len) {
           return tuple(z, O.None())
@@ -725,11 +704,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                 pipe(
                   p2(in_),
                   I.catchAll(
-                    ([e, leftover]): I.IO<
-                      R & R1,
-                      readonly [E.Either<E | E1, Z2>, Chunk<L | L1>],
-                      State<Z, Z1>
-                    > =>
+                    ([e, leftover]): I.IO<R & R1, readonly [E.Either<E | E1, Z2>, Chunk<L | L1>], State<Z, Z1>> =>
                       E.match_(
                         e,
                         (e) => Push.fail(e, leftover),
@@ -742,11 +717,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                 pipe(
                   p1(in_),
                   I.catchAll(
-                    ([e, leftover]): I.IO<
-                      R & R1,
-                      readonly [E.Either<E | E1, Z2>, Chunk<L | L1>],
-                      State<Z, Z1>
-                    > =>
+                    ([e, leftover]): I.IO<R & R1, readonly [E.Either<E | E1, Z2>, Chunk<L | L1>], State<Z, Z1>> =>
                       E.match_(
                         e,
                         (e) => Push.fail(e, leftover),
@@ -844,7 +815,7 @@ export function contramapM_<R, R1, E, E1, I, I2, L, Z>(
   fa: Sink<R, E, I, L, Z>,
   f: (i2: I2) => I.IO<R1, E1, I>
 ): Sink<R & R1, E | E1, I2, L, Z> {
-  return contramapChunksM_(fa, I.foreach(f))
+  return contramapChunksM_(fa, C.mapM(f))
 }
 
 /**
@@ -1063,9 +1034,7 @@ export function matchM<E, I, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
  */
 export function map_<R, E, I, L, Z, Z2>(sz: Sink<R, E, I, L, Z>, f: (z: Z) => Z2): Sink<R, E, I, L, Z2> {
   return new Sink(
-    M.map_(sz.push, (sink) => (inputs: O.Option<Chunk<I>>) =>
-      I.mapError_(sink(inputs), (e) => [E.map_(e[0], f), e[1]])
-    )
+    M.map_(sz.push, (sink) => (inputs: O.Option<Chunk<I>>) => I.mapError_(sink(inputs), (e) => [E.map_(e[0], f), e[1]]))
   )
 }
 
@@ -1258,11 +1227,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
         return pipe(
           Push.restartable(sz.push),
           M.map(([push, restart]) => {
-            const go = (
-              s: S,
-              in_: O.Option<Chunk<I>>,
-              end: boolean
-            ): I.IO<R, [E.Either<E, S>, Chunk<L>], S> =>
+            const go = (s: S, in_: O.Option<Chunk<I>>, end: boolean): I.IO<R, [E.Either<E, S>, Chunk<L>], S> =>
               pipe(
                 push(in_),
                 I.as(() => s),
@@ -1384,9 +1349,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
 }
 
 export function dropLeftover<R, E, I, L, Z>(sz: Sink<R, E, I, L, Z>): Sink<R, E, I, never, Z> {
-  return new Sink(
-    M.map_(sz.push, (p) => (in_: O.Option<Chunk<I>>) => I.mapError_(p(in_), ([v, _]) => [v, C.empty()]))
-  )
+  return new Sink(M.map_(sz.push, (p) => (in_: O.Option<Chunk<I>>) => I.mapError_(p(in_), ([v, _]) => [v, C.empty()])))
 }
 
 /**
@@ -1450,8 +1413,8 @@ export function toTransducer<R, E, I, L extends I, Z>(self: Sink<R, E, I, L, Z>)
                 I.apr_(
                   restart,
                   C.isEmpty(leftover) || O.isNone(input)
-                    ? I.succeed([z])
-                    : I.map_(go(O.Some(leftover)), (more) => [z, ...more])
+                    ? I.succeed(C.single(z))
+                    : I.map_(go(O.Some(leftover)), C.prepend(z))
                 )
             ),
           (_) => I.succeed(C.empty())
@@ -1537,9 +1500,7 @@ export function managed<R, E, A>(resource: M.Managed<R, E, A>) {
 /**
  * Exposes leftover
  */
-export function exposeLeftover<R, E, I, L, Z>(
-  ma: Sink<R, E, I, L, Z>
-): Sink<R, E, I, never, readonly [Z, Chunk<L>]> {
+export function exposeLeftover<R, E, I, L, Z>(ma: Sink<R, E, I, L, Z>): Sink<R, E, I, never, readonly [Z, Chunk<L>]> {
   return pipe(
     ma.push,
     M.map((push) => (in_: O.Option<Chunk<I>>) =>

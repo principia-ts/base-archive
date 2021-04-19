@@ -1,3 +1,4 @@
+import type { Chunk } from '../Chunk'
 import type { IO, UIO } from '../IO'
 import type { Promise } from '../Promise'
 import type { MutableQueue } from '@principia/base/util/support/MutableQueue'
@@ -9,6 +10,7 @@ import { tuple } from '@principia/base/tuple'
 import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '@principia/base/util/support/MutableQueue'
 
+import * as C from '../Chunk/core'
 import * as P from '../Promise'
 import * as I from './internal/io'
 
@@ -76,11 +78,11 @@ export abstract class XQueue<RA, RB, EA, EB, A, B> {
    * Removes all the values in the queue and returns the list of the values. If the queue
    * is empty returns empty list.
    */
-  abstract readonly takeAll: IO<RB, EB, readonly B[]>
+  abstract readonly takeAll: IO<RB, EB, Chunk<B>>
   /**
    * Takes up to max number of values in the queue.
    */
-  abstract readonly takeUpTo: (n: number) => IO<RB, EB, readonly B[]>
+  abstract readonly takeUpTo: (n: number) => IO<RB, EB, Chunk<B>>
 }
 
 /**
@@ -94,26 +96,26 @@ export interface Queue<A> extends XQueue<unknown, unknown, never, never, A, A> {
  */
 export interface Dequeue<A> extends XQueue<never, unknown, unknown, never, never, A> {}
 
-export function unsafeOfferAll<A>(q: MutableQueue<A>, as: readonly A[]): readonly A[] {
-  const bs = Array.from(as)
+export function unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
+  let bs = as
 
   while (bs.length > 0) {
-    if (!q.offer(bs[0])) {
+    if (!q.offer(C.unsafeGet_(bs, 0))) {
       return bs
     } else {
-      bs.shift()
+      bs = C.drop_(bs, 1)
     }
   }
 
   return bs
 }
 
-export function unsafePollAll<A>(q: MutableQueue<A>): readonly A[] {
-  const as = [] as A[]
+export function unsafePollAll<A>(q: MutableQueue<A>): Chunk<A> {
+  let as = C.empty<A>()
 
   while (!q.isEmpty) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    as.push(q.poll(undefined)!)
+    as = C.append_(as, q.poll(undefined)!)
   }
 
   return as
@@ -124,18 +126,18 @@ export function unsafeCompletePromise<A>(p: Promise<never, A>, a: A) {
 }
 
 export function unsafeRemove<A>(q: MutableQueue<A>, a: A) {
-  unsafeOfferAll(q, unsafePollAll(q)).filter((b) => a !== b)
+  C.filter_(unsafeOfferAll(q, unsafePollAll(q)), (b) => a !== b)
 }
 
-export function unsafePollN<A>(q: MutableQueue<A>, max: number): readonly A[] {
-  let j    = 0
-  const as = [] as A[]
+export function unsafePollN<A>(q: MutableQueue<A>, max: number): Chunk<A> {
+  let j  = 0
+  let as = C.empty<A>()
 
   while (j < max) {
     const p = q.poll(undefined)
 
     if (p != null) {
-      as.push(p)
+      as = C.append_(as, p)
     } else {
       return as
     }
@@ -163,7 +165,7 @@ export function unsafeCompleteTakers<A>(
         unsafeCompletePromise(taker, element)
         strategy.unsafeOnQueueEmptySpace(queue)
       } else {
-        unsafeOfferAll(takers, [taker, ...unsafePollAll(takers)])
+        unsafeOfferAll(takers, C.prepend_(unsafePollAll(takers), taker))
       }
 
       keepPolling = true
@@ -175,7 +177,7 @@ export function unsafeCompleteTakers<A>(
 
 export interface Strategy<A> {
   readonly handleSurplus: (
-    as: readonly A[],
+    as: Chunk<A>,
     queue: MutableQueue<A>,
     takers: MutableQueue<Promise<never, A>>,
     isShutdown: AtomicBoolean
@@ -192,7 +194,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
   private putters = new Unbounded<[A, Promise<never, boolean>, boolean]>()
 
   handleSurplus(
-    as: readonly A[],
+    as: Chunk<A>,
     queue: MutableQueue<A>,
     takers: MutableQueue<Promise<never, A>>,
     isShutdown: AtomicBoolean
@@ -221,16 +223,17 @@ export class BackPressureStrategy<A> implements Strategy<A> {
   unsafeRemove(p: Promise<never, boolean>) {
     unsafeOfferAll(
       this.putters,
-      unsafePollAll(this.putters).filter(([_, __]) => __ !== p)
+      C.filter_(unsafePollAll(this.putters), ([_, __]) => __ !== p)
     )
   }
 
-  unsafeOffer(as: readonly A[], p: Promise<never, boolean>) {
-    const bs = Array.from(as)
+  unsafeOffer(as: Chunk<A>, p: Promise<never, boolean>) {
+    let bs = as
 
     while (bs.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const head = bs.shift()!
+      const head = C.unsafeGet_(bs, 0)
+      bs         = C.drop_(bs, 1)
 
       if (bs.length === 0) {
         this.putters.offer([head, p, true])
@@ -252,7 +255,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
         if (offered && putter[2]) {
           unsafeCompletePromise(putter[1], true)
         } else if (!offered) {
-          unsafeOfferAll(this.putters, [putter, ...unsafePollAll(this.putters)])
+          unsafeOfferAll(this.putters, C.prepend_(unsafePollAll(this.putters), putter))
         }
       } else {
         keepPolling = false
@@ -276,7 +279,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
 
 export class DroppingStrategy<A> implements Strategy<A> {
   handleSurplus(
-    _as: readonly A[],
+    _as: Chunk<A>,
     _queue: MutableQueue<A>,
     _takers: MutableQueue<Promise<never, A>>,
     _isShutdown: AtomicBoolean
@@ -299,7 +302,7 @@ export class DroppingStrategy<A> implements Strategy<A> {
 
 export class SlidingStrategy<A> implements Strategy<A> {
   handleSurplus(
-    as: readonly A[],
+    as: Chunk<A>,
     queue: MutableQueue<A>,
     takers: MutableQueue<Promise<never, A>>,
     _isShutdown: AtomicBoolean
@@ -323,8 +326,8 @@ export class SlidingStrategy<A> implements Strategy<A> {
     return 0
   }
 
-  private unsafeSlidingOffer(queue: MutableQueue<A>, as: readonly A[]) {
-    const bs = Array.from(as)
+  private unsafeSlidingOffer(queue: MutableQueue<A>, as: Chunk<A>) {
+    let bs = as
 
     while (bs.length > 0) {
       if (queue.capacity === 0) {
@@ -333,8 +336,8 @@ export class SlidingStrategy<A> implements Strategy<A> {
       // poll 1 and retry
       queue.poll(undefined)
 
-      if (queue.offer(bs[0])) {
-        bs.shift()
+      if (queue.offer(C.unsafeGet_(bs, 0))) {
+        bs = C.drop_(bs, 1)
       }
     }
   }
@@ -370,24 +373,27 @@ export function unsafeCreate<A>(
             if (succeeded) {
               return I.pure(true)
             } else {
-              return strategy.handleSurplus([a], queue, takers, shutdownFlag)
+              return strategy.handleSurplus(C.single(a), queue, takers, shutdownFlag)
             }
           }
         }
       })
 
     offerAll: (as: Iterable<A>) => I.IO<unknown, never, boolean> = (as) => {
-      const arr = Array.from(as)
+      const arr = C.from(as)
       return I.deferTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
-          const pTakers                = queue.isEmpty ? unsafePollN(takers, arr.length) : []
-          const [forTakers, remaining] = A.splitAt(pTakers.length)(arr)
-
-          A.zip(forTakers)(pTakers).forEach(([taker, item]) => {
-            unsafeCompletePromise(taker, item)
-          })
+          const pTakers                = queue.isEmpty ? unsafePollN(takers, arr.length) : C.empty<Promise<never, A>>()
+          const [forTakers, remaining] = C.splitAt_(arr, pTakers.length)
+          pipe(
+            pTakers,
+            C.zip(forTakers),
+            C.foreach(([taker, item]) => {
+              unsafeCompletePromise(taker, item)
+            })
+          )
 
           if (remaining.length === 0) {
             return I.pure(true)
@@ -456,7 +462,7 @@ export function unsafeCreate<A>(
       })
     )
 
-    takeAll: I.IO<unknown, never, readonly A[]> = I.deferTotal(() => {
+    takeAll: I.IO<unknown, never, Chunk<A>> = I.deferTotal(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       } else {
@@ -468,7 +474,7 @@ export function unsafeCreate<A>(
       }
     })
 
-    takeUpTo: (n: number) => I.IO<unknown, never, readonly A[]> = (max) =>
+    takeUpTo: (n: number) => I.IO<unknown, never, Chunk<A>> = (max) =>
       I.deferTotal(() => {
         if (shutdownFlag.get) {
           return I.interrupt
@@ -522,17 +528,17 @@ export function makeBounded<A>(capacity: number): I.UIO<Queue<A>> {
  * collected.
  */
 export function takeBetween(min: number, max: number) {
-  return <RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>): I.IO<RB, EB, readonly B[]> => {
-    function takeRemaining(n: number): I.IO<RB, EB, ReadonlyArray<B>> {
+  return <RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>): I.IO<RB, EB, Chunk<B>> => {
+    function takeRemaining(n: number): I.IO<RB, EB, Chunk<B>> {
       if (n <= 0) {
-        return I.pure([])
+        return I.pure(C.empty())
       } else {
-        return I.bind_(self.take, (a) => I.map_(takeRemaining(n - 1), (_) => [a, ..._]))
+        return I.bind_(self.take, (a) => I.map_(takeRemaining(n - 1), C.prepend(a)))
       }
     }
 
     if (max < min) {
-      return I.pure([])
+      return I.pure(C.empty())
     } else {
       return pipe(
         self.takeUpTo(max),
@@ -540,9 +546,9 @@ export function takeBetween(min: number, max: number) {
           const remaining = min - bs.length
 
           if (remaining === 1) {
-            return I.map_(self.take, (b) => [...bs, b])
+            return I.map_(self.take, (b) => C.append_(bs, b))
           } else if (remaining > 1) {
-            return I.map_(takeRemaining(remaining - 1), (list) => [...bs, ...A.reverse(list)])
+            return I.map_(takeRemaining(remaining - 1), (list) => C.concat_(bs, list))
           } else {
             return I.pure(bs)
           }
@@ -561,7 +567,7 @@ export function takeBetween_<RA, RB, EA, EB, A, B>(
   self: XQueue<RA, RB, EA, EB, A, B>,
   min: number,
   max: number
-): I.IO<RB, EB, readonly B[]> {
+): I.IO<RB, EB, Chunk<B>> {
   return takeBetween(min, max)(self)
 }
 
@@ -684,7 +690,7 @@ export function takeAll<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>
  */
 export function takeAllUpTo(
   n: number
-): <RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) => I.IO<RB, EB, readonly B[]> {
+): <RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) => I.IO<RB, EB, Chunk<B>> {
   return (self) => self.takeUpTo(n)
 }
 
@@ -746,25 +752,17 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
 
     take: I.IO<RB & RB1 & R3, E3 | EB | EB1, D> = I.bind_(I.crossPar_(self.take, that.take), ([b, c]) => f(b, c))
 
-    takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = I.bind_(
+    takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> = I.bind_(
       I.crossPar_(self.takeAll, that.takeAll),
-      ([bs, cs]) => {
-        const abs = Array.from(bs)
-        const acs = Array.from(cs)
-        const all = A.zip_(abs, acs)
-
-        return I.foreach_(all, ([b, c]) => f(b, c))
-      }
+      ([bs, cs]) => C.mapM_(C.zip_(bs, cs), ([b, c]) => f(b, c))
     )
 
-    takeUpTo: (n: number) => I.IO<RB & RB1 & R3, E3 | EB | EB1, readonly D[]> = (max) =>
-      I.bind_(I.crossPar_(self.takeUpTo(max), that.takeUpTo(max)), ([bs, cs]) => {
-        const abs = Array.from(bs)
-        const acs = Array.from(cs)
-        const all = A.zip_(abs, acs)
-
-        return I.foreach_(all, ([b, c]) => f(b, c))
-      })
+    takeUpTo: (n: number) => I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> = (max) =>
+      pipe(
+        self.takeUpTo(max),
+        I.crossPar(that.takeUpTo(max)),
+        I.bind(([bs, cs]) => C.mapM_(C.zip_(bs, cs), ([b, c]) => f(b, c)))
+      )
   })()
 }
 
@@ -875,10 +873,9 @@ export function dimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
 
     take: I.IO<RD & RB, ED | EB, D> = I.bind_(self.take, g)
 
-    takeAll: I.IO<RD & RB, ED | EB, readonly D[]> = I.bind_(self.takeAll, (a) => I.foreach_(a, g))
+    takeAll: I.IO<RD & RB, ED | EB, Chunk<D>> = I.bind_(self.takeAll, C.mapM(g))
 
-    takeUpTo: (n: number) => I.IO<RD & RB, ED | EB, readonly D[]> = (max) =>
-      I.bind_(self.takeUpTo(max), (bs) => I.foreach_(bs, g))
+    takeUpTo: (n: number) => I.IO<RD & RB, ED | EB, Chunk<D>> = flow(self.takeUpTo, I.bind(C.mapM(g)))
   })()
 }
 
@@ -949,9 +946,9 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
 
     take: I.IO<RB, EB, B> = self.take
 
-    takeAll: I.IO<RB, EB, readonly B[]> = self.takeAll
+    takeAll: I.IO<RB, EB, Chunk<B>> = self.takeAll
 
-    takeUpTo: (n: number) => I.IO<RB, EB, readonly B[]> = (max) => self.takeUpTo(max)
+    takeUpTo: (n: number) => I.IO<RB, EB, Chunk<B>> = (max) => self.takeUpTo(max)
   })()
 }
 
@@ -1009,6 +1006,6 @@ export function map<B, C>(
 /**
  * Take the head option of values in the queue.
  */
-export function poll<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>) {
-  return I.map_(self.takeUpTo(1), A.head)
+export function poll<RA, RB, EA, EB, A, B>(self: XQueue<RA, RB, EA, EB, A, B>): IO<RB, EB, O.Option<B>> {
+  return I.map_(self.takeUpTo(1), C.head)
 }

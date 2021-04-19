@@ -1,110 +1,901 @@
-import type { Byte } from '@principia/base/Byte'
+/* eslint-disable functional/immutable-data */
 import type { Either } from '@principia/base/Either'
 import type { Monoid } from '@principia/base/Monoid'
+import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 
 import * as A from '@principia/base/Array'
-import { identity, unsafeCoerce  } from '@principia/base/function'
+import { identity, pipe } from '@principia/base/function'
+import * as It from '@principia/base/Iterable'
 import * as O from '@principia/base/Option'
 import { tuple } from '@principia/base/tuple'
-import { TextEncoder } from 'util'
+import { AtomicNumber } from '@principia/base/util/support/AtomicNumber'
 
-/*
- * -------------------------------------------
- * Model
- * -------------------------------------------
- */
+import * as I from '../IO/core'
 
-export interface Chunk<A> extends Readonly<ArrayLike<A>>, Iterable<A> {}
+const BUFFER_SIZE = 64
 
-export interface NonEmptyChunk<A> extends Readonly<ArrayLike<A>>, Iterable<A> {
-  readonly 0: A
+export interface Chunk<A> {
+  readonly _URI: 'Chunk'
+  readonly _A: () => A
+  readonly length: number
+  [Symbol.iterator](): Iterator<A>
 }
 
-export type TypedArray =
-  | Uint8Array
-  | Uint16Array
-  | Uint32Array
-  | Uint8ClampedArray
-  | Int8Array
-  | Int16Array
-  | Int32Array
+abstract class ChunkImplementation<A> implements Chunk<A>, Iterable<A> {
+  readonly _URI!: 'Chunk'
+  readonly _A!: () => A
+  abstract readonly length: number
+  abstract readonly depth: number
+  abstract readonly left: Chunk<A>
+  abstract readonly right: Chunk<A>
+  abstract readonly binary: boolean
+  abstract get(n: number): A
+  abstract foreach<B>(f: (a: A) => B): void
+  abstract toArray(n: number, dest: Array<A> | Uint8Array): void
+  abstract arrayIterator(): Iterator<ArrayLike<A>>
+  abstract reverseArrayIterator(): Iterator<ArrayLike<A>>
+  abstract [Symbol.iterator](): Iterator<A>
 
-/*
- * -------------------------------------------
- * Constructors
- * -------------------------------------------
- */
+  private arrayLikeCache: ArrayLike<unknown> | undefined
+  arrayLike(): ArrayLike<A> {
+    if (this.arrayLikeCache) {
+      return this.arrayLikeCache as ArrayLike<A>
+    }
+    const arr = this.binary ? alloc(this.length) : new Array(this.length)
+    this.toArray(0, arr)
+    this.arrayLikeCache = arr
+    return arr as ArrayLike<A>
+  }
 
-/**
- * @optimize identity
- */
-export function fromBuffer<A>(id: TypedArray): Chunk<A> {
-  return id as any
+  private arrayCache: Array<unknown> | undefined
+  array(): ReadonlyArray<A> {
+    if (this.arrayCache) {
+      return this.arrayCache as Array<A>
+    }
+    const arr = new Array(this.length)
+    this.toArray(0, arr)
+    this.arrayCache = arr
+    return arr as Array<A>
+  }
+
+  concat(that: ChunkImplementation<A>): ChunkImplementation<A> {
+    concrete<A>(this)
+    concrete<A>(that)
+    if (this._tag === 'Empty') {
+      return that
+    }
+    if (that._tag === 'Empty') {
+      return this
+    }
+    if (this._tag === 'AppendN') {
+      const chunk = fromArray(this.buffer as Array<A>).take(this.bufferUsed)
+      return this.start.concat(chunk).concat(that)
+    }
+    if (that._tag === 'PrependN') {
+      const chunk = fromArray(A.takeLast_(that.buffer as Array<A>, that.bufferUsed))
+      return this.concat(chunk).concat(that)
+    }
+    const diff = that.depth - this.depth
+    if (Math.abs(diff) <= 1) {
+      return new Concat(this, that)
+    } else if (diff < -1) {
+      if (this.left.depth >= this.right.depth) {
+        const nr = this.right.concat(that)
+        return new Concat(this.left, nr)
+      } else {
+        concrete(this.right)
+        const nrr = this.right.right.concat(that)
+        if (nrr.depth === this.depth - 3) {
+          const nr = new Concat(this.right.left, nrr)
+          return new Concat(this.left, nr)
+        } else {
+          const nl = new Concat(this.left, this.right.left)
+          return new Concat(nl, nrr)
+        }
+      }
+    } else {
+      if (that.right.depth >= that.left.depth) {
+        const nl = this.concat(that.left)
+        return new Concat(nl, that.right)
+      } else {
+        concrete(that.left)
+        const nll = this.concat(that.left.left)
+        if (nll.depth === that.depth - 3) {
+          const nl = new Concat(nll, that.left.right)
+          return new Concat(nl, that.right)
+        } else {
+          const nr = new Concat(that.left.right, that.right)
+          return new Concat(nll, nr)
+        }
+      }
+    }
+  }
+  take(n: number): ChunkImplementation<A> {
+    if (n <= 0) {
+      return _Empty
+    } else if (n >= this.length) {
+      return this
+    } else {
+      concrete<A>(this)
+      switch (this._tag) {
+        case 'Empty':
+          return _Empty
+        case 'Slice':
+          return n >= this.l ? this : new Slice(this.chunk, this.offset, n)
+        case 'Singleton':
+          return this
+        default:
+          return new Slice(this, 0, n)
+      }
+    }
+  }
+  append<A1>(a: A1): ChunkImplementation<A | A1> {
+    const binary = this.binary && isByte(a)
+    const buffer = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
+    buffer[0]    = a
+    return new AppendN(this, buffer, 1, new AtomicNumber(1), this.binary && binary)
+  }
+  prepend<A1>(a: A1): ChunkImplementation<A | A1> {
+    const binary            = this.binary && isByte(a)
+    const buffer            = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
+    buffer[BUFFER_SIZE - 1] = a
+    return new PrependN(this, buffer, 1, new AtomicNumber(1), this.binary && binary)
+  }
+
+  /**
+   * Materializes a chunk into a chunk backed by an array. This method can
+   * improve the performance of bulk operations.
+   */
+  materialize(): ChunkImplementation<A> {
+    concrete(this)
+    switch (this._tag) {
+      case 'Empty':
+        return this
+      case 'Arr':
+        return this
+      default:
+        return fromArray(this.arrayLike())
+    }
+  }
 }
 
-export function fromString(s: string): Chunk<Byte> {
-  return new TextEncoder().encode(s) as any
+const alloc = typeof Buffer !== 'undefined' ? Buffer.alloc : (n: number) => new Uint8Array(n)
+
+function isByte(u: unknown): boolean {
+  return typeof u === 'number' && Number.isInteger(u) && u >= 0 && u <= 255
 }
 
-export function empty<A>(): Chunk<A> {
-  return []
+class ArrayIndexOutOfBoundsException extends Error {
+  constructor(readonly index: number) {
+    super()
+  }
+}
+
+class Empty<A> extends ChunkImplementation<A> {
+  readonly _tag = 'Empty'
+  length        = 0
+  depth         = 0
+  left          = this
+  right         = this
+  binary        = false
+  get(_: number): A {
+    throw new ArrayIndexOutOfBoundsException(_)
+  }
+  foreach<B>(_: (a: never) => B): void {
+    return
+  }
+  toArray(_: number, __: Array<A> | Uint8Array): void {
+    return
+  }
+  [Symbol.iterator](): Iterator<A> {
+    return {
+      next: () => {
+        return {
+          value: null,
+          done: true
+        }
+      }
+    }
+  }
+  arrayIterator(): Iterator<Array<A>> {
+    return {
+      next: () => ({
+        value: undefined,
+        done: true
+      })
+    }
+  }
+  reverseArrayIterator(): Iterator<Array<A>> {
+    return {
+      next: () => ({
+        value: undefined,
+        done: true
+      })
+    }
+  }
+}
+const _Empty = new Empty<any>()
+
+class Concat<A> extends ChunkImplementation<A> {
+  readonly _tag = 'Concat'
+  length        = this.left.length + this.right.length
+  depth         = 1 + Math.max(this.left.depth, this.right.depth)
+  binary        = this.left.binary && this.right.binary
+  constructor(readonly left: ChunkImplementation<A>, readonly right: ChunkImplementation<A>) {
+    super()
+  }
+  get(n: number): A {
+    return n < this.left.length ? this.left.get(n) : this.right.get(n - this.left.length)
+  }
+  foreach<B>(f: (a: A) => B): void {
+    this.left.foreach(f)
+    this.right.foreach(f)
+  }
+  toArray(n: number, dest: Array<A> | Uint8Array): void {
+    this.left.toArray(n, dest)
+    this.right.toArray(n + this.left.length, dest)
+  }
+  [Symbol.iterator](): Iterator<A> {
+    const arr = this.arrayLike()
+    return arr[Symbol.iterator]()
+  }
+  arrayIterator(): Iterator<ArrayLike<A>> {
+    return It.concat_(It.iterable(this.left.arrayIterator), It.iterable(this.right.arrayIterator))[Symbol.iterator]()
+  }
+  reverseArrayIterator(): Iterator<ArrayLike<A>> {
+    return It.concat_(It.iterable(this.right.reverseArrayIterator), It.iterable(this.left.reverseArrayIterator))[
+      Symbol.iterator
+    ]()
+  }
+}
+
+class AppendN<A> extends ChunkImplementation<A> {
+  readonly _tag = 'AppendN'
+  length        = this.start.length + this.bufferUsed
+  depth         = 0
+  left          = _Empty
+  right         = _Empty
+  constructor(
+    readonly start: ChunkImplementation<A>,
+    readonly buffer: Array<unknown> | Uint8Array,
+    readonly bufferUsed: number,
+    readonly chain: AtomicNumber,
+    readonly binary: boolean
+  ) {
+    super()
+  }
+  append<A1>(a: A1): ChunkImplementation<A | A1> {
+    const binary = this.binary && isByte(a)
+    if (this.bufferUsed < this.buffer.length && this.chain.compareAndSet(this.bufferUsed, this.bufferUsed + 1)) {
+      if (this.binary && !binary) {
+        const buffer = new Array(BUFFER_SIZE)
+        for (let i = 0; i < BUFFER_SIZE; i++) {
+          buffer[i] = this.buffer[i]
+        }
+        buffer[this.bufferUsed] = a
+        return new AppendN(this.start, this.buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+      }
+      this.buffer[this.bufferUsed] = a
+      return new AppendN(this.start, this.buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+    } else {
+      const buffer = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
+      buffer[0]    = a
+      const chunk  = fromArray(this.buffer as Array<A>).take(this.bufferUsed)
+      return new AppendN(this.start.concat(chunk), buffer, 1, new AtomicNumber(1), this.binary && binary)
+    }
+  }
+  get(n: number): A {
+    if (n < this.start.length) {
+      return this.start.get(n)
+    } else {
+      return this.buffer[n - this.start.length] as A
+    }
+  }
+  toArray(n: number, dest: Array<A> | Uint8Array): void {
+    this.start.toArray(n, dest)
+    copyArray(this.buffer as ArrayLike<A>, 0, dest, this.start.length + n, this.bufferUsed)
+  }
+  foreach<B>(f: (a: A) => B): void {
+    this.start.foreach(f)
+    for (let i = 0; i < this.bufferUsed; i++) {
+      f(this.buffer[i] as A)
+    }
+  }
+  [Symbol.iterator](): Iterator<A> {
+    const arr = this.arrayLike()
+    return arr[Symbol.iterator]()
+  }
+  arrayIterator(): Iterator<ArrayLike<A>> {
+    const array = this.arrayLike()
+    let done    = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: array,
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+  reverseArrayIterator(): Iterator<ArrayLike<A>> {
+    const array = this.arrayLike()
+    let done    = true
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: array,
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+}
+
+class PrependN<A> extends ChunkImplementation<A> {
+  readonly _tag = 'PrependN'
+  length        = this.end.length + this.bufferUsed
+  depth         = 0
+  left          = _Empty
+  right         = _Empty
+  constructor(
+    readonly end: ChunkImplementation<A>,
+    readonly buffer: Array<unknown> | Uint8Array,
+    readonly bufferUsed: number,
+    readonly chain: AtomicNumber,
+    readonly binary: boolean
+  ) {
+    super()
+  }
+  prepend<A1>(a: A1): ChunkImplementation<A | A1> {
+    const binary = this.binary && isByte(a)
+    if (this.bufferUsed < this.buffer.length && this.chain.compareAndSet(this.bufferUsed, this.bufferUsed + 1)) {
+      if (this.binary && !binary) {
+        const buffer = new Array(BUFFER_SIZE)
+        for (let i = 0; i < BUFFER_SIZE; i++) {
+          buffer[i] = this.buffer[i]
+        }
+        buffer[BUFFER_SIZE - this.bufferUsed - 1] = a
+        return new PrependN(this.end, buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+      }
+      this.buffer[BUFFER_SIZE - this.bufferUsed - 1] = a
+      return new PrependN(this.end, this.buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+    } else {
+      const buffer            = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
+      buffer[BUFFER_SIZE - 1] = a
+      const chunk             = fromArray(
+        'subarray' in this.buffer
+          ? this.buffer.subarray(this.buffer.length - this.bufferUsed)
+          : this.buffer.slice(this.buffer.length - this.bufferUsed)
+      ) as ChunkImplementation<A>
+      return new PrependN(chunk.concat(this.end), buffer, 1, new AtomicNumber(1), this.binary && binary)
+    }
+  }
+  get(n: number): A {
+    return n < this.bufferUsed
+      ? (this.buffer[BUFFER_SIZE - this.bufferUsed + n] as A)
+      : this.end.get(n - this.bufferUsed)
+  }
+  toArray(n: number, dest: Array<A> | Uint8Array) {
+    const length = Math.min(this.bufferUsed, Math.max(dest.length - n, 0))
+    copyArray(this.buffer, BUFFER_SIZE - this.bufferUsed, dest, n, length)
+    this.end.toArray(n + length, dest)
+  }
+  foreach<B>(f: (a: A) => B): void {
+    for (let i = BUFFER_SIZE - this.bufferUsed - 1; i < BUFFER_SIZE; i++) {
+      f(this.buffer[i] as A)
+    }
+    this.end.foreach(f)
+  }
+  [Symbol.iterator](): Iterator<A> {
+    const arr = this.arrayLike()
+    return arr[Symbol.iterator]()
+  }
+  arrayIterator(): Iterator<ArrayLike<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this.arrayLike(),
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+  reverseArrayIterator(): Iterator<ArrayLike<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this.arrayLike(),
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+}
+
+class Singleton<A> extends ChunkImplementation<A> {
+  readonly _tag = 'Singleton'
+  length        = 1
+  depth         = 0
+  left          = _Empty
+  right         = _Empty
+  binary        = isByte(this.value)
+  constructor(readonly value: A) {
+    super()
+  }
+  get(n: number): A {
+    if (n === 0) {
+      return this.value
+    }
+    throw new ArrayIndexOutOfBoundsException(n)
+  }
+  foreach<B>(f: (a: A) => B): void {
+    f(this.value)
+  }
+  toArray(n: number, dest: Array<A> | Uint8Array) {
+    // eslint-disable-next-line functional/immutable-data
+    dest[n] = this.value
+  }
+  [Symbol.iterator](): Iterator<A> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this.value,
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+  arrayIterator(): Iterator<ArrayLike<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: [this.value],
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+  reverseArrayIterator(): Iterator<ArrayLike<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: [this.value],
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+}
+
+class Slice<A> extends ChunkImplementation<A> {
+  readonly _tag = 'Slice'
+  length        = this.l
+  depth         = 0
+  left          = _Empty
+  right         = _Empty
+  binary        = this.chunk.binary
+  constructor(readonly chunk: ChunkImplementation<A>, readonly offset: number, readonly l: number) {
+    super()
+  }
+  get(n: number): A {
+    return this.chunk.get(this.offset + n)
+  }
+  foreach<B>(f: (a: A) => B): void {
+    let i = 0
+    while (i < this.length) {
+      f(this.get(i))
+      i++
+    }
+  }
+  toArray(n: number, dest: Array<A> | Uint8Array) {
+    let i = 0
+    let j = n
+    while (i < this.length) {
+      dest[j] = this.get(i)
+      i++
+      j++
+    }
+  }
+  [Symbol.iterator](): Iterator<A> {
+    const arr = this.arrayLike()
+    return arr[Symbol.iterator]()
+  }
+  arrayIterator(): Iterator<ArrayLike<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this.arrayLike(),
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+  reverseArrayIterator(): Iterator<ArrayLike<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this.arrayLike(),
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+}
+
+class Arr<A> extends ChunkImplementation<A> {
+  readonly _tag = 'Arr'
+  length        = this._array.length
+  depth         = 0
+  left          = _Empty
+  right         = _Empty
+  binary        = false
+  constructor(readonly _array: ReadonlyArray<A>) {
+    super()
+  }
+  get(n: number): A {
+    if (n >= this.length || n < 0) {
+      throw new ArrayIndexOutOfBoundsException(n)
+    }
+    return this._array[n]
+  }
+  foreach<B>(f: (a: A) => B): void {
+    for (let i = 0; i < this.length; i++) {
+      f(this._array[i])
+    }
+  }
+  toArray(n: number, dest: Array<A> | Uint8Array): void {
+    copyArray(this._array, 0, dest, n, this.length)
+  }
+  [Symbol.iterator](): Iterator<A> {
+    return this._array[Symbol.iterator]()
+  }
+  arrayIterator(): Iterator<ReadonlyArray<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this._array,
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+  reverseArrayIterator(): Iterator<ReadonlyArray<A>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this._array,
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+}
+
+class BinArr extends ChunkImplementation<number> {
+  readonly _tag = 'Arr'
+  length        = this._array.length
+  depth         = 0
+  left          = _Empty
+  right         = _Empty
+  binary        = true
+  constructor(readonly _array: Uint8Array) {
+    super()
+  }
+  get(n: number): number {
+    if (n >= this.length || n < 0) {
+      throw new ArrayIndexOutOfBoundsException(n)
+    }
+    return this._array[n]
+  }
+  foreach<B>(f: (a: number) => B): void {
+    for (let i = 0; i < this.length; i++) {
+      f(this._array[i])
+    }
+  }
+  [Symbol.iterator](): Iterator<number> {
+    return this._array[Symbol.iterator]()
+  }
+  toArray(n: number, dest: Array<number> | Uint8Array): void {
+    copyArray(this._array, 0, dest, n, this.length)
+  }
+  arrayIterator(): Iterator<ArrayLike<number>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this._array,
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+  reverseArrayIterator(): Iterator<ArrayLike<number>> {
+    let done = false
+    return {
+      next: () => {
+        if (!done) {
+          done = true
+          return {
+            value: this._array,
+            done: false
+          }
+        } else {
+          return {
+            value: null,
+            done: true
+          }
+        }
+      }
+    }
+  }
+}
+
+function concrete<A>(
+  _: Chunk<A>
+): asserts _ is Empty<A> | Singleton<A> | Concat<A> | AppendN<A> | PrependN<A> | Slice<A> | Arr<A> {
+  //
+}
+
+function copyArray<A>(
+  source: ArrayLike<A>,
+  sourcePos: number,
+  dest: Array<A> | Uint8Array,
+  destPos: number,
+  length: number
+): void {
+  const j = Math.min(source.length, sourcePos + length)
+  for (let i = sourcePos; i < j; i++) {
+    // eslint-disable-next-line functional/immutable-data
+    dest[destPos + i - sourcePos] = source[i]
+  }
+}
+
+function fromArray<A>(array: ArrayLike<A>): ChunkImplementation<A> {
+  if (array.length === 0) {
+    return _Empty
+  } else {
+    return 'buffer' in array ? (new BinArr(array) as any) : new Arr(Array.from(array))
+  }
+}
+
+export function make<A>(...as: ReadonlyArray<A>): Chunk<A> {
+  return new Arr(as)
+}
+
+export function from<A>(as: Iterable<A>): Chunk<A> {
+  return new Arr(A.from(as))
+}
+
+export function fromBuffer(bytes: Uint8Array): Chunk<number> {
+  return new BinArr(bytes)
+}
+
+export function empty<B>(): Chunk<B> {
+  return new Empty()
 }
 
 export function single<A>(a: A): Chunk<A> {
-  return [a]
+  return new Singleton(a)
 }
 
-export const range: (start: number, end: number) => Chunk<number> = A.range
+export function range(start: number, end: number): Chunk<number> {
+  return fromArray(A.range(start, end))
+}
+
+export function isEmpty<A>(chunk: Chunk<A>): boolean {
+  concrete(chunk)
+  return chunk.length === 0
+}
+
+export function isNonEmpty<A>(chunk: Chunk<A>): boolean {
+  return !isEmpty(chunk)
+}
+
+export function head<A>(chunk: Chunk<A>): Option<A> {
+  concrete(chunk)
+  if (isEmpty(chunk)) {
+    return O.None()
+  }
+  return O.Some(chunk.get(0))
+}
+
+export function last<A>(chunk: Chunk<A>): Option<A> {
+  concrete(chunk)
+  if (isEmpty(chunk)) {
+    return O.None()
+  }
+  return O.Some(chunk.get(chunk.length - 1))
+}
+
+export function append_<A, A1>(chunk: Chunk<A>, a1: A1): Chunk<A | A1> {
+  concrete(chunk)
+  return chunk.append(a1)
+}
+
+export function append<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
+  return (chunk) => append_(chunk, a)
+}
+
+export function prepend_<A>(chunk: Chunk<A>, a: A): Chunk<A> {
+  concrete(chunk)
+  return chunk.prepend(a)
+}
+
+export function prepend<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
+  return (chunk) => prepend_(chunk, a)
+}
+
+export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
+  concrete<A>(chunk)
+  if (chunk._tag === 'Singleton') {
+    return new Singleton(f(chunk.value))
+  }
+  let b          = empty<B>()
+  const iterator = chunk.arrayIterator()
+  let result: IteratorResult<ArrayLike<A>>
+  while (!(result = iterator.next()).done) {
+    const as = result.value
+    for (let i = 0; i < as.length; i++) {
+      b = append_(b, f(as[i]))
+    }
+  }
+  return b
+}
+
+export function map<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
+  return (chunk) => map_(chunk, f)
+}
+
+export function foreach_<A, B>(chunk: Chunk<A>, f: (a: A) => B): void {
+  concrete(chunk)
+  chunk.foreach(f)
+}
+
+export function foreach<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => void {
+  return (chunk) => foreach_(chunk, f)
+}
+
+export function concat_<A>(xs: Chunk<A>, ys: Chunk<A>): Chunk<A> {
+  concrete(xs)
+  concrete(ys)
+  return xs.concat(ys)
+}
+
+export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
+  return (xs) => concat_(xs, ys)
+}
 
 /*
  * -------------------------------------------
- * Destructors
+ * Monad
  * -------------------------------------------
  */
 
-export function asBuffer(chunk: Chunk<Byte>): Buffer {
-  if (Buffer && Buffer.isBuffer(chunk)) {
-    return chunk
+export function bind_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
+  concrete(ma)
+  const iterator = ma.arrayIterator()
+  let result: IteratorResult<ArrayLike<A>>
+  let out        = empty<B>()
+  while (!(result = iterator.next()).done) {
+    const arr    = result.value
+    const length = arr.length
+    for (let i = 0; i < length; i++) {
+      const a = arr[i]
+      out     = concat_(out, f(a))
+    }
   }
-  if (isTyped(chunk)) {
-    return Buffer.from(chunk)
-  }
-  return Buffer.of(...unsafeCoerce<Chunk<Byte>, Array<number>>(chunk))
+  return out
 }
 
-export function asArray<A>(chunk: Chunk<A>): ReadonlyArray<A> {
-  if (Array.isArray(chunk)) {
-    return chunk
-  }
-  return Array.from(chunk)
-}
-
-export function head<A>(as: Chunk<A>): O.Option<A> {
-  return as.length > 0 ? O.Some(as[0]) : O.None()
-}
-
-export function last<A>(as: Chunk<A>): O.Option<A> {
-  return as.length > 0 ? O.Some(as[as.length - 1]) : O.None()
-}
-
-/*
- * -------------------------------------------
- * Guards
- * -------------------------------------------
- */
-
-export function isTyped(chunk: Chunk<unknown>): chunk is TypedArray {
-  return 'subarray' in chunk
-}
-
-export function isEmpty<A>(as: Chunk<A>): boolean {
-  return as.length === 0
-}
-
-export function isNonEmpty<A>(as: Chunk<A>): as is NonEmptyChunk<A> {
-  return as.length > 0
+export function bind<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
+  return (ma) => bind_(ma, f)
 }
 
 /*
@@ -113,30 +904,24 @@ export function isNonEmpty<A>(as: Chunk<A>): as is NonEmptyChunk<A> {
  * -------------------------------------------
  */
 
-export function zipWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
-  return Array.isArray(fa)
-    ? Array.isArray(fb)
-      ? A.zipWith_(fa, fb, f)
-      : A.zipWith_(fa, A.from(fb), f)
-    : Array.isArray(fb)
-    ? A.zipWith_(A.from(fa), fb, f)
-    : A.zipWith_(A.from(fa), A.from(fb), f)
+export function crossWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
+  return bind_(as, (a) => map_(bs, (b) => f(a, b)))
 }
 
-export function zipWith<A, B, C>(fb: Chunk<B>, f: (a: A, b: B) => C): (fa: Chunk<A>) => Chunk<C> {
-  return (fa) => zipWith_(fa, fb, f)
+export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
+  return (as) => crossWith_(as, bs, f)
 }
 
-export function zip_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<readonly [A, B]> {
-  return zipWith_(fa, fb, tuple)
+export function cross_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
+  return crossWith_(as, bs, tuple)
 }
 
-export function zip<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<readonly [A, B]> {
-  return (fa) => zip_(fa, fb)
+export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
+  return (as) => cross_(as, bs)
 }
 
 export function ap_<A, B>(fab: Chunk<(a: A) => B>, fa: Chunk<A>): Chunk<B> {
-  return zipWith_(fab, fa, (f, a) => f(a))
+  return crossWith_(fab, fa, (f, a) => f(a))
 }
 
 export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
@@ -145,11 +930,59 @@ export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
 
 /*
  * -------------------------------------------
- * Applicative
+ * Zip
  * -------------------------------------------
-*/
+ */
 
-export const pure = single
+export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
+  concrete(as)
+  concrete(bs)
+  const length = Math.min(as.length, bs.length)
+  if (length === 0) {
+    return empty()
+  } else {
+    const leftIterator                      = as.arrayIterator()
+    const rightIterator                     = bs.arrayIterator()
+    let r: Chunk<C>                         = empty()
+    let left: IteratorResult<ArrayLike<A>>  = null as any
+    let right: IteratorResult<ArrayLike<B>> = null as any
+    let leftLength                          = 0
+    let rightLength                         = 0
+    let i                                   = 0
+    let j                                   = 0
+    let k                                   = 0
+    while (i < length) {
+      if (j < leftLength && k < rightLength) {
+        const a = left.value[j]
+        const b = right.value[k]
+        const c = f(a, b)
+        r       = append_(r, c)
+        i++
+        j++
+        k++
+      } else if (j === leftLength && !(left = leftIterator.next()).done) {
+        leftLength = left.value.length
+        j          = 0
+      } else if (k === rightLength && !(right = rightIterator.next()).done) {
+        rightLength = right.value.length
+        k           = 0
+      }
+    }
+    return r
+  }
+}
+
+export function zipWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
+  return (as) => zipWith_(as, bs, f)
+}
+
+export function zip_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
+  return zipWith_(as, bs, tuple)
+}
+
+export function zip<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
+  return (as) => zip_(as, bs)
+}
 
 /*
  * -------------------------------------------
@@ -160,13 +993,20 @@ export const pure = single
 export function filter_<A, B extends A>(fa: Chunk<A>, refinement: Refinement<A, B>): Chunk<B>
 export function filter_<A>(fa: Chunk<A>, predicate: Predicate<A>): Chunk<A>
 export function filter_<A>(fa: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
-  if (isTyped(fa)) {
-    return fromBuffer(fa.filter(predicate as any))
+  concrete(fa)
+  const iterator = fa.arrayIterator()
+  let out        = empty<A>()
+  let result: IteratorResult<ArrayLike<A>>
+  while (!(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; i < array.length; i++) {
+      const a = array[i]
+      if (predicate(a)) {
+        out = append_(out, a)
+      }
+    }
   }
-  if (Array.isArray(fa)) {
-    return fa.filter(predicate)
-  }
-  return Array.from(fa).filter(predicate)
+  return out
 }
 
 export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Chunk<A>) => Chunk<B>
@@ -175,24 +1015,47 @@ export function filter<A>(predicate: Predicate<A>): (fa: Chunk<A>) => Chunk<A> {
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
-  if (Array.isArray(fa)) {
-    return A.filterMap_(fa, f)
+export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A) => Option<B>): Chunk<B> {
+  concrete(fa)
+  const iterator = fa.arrayIterator()
+  let out        = empty<B>()
+  let result: IteratorResult<ArrayLike<A>>
+  while (!(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; i < array.length; i++) {
+      const ob = f(array[i])
+      if (ob._tag === 'Some') {
+        out = append_(out, ob.value)
+      }
+    }
   }
-  return A.filterMap_(Array.from(fa), f)
+  return out
 }
 
-export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: Chunk<A>) => Chunk<B> {
+export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Chunk<A>) => Chunk<B> {
   return (self) => filterMap_(self, f)
 }
 
 export function partition_<A, B extends A>(fa: Chunk<A>, refinement: Refinement<A, B>): readonly [Chunk<A>, Chunk<B>]
 export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>]
 export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>] {
-  if (Array.isArray(fa)) {
-    return A.partition_(fa, predicate)
+  concrete(fa)
+  const iterator = fa.arrayIterator()
+  let left       = empty<A>()
+  let right      = empty<A>()
+  let result: IteratorResult<ArrayLike<A>>
+  while (!(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; i < array.length; i++) {
+      const a = array[i]
+      if (predicate(a)) {
+        right = append_(right, a)
+      } else {
+        left = append_(left, a)
+      }
+    }
   }
-  return A.partition_(A.from(fa), predicate)
+  return [left, right]
 }
 
 export function partition<A, B extends A>(refinement: Refinement<A, B>): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<B>]
@@ -202,10 +1065,26 @@ export function partition<A>(predicate: Predicate<A>): (fa: Chunk<A>) => readonl
 }
 
 export function partitionMap_<A, B, C>(fa: Chunk<A>, f: (a: A) => Either<B, C>): readonly [Chunk<B>, Chunk<C>] {
-  if (Array.isArray(fa)) {
-    return A.partitionMap_(fa, f)
+  concrete(fa)
+  const iterator = fa.arrayIterator()
+  let left       = empty<B>()
+  let right      = empty<C>()
+  let result: IteratorResult<ArrayLike<A>>
+  while (!(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; i < array.length; i++) {
+      const eab = f(array[i])
+      switch (eab._tag) {
+        case 'Left':
+          left = append_(left, eab.left)
+          break
+        case 'Right':
+          right = append_(right, eab.right)
+          break
+      }
+    }
   }
-  return A.partitionMap_(A.from(fa), f)
+  return [left, right]
 }
 
 export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Chunk<A>) => readonly [Chunk<B>, Chunk<C>] {
@@ -219,14 +1098,17 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Chunk<A>)
  */
 
 export function foldl_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
-  if (Array.isArray(fa)) {
-    return A.foldl_(fa, b, f)
+  concrete(fa)
+  const iterator = fa.arrayIterator()
+  let out        = b
+  let result: IteratorResult<ArrayLike<A>>
+  while (!(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; i < array.length; i++) {
+      out = f(out, array[i])
+    }
   }
-  let x = b
-  for (const y of fa) {
-    x = f(x, y)
-  }
-  return x
+  return out
 }
 
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Chunk<A>) => B {
@@ -234,14 +1116,17 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Chunk<A>) => B {
 }
 
 export function foldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
-  if (isEmpty(fa)) {
-    return b
+  concrete(fa)
+  const iterator = fa.reverseArrayIterator()
+  let out        = b
+  let result: IteratorResult<ArrayLike<A>>
+  while (!(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = array.length - 1; i >= 0; i--) {
+      out = f(array[i], out)
+    }
   }
-  let x = b
-  for (let i = fa.length - 1; i >= 0; i--) {
-    x = f(fa[i], x)
-  }
-  return x
+  return out
 }
 
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
@@ -259,252 +1144,255 @@ export function foldMap<M>(M: Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>) 
 
 /*
  * -------------------------------------------
- * Functor
- * -------------------------------------------
- */
-
-export function map_<A, B>(fa: Chunk<A>, f: (a: A) => B): Chunk<B> {
-  if (Array.isArray(fa)) {
-    return fa.map(f)
-  }
-  return Array.from(fa).map(f)
-}
-
-/**
- * @dataFirst map_
- */
-export function map<A, B>(f: (a: A) => B) {
-  return (self: Chunk<A>) => map_(self, f)
-}
-
-/*
- * -------------------------------------------
- * Monad
- * -------------------------------------------
- */
-
-export function bind_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
-  let rlen       = 0
-  const l        = ma.length
-  const mut_temp = new Array(l)
-  for (let i = 0; i < l; i++) {
-    const e     = ma[i]
-    const arr   = f(e)
-    rlen       += arr.length
-    mut_temp[i] = arr
-  }
-  const mut_r = Array(rlen)
-  let start   = 0
-  for (let i = 0; i < l; i++) {
-    const arr = mut_temp[i]
-    const l   = arr.length
-    for (let j = 0; j < l; j++) {
-      mut_r[j + start] = arr[j]
-    }
-    start += l
-  }
-  return mut_r
-}
-
-export function bind<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
-  return (ma) => bind_(ma, f)
-}
-
-export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
-  return bind_(mma, identity)
-}
-
-/*
- * -------------------------------------------
- * Combinators
+ * combinators
  * -------------------------------------------
  */
 
 export function drop_<A>(as: Chunk<A>, n: number): Chunk<A> {
-  if (isTyped(as)) {
-    return fromBuffer(as.subarray(n, as.length))
+  concrete(as)
+  const len = as.length
+  if (len <= 0) {
+    return as
+  } else if (n >= len) {
+    return empty()
+  } else {
+    switch (as._tag) {
+      case 'Slice':
+        return new Slice(as.chunk, as.offset + n, as.l - n)
+      case 'Singleton':
+        return n > 0 ? empty() : as
+      case 'Empty':
+        return empty()
+      default:
+        return new Slice(as, n, len - n)
+    }
   }
-  if (Array.isArray(as)) {
-    return A.drop_(as, n)
-  }
-  return A.drop_(Array.from(as), n)
 }
 
 export function drop(n: number): <A>(as: Chunk<A>) => Chunk<A> {
   return (as) => drop_(as, n)
 }
 
-export function splitAt_<A>(as: Chunk<A>, n: number): readonly [Chunk<A>, Chunk<A>] {
-  if (isTyped(as)) {
-    return [fromBuffer(as.subarray(0, n)), fromBuffer(as.subarray(n))]
-  }
-  if (Array && Array.isArray(as)) {
-    return [as.slice(0, n), as.slice(n)]
-  }
-  const as_ = Array.from(as)
-  return [as_.slice(0, n), as_.slice(n)]
-}
-
-export function splitAt(n: number): <A>(as: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
-  return (as) => splitAt_(as, n)
-}
-
-export function concat_<A>(xs: Chunk<A>, ys: Chunk<A>): Chunk<A> {
-  if (isEmpty(xs)) {
-    return ys
-  }
-
-  if (isEmpty(ys)) {
-    return xs
-  }
-
-  if (Buffer && Buffer.isBuffer(xs) && Buffer.isBuffer(ys)) {
-    return fromBuffer(Buffer.concat([xs, ys]))
-  }
-
-  if (isTyped(xs) && xs.constructor === ys.constructor) {
-    // @ts-expect-error
-    const c = new xs.constructor(xs.length + ys.length)
-    c.set(xs)
-    c.set(ys, xs.length)
-    return c
-  }
-
-  const lenx = xs.length
-  if (lenx === 0) {
-    return ys
-  }
-  const leny = ys.length
-  if (leny === 0) {
-    return xs
-  }
-  const mut_r = Array(lenx + leny)
-  for (let i = 0; i < lenx; i++) {
-    mut_r[i] = xs[i]
-  }
-  for (let i = 0; i < leny; i++) {
-    mut_r[i + lenx] = ys[i]
-  }
-  return mut_r
-}
-
-export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
-  return (xs) => concat_(xs, ys)
-}
-
-export const spanIndex_ = <A>(as: Chunk<A>, predicate: Predicate<A>): number => {
-  const l = as.length
-  let i   = 0
-  for (; i < l; i++) {
-    if (!predicate(as[i])) {
-      break
+export function dropWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
+  concrete(as)
+  switch (as._tag) {
+    case 'Arr': {
+      const arr = as.arrayLike()
+      let i     = 0
+      while (i < arr.length && predicate(arr[i])) {
+        i++
+      }
+      return drop_(as, i)
+    }
+    default: {
+      const iterator = as.arrayIterator()
+      let result: IteratorResult<ArrayLike<A>>
+      let cont       = true
+      let i          = 0
+      while (cont && !(result = iterator.next()).done) {
+        const array = result.value
+        let j       = 0
+        while (cont && j < array.length) {
+          if (predicate(array[j])) {
+            i++
+            j++
+          } else {
+            cont = false
+          }
+        }
+      }
+      return drop_(as, i)
     }
   }
-  return i
-}
-
-export function spanIndex<A>(predicate: Predicate<A>): (as: Chunk<A>) => number {
-  return (as) => spanIndex_(as, predicate)
-}
-
-export function dropWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
-  const i = spanIndex_(as, predicate)
-  if (isTyped(as)) {
-    return fromBuffer(as.slice(i, as.length))
-  }
-  const l        = as.length
-  const mut_rest = Array(l - i)
-  for (let j = i; j < l; j++) {
-    mut_rest[j - i] = as[j]
-  }
-  return mut_rest
 }
 
 export function dropWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
   return (as) => dropWhile_(as, predicate)
 }
 
-export function collectWhileMap_<A, B>(as: Chunk<A>, f: (x: A) => O.Option<B>): Chunk<B> {
-  const result: B[] = []
-
-  for (let i = 0; i < as.length; i++) {
-    const o = f(as[i])
-
-    if (O.isSome(o)) {
-      result.push(o.value)
-    } else {
-      break
-    }
-  }
-
-  return result
+export function splitAt_<A>(as: Chunk<A>, n: number): readonly [Chunk<A>, Chunk<A>] {
+  return [take_(as, n), drop_(as, n)]
 }
 
-export function collectWhileMap<A, B>(f: (a: A) => O.Option<B>): (as: Chunk<A>) => Chunk<B> {
-  return (as) => collectWhileMap_(as, f)
-}
-
-export function takeWhile_<A, B extends A>(as: Chunk<A>, f: Refinement<A, B>): Chunk<B>
-export function takeWhile_<A>(as: Chunk<A>, f: Predicate<A>): Chunk<A>
-export function takeWhile_<A>(as: Chunk<A>, f: Predicate<A>): Chunk<A> {
-  let j = as.length
-  for (let i = 0; i < as.length; i++) {
-    if (!f(as[i])) {
-      j = i
-      break
-    }
-  }
-
-  if (isTyped(as)) {
-    return fromBuffer(as.subarray(0, j))
-  }
-  if (Array && Array.isArray(as)) {
-    return as.slice(0, j)
-  }
-  return Array.from(as).slice(0, j)
-}
-
-export function takeWhile<A, B extends A>(f: Refinement<A, B>): (as: Chunk<A>) => Chunk<B>
-export function takeWhile<A>(f: Predicate<A>): (as: Chunk<A>) => Chunk<A>
-export function takeWhile<A>(f: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
-  return (as) => takeWhile_(as, f)
+export function splitAt(n: number): <A>(as: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
+  return (as) => splitAt_(as, n)
 }
 
 export function take_<A>(as: Chunk<A>, n: number): Chunk<A> {
-  if (Buffer && Buffer.isBuffer(as)) {
-    return fromBuffer(as.subarray(0, n))
-  }
-  if (Array.isArray(as)) {
-    return as.slice(0, n)
-  }
-  return Array.from(as).slice(0, n)
+  concrete(as)
+  return as.take(n)
 }
 
 export function take(n: number): <A>(as: Chunk<A>) => Chunk<A> {
   return (as) => take_(as, n)
 }
 
-export function append_<A>(as: Chunk<A>, a: A): Chunk<A> {
-  if (Buffer && Buffer.isBuffer(as)) {
-    const mut_b = Buffer.alloc(as.length + 1)
-    as.copy(mut_b, 0, 0, as.length)
-    mut_b[as.length] = a as any
-    return fromBuffer(mut_b)
+export function takeWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
+  concrete(as)
+  switch (as._tag) {
+    case 'Arr': {
+      const arr = as.arrayLike()
+      let i     = 0
+      while (i < arr.length && predicate(arr[i])) {
+        i++
+      }
+      return take_(as, i)
+    }
+    default: {
+      const iterator = as.arrayIterator()
+      let result: IteratorResult<ArrayLike<A>>
+      let cont       = true
+      let i          = 0
+      while (cont && !(result = iterator.next()).done) {
+        const array = result.value
+        let j       = 0
+        while (cont && j < array.length) {
+          if (!predicate(array[j])) {
+            cont = false
+          } else {
+            i++
+            j++
+          }
+        }
+      }
+      return take_(as, i)
+    }
   }
-  if (Array.isArray(as)) {
-    return A.append_(as, a)
-  }
-  return A.append_(A.from(as), a)
 }
 
-export function append<A>(a: A): (as: Chunk<A>) => Chunk<A> {
-  return (as) => append_(as, a)
+export function takeWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
+  return (as) => takeWhile_(as, predicate)
 }
 
-export function chunksOf_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
-  return A.chunksOf_(A.from(as), n)
+export function unsafeGet_<A>(as: Chunk<A>, n: number): A {
+  concrete(as)
+  return as.get(n)
 }
 
-export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
-  return (as) => chunksOf_(as, n)
+export function mapM_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+  return I.deferTotal(() => {
+    let out = empty<B>()
+    return pipe(
+      as,
+      I.foreachUnit((a) =>
+        I.map_(f(a), (b) => {
+          out = append_(out, b)
+        })
+      ),
+      I.as(() => out)
+    )
+  })
+}
+
+export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
+  return (as) => mapM_(as, f)
+}
+
+export function collectAllM<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
+  return mapM_(as, identity)
+}
+
+export function foldlM_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
+  return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
+}
+
+export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
+  return (as) => foldlM_(as, b, f)
+}
+
+export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+  return I.deferTotal(() => {
+    concrete(as)
+    let taking: I.IO<R, E, boolean> = I.succeed(true)
+    let out                         = empty<A>()
+    const iterator                  = as.arrayIterator()
+    let result: IteratorResult<ArrayLike<A>>
+    while (!(result = iterator.next()).done) {
+      const array = result.value
+      let i       = 0
+      while (i < array.length) {
+        const j = i
+        taking  = I.bind_(taking, (b) => {
+          const a = array[j]
+          return I.map_(b ? p(a) : I.succeed(false), (b1) => {
+            if (b1) {
+              out = append_(out, a)
+              return true
+            } else {
+              return false
+            }
+          })
+        })
+        i++
+      }
+    }
+    return I.as_(taking, () => out)
+  })
+}
+
+export function takeWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+  return (as) => takeWhileM_(as, p)
+}
+
+export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+  return I.deferTotal(() => {
+    concrete(as)
+    let dropping: I.IO<R, E, boolean> = I.succeed(true)
+    let out                           = empty<A>()
+    const iterator                    = as.arrayIterator()
+    let result: IteratorResult<ArrayLike<A>>
+    while (!(result = iterator.next()).done) {
+      const array = result.value
+      let i       = 0
+      while (i < array.length) {
+        const j  = i
+        dropping = I.bind_(dropping, (d) => {
+          const a = array[j]
+          return I.map_(d ? p(a) : I.succeed(false), (b) => {
+            if (b) {
+              return true
+            } else {
+              out = append_(out, a)
+              return false
+            }
+          })
+        })
+        i++
+      }
+    }
+    return I.as_(dropping, () => out)
+  })
+}
+
+export function dropWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+  return (as) => dropWhileM_(as, p)
+}
+
+export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+  return I.deferTotal(() => {
+    concrete(as)
+    let out: I.IO<R, E, Chunk<A>> = I.succeed(empty())
+    const iterator                = as.arrayIterator()
+    let result: IteratorResult<ArrayLike<A>>
+    while (!(result = iterator.next()).done) {
+      const array = result.value
+      let i       = 0
+      while (i < array.length) {
+        const a = array[i]
+        out     = I.crossWith_(out, p(a), (chunk, res) => {
+          if(res) {
+            return append_(chunk, a)
+          } else {
+            return chunk
+          }
+        })
+        i++
+      }
+    }
+    return out
+  })
+}
+
+export function filterM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+  return (as) => filterM_(as, p)
 }

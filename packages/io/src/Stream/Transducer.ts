@@ -88,7 +88,7 @@ export function fromPush<R, E, I, O>(
  * Creates a transducer that always evaluates the specified effect.
  */
 export function fromEffect<R, E, A>(io: I.IO<R, E, A>): Transducer<R, E, unknown, A> {
-  return new Transducer(M.succeed((_: any) => I.map_(io, C.pure)))
+  return new Transducer(M.succeed((_: any) => I.map_(io, C.single)))
 }
 
 /**
@@ -300,7 +300,7 @@ export function fold<I, O>(
     M.map_(Ref.makeManaged(O.Some(initial)), (state) => (is: O.Option<Chunk<I>>) =>
       O.match_(
         is,
-        () => pipe(Ref.getAndSet_(state, O.None()), I.map(O.match(() => C.empty(), C.pure))),
+        () => pipe(Ref.getAndSet_(state, O.None()), I.map(O.match(() => C.empty(), C.single))),
         (in_) =>
           Ref.modify_(state, (s) => {
             const [o, s2, progress] = go(
@@ -352,7 +352,7 @@ export function foldM<R, E, I, O>(
     M.map_(Ref.makeManaged(init), (state) => (is: O.Option<Chunk<I>>) =>
       O.match_(
         is,
-        () => pipe(state, Ref.getAndSet(O.None()), I.map(O.match(() => C.empty(), C.pure))),
+        () => pipe(state, Ref.getAndSet(O.None()), I.map(O.match(() => C.empty(), C.single))),
         (in_) =>
           pipe(
             state,
@@ -497,7 +497,7 @@ export function foldWeightedDecompose<I, O>(
             I.map(
               O.match(
                 () => C.empty(),
-                (s) => [s.result]
+                (s) => C.single(s.result)
               )
             )
           ),
@@ -600,7 +600,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
             I.map(
               O.match(
                 () => C.empty(),
-                (s) => [s.result]
+                (s) => C.single(s.result)
               )
             )
           ),
@@ -640,7 +640,7 @@ export function foldWeighted<I, O>(
   max: number,
   f: (o: O, i: I) => O
 ): Transducer<unknown, never, I, O> {
-  return foldWeightedDecompose(initial, costFn, max, C.pure, f)
+  return foldWeightedDecompose(initial, costFn, max, C.single, f)
 }
 
 /**
@@ -661,7 +661,10 @@ export function collectAllN<I>(n: number): Transducer<unknown, never, I, Chunk<I
     M.map_(Ref.makeManaged(C.empty<I>()), (state) => (is: O.Option<Chunk<I>>) =>
       O.match_(
         is,
-        () => I.map_(Ref.getAndSet_(state, C.empty()), (leftover) => (!C.isEmpty(leftover) ? [leftover] : C.empty())),
+        () =>
+          I.map_(Ref.getAndSet_(state, C.empty()), (leftover) =>
+            !C.isEmpty(leftover) ? C.single(leftover) : C.empty()
+          ),
         (in_) => Ref.modify_(state, (leftover) => go(in_, leftover, C.empty()))
       )
     )
@@ -776,7 +779,7 @@ export function contramapM_<R, E, I, O, R1, E1, J>(
         is,
         () => push(O.None()),
         flow(
-          I.foreach(f),
+          C.mapM(f),
           I.bind((in_) => push(O.Some(in_)))
         )
       )
@@ -860,7 +863,7 @@ export function filterInputM_<R, E, I, O, R1, E1>(
         is,
         () => push(O.None()),
         flow(
-          I.filter(predicate),
+          C.filterM(predicate),
           I.bind((in_) => push(O.Some(in_)))
         )
       )
@@ -942,7 +945,7 @@ export function mapM_<R, E, I, O, R1, E1, O1>(
   fa: Transducer<R, E, I, O>,
   f: (o: O) => I.IO<R1, E1, O1>
 ): Transducer<R & R1, E | E1, I, O1> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => I.bind_(push(input), I.foreach(f))))
+  return new Transducer(M.map_(fa.push, (push) => (input) => I.bind_(push(input), C.mapM(f))))
 }
 
 /**

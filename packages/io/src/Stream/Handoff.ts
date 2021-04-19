@@ -5,8 +5,8 @@ import { None, Some } from '@principia/base/Option'
 import { matchTag } from '@principia/base/util/matchers'
 
 import * as I from '../IO'
-import * as Ref from '../Ref'
 import * as P from '../Promise'
+import * as Ref from '../Ref'
 
 type State<A> = Empty | Full<A>
 
