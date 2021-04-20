@@ -1470,3 +1470,26 @@ export function reverse<A>(as: Chunk<A>): Iterable<A> {
     }
   })
 }
+
+export function chop_<A, B>(as: Chunk<A>, f: (as: Chunk<A>) => readonly [B, Chunk<A>]): Chunk<B> {
+  const out        = builder<B>()
+  let cs: Chunk<A> = as
+  while (isNonEmpty(cs)) {
+    const [b, c] = f(cs)
+    out.append(b)
+    cs = c
+  }
+  return out.result()
+}
+
+export function chop<A, B>(f: (as: Chunk<A>) => readonly [B, Chunk<A>]): (as: Chunk<A>) => Chunk<B> {
+  return (as) => chop_(as, f)
+}
+
+export function chunksOf_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
+  return chop_(as, splitAt(n))
+}
+
+export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
+  return chop(splitAt(n))
+}
