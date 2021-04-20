@@ -1,7 +1,7 @@
 import type { Option } from '../Option'
 
 import { pipe } from '@principia/prelude/function'
-import { matchTag } from '@principia/prelude/util/matchers'
+import { matchTag } from '@principia/prelude/matchers'
 
 import * as I from '../IO'
 import { None, Some } from '../Option'

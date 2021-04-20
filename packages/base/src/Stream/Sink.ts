@@ -4,7 +4,7 @@ import type { Has } from '@principia/prelude/Has'
 
 import { flow, identity, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
-import { matchTag } from '@principia/prelude/util/matchers'
+import { matchTag } from '@principia/prelude/matchers'
 
 import * as Ca from '../Cause'
 import * as C from '../Chunk'

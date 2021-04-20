@@ -16,7 +16,7 @@ import * as M from '@principia/base/Managed'
 import * as O from '@principia/base/Option'
 import * as Str from '@principia/base/string'
 import { flow, identity, pipe } from '@principia/prelude/function'
-import { matchTag, matchTag_ } from '@principia/prelude/util/matchers'
+import { matchTag, matchTag_ } from '@principia/prelude/matchers'
 
 import { Annotations, tagged, TestAnnotationMap } from './Annotation'
 import * as Annotation from './Annotation'

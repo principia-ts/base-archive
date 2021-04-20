@@ -13,7 +13,7 @@ import * as O from '@principia/base/Option'
 import * as Sy from '@principia/base/Sync'
 import { cyan, green, red, RESET } from '@principia/base/util/AnsiFormat'
 import { absurd, identity, pipe } from '@principia/prelude/function'
-import { matchTag, matchTag_ } from '@principia/prelude/util/matchers'
+import { matchTag, matchTag_ } from '@principia/prelude/matchers'
 
 import { TestAnnotationMap } from '../Annotation'
 import * as ES from '../ExecutedSpec'

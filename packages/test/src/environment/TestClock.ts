@@ -32,7 +32,7 @@ import { intersect } from '@principia/base/util/intersect'
 import { flow, pipe } from '@principia/prelude/function'
 import { tag } from '@principia/prelude/Has'
 import { tuple } from '@principia/prelude/tuple'
-import { matchTag } from '@principia/prelude/util/matchers'
+import { matchTag } from '@principia/prelude/matchers'
 
 import { AnnotationsTag, fibers } from '../Annotation'
 import { HashEqFiber, HashEqFiberId } from '../util'

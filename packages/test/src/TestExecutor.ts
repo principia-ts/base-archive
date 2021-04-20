@@ -11,7 +11,7 @@ import * as E from '@principia/base/Either'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Managed'
 import { flow, pipe } from '@principia/prelude/function'
-import { matchTag } from '@principia/prelude/util/matchers'
+import { matchTag } from '@principia/prelude/matchers'
 
 import { TestAnnotationMap } from './Annotation'
 import * as ES from './ExecutedSpec'

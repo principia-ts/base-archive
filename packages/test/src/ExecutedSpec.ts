@@ -7,7 +7,7 @@ import type { USync } from '@principia/base/Sync'
 import * as A from '@principia/base/Array'
 import * as Sy from '@principia/base/Sync'
 import { identity, pipe } from '@principia/prelude/function'
-import { matchTag, matchTag_ } from '@principia/prelude/util/matchers'
+import { matchTag, matchTag_ } from '@principia/prelude/matchers'
 
 class TestCase<E> {
   readonly _tag = 'Test'

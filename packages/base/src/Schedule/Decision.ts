@@ -1,7 +1,7 @@
 import type { IO } from '../IO/core'
 
 import { flow, pipe } from '@principia/prelude/function'
-import { matchTag_ } from '@principia/prelude/util/matchers'
+import { matchTag_ } from '@principia/prelude/matchers'
 
 import * as I from '../IO/core'
 

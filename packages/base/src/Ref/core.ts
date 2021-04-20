@@ -2,7 +2,7 @@ import type { FIO, UIO } from '../IO/core'
 
 import { flow, identity, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
-import { matchTag } from '@principia/prelude/util/matchers'
+import { matchTag } from '@principia/prelude/matchers'
 
 import * as E from '../Either'
 import * as I from '../IO/core'

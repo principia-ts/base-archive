@@ -4,8 +4,8 @@ import type { Layer } from '../core'
 import type * as H from '@principia/prelude/Has'
 
 import { pipe } from '@principia/prelude/function'
+import { matchTag } from '@principia/prelude/matchers'
 import { tuple } from '@principia/prelude/tuple'
-import { matchTag } from '@principia/prelude/util/matchers'
 
 import { Clock } from '../../Clock'
 import { catchAll, crossPar_, defer, first, fresh, fromRawEffect, fromRawFunctionM, identity } from '../core'

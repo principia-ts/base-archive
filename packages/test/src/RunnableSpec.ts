@@ -6,7 +6,7 @@ import type { Has } from '@principia/prelude/Has'
 
 import * as E from '@principia/base/Either'
 import * as I from '@principia/base/IO'
-import { matchTag } from '@principia/prelude/util/matchers'
+import { matchTag } from '@principia/prelude/matchers'
 
 import { AbstractRunnableSpec } from './AbstractRunnableSpec'
 import * as ExSp from './ExecutedSpec'

@@ -20,7 +20,7 @@ import * as Sc from '@principia/base/Schedule'
 import * as Str from '@principia/base/string'
 import { constTrue, pipe } from '@principia/prelude/function'
 import { hashString } from '@principia/prelude/Hashable'
-import { matchTag, matchTag_ } from '@principia/prelude/util/matchers'
+import { matchTag, matchTag_ } from '@principia/prelude/matchers'
 
 import { Annotations } from './Annotation'
 import * as Annotation from './Annotation'

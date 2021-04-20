@@ -1,6 +1,6 @@
 import { flow, identity, pipe } from '@principia/prelude/function'
+import { matchTag } from '@principia/prelude/matchers'
 import { tuple } from '@principia/prelude/tuple'
-import { matchTag } from '@principia/prelude/util/matchers'
 
 import * as E from '../Either'
 import * as O from '../Option'

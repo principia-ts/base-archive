@@ -211,7 +211,7 @@
   },
   "dependencies": {
     "@principia/compile": "^0.7.2",
-    "@principia/prelude": "^0.7.4"
+    "@principia/prelude": "^0.7.5"
   },
   "publishConfig": {
     "access": "public",

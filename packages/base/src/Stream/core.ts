@@ -12,9 +12,9 @@ import type { Refinement } from '@principia/prelude/Refinement'
 
 import { constTrue, flow, identity, pipe } from '@principia/prelude/function'
 import { isTag } from '@principia/prelude/Has'
+import { matchTag } from '@principia/prelude/matchers'
 import { not } from '@principia/prelude/Predicate'
 import { tuple } from '@principia/prelude/tuple'
-import { matchTag } from '@principia/prelude/util/matchers'
 
 import * as Ca from '../Cause'
 import * as C from '../Chunk'

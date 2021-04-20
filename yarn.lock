@@ -1753,10 +1753,10 @@
   resolved "https://registry.yarnpkg.com/@principia/compile/-/compile-0.7.2.tgz#958073ccda328cf4234cdeb607f2a140d282e82c"
   integrity sha512-qANXSPdv+cXZg6ooOroUvcIUnLmRFXTL6nJvsL3Q7kLbHs6BgwxDPESs9Ldbifi8FC4oe8aBc/K5vTSKUBbw2w==
 
-"@principia/prelude@^0.7.4":
-  version "0.7.4"
-  resolved "https://registry.yarnpkg.com/@principia/prelude/-/prelude-0.7.4.tgz#e636d39e0421e41402238ebcb84ffad26f369487"
-  integrity sha512-+beubvhdZSXVhSTtOzmIAoGzQvE9dYYspRHSC3MDbWtVsb8AOGV8iGhOaz7XjW62JdWxjeK/mbv/xoACbcvGVw==
+"@principia/prelude@^0.7.5":
+  version "0.7.5"
+  resolved "https://registry.yarnpkg.com/@principia/prelude/-/prelude-0.7.5.tgz#e8414909cf6f31fb0ee8c9d3d258a2b105b1af34"
+  integrity sha512-pttyyvx0NpTjnI9LTaOZReNwU5mlnlcFUn7Ti72aQ2gOlhfuuNbVBF2YtK7iVlU0B9hbaVABYOUsNdRksaJTRw==
   dependencies:
     "@principia/compile" "^0.7.2"
 
