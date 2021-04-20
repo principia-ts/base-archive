@@ -144,13 +144,13 @@ export class Chain<R_, E_, O, O2> {
       self.currOuterChunk,
       Ref.modify(([chunk, nextIdx]): [I.IO<R_, Option<E_>, O>, [Chunk<O>, number]] => {
         if (nextIdx < chunk.length) {
-          return [I.pure(chunk[nextIdx]), [chunk, nextIdx + 1]]
+          return [I.pure(C.unsafeGet_(chunk, nextIdx)), [chunk, nextIdx + 1]]
         } else {
           return [
             pipe(
               self.pullNonEmpty(self.outerStream),
               I.tap((os) => self.currOuterChunk.set([os, 1])),
-              I.map((os) => os[0])
+              I.map((os) => C.unsafeGet_(os, 0))
             ),
             [chunk, nextIdx]
           ]
@@ -3007,7 +3007,7 @@ export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E
                     if (i >= chunkSize) {
                       return Pull.end
                     } else {
-                      return pipe(switchStream(streams[i].proc), I.bind(currStream.set), I.apr(go))
+                      return pipe(switchStream(C.unsafeGet_(streams, i).proc), I.bind(currStream.set), I.apr(go))
                     }
                   })
                 ),
@@ -5748,24 +5748,26 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
           fromEffectOption,
           bind(([l, r, leftFirst]) =>
             pipe(
-              Ref.makeRef(l[l.length - 1]),
-              I.cross(Ref.makeRef(r[r.length - 1])),
+              Ref.makeRef(C.unsafeGet_(l, l.length - 1)),
+              I.cross(Ref.makeRef(C.unsafeGet_(r, r.length - 1))),
               fromEffect,
               bind(([latestLeft, latestRight]) =>
                 pipe(
                   fromChunk(
-                    leftFirst ? C.map_(r, (o1) => f(l[l.length - 1], o1)) : C.map_(l, (o) => f(o, r[r.length - 1]))
+                    leftFirst
+                      ? C.map_(r, (o1) => f(C.unsafeGet_(l, l.length - 1), o1))
+                      : C.map_(l, (o) => f(o, C.unsafeGet_(r, r.length - 1)))
                   ),
                   concat(
                     pipe(
                       left,
-                      I.tap((chunk) => latestLeft.set(chunk[chunk.length - 1])),
+                      I.tap((chunk) => latestLeft.set(C.unsafeGet_(chunk, chunk.length - 1))),
                       I.cross(latestRight.get),
                       repeatEffectOption,
                       mergeWith(
                         pipe(
                           right,
-                          I.tap((chunk) => latestRight.set(chunk[chunk.length - 1])),
+                          I.tap((chunk) => latestRight.set(C.unsafeGet_(chunk, chunk.length - 1))),
                           I.cross(latestLeft.get),
                           repeatEffectOption
                         ),
