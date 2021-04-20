@@ -1,6 +1,6 @@
 {
   "name": "@principia/base",
-  "version": "0.7.9",
+  "version": "0.7.10",
   "description": "Base datatypes",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -214,7 +214,7 @@
     "@principia/prelude": "^0.7.4"
   },
   "devDependencies": {
-    "@principia/test": "^0.7.2"
+    "@principia/test": "^0.7.3"
   },
   "publishConfig": {
     "access": "public",
