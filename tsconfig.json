@@ -16,25 +16,7 @@
     "baseUrl": ".",
     "paths": {
       "@principia/base/*": ["packages/base/dist/*"],
-      "@principia/base": ["packages/base/dist/index"],
-      "@principia/io/*": ["packages/io/dist/*"],
-      "@principia/io": ["packages/io/dist/index"],
-      "@principia/optics/*": ["packages/optics/dist/*"],
-      "@principia/model/*": ["packages/model/dist/*"],
-      "@principia/node/*": ["packages/node/dist/*"],
-      "@principia/http/*": ["packages/http/dist/*"],
-      "@principia/compile/*": ["packages/compile/dist/*"],
-      "@principia/free/*": ["packages/free/dist/*"],
-      "@principia/codec/*": ["packages/codec/dist/*"],
-      "@principia/codec": ["packages/codec/dist/index"],
-      "@principia/koa/*": ["packages/koa/dist/*"],
-      "@principia/koa": ["packages/koa/dist/index"],
-      "@principia/test": ["packages/test/dist/index"],
-      "@principia/test/*": ["packages/test/dist/*"],
-      "@principia/query": ["packages/query/dist/index"],
-      "@principia/query/*": ["packages/query/dist/*"],
-      "@principia/transformers/*": ["packages/transformers/dist/*"],
-      "@principia/codec2/*": ["packages/codec2/dist/*"]
+      "@principia/base": ["packages/base/dist/index"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]

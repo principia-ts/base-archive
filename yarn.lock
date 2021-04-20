@@ -1772,21 +1772,12 @@
     "@principia/compile" "^0.7.2"
     "@principia/free" "^0.7.2"
 
-"@principia/prelude@^0.7.3":
-  version "0.7.3"
-  resolved "https://registry.yarnpkg.com/@principia/prelude/-/prelude-0.7.3.tgz#f9866931c0be7da65aef79daeb24c5f20a0c16d7"
-  integrity sha512-5zlHFU0NjFxkK+oS4kJEAN0UyxtMNjStVhUZOE2YXg3LcrfDGX0SjXojHEeZooqi4dYQU/GxMBOkJa2T2O+mgw==
+"@principia/prelude@^0.7.4":
+  version "0.7.4"
+  resolved "https://registry.yarnpkg.com/@principia/prelude/-/prelude-0.7.4.tgz#e636d39e0421e41402238ebcb84ffad26f369487"
+  integrity sha512-+beubvhdZSXVhSTtOzmIAoGzQvE9dYYspRHSC3MDbWtVsb8AOGV8iGhOaz7XjW62JdWxjeK/mbv/xoACbcvGVw==
   dependencies:
     "@principia/compile" "^0.7.2"
-
-"@principia/test@^0.7.2":
-  version "0.7.2"
-  resolved "https://registry.yarnpkg.com/@principia/test/-/test-0.7.2.tgz#a6190518747639694940b012595541a1328ed1b4"
-  integrity sha512-ygHux3YgHV7L8QneenXFLF23GTA4VhXMzCZVWfBszT59kiVLaI6NNHc//OMwVxxljn/H5mhfDzMTxIIYKA//Ng==
-  dependencies:
-    "@principia/base" "^0.7.2"
-    "@principia/compile" "^0.7.2"
-    "@principia/io" "^0.7.3"
 
 "@tootallnate/once@1":
   version "1.1.2"
