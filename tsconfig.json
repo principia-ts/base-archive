@@ -16,7 +16,9 @@
     "baseUrl": ".",
     "paths": {
       "@principia/base/*": ["packages/base/dist/*"],
-      "@principia/base": ["packages/base/dist/index"]
+      "@principia/base": ["packages/base/dist/index"],
+      "@principia/test/*": ["packages/test/dist/*"],
+      "@principia/test": ["packages/test/dist/index"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]

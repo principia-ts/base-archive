@@ -1,7 +1,7 @@
 {
-  "name": "@principia/test",
-  "version": "0.7.3",
-  "description": "Abstractions for IO tests",
+  "name": "@principia/ptest",
+  "version": "0.7.2",
+  "description": "A simple runner for @principia/test",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
   "author": "Peter Krol <peter@peterkrol.com>",
@@ -13,38 +13,6 @@
       },
       "import": "./dist/dist/esm/index.js",
       "require": "./dist/dist/cjs/index.js"
-    },
-    "./Annotation": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Annotation/index.js",
-        "require": "./dist/dist-traced/cjs/Annotation/index.js"
-      },
-      "import": "./dist/dist/esm/Annotation/index.js",
-      "require": "./dist/dist/cjs/Annotation/index.js"
-    },
-    "./Assertion": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Assertion/index.js",
-        "require": "./dist/dist-traced/cjs/Assertion/index.js"
-      },
-      "import": "./dist/dist/esm/Assertion/index.js",
-      "require": "./dist/dist/cjs/Assertion/index.js"
-    },
-    "./Mock": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Mock/index.js",
-        "require": "./dist/dist-traced/cjs/Mock/index.js"
-      },
-      "import": "./dist/dist/esm/Mock/index.js",
-      "require": "./dist/dist/cjs/Mock/index.js"
-    },
-    "./Render": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Render/index.js",
-        "require": "./dist/dist-traced/cjs/Render/index.js"
-      },
-      "import": "./dist/dist/esm/Render/index.js",
-      "require": "./dist/dist/cjs/Render/index.js"
     },
     "./*": {
       "traced": {
@@ -58,27 +26,33 @@
   "main": "dist/dist/cjs/index.js",
   "module": "./dist/dist/esm/index.js",
   "types": "dist/index.d.ts",
+  "bin": "./bin/ptest.js",
   "scripts": {
     "autofix": "yarn lint --fix",
     "build": "yarn build:types && yarn build:esm && yarn build:cjs",
     "build:cjs": "ttsc --build ./config/tsconfig.cjs.json",
     "build:esm": "ttsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
-    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json",
+    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json && cpx ./bin/**/* ./dist/bin",
     "build:test": "ttsc --build ./config/tsconfig.test.json --verbose",
     "build:traced": "yarn build:traced:esm && yarn build:traced:cjs",
     "build:traced:cjs": "ttsc --build ./config/tsconfig.traced.cjs.json",
     "build:traced:esm": "ttsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",
-    "build:types": "ttsc --build ./config/tsconfig.types.json",
+    "build:types": "ttsc --build ./config/tsconfig.types.json --verbose",
     "buildAll": "yarn build && yarn build:traced && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint .",
-    "prepublish": "yarn buildAll"
+    "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
   },
   "dependencies": {
-    "@principia/base": "^0.7.10",
-    "@principia/compile": "^0.7.2"
+    "@principia/test": "^0.7.3",
+    "glob": "^7.1.6",
+    "ts-node": "^9.1.1",
+    "yargs": "^16.2.0"
+  },
+  "devDependencies": {
+    "@types/yargs": "^16.0.1"
   },
   "publishConfig": {
     "access": "public",
