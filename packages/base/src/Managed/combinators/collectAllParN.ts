@@ -1,3 +1,4 @@
+import type { Chunk } from '../../Chunk/core'
 import type { Managed } from '../core'
 
 import { identity } from '@principia/prelude/function'
@@ -10,7 +11,7 @@ import { foreachParN_, foreachUnitParN_ } from './foreachParN'
  *
  * Unlike `collectAllPar`, this method will use at most `n` fibers.
  */
-export function collectAllParN_<R, E, A>(mas: Iterable<Managed<R, E, A>>, n: number): Managed<R, E, ReadonlyArray<A>> {
+export function collectAllParN_<R, E, A>(mas: Iterable<Managed<R, E, A>>, n: number): Managed<R, E, Chunk<A>> {
   return foreachParN_(mas, n, identity)
 }
 
@@ -22,7 +23,7 @@ export function collectAllParN_<R, E, A>(mas: Iterable<Managed<R, E, A>>, n: num
  */
 export function collectAllParN(
   n: number
-): <R, E, A>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, ReadonlyArray<A>> {
+): <R, E, A>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, Chunk<A>> {
   return (mas) => collectAllParN_(mas, n)
 }
 

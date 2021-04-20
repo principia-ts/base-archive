@@ -1,3 +1,4 @@
+import type { Chunk } from '../../Chunk/core'
 import type { Managed } from '../core'
 
 import { pipe } from '@principia/prelude/function'
@@ -16,9 +17,7 @@ import { makeManagedReleaseMap } from './makeManagedReleaseMap'
  *
  * For a sequential version of this method, see `foreach`.
  */
-export function foreachPar<R, E, A, B>(
-  f: (a: A) => Managed<R, E, B>
-): (as: Iterable<A>) => Managed<R, E, readonly B[]> {
+export function foreachPar<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
   return (as) => foreachPar_(as, f)
 }
 
@@ -28,7 +27,7 @@ export function foreachPar<R, E, A, B>(
  *
  * For a sequential version of this method, see `foreach_`.
  */
-export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, readonly B[]> {
+export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, Chunk<B>> {
   return pipe(
     makeManagedReleaseMap(parallel),
     mapM((parallelReleaseMap) => {

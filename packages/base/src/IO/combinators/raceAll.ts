@@ -1,3 +1,4 @@
+import type { Chunk } from '../../Chunk/core'
 import type { Exit } from '../../Exit'
 import type { NonEmptyArray } from '../../NonEmptyArray'
 import type { IO, UIO } from '../core'
@@ -6,7 +7,7 @@ import { accessCallTrace, traceFrom } from '@principia/compile/util'
 import { flow, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from '../../Array/core'
+import * as C from '../../Chunk/core'
 import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'
 import * as P from '../../Promise'
@@ -15,7 +16,7 @@ import * as I from '../core'
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 
 const arbiter = <E, A>(
-  fibers: ReadonlyArray<Fiber.Fiber<E, A>>,
+  fibers: Chunk<Fiber.Fiber<E, A>>,
   winner: Fiber.Fiber<E, A>,
   promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
   fails: Ref.URef<number>
@@ -33,7 +34,7 @@ const arbiter = <E, A>(
         promise.succeed(tuple(a, winner)),
         I.bind((set) =>
           set
-            ? A.foldl_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
+            ? C.foldl_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
             : I.unit()
         )
       )
@@ -62,7 +63,7 @@ export function raceAll<R, E, A>(
           I.gen(function* (_) {
             const fs = yield* _(I.foreach_(ios, flow(makeInterruptible, I.fork)))
             yield* _(
-              A.foldl_(fs, I.unit(), (io, f) =>
+              C.foldl_(fs, I.unit(), (io, f) =>
                 I.bind_(io, () => pipe(f.await, I.bind(arbiter(fs, f, done, fails)), I.fork, I.asUnit))
               )
             )
@@ -76,7 +77,7 @@ export function raceAll<R, E, A>(
                 done.await,
                 I.bind(inheritRefs),
                 restore,
-                onInterrupt(() => A.foldl_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))
+                onInterrupt(() => C.foldl_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))
               )
             )
             return tuple(c, fs)

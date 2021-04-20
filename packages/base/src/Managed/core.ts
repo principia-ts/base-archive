@@ -1,4 +1,5 @@
 import type { Cause } from '../Cause'
+import type { Chunk } from '../Chunk/core'
 import type { Exit } from '../Exit'
 import type { FiberId } from '../Fiber/FiberId'
 import type { ReadonlyRecord } from '../Record'
@@ -14,6 +15,7 @@ import { tuple } from '@principia/prelude/tuple'
 
 import * as A from '../Array/core'
 import * as C from '../Cause/core'
+import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ex from '../Exit/core'
@@ -571,12 +573,15 @@ export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(ma: Ma
 /**
  * Submerges the error case of an `Either` into the `Managed`. The inverse
  * operation of `Managed.either`.
- * 
+ *
  * @trace call
  */
 export function absolve<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): Managed<R, E | E1, A> {
   const trace = accessCallTrace()
-  return bind_(fa, traceFrom(trace, (ea) => fromEither(() => ea)))
+  return bind_(
+    fa,
+    traceFrom(trace, (ea) => fromEither(() => ea))
+  )
 }
 
 /**
@@ -1233,7 +1238,7 @@ export function collect<A, E1, B>(
  * Evaluate each effect in the structure from left to right, and collect the
  * results. For a parallel version, see `collectAllPar`.
  */
-export function collectAll<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, ReadonlyArray<A>> {
+export function collectAll<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
   return foreach_(mas, identityFn)
 }
 
@@ -1328,7 +1333,7 @@ export function foldMap<M>(
  * For a parallel version of this method, see `foreachPar`.
  * If you do not need the results, see `foreachUnit` for a more efficient implementation.
  */
-export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, readonly B[]> {
+export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
   return (as) => foreach_(as, f)
 }
 
@@ -1340,14 +1345,14 @@ export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterabl
  * If you do not need the results, see `foreachUnit_` for a more efficient implementation.
  */
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>) {
-  return new Managed<R, E, readonly B[]>(
+  return new Managed<R, E, Chunk<B>>(
     I.map_(
       I.foreach_(as, (a) => f(a).io),
       (res) => {
-        const fins = res.map((k) => k[0])
-        const as   = res.map((k) => k[1])
+        const fins = Ch.map_(res, (k) => k[0])
+        const as   = Ch.map_(res, (k) => k[1])
 
-        return [(e) => I.foreach_(fins.reverse(), (fin) => fin(e)), as]
+        return [(e) => I.foreach_(Ch.reverse(fins), (fin) => fin(e)), as]
       }
     )
   )
@@ -1366,9 +1371,9 @@ export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E
       as,
       I.foreach((a) => f(a).io),
       I.map((result) => {
-        const fins = A.map_(result, (k) => k[0])
+        const fins = Ch.map_(result, (k) => k[0])
 
-        return [(e) => I.foreach_(A.reverse(fins), (fin) => fin(e)), undefined]
+        return [(e) => I.foreach_(Ch.reverse(fins), (fin) => fin(e)), undefined]
       })
     )
   )

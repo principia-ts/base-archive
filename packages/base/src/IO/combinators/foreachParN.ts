@@ -1,5 +1,7 @@
 // tracing: off
 
+import type { Chunk } from '../../Chunk/core'
+
 import { traceAs } from '@principia/compile/util'
 import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
@@ -14,11 +16,7 @@ import { bracket } from './bracket'
 /**
  * @trace 2
  */
-export function foreachParN_<A, R, E, B>(
-  as: Iterable<A>,
-  n: number,
-  f: (a: A) => I.IO<R, E, B>
-): I.IO<R, E, ReadonlyArray<B>> {
+export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   const worker = (
     q: Q.Queue<readonly [P.Promise<E, B>, A]>,
     pairs: Iterable<readonly [P.Promise<E, B>, A]>,
@@ -79,6 +77,6 @@ export function foreachParN_<A, R, E, B>(
 export function foreachParN<R, E, A, B>(
   n: number,
   f: (a: A) => I.IO<R, E, B>
-): (as: Iterable<A>) => I.IO<R, E, readonly B[]> {
+): (as: Iterable<A>) => I.IO<R, E, Chunk<B>> {
   return (as) => foreachParN_(as, n, f)
 }

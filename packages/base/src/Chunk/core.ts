@@ -7,11 +7,10 @@ import type { Predicate } from '@principia/prelude/Predicate'
 import type { Refinement } from '@principia/prelude/Refinement'
 
 import * as P from '@principia/prelude'
-import { identity, pipe, unsafeCoerce } from '@principia/prelude/function'
+import { identity, unsafeCoerce } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import * as A from '../Array/core'
-import * as I from '../IO/core'
 import * as It from '../Iterable'
 import * as O from '../Option'
 import { AtomicNumber } from '../util/support/AtomicNumber'
@@ -741,7 +740,7 @@ class BinArr extends ChunkImplementation<Byte> {
   }
 }
 
-function concrete<A>(
+export function concrete<A>(
   _: Chunk<A>
 ): asserts _ is Empty<A> | Singleton<A> | Concat<A> | AppendN<A> | PrependN<A> | Slice<A> | Arr<A> {
   //
@@ -919,16 +918,16 @@ export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
   if (chunk._tag === 'Singleton') {
     return new Singleton(f(chunk.value))
   }
-  let b          = empty<B>()
+  const b        = builder<B>()
   const iterator = chunk.arrayIterator()
   let result: IteratorResult<ArrayLike<A>>
   while (!(result = iterator.next()).done) {
     const as = result.value
     for (let i = 0; i < as.length; i++) {
-      b = append_(b, f(as[i]))
+      b.append(f(as[i]))
     }
   }
-  return b
+  return b.result()
 }
 
 export function map<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
@@ -1058,18 +1057,18 @@ export function filter_<A>(fa: Chunk<A>, predicate: Predicate<A>): Chunk<A>
 export function filter_<A>(fa: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
   concrete(fa)
   const iterator = fa.arrayIterator()
-  let out        = empty<A>()
+  const out      = builder<A>()
   let result: IteratorResult<ArrayLike<A>>
   while (!(result = iterator.next()).done) {
     const array = result.value
     for (let i = 0; i < array.length; i++) {
       const a = array[i]
       if (predicate(a)) {
-        out = append_(out, a)
+        out.append(a)
       }
     }
   }
-  return out
+  return out.result()
 }
 
 export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Chunk<A>) => Chunk<B>
@@ -1081,18 +1080,18 @@ export function filter<A>(predicate: Predicate<A>): (fa: Chunk<A>) => Chunk<A> {
 export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
   concrete(fa)
   const iterator = fa.arrayIterator()
-  let out        = empty<B>()
+  const out      = builder<B>()
   let result: IteratorResult<ArrayLike<A>>
   while (!(result = iterator.next()).done) {
     const array = result.value
     for (let i = 0; i < array.length; i++) {
       const ob = f(array[i])
       if (ob._tag === 'Some') {
-        out = append_(out, ob.value)
+        out.append(ob.value)
       }
     }
   }
-  return out
+  return out.result()
 }
 
 export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: Chunk<A>) => Chunk<B> {
@@ -1104,21 +1103,21 @@ export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): readonly [
 export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>] {
   concrete(fa)
   const iterator = fa.arrayIterator()
-  let left       = empty<A>()
-  let right      = empty<A>()
+  const left     = builder<A>()
+  const right    = builder<A>()
   let result: IteratorResult<ArrayLike<A>>
   while (!(result = iterator.next()).done) {
     const array = result.value
     for (let i = 0; i < array.length; i++) {
       const a = array[i]
       if (predicate(a)) {
-        right = append_(right, a)
+        right.append(a)
       } else {
-        left = append_(left, a)
+        left.append(a)
       }
     }
   }
-  return [left, right]
+  return [left.result(), right.result()]
 }
 
 export function partition<A, B extends A>(refinement: Refinement<A, B>): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<B>]
@@ -1130,8 +1129,8 @@ export function partition<A>(predicate: Predicate<A>): (fa: Chunk<A>) => readonl
 export function partitionMap_<A, B, C>(fa: Chunk<A>, f: (a: A) => Either<B, C>): readonly [Chunk<B>, Chunk<C>] {
   concrete(fa)
   const iterator = fa.arrayIterator()
-  let left       = empty<B>()
-  let right      = empty<C>()
+  const left     = builder<B>()
+  const right    = builder<C>()
   let result: IteratorResult<ArrayLike<A>>
   while (!(result = iterator.next()).done) {
     const array = result.value
@@ -1139,15 +1138,15 @@ export function partitionMap_<A, B, C>(fa: Chunk<A>, f: (a: A) => Either<B, C>):
       const eab = f(array[i])
       switch (eab._tag) {
         case 'Left':
-          left = append_(left, eab.left)
+          left.append(eab.left)
           break
         case 'Right':
-          right = append_(right, eab.right)
+          right.append(eab.right)
           break
       }
     }
   }
-  return [left, right]
+  return [left.result(), right.result()]
 }
 
 export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Chunk<A>) => readonly [Chunk<B>, Chunk<C>] {
@@ -1413,137 +1412,61 @@ export function unsafeGet_<A>(as: Chunk<A>, n: number): A {
   return as.get(n)
 }
 
-/*
- * -------------------------------------------
- * io combinators
- * -------------------------------------------
- */
-
-export function mapM_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
-  return I.deferTotal(() => {
-    const out = builder<B>()
-    return pipe(
-      as,
-      I.foreachUnit((a) =>
-        I.map_(f(a), (b) => {
-          out.append(b)
-        })
-      ),
-      I.as(() => out.result())
-    )
-  })
+export function unsafeGet(n: number): <A>(as: Chunk<A>) => A {
+  return (as) => unsafeGet_(as, n)
 }
 
-export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
-  return (as) => mapM_(as, f)
+export function get_<A>(as: Chunk<A>, n: number): O.Option<A> {
+  return O.tryCatch(() => unsafeGet_(as, n))
 }
 
-export function collectAllM<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
-  return mapM_(as, identity)
+export function get(n: number): <A>(as: Chunk<A>) => O.Option<A> {
+  return (as) => get_(as, n)
 }
 
-export function foldlM_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
-}
-
-export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
-  return (as) => foldlM_(as, b, f)
-}
-
-export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
-  return I.deferTotal(() => {
-    concrete(as)
-    let taking: I.IO<R, E, boolean> = I.succeed(true)
-    const out                       = builder<A>()
-    const iterator                  = as.arrayIterator()
-    let result: IteratorResult<ArrayLike<A>>
-    while (!(result = iterator.next()).done) {
-      const array = result.value
-      let i       = 0
-      while (i < array.length) {
-        const j = i
-        taking  = I.bind_(taking, (b) => {
-          const a = array[j]
-          return I.map_(b ? p(a) : I.succeed(false), (b1) => {
-            if (b1) {
-              out.append(a)
-              return true
-            } else {
-              return false
-            }
-          })
-        })
-        i++
+export function findFirst_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  let out        = O.None<A>()
+  let result: IteratorResult<ArrayLike<A>>
+  while (out._tag === 'None' && !(result = iterator.next()).done) {
+    const array  = result.value
+    const length = array.length
+    for (let i = 0; out._tag === 'None' && i < length; i++) {
+      const a = array[i]
+      if (f(a)) {
+        out = O.Some(a)
       }
     }
-    return I.as_(taking, () => out.result())
-  })
+  }
+  return out
 }
 
-export function takeWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
-  return (as) => takeWhileM_(as, p)
+export function findFirst<A>(f: (a: A) => boolean): (as: Chunk<A>) => O.Option<A> {
+  return (as) => findFirst_(as, f)
 }
 
-export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
-  return I.deferTotal(() => {
-    concrete(as)
-    let dropping: I.IO<R, E, boolean> = I.succeed(true)
-    const out                         = builder<A>()
-    const iterator                    = as.arrayIterator()
-    let result: IteratorResult<ArrayLike<A>>
-    while (!(result = iterator.next()).done) {
-      const array = result.value
-      let i       = 0
-      while (i < array.length) {
-        const j  = i
-        dropping = I.bind_(dropping, (d) => {
-          const a = array[j]
-          return I.map_(d ? p(a) : I.succeed(false), (b) => {
-            if (b) {
-              return true
-            } else {
-              out.append(a)
-              return false
-            }
-          })
-        })
-        i++
-      }
-    }
-    return I.as_(dropping, () => out.result())
-  })
-}
-
-export function dropWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
-  return (as) => dropWhileM_(as, p)
-}
-
-export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
-  return I.deferTotal(() => {
-    concrete(as)
-    const c                              = builder<A>()
-    let out: I.IO<R, E, ChunkBuilder<A>> = I.succeed(c)
-    const iterator                       = as.arrayIterator()
-    let result: IteratorResult<ArrayLike<A>>
-    while (!(result = iterator.next()).done) {
-      const array = result.value
-      let i       = 0
-      while (i < array.length) {
-        const a = array[i]
-        out     = I.crossWith_(out, p(a), (chunk, res) => {
-          if (res) {
-            return chunk.append(a)
-          } else {
-            return chunk
+export function reverse<A>(as: Chunk<A>): Iterable<A> {
+  concrete(as)
+  const arr = as.arrayLike()
+  return It.iterable<A>(() => {
+    let i = arr.length - 1
+    return {
+      next: () => {
+        if (i >= 0 && i < arr.length) {
+          const k = arr[i]
+          i--
+          return {
+            value: k,
+            done: false
           }
-        })
-        i++
+        } else {
+          return {
+            value: undefined,
+            done: true
+          }
+        }
       }
     }
-    return I.map_(out, (b) => b.result())
   })
-}
-
-export function filterM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
-  return (as) => filterM_(as, p)
 }

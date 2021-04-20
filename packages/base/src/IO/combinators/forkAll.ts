@@ -1,8 +1,9 @@
+import type { Chunk } from '../../Chunk/core'
 import type { IO, URIO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
-import * as A from '../../Array/core'
+import * as Ch from '../../Chunk/core'
 import * as Fiber from '../../Fiber'
 import * as I from '../../Iterable'
 import { bind_, foreach_, fork, map_, unit } from '../core'
@@ -13,14 +14,14 @@ import { bind_, foreach_, fork, map_, unit } from '../core'
  *
  * @trace call
  */
-export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fiber<E, ReadonlyArray<A>>> {
+export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fiber<E, Chunk<A>>> {
   const trace = accessCallTrace()
   return map_(
     foreach_(mas, fork),
     traceFrom(
       trace,
-      A.foldl(Fiber.succeed([]) as Fiber.Fiber<E, ReadonlyArray<A>>, (b, a) =>
-        Fiber.crossWith_(b, a, (_a, _b) => [..._a, _b])
+      Ch.foldl(Fiber.succeed([]) as Fiber.Fiber<E, Chunk<A>>, (b, a) =>
+        Fiber.crossWith_(b, a, (_a, _b) => Ch.append_(_a, _b))
       )
     )
   )

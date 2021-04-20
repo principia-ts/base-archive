@@ -1,5 +1,6 @@
 // tracing: off
 
+import type { Chunk } from '../../Chunk/core'
 import type { Exit } from '../../Exit/core'
 import type { Fiber } from '../../Fiber/core'
 import type { FiberContext } from '../../internal/FiberContext'
@@ -8,10 +9,11 @@ import { traceAs } from '@principia/compile/util'
 import { flow, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from '../../Array/core'
 import * as C from '../../Cause/core'
+import * as Ch from '../../Chunk/core'
 import * as Ex from '../../Exit'
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
+import * as It from '../../Iterable'
 import { fromEffect, Managed } from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap'
 import * as O from '../../Option'
@@ -121,7 +123,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
               I.foreach((f) => f.await),
               I.map(
                 flow(
-                  A.findFirst((e) => e._tag === 'Failure'),
+                  Ch.findFirst((e) => e._tag === 'Failure'),
                   O.isSome
                 )
               )
@@ -161,35 +163,33 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
  *
  * @trace 1
  */
-function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  const arr = Array.from(as)
-
-  return I.bind_(
+export function _foreachPar<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+  return pipe(
     I.effectTotal<B[]>(() => []),
-    (mut_array) => {
-      const fn = ([a, n]: [A, number]) =>
-        I.bind_(I.deferTotal(traceAs(f, () => f(a))), (b) =>
-          I.effectTotal(() => {
-            mut_array[n] = b
-          })
-        )
-      return I.bind_(
+    I.bind((mut_array) =>
+      I.bind_(
         foreachUnitPar_(
-          arr.map((a, n) => [a, n] as [A, number]),
-          fn
+          It.imap_(as, (n, a) => [a, n] as [A, number]),
+          ([a, n]) =>
+            I.bind_(I.deferTotal(traceAs(f, () => f(a))), (b) =>
+              I.effectTotal(() => {
+                mut_array[n] = b
+              })
+            )
         ),
         () => I.effectTotal(() => mut_array)
       )
-    }
+    ),
+    I.map(Ch.from)
   )
 }
 
-function joinAllFibers<E, A>(as: Iterable<Fiber<E, A>>) {
+function joinAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, E, Chunk<A>> {
   return I.tap_(I.bind_(awaitAllFibers(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
 }
 
-function awaitAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, ReadonlyArray<A>>> {
-  return I.result(foreachPar_(as, (f) => I.bind_(f.await, I.done)))
+function awaitAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, Chunk<A>>> {
+  return I.result(_foreachPar(as, (f) => I.bind_(f.await, I.done)))
 }
 
 function useManaged_<R, E, A, R2, E2, B>(

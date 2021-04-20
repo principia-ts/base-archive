@@ -9,6 +9,7 @@ import type { Option } from '@principia/base/Option'
 import type { Has } from '@principia/prelude/Has'
 
 import * as A from '@principia/base/Array'
+import * as C from '@principia/base/Chunk'
 import * as Set from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
@@ -95,7 +96,7 @@ export function countTests_<R, E, T>(spec: Spec<R, E, T>, f: (t: T) => boolean):
   return fold_(
     spec,
     matchTag({
-      Suite: ({ specs }) => M.bind_(specs, flow(M.foreach(identity), M.map(A.sum))),
+      Suite: ({ specs }) => M.bind_(specs, flow(M.foreach(identity), M.map(C.foldl(0, (b, a) => b + a)))),
       Test: ({ test }) => I.toManaged_(I.map_(test, (t) => (f(t) ? 1 : 0)))
     })
   )
@@ -195,7 +196,7 @@ export function foldM_<R, E, T, R1, E1, Z>(
             O.getOrElse_(exec, () => defExec),
             (spec) => M.release(foldM_(spec, f, defExec))
           ),
-          M.bind((z) => f(new SuiteCase(label, M.succeed(z), exec)))
+          M.bind((z) => f(new SuiteCase(label, M.succeed(C.toArray(z)), exec)))
         )
       ),
     Test: f

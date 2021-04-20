@@ -1,3 +1,4 @@
+import type { Chunk } from '../../Chunk/core'
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Managed } from '../core'
 
@@ -15,7 +16,7 @@ export function foreachExec_<R, E, A, B>(
   as: Iterable<A>,
   es: ExecutionStrategy,
   f: (a: A) => Managed<R, E, B>
-): Managed<R, E, ReadonlyArray<B>> {
+): Managed<R, E, Chunk<B>> {
   switch (es._tag) {
     case 'Sequential': {
       return foreach_(as, f)
@@ -38,6 +39,6 @@ export function foreachExec_<R, E, A, B>(
 export function foreachExec<R, E, A, B>(
   es: ExecutionStrategy,
   f: (a: A) => Managed<R, E, B>
-): (as: Iterable<A>) => Managed<R, E, ReadonlyArray<B>> {
-  return (as) => foreachExec_(as, es, f) as any
+): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
+  return (as) => foreachExec_(as, es, f)
 }

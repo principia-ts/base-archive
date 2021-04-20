@@ -1,5 +1,6 @@
 // tracing: off
 
+import type { Chunk } from '../../Chunk/core'
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
@@ -18,7 +19,7 @@ export function filterNotParN_<A, R, E>(
   as: Iterable<A>,
   n: number,
   f: (a: A) => IO<R, E, boolean>
-): IO<R, E, readonly A[]> {
+): IO<R, E, Chunk<A>> {
   return filterParN_(
     as,
     n,
@@ -41,6 +42,6 @@ export function filterNotParN_<A, R, E>(
 export function filterNotParN<A, R, E>(
   n: number,
   f: (a: A) => IO<R, E, boolean>
-): (as: Iterable<A>) => IO<R, E, readonly A[]> {
+): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
   return (as) => filterNotParN_(as, n, f)
 }

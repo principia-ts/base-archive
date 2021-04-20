@@ -2,6 +2,7 @@
 
 import type { Async } from '../Async'
 import type { Cause } from '../Cause/core'
+import type { Chunk } from '../Chunk'
 import type { Eval } from '../Eval'
 import type { Exit } from '../Exit/core'
 import type { Platform } from '../Fiber'
@@ -29,6 +30,7 @@ import { tuple } from '@principia/prelude/tuple'
 import * as A from '../Array/core'
 import { runAsyncEnv } from '../Async'
 import * as C from '../Cause/core'
+import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import { RuntimeException } from '../Exception'
@@ -1507,7 +1509,7 @@ export function collect<A, E1, A1>(
 /**
  * @trace call
  */
-export function collectAll<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, readonly A[]> {
+export function collectAll<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, Chunk<A>> {
   const trace = accessCallTrace()
   return foreach_(as, traceFrom(trace, flow(identity)))
 }
@@ -1666,18 +1668,22 @@ export function evaluate<A>(a: Eval<A>): UIO<A> {
  *
  * @trace 1
  */
-export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, ReadonlyArray<A>> {
-  return I.foldl_(as, succeed([]) as IO<R, E, A[]>, (ma, a) =>
-    crossWith_(
-      ma,
-      f(a),
-      traceAs(f, (as_, p) => {
-        if (p) {
-          as_.push(a)
-        }
-        return as_
-      })
-    )
+export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
+  return pipe(
+    as,
+    I.foldl(succeed(Ch.builder<A>()) as IO<R, E, Ch.ChunkBuilder<A>>, (ma, a) =>
+      crossWith_(
+        ma,
+        f(a),
+        traceAs(f, (builder, p) => {
+          if (p) {
+            builder.append(a)
+          }
+          return builder
+        })
+      )
+    ),
+    map((b) => b.result())
   )
 }
 
@@ -1686,8 +1692,8 @@ export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>
  *
  * @trace 0
  */
-export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>) {
-  return (as: Iterable<A>) => filter_(as, f)
+export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
+  return (as) => filter_(as, f)
 }
 
 /**
@@ -1696,7 +1702,7 @@ export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>) {
  *
  * @trace 1
  */
-export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>) {
+export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
   return filter_(
     as,
     traceAs(
@@ -1715,7 +1721,7 @@ export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boole
  *
  * @trace 0
  */
-export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, readonly A[]> {
+export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
   return (as) => filterNot_(as, f)
 }
 
@@ -2001,12 +2007,16 @@ export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterab
  * @since 1.0.0
  * @trace 1
  */
-export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, ReadonlyArray<B>> {
-  return I.foldl_(as, succeed([]) as IO<R, E, Array<B>>, (b, a) =>
-    crossWith_(b, deferTotal(traceAs(f, () => f(a))), (acc, r) => {
-      acc.push(r)
-      return acc
-    })
+export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Chunk<B>> {
+  return pipe(
+    as,
+    I.foldl(succeed(Ch.builder()) as IO<R, E, Ch.ChunkBuilder<B>>, (b, a) =>
+      crossWith_(b, deferTotal(traceAs(f, () => f(a))), (builder, r) => {
+        builder.append(r)
+        return builder
+      })
+    ),
+    map((b) => b.result())
   )
 }
 
@@ -2022,7 +2032,7 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>):
  *
  * @trace 0
  */
-export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, ReadonlyArray<B>> {
+export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
   return (as) => foreach_(as, f)
 }
 
@@ -2035,7 +2045,7 @@ export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>)
  * @trace 2
  */
 export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<R, E, B>): IO<R, E, B> {
-  return A.foldl_(Array.from(as), succeed(b) as IO<R, E, B>, (acc, el) =>
+  return I.foldl_(as, succeed(b) as IO<R, E, B>, (acc, el) =>
     bind_(
       acc,
       traceAs(f, (a) => f(a, el))
@@ -2104,8 +2114,8 @@ export function foldMap<M>(M: Monoid<M>) {
  *
  * @trace 2
  */
-export function foldr_<A, B, R, E>(i: Iterable<A>, b: B, f: (a: A, b: B) => IO<R, E, B>): IO<R, E, B> {
-  return A.foldr_(Array.from(i), succeed(b) as IO<R, E, B>, (el, acc) =>
+export function foldr_<A, B, R, E>(as: Iterable<A>, b: B, f: (a: A, b: B) => IO<R, E, B>): IO<R, E, B> {
+  return I.foldr_(as, succeed(b) as IO<R, E, B>, (el, acc) =>
     bind_(
       acc,
       traceAs(f, (a) => f(el, a))

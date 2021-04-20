@@ -1,3 +1,4 @@
+import type { Chunk } from '../Chunk/core'
 import type { FiberStatus, RuntimeFiber } from '../Fiber/core'
 import type { UIO } from '../IO/core'
 
@@ -15,7 +16,7 @@ export function dump<E, A>(fiber: RuntimeFiber<E, A>): T.UIO<FiberDump> {
   return T.map_(crossPar_(fiber.getRef(fiberName), fiber.status), ([name, status]) => FiberDump(fiber.id, name, status))
 }
 
-export function dumpFibers(fibers: Iterable<RuntimeFiber<any, any>>): UIO<ReadonlyArray<FiberDump>> {
+export function dumpFibers(fibers: Iterable<RuntimeFiber<any, any>>): UIO<Chunk<FiberDump>> {
   return T.foreach_(fibers, dump)
 }
 

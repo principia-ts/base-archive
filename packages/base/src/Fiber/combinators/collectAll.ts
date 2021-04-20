@@ -1,9 +1,10 @@
+import type { Chunk } from '../../Chunk/core'
 import type { Fiber } from '../core'
 
 import { pipe } from '@principia/prelude/function'
 
-import * as A from '../../Array/core'
 import * as C from '../../Cause'
+import * as Ch from '../../Chunk/core'
 import * as Ex from '../../Exit'
 import { None, Some } from '../../Option'
 import * as O from '../../Option'
@@ -30,15 +31,15 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
       pipe(
         I.foreach_(fibers, (f) => f.interruptAs(fiberId)),
         I.map(
-          A.foldr(Ex.succeed(A.empty) as Ex.Exit<E, ReadonlyArray<A>>, (a, b) =>
-            Ex.crossWithCause_(a, b, (_a, _b) => [_a, ..._b], C.both)
+          Ch.foldr(Ex.succeed(Ch.empty<A>()) as Ex.Exit<E, Chunk<A>>, (a, b) =>
+            Ex.crossWithCause_(a, b, (_a, _b) => Ch.prepend_(_b, _a), C.both)
           )
         )
       ),
     poll: pipe(
       I.foreach_(fibers, (f) => f.poll),
       I.map(
-        A.foldr(Some(Ex.succeed(A.empty) as Ex.Exit<E, readonly A[]>), (a, b) =>
+        Ch.foldr(Some(Ex.succeed(Ch.empty()) as Ex.Exit<E, Chunk<A>>), (a, b) =>
           O.match_(
             a,
             () => None(),
@@ -46,7 +47,7 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
               O.match_(
                 b,
                 () => None(),
-                (rb) => Some(Ex.crossWithCause_(ra, rb, (_a, _b) => [_a, ..._b], C.both))
+                (rb) => Some(Ex.crossWithCause_(ra, rb, (_a, _b) => Ch.prepend_(_b, _a), C.both))
               )
           )
         )

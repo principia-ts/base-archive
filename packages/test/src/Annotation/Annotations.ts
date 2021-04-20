@@ -5,6 +5,7 @@ import type { Layer } from '@principia/base/Layer'
 import type { Has } from '@principia/prelude/Has'
 
 import * as A from '@principia/base/Array'
+import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import { eqFiberId } from '@principia/base/Fiber'
 import * as FR from '@principia/base/FiberRef'
@@ -78,7 +79,7 @@ export abstract class Annotations {
                     (_) => I.succeed(HS.make<RuntimeFiber<any, any>>(HashEqFiber)),
                     flow(
                       I.foreach((_) => _.get),
-                      I.map(A.foldl(HS.make<RuntimeFiber<any, any>>(HashEqFiber), HS.union_)),
+                      I.map(C.foldl(HS.make<RuntimeFiber<any, any>>(HashEqFiber), HS.union_)),
                       I.map((s) => HS.filter_(s, (f) => !eqFiberId.equals_(f.id, descriptor.id)))
                     )
                   )

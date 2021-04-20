@@ -11,7 +11,7 @@ import type { URef } from '@principia/base/Ref'
 import type { URefM } from '@principia/base/RefM'
 import type { Has } from '@principia/prelude/Has'
 
-import * as A from '@principia/base/Array'
+import * as C from '@principia/base/Chunk'
 import { ClockTag, ProxyClock } from '@principia/base/Clock'
 import { Console } from '@principia/base/Console'
 import * as E from '@principia/base/Either'
@@ -31,8 +31,8 @@ import * as RefM from '@principia/base/RefM'
 import { intersect } from '@principia/base/util/intersect'
 import { flow, pipe } from '@principia/prelude/function'
 import { tag } from '@principia/prelude/Has'
-import { tuple } from '@principia/prelude/tuple'
 import { matchTag } from '@principia/prelude/matchers'
+import { tuple } from '@principia/prelude/tuple'
 
 import { AnnotationsTag, fibers } from '../Annotation'
 import { HashEqFiber, HashEqFiberId } from '../util'
@@ -132,7 +132,7 @@ export class TestClock implements Clock {
             (_) => I.succeed(HS.make(HashEqFiber)),
             flow(
               I.foreach(Ref.get),
-              I.map(A.foldl(HS.make(HashEqFiber), HS.union_)),
+              I.map(C.foldl(HS.make(HashEqFiber), HS.union_)),
               I.map(HS.filter((f) => !eqFiberId.equals_(f.id, descriptor.id)))
             )
           )

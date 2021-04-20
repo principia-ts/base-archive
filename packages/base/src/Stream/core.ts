@@ -1935,7 +1935,7 @@ export function distributedWith_<R, E, A>(
         ),
         M.bind((next) =>
           pipe(
-            C.collectAllM(
+            I.collectAll(
               pipe(
                 C.range(0, n - 1),
                 C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
@@ -4509,7 +4509,7 @@ export function foldWhileManagedM_<R, E, A, R1, E1, S>(
             is,
             I.matchM(
               O.match(() => I.succeed(s1), I.fail),
-              flow(C.foldlM(s1, f), I.bind(loop))
+              flow(I.foldl(s1, f), I.bind(loop))
             )
           )
         }

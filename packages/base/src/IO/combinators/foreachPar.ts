@@ -1,9 +1,9 @@
 // tracing: off
 
-import { traceAs } from '@principia/compile/util'
+import type { Chunk } from '../../Chunk/core'
+import type * as I from '../core'
 
-import * as I from '../core'
-import { foreachUnitPar_ } from './foreachUnitPar'
+import * as _ from './foreachUnitPar'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -13,29 +13,8 @@ import { foreachUnitPar_ } from './foreachUnitPar'
  *
  * @trace 1
  */
-export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  const arr = Array.from(as)
-
-  return I.bind_(
-    I.effectTotal<B[]>(() => []),
-    (mut_array) => {
-      function fn([a, n]: [A, number]) {
-        return I.bind_(I.deferTotal(traceAs(f, () => f(a))), (b) =>
-          I.effectTotal(() => {
-            mut_array[n] = b
-          })
-        )
-      }
-      return I.bind_(
-        foreachUnitPar_(
-          arr.map((a, n) => [a, n] as [A, number]),
-          fn
-        ),
-        () => I.effectTotal(() => mut_array)
-      )
-    }
-  )
-}
+export const foreachPar_: <R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>) => I.IO<R, E, Chunk<B>> =
+  _._foreachPar
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -46,6 +25,6 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
  * @dataFirst foreachPar_
  * @trace 0
  */
-export function foreachPar<R, E, A, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, ReadonlyArray<B>> {
+export function foreachPar<R, E, A, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, Chunk<B>> {
   return (as) => foreachPar_(as, f)
 }

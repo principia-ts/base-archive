@@ -11,8 +11,8 @@ import { pipe } from '@principia/prelude/function'
 import { mergeEnvironments, tag } from '@principia/prelude/Has'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from '../Array/core'
 import * as Ca from '../Cause'
+import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
@@ -286,7 +286,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
       return M.succeed((memo) => {
         return pipe(
           M.foreachPar_(_I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
-          M.map(A.foldl({} as any, (b, a) => ({ ...b, ...a })))
+          M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
     }
@@ -294,7 +294,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
       return M.succeed((memo) => {
         return pipe(
           M.foreach_(_I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
-          M.map(A.foldl({} as any, (b, a) => ({ ...b, ...a })))
+          M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
     }

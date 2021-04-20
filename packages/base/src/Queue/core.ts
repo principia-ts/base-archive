@@ -6,7 +6,6 @@ import type { MutableQueue } from '../util/support/MutableQueue'
 import { flow, identity, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
-import * as A from '../Array/core'
 import * as C from '../Chunk/core'
 import * as O from '../Option'
 import * as P from '../Promise'
@@ -754,14 +753,14 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
 
     takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> = I.bind_(
       I.crossPar_(self.takeAll, that.takeAll),
-      ([bs, cs]) => C.mapM_(C.zip_(bs, cs), ([b, c]) => f(b, c))
+      ([bs, cs]) => I.foreach_(C.zip_(bs, cs), ([b, c]) => f(b, c))
     )
 
     takeUpTo: (n: number) => I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> = (max) =>
       pipe(
         self.takeUpTo(max),
         I.crossPar(that.takeUpTo(max)),
-        I.bind(([bs, cs]) => C.mapM_(C.zip_(bs, cs), ([b, c]) => f(b, c)))
+        I.bind(([bs, cs]) => I.foreach_(C.zip_(bs, cs), ([b, c]) => f(b, c)))
       )
   })()
 }
@@ -873,9 +872,9 @@ export function dimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
 
     take: I.IO<RD & RB, ED | EB, D> = I.bind_(self.take, g)
 
-    takeAll: I.IO<RD & RB, ED | EB, Chunk<D>> = I.bind_(self.takeAll, C.mapM(g))
+    takeAll: I.IO<RD & RB, ED | EB, Chunk<D>> = I.bind_(self.takeAll, I.foreach(g))
 
-    takeUpTo: (n: number) => I.IO<RD & RB, ED | EB, Chunk<D>> = flow(self.takeUpTo, I.bind(C.mapM(g)))
+    takeUpTo: (n: number) => I.IO<RD & RB, ED | EB, Chunk<D>> = flow(self.takeUpTo, I.bind(I.foreach(g)))
   })()
 }
 
@@ -930,9 +929,9 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
           )
         ),
         I.bind((maybeAs) => {
-          const filtered = A.filterMap_(maybeAs, identity)
+          const filtered = C.filterMap_(maybeAs, identity)
 
-          if (A.isEmpty(filtered)) {
+          if (C.isEmpty(filtered)) {
             return I.pure(false)
           } else {
             return self.offerAll(filtered)
