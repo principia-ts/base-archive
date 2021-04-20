@@ -7,7 +7,7 @@ import type { Predicate } from '@principia/prelude/Predicate'
 import type { Refinement } from '@principia/prelude/Refinement'
 
 import * as P from '@principia/prelude'
-import { identity, pipe } from '@principia/prelude/function'
+import { identity, pipe, unsafeCoerce } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import * as A from '../Array/core'
@@ -834,6 +834,20 @@ export function isNonEmpty<A>(chunk: Chunk<A>): boolean {
  * destructors
  * -------------------------------------------
  */
+
+export function toArray<A>(chunk: Chunk<A>): ReadonlyArray<A> {
+  concrete(chunk)
+  return chunk.array()
+}
+
+export function toArrayLike<A>(chunk: Chunk<A>): ArrayLike<A> {
+  concrete(chunk)
+  return chunk.arrayLike()
+}
+
+export function toBuffer(chunk: Chunk<Byte>): Uint8Array {
+  return unsafeCoerce(toArrayLike(chunk))
+}
 
 export function head<A>(chunk: Chunk<A>): O.Option<A> {
   concrete(chunk)
