@@ -1,4 +1,5 @@
 /* eslint-disable functional/immutable-data */
+import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
 import type { ChunkURI } from '../Modules'
 import type * as HKT from '@principia/prelude/HKT'
@@ -673,34 +674,34 @@ class Arr<A> extends ChunkImplementation<A> {
   }
 }
 
-class BinArr extends ChunkImplementation<number> {
+class BinArr extends ChunkImplementation<Byte> {
   readonly _tag = 'Arr'
   length        = this._array.length
   depth         = 0
   left          = _Empty
   right         = _Empty
   binary        = true
-  constructor(readonly _array: Uint8Array) {
+  constructor(readonly _array: ByteArray) {
     super()
   }
-  get(n: number): number {
+  get(n: number): Byte {
     if (n >= this.length || n < 0) {
       throw new ArrayIndexOutOfBoundsException(n)
     }
     return this._array[n]
   }
-  foreach<B>(f: (a: number) => B): void {
+  foreach<B>(f: (a: Byte) => B): void {
     for (let i = 0; i < this.length; i++) {
       f(this._array[i])
     }
   }
-  [Symbol.iterator](): Iterator<number> {
+  [Symbol.iterator](): Iterator<Byte> {
     return this._array[Symbol.iterator]()
   }
-  toArray(n: number, dest: Array<number> | Uint8Array): void {
+  toArray(n: number, dest: Array<Byte> | Uint8Array): void {
     copyArray(this._array, 0, dest, n, this.length)
   }
-  arrayIterator(): Iterator<ArrayLike<number>> {
+  arrayIterator(): Iterator<ArrayLike<Byte>> {
     let done = false
     return {
       next: () => {
@@ -719,7 +720,7 @@ class BinArr extends ChunkImplementation<number> {
       }
     }
   }
-  reverseArrayIterator(): Iterator<ArrayLike<number>> {
+  reverseArrayIterator(): Iterator<ArrayLike<Byte>> {
     let done = false
     return {
       next: () => {
@@ -782,8 +783,8 @@ export function from<A>(as: Iterable<A>): Chunk<A> {
   return new Arr(A.from(as))
 }
 
-export function fromBuffer(bytes: Uint8Array): Chunk<number> {
-  return new BinArr(bytes)
+export function fromBuffer(bytes: Uint8Array): Chunk<Byte> {
+  return new BinArr(bytes as any)
 }
 
 export function empty<B>(): Chunk<B> {
@@ -1532,4 +1533,3 @@ export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>
 export function filterM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
   return (as) => filterM_(as, p)
 }
-
