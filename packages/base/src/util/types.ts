@@ -27,6 +27,8 @@ export type ExcludeMatchingProperties<T, V> = Pick<T, { [K in keyof T]-?: T[K] e
 
 export type EnsureLiteral<K> = string extends K ? never : [K] extends [UnionToIntersection<K>] ? K : never
 
+export type TestLiteral<K> = string extends K ? unknown : [K] extends [UnionToIntersection<K>] ? K : unknown
+
 export type Mutable<T> = T extends NonEmptyArray<infer A>
   ? Array<A> & { 0: A }
   : T extends ReadonlyArray<infer A>

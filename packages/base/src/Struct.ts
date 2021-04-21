@@ -2,7 +2,9 @@
  * Operations on heterogeneous records
  */
 import type { ReadonlyRecord } from './Record'
-import type { EnsureLiteral } from './util/types'
+import type { EnsureLiteral, TestLiteral } from './util/types'
+import type * as P from '@principia/prelude'
+import type * as HKT from '@principia/prelude/HKT'
 
 import * as A from './Array/core'
 import * as R from './Record'
@@ -15,6 +17,14 @@ import * as Str from './string'
  */
 
 type EnsureNonexistentProperty<T, K extends string> = Extract<keyof T, K> extends never ? T : never
+
+type EnsureLiteralKeys<S> = string extends keyof S ? never : S
+
+type EnsureLiteralTuple<A extends ReadonlyArray<unknown>> = unknown extends {
+  [K in keyof A]: A[K] extends string ? TestLiteral<A[K]> : unknown
+}[number]
+  ? never
+  : A
 
 /**
  * Inserts a key value pair into a struct
@@ -106,11 +116,77 @@ export function modifyAt_<S extends ReadonlyRecord<string, any>, K extends keyof
  * @category combinators
  * @since 1.0.0
  */
-export function modifyAt<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
-  k: K,
-  f: (a: S[K]) => B
-): (s: S) => { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B } {
-  return (s) => modifyAt_(s, k, f)
+export function modifyAt<S, K extends keyof S extends never ? string : keyof S, A, B>(
+  k: keyof S extends never ? EnsureLiteral<K> : K,
+  f: (a: K extends keyof S ? S[K] : A) => B
+): <S1 extends { [P in K]: A }>(
+  s: keyof S extends never ? S1 : S
+) => K extends keyof S
+  ? { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B }
+  : { readonly [P in Exclude<keyof S1, K> | K]: P extends Exclude<keyof S1, K> ? S1[P] : B } {
+  return (s) => modifyAt_(s, k as any, f as any) as any
+}
+
+/**
+ * Effectfully map over one value of a struct
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function modifyAtE_<F extends HKT.URIS, C = HKT.Auto>(
+  F: P.Functor<F, C>
+): <S_ extends ReadonlyRecord<string, any>, K_ extends keyof S_, N extends string, K, Q, W, X, I, S, R, E, B>(
+  s: S_,
+  k: K_,
+  f: (a: S_[K_]) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+) => HKT.Kind<
+  F,
+  C,
+  N,
+  K,
+  Q,
+  W,
+  X,
+  I,
+  S,
+  R,
+  E,
+  { readonly [P in Exclude<keyof S_, K_> | K_]: P extends Exclude<keyof S_, K_> ? S_[P] : B }
+> {
+  return (s, k, f) =>
+    F.map_(f(s[k]), (b) => ({
+      ...s,
+      [k]: b
+    }))
+}
+
+export function modifyAtE<F extends HKT.URIS, C = HKT.Auto>(
+  F: P.Functor<F, C>
+): <S_, K_ extends keyof S_ extends never ? string : keyof S, N extends string, K, Q, W, X, I, S, R, E, A, B>(
+  k: keyof S_ extends never ? EnsureLiteral<K_> : K_,
+  f: (a: K_ extends keyof S_ ? S_[K_] : A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+) => <S1 extends { [K in K_]: A }>(
+  s: keyof S_ extends never ? S1 : S_
+) => HKT.Kind<
+  F,
+  C,
+  N,
+  K,
+  Q,
+  W,
+  X,
+  I,
+  S,
+  R,
+  E,
+  K_ extends keyof S_
+    ? { readonly [P in Exclude<keyof S_, K_> | K_]: P extends Exclude<keyof S_, K_> ? S_[P] : B }
+    : {
+        readonly [P in Exclude<keyof S1, K_> | K_]: P extends Exclude<keyof S1, K_> ? S1[P] : B
+      }
+> {
+  const modifyAtEF_ = modifyAtE_(F)
+  return (k, f) => (s) => modifyAtEF_(s, k as any, f as any)
 }
 
 /**
@@ -133,11 +209,15 @@ export function updateAt_<S extends ReadonlyRecord<string, any>, K extends keyof
  * @category combinators
  * @since 1.0.0
  */
-export function updateAt<S extends ReadonlyRecord<string, any>, K extends keyof S, B>(
-  k: K,
+export function updateAt<S, K extends keyof S extends never ? string : keyof S, B>(
+  k: keyof S extends never ? EnsureLiteral<K> : K,
   b: B
-): (s: S) => { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B } {
-  return (s) => modifyAt_(s, k, () => b)
+): <S1 extends { [P in K]: any }>(
+  s: keyof S extends never ? S1 : S
+) => K extends keyof S
+  ? { readonly [P in Exclude<keyof S, K> | K]: P extends Exclude<keyof S, K> ? S[P] : B }
+  : { readonly [P in Exclude<keyof S1, K> | K]: P extends Exclude<keyof S1, K> ? S1[P] : B } {
+  return (s) => modifyAt_(s, k as any, () => b) as any
 }
 
 /**
@@ -165,10 +245,15 @@ export function hmap_<S extends ReadonlyRecord<string, any>, F extends { [K in k
  * @category combinators
  * @since 1.0.0
  */
-export function hmap<S extends ReadonlyRecord<string, any>, F extends { [K in keyof S]: (a: S[K]) => any }>(
-  fs: F
-): (s: S) => { readonly [K in keyof F]: ReturnType<F[K]> } {
-  return (s) => hmap_(s, fs)
+export function hmap<
+  S,
+  F extends keyof S extends never ? Record<string, (a: any) => any> : { [K in keyof S]: (a: S[K]) => any }
+>(
+  fs: keyof F extends never ? EnsureLiteralKeys<F> : F
+): <S1 extends { [K in keyof F]: Parameters<F[K]>[0] }>(
+  s: keyof S extends never ? S1 : S
+) => { readonly [K in keyof F]: ReturnType<F[K]> } {
+  return (s) => hmap_(s, fs as any) as any
 }
 
 export function pick_<S extends ReadonlyRecord<string, any>>(s: S) {
@@ -182,10 +267,12 @@ export function pick_<S extends ReadonlyRecord<string, any>>(s: S) {
   }
 }
 
-export function pick<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
-  ...keys: K
-): (s: S) => { [P in K[number]]: S[P] } {
-  return (s) => pick_(s)(...keys)
+export function pick<S, K extends ReadonlyArray<keyof S extends never ? string : keyof S>>(
+  ...keys: keyof S extends never ? EnsureLiteralTuple<K> : K
+): <S1 extends { [P in K[number]]: any }>(
+  s: keyof S extends never ? S1 : S
+) => K[number] extends keyof S ? { readonly [P in K[number]]: S[P] } : { readonly [P in K[number]]: S1[P] } {
+  return (s) => pick_(s)(...(keys as any)) as any
 }
 
 export function omit_<S extends ReadonlyRecord<string, any>>(s: S) {
@@ -200,8 +287,12 @@ export function omit_<S extends ReadonlyRecord<string, any>>(s: S) {
   }
 }
 
-export function omit<S extends ReadonlyRecord<string, any>, K extends ReadonlyArray<keyof S>>(
-  ...keys: K
-): (s: S) => { [P in Exclude<keyof S, K[number]>]: S[P] } {
-  return (s) => omit_(s)(...keys)
+export function omit<S, K extends ReadonlyArray<keyof S extends never ? string : keyof S>>(
+  ...keys: keyof S extends never ? EnsureLiteralTuple<K> : K
+): <S1 extends { [P in K[number]]: any }>(
+  s: keyof S extends never ? S1 : S
+) => K[number] extends keyof S
+  ? { readonly [P in Exclude<keyof S, K[number]>]: S[P] }
+  : { readonly [P in Exclude<keyof S1, K[number]>]: S1[P] } {
+  return (s) => omit_(s)(...(keys as any)) as any
 }
