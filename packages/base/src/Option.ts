@@ -4,6 +4,7 @@
  */
 
 import type { Either } from './Either'
+import type { Guard } from './Guard'
 import type { OptionURI } from './Modules'
 import type { These } from './These'
 import type { Eq } from '@principia/prelude/Eq'
@@ -18,6 +19,8 @@ import { makeEq } from '@principia/prelude/Eq'
 import { flow, identity, pipe } from '@principia/prelude/function'
 import * as O from '@principia/prelude/internal/option'
 import { tuple } from '@principia/prelude/tuple'
+
+import { makeGuard } from './Guard'
 
 /*
  * -------------------------------------------
@@ -849,6 +852,16 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
  */
 export function getRight<E, A>(fea: Either<E, A>): Option<A> {
   return fea._tag === 'Left' ? None() : Some(fea.right)
+}
+
+/*
+ * -------------------------------------------
+ * Guard
+ * -------------------------------------------
+*/
+
+export function getGuard<A>(G: Guard<unknown, A>): Guard<unknown, Option<A>> {
+  return makeGuard((u): u is Option<A> => isOption(u) && (u._tag === 'None' || G.is(u.value)))
 }
 
 /*
