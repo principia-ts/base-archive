@@ -68,8 +68,6 @@ export const alphaNumericChar: Gen<Has<Random>, string> = weighted(
   [char(97, 122), 26]
 )
 
-export const alphaNumericString: Gen<Has<Random> & Has<Sized>, string> = string(alphaNumericChar)
-
 export function alphaNumericStringBounded(min: number, max: number): Gen<Has<Random>, string> {
   return stringBounded(alphaNumericChar, min, max)
 }
@@ -386,3 +384,5 @@ export function zipWith<A, R1, B, C>(fb: Gen<R1, B>, f: (a: A, b: B) => C): <R>(
 function clamp(n: number, min: number, max: number): number {
   return n < min ? min : n > max ? max : n
 }
+
+export const alphaNumericString: Gen<Has<Random> & Has<Sized>, string> = string(alphaNumericChar)
