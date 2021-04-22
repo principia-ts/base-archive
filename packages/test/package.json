@@ -1,6 +1,6 @@
 {
   "name": "@principia/test",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "description": "Abstractions for IO tests",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
