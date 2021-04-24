@@ -2,13 +2,6 @@
 # yarn lockfile v1
 
 
-"@0x706b/ts-transform-fix-esm@^0.2.2":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@0x706b/ts-transform-fix-esm/-/ts-transform-fix-esm-0.2.2.tgz#77fd5916b8665281b2ef855e150aefc77cc20bcb"
-  integrity sha512-jlA3g8bwzewtlM/V9GC4iGnZFOIU1QwSCPDa4/B4LJHLHDe2d+pu475Vdb1wTOWuW+qOpA22pEeJbPRI0NDirw==
-  dependencies:
-    fp-ts "^2.8.2"
-
 "@babel/cli@^7.13.16":
   version "7.13.16"
   resolved "https://registry.yarnpkg.com/@babel/cli/-/cli-7.13.16.tgz#9d372e943ced0cc291f068204a9b010fd9cfadbc"
@@ -3952,7 +3945,7 @@ form-data@~2.3.2:
     combined-stream "^1.0.6"
     mime-types "^2.1.12"
 
-fp-ts@^2.10.4, fp-ts@^2.8.2:
+fp-ts@^2.10.4:
   version "2.10.4"
   resolved "https://registry.yarnpkg.com/fp-ts/-/fp-ts-2.10.4.tgz#f81f34b1c15b3255d65cdbb39508ebb42922aa0c"
   integrity sha512-vMTB5zNc9PnE20q145PNbkiL9P9WegwmKVOFloi/NfHnPdAlcob6I3AKqlH/9u3k3/M/GOftZhcJdBrb+NtnDA==
