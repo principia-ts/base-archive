@@ -56,9 +56,16 @@ export function constant<A>(a: A): Gen<unknown, A> {
  * -------------------------------------------
  */
 
-export const uniform: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextDouble, Sa.shrinkFractional(0.0)))
+export const uniform: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.next, Sa.shrinkFractional(0.0)))
 
-export const anyDouble: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextDouble, shrinkFractional(0)))
+export const anyDouble: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.next, shrinkFractional(0)))
+
+export const anyBigInt: Gen<Has<Random>, bigint> = fromEffectSample(
+  I.map_(
+    Random.nextBigIntBetween(BigInt(-1) << BigInt(255), (BigInt(1) << BigInt(255)) - BigInt(1)),
+    Sa.shrinkBigInt(BigInt(0))
+  )
+)
 
 export const anyInt: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextInt, Sa.shrinkIntegral(0)))
 
@@ -386,3 +393,4 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 export const alphaNumericString: Gen<Has<Random> & Has<Sized>, string> = string(alphaNumericChar)
+

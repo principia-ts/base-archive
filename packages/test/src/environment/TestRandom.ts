@@ -13,9 +13,10 @@ import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 import * as Li from '@principia/base/List'
 import * as O from '@principia/base/Option'
-import { Mash, RandomTag } from '@principia/base/Random'
+import { RandomTag } from '@principia/base/Random'
 import * as Ref from '@principia/base/Ref'
 import { intersect } from '@principia/base/util/intersect'
+import { Mash } from '@principia/base/util/Mash'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 import { tag } from '@principia/prelude/Has'
 
@@ -136,6 +137,10 @@ export class TestRandom implements Random {
     }
   }
 
+  private randomLong: UIO<bigint> = this.randomBits(32)['>>=']((i1) =>
+    this.randomBits(32)['>>=']((i2) => I.succeed(BigInt(i1 << 32) + BigInt(i2)))
+  )
+
   private randomInt = this.randomBits(32)
 
   private randomDouble = this.randomBits(26)['>>=']((i1) =>
@@ -158,6 +163,10 @@ export class TestRandom implements Random {
 
   get next(): UIO<number> {
     return this.getOrElse(this.bufferedDouble, this.random)
+  }
+
+  nextBigIntBetween(low: bigint, high: bigint): UIO<bigint> {
+    return I.repeatUntil_(this.randomLong, (n) => low <= n && n < high)
   }
 
   nextIntBetween(low: number, high: number): UIO<number> {

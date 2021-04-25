@@ -897,7 +897,7 @@ export function jittered_<R, I, O>(
   sc: Schedule<R, I, O>,
   { max = 0.1, min = 0 }: { min?: number, max?: number } = {}
 ): Schedule<R & Has<Random>, I, O> {
-  return delayedM_(sc, (d) => I.map_(Random.nextDouble, (r) => d * min * (1 - r) + d * max * r))
+  return delayedM_(sc, (d) => I.map_(Random.next, (r) => d * min * (1 - r) + d * max * r))
 }
 
 /**

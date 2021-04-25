@@ -270,6 +270,29 @@ function quot(x: number, y: number): number {
   return (x / y) | 0
 }
 
+function bigIntAbs(x: bigint): bigint {
+  return x < BigInt(0) ? -x : x
+}
+
+export function shrinkBigInt(smallest: bigint): (a: bigint) => Sample<unknown, bigint> {
+  return (a) =>
+    unfold(a, (max) =>
+      tuple(
+        max,
+        S.unfold(smallest, (min) => {
+          const mid = min + (max - min) / BigInt(2)
+          if (mid === max) {
+            return O.None()
+          } else if (bigIntAbs(max - mid) === BigInt(1)) {
+            return O.Some([mid, max])
+          } else {
+            return O.Some([mid, mid])
+          }
+        })
+      )
+    )
+}
+
 export function shrinkIntegral(smallest: number): (a: number) => Sample<unknown, number> {
   return (a) =>
     unfold(a, (max) =>
