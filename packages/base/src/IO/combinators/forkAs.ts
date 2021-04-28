@@ -1,10 +1,10 @@
 import type { IO, URIO } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
 import * as Fiber from '../../Fiber'
 import * as FiberRef from '../../FiberRef'
+import { pipe } from '../../function'
 import * as O from '../../Option'
 import { bind, fork } from '../core'
 import { uninterruptibleMask } from './interrupt'

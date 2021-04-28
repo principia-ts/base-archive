@@ -2,8 +2,8 @@ import type { Chunk } from '../../Chunk/core'
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
-import { flow } from '@principia/prelude/function'
 
+import { flow } from '../../function'
 import { map } from '../core'
 import { filterPar_ } from './filterPar'
 

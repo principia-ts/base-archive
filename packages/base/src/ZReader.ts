@@ -2,8 +2,8 @@ import type { ZReaderURI } from './Modules'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { identity, pipe } from '@principia/prelude/function'
 
+import { identity, pipe } from './function'
 import * as Mu from './Z'
 
 export interface ZReader<R, A> extends Mu.Z<never, unknown, never, R, never, A> {}

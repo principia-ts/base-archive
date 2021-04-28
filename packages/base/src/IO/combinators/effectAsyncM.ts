@@ -1,8 +1,8 @@
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
+import { pipe } from '../../function'
 import * as P from '../../Promise'
 import * as I from '../core'
 import { runtime } from '../runtime'

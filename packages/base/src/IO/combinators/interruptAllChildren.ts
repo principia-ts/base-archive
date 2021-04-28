@@ -1,9 +1,9 @@
 import type { IO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
-import { flow } from '@principia/prelude/function'
 
 import { interruptAll } from '../../Fiber'
+import { flow } from '../../function'
 import { ensuringChildren_ } from './ensuringChildren'
 
 /**

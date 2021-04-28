@@ -3,8 +3,8 @@
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
+import { pipe } from '../../function'
 import * as XR from '../../Ref'
 import { bind, bind_ } from '../core'
 import { foreachUnitParN_ } from './foreachUnitParN'

@@ -1,7 +1,6 @@
 import type { List } from './core'
 
-import { pipe } from '@principia/prelude/function'
-
+import { pipe } from '../function'
 import * as I from '../IO'
 import * as L from './core'
 
@@ -53,7 +52,7 @@ export function filterM_<A, R, E>(l: List<A>, p: (a: A) => I.IO<R, E, boolean>):
     let r = I.succeed(L.emptyPushable<A>()) as I.IO<R, E, L.MutableList<A>>
     L.forEach_(l, (a) => {
       r = I.crossWith_(r, p(a), (l, b) => {
-        if(b) {
+        if (b) {
           L.push(a, l)
         }
         return l

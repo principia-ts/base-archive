@@ -2,7 +2,6 @@ import type { Tuple2URI } from './Modules'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { identity } from '@principia/prelude/function'
 
 /*
  * -------------------------------------------
@@ -50,9 +49,7 @@ export function snd<A, I>(ai: Tuple2<A, I>): I {
  * -------------------------------------------
  */
 
-export function getSemimonoidalFunctor<M>(
-  S: P.Semigroup<M>
-): P.SemimonoidalFunctor<URI, HKT.Fix<'I', M>> {
+export function getSemimonoidalFunctor<M>(S: P.Semigroup<M>): P.SemimonoidalFunctor<URI, HKT.Fix<'I', M>> {
   const crossWith_: P.CrossWithFn_<URI, HKT.Fix<'I', M>> = (fa, fb, f) => [
     f(fst(fa), fst(fb)),
     S.combine_(snd(fa), snd(fb))
@@ -71,10 +68,7 @@ export function getSemimonoidalFunctor<M>(
  */
 
 export function getApply<M>(S: P.Semigroup<M>): P.Apply<URI, HKT.Fix<'I', M>> {
-  const ap_: P.ApFn_<URI, HKT.Fix<'I', M>> = (fab, fa) => [
-    fst(fab)(fst(fa)),
-    S.combine_(snd(fab), snd(fa))
-  ]
+  const ap_: P.ApFn_<URI, HKT.Fix<'I', M>> = (fab, fa) => [fst(fab)(fst(fa)), S.combine_(snd(fab), snd(fa))]
 
   return P.Apply({
     ...getSemimonoidalFunctor(S),
@@ -151,7 +145,7 @@ export function extend<A, I, B>(f: (wa: Tuple2<A, I>) => B): (wa: Tuple2<A, I>) 
 
 export const extract: <A, I>(wa: Tuple2<A, I>) => A = fst
 
-export const duplicate: <A, I>(wa: Tuple2<A, I>) => Tuple2<Tuple2<A, I>, I> = extend(identity)
+export const duplicate: <A, I>(wa: Tuple2<A, I>) => Tuple2<Tuple2<A, I>, I> = extend(P.identity)
 
 /*
  * -------------------------------------------
@@ -244,8 +238,6 @@ export const traverse: P.TraverseFn<URI, V> = (G) => {
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence = P.implementSequence<URI, V>()((_) => (G) => (ta) =>
-  G.map_(fst(ta), (a) => [a, snd(ta)])
-)
+export const sequence = P.implementSequence<URI, V>()((_) => (G) => (ta) => G.map_(fst(ta), (a) => [a, snd(ta)]))
 
 export { Tuple2URI } from './Modules'

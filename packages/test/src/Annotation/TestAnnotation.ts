@@ -7,15 +7,15 @@ import type { Hash } from '@principia/prelude/Hash'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { absurd } from '@principia/base/function'
+import { hash, hashString } from '@principia/base/Hashable'
 import * as Set from '@principia/base/HashSet'
 import * as S from '@principia/base/string'
-import { makeEq } from '@principia/prelude/Eq'
-import { absurd } from '@principia/prelude/function'
+import * as P from '@principia/prelude'
 import { tag } from '@principia/prelude/Has'
-import { hash, hashString } from '@principia/prelude/Hashable'
 
 export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
-  ...makeEq(equalsTestAnnotation),
+  ...P.Eq(equalsTestAnnotation),
   hash
 }
 

@@ -4,12 +4,11 @@ import type { Option } from '../Option'
 import type { Scope } from '../Scope'
 import type { FiberId } from './FiberId'
 
-import { identity } from '@principia/prelude/function'
-
 import * as C from '../Cause/core'
 import * as Ev from '../Eval'
 import * as Ex from '../Exit/core'
 import { FiberRef } from '../FiberRef/core'
+import { identity } from '../function'
 import * as I from '../IO/core'
 import * as O from '../Option'
 

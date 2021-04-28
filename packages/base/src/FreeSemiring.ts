@@ -1,18 +1,16 @@
 /*
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/ParSeq.scala
  */
-import type { Eq } from '@principia/prelude/Eq'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { makeEq } from '@principia/prelude/Eq'
-import { flow, hole, identity, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import * as A from './Array/core'
 import * as B from './boolean'
 import * as E from './Either'
 import * as Ev from './Eval'
+import { flow, hole, identity, pipe } from './function'
 import { FreeSemiringURI } from './Modules'
 import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 
@@ -363,9 +361,9 @@ export function first<A>(ma: FreeSemiring<never, A>): A {
  * -------------------------------------------
  */
 
-export function getEq<A>(E: Eq<A>): Eq<FreeSemiring<any, A>> {
+export function getEq<A>(E: P.Eq<A>): P.Eq<FreeSemiring<any, A>> {
   const equalsE = equals_(E)
-  return makeEq((x, y) => equalsE(x, y).value)
+  return P.Eq((x, y) => equalsE(x, y).value)
 }
 
 /*
@@ -374,7 +372,7 @@ export function getEq<A>(E: Eq<A>): Eq<FreeSemiring<any, A>> {
  * -------------------------------------------
  */
 
-function equals_<A>(E: Eq<A>): (l: FreeSemiring<any, A>, r: FreeSemiring<any, A>) => Ev.Eval<boolean> {
+function equals_<A>(E: P.Eq<A>): (l: FreeSemiring<any, A>, r: FreeSemiring<any, A>) => Ev.Eval<boolean> {
   return (l, r) => {
     switch (l._tag) {
       case 'Empty': {
@@ -417,12 +415,12 @@ function equals_<A>(E: Eq<A>): (l: FreeSemiring<any, A>, r: FreeSemiring<any, A>
 }
 
 function symmetric<X, A>(
-  f: (E: Eq<A>, x: FreeSemiring<X, A>, y: FreeSemiring<X, A>) => Ev.Eval<boolean>
-): (E: Eq<A>, x: FreeSemiring<X, A>, y: FreeSemiring<X, A>) => Ev.Eval<boolean> {
+  f: (E: P.Eq<A>, x: FreeSemiring<X, A>, y: FreeSemiring<X, A>) => Ev.Eval<boolean>
+): (E: P.Eq<A>, x: FreeSemiring<X, A>, y: FreeSemiring<X, A>) => Ev.Eval<boolean> {
   return (E, x, y) => Ev.crossWith_(f(E, x, y), f(E, y, x), B.or_)
 }
 
-function bothAssociate<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+function bothAssociate<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (l._tag === 'Both' && l.left._tag === 'Both' && r._tag === 'Both' && r.right._tag === 'Both') {
     return Ev.map_(
@@ -434,7 +432,7 @@ function bothAssociate<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any
   }
 }
 
-function bothDistribute<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+function bothDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (
     l._tag === 'Both' &&
@@ -473,7 +471,7 @@ function bothDistribute<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<an
   }
 }
 
-function bothCommute<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+function bothCommute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (l._tag === 'Both' && r._tag === 'Both') {
     return Ev.crossWith_(equalsE(l.left, r.right), equalsE(l.right, r.left), B.and_)
@@ -482,7 +480,7 @@ function bothCommute<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, 
   }
 }
 
-function thenAssociate<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+function thenAssociate<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (l._tag === 'Then' && l.left._tag === 'Then' && r._tag === 'Then' && r.right._tag === 'Then') {
     return Ev.map_(
@@ -494,7 +492,7 @@ function thenAssociate<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any
   }
 }
 
-function thenDistribute<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+function thenDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (
     l._tag === 'Then' &&
@@ -533,7 +531,7 @@ function thenDistribute<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<an
   }
 }
 
-function equalBoth<A>(E: Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never, A>): Ev.Eval<boolean> {
+function equalBoth<A>(E: P.Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (l._tag === 'Both' && r._tag === 'Both') {
     return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
@@ -542,7 +540,7 @@ function equalBoth<A>(E: Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never
   }
 }
 
-function equalThen<A>(E: Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never, A>): Ev.Eval<boolean> {
+function equalThen<A>(E: P.Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (l._tag === 'Then' && r._tag === 'Then') {
     return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
@@ -551,7 +549,7 @@ function equalThen<A>(E: Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never
   }
 }
 
-function equalEmpty<A>(E: Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+function equalEmpty<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (l._tag === 'Then' || l._tag === 'Both') {
     if (l.left._tag === 'Empty') {

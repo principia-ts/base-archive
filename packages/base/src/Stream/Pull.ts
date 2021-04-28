@@ -2,9 +2,8 @@ import type { Cause } from '../Cause'
 import type { Chunk } from '../Chunk'
 import type { Option } from '../Option'
 
-import { pipe } from '@principia/prelude/function'
-
 import * as C from '../Chunk'
+import { pipe } from '../function'
 import * as I from '../IO'
 import { None, Some } from '../Option'
 

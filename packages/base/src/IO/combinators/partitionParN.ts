@@ -3,8 +3,8 @@
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
-import { identity } from '@principia/prelude/function'
 
+import { identity } from '../../function'
 import * as I from '../../Iterable'
 import { attempt, map_ } from '../core'
 import { foreachParN_ } from './foreachParN'

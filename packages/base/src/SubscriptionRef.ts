@@ -1,7 +1,6 @@
 import type { URefM } from './RefM'
 
-import { pipe } from '@principia/prelude/function'
-
+import { pipe } from './function'
 import * as I from './IO'
 import * as RefM from './RefM'
 import * as S from './Stream'

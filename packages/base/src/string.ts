@@ -1,14 +1,14 @@
 import type { NonEmptyArray } from './NonEmptyArray'
 
 import * as P from '@principia/prelude'
-import { flow, identity, pipe } from '@principia/prelude/function'
-import { max_ } from '@principia/prelude/Ord'
 
 import * as A from './Array/core'
+import { flow, identity, pipe } from './function'
 import * as G from './Guard'
 import * as NA from './NonEmptyArray'
 import * as N from './number'
 import * as O from './Option'
+import { max_ } from './Ord'
 
 /**
  * The empty string
@@ -423,17 +423,17 @@ export function capitalizeAll(s: string): string {
  * -------------------------------------------
  */
 
-export const Eq: P.Eq<string> = P.makeEq((x, y) => x === y)
+export const Eq: P.Eq<string> = P.Eq((x, y) => x === y)
 
-export const Semigroup: P.Semigroup<string> = P.makeSemigroup((x, y) => x + y)
+export const Semigroup: P.Semigroup<string> = P.Semigroup((x, y) => x + y)
 
 export const Monoid: P.Monoid<string> = {
   ...Semigroup,
   nat: empty
 }
 
-export const Ord: P.Ord<string> = P.makeOrd((x, y) => (x < y ? -1 : x > y ? 1 : 0))
+export const Ord: P.Ord<string> = P.Ord((x, y) => (x < y ? -1 : x > y ? 1 : 0))
 
-export const Show: P.Show<string> = P.makeShow(identity)
+export const Show: P.Show<string> = P.Show(identity)
 
-export const Guard: G.Guard<unknown, string> = G.makeGuard((u: unknown): u is string => typeof u === 'string')
+export const Guard: G.Guard<unknown, string> = G.Guard((u: unknown): u is string => typeof u === 'string')

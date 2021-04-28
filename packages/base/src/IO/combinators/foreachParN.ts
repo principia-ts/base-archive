@@ -3,9 +3,9 @@
 import type { Chunk } from '../../Chunk/core'
 
 import { traceAs } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
+import { pipe } from '../../function'
 import * as L from '../../List/core'
 import * as P from '../../Promise'
 import * as Q from '../../Queue'

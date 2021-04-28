@@ -1,13 +1,12 @@
 import type { IO } from '@principia/base/IO'
 import type { IOEnv } from '@principia/base/IOEnv'
 import type { Layer } from '@principia/base/Layer'
-import type { Erase } from '@principia/base/util/types'
 import type { Has } from '@principia/prelude/Has'
 
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 import * as M from '@principia/base/Managed'
-import { pipe } from '@principia/prelude/function'
+import * as P from '@principia/prelude'
 import { tag } from '@principia/prelude/Has'
 
 export const LiveTag = tag<Live>()
@@ -33,8 +32,8 @@ export abstract class Live {
 export function withLive_<R, E, A, E1, B>(
   io: IO<R, E, A>,
   f: (_: IO<unknown, E, A>) => IO<IOEnv, E1, B>
-): IO<Erase<R, Has<Live>>, E | E1, B> {
-  return pipe(
+): IO<P.Erase<R, Has<Live>>, E | E1, B> {
+  return P.pipe(
     I.ask<R & Has<Live>>(),
     I.bind((r) => Live.live(f(I.giveAll_(io, r))))
   ) as any
@@ -42,6 +41,6 @@ export function withLive_<R, E, A, E1, B>(
 
 export function withLive<E, A, E1, B>(
   f: (_: IO<unknown, E, A>) => IO<IOEnv, E1, B>
-): <R>(io: IO<R, E, A>) => IO<Erase<R, Has<Live>>, E | E1, B> {
+): <R>(io: IO<R, E, A>) => IO<P.Erase<R, Has<Live>>, E | E1, B> {
   return (io) => withLive_(io, f)
 }

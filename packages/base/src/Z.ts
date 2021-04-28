@@ -8,8 +8,6 @@ import type * as HKT from '@principia/prelude/HKT'
 import type { Predicate } from '@principia/prelude/Predicate'
 
 import * as P from '@principia/prelude'
-import { flow, identity, pipe } from '@principia/prelude/function'
-import { tuple } from '@principia/prelude/tuple'
 
 import * as A from './Array/core'
 import * as E from './Either'
@@ -249,7 +247,7 @@ export function deferTotal<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>):
 }
 
 export function defer<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, unknown, A> {
-  return new DeferPartial(ma, identity)
+  return new DeferPartial(ma, P.identity)
 }
 
 export function deferCatch_<W, S1, S2, R, E, A, E1>(
@@ -266,7 +264,7 @@ export function deferCatch<E1>(
 }
 
 export function effect<A>(effect: () => A): Z<never, unknown, never, unknown, unknown, A> {
-  return new EffectPartial(effect, identity)
+  return new EffectPartial(effect, P.identity)
 }
 
 export function effectCatch_<A, E>(
@@ -301,12 +299,12 @@ export function modify<S1, S2, A>(f: (s: S1) => readonly [A, S2]): Z<never, S1, 
 export function modifyEither<S1, S2, E, A>(
   f: (s: S1) => E.Either<E, readonly [A, S2]>
 ): Z<never, S1, S2, unknown, E, A> {
-  return pipe(
+  return P.pipe(
     get<S1>(),
     map(f),
     bind(
       E.match(fail, ([a, s2]) =>
-        pipe(
+        P.pipe(
           succeed(a),
           mapState(() => s2)
         )
@@ -464,12 +462,12 @@ export function matchCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, 
   return matchLogCauseM_(
     fa,
     (ws, e) =>
-      pipe(
+      P.pipe(
         onFailure(e),
         censor((w1s) => A.concatW_(ws, w1s))
       ),
     (ws, a) =>
-      pipe(
+      P.pipe(
         onSuccess(a),
         censor((w2s) => A.concatW_(ws, w2s))
       )
@@ -510,7 +508,7 @@ export function matchM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E
   onFailure: (e: E) => Z<W1, S5, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return matchCauseM_(fa, flow(FS.first, onFailure), onSuccess)
+  return matchCauseM_(fa, P.flow(FS.first, onFailure), onSuccess)
 }
 
 /**
@@ -601,7 +599,7 @@ export function cross_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
-  return crossWith_(fa, fb, tuple)
+  return crossWith_(fa, fb, P.tuple)
 }
 
 export function cross<W, S, R1, E1, B>(
@@ -614,7 +612,7 @@ export function crossPar_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
-  return crossWithPar_(fa, fb, tuple)
+  return crossWithPar_(fa, fb, P.tuple)
 }
 
 export function crossPar<W, S, R1, E1, B>(
@@ -643,11 +641,11 @@ export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
   fb: Z<W, S, S, R1, E1, B>,
   f: (a: A, b: B) => C
 ): Z<W, S, S, R & R1, E | E1, C> {
-  return pipe(
+  return P.pipe(
     fa,
     matchCauseM(
       (c1) =>
-        pipe(
+        P.pipe(
           fb,
           matchCauseM(
             (c2) => halt(FS.both(c1, c2)),
@@ -715,7 +713,7 @@ export function zip_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   fa: Z<W, S1, S2, R, E, A>,
   fb: Z<W1, S2, S3, Q, D, B>
 ): Z<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
-  return zipWith_(fa, fb, tuple)
+  return zipWith_(fa, fb, P.tuple)
 }
 
 export function zip<W1, S2, S3, Q, D, B>(
@@ -878,7 +876,7 @@ export function tap<S2, A, W1, S3, R1, E1, B>(
 export function flatten<W, S1, S2, R, E, A, W1, S3, R1, E1>(
   mma: Z<W, S1, S2, R, E, Z<W1, S2, S3, R1, E1, A>>
 ): Z<W | W1, S1, S3, R1 & R, E1 | E, A> {
-  return bind_(mma, identity)
+  return bind_(mma, P.identity)
 }
 
 /*
@@ -1011,7 +1009,7 @@ export function listens_<W, S1, S2, R, E, A, B>(
   wa: Z<W, S1, S2, R, E, A>,
   f: (l: ReadonlyArray<W>) => B
 ): Z<W, S1, S2, R, E, readonly [A, B]> {
-  return pipe(
+  return P.pipe(
     wa,
     listen,
     map(([a, ws]) => [a, f(ws)])
@@ -1061,7 +1059,7 @@ export function catchSome_<W, S1, S2, R, E, A, S3, R1, E1, B>(
 ): Z<W, S1, S2 | S3, R & R1, E | E1, A | B> {
   return catchAll_(
     fa,
-    flow(
+    P.flow(
       f,
       O.getOrElse((): Z<W, S1, S2 | S3, R & R1, E | E1, A | B> => fa)
     )
@@ -1215,7 +1213,7 @@ export function orElseEither<W, S3, S4, R1, E1, A1>(
  */
 
 function _MonoidBindUnit<W, S, R, E>(): P.Monoid<Z<W, S, S, R, E, void>> {
-  return P.makeMonoid<Z<W, S, S, R, E, void>>((x, y) => bind_(x, () => y), unit())
+  return P.Monoid<Z<W, S, S, R, E, void>>((x, y) => bind_(x, () => y), unit())
 }
 
 export function iforeachUnit_<A, W, S, R, E>(
@@ -1598,7 +1596,7 @@ export function runStateResult<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, 
  * Runs this computation returning either the result or error
  */
 export function runEither<E, A>(ma: Z<never, unknown, unknown, unknown, E, A>): E.Either<E, A> {
-  return pipe(
+  return P.pipe(
     runAll_(ma, {} as never)[1],
     E.map(([, x]) => x),
     E.mapLeft(FS.first)

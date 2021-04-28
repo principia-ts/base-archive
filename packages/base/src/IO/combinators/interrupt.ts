@@ -5,12 +5,12 @@ import type { Option } from '../../Option'
 import type { Canceler, FIO, IO, UIO } from '../core'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { flow, pipe } from '@principia/prelude/function'
 
 import * as C from '../../Cause/core'
 import { Left } from '../../Either'
 import { join } from '../../Fiber/combinators/join'
 import { interruptible, uninterruptible } from '../../Fiber/core'
+import { flow, pipe } from '../../function'
 import { None, Some } from '../../Option'
 import { AtomicReference } from '../../util/support/AtomicReference'
 import { OneShot } from '../../util/support/OneShot'

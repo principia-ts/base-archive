@@ -14,7 +14,7 @@ import type {
 import type { Predicate } from '@principia/prelude/Predicate'
 import type { Refinement } from '@principia/prelude/Refinement'
 
-import { identity, pipe } from '@principia/prelude/function'
+import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
 import { $anonymousSelect, $guard, $namedSelect, $not, matchPattern, selectWithPattern } from './internal/pattern'
@@ -65,7 +65,7 @@ export function match_<I extends readonly [any, ...(readonly any[])]>(
       handler: (...args: any) => any
     }>
 
-    return pipe(
+    return P.pipe(
       matchers as ReadonlyArray<{ case: Pattern<any>, handle: (...args: any) => any }>,
       A.foldl([] as Cases, (b, c) => {
         b.push({
@@ -94,7 +94,7 @@ export function match_<I extends readonly [any, ...(readonly any[])]>(
 
 /**
  * Pipeable version of `match_`. Pattern matches on one or more values.
- * 
+ *
  * @note When specifying patterns (in the `case` property), use `as const`. For some Typescript-y reason it is required for the pipeable version
  *
  * @category pattern matching
@@ -278,7 +278,7 @@ function builder<A extends NonEmptyTuple<any>, B>(
 
   return {
     case(...args: ReadonlyArray<any>) {
-      const { patterns, predicates } = pipe(
+      const { patterns, predicates } = P.pipe(
         args.slice(0, -1),
         A.foldl({ patterns: [] as Array<Pattern<A>>, predicates: [] as Array<Predicate<A>> }, (acc, arg) => {
           if (typeof arg === 'function') {
@@ -316,7 +316,7 @@ function builder<A extends NonEmptyTuple<any>, B>(
           {
             test: predicate,
             handler,
-            select: identity
+            select: P.identity
           }
         ])
       ) as any,
@@ -328,7 +328,7 @@ function builder<A extends NonEmptyTuple<any>, B>(
           {
             test: () => true,
             handler,
-            select: identity
+            select: P.identity
           }
         ])
       ).run(),

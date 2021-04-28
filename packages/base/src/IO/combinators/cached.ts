@@ -6,11 +6,11 @@ import type { FIO, IO, UIO, URIO } from '../core'
 import type { Has } from '@principia/prelude/Has'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import { Clock } from '../../Clock'
 import { RuntimeException } from '../../Exception'
+import { pipe } from '../../function'
 import * as O from '../../Option'
 import * as P from '../../Promise'
 import * as RefM from '../../RefM'
@@ -117,4 +117,3 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
 function _invalidate<E, A>(cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>): UIO<void> {
   return cache.set(O.None())
 }
-

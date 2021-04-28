@@ -1,13 +1,10 @@
 import type { Option } from '../Option'
 import type { Stack } from '../util/support/Stack'
-import type { _A, _E, _R, UnionToIntersection } from '../util/types'
 import type { Has, Tag } from '@principia/prelude/Has'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { flow, identity, pipe } from '@principia/prelude/function'
 import { isTag, mergeEnvironments } from '@principia/prelude/Has'
-import { tuple } from '@principia/prelude/tuple'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
@@ -278,7 +275,7 @@ export function matchM<E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 export function match_<R, E, A, B, C>(async: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, never, B | C> {
-  return matchM_(async, flow(f, succeed), flow(g, succeed))
+  return matchM_(async, P.flow(f, succeed), P.flow(g, succeed))
 }
 
 export function match<E, A, B, C>(
@@ -320,10 +317,10 @@ export function pure<A>(a: A): Async<unknown, never, A> {
 export function sequenceTPar<A extends ReadonlyArray<Async<any, any, any>>>(
   ...asyncs: A & { 0: Async<any, any, any> }
 ): Async<
-  _R<A[number]>,
-  _E<A[number]>,
+  P._R<A[number]>,
+  P._E<A[number]>,
   {
-    [K in keyof A]: _A<A[K]>
+    [K in keyof A]: P._A<A[K]>
   }
 > {
   return new All(asyncs) as any
@@ -333,7 +330,7 @@ export function crossPar_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return crossWithPar_(fa, fb, tuple)
+  return crossWithPar_(fa, fb, P.tuple)
 }
 
 export function crossPar<R1, E1, A1>(
@@ -394,10 +391,10 @@ export function aprPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R
 
 export function sequenceT<A extends ReadonlyArray<Async<any, any, any>>>(
   ...fas: A & { 0: Async<any, any, any> }
-): Async<_R<A[number]>, _E<A[number]>, { [K in keyof A]: _A<A[K]> }> {
+): Async<P._R<A[number]>, P._E<A[number]>, { [K in keyof A]: P._A<A[K]> }> {
   return A.foldl_(
     fas,
-    (succeed(A.empty<any>()) as unknown) as Async<_R<A[number]>, _E<A[number]>, { [K in keyof A]: _A<A[K]> }>,
+    (succeed(A.empty<any>()) as unknown) as Async<P._R<A[number]>, P._E<A[number]>, { [K in keyof A]: P._A<A[K]> }>,
     (b, a) => crossWith_(b, a, (acc, r) => A.append_(acc, r)) as any
   )
 }
@@ -406,7 +403,7 @@ export function cross_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return crossWith_(fa, fb, tuple)
+  return crossWith_(fa, fb, P.tuple)
 }
 
 export function cross<R1, E1, A1>(
@@ -463,7 +460,7 @@ export function apr<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E
  */
 
 export function mapError_<R, E, A, B>(pab: Async<R, E, A>, f: (e: E) => B): Async<R, B, A> {
-  return matchM_(pab, flow(f, fail), succeed)
+  return matchM_(pab, P.flow(f, fail), succeed)
 }
 
 export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => Async<R, B, A> {
@@ -471,7 +468,7 @@ export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => A
 }
 
 export function bimap_<R, E, A, B, C>(pab: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, B, C> {
-  return matchM_(pab, flow(f, fail), flow(g, succeed))
+  return matchM_(pab, P.flow(f, fail), P.flow(g, succeed))
 }
 
 export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Async<R, E, A>) => Async<R, B, C> {
@@ -521,7 +518,7 @@ export function bind<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<
 }
 
 export function flatten<R, E, R1, E1, A>(mma: Async<R, E, Async<R1, E1, A>>): Async<R & R1, E | E1, A> {
-  return bind_(mma, identity)
+  return bind_(mma, P.identity)
 }
 
 export function tap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, A> {
@@ -560,7 +557,7 @@ export function asks<R, A>(f: (_: R) => A): Async<R, never, A> {
 }
 
 export function ask<R>(): Async<R, never, R> {
-  return asks(identity)
+  return asks(P.identity)
 }
 
 export function giveAll_<R, E, A>(ra: Async<R, E, A>, env: R): Async<unknown, E, A> {
@@ -601,13 +598,14 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Async<R, E, B>
 ) => Async<
-  R & UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
+  R & P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
   E,
   B
 > {
   return (f) =>
-    asksM((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
-      f(R.map_(s, (v) => r[v.key]) as any)
+    asksM(
+      (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+        f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 
@@ -616,14 +614,14 @@ export function asksServicesTM<SS extends Tag<any>[]>(
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Async<R, E, B>
 ) => Async<
-  R & UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
+  R & P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
   E,
   B
 > {
   return (f) =>
     asksM(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -637,13 +635,13 @@ export function asksServicesT<SS extends Tag<any>[]>(
 ): <B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
 ) => URAsync<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
   B
 > {
   return (f) =>
     asks(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -659,9 +657,12 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <B>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
-) => URAsync<UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>, B> {
+) => URAsync<
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
+  B
+> {
   return (f) =>
-    asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+    asks((r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
       f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
@@ -947,7 +948,7 @@ export function runPromiseExitEnv_<R, E, A>(
           break
         }
         case AsyncTag.Give: {
-          current = pipe(
+          current = P.pipe(
             effectTotal(() => {
               pushEnv(I.env)
             }),
@@ -1158,7 +1159,7 @@ const adapter: {
   <R, E, A>(_: Async<R, E, A>): GenHKT<Async<R, E, A>, A>
 } = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new GenHKT(asksService(_)(identity))
+    return new GenHKT(asksService(_)(P.identity))
   }
   if (E.isEither(_)) {
     return new GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))

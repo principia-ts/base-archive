@@ -1,9 +1,8 @@
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Exit } from '../../Exit'
 
-import { pipe } from '@principia/prelude/function'
-
 import * as Ex from '../../Exit'
+import { pipe } from '../../function'
 import { foreachExec as foreachExecIO } from '../../IO/combinators/foreachExec'
 import * as O from '../../Option'
 import * as Ref from '../../Ref'

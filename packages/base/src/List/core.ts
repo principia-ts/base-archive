@@ -17,8 +17,8 @@ import type { Predicate } from '@principia/prelude/Predicate'
 import type { Refinement } from '@principia/prelude/Refinement'
 
 import * as P from '@principia/prelude'
-import { identity } from '@principia/prelude/function'
 
+import { identity } from '../function'
 import * as O from '../Option'
 
 /**

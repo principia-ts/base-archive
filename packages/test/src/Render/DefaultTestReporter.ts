@@ -8,11 +8,11 @@ import type { USync } from '@principia/base/Sync'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { absurd, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Option'
 import * as Sy from '@principia/base/Sync'
 import { cyan, green, red, RESET } from '@principia/base/util/AnsiFormat'
-import { absurd, identity, pipe } from '@principia/prelude/function'
 import { matchTag, matchTag_ } from '@principia/prelude/matchers'
 
 import { TestAnnotationMap } from '../Annotation'

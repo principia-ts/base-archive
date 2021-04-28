@@ -1,8 +1,8 @@
 // tracing: off
 
 import { traceAs } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
+import { pipe } from '../../function'
 import * as Semaphore from '../../Semaphore'
 import * as I from '../core'
 import { foreachUnitPar_ } from './foreachUnitPar'

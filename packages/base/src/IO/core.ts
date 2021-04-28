@@ -14,7 +14,6 @@ import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Option } from '../Option'
 import type { Supervisor } from '../Supervisor'
 import type { Sync } from '../Sync'
-import type { _E, _R, UnionToIntersection } from '../util/types'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 import type { Monoid } from '@principia/prelude'
 import type { Has, Tag } from '@principia/prelude/Has'
@@ -22,8 +21,7 @@ import type { Predicate } from '@principia/prelude/Predicate'
 import type { Refinement } from '@principia/prelude/Refinement'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { makeMonoid } from '@principia/prelude'
-import { constant, flow, identity, pipe } from '@principia/prelude/function'
+import * as P from '@principia/prelude'
 import { isTag, mergeEnvironments } from '@principia/prelude/Has'
 import { tuple } from '@principia/prelude/tuple'
 
@@ -35,6 +33,7 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
+import { constant, flow, identity, pipe } from '../function'
 import * as I from '../Iterable'
 import * as NEA from '../NonEmptyArray'
 import * as O from '../Option'
@@ -1969,7 +1968,7 @@ export function matchCause<E, A, A1, A2>(
  */
 export function foreachUnit_<R, E, A, A1>(as: Iterable<A>, f: (a: A) => IO<R, E, A1>): IO<R, E, void> {
   return I.foldMap_(
-    makeMonoid<IO<R, E, void>>(
+    P.Monoid<IO<R, E, void>>(
       (x, y) =>
         bind_(
           x,
@@ -3645,13 +3644,14 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => IO<R, E, B>
 ) => IO<
-  R & UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
+  R & P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
   E,
   B
 > {
   return (f) =>
-    asksM((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
-      f(R.map_(s, (v) => r[v.key]) as any)
+    asksM(
+      (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+        f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 
@@ -3660,14 +3660,14 @@ export function asksServicesTM<SS extends Tag<any>[]>(
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => IO<R, E, B>
 ) => IO<
-  R & UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
+  R & P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
   E,
   B
 > {
   return (f) =>
     asksM(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -3681,13 +3681,13 @@ export function asksServicesT<SS extends Tag<any>[]>(
 ): <B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
 ) => URIO<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
   B
 > {
   return (f) =>
     asks(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -3703,9 +3703,9 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <B>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
-) => URIO<UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>, B> {
+) => URIO<P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>, B> {
   return (f) =>
-    asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+    asks((r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
       f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
@@ -3858,7 +3858,7 @@ export function gen<R0, E0, A0>(): <T extends GenIO<R0, E0, any>>(
      */
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
-) => IO<_R<T>, _E<T>, A0>
+) => IO<P._R<T>, P._E<T>, A0>
 export function gen<E0, A0>(): <T extends GenIO<any, E0, any>>(
   f: (i: {
     /**
@@ -3886,7 +3886,7 @@ export function gen<E0, A0>(): <T extends GenIO<any, E0, any>>(
      */
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
-) => IO<_R<T>, _E<T>, A0>
+) => IO<P._R<T>, P._E<T>, A0>
 export function gen<A0>(): <T extends GenIO<any, any, any>>(
   f: (i: {
     /**
@@ -3914,7 +3914,7 @@ export function gen<A0>(): <T extends GenIO<any, any, any>>(
      */
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A0, any>
-) => IO<_R<T>, _E<T>, A0>
+) => IO<P._R<T>, P._E<T>, A0>
 export function gen<T extends GenIO<any, any, any>, A>(
   f: (i: {
     /**
@@ -3942,10 +3942,10 @@ export function gen<T extends GenIO<any, any, any>, A>(
      */
     <R, E, A>(_: Sync<R, E, A>): GenIO<R, E, A>
   }) => Generator<T, A, any>
-): IO<_R<T>, _E<T>, A>
+): IO<P._R<T>, P._E<T>, A>
 export function gen(...args: any[]): any {
   const trace = accessCallTrace()
-  const _gen  = <T extends GenIO<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): IO<_R<T>, _E<T>, A> =>
+  const _gen  = <T extends GenIO<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): IO<P._R<T>, P._E<T>, A> =>
     deferTotal(
       traceFrom(trace, () => {
         const iterator = f(adapter as any)

@@ -1,8 +1,8 @@
 import type * as G from './Guard'
 
 import * as P from '@principia/prelude'
-import * as E from '@principia/prelude/Eq'
-import * as F from '@principia/prelude/Field'
+
+import * as E from './Eq'
 
 /*
  * -------------------------------------------
@@ -23,12 +23,12 @@ export function isNumber(u: unknown): u is number {
 /**
  * @category instances
  */
-export const Eq: P.Eq<number> = E.EqStrict
+export const Eq: P.Eq<number> = E.strict
 
 /**
  * @category instances
  */
-export const Ord: P.Ord<number> = P.makeOrd((x, y) => (x < y ? -1 : x > y ? 1 : 0))
+export const Ord: P.Ord<number> = P.Ord((x, y) => (x < y ? -1 : x > y ? 1 : 0))
 
 /**
  * @category instances
@@ -42,17 +42,17 @@ export const Bounded: P.Bounded<number> = {
 /**
  * @category instances
  */
-export const Show: P.Show<number> = P.makeShow((x) => JSON.stringify(x))
+export const Show: P.Show<number> = P.Show((x) => JSON.stringify(x))
 
 /**
  * @category instances
  */
-export const SemigroupSum: P.Semigroup<number> = P.makeSemigroup((x, y) => x + y)
+export const SemigroupSum: P.Semigroup<number> = P.Semigroup((x, y) => x + y)
 
 /**
  * @category instances
  */
-export const SemigroupProduct: P.Semigroup<number> = P.makeSemigroup((x, y) => x * y)
+export const SemigroupProduct: P.Semigroup<number> = P.Semigroup((x, y) => x * y)
 
 /**
  * @category instances
@@ -80,7 +80,7 @@ export const Guard: G.Guard<unknown, number> = {
 /**
  * @category instances
  */
-export const Field: F.Field<number> = F.Field({
+export const Field: P.Field<number> = P.Field({
   zero: 0,
   one: 1,
   degree: (_) => 1,

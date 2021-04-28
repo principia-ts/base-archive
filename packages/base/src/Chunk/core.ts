@@ -7,10 +7,9 @@ import type { Predicate } from '@principia/prelude/Predicate'
 import type { Refinement } from '@principia/prelude/Refinement'
 
 import * as P from '@principia/prelude'
-import { identity, unsafeCoerce } from '@principia/prelude/function'
-import { tuple } from '@principia/prelude/tuple'
 
 import * as A from '../Array/core'
+import { unsafeCoerce } from '../function'
 import * as It from '../Iterable'
 import * as O from '../Option'
 import { AtomicNumber } from '../util/support/AtomicNumber'
@@ -975,7 +974,7 @@ export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chu
 }
 
 export function cross_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
-  return crossWith_(as, bs, tuple)
+  return crossWith_(as, bs, P.tuple)
 }
 
 export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
@@ -1039,7 +1038,7 @@ export function zipWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk
 }
 
 export function zip_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
-  return zipWith_(as, bs, tuple)
+  return zipWith_(as, bs, P.tuple)
 }
 
 export function zip<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
@@ -1211,7 +1210,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>
  */
 
 export function compact<A>(as: Chunk<O.Option<A>>): Chunk<A> {
-  return filterMap_(as, identity)
+  return filterMap_(as, P.identity)
 }
 
 export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chunk<A>] {
@@ -1256,7 +1255,7 @@ export const traverse: P.TraverseFn<URI> = (G) => {
 
 export const sequence: P.SequenceFn<URI> = (G) => {
   const traverseG_ = traverse_(G)
-  return (ta) => traverseG_(ta, identity)
+  return (ta) => traverseG_(ta, P.identity)
 }
 
 /*

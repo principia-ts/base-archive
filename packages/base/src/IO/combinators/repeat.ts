@@ -4,9 +4,9 @@ import type { IO } from '../core'
 import type { Has } from '@principia/prelude/Has'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
 import * as E from '../../Either'
+import { pipe } from '../../function'
 import * as O from '../../Option'
 import * as S from '../../Schedule'
 import { bind, fail, map, map_, matchM, orDie } from '../core'

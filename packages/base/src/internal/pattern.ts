@@ -2,14 +2,10 @@
  * Forked from https://github.com/gvergnaud/ts-pattern
  */
 import type { Option } from '../Option'
-import type { Primitive, UnionToIntersection, UnionToTuple } from '../util/types'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-import type { Compute } from '@principia/prelude/util/compute'
-
-import { pipe } from '@principia/prelude/function'
+import type * as P from '@principia/prelude'
 
 import * as A from '../Array/core'
+import { pipe } from '../function'
 import * as O from '../Option'
 import * as R from '../Record'
 
@@ -215,7 +211,7 @@ const selectKwargsWithPattern = <a, p extends Pattern<a>>(pattern: p, value: a):
  * ---------------------------------------------------------------------------------------------------
  */
 
-export type GuardValue<F> = F extends Refinement<any, infer B> ? B : F extends Predicate<infer A> ? A : never
+export type GuardValue<F> = F extends P.Refinement<any, infer B> ? B : F extends P.Predicate<infer A> ? A : never
 
 type WildCardPattern<A> = A extends number
   ? typeof $number
@@ -229,7 +225,7 @@ export type GuardPattern<A, B extends A = never> = {
   /** @deprecated This property should only be used by ts-pattern's internals. */
   '@@pattern/__patternKind': typeof $guard
   /** @deprecated This property should only be used by ts-pattern's internals. */
-  '@@pattern/__when': Predicate<A> | Refinement<A, B>
+  '@@pattern/__when': P.Predicate<A> | P.Refinement<A, B>
 }
 
 export type NotPattern<A> = {
@@ -258,7 +254,7 @@ export type Pattern<A> =
   | GuardPattern<A>
   | NotPattern<A | any>
   | WildCardPattern<A>
-  | (A extends Primitive
+  | (A extends P.Primitive
       ? A
       : A extends ReadonlyArray<infer I>
       ? A extends readonly [infer A1, infer A2, infer A3, infer A4, infer A5]
@@ -298,7 +294,7 @@ export type InvertPattern<P> = P extends typeof __.number
     : P2
   : P extends NotPattern<infer A1>
   ? NotPattern<InvertPattern<A1>>
-  : P extends Primitive
+  : P extends P.Primitive
   ? P
   : P extends readonly (infer PP)[]
   ? P extends readonly [infer P1, infer P2, infer P3, infer P4, infer P5]
@@ -330,7 +326,7 @@ type InvertPatternForExclude<P, I> = P extends NotPattern<infer P1>
   ? unknown
   : P extends GuardPattern<any, infer P1>
   ? P1
-  : P extends Primitive
+  : P extends P.Primitive
   ? IsLiteral<P> extends true
     ? P
     : IsLiteral<I> extends true
@@ -533,7 +529,7 @@ type SelectionToArgs<selections extends Record<string, [unknown, unknown]>, i> =
   : { [k in keyof selections]: selections[k][0] }
 
 export type FindSelected<I, P> = SelectionToArgs<
-  Cast<UnionToIntersection<{} | FindSelectionUnion<I, P>>, Record<string, [unknown, unknown]>>,
+  Cast<P.UnionToIntersection<{} | FindSelectionUnion<I, P>>, Record<string, [unknown, unknown]>>,
   I
 >
 
@@ -541,7 +537,7 @@ export type Cast<a, b> = a extends b ? a : never
 
 export type ValueOf<a> = a extends any[] ? a[number] : a[keyof a]
 
-export type Values<a extends object> = UnionToTuple<ValueOf<a>>
+export type Values<a extends object> = P.UnionToTuple<ValueOf<a>>
 
 type SafeGet<data, k extends PropertyKey, def> = k extends keyof data ? data[k] : def
 
@@ -561,7 +557,7 @@ type Update<data, value, path extends PropertyKey[]> = path extends [infer head,
     ? Set<Update<a, value, Cast<tail, PropertyKey[]>>>
     : data extends Map<infer k, infer v>
     ? Map<k, Update<v, value, Cast<tail, PropertyKey[]>>>
-    : Compute<
+    : P.Compute<
         Omit<data, Cast<head, PropertyKey>> &
           {
             [k in Cast<head, PropertyKey>]: Update<SafeGet<data, k, {}>, value, Cast<tail, PropertyKey[]>>
@@ -575,7 +571,7 @@ export type IsMatching<a, p> =
   // match everything.
   unknown extends p
     ? true
-    : p extends Primitive
+    : p extends P.Primitive
     ? p extends a
       ? true
       : false
@@ -680,7 +676,7 @@ type BuildOne<data, xs extends any[]> = xs extends [[infer value, infer path], .
 
 type DistributeMatchingUnions<a, p> = IsAny<a> extends true ? any : BuildMany<a, Distribute<FindUnionsMany<a, p>>>
 
-type FindUnionsMany<a, p, path extends PropertyKey[] = []> = UnionToTuple<
+type FindUnionsMany<a, p, path extends PropertyKey[] = []> = P.UnionToTuple<
   (p extends any ? (IsMatching<a, p> extends true ? FindUnions<a, p, path> : []) : never)[number]
 >
 
@@ -755,7 +751,7 @@ type Flatten<xs extends any[]> = xs extends readonly [infer head, ...infer tail]
   ? [...Cast<head, any[]>, ...Flatten<tail>]
   : []
 
-export type IsUnion<a> = [a] extends [UnionToIntersection<a>] ? false : true
+export type IsUnion<a> = [a] extends [P.UnionToIntersection<a>] ? false : true
 
 export type DeepExclude<a, b> = Exclude<DistributeMatchingUnions<a, b>, b>
 

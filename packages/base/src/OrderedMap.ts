@@ -8,16 +8,13 @@
 
 import type { Option } from './Option'
 import type { Stack } from './util/support/Stack'
-import type { Semigroup } from '@principia/prelude'
-import type { Ord } from '@principia/prelude/Ord'
-import type { Predicate, PredicateWithIndex } from '@principia/prelude/Predicate'
-import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinement'
+import type * as P from '@principia/prelude'
 
 import * as O from './Option'
 import { makeStack } from './util/support/Stack'
 
 export class OrderedMap<K, V> implements OrderedMapIterable<K, V> {
-  constructor(readonly ord: Ord<K>, readonly root: Node<K, V> | Leaf) {}
+  constructor(readonly ord: P.Ord<K>, readonly root: Node<K, V> | Leaf) {}
 
   [Symbol.iterator](): OrderedMapIterator<K, V> {
     return forward(this)[Symbol.iterator]()
@@ -30,7 +27,7 @@ export class OrderedMap<K, V> implements OrderedMapIterable<K, V> {
  * -------------------------------------------
  */
 
-export function make<K, V>(ord: Ord<K>) {
+export function make<K, V>(ord: P.Ord<K>) {
   return new OrderedMap<K, V>(ord, null)
 }
 
@@ -38,9 +35,9 @@ export function make<K, V>(ord: Ord<K>) {
  * Creates a new `OrderedMap` from an `Ord` and an iterable of key-value pairs
  */
 export function from<K, V>(iterable: OrderedMapIterable<K, V>): OrderedMap<K, V>
-export function from<K, V>(iterable: Iterable<readonly [K, V]>, ord: Ord<K>): OrderedMap<K, V>
+export function from<K, V>(iterable: Iterable<readonly [K, V]>, ord: P.Ord<K>): OrderedMap<K, V>
 export function from<K, V>(
-  ...args: [OrderedMapIterable<K, V>] | [Iterable<readonly [K, V]>, Ord<K>]
+  ...args: [OrderedMapIterable<K, V>] | [Iterable<readonly [K, V]>, P.Ord<K>]
 ): OrderedMap<K, V> {
   let tree = args.length === 2 ? make<K, V>(args[1]) : make<K, V>(args[0].ord)
 
@@ -123,7 +120,7 @@ export function insert<K, V>(key: K, value: V): (m: OrderedMap<K, V>) => Ordered
  * Inserts an element into the correct position in the map, combining euqal key's values
  * with a `Semigroup` instance
  */
-export function insertWith_<V>(S: Semigroup<V>) {
+export function insertWith_<V>(S: P.Semigroup<V>) {
   return <K>(m: OrderedMap<K, V>, key: K, value: V) => {
     if (isEmptyNode(m.root)) {
       return new OrderedMap(m.ord, Node(R, Leaf, key, value, Leaf, 1))
@@ -187,7 +184,7 @@ export function remove<K>(key: K): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> 
  * Inserts an element into the correct position in the map, combining euqal key's values
  * with a `Semigroup` instance
  */
-export function insertWith<V>(S: Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
+export function insertWith<V>(S: P.Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
   const insertWithS_ = insertWith_(S)
   return (key, value) => (m) => insertWithS_(m, key, value)
 }
@@ -636,10 +633,10 @@ export function map<A, B>(f: (a: A) => B): <K>(fa: OrderedMap<K, A>) => OrderedM
 
 export function ifilter_<K, A, B extends A>(
   m: OrderedMap<K, A>,
-  refinement: RefinementWithIndex<K, A, B>
+  refinement: P.RefinementWithIndex<K, A, B>
 ): OrderedMap<K, B>
-export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: PredicateWithIndex<K, A>): OrderedMap<K, A>
-export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: PredicateWithIndex<K, A>): OrderedMap<K, A> {
+export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithIndex<K, A>): OrderedMap<K, A>
+export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithIndex<K, A>): OrderedMap<K, A> {
   let r         = make<K, A>(m.ord)
   const entries = forward(m)
   for (const [k, v] of entries) {
@@ -651,22 +648,22 @@ export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: PredicateWithInde
 }
 
 export function ifilter<K, A, B extends A>(
-  refinement: RefinementWithIndex<K, A, B>
+  refinement: P.RefinementWithIndex<K, A, B>
 ): (m: OrderedMap<K, A>) => OrderedMap<K, B>
-export function ifilter<K, A>(predicate: PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A>
-export function ifilter<K, A>(predicate: PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A> {
+export function ifilter<K, A>(predicate: P.PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A>
+export function ifilter<K, A>(predicate: P.PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A> {
   return (m) => ifilter_(m, predicate)
 }
 
-export function filter_<K, A, B extends A>(m: OrderedMap<K, A>, refinement: Refinement<A, B>): OrderedMap<K, B>
-export function filter_<K, A>(m: OrderedMap<K, A>, predicate: Predicate<A>): OrderedMap<K, A>
-export function filter_<K, A>(m: OrderedMap<K, A>, predicate: Predicate<A>): OrderedMap<K, A> {
+export function filter_<K, A, B extends A>(m: OrderedMap<K, A>, refinement: P.Refinement<A, B>): OrderedMap<K, B>
+export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.Predicate<A>): OrderedMap<K, A>
+export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.Predicate<A>): OrderedMap<K, A> {
   return ifilter_(m, (_, a) => predicate(a))
 }
 
-export function filter<A, B extends A>(refinement: Refinement<A, B>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, B>
-export function filter<A>(predicate: Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A>
-export function filter<A>(predicate: Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A> {
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, B>
+export function filter<A>(predicate: P.Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A>
+export function filter<A>(predicate: P.Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A> {
   return (m) => filter_(m, predicate)
 }
 
@@ -1324,7 +1321,7 @@ class OrderedMapIterator<K, V> implements Iterator<readonly [K, V]> {
 }
 
 export interface OrderedMapIterable<K, V> extends Iterable<readonly [K, V]> {
-  readonly ord: Ord<K>
+  readonly ord: P.Ord<K>
   [Symbol.iterator](): OrderedMapIterator<K, V>
 }
 

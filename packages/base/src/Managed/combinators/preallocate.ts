@@ -1,8 +1,8 @@
-import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
+import { pipe } from '../../function'
 import { Managed } from '../core'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'

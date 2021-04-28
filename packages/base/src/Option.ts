@@ -4,23 +4,14 @@
  */
 
 import type { Either } from './Either'
-import type { Guard } from './Guard'
 import type { OptionURI } from './Modules'
 import type { These } from './These'
-import type { Eq } from '@principia/prelude/Eq'
-import type { FunctionN } from '@principia/prelude/function'
 import type * as HKT from '@principia/prelude/HKT'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-import type { Show } from '@principia/prelude/Show'
 
 import * as P from '@principia/prelude'
-import { makeEq } from '@principia/prelude/Eq'
-import { flow, identity, pipe } from '@principia/prelude/function'
-import * as O from '@principia/prelude/internal/option'
-import { tuple } from '@principia/prelude/tuple'
+import * as O from '@principia/prelude/Option'
 
-import { makeGuard } from './Guard'
+import * as G from './Guard'
 
 /*
  * -------------------------------------------
@@ -104,7 +95,7 @@ export function tryCatch<A>(thunk: () => A): Option<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>): (...args: A) => Option<B> {
+export function tryCatchK<A extends ReadonlyArray<unknown>, B>(f: P.FunctionN<A, B>): (...args: A) => Option<B> {
   return (...a) => tryCatch(() => f(...a))
 }
 
@@ -239,7 +230,7 @@ export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa
 }
 
 export function align_<A, B>(fa: Option<A>, fb: Option<B>): Option<These<A, B>> {
-  return alignWith_(fa, fb, identity)
+  return alignWith_(fa, fb, P.identity)
 }
 
 export function align<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<These<A, B>> {
@@ -309,7 +300,7 @@ export function catchAll<B>(f: () => Option<B>): <A>(fa: Option<A>) => Option<A 
 export function catchSome_<A, B>(fa: Option<A>, f: () => Option<Option<B>>): Option<A | B> {
   return catchAll_(
     fa,
-    flow(
+    P.flow(
       f,
       getOrElse((): Option<A | B> => fa)
     )
@@ -348,7 +339,7 @@ export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
  * @since 1.0.0
  */
 export function cross_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
-  return crossWith_(fa, fb, tuple)
+  return crossWith_(fa, fb, P.tuple)
 }
 
 /**
@@ -447,8 +438,8 @@ export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten
  * -------------------------------------------
  */
 
-export function getEq<A>(E: Eq<A>): Eq<Option<A>> {
-  return makeEq((x, y) => (x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)))
+export function getEq<A>(E: P.Eq<A>): P.Eq<Option<A>> {
+  return P.Eq((x, y) => (x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)))
 }
 
 /*
@@ -469,7 +460,7 @@ export function extend<A, B>(f: (wa: Option<A>) => B): (wa: Option<A>) => Option
 /**
  */
 export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
-  return extend_(wa, identity)
+  return extend_(wa, P.identity)
 }
 
 /*
@@ -478,29 +469,32 @@ export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
  * -------------------------------------------
  */
 
-export function filter_<A, B extends A>(fa: Option<A>, refinement: Refinement<A, B>): Option<B>
-export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A>
-export function filter_<A>(fa: Option<A>, predicate: Predicate<A>): Option<A> {
+export function filter_<A, B extends A>(fa: Option<A>, refinement: P.Refinement<A, B>): Option<B>
+export function filter_<A>(fa: Option<A>, predicate: P.Predicate<A>): Option<A>
+export function filter_<A>(fa: Option<A>, predicate: P.Predicate<A>): Option<A> {
   return isNone(fa) ? None() : predicate(fa.value) ? fa : None()
 }
 
-export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Option<A>) => Option<B>
-export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A>
-export function filter<A>(predicate: Predicate<A>): (fa: Option<A>) => Option<A> {
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (fa: Option<A>) => Option<B>
+export function filter<A>(predicate: P.Predicate<A>): (fa: Option<A>) => Option<A>
+export function filter<A>(predicate: P.Predicate<A>): (fa: Option<A>) => Option<A> {
   return (fa) => filter_(fa, predicate)
 }
 
-export function partition_<A, B extends A>(fa: Option<A>, refinement: Refinement<A, B>): readonly [Option<A>, Option<B>]
-export function partition_<A>(fa: Option<A>, predicate: Predicate<A>): readonly [Option<A>, Option<A>]
-export function partition_<A>(fa: Option<A>, predicate: Predicate<A>): readonly [Option<A>, Option<A>] {
+export function partition_<A, B extends A>(
+  fa: Option<A>,
+  refinement: P.Refinement<A, B>
+): readonly [Option<A>, Option<B>]
+export function partition_<A>(fa: Option<A>, predicate: P.Predicate<A>): readonly [Option<A>, Option<A>]
+export function partition_<A>(fa: Option<A>, predicate: P.Predicate<A>): readonly [Option<A>, Option<A>] {
   return [filter_(fa, (a) => !predicate(a)), filter_(fa, predicate)]
 }
 
 export function partition<A, B extends A>(
-  refinement: Refinement<A, B>
+  refinement: P.Refinement<A, B>
 ): (fa: Option<A>) => readonly [Option<A>, Option<B>]
-export function partition<A>(predicate: Predicate<A>): (fa: Option<A>) => readonly [Option<A>, Option<A>]
-export function partition<A>(predicate: Predicate<A>): (fa: Option<A>) => readonly [Option<A>, Option<A>] {
+export function partition<A>(predicate: P.Predicate<A>): (fa: Option<A>) => readonly [Option<A>, Option<A>]
+export function partition<A>(predicate: P.Predicate<A>): (fa: Option<A>) => readonly [Option<A>, Option<A>] {
   return (fa) => partition_(fa, predicate)
 }
 
@@ -621,7 +615,7 @@ export function bind<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B>
  */
 export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
   return bind_(ma, (a) =>
-    pipe(
+    P.pipe(
       f(a),
       map(() => a)
     )
@@ -646,7 +640,7 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
  * @since 1.0.0
  */
 export function flatten<A>(mma: Option<Option<A>>): Option<A> {
-  return bind_(mma, identity)
+  return bind_(mma, P.identity)
 }
 
 /*
@@ -718,7 +712,7 @@ export function getApplySemigroup<A>(S: P.Semigroup<A>): P.Semigroup<Option<A>> 
  * -------------------------------------------
  */
 
-export function getShow<A>(S: Show<A>): Show<Option<A>> {
+export function getShow<A>(S: P.Show<A>): P.Show<Option<A>> {
   return {
     show: (a) => (isNone(a) ? 'None' : `Some(${S.show(a.value)})`)
   }
@@ -737,7 +731,7 @@ export function getShow<A>(S: Show<A>): Show<Option<A>> {
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) =>
-  isNone(ta) ? G.pure(None()) : pipe(f(ta.value), G.map(Some))
+  isNone(ta) ? G.pure(None()) : P.pipe(f(ta.value), G.map(Some))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -753,7 +747,7 @@ export const traverse: P.TraverseFn<URI> = (G) => (f) => (ta) => traverse_(G)(ta
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI> = (G) => (fa) => (isNone(fa) ? G.pure(None()) : pipe(fa.value, G.map(Some)))
+export const sequence: P.SequenceFn<URI> = (G) => (fa) => (isNone(fa) ? G.pure(None()) : P.pipe(fa.value, G.map(Some)))
 
 /*
  * -------------------------------------------
@@ -778,12 +772,12 @@ export const compactA: P.WitherFn<URI> = (A) => (f) => (wa) => compactA_(A)(wa, 
 export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) => {
   const o = map_(
     wa,
-    flow(
+    P.flow(
       f,
-      A.map((e) => tuple(getLeft(e), getRight(e)))
+      A.map((e) => P.tuple(getLeft(e), getRight(e)))
     )
   )
-  return isNone(o) ? A.pure(tuple(None(), None())) : o.value
+  return isNone(o) ? A.pure(P.tuple(None(), None())) : o.value
 }
 
 export const separateA: P.WiltFn<URI> = (A) => (f) => (wa) => separateA_(A)(wa, f)
@@ -858,10 +852,10 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  * -------------------------------------------
  * Guard
  * -------------------------------------------
-*/
+ */
 
-export function getGuard<A>(G: Guard<unknown, A>): Guard<unknown, Option<A>> {
-  return makeGuard((u): u is Option<A> => isOption(u) && (u._tag === 'None' || G.is(u.value)))
+export function getGuard<A>(guard: G.Guard<unknown, A>): G.Guard<unknown, Option<A>> {
+  return G.Guard((u): u is Option<A> => isOption(u) && (u._tag === 'None' || guard.is(u.value)))
 }
 
 /*

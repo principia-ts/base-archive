@@ -1,10 +1,7 @@
-import type { Ord } from '@principia/prelude/Ord'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-
-import { not } from '@principia/prelude/Predicate'
+import type * as P from '@principia/prelude'
 
 import * as OM from './OrderedMap'
+import { not } from './Predicate'
 
 export class OrderedSet<A> implements Iterable<A> {
   constructor(readonly keyMap: OM.OrderedMap<A, null>) {}
@@ -20,7 +17,7 @@ export class OrderedSet<A> implements Iterable<A> {
  * -------------------------------------------
  */
 
-export function make<A>(ord: Ord<A>): OrderedSet<A> {
+export function make<A>(ord: P.Ord<A>): OrderedSet<A> {
   return new OrderedSet(OM.make(ord))
 }
 
@@ -84,7 +81,7 @@ export function isSubset<A>(y: OrderedSet<A>): (x: OrderedSet<A>) => boolean {
   return (x) => isSubset_(x, y)
 }
 
-export function some_<A>(set: OrderedSet<A>, predicate: Predicate<A>): boolean {
+export function some_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): boolean {
   let found = false
   for (const a of set) {
     found = predicate(a)
@@ -93,11 +90,11 @@ export function some_<A>(set: OrderedSet<A>, predicate: Predicate<A>): boolean {
   return found
 }
 
-export function some<A>(predicate: Predicate<A>): (set: OrderedSet<A>) => boolean {
+export function some<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => boolean {
   return (set) => some_(set, predicate)
 }
 
-export function every_<A>(set: OrderedSet<A>, predicate: Predicate<A>): boolean {
+export function every_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): boolean {
   return not(some(not(predicate)))(set)
 }
 
@@ -107,7 +104,7 @@ export function every_<A>(set: OrderedSet<A>, predicate: Predicate<A>): boolean 
  * -------------------------------------------
  */
 
-export function map_<B>(O: Ord<B>): <A>(fa: OrderedSet<A>, f: (a: A) => B) => OrderedSet<B> {
+export function map_<B>(O: P.Ord<B>): <A>(fa: OrderedSet<A>, f: (a: A) => B) => OrderedSet<B> {
   return (fa, f) => {
     let r = make<B>(O)
     forEach_(fa, (a) => {
@@ -117,7 +114,7 @@ export function map_<B>(O: Ord<B>): <A>(fa: OrderedSet<A>, f: (a: A) => B) => Or
   }
 }
 
-export function map<B>(O: Ord<B>): <A>(f: (a: A) => B) => (fa: OrderedSet<A>) => OrderedSet<B> {
+export function map<B>(O: P.Ord<B>): <A>(f: (a: A) => B) => (fa: OrderedSet<A>) => OrderedSet<B> {
   return (f) => (fa) => map_(O)(fa, f)
 }
 
@@ -127,15 +124,15 @@ export function map<B>(O: Ord<B>): <A>(f: (a: A) => B) => (fa: OrderedSet<A>) =>
  * -------------------------------------------
  */
 
-export function filter_<A, B extends A>(set: OrderedSet<A>, refinement: Refinement<A, B>): OrderedSet<B>
-export function filter_<A>(set: OrderedSet<A>, predicate: Predicate<A>): OrderedSet<A>
-export function filter_<A>(set: OrderedSet<A>, predicate: Predicate<A>): OrderedSet<A> {
+export function filter_<A, B extends A>(set: OrderedSet<A>, refinement: P.Refinement<A, B>): OrderedSet<B>
+export function filter_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): OrderedSet<A>
+export function filter_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): OrderedSet<A> {
   return new OrderedSet(OM.ifilter_(set.keyMap, (a) => predicate(a)))
 }
 
-export function filter<A, B extends A>(refinement: Refinement<A, B>): (set: OrderedSet<A>) => OrderedSet<B>
-export function filter<A>(predicate: Predicate<A>): (set: OrderedSet<A>) => OrderedSet<A>
-export function filter<A>(predicate: Predicate<A>): (set: OrderedSet<A>) => OrderedSet<A> {
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (set: OrderedSet<A>) => OrderedSet<B>
+export function filter<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => OrderedSet<A>
+export function filter<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => OrderedSet<A> {
   return (set) => filter_(set, predicate)
 }
 
@@ -159,7 +156,7 @@ export function foldl<A, Z>(z: Z, f: (z: Z, a: A) => Z): (fa: OrderedSet<A>) => 
  * -------------------------------------------
  */
 
-export function bind_<B>(O: Ord<B>): <A>(ma: OrderedSet<A>, f: (a: A) => Iterable<B>) => OrderedSet<B> {
+export function bind_<B>(O: P.Ord<B>): <A>(ma: OrderedSet<A>, f: (a: A) => Iterable<B>) => OrderedSet<B> {
   return (ma, f) => {
     let r = make(O)
     forEach_(ma, (a) => {
@@ -173,7 +170,7 @@ export function bind_<B>(O: Ord<B>): <A>(ma: OrderedSet<A>, f: (a: A) => Iterabl
   }
 }
 
-export function bind<B>(O: Ord<B>): <A>(f: (A: A) => Iterable<B>) => (ma: OrderedSet<A>) => OrderedSet<B> {
+export function bind<B>(O: P.Ord<B>): <A>(f: (A: A) => Iterable<B>) => (ma: OrderedSet<A>) => OrderedSet<B> {
   return (f) => (ma) => bind_(O)(ma, f)
 }
 

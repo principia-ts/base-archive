@@ -7,9 +7,6 @@ import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinem
 import type { Show } from '@principia/prelude/Show'
 
 import * as P from '@principia/prelude'
-import { makeEq } from '@principia/prelude/Eq'
-import { identity, pipe } from '@principia/prelude/function'
-import { tuple } from '@principia/prelude/tuple'
 
 import * as G from './Guard'
 import * as O from './Option'
@@ -267,7 +264,7 @@ export function getEq<N extends string, A>(E: Eq<A>): Eq<ReadonlyRecord<N, A>>
 export function getEq<A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>>
 export function getEq<A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>> {
   const isSubrecordE = isSubrecord(E)
-  return makeEq((x, y) => isSubrecordE(x)(y) && isSubrecordE(y)(x))
+  return P.Eq((x, y) => isSubrecordE(x)(y) && isSubrecordE(y)(x))
 }
 
 /*
@@ -411,7 +408,7 @@ export function ipartition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predica
       mut_left[key] = a
     }
   }
-  return tuple(mut_left, mut_right)
+  return P.tuple(mut_left, mut_right)
 }
 
 /**
@@ -607,7 +604,7 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigr
     fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (a: A) => readonly [N, B]
   ): ReadonlyRecord<N, B> =>
-    pipe(
+    P.pipe(
       fa,
       F.foldl<A, Record<N, B>>({} as any, (mut_r, a) => {
         const [k, b] = f(a)
@@ -621,7 +618,7 @@ export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup
   const fromFoldableMapS = fromFoldableMap(S, F)
   return <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, N extends string>(
     fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, readonly [N, A]>
-  ): ReadonlyRecord<N, A> => fromFoldableMapS(fa, identity)
+  ): ReadonlyRecord<N, A> => fromFoldableMapS(fa, P.identity)
 }
 
 /*
@@ -685,7 +682,7 @@ export function map<A, B>(f: (a: A) => B): <N extends string>(fa: Readonly<Recor
 export function getMonoid<N extends string, A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<N, A>>
 export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string, A>>
 export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string, A>> {
-  return P.makeMonoid<ReadonlyRecord<string, A>>((x, y) => {
+  return P.Monoid<ReadonlyRecord<string, A>>((x, y) => {
     if (x === empty) {
       return y
     }
@@ -775,7 +772,7 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itrav
  */
 export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => {
   const traverseG = itraverse_(G)
-  return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
+  return (wa, f) => P.pipe(traverseG(wa, f), G.map(compact))
 }
 
 /**
@@ -795,7 +792,7 @@ export const compactA: P.WitherFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => 
 export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = P.implementWiltWithIndex_<[HKT.URI<RecordURI>]>()(
   () => (G) => {
     const traverseG = itraverse_(G)
-    return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
+    return (wa, f) => P.pipe(traverseG(wa, f), G.map(separate))
   }
 )
 
@@ -936,7 +933,7 @@ export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<re
  * -------------------------------------------
  */
 
-export const EqUnknownRecord: Eq<ReadonlyRecord<string, unknown>> = makeEq((x, y) => {
+export const EqUnknownRecord: Eq<ReadonlyRecord<string, unknown>> = P.Eq((x, y) => {
   for (const k in x) {
     if (!(k in y)) {
       return false
@@ -950,12 +947,12 @@ export const EqUnknownRecord: Eq<ReadonlyRecord<string, unknown>> = makeEq((x, y
   return true
 })
 
-export const GuardUnknownRecord: G.Guard<unknown, ReadonlyRecord<string, unknown>> = G.makeGuard(
+export const GuardUnknownRecord: G.Guard<unknown, ReadonlyRecord<string, unknown>> = G.Guard(
   (u): u is ReadonlyRecord<string, unknown> => u != null && typeof u === 'object' && !Array.isArray(u)
 )
 
 export function getGuard<A>(codomain: G.Guard<unknown, A>): G.Guard<unknown, ReadonlyRecord<string, A>> {
-  return pipe(
+  return P.pipe(
     GuardUnknownRecord,
     G.refine((r): r is ReadonlyRecord<string, A> => {
       for (const k in r) {

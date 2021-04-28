@@ -4,7 +4,7 @@ import type { FiberId } from './Fiber/FiberId'
 import type { FIO } from './IO/core'
 import type { Option } from './Option'
 
-import { pipe } from '@principia/prelude/function'
+import * as P from '@principia/prelude'
 
 import * as E from './Either'
 import {
@@ -98,7 +98,7 @@ export class Promise<E, A> {
    * waiting on the value of the promise as by the fiber calling this method.
    */
   get interrupt(): I.UIO<boolean> {
-    return pipe(
+    return P.pipe(
       I.fiberId(),
       I.bind((id) => this.completeWith(interruptAsIO(id)))
     )

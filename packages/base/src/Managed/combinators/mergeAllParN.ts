@@ -1,8 +1,7 @@
 import type { Managed } from '../core'
 
-import { pipe } from '@principia/prelude/function'
-
 import { parallelN } from '../../ExecutionStrategy'
+import { pipe } from '../../function'
 import * as Iter from '../../Iterable'
 import { mapM } from '../core'
 import * as I from '../internal/_io'

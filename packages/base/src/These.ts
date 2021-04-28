@@ -5,12 +5,9 @@ import type { Eq } from '@principia/prelude/Eq'
 import type { Show } from '@principia/prelude/Show'
 
 import * as P from '@principia/prelude'
-import { makeSemigroup } from '@principia/prelude'
-import { makeEq } from '@principia/prelude/Eq'
-import { identity } from '@principia/prelude/function'
 import * as HKT from '@principia/prelude/HKT'
-import { None, Some } from '@principia/prelude/internal/option'
-import * as T from '@principia/prelude/internal/these'
+import { None, Some } from '@principia/prelude/Option'
+import * as T from '@principia/prelude/These'
 
 /*
  * -------------------------------------------
@@ -257,7 +254,7 @@ export function swap<E, A>(pab: These<E, A>): These<A, E> {
  */
 
 export function getEq<E, A>(EE: Eq<E>, EA: Eq<A>): Eq<These<E, A>> {
-  return makeEq((x, y) =>
+  return P.Eq((x, y) =>
     isLeft(x)
       ? isLeft(y) && EE.equals_(x.left, y.left)
       : isRight(x)
@@ -354,7 +351,7 @@ export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<URI, HKT.Fi
  */
 
 export function getSemigroup<E, A>(SE: P.Semigroup<E>, SA: P.Semigroup<A>): P.Semigroup<These<E, A>> {
-  return makeSemigroup((x, y) =>
+  return P.Semigroup((x, y) =>
     isLeft(x)
       ? isLeft(y)
         ? Left(SE.combine_(x.left, y.left))
@@ -412,7 +409,7 @@ export const traverse: P.TraverseFn<URI, V> = (G) => {
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence = P.implementSequence<URI, V>()((_) => (G) => traverse(G)(identity))
+export const sequence = P.implementSequence<URI, V>()((_) => (G) => traverse(G)(P.identity))
 
 /*
  * -------------------------------------------

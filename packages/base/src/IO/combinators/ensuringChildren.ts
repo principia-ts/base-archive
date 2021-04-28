@@ -3,8 +3,7 @@
 import type { RuntimeFiber } from '../../Fiber'
 import type { IO } from '../core'
 
-import { pipe } from '@principia/prelude/function'
-
+import { pipe } from '../../function'
 import * as Supervisor from '../../Supervisor'
 import { bind, supervised } from '../core'
 import { ensuring } from './ensuring'

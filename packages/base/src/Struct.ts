@@ -1,20 +1,27 @@
 /**
  * Operations on heterogeneous records
  */
+import type * as Eq from './Eq'
 import type { ReadonlyRecord } from './Record'
-import type { EnsureLiteral, TestLiteral } from './util/types'
-import type * as P from '@principia/prelude'
 import type * as HKT from '@principia/prelude/HKT'
+
+import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
 import * as R from './Record'
 import * as Str from './string'
+
+type Eq<A> = Eq.Eq<A>
 
 /*
  * -------------------------------------------
  * *** experimental ***
  * -------------------------------------------
  */
+
+type EnsureLiteral<K> = string extends K ? never : [K] extends [P.UnionToIntersection<K>] ? K : never
+
+type TestLiteral<K> = string extends K ? unknown : [K] extends [P.UnionToIntersection<K>] ? K : unknown
 
 type EnsureNonexistentProperty<T, K extends string> = Extract<keyof T, K> extends never ? T : never
 
@@ -295,4 +302,17 @@ export function omit<S, K extends ReadonlyArray<keyof S extends never ? string :
   ? { readonly [P in Exclude<keyof S, K[number]>]: S[P] }
   : { readonly [P in Exclude<keyof S1, K[number]>]: S1[P] } {
   return (s) => omit_(s)(...(keys as any)) as any
+}
+
+export function getEq<P extends Record<PropertyKey, P.Eq<any>>>(
+  properties: P
+): Eq<Readonly<{ [K in keyof P]: Eq.TypeOf<P[K]> }>> {
+  return P.Eq((x, y) => {
+    for (const k in properties) {
+      if (!properties[k].equals_(x[k], y[k])) {
+        return false
+      }
+    }
+    return true
+  })
 }

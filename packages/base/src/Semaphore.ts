@@ -2,10 +2,9 @@ import type { Either } from './Either'
 import type { Promise } from './Promise'
 import type { URef } from './Ref/core'
 
-import { pipe } from '@principia/prelude/function'
-
 import * as E from './Either'
 import { IllegalArgumentError } from './Error'
+import { pipe } from './function'
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
 import * as M from './Managed/core'

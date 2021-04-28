@@ -2,11 +2,11 @@ import type { Cause } from '../../Cause/core'
 import type { IO } from '../core'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { flow } from '@principia/prelude/function'
 
 import * as C from '../../Cause/core'
 import * as E from '../../Either'
 import * as Ex from '../../Exit'
+import { flow } from '../../function'
 import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
 

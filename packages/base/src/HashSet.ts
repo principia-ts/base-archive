@@ -1,21 +1,13 @@
-import type { Eq } from '@principia/prelude/Eq'
-import type { Equatable } from '@principia/prelude/Equatable'
-import type { Hash } from '@principia/prelude/Hash'
-import type { Hashable } from '@principia/prelude/Hashable'
-import type { Ord } from '@principia/prelude/Ord'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-
-import { makeEq } from '@principia/prelude/Eq'
-import { $equals, equals } from '@principia/prelude/Equatable'
-import { $hash, hashIterator } from '@principia/prelude/Hashable'
-import { not } from '@principia/prelude/Predicate'
+import * as P from '@principia/prelude'
 import { tuple } from '@principia/prelude/tuple'
 
+import { $equals, equals } from './Equatable'
+import { $hash, hashIterator } from './Hashable'
 import * as HM from './HashMap'
 import * as It from './Iterable'
+import { not } from './Predicate'
 
-export class HashSet<V> implements Iterable<V>, Hashable, Equatable {
+export class HashSet<V> implements Iterable<V>, P.Hashable, P.Equatable {
   constructor(readonly keyMap: HM.HashMap<V, any>) {}
 
   [Symbol.iterator](): Iterator<V> {
@@ -29,7 +21,7 @@ export class HashSet<V> implements Iterable<V>, Hashable, Equatable {
   }
 }
 
-export function make<V>(K: Hash<V> & Eq<V>) {
+export function make<V>(K: P.Hash<V> & P.Eq<V>) {
   return new HashSet(HM.make(K))
 }
 
@@ -149,14 +141,14 @@ export function map<B>(E: HM.Config<B>): <A>(f: (x: A) => B) => (set: HashSet<A>
  *
  * @dataFirst some_
  */
-export function some<A>(predicate: Predicate<A>): (set: HashSet<A>) => boolean {
+export function some<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => boolean {
   return (set) => some_(set, predicate)
 }
 
 /**
  * true if one or more elements match predicate
  */
-export function some_<A>(set: HashSet<A>, predicate: Predicate<A>): boolean {
+export function some_<A>(set: HashSet<A>, predicate: P.Predicate<A>): boolean {
   let found = false
   for (const e of set) {
     found = predicate(e)
@@ -177,8 +169,8 @@ export function size<A>(set: HashSet<A>) {
 /**
  * Creates an equal for a set
  */
-export function getEq<A>(): Eq<HashSet<A>> {
-  return makeEq((x, y) => {
+export function getEq<A>(): P.Eq<HashSet<A>> {
+  return P.Eq((x, y) => {
     if (y === x) {
       return true
     }
@@ -201,14 +193,14 @@ export function getEq<A>(): Eq<HashSet<A>> {
  *
  * @dataFirst every_
  */
-export function every<A>(predicate: Predicate<A>): (set: HashSet<A>) => boolean {
+export function every<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => boolean {
   return (set) => every_(set, predicate)
 }
 
 /**
  * true if all elements match predicate
  */
-export function every_<A>(set: HashSet<A>, predicate: Predicate<A>): boolean {
+export function every_<A>(set: HashSet<A>, predicate: P.Predicate<A>): boolean {
   return not(some(not(predicate)))(set)
 }
 
@@ -265,18 +257,18 @@ export function isSubset_<A>(x: HashSet<A>, y: HashSet<A>): boolean {
  *
  * @dataFirst filter_
  */
-export function filter<A, B extends A>(refinement: Refinement<A, B>): (set: HashSet<A>) => HashSet<B>
-export function filter<A>(predicate: Predicate<A>): (set: HashSet<A>) => HashSet<A>
-export function filter<A>(predicate: Predicate<A>): (set: HashSet<A>) => HashSet<A> {
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (set: HashSet<A>) => HashSet<B>
+export function filter<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => HashSet<A>
+export function filter<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => HashSet<A> {
   return (set) => filter_(set, predicate)
 }
 
 /**
  * Filter set values using predicate
  */
-export function filter_<A, B extends A>(set: HashSet<A>, refinement: Refinement<A, B>): HashSet<B>
-export function filter_<A>(set: HashSet<A>, predicate: Predicate<A>): HashSet<A>
-export function filter_<A>(set: HashSet<A>, predicate: Predicate<A>): HashSet<A> {
+export function filter_<A, B extends A>(set: HashSet<A>, refinement: P.Refinement<A, B>): HashSet<B>
+export function filter_<A>(set: HashSet<A>, predicate: P.Predicate<A>): HashSet<A>
+export function filter_<A>(set: HashSet<A>, predicate: P.Predicate<A>): HashSet<A> {
   const r = make(set.keyMap.config)
 
   return mutate_(r, (r) => {
@@ -298,10 +290,10 @@ export function filter_<A>(set: HashSet<A>, predicate: Predicate<A>): HashSet<A>
  * @dataFirst partition_
  */
 export function partition<A, B extends A>(
-  refinement: Refinement<A, B>
+  refinement: P.Refinement<A, B>
 ): (set: HashSet<A>) => readonly [HashSet<A>, HashSet<B>]
-export function partition<A>(predicate: Predicate<A>): (set: HashSet<A>) => readonly [HashSet<A>, HashSet<A>]
-export function partition<A>(predicate: Predicate<A>): (set: HashSet<A>) => readonly [HashSet<A>, HashSet<A>] {
+export function partition<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => readonly [HashSet<A>, HashSet<A>]
+export function partition<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => readonly [HashSet<A>, HashSet<A>] {
   return (set) => partition_(set, predicate)
 }
 
@@ -310,10 +302,10 @@ export function partition<A>(predicate: Predicate<A>): (set: HashSet<A>) => read
  */
 export function partition_<A, B extends A>(
   set: HashSet<A>,
-  refinement: Refinement<A, B>
+  refinement: P.Refinement<A, B>
 ): readonly [HashSet<A>, HashSet<B>]
-export function partition_<A>(set: HashSet<A>, predicate: Predicate<A>): readonly [HashSet<A>, HashSet<A>]
-export function partition_<A>(set: HashSet<A>, predicate: Predicate<A>): readonly [HashSet<A>, HashSet<A>] {
+export function partition_<A>(set: HashSet<A>, predicate: P.Predicate<A>): readonly [HashSet<A>, HashSet<A>]
+export function partition_<A>(set: HashSet<A>, predicate: P.Predicate<A>): readonly [HashSet<A>, HashSet<A>] {
   const values_ = values(set)
   let e: IteratorResult<A>
   const right   = beginMutation(make(set.keyMap.config))
@@ -432,7 +424,7 @@ export function union<A>(y: Iterable<A>): (x: HashSet<A>) => HashSet<A> {
  * -------------------------------------------
  */
 
-export function toArray<A>(O: Ord<A>): (set: HashSet<A>) => ReadonlyArray<A> {
+export function toArray<A>(O: P.Ord<A>): (set: HashSet<A>) => ReadonlyArray<A> {
   return (set) => {
     const r: Array<A> = []
     forEach_(set, (a) => r.push(a))

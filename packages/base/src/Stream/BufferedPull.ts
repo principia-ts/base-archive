@@ -1,9 +1,9 @@
 import type { Chunk } from '../Chunk'
 
-import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import * as C from '../Chunk'
+import { pipe } from '../function'
 import * as I from '../IO'
 import * as O from '../Option'
 import * as R from '../Ref'
@@ -93,9 +93,7 @@ export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Optio
   )
 }
 
-export function make<R, E, A>(
-  pull: I.IO<R, O.Option<E>, Chunk<A>>
-): I.IO<unknown, never, BufferedPull<R, E, A>> {
+export function make<R, E, A>(pull: I.IO<R, O.Option<E>, Chunk<A>>): I.IO<unknown, never, BufferedPull<R, E, A>> {
   return I.gen(function* (_) {
     const done   = yield* _(R.makeRef(false))
     const cursor = yield* _(R.makeRef<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))

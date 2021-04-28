@@ -4,9 +4,9 @@ import type { Chunk } from '../../Chunk/core'
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
 import * as C from '../../Chunk/core'
+import { pipe } from '../../function'
 import * as O from '../../Option'
 import { map, map_ } from '../core'
 import { foreachParN } from './foreachParN'

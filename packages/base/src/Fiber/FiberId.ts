@@ -1,6 +1,4 @@
-import type { Eq } from '@principia/prelude/Eq'
-
-import { makeEq } from '@principia/prelude/Eq'
+import * as P from '@principia/prelude'
 
 import { AtomicNumber } from '../util/support/AtomicNumber'
 
@@ -27,7 +25,7 @@ export const FiberId = (startTime: number, seqNumber: number): FiberId => ({
 
 export const emptyFiberId = FiberId(0, 0)
 
-export const eqFiberId: Eq<FiberId> = makeEq((x, y) => x.seqNumber === y.seqNumber && x.startTime === y.startTime)
+export const eqFiberId: P.Eq<FiberId> = P.Eq((x, y) => x.seqNumber === y.seqNumber && x.startTime === y.startTime)
 
 export function newFiberId() {
   return FiberId(new Date().getTime(), _fiberCounter.getAndIncrement())

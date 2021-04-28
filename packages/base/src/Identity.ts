@@ -2,7 +2,6 @@ import type { IdentityURI } from './Modules'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { identity, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 /*
@@ -24,7 +23,7 @@ type URI = [HKT.URI<IdentityURI>]
 /**
  * @optimize identity
  */
-export const alt_: <A>(fa: A, that: () => A) => A = identity
+export const alt_: <A>(fa: A, that: () => A) => A = P.identity
 
 /**
  * @optimize identity
@@ -109,9 +108,9 @@ export function extend<A, B>(f: (wa: A) => B): (wa: A) => B {
 /**
  * @optimize identity
  */
-export const extract: <A>(wa: A) => A = identity
+export const extract: <A>(wa: A) => A = P.identity
 
-export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(identity)
+export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(P.identity)
 
 /*
  * -------------------------------------------
@@ -180,7 +179,7 @@ export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
 }
 
 export function flatten<A>(mma: A): A {
-  return bind_(mma, identity)
+  return bind_(mma, P.identity)
 }
 
 /*
@@ -189,14 +188,14 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<URI>()((_) => (G) => (ta, f) => pipe(f(ta), G.map(identity)))
+export const traverse_ = P.implementTraverse_<URI>()((_) => (G) => (ta, f) => P.pipe(f(ta), G.map(P.identity)))
 
 export const traverse: P.TraverseFn<URI> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<URI> = (G) => (ta) => pipe(ta, G.map(identity))
+export const sequence: P.SequenceFn<URI> = (G) => (ta) => P.pipe(ta, G.map(P.identity))
 
 /*
  * -------------------------------------------

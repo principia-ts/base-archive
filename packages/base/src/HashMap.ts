@@ -1,21 +1,22 @@
 /* eslint-disable functional/immutable-data */
 import type { Node, UpdateFn } from './internal/hamt'
-import type { Eq } from '@principia/prelude/Eq'
 import type { Equatable } from '@principia/prelude/Equatable'
 import type { Hash } from '@principia/prelude/Hash'
 import type { Hashable } from '@principia/prelude/Hashable'
 import type { Refinement } from '@principia/prelude/Refinement'
 
-import { EqStrict } from '@principia/prelude/Eq'
-import { $equals, equals } from '@principia/prelude/Equatable'
-import { constant, identity } from '@principia/prelude/function'
-import { $hash, hash, hashIterator } from '@principia/prelude/Hashable'
 import { tuple } from '@principia/prelude/tuple'
 
+import * as Eq from './Eq'
+import { $equals, equals } from './Equatable'
+import { constant, identity } from './function'
+import { $hash, hash, hashIterator } from './Hashable'
 import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as It from './Iterable'
 import * as O from './Option'
+
+type Eq<A> = Eq.Eq<A>
 
 export type Config<K> = Eq<K> & Hash<K>
 
@@ -441,7 +442,7 @@ export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
  */
 export function makeDefault<K, V>() {
   return make<K, V>({
-    ...EqStrict,
+    ...Eq.strict,
     hash
   })
 }

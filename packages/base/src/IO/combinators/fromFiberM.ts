@@ -1,9 +1,9 @@
 import type { IO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
-import { flow } from '@principia/prelude/function'
 
 import * as Fiber from '../../Fiber'
+import { flow } from '../../function'
 import { bind_ } from '../core'
 
 /**

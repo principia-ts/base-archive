@@ -1,9 +1,8 @@
-import type { Erase, UnionToIntersection } from './util/types'
+import type * as P from '@principia/prelude'
 import type { Has, Tag } from '@principia/prelude/Has'
 
-import { pipe } from '@principia/prelude/function'
-
 import * as A from './Array/core'
+import { pipe } from './function'
 import * as Sy from './Sync'
 import { AtomicReference } from './util/support/AtomicReference'
 
@@ -126,14 +125,14 @@ export class Both<R, E, A, R1, E1, A1> extends SyncLayer<R & R1, E | E1, A & A1>
   }
 }
 
-export class Using<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A & A1> {
+export class Using<R, E, A, R1, E1, A1> extends SyncLayer<R & P.Erase<R1, A>, E | E1, A & A1> {
   readonly _tag = SyncLayerTag.Using
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
     super()
   }
 
-  scope(): Sy.Sync<unknown, never, (_: SyncMemoMap) => Sy.Sync<R & Erase<R1, A>, E | E1, A & A1>> {
+  scope(): Sy.Sync<unknown, never, (_: SyncMemoMap) => Sy.Sync<R & P.Erase<R1, A>, E | E1, A & A1>> {
     return Sy.succeed(
       (_) =>
         pipe(
@@ -145,30 +144,30 @@ export class Using<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | 
               Sy.give(l)
             )
           )
-        ) as Sy.Sync<R & Erase<R1, A>, E | E1, A & A1>
+        ) as Sy.Sync<R & P.Erase<R1, A>, E | E1, A & A1>
     )
   }
 }
 
-export class From<R, E, A, R1, E1, A1> extends SyncLayer<R & Erase<R1, A>, E | E1, A1> {
+export class From<R, E, A, R1, E1, A1> extends SyncLayer<R & P.Erase<R1, A>, E | E1, A1> {
   readonly _tag = SyncLayerTag.From
 
   constructor(readonly left: SyncLayer<R, E, A>, readonly right: SyncLayer<R1, E1, A1>) {
     super()
   }
 
-  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R & Erase<R1, A>, E | E1, A1>> {
+  scope(): Sy.USync<(_: SyncMemoMap) => Sy.Sync<R & P.Erase<R1, A>, E | E1, A1>> {
     return Sy.succeed(
       (_) =>
         pipe(
           getMemoOrElseCreate(this.left)(_),
           Sy.bind((l) => pipe(getMemoOrElseCreate(this.right)(_), Sy.give(l)))
-        ) as Sy.Sync<R & Erase<R1, A>, E | E1, A1>
+        ) as Sy.Sync<R & P.Erase<R1, A>, E | E1, A1>
     )
   }
 }
 
-export type MergeR<Ls extends ReadonlyArray<SyncLayer<any, any, any>>> = UnionToIntersection<
+export type MergeR<Ls extends ReadonlyArray<SyncLayer<any, any, any>>> = P.UnionToIntersection<
   {
     [k in keyof Ls]: [Ls[k]] extends [SyncLayer<infer X, any, any>] ? (unknown extends X ? never : X) : never
   }[number]
@@ -178,7 +177,7 @@ export type MergeE<Ls extends ReadonlyArray<SyncLayer<any, any, any>>> = {
   [k in keyof Ls]: [Ls[k]] extends [SyncLayer<any, infer X, any>] ? X : never
 }[number]
 
-export type MergeA<Ls extends ReadonlyArray<SyncLayer<any, any, any>>> = UnionToIntersection<
+export type MergeA<Ls extends ReadonlyArray<SyncLayer<any, any, any>>> = P.UnionToIntersection<
   {
     [k in keyof Ls]: [Ls[k]] extends [SyncLayer<any, any, infer X>] ? (unknown extends X ? never : X) : never
   }[number]
@@ -242,25 +241,25 @@ export function and<R2, E2, A2>(
 
 export function andTo<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
-): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & Erase<R2, A>, E2 | E, A & A2> {
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & P.Erase<R2, A>, E2 | E, A & A2> {
   return (right) => new Using(right, left)
 }
 
 export function to<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
-): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & Erase<R2, A>, E2 | E, A2> {
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<R & P.Erase<R2, A>, E2 | E, A2> {
   return (right) => new From(right, left)
 }
 
 export function using<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
-): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<Erase<R, A2> & R2, E2 | E, A & A2> {
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<P.Erase<R, A2> & R2, E2 | E, A & A2> {
   return (right) => new Using(left, right)
 }
 
 export function from<R2, E2, A2>(
   left: SyncLayer<R2, E2, A2>
-): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<Erase<R, A2> & R2, E2 | E, A> {
+): <R, E, A>(right: SyncLayer<R, E, A>) => SyncLayer<P.Erase<R, A2> & R2, E2 | E, A> {
   return (right) => new From(left, right)
 }
 

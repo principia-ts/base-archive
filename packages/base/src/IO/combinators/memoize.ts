@@ -2,9 +2,9 @@ import type { IO, UIO } from '../core'
 import type { Eq } from '@principia/prelude/Eq'
 
 import { traceAs } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
+import { pipe } from '../../function'
 import * as P from '../../Promise'
 import * as RefM from '../../RefM'
 import * as I from '../core'

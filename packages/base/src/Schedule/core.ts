@@ -4,12 +4,12 @@ import type { Option } from '../Option'
 import type { Decision, StepFunction } from './Decision'
 import type { Has } from '@principia/prelude/Has'
 
-import { constant, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import { Clock } from '../Clock'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
+import { constant, pipe } from '../function'
 import * as I from '../IO/core'
 import * as O from '../Option'
 import { Random } from '../Random'
@@ -702,7 +702,7 @@ export function delayedFrom<R, I>(sc: Schedule<R, I, number>) {
 }
 
 export function exponential(base: number, factor = 2): Schedule<unknown, unknown, number> {
-  return delayedFrom(map_(forever, (i) => base * Math.pow(factor, i)), )
+  return delayedFrom(map_(forever, (i) => base * Math.pow(factor, i)))
 }
 
 export function union_<R, I, O, R1, I1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, O1>) {

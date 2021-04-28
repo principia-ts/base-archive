@@ -1,12 +1,12 @@
 import type { Clock } from '../../Clock'
 import type { Has } from '@principia/prelude/Has'
 
-import { flow, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import * as E from '../../Either'
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
+import { flow, pipe } from '../../function'
 import * as O from '../../Option'
 import { Managed } from '../core'
 import * as I from '../internal/_io'

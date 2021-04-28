@@ -2,8 +2,6 @@ import type { ReaderURI } from './Modules'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { flow, identity } from '@principia/prelude/function'
-import { tuple } from '@principia/prelude/tuple'
 
 /*
  * -------------------------------------------
@@ -26,7 +24,7 @@ type URI = [HKT.URI<ReaderURI>]
  */
 
 export function ask<R>(): Reader<R, R> {
-  return identity
+  return P.identity
 }
 
 export function asks<R, A>(f: (r: R) => A): Reader<R, A> {
@@ -82,7 +80,7 @@ export function pure<A>(a: A): Reader<unknown, A> {
  */
 
 export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {
-  return crossWith_(fa, fb, tuple)
+  return crossWith_(fa, fb, P.tuple)
 }
 
 export function cross<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, readonly [A, B]> {
@@ -134,7 +132,7 @@ export function apr<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reade
  */
 
 export function compose_<R, A, B>(fa: Reader<R, A>, fb: Reader<A, B>): Reader<R, B> {
-  return flow(fa, fb)
+  return P.flow(fa, fb)
 }
 
 export function compose<A, B>(fb: Reader<A, B>): <R>(fa: Reader<R, A>) => Reader<R, B> {
@@ -142,7 +140,7 @@ export function compose<A, B>(fb: Reader<A, B>): <R>(fa: Reader<R, A>) => Reader
 }
 
 export function id<R>(): Reader<R, R> {
-  return identity
+  return P.identity
 }
 
 /*
@@ -152,7 +150,7 @@ export function id<R>(): Reader<R, R> {
  */
 
 export function map_<R, A, B>(fa: Reader<R, A>, f: (a: A) => B): Reader<R, B> {
-  return flow(fa, f)
+  return P.flow(fa, f)
 }
 
 export function map<A, B>(f: (a: A) => B): <R>(fa: Reader<R, A>) => Reader<R, B> {
@@ -196,7 +194,7 @@ export function tap<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>)
  */
 
 export function dimap_<R, A, Q, B>(pa: Reader<R, A>, f: (q: Q) => R, g: (a: A) => B): Reader<Q, B> {
-  return flow(f, pa, g)
+  return P.flow(f, pa, g)
 }
 
 export function dimap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: Reader<R, A>) => Reader<Q, B> {
@@ -217,7 +215,7 @@ export function unit(): Reader<unknown, void> {
  * -------------------------------------------
  * instances
  * -------------------------------------------
-*/
+ */
 
 export const Functor = P.Functor<URI, V>({
   map_
@@ -271,7 +269,7 @@ export const MonadEnv = P.MonadEnv<URI, V>({
   bind_,
   flatten,
   asks,
-  giveAll_,
+  giveAll_
 })
 
 export const Profunctor = P.Profunctor<URI, V>({

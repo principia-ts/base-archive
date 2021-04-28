@@ -2,8 +2,7 @@ import type { Exit } from '../Exit'
 import type { Option } from '../Option'
 import type { URef } from '../Ref/core'
 
-import { absurd, increment, pipe } from '@principia/prelude/function'
-
+import { absurd, increment, pipe } from '../function'
 import * as I from '../IO/core'
 import * as M from '../Map'
 import * as O from '../Option'

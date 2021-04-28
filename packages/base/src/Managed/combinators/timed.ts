@@ -2,9 +2,8 @@ import type { Clock } from '../../Clock'
 import type * as RM from '../ReleaseMap'
 import type { Has } from '@principia/prelude/Has'
 
-import { pipe } from '@principia/prelude/function'
-
 import { ClockTag } from '../../Clock'
+import { pipe } from '../../function'
 import { asksServiceManaged, Managed } from '../core'
 import * as I from '../internal/_io'
 

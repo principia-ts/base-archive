@@ -1746,10 +1746,10 @@
   resolved "https://registry.yarnpkg.com/@principia/compile/-/compile-0.7.2.tgz#958073ccda328cf4234cdeb607f2a140d282e82c"
   integrity sha512-qANXSPdv+cXZg6ooOroUvcIUnLmRFXTL6nJvsL3Q7kLbHs6BgwxDPESs9Ldbifi8FC4oe8aBc/K5vTSKUBbw2w==
 
-"@principia/prelude@^0.7.5":
-  version "0.7.5"
-  resolved "https://registry.yarnpkg.com/@principia/prelude/-/prelude-0.7.5.tgz#e8414909cf6f31fb0ee8c9d3d258a2b105b1af34"
-  integrity sha512-pttyyvx0NpTjnI9LTaOZReNwU5mlnlcFUn7Ti72aQ2gOlhfuuNbVBF2YtK7iVlU0B9hbaVABYOUsNdRksaJTRw==
+"@principia/prelude@^0.8.3":
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/@principia/prelude/-/prelude-0.8.3.tgz#765118d6e6d873743a9fbe41a76e6ee77e78dcf4"
+  integrity sha512-hXkRfjc5nOOUo5q+vkbNCxDZMQHYZcjOTxBhwryJHvrHELDkzWKXXKjRVLQKfV3eT8qoZCHPdK70vk0RB/U+5A==
   dependencies:
     "@principia/compile" "^0.7.2"
 
@@ -1803,10 +1803,15 @@
   resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.2.1.tgz#283f669ff76d7b8260df8ab7a4262cc83d988256"
   integrity sha512-fZQQafSREFyuZcdWFAExYjBiCL7AUCdgsk80iO0q4yihYYdcIiH28CcuPTGFgLOCC8RlW49GSQxdHwZP+I7CNg==
 
-"@types/node@*", "@types/node@^14.14.41":
+"@types/node@*":
   version "14.14.41"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.14.41.tgz#d0b939d94c1d7bd53d04824af45f1139b8c45615"
   integrity sha512-dueRKfaJL4RTtSa7bWeTK1M+VH+Gns73oCgzvYfHZywRCoPSd8EkXBL0mZ9unPTveBn+D9phZBaxuzpwjWkW0g==
+
+"@types/node@^15.0.1":
+  version "15.0.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-15.0.1.tgz#ef34dea0881028d11398be5bf4e856743e3dc35a"
+  integrity sha512-TMkXt0Ck1y0KKsGr9gJtWGjttxlZnnvDtphxUOSd0bfaR6Q1jle+sPvrzNR1urqYTWMinoKvjKfXUGsumaO1PA==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.0"
@@ -3372,10 +3377,10 @@ escape-string-regexp@^4.0.0:
   resolved "https://registry.yarnpkg.com/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz#14ba83a5d373e3d311e5afca29cf5bfad965bf34"
   integrity sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==
 
-eslint-config-prettier@^8.2.0:
-  version "8.2.0"
-  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.2.0.tgz#78de77d63bca8e9e59dae75a614b5299925bb7b3"
-  integrity sha512-dWV9EVeSo2qodOPi1iBYU/x6F6diHv8uujxbxr77xExs3zTAlNXvVZKiyLsQGNz7yPV2K49JY5WjPzNIuDc2Bw==
+eslint-config-prettier@^8.3.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.3.0.tgz#f7471b20b6fe8a9a9254cc684454202886a2dd7a"
+  integrity sha512-BgZuLUSeKzvlL/VUjx/Yb787VQ26RU3gGjA3iiFvdsp/2bMfVIWUVP7tjxtjS0e+HP409cPlPvNkQloz8C91ew==
 
 eslint-import-resolver-node@^0.3.4:
   version "0.3.4"
@@ -3533,7 +3538,7 @@ eslint@^5.0.0:
     table "^5.2.3"
     text-table "^0.2.0"
 
-eslint@^7.24.0, eslint@^7.9.0:
+eslint@^7.25.0, eslint@^7.9.0:
   version "7.25.0"
   resolved "https://registry.yarnpkg.com/eslint/-/eslint-7.25.0.tgz#1309e4404d94e676e3e831b3a3ad2b050031eb67"
   integrity sha512-TVpSovpvCNpLURIScDRB6g5CYu/ZFq9GfX2hLNIV4dSBKxIWojeDODvYl3t0k0VtMxYeR8OXPCFE5+oHMlGfhw==

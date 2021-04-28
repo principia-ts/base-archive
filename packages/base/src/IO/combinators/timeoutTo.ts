@@ -2,9 +2,9 @@ import type { IO } from '../core'
 import type { Has } from '@principia/prelude/Has'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
 import { Clock } from '../../Clock'
+import { pipe } from '../../function'
 import { as, map } from '../core'
 import { makeInterruptible } from './interrupt'
 import { raceFirst } from './raceFirst'

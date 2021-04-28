@@ -9,7 +9,6 @@ import type { WidenLiteral } from './util'
 import type { Either } from '@principia/base/Either'
 import type { IO, URIO } from '@principia/base/IO'
 import type { Stream } from '@principia/base/Stream'
-import type { UnionToIntersection } from '@principia/base/util/types'
 import type { Has } from '@principia/prelude/Has'
 import type { Show } from '@principia/prelude/Show'
 
@@ -35,6 +34,7 @@ import { defaultTestExecutor } from './TestExecutor'
 import * as TF from './TestFailure'
 import { TestRunner } from './TestRunner'
 import * as TS from './TestSuccess'
+import {UnionToIntersection} from '@principia/prelude'
 
 export type TestReporter<E> = (duration: number, spec: ExecutedSpec<E>) => URIO<Has<TestLogger>, void>
 

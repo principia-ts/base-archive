@@ -6,24 +6,19 @@
  * and the _Right_ constructor is used to hold a correct value
  */
 
+import type { FunctionN } from './function'
 import type { EitherURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { These } from './These'
-import type { Mutable } from './util/types'
-import type { Eq } from '@principia/prelude/Eq'
-import type { FunctionN } from '@principia/prelude/function'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-import type { Show } from '@principia/prelude/Show'
 
 import * as P from '@principia/prelude'
-import { flow, identity, pipe } from '@principia/prelude/function'
+import * as E from '@principia/prelude/Either'
 import * as HKT from '@principia/prelude/HKT'
-import * as E from '@principia/prelude/internal/either'
 import { tuple } from '@principia/prelude/tuple'
 
 import { NoSuchElementError } from './Error'
+import { flow, identity, pipe } from './function'
 import { genF, GenHKT } from './Gen'
 import * as O from './Option'
 import * as T from './These'
@@ -203,11 +198,11 @@ export function fromOption<E>(onNothing: () => E): <A>(fa: Option<A>) => Either<
  */
 export function fromPredicate_<E, A, B extends A>(
   a: A,
-  refinement: Refinement<A, B>,
+  refinement: P.Refinement<A, B>,
   onFalse: (a: A) => E
 ): Either<E, B>
-export function fromPredicate_<E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A>
-export function fromPredicate_<E, A>(a: A, predicate: Predicate<A>, onFalse: (a: A) => E): Either<E, A> {
+export function fromPredicate_<E, A>(a: A, predicate: P.Predicate<A>, onFalse: (a: A) => E): Either<E, A>
+export function fromPredicate_<E, A>(a: A, predicate: P.Predicate<A>, onFalse: (a: A) => E): Either<E, A> {
   return predicate(a) ? Right(a) : Left(onFalse(a))
 }
 
@@ -216,11 +211,11 @@ export function fromPredicate_<E, A>(a: A, predicate: Predicate<A>, onFalse: (a:
  * @since 1.0.0
  */
 export function fromPredicate<E, A, B extends A>(
-  refinement: Refinement<A, B>,
+  refinement: P.Refinement<A, B>,
   onFalse: (a: A) => E
 ): (a: A) => Either<E, B>
-export function fromPredicate<E, A>(predicate: Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A>
-export function fromPredicate<E, A>(predicate: Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A> {
+export function fromPredicate<E, A>(predicate: P.Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A>
+export function fromPredicate<E, A>(predicate: P.Predicate<A>, onFalse: (a: A) => E): (a: A) => Either<E, A> {
   return (a) => fromPredicate_(a, predicate, onFalse)
 }
 
@@ -640,7 +635,7 @@ export function getCompactable<E>(M: P.Monoid<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export function getEq<E, A>(eqE: Eq<E>, eqA: Eq<A>): Eq<Either<E, A>> {
+export function getEq<E, A>(eqE: P.Eq<E>, eqA: P.Eq<A>): P.Eq<Either<E, A>> {
   const equals_ = (x: Either<E, A>, y: Either<E, A>) =>
     x === y || (isLeft(x) ? isLeft(y) && eqE.equals_(x.left, y.left) : isRight(y) && eqA.equals_(x.right, y.right))
   return {
@@ -706,7 +701,7 @@ export function getFilterable<E>(M: P.Monoid<E>) {
 
   const partition_: P.PartitionFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
     fa: Either<E, A>,
-    predicate: Predicate<A>
+    predicate: P.Predicate<A>
   ): readonly [Either<E, A>, Either<E, A>] => {
     return isLeft(fa) ? [fa, fa] : predicate(fa.right) ? [empty, Right(fa.right)] : [Right(fa.right), empty]
   }
@@ -721,7 +716,7 @@ export function getFilterable<E>(M: P.Monoid<E>) {
 
   const filter_: P.FilterFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
     fa: Either<E, A>,
-    predicate: Predicate<A>
+    predicate: P.Predicate<A>
   ): Either<E, A> => (isLeft(fa) ? fa : predicate(fa.right) ? fa : empty)
 
   return P.Filterable<[HKT.URI<EitherURI, V>], FixE>({
@@ -894,7 +889,7 @@ export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>>
  * @category Instances
  * @since 1.0.0
  */
-export function getShow<E, A>(showE: Show<E>, showA: Show<A>): Show<Either<E, A>> {
+export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either<E, A>> {
   return {
     show: (fa) => (isLeft(fa) ? `left(${showE.show(fa.left)})` : `right(${showA.show(fa.right)})`)
   }
@@ -1316,7 +1311,7 @@ export function itraverseArray_<A, E, B>(
   if (e._tag === 'Left') {
     return e
   }
-  const out: Mutable<NonEmptyArray<B>> = [e.right]
+  const out: P.Mutable<NonEmptyArray<B>> = [e.right]
   for (let i = 1; i < as.length; i++) {
     const e = f(i, as[i])
     if (e._tag === 'Left') {

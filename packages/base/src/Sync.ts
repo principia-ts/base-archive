@@ -1,15 +1,14 @@
 import type { SyncURI } from './Modules'
-import type { _E, _R, UnionToIntersection } from './util/types'
 import type { Has, Tag } from '@principia/prelude/Has'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { flow, identity, pipe } from '@principia/prelude/function'
 import { isTag, mergeEnvironments } from '@principia/prelude/Has'
 
 import * as A from './Array/core'
 import * as E from './Either'
 import { NoSuchElementError } from './Error'
+import { flow, identity, pipe } from './function'
 import { ZURI } from './Modules'
 import * as O from './Option'
 import * as R from './Record'
@@ -435,11 +434,11 @@ export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0,
  */
 
 export function getUnfailableSemigroup<S>(S: P.Semigroup<S>): P.Semigroup<USync<S>> {
-  return P.makeSemigroup(liftA2_(S.combine_))
+  return P.Semigroup(liftA2_(S.combine_))
 }
 
 export function getFailableSemigroup<E, A>(SA: P.Semigroup<A>, SE: P.Semigroup<E>): P.Semigroup<FSync<E, A>> {
-  return P.makeSemigroup((x, y) =>
+  return P.Semigroup((x, y) =>
     matchTogetherM_(
       x,
       y,
@@ -473,14 +472,14 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Sync<R, E, B>
 ) => Sync<
-  R & UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
+  R & P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
   E,
   B
 > {
   return (f) =>
     Z.asksM(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown
           }[keyof SS]
@@ -494,14 +493,14 @@ export function asksServicesTM<SS extends Tag<any>[]>(
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Sync<R, E, B>
 ) => Sync<
-  R & UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
+  R & P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
   E,
   B
 > {
   return (f) =>
     Z.asksM(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -515,14 +514,14 @@ export function asksServicesT<SS extends Tag<any>[]>(
 ): <B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
 ) => Sync<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
   never,
   B
 > {
   return (f) =>
     Z.asks(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -539,13 +538,14 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 ): <B>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
 ) => Sync<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
   never,
   B
 > {
   return (f) =>
-    Z.asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
-      f(R.map_(s, (v) => r[v.key]) as any)
+    Z.asks(
+      (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+        f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 
@@ -857,7 +857,7 @@ export function gen<R0, E0, A0>(): <T extends GenSync<R0, E0, any>>(
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
-) => Sync<_R<T>, _E<T>, A0>
+) => Sync<P._R<T>, P._E<T>, A0>
 export function gen<E0, A0>(): <T extends GenSync<any, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
@@ -866,7 +866,7 @@ export function gen<E0, A0>(): <T extends GenSync<any, E0, any>>(
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
-) => Sync<_R<T>, _E<T>, A0>
+) => Sync<P._R<T>, P._E<T>, A0>
 export function gen<A0>(): <T extends GenSync<any, any, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
@@ -875,7 +875,7 @@ export function gen<A0>(): <T extends GenSync<any, any, any>>(
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
-) => Sync<_R<T>, _E<T>, A0>
+) => Sync<P._R<T>, P._E<T>, A0>
 export function gen<T extends GenSync<any, any, any>, A>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
@@ -884,9 +884,9 @@ export function gen<T extends GenSync<any, any, any>, A>(
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A, any>
-): Sync<_R<T>, _E<T>, A>
+): Sync<P._R<T>, P._E<T>, A>
 export function gen(...args: any[]): any {
-  const _gen = <T extends GenSync<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): Sync<_R<T>, _E<T>, A> =>
+  const _gen = <T extends GenSync<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): Sync<P._R<T>, P._E<T>, A> =>
     deferTotal(() => {
       const iterator = f(adapter as any)
       const state    = iterator.next()

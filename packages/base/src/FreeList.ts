@@ -1,9 +1,6 @@
 import type { Stack } from './util/support/Stack'
-import type { Monoid, Semigroup } from '@principia/prelude'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
 
-import { makeMonoid, makeSemigroup } from '@principia/prelude'
+import * as P from '@principia/prelude'
 
 import { makeStack } from './util/support/Stack'
 
@@ -31,7 +28,7 @@ export interface Combine<A> {
 export interface Filter<A> {
   readonly _tag: 'Filter'
   readonly fa: FreeList<A>
-  readonly f: Predicate<A>
+  readonly f: P.Predicate<A>
 }
 
 export interface Map<A> {
@@ -85,9 +82,9 @@ export function Empty<A>(): FreeList<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function filter_<A, B extends A>(fa: FreeList<A>, f: Refinement<A, B>): FreeList<B>
-export function filter_<A>(fa: FreeList<A>, f: Predicate<A>): FreeList<A>
-export function filter_<A>(fa: FreeList<A>, f: Predicate<A>): FreeList<A> {
+export function filter_<A, B extends A>(fa: FreeList<A>, f: P.Refinement<A, B>): FreeList<B>
+export function filter_<A>(fa: FreeList<A>, f: P.Predicate<A>): FreeList<A>
+export function filter_<A>(fa: FreeList<A>, f: P.Predicate<A>): FreeList<A> {
   return {
     _tag: 'Filter',
     fa,
@@ -99,9 +96,9 @@ export function filter_<A>(fa: FreeList<A>, f: Predicate<A>): FreeList<A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function filter<A, B extends A>(f: Refinement<A, B>): (fa: FreeList<A>) => FreeList<B>
-export function filter<A>(f: Predicate<A>): (fa: FreeList<A>) => FreeList<A>
-export function filter<A>(f: Predicate<A>): (fa: FreeList<A>) => FreeList<A> {
+export function filter<A, B extends A>(f: P.Refinement<A, B>): (fa: FreeList<A>) => FreeList<B>
+export function filter<A>(f: P.Predicate<A>): (fa: FreeList<A>) => FreeList<A>
+export function filter<A>(f: P.Predicate<A>): (fa: FreeList<A>) => FreeList<A> {
   return (fa) => ({
     _tag: 'Filter',
     fa,
@@ -124,7 +121,7 @@ export function match_<A, R>(
   patterns: {
     Empty: () => R
     Element: (value: A) => R
-    Filter: (fa: FreeList<A>, f: Predicate<A>) => R
+    Filter: (fa: FreeList<A>, f: P.Predicate<A>) => R
     Map: (fa: FreeList<A>, f: (a: A) => A) => R
     Combine: (l: FreeList<A>, r: FreeList<A>) => R
   }
@@ -150,7 +147,7 @@ export function match_<A, R>(
 export function match<A, R>(patterns: {
   Empty: () => R
   Element: (value: A) => R
-  Filter: (fa: FreeList<A>, f: Predicate<A>) => R
+  Filter: (fa: FreeList<A>, f: P.Predicate<A>) => R
   Map: (fa: FreeList<A>, f: (a: A) => A) => R
   Combine: (l: FreeList<A>, r: FreeList<A>) => R
 }): (f: FreeList<A>) => R {
@@ -289,14 +286,14 @@ export function prepend<A>(a: A): (fs: FreeList<A>) => FreeList<A> {
  * @category Instances
  * @since 1.0.0
  */
-export function getSemigroup<A = never>(): Semigroup<FreeList<A>> {
-  return makeSemigroup(Combine)
+export function getSemigroup<A = never>(): P.Semigroup<FreeList<A>> {
+  return P.Semigroup(Combine)
 }
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export function getMonoid<A = never>(): Monoid<FreeList<A>> {
-  return makeMonoid(getSemigroup<A>().combine_, Empty())
+export function getMonoid<A = never>(): P.Monoid<FreeList<A>> {
+  return P.Monoid(getSemigroup<A>().combine_, Empty())
 }

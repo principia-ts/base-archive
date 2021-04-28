@@ -8,8 +8,6 @@ import type { Stack } from './util/support/Stack'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { identity } from '@principia/prelude/function'
-import { tuple } from '@principia/prelude/tuple'
 
 import { EvalURI } from './Modules'
 import * as O from './Option'
@@ -215,7 +213,7 @@ export function crossWith<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval
 }
 
 export function cross_<A, B>(ma: Eval<A>, mb: Eval<B>): Eval<readonly [A, B]> {
-  return crossWith_(ma, mb, tuple)
+  return crossWith_(ma, mb, P.tuple)
 }
 
 export function cross<B>(mb: Eval<B>): <A>(ma: Eval<A>) => Eval<readonly [A, B]> {
@@ -259,7 +257,7 @@ export function bind<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
 }
 
 export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
-  return bind_(mma, identity)
+  return bind_(mma, P.identity)
 }
 
 /*

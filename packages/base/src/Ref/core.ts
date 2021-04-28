@@ -1,10 +1,10 @@
 import type { FIO, UIO } from '../IO/core'
 
-import { flow, identity, pipe } from '@principia/prelude/function'
 import { matchTag } from '@principia/prelude/matchers'
 import { tuple } from '@principia/prelude/tuple'
 
 import * as E from '../Either'
+import { flow, identity, pipe } from '../function'
 import * as I from '../IO/core'
 import * as O from '../Option'
 import { AtomicReference } from '../util/support/AtomicReference'

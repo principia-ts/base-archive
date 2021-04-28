@@ -1,10 +1,10 @@
 import type { Managed } from '../core'
 
-import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
+import { pipe } from '../../function'
 import * as O from '../../Option'
 import * as M from '../core'
 import * as I from '../internal/io'

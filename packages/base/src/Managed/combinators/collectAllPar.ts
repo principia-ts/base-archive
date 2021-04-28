@@ -1,8 +1,7 @@
 import type { Chunk } from '../../Chunk/core'
 import type { Managed } from '../core'
 
-import { identity } from '@principia/prelude/function'
-
+import { identity } from '../../function'
 import { foreachPar_, foreachUnitPar_ } from './foreachPar'
 
 export function collectAllPar<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {

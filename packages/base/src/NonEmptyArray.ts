@@ -2,22 +2,15 @@ import type { Either } from './Either'
 import type { Guard } from './Guard'
 import type { NonEmptyArrayURI } from './Modules'
 import type { ReadonlyRecord } from './Record'
-import type { Mutable } from './util/types'
-import type * as P from '@principia/prelude'
-import type { Eq } from '@principia/prelude/Eq'
 import type * as HKT from '@principia/prelude/HKT'
-import type { Ord } from '@principia/prelude/Ord'
-import type { Predicate, PredicateWithIndex } from '@principia/prelude/Predicate'
-import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinement'
 
-import { identity, pipe } from '@principia/prelude/function'
-import * as S from '@principia/prelude/Semigroup'
-import { tuple } from '@principia/prelude/tuple'
+import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
 import * as G from './Guard'
 import * as _ from './internal/array'
 import * as O from './Option'
+import * as S from './Semigroup'
 
 /*
  * -------------------------------------------
@@ -194,7 +187,7 @@ export const pure = A.pure
  */
 
 export function zip_<A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<readonly [A, B]> {
-  return zipWith_(fa, fb, tuple)
+  return zipWith_(fa, fb, P.tuple)
 }
 
 export function zip<B>(fb: NonEmptyArray<B>): <A>(fa: NonEmptyArray<A>) => NonEmptyArray<readonly [A, B]> {
@@ -202,7 +195,7 @@ export function zip<B>(fb: NonEmptyArray<B>): <A>(fa: NonEmptyArray<A>) => NonEm
 }
 
 export function zipWith_<A, B, C>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>, f: (a: A, b: B) => C): NonEmptyArray<C> {
-  const mut_cs = [f(fa[0], fb[0])] as Mutable<NonEmptyArray<C>>
+  const mut_cs = [f(fa[0], fb[0])] as P.Mutable<NonEmptyArray<C>>
   const len    = Math.min(fa.length, fb.length)
   for (let i = 1; i < len; i++) {
     mut_cs[i] = f(fa[i], fb[i])
@@ -277,7 +270,7 @@ export const extract: <A>(ma: NonEmptyArray<A>) => A = head
  */
 export function extend_<A, B>(wa: NonEmptyArray<A>, f: (wa: NonEmptyArray<A>) => B): NonEmptyArray<B> {
   let next  = tail(wa)
-  const out = [f(wa)] as Mutable<NonEmptyArray<B>>
+  const out = [f(wa)] as P.Mutable<NonEmptyArray<B>>
   while (isNonEmpty(next)) {
     out.push(f(next))
     next = tail(next)
@@ -298,7 +291,7 @@ export function extend<A, B>(f: (wa: NonEmptyArray<A>) => B): (wa: NonEmptyArray
  * @since 1.0.0
  */
 export function duplicate<A>(wa: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<A>> {
-  return extend_(wa, identity)
+  return extend_(wa, P.identity)
 }
 
 /*
@@ -308,23 +301,23 @@ export function duplicate<A>(wa: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<
  */
 
 export const ifilter_: {
-  <A, B extends A>(fa: NonEmptyArray<A>, f: RefinementWithIndex<number, A, B>): ReadonlyArray<B>
-  <A>(fa: NonEmptyArray<A>, f: PredicateWithIndex<number, A>): ReadonlyArray<A>
+  <A, B extends A>(fa: NonEmptyArray<A>, f: P.RefinementWithIndex<number, A, B>): ReadonlyArray<B>
+  <A>(fa: NonEmptyArray<A>, f: P.PredicateWithIndex<number, A>): ReadonlyArray<A>
 } = A.ifilter_
 
 export const ifilter: {
-  <A, B extends A>(f: RefinementWithIndex<number, A, B>): (fa: NonEmptyArray<A>) => ReadonlyArray<B>
-  <A>(f: PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => ReadonlyArray<A>
+  <A, B extends A>(f: P.RefinementWithIndex<number, A, B>): (fa: NonEmptyArray<A>) => ReadonlyArray<B>
+  <A>(f: P.PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => ReadonlyArray<A>
 } = A.ifilter
 
 export const filter_: {
-  <A, B extends A>(fa: NonEmptyArray<A>, f: Refinement<A, B>): ReadonlyArray<B>
-  <A>(fa: NonEmptyArray<A>, f: Predicate<A>): ReadonlyArray<A>
+  <A, B extends A>(fa: NonEmptyArray<A>, f: P.Refinement<A, B>): ReadonlyArray<B>
+  <A>(fa: NonEmptyArray<A>, f: P.Predicate<A>): ReadonlyArray<A>
 } = A.filter_
 
 export const filter: {
-  <A, B extends A>(f: Refinement<A, B>): (fa: NonEmptyArray<A>) => ReadonlyArray<B>
-  <A>(f: Predicate<A>): (fa: NonEmptyArray<A>) => ReadonlyArray<A>
+  <A, B extends A>(f: P.Refinement<A, B>): (fa: NonEmptyArray<A>) => ReadonlyArray<B>
+  <A>(f: P.Predicate<A>): (fa: NonEmptyArray<A>) => ReadonlyArray<A>
 } = A.filter
 
 export const ifilterMap_: <A, B>(fa: NonEmptyArray<A>, f: (i: number, a: A) => O.Option<B>) => ReadonlyArray<B> =
@@ -338,30 +331,32 @@ export const filterMap_: <A, B>(fa: NonEmptyArray<A>, f: (a: A) => O.Option<B>) 
 export const filterMap: <A, B>(f: (a: A) => O.Option<B>) => (fa: NonEmptyArray<A>) => ReadonlyArray<B> = A.filterMap
 
 export const ipartition_: {
-  <A, B extends A>(fa: NonEmptyArray<A>, refinement: RefinementWithIndex<number, A, B>): readonly [
+  <A, B extends A>(fa: NonEmptyArray<A>, refinement: P.RefinementWithIndex<number, A, B>): readonly [
     ReadonlyArray<A>,
     ReadonlyArray<B>
   ]
-  <A>(fa: NonEmptyArray<A>, predicate: PredicateWithIndex<number, A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+  <A>(fa: NonEmptyArray<A>, predicate: P.PredicateWithIndex<number, A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 } = A.ipartition_
 
 export const ipartition: {
-  <A, B extends A>(refinement: RefinementWithIndex<number, A, B>): (
+  <A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (
     fa: NonEmptyArray<A>
   ) => readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-  <A>(predicate: PredicateWithIndex<number, A>): (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+  <A>(predicate: P.PredicateWithIndex<number, A>): (
+    fa: NonEmptyArray<A>
+  ) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 } = A.ipartition
 
 export const partition_: {
-  <A, B extends A>(fa: NonEmptyArray<A>, refinement: Refinement<A, B>): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-  <A>(fa: NonEmptyArray<A>, predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+  <A, B extends A>(fa: NonEmptyArray<A>, refinement: P.Refinement<A, B>): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+  <A>(fa: NonEmptyArray<A>, predicate: P.Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 } = A.partition_
 
 export const partition: {
-  <A, B extends A>(refinement: Refinement<A, B>): (
+  <A, B extends A>(refinement: P.Refinement<A, B>): (
     fa: NonEmptyArray<A>
   ) => readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-  <A>(predicate: Predicate<A>): (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+  <A>(predicate: P.Predicate<A>): (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 } = A.partition
 
 export const ipartitionMap_: <A, B, C>(
@@ -589,7 +584,7 @@ export function unit(): NonEmptyArray<void> {
  * @category combinators
  * @since 1.0.0
  */
-export const uniq: <A>(E: Eq<A>) => (as: NonEmptyArray<A>) => NonEmptyArray<A> = A.uniq as any
+export const uniq: <A>(E: P.Eq<A>) => (as: NonEmptyArray<A>) => NonEmptyArray<A> = A.uniq as any
 
 /**
  * @category combinators
@@ -657,7 +652,7 @@ export const chop: <A, B>(
  * @category combinators
  * @since 1.0.0
  */
-export const group: <A>(E: Eq<A>) => (as: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray<A>> = A.group as any
+export const group: <A>(E: P.Eq<A>) => (as: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray<A>> = A.group as any
 
 /**
  * Sort and then group the elements of an array into non empty arrays.
@@ -665,7 +660,7 @@ export const group: <A>(E: Eq<A>) => (as: NonEmptyArray<A>) => NonEmptyArray<Non
  * @category combinators
  * @since 1.0.0
  */
-export function groupSort<A>(O: Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray<A>> {
+export function groupSort<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<NonEmptyArray<A>> {
   const sortO  = sort(O)
   const groupO = group(O)
   return (as) => groupO(sortO(as))
@@ -695,7 +690,7 @@ export const groupBy: <A>(f: (a: A) => string) => (as: ReadonlyArray<A>) => Read
  * @category combinators
  * @since 1.0.0
  */
-export function sort<A>(O: Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<A> {
+export function sort<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArray<A> {
   return (as) => (as.length === 1 ? as : (as.slice().sort((first, second) => O.compare_(first, second)) as any))
 }
 
@@ -781,7 +776,7 @@ export const unsafeInsertAt: <A>(i: number, a: A) => (as: NonEmptyArray<A>) => N
  *
  * @since 1.0.0
  */
-export const mutableClone: <A>(as: NonEmptyArray<A>) => Mutable<NonEmptyArray<A>> = A.mutableClone as any
+export const mutableClone: <A>(as: NonEmptyArray<A>) => P.Mutable<NonEmptyArray<A>> = A.mutableClone as any
 
 /**
  * Clones a `NonEmptyArray` returning the clone typed as immutable
@@ -837,7 +832,7 @@ export function init<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
  *
  * @since 1.0.0
  */
-export function mutate_<A>(as: NonEmptyArray<A>, f: (as: Mutable<NonEmptyArray<A>>) => void): ReadonlyArray<A> {
+export function mutate_<A>(as: NonEmptyArray<A>, f: (as: P.Mutable<NonEmptyArray<A>>) => void): ReadonlyArray<A> {
   const mut_as = mutableClone(as)
   f(mut_as)
   return mut_as
@@ -848,14 +843,14 @@ export function mutate_<A>(as: NonEmptyArray<A>, f: (as: Mutable<NonEmptyArray<A
  *
  * @since 1.0.0
  */
-export function mutate<A>(f: (as: Mutable<NonEmptyArray<A>>) => void): (as: NonEmptyArray<A>) => ReadonlyArray<A> {
+export function mutate<A>(f: (as: P.Mutable<NonEmptyArray<A>>) => void): (as: NonEmptyArray<A>) => ReadonlyArray<A> {
   return (as) => mutate_(as, f)
 }
 
 /**
  * @since 1.0.0
  */
-export function min<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
+export function min<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
   const Sa = S.min(O)
   return (as) => {
     const [head, tail] = unprepend(as)
@@ -866,7 +861,7 @@ export function min<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
 /**
  * @since 1.0.0
  */
-export function max<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
+export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
   const Sa = S.max(O)
   return (as) => {
     const [head, tail] = unprepend(as)
@@ -880,7 +875,7 @@ export function max<A>(O: Ord<A>): (as: NonEmptyArray<A>) => A {
  * -------------------------------------------
  */
 
-export const GuardUnknownNonEmptyArray: Guard<unknown, NonEmptyArray<unknown>> = pipe(
+export const GuardUnknownNonEmptyArray: Guard<unknown, NonEmptyArray<unknown>> = P.pipe(
   A.GuardUnknownArray,
   G.refine((i): i is NonEmptyArray<unknown> => i.length > 0)
 )

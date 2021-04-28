@@ -1,4 +1,4 @@
-import type { UnionToIntersection } from './types'
+import type { UnionToIntersection } from '@principia/prelude'
 
 import * as A from '../Array/core'
 

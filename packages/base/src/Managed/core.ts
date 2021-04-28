@@ -3,13 +3,11 @@ import type { Chunk } from '../Chunk/core'
 import type { Exit } from '../Exit'
 import type { FiberId } from '../Fiber/FiberId'
 import type { ReadonlyRecord } from '../Record'
-import type { _E, _R, EnforceNonEmptyRecord, UnionToIntersection } from '../util/types'
 import type { Finalizer, ReleaseMap } from './ReleaseMap'
-import type { Monoid } from '@principia/prelude'
 import type { Has, Tag } from '@principia/prelude/Has'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { flow, identity as identityFn, pipe } from '@principia/prelude/function'
+import * as P from '@principia/prelude'
 import { isTag } from '@principia/prelude/Has'
 import { tuple } from '@principia/prelude/tuple'
 
@@ -19,6 +17,7 @@ import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ex from '../Exit/core'
+import { flow, identity as identityFn, pipe } from '../function'
 import * as Iter from '../Iterable'
 import * as O from '../Option'
 import * as R from '../Record'
@@ -484,10 +483,10 @@ export function apr<R1, E1, B>(fb: Managed<R1, E1, B>): <R, E, A>(fa: Managed<R,
 }
 
 export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
-  mr: EnforceNonEmptyRecord<MR> & Record<string, Managed<any, any, any>>
+  mr: P.EnforceNonEmptyRecord<MR> & Record<string, Managed<any, any, any>>
 ): Managed<
-  _R<MR[keyof MR]>,
-  _E<MR[keyof MR]>,
+  P._R<MR[keyof MR]>,
+  P._E<MR[keyof MR]>,
   {
     [K in keyof MR]: [MR[K]] extends [Managed<any, any, infer A>] ? A : never
   }
@@ -511,7 +510,7 @@ export const sequenceT = <T extends ReadonlyArray<Managed<any, any, any>>>(
   ...mt: T & {
     0: Managed<any, any, any>
   }
-): Managed<_R<T[number]>, _E<T[number]>, { [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never }> =>
+): Managed<P._R<T[number]>, P._E<T[number]>, { [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never }> =>
   foreach_(mt, identityFn) as any
 
 /*
@@ -1309,7 +1308,7 @@ export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => Managed<R, E, B>): (a
  * @since 1.0.0
  */
 export function foldMap_<M>(
-  M: Monoid<M>
+  M: P.Monoid<M>
 ): <R, E, A>(mas: Iterable<Managed<R, E, A>>, f: (a: A) => M) => Managed<R, E, M> {
   return (mas, f) => foldl_(mas, M.nat, (x, ma) => pipe(ma, map(flow(f, (y) => M.combine_(x, y)))))
 }
@@ -1321,7 +1320,7 @@ export function foldMap_<M>(
  * @since 1.0.0
  */
 export function foldMap<M>(
-  M: Monoid<M>
+  M: P.Monoid<M>
 ): <A>(f: (a: A) => M) => <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, M> {
   return (f) => (mas) => foldMap_(M)(mas, f)
 }
@@ -2085,12 +2084,12 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => I.IO<R, E, B>
 ) => Managed<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]> & R,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]> & R,
   E,
   B
 > {
   return (f) =>
-    asksM((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+    asksM((r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
       f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
@@ -2103,14 +2102,14 @@ export function asksServicesManaged<SS extends Record<string, Tag<any>>>(
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Managed<R, E, B>
 ) => Managed<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]> & R,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]> & R,
   E,
   B
 > {
   return (f) =>
     asksManaged(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown
           }[keyof SS]
@@ -2124,14 +2123,14 @@ export function asksServicesTM<SS extends Tag<any>[]>(
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => I.IO<R, E, B>
 ) => Managed<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]> & R,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]> & R,
   E,
   B
 > {
   return (f) =>
     asksM(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -2145,14 +2144,14 @@ export function asksServicesTManaged<SS extends Tag<any>[]>(
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Managed<R, E, B>
 ) => Managed<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]> & R,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]> & R,
   E,
   B
 > {
   return (f) =>
     asksManaged(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -2166,14 +2165,14 @@ export function asksServicesT<SS extends Tag<any>[]>(
 ): <B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
 ) => Managed<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never }[keyof SS & number]>,
   never,
   B
 > {
   return (f) =>
     asks(
       (
-        r: UnionToIntersection<
+        r: P.UnionToIntersection<
           {
             [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : never
           }[keyof SS & number]
@@ -2190,12 +2189,12 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 ): <B>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
 ) => Managed<
-  UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
+  P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>,
   never,
   B
 > {
   return (f) =>
-    asks((r: UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+    asks((r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
       f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
@@ -2290,7 +2289,7 @@ export function gen<R0, E0, A0>(): <T extends GenManaged<R0, E0, any>>(
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
   }) => Generator<T, A0, any>
-) => Managed<_R<T>, _E<T>, A0>
+) => Managed<P._R<T>, P._E<T>, A0>
 export function gen<E0, A0>(): <T extends GenManaged<any, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
@@ -2300,7 +2299,7 @@ export function gen<E0, A0>(): <T extends GenManaged<any, E0, any>>(
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
   }) => Generator<T, A0, any>
-) => Managed<_R<T>, _E<T>, A0>
+) => Managed<P._R<T>, P._E<T>, A0>
 export function gen<A0>(): <T extends GenManaged<any, any, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
@@ -2310,7 +2309,7 @@ export function gen<A0>(): <T extends GenManaged<any, any, any>>(
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
   }) => Generator<T, A0, any>
-) => Managed<_R<T>, _E<T>, A0>
+) => Managed<P._R<T>, P._E<T>, A0>
 export function gen<T extends GenManaged<any, any, any>, AEff>(
   f: (i: {
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
@@ -2320,11 +2319,11 @@ export function gen<T extends GenManaged<any, any, any>, AEff>(
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
   }) => Generator<T, AEff, any>
-): Managed<_R<T>, _E<T>, AEff>
+): Managed<P._R<T>, P._E<T>, AEff>
 export function gen(...args: any[]): any {
   function gen_<Eff extends GenManaged<any, any, any>, AEff>(
     f: (i: any) => Generator<Eff, AEff, any>
-  ): Managed<_R<Eff>, _E<Eff>, AEff> {
+  ): Managed<P._R<Eff>, P._E<Eff>, AEff> {
     return defer(() => {
       const iterator = f(adapter as any)
       const state    = iterator.next()

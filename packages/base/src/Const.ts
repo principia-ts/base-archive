@@ -4,7 +4,8 @@ import type * as HKT from '@principia/prelude/HKT'
 import type { Ord } from '@principia/prelude/Ord'
 
 import * as P from '@principia/prelude'
-import { identity, unsafeCoerce } from '@principia/prelude/function'
+
+import { identity, unsafeCoerce } from './function'
 
 /*
  * -------------------------------------------

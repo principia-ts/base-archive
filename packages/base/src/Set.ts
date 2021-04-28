@@ -1,19 +1,10 @@
 import type * as E from './Either'
 import type * as O from './Option'
-import type * as P from '@principia/prelude'
-import type { Eq } from '@principia/prelude/Eq'
-import type { Ord } from '@principia/prelude/Ord'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-import type { Show } from '@principia/prelude/Show'
 
-import { makeMonoid, makeSemigroup } from '@principia/prelude'
-import { makeEq } from '@principia/prelude/Eq'
-import { identity } from '@principia/prelude/function'
-import { not } from '@principia/prelude/Predicate'
-import { tuple } from '@principia/prelude/tuple'
+import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
+import { not } from './Predicate'
 
 /*
  * -------------------------------------------
@@ -33,7 +24,7 @@ export function singleton<A>(a: A): ReadonlySet<A> {
   return new Set([a])
 }
 
-export function fromArray_<A>(as: ReadonlyArray<A>, E: Eq<A>): ReadonlySet<A> {
+export function fromArray_<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlySet<A> {
   const len = as.length
   const r   = new Set<A>()
   const has = elem_(E)
@@ -46,7 +37,7 @@ export function fromArray_<A>(as: ReadonlyArray<A>, E: Eq<A>): ReadonlySet<A> {
   return r
 }
 
-export function fromArray<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlySet<A> {
+export function fromArray<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlySet<A> {
   return (as) => fromArray_(as, E)
 }
 
@@ -56,7 +47,7 @@ export function fromArray<A>(E: Eq<A>): (as: ReadonlyArray<A>) => ReadonlySet<A>
  * -------------------------------------------
  */
 
-export function toArray<A>(O: Ord<A>): (set: ReadonlySet<A>) => ReadonlyArray<A> {
+export function toArray<A>(O: P.Ord<A>): (set: ReadonlySet<A>) => ReadonlyArray<A> {
   return (set) => {
     const r: Array<A> = []
     set.forEach((e) => r.push(e))
@@ -74,7 +65,7 @@ export function toSet<A>(s: ReadonlySet<A>): Set<A> {
  * -------------------------------------------
  */
 
-export function insert_<A>(E: Eq<A>) {
+export function insert_<A>(E: P.Eq<A>) {
   const elemE_ = elem_(E)
   return (set: ReadonlySet<A>, a: A) => {
     if (!elemE_(set, a)) {
@@ -87,16 +78,16 @@ export function insert_<A>(E: Eq<A>) {
   }
 }
 
-export function insert<A>(E: Eq<A>) {
+export function insert<A>(E: P.Eq<A>) {
   const insertE_ = insert_(E)
   return (a: A) => (set: ReadonlySet<A>) => insertE_(set, a)
 }
 
-export function remove_<A>(E: Eq<A>): (set: ReadonlySet<A>, a: A) => ReadonlySet<A> {
+export function remove_<A>(E: P.Eq<A>): (set: ReadonlySet<A>, a: A) => ReadonlySet<A> {
   return (set, a) => filter_(set, (ax) => !E.equals(a)(ax))
 }
 
-export function remove<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => ReadonlySet<A> {
+export function remove<A>(E: P.Eq<A>): (a: A) => (set: ReadonlySet<A>) => ReadonlySet<A> {
   return (a) => (set) => remove_(E)(set, a)
 }
 
@@ -109,7 +100,7 @@ export function remove<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => Readonly
 /**
  * @since 1.0.0
  */
-export function some_<A>(set: ReadonlySet<A>, predicate: Predicate<A>): boolean {
+export function some_<A>(set: ReadonlySet<A>, predicate: P.Predicate<A>): boolean {
   const values = set.values()
   let e: IteratorResult<A>
   let found    = false
@@ -122,21 +113,21 @@ export function some_<A>(set: ReadonlySet<A>, predicate: Predicate<A>): boolean 
 /**
  * @since 1.0.0
  */
-export function some<A>(predicate: Predicate<A>): (set: ReadonlySet<A>) => boolean {
+export function some<A>(predicate: P.Predicate<A>): (set: ReadonlySet<A>) => boolean {
   return (set) => some_(set, predicate)
 }
 
 /**
  * @since 1.0.0
  */
-export function every_<A>(set: ReadonlySet<A>, predicate: Predicate<A>) {
+export function every_<A>(set: ReadonlySet<A>, predicate: P.Predicate<A>) {
   return not(some(not(predicate)))(set)
 }
 
 /**
  * @since 1.0.0
  */
-export function every<A>(predicate: Predicate<A>): (set: ReadonlySet<A>) => boolean {
+export function every<A>(predicate: P.Predicate<A>): (set: ReadonlySet<A>) => boolean {
   return (set) => every_(set, predicate)
 }
 
@@ -145,7 +136,7 @@ export function every<A>(predicate: Predicate<A>): (set: ReadonlySet<A>) => bool
  *
  * @since 1.0.0
  */
-export function elem_<A>(E: Eq<A>): (set: ReadonlySet<A>, a: A) => boolean {
+export function elem_<A>(E: P.Eq<A>): (set: ReadonlySet<A>, a: A) => boolean {
   return (set, a) => {
     const values = set.values()
     let e: IteratorResult<A>
@@ -162,7 +153,7 @@ export function elem_<A>(E: Eq<A>): (set: ReadonlySet<A>, a: A) => boolean {
  *
  * @since 1.0.0
  */
-export function elem<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => boolean {
+export function elem<A>(E: P.Eq<A>): (a: A) => (set: ReadonlySet<A>) => boolean {
   return (a) => (set) => elem_(E)(set, a)
 }
 
@@ -171,7 +162,7 @@ export function elem<A>(E: Eq<A>): (a: A) => (set: ReadonlySet<A>) => boolean {
  *
  * @since 1.0.0
  */
-export function isSubset<A>(E: Eq<A>): (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => boolean {
+export function isSubset<A>(E: P.Eq<A>): (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => boolean {
   const elemE = elem(E)
   return (that) => every((a: A) => elemE(a)(that))
 }
@@ -190,13 +181,13 @@ export function isNonEmpty<A>(set: ReadonlySet<A>): boolean {
  * -------------------------------------------
  */
 
-export function compact<A>(E: Eq<A>): (fa: ReadonlySet<O.Option<A>>) => ReadonlySet<A> {
-  return filterMap(E)(identity)
+export function compact<A>(E: P.Eq<A>): (fa: ReadonlySet<O.Option<A>>) => ReadonlySet<A> {
+  return filterMap(E)(P.identity)
 }
 
 export function separate<E, A>(
-  EE: Eq<E>,
-  EA: Eq<A>
+  EE: P.Eq<E>,
+  EA: P.Eq<A>
 ): (fa: ReadonlySet<E.Either<E, A>>) => readonly [ReadonlySet<E>, ReadonlySet<A>] {
   return (fa) => {
     const elemEE        = elem(EE)
@@ -223,13 +214,13 @@ export function separate<E, A>(
 
 /*
  * -------------------------------------------
- * Eq
+ * P.Eq
  * -------------------------------------------
  */
 
-export function getEq<A>(E: Eq<A>): Eq<ReadonlySet<A>> {
+export function getEq<A>(E: P.Eq<A>): P.Eq<ReadonlySet<A>> {
   const subsetE = isSubset(E)
-  return makeEq((x, y) => subsetE(x)(y) && subsetE(y)(x))
+  return P.Eq((x, y) => subsetE(x)(y) && subsetE(y)(x))
 }
 
 /*
@@ -241,9 +232,9 @@ export function getEq<A>(E: Eq<A>): Eq<ReadonlySet<A>> {
 /**
  * @since 1.0.0
  */
-export function filter_<A, B extends A>(fa: ReadonlySet<A>, refinement: Refinement<A, B>): ReadonlySet<B>
-export function filter_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>): ReadonlySet<A>
-export function filter_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
+export function filter_<A, B extends A>(fa: ReadonlySet<A>, refinement: P.Refinement<A, B>): ReadonlySet<B>
+export function filter_<A>(fa: ReadonlySet<A>, predicate: P.Predicate<A>): ReadonlySet<A>
+export function filter_<A>(fa: ReadonlySet<A>, predicate: P.Predicate<A>) {
   const values = fa.values()
   let e: IteratorResult<A>
   const r      = new Set<A>()
@@ -261,10 +252,10 @@ export function filter_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
  */
 export function partition_<A, B extends A>(
   fa: ReadonlySet<A>,
-  refinement: Refinement<A, B>
+  refinement: P.Refinement<A, B>
 ): readonly [ReadonlySet<A>, ReadonlySet<B>]
-export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>): readonly [ReadonlySet<A>, ReadonlySet<A>]
-export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
+export function partition_<A>(fa: ReadonlySet<A>, predicate: P.Predicate<A>): readonly [ReadonlySet<A>, ReadonlySet<A>]
+export function partition_<A>(fa: ReadonlySet<A>, predicate: P.Predicate<A>) {
   const values = fa.values()
   let e: IteratorResult<A>
   const right  = new Set<A>()
@@ -277,18 +268,20 @@ export function partition_<A>(fa: ReadonlySet<A>, predicate: Predicate<A>) {
       left.add(value)
     }
   }
-  return tuple(left, right)
+  return P.tuple(left, right)
 }
 
 /**
  * @since 1.0.0
  */
 export function partition<A, B extends A>(
-  refinement: Refinement<A, B>
+  refinement: P.Refinement<A, B>
 ): (fa: ReadonlySet<A>) => readonly [ReadonlySet<A>, ReadonlySet<B>]
-export function partition<A>(predicate: Predicate<A>): (fa: ReadonlySet<A>) => readonly [ReadonlySet<A>, ReadonlySet<A>]
 export function partition<A>(
-  predicate: Predicate<A>
+  predicate: P.Predicate<A>
+): (fa: ReadonlySet<A>) => readonly [ReadonlySet<A>, ReadonlySet<A>]
+export function partition<A>(
+  predicate: P.Predicate<A>
 ): (fa: ReadonlySet<A>) => readonly [ReadonlySet<A>, ReadonlySet<A>] {
   return (fa) => partition_(fa, predicate)
 }
@@ -296,7 +289,7 @@ export function partition<A>(
 /**
  * @since 1.0.0
  */
-export function partitionMap_<B, C>(EB: Eq<B>, EC: Eq<C>) {
+export function partitionMap_<B, C>(EB: P.Eq<B>, EC: P.Eq<C>) {
   return <A>(set: ReadonlySet<A>, f: (a: A) => E.Either<B, C>): readonly [ReadonlySet<B>, ReadonlySet<C>] => {
     const values = set.values()
     let e: IteratorResult<A>
@@ -327,8 +320,8 @@ export function partitionMap_<B, C>(EB: Eq<B>, EC: Eq<C>) {
  * @since 1.0.0
  */
 export function partitionMap<B, C>(
-  EB: Eq<B>,
-  EC: Eq<C>
+  EB: P.Eq<B>,
+  EC: P.Eq<C>
 ): <A>(f: (a: A) => E.Either<B, C>) => (set: ReadonlySet<A>) => readonly [ReadonlySet<B>, ReadonlySet<C>] {
   return (f) => (set) => partitionMap_(EB, EC)(set, f)
 }
@@ -336,7 +329,7 @@ export function partitionMap<B, C>(
 /**
  * @since 1.0.0
  */
-export function filterMap_<B>(E: Eq<B>) {
+export function filterMap_<B>(E: P.Eq<B>) {
   const elemE_ = elem_(E)
   return <A>(fa: ReadonlySet<A>, f: (a: A) => O.Option<B>) => {
     const r: Set<B> = new Set()
@@ -353,7 +346,7 @@ export function filterMap_<B>(E: Eq<B>) {
 /**
  * @since 1.0.0
  */
-export function filterMap<B>(E: Eq<B>) {
+export function filterMap<B>(E: P.Eq<B>) {
   const filterMapE_ = filterMap_(E)
   return <A>(f: (a: A) => O.Option<B>) => (fa: ReadonlySet<A>) => filterMapE_(fa, f)
 }
@@ -364,21 +357,21 @@ export function filterMap<B>(E: Eq<B>) {
  * -------------------------------------------
  */
 
-export function foldl_<A>(O: Ord<A>) {
+export function foldl_<A>(O: P.Ord<A>) {
   const toArrayO = toArray(O)
   return <B>(set: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B => A.foldl_(toArrayO(set), b, f)
 }
 
-export function foldl<A>(O: Ord<A>): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
+export function foldl<A>(O: P.Ord<A>): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
   return (b, f) => (set) => foldl_(O)(set, b, f)
 }
 
-export function foldMap_<A, M>(O: Ord<A>, M: P.Monoid<M>) {
+export function foldMap_<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
   const toArrayO = toArray(O)
   return (fa: ReadonlySet<A>, f: (a: A) => M) => A.foldl_(toArrayO(fa), M.nat, (b, a) => M.combine_(b, f(a)))
 }
 
-export function foldMap<A, M>(O: Ord<A>, M: P.Monoid<M>) {
+export function foldMap<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
   const foldMapOM_ = foldMap_(O, M)
   return (f: (a: A) => M) => (fa: ReadonlySet<A>) => foldMapOM_(fa, f)
 }
@@ -389,7 +382,7 @@ export function foldMap<A, M>(O: Ord<A>, M: P.Monoid<M>) {
  * -------------------------------------------
  */
 
-export function map_<B>(E: Eq<B>) {
+export function map_<B>(E: P.Eq<B>) {
   return <A>(set: ReadonlySet<A>, f: (a: A) => B) => {
     const elemE = elem(E)
     const r     = new Set<B>()
@@ -403,7 +396,7 @@ export function map_<B>(E: Eq<B>) {
   }
 }
 
-export function map<B>(E: Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>) => Set<B> {
+export function map<B>(E: P.Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>) => Set<B> {
   return (f) => (set) => map_(E)(set, f)
 }
 
@@ -413,7 +406,7 @@ export function map<B>(E: Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>) =
  * -------------------------------------------
  */
 
-export function bind_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
+export function bind_<B>(E: P.Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
   const elemE = elem(E)
   return (set, f) => {
     const r = new Set<B>()
@@ -428,13 +421,13 @@ export function bind_<B>(E: Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => Readon
   }
 }
 
-export function bind<B>(E: Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
+export function bind<B>(E: P.Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
   return (f) => (set) => bind_(E)(set, f)
 }
 
-export function flatten<A>(E: Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> {
+export function flatten<A>(E: P.Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> {
   const bindE = bind(E)
-  return bindE(identity)
+  return bindE(P.identity)
 }
 
 /*
@@ -443,9 +436,9 @@ export function flatten<A>(E: Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => Reado
  * -------------------------------------------
  */
 
-export function getUnionMonoid<A>(E: Eq<A>): P.Monoid<ReadonlySet<A>> {
+export function getUnionMonoid<A>(E: P.Eq<A>): P.Monoid<ReadonlySet<A>> {
   const unionE_ = union_(E)
-  return makeMonoid<ReadonlySet<A>>((x, y) => unionE_(x, y), empty())
+  return P.Monoid<ReadonlySet<A>>((x, y) => unionE_(x, y), empty())
 }
 
 /*
@@ -454,9 +447,9 @@ export function getUnionMonoid<A>(E: Eq<A>): P.Monoid<ReadonlySet<A>> {
  * -------------------------------------------
  */
 
-export function getIntersectionSemigroup<A>(E: Eq<A>): P.Semigroup<ReadonlySet<A>> {
+export function getIntersectionSemigroup<A>(E: P.Eq<A>): P.Semigroup<ReadonlySet<A>> {
   const intersectionE_ = intersection_(E)
-  return makeSemigroup((x, y) => intersectionE_(x, y))
+  return P.Semigroup((x, y) => intersectionE_(x, y))
 }
 
 /*
@@ -465,7 +458,7 @@ export function getIntersectionSemigroup<A>(E: Eq<A>): P.Semigroup<ReadonlySet<A
  * -------------------------------------------
  */
 
-export function getShow<A>(S: Show<A>): Show<ReadonlySet<A>> {
+export function getShow<A>(S: P.Show<A>): P.Show<ReadonlySet<A>> {
   return {
     show: (s) => {
       let elements = ''
@@ -492,7 +485,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlySet<A>> {
  * @category Combinators
  * @since 1.0.0
  */
-export function union_<A>(E: Eq<A>) {
+export function union_<A>(E: P.Eq<A>) {
   const elemE = elem(E)
   return (me: ReadonlySet<A>, that: ReadonlySet<A>) => {
     if (me.size === 0) {
@@ -517,7 +510,7 @@ export function union_<A>(E: Eq<A>) {
  * @category Combinators
  * @since 1.0.0
  */
-export function union<A>(E: Eq<A>) {
+export function union<A>(E: P.Eq<A>) {
   const unionE_ = union_(E)
   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => unionE_(me, that)
 }
@@ -528,7 +521,7 @@ export function union<A>(E: Eq<A>) {
  * @category Combinators
  * @since 1.0.0
  */
-export function intersection_<A>(E: Eq<A>): (me: ReadonlySet<A>, that: ReadonlySet<A>) => ReadonlySet<A> {
+export function intersection_<A>(E: P.Eq<A>): (me: ReadonlySet<A>, that: ReadonlySet<A>) => ReadonlySet<A> {
   const elemE = elem(E)
   return (me, that) => {
     if (me.size === 0 || that.size === 0) {
@@ -550,17 +543,17 @@ export function intersection_<A>(E: Eq<A>): (me: ReadonlySet<A>, that: ReadonlyS
  * @category Combinators
  * @since 1.0.0
  */
-export function intersection<A>(E: Eq<A>) {
+export function intersection<A>(E: P.Eq<A>) {
   const intersectionE_ = intersection_(E)
   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => intersectionE_(me, that)
 }
 
-export function difference_<A>(E: Eq<A>) {
+export function difference_<A>(E: P.Eq<A>) {
   const elemE_ = elem_(E)
   return (me: ReadonlySet<A>, that: ReadonlySet<A>) => filter_(me, (a) => !elemE_(that, a))
 }
 
-export function difference<A>(E: Eq<A>) {
+export function difference<A>(E: P.Eq<A>) {
   const differenceE_ = difference_(E)
   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => differenceE_(me, that)
 }

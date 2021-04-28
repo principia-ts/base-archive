@@ -2,10 +2,10 @@ import type { Chunk } from '../Chunk/core'
 import type { FiberStatus, RuntimeFiber } from '../Fiber/core'
 import type { UIO } from '../IO/core'
 
-import { constant } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import { FiberDump, fiberName } from '../Fiber/core'
+import { constant } from '../function'
 import { crossPar_ } from '../IO/combinators/apply-par'
 import * as T from '../IO/core'
 import * as IT from '../Iterable'

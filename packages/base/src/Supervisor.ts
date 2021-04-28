@@ -8,8 +8,7 @@ import type { RuntimeFiber } from './Fiber'
 import type * as O from './Option'
 import type { Atomic } from './Ref'
 
-import { pipe } from '@principia/prelude/function'
-
+import { pipe } from './function'
 import * as I from './IO/core'
 import * as Ref from './Ref/atomic'
 import { AtomicReference } from './util/support/AtomicReference'

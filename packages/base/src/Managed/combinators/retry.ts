@@ -3,9 +3,9 @@ import type { Schedule } from '../../Schedule'
 import type { ReleaseMap } from '../ReleaseMap'
 import type { Has } from '@principia/prelude/Has'
 
-import { pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
+import { pipe } from '../../function'
 import { Managed } from '../core'
 import * as I from '../internal/_io'
 

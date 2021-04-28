@@ -1,6 +1,4 @@
-import type { Show } from '@principia/prelude/Show'
-
-import { makeShow } from '@principia/prelude/Show'
+import * as P from '@principia/prelude'
 
 export abstract class Exception extends Error {
   abstract readonly _tag: string
@@ -20,7 +18,7 @@ export abstract class Exception extends Error {
   }
 }
 
-export const getShow: Show<Exception> = makeShow(
+export const Show: P.Show<Exception> = P.Show(
   (ex) => `An exception occurred at ${ex.stack.split[0]}\n  [${ex.name}]: ${ex.message}`
 )
 

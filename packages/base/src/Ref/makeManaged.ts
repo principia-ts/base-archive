@@ -1,5 +1,4 @@
-import { flow } from '@principia/prelude/function'
-
+import { flow } from '../function'
 import { toManaged } from '../IO/combinators/toManaged'
 import { makeRef } from './core'
 

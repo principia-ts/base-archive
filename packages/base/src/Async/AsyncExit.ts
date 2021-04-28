@@ -1,6 +1,7 @@
-import { identity, pipe } from '@principia/prelude/function'
 import { matchTag_ } from '@principia/prelude/matchers'
 import { tuple } from '@principia/prelude/tuple'
+
+import { identity, pipe } from '../function'
 
 export interface Interrupt {
   readonly _tag: 'Interrupt'

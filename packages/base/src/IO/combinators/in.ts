@@ -2,10 +2,10 @@ import type { Scope } from '../../Scope'
 import type { IO } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
 import * as A from '../../Array/core'
 import * as F from '../../Fiber'
+import { pipe } from '../../function'
 import * as O from '../../Option'
 import { bind } from '../core'
 import { forkDaemon } from './core-scope'

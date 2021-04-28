@@ -1,9 +1,9 @@
 import type { StoreURI } from './Modules'
-import type { Endomorphism } from '@principia/prelude/Endomorphism'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
-import { identity } from '@principia/prelude/function'
+
+import { identity } from './function'
 
 export interface Store<S, A> {
   readonly peek: (s: S) => A
@@ -27,22 +27,22 @@ export function seek<S>(s: S): <A>(wa: Store<S, A>) => Store<S, A> {
   return (wa) => seek_(wa, s)
 }
 
-export function seeks_<S, A>(wa: Store<S, A>, f: Endomorphism<S>): Store<S, A> {
+export function seeks_<S, A>(wa: Store<S, A>, f: P.Endomorphism<S>): Store<S, A> {
   return {
     peek: wa.peek,
     pos: f(wa.pos)
   }
 }
 
-export function seeks<S>(f: Endomorphism<S>): <A>(wa: Store<S, A>) => Store<S, A> {
+export function seeks<S>(f: P.Endomorphism<S>): <A>(wa: Store<S, A>) => Store<S, A> {
   return (wa) => seeks_(wa, f)
 }
 
-export function peeks_<S, A>(wa: Store<S, A>, f: Endomorphism<S>): A {
+export function peeks_<S, A>(wa: Store<S, A>, f: P.Endomorphism<S>): A {
   return wa.peek(f(wa.pos))
 }
 
-export function peeks<S>(f: Endomorphism<S>): <A>(wa: Store<S, A>) => A {
+export function peeks<S>(f: P.Endomorphism<S>): <A>(wa: Store<S, A>) => A {
   return (wa) => peeks_(wa, f)
 }
 

@@ -1,4 +1,4 @@
-import type { FunctionN, Lazy } from '@principia/prelude/function'
+import type { FunctionN, Lazy } from '@principia/prelude'
 
 export interface Done<A> {
   readonly _tag: 'Done'

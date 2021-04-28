@@ -12,9 +12,9 @@ import * as It from '@principia/base/Iterable'
 import * as L from '@principia/base/List'
 import * as N from '@principia/base/number'
 import * as O from '@principia/base/Option'
+import * as S from '@principia/base/Show'
 import * as Str from '@principia/base/string'
 import { flow, identity, pipe } from '@principia/prelude/function'
-import * as S from '@principia/prelude/Show'
 import assert from 'assert'
 
 import * as BA from '../FreeBooleanAlgebra'
@@ -139,7 +139,7 @@ export function contains<A>(element: A, eq: Eq<A>, show?: S.Show<A>): Assertion<
 }
 
 export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
-  return assertion('containsCause', [param(cause, S.makeShow<C.Cause<E>>(C.pretty))], C.contains(cause))
+  return assertion('containsCause', [param(cause, S.Show<C.Cause<E>>(C.pretty))], C.contains(cause))
 }
 
 export function containsString(element: string): Assertion<string> {

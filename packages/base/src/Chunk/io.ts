@@ -1,8 +1,7 @@
 /* eslint-disable functional/immutable-data */
 import type { Chunk, ChunkBuilder } from './core'
 
-import { identity, pipe } from '@principia/prelude/function'
-
+import { identity, pipe } from '../function'
 import * as I from '../IO/core'
 import { builder, concrete, foldl_ } from './core'
 

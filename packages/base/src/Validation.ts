@@ -1,4 +1,3 @@
-import type { Erase } from './util/types'
 import type * as HKT from '@principia/prelude/HKT'
 
 import * as P from '@principia/prelude'
@@ -7,7 +6,7 @@ import * as E from './Either'
 
 export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: P.MonadExcept<F, C>
-): <E>(S: P.Semigroup<E>) => P.Applicative<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
+): <E>(S: P.Semigroup<E>) => P.Applicative<F, P.Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
 export function getApplicativeValidation<F>(
   F: P.MonadExcept<HKT.UHKT2<F>>
 ): <E>(S: P.Semigroup<E>) => P.Applicative<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
@@ -38,7 +37,7 @@ export function getApplicativeValidation<F>(
 
 export function getAltValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: P.MonadExcept<F, C> & P.Alt<F, C>
-): <E>(S: P.Semigroup<E>) => P.Alt<F, Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
+): <E>(S: P.Semigroup<E>) => P.Alt<F, P.Erase<HKT.Strip<C, 'E'>, HKT.Auto> & HKT.Fix<'E', E>>
 export function getAltValidation<F>(
   F: P.MonadExcept<HKT.UHKT2<F>> & P.Alt<HKT.UHKT2<F>>
 ): <E>(S: P.Semigroup<E>) => P.Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>> {

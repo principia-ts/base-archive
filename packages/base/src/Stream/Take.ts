@@ -3,11 +3,10 @@ import type { Exit } from '../Exit'
 import type { Option } from '../Option'
 import type { Pull } from './Pull'
 
-import { flow, pipe } from '@principia/prelude/function'
-
 import * as Ca from '../Cause'
 import * as C from '../Chunk'
 import * as Ex from '../Exit'
+import { flow, pipe } from '../function'
 import * as I from '../IO'
 import * as O from '../Option'
 
@@ -72,8 +71,6 @@ export function map_<E, A, B>(take: Take<E, A>, f: (a: A) => B): Take<E, B> {
   return Ex.map_(take, C.map(f))
 }
 
-export function map<A, B>(
-  f: (a: A) => B
-): <E>(take: Exit<Option<E>, Chunk<A>>) => Exit<Option<E>, Chunk<B>> {
+export function map<A, B>(f: (a: A) => B): <E>(take: Exit<Option<E>, Chunk<A>>) => Exit<Option<E>, Chunk<B>> {
   return (take) => map_(take, f)
 }

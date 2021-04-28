@@ -2,8 +2,8 @@ import type { Exit } from '../../Exit'
 import type { IO } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
-import { pipe } from '@principia/prelude/function'
 
+import { pipe } from '../../function'
 import * as I from '../core'
 import { race_ } from './race'
 

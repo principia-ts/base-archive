@@ -2,7 +2,6 @@ import type * as HKT from '@principia/prelude/HKT'
 import type { Show } from '@principia/prelude/Show'
 
 import * as P from '@principia/prelude'
-import { identity } from '@principia/prelude/function'
 
 import * as A from './Array/core'
 
@@ -13,7 +12,7 @@ import * as A from './Array/core'
  */
 
 /**
- * `Tree` is an implementation of a multi-way rose tree
+ * `RoseTree` is an implementation of a multi-way rose tree
  */
 export interface RoseTree<A> {
   readonly value: A
@@ -172,7 +171,7 @@ export function extend<A, B>(f: (wa: RoseTree<A>) => B): (wa: RoseTree<A>) => Ro
   return (wa) => extend_(wa, f)
 }
 
-export const duplicate: <A>(wa: RoseTree<A>) => RoseTree<RoseTree<A>> = extend(identity)
+export const duplicate: <A>(wa: RoseTree<A>) => RoseTree<RoseTree<A>> = extend(P.identity)
 
 export function extract<A>(wa: RoseTree<A>): A {
   return wa.value
@@ -257,7 +256,7 @@ export function bind<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => RoseT
   return (ma) => bind_(ma, f)
 }
 
-export const flatten: <A>(mma: RoseTree<RoseTree<A>>) => RoseTree<A> = bind(identity)
+export const flatten: <A>(mma: RoseTree<RoseTree<A>>) => RoseTree<A> = bind(P.identity)
 
 export function tap_<A, B>(ma: RoseTree<A>, f: (a: A) => RoseTree<B>): RoseTree<A> {
   return bind_(ma, (a) => map_(f(a), () => a))
@@ -319,7 +318,7 @@ export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>
 
 export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
-export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => traverse_(G)(ta, identity)
+export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => traverse_(G)(ta, P.identity)
 
 /*
  * -------------------------------------------

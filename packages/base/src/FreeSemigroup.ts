@@ -1,6 +1,4 @@
-import type { Semigroup } from '@principia/prelude'
-
-import { makeSemigroup } from '@principia/prelude'
+import * as P from '@principia/prelude'
 
 import * as Ev from './Eval'
 
@@ -100,6 +98,6 @@ export function fold<A, B>(
  * @category Instances
  * @since 1.0.0
  */
-export function getSemigroup<A = never>(): Semigroup<FreeSemigroup<A>> {
-  return makeSemigroup(Combine)
+export function getSemigroup<A = never>(): P.Semigroup<FreeSemigroup<A>> {
+  return P.Semigroup(Combine)
 }

@@ -1,11 +1,10 @@
 import type { Chunk } from '../../Chunk/core'
 import type { Fiber } from '../core'
 
-import { pipe } from '@principia/prelude/function'
-
 import * as C from '../../Cause'
 import * as Ch from '../../Chunk/core'
 import * as Ex from '../../Exit'
+import { pipe } from '../../function'
 import { None, Some } from '../../Option'
 import * as O from '../../Option'
 import { makeSynthetic } from '../core'

@@ -1,10 +1,9 @@
 import type { FiberContext } from '../../Fiber'
 import type { IO, URIO } from '../core'
 
-import { flow, pipe } from '@principia/prelude/function'
-
 import * as C from '../../Cause/core'
 import * as E from '../../Either'
+import { flow, pipe } from '../../function'
 import { fork, halt } from '../core'
 import { onError } from './onError'
 

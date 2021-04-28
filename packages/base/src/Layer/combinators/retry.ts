@@ -3,11 +3,11 @@ import type { StepFunction } from '../../Schedule/Decision'
 import type { Layer } from '../core'
 import type * as H from '@principia/prelude/Has'
 
-import { pipe } from '@principia/prelude/function'
 import { matchTag } from '@principia/prelude/matchers'
 import { tuple } from '@principia/prelude/tuple'
 
 import { Clock } from '../../Clock'
+import { pipe } from '../../function'
 import { catchAll, crossPar_, defer, first, fresh, fromRawEffect, fromRawFunctionM, identity } from '../core'
 import * as I from '../internal/io'
 

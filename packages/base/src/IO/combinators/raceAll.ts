@@ -4,12 +4,12 @@ import type { NonEmptyArray } from '../../NonEmptyArray'
 import type { IO, UIO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
-import { flow, pipe } from '@principia/prelude/function'
 import { tuple } from '@principia/prelude/tuple'
 
 import * as C from '../../Chunk/core'
 import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'
+import { flow, pipe } from '../../function'
 import * as P from '../../Promise'
 import * as Ref from '../../Ref'
 import * as I from '../core'

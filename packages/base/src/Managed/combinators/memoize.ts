@@ -1,7 +1,6 @@
 import type { Managed, UManaged } from '../core'
 
-import { pipe } from '@principia/prelude/function'
-
+import { pipe } from '../../function'
 import { once } from '../../IO/combinators/once'
 import { to } from '../../IO/combinators/to'
 import * as P from '../../Promise'

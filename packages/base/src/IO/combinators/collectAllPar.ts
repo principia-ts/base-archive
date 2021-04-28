@@ -4,8 +4,8 @@ import type { Chunk } from '../../Chunk/core'
 import type { IO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
-import { flow, identity } from '@principia/prelude/function'
 
+import { flow, identity } from '../../function'
 import { foreachPar_ } from './foreachPar'
 import { foreachUnitPar_ } from './foreachUnitPar'
 

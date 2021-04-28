@@ -2,6 +2,7 @@ import type { Predicate } from '@principia/prelude/Predicate'
 
 import * as P from '@principia/prelude'
 
+import { makeEq } from './Eq'
 import * as G from './Guard'
 
 export function invert(b: boolean): boolean {
@@ -70,12 +71,21 @@ export function orPass<A>(g: Predicate<A>): (f: Predicate<A>) => Predicate<A> {
  * -------------------------------------------
  */
 
-export const SemigroupAll: P.Semigroup<boolean> = P.makeSemigroup((x, y) => x && y)
+export const BooleanAlgebra: P.BooleanAlgebra<boolean> = {
+  meet: (x, y) => x && y,
+  join: (x, y) => x || y,
+  zero: false,
+  one: true,
+  implies: (x, y) => !x || y,
+  not: (x) => !x
+}
 
-export const SemigroupAny: P.Semigroup<boolean> = P.makeSemigroup((x, y) => x || y)
+export const SemigroupAll: P.Semigroup<boolean> = P.Semigroup((x, y) => x && y)
 
-export const Eq: P.Eq<boolean> = P.makeEq((x, y) => x === y)
+export const SemigroupAny: P.Semigroup<boolean> = P.Semigroup((x, y) => x || y)
 
-export const Show: P.Show<boolean> = P.makeShow((a) => JSON.stringify(a))
+export const Eq: P.Eq<boolean> = P.Eq((x, y) => x === y)
 
-export const Guard: G.Guard<unknown, boolean> = G.makeGuard((u): u is boolean => typeof u === 'boolean')
+export const Show: P.Show<boolean> = P.Show((a) => JSON.stringify(a))
+
+export const Guard: G.Guard<unknown, boolean> = G.Guard((u): u is boolean => typeof u === 'boolean')
