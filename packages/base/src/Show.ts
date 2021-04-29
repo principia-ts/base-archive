@@ -12,7 +12,7 @@ export type TypeOf<S> = S extends Show<infer A> ? A : never
 
 /*
  * -------------------------------------------
- * Primitives
+ * primitives
  * -------------------------------------------
  */
 
@@ -22,21 +22,7 @@ export const any: Show<any> = {
 
 /*
  * -------------------------------------------
- * Contravariant
- * -------------------------------------------
- */
-
-export function contramap_<A, B>(fa: Show<A>, f: (b: B) => A): Show<B> {
-  return Show((b) => fa.show(f(b)))
-}
-
-export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
-  return (fa) => contramap_(fa, f)
-}
-
-/*
- * -------------------------------------------
- * Combinators
+ * combinators
  * -------------------------------------------
  */
 
@@ -59,6 +45,20 @@ export function undefinable<A>(or: Show<A>): Show<A | undefined> {
 export function lazy<A>(f: () => Show<A>): Show<A> {
   const get = memoize<void, Show<A>>(f)
   return Show((a) => get().show(a))
+}
+
+/*
+ * -------------------------------------------
+ * Contravariant
+ * -------------------------------------------
+ */
+
+export function contramap_<A, B>(fa: Show<A>, f: (b: B) => A): Show<B> {
+  return Show((b) => fa.show(f(b)))
+}
+
+export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
+  return (fa) => contramap_(fa, f)
 }
 
 export { ShowURI } from './Modules'

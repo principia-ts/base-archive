@@ -1,3 +1,5 @@
+import { memoize } from './function'
+
 export interface Eq<A> {
   readonly equals_: (x: A, y: A) => boolean
   readonly equals: (y: A) => (x: A) => boolean
@@ -29,6 +31,21 @@ export const any: Eq<any> = Eq(() => true)
 export const never: Eq<never> = Eq(() => false)
 
 export const strict: Eq<unknown> = Eq((x, y) => x === y)
+
+/*
+ * -------------------------------------------
+ * combinators
+ * -------------------------------------------
+ */
+
+export function nullable<A>(E: Eq<A>): Eq<null | A> {
+  return Eq((x, y) => (x == null || y == null ? x === y : E.equals_(x, y)))
+}
+
+export function lazy<A>(f: () => Eq<A>): Eq<A> {
+  const get = memoize<void, Eq<A>>(f)
+  return Eq((x, y) => get().equals_(x, y))
+}
 
 /*
  * -------------------------------------------
