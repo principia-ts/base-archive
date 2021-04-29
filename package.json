@@ -39,6 +39,7 @@
     "fp-ts": "^2.10.4",
     "glob": "^7.1.6",
     "lerna": "^4.0.0",
+    "madge": "^4.0.2",
     "prettier-eslint": "^12.0.0",
     "prettier-eslint-cli": "^5.0.1",
     "rimraf": "^3.0.2",

@@ -1,6 +1,6 @@
 import type { Magma } from './Magma'
 
-import * as Ord from './Ord'
+import * as Ord from './internal/Ord'
 
 type Ord<A> = Ord.Ord<A>
 

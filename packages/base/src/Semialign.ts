@@ -7,8 +7,8 @@ import { identity } from './function'
 import { Functor } from './Functor'
 import * as HKT from './HKT'
 import * as O from './internal/Option'
-import * as T from './These'
-import { tuple } from './tuple'
+import * as T from './internal/These'
+import { tuple } from './internal/tuple'
 
 export interface Semialign<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly alignWith_: AlignWithFn_<F, C>

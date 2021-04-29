@@ -5,7 +5,7 @@ import type { EnforceNonEmptyRecord } from './util/types'
 
 import { Functor, getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
-import { tuple } from './tuple'
+import { tuple } from './internal/tuple'
 
 export interface SemimonoidalFunctor<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Semimonoidal<F, C> {
   readonly crossWith_: CrossWithFn_<F, C>

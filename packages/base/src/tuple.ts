@@ -2,11 +2,10 @@ import * as A from './Array/core'
 import * as E from './Eq'
 import { pipe } from './function'
 import * as G from './Guard'
+import * as _ from './internal/tuple'
 import * as S from './Show'
 
-export function tuple<T extends ReadonlyArray<any>>(...t: T): readonly [...T] {
-  return t
-}
+export const tuple = _.tuple
 
 /*
  * -------------------------------------------
