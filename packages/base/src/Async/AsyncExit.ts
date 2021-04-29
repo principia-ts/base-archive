@@ -1,6 +1,6 @@
 import { identity, pipe } from '../function'
 import { tuple } from '../tuple'
-import { matchTag_ } from '../util/matchers'
+import { matchTag_ } from '../util/match'
 
 export interface Interrupt {
   readonly _tag: 'Interrupt'

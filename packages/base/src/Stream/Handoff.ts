@@ -5,7 +5,7 @@ import * as I from '../IO'
 import { None, Some } from '../Option'
 import * as P from '../Promise'
 import * as Ref from '../Ref'
-import { matchTag } from '../util/matchers'
+import { matchTag } from '../util/match'
 
 type State<A> = Empty | Full<A>
 

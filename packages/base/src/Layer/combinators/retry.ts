@@ -6,7 +6,7 @@ import type { Layer } from '../core'
 import { Clock } from '../../Clock'
 import { pipe } from '../../function'
 import { tuple } from '../../tuple'
-import { matchTag } from '../../util/matchers'
+import { matchTag } from '../../util/match'
 import { catchAll, crossPar_, defer, first, fresh, fromRawEffect, fromRawFunctionM, identity } from '../core'
 import * as I from '../internal/io'
 

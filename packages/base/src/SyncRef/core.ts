@@ -3,7 +3,7 @@ import { flow, identity, pipe } from '../function'
 import * as O from '../Option'
 import * as S from '../Sync'
 import { tuple } from '../tuple'
-import { matchTag } from '../util/matchers'
+import { matchTag } from '../util/match'
 import { AtomicReference } from '../util/support/AtomicReference'
 import * as At from './atomic'
 

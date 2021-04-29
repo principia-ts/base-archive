@@ -2,7 +2,7 @@ import type { IO } from '../IO/core'
 
 import { flow, pipe } from '../function'
 import * as I from '../IO/core'
-import { matchTag_ } from '../util/matchers'
+import { matchTag_ } from '../util/match'
 
 /*
  * -------------------------------------------

@@ -20,7 +20,7 @@ import * as M from '@principia/base/Managed'
 import * as O from '@principia/base/Option'
 import * as Sc from '@principia/base/Schedule'
 import * as Str from '@principia/base/string'
-import { matchTag, matchTag_ } from '@principia/base/util/matchers'
+import { matchTag, matchTag_ } from '@principia/base/util/match'
 
 import { Annotations } from './Annotation'
 import * as Annotation from './Annotation'

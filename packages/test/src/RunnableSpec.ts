@@ -6,7 +6,7 @@ import type { URIO } from '@principia/base/IO'
 
 import * as E from '@principia/base/Either'
 import * as I from '@principia/base/IO'
-import { matchTag } from '@principia/base/util/matchers'
+import { matchTag } from '@principia/base/util/match'
 
 import { AbstractRunnableSpec } from './AbstractRunnableSpec'
 import * as ExSp from './ExecutedSpec'

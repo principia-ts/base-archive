@@ -7,7 +7,7 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as F from '@principia/base/function'
-import { matchTag } from '@principia/base/util/matchers'
+import { matchTag } from '@principia/base/util/match'
 
 import * as ExSpec from './ExecutedSpec'
 import { render, silent } from './Render'

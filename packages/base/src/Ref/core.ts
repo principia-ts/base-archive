@@ -5,7 +5,7 @@ import { flow, identity, pipe } from '../function'
 import * as I from '../IO/core'
 import * as O from '../Option'
 import { tuple } from '../tuple'
-import { matchTag } from '../util/matchers'
+import { matchTag } from '../util/match'
 import { AtomicReference } from '../util/support/AtomicReference'
 import * as At from './atomic'
 
