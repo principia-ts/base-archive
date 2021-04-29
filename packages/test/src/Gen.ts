@@ -393,3 +393,5 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 export const alphaNumericString: Gen<Has<Random> & Has<Sized>, string> = string(alphaNumericChar)
+
+export { GenURI } from './Modules'
