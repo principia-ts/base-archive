@@ -134,6 +134,14 @@
       "import": "./dist/dist/esm/Managed/index.js",
       "require": "./dist/dist/cjs/Managed/index.js"
     },
+    "./prelude": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/prelude/index.js",
+        "require": "./dist/dist-traced/cjs/prelude/index.js"
+      },
+      "import": "./dist/dist/esm/prelude/index.js",
+      "require": "./dist/dist/cjs/prelude/index.js"
+    },
     "./Queue": {
       "traced": {
         "import": "./dist/dist-traced/esm/Queue/index.js",
@@ -173,6 +181,14 @@
       },
       "import": "./dist/dist/esm/SyncRef/index.js",
       "require": "./dist/dist/cjs/SyncRef/index.js"
+    },
+    "./util/pure-rand": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/util/pure-rand/index.js",
+        "require": "./dist/dist-traced/cjs/util/pure-rand/index.js"
+      },
+      "import": "./dist/dist/esm/util/pure-rand/index.js",
+      "require": "./dist/dist/cjs/util/pure-rand/index.js"
     },
     "./*": {
       "traced": {
