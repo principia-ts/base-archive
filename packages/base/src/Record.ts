@@ -932,7 +932,7 @@ export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<re
  * -------------------------------------------
  */
 
-export const EqUnknownRecord: Eq<ReadonlyRecord<string, unknown>> = P.Eq((x, y) => {
+export const UnknownRecordEq: Eq<ReadonlyRecord<string, unknown>> = P.Eq((x, y) => {
   for (const k in x) {
     if (!(k in y)) {
       return false
@@ -946,13 +946,13 @@ export const EqUnknownRecord: Eq<ReadonlyRecord<string, unknown>> = P.Eq((x, y) 
   return true
 })
 
-export const GuardUnknownRecord: G.Guard<unknown, ReadonlyRecord<string, unknown>> = G.Guard(
+export const UnknownRecordGuard: G.Guard<unknown, ReadonlyRecord<string, unknown>> = G.Guard(
   (u): u is ReadonlyRecord<string, unknown> => u != null && typeof u === 'object' && !Array.isArray(u)
 )
 
 export function getGuard<A>(codomain: G.Guard<unknown, A>): G.Guard<unknown, ReadonlyRecord<string, A>> {
   return P.pipe(
-    GuardUnknownRecord,
+    UnknownRecordGuard,
     G.refine((r): r is ReadonlyRecord<string, A> => {
       for (const k in r) {
         if (!codomain.is(r[k])) {

@@ -875,7 +875,7 @@ export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
  */
 
 export const GuardUnknownNonEmptyArray: Guard<unknown, NonEmptyArray<unknown>> = P.pipe(
-  A.GuardUnknownArray,
+  A.UnknownArrayGuard,
   G.refine((i): i is NonEmptyArray<unknown> => i.length > 0)
 )
 

@@ -325,7 +325,7 @@ function _intersect<A extends ReadonlyArray<Record<string, any>>>(
       let computation = Ev.now(mut_out)
       for (const k in a) {
         const ak = a[k]
-        if (R.GuardUnknownRecord.is(ak) && R.GuardUnknownRecord.is(mut_out[k])) {
+        if (R.UnknownRecordGuard.is(ak) && R.UnknownRecordGuard.is(mut_out[k])) {
           computation = pipe(
             computation,
             Ev.bind((mut_out) =>
@@ -456,7 +456,7 @@ export function getGuard<P extends Record<string, G.AnyUGuard>>(
   properties: P
 ): G.Guard<unknown, { [K in keyof P]: G.TypeOf<P[K]> }>
 export function getGuard(properties: Record<string, G.AnyUGuard>): G.Guard<unknown, Record<string, any>> {
-  return P.pipe(R.GuardUnknownRecord, G.compose(getKeysGuard(properties)), G.compose(getStrictGuard(properties)))
+  return P.pipe(R.UnknownRecordGuard, G.compose(getKeysGuard(properties)), G.compose(getStrictGuard(properties)))
 }
 
 export function getStrictPartialGuard<P extends Record<string, G.AnyGuard>>(
@@ -480,7 +480,7 @@ export function getPartialGuard<P extends Record<string, G.Guard<unknown, any>>>
   properties: P
 ): G.Guard<unknown, Partial<{ [K in keyof P]: G.TypeOf<P[K]> }>>
 export function getPartialGuard(properties: Record<string, G.AnyUGuard>): G.Guard<unknown, any> {
-  return P.pipe(R.GuardUnknownRecord, G.compose(getStrictPartialGuard(properties)))
+  return P.pipe(R.UnknownRecordGuard, G.compose(getStrictPartialGuard(properties)))
 }
 
 export function getIntersectionGuard<M extends ReadonlyArray<G.Guard<any, Record<string, any>>>>(
@@ -523,7 +523,7 @@ export function getSumGuard<T extends string>(
 export function getSumGuard(
   tag: string
 ): (members: Record<string, G.Guard<unknown, Record<string, any>>>) => G.Guard<unknown, Record<string, any>> {
-  return (members) => pipe(R.GuardUnknownRecord, G.compose(getStrictSumGuard(tag)(members)))
+  return (members) => pipe(R.UnknownRecordGuard, G.compose(getStrictSumGuard(tag)(members)))
 }
 
 /*

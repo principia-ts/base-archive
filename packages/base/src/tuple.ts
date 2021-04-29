@@ -47,7 +47,7 @@ export function getGuard<C extends ReadonlyArray<G.AnyUGuard>>(
   ...components: C
 ): G.Guard<unknown, Readonly<{ [I in keyof C]: G.TypeOf<C[I]> }>>
 export function getGuard(...components: ReadonlyArray<G.AnyUGuard>): G.Guard<unknown, ReadonlyArray<any>> {
-  return pipe(A.GuardUnknownArray, G.compose(getIndicesGuard(...components)), G.compose(getStrictGuard(...components)))
+  return pipe(A.UnknownArrayGuard, G.compose(getIndicesGuard(...components)), G.compose(getStrictGuard(...components)))
 }
 
 /*

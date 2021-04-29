@@ -2196,15 +2196,15 @@ export function union<A>(E: P.Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArr
  * -------------------------------------------
  */
 
-export const EqUnknownArray: P.Eq<ReadonlyArray<unknown>> = P.Eq((x, y) => x.length === y.length)
+export const UnknownArrayEq: P.Eq<ReadonlyArray<unknown>> = P.Eq((x, y) => x.length === y.length)
 
-export const GuardUnknownArray: G.Guard<unknown, ReadonlyArray<unknown>> = G.Guard((u): u is ReadonlyArray<unknown> =>
+export const UnknownArrayGuard: G.Guard<unknown, ReadonlyArray<unknown>> = G.Guard((u): u is ReadonlyArray<unknown> =>
   Array.isArray(u)
 )
 
 export function getGuard<A>(item: G.Guard<unknown, A>): G.Guard<unknown, ReadonlyArray<A>> {
   return pipe(
-    GuardUnknownArray,
+    UnknownArrayGuard,
     G.refine((u): u is ReadonlyArray<A> => u.every((v) => item.is(v)))
   )
 }
