@@ -2,14 +2,12 @@ import type { Cause } from '../Cause'
 import type { Chunk } from '../Chunk/core'
 import type { Exit } from '../Exit'
 import type { FiberId } from '../Fiber/FiberId'
+import type { Has, Tag } from '../Has'
+import type * as P from '../prelude'
 import type { ReadonlyRecord } from '../Record'
 import type { Finalizer, ReleaseMap } from './ReleaseMap'
-import type { Has, Tag } from '@principia/prelude/Has'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import * as P from '@principia/prelude'
-import { isTag } from '@principia/prelude/Has'
-import { tuple } from '@principia/prelude/tuple'
 
 import * as A from '../Array/core'
 import * as C from '../Cause/core'
@@ -18,10 +16,12 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ex from '../Exit/core'
 import { flow, identity as identityFn, pipe } from '../function'
+import { isTag } from '../Has'
 import * as Iter from '../Iterable'
 import * as O from '../Option'
 import * as R from '../Record'
 import * as Ref from '../Ref/core'
+import { tuple } from '../tuple'
 import * as I from './internal/io'
 import { add, addIfOpen, noopFinalizer, release } from './ReleaseMap'
 
@@ -510,8 +510,11 @@ export const sequenceT = <T extends ReadonlyArray<Managed<any, any, any>>>(
   ...mt: T & {
     0: Managed<any, any, any>
   }
-): Managed<P._R<T[number]>, P._E<T[number]>, { [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never }> =>
-  foreach_(mt, identityFn) as any
+): Managed<
+  P._R<T[number]>,
+  P._E<T[number]>,
+  { [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never }
+> => foreach_(mt, identityFn) as any
 
 /*
  * -------------------------------------------
@@ -2089,8 +2092,9 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    asksM((r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
-      f(R.map_(s, (v) => r[v.key]) as any)
+    asksM(
+      (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+        f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 

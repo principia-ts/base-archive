@@ -7,8 +7,8 @@
  */
 
 import type { Option } from './Option'
+import type * as P from './prelude'
 import type { Stack } from './util/support/Stack'
-import type * as P from '@principia/prelude'
 
 import * as O from './Option'
 import { makeStack } from './util/support/Stack'

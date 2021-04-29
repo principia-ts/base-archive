@@ -1,4 +1,16 @@
-import * as P from '@principia/prelude'
+import { flow, identity } from './function'
+import { Monoid } from './Monoid'
+import { Semigroup } from './Semigroup'
+
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+ */
+
+export interface Endomorphism<A> {
+  (a: A): A
+}
 
 /*
  * -------------------------------------------
@@ -6,10 +18,10 @@ import * as P from '@principia/prelude'
  * -------------------------------------------
  */
 
-export function getSemigroup<A>(): P.Semigroup<P.Endomorphism<A>> {
-  return P.Semigroup((x, y) => P.flow(x, y))
+export function getSemigroup<A>(): Semigroup<Endomorphism<A>> {
+  return Semigroup((x, y) => flow(x, y))
 }
 
-export function getMonoid<A>(): P.Monoid<P.Endomorphism<A>> {
-  return P.Monoid((x, y) => P.flow(x, y), P.identity)
+export function getMonoid<A>(): Monoid<Endomorphism<A>> {
+  return Monoid((x, y) => flow(x, y), identity)
 }

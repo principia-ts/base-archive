@@ -1,5 +1,4 @@
-import { tag } from '@principia/prelude/Has'
-
+import { tag } from './Has'
 import * as I from './IO/core'
 import * as L from './Layer/core'
 

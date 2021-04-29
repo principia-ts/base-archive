@@ -2,14 +2,13 @@ import type { Chunk } from '../Chunk/core'
 import type { FiberStatus, RuntimeFiber } from '../Fiber/core'
 import type { UIO } from '../IO/core'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import { FiberDump, fiberName } from '../Fiber/core'
 import { constant } from '../function'
 import { crossPar_ } from '../IO/combinators/apply-par'
 import * as T from '../IO/core'
 import * as IT from '../Iterable'
 import * as O from '../Option'
+import { tuple } from '../tuple'
 import { parseMs } from '../util/parse-ms'
 
 export function dump<E, A>(fiber: RuntimeFiber<E, A>): T.UIO<FiberDump> {

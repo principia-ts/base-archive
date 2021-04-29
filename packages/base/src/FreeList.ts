@@ -1,7 +1,6 @@
 import type { Stack } from './util/support/Stack'
 
-import * as P from '@principia/prelude'
-
+import * as P from './prelude'
 import { makeStack } from './util/support/Stack'
 
 /*

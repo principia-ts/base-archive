@@ -1,9 +1,8 @@
 import type { Managed } from '../core'
 import type { Finalizer } from '../ReleaseMap'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import { pipe } from '../../function'
+import { tuple } from '../../tuple'
 import { map } from '../core'
 import * as I from '../internal/io'
 import { releaseMap } from './releaseMap'

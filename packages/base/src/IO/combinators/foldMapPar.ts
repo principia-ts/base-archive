@@ -1,5 +1,5 @@
+import type { Monoid } from '../../Monoid'
 import type { IO } from '../core'
-import type { Monoid } from '@principia/prelude'
 
 import { traceAs } from '@principia/compile/util'
 

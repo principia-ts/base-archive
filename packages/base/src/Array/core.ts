@@ -5,18 +5,17 @@ import type { Option } from '../Option'
 import type { ReadonlyRecord } from '../Record'
 import type { These } from '../These'
 
-import * as P from '@principia/prelude'
-import * as HKT from '@principia/prelude/HKT'
-
 import { identity, pipe, unsafeCoerce } from '../function'
 import { GenLazyHKT, genWithHistoryF } from '../Gen'
 import * as G from '../Guard'
+import * as HKT from '../HKT'
 import * as _ from '../internal/array'
 import { ArrayURI } from '../Modules'
 import * as N from '../number'
 import * as O from '../Option'
 import * as Ord from '../Ord'
 import { EQ } from '../Ordering'
+import * as P from '../prelude'
 
 /*
  * -------------------------------------------

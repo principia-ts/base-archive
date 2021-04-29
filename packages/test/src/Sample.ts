@@ -1,16 +1,16 @@
 import type { IO } from '@principia/base/IO'
 import type { Option } from '@principia/base/Option'
+import type { Predicate } from '@principia/base/Predicate'
 import type { Stream } from '@principia/base/Stream'
-import type { Predicate } from '@principia/prelude/Predicate'
 
 import * as Ca from '@principia/base/Cause'
 import * as C from '@principia/base/Chunk'
 import * as Ex from '@principia/base/Exit'
+import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Option'
 import * as S from '@principia/base/Stream'
-import { pipe } from '@principia/prelude/function'
-import { tuple } from '@principia/prelude/tuple'
+import { tuple } from '@principia/base/tuple'
 
 export class Sample<R, A> {
   constructor(readonly value: A, readonly shrink: Stream<R, never, Sample<R, A>>) {}

@@ -1,11 +1,10 @@
 import type { Clock } from '../../Clock'
+import type { Has } from '../../Has'
 import type { Schedule } from '../../Schedule'
 import type { ReleaseMap } from '../ReleaseMap'
-import type { Has } from '@principia/prelude/Has'
-
-import { tuple } from '@principia/prelude/tuple'
 
 import { pipe } from '../../function'
+import { tuple } from '../../tuple'
 import { Managed } from '../core'
 import * as I from '../internal/_io'
 

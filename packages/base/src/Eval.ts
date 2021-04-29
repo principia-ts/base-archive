@@ -4,13 +4,13 @@
  * -------------------------------------------
  */
 
+import type * as HKT from './HKT'
 import type { Stack } from './util/support/Stack'
-import type * as HKT from '@principia/prelude/HKT'
 
-import * as P from '@principia/prelude'
-
+import * as A from './Array/core'
 import { EvalURI } from './Modules'
 import * as O from './Option'
+import * as P from './prelude'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 
@@ -268,6 +268,20 @@ export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
 
 export function unit(): Eval<void> {
   return now(undefined)
+}
+
+/*
+ * -------------------------------------------
+ * combinators
+ * -------------------------------------------
+ */
+
+export function foreachArrayUnit_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Eval<B>): Eval<void> {
+  return A.foldl_(as, now<void>(undefined), (b, a) => bind_(b, () => (f(a) as unknown) as Eval<void>))
+}
+
+export function foldl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => Eval<B>): Eval<B> {
+  return A.foldl_(as, now(b), (b, a) => bind_(b, (b) => f(b, a)))
 }
 
 /*

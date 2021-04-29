@@ -1,6 +1,6 @@
 import type { NonEmptyArray } from '../../NonEmptyArray'
+import type { UnionToIntersection } from '../../util/types'
 import type { IO } from '../core'
-import type { UnionToIntersection } from '@principia/prelude/util/types'
 
 import { identity } from '../../function'
 import { foreach_ } from '../core'

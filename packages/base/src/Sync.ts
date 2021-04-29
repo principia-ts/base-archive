@@ -1,16 +1,15 @@
+import type { Has, Tag } from './Has'
+import type * as HKT from './HKT'
 import type { SyncURI } from './Modules'
-import type { Has, Tag } from '@principia/prelude/Has'
-import type * as HKT from '@principia/prelude/HKT'
-
-import * as P from '@principia/prelude'
-import { isTag, mergeEnvironments } from '@principia/prelude/Has'
 
 import * as A from './Array/core'
 import * as E from './Either'
 import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'
+import { isTag, mergeEnvironments } from './Has'
 import { ZURI } from './Modules'
 import * as O from './Option'
+import * as P from './prelude'
 import * as R from './Record'
 import * as Z from './Z'
 

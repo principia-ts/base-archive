@@ -1,15 +1,14 @@
 import type * as E from './Either'
+import type { Eq } from './Eq'
+import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
-import type { Eq } from '@principia/prelude/Eq'
-import type * as HKT from '@principia/prelude/HKT'
-import type { Predicate, PredicateWithIndex } from '@principia/prelude/Predicate'
-import type { Refinement, RefinementWithIndex } from '@principia/prelude/Refinement'
-import type { Show } from '@principia/prelude/Show'
-
-import * as P from '@principia/prelude'
+import type { Predicate, PredicateWithIndex } from './Predicate'
+import type { Refinement, RefinementWithIndex } from './Refinement'
+import type { Show } from './Show'
 
 import * as G from './Guard'
 import * as O from './Option'
+import * as P from './prelude'
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty
 

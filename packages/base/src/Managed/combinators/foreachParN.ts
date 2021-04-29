@@ -1,12 +1,11 @@
 import type { Chunk } from '../../Chunk/core'
 import type { Managed } from '../core'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import { parallelN, sequential } from '../../ExecutionStrategy'
 import { pipe } from '../../function'
 import { foreachParN_ as effectForeachParN } from '../../IO/combinators/foreachParN'
 import { foreachUnitParN_ as effectForeachUnitParN } from '../../IO/combinators/foreachUnitParN'
+import { tuple } from '../../tuple'
 import { mapM } from '../core'
 import * as I from '../internal/io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'

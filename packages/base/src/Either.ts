@@ -12,16 +12,15 @@ import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { These } from './These'
 
-import * as P from '@principia/prelude'
-import * as E from '@principia/prelude/Either'
-import * as HKT from '@principia/prelude/HKT'
-import { tuple } from '@principia/prelude/tuple'
-
 import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'
 import { genF, GenHKT } from './Gen'
+import * as HKT from './HKT'
+import * as E from './internal/Either'
 import * as O from './Option'
+import * as P from './prelude'
 import * as T from './These'
+import { tuple } from './tuple'
 
 /*
  * -------------------------------------------

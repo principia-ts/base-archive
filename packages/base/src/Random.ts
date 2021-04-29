@@ -3,8 +3,7 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import { tag } from '@principia/prelude/Has'
-
+import { tag } from './Has'
 import * as I from './IO/core'
 import * as L from './Layer/core'
 import * as prand from './util/pure-rand'

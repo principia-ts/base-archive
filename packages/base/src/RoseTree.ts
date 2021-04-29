@@ -1,9 +1,8 @@
-import type * as HKT from '@principia/prelude/HKT'
-import type { Show } from '@principia/prelude/Show'
-
-import * as P from '@principia/prelude'
+import type * as HKT from './HKT'
+import type { Show } from './Show'
 
 import * as A from './Array/core'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------
@@ -27,7 +26,7 @@ export type URI = HKT.URI<typeof URI, V>
 
 export type V = HKT.Auto
 
-declare module '@principia/prelude/HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
     readonly [URI]: RoseTree<A>
   }

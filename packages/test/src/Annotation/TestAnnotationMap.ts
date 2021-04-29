@@ -4,7 +4,7 @@ import type { HashMap } from '@principia/base/HashMap'
 import * as A from '@principia/base/Array'
 import * as Map from '@principia/base/HashMap'
 import * as O from '@principia/base/Option'
-import { identity, pipe } from '@principia/prelude/function'
+import { identity, pipe } from '@principia/base/function'
 
 import { TestAnnotationHash } from './TestAnnotation'
 

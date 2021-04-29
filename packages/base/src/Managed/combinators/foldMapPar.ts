@@ -1,5 +1,5 @@
+import type { Monoid } from '../../Monoid'
 import type { Managed } from '../core'
-import type { Monoid } from '@principia/prelude'
 
 import { mergeAllPar_ } from './mergeAllPar'
 

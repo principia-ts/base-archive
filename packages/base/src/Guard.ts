@@ -1,16 +1,37 @@
-import type { ReadonlyRecord } from './Record'
-import type * as P from '@principia/prelude'
+import type * as P from './prelude'
 
 import { memoize, pipe } from './function'
 
 /*
  * -------------------------------------------
- * Model
+ * internal
  * -------------------------------------------
  */
+
+const UnknownArray: Guard<unknown, ReadonlyArray<unknown>> = Guard((u): u is ReadonlyArray<unknown> => Array.isArray(u))
+
+/**
+ * @category Primitives
+ * @since 1.0.0
+ * @internal
+ */
+const UnknownRecord: Guard<unknown, Readonly<Record<PropertyKey, any>>> = {
+  is: (i): i is Record<PropertyKey, unknown> => i != null && typeof i === 'object' && !Array.isArray(i)
+}
+
+/*
+ * -------------------------------------------
+ * model
+ * -------------------------------------------
+ */
+
 export interface Guard<I, A extends I> {
   is: (i: I) => i is A
 }
+
+export type AnyGuard = Guard<any, any>
+
+export type AnyUGuard = Guard<unknown, any>
 
 export type TypeOf<G> = G extends Guard<any, infer A> ? A : never
 
@@ -18,7 +39,7 @@ export type InputOf<G> = G extends Guard<infer I, any> ? I : never
 
 /*
  * -------------------------------------------
- * Constructors
+ * constructors
  * -------------------------------------------
  */
 
@@ -40,7 +61,7 @@ export function literal<A extends readonly [P.Primitive, ...Array<P.Primitive>]>
 
 /*
  * -------------------------------------------
- * Combinators
+ * combinators
  * -------------------------------------------
  */
 
@@ -58,88 +79,16 @@ export function nullable<I, A extends I>(or: Guard<I, A>): Guard<null | I, null 
   }
 }
 
-export function struct<P extends Record<PropertyKey, Guard<unknown, any>>>(
-  properties: P
-): Guard<
-  unknown,
-  {
-    [K in keyof P]: TypeOf<P[K]>
-  }
-> {
-  return pipe(
-    UnknownRecord,
-    refine((r): r is {
-      [K in keyof P]: TypeOf<P[K]>
-    } => {
-      for (const k in properties) {
-        if (!(k in r) || !properties[k].is(r[k])) {
-          return false
-        }
-      }
-      return true
-    })
-  )
-}
-
-export function partial<P extends Record<PropertyKey, Guard<unknown, any>>>(
-  properties: P
-): Guard<
-  unknown,
-  Partial<
-    {
-      [K in keyof P]: TypeOf<P[K]>
-    }
-  >
-> {
-  return pipe(
-    UnknownRecord,
-    refine((r): r is Partial<{ [K in keyof P]: TypeOf<P[K]> }> => {
-      for (const k in properties) {
-        const v = r[k]
-        if (v !== undefined && !properties[k].is(r[k])) {
-          return false
-        }
-      }
-      return true
-    })
-  )
-}
-
-export function tuple<A extends ReadonlyArray<Guard<unknown, any>>>(
-  ...components: A
-): Guard<unknown, Readonly<{ [i in keyof A]: TypeOf<A[i]> }>> {
-  return {
-    is: (u): u is Readonly<{ [i in keyof A]: TypeOf<A[i]> }> =>
-      Array.isArray(u) && u.length === components.length && components.every((g, index) => g.is(u[index]))
-  }
-}
-
-export function intersect<B>(right: Guard<unknown, B>) {
-  return <A>(left: Guard<unknown, A>): Guard<unknown, A & B> => ({
-    is: (u): u is A & B => left.is(u) && right.is(u)
-  })
-}
-
-export function union<A extends readonly [unknown, ...Array<unknown>]>(
-  ...members: {
-    [K in keyof A]: Guard<unknown, A[K]>
-  }
-): Guard<unknown, A[number]> {
-  return {
-    is: (u): u is A | A[number] => members.some((m) => m.is(u))
-  }
+export function union<Members extends ReadonlyArray<AnyGuard>>(...members: Members): Guard<unknown, Members[number]> {
+  return Guard((u): u is Members[number] => members.some((m) => m.is(u)))
 }
 
 export function sum<T extends string>(tag: T) {
-  return <A>(
-    members: {
-      [K in keyof A]: Guard<unknown, A[K] & Record<T, K>>
-    }
-  ): Guard<unknown, A[keyof A]> =>
+  return <Members extends Record<string, AnyGuard>>(members: Members): Guard<unknown, Members[keyof Members]> =>
     pipe(
       UnknownRecord,
       refine((r): r is any => {
-        const v = r[tag] as keyof A
+        const v = r[tag] as keyof Members
         if (v in members) {
           return members[v].is(r)
         }
@@ -155,6 +104,12 @@ export function lazy<A>(f: () => Guard<unknown, A>): Guard<unknown, A> {
   }
 }
 
+/*
+ * -------------------------------------------
+ * Alt
+ * -------------------------------------------
+ */
+
 export function alt_<I, A extends I>(me: Guard<I, A>, that: () => Guard<I, A>): Guard<I, A> {
   return {
     is: (i): i is A => me.is(i) || that().is(i)
@@ -164,6 +119,12 @@ export function alt_<I, A extends I>(me: Guard<I, A>, that: () => Guard<I, A>): 
 export function alt<I, A extends I>(that: () => Guard<I, A>): (me: Guard<I, A>) => Guard<I, A> {
   return (me) => alt_(me, that)
 }
+
+/*
+ * -------------------------------------------
+ * Category
+ * -------------------------------------------
+ */
 
 export function zero<I, A extends I>(): Guard<I, A> {
   return {
@@ -188,18 +149,3 @@ export function id<A>(): Guard<A, A> {
 }
 
 export { GuardURI } from './Modules'
-
-/*
- * -------------------------------------------
- * Internal
- * -------------------------------------------
- */
-
-/**
- * @category Primitives
- * @since 1.0.0
- * @internal
- */
-const UnknownRecord: Guard<unknown, ReadonlyRecord<string, unknown>> = {
-  is: (i): i is Record<string, unknown> => i != null && typeof i === 'object' && !Array.isArray(i)
-}

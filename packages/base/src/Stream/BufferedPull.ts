@@ -1,12 +1,11 @@
 import type { Chunk } from '../Chunk'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import * as C from '../Chunk'
 import { pipe } from '../function'
 import * as I from '../IO'
 import * as O from '../Option'
 import * as R from '../Ref'
+import { tuple } from '../tuple'
 import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {

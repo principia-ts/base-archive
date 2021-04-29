@@ -5,9 +5,9 @@ import type { Either } from '@principia/base/Either'
 import type { USync } from '@principia/base/Sync'
 
 import * as A from '@principia/base/Array'
+import { identity, pipe } from '@principia/base/function'
 import * as Sy from '@principia/base/Sync'
-import { identity, pipe } from '@principia/prelude/function'
-import { matchTag, matchTag_ } from '@principia/prelude/matchers'
+import { matchTag, matchTag_ } from '@principia/base/util/matchers'
 
 class TestCase<E> {
   readonly _tag = 'Test'

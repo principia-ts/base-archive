@@ -1,7 +1,5 @@
 import type { NonEmptyArray } from './NonEmptyArray'
 
-import * as P from '@principia/prelude'
-
 import * as A from './Array/core'
 import { flow, identity, pipe } from './function'
 import * as G from './Guard'
@@ -9,6 +7,7 @@ import * as NA from './NonEmptyArray'
 import * as N from './number'
 import * as O from './Option'
 import { max_ } from './Ord'
+import * as P from './prelude'
 
 /**
  * The empty string

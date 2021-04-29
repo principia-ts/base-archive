@@ -1,10 +1,9 @@
 import type * as E from './Either'
 import type * as O from './Option'
 
-import * as P from '@principia/prelude'
-
 import * as A from './Array/core'
 import { not } from './Predicate'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------

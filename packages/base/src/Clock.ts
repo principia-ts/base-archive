@@ -3,8 +3,7 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import { tag } from '@principia/prelude/Has'
-
+import { tag } from './Has'
 import { effectAsyncInterrupt } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 import * as L from './Layer/core'

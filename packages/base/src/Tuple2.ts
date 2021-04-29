@@ -1,7 +1,7 @@
+import type * as HKT from './HKT'
 import type { Tuple2URI } from './Modules'
-import type * as HKT from '@principia/prelude/HKT'
 
-import * as P from '@principia/prelude'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------

@@ -1,6 +1,6 @@
 import type { Clock } from '../../Clock'
+import type { Has } from '../../Has'
 import type { IO } from '../core'
-import type { Has } from '@principia/prelude/Has'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 

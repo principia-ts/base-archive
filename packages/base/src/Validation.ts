@@ -1,8 +1,7 @@
-import type * as HKT from '@principia/prelude/HKT'
-
-import * as P from '@principia/prelude'
+import type * as HKT from './HKT'
 
 import * as E from './Either'
+import * as P from './prelude'
 
 export function getApplicativeValidation<F extends HKT.URIS, C = HKT.Auto>(
   F: P.MonadExcept<F, C>

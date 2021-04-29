@@ -1,6 +1,18 @@
-import type * as P from '@principia/prelude'
+import type * as O from './internal/Option'
 
-import * as O from './Option'
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+ */
+
+export interface Refinement<A, B extends A> {
+  (a: A): a is B
+}
+
+export interface RefinementWithIndex<I, A, B extends A> {
+  (i: I, a: A): a is B
+}
 
 /*
  * -------------------------------------------
@@ -8,8 +20,8 @@ import * as O from './Option'
  * -------------------------------------------
  */
 
-export function fromOptionK<A, B extends A>(pf: (a: A) => O.Option<B>): P.Refinement<A, B> {
-  return (a): a is B => O.isSome(pf(a))
+export function fromOptionK<A, B extends A>(pf: (a: A) => O.Option<B>): Refinement<A, B> {
+  return (a): a is B => pf(a)._tag === 'Some'
 }
 
 /*
@@ -18,20 +30,15 @@ export function fromOptionK<A, B extends A>(pf: (a: A) => O.Option<B>): P.Refine
  * -------------------------------------------
  */
 
-export function compose_<A, B extends A, C extends B>(
-  ab: P.Refinement<A, B>,
-  bc: P.Refinement<B, C>
-): P.Refinement<A, C> {
+export function compose_<A, B extends A, C extends B>(ab: Refinement<A, B>, bc: Refinement<B, C>): Refinement<A, C> {
   return (i): i is C => ab(i) && bc(i)
 }
 
-export function compose<A, B extends A, C extends B>(
-  bc: P.Refinement<B, C>
-): (ab: P.Refinement<A, B>) => P.Refinement<A, C> {
+export function compose<A, B extends A, C extends B>(bc: Refinement<B, C>): (ab: Refinement<A, B>) => Refinement<A, C> {
   return (ab) => compose_(ab, bc)
 }
 
-export function id<A>(): P.Refinement<A, A> {
+export function id<A>(): Refinement<A, A> {
   return (_): _ is A => true
 }
 
@@ -41,36 +48,36 @@ export function id<A>(): P.Refinement<A, A> {
  * -------------------------------------------
  */
 
-export function not<A, B extends A>(refinement: P.Refinement<A, B>): P.Refinement<A, Exclude<A, B>> {
+export function not<A, B extends A>(refinement: Refinement<A, B>): Refinement<A, Exclude<A, B>> {
   return (a): a is Exclude<A, B> => !refinement(a)
 }
 
 export function or_<A, B extends A, C extends A>(
-  first: P.Refinement<A, B>,
-  second: P.Refinement<A, C>
-): P.Refinement<A, B | C> {
+  first: Refinement<A, B>,
+  second: Refinement<A, C>
+): Refinement<A, B | C> {
   return (a): a is B | C => first(a) || second(a)
 }
 
 export function or<A, C extends A>(
-  second: P.Refinement<A, C>
-): <B extends A>(first: P.Refinement<A, B>) => P.Refinement<A, B | C> {
+  second: Refinement<A, C>
+): <B extends A>(first: Refinement<A, B>) => Refinement<A, B | C> {
   return (first) => or_(first, second)
 }
 
 export function and_<A, B extends A, C extends A>(
-  first: P.Refinement<A, B>,
-  second: P.Refinement<A, C>
-): P.Refinement<A, B & C> {
+  first: Refinement<A, B>,
+  second: Refinement<A, C>
+): Refinement<A, B & C> {
   return (a): a is B & C => first(a) && second(a)
 }
 
 export function and<A, C extends A>(
-  second: P.Refinement<A, C>
-): <B extends A>(first: P.Refinement<A, B>) => P.Refinement<A, B & C> {
+  second: Refinement<A, C>
+): <B extends A>(first: Refinement<A, B>) => Refinement<A, B & C> {
   return (first) => and_(first, second)
 }
 
-export function zero<A, B extends A>(): P.Refinement<A, B> {
+export function zero<A, B extends A>(): Refinement<A, B> {
   return (_): _ is B => false
 }

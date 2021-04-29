@@ -1,9 +1,14 @@
-import * as P from '@principia/prelude'
-
 import { PCGRandom } from './internal/PCGRandom'
+import { isDefined } from './util/predicates'
 
-export function isHashable(value: any): value is P.Hashable {
-  return P.$hash in value
+export const $hash = Symbol.for('$hash')
+
+export interface Hashable {
+  [$hash](): number
+}
+
+export function isHashable(value: any): value is Hashable {
+  return $hash in value
 }
 
 const CACHE  = new WeakMap<any, number>()
@@ -45,9 +50,9 @@ export function hashObject(value: object): number {
 
 function _hashObject(value: object): number {
   let h = CACHE.get(value)
-  if (P.isDefined(h)) return h
+  if (isDefined(h)) return h
   if (isHashable(value)) {
-    h = value[P.$hash]()
+    h = value[$hash]()
   } else {
     h = _current++
   }
@@ -76,17 +81,17 @@ export function hashMiscRef(o: any) {
 
 function _hashMiscRef(o: any): number {
   let h = CACHE.get(o)
-  if (P.isDefined(h)) return h
+  if (isDefined(h)) return h
   h = randomInt()
   CACHE.set(o, h)
   return h
 }
 
-export function hashArray(arr: any[]): number {
+export function hashArray(arr: Array<any> | ReadonlyArray<any>): number {
   return opt(_hashArray(arr))
 }
 
-function _hashArray(arr: any[]): number {
+function _hashArray(arr: Array<any> | ReadonlyArray<any>): number {
   let h = 6151
   for (let i = 0; i < arr.length; i++) {
     h = combineHash(_hashNumber(i), _hash(arr[i]))
@@ -150,5 +155,3 @@ export function combineHash(x: number, y: number): number {
 export function opt(n: number): number {
   return (n & 0xbfffffff) | ((n >>> 1) & 0x40000000)
 }
-
-export * from '@principia/prelude/Hashable'

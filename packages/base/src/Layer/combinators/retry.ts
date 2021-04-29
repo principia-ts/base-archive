@@ -1,13 +1,12 @@
+import type * as H from '../../Has'
 import type { Schedule } from '../../Schedule'
 import type { StepFunction } from '../../Schedule/Decision'
 import type { Layer } from '../core'
-import type * as H from '@principia/prelude/Has'
-
-import { matchTag } from '@principia/prelude/matchers'
-import { tuple } from '@principia/prelude/tuple'
 
 import { Clock } from '../../Clock'
 import { pipe } from '../../function'
+import { tuple } from '../../tuple'
+import { matchTag } from '../../util/matchers'
 import { catchAll, crossPar_, defer, first, fresh, fromRawEffect, fromRawFunctionM, identity } from '../core'
 import * as I from '../internal/io'
 

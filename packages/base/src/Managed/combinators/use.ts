@@ -1,8 +1,7 @@
 import type { Managed } from '../core'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import { sequential } from '../../ExecutionStrategy'
+import { tuple } from '../../tuple'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
 import { releaseAll } from './releaseAll'

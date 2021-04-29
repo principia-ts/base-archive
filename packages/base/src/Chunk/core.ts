@@ -1,17 +1,16 @@
 /* eslint-disable functional/immutable-data */
 import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
+import type * as HKT from '../HKT'
 import type { ChunkURI } from '../Modules'
-import type * as HKT from '@principia/prelude/HKT'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-
-import * as P from '@principia/prelude'
+import type { Predicate } from '../Predicate'
+import type { Refinement } from '../Refinement'
 
 import * as A from '../Array/core'
 import { unsafeCoerce } from '../function'
 import * as It from '../Iterable'
 import * as O from '../Option'
+import * as P from '../prelude'
 import { AtomicNumber } from '../util/support/AtomicNumber'
 
 type URI = [HKT.URI<ChunkURI>]

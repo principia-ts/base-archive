@@ -2,6 +2,7 @@ import type { Async } from './Async'
 import type { Chunk } from './Chunk'
 import type { Const } from './Const'
 import type { Either } from './Either'
+import type { Eq } from './Eq'
 import type { Eval } from './Eval'
 import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
@@ -10,8 +11,11 @@ import type { IO } from './IO'
 import type { List } from './List/core'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
+import type { Ord } from './Ord'
+import type { Predicate } from './Predicate'
 import type { Reader } from './Reader'
 import type { ReadonlyRecord } from './Record'
+import type { Show } from './Show'
 import type { State } from './State'
 import type { Store } from './Store'
 import type { Sync } from './Sync'
@@ -20,6 +24,18 @@ import type { Tuple2 } from './Tuple2'
 import type { Writer } from './Writer'
 import type { Z } from './Z'
 import type { ZReader } from './ZReader'
+
+export const ShowURI = 'Show'
+export type ShowURI = typeof ShowURI
+
+export const EqURI = 'Eq'
+export type EqURI = typeof EqURI
+
+export const OrdURI = 'Ord'
+export type OrdURI = typeof OrdURI
+
+export const PredicateURI = 'Predicate'
+export type PredicateURI = typeof PredicateURI
 
 export const ArrayURI = 'Array'
 export type ArrayURI = typeof ArrayURI
@@ -99,9 +115,12 @@ export type IOURI = typeof IOURI
 export const ChunkURI = 'Chunk'
 export type ChunkURI = typeof ChunkURI
 
-
-declare module '@principia/prelude/HKT' {
+declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+    [ShowURI]: Show<A>
+    [EqURI]: Eq<A>
+    [OrdURI]: Ord<A>
+    [PredicateURI]: Predicate<A>
     [ArrayURI]: ReadonlyArray<A>
     [ConstURI]: Const<E, A>
     [EitherURI]: Either<E, A>

@@ -1,12 +1,11 @@
 import type { ReadonlyRecord } from '../../Record'
+import type { _E, _R, EnforceNonEmptyRecord } from '../../util/types'
 import type { Managed } from '../core'
-import type { _E, _R, EnforceNonEmptyRecord } from '@principia/prelude/util/types'
-
-import { tuple } from '@principia/prelude/tuple'
 
 import { parallel, sequential } from '../../ExecutionStrategy'
 import { identity } from '../../function'
 import * as R from '../../Record'
+import { tuple } from '../../tuple'
 import { map_, mapM_ } from '../core'
 import * as I from '../internal/io'
 import { foreachPar_ } from './foreachPar'

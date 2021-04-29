@@ -1,6 +1,6 @@
+import type { Has } from '@principia/base/Has'
 import type { IOEnv } from '@principia/base/IOEnv'
 import type { Layer } from '@principia/base/Layer'
-import type { Has } from '@principia/prelude/Has'
 
 import { live as liveIOEnv } from '@principia/base/IOEnv'
 

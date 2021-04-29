@@ -1,9 +1,10 @@
-import type * as P from '@principia/prelude'
-import type { Ordering } from '@principia/prelude/Ordering'
+import type * as P from './prelude'
 
-import { EQ, GT, LT } from '@principia/prelude/Ordering'
+export type Ordering = -1 | 0 | 1
 
-export { EQ, GT, LT, Ordering }
+export const LT = -1
+export const EQ = 0
+export const GT = 1
 
 export const sign = (n: number): Ordering => (n <= -1 ? LT : n >= 1 ? GT : EQ)
 

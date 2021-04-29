@@ -1,12 +1,12 @@
 import type { XSpec } from './Spec'
 import type * as TA from './TestArgs'
 import type { Clock } from '@principia/base/Clock'
+import type { Has } from '@principia/base/Has'
 import type { URIO } from '@principia/base/IO'
-import type { Has } from '@principia/prelude/Has'
 
 import * as E from '@principia/base/Either'
 import * as I from '@principia/base/IO'
-import { matchTag } from '@principia/prelude/matchers'
+import { matchTag } from '@principia/base/util/matchers'
 
 import { AbstractRunnableSpec } from './AbstractRunnableSpec'
 import * as ExSp from './ExecutedSpec'

@@ -1,11 +1,10 @@
 import type { Exit } from '../../Exit'
 import type { ReleaseMap } from '../ReleaseMap'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
 import { flow, pipe } from '../../function'
+import { tuple } from '../../tuple'
 import { Managed } from '../core'
 import * as I from '../internal/io'
 import { add, make } from '../ReleaseMap'

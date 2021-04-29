@@ -1,13 +1,12 @@
 import type { FiberId } from '../Fiber/FiberId'
 import type { IO } from '../IO/core'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import * as A from '../Array/core'
 import * as C from '../Cause'
 import * as E from '../Either'
 import { identity, pipe } from '../function'
 import * as O from '../Option'
+import { tuple } from '../tuple'
 
 /*
  * -------------------------------------------

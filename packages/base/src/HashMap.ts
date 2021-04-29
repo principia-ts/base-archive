@@ -1,11 +1,9 @@
 /* eslint-disable functional/immutable-data */
+import type { Equatable } from './Equatable'
+import type { Hash } from './Hash'
+import type { Hashable } from './Hashable'
 import type { Node, UpdateFn } from './internal/hamt'
-import type { Equatable } from '@principia/prelude/Equatable'
-import type { Hash } from '@principia/prelude/Hash'
-import type { Hashable } from '@principia/prelude/Hashable'
-import type { Refinement } from '@principia/prelude/Refinement'
-
-import { tuple } from '@principia/prelude/tuple'
+import type { Refinement } from './Refinement'
 
 import * as Eq from './Eq'
 import { $equals, equals } from './Equatable'
@@ -15,6 +13,7 @@ import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as It from './Iterable'
 import * as O from './Option'
+import { tuple } from './tuple'
 
 type Eq<A> = Eq.Eq<A>
 

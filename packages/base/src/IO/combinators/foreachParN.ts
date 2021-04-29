@@ -3,13 +3,13 @@
 import type { Chunk } from '../../Chunk/core'
 
 import { traceAs } from '@principia/compile/util'
-import { tuple } from '@principia/prelude/tuple'
 
 import { pipe } from '../../function'
 import * as L from '../../List/core'
 import * as P from '../../Promise'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
+import { tuple } from '../../tuple'
 import * as I from '../core'
 import { bracket } from './bracket'
 

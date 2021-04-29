@@ -1,13 +1,13 @@
 import type * as E from './Either'
+import type { Eq } from './Eq'
 import type { TheseURI } from './Modules'
 import type * as O from './Option'
-import type { Eq } from '@principia/prelude/Eq'
-import type { Show } from '@principia/prelude/Show'
+import type { Show } from './Show'
 
-import * as P from '@principia/prelude'
-import * as HKT from '@principia/prelude/HKT'
-import { None, Some } from '@principia/prelude/Option'
-import * as T from '@principia/prelude/These'
+import * as HKT from './HKT'
+import { None, Some } from './internal/Option'
+import * as T from './internal/These'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------

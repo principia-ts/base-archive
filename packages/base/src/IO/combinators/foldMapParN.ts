@@ -1,7 +1,7 @@
 // tracing: off
 
+import type { Monoid } from '../../Monoid'
 import type { IO } from '../core'
-import type { Monoid } from '@principia/prelude'
 
 import { mergeAllParN_ } from './mergeAllParN'
 

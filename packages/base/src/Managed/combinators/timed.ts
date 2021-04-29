@@ -1,6 +1,6 @@
 import type { Clock } from '../../Clock'
+import type { Has } from '../../Has'
 import type * as RM from '../ReleaseMap'
-import type { Has } from '@principia/prelude/Has'
 
 import { ClockTag } from '../../Clock'
 import { pipe } from '../../function'

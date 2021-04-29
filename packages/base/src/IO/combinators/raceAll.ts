@@ -4,7 +4,6 @@ import type { NonEmptyArray } from '../../NonEmptyArray'
 import type { IO, UIO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
-import { tuple } from '@principia/prelude/tuple'
 
 import * as C from '../../Chunk/core'
 import * as Ex from '../../Exit'
@@ -12,6 +11,7 @@ import * as Fiber from '../../Fiber'
 import { flow, pipe } from '../../function'
 import * as P from '../../Promise'
 import * as Ref from '../../Ref'
+import { tuple } from '../../tuple'
 import * as I from '../core'
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 

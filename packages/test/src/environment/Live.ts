@@ -1,13 +1,13 @@
+import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
 import type { IOEnv } from '@principia/base/IOEnv'
 import type { Layer } from '@principia/base/Layer'
-import type { Has } from '@principia/prelude/Has'
 
+import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 import * as M from '@principia/base/Managed'
-import * as P from '@principia/prelude'
-import { tag } from '@principia/prelude/Has'
+import * as P from '@principia/base/prelude'
 
 export const LiveTag = tag<Live>()
 

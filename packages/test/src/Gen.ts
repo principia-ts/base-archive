@@ -1,13 +1,14 @@
+import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
+import type { Predicate } from '@principia/base/Predicate'
+import type { Refinement } from '@principia/base/Refinement'
 import type { Stream } from '@principia/base/Stream'
-import type { Has } from '@principia/prelude/Has'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
 import { sequential } from '@principia/base/ExecutionStrategy'
+import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as N from '@principia/base/number'
 import * as O from '@principia/base/Option'
@@ -15,8 +16,7 @@ import { OrderedMap } from '@principia/base/OrderedMap'
 import * as OM from '@principia/base/OrderedMap'
 import { Random } from '@principia/base/Random'
 import * as S from '@principia/base/Stream'
-import { identity, pipe } from '@principia/prelude/function'
-import { tuple } from '@principia/prelude/tuple'
+import { tuple } from '@principia/base/tuple'
 
 import { Sample, shrinkFractional } from './Sample'
 import * as Sa from './Sample'
@@ -393,4 +393,3 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 export const alphaNumericString: Gen<Has<Random> & Has<Sized>, string> = string(alphaNumericChar)
-

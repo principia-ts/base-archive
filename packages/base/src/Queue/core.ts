@@ -3,12 +3,11 @@ import type { IO, UIO } from '../IO'
 import type { Promise } from '../Promise'
 import type { MutableQueue } from '../util/support/MutableQueue'
 
-import { tuple } from '@principia/prelude/tuple'
-
 import * as C from '../Chunk/core'
 import { flow, identity, pipe } from '../function'
 import * as O from '../Option'
 import * as P from '../Promise'
+import { tuple } from '../tuple'
 import { AtomicBoolean } from '../util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '../util/support/MutableQueue'
 import * as I from './internal/io'

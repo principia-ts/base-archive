@@ -1,9 +1,8 @@
+import type * as HKT from './HKT'
 import type { StoreURI } from './Modules'
-import type * as HKT from '@principia/prelude/HKT'
-
-import * as P from '@principia/prelude'
 
 import { identity } from './function'
+import * as P from './prelude'
 
 export interface Store<S, A> {
   readonly peek: (s: S) => A

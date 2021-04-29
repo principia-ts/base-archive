@@ -1,11 +1,9 @@
 import type { Stack } from '..//util/support/Stack'
+import type { Eq } from '../Eq'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { NonEmptyArray } from '../NonEmptyArray'
-import type { Eq } from '@principia/prelude/Eq'
-import type { Predicate } from '@principia/prelude/Predicate'
-
-import { tuple } from '@principia/prelude/tuple'
+import type { Predicate } from '../Predicate'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
@@ -17,6 +15,7 @@ import { prettyTrace } from '../Fiber/trace'
 import { flow, identity, pipe } from '../function'
 import * as L from '../List/core'
 import * as O from '../Option'
+import { tuple } from '../tuple'
 import { makeStack } from '../util/support/Stack'
 
 export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E> | Traced<E>

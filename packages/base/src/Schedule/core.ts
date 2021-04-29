@@ -1,10 +1,8 @@
 import type { Either } from '../Either'
+import type { Has } from '../Has'
 import type { FIO, IO, UIO } from '../IO/core'
 import type { Option } from '../Option'
 import type { Decision, StepFunction } from './Decision'
-import type { Has } from '@principia/prelude/Has'
-
-import { tuple } from '@principia/prelude/tuple'
 
 import { Clock } from '../Clock'
 import * as E from '../Either'
@@ -14,6 +12,7 @@ import * as I from '../IO/core'
 import * as O from '../Option'
 import { Random } from '../Random'
 import * as Ref from '../Ref/core'
+import { tuple } from '../tuple'
 import { done, makeContinue, makeDone, toDone } from './Decision'
 
 /*

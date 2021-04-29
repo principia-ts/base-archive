@@ -1,15 +1,14 @@
 import type { Either } from './Either'
 import type { Guard } from './Guard'
+import type * as HKT from './HKT'
 import type { NonEmptyArrayURI } from './Modules'
 import type { ReadonlyRecord } from './Record'
-import type * as HKT from '@principia/prelude/HKT'
-
-import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
 import * as G from './Guard'
 import * as _ from './internal/array'
 import * as O from './Option'
+import * as P from './prelude'
 import * as S from './Semigroup'
 
 /*

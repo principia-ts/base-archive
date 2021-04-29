@@ -1,5 +1,4 @@
-import * as P from '@principia/prelude'
-
+import * as P from '../prelude'
 import { AtomicNumber } from '../util/support/AtomicNumber'
 
 /*

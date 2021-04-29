@@ -1,12 +1,11 @@
 import type { Either } from './Either'
+import type * as HKT from './HKT'
 import type { IterableURI } from './Modules'
 import type { Option } from './Option'
-import type * as HKT from '@principia/prelude/HKT'
-
-import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
 import * as O from './Option'
+import * as P from './prelude'
 
 type URI = [HKT.URI<IterableURI>]
 

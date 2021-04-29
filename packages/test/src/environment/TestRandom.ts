@@ -1,14 +1,15 @@
 import type { Clock } from '@principia/base/Clock'
+import type { Has } from '@principia/base/Has'
 import type { UIO } from '@principia/base/IO'
 import type { List } from '@principia/base/List'
 import type { Option } from '@principia/base/Option'
 import type { Random } from '@principia/base/Random'
 import type { URef } from '@principia/base/Ref'
-import type { Has } from '@principia/prelude/Has'
 
 import { Byte } from '@principia/base/Byte'
 import { ClockTag } from '@principia/base/Clock'
 import { IllegalArgumentError } from '@principia/base/Error'
+import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 import * as Li from '@principia/base/List'
@@ -18,7 +19,6 @@ import * as Ref from '@principia/base/Ref'
 import { intersect } from '@principia/base/util/intersect'
 import { Mash } from '@principia/base/util/Mash'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
-import { tag } from '@principia/prelude/Has'
 
 const TestRandomTag = tag<TestRandom>()
 

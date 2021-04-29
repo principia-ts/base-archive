@@ -4,8 +4,6 @@ import type { FiberId } from './Fiber/FiberId'
 import type { FIO } from './IO/core'
 import type { Option } from './Option'
 
-import * as P from '@principia/prelude'
-
 import * as E from './Either'
 import {
   effectAsyncInterruptEither,
@@ -14,6 +12,7 @@ import {
 } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 import * as O from './Option'
+import * as P from './prelude'
 import { AtomicReference } from './util/support/AtomicReference'
 
 export class Promise<E, A> {

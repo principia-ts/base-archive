@@ -10,16 +10,15 @@
  */
 
 import type { Either } from '../Either'
+import type * as HKT from '../HKT'
 import type { ListURI } from '../Modules'
-import type * as HKT from '@principia/prelude/HKT'
-import type { Ordering } from '@principia/prelude/Ordering'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-
-import * as P from '@principia/prelude'
+import type { Ordering } from '../Ordering'
+import type { Predicate } from '../Predicate'
+import type { Refinement } from '../Refinement'
 
 import { identity } from '../function'
 import * as O from '../Option'
+import * as P from '../prelude'
 
 /**
  * Represents a list of elements.

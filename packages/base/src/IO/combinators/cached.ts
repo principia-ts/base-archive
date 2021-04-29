@@ -1,12 +1,11 @@
 // tracing: off
 
+import type { Has } from '../../Has'
 import type { Option } from '../../Option'
 import type { Promise } from '../../Promise'
 import type { FIO, IO, UIO, URIO } from '../core'
-import type { Has } from '@principia/prelude/Has'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
-import { tuple } from '@principia/prelude/tuple'
 
 import { Clock } from '../../Clock'
 import { RuntimeException } from '../../Exception'
@@ -14,6 +13,7 @@ import { pipe } from '../../function'
 import * as O from '../../Option'
 import * as P from '../../Promise'
 import * as RefM from '../../RefM'
+import { tuple } from '../../tuple'
 import * as I from '../core'
 import { uninterruptibleMask } from './interrupt'
 import { to } from './to'

@@ -1,14 +1,18 @@
 /**
  * Operations on heterogeneous records
  */
-import type * as Eq from './Eq'
+import type * as HKT from './HKT'
+import type { UnionToIntersection } from './prelude'
 import type { ReadonlyRecord } from './Record'
-import type * as HKT from '@principia/prelude/HKT'
-
-import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
+import * as Eq from './Eq'
+import * as Ev from './Eval'
+import * as G from './Guard'
+import { pipe } from './prelude'
+import * as P from './prelude'
 import * as R from './Record'
+import * as S from './Show'
 import * as Str from './string'
 
 type Eq<A> = Eq.Eq<A>
@@ -32,6 +36,12 @@ type EnsureLiteralTuple<A extends ReadonlyArray<unknown>> = unknown extends {
 }[number]
   ? never
   : A
+
+/*
+ * -------------------------------------------
+ * operations
+ * -------------------------------------------
+ */
 
 /**
  * Inserts a key value pair into a struct
@@ -304,7 +314,57 @@ export function omit<S, K extends ReadonlyArray<keyof S extends never ? string :
   return (s) => omit_(s)(...(keys as any)) as any
 }
 
-export function getEq<P extends Record<PropertyKey, P.Eq<any>>>(
+function _intersect<A extends ReadonlyArray<Record<string, any>>>(
+  ...members: A
+): Ev.Eval<UnionToIntersection<A[number]>> {
+  if (A.isEmpty(members)) {
+    return Ev.now({} as any)
+  }
+  return Ev.foldl_(members.slice(1), members[0] as UnionToIntersection<A[number]>, (mut_out, a) =>
+    Ev.defer(() => {
+      let computation = Ev.now(mut_out)
+      for (const k in a) {
+        const ak = a[k]
+        if (R.GuardUnknownRecord.is(ak) && R.GuardUnknownRecord.is(mut_out[k])) {
+          computation = pipe(
+            computation,
+            Ev.bind((mut_out) =>
+              Ev.map_(_intersect(mut_out[k], ak), (intersected) => {
+                mut_out[k] = intersected
+                return mut_out
+              })
+            )
+          )
+        } else {
+          computation = pipe(
+            computation,
+            Ev.map((mut_out) => {
+              mut_out[k] = ak
+              return mut_out
+            })
+          )
+        }
+      }
+      return computation
+    })
+  )
+}
+
+export function intersect<A extends ReadonlyArray<Record<string, any>>>(...members: A): UnionToIntersection<A[number]> {
+  return _intersect(...members).value
+}
+
+/*
+ * -------------------------------------------
+ * Eq
+ * -------------------------------------------
+ */
+
+export function getKeysEq<P extends Record<string, any>>(_: P): Eq<Record<keyof P, unknown>> {
+  return R.getEq(Eq.any)
+}
+
+export function getEq<P extends Record<string, P.Eq<any>>>(
   properties: P
 ): Eq<Readonly<{ [K in keyof P]: Eq.TypeOf<P[K]> }>> {
   return P.Eq((x, y) => {
@@ -315,4 +375,220 @@ export function getEq<P extends Record<PropertyKey, P.Eq<any>>>(
     }
     return true
   })
+}
+
+export function getPartialEq<P extends Record<string, P.Eq<any>>>(
+  properties: P
+): Eq<Partial<{ readonly [K in keyof P]: Eq.TypeOf<P[K]> }>> {
+  return P.Eq((x, y) => {
+    for (const k in properties) {
+      const xk = x[k]
+      const yk = y[k]
+      if (!(xk === undefined || yk === undefined ? xk === yk : properties[k].equals_(xk!, yk!))) {
+        return false
+      }
+    }
+    return true
+  })
+}
+
+export function getIntersectionEq<Members extends ReadonlyArray<Eq<Record<string, any>>>>(
+  ...members: Members
+): Eq<UnionToIntersection<{ [K in keyof Members]: Eq.TypeOf<Members[K]> }[keyof Members]>>
+export function getIntersectionEq(...members: ReadonlyArray<Eq<Record<string, any>>>): Eq<Record<string, any>> {
+  return P.Eq((x, y) => A.foldl_(members, true as boolean, (b, a) => b && a.equals_(x, y)))
+}
+
+type EnsureTagEq<T extends string, Members extends Record<string, Eq<any>>> = Members &
+  {
+    [K in keyof Members]: Eq<{ [tag in T]: K }>
+  }
+
+export function getSumEq<T extends string>(
+  tag: T
+): <Members extends Record<string, Eq<Record<string, any>>>>(
+  members: EnsureTagEq<T, Members>
+) => Eq<{ [K in keyof Members]: Eq.TypeOf<Members[K]> }[keyof Members]> {
+  return (members) =>
+    P.Eq((x, y) => {
+      const vx = x[tag]
+      const vy = y[tag]
+      if (vx !== vy) {
+        return false
+      }
+      return members[vx].equals_(x, y)
+    })
+}
+
+/*
+ * -------------------------------------------
+ * Guard
+ * -------------------------------------------
+ */
+
+export function getKeysGuard<P extends Record<string, any>>(
+  properties: P
+): G.Guard<Record<PropertyKey, unknown>, Record<keyof P, unknown>> {
+  return G.Guard((u): u is Record<keyof P, unknown> => {
+    for (const key in properties) {
+      if (!(key in u)) {
+        return false
+      }
+    }
+    return true
+  })
+}
+
+export function getStrictGuard<P extends Record<string, G.AnyGuard>>(
+  properties: P
+): G.Guard<{ readonly [K in keyof P]: G.InputOf<P[K]> }, { readonly [K in keyof P]: G.TypeOf<P[K]> }> {
+  return G.Guard((r): r is { readonly [K in keyof P]: G.TypeOf<P[K]> } => {
+    for (const key in properties) {
+      if (!properties[key].is(r[key])) {
+        return false
+      }
+    }
+    return true
+  })
+}
+
+export function getGuard<P extends Record<string, G.AnyUGuard>>(
+  properties: P
+): G.Guard<unknown, { [K in keyof P]: G.TypeOf<P[K]> }>
+export function getGuard(properties: Record<string, G.AnyUGuard>): G.Guard<unknown, Record<string, any>> {
+  return P.pipe(R.GuardUnknownRecord, G.compose(getKeysGuard(properties)), G.compose(getStrictGuard(properties)))
+}
+
+export function getStrictPartialGuard<P extends Record<string, G.AnyGuard>>(
+  properties: P
+): G.Guard<
+  Partial<{ readonly [K in keyof P]: G.InputOf<P[K]> }>,
+  Partial<{ readonly [K in keyof P]: G.TypeOf<P[K]> }>
+> {
+  return G.Guard((r): r is Partial<{ [K in keyof P]: G.TypeOf<P[K]> }> => {
+    for (const key in properties) {
+      const v = r[key]
+      if (v !== undefined && !properties[key].is(v)) {
+        return false
+      }
+    }
+    return true
+  })
+}
+
+export function getPartialGuard<P extends Record<string, G.Guard<unknown, any>>>(
+  properties: P
+): G.Guard<unknown, Partial<{ [K in keyof P]: G.TypeOf<P[K]> }>>
+export function getPartialGuard(properties: Record<string, G.AnyUGuard>): G.Guard<unknown, any> {
+  return P.pipe(R.GuardUnknownRecord, G.compose(getStrictPartialGuard(properties)))
+}
+
+export function getIntersectionGuard<M extends ReadonlyArray<G.Guard<any, Record<string, any>>>>(
+  ...members: M
+): G.Guard<
+  UnionToIntersection<{ [K in keyof M]: G.InputOf<M[K]> }[number]>,
+  UnionToIntersection<{ [K in keyof M]: G.TypeOf<M[K]> }[number]>
+> {
+  return G.Guard((i): i is UnionToIntersection<{ [K in keyof M]: G.TypeOf<M[K]> }[number]> =>
+    A.foldl_(members, true as boolean, (b, g) => b && g.is(i))
+  )
+}
+
+type EnsureTagGuard<T extends string, Members extends Record<string, G.Guard<any, any>>> = Members &
+  {
+    [K in keyof Members]: G.Guard<any, { [tag in T]: K }>
+  }
+
+export function getStrictSumGuard<T extends string>(tag: T) {
+  return <Members extends Record<string, G.Guard<any, Record<string, any>>>>(
+    members: EnsureTagGuard<T, Members>
+  ): G.Guard<
+    { readonly [K in keyof Members]: G.InputOf<Members[K]> }[keyof Members],
+    { readonly [K in keyof Members]: G.TypeOf<Members[K]> }[keyof Members]
+  > =>
+    G.Guard((i): i is { readonly [K in keyof Members]: G.TypeOf<Members[K]> }[keyof Members] => {
+      const v = i[tag]
+      if (v in members) {
+        return members[v].is(i)
+      }
+      return false
+    })
+}
+
+export function getSumGuard<T extends string>(
+  tag: T
+): <Members extends Record<string, G.Guard<unknown, Record<string, any>>>>(
+  members: EnsureTagGuard<T, Members>
+) => G.Guard<unknown, { readonly [K in keyof Members]: G.TypeOf<Members[K]> }[keyof Members]>
+export function getSumGuard(
+  tag: string
+): (members: Record<string, G.Guard<unknown, Record<string, any>>>) => G.Guard<unknown, Record<string, any>> {
+  return (members) => pipe(R.GuardUnknownRecord, G.compose(getStrictSumGuard(tag)(members)))
+}
+
+/*
+ * -------------------------------------------
+ * Show
+ * -------------------------------------------
+ */
+
+export function getKeysShow<P extends Record<string, unknown>>(properties: P): S.Show<Record<keyof P, unknown>> {
+  return S.Show(
+    (a) =>
+      `{ ${pipe(
+        R.ifoldl_(a, A.empty<string>(), (b, k, _) => A.append_(b, `${k}: unknown`)),
+        A.join(', ')
+      )} }`
+  )
+}
+
+export function getShow<P extends Record<string, S.Show<any>>>(
+  properties: P
+): S.Show<{ [K in keyof P]: S.TypeOf<P[K]> }> {
+  return S.Show(
+    (a) =>
+      `{ ${pipe(
+        properties,
+        R.ifoldl(A.empty<string>(), (b, k, s) => A.append_(b, `${k}: ${s.show(a[k])}`)),
+        A.join(', ')
+      )} }`
+  )
+}
+
+export function getPartialShow<P extends Record<string, S.Show<any>>>(
+  properties: P
+): S.Show<Partial<{ [K in keyof P]: S.TypeOf<P[K]> }>> {
+  return S.Show(
+    (a) =>
+      `${pipe(
+        properties,
+        R.ifoldl(A.empty<string>(), (b, k, s) => (a[k] == null ? b : A.append_(b, `${k}: ${s.show(a[k])}`))),
+        A.join(', ')
+      )}`
+  )
+}
+
+export function getIntersectionShow<Members extends ReadonlyArray<S.Show<Record<string, any>>>>(
+  ...members: Members
+): S.Show<UnionToIntersection<{ [K in keyof Members]: S.TypeOf<Members[K]> }[keyof Members]>> {
+  return S.Show((a) =>
+    pipe(
+      members,
+      A.foldl(A.empty<string>(), (b, s) => A.append_(b, s.show(a as Record<string, any>))),
+      A.join(' & ')
+    )
+  )
+}
+
+type EnsureTagShow<T extends string, Members extends Record<string, S.Show<any>>> = Members &
+  {
+    [K in keyof Members]: S.Show<{ [tag in T]: K }>
+  }
+
+export function getSumShow<T extends string>(
+  tag: T
+): <Members extends Record<string, S.Show<Record<string, any>>>>(
+  members: EnsureTagShow<T, Members>
+) => S.Show<{ [K in keyof Members]: S.TypeOf<Members[K]> }[keyof Members]> {
+  return (members) => S.Show((a: Record<string, any>) => members[a[tag]].show(a))
 }

@@ -1,4 +1,4 @@
-import type * as P from '@principia/prelude'
+import type * as P from './prelude'
 
 import * as OM from './OrderedMap'
 import { not } from './Predicate'

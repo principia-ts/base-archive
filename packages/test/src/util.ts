@@ -1,6 +1,6 @@
 import type { FiberId, RuntimeFiber } from '@principia/base/Fiber'
-import type * as P from '@principia/prelude'
-import type { Hash } from '@principia/prelude/Hash'
+import type { Hash } from '@principia/base/Hash'
+import type * as P from '@principia/base/prelude'
 
 import * as Eq from '@principia/base/Eq'
 import { eqFiberId } from '@principia/base/Fiber'

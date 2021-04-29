@@ -6,10 +6,10 @@ import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } 
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { FiberRef } from '../FiberRef'
+import type * as HKT from '../HKT'
 import type { Option } from '../Option'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
-import type * as HKT from '@principia/prelude/HKT'
 
 import { IOURI } from '../Modules'
 

@@ -1,13 +1,13 @@
+import type { Eq } from '@principia/base/Eq'
 import type { Eval } from '@principia/base/Eval'
 import type { IO } from '@principia/base/IO'
-import type { Eq } from '@principia/prelude/Eq'
 
 import * as B from '@principia/base/boolean'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Option'
-import { flow, identity, pipe } from '@principia/prelude/function'
 
 /*
  * -------------------------------------------

@@ -1,5 +1,5 @@
 import type { NonEmptyArray } from '../NonEmptyArray'
-import type { Mutable } from '@principia/prelude'
+import type { Mutable } from '../prelude'
 
 export function isNonEmpty<A>(as: ReadonlyArray<A>): as is NonEmptyArray<A> {
   return as.length > 0

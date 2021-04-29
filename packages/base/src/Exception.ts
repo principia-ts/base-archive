@@ -1,4 +1,4 @@
-import * as P from '@principia/prelude'
+import * as P from './prelude'
 
 export abstract class Exception extends Error {
   abstract readonly _tag: string

@@ -1,8 +1,8 @@
+import type * as HKT from './HKT'
 import type { IdentityURI } from './Modules'
-import type * as HKT from '@principia/prelude/HKT'
 
-import * as P from '@principia/prelude'
-import { tuple } from '@principia/prelude/tuple'
+import * as P from './prelude'
+import { tuple } from './tuple'
 
 /*
  * -------------------------------------------

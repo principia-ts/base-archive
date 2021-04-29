@@ -1,12 +1,11 @@
 // tracing: off
 
+import type * as HKT from '../HKT'
 import type { IOURI } from '../Modules'
 import type { V } from './core'
-import type * as HKT from '@principia/prelude/HKT'
 
-import { mapNF, sequenceSF } from '@principia/prelude'
-import * as P from '@principia/prelude'
-
+import { mapNF, sequenceSF } from '../prelude'
+import * as P from '../prelude'
 import { apPar_, crossPar_, crossWithPar_ } from './combinators'
 import { ap_, bimap_, bind_, catchAll_, cross_, crossWith_, fail, flatten, map_, mapError_, pure, unit } from './core'
 

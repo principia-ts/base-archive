@@ -1,4 +1,4 @@
-import * as NT from '@principia/prelude/Newtype'
+import * as NT from './Newtype'
 
 export const Byte = NT.typeDef<number>()('Byte')
 export interface Byte extends NT.TypeOf<typeof Byte> {}

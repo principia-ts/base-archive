@@ -1,11 +1,10 @@
-import * as P from '@principia/prelude'
-import { tuple } from '@principia/prelude/tuple'
-
 import { $equals, equals } from './Equatable'
 import { $hash, hashIterator } from './Hashable'
 import * as HM from './HashMap'
 import * as It from './Iterable'
 import { not } from './Predicate'
+import * as P from './prelude'
+import { tuple } from './tuple'
 
 export class HashSet<V> implements Iterable<V>, P.Hashable, P.Equatable {
   constructor(readonly keyMap: HM.HashMap<V, any>) {}

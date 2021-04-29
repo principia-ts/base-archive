@@ -1,13 +1,11 @@
 /**
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/fx/ZPure.scala
  */
+import type { Eq } from './Eq'
 import type { FreeSemiring } from './FreeSemiring'
+import type * as HKT from './HKT'
+import type { Predicate } from './Predicate'
 import type { Stack } from './util/support/Stack'
-import type { Eq } from '@principia/prelude/Eq'
-import type * as HKT from '@principia/prelude/HKT'
-import type { Predicate } from '@principia/prelude/Predicate'
-
-import * as P from '@principia/prelude'
 
 import * as A from './Array/core'
 import * as E from './Either'
@@ -15,6 +13,8 @@ import * as FS from './FreeSemiring'
 import * as I from './Iterable'
 import { ZURI } from './Modules'
 import * as O from './Option'
+import * as P from './prelude'
+import { flow } from './prelude'
 import { makeStack } from './util/support/Stack'
 
 /*
@@ -1059,7 +1059,7 @@ export function catchSome_<W, S1, S2, R, E, A, S3, R1, E1, B>(
 ): Z<W, S1, S2 | S3, R & R1, E | E1, A | B> {
   return catchAll_(
     fa,
-    P.flow(
+    flow(
       f,
       O.getOrElse((): Z<W, S1, S2 | S3, R & R1, E | E1, A | B> => fa)
     )

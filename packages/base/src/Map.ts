@@ -1,10 +1,9 @@
+import type * as HKT from './HKT'
 import type { MapURI } from './Modules'
-import type * as HKT from '@principia/prelude/HKT'
-
-import * as P from '@principia/prelude'
 
 import * as E from './Either'
 import * as O from './Option'
+import * as P from './prelude'
 
 type URI = [HKT.URI<MapURI>]
 

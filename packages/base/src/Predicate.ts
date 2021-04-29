@@ -1,6 +1,19 @@
-import * as P from '@principia/prelude'
-
 import { constFalse, constTrue } from './function'
+import { Monoid } from './Monoid'
+import { Semigroup } from './Semigroup'
+
+/*
+ * -------------------------------------------
+ * Model
+ * -------------------------------------------
+ */
+export interface Predicate<A> {
+  (a: A): boolean
+}
+
+export interface PredicateWithIndex<I, A> {
+  (i: I, a: A): boolean
+}
 
 /*
  * -------------------------------------------
@@ -8,11 +21,11 @@ import { constFalse, constTrue } from './function'
  * -------------------------------------------
  */
 
-export function contramap_<A, B>(fa: P.Predicate<A>, f: (b: B) => A): P.Predicate<B> {
+export function contramap_<A, B>(fa: Predicate<A>, f: (b: B) => A): Predicate<B> {
   return (b) => fa(f(b))
 }
 
-export function contramap<A, B>(f: (b: B) => A): (fa: P.Predicate<A>) => P.Predicate<B> {
+export function contramap<A, B>(f: (b: B) => A): (fa: Predicate<A>) => Predicate<B> {
   return (fa) => contramap_(fa, f)
 }
 
@@ -22,20 +35,20 @@ export function contramap<A, B>(f: (b: B) => A): (fa: P.Predicate<A>) => P.Predi
  * -------------------------------------------
  */
 
-export function getSemigroupAny<A = never>(): P.Semigroup<P.Predicate<A>> {
-  return P.Semigroup(or_)
+export function getSemigroupAny<A = never>(): Semigroup<Predicate<A>> {
+  return Semigroup(or_)
 }
 
-export function getMonoidAny<A = never>(): P.Monoid<P.Predicate<A>> {
-  return P.Monoid<P.Predicate<A>>(or_, constFalse)
+export function getMonoidAny<A = never>(): Monoid<Predicate<A>> {
+  return Monoid<Predicate<A>>(or_, constFalse)
 }
 
-export function getSemigroupAll<A = never>(): P.Semigroup<P.Predicate<A>> {
-  return P.Semigroup(and_)
+export function getSemigroupAll<A = never>(): Semigroup<Predicate<A>> {
+  return Semigroup(and_)
 }
 
-export function getMonoidAll<A = never>(): P.Monoid<P.Predicate<A>> {
-  return P.Monoid<P.Predicate<A>>(and_, constTrue)
+export function getMonoidAll<A = never>(): Monoid<Predicate<A>> {
+  return Monoid<Predicate<A>>(and_, constTrue)
 }
 
 /*
@@ -44,22 +57,22 @@ export function getMonoidAll<A = never>(): P.Monoid<P.Predicate<A>> {
  * -------------------------------------------
  */
 
-export function not<A>(predicate: P.Predicate<A>): P.Predicate<A> {
+export function not<A>(predicate: Predicate<A>): Predicate<A> {
   return (a) => !predicate(a)
 }
 
-export function or_<A>(first: P.Predicate<A>, second: P.Predicate<A>): P.Predicate<A> {
+export function or_<A>(first: Predicate<A>, second: Predicate<A>): Predicate<A> {
   return (a) => first(a) || second(a)
 }
 
-export function or<A>(second: P.Predicate<A>): (first: P.Predicate<A>) => P.Predicate<A> {
+export function or<A>(second: Predicate<A>): (first: Predicate<A>) => Predicate<A> {
   return (first) => or_(first, second)
 }
 
-export function and_<A>(first: P.Predicate<A>, second: P.Predicate<A>): P.Predicate<A> {
+export function and_<A>(first: Predicate<A>, second: Predicate<A>): Predicate<A> {
   return (a) => first(a) && second(a)
 }
 
-export function and<A>(second: P.Predicate<A>): (first: P.Predicate<A>) => P.Predicate<A> {
+export function and<A>(second: Predicate<A>): (first: Predicate<A>) => Predicate<A> {
   return (first) => and_(first, second)
 }

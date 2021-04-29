@@ -1,5 +1,5 @@
-import type * as P from '@principia/prelude'
-import type * as HKT from '@principia/prelude/HKT'
+import type * as HKT from './HKT'
+import type * as P from './prelude'
 
 import { PrematureGeneratorExitError } from './Error'
 import * as L from './List/core'

@@ -1,5 +1,5 @@
 /* eslint-disable functional/immutable-data */
-import type { Eq } from '@principia/prelude/Eq'
+import type { Eq } from '../Eq'
 
 import * as O from '../Option'
 

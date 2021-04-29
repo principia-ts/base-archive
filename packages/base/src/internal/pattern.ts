@@ -2,7 +2,7 @@
  * Forked from https://github.com/gvergnaud/ts-pattern
  */
 import type { Option } from '../Option'
-import type * as P from '@principia/prelude'
+import type * as P from '../prelude'
 
 import * as A from '../Array/core'
 import { pipe } from '../function'

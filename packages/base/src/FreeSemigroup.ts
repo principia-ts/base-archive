@@ -1,6 +1,5 @@
-import * as P from '@principia/prelude'
-
 import * as Ev from './Eval'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------

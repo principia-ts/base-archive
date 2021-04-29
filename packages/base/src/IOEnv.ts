@@ -1,4 +1,4 @@
-import type { Has } from '@principia/prelude/Has'
+import type { Has } from './Has'
 
 import { Clock } from './Clock'
 import { Console } from './Console'

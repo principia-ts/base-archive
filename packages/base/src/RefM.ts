@@ -3,12 +3,11 @@ import type { UManaged } from './Managed/core'
 import type { URef } from './Ref'
 import type { Semaphore } from './Semaphore'
 
-import * as P from '@principia/prelude'
-
 import * as E from './Either'
 import * as I from './IO/core'
 import * as M from './Managed/core'
 import * as O from './Option'
+import * as P from './prelude'
 import * as Q from './Queue'
 import * as R from './Ref'
 import { withPermit } from './Semaphore'

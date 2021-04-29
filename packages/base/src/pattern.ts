@@ -11,14 +11,13 @@ import type {
   NotPattern,
   Pattern
 } from './internal/pattern'
-import type { Predicate } from '@principia/prelude/Predicate'
-import type { Refinement } from '@principia/prelude/Refinement'
-
-import * as P from '@principia/prelude'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 
 import * as A from './Array/core'
 import { $anonymousSelect, $guard, $namedSelect, $not, matchPattern, selectWithPattern } from './internal/pattern'
 import * as O from './Option'
+import * as P from './prelude'
 
 type NonEmptyTuple<A> = readonly [A, ...A[]]
 

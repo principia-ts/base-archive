@@ -1,11 +1,22 @@
-import * as P from '@principia/prelude'
+export interface Eq<A> {
+  readonly equals_: (x: A, y: A) => boolean
+  readonly equals: (y: A) => (x: A) => boolean
+}
 
-export type TypeOf<E> = E extends P.Eq<infer A> ? A : never
+export function Eq<A>(equals: (x: A, y: A) => boolean): Eq<A> {
+  const equals_ = (x: A, y: A) => x === y || equals(x, y)
+  return {
+    equals_,
+    equals: (y) => (x) => equals_(x, y)
+  }
+}
+
+export type TypeOf<E> = E extends Eq<infer A> ? A : never
 
 /**
- * An alias of `fromEquals` for easy imports
+ * An alias of `Eq` for easy imports
  */
-export const makeEq = P.Eq
+export const makeEq = Eq
 
 /*
  * -------------------------------------------
@@ -13,11 +24,11 @@ export const makeEq = P.Eq
  * -------------------------------------------
  */
 
-export const any: P.Eq<any> = P.Eq(() => true)
+export const any: Eq<any> = Eq(() => true)
 
-export const never: P.Eq<never> = P.Eq(() => false)
+export const never: Eq<never> = Eq(() => false)
 
-export const strict: P.Eq<unknown> = P.Eq((x, y) => x === y)
+export const strict: Eq<unknown> = Eq((x, y) => x === y)
 
 /*
  * -------------------------------------------
@@ -25,12 +36,12 @@ export const strict: P.Eq<unknown> = P.Eq((x, y) => x === y)
  * -------------------------------------------
  */
 
-export function contramap_<A, B>(fa: P.Eq<A>, f: (b: B) => A): P.Eq<B> {
-  return P.Eq((x, y) => fa.equals_(f(x), f(y)))
+export function contramap_<A, B>(fa: Eq<A>, f: (b: B) => A): Eq<B> {
+  return Eq((x, y) => fa.equals_(f(x), f(y)))
 }
 
-export function contramap<A, B>(f: (b: B) => A): (fa: P.Eq<A>) => P.Eq<B> {
+export function contramap<A, B>(f: (b: B) => A): (fa: Eq<A>) => Eq<B> {
   return (fa) => contramap_(fa, f)
 }
 
-export * from '@principia/prelude/Eq'
+export { EqURI } from './Modules'

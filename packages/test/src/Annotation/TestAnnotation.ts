@@ -1,18 +1,18 @@
 import type { Either } from '@principia/base/Either'
+import type * as Eq from '@principia/base/Eq'
 import type * as Fiber from '@principia/base/Fiber'
+import type { Tag } from '@principia/base/Has'
+import type { Hash } from '@principia/base/Hash'
 import type { URef } from '@principia/base/Ref'
-import type * as Eq from '@principia/prelude/Eq'
-import type { Tag } from '@principia/prelude/Has'
-import type { Hash } from '@principia/prelude/Hash'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { absurd } from '@principia/base/function'
+import { tag } from '@principia/base/Has'
 import { hash, hashString } from '@principia/base/Hashable'
 import * as Set from '@principia/base/HashSet'
+import * as P from '@principia/base/prelude'
 import * as S from '@principia/base/string'
-import * as P from '@principia/prelude'
-import { tag } from '@principia/prelude/Has'
 
 export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
   ...P.Eq(equalsTestAnnotation),

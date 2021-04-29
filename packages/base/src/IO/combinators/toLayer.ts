@@ -1,5 +1,5 @@
+import type { Has, Tag } from '../../Has'
 import type { IO } from '../core'
-import type { Has, Tag } from '@principia/prelude/Has'
 
 import * as L from '../../Layer/core'
 

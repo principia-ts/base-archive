@@ -1,5 +1,5 @@
-import type * as P from '@principia/prelude'
-import type { Has, Tag } from '@principia/prelude/Has'
+import type { Has, Tag } from './Has'
+import type * as P from './prelude'
 
 import * as A from './Array/core'
 import { pipe } from './function'

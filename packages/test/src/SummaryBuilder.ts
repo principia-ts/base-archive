@@ -5,9 +5,9 @@ import type { Either } from '@principia/base/Either'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/prelude/function'
+import { pipe } from '@principia/base/function'
 import * as F from '@principia/base/function'
-import { matchTag } from '@principia/prelude/matchers'
+import { matchTag } from '@principia/base/util/matchers'
 
 import * as ExSpec from './ExecutedSpec'
 import { render, silent } from './Render'

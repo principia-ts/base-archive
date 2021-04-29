@@ -1,11 +1,10 @@
+import type { Eq } from './Eq'
+import type * as HKT from './HKT'
 import type { ConstURI } from './Modules'
-import type { Eq } from '@principia/prelude/Eq'
-import type * as HKT from '@principia/prelude/HKT'
-import type { Ord } from '@principia/prelude/Ord'
-
-import * as P from '@principia/prelude'
+import type { Ord } from './Ord'
 
 import { identity, unsafeCoerce } from './function'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------
