@@ -1,6 +1,6 @@
 {
   "name": "@principia/base",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Base datatypes",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
