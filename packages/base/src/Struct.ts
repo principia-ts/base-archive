@@ -3,7 +3,7 @@
  */
 import type * as HKT from './HKT'
 import type { NonEmptyArray } from './NonEmptyArray'
-import type { UnionToIntersection } from './prelude'
+import type { EnforceNonEmptyRecord, UnionToIntersection } from './prelude'
 import type { ReadonlyRecord } from './Record'
 
 import * as A from './Array/core'
@@ -407,7 +407,9 @@ type EnsureTagEq<T extends string, Members extends Record<string, Eq<any>>> = Me
 
 export function getSumEq<T extends string>(
   tag: T
-): <M extends Record<string, Eq<Record<string, any>>>>(members: EnsureTagEq<T, M>) => Eq<Eq.TypeOf<M[keyof M]>> {
+): <M extends Record<string, Eq<Record<string, any>>>>(
+  members: EnforceNonEmptyRecord<EnsureTagEq<T, M>>
+) => Eq<Eq.TypeOf<M[keyof M]>> {
   return (members) =>
     P.Eq((x, y) => {
       const vx = x[tag]
@@ -497,7 +499,7 @@ type EnsureTagGuard<T extends string, Members extends Record<string, G.Guard<any
 
 export function getStrictSumGuard<T extends string>(tag: T) {
   return <M extends Record<string, G.Guard<any, Record<string, any>>>>(
-    members: EnsureTagGuard<T, M>
+    members: EnforceNonEmptyRecord<EnsureTagGuard<T, M>>
   ): G.Guard<G.InputOf<M[keyof M]>, G.TypeOf<M[keyof M]>> =>
     G.Guard((i): i is { readonly [K in keyof M]: G.TypeOf<M[K]> }[keyof M] => {
       const v = i[tag]
@@ -511,7 +513,7 @@ export function getStrictSumGuard<T extends string>(tag: T) {
 export function getSumGuard<T extends string>(
   tag: T
 ): <M extends Record<string, G.Guard<unknown, Record<string, any>>>>(
-  members: EnsureTagGuard<T, M>
+  members: EnforceNonEmptyRecord<EnsureTagGuard<T, M>>
 ) => G.Guard<unknown, G.TypeOf<M[keyof M]>>
 export function getSumGuard(
   tag: string
@@ -581,7 +583,7 @@ type EnsureTagShow<T extends string, M extends Record<string, S.Show<any>>> = M 
 export function getSumShow<T extends string>(
   tag: T
 ): <M extends Record<string, S.Show<Record<string, any>>>>(
-  members: EnsureTagShow<T, M>
+  members: EnforceNonEmptyRecord<EnsureTagShow<T, M>>
 ) => S.Show<{ [K in keyof M]: S.TypeOf<M[K]> }[keyof M]> {
   return (members) => S.Show((a: Record<string, any>) => members[a[tag]].show(a))
 }

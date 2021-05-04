@@ -16,7 +16,7 @@ import * as Li from '@principia/base/List'
 import * as O from '@principia/base/Option'
 import { RandomTag } from '@principia/base/Random'
 import * as Ref from '@principia/base/Ref'
-import { intersect } from '@principia/base/util/intersect'
+import { intersect } from '@principia/base/struct'
 import { Mash } from '@principia/base/util/Mash'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
