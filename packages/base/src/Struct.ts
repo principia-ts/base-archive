@@ -427,17 +427,18 @@ export function getSumEq<T extends string>(
  * -------------------------------------------
  */
 
-export function getKeysGuard<P extends Record<string, any>>(
-  properties: P
-): G.Guard<Record<PropertyKey, unknown>, Record<keyof P, unknown>> {
-  return G.Guard((u): u is Record<keyof P, unknown> => {
-    for (const key in properties) {
-      if (!(key in u)) {
-        return false
+export function getKeysGuard<P extends Record<string, any>>(properties: P): G.Guard<unknown, Record<keyof P, unknown>> {
+  return G.compose_(
+    R.UnknownRecordGuard,
+    G.Guard((u): u is Record<keyof P, unknown> => {
+      for (const key in properties) {
+        if (!(key in u)) {
+          return false
+        }
       }
-    }
-    return true
-  })
+      return true
+    })
+  )
 }
 
 export function getStrictGuard<P extends Record<string, G.AnyGuard>>(
