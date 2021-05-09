@@ -1,13 +1,13 @@
-import type { Either } from '../../Either'
-import type { Exit } from '../../Exit'
-import type { Fiber } from '../../Fiber'
-import type { IO } from '../../IO'
+import type { Either } from '../../../Either'
+import type { Exit } from '../../../Exit'
+import type { Fiber } from '../../../Fiber'
+import type { IO } from '../../../IO'
 
 export const MergeStateTag = {
   BothRunning: 'BothRunning',
   LeftDone: 'LeftDone',
   RightDone: 'RightDone'
-}
+} as const
 
 export class BothRunning<Env, Err, Err1, Err2, Elem, Done, Done1, Done2> {
   readonly _mergeStateTag = MergeStateTag.BothRunning

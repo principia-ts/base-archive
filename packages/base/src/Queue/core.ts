@@ -94,6 +94,11 @@ export interface Queue<A> extends XQueue<unknown, unknown, never, never, A, A> {
  */
 export interface Dequeue<A> extends XQueue<never, unknown, unknown, never, never, A> {}
 
+/**
+ * A queue that can only be enqueued.
+ */
+export interface Enqueue<A> extends XQueue<unknown, never, never, unknown, A, any> {}
+
 export function unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
   let bs = as
 
@@ -969,6 +974,69 @@ export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A>(
   f: (_: A1) => boolean
 ): XQueue<RA, RB, EA, EB, A1, B> {
   return filterInputM_(self, (a) => I.pure(f(a)))
+}
+
+export function filterOutputM_<RA, RB, EA, EB, A, B, RB1, EB1>(
+  self: XQueue<RA, RB, EA, EB, A, B>,
+  f: (b: B) => IO<RB1, EB1, boolean>
+): XQueue<RA, RB & RB1, EA, EB | EB1, A, B> {
+  return new (class extends XQueue<RA, RB & RB1, EA, EB | EB1, A, B> {
+    awaitShutdown: UIO<void> = self.awaitShutdown
+
+    capacity: number = self.capacity
+
+    isShutdown: UIO<boolean> = self.isShutdown
+
+    offer = (a: A): IO<RA, EA, boolean> => {
+      return self.offer(a)
+    }
+
+    offerAll = (as: Iterable<A>): IO<RA, EA, boolean> => {
+      return self.offerAll(as)
+    }
+
+    shutdown: UIO<void> = self.shutdown
+
+    size: UIO<number> = self.size
+
+    take: IO<RB & RB1, EB1 | EB, B> = I.bind_(self.take, (b) => {
+      return I.bind_(f(b), (p) => {
+        return p ? I.succeed(b) : this.take
+      })
+    })
+
+    takeAll: IO<RB & RB1, EB | EB1, Chunk<B>> = I.bind_(self.takeAll, (bs) => I.filter_(bs, f))
+
+    loop(max: number, acc: Chunk<B>): IO<RB & RB1, EB | EB1, Chunk<B>> {
+      return I.bind_(self.takeUpTo(max), (bs) => {
+        if (C.isEmpty(bs)) {
+          return I.succeed(acc)
+        }
+
+        return I.bind_(I.filter_(bs, f), (filtered) => {
+          const length = filtered.length
+
+          if (length === max) {
+            return I.succeed(C.concat_(acc, filtered))
+          } else {
+            return this.loop(max - length, C.concat_(acc, filtered))
+          }
+        })
+      })
+    }
+
+    takeUpTo = (n: number): IO<RB & RB1, EB | EB1, C.Chunk<B>> => {
+      return I.deferTotal(() => {
+        return this.loop(n, C.empty())
+      })
+    }
+  })()
+}
+
+export function filterOutputM<B, RB1, EB1>(
+  f: (b: B) => IO<RB1, EB1, boolean>
+): <RA, RB, EA, EB, A>(self: XQueue<RA, RB, EA, EB, A, B>) => XQueue<RA, RB & RB1, EA, EB | EB1, A, B> {
+  return (self) => filterOutputM_(self, f)
 }
 
 /**

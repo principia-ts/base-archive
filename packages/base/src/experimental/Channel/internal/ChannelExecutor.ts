@@ -1,18 +1,18 @@
 /* eslint-disable functional/immutable-data */
-import type { Cause } from '../../Cause'
-import type { Exit } from '../../Exit'
-import type { IO, URIO } from '../../IO'
-import type { List, MutableList } from '../../List'
+import type { Cause } from '../../../Cause'
+import type { Exit } from '../../../Exit'
+import type { IO, URIO } from '../../../IO'
+import type { List, MutableList } from '../../../List'
 import type { ChannelState } from './ChannelState'
 
-import * as Ca from '../../Cause'
-import * as Ex from '../../Exit'
-import * as F from '../../Fiber'
-import { identity, pipe } from '../../function'
-import * as I from '../../IO'
-import * as L from '../../List'
-import * as O from '../../Option'
-import * as C from '../Channel'
+import * as Ca from '../../../Cause'
+import * as Ex from '../../../Exit'
+import * as F from '../../../Fiber'
+import { identity, pipe } from '../../../function'
+import * as I from '../../../IO'
+import * as L from '../../../List'
+import * as O from '../../../Option'
+import * as C from '../primitives'
 import * as State from './ChannelState'
 
 type ErasedChannel<R> = C.Channel<R, unknown, unknown, unknown, unknown, unknown, unknown>
@@ -383,8 +383,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
             return this.finishSubexecutorWithCloseEffect(doneValue, inner.exec.close(doneValue))
           }
         }
-        break
       }
+      // eslint-disable-next-line no-fallthrough
       case State.ChannelStateTag.Effect: {
         return new State.Effect(
           I.catchAllCause_(
@@ -505,7 +505,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private runReadGo(
     state: ChannelState<Env, unknown>,
-    read: C.Read<Env, any, any, any, any, any, any, any, any, any>,
+    read: C.Read<Env, any, any, any, any, any, any, any, any>,
     input: ErasedExecutor<Env>
   ): I.URIO<Env, void> {
     State.concrete(state)
@@ -533,7 +533,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     }
   }
 
-  private runRead(read: C.Read<Env, any, any, any, any, any, any, any, any, any>): ChannelState<Env, any> | undefined {
+  private runRead(read: C.Read<Env, any, any, any, any, any, any, any, any>): ChannelState<Env, any> | undefined {
     if (this.input) {
       const input = this.input
       const state = input.run()

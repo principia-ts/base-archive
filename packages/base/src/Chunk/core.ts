@@ -1414,6 +1414,11 @@ export function unsafeGet(n: number): <A>(as: Chunk<A>) => A {
   return (as) => unsafeGet_(as, n)
 }
 
+export function unsafeHead<A>(as: Chunk<A>): A {
+  concrete(as)
+  return as.get(0)
+}
+
 export function get_<A>(as: Chunk<A>, n: number): O.Option<A> {
   return O.tryCatch(() => unsafeGet_(as, n))
 }

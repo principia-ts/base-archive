@@ -1,9 +1,9 @@
-import type { Stack } from '..//util/support/Stack'
 import type { Eq } from '../Eq'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Predicate } from '../Predicate'
+import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
@@ -1390,4 +1390,312 @@ export const defaultRenderer: Renderer = {
 
 export function pretty<E>(cause: Cause<E>, renderer: Renderer<E> = defaultRenderer): string {
   return prettySafe(cause, renderer).value
+}
+
+/*
+ * -------------------------------------------
+ * Flip
+ * -------------------------------------------
+ */
+
+const FCEStackFrameDoneTypeId = Symbol()
+class FCEStackFrameDone {
+  readonly _typeId: typeof FCEStackFrameDoneTypeId = FCEStackFrameDoneTypeId
+}
+const FCEStackFrameTracedTypeId = Symbol()
+class FCEStackFrameTraced<E, A> {
+  readonly _typeId: typeof FCEStackFrameTracedTypeId = FCEStackFrameTracedTypeId
+
+  constructor(readonly cause: Traced<E.Either<E, A>>) {}
+}
+
+const FCEStackFrameThenLeftTypeId = Symbol()
+class FCEStackFrameThenLeft<E, A> {
+  readonly _typeId: typeof FCEStackFrameThenLeftTypeId = FCEStackFrameThenLeftTypeId
+
+  constructor(readonly cause: Then<E.Either<E, A>>) {}
+}
+const FCEStackFrameThenRightTypeId = Symbol()
+class FCEStackFrameThenRight<E, A> {
+  readonly _typeId: typeof FCEStackFrameThenRightTypeId = FCEStackFrameThenRightTypeId
+
+  constructor(readonly cause: Then<E.Either<E, A>>, readonly leftResult: E.Either<Cause<E>, A>) {}
+}
+const FCEStackFrameBothLeftTypeId = Symbol()
+class FCEStackFrameBothLeft<E, A> {
+  readonly _typeId: typeof FCEStackFrameBothLeftTypeId = FCEStackFrameBothLeftTypeId
+
+  constructor(readonly cause: Both<E.Either<E, A>>) {}
+}
+const FCEStackFrameBothRightTypeId = Symbol()
+class FCEStackFrameBothRight<E, A> {
+  readonly _typeId: typeof FCEStackFrameBothRightTypeId = FCEStackFrameBothRightTypeId
+
+  constructor(readonly cause: Both<E.Either<E, A>>, readonly leftResult: E.Either<Cause<E>, A>) {}
+}
+
+type FCEStackFrame<E, A> =
+  | FCEStackFrameDone
+  | FCEStackFrameTraced<E, A>
+  | FCEStackFrameThenLeft<E, A>
+  | FCEStackFrameThenRight<E, A>
+  | FCEStackFrameBothLeft<E, A>
+  | FCEStackFrameBothRight<E, A>
+
+/**
+ * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>` by
+ * recursively stripping out any failures with the error `None`.
+ */
+export function flipCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> {
+  let stack: Stack<FCEStackFrame<E, A>> = makeStack(new FCEStackFrameDone())
+  let result: E.Either<Cause<E>, A> | undefined
+  let c                                 = cause
+
+  recursion: while (stack) {
+    // eslint-disable-next-line no-constant-condition
+    pushing: while (true) {
+      switch (c._tag) {
+        case 'Empty':
+          result = E.Left(empty)
+          break pushing
+        case 'Traced':
+          stack = makeStack(new FCEStackFrameTraced(c), stack)
+          c     = c.cause
+          continue pushing
+        case 'Interrupt':
+          result = E.Left(interrupt(c.fiberId))
+          break pushing
+        case 'Die':
+          result = E.Left(c)
+          break pushing
+        case 'Fail':
+          result = E.match_(
+            c.value,
+            (l) => E.Left(fail(l)),
+            (r) => E.Right(r)
+          )
+          break pushing
+        case 'Then':
+          stack = makeStack(new FCEStackFrameThenLeft(c), stack)
+          c     = c.left
+          continue pushing
+        case 'Both':
+          stack = makeStack(new FCEStackFrameBothLeft(c), stack)
+          c     = c.left
+          continue pushing
+      }
+    }
+
+    // eslint-disable-next-line no-constant-condition
+    popping: while (true) {
+      const top = stack.value
+
+      stack = stack.previous!
+
+      switch (top._typeId) {
+        case FCEStackFrameDoneTypeId:
+          return result
+        case FCEStackFrameTracedTypeId:
+          result = E.mapLeft_(result, (_) => traced(_, top.cause.trace))
+          continue popping
+        case FCEStackFrameThenLeftTypeId:
+          c     = top.cause.right
+          stack = makeStack(new FCEStackFrameThenRight(top.cause, result), stack)
+          continue recursion
+        case FCEStackFrameThenRightTypeId: {
+          const l = top.leftResult
+
+          if (E.isLeft(l) && E.isLeft(result)) {
+            result = E.Left(then(l.left, result.left))
+          }
+
+          if (E.isRight(l)) {
+            result = E.Right(l.right)
+          }
+
+          if (E.isRight(result)) {
+            result = E.Right(result.right)
+          }
+
+          continue popping
+        }
+        case FCEStackFrameBothLeftTypeId:
+          c     = top.cause.right
+          stack = makeStack(new FCEStackFrameBothRight(top.cause, result), stack)
+          continue recursion
+        case FCEStackFrameBothRightTypeId: {
+          const l = top.leftResult
+
+          if (E.isLeft(l) && E.isLeft(result)) {
+            result = E.Left(both(l.left, result.left))
+          }
+
+          if (E.isRight(l)) {
+            result = E.Right(l.right)
+          }
+
+          if (E.isRight(result)) {
+            result = E.Right(result.right)
+          }
+
+          continue popping
+        }
+      }
+    }
+  }
+
+  throw new Error('Bug')
+}
+
+const FCOStackFrameDoneTypeId = Symbol()
+class FCOStackFrameDone {
+  readonly _typeId: typeof FCOStackFrameDoneTypeId = FCOStackFrameDoneTypeId
+}
+const FCOStackFrameTracedTypeId = Symbol()
+class FCOStackFrameTraced<E> {
+  readonly _typeId: typeof FCOStackFrameTracedTypeId = FCOStackFrameTracedTypeId
+
+  constructor(readonly cause: Traced<O.Option<E>>) {}
+}
+
+const FCOStackFrameThenLeftTypeId = Symbol()
+class FCOStackFrameThenLeft<E> {
+  readonly _typeId: typeof FCOStackFrameThenLeftTypeId = FCOStackFrameThenLeftTypeId
+
+  constructor(readonly cause: Then<O.Option<E>>) {}
+}
+const FCOStackFrameThenRightTypeId = Symbol()
+class FCOStackFrameThenRight<E> {
+  readonly _typeId: typeof FCOStackFrameThenRightTypeId = FCOStackFrameThenRightTypeId
+
+  constructor(readonly cause: Then<O.Option<E>>, readonly leftResult: O.Option<Cause<E>>) {}
+}
+const FCOStackFrameBothLeftTypeId = Symbol()
+class FCOStackFrameBothLeft<E> {
+  readonly _typeId: typeof FCOStackFrameBothLeftTypeId = FCOStackFrameBothLeftTypeId
+
+  constructor(readonly cause: Both<O.Option<E>>) {}
+}
+const FCOStackFrameBothRightTypeId = Symbol()
+class FCOStackFrameBothRight<E> {
+  readonly _typeId: typeof FCOStackFrameBothRightTypeId = FCOStackFrameBothRightTypeId
+
+  constructor(readonly cause: Both<O.Option<E>>, readonly leftResult: O.Option<Cause<E>>) {}
+}
+
+type FCOStackFrame<E> =
+  | FCOStackFrameDone
+  | FCOStackFrameTraced<E>
+  | FCOStackFrameThenLeft<E>
+  | FCOStackFrameThenRight<E>
+  | FCOStackFrameBothLeft<E>
+  | FCOStackFrameBothRight<E>
+
+/**
+ * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>` by
+ * recursively stripping out any failures with the error `None`.
+ */
+export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> {
+  let stack: Stack<FCOStackFrame<E>> = makeStack(new FCOStackFrameDone())
+  let result: O.Option<Cause<E>> | undefined
+  let c                              = cause
+
+  recursion: while (stack) {
+    // eslint-disable-next-line no-constant-condition
+    pushing: while (true) {
+      switch (c._tag) {
+        case 'Empty':
+          result = O.Some(empty)
+          break pushing
+        case 'Traced':
+          stack = makeStack(new FCOStackFrameTraced(c), stack)
+          c     = c.cause
+          continue pushing
+        case 'Interrupt':
+          result = O.Some(interrupt(c.fiberId))
+          break pushing
+        case 'Die':
+          result = O.Some(c)
+          break pushing
+        case 'Fail':
+          result = O.match_(
+            c.value,
+            () => O.None(),
+            (r) => O.Some(fail(r))
+          )
+          break pushing
+        case 'Then':
+          stack = makeStack(new FCOStackFrameThenLeft(c), stack)
+          c     = c.left
+          continue pushing
+        case 'Both':
+          stack = makeStack(new FCOStackFrameBothLeft(c), stack)
+          c     = c.left
+          continue pushing
+      }
+    }
+
+    // eslint-disable-next-line no-constant-condition
+    popping: while (true) {
+      const top = stack.value
+
+      stack = stack.previous!
+
+      switch (top._typeId) {
+        case FCOStackFrameDoneTypeId:
+          return result
+        case FCOStackFrameTracedTypeId:
+          result = O.map_(result, (_) => traced(_, top.cause.trace))
+          continue popping
+        case FCOStackFrameThenLeftTypeId:
+          c     = top.cause.right
+          stack = makeStack(new FCOStackFrameThenRight(top.cause, result), stack)
+          continue recursion
+        case FCOStackFrameThenRightTypeId: {
+          const l = top.leftResult
+
+          if (O.isSome(l) && O.isSome(result)) {
+            result = O.Some(then(l.value, result.value))
+          }
+
+          if (O.isNone(l) && O.isSome(result)) {
+            result = O.Some(result.value)
+          }
+
+          if (O.isSome(l) && O.isNone(result)) {
+            result = O.Some(l.value)
+          }
+
+          result = O.None()
+
+          continue popping
+        }
+        case FCOStackFrameBothLeftTypeId:
+          c     = top.cause.right
+          stack = makeStack(new FCOStackFrameBothRight(top.cause, result), stack)
+          continue recursion
+        case FCOStackFrameBothRightTypeId: {
+          const l = top.leftResult
+
+          if (O.isSome(l) && O.isSome(result)) {
+            result = O.Some(both(l.value, result.value))
+          }
+
+          if (O.isNone(l) && O.isSome(result)) {
+            result = O.Some(result.value)
+          }
+
+          if (O.isSome(l) && O.isNone(result)) {
+            result = O.Some(l.value)
+          }
+
+          result = O.None()
+
+          continue popping
+        }
+      }
+    }
+  }
+
+  throw new Error('Bug')
 }

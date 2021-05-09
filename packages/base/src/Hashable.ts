@@ -4,7 +4,7 @@ import { isDefined } from './util/predicates'
 export const $hash = Symbol.for('$hash')
 
 export interface Hashable {
-  [$hash](): number
+  [$hash]: number
 }
 
 export function isHashable(value: any): value is Hashable {
@@ -52,7 +52,7 @@ function _hashObject(value: object): number {
   let h = CACHE.get(value)
   if (isDefined(h)) return h
   if (isHashable(value)) {
-    h = value[$hash]()
+    h = value[$hash]
   } else {
     h = _current++
   }

@@ -1,9 +1,9 @@
-import type { Cause } from '../Cause'
-import type { Exit } from '../Exit'
-import type { IO, URIO } from '../IO'
+import type { Cause } from '../../Cause'
+import type { Exit } from '../../Exit'
+import type { IO, URIO } from '../../IO'
 import type { AsyncInputProducer } from './internal/producer'
 
-import * as Ex from '../Exit'
+import * as Ex from '../../Exit'
 
 export const ChannelTag = {
   PipeTo: 'PipeTo',
@@ -32,7 +32,15 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
   readonly _InDone!: (_: InDone) => void
   readonly _OutErr!: () => OutErr
   readonly _OutElem!: () => OutElem
-  readonly _OutDone!: () => OutDone
+  readonly _OutDone!: () => OutDone;
+
+  readonly ['>>>'] = <Env2, OutErr2, OutElem2, OutDone2>(
+    that: Channel<Env2, OutErr, OutElem, OutDone, OutErr2, OutElem2, OutDone2>
+  ): Channel<Env & Env2, InErr, InElem, InDone, OutErr2, OutElem2, OutDone2> =>
+    new PipeTo<Env & Env2, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutElem2, OutDone, OutDone2>(
+      () => this,
+      () => that
+    )
 }
 
 export abstract class Continuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2> {
@@ -132,19 +140,19 @@ export class Fold<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone,
   }
 }
 
-export class Read<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutElem2, OutDone, OutDone2> extends Channel<
+export class Read<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2> extends Channel<
   Env,
   InErr,
   InElem,
   InDone,
   OutErr2,
-  OutElem2,
+  OutElem,
   OutDone2
 > {
   readonly _channelTag = ChannelTag.Read
   constructor(
-    readonly more: (_: InElem) => Channel<Env, InErr, InElem, InDone, OutErr2, OutElem2, OutDone2>,
-    readonly done: ContinuationK<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem2, OutDone, OutDone2>
+    readonly more: (_: InElem) => Channel<Env, InErr, InElem, InDone, OutErr2, OutElem, OutDone2>,
+    readonly done: ContinuationK<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2>
   ) {
     super()
   }
@@ -152,7 +160,7 @@ export class Read<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutElem2
 
 export class Done<OutDone> extends Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
   readonly _channelTag = ChannelTag.Done
-  constructor(readonly terminal: OutDone) {
+  constructor(readonly terminal: () => OutDone) {
     super()
   }
 }
@@ -261,7 +269,7 @@ export class Provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> exten
 
 export class Emit<OutElem, OutDone> extends Channel<unknown, unknown, unknown, unknown, never, OutElem, OutDone> {
   readonly _channelTag = ChannelTag.Emit
-  constructor(readonly out: OutElem) {
+  constructor(readonly out: () => OutElem) {
     super()
   }
 }
@@ -288,7 +296,7 @@ export function concrete<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   _: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): asserts _ is
   | PipeTo<Env, InErr, InElem, InDone, OutErr, any, OutElem, any, OutDone, any>
-  | Read<Env, InErr, InElem, InDone, OutErr, any, OutElem, any, OutDone, any>
+  | Read<Env, InErr, InElem, InDone, OutErr, any, OutElem, OutDone, any>
   | Done<OutDone>
   | Halt<OutErr>
   | Effect<Env, OutErr, OutDone>

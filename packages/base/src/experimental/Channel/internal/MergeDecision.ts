@@ -1,5 +1,5 @@
-import type { Exit } from '../../Exit'
-import type { IO } from '../../IO'
+import type { Exit } from '../../../Exit'
+import type { IO } from '../../../IO'
 
 export const MergeDecisionTag = {
   Done: 'Done',
@@ -13,6 +13,12 @@ export abstract class MergeDecision<R, E0, Z0, E, Z> {
   readonly _Z0!: (_: Z0) => void
   readonly _E!: () => E
   readonly _Z!: () => Z
+}
+
+export function concrete<R, E0, Z0, E, Z>(
+  _: MergeDecision<R, E0, Z0, E, Z>
+): asserts _ is Done<R, E, Z> | Await<R, E0, Z0, E, Z> {
+  //
 }
 
 export class Done<R, E, Z> extends MergeDecision<R, unknown, unknown, E, Z> {
