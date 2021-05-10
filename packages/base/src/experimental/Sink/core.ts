@@ -1,4 +1,6 @@
 import * as C from '../../Chunk'
+import { flow, pipe } from '../../function'
+import * as I from '../../IO'
 import * as Ch from '../Channel'
 
 /**
@@ -39,4 +41,77 @@ export function drain<Err, A>() {
   )
 
   return new Sink(drain)
+}
+
+/**
+ * A sink that executes the provided effectful function for every element fed to it.
+ */
+export function foreach<R, Err, In>(f: (inp: In) => I.IO<R, Err, any>): Sink<R, Err, In, Err, In, void> {
+  return foreachWhile(
+    flow(
+      f,
+      I.as(() => true)
+    )
+  )
+}
+
+/**
+ * A sink that executes the provided effectful function for every chunk fed to it.
+ */
+export function foreachChunk<R, Err, In>(f: (inp: C.Chunk<In>) => I.IO<R, Err, any>): Sink<R, Err, In, Err, In, void> {
+  return foreachChunkWhile(
+    flow(
+      f,
+      I.as(() => true)
+    )
+  )
+}
+
+function foreachWhileLoop<R, Err, In>(
+  f: (_: In) => I.IO<R, Err, boolean>,
+  chunk: C.Chunk<In>,
+  idx: number,
+  len: number,
+  cont: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void>
+): Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> {
+  if (idx === len) {
+    return cont
+  }
+  return pipe(
+    Ch.fromEffect(f(C.unsafeGet_(chunk, idx))),
+    Ch.bind((b) => (b ? foreachWhileLoop(f, chunk, idx + 1, len, cont) : Ch.write(C.drop_(chunk, idx)))),
+    Ch.catchAll((e) => pipe(Ch.write(C.drop_(chunk, idx)), Ch.zipRight(Ch.fail(e))))
+  )
+}
+
+/**
+ * A sink that executes the provided effectful function for every element fed to it
+ * until `f` evaluates to `false`.
+ */
+export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): Sink<R, Err, In, Err, In, void> {
+  const process: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWithCause(
+    (inp: C.Chunk<In>) => foreachWhileLoop(f, inp, 0, inp.length, process),
+    Ch.halt,
+    () => Ch.unit
+  )
+  return new Sink(process)
+}
+
+/**
+ * A sink that executes the provided effectful function for every chunk fed to it
+ * until `f` evaluates to `false`.
+ */
+export function foreachChunkWhile<R, Err, In>(
+  f: (chunk: C.Chunk<In>) => I.IO<R, Err, boolean>
+): Sink<R, Err, In, Err, In, void> {
+  const reader: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWith(
+    (inp: C.Chunk<In>) =>
+      pipe(
+        Ch.fromEffect(f(inp)),
+        Ch.bind((cont) => (cont ? reader : Ch.end(undefined)))
+      ),
+    (err: Err) => Ch.fail(err),
+    (_) => Ch.unit
+  )
+  return new Sink(reader)
 }
