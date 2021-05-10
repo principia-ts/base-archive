@@ -42,12 +42,12 @@ class Inner<R> {
   readonly _subexecutorStackTag = SubexecutorStackTag.Inner
   constructor(
     readonly exec: ErasedExecutor<R>,
-    readonly subK: (_: any) => ErasedChannel<R>,
-    readonly lastDone: any,
-    readonly combineSubK: (_: any, __: any) => any,
-    readonly combineSubKAndInner: (_: any, __: any) => any
+    readonly subK: (_: unknown) => ErasedChannel<R>,
+    readonly lastDone: unknown,
+    readonly combineSubK: (_: unknown, __: unknown) => unknown,
+    readonly combineSubKAndInner: (_: unknown, __: unknown) => unknown
   ) {}
-  close(ex: Exit<any, any>): URIO<R, Exit<any, any>> | undefined {
+  close(ex: Exit<unknown, unknown>): URIO<R, Exit<unknown, unknown>> | undefined {
     const fin = this.exec.close(ex)
     if (fin) return I.result(fin)
   }
@@ -62,9 +62,9 @@ class Inner<R> {
 const endUnit = new C.Done(() => void 0)
 
 function maybeCloseBoth<Env>(
-  l: IO<Env, never, any> | undefined,
-  r: IO<Env, never, any> | undefined
-): URIO<Env, Exit<never, any>> | undefined {
+  l: IO<Env, never, unknown> | undefined,
+  r: IO<Env, never, unknown> | undefined
+): URIO<Env, Exit<never, unknown>> | undefined {
   if (l && r) return pipe(I.result(l), I.crossWith(I.result(r), Ex.apr_))
   else if (l) return I.result(l)
   else if (r) return I.result(r)
@@ -72,12 +72,12 @@ function maybeCloseBoth<Env>(
 
 export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
   private input?: ErasedExecutor<Env>
-  private inProgressFinalizer?: URIO<Env, Exit<any, any>>
+  private inProgressFinalizer?: URIO<Env, Exit<unknown, unknown>>
   private subexecutorStack?: SubexecutorStack<Env>
   private doneStack: List<ErasedContinuation<Env>> = L.empty()
-  private done?: Exit<any, any>
+  private done?: Exit<unknown, unknown>
   private cancelled?: Exit<OutErr, OutDone>
-  private emitted?: any
+  private emitted?: unknown
   private currentChannel?: ErasedChannel<Env>
 
   constructor(
@@ -87,17 +87,20 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     this.currentChannel = initialChannel() as ErasedChannel<Env>
   }
 
-  private restorePipe(exit: Exit<any, any>, prev: ErasedExecutor<Env> | undefined): IO<Env, never, any> | undefined {
+  private restorePipe(
+    exit: Exit<unknown, unknown>,
+    prev: ErasedExecutor<Env> | undefined
+  ): IO<Env, never, unknown> | undefined {
     const currInput = this.input
     this.input      = prev
     return currInput?.close(exit)
   }
 
   private unwindAllFinalizers(
-    acc: Exit<any, any>,
+    acc: Exit<unknown, unknown>,
     conts: List<ErasedContinuation<Env>>,
-    exit: Exit<any, any>
-  ): IO<Env, any, any> {
+    exit: Exit<unknown, unknown>
+  ): IO<Env, unknown, unknown> {
     while (!L.isEmpty(conts)) {
       const head = L.unsafeFirst(conts)!
       C.concreteContinuation(head)
@@ -114,7 +117,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     return I.done(acc)
   }
 
-  private popAllFinalizers(exit: Exit<any, any>): URIO<Env, Exit<any, any>> {
+  private popAllFinalizers(exit: Exit<unknown, unknown>): URIO<Env, Exit<unknown, unknown>> {
     const effect   = I.result(this.unwindAllFinalizers(Ex.unit(), this.doneStack, exit))
     this.doneStack = L.empty()
     this.storeInProgressFinalizer(effect)
@@ -123,7 +126,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private popNextFinalizersGo(
     stack: List<ErasedContinuation<Env>>,
-    builder: MutableList<C.ContinuationFinalizer<Env, any, any>>
+    builder: MutableList<C.ContinuationFinalizer<Env, unknown, unknown>>
   ) {
     while (!L.isEmpty(stack)) {
       const head = L.unsafeFirst(stack)!
@@ -138,13 +141,13 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     return L.empty()
   }
 
-  private popNextFinalizers(): L.List<C.ContinuationFinalizer<Env, any, any>> {
-    const builder  = L.emptyPushable<C.ContinuationFinalizer<Env, any, any>>()
+  private popNextFinalizers(): L.List<C.ContinuationFinalizer<Env, unknown, unknown>> {
+    const builder  = L.emptyPushable<C.ContinuationFinalizer<Env, unknown, unknown>>()
     this.doneStack = this.popNextFinalizersGo(this.doneStack, builder)
     return builder
   }
 
-  private storeInProgressFinalizer(effect: URIO<Env, Exit<any, any>>): void {
+  private storeInProgressFinalizer(effect: URIO<Env, Exit<unknown, unknown>>): void {
     this.inProgressFinalizer = effect
   }
 
@@ -152,11 +155,11 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     this.inProgressFinalizer = undefined
   }
 
-  private ifNotNull<R, E>(io: URIO<R, Exit<E, any>> | undefined): URIO<R, Exit<E, any>> {
+  private ifNotNull<R, E>(io: URIO<R, Exit<E, unknown>> | undefined): URIO<R, Exit<E, unknown>> {
     return io ?? I.succeed(Ex.unit())
   }
 
-  close(exit: Exit<any, any>): IO<Env, never, any> | undefined {
+  close(exit: Exit<unknown, unknown>): IO<Env, never, unknown> | undefined {
     const runInProgressFinalizer = this.inProgressFinalizer
       ? I.ensuring_(
           this.inProgressFinalizer,
@@ -164,7 +167,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         )
       : undefined
 
-    let closeSubexecutors: URIO<Env, Exit<any, any>> | undefined
+    let closeSubexecutors: URIO<Env, Exit<unknown, unknown>> | undefined
 
     if (this.subexecutorStack) {
       if (this.subexecutorStack._subexecutorStackTag === SubexecutorStackTag.Inner) {
@@ -183,7 +186,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       }
     }
 
-    let closeSelf: URIO<Env, Exit<any, any>> | undefined
+    let closeSelf: URIO<Env, Exit<unknown, unknown>> | undefined
 
     const selfFinalizers = this.popAllFinalizers(exit)
 
@@ -226,7 +229,10 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     return State._Done
   }
 
-  private finishSubexecutorWithCloseEffect(subexecDone: Exit<any, any>, closeEffect: IO<Env, never, any> | undefined) {
+  private finishSubexecutorWithCloseEffect(
+    subexecDone: Exit<unknown, unknown>,
+    closeEffect: IO<Env, never, unknown> | undefined
+  ) {
     if (closeEffect) {
       return new State.Effect(
         pipe(
@@ -246,7 +252,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         )
       )
     } else {
-      const state: ChannelState<Env, any> | undefined = Ex.match_(
+      const state: ChannelState<Env, unknown> | undefined = Ex.match_(
         subexecDone,
         (cause) => this.doneHalt(cause),
         (a) => this.doneSucceed(a)
@@ -258,7 +264,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     }
   }
 
-  private finishWithExit(exit: Exit<any, any>): IO<Env, any, any> {
+  private finishWithExit(exit: Exit<unknown, unknown>): IO<Env, unknown, unknown> {
     const state: ChannelState<Env, unknown> | undefined = Ex.match_(exit, this.doneHalt, this.doneSucceed)
 
     this.subexecutorStack = undefined
@@ -271,9 +277,9 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   }
 
   private runFinalizers(
-    finalizers: List<(e: Exit<any, any>) => URIO<Env, any>>,
-    exit: Exit<any, any>
-  ): URIO<Env, Exit<any, any>> {
+    finalizers: List<(e: Exit<unknown, unknown>) => URIO<Env, unknown>>,
+    exit: Exit<unknown, unknown>
+  ): URIO<Env, Exit<unknown, unknown>> {
     if (L.isEmpty(finalizers)) {
       return I.succeed(Ex.unit())
     }
@@ -293,13 +299,16 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     exec: ErasedExecutor<Env>,
     rest: Inner<Env>,
     self: ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
-    cause: Cause<any>
-  ): ChannelState<Env, any> | undefined {
+    cause: Cause<unknown>
+  ): ChannelState<Env, unknown> | undefined {
     const closeEffect = maybeCloseBoth(exec.close(Ex.halt(cause)), rest.exec.close(Ex.halt(cause)))
     return self.finishSubexecutorWithCloseEffect(Ex.halt(cause), closeEffect ? I.bind_(closeEffect, I.done) : undefined)
   }
 
-  private drainFromKAndSubexecutor(exec: ErasedExecutor<Env>, rest: Inner<Env>): ChannelState<Env, any> | undefined {
+  private drainFromKAndSubexecutor(
+    exec: ErasedExecutor<Env>,
+    rest: Inner<Env>
+  ): ChannelState<Env, unknown> | undefined {
     const run = exec.run()
     State.concrete(run)
     switch (run._channelStateTag) {
@@ -398,7 +407,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     }
   }
 
-  private drainSubexecutor(): ChannelState<Env, any> | undefined {
+  private drainSubexecutor(): ChannelState<Env, unknown> | undefined {
     const subexecutorStack = this.subexecutorStack!
 
     if (subexecutorStack._subexecutorStackTag === SubexecutorStackTag.Inner) {
@@ -413,7 +422,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     this.subexecutorStack = nextSubExec
   }
 
-  private doneSucceed(z: any): ChannelState<Env, any> | undefined {
+  private doneSucceed(z: unknown): ChannelState<Env, unknown> | undefined {
     if (L.isEmpty(this.doneStack)) {
       this.done           = Ex.succeed(z)
       this.currentChannel = undefined
@@ -456,7 +465,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     }
   }
 
-  private doneHalt(cause: Cause<any>): ChannelState<Env, any> | undefined {
+  private doneHalt(cause: Cause<unknown>): ChannelState<Env, unknown> | undefined {
     if (L.isEmpty(this.doneStack)) {
       this.done           = Ex.halt(cause)
       this.currentChannel = undefined
@@ -505,7 +514,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private runReadGo(
     state: ChannelState<Env, unknown>,
-    read: C.Read<Env, any, any, any, any, any, any, any, any>,
+    read: C.Read<Env, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown>,
     input: ErasedExecutor<Env>
   ): I.URIO<Env, void> {
     State.concrete(state)
@@ -533,7 +542,9 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     }
   }
 
-  private runRead(read: C.Read<Env, any, any, any, any, any, any, any, any>): ChannelState<Env, any> | undefined {
+  private runRead(
+    read: C.Read<Env, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown>
+  ): ChannelState<Env, unknown> | undefined {
     if (this.input) {
       const input = this.input
       const state = input.run()
@@ -589,7 +600,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   }
 
   run(): ChannelState<Env, OutErr> {
-    let result: ChannelState<Env, any> | undefined = undefined
+    let result: ChannelState<Env, unknown> | undefined = undefined
 
     while (!result) {
       if (this.cancelled) {
@@ -606,9 +617,9 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           switch (currentChannel._channelTag) {
             case C.ChannelTag.Bridge: {
               if (this.input) {
-                const inputExecutor           = this.input
-                this.input                    = undefined
-                const drainer: URIO<Env, any> = I.deferTotal(() => {
+                const inputExecutor               = this.input
+                this.input                        = undefined
+                const drainer: URIO<Env, unknown> = I.deferTotal(() => {
                   const state = inputExecutor.run()
 
                   State.concrete(state)
@@ -671,7 +682,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               break
             }
             case C.ChannelTag.Done: {
-              result = this.doneSucceed(currentChannel.terminal)
+              result = this.doneSucceed(currentChannel.terminal())
               break
             }
             case C.ChannelTag.Halt: {
@@ -706,7 +717,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               break
             }
             case C.ChannelTag.Emit: {
-              this.emitted        = currentChannel.out
+              this.emitted        = currentChannel.out()
               this.currentChannel = endUnit
               result              = State._Emit
               break
@@ -755,6 +766,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         }
       }
     }
-    return result
+    return result as ChannelState<Env, OutErr>
   }
 }

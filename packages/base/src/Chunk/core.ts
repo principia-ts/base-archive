@@ -1496,3 +1496,112 @@ export function chunksOf_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
 export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
   return chop(splitAt(n))
 }
+
+export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
+  return bind_(mma, P.identity)
+}
+
+/**
+ * Fills a chunk with the result of applying `f` `n` times
+ */
+export function fill<A>(n: number, f: (n: number) => A): Chunk<A> {
+  if (n <= 0) {
+    return empty<A>()
+  }
+  let builder = empty<A>()
+  for (let i = 0; i < n; i++) {
+    builder = append_(builder, f(i))
+  }
+  return builder
+}
+
+/**
+ * Transforms all elements of the chunk for as long as the specified partial function is defined.
+ */
+export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
+  concrete(self)
+
+  switch (self._tag) {
+    case 'Singleton': {
+      return O.match_(f(self.value), () => empty(), single)
+    }
+    case 'Arr': {
+      const array = self.arrayLike()
+      let dest    = empty<B>()
+      for (let i = 0; i < array.length; i++) {
+        const rhs = f(array[i]!)
+        if (O.isSome(rhs)) {
+          dest = append_(dest, rhs.value)
+        } else {
+          return dest
+        }
+      }
+      return dest
+    }
+    default: {
+      return collectWhile_(self.materialize(), f)
+    }
+  }
+}
+
+/**
+ * Transforms all elements of the chunk for as long as the specified partial function is defined.
+ *
+ * @dataFirst collectWhile_
+ */
+export function collectWhile<A, B>(f: (a: A) => O.Option<B>): (self: Chunk<A>) => Chunk<B> {
+  return (self) => collectWhile_(self, f)
+}
+
+/**
+ * Returns every elements after the first. Note that this method is partial
+ * in that it will throw an exception if the chunk is empty. Consider using
+ * `head` to explicitly handle the possibility that the chunk is empty
+ * or iterating over the elements of the chunk in lower level, performance
+ * sensitive code unless you really only need the first element of the chunk.
+ */
+export function unsafeTail<A>(self: Chunk<A>): Chunk<A> {
+  concrete(self)
+  if (self.length === 0) {
+    throw new ArrayIndexOutOfBoundsException(1)
+  }
+
+  return drop_(self, 1)
+}
+
+/**
+ * Splits this chunk on the first element that matches this predicate.
+ */
+export function splitWhere_<A>(self: Chunk<A>, f: (a: A) => boolean): readonly [Chunk<A>, Chunk<A>] {
+  concrete(self)
+  const iterator = self.arrayIterator()
+  let next
+  let cont       = true
+  let i          = 0
+
+  while (cont && (next = iterator.next()) && !next.done) {
+    const array = next.value
+    const len   = array.length
+    let j       = 0
+    while (cont && j < len) {
+      const a = array[j]!
+      if (f(a)) {
+        cont = false
+      } else {
+        i++
+        j++
+      }
+    }
+  }
+
+  return splitAt_(self, i)
+}
+
+/**
+ * Splits this chunk on the first element that matches this predicate.
+ *
+ * @dataFirst splitWhere_
+ */
+export function splitWhere<A>(f: (a: A) => boolean): (self: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
+  return (self) => splitWhere_(self, f)
+}
