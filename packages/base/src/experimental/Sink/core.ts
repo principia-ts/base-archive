@@ -1,6 +1,7 @@
 import * as C from '../../Chunk'
 import { flow, pipe } from '../../function'
 import * as I from '../../IO'
+import { AtomicReference } from '../../util/support/AtomicReference'
 import * as Ch from '../Channel'
 
 /**
@@ -11,6 +12,22 @@ import * as Ch from '../Channel'
  */
 export class Sink<R, InErr, In, OutErr, L, Z> {
   constructor(readonly channel: Ch.Channel<R, InErr, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>) {}
+}
+
+export function succeed<A>(a: A): Sink<unknown, unknown, unknown, never, never, A> {
+  return new Sink(Ch.succeed(a))
+}
+
+export function effectTotal<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
+  return new Sink(Ch.effectTotal(a))
+}
+
+export function fail<E>(e: E): Sink<unknown, unknown, unknown, E, never, never> {
+  return new Sink(Ch.fail(e))
+}
+
+export function failWith<E>(e: () => E): Sink<unknown, unknown, unknown, E, never, never> {
+  return new Sink(Ch.failWith(e))
 }
 
 /**
@@ -85,15 +102,8 @@ export function contramapChunksM_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
 ): Sink<R & R1, InErr | InErr1, In1, OutErr, L, Z> {
-  const loop: Ch.Channel<
-    R & R1,
-    InErr | InErr1,
-    C.Chunk<In1>,
-    unknown,
-    InErr | InErr1,
-    C.Chunk<In>,
-    unknown
-  > = Ch.readWith((chunk) => Ch.fromEffect(f(chunk))['>>='](Ch.write)['*>'](loop), Ch.fail, Ch.succeed)
+  const loop: Ch.Channel<R & R1, InErr | InErr1, C.Chunk<In1>, unknown, InErr | InErr1, C.Chunk<In>, unknown> =
+    Ch.readWith((chunk) => Ch.fromEffect(f(chunk))['>>='](Ch.write)['*>'](loop), Ch.fail, Ch.succeed)
   return new Sink(
     loop['>>>'](sink.channel as Ch.Channel<R, InErr | InErr1, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>)
   )
@@ -208,6 +218,12 @@ export function foreachChunkWhile<R, Err, In>(
   return new Sink(reader)
 }
 
+/*
+ * -------------------------------------------
+ * Functor
+ * -------------------------------------------
+ */
+
 /**
  * Transforms this sink's result.
  */
@@ -225,4 +241,117 @@ export function map<Z, Z2>(
   f: (z: Z) => Z2
 ): <R, InErr, In, OutErr, L>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R, InErr, In, OutErr, L, Z2> {
   return (sink) => map_(sink, f)
+}
+
+export function mapM_<R, InErr, In, OutErr, L, Z, R1, OutErr1, Z1>(
+  sink: Sink<R, InErr, In, OutErr, L, Z>,
+  f: (z: Z) => I.IO<R1, OutErr1, Z1>
+): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1> {
+  return new Sink(Ch.mapM_(sink.channel, f))
+}
+
+export function mapM<Z, R1, OutErr1, Z1>(
+  f: (z: Z) => I.IO<R1, OutErr1, Z1>
+): <R, InErr, In, OutErr, L>(
+  sink: Sink<R, InErr, In, OutErr, L, Z>
+) => Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1> {
+  return (sink) => mapM_(sink, f)
+}
+
+/*
+ * -------------------------------------------
+ * Bifunctor
+ * -------------------------------------------
+ */
+
+export function mapError_<R, InErr, In, OutErr, L, Z, OutErr2>(
+  sink: Sink<R, InErr, In, OutErr, L, Z>,
+  f: (e: OutErr) => OutErr2
+): Sink<R, InErr, In, OutErr2, L, Z> {
+  return new Sink(Ch.mapError_(sink.channel, f))
+}
+
+export function mapError<OutErr, OutErr2>(
+  f: (e: OutErr) => OutErr2
+): <R, InErr, In, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R, InErr, In, OutErr2, L, Z> {
+  return (sink) => mapError_(sink, f)
+}
+
+/*
+ * -------------------------------------------
+ * Match
+ * -------------------------------------------
+ */
+
+export function matchM_<
+  R,
+  InErr,
+  In extends L,
+  OutErr,
+  L extends L1,
+  Z,
+  R1,
+  InErr1,
+  OutErr1,
+  In1 extends In,
+  L1,
+  Z1,
+  OutErr2
+>(
+  sink: Sink<R, InErr, In, OutErr, L, Z>,
+  onFailure: (err: OutErr) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+  onSuccess: (z: Z) => Sink<R1, InErr1, In1, OutErr2, L1, Z1>
+): Sink<R & R1, InErr & InErr1, In1, OutErr1 | OutErr2, L1, Z1> {
+  return new Sink(
+    pipe(
+      sink.channel,
+      Ch.doneCollect,
+      Ch.foldM(
+        (err) => onFailure(err).channel,
+        ([leftovers, z]) =>
+          Ch.deferTotal(() => {
+            const leftoversRef     = new AtomicReference(C.filter_(leftovers, C.isNonEmpty))
+            const refReader        = Ch.effectTotal(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
+              Ch.writeChunk(chunk as C.Chunk<C.Chunk<In1>>)
+            )
+            const passthrough      = Ch.id<InErr1, C.Chunk<In1>, unknown>()
+            const continuationSink = refReader['*>'](passthrough)['>>>'](onSuccess(z).channel)
+
+            return Ch.doneCollect(continuationSink)['>>='](([newLeftovers, z1]) =>
+              Ch.effectTotal(() => leftoversRef.get)
+                ['>>='](Ch.writeChunk)
+                ['*>'](Ch.writeChunk(newLeftovers)['$>'](z1))
+            )
+          })
+      )
+    )
+  )
+}
+
+export function matchM<In extends L, OutErr, L extends L1, Z, R1, InErr1, OutErr1, In1 extends In, L1, Z1, OutErr2>(
+  onFailure: (err: OutErr) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+  onSuccess: (z: Z) => Sink<R1, InErr1, In1, OutErr2, L1, Z1>
+): <R, InErr>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R & R1, InErr & InErr1, In1, OutErr1 | OutErr2, L1, Z1> {
+  return (sink) => matchM_(sink, onFailure, onSuccess)
+}
+
+/*
+ * -------------------------------------------
+ * Monad
+ * -------------------------------------------
+ */
+
+export function bind_<R, InErr, In extends L, OutErr, L extends L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
+  sink: Sink<R, InErr, In, OutErr, L, Z>,
+  f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
+): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
+  return matchM_(sink, (err) => fail(err), f)
+}
+
+export function bind<In extends L, L extends L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
+  f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
+): <R, InErr, OutErr>(
+  sink: Sink<R, InErr, In, OutErr, L, Z>
+) => Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
+  return (sink) => bind_(sink, f)
 }

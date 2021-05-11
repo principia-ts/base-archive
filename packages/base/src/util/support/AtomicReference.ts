@@ -20,4 +20,10 @@ export class AtomicReference<A> {
     }
     return false
   }
+
+  getAndSet(value: A) {
+    const previous = this.current
+    this.current   = value
+    return previous
+  }
 }

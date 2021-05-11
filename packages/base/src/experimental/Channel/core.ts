@@ -43,6 +43,9 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
       () => that
     );
 
+  readonly ['$>'] = <OutDone2>(z2: OutDone2): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2> =>
+    map_(this, () => z2);
+
   readonly ['>>='] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone2>(
     f: (d: OutDone) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone2>
   ): Channel<
@@ -355,7 +358,9 @@ export function concrete<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   | Fold<Env, InErr, InElem, InDone, OutErr, any, OutElem, OutDone, any>
   | Provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   | BracketOut<Env, OutErr, OutElem, OutDone>
-  | Ensuring<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
+  | Ensuring<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
+  | EffectSuspendTotal<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
+  | EffectTotal<OutDone> {
   //
 }
 

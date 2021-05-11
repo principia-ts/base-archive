@@ -1,4 +1,5 @@
 import type { Cause } from '../../Cause'
+import type { Chunk } from '../../Chunk'
 import type { Exit } from '../../Exit'
 import type { IO, URIO } from '../../IO'
 import type { Predicate } from '../../Predicate'
@@ -31,6 +32,8 @@ import {
   ConcatAll,
   ContinuationK,
   Effect,
+  EffectSuspendTotal,
+  EffectTotal,
   Emit,
   end,
   Ensuring,
@@ -49,6 +52,18 @@ import * as State from './internal/ChannelState'
 import * as MD from './internal/MergeDecision'
 import * as MS from './internal/MergeState'
 import { makeSingleProducerAsyncInput } from './internal/producer'
+
+export function effectTotal<OutDone>(
+  effect: () => OutDone
+): Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
+  return new EffectTotal(effect)
+}
+
+export function deferTotal<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
+  effect: () => Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
+): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
+  return new EffectSuspendTotal(effect)
+}
 
 /**
  * Pipe the output of a channel into the input of another
@@ -1122,12 +1137,21 @@ export function foldM_<
   OutElem,
   OutElem1,
   OutDone,
-  OutDone1
+  OutDone1,
+  OutErr2
 >(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   onError: (error: OutErr) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>,
-  onSuccess: (done: OutDone) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
-): Channel<Env & Env1, InErr & InErr1, InElem & InElem1, InDone & InDone1, OutErr1, OutElem | OutElem1, OutDone1> {
+  onSuccess: (done: OutDone) => Channel<Env1, InErr1, InElem1, InDone1, OutErr2, OutElem1, OutDone1>
+): Channel<
+  Env & Env1,
+  InErr & InErr1,
+  InElem & InElem1,
+  InDone & InDone1,
+  OutErr1 | OutErr2,
+  OutElem | OutElem1,
+  OutDone1
+> {
   return foldCauseM_(
     self,
     (_) => {
@@ -1144,12 +1168,12 @@ export function foldM_<
 /**
  * @dataFirst foldM_
  */
-export function foldM<Env1, InErr1, InElem1, InDone1, OutErr, OutErr1, OutElem1, OutDone, OutDone1>(
-  onErr: (oErr: OutErr) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>,
-  onSucc: (oErr: OutDone) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
+export function foldM<Env1, InErr1, InElem1, InDone1, OutErr, OutErr1, OutElem1, OutDone, OutDone1, OutErr2>(
+  onFailure: (oErr: OutErr) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>,
+  onSuccess: (oErr: OutDone) => Channel<Env1, InErr1, InElem1, InDone1, OutErr2, OutElem1, OutDone1>
 ) {
   return <Env, InErr, InElem, InDone, OutElem>(self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>) =>
-    foldM_(self, onErr, onSucc)
+    foldM_(self, onFailure, onSuccess)
 }
 
 /**
@@ -1374,68 +1398,72 @@ export function mergeWith_<
         OutDone2 | OutDone3
       >
 
-      const handleSide = <Err, Done, Err2, Done2>(
-        exit: Ex.Exit<E.Either<Err, Done>, OutElem | OutElem1>,
-        fiber: F.Fiber<E.Either<Err2, Done2>, OutElem | OutElem1>,
-        pull: IO<Env & Env1, E.Either<Err, Done>, OutElem | OutElem1>
-      ) => (
-        done: (
-          ex: Ex.Exit<Err, Done>
-        ) => MD.MergeDecision<Env & Env1, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>,
-        both: (
-          f1: F.Fiber<E.Either<Err, Done>, OutElem | OutElem1>,
-          f2: F.Fiber<E.Either<Err2, Done2>, OutElem | OutElem1>
-        ) => MergeState,
-        single: (f: (ex: Ex.Exit<Err2, Done2>) => IO<Env & Env1, OutErr2 | OutErr3, OutDone2 | OutDone3>) => MergeState
-      ): IO<
-        Env & Env1,
-        never,
-        Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3>
-      > =>
-        Ex.match_(
-          exit,
-          (
-            cause
-          ): IO<
-            Env & Env1,
-            never,
-            Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem1 | OutElem, OutDone2 | OutDone3>
-          > => {
-            const result = done(
-              E.match_(
-                Ca.flipCauseEither(cause),
-                (_) => Ex.halt(_),
-                (_) => Ex.succeed(_)
-              )
-            )
-
-            MD.concrete(result)
-
-            if (result._mergeDecisionTag === MD.MergeDecisionTag.Done) {
-              return I.succeed(fromEffect(I.apr_(F.interrupt(fiber), result.io)))
-            } else if (result._mergeDecisionTag === MD.MergeDecisionTag.Await) {
-              return I.map_(
-                fiber.await,
-                Ex.match(
-                  (cause) =>
-                    fromEffect(
-                      result.f(
-                        E.match_(
-                          Ca.flipCauseEither(cause),
-                          (_) => Ex.halt(_),
-                          (_) => Ex.succeed(_)
-                        )
-                      )
-                    ),
-                  (elem) => zipr_(write(elem), go(single(result.f)))
+      const handleSide =
+        <Err, Done, Err2, Done2>(
+          exit: Ex.Exit<E.Either<Err, Done>, OutElem | OutElem1>,
+          fiber: F.Fiber<E.Either<Err2, Done2>, OutElem | OutElem1>,
+          pull: IO<Env & Env1, E.Either<Err, Done>, OutElem | OutElem1>
+        ) =>
+        (
+          done: (
+            ex: Ex.Exit<Err, Done>
+          ) => MD.MergeDecision<Env & Env1, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>,
+          both: (
+            f1: F.Fiber<E.Either<Err, Done>, OutElem | OutElem1>,
+            f2: F.Fiber<E.Either<Err2, Done2>, OutElem | OutElem1>
+          ) => MergeState,
+          single: (
+            f: (ex: Ex.Exit<Err2, Done2>) => IO<Env & Env1, OutErr2 | OutErr3, OutDone2 | OutDone3>
+          ) => MergeState
+        ): IO<
+          Env & Env1,
+          never,
+          Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3>
+        > =>
+          Ex.match_(
+            exit,
+            (
+              cause
+            ): IO<
+              Env & Env1,
+              never,
+              Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem1 | OutElem, OutDone2 | OutDone3>
+            > => {
+              const result = done(
+                E.match_(
+                  Ca.flipCauseEither(cause),
+                  (_) => Ex.halt(_),
+                  (_) => Ex.succeed(_)
                 )
               )
-            }
 
-            throw new Error('Unexpected')
-          },
-          (elem) => I.map_(I.fork(pull), (leftFiber) => zipr_(write(elem), go(both(leftFiber, fiber))))
-        )
+              MD.concrete(result)
+
+              if (result._mergeDecisionTag === MD.MergeDecisionTag.Done) {
+                return I.succeed(fromEffect(I.apr_(F.interrupt(fiber), result.io)))
+              } else if (result._mergeDecisionTag === MD.MergeDecisionTag.Await) {
+                return I.map_(
+                  fiber.await,
+                  Ex.match(
+                    (cause) =>
+                      fromEffect(
+                        result.f(
+                          E.match_(
+                            Ca.flipCauseEither(cause),
+                            (_) => Ex.halt(_),
+                            (_) => Ex.succeed(_)
+                          )
+                        )
+                      ),
+                    (elem) => zipr_(write(elem), go(single(result.f)))
+                  )
+                )
+              }
+
+              throw new Error('Unexpected')
+            },
+            (elem) => I.map_(I.fork(pull), (leftFiber) => zipr_(write(elem), go(both(leftFiber, fiber))))
+          )
 
       const go = (
         state: MergeState
@@ -1877,9 +1905,7 @@ export function bracketExit_<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDo
   release: (a: Acquired, exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDone> {
   return pipe(
-    fromEffect(
-      Ref.makeRef<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())
-    ),
+    fromEffect(Ref.makeRef<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
     bind((ref) =>
       pipe(
         fromEffect(I.makeUninterruptible(I.tap_(acquire, (a) => ref.set((_) => release(a, _))))),
@@ -2072,4 +2098,17 @@ export function writeAll<Out>(
     end(undefined) as Channel<unknown, unknown, unknown, unknown, never, Out, void>,
     (out, conduit) => zipr_(write(out), conduit)
   )
+}
+
+function writeChunkWriter<Out>(
+  outs: Chunk<Out>,
+  idx: number,
+  len: number
+): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
+  if (idx === len) return unit
+  return write(A.unsafeGet_(outs, idx))['*>'](writeChunkWriter(outs, idx + 1, len))
+}
+
+export function writeChunk<Out>(outs: Chunk<Out>): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
+  return writeChunkWriter(outs, 0, outs.length)
 }

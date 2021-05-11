@@ -716,6 +716,14 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               )
               break
             }
+            case C.ChannelTag.EffectTotal: {
+              result = this.doneSucceed(currentChannel.effect())
+              break
+            }
+            case C.ChannelTag.EffectSuspendTotal: {
+              this.currentChannel = currentChannel.effect()
+              break
+            }
             case C.ChannelTag.Emit: {
               this.emitted        = currentChannel.out()
               this.currentChannel = endUnit
