@@ -1,11 +1,10 @@
 import type { MutableQueue } from '../util/support/MutableQueue'
 
-import { pipe } from '@principia/base/function'
-
 import * as C from '../Chunk'
 import { parallel } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
 import * as F from '../Fiber'
+import { pipe } from '../function'
 import * as I from '../IO'
 import * as M from '../Managed'
 import * as RM from '../Managed/ReleaseMap'

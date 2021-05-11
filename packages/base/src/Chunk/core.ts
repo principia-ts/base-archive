@@ -23,7 +23,13 @@ export abstract class Chunk<A> {
   abstract readonly length: number
   abstract [Symbol.iterator](): Iterator<A>
 
-  readonly ['++'] = (that: Chunk<A>): Chunk<A> => concat_(this, that)
+  constructor() {
+    this['++'] = this['++'].bind(this)
+  }
+
+  ['++'](that: Chunk<A>): Chunk<A> {
+    return concat_(this, that)
+  }
 }
 
 abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
@@ -812,7 +818,7 @@ function fromArray<A>(array: ArrayLike<A>): ChunkImplementation<A> {
   if (array.length === 0) {
     return _Empty
   } else {
-    return 'buffer' in array ? (new BinArr(array) as any) : new Arr(Array.from(array))
+    return 'buffer' in array ? (new BinArr(array as any) as any) : new Arr(Array.from(array))
   }
 }
 
@@ -1293,8 +1299,8 @@ export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chu
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<URI>()((_) => (G) => (ta, f) =>
-  foldl_(ta, G.pure(empty()), (fbs, a) => G.crossWith_(fbs, f(a), append_))
+export const traverse_ = P.implementTraverse_<URI>()(
+  (_) => (G) => (ta, f) => foldl_(ta, G.pure(empty()), (fbs, a) => G.crossWith_(fbs, f(a), append_))
 )
 
 export const traverse: P.TraverseFn<URI> = (G) => {

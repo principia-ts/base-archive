@@ -35,7 +35,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]>, Hashable, Equat
     return new HashMapIterator(this, identity)
   }
 
-  [$hash](): number {
+  get [$hash](): number {
     return hashIterator(this[Symbol.iterator]())
   }
 

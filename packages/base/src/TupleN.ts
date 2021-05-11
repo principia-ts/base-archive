@@ -8,7 +8,7 @@ export class TupleN<C extends ReadonlyArray<unknown>> implements Iterable<C[numb
   readonly _tag = 'Tuple'
   constructor(readonly components: C) {}
 
-  [$hash](): number {
+  get [$hash](): number {
     return hashArray(this.components)
   }
   [$equals](that: unknown): boolean {

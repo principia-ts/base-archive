@@ -12,7 +12,7 @@ export class HashSet<V> implements Iterable<V>, P.Hashable, P.Equatable {
   [Symbol.iterator](): Iterator<V> {
     return HM.keys(this.keyMap)
   }
-  [$hash](): number {
+  get [$hash](): number {
     return hashIterator(this[Symbol.iterator]())
   }
   [$equals](other: unknown): boolean {
