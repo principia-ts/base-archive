@@ -17,14 +17,16 @@ type URI = [HKT.URI<ChunkURI>]
 
 const BUFFER_SIZE = 64
 
-export interface Chunk<A> {
-  readonly _URI: 'Chunk'
-  readonly _A: () => A
-  readonly length: number
-  [Symbol.iterator](): Iterator<A>
+export abstract class Chunk<A> {
+  readonly _URI!: 'Chunk'
+  readonly _A!: () => A
+  abstract readonly length: number
+  abstract [Symbol.iterator](): Iterator<A>
+
+  readonly ['++'] = (that: Chunk<A>): Chunk<A> => concat_(this, that)
 }
 
-abstract class ChunkImplementation<A> implements Chunk<A>, Iterable<A> {
+abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
   readonly _URI!: 'Chunk'
   readonly _A!: () => A
   abstract readonly length: number
@@ -136,13 +138,25 @@ abstract class ChunkImplementation<A> implements Chunk<A>, Iterable<A> {
     const binary = this.binary && isByte(a)
     const buffer = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
     buffer[0]    = a
-    return new AppendN(this, buffer, 1, new AtomicNumber(1), this.binary && binary)
+    return new AppendN<A | A1>(
+      this as ChunkImplementation<A | A1>,
+      buffer,
+      1,
+      new AtomicNumber(1),
+      this.binary && binary
+    )
   }
   prepend<A1>(a: A1): ChunkImplementation<A | A1> {
     const binary            = this.binary && isByte(a)
     const buffer            = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
     buffer[BUFFER_SIZE - 1] = a
-    return new PrependN(this, buffer, 1, new AtomicNumber(1), this.binary && binary)
+    return new PrependN<A | A1>(
+      this as ChunkImplementation<A | A1>,
+      buffer,
+      1,
+      new AtomicNumber(1),
+      this.binary && binary
+    )
   }
 
   /**
@@ -276,15 +290,33 @@ class AppendN<A> extends ChunkImplementation<A> {
           buffer[i] = this.buffer[i]
         }
         buffer[this.bufferUsed] = a
-        return new AppendN(this.start, this.buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+        return new AppendN<A | A1>(
+          this.start as ChunkImplementation<A | A1>,
+          this.buffer,
+          this.bufferUsed + 1,
+          this.chain,
+          this.binary && binary
+        )
       }
       this.buffer[this.bufferUsed] = a
-      return new AppendN(this.start, this.buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+      return new AppendN<A | A1>(
+        this.start as ChunkImplementation<A | A1>,
+        this.buffer,
+        this.bufferUsed + 1,
+        this.chain,
+        this.binary && binary
+      )
     } else {
       const buffer = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
       buffer[0]    = a
       const chunk  = fromArray(this.buffer as Array<A>).take(this.bufferUsed)
-      return new AppendN(this.start.concat(chunk), buffer, 1, new AtomicNumber(1), this.binary && binary)
+      return new AppendN<A | A1>(
+        this.start.concat(chunk) as ChunkImplementation<A | A1>,
+        buffer,
+        1,
+        new AtomicNumber(1),
+        this.binary && binary
+      )
     }
   }
   get(n: number): A {
@@ -374,10 +406,22 @@ class PrependN<A> extends ChunkImplementation<A> {
           buffer[i] = this.buffer[i]
         }
         buffer[BUFFER_SIZE - this.bufferUsed - 1] = a
-        return new PrependN(this.end, buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+        return new PrependN<A | A1>(
+          this.end as ChunkImplementation<A | A1>,
+          buffer,
+          this.bufferUsed + 1,
+          this.chain,
+          this.binary && binary
+        )
       }
       this.buffer[BUFFER_SIZE - this.bufferUsed - 1] = a
-      return new PrependN(this.end, this.buffer, this.bufferUsed + 1, this.chain, this.binary && binary)
+      return new PrependN<A | A1>(
+        this.end as ChunkImplementation<A | A1>,
+        this.buffer,
+        this.bufferUsed + 1,
+        this.chain,
+        this.binary && binary
+      )
     } else {
       const buffer            = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
       buffer[BUFFER_SIZE - 1] = a
@@ -386,7 +430,13 @@ class PrependN<A> extends ChunkImplementation<A> {
           ? this.buffer.subarray(this.buffer.length - this.bufferUsed)
           : this.buffer.slice(this.buffer.length - this.bufferUsed)
       ) as ChunkImplementation<A>
-      return new PrependN(chunk.concat(this.end), buffer, 1, new AtomicNumber(1), this.binary && binary)
+      return new PrependN<A | A1>(
+        chunk.concat(this.end) as ChunkImplementation<A | A1>,
+        buffer,
+        1,
+        new AtomicNumber(1),
+        this.binary && binary
+      )
     }
   }
   get(n: number): A {

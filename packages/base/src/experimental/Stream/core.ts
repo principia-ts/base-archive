@@ -599,7 +599,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
 
   return bind_(fromEffect(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
     const handoffProducer: Ch.Channel<unknown, E1, C.Chunk<A>, unknown, never, never, any> = Ch.readWithCause(
-      (_in: C.Chunk<A>) => Ch.zipRight_(Ch.fromEffect(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
+      (_in: C.Chunk<A>) => Ch.zipr_(Ch.fromEffect(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
       (cause: Ca.Cause<E1>) => Ch.fromEffect(HO.offer(handoff, new HO.Halt(cause))),
       (_: any) => Ch.fromEffect(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
     )
@@ -607,12 +607,12 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E1, C.Chunk<A1>, void> = Ch.unwrap(
       I.bind_(Ref.getAndSet_(sinkLeftovers, C.empty<A1>()), (leftovers) => {
         if (C.isEmpty(leftovers)) {
-          return I.succeed(Ch.zipRight_(Ch.write(leftovers), handoffConsumer))
+          return I.succeed(Ch.zipr_(Ch.write(leftovers), handoffConsumer))
         } else {
           return I.map_(HO.take(handoff), (_) => {
             switch (_._typeId) {
               case HO.EmitTypeId:
-                return Ch.zipRight_(Ch.write(_.els), handoffConsumer)
+                return Ch.zipr_(Ch.write(_.els), handoffConsumer)
               case HO.HaltTypeId:
                 return Ch.halt(_.error)
               case HO.EndTypeId:
@@ -640,7 +640,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
       return pipe(
         Ch.managed_(I.forkManaged(timeout), (fiber) => {
           return Ch.bind_(Ch.doneCollect(handoffConsumer['>>>'](sink.channel)), ([leftovers, b]) => {
-            return Ch.zipRight_(
+            return Ch.zipr_(
               Ch.fromEffect(I.apr_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
               Ch.unwrap(
                 Ref.modify_(sinkEndReason, (reason) => {
@@ -816,7 +816,7 @@ export function buffer_<R, E, A>(self: Stream<R, E, A>, capacity: number): Strea
         Take.fold(
           Ch.end(undefined),
           (error) => Ch.halt(error),
-          (value) => Ch.zipRight_(Ch.write(value), process)
+          (value) => Ch.zipr_(Ch.write(value), process)
         )
       )
 
@@ -847,7 +847,7 @@ export function bufferUnbounded<R, E, A>(self: Stream<R, E, A>): Stream<R, E, A>
         Take.fold(
           Ch.end(undefined),
           (error) => Ch.halt(error),
-          (value) => Ch.zipRight_(Ch.write(value), process)
+          (value) => Ch.zipr_(Ch.write(value), process)
         )
       )
 
@@ -1018,12 +1018,12 @@ export function chunkN_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E,
               }
             }
 
-            return Ch.zipRight_(Ch.writeAll(...L.toArray(L.reverse(chunks))), process)
+            return Ch.zipr_(Ch.writeAll(...L.toArray(L.reverse(chunks))), process)
           }
 
           return process
         },
-        (cause) => Ch.zipRight_(rechunker.emitOfNotEmpty(), Ch.halt(cause)),
+        (cause) => Ch.zipr_(rechunker.emitOfNotEmpty(), Ch.halt(cause)),
         (_) => rechunker.emitOfNotEmpty()
       )
 
@@ -1140,7 +1140,7 @@ export function collectWhile_<R, E, A, A1>(self: Stream<R, E, A>, pf: (a: A) => 
       const mapped = C.collectWhile_(_in, pf)
 
       if (mapped.length === _in.length) {
-        return Ch.zipRight_(Ch.write(mapped), loop)
+        return Ch.zipr_(Ch.write(mapped), loop)
       } else {
         return Ch.write(mapped)
       }
@@ -1282,7 +1282,7 @@ export function concat_<R, R1, E, E1, A, A1>(
   self: Stream<R, E, A>,
   that: Stream<R1, E1, A1>
 ): Stream<R & R1, E | E1, A | A1> {
-  return new Stream<R & R1, E | E1, A | A1>(Ch.zipRight_(self.channel, that.channel))
+  return new Stream<R & R1, E | E1, A | A1>(Ch.zipr_(self.channel, that.channel))
 }
 
 /**
@@ -1451,7 +1451,7 @@ export function runIntoManaged_<R, R1, E extends E1, E1, A>(
   queue: Q.XQueue<R1, never, never, unknown, Take.Take<E1, A>, any>
 ): M.Managed<R & R1, E | E1, void> {
   const writer: Ch.Channel<R, E, C.Chunk<A>, unknown, E, Take.Take<E | E1, A>, any> = Ch.readWithCause(
-    (in_) => Ch.zipRight_(Ch.write(Take.chunk(in_)), writer),
+    (in_) => Ch.zipr_(Ch.write(Take.chunk(in_)), writer),
     (cause) => Ch.write(Take.halt(cause)),
     (_) => Ch.write(Take.end)
   )
@@ -1501,7 +1501,7 @@ export function flattenExitOption<R, E, E1, A>(self: Stream<R, E, Ex.Exit<O.Opti
       )
     )
 
-    return Ch.zipRight_(
+    return Ch.zipr_(
       Ch.write(
         C.filterMap_(
           toEmit,
@@ -1770,7 +1770,7 @@ export function unfoldChunkM<S>(s: S) {
           f(s),
           O.match(
             () => Ch.end(undefined),
-            ([as, s]) => Ch.zipRight_(Ch.write(as), loop(s))
+            ([as, s]) => Ch.zipr_(Ch.write(as), loop(s))
           )
         )
       )
@@ -1847,9 +1847,7 @@ function fromIteratorTotalLoop<A>(
   return Ch.unwrap(
     I.effectTotal(() => {
       const v = iterator.next()
-      return v.done
-        ? Ch.end(undefined)
-        : pipe(Ch.write(C.single(v.value)), Ch.zipRight(fromIteratorTotalLoop(iterator)))
+      return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.zipr(fromIteratorTotalLoop(iterator)))
     })
   )
 }

@@ -10,7 +10,7 @@
 // ------------------------------------------------------------------------------
 
 const hasRequire   = /require\(/
-const spaceMatcher = /(\s*)((?!=>)(?:\+|-|\*|\/|%|&|\^|\||<<|>>|\*\*|>>>)?=)/
+const spaceMatcher = /(\s*)((?!\[\'|\"|\`)(?!=>)(?:\+|-|\*|\/|%|&|\^|\||<<|>>|\*\*|>>>)?=)(?!\'|\"|\`\])/
 
 module.exports = {
   meta: {
@@ -122,7 +122,7 @@ module.exports = {
               const tokens          = sourceCode.getTokens(node)
               const firstToken      = tokens[0]
               const assignmentToken = tokens.find((token) =>
-                ['=', '+=', '-=', '*=', '/=', '%=', '&=', '^=', '|=', '<<=', '>>=', '**=', '>>>='].includes(token.value)
+                ['=', '+=', '-=', '*=', '/=', '%=', '&=', '^=', '|=', '>>=', '<<=', '**=', '>>>='].includes(token.value)
               )
               const line            = sourceCode.getText(node)
               const lineIsAligned   = line.charAt(maxPos) === '='
@@ -164,10 +164,10 @@ module.exports = {
       const nodeBefore = isAssignmentExpression(node)
         ? node.left
         : node?.type === 'ExportNamedDeclaration'
-          ? node.declaration.declarations.find((dcl) => dcl.type === 'VariableDeclarator').id
-          : node?.type === 'ClassProperty'
-            ? node.key
-            : node.declarations.find((dcl) => dcl.type === 'VariableDeclarator').id
+        ? node.declaration.declarations.find((dcl) => dcl.type === 'VariableDeclarator').id
+        : node?.type === 'ClassProperty'
+        ? node.key
+        : node.declarations.find((dcl) => dcl.type === 'VariableDeclarator').id
 
       const prefix = nodeBefore.loc.end.column - nodeBefore.loc.start.column
       return prefix

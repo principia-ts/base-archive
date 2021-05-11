@@ -12,7 +12,7 @@ import { identity, pipe } from '../../../function'
 import * as I from '../../../IO'
 import * as L from '../../../List'
 import * as O from '../../../Option'
-import * as C from '../primitives'
+import * as C from '../core'
 import * as State from './ChannelState'
 
 type ErasedChannel<R> = C.Channel<R, unknown, unknown, unknown, unknown, unknown, unknown>
