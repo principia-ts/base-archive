@@ -4,12 +4,14 @@ import type { Either } from '../Either'
 import type * as HKT from '../HKT'
 import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
+import type { Equatable, Hashable } from '../prelude'
 import type { Refinement } from '../Refinement'
 
 import * as A from '../Array/core'
 import { unsafeCoerce } from '../function'
 import * as It from '../Iterable'
 import * as O from '../Option'
+import { $equals, $hash, equals, hashIterator } from '../prelude'
 import * as P from '../prelude'
 import { AtomicNumber } from '../util/support/AtomicNumber'
 
@@ -17,24 +19,44 @@ type URI = [HKT.URI<ChunkURI>]
 
 const BUFFER_SIZE = 64
 
-export abstract class Chunk<A> {
-  readonly _URI!: 'Chunk'
+export const ChunkTag = Symbol()
+export type ChunkTag = typeof ChunkTag
+
+export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable {
+  readonly [ChunkTag]: ChunkTag = ChunkTag
   readonly _A!: () => A
   abstract readonly length: number
   abstract [Symbol.iterator](): Iterator<A>
 
   constructor() {
     this['++'] = this['++'].bind(this)
+    this['+']  = this['+'].bind(this)
   }
 
+  get [$hash](): number {
+    return hashIterator(this[Symbol.iterator]())
+  }
+
+  [$equals](that: unknown): boolean {
+    return isChunk(that) && corresponds_(this, that, equals)
+  }
+
+  /**
+   * Returns the concatenation of this chunk with the specified chunk.
+   */
   ['++'](that: Chunk<A>): Chunk<A> {
     return concat_(this, that)
+  }
+
+  /**
+   * Appends an element to the chunk.
+   */
+  ['+'](a: A): Chunk<A> {
+    return append_(this, a)
   }
 }
 
 abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
-  readonly _URI!: 'Chunk'
-  readonly _A!: () => A
   abstract readonly length: number
   abstract readonly depth: number
   abstract readonly left: Chunk<A>
@@ -882,6 +904,72 @@ export function isNonEmpty<A>(chunk: Chunk<A>): boolean {
   return !isEmpty(chunk)
 }
 
+export function isChunk<A>(u: Iterable<A>): u is Chunk<A>
+export function isChunk(u: unknown): u is Chunk<unknown>
+export function isChunk(u: unknown): u is Chunk<unknown> {
+  return P.isObject(u) && ChunkTag in u
+}
+
+/*
+ * -------------------------------------------
+ * Equatable
+ * -------------------------------------------
+ */
+
+export function corresponds_<A, B>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => boolean): boolean {
+  if (as.length !== bs.length) {
+    return false
+  }
+
+  concrete(as)
+  concrete(bs)
+
+  const leftIterator  = as.arrayIterator()
+  const rightIterator = bs.arrayIterator()
+
+  let left: ArrayLike<A> | undefined  = undefined
+  let right: ArrayLike<B> | undefined = undefined
+  let leftLength                      = 0
+  let rightLength                     = 0
+  let i                               = 0
+  let j                               = 0
+  let equal                           = true
+  let done                            = false
+
+  let leftNext
+  let rightNext
+
+  while (equal && !done) {
+    if (i < leftLength && j < rightLength) {
+      const a = left![i]
+      const b = right![j]
+      if (!f(a, b)) {
+        equal = false
+      }
+      i++
+      j++
+    } else if (i === leftLength && !(leftNext = leftIterator.next()).done) {
+      left       = leftNext.value
+      leftLength = left.length
+      i          = 0
+    } else if (j === rightLength && !(rightNext = rightIterator.next()).done) {
+      right       = rightNext.value
+      rightLength = right.length
+      j           = 0
+    } else if (i === leftLength && j === rightLength) {
+      done = true
+    } else {
+      equal = false
+    }
+  }
+
+  return equal
+}
+
+export function corresponds<A, B>(bs: Chunk<B>, f: (a: A, b: B) => boolean): (as: Chunk<A>) => boolean {
+  return (as) => corresponds_(as, bs, f)
+}
+
 /*
  * -------------------------------------------
  * destructors
@@ -1012,6 +1100,10 @@ export function bind_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
 
 export function bind<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
   return (ma) => bind_(ma, f)
+}
+
+export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
+  return bind_(mma, P.identity)
 }
 
 /*
@@ -1325,16 +1417,12 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chun
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const mt = f(bb)
-    switch (mt._tag) {
-      case 'Some': {
-        const [a, b] = mt.value
-        out.append(a)
-        bb = b
-        break
-      }
-      case 'None': {
-        break
-      }
+    if (mt._tag === 'Some') {
+      const [a, b] = mt.value
+      out.append(a)
+      bb = b
+    } else {
+      return out.result()
     }
   }
 }
@@ -1344,6 +1432,67 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chun
  * combinators
  * -------------------------------------------
  */
+
+export function chop_<A, B>(as: Chunk<A>, f: (as: Chunk<A>) => readonly [B, Chunk<A>]): Chunk<B> {
+  const out        = builder<B>()
+  let cs: Chunk<A> = as
+  while (isNonEmpty(cs)) {
+    const [b, c] = f(cs)
+    out.append(b)
+    cs = c
+  }
+  return out.result()
+}
+
+export function chop<A, B>(f: (as: Chunk<A>) => readonly [B, Chunk<A>]): (as: Chunk<A>) => Chunk<B> {
+  return (as) => chop_(as, f)
+}
+
+export function chunksOf_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
+  return chop_(as, splitAt(n))
+}
+
+export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
+  return chop(splitAt(n))
+}
+
+/**
+ * Transforms all elements of the chunk for as long as the specified partial function is defined.
+ */
+export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
+  concrete(self)
+
+  switch (self._tag) {
+    case 'Singleton': {
+      return O.match_(f(self.value), () => empty(), single)
+    }
+    case 'Arr': {
+      const array = self.arrayLike()
+      let dest    = empty<B>()
+      for (let i = 0; i < array.length; i++) {
+        const rhs = f(array[i]!)
+        if (O.isSome(rhs)) {
+          dest = append_(dest, rhs.value)
+        } else {
+          return dest
+        }
+      }
+      return dest
+    }
+    default: {
+      return collectWhile_(self.materialize(), f)
+    }
+  }
+}
+
+/**
+ * Transforms all elements of the chunk for as long as the specified partial function is defined.
+ *
+ * @dataFirst collectWhile_
+ */
+export function collectWhile<A, B>(f: (a: A) => O.Option<B>): (self: Chunk<A>) => Chunk<B> {
+  return (self) => collectWhile_(self, f)
+}
 
 export function drop_<A>(as: Chunk<A>, n: number): Chunk<A> {
   concrete(as)
@@ -1407,6 +1556,95 @@ export function dropWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A
   return (as) => dropWhile_(as, predicate)
 }
 
+/**
+ * Fills a chunk with the result of applying `f` `n` times
+ */
+export function fill<A>(n: number, f: (n: number) => A): Chunk<A> {
+  if (n <= 0) {
+    return empty<A>()
+  }
+  let builder = empty<A>()
+  for (let i = 0; i < n; i++) {
+    builder = append_(builder, f(i))
+  }
+  return builder
+}
+
+export function findFirst_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  let out        = O.None<A>()
+  let result: IteratorResult<ArrayLike<A>>
+  while (out._tag === 'None' && !(result = iterator.next()).done) {
+    const array  = result.value
+    const length = array.length
+    for (let i = 0; out._tag === 'None' && i < length; i++) {
+      const a = array[i]
+      if (f(a)) {
+        out = O.Some(a)
+      }
+    }
+  }
+  return out
+}
+
+export function findFirst<A>(f: (a: A) => boolean): (as: Chunk<A>) => O.Option<A> {
+  return (as) => findFirst_(as, f)
+}
+
+export function foldWhile_<A, B>(as: Chunk<A>, b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): B {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  let s          = b
+  let cont       = predicate(s)
+  let result: IteratorResult<ArrayLike<A>>
+  while (cont && !(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; cont && i < array.length; i++) {
+      s    = f(s, array[i])
+      cont = predicate(s)
+    }
+  }
+  return s
+}
+
+export function foldWhile<A, B>(b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): (as: Chunk<A>) => B {
+  return (as) => foldWhile_(as, b, predicate, f)
+}
+
+export function get_<A>(as: Chunk<A>, n: number): O.Option<A> {
+  return O.tryCatch(() => unsafeGet_(as, n))
+}
+
+export function get(n: number): <A>(as: Chunk<A>) => O.Option<A> {
+  return (as) => get_(as, n)
+}
+
+export function reverse<A>(as: Chunk<A>): Iterable<A> {
+  concrete(as)
+  const arr = as.arrayLike()
+  return It.iterable<A>(() => {
+    let i = arr.length - 1
+    return {
+      next: () => {
+        if (i >= 0 && i < arr.length) {
+          const k = arr[i]
+          i--
+          return {
+            value: k,
+            done: false
+          }
+        } else {
+          return {
+            value: undefined,
+            done: true
+          }
+        }
+      }
+    }
+  })
+}
+
 export function splitAt_<A>(as: Chunk<A>, n: number): readonly [Chunk<A>, Chunk<A>] {
   return [take_(as, n), drop_(as, n)]
 }
@@ -1461,170 +1699,6 @@ export function takeWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A
   return (as) => takeWhile_(as, predicate)
 }
 
-export function unsafeGet_<A>(as: Chunk<A>, n: number): A {
-  concrete(as)
-  return as.get(n)
-}
-
-export function unsafeGet(n: number): <A>(as: Chunk<A>) => A {
-  return (as) => unsafeGet_(as, n)
-}
-
-export function unsafeHead<A>(as: Chunk<A>): A {
-  concrete(as)
-  return as.get(0)
-}
-
-export function get_<A>(as: Chunk<A>, n: number): O.Option<A> {
-  return O.tryCatch(() => unsafeGet_(as, n))
-}
-
-export function get(n: number): <A>(as: Chunk<A>) => O.Option<A> {
-  return (as) => get_(as, n)
-}
-
-export function findFirst_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
-  concrete(as)
-  const iterator = as.arrayIterator()
-  let out        = O.None<A>()
-  let result: IteratorResult<ArrayLike<A>>
-  while (out._tag === 'None' && !(result = iterator.next()).done) {
-    const array  = result.value
-    const length = array.length
-    for (let i = 0; out._tag === 'None' && i < length; i++) {
-      const a = array[i]
-      if (f(a)) {
-        out = O.Some(a)
-      }
-    }
-  }
-  return out
-}
-
-export function findFirst<A>(f: (a: A) => boolean): (as: Chunk<A>) => O.Option<A> {
-  return (as) => findFirst_(as, f)
-}
-
-export function reverse<A>(as: Chunk<A>): Iterable<A> {
-  concrete(as)
-  const arr = as.arrayLike()
-  return It.iterable<A>(() => {
-    let i = arr.length - 1
-    return {
-      next: () => {
-        if (i >= 0 && i < arr.length) {
-          const k = arr[i]
-          i--
-          return {
-            value: k,
-            done: false
-          }
-        } else {
-          return {
-            value: undefined,
-            done: true
-          }
-        }
-      }
-    }
-  })
-}
-
-export function chop_<A, B>(as: Chunk<A>, f: (as: Chunk<A>) => readonly [B, Chunk<A>]): Chunk<B> {
-  const out        = builder<B>()
-  let cs: Chunk<A> = as
-  while (isNonEmpty(cs)) {
-    const [b, c] = f(cs)
-    out.append(b)
-    cs = c
-  }
-  return out.result()
-}
-
-export function chop<A, B>(f: (as: Chunk<A>) => readonly [B, Chunk<A>]): (as: Chunk<A>) => Chunk<B> {
-  return (as) => chop_(as, f)
-}
-
-export function chunksOf_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
-  return chop_(as, splitAt(n))
-}
-
-export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
-  return chop(splitAt(n))
-}
-
-export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
-  return bind_(mma, P.identity)
-}
-
-/**
- * Fills a chunk with the result of applying `f` `n` times
- */
-export function fill<A>(n: number, f: (n: number) => A): Chunk<A> {
-  if (n <= 0) {
-    return empty<A>()
-  }
-  let builder = empty<A>()
-  for (let i = 0; i < n; i++) {
-    builder = append_(builder, f(i))
-  }
-  return builder
-}
-
-/**
- * Transforms all elements of the chunk for as long as the specified partial function is defined.
- */
-export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
-  concrete(self)
-
-  switch (self._tag) {
-    case 'Singleton': {
-      return O.match_(f(self.value), () => empty(), single)
-    }
-    case 'Arr': {
-      const array = self.arrayLike()
-      let dest    = empty<B>()
-      for (let i = 0; i < array.length; i++) {
-        const rhs = f(array[i]!)
-        if (O.isSome(rhs)) {
-          dest = append_(dest, rhs.value)
-        } else {
-          return dest
-        }
-      }
-      return dest
-    }
-    default: {
-      return collectWhile_(self.materialize(), f)
-    }
-  }
-}
-
-/**
- * Transforms all elements of the chunk for as long as the specified partial function is defined.
- *
- * @dataFirst collectWhile_
- */
-export function collectWhile<A, B>(f: (a: A) => O.Option<B>): (self: Chunk<A>) => Chunk<B> {
-  return (self) => collectWhile_(self, f)
-}
-
-/**
- * Returns every elements after the first. Note that this method is partial
- * in that it will throw an exception if the chunk is empty. Consider using
- * `head` to explicitly handle the possibility that the chunk is empty
- * or iterating over the elements of the chunk in lower level, performance
- * sensitive code unless you really only need the first element of the chunk.
- */
-export function unsafeTail<A>(self: Chunk<A>): Chunk<A> {
-  concrete(self)
-  if (self.length === 0) {
-    throw new ArrayIndexOutOfBoundsException(1)
-  }
-
-  return drop_(self, 1)
-}
-
 /**
  * Splits this chunk on the first element that matches this predicate.
  */
@@ -1660,4 +1734,120 @@ export function splitWhere_<A>(self: Chunk<A>, f: (a: A) => boolean): readonly [
  */
 export function splitWhere<A>(f: (a: A) => boolean): (self: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
   return (self) => splitWhere_(self, f)
+}
+
+export function unsafeGet_<A>(as: Chunk<A>, n: number): A {
+  concrete(as)
+  return as.get(n)
+}
+
+export function unsafeGet(n: number): <A>(as: Chunk<A>) => A {
+  return (as) => unsafeGet_(as, n)
+}
+
+/**
+ * Returns the first element of this chunk. Note that this method is partial
+ * in that it will throw an exception if the chunk is empty. Consider using
+ * `head` to explicitly handle the possibility that the chunk is empty
+ * or iterating over the elements of the chunk in lower level, performance
+ * sensitive code unless you really only need the first element of the chunk.
+ */
+export function unsafeHead<A>(as: Chunk<A>): A {
+  concrete(as)
+  return as.get(0)
+}
+
+/**
+ * Returns every element after the first. Note that this method is partial
+ * in that it will throw an exception if the chunk is empty. Consider using
+ * `tail` to explicitly handle the possibility that the chunk is empty
+ */
+export function unsafeTail<A>(self: Chunk<A>): Chunk<A> {
+  concrete(self)
+  if (self.length === 0) {
+    throw new ArrayIndexOutOfBoundsException(1)
+  }
+
+  return drop_(self, 1)
+}
+
+/*
+ * -------------------------------------------
+ * util
+ * -------------------------------------------
+ */
+
+/**
+ * Determines whether every element of the Chunk satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function every_<A, B extends A>(as: Chunk<A>, refinement: P.Refinement<A, B>): as is Chunk<B>
+export function every_<A>(as: Chunk<A>, predicate: P.Predicate<A>): boolean
+export function every_<A>(as: Chunk<A>, predicate: P.Predicate<A>): boolean {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  let every      = true
+  let result: IteratorResult<ArrayLike<A>>
+  while (every && !(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; every && i < array.length; i++) {
+      every = predicate(array[i])
+    }
+  }
+  return every
+}
+
+/**
+ * Determines whether every element of the Chunk satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function every<A, B extends A>(refinement: P.Refinement<A, B>): (as: Chunk<A>) => as is Chunk<B>
+export function every<A>(predicate: P.Predicate<A>): (as: Chunk<A>) => boolean
+export function every<A>(predicate: P.Predicate<A>): (as: Chunk<A>) => boolean {
+  return (as) => every_(as, predicate)
+}
+
+/**
+ * Determines whether at least one element of the Chunk satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function exists_<A>(as: Chunk<A>, predicate: P.Predicate<A>): boolean {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  let exists     = true
+  let result: IteratorResult<ArrayLike<A>>
+  while (!exists && !(result = iterator.next()).done) {
+    const array = result.value
+    for (let i = 0; !exists && i < array.length; i++) {
+      exists = predicate(array[i])
+    }
+  }
+  return exists
+}
+
+/**
+ * Determines whether at least one element of the Chunk satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function exists<A>(predicate: P.Predicate<A>): (as: Chunk<A>) => boolean {
+  return (as) => exists_(as, predicate)
+}
+
+/**
+ * Returns the length of the given chunk
+ *
+ * @category util
+ * @since 1.0.0
+ */
+export function size<A>(as: Chunk<A>): number {
+  concrete(as)
+  return as.length
 }

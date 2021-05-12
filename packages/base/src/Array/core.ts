@@ -1133,7 +1133,7 @@ export function append_<A>(init: ReadonlyArray<A>, end: A): NonEmptyArray<A> {
     mut_r[i] = init[i]
   }
   mut_r[len] = end
-  return (mut_r as unknown) as NonEmptyArray<A>
+  return mut_r as unknown as NonEmptyArray<A>
 }
 
 /**
@@ -1312,7 +1312,7 @@ export function prepend_<A>(tail: ReadonlyArray<A>, head: A): NonEmptyArray<A> {
     mut_out[i + 1] = tail[i]
   }
   mut_out[0] = head
-  return (mut_out as unknown) as NonEmptyArray<A>
+  return mut_out as unknown as NonEmptyArray<A>
 }
 
 /**
@@ -2343,9 +2343,7 @@ export { of as do }
 export const bindS: <A, K, N extends string>(
   name: Exclude<N, keyof K>,
   f: (_: K) => ReadonlyArray<A>
-) => (
-  mk: ReadonlyArray<K>
-) => ReadonlyArray<
+) => (mk: ReadonlyArray<K>) => ReadonlyArray<
   {
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
@@ -2353,9 +2351,7 @@ export const bindS: <A, K, N extends string>(
 
 export const bindTo: <K, N extends string>(
   name: Exclude<N, keyof K>
-) => <A>(
-  fa: ReadonlyArray<A>
-) => ReadonlyArray<
+) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<
   {
     [k in Exclude<N, keyof K>]: A
   }
@@ -2407,9 +2403,9 @@ export function unsafeModifyAt<A>(i: number, f: (a: A) => A): (as: ReadonlyArray
 }
 
 export function unsafeInsertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): NonEmptyArray<A> {
-  return (mutate_(as, (xs) => {
+  return mutate_(as, (xs) => {
     xs.splice(i, 0, a)
-  }) as unknown) as NonEmptyArray<A>
+  }) as unknown as NonEmptyArray<A>
 }
 
 export function unsafeInsertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => NonEmptyArray<A> {
@@ -2438,7 +2434,7 @@ export function unsafeDeleteAt_<A>(as: ReadonlyArray<A>, i: number): ReadonlyArr
 
 /*
  * -------------------------------------------
- * Utilities
+ * utils
  * -------------------------------------------
  */
 
@@ -2519,9 +2515,64 @@ export function spanIndexRight_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<
 }
 
 /**
- * @category utilities
+ * @category utils
  * @since 1.0.0
  */
 export function sum(as: ReadonlyArray<number>): number {
   return foldl_(as, 0, (b, a) => b + a)
+}
+
+/**
+ * Determines whether every element of the array satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function every_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): as is ReadonlyArray<B>
+export function every_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): boolean
+export function every_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): boolean {
+  let result = true
+  let i      = 0
+  while (result && i < as.length) {
+    result = predicate(as[i])
+    i++
+  }
+  return result
+}
+
+/**
+ * Determines whether every element of the array satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function every<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => as is ReadonlyArray<B>
+export function every<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => boolean
+export function every<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => boolean {
+  return (as) => every_(as, predicate)
+}
+
+/**
+ * Determines whether at least one element of the array satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function exists_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): as is NonEmptyArray<A> {
+  let result = false
+  const i    = 0
+  while (!result && i < as.length) {
+    result = predicate(as[i])
+  }
+  return result
+}
+
+/**
+ * Determines whether at least one element of the array satisfies the given predicate
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function exists<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => as is NonEmptyArray<A> {
+  return (as): as is NonEmptyArray<A> => exists_(as, predicate)
 }
