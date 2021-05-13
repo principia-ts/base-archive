@@ -14,7 +14,7 @@ import * as E from '../../Either'
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
 import * as F from '../../Fiber'
-import { identity, pipe } from '../../function'
+import { flow, identity, pipe } from '../../function'
 import * as H from '../../Hub'
 import * as I from '../../IO'
 import * as M from '../../Managed'
@@ -45,13 +45,14 @@ import {
   Provide,
   Read,
   succeed,
+  zipr,
   zipr_
 } from './core'
 import { ChannelExecutor } from './internal/ChannelExecutor'
 import * as State from './internal/ChannelState'
 import * as MD from './internal/MergeDecision'
 import * as MS from './internal/MergeState'
-import { makeSingleProducerAsyncInput } from './internal/producer'
+import { makeSingleProducerAsyncInput } from './internal/SingleProducerAsyncInput'
 
 export function effectTotal<OutDone>(
   effect: () => OutDone
@@ -701,7 +702,9 @@ export function unwrapManaged<R, E, Env, InErr, InElem, InDone, OutErr, OutElem,
 /**
  * Unit channel
  */
-export const unit: Channel<unknown, unknown, unknown, unknown, never, never, void> = end(void 0)
+export function unit(): Channel<unknown, unknown, unknown, unknown, never, never, void> {
+  return end(void 0)
+}
 
 /**
  * Returns a new channel that is the same as this one, except the terminal value of the channel
@@ -1378,7 +1381,7 @@ export function mergeWith_<
   OutElem | OutElem1,
   OutDone2 | OutDone3
 > {
-  const m = pipe(
+  return pipe(
     M.do,
     M.bindS('input', () =>
       I.toManaged_(makeSingleProducerAsyncInput<InErr & InErr1, InElem & InElem1, InDone & InDone1>())
@@ -1397,7 +1400,6 @@ export function mergeWith_<
         OutDone1,
         OutDone2 | OutDone3
       >
-
       const handleSide =
         <Err, Done, Err2, Done2>(
           exit: Ex.Exit<E.Either<Err, Done>, OutElem | OutElem1>,
@@ -1422,134 +1424,99 @@ export function mergeWith_<
         > =>
           Ex.match_(
             exit,
-            (
-              cause
-            ): IO<
-              Env & Env1,
-              never,
-              Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem1 | OutElem, OutDone2 | OutDone3>
-            > => {
-              const result = done(
-                E.match_(
-                  Ca.flipCauseEither(cause),
-                  (_) => Ex.halt(_),
-                  (_) => Ex.succeed(_)
-                )
-              )
+            (cause) => {
+              const result = pipe(Ca.flipCauseEither(cause), E.match(Ex.halt, Ex.succeed), done)
 
               MD.concrete(result)
 
-              if (result._mergeDecisionTag === MD.MergeDecisionTag.Done) {
-                return I.succeed(fromEffect(I.apr_(F.interrupt(fiber), result.io)))
-              } else if (result._mergeDecisionTag === MD.MergeDecisionTag.Await) {
-                return I.map_(
-                  fiber.await,
-                  Ex.match(
-                    (cause) =>
-                      fromEffect(
-                        result.f(
-                          E.match_(
-                            Ca.flipCauseEither(cause),
-                            (_) => Ex.halt(_),
-                            (_) => Ex.succeed(_)
-                          )
-                        )
-                      ),
-                    (elem) => zipr_(write(elem), go(single(result.f)))
+              switch (result._mergeDecisionTag) {
+                case MD.MergeDecisionTag.Done: {
+                  return pipe(F.interrupt(fiber)['*>'](result.io), fromEffect, I.succeed)
+                }
+                case MD.MergeDecisionTag.Await: {
+                  return pipe(
+                    fiber.await,
+                    I.map(
+                      Ex.match(
+                        flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), result.f, fromEffect),
+                        flow(write, zipr(go(single(result.f))))
+                      )
+                    )
                   )
-                )
+                }
               }
-
-              throw new Error('Unexpected')
             },
-            (elem) => I.map_(I.fork(pull), (leftFiber) => zipr_(write(elem), go(both(leftFiber, fiber))))
+            (elem) => I.fork(pull)['<$>']((leftFiber) => write(elem)['*>'](go(both(leftFiber, fiber))))
           )
 
       const go = (
         state: MergeState
       ): Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3> => {
-        if (state._mergeStateTag === MS.MergeStateTag.BothRunning) {
-          const lj: IO<Env1, E.Either<OutErr, OutDone>, OutElem | OutElem1>   = F.join(state.left)
-          const rj: IO<Env1, E.Either<OutErr1, OutDone1>, OutElem | OutElem1> = F.join(state.right)
+        switch (state._mergeStateTag) {
+          case MS.MergeStateTag.BothRunning: {
+            const lj: IO<Env1, E.Either<OutErr, OutDone>, OutElem | OutElem1>   = F.join(state.left)
+            const rj: IO<Env1, E.Either<OutErr1, OutDone1>, OutElem | OutElem1> = F.join(state.right)
 
-          return unwrap(
-            I.raceWith_(
-              lj,
-              rj,
-              (leftEx, _) =>
-                handleSide(leftEx, state.right, pullL)(
-                  leftDone,
-                  (l, r) => new MS.BothRunning(l, r),
-                  (_) => new MS.LeftDone(_)
-                ),
-              (rightEx, _) =>
-                handleSide(rightEx, state.left, pullR)(
-                  rightDone,
-                  (l, r) => new MS.BothRunning(r, l),
-                  (_) => new MS.RightDone(_)
-                )
+            return unwrap(
+              I.raceWith_(
+                lj,
+                rj,
+                (leftEx, _) =>
+                  handleSide(leftEx, state.right, pullL)(
+                    leftDone,
+                    (l, r) => new MS.BothRunning(l, r),
+                    (_) => new MS.LeftDone(_)
+                  ),
+                (rightEx, _) =>
+                  handleSide(rightEx, state.left, pullR)(
+                    rightDone,
+                    (l, r) => new MS.BothRunning(r, l),
+                    (_) => new MS.RightDone(_)
+                  )
+              )
             )
-          )
-        } else if (state._mergeStateTag === MS.MergeStateTag.LeftDone) {
-          return unwrap(
-            I.map_(
+          }
+          case MS.MergeStateTag.LeftDone: {
+            return pipe(
               I.result(pullR),
-              Ex.match(
-                (cause) =>
-                  fromEffect(
-                    state.f(
-                      E.match_(
-                        Ca.flipCauseEither(cause),
-                        (_) => Ex.halt(_),
-                        (_) => Ex.succeed(_)
-                      )
-                    )
-                  ),
-                (elem) => zipr_(write(elem), go(new MS.LeftDone(state.f)))
-              )
+              I.map(
+                Ex.match(
+                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromEffect),
+                  flow(write, zipr(go(new MS.LeftDone(state.f))))
+                )
+              ),
+              unwrap
             )
-          )
-        } else {
-          return unwrap(
-            I.map_(
+          }
+          case MS.MergeStateTag.RightDone: {
+            return pipe(
               I.result(pullL),
-              Ex.match(
-                (cause) =>
-                  fromEffect(
-                    state.f(
-                      E.match_(
-                        Ca.flipCauseEither(cause),
-                        (_) => Ex.halt(_),
-                        (_) => Ex.succeed(_)
-                      )
-                    )
-                  ),
-                (elem) => zipr_(write(elem), go(new MS.RightDone(state.f)))
-              )
+              I.map(
+                Ex.match(
+                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromEffect),
+                  flow(write, zipr(go(new MS.RightDone(state.f))))
+                )
+              ),
+              unwrap
             )
-          )
+          }
         }
       }
 
       return pipe(
-        fromEffect(
-          I.crossWith_(
-            I.fork(pullL),
-            I.fork(pullR),
-            (a, b): MergeState =>
-              new MS.BothRunning<unknown, OutErr, OutErr1, unknown, OutElem | OutElem1, OutDone, OutDone1, unknown>(
-                a,
-                b
-              )
-          )
+        I.fork(pullL),
+        I.crossWith(
+          I.fork(pullR),
+          (a, b): MergeState =>
+            new MS.BothRunning<unknown, OutErr, OutErr1, unknown, OutElem | OutElem1, OutDone, OutDone1, unknown>(a, b)
         ),
+        fromEffect,
         bind(go),
         embedInput(input)
       )
-    })
+    }),
+    unwrapManaged
   )
-
-  return unwrapManaged(m)
 }
 
 /**
@@ -1590,7 +1557,11 @@ export function mapOut_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Ou
   f: (o: OutElem) => OutElem2
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem2, OutDone> {
   const reader: Channel<Env, OutErr, OutElem, OutDone, OutErr, OutElem2, OutDone> = readWithCause(
-    (i) => bind_(write(f(i)), () => reader),
+    flow(
+      f,
+      write,
+      bind(() => reader)
+    ),
     halt,
     end
   )
@@ -1718,7 +1689,7 @@ export function runDrain<Env, InErr, InDone, OutElem, OutErr, OutDone>(
   return run(drain(self))
 }
 
-export function unit_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
+export function asUnit<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, void> {
   return as_(self, undefined)
@@ -2105,7 +2076,7 @@ function writeChunkWriter<Out>(
   idx: number,
   len: number
 ): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
-  if (idx === len) return unit
+  if (idx === len) return unit()
   return write(A.unsafeGet_(outs, idx))['*>'](writeChunkWriter(outs, idx + 1, len))
 }
 

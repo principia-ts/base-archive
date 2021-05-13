@@ -1,8 +1,7 @@
 /* eslint-disable functional/immutable-data */
-import * as Eq from './Equatable'
-import * as H from './Hashable'
 import * as I from './Iterable'
 import * as O from './Option'
+import * as St from './Structural'
 import { AtomicNumber } from './util/support/AtomicNumber'
 
 export const HashMapTypeId = Symbol()
@@ -45,7 +44,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   readonly length                 = new AtomicNumber(0)
 
   get(k: K): O.Option<V> {
-    const hash = H.hash(k)
+    const hash = St.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
@@ -55,7 +54,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let c: Node<K, V> | undefined = arr
 
     while (c) {
-      if (Eq.equals(k, c.k)) {
+      if (St.equals(k, c.k)) {
         return O.Some(c.v)
       }
       c = c.next
@@ -65,14 +64,14 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   }
 
   remove(k: K): HashMap<K, V> {
-    const hash = H.hash(k)
+    const hash = St.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
       return this
     }
 
-    if (Eq.equals(k, arr.k)) {
+    if (St.equals(k, arr.k)) {
       if (typeof arr.next !== 'undefined') {
         this.backingMap.set(hash, arr.next)
       } else {
@@ -86,7 +85,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let curr                         = arr
 
     while (next) {
-      if (Eq.equals(k, next.k)) {
+      if (St.equals(k, next.k)) {
         curr.next = next.next
         this.length.decrementAndGet()
         return this
@@ -99,7 +98,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   }
 
   set(k: K, v: V): HashMap<K, V> {
-    const hash = H.hash(k)
+    const hash = St.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
@@ -112,7 +111,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let l                         = arr
 
     while (c) {
-      if (Eq.equals(k, c.k)) {
+      if (St.equals(k, c.k)) {
         c.v = v
         return this
       }
@@ -126,7 +125,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   }
 
   update(k: K, f: (v: V) => V): HashMap<K, V> {
-    const hash = H.hash(k)
+    const hash = St.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
@@ -136,7 +135,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let c: Node<K, V> | undefined = arr
 
     while (c) {
-      if (Eq.equals(k, c.k)) {
+      if (St.equals(k, c.k)) {
         c.v = f(c.v)
         return this
       }

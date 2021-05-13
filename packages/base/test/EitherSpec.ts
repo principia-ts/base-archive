@@ -1,10 +1,10 @@
 import * as E from '@principia/base/Either'
+import * as Eq from '@principia/base/Eq'
+import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
-import * as Eq from '@principia/prelude/Eq'
-import { pipe } from '@principia/prelude/function'
 import { assert, deepStrictEqualTo, DefaultRunnableSpec, equalTo, suite, test } from '@principia/test'
 
-const eqEitherStrict = E.getEq(Eq.EqStrict, Eq.EqStrict)
+const eqEitherStrict = E.getEq(Eq.strict, Eq.strict)
 
 class EitherSpec extends DefaultRunnableSpec {
   spec = suite(

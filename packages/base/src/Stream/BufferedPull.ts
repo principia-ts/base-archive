@@ -64,7 +64,7 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Opt
               [C.empty(), 0]
             ]
           } else {
-            return [I.pure(c[i]), [c, i + 1]]
+            return [I.pure(C.unsafeGet_(c, i)), [c, i + 1]]
           }
         }),
         I.flatten

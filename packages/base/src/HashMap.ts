@@ -1,18 +1,16 @@
 /* eslint-disable functional/immutable-data */
-import type { Equatable } from './Equatable'
+import type * as Eq from './Eq'
 import type { Hash } from './Hash'
-import type { Hashable } from './Hashable'
 import type { Node, UpdateFn } from './internal/hamt'
 import type { Refinement } from './Refinement'
+import type { Equatable, Hashable } from './Structural'
 
-import * as Eq from './Eq'
-import { $equals, equals } from './Equatable'
 import { constant, identity } from './function'
-import { $hash, hash, hashIterator } from './Hashable'
 import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as It from './Iterable'
 import * as O from './Option'
+import * as St from './Structural'
 import { tuple } from './tuple'
 
 type Eq<A> = Eq.Eq<A>
@@ -35,12 +33,12 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]>, Hashable, Equat
     return new HashMapIterator(this, identity)
   }
 
-  get [$hash](): number {
-    return hashIterator(this[Symbol.iterator]())
+  get [St.$hash](): number {
+    return St.hashIterator(new HashMapIterator(this, ([k, v]) => St.combineHash(St.hash(k), St.hash(v))))
   }
 
-  [$equals](other: unknown): boolean {
-    return other instanceof HashMap && other.size === this.size && It.corresponds(this, other, equals)
+  [St.$equals](other: unknown): boolean {
+    return other instanceof HashMap && other.size === this.size && It.corresponds(this, other, St.equals)
   }
 }
 
@@ -437,12 +435,12 @@ export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
 }
 
 /**
- * Make a new map that has randomly cached hash and referential equality
+ * Make a new map that has randomly cached hash and structural equality
  */
 export function makeDefault<K, V>() {
   return make<K, V>({
-    ...Eq.strict,
-    hash
+    ...St.DefaultEq,
+    ...St.DefaultHash
   })
 }
 

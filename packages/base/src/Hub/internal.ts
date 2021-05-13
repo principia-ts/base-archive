@@ -1,15 +1,10 @@
 /* eslint-disable functional/immutable-data */
-import type { Equatable } from '../Equatable'
-import type { Hashable } from '../Hashable'
 import type { MutableQueue } from '../util/support/MutableQueue'
 
 import * as C from '../Chunk'
-import { $equals } from '../Equatable'
-import * as Eq from '../Equatable'
-import { $hash } from '../Hashable'
-import * as H from '../Hashable'
 import * as I from '../IO'
 import * as P from '../Promise'
+import * as St from '../Structural'
 
 export abstract class Subscription<A> {
   abstract isEmpty(): boolean
@@ -103,7 +98,7 @@ export class BoundedHubArb<A> extends Hub<A> {
     if (this.subscribersIndex !== this.publisherIndex) {
       const index = this.subscribersIndex % this.capacity
 
-      this.array[index]       = (null as unknown) as A
+      this.array[index]       = null as unknown as A
       this.subscribers[index] = 0
       this.subscribersIndex  += 1
     }
@@ -143,7 +138,7 @@ class BoundedHubArbSubscription<A> extends Subscription<A> {
       this.self.subscribers[index] -= 1
 
       if (this.self.subscribers[index] === 0) {
-        this.self.array[index]      = (null as unknown) as A
+        this.self.array[index]      = null as unknown as A
         this.self.subscribersIndex += 1
       }
 
@@ -199,7 +194,7 @@ class BoundedHubArbSubscription<A> extends Subscription<A> {
         this.self.subscribers[index] -= 1
 
         if (this.self.subscribers[index] === 0) {
-          this.self.array[index]      = (null as unknown) as A
+          this.self.array[index]      = null as unknown as A
           this.self.subscribersIndex += 1
         }
 
@@ -285,7 +280,7 @@ export class BoundedHubPow2<A> extends Hub<A> {
     if (this.subscribersIndex !== this.publisherIndex) {
       const index = this.subscribersIndex & this.mask
 
-      this.array[index]       = (null as unknown) as A
+      this.array[index]       = null as unknown as A
       this.subscribers[index] = 0
       this.subscribersIndex  += 1
     }
@@ -325,7 +320,7 @@ class BoundedHubPow2Subcription<A> extends Subscription<A> {
       this.self.subscribers[index] -= 1
 
       if (this.self.subscribers[index] === 0) {
-        this.self.array[index]      = (null as unknown) as A
+        this.self.array[index]      = null as unknown as A
         this.self.subscribersIndex += 1
       }
 
@@ -381,7 +376,7 @@ class BoundedHubPow2Subcription<A> extends Subscription<A> {
         this.self.subscribers[index] -= 1
 
         if (this.self.subscribers[index] === 0) {
-          this.self.array[index]      = (null as unknown) as A
+          this.self.array[index]      = null as unknown as A
           this.self.subscribersIndex += 1
         }
 
@@ -395,7 +390,7 @@ export class BoundedHubSingle<A> extends Hub<A> {
   publisherIndex  = 0
   subscriberCount = 0
   subscribers     = 0
-  value: A        = (null as unknown) as A
+  value: A        = null as unknown as A
 
   readonly capacity = 1
 
@@ -446,7 +441,7 @@ export class BoundedHubSingle<A> extends Hub<A> {
   slide(): void {
     if (this.isFull()) {
       this.subscribers = 0
-      this.value       = (null as unknown) as A
+      this.value       = null as unknown as A
     }
   }
 
@@ -476,7 +471,7 @@ class BoundedHubSingleSubscription<A> extends Subscription<A> {
     this.self.subscribers -= 1
 
     if (this.self.subscribers === 0) {
-      this.self.value = (null as unknown) as A
+      this.self.value = null as unknown as A
     }
 
     this.subscriberIndex += 1
@@ -494,7 +489,7 @@ class BoundedHubSingleSubscription<A> extends Subscription<A> {
     this.self.subscribers -= 1
 
     if (this.self.subscribers === 0) {
-      this.self.value = (null as unknown) as A
+      this.self.value = null as unknown as A
     }
 
     this.subscriberIndex += 1
@@ -515,7 +510,7 @@ class BoundedHubSingleSubscription<A> extends Subscription<A> {
         this.self.subscribers -= 1
 
         if (this.self.subscribers === 0) {
-          this.self.value = (null as unknown) as A
+          this.self.value = null as unknown as A
         }
       }
     }
@@ -662,7 +657,7 @@ class UnboundedHubSubscription<A> extends Subscription<A> {
     let i          = 0
 
     while (i !== n) {
-      const a = this.poll((default_ as unknown) as A)
+      const a = this.poll(default_ as unknown as A)
       if (a === default_) {
         i = n
       } else {
@@ -703,15 +698,15 @@ class UnboundedHubSubscription<A> extends Subscription<A> {
   }
 }
 
-export class HashedPair<A, B> implements Hashable, Equatable {
+export class HashedPair<A, B> implements St.Hashable, St.Equatable {
   constructor(readonly first: A, readonly second: B) {}
 
-  get [$hash]() {
-    return H.combineHash(H.hash(this.first), H.hash(this.second))
+  get [St.$hash]() {
+    return St.combineHash(St.hash(this.first), St.hash(this.second))
   }
 
-  [$equals](that: unknown) {
-    return that instanceof HashedPair && Eq.equals(this.first, that.first) && Eq.equals(this.second, that.second)
+  [St.$equals](that: unknown) {
+    return that instanceof HashedPair && St.equals(this.first, that.first) && St.equals(this.second, that.second)
   }
 }
 

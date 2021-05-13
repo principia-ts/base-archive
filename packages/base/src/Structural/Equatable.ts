@@ -1,10 +1,11 @@
-import { createCircularEqualCreator, createComparator } from './internal/equatable'
-import { isObject } from './util/predicates'
+import * as E from '../Eq'
+import { createCircularEqualCreator, createComparator, sameValueZeroEqual } from '../internal/equatable'
+import { isObject } from '../util/predicates'
 
 export const $equals = Symbol.for('$equals')
 
 export interface Equatable {
-  [$equals](that: any): boolean
+  [$equals](that: unknown): boolean
 }
 
 export function isEquatable(u: unknown): u is Equatable {
@@ -27,5 +28,7 @@ export function equals(a: unknown, b: unknown): boolean {
   } else if (isEquatable(b)) {
     return b[$equals](a)
   }
-  return a === b
+  return sameValueZeroEqual(a, b)
 }
+
+export const DefaultEq: E.Eq<unknown> = E.makeEq(equals)

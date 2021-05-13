@@ -18,11 +18,11 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.13.16",
-    "@babel/core": "^7.14.0",
-    "@babel/preset-env": "^7.14.1",
+    "@babel/core": "^7.14.2",
+    "@babel/preset-env": "^7.14.2",
     "@types/benchmark": "^2.1.0",
     "@types/cpx": "^1.5.1",
-    "@types/node": "^15.0.2",
+    "@types/node": "^15.0.3",
     "@types/rimraf": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^4.23.0",
     "@typescript-eslint/parser": "^4.23.0",
@@ -46,7 +46,7 @@
     "sort-package-json": "^1.50.0",
     "ts-node": "^9.1.1",
     "ttypescript": "^1.5.12",
-    "typescript": "next",
+    "typescript": "^4.3.1-rc",
     "ultra-runner": "^3.10.5",
     "yargs": "^17.0.1"
   }

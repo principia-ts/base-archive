@@ -2,10 +2,10 @@ import * as B from '@principia/base/boolean'
 import * as Ca from '@principia/base/Cause'
 import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
+import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as N from '@principia/base/number'
 import * as Ref from '@principia/base/Ref'
-import { pipe } from '@principia/prelude/function'
 import { assert, assertM, deepStrictEqualTo, DefaultRunnableSpec, equalTo, suite, testM } from '@principia/test'
 
 class IOSpec extends DefaultRunnableSpec {

@@ -1,13 +1,20 @@
 import type { Exit } from '../../../Exit'
 import type { IO } from '../../../IO'
 
+export const DoneTag = Symbol()
+export type DoneTag = typeof DoneTag
+export const AwaitTag = Symbol()
+export type AwaitTag = typeof AwaitTag
+
 export const MergeDecisionTag = {
-  Done: 'Done',
-  Await: 'Await'
+  Done: DoneTag,
+  Await: AwaitTag
 } as const
 
+export const MergeDecisionTypeId = Symbol()
+export type MergeDecisionTypeId = typeof MergeDecisionTypeId
 export abstract class MergeDecision<R, E0, Z0, E, Z> {
-  readonly _U!: 'MergeDecision'
+  readonly [MergeDecisionTypeId]: MergeDecisionTypeId = MergeDecisionTypeId
   readonly _R!: (_: R) => void
   readonly _E0!: (_: E0) => void
   readonly _Z0!: (_: Z0) => void
@@ -22,14 +29,14 @@ export function concrete<R, E0, Z0, E, Z>(
 }
 
 export class Done<R, E, Z> extends MergeDecision<R, unknown, unknown, E, Z> {
-  readonly _mergeDecisionTag = MergeDecisionTag.Done
+  readonly _mergeDecisionTag: DoneTag = MergeDecisionTag.Done
   constructor(readonly io: IO<R, E, Z>) {
     super()
   }
 }
 
 export class Await<R, E0, Z0, E, Z> extends MergeDecision<R, E0, Z0, E, Z> {
-  readonly _mergeDecisionTag = MergeDecisionTag.Await
+  readonly _mergeDecisionTag: AwaitTag = MergeDecisionTag.Await
   constructor(readonly f: (_: Exit<E0, Z0>) => IO<R, E, Z>) {
     super()
   }

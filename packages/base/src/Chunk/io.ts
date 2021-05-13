@@ -51,8 +51,7 @@ export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value
-      let i       = 0
-      while (i < array.length) {
+      for (let i = 0; i < array.length; i++) {
         const j = i
         taking  = I.bind_(taking, (b) => {
           const a = array[j]
@@ -65,7 +64,6 @@ export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
             }
           })
         })
-        i++
       }
     }
     return I.as_(taking, () => out.result())
@@ -85,8 +83,7 @@ export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value
-      let i       = 0
-      while (i < array.length) {
+      for (let i = 0; i < array.length; i++) {
         const j  = i
         dropping = I.bind_(dropping, (d) => {
           const a = array[j]
@@ -99,7 +96,6 @@ export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
             }
           })
         })
-        i++
       }
     }
     return I.as_(dropping, () => out.result())
@@ -119,8 +115,7 @@ export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value
-      let i       = 0
-      while (i < array.length) {
+      for (let i = 0; i < array.length; i++) {
         const a = array[i]
         out     = I.crossWith_(out, p(a), (chunk, res) => {
           if (res) {
@@ -129,7 +124,6 @@ export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>
             return chunk
           }
         })
-        i++
       }
     }
     return I.map_(out, (b) => b.result())

@@ -143,7 +143,7 @@ export function drain<Err, A>() {
   const drain: Ch.Channel<unknown, Err, C.Chunk<A>, unknown, Err, C.Chunk<never>, void> = Ch.readWithCause(
     (_) => drain,
     Ch.halt,
-    (_) => Ch.unit
+    (_) => Ch.unit()
   )
 
   return new Sink(drain)
@@ -198,7 +198,7 @@ export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): S
   const process: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWithCause(
     (inp: C.Chunk<In>) => foreachWhileLoop(f, inp, 0, inp.length, process),
     Ch.halt,
-    () => Ch.unit
+    () => Ch.unit()
   )
   return new Sink(process)
 }
@@ -213,7 +213,7 @@ export function foreachChunkWhile<R, Err, In>(
   const reader: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWith(
     (inp: C.Chunk<In>) => Ch.fromEffect(f(inp))['>>=']((cont) => (cont ? reader : Ch.end(undefined))),
     (err: Err) => Ch.fail(err),
-    (_) => Ch.unit
+    () => Ch.unit()
   )
   return new Sink(reader)
 }

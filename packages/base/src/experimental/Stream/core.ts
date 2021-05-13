@@ -49,7 +49,7 @@ export type StreamTypeId = typeof StreamTypeId
  * for rich and expressive composition of streams.
  */
 export class Stream<R, E, A> {
-  readonly _typeId: StreamTypeId = StreamTypeId
+  readonly [StreamTypeId]: StreamTypeId = StreamTypeId
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
@@ -74,7 +74,7 @@ export function bind_<R, E, O, R1, E1, O1>(
     Ch.concatMap_(self.channel, (o) =>
       C.foldl_(
         C.map_(o, (x) => f(x).channel),
-        Ch.unit as Ch.Channel<R1, unknown, unknown, unknown, E1, C.Chunk<O1>, unknown>,
+        Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, E1, C.Chunk<O1>, unknown>,
         (s, a) => Ch.bind_(s, () => a)
       )
     )
@@ -205,7 +205,7 @@ export function effectOption<R, E, A>(self: I.IO<R, O.Option<E>, A>): Stream<R, 
     Ch.unwrap(
       I.match_(
         self,
-        O.match(() => Ch.unit, Ch.fail),
+        O.match(() => Ch.unit(), Ch.fail),
         (x) => Ch.write(C.single(x))
       )
     )
@@ -470,7 +470,7 @@ function unfoldChunksLoop<S, R, E, A>(
     I.map_(
       f(s),
       O.match(
-        () => Ch.unit,
+        () => Ch.unit(),
         ([as, s]) => Ch.bind_(Ch.write(as), () => unfoldChunksLoop(s, f))
       )
     )
@@ -664,7 +664,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
         }),
         Ch.bind((_) => {
           if (O.isNone(_)) {
-            return Ch.unit
+            return Ch.unit()
           } else {
             return scheduledAggregator(_)
           }
@@ -982,7 +982,7 @@ class Rechunker<A> {
     if (this.pos !== 0) {
       return Ch.write(this.builder.result())
     } else {
-      return Ch.unit
+      return Ch.unit()
     }
   }
   /* eslint-enable */
@@ -1254,24 +1254,25 @@ export function collectWhileSuccess<R, E, A1, L1>(self: Stream<R, E, Ex.Exit<L1,
  * Where possible, prefer `Stream#combineChunks` for a more efficient implementation.
  */
 export function combine<R, R1, E, E1, A, A2>(self: Stream<R, E, A>, that: Stream<R1, E1, A2>) {
-  return <S>(s: S) => <A3>(
-    f: (
-      s: S,
-      eff1: I.IO<R, O.Option<E>, A>,
-      eff2: I.IO<R1, O.Option<E1>, A2>
-    ) => I.IO<R1, never, Ex.Exit<O.Option<E | E1>, readonly [A3, S]>>
-  ): Stream<R1 & R, E | E1, A3> => {
-    return unwrapManaged(
-      pipe(
-        M.do,
-        M.bindS('left', () => M.mapM_(toPull(self), BP.make)),
-        M.bindS('right', () => M.mapM_(toPull(that), BP.make)),
-        M.map(({ left, right }) =>
-          unfoldM(s)((s) => I.bind_(f(s, BP.pullElement(left), BP.pullElement(right)), (_) => I.optional(I.done(_))))
+  return <S>(s: S) =>
+    <A3>(
+      f: (
+        s: S,
+        eff1: I.IO<R, O.Option<E>, A>,
+        eff2: I.IO<R1, O.Option<E1>, A2>
+      ) => I.IO<R1, never, Ex.Exit<O.Option<E | E1>, readonly [A3, S]>>
+    ): Stream<R1 & R, E | E1, A3> => {
+      return unwrapManaged(
+        pipe(
+          M.do,
+          M.bindS('left', () => M.mapM_(toPull(self), BP.make)),
+          M.bindS('right', () => M.mapM_(toPull(that), BP.make)),
+          M.map(({ left, right }) =>
+            unfoldM(s)((s) => I.bind_(f(s, BP.pullElement(left), BP.pullElement(right)), (_) => I.optional(I.done(_))))
+          )
         )
       )
-    )
-  }
+    }
 }
 
 /**
@@ -1515,19 +1516,12 @@ export function flattenExitOption<R, E, E1, A>(self: Stream<R, E, Ex.Exit<O.Opti
     )
   }
 
-  const process: Ch.Channel<
-    R,
-    E,
-    C.Chunk<Ex.Exit<O.Option<E1>, A>>,
-    unknown,
-    E | E1,
-    C.Chunk<A>,
-    any
-  > = Ch.readWithCause(
-    (chunk) => processChunk(chunk, process),
-    (cause) => Ch.halt(cause),
-    (_) => Ch.end(undefined)
-  )
+  const process: Ch.Channel<R, E, C.Chunk<Ex.Exit<O.Option<E1>, A>>, unknown, E | E1, C.Chunk<A>, any> =
+    Ch.readWithCause(
+      (chunk) => processChunk(chunk, process),
+      (cause) => Ch.halt(cause),
+      (_) => Ch.end(undefined)
+    )
 
   return new Stream(self.channel['>>>'](process))
 }

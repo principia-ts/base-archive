@@ -4,8 +4,16 @@
     "rootDir": "../",
     "target": "es2017",
     "module": "commonjs",
-    "sourceMap": true
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "tracing": false,
+        "relativeProjectRoot": "../../"
+      }
+    ]
   },
   "include": ["../src", "../test"],
+  "exclude": ["../test/*Spec.ts"],
   "extends": "../../../tsconfig.json"
 }

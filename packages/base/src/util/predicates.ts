@@ -57,6 +57,10 @@ export function isNumber(value: any): value is number {
   return typeof value === 'number'
 }
 
+export function isByte(n: unknown): n is number {
+  return typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 255
+}
+
 export function isSymbol(value: any): value is symbol {
   return typeof value === 'symbol'
 }

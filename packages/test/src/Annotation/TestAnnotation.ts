@@ -9,10 +9,10 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { absurd } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
-import { hash, hashString } from '@principia/base/Hashable'
 import * as Set from '@principia/base/HashSet'
 import * as P from '@principia/base/prelude'
 import * as S from '@principia/base/string'
+import { hash, hashString } from '@principia/base/Structural'
 
 export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
   ...P.Eq(equalsTestAnnotation),
@@ -34,16 +34,20 @@ export function equalsTestAnnotation<V>(x: TestAnnotation<V>, y: TestAnnotation<
   return x.hashCode === y.hashCode
 }
 
-export const Ignored                         = tag<number>()
+export const Ignored = tag<number>()
+
 export const ignored: TestAnnotation<number> = new TestAnnotation(Ignored, 'ignored', 0, (x, y) => x + y)
 
-export const Repeated                         = tag<number>()
+export const Repeated = tag<number>()
+
 export const repeated: TestAnnotation<number> = new TestAnnotation(Repeated, 'repeated', 0, (x, y) => x + y)
 
-export const Retried                         = tag<number>()
+export const Retried = tag<number>()
+
 export const retried: TestAnnotation<number> = new TestAnnotation(Retried, 'retried', 0, (x, y) => x + y)
 
-export const Tagged                                      = tag<Set.HashSet<string>>()
+export const Tagged = tag<Set.HashSet<string>>()
+
 export const tagged: TestAnnotation<Set.HashSet<string>> = new TestAnnotation(
   Tagged,
   'tagged',
@@ -51,13 +55,14 @@ export const tagged: TestAnnotation<Set.HashSet<string>> = new TestAnnotation(
   Set.union_
 )
 
-export const Timing                         = tag<number>()
+export const Timing = tag<number>()
+
 export const timing: TestAnnotation<number> = new TestAnnotation(Timing, 'timing', 0, (x, y) => x + y)
 
 export const Fibers = tag<Either<number, ReadonlyArray<URef<Set.HashSet<Fiber.RuntimeFiber<any, any>>>>>>()
-export const fibers: TestAnnotation<
-  Either<number, ReadonlyArray<URef<Set.HashSet<Fiber.RuntimeFiber<any, any>>>>>
-> = new TestAnnotation(Fibers, 'fibers', E.Left(0), compose_)
+
+export const fibers: TestAnnotation<Either<number, ReadonlyArray<URef<Set.HashSet<Fiber.RuntimeFiber<any, any>>>>>> =
+  new TestAnnotation(Fibers, 'fibers', E.Left(0), compose_)
 
 function compose_<A>(
   left: Either<number, ReadonlyArray<A>>,

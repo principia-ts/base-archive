@@ -1,5 +1,6 @@
-import { PCGRandom } from './internal/PCGRandom'
-import { isDefined } from './util/predicates'
+import * as H from '../Hash'
+import { PCGRandom } from '../internal/PCGRandom'
+import { isDefined } from '../util/predicates'
 
 export const $hash = Symbol.for('$hash')
 
@@ -155,3 +156,5 @@ export function combineHash(x: number, y: number): number {
 export function opt(n: number): number {
   return (n & 0xbfffffff) | ((n >>> 1) & 0x40000000)
 }
+
+export const DefaultHash: H.Hash<unknown> = H.Hash(hash)

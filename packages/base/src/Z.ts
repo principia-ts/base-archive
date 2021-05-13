@@ -4,14 +4,15 @@
 import type { Eq } from './Eq'
 import type { FreeSemiring } from './FreeSemiring'
 import type * as HKT from './HKT'
+import type { ZURI } from './Modules'
 import type { Predicate } from './Predicate'
 import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
+import * as C from './Chunk/core'
 import * as E from './Either'
 import * as FS from './FreeSemiring'
 import * as I from './Iterable'
-import { ZURI } from './Modules'
 import * as O from './Option'
 import * as P from './prelude'
 import { flow } from './prelude'
@@ -23,8 +24,10 @@ import { makeStack } from './util/support/Stack'
  * -------------------------------------------
  */
 
-export const _ZI = '_ZI'
-export type _ZI = typeof _ZI
+export const ZInstruction = Symbol()
+export type ZInstruction = typeof ZInstruction
+export const ZTypeId = Symbol()
+export type ZTypeId = typeof ZTypeId
 
 export type Cause<E> = FreeSemiring<never, E>
 
@@ -68,7 +71,7 @@ abstract class ZSyntax<W, S1, S2, R, E, A> {
  * @since 1.0.0
  */
 export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> {
-  readonly _U = ZURI
+  readonly [ZTypeId]: ZTypeId = ZTypeId
 
   readonly _W!: () => W
   readonly _S1!: (_: S1) => void
@@ -81,79 +84,108 @@ export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> 
     super()
   }
 
-  get [_ZI](): Instruction {
+  get [ZInstruction](): Instruction {
     return this as any
   }
 }
 
-const Tags = {
-  Succeed: 'Succeed',
-  EffectTotal: 'EffectTotal',
-  EffectPartial: 'EffectPartial',
-  DeferTotal: 'DeferTotal',
-  DeferPartial: 'DeferPartial',
-  Fail: 'Fail',
-  Modify: 'Modify',
-  Bind: 'Bind',
-  Match: 'Match',
-  Asks: 'Asks',
-  Give: 'Give',
-  Tell: 'Tell',
-  Listen: 'Listen',
-  Censor: 'Censor'
+export const SucceedTag = Symbol()
+export type SucceedTag = typeof SucceedTag
+export const EffectTotalTag = Symbol()
+export type EffectTotalTag = typeof EffectTotalTag
+export const EffectPartialTag = Symbol()
+export type EffectPartialTag = typeof EffectPartialTag
+export const DeferTotalTag = Symbol()
+export type DeferTotalTag = typeof DeferTotalTag
+export const DeferPartialTag = Symbol()
+export type DeferPartialTag = typeof DeferPartialTag
+export const FailTag = Symbol()
+export type FailTag = typeof FailTag
+export const ModifyTag = Symbol()
+export type ModifyTag = typeof ModifyTag
+export const BindTag = Symbol()
+export type BindTag = typeof BindTag
+export const MatchTag = Symbol()
+export type MatchTag = typeof MatchTag
+export const AsksTag = Symbol()
+export type AsksTag = typeof AsksTag
+export const GiveTag = Symbol()
+export type GiveTag = typeof GiveTag
+export const TellTag = Symbol()
+export type TellTag = typeof TellTag
+export const ListenTag = Symbol()
+export type ListenTag = typeof ListenTag
+export const CensorTag = Symbol()
+export type CensorTag = typeof CensorTag
+
+const ZTag = {
+  Succeed: SucceedTag,
+  EffectTotal: EffectTotalTag,
+  EffectPartial: EffectPartialTag,
+  DeferTotal: DeferTotalTag,
+  DeferPartial: DeferPartialTag,
+  Fail: FailTag,
+  Modify: ModifyTag,
+  Bind: BindTag,
+  Match: MatchTag,
+  Asks: AsksTag,
+  Give: GiveTag,
+  Tell: TellTag,
+  Listen: ListenTag,
+  Censor: CensorTag
 } as const
 
 class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
-  readonly _multiTag = Tags.Succeed
+  readonly _zTag: SucceedTag = ZTag.Succeed
   constructor(readonly value: A) {
     super()
   }
 }
 
 class EffectTotal<A> extends Z<never, unknown, never, unknown, never, A> {
-  readonly _multiTag = Tags.EffectTotal
+  readonly _zTag: EffectTotalTag = ZTag.EffectTotal
   constructor(readonly effect: () => A) {
     super()
   }
 }
 
 class EffectPartial<E, A> extends Z<never, unknown, never, unknown, E, A> {
-  readonly _multiTag = Tags.EffectPartial
+  readonly _zTag: EffectPartialTag = ZTag.EffectPartial
   constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
 }
 
 class DeferTotal<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
-  readonly _multiTag = Tags.DeferTotal
+  readonly _zTag: DeferTotalTag = ZTag.DeferTotal
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
 class DeferPartial<W, S1, S2, R, E, A, E1> extends Z<W, S1, S2, R, E | E1, A> {
-  readonly _multiTag = Tags.DeferPartial
+  readonly _zTag: DeferPartialTag = ZTag.DeferPartial
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
 }
 
 class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
-  readonly _multiTag = Tags.Fail
+  readonly _zTag: FailTag = ZTag.Fail
   constructor(readonly error: Cause<E>) {
     super()
   }
 }
 
 class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
-  readonly _multiTag = Tags.Modify
+  readonly _zTag: ModifyTag = ZTag.Modify
   constructor(readonly run: (s1: S1) => readonly [A, S2]) {
     super()
   }
 }
 
 class Bind<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
-  readonly _multiTag = Tags.Bind
+  readonly _zTag: BindTag = ZTag.Bind
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly cont: (a: A) => Z<W1, S2, S3, Q, D, B>) {
     super()
   }
@@ -167,40 +199,40 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
   E1 | E2,
   B | C
 > {
-  readonly _multiTag = Tags.Match
+  readonly _zTag: MatchTag = ZTag.Match
   constructor(
     readonly z: Z<W, S1, S2, R, E, A>,
-    readonly onFailure: (ws: ReadonlyArray<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
-    readonly onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+    readonly onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
+    readonly onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
   ) {
     super()
   }
 }
 
 class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
-  readonly _multiTag = Tags.Asks
+  readonly _zTag: AsksTag = ZTag.Asks
   constructor(readonly asks: (r: R0) => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
 class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
-  readonly _multiTag = Tags.Give
+  readonly _zTag: GiveTag = ZTag.Give
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly env: R) {
     super()
   }
 }
 
 class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
-  readonly _multiTag = Tags.Tell
-  constructor(readonly log: ReadonlyArray<W>) {
+  readonly _zTag: TellTag = ZTag.Tell
+  constructor(readonly log: C.Chunk<W>) {
     super()
   }
 }
 
 class Censor<W, S1, S2, R, E, A, W1> extends Z<W1, S1, S2, R, E, A> {
-  readonly _multiTag = Tags.Censor
-  constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: ReadonlyArray<W>) => ReadonlyArray<W1>) {
+  readonly _zTag: CensorTag = ZTag.Censor
+  constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Chunk<W>) => C.Chunk<W1>) {
     super()
   }
 }
@@ -433,8 +465,8 @@ export function giveState<S1>(s: S1): <W, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>
  */
 export function matchLogCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
-  onFailure: (ws: ReadonlyArray<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
-  onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
+  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return new Match(fa, onFailure, onSuccess)
 }
@@ -448,8 +480,8 @@ export function matchLogCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S
  * @note the log is cleared after being provided
  */
 export function matchLogCauseM<W, S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
-  onFailure: (ws: ReadonlyArray<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
-  onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
+  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <R>(fa: Z<W, S1, S2, R, E, A>) => Z<W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return (fa) => matchLogCauseM_(fa, onFailure, onSuccess)
 }
@@ -464,12 +496,12 @@ export function matchCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, 
     (ws, e) =>
       P.pipe(
         onFailure(e),
-        censor((w1s) => A.concatW_(ws, w1s))
+        censor((w1s) => C.concatW_(ws, w1s))
       ),
     (ws, a) =>
       P.pipe(
         onSuccess(a),
-        censor((w2s) => A.concatW_(ws, w2s))
+        censor((w2s) => C.concatW_(ws, w2s))
       )
   )
 }
@@ -483,15 +515,15 @@ export function matchCauseM<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2,
 
 export function matchLogM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
-  onFailure: (ws: ReadonlyArray<W>, e: E) => Z<W1, S5, S3, R1, E1, B>,
-  onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S5, S3, R1, E1, B>,
+  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return matchLogCauseM_(fa, (ws, e) => onFailure(ws, FS.first(e)), onSuccess)
 }
 
 export function matchLogM<W, S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
-  onFailure: (ws: ReadonlyArray<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
-  onSuccess: (ws: ReadonlyArray<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
+  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <R>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return (fa) => matchLogM_(fa, onFailure, onSuccess)
 }
@@ -941,7 +973,7 @@ export function unit(): Z<never, unknown, never, unknown, never, void> {
  * Erases the current log
  */
 export function erase<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<never, S1, S2, R, E, A> {
-  return censor_(wa, () => [])
+  return censor_(wa, () => C.empty())
 }
 
 /**
@@ -949,7 +981,7 @@ export function erase<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<never, S
  */
 export function censor_<W, S1, S2, R, E, A, W1>(
   wa: Z<W, S1, S2, R, E, A>,
-  f: (ws: ReadonlyArray<W>) => ReadonlyArray<W1>
+  f: (ws: C.Chunk<W>) => C.Chunk<W1>
 ): Z<W1, S1, S2, R, E, A> {
   return new Censor(wa, f)
 }
@@ -958,7 +990,7 @@ export function censor_<W, S1, S2, R, E, A, W1>(
  * Modifies the current log with the specified function
  */
 export function censor<W, W1>(
-  f: (ws: ReadonlyArray<W>) => ReadonlyArray<W1>
+  f: (ws: C.Chunk<W>) => C.Chunk<W1>
 ): <S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>) => Z<W1, S1, S2, R, E, A> {
   return (wa) => censor_(wa, f)
 }
@@ -966,38 +998,36 @@ export function censor<W, W1>(
 /**
  * Constructs a computation
  */
-export function tellAll<W>(ws: ReadonlyArray<W>): Z<W, unknown, never, unknown, never, void> {
+export function tellAll<W>(ws: C.Chunk<W>): Z<W, unknown, never, unknown, never, void> {
   return new Tell(ws)
 }
 
 export function tell<W>(w: W): Z<W, unknown, never, unknown, never, void> {
-  return tellAll([w])
+  return tellAll(C.single(w))
 }
 
 export function writeAll_<W, S1, S2, R, E, A, W1>(
   ma: Z<W, S1, S2, R, E, A>,
-  ws: ReadonlyArray<W1>
+  ws: C.Chunk<W1>
 ): Z<W | W1, S1, S2, R, E, A> {
-  return censor_(ma, A.concatW(ws))
+  return censor_(ma, C.concatW(ws))
 }
 
 export function writeAll<W1>(
-  ws: ReadonlyArray<W1>
+  ws: C.Chunk<W1>
 ): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S2, R, E, A> {
   return (ma) => writeAll_(ma, ws)
 }
 
 export function write_<W, S1, S2, R, E, A, W1>(ma: Z<W, S1, S2, R, E, A>, w: W1): Z<W | W1, S1, S2, R, E, A> {
-  return writeAll_(ma, [w])
+  return writeAll_(ma, C.single(w))
 }
 
 export function write<W1>(w: W1): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S2, R, E, A> {
   return (ma) => write_(ma, w)
 }
 
-export function listen<W, S1, S2, R, E, A>(
-  wa: Z<W, S1, S2, R, E, A>
-): Z<W, S1, S2, R, E, readonly [A, ReadonlyArray<W>]> {
+export function listen<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, readonly [A, C.Chunk<W>]> {
   return matchLogCauseM_(
     wa,
     (_, e) => halt(e),
@@ -1007,7 +1037,7 @@ export function listen<W, S1, S2, R, E, A>(
 
 export function listens_<W, S1, S2, R, E, A, B>(
   wa: Z<W, S1, S2, R, E, A>,
-  f: (l: ReadonlyArray<W>) => B
+  f: (l: C.Chunk<W>) => B
 ): Z<W, S1, S2, R, E, readonly [A, B]> {
   return P.pipe(
     wa,
@@ -1017,7 +1047,7 @@ export function listens_<W, S1, S2, R, E, A, B>(
 }
 
 export function listens<W, B>(
-  f: (l: ReadonlyArray<W>) => B
+  f: (l: C.Chunk<W>) => B
 ): <S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, E, readonly [A, B]> {
   return (wa) => listens_(wa, f)
 }
@@ -1306,7 +1336,7 @@ export function iforeachArray<A, W, S, R, E, B>(
  */
 
 class MatchFrame {
-  readonly _multiTag = 'MatchFrame'
+  readonly _zTag = 'MatchFrame'
   constructor(
     readonly failure: (e: any) => Z<any, any, any, any, any, any>,
     readonly apply: (a: any) => Z<any, any, any, any, any, any>
@@ -1314,7 +1344,7 @@ class MatchFrame {
 }
 
 class ApplyFrame {
-  readonly _multiTag = 'ApplyFrame'
+  readonly _zTag = 'ApplyFrame'
   constructor(readonly apply: (e: any) => Z<any, any, any, any, any, any>) {}
 }
 
@@ -1327,7 +1357,7 @@ type Frame = MatchFrame | ApplyFrame
 export function runAll_<W, S1, S2, E, A>(
   ma: Z<W, S1, S2, unknown, E, A>,
   s: S1
-): readonly [ReadonlyArray<W>, E.Either<Cause<E>, readonly [S2, A]>] {
+): readonly [C.Chunk<W>, E.Either<Cause<E>, readonly [S2, A]>] {
   let frames = undefined as Stack<Frame> | undefined
 
   let s0            = s as any
@@ -1335,7 +1365,7 @@ export function runAll_<W, S1, S2, E, A>(
   const environment = undefined as Stack<any> | undefined
   let failed        = false
   let current       = ma as Z<any, any, any, any, any, any> | undefined
-  let log           = Array<W>()
+  let log           = C.empty<W>()
 
   function popContinuation() {
     const current = frames?.value
@@ -1365,7 +1395,7 @@ export function runAll_<W, S1, S2, E, A>(
       if (next == null) {
         unwinding = false
       } else {
-        if (next._multiTag === 'MatchFrame') {
+        if (next._zTag === 'MatchFrame') {
           unwinding = false
           pushContinuation(new ApplyFrame(next.failure))
         }
@@ -1374,15 +1404,15 @@ export function runAll_<W, S1, S2, E, A>(
   }
 
   while (current != null) {
-    const I = current[_ZI]
+    const I = current[ZInstruction]
 
-    switch (I._multiTag) {
-      case Tags.Bind: {
-        current = I.z[_ZI]
+    switch (I._zTag) {
+      case ZTag.Bind: {
+        current = I.z[ZInstruction]
         pushContinuation(new ApplyFrame(I.cont))
         break
       }
-      case Tags.EffectTotal: {
+      case ZTag.EffectTotal: {
         result                = I.effect()
         const nextInstruction = popContinuation()
         if (nextInstruction) {
@@ -1392,7 +1422,7 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case Tags.EffectPartial: {
+      case ZTag.EffectPartial: {
         try {
           current = succeed(I.effect())
         } catch (e) {
@@ -1400,11 +1430,11 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case Tags.DeferTotal: {
+      case ZTag.DeferTotal: {
         current = I.z()
         break
       }
-      case Tags.DeferPartial: {
+      case ZTag.DeferPartial: {
         try {
           current = I.z()
         } catch (e) {
@@ -1412,7 +1442,7 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case Tags.Succeed: {
+      case ZTag.Succeed: {
         result          = I.value
         const nextInstr = popContinuation()
         if (nextInstr) {
@@ -1422,7 +1452,7 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case Tags.Fail: {
+      case ZTag.Fail: {
         findNextErrorHandler()
         const nextInst = popContinuation()
         if (nextInst) {
@@ -1434,30 +1464,30 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case Tags.Match: {
+      case ZTag.Match: {
         current     = I.z
         const state = s0
         pushContinuation(
           new MatchFrame(
             (cause: Cause<any>) => {
               const m = put(state)['*>'](I.onFailure(log, cause))
-              log     = []
+              log     = C.empty()
               return m
             },
             (a) => {
               const m = I.onSuccess(log, a)
-              log     = []
+              log     = C.empty()
               return m
             }
           )
         )
         break
       }
-      case Tags.Asks: {
+      case ZTag.Asks: {
         current = I.asks(environment?.value || {})
         break
       }
-      case Tags.Give: {
+      case ZTag.Give: {
         pushEnv(I.env)
         current = matchM_(
           I.z,
@@ -1466,7 +1496,7 @@ export function runAll_<W, S1, S2, E, A>(
         )
         break
       }
-      case Tags.Modify: {
+      case ZTag.Modify: {
         const updated  = I.run(s0)
         s0             = updated[1]
         result         = updated[0]
@@ -1478,8 +1508,8 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case Tags.Tell: {
-        log            = I.log as Array<W>
+      case ZTag.Tell: {
+        log            = I.log
         const nextInst = popContinuation()
         if (nextInst) {
           current = nextInst.apply(result)
@@ -1488,16 +1518,16 @@ export function runAll_<W, S1, S2, E, A>(
         }
         break
       }
-      case Tags.Censor: {
+      case ZTag.Censor: {
         current = I.z
         pushContinuation(
           new MatchFrame(
             (cause: Cause<any>) => {
-              log = I.modifyLog(log) as Array<W>
+              log = I.modifyLog(log)
               return halt(cause)
             },
             (a) => {
-              log = I.modifyLog(log) as Array<W>
+              log = I.modifyLog(log)
               return succeed(a)
             }
           )
@@ -1519,7 +1549,7 @@ export function runAll_<W, S1, S2, E, A>(
  */
 export function runAll<S1>(
   s: S1
-): <W, S2, E, A>(fa: Z<W, S1, S2, unknown, E, A>) => readonly [ReadonlyArray<W>, E.Either<Cause<E>, readonly [S2, A]>] {
+): <W, S2, E, A>(fa: Z<W, S1, S2, unknown, E, A>) => readonly [C.Chunk<W>, E.Either<Cause<E>, readonly [S2, A]>] {
   return (fa) => runAll_(fa, s)
 }
 
@@ -1528,7 +1558,7 @@ export function runAll<S1>(
  * the updated state and the result.
  */
 export function run_<W, S1, S2, A>(ma: Z<W, S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
-  return (runAll_(ma, s) as [ReadonlyArray<W>, E.Right<readonly [S2, A]>])[1].right
+  return (runAll_(ma, s) as [C.Chunk<W>, E.Right<readonly [S2, A]>])[1].right
 }
 
 /**
@@ -1581,7 +1611,7 @@ export function runState<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, never,
  * result and discarding the updated state.
  */
 export function runStateResult_<W, S1, S2, A>(ma: Z<W, S1, S2, unknown, never, A>, s: S1): A {
-  return (runAll_(ma, s) as readonly [ReadonlyArray<W>, E.Right<readonly [S2, A]>])[1].right[1]
+  return (runAll_(ma, s) as readonly [C.Chunk<W>, E.Right<readonly [S2, A]>])[1].right[1]
 }
 
 /**
@@ -1611,8 +1641,8 @@ export function runReaderEither<R>(env: R): <E, A>(ma: Z<never, unknown, unknown
   return (ma) => runReaderEither_(ma, env)
 }
 
-export function runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): readonly [ReadonlyArray<W>, A] {
-  const [log, result] = runAll_(ma, {}) as readonly [ReadonlyArray<W>, E.Right<[never, A]>]
+export function runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): readonly [C.Chunk<W>, A] {
+  const [log, result] = runAll_(ma, {}) as readonly [C.Chunk<W>, E.Right<[never, A]>]
   return [log, result.right[1]]
 }
 

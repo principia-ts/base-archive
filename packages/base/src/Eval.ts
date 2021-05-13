@@ -5,16 +5,41 @@
  */
 
 import type * as HKT from './HKT'
+import type { EvalURI } from './Modules'
 import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
-import { EvalURI } from './Modules'
 import * as O from './Option'
 import * as P from './prelude'
 import { AtomicReference } from './util/support/AtomicReference'
 import { makeStack } from './util/support/Stack'
 
 type URI = [HKT.URI<EvalURI>]
+
+export const EvalTypeId = Symbol()
+export type EvalTypeId = typeof EvalTypeId
+
+export const NowTag = Symbol()
+export type NowTag = typeof NowTag
+export const LaterTag = Symbol()
+export type LaterTag = typeof LaterTag
+export const AlwaysTag = Symbol()
+export type AlwaysTag = typeof AlwaysTag
+export const DeferTag = Symbol()
+export type DeferTag = typeof DeferTag
+export const BindTag = Symbol()
+export type BindTag = typeof BindTag
+export const MemoizeTag = Symbol()
+export type MemoizeTag = typeof MemoizeTag
+
+export const EvalTag = {
+  Now: NowTag,
+  Later: LaterTag,
+  Always: AlwaysTag,
+  Defer: DeferTag,
+  Bind: BindTag,
+  Memoize: MemoizeTag
+} as const
 
 /**
  * `Eval<A>` is a monad that controls evaluation, providing a way to perform
@@ -25,7 +50,7 @@ type URI = [HKT.URI<EvalURI>]
  * use `Sync`, `Async`, or `IO` from the `io` package
  */
 export abstract class Eval<A> {
-  readonly _U = EvalURI
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
   readonly _A!: () => A
 
   abstract get value(): A
@@ -33,7 +58,7 @@ export abstract class Eval<A> {
 }
 
 class Now<A> extends Eval<A> {
-  readonly _evalTag = 'Now'
+  readonly _evalTag: NowTag = EvalTag.Now
   constructor(readonly a: A) {
     super()
   }
@@ -46,9 +71,9 @@ class Now<A> extends Eval<A> {
 }
 
 class Later<A> extends Eval<A> {
-  readonly _evalTag        = 'Later'
-  private thunk            = new AtomicReference<null | (() => A)>(null)
-  private result: A | null = null
+  readonly _evalTag: LaterTag = EvalTag.Later
+  private thunk               = new AtomicReference<null | (() => A)>(null)
+  private result: A | null    = null
   constructor(f: () => A) {
     super()
     this.thunk.set(f)
@@ -70,7 +95,7 @@ class Later<A> extends Eval<A> {
 }
 
 class Always<A> extends Eval<A> {
-  readonly _evalTag = 'Always'
+  readonly _evalTag: AlwaysTag = EvalTag.Always
   constructor(readonly thunk: () => A) {
     super()
   }
@@ -83,7 +108,7 @@ class Always<A> extends Eval<A> {
 }
 
 class Defer<A> extends Eval<A> {
-  readonly _evalTag = 'Defer'
+  readonly _evalTag: DeferTag = EvalTag.Defer
   constructor(readonly thunk: () => Eval<A>) {
     super()
   }
@@ -96,7 +121,7 @@ class Defer<A> extends Eval<A> {
 }
 
 class Bind<A, B> extends Eval<B> {
-  readonly _evalTag = 'Bind'
+  readonly _evalTag: BindTag = EvalTag.Bind
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
     super()
   }
@@ -109,7 +134,7 @@ class Bind<A, B> extends Eval<B> {
 }
 
 class Memoize<A> extends Eval<A> {
-  readonly _evalTag = 'Memoize'
+  readonly _evalTag: MemoizeTag = EvalTag.Memoize
   constructor(readonly ma: Eval<A>) {
     super()
   }
@@ -277,7 +302,7 @@ export function unit(): Eval<void> {
  */
 
 export function foreachArrayUnit_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Eval<B>): Eval<void> {
-  return A.foldl_(as, now<void>(undefined), (b, a) => bind_(b, () => (f(a) as unknown) as Eval<void>))
+  return A.foldl_(as, now<void>(undefined), (b, a) => bind_(b, () => f(a) as unknown as Eval<void>))
 }
 
 export function foldl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => Eval<B>): Eval<B> {
@@ -293,11 +318,13 @@ export function foldl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => Eval
 type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Bind<any, any> | Memoize<any>
 
 export function evaluate<A>(e: Eval<A>): A {
-  const addToMemo = <A1>(m: Memoize<A1>) => (a: A1): Eval<A1> => {
-    // eslint-disable-next-line functional/immutable-data
-    m.result = O.Some(a)
-    return new Now(a)
-  }
+  const addToMemo =
+    <A1>(m: Memoize<A1>) =>
+    (a: A1): Eval<A1> => {
+      // eslint-disable-next-line functional/immutable-data
+      m.result = O.Some(a)
+      return new Now(a)
+    }
 
   let frames  = undefined as Stack<(_: any) => Eval<any>> | undefined
   let current = e as Eval<any> | undefined
@@ -306,24 +333,24 @@ export function evaluate<A>(e: Eval<A>): A {
   while (current != null) {
     const I = current as Concrete
     switch (I._evalTag) {
-      case 'Bind': {
+      case EvalTag.Bind: {
         const nested       = I.ma as Concrete
         const continuation = I.f
 
         switch (nested._evalTag) {
-          case 'Now': {
+          case EvalTag.Now: {
             current = continuation(nested.a)
             break
           }
-          case 'Later': {
+          case EvalTag.Later: {
             current = continuation(nested.value)
             break
           }
-          case 'Always': {
+          case EvalTag.Always: {
             current = continuation(nested.thunk())
             break
           }
-          case 'Memoize': {
+          case EvalTag.Memoize: {
             if (nested.result._tag === 'Some') {
               current = I.f(nested.result.value)
               break
@@ -342,7 +369,7 @@ export function evaluate<A>(e: Eval<A>): A {
         }
         break
       }
-      case 'Now': {
+      case EvalTag.Now: {
         const continuation = frames?.value
         frames             = frames?.previous
         if (continuation) {
@@ -353,7 +380,7 @@ export function evaluate<A>(e: Eval<A>): A {
         }
         break
       }
-      case 'Later': {
+      case EvalTag.Later: {
         const a            = I.value
         const continuation = frames?.value
         frames             = frames?.previous
@@ -365,7 +392,7 @@ export function evaluate<A>(e: Eval<A>): A {
         }
         break
       }
-      case 'Always': {
+      case EvalTag.Always: {
         const a            = I.thunk()
         const continuation = frames?.value
         frames             = frames?.previous
@@ -377,11 +404,11 @@ export function evaluate<A>(e: Eval<A>): A {
         }
         break
       }
-      case 'Defer': {
+      case EvalTag.Defer: {
         current = I.thunk()
         break
       }
-      case 'Memoize': {
+      case EvalTag.Memoize: {
         if (I.result._tag === 'Some') {
           const f = frames?.value
           frames  = frames?.previous

@@ -1,21 +1,17 @@
-import type { Equatable } from './Equatable'
-import type { Hashable } from './Hashable'
+import * as St from './Structural'
 
-import { $equals, equals } from './Equatable'
-import { $hash, hashArray } from './Hashable'
-
-export class TupleN<C extends ReadonlyArray<unknown>> implements Iterable<C[number]>, Hashable, Equatable {
+export class TupleN<C extends ReadonlyArray<unknown>> implements Iterable<C[number]>, St.Hashable, St.Equatable {
   readonly _tag = 'Tuple'
   constructor(readonly components: C) {}
 
-  get [$hash](): number {
-    return hashArray(this.components)
+  get [St.$hash](): number {
+    return St.hashArray(this.components)
   }
-  [$equals](that: unknown): boolean {
+  [St.$equals](that: unknown): boolean {
     return (
       isTuple(that) &&
       this.components.length === that.components.length &&
-      this.components.every((v, i) => equals(v, that.components[i]))
+      this.components.every((v, i) => St.equals(v, that.components[i]))
     )
   }
   [Symbol.iterator](): IterableIterator<C[number]> {
