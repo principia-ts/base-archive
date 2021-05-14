@@ -1,60 +1,266 @@
-import type { Eq } from '../Eq'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
+import type { HashSet } from '../HashSet'
 import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Predicate } from '../Predicate'
+import type * as P from '../prelude'
 import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
+import * as B from '../boolean'
 import * as E from '../Either'
-import { makeEq } from '../Eq'
+import { Eq, makeEq } from '../Eq'
 import * as Ev from '../Eval'
 import { InterruptedException } from '../Exception'
 import { eqFiberId } from '../Fiber/FiberId'
 import { prettyTrace } from '../Fiber/trace'
-import { flow, identity, pipe } from '../function'
+import { flow, hole, identity, pipe } from '../function'
+import * as HS from '../HashSet'
 import * as L from '../List/core'
 import * as O from '../Option'
+import { isObject } from '../prelude'
+import * as St from '../Structural'
 import { tuple } from '../tuple'
 import { makeStack } from '../util/support/Stack'
 
-export type Cause<E> = Empty | Fail<E> | Die | Interrupt | Then<E> | Both<E> | Traced<E>
+export const CauseTypeId = Symbol()
+export type CauseTypeId = typeof CauseTypeId
 
-export interface Empty {
-  readonly _tag: 'Empty'
+export type Cause<E> = Empty | Die | Interrupt | Fail<E> | Then<E> | Both<E> | Traced<E>
+
+export function isCause(u: unknown): u is Cause<unknown> {
+  return isObject(u) && CauseTypeId in u
 }
 
-export interface Fail<E> {
-  readonly _tag: 'Fail'
-  readonly value: E
+export const EmptyTag = Symbol()
+export type EmptyTag = typeof EmptyTag
+export const FailTag = Symbol()
+export type FailTag = typeof FailTag
+export const DieTag = Symbol()
+export type DieTag = typeof DieTag
+export const InterruptTag = Symbol()
+export type InterruptTag = typeof InterruptTag
+export const ThenTag = Symbol()
+export type ThenTag = typeof ThenTag
+export const BothTag = Symbol()
+export type BothTag = typeof BothTag
+export const TracedTag = Symbol()
+export type TracedTag = typeof TracedTag
+
+export const CauseTag = {
+  Empty: EmptyTag,
+  Fail: FailTag,
+  Die: DieTag,
+  Interrupt: InterruptTag,
+  Then: ThenTag,
+  Both: BothTag,
+  Traced: TracedTag
+} as const
+
+const _emptyHash = St.opt(St.randomInt())
+
+export class Empty {
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag: EmptyTag             = CauseTag.Empty
+
+  get [St.$hash](): number {
+    return _emptyHash
+  }
+  [St.$equals](that: unknown): boolean {
+    return isCause(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: Cause<unknown>): Ev.Eval<boolean> {
+    switch (that._tag) {
+      case CauseTag.Empty:
+        return Ev.now(true)
+      case CauseTag.Then:
+      case CauseTag.Both:
+        return Ev.crossWith_(this.equalsEval(that.left), this.equalsEval(that.right), B.and_)
+      case CauseTag.Traced:
+        return Ev.defer(() => this.equalsEval(that.cause))
+      default:
+        return Ev.now(false)
+    }
+  }
 }
 
-export interface Die {
-  readonly _tag: 'Die'
-  readonly value: unknown
+export class Fail<E> {
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag: FailTag              = CauseTag.Fail
+
+  constructor(readonly value: E) {}
+
+  get [St.$hash](): number {
+    return St.combineHash(St.hash(this._tag), St.hash(this.value))
+  }
+  [St.$equals](that: unknown): boolean {
+    return isCause(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: Cause<unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      switch (that._tag) {
+        case CauseTag.Fail:
+          return St.equals(self.value, that.value)
+        case CauseTag.Both:
+        case CauseTag.Then:
+          return yield* _(structuralSymmetric(structuralEqualEmpty)(self, that))
+        case CauseTag.Traced:
+          return yield* _(self.equalsEval(that.cause))
+        default:
+          return false
+      }
+    })
+  }
 }
 
-export interface Interrupt {
-  readonly _tag: 'Interrupt'
-  readonly fiberId: FiberId
+export class Die {
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag: DieTag               = CauseTag.Die
+
+  constructor(readonly value: unknown) {}
+
+  get [St.$hash](): number {
+    return St.combineHash(St.hash(this._tag), St.hash(this.value))
+  }
+  [St.$equals](that: unknown): boolean {
+    return isCause(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: Cause<unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      switch (that._tag) {
+        case CauseTag.Die:
+          return St.equals(self.value, that.value)
+        case CauseTag.Then:
+        case CauseTag.Both:
+          return yield* _(structuralSymmetric(structuralEqualEmpty)(self, that))
+        case CauseTag.Traced:
+          return yield* _(self.equalsEval(that.cause))
+        default:
+          return false
+      }
+    })
+  }
 }
 
-export interface Then<E> {
-  readonly _tag: 'Then'
-  readonly left: Cause<E>
-  readonly right: Cause<E>
+export class Interrupt {
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag: InterruptTag         = CauseTag.Interrupt
+
+  constructor(readonly fiberId: FiberId) {}
+
+  get [St.$hash](): number {
+    return St.combineHash(St.hash(this._tag), St.hash(this.fiberId))
+  }
+
+  [St.$equals](that: unknown): boolean {
+    return isCause(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: Cause<unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      switch (that._tag) {
+        case CauseTag.Interrupt:
+          return eqFiberId.equals_(self.fiberId, that.fiberId)
+        case CauseTag.Then:
+        case CauseTag.Both:
+          return yield* _(structuralSymmetric(structuralEqualEmpty)(self, that))
+        case CauseTag.Traced:
+          return yield* _(self.equalsEval(that.cause))
+        default:
+          return false
+      }
+    })
+  }
 }
 
-export interface Both<E> {
-  readonly _tag: 'Both'
-  readonly left: Cause<E>
-  readonly right: Cause<E>
+export class Then<E> {
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag: ThenTag              = CauseTag.Then
+
+  constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
+
+  get [St.$hash](): number {
+    return hashCode(this)
+  }
+
+  [St.$equals](that: unknown): boolean {
+    return isCause(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: Cause<unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      if (that._tag === CauseTag.Traced) {
+        return yield* _(self.equalsEval(that.cause))
+      }
+      return (
+        (yield* _(structuralEqualThen(self, that))) ||
+        (yield* _(structuralSymmetric(structuralThenAssociate)(self, that))) ||
+        (yield* _(structuralSymmetric(strcturalThenDistribute)(self, that))) ||
+        (yield* _(structuralSymmetric(structuralEqualEmpty)(self, that)))
+      )
+    })
+  }
 }
 
-export interface Traced<E> {
-  readonly _tag: 'Traced'
-  readonly cause: Cause<E>
-  readonly trace: Trace
+export class Both<E> {
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag: BothTag              = CauseTag.Both
+
+  constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
+
+  get [St.$hash](): number {
+    return hashCode(this)
+  }
+
+  [St.$equals](that: unknown): boolean {
+    return isCause(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: Cause<unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      if (that._tag === CauseTag.Traced) {
+        return yield* _(self.equalsEval(that.cause))
+      }
+      return (
+        (yield* _(structuralEqualBoth(self, that))) ||
+        (yield* _(structuralSymmetric(structuralBothAssociate)(self, that))) ||
+        (yield* _(structuralSymmetric(structuralBothDistribute)(self, that))) ||
+        (yield* _(structuralSymmetric(structuralEqualEmpty)(self, that)))
+      )
+    })
+  }
+}
+
+export class Traced<E> {
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag: TracedTag            = CauseTag.Traced
+
+  constructor(readonly cause: Cause<E>, readonly trace: Trace) {}
+
+  get [St.$hash](): number {
+    return this.cause[St.$hash]
+  }
+
+  [St.$equals](that: unknown): boolean {
+    return isCause(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: Cause<unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      return that._tag === CauseTag.Traced
+        ? yield* _(self.cause.equalsEval(that.cause))
+        : yield* _(self.cause.equalsEval(that))
+    })
+  }
 }
 
 /*
@@ -63,58 +269,43 @@ export interface Traced<E> {
  * -------------------------------------------
  */
 
-export const empty: Cause<never> = {
-  _tag: 'Empty'
-}
+export const empty: Cause<never> = new Empty()
 
 /**
  */
 export function fail<E>(value: E): Cause<E> {
-  return {
-    _tag: 'Fail',
-    value
-  }
+  return new Fail(value)
 }
 
 export function traced<E>(cause: Cause<E>, trace: Trace): Cause<E> {
   if (L.isEmpty(trace.executionTrace) && L.isEmpty(trace.stackTrace) && O.isNone(trace.parentTrace)) {
     return cause
   }
-  return {
-    _tag: 'Traced',
-    cause,
-    trace
-  }
+  return new Traced(cause, trace)
 }
 
 /**
  */
 export function die(value: unknown): Cause<never> {
-  return {
-    _tag: 'Die',
-    value
-  }
+  return new Die(value)
 }
 
 /**
  */
 export function interrupt(fiberId: FiberId): Cause<never> {
-  return {
-    _tag: 'Interrupt',
-    fiberId
-  }
+  return new Interrupt(fiberId)
 }
 
 /**
  */
 export function then<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
-  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: 'Then', left, right }
+  return isEmpty(left) ? right : isEmpty(right) ? left : new Then<E | E1>(left, right)
 }
 
 /**
  */
 export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
-  return isEmpty(left) ? right : isEmpty(right) ? left : { _tag: 'Both', left, right }
+  return isEmpty(left) ? right : isEmpty(right) ? left : new Both<E | E1>(left, right)
 }
 
 /*
@@ -135,45 +326,45 @@ export const failed: <E>(cause: Cause<E>) => boolean = flow(
 /**
  */
 export function isThen<E>(cause: Cause<E>): cause is Then<E> {
-  return cause._tag === 'Then'
+  return cause._tag === CauseTag.Then
 }
 
 /**
  */
 export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
-  return cause._tag === 'Both'
+  return cause._tag === CauseTag.Both
 }
 
 /**
  */
 export function isEmpty<E>(cause: Cause<E>): boolean {
-  if (cause._tag === 'Empty' || (cause._tag === 'Traced' && cause.cause._tag === 'Empty')) {
+  if (cause._tag === CauseTag.Empty || (cause._tag === CauseTag.Traced && cause.cause._tag === CauseTag.Empty)) {
     return true
   }
   let causes: Stack<Cause<E>> | undefined = undefined
   let current: Cause<E> | undefined       = cause
   while (current) {
     switch (current._tag) {
-      case 'Die': {
+      case CauseTag.Die: {
         return false
       }
-      case 'Fail': {
+      case CauseTag.Fail: {
         return false
       }
-      case 'Interrupt': {
+      case CauseTag.Interrupt: {
         return false
       }
-      case 'Then': {
+      case CauseTag.Then: {
         causes  = makeStack(current.right, causes)
         current = current.left
         break
       }
-      case 'Both': {
+      case CauseTag.Both: {
         causes  = makeStack(current.right, causes)
         current = current.left
         break
       }
-      case 'Traced': {
+      case CauseTag.Traced: {
         current = current.cause
         break
       }
@@ -214,22 +405,26 @@ export function interrupted<E>(cause: Cause<E>): boolean {
   )
 }
 
+export function _contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => Ev.Eval<boolean> {
+  return (cause) =>
+    Ev.gen(function* (_) {
+      if (yield* _(cause.equalsEval(that))) {
+        return true
+      }
+      return yield* _(
+        pipe(
+          cause,
+          foldl(Ev.now(false), (_, c) => O.Some(Ev.bind_(_, (b) => (b ? Ev.now(b) : c.equalsEval(that)))))
+        )
+      )
+    })
+}
+
 /**
  * Determines if this cause contains or is equal to the specified cause.
  */
 export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
-  return (cause) =>
-    equalsCause(that, cause) ||
-    foldl_(cause, false as boolean, (_, c) => (equalsCause(that, c) ? O.Some(true) : O.None()))
-}
-
-export function isCause(u: unknown): u is Cause<unknown> {
-  return (
-    typeof u === 'object' &&
-    u !== null &&
-    '_tag' in u &&
-    ['Empty', 'Fail', 'Die', 'Interrupt', 'Then', 'Both'].includes(u['_tag'])
-  )
+  return flow(_contains(that), Ev.evaluate)
 }
 
 /*
@@ -241,38 +436,38 @@ export function isCause(u: unknown): u is Cause<unknown> {
 /**
  * @internal
  */
-export function _find<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): Ev.Eval<O.Option<A>> {
+export function findEval<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): Ev.Eval<O.Option<A>> {
   const apply = f(cause)
   if (apply._tag === 'Some') {
     return Ev.now(apply)
   }
   switch (cause._tag) {
-    case 'Then': {
+    case CauseTag.Then: {
       return pipe(
-        Ev.defer(() => _find(cause.left, f)),
+        Ev.defer(() => findEval(cause.left, f)),
         Ev.bind((isLeft) => {
           if (isLeft._tag === 'Some') {
             return Ev.now(isLeft)
           } else {
-            return _find(cause.right, f)
+            return findEval(cause.right, f)
           }
         })
       )
     }
-    case 'Both': {
+    case CauseTag.Both: {
       return pipe(
-        Ev.defer(() => _find(cause.left, f)),
+        Ev.defer(() => findEval(cause.left, f)),
         Ev.bind((isLeft) => {
           if (isLeft._tag === 'Some') {
             return Ev.now(isLeft)
           } else {
-            return _find(cause.right, f)
+            return findEval(cause.right, f)
           }
         })
       )
     }
-    case 'Traced': {
-      return Ev.defer(() => _find(cause.cause, f))
+    case CauseTag.Traced: {
+      return Ev.defer(() => findEval(cause.cause, f))
     }
     default: {
       return Ev.now(apply)
@@ -281,7 +476,7 @@ export function _find<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>
 }
 
 export function find_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>): O.Option<A> {
-  return _find(cause, f).value
+  return findEval(cause, f).value
 }
 
 /**
@@ -297,7 +492,7 @@ export function find<A, E>(f: (cause: Cause<E>) => O.Option<A>): (cause: Cause<E
 /**
  * @internal
  */
-function _match<E, A>(
+function matchEval<E, A>(
   cause: Cause<E>,
   onEmpty: () => A,
   onFail: (reason: E) => A,
@@ -308,29 +503,29 @@ function _match<E, A>(
   onTraced: (_: A, trace: Trace) => A
 ): Ev.Eval<A> {
   switch (cause._tag) {
-    case 'Empty':
+    case CauseTag.Empty:
       return Ev.now(onEmpty())
-    case 'Fail':
+    case CauseTag.Fail:
       return Ev.now(onFail(cause.value))
-    case 'Die':
+    case CauseTag.Die:
       return Ev.now(onDie(cause.value))
-    case 'Interrupt':
+    case CauseTag.Interrupt:
       return Ev.now(onInterrupt(cause.fiberId))
-    case 'Both':
+    case CauseTag.Both:
       return Ev.crossWith_(
-        Ev.defer(() => _match(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
-        Ev.defer(() => _match(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => matchEval(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => matchEval(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         onBoth
       )
-    case 'Then':
+    case CauseTag.Then:
       return Ev.crossWith_(
-        Ev.defer(() => _match(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
-        Ev.defer(() => _match(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => matchEval(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => matchEval(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         onThen
       )
-    case 'Traced':
+    case CauseTag.Traced:
       return Ev.map_(
-        Ev.defer(() => _match(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => matchEval(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
         (a) => onTraced(a, cause.trace)
       )
   }
@@ -352,7 +547,7 @@ export function match_<E, A>(
   onBoth: (l: A, r: A) => A,
   onTraced: (_: A, trace: Trace) => A
 ): A {
-  return _match(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
+  return matchEval(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
 }
 
 /**
@@ -370,7 +565,7 @@ export function match<E, A>(
   onBoth: (l: A, r: A) => A,
   onTraced: (_: A, trace: Trace) => A
 ): (cause: Cause<E>) => A {
-  return (cause) => _match(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
+  return (cause) => matchEval(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
 }
 
 /**
@@ -389,12 +584,12 @@ export function foldl_<E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) =
     acc     = x._tag === 'Some' ? x.value : acc
 
     switch (current._tag) {
-      case 'Then': {
+      case CauseTag.Then: {
         causes  = makeStack(current.right, causes)
         current = current.left
         break
       }
-      case 'Both': {
+      case CauseTag.Both: {
         causes  = makeStack(current.right, causes)
         current = current.left
         break
@@ -428,7 +623,7 @@ export function foldl<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (c
  * exists.
  */
 export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
-  return find_(cause, (c) => (c._tag === 'Interrupt' ? O.Some(c.fiberId) : O.None()))
+  return find_(cause, (c) => (c._tag === CauseTag.Interrupt ? O.Some(c.fiberId) : O.None()))
 }
 
 /**
@@ -436,7 +631,7 @@ export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
  * exists.
  */
 export function failureOption<E>(cause: Cause<E>): O.Option<E> {
-  return find_(cause, (c) => (c._tag === 'Fail' ? O.Some(c.value) : O.None()))
+  return find_(cause, (c) => (c._tag === CauseTag.Fail ? O.Some(c.value) : O.None()))
 }
 
 /**
@@ -444,7 +639,7 @@ export function failureOption<E>(cause: Cause<E>): O.Option<E> {
  * one exists.
  */
 export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
-  return find_(cause, (c) => (c._tag === 'Die' ? O.Some(c.value) : O.None()))
+  return find_(cause, (c) => (c._tag === CauseTag.Die ? O.Some(c.value) : O.None()))
 }
 
 /*
@@ -517,75 +712,16 @@ export function ap<E>(fa: Cause<E>): <D>(fab: Cause<(a: E) => D>) => Cause<D> {
  * -------------------------------------------
  */
 
-export function equalsCause<E>(x: Cause<E>, y: Cause<E>): boolean {
-  if (x === y) return true
-  let current: readonly [Cause<E>, Cause<E>] | undefined = tuple(x, y)
-  let causes: Stack<readonly [Cause<E>, Cause<E>]> | undefined
-
-  while (current) {
-    if (current[0]._tag === 'Traced') {
-      current = [current[0].cause, current[1]]
-      continue
-    }
-    if (current[1]._tag === 'Traced') {
-      current = [current[0], current[1].cause]
-      continue
-    }
-    switch (current[0]._tag) {
-      case 'Fail': {
-        if (!(current[1]._tag === 'Fail' && current[0].value === current[1].value)) {
-          return false
-        }
-        current = undefined
-        break
-      }
-      case 'Die': {
-        if (!(current[1]._tag === 'Die' && current[0].value === current[1].value)) {
-          return false
-        }
-        current = undefined
-        break
-      }
-      case 'Empty': {
-        if (!(current[1]._tag === 'Empty')) {
-          return false
-        }
-        current = undefined
-        break
-      }
-      case 'Interrupt': {
-        if (!(current[1]._tag === 'Interrupt' && eqFiberId.equals_(current[0].fiberId, current[1].fiberId))) {
-          return false
-        }
-        current = undefined
-        break
-      }
-      case 'Both': {
-        if (!(current[1]._tag === 'Both')) {
-          return false
-        }
-        causes  = makeStack([current[0].right, current[1].right], causes)
-        current = tuple(current[0].left, current[1].left)
-        break
-      }
-      case 'Then': {
-        if (!(current[1]._tag === 'Then')) {
-          return false
-        }
-        causes  = makeStack([current[0].right, current[1].right], causes)
-        current = tuple(current[0].left, current[1].left)
-        break
-      }
-    }
-    if (!current && causes) {
-      current = causes?.value
-      causes  = causes?.previous
-    }
-  }
-  return true
+export function equals<E>(x: Cause<E>, y: Cause<E>): boolean {
+  return x.equalsEval(y).value
 }
 
-export const eqCause: Eq<Cause<any>> = makeEq(equalsCause)
+export const EqStructural: Eq<Cause<any>> = makeEq(equals)
+
+export function getEq<E>(E: Eq<E>): Eq<Cause<E>> {
+  const equalsE = equals_(E)
+  return Eq((x, y) => equalsE(x, y).value)
+}
 
 /*
  * -------------------------------------------
@@ -622,30 +758,30 @@ export function map<E, D>(f: (e: E) => D): (fa: Cause<E>) => Cause<D> {
 /**
  * @internal
  */
-function _bind<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
+function bindEval<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
   switch (ma._tag) {
-    case 'Empty':
+    case CauseTag.Empty:
       return Ev.now(empty)
-    case 'Fail':
+    case CauseTag.Fail:
       return Ev.now(f(ma.value))
-    case 'Die':
+    case CauseTag.Die:
       return Ev.now(ma)
-    case 'Interrupt':
+    case CauseTag.Interrupt:
       return Ev.now(ma)
-    case 'Then':
+    case CauseTag.Then:
       return Ev.crossWith_(
-        Ev.defer(() => _bind(ma.left, f)),
-        Ev.defer(() => _bind(ma.right, f)),
+        Ev.defer(() => bindEval(ma.left, f)),
+        Ev.defer(() => bindEval(ma.right, f)),
         then
       )
-    case 'Both':
+    case CauseTag.Both:
       return Ev.crossWith_(
-        Ev.defer(() => _bind(ma.left, f)),
-        Ev.defer(() => _bind(ma.right, f)),
+        Ev.defer(() => bindEval(ma.left, f)),
+        Ev.defer(() => bindEval(ma.right, f)),
         both
       )
-    case 'Traced':
-      return Ev.map_(_bind(ma.cause, f), (cause) => traced(cause, ma.trace))
+    case CauseTag.Traced:
+      return Ev.map_(bindEval(ma.cause, f), (cause) => traced(cause, ma.trace))
   }
 }
 
@@ -656,7 +792,7 @@ function _bind<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> {
  * @since 1.0.0
  */
 export function bind_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
-  return _bind(ma, f).value
+  return bindEval(ma, f).value
 }
 
 /**
@@ -709,14 +845,16 @@ export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
  * Extracts a list of non-recoverable errors from the `Cause`.
  */
 export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
-  return foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) => (c._tag === 'Die' ? O.Some([...a, c.value]) : O.None()))
+  return foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
+    c._tag === CauseTag.Die ? O.Some([...a, c.value]) : O.None()
+  )
 }
 
 /**
  * Produces a list of all recoverable errors `E` in the `Cause`.
  */
 export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
-  return foldl_(cause, [] as readonly E[], (a, c) => (c._tag === 'Fail' ? O.Some([...a, c.value]) : O.None()))
+  return foldl_(cause, [] as readonly E[], (a, c) => (c._tag === CauseTag.Fail ? O.Some([...a, c.value]) : O.None()))
 }
 
 /**
@@ -724,7 +862,7 @@ export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
  * by this `Cause`.
  */
 export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
-  return foldl_(cause, new Set(), (s, c) => (c._tag === 'Interrupt' ? O.Some(s.add(c.fiberId)) : O.None()))
+  return foldl_(cause, new Set(), (s, c) => (c._tag === CauseTag.Interrupt ? O.Some(s.add(c.fiberId)) : O.None()))
 }
 
 /**
@@ -742,37 +880,37 @@ export function interruptedOnly<E>(cause: Cause<E>): boolean {
 /**
  * @internal
  */
-function _stripFailures<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
+function stripFailuresEval<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
   switch (cause._tag) {
-    case 'Empty': {
+    case CauseTag.Empty: {
       return Ev.now(empty)
     }
-    case 'Fail': {
+    case CauseTag.Fail: {
       return Ev.now(empty)
     }
-    case 'Interrupt': {
+    case CauseTag.Interrupt: {
       return Ev.now(cause)
     }
-    case 'Die': {
+    case CauseTag.Die: {
       return Ev.now(cause)
     }
-    case 'Both': {
+    case CauseTag.Both: {
       return Ev.crossWith_(
-        Ev.defer(() => _stripFailures(cause.left)),
-        Ev.defer(() => _stripFailures(cause.right)),
+        Ev.defer(() => stripFailuresEval(cause.left)),
+        Ev.defer(() => stripFailuresEval(cause.right)),
         both
       )
     }
-    case 'Then': {
+    case CauseTag.Then: {
       return Ev.crossWith_(
-        Ev.defer(() => _stripFailures(cause.left)),
-        Ev.defer(() => _stripFailures(cause.right)),
+        Ev.defer(() => stripFailuresEval(cause.left)),
+        Ev.defer(() => stripFailuresEval(cause.right)),
         then
       )
     }
-    case 'Traced': {
+    case CauseTag.Traced: {
       return Ev.map_(
-        Ev.defer(() => _stripFailures(cause.cause)),
+        Ev.defer(() => stripFailuresEval(cause.cause)),
         (c) => traced(c, cause.trace)
       )
     }
@@ -783,43 +921,43 @@ function _stripFailures<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
  * Discards all typed failures kept on this `Cause`.
  */
 export function stripFailures<E>(cause: Cause<E>): Cause<never> {
-  return _stripFailures(cause).value
+  return stripFailuresEval(cause).value
 }
 
 /**
  * @internal
  */
-export function _stripInterrupts<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
+export function stripInterruptsEval<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
   switch (cause._tag) {
-    case 'Empty': {
+    case CauseTag.Empty: {
       return Ev.now(empty)
     }
-    case 'Fail': {
+    case CauseTag.Fail: {
       return Ev.now(cause)
     }
-    case 'Interrupt': {
+    case CauseTag.Interrupt: {
       return Ev.now(empty)
     }
-    case 'Die': {
+    case CauseTag.Die: {
       return Ev.now(cause)
     }
-    case 'Both': {
+    case CauseTag.Both: {
       return Ev.crossWith_(
-        Ev.defer(() => _stripInterrupts(cause.left)),
-        Ev.defer(() => _stripInterrupts(cause.right)),
+        Ev.defer(() => stripInterruptsEval(cause.left)),
+        Ev.defer(() => stripInterruptsEval(cause.right)),
         both
       )
     }
-    case 'Then': {
+    case CauseTag.Then: {
       return Ev.crossWith_(
-        Ev.defer(() => _stripInterrupts(cause.left)),
-        Ev.defer(() => _stripInterrupts(cause.right)),
+        Ev.defer(() => stripInterruptsEval(cause.left)),
+        Ev.defer(() => stripInterruptsEval(cause.right)),
         then
       )
     }
-    case 'Traced': {
+    case CauseTag.Traced: {
       return Ev.map_(
-        Ev.defer(() => _stripInterrupts(cause.cause)),
+        Ev.defer(() => stripInterruptsEval(cause.cause)),
         (c) => traced(c, cause.trace)
       )
     }
@@ -830,27 +968,27 @@ export function _stripInterrupts<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
  * Discards all interrupts kept on this `Cause`.
  */
 export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
-  return _stripInterrupts(cause).value
+  return stripInterruptsEval(cause).value
 }
 
-function _stripSomeDefects<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<O.Option<Cause<E>>> {
+function stripSomeDefectsEval<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<O.Option<Cause<E>>> {
   switch (cause._tag) {
-    case 'Empty': {
+    case CauseTag.Empty: {
       return Ev.now(O.None())
     }
-    case 'Interrupt': {
+    case CauseTag.Interrupt: {
       return Ev.now(O.Some(interrupt(cause.fiberId)))
     }
-    case 'Fail': {
+    case CauseTag.Fail: {
       return Ev.now(O.Some(fail(cause.value)))
     }
-    case 'Die': {
+    case CauseTag.Die: {
       return Ev.now(pf(cause.value) ? O.Some(die(cause.value)) : O.None())
     }
-    case 'Both': {
+    case CauseTag.Both: {
       return Ev.crossWith_(
-        Ev.defer(() => _stripSomeDefects(cause.left, pf)),
-        Ev.defer(() => _stripSomeDefects(cause.right, pf)),
+        Ev.defer(() => stripSomeDefectsEval(cause.left, pf)),
+        Ev.defer(() => stripSomeDefectsEval(cause.right, pf)),
         (left, right) => {
           return left._tag === 'Some'
             ? right._tag === 'Some'
@@ -862,10 +1000,10 @@ function _stripSomeDefects<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<
         }
       )
     }
-    case 'Then': {
+    case CauseTag.Then: {
       return Ev.crossWith_(
-        Ev.defer(() => _stripSomeDefects(cause.left, pf)),
-        Ev.defer(() => _stripSomeDefects(cause.right, pf)),
+        Ev.defer(() => stripSomeDefectsEval(cause.left, pf)),
+        Ev.defer(() => stripSomeDefectsEval(cause.right, pf)),
         (left, right) => {
           return left._tag === 'Some'
             ? right._tag === 'Some'
@@ -877,9 +1015,9 @@ function _stripSomeDefects<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<
         }
       )
     }
-    case 'Traced': {
+    case CauseTag.Traced: {
       return Ev.map_(
-        Ev.defer(() => _stripSomeDefects(cause.cause, pf)),
+        Ev.defer(() => stripSomeDefectsEval(cause.cause, pf)),
         O.map((c) => traced(c, cause.trace))
       )
     }
@@ -887,34 +1025,34 @@ function _stripSomeDefects<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<
 }
 
 export function stripSomeDefects_<E>(cause: Cause<E>, pf: Predicate<unknown>): O.Option<Cause<E>> {
-  return _stripSomeDefects(cause, pf).value
+  return stripSomeDefectsEval(cause, pf).value
 }
 
 export function stripSomeDefects(pf: Predicate<unknown>): <E>(cause: Cause<E>) => O.Option<Cause<E>> {
-  return (cause) => _stripSomeDefects(cause, pf).value
+  return (cause) => stripSomeDefectsEval(cause, pf).value
 }
 
 /**
  * @internal
  */
-function _keepDefects<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
+function keepDefectsEval<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
   switch (cause._tag) {
-    case 'Empty': {
+    case CauseTag.Empty: {
       return Ev.now(O.None())
     }
-    case 'Fail': {
+    case CauseTag.Fail: {
       return Ev.now(O.None())
     }
-    case 'Interrupt': {
+    case CauseTag.Interrupt: {
       return Ev.now(O.None())
     }
-    case 'Die': {
+    case CauseTag.Die: {
       return Ev.now(O.Some(cause))
     }
-    case 'Then': {
+    case CauseTag.Then: {
       return Ev.crossWith_(
-        Ev.defer(() => _keepDefects(cause.left)),
-        Ev.defer(() => _keepDefects(cause.right)),
+        Ev.defer(() => keepDefectsEval(cause.left)),
+        Ev.defer(() => keepDefectsEval(cause.right)),
         (lefts, rights) => {
           if (lefts._tag === 'Some' && rights._tag === 'Some') {
             return O.Some(then(lefts.value, rights.value))
@@ -928,10 +1066,10 @@ function _keepDefects<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
         }
       )
     }
-    case 'Both': {
+    case CauseTag.Both: {
       return Ev.crossWith_(
-        Ev.defer(() => _keepDefects(cause.left)),
-        Ev.defer(() => _keepDefects(cause.right)),
+        Ev.defer(() => keepDefectsEval(cause.left)),
+        Ev.defer(() => keepDefectsEval(cause.right)),
         (lefts, rights) => {
           if (lefts._tag === 'Some' && rights._tag === 'Some') {
             return O.Some(both(lefts.value, rights.value))
@@ -945,9 +1083,9 @@ function _keepDefects<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
         }
       )
     }
-    case 'Traced': {
+    case CauseTag.Traced: {
       return Ev.map_(
-        Ev.defer(() => _keepDefects(cause.cause)),
+        Ev.defer(() => keepDefectsEval(cause.cause)),
         O.map((c) => traced(c, cause.trace))
       )
     }
@@ -959,27 +1097,27 @@ function _keepDefects<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
  * return only `Die` cause/finalizer defects.
  */
 export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
-  return _keepDefects(cause).value
+  return keepDefectsEval(cause).value
 }
 
-function _sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Either<Cause<E>, A>> {
+function sequenceCauseEitherEval<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Either<Cause<E>, A>> {
   switch (cause._tag) {
-    case 'Empty': {
+    case CauseTag.Empty: {
       return Ev.now(E.Left(empty))
     }
-    case 'Interrupt': {
+    case CauseTag.Interrupt: {
       return Ev.now(E.Left(cause))
     }
-    case 'Fail': {
+    case CauseTag.Fail: {
       return Ev.now(cause.value._tag === 'Left' ? E.Left(fail(cause.value.left)) : E.Right(cause.value.right))
     }
-    case 'Die': {
+    case CauseTag.Die: {
       return Ev.now(E.Left(cause))
     }
-    case 'Then': {
+    case CauseTag.Then: {
       return Ev.crossWith_(
-        Ev.defer(() => _sequenceCauseEither(cause.left)),
-        Ev.defer(() => _sequenceCauseEither(cause.right)),
+        Ev.defer(() => sequenceCauseEitherEval(cause.left)),
+        Ev.defer(() => sequenceCauseEitherEval(cause.right)),
         (lefts, rights) => {
           return lefts._tag === 'Left'
             ? rights._tag === 'Right'
@@ -989,10 +1127,10 @@ function _sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Eit
         }
       )
     }
-    case 'Both': {
+    case CauseTag.Both: {
       return Ev.crossWith_(
-        Ev.defer(() => _sequenceCauseEither(cause.left)),
-        Ev.defer(() => _sequenceCauseEither(cause.right)),
+        Ev.defer(() => sequenceCauseEitherEval(cause.left)),
+        Ev.defer(() => sequenceCauseEitherEval(cause.right)),
         (lefts, rights) => {
           return lefts._tag === 'Left'
             ? rights._tag === 'Right'
@@ -1002,9 +1140,9 @@ function _sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Eit
         }
       )
     }
-    case 'Traced': {
+    case CauseTag.Traced: {
       return Ev.map_(
-        Ev.defer(() => _sequenceCauseEither(cause.cause)),
+        Ev.defer(() => sequenceCauseEitherEval(cause.cause)),
         E.mapLeft((c) => traced(c, cause.trace))
       )
     }
@@ -1015,27 +1153,27 @@ function _sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Eit
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
 export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> {
-  return _sequenceCauseEither(cause).value
+  return sequenceCauseEitherEval(cause).value
 }
 
-function _sequenceCauseOption<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Cause<E>>> {
+function sequenceCauseOptionEval<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Cause<E>>> {
   switch (cause._tag) {
-    case 'Empty': {
+    case CauseTag.Empty: {
       return Ev.now(O.Some(empty))
     }
-    case 'Interrupt': {
+    case CauseTag.Interrupt: {
       return Ev.now(O.Some(cause))
     }
-    case 'Fail': {
+    case CauseTag.Fail: {
       return Ev.now(O.map_(cause.value, fail))
     }
-    case 'Die': {
+    case CauseTag.Die: {
       return Ev.now(O.Some(cause))
     }
-    case 'Then': {
+    case CauseTag.Then: {
       return Ev.crossWith_(
-        Ev.defer(() => _sequenceCauseOption(cause.left)),
-        Ev.defer(() => _sequenceCauseOption(cause.right)),
+        Ev.defer(() => sequenceCauseOptionEval(cause.left)),
+        Ev.defer(() => sequenceCauseOptionEval(cause.right)),
         (lefts, rights) => {
           return lefts._tag === 'Some'
             ? rights._tag === 'Some'
@@ -1047,10 +1185,10 @@ function _sequenceCauseOption<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Ca
         }
       )
     }
-    case 'Both': {
+    case CauseTag.Both: {
       return Ev.crossWith_(
-        Ev.defer(() => _sequenceCauseOption(cause.left)),
-        Ev.defer(() => _sequenceCauseOption(cause.right)),
+        Ev.defer(() => sequenceCauseOptionEval(cause.left)),
+        Ev.defer(() => sequenceCauseOptionEval(cause.right)),
         (lefts, rights) => {
           return lefts._tag === 'Some'
             ? rights._tag === 'Some'
@@ -1062,9 +1200,9 @@ function _sequenceCauseOption<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Ca
         }
       )
     }
-    case 'Traced': {
+    case CauseTag.Traced: {
       return Ev.map_(
-        Ev.defer(() => _sequenceCauseOption(cause.cause)),
+        Ev.defer(() => sequenceCauseOptionEval(cause.cause)),
         O.map((c) => traced(c, cause.trace))
       )
     }
@@ -1075,7 +1213,7 @@ function _sequenceCauseOption<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Ca
  * Converts the specified `Cause<Option<E>>` to an `Option<Cause<E>>`.
  */
 export function sequenceCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> {
-  return _sequenceCauseOption(cause).value
+  return sequenceCauseOptionEval(cause).value
 }
 
 /**
@@ -1118,6 +1256,31 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
       O.alt(() => A.head(defects(cause))),
       O.getOrElse(() => new InterruptedException('Interrupted'))
     )
+}
+
+export function untracedEval<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
+  switch (cause._tag) {
+    case CauseTag.Traced:
+      return Ev.defer(() => untracedEval(cause.cause))
+    case CauseTag.Both:
+      return Ev.crossWith_(
+        Ev.defer(() => untracedEval(cause.left)),
+        Ev.defer(() => untracedEval(cause.right)),
+        both
+      )
+    case CauseTag.Then:
+      return Ev.crossWith_(
+        Ev.defer(() => untracedEval(cause.left)),
+        Ev.defer(() => untracedEval(cause.right)),
+        then
+      )
+    default:
+      return Ev.now(cause)
+  }
+}
+
+export function untraced<E>(cause: Cause<E>): Cause<E> {
+  return untracedEval(cause).value
 }
 
 /*
@@ -1249,37 +1412,37 @@ const renderToString = (u: unknown): string => {
 const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<Sequential> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
-      case 'Empty': {
+      case CauseTag.Empty: {
         return Sequential([])
       }
-      case 'Fail': {
+      case CauseTag.Fail: {
         return cause.value instanceof Error
           ? renderFailure(renderer.renderError(cause.value), O.None(), renderer.renderTrace)
           : renderFailure(renderer.renderFailure(cause.value), O.None(), renderer.renderTrace)
       }
-      case 'Die': {
+      case CauseTag.Die: {
         return cause.value instanceof Error
           ? renderDie(renderer.renderError(cause.value), O.None(), renderer.renderTrace)
           : renderDie(renderer.renderUnknown(cause.value), O.None(), renderer.renderTrace)
       }
-      case 'Interrupt': {
+      case CauseTag.Interrupt: {
         return renderInterrupt(cause.fiberId, O.None(), renderer.renderTrace)
       }
-      case 'Then': {
+      case CauseTag.Then: {
         return Sequential(yield* _(linearSegments(cause, renderer)))
       }
-      case 'Both': {
+      case CauseTag.Both: {
         return Sequential([Parallel(yield* _(parallelSegments(cause, renderer)))])
       }
-      case 'Traced': {
+      case CauseTag.Traced: {
         switch (cause.cause._tag) {
-          case 'Fail': {
+          case CauseTag.Fail: {
             return renderFailure(renderer.renderFailure(cause.cause.value), O.Some(cause.trace), renderer.renderTrace)
           }
-          case 'Die': {
+          case CauseTag.Die: {
             return renderDie(renderer.renderUnknown(cause.cause.value), O.Some(cause.trace), renderer.renderTrace)
           }
-          case 'Interrupt': {
+          case CauseTag.Interrupt: {
             return renderInterrupt(cause.cause.fiberId, O.Some(cause.trace), renderer.renderTrace)
           }
           default: {
@@ -1299,7 +1462,7 @@ const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<S
 const linearSegments = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<Step[]> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
-      case 'Then': {
+      case CauseTag.Then: {
         return [
           ...(yield* _(linearSegments(cause.left, renderer))),
           ...(yield* _(linearSegments(cause.right, renderer)))
@@ -1314,7 +1477,7 @@ const linearSegments = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<Step
 const parallelSegments = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<Sequential[]> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
-      case 'Both': {
+      case CauseTag.Both: {
         return [
           ...(yield* _(parallelSegments(cause.left, renderer))),
           ...(yield* _(parallelSegments(cause.right, renderer)))
@@ -1455,31 +1618,31 @@ export function flipCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Ca
     // eslint-disable-next-line no-constant-condition
     pushing: while (true) {
       switch (c._tag) {
-        case 'Empty':
+        case CauseTag.Empty:
           result = E.Left(empty)
           break pushing
-        case 'Traced':
+        case CauseTag.Traced:
           stack = makeStack(new FCEStackFrameTraced(c), stack)
           c     = c.cause
           continue pushing
-        case 'Interrupt':
+        case CauseTag.Interrupt:
           result = E.Left(interrupt(c.fiberId))
           break pushing
-        case 'Die':
+        case CauseTag.Die:
           result = E.Left(c)
           break pushing
-        case 'Fail':
+        case CauseTag.Fail:
           result = E.match_(
             c.value,
             (l) => E.Left(fail(l)),
             (r) => E.Right(r)
           )
           break pushing
-        case 'Then':
+        case CauseTag.Then:
           stack = makeStack(new FCEStackFrameThenLeft(c), stack)
           c     = c.left
           continue pushing
-        case 'Both':
+        case CauseTag.Both:
           stack = makeStack(new FCEStackFrameBothLeft(c), stack)
           c     = c.left
           continue pushing
@@ -1604,31 +1767,31 @@ export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>
     // eslint-disable-next-line no-constant-condition
     pushing: while (true) {
       switch (c._tag) {
-        case 'Empty':
+        case CauseTag.Empty:
           result = O.Some(empty)
           break pushing
-        case 'Traced':
+        case CauseTag.Traced:
           stack = makeStack(new FCOStackFrameTraced(c), stack)
           c     = c.cause
           continue pushing
-        case 'Interrupt':
+        case CauseTag.Interrupt:
           result = O.Some(interrupt(c.fiberId))
           break pushing
-        case 'Die':
+        case CauseTag.Die:
           result = O.Some(c)
           break pushing
-        case 'Fail':
+        case CauseTag.Fail:
           result = O.match_(
             c.value,
             () => O.None(),
             (r) => O.Some(fail(r))
           )
           break pushing
-        case 'Then':
+        case CauseTag.Then:
           stack = makeStack(new FCOStackFrameThenLeft(c), stack)
           c     = c.left
           continue pushing
-        case 'Both':
+        case CauseTag.Both:
           stack = makeStack(new FCOStackFrameBothLeft(c), stack)
           c     = c.left
           continue pushing
@@ -1698,4 +1861,560 @@ export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>
   }
 
   throw new Error('Bug')
+}
+
+/*
+ * -------------------------------------------
+ * structural equality internals
+ * -------------------------------------------
+ */
+
+function structuralSymmetric<A>(
+  f: (x: Cause<A>, y: Cause<A>) => Ev.Eval<boolean>
+): (x: Cause<A>, y: Cause<A>) => Ev.Eval<boolean> {
+  return (x, y) => Ev.crossWith_(f(x, y), f(y, x), B.or_)
+}
+
+function structuralEqualEmpty<A>(l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  if (l._tag === CauseTag.Then || l._tag === CauseTag.Both) {
+    if (l.left._tag === CauseTag.Empty) {
+      return l.right.equalsEval(r)
+    } else if (l.right._tag === CauseTag.Empty) {
+      return l.left.equalsEval(r)
+    } else {
+      return Ev.pure(false)
+    }
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralThenAssociate<A>(l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  if (
+    l._tag === CauseTag.Then &&
+    l.left._tag === CauseTag.Then &&
+    r._tag === CauseTag.Then &&
+    r.right._tag === CauseTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.left.equalsEval(r.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function strcturalThenDistribute<A>(l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  if (
+    l._tag === CauseTag.Then &&
+    l.right._tag === CauseTag.Both &&
+    r._tag === CauseTag.Both &&
+    r.right._tag === CauseTag.Then &&
+    r.left._tag === CauseTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        r.left.left.equalsEval(r.right.left),
+        l.left.equalsEval(r.left.left),
+        l.right.left.equalsEval(r.left.right),
+        l.right.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else if (
+    l._tag === CauseTag.Then &&
+    l.left._tag === CauseTag.Both &&
+    r._tag === CauseTag.Both &&
+    r.left._tag === CauseTag.Then &&
+    r.right._tag === CauseTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        r.left.right.equalsEval(r.right.right),
+        l.left.left.equalsEval(r.left.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.equalsEval(r.left.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralEqualThen<A>(l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  if (l._tag === CauseTag.Then && r._tag === CauseTag.Then) {
+    return Ev.crossWith_(l.left.equalsEval(r.left), l.right.equalsEval(r.right), B.and_)
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralBothAssociate<A>(l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  if (
+    l._tag === CauseTag.Both &&
+    l.left._tag === CauseTag.Both &&
+    r._tag === CauseTag.Both &&
+    r.right._tag === CauseTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.left.equalsEval(r.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralBothDistribute<A>(l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  if (
+    l._tag === CauseTag.Both &&
+    l.left._tag === CauseTag.Then &&
+    l.right._tag === CauseTag.Then &&
+    r._tag === CauseTag.Then &&
+    r.right._tag === CauseTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.left.equalsEval(l.right.left),
+        l.left.left.equalsEval(r.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else if (
+    l._tag === CauseTag.Both &&
+    l.left._tag === CauseTag.Then &&
+    l.right._tag === CauseTag.Then &&
+    r._tag === CauseTag.Then &&
+    r.left._tag === CauseTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.right.equalsEval(l.right.right),
+        l.left.left.equalsEval(r.left.left),
+        l.right.left.equalsEval(r.left.right),
+        l.left.right.equalsEval(r.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralEqualBoth<A>(l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  if (l._tag === CauseTag.Both && r._tag === CauseTag.Both) {
+    return Ev.crossWith_(l.left.equalsEval(r.left), l.right.equalsEval(r.right), B.and_)
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+/*
+ * -------------------------------------------
+ * hash internals
+ * -------------------------------------------
+ */
+
+function stepLoop<A>(
+  cause: Cause<A>,
+  stack: L.List<Cause<A>>,
+  parallel: HashSet<Cause<A>>,
+  sequential: L.List<Cause<A>>
+): readonly [HashSet<Cause<A>>, L.List<Cause<A>>] {
+  // eslint-disable-next-line no-constant-condition
+  while (1) {
+    /* eslint-disable no-param-reassign */
+    switch (cause._tag) {
+      case CauseTag.Empty: {
+        if (L.isEmpty(stack)) {
+          return tuple(parallel, sequential)
+        } else {
+          cause = L.unsafeFirst(stack)!
+          stack = L.tail(stack)
+        }
+        break
+      }
+      case CauseTag.Traced: {
+        cause = cause.cause
+        break
+      }
+      case CauseTag.Then: {
+        const left  = cause.left
+        const right = cause.right
+        switch (left._tag) {
+          case CauseTag.Empty: {
+            cause = right
+            break
+          }
+          case CauseTag.Then: {
+            cause = then(left.left, then(left.right, right))
+            break
+          }
+          case CauseTag.Both: {
+            cause = both(then(left.left, right), then(left.right, right))
+            break
+          }
+          case CauseTag.Traced: {
+            cause = then(left.cause, right)
+            break
+          }
+          default: {
+            cause      = left
+            sequential = L.prepend_(sequential, right)
+          }
+        }
+        break
+      }
+      case CauseTag.Both: {
+        stack = L.prepend_(stack, cause.right)
+        cause = cause.left
+        break
+      }
+      default: {
+        if (L.isEmpty(stack)) {
+          return tuple(HS.add_(parallel, cause), sequential)
+        } else {
+          cause    = L.unsafeFirst(stack)!
+          stack    = L.tail(stack)
+          parallel = HS.add_(parallel, cause)
+          break
+        }
+      }
+    }
+  }
+  return hole()
+  /* eslint-enable no-param-reassign */
+}
+
+function step<A>(cause: Cause<A>): readonly [HashSet<Cause<A>>, L.List<Cause<A>>] {
+  return stepLoop(cause, L.empty(), HS.makeDefault(), L.empty())
+}
+
+function flattenLoop<A>(causes: L.List<Cause<A>>, flattened: L.List<HashSet<Cause<A>>>): L.List<HashSet<Cause<A>>> {
+  // eslint-disable-next-line no-constant-condition
+  while (1) {
+    const [parallel, sequential] = L.foldl_(
+      causes,
+      tuple(HS.makeDefault<Cause<A>>(), L.empty<Cause<A>>()),
+      ([parallel, sequential], cause) => {
+        const [set, seq] = step(cause)
+        return tuple(HS.union_(parallel, set), L.concat_(sequential, seq))
+      }
+    )
+    const updated = HS.size(parallel) > 0 ? L.prepend_(flattened, parallel) : flattened
+    if (L.isEmpty(sequential)) {
+      return L.reverse(updated)
+    } else {
+      /* eslint-disable no-param-reassign */
+      causes    = sequential
+      flattened = updated
+      /* eslint-enable no-param-reassign */
+    }
+  }
+  return hole()
+}
+
+function flat<A>(cause: Cause<A>): L.List<HashSet<Cause<A>>> {
+  return flattenLoop(L.of(cause), L.empty())
+}
+
+function hashCode<A>(cause: Cause<A>): number {
+  const flattened = flat(cause)
+  const size      = L.length(flattened)
+  let head
+  if (size === 0) {
+    return _emptyHash
+  } else if (size === 1 && (head = L.unsafeFirst(flattened)!) && HS.size(head) === 1) {
+    return L.unsafeFirst(L.from(head))![St.$hash]
+  } else {
+    return St.hashIterator(flattened[Symbol.iterator]())
+  }
+}
+
+/*
+ * -------------------------------------------
+ * typeclass equality internals
+ * -------------------------------------------
+ */
+
+function _equalEmpty<A>(E: P.Eq<A>): (l: Empty, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) => {
+    switch (r._tag) {
+      case CauseTag.Empty:
+        return Ev.now(true)
+      case CauseTag.Then:
+      case CauseTag.Both:
+        return Ev.crossWith_(_equalEmpty(E)(l, r.left), _equalEmpty(E)(l, r.right), B.and_)
+      case CauseTag.Traced:
+        return Ev.defer(() => _equalEmpty(E)(l, r.cause))
+      default:
+        return Ev.now(false)
+    }
+  }
+}
+
+function _equalFail<A>(E: P.Eq<A>): (l: Fail<A>, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) => {
+    switch (r._tag) {
+      case CauseTag.Fail:
+        return Ev.now(E.equals_(l.value, r.value))
+      case CauseTag.Both:
+      case CauseTag.Then:
+        return symmetric(equalEmpty)(E, l, r)
+      case CauseTag.Traced:
+        return Ev.defer(() => _equalFail(E)(l, r.cause))
+      default:
+        return Ev.now(false)
+    }
+  }
+}
+
+function _equalDie<A>(E: P.Eq<A>): (l: Die, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) => {
+    switch (r._tag) {
+      case CauseTag.Die:
+        return Ev.now(St.equals(l.value, r.value))
+      case CauseTag.Then:
+      case CauseTag.Both:
+        return symmetric(equalEmpty)(E, l, r)
+      case CauseTag.Traced:
+        return Ev.defer(() => _equalDie(E)(l, r.cause))
+      default:
+        return Ev.now(false)
+    }
+  }
+}
+
+function _equalInterrupt<A>(E: P.Eq<A>): (l: Interrupt, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) => {
+    switch (r._tag) {
+      case CauseTag.Interrupt:
+        return Ev.now(eqFiberId.equals_(l.fiberId, r.fiberId))
+      case CauseTag.Then:
+      case CauseTag.Both:
+        return symmetric(equalEmpty)(E, l, r)
+      case CauseTag.Traced:
+        return Ev.defer(() => _equalInterrupt(E)(l, r.cause))
+      default:
+        return Ev.now(false)
+    }
+  }
+}
+
+function _equalThen<A>(E: P.Eq<A>): (l: Then<A>, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) =>
+    Ev.gen(function* (_) {
+      if (r._tag === CauseTag.Traced) {
+        return yield* _(_equalThen(E)(l, r.cause))
+      }
+      return (
+        (yield* _(equalThen(E, l, r))) ||
+        (yield* _(symmetric(thenAssociate)(E, l, r))) ||
+        (yield* _(symmetric(thenDistribute)(E, l, r))) ||
+        (yield* _(symmetric(equalEmpty)(E, l, r)))
+      )
+    })
+}
+
+function _equalBoth<A>(E: P.Eq<A>): (l: Both<A>, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) =>
+    Ev.gen(function* (_) {
+      if (r._tag === CauseTag.Traced) {
+        return yield* _(_equalBoth(E)(l, r.cause))
+      }
+      return (
+        (yield* _(equalBoth(E, l, r))) ||
+        (yield* _(symmetric(bothAssociate)(E, l, r))) ||
+        (yield* _(symmetric(bothDistribute)(E, l, r))) ||
+        (yield* _(symmetric(equalEmpty)(E, l, r)))
+      )
+    })
+}
+
+function _equalTraced<A>(E: P.Eq<A>): (l: Traced<A>, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) => Ev.defer(() => (r._tag === CauseTag.Traced ? equals_(E)(l.cause, r.cause) : equals_(E)(l.cause, r)))
+}
+
+function equals_<A>(E: P.Eq<A>): (l: Cause<A>, r: Cause<A>) => Ev.Eval<boolean> {
+  return (l, r) => {
+    switch (l._tag) {
+      case CauseTag.Empty:
+        return _equalEmpty(E)(l, r)
+      case CauseTag.Fail:
+        return _equalFail(E)(l, r)
+      case CauseTag.Die:
+        return _equalDie(E)(l, r)
+      case CauseTag.Interrupt:
+        return _equalInterrupt(E)(l, r)
+      case CauseTag.Traced:
+        return _equalTraced(E)(l, r)
+      case CauseTag.Both:
+        return _equalBoth(E)(l, r)
+      case CauseTag.Then:
+        return _equalThen(E)(l, r)
+    }
+  }
+}
+
+function symmetric<A>(
+  f: (E: P.Eq<A>, x: Cause<A>, y: Cause<A>) => Ev.Eval<boolean>
+): (E: P.Eq<A>, x: Cause<A>, y: Cause<A>) => Ev.Eval<boolean> {
+  return (E, x, y) => Ev.crossWith_(f(E, x, y), f(E, y, x), B.or_)
+}
+
+function bothAssociate<A>(E: P.Eq<A>, l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  const equalsE = equals_(E)
+  if (
+    l._tag === CauseTag.Both &&
+    l.left._tag === CauseTag.Both &&
+    r._tag === CauseTag.Both &&
+    r.right._tag === CauseTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(equalsE(l.left.left, r.left), equalsE(l.left.right, r.right.left), equalsE(l.right, r.right.right)),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function bothDistribute<A>(E: P.Eq<A>, l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  const equalsE = equals_(E)
+  if (
+    l._tag === CauseTag.Both &&
+    l.left._tag === CauseTag.Then &&
+    l.right._tag === CauseTag.Then &&
+    r._tag === CauseTag.Then &&
+    r.right._tag === CauseTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        equalsE(l.left.left, l.right.left),
+        equalsE(l.left.left, r.left),
+        equalsE(l.left.right, r.right.left),
+        equalsE(l.right.right, r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else if (
+    l._tag === CauseTag.Both &&
+    l.left._tag === CauseTag.Then &&
+    l.right._tag === CauseTag.Then &&
+    r._tag === CauseTag.Then &&
+    r.left._tag === CauseTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        equalsE(l.left.right, l.right.right),
+        equalsE(l.left.left, r.left.left),
+        equalsE(l.right.left, r.left.right),
+        equalsE(l.left.right, r.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function thenAssociate<A>(E: P.Eq<A>, l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  const equalsE = equals_(E)
+  if (
+    l._tag === CauseTag.Then &&
+    l.left._tag === CauseTag.Then &&
+    r._tag === CauseTag.Then &&
+    r.right._tag === CauseTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(equalsE(l.left.left, r.left), equalsE(l.left.right, r.right.left), equalsE(l.right, r.right.right)),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function thenDistribute<A>(E: P.Eq<A>, l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  const equalsE = equals_(E)
+  if (
+    l._tag === CauseTag.Then &&
+    l.right._tag === CauseTag.Both &&
+    r._tag === CauseTag.Both &&
+    r.right._tag === CauseTag.Then &&
+    r.left._tag === CauseTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        equalsE(r.left.left, r.right.left),
+        equalsE(l.left, r.left.left),
+        equalsE(l.right.left, r.left.right),
+        equalsE(l.right.right, r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else if (
+    l._tag === CauseTag.Then &&
+    l.left._tag === CauseTag.Both &&
+    r._tag === CauseTag.Both &&
+    r.left._tag === CauseTag.Then &&
+    r.right._tag === CauseTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        equalsE(r.left.right, r.right.right),
+        equalsE(l.left.left, r.left.left),
+        equalsE(l.left.right, r.right.left),
+        equalsE(l.right, r.left.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function equalBoth<A>(E: P.Eq<A>, l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  const equalsE = equals_(E)
+  if (l._tag === CauseTag.Both && r._tag === CauseTag.Both) {
+    return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function equalThen<A>(E: P.Eq<A>, l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  const equalsE = equals_(E)
+  if (l._tag === CauseTag.Then && r._tag === CauseTag.Then) {
+    return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function equalEmpty<A>(E: P.Eq<A>, l: Cause<A>, r: Cause<A>): Ev.Eval<boolean> {
+  const equalsE = equals_(E)
+  if (l._tag === CauseTag.Then || l._tag === CauseTag.Both) {
+    if (l.left._tag === CauseTag.Empty) {
+      return equalsE(l.right, r)
+    } else if (l.right._tag === CauseTag.Empty) {
+      return equalsE(l.left, r)
+    } else {
+      return Ev.pure(false)
+    }
+  } else {
+    return Ev.pure(false)
+  }
 }

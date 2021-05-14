@@ -1,6 +1,7 @@
 /*
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/ParSeq.scala
  */
+import type { HashSet } from './HashSet'
 import type * as HKT from './HKT'
 
 import * as A from './Array/core'
@@ -8,8 +9,12 @@ import * as B from './boolean'
 import * as E from './Either'
 import * as Ev from './Eval'
 import { flow, hole, identity, pipe } from './function'
+import * as HS from './HashSet'
+import * as L from './List/core'
 import { FreeSemiringURI } from './Modules'
 import * as P from './prelude'
+import { isObject } from './prelude'
+import * as St from './Structural'
 import { tuple } from './tuple'
 import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 
@@ -21,25 +26,112 @@ import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 
 export { FreeSemiringURI }
 
-export interface Single<A> {
-  readonly _tag: 'Single'
-  readonly value: A
+export const FreeSemiringTypeId = Symbol()
+export type FreeSemiringTypeId = typeof FreeSemiringTypeId
+
+export const SingleTag = Symbol()
+export type SingleTag = typeof SingleTag
+export const ThenTag = Symbol()
+export type ThenTag = typeof ThenTag
+export const BothTag = Symbol()
+export type BothTag = typeof BothTag
+export const EmptyTag = Symbol()
+export type EmptyTag = typeof EmptyTag
+
+export const FreeSemiringTag = {
+  Single: SingleTag,
+  Then: ThenTag,
+  Both: BothTag,
+  Empty: EmptyTag
+} as const
+
+export class Single<A> {
+  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
+  readonly _tag: SingleTag                          = FreeSemiringTag.Single
+
+  constructor(readonly value: A) {}
+
+  get [St.$hash](): number {
+    return St.hash(this.value)
+  }
+  [St.$equals](that: unknown): boolean {
+    return isFreeSemiring(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
+    return Ev.now(that._tag === FreeSemiringTag.Single && St.equals(this.value, that.value))
+  }
 }
 
-export interface Then<Z, A> {
-  readonly _tag: 'Then'
-  readonly left: FreeSemiring<Z, A>
-  readonly right: FreeSemiring<Z, A>
+export class Then<Z, A> {
+  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
+  readonly _tag: ThenTag                            = FreeSemiringTag.Then
+
+  constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
+
+  get [St.$hash](): number {
+    return hashCode(this)
+  }
+  [St.$equals](that: unknown): boolean {
+    return isFreeSemiring(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      return (
+        (yield* _(structuralEqualThen(self, that))) ||
+        (yield* _(structuralSymmetric(structuralThenAssociate)(self, that))) ||
+        (yield* _(structuralSymmetric(structuralThenDistribute)(self, that))) ||
+        (yield* _(structuralSymmetric(structuralEqualEmpty)(self, that)))
+      )
+    })
+  }
 }
 
-export interface Empty {
-  readonly _tag: 'Empty'
+const _emptyHash = St.opt(St.randomInt())
+
+export class Empty {
+  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
+  readonly _tag: EmptyTag                           = FreeSemiringTag.Empty
+
+  get [St.$hash](): number {
+    return _emptyHash
+  }
+  [St.$equals](that: unknown): boolean {
+    return isFreeSemiring(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
+    return Ev.now(that._tag === FreeSemiringTag.Empty)
+  }
 }
 
-export interface Both<Z, A> {
-  readonly _tag: 'Both'
-  readonly left: FreeSemiring<Z, A>
-  readonly right: FreeSemiring<Z, A>
+export class Both<Z, A> {
+  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
+  readonly _tag: BothTag                            = FreeSemiringTag.Both
+
+  constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
+
+  get [St.$hash](): number {
+    return hashCode(this)
+  }
+  [St.$equals](that: unknown): boolean {
+    return isFreeSemiring(that) && this.equalsEval(that).value
+  }
+
+  equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
+    const self = this
+    return Ev.gen(function* (_) {
+      return (
+        (yield* _(structuralEqualBoth(self, that))) ||
+        (yield* _(structuralSymmetric(structuralBothAssociate)(self, that))) ||
+        (yield* _(structuralSymmetric(structuralBothDistribute)(self, that))) ||
+        (yield* _(structuralBothCommute(self, that))) ||
+        (yield* _(structuralSymmetric(structuralEqualEmpty)(self, that)))
+      )
+    })
+  }
 }
 
 /**
@@ -63,6 +155,10 @@ export type FreeSemiring<Z, A> = Empty | Single<A> | Then<Z, A> | Both<Z, A>
 
 export type V = HKT.V<'X', '+'>
 
+export function isFreeSemiring(u: unknown): u is FreeSemiring<unknown, unknown> {
+  return isObject(u) && FreeSemiringTypeId in u
+}
+
 /*
  * -------------------------------------------
  * Constructors
@@ -70,32 +166,19 @@ export type V = HKT.V<'X', '+'>
  */
 
 export function single<A>(a: A): FreeSemiring<never, A> {
-  return {
-    _tag: 'Single',
-    value: a
-  }
+  return new Single(a)
 }
 
 export function empty<A>(): FreeSemiring<void, A> {
-  return {
-    _tag: 'Empty'
-  }
+  return new Empty()
 }
 
-export function then<Z, A>(left: FreeSemiring<Z, A>, right: FreeSemiring<Z, A>): FreeSemiring<Z, A> {
-  return {
-    _tag: 'Then',
-    left,
-    right
-  }
+export function then<Z, A, B>(left: FreeSemiring<Z, A>, right: FreeSemiring<Z, B>): FreeSemiring<Z, A | B> {
+  return new Then<Z, A | B>(left, right)
 }
 
 export function both<Z, A, B>(left: FreeSemiring<Z, A>, right: FreeSemiring<Z, B>): FreeSemiring<Z, A | B> {
-  return {
-    _tag: 'Both',
-    left,
-    right
-  }
+  return new Both<Z, A | B>(left, right)
 }
 
 /*
@@ -137,24 +220,24 @@ function foldLoop<A, B>(
       const parSeqs = input.head!.next!
       /* eslint-disable no-param-reassign */
       switch (head._tag) {
-        case 'Empty': {
+        case FreeSemiringTag.Empty: {
           input = new LinkedList(parSeqs)
           output.prepend(E.Right(onEmpty))
           break
         }
-        case 'Single': {
+        case FreeSemiringTag.Single: {
           input = new LinkedList(parSeqs)
           output.prepend(E.Right(onSingle(head.value)))
           break
         }
-        case 'Then': {
+        case FreeSemiringTag.Then: {
           input = new LinkedList(parSeqs)
           input.prepend(head.right)
           input.prepend(head.left)
           output.prepend(E.Left(false))
           break
         }
-        case 'Both': {
+        case FreeSemiringTag.Both: {
           input = new LinkedList(parSeqs)
           input.prepend(head.right)
           input.prepend(head.left)
@@ -306,14 +389,15 @@ export function flatten<Z, Z1, A>(ma: FreeSemiring<Z, FreeSemiring<Z1, A>>): Fre
  * -------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<[HKT.URI<FreeSemiringURI>], V>()((_) => (G) => (ta, f) =>
-  fold_(
-    ta,
-    G.pure(empty()),
-    flow(f, G.map(single)),
-    (gb1, gb2) => G.crossWith_(gb1, gb2, then),
-    (gb1, gb2) => G.crossWith_(gb1, gb2, both)
-  )
+export const traverse_ = P.implementTraverse_<[HKT.URI<FreeSemiringURI>], V>()(
+  (_) => (G) => (ta, f) =>
+    fold_(
+      ta,
+      G.pure(empty()),
+      flow(f, G.map(single)),
+      (gb1, gb2) => G.crossWith_(gb1, gb2, then),
+      (gb1, gb2) => G.crossWith_(gb1, gb2, both)
+    )
 )
 
 export const traverse = P.implementTraverse<[HKT.URI<FreeSemiringURI>], V>()((_) => (G) => {
@@ -336,17 +420,17 @@ export function first<A>(ma: FreeSemiring<never, A>): A {
   let current = ma
   for (;;) {
     switch (current._tag) {
-      case 'Empty': {
+      case FreeSemiringTag.Empty: {
         return hole<A>()
       }
-      case 'Single': {
+      case FreeSemiringTag.Single: {
         return current.value
       }
-      case 'Both': {
+      case FreeSemiringTag.Both: {
         current = current.left
         break
       }
-      case 'Then': {
+      case FreeSemiringTag.Then: {
         current = current.left
         break
       }
@@ -374,19 +458,19 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<FreeSemiring<any, A>> {
 function equals_<A>(E: P.Eq<A>): (l: FreeSemiring<any, A>, r: FreeSemiring<any, A>) => Ev.Eval<boolean> {
   return (l, r) => {
     switch (l._tag) {
-      case 'Empty': {
-        if (r._tag !== 'Empty') {
+      case FreeSemiringTag.Empty: {
+        if (r._tag !== FreeSemiringTag.Empty) {
           return Ev.pure(false)
         }
         return Ev.pure(true)
       }
-      case 'Single': {
-        if (r._tag !== 'Single') {
+      case FreeSemiringTag.Single: {
+        if (r._tag !== FreeSemiringTag.Single) {
           return Ev.pure(false)
         }
         return Ev.pure(E.equals_(l.value, r.value))
       }
-      case 'Both': {
+      case FreeSemiringTag.Both: {
         return pipe(
           Ev.sequenceT(
             equalBoth(E, l, r),
@@ -398,7 +482,7 @@ function equals_<A>(E: P.Eq<A>): (l: FreeSemiring<any, A>, r: FreeSemiring<any, 
           Ev.map(A.foldl(false, B.or_))
         )
       }
-      case 'Then': {
+      case FreeSemiringTag.Then: {
         return pipe(
           Ev.sequenceT(
             equalThen(E, l, r),
@@ -421,7 +505,12 @@ function symmetric<X, A>(
 
 function bothAssociate<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
-  if (l._tag === 'Both' && l.left._tag === 'Both' && r._tag === 'Both' && r.right._tag === 'Both') {
+  if (
+    l._tag === FreeSemiringTag.Both &&
+    l.left._tag === FreeSemiringTag.Both &&
+    r._tag === FreeSemiringTag.Both &&
+    r.right._tag === FreeSemiringTag.Both
+  ) {
     return Ev.map_(
       Ev.sequenceT(equalsE(l.left.left, r.left), equalsE(l.left.right, r.right.left), equalsE(l.right, r.right.right)),
       A.foldl(true, B.and_)
@@ -434,11 +523,11 @@ function bothAssociate<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<a
 function bothDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (
-    l._tag === 'Both' &&
-    l.left._tag === 'Then' &&
-    l.right._tag === 'Then' &&
-    r._tag === 'Then' &&
-    r.right._tag === 'Both'
+    l._tag === FreeSemiringTag.Both &&
+    l.left._tag === FreeSemiringTag.Then &&
+    l.right._tag === FreeSemiringTag.Then &&
+    r._tag === FreeSemiringTag.Then &&
+    r.right._tag === FreeSemiringTag.Both
   ) {
     return Ev.map_(
       Ev.sequenceT(
@@ -450,11 +539,11 @@ function bothDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<
       A.foldl(true, B.and_)
     )
   } else if (
-    l._tag === 'Both' &&
-    l.left._tag === 'Then' &&
-    l.right._tag === 'Then' &&
-    r._tag === 'Then' &&
-    r.left._tag === 'Both'
+    l._tag === FreeSemiringTag.Both &&
+    l.left._tag === FreeSemiringTag.Then &&
+    l.right._tag === FreeSemiringTag.Then &&
+    r._tag === FreeSemiringTag.Then &&
+    r.left._tag === FreeSemiringTag.Both
   ) {
     return Ev.map_(
       Ev.sequenceT(
@@ -472,7 +561,7 @@ function bothDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<
 
 function bothCommute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
-  if (l._tag === 'Both' && r._tag === 'Both') {
+  if (l._tag === FreeSemiringTag.Both && r._tag === FreeSemiringTag.Both) {
     return Ev.crossWith_(equalsE(l.left, r.right), equalsE(l.right, r.left), B.and_)
   } else {
     return Ev.pure(false)
@@ -481,7 +570,12 @@ function bothCommute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any
 
 function thenAssociate<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
-  if (l._tag === 'Then' && l.left._tag === 'Then' && r._tag === 'Then' && r.right._tag === 'Then') {
+  if (
+    l._tag === FreeSemiringTag.Then &&
+    l.left._tag === FreeSemiringTag.Then &&
+    r._tag === FreeSemiringTag.Then &&
+    r.right._tag === FreeSemiringTag.Then
+  ) {
     return Ev.map_(
       Ev.sequenceT(equalsE(l.left.left, r.left), equalsE(l.left.right, r.right.left), equalsE(l.right, r.right.right)),
       A.foldl(true, B.and_)
@@ -494,11 +588,11 @@ function thenAssociate<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<a
 function thenDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
   if (
-    l._tag === 'Then' &&
-    l.right._tag === 'Both' &&
-    r._tag === 'Both' &&
-    r.right._tag === 'Then' &&
-    r.left._tag === 'Then'
+    l._tag === FreeSemiringTag.Then &&
+    l.right._tag === FreeSemiringTag.Both &&
+    r._tag === FreeSemiringTag.Both &&
+    r.right._tag === FreeSemiringTag.Then &&
+    r.left._tag === FreeSemiringTag.Then
   ) {
     return Ev.map_(
       Ev.sequenceT(
@@ -510,11 +604,11 @@ function thenDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<
       A.foldl(true, B.and_)
     )
   } else if (
-    l._tag === 'Then' &&
-    l.left._tag === 'Both' &&
-    r._tag === 'Both' &&
-    r.left._tag === 'Then' &&
-    r.right._tag === 'Then'
+    l._tag === FreeSemiringTag.Then &&
+    l.left._tag === FreeSemiringTag.Both &&
+    r._tag === FreeSemiringTag.Both &&
+    r.left._tag === FreeSemiringTag.Then &&
+    r.right._tag === FreeSemiringTag.Then
   ) {
     return Ev.map_(
       Ev.sequenceT(
@@ -532,7 +626,7 @@ function thenDistribute<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<
 
 function equalBoth<A>(E: P.Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
-  if (l._tag === 'Both' && r._tag === 'Both') {
+  if (l._tag === FreeSemiringTag.Both && r._tag === FreeSemiringTag.Both) {
     return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
   } else {
     return Ev.pure(false)
@@ -541,7 +635,7 @@ function equalBoth<A>(E: P.Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<nev
 
 function equalThen<A>(E: P.Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<never, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
-  if (l._tag === 'Then' && r._tag === 'Then') {
+  if (l._tag === FreeSemiringTag.Then && r._tag === FreeSemiringTag.Then) {
     return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
   } else {
     return Ev.pure(false)
@@ -550,15 +644,292 @@ function equalThen<A>(E: P.Eq<A>, l: FreeSemiring<never, A>, r: FreeSemiring<nev
 
 function equalEmpty<A>(E: P.Eq<A>, l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
   const equalsE = equals_(E)
-  if (l._tag === 'Then' || l._tag === 'Both') {
-    if (l.left._tag === 'Empty') {
+  if (l._tag === FreeSemiringTag.Then || l._tag === FreeSemiringTag.Both) {
+    if (l.left._tag === FreeSemiringTag.Empty) {
       return equalsE(l.right, r)
-    } else if (l.right._tag === 'Empty') {
+    } else if (l.right._tag === FreeSemiringTag.Empty) {
       return equalsE(l.left, r)
     } else {
       return Ev.pure(false)
     }
   } else {
     return Ev.pure(false)
+  }
+}
+
+function structuralSymmetric<A>(
+  f: (x: FreeSemiring<any, A>, y: FreeSemiring<any, A>) => Ev.Eval<boolean>
+): (x: FreeSemiring<any, A>, y: FreeSemiring<any, A>) => Ev.Eval<boolean> {
+  return (x, y) => Ev.crossWith_(f(x, y), f(y, x), B.or_)
+}
+
+function structuralEqualEmpty<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (l._tag === FreeSemiringTag.Then || l._tag === FreeSemiringTag.Both) {
+    if (l.left._tag === FreeSemiringTag.Empty) {
+      return l.right.equalsEval(r)
+    } else if (l.right._tag === FreeSemiringTag.Empty) {
+      return l.left.equalsEval(r)
+    } else {
+      return Ev.pure(false)
+    }
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralThenAssociate<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (
+    l._tag === FreeSemiringTag.Then &&
+    l.left._tag === FreeSemiringTag.Then &&
+    r._tag === FreeSemiringTag.Then &&
+    r.right._tag === FreeSemiringTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.left.equalsEval(r.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralThenDistribute<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (
+    l._tag === FreeSemiringTag.Then &&
+    l.right._tag === FreeSemiringTag.Both &&
+    r._tag === FreeSemiringTag.Both &&
+    r.right._tag === FreeSemiringTag.Then &&
+    r.left._tag === FreeSemiringTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        r.left.left.equalsEval(r.right.left),
+        l.left.equalsEval(r.left.left),
+        l.right.left.equalsEval(r.left.right),
+        l.right.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else if (
+    l._tag === FreeSemiringTag.Then &&
+    l.left._tag === FreeSemiringTag.Both &&
+    r._tag === FreeSemiringTag.Both &&
+    r.left._tag === FreeSemiringTag.Then &&
+    r.right._tag === FreeSemiringTag.Then
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        r.left.right.equalsEval(r.right.right),
+        l.left.left.equalsEval(r.left.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.equalsEval(r.left.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralEqualThen<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (l._tag === FreeSemiringTag.Then && r._tag === FreeSemiringTag.Then) {
+    return Ev.crossWith_(l.left.equalsEval(r.left), l.right.equalsEval(r.right), B.and_)
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralBothAssociate<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (
+    l._tag === FreeSemiringTag.Both &&
+    l.left._tag === FreeSemiringTag.Both &&
+    r._tag === FreeSemiringTag.Both &&
+    r.right._tag === FreeSemiringTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.left.equalsEval(r.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralBothDistribute<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (
+    l._tag === FreeSemiringTag.Both &&
+    l.left._tag === FreeSemiringTag.Then &&
+    l.right._tag === FreeSemiringTag.Then &&
+    r._tag === FreeSemiringTag.Then &&
+    r.right._tag === FreeSemiringTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.left.equalsEval(l.right.left),
+        l.left.left.equalsEval(r.left),
+        l.left.right.equalsEval(r.right.left),
+        l.right.right.equalsEval(r.right.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else if (
+    l._tag === FreeSemiringTag.Both &&
+    l.left._tag === FreeSemiringTag.Then &&
+    l.right._tag === FreeSemiringTag.Then &&
+    r._tag === FreeSemiringTag.Then &&
+    r.left._tag === FreeSemiringTag.Both
+  ) {
+    return Ev.map_(
+      Ev.sequenceT(
+        l.left.right.equalsEval(l.right.right),
+        l.left.left.equalsEval(r.left.left),
+        l.right.left.equalsEval(r.left.right),
+        l.left.right.equalsEval(r.right)
+      ),
+      A.foldl(true, B.and_)
+    )
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralBothCommute<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (l._tag === FreeSemiringTag.Both && r._tag === FreeSemiringTag.Both) {
+    return Ev.crossWith_(l.left.equalsEval(r.right), l.right.equalsEval(r.left), B.and_)
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+function structuralEqualBoth<A>(l: FreeSemiring<any, A>, r: FreeSemiring<any, A>): Ev.Eval<boolean> {
+  if (l._tag === FreeSemiringTag.Both && r._tag === FreeSemiringTag.Both) {
+    return Ev.crossWith_(l.left.equalsEval(r.left), l.right.equalsEval(r.right), B.and_)
+  } else {
+    return Ev.pure(false)
+  }
+}
+
+/*
+ * -------------------------------------------
+ * hash internals
+ * -------------------------------------------
+ */
+
+function stepLoop<A>(
+  fa: FreeSemiring<any, A>,
+  stack: L.List<FreeSemiring<any, A>>,
+  parallel: HashSet<FreeSemiring<any, A>>,
+  sequential: L.List<FreeSemiring<any, A>>
+): readonly [HashSet<FreeSemiring<any, A>>, L.List<FreeSemiring<any, A>>] {
+  // eslint-disable-next-line no-constant-condition
+  while (1) {
+    /* eslint-disable no-param-reassign */
+    switch (fa._tag) {
+      case FreeSemiringTag.Empty: {
+        if (L.isEmpty(stack)) {
+          return tuple(parallel, sequential)
+        } else {
+          fa    = L.unsafeFirst(stack)!
+          stack = L.tail(stack)
+        }
+        break
+      }
+      case FreeSemiringTag.Then: {
+        const left  = fa.left
+        const right = fa.right
+        switch (left._tag) {
+          case FreeSemiringTag.Empty: {
+            fa = right
+            break
+          }
+          case FreeSemiringTag.Then: {
+            fa = then(left.left, then(left.right, right))
+            break
+          }
+          case FreeSemiringTag.Both: {
+            fa = both(then(left.left, right), then(left.right, right))
+            break
+          }
+          default: {
+            fa         = left
+            sequential = L.prepend_(sequential, right)
+          }
+        }
+        break
+      }
+      case FreeSemiringTag.Both: {
+        stack = L.prepend_(stack, fa.right)
+        fa    = fa.left
+        break
+      }
+      default: {
+        if (L.isEmpty(stack)) {
+          return tuple(HS.add_(parallel, fa), sequential)
+        } else {
+          fa       = L.unsafeFirst(stack)!
+          stack    = L.tail(stack)
+          parallel = HS.add_(parallel, fa)
+          break
+        }
+      }
+    }
+  }
+  return hole()
+  /* eslint-enable no-param-reassign */
+}
+
+function step<A>(fa: FreeSemiring<any, A>): readonly [HashSet<FreeSemiring<any, A>>, L.List<FreeSemiring<any, A>>] {
+  return stepLoop(fa, L.empty(), HS.makeDefault(), L.empty())
+}
+
+function flattenLoop<A>(
+  fas: L.List<FreeSemiring<any, A>>,
+  flattened: L.List<HashSet<FreeSemiring<any, A>>>
+): L.List<HashSet<FreeSemiring<any, A>>> {
+  // eslint-disable-next-line no-constant-condition
+  while (1) {
+    const [parallel, sequential] = L.foldl_(
+      fas,
+      tuple(HS.makeDefault<FreeSemiring<any, A>>(), L.empty<FreeSemiring<any, A>>()),
+      ([parallel, sequential], fa) => {
+        const [set, seq] = step(fa)
+        return tuple(HS.union_(parallel, set), L.concat_(sequential, seq))
+      }
+    )
+    const updated = HS.size(parallel) > 0 ? L.prepend_(flattened, parallel) : flattened
+    if (L.isEmpty(sequential)) {
+      return L.reverse(updated)
+    } else {
+      /* eslint-disable no-param-reassign */
+      fas       = sequential
+      flattened = updated
+      /* eslint-enable no-param-reassign */
+    }
+  }
+  return hole()
+}
+
+function flat<A>(fa: FreeSemiring<any, A>): L.List<HashSet<FreeSemiring<any, A>>> {
+  return flattenLoop(L.of(fa), L.empty())
+}
+
+function hashCode<A>(fa: FreeSemiring<any, A>): number {
+  const flattened = flat(fa)
+  const size      = L.length(flattened)
+  let head
+  if (size === 0) {
+    return _emptyHash
+  } else if (size === 1 && (head = L.unsafeFirst(flattened)!) && HS.size(head) === 1) {
+    return L.unsafeFirst(L.from(head))![St.$hash]
+  } else {
+    return St.hashIterator(flattened[Symbol.iterator]())
   }
 }

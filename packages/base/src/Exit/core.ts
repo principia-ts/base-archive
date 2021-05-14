@@ -1,11 +1,15 @@
 import type { FiberId } from '../Fiber/FiberId'
 import type { IO } from '../IO/core'
+import type { Predicate } from '../prelude'
+import type { Equatable, Hashable } from '../Structural'
 
 import * as A from '../Array/core'
 import * as C from '../Cause'
 import * as E from '../Either'
 import { identity, pipe } from '../function'
 import * as O from '../Option'
+import { isObject } from '../prelude'
+import * as St from '../Structural'
 import { tuple } from '../tuple'
 
 /*
@@ -14,16 +18,49 @@ import { tuple } from '../tuple'
  * -------------------------------------------
  */
 
+export const ExitTypeId = Symbol()
+export type ExitTypeId = typeof ExitTypeId
+
 export type Exit<E, A> = Success<A> | Failure<E>
 
-export interface Success<A> {
-  readonly _tag: 'Success'
-  readonly value: A
+export const SuccessTag = Symbol()
+export type SuccessTag = typeof SuccessTag
+export const FailureTag = Symbol()
+export type FailureTag = typeof FailureTag
+
+export const ExitTag = {
+  Success: SuccessTag,
+  Failure: FailureTag
+} as const
+
+export class Success<A> implements Hashable, Equatable {
+  readonly [ExitTypeId]: ExitTypeId = ExitTypeId
+  readonly _tag: SuccessTag         = ExitTag.Success
+  constructor(readonly value: A) {}
+
+  get [St.$hash](): number {
+    return St.hash(this.value)
+  }
+  [St.$equals](that: unknown): boolean {
+    return isExit(that) && isSuccess(that) && St.equals(this.value, that.value)
+  }
 }
 
-export interface Failure<E> {
-  readonly _tag: 'Failure'
-  readonly cause: C.Cause<E>
+export class Failure<E> {
+  readonly [ExitTypeId]: ExitTypeId = ExitTypeId
+  readonly _tag: FailureTag         = ExitTag.Failure
+  constructor(readonly cause: C.Cause<E>) {}
+
+  get [St.$hash](): number {
+    return St.hash(this.cause)
+  }
+  [St.$equals](that: unknown): boolean {
+    return isExit(that) && isFailure(that) && St.equals(this.cause, that.cause)
+  }
+}
+
+export function isExit(u: unknown): u is Exit<unknown, unknown> {
+  return isObject(u) && ExitTypeId in u
 }
 
 /*
@@ -33,17 +70,11 @@ export interface Failure<E> {
  */
 
 export function succeed<E = never, A = never>(value: A): Exit<E, A> {
-  return {
-    _tag: 'Success',
-    value
-  }
+  return new Success(value)
 }
 
 export function halt<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
-  return {
-    _tag: 'Failure',
-    cause
-  }
+  return new Failure(cause)
 }
 
 export function fail<E = never, A = never>(e: E): Exit<E, A> {
@@ -77,11 +108,11 @@ export function fromOption<E>(onNone: () => E): <A>(fa: O.Option<A>) => Exit<E, 
  */
 
 export function isSuccess<E, A>(exit: Exit<E, A>): exit is Success<A> {
-  return exit._tag === 'Success'
+  return exit._tag === ExitTag.Success
 }
 
 export function isFailure<E, A>(exit: Exit<E, A>): exit is Failure<E> {
-  return exit._tag === 'Failure'
+  return exit._tag === ExitTag.Failure
 }
 
 export function isInterrupt<E, A>(exit: Exit<E, A>): exit is Failure<E> {
@@ -96,10 +127,10 @@ export function isInterrupt<E, A>(exit: Exit<E, A>): exit is Failure<E> {
 
 export function match_<E, A, B>(exit: Exit<E, A>, onFailure: (e: C.Cause<E>) => B, onSuccess: (a: A) => B): B {
   switch (exit._tag) {
-    case 'Success': {
+    case ExitTag.Success: {
       return onSuccess(exit.value)
     }
-    case 'Failure': {
+    case ExitTag.Failure: {
       return onFailure(exit.cause)
     }
   }
@@ -118,10 +149,10 @@ export function matchM_<E, A, R1, E1, A1, R2, E2, A2>(
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R1 & R2, E1 | E2, A1 | A2> {
   switch (exit._tag) {
-    case 'Success': {
+    case ExitTag.Success: {
       return onSuccess(exit.value)
     }
-    case 'Failure': {
+    case ExitTag.Failure: {
       return onFailure(exit.cause)
     }
   }
@@ -197,23 +228,23 @@ export function crossWithCause_<E, A, G, B, C>(
   g: (ea: C.Cause<E>, eb: C.Cause<G>) => C.Cause<E | G>
 ): Exit<E | G, C> {
   switch (fa._tag) {
-    case 'Failure': {
+    case ExitTag.Failure: {
       switch (fb._tag) {
-        case 'Success': {
+        case ExitTag.Success: {
           return fa
         }
-        case 'Failure': {
+        case ExitTag.Failure: {
           return halt(g(fa.cause, fb.cause))
         }
       }
     }
     // eslint-disable-next-line no-fallthrough
-    case 'Success': {
+    case ExitTag.Success: {
       switch (fb._tag) {
-        case 'Success': {
+        case ExitTag.Success: {
           return succeed(f(fa.value, fb.value))
         }
-        case 'Failure': {
+        case ExitTag.Failure: {
           return fb
         }
       }
@@ -265,6 +296,14 @@ export function mapError_<E, A, G>(pab: Exit<E, A>, f: (e: E) => G): Exit<G, A> 
 
 export function mapError<E, G>(f: (e: E) => G): <A>(pab: Exit<E, A>) => Exit<G, A> {
   return (pab) => mapError_(pab, f)
+}
+
+export function mapErrorCause_<E, A, G>(pab: Exit<E, A>, f: (e: C.Cause<E>) => C.Cause<G>): Exit<G, A> {
+  return isFailure(pab) ? halt(f(pab.cause)) : pab
+}
+
+export function mapErrorCause<E, G>(f: (e: C.Cause<E>) => C.Cause<G>): <A>(pab: Exit<E, A>) => Exit<G, A> {
+  return (pab) => mapErrorCause_(pab, f)
 }
 
 export function bimap_<E, A, G, B>(pab: Exit<E, A>, f: (e: E) => G, g: (a: A) => B): Exit<G, B> {
@@ -382,10 +421,22 @@ export function collectAllPar<E, A>(...exits: ReadonlyArray<Exit<E, A>>): O.Opti
   )
 }
 
+export function exists_<E, A>(exit: Exit<E, A>, predicate: Predicate<A>): boolean {
+  return match_(exit, () => false, predicate)
+}
+
+export function exists<A>(predicate: Predicate<A>): <E>(exit: Exit<E, A>) => boolean {
+  return (exit) => exists_(exit, predicate)
+}
+
 export function orElseFail_<E, A, G>(exit: Exit<E, A>, orElse: G) {
   return mapError_(exit, () => orElse)
 }
 
 export function orElseFail<G>(orElse: G): <E, A>(exit: Exit<E, A>) => Exit<G, A> {
   return (exit) => orElseFail_(exit, orElse)
+}
+
+export function untraced<E, A>(exit: Exit<E, A>): Exit<E, A> {
+  return mapErrorCause_(exit, C.untraced)
 }

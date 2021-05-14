@@ -15,7 +15,7 @@ export function isHashable(value: any): value is Hashable {
 const CACHE  = new WeakMap<any, number>()
 const RANDOM = new PCGRandom((Math.random() * 4294967296) >>> 0)
 
-function randomInt(): number {
+export function randomInt(): number {
   return RANDOM.integer(0x7fffffff)
 }
 

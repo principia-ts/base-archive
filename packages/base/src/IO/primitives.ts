@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Cause } from '../Cause'
+import type { Cause } from '../Cause/core'
 import type { Exit } from '../Exit'
 import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
 import type { FiberId } from '../Fiber/FiberId'
@@ -11,6 +11,7 @@ import type { Option } from '../Option'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 
+import { Die } from '../Cause/core'
 import { IOURI } from '../Modules'
 
 /*
@@ -385,10 +386,7 @@ export class GetPlatform<R, E, A> extends IO<R, E, A> {
   }
 }
 
-export const ffiNotImplemented = new Fail(() => ({
-  _tag: 'Die',
-  value: new Error('Integration not implemented or unsupported')
-}))
+export const ffiNotImplemented = new Fail(() => new Die(new Error('Integration not implemented or unsupported')))
 
 export type Instruction =
   | Bind<any, any, any, any, any, any>
