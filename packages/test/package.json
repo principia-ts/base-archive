@@ -68,7 +68,7 @@
     "build:traced": "yarn build:traced:esm && yarn build:traced:cjs",
     "build:traced:cjs": "ttsc --build ./config/tsconfig.traced.cjs.json",
     "build:traced:esm": "ttsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",
-    "build:types": "ttsc --build ./config/tsconfig.types.json",
+    "build:types": "tsc --build ./config/tsconfig.types.json",
     "buildAll": "yarn build && yarn build:traced && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
