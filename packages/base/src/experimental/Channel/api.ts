@@ -1309,11 +1309,7 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     }
     case State.ChannelStateTag.Done: {
       const done = exec.getDone()
-      if (done._tag === 'Success') {
-        return I.fail(E.Right(done.value))
-      } else {
-        return I.halt(Ca.map_(done.cause, E.Left))
-      }
+      return Ex.matchM_(done, flow(Ca.map(E.Left), I.halt), flow(E.Right, I.fail))
     }
   }
 }

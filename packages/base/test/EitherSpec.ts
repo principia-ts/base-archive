@@ -2,16 +2,14 @@ import * as E from '@principia/base/Either'
 import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Option'
-import { assert, deepStrictEqualTo, DefaultRunnableSpec, equalTo, suite, test } from '@principia/test'
-
-const eqEitherStrict = E.getEq(Eq.strict, Eq.strict)
+import { assert, deepStrictEqualTo, DefaultRunnableSpec, suite, test } from '@principia/test'
 
 class EitherSpec extends DefaultRunnableSpec {
   spec = suite(
     'EitherSpec',
     test('mapLeft', () => {
       const double = (n: number): number => n * 2
-      return assert(pipe(E.Right('bar'), E.mapLeft(double)), equalTo(E.Right('bar'), eqEitherStrict))['&&'](
+      return assert(pipe(E.Right('bar'), E.mapLeft(double)), deepStrictEqualTo(E.Right('bar')))['&&'](
         assert(pipe(E.Left(2), E.mapLeft(double)), deepStrictEqualTo(E.Left(4)))
       )
     }),

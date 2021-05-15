@@ -6,7 +6,7 @@ import type { Stream } from '@principia/base/Stream'
 import * as Ca from '@principia/base/Cause'
 import * as C from '@principia/base/Chunk'
 import * as Ex from '@principia/base/Exit'
-import { pipe } from '@principia/base/function'
+import { hole, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Option'
 import * as S from '@principia/base/Stream'
@@ -147,33 +147,39 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
       pipe(
         I.result(left),
         I.crossWith(I.result(right), (ea, eb) => {
-          return ea._tag === 'Success'
-            ? eb._tag === 'Success'
-              ? Ex.succeed(
-                  tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.Some(ea.value), O.Some(eb.value)))
+          if (Ex.isSuccess(ea)) {
+            if (Ex.isSuccess(eb)) {
+              // Success && Success
+              return Ex.succeed(
+                tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.Some(ea.value), O.Some(eb.value)))
+              )
+            } else {
+              // Success && Failure
+              return pipe(
+                eb.cause,
+                Ca.sequenceCauseOption,
+                O.match(
+                  () =>
+                    O.match_(
+                      s2,
+                      () =>
+                        Ex.succeed(
+                          tuple(
+                            map_(ea.value, (a) => f(a, mb.value)),
+                            tuple(leftDone, true, O.Some(ea.value), s2)
+                          )
+                        ),
+                      (r) =>
+                        Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.Some(ea.value), s2)))
+                    ),
+                  (cause) => Ex.halt(cause)
                 )
-              : pipe(
-                  eb.cause,
-                  Ca.sequenceCauseOption,
-                  O.match(
-                    () =>
-                      O.match_(
-                        s2,
-                        () =>
-                          Ex.succeed(
-                            tuple(
-                              map_(ea.value, (a) => f(a, mb.value)),
-                              tuple(leftDone, true, O.Some(ea.value), s2)
-                            )
-                          ),
-                        (r) =>
-                          Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.Some(ea.value), s2)))
-                      ),
-                    (cause) => Ex.halt(cause)
-                  )
-                )
-            : eb._tag === 'Success'
-            ? pipe(
+              )
+            }
+          } else {
+            if (Ex.isSuccess(eb)) {
+              // Failure && Success
+              return pipe(
                 ea.cause,
                 Ca.sequenceCauseOption,
                 O.match(
@@ -193,35 +199,117 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
                   (cause) => Ex.halt(cause)
                 )
               )
-            : (() => {
-                const causeL = Ca.sequenceCauseOption(ea.cause)
-                const causeR = Ca.sequenceCauseOption(eb.cause)
-                return causeL._tag === 'Some'
-                  ? causeR._tag === 'Some'
-                    ? Ex.halt(Ca.both(causeL.value, causeR.value))
-                    : Ex.halt(causeL.value)
-                  : causeR._tag === 'Some'
-                  ? Ex.halt(causeR.value)
-                  : (() => {
-                      if (!leftDone && s2._tag === 'Some') {
-                        return Ex.succeed(
-                          tuple(
-                            map_(s2.value, (b) => f(ma.value, b)),
-                            tuple(true, rightDone, s1, s2)
-                          )
-                        )
-                      } else if (!rightDone && s1._tag === 'Some') {
-                        return Ex.succeed(
-                          tuple(
-                            map_(s1.value, (a) => f(a, mb.value)),
-                            tuple(leftDone, true, O.None(), s2)
-                          )
-                        )
-                      } else {
-                        return Ex.fail(O.None())
-                      }
-                    })()
-              })()
+            } else {
+              // Failure && Failure
+              const causeL = Ca.sequenceCauseOption(ea.cause)
+              const causeR = Ca.sequenceCauseOption(eb.cause)
+              if (O.isSome(causeL)) {
+                if (O.isSome(causeR)) {
+                  return Ex.halt(Ca.both(causeL.value, causeR.value))
+                } else {
+                  return Ex.halt(causeL.value)
+                }
+              } else {
+                if (O.isSome(causeR)) {
+                  return Ex.halt(causeR.value)
+                } else {
+                  if (!leftDone && s2._tag === 'Some') {
+                    return Ex.succeed(
+                      tuple(
+                        map_(s2.value, (b) => f(ma.value, b)),
+                        tuple(true, rightDone, s1, s2)
+                      )
+                    )
+                  } else if (!rightDone && s1._tag === 'Some') {
+                    return Ex.succeed(
+                      tuple(
+                        map_(s1.value, (a) => f(a, mb.value)),
+                        tuple(leftDone, true, O.None(), s2)
+                      )
+                    )
+                  } else {
+                    return Ex.fail(O.None())
+                  }
+                }
+              }
+            }
+          }
+          return hole()
+          // return ea._tag === Ex.ExitTag.Success
+          //   ? eb._tag === Ex.ExitTag.Success
+          //     ? Ex.succeed(
+          //         tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.Some(ea.value), O.Some(eb.value)))
+          //       )
+          //     : pipe(
+          //         eb.cause,
+          //         Ca.sequenceCauseOption,
+          //         O.match(
+          //           () =>
+          //             O.match_(
+          //               s2,
+          //               () =>
+          //                 Ex.succeed(
+          //                   tuple(
+          //                     map_(ea.value, (a) => f(a, mb.value)),
+          //                     tuple(leftDone, true, O.Some(ea.value), s2)
+          //                   )
+          //                 ),
+          //               (r) =>
+          //                 Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.Some(ea.value), s2)))
+          //             ),
+          //           (cause) => Ex.halt(cause)
+          //         )
+          //       )
+          //   : eb._tag === Ex.ExitTag.Success
+          //   ? pipe(
+          //       ea.cause,
+          //       Ca.sequenceCauseOption,
+          //       O.match(
+          //         () =>
+          //           O.match_(
+          //             s1,
+          //             () =>
+          //               Ex.succeed(
+          //                 tuple(
+          //                   map_(eb.value, (b) => f(ma.value, b)),
+          //                   tuple(true, rightDone, s1, O.Some(eb.value))
+          //                 )
+          //               ),
+          //             (l) =>
+          //               Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.Some(eb.value))))
+          //           ),
+          //         (cause) => Ex.halt(cause)
+          //       )
+          //     )
+          //   : (() => {
+          //       const causeL = Ca.sequenceCauseOption(ea.cause)
+          //       const causeR = Ca.sequenceCauseOption(eb.cause)
+          //       return causeL._tag === 'Some'
+          //         ? causeR._tag === 'Some'
+          //           ? Ex.halt(Ca.both(causeL.value, causeR.value))
+          //           : Ex.halt(causeL.value)
+          //         : causeR._tag === 'Some'
+          //         ? Ex.halt(causeR.value)
+          //         : (() => {
+          //             if (!leftDone && s2._tag === 'Some') {
+          //               return Ex.succeed(
+          //                 tuple(
+          //                   map_(s2.value, (b) => f(ma.value, b)),
+          //                   tuple(true, rightDone, s1, s2)
+          //                 )
+          //               )
+          //             } else if (!rightDone && s1._tag === 'Some') {
+          //               return Ex.succeed(
+          //                 tuple(
+          //                   map_(s1.value, (a) => f(a, mb.value)),
+          //                   tuple(leftDone, true, O.None(), s2)
+          //                 )
+          //               )
+          //             } else {
+          //               return Ex.fail(O.None())
+          //             }
+          //           })()
+          //     })()
         })
       )
   )

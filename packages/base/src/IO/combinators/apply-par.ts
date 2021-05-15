@@ -7,6 +7,7 @@ import type { FiberId } from '../../Fiber/FiberId'
 import { accessCallTrace, traceAs, traceCall } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
+import * as Ex from '../../Exit/core'
 import { join } from '../../Fiber/combinators/join'
 import * as I from '../core'
 import { raceWith_, transplant } from './core-scope'
@@ -89,23 +90,18 @@ function coordinateCrossWithPar<E, E2>() {
     winner: Exit<E | E2, X>,
     loser: Fiber<E | E2, Y>
   ) => {
-    switch (winner._tag) {
-      case 'Success': {
-        return I.map_(join(loser), (y) => f(winner.value, y))
-      }
-      case 'Failure': {
-        return I.bind_(loser.interruptAs(fiberId), (e) => {
-          switch (e._tag) {
-            case 'Success': {
-              return I.halt(winner.cause)
-            }
-            case 'Failure': {
-              return leftWinner ? I.halt(C.both(winner.cause, e.cause)) : I.halt(C.both(e.cause, winner.cause))
-            }
-          }
-        })
-      }
-    }
+    return Ex.matchM_(
+      winner,
+      (cw) =>
+        I.bind_(
+          loser.interruptAs(fiberId),
+          Ex.matchM(
+            (cl) => (leftWinner ? I.halt(C.both(cw, cl)) : I.halt(C.both(cl, cw))),
+            () => I.halt(cw)
+          )
+        ),
+      (x) => I.map_(join(loser), (y) => f(x, y))
+    )
   }
 }
 

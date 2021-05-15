@@ -425,8 +425,9 @@ export function fromConstructor<S>(
   never,
   H.Has<S>
 > {
-  return (constructor) => (...tags) =>
-    fromEffect(tag)(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
+  return (constructor) =>
+    (...tags) =>
+      fromEffect(tag)(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
 }
 
 export function fromEffectConstructor<S>(
@@ -440,8 +441,11 @@ export function fromEffectConstructor<S>(
   E,
   H.Has<S>
 > {
-  return (constructor) => (...tags) =>
-    fromEffect(tag)(I.asksServicesTM(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
+  return (constructor) =>
+    (...tags) =>
+      fromEffect(tag)(
+        I.asksServicesTM(...tags)((...services: any[]) => constructor(...(services as any))) as any
+      ) as any
 }
 
 export function fromManagedConstructor<S>(
@@ -455,13 +459,14 @@ export function fromManagedConstructor<S>(
   E,
   H.Has<S>
 > {
-  return (constructor) => (...tags) =>
-    fromManaged(tag)(
-      M.bind_(
-        M.fromEffect(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any)))),
-        (_) => _
+  return (constructor) =>
+    (...tags) =>
+      fromManaged(tag)(
+        M.bind_(
+          M.fromEffect(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any)))),
+          (_) => _
+        )
       )
-    )
 }
 
 export function bracketConstructor<S>(
@@ -478,10 +483,12 @@ export function bracketConstructor<S>(
   E,
   H.Has<S>
 > {
-  return (constructor) => (...tags) => (open, release) =>
-    prepare(tag)(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any)
-      .open(open as any)
-      .release(release as any) as any
+  return (constructor) =>
+    (...tags) =>
+    (open, release) =>
+      prepare(tag)(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any)
+        .open(open as any)
+        .release(release as any) as any
 }
 
 export function bracketEffectConstructor<S>(
@@ -498,10 +505,12 @@ export function bracketEffectConstructor<S>(
   E0 | E,
   H.Has<S>
 > {
-  return (constructor) => (...tags) => (open, release) =>
-    prepare(tag)(I.asksServicesTM(...tags)((...services: any[]) => constructor(...(services as any))) as any)
-      .open(open as any)
-      .release(release as any) as any
+  return (constructor) =>
+    (...tags) =>
+    (open, release) =>
+      prepare(tag)(I.asksServicesTM(...tags)((...services: any[]) => constructor(...(services as any))) as any)
+        .open(open as any)
+        .release(release as any) as any
 }
 
 export function restrict<Tags extends H.Tag<any>[]>(
@@ -959,16 +968,12 @@ export class MemoMap {
             const cached = I.asksM(([_, rm]: readonly [R, ReleaseMap]) =>
               pipe(
                 acquire as I.FIO<E, A>,
-                I.onExit((ex) => {
-                  switch (ex._tag) {
-                    case 'Success': {
-                      return RelMap.add(release)(rm)
-                    }
-                    case 'Failure': {
-                      return I.unit()
-                    }
-                  }
-                }),
+                I.onExit(
+                  Ex.match(
+                    () => I.unit(),
+                    () => RelMap.add(release)(rm)
+                  )
+                ),
                 I.map((x) => [release, x] as readonly [Finalizer, A])
               )
             )

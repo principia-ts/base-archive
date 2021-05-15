@@ -11,7 +11,7 @@ import { ClockTag, LiveClock } from '../Clock'
 import { ConsoleTag, LiveConsole } from '../Console'
 import * as Ex from '../Exit/core'
 import { interruptible, newFiberId } from '../Fiber'
-import { constVoid, identity } from '../function'
+import { constVoid, flow, identity } from '../function'
 import { FiberContext } from '../internal/FiberContext'
 import { Platform } from '../internal/Platform'
 import * as O from '../Option'
@@ -160,18 +160,7 @@ export class CustomRuntime<R, A> {
     context.evaluateLater(_[_I])
 
     return new Promise((res, rej) => {
-      context.runAsync((exit) => {
-        switch (exit._tag) {
-          case 'Success': {
-            res(exit.value)
-            break
-          }
-          case 'Failure': {
-            rej(C.squash(identity)(exit.cause))
-            break
-          }
-        }
-      })
+      context.runAsync(Ex.match(flow(C.squash(identity), rej), res))
     })
   }
 
@@ -341,17 +330,8 @@ export const defaultRuntime = makeCustomRuntime(defaultEnv, defaultPlatform)
 /**
  * Exports of default runtime
  */
-export const {
-  run_,
-  runAsap_,
-  runCancel_,
-  run,
-  runAsap,
-  runCancel,
-  runFiber,
-  runPromise,
-  runPromiseExit
-} = defaultRuntime
+export const { run_, runAsap_, runCancel_, run, runAsap, runCancel, runFiber, runPromise, runPromiseExit } =
+  defaultRuntime
 
 /**
  * Use current environment to build a runtime that is capable of

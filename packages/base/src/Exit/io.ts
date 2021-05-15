@@ -1,8 +1,9 @@
 import type { IO } from '../IO/core'
 import type { Exit } from './core'
 
+import { pipe } from '../function'
 import * as I from '../IO/core'
-import { halt } from './core'
+import * as Ex from './core'
 
 /**
  * Applies the function `f` to the successful result of the `Exit` and
@@ -12,14 +13,11 @@ export function foreachM_<E2, A2, R, E, A>(
   exit: Exit<E2, A2>,
   f: (a: A2) => IO<R, E, A>
 ): IO<R, never, Exit<E | E2, A>> {
-  switch (exit._tag) {
-    case 'Failure': {
-      return I.succeed(halt(exit.cause))
-    }
-    case 'Success': {
-      return I.result(f(exit.value))
-    }
-  }
+  return Ex.match_(
+    exit,
+    (c): I.URIO<R, Exit<E | E2, A>> => pipe(Ex.halt(c), I.succeed),
+    (a) => pipe(f(a), I.result)
+  )
 }
 
 /**
@@ -32,16 +30,8 @@ export function foreachM<A2, R, E, A>(
   return (exit) => foreachM_(exit, f)
 }
 
-export const mapM_ = <R, E, E1, A, A1>(
-  exit: Exit<E, A>,
-  f: (a: A) => IO<R, E1, A1>
-): IO<R, never, Exit<E | E1, A1>> => {
-  switch (exit._tag) {
-    case 'Failure':
-      return I.succeed(halt(exit.cause))
-    case 'Success':
-      return I.result(f(exit.value))
-  }
+export function mapM_<R, E, E1, A, A1>(exit: Exit<E, A>, f: (a: A) => IO<R, E1, A1>): IO<R, never, Exit<E | E1, A1>> {
+  return foreachM_(exit, f)
 }
 
 export function mapM<R, E1, A, A1>(

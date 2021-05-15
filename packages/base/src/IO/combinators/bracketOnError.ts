@@ -5,6 +5,7 @@ import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
 
+import * as Ex from '../../Exit/core'
 import { unit } from '../core'
 import { bracketExit_ } from './bracketExit'
 
@@ -25,7 +26,13 @@ export function bracketOnError_<R, E, A, R1, E1, A1, R2, E2, A2>(
   return bracketExit_(
     acquire,
     use,
-    traceAs(release, (a, e) => (e._tag === 'Success' ? unit() : release(a, e)))
+    traceAs(release, (a, e) =>
+      Ex.match_(
+        e,
+        () => release(a, e),
+        () => unit()
+      )
+    )
   )
 }
 

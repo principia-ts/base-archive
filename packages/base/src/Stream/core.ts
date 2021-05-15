@@ -1356,9 +1356,7 @@ export function bind_<R, E, A, R1, E1, B>(
   return new Stream(
     M.gen(function* (_) {
       const outerStream     = yield* _(ma.proc)
-      const currOuterChunk  = yield* _(
-        Ref.makeRef<[Chunk<A>, number]>([C.empty(), 0])
-      )
+      const currOuterChunk  = yield* _(Ref.makeRef<[Chunk<A>, number]>([C.empty(), 0]))
       const currInnerStream = yield* _(Ref.makeRef<I.IO<R_, Option<E_>, Chunk<B>>>(Pull.end))
       const innerFinalizer  = yield* _(M.finalizerRef(RM.noopFinalizer))
       return new Chain(f, outerStream, currOuterChunk, currInnerStream, innerFinalizer).apply()
@@ -2285,9 +2283,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
   return new Stream<R & R1, E1, A | B>(
     M.gen(function* (_) {
       const finalizerRef = yield* _(M.finalizerRef(RM.noopFinalizer))
-      const stateRef     = yield* _(
-        Ref.makeRef<State<E>>({ _tag: 'NotStarted' })
-      )
+      const stateRef     = yield* _(Ref.makeRef<State<E>>({ _tag: 'NotStarted' }))
 
       const closeCurrent = (cause: Ca.Cause<any>) =>
         pipe(
@@ -2297,25 +2293,27 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
           I.makeUninterruptible
         )
 
-      const open = <R, E0, O>(stream: Stream<R, E0, O>) => (asState: (_: Pull.Pull<R, E0, O>) => State<E>) =>
-        I.uninterruptibleMask(({ restore }) =>
-          pipe(
-            RM.make,
-            I.bind((releaseMap) =>
-              pipe(
-                finalizerRef.set((exit) => M.releaseAll(exit, sequential)(releaseMap)),
-                I.bind(() =>
-                  pipe(
-                    restore(stream.proc.io),
-                    I.gives((_: R) => [_, releaseMap] as [R, RM.ReleaseMap]),
-                    I.map(([_, __]) => __),
-                    I.tap((pull) => stateRef.set(asState(pull)))
+      const open =
+        <R, E0, O>(stream: Stream<R, E0, O>) =>
+        (asState: (_: Pull.Pull<R, E0, O>) => State<E>) =>
+          I.uninterruptibleMask(({ restore }) =>
+            pipe(
+              RM.make,
+              I.bind((releaseMap) =>
+                pipe(
+                  finalizerRef.set((exit) => M.releaseAll(exit, sequential)(releaseMap)),
+                  I.bind(() =>
+                    pipe(
+                      restore(stream.proc.io),
+                      I.gives((_: R) => [_, releaseMap] as [R, RM.ReleaseMap]),
+                      I.map(([_, __]) => __),
+                      I.tap((pull) => stateRef.set(asState(pull)))
+                    )
                   )
                 )
               )
             )
           )
-        )
 
       const failover = (cause: Ca.Cause<Option<E>>) =>
         pipe(
@@ -2620,8 +2618,9 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
  * elements of the produced streams may be buffered in memory by this operator.
  */
 export function bindParSwitch(n: number, bufferSize = 16) {
-  return <A, R1, E1, B>(f: (a: A) => Stream<R1, E1, B>) => <R, E>(ma: Stream<R, E, A>): Stream<R & R1, E | E1, B> =>
-    bindParSwitch_(n, bufferSize)(ma, f)
+  return <A, R1, E1, B>(f: (a: A) => Stream<R1, E1, B>) =>
+    <R, E>(ma: Stream<R, E, A>): Stream<R & R1, E | E1, B> =>
+      bindParSwitch_(n, bufferSize)(ma, f)
 }
 
 /**
@@ -2671,9 +2670,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
   } else {
     return new Stream(
       M.gen(function* (_) {
-        const ref = yield* _(
-          Ref.makeRef<State<A>>({ buffer: C.empty(), done: false })
-        )
+        const ref = yield* _(Ref.makeRef<State<A>>({ buffer: C.empty(), done: false }))
         const p   = yield* _(ma.proc)
         return I.bind_(ref.get, (s) => emitOrAccumulate(s.buffer, s.done, ref, p))
       })
@@ -4579,37 +4576,36 @@ export function scheduleEither<R1, A, B>(schedule: Schedule<R1, A, B>) {
  * Uses the provided function to align the stream and schedule outputs on the same type.
  */
 export function scheduleWith<R1, A, B>(schedule: Sc.Schedule<R1, A, B>) {
-  return <C, D>(f: (a: A) => C, g: (b: B) => D) => <R, E>(
-    self: Stream<R, E, A>
-  ): Stream<R & R1 & Has<Clock>, E, C | D> => {
-    return new Stream(
-      M.gen(function* (_) {
-        const os     = yield* _(pipe(self.proc, M.mapM(BPull.make)))
-        const driver = yield* _(Sc.driver(schedule))
+  return <C, D>(f: (a: A) => C, g: (b: B) => D) =>
+    <R, E>(self: Stream<R, E, A>): Stream<R & R1 & Has<Clock>, E, C | D> => {
+      return new Stream(
+        M.gen(function* (_) {
+          const os     = yield* _(pipe(self.proc, M.mapM(BPull.make)))
+          const driver = yield* _(Sc.driver(schedule))
 
-        const pull = pipe(
-          os,
-          BPull.pullElement,
-          I.bind((o) =>
-            pipe(
-              driver.next(o),
-              I.as(() => C.single(f(o))),
-              I.orElse(() =>
-                pipe(
-                  driver.last,
-                  I.orDie,
-                  I.map((b) => C.make<C | D>(f(o), g(b))),
-                  I.apl(driver.reset)
+          const pull = pipe(
+            os,
+            BPull.pullElement,
+            I.bind((o) =>
+              pipe(
+                driver.next(o),
+                I.as(() => C.single(f(o))),
+                I.orElse(() =>
+                  pipe(
+                    driver.last,
+                    I.orDie,
+                    I.map((b) => C.make<C | D>(f(o), g(b))),
+                    I.apl(driver.reset)
+                  )
                 )
               )
             )
           )
-        )
 
-        return pull
-      })
-    )
-  }
+          return pull
+        })
+      )
+    }
 }
 
 export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> {
@@ -5069,17 +5065,11 @@ export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Managed<R, never,
               return { done: false, value: E.Right(v) }
             } else {
               const result = await runtime.runPromiseExit(pull)
-              switch (result._tag) {
-                case 'Success': {
-                  const c      = Array.from(result.value).reverse()
-                  const v      = c.pop()!
-                  currentChunk = c
-                  return { done: false, value: E.Right(v) }
-                }
-                case 'Failure': {
-                  const f = Ca.failureOrCause(result.cause)
-                  return E.match_(
-                    f,
+              return Ex.match_(
+                result,
+                flow(
+                  Ca.failureOrCause,
+                  E.match(
                     O.match(
                       () => ({ value: null, done: true }),
                       (e) => ({ value: E.Left(e), done: true })
@@ -5088,8 +5078,14 @@ export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Managed<R, never,
                       throw new Ca.FiberFailure(ca)
                     }
                   )
+                ),
+                (chunk) => {
+                  const c      = Array.from(chunk).reverse()
+                  const v      = c.pop()!
+                  currentChunk = c
+                  return { done: false, value: E.Right(v) }
                 }
-              }
+              )
             }
           }
         }

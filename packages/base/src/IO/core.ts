@@ -316,18 +316,7 @@ export function dieMessage(message: string): FIO<never, never> {
  */
 export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
   const trace = accessCallTrace()
-  return deferTotal(
-    traceFrom(trace, () => {
-      switch (exit._tag) {
-        case 'Success': {
-          return succeed(exit.value)
-        }
-        case 'Failure': {
-          return halt(exit.cause)
-        }
-      }
-    })
-  )
+  return deferTotal(traceFrom(trace, () => Ex.match_(exit, halt, succeed)))
 }
 
 /**
@@ -2101,7 +2090,9 @@ export function foldMap<M>(M: Monoid<M>) {
     /**
      * @trace 0
      */
-    <A>(f: (a: A) => M) => <R, E>(as: ReadonlyArray<IO<R, E, A>>): IO<R, E, M> => foldMap_(M)(as, f)
+    <A>(f: (a: A) => M) =>
+      <R, E>(as: ReadonlyArray<IO<R, E, A>>): IO<R, E, M> =>
+        foldMap_(M)(as, f)
   )
 }
 
@@ -3735,8 +3726,9 @@ export function askService<T>(s: Tag<T>): IO<Has<T>, never, T> {
  * Provides the service with the required Service Entry
  */
 export function giveServiceM<T>(_: Tag<T>) {
-  return <R, E>(f: IO<R, E, T>) => <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>): IO<R & R1, E | E1, A1> =>
-    asksM((r: R & R1) => bind_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+  return <R, E>(f: IO<R, E, T>) =>
+    <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>): IO<R & R1, E | E1, A1> =>
+      asksM((r: R & R1) => bind_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**

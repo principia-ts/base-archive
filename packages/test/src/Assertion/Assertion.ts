@@ -2,6 +2,7 @@ import type { Render, RenderParam } from '../Render'
 import type { WidenLiteral } from '../util'
 import type { Eq } from '@principia/base/Eq'
 import type { Exit } from '@principia/base/Exit'
+import type { Show } from '@principia/base/Show'
 
 import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Cause'
@@ -15,6 +16,7 @@ import * as N from '@principia/base/number'
 import * as O from '@principia/base/Option'
 import * as S from '@principia/base/Show'
 import * as Str from '@principia/base/string'
+import * as St from '@principia/base/Structural'
 import assert from 'assert'
 
 import * as BA from '../FreeBooleanAlgebra'
@@ -45,6 +47,19 @@ export class Assertion<A> extends AssertionM<A> {
   [':'](string: string): Assertion<A> {
     return new Assertion(infix(param(this), ':', param(quoted(string))), this.run)
   }
+}
+
+interface Custom<A> {
+  eq?: Eq<A>
+  show?: Show<A>
+}
+
+function getShow<A>(_?: Custom<A>): Show<A> {
+  return _?.show || S.any
+}
+
+function getEq<A>(_?: Custom<A>): Eq<A> {
+  return _?.eq || St.DefaultEq
 }
 
 export function and<A>(that: Assertion<A>): (self: Assertion<A>) => Assertion<A> {
@@ -134,8 +149,10 @@ export function approximatelyEquals(reference: number, tolerance: number): Asser
   )
 }
 
-export function contains<A>(element: A, eq: Eq<A>, show?: S.Show<A>): Assertion<ReadonlyArray<A>> {
-  return assertion('contains', [param(element, show)], A.elem(eq)(element), A.getShow(show ?? S.any))
+export function contains<A>(element: A, custom?: Custom<A>): Assertion<ReadonlyArray<A>> {
+  const show = getShow(custom)
+  const eq   = getEq(custom)
+  return assertion('contains', [param(element, show)], A.elem(eq)(element), A.getShow(show))
 }
 
 export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
@@ -201,10 +218,12 @@ export function hasMessage(message: Assertion<string>): Assertion<Error> {
   return assertionRec('hasMessage', [param(message)], message, (error) => O.Some(error.message))
 }
 
-export function endsWith<A>(suffix: ReadonlyArray<A>, eq: Eq<A>, show?: S.Show<A>): Assertion<ReadonlyArray<A>> {
+export function endsWith<A>(suffix: ReadonlyArray<A>, custom?: Custom<A>): Assertion<ReadonlyArray<A>> {
+  const show = getShow(custom)
+  const eq   = getEq(custom)
   return assertion(
     'endsWith',
-    [param(suffix, show ? A.getShow(show) : undefined)],
+    [param(suffix, A.getShow(show))],
     (as) => {
       const dropped = A.drop_(as, as.length - suffix.length)
       if (dropped.length !== suffix.length) {
@@ -217,16 +236,12 @@ export function endsWith<A>(suffix: ReadonlyArray<A>, eq: Eq<A>, show?: S.Show<A
       }
       return true
     },
-    show && A.getShow(show)
+    A.getShow(show)
   )
 }
 
-export function equalTo<A>(
-  expected: WidenLiteral<A>,
-  eq: Eq<WidenLiteral<A>>,
-  show?: S.Show<WidenLiteral<A>>
-): Assertion<WidenLiteral<A>> {
-  return assertion('equalTo', [param(expected, show)], (actual) => eq.equals_(actual, expected))
+export function equalTo<A>(expected: WidenLiteral<A>, custom?: Custom<WidenLiteral<A>>): Assertion<WidenLiteral<A>> {
+  return assertion('equalTo', [param(expected, getShow(custom))], (actual) => getEq(custom).equals_(actual, expected))
 }
 
 export const isTrue: Assertion<boolean> = assertion('isTrue', [], identity)

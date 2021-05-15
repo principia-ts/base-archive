@@ -125,7 +125,7 @@ export function isInterrupt<E, A>(exit: Exit<E, A>): exit is Failure<E> {
  * -------------------------------------------
  */
 
-export function match_<E, A, B>(exit: Exit<E, A>, onFailure: (e: C.Cause<E>) => B, onSuccess: (a: A) => B): B {
+export function match_<E, A, B, C>(exit: Exit<E, A>, onFailure: (e: C.Cause<E>) => B, onSuccess: (a: A) => C): B | C {
   switch (exit._tag) {
     case ExitTag.Success: {
       return onSuccess(exit.value)
@@ -136,7 +136,10 @@ export function match_<E, A, B>(exit: Exit<E, A>, onFailure: (e: C.Cause<E>) => 
   }
 }
 
-export function match<E, A, B>(onFailure: (e: C.Cause<E>) => B, onSuccess: (a: A) => B): (exit: Exit<E, A>) => B {
+export function match<E, A, B, C>(
+  onFailure: (e: C.Cause<E>) => B,
+  onSuccess: (a: A) => C
+): (exit: Exit<E, A>) => B | C {
   return (exit) => match_(exit, onFailure, onSuccess)
 }
 

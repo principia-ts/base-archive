@@ -27,7 +27,7 @@ import * as I from '../Fiber/internal/io'
 import { IOTag } from '../Fiber/internal/io'
 import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from '../Fiber/trace'
 import * as FR from '../FiberRef'
-import { constVoid } from '../function'
+import { constVoid, flow } from '../function'
 import * as L from '../List/core'
 import * as O from '../Option'
 import * as Scope from '../Scope'
@@ -341,12 +341,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get await(): I.UIO<Exit<E, A>> {
-    return I.effectAsyncInterruptEither(
-      (k): E.Either<I.UIO<void>, I.UIO<Exit<E, A>>> => {
-        const cb: Callback<never, Exit<E, A>> = (x) => k(I.done(x))
-        return O.match_(this.observe(cb), () => E.Left(I.effectTotal(() => this.interruptObserver(cb))), E.Right)
-      }
-    )
+    return I.effectAsyncInterruptEither((k): E.Either<I.UIO<void>, I.UIO<Exit<E, A>>> => {
+      const cb: Callback<never, Exit<E, A>> = (x) => k(I.done(x))
+      return O.match_(this.observe(cb), () => E.Left(I.effectTotal(() => this.interruptObserver(cb))), E.Right)
+    })
   }
 
   private interruptObserver(k: Callback<never, Exit<E, A>>) {
@@ -447,7 +445,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private reportUnhandled(exit: Ex.Exit<E, A>) {
-    if (exit._tag === 'Failure') {
+    if (exit._tag === Ex.ExitTag.Failure) {
       this.reportFailure(exit.cause)
     }
   }
@@ -595,35 +593,33 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   ): I.Instruction {
     if (parentScope !== Scope.globalScope) {
       const exitOrKey = parentScope.unsafeEnsure((exit) =>
-        I.deferTotal(
-          (): I.UIO<any> => {
-            const _interruptors = exit._tag === 'Failure' ? C.interruptors(exit.cause) : new Set<FiberId>()
+        I.deferTotal((): I.UIO<any> => {
+          const _interruptors = exit._tag === Ex.ExitTag.Failure ? C.interruptors(exit.cause) : new Set<FiberId>()
 
-            const head = _interruptors.values().next()
+          const head = _interruptors.values().next()
 
-            if (head.done) {
-              return childContext.interruptAs(this.fiberId)
-            } else {
-              return childContext.interruptAs(head.value)
-            }
+          if (head.done) {
+            return childContext.interruptAs(this.fiberId)
+          } else {
+            return childContext.interruptAs(head.value)
           }
-        )
+        })
       )
 
       return E.match_(
         exitOrKey,
-        (exit) => {
-          switch (exit._tag) {
-            case 'Failure': {
-              return I.interruptAs(O.getOrElse_(A.head(Array.from(C.interruptors(exit.cause))), () => this.fiberId))[
-                I._I
-              ]
-            }
-            case 'Success': {
-              return I.interruptAs(this.fiberId)[I._I]
-            }
-          }
-        },
+        (exit) =>
+          Ex.match_(
+            exit,
+            flow(
+              C.interruptors,
+              A.from,
+              A.head,
+              O.getOrElse(() => this.fiberId),
+              I.interruptAs
+            ),
+            () => I.interruptAs(this.fiberId)
+          )[I._I],
         (key) => {
           childContext.mut_scopeKey = key
           // Remove the finalizer key from the parent scope when the child fiber terminates:
@@ -672,16 +668,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     cb: (_: I.IO<R & R1 & R2 & R3, E2 | E3, A2 | A3>) => void
   ): void {
     if (ab.compareAndSet(true, false)) {
-      switch (winnerExit._tag) {
-        case 'Failure': {
-          cb(cont(winnerExit, loser))
-          break
-        }
-        case 'Success': {
-          cb(I.bind(() => cont(winnerExit, loser))(winner.inheritRefs))
-          break
-        }
-      }
+      Ex.match_(
+        winnerExit,
+        () => cb(cont(winnerExit, loser)),
+        () => cb(I.bind_(winner.inheritRefs, () => cont(winnerExit, loser)))
+      )
     }
   }
 
@@ -706,32 +697,22 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     return I.effectAsync<R & R1 & R2 & R3, E2 | E3, A2 | A3>(
       (cb) => {
         const leftRegister = left.registerObserver((exit) => {
-          switch (exit._tag) {
-            case 'Failure': {
-              this.complete(left, right, race.leftWins, exit, raceIndicator, cb)
-              break
-            }
-            case 'Success': {
-              this.complete(left, right, race.leftWins, exit.value, raceIndicator, cb)
-              break
-            }
-          }
+          Ex.match_(
+            exit,
+            () => this.complete(left, right, race.leftWins, exit, raceIndicator, cb),
+            (v) => this.complete(left, right, race.leftWins, v, raceIndicator, cb)
+          )
         })
 
         if (leftRegister != null) {
           this.complete(left, right, race.leftWins, leftRegister, raceIndicator, cb)
         } else {
           const rightRegister = right.registerObserver((exit) => {
-            switch (exit._tag) {
-              case 'Failure': {
-                this.complete(right, left, race.rightWins, exit, raceIndicator, cb)
-                break
-              }
-              case 'Success': {
-                this.complete(right, left, race.rightWins, exit.value, raceIndicator, cb)
-                break
-              }
-            }
+            Ex.match_(
+              exit,
+              () => this.complete(right, left, race.rightWins, exit, raceIndicator, cb),
+              (v) => this.complete(right, left, race.rightWins, v, raceIndicator, cb)
+            )
           })
 
           if (rightRegister != null) {

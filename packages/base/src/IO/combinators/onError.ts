@@ -3,6 +3,7 @@ import type { IO } from '../core'
 
 import { accessCallTrace, traceAs, traceCall } from '@principia/compile/util'
 
+import * as Ex from '../../Exit/core'
 import { unit } from '../core'
 import { onExit_ } from './onExit'
 
@@ -17,16 +18,10 @@ export function onError_<R, E, A, R2, E2>(
   const trace = accessCallTrace()
   return traceCall(onExit_, trace)(
     ma,
-    traceAs(cleanup, (e) => {
-      switch (e._tag) {
-        case 'Failure': {
-          return cleanup(e.cause)
-        }
-        case 'Success': {
-          return unit()
-        }
-      }
-    })
+    traceAs(
+      cleanup,
+      Ex.match(cleanup, () => unit())
+    )
   )
 }
 

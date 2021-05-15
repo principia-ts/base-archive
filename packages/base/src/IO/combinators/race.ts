@@ -9,14 +9,15 @@ import { join } from '../../Fiber/combinators/join'
 import * as I from '../core'
 import { raceWith_ } from './core-scope'
 
-const mergeInterruption = <E1, A, A1>(a: A) => (x: Exit<E1, A1>): IO<unknown, E1, A> => {
-  switch (x._tag) {
-    case 'Success':
-      return I.pure(a)
-    case 'Failure':
-      return C.interruptedOnly(x.cause) ? I.pure(a) : I.halt(x.cause)
+const mergeInterruption =
+  <E1, A, A1>(a: A) =>
+  (x: Exit<E1, A1>): IO<unknown, E1, A> => {
+    return Ex.matchM_(
+      x,
+      (cause) => (C.interruptedOnly(cause) ? I.succeed(a) : I.halt(cause)),
+      () => I.succeed(a)
+    )
   }
-}
 
 /**
  * Returns an IO that races this effect with the specified effect,

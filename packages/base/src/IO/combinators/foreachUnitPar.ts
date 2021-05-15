@@ -51,9 +51,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     const parentId    = yield* _(I.fiberId())
     const causes      = yield* _(Ref.makeRef<C.Cause<E>>(C.empty))
     const result      = yield* _(P.make<void, void>())
-    const status      = yield* _(
-      Ref.makeRef<[number, number, boolean]>([0, 0, false])
-    )
+    const status      = yield* _(Ref.makeRef<[number, number, boolean]>([0, 0, false]))
     const startEffect = pipe(
       status,
       Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] => {
@@ -121,12 +119,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
             pipe(
               fibers,
               I.foreach((f) => f.await),
-              I.map(
-                flow(
-                  Ch.findFirst((e) => e._tag === 'Failure'),
-                  O.isSome
-                )
-              )
+              I.map(flow(Ch.findFirst(Ex.isFailure), O.isSome))
             )
           ),
           I.refailWithTrace

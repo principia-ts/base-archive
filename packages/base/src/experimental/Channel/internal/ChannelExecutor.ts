@@ -326,16 +326,15 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       }
       case State.ChannelStateTag.Done: {
         const done = exec.getDone()
-        switch (done._tag) {
-          case 'Failure': {
-            return this.handleSubexecFailure(exec, rest, this, done.cause)
-          }
-          case 'Success': {
+        return Ex.match_(
+          done,
+          (cause) => this.handleSubexecFailure(exec, rest, this, cause),
+          (value) => {
             const closeEffect  = exec.close(done)
             const modifiedRest = new Inner(
               rest.exec,
               rest.subK,
-              rest.lastDone ? rest.combineSubK(rest.lastDone, done.value) : done.value,
+              rest.lastDone ? rest.combineSubK(rest.lastDone, value) : value,
               rest.combineSubK,
               rest.combineSubKAndInner
             )
@@ -365,7 +364,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               return undefined
             }
           }
-        }
+        )
       }
     }
   }
@@ -383,15 +382,14 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       }
       case State.ChannelStateTag.Done: {
         const done = inner.exec.getDone()
-        switch (done._tag) {
-          case 'Failure': {
-            return this.finishSubexecutorWithCloseEffect(done, inner.exec.close(done))
-          }
-          case 'Success': {
-            const doneValue = Ex.succeed(inner.combineSubKAndInner(inner.lastDone, done.value))
+        return Ex.match_(
+          done,
+          () => this.finishSubexecutorWithCloseEffect(done, inner.exec.close(done)),
+          (value) => {
+            const doneValue = Ex.succeed(inner.combineSubKAndInner(inner.lastDone, value))
             return this.finishSubexecutorWithCloseEffect(doneValue, inner.exec.close(doneValue))
           }
-        }
+        )
       }
       // eslint-disable-next-line no-fallthrough
       case State.ChannelStateTag.Effect: {
