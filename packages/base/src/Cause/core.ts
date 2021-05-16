@@ -32,36 +32,23 @@ export function isCause(u: unknown): u is Cause<unknown> {
   return isObject(u) && CauseTypeId in u
 }
 
-export const EmptyTag = Symbol()
-export type EmptyTag = typeof EmptyTag
-export const FailTag = Symbol()
-export type FailTag = typeof FailTag
-export const DieTag = Symbol()
-export type DieTag = typeof DieTag
-export const InterruptTag = Symbol()
-export type InterruptTag = typeof InterruptTag
-export const ThenTag = Symbol()
-export type ThenTag = typeof ThenTag
-export const BothTag = Symbol()
-export type BothTag = typeof BothTag
-export const TracedTag = Symbol()
-export type TracedTag = typeof TracedTag
-
 export const CauseTag = {
-  Empty: EmptyTag,
-  Fail: FailTag,
-  Die: DieTag,
-  Interrupt: InterruptTag,
-  Then: ThenTag,
-  Both: BothTag,
-  Traced: TracedTag
+  Empty: 'Empty',
+  Fail: 'Fail',
+  Die: 'Die',
+  Interrupt: 'Interrupt',
+  Then: 'Then',
+  Both: 'Both',
+  Traced: 'Traced'
 } as const
 
 const _emptyHash = St.opt(St.randomInt())
 
 export class Empty {
+  readonly _E!: () => never
+
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag: EmptyTag             = CauseTag.Empty
+  readonly _tag                       = CauseTag.Empty
 
   get [St.$hash](): number {
     return _emptyHash
@@ -86,8 +73,10 @@ export class Empty {
 }
 
 export class Fail<E> {
+  readonly _E!: () => E
+
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag: FailTag              = CauseTag.Fail
+  readonly _tag                       = CauseTag.Fail
 
   constructor(readonly value: E) {}
 
@@ -117,8 +106,10 @@ export class Fail<E> {
 }
 
 export class Die {
+  readonly _E!: () => never
+
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag: DieTag               = CauseTag.Die
+  readonly _tag                       = CauseTag.Die
 
   constructor(readonly value: unknown) {}
 
@@ -148,8 +139,10 @@ export class Die {
 }
 
 export class Interrupt {
+  readonly _E!: () => never
+
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag: InterruptTag         = CauseTag.Interrupt
+  readonly _tag                       = CauseTag.Interrupt
 
   constructor(readonly fiberId: FiberId) {}
 
@@ -180,8 +173,10 @@ export class Interrupt {
 }
 
 export class Then<E> {
+  readonly _E!: () => E
+
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag: ThenTag              = CauseTag.Then
+  readonly _tag                       = CauseTag.Then
 
   constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
 
@@ -210,8 +205,10 @@ export class Then<E> {
 }
 
 export class Both<E> {
+  readonly _E!: () => E
+
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag: BothTag              = CauseTag.Both
+  readonly _tag                       = CauseTag.Both
 
   constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
 
@@ -240,8 +237,10 @@ export class Both<E> {
 }
 
 export class Traced<E> {
+  readonly _E!: () => E
+
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag: TracedTag            = CauseTag.Traced
+  readonly _tag                       = CauseTag.Traced
 
   constructor(readonly cause: Cause<E>, readonly trace: Trace) {}
 

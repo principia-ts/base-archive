@@ -577,7 +577,7 @@ export function ipartitionMap_<A, B, C>(
  */
 export function ipartitionMap<A, B, C>(
   f: (i: number, a: A) => Either<B, C>
-): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
+):(ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
   return (ta) => ipartitionMap_(ta, f)
 }
 
@@ -2522,6 +2522,29 @@ export function sum(as: ReadonlyArray<number>): number {
   return foldl_(as, 0, (b, a) => b + a)
 }
 
+export function ievery_<A, B extends A>(
+  as: ReadonlyArray<A>,
+  refinement: P.RefinementWithIndex<number, A, B>
+): as is ReadonlyArray<B>
+export function ievery_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): boolean
+export function ievery_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): boolean {
+  let result = true
+  let i      = 0
+  while (result && i < as.length) {
+    result = predicate(i, as[i])
+    i++
+  }
+  return result
+}
+
+export function ievery<A, B extends A>(
+  refinement: P.RefinementWithIndex<number, A, B>
+): (as: ReadonlyArray<A>) => as is ReadonlyArray<B>
+export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => boolean
+export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => boolean {
+  return (as) => ievery_(as, predicate)
+}
+
 /**
  * Determines whether every element of the array satisfies the given predicate
  *
@@ -2531,13 +2554,7 @@ export function sum(as: ReadonlyArray<number>): number {
 export function every_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): as is ReadonlyArray<B>
 export function every_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): boolean
 export function every_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): boolean {
-  let result = true
-  let i      = 0
-  while (result && i < as.length) {
-    result = predicate(as[i])
-    i++
-  }
-  return result
+  return ievery_(as, (_, a) => predicate(a))
 }
 
 /**

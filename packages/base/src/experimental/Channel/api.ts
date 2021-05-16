@@ -1278,7 +1278,7 @@ function runManagedInterpret<Env, InErr, InDone, OutErr, OutDone>(
   // eslint-disable-next-line no-constant-condition
   while (1) {
     State.concrete(channelState)
-    switch (channelState._channelStateTag) {
+    switch (channelState._tag) {
       case State.ChannelStateTag.Effect: {
         return I.bind_(channelState.effect, () => runManagedInterpret(exec.run(), exec))
       }
@@ -1300,7 +1300,7 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   exec: ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): IO<Env, E.Either<OutErr, OutDone>, OutElem> {
   State.concrete(channelState)
-  switch (channelState._channelStateTag) {
+  switch (channelState._tag) {
     case State.ChannelStateTag.Effect: {
       return I.bind_(I.mapError_(channelState.effect, E.Left), () => toPullInterpret(exec.run(), exec))
     }
@@ -1425,7 +1425,7 @@ export function mergeWith_<
 
               MD.concrete(result)
 
-              switch (result._mergeDecisionTag) {
+              switch (result._tag) {
                 case MD.MergeDecisionTag.Done: {
                   return pipe(F.interrupt(fiber)['*>'](result.io), fromEffect, I.succeed)
                 }
@@ -1448,7 +1448,7 @@ export function mergeWith_<
       const go = (
         state: MergeState
       ): Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3> => {
-        switch (state._mergeStateTag) {
+        switch (state._tag) {
           case MS.MergeStateTag.BothRunning: {
             const lj: IO<Env1, E.Either<OutErr, OutDone>, OutElem | OutElem1>   = F.join(state.left)
             const rj: IO<Env1, E.Either<OutErr1, OutDone1>, OutElem | OutElem1> = F.join(state.right)

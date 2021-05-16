@@ -48,10 +48,6 @@ export abstract class Layer<R, E, A> {
     return this
   }
 
-  ['_I'](): LayerInstruction {
-    return this as any
-  }
-
   ['>=>']<E1, A1>(that: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
     return compose_(this, that)
   }
@@ -116,6 +112,13 @@ export abstract class Layer<R, E, A> {
   }
 }
 
+/**
+ * @optimize remove
+ */
+function concrete(_: Layer<any, any, any>): asserts _ is LayerInstruction {
+  //
+}
+
 /*
  * -------------------------------------------
  * Instructions
@@ -129,10 +132,10 @@ export const LayerTag = {
   Fresh: 'Fresh',
   FromManaged: 'FromManaged',
   Defer: 'Defer',
-  CrossWithPar: 'Map2Par',
+  CrossWithPar: 'CrossWithPar',
   AllPar: 'AllPar',
   AllSeq: 'AllSeq',
-  CrossWithSeq: 'Map2Seq'
+  CrossWithSeq: 'CrossWithSeq'
 } as const
 
 /**
@@ -149,8 +152,8 @@ export type LayerInstruction =
   | Fresh<any, any, any>
   | FromManaged<any, any, any>
   | Defer<any, any, any>
-  | Map2Par<any, any, any, any, any, any, any>
-  | Map2Seq<any, any, any, any, any, any, any>
+  | CrossWithPar<any, any, any, any, any, any, any>
+  | CrossWithSeq<any, any, any, any, any, any, any>
   | AllPar<Layer<any, any, any>[]>
   | AllSeq<Layer<any, any, any>[]>
 
@@ -222,7 +225,7 @@ export type MergeA<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
   }[number]
 >
 
-export class Map2Par<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+export class CrossWithPar<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
   readonly _tag = LayerTag.CrossWithPar
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
@@ -238,7 +241,7 @@ export class AllPar<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>,
   }
 }
 
-export class Map2Seq<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+export class CrossWithSeq<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
   readonly _tag = LayerTag.CrossWithSeq
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
@@ -257,34 +260,38 @@ export class AllSeq<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>,
 export type RIO<R, A> = Layer<R, never, A>
 
 function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap) => Managed<R, E, A>> {
-  const _I = layer._I()
+  concrete(layer)
 
-  switch (_I._tag) {
+  switch (layer._tag) {
     case LayerTag.Fresh: {
-      return M.succeed(() => build(_I.layer))
+      return M.succeed(() => build(layer.layer))
     }
     case LayerTag.FromManaged: {
-      return M.succeed(() => _I.managed)
+      return M.succeed(() => layer.managed)
     }
     case LayerTag.Defer: {
-      return M.succeed((memo) => memo.getOrElseMemoize(_I.factory()))
+      return M.succeed((memo) => memo.getOrElseMemoize(layer.factory()))
     }
     case LayerTag.FMap: {
-      return M.succeed((memo) => M.map_(memo.getOrElseMemoize(_I.layer), _I.f))
+      return M.succeed((memo) => M.map_(memo.getOrElseMemoize(layer.layer), layer.f))
     }
     case LayerTag.Bind: {
-      return M.succeed((memo) => M.bind_(memo.getOrElseMemoize(_I.layer), (a) => memo.getOrElseMemoize(_I.f(a))))
+      return M.succeed((memo) => M.bind_(memo.getOrElseMemoize(layer.layer), (a) => memo.getOrElseMemoize(layer.f(a))))
     }
     case LayerTag.CrossWithPar: {
-      return M.succeed((memo) => M.crossWithPar_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
+      return M.succeed((memo) =>
+        M.crossWithPar_(memo.getOrElseMemoize(layer.layer), memo.getOrElseMemoize(layer.that), layer.f)
+      )
     }
     case LayerTag.CrossWithSeq: {
-      return M.succeed((memo) => M.crossWith_(memo.getOrElseMemoize(_I.layer), memo.getOrElseMemoize(_I.that), _I.f))
+      return M.succeed((memo) =>
+        M.crossWith_(memo.getOrElseMemoize(layer.layer), memo.getOrElseMemoize(layer.that), layer.f)
+      )
     }
     case LayerTag.AllPar: {
       return M.succeed((memo) => {
         return pipe(
-          M.foreachPar_(_I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+          M.foreachPar_(layer.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
           M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
@@ -292,7 +299,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     case LayerTag.AllSeq: {
       return M.succeed((memo) => {
         return pipe(
-          M.foreach_(_I.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+          M.foreach_(layer.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
           M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
@@ -300,13 +307,13 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     case LayerTag.Fold: {
       return M.succeed((memo) =>
         M.matchCauseM_(
-          memo.getOrElseMemoize(_I.layer),
+          memo.getOrElseMemoize(layer.layer),
           (e) =>
             pipe(
               I.toManaged()(I.ask<any>()),
-              M.bind((r) => M.gives_(memo.getOrElseMemoize(_I.onFailure), () => tuple(r, e)))
+              M.bind((r) => M.gives_(memo.getOrElseMemoize(layer.onFailure), () => tuple(r, e)))
             ),
-          (r) => M.giveAll_(memo.getOrElseMemoize(_I.onSuccess), r)
+          (r) => M.giveAll_(memo.getOrElseMemoize(layer.onSuccess), r)
         )
       )
     }
@@ -552,7 +559,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Layer<R & R1, E | E1, C> {
-  return new Map2Seq(fa, fb, f)
+  return new CrossWithSeq(fa, fb, f)
 }
 
 export function crossWith<A, R1, E1, B, C>(
@@ -566,7 +573,7 @@ export function cross_<R, E, A, R1, E1, B>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, readonly [A, B]> {
-  return new Map2Seq(fa, fb, tuple)
+  return new CrossWithSeq(fa, fb, tuple)
 }
 
 export function cross<R1, E1, B>(
@@ -596,7 +603,7 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Layer<R & R1, E | E1, C> {
-  return new Map2Par(fa, fb, f)
+  return new CrossWithPar(fa, fb, f)
 }
 
 export function crossWithPar<A, R1, E1, B, C>(
@@ -715,7 +722,7 @@ export function and_<R, E, A, R2, E2, A2>(
   left: Layer<R, E, A>,
   right: Layer<R2, E2, A2>
 ): Layer<R & R2, E | E2, A & A2> {
-  return new Map2Par(left, right, (l, r) => ({ ...l, ...r }))
+  return new CrossWithPar(left, right, (l, r) => ({ ...l, ...r }))
 }
 
 /**
@@ -736,7 +743,7 @@ export function andSeq_<R, E, A, R1, E1, A1>(
   layer: Layer<R, E, A>,
   that: Layer<R1, E1, A1>
 ): Layer<R & R1, E | E1, A & A1> {
-  return new Map2Seq(layer, that, (l, r) => ({ ...l, ...r }))
+  return new CrossWithSeq(layer, that, (l, r) => ({ ...l, ...r }))
 }
 
 /**

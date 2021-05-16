@@ -4,17 +4,10 @@ import type { IO } from '../../../IO'
 import * as E from '../../../Either'
 import * as I from '../../../IO'
 
-export const EmitTag = Symbol()
-export type EmitTag = typeof EmitTag
-export const DoneTag = Symbol()
-export type DoneTag = typeof DoneTag
-export const EffectTag = Symbol()
-export type EffectTag = typeof EffectTag
-
 export const ChannelStateTag = {
-  Emit: EmitTag,
-  Done: DoneTag,
-  Effect: EffectTag
+  Emit: 'Emit',
+  Done: 'Done',
+  Effect: 'Effect'
 } as const
 
 export const ChannelStateTypeId = Symbol()
@@ -27,8 +20,8 @@ export abstract class ChannelState<R, E> {
 
   get effect(): IO<R, E, any> {
     concrete(this)
-    switch (this._channelStateTag) {
-      case EffectTag:
+    switch (this._tag) {
+      case ChannelStateTag.Effect:
         return this.io
       default:
         return I.unit()
@@ -37,15 +30,15 @@ export abstract class ChannelState<R, E> {
 }
 
 export class Emit extends ChannelState<unknown, never> {
-  readonly _channelStateTag: EmitTag = ChannelStateTag.Emit
+  readonly _tag = ChannelStateTag.Emit
 }
 export const _Emit = new Emit()
 export class Done extends ChannelState<unknown, never> {
-  readonly _channelStateTag: DoneTag = ChannelStateTag.Done
+  readonly _tag = ChannelStateTag.Done
 }
 export const _Done = new Done()
 export class Effect<R, E> extends ChannelState<R, E> {
-  readonly _channelStateTag: EffectTag = ChannelStateTag.Effect
+  readonly _tag = ChannelStateTag.Effect
   constructor(readonly io: IO<R, E, any>) {
     super()
   }
@@ -58,7 +51,7 @@ export function concrete<R, E>(_: ChannelState<R, E>): asserts _ is Emit | Done 
 export function unroll<R, E>(runStep: () => ChannelState<R, E>): IO<R, E, Either<Emit, Done>> {
   const state = runStep()
   concrete(state)
-  switch (state._channelStateTag) {
+  switch (state._tag) {
     case ChannelStateTag.Done:
       return I.succeed(E.Right(_Done))
     case ChannelStateTag.Emit:

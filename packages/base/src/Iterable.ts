@@ -574,6 +574,48 @@ export function corresponds<A, B>(left: Iterable<A>, right: Iterable<B>, f: (a: 
   }
 }
 
+export function ievery_<A, B extends A>(
+  as: Iterable<A>,
+  refinement: P.RefinementWithIndex<number, A, B>
+): as is Iterable<B>
+export function ievery_<A>(as: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): boolean
+export function ievery_<A>(as: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): boolean {
+  const iterator = as[Symbol.iterator]()
+  let result     = true
+  let i          = 0
+  let next: IteratorResult<A>
+  while (result && !(next = iterator.next()).done) {
+    result = predicate(i, next.value)
+    i++
+  }
+  return result
+}
+
+export function ievery<A, B extends A>(
+  refinement: P.RefinementWithIndex<number, A, B>
+): (as: Iterable<A>) => as is Iterable<B>
+export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iterable<A>) => boolean
+export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iterable<A>) => boolean {
+  return (as) => ievery_(as, predicate)
+}
+
+export function every_<A, B extends A>(
+  as: Iterable<A>,
+  refinement: P.Refinement<A, B>
+): as is Iterable<B>
+export function every_<A>(as: Iterable<A>, predicate: P.Predicate<A>): boolean
+export function every_<A>(as: Iterable<A>, predicate: P.Predicate<A>): boolean {
+  return ievery_(as, (_, a) => predicate(a))
+}
+
+export function every<A, B extends A>(
+  refinement: P.Refinement<A, B>
+): (as: Iterable<A>) => as is Iterable<B>
+export function every<A>(predicate: P.Predicate<A>): (as: Iterable<A>) => boolean
+export function every<A>(predicate: P.Predicate<A>): (as: Iterable<A>) => boolean {
+  return (as) => every_(as, predicate)
+}
+
 /*
  * -------------------------------------------
  * Instances

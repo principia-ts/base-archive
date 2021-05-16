@@ -24,8 +24,6 @@ import { makeStack } from './util/support/Stack'
  * -------------------------------------------
  */
 
-export const ZInstruction = Symbol()
-export type ZInstruction = typeof ZInstruction
 export const ZTypeId = Symbol()
 export type ZTypeId = typeof ZTypeId
 
@@ -83,109 +81,83 @@ export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> 
   constructor() {
     super()
   }
-
-  get [ZInstruction](): Instruction {
-    return this as any
-  }
 }
 
-export const SucceedTag = Symbol()
-export type SucceedTag = typeof SucceedTag
-export const EffectTotalTag = Symbol()
-export type EffectTotalTag = typeof EffectTotalTag
-export const EffectPartialTag = Symbol()
-export type EffectPartialTag = typeof EffectPartialTag
-export const DeferTotalTag = Symbol()
-export type DeferTotalTag = typeof DeferTotalTag
-export const DeferPartialTag = Symbol()
-export type DeferPartialTag = typeof DeferPartialTag
-export const FailTag = Symbol()
-export type FailTag = typeof FailTag
-export const ModifyTag = Symbol()
-export type ModifyTag = typeof ModifyTag
-export const BindTag = Symbol()
-export type BindTag = typeof BindTag
-export const MatchTag = Symbol()
-export type MatchTag = typeof MatchTag
-export const AsksTag = Symbol()
-export type AsksTag = typeof AsksTag
-export const GiveTag = Symbol()
-export type GiveTag = typeof GiveTag
-export const TellTag = Symbol()
-export type TellTag = typeof TellTag
-export const ListenTag = Symbol()
-export type ListenTag = typeof ListenTag
-export const CensorTag = Symbol()
-export type CensorTag = typeof CensorTag
+/**
+ * @optimize remove
+ */
+function concrete(z: Z<any, any, any, any, any, any>): asserts z is Concrete {
+  //
+}
 
 const ZTag = {
-  Succeed: SucceedTag,
-  EffectTotal: EffectTotalTag,
-  EffectPartial: EffectPartialTag,
-  DeferTotal: DeferTotalTag,
-  DeferPartial: DeferPartialTag,
-  Fail: FailTag,
-  Modify: ModifyTag,
-  Bind: BindTag,
-  Match: MatchTag,
-  Asks: AsksTag,
-  Give: GiveTag,
-  Tell: TellTag,
-  Listen: ListenTag,
-  Censor: CensorTag
+  Succeed: 'Succeed',
+  EffectTotal: 'EffectTotal',
+  EffectPartial: 'EffectPartial',
+  DeferTotal: 'DeferTotal',
+  DeferPartial: 'DeferPartial',
+  Fail: 'Fail',
+  Modify: 'Modify',
+  Bind: 'Bind',
+  Match: 'Match',
+  Asks: 'Asks',
+  Give: 'Give',
+  Tell: 'Tell',
+  Listen: 'Listen',
+  Censor: 'Censor'
 } as const
 
 class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
-  readonly _zTag: SucceedTag = ZTag.Succeed
+  readonly _tag = ZTag.Succeed
   constructor(readonly value: A) {
     super()
   }
 }
 
 class EffectTotal<A> extends Z<never, unknown, never, unknown, never, A> {
-  readonly _zTag: EffectTotalTag = ZTag.EffectTotal
+  readonly _tag = ZTag.EffectTotal
   constructor(readonly effect: () => A) {
     super()
   }
 }
 
 class EffectPartial<E, A> extends Z<never, unknown, never, unknown, E, A> {
-  readonly _zTag: EffectPartialTag = ZTag.EffectPartial
+  readonly _tag = ZTag.EffectPartial
   constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
 }
 
 class DeferTotal<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
-  readonly _zTag: DeferTotalTag = ZTag.DeferTotal
+  readonly _tag = ZTag.DeferTotal
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
 class DeferPartial<W, S1, S2, R, E, A, E1> extends Z<W, S1, S2, R, E | E1, A> {
-  readonly _zTag: DeferPartialTag = ZTag.DeferPartial
+  readonly _tag = ZTag.DeferPartial
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
 }
 
 class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
-  readonly _zTag: FailTag = ZTag.Fail
+  readonly _tag = ZTag.Fail
   constructor(readonly error: Cause<E>) {
     super()
   }
 }
 
 class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
-  readonly _zTag: ModifyTag = ZTag.Modify
+  readonly _tag = ZTag.Modify
   constructor(readonly run: (s1: S1) => readonly [A, S2]) {
     super()
   }
 }
 
 class Bind<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
-  readonly _zTag: BindTag = ZTag.Bind
+  readonly _tag = ZTag.Bind
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly cont: (a: A) => Z<W1, S2, S3, Q, D, B>) {
     super()
   }
@@ -199,7 +171,7 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
   E1 | E2,
   B | C
 > {
-  readonly _zTag: MatchTag = ZTag.Match
+  readonly _tag = ZTag.Match
   constructor(
     readonly z: Z<W, S1, S2, R, E, A>,
     readonly onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
@@ -210,34 +182,34 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
 }
 
 class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
-  readonly _zTag: AsksTag = ZTag.Asks
+  readonly _tag = ZTag.Asks
   constructor(readonly asks: (r: R0) => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
 class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
-  readonly _zTag: GiveTag = ZTag.Give
+  readonly _tag = ZTag.Give
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly env: R) {
     super()
   }
 }
 
 class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
-  readonly _zTag: TellTag = ZTag.Tell
+  readonly _tag = ZTag.Tell
   constructor(readonly log: C.Chunk<W>) {
     super()
   }
 }
 
 class Censor<W, S1, S2, R, E, A, W1> extends Z<W1, S1, S2, R, E, A> {
-  readonly _zTag: CensorTag = ZTag.Censor
+  readonly _tag = ZTag.Censor
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Chunk<W>) => C.Chunk<W1>) {
     super()
   }
 }
 
-type Instruction =
+type Concrete =
   | Succeed<any>
   | Fail<any>
   | Modify<any, any, any>
@@ -1404,16 +1376,17 @@ export function runAll_<W, S1, S2, E, A>(
   }
 
   while (current != null) {
-    const I = current[ZInstruction]
+    const Z = current
+    concrete(Z)
 
-    switch (I._zTag) {
+    switch (Z._tag) {
       case ZTag.Bind: {
-        current = I.z[ZInstruction]
-        pushContinuation(new ApplyFrame(I.cont))
+        current = Z.z
+        pushContinuation(new ApplyFrame(Z.cont))
         break
       }
       case ZTag.EffectTotal: {
-        result                = I.effect()
+        result                = Z.effect()
         const nextInstruction = popContinuation()
         if (nextInstruction) {
           current = nextInstruction.apply(result)
@@ -1424,26 +1397,26 @@ export function runAll_<W, S1, S2, E, A>(
       }
       case ZTag.EffectPartial: {
         try {
-          current = succeed(I.effect())
+          current = succeed(Z.effect())
         } catch (e) {
-          current = fail(I.onThrow(e))
+          current = fail(Z.onThrow(e))
         }
         break
       }
       case ZTag.DeferTotal: {
-        current = I.z()
+        current = Z.z()
         break
       }
       case ZTag.DeferPartial: {
         try {
-          current = I.z()
+          current = Z.z()
         } catch (e) {
-          current = fail(I.onThrow(e))
+          current = fail(Z.onThrow(e))
         }
         break
       }
       case ZTag.Succeed: {
-        result          = I.value
+        result          = Z.value
         const nextInstr = popContinuation()
         if (nextInstr) {
           current = nextInstr.apply(result)
@@ -1456,26 +1429,26 @@ export function runAll_<W, S1, S2, E, A>(
         findNextErrorHandler()
         const nextInst = popContinuation()
         if (nextInst) {
-          current = nextInst.apply(I.error)
+          current = nextInst.apply(Z.error)
         } else {
           failed  = true
-          result  = I.error
+          result  = Z.error
           current = undefined
         }
         break
       }
       case ZTag.Match: {
-        current     = I.z
+        current     = Z.z
         const state = s0
         pushContinuation(
           new MatchFrame(
             (cause: Cause<any>) => {
-              const m = put(state)['*>'](I.onFailure(log, cause))
+              const m = put(state)['*>'](Z.onFailure(log, cause))
               log     = C.empty()
               return m
             },
             (a) => {
-              const m = I.onSuccess(log, a)
+              const m = Z.onSuccess(log, a)
               log     = C.empty()
               return m
             }
@@ -1484,20 +1457,20 @@ export function runAll_<W, S1, S2, E, A>(
         break
       }
       case ZTag.Asks: {
-        current = I.asks(environment?.value || {})
+        current = Z.asks(environment?.value || {})
         break
       }
       case ZTag.Give: {
-        pushEnv(I.env)
+        pushEnv(Z.env)
         current = matchM_(
-          I.z,
+          Z.z,
           (e) => succeed(popEnv())['*>'](fail(e)),
           (a) => succeed(popEnv())['*>'](succeed(a))
         )
         break
       }
       case ZTag.Modify: {
-        const updated  = I.run(s0)
+        const updated  = Z.run(s0)
         s0             = updated[1]
         result         = updated[0]
         const nextInst = popContinuation()
@@ -1509,7 +1482,7 @@ export function runAll_<W, S1, S2, E, A>(
         break
       }
       case ZTag.Tell: {
-        log            = I.log
+        log            = Z.log
         const nextInst = popContinuation()
         if (nextInst) {
           current = nextInst.apply(result)
@@ -1519,15 +1492,15 @@ export function runAll_<W, S1, S2, E, A>(
         break
       }
       case ZTag.Censor: {
-        current = I.z
+        current = Z.z
         pushContinuation(
           new MatchFrame(
             (cause: Cause<any>) => {
-              log = I.modifyLog(log)
+              log = Z.modifyLog(log)
               return halt(cause)
             },
             (a) => {
-              log = I.modifyLog(log)
+              log = Z.modifyLog(log)
               return succeed(a)
             }
           )

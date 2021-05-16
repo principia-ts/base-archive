@@ -34,12 +34,12 @@ const SubexecutorStackTag = {
 } as const
 
 class FromKAnd<R> {
-  readonly _subexecutorStackTag = SubexecutorStackTag.FromKAnd
+  readonly _tag = SubexecutorStackTag.FromKAnd
   constructor(readonly fromK: ErasedExecutor<R>, readonly rest: Inner<R>) {}
 }
 
 class Inner<R> {
-  readonly _subexecutorStackTag = SubexecutorStackTag.Inner
+  readonly _tag = SubexecutorStackTag.Inner
   constructor(
     readonly exec: ErasedExecutor<R>,
     readonly subK: (_: unknown) => ErasedChannel<R>,
@@ -104,7 +104,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     while (!L.isEmpty(conts)) {
       const head = L.unsafeFirst(conts)!
       C.concreteContinuation(head)
-      if (head._channelTag === C.ChannelTag.ContinuationK) {
+      if (head._tag === C.ChannelTag.ContinuationK) {
         // eslint-disable-next-line no-param-reassign
         conts = L.tail(conts)
       } else {
@@ -131,7 +131,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     while (!L.isEmpty(stack)) {
       const head = L.unsafeFirst(stack)!
       C.concreteContinuation(head)
-      if (head._channelTag === C.ChannelTag.ContinuationK) {
+      if (head._tag === C.ChannelTag.ContinuationK) {
         return stack
       }
       L.push(head, builder)
@@ -170,7 +170,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     let closeSubexecutors: URIO<Env, Exit<unknown, unknown>> | undefined
 
     if (this.subexecutorStack) {
-      if (this.subexecutorStack._subexecutorStackTag === SubexecutorStackTag.Inner) {
+      if (this.subexecutorStack._tag === SubexecutorStackTag.Inner) {
         closeSubexecutors = this.subexecutorStack.close(exit)
       } else {
         const fin1 = this.subexecutorStack.fromK.close(exit)
@@ -311,7 +311,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   ): ChannelState<Env, unknown> | undefined {
     const run = exec.run()
     State.concrete(run)
-    switch (run._channelStateTag) {
+    switch (run._tag) {
       case State.ChannelStateTag.Effect: {
         return new State.Effect(
           pipe(
@@ -373,7 +373,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     const run = inner.exec.run()
     State.concrete(run)
 
-    switch (run._channelStateTag) {
+    switch (run._tag) {
       case State.ChannelStateTag.Emit: {
         const fromK: ErasedExecutor<Env> = new ChannelExecutor(() => inner.subK(inner.exec.getEmit()), this.providedEnv)
         fromK.input                      = this.input
@@ -408,7 +408,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   private drainSubexecutor(): ChannelState<Env, unknown> | undefined {
     const subexecutorStack = this.subexecutorStack!
 
-    if (subexecutorStack._subexecutorStackTag === SubexecutorStackTag.Inner) {
+    if (subexecutorStack._tag === SubexecutorStackTag.Inner) {
       return this.drainInnerSubExecutor(subexecutorStack)
     } else {
       return this.drainFromKAndSubexecutor(subexecutorStack.fromK, subexecutorStack.rest)
@@ -429,7 +429,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     const head = L.unsafeFirst(this.doneStack)!
     C.concreteContinuation(head)
 
-    if (head._channelTag === C.ChannelTag.ContinuationK) {
+    if (head._tag === C.ChannelTag.ContinuationK) {
       this.doneStack      = L.tail(this.doneStack)
       this.currentChannel = head.onSuccess(z)
       return
@@ -472,7 +472,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     const head = L.unsafeFirst(this.doneStack)!
     C.concreteContinuation(head)
 
-    if (head._channelTag === C.ChannelTag.ContinuationK) {
+    if (head._tag === C.ChannelTag.ContinuationK) {
       this.doneStack      = L.tail(this.doneStack)
       this.currentChannel = head.onHalt(cause)
       return
@@ -516,7 +516,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     input: ErasedExecutor<Env>
   ): I.URIO<Env, void> {
     State.concrete(state)
-    switch (state._channelStateTag) {
+    switch (state._tag) {
       case State.ChannelStateTag.Emit: {
         return I.effectTotal(() => {
           this.currentChannel = read.more(input.getEmit())
@@ -549,7 +549,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
       State.concrete(state)
 
-      switch (state._channelStateTag) {
+      switch (state._tag) {
         case State.ChannelStateTag.Emit: {
           this.currentChannel = read.more(input.getEmit())
           return
@@ -612,7 +612,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           C.concrete(this.currentChannel)
           const currentChannel = this.currentChannel
 
-          switch (currentChannel._channelTag) {
+          switch (currentChannel._tag) {
             case C.ChannelTag.Bridge: {
               if (this.input) {
                 const inputExecutor               = this.input
@@ -622,7 +622,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
                   State.concrete(state)
 
-                  switch (state._channelStateTag) {
+                  switch (state._tag) {
                     case State.ChannelStateTag.Emit: {
                       return pipe(
                         currentChannel.input.emit(inputExecutor.getEmit()),
@@ -695,7 +695,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   (cause) => {
                     const res = this.doneHalt(cause)
                     State.concrete(res!)
-                    if (res?._channelStateTag === State.ChannelStateTag.Effect) {
+                    if (res?._tag === State.ChannelStateTag.Effect) {
                       return res.effect
                     } else {
                       return I.unit()
@@ -704,7 +704,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   (z) => {
                     const res = this.doneSucceed(z)
                     State.concrete(res!)
-                    if (res?._channelStateTag === State.ChannelStateTag.Effect) {
+                    if (res?._tag === State.ChannelStateTag.Effect) {
                       return res.effect
                     } else {
                       return I.unit()

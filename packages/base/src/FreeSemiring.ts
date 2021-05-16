@@ -29,25 +29,16 @@ export { FreeSemiringURI }
 export const FreeSemiringTypeId = Symbol()
 export type FreeSemiringTypeId = typeof FreeSemiringTypeId
 
-export const SingleTag = Symbol()
-export type SingleTag = typeof SingleTag
-export const ThenTag = Symbol()
-export type ThenTag = typeof ThenTag
-export const BothTag = Symbol()
-export type BothTag = typeof BothTag
-export const EmptyTag = Symbol()
-export type EmptyTag = typeof EmptyTag
-
 export const FreeSemiringTag = {
-  Single: SingleTag,
-  Then: ThenTag,
-  Both: BothTag,
-  Empty: EmptyTag
+  Single: 'Single',
+  Then: 'Then',
+  Both: 'Both',
+  Empty: 'Empty'
 } as const
 
 export class Single<A> {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag: SingleTag                          = FreeSemiringTag.Single
+  readonly _tag                                     = FreeSemiringTag.Single
 
   constructor(readonly value: A) {}
 
@@ -65,7 +56,7 @@ export class Single<A> {
 
 export class Then<Z, A> {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag: ThenTag                            = FreeSemiringTag.Then
+  readonly _tag                                     = FreeSemiringTag.Then
 
   constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
 
@@ -93,7 +84,7 @@ const _emptyHash = St.opt(St.randomInt())
 
 export class Empty {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag: EmptyTag                           = FreeSemiringTag.Empty
+  readonly _tag                                     = FreeSemiringTag.Empty
 
   get [St.$hash](): number {
     return _emptyHash
@@ -109,7 +100,7 @@ export class Empty {
 
 export class Both<Z, A> {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag: BothTag                            = FreeSemiringTag.Both
+  readonly _tag                                     = FreeSemiringTag.Both
 
   constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
 

@@ -23,19 +23,17 @@ export type ExitTypeId = typeof ExitTypeId
 
 export type Exit<E, A> = Success<A> | Failure<E>
 
-export const SuccessTag = Symbol()
-export type SuccessTag = typeof SuccessTag
-export const FailureTag = Symbol()
-export type FailureTag = typeof FailureTag
-
 export const ExitTag = {
-  Success: SuccessTag,
-  Failure: FailureTag
+  Success: 'Success',
+  Failure: 'Failure'
 } as const
 
 export class Success<A> implements Hashable, Equatable {
+  readonly _E!: () => never
+  readonly _A!: () => A;
+
   readonly [ExitTypeId]: ExitTypeId = ExitTypeId
-  readonly _tag: SuccessTag         = ExitTag.Success
+  readonly _tag                     = ExitTag.Success
   constructor(readonly value: A) {}
 
   get [St.$hash](): number {
@@ -47,8 +45,11 @@ export class Success<A> implements Hashable, Equatable {
 }
 
 export class Failure<E> {
+  readonly _E!: () => E
+  readonly _A!: () => never;
+
   readonly [ExitTypeId]: ExitTypeId = ExitTypeId
-  readonly _tag: FailureTag         = ExitTag.Failure
+  readonly _tag                     = ExitTag.Failure
   constructor(readonly cause: C.Cause<E>) {}
 
   get [St.$hash](): number {

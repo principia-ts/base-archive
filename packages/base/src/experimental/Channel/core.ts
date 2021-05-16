@@ -6,56 +6,23 @@ import type { AsyncInputProducer } from './internal/producer'
 import * as Ex from '../../Exit'
 import { tuple } from '../../tuple'
 
-export const PipeToTag = Symbol()
-export type PipeToTag = typeof PipeToTag
-export const ContinuationKTag = Symbol()
-export type ContinuationKTag = typeof ContinuationKTag
-export const ContinuationFinalizerTag = Symbol()
-export type ContinuationFinalizerTag = typeof ContinuationFinalizerTag
-export const FoldTag = Symbol()
-export type FoldTag = typeof FoldTag
-export const BridgeTag = Symbol()
-export type BridgeTag = typeof BridgeTag
-export const ReadTag = Symbol()
-export type ReadTag = typeof ReadTag
-export const DoneTag = Symbol()
-export type DoneTag = typeof DoneTag
-export const HaltTag = Symbol()
-export type HaltTag = typeof HaltTag
-export const EffectTag = Symbol()
-export type EffectTag = typeof EffectTag
-export const EmitTag = Symbol()
-export type EmitTag = typeof EmitTag
-export const EffectTotalTag = Symbol()
-export type EffectTotalTag = typeof EffectTotalTag
-export const EffectSuspendTotalTag = Symbol()
-export type EffectSuspendTotalTag = typeof EffectSuspendTotalTag
-export const EnsuringTag = Symbol()
-export type EnsuringTag = typeof EnsuringTag
-export const ConcatAllTag = Symbol()
-export type ConcatAllTag = typeof ConcatAllTag
-export const BracketOutTag = Symbol()
-export type BracketOutTag = typeof BracketOutTag
-export const ProvideTag = Symbol()
-export type ProvideTag = typeof ProvideTag
-
 export const ChannelTag = {
-  PipeTo: PipeToTag,
-  ContinuationK: ContinuationKTag,
-  ContinuationFinalizer: ContinuationFinalizerTag,
-  Fold: FoldTag,
-  Bridge: BridgeTag,
-  Read: ReadTag,
-  Done: DoneTag,
-  Halt: HaltTag,
-  Effect: EffectTag,
-  Emit: EmitTag,
-  EffectTotal: EffectTotalTag,
-  EffectSuspendTotal: EffectSuspendTotalTag,
-  Ensuring: EnsuringTag,
-  ConcatAll: ConcatAllTag,
-  BracketOut: BracketOutTag,
-  Provide: ProvideTag
+  PipeTo: 'PipeTo',
+  ContinuationK: 'ContinuationK',
+  ContinuationFinalizer: 'ContinuationFinalizer',
+  Fold: 'Fold',
+  Bridge: 'Bridge',
+  Read: 'Read',
+  Done: 'Done',
+  Halt: 'Halt',
+  Effect: 'Effect',
+  Emit: 'Emit',
+  EffectTotal: 'EffectTotal',
+  EffectSuspendTotal: 'EffectSuspendTotal',
+  Ensuring: 'Ensuring',
+  ConcatAll: 'ConcatAll',
+  BracketOut: 'BracketOut',
+  Provide: 'Provide'
 } as const
 
 export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
@@ -150,7 +117,7 @@ export class ContinuationK<
   OutDone,
   OutDone2
 > extends Continuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2> {
-  readonly _channelTag: ContinuationKTag = ChannelTag.ContinuationK
+  readonly _tag = ChannelTag.ContinuationK
   constructor(
     readonly onSuccess: (_: OutDone) => Channel<Env, InErr, InElem, InDone, OutErr2, OutElem, OutDone2>,
     readonly onHalt: (_: Cause<OutErr>) => Channel<Env, InErr, InElem, InDone, OutErr2, OutElem, OutDone2>
@@ -174,7 +141,7 @@ export class ContinuationFinalizer<Env, OutErr, OutDone> extends Continuation<
   OutDone,
   never
 > {
-  readonly _channelTag: ContinuationFinalizerTag = ChannelTag.ContinuationFinalizer
+  readonly _tag = ChannelTag.ContinuationFinalizer
   constructor(readonly finalizer: (_: Exit<OutErr, OutDone>) => URIO<Env, any>) {
     super()
   }
@@ -197,7 +164,7 @@ export class PipeTo<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutEle
   OutElem2,
   OutDone2
 > {
-  readonly _channelTag: PipeToTag = ChannelTag.PipeTo
+  readonly _tag = ChannelTag.PipeTo
   constructor(
     readonly left: () => Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
     readonly right: () => Channel<Env, OutErr, OutElem, OutDone, OutErr2, OutElem2, OutDone2>
@@ -215,7 +182,7 @@ export class Fold<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone,
   OutElem,
   OutDone2
 > {
-  readonly _channelTag: FoldTag = ChannelTag.Fold
+  readonly _tag = ChannelTag.Fold
   constructor(
     readonly value: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
     readonly k: ContinuationK<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2>
@@ -233,7 +200,7 @@ export class Read<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone,
   OutElem,
   OutDone2
 > {
-  readonly _channelTag: ReadTag = ChannelTag.Read
+  readonly _tag = ChannelTag.Read
   constructor(
     readonly more: (_: InElem) => Channel<Env, InErr, InElem, InDone, OutErr2, OutElem, OutDone2>,
     readonly done: ContinuationK<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2>
@@ -243,28 +210,28 @@ export class Read<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone,
 }
 
 export class Done<OutDone> extends Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
-  readonly _channelTag: DoneTag = ChannelTag.Done
+  readonly _tag = ChannelTag.Done
   constructor(readonly terminal: () => OutDone) {
     super()
   }
 }
 
 export class Halt<OutErr> extends Channel<unknown, unknown, unknown, unknown, OutErr, never, never> {
-  readonly _channelTag: HaltTag = ChannelTag.Halt
+  readonly _tag = ChannelTag.Halt
   constructor(readonly error: () => Cause<OutErr>) {
     super()
   }
 }
 
 export class Effect<Env, OutErr, OutDone> extends Channel<Env, unknown, unknown, unknown, OutErr, never, OutDone> {
-  readonly _channelTag: EffectTag = ChannelTag.Effect
+  readonly _tag = ChannelTag.Effect
   constructor(readonly io: IO<Env, OutErr, OutDone>) {
     super()
   }
 }
 
 export class EffectTotal<OutDone> extends Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
-  readonly _channelTag: EffectTotalTag = ChannelTag.EffectTotal
+  readonly _tag = ChannelTag.EffectTotal
   constructor(readonly effect: () => OutDone) {
     super()
   }
@@ -279,7 +246,7 @@ export class EffectSuspendTotal<Env, InErr, InElem, InDone, OutErr, OutElem, Out
   OutElem,
   OutDone
 > {
-  readonly _channelTag: EffectSuspendTotalTag = ChannelTag.EffectSuspendTotal
+  readonly _tag = ChannelTag.EffectSuspendTotal
   constructor(readonly effect: () => Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>) {
     super()
   }
@@ -294,7 +261,7 @@ export class Ensuring<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> exte
   OutElem,
   OutDone
 > {
-  readonly _channelTag: EnsuringTag = ChannelTag.Ensuring
+  readonly _tag = ChannelTag.Ensuring
   constructor(
     readonly channel: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
     readonly finalizer: (_: Exit<OutErr, OutDone>) => IO<Env, never, any>
@@ -315,7 +282,7 @@ export class ConcatAll<
   OutDone2,
   OutDone3
 > extends Channel<Env, InErr, InElem, InDone, OutErr, OutElem2, OutDone3> {
-  readonly _channelTag: ConcatAllTag = ChannelTag.ConcatAll
+  readonly _tag = ChannelTag.ConcatAll
   constructor(
     readonly combineInners: (_: OutDone, __: OutDone) => OutDone,
     readonly combineAll: (_: OutDone, __: OutDone2) => OutDone3,
@@ -327,7 +294,7 @@ export class ConcatAll<
 }
 
 export class BracketOut<R, E, Z, OutDone> extends Channel<R, unknown, unknown, unknown, E, Z, OutDone> {
-  readonly _channelTag: BracketOutTag = ChannelTag.BracketOut
+  readonly _tag = ChannelTag.BracketOut
   constructor(readonly acquire: IO<R, E, Z>, readonly finalizer: (_: Z, exit: Exit<any, any>) => URIO<R, any>) {
     super()
   }
@@ -342,7 +309,7 @@ export class Provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> exten
   OutElem,
   OutDone
 > {
-  readonly _channelTag: ProvideTag = ChannelTag.Provide
+  readonly _tag = ChannelTag.Provide
   constructor(
     readonly environment: Env,
     readonly inner: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
@@ -352,7 +319,7 @@ export class Provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> exten
 }
 
 export class Emit<OutElem, OutDone> extends Channel<unknown, unknown, unknown, unknown, never, OutElem, OutDone> {
-  readonly _channelTag: EmitTag = ChannelTag.Emit
+  readonly _tag = ChannelTag.Emit
   constructor(readonly out: () => OutElem) {
     super()
   }
@@ -367,7 +334,7 @@ export class Bridge<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> extend
   OutElem,
   OutDone
 > {
-  readonly _channelTag: BridgeTag = ChannelTag.Bridge
+  readonly _tag = ChannelTag.Bridge
   constructor(
     readonly input: AsyncInputProducer<InErr, InElem, InDone>,
     readonly channel: Channel<Env, unknown, unknown, unknown, OutErr, OutElem, OutDone>

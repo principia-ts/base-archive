@@ -22,32 +22,15 @@ const BUFFER_SIZE = 64
 export const ChunkTypeId = Symbol()
 export type ChunkTypeId = typeof ChunkTypeId
 
-export const EmptyTag = Symbol()
-export type EmptyTag = typeof EmptyTag
-export const ConcatTag = Symbol()
-export type ConcatTag = typeof ConcatTag
-export const AppendNTag = Symbol()
-export type AppendNTag = typeof AppendNTag
-export const PrependNTag = Symbol()
-export type PrependNTag = typeof PrependNTag
-export const SliceTag = Symbol()
-export type SliceTag = typeof SliceTag
-export const SingletonTag = Symbol()
-export type SingletonTag = typeof SingletonTag
-export const ArrTag = Symbol()
-export type ArrTag = typeof ArrTag
-export const BinArrTag = Symbol()
-export type BinArrTag = typeof BinArrTag
-
 export const ChunkTag = {
-  Empty: EmptyTag,
-  Concat: ConcatTag,
-  AppendN: AppendNTag,
-  PrependN: PrependNTag,
-  Slice: SliceTag,
-  Singleton: SingletonTag,
-  Arr: ArrTag,
-  BinArr: BinArrTag
+  Empty: 'Empty',
+  Concat: 'Concat',
+  AppendN: 'AppendN',
+  PrependN: 'PrependN',
+  Slice: 'Slice',
+  Singleton: 'Singleton',
+  Arr: 'Arr',
+  BinArr: 'BinArr'
 } as const
 
 export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable {
@@ -122,17 +105,17 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
   concat(that: ChunkImplementation<A>): ChunkImplementation<A> {
     concrete<A>(this)
     concrete<A>(that)
-    if (this._chunkTag === EmptyTag) {
+    if (this._chunkTag === ChunkTag.Empty) {
       return that
     }
-    if (that._chunkTag === EmptyTag) {
+    if (that._chunkTag === ChunkTag.Empty) {
       return this
     }
-    if (this._chunkTag === AppendNTag) {
+    if (this._chunkTag === ChunkTag.AppendN) {
       const chunk = fromArray(this.buffer as Array<A>).take(this.bufferUsed)
       return this.start.concat(chunk).concat(that)
     }
-    if (that._chunkTag === PrependNTag) {
+    if (that._chunkTag === ChunkTag.PrependN) {
       const chunk = fromArray(A.takeLast_(that.buffer as Array<A>, that.bufferUsed))
       return this.concat(chunk).concat(that)
     }
@@ -179,11 +162,11 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
     } else {
       concrete<A>(this)
       switch (this._chunkTag) {
-        case EmptyTag:
+        case ChunkTag.Empty:
           return _Empty
-        case SliceTag:
+        case ChunkTag.Slice:
           return n >= this.l ? this : new Slice(this.chunk, this.offset, n)
-        case SingletonTag:
+        case ChunkTag.Singleton:
           return this
         default:
           return new Slice(this, 0, n)
@@ -222,9 +205,9 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
   materialize(): ChunkImplementation<A> {
     concrete(this)
     switch (this._chunkTag) {
-      case EmptyTag:
+      case ChunkTag.Empty:
         return this
-      case ArrTag:
+      case ChunkTag.Arr:
         return this
       default:
         return fromArray(this.arrayLike())
@@ -241,7 +224,7 @@ class ArrayIndexOutOfBoundsException extends Error {
 }
 
 class Empty<A> extends ChunkImplementation<A> {
-  readonly _chunkTag: EmptyTag = ChunkTag.Empty
+  readonly _chunkTag = ChunkTag.Empty
 
   length = 0
   depth  = 0
@@ -287,7 +270,7 @@ class Empty<A> extends ChunkImplementation<A> {
 const _Empty = new Empty<any>()
 
 class Concat<A> extends ChunkImplementation<A> {
-  readonly _chunkTag: ConcatTag = ChunkTag.Concat
+  readonly _chunkTag = ChunkTag.Concat
 
   length = this.left.length + this.right.length
   depth  = 1 + Math.max(this.left.depth, this.right.depth)
@@ -324,7 +307,7 @@ class Concat<A> extends ChunkImplementation<A> {
 }
 
 class AppendN<A> extends ChunkImplementation<A> {
-  readonly _chunkTag: AppendNTag = ChunkTag.AppendN
+  readonly _chunkTag = ChunkTag.AppendN
 
   length = this.start.length + this.bufferUsed
   depth  = 0
@@ -441,7 +424,7 @@ class AppendN<A> extends ChunkImplementation<A> {
 }
 
 class PrependN<A> extends ChunkImplementation<A> {
-  readonly _chunkTag: PrependNTag = ChunkTag.PrependN
+  readonly _chunkTag = ChunkTag.PrependN
 
   length = this.end.length + this.bufferUsed
   depth  = 0
@@ -559,7 +542,7 @@ class PrependN<A> extends ChunkImplementation<A> {
 }
 
 class Singleton<A> extends ChunkImplementation<A> {
-  readonly _chunkTag: SingletonTag = ChunkTag.Singleton
+  readonly _chunkTag = ChunkTag.Singleton
 
   length = 1
   depth  = 0
@@ -642,7 +625,7 @@ class Singleton<A> extends ChunkImplementation<A> {
 }
 
 class Slice<A> extends ChunkImplementation<A> {
-  readonly _chunkTag: SliceTag = ChunkTag.Slice
+  readonly _chunkTag = ChunkTag.Slice
 
   length = this.l
   depth  = 0
@@ -716,7 +699,7 @@ class Slice<A> extends ChunkImplementation<A> {
 }
 
 class Arr<A> extends ChunkImplementation<A> {
-  readonly _chunkTag: ArrTag = ChunkTag.Arr
+  readonly _chunkTag = ChunkTag.Arr
 
   length = this._array.length
   depth  = 0
@@ -784,7 +767,7 @@ class Arr<A> extends ChunkImplementation<A> {
 }
 
 class BinArr extends ChunkImplementation<Byte> {
-  readonly _chunkTag: BinArrTag = ChunkTag.BinArr
+  readonly _chunkTag = ChunkTag.BinArr
 
   length = this._array.length
   depth  = 0
@@ -1105,7 +1088,7 @@ export function prepend<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
 
 export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
   concrete<A>(chunk)
-  if (chunk._chunkTag === SingletonTag) {
+  if (chunk._chunkTag === ChunkTag.Singleton) {
     return new Singleton(f(chunk.value))
   }
   const b        = builder<B>()
@@ -1511,10 +1494,10 @@ export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => O.Option<B>): C
   concrete(self)
 
   switch (self._chunkTag) {
-    case SingletonTag: {
+    case ChunkTag.Singleton: {
       return O.match_(f(self.value), () => empty(), single)
     }
-    case ArrTag: {
+    case ChunkTag.Arr: {
       const array = self.arrayLike()
       let dest    = empty<B>()
       for (let i = 0; i < array.length; i++) {
@@ -1551,11 +1534,11 @@ export function drop_<A>(as: Chunk<A>, n: number): Chunk<A> {
     return empty()
   } else {
     switch (as._chunkTag) {
-      case SliceTag:
+      case ChunkTag.Slice:
         return new Slice(as.chunk, as.offset + n, as.l - n)
-      case SingletonTag:
+      case ChunkTag.Singleton:
         return n > 0 ? empty() : as
-      case EmptyTag:
+      case ChunkTag.Empty:
         return empty()
       default:
         return new Slice(as, n, len - n)
@@ -1570,7 +1553,7 @@ export function drop(n: number): <A>(as: Chunk<A>) => Chunk<A> {
 export function dropWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
   concrete(as)
   switch (as._chunkTag) {
-    case ArrTag: {
+    case ChunkTag.Arr: {
       const arr = as.arrayLike()
       let i     = 0
       while (i < arr.length && predicate(arr[i])) {
@@ -1713,7 +1696,7 @@ export function take(n: number): <A>(as: Chunk<A>) => Chunk<A> {
 export function takeWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
   concrete(as)
   switch (as._chunkTag) {
-    case ArrTag: {
+    case ChunkTag.Arr: {
       const arr = as.arrayLike()
       let i     = 0
       while (i < arr.length && predicate(arr[i])) {
