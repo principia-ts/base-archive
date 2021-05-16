@@ -155,5 +155,6 @@ declare module './HKT' {
     [RecordURI]: N
     [IterableURI]: number
     [AsyncIterableURI]: number
+    [ChunkURI]: number
   }
 }

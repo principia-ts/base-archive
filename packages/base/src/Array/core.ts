@@ -25,7 +25,7 @@ import * as P from '../prelude'
 
 type URI = [HKT.URI<ArrayURI>]
 
-export type InferA<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<infer A> ? A : never
+export type TypeOf<T> = T extends ReadonlyArray<infer A> ? A : never
 
 export { ArrayURI }
 
@@ -577,7 +577,7 @@ export function ipartitionMap_<A, B, C>(
  */
 export function ipartitionMap<A, B, C>(
   f: (i: number, a: A) => Either<B, C>
-):(ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
+): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
   return (ta) => ipartitionMap_(ta, f)
 }
 
