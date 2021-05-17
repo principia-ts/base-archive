@@ -2577,9 +2577,10 @@ export function every<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => b
  */
 export function exists_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): as is NonEmptyArray<A> {
   let result = false
-  const i    = 0
+  let i      = 0
   while (!result && i < as.length) {
     result = predicate(as[i])
+    i++
   }
   return result
 }
