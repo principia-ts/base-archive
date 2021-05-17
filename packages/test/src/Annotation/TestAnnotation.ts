@@ -1,8 +1,6 @@
 import type { Either } from '@principia/base/Either'
-import type * as Eq from '@principia/base/Eq'
 import type * as Fiber from '@principia/base/Fiber'
 import type { Tag } from '@principia/base/Has'
-import type { Hash } from '@principia/base/Hash'
 import type { URef } from '@principia/base/Ref'
 
 import * as A from '@principia/base/Array'
@@ -10,16 +8,17 @@ import * as E from '@principia/base/Either'
 import { absurd } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as Set from '@principia/base/HashSet'
-import * as P from '@principia/base/prelude'
-import * as S from '@principia/base/string'
-import { hash, hashString } from '@principia/base/Structural'
+import { isObject } from '@principia/base/prelude'
+import * as St from '@principia/base/Structural'
 
-export const TestAnnotationHash: Hash<TestAnnotation<any>> & Eq.Eq<TestAnnotation<any>> = {
-  ...P.Eq(equalsTestAnnotation),
-  hash
-}
+export const TestAnnotationTypeId = Symbol()
+export type TestAnnotationTypeId = typeof TestAnnotationTypeId
 
 export class TestAnnotation<V> {
+  readonly _V!: () => V;
+
+  readonly [TestAnnotationTypeId]: TestAnnotationTypeId = TestAnnotationTypeId
+
   constructor(
     readonly tag: Tag<V>,
     readonly identifier: string,
@@ -27,11 +26,22 @@ export class TestAnnotation<V> {
     readonly combine: (v1: V, v2: V) => V
   ) {}
 
-  readonly hashCode = Symbol.for([this.identifier, this.tag].toString())
+  get [St.$hash](): number {
+    return St.combineHash(St.hashString(this.identifier), St.hash(this.tag))
+  }
+
+  [St.$equals](that: unknown): boolean {
+    return (
+      isTestAnnotation(that) &&
+      this.tag.key === that.tag.key &&
+      this.identifier === that.identifier &&
+      St.equals(this.initial, that.initial)
+    )
+  }
 }
 
-export function equalsTestAnnotation<V>(x: TestAnnotation<V>, y: TestAnnotation<V>): boolean {
-  return x.hashCode === y.hashCode
+export function isTestAnnotation(u: unknown): u is TestAnnotation<unknown> {
+  return isObject(u) && TestAnnotationTypeId in u
 }
 
 export const Ignored = tag<number>()
@@ -51,7 +61,7 @@ export const Tagged = tag<Set.HashSet<string>>()
 export const tagged: TestAnnotation<Set.HashSet<string>> = new TestAnnotation(
   Tagged,
   'tagged',
-  Set.make({ ...S.Eq, hash: hashString }),
+  Set.makeDefault(),
   Set.union_
 )
 

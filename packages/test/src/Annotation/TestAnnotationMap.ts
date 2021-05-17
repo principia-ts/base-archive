@@ -6,8 +6,6 @@ import { identity, pipe } from '@principia/base/function'
 import * as Map from '@principia/base/HashMap'
 import * as O from '@principia/base/Option'
 
-import { TestAnnotationHash } from './TestAnnotation'
-
 export class TestAnnotationMap {
   constructor(private readonly map: HashMap<TestAnnotation<any>, any>) {}
 
@@ -47,5 +45,5 @@ export class TestAnnotationMap {
     return this.update(key, (_) => key.combine(_, value))
   }
 
-  static empty: TestAnnotationMap = new TestAnnotationMap(Map.make(TestAnnotationHash))
+  static empty: TestAnnotationMap = new TestAnnotationMap(Map.makeDefault())
 }

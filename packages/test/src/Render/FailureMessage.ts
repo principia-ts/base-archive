@@ -115,7 +115,7 @@ function renderWhole(fragment: AssertionValue<any>, whole: AssertionValue<any>, 
   return withOffset(offset + tabSize)(
     blue(whole.showValue())
       ['+'](renderSatisfied(whole))
-      ['++'](highlight(cyan(whole.assertion().toString()), fragment.assertion().toString()))
+      ['++'](highlight(cyan(whole.assertion.toString()), fragment.assertion.toString()))
   )
 }
 
@@ -143,7 +143,7 @@ function renderGenFailureDetails(failureDetails: Option<GenFailureDetails>, offs
 
 function renderFragment(fragment: AssertionValue<any>, offset: number): Line {
   return withOffset(offset + tabSize)(
-    blue(fragment.showValue())['+'](renderSatisfied(fragment))['+'](cyan(fragment.assertion().toString()))
+    blue(fragment.showValue())['+'](renderSatisfied(fragment))['+'](cyan(fragment.assertion.toString()))
   )
 }
 
@@ -161,7 +161,7 @@ function highlight(fragment: Fragment, substring: string, colorCode = YELLOW): L
 }
 
 function renderSatisfied(fragment: AssertionValue<any>): Fragment {
-  return BA.isTrue(fragment.result()) ? new Fragment(' satisfied ') : new Fragment(' did not satisfy ')
+  return BA.isTrue(fragment.result.value) ? new Fragment(' satisfied ') : new Fragment(' did not satisfy ')
 }
 
 export function renderCause(cause: Cause<any>, offset: number): Message {

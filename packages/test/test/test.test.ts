@@ -14,8 +14,8 @@ import { nonFlaky } from '../src/TestAspect'
 class TestSpec extends DefaultRunnableSpec {
   spec = suite(
     'Suite',
-    test('test1', () => assert(100, equalTo(100 as number, Eq.strict))),
-    test('ignoreMe', () => assert(['a', 'b', 'c'], endsWith(['b', 'c'], Eq.strict)))['@@'](nonFlaky),
+    test('test1', () => assert(100, equalTo(100))),
+    test('ignoreMe', () => assert(['a', 'b', 'c'], endsWith(['b', 'c'])))['@@'](nonFlaky),
     testM('testM1', () =>
       assertM(
         I.effectAsync<unknown, never, string>((k) => {
@@ -23,10 +23,10 @@ class TestSpec extends DefaultRunnableSpec {
             k(I.succeed('hello'))
           }, 100)
         }),
-        equalTo('hello', Eq.strict)
+        equalTo('hello')
       )
     )['@@'](nonFlaky),
-    testM('check', () => check(Gen.int(0, 100), (n) => assert(n, equalTo(100, Eq.strict)))),
+    testM('check', () => check(Gen.int(0, 100), (n) => assert(n, equalTo(100)))),
     test('deepStrict', () => assert(E.Left('left'), deepStrictEqualTo(E.Left('left'))))
   )
 }

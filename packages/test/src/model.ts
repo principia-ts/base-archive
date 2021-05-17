@@ -15,6 +15,7 @@ import type { UnionToIntersection } from '@principia/base/util/types'
 
 import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
+import * as Ev from '@principia/base/Eval'
 import { flow, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Managed'
@@ -42,8 +43,8 @@ function traverseResultLoop<A>(whole: AssertionValue<A>, failureDetails: Failure
   if (whole.isSameAssertionAs(NA.head(failureDetails.assertion))) {
     return BA.success(failureDetails)
   } else {
-    const fragment = whole.result()
-    const result   = BA.isTrue(fragment) ? fragment : BA.not(fragment)
+    const fragment = whole.result
+    const result   = BA.isTrue(fragment.value) ? fragment.value : BA.not(fragment.value)
     return BA.bind_(result, (fragment) =>
       traverseResultLoop(fragment, FailureDetails([whole, ...failureDetails.assertion], failureDetails.gen))
     )
@@ -52,12 +53,15 @@ function traverseResultLoop<A>(whole: AssertionValue<A>, failureDetails: Failure
 
 export function traverseResult<A>(
   value: A,
-  assertResult: () => AssertResult<A>,
-  assertion: () => AssertionM<A>,
+  assertResult: AssertResult<A>,
+  assertion: AssertionM<A>,
   showA?: Show<A>
 ): TestResult {
-  return BA.bind_(assertResult(), (fragment) =>
-    traverseResultLoop(fragment, FailureDetails([new AssertionValue(value, assertion, assertResult, showA)]))
+  return BA.bind_(assertResult, (fragment) =>
+    traverseResultLoop(
+      fragment,
+      FailureDetails([new AssertionValue(value, Ev.now(assertion), Ev.now(assertResult), showA)])
+    )
   )
 }
 
@@ -66,12 +70,7 @@ export function assert<A>(
   assertion: Assertion<WidenLiteral<A>>,
   showA?: Show<WidenLiteral<A>>
 ): TestResult {
-  return traverseResult(
-    value,
-    () => assertion.run(value),
-    () => assertion,
-    showA
-  )
+  return traverseResult(value, assertion.run(value), assertion, showA)
 }
 
 export const assertCompletes = assert(true, isTrue)
@@ -80,12 +79,7 @@ export function assertM<R, E, A>(io: IO<R, E, A>, assertion: AssertionM<A>, show
   return I.gen(function* (_) {
     const value        = yield* _(io)
     const assertResult = yield* _(assertion.runM(value))
-    return traverseResult(
-      value,
-      () => assertResult,
-      () => assertion,
-      showA
-    )
+    return traverseResult(value, assertResult, assertion, showA)
   })
 }
 
@@ -193,13 +187,7 @@ function shrinkStream<R, R1, E, A>(
             () =>
               I.succeed(
                 BA.success(
-                  FailureDetails([
-                    new AssertionValue(
-                      undefined,
-                      () => anything,
-                      () => anything.run(undefined)
-                    )
-                  ])
+                  FailureDetails([new AssertionValue(undefined, Ev.now(anything), Ev.now(anything.run(undefined)))])
                 )
               ),
             (_) => I.fromEither(() => _)

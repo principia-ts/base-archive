@@ -1,5 +1,7 @@
 import type { Assertion } from './Assertion'
 
+import * as Ev from '@principia/base/Eval'
+
 import * as BA from '../FreeBooleanAlgebra'
 import { AssertionValue } from './AssertionValue'
 
@@ -19,10 +21,10 @@ export function AssertionData<A>(assertion: Assertion<A>, value: A): AssertionDa
 
 export function asSuccess<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<AssertionValue<A>> {
   return BA.success(
-    new AssertionValue<A>(
+    new AssertionValue(
       _.value,
-      () => _.assertion,
-      () => asSuccess(_)
+      Ev.later(() => _.assertion),
+      Ev.later(() => asSuccess(_))
     )
   )
 }
@@ -31,8 +33,8 @@ export function asFailure<A>(_: AssertionData<A>): BA.FreeBooleanAlgebra<Asserti
   return BA.failure(
     new AssertionValue(
       _.value,
-      () => _.assertion,
-      () => asFailure(_)
+      Ev.later(() => _.assertion),
+      Ev.later(() => asFailure(_))
     )
   )
 }

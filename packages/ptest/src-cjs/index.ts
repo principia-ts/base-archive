@@ -26,7 +26,7 @@ const argv = yargs(process.argv.slice(2))
 const testArgs = new TestArgs(argv.tests || [], argv.tags || [], O.fromNullable(argv.policy))
 
 const program = pipe(
-  glob(argv.path ?? './**/test/*Spec.ts'),
+  glob(argv.path ?? './!(node_modules)/**/test/*Spec.ts'),
   I.map(
     A.map((s) => {
       const parsed = path.parse(s)

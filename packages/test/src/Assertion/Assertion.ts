@@ -7,6 +7,7 @@ import type { Show } from '@principia/base/Show'
 import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Cause'
 import * as E from '@principia/base/Either'
+import * as Ev from '@principia/base/Eval'
 import * as Ex from '@principia/base/Exit'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
@@ -76,18 +77,20 @@ export function assertion<A>(
   run: (actual: A) => boolean,
   show?: S.Show<A>
 ): Assertion<A> {
-  const assertion = (): Assertion<A> =>
-    assertionDirect(name, params, (actual) => {
-      const result = (): BA.FreeBooleanAlgebra<AssertionValue<A>> => {
-        if (run(actual)) {
-          return BA.success(new AssertionValue(actual, assertion, result, show))
-        } else {
-          return BA.failure(new AssertionValue(actual, assertion, result, show))
-        }
-      }
-      return result()
-    })
-  return assertion()
+  const assertion = Ev.later(
+    (): Assertion<A> =>
+      assertionDirect(name, params, (actual) => {
+        const result = Ev.later((): BA.FreeBooleanAlgebra<AssertionValue<A>> => {
+          if (run(actual)) {
+            return BA.success(new AssertionValue(actual, assertion, result, show))
+          } else {
+            return BA.failure(new AssertionValue(actual, assertion, result, show))
+          }
+        })
+        return result.value
+      })
+  )
+  return assertion.value
 }
 
 export function assertionDirect<A>(
@@ -103,35 +106,28 @@ export function assertionRec<A, B>(
   params: ReadonlyArray<RenderParam>,
   assertion: Assertion<B>,
   get: (_: A) => O.Option<B>,
-  { showA, showB }: { showA?: S.Show<A>, showB?: S.Show<B> } = {},
   orElse: (data: AssertionData<A>) => BA.FreeBooleanAlgebra<AssertionValue<A>> = asFailure
 ): Assertion<A> {
-  const resultAssertion = (): Assertion<A> =>
+  const resultAssertion: Ev.Eval<Assertion<A>> = Ev.later(() =>
     assertionDirect(name, params, (a) =>
       O.match_(
         get(a),
-        () => orElse(AssertionData(resultAssertion(), a)),
+        () => orElse(AssertionData(resultAssertion.value, a)),
         (b) => {
           const innerResult = assertion.run(b)
-          const result      = (): BA.FreeBooleanAlgebra<AssertionValue<any>> => {
+          const result      = Ev.later((): BA.FreeBooleanAlgebra<AssertionValue<any>> => {
             if (BA.isTrue(innerResult)) {
-              return BA.success(new AssertionValue(a, resultAssertion, result, showA))
+              return BA.success(new AssertionValue(a, resultAssertion, result))
             } else {
-              return BA.failure(
-                new AssertionValue(
-                  b,
-                  () => assertion,
-                  () => innerResult,
-                  showB
-                )
-              )
+              return BA.failure(new AssertionValue(b, Ev.now(assertion), Ev.now(innerResult)))
             }
-          }
-          return result()
+          })
+          return result.value
         }
       )
     )
-  return resultAssertion()
+  )
+  return resultAssertion.value
 }
 
 export const anything: Assertion<any> = assertion('anything', [], () => true)
@@ -203,7 +199,6 @@ export function forall<A>(assertion: Assertion<A>): Assertion<Iterable<A>> {
     [param(assertion)],
     assertion,
     It.findFirst((a) => !assertion.test(a)),
-    {},
     asSuccess
   )
 }
