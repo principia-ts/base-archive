@@ -6,11 +6,13 @@ import type { FreeSemiring } from './FreeSemiring'
 import type * as HKT from './HKT'
 import type { ZURI } from './Modules'
 import type { Predicate } from './Predicate'
+import type { _A, _E, _R } from './prelude'
 import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
 import * as C from './Chunk/core'
 import * as E from './Either'
+import { GenEval } from './Eval'
 import * as FS from './FreeSemiring'
 import * as I from './Iterable'
 import * as O from './Option'
@@ -345,6 +347,10 @@ export function get<S>(): Z<never, S, S, unknown, never, S> {
 
 export function gets<S, A>(f: (s: S) => A): Z<never, S, S, unknown, never, A> {
   return modify((s) => [f(s), s])
+}
+
+export function getsM<S, W, R, E, A>(f: (s: S) => Z<W, S, S, R, E, A>): Z<W, S, S, R, E, A> {
+  return P.pipe(get<S>(), bind(f))
 }
 
 /**
@@ -1692,5 +1698,47 @@ export const MonadState = P.MonadState<URI, V>({
   put,
   modify
 })
+
+export class GenZ<W, S, R, E, A> {
+  readonly _W!: () => W
+  readonly _S!: (_: S) => S
+  readonly _R!: (_: R) => void
+  readonly _E!: () => E
+  readonly _A!: () => A
+
+  constructor(readonly Z: Z<W, S, S, R, E, A>) {}
+
+  *[Symbol.iterator](): Generator<GenZ<W, S, R, E, A>, A, any> {
+    return yield this
+  }
+}
+
+const adapter = (_: any, __?: any) => {
+  return new GenZ(_)
+}
+
+type _W<Z> = [Z] extends [{ ['_W']: () => infer W }] ? W : never
+type _S<Z> = [Z] extends [{ ['_S']: (_: infer S) => infer S }] ? S : never
+
+export function gen<T extends GenZ<any, any, any, any, any>, A>(
+  f: (i: <W, S, R, E, A>(_: Z<W, S, S, R, E, A>) => GenZ<W, S, R, E, A>) => Generator<T, A, any>
+): Z<_W<T>, _S<T>, _S<T>, _R<T>, _E<T>, A> {
+  return deferTotal(() => {
+    const iterator = f(adapter as any)
+    const state    = iterator.next()
+
+    function run(state: IteratorYieldResult<T> | IteratorReturnResult<A>): Z<any, any, any, any, any, A> {
+      if (state.done) {
+        return succeed(state.value)
+      }
+      return bind_(state.value['Z'], (val) => {
+        const next = iterator.next(val)
+        return run(next)
+      })
+    }
+
+    return run(state)
+  })
+}
 
 export { ZURI } from './Modules'

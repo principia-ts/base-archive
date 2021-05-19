@@ -1930,6 +1930,17 @@ export function get(n: number): <A>(as: Chunk<A>) => O.Option<A> {
   return (as) => get_(as, n)
 }
 
+export function join_(chunk: Chunk<string>, separator: string): string {
+  if (chunk.length === 0) {
+    return ''
+  }
+  return foldl_(unsafeTail(chunk), unsafeGet_(chunk, 0), (b, s) => b + separator + s)
+}
+
+export function join(separator: string): (chunk: Chunk<string>) => string {
+  return (chunk) => join_(chunk, separator)
+}
+
 export function reverse<A>(as: Chunk<A>): Iterable<A> {
   concrete(as)
   const arr = as.arrayLike()
@@ -2297,7 +2308,7 @@ export function every<A>(predicate: P.Predicate<A>): (as: Chunk<A>) => boolean {
 export function exists_<A>(as: Chunk<A>, predicate: P.Predicate<A>): boolean {
   concrete(as)
   const iterator = as.arrayIterator()
-  let exists     = true
+  let exists     = false
   let result: IteratorResult<ArrayLike<A>>
   while (!exists && !(result = iterator.next()).done) {
     const array = result.value

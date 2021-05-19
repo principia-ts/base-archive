@@ -16,6 +16,8 @@
   },
   "plugins": ["align-assignments", "import", "simple-import-sort", "functional", "@typescript-eslint"],
   "rules": {
+    "prefer-const": "off",
+
     "sort-imports": "off",
     "import/order": "off",
     "import/first": "error",
