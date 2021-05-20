@@ -1,11 +1,11 @@
-import type { Either } from './Either'
-import type * as HKT from './HKT'
-import type { IterableURI } from './Modules'
-import type { Option } from './Option'
+import type { Either } from '../Either'
+import type * as HKT from '../HKT'
+import type { IterableURI } from '../Modules'
+import type { Option } from '../Option'
 
-import * as A from './Array/core'
-import * as O from './Option'
-import * as P from './prelude'
+import * as A from '../Array/core'
+import * as O from '../Option'
+import * as P from '../prelude'
 
 type URI = [HKT.URI<IterableURI>]
 
@@ -599,18 +599,13 @@ export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iter
   return (as) => ievery_(as, predicate)
 }
 
-export function every_<A, B extends A>(
-  as: Iterable<A>,
-  refinement: P.Refinement<A, B>
-): as is Iterable<B>
+export function every_<A, B extends A>(as: Iterable<A>, refinement: P.Refinement<A, B>): as is Iterable<B>
 export function every_<A>(as: Iterable<A>, predicate: P.Predicate<A>): boolean
 export function every_<A>(as: Iterable<A>, predicate: P.Predicate<A>): boolean {
   return ievery_(as, (_, a) => predicate(a))
 }
 
-export function every<A, B extends A>(
-  refinement: P.Refinement<A, B>
-): (as: Iterable<A>) => as is Iterable<B>
+export function every<A, B extends A>(refinement: P.Refinement<A, B>): (as: Iterable<A>) => as is Iterable<B>
 export function every<A>(predicate: P.Predicate<A>): (as: Iterable<A>) => boolean
 export function every<A>(predicate: P.Predicate<A>): (as: Iterable<A>) => boolean {
   return (as) => every_(as, predicate)
@@ -698,4 +693,4 @@ export const FoldableWithIndex = P.FoldableWithIndex<URI>({
   ifoldMap_
 })
 
-export { IterableURI } from './Modules'
+export { IterableURI } from '../Modules'

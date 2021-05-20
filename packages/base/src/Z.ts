@@ -6,15 +6,14 @@ import type { FreeSemiring } from './FreeSemiring'
 import type * as HKT from './HKT'
 import type { ZURI } from './Modules'
 import type { Predicate } from './Predicate'
-import type { _A, _E, _R } from './prelude'
+import type { _E, _R } from './prelude'
 import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
 import * as C from './Chunk/core'
 import * as E from './Either'
-import { GenEval } from './Eval'
 import * as FS from './FreeSemiring'
-import * as I from './Iterable'
+import * as I from './Iterable/core'
 import * as O from './Option'
 import * as P from './prelude'
 import { flow } from './prelude'
@@ -1638,6 +1637,9 @@ export type V = HKT.V<'W', '_'> & HKT.V<'S', '_'> & HKT.V<'R', '-'> & HKT.V<'E',
 export const Functor = P.Functor<URI, V>({ map_ })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, crossWith_, cross_ })
+
+export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
+export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI, V>({ map_, crossWith_, cross_, ap_ })
 

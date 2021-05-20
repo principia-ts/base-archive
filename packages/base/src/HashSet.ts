@@ -1,5 +1,5 @@
 import * as HM from './HashMap'
-import * as It from './Iterable'
+import * as It from './Iterable/core'
 import { not } from './Predicate'
 import * as P from './prelude'
 import * as St from './Structural'

@@ -5,17 +5,22 @@ import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
 import type { Equatable, Hashable } from '../prelude'
 import type { Refinement } from '../Refinement'
+import type { ShowComputationExternal } from '../Structural/Showable'
+import type { Showable } from '../Structural/Showable/core'
 import type { These } from '../These'
 
 import * as A from '../Array/core'
 import { pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
-import * as It from '../Iterable'
+import * as It from '../Iterable/core'
 import * as O from '../Option'
 import { $equals, $hash, equals, hashIterator, isByte } from '../prelude'
 import * as P from '../prelude'
+import { _show, showComputationComplex } from '../Structural/Showable'
+import { $show } from '../Structural/Showable/core'
 import * as Th from '../These'
 import { AtomicNumber } from '../util/support/AtomicNumber'
+import * as Z from '../Z'
 
 type URI = [HKT.URI<ChunkURI>]
 
@@ -35,7 +40,7 @@ export const ChunkTag = {
   BinArr: 'BinArr'
 } as const
 
-export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable {
+export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable, Showable {
   readonly [ChunkTypeId]: ChunkTypeId = ChunkTypeId
   readonly _A!: () => A
   abstract readonly length: number
@@ -48,6 +53,15 @@ export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable {
 
   get [$hash](): number {
     return hashIterator(this[Symbol.iterator]())
+  }
+
+  get [$show](): ShowComputationExternal {
+    return showComputationComplex({
+      extrasType: 1,
+      base: Z.pure(`Chunk(${this.length})`),
+      indices: traverse_(Z.Applicative)(this, _show),
+      braces: ['[', ']']
+    })
   }
 
   [$equals](that: unknown): boolean {
