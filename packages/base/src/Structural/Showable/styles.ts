@@ -27,6 +27,7 @@ export type ShowGroup =
   | 'date'
   | 'regexp'
   | 'module'
+  | 'dim'
 
 export type ShowStyle = Record<ShowGroup, Endomorphism<string>>
 
@@ -41,7 +42,8 @@ export const defaultShowStyle: ShowStyle = {
   symbol: _.green,
   date: _.magenta,
   regexp: _.red,
-  module: _.underline
+  module: _.underline,
+  dim: _.dim
 }
 
 export type StyleFunction = (str: string, group: ShowGroup) => string

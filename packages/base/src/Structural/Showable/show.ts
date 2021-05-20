@@ -39,7 +39,7 @@ const builtInObjects = new Set(Object.getOwnPropertyNames(globalThis).filter((e)
 export interface ShowContextArgs {
   readonly stylize: StyleFunction
   readonly circular: HM.HashMap<unknown, number>
-  readonly seen: Chunk<unknown>
+  readonly seen: Array<unknown>
   readonly indentationLevel: number
   readonly maxArrayLength: number
   readonly breakLength: number
@@ -48,6 +48,8 @@ export interface ShowContextArgs {
   readonly depth: number
   readonly showHidden: boolean
   readonly maxStringLength: number
+  readonly currentDepth: number
+  readonly recurseTimes: number
 }
 
 export class ShowContext extends CaseClass<ShowContextArgs> {}
@@ -103,6 +105,7 @@ function escapeFn(str: string): string {
 const OBJECT_TYPE       = 0
 const ARRAY_TYPE        = 1
 const ARRAY_EXTRAS_TYPE = 2
+const PROTO_TYPE        = 3
 
 export type ShowComputationZ<A> = Z.Z<never, ShowContext, ShowContext, unknown, never, A>
 export type ShowComputation = ShowComputationZ<string>
@@ -141,16 +144,18 @@ export function show(value: unknown): string {
     _show(value),
     new ShowContext({
       circular: HM.makeDefault<unknown, number>(),
-      seen: C.empty(),
+      seen: [],
       indentationLevel: 0,
       maxArrayLength: 100,
       breakLength: 100,
       compact: 3,
       colors: true,
-      depth: Infinity,
+      depth: 4,
       showHidden: true,
       maxStringLength: 100,
-      stylize: stylizeWithColor
+      stylize: stylizeWithColor,
+      currentDepth: 0,
+      recurseTimes: 0
     })
   )
 }
@@ -173,7 +178,7 @@ export function _show(value: unknown): ShowComputation {
 
 function showValue(value: object): ShowComputation {
   return Z.getsM((context) => {
-    if (C.exists_(context.seen, (v) => v === value)) {
+    if (A.exists_(context.seen, (v) => v === value)) {
       return pipe(
         Z.modify((context: ShowContext) =>
           pipe(
@@ -204,6 +209,7 @@ interface InspectionInfo {
   readonly noIterator: boolean
   readonly extrasType: number
   readonly keys: ReadonlyArray<PropertyKey>
+  readonly protoProps: Chunk<PropertyKey>
 }
 function inspectionInfo(args: Omit<InspectionInfo, '_tag'>): InspectionInfo {
   return {
@@ -241,14 +247,18 @@ type InspectionResult = InspectionInfo | InspectionEarlyReturn | InspectionExter
  * the structure of that value
  */
 function getInspectionInfo(context: ShowContext, value: object, typedArray?: string): InspectionResult {
-  const constructor = getConstructorName(value)
-  let keys          = [] as Array<PropertyKey>
-  let tag           = value[Symbol.toStringTag]
-  let base          = ''
-  let formatter     = (_: any) => Z.pure(C.empty<string>()) as ShowComputationChunk
-  let braces        = ['', ''] as [string, string]
-  let noIterator    = true
-  let extrasType    = OBJECT_TYPE
+  if (isShowable(value)) {
+    return inspectionExternal(value[$show])
+  }
+
+  let [constructor, protoProps] = getConstructorName(value)
+  let keys                      = [] as Array<PropertyKey>
+  let tag                       = value[Symbol.toStringTag]
+  let base                      = ''
+  let formatter                 = (_: any) => Z.pure(C.empty<string>()) as ShowComputationChunk
+  let braces                    = ['', ''] as [string, string]
+  let noIterator                = true
+  let extrasType                = OBJECT_TYPE
 
   if (
     typeof tag !== 'string' ||
@@ -263,9 +273,6 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
 
   if (value[Symbol.iterator] || constructor === null) {
     noIterator = false
-    if (isShowable(value)) {
-      return inspectionExternal(value[$show])
-    }
     if (isArray(value)) {
       const prefix = getPrefix(constructor, tag, 'Array', `(${value.length})`)
       braces       = [`${prefix}[`, ']']
@@ -279,7 +286,7 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
       const prefix = getPrefix(constructor, tag, 'Set', `(${size})`)
       keys         = getKeys(value, context.showHidden)
       formatter    = showSet
-      if (size === 0 && keys.length === 0) {
+      if (size === 0 && keys.length === 0 && C.isEmpty(protoProps)) {
         return inspectionEarlyReturn(`${prefix}{}`)
       }
       braces = [`${prefix}{`, '}']
@@ -288,7 +295,7 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
       const prefix = getPrefix(constructor, tag, 'Map', `(${size})`)
       keys         = getKeys(value, context.showHidden)
       formatter    = showMap
-      if (size === 0 && keys.length === 0) {
+      if (size === 0 && keys.length === 0 && C.isEmpty(protoProps)) {
         return inspectionEarlyReturn(`${prefix}{}`)
       }
       braces = [`${prefix}{`, '}']
@@ -313,12 +320,12 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
       if (tag !== '') {
         braces[0] = `${getPrefix(constructor, tag, 'Object')}{`
       }
-      if (keys.length === 0) {
+      if (keys.length === 0 && C.isEmpty(protoProps)) {
         return inspectionEarlyReturn(`${braces[0]}}`)
       }
     } else if (typeof value === 'function') {
       base = getFunctionBase(value, constructor, tag)
-      if (keys.length === 0) {
+      if (keys.length === 0 && C.isEmpty(protoProps)) {
         return inspectionEarlyReturn(base)
       }
     } else if (isRegExp(value)) {
@@ -327,7 +334,7 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
       if (prefix !== 'RegExp ') {
         base = `${prefix}${base}`
       }
-      if (keys.length === 0) {
+      if (keys.length === 0 && C.isEmpty(protoProps)) {
         return inspectionEarlyReturn(base)
       }
     } else if (isDate(value)) {
@@ -336,7 +343,7 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
       if (prefix !== 'Date ') {
         base = `${prefix}${base}`
       }
-      if (keys.length === 0) {
+      if (keys.length === 0 && C.isEmpty(protoProps)) {
         return inspectionEarlyReturn(base)
       }
     } else if (isAnyArrayBuffer(value)) {
@@ -344,7 +351,7 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
       const prefix    = getPrefix(constructor, tag, arrayType)
       if (typedArray === undefined) {
         formatter = showArrayBuffer
-      } else if (keys.length === 0) {
+      } else if (keys.length === 0 && C.isEmpty(protoProps)) {
         return inspectionEarlyReturn(prefix + `{ byteLength: ${_showNumber(context, value.byteLength)} }`)
       }
       braces[0] = `${prefix}{`
@@ -373,7 +380,8 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
     formatter,
     braces,
     noIterator,
-    extrasType
+    extrasType,
+    protoProps
   })
 }
 
@@ -383,13 +391,25 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
  */
 function showRaw(value: object, typedArray?: string): ShowComputation {
   return pipe(
-    Z.gets((context: ShowContext) => getInspectionInfo(context, value, typedArray)),
-    Z.bind((info) => {
+    Z.gets((context: ShowContext) => tuple(context, getInspectionInfo(context, value, typedArray))),
+    Z.bind(([context, info]) => {
+      if (info._tag === 'InspectionInfo' && context.recurseTimes > context.depth) {
+        let constructorName = getPrefix(info.constructor, info.tag, 'Object').slice(0, -1)
+        if (info.constructor !== null) {
+          constructorName = `[${constructorName}]`
+        }
+        return Z.update((context: ShowContext) =>
+          context.copy({ recurseTimes: context.recurseTimes - 1, currentDepth: context.currentDepth - 1 })
+        )['*>'](Z.pure(context.stylize(constructorName, 'special')))
+      }
       if (info._tag === 'InspectionEarlyReturn') {
         return Z.pure(info.shown)
       } else {
         return pipe(
-          Z.update((context: ShowContext) => context.copy({ seen: context.seen[':+'](value) })),
+          Z.update((context: ShowContext) => {
+            context.seen.push(value)
+            return context
+          }),
           Z.apr(
             Z.deferTotal(() => {
               let keys: ShowComputationChunk
@@ -400,8 +420,13 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
               switch (info._tag) {
                 case 'InspectionInfo': {
                   base       = Z.pure(info.base)
-                  keys       = C.traverse_(Z.Applicative)(C.from(info.keys), (key) =>
-                    showProperty(value, key, info.extrasType)
+                  keys       = pipe(
+                    C.from(info.keys),
+                    C.traverse(Z.Applicative)((key) => showProperty(value, key, info.extrasType)),
+                    Z.crossWith(
+                      C.traverse_(Z.Applicative)(info.protoProps, (key) => showProperty(value, key, PROTO_TYPE)),
+                      C.concat_
+                    )
                   )
                   indices    = info.formatter(value)
                   braces     = info.braces
@@ -443,11 +468,21 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
               )
 
               return pipe(
-                output,
+                Z.update((_: ShowContext) =>
+                  _.copy({ recurseTimes: context.recurseTimes + 1, currentDepth: _.recurseTimes + 1 })
+                ),
+                Z.apr(output),
                 Z.cross(baseWithRef),
-                Z.apl(Z.update((_: ShowContext) => _.copy({ seen: C.take_(_.seen, _.seen.length - 1) }))),
                 Z.bind(([output, base]) =>
                   Z.gets((context) => reduceToSingleString(context, output, base, braces, extrasType, value))
+                ),
+                Z.apl(
+                  Z.update((context: ShowContext) => {
+                    context.seen.pop()
+                    return context.copy({
+                      recurseTimes: context.recurseTimes - 1
+                    })
+                  })
                 )
               )
             })
@@ -476,7 +511,7 @@ function reduceToSingleString(
     if (extrasType === ARRAY_EXTRAS_TYPE && entries > 6) {
       output = groupElements(context, output, value)
     }
-    if (entries === output.length) {
+    if (context.currentDepth - context.recurseTimes < context.compact && entries === output.length) {
       const start = output.length + context.indentationLevel + braces[0].length + base.length + 10
       if (isBelowBreakLength(context, output, start, base)) {
         return `${base ? `${base} ` : ''}${braces[0]} ${C.join_(output, ', ')} ${braces[1]}`
@@ -526,7 +561,13 @@ function showMap(value: Map<unknown, unknown>): ShowComputationChunk {
     Z.apr(
       It.traverseChunk_(Z.Applicative)(value, ([k, v]) => Z.crossWith_(_show(k), _show(v), (k, v) => `${k} => ${v}`))
     ),
-    Z.apl(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
+    Z.apl(
+      Z.update((_: ShowContext) =>
+        _.copy({
+          indentationLevel: _.indentationLevel - 2
+        })
+      )
+    )
   )
 }
 
@@ -587,6 +628,59 @@ function showArrayBuffer(value: ArrayBuffer | SharedArrayBuffer): ShowComputatio
   })
 }
 
+const maxEntries = 2 ** 32 - 2
+
+function showSpecialArray(
+  value: ReadonlyArray<unknown>,
+  maxLength: number,
+  currentComputation: ShowComputationChunk,
+  currentIndex: number,
+  currentLength: number
+): ShowComputationChunk {
+  return Z.getsM((context) => {
+    const keys       = Object.keys(value)
+    let index        = currentIndex
+    let i            = currentIndex
+    let outputLength = currentLength
+    let computation  = currentComputation
+    for (; i < keys.length && outputLength < maxLength; i++) {
+      const key = keys[i]
+      const tmp = +key
+      if (tmp > maxEntries) {
+        break
+      }
+      if (`${index}` !== key) {
+        if (!numberRegExp.test(key)) {
+          break
+        }
+        const emptyItems = tmp - index
+        const message    = `<${emptyItems} empty item${pluralize(emptyItems)}>`
+        computation      = Z.map_(computation, C.append(context.stylize(message, 'undefined')))
+        outputLength++
+        index = tmp
+        if (outputLength === maxLength) {
+          break
+        }
+      }
+      computation = Z.crossWith_(computation, showProperty(value, key, ARRAY_TYPE), C.append_)
+      outputLength++
+      index++
+    }
+    const remaining = value.length - index
+    if (outputLength !== maxLength) {
+      if (remaining > 0) {
+        computation = Z.map_(
+          computation,
+          C.append(context.stylize(`<${remaining} empty item${pluralize(remaining)}>`, 'undefined'))
+        )
+      }
+    } else if (remaining > 0) {
+      computation = Z.map_(computation, C.append(`... ${remaining} more item${pluralize(remaining)}`))
+    }
+    return computation
+  })
+}
+
 function showArray(value: ReadonlyArray<unknown>): ShowComputationChunk {
   return pipe(
     Z.gets((context: ShowContext) => {
@@ -597,14 +691,19 @@ function showArray(value: ReadonlyArray<unknown>): ShowComputationChunk {
       chunk           = C.take_(chunk, len)
       return tuple(remaining, chunk)
     }),
-    Z.bind(([remaining, chunk]) =>
-      pipe(
-        C.itraverse_(Z.Applicative)(chunk, (i) => showProperty(value, i, ARRAY_TYPE)),
-        Z.map((chunk) =>
-          remaining > 0 ? C.append_(chunk, `... ${remaining} more item${pluralize(remaining)}`) : chunk
-        )
-      )
-    )
+    Z.bind(([remaining, chunk]) => {
+      let computation = Z.pure(C.empty()) as ShowComputationChunk
+      for (let i = 0; i < chunk.length; i++) {
+        if (!Object.prototype.hasOwnProperty.call(value, i)) {
+          return showSpecialArray(value, chunk.length, computation, i, i)
+        }
+        computation = Z.crossWith_(computation, showProperty(value, i, ARRAY_TYPE), C.append_)
+      }
+      if (remaining > 0) {
+        computation = Z.map_(computation, C.append(`... ${remaining} more item${pluralize(remaining)}`))
+      }
+      return computation
+    })
   )
 }
 
@@ -620,7 +719,7 @@ export function showProperty(
         let descriptor = desc || Object.getOwnPropertyDescriptor(value, key) || { value: value[key], enumerable: true }
 
         if (isDefined(descriptor.value)) {
-          const diff = context.compact !== true || type !== OBJECT_TYPE ? 2 : 3
+          const diff = context.compact !== true || (type !== OBJECT_TYPE && type !== PROTO_TYPE) ? 2 : 3
           return pipe(
             Z.update((_: ShowContext): ShowContext => _.copy({ indentationLevel: _.indentationLevel + diff })),
             Z.apr(_show(descriptor.value)),
@@ -661,6 +760,11 @@ export function showProperty(
         } else {
           name = context.stylize(strEscape(String(key)), 'string')
         }
+
+        if (type === PROTO_TYPE) {
+          return context.stylize(`${name}:${extra}${shown}`, 'dim')
+        }
+
         return `${name}:${extra}${shown}`
       })
     )
@@ -757,23 +861,6 @@ function groupElements(context: ShowContext, input: Chunk<string>, value?: Array
     output = tmp
   }
   return output
-}
-
-export function showCircular(value: unknown): ShowComputation {
-  return pipe(
-    Z.gets((context: ShowContext) => HM.get_(context.circular, value)),
-    Z.bind(
-      O.match(
-        () =>
-          Z.modify((_: ShowContext) => [
-            tuple(_.circular.size + 1, _.stylize),
-            _.copy({ circular: HM.set_(_.circular, value, _.circular.size + 1) })
-          ]),
-        (n) => Z.gets((_) => tuple(n, _.stylize))
-      )
-    ),
-    Z.map(([n, stylize]) => stylize(`[Circular *${n}]`, 'special'))
-  )
 }
 
 type Primitive = string | number | boolean | bigint | symbol
@@ -922,9 +1009,11 @@ function isZeroWidthCodePoint(code: number): boolean {
   ) // Variation Selectors
 }
 
-function getConstructorName(value: object): string | null {
-  let obj   = value
-  const tmp = obj
+function getConstructorName(value: object): [string | null, Chunk<PropertyKey>] {
+  let obj        = value
+  const tmp      = obj
+  let firstProto
+  let protoProps = C.empty<PropertyKey>()
   while (obj || isUndetectableObject(obj)) {
     const descriptor = Object.getOwnPropertyDescriptor(obj, 'constructor')
     if (
@@ -933,12 +1022,64 @@ function getConstructorName(value: object): string | null {
       descriptor.value.name !== '' &&
       isInstanceof(tmp, descriptor.value)
     ) {
-      return descriptor.value.name
+      if (firstProto !== obj || !builtInObjects.has(descriptor.value.name)) {
+        protoProps = C.concat_(protoProps, getPrototypeProperties(tmp, firstProto || tmp))
+      }
+      return [descriptor.value.name, protoProps]
     }
 
     obj = Object.getPrototypeOf(obj)
+    if (!firstProto) {
+      firstProto = obj
+    }
   }
-  return null
+
+  return [null, C.empty()]
+}
+
+function getPrototypeProperties(main: object, obj: object): Chunk<PropertyKey> {
+  let proto                 = obj
+  let keySet                = new Set<PropertyKey>()
+  let keys: PropertyKey[]   = []
+  let depth                 = 0
+  let output: PropertyKey[] = []
+
+  while (depth <= 3) {
+    if (depth !== 0 || main === proto) {
+      proto = Object.getPrototypeOf(proto)
+      if (proto === null) {
+        return C.from(output)
+      }
+      const descriptor = Object.getOwnPropertyDescriptor(proto, 'constructor')
+      if (descriptor !== undefined && isFunction(descriptor.value) && builtInObjects.has(descriptor.value.name)) {
+        return C.from(output)
+      }
+    }
+
+    if (depth !== 0) {
+      for (let i = 0; i < keys.length; i++) {
+        keySet.add(keys[i])
+      }
+    }
+    keys = Reflect.ownKeys(proto)
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i]
+      if (
+        key === 'constructor' ||
+        Object.prototype.hasOwnProperty.call(main, key) ||
+        (depth !== 0 && keySet.has(key))
+      ) {
+        continue
+      }
+      const desc = Object.getOwnPropertyDescriptor(proto, key)
+      if (typeof desc?.value === 'function') {
+        continue
+      }
+      output.push(key)
+    }
+    depth++
+  }
+  return C.from(output)
 }
 
 function isInstanceof(value: unknown, constructor: Function): boolean {

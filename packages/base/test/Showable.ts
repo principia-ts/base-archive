@@ -2,6 +2,7 @@ import * as A from '../src/Array'
 import * as C from '../src/Chunk'
 import * as S from '../src/Structural/Showable'
 import * as prand from '../src/util/pure-rand'
+import * as Z from '../src/Z'
 
 const rand = new prand.Random(prand.mersenne(Math.random() * 100))
 
@@ -36,7 +37,9 @@ const object = {
   f: smallCircularArray,
   [key]: generateString(10),
   g: chunk,
-  h: aMap
+  h: aMap,
+  i: Z.pure('A'),
+  j: [23, 24, 25, , , ,]
 }
 
 // eslint-disable-next-line functional/immutable-data
@@ -46,3 +49,56 @@ smallCircularArray[3] = object
 ;(object as any).g = C.append_((object as any).g, object)
 
 console.log(S.show(object))
+
+class A_ {
+  a = 'A'
+  f() {
+    return this.a
+  }
+}
+
+// eslint-disable-next-line functional/immutable-data
+(A_.prototype as any).x = 'X'
+
+class B_ extends A_ {
+  b = 'B'
+  g() {
+    return this.b
+  }
+}
+
+class C_ extends B_ {
+  c = 'C'
+  h() {
+    return this.c
+  }
+}
+
+const protoTest = new C_()
+
+console.log(S.show(protoTest))
+
+const anUnreasonablyDeepObject = {
+  a: {
+    b: {
+      c: {
+        d: {
+          e: {
+            f: {
+              g: {
+                h: 'oh hi'
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  b0: {
+    c0: {
+      d0: 23
+    }
+  }
+}
+
+console.log(S.show(anUnreasonablyDeepObject))

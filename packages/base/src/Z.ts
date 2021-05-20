@@ -7,6 +7,7 @@ import type * as HKT from './HKT'
 import type { ZURI } from './Modules'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
+import type { ShowComputationExternal } from './Structural/Showable'
 import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
@@ -17,6 +18,7 @@ import * as I from './Iterable/core'
 import * as O from './Option'
 import * as P from './prelude'
 import { flow } from './prelude'
+import { $show, showComputationPrimitive } from './Structural/Showable'
 import { makeStack } from './util/support/Stack'
 
 /*
@@ -81,6 +83,10 @@ export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> 
 
   constructor() {
     super()
+  }
+
+  get [$show](): ShowComputationExternal {
+    return showComputationPrimitive(pure(`Z (${this.constructor.name}) {}`))
   }
 }
 
