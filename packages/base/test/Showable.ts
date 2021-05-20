@@ -1,3 +1,5 @@
+import { inspect } from 'util'
+
 import * as A from '../src/Array'
 import * as C from '../src/Chunk'
 import * as S from '../src/Structural/Showable'
@@ -28,11 +30,13 @@ const aMap = new Map([
 
 const chunk = C.map_(C.make(0, 1, 2, 3, 4, 5, 6, 7, 8, 9), (n) => n.toString(16))
 
+const buffer = new Uint8Array([234, 23, 12, 48, 37, 10])
+
 const object = {
   a: 'a pretty short string',
   b: generateString(1000),
   c: rand.nextInt(0, 999999999999),
-  d: rand.nextBigInt(0n, 99999999999999999999999999999999999999999n),
+  d: rand.nextBigInt(BigInt(0), BigInt(99999999999999999999999999999999999999999)),
   e: largeNumberArray,
   f: smallCircularArray,
   [key]: generateString(10),

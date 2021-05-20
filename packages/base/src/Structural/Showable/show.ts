@@ -32,7 +32,7 @@ import {
 import * as str from '../../string'
 import * as Z from '../../Z'
 import { $show, isShowable } from './core'
-import { stylizeWithColor } from './styles'
+import { stylizeNoColor, stylizeWithColor } from './styles'
 
 const builtInObjects = new Set(Object.getOwnPropertyNames(globalThis).filter((e) => /^[A-Z][a-zA-Z0-9]+$/.test(e)))
 
@@ -135,7 +135,7 @@ export function showComputationPrimitive(computation: ShowComputation): ShowComp
 
 export interface ShowComputationComplex {
   readonly _tag: 'Complex'
-  extrasType?: 0 | 1 | 2
+  extrasType?: number
   base?: ShowComputation
   indices?: ShowComputationChunk
   keys?: ShowComputationChunk
@@ -152,18 +152,18 @@ export type ShowComputationExternal = ShowComputationPrimitive | ShowComputation
 
 function getShowContext(options?: Partial<ShowOptions>) {
   return new ShowContext({
+    maxArrayLength: 100,
+    maxStringLength: 100,
+    breakLength: 100,
+    compact: 3,
+    colors: false,
+    depth: 3,
+    showHidden: true,
     circular: HM.makeDefault<unknown, number>(),
     seen: [],
     budget: {},
     indentationLevel: 0,
-    maxArrayLength: 100,
-    breakLength: 100,
-    compact: 3,
-    colors: true,
-    depth: 4,
-    showHidden: true,
-    maxStringLength: 100,
-    stylize: stylizeWithColor,
+    stylize: options?.colors === true ? stylizeWithColor : stylizeNoColor,
     currentDepth: 0,
     recurseTimes: 0,
     ...(options || {})
@@ -261,7 +261,7 @@ function inspectionExternal(computation: ShowComputationExternal): InspectionExt
 type InspectionResult = InspectionInfo | InspectionEarlyReturn | InspectionExternal
 
 /**
- * Determines the approximate type of the unknown value and collection information about
+ * Determines the approximate type of the unknown value and collects information about
  * the structure of that value
  */
 function getInspectionInfo(context: ShowContext, value: object, typedArray?: string): InspectionResult {
