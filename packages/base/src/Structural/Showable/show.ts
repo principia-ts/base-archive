@@ -50,6 +50,17 @@ export interface ShowContextArgs {
   readonly maxStringLength: number
   readonly currentDepth: number
   readonly recurseTimes: number
+  readonly budget: Record<number, number>
+}
+
+export interface ShowOptions {
+  readonly maxArrayLength: number
+  readonly maxStringLength: number
+  readonly breakLength: number
+  readonly compact: number | boolean
+  readonly colors: boolean
+  readonly depth: number
+  readonly showHidden: boolean
 }
 
 export class ShowContext extends CaseClass<ShowContextArgs> {}
@@ -139,25 +150,32 @@ export function showComputationComplex(args: Omit<ShowComputationComplex, '_tag'
 
 export type ShowComputationExternal = ShowComputationPrimitive | ShowComputationComplex
 
+function getShowContext(options?: Partial<ShowOptions>) {
+  return new ShowContext({
+    circular: HM.makeDefault<unknown, number>(),
+    seen: [],
+    budget: {},
+    indentationLevel: 0,
+    maxArrayLength: 100,
+    breakLength: 100,
+    compact: 3,
+    colors: true,
+    depth: 4,
+    showHidden: true,
+    maxStringLength: 100,
+    stylize: stylizeWithColor,
+    currentDepth: 0,
+    recurseTimes: 0,
+    ...(options || {})
+  })
+}
+
 export function show(value: unknown): string {
-  return Z.runStateResult_(
-    _show(value),
-    new ShowContext({
-      circular: HM.makeDefault<unknown, number>(),
-      seen: [],
-      indentationLevel: 0,
-      maxArrayLength: 100,
-      breakLength: 100,
-      compact: 3,
-      colors: true,
-      depth: 4,
-      showHidden: true,
-      maxStringLength: 100,
-      stylize: stylizeWithColor,
-      currentDepth: 0,
-      recurseTimes: 0
-    })
-  )
+  return Z.runStateResult_(_show(value), getShowContext())
+}
+
+export function showWithOptions(value: unknown, options: Partial<ShowOptions>): string {
+  return Z.runStateResult_(_show(value), getShowContext(options))
 }
 
 export function _show(value: unknown): ShowComputation {
@@ -474,7 +492,21 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                 Z.apr(output),
                 Z.cross(baseWithRef),
                 Z.bind(([output, base]) =>
-                  Z.gets((context) => reduceToSingleString(context, output, base, braces, extrasType, value))
+                  Z.modify((context) => {
+                    const res = reduceToSingleString(context, output, base, braces, extrasType, value)
+
+                    const budget    = context.budget[context.indentationLevel] || 0
+                    const newLength = budget + res.length
+                    let newBudget   = { ...context.budget, [context.indentationLevel]: newLength }
+                    let newContext
+
+                    if (newLength > 2 ** 27) {
+                      newContext = context.copy({ budget: newBudget, depth: -1 })
+                    } else {
+                      newContext = context.copy({ budget: newBudget })
+                    }
+                    return [res, newContext]
+                  })
                 ),
                 Z.apl(
                   Z.update((context: ShowContext) => {
