@@ -1,6 +1,6 @@
 import * as H from '../../Hash'
 import { PCGRandom } from '../../internal/PCGRandom'
-import { isDefined } from '../../util/predicates'
+import { isArray, isDefined, isIterable, isPlain } from '../../util/predicates'
 import { $hash, isHashable } from './core'
 
 /*
@@ -59,6 +59,12 @@ function _hashObject(value: object): number {
   if (isDefined(h)) return h
   if (isHashable(value)) {
     h = value[$hash]
+  } else if (isArray(value)) {
+    h = _hashArray(value)
+  } else if (isIterable(value)) {
+    h = _hashIterator(value[Symbol.iterator]())
+  } else if (isPlain(value)) {
+    h = _hashPlainObject(value)
   } else {
     h = _current++
   }
@@ -75,8 +81,8 @@ function _hashPlainObject(o: any): number {
   const keys = Object.keys(o)
   let h      = 12289
   for (let i = 0; i < keys.length; i++) {
-    h = combineHash(h, _hashString(keys[i]))
-    h = combineHash(h, _hash((o as any)[keys[i]]))
+    h = _combineHash(h, _hashString(keys[i]))
+    h = _combineHash(h, _hash((o as any)[keys[i]]))
   }
   return h
 }
@@ -100,7 +106,7 @@ export function hashArray(arr: Array<any> | ReadonlyArray<any>): number {
 function _hashArray(arr: Array<any> | ReadonlyArray<any>): number {
   let h = 6151
   for (let i = 0; i < arr.length; i++) {
-    h = combineHash(_hashNumber(i), _hash(arr[i]))
+    h = _combineHash(_hashNumber(i), _hash(arr[i]))
   }
   return h
 }
@@ -113,7 +119,7 @@ function _hashIterator(it: Iterator<any>): number {
   let res: IteratorResult<any>
   let h = 6151
   while (!(res = it.next()).done) {
-    h = combineHash(h, hash(res.value))
+    h = _combineHash(h, hash(res.value))
   }
   return h
 }
@@ -155,6 +161,10 @@ function _hash(arg: any): number {
 }
 
 export function combineHash(x: number, y: number): number {
+  return opt(_combineHash(x, y))
+}
+
+export function _combineHash(x: number, y: number): number {
   return (x * 53) ^ y
 }
 

@@ -2,42 +2,38 @@ import type { Equatable } from './Structural/Equatable'
 import type { Hashable } from './Structural/Hashable'
 
 import { isObject } from './prelude'
-import { $equals,equals  } from './Structural/Equatable'
-import { $hash, combineHash, hash, hashString } from './Structural/Hashable'
+import { $equals, equals } from './Structural/Equatable'
+import { _combineHash, $hash, hash, hashString } from './Structural/Hashable'
 
 export const CaseTypeId = Symbol()
-
-export interface CaseArgs {
-  [CaseTypeId]: ReadonlyArray<string>
-}
+export type CaseTypeId = typeof CaseTypeId
 
 export interface Copy<T> {
   copy(args: {} extends T ? void : Partial<T>): this
 }
 
 export interface CaseConstructor {
+  [CaseTypeId]: ReadonlyArray<string>
   new <T>(args: {} extends T ? void : T): T & Copy<T>
 }
 
-export function isCaseClass(u: unknown): u is CaseArgs {
+export function isCaseClass(u: unknown): u is CaseConstructor {
   return isObject(u) && CaseTypeId in u
 }
 
 const h0 = hashString('@principia/base/Case')
 
 // @ts-expect-error
-export const CaseClass: CaseConstructor = class<T> implements CaseArgs, Hashable, Equatable {
+export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatable {
   private args: T
   private keys: ReadonlyArray<string>
   constructor(args: T) {
-    this.args = args
-    if (isObject(args)) {
-      const keys = Object.keys(args)
-      for (let i = 0; i < keys.length; i++) {
-        this[keys[i]] = args[keys[i]]
-      }
+    this.args  = args
+    const keys = Object.keys(args)
+    for (let i = 0; i < keys.length; i++) {
+      this[keys[i]] = args[keys[i]]
     }
-    this.keys = Object.keys(this).sort()
+    this.keys = keys.sort()
   }
 
   get [CaseTypeId](): ReadonlyArray<string> {
@@ -47,7 +43,7 @@ export const CaseClass: CaseConstructor = class<T> implements CaseArgs, Hashable
   get [$hash](): number {
     let h = h0
     for (const k of this.keys) {
-      h = combineHash(h, hash(this[k]))
+      h = _combineHash(h, hash(this[k]))
     }
     return h
   }

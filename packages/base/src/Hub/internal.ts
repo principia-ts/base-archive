@@ -702,7 +702,7 @@ export class HashedPair<A, B> implements St.Hashable, St.Equatable {
   constructor(readonly first: A, readonly second: B) {}
 
   get [St.$hash]() {
-    return St.combineHash(St.hash(this.first), St.hash(this.second))
+    return St._combineHash(St.hash(this.first), St.hash(this.second))
   }
 
   [St.$equals](that: unknown) {

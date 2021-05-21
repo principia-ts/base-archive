@@ -34,7 +34,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]>, Hashable, Equat
   }
 
   get [St.$hash](): number {
-    return St.hashIterator(new HashMapIterator(this, ([k, v]) => St.combineHash(St.hash(k), St.hash(v))))
+    return St.hashIterator(new HashMapIterator(this, ([k, v]) => St._combineHash(St.hash(k), St.hash(v))))
   }
 
   [St.$equals](other: unknown): boolean {

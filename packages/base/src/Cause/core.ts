@@ -81,7 +81,7 @@ export class Fail<E> {
   constructor(readonly value: E) {}
 
   get [St.$hash](): number {
-    return St.combineHash(St.hash(this._tag), St.hash(this.value))
+    return St._combineHash(St.hash(this._tag), St.hash(this.value))
   }
   [St.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
@@ -114,7 +114,7 @@ export class Die {
   constructor(readonly value: unknown) {}
 
   get [St.$hash](): number {
-    return St.combineHash(St.hash(this._tag), St.hash(this.value))
+    return St._combineHash(St.hash(this._tag), St.hash(this.value))
   }
   [St.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
@@ -147,7 +147,7 @@ export class Interrupt {
   constructor(readonly fiberId: FiberId) {}
 
   get [St.$hash](): number {
-    return St.combineHash(St.hash(this._tag), St.hash(this.fiberId))
+    return St._combineHash(St.hash(this._tag), St.hash(this.fiberId))
   }
 
   [St.$equals](that: unknown): boolean {
