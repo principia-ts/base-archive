@@ -8,13 +8,17 @@ import { _combineHash, $hash, hash, hashString } from './Structural/Hashable'
 export const CaseTypeId = Symbol()
 export type CaseTypeId = typeof CaseTypeId
 
+export interface CaseArgs {
+  readonly [CaseTypeId]: ReadonlyArray<string>
+}
+
 export interface Copy<T> {
   copy(args: {} extends T ? void : Partial<T>): this
 }
 
 export interface CaseConstructor {
   [CaseTypeId]: ReadonlyArray<string>
-  new <T>(args: {} extends T ? void : T): T & Copy<T>
+  new <T>(args: {} extends T ? void : T): T & Copy<T> & CaseArgs
 }
 
 export function isCaseClass(u: unknown): u is CaseConstructor {
@@ -24,7 +28,7 @@ export function isCaseClass(u: unknown): u is CaseConstructor {
 const h0 = hashString('@principia/base/Case')
 
 // @ts-expect-error
-export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatable {
+export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatable, CaseArgs {
   private args: T
   private keys: ReadonlyArray<string> = []
   constructor(args: T) {
