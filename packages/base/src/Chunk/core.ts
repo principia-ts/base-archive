@@ -3,7 +3,6 @@ import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
 import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
-import type { Equatable, Hashable } from '../prelude'
 import type { Refinement } from '../Refinement'
 import type { ShowComputationExternal } from '../Structural/Showable'
 import type { Showable } from '../Structural/Showable/core'
@@ -14,8 +13,10 @@ import { pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
 import * as It from '../Iterable/core'
 import * as O from '../Option'
-import { $equals, $hash, equals, hashIterator, isByte } from '../prelude'
+import { isByte } from '../prelude'
 import * as P from '../prelude'
+import * as Eq from '../Structural/Equatable'
+import * as Ha from '../Structural/Hashable'
 import { _show, showComputationComplex } from '../Structural/Showable'
 import { $show } from '../Structural/Showable/core'
 import * as Th from '../These'
@@ -40,7 +41,7 @@ export const ChunkTag = {
   BinArr: 'BinArr'
 } as const
 
-export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable, Showable {
+export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Eq.Equatable, Showable {
   readonly [ChunkTypeId]: ChunkTypeId = ChunkTypeId
   readonly _A!: () => A
   abstract readonly length: number
@@ -51,8 +52,8 @@ export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable, Show
     this[':+'] = this[':+'].bind(this)
   }
 
-  get [$hash](): number {
-    return hashIterator(this[Symbol.iterator]())
+  get [Ha.$hash](): number {
+    return Ha.hashIterator(this[Symbol.iterator]())
   }
 
   get [$show](): ShowComputationExternal {
@@ -64,8 +65,8 @@ export abstract class Chunk<A> implements Iterable<A>, Hashable, Equatable, Show
     })
   }
 
-  [$equals](that: unknown): boolean {
-    return isChunk(that) && corresponds_(this, that, equals)
+  [Eq.$equals](that: unknown): boolean {
+    return isChunk(that) && corresponds_(this, that, Eq.equals)
   }
 
   /**
