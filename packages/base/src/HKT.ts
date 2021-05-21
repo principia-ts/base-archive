@@ -1,10 +1,10 @@
 import type { Erase, UnionToIntersection } from './util/types'
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Base
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/base.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export interface Auto {
@@ -31,10 +31,10 @@ export type CompositionBase2<F extends URIS, G extends URIS, CF = Auto, CG = Aut
 >
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Generic Helpers
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/hkt.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export const HKT_URI = 'HKT'
@@ -68,10 +68,10 @@ export type UHKT3<F> = [URI<'HKT3', CustomType<'F', F>>]
 export type UHKT4<F> = [URI<'HKT4', CustomType<'F', F>>]
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * HKT Encoding
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/hkt.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -120,10 +120,10 @@ export interface URItoIndex<N extends string, K> {
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Kind Encoding
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/kind.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export type ConcreteURIS = keyof URItoKind<any, any, any, any, any, any, any, any, any, any, any, any>
@@ -174,10 +174,10 @@ export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A>
   : never
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Inference
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/infer.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export type Infer<F extends URIS, C, P extends Param | 'A' | 'C', K> = [K] extends [
@@ -254,10 +254,10 @@ export type CompositionIndexFor<F extends URIS, N extends string, K> = Compositi
 >
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Custom
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/custom.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export interface CustomType<P extends string, V> {
@@ -275,10 +275,10 @@ export type AccessCustomExtends<C, P extends string, D = any> = C extends Custom
   : D
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Fix
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/fix.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export type Param = 'N' | 'K' | 'Q' | 'W' | 'I' | 'X' | 'S' | 'R' | 'E'
@@ -315,19 +315,19 @@ export type Unfix<C, P extends Param> = (Exclude<keyof C, 'Fix'> extends never
 export type CleanParam<C, P extends Param> = C extends (Auto | V<P, '_'> | V<P, '+'> | Fix<P, any>) & infer X ? X : C
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * OrNever
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/or-never.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export type OrNever<K> = unknown extends K ? never : K
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Variance Encoding
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/variance.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export type Variance = '+' | '-' | '_'
@@ -399,10 +399,10 @@ export type Initial<C, P extends Param> = C extends V<P, '-'>
 export type Strip<C, P extends Param> = Erase<C, V<P, '_'> & V<P, '-'> & V<P, '+'>>
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Instance Helpers
  * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/instance.ts
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export type Ignores = '_F' | '_G' | 'Commutative' | '_C' | '_CF' | '_CG'

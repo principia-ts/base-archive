@@ -4,9 +4,9 @@ import type * as P from '../prelude'
 import * as C from '../Chunk/core'
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Traversable
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export function itraverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
@@ -43,9 +43,7 @@ export function traverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) 
 }
 
 export function traverseChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
-  return <A, N extends string, K, Q, W, X, I, S, R, E, B>(
-      f: (a: A) => HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, B>
-    ) =>
+  return <A, N extends string, K, Q, W, X, I, S, R, E, B>(f: (a: A) => HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, B>) =>
     (ta: Iterable<A>): HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, C.Chunk<B>> =>
       itraverseChunk_(G)(ta, (_, a) => f(a))
 }

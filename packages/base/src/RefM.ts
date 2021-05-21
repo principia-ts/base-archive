@@ -97,8 +97,10 @@ export class DerivedAllM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A
     return this.use(
       (value, getEither, setEither) =>
         new DerivedAllM<RA & RC, RB & RD, EC, ED, C, D>((f) =>
-          f(value, P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)), (a) => (s) =>
-            I.bind_(ca(a), (a) => I.mapError_(setEither(a)(s), ea))
+          f(
+            value,
+            P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)),
+            (a) => (s) => I.bind_(ca(a), (a) => I.mapError_(setEither(a)(s), ea))
           )
         )
     )
@@ -114,11 +116,14 @@ export class DerivedAllM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A
     return this.use(
       (value, getEither, setEither) =>
         new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D>((f) =>
-          f(value, P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)), (c) => (s) =>
-            I.bind_(
-              I.matchM_(getEither(s), (e) => I.fail(ec(e)), ca(c)),
-              (a) => I.mapError_(setEither(a)(s), ea)
-            )
+          f(
+            value,
+            P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)),
+            (c) => (s) =>
+              I.bind_(
+                I.matchM_(getEither(s), (e) => I.fail(ec(e)), ca(c)),
+                (a) => I.mapError_(setEither(a)(s), ea)
+              )
           )
         )
     )
@@ -176,8 +181,11 @@ export class DerivedM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, B
     return this.use(
       (value, getEither, setEither) =>
         new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D>((f) =>
-          f(value, P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)), (c) => (s) =>
-            P.pipe(getEither(s), I.matchM(P.flow(ec, I.fail), ca(c)), I.bind(P.flow(setEither, I.mapError(ea))))
+          f(
+            value,
+            P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)),
+            (c) => (s) =>
+              P.pipe(getEither(s), I.matchM(P.flow(ec, I.fail), ca(c)), I.bind(P.flow(setEither, I.mapError(ea))))
           )
         )
     )
@@ -239,9 +247,9 @@ export function concrete<RA, RB, EA, EB, A>(_: RefM<RA, RB, EA, EB, A, A>) {
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Constructors
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -291,9 +299,9 @@ export function dequeueRefM<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Contravariant
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -337,9 +345,9 @@ export function contramap<C, A>(
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Fold
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -459,9 +467,9 @@ export function filterOutput<B>(
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Fold
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -561,9 +569,9 @@ export function matchAllM<EA, EB, A, B, RC, RD, EC, ED, C = A, D = B>(
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Functor
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -607,9 +615,9 @@ export function map<B, C>(
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Tap
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -671,9 +679,9 @@ export function tapOutput<B, RC, EC>(
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Combinators
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**

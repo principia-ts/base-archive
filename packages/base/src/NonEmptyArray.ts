@@ -12,9 +12,9 @@ import * as P from './prelude'
 import * as S from './Semigroup'
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Model
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export type NonEmptyArray<A> = ReadonlyArray<A> & {
@@ -22,9 +22,9 @@ export type NonEmptyArray<A> = ReadonlyArray<A> & {
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Constructors
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -97,9 +97,9 @@ export function replicate<A>(n: number, a: A): NonEmptyArray<A> {
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Destructors
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export function fold<A>(S: P.Semigroup<A>): (as: NonEmptyArray<A>) => A {
@@ -131,9 +131,9 @@ export function matchRight<A, B>(f: (init: ReadonlyArray<A>, last: A) => B): (as
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Guards
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export const isNonEmpty: <A>(as: ReadonlyArray<A>) => as is NonEmptyArray<A> = _.isNonEmpty
@@ -143,9 +143,9 @@ export const isOutOfBound_: <A>(as: NonEmptyArray<A>, i: number) => boolean = A.
 export const isOutOfBound: (i: number) => <A>(as: NonEmptyArray<A>) => boolean = A.isOutOfBound
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Alt
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -166,9 +166,9 @@ export const alt_: <A>(fa: NonEmptyArray<A>, that: () => NonEmptyArray<A>) => No
 export const alt: <A>(that: () => NonEmptyArray<A>) => (fa: NonEmptyArray<A>) => NonEmptyArray<A> = A.alt as any
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Applicative
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -180,9 +180,9 @@ export const alt: <A>(that: () => NonEmptyArray<A>) => (fa: NonEmptyArray<A>) =>
 export const pure = A.pure
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Apply
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export function zip_<A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<readonly [A, B]> {
@@ -209,14 +209,11 @@ export function zipWith<A, B, C>(
   return (fa) => zipWith_(fa, fb, f)
 }
 
-export const cross_: <A, B>(
-  fa: NonEmptyArray<A>,
-  fb: NonEmptyArray<B>
-) => NonEmptyArray<readonly [A, B]> = A.cross_ as any
+export const cross_: <A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>) => NonEmptyArray<readonly [A, B]> =
+  A.cross_ as any
 
-export const cross: <B>(
-  fb: NonEmptyArray<B>
-) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<readonly [A, B]> = A.cross as any
+export const cross: <B>(fb: NonEmptyArray<B>) => <A>(fa: NonEmptyArray<A>) => NonEmptyArray<readonly [A, B]> =
+  A.cross as any
 
 export const crossWith_: <A, B, C>(
   fa: NonEmptyArray<A>,
@@ -246,9 +243,9 @@ export const ap_: <A, B>(fab: NonEmptyArray<(a: A) => B>, fa: NonEmptyArray<A>) 
 export const ap: <A>(fa: NonEmptyArray<A>) => <B>(fab: NonEmptyArray<(a: A) => B>) => NonEmptyArray<B> = A.ap as any
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Comonad
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -258,9 +255,9 @@ export const ap: <A>(fa: NonEmptyArray<A>) => <B>(fab: NonEmptyArray<(a: A) => B
 export const extract: <A>(ma: NonEmptyArray<A>) => A = head
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Extend
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -294,9 +291,9 @@ export function duplicate<A>(wa: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Filterable
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export const ifilter_: {
@@ -377,9 +374,9 @@ export const partitionMap: <A, B, C>(
 ) => (fa: NonEmptyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] = A.partitionMap
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Foldable
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -463,9 +460,9 @@ export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEm
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Functor
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export const imap_: <A, B>(fa: NonEmptyArray<A>, f: (i: number, a: A) => B) => NonEmptyArray<B> = A.imap_ as any
@@ -477,9 +474,9 @@ export const map_: <A, B>(fa: NonEmptyArray<A>, f: (a: A) => B) => NonEmptyArray
 export const map: <A, B>(f: (a: A) => B) => (fa: NonEmptyArray<A>) => NonEmptyArray<B> = A.map as any
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Monad
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -490,14 +487,11 @@ export const map: <A, B>(f: (a: A) => B) => (fa: NonEmptyArray<A>) => NonEmptyAr
  */
 export const flatten: <A>(mma: NonEmptyArray<NonEmptyArray<A>>) => NonEmptyArray<A> = A.flatten as any
 
-export const ibind_: <A, B>(
-  ma: NonEmptyArray<A>,
-  f: (i: number, a: A) => NonEmptyArray<B>
-) => NonEmptyArray<B> = A.ibind_ as any
+export const ibind_: <A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonEmptyArray<B>) => NonEmptyArray<B> =
+  A.ibind_ as any
 
-export const ibind: <A, B>(
-  f: (i: number, a: A) => NonEmptyArray<B>
-) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.ibind as any
+export const ibind: <A, B>(f: (i: number, a: A) => NonEmptyArray<B>) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> =
+  A.ibind as any
 
 /**
  * Composes computations in sequence, using the return value of one computation as input for the next
@@ -516,9 +510,9 @@ export const bind_: <A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>) 
 export const bind: <A, B>(f: (a: A) => NonEmptyArray<B>) => (ma: NonEmptyArray<A>) => NonEmptyArray<B> = A.bind as any
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Traversable
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -560,9 +554,9 @@ export const traverse: P.TraverseFn<[HKT.URI<NonEmptyArrayURI>]> = A.traverse as
 export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = A.sequence as any
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Unit
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -574,9 +568,9 @@ export function unit(): NonEmptyArray<void> {
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Combinators
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -606,9 +600,7 @@ export function concat_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): Readonly
  * @since 1.0.0
  */
 export function concat<A>(ys: NonEmptyArray<A>): (xs: ReadonlyArray<A>) => NonEmptyArray<A>
-export function concat<A>(
-  ys: ReadonlyArray<A>
-): {
+export function concat<A>(ys: ReadonlyArray<A>): {
   (xs: NonEmptyArray<A>): NonEmptyArray<A>
   (xs: ReadonlyArray<A>): ReadonlyArray<A>
 }
@@ -732,42 +724,34 @@ export function modifyAt<A>(i: number, f: (a: A) => A): (as: NonEmptyArray<A>) =
 /**
  * @since 1.0.0
  */
-export const unzip: <A, B>(
-  as: NonEmptyArray<readonly [A, B]>
-) => readonly [NonEmptyArray<A>, NonEmptyArray<B>] = A.unzip as any
+export const unzip: <A, B>(as: NonEmptyArray<readonly [A, B]>) => readonly [NonEmptyArray<A>, NonEmptyArray<B>] =
+  A.unzip as any
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Unsafe
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
-export const unsafeModifyAt_: <A>(
-  as: NonEmptyArray<A>,
-  i: number,
-  f: (a: A) => A
-) => NonEmptyArray<A> = A.unsafeModifyAt_ as any
+export const unsafeModifyAt_: <A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A) => NonEmptyArray<A> =
+  A.unsafeModifyAt_ as any
 
-export const unsafeModifyAt: <A>(
-  i: number,
-  f: (a: A) => A
-) => (as: NonEmptyArray<A>) => NonEmptyArray<A> = A.unsafeModifyAt as any
+export const unsafeModifyAt: <A>(i: number, f: (a: A) => A) => (as: NonEmptyArray<A>) => NonEmptyArray<A> =
+  A.unsafeModifyAt as any
 
 export const unsafeUpdateAt_: <A>(as: NonEmptyArray<A>, i: number, a: A) => NonEmptyArray<A> = A.unsafeUpdateAt_ as any
 
-export const unsafeUpdateAt: <A>(
-  i: number,
-  a: A
-) => (as: NonEmptyArray<A>) => NonEmptyArray<A> = A.unsafeUpdateAt as any
+export const unsafeUpdateAt: <A>(i: number, a: A) => (as: NonEmptyArray<A>) => NonEmptyArray<A> =
+  A.unsafeUpdateAt as any
 
 export const unsafeInsertAt_: <A>(as: NonEmptyArray<A>, i: number, a: A) => NonEmptyArray<A> = A.unsafeInsertAt_
 
 export const unsafeInsertAt: <A>(i: number, a: A) => (as: NonEmptyArray<A>) => NonEmptyArray<A> = A.unsafeInsertAt
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Utilities
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**
@@ -869,9 +853,9 @@ export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Instances
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export const GuardUnknownNonEmptyArray: Guard<unknown, NonEmptyArray<unknown>> = P.pipe(

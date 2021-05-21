@@ -55,12 +55,12 @@ interface Custom<A> {
   show?: Show<A>
 }
 
-function getShow<A>(_?: Custom<A>): Show<A> {
-  return _?.show || S.any
+function getShow<A>(_?: Custom<A>): O.Option<Show<A>> {
+  return O.fromNullable(_?.show)
 }
 
-function getEq<A>(_?: Custom<A>): Eq<A> {
-  return _?.eq || St.DefaultEq
+function getEq<A>(_?: Custom<A>): O.Option<Eq<A>> {
+  return O.fromNullable(_?.eq)
 }
 
 export function and<A>(that: Assertion<A>): (self: Assertion<A>) => Assertion<A> {
@@ -146,9 +146,17 @@ export function approximatelyEquals(reference: number, tolerance: number): Asser
 }
 
 export function contains<A>(element: A, custom?: Custom<A>): Assertion<ReadonlyArray<A>> {
-  const show = getShow(custom)
-  const eq   = getEq(custom)
-  return assertion('contains', [param(element, show)], A.elem(eq)(element), A.getShow(show))
+  return assertion(
+    'contains',
+    [param(element, custom?.show)],
+    A.elem(
+      pipe(
+        getEq(custom),
+        O.getOrElse(() => St.DefaultEq)
+      )
+    )(element),
+    pipe(getShow(custom), O.map(A.getShow), O.toUndefined)
+  )
 }
 
 export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
@@ -156,7 +164,7 @@ export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
 }
 
 export function containsString(element: string): Assertion<string> {
-  return assertion('containsString', [param(Str.surround_(element, '"'))], Str.contains(element), Str.Show)
+  return assertion('containsString', [param(element)], Str.contains(element), Str.Show)
 }
 
 export function deepStrictEqualTo(expected: any, show?: S.Show<any>): Assertion<any> {
@@ -214,11 +222,11 @@ export function hasMessage(message: Assertion<string>): Assertion<Error> {
 }
 
 export function endsWith<A>(suffix: ReadonlyArray<A>, custom?: Custom<A>): Assertion<ReadonlyArray<A>> {
-  const show = getShow(custom)
-  const eq   = getEq(custom)
+  const show = pipe(getShow(custom), O.map(A.getShow), O.toUndefined)
+  const eq   = pipe(getEq(custom), O.getOrElse(() => St.DefaultEq))
   return assertion(
     'endsWith',
-    [param(suffix, A.getShow(show))],
+    [param(suffix, show)],
     (as) => {
       const dropped = A.drop_(as, as.length - suffix.length)
       if (dropped.length !== suffix.length) {
@@ -231,12 +239,14 @@ export function endsWith<A>(suffix: ReadonlyArray<A>, custom?: Custom<A>): Asser
       }
       return true
     },
-    A.getShow(show)
+    show
   )
 }
 
 export function equalTo<A>(expected: WidenLiteral<A>, custom?: Custom<WidenLiteral<A>>): Assertion<WidenLiteral<A>> {
-  return assertion('equalTo', [param(expected, getShow(custom))], (actual) => getEq(custom).equals_(actual, expected))
+  const show = pipe(getShow(custom), O.toUndefined)
+  const eq   = pipe(getEq(custom), O.getOrElse(() => St.DefaultEq))
+  return assertion('equalTo', [param(expected, show)], (actual) => eq.equals_(actual, expected))
 }
 
 export const isTrue: Assertion<boolean> = assertion('isTrue', [], identity)

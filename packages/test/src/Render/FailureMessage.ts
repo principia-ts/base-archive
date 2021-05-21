@@ -106,16 +106,14 @@ function renderAssertionFailureDetails(failureDetails: NonEmptyArray<AssertionVa
     })
   }
 
-  return renderFragment(failureDetails[0], offset)
-    .toMessage()
-    ['++'](Ev.evaluate(loop(failureDetails, Message.empty)))
+  return renderFragment(failureDetails[0], offset)['++'](Ev.evaluate(loop(failureDetails, Message.empty)))
 }
 
 function renderWhole(fragment: AssertionValue<any>, whole: AssertionValue<any>, offset: number): Line {
   return withOffset(offset + tabSize)(
     blue(whole.showValue())
       ['+'](renderSatisfied(whole))
-      ['++'](highlight(cyan(whole.assertion.toString()), fragment.assertion.toString()))
+      ['++'](highlight(cyan(whole.assertion.value.rendered), fragment.assertion.value.rendered))
   )
 }
 
@@ -141,10 +139,18 @@ function renderGenFailureDetails(failureDetails: Option<GenFailureDetails>, offs
   )
 }
 
-function renderFragment(fragment: AssertionValue<any>, offset: number): Line {
-  return withOffset(offset + tabSize)(
-    blue(fragment.showValue())['+'](renderSatisfied(fragment))['+'](cyan(fragment.assertion.toString()))
+function renderFragment(fragment: AssertionValue<any>, offset: number): Message {
+  const assertionMessage = new Message(
+    A.map_(fragment.assertion.value.rendered.split(/\n/), (s) => withOffset(offset + tabSize)(cyan(s).toLine()))
   )
+  return withOffset(offset + tabSize)(blue(fragment.showValue())['+'](renderSatisfied(fragment)))
+    .toMessage()
+    ['++'](assertionMessage.withOffset(tabSize))
+  // return withOffset(offset + tabSize)(
+  //   blue(fragment.showValue())
+  //     ['+'](renderSatisfied(fragment))
+  //     ['+'](cyan(fragment.assertion.value.rendered.replace(/\n/g, `\n${' '.repeat(offset + tabSize)}`)))
+  // )
 }
 
 function highlight(fragment: Fragment, substring: string, colorCode = YELLOW): Line {

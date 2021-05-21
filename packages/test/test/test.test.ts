@@ -11,6 +11,16 @@ import { Live } from '../src/environment/Live'
 import * as Gen from '../src/Gen'
 import { nonFlaky } from '../src/TestAspect'
 
+const bigObject = {
+  a: 'string',
+  b: 1289379,
+  c: {
+    d: 'another string',
+    e: true,
+    f: [1, 2, 3, 4]
+  }
+}
+
 class TestSpec extends DefaultRunnableSpec {
   spec = suite(
     'Suite',
@@ -27,7 +37,8 @@ class TestSpec extends DefaultRunnableSpec {
       )
     )['@@'](nonFlaky),
     testM('check', () => check(Gen.int(0, 100), (n) => assert(n, equalTo(100)))),
-    test('deepStrict', () => assert(E.Left('left'), deepStrictEqualTo(E.Left('left'))))
+    test('deepStrict', () => assert(E.Left('left'), deepStrictEqualTo(E.Left('left')))),
+    test('large', () => assert({}, deepStrictEqualTo(bigObject)))
   )
 }
 

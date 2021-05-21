@@ -328,9 +328,9 @@ export interface CrossWithFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * Derivatives
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 export function apF_<F extends HKT.URIS, C = HKT.Auto>(A: SemimonoidalFunctor<F, C>): ApFn_<F, C> {
@@ -623,7 +623,9 @@ export interface MapNFn_<F extends HKT.URIS, TC = HKT.Auto> {
  */
 export function mapNF<F extends HKT.URIS, C = HKT.Auto>(A: SemimonoidalFunctor<F, C>): MapNFn<F, C>
 export function mapNF<F>(F: SemimonoidalFunctor<HKT.UHKT<F>>): MapNFn<HKT.UHKT<F>> {
-  return (f) => (...t) => F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)))
+  return (f) =>
+    (...t) =>
+      F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)))
 }
 
 /**
@@ -638,7 +640,9 @@ export function mapNF<F>(F: SemimonoidalFunctor<HKT.UHKT<F>>): MapNFn<HKT.UHKT<F
  */
 export function mapNF_<F extends HKT.URIS, C = HKT.Auto>(A: SemimonoidalFunctor<F, C>): MapNFn_<F, C>
 export function mapNF_<F>(F: SemimonoidalFunctor<HKT.UHKT<F>>): MapNFn_<HKT.UHKT<F>> {
-  return (...t) => (f) => F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)))
+  return (...t) =>
+    (f) =>
+      F.map_(sequenceTF(F)(...(t as any)), (as) => f(...(as as any)))
 }
 
 export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
@@ -803,9 +807,9 @@ export function sequenceTF<F>(F: SemimonoidalFunctor<HKT.UHKT<F>>): SequenceTFn<
 }
 
 /*
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  * internal
- * -------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
 
 /**

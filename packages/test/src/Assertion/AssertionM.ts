@@ -3,11 +3,16 @@ import type { AssertionValue } from './AssertionValue'
 
 import * as BA from '../FreeBooleanAlgebra'
 import { infix, param, quoted } from '../Render'
+import {isObject} from '@principia/base/prelude'
 
 export type AssertResultM<A> = BA.FreeBooleanAlgebraM<unknown, never, AssertionValue<A>>
 
+export const AssertionMTypeId = Symbol('@principia/test/AssertionM')
+export type AssertionMTypeId = typeof AssertionMTypeId
+
 export class AssertionM<A> {
-  readonly _tag = 'AssertionM'
+  readonly [AssertionMTypeId]: AssertionMTypeId = AssertionMTypeId
+
   constructor(readonly render: Render, readonly runM: (actual: A) => AssertResultM<A>) {}
 
   ['&&'](this: AssertionM<A>, that: AssertionM<A>): AssertionM<A> {
@@ -24,9 +29,13 @@ export class AssertionM<A> {
     )
   }
 
-  toString() {
-    return this.render.toString()
+  get rendered() {
+    return this.render.rendered
   }
+}
+
+export function isAssertionM(u: unknown): u is AssertionM<unknown> {
+  return isObject(u) && AssertionMTypeId in u
 }
 
 export function label_<A>(am: AssertionM<A>, string: string): AssertionM<A> {
