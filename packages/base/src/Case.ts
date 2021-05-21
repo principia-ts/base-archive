@@ -26,14 +26,16 @@ const h0 = hashString('@principia/base/Case')
 // @ts-expect-error
 export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatable {
   private args: T
-  private keys: ReadonlyArray<string>
+  private keys: ReadonlyArray<string> = []
   constructor(args: T) {
-    this.args  = args
-    const keys = Object.keys(args)
-    for (let i = 0; i < keys.length; i++) {
-      this[keys[i]] = args[keys[i]]
+    this.args = args
+    if (isObject(args)) {
+      const keys = Object.keys(args)
+      for (let i = 0; i < keys.length; i++) {
+        this[keys[i]] = args[keys[i]]
+      }
+      this.keys = keys.sort()
     }
-    this.keys = keys.sort()
   }
 
   get [CaseTypeId](): ReadonlyArray<string> {
