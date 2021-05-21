@@ -1,16 +1,6 @@
-import * as E from '../Eq'
-import { createCircularEqualCreator, createComparator, sameValueZeroEqual } from '../internal/equatable'
-import { isObject } from '../util/predicates'
-
-export const $equals = Symbol.for('$equals')
-
-export interface Equatable {
-  [$equals](that: unknown): boolean
-}
-
-export function isEquatable(u: unknown): u is Equatable {
-  return isObject(u) && $equals in u
-}
+import * as E from '../../Eq'
+import { $equals, isEquatable } from './core'
+import { createCircularEqualCreator, createComparator, sameValueZeroEqual } from './internal'
 
 export const deepEquals = createComparator(
   createCircularEqualCreator((eq) => (a, b, meta) => {

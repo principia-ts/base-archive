@@ -1,16 +1,21 @@
-import * as H from '../Hash'
-import { PCGRandom } from '../internal/PCGRandom'
-import { isDefined } from '../util/predicates'
+import * as H from '../../Hash'
+import { PCGRandom } from '../../internal/PCGRandom'
+import { isDefined } from '../../util/predicates'
+import { $hash, isHashable } from './core'
 
-export const $hash = Symbol.for('$hash')
+/*
+ * -------------------------------------------------------------------------------------------------
+ * instances
+ * -------------------------------------------------------------------------------------------------
+ */
 
-export interface Hashable {
-  [$hash]: number
-}
+export const DefaultHash: H.Hash<unknown> = H.Hash(hash)
 
-export function isHashable(value: any): value is Hashable {
-  return $hash in value
-}
+/*
+ * -------------------------------------------------------------------------------------------------
+ * internal
+ * -------------------------------------------------------------------------------------------------
+ */
 
 const CACHE  = new WeakMap<any, number>()
 const RANDOM = new PCGRandom((Math.random() * 4294967296) >>> 0)
@@ -156,5 +161,3 @@ export function combineHash(x: number, y: number): number {
 export function opt(n: number): number {
   return (n & 0xbfffffff) | ((n >>> 1) & 0x40000000)
 }
-
-export const DefaultHash: H.Hash<unknown> = H.Hash(hash)

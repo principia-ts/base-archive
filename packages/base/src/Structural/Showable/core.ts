@@ -2,7 +2,7 @@ import type { ShowComputationExternal } from './show'
 
 import { isObject } from '../../util/predicates'
 
-export const $show = Symbol('principia.showable.show')
+export const $show = Symbol('@principia/base/Structural/Showable')
 
 export interface Showable {
   [$show]: ShowComputationExternal

@@ -48,6 +48,8 @@ export const defaultShowStyle: ShowStyle = {
 
 export type StyleFunction = (str: string, group: ShowGroup) => string
 
+export type GetStyle = (group: ShowGroup) => string
+
 export function stylizeWithColor(str: string, group: ShowGroup): string {
   return defaultShowStyle[group](str)
 }
