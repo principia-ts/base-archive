@@ -1,16 +1,18 @@
 import type { Byte } from '../Byte'
 import type { Either } from '../Either'
+import type { ArrayURI } from '../Modules'
 import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Option } from '../Option'
 import type { ReadonlyRecord } from '../Record'
 import type { These } from '../These'
 
+import * as Ev from '../Eval/core'
 import { identity, pipe, unsafeCoerce } from '../function'
 import { GenLazyHKT, genWithHistoryF } from '../Gen'
 import * as G from '../Guard'
 import * as HKT from '../HKT'
 import * as _ from '../internal/array'
-import { ArrayURI } from '../Modules'
+import * as NEA from '../NonEmptyArray/core'
 import * as N from '../number'
 import * as O from '../Option'
 import * as Ord from '../Ord'
@@ -19,7 +21,7 @@ import * as P from '../prelude'
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Model
+ * model
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -27,11 +29,9 @@ type URI = [HKT.URI<ArrayURI>]
 
 export type TypeOf<T> = T extends ReadonlyArray<infer A> ? A : never
 
-export { ArrayURI }
-
 /*
  * -------------------------------------------------------------------------------------------------
- * Constructors
+ * constructors
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -85,13 +85,11 @@ export function range(start: number, end: number): ReadonlyArray<number> {
  * @category constructors
  * @since 1.0.0
  */
-export function replicate<A>(n: number, a: A): ReadonlyArray<A> {
-  return makeBy(n, () => a)
-}
+export const replicate: <A>(n: number, a: A) => ReadonlyArray<A> = NEA.replicate
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Guards
+ * guards
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -101,9 +99,7 @@ export function isEmpty<A>(as: ReadonlyArray<A>): boolean {
 
 export const isNonEmpty = _.isNonEmpty
 
-export function isOutOfBound_<A>(as: ReadonlyArray<A>, i: number): boolean {
-  return i < 0 || i >= as.length
-}
+export const isOutOfBound_: <A>(as: ReadonlyArray<A>, i: number) => boolean = _.isOutOfBound_
 
 export function isOutOfBound(i: number): <A>(as: ReadonlyArray<A>) => boolean {
   return (as) => isOutOfBound_(as, i)
@@ -121,9 +117,7 @@ export function isOutOfBound(i: number): <A>(as: ReadonlyArray<A>) => boolean {
  * @category Unit
  * @since 1.0.0
  */
-export function unit(): ReadonlyArray<void> {
-  return [undefined]
-}
+export const unit: () => ReadonlyArray<void> = NEA.unit
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -164,9 +158,7 @@ export function alt<A>(that: () => ReadonlyArray<A>): (fa: ReadonlyArray<A>) => 
  * @category Applicative
  * @since 1.0.0
  */
-export function pure<A>(a: A): NonEmptyArray<A> {
-  return [a]
-}
+export const pure: <A>(a: A) => NonEmptyArray<A> = NEA.pure
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -612,14 +604,7 @@ export function partitionMap<A, B, C>(
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldl_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i: number, a: A) => B): B {
-  const len = fa.length
-  let r     = b
-  for (let i = 0; i < len; i++) {
-    r = f(r, i, fa[i])
-  }
-  return r
-}
+export const ifoldl_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i: number, a: A) => B) => B = _.ifoldl_
 
 /**
  * @category FoldableWithIndex
@@ -649,13 +634,7 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: ReadonlyArray<A>) 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldr_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, i: number, b: B) => B): B {
-  let r = b
-  for (let i = fa.length - 1; i >= 0; i--) {
-    r = f(fa[i], i, r)
-  }
-  return r
-}
+export const ifoldr_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, i: number, b: B) => B) => B = _.ifoldr_
 
 /**
  * @category FoldableWithIndex
@@ -736,7 +715,7 @@ export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
  */
 export function imap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): ReadonlyArray<B> {
   const len    = fa.length
-  const mut_bs = new Array(len)
+  const mut_bs = Array(len)
   for (let i = 0; i < len; i++) {
     mut_bs[i] = f(i, fa[i])
   }
@@ -782,7 +761,7 @@ export function map<A, B>(f: (a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArr
 export function ibind_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
   let outLen     = 0
   const len      = fa.length
-  const mut_temp = new Array(len)
+  const mut_temp = Array(len)
   for (let i = 0; i < len; i++) {
     const e     = fa[i]
     const arr   = f(i, e)
@@ -1222,6 +1201,24 @@ export function collectWhile<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A
   return (as) => collectWhile_(as, f)
 }
 
+function comprehensionLoop<A, R>(
+  scope: ReadonlyArray<A>,
+  input: ReadonlyArray<ReadonlyArray<A>>,
+  f: (...xs: ReadonlyArray<A>) => R,
+  g: (...xs: ReadonlyArray<A>) => boolean
+): Ev.Eval<ReadonlyArray<R>> {
+  if (input.length === 0) {
+    return g(...scope) ? Ev.now([f(...scope)]) : Ev.now(empty())
+  } else {
+    return pipe(
+      input[0],
+      map((x) => comprehensionLoop(append_(scope, x), input.slice(1), f, g)),
+      sequence(Ev.Applicative),
+      Ev.map(flatten)
+    )
+  }
+}
+
 /**
  * @category combinators
  * @since 1.0.0
@@ -1243,86 +1240,67 @@ export function comprehension<A, B, R>(
 ): ReadonlyArray<R>
 export function comprehension<A, R>(
   input: readonly [ReadonlyArray<A>],
-  f: (a: A) => boolean,
-  g?: (a: A) => R
+  f: (a: A) => R,
+  g?: (a: A) => boolean
 ): ReadonlyArray<R>
-export function comprehension<R>(
-  input: ReadonlyArray<ReadonlyArray<any>>,
-  f: (...xs: ReadonlyArray<any>) => R,
-  g: (...xs: ReadonlyArray<any>) => boolean = () => true
+export function comprehension<A, R>(
+  input: ReadonlyArray<ReadonlyArray<A>>,
+  f: (...xs: ReadonlyArray<A>) => R,
+  g: (...xs: ReadonlyArray<A>) => boolean = () => true
 ): ReadonlyArray<R> {
-  const go = (scope: ReadonlyArray<any>, input: ReadonlyArray<ReadonlyArray<any>>): ReadonlyArray<R> => {
-    if (input.length === 0) {
-      return g(...scope) ? [f(...scope)] : empty()
-    } else {
-      return bind_(input[0], (x) => go(append_(scope, x), input.slice(1)))
-    }
-  }
-  return go(empty(), input)
+  return comprehensionLoop([], input, f, g).value
 }
 
 /**
  * @category combinators
  * @since 1.0.0
  */
-export function concatW_<A, B>(xs: ReadonlyArray<A>, ys: ReadonlyArray<B>): ReadonlyArray<A | B> {
-  const lenx = xs.length
-  if (lenx === 0) {
-    return ys
-  }
-  const leny = ys.length
-  if (leny === 0) {
-    return xs
-  }
-  const mut_r = Array(lenx + leny)
-  for (let i = 0; i < lenx; i++) {
-    mut_r[i] = xs[i]
-  }
-  for (let i = 0; i < leny; i++) {
-    mut_r[i + lenx] = ys[i]
-  }
-  return mut_r
-}
+export const concatW_: <A, B>(xs: ReadonlyArray<A>, ys: ReadonlyArray<B>) => ReadonlyArray<A | B> = NEA.concatW_
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ * @dataFirst concatW_
+ */
+export const concatW: <A>(ys: ReadonlyArray<A>) => <B>(xs: ReadonlyArray<B>) => ReadonlyArray<A | B> = NEA.concatW
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export const concat_: <A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => ReadonlyArray<A> = NEA.concat_
 
 /**
  * @category combinators
  * @since 1.0.0
  * @dataFirst concat_
  */
-export function concatW<A>(ys: ReadonlyArray<A>): <B>(xs: ReadonlyArray<B>) => ReadonlyArray<A | B> {
-  return (xs) => concatW_(xs, ys)
-}
-
-export function concat_<A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
-  return concatW_(xs, ys)
-}
-
-export function concat<A>(ys: ReadonlyArray<A>): (xs: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (xs) => concat_(xs, ys)
-}
+export const concat: <A>(ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> = NEA.concat
 
 /**
  * @category combinators
  * @since 1.0.0
  */
-export function prepend_<A>(tail: ReadonlyArray<A>, head: A): NonEmptyArray<A> {
-  const len     = tail.length
-  const mut_out = Array(len + 1)
-  for (let i = 0; i < len; i++) {
-    mut_out[i + 1] = tail[i]
-  }
-  mut_out[0] = head
-  return mut_out as unknown as NonEmptyArray<A>
-}
+export const prependW_: <A, B>(tail: ReadonlyArray<A>, head: B) => NonEmptyArray<A | B> = NEA.prependW_
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export const prependW: <B>(head: B) => <A>(tail: ReadonlyArray<A>) => NonEmptyArray<A | B> = NEA.prependW
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export const prepend_: <A>(tail: ReadonlyArray<A>, head: A) => NonEmptyArray<A> = NEA.prepend_
 
 /**
  * @category combinators
  * @since 1.0.0
  * @dataFirst prepend_
  */
-export function prepend<A>(head: A): (tail: ReadonlyArray<A>) => NonEmptyArray<A> {
-  return (tail) => prepend_(tail, head)
-}
+export const prepend: <A>(head: A) => (tail: ReadonlyArray<A>) => NonEmptyArray<A> = NEA.prepend
 
 /**
  * Delete the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
@@ -1369,7 +1347,7 @@ export function difference<A>(E: P.Eq<A>): (ys: ReadonlyArray<A>) => (xs: Readon
  * @since 1.0.0
  */
 export function drop_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
-  return as.slice(n, as.length)
+  return as.slice(n)
 }
 
 /**
@@ -1825,7 +1803,17 @@ export function prependAll<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> 
  * @since 1.0.0
  */
 export function reverse<A>(as: ReadonlyArray<A>): ReadonlyArray<A> {
-  return isEmpty(as) ? as : as.slice().reverse()
+  if (isEmpty(as)) {
+    return empty()
+  } else if (as.length === 1) {
+    return [as[0]]
+  } else {
+    let mut_out = Array(as.length)
+    for (let j = 0, i = as.length - 1; i >= 0; i--, j++) {
+      mut_out[j] = as[i]
+    }
+    return mut_out
+  }
 }
 
 /**
@@ -1915,13 +1903,29 @@ export function scanr<A, B>(b: B, f: (a: A, b: B) => B): (as: ReadonlyArray<A>) 
 }
 
 /**
+ * @category combinators
+ * @since 1.0.0
+ */
+export function slice_<A>(as: ReadonlyArray<A>, start?: number, end?: number): ReadonlyArray<A> {
+  return as.slice(start, end)
+}
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export function slice(start?: number, end?: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (as) => as.slice(start, end)
+}
+
+/**
  * Sort the elements of an array in increasing order, creating a new array
  *
  * @category combinators
  * @since 1.0.0
  */
 export function sort<B>(O: P.Ord<B>): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (as) => (isEmpty(as) ? empty() : as.length === 1 ? as : as.slice().sort((a, b) => O.compare(a)(b)))
+  return (as) => (isEmpty(as) ? empty() : as.length === 1 ? as : mutableClone(as).sort((a, b) => O.compare(a)(b)))
 }
 
 /**
@@ -2456,7 +2460,7 @@ export function last<A>(as: ReadonlyArray<A>): Option<A> {
 }
 
 export function mutableClone<A>(as: ReadonlyArray<A>): Array<A> {
-  return as.slice()
+  return as.slice(0) as unknown as Array<A>
 }
 
 export const clone: <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> = mutableClone

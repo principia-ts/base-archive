@@ -4,15 +4,14 @@
  * -------------------------------------------------------------------------------------------------
  */
 
-import type * as HKT from './HKT'
-import type { EvalURI } from './Modules'
-import type { Stack } from './util/support/Stack'
+import type * as HKT from '../HKT'
+import type { EvalURI } from '../Modules'
+import type { Stack } from '../util/support/Stack'
 
-import * as A from './Array/core'
-import * as O from './Option'
-import * as P from './prelude'
-import { AtomicReference } from './util/support/AtomicReference'
-import { makeStack } from './util/support/Stack'
+import * as O from '../Option'
+import * as P from '../prelude'
+import { AtomicReference } from '../util/support/AtomicReference'
+import { makeStack } from '../util/support/Stack'
 
 type URI = [HKT.URI<EvalURI>]
 
@@ -297,20 +296,6 @@ export function unit(): Eval<void> {
 
 /*
  * -------------------------------------------------------------------------------------------------
- * combinators
- * -------------------------------------------------------------------------------------------------
- */
-
-export function foreachArrayUnit_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Eval<B>): Eval<void> {
-  return A.foldl_(as, now<void>(undefined), (b, a) => bind_(b, () => f(a) as unknown as Eval<void>))
-}
-
-export function foldl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => Eval<B>): Eval<B> {
-  return A.foldl_(as, now(b), (b, a) => bind_(b, (b) => f(b, a)))
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
  * Runtime
  * -------------------------------------------------------------------------------------------------
  */
@@ -514,5 +499,3 @@ export function gen<T extends GenEval<any>, A>(f: (i: <A>(_: Eval<A>) => GenEval
     return _run(state, iterator)
   })
 }
-
-export { EvalURI } from './Modules'
