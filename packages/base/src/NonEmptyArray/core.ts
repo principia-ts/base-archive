@@ -1,12 +1,14 @@
 import type { Guard } from '../Guard'
 import type * as HKT from '../HKT'
+import type { These } from '../internal/These'
 import type { NonEmptyArrayURI } from '../Modules'
 import type { Endomorphism } from '../prelude'
 import type { ReadonlyRecord } from '../Record'
 
 import * as Ev from '../Eval/core'
 import * as G from '../Guard'
-import * as _ from '../internal/array'
+import * as _ from '../internal/Array'
+import * as Th from '../internal/These'
 import * as O from '../Option'
 import * as Ord from '../Ord'
 import * as P from '../prelude'
@@ -236,6 +238,64 @@ export function isOutOfBound_<A>(as: NonEmptyArray<A>, i: number): boolean {
 
 export function isOutOfBound(i: number): <A>(as: NonEmptyArray<A>) => boolean {
   return (as) => isOutOfBound_(as, i)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * ALign
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function alignWith_<A, B, C>(
+  fa: NonEmptyArray<A>,
+  fb: NonEmptyArray<B>,
+  f: (_: These<A, B>) => C
+): NonEmptyArray<C> {
+  const minlen  = Math.min(fa.length, fb.length)
+  const maxlen  = Math.max(fa.length, fb.length)
+  const mut_ret = allocWithHead(f(Th.Both(head(fa), head(fb))), maxlen)
+  for (let i = 1; i < minlen; i++) {
+    mut_ret[i] = f(Th.Both(fa[i], fb[i]))
+  }
+  if (minlen === maxlen) {
+    return mut_ret
+  } else if (fa.length > fb.length) {
+    for (let i = minlen; i < maxlen; i++) {
+      mut_ret[i] = f(Th.Left(fa[i]))
+    }
+  } else {
+    for (let i = minlen; i < maxlen; i++) {
+      mut_ret[i] = f(Th.Right(fb[i]))
+    }
+  }
+  return mut_ret
+}
+
+/**
+ * @category Align
+ * @since 1.0.0
+ */
+export function alignWith<A, B, C>(
+  fb: NonEmptyArray<B>,
+  f: (_: These<A, B>) => C
+): (fa: NonEmptyArray<A>) => NonEmptyArray<C> {
+  return (fa) => alignWith_(fa, fb, f)
+}
+
+/**
+ * @category Align
+ * @since 1.0.0
+ */
+export function align_<A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<These<A, B>> {
+  return alignWith_(fa, fb, P.identity)
+}
+
+/**
+ * @category Align
+ * @since 1.0.0
+ */
+export function align<B>(fb: NonEmptyArray<B>): <A>(fa: NonEmptyArray<A>) => NonEmptyArray<These<A, B>> {
+  return (fa) => align_(fa, fb)
 }
 
 /*
@@ -509,8 +569,7 @@ export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEm
 
 export function imap_<A, B>(fa: NonEmptyArray<A>, f: (i: number, a: A) => B): NonEmptyArray<B> {
   // perf: const mut_out = [f(0, fa[0])]
-  const mut_out = Array(fa.length) as MutableNonEmptyArray<B>
-  mut_out[0]    = f(0, fa[0])
+  const mut_out = allocWithHead(f(0, fa[0]), fa.length)
   for (let i = 1; i < fa.length; i++) {
     mut_out[i] = f(i, fa[i])
   }
@@ -549,7 +608,7 @@ export function ibind_<A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonEm
   let outLen = 1
   const len  = ma.length
   // perf: const mut_temp = [f(0, ma[0])]
-  const mut_temp = Array(len) as MutableNonEmptyArray<NonEmptyArray<B>>
+  const mut_temp = allocWithHead(f(0, ma[0]), len)
   mut_temp[0]    = f(0, ma[0])
   for (let i = 1; i < len; i++) {
     const e     = ma[i]
@@ -739,8 +798,7 @@ export function reverse<A>(as: NonEmptyArray<A>): NonEmptyArray<A> {
     return as
   }
   // perf: let out = [as[as.length - 1]]
-  let mut_out = Array(as.length) as MutableNonEmptyArray<A>
-  mut_out[0]  = as[as.length - 1]
+  let mut_out = allocWithHead(as[as.length - 1], as.length)
   for (let j = 1, i = as.length - 2; i >= 0; i--, j++) {
     mut_out[j] = as[i]
   }
@@ -1310,6 +1368,109 @@ export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
  * -------------------------------------------------------------------------------------------------
  */
 
+type URI = [HKT.URI<NonEmptyArrayURI>]
+
 export const GuardUnknownNonEmptyArray: Guard<unknown, NonEmptyArray<unknown>> = G.Guard(
   (u: unknown): u is NonEmptyArray<unknown> => isArray(u) && u.length > 0
 )
+
+export const Semialign = P.Semialign<URI>({
+  map_,
+  alignWith_,
+  align_
+})
+
+export const Functor = P.Functor<URI>({
+  map_
+})
+
+export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+  imap_
+})
+
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+  map_,
+  cross_,
+  crossWith_
+})
+
+export const Apply = P.Apply<URI>({
+  map_,
+  cross_,
+  crossWith_,
+  ap_
+})
+
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+  map_,
+  cross_,
+  crossWith_,
+  unit
+})
+
+export const Applicative = P.Applicative<URI>({
+  map_,
+  cross_,
+  crossWith_,
+  ap_,
+  pure,
+  unit
+})
+
+export const Zip = P.Zip<URI>({
+  zip_,
+  zipWith_
+})
+
+export const Alt = P.Alt<URI>({
+  map_,
+  alt_
+})
+
+export const Foldable = P.Foldable<URI>({
+  foldl_,
+  foldr_,
+  foldMap_
+})
+
+export const FoldableWithIndex = P.FoldableWithIndex<URI>({
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_
+})
+
+export const Monad = P.Monad<URI>({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  pure,
+  unit,
+  bind_,
+  flatten
+})
+
+export const Traversable = P.Traversable<URI>({
+  map_,
+  traverse_
+})
+
+export const TraversableWithIndex = P.TraversableWithIndex<URI>({
+  imap_,
+  itraverse_
+})
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * internal
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * @internal
+ */
+function allocWithHead<A>(head: A, length: number): MutableNonEmptyArray<A> {
+  const mut_as = Array(length) as MutableNonEmptyArray<A>
+  mut_as[0]    = head
+  return mut_as
+}

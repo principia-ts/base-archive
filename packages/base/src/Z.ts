@@ -7,7 +7,6 @@ import type * as HKT from './HKT'
 import type { ZURI } from './Modules'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
-import type { ShowComputationExternal } from './Structural/Showable'
 import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
@@ -16,9 +15,8 @@ import * as E from './Either'
 import * as FS from './FreeSemiring'
 import * as I from './Iterable/core'
 import * as O from './Option'
+import { flow, isObject } from './prelude'
 import * as P from './prelude'
-import { flow } from './prelude'
-import { $show, showComputationPrimitive } from './Structural/Showable'
 import { makeStack } from './util/support/Stack'
 
 /*
@@ -84,10 +82,10 @@ export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> 
   constructor() {
     super()
   }
+}
 
-  get [$show](): ShowComputationExternal {
-    return showComputationPrimitive(pure(`Z (${this.constructor.name}) {}`))
-  }
+export function isZ(u: unknown): u is Z<unknown, unknown, unknown, unknown, unknown, unknown> {
+  return isObject(u) && ZTypeId in u
 }
 
 /**
@@ -1245,35 +1243,32 @@ export function iforeachUnit<A, W, S, R, E>(
 export function iforeach_<W, S, R, E, A, B>(
   as: Iterable<A>,
   f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, ReadonlyArray<B>> {
-  return I.ifoldl_(as, succeed([]) as Z<W, S, S, R, E, Array<B>>, (b, i, a) =>
+): Z<W, S, S, R, E, C.Chunk<B>> {
+  return I.ifoldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Chunk<B>>, (b, i, a) =>
     crossWith_(
       b,
       deferTotal(() => f(i, a)),
-      (acc, a) => {
-        acc.push(a)
-        return acc
-      }
+      C.append_
     )
   )
 }
 
 export function iforeach<A, W, S, R, E, B>(
   f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
+): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
   return (as) => iforeach_(as, f)
 }
 
 export function foreach_<A, W, S, R, E, B>(
   as: Iterable<A>,
   f: (a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, ReadonlyArray<B>> {
+): Z<W, S, S, R, E, C.Chunk<B>> {
   return iforeach_(as, (_, a) => f(a))
 }
 
 export function foreach<A, W, S, R, E, B>(
   f: (a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
+): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
   return (as) => foreach_(as, f)
 }
 

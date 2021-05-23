@@ -11,7 +11,8 @@ import { identity, pipe, unsafeCoerce } from '../function'
 import { GenLazyHKT, genWithHistoryF } from '../Gen'
 import * as G from '../Guard'
 import * as HKT from '../HKT'
-import * as _ from '../internal/array'
+import * as _ from '../internal/Array'
+import * as Th from '../internal/These'
 import * as NEA from '../NonEmptyArray/core'
 import * as N from '../number'
 import * as O from '../Option'
@@ -889,21 +890,21 @@ export function alignWith_<A, B, C>(
   fb: ReadonlyArray<B>,
   f: (_: These<A, B>) => C
 ): ReadonlyArray<C> {
-  const mut_ret: Array<C> = []
-  const minlen            = Math.min(fa.length, fb.length)
-  const maxlen            = Math.max(fa.length, fb.length)
+  const minlen  = Math.min(fa.length, fb.length)
+  const maxlen  = Math.max(fa.length, fb.length)
+  const mut_ret = Array(maxlen)
   for (let i = 0; i < minlen; i++) {
-    mut_ret.push(f({ _tag: 'Both', left: fa[i], right: fb[i] }))
+    mut_ret[i] = (f(Th.Both(fa[i], fb[i])))
   }
   if (minlen === maxlen) {
     return mut_ret
   } else if (fa.length > fb.length) {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret.push(f({ _tag: 'Left', left: fa[i] }))
+      mut_ret[i] = (f(Th.Left(fa[i])))
     }
   } else {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret.push(f({ _tag: 'Right', right: fb[i] }))
+      mut_ret[i] = (f(Th.Right(fb[i])))
     }
   }
   return mut_ret

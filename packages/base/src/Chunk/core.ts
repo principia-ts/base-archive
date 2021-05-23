@@ -4,8 +4,6 @@ import type { Either } from '../Either'
 import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
-import type { ShowComputationExternal } from '../Structural/Showable'
-import type { Showable } from '../Structural/Showable/core'
 import type { These } from '../These'
 
 import * as A from '../Array/core'
@@ -17,11 +15,8 @@ import { isByte } from '../prelude'
 import * as P from '../prelude'
 import * as Eq from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
-import { _show, showComputationComplex } from '../Structural/Showable'
-import { $show } from '../Structural/Showable/core'
 import * as Th from '../These'
 import { AtomicNumber } from '../util/support/AtomicNumber'
-import * as Z from '../Z'
 
 type URI = [HKT.URI<ChunkURI>]
 
@@ -41,7 +36,7 @@ export const ChunkTag = {
   BinArr: 'BinArr'
 } as const
 
-export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Eq.Equatable, Showable {
+export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Eq.Equatable {
   readonly [ChunkTypeId]: ChunkTypeId = ChunkTypeId
   readonly _A!: () => A
   abstract readonly length: number
@@ -54,15 +49,6 @@ export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Eq.Equatable
 
   get [Ha.$hash](): number {
     return Ha.hashIterator(this[Symbol.iterator]())
-  }
-
-  get [$show](): ShowComputationExternal {
-    return showComputationComplex({
-      extrasType: 1,
-      base: Z.pure(`Chunk(${this.length})`),
-      indices: traverse_(Z.Applicative)(this, _show),
-      braces: ['[', ']']
-    })
   }
 
   [Eq.$equals](that: unknown): boolean {

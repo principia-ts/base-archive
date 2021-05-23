@@ -1,24 +1,25 @@
-/**
- * Re-exports @principia/base/Array and adds IO-specific combinators
- */
-
 import { pipe } from '../function'
 import * as I from '../IO'
+import { tuple } from '../prelude'
 import * as A from './core'
 
 /**
  * Effectfully maps the elements of this Array.
  */
 export function mapM_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return A.foldl_(as, I.succeed([]) as I.IO<R, E, Array<B>>, (b, a) =>
-    I.crossWith_(
-      b,
-      I.deferTotal(() => f(a)),
-      (acc, b) => {
-        acc.push(b)
-        return acc
-      }
-    )
+  return pipe(
+    as,
+    A.foldl(I.succeed([0, Array(as.length)]) as I.IO<R, E, readonly [number, Array<B>]>, (b, a) =>
+      I.crossWith_(
+        b,
+        I.deferTotal(() => f(a)),
+        ([i, mut_acc], b) => {
+          mut_acc[i] = b
+          return tuple(i + 1, mut_acc)
+        }
+      )
+    ),
+    I.map(([, bs]) => bs)
   )
 }
 
@@ -33,27 +34,24 @@ export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArray
  * Effectfully maps the elements of this Array in parallel.
  */
 export function mapMPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return I.bind_(
-    I.effectTotal<B[]>(() => []),
-    (mut_bs) => {
-      function fn([a, n]: [A, number]) {
-        return I.bind_(
-          I.deferTotal(() => f(a)),
-          (b) =>
-            I.effectTotal(() => {
-              mut_bs[n] = b
-            })
-        )
-      }
+  return I.bind_(I.succeed<B[]>(Array(as.length)), (mut_bs) => {
+    function fn([a, n]: [A, number]) {
       return I.bind_(
-        I.foreachUnitPar_(
-          A.imap_(as, (n, a) => [a, n] as [A, number]),
-          fn
-        ),
-        () => I.effectTotal(() => mut_bs)
+        I.deferTotal(() => f(a)),
+        (b) =>
+          I.effectTotal(() => {
+            mut_bs[n] = b
+          })
       )
     }
-  )
+    return I.bind_(
+      I.foreachUnitPar_(
+        A.imap_(as, (n, a) => [a, n] as [A, number]),
+        fn
+      ),
+      () => I.effectTotal(() => mut_bs)
+    )
+  })
 }
 
 /**
@@ -76,17 +74,17 @@ export function mapAccumM_<S, A, R, E, B>(
 ): I.IO<R, E, readonly [S, ReadonlyArray<B>]> {
   return I.deferTotal(() => {
     let dest: I.IO<R, E, S> = I.succeed(s)
-    const res: Array<B>     = []
+    const mut_out: Array<B> = Array(as.length)
     for (let i = 0; i < as.length; i++) {
       const v = as[i]
       dest    = I.bind_(dest, (state) =>
         I.map_(f(state, v), ([s2, b]) => {
-          res.push(b)
+          mut_out[i] = b
           return s2
         })
       )
     }
-    return I.map_(dest, (s) => [s, res])
+    return I.map_(dest, (s) => [s, mut_out])
   })
 }
 
@@ -168,7 +166,7 @@ export function takeWhileM<A, R, E>(
 }
 
 export function foldlM_<A, R, E, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (b, a) => I.bind_(b, (_) => f(_, a)))
+  return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
 }
 
 export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, B> {

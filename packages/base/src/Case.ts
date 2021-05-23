@@ -5,7 +5,7 @@ import { isObject } from './prelude'
 import { $equals, equals } from './Structural/Equatable'
 import { _combineHash, $hash, hash, hashString } from './Structural/Hashable'
 
-export const CaseTypeId = Symbol()
+export const CaseTypeId = Symbol('@principia/base/Case')
 export type CaseTypeId = typeof CaseTypeId
 
 export interface CaseArgs {

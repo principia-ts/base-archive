@@ -8,6 +8,7 @@ import type { ReadonlyRecord } from '../Record'
 import type { Finalizer, ReleaseMap } from './ReleaseMap'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
+import { stat } from 'fs'
 
 import * as A from '../Array/core'
 import * as C from '../Cause/core'
@@ -31,12 +32,17 @@ import { add, addIfOpen, noopFinalizer, release } from './ReleaseMap'
  * -------------------------------------------------------------------------------------------------
  */
 
+export const ManagedTypeId = Symbol('@principia/base/Managed')
+export type ManagedTypeId = typeof ManagedTypeId
+
 export class Managed<R, E, A> {
-  readonly [I._U]: 'Managed';
+  readonly [ManagedTypeId]: ManagedTypeId = ManagedTypeId;
   readonly [I._R]: (_: R) => void;
   readonly [I._E]: () => E;
   readonly [I._A]: () => A
   constructor(readonly io: I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>) {}
+
+  readonly ['*>'] = <R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A1> => apr_(this, fb)
 }
 
 export type UManaged<A> = Managed<unknown, never, A>
@@ -424,6 +430,9 @@ export const pure = succeed
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
+ *
+ * @dataFirst crossWith_
+ * @trace 1
  */
 export function crossWith<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
@@ -435,49 +444,84 @@ export function crossWith<A, R1, E1, B, C>(
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
+ *
+ * @trace 2
  */
 export function crossWith_<R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) {
-  return bind_(fa, (a) => map_(fb, (a2) => f(a, a2)))
+  return bind_(fa, (a) =>
+    map_(
+      fb,
+      traceAs(f, (a2) => f(a, a2))
+    )
+  )
 }
 
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
+ *
+ * @trace call
  */
-export function cross_<R, E, A, R1, E1, A1>(self: Managed<R, E, A>, that: Managed<R1, E1, A1>) {
-  return crossWith_(self, that, (a, a2) => [a, a2] as [A, A1])
+export function cross_<R, E, A, R1, E1, A1>(fa: Managed<R, E, A>, fb: Managed<R1, E1, A1>) {
+  const trace = accessCallTrace()
+  return traceFrom(trace, crossWith_)(fa, fb, (a, a2) => [a, a2] as [A, A1])
 }
 
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in sequence, combining their results with the specified `f` function.
+ *
+ * @dataFirst cross_
+ * @trace call
  */
 export function cross<R1, E1, A1>(that: Managed<R1, E1, A1>) {
-  return <R, E, A>(self: Managed<R, E, A>) => crossWith_(self, that, (a, a2) => [a, a2] as [A, A1])
+  const trace = accessCallTrace()
+  return <R, E, A>(self: Managed<R, E, A>) => traceCall(cross_, trace)(self, that)
 }
 
+/**
+ * @trace call
+ */
 export function ap_<R, E, A, Q, D, B>(fab: Managed<Q, D, (a: A) => B>, fa: Managed<R, E, A>): Managed<Q & R, D | E, B> {
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ * @trace call
+ */
 export function ap<R, E, A>(
   fa: Managed<R, E, A>
 ): <Q, D, B>(fab: Managed<Q, D, (a: A) => B>) => Managed<Q & R, E | D, B> {
   return (fab) => ap_(fab, fa)
 }
 
+/**
+ * @trace call
+ */
 export function apl_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst apl_
+ * @trace call
+ */
 export function apl<R1, E1, B>(fb: Managed<R1, E1, B>): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
   return (fa) => apl_(fa, fb)
 }
 
+/**
+ * @trace call
+ */
 export function apr_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFrist apr_
+ * @trace call
+ */
 export function apr<R1, E1, B>(fb: Managed<R1, E1, B>): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
   return (fa) => apr_(fa, fb)
 }
@@ -525,14 +569,26 @@ export const sequenceT = <T extends ReadonlyArray<Managed<any, any, any>>>(
 /**
  * Returns an effect whose failure and success channels have been mapped by
  * the specified pair of functions, `f` and `g`.
+ *
+ * @trace 1
+ * @trace 2
  */
 export function bimap_<R, E, A, B, C>(pab: Managed<R, E, A>, f: (e: E) => B, g: (a: A) => C): Managed<R, B, C> {
-  return new Managed(I.bimap_(pab.io, f, ([fin, a]) => [fin, g(a)]))
+  return new Managed(
+    I.bimap_(
+      pab.io,
+      f,
+      traceAs(g, ([fin, a]) => [fin, g(a)])
+    )
+  )
 }
 
 /**
  * Returns an effect whose failure and success channels have been mapped by
  * the specified pair of functions, `f` and `g`.
+ *
+ * @trace 0
+ * @trace 1
  */
 export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Managed<R, E, A>) => Managed<R, B, C> {
   return (pab) => bimap_(pab, f, g)
@@ -540,6 +596,8 @@ export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Mana
 
 /**
  * Returns an effect whose failure is mapped by the specified `f` function.
+ *
+ * @trace 1
  */
 export function mapError_<R, E, A, D>(pab: Managed<R, E, A>, f: (e: E) => D): Managed<R, D, A> {
   return new Managed(I.mapError_(pab.io, f))
@@ -547,6 +605,8 @@ export function mapError_<R, E, A, D>(pab: Managed<R, E, A>, f: (e: E) => D): Ma
 
 /**
  * Returns an effect whose failure is mapped by the specified `f` function.
+ *
+ * @trace 0
  */
 export function mapError<E, D>(f: (e: E) => D): <R, A>(pab: Managed<R, E, A>) => Managed<R, D, A> {
   return (pab) => mapError_(pab, f)
@@ -554,6 +614,8 @@ export function mapError<E, D>(f: (e: E) => D): <R, A>(pab: Managed<R, E, A>) =>
 
 /**
  * Returns a Managed whose full failure is mapped by the specified `f` function.
+ *
+ * @trace 1
  */
 export function mapErrorCause_<R, E, A, D>(ma: Managed<R, E, A>, f: (e: Cause<E>) => Cause<D>): Managed<R, D, A> {
   return new Managed(I.mapErrorCause_(ma.io, f))
@@ -561,6 +623,8 @@ export function mapErrorCause_<R, E, A, D>(ma: Managed<R, E, A>, f: (e: Cause<E>
 
 /**
  * Returns a Managed whose full failure is mapped by the specified `f` function.
+ *
+ * @trace 0
  */
 export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(ma: Managed<R, E, A>) => Managed<R, D, A> {
   return (ma) => mapErrorCause_(ma, f)
@@ -940,6 +1004,8 @@ export function tapCause<E, R1, E1>(
 
 /**
  * Returns an effect that effectfully peeks at the failure of the acquired resource.
+ *
+ * @trace 1
  */
 export function tapError_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
@@ -950,6 +1016,8 @@ export function tapError_<R, E, A, R1, E1>(
 
 /**
  * Returns an effect that effectfully peeks at the failure of the acquired resource.
+ *
+ * @trace 0
  */
 export function tapError<E, R1, E1>(
   f: (e: E) => Managed<R1, E1, any>
@@ -960,6 +1028,8 @@ export function tapError<E, R1, E1>(
 /**
  * Like `Managed#tap`, but uses a function that returns an `IO` value rather than a
  * `Managed` value.
+ *
+ * @trace 1
  */
 export function tapM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
@@ -971,6 +1041,8 @@ export function tapM_<R, E, A, R1, E1>(
 /**
  * Like `Managed#tap`, but uses a function that returns an `IO` value rather than a
  * `Managed` value.
+ *
+ * @trace 0
  */
 export function tapM<A, R1, E1>(
   f: (a: A) => I.IO<R1, E1, any>
@@ -986,9 +1058,12 @@ export function tapM<A, R1, E1>(
 
 /**
  * Accesses the whole environment of the effect.
+ *
+ * @trace call
  */
 export function ask<R>(): Managed<R, never, R> {
-  return fromEffect(I.ask<R>())
+  const trace = accessCallTrace()
+  return traceCall(fromEffect, trace)(I.ask<R>())
 }
 
 /**
@@ -1024,7 +1099,7 @@ export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Manage
  * @trace 1
  */
 export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> {
-  return new Managed(I.asksM(([r0, rm]: readonly [R0, ReleaseMap]) => I.giveAll_(ma.io, [f(r0), rm])))
+  return new Managed(I.asksM(traceAs(f, ([r0, rm]: readonly [R0, ReleaseMap]) => I.giveAll_(ma.io, [f(r0), rm]))))
 }
 
 /**
@@ -1053,15 +1128,29 @@ export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown
 /**
  * Provides the `Managed` effect with its required environment, which eliminates
  * its dependency on `R`.
+ *
+ * @dataFirst giveAll_
+ * @trace call
  */
 export function giveAll<R>(env: R): <E, A>(ma: Managed<R, E, A>) => Managed<unknown, E, A> {
   return (ma) => giveAll_(ma, env)
 }
 
+/**
+ * @trace call
+ */
 export function give_<E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>, env: R): Managed<R0, E, A> {
-  return gives_(ma, (r0) => ({ ...r0, ...env }))
+  const trace = accessCallTrace()
+  return gives_(
+    ma,
+    traceFrom(trace, (r0) => ({ ...r0, ...env }))
+  )
 }
 
+/**
+ * @dataFirst give_
+ * @trace call
+ */
 export function give<R>(env: R): <R0, E, A>(ma: Managed<R & R0, E, A>) => Managed<R0, E, A> {
   return (ma) => give_(ma, env)
 }
@@ -1072,8 +1161,12 @@ export function give<R>(env: R): <R0, E, A>(ma: Managed<R & R0, E, A>) => Manage
  * -------------------------------------------------------------------------------------------------
  */
 
+/**
+ * @trace call
+ */
 export function unit(): Managed<unknown, never, void> {
-  return fromEffect(I.unit())
+  const trace = accessCallTrace()
+  return traceCall(fromEffect, trace)(I.unit())
 }
 
 /*
@@ -1085,14 +1178,19 @@ export function unit(): Managed<unknown, never, void> {
 /**
  * Maps this effect to the specified constant while preserving the
  * effects of this effect.
+ *
+ * @trace 1
  */
 export function as_<R, E, A, B>(ma: Managed<R, E, A>, b: () => B): Managed<R, E, B> {
-  return map_(ma, () => b())
+  return map_(ma, b)
 }
 
 /**
  * Maps this effect to the specified constant while preserving the
  * effects of this effect.
+ *
+ * @dataFirst as_
+ * @trace 0
  */
 export function as<B>(b: () => B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, B> {
   return (ma) => as_(ma, b)
@@ -1100,22 +1198,45 @@ export function as<B>(b: () => B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R,
 
 /**
  * Maps the success value of this effect to an optional value.
+ *
+ * @trace call
  */
 export function asSome<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, O.Option<A>> {
-  return map_(ma, O.Some)
+  const trace = accessCallTrace()
+  return map_(
+    ma,
+    traceFrom(trace, (a) => O.Some(a))
+  )
 }
 
 /**
  * Maps the error value of this effect to an optional value.
+ *
+ * @trace call
  */
 export function asSomeError<R, E, A>(ma: Managed<R, E, A>): Managed<R, O.Option<E>, A> {
-  return mapError_(ma, O.Some)
+  const trace = accessCallTrace()
+  return mapError_(
+    ma,
+    traceFrom(trace, (e) => O.Some(e))
+  )
 }
 
-export const asUnit: <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> = map(() => undefined)
+/**
+ * @trace call
+ */
+export function asUnit<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, void> {
+  const trace = accessCallTrace()
+  return map_(
+    ma,
+    traceFrom(trace, () => undefined)
+  )
+}
 
 /**
  * Recovers from all errors.
+ *
+ * @trace 1
  */
 export function catchAll_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
@@ -1126,6 +1247,9 @@ export function catchAll_<R, E, A, R1, E1, B>(
 
 /**
  * Recovers from all errors.
+ *
+ * @dataFirst catchAll_
+ * @trace 0
  */
 export function catchAll<E, R1, E1, B>(
   f: (e: E) => Managed<R1, E1, B>
@@ -1135,6 +1259,8 @@ export function catchAll<E, R1, E1, B>(
 
 /**
  * Recovers from all errors with provided Cause.
+ *
+ * @trace 1
  */
 export function catchAllCause_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
@@ -1145,6 +1271,9 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
 
 /**
  * Recovers from all errors with provided Cause.
+ *
+ * @dataFirst catchAllCause_
+ * @trace 0
  */
 export function catchAllCause<E, R1, E1, B>(
   f: (e: Cause<E>) => Managed<R1, E1, B>
@@ -1154,16 +1283,24 @@ export function catchAllCause<E, R1, E1, B>(
 
 /**
  * Recovers from some or all of the error cases.
+ *
+ * @trace 1
  */
 export function catchSome_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   pf: (e: E) => O.Option<Managed<R1, E1, B>>
 ): Managed<R & R1, E | E1, A | B> {
-  return catchAll_(ma, (e) => O.getOrElse_(pf(e), () => fail<E | E1>(e)))
+  return catchAll_(
+    ma,
+    traceAs(pf, (e) => O.getOrElse_(pf(e), () => fail<E | E1>(e)))
+  )
 }
 
 /**
  * Recovers from some or all of the error cases.
+ *
+ * @dataFirst catchSome_
+ * @trace 0
  */
 export function catchSome<E, R1, E1, B>(
   pf: (e: E) => O.Option<Managed<R1, E1, B>>
@@ -1173,16 +1310,24 @@ export function catchSome<E, R1, E1, B>(
 
 /**
  * Recovers from some or all of the error Causes.
+ *
+ * @trace 1
  */
 export function catchSomeCause_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   pf: (e: Cause<E>) => O.Option<Managed<R1, E1, B>>
 ): Managed<R & R1, E | E1, A | B> {
-  return catchAllCause_(ma, (e) => O.getOrElse_(pf(e), () => halt<E | E1>(e)))
+  return catchAllCause_(
+    ma,
+    traceAs(pf, (e) => O.getOrElse_(pf(e), () => halt<E | E1>(e)))
+  )
 }
 
 /**
  * Recovers from some or all of the error Causes.
+ *
+ * @dataFirst catchSomeCause_
+ * @trace 0
  */
 export function catchSomeCause<E, R1, E1, B>(
   pf: (e: Cause<E>) => O.Option<Managed<R1, E1, B>>
@@ -1193,18 +1338,26 @@ export function catchSomeCause<E, R1, E1, B>(
 /**
  * Fail with `e` if the supplied partial function does not match, otherwise
  * continue with the returned value.
+ *
+ * @trace 2
  */
 export function collectM_<R, E, A, E1, R2, E2, B>(
   ma: Managed<R, E, A>,
   e: E1,
   pf: (a: A) => O.Option<Managed<R2, E2, B>>
 ): Managed<R & R2, E | E1 | E2, B> {
-  return bind_(ma, (a) => O.getOrElse_(pf(a), () => fail<E1 | E2>(e)))
+  return bind_(
+    ma,
+    traceAs(pf, (a) => O.getOrElse_(pf(a), () => fail<E1 | E2>(e)))
+  )
 }
 
 /**
  * Fail with `e` if the supplied partial function does not match, otherwise
  * continue with the returned value.
+ *
+ * @dataFirst collectM_
+ * @trace 1
  */
 export function collectM<A, E1, R2, E2, B>(
   e: E1,
@@ -1216,18 +1369,23 @@ export function collectM<A, E1, R2, E2, B>(
 /**
  * Fail with `e` if the supplied partial function does not match, otherwise
  * succeed with the returned value.
+ *
+ * @trace 2
  */
 export function collect_<R, E, A, E1, B>(
   ma: Managed<R, E, A>,
   e: E1,
   pf: (a: A) => O.Option<B>
 ): Managed<R, E | E1, B> {
-  return collectM_(ma, e, flow(pf, O.map(succeed)))
+  return collectM_(ma, e, traceAs(pf, flow(pf, O.map(succeed))))
 }
 
 /**
  * Fail with `e` if the supplied partial function does not match, otherwise
  * succeed with the returned value.
+ *
+ * @dataFirst collect_
+ * @trace 1
  */
 export function collect<A, E1, B>(
   e: E1,
@@ -1239,40 +1397,50 @@ export function collect<A, E1, B>(
 /**
  * Evaluate each effect in the structure from left to right, and collect the
  * results. For a parallel version, see `collectAllPar`.
+ *
+ * @trace call
  */
 export function collectAll<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
-  return foreach_(mas, identityFn)
+  const trace = accessCallTrace()
+  return traceCall(foreach_, trace)(mas, identityFn)
 }
 
 /**
  * Evaluate each effect in the structure from left to right, and discard the
  * results. For a parallel version, see `collectAllPar_`.
+ *
+ * @trace call
  */
 export function collectAllUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, void> {
-  return foreachUnit_(mas, identityFn)
+  const trace = accessCallTrace()
+  return traceCall(foreachUnit_, trace)(mas, identityFn)
 }
 
 /**
  * Executes the second effect and then provides its output as an environment to this effect
+ *
+ * @trace call
  */
 export function compose<R, E, A, R1, E1>(ma: Managed<R, E, A>, that: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
-  return pipe(
-    ask<R1>(),
-    bind((r1) => give_(that, r1)),
-    bind((r) => give_(ma, r))
-  )
+  const trace = accessCallTrace()
+  return pipe(ask<R1>(), bind(traceFrom(trace, (r1) => give_(that, r1))), bind(traceFrom(trace, (r) => give_(ma, r))))
 }
 
 /**
  * Returns a Managed that ignores errors raised by the acquire effect and
  * runs it repeatedly until it eventually succeeds.
+ *
+ * @trace call
  */
 export function eventually<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
-  return new Managed(I.eventually(ma.io))
+  const trace = accessCallTrace()
+  return new Managed(traceCall(I.eventually, trace)(ma.io))
 }
 
 /**
  * Effectfully map the error channel
+ *
+ * @trace 1
  */
 export function bindError_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
@@ -1283,6 +1451,8 @@ export function bindError_<R, E, A, R1, E1>(
 
 /**
  * Effectfully map the error channel
+ *
+ * @trace 0
  */
 export function bindError<E, R1, E1>(
   f: (e: E) => URManaged<R1, E1>
@@ -1292,13 +1462,22 @@ export function bindError<E, R1, E1>(
 
 /**
  * Folds an Iterable<A> using an effectual function f, working sequentially from left to right.
+ *
+ * @trace 2
  */
 export function foldl_<R, E, A, B>(as: Iterable<A>, b: B, f: (b: B, a: A) => Managed<R, E, B>): Managed<R, E, B> {
-  return A.foldl_(Array.from(as), succeed(b) as Managed<R, E, B>, (acc, v) => bind_(acc, (a) => f(a, v)))
+  return A.foldl_(Array.from(as), succeed(b) as Managed<R, E, B>, (acc, v) =>
+    bind_(
+      acc,
+      traceAs(f, (a) => f(a, v))
+    )
+  )
 }
 
 /**
  * Folds an Iterable<A> using an effectual function f, working sequentially from left to right.
+ *
+ * @trace 1
  */
 export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, B> {
   return (as) => foldl_(as, b, f)
@@ -1310,10 +1489,22 @@ export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => Managed<R, E, B>): (a
  * @category Combinators
  * @since 1.0.0
  */
-export function foldMap_<M>(
-  M: P.Monoid<M>
-): <R, E, A>(mas: Iterable<Managed<R, E, A>>, f: (a: A) => M) => Managed<R, E, M> {
-  return (mas, f) => foldl_(mas, M.nat, (x, ma) => pipe(ma, map(flow(f, (y) => M.combine_(x, y)))))
+export function foldMap_<M>(M: P.Monoid<M>) {
+  /**
+   * @trace 1
+   */
+  return <R, E, A>(mas: Iterable<Managed<R, E, A>>, f: (a: A) => M): Managed<R, E, M> =>
+    foldl_(mas, M.nat, (x, ma) =>
+      pipe(
+        ma,
+        map(
+          traceAs(
+            f,
+            flow(f, (y) => M.combine_(x, y))
+          )
+        )
+      )
+    )
 }
 
 /**
@@ -1322,21 +1513,13 @@ export function foldMap_<M>(
  * @category Combinators
  * @since 1.0.0
  */
-export function foldMap<M>(
-  M: P.Monoid<M>
-): <A>(f: (a: A) => M) => <R, E>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, M> {
-  return (f) => (mas) => foldMap_(M)(mas, f)
-}
-
-/**
- * Applies the function `f` to each element of the `Iterable<A>` and
- * returns the results in a new `B[]`.
- *
- * For a parallel version of this method, see `foreachPar`.
- * If you do not need the results, see `foreachUnit` for a more efficient implementation.
- */
-export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
-  return (as) => foreach_(as, f)
+export function foldMap<M>(M: P.Monoid<M>) {
+  /**
+   * @trace 0
+   */
+  return <A>(f: (a: A) => M) =>
+    <R, E>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, M> =>
+      foldMap_(M)(mas, f)
 }
 
 /**
@@ -1345,11 +1528,16 @@ export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterabl
  *
  * For a parallel version of this method, see `foreachPar_`.
  * If you do not need the results, see `foreachUnit_` for a more efficient implementation.
+ *
+ * @trace 1
  */
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>) {
   return new Managed<R, E, Chunk<B>>(
     I.map_(
-      I.foreach_(as, (a) => f(a).io),
+      I.foreach_(
+        as,
+        traceAs(f, (a) => f(a).io)
+      ),
       (res) => {
         const fins = Ch.map_(res, (k) => k[0])
         const as   = Ch.map_(res, (k) => k[1])
@@ -1361,17 +1549,33 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E,
 }
 
 /**
+ * Applies the function `f` to each element of the `Iterable<A>` and
+ * returns the results in a new `B[]`.
+ *
+ * For a parallel version of this method, see `foreachPar`.
+ * If you do not need the results, see `foreachUnit` for a more efficient implementation.
+ *
+ * @dataFirst foreach_
+ * @trace 0
+ */
+export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
+  return (as) => foreach_(as, f)
+}
+
+/**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
  * produced effects sequentially.
  *
  * Equivalent to `asUnit(foreach(f)(as))`, but without the cost of building
  * the list of results.
+ *
+ * @trace 1
  */
 export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> {
   return new Managed(
     pipe(
       as,
-      I.foreach((a) => f(a).io),
+      I.foreach(traceAs(f, (a) => f(a).io)),
       I.map((result) => {
         const fins = Ch.map_(result, (k) => k[0])
 
@@ -1387,6 +1591,9 @@ export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E
  *
  * Equivalent to `asUnit(foreach(f)(as))`, but without the cost of building
  * the list of results.
+ *
+ * @dataFirst foreachUnit_
+ * @trace 0
  */
 export function foreachUnit<R, E, A>(f: (a: A) => Managed<R, E, unknown>): (as: Iterable<A>) => Managed<R, E, void> {
   return (as) => foreachUnit_(as, f)
@@ -1394,9 +1601,15 @@ export function foreachUnit<R, E, A>(f: (a: A) => Managed<R, E, unknown>): (as: 
 
 /**
  * Unwraps the optional success of this effect, but can fail with None value.
+ *
+ * @trace call
  */
 export function get<R, A>(ma: Managed<R, never, O.Option<A>>): Managed<R, O.Option<never>, A> {
-  return absolve(
+  const trace = accessCallTrace()
+  return traceCall(
+    absolve,
+    trace
+  )(
     map_(
       ma,
       E.fromOption(() => O.None())
@@ -1405,17 +1618,26 @@ export function get<R, A>(ma: Managed<R, never, O.Option<A>>): Managed<R, O.Opti
 }
 /**
  * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
+ *
+ * @trace call
  */
 export function ifM_<R, E, R1, E1, B, R2, E2, C>(
   mb: Managed<R, E, boolean>,
   onTrue: () => Managed<R1, E1, B>,
   onFalse: () => Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E | E1 | E2, B | C> {
-  return bind_(mb, (b) => (b ? (onTrue() as Managed<R & R1 & R2, E | E1 | E2, B | C>) : onFalse()))
+  const trace = accessCallTrace()
+  return bind_(
+    mb,
+    traceFrom(trace, (b) => (b ? (onTrue() as Managed<R & R1 & R2, E | E1 | E2, B | C>) : onFalse()))
+  )
 }
 
 /**
  * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
+ *
+ * @dataFirst ifM_
+ * @trace call
  */
 export function ifM<R1, E1, B, R2, E2, C>(onTrue: () => Managed<R1, E1, B>, onFalse: () => Managed<R2, E2, C>) {
   return <R, E>(mb: Managed<R, E, boolean>): Managed<R & R1 & R2, E | E1 | E2, B | C> => ifM_(mb, onTrue, onFalse)
@@ -1423,17 +1645,22 @@ export function ifM<R1, E1, B, R2, E2, C>(onTrue: () => Managed<R1, E1, B>, onFa
 
 /**
  * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
+ *
+ * @trace call
  */
 export function if_<R, E, A, R1, E1, B>(
   b: boolean,
   onTrue: () => Managed<R, E, A>,
   onFalse: () => Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A | B> {
-  return ifM_(succeed(b), onTrue, onFalse)
+  const trace = accessCallTrace()
+  return traceCall(ifM_, trace)(succeed(b), onTrue, onFalse)
 }
 
 /**
  * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
+ *
+ * @trace call
  */
 function _if<R, E, A, R1, E1, B>(onTrue: () => Managed<R, E, A>, onFalse: () => Managed<R1, E1, B>) {
   return (b: boolean): Managed<R & R1, E | E1, A | B> => if_(b, onTrue, onFalse)
@@ -1442,27 +1669,35 @@ export { _if as if }
 
 /**
  * Ignores the success or failure of a Managed
+ *
+ * @trace call
  */
 export function ignore<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, void> {
+  const trace = accessCallTrace()
   return match_(
     ma,
-    () => {
+    traceFrom(trace, () => {
       /* */
-    },
-    () => {
+    }),
+    traceFrom(trace, () => {
       /* */
-    }
+    })
   )
 }
 
 /**
  * Returns a Managed that is interrupted as if by the fiber calling this
  * method.
+ *
+ * @trace call
  */
-export const interrupt: Managed<unknown, never, never> = bind_(
-  fromEffect(I.descriptorWith((d) => I.succeed(d.id))),
-  (id) => halt(C.interrupt(id))
-)
+export function interrupt(): Managed<unknown, never, never> {
+  const trace = accessCallTrace()
+  return bind_(
+    fromEffect(I.descriptorWith((d) => I.succeed(d.id))),
+    traceFrom(trace, (id) => halt(C.interrupt(id)))
+  )
+}
 
 /**
  * Returns a Managed that is interrupted as if by the specified fiber.
@@ -1473,44 +1708,59 @@ export function interruptAs(fiberId: FiberId): Managed<unknown, never, never> {
 
 /**
  * Returns whether this managed effect is a failure.
+ *
+ * @trace call
  */
 export function isFailure<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, boolean> {
+  const trace = accessCallTrace()
   return match_(
     ma,
-    () => true,
-    () => false
+    traceFrom(trace, () => true),
+    traceFrom(trace, () => false)
   )
 }
 
 /**
  * Returns whether this managed effect is a success.
+ *
+ * @trace call
  */
 export function isSuccess<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, boolean> {
+  const trace = accessCallTrace()
   return match_(
     ma,
-    () => false,
-    () => true
+    traceFrom(trace, () => false),
+    traceFrom(trace, () => true)
   )
 }
 
 /**
  * Depending on the environment execute this or the other effect
+ *
+ * @trace call
  */
 export function join_<R, E, A, R1, E1, A1>(
   ma: Managed<R, E, A>,
   that: Managed<R1, E1, A1>
 ): Managed<E.Either<R, R1>, E | E1, A | A1> {
+  const trace = accessCallTrace()
   return bind_(
     ask<E.Either<R, R1>>(),
-    E.match(
-      (r): FManaged<E | E1, A | A1> => giveAll_(ma, r),
-      (r1) => giveAll_(that, r1)
+    traceFrom(
+      trace,
+      E.match(
+        (r): FManaged<E | E1, A | A1> => giveAll_(ma, r),
+        (r1) => giveAll_(that, r1)
+      )
     )
   )
 }
 
 /**
  * Depending on the environment execute this or the other effect
+ *
+ * @dataFirst join_
+ * @trace call
  */
 export function join<R1, E1, A1>(
   that: Managed<R1, E1, A1>
@@ -1520,22 +1770,31 @@ export function join<R1, E1, A1>(
 
 /**
  * Depending on provided environment returns either this one or the other effect.
+ *
+ * @trace call
  */
 export function joinEither_<R, E, A, R1, E1, A1>(
   ma: Managed<R, E, A>,
   that: Managed<R1, E1, A1>
 ): Managed<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
+  const trace = accessCallTrace()
   return bind_(
     ask<E.Either<R, R1>>(),
-    E.match(
-      (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.Left), r),
-      (r1) => giveAll_(map_(that, E.Right), r1)
+    traceFrom(
+      trace,
+      E.match(
+        (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.Left), r),
+        (r1) => giveAll_(map_(that, E.Right), r1)
+      )
     )
   )
 }
 
 /**
  * Depending on provided environment returns either this one or the other effect.
+ *
+ * @dataFirst joinEither_
+ * @trace call
  */
 export function joinEither<R1, E1, A1>(
   that: Managed<R1, E1, A1>
@@ -1546,18 +1805,26 @@ export function joinEither<R1, E1, A1>(
 /**
  * Returns a Managed whose success is mapped by the specified side effecting
  * `f` function, translating any thrown exceptions into typed failed effects.
+ *
+ * @trace 1
  */
 export function mapEffectWith_<R, E, A, E1, B>(
   ma: Managed<R, E, A>,
   f: (a: A) => B,
   onThrow: (error: unknown) => E1
 ): Managed<R, E | E1, B> {
-  return matchM_(ma, fail, (a) => effectCatch_(() => f(a), onThrow))
+  return matchM_(
+    ma,
+    fail,
+    traceAs(f, (a) => effectCatch_(() => f(a), onThrow))
+  )
 }
 
 /**
  * Returns a Managed whose success is mapped by the specified side effecting
  * `f` function, translating any thrown exceptions into typed failed effects.
+ *
+ * @trace 0
  */
 export function mapEffectWith<A, E1, B>(
   f: (a: A) => B,
@@ -1569,6 +1836,8 @@ export function mapEffectWith<A, E1, B>(
 /**
  * Returns a Managed whose success is mapped by the specified side effecting
  * `f` function.
+ *
+ * @trace 1
  */
 export function mapEffect_<R, E, A, B>(ma: Managed<R, E, A>, f: (a: A) => B): Managed<R, unknown, B> {
   return mapEffectWith_(ma, f, identityFn)
@@ -1577,6 +1846,8 @@ export function mapEffect_<R, E, A, B>(ma: Managed<R, E, A>, f: (a: A) => B): Ma
 /**
  * Returns a Managed whose success is mapped by the specified side effecting
  * `f` function.
+ *
+ * @trace 0
  */
 export function mapEffect<A, B>(f: (a: A) => B): <R, E>(ma: Managed<R, E, A>) => Managed<R, unknown, B> {
   return (ma) => mapEffect_(ma, f)
@@ -1585,13 +1856,22 @@ export function mapEffect<A, B>(f: (a: A) => B): <R, E>(ma: Managed<R, E, A>) =>
 /**
  * Returns a new Managed where the error channel has been merged into the
  * success channel to their common combined type.
+ *
+ * @trace call
  */
 export function merge<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, E | A> {
-  return matchM_(ma, succeed, succeed)
+  const trace = accessCallTrace()
+  return matchM_(
+    ma,
+    traceFrom(trace, (e) => succeed(e)),
+    traceFrom(trace, (a) => succeed(a))
+  )
 }
 
 /**
  * Merges an `Iterable<Managed>` to a single `Managed`, working sequentially.
+ *
+ * @trace 2
  */
 export function mergeAll_<R, E, A, B>(mas: Iterable<Managed<R, E, A>>, b: B, f: (b: B, a: A) => B): Managed<R, E, B> {
   return Iter.foldl_(mas, succeed(b) as Managed<R, E, B>, (b, a) => crossWith_(b, a, f))
@@ -1599,6 +1879,8 @@ export function mergeAll_<R, E, A, B>(mas: Iterable<Managed<R, E, A>>, b: B, f: 
 
 /**
  * Merges an `Iterable<Managed>` to a single `Managed`, working sequentially.
+ *
+ * @trace 1
  */
 export function mergeAll<A, B>(
   b: B,
@@ -1609,39 +1891,60 @@ export function mergeAll<A, B>(
 
 /**
  * Requires the option produced by this value to be `None`.
+ *
+ * @trace call
  */
 export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Option<E>, void> {
+  const trace = accessCallTrace()
   return matchM_(
     ma,
-    flow(O.Some, fail),
-    O.match(
-      () => unit(),
-      () => fail(O.None())
+    traceFrom(trace, flow(O.Some, fail)),
+    traceFrom(
+      trace,
+      O.match(
+        () => unit(),
+        () => fail(O.None())
+      )
     )
   )
 }
 
 /**
  * Executes this effect, skipping the error but returning optionally the success.
+ *
+ * @trace call
  */
 export function option<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, O.Option<A>> {
-  return match_(ma, () => O.None(), O.Some)
+  const trace = accessCallTrace()
+  return match_(
+    ma,
+    traceFrom(trace, () => O.None()),
+    traceFrom(trace, (a) => O.Some(a))
+  )
 }
 
 /**
  * Converts an option on errors into an option on values.
+ *
+ * @trace call
  */
 export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E, O.Option<A>> {
+  const trace = accessCallTrace()
   return matchM_(
     ma,
-    O.match(() => succeed(O.None()), fail),
-    flow(O.Some, succeed)
+    traceFrom(
+      trace,
+      O.match(() => succeed(O.None()), fail)
+    ),
+    traceFrom(trace, flow(O.Some, succeed))
   )
 }
 
 /**
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown`.
+ *
+ * @trace 1
  */
 export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown): Managed<R, never, A> {
   return new Managed(I.orDieWith_(ma.io, f))
@@ -1650,6 +1953,8 @@ export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown):
 /**
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown.
+ *
+ * @trace 0
  */
 export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
   return (ma) => orDieWith_(ma, f)
@@ -1658,83 +1963,132 @@ export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>)
 /**
  * Translates effect failure into death of the fiber, making all failures unchecked and
  * not a part of the type of the effect.
+ *
+ * @trace call
  */
 export function orDie<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
-  return orDieWith_(ma, identityFn)
+  const trace = accessCallTrace()
+  return orDieWith_(
+    ma,
+    traceFrom(trace, (e) => e)
+  )
 }
 
 /**
  * Executes this effect and returns its value, if it succeeds, but
  * otherwise executes the specified effect.
+ *
+ * @trace call
+ * @trace 1
  */
 export function orElse_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   that: () => Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A | B> {
-  return matchM_(ma, () => that(), succeed)
+  const trace = accessCallTrace()
+  return matchM_(
+    ma,
+    that,
+    traceFrom(trace, (a) => succeed(a))
+  )
 }
 
 /**
  * Executes this effect and returns its value, if it succeeds, but
  * otherwise executes the specified effect.
+ *
+ * @trace call
+ * @trace 0
  */
 export function orElse<R1, E1, B>(
   that: () => Managed<R1, E1, B>
 ): <R, E, A>(ma: Managed<R, E, A>) => Managed<R & R1, E | E1, A | B> {
-  return (ma) => orElse_(ma, that)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(orElse_, trace)(ma, that)
 }
 
 /**
  * Returns an effect that will produce the value of this effect, unless it
  * fails, in which case, it will produce the value of the specified effect.
+ *
+ * @trace call
+ * @trace 1
  */
 export function orElseEither_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   that: () => Managed<R1, E1, B>
 ): Managed<R & R1, E1, E.Either<B, A>> {
-  return matchM_(ma, () => map_(that(), E.Left), flow(E.Right, succeed))
+  const trace = accessCallTrace()
+  return matchM_(
+    ma,
+    traceAs(that, () => map_(that(), E.Left)),
+    traceFrom(trace, flow(E.Right, succeed))
+  )
 }
 
 /**
  * Returns an effect that will produce the value of this effect, unless it
  * fails, in which case, it will produce the value of the specified effect.
+ *
+ * @dataFirst orElseEither_
+ * @trace call
+ * @trace 0
  */
 export function orElseEither<R1, E1, B>(
   that: () => Managed<R1, E1, B>
 ): <R, E, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1, E.Either<B, A>> {
-  return (ma) => orElseEither_(ma, that)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(orElseEither_, trace)(ma, that)
 }
 
 /**
  * Executes this effect and returns its value, if it succeeds, but
  * otherwise fails with the specified error.
+ *
+ * @trace call
+ * @trace 1
  */
 export function orElseFail_<R, E, A, E1>(ma: Managed<R, E, A>, e: () => E1): Managed<R, E | E1, A> {
-  return orElse_(ma, () => fail(e()))
+  const trace = accessCallTrace()
+  return traceCall(orElse_, trace)(
+    ma,
+    traceAs(e, () => fail(e()))
+  )
 }
 
 /**
  * Executes this effect and returns its value, if it succeeds, but
  * otherwise fails with the specified error.
+ *
+ * @dataFirst orElseFail_
+ * @trace call
+ * @trace 0
  */
 export function orElseFail<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E1 | E, A> {
-  return (ma) => orElseFail_(ma, e)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(orElseFail_, trace)(ma, e)
 }
 
 /**
  * Returns an effect that will produce the value of this effect, unless it
  * fails with the `None` value, in which case it will produce the value of
  * the specified effect.
+ *
+ * @trace 1
  */
 export function orElseOptional_<R, E, A, R1, E1, B>(
   ma: Managed<R, O.Option<E>, A>,
   that: () => Managed<R1, O.Option<E1>, B>
 ): Managed<R & R1, O.Option<E | E1>, A | B> {
+  const trace = accessCallTrace()
   return catchAll_(
     ma,
-    O.match(
-      () => that(),
-      (e) => fail(O.Some<E | E1>(e))
+    traceAs(
+      that,
+      O.match(
+        () => that(),
+        (e) => fail(O.Some<E | E1>(e))
+      )
     )
   )
 }
@@ -1743,6 +2097,8 @@ export function orElseOptional_<R, E, A, R1, E1, B>(
  * Returns an effect that will produce the value of this effect, unless it
  * fails with the `None` value, in which case it will produce the value of
  * the specified effect.
+ *
+ * @trace 0
  */
 export function orElseOptional<R1, E1, B>(
   that: () => Managed<R1, O.Option<E1>, B>
@@ -1753,14 +2109,21 @@ export function orElseOptional<R1, E1, B>(
 /**
  * Executes this Managed and returns its value, if it succeeds, but
  * otherwise succeeds with the specified value.
+ *
+ * @trace 1
  */
 export function orElseSucceed_<R, E, A, A1>(ma: Managed<R, E, A>, that: () => A1): Managed<R, E, A | A1> {
-  return orElse_(ma, () => succeed(that()))
+  return orElse_(
+    ma,
+    traceAs(that, () => succeed(that()))
+  )
 }
 
 /**
  * Executes this Managed and returns its value, if it succeeds, but
  * otherwise succeeds with the specified value.
+ *
+ * @trace 0
  */
 export function orElseSucceed<A1>(that: () => A1): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, A1 | A> {
   return (ma) => orElseSucceed_(ma, that)
@@ -1769,56 +2132,78 @@ export function orElseSucceed<A1>(that: () => A1): <R, E, A>(ma: Managed<R, E, A
 /**
  * Keeps some of the errors, and terminates the fiber with the rest, using
  * the specified function to convert the `E` into a `Throwable`.
+ *
+ * @trace call
  */
 export function refineOrDieWith_<R, E, A, E1>(
   ma: Managed<R, E, A>,
   pf: (e: E) => O.Option<E1>,
   f: (e: E) => unknown
 ): Managed<R, E1, A> {
-  return catchAll_(ma, (e) => O.match_(pf(e), () => die(f(e)), fail))
+  const trace = accessCallTrace()
+  return catchAll_(
+    ma,
+    traceFrom(trace, (e) => O.match_(pf(e), () => die(f(e)), fail))
+  )
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest, using
  * the specified function to convert the `E` into a `Throwable`.
+ *
+ * @trace call
  */
 export function refineOrDieWith<E, E1>(
   pf: (e: E) => O.Option<E1>,
   f: (e: E) => unknown
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
-  return (ma) => refineOrDieWith_(ma, pf, f)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(refineOrDieWith_, trace)(ma, pf, f)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
+ *
+ * @trace call
  */
 export function refineOrDie_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (e: E) => O.Option<E1>): Managed<R, E1, A> {
-  return refineOrDieWith_(ma, pf, identityFn)
+  const trace = accessCallTrace()
+  return traceCall(refineOrDieWith_, trace)(ma, pf, identityFn)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
+ *
+ * @trace call
  */
 export function refineOrDie<E, E1>(pf: (e: E) => O.Option<E1>): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
-  return (ma) => refineOrDie_(ma, pf)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(refineOrDie_, trace)(ma, pf)
 }
 
 /**
  * Continue with the returned computation if the partial function `pf` matches,
  * translating the successful match into a failure, otherwise continue with
  * our held value.
+ *
+ * @trace 1
  */
 export function rejectM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   pf: (a: A) => O.Option<Managed<R1, E1, E1>>
 ): Managed<R & R1, E | E1, A> {
-  return bind_(ma, (a) => O.match_(pf(a), () => succeed(a), bind(fail)))
+  return bind_(
+    ma,
+    traceAs(pf, (a) => O.match_(pf(a), () => succeed(a), bind(fail)))
+  )
 }
 
 /**
  * Continue with the returned computation if the partial function `pf` matches,
  * translating the successful match into a failure, otherwise continue with
  * our held value.
+ *
+ * @trace 0
  */
 export function rejectM<A, R1, E1>(
   pf: (a: A) => O.Option<Managed<R1, E1, E1>>
@@ -1829,26 +2214,42 @@ export function rejectM<A, R1, E1>(
 /**
  * Fail with the returned value if the partial function `pf` matches, otherwise
  * continue with our held value.
+ *
+ * @trace 1
  */
 export function reject_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (a: A) => O.Option<E1>): Managed<R, E | E1, A> {
-  return rejectM_(ma, (a) => O.map_(pf(a), fail))
+  return rejectM_(
+    ma,
+    traceAs(pf, (a) => O.map_(pf(a), fail))
+  )
 }
 
 /**
  * Fail with the returned value if the partial function `pf` matches, otherwise
  * continue with our held value.
+ *
+ * @trace 0
  */
 export function reject<A, E1>(pf: (a: A) => O.Option<E1>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E1 | E, A> {
   return (ma) => reject_(ma, pf)
 }
 
+/**
+ * @trace 1
+ */
 export function require_<R, E, A>(ma: Managed<R, E, O.Option<A>>, error: () => E): Managed<R, E, A> {
   return bind_(
     ma,
-    O.match(() => bind_(effectTotal(error), fail), succeed)
+    traceAs(
+      error,
+      O.match(() => bind_(effectTotal(error), fail), succeed)
+    )
   )
 }
 
+/**
+ * @trace 0
+ */
 function _require<E>(error: () => E): <R, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E, A> {
   return (ma) => require_(ma, error)
 }
@@ -1857,24 +2258,34 @@ export { _require as require }
 /**
  * Returns a Managed that semantically runs the Managed on a fiber,
  * producing an `Exit` for the completion value of the fiber.
+ *
+ * @trace call
  */
 export function result<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, Ex.Exit<E, A>> {
+  const trace = accessCallTrace()
   return matchCauseM_(
     ma,
-    (cause) => succeed(Ex.halt(cause)),
-    (a) => succeed(Ex.succeed(a))
+    traceFrom(trace, (cause) => succeed(Ex.halt(cause))),
+    traceFrom(trace, (a) => succeed(Ex.succeed(a)))
   )
 }
 
 /**
  * Extracts the optional value, or returns the given 'default'.
+ *
+ * @trace 1
  */
 export function someOrElse_<R, E, A, B>(ma: Managed<R, E, O.Option<A>>, onNone: () => B): Managed<R, E, A | B> {
-  return map_(ma, O.getOrElse(onNone))
+  return map_(
+    ma,
+    traceAs(onNone, (_) => O.getOrElse_(_, onNone))
+  )
 }
 
 /**
  * Extracts the optional value, or returns the given 'default'.
+ *
+ * @trace 0
  */
 export function someOrElse<B>(onNone: () => B): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E, A | B> {
   return (ma) => someOrElse_(ma, onNone)
@@ -1882,38 +2293,54 @@ export function someOrElse<B>(onNone: () => B): <R, E, A>(ma: Managed<R, E, O.Op
 
 /**
  * Extracts the optional value, or executes the effect 'default'.
+ *
+ * @trace call
  */
 export function someOrElseM_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, O.Option<A>>,
   onNone: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A | B> {
+  const trace = accessCallTrace()
   return bind_(
     ma,
-    O.match((): Managed<R1, E1, A | B> => onNone, succeed)
+    traceFrom(
+      trace,
+      O.match((): Managed<R1, E1, A | B> => onNone, succeed)
+    )
   )
 }
 
 /**
  * Extracts the optional value, or executes the effect 'default'.
+ *
+ * @trace call
  */
 export function someOrElseM<R1, E1, B>(
   onNone: Managed<R1, E1, B>
 ): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R & R1, E | E1, A | B> {
-  return (ma) => someOrElseM_(ma, onNone)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(someOrElseM_, trace)(ma, onNone)
 }
 
 /**
  * Extracts the optional value, or fails with the given error 'e'.
+ *
+ * @trace 1
  */
 export function someOrFailWith_<R, E, A, E1>(ma: Managed<R, E, O.Option<A>>, e: () => E1): Managed<R, E | E1, A> {
   return bind_(
     ma,
-    O.match(() => fail(e()), succeed)
+    traceAs(
+      e,
+      O.match(() => fail(e()), succeed)
+    )
   )
 }
 
 /**
  * Extracts the optional value, or fails with the given error 'e'.
+ *
+ * @trace 0
  */
 export function someOrFailWith<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E | E1, A> {
   return (ma) => someOrFailWith_(ma, e)
@@ -1921,64 +2348,93 @@ export function someOrFailWith<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, O.O
 
 /**
  * Extracts the optional value, or fails with a NoSuchElementError
+ *
+ * @trace call
  */
 export function someOrFail<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, E | NoSuchElementError, A> {
-  return someOrFailWith_(ma, () => new NoSuchElementError('Managed.someOrFail'))
+  const trace = accessCallTrace()
+  return someOrFailWith_(
+    ma,
+    traceFrom(trace, () => new NoSuchElementError('Managed.someOrFail'))
+  )
 }
 
 /**
  * Swaps the error and result
+ *
+ * @trace call
  */
 export function swap<R, E, A>(ma: Managed<R, E, A>): Managed<R, A, E> {
-  return matchM_(ma, succeed, fail)
+  const trace = accessCallTrace()
+  return matchM_(
+    ma,
+    traceFrom(trace, (e) => succeed(e)),
+    traceFrom(trace, (a) => fail(a))
+  )
 }
 
 /**
  * Swap the error and result, then apply an effectful function to the effect
+ *
+ * @trace call
  */
 export function swapWith_<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   f: (me: Managed<R, A, E>) => Managed<R1, B, E1>
 ): Managed<R1, E1, B> {
-  return swap(f(swap(ma)))
+  const trace = accessCallTrace()
+  return traceCall(swap, trace)(f(swap(ma)))
 }
 
 /**
  * Swap the error and result, then apply an effectful function to the effect
+ *
+ * @trace call
  */
 export function swapWith<R, E, A, R1, E1, B>(
   f: (me: Managed<R, A, E>) => Managed<R1, B, E1>
 ): (ma: Managed<R, E, A>) => Managed<R1, E1, B> {
-  return (ma) => swapWith_(ma, f)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(swapWith_, trace)(ma, f)
 }
 
 /**
  * Exposes the full cause of failure of this Managed.
+ *
+ * @trace call
  */
 export function sandbox<R, E, A>(ma: Managed<R, E, A>): Managed<R, Cause<E>, A> {
-  return new Managed(I.sandbox(ma.io))
+  const trace = accessCallTrace()
+  return new Managed(traceCall(I.sandbox, trace)(ma.io))
 }
 
 /**
  * Companion helper to `sandbox`. Allows recovery, and partial recovery, from
  * errors and defects alike.
+ *
+ * @trace call
  */
 export function sandboxWith<R, E, A, R1, E1, B>(
   ma: Managed<R, E, A>,
   f: (ma: Managed<R, Cause<E>, A>) => Managed<R1, Cause<E1>, B>
 ): Managed<R & R1, E | E1, B> {
-  return unsandbox(f(sandbox(ma)))
+  const trace = accessCallTrace()
+  return traceCall(unsandbox, trace)(f(sandbox(ma)))
 }
 
 /**
  * The moral equivalent of `if (!p) exp`
+ *
+ * @trace 1
  */
 export function unless_<R, E, A>(ma: Managed<R, E, A>, b: () => boolean): Managed<R, E, void> {
-  return defer(() => (b() ? unit() : asUnit(ma)))
+  return defer(traceAs(b, () => (b() ? unit() : asUnit(ma))))
 }
 
 /**
  * The moral equivalent of `if (!p) exp`
+ *
+ * @trace 0
  */
 export function unless(b: () => boolean): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> {
   return (ma) => unless_(ma, b)
@@ -1986,44 +2442,68 @@ export function unless(b: () => boolean): <R, E, A>(ma: Managed<R, E, A>) => Man
 
 /**
  * The moral equivalent of `if (!p) exp` when `p` has side-effects
+ *
+ * @trace call
  */
 export function unlessM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   mb: Managed<R1, E1, boolean>
 ): Managed<R & R1, E | E1, void> {
-  return bind_(mb, (b) => (b ? unit() : asUnit(ma)))
+  const trace = accessCallTrace()
+  return bind_(
+    mb,
+    traceFrom(trace, (b) => (b ? unit() : asUnit(ma)))
+  )
 }
 
 /**
  * The moral equivalent of `if (!p) exp` when `p` has side-effects
+ *
+ * @trace call
  */
 export function unlessM<R1, E1>(
   mb: Managed<R1, E1, boolean>
 ): <R, E, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1 | E, void> {
-  return (ma) => unlessM_(ma, mb)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(unlessM_, trace)(ma, mb)
 }
 
 /**
  * The inverse operation of `sandbox`
+ *
+ * @trace call
  */
-export const unsandbox: <R, E, A>(ma: Managed<R, Cause<E>, A>) => Managed<R, E, A> = mapErrorCause(C.flatten)
+export function unsandbox<R, E, A>(ma: Managed<R, Cause<E>, A>): Managed<R, E, A> {
+  const trace = accessCallTrace()
+  return mapErrorCause_(
+    ma,
+    traceFrom(trace, (c) => C.flatten(c))
+  )
+}
 
 /**
  * Unwraps a `Managed` that is inside an `IO`.
+ *
+ * @trace call
  */
 export function unwrap<R, E, R1, E1, A>(fa: I.IO<R, E, Managed<R1, E1, A>>): Managed<R & R1, E | E1, A> {
-  return flatten(fromEffect(fa))
+  const trace = accessCallTrace()
+  return traceCall(flatten, trace)(fromEffect(fa))
 }
 
 /**
  * The moral equivalent of `if (p) exp`
+ *
+ * @trace 1
  */
 export function when_<R, E, A>(ma: Managed<R, E, A>, b: () => boolean): Managed<R, E, void> {
-  return defer(() => (b() ? asUnit(ma) : unit()))
+  return defer(traceAs(b, () => (b() ? asUnit(ma) : unit())))
 }
 
 /**
  * The moral equivalent of `if (p) exp`
+ *
+ * @trace 0
  */
 export function when(b: () => boolean): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> {
   return (ma) => when_(ma, b)
@@ -2031,28 +2511,40 @@ export function when(b: () => boolean): <R, E, A>(ma: Managed<R, E, A>) => Manag
 
 /**
  * The moral equivalent of `if (p) exp` when `p` has side-effects
+ *
+ * @trace call
  */
 export function whenM_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   mb: Managed<R1, E1, boolean>
 ): Managed<R & R1, E | E1, void> {
-  return bind_(mb, (b) => (b ? asUnit(ma) : unit()))
+  const trace = accessCallTrace()
+  return bind_(
+    mb,
+    traceFrom(trace, (b) => (b ? asUnit(ma) : unit()))
+  )
 }
 
 /**
  * The moral equivalent of `if (p) exp` when `p` has side-effects
+ *
+ * @trace call
  */
 export function whenM<R1, E1>(
   mb: Managed<R1, E1, boolean>
 ): <R, E, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1 | E, void> {
-  return (ma) => whenM_(ma, mb)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(whenM_, trace)(ma, mb)
 }
 
 /**
  * Zips this Managed with its environment
+ *
+ * @trace call
  */
 export function zipEnv<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [A, R]> {
-  return cross_(ma, ask<R>())
+  const trace = accessCallTrace()
+  return traceCall(cross_, trace)(ma, ask<R>())
 }
 
 /*
@@ -2261,7 +2753,7 @@ export class GenManaged<R, E, A> {
   readonly _E!: () => E
   readonly _A!: () => A
 
-  constructor(readonly M: Managed<R, E, A>) {}
+  constructor(readonly M: Managed<R, E, A>, readonly _trace?: string) {}
 
   *[Symbol.iterator](): Generator<GenManaged<R, E, A>, A, any> {
     return yield this
@@ -2270,84 +2762,79 @@ export class GenManaged<R, E, A> {
 
 const adapter = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new GenManaged(asksService(_)(identityFn))
+    return new GenManaged(asksService(_)(identityFn), adapter['$trace'])
   }
   if (E.isEither(_)) {
-    return new GenManaged(fromEither(() => _))
+    return new GenManaged(
+      fromEither(() => _),
+      adapter['$trace']
+    )
   }
   if (O.isOption(_)) {
-    return new GenManaged(__ ? (_._tag === 'None' ? fail(__()) : succeed(_.value)) : fromEffect(I.getOrFail(() => _)))
+    return new GenManaged(
+      __ ? (_._tag === 'None' ? fail(__()) : succeed(_.value)) : fromEffect(I.getOrFail(() => _)),
+      adapter['$trace']
+    )
   }
   if (_ instanceof Managed) {
-    return new GenManaged(_)
+    return new GenManaged(_, adapter['$trace'])
   }
-  return new GenManaged(fromEffect(_))
+  return new GenManaged(fromEffect(_), adapter['$trace'])
 }
 
-export function gen<R0, E0, A0>(): <T extends GenManaged<R0, E0, any>>(
+/**
+ * @trace call
+ */
+export function gen<T extends GenManaged<any, any, any>, A>(
   f: (i: {
+    /**
+     * @trace call
+     */
     <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
+    /**
+     * @trace call
+     */
     <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
+    /**
+     * @trace call
+     */
     <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
+    /**
+     * @trace call
+     */
     <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
+    /**
+     * @trace call
+     */
     <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
+    /**
+     * @trace call
+     */
     <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
-  }) => Generator<T, A0, any>
-) => Managed<P._R<T>, P._E<T>, A0>
-export function gen<E0, A0>(): <T extends GenManaged<any, E0, any>>(
-  f: (i: {
-    <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
-    <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
-    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
-    <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
-    <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
-    <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
-  }) => Generator<T, A0, any>
-) => Managed<P._R<T>, P._E<T>, A0>
-export function gen<A0>(): <T extends GenManaged<any, any, any>>(
-  f: (i: {
-    <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
-    <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
-    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
-    <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
-    <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
-    <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
-  }) => Generator<T, A0, any>
-) => Managed<P._R<T>, P._E<T>, A0>
-export function gen<T extends GenManaged<any, any, any>, AEff>(
-  f: (i: {
-    <A>(_: Tag<A>): GenManaged<Has<A>, never, A>
-    <E, A>(_: O.Option<A>, onNone: () => E): GenManaged<unknown, E, A>
-    <A>(_: O.Option<A>): GenManaged<unknown, NoSuchElementError, A>
-    <E, A>(_: E.Either<E, A>): GenManaged<unknown, E, A>
-    <R, E, A>(_: Managed<R, E, A>): GenManaged<R, E, A>
-    <R, E, A>(_: I.IO<R, E, A>): GenManaged<R, E, A>
-  }) => Generator<T, AEff, any>
-): Managed<P._R<T>, P._E<T>, AEff>
-export function gen(...args: any[]): any {
-  function gen_<Eff extends GenManaged<any, any, any>, AEff>(
-    f: (i: any) => Generator<Eff, AEff, any>
-  ): Managed<P._R<Eff>, P._E<Eff>, AEff> {
-    return defer(() => {
+  }) => Generator<T, A, any>
+): Managed<P._R<T>, P._E<T>, A> {
+  const trace = accessCallTrace()
+  return defer(
+    traceFrom(trace, () => {
       const iterator = f(adapter as any)
       const state    = iterator.next()
 
-      function run(state: IteratorYieldResult<Eff> | IteratorReturnResult<AEff>): Managed<any, any, AEff> {
+      function run(state: IteratorYieldResult<T> | IteratorReturnResult<A>): Managed<any, any, A> {
         if (state.done) {
           return succeed(state.value)
         }
-        return bind_(state.value.M, (val) => {
+        const f = (val: any) => {
           const next = iterator.next(val)
           return run(next)
-        })
+        }
+        if (state.value._trace) {
+          // eslint-disable-next-line functional/immutable-data
+          f['$trace'] = state.value._trace
+        }
+        return bind_(state.value.M, f)
       }
 
       return run(state)
     })
-  }
-
-  if (args.length === 0) {
-    return (f: any) => gen_(f)
-  }
-  return gen_(args[0])
+  )
 }

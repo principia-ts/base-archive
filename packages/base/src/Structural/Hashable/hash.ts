@@ -42,11 +42,11 @@ export function hashNumber(n: number): number {
 }
 
 function _hashNumber(n: number): number {
-  let _n = n
-  if (_n !== n || _n === Infinity) return 0
-  let h = _n | 0
-  if (h !== _n) h ^= _n * 0xffffffff
-  while (n > 0xffffffff) h ^= _n /= 0xffffffff
+  if (n !== n || n === Infinity) return 0
+  let h = n | 0
+  if (h !== n) h ^= n * 0xffffffff
+  // eslint-disable-next-line no-param-reassign
+  while (n > 0xffffffff) h ^= n /= 0xffffffff
   return n
 }
 
@@ -81,8 +81,9 @@ function _hashPlainObject(o: any): number {
   const keys = Object.keys(o)
   let h      = 12289
   for (let i = 0; i < keys.length; i++) {
-    h = _combineHash(h, _hashString(keys[i]))
-    h = _combineHash(h, _hash((o as any)[keys[i]]))
+    h       = _combineHash(h, _hashString(keys[i]))
+    const c = CACHE.get(o[keys[i]])
+    h       = c ? _combineHash(h, c) : _combineHash(h, _hash((o as any)[keys[i]]))
   }
   return h
 }

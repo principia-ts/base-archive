@@ -1,5 +1,5 @@
+import type { TestReporter } from '../api'
 import type { ExecutedSpec } from '../ExecutedSpec'
-import type { TestReporter } from '../model'
 import type { FailureDetails } from './FailureDetails'
 import type { Fragment, Message } from './FailureMessage'
 import type { TestAnnotationRenderer } from './TestAnnotationRenderer'

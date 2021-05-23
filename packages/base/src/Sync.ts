@@ -1,3 +1,4 @@
+import type { Chunk } from './Chunk'
 import type { Has, Tag } from './Has'
 import type * as HKT from './HKT'
 import type { SyncURI } from './Modules'
@@ -670,22 +671,18 @@ export const iforeachArrayUnit: <A, R, E>(
   f: (i: number, a: A) => Sync<R, E, void>
 ) => (as: ReadonlyArray<A>) => Sync<R, E, void> = Z.iforeachArrayUnit
 
-export const iforeach_: <A, R, E, B>(
-  as: Iterable<A>,
-  f: (i: number, a: A) => Sync<R, E, B>
-) => Sync<R, E, ReadonlyArray<B>> = Z.iforeach_
+export const iforeach_: <A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> =
+  Z.iforeach_
 
 export const iforeach: <A, R, E, B>(
   f: (i: number, a: A) => Sync<R, E, B>
-) => (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> = Z.iforeach
+) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> = Z.iforeach
 
-export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, ReadonlyArray<B>> =
-  Z.foreach_
+export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> = Z.foreach_
 
-export const foreach: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, ReadonlyArray<B>> =
-  Z.foreach
+export const foreach: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> = Z.foreach
 
-export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E, ReadonlyArray<A>> {
+export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E, Chunk<A>> {
   return foreach_(as, identity)
 }
 

@@ -1,6 +1,6 @@
 import type { Annotations } from './Annotation'
+import type { TestReporter } from './api'
 import type { ExecutedSpec } from './ExecutedSpec'
-import type { TestReporter } from './model'
 import type { XSpec } from './Spec'
 import type { TestExecutor } from './TestExecutor'
 import type { Platform } from '@principia/base/Fiber'

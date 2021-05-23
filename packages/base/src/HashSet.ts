@@ -1,21 +1,24 @@
+import type { Equatable, Hashable } from './Structural'
+
 import * as HM from './HashMap'
 import * as It from './Iterable/core'
 import { not } from './Predicate'
 import * as P from './prelude'
-import * as St from './Structural'
+import * as Eq from './Structural/Equatable'
+import * as Ha from './Structural/Hashable'
 import { tuple } from './tuple'
 
-export class HashSet<V> implements Iterable<V>, St.Hashable, St.Equatable {
+export class HashSet<V> implements Iterable<V>, Hashable, Equatable {
   constructor(readonly keyMap: HM.HashMap<V, any>) {}
 
   [Symbol.iterator](): Iterator<V> {
     return HM.keys(this.keyMap)
   }
-  get [St.$hash](): number {
-    return St.hashIterator(this[Symbol.iterator]())
+  get [Ha.$hash](): number {
+    return Ha.hashIterator(this[Symbol.iterator]())
   }
-  [St.$equals](other: unknown): boolean {
-    return other instanceof HashSet && this.keyMap.size === other.keyMap.size && It.corresponds(this, other, St.equals)
+  [Eq.$equals](other: unknown): boolean {
+    return other instanceof HashSet && this.keyMap.size === other.keyMap.size && It.corresponds(this, other, Eq.equals)
   }
 }
 

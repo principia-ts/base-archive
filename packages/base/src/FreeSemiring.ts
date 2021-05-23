@@ -14,7 +14,8 @@ import * as L from './List/core'
 import { FreeSemiringURI } from './Modules'
 import * as P from './prelude'
 import { isObject } from './prelude'
-import * as St from './Structural'
+import * as Eq from './Structural/Equatable'
+import * as Ha from './Structural/Hashable'
 import { tuple } from './tuple'
 import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 
@@ -42,15 +43,15 @@ export class Single<A> {
 
   constructor(readonly value: A) {}
 
-  get [St.$hash](): number {
-    return St.hash(this.value)
+  get [Ha.$hash](): number {
+    return Ha.hash(this.value)
   }
-  [St.$equals](that: unknown): boolean {
+  [Eq.$equals](that: unknown): boolean {
     return isFreeSemiring(that) && this.equalsEval(that).value
   }
 
   equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
-    return Ev.now(that._tag === FreeSemiringTag.Single && St.equals(this.value, that.value))
+    return Ev.now(that._tag === FreeSemiringTag.Single && Eq.equals(this.value, that.value))
   }
 }
 
@@ -60,10 +61,10 @@ export class Then<Z, A> {
 
   constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
 
-  get [St.$hash](): number {
+  get [Ha.$hash](): number {
     return hashCode(this)
   }
-  [St.$equals](that: unknown): boolean {
+  [Eq.$equals](that: unknown): boolean {
     return isFreeSemiring(that) && this.equalsEval(that).value
   }
 
@@ -80,16 +81,16 @@ export class Then<Z, A> {
   }
 }
 
-const _emptyHash = St.opt(St.randomInt())
+const _emptyHash = Ha.opt(Ha.randomInt())
 
 export class Empty {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
   readonly _tag                                     = FreeSemiringTag.Empty
 
-  get [St.$hash](): number {
+  get [Ha.$hash](): number {
     return _emptyHash
   }
-  [St.$equals](that: unknown): boolean {
+  [Eq.$equals](that: unknown): boolean {
     return isFreeSemiring(that) && this.equalsEval(that).value
   }
 
@@ -104,10 +105,10 @@ export class Both<Z, A> {
 
   constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
 
-  get [St.$hash](): number {
+  get [Ha.$hash](): number {
     return hashCode(this)
   }
-  [St.$equals](that: unknown): boolean {
+  [Eq.$equals](that: unknown): boolean {
     return isFreeSemiring(that) && this.equalsEval(that).value
   }
 
@@ -919,8 +920,8 @@ function hashCode<A>(fa: FreeSemiring<any, A>): number {
   if (size === 0) {
     return _emptyHash
   } else if (size === 1 && (head = L.unsafeFirst(flattened)!) && HS.size(head) === 1) {
-    return L.unsafeFirst(L.from(head))![St.$hash]
+    return L.unsafeFirst(L.from(head))![Ha.$hash]
   } else {
-    return St.hashIterator(flattened[Symbol.iterator]())
+    return Ha.hashIterator(flattened[Symbol.iterator]())
   }
 }

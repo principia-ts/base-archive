@@ -43,7 +43,8 @@ const object = {
   g: chunk,
   h: aMap,
   i: Z.pure('A'),
-  j: [23, 24, 25, , , ,]
+  j: [23, 24, 25, , , ,],
+  k: buffer
 }
 
 // eslint-disable-next-line functional/immutable-data
@@ -54,55 +55,4 @@ smallCircularArray[3] = object
 
 console.log(S.show(object))
 
-class A_ {
-  a = 'A'
-  f() {
-    return this.a
-  }
-}
-
-// eslint-disable-next-line functional/immutable-data
-(A_.prototype as any).x = 'X'
-
-class B_ extends A_ {
-  b = 'B'
-  g() {
-    return this.b
-  }
-}
-
-class C_ extends B_ {
-  c = 'C'
-  h() {
-    return this.c
-  }
-}
-
-const protoTest = new C_()
-
-console.log(S.show(protoTest))
-
-const anUnreasonablyDeepObject = {
-  a: {
-    b: {
-      c: {
-        d: {
-          e: {
-            f: {
-              g: {
-                h: 'oh hi'
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  b0: {
-    c0: {
-      d0: 23
-    }
-  }
-}
-
-console.log(S.show(anUnreasonablyDeepObject))
+console.log(inspect(object))

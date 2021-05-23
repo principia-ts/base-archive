@@ -10,7 +10,8 @@ import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as It from './Iterable/core'
 import * as O from './Option'
-import * as St from './Structural'
+import * as Equ from './Structural/Equatable'
+import * as Ha from './Structural/Hashable'
 import { tuple } from './tuple'
 
 type Eq<A> = Eq.Eq<A>
@@ -33,12 +34,12 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]>, Hashable, Equat
     return new HashMapIterator(this, identity)
   }
 
-  get [St.$hash](): number {
-    return St.hashIterator(new HashMapIterator(this, ([k, v]) => St._combineHash(St.hash(k), St.hash(v))))
+  get [Ha.$hash](): number {
+    return Ha.hashIterator(new HashMapIterator(this, ([k, v]) => Ha._combineHash(Ha.hash(k), Ha.hash(v))))
   }
 
-  [St.$equals](other: unknown): boolean {
-    return other instanceof HashMap && other.size === this.size && It.corresponds(this, other, St.equals)
+  [Equ.$equals](other: unknown): boolean {
+    return other instanceof HashMap && other.size === this.size && It.corresponds(this, other, Equ.equals)
   }
 }
 
@@ -439,8 +440,8 @@ export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
  */
 export function makeDefault<K, V>() {
   return make<K, V>({
-    ...St.DefaultEq,
-    ...St.DefaultHash
+    ...Equ.DefaultEq,
+    ...Ha.DefaultHash
   })
 }
 

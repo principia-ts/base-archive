@@ -5,7 +5,7 @@ import type { StyleFunction } from './styles'
 
 import * as A from '../../Array/core'
 import { CaseClass } from '../../Case'
-import * as C from '../../Chunk'
+import * as C from '../../Chunk/core'
 import { pipe } from '../../function'
 import * as HM from '../../HashMap'
 import * as It from '../../Iterable'
@@ -255,7 +255,15 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
 
   if (value[Symbol.iterator] || constructor === null) {
     noIterator = false
-    if (isArray(value)) {
+    if (C.isChunk(value)) {
+      braces = [`Chunk (${value.length}) [`, ']']
+      if (value.length == 0) {
+        return inspectionEarlyReturn(`${braces[0]}]`)
+      }
+      protoProps = C.empty()
+      extrasType = ARRAY_EXTRAS_TYPE
+      formatter  = showChunk
+    } else if (isArray(value)) {
       const prefix = getPrefix(constructor, tag, 'Array', `(${value.length})`)
       braces       = [`${prefix}[`, ']']
       if (value.length === 0) {
@@ -347,6 +355,8 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
       return inspectionEarlyReturn(`${getPrefix(constructor, tag, 'WeakSet')}{}`)
     } else if (isWeakMap(value)) {
       return inspectionEarlyReturn(`${getPrefix(constructor, tag, 'WeakMap')}{}`)
+    } else if (Z.isZ(value)) {
+      return constructor !== null ? inspectionEarlyReturn(`Z (${constructor}) {}`) : inspectionEarlyReturn('Z {}')
     } else {
       if (keys.length === 0) {
         return inspectionEarlyReturn(`${getPrefix(constructor, tag, 'Object')}{}`)
@@ -593,7 +603,8 @@ function showTypedArray(value: TypedArray): ShowComputationChunk {
                 Z.map((shownKeys) => output['++'](shownKeys))
               )
             )
-          )
+          ),
+          Z.apl(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
         )
       } else {
         return Z.pure(output)
@@ -703,6 +714,24 @@ function showArray(value: ReadonlyArray<unknown>): ShowComputationChunk {
   )
 }
 
+function showChunk(value: Chunk<unknown>): ShowComputationChunk {
+  return pipe(
+    Z.gets((context: ShowContext) => {
+      const valLen    = value.length
+      const len       = Math.min(Math.max(0, context.maxArrayLength), valLen)
+      const remaining = valLen - len
+      let chunk       = C.take_(value, len)
+      return tuple(remaining, chunk)
+    }),
+    Z.bind(([remaining, chunk]) =>
+      pipe(
+        C.traverse_(Z.Applicative)(chunk, _show),
+        Z.map((chunk) => (remaining > 0 ? chunk[':+'](`... ${remaining} more item${pluralize(remaining)}`) : chunk))
+      )
+    )
+  )
+}
+
 export function showProperty(
   value: object,
   key: PropertyKey,
@@ -771,7 +800,7 @@ export function showProperty(
  * Groups the formatted elements of an array-like structure into chunks limited by the
  * maximum character width set in the context
  */
-function groupElements(context: ShowContext, input: Chunk<string>, value?: Array<unknown>): Chunk<string> {
+function groupElements(context: ShowContext, input: Chunk<string>, value?: unknown): Chunk<string> {
   let totalLength      = 0
   let maxLength        = 0
   let i                = 0
@@ -827,7 +856,7 @@ function groupElements(context: ShowContext, input: Chunk<string>, value?: Array
     }
 
     let order = String.prototype.padStart
-    if (value !== undefined) {
+    if (value !== undefined && isArray(value)) {
       for (let i = 0; i < output.length; i++) {
         if (typeof value[i] !== 'number' && typeof value[i] !== 'bigint') {
           order = String.prototype.padEnd

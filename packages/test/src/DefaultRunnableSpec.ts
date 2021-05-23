@@ -1,6 +1,6 @@
 import type { TestEnvironment } from './environment/TestEnvironment'
 
-import { defaultTestRunner } from './model'
+import { defaultTestRunner } from './api'
 import { RunnableSpec } from './RunnableSpec'
 import { timeoutWarning } from './TestAspect'
 

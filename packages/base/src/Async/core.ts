@@ -1,5 +1,6 @@
 import type { Has, Tag } from '../Has'
 import type * as HKT from '../HKT'
+import type { AsyncURI } from '../Modules'
 import type { Option } from '../Option'
 import type { Stack } from '../util/support/Stack'
 
@@ -8,7 +9,6 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import { genF, GenHKT } from '../Gen'
 import { isTag, mergeEnvironments } from '../Has'
-import { AsyncURI } from '../Modules'
 import { isOption } from '../Option'
 import * as P from '../prelude'
 import * as R from '../Record'
@@ -21,22 +21,18 @@ import * as Ex from './AsyncExit'
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _AI = '_AI'
-export type _AI = typeof _AI
+export const AsyncTypeId = Symbol('@principia/base/Async')
+export type AsyncTypeId = typeof AsyncTypeId
 
 /**
  * `Async` is a lightweight `IO` datatype for interruptible asynchronous computation.
  * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fibers`.
  */
 export abstract class Async<R, E, A> {
-  readonly _U = AsyncURI
+  readonly [AsyncTypeId]: AsyncTypeId = AsyncTypeId
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
-
-  get [_AI](): AsyncInstruction {
-    return this as any
-  }
 }
 
 export const AsyncTag = {
@@ -64,7 +60,7 @@ export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
 type URI = [HKT.URI<AsyncURI>]
 
-export type AsyncInstruction =
+export type Concrete =
   | Succeed<any>
   | Defer<any, any, any>
   | LiftPromise<any, any>
@@ -79,6 +75,13 @@ export type AsyncInstruction =
   | Total<any>
   | Partial<any, any>
   | Interrupt
+
+/**
+ * @optimize identity
+ */
+function asConcrete(_: Async<any, any, any>): Concrete {
+  return _ as Concrete
+}
 
 export class Succeed<A> extends Async<unknown, never, A> {
   readonly _asyncTag = AsyncTag.Succeed
@@ -809,29 +812,31 @@ export function runPromiseExitEnv_<R, E, A>(
     let instructionCount                          = 0
     let interrupted                               = false
 
-    const isInterrupted = () => interrupted || interruptionState.interrupted
+    function isInterrupted() {
+      return interrupted || interruptionState.interrupted
+    }
 
-    const popContinuation = (): Frame | undefined => {
+    function popContinuation(): Frame | undefined {
       const current = frames?.value
       frames        = frames?.previous
       return current
     }
 
-    const pushContinuation = (continuation: Frame): void => {
+    function pushContinuation(continuation: Frame): void {
       frames = makeStack(continuation, frames)
     }
 
-    const popEnv = () => {
+    function popEnv() {
       const current = env?.value
       env           = env?.previous
       return current
     }
 
-    const pushEnv = (k: any) => {
+    function pushEnv(k: any) {
       env = makeStack(k, env)
     }
 
-    const unwindStack = () => {
+    function unwindStack() {
       let unwinding = true
       while (unwinding) {
         const next = popContinuation()
@@ -853,12 +858,13 @@ export function runPromiseExitEnv_<R, E, A>(
         })
         instructionCount = 0
       }
-      instructionCount         += 1
-      const I: AsyncInstruction = current[_AI]
+      instructionCount += 1
+
+      const I = asConcrete(current)
       switch (I._asyncTag) {
         case AsyncTag.Chain: {
-          const nested: AsyncInstruction                       = I.async[_AI]
-          const continuation: (a: any) => Async<any, any, any> = I.f
+          const nested: Concrete = asConcrete(I.async)
+          const continuation     = I.f
           switch (nested._asyncTag) {
             case AsyncTag.Succeed: {
               current = continuation(nested.value)
