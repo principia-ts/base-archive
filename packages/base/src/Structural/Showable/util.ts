@@ -1,6 +1,5 @@
 import type { Chunk } from '../../Chunk'
 
-// eslint-disable-next-line import/no-cycle
 import * as C from '../../Chunk/core'
 import * as str from '../../string'
 import { isFunction } from '../../util/predicates'

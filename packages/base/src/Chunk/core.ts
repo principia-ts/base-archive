@@ -1022,12 +1022,27 @@ export function head<A>(chunk: Chunk<A>): O.Option<A> {
   return O.Some(chunk.get(0))
 }
 
+export function tail<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
+  concrete(chunk)
+  if (isEmpty(chunk)) {
+    return O.None()
+  }
+  return O.Some(drop_(chunk, 1))
+}
+
 export function last<A>(chunk: Chunk<A>): O.Option<A> {
   concrete(chunk)
   if (isEmpty(chunk)) {
     return O.None()
   }
   return O.Some(chunk.get(chunk.length - 1))
+}
+
+export function init<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
+  if (isEmpty(chunk)) {
+    return O.None()
+  }
+  return O.Some(take_(chunk, chunk.length - 1))
 }
 
 /*

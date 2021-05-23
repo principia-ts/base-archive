@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Cause } from '../Cause'
 import type { Chunk } from '../Chunk/core'
 import type { Exit } from '../Exit'
@@ -8,7 +10,6 @@ import type { ReadonlyRecord } from '../Record'
 import type { Finalizer, ReleaseMap } from './ReleaseMap'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { stat } from 'fs'
 
 import * as A from '../Array/core'
 import * as C from '../Cause/core'

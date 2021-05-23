@@ -95,7 +95,7 @@ export function render<E>(
 
           const rest = pipe(
             specs,
-            Sy.foreach((es) => loop(Sy.succeed(es), depth + tabSize, A.prepend_(ancestors, annotations))),
+            Sy.foreachArray((es) => loop(Sy.succeed(es), depth + tabSize, A.prepend_(ancestors, annotations))),
             Sy.map((rr) => A.flatten(rr))
           )
 

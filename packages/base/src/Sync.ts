@@ -662,15 +662,6 @@ export const iforeachUnit: <A, R, E>(
   f: (i: number, a: A) => Sync<R, E, void>
 ) => (as: Iterable<A>) => Sync<R, E, void> = Z.iforeachUnit
 
-export const iforeachArrayUnit_: <A, R, E>(
-  as: ReadonlyArray<A>,
-  f: (i: number, a: A) => Sync<R, E, void>
-) => Sync<R, E, void> = Z.iforeachArrayUnit_
-
-export const iforeachArrayUnit: <A, R, E>(
-  f: (i: number, a: A) => Sync<R, E, void>
-) => (as: ReadonlyArray<A>) => Sync<R, E, void> = Z.iforeachArrayUnit
-
 export const iforeach_: <A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> =
   Z.iforeach_
 
@@ -682,8 +673,39 @@ export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>)
 
 export const foreach: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> = Z.foreach
 
-export function collectAll<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E, Chunk<A>> {
+export const iforeachArrayUnit_: <A, R, E>(
+  as: ReadonlyArray<A>,
+  f: (i: number, a: A) => Sync<R, E, void>
+) => Sync<R, E, void> = Z.iforeachArrayUnit_
+
+export const iforeachArrayUnit: <A, R, E>(
+  f: (i: number, a: A) => Sync<R, E, void>
+) => (as: ReadonlyArray<A>) => Sync<R, E, void> = Z.iforeachArrayUnit
+
+export const iforeachArray_: <A, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (i: number, a: A) => Sync<R, E, B>
+) => Sync<R, E, ReadonlyArray<B>> = Z.iforeachArray_
+
+export const iforeachArray: <A, R, E, B>(
+  f: (i: number, a: A) => Sync<R, E, B>
+) => (as: ReadonlyArray<A>) => Sync<R, E, ReadonlyArray<B>> = Z.iforeachArray
+
+export const foreachArray_: <A, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A) => Sync<R, E, B>
+) => Sync<R, E, ReadonlyArray<B>> = Z.foreachArray_
+
+export const foreachArray: <A, R, E, B>(
+  f: (a: A) => Sync<R, E, B>
+) => (as: ReadonlyArray<A>) => Sync<R, E, ReadonlyArray<B>> = Z.foreachArray
+
+export function collectAll<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, Chunk<A>> {
   return foreach_(as, identity)
+}
+
+export function collectAllArray<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E, ReadonlyArray<A>> {
+  return foreachArray_(as, identity)
 }
 
 /*

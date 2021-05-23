@@ -1307,6 +1307,19 @@ export function iforeachArray<A, W, S, R, E, B>(
   return (as) => iforeachArray_(as, f)
 }
 
+export function foreachArray_<A, W, S, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a:A) => Z<W, S, S, R, E, B>
+): Z<W, S, S, R, E, ReadonlyArray<B>> {
+  return iforeachArray_(as, (_, a) => f(a))
+}
+
+export function foreachArray<A, W, S, R, E, B>(
+  f: (a: A) => Z<W, S, S, R, E, B>
+): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
+  return (as) => foreachArray_(as, f)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Runtime
