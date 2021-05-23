@@ -7,6 +7,7 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as F from '@principia/base/function'
+import * as L from '@principia/base/List'
 import { matchTag } from '@principia/base/util/match'
 
 import * as ExSpec from './ExecutedSpec'
@@ -36,9 +37,10 @@ export function buildSummary<E>(executedSpec: ExecutedSpec<E>): Summary {
   const failures = extractFailures(executedSpec)
   const rendered = pipe(
     failures,
-    A.bind((spec) => render(spec, silent)),
-    A.bind((_) => _.rendered),
-    A.join('\n')
+    L.from,
+    L.bind((spec) => render(spec, silent)),
+    L.bind((_) => _.rendered),
+    L.join('\n')
   )
   return new Summary(success, fail, ignore, rendered)
 }

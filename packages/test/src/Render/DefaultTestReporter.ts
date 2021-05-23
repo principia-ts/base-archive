@@ -10,6 +10,7 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { absurd, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
+import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
 import * as Sy from '@principia/base/Sync'
 import { cyan, green, red, RESET } from '@principia/base/util/AnsiFormat'
@@ -23,10 +24,9 @@ import * as FM from './FailureMessage'
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {
-    const rendered = A.bind_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
+    const rendered = L.bind_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
     const stats    = logStats(duration, executedSpec)
-
-    return I.asksServiceM(TestLoggerTag)((l) => l.logLine(A.append(stats)(rendered).join('\n')))
+    return I.asksServiceM(TestLoggerTag)((l) => l.logLine(pipe(rendered, L.append(stats), L.join('\n'))))
   }
 }
 
@@ -61,12 +61,12 @@ export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): st
 export function render<E>(
   executedSpec: ExecutedSpec<E>,
   testAnnotationRenderer: TestAnnotationRenderer
-): ReadonlyArray<RenderedResult<string>> {
+): L.List<RenderedResult<string>> {
   const loop = (
     executedSpec: USync<ExecutedSpec<E>>,
     depth: number,
-    ancestors: ReadonlyArray<TestAnnotationMap>
-  ): USync<ReadonlyArray<RenderedResult<string>>> =>
+    ancestors: L.List<TestAnnotationMap>
+  ): USync<L.List<RenderedResult<string>>> =>
     Sy.bind_(executedSpec, (executedSpec) =>
       matchTag_(executedSpec, {
         Suite: ({ label, specs }) => {
@@ -86,23 +86,22 @@ export function render<E>(
           )
           const status: Status = hasFailures ? Failed : Passed
           const renderedLabel  = A.isEmpty(specs)
-            ? []
+            ? L.empty()
             : hasFailures
-            ? [renderFailureLabel(label, depth)]
-            : [renderSuccessLabel(label, depth)]
+            ? L.of(renderFailureLabel(label, depth))
+            : L.of(renderSuccessLabel(label, depth))
 
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
 
           const rest = pipe(
             specs,
-            Sy.foreachArray((es) => loop(Sy.succeed(es), depth + tabSize, A.prepend_(ancestors, annotations))),
-            Sy.map((rr) => A.flatten(rr))
+            Sy.foreachList((es) => loop(Sy.succeed(es), depth + tabSize, L.prepend_(ancestors, annotations))),
+            Sy.map((rr) => L.flatten(rr))
           )
 
-          return Sy.map_(rest, (rest) => [
-            rendered(Suite, label, status, depth, [...renderedLabel]).withAnnotations(renderedAnnotations),
-            ...rest
-          ])
+          return Sy.map_(rest, (rest) =>
+            L.prepend_(rest, rendered(Suite, label, status, depth, renderedLabel).withAnnotations(renderedAnnotations))
+          )
         },
         Test: ({ label, test, annotations }) => {
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
@@ -122,22 +121,28 @@ export function render<E>(
                 ),
               RuntimeFailure: ({ cause }) =>
                 Sy.succeed(
-                  rendered(Test, label, Failed, depth, [renderFailureLabel(label, depth), renderCause(cause, depth)])
+                  rendered(
+                    Test,
+                    label,
+                    Failed,
+                    depth,
+                    L.list(renderFailureLabel(label, depth), renderCause(cause, depth))
+                  )
                 )
             }),
             matchTag({
               Succeeded: () =>
-                Sy.succeed(rendered(Test, label, Passed, depth, [withOffset(depth)(`${green('+')} ${label}`)])),
-              Ignored: () => Sy.succeed(rendered(Test, label, Ignored, depth, []))
+                Sy.succeed(rendered(Test, label, Passed, depth, L.of(withOffset(depth)(`${green('+')} ${label}`)))),
+              Ignored: () => Sy.succeed(rendered(Test, label, Ignored, depth, L.empty()))
             })
           )
 
-          return Sy.map_(renderedResult, (r) => [r.withAnnotations(renderedAnnotations)])
+          return Sy.map_(renderedResult, (r) => L.of(r.withAnnotations(renderedAnnotations)))
         }
       })
     )
 
-  return Sy.run(loop(Sy.succeed(executedSpec), 0, A.empty()))
+  return Sy.run(loop(Sy.succeed(executedSpec), 0, L.empty()))
 }
 
 function rendered(
@@ -145,13 +150,13 @@ function rendered(
   label: string,
   status: Status,
   offset: number,
-  rendered: ReadonlyArray<string>
+  rendered: L.List<string>
 ): RenderedResult<string> {
   return new RenderedResult(caseType, label, status, offset, rendered)
 }
 
-function renderFailure(label: string, offset: number, details: FailureDetails): ReadonlyArray<string> {
-  return A.prepend_(renderFailureDetails(details, offset), renderFailureLabel(label, offset))
+function renderFailure(label: string, offset: number, details: FailureDetails): L.List<string> {
+  return L.prepend_(renderFailureDetails(details, offset), renderFailureLabel(label, offset))
 }
 
 function renderSuccessLabel(label: string, offset: number): string {
@@ -162,22 +167,22 @@ function renderFailureLabel(label: string, offset: number): string {
   return withOffset(offset)(red(`- ${label}`))
 }
 
-function renderFailureDetails(failureDetails: FailureDetails, offset: number): ReadonlyArray<string> {
+function renderFailureDetails(failureDetails: FailureDetails, offset: number): L.List<string> {
   return renderToStringLines(FM.renderFailureDetails(failureDetails, offset))
 }
 
 function renderCause(cause: Cause<any>, offset: number): string {
-  return renderToStringLines(FM.renderCause(cause, offset)).join('\n')
+  return L.join_(renderToStringLines(FM.renderCause(cause, offset)), '\n')
 }
 
 function withOffset(n: number): (s: string) => string {
   return (s) => ' '.repeat(n) + s
 }
 
-function renderToStringLines(message: Message): ReadonlyArray<string> {
+function renderToStringLines(message: Message): L.List<string> {
   const renderFragment = (f: Fragment) => (f.colorCode !== '' ? f.colorCode + f.text + RESET : f.text)
-  return A.map_(message.lines, (line) =>
-    withOffset(line.offset)(A.foldl_(line.fragments, '', (str, f) => str + renderFragment(f)))
+  return L.map_(message.lines, (line) =>
+    withOffset(line.offset)(L.foldl_(line.fragments, '', (str, f) => str + renderFragment(f)))
   )
 }
 
@@ -189,7 +194,7 @@ class RenderedResult<T> {
     readonly label: string,
     readonly status: Status,
     readonly offset: number,
-    readonly rendered: ReadonlyArray<T>
+    readonly rendered: L.List<T>
   ) {}
 
   ['&&'](that: RenderedResult<T>): RenderedResult<T> {
@@ -206,10 +211,7 @@ class RenderedResult<T> {
           this.label,
           this.status,
           this.offset,
-          A.concat_(
-            this.rendered,
-            O.getOrElse_(A.tail(that.rendered), () => [])
-          )
+          L.concat_(this.rendered, L.tail(that.rendered))
         )
       : selfTag === 'Passed'
       ? that
@@ -232,10 +234,7 @@ class RenderedResult<T> {
           this.label,
           this.status,
           this.offset,
-          A.concat_(
-            this.rendered,
-            O.getOrElse_(A.tail(that.rendered), () => [])
-          )
+          L.concat_(this.rendered, L.tail(that.rendered))
         )
       : selfTag === 'Passed'
       ? this
@@ -252,14 +251,14 @@ class RenderedResult<T> {
     })
   }
 
-  withAnnotations(this: RenderedResult<string>, annotations: ReadonlyArray<string>): RenderedResult<string> {
-    if (A.isEmpty(this.rendered) || A.isEmpty(annotations)) {
+  withAnnotations(this: RenderedResult<string>, annotations: L.List<string>): RenderedResult<string> {
+    if (L.isEmpty(this.rendered) || L.isEmpty(annotations)) {
       return this
     } else {
-      const renderedAnnotations     = ` - ${annotations.join(', ')}`
-      const head                    = O.match_(A.head(this.rendered), () => '', identity)
-      const tail                    = O.match_(A.tail(this.rendered), () => [], identity)
-      const renderedWithAnnotations = A.prepend_(tail, head + renderedAnnotations)
+      const renderedAnnotations     = ` - ${L.join_(annotations, ', ')}`
+      const head                    = O.match_(L.first(this.rendered), () => '', identity)
+      const tail                    = L.tail(this.rendered)
+      const renderedWithAnnotations = L.prepend_(tail, head + renderedAnnotations)
       return new RenderedResult(this.caseType, this.label, this.status, this.offset, renderedWithAnnotations)
     }
   }

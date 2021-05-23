@@ -2,6 +2,7 @@ import type { Option } from '@principia/base/Option'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
+import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
 import * as Str from '@principia/base/string'
 
@@ -9,13 +10,13 @@ import * as TA from '../Annotation'
 
 export class LeafRenderer<V> {
   readonly _tag = 'LeafRenderer'
-  constructor(readonly annotation: TA.TestAnnotation<V>, readonly render: (_: ReadonlyArray<V>) => Option<string>) {}
+  constructor(readonly annotation: TA.TestAnnotation<V>, readonly render: (_: L.List<V>) => Option<string>) {}
 
-  run(ancestors: ReadonlyArray<TA.TestAnnotationMap>, child: TA.TestAnnotationMap) {
+  run(ancestors: L.List<TA.TestAnnotationMap>, child: TA.TestAnnotationMap) {
     return O.match_(
-      this.render(A.prepend(child.get(this.annotation))(A.map_(ancestors, (m) => m.get(this.annotation)))),
-      () => [],
-      (s) => [s]
+      this.render(L.prepend(child.get(this.annotation))(L.map_(ancestors, (m) => m.get(this.annotation)))),
+      () => L.empty<string>(),
+      L.of
     )
   }
 }
@@ -24,8 +25,8 @@ export class CompositeRenderer {
   readonly _tag = 'CompositeRenderer'
   constructor(readonly renderers: ReadonlyArray<TestAnnotationRenderer>) {}
 
-  run(ancestors: ReadonlyArray<TA.TestAnnotationMap>, child: TA.TestAnnotationMap): ReadonlyArray<string> {
-    return A.bind_(this.renderers, (r) => r.run(ancestors, child))
+  run(ancestors: L.List<TA.TestAnnotationMap>, child: TA.TestAnnotationMap): L.List<string> {
+    return L.bind_(L.from(this.renderers), (r) => r.run(ancestors, child))
   }
 }
 
@@ -64,7 +65,7 @@ export const timed: TestAnnotationRenderer = new LeafRenderer(TA.timing, ([child
 export const silent: TestAnnotationRenderer = {
   _tag: 'CompositeRenderer',
   renderers: [],
-  run: (ancestors, child) => A.empty()
+  run: (ancestors, child) => L.empty()
 }
 
 export const defaultTestAnnotationRenderer: TestAnnotationRenderer = new CompositeRenderer([
