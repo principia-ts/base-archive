@@ -14,6 +14,7 @@ import * as C from './Chunk/core'
 import * as E from './Either'
 import * as FS from './FreeSemiring'
 import * as I from './Iterable/core'
+import * as L from './List/core'
 import * as O from './Option'
 import { flow, isObject } from './prelude'
 import * as P from './prelude'
@@ -1309,7 +1310,7 @@ export function iforeachArray<A, W, S, R, E, B>(
 
 export function foreachArray_<A, W, S, R, E, B>(
   as: ReadonlyArray<A>,
-  f: (a:A) => Z<W, S, S, R, E, B>
+  f: (a: A) => Z<W, S, S, R, E, B>
 ): Z<W, S, S, R, E, ReadonlyArray<B>> {
   return iforeachArray_(as, (_, a) => f(a))
 }
@@ -1318,6 +1319,41 @@ export function foreachArray<A, W, S, R, E, B>(
   f: (a: A) => Z<W, S, S, R, E, B>
 ): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
   return (as) => foreachArray_(as, f)
+}
+
+export function iforeachList_<A, W, S, R, E, B>(
+  as: Iterable<A>,
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+): Z<W, S, S, R, E, L.List<B>> {
+  return I.ifoldl_(as, succeed(L.emptyPushable()) as Z<W, S, S, R, E, L.MutableList<B>>, (b, i, a) =>
+    crossWith_(
+      b,
+      deferTotal(() => f(i, a)),
+      (acc, a) => {
+        L.push(a, acc)
+        return acc
+      }
+    )
+  )
+}
+
+export function iforeachList<A, W, S, R, E, B>(
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
+  return (as) => iforeachList_(as, f)
+}
+
+export function foreachList_<A, W, S, R, E, B>(
+  as: Iterable<A>,
+  f: (a: A) => Z<W, S, S, R, E, B>
+): Z<W, S, S, R, E, L.List<B>> {
+  return iforeachList_(as, (_, a) => f(a))
+}
+
+export function foreachList<A, W, S, R, E, B>(
+  f: (a: A) => Z<W, S, S, R, E, B>
+): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
+  return (as) => foreachList_(as, f)
 }
 
 /*

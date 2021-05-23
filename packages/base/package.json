@@ -46,6 +46,14 @@
       "import": "./dist/dist/esm/Chunk/index.js",
       "require": "./dist/dist/cjs/Chunk/index.js"
     },
+    "./Eval": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Eval/index.js",
+        "require": "./dist/dist-traced/cjs/Eval/index.js"
+      },
+      "import": "./dist/dist/esm/Eval/index.js",
+      "require": "./dist/dist/cjs/Eval/index.js"
+    },
     "./Exit": {
       "traced": {
         "import": "./dist/dist-traced/esm/Exit/index.js",
@@ -173,6 +181,14 @@
       },
       "import": "./dist/dist/esm/Managed/index.js",
       "require": "./dist/dist/cjs/Managed/index.js"
+    },
+    "./NonEmptyArray": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/NonEmptyArray/index.js",
+        "require": "./dist/dist-traced/cjs/NonEmptyArray/index.js"
+      },
+      "import": "./dist/dist/esm/NonEmptyArray/index.js",
+      "require": "./dist/dist/cjs/NonEmptyArray/index.js"
     },
     "./prelude": {
       "traced": {

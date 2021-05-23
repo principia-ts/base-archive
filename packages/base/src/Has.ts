@@ -1,3 +1,5 @@
+// tracing: off
+
 /**
  * Originally ported from https://github.com/zio/zio/blob/master/core/shared/src/main/scala/zio/Has.scala
  * by Michael Arnaldi and the Matechs Garage Contributors
@@ -10,6 +12,7 @@
 import type { Option } from './internal/Option'
 
 import { fromNullable, None } from './internal/Option'
+import { isObject } from './prelude'
 
 /**
  * URI used in Has
@@ -26,21 +29,6 @@ export interface Has<T> {
 }
 
 /**
- * URI used in Region
- */
-export const RegionURI: unique symbol = Symbol()
-
-/**
- * Branding sub-environments
- */
-export interface Region<K, T> {
-  [RegionURI]: {
-    _K: () => K
-    _T: () => T
-  }
-}
-
-/**
  * Extract the type of a class constructor
  */
 export type ConstructorType<K extends Constructor<any>> = K extends {
@@ -51,21 +39,23 @@ export type ConstructorType<K extends Constructor<any>> = K extends {
 
 export type Constructor<T> = Function & { prototype: T }
 
+export const TagTypeId = Symbol('@principia/base/Has/Tag')
+export type TagTypeId = typeof TagTypeId
+
 /**
  * Tag Encodes capabilities of reading and writing a service T into a generic environment
  */
-export interface Tag<T> {
-  _tag: 'Tag'
-  _T: T
-  key: PropertyKey
-  def: boolean
-  overridable: () => Tag<T>
-  fixed: () => Tag<T>
-  refine: <T1 extends T>() => Tag<T1>
-  read: (r: Has<T>) => T
-  readOption: (r: unknown) => Option<T>
-  setKey: (s: PropertyKey) => Tag<T>
-  of: (_: T) => Has<T>
+export class Tag<T> {
+  readonly [TagTypeId]: TagTypeId = TagTypeId
+  readonly _T!: T
+  constructor(readonly def: boolean = false, readonly key: PropertyKey = Symbol()) {}
+  readonly overridable = (): Tag<T> => new Tag(true, this.key)
+  readonly fixed       = (): Tag<T> => new Tag(false, this.key)
+  readonly refine      = <T1 extends T>(): Tag<T1> => new Tag(this.def, this.key)
+  readonly read        = (r: Has<T>): T => r[this.key]
+  readonly readOption  = (r: unknown): Option<T> => (isObject(r) ? fromNullable(r[this.key]) : None())
+  readonly setKey      = (s: PropertyKey): Tag<T> => new Tag(this.def, s)
+  readonly of          = (_: T): Has<T> => ({ [this.key]: _ } as any)
 }
 
 /**
@@ -74,19 +64,7 @@ export interface Tag<T> {
 export type HasTag<T> = [T] extends [Tag<infer A>] ? Has<A> : never
 
 function makeTag<T>(def = false, key: PropertyKey = Symbol()): Tag<T> {
-  return {
-    _tag: 'Tag',
-    _T: undefined as any,
-    key,
-    def,
-    of: (t) => ({ [key]: t } as any),
-    overridable: () => makeTag(true, key),
-    fixed: () => makeTag(false, key),
-    refine: () => makeTag(def, key),
-    read: (r: Has<T>) => r[key],
-    readOption: (r) => (typeof r === 'object' && r !== null ? fromNullable(r[key]) : None()),
-    setKey: (s: PropertyKey) => makeTag(def, s)
-  }
+  return new Tag(def, key)
 }
 
 /**
@@ -128,10 +106,7 @@ export function replaceServiceIn_<R, T>(r: R & Has<T>, _: Tag<T>, f: (t: T) => T
  * environments will override pre-existing. Useful to provide defaults.
  */
 export function overridable<T>(h: Tag<T>): Tag<T> {
-  return {
-    ...h,
-    def: true
-  }
+  return h.overridable()
 }
 
 export function mergeEnvironments<T, R1>(_: Tag<T>, r: R1, t: T): R1 & Has<T> {
@@ -156,5 +131,6 @@ export class DerivationContext {
   }
 }
 
-export const isTag = (u: unknown): u is Tag<unknown> =>
-  typeof u === 'object' && u != null && '_tag' in u && u['_tag'] === 'Tag'
+export function isTag(u: unknown): u is Tag<unknown> {
+  return typeof u === 'object' && u != null && '_tag' in u && u['_tag'] === 'Tag'
+}

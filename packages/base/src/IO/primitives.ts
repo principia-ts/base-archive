@@ -1,6 +1,7 @@
 // tracing: off
 
 import type { Cause } from '../Cause/core'
+import type { Either } from '../Either'
 import type { Exit } from '../Exit'
 import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
 import type { FiberId } from '../Fiber/FiberId'
@@ -32,19 +33,20 @@ export const IOTag = {
   EffectPartial: 'EffectPartial',
   EffectTotal: 'EffectTotal',
   Async: 'Async',
-  Fold: 'Fold',
+  Match: 'Match',
   Fork: 'Fork',
   Fail: 'Fail',
   Yield: 'Yield',
   Read: 'Read',
   Give: 'Give',
-  DeferTotal: 'DeferTotal',
+  DeferTotalWith: 'DeferTotalWith',
   Race: 'Race',
   SetInterrupt: 'SetInterrupt',
   GetInterrupt: 'GetInterrupt',
   CheckDescriptor: 'CheckDescriptor',
   Supervise: 'Supervise',
-  DeferPartial: 'DeferPartial',
+  DeferPartialWith: 'DeferPartialWith',
+  DeferMaybeWith: 'DeferMaybeWith',
   NewFiberRef: 'NewFiberRef',
   ModifyFiberRef: 'ModifyFiberRef',
   GetForkScope: 'GetForkScope',
@@ -178,8 +180,8 @@ export class EffectAsync<R, E, A> extends IO<R, E, A> {
 /**
  * @internal
  */
-export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2, B | C> {
-  readonly _tag = IOTag.Fold
+export class Match<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2, B | C> {
+  readonly _tag = IOTag.Match
 
   constructor(
     readonly io: IO<R, E, A>,
@@ -254,10 +256,17 @@ export class Give<R, E, A> extends IO<unknown, E, A> {
 /**
  * @internal
  */
-export class DeferTotal<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.DeferTotal
+export class DeferTotalWith<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.DeferTotalWith
 
-  constructor(readonly io: () => IO<R, E, A>) {
+  constructor(readonly io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>) {
+    super()
+  }
+}
+
+export class DeferMaybeWith<R, E, A, E1, A1> extends IO<R, E | E1, A | A1> {
+  readonly _tag = IOTag.DeferMaybeWith
+  constructor(readonly io: (platform: Platform<unknown>, id: FiberId) => Either<Exit<E, A>, IO<R, E1, A1>>) {
     super()
   }
 }
@@ -326,10 +335,13 @@ export class Supervise<R, E, A> extends IO<R, E, A> {
 /**
  * @internal
  */
-export class DeferPartial<R, E, A, E2> extends IO<R, E | E2, A> {
-  readonly _tag = IOTag.DeferPartial
+export class DeferPartialWith<R, E, A, E2> extends IO<R, E | E2, A> {
+  readonly _tag = IOTag.DeferPartialWith
 
-  constructor(readonly io: () => IO<R, E, A>, readonly onThrow: (u: unknown) => E2) {
+  constructor(
+    readonly io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
+    readonly onThrow: (u: unknown) => E2
+  ) {
     super()
   }
 }
@@ -394,7 +406,7 @@ export type Instruction =
   | EffectPartial<any, any>
   | EffectTotal<any>
   | EffectAsync<any, any, any>
-  | Fold<any, any, any, any, any, any, any, any, any>
+  | Match<any, any, any, any, any, any, any, any, any>
   | Fork<any, any, any>
   | SetInterrupt<any, any, any>
   | GetInterrupt<any, any, any>
@@ -403,8 +415,9 @@ export type Instruction =
   | Yield
   | Read<any, any, any, any>
   | Give<any, any, any>
-  | DeferTotal<any, any, any>
-  | DeferPartial<any, any, any, any>
+  | DeferTotalWith<any, any, any>
+  | DeferPartialWith<any, any, any, any>
+  | DeferMaybeWith<any, any, any, any, any>
   | NewFiberRef<any>
   | ModifyFiberRef<any, any>
   | Race<any, any, any, any, any, any, any, any, any, any, any, any>
@@ -416,6 +429,14 @@ export type Instruction =
   | GetTracingStatus<any, any, any>
   | SetTracingStatus<any, any, any>
   | GetPlatform<any, any, any>
+
+/**
+ * @optimize identity
+ */
+export function concrete(_: IO<any, any, any>): Instruction {
+  // @ts-expect-error
+  return _
+}
 
 export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
 

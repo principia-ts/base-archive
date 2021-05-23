@@ -42,17 +42,17 @@ import { tuple } from '../tuple'
 import {
   Bind,
   CheckDescriptor,
-  DeferPartial,
-  DeferTotal,
+  DeferPartialWith,
+  DeferTotalWith,
   EffectAsync,
   EffectPartial,
   EffectTotal,
   Fail,
-  Fold,
   Fork,
   GetInterrupt,
   GetPlatform,
   Give,
+  Match,
   Read,
   Succeed,
   Supervise,
@@ -187,7 +187,17 @@ export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () =
  * @trace 0
  */
 export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
-  return new DeferPartial(io, identity)
+  return new DeferPartialWith(io, identity)
+}
+
+/**
+ * Returns a lazily constructed effect, whose construction may itself require effects.
+ * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
+ *
+ * @trace 0
+ */
+export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, unknown, A> {
+  return new DeferPartialWith(io, identity)
 }
 
 /**
@@ -200,7 +210,7 @@ export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
  * @trace 1
  */
 export function deferCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
-  return new DeferPartial(io, onThrow)
+  return new DeferPartialWith(io, onThrow)
 }
 
 /**
@@ -221,6 +231,41 @@ export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: (
 }
 
 /**
+ * Returns a lazily constructed effect, whose construction may itself require effects,
+ * translating any thrown exceptions into typed failed effects and mapping the error.
+ *
+ * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
+ *
+ * @trace 0
+ * @trace 1
+ */
+export function deferCatchWith_<R, E, A, E1>(
+  io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
+  onThrow: (error: unknown) => E1
+): IO<R, E | E1, A> {
+  return new DeferPartialWith(io, onThrow)
+}
+
+/**
+ * Returns a lazily constructed effect, whose construction may itself require effects,
+ * translating any thrown exceptions into typed failed effects and mapping the error.
+ *
+ * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
+ *
+ * @trace 0
+ */
+export function deferCatchWith<E1>(
+  onThrow: (error: unknown) => E1
+): <R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>) => IO<R, E | E1, A> {
+  return (
+    /**
+     * @trace 0
+     */
+    (io) => deferCatchWith_(io, onThrow)
+  )
+}
+
+/**
  * Returns a lazily constructed effect, whose construction may itself require
  * effects. The effect must not throw any exceptions. When no environment is required (i.e., when R == unknown)
  * it is conceptually equivalent to `flatten(effectTotal(io))`. If you wonder if the effect throws exceptions,
@@ -231,7 +276,21 @@ export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: (
  * @trace 0
  */
 export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
-  return new DeferTotal(io)
+  return new DeferTotalWith(io)
+}
+
+/**
+ * Returns a lazily constructed effect, whose construction may itself require
+ * effects. The effect must not throw any exceptions. When no environment is required (i.e., when R == unknown)
+ * it is conceptually equivalent to `flatten(effectTotal(io))`. If you wonder if the effect throws exceptions,
+ * do not use this method, use `IO.defer`.
+ *
+ * @category Constructors
+ * @since 1.0.0
+ * @trace 0
+ */
+export function deferTotalWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E, A> {
+  return new DeferTotalWith(io)
 }
 
 /**
@@ -709,7 +768,7 @@ export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new Fold(ma, onFailure, onSuccess)
+  return new Match(ma, onFailure, onSuccess)
 }
 
 /**
@@ -723,7 +782,7 @@ export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => new Fold(ma, onFailure, onSuccess)
+  return (ma) => new Match(ma, onFailure, onSuccess)
 }
 
 /**
@@ -2903,7 +2962,7 @@ export function partition<R, E, A, B>(
  */
 export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
   const trace = accessCallTrace()
-  return new Fold(
+  return new Match(
     ma,
     traceFrom(trace, (cause) => succeed(Ex.halt(cause))),
     traceFrom(trace, (a) => succeed(Ex.succeed(a)))
@@ -3446,7 +3505,7 @@ export function tryOrElse_<R, E, A, R1, E1, A1, R2, E2, A2>(
   that: () => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new Fold(
+  return new Match(
     ma,
     traceAs(that, (cause) => O.match_(C.keepDefects(cause), that, halt)),
     onSuccess
