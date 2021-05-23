@@ -1792,10 +1792,10 @@
   dependencies:
     "@octokit/openapi-types" "^7.0.0"
 
-"@principia/compile@0.8.7":
-  version "0.8.7"
-  resolved "https://registry.yarnpkg.com/@principia/compile/-/compile-0.8.7.tgz#72c3e556d627fd5ec0b431d8d4110efa858c05d4"
-  integrity sha512-vdEx9EdItgRpo6Fi2PMhXIDwbTNWD6RHZfoDxthNbB7l+eyxc7e/ptVOxKfdcUvfTZY5nXOSG9DyTq5pE5JU6A==
+"@principia/compile@0.8.8", "@principia/compile@^0.8.8":
+  version "0.8.8"
+  resolved "https://registry.yarnpkg.com/@principia/compile/-/compile-0.8.8.tgz#c02a21877004e915f97d94549a0388082d022b27"
+  integrity sha512-Spa451Xa42Q4gOFe1xDAQOWGLHJopNrGB35K6YiqWY9GlD6G3mY4Qh/KiIooBxAdRIjnTl2Ol2yVkkdJzElCtg==
 
 "@tootallnate/once@1":
   version "1.1.2"
@@ -1880,10 +1880,10 @@
   resolved "https://registry.yarnpkg.com/@types/yargs-parser/-/yargs-parser-20.2.0.tgz#dd3e6699ba3237f0348cd085e4698780204842f9"
   integrity sha512-37RSHht+gzzgYeobbG+KWryeAW8J33Nhr69cjTqSYymXVZEN9NbRYWoYlRtDhHKPVT1FyNKwaTPC1NynKZpzRA==
 
-"@types/yargs@^17.0.0":
-  version "17.0.0"
-  resolved "https://registry.yarnpkg.com/@types/yargs/-/yargs-17.0.0.tgz#32f740934eedf0a5cd19470249f317755c91f1ae"
-  integrity sha512-RS7u2X7vdXjVQs160PWY1pjLBw6GJj04utojn0KU8p2rRZR37FSzzK6XOT+KLzT/DVbDYRyezroc0LHIvM5Z2A==
+"@types/yargs@^16.0.2":
+  version "16.0.3"
+  resolved "https://registry.yarnpkg.com/@types/yargs/-/yargs-16.0.3.tgz#4b6d35bb8e680510a7dc2308518a80ee1ef27e01"
+  integrity sha512-YlFfTGS+zqCgXuXNV26rOIeETOkXnGQXP/pjjL9P0gO/EP9jTmc7pUBhx+jVEIxpq41RX33GQ7N3DzOSfZoglQ==
   dependencies:
     "@types/yargs-parser" "*"
 
