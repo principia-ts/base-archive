@@ -30,6 +30,7 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
+import { DeferMaybeWith } from '../FiberRef/internal/io'
 import { constant, flow, identity, pipe } from '../function'
 import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
@@ -252,17 +253,24 @@ export function deferCatchWith_<R, E, A, E1>(
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  *
+ * @dataFirst deferCatchWith_
  * @trace 0
  */
-export function deferCatchWith<E1>(
-  onThrow: (error: unknown) => E1
-): <R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>) => IO<R, E | E1, A> {
-  return (
-    /**
-     * @trace 0
-     */
-    (io) => deferCatchWith_(io, onThrow)
-  )
+export function deferCatchWith<E1>(onThrow: (error: unknown) => E1) {
+  /**
+   * @trace 0
+   */
+  return <R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E | E1, A> =>
+    deferCatchWith_(io, onThrow)
+}
+
+/**
+ * @trace 0
+ */
+export function deferMaybeWith<E, A, R, E1, A1>(
+  io: (platform: Platform<unknown>, id: FiberId) => E.Either<Exit<E, A>, IO<R, E1, A1>>
+): IO<R, E | E1, A | A1> {
+  return new DeferMaybeWith(io)
 }
 
 /**
@@ -511,6 +519,7 @@ export function supervised_<R, E, A>(fa: IO<R, E, A>, supervisor: Supervisor<any
  *
  * @category Combinators
  * @since 1.0.0
+ *
  * @dataFirst supervised_
  */
 export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, A> {
@@ -528,6 +537,7 @@ export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, 
  *
  * @category Applicative
  * @since 1.0.0
+ *
  * @trace call
  */
 export const pure: <A>(a: A) => UIO<A> = succeed
@@ -543,6 +553,7 @@ export const pure: <A>(a: A) => UIO<A> = succeed
  *
  * @category Apply
  * @since 1.0.0
+ *
  * @trace call
  */
 export function cross_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, readonly [A, B]> {
@@ -683,6 +694,7 @@ export function bimap_<R, E, A, E1, B>(pab: IO<R, E, A>, f: (e: E) => E1, g: (a:
  * @category Bifunctor
  * @since 1.0.0
  *
+ * @dataFirst bimap_
  * @trace 0
  * @trace 1
  */
@@ -716,6 +728,7 @@ export function mapError_<R, E, A, E1>(fea: IO<R, E, A>, f: (e: E) => E1): IO<R,
  * @category Bifunctor
  * @since 1.0.0
  *
+ * @dataFirst mapError_
  * @trace 0
  */
 export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO<R, E1, A> {
@@ -1089,10 +1102,13 @@ export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
  *
  * @category MonadEnv
  * @since 1.0.0
+ *
  * @dataFirst giveAll_
+ * @trace call
  */
 export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
-  return (ma) => giveAll_(ma, r)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(giveAll_, trace)(ma, r)
 }
 
 /**
@@ -1493,6 +1509,7 @@ export function catchSomeDefect_<R, E, A, R1, E1, A1>(
  * @since 1.0.0
  *
  * @dataFirst catchSomeDefect_
+ * @trace 0
  */
 export function catchSomeDefect<R1, E1, A1>(
   f: (_: unknown) => Option<IO<R1, E1, A1>>
@@ -1592,6 +1609,7 @@ export function collectM_<R, E, A, R1, E1, A1, E2>(
 }
 
 /**
+ * @dataFirst collectM_
  * @trace 0
  * @trace 1
  */
@@ -1614,6 +1632,7 @@ export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>):
 }
 
 /**
+ * @dataFirst compose_
  * @trace call
  */
 export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
@@ -1694,6 +1713,7 @@ export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B):
 }
 
 /**
+ * @dataFirst extend_
  * @trace 0
  */
 export function extend<R, E, A, B>(f: (wa: IO<R, E, A>) => B): (wa: IO<R, E, A>) => IO<R, E, B> {
@@ -1737,6 +1757,7 @@ export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>
 /**
  * Filters the collection using the specified effectual predicate.
  *
+ * @dataFirst filter_
  * @trace 0
  */
 export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
@@ -1766,6 +1787,7 @@ export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boole
  * Filters the collection using the specified effectual predicate, removing
  * all elements that satisfy the predicate.
  *
+ * @dataFirst filterNot_
  * @trace 0
  */
 export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
@@ -1805,6 +1827,7 @@ export function filterOrElse_<R, E, A, R1, E1, A1>(
 /**
  * Applies `or` if the predicate fails.
  *
+ * @dataFirst filterOrElse_
  * @trace call
  */
 export function filterOrElse<A, B extends A, R1, E1, A1>(
@@ -1842,6 +1865,7 @@ export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, 
 /**
  * Dies with specified `unknown` if the predicate fails.
  *
+ * @dataFirst filterOrDie_
  * @trace call
  */
 export function filterOrDie<A, B extends A>(
@@ -1882,6 +1906,7 @@ export function filterOrDieMessage_<R, E, A>(fa: IO<R, E, A>, predicate: Predica
  * Dies with an `Error` having the specified message
  * if the predicate fails.
  *
+ * @dataFirst filterOrDieMessage_
  * @trace call
  */
 export function filterOrDieMessage<A, B extends A>(
@@ -1927,6 +1952,7 @@ export function filterOrFail_<R, E, A, E1>(
 /**
  * Fails with `failWith` if the predicate fails.
  *
+ * @dataFirst filterOrFail_
  * @trace call
  */
 export function filterOrFail<A, B extends A, E1>(
@@ -1969,6 +1995,7 @@ export function bindError_<R, R1, E, E1, A>(ma: IO<R, E, A>, f: (e: E) => IO<R1,
 }
 
 /**
+ * @dataFirst bindError_
  * @trace 0
  */
 export function bindError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E1, A> {
@@ -1992,6 +2019,7 @@ export function matchCause_<R, E, A, A1, A2>(
 /**
  * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
  *
+ * @dataFirst matchCause_
  * @trace 0
  * @trace 1
  */
@@ -2037,6 +2065,7 @@ export function foreachUnit_<R, E, A, A1>(as: Iterable<A>, f: (a: A) => IO<R, E,
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst foreachUnit_
  * @trace 0
  */
 export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterable<A>) => IO<R, E, void> {
@@ -2052,6 +2081,7 @@ export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterab
  *
  * @category Combinators
  * @since 1.0.0
+ *
  * @trace 1
  */
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Chunk<B>> {
@@ -2077,6 +2107,7 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>):
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst foreach_
  * @trace 0
  */
 export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
@@ -2106,6 +2137,7 @@ export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst foldl_
  * @trace 1
  */
 export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, B> {
@@ -2143,6 +2175,8 @@ export function foldMap_<M>(M: Monoid<M>) {
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst foldMap_
  */
 export function foldMap<M>(M: Monoid<M>) {
   return (
@@ -2178,6 +2212,7 @@ export function foldr_<A, B, R, E>(as: Iterable<A>, b: B, f: (a: A, b: B) => IO<
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst foldr_
  * @trace 1
  */
 export function foldr<A, B, R, E>(b: B, f: (a: A, b: B) => IO<R, E, B>): (i: Iterable<A>) => IO<R, E, B> {
@@ -2284,6 +2319,7 @@ export function getOrElse_<R, E, A, B>(ma: IO<R, E, Option<A>>, orElse: () => B)
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst getOrElse_
  * @trace 0
  */
 export function getOrElse<B>(orElse: () => B): <R, E, A>(ma: IO<R, E, Option<A>>) => IO<R, E, B | A> {
@@ -2312,6 +2348,7 @@ export function getOrElseM_<R, E, A, R1, E1, B>(
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst getOrElseM_
  * @trace call
  */
 export function getOrElseM<R1, E1, B>(
@@ -2344,6 +2381,8 @@ export function getOrFailWith_<E, A>(v: () => Option<A>, e: () => E): FIO<E, A> 
 
 /**
  * Lifts an Option into an IO. If the option is `None`, fail with the `e` value.
+ *
+ * @dataFirst getOrFailWith_
  */
 export function getOrFailWith<E>(e: () => E) {
   return (
@@ -2408,6 +2447,7 @@ export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst ifM_
  * @trace 0
  * @trace 1
  */
@@ -2431,6 +2471,7 @@ export function if_<R, E, A, R1, E1, A1>(
 }
 
 /**
+ * @dataFirst if_
  * @trace 0
  * @trace 1
  */
@@ -2507,6 +2548,7 @@ export function iterate_<R, E, A>(initial: A, cont: (a: A) => boolean, body: (a:
  * return s;
  * ```
  *
+ * @dataFirst iterate_
  * @trace 1
  */
 export function iterate<R, E, A>(cont: (b: A) => boolean, body: (b: A) => IO<R, E, A>): (initial: A) => IO<R, E, A> {
@@ -2536,6 +2578,7 @@ export function join_<R, E, A, R1, E1, A1>(io: IO<R, E, A>, that: IO<R1, E1, A1>
 /**
  * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  *
+ * @dataFirst join_
  * @trace call
  */
 export function join<R1, E1, A1>(
@@ -2571,6 +2614,7 @@ export function joinEither_<R, E, A, R1, E1, A1>(
 /**
  * Joins two `IOs` into one, where one or the other is returned depending on the provided environment
  *
+ * @dataFirst joinEither_
  * @trace call
  */
 export function joinEither<R1, E1, A1>(
@@ -2641,6 +2685,7 @@ export function loop_<A, R, E, B>(
  * }
  * ```
  *
+ * @dataFirst loop_
  * @trace 3
  */
 export function loopUnit_<A, R, E>(
@@ -2675,6 +2720,7 @@ export function mapEffectCatch_<R, E, A, E1, B>(
 }
 
 /**
+ * @dataFirst mapEffectCatch_
  * @trace 0
  */
 export function mapEffectCatch<A, B, E1>(f: (a: A) => B, onThrow: (u: unknown) => E1) {
@@ -2703,6 +2749,7 @@ export function mapErrorCause_<R, E, A, E1>(ma: IO<R, E, A>, f: (cause: Cause<E>
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst mapErrorCause_
  * @trace 0
  */
 export function mapErrorCause<E, E1>(f: (cause: Cause<E>) => Cause<E1>) {
@@ -2729,6 +2776,7 @@ export function mergeAll_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B
 /**
  * Merges an `Iterable<IO>` to a single IO, working sequentially.
  *
+ * @dataFirst mergeAll_
  * @trace 1
  */
 export function mergeAll<A, B>(b: B, f: (b: B, a: A) => B) {
@@ -2804,6 +2852,7 @@ export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R
 }
 
 /**
+ * @dataFirst orDieWith_
  * @trace 0
  */
 export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
@@ -2818,6 +2867,7 @@ export function orElse_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, that: () => IO<R1,
 }
 
 /**
+ * @dataFirst orElse_
  * @trace 0
  */
 export function orElse<R1, E1, A1>(that: () => IO<R1, E1, A1>): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1, A1 | A> {
@@ -2839,6 +2889,7 @@ export function orElseEither_<R, E, A, R1, E1, A1>(
 }
 
 /**
+ * @dataFirst orElseEither_
  * @trace 0
  */
 export function orElseEither<R1, E1, A1>(
@@ -2858,6 +2909,7 @@ export function orElseFail_<R, E, A, E1>(ma: IO<R, E, A>, e: () => E1): IO<R, E1
 }
 
 /**
+ * @dataFirst orElseFail_
  * @trace 0
  */
 export function orElseFail<E1>(e: () => E1): <R, E, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
@@ -2881,6 +2933,7 @@ export function orElseOption_<R, E, A, R1, E1, A1>(
 }
 
 /**
+ * @dataFirst orElseOption_
  * @trace 0
  */
 export function orElseOption<R1, E1, A1>(
@@ -2900,6 +2953,7 @@ export function orElseSucceed_<R, E, A, A1>(ma: IO<R, E, A>, a: () => A1): IO<R,
 }
 
 /**
+ * @dataFirst orElseSucceed_
  * @trace 0
  */
 export function orElseSucceed<A1>(a: () => A1): <R, E, A>(self: IO<R, E, A>) => IO<R, E, A1 | A> {
@@ -2943,6 +2997,7 @@ export function partition_<R, E, A, B>(
  * Feeds elements of type `A` to a function `f` that returns an IO.
  * Collects all successes and failures in a separated fashion.
  *
+ * @dataFirst partition_
  * @trace 0
  */
 export function partition<R, E, A, B>(
@@ -2992,6 +3047,7 @@ export function refineOrDie_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  *
+ * @dataFirst refineOrDie_
  * @trace 0
  */
 export function refineOrDie<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
@@ -3020,6 +3076,7 @@ export function refineOrDieWith_<R, E, A, E1>(
  * Keeps some of the errors, and terminates the fiber with the rest, using
  * the specified function to convert the `E` into an `Error`.
  *
+ * @dataFirst refineOrDieWith_
  * @trace call
  */
 export function refineOrDieWith<E, E1>(
@@ -3053,6 +3110,7 @@ export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>):
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst reject_
  * @trace 0
  */
 export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
@@ -3087,6 +3145,7 @@ export function rejectM_<R, E, A, R1, E1>(
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst rejectM_
  * @trace 0
  */
 export function rejectM<R1, E1, A>(
@@ -3123,6 +3182,7 @@ export function repeatN_<R, E, A>(ma: IO<R, E, A>, n: number): IO<R, E, A> {
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst repeatN_
  * @trace call
  */
 export function repeatN(n: number): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
@@ -3142,6 +3202,7 @@ export function repeatUntil_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO
 /**
  * Repeats this effect until its result satisfies the specified predicate.
  *
+ * @dataFirst repeatUntil_
  * @trace 0
  */
 export function repeatUntil<A>(f: (a: A) => boolean): <R, E>(ma: IO<R, E, A>) => IO<R, E, A> {
@@ -3166,6 +3227,7 @@ export function repeatUntilM_<R, E, A, R1, E1>(
 /**
  * Repeats this effect until its result satisfies the specified effectful predicate.
  *
+ * @dataFirst repeatUntilM_
  * @trace 0
  */
 export function repeatUntilM<A, R1, E1>(
@@ -3186,6 +3248,7 @@ export function repeatWhile_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO
 /**
  * Repeats this effect while its error satisfies the specified predicate.
  *
+ * @dataFirst repeatWhile_
  * @trace 0
  */
 export function repeatWhile<A>(f: (a: A) => boolean): <R, E>(ma: IO<R, E, A>) => IO<R, E, A> {
@@ -3210,6 +3273,7 @@ export function repeatWhileM_<R, E, A, R1, E1>(
 /**
  * Repeats this effect while its error satisfies the specified effectful predicate.
  *
+ * @dataFirst repeatWhileM_
  * @trace 0
  */
 export function repeatWhileM<A, R1, E1>(
@@ -3241,6 +3305,7 @@ export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO
 
 /**
  * @trace 0
+ * @dataFirst require_
  */
 function _require<E>(error: () => E): <R, A>(ma: IO<R, E, O.Option<A>>) => IO<R, E, A> {
   return (ma) => require_(ma, error)
@@ -3270,6 +3335,7 @@ export function retryUntil_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean): IO<
 /**
  * Retries this effect until its error satisfies the specified effectful predicate.
  *
+ * @dataFirst retryUntil_
  * @trace 0
  */
 export function retryUntil<E>(f: (e: E) => boolean): <R, A>(fa: IO<R, E, A>) => IO<R, E, A> {
@@ -3294,6 +3360,7 @@ export function retryUntilM_<R, E, A, R1, E1>(
 /**
  * Retries this effect until its error satisfies the specified effectful predicate.
  *
+ * @dataFirst retryUntilM_
  * @trace 0
  */
 export function retryUntilM<E, R1, E1>(
@@ -3314,6 +3381,7 @@ export function retryWhile_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean) {
 /**
  * Retries this effect while its error satisfies the specified predicate.
  *
+ * @dataFirst retryWhile_
  * @trace 0
  */
 export function retryWhile<E>(f: (e: E) => boolean): <R, A>(fa: IO<R, E, A>) => IO<R, E, A> {
@@ -3338,6 +3406,7 @@ export function retryWhileM_<R, E, A, R1, E1>(
 /**
  * Retries this effect while its error satisfies the specified effectful predicate.
  *
+ * @dataFirst retryWhileM_
  * @trace 0
  */
 export function retryWhileM<E, R1, E1>(
@@ -3373,6 +3442,7 @@ export function tapCause_<R2, A2, R, E, E2>(
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst tapCause_
  * @trace 0
  */
 export function tapCause<R, E, E1>(
@@ -3394,6 +3464,9 @@ export function sandbox<R, E, A>(fa: IO<R, E, A>): IO<R, Cause<E>, A> {
   return matchCauseM_(fa, traceFrom(trace, flow(fail)), traceFrom(trace, flow(succeed)))
 }
 
+/**
+ * @trace call
+ */
 export function sandboxWith_<R, E, A, E1>(
   ma: IO<R, E, A>,
   f: (_: IO<R, Cause<E>, A>) => IO<R, Cause<E1>, A>
@@ -3403,6 +3476,7 @@ export function sandboxWith_<R, E, A, E1>(
 }
 
 /**
+ * @dataFirst sandboxWith_
  * @trace call
  */
 export function sandboxWith<R, E, A, E1>(
@@ -3432,11 +3506,15 @@ export function summarized_<R, E, A, R1, E1, B, C>(
   })
 }
 
+/**
+ * @trace call
+ */
 export function summarized<R1, E1, B, C>(
   summary: IO<R1, E1, B>,
   f: (start: B, end: B) => C
 ): <R, E, A>(self: IO<R, E, A>) => IO<R & R1, E1 | E, readonly [C, A]> {
-  return (self) => summarized_(self, summary, f)
+  const trace = accessCallTrace()
+  return (self) => traceCall(summarized_, trace)(self, summary, f)
 }
 
 /**
@@ -3471,6 +3549,7 @@ export function swapWith_<R, E, A, R1, E1, A1>(fa: IO<R, E, A>, f: (ma: IO<R, A,
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst swapWith_
  * @trace call
  */
 export function swapWith<R, E, A, R1, E1, A1>(
@@ -3482,18 +3561,25 @@ export function swapWith<R, E, A, R1, E1, A1>(
 
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
+ *
+ * @trace all
  */
 export function timedWith_<R, E, A, R1, E1>(ma: IO<R, E, A>, msTime: IO<R1, E1, number>) {
-  return summarized_(ma, msTime, (start, end) => end - start)
+  const trace = accessCallTrace()
+  return traceCall(summarized_, trace)(ma, msTime, (start, end) => end - start)
 }
 
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
+ *
+ * @dataFirst timedWith_
+ * @trace call
  */
 export function timedWith<R1, E1>(
   msTime: IO<R1, E1, number>
 ): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, readonly [number, A]> {
-  return (ma) => timedWith_(ma, msTime)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(timedWith_, trace)(ma, msTime)
 }
 
 /**
@@ -3513,6 +3599,7 @@ export function tryOrElse_<R, E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 /**
+ * @dataFirst tryOrElse_
  * @trace 0
  * @trace 1
  */
@@ -3558,6 +3645,7 @@ export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: unknown) => Opti
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst unrefine_
  * @trace 0
  */
 export function unrefine<E1>(pf: (u: unknown) => Option<E1>): <R, E, A>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
@@ -3600,12 +3688,12 @@ export function unrefineWith_<R, E, A, E1, E2>(
  * @category Combinators
  * @since 1.0.0
  *
+ * @dataFirst unrefineWith_
  * @trace 0
+ * @trace 1
  */
-export function unrefineWith<E1>(
-  pf: (u: unknown) => Option<E1>
-): <E, E2>(f: (e: E) => E2) => <R, A>(ma: IO<R, E, A>) => IO<R, E1 | E2, A> {
-  return (f) => (ma) => unrefineWith_(ma, pf, f)
+export function unrefineWith<E, E1, E2>(pf: (u: unknown) => Option<E1>, f: (e: E) => E2) {
+  return <R, A>(ma: IO<R, E, A>): IO<R, E1 | E2, A> => unrefineWith_(ma, pf, f)
 }
 
 /**
@@ -3643,6 +3731,7 @@ export function whenM_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>
  * @category Combinators,
  * @since 1.0.0
  *
+ * @dataFirst whenM_
  * @trace call
  */
 export function whenM<R, E>(mb: IO<R, E, boolean>): <R1, E1, A>(ma: IO<R1, E1, A>) => IO<R & R1, E | E1, void> {
@@ -3658,6 +3747,7 @@ export function when_<R, E, A>(ma: IO<R, E, A>, b: () => boolean) {
 }
 
 /**
+ * @dataFirst when_
  * @trace 0
  */
 export function when(b: () => boolean): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, void> {
