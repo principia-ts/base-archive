@@ -40,7 +40,6 @@
     "curly": ["warn", "multi-line", "consistent"],
     "quotes": ["warn", "single", { "avoidEscape": true }],
     "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
-    "max-len": ["warn", 120],
     "semi": ["error", "never", { "beforeStatementContinuationChars": "always" }],
     "object-curly-spacing": ["warn", "always"],
 

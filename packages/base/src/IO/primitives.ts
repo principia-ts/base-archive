@@ -14,6 +14,7 @@ import type { Supervisor } from '../Supervisor'
 
 import { Die } from '../Cause/core'
 import { IOURI } from '../Modules'
+import { isObject } from '../prelude'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -79,7 +80,11 @@ abstract class IOSyntax<R, E, A> {
   }
 }
 
+export const IOTypeId = Symbol('@principia/base/IO')
+export type IOTypeId = typeof IOTypeId
+
 export abstract class IO<R, E, A> extends IOSyntax<R, E, A> {
+  readonly [IOTypeId]: IOTypeId = IOTypeId;
   readonly [_U]: IOURI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
@@ -93,6 +98,10 @@ export abstract class IO<R, E, A> extends IOSyntax<R, E, A> {
   get [_I](): Instruction {
     return this as any
   }
+}
+
+export function isIO(u: unknown): u is IO<any, any, any> {
+  return isObject(u) && IOTypeId in u
 }
 
 /*
