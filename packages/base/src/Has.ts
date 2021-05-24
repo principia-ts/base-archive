@@ -58,6 +58,10 @@ export class Tag<T> {
   readonly of          = (_: T): Has<T> => ({ [this.key]: _ } as any)
 }
 
+export function isTag(u: unknown): u is Tag<unknown> {
+  return isObject(u) && TagTypeId in u
+}
+
 /**
  * Extract the Has type from any augumented variant
  */
@@ -129,8 +133,4 @@ export class DerivationContext {
     this.hasMap.set(has, computed)
     return computed
   }
-}
-
-export function isTag(u: unknown): u is Tag<unknown> {
-  return typeof u === 'object' && u != null && '_tag' in u && u['_tag'] === 'Tag'
 }
