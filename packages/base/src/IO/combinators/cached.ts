@@ -5,7 +5,7 @@ import type { Option } from '../../Option'
 import type { Promise } from '../../Promise'
 import type { FIO, IO, UIO, URIO } from '../core'
 
-import { accessCallTrace, traceCall } from '@principia/compile/util'
+import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import { Clock } from '../../Clock'
 import { RuntimeException } from '../../Exception'
@@ -30,10 +30,11 @@ export function cachedInvalidate_<R, E, A>(
   ma: IO<R, E, A>,
   timeToLive: number
 ): URIO<R & Has<Clock>, readonly [FIO<E, A>, UIO<void>]> {
+  const trace = accessCallTrace()
   return I.gen(function* (_) {
     const r     = yield* _(I.ask<R & Has<Clock>>())
     const cache = yield* _(RefM.makeRefM<Option<readonly [number, Promise<E, A>]>>(O.None()))
-    return tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache))
+    return yield* _(traceCall(I.succeed, trace)(tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache))))
   })
 }
 
@@ -63,7 +64,10 @@ export function cachedInvalidate(
  */
 export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & Has<Clock>, FIO<E, A>> {
   const trace = accessCallTrace()
-  return I.map_(traceCall(cachedInvalidate_, trace)(ma, timeToLive), ([_]) => _)
+  return I.map_(
+    cachedInvalidate_(ma, timeToLive),
+    traceFrom(trace, ([_]) => _)
+  )
 }
 
 /**
@@ -77,7 +81,7 @@ export function cached_<R, E, A>(ma: IO<R, E, A>, timeToLive: number): URIO<R & 
  */
 export function cached(timeToLive: number): <R, E, A>(ma: I.IO<R, E, A>) => URIO<R & Has<Clock>, FIO<E, A>> {
   const trace = accessCallTrace()
-  return traceCall((ma) => cached_(ma, timeToLive), trace)
+  return (ma) => traceCall(cached_, trace)(ma, timeToLive)
 }
 
 function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
@@ -88,6 +92,9 @@ function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
   })
 }
 
+/**
+ * @trace call
+ */
 function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>) {
   return uninterruptibleMask(({ restore }) =>
     pipe(

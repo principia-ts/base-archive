@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Exit } from '../../Exit'
 import type { IO } from '../core'
 

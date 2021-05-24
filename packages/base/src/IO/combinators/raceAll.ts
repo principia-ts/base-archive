@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Chunk } from '../../Chunk/core'
 import type { Exit } from '../../Exit'
 import type { NonEmptyArray } from '../../NonEmptyArray'
@@ -15,30 +17,32 @@ import { tuple } from '../../tuple'
 import * as I from '../core'
 import { makeInterruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 
-const arbiter = <E, A>(
-  fibers: Chunk<Fiber.Fiber<E, A>>,
-  winner: Fiber.Fiber<E, A>,
-  promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
-  fails: Ref.URef<number>
-) => (res: Exit<E, A>): UIO<void> =>
-  Ex.matchM_(
-    res,
-    (e) =>
-      pipe(
-        fails,
-        Ref.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
-        I.flatten
-      ),
-    (a) =>
-      pipe(
-        promise.succeed(tuple(a, winner)),
-        I.bind((set) =>
-          set
-            ? C.foldl_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
-            : I.unit()
+const arbiter =
+  <E, A>(
+    fibers: Chunk<Fiber.Fiber<E, A>>,
+    winner: Fiber.Fiber<E, A>,
+    promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
+    fails: Ref.URef<number>
+  ) =>
+  (res: Exit<E, A>): UIO<void> =>
+    Ex.matchM_(
+      res,
+      (e) =>
+        pipe(
+          fails,
+          Ref.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
+          I.flatten
+        ),
+      (a) =>
+        pipe(
+          promise.succeed(tuple(a, winner)),
+          I.bind((set) =>
+            set
+              ? C.foldl_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
+              : I.unit()
+          )
         )
-      )
-  )
+    )
 
 /**
  * Returns an IO that races this effect with all the specified effects,

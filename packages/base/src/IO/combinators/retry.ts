@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
 import type { IO } from '../core'
@@ -85,12 +87,7 @@ const _loop = <R, E extends I, A, R1, I, O, R2, E2, A2>(
       pipe(
         driver.next(e),
         matchM(
-          () =>
-            pipe(
-              driver.last,
-              orDie,
-              bind((o) => pipe(orElse(e, o), map(E.Left)))
-            ),
+          () => pipe(driver.last, orDie, bind(traceAs(orElse, (o) => pipe(orElse(e, o), map(E.Left))))),
           () => _loop(fa, orElse, driver)
         )
       )

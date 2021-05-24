@@ -686,7 +686,7 @@ class UnsafeMakeHubImplementation<A> extends XHubInternal<unknown, unknown, neve
         I.deferTotal(() => {
           shutdownFlag.set(true)
           return pipe(
-            M.releaseAll(Ex.interrupt(fiberId), parallel)(releaseMap)['*>'](strategy.shutdown),
+            M.releaseAll_(releaseMap, Ex.interrupt(fiberId), parallel)['*>'](strategy.shutdown),
             I.whenM(shutdownHook.succeed(undefined))
           )
         })
@@ -706,7 +706,10 @@ class UnsafeMakeHubImplementation<A> extends XHubInternal<unknown, unknown, neve
       M.do,
       M.bindS('dequeue', () => I.toManaged_(makeSubscription(hub, subscribers, strategy))),
       M.tap(({ dequeue }) =>
-        M.makeExit_(RM.add((_) => Q.shutdown(dequeue))(releaseMap), (finalizer, exit) => finalizer(exit))
+        M.makeExit_(
+          RM.add(releaseMap, (_) => Q.shutdown(dequeue)),
+          (finalizer, exit) => finalizer(exit)
+        )
       ),
       M.map(({ dequeue }) => dequeue)
     )
@@ -843,7 +846,7 @@ class UnsafeMakeSubscriptionImplementation<A> extends XQueue<never, unknown, unk
           return I.interrupt
         }
 
-        const empty   = (null as unknown) as A
+        const empty   = null as unknown as A
         const message = this.pollers.isEmpty ? this.subscription.poll(empty) : empty
 
         if (message === null) {

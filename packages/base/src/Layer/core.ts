@@ -978,7 +978,7 @@ export class MemoMap {
                 I.onExit(
                   Ex.match(
                     () => I.unit(),
-                    () => RelMap.add(release)(rm)
+                    () => RelMap.add(rm, release)
                   )
                 ),
                 I.map((x) => [release, x] as readonly [Finalizer, A])
@@ -1010,7 +1010,7 @@ export class MemoMap {
                           (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
                             pipe(
                               promise.halt(cause),
-                              I.bind(() => M.releaseAll(ex, sequential)(innerReleaseMap) as I.FIO<E, any>),
+                              I.bind(() => M.releaseAll_(innerReleaseMap, ex, sequential) as I.FIO<E, any>),
                               I.bind(() => I.halt(cause))
                             ),
                           ([, a]) =>
@@ -1018,14 +1018,14 @@ export class MemoMap {
                               yield* _(
                                 finalizerRef.set((e) =>
                                   pipe(
-                                    M.releaseAll(e, sequential)(innerReleaseMap),
+                                    M.releaseAll_(innerReleaseMap, e, sequential),
                                     I.whenM(Ref.modify_(observers, (n) => [n === 1, n - 1]))
                                   )
                                 )
                               )
                               yield* _(Ref.update_(observers, (n) => n + 1))
                               const outerFinalizer = yield* _(
-                                RelMap.add((e) => I.bind_(finalizerRef.get, (f) => f(e)))(outerReleaseMap)
+                                RelMap.add(outerReleaseMap, (e) => I.bind_(finalizerRef.get, (f) => f(e)))
                               )
                               yield* _(promise.succeed(a))
                               return tuple(outerFinalizer, a)

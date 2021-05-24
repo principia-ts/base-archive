@@ -1,7 +1,10 @@
+// tracing: off
+
 import type { Chunk } from '../../Chunk/core'
 import type { Managed } from '../core'
 
-import { identity } from '../../function'
+import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
+
 import { foreachParN_, foreachUnitParN_ } from './foreachParN'
 
 /**
@@ -9,9 +12,16 @@ import { foreachParN_, foreachUnitParN_ } from './foreachParN'
  * results. For a sequential version, see `collectAll`.
  *
  * Unlike `collectAllPar`, this method will use at most `n` fibers.
+ *
+ * @trace call
  */
 export function collectAllParN_<R, E, A>(mas: Iterable<Managed<R, E, A>>, n: number): Managed<R, E, Chunk<A>> {
-  return foreachParN_(mas, n, identity)
+  const trace = accessCallTrace()
+  return foreachParN_(
+    mas,
+    n,
+    traceFrom(trace, (_) => _)
+  )
 }
 
 /**
@@ -19,9 +29,13 @@ export function collectAllParN_<R, E, A>(mas: Iterable<Managed<R, E, A>>, n: num
  * results. For a sequential version, see `collectAll`.
  *
  * Unlike `collectAllPar`, this method will use at most `n` fibers.
+ *
+ * @dataFirst collectAllParN_
+ * @trace call
  */
 export function collectAllParN(n: number): <R, E, A>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, Chunk<A>> {
-  return (mas) => collectAllParN_(mas, n)
+  const trace = accessCallTrace()
+  return (mas) => traceCall(collectAllParN_, trace)(mas, n)
 }
 
 /**
@@ -29,9 +43,16 @@ export function collectAllParN(n: number): <R, E, A>(mas: Iterable<Managed<R, E,
  * results. For a sequential version, see `collectAllUnit`.
  *
  * Unlike `collectAllUnitPar`, this method will use at most `n` fibers.
+ *
+ * @trace call
  */
 export function collectAllUnitParN_<R, E, A>(mas: Iterable<Managed<R, E, A>>, n: number): Managed<R, E, void> {
-  return foreachUnitParN_(mas, n, identity)
+  const trace = accessCallTrace()
+  return foreachUnitParN_(
+    mas,
+    n,
+    traceFrom(trace, (_) => _)
+  )
 }
 
 /**
@@ -39,7 +60,11 @@ export function collectAllUnitParN_<R, E, A>(mas: Iterable<Managed<R, E, A>>, n:
  * results. For a sequential version, see `collectAllUnit`.
  *
  * Unlike `collectAllUnitPar`, this method will use at most `n` fibers.
+ *
+ * @dataFirst collectAllUnitParN_
+ * @trace call
  */
 export function collectAllUnitParN(n: number): <R, E, A>(mas: Iterable<Managed<R, E, A>>) => Managed<R, E, void> {
-  return (mas) => collectAllUnitParN_(mas, n)
+  const trace = accessCallTrace()
+  return (mas) => traceCall(collectAllUnitParN_, trace)(mas, n)
 }

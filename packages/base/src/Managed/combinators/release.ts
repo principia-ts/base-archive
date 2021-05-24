@@ -1,4 +1,8 @@
+// tracing: off
+
 import type { Managed } from '../core'
+
+import { accessCallTrace, traceCall } from '@principia/compile/util'
 
 import { fromEffect } from '../core'
 import { useNow } from './use'
@@ -8,7 +12,10 @@ import { useNow } from './use'
  * conceptually "close" a scope when composing multiple managed effects.
  * Note that this is only safe if the result of this managed effect is valid
  * outside its scope.
+ *
+ * @trace call
  */
 export function release<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, A> {
-  return fromEffect(useNow(ma))
+  const trace = accessCallTrace()
+  return traceCall(fromEffect, trace)(useNow(ma))
 }

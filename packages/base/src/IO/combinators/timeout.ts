@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
 import type { IO } from '../core'

@@ -1,6 +1,10 @@
+// tracing: off
+
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
 import type { IO } from '../core'
+
+import { traceAs } from '@principia/compile/util'
 
 import { deferTotal, fail, flatten, pure } from '../core'
 import { timeoutTo_ } from './timeoutTo'
@@ -12,14 +16,7 @@ import { timeoutTo_ } from './timeoutTo'
  * @trace 2
  */
 export function timeoutFail_<R, E, A, E1>(ma: IO<R, E, A>, d: number, e: () => E1): IO<R & Has<Clock>, E | E1, A> {
-  return flatten(
-    timeoutTo_(
-      ma,
-      d,
-      deferTotal(() => fail(e())),
-      pure
-    )
-  )
+  return flatten(timeoutTo_(ma, d, deferTotal(traceAs(e, () => fail(e()))), pure))
 }
 
 /**

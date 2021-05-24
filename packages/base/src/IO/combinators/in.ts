@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Scope } from '../../Scope'
 import type { IO } from '../core'
 

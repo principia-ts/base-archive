@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
 import type { Option } from '../../Option'
@@ -123,7 +125,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
               pipe(
                 fa,
                 matchM(
-                  (e) => pipe(f(e, O.Some(b)), map(E.Left)),
+                  traceAs(f, (e) => pipe(f(e, O.Some(b)), map(E.Left))),
                   (a) => loop(a)
                 )
               )

@@ -1,5 +1,9 @@
+// tracing: off
+
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
+
+import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as E from '../../Either'
 import { sequential } from '../../ExecutionStrategy'
@@ -10,21 +14,20 @@ import { tuple } from '../../tuple'
 import { Managed } from '../core'
 import * as I from '../internal/_io'
 import * as RM from '../ReleaseMap'
-import { releaseAll } from './releaseAll'
+import { releaseAll_ } from './releaseAll'
 
-export function timeout(d: number) {
-  return <R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E, O.Option<A>> =>
-    new Managed(
-      I.uninterruptibleMask(({ restore }) =>
+/**
+ * @trace call
+ */
+export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & Has<Clock>, E, O.Option<A>> {
+  const trace = accessCallTrace()
+  return new Managed(
+    I.uninterruptibleMask(
+      traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
           const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & Has<Clock>, RM.ReleaseMap]>())
           const innerReleaseMap      = yield* _(RM.make)
-          const earlyRelease         = yield* _(
-            pipe(
-              outerReleaseMap,
-              RM.add((ex) => releaseAll(ex, sequential)(innerReleaseMap))
-            )
-          )
+          const earlyRelease         = yield* _(RM.add(outerReleaseMap, (ex) => releaseAll_(innerReleaseMap, ex, sequential)))
 
           const id         = yield* _(I.fiberId())
           const raceResult = yield* _(
@@ -50,7 +53,7 @@ export function timeout(d: number) {
               (fiber) =>
                 pipe(
                   fiber.interruptAs(id),
-                  I.ensuring(pipe(innerReleaseMap, releaseAll(Ex.interrupt(id), sequential))),
+                  I.ensuring(releaseAll_(innerReleaseMap, Ex.interrupt(id), sequential)),
                   I.forkDaemon,
                   I.as(() => O.None())
                 ),
@@ -61,4 +64,5 @@ export function timeout(d: number) {
         })
       )
     )
+  )
 }

@@ -7,7 +7,7 @@ import type { Option } from '../../Option'
 import type { Scope } from '../../Scope'
 import type { FailureReporter, IO, UIO, URIO } from '../core'
 
-import { traceAs } from '@principia/compile/util'
+import { accessCallTrace, traceAs, traceCall } from '@principia/compile/util'
 
 import * as O from '../../Option'
 import { globalScope } from '../../Scope'
@@ -71,9 +71,12 @@ export function forkScopeMask<R, E, A>(
  *
  * The fiber is forked with interrupt supervision mode, meaning that when the
  * fiber that forks the child exits, the child will be interrupted.
+ *
+ * @trace call
  */
 export function forkIn_<R, E, A>(io: IO<R, E, A>, scope: Scope<Exit<any, any>>): URIO<R, RuntimeFiber<E, A>> {
-  return new Fork(io, O.Some(scope), O.None())
+  const trace = accessCallTrace()
+  return new Fork(io, O.Some(scope), O.None(), trace)
 }
 
 /**
@@ -87,18 +90,19 @@ export function forkIn_<R, E, A>(io: IO<R, E, A>, scope: Scope<Exit<any, any>>):
  * The fiber is forked with interrupt supervision mode, meaning that when the
  * fiber that forks the child exits, the child will be interrupted.
  *
+ * @trace call
  * @dataFirst forkIn_
  */
 export function forkIn(scope: Scope<Exit<any, any>>): <R, E, A>(io: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {
-  return (io) => forkIn_(io, scope)
+  const trace = accessCallTrace()
+  return (io) => traceCall(forkIn_, trace)(io, scope)
 }
 
 /**
  * Returns an effect that races this effect with the specified effect, calling
  * the specified finisher as soon as one result or the other has been computed.
  *
- * @trace 2
- * @trace 3
+ * @trace call
  */
 export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   left: IO<R, E, A>,
@@ -107,7 +111,8 @@ export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
   scope: Option<Scope<Exit<any, any>>> = O.None()
 ): IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
-  return new Race(left, right, leftWins, rightWins, scope)
+  const trace = accessCallTrace()
+  return new Race(left, right, leftWins, rightWins, scope, trace)
 }
 
 /**
@@ -115,8 +120,7 @@ export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
  * the specified finisher as soon as one result or the other has been computed.
  *
  * @dataFirst raceWith_
- * @trace 1
- * @trace 2
+ * @trace call
  */
 export function raceWith<E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   right: IO<R1, E1, A1>,
@@ -124,7 +128,8 @@ export function raceWith<E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
   scope: Option<Scope<Exit<any, any>>> = O.None()
 ): <R>(left: IO<R, E, A>) => IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
-  return (left) => new Race(left, right, leftWins, rightWins, scope)
+  const trace = accessCallTrace()
+  return (left) => new Race(left, right, leftWins, rightWins, scope, trace)
 }
 
 export type Grafter = <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
@@ -140,28 +145,34 @@ export type Grafter = <R, E, A>(effect: IO<R, E, A>) => IO<R, E, A>
  * @trace 0
  */
 export function transplant<R, E, A>(f: (_: Grafter) => IO<R, E, A>): IO<R, E, A> {
-  return forkScopeWith((scope) => f((e) => new OverrideForkScope(e, O.Some(scope))))
+  return forkScopeWith(traceAs(f, (scope) => f((e) => new OverrideForkScope(e, O.Some(scope)))))
 }
 
 /**
  * Forks the effect into a new fiber attached to the global scope. Because the
  * new fiber is attached to the global scope, when the fiber executing the
  * returned effect terminates, the forked fiber will continue running.
+ *
+ * @trace call
  */
 export function forkDaemon<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
-  return new Fork(ma, O.Some(globalScope), O.None())
+  const trace = accessCallTrace()
+  return new Fork(ma, O.Some(globalScope), O.None(), trace)
 }
 
 /**
  * Forks the effect into a new fiber attached to the global scope. Because the
  * new fiber is attached to the global scope, when the fiber executing the
  * returned effect terminates, the forked fiber will continue running.
+ *
+ * @trace call
  */
 export function forkDaemonReport_<R, E, A>(
   ma: IO<R, E, A>,
   reportFailure: FailureReporter
 ): URIO<R, FiberContext<E, A>> {
-  return new Fork(ma, O.Some(globalScope), O.Some(reportFailure))
+  const trace = accessCallTrace()
+  return new Fork(ma, O.Some(globalScope), O.Some(reportFailure), trace)
 }
 
 /**
@@ -170,11 +181,13 @@ export function forkDaemonReport_<R, E, A>(
  * returned effect terminates, the forked fiber will continue running.
  *
  * @dataFirst forkDaemonReport_
+ * @trace call
  */
 export function forkDaemonReport(
   reportFailure: FailureReporter
 ): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
-  return (ma) => forkDaemonReport_(ma, reportFailure)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(forkDaemonReport_, trace)(ma, reportFailure)
 }
 
 /**
@@ -187,13 +200,16 @@ export function forkDaemonReport(
  *
  * The fiber is forked with interrupt supervision mode, meaning that when the
  * fiber that forks the child exits, the child will be interrupted.
+ *
+ * @trace call
  */
 export function forkInReport_<R, E, A>(
   ma: IO<R, E, A>,
   scope: Scope<Exit<any, any>>,
   reportFailure: FailureReporter
 ): URIO<R, RuntimeFiber<E, A>> {
-  return new Fork(ma, O.Some(scope), O.Some(reportFailure))
+  const trace = accessCallTrace()
+  return new Fork(ma, O.Some(scope), O.Some(reportFailure), trace)
 }
 
 /**
@@ -206,20 +222,26 @@ export function forkInReport_<R, E, A>(
  *
  * The fiber is forked with interrupt supervision mode, meaning that when the
  * fiber that forks the child exits, the child will be interrupted.
+ *
+ * @trace call
  */
 export function forkInReport(
   scope: Scope<Exit<any, any>>,
   reportFailure: FailureReporter
 ): <R, E, A>(ma: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {
-  return (ma) => forkInReport_(ma, scope, reportFailure)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(forkInReport_, trace)(ma, scope, reportFailure)
 }
 
 /**
  * Returns a new effect that will utilize the specified scope to supervise
  * any fibers forked within the original effect.
+ *
+ * @trace call
  */
 export function overrideForkScope_<R, E, A>(ma: IO<R, E, A>, scope: Scope<Exit<any, any>>): IO<R, E, A> {
-  return new OverrideForkScope(ma, O.Some(scope))
+  const trace = accessCallTrace()
+  return new OverrideForkScope(ma, O.Some(scope), trace)
 }
 
 /**
@@ -227,15 +249,20 @@ export function overrideForkScope_<R, E, A>(ma: IO<R, E, A>, scope: Scope<Exit<a
  * any fibers forked within the original effect.
  *
  * @dataFirst overrideForkScope_
+ * @trace call
  */
 export function overrideForkScope(scope: Scope<Exit<any, any>>): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
-  return (ma) => overrideForkScope_(ma, scope)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(overrideForkScope_, trace)(ma, scope)
 }
 
 /**
  * Returns a new effect that will utilize the default scope (fiber scope) to
  * supervise any fibers forked within the original effect.
+ *
+ * @trace call
  */
 export function defaultForkScope<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return new OverrideForkScope(ma, O.None())
+  const trace = accessCallTrace()
+  return new OverrideForkScope(ma, O.None(), trace)
 }

@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { UIO } from '../core'
 
 import { deferTotal, effectTotal } from '../core'

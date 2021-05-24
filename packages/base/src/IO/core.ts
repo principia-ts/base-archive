@@ -30,7 +30,6 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
-import { DeferMaybeWith } from '../FiberRef/internal/io'
 import { constant, flow, identity, pipe } from '../function'
 import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
@@ -43,6 +42,7 @@ import { tuple } from '../tuple'
 import {
   Bind,
   CheckDescriptor,
+  DeferMaybeWith,
   DeferPartialWith,
   DeferTotalWith,
   EffectAsync,
@@ -57,8 +57,7 @@ import {
   Read,
   Succeed,
   Supervise,
-  Yield
-} from './primitives'
+  Yield } from './primitives'
 
 export * from './primitives'
 
@@ -2253,9 +2252,12 @@ export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  * fibers leak. This behavior is called "auto supervision", and if this
  * behavior is not desired, you may use the `forkDaemon` or `forkIn`
  * methods.
+ *
+ * @trace call
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
-  return new Fork(ma, O.None(), O.None())
+  const trace = accessCallTrace()
+  return new Fork(ma, O.None(), O.None(), trace)
 }
 
 /**
@@ -2279,9 +2281,12 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  * fibers leak. This behavior is called "auto supervision", and if this
  * behavior is not desired, you may use the `forkDaemon` or `forkIn`
  * methods.
+ *
+ * @trace call
  */
 export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
-  return (ma) => new Fork(ma, O.None(), O.Some(reportFailure))
+  const trace = accessCallTrace()
+  return (ma) => new Fork(ma, O.None(), O.Some(reportFailure), trace)
 }
 
 /**
@@ -3562,7 +3567,7 @@ export function swapWith<R, E, A, R1, E1, A1>(
 /**
  * A more powerful variation of `timed` that allows specifying the clock.
  *
- * @trace all
+ * @trace call
  */
 export function timedWith_<R, E, A, R1, E1>(ma: IO<R, E, A>, msTime: IO<R1, E1, number>) {
   const trace = accessCallTrace()

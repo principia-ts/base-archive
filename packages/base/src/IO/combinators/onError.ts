@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Cause } from '../../Cause/core'
 import type { IO } from '../core'
 

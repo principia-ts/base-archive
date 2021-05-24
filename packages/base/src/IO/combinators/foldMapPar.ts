@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Monoid } from '../../Monoid'
 import type { IO } from '../core'
 
@@ -36,6 +38,8 @@ export function foldMapPar<M>(M: Monoid<M>) {
     /**
      * @trace 0
      */
-    <A>(f: (a: A) => M) => <R, E>(as: Iterable<IO<R, E, A>>): IO<R, E, M> => foldMapPar_(M)(as, f)
+    <A>(f: (a: A) => M) =>
+      <R, E>(as: Iterable<IO<R, E, A>>): IO<R, E, M> =>
+        foldMapPar_(M)(as, f)
   )
 }

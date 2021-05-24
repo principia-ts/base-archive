@@ -1,4 +1,8 @@
+// tracing: off
+
 import type { Managed } from '../core'
+
+import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
@@ -8,7 +12,7 @@ import { tuple } from '../../tuple'
 import * as M from '../core'
 import * as I from '../internal/io'
 import * as RelMap from '../ReleaseMap'
-import { releaseAll } from './releaseAll'
+import { releaseAll_ } from './releaseAll'
 import { releaseMap } from './releaseMap'
 
 /**
@@ -23,39 +27,42 @@ import { releaseMap } from './releaseMap'
  *
  * This constructor can be used to create an expressive control flow that uses
  * several instances of a managed resource.
+ *
+ * @trace call
  */
 export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => I.IO<R, E, A>> {
+  const trace = accessCallTrace()
   return M.gen(function* (_) {
-    const rm  = yield* _(releaseMap)
+    const rm  = yield* _(releaseMap())
     const key = yield* _(
       pipe(
-        rm,
-        RelMap.addIfOpen((_) => I.unit()),
+        RelMap.addIfOpen(rm, (_) => I.unit()),
         I.bind(O.match(() => I.interrupt, I.succeed)),
         M.fromEffect
       )
     )
     return (newResource: Managed<R, E, A>) =>
-      I.uninterruptibleMask(({ restore }) =>
-        I.gen(function* (_) {
-          yield* _(
-            pipe(
-              rm,
-              RelMap.replace(key, (_) => I.unit()),
-              I.bind(
-                O.match(
-                  () => I.unit(),
-                  (fin) => fin(Ex.unit())
+      I.uninterruptibleMask(
+        traceFrom(trace, ({ restore }) =>
+          I.gen(function* (_) {
+            yield* _(
+              pipe(
+                RelMap.replace(rm, key, (_) => I.unit()),
+                I.bind(
+                  O.match(
+                    () => I.unit(),
+                    (fin) => fin(Ex.unit())
+                  )
                 )
               )
             )
-          )
-          const r     = yield* _(I.ask<R>())
-          const inner = yield* _(RelMap.make)
-          const a     = yield* _(pipe(newResource.io, I.giveAll(tuple(r, inner)), restore))
-          yield* _(RelMap.replace(key, (exit) => releaseAll(exit, sequential)(inner))(rm))
-          return a[1]
-        })
+            const r     = yield* _(I.ask<R>())
+            const inner = yield* _(RelMap.make)
+            const a     = yield* _(pipe(newResource.io, I.giveAll(tuple(r, inner)), restore))
+            yield* _(RelMap.replace(rm, key, (exit) => releaseAll_(inner, exit, sequential)))
+            return a[1]
+          })
+        )
       )
   })
 }

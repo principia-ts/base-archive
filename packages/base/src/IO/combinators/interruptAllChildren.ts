@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { IO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'

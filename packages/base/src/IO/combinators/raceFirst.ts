@@ -1,7 +1,9 @@
+// tracing: off
+
 import type { Exit } from '../../Exit'
 import type { IO } from '../core'
 
-import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
+import { accessCallTrace, traceCall } from '@principia/compile/util'
 
 import { pipe } from '../../function'
 import * as I from '../core'
@@ -12,7 +14,10 @@ import { race_ } from './race'
  */
 export function raceFirst_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, that: IO<R1, E1, A1>): IO<R & R1, E | E1, A | A1> {
   const trace = accessCallTrace()
-  return pipe(race_(I.result(ma), I.result(that)), I.bind(traceFrom(trace, (a) => I.done(a as Exit<E | E1, A | A1>))))
+  return pipe(
+    traceCall(race_, trace)(I.result(ma), I.result(that)),
+    I.bind((a) => I.done(a as Exit<E | E1, A | A1>))
+  )
 }
 
 /**

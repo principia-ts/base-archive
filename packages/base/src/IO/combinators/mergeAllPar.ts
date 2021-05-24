@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { IO } from '../core'
 
 import * as I from '../../Iterable'

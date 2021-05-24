@@ -119,6 +119,7 @@ export function effectCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => 
 /**
  * Imports a synchronous side-effect that may throw into a Managed
  *
+ * @dataFirst effectCatch_
  * @trace 0
  */
 export function effectCatch<E>(onThrow: (error: unknown) => E) {
@@ -219,6 +220,7 @@ export function identity<R>(): Managed<R, never, R> {
  * Lifts a `IO<S, R, E, A>` into `Managed<S, R, E, A>` with a release action.
  * The acquire and release actions will be performed uninterruptibly.
  *
+ * @dataFirst make_
  * @trace 0
  */
 export function make<R1, A>(
@@ -244,6 +246,7 @@ export function make_<R, E, A, R1>(
  * Lifts a `IO<S, R, E, A>` into `Managed<S, R, E, A>` with a release action
  * that handles `Exit`. The acquire and release actions will be performed uninterruptibly.
  *
+ * @dataFirst makeExit_
  * @trace call
  * @trace 0
  */
@@ -271,7 +274,7 @@ export function makeExit_<R, E, A, R1>(
       I.gen(function* (_) {
         const r  = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
         const a  = yield* traceCall(_, trace)(I.giveAll_(acquire, r[0]))
-        const rm = yield* traceCall(_, release['$trace'])(add((ex) => I.giveAll_(release(a, ex), r[0]))(r[1]))
+        const rm = yield* traceCall(_, release['$trace'])(add(r[1], (ex) => I.giveAll_(release(a, ex), r[0])))
         return tuple(rm, a)
       })
     )
@@ -297,7 +300,7 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
         I.gen(function* (_) {
           const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
           const reserved        = yield* _(I.giveAll_(reservation, r))
-          const releaseKey      = yield* _(addIfOpen((x) => I.giveAll_(reserved.release(x), r))(releaseMap))
+          const releaseKey      = yield* _(addIfOpen(releaseMap, (x) => I.giveAll_(reserved.release(x), r)))
           const finalizerAndA   = yield* _(
             I.deferTotal(() => {
               switch (releaseKey._tag) {
@@ -309,7 +312,7 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
                     reserved.acquire,
                     I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
                     restore,
-                    I.map((a): readonly [Finalizer, A] => tuple((e) => release(releaseKey.value, e)(releaseMap), a))
+                    I.map((a): readonly [Finalizer, A] => tuple((e) => release(releaseMap, releaseKey.value, e), a))
                   )
                 }
               }
@@ -354,6 +357,7 @@ export function makeReservation_<R, E, A, R2>(
 /**
  * Make a new reservation
  *
+ * @dataFirst makeReservation_
  * @trace 0
  */
 export function makeReservation<R2>(
@@ -588,6 +592,7 @@ export function bimap_<R, E, A, B, C>(pab: Managed<R, E, A>, f: (e: E) => B, g: 
  * Returns an effect whose failure and success channels have been mapped by
  * the specified pair of functions, `f` and `g`.
  *
+ * @dataFirst bimap_
  * @trace 0
  * @trace 1
  */
@@ -607,6 +612,7 @@ export function mapError_<R, E, A, D>(pab: Managed<R, E, A>, f: (e: E) => D): Ma
 /**
  * Returns an effect whose failure is mapped by the specified `f` function.
  *
+ * @dataFirst mapError_
  * @trace 0
  */
 export function mapError<E, D>(f: (e: E) => D): <R, A>(pab: Managed<R, E, A>) => Managed<R, D, A> {
@@ -625,6 +631,7 @@ export function mapErrorCause_<R, E, A, D>(ma: Managed<R, E, A>, f: (e: Cause<E>
 /**
  * Returns a Managed whose full failure is mapped by the specified `f` function.
  *
+ * @dataFirst mapErrorCause_
  * @trace 0
  */
 export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(ma: Managed<R, E, A>) => Managed<R, D, A> {
@@ -690,6 +697,7 @@ export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 /**
  * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
  *
+ * @dataFirst matchCauseM_
  * @trace 0
  * @trace 1
  */
@@ -719,6 +727,7 @@ export function matchM_<R, E, A, R1, E1, B, R2, E2, C>(
  * Recovers from errors by accepting one Managed to execute for the case of an
  * error, and one Managed to execute for the case of success.
  *
+ * @dataFirst matchM_
  * @trace 0
  * @trace 1
  */
@@ -750,6 +759,7 @@ export function match_<R, E, A, B, C>(
  * does not fail, but succeeds with the value returned by the left or right
  * function passed to `match`.
  *
+ * @dataFirst match_
  * @trace 0
  * @trace 1
  */
@@ -777,6 +787,7 @@ export function matchCause_<R, E, A, B, C>(
 /**
  * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
  *
+ * @dataFirst matchCause_
  * @trace 0
  * @trace 1
  */
@@ -810,6 +821,7 @@ export function map_<R, E, A, B>(fa: Managed<R, E, A>, f: (a: A) => B): Managed<
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
  *
+ * @dataFirst map_
  * @trace 0
  */
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Managed<R, E, A>) => Managed<R, E, B> {
@@ -841,6 +853,7 @@ export function mapM_<R, E, A, R1, E1, B>(
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
  *
+ * @dataFirst mapM_
  * @trace 0
  */
 export function mapM<R1, E1, A, B>(
@@ -860,6 +873,7 @@ export function mapM<R1, E1, A, B>(
  * the passing of its value to the specified continuation function `f`,
  * followed by the managed that it returns.
  *
+ * @dataFirst bind_
  * @trace 0
  */
 export function bind<R1, E1, A, A1>(
@@ -910,6 +924,7 @@ export function tap_<R, E, A, Q, D>(ma: Managed<R, E, A>, f: (a: A) => Managed<Q
 /**
  * Returns a managed that effectfully peeks at the acquired resource.
  *
+ * @dataFirst tap_
  * @trace 0
  */
 export function tap<R1, E1, A>(
@@ -965,6 +980,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
 /**
  * Returns an effect that effectfully peeks at the failure or success of the acquired resource.
  *
+ * @dataFirst tapBoth_
  * @trace 0
  * @trace 1
  */
@@ -995,6 +1011,7 @@ export function tapCause_<R, E, A, R1, E1>(
  * Returns an effect that effectually peeks at the cause of the failure of
  * the acquired resource.
  *
+ * @dataFirst tapCause_
  * @trace 0
  */
 export function tapCause<E, R1, E1>(
@@ -1018,6 +1035,7 @@ export function tapError_<R, E, A, R1, E1>(
 /**
  * Returns an effect that effectfully peeks at the failure of the acquired resource.
  *
+ * @dataFirst tapError_
  * @trace 0
  */
 export function tapError<E, R1, E1>(
@@ -1043,6 +1061,7 @@ export function tapM_<R, E, A, R1, E1>(
  * Like `Managed#tap`, but uses a function that returns an `IO` value rather than a
  * `Managed` value.
  *
+ * @dataFirst tapM_
  * @trace 0
  */
 export function tapM<A, R1, E1>(
@@ -1106,6 +1125,7 @@ export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Man
 /**
  * Modify the environment required to run a Managed
  *
+ * @dataFirst gives_
  * @trace 0
  */
 export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => Managed<R0, E, A> {
@@ -1453,6 +1473,7 @@ export function bindError_<R, E, A, R1, E1>(
 /**
  * Effectfully map the error channel
  *
+ * @dataFirst bindError_
  * @trace 0
  */
 export function bindError<E, R1, E1>(
@@ -1478,6 +1499,7 @@ export function foldl_<R, E, A, B>(as: Iterable<A>, b: B, f: (b: B, a: A) => Man
 /**
  * Folds an Iterable<A> using an effectual function f, working sequentially from left to right.
  *
+ * @dataFirst foldl_
  * @trace 1
  */
 export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, B> {
@@ -1511,14 +1533,17 @@ export function foldMap_<M>(M: P.Monoid<M>) {
 /**
  * Combines an array of `Managed` effects using a `Monoid`
  *
+ * @dataFirst foldMap_
  * @category Combinators
  * @since 1.0.0
  */
 export function foldMap<M>(M: P.Monoid<M>) {
-  /**
-   * @trace 0
-   */
-  return <A>(f: (a: A) => M) =>
+  return <A>(
+      /**
+       * @trace 0
+       */
+      f: (a: A) => M
+    ) =>
     <R, E>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, M> =>
       foldMap_(M)(mas, f)
 }
@@ -1661,6 +1686,7 @@ export function if_<R, E, A, R1, E1, B>(
 /**
  * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
  *
+ * @dataFirst if_
  * @trace call
  */
 function _if<R, E, A, R1, E1, B>(onTrue: () => Managed<R, E, A>, onFalse: () => Managed<R1, E1, B>) {
@@ -1825,6 +1851,7 @@ export function mapEffectWith_<R, E, A, E1, B>(
  * Returns a Managed whose success is mapped by the specified side effecting
  * `f` function, translating any thrown exceptions into typed failed effects.
  *
+ * @dataFirst mapEffectWith_
  * @trace 0
  */
 export function mapEffectWith<A, E1, B>(
@@ -1848,6 +1875,7 @@ export function mapEffect_<R, E, A, B>(ma: Managed<R, E, A>, f: (a: A) => B): Ma
  * Returns a Managed whose success is mapped by the specified side effecting
  * `f` function.
  *
+ * @dataFirst mapEffect_
  * @trace 0
  */
 export function mapEffect<A, B>(f: (a: A) => B): <R, E>(ma: Managed<R, E, A>) => Managed<R, unknown, B> {
@@ -1881,6 +1909,7 @@ export function mergeAll_<R, E, A, B>(mas: Iterable<Managed<R, E, A>>, b: B, f: 
 /**
  * Merges an `Iterable<Managed>` to a single `Managed`, working sequentially.
  *
+ * @dataFirst mergeAll_
  * @trace 1
  */
 export function mergeAll<A, B>(
@@ -1955,6 +1984,7 @@ export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown):
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown.
  *
+ * @dataFirst orDieWith_
  * @trace 0
  */
 export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
@@ -1998,6 +2028,7 @@ export function orElse_<R, E, A, R1, E1, B>(
  * Executes this effect and returns its value, if it succeeds, but
  * otherwise executes the specified effect.
  *
+ * @dataFirst orElse_
  * @trace call
  * @trace 0
  */
@@ -2081,7 +2112,6 @@ export function orElseOptional_<R, E, A, R1, E1, B>(
   ma: Managed<R, O.Option<E>, A>,
   that: () => Managed<R1, O.Option<E1>, B>
 ): Managed<R & R1, O.Option<E | E1>, A | B> {
-  const trace = accessCallTrace()
   return catchAll_(
     ma,
     traceAs(
@@ -2099,6 +2129,7 @@ export function orElseOptional_<R, E, A, R1, E1, B>(
  * fails with the `None` value, in which case it will produce the value of
  * the specified effect.
  *
+ * @dataFirst orElseOptional_
  * @trace 0
  */
 export function orElseOptional<R1, E1, B>(
@@ -2124,6 +2155,7 @@ export function orElseSucceed_<R, E, A, A1>(ma: Managed<R, E, A>, that: () => A1
  * Executes this Managed and returns its value, if it succeeds, but
  * otherwise succeeds with the specified value.
  *
+ * @dataFirst orElseSucceed_
  * @trace 0
  */
 export function orElseSucceed<A1>(that: () => A1): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, A1 | A> {
@@ -2152,6 +2184,7 @@ export function refineOrDieWith_<R, E, A, E1>(
  * Keeps some of the errors, and terminates the fiber with the rest, using
  * the specified function to convert the `E` into a `Throwable`.
  *
+ * @dataFirst refineOrDieWith_
  * @trace call
  */
 export function refineOrDieWith<E, E1>(
@@ -2175,6 +2208,7 @@ export function refineOrDie_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (e: E) => O.
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  *
+ * @dataFirst refineOrDie_
  * @trace call
  */
 export function refineOrDie<E, E1>(pf: (e: E) => O.Option<E1>): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
@@ -2204,6 +2238,7 @@ export function rejectM_<R, E, A, R1, E1>(
  * translating the successful match into a failure, otherwise continue with
  * our held value.
  *
+ * @dataFirst rejectM_
  * @trace 0
  */
 export function rejectM<A, R1, E1>(
@@ -2229,6 +2264,7 @@ export function reject_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (a: A) => O.Optio
  * Fail with the returned value if the partial function `pf` matches, otherwise
  * continue with our held value.
  *
+ * @dataFirst reject_
  * @trace 0
  */
 export function reject<A, E1>(pf: (a: A) => O.Option<E1>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E1 | E, A> {
@@ -2249,6 +2285,7 @@ export function require_<R, E, A>(ma: Managed<R, E, O.Option<A>>, error: () => E
 }
 
 /**
+ * @dataFirst require_
  * @trace 0
  */
 function _require<E>(error: () => E): <R, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E, A> {
@@ -2286,6 +2323,7 @@ export function someOrElse_<R, E, A, B>(ma: Managed<R, E, O.Option<A>>, onNone: 
 /**
  * Extracts the optional value, or returns the given 'default'.
  *
+ * @dataFirst someOrElse_
  * @trace 0
  */
 export function someOrElse<B>(onNone: () => B): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E, A | B> {
@@ -2314,6 +2352,7 @@ export function someOrElseM_<R, E, A, R1, E1, B>(
 /**
  * Extracts the optional value, or executes the effect 'default'.
  *
+ * @dataFirst someOrElseM_
  * @trace call
  */
 export function someOrElseM<R1, E1, B>(
@@ -2341,6 +2380,7 @@ export function someOrFailWith_<R, E, A, E1>(ma: Managed<R, E, O.Option<A>>, e: 
 /**
  * Extracts the optional value, or fails with the given error 'e'.
  *
+ * @dataFirst someOrFailWith_
  * @trace 0
  */
 export function someOrFailWith<E1>(e: () => E1): <R, E, A>(ma: Managed<R, E, O.Option<A>>) => Managed<R, E | E1, A> {
@@ -2390,6 +2430,7 @@ export function swapWith_<R, E, A, R1, E1, B>(
 /**
  * Swap the error and result, then apply an effectful function to the effect
  *
+ * @dataFirst swapWith_
  * @trace call
  */
 export function swapWith<R, E, A, R1, E1, B>(
@@ -2435,6 +2476,7 @@ export function unless_<R, E, A>(ma: Managed<R, E, A>, b: () => boolean): Manage
 /**
  * The moral equivalent of `if (!p) exp`
  *
+ * @dataFirst unless_
  * @trace 0
  */
 export function unless(b: () => boolean): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> {
@@ -2460,6 +2502,7 @@ export function unlessM_<R, E, A, R1, E1>(
 /**
  * The moral equivalent of `if (!p) exp` when `p` has side-effects
  *
+ * @dataFirst unlessM_
  * @trace call
  */
 export function unlessM<R1, E1>(
@@ -2504,6 +2547,7 @@ export function when_<R, E, A>(ma: Managed<R, E, A>, b: () => boolean): Managed<
 /**
  * The moral equivalent of `if (p) exp`
  *
+ * @dataFirst when_
  * @trace 0
  */
 export function when(b: () => boolean): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, void> {
@@ -2529,6 +2573,7 @@ export function whenM_<R, E, A, R1, E1>(
 /**
  * The moral equivalent of `if (p) exp` when `p` has side-effects
  *
+ * @dataFirst whenM_
  * @trace call
  */
 export function whenM<R1, E1>(

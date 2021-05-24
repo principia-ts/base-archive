@@ -1,6 +1,10 @@
+// tracing: off
+
 import type { ReadonlyRecord } from '../../Record'
 import type { _E, _R, EnforceNonEmptyRecord } from '../../util/types'
 import type { Managed } from '../core'
+
+import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import { parallel, sequential } from '../../ExecutionStrategy'
 import { identity } from '../../function'
@@ -21,6 +25,8 @@ import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
+ *
+ * @trace 2
  */
 export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fa: Managed<R, E, A>,
@@ -34,7 +40,7 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
       I.crossWithPar_(
         I.gives_(fa.io, (_: R & R1) => tuple(_, l)),
         I.gives_(fb.io, (_: R & R1) => tuple(_, r)),
-        ([_, a], [__, a2]) => f(a, a2)
+        traceAs(f, ([_, a], [__, a2]) => f(a, a2))
       )
     )
   })
@@ -43,6 +49,9 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
 /**
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
+ *
+ * @dataFirst crossWithPar_
+ * @trace 1
  */
 export function crossWithPar<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
@@ -51,50 +60,102 @@ export function crossWithPar<A, R1, E1, B, C>(
   return (fa) => crossWithPar_(fa, fb, f)
 }
 
+/**
+ * @trace call
+ */
 export function crossPar_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, readonly [A, B]> {
-  return crossWithPar_(fa, fb, tuple)
+  const trace = accessCallTrace()
+  return crossWithPar_(
+    fa,
+    fb,
+    traceFrom(trace, (a, b) => tuple(a, b))
+  )
 }
 
+/**
+ * @dataFirst crossPar_
+ * @trace call
+ */
 export function crossPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E | E1, readonly [A, B]> {
-  return (fa) => crossPar_(fa, fb)
+  const trace = accessCallTrace()
+  return (fa) => traceCall(crossPar_, trace)(fa, fb)
 }
 
+/**
+ * @trace call
+ */
 export function apPar_<R, E, A, R1, E1, B>(
   fab: Managed<R1, E1, (a: A) => B>,
   fa: Managed<R, E, A>
 ): Managed<R & R1, E | E1, B> {
-  return crossWithPar_(fab, fa, (f, a) => f(a))
+  const trace = accessCallTrace()
+  return crossWithPar_(
+    fab,
+    fa,
+    traceFrom(trace, (f, a) => f(a))
+  )
 }
 
+/**
+ * @dataFirst apPar_
+ * @trace call
+ */
 export function apPar<R, E, A>(
   fa: Managed<R, E, A>
 ): <R1, E1, B>(fab: Managed<R1, E1, (a: A) => B>) => Managed<R & R1, E | E1, B> {
-  return (fab) => apPar_(fab, fa)
+  const trace = accessCallTrace()
+  return (fab) => traceCall(apPar_, trace)(fab, fa)
 }
 
+/**
+ * @trace call
+ */
 export function aplPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
-  return crossWithPar_(fa, fb, (a, _) => a)
+  const trace = accessCallTrace()
+  return crossWithPar_(
+    fa,
+    fb,
+    traceFrom(trace, (a, _) => a)
+  )
 }
 
+/**
+ * @dataFirst aplPar_
+ * @trace call
+ */
 export function aplPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
-  return (fa) => aplPar_(fa, fb)
+  const trace = accessCallTrace()
+  return (fa) => traceCall(aplPar_, trace)(fa, fb)
 }
 
+/**
+ * @trace call
+ */
 export function aprPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
-  return crossWithPar_(fa, fb, (_, b) => b)
+  const trace = accessCallTrace()
+  return crossWithPar_(
+    fa,
+    fb,
+    traceFrom(trace, (_, b) => b)
+  )
 }
 
+/**
+ * @dataFirst aprPar_
+ * @trace call
+ */
 export function aprPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
-  return (fa) => aprPar_(fa, fb)
+  const trace = accessCallTrace()
+  return (fa) => traceCall(aprPar_, trace)(fa, fb)
 }
 
 export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(

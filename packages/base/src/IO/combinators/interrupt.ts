@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Either } from '../../Either'
 import type { InterruptStatus } from '../../Fiber/core'
 import type { FiberId } from '../../Fiber/FiberId'
@@ -55,9 +57,12 @@ export const interrupt: IO<unknown, never, never> = bind_(fiberId(), interruptAs
  * effect becomes interruptible (the default), while if `false` is used, then
  * the effect becomes uninterruptible. These changes are compositional, so
  * they only affect regions of the effect.
+ *
+ * @trace call
  */
 export function setInterruptStatus_<R, E, A>(effect: IO<R, E, A>, flag: InterruptStatus): IO<R, E, A> {
-  return new SetInterrupt(effect, flag)
+  const trace = accessCallTrace()
+  return new SetInterrupt(effect, flag, trace)
 }
 
 /**
@@ -65,9 +70,12 @@ export function setInterruptStatus_<R, E, A>(effect: IO<R, E, A>, flag: Interrup
  * effect becomes interruptible (the default), while if `false` is used, then
  * the effect becomes uninterruptible. These changes are compositional, so
  * they only affect regions of the effect.
+ *
+ * @trace call
  */
 export function setInterruptStatus(flag: InterruptStatus): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
-  return (ma) => setInterruptStatus_(ma, flag)
+  const trace = accessCallTrace()
+  return (ma) => traceCall(setInterruptStatus_, trace)(ma, flag)
 }
 
 /**
@@ -80,9 +88,12 @@ export function setInterruptStatus(flag: InterruptStatus): <R, E, A>(ma: IO<R, E
  * WARNING: This operator "punches holes" into effects, allowing them to be
  * interrupted in unexpected places. Do not use this operator unless you know
  * exactly what you are doing. Instead, you should use `uninterruptibleMask`.
+ *
+ * @trace call
  */
 export function makeInterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return setInterruptStatus_(ma, interruptible)
+  const trace = accessCallTrace()
+  return traceCall(setInterruptStatus_, trace)(ma, interruptible)
 }
 
 /**
@@ -92,18 +103,23 @@ export function makeInterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  *
  * Uninterruptible effects may recover from all failure causes (including
  * interruption of an inner effect that has been made interruptible).
+ *
+ * @trace call
  */
 export function makeUninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return setInterruptStatus_(ma, uninterruptible)
+  const trace = accessCallTrace()
+  return traceCall(setInterruptStatus_, trace)(ma, uninterruptible)
 }
 
 /**
  * Makes the effect uninterruptible, but passes it a restore function that
  * can be used to restore the inherited interruptibility from whatever region
  * the effect is composed into.
+ *
+ * @trace 0
  */
 export function uninterruptibleMask<R, E, A>(f: (restore: InterruptStatusRestore) => IO<R, E, A>): IO<R, E, A> {
-  return checkInterruptible((flag) => makeUninterruptible(f(new InterruptStatusRestore(flag))))
+  return checkInterruptible(traceAs(f, (flag) => makeUninterruptible(f(new InterruptStatusRestore(flag)))))
 }
 
 /**
@@ -309,8 +325,13 @@ export function effectAsyncInterruptPromise<R, E, A>(
   )
 }
 
+/**
+ * @trace 0
+ */
 function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
-  return effectAsync((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(die, resolve))
-  })
+  return effectAsync(
+    traceAs(promise, (resolve) => {
+      promise().then(flow(pure, resolve)).catch(flow(die, resolve))
+    })
+  )
 }

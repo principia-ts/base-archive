@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Either } from '../../Either'
 import type { IO } from '../core'
 

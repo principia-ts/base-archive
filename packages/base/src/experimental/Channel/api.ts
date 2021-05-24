@@ -629,7 +629,7 @@ export function fromEffect<R, E, A>(io: IO<R, E, A>): Channel<R, unknown, unknow
  */
 export function managedOut<R, E, A>(managed: M.Managed<R, E, A>): Channel<R, unknown, unknown, unknown, E, A, unknown> {
   return concatMap_(
-    bracketOutExit_(RM.make, (rm, ex) => M.releaseAll(ex, sequential)(rm)),
+    bracketOutExit_(RM.make, (rm, ex) => M.releaseAll_(rm, ex, sequential)),
     (rm) =>
       pipe(
         managed.io,
@@ -1980,10 +1980,11 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
       )
     },
     (_) =>
-      M.releaseAll(
+      M.releaseAll_(
+        _,
         Ex.unit(), // FIXME: BracketOut should be BracketOutExit (From ZIO)
         sequential
-      )(_)
+      )
   )
 }
 

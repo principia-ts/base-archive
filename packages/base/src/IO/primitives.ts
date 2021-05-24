@@ -203,7 +203,8 @@ export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
   constructor(
     readonly io: IO<R, E, A>,
     readonly scope: Option<Scope<Exit<any, any>>>,
-    readonly reportFailure: Option<FailureReporter>
+    readonly reportFailure: Option<FailureReporter>,
+    readonly trace?: string
   ) {
     super()
   }
@@ -282,7 +283,8 @@ export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1
     readonly right: IO<R1, E1, A1>,
     readonly leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
     readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
-    readonly scope: Option<Scope<Exit<any, any>>>
+    readonly scope: Option<Scope<Exit<any, any>>>,
+    readonly trace?: string
   ) {
     super()
   }
@@ -294,7 +296,7 @@ export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1
 export class SetInterrupt<R, E, A> extends IO<R, E, A> {
   readonly _tag = IOTag.SetInterrupt
 
-  constructor(readonly io: IO<R, E, A>, readonly flag: InterruptStatus) {
+  constructor(readonly io: IO<R, E, A>, readonly flag: InterruptStatus, readonly trace?: string) {
     super()
   }
 }
@@ -385,7 +387,7 @@ export class GetForkScope<R, E, A> extends IO<R, E, A> {
 export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
   readonly _tag = IOTag.OverrideForkScope
 
-  constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>) {
+  constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>, readonly trace?: string) {
     super()
   }
 }

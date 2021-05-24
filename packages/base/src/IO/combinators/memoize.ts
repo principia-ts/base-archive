@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Eq } from '../../Eq'
 import type { IO, UIO } from '../core'
 
@@ -19,26 +21,28 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
   return pipe(
     RefM.makeRefM(new Map<A, P.Promise<E, B>>()),
     I.map(
-      traceAs(f, (ref) => (a: A) =>
-        I.gen(function* (_) {
-          const promise = yield* _(
-            pipe(
-              RefM.modifyM_(ref, (m) => {
-                const memo = m.get(a)
-                if (memo) {
-                  return I.succeed(tuple(memo, m))
-                } else {
-                  return I.gen(function* (_) {
-                    const p = yield* _(P.make<E, B>())
-                    yield* _(I.fork(to(p)(f(a))))
-                    return tuple(p, m.set(a, p))
-                  })
-                }
-              })
+      traceAs(
+        f,
+        (ref) => (a: A) =>
+          I.gen(function* (_) {
+            const promise = yield* _(
+              pipe(
+                RefM.modifyM_(ref, (m) => {
+                  const memo = m.get(a)
+                  if (memo) {
+                    return I.succeed(tuple(memo, m))
+                  } else {
+                    return I.gen(function* (_) {
+                      const p = yield* _(P.make<E, B>())
+                      yield* _(I.fork(to(p)(f(a))))
+                      return tuple(p, m.set(a, p))
+                    })
+                  }
+                })
+              )
             )
-          )
-          return yield* _(promise.await)
-        })
+            return yield* _(promise.await)
+          })
       )
     )
   )
@@ -58,26 +62,28 @@ export function memoizeEq<A>(eq: Eq<A>) {
       pipe(
         RefM.makeRefM(new Map<A, P.Promise<E, B>>()),
         I.map(
-          traceAs(f, (ref) => (a: A) =>
-            I.gen(function* (_) {
-              const promise = yield* _(
-                pipe(
-                  RefM.modifyM_(ref, (m) => {
-                    for (const [k, v] of m.entries()) {
-                      if (eq.equals_(k, a)) {
-                        return I.succeed(tuple(v, m))
+          traceAs(
+            f,
+            (ref) => (a: A) =>
+              I.gen(function* (_) {
+                const promise = yield* _(
+                  pipe(
+                    RefM.modifyM_(ref, (m) => {
+                      for (const [k, v] of m.entries()) {
+                        if (eq.equals_(k, a)) {
+                          return I.succeed(tuple(v, m))
+                        }
                       }
-                    }
-                    return I.gen(function* (_) {
-                      const p = yield* _(P.make<E, B>())
-                      yield* _(I.fork(to(p)(f(a))))
-                      return tuple(p, m.set(a, p))
+                      return I.gen(function* (_) {
+                        const p = yield* _(P.make<E, B>())
+                        yield* _(I.fork(to(p)(f(a))))
+                        return tuple(p, m.set(a, p))
+                      })
                     })
-                  })
+                  )
                 )
-              )
-              return yield* _(promise.await)
-            })
+                return yield* _(promise.await)
+              })
           )
         )
       )

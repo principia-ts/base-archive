@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Managed } from '../core'
 
 import { parallelN } from '../../ExecutionStrategy'
@@ -15,6 +17,8 @@ import { makeManagedReleaseMap } from './makeManagedReleaseMap'
  * - associative: `f(a, f(b, c)) == f(f(a, b), c)`
  *
  * Unlike `mergeAllPar`, this method will use at most up to `n` fibers.
+ *
+ * @trace 3
  */
 export function mergeAllParN_<R, E, A, B>(
   mas: Iterable<Managed<R, E, A>>,
@@ -43,6 +47,9 @@ export function mergeAllParN_<R, E, A, B>(
  * - associative: `f(a, f(b, c)) == f(f(a, b), c)`
  *
  * Unlike `mergeAllPar`, this method will use at most up to `n` fibers.
+ *
+ * @dataFirst mergeAllParN_
+ * @trace 2
  */
 export function mergeAllParN<A, B>(
   n: number,

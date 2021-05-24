@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Chunk } from '../../Chunk/core'
 import type { IO } from '../core'
 

@@ -216,7 +216,7 @@ function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberCo
           )
         )
         const releaseMapEntry      = yield* _(
-          RM.add((e) => pipe(fiber, interruptFiber, I.apr(releaseAllSeq_(innerReleaseMap, e))))(outerReleaseMap)
+          RM.add(outerReleaseMap, (e) => pipe(fiber, interruptFiber, I.apr(releaseAllSeq_(innerReleaseMap, e))))
         )
 
         return tuple(releaseMapEntry, fiber)

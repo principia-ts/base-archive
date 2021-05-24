@@ -4,7 +4,7 @@ import type { Exit } from '../../Exit/core'
 import type { Fiber } from '../../Fiber/core'
 import type { FiberId } from '../../Fiber/FiberId'
 
-import { accessCallTrace, traceAs, traceCall } from '@principia/compile/util'
+import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit/core'
@@ -100,7 +100,7 @@ function coordinateCrossWithPar<E, E2>() {
             () => I.halt(cw)
           )
         ),
-      (x) => I.map_(join(loser), (y) => f(x, y))
+      (x) => I.map_(join(loser), traceAs(f, (y) => f(x, y)))
     )
   }
 }
@@ -110,7 +110,8 @@ function coordinateCrossWithPar<E, E2>() {
  * @trace call
  */
 export function apPar_<R, E, A, R1, E1, B>(fab: I.IO<R, E, (a: A) => B>, fa: I.IO<R1, E1, A>): I.IO<R & R1, E | E1, B> {
-  return crossWithPar_(fab, fa, (f, a) => f(a))
+  const trace = accessCallTrace()
+  return crossWithPar_(fab, fa, traceFrom(trace, (f, a) => f(a)))
 }
 
 /**
@@ -118,14 +119,16 @@ export function apPar_<R, E, A, R1, E1, B>(fab: I.IO<R, E, (a: A) => B>, fa: I.I
  * @trace call
  */
 export function apPar<R, E, A>(fa: I.IO<R, E, A>): <Q, D, B>(fab: I.IO<Q, D, (a: A) => B>) => I.IO<Q & R, E | D, B> {
-  return (fab) => apPar_(fab, fa)
+  const trace = accessCallTrace()
+  return (fab) => traceCall(apPar_, trace)(fab, fa)
 }
 
 /**
  * @trace call
  */
 export function aplPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, A> {
-  return crossWithPar_(fa, fb, (a, _) => a)
+  const trace = accessCallTrace()
+  return crossWithPar_(fa, fb, traceFrom(trace, (a, _) => a))
 }
 
 /**
@@ -133,14 +136,16 @@ export function aplPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, 
  * @trace call
  */
 export function aplPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, A> {
-  return (fa) => aplPar_(fa, fb)
+  const trace = accessCallTrace()
+  return (fa) => traceCall(aplPar_, trace)(fa, fb)
 }
 
 /**
  * @trace call
  */
 export function aprPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B> {
-  return crossWithPar_(fa, fb, (_, b) => b)
+  const trace = accessCallTrace()
+  return crossWithPar_(fa, fb, traceFrom(trace, (_, b) => b))
 }
 
 /**
@@ -148,5 +153,6 @@ export function aprPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, 
  * @trace call
  */
 export function aprPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
-  return (fa) => aprPar_(fa, fb)
+  const trace = accessCallTrace()
+  return (fa) => traceCall(aprPar_, trace)(fa, fb)
 }

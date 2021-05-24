@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { FIO } from '../core'
 
 import * as Fiber from '../../Fiber'

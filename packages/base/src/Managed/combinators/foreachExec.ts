@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Chunk } from '../../Chunk/core'
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Managed } from '../core'
@@ -11,6 +13,8 @@ import { foreachParN_ } from './foreachParN'
  * and returns the results in a new `readonly B[]`.
  *
  * For a sequential version of this method, see `foreach`.
+ *
+ * @trace 2
  */
 export function foreachExec_<R, E, A, B>(
   as: Iterable<A>,
@@ -35,6 +39,9 @@ export function foreachExec_<R, E, A, B>(
  * and returns the results in a new `readonly B[]`.
  *
  * For a sequential version of this method, see `foreach`.
+ *
+ * @dataFirst foreachExec_
+ * @trace 1
  */
 export function foreachExec<R, E, A, B>(
   es: ExecutionStrategy,

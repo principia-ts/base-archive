@@ -169,7 +169,7 @@ export class Chain<R_, E_, O, O2> {
               )
             )
             yield* _(self.currInnerStream.set(pull))
-            yield* _(self.innerFinalizer.set((e) => M.releaseAll(e, sequential)(releaseMap)))
+            yield* _(self.innerFinalizer.set((e) => M.releaseAll_(releaseMap, e, sequential)))
           })
         )
       )
@@ -2301,7 +2301,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
               RM.make,
               I.bind((releaseMap) =>
                 pipe(
-                  finalizerRef.set((exit) => M.releaseAll(exit, sequential)(releaseMap)),
+                  finalizerRef.set((exit) => M.releaseAll_(releaseMap, exit, sequential)),
                   I.bind(() =>
                     pipe(
                       restore(stream.proc.io),

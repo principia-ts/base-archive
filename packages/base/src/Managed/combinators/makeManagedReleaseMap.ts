@@ -1,15 +1,22 @@
+// tracing: off
+
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Managed } from '../core'
 
+import { accessCallTrace, traceCall } from '@principia/compile/util'
+
 import { makeExit_ } from '../core'
 import * as RM from '../ReleaseMap'
-import { releaseAll } from './releaseAll'
+import { releaseAll_ } from './releaseAll'
 
 /**
  * Construct a `ReleaseMap` wrapped in a `Managed`. The `ReleaseMap` will
  * be released with the specified `ExecutionStrategy` as the release action
  * for the resulting `Managed`.
+ *
+ * @trace call
  */
 export function makeManagedReleaseMap(es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> {
-  return makeExit_(RM.make, (rm, e) => releaseAll(e, es)(rm))
+  const trace = accessCallTrace()
+  return traceCall(makeExit_, trace)(RM.make, (rm, e) => releaseAll_(rm, e, es))
 }

@@ -37,81 +37,79 @@ export function finalizers(state: Running): ReadonlyMap<number, Finalizer> {
 
 export const noopFinalizer: Finalizer = () => I.unit()
 
-export function addIfOpen(finalizer: Finalizer) {
-  return (_: ReleaseMap): I.IO<unknown, never, Option<number>> =>
-    pipe(
-      _.ref,
-      XR.modify<I.IO<unknown, never, Option<number>>, State>((s) => {
-        switch (s._tag) {
-          case 'Exited': {
-            return [I.map_(finalizer(s.exit), () => None()), new Exited(increment(s.nextKey), s.exit)]
-          }
-          case 'Running': {
-            return [
-              I.pure(Some(s.nextKey)),
-              new Running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)))
-            ]
-          }
+export function addIfOpen(_: ReleaseMap, finalizer: Finalizer): I.UIO<Option<number>> {
+  return pipe(
+    _.ref,
+    XR.modify<I.IO<unknown, never, Option<number>>, State>((s) => {
+      switch (s._tag) {
+        case 'Exited': {
+          return [I.map_(finalizer(s.exit), () => None()), new Exited(increment(s.nextKey), s.exit)]
         }
-      }),
-      I.flatten
-    )
+        case 'Running': {
+          return [
+            I.pure(Some(s.nextKey)),
+            new Running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)))
+          ]
+        }
+      }
+    }),
+    I.flatten
+  )
 }
 
-export function release(key: number, exit: Exit<any, any>) {
-  return (_: ReleaseMap) =>
-    pipe(
-      _.ref,
-      XR.modify((s) => {
-        switch (s._tag) {
-          case 'Exited': {
-            return [I.unit(), s]
-          }
-          case 'Running': {
-            return [
-              O.match_(
-                M.lookup_(s.finalizers(), key),
-                () => I.unit(),
-                (f) => f(exit)
-              ),
-              new Running(s.nextKey, M.remove_(s.finalizers(), key))
-            ]
-          }
+export function release(_: ReleaseMap, key: number, exit: Exit<any, any>) {
+  return pipe(
+    _.ref,
+    XR.modify((s) => {
+      switch (s._tag) {
+        case 'Exited': {
+          return [I.unit(), s]
         }
-      })
-    )
+        case 'Running': {
+          return [
+            O.match_(
+              M.lookup_(s.finalizers(), key),
+              () => I.unit(),
+              (f) => f(exit)
+            ),
+            new Running(s.nextKey, M.remove_(s.finalizers(), key))
+          ]
+        }
+      }
+    })
+  )
 }
 
-export function add(finalizer: Finalizer) {
-  return (_: ReleaseMap) =>
-    I.map_(
-      addIfOpen(finalizer)(_),
-      O.match(
-        (): Finalizer => () => I.unit(),
-        (k): Finalizer => (e) => release(k, e)(_)
-      )
+export function add(_: ReleaseMap, finalizer: Finalizer): I.UIO<Finalizer> {
+  return I.map_(
+    addIfOpen(_, finalizer),
+    O.match(
+      (): Finalizer => () => I.unit(),
+      (k): Finalizer =>
+        (e) =>
+          release(_, k, e)
     )
+  )
 }
 
-export function replace(key: number, finalizer: Finalizer): (_: ReleaseMap) => I.IO<unknown, never, Option<Finalizer>> {
-  return (_) =>
-    pipe(
-      _.ref,
-      XR.modify<I.IO<unknown, never, Option<Finalizer>>, State>((s) => {
-        switch (s._tag) {
-          case 'Exited':
-            return [I.map_(finalizer(s.exit), () => None()), new Exited(s.nextKey, s.exit)]
-          case 'Running':
-            return [
-              I.succeed(M.lookup_(finalizers(s), key)),
-              new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
-            ]
-          default:
-            return absurd(s)
-        }
-      }),
-      I.flatten
-    )
+export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO<Option<Finalizer>> {
+  return pipe(
+    _.ref,
+    XR.modify<I.IO<unknown, never, Option<Finalizer>>, State>((s) => {
+      switch (s._tag) {
+        case 'Exited':
+          return [I.map_(finalizer(s.exit), () => None()), new Exited(s.nextKey, s.exit)]
+        case 'Running':
+          return [
+            I.succeed(M.lookup_(finalizers(s), key)),
+            new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
+          ]
+        default:
+          return absurd(s)
+      }
+    }),
+    I.flatten
+  )
 }
 
 export const make = I.map_(XR.makeRef<State>(new Running(0, new Map())), (s) => new ReleaseMap(s))

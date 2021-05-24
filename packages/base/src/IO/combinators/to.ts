@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Promise } from '../../Promise'
 import type { IO } from '../core'
 
@@ -22,6 +24,8 @@ export function to_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never
  * Returns an IO that keeps or breaks a promise based on the result of
  * this effect. Synchronizes interruption, so if this effect is interrupted,
  * the specified promise will be interrupted, too.
+ *
+ * @trace call
  */
 export function to<E, A>(p: Promise<E, A>): <R>(effect: IO<R, E, A>) => IO<R, never, boolean> {
   const trace = accessCallTrace()

@@ -1,3 +1,5 @@
+// tracing: off
+
 import type { Has } from '../../Has'
 import type { IO } from '../core'
 
@@ -19,6 +21,7 @@ import { raceFirst } from './raceFirst'
  * will be safely interrupted
  *
  * @trace call
+ * @trace 3
  */
 export function timeoutTo_<R, E, A, B, B1>(
   ma: IO<R, E, A>,
@@ -53,6 +56,7 @@ export function timeoutTo_<R, E, A, B, B1>(
  * will be safely interrupted
  *
  * @trace call
+ * @trace 2
  */
 export function timeoutTo<A, B, B1>(
   d: number,
