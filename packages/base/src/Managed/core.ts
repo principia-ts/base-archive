@@ -43,7 +43,27 @@ export class Managed<R, E, A> {
   readonly [I._A]: () => A
   constructor(readonly io: I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>) {}
 
-  readonly ['*>'] = <R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A1> => apr_(this, fb)
+  ['>>=']<R1, E1, B>(f: (a: A) => Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
+    return bind_(this, f)
+  }
+  ['*>']<R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A1> {
+    return apr_(this, fb)
+  }
+  ['<*']<R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A> {
+    return apl_(this, fb)
+  }
+  ['<$>']<B>(f: (a: A) => B): Managed<R, E, B> {
+    return map_(this, f)
+  }
+  ['$>']<B>(b: () => B): Managed<R, E, B> {
+    return as_(this, b)
+  }
+  ['>>>']<E1, B>(fb: Managed<A, E1, B>): Managed<R, E | E1, B> {
+    return composer_(this, fb)
+  }
+  ['<<<']<R1, E1>(fb: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
+    return composel_(this, fb)
+  }
 }
 
 export type UManaged<A> = Managed<unknown, never, A>
@@ -1438,13 +1458,41 @@ export function collectAllUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): Manage
 }
 
 /**
+ * @trace call
+ */
+export function composer_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1, B>): Managed<R, E | E1, B> {
+  const trace = accessCallTrace()
+  return bind_(
+    ma,
+    traceFrom(trace, (a) => giveAll_(mb, a))
+  )
+}
+
+/**
+ * @trace call
+ */
+export function composer<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E | E1, B> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(composer_, trace)(ma, mb)
+}
+
+/**
  * Executes the second effect and then provides its output as an environment to this effect
  *
  * @trace call
  */
-export function compose<R, E, A, R1, E1>(ma: Managed<R, E, A>, that: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
+export function composel_<R, E, A, R1, E1>(ma: Managed<R, E, A>, mr: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
   const trace = accessCallTrace()
-  return pipe(ask<R1>(), bind(traceFrom(trace, (r1) => give_(that, r1))), bind(traceFrom(trace, (r) => give_(ma, r))))
+  return pipe(ask<R1>(), bind(traceFrom(trace, (r1) => give_(mr, r1))), bind(traceFrom(trace, (r) => give_(ma, r))))
+}
+
+/**
+ * Executes the second effect and then provides its output as an environment to this effect
+ *
+ * @trace call
+ */
+export function composel<R, R1, E1>(mr: Managed<R1, E1, R>): <E, A>(ma: Managed<R, E, A>) => Managed<R1, E | E1, A> {
+  return (ma) => composel_(ma, mr)
 }
 
 /**
