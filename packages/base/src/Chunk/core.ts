@@ -1111,7 +1111,7 @@ export function alignWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (_: These<A, 
   const minlen = Math.min(fa.length, fb.length)
   const maxlen = Math.max(fa.length, fb.length)
   for (let i = 0; i < minlen; i++) {
-    out.append(f(Th.Both(fa.get(i), fb.get(i))))
+    out.append(f(Th.both(fa.get(i), fb.get(i))))
   }
   if (minlen === maxlen) {
     return out.result()

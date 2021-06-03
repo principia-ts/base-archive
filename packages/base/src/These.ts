@@ -56,10 +56,10 @@ export const right = T.right
 /**
  * @category constructors
  */
-export const Both = T.both
+export const both = T.both
 
 export function rightOrThese_<E, A>(me: O.Option<E>, a: A): These<E, A> {
-  return me._tag === 'None' ? right(a) : Both(me.value, a)
+  return me._tag === 'None' ? right(a) : both(me.value, a)
 }
 
 export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
@@ -67,7 +67,7 @@ export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
 }
 
 export function leftOrThese_<E, A>(me: O.Option<A>, e: E): These<E, A> {
-  return me._tag === 'None' ? left(e) : Both(e, me.value)
+  return me._tag === 'None' ? left(e) : both(e, me.value)
 }
 
 export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
@@ -81,7 +81,7 @@ export function fromOptions<E, A>(fe: O.Option<E>, fa: O.Option<A>): O.Option<Th
       : some(right(fa.value))
     : fa._tag === 'None'
     ? some(left(fe.value))
-    : some(Both(fe.value, fa.value))
+    : some(both(fe.value, fa.value))
 }
 
 /*
@@ -208,12 +208,12 @@ export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<UR
         ? left(fb.left)
         : isRight(fb)
         ? right(f(fa.right, fb.right))
-        : Both(fb.left, f(fa.right, fb.right))
+        : both(fb.left, f(fa.right, fb.right))
       : isLeft(fb)
       ? left(SE.combine_(fa.left, fb.left))
       : isRight(fb)
-      ? Both(fa.left, f(fa.right, fb.right))
-      : Both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
+      ? both(fa.left, f(fa.right, fb.right))
+      : both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
 
   return P.SemimonoidalFunctor({
     map_,
@@ -228,7 +228,7 @@ export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<UR
  */
 
 export function bimap_<E, A, G, B>(pab: These<E, A>, f: (e: E) => G, g: (a: A) => B): These<G, B> {
-  return isLeft(pab) ? left(f(pab.left)) : isRight(pab) ? right(g(pab.right)) : Both(f(pab.left), g(pab.right))
+  return isLeft(pab) ? left(f(pab.left)) : isRight(pab) ? right(g(pab.right)) : both(f(pab.left), g(pab.right))
 }
 
 export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: These<E, A>) => These<G, B> {
@@ -236,7 +236,7 @@ export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: These<E
 }
 
 export function mapLeft_<E, A, G>(pab: These<E, A>, f: (e: E) => G): These<G, A> {
-  return isLeft(pab) ? left(f(pab.left)) : isBoth(pab) ? Both(f(pab.left), pab.right) : pab
+  return isLeft(pab) ? left(f(pab.left)) : isBoth(pab) ? both(f(pab.left), pab.right) : pab
 }
 
 export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: These<E, A>) => These<G, A> {
@@ -244,7 +244,7 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: These<E, A>) => These<G,
 }
 
 export function swap<E, A>(pab: These<E, A>): These<A, E> {
-  return isLeft(pab) ? right(pab.left) : isRight(pab) ? left(pab.right) : Both(pab.right, pab.left)
+  return isLeft(pab) ? right(pab.left) : isRight(pab) ? left(pab.right) : both(pab.right, pab.left)
 }
 
 /*
@@ -300,7 +300,7 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: These<E, A>) =>
  */
 
 export function map_<E, A, B>(fa: These<E, A>, f: (a: A) => B): These<E, B> {
-  return isLeft(fa) ? fa : isRight(fa) ? right(f(fa.right)) : Both(fa.left, f(fa.right))
+  return isLeft(fa) ? fa : isRight(fa) ? right(f(fa.right)) : both(fa.left, f(fa.right))
 }
 
 export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
@@ -325,8 +325,8 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[HKT.URI<TheseURI, {}>]
     return isLeft(fb)
       ? left(SE.combine_(ma.left, fb.left))
       : isRight(fb)
-      ? Both(ma.left, fb.right)
-      : Both(SE.combine_(ma.left, fb.left), fb.right)
+      ? both(ma.left, fb.right)
+      : both(SE.combine_(ma.left, fb.left), fb.right)
   }
   return P.Monad({
     ...getApplicative(SE),
@@ -356,19 +356,19 @@ export function getSemigroup<E, A>(SE: P.Semigroup<E>, SA: P.Semigroup<A>): P.Se
       ? isLeft(y)
         ? left(SE.combine_(x.left, y.left))
         : isRight(y)
-        ? Both(x.left, y.right)
-        : Both(SE.combine_(x.left, y.left), y.right)
+        ? both(x.left, y.right)
+        : both(SE.combine_(x.left, y.left), y.right)
       : isRight(x)
       ? isLeft(y)
-        ? Both(y.left, x.right)
+        ? both(y.left, x.right)
         : isRight(y)
         ? right(SA.combine_(x.right, y.right))
-        : Both(y.left, SA.combine_(x.right, y.right))
+        : both(y.left, SA.combine_(x.right, y.right))
       : isLeft(y)
-      ? Both(SE.combine_(x.left, y.left), x.right)
+      ? both(SE.combine_(x.left, y.left), x.right)
       : isRight(y)
-      ? Both(x.left, SA.combine_(x.right, y.right))
-      : Both(SE.combine_(x.left, y.left), SA.combine_(x.right, y.right))
+      ? both(x.left, SA.combine_(x.right, y.right))
+      : both(SE.combine_(x.left, y.left), SA.combine_(x.right, y.right))
   )
 }
 
@@ -400,7 +400,7 @@ export const traverse_ = P.implementTraverse_<URI, V>()((_) => (G) => {
       ? G.pure(ta)
       : isRight(ta)
       ? G.map_(f(ta.right), right)
-      : G.map_(f(ta.right), (b) => Both(ta.left, b))
+      : G.map_(f(ta.right), (b) => both(ta.left, b))
   }
 })
 

@@ -313,7 +313,7 @@ export function alignWith_<E, A, E1, B, C>(
       : right(f(T.right(fb.right)))
     : fb._tag === 'Left'
     ? right(f(T.left(fa.right)))
-    : right(f(T.Both(fa.right, fb.right)))
+    : right(f(T.both(fa.right, fb.right)))
 }
 
 export function alignWith<A, E1, B, C>(
